@@ -1,4 +1,4 @@
-import {SarMatrix} from './sar-matrix-types';
+import {observedMolecules, SarMatrix} from './sar-matrix-types';
 
 export enum SarRankScheme {
   Potency = 'Potent compounds',
@@ -73,17 +73,6 @@ export function rankMatrices(matrices: SarMatrix[], scheme: SarRankScheme,
   };
   return [...matrices].sort((a, b) => (rank(b) - rank(a)) ||
     (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
-}
-
-function observedMolecules(matrix: SarMatrix): Set<number> {
-  const mols = new Set<number>();
-  for (const row of matrix.cells) {
-    for (const cell of row) {
-      if (cell.kind === 'real' && cell.molIdx !== null)
-        mols.add(cell.molIdx);
-    }
-  }
-  return mols;
 }
 
 /**

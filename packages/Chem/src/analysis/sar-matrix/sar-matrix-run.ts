@@ -13,7 +13,7 @@ import {buildMatchedSeries, buildCoarserLevels, clusterRelatedCores, groupSeries
   poolUngroupedSeries, poolUngroupedMolecules}
   from './sar-matrix-clustering';
 import {rankMatrices, SarRankScheme} from './sar-matrix-ranking';
-import {logSarTime, SarMatrix, SarMatrixCell} from './sar-matrix-types';
+import {logSarTime, observedMolecules, SarMatrix, SarMatrixCell} from './sar-matrix-types';
 
 /**
  * Link each virtual analog's row core to its column substituent in one batched worker call.
@@ -51,17 +51,10 @@ async function linkVirtualStructures(matrices: SarMatrix[]): Promise<void> {
 
 /** Row cores, column substituents and observed compounds of an assembled matrix, as comparable sets. */
 function matrixContent(matrix: SarMatrix): {rows: Set<string>, cols: Set<string>, mols: Set<number>} {
-  const mols = new Set<number>();
-  for (const row of matrix.cells) {
-    for (const cell of row) {
-      if (cell.kind === 'real' && cell.molIdx !== null)
-        mols.add(cell.molIdx);
-    }
-  }
   return {
     rows: new Set(matrix.rows.map((r) => r.keySmiles)),
     cols: new Set(matrix.columns.map((c) => `${c.position}${c.substSmiles}`)),
-    mols,
+    mols: observedMolecules(matrix),
   };
 }
 
@@ -167,6 +160,15 @@ export interface SarMatrixParams {
   higherIsBetter: boolean;
   /** Core-similarity clustering threshold (lower groups more distant cores). Similarity grouping only. */
   threshold: number;
+  /** Fewest MEASURED compounds a matrix must hold to be kept. One measured compound gives no row
+   *  effect, no column effect, no correlation and nothing to predict from, so such a matrix is a row
+   *  of blanks around a single value. Matrices are grouped by structure before activity is attached,
+   *  which is how they arise: the compounds are there, the measurements are not. */
+  minCompounds: number;
+  /** Whether to predict the activity of a compound the set already holds but has no measurement for.
+   *  Same additive model as an unexplored cell, and only where its row and column both have
+   *  measurements to fit — it just never becomes something to synthesize. */
+  predictUnmeasured: boolean;
   /** Optional: series the user assigned themselves, one value per compound. Replaces `grouping`
    *  entirely and skips the automatic tiers, which would otherwise fold the user's series by
    *  chemistry into matrices they did not ask for. */
@@ -272,12 +274,14 @@ export async function runSarMatrix(molecules: DG.Column, activity: DG.Column<num
   logSarTime(`decomposition total (${decomps.filter(Boolean).length}/${clusters.length} clusters decomposed)`, t);
 
   // A matrix needs >=2 rows to compare cores; folding can collapse several series onto one row, so
-  // this is checked after assembly.
+  // this is checked after assembly. The floor counts MEASURED compounds, not clustered members.
   t = performance.now();
   const usable = (matrix: SarMatrix | null): matrix is SarMatrix =>
-    matrix !== null && matrix.realCount > 0 && matrix.columns.length > 0 && matrix.rows.length >= 2;
+    matrix !== null && matrix.realCount >= params.minCompounds && matrix.columns.length > 0 &&
+    matrix.rows.length >= 2;
   const assembled = (await Promise.all(clusters.map((cluster, i) =>
-    assembleMultiPositionMatrix(cluster, molList, activities, params.predictVirtual, decomps[i]))))
+    assembleMultiPositionMatrix(cluster, molList, activities, params.predictVirtual, decomps[i],
+      params.predictUnmeasured))))
     .filter(usable);
 
   // An anchor can decompose a cluster into fewer rows than it has series, and a matrix under two rows
@@ -287,7 +291,8 @@ export async function runSarMatrix(molecules: DG.Column, activity: DG.Column<num
   const built = new Set(assembled.map((matrix) => matrix.id));
   const rescued = (await Promise.all(clusters.map((cluster, i) =>
     decomps[i] !== null && !built.has(cluster.id) ?
-      assembleMultiPositionMatrix(cluster, molList, activities, params.predictVirtual, null) : null)))
+      assembleMultiPositionMatrix(cluster, molList, activities, params.predictVirtual, null,
+        params.predictUnmeasured) : null)))
     .filter(usable);
   if (rescued.length) {
     assembled.push(...rescued);

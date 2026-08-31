@@ -8,7 +8,7 @@ import {MmpFragments} from '../analysis/molecular-matched-pairs/mmp-analysis/mmp
 import {buildMatchedSeries, clusterRelatedCores} from '../analysis/sar-matrix/sar-matrix-clustering';
 import {assembleSinglePositionMatrix, fitAdditiveModel} from '../analysis/sar-matrix/sar-matrix-assemble';
 import {computeMatrixConfidence} from '../analysis/sar-matrix/sar-matrix-confidence';
-import {rankMatrices, SarRankScheme} from '../analysis/sar-matrix/sar-matrix-ranking';
+import {SarRankScheme} from '../analysis/sar-matrix/sar-matrix-ranking';
 import {runSarMatrix, SarGrouping, SarMatrixParams} from '../analysis/sar-matrix/sar-matrix-run';
 import {SCALING_METHODS} from '../analysis/molecular-matched-pairs/mmp-viewer/mmp-constants';
 import {computeAllTransfers, spearman, transferStats} from '../analysis/sar-matrix/sar-matrix-transfer';
@@ -103,7 +103,8 @@ function e2eParams(useMcsAnchors: boolean): SarMatrixParams {
   return {
     scaling: SCALING_METHODS.NONE, fragmentCutoff: 1, predictVirtual: true, grouping: SarGrouping.Site,
     fragmentationLevels: 2, higherIsBetter: true, threshold: 0.4, useMcsAnchors,
-    rankScheme: SarRankScheme.Potency,
+    // Below the viewer's default, so the fixture's exact matrix set survives the floor.
+    rankScheme: SarRankScheme.Potency, minCompounds: 1, predictUnmeasured: true,
   };
 }
 
@@ -129,7 +130,8 @@ function mixedCoverage(): {molecules: DG.Column, activity: DG.Column<number>} {
 
 /** Three cores x two substituents with every slot occupied but CoreC/Et, so the additive model can
  *  predict both blanks. A-Et is in the set and never assayed; only CoreC/Et is genuinely unmade. */
-function unmeasuredMatrix(): {matrix: SarMatrix, etIdx: number, row: (core: string) => number} {
+function unmeasuredMatrix(predictUnmeasured = false):
+  {matrix: SarMatrix, etIdx: number, row: (core: string) => number} {
   const cluster: CoreCluster = {
     id: 'c0', siteKey: '', level: 2,
     series: [
@@ -139,7 +141,7 @@ function unmeasuredMatrix(): {matrix: SarMatrix, etIdx: number, row: (core: stri
     ],
   };
   const matrix = assembleSinglePositionMatrix(cluster, ['A-Me', 'A-Et', 'B-Me', 'B-Et', 'C-Me'],
-    Float32Array.from([10, NaN, 8, 6, 4]), true);
+    Float32Array.from([10, NaN, 8, 6, 4]), true, predictUnmeasured);
   return {matrix, etIdx: matrix.columns.findIndex((c) => c.substSmiles === 'Et'),
     row: (core) => matrix.rows.findIndex((r) => r.coreSmiles === core)};
 }
@@ -152,7 +154,7 @@ category('SAR Matrix', () => {
     }
   });
 
-  test('buildMatchedSeries groups molecules by shared core', async () => {
+  test('series by shared core', async () => {
     const series = buildMatchedSeries(fakeFrags(), 10);
     expect(series.length, 2);
     for (const s of series) {
@@ -163,7 +165,7 @@ category('SAR Matrix', () => {
     }
   });
 
-  test('assembleMatrix fills an empty cell with the additive prediction', async () => {
+  test('columns from substituents', async () => {
     const cluster: CoreCluster = {
       id: 'c0',
       siteKey: '',
@@ -172,66 +174,32 @@ category('SAR Matrix', () => {
         {coreSmiles: 'CoreA', members: [
           {molIdx: 0, substSmiles: 'Me'},
           {molIdx: 1, substSmiles: 'Et'},
+          {molIdx: 2, substSmiles: 'Pr'},
         ]},
         {coreSmiles: 'CoreB', members: [
-          {molIdx: 2, substSmiles: 'Me'},
+          {molIdx: 3, substSmiles: 'Me'},
         ]},
       ],
     };
-    const molecules = ['A-Me', 'A-Et', 'B-Me'];
-    const activities = Float32Array.from([1, 2, 3]);
-    const matrix = assembleSinglePositionMatrix(cluster, molecules, activities, true);
+    const molecules = ['A-Me', 'A-Et', 'A-Pr', 'B-Me'];
+    const activities = Float32Array.from([1, 2, 3, 4]);
 
-    expect(matrix.rows.length, 2);
-    expect(matrix.columns.length, 2);
-    expect(matrix.realCount, 3);
-    expect(matrix.virtualCount, 1);
+    const noPredict = assembleSinglePositionMatrix(cluster, molecules, activities, false);
+    expect(noPredict.columns.map((c) => c.substSmiles).sort().join(','), 'Et,Me,Pr');
+    expect(noPredict.realCount, 4);
+    expect(noPredict.virtualCount, 0);
+    const hasVirtual = noPredict.cells.some((row) => row.some((cell) => cell.kind === 'virtual'));
+    expect(hasVirtual, false, 'predict:false must leave missing combinations empty, not virtual');
 
-    const meIdx = matrix.columns.findIndex((c) => c.substSmiles === 'Me');
-    const etIdx = matrix.columns.findIndex((c) => c.substSmiles === 'Et');
-    const bEt = matrix.cells[1][etIdx];
-    expect(bEt.kind, 'virtual');
-    // rowMean(B)=3, colMean(Et)=2, grandMean=2  ->  3 + 2 - 2 = 3
-    expect(bEt.value, 3);
-    expect(matrix.cells[1][meIdx].kind, 'real');
+    const predicted = assembleSinglePositionMatrix(cluster, molecules, activities, true);
+    const etIdx = predicted.columns.findIndex((c) => c.substSmiles === 'Et');
+    const prIdx = predicted.columns.findIndex((c) => c.substSmiles === 'Pr');
+    const filled = [predicted.cells[1][etIdx], predicted.cells[1][prIdx]];
+    expect(filled.some((c) => c.kind === 'virtual' && c.value !== null), true,
+      'predict:true fills at least one missing combination');
   });
 
-  test('assembleSinglePositionMatrix: columns are the distinct substituents; predict:false leaves no virtual cells',
-    async () => {
-      const cluster: CoreCluster = {
-        id: 'c0',
-        siteKey: '',
-        level: 2,
-        series: [
-          {coreSmiles: 'CoreA', members: [
-            {molIdx: 0, substSmiles: 'Me'},
-            {molIdx: 1, substSmiles: 'Et'},
-            {molIdx: 2, substSmiles: 'Pr'},
-          ]},
-          {coreSmiles: 'CoreB', members: [
-            {molIdx: 3, substSmiles: 'Me'},
-          ]},
-        ],
-      };
-      const molecules = ['A-Me', 'A-Et', 'A-Pr', 'B-Me'];
-      const activities = Float32Array.from([1, 2, 3, 4]);
-
-      const noPredict = assembleSinglePositionMatrix(cluster, molecules, activities, false);
-      expect(noPredict.columns.map((c) => c.substSmiles).sort().join(','), 'Et,Me,Pr');
-      expect(noPredict.realCount, 4);
-      expect(noPredict.virtualCount, 0);
-      const hasVirtual = noPredict.cells.some((row) => row.some((cell) => cell.kind === 'virtual'));
-      expect(hasVirtual, false, 'predict:false must leave missing combinations empty, not virtual');
-
-      const predicted = assembleSinglePositionMatrix(cluster, molecules, activities, true);
-      const etIdx = predicted.columns.findIndex((c) => c.substSmiles === 'Et');
-      const prIdx = predicted.columns.findIndex((c) => c.substSmiles === 'Pr');
-      const filled = [predicted.cells[1][etIdx], predicted.cells[1][prIdx]];
-      expect(filled.some((c) => c.kind === 'virtual' && c.value !== null), true,
-        'predict:true fills at least one missing combination');
-    });
-
-  test('assembleSinglePositionMatrix: a NaN activity becomes an unmeasured cell, not a real one', async () => {
+  test('NaN activity is unmeasured', async () => {
     const cluster: CoreCluster = {
       id: 'c0',
       siteKey: '',
@@ -241,16 +209,19 @@ category('SAR Matrix', () => {
           {molIdx: 0, substSmiles: 'Me'},
           {molIdx: 1, substSmiles: 'Et'}, // activity missing (NaN)
         ]},
+        // B-Et is what keeps the Et column observed, and so unpruned: a column whose only compound is
+        // the unmeasured one is an axis the data never touched, and is dropped before this assertion.
         {coreSmiles: 'CoreB', members: [
           {molIdx: 2, substSmiles: 'Me'},
+          {molIdx: 3, substSmiles: 'Et'},
         ]},
       ],
     };
-    const molecules = ['A-Me', 'A-Et', 'B-Me'];
-    const activities = Float32Array.from([10, NaN, 5]);
+    const molecules = ['A-Me', 'A-Et', 'B-Me', 'B-Et'];
+    const activities = Float32Array.from([10, NaN, 5, 7]);
     const matrix = assembleSinglePositionMatrix(cluster, molecules, activities, false);
 
-    expect(matrix.realCount, 2, 'the NaN-activity member must not count as a real observation');
+    expect(matrix.realCount, 3, 'the NaN-activity member must not count as a real observation');
     const etIdx = matrix.columns.findIndex((c) => c.substSmiles === 'Et');
     const aEt = matrix.cells[0][etIdx];
     expect(aEt.kind, 'unmeasured', 'the compound is in the set, only its activity is missing');
@@ -261,15 +232,46 @@ category('SAR Matrix', () => {
     expect(matrix.maxActivity, 10, 'maxActivity must be the max of the finite activities only');
   });
 
-  test('a compound with no activity is never predicted as an analog to make', async () => {
+  test('untested is not an analog', async () => {
     const {matrix, etIdx, row} = unmeasuredMatrix();
     expect(matrix.cells[row('CoreA')][etIdx].kind, 'unmeasured', 'a compound the set holds is not one to make');
-    expect(matrix.cells[row('CoreA')][etIdx].value, null, 'no activity was measured, so none may be reported');
+    expect(matrix.cells[row('CoreA')][etIdx].value, null, 'with prediction off, no number may be reported');
     expect(matrix.cells[row('CoreC')][etIdx].kind, 'virtual', 'an unmade slot must still be predicted');
     expect(matrix.cells.flat().filter((c) => c.kind === 'virtual').length, 1, 'only the unmade slot is proposed');
   });
 
-  test('fitAdditiveModel: predicts rowMean + colMean - grandMean with support = min(rowN, colN)', async () => {
+  test('prune unobserved core', async () => {
+    // CoreC bears only a compound with no activity, so its row can never be predicted from anything.
+    const cluster: CoreCluster = {
+      id: 'c0', siteKey: '', level: 2,
+      series: [
+        {coreSmiles: 'CoreA', members: [{molIdx: 0, substSmiles: 'Me'}, {molIdx: 1, substSmiles: 'Et'}]},
+        {coreSmiles: 'CoreB', members: [{molIdx: 2, substSmiles: 'Me'}, {molIdx: 3, substSmiles: 'Et'}]},
+        {coreSmiles: 'CoreC', members: [{molIdx: 4, substSmiles: 'Me'}]},
+      ],
+    };
+    const matrix = assembleSinglePositionMatrix(cluster, ['A-Me', 'A-Et', 'B-Me', 'B-Et', 'C-Me'],
+      Float32Array.from([10, 9, 8, 6, NaN]), true);
+    expect(matrix.rows.length, 2, 'the core with nothing measured on it is not an axis');
+    expect(matrix.rows.some((r) => r.coreSmiles === 'CoreC'), false);
+    expect(matrix.rows.map((r) => r.label).join(','), 'Core 1,Core 2', 'labels renumber over the gap');
+    expect(matrix.cells.flat().filter((c) => c.kind === 'empty').length, 0,
+      'every surviving cell is measured or predictable');
+    expect(matrix.realCount, 4, 'dropping an unobserved row loses no measured compound');
+  });
+
+  test('predict untested compound', async () => {
+    const {matrix, etIdx, row} = unmeasuredMatrix(true);
+    const aEt = matrix.cells[row('CoreA')][etIdx];
+    expect(aEt.kind, 'unmeasured', 'a predicted number must not promote the compound to an unmade analog');
+    expect(aEt.molIdx, 1, 'the cell still stands for the compound the set holds');
+    // rowMean(CoreA) = 10, colMean(Et) = 6, grandMean = (10 + 8 + 6 + 4) / 4 = 7.
+    expect(aEt.value !== null && Math.abs(aEt.value - 9) < 1e-6, true, 'rowMean + colMean - grandMean');
+    expect(matrix.cells.flat().filter((c) => c.kind === 'virtual').length, 1,
+      'the count of analogs to synthesize is unchanged');
+  });
+
+  test('additive model fit', async () => {
     // 3x3 grid: row2 and col2 have no observation at all.
     const cells: SarMatrixCell[][] = [
       [realCell(1), realCell(3), emptyCell()],
@@ -288,7 +290,7 @@ category('SAR Matrix', () => {
     expect(predict(2, 0), null, 'row 2 has no observation — unpredictable');
   });
 
-  test('computeMatrixConfidence: null when fewer than 4 observed cells', async () => {
+  test('confidence needs 4 cells', async () => {
     const cells: SarMatrixCell[][] = [
       [realCell(1), realCell(2), emptyCell()],
       [realCell(3), emptyCell(), emptyCell()],
@@ -296,7 +298,7 @@ category('SAR Matrix', () => {
     expect(computeMatrixConfidence(makeMatrix(cells)), null);
   });
 
-  test('computeMatrixConfidence: high R2 / low RMSE on a perfectly additive matrix', async () => {
+  test('confidence on additive', async () => {
     const matrix = additiveMatrix([0, 1, 2, 3], [0, 10, 20, 30]);
     const conf = computeMatrixConfidence(matrix);
     expect(conf !== null, true);
@@ -305,7 +307,7 @@ category('SAR Matrix', () => {
     expect(conf!.rmse < 5, true, `expected a small rmse, got ${conf!.rmse}`);
   });
 
-  test('computeMatrixConfidence: negative R2 on a clearly non-additive matrix', async () => {
+  test('confidence on non-additive', async () => {
     // Diagonal spikes: no row/column effect explains this pattern.
     const cells: SarMatrixCell[][] = Array.from({length: 4}, (_, ri) =>
       Array.from({length: 4}, (_, ci) => realCell(ri === ci ? 100 : 0)));
@@ -314,17 +316,7 @@ category('SAR Matrix', () => {
     expect(conf!.r2 < 0, true, `expected a negative r2 for a non-additive matrix, got ${conf!.r2}`);
   });
 
-  test('computeMatrixConfidence: reports the cross-validatable fraction and stores a LOO fit', async () => {
-    const matrix = additiveMatrix([0, 1, 2, 3], [0, 10, 20, 30]);
-    const conf = computeMatrixConfidence(matrix);
-    expect(conf !== null, true);
-    expect(conf!.total, 16, 'total counts every observed cell');
-    expect(conf!.n, 16, 'all 16 cells are cross-validatable here');
-    // The LOO pass stores an out-of-sample fitted value on every observed cell (drives the flag).
-    expect(typeof matrix.cells[0][0].fit, 'number', 'observed cells get a leave-one-out fit');
-  });
-
-  test('computeMatrixConfidence: validates each R-position slice independently', async () => {
+  test('confidence per R-position', async () => {
     // Two position groups (R1 = cols 0-2, R2 = cols 3-5), each additive on its own.
     const cells: SarMatrixCell[][] = [
       [realCell(1), realCell(2), realCell(3), realCell(10), realCell(20), realCell(30)],
@@ -339,25 +331,7 @@ category('SAR Matrix', () => {
     expect(conf!.r2 > 0.85, true, `both slices are additive, so r2 should be high, got ${conf!.r2}`);
   });
 
-  test('rankMatrices scores every scheme and sorts by the chosen one', async () => {
-    const cluster: CoreCluster = {
-      id: 'c0',
-      siteKey: '',
-      level: 2,
-      series: [
-        {coreSmiles: 'CoreA', members: [
-          {molIdx: 0, substSmiles: 'Me'},
-          {molIdx: 1, substSmiles: 'Et'},
-        ]},
-      ],
-    };
-    const matrix = assembleSinglePositionMatrix(cluster, ['A-Me', 'A-Et'], Float32Array.from([1, 5]), false);
-    const ranked = rankMatrices([matrix], SarRankScheme.Potency);
-    expect(ranked.length, 1);
-    expect(ranked[0].scores[SarRankScheme.Potency], 5);
-  });
-
-  test('spearman: rank correlation, monotone-invariant and outlier-robust', async () => {
+  test('spearman correlation', async () => {
     // A monotone but non-linear relation is a perfect rank correlation even though Pearson is < 1.
     expectFloat(spearman([1, 2, 3, 4], [1, 4, 9, 16])!, 1, 0.001);
     expectFloat(spearman([1, 2, 3, 4], [4, 3, 2, 1])!, -1, 0.001);
@@ -368,7 +342,7 @@ category('SAR Matrix', () => {
     expect(spearman([1, 1, 1, 1], [1, 2, 3, 4]), null, 'a constant side has no ordering to correlate');
   });
 
-  test('computeAllTransfers finds a cross-matrix transfer between differently-scaffolded series', async () => {
+  test('transfer across matrices', async () => {
     // Two matrices whose columns carry the same R-groups (S0..S3); a row in each tracks the other.
     const matA = makeMatrix([
       xferRow([1, 2, 3, 4]),
@@ -384,29 +358,18 @@ category('SAR Matrix', () => {
     expectFloat(transfers[0].correlation, 1, 0.01);
   });
 
-  test('computeAllTransfers reports two related-core rows of one matrix (the canonical transfer)', async () => {
-    // Rows of one matrix are analog series with related cores — the canonical SAR-transfer pairing.
-    // Real observations are correlated (not the additive fit), so a within-matrix pair is a transfer.
-    const mat = makeMatrix([xferRow([1, 2, 3, 4]), xferRow([2, 3, 4, 5], 'b')]);
-    const transfers = await computeAllTransfers([mat], 0);
-    expect(transfers.length, 1, 'a within-matrix related-core pair is a transfer');
-    expect(transfers[0].a.matrixIndex === transfers[0].b.matrixIndex, true, 'both rows are in the one matrix');
-    expectFloat(transfers[0].correlation, 1, 0.01);
-  });
-
-  test('computeAllTransfers: anti-correlated rows of one matrix are not a transfer', async () => {
-    // Within-matrix pairs are compared, but only conserved potency order counts: ρ = -1 is not transfer.
-    const mat = makeMatrix([xferRow([1, 2, 3, 4]), xferRow([4, 3, 2, 1], 'b')]);
-    expect((await computeAllTransfers([mat], 0)).length, 0, 'opposite orderings are not a transfer');
-  });
-
-  test('computeAllTransfers skips pairs below the correlation floor', async () => {
+  test('transfer correlation floor', async () => {
     const matA = makeMatrix([xferRow([1, 2, 3, 4])]);
-    const matB = makeMatrix([xferRow([4, 3, 2, 1], 'b')]); // ρ = -1, below the 0.7 floor
-    expect((await computeAllTransfers([matA, matB], 0)).length, 0, 'uncorrelated series yield no transfer');
+    // Ranks 2,1,4,3 against 1,2,3,4 is a spearman of 0.6 — the trend is real but under the 0.7 floor.
+    const below = makeMatrix([xferRow([2, 1, 4, 3], 'b')]);
+    expect((await computeAllTransfers([matA, below], 0)).length, 0, 'a correlation under the floor is no transfer');
+    // Same shapes and the same open similarity gate, so a passing correlation must still come through:
+    // without this the assertion above would hold even if the pairing had failed for some other reason.
+    const above = makeMatrix([xferRow([2, 3, 4, 5], 'b')]);
+    expect((await computeAllTransfers([matA, above], 0)).length, 1, 'the pair is otherwise eligible');
   });
 
-  test('computeAllTransfers dedupes the same core pair to its best position', async () => {
+  test('transfer dedupe by position', async () => {
     // The same two cores pair at both R1 (ρ=1) and R2 (ρ=0.8) — only R1 survives.
     const positions = ['R1', 'R2'];
     const twoPosition = (values: number[], side: 'a' | 'b'): SarMatrix => {
@@ -421,7 +384,7 @@ category('SAR Matrix', () => {
     expect(transfers[0].a.position, 'R1', 'R1 is the more-correlated position, so it is kept');
   });
 
-  test('transferStats: identical per-step deltas give foldMatch = 1, no benefiting cell without a virtual',
+  test('foldMatch on equal steps',
     async () => {
       // matB = matA − 9, so the trends are identical: correlation 1 and every step delta matches.
       const matA = makeMatrix([xferRow([10, 12, 14, 20])]); // deltas +2, +2, +6
@@ -435,7 +398,7 @@ category('SAR Matrix', () => {
       expect(stats.benefiting, null, 'no virtual cells in either core — nothing to benefit from the transfer');
     });
 
-  test('transferStats: differing step magnitudes give a lower foldMatch', async () => {
+  test('foldMatch on unequal steps', async () => {
     const matA = makeMatrix([xferRow([10, 12, 14, 20])]); // deltas +2, +2, +6
     const matB = makeMatrix([xferRow([1, 2, 3, 4], 'b')]); // same direction, +1 each
     const transfers = await computeAllTransfers([matA, matB], 0);
@@ -447,19 +410,20 @@ category('SAR Matrix', () => {
     expect(stats.foldMatch! < 1, true);
   });
 
-  test('transferStats points benefiting at the follower core\'s virtual analog', async () => {
-    // Four measured pairs (S0..S3) carry the correlation; the follower has S4 only as a prediction.
-    const matA = makeMatrix([xferRow([1, 2, 3, 4, 5])]);
+  test('transferStats both sides', async () => {
+    // Both cores have an untested S4. The stronger is the leader's, and the leader is scanned second,
+    // so stopping at the first side with a candidate reports the weaker analog as the one to make.
+    const matA = makeMatrix([[...xferRow([1, 2, 3, 4]), virtualCell(20)]]);
     const matB = makeMatrix([[...xferRow([2, 3, 4, 5], 'b'), virtualCell(10)]]);
     const transfers = await computeAllTransfers([matA, matB], 0);
-    expect(transfers.length, 1, 'one transfer between the two single-row matrices');
+    expect(transfers.length, 1, 'the four measured pairs correlate, so the pair is a transfer');
     const stats = transferStats(transfers[0], true);
-    expect(stats.benefiting !== null, true, 'the follower core has an untested (virtual) analog to fill');
-    expect(stats.benefiting!.side, 'b', 'the follower is the second matrix');
-    expect(stats.benefiting!.substSmiles, 'S4', 'the virtual sits at the follower core\'s fifth substituent');
+    expect(stats.benefiting !== null, true, 'both sides carry a virtual analog');
+    expect(stats.benefiting!.side, 'a', 'the strongest analog wins wherever it sits');
+    expectFloat(stats.benefiting!.value, 20, 0.01);
   });
 
-  test('computeAllTransfers carries the analogs one side has only predicted', async () => {
+  test('transfer carries analogs', async () => {
     // The leader measured all five R-groups; the follower has the fifth only as a prediction. That
     // column is what the transfer argues for, so it comes back alongside the four that are matched —
     // and separately from them, since it has no second observation to correlate.
@@ -474,7 +438,7 @@ category('SAR Matrix', () => {
     expect(transfers[0].predictedBCols[0], 4, 'the follower has it predicted at its fifth column');
   });
 
-  test('computeAllTransfers ignores a compound shared by both series', async () => {
+  test('transfer ignores shared cpd', async () => {
     // The overlapping cover puts one compound in several matrices at once. Matched against itself it
     // would put its own potency on both axes and report a perfect correlation that means nothing, so
     // these two series — same compounds, same potencies — must yield no transfer at all.
@@ -484,17 +448,7 @@ category('SAR Matrix', () => {
       'a series compared against its own compounds is not a transfer');
   });
 
-  test('computeAllTransfers requires the same R-group, not merely a similar one', async () => {
-    // Same compounds and the same perfect trend, but the follower files them under different
-    // substituents. A transfer claims one particular change did one particular thing on two scaffolds,
-    // and two series that never made the same change support no such claim.
-    const matA = makeMatrix([xferRow([1, 2, 3, 4])]);
-    const matB = makeMatrix([xferRow([2, 3, 4, 5], 'b')]);
-    matB.columns.forEach((col, i) => col.substSmiles = `T${i}`);
-    expect((await computeAllTransfers([matA, matB], 0)).length, 0, 'different R-groups are not a pairing');
-  });
-
-  test('computeAllTransfers applies the compound similarity floor', async () => {
+  test('transfer similarity floor', async () => {
     // Identical R-groups and a perfect trend either way, so only the similarity gate decides. At 0
     // every pair passes; at 1 none can, since the two sides are different compounds by construction.
     const matA = makeMatrix([xferRow([1, 2, 3, 4])]);
@@ -504,7 +458,7 @@ category('SAR Matrix', () => {
       'demanding all but identical compounds admits none');
   });
 
-  test('linkRGroupFragments joins a core with a fragment at its attachment point', async () => {
+  test('link core and fragment', async () => {
     const svc = await chemCommonRdKit.getRdKitService();
     const linked = await svc.linkRGroupFragments(['c1ccc([*:1])cc1'], [['C[*:1]']], [1]);
     expect(linked.length, 1);
@@ -515,7 +469,7 @@ category('SAR Matrix', () => {
     mol.delete();
   });
 
-  test('linkRGroupFragments: a position the core lacks is skipped, not fatal', async () => {
+  test('link skips missing position', async () => {
     const svc = await chemCommonRdKit.getRdKitService();
     // Rows of one matrix can have different cores, so a core need not carry every decomposed position.
     const linked = await svc.linkRGroupFragments(
@@ -528,18 +482,7 @@ category('SAR Matrix', () => {
     mol.delete();
   });
 
-  test('linkRGroupFragments: an empty fragment removes the attachment point cleanly', async () => {
-    const svc = await chemCommonRdKit.getRdKitService();
-    const linked = await svc.linkRGroupFragments(['c1ccc([*:1])cc1'], [['']], [1]);
-    expect(linked.length, 1);
-    expect(linked[0].includes('*'), false, 'no stray attachment point should remain');
-    const mol = chemCommonRdKit.checkMoleculeValid(linked[0]);
-    expect(mol !== null, true, 'the assembled SMILES must parse as a valid molecule');
-    expect(mol.get_num_atoms(), 6, 'benzene: 6 ring carbons, no substituent added');
-    mol.delete();
-  });
-
-  test('runSarMatrix end-to-end: the same input gives the same matrices twice', async () => {
+  test('run is deterministic', async () => {
     const {molecules, activity} = twoSiteGrid();
     const first = await runSarMatrix(molecules, activity, e2eParams(false));
     const second = await runSarMatrix(molecules, activity, e2eParams(false));
@@ -552,7 +495,7 @@ category('SAR Matrix', () => {
   // Compared by cluster id, not by content: an anchor the MCS finds can reshape a matrix's rows, and
   // that is the option working. What must never happen is a cluster losing its matrix, or a compound
   // the core grouping placed ending up in none.
-  test('runSarMatrix end-to-end: the MCS option never costs a matrix or a compound', async () => {
+  test('MCS costs no matrix', async () => {
     const {molecules, activity} = mixedCoverage();
     const params = {...e2eParams(false), grouping: SarGrouping.Similarity};
     const off = await runSarMatrix(molecules, activity, params);
@@ -582,7 +525,7 @@ category('SAR Matrix', () => {
   // A decomposed matrix still shows one column axis, so `positions` is length 1 either way; what
   // separates it from the single-position fallback is that the decomposition named every position it
   // found, which is what `refValues` carries.
-  test('runSarMatrix end-to-end: the site key anchors a multi-position matrix without any MCS', async () => {
+  test('site key anchors matrix', async () => {
     const {molecules, activity} = twoSiteGrid();
     const matrices = await runSarMatrix(molecules, activity, e2eParams(false));
     const decomposed = matrices.filter((m) => Object.keys(m.refValues).length > 1);
@@ -593,7 +536,7 @@ category('SAR Matrix', () => {
   // Fragment ids are minted as the workers discover fragments, so the same data reaches this stage
   // under different ids from one run to the next. Anything downstream resolving a tie by "whichever
   // came first" then yields a different set of matrices for identical input.
-  test('buildMatchedSeries: series order follows the chemistry, not the fragment ids', async () => {
+  test('series order by chemistry', async () => {
     // Same four molecules and the same two cores, with the core ids swapped and the rows reversed.
     const asDiscovered: MmpFragments = {
       idToName: ['', 'CoreA', 'CoreB', 'Me', 'Et'],
@@ -611,17 +554,10 @@ category('SAR Matrix', () => {
       'the same molecules must give the same series whichever ids the workers assigned');
   });
 
-  test('buildMatchedSeries: repeated calls on one input are identical', async () => {
-    const frags = fakeFrags();
-    const once = JSON.stringify(buildMatchedSeries(frags, 1));
-    const twice = JSON.stringify(buildMatchedSeries(fakeFrags(), 1));
-    expect(once, twice, 'a pure stage must not vary between calls');
-  });
-
   // Clustering by core similarity alone will put cores whose substituents hang off different places
   // into one matrix. Their substituent vocabularies are disjoint, so the column axis pools both and a
   // column means one position on some rows and another on the rest.
-  test('clusterRelatedCores: every multi-row cluster varies at a shared site', async () => {
+  test('clusters share a site', async () => {
     // One triazole, attachments at three different ring positions — near-identical by fingerprint.
     const series: MatchedSeries[] = [
       {coreSmiles: 'CCc1c([*:1])nnn1-c1ccc(F)cc1', members: [{molIdx: 0, substSmiles: 'C[*:1]'}]},

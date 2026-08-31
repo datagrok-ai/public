@@ -125,12 +125,6 @@ const MAX_MATRIX_ROWS = 2000;
  *  so few rows must not buy unlimited width. */
 const MAX_MATRIX_COLS = 500;
 
-/**
- * Fill every empty cell the additive model can reach, returning how many were filled.
- *
- * A real cell keeps its measured value: its fitted one comes from the leave-one-out pass in
- * `computeMatrixConfidence`, and an in-sample residual would let a cliff cell hide.
- */
 /** Claim a cell for a compound the set holds but has no activity for, so `fillVirtualCells` cannot
  *  predict it and offer it as one to make. Never over a measured cell: two members can share a slot,
  *  and a measurement outranks a blank. */
@@ -140,17 +134,70 @@ function claimUnmeasured(cells: SarMatrixCell[][], ri: number, ci: number, molId
     cells[ri][ci] = {kind: 'unmeasured', value: null, molIdx, smiles: molecules[molIdx]};
 }
 
-function fillVirtualCells(cells: SarMatrixCell[][], rowCount: number, columnCount: number): number {
+/**
+ * Drop every row and column holding no measurement, in place.
+ *
+ * The additive model can only reach a cell whose row AND column each have one, so such a line can
+ * never be anything but blank — it is an axis the data never touched, carried in because a compound
+ * decomposed onto that core or bore that R-group without ever being assayed. Removing them is what
+ * makes the filled matrix dense: afterwards every remaining cell is measured or predictable.
+ *
+ * No measured compound is lost, since the lines removed hold none by definition.
+ */
+function pruneUnobservedLines(rows: SarMatrixRow[], columns: SarMatrixColumn[],
+  cells: SarMatrixCell[][]): void {
+  const observed = (cell: SarMatrixCell): boolean => cell.kind === 'real';
+  const keepRows = rows.map((_row, ri) => cells[ri].some(observed));
+  const keepCols = columns.map((_col, ci) => cells.some((row) => observed(row[ci])));
+  if (keepRows.every(Boolean) && keepCols.every(Boolean))
+    return;
+  for (let ri = cells.length - 1; ri >= 0; ri--) {
+    if (!keepRows[ri]) {
+      cells.splice(ri, 1);
+      rows.splice(ri, 1);
+      continue;
+    }
+    for (let ci = keepCols.length - 1; ci >= 0; ci--) {
+      if (!keepCols[ci])
+        cells[ri].splice(ci, 1);
+    }
+  }
+  for (let ci = keepCols.length - 1; ci >= 0; ci--) {
+    if (!keepCols[ci])
+      columns.splice(ci, 1);
+  }
+  // Labels number the rows as displayed, so they are reassigned rather than left with the gaps a
+  // removed core would leave (Core 1, Core 3, Core 6).
+  rows.forEach((row, ri) => row.label = `Core ${ri + 1}`);
+}
+
+/**
+ * Fill every cell the additive model can reach, returning how many analogs were proposed.
+ *
+ * A real cell keeps its measured value: its fitted one comes from the leave-one-out pass in
+ * `computeMatrixConfidence`, and an in-sample residual would let a cliff cell hide.
+ */
+function fillVirtualCells(cells: SarMatrixCell[][], rowCount: number, columnCount: number,
+  predictUnmeasured: boolean): number {
   const predictCell = fitAdditiveModel(cells, rowCount, columnCount);
   let filled = 0;
   for (let ri = 0; ri < rowCount; ri++) {
     for (let ci = 0; ci < columnCount; ci++) {
       const predicted = predictCell(ri, ci);
-      if (predicted === null || cells[ri][ci].kind !== 'empty')
+      if (predicted === null)
         continue;
-      cells[ri][ci] = {kind: 'virtual' as SarMatrixCellKind, value: predicted.value,
-        molIdx: null, smiles: null, support: predicted.support, references: predicted.references};
-      filled++;
+      const cell = cells[ri][ci];
+      if (cell.kind === 'empty') {
+        cells[ri][ci] = {kind: 'virtual' as SarMatrixCellKind, value: predicted.value,
+          molIdx: null, smiles: null, support: predicted.support, references: predicted.references};
+        filled++;
+      } else if (predictUnmeasured && cell.kind === 'unmeasured') {
+        // Keeps its kind, structure and row: the compound exists, so the prediction is an argument to
+        // TEST it, and nothing downstream may offer it as one to synthesize.
+        cell.value = predicted.value;
+        cell.support = predicted.support;
+        cell.references = predicted.references;
+      }
     }
   }
   return filled;
@@ -174,12 +221,12 @@ function boundedSeries(cluster: CoreCluster): MatchedSeries[] {
  * A null decomposition falls back to `assembleSinglePositionMatrix`.
  */
 export async function assembleMultiPositionMatrix(cluster: CoreCluster, molecules: string[],
-  activities: Float32Array, predict: boolean,
-  decomp: ClusterDecomposition | null): Promise<SarMatrix | null> {
+  activities: Float32Array, predict: boolean, decomp: ClusterDecomposition | null,
+  predictUnmeasured = false): Promise<SarMatrix | null> {
   // Both ways into the fallback ask the same question, so the rule sits here rather than at the two
   // call sites: placeholder series have no real cores, and would read as one bare core per compound.
   const fallback = (): SarMatrix | null => cluster.requiresDecomposition ? null :
-    assembleSinglePositionMatrix(cluster, molecules, activities, predict);
+    assembleSinglePositionMatrix(cluster, molecules, activities, predict, predictUnmeasured);
   if (!decomp)
     return fallback();
 
@@ -264,10 +311,11 @@ export async function assembleMultiPositionMatrix(cluster: CoreCluster, molecule
     }
   });
   const realCount = realMols.size;
+  pruneUnobservedLines(rows, columns, cells);
 
   let virtualCount = 0;
   if (predict) {
-    virtualCount = fillVirtualCells(cells, rows.length, columns.length);
+    virtualCount = fillVirtualCells(cells, rows.length, columns.length, predictUnmeasured);
     await linkVirtualCellStructures(rows, columns, cells, refValues);
   }
 
@@ -348,7 +396,7 @@ async function linkVirtualCellStructures(rows: SarMatrixRow[], columns: SarMatri
  * empty cells filled with Free-Wilson predictions. Used when no usable shared anchor is found.
  */
 export function assembleSinglePositionMatrix(cluster: CoreCluster, molecules: string[], activities: Float32Array,
-  predict: boolean): SarMatrix {
+  predict: boolean, predictUnmeasured = false): SarMatrix {
   const series = boundedSeries(cluster);
 
   const colIndex = new Map<string, number>();
@@ -405,8 +453,9 @@ export function assembleSinglePositionMatrix(cluster: CoreCluster, molecules: st
     }
   });
   const realCount = realMols.size;
+  pruneUnobservedLines(rows, columns, cells);
 
-  const virtualCount = predict ? fillVirtualCells(cells, rows.length, columns.length) : 0;
+  const virtualCount = predict ? fillVirtualCells(cells, rows.length, columns.length, predictUnmeasured) : 0;
 
   return {
     id: cluster.id,

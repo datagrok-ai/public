@@ -119,3 +119,16 @@ export function finiteOrNaN(value: number | undefined): number {
   return value === undefined || !Number.isFinite(value) ? NaN : value;
 }
 
+/** The distinct compounds a matrix actually measured. One compound can occupy several cells — folding
+ *  puts it under more than one core — so this is a set, and it is what "N cpd" counts. */
+export function observedMolecules(matrix: SarMatrix): Set<number> {
+  const mols = new Set<number>();
+  for (const row of matrix.cells) {
+    for (const cell of row) {
+      if (cell.kind === 'real' && cell.molIdx !== null)
+        mols.add(cell.molIdx);
+    }
+  }
+  return mols;
+}
+

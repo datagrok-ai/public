@@ -996,7 +996,7 @@ To run SAR Matrix analysis:
 2. Select the **Table**, the **Molecules** column, and a numerical **Activity** column.
 3. Choose the activity **Scaling** (_none_, _log10_, or _-log10_). Use _-log10_ for IC50 or Ki values so that higher numbers mean more potent.
 4. To group by your own series rather than by structure, set **Series column (Optional)**. Compounds sharing a value become one matrix, named with that value. Leave it empty to group by structure.
-5. To let one matrix vary several positions at once, turn on **Multi-position matrices**. See [Multi-position matrices](#multi-position-matrices) before you do — it is slower, and the matrices it produces can differ between runs over the same data.
+5. To also cover the compounds no shared core could group, turn on **Group leftovers by MCS**. See [Group leftovers by MCS](#group-leftovers-by-mcs) before you do — it is slower, and the matrices it produces can differ between runs over the same data.
 6. Click **OK**. The analysis opens with a ranked list of matrices on the left and the selected matrix on the right.
 
 ![SAR Matrix walkthrough](img/sar_matrix_demo.gif)
@@ -1007,10 +1007,12 @@ For a predicted cell the panel shows a **Design action**: click **Add to make-li
 analog, building the list up one compound at a time. To take more at once, right-click the matrix and
 add the predicted analogs of the current series, or of every series.
 
-Everything you collect lands in the **Make list** tab, each analog with its predicted potency, the
-support behind it, and the series, core and substituent it came from. **Add selected** there takes
-whichever cell is selected in the matrix, so the Context Panel is not the only way in. **Open as
-table** hands out a copy to save, export or join, and **Clear** empties the list.
+The cart icon above the matrix collects whichever cell is selected, so the Context Panel is not the
+only way in. It takes measured compounds as readily as predicted ones.
+
+Everything you collect lands in the **Make list** tab, each compound with its potency, the support
+behind it, and the series, core and substituent it came from. **Open as table** hands out a copy to
+save, export or join, and **Clear** empties the list.
 
 ![Make list of virtual analogs](img/sar_matrix_make_list.png)
 
@@ -1023,21 +1025,24 @@ varies marked. They are listed rather than merged, because each varies a differe
 substituents at different positions do not belong in one column. Open them in turn to read the same
 compounds from each position.
 
-#### Multi-position matrices
+#### Group leftovers by MCS
 
-By default a matrix varies one position: its rows are cores, its columns the substituents at the
-single site those cores have in common. Turn on **Multi-position matrices** and each series is
-instead decomposed against a shared core, so a matrix can vary several positions at once.
+Grouping by shared core cannot reach every compound. Series that no core gathered are left without a
+matrix. Turn on **Group leftovers by MCS** to pool those series and search for a common core with a
+maximum common substructure, so those compounds are covered too.
 
 Weigh it before turning it on:
 
-* It is roughly five times slower on a large set, because deriving a shared core runs a maximum
-  common substructure search per series.
+* It is slower on a large set, because the pooled series go through a substructure search.
 * The set of matrices can differ between runs over the same data, so a result is not reproducible.
+  With the option off, the same data always gives the same matrices.
+* It never removes a matrix or drops a compound. It can change a core-grouped series from one varying
+  position to several, because a series whose shared core is too small to anchor is pooled with the
+  leftovers.
 * It does not add a second axis to the grid. A matrix still enumerates one position in its columns,
   and the others fold into the row.
 
-Leave it off unless you need the shared-core decomposition.
+Leave it off unless you need the leftover compounds covered.
 
 Switch to the **SAR Transfer** tab for the pairs of cores whose potency trends run in parallel.
 Each entry shows the two series side by side over the substituents they share, the strength of

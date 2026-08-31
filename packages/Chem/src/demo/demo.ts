@@ -199,9 +199,18 @@ interface SarHint {
   text: string;
 }
 
+/** A tab header of the SAR viewer, used as the fallback anchor for hints about a tab the tour has
+ *  not opened yet — that tab's own markup does not exist until it is shown once. */
+function sarTabHeader(title: string): Element | null {
+  return Array.from(document.querySelectorAll('.d4-tab-header'))
+    .find((e) => e.textContent?.trim() === title) ?? null;
+}
+
 const SAR_HINTS: SarHint[] = [
   {
-    anchor: () => document.querySelector('.chem-sar-nav-list'),
+    // The first card, not the list: the list runs the full height of the pane, so a popup beside it
+    // is centred halfway down and lands over the matrix rather than beside what it describes.
+    anchor: () => document.querySelector('.chem-sar-nav-list:not(.chem-sar-xfer-list) .chem-sar-card'),
     position: ui.hints.POSITION.RIGHT,
     title: 'Analog series',
     text: 'Every card on the left is an analog series: compounds that share a core and vary at one ' +
@@ -209,8 +218,8 @@ const SAR_HINTS: SarHint[] = [
       'cores and compounds it covers, and its score on the current ranking.',
   },
   {
-    anchor: () => document.querySelector('.chem-sar-scaffold-card') ??
-      document.querySelector('.chem-sar-nav-list'),
+    anchor: () => document.querySelector('.chem-sar-nav-list:not(.chem-sar-xfer-list) .chem-sar-scaffold-card') ??
+      document.querySelector('.chem-sar-nav-list:not(.chem-sar-xfer-list) .chem-sar-card'),
     position: ui.hints.POSITION.RIGHT,
     title: 'One scaffold, several series',
     text: 'A Scaffold row gathers the series built on the same scaffold, drawn above them with every ' +
@@ -236,7 +245,8 @@ const SAR_HINTS: SarHint[] = [
       'and Level to drop the thin or over-folded ones. Core searches by substructure.',
   },
   {
-    anchor: () => document.querySelector('.chem-sar-nav-list'),
+    anchor: () => document.querySelector('.chem-sar-nav-list:not(.chem-sar-xfer-list) .chem-sar-scaffold-card') ??
+      document.querySelector('.chem-sar-nav-list:not(.chem-sar-xfer-list) .chem-sar-card'),
     position: ui.hints.POSITION.RIGHT,
     title: 'Select and unfold',
     text: 'Click a card to open that series in the matrix on the right. Levels nest: an L1 card is a ' +
@@ -252,8 +262,9 @@ const SAR_HINTS: SarHint[] = [
     position: ui.hints.POSITION.BOTTOM,
     title: 'What the open matrix holds',
     text: 'The chips above the matrix summarise it: how many compounds it holds, its size as cores by ' +
-      'substituents, the activity range on the current scale, and how many analogs are predicted ' +
-      'rather than measured. The size counts what is on screen, so a filter shrinks it.',
+      'substituents, the activity range on the current scale, how many analogs are predicted rather ' +
+      'than measured, and - where there are any - how many compounds the dataset holds with no ' +
+      'activity value at all. The size counts what is on screen, so a filter shrinks it.',
   },
   {
     anchor: () => document.querySelector('.chem-sar-control-bar .chem-sar-filter-icon'),
@@ -270,9 +281,22 @@ const SAR_HINTS: SarHint[] = [
     title: 'Then click a cell',
     text: 'Cores run down the rows, substituents across the columns. The header over the first column ' +
       'draws the aligned core they all share, and each substituent header carries its R group above ' +
-      'the position it occupies, so every column reads against the same core. A solid cell is a ' +
-      'measured compound; a pale cell with a dashed outline is one nobody has made yet. Click either ' +
-      'to inspect it.',
+      'the position it occupies, so every column reads against the same core. The outline says whether ' +
+      'the compound exists and the value says where its number came from: a solid cell is one you ' +
+      'have, a dashed one is an analog nobody has made, and a "~" marks a predicted number either way. ' +
+      'A solid cell with a "~" is therefore a compound in hand that was never assayed. Click any of ' +
+      'them to inspect it.',
+  },
+  {
+    anchor: () => document.querySelector('.grok-prop-panel'),
+    position: ui.hints.POSITION.LEFT,
+    title: 'A compound that exists',
+    text: 'Select a solid cell and the Context Panel shows the compound itself: its structure, the ' +
+      'potency measured on it, and the compounds sharing its core and its substituent as the SAR ' +
+      'around it. Some solid cells carry a "~" value instead of a plain one - those are compounds ' +
+      'the dataset already holds but nobody ever assayed. They keep the solid frame and their ' +
+      'registration id, because the compound is real; only the number is estimated, so the panel ' +
+      'offers them for testing rather than synthesis.',
   },
   {
     anchor: () => document.querySelector('.grok-prop-panel'),
@@ -280,7 +304,7 @@ const SAR_HINTS: SarHint[] = [
     title: 'A virtual analog',
     text: 'Select a dashed cell and the Context Panel explains it: the core and substituent were ' +
       'never combined, so its potency is predicted from how each performs elsewhere in the matrix, ' +
-      'with the compounds behind every term listed as reference points. Add to make-list collects ' +
+      'with the compounds behind every term listed as reference points. Add to Make list collects ' +
       'the ones worth making into the Make list tab.',
   },
   {
@@ -292,8 +316,7 @@ const SAR_HINTS: SarHint[] = [
       'ones. To collect in bulk, right-click the matrix and add a whole series of predictions at once.',
   },
   {
-    anchor: () => Array.from(document.querySelectorAll('.d4-tab-header'))
-      .find((e) => e.textContent?.trim() === 'SAR Transfer') ?? null,
+    anchor: () => sarTabHeader('SAR Transfer'),
     position: ui.hints.POSITION.BOTTOM,
     title: 'Carry the SAR across scaffolds',
     text: 'The SAR Transfer tab pairs cores whose potency trends run in parallel over the substituents ' +
@@ -301,25 +324,71 @@ const SAR_HINTS: SarHint[] = [
       'carry to the other, and the analogs it argues for are marked in the matrix.',
   },
   {
+    anchor: () => document.querySelector('.chem-sar-xfer-nav .chem-sar-scaffold-card') ??
+      document.querySelector('.chem-sar-xfer-list') ?? sarTabHeader('SAR Transfer'),
+    position: ui.hints.POSITION.RIGHT,
+    title: 'Sources, nested by series',
+    text: 'Each card on the left is one source core, and the cards are gathered under the series that ' +
+      'core belongs to - a series contributing a single core gets no header, since the card already ' +
+      'names it. Use the chevron to fold a series shut while you read another. A source that transfers ' +
+      'to several targets is one card rather than several: the dropdown in the header above the grid ' +
+      'switches between its targets, keeping the source fixed.',
+  },
+  {
+    anchor: () => document.querySelector('.chem-sar-xfer-nav .chem-sar-nav-controls .ui-input-root') ??
+      sarTabHeader('SAR Transfer'),
+    position: ui.hints.POSITION.RIGHT,
+    title: 'Rank the transfers',
+    text: 'Potent compounds orders by the strongest analog a pairing points at - the question the ' +
+      'matrix list asks, asked of a transfer. Fold match orders by how far the size of each step ' +
+      'carries rather than merely its direction: two cores can rank every substituent alike and still ' +
+      'disagree on what a swap is worth. Analogs gained orders by how many compounds the pairing ' +
+      'actually argues for making, which is none when both cores have already explored the same ' +
+      'R-groups. Correlation is not a scheme - it takes too few distinct values to order a list, so it ' +
+      'stays a chip on every card instead. The funnel beside the dropdown filters on all three.',
+  },
+  {
     anchor: () => document.querySelector('.chem-sar-xfer-panel .chem-sar-grid-host') ??
-      Array.from(document.querySelectorAll('.d4-tab-header'))
-        .find((e) => e.textContent?.trim() === 'SAR Transfer') ?? null,
+      sarTabHeader('SAR Transfer'),
     position: ui.hints.POSITION.LEFT,
     title: 'Analogs the transfer argues for',
     text: 'The two series are laid out over the substituents they share, and the columns captioned ' +
       '"predicted" are the ones only one of them has tried. Those cells are dashed, exactly as in the ' +
       'matrix: click one and the Context Panel gives the same Free-Wilson breakdown and the same Add ' +
-      'to make-list, so an analog suggested by a transfer joins the same synthesis list.',
+      'to Make list, so an analog suggested by a transfer joins the same synthesis list.',
   },
   {
-    anchor: () => Array.from(document.querySelectorAll('.d4-tab-header'))
-      .find((e) => e.textContent?.trim() === 'Make list') ?? null,
+    anchor: () => document.querySelector('.chem-sar-xfer-panel .chem-sar-control-bar .ui-input-root') ??
+      document.querySelector('.chem-sar-xfer-panel .chem-sar-main-bar') ?? sarTabHeader('SAR Transfer'),
     position: ui.hints.POSITION.BOTTOM,
-    title: 'The make-list',
-    text: 'Everything collected lands here: each analog with its structure, whether it is predicted or ' +
-      'already made, its potency and the activity that potency is read on, how much evidence stood ' +
-      'behind it, and the series, core and substituent it came from. Open as table hands out a copy ' +
-      'to save, export or join; Clear empties the list.',
+    title: 'Pick the target core',
+    text: 'One core often transfers to several. The dropdown in the header switches between them ' +
+      'while the source stays put, so you can read the same series against each core its SAR carries ' +
+      'to in turn. The title left of it always names the pair on screen, and the chips beside it - ' +
+      'correlation, fold match, shared R-groups and how many compounds the pairing argues for - ' +
+      'change with the target you pick. A source with only one target gets no dropdown.',
+  },
+  {
+    anchor: () => document.querySelector('.chem-sar-xfer-panel .chem-sar-cart-icon') ??
+      document.querySelector('.chem-sar-xfer-panel .chem-sar-main-bar') ?? sarTabHeader('SAR Transfer'),
+    position: ui.hints.POSITION.LEFT,
+    title: 'Collect what the transfer argues for',
+    text: 'The cart takes every analog the open transfer proposes - the count on the "to make" chip - ' +
+      'into the Make list in one go, so a promising pairing does not have to be harvested cell by ' +
+      'cell. It adds only the side that has not made the compound yet: the other side is the ' +
+      'measurement the argument rests on, not a proposal. A single cell can still be added from its ' +
+      'own Context Panel.',
+  },
+  {
+    anchor: () => sarTabHeader('Make list'),
+    position: ui.hints.POSITION.BOTTOM,
+    title: 'The Make list',
+    text: 'Everything collected lands here: each analog with its structure, its potency and the ' +
+      'activity that potency is read on, how much evidence stood behind it, and the series, core and ' +
+      'substituent it came from. Status and Method are separate columns because they answer different ' +
+      'questions - Status says whether the compound exists (Synthesized, Untested or Virtual), Method ' +
+      'says where its number came from (measured or predicted), and an untested compound is made and ' +
+      'predicted at once. Open as table hands out a copy to save, export or join; Clear empties it.',
   },
 ];
 

@@ -270,24 +270,29 @@ i.chem-sar-card-twisty:hover {
   min-width: 0;
 }
 
+/* One row, never two: a wrapped header pushes the grid down and re-flows as the pane is resized. The
+   title and controls hold their size and the chips give way, so a pane too narrow for everything
+   loses chips from the right rather than gaining a second line. */
 .chem-sar-main-bar {
   display: flex;
   align-items: center;
   gap: 8px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   padding: 0px 10px;
   border-bottom: 1px solid var(--grey-2);
 }
 
-/* Where a control bar still follows as its own row, the lower of the two carries the rule so the pane
-   is not underlined twice. */
-.chem-sar-main-bar:has(+ .chem-sar-control-bar) {
-  border-bottom: none;
+.chem-sar-main-bar > .chem-sar-main-title {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-/* The controls sit at the far end of the title row; the standalone bar keeps its own padding and rule
-   because the transfer pane still stacks it under a title of its own. */
+/* The controls sit at the far end of the title row. */
 .chem-sar-control-bar.chem-sar-control-inline {
+  flex: 0 0 auto;
   margin-left: auto;
   padding: 0;
   border-bottom: none;
@@ -346,7 +351,14 @@ i.chem-sar-card-twisty:hover {
   display: flex;
   align-items: center;
   gap: 5px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  /* Shrinks below its content so the header stays one row; min-width:0 is what lets a flex item
+     shrink past its intrinsic size at all. The outsized shrink factor makes the chips absorb nearly
+     all of a shortfall, so a narrow pane drops chips from the right before it truncates the title —
+     and never before the controls, which do not shrink. */
+  flex: 0 100 auto;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .chem-sar-chip-badge {
@@ -406,12 +418,6 @@ i.chem-sar-card-twisty:hover {
   font-size: 11.5px;
   font-weight: 600;
   color: var(--grey-6);
-}
-
-.chem-sar-xfer-ben {
-  display: flex;
-  align-items: center;
-  gap: 4px;
 }
 
 .chem-sar-cp-hint {
@@ -552,12 +558,11 @@ i.chem-sar-card-twisty:hover {
   overflow: hidden;
 }
 
-/* Width must match .chem-sar-nav — the pane beside it fits its cells against the same leftover. */
-.chem-sar-xfer-list {
-  flex: 0 0 320px;
-  min-width: 320px;
+/* The transfer list is a .chem-sar-nav like the matrix navigator, so it takes that pane's width and
+   border. The list inside it must stay flex:1 to fill the height under the header — a width here
+   would land on the same element as .chem-sar-nav-list and, being later in the file, beat it. */
+.chem-sar-xfer-nav {
   border-right: 1px solid var(--grey-2);
-  overflow-y: auto;
 }
 
 /* Fixed-width popup (cannot be dragged like the docked Filters panel), so it must fit its widest filter outright. */
