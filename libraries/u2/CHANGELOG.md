@@ -2,6 +2,8 @@
 
 ## v.next
 
+* Automation identity (core/docs/features/ui2/AUTOMATION.md): an explicit `name` on any control stamps `data-u2-name` (an input's label fallback stays a form key and never stamps); `Input` stamps `data-u2-part` on label/editor/options/error and answers the same elements from `getWidgetStatus().parts`; `Overlay.show` stamps `data-u2-owner` on portaled popups from the anchor's nearest named ancestor, so hierarchical selectors survive the portal; `Dialog` takes `{name}`, `appView` names its content root after the view; `Form.add` warns once per kind on an input with neither name nor label
+
 * GROK-20753: The control inspector no longer lists a property whose value cannot be read — a control built by hand rather than through `registry.create` gets the registry's metadata but reads nothing for a prop backed by a private field or by an unpassed constructor option, and a row that can neither show a value nor take one reads as broken; the no-control empty state now says the element is not a u2 component instead of denying it is a control
 * GROK-20753: `Wizard` marks a step completed only while it is behind the current one — going BACK no longer leaves a green check on the step ahead of you (a visited step stays reachable)
 * GROK-20753: The horizontal `RangeSlider` keeps a 60 px floor, so a narrow host cannot collapse it onto its own two handles

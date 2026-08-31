@@ -37,9 +37,11 @@ export class Dialog extends Control {
   private _restore: HTMLElement | undefined;
   private _drag: {dx: number, dy: number} | undefined;
 
-  constructor(title: string) {
+  constructor(title: string, options?: {name?: string}) {
     super();
     this.isOpen = this._open;
+    if (options?.name !== undefined)
+      this.name = options.name;
     this.root.classList.add('u2-dialog');
     this.root.dataset.u2 = 'dialog';
     this.root.tabIndex = -1;
@@ -73,8 +75,8 @@ export class Dialog extends Control {
     this._listen(this._backdrop, 'pointerdown', (e) => e.preventDefault());
   }
 
-  static create(title: string): Dialog {
-    return new Dialog(title);
+  static create(title: string, options?: {name?: string}): Dialog {
+    return new Dialog(title, options);
   }
 
   add(el: HTMLElement | Control | string): Dialog {
