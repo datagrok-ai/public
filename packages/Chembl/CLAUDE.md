@@ -10,8 +10,13 @@ package is **SQL queries** against a Postgres ChEMBL instance with the **RDKit c
 plus a small TypeScript layer that wires those queries into context panels, info panels, the
 `CHEMBL_ID` semantic type, the database explorer, the HitTriage data-source picker, and the demo app.
 
-Auth / credentials: built-in. The three connections in `connections/` point at the public Datagrok
-demo Postgres at `db.datagrok.ai:54325/54326` with hard-coded credentials — no secrets to set.
+Auth / credentials: built-in — no secrets to set. `Chembl` and `ChemblSql` resolve their server from
+the package's own Docker container (`dockerfiles/`, `${Chembl<DockerContainer>}`); `Unichem` still
+points at the public Datagrok demo Postgres at `db.datagrok.ai:54326`.
+
+The package version tracks the ChEMBL release it ships: the container's base image is
+`datagrok/demo_db_chembl:<release>` and the package version is `<release>.0.0`, so ChEMBL 37 ships as
+37.0.0. Bumping to a new release means bumping the `FROM` tag and the major version together.
 
 ## Architecture
 
@@ -40,6 +45,9 @@ demo Postgres at `db.datagrok.ai:54325/54326` with hard-coded credentials — no
 - **`connections/*.json`** — `Chembl` (Postgres provider, used by everything that needs `Choices` /
   `batchMode` / parameterised inputs), `ChemblSql` (PostgresDart provider, used **only** by the
   converters in `converters.sql`), `Unichem` (separate DB, used by one unit-test query).
+- **`dockerfiles/`** — the ChEMBL database itself, a thin layer over `datagrok/demo_db_chembl` that
+  adds the read-only `datagrok` role the connections log in as. `on_demand`, so the first query
+  after an idle period pays a container start.
 - **`enrichments/*.json`** — declarative DBExplorer enrichments (extra columns pulled in on the fly
   when a CHEMBL ID / molregno is materialised). One file per logical enrichment, each specifying a
   key table/column and a join plan against `Chembl:Chembl`. Not queries — don't confuse with
