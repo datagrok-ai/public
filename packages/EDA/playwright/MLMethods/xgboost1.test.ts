@@ -1,6 +1,7 @@
 import { test, expect } from '../helpers';
 import {
   openDemoCsv, openTrainModelView, resetShell, setPredictColumn, trainEdaModelViaApi,
+  XGBOOST_DEFAULTS,
 } from '../helpers';
 
 // Test Track scenario: EDA/MLMethods/xgboost1.md
@@ -27,7 +28,11 @@ test.describe.serial('EDA / MLMethods / XGBoost (classification)', () => {
     await openTrainModelView(page);
     await setPredictColumn(page, 'Species');
 
-    const trained = await trainEdaModelViaApi(page, 'eda:trainXGBooster', 'Species');
+    // See xgboost2: the hyperparameters the Train dialog would supply are passed explicitly
+    // because `functions.call` does not apply the decorator's `initialValue`s.
+    const trained = await trainEdaModelViaApi(page, 'eda:trainXGBooster', 'Species', {
+      extraParams: XGBOOST_DEFAULTS,
+    });
     expect(trained.ok, trained.error ?? 'xgboost training returned null').toBe(true);
   });
 });
