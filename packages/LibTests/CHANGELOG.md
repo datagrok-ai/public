@@ -1,5 +1,9 @@
 # Lib Tests changelog
 
+## v.next
+
+* Arrow: Added round-trip regression tests for null int, float and datetime values
+
 ## 1.9.7 (2026-08-07)
 
 * Fixed worker fitting tests in CI builds: deterministic chunk ids keep the fitting-worker chunk name free of `node_modules`, which the server refuses to serve
