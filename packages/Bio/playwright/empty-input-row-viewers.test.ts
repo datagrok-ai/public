@@ -53,7 +53,6 @@ const viewerCases: ViewerCase[] = [
 for (const vc of viewerCases) {
   test(`Bio ${vc.label} rejects empty current-row input with balloon`, async ({page}) => {
     test.setTimeout(180_000);
-    test.fail(true, 'GROK-16111: Bio current-row viewers silently KNN on empty input, no rejection balloon — remove test.fail when fixed');
     stepErrors.length = 0;
     await loginToDatagrok(page);
     await page.evaluate(async () => {
@@ -172,7 +171,7 @@ for (const vc of viewerCases) {
       // Invariant 2 (.md): no silent zero-row result — the source table is not rewritten and the viewer reacts (docks or rejects), never a silent no-op.
       expect(probe.rowCount, `${vc.label}: source table must not be silently rewritten on empty input`).toBe(baseRowCount);
       expect(probe.docked || probe.balloonCount > 0, `${vc.label}: viewer must react on empty input (dock or reject), not silently no-op`).toBe(true);
-      // Invariant 1 (.md): empty current-row input must surface a rejection balloon. GROK-16111 keeps this failing today; test.fail() tracks the xfail and auto-flips to red when fixed.
+      // Invariant 1 (.md): empty current-row input must surface a rejection balloon. Fails on GROK-16111.
       expect(probe.balloonCount, 'GROK-16111: empty current-row input must surface a rejection balloon').toBeGreaterThan(0);
     });
     finishSpec();
