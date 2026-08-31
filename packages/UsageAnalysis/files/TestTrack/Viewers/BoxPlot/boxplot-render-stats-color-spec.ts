@@ -20,12 +20,7 @@ async function bpProp(page: Page, prop: string): Promise<any> {
 }
 
 async function setBpProp(page: Page, prop: string, value: any, settleMs = 900): Promise<void> {
-  await page.evaluate(({p, val}) => {
-    const bp = grok.shell.tv.viewers.find((x: any) => x.type === 'Box plot');
-    bp.props[p] = val;
-  }, {p: prop, val: value});
-
-  await page.waitForTimeout(settleMs);
+  await v.setViewerProps(page, 'Box plot', [{set: {[prop]: value}, wait: settleMs}]);
 }
 
 async function canvasRect(page: Page): Promise<{x: number; y: number; w: number; h: number}> {
