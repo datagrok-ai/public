@@ -2561,11 +2561,11 @@ export class PackageFunctions {
       type: 'int',
       options: {initialValue: '3', caption: 'Series levels', min: '1', max: '5',
         description: 'Nested series tiers (L1/L2/L3): 1 is a flat list, each level folds matrices one cut broader'},
-    }) fragmentationLevels: number = 2,
+    }) fragmentationLevels: number = 3,
     @grok.decorators.param({options: {initialValue: 'true'}}) predictVirtual: boolean = true,
     @grok.decorators.param({
-      options: {initialValue: 'false', caption: 'Multi-position matrices',
-        description: 'Off gives the same matrices every run. On finds each series a shared core so one matrix can vary several positions at once, which is slower and can yield a different set of matrices each run'},
+      options: {initialValue: 'false', caption: 'Group leftovers by MCS',
+        description: 'Off leaves out the compounds no shared core could group. On searches those for a common core and adds the matrices it finds, keeping every matrix the core grouping already produced. Slower on large sets'},
     }) useMcsAnchors: boolean = false,
     // Last, and picked by name rather than as a column: a column-typed input cannot start empty here,
     // because the column selector always resolves to the first matching column — which would silently

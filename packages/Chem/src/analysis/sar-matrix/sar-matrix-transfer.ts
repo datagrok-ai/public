@@ -316,18 +316,14 @@ export function transferStats(transfer: Transfer, higherIsBetter: boolean): Tran
   }
 
   let benefiting: {side: 'a' | 'b', substSmiles: string, value: number} | null = null;
+  // Best across both sides. The two are answers to the same question, so stopping at whichever side
+  // happens to hold an analog would report a weaker one than the transfer actually argues for. Strict
+  // comparison keeps 'b' on ties, so the reported side does not depend on iteration order.
   for (const [side, analogs] of [['b', transfer.bVirtual], ['a', transfer.aVirtual]] as const) {
-    let best = higherIsBetter ? -Infinity : Infinity;
-    let pick: VirtualAnalog | null = null;
     for (const analog of analogs) {
-      if (higherIsBetter ? analog.value > best : analog.value < best) {
-        best = analog.value;
-        pick = analog;
-      }
-    }
-    if (pick) {
-      benefiting = {side, substSmiles: pick.substSmiles, value: pick.value};
-      break;
+      if (benefiting === null ||
+        (higherIsBetter ? analog.value > benefiting.value : analog.value < benefiting.value))
+        benefiting = {side, substSmiles: analog.substSmiles, value: analog.value};
     }
   }
   return {correlation: transfer.correlation, foldMatch, benefiting};

@@ -1,3 +1,5 @@
+import * as DG from 'datagrok-api/dg';
+
 import {category, test, expect, expectFloat, before} from '@datagrok-libraries/test/src/test';
 
 import {_package} from '../package-test';
@@ -7,6 +9,8 @@ import {buildMatchedSeries, clusterRelatedCores} from '../analysis/sar-matrix/sa
 import {assembleSinglePositionMatrix, fitAdditiveModel} from '../analysis/sar-matrix/sar-matrix-assemble';
 import {computeMatrixConfidence} from '../analysis/sar-matrix/sar-matrix-confidence';
 import {rankMatrices, SarRankScheme} from '../analysis/sar-matrix/sar-matrix-ranking';
+import {runSarMatrix, SarGrouping, SarMatrixParams} from '../analysis/sar-matrix/sar-matrix-run';
+import {SCALING_METHODS} from '../analysis/molecular-matched-pairs/mmp-viewer/mmp-constants';
 import {computeAllTransfers, spearman, transferStats} from '../analysis/sar-matrix/sar-matrix-transfer';
 import {CoreCluster, MatchedSeries, SarMatrix, SarMatrixCell, SarMatrixColumn, SarMatrixRow}
   from '../analysis/sar-matrix/sar-matrix-types';
@@ -83,6 +87,61 @@ function makeMatrix(cells: SarMatrixCell[][], positions: string[] = ['R1']): Sar
 function additiveMatrix(rowEffect: number[], colEffect: number[]): SarMatrix {
   const cells = rowEffect.map((re) => colEffect.map((ce) => realCell(re + ce)));
   return makeMatrix(cells);
+}
+
+/** A 3x2 grid: three substituents at one ring position crossed with two at another, so the set has a
+ *  shared scaffold and genuinely varies at two sites. */
+function twoSiteGrid(): {molecules: DG.Column, activity: DG.Column<number>} {
+  const smiles = ['Cc1ccc(F)cc1', 'CCc1ccc(F)cc1', 'Clc1ccc(F)cc1',
+    'Cc1ccc(OC)cc1', 'CCc1ccc(OC)cc1', 'Clc1ccc(OC)cc1'];
+  const molecules = DG.Column.fromStrings('smiles', smiles);
+  molecules.semType = DG.SEMTYPE.MOLECULE;
+  return {molecules, activity: DG.Column.fromList('double', 'activity', [5.1, 5.8, 6.4, 6.0, 6.7, 7.2])};
+}
+
+function e2eParams(useMcsAnchors: boolean): SarMatrixParams {
+  return {
+    scaling: SCALING_METHODS.NONE, fragmentCutoff: 1, predictVirtual: true, grouping: SarGrouping.Site,
+    fragmentationLevels: 2, higherIsBetter: true, threshold: 0.4, useMcsAnchors,
+    rankScheme: SarRankScheme.Potency,
+  };
+}
+
+/** Everything a rerun must reproduce: which matrices exist, and the cores/columns each is built from. */
+function matrixShape(matrices: SarMatrix[]): string {
+  return matrices.map((m) => [m.label, m.level, m.siteKey, m.positions.join('+'),
+    m.rows.map((r) => r.coreSmiles).join(','), m.columns.map((c) => c.substSmiles).join(',')].join('|')).join('\n');
+}
+
+/** Two grid chemotypes the core grouping handles, plus isolated ring series it cannot: only the
+ *  second kind is left for the MCS to pool. */
+function mixedCoverage(): {molecules: DG.Column, activity: DG.Column<number>} {
+  const smiles = ['Cc1ccc(F)cc1', 'CCc1ccc(F)cc1', 'Clc1ccc(F)cc1',
+    'Cc1ccc(OC)cc1', 'CCc1ccc(OC)cc1', 'Clc1ccc(OC)cc1',
+    'Cc1ccc2ccccc2c1', 'CCc1ccc2ccccc2c1', 'Clc1ccc2ccccc2c1', 'Brc1ccc2ccccc2c1',
+    'Cc1cccc2ccccc12', 'CCc1cccc2ccccc12', 'Clc1cccc2ccccc12',
+    'FC1CCCCC1', 'ClC1CCCCC1', 'BrC1CCCCC1'];
+  const molecules = DG.Column.fromStrings('smiles', smiles);
+  molecules.semType = DG.SEMTYPE.MOLECULE;
+  return {molecules, activity: DG.Column.fromList('double', 'activity',
+    smiles.map((_s, i) => 5 + (i % 5) * 0.4))};
+}
+
+/** Three cores x two substituents with every slot occupied but CoreC/Et, so the additive model can
+ *  predict both blanks. A-Et is in the set and never assayed; only CoreC/Et is genuinely unmade. */
+function unmeasuredMatrix(): {matrix: SarMatrix, etIdx: number, row: (core: string) => number} {
+  const cluster: CoreCluster = {
+    id: 'c0', siteKey: '', level: 2,
+    series: [
+      {coreSmiles: 'CoreA', members: [{molIdx: 0, substSmiles: 'Me'}, {molIdx: 1, substSmiles: 'Et'}]},
+      {coreSmiles: 'CoreB', members: [{molIdx: 2, substSmiles: 'Me'}, {molIdx: 3, substSmiles: 'Et'}]},
+      {coreSmiles: 'CoreC', members: [{molIdx: 4, substSmiles: 'Me'}]},
+    ],
+  };
+  const matrix = assembleSinglePositionMatrix(cluster, ['A-Me', 'A-Et', 'B-Me', 'B-Et', 'C-Me'],
+    Float32Array.from([10, NaN, 8, 6, 4]), true);
+  return {matrix, etIdx: matrix.columns.findIndex((c) => c.substSmiles === 'Et'),
+    row: (core) => matrix.rows.findIndex((r) => r.coreSmiles === core)};
 }
 
 category('SAR Matrix', () => {
@@ -172,7 +231,7 @@ category('SAR Matrix', () => {
         'predict:true fills at least one missing combination');
     });
 
-  test('assembleSinglePositionMatrix: a NaN activity is skipped, not turned into a real cell', async () => {
+  test('assembleSinglePositionMatrix: a NaN activity becomes an unmeasured cell, not a real one', async () => {
     const cluster: CoreCluster = {
       id: 'c0',
       siteKey: '',
@@ -194,11 +253,20 @@ category('SAR Matrix', () => {
     expect(matrix.realCount, 2, 'the NaN-activity member must not count as a real observation');
     const etIdx = matrix.columns.findIndex((c) => c.substSmiles === 'Et');
     const aEt = matrix.cells[0][etIdx];
-    expect(aEt.kind, 'empty', 'missing activity leaves the combination unmade, not real');
+    expect(aEt.kind, 'unmeasured', 'the compound is in the set, only its activity is missing');
     expect(aEt.value, null);
+    expect(aEt.molIdx, 1, 'an unmeasured cell keeps the compound it stands for');
     // A poisoned min (e.g. 0 from an unguarded NaN comparison) would break the potency color scale.
     expect(matrix.minActivity, 5, 'minActivity must be the min of the finite activities only');
     expect(matrix.maxActivity, 10, 'maxActivity must be the max of the finite activities only');
+  });
+
+  test('a compound with no activity is never predicted as an analog to make', async () => {
+    const {matrix, etIdx, row} = unmeasuredMatrix();
+    expect(matrix.cells[row('CoreA')][etIdx].kind, 'unmeasured', 'a compound the set holds is not one to make');
+    expect(matrix.cells[row('CoreA')][etIdx].value, null, 'no activity was measured, so none may be reported');
+    expect(matrix.cells[row('CoreC')][etIdx].kind, 'virtual', 'an unmade slot must still be predicted');
+    expect(matrix.cells.flat().filter((c) => c.kind === 'virtual').length, 1, 'only the unmade slot is proposed');
   });
 
   test('fitAdditiveModel: predicts rowMean + colMean - grandMean with support = min(rowN, colN)', async () => {
@@ -471,9 +539,56 @@ category('SAR Matrix', () => {
     mol.delete();
   });
 
-  test('runSarMatrix end-to-end (fragmentation + clustering + assembly via workers)', async () => {
-  }, {skipReason: 'GROK-TBD — needs the server-side Chem:MurckoScaffolds script plus MMP fragmentation ' +
-    'workers; covered indirectly by the pure-function tests above and by manual QA of the SAR Matrix viewer.'});
+  test('runSarMatrix end-to-end: the same input gives the same matrices twice', async () => {
+    const {molecules, activity} = twoSiteGrid();
+    const first = await runSarMatrix(molecules, activity, e2eParams(false));
+    const second = await runSarMatrix(molecules, activity, e2eParams(false));
+    expect(first.length > 0, true, 'the fragmentation/clustering/assembly pipeline must yield matrices');
+    expect(matrixShape(first), matrixShape(second), 'two runs over one input must give identical matrices');
+  });
+
+  // The option only ever adds: it pools the series no shared core could group and asks an MCS for
+  // their common core. Whatever the core grouping found must survive it untouched.
+  // Compared by cluster id, not by content: an anchor the MCS finds can reshape a matrix's rows, and
+  // that is the option working. What must never happen is a cluster losing its matrix, or a compound
+  // the core grouping placed ending up in none.
+  test('runSarMatrix end-to-end: the MCS option never costs a matrix or a compound', async () => {
+    const {molecules, activity} = mixedCoverage();
+    const params = {...e2eParams(false), grouping: SarGrouping.Similarity};
+    const off = await runSarMatrix(molecules, activity, params);
+    const on = await runSarMatrix(molecules, activity, {...params, useMcsAnchors: true});
+    const placed = (matrices: SarMatrix[]): Set<number> => {
+      const mols = new Set<number>();
+      for (const matrix of matrices) {
+        for (const row of matrix.cells) {
+          for (const cell of row) {
+            if (cell.kind === 'real' && cell.molIdx !== null)
+              mols.add(cell.molIdx);
+          }
+        }
+      }
+      return mols;
+    };
+    const onIds = new Set(on.map((matrix) => matrix.id));
+    const vanished = off.filter((matrix) => !onIds.has(matrix.id));
+    const onMols = placed(on);
+    const droppedMols = [...placed(off)].filter((molIdx) => !onMols.has(molIdx));
+    expect(off.length > 0, true, 'the core grouping must produce matrices on its own');
+    expect(vanished.length, 0, 'every cluster with a matrix must still have one once the MCS is on');
+    expect(droppedMols.length, 0, 'no compound the core grouping placed may end up in no matrix');
+    expect(on.length >= off.length, true, 'pooling the leftovers cannot yield fewer matrices');
+  });
+
+  // A decomposed matrix still shows one column axis, so `positions` is length 1 either way; what
+  // separates it from the single-position fallback is that the decomposition named every position it
+  // found, which is what `refValues` carries.
+  test('runSarMatrix end-to-end: the site key anchors a multi-position matrix without any MCS', async () => {
+    const {molecules, activity} = twoSiteGrid();
+    const matrices = await runSarMatrix(molecules, activity, e2eParams(false));
+    const decomposed = matrices.filter((m) => Object.keys(m.refValues).length > 1);
+    expect(decomposed.length > 0, true, 'a cluster grouped by site carries its shared scaffold, so it ' +
+      'must decompose against it with no MCS rather than falling back to a single position');
+  });
 
   // Fragment ids are minted as the workers discover fragments, so the same data reaches this stage
   // under different ids from one run to the next. Anything downstream resolving a tie by "whichever
@@ -490,7 +605,7 @@ category('SAR Matrix', () => {
       sizes: Uint32Array.from(['', 'CoreB', 'CoreA', 'Et', 'Me'].map((n) => n.length)),
       fragCodes: [[[2, 4]], [[2, 3]], [[1, 4]], [[1, 3]]],
     };
-    const shape = (frags: MmpFragments) => buildMatchedSeries(frags, 1)
+    const shape = (frags: MmpFragments): string => buildMatchedSeries(frags, 1)
       .map((s) => `${s.coreSmiles}:${s.members.map((m) => m.molIdx).join(',')}`).join(' | ');
     expect(shape(asDiscovered), shape(asRediscovered),
       'the same molecules must give the same series whichever ids the workers assigned');
@@ -513,7 +628,7 @@ category('SAR Matrix', () => {
       {coreSmiles: 'COc1c([*:1])nnn1-c1ccc(F)cc1', members: [{molIdx: 1, substSmiles: 'C[*:1]'}]},
       {coreSmiles: 'COC(=O)c1nnn(-c2ccc(F)cc2)c1[*:1]', members: [{molIdx: 2, substSmiles: 'C[*:1]'}]},
       {coreSmiles: 'N#Cc1nnn(-c2ccc(F)cc2)c1[*:1]', members: [{molIdx: 3, substSmiles: 'CC[*:1]'}]},
-    ] as MatchedSeries[];
+    ];
     const clusters = await clusterRelatedCores(series, 0.3);
     const grouped = clusters.filter((c) => c.series.length > 1);
     // Without this the assertion below is vacuous: all-singleton output would pass it having tested
@@ -522,9 +637,10 @@ category('SAR Matrix', () => {
     for (const cluster of grouped) {
       expect(cluster.siteKey !== '', true,
         'a cluster holding several cores must name the site they share, or its columns mix positions');
-      const sites = new Set(cluster.series.map((s) => s.coreSmiles.indexOf('[*:1]') >= 0 ?
-        s.coreSmiles.replace(/\[\*:\d+\]/g, '*') : ''));
-      expect(sites.size >= 1, true, 'every row of a cluster carries an attachment');
+      for (const matched of cluster.series) {
+        expect(matched.coreSmiles.includes('[*:'), true,
+          'every core in a clustered series must carry the attachment its substituents hang off');
+      }
     }
   });
 });

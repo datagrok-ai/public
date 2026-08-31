@@ -196,6 +196,14 @@ i.chem-sar-card-twisty:hover {
   padding: 0 4px;
 }
 
+/* The fold count on this badge counts groups, not surviving series, so it reads higher than what the
+   card expands into. Coloured where the two disagree, to send the reader to the tooltip. */
+.chem-sar-card-level-partial {
+  color: var(--orange-2);
+  border-color: var(--orange-2);
+  cursor: help;
+}
+
 /* One line, clipped rather than wrapped: a second line pushes the card's rows out of step with the
    score column beside it and makes the list ragged. */
 .chem-sar-card-desc {
@@ -356,6 +364,14 @@ i.chem-sar-card-twisty:hover {
   background: var(--blue-2);
   border-color: var(--grey-2);
   font-weight: 600;
+}
+
+/* Reads as a caveat rather than a measurement: it reports what the sub-series below do NOT reach.
+   Coloured on the text and border only, since the base chip's background is the one that is defined. */
+.chem-sar-chip-partial {
+  color: var(--orange-2);
+  border-color: var(--orange-2);
+  cursor: help;
 }
 
 .chem-sar-xfer-stats {
@@ -562,12 +578,6 @@ i.chem-sar-card-twisty:hover {
   border-radius: 3px;
 }
 
-/* Lift the sketcher dialog above the filters popup, which would otherwise stack over it. */
-.d4-dialog:has(.chem-sketcher-host),
-.d4-dialog:has(.grok-sketcher) {
-  z-index: 10001 !important;
-}
-
 .chem-sar-struct-filters .d4-filter-group-wrapper {
   flex-direction: column;
 }
@@ -579,11 +589,6 @@ i.chem-sar-card-twisty:hover {
 
 .chem-sar-struct-filters .d4-filter {
   width: 100%;
-}
-
-/* Restore the sketcher's 500px width; the popup host zeroes its min-width and the zero leaks into the dialog. */
-.d4-dialog-contents .chem-sketcher-host {
-  min-width: 500px!important;
 }
 
 .chem-sar-struct-icon {

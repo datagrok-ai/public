@@ -4,21 +4,12 @@ import {logSarTime} from './sar-matrix-types';
 
 const MIN_ANCHOR_HEAVY_ATOMS = 4;
 export const MAX_SAR_CLUSTER_SIZE = 300;
-/**
- * Bounds on what may be handed to an MCS, and the reason both are counted rather than timed.
- *
- * A cluster whose MCS overruns its budget costs more than itself: the worker running it is
- * restarted, that slot stops drawing from the queue, and once every slot has stopped the clusters
- * still queued are dropped unanalysed. How many get that far depends on how busy the machine is, so
- * a time-based limit makes the set of matrices differ between two runs over identical data.
- *
- * Deciding from the molecules instead keeps that decision reproducible. The MCS is a subgraph of the
- * cluster's smallest member, so that member's atom count — not how many molecules there are — is what
- * makes a cluster unaffordable, and sampling caps the rest of the search. A cluster past the ceiling
- * gets no anchor and is assembled through the single-position fallback, on every machine alike.
- */
+/** Counted, not timed: a timeout retires the worker running it, and the clusters queued behind that
+ *  worker are then dropped, so a busier machine yields fewer matrices over the same data. The MCS is
+ *  a subgraph of the cluster's smallest member, so that member's atom count bounds the search. Past
+ *  the ceiling a cluster gets no anchor and falls back to a single position. */
 const MCS_SAMPLE_SIZE = 8;
-const MAX_MCS_ANCHOR_ATOMS = 50;
+const MAX_MCS_ANCHOR_ATOMS = 30;
 /** Permissive floor: anchoring on the ring scaffold makes the core a small fraction of a large
  *  molecule by design, so this only rejects a degenerate anchor (median coverage across cluster). */
 const MIN_MCS_COVERAGE = 0.2;
@@ -68,26 +59,32 @@ function median(values: number[]): number {
 // Each miss is a main-thread RDKit parse and keys recur heavily across clusters. Cleared wholesale
 // past the cap so neither map grows unbounded across a session.
 const heavyAtomCache = new Map<string, number>();
+const anchorAtomCache = new Map<string, number>();
 const canonicalCoreCache = new Map<string, string>();
 const DECOMPOSE_CACHE_MAX = 10000;
 
-function heavyAtomCount(rdkit: ReturnType<typeof getRdKitModule>, smiles: string): number {
-  const cached = heavyAtomCache.get(smiles);
+/** Heavy atoms of a structure, memoised: keys recur heavily across clusters and each miss is a
+ *  main-thread RDKit parse. `asQuery` reads the string as a SMARTS anchor, which carries no validity
+ *  flag of its own; anything that will not parse counts zero. */
+function cachedAtomCount(smiles: string, rdkit: ReturnType<typeof getRdKitModule>,
+  asQuery = false): number {
+  const cache = asQuery ? anchorAtomCache : heavyAtomCache;
+  const cached = cache.get(smiles);
   if (cached !== undefined)
     return cached;
   let mol = null;
   let count = 0;
   try {
-    mol = rdkit.get_mol(smiles);
-    count = mol && mol.is_valid() ? mol.get_num_atoms() : 0;
+    mol = asQuery ? rdkit.get_qmol(smiles) : rdkit.get_mol(smiles);
+    count = asQuery ? mol?.get_num_atoms() ?? 0 : (mol && mol.is_valid() ? mol.get_num_atoms() : 0);
   } catch {
     count = 0;
   } finally {
     mol?.delete();
   }
-  if (heavyAtomCache.size >= DECOMPOSE_CACHE_MAX)
-    heavyAtomCache.clear();
-  heavyAtomCache.set(smiles, count);
+  if (cache.size >= DECOMPOSE_CACHE_MAX)
+    cache.clear();
+  cache.set(smiles, count);
   return count;
 }
 
@@ -113,23 +110,50 @@ function canonicalCore(rdkit: ReturnType<typeof getRdKitModule>, coreRaw: string
   return coreSmiles;
 }
 
-/**
- * The molecules a cluster's MCS is actually computed over: distinct structures, smallest first,
- * capped at {@link MCS_SAMPLE_SIZE}. Smallest first because the MCS cannot exceed the smallest
- * member, so those are the molecules that determine it while the larger ones only widen the search.
- * The anchor this yields still faces `anchorIsUsable`, which measures it against every molecule in
- * the cluster. Sorting by size then by string keeps one cluster's sample the same on every run.
- */
+/** Distinct structures, smallest first, capped at {@link MCS_SAMPLE_SIZE}: the MCS cannot exceed the
+ *  smallest member, so those determine it while larger ones only widen the search. The resulting
+ *  anchor still faces `anchorIsUsable` against the whole cluster. Sorting by size then string keeps
+ *  the sample identical across runs. */
 function mcsSample(smiles: string[], rdkit: ReturnType<typeof getRdKitModule>): string[] {
-  const ranked = [...new Set(smiles)].map((s) => ({s, atoms: heavyAtomCount(rdkit, s)}));
+  // Unparseable input counts zero atoms, which would otherwise sort it to the front and make it the
+  // member the affordability gate measures — letting a molecule nothing can read stand in for a small
+  // one and admit an unbounded search.
+  const ranked = [...new Set(smiles)]
+    .map((s) => ({s, atoms: cachedAtomCount(s, rdkit)}))
+    .filter((r) => r.atoms > 0);
   ranked.sort((a, b) => a.atoms - b.atoms || (a.s < b.s ? -1 : a.s > b.s ? 1 : 0));
   return ranked.slice(0, MCS_SAMPLE_SIZE).map((r) => r.s);
+}
+
+/**
+ * A cluster's site key as an anchor substructure, or null when it yields nothing usable.
+ *
+ * The key's marks are cut points rather than atoms, so they come off and the ring system underneath
+ * is the anchor. Leaving them in would make the anchor demand a substituent at each site and drop
+ * every molecule carrying a hydrogen there. What remains is re-parsed: removing a mark can leave a
+ * fragment RDKit will not read, and an anchor it cannot parse is worse than none.
+ */
+function siteKeyAnchor(siteKey: string): string | null {
+  if (!siteKey)
+    return null;
+  const bare = siteKey.replace(/\(\[\d*\*(?::\d+)?\]\)/g, '').replace(/\[\d*\*(?::\d+)?\]/g, '');
+  if (!bare)
+    return null;
+  let mol = null;
+  try {
+    mol = getRdKitModule().get_mol(bare);
+    return mol?.is_valid() ? mol.get_smiles() : null;
+  } catch {
+    return null;
+  } finally {
+    mol?.delete();
+  }
 }
 
 /** Whether a sample from {@link mcsSample} is worth attempting: at least two structures to compare,
  *  and a smallest member small enough to bound the search. */
 function mcsIsAffordable(sample: string[], rdkit: ReturnType<typeof getRdKitModule>): boolean {
-  return sample.length >= 2 && heavyAtomCount(rdkit, sample[0]) <= MAX_MCS_ANCHOR_ATOMS;
+  return sample.length >= 2 && cachedAtomCount(sample[0], rdkit) <= MAX_MCS_ANCHOR_ATOMS;
 }
 
 interface ClusterPrep {
@@ -144,24 +168,17 @@ interface ClusterPrep {
 }
 
 /** Reject an anchor too small to carry a shared multi-position core, or covering too little of the
- *  molecules — the leftover would become oversized R-groups that decompose badly. */
-function anchorIsUsable(prep: ClusterPrep, rdkit: ReturnType<typeof getRdKitModule>): boolean {
-  if (!prep.anchor)
+ *  molecules — the leftover would become oversized R-groups that decompose badly. Takes the anchor
+ *  rather than the prep, so a caller can weigh one without first writing it onto the prep. */
+function anchorIsUsable(anchor: string | null, smiles: string[],
+  rdkit: ReturnType<typeof getRdKitModule>): boolean {
+  if (!anchor)
     return false;
-  let anchorHeavyAtoms = 0;
-  let anchorMol = null;
-  try {
-    anchorMol = rdkit.get_qmol(prep.anchor);
-    anchorHeavyAtoms = anchorMol?.get_num_atoms() ?? 0;
-  } catch {
-    return false;
-  } finally {
-    anchorMol?.delete();
-  }
+  const anchorHeavyAtoms = cachedAtomCount(anchor, rdkit, true);
   if (anchorHeavyAtoms < MIN_ANCHOR_HEAVY_ATOMS)
     return false;
-  const coverages = prep.smiles
-    .map((s) => heavyAtomCount(rdkit, s))
+  const coverages = smiles
+    .map((s) => cachedAtomCount(s, rdkit))
     .filter((n) => n > 0)
     .map((n) => anchorHeavyAtoms / n);
   return median(coverages) >= MIN_MCS_COVERAGE;
@@ -208,16 +225,21 @@ function buildDecomposition(prep: ClusterPrep, res: IRGroupAnalysisResult | null
 
 /**
  * Decomposes every cluster against one shared anchor scaffold each, so R1, R2, ... come out aligned
- * by construction. Anchor priority per cluster: a single shared Bemis-Murcko ring scaffold; else the
- * generic MCS of several related scaffolds; else the MCS of the whole molecules. Returns one entry
- * per input cluster, or null where no useful clean anchor exists (caller falls back to the
- * single-position construction). Batched through a worker-per-cluster queue so independent clusters
- * run in parallel. `useMcsAnchors` false skips every MCS: that gives up the multi-position matrices,
- * and is currently the only setting whose output does not depend on how long an MCS happened to run.
- * The bounds below shrink the search but do not make it terminate within any particular budget.
+ * by construction. Anchor priority per cluster: the site key the grouping already derived; else a
+ * single shared Bemis-Murcko ring scaffold; else the generic MCS of several related scaffolds; else
+ * the MCS of the whole molecules. Returns one entry per input cluster, or null where no useful clean
+ * anchor exists (caller falls back to the single-position construction). Batched through a
+ * worker-per-cluster queue so independent clusters run in parallel.
+ *
+ * `siteKeys` is what keeps the MCS a genuine last resort: a cluster grouped by site was formed
+ * BECAUSE its cores reduce to that remainder, so the shared scaffold is already known exactly and
+ * rediscovering it by search would be both slower and less certain. The key is taken only when it
+ * clears the same usability bar an MCS anchor faces, so a cluster whose key is too small reaches the
+ * MCS like an unkeyed one — which is what `useMcsAnchors` false then gives up.
  */
 export async function decomposeClusters(clusterMembers: number[][], molecules: string[],
-  scaffolds: string[] = [], useMcsAnchors: boolean = true): Promise<(ClusterDecomposition | null)[]> {
+  scaffolds: string[] = [], useMcsAnchors: boolean = true,
+  siteKeys: string[] = []): Promise<(ClusterDecomposition | null)[]> {
   const results = new Array<ClusterDecomposition | null>(clusterMembers.length).fill(null);
   const rdkit = getRdKitModule();
   const service = await getRdKitService();
@@ -234,8 +256,16 @@ export async function decomposeClusters(clusterMembers: number[][], molecules: s
       idx: i, molIdx, smiles: molIdx.map((k) => molecules[k]), anchor: null, anchorIsQuery: false,
     };
     preps.push(prep);
+    const siteAnchor = siteKeyAnchor(siteKeys[i] ?? '');
     const clusterScaffolds = scaffolds.length ?
       [...new Set(molIdx.map((k) => scaffolds[k]).filter((s) => s))] : [];
+    // Exact shared scaffold, already derived by the grouping. Measured against the same bar the MCS
+    // anchors face and only taken when it clears it: a key can be a small fraction of the molecules
+    // it keys, and a cluster the MCS could still anchor should reach the MCS.
+    if (siteAnchor && anchorIsUsable(siteAnchor, prep.smiles, rdkit)) {
+      prep.anchor = siteAnchor;
+      continue;
+    }
     if (clusterScaffolds.length === 1)
       prep.anchor = clusterScaffolds[0]; // concrete substructure, no MCS needed
     else if (!useMcsAnchors)
@@ -254,11 +284,8 @@ export async function decomposeClusters(clusterMembers: number[][], molecules: s
     }
   }
 
-  // Phase 2 — MCS passes. Atoms are compared by element (2nd arg) rather than generically: matching
-  // any atom to any other is what makes this search explode, since the branching comes from how many
-  // atoms are interchangeable and not from how many molecules there are — bounding the input above
-  // does nothing about it, and an MCS that overruns costs the queue behind it. Comparing by element
-  // also states what a scaffold anchor means: a benzene ring anchors a benzene ring, not any 6-ring.
+  // Phase 2 — MCS passes. Atoms compare by element (2nd arg), not generically: interchangeable atoms
+  // are what make this search explode, and by element a benzene anchors a benzene, not any 6-ring.
   // `rawSmarts` (last arg) keeps RDKit's SMARTS, which a SMILES round-trip would not survive intact.
   if (scaffoldMcs.length > 0) {
     const t = performance.now();
@@ -282,7 +309,7 @@ export async function decomposeClusters(clusterMembers: number[][], molecules: s
   }
 
   // Phase 3 — validate anchors on the main thread, then batch-decompose the survivors.
-  const decomposable = preps.filter((prep) => anchorIsUsable(prep, rdkit));
+  const decomposable = preps.filter((prep) => anchorIsUsable(prep.anchor, prep.smiles, rdkit));
   if (decomposable.length === 0)
     return results;
 

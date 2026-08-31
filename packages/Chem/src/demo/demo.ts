@@ -242,24 +242,37 @@ const SAR_HINTS: SarHint[] = [
     text: 'Click a card to open that series in the matrix on the right. Levels nest: an L1 card is a ' +
       'single core with its substituents, while L2 and L3 group the cores that agree one and two cuts ' +
       'deeper - their badge reads "L2·6" for a level-2 matrix folding six in. Use the chevron to ' +
-      'unfold one into the matrices it groups, shown indented beneath it.',
+      'unfold one into the matrices it groups, shown indented beneath it. An orange badge warns that ' +
+      'unfolding will not reach every compound: the rest sit in groups too thin to form a matrix of ' +
+      'their own, so they are counted on this card but appear in none of the series below. The chip ' +
+      'above the matrix repeats the split, and both give the exact numbers on hover.',
   },
   {
-    anchor: () => document.querySelector('.chem-sar-control-bar .chem-sar-struct-icon'),
+    anchor: () => document.querySelector('.chem-sar-chips'),
+    position: ui.hints.POSITION.BOTTOM,
+    title: 'What the open matrix holds',
+    text: 'The chips above the matrix summarise it: how many compounds it holds, its size as cores by ' +
+      'substituents, the activity range on the current scale, and how many analogs are predicted ' +
+      'rather than measured. The size counts what is on screen, so a filter shrinks it.',
+  },
+  {
+    anchor: () => document.querySelector('.chem-sar-control-bar .chem-sar-filter-icon'),
     position: ui.hints.POSITION.LEFT,
     title: 'Filter the matrix',
     text: 'This funnel filters the cells themselves. Reference points is the one to reach for - it ' +
       'hides predictions resting on too little evidence, so what stays is what the data supports. ' +
-      'Potency, MW, Core and R narrow the grid the same way, and the dropdown next to this funnel ' +
-      'switches what each cell prints.',
+      'Potency, MW, Core and R narrow the grid the same way, and the Caption dropdown in the same bar ' +
+      'annotates each substituent column with a metric - its mean potency or molecular weight.',
   },
   {
     anchor: () => document.querySelector('.chem-sar-grid-host'),
     position: ui.hints.POSITION.RIGHT,
     title: 'Then click a cell',
-    text: 'Cores run down the rows, substituents across the columns. A solid cell is a measured ' +
-      'compound; a pale cell with a dashed outline is one nobody has made yet. Click either to ' +
-      'inspect it.',
+    text: 'Cores run down the rows, substituents across the columns. The header over the first column ' +
+      'draws the aligned core they all share, and each substituent header carries its R group above ' +
+      'the position it occupies, so every column reads against the same core. A solid cell is a ' +
+      'measured compound; a pale cell with a dashed outline is one nobody has made yet. Click either ' +
+      'to inspect it.',
   },
   {
     anchor: () => document.querySelector('.grok-prop-panel'),
@@ -269,6 +282,14 @@ const SAR_HINTS: SarHint[] = [
       'never combined, so its potency is predicted from how each performs elsewhere in the matrix, ' +
       'with the compounds behind every term listed as reference points. Add to make-list collects ' +
       'the ones worth making into the Make list tab.',
+  },
+  {
+    anchor: () => document.querySelector('.chem-sar-control-bar .chem-sar-cart-icon'),
+    position: ui.hints.POSITION.LEFT,
+    title: 'Collect what is worth making',
+    text: 'The cart adds whichever cell is selected in the matrix to the make list, so an analog can ' +
+      'be collected without leaving the grid. It takes measured compounds as readily as predicted ' +
+      'ones. To collect in bulk, right-click the matrix and add a whole series of predictions at once.',
   },
   {
     anchor: () => Array.from(document.querySelectorAll('.d4-tab-header'))
@@ -295,10 +316,10 @@ const SAR_HINTS: SarHint[] = [
       .find((e) => e.textContent?.trim() === 'Make list') ?? null,
     position: ui.hints.POSITION.BOTTOM,
     title: 'The make-list',
-    text: 'Everything collected lands here, each analog with its predicted potency, the support behind ' +
-      'it and the series it came from. Add selected takes whichever cell is selected in the matrix, so ' +
-      'the Context Panel is not the only way in. Open as table hands out a copy to save, export or ' +
-      'join; Clear empties the list.',
+    text: 'Everything collected lands here: each analog with its structure, whether it is predicted or ' +
+      'already made, its potency and the activity that potency is read on, how much evidence stood ' +
+      'behind it, and the series, core and substituent it came from. Open as table hands out a copy ' +
+      'to save, export or join; Clear empties the list.',
   },
 ];
 

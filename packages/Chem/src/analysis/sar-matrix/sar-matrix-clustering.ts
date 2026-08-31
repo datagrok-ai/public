@@ -41,9 +41,8 @@ export function buildMatchedSeries(frags: MmpFragments, fragmentCutoff: number):
     series.push({coreSmiles: idToName[coreFragId], members});
   }
   // Canonical order, keyed on the chemistry rather than on fragment ids. Those ids are minted as the
-  // workers discover fragments, so this map's order changes from one run to the next even though its
-  // contents do not — and every later stage that resolves a tie by "whichever came first" would inherit
-  // that, giving a different set of matrices for the same data. Ordering once here settles all of them.
+  // workers discover fragments, so this map's order varies between runs even though its contents do
+  // not. Ordering once here settles every downstream tie at the same time.
   for (const matched of series)
     matched.members.sort((a, b) => a.molIdx - b.molIdx);
   series.sort((a, b) => a.coreSmiles < b.coreSmiles ? -1 : a.coreSmiles > b.coreSmiles ? 1 : 0);
@@ -78,9 +77,8 @@ function isSubset(a: Set<number>, b: Set<number>): boolean {
 /**
  * Group the series by a value the user supplies per compound: everything carrying the same value
  * becomes one matrix, labelled with that value. A core whose compounds carry different values is split
- * across them, so a compound follows the series it was assigned rather than the chemistry of its core —
- * otherwise it would land in a matrix whose name contradicts its own column. Compounds with no value
- * sit out; grouping them under one "blank" matrix would invent a series the user never named.
+ * across them, so a compound never lands in a matrix whose name contradicts its own column. Compounds
+ * with no value sit out rather than forming a "blank" series the user never named.
  */
 export function groupSeriesByColumn(series: MatchedSeries[], values: (string | null)[]): CoreCluster[] {
   const byValue = new Map<string, Map<string, MatchedSeries>>();
@@ -134,10 +132,8 @@ export async function groupSeriesBySite(series: MatchedSeries[]): Promise<CoreCl
 
   const bySite = await seriesBySite(series);
 
-  // Largest first, so a group survives only when it covers series the kept ones do not. Equal sizes are
-  // broken by key: which of two same-sized groups is kept decides the whole set below it, and leaving
-  // that to Map insertion order ties the result to the order fragments came back from the workers —
-  // stable within a page session, different in the next one, so the same data gave a different count.
+  // Largest first, so a group survives only when it covers series the kept ones do not; which of two
+  // same-sized groups is kept decides the whole set below it, hence the key tiebreak.
   const groups = [...bySite.entries()].filter(([, g]) => g.size > 1)
     .sort((a, b) => b[1].size - a[1].size || (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0));
   const kept: {key: string, members: Set<number>}[] = [];
@@ -246,7 +242,6 @@ export async function buildCoarserLevels(clusters: CoreCluster[], extraLevels: n
   return all;
 }
 
-
 /** Past this many cores the all-pairs comparison stops being worth its cost. */
 const MAX_BUTINA_CORES = 3000;
 
@@ -309,17 +304,7 @@ export async function clusterRelatedCores(series: MatchedSeries[],
 
   const keys = series.map((s) => s.coreSmiles);
 
-  let assignment: number[];
-  if (keys.length <= MAX_BUTINA_CORES)
-    assignment = await butinaCluster(keys, threshold, fingerprintType);
-  else {
-    // Past MAX_BUTINA_CORES the quadratic all-pairs pass costs too much; BitBIRCH builds its tree in
-    // one incremental sweep instead.
-    const coreCol = DG.Column.fromStrings('core', keys);
-    coreCol.semType = DG.SEMTYPE.MOLECULE;
-    const clusterCol = await bitbirchWorker(coreCol, threshold, fingerprintType);
-    assignment = series.map((_s, i) => clusterCol.isNone(i) ? -1 : clusterCol.get(i));
-  }
+  const assignment = await similarityAssignment(keys, threshold, fingerprintType);
 
   // Group series by cluster id; anything unplaced becomes its own singleton.
   const seriesByCluster = new Map<number, number[]>();
@@ -332,10 +317,9 @@ export async function clusterRelatedCores(series: MatchedSeries[],
     group.push(i);
   }
 
-  // Similarity alone lets a cluster hold cores whose substituents hang off different places. Their
-  // vocabularies are then disjoint, and the matrix pools them into one axis: a column reads as one
-  // position on some rows and another on the rest, which no cell in it can be compared across. Each
-  // cluster is therefore split so its rows share a site, the largest share first.
+  // Similarity alone lets a cluster hold cores whose substituents hang off different places, and the
+  // matrix pools those into one axis — a column that means one position on some rows and another on
+  // the rest, comparable across neither. Split so the rows of a cluster share a site.
   const bySite = await seriesBySite(series);
   const clusters: CoreCluster[] = [];
   const emit = (members: number[], siteKey: string): void => {
@@ -366,4 +350,109 @@ export async function clusterRelatedCores(series: MatchedSeries[],
       emit([i], '');
   }
   return clusters;
+}
+
+/**
+ * Cluster id per structure, `-1` for anything left unplaced. Butina compares all pairs, which is
+ * quadratic, so past {@link MAX_BUTINA_CORES} BitBIRCH builds its tree in one incremental sweep.
+ */
+async function similarityAssignment(structures: string[], threshold: number,
+  fingerprintType: Fingerprint): Promise<number[]> {
+  if (structures.length <= MAX_BUTINA_CORES)
+    return butinaCluster(structures, threshold, fingerprintType);
+  const col = DG.Column.fromStrings('structure', structures);
+  col.semType = DG.SEMTYPE.MOLECULE;
+  const clusterCol = await bitbirchWorker(col, threshold, fingerprintType);
+  return structures.map((_s, i) => clusterCol.isNone(i) ? -1 : clusterCol.get(i));
+}
+
+/**
+ * Similarity groups over `structures`, as index groups ordered by the structure each starts with — so
+ * which group is which does not follow the order the workers returned them. Singleton groups are
+ * kept; the caller decides whether one structure on its own is worth a cluster.
+ */
+async function similarityGroups(structures: string[], threshold: number,
+  fingerprintType: Fingerprint): Promise<number[][]> {
+  const assignment = await similarityAssignment(structures, threshold, fingerprintType);
+  const byCluster = new Map<number, number[]>();
+  let singletonKey = -1;
+  for (let i = 0; i < structures.length; i++) {
+    const key = assignment[i] < 0 ? singletonKey-- : assignment[i];
+    // Appended, not rebuilt: the pooled set runs to thousands of structures, and copying the group on
+    // every insert makes filling one cluster quadratic in its own size.
+    const group = byCluster.get(key);
+    if (group === undefined)
+      byCluster.set(key, [i]);
+    else
+      group.push(i);
+  }
+  return [...byCluster.values()]
+    // Equal structures must compare 0: duplicates are routine here, and a comparator that never
+    // reports equality leaves their order up to the sort implementation, which is the one thing this
+    // ordering exists to prevent.
+    .map((group) => [...group].sort((a, b) =>
+      structures[a] < structures[b] ? -1 : structures[a] > structures[b] ? 1 : a - b))
+    .sort((a, b) => structures[a[0]] < structures[b[0]] ? -1 :
+      structures[a[0]] > structures[b[0]] ? 1 : a[0] - b[0]);
+}
+
+/**
+ * Pool the series no core grouping could place, so an MCS has something to anchor.
+ *
+ * A series left on its own holds one core, and one core is one row: it can never become a matrix, so
+ * its compounds simply do not appear. Grouping several by core similarity gives them rows to compare
+ * against each other, and since they share no cut site — that is why they were left over — an MCS is
+ * the only thing that can find their common core. Clusters the grouping placed are untouched.
+ */
+export async function poolUngroupedSeries(clusters: CoreCluster[], threshold: number,
+  fingerprintType: Fingerprint = Fingerprint.Morgan): Promise<CoreCluster[]> {
+  const isLone = (c: CoreCluster): boolean => !c.siteKey && c.series.length === 1;
+  const lone = clusters.filter(isLone);
+  if (lone.length < 2)
+    return clusters;
+
+  const groups = await similarityGroups(lone.map((c) => c.series[0].coreSmiles), threshold, fingerprintType);
+  const out = clusters.filter((c) => !isLone(c));
+  for (const group of groups)
+    out.push({id: `p${out.length}`, series: group.map((i) => lone[i].series[0]), siteKey: '', level: 2});
+  return out;
+}
+
+/**
+ * Group the compounds that never formed a matched series at all.
+ *
+ * {@link poolUngroupedSeries} can only rescue a series that exists; a compound whose every cut left
+ * it without a partner has no core and no series, so nothing upstream ever offers it to a matrix.
+ * Clustering those by whole-molecule similarity and letting an MCS find their common core is the only
+ * route to them. A compound alone is no use here, so singleton groups are dropped rather than kept.
+ *
+ * Marked `requiresDecomposition`: the series below are placeholders carrying no real core, so without
+ * a decomposition the single-position fallback would read each compound as its own bare core.
+ */
+export async function poolUngroupedMolecules(clusters: CoreCluster[], molecules: string[],
+  threshold: number, fingerprintType: Fingerprint = Fingerprint.Morgan): Promise<CoreCluster[]> {
+  const covered = new Set<number>();
+  for (const cluster of clusters) {
+    for (const matched of cluster.series) {
+      for (const member of matched.members)
+        covered.add(member.molIdx);
+    }
+  }
+  const leftover = molecules.map((_m, i) => i).filter((i) => !covered.has(i) && molecules[i]);
+  if (leftover.length < 2)
+    return clusters;
+
+  const groups = await similarityGroups(leftover.map((i) => molecules[i]), threshold, fingerprintType);
+  const out = [...clusters];
+  for (const group of groups.filter((g) => g.length > 1)) {
+    out.push({
+      id: `m${out.length}`,
+      series: group.map((i) => ({
+        coreSmiles: molecules[leftover[i]],
+        members: [{molIdx: leftover[i], substSmiles: ''}],
+      })),
+      siteKey: '', level: 2, requiresDecomposition: true,
+    });
+  }
+  return out;
 }

@@ -51,7 +51,9 @@ function preferredScore(matrix: SarMatrix, higherIsBetter: boolean): number {
     if (n >= 2)
       best = Math.max(best, higherIsBetter ? sum / n : -(sum / n));
   }
-  return best === -Infinity ? 0 : best;
+  // Not mapped to 0: scores are negative whenever lower activity is better, so a zero sentinel would
+  // rank the unscorable above everything merely below average.
+  return best;
 }
 
 /** Score every matrix under all schemes and sort by the chosen one. Every score is higher-is-better,
@@ -63,8 +65,13 @@ export function rankMatrices(matrices: SarMatrix[], scheme: SarRankScheme,
     matrix.scores[SarRankScheme.Discontinuity] = discontinuityScore(matrix);
     matrix.scores[SarRankScheme.Preferred] = preferredScore(matrix, higherIsBetter);
   }
-  // Id breaks a tie so equally scored matrices always list in the same order.
-  return [...matrices].sort((a, b) => ((b.scores[scheme] ?? 0) - (a.scores[scheme] ?? 0)) ||
+  // -Infinity minus -Infinity is NaN, which would cost the comparator its total order. Ranked at the
+  // finite floor so two unscorable matrices compare equal and fall through to the id.
+  const rank = (matrix: SarMatrix): number => {
+    const score = matrix.scores[scheme];
+    return score === undefined || !Number.isFinite(score) ? -Number.MAX_VALUE : score;
+  };
+  return [...matrices].sort((a, b) => (rank(b) - rank(a)) ||
     (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
 }
 

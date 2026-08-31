@@ -1,3 +1,11 @@
+import * as DG from 'datagrok-api/dg';
+
+/*
+ * Every comparator across these modules ends in a content-derived tiebreak: fragments arrive in
+ * worker-completion order, so resolving a tie by index or Map order makes the matrices depend on
+ * scheduling. Removing one reintroduces that.
+ */
+
 export function logSarTime(stage: string, t0: number): void {
   console.log(`SAR Matrix | ${stage}: ${Math.round(performance.now() - t0)} ms`);
 }
@@ -19,20 +27,24 @@ export interface CoreCluster {
   /** The remainder every member core reduced to — what this group is keyed on. Empty for a lone
    *  series that no site grouped. Cutting it once more is what relates whole matrices to each other. */
   siteKey: string;
+  /** Series are placeholders for compounds that never formed one, so this cluster is worth building
+   *  only if its decomposition succeeds. */
+  requiresDecomposition?: boolean;
   /** Fragmentation level: 2 for matrices built directly from series, higher for each round that
    *  folds groups of the level below into one. */
   level: number;
   parentId?: string;
-  /** Set only when the user grouped the series themselves: the value their column carried, used
-   *  verbatim as the matrix label so the names on screen are the ones they wrote. */
+  /** The user's own grouping value, used verbatim as the label so the names are the ones they wrote. */
   label?: string;
 }
 
-export type SarMatrixCellKind = 'real' | 'virtual' | 'empty';
+/** `unmeasured` is a compound the dataset already holds whose activity is missing. It is kept apart
+ *  from `empty` so the Free-Wilson fill cannot propose synthesizing something that already exists. */
+export type SarMatrixCellKind = 'real' | 'virtual' | 'empty' | 'unmeasured';
 
 export interface SarMatrixCell {
   kind: SarMatrixCellKind;
-  /** Observed (real) or predicted (virtual) scaled activity; null when empty. */
+  /** Observed (real) or predicted (virtual) scaled activity; null when empty or unmeasured. */
   value: number | null;
   molIdx: number | null;
   smiles: string | null;
@@ -90,3 +102,20 @@ export interface SarMatrix {
    *  cross-validate. `n` cross-validatable observed cells out of `total`. */
   confidence?: {r2: number, rmse: number, n: number, total: number} | null;
 }
+
+/** Close a grid, tolerating one that cannot: a view-less grid may not support close, and dropping
+ *  the reference is enough. */
+export function closeGridQuietly(grid: DG.Grid | null | undefined): void {
+  try {
+    grid?.close?.();
+  } catch (e) {
+    // Nothing to do; the caller drops its reference either way.
+  }
+}
+
+/** A score fit to sit in a numeric column: anything non-finite becomes empty, since a sentinel like
+ *  -Infinity would stretch the column's histogram across the whole axis. */
+export function finiteOrNaN(value: number | undefined): number {
+  return value === undefined || !Number.isFinite(value) ? NaN : value;
+}
+

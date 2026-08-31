@@ -1,6 +1,7 @@
 import {getRdKitService} from '../../utils/chem-common-rdkit';
 import {ClusterDecomposition, PositionRecord} from './sar-matrix-decompose';
-import {CoreCluster, SarMatrix, SarMatrixCell, SarMatrixCellKind, SarMatrixColumn, SarMatrixRow}
+import {CoreCluster, MatchedSeries, SarMatrix, SarMatrixCell, SarMatrixCellKind, SarMatrixColumn,
+  SarMatrixRow}
   from './sar-matrix-types';
 
 /**
@@ -66,8 +67,7 @@ function selectActivePositions(records: PositionRecord[], positions: string[]): 
   return positions
     .map((p) => ({p, n: new Set(records.map((r) => r.values[p]).filter((v) => v)).size}))
     .filter((d) => d.n >= 2)
-    // Position name breaks a tie: which of two equally rich positions becomes the column axis decides
-    // the whole matrix, and it must not depend on the order the records happened to arrive in.
+    // Which of two equally rich positions becomes the column axis decides the whole matrix.
     .sort((a, b) => b.n - a.n || (a.p < b.p ? -1 : a.p > b.p ? 1 : 0))
     .map((d) => d.p);
 }
@@ -98,19 +98,74 @@ function selectRows(records: PositionRecord[], foldedPositions: string[]): RowGr
   return [...byKey.values()];
 }
 
+/** Distinct values, most frequent first; the value itself breaks a tie so columns do not follow the
+ *  order the records happened to arrive in. */
+function rankByFrequency(values: Iterable<string>): string[] {
+  const counts = new Map<string, number>();
+  for (const value of values)
+    counts.set(value, (counts.get(value) ?? 0) + 1);
+  return [...counts.entries()]
+    .sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0))
+    .map(([value]) => value);
+}
+
 /** Distinct values at a position, most frequent first. Every value becomes a column; thin columns are
  *  surfaced by the pane's reference-point filter rather than dropped. */
 function topValues(records: PositionRecord[], position: string): string[] {
-  const counts = new Map<string, number>();
-  for (const r of records) {
-    const v = r.values[position];
-    if (v)
-      counts.set(v, (counts.get(v) ?? 0) + 1);
+  return rankByFrequency(records.map((r) => r.values[position]).filter((v) => v));
+}
+
+/** Ceiling on the cells one matrix may hold. Nothing upstream bounds a single-position matrix —
+ *  `MAX_SAR_CLUSTER_SIZE` gates the decomposition, and a cluster past it arrives here with no anchor
+ *  — so a runaway grouping would allocate millions of cells before anything could reject them. */
+const MAX_MATRIX_CELLS = 250000;
+/** Ceiling on rows; the cell ceiling then trims columns to fit around it. */
+const MAX_MATRIX_ROWS = 2000;
+/** Ceiling on columns, independent of the cell budget: the pane builds a grid column per substituent,
+ *  so few rows must not buy unlimited width. */
+const MAX_MATRIX_COLS = 500;
+
+/**
+ * Fill every empty cell the additive model can reach, returning how many were filled.
+ *
+ * A real cell keeps its measured value: its fitted one comes from the leave-one-out pass in
+ * `computeMatrixConfidence`, and an in-sample residual would let a cliff cell hide.
+ */
+/** Claim a cell for a compound the set holds but has no activity for, so `fillVirtualCells` cannot
+ *  predict it and offer it as one to make. Never over a measured cell: two members can share a slot,
+ *  and a measurement outranks a blank. */
+function claimUnmeasured(cells: SarMatrixCell[][], ri: number, ci: number, molIdx: number,
+  molecules: string[]): void {
+  if (cells[ri][ci].kind === 'empty')
+    cells[ri][ci] = {kind: 'unmeasured', value: null, molIdx, smiles: molecules[molIdx]};
+}
+
+function fillVirtualCells(cells: SarMatrixCell[][], rowCount: number, columnCount: number): number {
+  const predictCell = fitAdditiveModel(cells, rowCount, columnCount);
+  let filled = 0;
+  for (let ri = 0; ri < rowCount; ri++) {
+    for (let ci = 0; ci < columnCount; ci++) {
+      const predicted = predictCell(ri, ci);
+      if (predicted === null || cells[ri][ci].kind !== 'empty')
+        continue;
+      cells[ri][ci] = {kind: 'virtual' as SarMatrixCellKind, value: predicted.value,
+        molIdx: null, smiles: null, support: predicted.support, references: predicted.references};
+      filled++;
+    }
   }
-  // Equal counts are ordered by the substituent itself, so the columns come out the same every run.
-  return [...counts.entries()]
-    .sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0))
-    .map(([v]) => v);
+  return filled;
+}
+
+/** The cluster's series cut to {@link MAX_MATRIX_ROWS}, densest first so a trim keeps the rows
+ *  carrying the most data, broken by core so equal-sized series always cut the same way. */
+function boundedSeries(cluster: CoreCluster): MatchedSeries[] {
+  if (cluster.series.length <= MAX_MATRIX_ROWS)
+    return cluster.series;
+  const ranked = [...cluster.series].sort((a, b) => b.members.length - a.members.length ||
+    (a.coreSmiles < b.coreSmiles ? -1 : a.coreSmiles > b.coreSmiles ? 1 : 0));
+  console.warn(`SAR Matrix | a cluster of ${cluster.series.length} series was cut to ` +
+    `${MAX_MATRIX_ROWS} rows; the rest carry the fewest compounds`);
+  return ranked.slice(0, MAX_MATRIX_ROWS);
 }
 
 /**
@@ -119,13 +174,18 @@ function topValues(records: PositionRecord[], position: string): string[] {
  * A null decomposition falls back to `assembleSinglePositionMatrix`.
  */
 export async function assembleMultiPositionMatrix(cluster: CoreCluster, molecules: string[],
-  activities: Float32Array, predict: boolean, decomp: ClusterDecomposition | null): Promise<SarMatrix> {
+  activities: Float32Array, predict: boolean,
+  decomp: ClusterDecomposition | null): Promise<SarMatrix | null> {
+  // Both ways into the fallback ask the same question, so the rule sits here rather than at the two
+  // call sites: placeholder series have no real cores, and would read as one bare core per compound.
+  const fallback = (): SarMatrix | null => cluster.requiresDecomposition ? null :
+    assembleSinglePositionMatrix(cluster, molecules, activities, predict);
   if (!decomp)
-    return assembleSinglePositionMatrix(cluster, molecules, activities, predict);
+    return fallback();
 
   const activePositions = selectActivePositions(decomp.records, decomp.positions);
   if (activePositions.length === 0)
-    return assembleSinglePositionMatrix(cluster, molecules, activities, predict);
+    return fallback();
 
   // Richest position is the column axis; EVERY other position folds into the row identity (not just
   // the richest few). A position left out of both axes is unconstrained, so two compounds differing
@@ -137,7 +197,8 @@ export async function assembleMultiPositionMatrix(cluster: CoreCluster, molecule
   for (const p of decomp.positions)
     refValues[p] = referenceValue(decomp.records, p);
 
-  const candidates = new Set(topValues(decomp.records, columnPosition));
+  const columnValues = topValues(decomp.records, columnPosition);
+  const candidates = new Set(columnValues);
   const observed = (record: PositionRecord): string | null => {
     const value = record.values[columnPosition] ?? '';
     return candidates.has(value) && Number.isFinite(activities[record.molIdx]) ? value : null;
@@ -148,7 +209,6 @@ export async function assembleMultiPositionMatrix(cluster: CoreCluster, molecule
   const rowGroups = selectRows(decomp.records, foldedPositions)
     .map((group) => ({group, score: group.members.filter((r) => observed(r) !== null).length}))
     .filter((ranked) => ranked.score > 0)
-    // Core then folded substituents break a tie, so rows of equal density keep a fixed order.
     .sort((a, b) => b.score - a.score || (a.group.coreSmiles < b.group.coreSmiles ? -1 :
       a.group.coreSmiles > b.group.coreSmiles ? 1 :
         JSON.stringify(a.group.folded) < JSON.stringify(b.group.folded) ? -1 : 1))
@@ -166,7 +226,7 @@ export async function assembleMultiPositionMatrix(cluster: CoreCluster, molecule
   }
   const columns: SarMatrixColumn[] = [];
   const columnIndex = new Map<string, number>();
-  for (const value of topValues(decomp.records, columnPosition)) {
+  for (const value of columnValues) {
     if (!supported.has(value))
       continue;
     columnIndex.set(value, columns.length);
@@ -188,11 +248,13 @@ export async function assembleMultiPositionMatrix(cluster: CoreCluster, molecule
   rowGroups.forEach((group, ri) => {
     for (const record of group.members) {
       const activity = activities[record.molIdx];
-      if (!Number.isFinite(activity))
-        continue;
       const ci = columnIndex.get(record.values[columnPosition] ?? '');
       if (ci === undefined)
         continue;
+      if (!Number.isFinite(activity)) {
+        claimUnmeasured(cells, ri, ci, record.molIdx, molecules);
+        continue;
+      }
       cells[ri][ci] = {kind: 'real', value: activity, molIdx: record.molIdx, smiles: molecules[record.molIdx]};
       realMols.add(record.molIdx);
       if (activity < minActivity)
@@ -205,22 +267,7 @@ export async function assembleMultiPositionMatrix(cluster: CoreCluster, molecule
 
   let virtualCount = 0;
   if (predict) {
-    const predictCell = fitAdditiveModel(cells, rows.length, columns.length);
-    for (let ri = 0; ri < rows.length; ri++) {
-      for (let ci = 0; ci < columns.length; ci++) {
-        const predicted = predictCell(ri, ci);
-        if (predicted === null)
-          continue;
-        const existing = cells[ri][ci];
-        if (existing.kind === 'empty') {
-          cells[ri][ci] = {kind: 'virtual' as SarMatrixCellKind, value: predicted.value,
-            molIdx: null, smiles: null, support: predicted.support, references: predicted.references};
-          virtualCount++;
-        }
-        // Real cells get their fitted value from the leave-one-out pass in computeMatrixConfidence,
-        // not from this in-sample fit — an in-sample residual would let a cliff cell hide.
-      }
-    }
+    virtualCount = fillVirtualCells(cells, rows.length, columns.length);
     await linkVirtualCellStructures(rows, columns, cells, refValues);
   }
 
@@ -302,20 +349,31 @@ async function linkVirtualCellStructures(rows: SarMatrixRow[], columns: SarMatri
  */
 export function assembleSinglePositionMatrix(cluster: CoreCluster, molecules: string[], activities: Float32Array,
   predict: boolean): SarMatrix {
+  const series = boundedSeries(cluster);
+
   const colIndex = new Map<string, number>();
   const columns: SarMatrixColumn[] = [];
-  for (const series of cluster.series) {
-    for (const member of series.members) {
-      if (!colIndex.has(member.substSmiles)) {
-        colIndex.set(member.substSmiles, columns.length);
-        columns.push({position: 'R1', substSmiles: member.substSmiles});
-      }
-    }
+  const substituentsOf = (): string[] => {
+    // Unfiltered, unlike topValues: an empty substituent is a real column here, since a pooled series
+    // carries placeholder members and MMP can mint an empty fragment name.
+    const ranked = rankByFrequency(series.flatMap((m) => m.members.map((member) => member.substSmiles)));
+    // Bounded on its own as well as against the row count: the cell budget alone would let a two-row
+    // matrix have six figures of columns.
+    const limit = Math.max(1, Math.min(MAX_MATRIX_COLS, Math.floor(MAX_MATRIX_CELLS / series.length)));
+    if (ranked.length <= limit)
+      return ranked;
+    console.warn(`SAR Matrix | a matrix of ${ranked.length} substituents was cut to ${limit} columns; ` +
+      'the rest occur least often');
+    return ranked.slice(0, limit);
+  };
+  for (const substSmiles of substituentsOf()) {
+    colIndex.set(substSmiles, columns.length);
+    columns.push({position: 'R1', substSmiles});
   }
 
-  const rows: SarMatrixRow[] = cluster.series.map((series, i) => ({
-    coreSmiles: series.coreSmiles,
-    keySmiles: series.coreSmiles,
+  const rows: SarMatrixRow[] = series.map((matched, i) => ({
+    coreSmiles: matched.coreSmiles,
+    keySmiles: matched.coreSmiles,
     label: `Core ${i + 1}`,
     foldedValues: {},
   }));
@@ -325,40 +383,30 @@ export function assembleSinglePositionMatrix(cluster: CoreCluster, molecules: st
 
   let minActivity = Infinity;
   let maxActivity = -Infinity;
-  let realCount = 0;
-  cluster.series.forEach((series, ri) => {
-    for (const member of series.members) {
+  // Distinct compounds, not filled cells: one reached through two series sits in two cells, and
+  // counting it twice overstates every "cpd" the UI shows.
+  const realMols = new Set<number>();
+  series.forEach((matched, ri) => {
+    for (const member of matched.members) {
       const activity = activities[member.molIdx];
-      if (!Number.isFinite(activity))
+      const ci = colIndex.get(member.substSmiles);
+      if (ci === undefined)
         continue;
-      const ci = colIndex.get(member.substSmiles)!;
+      if (!Number.isFinite(activity)) {
+        claimUnmeasured(cells, ri, ci, member.molIdx, molecules);
+        continue;
+      }
       cells[ri][ci] = {kind: 'real', value: activity, molIdx: member.molIdx, smiles: molecules[member.molIdx]};
-      realCount++;
+      realMols.add(member.molIdx);
       if (activity < minActivity)
         minActivity = activity;
       if (activity > maxActivity)
         maxActivity = activity;
     }
   });
+  const realCount = realMols.size;
 
-  let virtualCount = 0;
-  if (predict) {
-    const predictCell = fitAdditiveModel(cells, rows.length, columns.length);
-    for (let ri = 0; ri < rows.length; ri++) {
-      for (let ci = 0; ci < columns.length; ci++) {
-        const predicted = predictCell(ri, ci);
-        if (predicted === null)
-          continue;
-        const existing = cells[ri][ci];
-        if (existing.kind === 'empty') {
-          cells[ri][ci] = {kind: 'virtual' as SarMatrixCellKind, value: predicted.value,
-            molIdx: null, smiles: null, support: predicted.support, references: predicted.references};
-          virtualCount++;
-        }
-        // Real cells' fitted value comes from the leave-one-out pass, not this in-sample fit.
-      }
-    }
-  }
+  const virtualCount = predict ? fillVirtualCells(cells, rows.length, columns.length) : 0;
 
   return {
     id: cluster.id,
