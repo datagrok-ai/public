@@ -2,6 +2,9 @@
 
 ## v.next
 
+* GROK-20799: Added `grok.meta.propertiesOf(type, {filterable})` — the curated property catalog of a platform entity type or a domain table, as descriptors whose names filters, facets and grids accept; null for an uncurated type or an unknown table
+* GROK-20799: Added `grok.meta.coreLocationOf(type)` — the read-only `Core` domain table serving a platform type's rows, or null
+* GROK-20799: Added `Property.refType` (the type an entity-valued property points at) and `Property.relationKind` (the new `DG.RELATION_KIND` enum; null when the property carries no database annotation)
 * GROK-20753: Added `DG.SEMTYPE.FUNCTION_NAME` (`'FunctionName'`) — the standard semantic type for a namespace-qualified function name.
 * GROK-20753: Added `FuncCall.evalParamValidators(name)` — runs the parameter's named `validators:` against its current value in the call (resolution and evaluation stay Dart-side; passing validators are omitted from the returned `{message, isError, isHelper}` list).
 * GROK-20753: Added `DG.StringUtils.levenshteinDistance(a, b)` / `jaroWinklerDistance(a, b)` — normalized string distances in [0, 1] (moved from `@datagrok-libraries/u2`)

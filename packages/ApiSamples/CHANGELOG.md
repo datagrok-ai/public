@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-20799: Added dapi/entity-properties.js — `grok.meta.propertiesOf`/`coreLocationOf` discovery, from a type's catalog to a related-entity filter over its Core table
 * GROK-20753: Added functions/eval-param-validators.js — named parameter validators run via `FuncCall.evalParamValidators` against the call's current value
 * GROK-20753: Added misc/utils/string-distances.js — `DG.StringUtils.levenshteinDistance`/`jaroWinklerDistance`
 * GROK-20753: Added ui/dialogs/pick-table.js — `ui.pickTableFromFiles`/`ui.pickTableFromQuery` with the null-on-cancel contract

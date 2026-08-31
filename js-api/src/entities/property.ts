@@ -3,7 +3,7 @@
  * @module entities/property
  */
 
-import {ColumnTypeFilter, SemType, TYPE, Type} from "../const";
+import {ColumnTypeFilter, RELATION_KIND, SemType, TYPE, Type} from "../const";
 import {toDart, toJs} from "../wrappers";
 import {MapProxy} from "../proxies";
 import {IDartApi} from "../api/grok_api.g";
@@ -80,6 +80,13 @@ export class Property implements IProperty {
 
   /** Property subtype */
   get propertySubType(): TYPE { return api.grok_Property_Get_PropertySubType(this.dart); }
+
+  /** Type this property points at (`'User'`), or null when it holds a plain value. */
+  get refType(): string | null { return api.grok_Property_Get_RefType(this.dart) ?? null; }
+
+  /** How the property relates to its owner in the database ({@link RELATION_KIND}) —
+   * null when it carries no database annotation, and is therefore not filterable. */
+  get relationKind(): RELATION_KIND | null { return api.grok_Property_Get_RelationKind(this.dart) ?? null; }
 
   /** Applies to viewers properties whether to include the property in the layout or not. */
   get includeInLayout(): boolean { return api.grok_Property_Get_IncludeInLayout(this.dart); }

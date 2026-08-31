@@ -6,6 +6,7 @@ import {Data} from './src/data';
 import {Logger} from './src/logger';
 import {UserSettingsStorage} from "./src/user_settings_storage";
 import {AI} from "./src/ai";
+import {Meta} from './src/meta';
 
 /** Function-related APIs (finding, calling, registering) */
 export const functions = new Functions();
@@ -30,6 +31,10 @@ export const userSettings = new UserSettingsStorage();
 
 /** AI API */
 export const ai = AI;
+
+/** What the platform knows about its own types: property catalogs of entity types and
+ * domain tables, and where a type's rows are served as a domain table. */
+export const meta = new Meta();
 
 export * from './src/chem';
 export * from './src/ml';

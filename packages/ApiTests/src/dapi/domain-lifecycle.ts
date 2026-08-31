@@ -4,9 +4,9 @@ declare let grok: typeof _grok, DG: typeof _DG;
 
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 
-// Resolves to the thrown error (null when the action succeeded) — shared by both
-// categories in this file for typed-error assertions.
-async function thrown(action: () => Promise<any>): Promise<any> {
+// Resolves to the thrown error (null when the action succeeded) — the shared
+// helper for typed-error assertions across the domain suites.
+export async function thrown(action: () => Promise<any>): Promise<any> {
   try {
     await action();
     return null;
