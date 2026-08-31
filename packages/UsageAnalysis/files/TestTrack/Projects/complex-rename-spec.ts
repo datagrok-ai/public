@@ -215,12 +215,12 @@ test('Projects / Complex rename: rename Query, reopen, verify reference resoluti
       expect(ok).toBe(true);
     });
 
-    await softStep('github-3550 INVARIANT: reopen project, verify auto-resolve OR explicit error', async () => {
+    await softStep('github-3550 INVARIANT: rename external query, reopen project — source table must still resolve', async () => {
       if (!saved) throw new Error('no saved project');
       const result = await evalJs<{
         loadedOk: boolean;
         errorMessage: string | null;
-        relationsCount: number;
+        rowCount: number;
       }>(page, `(async () => {
         grok.shell.closeAll();
         await new Promise(r => setTimeout(r, 800));
@@ -231,16 +231,17 @@ test('Projects / Complex rename: rename Query, reopen, verify reference resoluti
           if (grok.shell.tables.length > 0) break;
           await new Promise(r => setTimeout(r, 500));
         }
-        const fresh = await grok.dapi.projects.find('${saved.projectId}');
         return {
           loadedOk: grok.shell.tables.length > 0,
           errorMessage,
-          relationsCount: fresh.relations ? fresh.relations.length : 0,
+          rowCount: grok.shell.tv?.dataFrame?.rowCount ?? 0,
         };
       })()`);
-      const isHappyPath = result.loadedOk;
-      const isGracefulFailure = !result.loadedOk && result.errorMessage !== null;
-      expect(isHappyPath || isGracefulFailure).toBe(true);
+      expect(result.loadedOk, result.errorMessage
+        ? `project failed to reopen after query rename (github-3550): ${result.errorMessage}`
+        : 'project reopened with zero tables — query reference was invalidated by rename (github-3550)',
+      ).toBe(true);
+      expect(result.rowCount).toBeGreaterThan(0);
     });
   } finally {
     if (saved)
@@ -299,11 +300,12 @@ test('Projects / Complex rename: rename Script, reopen, verify reference resolut
       expect(ok).toBe(true);
     });
 
-    await softStep('Sister invariant: reopen project, verify auto-resolve OR explicit error', async () => {
+    await softStep('Sister invariant: rename external script, reopen project — source table must still resolve', async () => {
       if (!saved) throw new Error('no saved project');
       const result = await evalJs<{
         loadedOk: boolean;
         errorMessage: string | null;
+        rowCount: number;
       }>(page, `(async () => {
         grok.shell.closeAll();
         await new Promise(r => setTimeout(r, 800));
@@ -317,11 +319,14 @@ test('Projects / Complex rename: rename Script, reopen, verify reference resolut
         return {
           loadedOk: grok.shell.tables.length > 0,
           errorMessage,
+          rowCount: grok.shell.tv?.dataFrame?.rowCount ?? 0,
         };
       })()`);
-      const isHappyPath = result.loadedOk;
-      const isGracefulFailure = !result.loadedOk && result.errorMessage !== null;
-      expect(isHappyPath || isGracefulFailure).toBe(true);
+      expect(result.loadedOk, result.errorMessage
+        ? `project failed to reopen after script rename: ${result.errorMessage}`
+        : 'project reopened with zero tables — script reference was invalidated by rename',
+      ).toBe(true);
+      expect(result.rowCount).toBeGreaterThan(0);
     });
   } finally {
     if (saved)
