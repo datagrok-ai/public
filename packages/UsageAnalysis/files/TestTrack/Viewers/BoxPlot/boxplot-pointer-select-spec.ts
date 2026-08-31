@@ -1,7 +1,8 @@
 /* ---
 realizes: [boxplot.cp.pointer-select-highlight]
 --- */
-import {test, expect, Page} from '@playwright/test';
+import {expect, Page} from '@playwright/test';
+import {test} from '../../shared-page';
 import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 import {armBalloonRecorderProved, expectNoBalloonSinceArmed} from '../../helpers/balloons';

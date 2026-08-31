@@ -1,7 +1,8 @@
 /* ---
 realizes: [boxplot.cp.render-stats-color-sync, boxplot.int.violin-needs-bins-and-style, boxplot.int.pvalue-toggle-key-and-menu]
 --- */
-import {test, expect, Page} from '@playwright/test';
+import {expect, Page} from '@playwright/test';
+import {test} from '../../shared-page';
 import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 

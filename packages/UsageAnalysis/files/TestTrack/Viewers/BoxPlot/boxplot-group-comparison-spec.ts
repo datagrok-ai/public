@@ -1,7 +1,8 @@
 /* ---
 realizes: [boxplot.cp.group-comparison-ladder, boxplot.cp.covariate-adjust-baseline, boxplot.int.covariate-sets-adjustment]
 --- */
-import {test, expect, Page} from '@playwright/test';
+import {expect, Page} from '@playwright/test';
+import {test} from '../../shared-page';
 import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 

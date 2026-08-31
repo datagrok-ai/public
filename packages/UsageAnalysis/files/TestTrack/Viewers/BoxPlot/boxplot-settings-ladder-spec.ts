@@ -1,7 +1,8 @@
 /* ---
 realizes: [boxplot.cp.value-category-axes-persist, boxplot.int.category-sets-marker-color]
 --- */
-import {test, expect, Page} from '@playwright/test';
+import {expect, Page} from '@playwright/test';
+import {test} from '../../shared-page';
 import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 import {saveProjectViaUI, deleteProjectWithCleanup} from '../../helpers/projects';

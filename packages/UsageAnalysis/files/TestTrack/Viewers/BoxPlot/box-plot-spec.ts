@@ -1,7 +1,8 @@
 /* ---
 realizes: [boxplot.cp.property-surface-smoke, boxplot.int.inside-outside-values, boxplot.int.auto-layout-hides-chrome, boxplot.int.showmarkers-gates-marker-props]
 --- */
-import {test, expect, Page} from '@playwright/test';
+import {expect, Page} from '@playwright/test';
+import {test} from '../../shared-page';
 import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 
