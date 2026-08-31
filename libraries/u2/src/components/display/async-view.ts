@@ -56,7 +56,7 @@ export class AsyncView<T> extends Control {
     this._skeleton = options?.skeleton ?? false;
     this.root.classList.add('u2-async-view');
     this.root.dataset.u2 = 'async-view';
-    this._retry = this.run(() => button('Retry', () => source.retry()));
+    this._retry = this.runInScope(() => button('Retry', () => source.retry()));
     this.own(() => this._releaseContent());
     this.effect(() => this._apply(source.state.value));
   }

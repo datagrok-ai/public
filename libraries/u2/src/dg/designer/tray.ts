@@ -174,13 +174,13 @@ export class Tray extends Control {
   }
 
   private _addFunc(instance: SpecInstance): void {
-    this.run(() => funcPicker({title: 'Data source: function or query', instance,
+    this.runInScope(() => funcPicker({title: 'Data source: function or query', instance,
       onPick: (pick) => this._options.onAdd(nameForTag(FUNC), (name) =>
         funcSourceNode(instance.registry.get(FUNC), name, pick))}));
   }
 
   private _addEntities(instance: SpecInstance): void {
-    this.run(() => {
+    this.runInScope(() => {
       const collection = new ChoiceInput({label: 'Collection', items: COLLECTIONS, value: COLLECTIONS[0]});
       const filter = new TextInput({label: 'Filter', placeholder: 'A smart-search filter'});
       const pageSize = new NumberInput({label: 'Page size', mode: 'int', value: 20});

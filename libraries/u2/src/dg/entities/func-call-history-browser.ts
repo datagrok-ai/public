@@ -63,7 +63,7 @@ export class FuncCallHistoryBrowser extends Control {
     this.own(() => this._pager.dispose());
 
     const itemHeight = options.itemHeight ?? 36;
-    this._list = this.run(() => new VirtualList<DG.FuncCall>({
+    this._list = this.runInScope(() => new VirtualList<DG.FuncCall>({
       itemHeight,
       keyOf: (call) => call.id,
       render: (call, _index, row) => this._renderRow(call, row),
@@ -79,7 +79,7 @@ export class FuncCallHistoryBrowser extends Control {
     this.own(() => this._list.root.removeEventListener('scroll', onScroll));
 
     const emptyMessage = span('', 'u2-fch-empty-message');
-    const retry = this.run(() => button('Retry', () => this._pager.loadMore()));
+    const retry = this.runInScope(() => button('Retry', () => this._pager.loadMore()));
     retry.dataset.u2 = 'fch-retry';
     const stateArea = divV([emptyMessage, retry], 'u2-async-empty u2-fch-state');
     stateArea.dataset.u2 = 'fch-state';

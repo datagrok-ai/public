@@ -120,7 +120,7 @@ export class Wizard extends Control {
   /** Shows the wizard as a modal dialog; repeated calls reopen the same one. */
   openInDialog(title: string, options: {width?: number, height?: number} = {}): Dialog {
     if (!this._dialog) {
-      const dialog = this.run(() => Dialog.create(title).add(this));
+      const dialog = this.runInScope(() => Dialog.create(title).add(this));
       this._dialog = dialog;
       this._footer.insertBefore(this._button('CANCEL', () => dialog.close()), this._back);
       let open = false;
@@ -217,7 +217,7 @@ export class Wizard extends Control {
   }
 
   private _button(text: string, onClick: () => void, primary?: boolean): HTMLButtonElement {
-    return this.run(() => button(text, onClick, {primary}));
+    return this.runInScope(() => button(text, onClick, {primary}));
   }
 
   private _focusStep(index: number): void {
