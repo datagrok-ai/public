@@ -48,12 +48,20 @@ async function driveSelect(page: Page, which: string, value: string): Promise<vo
     } else {
       const controls = document.querySelector('.d4-box-plot-group-comparison-controls')!;
       const selects = Array.from(controls.querySelectorAll('select'));
-      if (which === 'method') sel = selects[0];
-      else if (which === 'control') sel = selects[1];
-      else if (which === 'baseline')
+      // Address by the option offered, never by position: how many selects this
+      // container renders depends on covariate, category count and adjust mode, so
+      // selects[0]/[1] drift onto the wrong control and `value = ...` is then a
+      // silent no-op (an unknown value leaves value === '').
+      if (which === 'baseline')
         sel = selects.find((s) => Array.from(s.options).some((o) => o.value === 'pooled'));
+      else
+        sel = selects.find((s) => Array.from(s.options).some((o) => o.value === value));
     }
-    if (!sel) throw new Error(`group-comparison select "${which}" not found`);
+    if (!sel) {
+      const offered = Array.from(document.querySelectorAll('.d4-box-plot-group-comparison-controls select'))
+        .map((s) => Array.from((s as HTMLSelectElement).options).map((o) => o.value).join('|'));
+      throw new Error(`group-comparison select "${which}" offering "${value}" not found; offered: ${JSON.stringify(offered)}`);
+    }
     sel.value = value;
     sel.dispatchEvent(new Event('input', {bubbles: true}));
   }, {which, value});
@@ -374,7 +382,9 @@ test('Box plot group comparison and covariate adjustment', async ({page}) => {
     await driveSelect(page, 'method', 'ANCOVA');
 
     expect(await bpProp(page, 'method')).toBe('ANCOVA');
-    const dom = await page.evaluate(() => {
+    // The control strip is rebuilt on a later pass than the render event driveSelect
+    // waits on, so a single read catches the adjust toggle still up.
+    const dom = await v.pollValue(() => page.evaluate(() => {
       const root = document.querySelector('[name="viewer-Box-plot"]')!;
       const toggle = Array.from(root.querySelectorAll('select')).find((s) =>
         Array.from(s.options).some((o) => o.value === 'regressOut' || o.value === 'ratio'));
@@ -383,7 +393,7 @@ test('Box plot group comparison and covariate adjustment', async ({page}) => {
       const caption = Array.from(root.querySelectorAll('.d4-column-selector-caption'))
         .some((c) => /Adjust by:/i.test(c.textContent ?? ''));
       return {toggleHidden, caption};
-    });
+    }), (d) => d.toggleHidden && d.caption, 2500, 100);
     expect(dom.toggleHidden).toBe(true);
     expect(dom.caption).toBe(true);
     expect(await bpProp(page, 'adjustmentMode')).toBe('ratio');
