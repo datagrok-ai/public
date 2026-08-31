@@ -1,7 +1,8 @@
 /* ---
 realizes: [filters.cp.filter-type-and-selection-modes]
 --- */
-import {test, expect, Page} from '@playwright/test';
+import {expect, Page} from '@playwright/test';
+import {test} from '../../shared-page';
 import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 import {addCardViaColumnSelector, cardCount, expectHeaderCounterNow, headerCounterTarget,

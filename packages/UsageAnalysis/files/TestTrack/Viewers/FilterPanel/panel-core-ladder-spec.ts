@@ -1,6 +1,8 @@
 /* ---
 realizes: [filters.cp.panel-core-ladder, filters.int.and-combination, filters.int.master-active-toggle, filters.int.active-counter-counts-filtering-only, filters.int.header-search-hides-cards, filters.int.esc-toggles-not-resets]
 --- */
+// Own page, deliberately: on the shared page this spec inherits reapplied filter
+// state and opens demog already filtered (157 rows against its expected 5850).
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
 import * as v from '../../helpers/viewers';

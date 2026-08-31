@@ -1,7 +1,8 @@
 /* ---
 realizes: [filters.cp.compose-with-viewer-filtering, filters.int.and-combination]
 --- */
-import {test, expect, Page} from '@playwright/test';
+import {expect, Page} from '@playwright/test';
+import {test} from '../../shared-page';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 import {expectHeaderCounter, expectHeaderCounterNow, trueCount} from '../../helpers/filter-panel';

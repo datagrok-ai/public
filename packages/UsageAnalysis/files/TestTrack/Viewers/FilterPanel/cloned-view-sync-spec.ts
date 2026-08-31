@@ -1,7 +1,8 @@
 /* ---
 realizes: [filters.cp.cloned-view-sync, filters.int.same-column-sync]
 --- */
-import {test, expect} from '@playwright/test';
+import {expect} from '@playwright/test';
+import {test} from '../../shared-page';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 

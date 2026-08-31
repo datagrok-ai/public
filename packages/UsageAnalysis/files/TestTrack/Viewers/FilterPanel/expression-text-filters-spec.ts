@@ -1,7 +1,8 @@
 /* ---
 realizes: [filters.cp.expression-and-text-ui]
 --- */
-import {test, expect, Page} from '@playwright/test';
+import {expect, Page} from '@playwright/test';
+import {test} from '../../shared-page';
 import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 import {addCardViaColumnSelector, cardCount, clickResetCriteriaIcon, trueCount} from '../../helpers/filter-panel';
