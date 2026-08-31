@@ -261,6 +261,8 @@ export async function runPlaywrightTests(
     ...process.env,
     DATAGROK_URL: webUrl,
     DATAGROK_AUTH_TOKEN: token,
+    DATAGROK_API_URL: url,
+    DATAGROK_DEV_KEY: key,
     PLAYWRIGHT_JSON_OUTPUT_NAME: reportFile,
   };
   if (token2)
