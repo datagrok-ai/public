@@ -22,6 +22,7 @@ function draggedProperty(o: any): string | null {
 /// One accordion pane per sector, each holding the MPO rows the profile editor builds from.
 export class VlaaiVisEditor {
   readonly root = ui.div([], 'power-grid-vlaaivis');
+  readonly boundsInputs: DG.InputBase<number | null>[];
 
   private model: VlaaiVisModel;
   private gc: DG.GridColumn;
@@ -35,7 +36,8 @@ export class VlaaiVisEditor {
   constructor(settings: PieChartSettings, gc: DG.GridColumn) {
     this.gc = gc;
     this.model = new VlaaiVisModel(settings, gc.grid.dataFrame);
-    this.root.append(this.buildBoundsForm(), this.body);
+    this.boundsInputs = this.buildBoundsInputs();
+    this.root.append(this.body);
     this.subs.push(this.model.onChanged.subscribe((change) => this.onModelChanged(change)));
     this.render();
   }
@@ -45,6 +47,8 @@ export class VlaaiVisEditor {
   }
 
   detach(): void {
+    for (const input of this.boundsInputs)
+      input.root.remove();
     this.disposeRows();
     for (const sub of this.subs)
       sub.unsubscribe();
@@ -57,17 +61,17 @@ export class VlaaiVisEditor {
     this.gc.grid.invalidate();
   }
 
-  private buildBoundsForm(): HTMLElement {
+  private buildBoundsInputs(): DG.InputBase<number | null>[] {
     const bound = (caption: string, key: 'lowerBound' | 'upperBound', tooltip: string) => {
       const input = ui.input.float(caption, {value: this.model.bound(key), min: 0, max: 1, showSlider: false,
         onValueChanged: (v) => this.model.setBound(key, clamp01(v))});
       input.setTooltip(tooltip);
       return input;
     };
-    return ui.divV([
+    return [
       bound(LABELS.LOWER_BOUND, 'lowerBound', TOOLTIPS.LOWER_BOUND),
       bound(LABELS.UPPER_BOUND, 'upperBound', TOOLTIPS.UPPER_BOUND),
-    ]);
+    ];
   }
 
   private render(): void {
@@ -112,7 +116,7 @@ export class VlaaiVisEditor {
       ui.p('A sector is a colored group of columns. The length of each wedge is that column\'s desirability ' +
         'score, and the sector\'s share of the circle is the sum of its weights.'),
       ui.divH([
-        ui.bigButton(`Auto-group first ${DEFAULTS.AUTO_GROUP_COLUMNS}`, () => this.autoGroup()),
+        ui.bigButton(LABELS.AUTO_GROUP, () => this.autoGroup(), TOOLTIPS.AUTO_GROUP),
         ui.button('New sector', () => this.addSector()),
       ], 'power-grid-vlaaivis-actions'),
     ], 'statistics-mpo-empty-state');

@@ -1,3 +1,7 @@
+.power-grid-pie-settings > .ui-form {
+  padding-bottom: 12px;
+}
+
 .power-grid-vlaaivis .statistics-mpo-row {
   min-height: 0;
   padding: 4px 0;

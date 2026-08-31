@@ -14,8 +14,9 @@ export const DEFAULTS = {
 export const LABELS = {
   UNASSIGNED: 'Unassigned columns',
   DROP_HINT: 'Drag a property here to take it out of its sector',
-  LOWER_BOUND: 'Reference range, min',
-  UPPER_BOUND: 'Reference range, max',
+  LOWER_BOUND: 'Target min',
+  UPPER_BOUND: 'Target max',
+  AUTO_GROUP: 'Auto-group',
 };
 
 export const TOOLTIPS = {
@@ -24,6 +25,7 @@ export const TOOLTIPS = {
   LOWER_BOUND: 'Inner edge of the shaded ring drawn behind the wedges.',
   UPPER_BOUND: 'Outer edge of the shaded ring. Wedges reaching past it are meeting the target.',
   NEW_SECTOR: 'New sector',
+  AUTO_GROUP: `Puts each of the first ${DEFAULTS.AUTO_GROUP_COLUMNS} columns into its own sector`,
   UNASSIGNED: 'Columns not in any sector aren\'t drawn. Drag one into a sector to include it.',
   DRAG: 'Drag into a sector to move it',
   COLOR: 'Sector color',

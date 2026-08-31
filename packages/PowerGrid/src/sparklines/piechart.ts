@@ -320,7 +320,9 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
       }
       settings.sectors ??= stashedSectors;
       editor = new VlaaiVisEditor(settings, gc);
+      inputs.append(...editor.boundsInputs.map((input) => input.root));
       elementsDiv.appendChild(editor.root);
+      gc.grid.invalidate();
     };
 
     const baseInputs = createBaseInputs(gc, settings);
@@ -330,21 +332,20 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
         editor.refresh();
     });
 
+    const style = settings.style ?? PieChartStyle.Radius;
     const inputs = ui.inputs([
       ...baseInputs,
-      ui.input.choice('Style', {value: settings.style ?? PieChartStyle.Radius, items: [PieChartStyle.Angle, PieChartStyle.Radius, PieChartStyle.Vlaaivis],
+      ui.input.choice('Style', {value: style, items: [PieChartStyle.Angle, PieChartStyle.Radius, PieChartStyle.Vlaaivis],
         onValueChanged: (value) => {
           settings.style = value;
           showEditor(value);
-        },
-        onCreated: (input) => {
-          if (input.value === PieChartStyle.Vlaaivis)
-            showEditor(PieChartStyle.Vlaaivis);
         }
       }),
     ]);
+    if (style === PieChartStyle.Vlaaivis)
+      showEditor(style);
 
-    return ui.divV([inputs, elementsDiv]);
+    return ui.divV([inputs, elementsDiv], 'power-grid-pie-settings');
   }
 
   hasContextValue(gridCell: DG.GridCell): boolean { return true; }
