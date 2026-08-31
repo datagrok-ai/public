@@ -1,0 +1,76 @@
+# gitleaks baseline for datagrok-ai/public.
+#
+# Each entry pins ONE known finding (file:rule:line) that has been reviewed. A
+# NEW secret in any of these files still fails the scan - this is a baseline,
+# not an allowlist. Structural false positives (vendored OpenAPI specs,
+# bioinformatics fixtures, test trees) are excluded by path in .gitleaks.toml
+# instead, so they never reach this file.
+#
+# Two kinds of entry, and the difference matters:
+#   - PUBLISHED ON PURPOSE: demo and test-database credentials this repo ships
+#     so users can open Northwind/Chembl. Permanent; they are meant to be public.
+#   - REMEDIATION DEBT: real secrets that were committed and are still live.
+#     Kept here only so the gate starts green while they are worked off. Remove
+#     the line once the secret is rotated and read from the environment.
+#
+# Regenerate after review with:
+#   gitleaks dir . --report-format json --report-path leaks.json
+
+# ============================================================================
+# REMEDIATION DEBT - rotate + externalise, then delete these lines
+# ============================================================================
+# Revvity Signals API key for the dgrok-snb-intg tenant, sent as x-api-key
+# against https://dgrok-snb-intg.signalsresearch2.revvitycloud.com. Public in
+# git history since 2025-11-18, so scrubbing HEAD alone does NOT undo the
+# exposure - the key must be revoked in the Signals tenant and reissued, and
+# the script changed to read it from the environment.
+packages/RevvitySignalsLink/scripts/revvity_etl.py:generic-api-key:14
+
+# --- Algolia search-only key ---
+docusaurus/docusaurus-debug.config.js:generic-api-key:196
+docusaurus/docusaurus-wiki-debug.config.js:generic-api-key:184
+docusaurus/docusaurus.config.js:generic-api-key:211
+
+# --- DB connection (demo/test) ---
+packages/Chembl/connections/unichem.json:generic-api-key:13
+packages/DBTests/connections/cached-postgresql-test.json:generic-api-key:15
+packages/DBTests/connections/clickhouse-adbc-db-tests.json:generic-api-key:14
+packages/DBTests/connections/clickhouse-db-tests.json:generic-api-key:13
+packages/DBTests/connections/mariadb-db-tests.json:generic-api-key:13
+packages/DBTests/connections/mssql-db-tests.json:generic-api-key:13
+packages/DBTests/connections/mssql-test.json:generic-api-key:13
+packages/DBTests/connections/mysql-db-tests.json:generic-api-key:13
+packages/DBTests/connections/neo4j-db-tests.json:generic-api-key:13
+packages/DBTests/connections/oracle-db-tests.json:generic-api-key:13
+packages/DBTests/connections/postgres-db-tests.json:generic-api-key:13
+packages/DBTests/connections/postgresnet-test.json:generic-api-key:13
+packages/DBTests/connections/postgresql-test.json:generic-api-key:13
+packages/DBTests/connections/snowflake-db-tests.json:generic-api-key:15
+packages/Samples/connections/clickhouse-northwind.json:generic-api-key:15
+packages/Samples/connections/mariadb-northwind.json:generic-api-key:15
+packages/Samples/connections/mssql-northwind.json:generic-api-key:15
+packages/Samples/connections/mysql-northwind.json:generic-api-key:15
+packages/Samples/connections/neo4j-northwind.json:generic-api-key:15
+packages/Samples/connections/oracle-northwind.json:generic-api-key:15
+packages/Samples/connections/postgres-northwind.json:generic-api-key:15
+packages/Samples/connections/postgres-world.json:generic-api-key:15
+packages/Samples/projects/coffee-company/connections/postgres-starbucks.json:generic-api-key:15
+
+# --- documentation example ---
+help/govern/_deprecated/group.md:generic-api-key:57
+help/govern/access-control/users-and-groups.md:generic-api-key:250
+
+# --- localhost demo default ---
+packages/NodeJSDemo/dockerfiles/todo-app/src/server.ts:generic-api-key:8
+
+# --- map-tile provider key ---
+packages/GIS/src/gis-openlayer.ts:generic-api-key:811
+packages/GIS/src/package.ts:generic-api-key:340
+
+# --- saved notebook session_token ---
+packages/Samples/_deprecated/projects/demo-notebooks/notebooks/rigid_body_transformations_in_a_plane_2d.json:generic-api-key:1391
+packages/Samples/projects/demo-notebooks/notebooks/rigid_body_transformations_in_a_plane_2d.json:generic-api-key:1391
+
+# --- tutorial demo credential ---
+packages/Tutorials/src/tracks/data-access/tutorials/data-connectors.ts:generic-api-key:60
+packages/Tutorials/src/tracks/eda/tutorials/dashboard.ts:generic-api-key:64

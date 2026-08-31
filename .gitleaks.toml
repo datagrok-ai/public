@@ -2,7 +2,15 @@
 #
 # Extends the upstream default ruleset (every built-in secret detector) and adds
 # a Datagrok allowlist so data fixtures and clearly-fake placeholder values do
-# not produce noise. Real credentials must never live in the repo.
+# not produce noise.
+#
+# Two different mechanisms, deliberately kept apart:
+#   - this file excludes whole PATH CLASSES that structurally cannot hold our
+#     secrets (fixtures, vendored specs, test trees). Nothing in them is ever
+#     scanned, now or later, so keep the list tight.
+#   - .gitleaksignore pins INDIVIDUAL reviewed findings (file:rule:line). The
+#     demo and test-database credentials this repo publishes on purpose live
+#     there, so a NEW secret in one of those same files still fails the scan.
 #
 # Used by: the gitleaks pre-commit hook (.pre-commit-config.yaml) and the
 # "Secret scan (gitleaks)" GitHub Actions workflow (.github/workflows/gitleaks.yaml).
@@ -23,9 +31,17 @@ paths = [
   '''.*\.min\.js$''',
   '''(^|/)ApiSamples/''',
   '''(^|/)ApiTests/''',
-  '''(^|/)test/''',
+  '''(^|/)tests?/''',
   '''.*_test\.dart$''',
   '''.*\.(test|spec)\.(ts|js)$''',
+  # Vendored third-party OpenAPI specs. These describe secret-store and OAuth
+  # endpoints, so every schema field name and example value ("secret:",
+  # "oauth2State:", an example presigned S3 downloadURL) trips a detector.
+  # They are upstream API documentation, not our credentials.
+  '''(^|/)KnimeLink/openapi/''',
+  '''(^|/)BenchlingLink/swaggers/''',
+  # Multiple sequence alignments — residue strings read as high entropy.
+  '''.*\.a3m$''',
   '''(^|/)cfg/local2/''',
   '''(^|/)users/''',
   # Browser-facing client code — anything here ships to the browser by design
