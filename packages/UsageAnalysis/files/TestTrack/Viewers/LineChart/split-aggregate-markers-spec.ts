@@ -1,8 +1,9 @@
 /* ---
 realizes: [linechart.cp.setup-split-aggregate-markers]
 --- */
-import {test, expect, type Page} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
+import {expect, type Page} from '@playwright/test';
+import {localTest as test} from '../../shared-page';
+import {openDatagrok, specTestOptions, softStep, stepErrors, isLocalBootNoise} from '../../spec-login';
 import {countCanvasPixels, snapshotCanvasColors, diffCanvasColors, setViewerProps,
   waitForCanvasChange, waitForViewerRendered} from '../../helpers/viewers';
 
@@ -68,16 +69,16 @@ test('Line Chart — Setup, Split, Aggregate, Markers', async ({page}) => {
   consoleErrors.length = 0;
 
   page.on('pageerror', (e) => pageErrors.push(String(e)));
-  page.on('console', (m) => { if (m.type() === 'error') consoleErrors.push(m.text()); });
+  page.on('console', (m) => { if (m.type() === 'error' && !isLocalBootNoise(m.text())) consoleErrors.push(m.text()); });
 
-  await loginToDatagrok(page);
+  await openDatagrok(page);
 
   await page.evaluate(async (path) => {
     document.body.classList.add('selenium');
     grok.shell.settings.showFiltersIconsConstantly = true;
     grok.shell.windows.simpleMode = true;
     grok.shell.closeAll();
-    const df = await grok.dapi.files.readCsv(path);
+    const df = await (window as any).__readCsv(path);
     grok.shell.addTableView(df);
     await new Promise((resolve) => {
       const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(undefined); });

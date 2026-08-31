@@ -1,8 +1,9 @@
 /* ---
 realizes: [linechart.cp.filter-follow-and-empty]
 --- */
-import {test, expect, type Page} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
+import {expect, type Page} from '@playwright/test';
+import {localTest as test} from '../../shared-page';
+import {openDatagrok, specTestOptions, softStep, stepErrors, isLocalBootNoise} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 
 declare const grok: any;
@@ -75,9 +76,9 @@ test('Line Chart — Filter Follow and Empty-Chart Resilience', async ({page}) =
   consoleErrors.length = 0;
 
   page.on('pageerror', (e) => pageErrors.push(String(e)));
-  page.on('console', (m) => { if (m.type() === 'error') consoleErrors.push(m.text()); });
+  page.on('console', (m) => { if (m.type() === 'error' && !isLocalBootNoise(m.text())) consoleErrors.push(m.text()); });
 
-  await loginToDatagrok(page);
+  await openDatagrok(page);
 
   await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 3000});
 
