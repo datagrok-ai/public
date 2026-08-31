@@ -1,8 +1,9 @@
 /* ---
 realizes: [matrixplot.cp.axes-layout-and-style, matrixplot.int.auto-layout-overrides-axis-toggles, viewers.matrix-plot]
 --- */
-import {test, expect, Page} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
+import {expect, Page} from '@playwright/test';
+import {localTest as test} from '../../shared-page';
+import {openDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 
 declare const grok: any;
@@ -65,7 +66,7 @@ test('Matrix Plot — Axes Visibility, Auto Layout, Font', async ({page}: {page:
   const pageErrors: string[] = [];
   page.on('pageerror', (e) => { if (!isBenignError(String(e))) pageErrors.push(String(e)); });
 
-  await loginToDatagrok(page);
+  await openDatagrok(page);
   await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 3000});
   await v.addViewerByIcon(page, 'matrix-plot', 'Matrix-plot');
   await v.openViewerGear(page, 'Matrix plot');

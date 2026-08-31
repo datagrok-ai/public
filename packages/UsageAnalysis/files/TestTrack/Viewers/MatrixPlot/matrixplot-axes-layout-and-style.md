@@ -9,6 +9,7 @@ realized_as:
   - matrixplot-axes-layout-and-style-spec.ts
 priority: p1
 target_layer: playwright
+boot_lane: local
 coverage_type: regression
 related_bugs:
   - id: GROK-19106

@@ -10,6 +10,7 @@ realized_as:
   - matrixplot-inspect-scroll-cells-spec.ts
 priority: p1
 target_layer: playwright
+boot_lane: local
 coverage_type: smoke
 related_bugs: []
 expected_results:

@@ -1,7 +1,8 @@
 /* ---
 realizes: [matrixplot.cp.configure-axes-inner-type, matrixplot.int.axes-drive-inner-grid, viewers.matrix-plot]
 --- */
-import {test, expect, Page} from '@playwright/test';
+import {expect, Page} from '@playwright/test';
+import {test} from '../../shared-page';
 import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 import {saveProjectViaApi, deleteProjectWithCleanup} from '../../helpers/projects';
