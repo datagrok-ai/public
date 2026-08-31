@@ -45,8 +45,9 @@ export class StringInputNode extends InputBase {
   }
 }
 
-/** A String Input pre-tagged `semType: Molecule` — enough for the value editor to become
- *  Chem's sketcher; emits an ordinary string input line. */
+/** A String Input pre-tagged `semType: Molecule` — the panel's value editor becomes
+ *  Chem's compact molecule input, while the NODE body embeds a real inplace sketcher
+ *  (`buildInlineSketcherEditor` in utils/input-values.ts); emits an ordinary string input line. */
 export class MoleculeInputNode extends InputBase {
   constructor() {
     super('Sketcher Input', 'molecule', 'string', 'molecule',

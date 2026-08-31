@@ -1,7 +1,8 @@
 /** Layered, banded graph layout shared by the creation-script importer and the ribbon's
  *  "Clean Layout". Pure and DOM-free: reads node metadata, mutates `node.pos`. */
 
-import {FlowNode, isExecKey, hiddenSocketRow, inlinePreviewEnabled, inlinePreviewSize} from './scheme';
+import {FlowNode, isExecKey, hiddenSocketRow, inlinePreviewEnabled, inlinePreviewSize,
+  hostsHelmEditor, editorBoxSize} from './scheme';
 
 export interface LayoutEdge {
   source: FlowNode;
@@ -206,7 +207,11 @@ export function estimateNodeHeight(node: FlowNode): number {
   const rows = Math.max(visible('input', Object.keys(node.inputs)),
     visible('output', Object.keys(node.outputs)), 1);
   // title bar + the always-present one-line info row + body padding + rows.
-  const base = 28 + 19 + 12 + rows * 20;
+  let base = 28 + 19 + 12 + rows * 20;
+  // A Helm Input's body hosts the resizable editor box (plus its margins); the
+  // sketcher input's compact preview is row-sized, and its expanded state is
+  // transient UI that never participates in layout.
+  if (hostsHelmEditor(node)) base += editorBoxSize(node).height + 14;
   // The in-node preview container adds its own height (plus its margins).
   return inlinePreviewEnabled(node) ? base + inlinePreviewSize(node).height + 14 : base;
 }
@@ -219,5 +224,8 @@ export function estimateNodeWidth(node: FlowNode): number {
   // A node with the in-node preview lifts the CSS cap — its width is the container's.
   if (!node.collapsed && inlinePreviewEnabled(node))
     return Math.max(base, inlinePreviewSize(node).width + 18);
+  // So does a Helm Input's embedded editor box.
+  if (!node.collapsed && hostsHelmEditor(node))
+    return Math.max(base, editorBoxSize(node).width + 18);
   return base;
 }

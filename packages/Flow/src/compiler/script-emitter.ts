@@ -225,7 +225,7 @@ function buildInputLine(step: CompiledStep, node: FlowNode): string | null {
   // default literal — those feed the prepared call at run time instead.
   const defaultVal = step.properties['defaultValue'];
   if (defaultVal !== undefined && defaultVal !== '' && defaultVal !== null &&
-      !NON_HEADER_DEFAULT_TYPES.has(outputType))
+      !NON_HEADER_DEFAULT_TYPES.has(outputType) && headerSafeDefault(defaultVal))
     line = `//input: ${outputType} ${paramName} = ${formatHeaderDefault(defaultVal, outputType)}`;
 
   if (step.properties['typeFilter']) qualifiers.push(`type: ${step.properties['typeFilter']}`);
@@ -741,6 +741,18 @@ function emitBreakpointCode(step: CompiledStep): string[] {
     '});',
     `__ff_emit('node-complete', '${step.nodeId}');`,
   ];
+}
+
+/** Whether a value can ride the `//input:` header as `= <default>`. The platform's
+ *  ScriptParser (`_validateParamLine`) treats the span from the line's FIRST `{` to its
+ *  LAST `}` as the options block — with no string-awareness or escaping — so a
+ *  brace-carrying default (HELM: `PEPTIDE1{A.C}$$$$`) corrupts the whole line, eating
+ *  the `{semType: …}` qualifiers and failing validation. Newlines (molfiles) have no
+ *  unescape on the parse side either. Unsafe values simply stay out of the header —
+ *  runs feed them through the configured-value channel regardless. */
+function headerSafeDefault(value: unknown): boolean {
+  const s = String(value);
+  return !s.includes('{') && !s.includes('}') && !s.includes('\n') && !s.includes('\r');
 }
 
 function formatHeaderDefault(value: unknown, type: string): string {

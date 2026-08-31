@@ -1,5 +1,9 @@
 # Helm changelog
 
+## 3.0.6
+
+* HelmInput: Fixed the editor dialog's OK updating only the drawing — the input's value now reflects the sketched HELM and `onChanged` fires, so consumers (e.g. Flow's Helm Input node) read the edited value
+
 ## 3.0.5 (2026-08-31)
 
 ### Features

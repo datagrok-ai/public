@@ -300,6 +300,8 @@ export class FlowEditor {
     getInlinePreviewContent: (nodeId) => this.callbacks.getInlinePreviewContent?.(nodeId) ?? null,
     syncInlinePreview: (nodeId, host) => this.syncInlinePreview(nodeId, host),
     releaseInlinePreview: (nodeId) => this.releaseInlinePreview(nodeId),
+    getZoom: () => this.area.area.transform.k || 1,
+    focusNodeForEditing: (nodeId, w, h) => void this.focusNodeForEditing(nodeId, w, h),
     isInlinePreviewPending: (nodeId) => this.callbacks.isInlinePreviewPending?.(nodeId) ?? false,
   };
 
@@ -3186,6 +3188,31 @@ export class FlowEditor {
     const rect = this.area.container.getBoundingClientRect();
     const k = this.area.area.transform.k;
     await this.area.area.translate(rect.width / 2 - cx * k, rect.height / 2 - cy * k);
+  }
+
+  /** Snap to native zoom (1) and pan so a `w`×`h` box anchored at the node's
+   *  top-left is fully visible (16px margin; top-left wins when the viewport is
+   *  smaller than the box). The in-node sketcher expands through this — its
+   *  chrome only works unscaled. */
+  async focusNodeForEditing(nodeId: string, w: number, h: number): Promise<void> {
+    const node = this.editor.getNode(nodeId);
+    if (!node) return;
+    // Unconditionally — a conditional read races a still-pending zoom (the
+    // guard pipe is async, so transform.k can be stale at this point).
+    await this.area.area.zoom(1);
+    const rect = this.canvasEl.getBoundingClientRect();
+    const margin = 16;
+    const t = this.area.area.transform;
+    const x1 = node.pos.x * t.k + t.x;
+    const y1 = node.pos.y * t.k + t.y;
+    let dx = 0;
+    let dy = 0;
+    if (x1 + w + margin > rect.width) dx = rect.width - (x1 + w + margin);
+    if (y1 + h + margin > rect.height) dy = rect.height - (y1 + h + margin);
+    if (x1 + dx < margin) dx = margin - x1;
+    if (y1 + dy < margin) dy = margin - y1;
+    if (dx !== 0 || dy !== 0)
+      await this.area.area.translate(t.x + dx, t.y + dy);
   }
 
   async addConnectionByKeys(

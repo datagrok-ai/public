@@ -2,6 +2,12 @@
 
 ## v.next
 
+* Improved: The Sketcher Input node shows a compact molecule preview that, when clicked, expands into a real inplace 500×500 chem sketcher right on the node — no dialog; sketcher chrome is not built to be zoomed, so expanding snaps the canvas to native zoom and pans the sketcher fully into view, zooming away folds it back to the preview, Done closes it, and sketching writes the SMILES straight into the configured value
+* Improved: The Helm Input node hosts the HELM editor in a resizable in-card box (drag the corner handle; the size saves with the flow) — and the editor now actually fills it, where it used to stay pinned at its built-in 250×250 regardless of the container
+* Fixed: A Helm Input's sketched value read back empty — the HELM editor's OK now propagates into the configured value (paired with a Helm-package fix that makes the editor dialog update the input's value and fire its change event)
+* Fixed: A flow loaded with a HELM value in a Helm Input ran fine but the helm editor rendered empty (and its dialog opened empty) — the initial value sync landed on the still-unbound asynchronously-materialized editor and was lost; the sync now retries until the editor binds
+* Improved: The Interactive Viewers demo gained a HELM chain (Helm Input → To Atomic Level → Render Molecule) alongside the sketcher pipeline
+* Fixed: A default containing braces (a HELM string, JSON-ish text) corrupted the emitted `//input:` line — the platform parses the line's first `{` to its last `}` as the options block, so validation errored and the semType was lost; such defaults now stay out of the header (runs feed them through the configured-value channel regardless)
 * Added: The Interactive Viewers demo (sketcher-driven chem pipeline with seven live in-node viewers, opens with autorun on) as a home-screen template card and a bundled flow script
 * Added: `Flow:renderMolecule` — turns a molecule (SMILES/molfile, sketcher-compatible) into a widget drawn once on a large square canvas, so the in-node preview stays crisp at any size; autoruns by default
 * Improved: Annotations offer a 13-color palette (was 5) and a Title size submenu (Small–Huge) in their right-click menu — both as radio groups; the title font size saves with the flow, and recoloring/resizing now lights the Save button

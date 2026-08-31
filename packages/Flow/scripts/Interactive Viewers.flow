@@ -3,22 +3,23 @@
 //language: flow
 //tags: funcflow, flow
 //input: string molecule = "CC(Oc1c2C(OCCSSCCCc2c(Cl)c(Cl)c1)=O)=O" {semType: Molecule}
+//input: string sequence {semType: Macromolecule}
 {
   "version": "2.0",
   "name": "Interactive Viewers",
   "description": "Fully interactive flow with built-in viewers and inputs",
   "author": "admin",
-  "created": "2026-08-27T18:36:53.231Z",
-  "modified": "2026-08-27T18:36:53.231Z",
+  "created": "2026-08-31T16:28:39.541Z",
+  "modified": "2026-08-31T16:28:39.541Z",
   "nodes": [
     {
-      "id": "d1da0f5ecc0abc33",
+      "id": "adf8769370f692fa",
       "typeName": "DG Functions/Uncategorized/OpenFile",
       "label": "Open File: SPGI.csv",
       "description": "",
       "pos": {
-        "x": -811.7392510215012,
-        "y": 351.00570213881815
+        "x": -806.103042110258,
+        "y": 354.5977930294344
       },
       "properties": {},
       "inputValues": {
@@ -27,13 +28,13 @@
       }
     },
     {
-      "id": "cca903bb08979a55",
+      "id": "3cd794745eba3cd3",
       "typeName": "Viewers/Scatter Plot",
       "label": "Scatter Plot",
       "description": "",
       "pos": {
-        "x": -525.7794446582865,
-        "y": -177.16597997529374
+        "x": -520.1432357470433,
+        "y": -251.73042727226544
       },
       "properties": {
         "viewerType": "Scatter plot",
@@ -88,20 +89,20 @@
         },
         "inlinePreviewSize": {
           "width": 639,
-          "height": 367
+          "height": 339
         },
         "inlinePreview": true
       },
       "inputValues": {}
     },
     {
-      "id": "27c824841746d2f8",
+      "id": "9bf085f47e3957fc",
       "typeName": "Viewers/Histogram",
       "label": "Histogram",
       "description": "",
       "pos": {
-        "x": -525.7794446582865,
-        "y": 680
+        "x": -527.1430561921132,
+        "y": 575.7695275165077
       },
       "properties": {
         "viewerType": "Histogram",
@@ -123,20 +124,20 @@
         },
         "inlinePreviewSize": {
           "width": 646,
-          "height": 241
+          "height": 224
         },
         "inlinePreview": true
       },
       "inputValues": {}
     },
     {
-      "id": "d2fafa252b154a36",
+      "id": "9ecc39459b2cdc10",
       "typeName": "Viewers/Pie Chart",
       "label": "Pie Chart",
       "description": "",
       "pos": {
-        "x": -525.7794446582865,
-        "y": 298.3350220600903
+        "x": -520.1432357470433,
+        "y": 196.5195884679394
       },
       "properties": {
         "viewerType": "Pie chart",
@@ -157,13 +158,13 @@
       "inputValues": {}
     },
     {
-      "id": "14322c13fbe1c557",
+      "id": "0e2b005f5154e4e0",
       "typeName": "Viewers/Bar Chart",
       "label": "Bar Chart",
       "description": "",
       "pos": {
-        "x": -208.57940462379662,
-        "y": 298.3350220600903
+        "x": -207.14301600435613,
+        "y": 196.5195884679394
       },
       "properties": {
         "viewerType": "Bar chart",
@@ -211,7 +212,7 @@
       "inputValues": {}
     },
     {
-      "id": "fbc536b4d4b66544",
+      "id": "9c6ae44e7dc14975",
       "typeName": "DG Functions/Uncategorized/OpenFile",
       "label": "Open File: pdb_data.csv",
       "description": "",
@@ -226,17 +227,17 @@
       }
     },
     {
-      "id": "bb1069526c4bb8bf",
+      "id": "913208a310d9106d",
       "typeName": "Inputs/Sketcher Input",
       "label": "Sketcher Input",
       "description": "",
       "pos": {
-        "x": 227.97428987794186,
-        "y": 466.99983176302806
+        "x": 940,
+        "y": 810.6494297142364
       },
       "properties": {
         "paramName": "molecule",
-        "defaultValue": "CC(Oc1c2C(OCCSSCCCc2c(Cl)c(Cl)c1)=O)=O",
+        "defaultValue": "CC(=O)Oc1cc(Cl)c(Cl)c2c1C(=O)OCCS(C)S(CC(CCCC)C2)O",
         "nullable": false,
         "caption": "",
         "choices": "",
@@ -245,19 +246,19 @@
       "inputValues": {}
     },
     {
-      "id": "94b5afe1227b8529",
+      "id": "555cb32221637bc3",
       "typeName": "DG Functions/panel/ChemistryGasteigerPartialCharges",
       "label": "Gasteiger Partial Charges",
       "description": "RDKit-based script.",
       "pos": {
-        "x": 460,
-        "y": 440
+        "x": 940,
+        "y": 464.24772192059885
       },
       "properties": {
         "inlinePreview": true,
         "inlinePreviewSize": {
-          "width": 234,
-          "height": 195
+          "width": 221,
+          "height": 204
         }
       },
       "inputValues": {
@@ -266,14 +267,14 @@
       }
     },
     {
-      "id": "e5addc4a2a462b9d",
+      "id": "86089b8412b72a28",
       "typeName": "DG Functions/Uncategorized/Mutate",
       "label": "Mutate",
       "description": "Generates the new dataset based on the given structure. Generated table has a column named 'mutations' with mutated structures.",
       "collapsed": true,
       "pos": {
-        "x": 237.97427684538343,
-        "y": 632.6998731030798
+        "x": 940,
+        "y": 780
       },
       "properties": {},
       "inputValues": {
@@ -284,13 +285,13 @@
       }
     },
     {
-      "id": "c3de791c136e15f3",
+      "id": "78646a9e3fee51f8",
       "typeName": "Viewers/Grid",
       "label": "Grid",
       "description": "",
       "pos": {
-        "x": 747.9742674367648,
-        "y": 460
+        "x": 212.98684717345614,
+        "y": 464.24772192059885
       },
       "properties": {
         "viewerType": "Grid",
@@ -405,22 +406,22 @@
           }
         ],
         "inlinePreviewSize": {
-          "width": 547,
-          "height": 498
+          "width": 705,
+          "height": 845
         },
         "inlinePreview": true
       },
       "inputValues": {}
     },
     {
-      "id": "ad7d8322b1868c5a",
+      "id": "89643f311d66140f",
       "typeName": "DG Functions/hitTriageFunction,transform/addChemPropertiesColumns",
       "label": "Chemical Properties (OCL)",
       "description": "Calculates chemical properties using OpenChemLib and adds them as columns to the input table. properties include Molecular Weight (MW), Hydrogen Bond Acceptors (HBA), Hydrogen Bond Donors (HBD), LogP (Partition), LogS (Solubility), Polar Surface Area (PSA), Rotatable Bonds, Stereo Centers, Molecule Charge.",
       "collapsed": true,
       "pos": {
-        "x": 227.97426743676544,
-        "y": 671.4000226601356
+        "x": 1100,
+        "y": 780
       },
       "properties": {
         "columnTables": {
@@ -441,13 +442,13 @@
       }
     },
     {
-      "id": "91ea148a0ef8bfdb",
+      "id": "b515f9b63fefe264",
       "typeName": "Viewers/Radar",
       "label": "Radar",
       "description": "",
       "pos": {
-        "x": 227.97426743676544,
-        "y": 758.6250417449626
+        "x": 1181.000026196464,
+        "y": 464.247628893383
       },
       "properties": {
         "viewerType": "Radar",
@@ -461,20 +462,20 @@
         ],
         "inlinePreview": true,
         "inlinePreviewSize": {
-          "width": 487,
-          "height": 200
+          "width": 262,
+          "height": 218
         }
       },
       "inputValues": {}
     },
     {
-      "id": "a36403e0388b57f7",
+      "id": "eb86a5f4a8cee7ac",
       "typeName": "Viewers/Biostructure",
       "label": "Biostructure",
       "description": "",
       "pos": {
-        "x": 541.9998657287631,
-        "y": -251.74997070221673
+        "x": 581.6664360231003,
+        "y": -250.08334207585722
       },
       "properties": {
         "viewerType": "Biostructure",
@@ -520,15 +521,15 @@
           }
         ],
         "inlinePreviewSize": {
-          "width": 759,
-          "height": 565
+          "width": 865,
+          "height": 564
         },
         "inlinePreview": true
       },
       "inputValues": {}
     },
     {
-      "id": "ff9b512400592397",
+      "id": "82fcfb263e922c9d",
       "typeName": "DG Functions/Uncategorized/setCurrentRow",
       "label": "Set Current Row",
       "description": "Sets the current row of the table",
@@ -543,7 +544,7 @@
       }
     },
     {
-      "id": "a22e929780999b61",
+      "id": "f0b0257e08eb07d8",
       "typeName": "Viewers/Grid",
       "label": "Grid",
       "description": "",
@@ -634,15 +635,15 @@
           }
         ],
         "inlinePreviewSize": {
-          "width": 313,
-          "height": 444
+          "width": 344,
+          "height": 440
         },
         "inlinePreview": true
       },
       "inputValues": {}
     },
     {
-      "id": "a229d0c89ad222b0",
+      "id": "229c3ee9a4bc1b07",
       "typeName": "DG Functions/Uncategorized/deleteColumns",
       "label": "Delete Columns",
       "description": "A copy of the table without the chosen columns. Removes selected columns",
@@ -659,115 +660,188 @@
       "inputValues": {
         "columns": "pdb,id"
       }
+    },
+    {
+      "id": "0ef228e92e188271",
+      "typeName": "Inputs/Helm Input",
+      "label": "Helm Input",
+      "description": "",
+      "pos": {
+        "x": -863.9421391434906,
+        "y": 958.5879530061143
+      },
+      "properties": {
+        "paramName": "sequence",
+        "defaultValue": "PEPTIDE1{A.C.D.E.C.G.H.I}|RNA1{r(A)p.ena(e5U)en}$PEPTIDE1,PEPTIDE1,2:R3-5:R3|PEPTIDE1,RNA1,1:R1-1:R1$$$V2.0",
+        "nullable": false,
+        "caption": "",
+        "choices": "",
+        "semType": "Macromolecule",
+        "editorSize": {
+          "width": 551,
+          "height": 352
+        }
+      },
+      "inputValues": {}
+    },
+    {
+      "id": "4fcb118bd8b84980",
+      "typeName": "DG Functions/Uncategorized/toAtomicLevelSingleSeq",
+      "label": "To Atomic Level Single sequence",
+      "description": "Converts a single sequence to molblock",
+      "collapsed": true,
+      "pos": {
+        "x": -657.5357666608617,
+        "y": 929.5879848909034
+      },
+      "properties": {},
+      "inputValues": {
+        "sequence": ""
+      }
+    },
+    {
+      "id": "cbec3c49031a9e72",
+      "typeName": "DG Functions/Uncategorized/renderMolecule",
+      "label": "Render Molecule",
+      "description": "Renders a molecule as a widget. Drawn once on a large square canvas so the preview stays crisp at any size",
+      "pos": {
+        "x": -283.94213914349064,
+        "y": 932.5879673545995
+      },
+      "properties": {
+        "inlinePreview": true,
+        "inlinePreviewSize": {
+          "width": 432,
+          "height": 378
+        }
+      },
+      "inputValues": {
+        "molecule": ""
+      }
     }
   ],
   "connections": [
     {
-      "id": "0e26e4d31e1e64ee",
-      "source": "d1da0f5ecc0abc33",
+      "id": "967fd58f44fac0b0",
+      "source": "adf8769370f692fa",
       "sourceOutput": "result",
-      "target": "cca903bb08979a55",
+      "target": "3cd794745eba3cd3",
       "targetInput": "table"
     },
     {
-      "id": "90b718b474dfe07b",
-      "source": "d1da0f5ecc0abc33",
+      "id": "9b9faa1978ca1f7e",
+      "source": "adf8769370f692fa",
       "sourceOutput": "result",
-      "target": "27c824841746d2f8",
+      "target": "9bf085f47e3957fc",
       "targetInput": "table"
     },
     {
-      "id": "67c11a03e45c530c",
-      "source": "d1da0f5ecc0abc33",
+      "id": "c65d9e0f4ec74e14",
+      "source": "adf8769370f692fa",
       "sourceOutput": "result",
-      "target": "d2fafa252b154a36",
+      "target": "9ecc39459b2cdc10",
       "targetInput": "table"
     },
     {
-      "id": "4e23d5bc4bafe624",
-      "source": "d1da0f5ecc0abc33",
+      "id": "eb1ce5c900e0aba2",
+      "source": "adf8769370f692fa",
       "sourceOutput": "result",
-      "target": "14322c13fbe1c557",
+      "target": "0e2b005f5154e4e0",
       "targetInput": "table"
     },
     {
-      "id": "633c87c4a29bdccc",
-      "source": "bb1069526c4bb8bf",
+      "id": "60205ea1223631ec",
+      "source": "913208a310d9106d",
       "sourceOutput": "molecule",
-      "target": "94b5afe1227b8529",
+      "target": "555cb32221637bc3",
       "targetInput": "mol"
     },
     {
-      "id": "c663a1692da627ef",
-      "source": "bb1069526c4bb8bf",
+      "id": "b39be700810b3221",
+      "source": "913208a310d9106d",
       "sourceOutput": "molecule",
-      "target": "e5addc4a2a462b9d",
+      "target": "86089b8412b72a28",
       "targetInput": "molecule"
     },
     {
-      "id": "5863116179d97ede",
-      "source": "e5addc4a2a462b9d",
+      "id": "ed959d2996d3bdb2",
+      "source": "86089b8412b72a28",
       "sourceOutput": "mutations",
-      "target": "ad7d8322b1868c5a",
+      "target": "89643f311d66140f",
       "targetInput": "table"
     },
     {
-      "id": "c1efad1280665c4d",
-      "source": "ad7d8322b1868c5a",
+      "id": "ba53c4f57399ea01",
+      "source": "89643f311d66140f",
       "sourceOutput": "table__pt",
-      "target": "c3de791c136e15f3",
+      "target": "78646a9e3fee51f8",
       "targetInput": "table"
     },
     {
-      "id": "ca81a1202e59442a",
-      "source": "ad7d8322b1868c5a",
+      "id": "c9fa52c82dec46e8",
+      "source": "89643f311d66140f",
       "sourceOutput": "table__pt",
-      "target": "91ea148a0ef8bfdb",
+      "target": "b515f9b63fefe264",
       "targetInput": "table"
     },
     {
-      "id": "d2b02dd191631812",
-      "source": "ff9b512400592397",
+      "id": "f1329b70beef8d33",
+      "source": "82fcfb263e922c9d",
       "sourceOutput": "result",
-      "target": "a36403e0388b57f7",
+      "target": "eb86a5f4a8cee7ac",
       "targetInput": "table"
     },
     {
-      "id": "999439bd8bbb47e8",
-      "source": "ff9b512400592397",
+      "id": "32053b37d8968e40",
+      "source": "82fcfb263e922c9d",
       "sourceOutput": "result",
-      "target": "a22e929780999b61",
+      "target": "f0b0257e08eb07d8",
       "targetInput": "table"
     },
     {
-      "id": "5bb7c7e056cb9fe1",
-      "source": "fbc536b4d4b66544",
+      "id": "9e8830fff9d53867",
+      "source": "9c6ae44e7dc14975",
       "sourceOutput": "result",
-      "target": "a229d0c89ad222b0",
+      "target": "229c3ee9a4bc1b07",
       "targetInput": "table"
     },
     {
-      "id": "2f818e78df465ce2",
-      "source": "a229d0c89ad222b0",
+      "id": "c1846e2f7f951c9a",
+      "source": "229c3ee9a4bc1b07",
       "sourceOutput": "result",
-      "target": "ff9b512400592397",
+      "target": "82fcfb263e922c9d",
       "targetInput": "table"
+    },
+    {
+      "id": "283d45acaf2c9001",
+      "source": "0ef228e92e188271",
+      "sourceOutput": "sequence",
+      "target": "4fcb118bd8b84980",
+      "targetInput": "sequence"
+    },
+    {
+      "id": "d3efe945559ccd74",
+      "source": "4fcb118bd8b84980",
+      "sourceOutput": "molfile",
+      "target": "cbec3c49031a9e72",
+      "targetInput": "molecule"
     }
   ],
   "annotations": [
     {
       "id": "ann-140yrk6z",
       "pos": {
-        "x": -872.1958486701183,
-        "y": -268.50294977151145
+        "x": -866.559639758875,
+        "y": -264.9108588808952
       },
       "size": {
-        "w": 1062.9159398696981,
-        "h": 1339.2579576570065
+        "w": 1056.0923576046728,
+        "h": 1185.6412377541722
       },
       "text": "VIEWERS",
       "color": "#BBDEFB",
-      "fontSize": 26
+      "fontSize": 26,
+      "pinned": true
     },
     {
       "id": "ann-8lskzs5f",
@@ -776,26 +850,56 @@
         "y": -268.16623428695743
       },
       "size": {
-        "w": 1138.218631616114,
-        "h": 689.3923677551833
+        "w": 1278.3192764709163,
+        "h": 691.0108997374774
       },
       "text": "3D",
       "color": "#F0F4C3",
-      "fontSize": 26
+      "fontSize": 26,
+      "pinned": true
     },
     {
       "id": "ann-lkl5ncpf",
       "pos": {
-        "x": 200.39799888392602,
-        "y": 436.77530970979626
+        "x": 198.18601493368817,
+        "y": 428.1746856382101
       },
       "size": {
-        "w": 1139.6116499308446,
-        "h": 636.2389934709291
+        "w": 1278.8488545849305,
+        "h": 990.4832426111004
       },
       "text": "Molecules",
       "color": "#C5CAE9",
-      "fontSize": 26
+      "fontSize": 26,
+      "pinned": true
+    },
+    {
+      "id": "ann-xb918esd",
+      "pos": {
+        "x": 493.5354901190448,
+        "y": 856.771379161913
+      },
+      "size": {
+        "w": 240,
+        "h": 140
+      },
+      "text": "Annotation",
+      "color": "#C8E6C9"
+    },
+    {
+      "id": "ann-icbsvbtw",
+      "pos": {
+        "x": -868.9404923724243,
+        "y": 927.2314238667177
+      },
+      "size": {
+        "w": 1059.6452677202808,
+        "h": 491.8345108419991
+      },
+      "text": "PEPTIDES",
+      "color": "#C8E6C9",
+      "fontSize": 26,
+      "pinned": true
     }
   ],
   "groups": [],

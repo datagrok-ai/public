@@ -16,7 +16,7 @@ export class InputValueControl extends ClassicPreset.Control {
   element(): HTMLElement | null {
     if (this.editor === undefined) {
       this.editor = buildInputValueEditor(this.node,
-        () => this.node.editorBridge?.notifyParamsChanged(this.node.id));
+        () => this.node.editorBridge?.notifyParamsChanged(this.node.id), {host: 'node'});
     }
     return this.editor?.root ?? null;
   }

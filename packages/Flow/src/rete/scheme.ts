@@ -24,6 +24,12 @@ export interface FlowEditorBridge {
   syncInlinePreview(nodeId: string, host: HTMLElement): void;
   /** Tear the node's preview portal down (toggle-off, collapse, unmount). */
   releaseInlinePreview(nodeId: string): void;
+  /** Current canvas zoom — the in-node sketcher exists only at native zoom (1)
+   *  and folds away when the user zooms. */
+  getZoom(): number;
+  /** Snap the canvas to native zoom and pan so a `w`×`h` box anchored at the
+   *  node's top-left is fully visible — what expanding the in-node sketcher does. */
+  focusNodeForEditing(nodeId: string, w: number, h: number): void;
   /** True while a run in progress still has this node ahead of it — the empty
    *  preview shows a loader instead of the "run the flow" placeholder. */
   isInlinePreviewPending(nodeId: string): boolean;
@@ -196,6 +202,42 @@ export function supportsInlinePreview(node: FlowNode): boolean {
 export function inlinePreviewEnabled(node: FlowNode): boolean {
   return node.properties[INLINE_PREVIEW_PROP] === true && supportsInlinePreview(node);
 }
+
+/** Size of the expanded in-node sketcher — it only exists at native zoom (1),
+ *  so layout px equal screen px. */
+export const INLINE_SKETCHER_SIZE = 500;
+
+/** Default in-card box of the HELM editor on a Helm Input node's body. */
+export const INLINE_HELM_WIDTH = 300;
+export const INLINE_HELM_HEIGHT = 250;
+
+/** User-resized helm box, `{width, height}` in `node.properties` (serializes). */
+export const EDITOR_BOX_SIZE_PROP = 'editorSize';
+
+/** A Molecule-tagged string input hosts the compact-preview / expand-in-place
+ *  sketcher on the node body (the panel's Value row keeps the standard editor).
+ *  Reads the `semType` qualifier, not the node type, so a String Input the user
+ *  tags `Molecule` gets it too — same routing as `inputValueProperty`. */
+export function hostsInlineSketcher(node: FlowNode): boolean {
+  return node.dgNodeType === 'input' && node.dgOutputType === 'string' &&
+    String(node.properties['semType'] ?? '').trim() === 'Molecule';
+}
+
+/** A Macromolecule-tagged string input hosts the HELM editor in a resizable
+ *  in-card box on the node body. */
+export function hostsHelmEditor(node: FlowNode): boolean {
+  return node.dgNodeType === 'input' && node.dgOutputType === 'string' &&
+    String(node.properties['semType'] ?? '').trim() === 'Macromolecule';
+}
+
+/** The helm box; malformed/missing stored values fall back to the 300×250 default. */
+export function editorBoxSize(node: FlowNode): {width: number; height: number} {
+  const s = node.properties[EDITOR_BOX_SIZE_PROP] as {width?: unknown; height?: unknown} | undefined;
+  const dim = (v: unknown, d: number): number =>
+    typeof v === 'number' && isFinite(v) && v > 0 ? Math.round(v) : d;
+  return {width: dim(s?.width, INLINE_HELM_WIDTH), height: dim(s?.height, INLINE_HELM_HEIGHT)};
+}
+
 
 /** Preview container size; malformed/missing values fall back to the 300×300 default. */
 export function inlinePreviewSize(node: FlowNode): {width: number; height: number} {
