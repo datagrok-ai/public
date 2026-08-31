@@ -91,7 +91,7 @@ function build<V extends DG.Viewer, S>(make: (df: DG.DataFrame, look: Partial<S>
       REPOINTING.delete(viewer);
     }
   });
-  viewer.run(() => {
+  viewer.runInScope(() => {
     for (const [name, source] of bound)
       viewer.link(name, source, isWritableSignal(source));
   });

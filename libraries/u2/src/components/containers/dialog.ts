@@ -171,7 +171,7 @@ export class Dialog extends Control {
   }
 
   private _button(text: string, onClick: () => void, primary?: boolean): HTMLButtonElement {
-    return this.run(() => button(text, onClick, {primary}));
+    return this.runInScope(() => button(text, onClick, {primary}));
   }
 
   private _finish(fn: (() => unknown) | undefined): void {

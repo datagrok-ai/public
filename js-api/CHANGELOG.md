@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Renamed the u2 `Component.run(fn)` scope helper to `runInScope(fn)` — `run` is inherited by every view and widget and collided with the long-standing `run()` on `FunctionView` and `Tutorial`, breaking those package builds with `TS2416`
 * GROK-20753: Added `DG.SEMTYPE.FUNCTION_NAME` (`'FunctionName'`) — the standard semantic type for a namespace-qualified function name.
 * GROK-20753: Added `FuncCall.evalParamValidators(name)` — runs the parameter's named `validators:` against its current value in the call (resolution and evaluation stay Dart-side; passing validators are omitted from the returned `{message, isError, isHelper}` list).
 * GROK-20753: Added `DG.StringUtils.levenshteinDistance(a, b)` / `jaroWinklerDistance(a, b)` — normalized string distances in [0, 1] (moved from `@datagrok-libraries/u2`)

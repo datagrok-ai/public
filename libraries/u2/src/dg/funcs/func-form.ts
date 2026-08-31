@@ -260,7 +260,7 @@ export class FuncCallForm extends Form {
   }
 
   private _buildRunButton(show: LiveOption<boolean>): void {
-    const run = this.run(() => button('Run', () => void this._runAndSave(), {primary: true}));
+    const run = this.runInScope(() => button('Run', () => void this._runAndSave(), {primary: true}));
     run.dataset.u2 = 'ff-run';
     this.addButtons((row) => row.append(run));
     if (show instanceof Signal)
@@ -297,7 +297,7 @@ export class FuncCallForm extends Form {
   }
 
   private _buildHistoryIcon(show: LiveOption<boolean>): void {
-    const icon = this._historyIcon = this.run(() => iconButton('history',
+    const icon = this._historyIcon = this.runInScope(() => iconButton('history',
       () => this._toggleHistory(), {tooltip: 'Apply a previous run'}));
     icon.dataset.u2 = 'ff-history-icon';
     this.addButtons((row) => row.prepend(icon));
@@ -479,7 +479,7 @@ export class FuncCallForm extends Form {
     // auto-hide machinery and the category skin stay exactly where they were; a header owning
     // no fields (a group heading, a duplicate) renders plain — a chevron over nothing lies
     const section = (name: string, collapsible: boolean, levelClass?: string): Section => {
-      const s = this.run(() => new Section({title: name, collapsible}));
+      const s = this.runInScope(() => new Section({title: name, collapsible}));
       s.header.classList.add('u2-form-category');
       if (levelClass !== undefined)
         s.header.classList.add(levelClass);
@@ -590,18 +590,18 @@ export class FuncCallForm extends Form {
       postfix: prop.units || prop.options?.['units'] || undefined,
       ...rest,
     };
-    const registered = custom ? null : this.run(() => Editors.resolve(prop, options));
+    const registered = custom ? null : this.runInScope(() => Editors.resolve(prop, options));
     // a custom editor owns its field entirely and gets no dynamic wiring (the W1 override contract)
     const route: FuncField['route'] = (custom ?? registered) != null ? 'field' : routed;
     const filter = route === 'column' || route === 'columns' ? columnPredicate(prop) : undefined;
     let input: Input<any>;
     let kind: Kind | null;
     if (route === 'choices') {
-      input = this.run(() => new ChoiceInput({...options, items: []}));
+      input = this.runInScope(() => new ChoiceInput({...options, items: []}));
       kind = 'choice';
     }
     else if (route === 'multiChoices') {
-      input = this.run(() => new MultiChoiceInput({...options, items: [], showSummaryCheckbox: true}));
+      input = this.runInScope(() => new MultiChoiceInput({...options, items: [], showSummaryCheckbox: true}));
       kind = 'list';
     }
     else if (route === 'suggestions') {
@@ -610,16 +610,16 @@ export class FuncCallForm extends Form {
     }
     else if (route === 'table') {
       const {label: caption, ...tableOptions} = options;
-      input = this.run(() => tableInput(caption ?? param.name, tableOptions));
+      input = this.runInScope(() => tableInput(caption ?? param.name, tableOptions));
       kind = 'string';
     }
     else if (route === 'column') {
-      input = this.run(() => new ColumnInput({...options,
+      input = this.runInScope(() => new ColumnInput({...options,
         table: asTable(parent?.value), filter}));
       kind = 'string';
     }
     else if (route === 'columns') {
-      input = this.run(() => new ColumnsInput({...options,
+      input = this.runInScope(() => new ColumnsInput({...options,
         table: asTable(parent?.value), filter}));
       kind = 'list';
     }
@@ -627,7 +627,7 @@ export class FuncCallForm extends Form {
       const platform = (custom ?? registered) != null ? null :
         ObjectForm.platformInput(this, prop, this._call, this._formOptions.editors === 'auto');
       input = custom ?? registered ?? platform ??
-        this.run(() => inputForProperty(prop, {...options, assumeWritable: true}));
+        this.runInScope(() => inputForProperty(prop, {...options, assumeWritable: true}));
       kind = platform !== null && input === platform ? null : kindOf(prop, true);
     }
     const field: FuncField = {param, input, kind, route, filter, orphaned: false,
@@ -741,7 +741,7 @@ export class FuncCallForm extends Form {
 
   private _suggestInput(name: string, options: InputOptions<any>): Input<string> {
     let tooltips: Record<string, string> = {};
-    return this.run(() => new SuggestInput({
+    return this.runInScope(() => new SuggestInput({
       ...options,
       minChars: 1,
       source: async (text: string, abort: AbortSignal) => {
@@ -777,7 +777,7 @@ export class FuncCallForm extends Form {
         retry: () => this._wireSource(field)});
       return;
     }
-    field.source = this.run(() => new ParamSource(this._call, field.param.name,
+    field.source = this.runInScope(() => new ParamSource(this._call, field.param.name,
       (r) => this._applyItems(field, r), state));
   }
 
@@ -794,7 +794,7 @@ export class FuncCallForm extends Form {
   private _stateOf(field: FuncField): ParamState {
     let state = field.state;
     if (state === undefined) {
-      const created = this.run(() => new ParamState());
+      const created = this.runInScope(() => new ParamState());
       state = created;
       field.state = created;
       field.input.box.append(created.root);
@@ -1136,7 +1136,7 @@ export class FuncCallForm extends Form {
     for (const field of this._fields) {
       if (field.orphaned || (field.route !== 'table' && !dependents.has(field)))
         continue;
-      const binding = this.run(() => new TableBinding(this._call, field.param,
+      const binding = this.runInScope(() => new TableBinding(this._call, field.param,
         (name) => tableByName(name), dependents.get(field) ?? [],
         (dep, oldTableName) => this._clearedNotice(dep.field, oldTableName)));
       this._tableBindings.push(binding);

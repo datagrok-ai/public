@@ -11,7 +11,7 @@ function owner(): Scope {
   const scope = Scope.ambient;
   if (!scope) {
     throw new Error('u2: signal binding needs an owner — ' +
-      'wrap the code in Control.build(...) or component.run(...)');
+      'wrap the code in Control.build(...) or component.runInScope(...)');
   }
   return scope;
 }

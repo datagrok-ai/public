@@ -9,7 +9,7 @@ export type Child = HTMLElement | Control | string | ReadonlySignal<unknown>;
 export type Text = string | ReadonlySignal<unknown>;
 
 const NO_OWNER = 'u2: signal binding needs an owner — ' +
-  'wrap the code in Control.build(...) or component.run(...)';
+  'wrap the code in Control.build(...) or component.runInScope(...)';
 
 function isSignal(x: unknown): x is ReadonlySignal<unknown> {
   return x instanceof Signal;

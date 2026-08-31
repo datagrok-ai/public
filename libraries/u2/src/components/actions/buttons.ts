@@ -17,7 +17,7 @@ export interface IconButtonOptions {
 }
 
 const NO_OWNER = 'u2: signal binding needs an owner — ' +
-  'wrap the code in Control.build(...) or component.run(...)';
+  'wrap the code in Control.build(...) or component.runInScope(...)';
 
 /** Hover text in the icon.ts convention: the tooltip service when there is a scope to own it,
  * the native `title` otherwise. The tooltip doubles as the accessible name — the u2 tooltip

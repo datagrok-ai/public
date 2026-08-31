@@ -78,7 +78,7 @@ export class SpecDesigner extends Control {
     this.root.dataset.u2 = 'designer';
     // the shortcuts below are the view's own: the root has to be able to hold focus for them
     this.root.tabIndex = 0;
-    this._tray = this.run(() => new Tray({
+    this._tray = this.runInScope(() => new Tray({
       onSelect: (node) => this._select(node),
       onContext: (node, x, y) => {
         this._select(node);
@@ -86,11 +86,11 @@ export class SpecDesigner extends Control {
       },
       onAdd: (base, seed) => this._dragLayer.addComponent(base, seed),
     }));
-    this._tree = this.run(() => new VirtualTree<SpecNode>({
+    this._tree = this.runInScope(() => new VirtualTree<SpecNode>({
       onRename: (node, label) => this._rename(node, label),
       contextActions: (node) => this._rowActions(node),
     }));
-    this._mode = this.run(() => new ButtonGroup({
+    this._mode = this.runInScope(() => new ButtonGroup({
       items: [{id: 'design', label: 'Design'}, {id: 'run', label: 'Run'}],
       toggle: 'single',
       density: 'ribbon',
@@ -197,7 +197,7 @@ export class SpecDesigner extends Control {
 
     this.open(spec);
 
-    this._palette = this.run(() => new Palette(this._instance?.registry ?? this._registry));
+    this._palette = this.runInScope(() => new Palette(this._instance?.registry ?? this._registry));
     this.toolbox = divV([h3('Palette'), this._palette.root, h3('Structure'), this._tree.root],
       'u2-designer-toolbox');
     this._listen(this._palette.root, 'mousedown', (e) => this._dragLayer.onPaletteDown(e as MouseEvent));
@@ -231,7 +231,7 @@ export class SpecDesigner extends Control {
   }
 
   ribbon(): HTMLElement[] {
-    return this.run(() => this._ribbon.build());
+    return this.runInScope(() => this._ribbon.build());
   }
 
   /** Renders `spec` in place of what the canvas holds, with a fresh editor — an instance and its
@@ -255,7 +255,7 @@ export class SpecDesigner extends Control {
     this._selection.multi = [];
     this._hovered = null;
     this._pendingSelect = null;
-    this._instance = this.run(() => renderSpec(parsed, this._ctx, this._registry,
+    this._instance = this.runInScope(() => renderSpec(parsed, this._ctx, this._registry,
       {designTime: this._mode.selected.peek()[0] !== 'run'}));
     this._surface.append(this._instance.root);
     this._editor.value = new SpecEditor(this._instance);

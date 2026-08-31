@@ -346,11 +346,11 @@ export class ObjectForm extends Form {
       nullable: prop.nullable,
       ...rest,
     };
-    const registered = custom ? null : this.run(() => Editors.resolve(prop, options));
+    const registered = custom ? null : this.runInScope(() => Editors.resolve(prop, options));
     const platform = (custom ?? registered) != null ? null :
       ObjectForm.platformInput(this, prop, this.target, this._auto);
     const input = custom ?? registered ?? platform ??
-      this.run(() => inputForProperty(prop, options));
+      this.runInScope(() => inputForProperty(prop, options));
     const native = input === platform;
     if (!native) {
       input.value.value = this._read(prop, kind);
@@ -397,7 +397,7 @@ export class ObjectForm extends Form {
       return null;
     try {
       const input = dg.InputBase.forProperty(prop as any, target);
-      return input == null ? null : form.run(() => fromDartInput(input, prop.name));
+      return input == null ? null : form.runInScope(() => fromDartInput(input, prop.name));
     } catch {
       return null;
     }
