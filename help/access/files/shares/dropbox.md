@@ -15,6 +15,7 @@ Provides access to [Dropbox](https://www.dropbox.com) storage as [file share](..
 ```json
 {
   "parameters": {
+    "clientId": "",
     "dir": ""
   },
   "credentials": {
@@ -24,6 +25,9 @@ Provides access to [Dropbox](https://www.dropbox.com) storage as [file share](..
   }
 }
 ```
+
+`clientId` is the app key of the [Dropbox app](https://www.dropbox.com/developers/apps) that
+authorizes access. Register your own app and paste its app key here — Datagrok does not ship one.
 
 See also:
 

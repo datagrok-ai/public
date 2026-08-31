@@ -140,7 +140,6 @@ All values have default "false" values.
 | createAdminUser           | Add 'admin' user with all privileges                                                           |
 | createTestUser            | Add a user that is used for unit testing                                                       |
 | createSeleniumUser        | Add a user that will be used when executing selenium UI tests                                  |
-| createBetaUsers           | Register users from the beta_users.csv file                                                    |
 | createDatabaseTestJobs    | Create data jobs for connecting to various data sources, such as Oracle, SQL Server, or Hadoop |
 | deleteDataFolder          | Delete data folder before deploying                                                            |
 | importRDatasets           | Import 'r datasets' into the platform                                                          |
