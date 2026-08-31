@@ -1154,6 +1154,12 @@ export function sarMatrixViewer() : any {
   return PackageFunctions.sarMatrixViewer();
 }
 
+//description: Column names available for SAR Matrix series grouping
+//output: list<string> result
+export function sarSeriesColumnChoices() : string[] {
+  return PackageFunctions.sarSeriesColumnChoices();
+}
+
 //name: SAR Matrix
 //description: Groups related compound series into potency-colored matrices and predicts virtual analogs.
 //input: dataframe table 
@@ -1164,9 +1170,11 @@ export function sarMatrixViewer() : any {
 //input: double fragmentCutoff = 0.4 { description: Maximum fragment size relative to core }
 //input: int fragmentationLevels = 3 { caption: Series levels; min: 1; max: 5; description: Nested series tiers (L1/L2/L3): 1 is a flat list, each level folds matrices one cut broader }
 //input: bool predictVirtual = true 
+//input: bool useMcsAnchors = false { caption: Group leftovers by MCS; description: Off leaves out the compounds no shared core could group. On searches those for a common core and adds the matrices it finds, keeping every matrix the core grouping already produced. Slower on large sets }
+//input: string seriesColumn { nullable: true; caption: Series column (Optional); choices: Chem:sarSeriesColumnChoices(); description: Optional. Your own grouping: compounds sharing a value become one matrix named with that value. Leave empty to group by structure }
 //top-menu: Chem | Analyze | SAR Matrix...
-export async function sarMatrixAnalysis(table: DG.DataFrame, molecules: DG.Column, activity: DG.Column, scaling: string, activityDirection: string, fragmentCutoff: number, fragmentationLevels: number, predictVirtual: boolean) : Promise<void> {
-  await PackageFunctions.sarMatrixAnalysis(table, molecules, activity, scaling, activityDirection, fragmentCutoff, fragmentationLevels, predictVirtual);
+export async function sarMatrixAnalysis(table: DG.DataFrame, molecules: DG.Column, activity: DG.Column, scaling: string, activityDirection: string, fragmentCutoff: number, fragmentationLevels: number, predictVirtual: boolean, useMcsAnchors: boolean, seriesColumn: string) : Promise<void> {
+  await PackageFunctions.sarMatrixAnalysis(table, molecules, activity, scaling, activityDirection, fragmentCutoff, fragmentationLevels, predictVirtual, useMcsAnchors, seriesColumn);
 }
 
 //name: Scaffold Tree Filter
@@ -1207,6 +1215,13 @@ export async function demoSimilarityDiversitySearch() : Promise<void> {
 //meta.demoPath: Cheminformatics | Matched Molecular Pairs
 export async function demoMMPA() : Promise<void> {
   await PackageFunctions.demoMMPA();
+}
+
+//name: Demo SAR Matrix
+//description: Group analog series into potency matrices and predict the analogs worth making next
+//meta.demoPath: Cheminformatics | SAR Matrix
+export async function demoSarMatrix() : Promise<void> {
+  await PackageFunctions.demoSarMatrix();
 }
 
 //name: Demo R Group Analysis

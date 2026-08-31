@@ -862,10 +862,17 @@ export namespace funcs {
   }
 
   /**
+  Column names available for SAR Matrix series grouping
+  */
+  export async function sarSeriesColumnChoices(): Promise<any> {
+    return await grok.functions.call('Chem:SarSeriesColumnChoices', {});
+  }
+
+  /**
   Groups related compound series into potency-colored matrices and predicts virtual analogs.
   */
-  export async function sarMatrixAnalysis(table: DG.DataFrame , molecules: DG.Column , activity: DG.Column , scaling: string , activityDirection: string , fragmentCutoff: number , fragmentationLevels: number , predictVirtual: boolean ): Promise<void> {
-    return await grok.functions.call('Chem:SarMatrixAnalysis', { table, molecules, activity, scaling, activityDirection, fragmentCutoff, fragmentationLevels, predictVirtual });
+  export async function sarMatrixAnalysis(table: DG.DataFrame , molecules: DG.Column , activity: DG.Column , scaling: string , activityDirection: string , fragmentCutoff: number , fragmentationLevels: number , predictVirtual: boolean , useMcsAnchors: boolean , seriesColumn: string | null): Promise<void> {
+    return await grok.functions.call('Chem:SarMatrixAnalysis', { table, molecules, activity, scaling, activityDirection, fragmentCutoff, fragmentationLevels, predictVirtual, useMcsAnchors, seriesColumn });
   }
 
   /**
@@ -895,6 +902,13 @@ export namespace funcs {
   */
   export async function demoMMPA(): Promise<void> {
     return await grok.functions.call('Chem:DemoMMPA', {});
+  }
+
+  /**
+  Group analog series into potency matrices and predict the analogs worth making next
+  */
+  export async function demoSarMatrix(): Promise<void> {
+    return await grok.functions.call('Chem:DemoSarMatrix', {});
   }
 
   /**

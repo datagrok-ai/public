@@ -275,7 +275,7 @@ i.chem-sar-card-twisty:hover {
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
-  padding: 6px 10px;
+  padding: 0px 10px;
   border-bottom: 1px solid var(--grey-2);
 }
 
@@ -631,6 +631,6 @@ i.chem-sar-card-twisty:hover {
 }
 
 .chem-sar-makelist-grid {
-  flex: 1;
+  height: calc(100% - 50px);
   min-height: 0;
 }
