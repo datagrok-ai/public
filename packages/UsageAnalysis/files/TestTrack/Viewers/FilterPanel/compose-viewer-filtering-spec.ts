@@ -35,8 +35,11 @@ async function seedPanelCriterion(page: Page, category: string): Promise<number>
 
 async function addViewer(page: Page, type: string): Promise<void> {
   await page.evaluate(async (t: string) => {
-    grok.shell.tv.addViewer(t);
-    await new Promise((r) => setTimeout(r, 1500));
+    const w = window as any;
+    const viewer = grok.shell.tv.addViewer(t);
+    await w.__poll(() => Array.from(grok.shell.tv.viewers).includes(viewer),
+      (there: boolean) => there, 1500, 25);
+    await w.__eventFired(`viewer:${t}.onViewerRendered`, 1500).catch(() => {});
   }, type);
 }
 
@@ -87,11 +90,13 @@ async function driveViewerContextMenuLeaf(page: Page, type: string, path: string
       if (i === segments.length - 1) { item.click(); break; }
       const r = item.getBoundingClientRect();
       const at = {clientX: r.x + r.width / 2, clientY: r.y + r.height / 2, bubbles: true};
+      const opened = document.querySelectorAll('.d4-menu-popup').length;
       item.dispatchEvent(new MouseEvent('mouseenter', at));
       item.dispatchEvent(new MouseEvent('mousemove', at));
-      await new Promise((res) => setTimeout(res, 400));
+      await (window as any).__poll(() => document.querySelectorAll('.d4-menu-popup').length,
+        (n: number) => n > opened, 400, 25);
     }
-    await new Promise((res) => setTimeout(res, 500));
+    await (window as any).__stable(() => document.querySelectorAll('.d4-menu-popup').length, 500, 50);
     return true;
   }, path);
 }
@@ -109,12 +114,14 @@ async function dragSliderHandle(
     return {x: r.x + r.width / 2, y: r.y + r.height / 2};
   }, {sel: rootSelector, hn: handleName});
   if (!box) return false;
+  const countBefore = await trueCount(page);
   await page.mouse.move(box.x, box.y);
   await page.mouse.down();
   await page.mouse.move(box.x + dx / 3, box.y + dy / 3, {steps: 4});
   await page.mouse.move(box.x + dx, box.y + dy, {steps: 10});
   await page.mouse.up();
-  await page.waitForTimeout(900);
+  await page.evaluate((was: number) => (window as any).__moved(
+    () => grok.shell.tv.dataFrame.filter.trueCount, was, 900), countBefore);
   return true;
 }
 
@@ -129,8 +136,10 @@ async function armOnClickFilter(page: Page, type: string): Promise<void> {
 async function clickViewerAt(page: Page, type: string, fx: number, fy: number): Promise<boolean> {
   const rect = await viewerCanvasRect(page, type);
   if (!rect) return false;
+  const countBefore = await trueCount(page);
   await page.mouse.click(rect.x + rect.w * fx, rect.y + rect.h * fy);
-  await page.waitForTimeout(900);
+  await page.evaluate((was: number) => (window as any).__moved(
+    () => grok.shell.tv.dataFrame.filter.trueCount, was, 900), countBefore);
   return true;
 }
 
@@ -143,8 +152,10 @@ async function resetSliderByDoubleClick(page: Page, rootSelector: string): Promi
     return {x: r.x + r.width / 2, y: r.y + r.height / 2};
   }, rootSelector);
   if (!at) return false;
+  const countBefore = await trueCount(page);
   await page.mouse.dblclick(at.x, at.y);
-  await page.waitForTimeout(900);
+  await page.evaluate((was: number) => (window as any).__moved(
+    () => grok.shell.tv.dataFrame.filter.trueCount, was, 900), countBefore);
   return true;
 }
 
@@ -231,9 +242,10 @@ const VIEWER_CHANNELS: Array<{
     arm: async (p) => {
       await p.evaluate(async () => {
         const h = grok.shell.tv.viewers.find((x: any) => x.type === 'Histogram');
-        h.props.valueColumnName = 'AGE';
-        h.props.filteringEnabled = true;
-        await new Promise((r) => setTimeout(r, 900));
+        await (window as any).__settled('viewer:Histogram.onViewerRendered', () => {
+          h.props.valueColumnName = 'AGE';
+          h.props.filteringEnabled = true;
+        }, 900);
       });
       expect(await p.evaluate(() =>
         grok.shell.tv.viewers.find((x: any) => x.type === 'Histogram').props.filteringEnabled),
@@ -263,8 +275,8 @@ const VIEWER_CHANNELS: Array<{
     arm: async (p) => {
       await p.evaluate(async () => {
         const pc = grok.shell.tv.viewers.find((x: any) => x.type === 'PC Plot');
-        pc.props.showFilters = true;
-        await new Promise((r) => setTimeout(r, 900));
+        await (window as any).__settled('viewer:PC Plot.onViewerRendered',
+          () => { pc.props.showFilters = true; }, 900);
       });
       expect(await p.evaluate(() =>
         grok.shell.tv.viewers.find((x: any) => x.type === 'PC Plot').props.showFilters),
@@ -272,7 +284,8 @@ const VIEWER_CHANNELS: Array<{
     },
     drive: async (p) => {
       await p.locator('[name="viewer-PC-Plot"]').first().hover();
-      await p.waitForTimeout(600);
+      await p.evaluate((sel: string) => (window as any).__poll(() => document.querySelector(sel),
+        (el: Element | null) => el !== null, 600, 25), PC_SLIDER);
       const height = await p.evaluate((sel: string) =>
         document.querySelector(sel)?.getBoundingClientRect().height ?? 0, PC_SLIDER);
       if (height === 0) return false;
@@ -318,6 +331,7 @@ test('Filters — Composition of Filter Panel with Viewer-Driven Filtering', asy
 
   await loginToDatagrok(page);
   await v.openTable(page, {path: datasetPath, withFilterPanel: true});
+  await v.installEventWaits(page);
 
   const total = await trueCount(page);
   expect(total).toBe(FULL);
@@ -397,8 +411,8 @@ test('Filters — Composition of Filter Panel with Viewer-Driven Filtering', asy
       await addViewer(page, 'Bar chart');
       await page.evaluate(async (split: string) => {
         const bc = grok.shell.tv.viewers.find((x: any) => x.type === 'Bar chart');
-        bc.props.splitColumnName = split;
-        await new Promise((r) => setTimeout(r, 1000));
+        await (window as any).__settled('viewer:Bar chart.onViewerRendered',
+          () => { bc.props.splitColumnName = split; }, 1000);
       }, SPLIT_COLUMN);
       await armOnClickFilter(page, 'Bar chart');
 
@@ -435,8 +449,10 @@ test('Filters — Composition of Filter Panel with Viewer-Driven Filtering', asy
       ];
       let landed: {survivors: string[]; expected: number; filtered: number} | null = null;
       for (const pos of positions) {
+        const probeBefore = await trueCount(page);
         await page.mouse.click(pos.x, pos.y);
-        await page.waitForTimeout(900);
+        await page.evaluate((was: number) => (window as any).__moved(
+          () => grok.shell.tv.dataFrame.filter.trueCount, was, 900), probeBefore);
         const probe = await probeBars();
         if (probe.survivors.length === 1 && probe.filtered > 0 && probe.filtered < truePanel) {
           landed = probe;
@@ -681,8 +697,8 @@ test('Filters — Composition of Filter Panel with Viewer-Driven Filtering', asy
 
       const sel = await page.evaluate(async () => {
         const df = grok.shell.tv.dataFrame;
-        df.selection.copyFrom(df.filter);
-        await new Promise((r) => setTimeout(r, 400));
+        await (window as any).__settled('df.onSelectionChanged',
+          () => df.selection.copyFrom(df.filter), 400);
         return {afterVisible: df.selection.trueCount, rowCount: df.rowCount};
       });
       rowCount = sel.rowCount;
@@ -699,8 +715,8 @@ test('Filters — Composition of Filter Panel with Viewer-Driven Filtering', asy
         for (let i = 0; i < df.rowCount; i++) kept.push(df.selection.get(i));
         let caucasian = 0;
         for (let i = 0; i < df.rowCount; i++) if (raceCol.get(i) === 'Caucasian') caucasian++;
-        df.selection.init((i: number) => kept[i] || raceCol.get(i) === 'Caucasian');
-        await new Promise((r) => setTimeout(r, 400));
+        await (window as any).__settled('df.onSelectionChanged',
+          () => df.selection.init((i: number) => kept[i] || raceCol.get(i) === 'Caucasian'), 400);
         return {afterAdd: df.selection.trueCount, caucasian, filter: df.filter.trueCount};
       });
       secondCategoryCount = sel.caucasian;
@@ -772,7 +788,8 @@ test('Filters — Composition of Filter Panel with Viewer-Driven Filtering', asy
       expect(await v.driveTopMenuLeaf(page, ['Select', 'Selection to Filter']),
         'the Select > Selection to Filter menu leaf was not actuated').toBe(true);
       await page.mouse.move(park.x, park.y);
-      await page.waitForTimeout(1500);
+      await page.evaluate((was: number) => (window as any).__moved(
+        () => grok.shell.tv.dataFrame.filter.trueCount, was, 1500), inverted);
 
       const outcome = await page.evaluate(() => {
         const df = grok.shell.tv.dataFrame;

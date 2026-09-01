@@ -57,7 +57,7 @@ async function cardCanvasBox(page: Page, column: string): Promise<{w: number; h:
 }
 
 async function clickCardTypeSwitch(page: Page, column: string, icon: 'icon-list' | 'icon-signal'): Promise<void> {
-  await page.evaluate(({col, ic}) => {
+  await page.evaluate(async ({col, ic}) => {
     const card = [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter')]
       .find((c) => (c.querySelector('.d4-filter-column-name')?.textContent ?? '').trim() === col);
     if (!card) throw new Error(`the panel carries no ${col} card to switch the filter type on`);
@@ -66,9 +66,13 @@ async function clickCardTypeSwitch(page: Page, column: string, icon: 'icon-list'
       const offered = [...card.querySelectorAll('[name^="icon-"]')].map((e) => e.getAttribute('name')).join(' | ');
       throw new Error(`the ${col} card header carries no [name="${ic}"] type-switch icon; icons present: ${offered}`);
     }
+    const typesOn = () => grok.shell.tv.getFiltersGroup().filters
+      .filter((f: any) => { try { return f.filterColumnName === col; } catch (_) { return false; } })
+      .map((f: any) => f.filterType).join(',');
+    const was = typesOn();
     target.click();
+    await (window as any).__poll(typesOn, (t: string) => t !== was, 1200, 50);
   }, {col: column, ic: icon});
-  await page.waitForTimeout(1200);
 }
 
 async function cardIndicatorMenu(page: Page, column: string,
@@ -108,9 +112,10 @@ async function cardIndicatorMenu(page: Page, column: string,
     const merge = () => { for (const t of texts()) if (!seen.includes(t)) seen.push(t); };
     const hoverItem = async (item: Element) => {
       const b = item.getBoundingClientRect();
+      const before = items().length;
       for (const type of ['mouseover', 'mousemove'])
         item.dispatchEvent(new MouseEvent(type, {bubbles: true, clientX: b.x + 5, clientY: b.y + 5}));
-      await new Promise((r) => setTimeout(r, 700));
+      await (window as any).__poll(() => items().length, (n: number) => n > before, 700, 25);
     };
 
     for (const g of hover ?? []) {
@@ -131,13 +136,21 @@ async function cardIndicatorMenu(page: Page, column: string,
         merge();
       }
       else {
+        const ind = () => document.querySelector(
+          '[name="viewer-Filters"] .d4-filter-group-header .d4-filter-indicator') as HTMLElement | null;
+        const stamp = () => {
+          const e = ind();
+          return `${grok.shell.tv.dataFrame.filter.trueCount}|${e?.textContent?.trim() ?? ''}` +
+            `|${e ? window.getComputedStyle(e).visibility : ''}`;
+        };
+        const was = stamp();
         (item as HTMLElement).click();
-        await new Promise((r) => setTimeout(r, 800));
+        await (window as any).__moved(stamp, was, 800);
       }
     }
 
     document.body.click();
-    await new Promise((r) => setTimeout(r, 300));
+    await (window as any).__poll(() => items().length, (n: number) => n === 0, 300, 25);
     return seen;
   }, {col: column, hover: opts.hover ?? [], path: opts.path ?? []});
 }
@@ -257,14 +270,24 @@ async function inCardSearch(page: Page, column: string, fragment: string): Promi
   return page.evaluate(async ({col, frag}) => {
     const card = [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter')]
       .find((c) => (c.querySelector('.d4-filter-column-name')?.textContent ?? '').trim() === col) as HTMLElement;
+    const w = window as any;
+    // The callers read the header counter right after this returns, and the panel repaints it a
+    // pass later than it moves the row filter — so the settle has to watch both.
+    const stamp = () => {
+      const ind = document.querySelector(
+        '[name="viewer-Filters"] .d4-filter-group-header .d4-filter-indicator') as HTMLElement | null;
+      const vis = ind ? window.getComputedStyle(ind).visibility : '';
+      return `${grok.shell.tv.dataFrame.filter.trueCount}|${ind?.textContent?.trim() ?? ''}|${vis}`;
+    };
     (card.querySelector('[name="icon-search"]') as HTMLElement | null)?.click();
-    await new Promise((r) => setTimeout(r, 500));
-    const input = card.querySelector('input.d4-search-input[placeholder="Search"]') as HTMLInputElement;
+    const input = await w.__poll(() => card.querySelector('input.d4-search-input[placeholder="Search"]'),
+      (el: HTMLInputElement | null) => el !== null, 500, 25) as HTMLInputElement;
     input.focus();
     const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')!.set!;
     setter.call(input, frag);
+    const was = stamp();
     input.dispatchEvent(new Event('input', {bubbles: true}));
-    await new Promise((r) => setTimeout(r, 1200));
+    await w.__moved(stamp, was, 1200);
     return grok.shell.tv.dataFrame.filter.trueCount;
   }, {col: column, frag: fragment});
 }
@@ -276,10 +299,15 @@ async function clearInCardSearch(page: Page, column: string): Promise<void> {
     const input = card.querySelector('input.d4-search-input[placeholder="Search"]') as HTMLInputElement;
     if (input) {
       const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')!.set!;
+      const w = window as any;
+      const ind = () => document.querySelector(
+        '[name="viewer-Filters"] .d4-filter-group-header .d4-filter-indicator') as HTMLElement | null;
+      const stamp = () => `${grok.shell.tv.dataFrame.filter.trueCount}|${ind()?.textContent?.trim() ?? ''}`;
+      const was = stamp();
       setter.call(input, '');
       input.dispatchEvent(new Event('input', {bubbles: true}));
+      await w.__moved(stamp, was, 800);
     }
-    await new Promise((r) => setTimeout(r, 800));
   }, column);
 }
 
@@ -287,19 +315,29 @@ async function pasteInCardSearch(page: Page, column: string, values: string[], t
   return page.evaluate(async ({col, vals, trail}) => {
     const card = [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter')]
       .find((c) => (c.querySelector('.d4-filter-column-name')?.textContent ?? '').trim() === col) as HTMLElement;
+    const w = window as any;
+    // The callers read the header counter right after this returns, and the panel repaints it a
+    // pass later than it moves the row filter — so the settle has to watch both.
+    const stamp = () => {
+      const ind = document.querySelector(
+        '[name="viewer-Filters"] .d4-filter-group-header .d4-filter-indicator') as HTMLElement | null;
+      const vis = ind ? window.getComputedStyle(ind).visibility : '';
+      return `${grok.shell.tv.dataFrame.filter.trueCount}|${ind?.textContent?.trim() ?? ''}|${vis}`;
+    };
     (card.querySelector('[name="icon-search"]') as HTMLElement | null)?.click();
-    await new Promise((r) => setTimeout(r, 500));
-    const input = card.querySelector('input.d4-search-input[placeholder="Search"]') as HTMLInputElement;
+    const input = await w.__poll(() => card.querySelector('input.d4-search-input[placeholder="Search"]'),
+      (el: HTMLInputElement | null) => el !== null, 500, 25) as HTMLInputElement;
     const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')!.set!;
     setter.call(input, '');
     input.dispatchEvent(new Event('input', {bubbles: true}));
-    await new Promise((r) => setTimeout(r, 600));
+    await w.__poll(() => input.value, (val: string) => val === '', 600, 25);
     input.focus();
     const text = vals.join('\n') + (trail ? '\n' : '');
     const dt = new DataTransfer();
     dt.setData('text', text);
+    const was = stamp();
     input.dispatchEvent(new ClipboardEvent('paste', {bubbles: true, cancelable: true, clipboardData: dt}));
-    await new Promise((r) => setTimeout(r, 1500));
+    await w.__moved(stamp, was, 1500);
     return grok.shell.tv.dataFrame.filter.trueCount;
   }, {col: column, vals: values, trail: trailingSep});
 }
@@ -310,6 +348,7 @@ test('Filter Panel — Filter type switching and category selection modes', asyn
   await loginToDatagrok(page);
 
   await v.openTable(page, {path: datasetPath, withFilterPanel: true});
+  await v.installEventWaits(page);
 
   const consoleErrors: string[] = [];
   page.on('console', (msg) => { if (msg.type() === 'error') consoleErrors.push(msg.text()); });
@@ -628,13 +667,14 @@ test('Filter Panel — Filter type switching and category selection modes', asyn
   await softStep('Step 10 — delete Asian rows, undo, RACE card re-lists Asian', async () => {
     const del = await page.evaluate(async () => {
       const df = grok.shell.tv.dataFrame;
-      df.selection.init((i: number) => df.col('RACE').get(i) === 'Asian');
-      await new Promise((r) => setTimeout(r, 300));
+      const w = window as any;
+      await w.__settled('df.onSelectionChanged',
+        () => df.selection.init((i: number) => df.col('RACE').get(i) === 'Asian'), 300);
       const selected = df.selection.trueCount;
       const rowsBefore = df.rowCount;
       const fns = DG.Func.find({name: 'CmdRemoveSelectedRows'});
       await fns[0].prepare({}).call();
-      await new Promise((r) => setTimeout(r, 1200));
+      await w.__poll(() => grok.shell.tv.dataFrame.rowCount, (n: number) => n !== rowsBefore, 1200, 50);
       const dfa = grok.shell.tv.dataFrame;
       return {selected, rowsBefore, rowsAfter: dfa.rowCount, catsAfter: dfa.col('RACE').categories};
     });
@@ -656,7 +696,8 @@ test('Filter Panel — Filter type switching and category selection modes', asyn
     });
     await page.mouse.click(gridPoint.x, gridPoint.y);
     await page.keyboard.press('Control+z');
-    await page.waitForTimeout(1500);
+    await page.evaluate(async (rows: number) => (window as any).__poll(
+      () => grok.shell.tv.dataFrame.rowCount, (n: number) => n === rows, 1500, 50), fullRowCount);
 
     const restored = await page.evaluate(() => {
       const df = grok.shell.tv.dataFrame;
@@ -688,7 +729,8 @@ test('Filter Panel — Filter type switching and category selection modes', asyn
 
     await page.evaluate(async () => {
       await grok.shell.tv.dataFrame.columns.addNewCalculated('probe_constant', '1');
-      await new Promise((r) => setTimeout(r, 800));
+      await (window as any).__poll(() => !!grok.shell.tv.dataFrame.col('probe_constant'),
+        (there: boolean) => there, 800, 25);
     });
     await addCardViaColumnSelector(page, 'probe_constant');
     expect(await orderedCaptions(page)).toContain('probe_constant');
@@ -707,9 +749,13 @@ test('Filter Panel — Filter type switching and category selection modes', asyn
       if (!canvas) throw new Error('the probe_constant card lost its canvas between the presence check and the click');
       const r = canvas.getBoundingClientRect();
       const o = {bubbles: true, cancelable: true, clientX: r.left + r.width / 2, clientY: r.top + r.height / 2};
+      const was = grok.shell.tv.dataFrame.filter.trueCount;
       for (const type of ['mousedown', 'mouseup', 'click'])
         canvas.dispatchEvent(new MouseEvent(type, o));
-      await new Promise((r2) => setTimeout(r2, 1500));
+      // Standing still is the expected outcome, so this spends the whole budget looking for a move
+      // it hopes not to see — a settle would agree with itself immediately and pass a card that
+      // filtered a moment later, which is the defect the step exists to catch.
+      await (window as any).__moved(() => grok.shell.tv.dataFrame.filter.trueCount, was, 1500);
       return true;
     });
     expect(clicked, 'the zero-variance card body was actually clicked').toBe(true);
@@ -725,7 +771,8 @@ test('Filter Panel — Filter type switching and category selection modes', asyn
   await softStep('Step 12 — remove the probe column; its card leaves the panel', async () => {
     await page.evaluate(async () => {
       grok.shell.tv.dataFrame.columns.remove('probe_constant');
-      await new Promise((r) => setTimeout(r, 1000));
+      await (window as any).__poll(() => !!grok.shell.tv.dataFrame.col('probe_constant'),
+        (there: boolean) => !there, 1000, 25);
     });
     expect(await page.evaluate(() => !grok.shell.tv.dataFrame.col('probe_constant')),
       'probe_constant column removed from the table').toBe(true);
@@ -735,11 +782,10 @@ test('Filter Panel — Filter type switching and category selection modes', asyn
   });
 
   await softStep('Teardown', async () => {
-    await page.evaluate(async () => {
+    await page.evaluate(() => {
       try { grok.shell.tv?.dataFrame?.columns?.remove('probe_constant'); } catch (_) {}
-      grok.shell.closeAll();
-      await new Promise((r) => setTimeout(r, 500));
     });
+    await v.closeAllAndWait(page);
   });
 
   v.finishSpec();

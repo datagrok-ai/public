@@ -82,8 +82,9 @@ async function dragColumnHeaderToPanel(page: Page, column: string): Promise<void
   });
   await page.mouse.move(zone.x, zone.y, {steps: 4});
   await page.waitForTimeout(120);
+  const cardsBefore = await cardCount(page);
   await page.mouse.up();
-  await page.waitForTimeout(700);
+  await v.pollValue(() => cardCount(page), (n) => n > cardsBefore, 700, 50);
 }
 
 async function dragCaptionAboveCard(page: Page, fromCaption: string, targetIndex: number): Promise<void> {
@@ -219,21 +220,20 @@ async function addViaHeaderCombo(page: Page, column: string): Promise<void> {
 
 async function addViaColumnProperties(page: Page, column: string): Promise<void> {
   await page.evaluate((col) => { grok.shell.o = grok.shell.tv.dataFrame.col(col); }, column);
-  await page.waitForTimeout(1000);
-  await page.evaluate(() => {
-    const header = [...document.querySelectorAll('[name="div-section--Filter"]')]
-      .find((e) => e.getBoundingClientRect().width > 0) as HTMLElement | undefined;
+  const cardsBefore = await cardCount(page);
+  await page.evaluate(async () => {
+    const w = window as any;
     const linkVisible = () => [...document.querySelectorAll('label.d4-link-action')]
       .some((e) => (e.textContent ?? '').trim().toLowerCase() === 'add filter' && e.getBoundingClientRect().width > 0);
-    if (!linkVisible()) header?.click();
-  });
-  await page.waitForTimeout(800);
-  await page.evaluate(() => {
+    const header = await w.__poll(() => [...document.querySelectorAll('[name="div-section--Filter"]')]
+      .find((e) => e.getBoundingClientRect().width > 0), (e: HTMLElement | undefined) => e !== undefined, 1000, 25);
+    if (!linkVisible()) (header as HTMLElement | undefined)?.click();
+    await w.__poll(linkVisible, (there: boolean) => there, 800, 25);
     const link = [...document.querySelectorAll('label.d4-link-action')]
       .find((e) => (e.textContent ?? '').trim().toLowerCase() === 'add filter' && e.getBoundingClientRect().width > 0) as HTMLElement | undefined;
     link?.click();
   });
-  await page.waitForTimeout(900);
+  await v.pollValue(() => cardCount(page), (n) => n > cardsBefore, 900, 50);
 }
 
 async function narrowToTopCategory(page: Page, column: string): Promise<number> {
@@ -244,9 +244,8 @@ async function narrowToTopCategory(page: Page, column: string): Promise<number> 
     const dc = df.col(col);
     for (let i = 0; i < df.rowCount; i++) counts[dc.get(i)] = (counts[dc.get(i)] || 0) + 1;
     const top = Object.entries(counts).sort((a, b) => (b[1] as number) - (a[1] as number))[0][0];
-    fg.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: col, selected: [top]});
-    await new Promise((r) => setTimeout(r, 700));
-    return df.filter.trueCount;
+    return (window as any).__filtered(() =>
+      fg.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: col, selected: [top]}), 700);
   }, column);
   expect(typeof c, `${column} narrow: trueCount must be a number`).toBe('number');
   return c;
@@ -255,11 +254,11 @@ async function narrowToTopCategory(page: Page, column: string): Promise<number> 
 async function openColumnVisibilityDialog(page: Page, column: string): Promise<void> {
   const pt = await gridHeaderPoint(page, column);
   await page.mouse.click(pt.x, pt.y, {button: 'right'});
-  await page.waitForTimeout(600);
+  await v.pollValue(() => page.locator('.d4-menu-popup').count(), (n) => n > 0, 600, 50);
   await driveOpenMenuLeaf(page, null, 'Order or Hide Columns...');
-  await page.locator('.d4-dialog').filter({hasText: 'Order or Hide Columns'}).first()
-    .waitFor({timeout: 10_000});
-  await page.waitForTimeout(600);
+  const dialog = page.locator('.d4-dialog').filter({hasText: 'Order or Hide Columns'}).first();
+  await dialog.waitFor({timeout: 10_000});
+  await v.pollValue(() => dialog.locator('[name="viewer-Grid"] canvas').count(), (n) => n > 0, 600, 50);
 }
 
 const COLUMN_GRID_ROW_PITCH = 28.1;
@@ -425,6 +424,9 @@ async function openCleanDemogView(page: Page, path: string): Promise<void> {
     const previous = grok.shell.v;
     const df = await grok.dapi.files.readCsv(p);
     grok.shell.addTableView(df);
+    // Left as fixed settles on purpose: every event-based readiness condition tried here let the
+    // previous view close too early, and Scenario 6 then typed into a column selector listing the
+    // wrong table's columns. 1.6s is not worth that.
     await new Promise((r) => setTimeout(r, 800));
     previous?.close();
     await new Promise((r) => setTimeout(r, 800));
@@ -598,6 +600,7 @@ test('Filter Panel — Add, Reorder, and Remove Entry Points', async ({page}) =>
   await loginToDatagrok(page);
 
   await v.openTable(page, {path: datasetPath, withFilterPanel: true});
+  await v.installEventWaits(page);
 
   await softStep('Setup — the zero-card baseline: empty the Filter Panel and confirm it carries no cards', async () => {
     await removeAllViaHamburger(page);
@@ -627,9 +630,10 @@ test('Filter Panel — Add, Reorder, and Remove Entry Points', async ({page}) =>
     expect(pinBefore.idx < pinBefore.frozen, 'AGE is already pinned, so the drag below would not be a pinned-source drag').toBe(false);
     const agePt = await gridHeaderPoint(page, 'AGE');
     await page.mouse.click(agePt.x, agePt.y, {button: 'right'});
-    await page.waitForTimeout(600);
+    await v.pollValue(() => page.locator('.d4-menu-popup').count(), (n) => n > 0, 600, 50);
     await driveOpenMenuLeaf(page, 'Pin', 'Pin Column');
-    await page.waitForTimeout(700);
+    await v.pollValue(() => page.evaluate(() => grok.shell.tv.grid.props.frozenColumns),
+      (n) => n !== pinBefore.frozen, 700, 50);
     const pinAfter = await page.evaluate(() => {
       const grid = grok.shell.tv.grid;
       return {idx: grid.columns.byName('AGE')?.idx, frozen: grid.props.frozenColumns};
@@ -707,11 +711,10 @@ test('Filter Panel — Add, Reorder, and Remove Entry Points', async ({page}) =>
       const card = cards.find((c) => (c.querySelector('.d4-filter-column-name')?.textContent ?? '').trim() === 'DIS_POP')!;
       const cb = (card.querySelector('input[type="checkbox"].ui-input-editor')
         ?? card.querySelector('input[type="checkbox"]')) as HTMLInputElement;
-      cb.click();
-      await new Promise((r) => setTimeout(r, 700));
+      const trueCount = await (window as any).__filtered(() => cb.click(), 700);
       const f = fg.filters.find((x: any) => (x.filterColumnName ?? x.columnName) === 'DIS_POP');
       return {
-        trueCount: grok.shell.tv.dataFrame.filter.trueCount,
+        trueCount,
         isFiltering: f?.isFiltering,
         hasDisabledClass: card.classList.contains('d4-filter-disabled'),
         checked: cb.checked,
@@ -730,9 +733,7 @@ test('Filter Panel — Add, Reorder, and Remove Entry Points', async ({page}) =>
       const card = cards.find((c) => (c.querySelector('.d4-filter-column-name')?.textContent ?? '').trim() === 'DIS_POP')!;
       const cb = (card.querySelector('input[type="checkbox"].ui-input-editor')
         ?? card.querySelector('input[type="checkbox"]')) as HTMLInputElement;
-      if (!cb.checked) cb.click();
-      await new Promise((r) => setTimeout(r, 700));
-      return grok.shell.tv.dataFrame.filter.trueCount;
+      return (window as any).__filtered(() => { if (!cb.checked) cb.click(); }, 700);
     });
     expect(rechecked).toBe(trueCountRaceDispop);
     await expectHeaderCounter(page, '2',
@@ -787,8 +788,10 @@ test('Filter Panel — Add, Reorder, and Remove Entry Points', async ({page}) =>
     await page.evaluate(async () => {
       const cards = [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter')] as HTMLElement[];
       const exprCard = cards.find((c) => (c.querySelector('.d4-filter-column-name')?.textContent ?? '').trim() === 'Expression')!;
+      const cards2 = () => document.querySelectorAll('[name="viewer-Filters"] .d4-filter').length;
+      const was = cards2();
       (exprCard.querySelector('[name="icon-times"]') as HTMLElement)?.click();
-      await new Promise((r) => setTimeout(r, 600));
+      await (window as any).__poll(cards2, (n: number) => n < was, 600, 25);
     });
     const captions = await orderedCaptions(page);
     expect(captions).not.toContain('Expression');
@@ -900,10 +903,12 @@ test('Filter Panel — Add, Reorder, and Remove Entry Points', async ({page}) =>
       const age = byName('AGE')!;
       const cb = (age.querySelector('input[type="checkbox"].ui-input-editor')
         ?? age.querySelector('input[type="checkbox"]')) as HTMLInputElement;
-      cb.click();
-      await new Promise((r) => setTimeout(r, 700));
+      const w = window as any;
+      const cardsNow = () => document.querySelectorAll('[name="viewer-Filters"] .d4-filter').length;
+      await w.__filtered(() => cb.click(), 700);
+      const was = cardsNow();
       (byName('SEX')!.querySelector('[name="icon-times"]') as HTMLElement)?.click();
-      await new Promise((r) => setTimeout(r, 700));
+      await w.__poll(cardsNow, (n: number) => n < was, 700, 25);
       return {ageChecked: cb.checked, count: grok.shell.tv.dataFrame.filter.trueCount};
     });
     expect(state.ageChecked, 'the AGE card did not become unchecked').toBe(false);

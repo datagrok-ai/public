@@ -52,21 +52,34 @@ async function commitFormRule(page: Page, column: string, op: string, value: str
     const opSel = selects[1] as HTMLSelectElement;
     const setSel = Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, 'value')!.set!;
     const setInp = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')!.set!;
+    const w = window as any;
+    const ruleCount = () =>
+      (grok.shell.tv.getFiltersGroup().getStates(null, 'expression')[0]?.gridNames ?? []).length;
+    const rulesBefore = ruleCount();
     setSel.call(colSel, col);
     colSel.dispatchEvent(new Event('input', {bubbles: true}));
     colSel.dispatchEvent(new Event('change', {bubbles: true}));
-    await new Promise((r) => setTimeout(r, 700));
-    setSel.call(opSel, operation);
-    opSel.dispatchEvent(new Event('input', {bubbles: true}));
-    opSel.dispatchEvent(new Event('change', {bubbles: true}));
-    await new Promise((r) => setTimeout(r, 400));
-    const valInput = card.querySelector('.ui-input-text input') as HTMLInputElement;
+    // Picking a column repopulates the operation list, and assigning a value a <select> does not
+    // offer is a silent no-op — so re-assert until the value HOLDS. Returning on the first read
+    // that matches is not enough: a repopulation landing a tick later wipes it again.
+    let held = 0;
+    await w.__poll(() => {
+      if (opSel.value === operation) return ++held;
+      held = 0;
+      setSel.call(opSel, operation);
+      opSel.dispatchEvent(new Event('input', {bubbles: true}));
+      opSel.dispatchEvent(new Event('change', {bubbles: true}));
+      return held;
+    }, (h: number) => h >= 3, 1100, 50);
+    const valInput = await w.__poll(() => card.querySelector('.ui-input-text input'),
+      (el: HTMLInputElement | null) => el !== null, 400, 25) as HTMLInputElement;
     setInp.call(valInput, val);
     valInput.dispatchEvent(new Event('input', {bubbles: true}));
     valInput.dispatchEvent(new Event('change', {bubbles: true}));
+    // The card absorbs the value on its own debounce; clicking + before that commits an empty rule.
     await new Promise((r) => setTimeout(r, 300));
     (card.querySelector('.fal.fa-plus') as HTMLElement).click();
-    await new Promise((r) => setTimeout(r, 1300));
+    await w.__poll(ruleCount, (n: number) => n > rulesBefore, 1600, 50);
   }, {col: column, operation: op, val: value});
 }
 
@@ -84,10 +97,11 @@ async function andOrControl(page: Page, column: string | null, toggle: boolean):
       .find((d) => { const t = (d.textContent ?? '').trim(); return t === 'OR' || t === 'AND'; }) as HTMLElement | undefined;
     const before = read();
     if (!before) throw new Error(`the ${name} card header carries no AND/OR control to read or click`);
-    if (!doToggle) return (before.textContent ?? '').trim();
+    const was = (before.textContent ?? '').trim();
+    if (!doToggle) return was;
     before.click();
-    await new Promise((r) => setTimeout(r, 1500));
-    return (read()?.textContent ?? '').trim();
+    return (window as any).__poll(() => (read()?.textContent ?? '').trim(),
+      (t: string) => t !== '' && t !== was, 1500, 50);
   }, {col: column, doToggle: toggle});
 }
 
@@ -118,8 +132,11 @@ async function removeQueryRow(page: Page, rowIndex: number, ruleCount: number): 
       document.body.click();
       throw new Error(`the rule-row context menu offered no "Remove Query" leaf; visible: ${visible}`);
     }
+    const rowsBefore = (grok.shell.tv.getFiltersGroup().getStates(null, 'expression')[0]?.gridNames ?? []).length;
     (leaf as HTMLElement).click();
-    await new Promise((res) => setTimeout(res, 1300));
+    await (window as any).__poll(
+      () => (grok.shell.tv.getFiltersGroup().getStates(null, 'expression')[0]?.gridNames ?? []).length,
+      (n: number) => n < rowsBefore, 1300, 50);
     return true;
   }, {idx: rowIndex, count: ruleCount});
 }
@@ -135,9 +152,12 @@ async function toggleRuleCheckbox(page: Page, rowIndex: number, ruleCount: numbe
     for (const type of ['pointermove', 'mousemove'])
       overlay.dispatchEvent(new MouseEvent(type, {bubbles: true, clientX: x, clientY: y}));
     await new Promise((res) => setTimeout(res, 300));
+    const values = () =>
+      JSON.stringify(grok.shell.tv.getFiltersGroup().getStates(null, 'expression')[0]?.gridValues ?? []);
+    const valuesBefore = values();
     for (const type of ['mousedown', 'mouseup', 'click'])
       overlay.dispatchEvent(new MouseEvent(type, {bubbles: true, cancelable: true, clientX: x, clientY: y, button: 0}));
-    await new Promise((res) => setTimeout(res, 1200));
+    await (window as any).__poll(values, (v: string) => v !== valuesBefore, 1200, 50);
     const s = grok.shell.tv.getFiltersGroup().getStates(null, 'expression')[0];
     return (s?.gridValues ?? []) as boolean[];
   }, {idx: rowIndex, count: ruleCount});
@@ -146,9 +166,10 @@ async function toggleRuleCheckbox(page: Page, rowIndex: number, ruleCount: numbe
 async function toggleExpressionMode(page: Page): Promise<string> {
   return page.evaluate(async () => {
     const card = (document.querySelector('.d4-expression-filter') as HTMLElement).closest('.d4-filter')!;
+    const mode = () => grok.shell.tv.getFiltersGroup().getStates(null, 'expression')[0].expressionMode;
+    const was = mode();
     (card.querySelector('[name="icon-italic"]') as HTMLElement).click();
-    await new Promise((r) => setTimeout(r, 1300));
-    return grok.shell.tv.getFiltersGroup().getStates(null, 'expression')[0].expressionMode;
+    return (window as any).__poll(mode, (m: any) => m !== was, 1300, 50);
   });
 }
 
@@ -160,13 +181,22 @@ async function typeFreeText(page: Page, expr: string): Promise<{value: string; i
     const setInp = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')!.set!;
     setInp.call(input, '');
     input.dispatchEvent(new Event('input', {bubbles: true}));
-    await new Promise((r) => setTimeout(r, 300));
+    await (window as any).__poll(() => input.value, (val: string) => val === '', 300, 25);
     input.focus();
+    const beforeEnter = `${input.value}|${input.classList.contains('d4-invalid')}`;
     setInp.call(input, e);
     input.dispatchEvent(new Event('input', {bubbles: true}));
     input.dispatchEvent(new KeyboardEvent('keydown', {bubbles: true, key: 'Enter', code: 'Enter', keyCode: 13} as any));
     input.dispatchEvent(new KeyboardEvent('keyup', {bubbles: true, key: 'Enter', code: 'Enter', keyCode: 13} as any));
-    await new Promise((r) => setTimeout(r, 1800));
+    // Both outcomes are legal here — the expression commits, or it is rejected and the box goes
+    // d4-invalid — so this waits on the pair leaving what it read before Enter. A settle alone
+    // would agree with itself before the verdict lands and report the pre-Enter state.
+    const verdict = () => {
+      const el = [...card.querySelectorAll('input.d4-search-input[placeholder="Search"]')]
+        .find((i) => (i as HTMLInputElement).getBoundingClientRect().width > 0) as HTMLInputElement | undefined;
+      return `${el?.value ?? ''}|${el?.classList.contains('d4-invalid') ?? ''}`;
+    };
+    await (window as any).__moved(verdict, beforeEnter, 1800);
     const live = [...card.querySelectorAll('input.d4-search-input[placeholder="Search"]')]
       .find((i) => (i as HTMLInputElement).getBoundingClientRect().width > 0) as HTMLInputElement | undefined;
     return {value: live?.value ?? '', invalid: live?.classList.contains('d4-invalid') ?? true};
@@ -195,27 +225,38 @@ async function pasteRegexValueAndCommit(page: Page, column: string, pasted: stri
     const colSel = selects[0] as HTMLSelectElement;
     const opSel = selects[1] as HTMLSelectElement;
     const setSel = Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, 'value')!.set!;
+    const w = window as any;
+    const ruleCount = () =>
+      (grok.shell.tv.getFiltersGroup().getStates(null, 'expression')[0]?.gridNames ?? []).length;
+    const rulesBefore = ruleCount();
     setSel.call(colSel, col);
     colSel.dispatchEvent(new Event('input', {bubbles: true}));
     colSel.dispatchEvent(new Event('change', {bubbles: true}));
-    await new Promise((r) => setTimeout(r, 700));
-    setSel.call(opSel, 'regex');
-    opSel.dispatchEvent(new Event('input', {bubbles: true}));
-    opSel.dispatchEvent(new Event('change', {bubbles: true}));
-    await new Promise((r) => setTimeout(r, 400));
-    const valInput = card.querySelector('.ui-input-text input') as HTMLInputElement;
+    let held = 0;
+    await w.__poll(() => {
+      if (opSel.value === 'regex') return ++held;
+      held = 0;
+      setSel.call(opSel, 'regex');
+      opSel.dispatchEvent(new Event('input', {bubbles: true}));
+      opSel.dispatchEvent(new Event('change', {bubbles: true}));
+      return held;
+    }, (h: number) => h >= 3, 1100, 50);
+    const valInput = await w.__poll(() => card.querySelector('.ui-input-text input'),
+      (el: HTMLInputElement | null) => el !== null, 400, 25) as HTMLInputElement;
     const setInp = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')!.set!;
     valInput.focus();
     setInp.call(valInput, '');
     valInput.dispatchEvent(new Event('input', {bubbles: true}));
-    await new Promise((r) => setTimeout(r, 250));
+    await w.__poll(() => valInput.value, (v: string) => v === '', 250, 25);
     const dt = new DataTransfer();
     dt.setData('text', text);
     valInput.dispatchEvent(new ClipboardEvent('paste', {bubbles: true, cancelable: true, clipboardData: dt}));
-    await new Promise((r) => setTimeout(r, 600));
+    await w.__poll(() => valInput.value, (v: string) => v.length > 0, 600, 25);
     const value = valInput.value;
+    // Same debounce as commitFormRule: + before the card absorbs the value commits an empty rule.
+    await new Promise((r) => setTimeout(r, 300));
     (card.querySelector('.fal.fa-plus') as HTMLElement).click();
-    await new Promise((r) => setTimeout(r, 1300));
+    await w.__poll(ruleCount, (n: number) => n > rulesBefore, 1600, 50);
     const st = grok.shell.tv.getFiltersGroup().getStates(null, 'expression')[0];
     return {value, count: grok.shell.tv.dataFrame.filter.trueCount, rules: st.gridNames};
   }, {col: column, text: pasted});
@@ -240,13 +281,13 @@ async function addAromaTerm(page: Page, term: string): Promise<number> {
       .find((c) => ((c.querySelector('.d4-filter-column-name'))?.textContent || '').trim() === 'Aroma') as HTMLElement;
     const input = card.querySelector('.d4-search-input') as HTMLInputElement;
     const setInp = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')!.set!;
+    const before = grok.shell.tv.dataFrame.filter.trueCount;
     input.focus();
     setInp.call(input, t);
     input.dispatchEvent(new Event('input', {bubbles: true}));
     input.dispatchEvent(new KeyboardEvent('keydown', {bubbles: true, key: 'Enter', code: 'Enter', keyCode: 13} as any));
     input.dispatchEvent(new KeyboardEvent('keyup', {bubbles: true, key: 'Enter', code: 'Enter', keyCode: 13} as any));
-    await new Promise((r) => setTimeout(r, 1700));
-    return grok.shell.tv.dataFrame.filter.trueCount;
+    return (window as any).__moved(() => grok.shell.tv.dataFrame.filter.trueCount, before, 1700);
   }, term);
 }
 
@@ -256,12 +297,13 @@ async function setAromaFuzziness(page: Page, value: number): Promise<number> {
       .find((c) => ((c.querySelector('.d4-filter-column-name'))?.textContent || '').trim() === 'Aroma') as HTMLElement;
     const range = card.querySelector('input[type="range"]') as HTMLInputElement;
     const setInp = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')!.set!;
+    const before = grok.shell.tv.dataFrame.filter.trueCount;
     range.focus();
     setInp.call(range, String(val));
-    range.dispatchEvent(new Event('input', {bubbles: true}));
-    range.dispatchEvent(new Event('change', {bubbles: true}));
-    await new Promise((r) => setTimeout(r, 1800));
-    return grok.shell.tv.dataFrame.filter.trueCount;
+    return (window as any).__filtered(() => {
+      range.dispatchEvent(new Event('input', {bubbles: true}));
+      range.dispatchEvent(new Event('change', {bubbles: true}));
+    }, 1800, before);
   }, value);
 }
 
@@ -271,6 +313,7 @@ test('Filter Panel — Expression filter and Text filter driven through their ow
   await loginToDatagrok(page);
 
   await v.openTable(page, {path: demogPath, withFilterPanel: true});
+  await v.installEventWaits(page);
 
   await softStep('Setup — record the full demog row count', async () => {
     expect(await trueCount(page), 'baseline is the full demog row set').toBe(fullCount_demog);
@@ -553,10 +596,7 @@ test('Filter Panel — Expression filter and Text filter driven through their ow
   });
 
   await softStep('Teardown', async () => {
-    await page.evaluate(async () => {
-      grok.shell.closeAll();
-      await new Promise((r) => setTimeout(r, 500));
-    });
+    await v.closeAllAndWait(page);
   });
 
   v.finishSpec();

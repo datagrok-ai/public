@@ -68,9 +68,9 @@ async function toggleCardCheckbox(page: import('@playwright/test').Page, column:
     if (!card) throw new Error(`toggleCardCheckbox: the panel carries no ${column} card`);
     const cb = card.querySelector('input[type="checkbox"].ui-input-editor') as HTMLInputElement | null;
     if (!cb) throw new Error(`toggleCardCheckbox: the ${column} card carries no enable/disable checkbox`);
-    cb.click();
-    await new Promise((r) => setTimeout(r, 800));
-    return {count: grok.shell.tv.dataFrame.filter.trueCount, checked: cb.checked};
+    const was = grok.shell.tv.dataFrame.filter.trueCount;
+    const count = await (window as any).__filtered(() => cb.click(), 800, was);
+    return {count, checked: cb.checked};
   }, column);
 }
 
@@ -120,7 +120,9 @@ async function driveHeaderSearch(page: import('@playwright/test').Page, text: st
   await page.keyboard.press('Control+a');
   await page.keyboard.type(text, {delay: 40});
   const typed = await input.inputValue();
-  await page.waitForTimeout(800);
+  const wasVisible = visibleBefore.join(' ');
+  await v.pollValue(async () => (await visibleCardCaptions(page)).join(' '),
+    (now) => now !== wasVisible, 800, 50);
   return {
     visibleBefore,
     visibleAfter: await visibleCardCaptions(page),
@@ -141,7 +143,8 @@ async function collapseHeaderSearch(page: import('@playwright/test').Page): Prom
     icon.click();
   });
   await input.waitFor({state: 'hidden', timeout: 10_000});
-  await page.waitForTimeout(400);
+  await v.pollStable(async () => (await visibleCardCaptions(page)).join(' '),
+    (a, b) => a === b, 400, 50);
 }
 
 async function headerSearchState(page: import('@playwright/test').Page):
@@ -254,7 +257,9 @@ async function raiseCounterTooltipCells(page: import('@playwright/test').Page): 
       `text=${JSON.stringify(target.text)}) — the counter block is hidden while nothing is filtering`);
   }
   await page.mouse.move(5, 5);
-  await page.waitForTimeout(800);
+  await v.pollValue(async () => (await tooltipStates(page))
+    .filter((t) => t.display !== 'none' && t.visibility !== 'hidden').length,
+  (shown) => shown === 0, 800, 50);
   const baseline = (await tooltipStates(page)).map((t) => t.text);
   const fresh = (i: number, text: string) => text.length > 0 && text !== (baseline[i] ?? '');
   await page.mouse.move(target.x, Math.max(2, target.y - 60), {steps: 6});
@@ -292,6 +297,7 @@ test('Filter Panel — Panel Core Ladder', async ({page}) => {
 
   await loginToDatagrok(page);
   await v.openTable(page, {path: datasetPath, withFilterPanel: true});
+  await v.installEventWaits(page);
 
   expect(await trueCount(page)).toBe(FULL);
   await removeAllViaPanelMenu(page);
@@ -340,10 +346,9 @@ test('Filter Panel — Panel Core Ladder', async ({page}) => {
       } else {
         await page.mouse.up();
       }
-      await page.waitForTimeout(900);
-      const hasRace = await page.evaluate(() =>
+      const hasRace = await v.pollValue(async () => page.evaluate(() =>
         Array.from(document.querySelectorAll('[name="viewer-Filters"] .d4-filter-column-name'))
-          .some((c) => c.textContent?.trim() === 'RACE'));
+          .some((c) => c.textContent?.trim() === 'RACE')), (seen) => seen, 900, 50);
       expect(hasRace).toBe(true);
     });
 
@@ -352,8 +357,7 @@ test('Filter Panel — Panel Core Ladder', async ({page}) => {
       const pt = await categoryRowPoint(page, 'RACE', RACE_CATEGORY);
       expect(pt).not.toBeNull();
       await page.mouse.click(pt!.x, pt!.y);
-      await page.waitForTimeout(900);
-      const after = await trueCount(page);
+      const after = await v.pollValue(() => trueCount(page), (c) => c !== before, 900, 50);
       expect(after).not.toBe(before);
       expect(after).toBeLessThan(FULL);
       expect(after).toBeGreaterThan(0);
@@ -376,8 +380,8 @@ test('Filter Panel — Panel Core Ladder', async ({page}) => {
       const cardBox = await ageCard.first().boundingBox();
       expect(cardBox).not.toBeNull();
       await page.mouse.move(cardBox!.x + cardBox!.width / 2, cardBox!.y + 8, {steps: 6});
-      await page.waitForTimeout(400);
       const indicator = ageCard.locator('.d4-filter-indicator').first();
+      await v.pollValue(() => indicator.isVisible(), (shown) => shown, 400, 50);
       if (await indicator.isVisible())
         await indicator.click();
       else
@@ -386,11 +390,11 @@ test('Filter Panel — Panel Core Ladder', async ({page}) => {
       const ageMax = ageCard.locator('input.d4-filter-input-max').first();
       await ageMax.waitFor({state: 'visible', timeout: 10_000});
 
-      const rowsNow = async () => trueCount(page);
+      const rowsAfter = (from: number) =>
+        v.pollValue(() => trueCount(page), (c) => c !== from, 1200, 50);
       await ageMax.fill('60');
       await ageMax.press('Enter');
-      await page.waitForTimeout(1200);
-      const at60 = await rowsNow();
+      const at60 = await rowsAfter(trueCountRaceOnly);
       expect(trueCountRaceOnly, 'Step 3 did not record the categorical-only row count').toBeGreaterThan(0);
       expect(at60).toBeLessThan(trueCountRaceOnly);
       expect(at60).toBeGreaterThan(0);
@@ -398,12 +402,10 @@ test('Filter Panel — Panel Core Ladder', async ({page}) => {
 
       await ageMax.fill('999');
       await ageMax.press('Enter');
-      await page.waitForTimeout(1200);
-      const at999 = await rowsNow();
+      const at999 = await rowsAfter(at60);
       await ageMax.fill('55');
       await ageMax.press('Enter');
-      await page.waitForTimeout(1200);
-      const atMoved = await rowsNow();
+      const atMoved = await rowsAfter(at999);
       expect(atMoved).not.toBe(at999);
       expect(atMoved).toBeLessThan(trueCountRaceOnly);
       expect(atMoved).toBeGreaterThan(0);
@@ -447,11 +449,11 @@ test('Filter Panel — Panel Core Ladder', async ({page}) => {
         const before = df.filter.trueCount;
         const cards = Array.from(document.querySelectorAll('[name="viewer-Filters"] .d4-filter'));
         const race = cards.find((c) => c.querySelector('.d4-filter-column-name')?.textContent?.trim() === 'RACE')!;
-        (race.querySelector('input[type="checkbox"].ui-input-editor') as HTMLInputElement).click();
-        await new Promise((r) => setTimeout(r, 800));
+        const after = await (window as any).__filtered(() =>
+          (race.querySelector('input[type="checkbox"].ui-input-editor') as HTMLInputElement).click(), 800, before);
         const stillPresent = Array.from(document.querySelectorAll('[name="viewer-Filters"] .d4-filter-column-name'))
           .some((c) => c.textContent?.trim() === 'RACE');
-        return {before, after: df.filter.trueCount, present: stillPresent, disabledClass: race.classList.contains('d4-filter-disabled')};
+        return {before, after, present: stillPresent, disabledClass: race.classList.contains('d4-filter-disabled')};
       });
       trueCountAgeOnly = after;
       expect(after).toBeGreaterThan(before);
@@ -481,14 +483,11 @@ test('Filter Panel — Panel Core Ladder', async ({page}) => {
 
     await softStep('Step 8a Master toggle off → full count, d4-filters-disabled, cards present', async () => {
       const {after, disabled} = await page.evaluate(async () => {
-        const df = grok.shell.tv.dataFrame;
         const panel = document.querySelector('[name="viewer-Filters"]')!;
-        (panel.querySelector('.d4-filter-group-header input[type="checkbox"]') as HTMLInputElement).click();
-        await new Promise((r) => setTimeout(r, 800));
-        return {
-          after: df.filter.trueCount,
-          disabled: panel.classList.contains('d4-filters-disabled'),
-        };
+        const was = grok.shell.tv.dataFrame.filter.trueCount;
+        const after = await (window as any).__filtered(() =>
+          (panel.querySelector('.d4-filter-group-header input[type="checkbox"]') as HTMLInputElement).click(), 800, was);
+        return {after, disabled: panel.classList.contains('d4-filters-disabled')};
       });
       expect(after).toBe(FULL);
       expect(disabled).toBe(true);
@@ -517,14 +516,14 @@ test('Filter Panel — Panel Core Ladder', async ({page}) => {
 
     await softStep('Step 8b Master toggle on → restores AGE-only value, RACE checkbox stays unchecked', async () => {
       const {after, disabled, raceChecked} = await page.evaluate(async () => {
-        const df = grok.shell.tv.dataFrame;
         const panel = document.querySelector('[name="viewer-Filters"]')!;
-        (panel.querySelector('.d4-filter-group-header input[type="checkbox"]') as HTMLInputElement).click();
-        await new Promise((r) => setTimeout(r, 800));
+        const was = grok.shell.tv.dataFrame.filter.trueCount;
+        const after = await (window as any).__filtered(() =>
+          (panel.querySelector('.d4-filter-group-header input[type="checkbox"]') as HTMLInputElement).click(), 800, was);
         const race = Array.from(document.querySelectorAll('[name="viewer-Filters"] .d4-filter'))
           .find((c) => c.querySelector('.d4-filter-column-name')?.textContent?.trim() === 'RACE')!;
         return {
-          after: df.filter.trueCount,
+          after,
           disabled: panel.classList.contains('d4-filters-disabled'),
           raceChecked: (race.querySelector('input[type="checkbox"].ui-input-editor') as HTMLInputElement).checked,
         };
@@ -629,22 +628,24 @@ test('Filter Panel — Panel Core Ladder', async ({page}) => {
       try {
         await stampTableName(page, mainMarker);
         trueCountSaved = await page.evaluate(async (category: string) => {
+          const w = window as any;
           const fg = grok.shell.tv.getFiltersGroup();
-          const df = grok.shell.tv.dataFrame;
-          fg.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: 'RACE', selected: [category]});
-          await new Promise((r) => setTimeout(r, 600));
-          fg.updateOrAdd({type: 'histogram', column: 'AGE', min: 18, max: 60});
-          await new Promise((r) => setTimeout(r, 700));
-          return df.filter.trueCount;
+          const full = grok.shell.tv.dataFrame.filter.trueCount;
+          const afterRace = await w.__filtered(() =>
+            fg.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: 'RACE', selected: [category]}), 600, full);
+          return w.__filtered(() =>
+            fg.updateOrAdd({type: 'histogram', column: 'AGE', min: 18, max: 60}), 700, afterRace);
         }, RACE_CATEGORY);
         await expectHeaderCounter(page, '2', 'the two-filter state is re-established, so the counter must read 2 before the layout is saved');
 
         savedLayout = await saveLayoutToGallery(page, mainMarker);
 
         await page.evaluate(async () => {
-          grok.shell.tv.dataFrame.resetFilter();
-          try { grok.shell.tv.addViewer('Bar chart'); } catch (_) {}
-          await new Promise((r) => setTimeout(r, 800));
+          const was = grok.shell.tv.dataFrame.filter.trueCount;
+          await (window as any).__filtered(() => {
+            grok.shell.tv.dataFrame.resetFilter();
+            try { grok.shell.tv.addViewer('Bar chart'); } catch (_) {}
+          }, 800, was);
         });
         const perturbed = await trueCount(page);
         expect(perturbed).not.toBe(trueCountSaved);
@@ -710,11 +711,9 @@ test('Filter Panel — Panel Core Ladder', async ({page}) => {
         resetLayout = await saveLayoutToGallery(page, resetMarker);
 
         const perturbed = await page.evaluate(async () => {
-          const df = grok.shell.tv.dataFrame;
-          grok.shell.tv.getFiltersGroup()
-            .updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: 'RACE', selected: ['Asian']});
-          await new Promise((r) => setTimeout(r, 900));
-          return df.filter.trueCount;
+          const was = grok.shell.tv.dataFrame.filter.trueCount;
+          return (window as any).__filtered(() => grok.shell.tv.getFiltersGroup()
+            .updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: 'RACE', selected: ['Asian']}), 900, was);
         });
         expect(perturbed).not.toBe(FULL);
         await page.evaluate(async (layoutId: string) => {
@@ -743,19 +742,19 @@ test('Filter Panel — Panel Core Ladder', async ({page}) => {
 
     await softStep('Step 13 Project round-trip → panel reopens, filters restored (GROK-19152 barrier)', async () => {
       trueCountSaved = await page.evaluate(async (category: string) => {
+        const w = window as any;
         const fg = grok.shell.tv.getFiltersGroup();
-        const df = grok.shell.tv.dataFrame;
-        fg.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: 'RACE', selected: [category]});
-        await new Promise((r) => setTimeout(r, 600));
-        fg.updateOrAdd({type: 'histogram', column: 'AGE', min: 18, max: 60});
-        await new Promise((r) => setTimeout(r, 700));
-        return df.filter.trueCount;
+        const full = grok.shell.tv.dataFrame.filter.trueCount;
+        const afterRace = await w.__filtered(() =>
+          fg.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: 'RACE', selected: [category]}), 600, full);
+        return w.__filtered(() =>
+          fg.updateOrAdd({type: 'histogram', column: 'AGE', min: 18, max: 60}), 700, afterRace);
       }, RACE_CATEGORY);
 
       const saved = await saveProjectViaApi(page, projectName);
       projectId = saved.projectId;
 
-      await page.evaluate(async () => { grok.shell.closeAll(); await new Promise((r) => setTimeout(r, 800)); });
+      await v.closeAllAndWait(page);
 
       await page.evaluate(async (id: string) => {
         const project = await grok.dapi.projects.find(id);
@@ -767,9 +766,11 @@ test('Filter Panel — Panel Core Ladder', async ({page}) => {
       }, {timeout: 60_000});
 
       const reopened = await page.evaluate(async () => {
-        await new Promise((r) => setTimeout(r, 1500));
-        const caps = Array.from(document.querySelectorAll('[name="viewer-Filters"] .d4-filter-column-name'))
+        const capsOf = () => Array.from(document.querySelectorAll('[name="viewer-Filters"] .d4-filter-column-name'))
           .map((c) => c.textContent?.trim());
+        await (window as any).__poll(() => capsOf(),
+          (c: string[]) => c.includes('RACE') && c.includes('AGE'), 1500, 50);
+        const caps = capsOf();
         return {
           panel: !!document.querySelector('[name="viewer-Filters"]'),
           hasRace: caps.includes('RACE'),

@@ -163,6 +163,7 @@ test('Collaborative Filtering for Linked Tables', async ({page}) => {
   stepErrors.length = 0;
 
   await loginToDatagrok(page);
+  await v.installEventWaits(page);
 
   let fx: Fixture = {
     linkedRowCount: -1, linkAndFilterCount: -1, bothCriteriaCount: -1,
@@ -206,11 +207,14 @@ test('Collaborative Filtering for Linked Tables', async ({page}) => {
           Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i))
             .some((c: any) => c.semType === 'Molecule' || c.semType === 'Macromolecule'));
         if (hasBioChem) {
-          for (let i = 0; i < 50; i++) {
-            if (document.querySelector('[name="viewer-Grid"] canvas')) break;
-            await new Promise((r) => setTimeout(r, 200));
-          }
-          await new Promise((r) => setTimeout(r, 5000));
+          const w = window as any;
+          await w.__poll(() => document.querySelector('[name="viewer-Grid"] canvas'),
+            (el: Element | null) => el !== null, 10_000, 200);
+          // Rendering a molecule/macromolecule grid settles in bursts; hold for the quiet gap
+          // rather than for a flat five seconds.
+          await w.__quiet('grok.events.onViewerAdded', 500, 5000).catch(() => {});
+          await w.__stable(() =>
+            document.querySelectorAll('[name="viewer-Grid"] canvas').length, 5000, 200);
         }
         const views = Array.from((window as any).grok.shell.tableViews).map((tv: any) => tv.dataFrame.name);
         return {df1: df1.rowCount, df2: df2.rowCount, df3: df3.rowCount,

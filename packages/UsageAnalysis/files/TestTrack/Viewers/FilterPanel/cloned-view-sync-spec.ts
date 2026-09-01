@@ -337,6 +337,7 @@ test('Filters — Cloned View Synchronization', async ({page}) => {
 
   await loginToDatagrok(page);
   await v.openTable(page, {path: datasetPath, withFilterPanel: true});
+  await v.installEventWaits(page);
   await installViewResolver(page);
 
   const ORIG = 'demog';
@@ -530,8 +531,13 @@ test('Filters — Cloned View Synchronization', async ({page}) => {
 
       const added = await page.evaluate(async (vn: string) => {
         const fg = (window as any).__tv(vn).getFiltersGroup();
+        const isAgeCat = (f: any) => {
+          try { return f.filterColumnName === 'AGE' && f.filterType === 'categorical'; }
+          catch (_) { return false; }
+        };
         fg.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: 'AGE'});
-        await new Promise((r) => setTimeout(r, 1500));
+        await (window as any).__poll(() => fg.filters.some(isAgeCat),
+          (there: boolean) => there, 1500, 50);
         const cat = fg.filters.find((f: any) => { try { return f.filterColumnName === 'AGE' && f.filterType === 'categorical'; } catch (_) { return false; } });
         if (!cat)
           throw new Error(`AGE categorical card was not created in view "${vn}"`);
@@ -780,16 +786,16 @@ test('Filters — Cloned View Synchronization', async ({page}) => {
 
     await softStep('Scenario 3 - Step 4 filtering the host frame leaves the shared-column frame untouched', async () => {
       const before = await page.evaluate(async () => {
+        const w = window as any;
         grok.shell.closeAll();
-        await new Promise((r) => setTimeout(r, 800));
         const t1 = await grok.dapi.files.readCsv('System:DemoFiles/demog.csv');
         const v1 = grok.shell.addTableView(t1);
         v1.name = 'HostView';
-        await new Promise((r) => setTimeout(r, 1200));
+        await w.__poll(() => w.__tv('HostView'), (view: any) => !!view, 1200, 25);
         const sexCol = t1.col('SEX');
         const t2 = DG.DataFrame.fromColumns([sexCol]);
         grok.shell.addTableView(t2).name = 'SharedColView';
-        await new Promise((r) => setTimeout(r, 1200));
+        await w.__poll(() => w.__tv('SharedColView'), (view: any) => !!view, 1200, 25);
 
         t1.col('SEX').setTag('sharedColumnProbe', 'shared');
         const sharesColumnObject = t2.col('SEX').getTag('sharedColumnProbe') === 'shared';
@@ -830,12 +836,11 @@ test('Filters — Cloned View Synchronization', async ({page}) => {
       try {
         await page.evaluate(async (vn: string) => {
           grok.shell.closeAll();
-          await new Promise((r) => setTimeout(r, 800));
           const df = await grok.dapi.files.readCsv('System:DemoFiles/demog.csv');
           const view = grok.shell.addTableView(df);
           df.name = vn;
           view.name = vn;
-          await new Promise((r) => setTimeout(r, 1500));
+          await (window as any).__poll(() => (window as any).__tv(vn), (v2: any) => !!v2, 1500, 25);
           view.getFiltersGroup();
         }, LAYOUT_VIEW);
         await v.resetFilters(page);
@@ -891,11 +896,15 @@ test('Filters — Cloned View Synchronization', async ({page}) => {
 
         await v.applyNumericFilter(page, 'AGE', 0, 200);
         await page.evaluate(async (vn: string) => {
-          const view = (window as any).__tv(vn);
+          const w = window as any;
+          const view = w.__tv(vn);
+          const root = view.root as HTMLElement;
           view.getFiltersGroup().close();
-          await new Promise((r) => setTimeout(r, 800));
-          view.addViewer('Bar chart');
-          await new Promise((r) => setTimeout(r, 1500));
+          await w.__poll(() => root.querySelectorAll('[name="viewer-Filters"]').length,
+            (n: number) => n === 0, 800, 25);
+          const added = view.addViewer('Bar chart');
+          await w.__poll(() => Array.from(view.viewers).includes(added),
+            (there: boolean) => there, 1500, 25);
         }, LAYOUT_VIEW);
         expect(await page.locator('[name="viewer-Filters"]').count()).toBe(0);
         const perturbed = await trueCountOf(page, LAYOUT_VIEW);

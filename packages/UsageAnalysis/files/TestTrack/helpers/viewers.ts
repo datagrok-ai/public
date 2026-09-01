@@ -1733,6 +1733,81 @@ export async function installEventWaits(page: Page): Promise<void> {
       }
       return value;
     };
+
+    // In-page twin of pollStable: resolves once two consecutive reads agree, so a caller reads a
+    // value that has stopped moving instead of the first one it happened to catch. The comparison
+    // is strict equality — a read that builds an object has to stringify it.
+    //
+    // ONLY for a value that is not expected to move. Two reads of a gesture that has not landed
+    // yet also agree, so on a value that IS expected to move this returns the stale one — pass
+    // the pre-gesture value to __moved / __filtered there instead.
+    w.__stable = async (read: () => any, capMs = 1500, intervalMs = 50) => {
+      const deadline = Date.now() + capMs;
+      let prev = read();
+      while (Date.now() < deadline) {
+        await new Promise((r) => setTimeout(r, intervalMs));
+        const cur = read();
+        if (cur === prev) return cur;
+        prev = cur;
+      }
+      return prev;
+    };
+
+    // Resolves once `read` has held one value for gapMs uninterrupted, or at capMs.
+    //
+    // The reason this is not __stable: a panel gesture lands in stages — the row filter first, the
+    // header counter a repaint later — and two reads 25ms apart agree in the gap BETWEEN those
+    // stages. __stable returns there, mid-update, which is how a counter that reads "0" reached an
+    // assertion expecting "1". A real quiet gap is the only settle that spans a staged update.
+    w.__settledFor = async (read: () => any, gapMs = 150, capMs = 1500, intervalMs = 25) => {
+      const deadline = Date.now() + capMs;
+      let prev = read();
+      let since = Date.now();
+      while (Date.now() < deadline) {
+        await new Promise((r) => setTimeout(r, intervalMs));
+        const cur = read();
+        if (cur !== prev) { prev = cur; since = Date.now(); continue; }
+        if (Date.now() - since >= gapMs) return cur;
+      }
+      return prev;
+    };
+
+    // Wait for `read` to leave `from` and then go quiet, inside one budget. Both halves are
+    // needed: without the first, a settle returns the pre-gesture value; without the second, a
+    // change-poll returns the first of a staged update.
+    //
+    // `read` must stamp everything the caller's assertion goes on to read. Stamping the row count
+    // alone and then asserting on the header counter waits for the wrong thing.
+    w.__moved = async (read: () => any, from: any, capMs = 1500, intervalMs = 25) => {
+      const deadline = Date.now() + capMs;
+      await w.__poll(read, (v: any) => v !== from, capMs, intervalMs);
+      return w.__settledFor(read, 150, Math.max(0, deadline - Date.now()), intervalMs);
+    };
+
+    // Run a filtering gesture and report the row count it leaves behind.
+    //
+    // With `from` — the count before the gesture, for callers that assert it MOVED — this ignores
+    // the event and waits on the count itself. Gating on the event first and then polling the
+    // value out of what is left of the same budget means a gesture that raises no event burns the
+    // whole cap on the wait and reads the stale count with zero budget left, where the fixed sleep
+    // it replaced would have read the settled one.
+    //
+    // Without `from`, standing still is a legal outcome, so there is nothing to poll for: arm the
+    // event (before the act, or it races), then wait for quiet.
+    w.__filtered = async (act: () => any, capMs = 1500, from?: number) => {
+      const count = () => w.grok.shell.tv.dataFrame.filter.trueCount;
+      if (from !== undefined) {
+        await act();
+        return w.__moved(count, from, capMs);
+      }
+      await w.__settled('df.onRowsFiltered', act, capMs);
+      return w.__settledFor(count, 150, capMs);
+    };
+
+    // An open table view is not a readable one: the dataFrame lands after the view does, which is
+    // the gap closeAll, project open and addTableView all used a fixed sleep to cover.
+    w.__tableReady = (capMs = 5000) => w.__poll(
+      () => w.grok.shell.tv?.dataFrame?.rowCount ?? 0, (n: number) => n > 0, capMs, 50);
   });
 }
 
