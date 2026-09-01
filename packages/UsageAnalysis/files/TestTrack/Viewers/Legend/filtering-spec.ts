@@ -88,10 +88,13 @@ test('Legend filtering', async ({page}) => {
       const tv = (window as any).grok.shell.tv;
       const layout = tv.saveLayout();
       layout.name = 'Filtering_' + Date.now();
-      const saved = await (window as any).grok.dapi.layouts.save(layout);
-      await new Promise((r) => setTimeout(r, 1000));
-      tv.loadLayout(await (window as any).grok.dapi.layouts.find(saved.id));
-      await new Promise((r) => setTimeout(r, 3500));
+      const saved = await w.grok.dapi.layouts.save(layout);
+      const found = await w.__findSaved(() => w.grok.dapi.layouts.find(saved.id));
+      const gen = w.__viewerGen();
+      tv.loadLayout(found);
+      await w.__rebuilt(gen, () => {
+        return `${w.grok.shell.tv?.dataFrame?.filter?.trueCount ?? -1}`;
+      }, 4500);
       (window as any).__filtLayoutId = saved.id;
       return {before, after: (window as any).grok.shell.tv.dataFrame.filter.trueCount};
     });
@@ -197,10 +200,14 @@ test('Legend filtering', async ({page}) => {
       const before = df.filter.trueCount;
       const layout = tv.saveLayout();
       layout.name = 'FilteringClick_' + Date.now();
-      const saved = await (window as any).grok.dapi.layouts.save(layout);
-      await new Promise((r) => setTimeout(r, 1000));
-      tv.loadLayout(await (window as any).grok.dapi.layouts.find(saved.id));
-      await new Promise((r) => setTimeout(r, 3500));
+      const w = window as any;
+      const saved = await w.grok.dapi.layouts.save(layout);
+      const found = await w.__findSaved(() => w.grok.dapi.layouts.find(saved.id));
+      const gen = w.__viewerGen();
+      tv.loadLayout(found);
+      await w.__rebuilt(gen, () => {
+        return `${w.grok.shell.tv?.dataFrame?.filter?.trueCount ?? -1}`;
+      }, 4500);
       (window as any).__filtClickLayoutId = saved.id;
       const tvAfter = (window as any).grok.shell.tv;
       return {

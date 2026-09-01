@@ -60,10 +60,16 @@ test('Line chart legend', async ({page}) => {
       const tv = (window as any).grok.shell.tv;
       const layout = tv.saveLayout();
       layout.name = 'LineChart_' + Date.now();
-      const saved = await (window as any).grok.dapi.layouts.save(layout);
-      await new Promise((r) => setTimeout(r, 1000));
-      tv.loadLayout(await (window as any).grok.dapi.layouts.find(saved.id));
-      await new Promise((r) => setTimeout(r, 3500));
+      const w = window as any;
+      const saved = await w.grok.dapi.layouts.save(layout);
+      const found = await w.__findSaved(() => w.grok.dapi.layouts.find(saved.id));
+      const gen = w.__viewerGen();
+      tv.loadLayout(found);
+      await w.__rebuilt(gen, () => {
+        const v = (Array.from(w.grok.shell.tv?.viewers ?? []) as any[])
+          .find((x) => x.type === 'Line chart');
+        return `${v?.props?.multiAxis}|${v?.props?.splitColumnName ?? ''}`;
+      }, 4500);
       const lc = (window as any).grok.shell.tv.viewers.find((x: any) => x.type === 'Line chart');
       return {layoutId: saved.id, multiAxis: lc?.props.multiAxis, split: lc?.props.splitColumnName};
     });
@@ -100,10 +106,16 @@ test('Line chart legend', async ({page}) => {
       const tv = (window as any).grok.shell.tv;
       const layout = tv.saveLayout();
       layout.name = 'LineChart2_' + Date.now();
-      const saved = await (window as any).grok.dapi.layouts.save(layout);
-      await new Promise((r) => setTimeout(r, 1000));
-      tv.loadLayout(await (window as any).grok.dapi.layouts.find(saved.id));
-      await new Promise((r) => setTimeout(r, 3500));
+      const w = window as any;
+      const saved = await w.grok.dapi.layouts.save(layout);
+      const found = await w.__findSaved(() => w.grok.dapi.layouts.find(saved.id));
+      const gen = w.__viewerGen();
+      tv.loadLayout(found);
+      await w.__rebuilt(gen, () => {
+        const v = (Array.from(w.grok.shell.tv?.viewers ?? []) as any[])
+          .find((x) => x.type === 'Line chart');
+        return `${(v?.props?.yColumnNames ?? []).join(',')}`;
+      }, 4500);
       const lc = (window as any).grok.shell.tv.viewers.find((x: any) => x.type === 'Line chart');
       return {layoutId: saved.id, yCols: lc?.props.yColumnNames};
     });
@@ -146,7 +158,14 @@ test('Line chart legend', async ({page}) => {
       } catch (e: any) {
         return {phase: 'reopen', ok: false, error: String(e).slice(0, 200), projectId: pid};
       }
-      await new Promise((r) => setTimeout(r, 3500));
+      // a reopened project lands the view, the dataFrame and the restored look in that
+      // order, so readiness is the table and the settle is on what the step reads
+      await w.__tableReady(3500);
+      await w.__settledFor(() => {
+        const v = (Array.from(w.grok.shell.tv?.viewers ?? []) as any[])
+          .find((x) => x.type === 'Line chart');
+        return `${v?.props?.multiAxis}|${(v?.props?.yColumnNames ?? []).join(',')}`;
+      }, 250, 1500, 25);
       const tv = (window as any).grok.shell.tv;
       if (!tv) return {phase: 'reopen', ok: false, error: 'no tv after reopen', projectId: pid};
       const lc = tv.viewers.find((x: any) => x.type === 'Line chart');

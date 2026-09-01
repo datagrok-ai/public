@@ -152,7 +152,12 @@ test('Legend scatterplot — Color + Marker combined', async ({page}) => {
       } catch (e: any) {
         return {phase: 'reopen', ok: false, error: String(e).slice(0, 200), projectId: pid};
       }
-      await new Promise((r) => setTimeout(r, 3500));
+      // a reopened project lands the view, the dataFrame and the restored look in that
+      // order, so readiness is the table and the settle is on what the step reads
+      await w.__tableReady(3500);
+      await w.__settledFor(() => {
+        return `${!!w.grok.shell.tv}|${w.grok.shell.tv?.dataFrame?.rowCount ?? 0}`;
+      }, 250, 1500, 25);
       return {phase: 'verified', ok: true, projectId: pid};
     });
     expect(res.ok, res.ok ? '' : `project save+reopen failed in phase '${res.phase}': ${res.error}`).toBe(true);
@@ -633,7 +638,13 @@ test('Legend scatterplot — grid color coding linear/categorical', async ({page
       } catch (e: any) {
         return {phase: 'reopen', ok: false, error: String(e).slice(0, 200), projectId: pid};
       }
-      await new Promise((r) => setTimeout(r, 3500));
+      // a reopened project lands the view, the dataFrame and the restored look in that
+      // order, so readiness is the table and the settle is on what the step reads
+      await w.__tableReady(3500);
+      await w.__settledFor(() => {
+        const c = w.grok.shell.tv?.dataFrame?.col('Stereo Category');
+        return `${(c?.categories ?? []).indexOf('R_ONE')}`;
+      }, 250, 1500, 25);
       const tv = (window as any).grok.shell.tv;
       if (!tv) return {phase: 'reopen', ok: false, error: 'no tv after reopen', projectId: pid};
       const col = tv.dataFrame.col('Stereo Category');

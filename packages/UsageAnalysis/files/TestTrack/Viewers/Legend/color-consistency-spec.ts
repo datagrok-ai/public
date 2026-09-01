@@ -106,10 +106,16 @@ test('Legend color consistency', async ({page}) => {
       const tv = (window as any).grok.shell.tv;
       const layout = tv.saveLayout();
       layout.name = 'ColorConsist_' + Date.now();
-      const saved = await (window as any).grok.dapi.layouts.save(layout);
-      await new Promise((r) => setTimeout(r, 1000));
-      tv.loadLayout(await (window as any).grok.dapi.layouts.find(saved.id));
-      await new Promise((r) => setTimeout(r, 3500));
+      const w = window as any;
+      const saved = await w.grok.dapi.layouts.save(layout);
+      const found = await w.__findSaved(() => w.grok.dapi.layouts.find(saved.id));
+      const gen = w.__viewerGen();
+      tv.loadLayout(found);
+      await w.__rebuilt(gen, () => {
+        const c = w.grok.shell.tv?.dataFrame?.col('Stereo Category');
+        const t = JSON.parse(c?.tags['.color-coding-categorical'] ?? '{}');
+        return String(t['R_ONE'] ?? '').toLowerCase();
+      }, 4500);
       (window as any).__ccLayoutId = saved.id;
       const col = (window as any).grok.shell.tv.dataFrame.col('Stereo Category');
       const tag = JSON.parse(col.tags['.color-coding-categorical'] ?? '{}');
@@ -153,7 +159,14 @@ test('Legend color consistency', async ({page}) => {
       } catch (e: any) {
         return {phase: 'reopen', ok: false, error: String(e).slice(0, 200), projectId};
       }
-      await new Promise((r) => setTimeout(r, 3500));
+      // a reopened project lands the view, the dataFrame and the restored look in that
+      // order, so readiness is the table and the settle is on what the step reads
+      await w.__tableReady(3500);
+      await w.__settledFor(() => {
+        const c = w.grok.shell.tv?.dataFrame?.col('Stereo Category');
+        const t = JSON.parse(c?.tags['.color-coding-categorical'] ?? '{}');
+        return String(t['R_ONE'] ?? '').toLowerCase();
+      }, 250, 1500, 25);
       const tv = (window as any).grok.shell.tv;
       if (!tv) return {phase: 'reopen', ok: false, error: 'no tv after reopen', projectId};
       const col = tv.dataFrame.col('Stereo Category');

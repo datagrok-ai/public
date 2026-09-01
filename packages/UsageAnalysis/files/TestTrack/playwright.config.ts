@@ -6,7 +6,7 @@ export default defineConfig({
 
   fullyParallel: true,
 
-  workers: process.env.CI ? 4 : 1,
+  workers: process.env.PW_WORKERS ? Number(process.env.PW_WORKERS) : (process.env.CI ? 4 : 1),
   retries: process.env.CI ? 1 : 0,
 
   timeout: 60_000,

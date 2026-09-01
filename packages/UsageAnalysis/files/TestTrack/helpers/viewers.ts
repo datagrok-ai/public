@@ -1808,6 +1808,41 @@ export async function installEventWaits(page: Page): Promise<void> {
     // the gap closeAll, project open and addTableView all used a fixed sleep to cover.
     w.__tableReady = (capMs = 5000) => w.__poll(
       () => w.grok.shell.tv?.dataFrame?.rowCount ?? 0, (n: number) => n > 0, capMs, 50);
+
+    // dapi.save resolves before the entity always reads back, which is what the fixed second
+    // between a layouts.save and the layouts.find of the same id was covering. Retry the read
+    // instead: it costs nothing when the first attempt succeeds, and unlike the sleep it still
+    // works when the stand is slower than one second.
+    w.__findSaved = async (read: () => Promise<any>, capMs = 1000) => {
+      const deadline = Date.now() + capMs;
+      for (;;) {
+        const v = await read().catch(() => null);
+        if (v || Date.now() >= deadline) return v;
+        await new Promise((r) => setTimeout(r, 50));
+      }
+    };
+
+    // loadLayout and a project reopen REPLACE the viewer instances rather than repainting them,
+    // so neither a repaint clock stamped on the old viewer nor a settle on the asserted value is
+    // a usable signal: the clock belongs to a viewer that is gone, and the value still reads the
+    // old viewer's until the new one exists. Tag what is on screen now, and wait for something
+    // untagged.
+    w.__viewerGen = () => {
+      const gen = (w.__genSeq = (w.__genSeq ?? 0) + 1);
+      for (const v of Array.from(w.grok.shell.tv?.viewers ?? []) as any[]) v.__genTag = gen;
+      return gen;
+    };
+
+    // Wait for the viewers tagged by `gen` to be replaced, THEN let the caller's own stamp go
+    // quiet. `stamp` must read what the assertion reads — the rebuild landing is not the same
+    // event as the restored value being readable.
+    w.__rebuilt = async (gen: number, stamp: () => any, capMs = 4000, gapMs = 250) => {
+      const deadline = Date.now() + capMs;
+      const fresh = () => (Array.from(w.grok.shell.tv?.viewers ?? []) as any[])
+        .filter((v) => v.__genTag !== gen).length;
+      await w.__poll(fresh, (n: number) => n > 0, capMs, 25);
+      return w.__settledFor(stamp, gapMs, Math.max(0, deadline - Date.now()), 25);
+    };
   });
 }
 

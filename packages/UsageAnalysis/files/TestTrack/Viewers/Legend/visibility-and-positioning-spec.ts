@@ -217,10 +217,15 @@ test('Legend visibility and positioning', async ({page}) => {
       const tv = (window as any).grok.shell.tv;
       const layout = tv.saveLayout();
       layout.name = 'LegendVP_' + Date.now();
-      const saved = await (window as any).grok.dapi.layouts.save(layout);
-      await new Promise((r) => setTimeout(r, 1000));
-      tv.loadLayout(await (window as any).grok.dapi.layouts.find(saved.id));
-      await new Promise((r) => setTimeout(r, 3500));
+      const w = window as any;
+      const saved = await w.grok.dapi.layouts.save(layout);
+      const found = await w.__findSaved(() => w.grok.dapi.layouts.find(saved.id));
+      const gen = w.__viewerGen();
+      tv.loadLayout(found);
+      await w.__rebuilt(gen, () => {
+        const vs = Array.from(w.grok.shell.tv?.viewers ?? []) as any[];
+        return `${vs.length}|${vs.some((x) => x.type === 'Scatter plot')}`;
+      }, 4500);
       const sp = (window as any).grok.shell.tv.viewers.find((x: any) => x.type === 'Scatter plot');
       return {layoutId: saved.id, viewerCount: (window as any).grok.shell.tv.viewers.length, spExists: !!sp};
     });
@@ -263,10 +268,16 @@ test('Legend visibility and positioning', async ({page}) => {
       const tv = (window as any).grok.shell.tv;
       const layout = tv.saveLayout();
       layout.name = 'LegendVP2_' + Date.now();
-      const saved = await (window as any).grok.dapi.layouts.save(layout);
-      await new Promise((r) => setTimeout(r, 1000));
-      tv.loadLayout(await (window as any).grok.dapi.layouts.find(saved.id));
-      await new Promise((r) => setTimeout(r, 3500));
+      const w = window as any;
+      const saved = await w.grok.dapi.layouts.save(layout);
+      const found = await w.__findSaved(() => w.grok.dapi.layouts.find(saved.id));
+      const gen = w.__viewerGen();
+      tv.loadLayout(found);
+      await w.__rebuilt(gen, () => {
+        const v = (Array.from(w.grok.shell.tv?.viewers ?? []) as any[])
+          .find((x) => x.type === 'Scatter plot');
+        return `${v?.props?.legendVisibility ?? ''}|${v?.props?.legendPosition ?? ''}`;
+      }, 4500);
       const sp = (window as any).grok.shell.tv.viewers.find((x: any) => x.type === 'Scatter plot');
       return {layoutId: saved.id, vis: sp?.props?.legendVisibility, pos: sp?.props?.legendPosition};
     });
@@ -344,10 +355,16 @@ test('Legend visibility and positioning', async ({page}) => {
       const tv = (window as any).grok.shell.tv;
       const layout = tv.saveLayout();
       layout.name = 'LegendVP3_' + Date.now();
-      const saved = await (window as any).grok.dapi.layouts.save(layout);
-      await new Promise((r) => setTimeout(r, 1000));
-      tv.loadLayout(await (window as any).grok.dapi.layouts.find(saved.id));
-      await new Promise((r) => setTimeout(r, 3500));
+      const w = window as any;
+      const saved = await w.grok.dapi.layouts.save(layout);
+      const found = await w.__findSaved(() => w.grok.dapi.layouts.find(saved.id));
+      const gen = w.__viewerGen();
+      tv.loadLayout(found);
+      await w.__rebuilt(gen, () => {
+        const v = (Array.from(w.grok.shell.tv?.viewers ?? []) as any[])
+          .find((x) => x.type === 'Scatter plot');
+        return `${v?.props?.legendPosition ?? ''}`;
+      }, 4500);
       const sp = (window as any).grok.shell.tv.viewers.find((x: any) => x.type === 'Scatter plot');
       return {layoutId: saved.id, pos: sp?.props?.legendPosition};
     });
@@ -391,7 +408,13 @@ test('Legend visibility and positioning', async ({page}) => {
       } catch (e: any) {
         return {phase: 'reopen', ok: false, error: String(e).slice(0, 200), projectId: pid};
       }
-      await new Promise((r) => setTimeout(r, 3500));
+      const stamp = () => {
+        const t = w.grok.shell.tv;
+        const v = (Array.from(t?.viewers ?? []) as any[]).find((x) => x.type === 'Scatter plot');
+        return `${!!t}|${v?.props?.legendVisibility ?? ''}|${v?.props?.legendPosition ?? ''}`;
+      };
+      await w.__poll(stamp, (x: string) => /^true\|[^|]+\|[^|]+$/.test(x), 3500, 25);
+      await w.__settledFor(stamp, 250, 1000, 25);
       const tv = (window as any).grok.shell.tv;
       if (!tv) return {phase: 'reopen', ok: false, error: 'no tv after reopen', projectId: pid};
       const sp = tv.viewers.find((x: any) => x.type === 'Scatter plot');

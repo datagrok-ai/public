@@ -59,11 +59,17 @@ test('GROK-17278: line chart legend color persists across layout + project round
       const layout = tv.saveLayout();
       layout.name = 'GROK17278_' + Date.now();
       try {
-        const saved = await withTimeout((window as any).grok.dapi.layouts.save(layout), 30000, 'layouts.save');
-        await new Promise((r) => setTimeout(r, 1000));
-        const found = await withTimeout((window as any).grok.dapi.layouts.find(saved.id), 15000, 'layouts.find');
+        const w = window as any;
+        const saved = await withTimeout(w.grok.dapi.layouts.save(layout), 30000, 'layouts.save');
+        const found = await w.__findSaved(
+          () => withTimeout(w.grok.dapi.layouts.find(saved.id), 15000, 'layouts.find'));
+        const gen = w.__viewerGen();
         tv.loadLayout(found);
-        await new Promise((r) => setTimeout(r, 3500));
+        await w.__rebuilt(gen, () => {
+          const c = w.grok.shell.tv?.dataFrame?.col('Stereo Category');
+          const t = JSON.parse(c?.tags['.color-coding-categorical'] ?? '{}');
+          return String(t['R_ONE'] ?? '').toLowerCase();
+        }, 4500);
         const col = (window as any).grok.shell.tv.dataFrame.col('Stereo Category');
         const t = JSON.parse(col.tags['.color-coding-categorical'] ?? '{}');
         return {layoutId: saved.id, ok: true, rOneAfterReload: String(t['R_ONE'] ?? '').toLowerCase()};
@@ -111,7 +117,14 @@ test('GROK-17278: line chart legend color persists across layout + project round
       } catch (e: any) {
         return {phase: 'reopen', ok: false, error: String(e).slice(0, 200), projectId: pid};
       }
-      await new Promise((r) => setTimeout(r, 3500));
+      // a reopened project lands the view, the dataFrame and the restored look in that
+      // order, so readiness is the table and the settle is on what the step reads
+      await w.__tableReady(3500);
+      await w.__settledFor(() => {
+        const c = w.grok.shell.tv?.dataFrame?.col('Stereo Category');
+        const t = JSON.parse(c?.tags['.color-coding-categorical'] ?? '{}');
+        return String(t['R_ONE'] ?? '').toLowerCase();
+      }, 250, 1500, 25);
       const tv = (window as any).grok.shell.tv;
       if (!tv) return {phase: 'reopen', ok: false, error: 'no tv after reopen', projectId: pid};
       const col = tv.dataFrame.col('Stereo Category');
