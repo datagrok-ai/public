@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import {getRdKitModule} from '../../utils/chem-common-rdkit';
 import {getMoleculeRenderer} from '../../package';
 import {SarMatrix} from './sar-matrix-types';
-import {argbToRgba, MatrixGridState} from './sar-matrix-ui-common';
+import {MatrixGridState} from './sar-matrix-ui-common';
 
 /** Drawing molecules onto a grid canvas, aligned so a shared core points the same way in every cell.
  *
@@ -193,7 +193,11 @@ function ensureBlitCanvas(w: number, h: number): OffscreenCanvas {
  *  The bitmap is produced at device size and blitted 1:1 at a whole-pixel offset so bond lines stay
  *  crisp (drawing through the grid's scaled transform bilinear-filters every bond). The device rect
  *  comes from the context transform, not `devicePixelRatio`, so a grid translate can't displace cells.
- *  Blits via a scratch canvas, not `putImageData`, so the grid's clip is respected. */
+ *
+ *  The molecule raster is rendered on a TRANSPARENT background (so it caches by molecule + size, not
+ *  by the per-cell tint); `argb` is laid down here as the background and the molecule composited over
+ *  it, which blends the anti-aliased bonds into the tint with no pale fringe. Both the fill and the
+ *  blit run at device pixels through the scratch canvas, so the grid's clip is respected. */
 export function drawDepiction(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
   molStr: string, template: string | null, argb: number): void {
   const renderer = getMoleculeRenderer();
@@ -209,7 +213,7 @@ export function drawDepiction(g: CanvasRenderingContext2D, x: number, y: number,
     return;
   let image: ImageData;
   try {
-    image = renderer.getCachedMolImageData(molblock, dw, dh, argbToRgba(argb));
+    image = renderer.getCachedMolImageData(molblock, dw, dh);
   } catch {
     return; // malformed structure — leave the cell to its background
   }
@@ -217,6 +221,10 @@ export function drawDepiction(g: CanvasRenderingContext2D, x: number, y: number,
   scratch.getContext('2d')!.putImageData(image, 0, 0);
   g.save();
   g.setTransform(1, 0, 0, 1, 0, 0);
-  g.drawImage(scratch, 0, 0, dw, dh, Math.round(m.a * x + m.e), Math.round(m.d * y + m.f), dw, dh);
+  const destX = Math.round(m.a * x + m.e);
+  const destY = Math.round(m.d * y + m.f);
+  g.fillStyle = DG.Color.toHtml(argb);
+  g.fillRect(destX, destY, dw, dh);
+  g.drawImage(scratch, 0, 0, dw, dh, destX, destY, dw, dh);
   g.restore();
 }

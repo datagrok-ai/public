@@ -468,18 +468,20 @@ M  END
 
   /**
    * Rasterize a fully-prepared molecule string (SMILES, or a laid-out molblock the caller has already
-   * aligned / labelled) to a cached `ImageData` at the given device size, reusing this renderer's
-   * shared `molCache` and `rendersCache`. `bgRgba` (0-1 channels) is baked into the RDKit draw so a
-   * cell tint blends into the anti-aliased bonds instead of leaving a pale fringe.
+   * aligned / labelled) to a cached `ImageData` at the given device size on a TRANSPARENT background,
+   * reusing this renderer's shared `molCache` and `rendersCache`.
+   *
+   * Background-free on purpose: the cache key is then the molecule and size alone, so a caller that
+   * tints per cell composites this raster over its own background instead of baking a per-cell colour
+   * into the key — which would make every tinted cell a distinct entry and thrash the shared LRU.
    *
    * For callers that paint molecules onto a canvas of their own (the SAR Matrix grid) rather than
    * going through `render()`. The returned `ImageData` is owned by `rendersCache` — read it, don't
    * mutate it.
    */
-  getCachedMolImageData(molString: string, width: number, height: number,
-    bgRgba: [number, number, number, number]): ImageData {
+  getCachedMolImageData(molString: string, width: number, height: number): ImageData {
     return this._fetchRender(width, height, molString, [], false, false, false, {}, undefined,
-      {clearBackground: true, backgroundColour: bgRgba});
+      {clearBackground: false});
   }
 
   _drawMolecule(x: number, y: number, w: number, h: number, onscreenCanvas: HTMLCanvasElement,
