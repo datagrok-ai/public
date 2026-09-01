@@ -40,7 +40,7 @@ export class MmmpFunctionEditor extends DG.FuncCallEditor {
     super(root);
     this.tableInput =
         ui.input.table('Table', {value: funcCall.inputs['table'] ?? grok.shell.tv.dataFrame,
-          items: grok.shell.tables, onValueChanged: () => {
+          items: grok.shell.tables, nullable: false, onValueChanged: () => {
             this.onTableInputChanged();
             this.syncCall();
           }});
@@ -65,6 +65,8 @@ export class MmmpFunctionEditor extends DG.FuncCallEditor {
   }
 
   onTableInputChanged() {
+    if (this.tableInput.value == null)
+      return;
     this.activitiesParams = {};
     ui.empty(this.activitiesInputRoot);
     const numericalColumns = Array.from(this.tableInput.value!.columns.numerical);

@@ -169,6 +169,22 @@ category('Editors: no infinite loop', () => {
     expect(roundTrip.fragmentCutoff, 0.7, 'history round-trip lost the cutoff');
   });
 
+  // regression: a null table (blank dropdown option / programmatic set) used to throw
+  // "Cannot read properties of null (reading 'columns')" after tearing down the Activities input
+  test('MMP editor survives null table', async () => {
+    const editor: any = await buildEditor('mmpAnalysis', 'MMPEditor', {table: view.dataFrame});
+    const options = Array.from(editor.tableInput.root.querySelectorAll('option')) as HTMLOptionElement[];
+    expect(options.every((o) => o.value !== ''), true, 'Table input must not offer a blank option');
+    expect(editor.activitiesInputRoot.children.length > 0, true, 'activities input not built');
+    editor.tableInput.value = null;
+    expect(editor.activitiesInputRoot.children.length > 0, true, 'activities input destroyed by null table');
+    expect(editor.isValid, false, 'editor must be invalid without a table');
+    editor.tableInput.value = view.dataFrame;
+    expect(editor.tableInput.value?.name, view.dataFrame.name, 'table not restored');
+    expect(editor.activitiesInputRoot.children.length > 0, true,
+      'activities input not rebuilt after table re-selected');
+  });
+
   test('Map Identifiers editor history restore', async () => {
     const editor: any = await buildEditor('getMapIdentifiers', 'mapIdentifiersEditor', {table: view.dataFrame});
     editor.loadHistoryString(JSON.stringify({fromSource: 'chembl', toSource: 'pubchem'}));

@@ -2,6 +2,7 @@
 
 ## v.next
 
+* 2169: Make the MMP dialog Table input non-nullable and guard onTableInputChanged against a null table
 * Fixed the package build failing on `TS2610` — `name` is an accessor on the u2 `Component` base, so the viewer overrides it with its own accessor instead of redeclaring it as a property
 * Fixed Gasteiger Partial Charges panel on current RDKit — `GetSimilarityMapFromWeights` now requires an explicit `MolDraw2DCairo` drawer (passed by keyword, so pre-2023.09 RDKit still works)
 
