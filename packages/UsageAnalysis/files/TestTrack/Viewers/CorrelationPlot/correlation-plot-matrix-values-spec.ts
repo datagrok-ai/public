@@ -1,7 +1,8 @@
 /* ---
 realizes: [correlationplot.cp.matrix-values-scope-persist, correlationplot.int.numerical-columns-only]
 --- */
-import {test, expect} from '@playwright/test';
+import {expect} from '@playwright/test';
+import {test} from '../../shared-page';
 import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 import {saveProjectViaApi, deleteProjectWithCleanup} from '../../helpers/projects';
