@@ -1,7 +1,8 @@
 /* ---
 realizes: [pivottable.cp.rowsource-filter-selection-links, pivottable.int.filtering-requires-row-source-all, pivottable.int.selection-link-gated-by-row-source]
 --- */
-import {test, expect, Page} from '@playwright/test';
+import {expect, Page} from '@playwright/test';
+import {test} from '../../shared-page';
 import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 import {armBalloonRecorderProved, expectNoBalloonSinceArmed} from '../../helpers/balloons';

@@ -1,7 +1,8 @@
 /* ---
 realizes: [formsviewer.cp.forms-core, formsviewer.int.sort-mirrors-grid, formsviewer.int.pinned-rows-persist-by-value, formsviewer.int.selection-intersects-filter, formsviewer.edge.pin-non-unique-value-warns, formsviewer.edge.pinned-row-absent-from-ordinary-cards]
 --- */
-import {test, expect, Page} from '@playwright/test';
+import {expect, Page} from '@playwright/test';
+import {test} from '../../shared-page';
 import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 import {knownOpenBug} from '../../helpers/known-open-bug';

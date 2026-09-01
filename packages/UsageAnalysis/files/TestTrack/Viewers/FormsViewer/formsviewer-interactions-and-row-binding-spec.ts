@@ -1,7 +1,8 @@
 /* ---
 realizes: [formsviewer.cp.interactions-and-row-binding]
 --- */
-import {test, expect, Page} from '@playwright/test';
+import {expect, Page} from '@playwright/test';
+import {test} from '../../shared-page';
 import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 import {HOST, ORDINARY, CURRENT, cardFieldValue, fieldValuesByPosition, waitForOrderStable} from '../../helpers/forms';

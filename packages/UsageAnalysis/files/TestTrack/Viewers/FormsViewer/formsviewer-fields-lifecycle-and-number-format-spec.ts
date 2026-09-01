@@ -1,7 +1,8 @@
 /* ---
 realizes: [formsviewer.cp.fields-lifecycle-and-number-format, formsviewer.int.number-format-vs-grid, formsviewer.edge.empty-fields-column-names, formsviewer.edge.tilde-columns-excluded, formsviewer.edge.over-20-columns-capped-silently, formsviewer.edge.renamed-column-follows-rename, formsviewer.edge.number-format-float-only]
 --- */
-import {test, expect, Page} from '@playwright/test';
+import {expect, Page} from '@playwright/test';
+import {test} from '../../shared-page';
 import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
 import {addViewerByIcon, cleanupShell, finishSpec, openTable, openViewerProperties, pollValue} from '../../helpers/viewers';
 import {HOST, CURRENT, drawnLabelNames, balloonCount, withConsoleErrorCount} from '../../helpers/forms';

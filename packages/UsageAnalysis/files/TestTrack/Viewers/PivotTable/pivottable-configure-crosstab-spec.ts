@@ -1,7 +1,8 @@
 /* ---
 realizes: [pivottable.cp.configure-crosstab-values, pivottable.int.agg-types-track-agg-columns, pivottable.int.empty-aggregates-clear-pivot]
 --- */
-import {test, expect, Page} from '@playwright/test';
+import {expect, Page} from '@playwright/test';
+import {test} from '../../shared-page';
 import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 import * as proj from '../../helpers/projects';
