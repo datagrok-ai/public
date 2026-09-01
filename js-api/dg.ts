@@ -46,6 +46,9 @@ export * from './src/proxies';
 export * from './src/utils_convert';
 export * from './src/ui/tree-view';
 
+export {AIChat, AIEngine} from './src/ai';
+export type {AIAttachment, AIChatOptions, AIRunOptions, AIResult, AIUsage, AIStream, AITurnEvent} from './src/ai';
+
 export * as U2 from './src/u2core/index.js';
 
 import * as grok from './grok';

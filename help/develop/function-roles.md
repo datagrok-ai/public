@@ -12,6 +12,7 @@ keywords:
   - cellRenderer
   - fileViewer
   - packageSettingsEditor
+  - aiEngine
   - DG.FUNC_TYPES
 ---
 
@@ -28,6 +29,7 @@ Typically, each function type has a special role denoting what the function does
 * `#fileViewer` and `#fileExporter` for [file viewers](#file-viewers)
   and [exporters](#file-exporters)
 * `#packageSettingsEditor` for [settings editors](#settings-editors)
+* `#aiEngine` for [AI engines](#ai-engines)
 
 You can use these roles to search for certain functions either from the platform's interface
 ([https://public.datagrok.ai/functions?q](https://public.datagrok.ai/functions?q)) or from within your code:
@@ -144,6 +146,19 @@ A file exporter is a function used for exporting data from the platform. It is a
 Exporters reside in the platform's top menu "export" section.
 
 *Details:* [How to create file exporters](how-to/files/file-exporters.md)
+
+## AI engines
+
+An AI engine is a function with the `aiEngine` role that returns a `DG.AIEngine` — a backend
+`grok.ai` discovers and talks to (see the `grok.ai` samples in ApiSamples and the Claude engine in Grokky):
+
+```ts
+//output: dynamic result
+//meta.role: aiEngine
+export function claudeEngine(): DG.AIEngine {
+  return new ClaudeEngine();
+}
+```
 
 ## Settings editors
 

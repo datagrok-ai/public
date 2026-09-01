@@ -19,6 +19,12 @@ export function combinedLLMSearchProvider() : any {
   return PackageFunctions.combinedLLMSearchProvider();
 }
 
+//output: dynamic result
+//meta.role: aiEngine
+export function claudeEngine() : any {
+  return PackageFunctions.claudeEngine();
+}
+
 //name: Help
 //description: Get answers from AI assistant based on Datagrok documentation and public code.
 //input: string prompt 

@@ -444,6 +444,9 @@ export const FUNC_TYPES = {
   MONOMER_LIB_PROVIDER: 'monomer-lib-provider',
 
   SEARCH_PROVIDER: 'searchProvider',
+
+  AI_ENGINE: 'aiEngine',
+
   NOTATION_REFINER: 'notationRefiner',
 }
 
@@ -620,6 +623,11 @@ export const functionRoles: FuncRoleDescription[] = [
     role: FUNC_TYPES.SEARCH_PROVIDER,
     description: 'Marks a function to be used as a search provider in the global search.',
     signature: 'searchProvider(): SearchProvider'
+  },
+  {
+    role: FUNC_TYPES.AI_ENGINE,
+    description: 'Provides an AI backend (engine) discoverable through grok.ai.',
+    signature: 'aiEngine(): AIEngine'
   },
   {
     role: FUNC_TYPES.NOTATION_REFINER,
