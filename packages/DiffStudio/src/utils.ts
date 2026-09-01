@@ -287,7 +287,10 @@ export function closeWindows() {
   grok.shell.windows.showColumns = false;
 }
 
-/** Get dataframe with recent models */
+/** Get dataframe with recent models. A corrupt or legacy `.d42` (e.g. one left on a
+ *  stand in an incompatible blob format) must degrade to «no recents» rather than throw:
+ *  this read also runs fire-and-forget from the constructor's prefetch, so a throw becomes
+ *  an unhandled rejection that surfaces to `grok.shell.lastError` and fails demo tests. */
 export async function getRecentModelsTable(): Promise<DG.DataFrame> {
   const path = `${grok.shell.user.project.name}:Home/${PATH.RECENT}`;
   const exist = await grok.dapi.files.exists(path);
@@ -295,8 +298,12 @@ export async function getRecentModelsTable(): Promise<DG.DataFrame> {
   if (!exist)
     return DG.DataFrame.create(0);
 
-  const dfs = await grok.dapi.files.readBinaryDataFrames(path);
-  return dfs[0];
+  try {
+    const dfs = await grok.dapi.files.readBinaryDataFrames(path);
+    return dfs[0];
+  } catch {
+    return DG.DataFrame.create(0);
+  }
 }
 
 let recentDfPromise: Promise<DG.DataFrame> | null = null;

@@ -1,5 +1,9 @@
 # Diff Studio changelog
 
+## 1.6.8 (2026-09-01)
+
+* Fixed demo tests failing when a corrupt/legacy recent-models `.d42` file surfaced a read error to the shell
+
 ## 1.6.7 (2026-09-01)
 
 * Fixed model deep-link parsing after the platform started percent-encoding the path
