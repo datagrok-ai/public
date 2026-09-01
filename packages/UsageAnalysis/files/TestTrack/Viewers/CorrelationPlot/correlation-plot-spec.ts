@@ -442,11 +442,15 @@ test('Correlation plot — property surface smoke', async ({page}) => {
 
     await refreshRoot(page, geom);
     await page.mouse.move(geom.rootX + 5, geom.rootY + geom.headerH + 200);
-    const displayIdle: string = await v.pollValue(() => page.evaluate(() => {
+    // "not shown" is display:none OR no tooltip node at all; the absent node satisfies the
+    // claim more strongly than the hidden one, and the sibling check below already reads it
+    // that way (d !== 'block'). Demanding exactly 'none' failed whenever nothing had built
+    // the node yet.
+    const tipShownIdle: boolean = await v.pollValue(() => page.evaluate(() => {
       const tip = document.querySelector('.d4-tooltip');
-      return tip ? getComputedStyle(tip).display : 'missing';
-    }), (d) => d === 'none', 500, 100);
-    expect(displayIdle).toBe('none');
+      return !!tip && getComputedStyle(tip).display === 'block';
+    }), (shown) => shown === false, 500, 100);
+    expect(tipShownIdle).toBe(false);
     const cOff = cellCenter(geom, xiHeight, yiAge);
     await page.mouse.move(cOff.x, cOff.y);
     const shownWhileOff: boolean = await page.evaluate(async () => {
@@ -457,7 +461,7 @@ test('Correlation plot — property surface smoke', async ({page}) => {
       }
       return false;
     });
-    console.log(`[Menu] displayIdle=${displayIdle} shownWhileOff=${shownWhileOff}`);
+    console.log(`[Menu] tipShownIdle=${tipShownIdle} shownWhileOff=${shownWhileOff}`);
 
     expect(shownWhileOff).toBe(false);
 
