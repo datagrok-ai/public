@@ -12,11 +12,12 @@ import {
   TableInputNode, ColumnInputNode, ColumnListInputNode, StringInputNode, MoleculeInputNode,
   HelmInputNode, NumberInputNode, IntInputNode, BooleanInputNode, DateTimeInputNode,
   FileInputNode, MapInputNode, DynamicInputNode, StringListInputNode, BlobInputNode,
+  PropertyInputNode, PROPERTY_INPUT_TYPE,
 } from './nodes/input-nodes';
 import {TableOutputNode, ValueOutputNode} from './nodes/output-nodes';
 import {
   SelectColumnNode, SelectColumnsNode, SelectTableNode, AddTableViewNode, LogNode, InfoNode,
-  WarningNode, ToStringNode, FromJsonNode, ToJsonNode,
+  WarningNode, ToStringNode, ToSemanticValueNode, FromJsonNode, ToJsonNode,
   ConstStringNode, ConstIntNode, ConstDoubleNode, ConstBoolNode, ConstListNode,
 } from './nodes/utility-nodes';
 import {
@@ -132,6 +133,7 @@ export function registerBuiltinNodes(): void {
   register('Inputs/Dynamic Input', () => new DynamicInputNode());
   register('Inputs/String List Input', () => new StringListInputNode());
   register('Inputs/Blob Input', () => new BlobInputNode());
+  register(PROPERTY_INPUT_TYPE, () => new PropertyInputNode());
 
   register('Outputs/Table Output', () => new TableOutputNode());
   register('Outputs/Value Output', () => new ValueOutputNode());
@@ -144,6 +146,7 @@ export function registerBuiltinNodes(): void {
   register('Utilities/Info', () => new InfoNode());
   register('Utilities/Warning', () => new WarningNode());
   register('Utilities/ToString', () => new ToStringNode());
+  register('Utilities/To Semantic Value', () => new ToSemanticValueNode());
   register('Utilities/FromJSON', () => new FromJsonNode());
   register('Utilities/ToJSON', () => new ToJsonNode());
 
@@ -503,6 +506,9 @@ export interface SuggestionContext {
   graphPackageNames?: Iterable<string>;
   /** Simple function names already used on the canvas (any case). */
   graphFuncNames?: Iterable<string>;
+  /** Reverse menu only: the dragged input sits on a DG-function node — a Property
+   *  Input can mimic that parameter, so it leads the list. */
+  targetIsFuncInput?: boolean;
 }
 
 /** Node types with an input compatible with `sourceType`, ranked for the drag-out suggestion menu. */
@@ -586,6 +592,9 @@ export function findNodeTypesProducingOutput(
   const {preferredDomains, usedFuncs} = contextBoosts(context);
 
   const rank = (t: CompatibleNodeType & {exact: boolean; realOutput: boolean}): number => {
+    // The universal mimic leads when the drag came out of a function input — picking
+    // it adopts that parameter's property wholesale (type, editor, qualifiers).
+    if (t.typeName === PROPERTY_INPUT_TYPE) return context?.targetIsFuncInput ? -1 : 3;
     if (t.typeName.startsWith('Inputs/') && t.realOutput && t.exact) return 0;
     const info = infoByTypeName.get(t.typeName);
     if (info && preferredDomains.size > 0 && preferredDomains.has(funcCategory(info))) return 1;

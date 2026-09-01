@@ -5,6 +5,7 @@ import {FlowEditor, outputOrderRank} from '../rete/flow-editor';
 import {FlowNode, isExecKey, isSetVarNode} from '../rete/scheme';
 import {CompiledStep, compileGraph} from './graph-compiler';
 import {NON_HEADER_DEFAULT_TYPES} from '../utils/input-values';
+import {isChoicesRefString} from '../utils/choice-refs';
 
 export interface ScriptSettings {
   name: string;
@@ -234,8 +235,13 @@ function buildInputLine(step: CompiledStep, node: FlowNode): string | null {
   if (step.properties['nullable'] === true) qualifiers.push('nullable: true');
   if (step.properties['caption']) qualifiers.push(`caption: ${step.properties['caption']}`);
   if (step.properties['choices']) {
-    const items = String(step.properties['choices']).split(',').map((s) => s.trim()).filter(Boolean);
-    qualifiers.push(`choices: [${items.map((s) => `"${s}"`).join(', ')}]`);
+    const rawChoices = String(step.properties['choices']);
+    // A choices REFERENCE (func call / query) can't be spelled in a header line —
+    // its quotes/parens/commas would corrupt the options block; editors resolve it live.
+    if (!isChoicesRefString(rawChoices)) {
+      const items = rawChoices.split(',').map((s) => s.trim()).filter(Boolean);
+      qualifiers.push(`choices: [${items.map((s) => `"${s}"`).join(', ')}]`);
+    }
   }
   if (step.properties['min'] !== undefined && step.properties['min'] !== '')
     qualifiers.push(`min: ${step.properties['min']}`);
@@ -318,6 +324,11 @@ function emitUtilityStep(step: CompiledStep): string | null {
   case 'ToString': {
     const v = step.inputs.get('value') ?? 'undefined';
     return `let ${step.variableName} = (${v}).toString();`;
+  }
+  case 'To Semantic Value': {
+    const v = step.inputs.get('value') ?? 'undefined';
+    const semType = String(step.properties['semType'] ?? 'Molecule');
+    return `let ${step.variableName} = DG.SemanticValue.fromValueType(${v}, ${JSON.stringify(semType)});`;
   }
   case 'String':
     return `let ${step.variableName} = ${JSON.stringify(String(step.properties['value'] ?? ''))};`;

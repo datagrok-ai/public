@@ -26,6 +26,8 @@ import {
 import {TypedSocket} from './sockets';
 import {DgControlComponent, FlowConnectionComponent, FlowNodeComponent, FlowSocketComponent} from './node-component';
 import {InputValueControl} from './nodes/input-value-control';
+import {PROPERTY_INPUT_TYPE, adoptInputProperty, applyPropertyInputShape} from './nodes/input-nodes';
+import {effectiveFuncInputs} from '../utils/func-input-overrides';
 import {getSlotColor, getSlotLetter} from '../types/type-map';
 import {tid, setTid} from '../utils/test-ids';
 import {FlowAnnotation, AnnotationDoc, ANNOTATION_COLORS, ANNOTATION_TITLE_SIZES} from './annotation';
@@ -343,6 +345,33 @@ export class FlowEditor {
     }
   }
 
+  /** A Property Input MIMICS the function input it connects to — adopt (or re-adopt)
+   *  the target parameter's property on every connect, then rebuild the value editor
+   *  for the new shape. Non-function targets are left for manual panel configuration. */
+  private maybeAdoptPropertyInput(connection: FlowScheme['Connection']): void {
+    if (isExecKey(String(connection.sourceOutput)) || isExecKey(String(connection.targetInput))) return;
+    const source = this.editor.getNode(connection.source);
+    if (!source || source.dgTypeName !== PROPERTY_INPUT_TYPE) return;
+    const func = this.editor.getNode(connection.target)?.dgFunc;
+    if (!func) return;
+    let prop: DG.Property | undefined;
+    try {
+      prop = effectiveFuncInputs(func).find((p) => p.name === String(connection.targetInput));
+    } catch {
+      return; // Dart proxy introspection can throw
+    }
+    if (!prop) return;
+    adoptInputProperty(source, prop, func);
+    this.rebuildValueEditor(source.id);
+  }
+
+  /** Rebuild a node's inline value editor after its type/qualifiers changed shape. */
+  rebuildValueEditor(nodeId: string): void {
+    const ctl = this.getNodeById(nodeId)?.controls['value'];
+    if (ctl instanceof InputValueControl) ctl.rebuild();
+    void this.updateNode(nodeId);
+  }
+
   /** Collapsed nodes and hidden rows render socket DOM only for *connected*
    *  sockets — re-render endpoints so a new wire has an element to attach to. */
   private refreshCollapsedEndpoints(conn: FlowScheme['Connection']): void {
@@ -385,8 +414,10 @@ export class FlowEditor {
         this.handleGroupMemberRemoved(context.data.id);
         this.releaseInlinePreview(context.data.id);
       }
-      if (context.type === 'connectioncreated')
+      if (context.type === 'connectioncreated') {
         this.maybeAutoTypeValueOutput(context.data);
+        this.maybeAdoptPropertyInput(context.data);
+      }
       if (context.type === 'connectionremoved')
         this.connectionStatuses.delete(context.data.id);
       if (context.type === 'connectioncreated' || context.type === 'connectionremoved') {
@@ -1272,6 +1303,8 @@ export class FlowEditor {
       sourcePackageName: this.editor.getNode(target.nodeId)?.dgPackageName,
       graphPackageNames: nodes.map((n) => n.dgPackageName).filter(Boolean),
       graphFuncNames: nodes.map((n) => n.dgFunc?.name ?? '').filter(Boolean),
+      // A function-input drag leads with Property Input — it will mimic this parameter.
+      targetIsFuncInput: this.editor.getNode(target.nodeId)?.dgFunc != null,
     });
     if (candidates.length === 0) return;
 
@@ -3070,6 +3103,7 @@ export class FlowEditor {
       fresh.collapsed = snap.collapsed;
       fresh.properties = JSON.parse(JSON.stringify(snap.properties));
       fresh.inputValues = JSON.parse(JSON.stringify(snap.inputValues));
+      applyPropertyInputShape(fresh);
       this.dedupeVariableName(fresh);
       await this.editor.addNode(fresh);
       fresh.pos = {x: snap.pos.x + offset, y: snap.pos.y + offset};

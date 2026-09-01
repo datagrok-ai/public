@@ -7,6 +7,8 @@ import * as DG from 'datagrok-api/dg';
 import dayjs from 'dayjs';
 import {FlowNode, hostsInlineSketcher, hostsHelmEditor, editorBoxSize,
   EDITOR_BOX_SIZE_PROP, INLINE_SKETCHER_SIZE} from '../rete/scheme';
+import {isChoicesRefString} from './choice-refs';
+import {loadChoicesRefItems} from '../panel/choice-input-processor';
 import {setTid} from './test-ids';
 
 /** Types whose configured value must NOT leak into the `//input:` header default —
@@ -107,8 +109,15 @@ export function inputValueProperty(node: FlowNode): DG.Property | null {
   const type = SCALAR_PROP_TYPES[node.dgOutputType ?? ''];
   if (!type) return null;
   const options: Record<string, unknown> = {name: 'Value', type};
-  const choices = String(node.properties['choices'] ?? '').split(',').map((x) => x.trim()).filter(Boolean);
-  if (choices.length > 0) options['choices'] = choices;
+  const choicesRaw = String(node.properties['choices'] ?? '').trim();
+  if (isChoicesRefString(choicesRaw)) {
+    // A reference (func call / query) — the single item IS the reference string;
+    // the editor builder swaps in the resolved list asynchronously.
+    options['choices'] = [choicesRaw];
+  } else {
+    const choices = choicesRaw.split(',').map((x) => x.trim()).filter(Boolean);
+    if (choices.length > 0) options['choices'] = choices;
+  }
   const min = parseFloat(String(node.properties['min'] ?? ''));
   const max = parseFloat(String(node.properties['max'] ?? ''));
   if (!isNaN(min)) options['min'] = min;
@@ -199,6 +208,30 @@ export function buildInputValueEditor(node: FlowNode, onUserChange: () => void,
           node.properties['defaultValue'] = v as string | number | boolean ?? '';
       }),
     });
+    // Choices stored as a REFERENCE resolve asynchronously into the real item list
+    // (the editor starts as a one-item combo holding the reference string). Under
+    // the `syncing` guard — swapping items must never read as a user edit.
+    const choicesRaw = String(node.properties['choices'] ?? '').trim();
+    if (isChoicesRefString(choicesRaw) && input instanceof DG.ChoiceInput) {
+      const choiceInput = input as DG.ChoiceInput<string>;
+      ui.setUpdateIndicator(choiceInput.input, true, 'loading');
+      void loadChoicesRefItems(choicesRaw, String(node.properties['choicesConnection'] ?? ''))
+        .then((items) => {
+          if (!items || items.length === 0) return;
+          syncing = true;
+          try {
+            choiceInput.items = items;
+            const want = String(node.properties['defaultValue'] ?? '');
+            if (want !== '' && items.includes(want)) choiceInput.stringValue = want;
+          } catch {
+            // editor torn down meanwhile
+          } finally {
+            syncing = false;
+          }
+        })
+        .catch((e) => console.error('Flow: failed to load choices for the value editor', e))
+        .finally(() => ui.setUpdateIndicator(choiceInput.input, false));
+    }
     const applyValue = (): void => {
       const v = node.properties['defaultValue'];
       if (type === 'bool') input.value = v === true || String(v) === 'true';
@@ -385,7 +418,8 @@ function buildInlineSketcherEditor(node: FlowNode, onUserChange: () => void): In
     sketcher.onChanged.subscribe(() => {
       if (!touched) return;
       const smiles = sketcher!.getSmiles();
-      node.properties['defaultValue'] = smiles;
+      const molblock = sketcher!.getMolFile();
+      node.properties['defaultValue'] = molblock;
       markMissing();
       const now = JSON.stringify(smiles);
       if (now === last) return;
