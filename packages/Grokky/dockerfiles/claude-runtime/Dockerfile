@@ -1,37 +1,43 @@
-# node 20 is EOL since 2026-04; 22-slim is still bookworm and npm@latest (12+) needs node >=22.22
-FROM node:22-slim
+# node 20 is EOL since 2026-04; npm@latest (12+) needs node >=22.22
+FROM node:22-trixie-slim
 
-# apt-get upgrade first: the node-slim base ships whatever gnutls28/dpkg were
-# current at ITS build time, not ours (gnutls28 3.7.9-2+deb12u7 fixes CRITICAL CVE-2026-42010).
-# pip/setuptools: install fixed versions into /usr/local, then purge the apt copies
-# so the vulnerable 23.0.1/66.1.1 dist-info no longer ships (python3-venv still
-# seeds venvs from the *-whl packages).
 RUN apt-get update && apt-get -y upgrade && apt-get install -y --no-install-recommends \
-    git ca-certificates python3 python3-venv python3-pip make g++ util-linux && \
-    python3 -m pip install --no-cache-dir --break-system-packages --upgrade "pip>=26.1.2" "setuptools>=78.1.1" && \
-    apt-get purge -y python3-pip python3-setuptools python3-wheel && \
+    git ca-certificates python3 python3-pip util-linux && \
+    python3 -m pip install --no-cache-dir --break-system-packages --ignore-installed \
+      --upgrade "pip>=26.1.2" "setuptools>=78.1.1" virtualenv && \
+    apt-get purge -y python3-pip python3-setuptools python3-wheel \
+      python3-pip-whl python3-setuptools-whl && \
     apt-get -y autoremove && \
-    rm -rf /var/lib/apt/lists/*
+    rm -rf /var/lib/apt/lists/* && \
+    for p in pip setuptools; do \
+      ls -1 /usr/local/lib/python3*/dist-packages/virtualenv/seed/wheels/embed/$p-*.whl \
+        | sort -V | head -n -1 | xargs -r rm -f; \
+    done
 
 WORKDIR /app
 
 ARG HOME_DIR=/home/grok
-# jar-delete: the checked-in JDBC driver jars (connectors/grok_connect/lib) carry
-# Java CVEs and there is no JRE in this image to use them.
 RUN groupadd -g 2001 grok && \
     useradd -m -d ${HOME_DIR} -g grok -u 1001 grok && \
     groupadd -g 2002 broker && \
     useradd -m -d /home/broker -g broker -u 1002 broker && \
     chmod 0700 /home/broker && \
     git clone --depth 1 https://github.com/datagrok-ai/public.git /workspace && \
-    find /workspace -name '*.jar' -delete && \
+    find /workspace \( -name '*.jar' -o -name 'Cargo.lock' \) -delete && \
     mkdir -p /users && \
     chown -R grok:grok ${HOME_DIR} /workspace /users
 
-# Refresh npm first: the node-image npm bundles tar/glob/sigstore/cross-spawn that
-# get CVE-flagged; npm 12+ ships a clean tree. npm is a runtime dependency here
-# (the agent shells out to it in the workspace), so it cannot be removed like elsewhere.
+RUN dpkg --purge --force-remove-essential --force-depends \
+      perl perl-base perl-modules-5.40 libperl5.40
+
 RUN npm install -g npm@latest && \
+    npm install --prefix /tmp/fix --no-save \
+      ip-address@10.3.1 undici@6.28.0 brace-expansion@5.0.9 tar@7.5.21 && \
+    for p in ip-address undici brace-expansion tar; do \
+      rm -rf "$(npm root -g)/npm/node_modules/$p"; \
+      mv "/tmp/fix/node_modules/$p" "$(npm root -g)/npm/node_modules/$p"; \
+    done && \
+    rm -rf /tmp/fix && \
     npm install -g @anthropic-ai/claude-code@2.1.231 && \
     node "$(npm root -g)/@anthropic-ai/claude-code/install.cjs" && \
     claude --version && \

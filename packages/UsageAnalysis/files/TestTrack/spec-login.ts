@@ -57,8 +57,21 @@ async function injectToken(page: Page, token: string) {
   await page.locator('[name="Browse"]').waitFor({timeout: 60_000});
 }
 
+// The session behind DATAGROK_AUTH_TOKEN is shared by every spec, and the relogin scenarios
+// POST /users/logout, which invalidates it server-side for everyone who logs in afterwards.
+// Mint a throwaway session per context so one spec's logout cannot lock the rest out.
+async function mintToken(): Promise<string | undefined> {
+  const apiUrl = process.env.DATAGROK_API_URL;
+  const devKey = process.env.DATAGROK_DEV_KEY;
+  if (!apiUrl || !devKey)
+    return undefined;
+  const response = await fetch(`${apiUrl}/users/login/dev/${devKey}`, {method: 'POST'});
+  const json = await response.json().catch(() => null);
+  return json?.token ?? undefined;
+}
+
 export async function loginToDatagrok(page: Page) {
-  const token = process.env.DATAGROK_AUTH_TOKEN;
+  const token = (await mintToken()) ?? process.env.DATAGROK_AUTH_TOKEN;
   if (!token || token.length === 0)
     throw new Error('DATAGROK_AUTH_TOKEN is not set. Run via `grok test`, which derives the token from ~/.grok/config.yaml.');
   await injectToken(page, token);

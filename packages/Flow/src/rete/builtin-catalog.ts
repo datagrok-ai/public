@@ -18,6 +18,8 @@ export const BUILTIN_SECTIONS: BuiltinSection[] = [
     title: 'Inputs',
     tip: 'Script input parameters (become //input: lines)',
     nodes: [
+      {name: 'Property Input', type: 'Inputs/Property Input',
+        desc: 'Mimics the function input it connects to — type, editor, and qualifiers come from the target parameter'},
       {name: 'Table Input', type: 'Inputs/Table Input', desc: 'Dataframe input parameter'},
       {name: 'Column Input', type: 'Inputs/Column Input', desc: 'Single column from a table'},
       {name: 'Column List Input', type: 'Inputs/Column List Input', desc: 'Multiple columns from a table'},
@@ -66,6 +68,8 @@ export const BUILTIN_SECTIONS: BuiltinSection[] = [
       {name: 'Info', type: 'Utilities/Info', desc: 'Shows an info balloon via grok.shell.info()'},
       {name: 'Warning', type: 'Utilities/Warning', desc: 'Shows a warning balloon via grok.shell.warning()'},
       {name: 'ToString', type: 'Utilities/ToString', desc: 'Converts any value to a string'},
+      {name: 'To Semantic Value', type: 'Utilities/To Semantic Value',
+        desc: 'Wraps a value into a semantic value (DG.SemanticValue) of the given semantic type, e.g. Molecule'},
       {name: 'FromJSON', type: 'Utilities/FromJSON', desc: 'Parses a JSON string into an object'},
       {name: 'ToJSON', type: 'Utilities/ToJSON', desc: 'Serializes a value to a JSON string'},
     ],

@@ -1,6 +1,7 @@
 import { test, expect } from '../helpers';
 import {
   openDemoCsv, openTrainModelView, resetShell, setPredictColumn, trainEdaModelViaApi,
+  XGBOOST_DEFAULTS,
 } from '../helpers';
 
 // Test Track scenario: EDA/MLMethods/xgboost2.md
@@ -24,7 +25,13 @@ test.describe.serial('EDA / MLMethods / XGBoost (regression)', () => {
     await openTrainModelView(page);
     await setPredictColumn(page, 'price');
 
-    const trained = await trainEdaModelViaApi(page, 'eda:trainXGBooster', 'price', { numericOnly: true });
+    // `functions.call` does not apply the decorator's `initialValue`s, and since GROK-20366
+    // XGBooster.fit validates them, so the hyperparameters the Train dialog would have
+    // supplied are passed explicitly. Values are the decorator defaults in package.ts.
+    const trained = await trainEdaModelViaApi(page, 'eda:trainXGBooster', 'price', {
+      numericOnly: true,
+      extraParams: XGBOOST_DEFAULTS,
+    });
     expect(trained.ok, trained.error ?? 'xgboost training returned null').toBe(true);
   });
 });

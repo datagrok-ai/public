@@ -1944,6 +1944,106 @@
   border-bottom: 1px solid #ffb300 !important;
 }
 
+/* ===== Sketcher Input: compact preview that expands into an in-node sketcher ===== */
+
+/* The expanded sketcher (and the helm box) must not be clipped by the 280px cap. */
+.ff-node:has(.ff-sketcher-expanded),
+.ff-node:has(.ff-helm-box) {
+  max-width: none;
+}
+
+.ff-sketcher-compact {
+  margin-top: 4px;
+  border: 1px solid var(--grey-2, #dbdcdf);
+  border-radius: 4px;
+  background: #ffffff;
+  overflow: hidden;
+  cursor: pointer;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ff-sketcher-compact:hover {
+  border-color: var(--blue-1, #2083d5);
+}
+
+.ff-sketcher-empty {
+  color: var(--blue-1, #2083d5);
+  font-size: 12px;
+  padding: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.ff-sketcher-preview {
+  display: block;
+  max-width: 100%;
+}
+
+/* Expanded: a fixed 500×500 box (INLINE_SKETCHER_SIZE in rete/scheme.ts).
+ * The sketcher only exists at native zoom — expanding snaps the canvas to
+ * zoom 1 and pans it into view; a user zoom folds it back to the preview. */
+.ff-sketcher-full {
+  display: flex;
+  flex-direction: column;
+  width: 500px;
+  height: 500px;
+  margin-top: 4px;
+  border: 1px solid var(--grey-2, #dbdcdf);
+  border-radius: 4px;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.ff-sketcher-header {
+  flex: 0 0 auto;
+  justify-content: flex-end;
+  padding: 2px 4px;
+  border-bottom: 1px solid var(--grey-1, #f2f2f5);
+}
+
+.ff-sketcher-full .grok-sketcher,
+.ff-sketcher-full > div:last-child {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.ff-inline-sketcher.ff-value-missing .ff-sketcher-compact {
+  border-color: #ffb300;
+}
+
+/* ===== Helm Input: the HELM editor in a resizable in-card box ===== */
+
+/* Default dimensions mirror INLINE_HELM_WIDTH/HEIGHT in rete/scheme.ts; the
+ * native resize handle writes inline width/height, persisted to editorSize. */
+.ff-helm-box {
+  position: relative;
+  margin-top: 4px;
+  border: 1px solid var(--grey-2, #dbdcdf);
+  border-radius: 4px;
+  background: #ffffff;
+  overflow: hidden;
+  resize: both;
+  min-width: 150px;
+  min-height: 120px;
+  max-width: 900px;
+  max-height: 900px;
+}
+
+/* Stretch the DG input chrome to the box; the editor host itself is stretched
+ * by JS (inline !important — it carries fixed inline defaults of its own). */
+.ff-helm-box > div,
+.ff-helm-box .ui-input-root,
+.ff-helm-box .ui-input-helm {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+}
+
 /* Connection paths */
 .ff-connection {
   z-index: -1;
@@ -3179,8 +3279,8 @@ div.ui-box>div.ui-div.funcflow-canvas-container {
 }
 
 .ff-node-input[data-node-type-name="Inputs/Helm Input"] .ui-input-editor.ui-div {
-  width: 75px !important;
-  height: 75px !important;
+  width: 100% !important;
+  height: 90% !important;
   min-width: 75px !important;
   min-height: 75px !important;
 }

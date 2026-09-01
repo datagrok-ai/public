@@ -36,8 +36,8 @@ export class Palette extends Control {
     super();
     this.root.classList.add('u2-palette');
     this.root.dataset.u2 = 'palette';
-    this.filter = this.run(() => new TextInput({search: true, inline: true, placeholder: 'Filter'}));
-    const accordion = this.run(() => new Accordion());
+    this.filter = this.runInScope(() => new TextInput({search: true, inline: true, placeholder: 'Filter'}));
+    const accordion = this.runInScope(() => new Accordion());
     accordion.root.classList.add('u2-palette-list');
     this.root.append(this.filter.root, accordion.root);
 

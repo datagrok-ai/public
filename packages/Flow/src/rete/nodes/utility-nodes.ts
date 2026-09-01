@@ -90,6 +90,21 @@ export class WarningNode extends FlowNode {
   }
 }
 
+/** Wraps any value into a `DG.SemanticValue` so semType-aware consumers (widgets,
+ *  panels, cell renderers) recognize it; the semantic type is a plain string property. */
+export class ToSemanticValueNode extends FlowNode {
+  constructor() {
+    super('To Semantic Value');
+    this.dgNodeType = 'utility';
+    this.properties = {semType: 'Molecule'};
+    (this as unknown as {color: string}).color = COLOR_UTILITY;
+    this.addInput('value', new ClassicPreset.Input(getSocket('dynamic'), 'value'));
+    this.addOutput('semanticValue', new ClassicPreset.Output(getSocket('semantic_value'), 'semantic value'));
+    this.requiredInputs = ['value'];
+    this.requiredProps = ['semType'];
+  }
+}
+
 export class ToStringNode extends FlowNode {
   constructor() {
     super('ToString');

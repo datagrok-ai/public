@@ -2,8 +2,6 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
-import wu from 'wu';
-
 type getSettingsFunc<Type extends SummarySettingsBase> = (gs: DG.GridColumn) => Type;
 
 
@@ -54,10 +52,7 @@ export function getSettingsBase<T extends SummarySettingsBase>(
   const settings = isSummarySettingsBase(gc.settings) ?
     (gc.settings as unknown as T) :
     (gc.settings[sparklineType] ??= {
-      columnNames: names(
-        wu(gc.grid.dataFrame.columns.numerical)
-          .filter((c: DG.Column) => c.type !== DG.TYPE.DATE_TIME)
-      ).slice(0, 10),
+      columnNames: names(gc.grid.dataFrame.columns.numericalNoDateTime).slice(0, 10),
     } as unknown as T);
 
   if (!settings.minValues || !settings.maxValues) {
@@ -286,11 +281,11 @@ export function createBaseInputs(gridColumn: DG.GridColumn, settings: SummarySet
   }
 
   function createColumnsInput(): DG.InputBase {
-    const columnNames = settings?.columnNames ?? names(df.columns.numerical);
+    const columnNames = settings?.columnNames ?? names(df.columns.numericalNoDateTime);
     const options: any = {
       value: df.columns.byNames(columnNames),
       table: df,
-      available: isSmartForm ? names(df.columns) : names(df.columns.numerical),
+      available: isSmartForm ? names(df.columns) : names(df.columns.numericalNoDateTime),
       onValueChanged: (value: DG.Column[]) => {
         settings.columnNames = names(value);
         invalidate();

@@ -127,7 +127,7 @@ export class Component implements BindSource {
     return proto === Object.prototype || proto === null;
   }
 
-  run<T>(fn: () => T): T {
+  runInScope<T>(fn: () => T): T {
     return Scope.runWith(this.scope, fn);
   }
 

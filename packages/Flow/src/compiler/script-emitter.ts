@@ -5,6 +5,7 @@ import {FlowEditor, outputOrderRank} from '../rete/flow-editor';
 import {FlowNode, isExecKey, isSetVarNode} from '../rete/scheme';
 import {CompiledStep, compileGraph} from './graph-compiler';
 import {NON_HEADER_DEFAULT_TYPES} from '../utils/input-values';
+import {isChoicesRefString} from '../utils/choice-refs';
 
 export interface ScriptSettings {
   name: string;
@@ -225,7 +226,7 @@ function buildInputLine(step: CompiledStep, node: FlowNode): string | null {
   // default literal — those feed the prepared call at run time instead.
   const defaultVal = step.properties['defaultValue'];
   if (defaultVal !== undefined && defaultVal !== '' && defaultVal !== null &&
-      !NON_HEADER_DEFAULT_TYPES.has(outputType))
+      !NON_HEADER_DEFAULT_TYPES.has(outputType) && headerSafeDefault(defaultVal))
     line = `//input: ${outputType} ${paramName} = ${formatHeaderDefault(defaultVal, outputType)}`;
 
   if (step.properties['typeFilter']) qualifiers.push(`type: ${step.properties['typeFilter']}`);
@@ -234,8 +235,13 @@ function buildInputLine(step: CompiledStep, node: FlowNode): string | null {
   if (step.properties['nullable'] === true) qualifiers.push('nullable: true');
   if (step.properties['caption']) qualifiers.push(`caption: ${step.properties['caption']}`);
   if (step.properties['choices']) {
-    const items = String(step.properties['choices']).split(',').map((s) => s.trim()).filter(Boolean);
-    qualifiers.push(`choices: [${items.map((s) => `"${s}"`).join(', ')}]`);
+    const rawChoices = String(step.properties['choices']);
+    // A choices REFERENCE (func call / query) can't be spelled in a header line —
+    // its quotes/parens/commas would corrupt the options block; editors resolve it live.
+    if (!isChoicesRefString(rawChoices)) {
+      const items = rawChoices.split(',').map((s) => s.trim()).filter(Boolean);
+      qualifiers.push(`choices: [${items.map((s) => `"${s}"`).join(', ')}]`);
+    }
   }
   if (step.properties['min'] !== undefined && step.properties['min'] !== '')
     qualifiers.push(`min: ${step.properties['min']}`);
@@ -318,6 +324,11 @@ function emitUtilityStep(step: CompiledStep): string | null {
   case 'ToString': {
     const v = step.inputs.get('value') ?? 'undefined';
     return `let ${step.variableName} = (${v}).toString();`;
+  }
+  case 'To Semantic Value': {
+    const v = step.inputs.get('value') ?? 'undefined';
+    const semType = String(step.properties['semType'] ?? 'Molecule');
+    return `let ${step.variableName} = DG.SemanticValue.fromValueType(${v}, ${JSON.stringify(semType)});`;
   }
   case 'String':
     return `let ${step.variableName} = ${JSON.stringify(String(step.properties['value'] ?? ''))};`;
@@ -741,6 +752,18 @@ function emitBreakpointCode(step: CompiledStep): string[] {
     '});',
     `__ff_emit('node-complete', '${step.nodeId}');`,
   ];
+}
+
+/** Whether a value can ride the `//input:` header as `= <default>`. The platform's
+ *  ScriptParser (`_validateParamLine`) treats the span from the line's FIRST `{` to its
+ *  LAST `}` as the options block — with no string-awareness or escaping — so a
+ *  brace-carrying default (HELM: `PEPTIDE1{A.C}$$$$`) corrupts the whole line, eating
+ *  the `{semType: …}` qualifiers and failing validation. Newlines (molfiles) have no
+ *  unescape on the parse side either. Unsafe values simply stay out of the header —
+ *  runs feed them through the configured-value channel regardless. */
+function headerSafeDefault(value: unknown): boolean {
+  const s = String(value);
+  return !s.includes('{') && !s.includes('}') && !s.includes('\n') && !s.includes('\r');
 }
 
 function formatHeaderDefault(value: unknown, type: string): string {

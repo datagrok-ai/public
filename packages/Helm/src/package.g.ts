@@ -25,6 +25,15 @@ export function editMoleculeCell(cell: any) : void {
   PackageFunctions.editMoleculeCell(cell);
 }
 
+//name: HELM Renderer
+//tags: widgets, panel
+//input: column col { semType: Macromolecule; units: helm }
+//output: widget result
+//meta.role: widgets,panel
+export async function helmPanel(col: DG.Column) : Promise<any> {
+  return await PackageFunctions.helmPanel(col);
+}
+
 //name: Edit Helm...
 //description: Adds editor
 //input: semantic_value mol { semType: Macromolecule }

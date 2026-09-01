@@ -499,8 +499,10 @@ class Builder {
     const svg = this.zoom_container.svg;
 
     // remove the old map side effects
-    if (this.map)
+    if (this.map) {
       this.map.key_manager.toggle(false);
+      this.map.key_manager.setScope(null); // drop its click-to-focus listener
+    }
 
 
     if (mapData !== null) {
@@ -573,6 +575,10 @@ class Builder {
     );
 
     // Set up key manager
+    // Escher may be embedded in a host application (as a view, a tab, ...), so the shortcuts are
+    // scoped to the builder container: they only fire while the map is focused or targeted, and
+    // never while the user types elsewhere on the page.
+    this.map.key_manager.setScope(this.selection.node() as HTMLElement);
     this.map.key_manager.assignedKeys = this.getKeys();
     // Tell the key manager about the reaction input and search bar
     this.map.key_manager.inputList = [

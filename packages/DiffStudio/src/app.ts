@@ -39,6 +39,7 @@ import {unusedFileName, sanitizeModelFileName, getTableFromLastRows, getInputsTa
   prefetchFolderListing, getCachedFileInfo, invalidateFolderListing,
   getCachedFileInfoSync,
   loadModelContent, setCachedModelContent, readAndCacheModelContent, prefetchMyModelFilesContent,
+  findParamsIdx, parseStartingInputs,
   ExternalLibraryEntry} from './utils';
 
 import {ModelError, showModelErrorHint, getIsNotDefined, getUnexpected, getNullOutput} from './error-utils';
@@ -332,25 +333,13 @@ export class DiffStudio {
         await this.setState(state);
       } else { // Process starting URL
         const modelIdx = this.startingPath.lastIndexOf('/') + 1;
-        const paramsIdx = this.startingPath.indexOf(PATH.PARAM);
+        const paramsIdx = findParamsIdx(this.startingPath);
 
         if (paramsIdx > -1) { // There are parameters in URL
-          const model = this.startingPath.slice(modelIdx, (paramsIdx > -1) ? paramsIdx : undefined);
+          const model = this.startingPath.slice(modelIdx, paramsIdx);
 
           if (MODELS.includes(model)) { // Check & run built-in model
-            this.startingInputs = new Map<string, number>();
-
-            if (modelIdx < paramsIdx) { // Check correctness of URL & extract inputs
-              try {
-                this.startingPath.slice(paramsIdx + PATH.PARAM.length).split(PATH.AND).forEach((equality) => {
-                  const eqIdx = equality.indexOf(PATH.EQ);
-                  this.startingInputs?.set(equality.slice(0, eqIdx).toLowerCase(), Number(equality.slice(eqIdx + 1)));
-                });
-              } catch (error) {
-                this.startingInputs = null;
-              }
-            }
-
+            this.startingInputs = parseStartingInputs(this.startingPath);
             await this.setState(model as EDITOR_STATE, false);
           } else // Unknown model, run last called model
             await this.runLastCalledModel();
@@ -417,18 +406,8 @@ export class DiffStudio {
     this.updateRibbonWgts();
 
     // Process URL & extract input values
-    const paramsIdx = path.indexOf(PATH.PARAM);
-    if (paramsIdx > -1) {
-      try {
-        this.startingInputs = new Map<string, number>();
-        path.slice(paramsIdx + PATH.PARAM.length).split(PATH.AND).forEach((equality) => {
-          const eqIdx = equality.indexOf(PATH.EQ);
-          this.startingInputs!.set(equality.slice(0, eqIdx).toLowerCase(), Number(equality.slice(eqIdx + 1)));
-        });
-      } catch (error) {
-        this.startingInputs = null;
-      }
-    }
+    if (findParamsIdx(path) > -1)
+      this.startingInputs = parseStartingInputs(path);
 
     this.toRunWhenFormCreated = true;
     this.schedulePreviewDock();
@@ -536,18 +515,8 @@ export class DiffStudio {
 
     this.updateRibbonWgts();
 
-    const paramsIdx = path.indexOf(PATH.PARAM);
-    if (paramsIdx > -1) {
-      try {
-        this.startingInputs = new Map<string, number>();
-        path.slice(paramsIdx + PATH.PARAM.length).split(PATH.AND).forEach((equality) => {
-          const eqIdx = equality.indexOf(PATH.EQ);
-          this.startingInputs!.set(equality.slice(0, eqIdx).toLowerCase(), Number(equality.slice(eqIdx + 1)));
-        });
-      } catch (error) {
-        this.startingInputs = null;
-      }
-    }
+    if (findParamsIdx(path) > -1)
+      this.startingInputs = parseStartingInputs(path);
 
     this.toRunWhenFormCreated = true;
     await this.runSolving();

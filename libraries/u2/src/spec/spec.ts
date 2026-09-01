@@ -157,7 +157,7 @@ export class SpecInstance extends Control {
     this.root.classList.add('u2-spec');
     // two phases (Q1): the tray is built first, so a visual bind resolves against it, and started
     // last, so a source param can bind to an input declared anywhere in the form
-    this.run(() => {
+    this.runInScope(() => {
       for (const node of spec.components ?? [])
         this._mountComponent(node);
       this.root.append(SpecInstance._element(this._render(spec.root)));

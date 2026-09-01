@@ -1,5 +1,16 @@
 # Helm changelog
 
+## 3.0.6
+
+* HelmInput: Fixed the editor dialog's OK updating only the drawing — the input's value now reflects the sketched HELM and `onChanged` fires, so consumers (e.g. Flow's Helm Input node) read the edited value
+
+## 3.0.5 (2026-08-31)
+
+### Features
+
+* Configurable line-break length: the `MonomersPerRow` package property (default 20) sets how many monomers are drawn per row before a HELM structure wraps, counting nucleotides for RNA/DNA
+* HELM Renderer column panel: an editor for the same width that applies to the current session without changing the package default
+
 ## 3.0.3
 
 * Moved the Helm Playwright E2E suite into the package (playwright/); helpers from @datagrok-libraries/test/src/playwright

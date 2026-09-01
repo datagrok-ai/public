@@ -43,7 +43,7 @@ export class ProgressBar extends Control {
 
     const description = options?.description;
     if (description !== undefined)
-      this.root.append(this.run(() => span(description, 'u2-progress-description')));
+      this.root.append(this.runInScope(() => span(description, 'u2-progress-description')));
 
     this.root.classList.toggle('u2-progress-indeterminate', this._indeterminate);
     this.effect(() => this._apply(this.value.value));

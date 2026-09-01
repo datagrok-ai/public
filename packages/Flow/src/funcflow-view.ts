@@ -1405,11 +1405,15 @@ export class FuncFlowView extends DG.ViewBase {
     const opts: AddEventListenerOptions = {capture: true};
     const handler = (): void => {
       // Only when THIS view is the current one — never pin someone else's view.
-      const cur = grok.shell.v;
-      if (!this.dart || !cur || cur.dart !== this.dart) return;
-      try {
-        (grok.shell.v as DG.View).pin?.();
-      } catch {/* not pinnable in this host — ignore */}
+      setTimeout(() => {
+        const cur = grok.shell.v;
+        if (!this.dart || !cur || cur.dart !== this.dart) return;
+        try {
+          grok.shell.v.pin?.();
+        } catch (e) {
+          console.error(e);
+        }
+      }, 100);
       this.teardownAutoPin();
     };
     this.autoPinHandler = handler;

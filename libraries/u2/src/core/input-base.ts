@@ -86,7 +86,7 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
     this._optionsRail = div([], 'u2-input-options');
     this._optionsRail.dataset.u2Part = 'options';
     this._error.dataset.u2Part = 'error';
-    this._editor = this.run(() => this.createEditor());
+    this._editor = this.runInScope(() => this.createEditor());
     this._editor.classList.add('u2-input-editor');
     this._editor.dataset.u2Part = 'editor';
     // prepended: a subclass that filled the rail from createEditor already attached it

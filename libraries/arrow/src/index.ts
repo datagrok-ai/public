@@ -104,62 +104,62 @@ export function fromFeather(bytes: Uint8Array): DG.DataFrame | null {
         continue;
       } else
         values = unpackDictionaryColumn(vector);
-    } else {
+    } else
       values = vector.toArray();
-    }
+
 
     switch (type.typeId) {
-    case arrow.Type.Int8:
-    case arrow.Type.Int16:
-    case arrow.Type.Int32:
-    case arrow.Type.Int:
-      if (ArrayBuffer.isView(values)) {
-        if (type.bitWidth < 64)
-          columns.push(DG.Column.fromInt32Array(name, values as Int32Array));
+      case arrow.Type.Int8:
+      case arrow.Type.Int16:
+      case arrow.Type.Int32:
+      case arrow.Type.Int:
+        if (ArrayBuffer.isView(values)) {
+          if (type.bitWidth < 64)
+            columns.push(DG.Column.fromInt32Array(name, withNulls(values as Int32Array, vector, DG.INT_NULL)));
+          else
+            columns.push(convertInt64Column(values as BigInt64Array, vector, name));
+        } else
+          columns.push(DG.Column.fromList(DG.COLUMN_TYPE.INT as DG.ColumnType, name, values));
+        break;
+      case arrow.Type.Uint32:
+      case arrow.Type.Int64:
+      case arrow.Type.Uint64:
+        columns.push(convertInt64Column(values, vector, name));
+        break;
+      case arrow.Type.Float:
+      case arrow.Type.Decimal:
+        if (ArrayBuffer.isView(values)) {
+          if (type.bitWidth < 64)
+            columns.push(DG.Column.fromFloat32Array(name, withNulls(values as Float32Array, vector, DG.FLOAT_NULL)));
+          else
+            columns.push(DG.Column.fromFloat64Array(name, withNulls(values as Float64Array, vector, DG.FLOAT_NULL)));
+        } else
+          columns.push(DG.Column.fromList(DG.COLUMN_TYPE.FLOAT as DG.ColumnType, name, values));
+        break;
+      case arrow.Type.Utf8:
+      case arrow.Type.Interval:
+        columns.push(DG.Column.fromList(DG.COLUMN_TYPE.STRING as DG.ColumnType, name, values));
+        break;
+      case arrow.Type.Bool:
+        if (ArrayBuffer.isView(values))
+          columns.push(DG.Column.fromBitSet(name, DG.BitSet.fromBytes(values.buffer as ArrayBuffer, table.numRows)));
         else
-          columns.push(convertInt64Column(values as BigInt64Array, name));
-      } else
-        columns.push(DG.Column.fromList(DG.COLUMN_TYPE.INT as DG.ColumnType, name, values));
-      break;
-    case arrow.Type.Uint32:
-    case arrow.Type.Int64:
-    case arrow.Type.Uint64:
-      columns.push(convertInt64Column(values, name));
-      break;
-    case arrow.Type.Float:
-    case arrow.Type.Decimal:
-      if (ArrayBuffer.isView(values)) {
-        if (type.bitWidth < 64)
-          columns.push(DG.Column.fromFloat32Array(name, values as Float32Array));
+          columns.push(DG.Column.fromList(DG.COLUMN_TYPE.BOOL as DG.ColumnType, name, values));
+        break;
+      case arrow.Type.Date:
+      case arrow.Type.Timestamp:
+        columns.push(DG.Column.fromList(DG.COLUMN_TYPE.DATE_TIME as DG.ColumnType, name,
+          values instanceof BigInt64Array ? datesFromTimestamps(values, vector, type.unit) : values));
+        break;
+      case arrow.Type.Time:
+        if (type?.bitWidth < 64)
+          columns.push(DG.Column.fromInt32Array(name, new Int32Array(values.buffer)));
         else
-          columns.push(DG.Column.fromFloat64Array(name, values as Float64Array));
-      } else
-        columns.push(DG.Column.fromList(DG.COLUMN_TYPE.FLOAT as DG.ColumnType, name, values));
-      break;
-    case arrow.Type.Utf8:
-    case arrow.Type.Interval:
-      columns.push(DG.Column.fromList(DG.COLUMN_TYPE.STRING as DG.ColumnType, name, values));
-      break;
-    case arrow.Type.Bool:
-      if (ArrayBuffer.isView(values))
-        columns.push(DG.Column.fromBitSet(name, DG.BitSet.fromBytes(values.buffer as ArrayBuffer, table.numRows)));
-      else
-        columns.push(DG.Column.fromList(DG.COLUMN_TYPE.BOOL as DG.ColumnType, name, values));
-      break;
-    case arrow.Type.Date:
-    case arrow.Type.Timestamp:
-      columns.push(DG.Column.fromList(DG.COLUMN_TYPE.DATE_TIME as DG.ColumnType, name, values instanceof BigInt64Array ?
-        Array.from(values, (b) => timestampBigIntToDate(b, type.unit)) : values));
-      break;
-    case arrow.Type.Time:
-      if (type?.bitWidth < 64)
-        columns.push(DG.Column.fromInt32Array(name, new Int32Array(values.buffer)));
-      else
-        columns.push(convertInt64Column(values, name));
-      break;
-    default:
-      columns.push(DG.Column.fromStrings(name, values));
-      break;
+          columns.push(convertInt64Column(values, vector, name));
+        break;
+      default:
+        columns.push(DG.Column.fromStrings(name, values));
+        break;
     }
   }
   return DG.DataFrame.fromColumns(columns);
@@ -200,14 +200,55 @@ function stringColumnFromDictionary(name: string, vector: arrow.Vector): DG.Colu
   return DG.Column.fromIndexes(name, data, indexes);
 }
 
-function convertInt64Column(array: BigInt64Array | BigUint64Array, name: string): DG.Column {
-  for (const i of array) {
-    if (i > BigInt(2 ** 31 - 1))
-      return DG.Column.fromBigInt64Array(name, array);
+function forEachNull(vector: arrow.Vector, action: (row: number) => void): void {
+  if (vector.nullCount === 0)
+    return;
+  let row = 0;
+  for (const chunk of vector.data) {
+    const bitmap = chunk.nullBitmap;
+    if (!bitmap || bitmap.length === 0) {
+      row += chunk.length;
+      continue;
+    }
+    for (let i = 0; i < chunk.length; i++, row++) {
+      const bit = chunk.offset + i;
+      if (!(bitmap[bit >> 3] & (1 << (bit & 7))))
+        action(row);
+    }
   }
-  const result: Int32Array = new Int32Array(new ArrayBuffer(array.length * 4));
+}
+
+function withNulls<T extends Int32Array | Float32Array | Float64Array>(values: T, vector: arrow.Vector,
+  nullValue: number): T {
+  if (vector.nullCount === 0)
+    return values;
+  const result = values.slice() as T;
+  forEachNull(vector, (row) => result[row] = nullValue);
+  return result;
+}
+
+function datesFromTimestamps(values: BigInt64Array, vector: arrow.Vector, unit: number): (Date | null)[] {
+  const dates: (Date | null)[] = Array.from(values, (v) => timestampBigIntToDate(v, unit));
+  forEachNull(vector, (row) => dates[row] = null);
+  return dates;
+}
+
+function convertInt64Column(array: BigInt64Array | BigUint64Array, vector: arrow.Vector, name: string): DG.Column {
+  const hasNulls = vector.nullCount > 0;
+  const max = BigInt(2 ** 31 - 1);
+  for (let i = 0; i < array.length; i++) {
+    if (array[i] > max && (!hasNulls || vector.isValid(i))) {
+      if (!hasNulls)
+        return DG.Column.fromBigInt64Array(name, array);
+      const values: any[] = Array.from(array, (v) => DG.toDart(v));
+      forEachNull(vector, (row) => values[row] = null);
+      return DG.Column.fromList(DG.COLUMN_TYPE.BIG_INT as DG.ColumnType, name, values);
+    }
+  }
+  const result = new Int32Array(array.length);
   for (let i = 0; i < array.length; i++)
     result[i] = Number(array[i]);
+  forEachNull(vector, (row) => result[row] = DG.INT_NULL);
   return DG.Column.fromInt32Array(name, result);
 }
 
@@ -218,20 +259,20 @@ function inferNumberType(values: number[]): arrow.DataType {
 function timestampBigIntToDate(value: bigint, unit: number): Date {
   let ms: number;
   switch (unit) {
-  case 0:
-    ms = Number(value) * 1000;
-    break;
-  case 1:
-    ms = Number(value);
-    break;
-  case 2:
-    ms = Number(value / BigInt(1000));
-    break;
-  case 3:
-    ms = Number(value / BigInt(1000000));
-    break;
-  default:
-    throw new Error(`Unsupported time unit: ${unit}`);
+    case 0:
+      ms = Number(value) * 1000;
+      break;
+    case 1:
+      ms = Number(value);
+      break;
+    case 2:
+      ms = Number(value / BigInt(1000));
+      break;
+    case 3:
+      ms = Number(value / BigInt(1000000));
+      break;
+    default:
+      throw new Error(`Unsupported time unit: ${unit}`);
   }
   return new Date(ms);
 }

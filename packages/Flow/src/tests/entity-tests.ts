@@ -251,6 +251,10 @@ category('Flow: bundled flow scripts', () => {
     expect(gen.header.includes(
       '//input: string molecule = "CC(Oc1c2C(OCCSSCCCc2c(Cl)c(Cl)c1)=O)=O" {semType: Molecule}'), true,
     `the sketcher input line must match the committed header; got:\n${gen.header}`);
+    expect(gen.header.includes('//input: string sequence {semType: Macromolecule}'), true,
+      `the helm input line must match the committed header; got:\n${gen.header}`);
+    expect(gen.header.includes('PEPTIDE1'), false,
+      'the HELM default is brace-carrying — it must never ride the header (headerSafeDefault)');
     expect(gen.outputs.length, 0, 'no output nodes, no //output lines');
   }, {timeout: 30000});
 

@@ -311,7 +311,10 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
       editor?.detach();
       editor = null;
       ui.empty(elementsDiv);
-      if (style !== PieChartStyle.Vlaaivis) {
+      const isVlaaivis = style === PieChartStyle.Vlaaivis;
+      for (const input of scalingInputs)
+        input.visible = !isVlaaivis;
+      if (!isVlaaivis) {
         if (settings.sectors)
           stashedSectors = settings.sectors;
         delete settings.sectors;
@@ -320,31 +323,32 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
       }
       settings.sectors ??= stashedSectors;
       editor = new VlaaiVisEditor(settings, gc);
+      inputs.append(...editor.boundsInputs.map((input) => input.root));
       elementsDiv.appendChild(editor.root);
+      gc.grid.invalidate();
     };
 
-    const baseInputs = createBaseInputs(gc, settings);
-    const [columnsInput] = baseInputs;
+    const [columnsInput, ...scalingInputs] = createBaseInputs(gc, settings);
     columnsInput.onChanged.subscribe(() => {
       if (editor)
         editor.refresh();
     });
 
+    const style = settings.style ?? PieChartStyle.Radius;
     const inputs = ui.inputs([
-      ...baseInputs,
-      ui.input.choice('Style', {value: settings.style ?? PieChartStyle.Radius, items: [PieChartStyle.Angle, PieChartStyle.Radius, PieChartStyle.Vlaaivis],
+      ui.input.choice('Style', {value: style, items: [PieChartStyle.Angle, PieChartStyle.Radius, PieChartStyle.Vlaaivis],
         onValueChanged: (value) => {
           settings.style = value;
           showEditor(value);
-        },
-        onCreated: (input) => {
-          if (input.value === PieChartStyle.Vlaaivis)
-            showEditor(PieChartStyle.Vlaaivis);
         }
       }),
+      columnsInput,
+      ...scalingInputs,
     ]);
+    if (style === PieChartStyle.Vlaaivis)
+      showEditor(style);
 
-    return ui.divV([inputs, elementsDiv]);
+    return ui.divV([inputs, elementsDiv], 'power-grid-pie-settings');
   }
 
   hasContextValue(gridCell: DG.GridCell): boolean { return true; }

@@ -1,3 +1,7 @@
+.power-grid-pie-settings > .ui-form {
+  padding-bottom: 12px;
+}
+
 .power-grid-vlaaivis .statistics-mpo-row {
   min-height: 0;
   padding: 4px 0;
@@ -64,13 +68,23 @@
   color: var(--blue-1);
 }
 
-.power-grid-vlaaivis-actions {
-  gap: 8px;
-  justify-content: center;
+.power-grid-vlaaivis-tip {
+  align-items: flex-start;
+  gap: 7px;
+  margin-bottom: 10px;
+  padding: 8px 10px;
+  border-radius: 4px;
+  background: var(--steel-1);
+  color: var(--grey-5);
+  line-height: 1.45;
 }
 
-.power-grid-vlaaivis-hint {
-  padding: 6px 4px;
-  color: var(--text-color-light);
-  font-style: italic;
+.power-grid-vlaaivis-empty {
+  padding: 2px 4px 6px;
+  color: var(--grey-4);
+}
+
+.power-grid-vlaaivis-tip .fa-info-circle {
+  margin-top: 2px;
+  color: var(--blue-1);
 }

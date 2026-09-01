@@ -6,16 +6,17 @@ export const DEFAULTS = {
   WEIGHT: 1,
   LOWER_BOUND: 0.8,
   UPPER_BOUND: 0.9,
-  /// Auto-grouping takes this many columns; the rest stay unassigned for the user to place.
+  /// Columns put into their own sector when the editor opens on an unconfigured chart.
   AUTO_GROUP_COLUMNS: 3,
   PLOT_HEIGHT: 64,
 };
 
 export const LABELS = {
   UNASSIGNED: 'Unassigned columns',
-  DROP_HINT: 'Drag a property here to take it out of its sector',
-  LOWER_BOUND: 'Reference range, min',
-  UPPER_BOUND: 'Reference range, max',
+  TIP: 'Drag a column name onto a sector to move it. Unassigned columns aren\'t drawn.',
+  NO_UNASSIGNED: 'Every column is in a sector. Drag one here to leave it out.',
+  LOWER_BOUND: 'Target min',
+  UPPER_BOUND: 'Target max',
 };
 
 export const TOOLTIPS = {

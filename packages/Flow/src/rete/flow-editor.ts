@@ -26,6 +26,8 @@ import {
 import {TypedSocket} from './sockets';
 import {DgControlComponent, FlowConnectionComponent, FlowNodeComponent, FlowSocketComponent} from './node-component';
 import {InputValueControl} from './nodes/input-value-control';
+import {PROPERTY_INPUT_TYPE, adoptInputProperty, applyPropertyInputShape} from './nodes/input-nodes';
+import {effectiveFuncInputs} from '../utils/func-input-overrides';
 import {getSlotColor, getSlotLetter} from '../types/type-map';
 import {tid, setTid} from '../utils/test-ids';
 import {FlowAnnotation, AnnotationDoc, ANNOTATION_COLORS, ANNOTATION_TITLE_SIZES} from './annotation';
@@ -300,6 +302,8 @@ export class FlowEditor {
     getInlinePreviewContent: (nodeId) => this.callbacks.getInlinePreviewContent?.(nodeId) ?? null,
     syncInlinePreview: (nodeId, host) => this.syncInlinePreview(nodeId, host),
     releaseInlinePreview: (nodeId) => this.releaseInlinePreview(nodeId),
+    getZoom: () => this.area.area.transform.k || 1,
+    focusNodeForEditing: (nodeId, w, h) => void this.focusNodeForEditing(nodeId, w, h),
     isInlinePreviewPending: (nodeId) => this.callbacks.isInlinePreviewPending?.(nodeId) ?? false,
   };
 
@@ -339,6 +343,33 @@ export class FlowEditor {
       targetNode.properties['outputType'] = detected;
       void this.area.update('node', targetNode.id);
     }
+  }
+
+  /** A Property Input MIMICS the function input it connects to — adopt (or re-adopt)
+   *  the target parameter's property on every connect, then rebuild the value editor
+   *  for the new shape. Non-function targets are left for manual panel configuration. */
+  private maybeAdoptPropertyInput(connection: FlowScheme['Connection']): void {
+    if (isExecKey(String(connection.sourceOutput)) || isExecKey(String(connection.targetInput))) return;
+    const source = this.editor.getNode(connection.source);
+    if (!source || source.dgTypeName !== PROPERTY_INPUT_TYPE) return;
+    const func = this.editor.getNode(connection.target)?.dgFunc;
+    if (!func) return;
+    let prop: DG.Property | undefined;
+    try {
+      prop = effectiveFuncInputs(func).find((p) => p.name === String(connection.targetInput));
+    } catch {
+      return; // Dart proxy introspection can throw
+    }
+    if (!prop) return;
+    adoptInputProperty(source, prop, func);
+    this.rebuildValueEditor(source.id);
+  }
+
+  /** Rebuild a node's inline value editor after its type/qualifiers changed shape. */
+  rebuildValueEditor(nodeId: string): void {
+    const ctl = this.getNodeById(nodeId)?.controls['value'];
+    if (ctl instanceof InputValueControl) ctl.rebuild();
+    void this.updateNode(nodeId);
   }
 
   /** Collapsed nodes and hidden rows render socket DOM only for *connected*
@@ -383,8 +414,10 @@ export class FlowEditor {
         this.handleGroupMemberRemoved(context.data.id);
         this.releaseInlinePreview(context.data.id);
       }
-      if (context.type === 'connectioncreated')
+      if (context.type === 'connectioncreated') {
         this.maybeAutoTypeValueOutput(context.data);
+        this.maybeAdoptPropertyInput(context.data);
+      }
       if (context.type === 'connectionremoved')
         this.connectionStatuses.delete(context.data.id);
       if (context.type === 'connectioncreated' || context.type === 'connectionremoved') {
@@ -1270,6 +1303,8 @@ export class FlowEditor {
       sourcePackageName: this.editor.getNode(target.nodeId)?.dgPackageName,
       graphPackageNames: nodes.map((n) => n.dgPackageName).filter(Boolean),
       graphFuncNames: nodes.map((n) => n.dgFunc?.name ?? '').filter(Boolean),
+      // A function-input drag leads with Property Input — it will mimic this parameter.
+      targetIsFuncInput: this.editor.getNode(target.nodeId)?.dgFunc != null,
     });
     if (candidates.length === 0) return;
 
@@ -3068,6 +3103,7 @@ export class FlowEditor {
       fresh.collapsed = snap.collapsed;
       fresh.properties = JSON.parse(JSON.stringify(snap.properties));
       fresh.inputValues = JSON.parse(JSON.stringify(snap.inputValues));
+      applyPropertyInputShape(fresh);
       this.dedupeVariableName(fresh);
       await this.editor.addNode(fresh);
       fresh.pos = {x: snap.pos.x + offset, y: snap.pos.y + offset};
@@ -3186,6 +3222,31 @@ export class FlowEditor {
     const rect = this.area.container.getBoundingClientRect();
     const k = this.area.area.transform.k;
     await this.area.area.translate(rect.width / 2 - cx * k, rect.height / 2 - cy * k);
+  }
+
+  /** Snap to native zoom (1) and pan so a `w`×`h` box anchored at the node's
+   *  top-left is fully visible (16px margin; top-left wins when the viewport is
+   *  smaller than the box). The in-node sketcher expands through this — its
+   *  chrome only works unscaled. */
+  async focusNodeForEditing(nodeId: string, w: number, h: number): Promise<void> {
+    const node = this.editor.getNode(nodeId);
+    if (!node) return;
+    // Unconditionally — a conditional read races a still-pending zoom (the
+    // guard pipe is async, so transform.k can be stale at this point).
+    await this.area.area.zoom(1);
+    const rect = this.canvasEl.getBoundingClientRect();
+    const margin = 16;
+    const t = this.area.area.transform;
+    const x1 = node.pos.x * t.k + t.x;
+    const y1 = node.pos.y * t.k + t.y;
+    let dx = 0;
+    let dy = 0;
+    if (x1 + w + margin > rect.width) dx = rect.width - (x1 + w + margin);
+    if (y1 + h + margin > rect.height) dy = rect.height - (y1 + h + margin);
+    if (x1 + dx < margin) dx = margin - x1;
+    if (y1 + dy < margin) dy = margin - y1;
+    if (dx !== 0 || dy !== 0)
+      await this.area.area.translate(t.x + dx, t.y + dy);
   }
 
   async addConnectionByKeys(

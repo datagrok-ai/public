@@ -198,8 +198,10 @@ test('Bio monomer_library source-class lifecycle: load → edit/save round-trip 
         } catch (e) {
           return {dispatchErr: String(e).slice(0, 200), viewLabels};
         }
+        // The first dispatch pays the monomer-library load: measured 12.3s cold on dev against
+        // 0.2s once warm, and CI is slower still. A 10s window lost the race outright.
         let dialog: Element | null = null;
-        for (let i = 0; i < 50; i++) {
+        for (let i = 0; i < 200; i++) {
           const candidates = Array.from(document.querySelectorAll('.d4-dialog'));
           for (const d of candidates) {
             if (d.querySelector('.monomer-lib-controls-form')) {
@@ -235,7 +237,7 @@ test('Bio monomer_library source-class lifecycle: load → edit/save round-trip 
       });
       expect(result.dispatchErr, `dispatch error: ${result.dispatchErr}`).toBeNull();
       expect(result.dialogOpened,
-        `expected dialog with .monomer-lib-controls-form within 10s; view labels: [${result.viewLabels.join(', ')}]`).toBe(true);
+        `expected dialog with .monomer-lib-controls-form within 40s; view labels: [${result.viewLabels.join(', ')}]`).toBe(true);
       expect(result.dialogRowCount).toBeGreaterThanOrEqual(1);
       expect(result.cataloguesAgree,
         `view labels [${result.viewLabels.join(', ')}] disagree with dialog labels ` +

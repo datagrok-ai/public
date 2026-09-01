@@ -181,10 +181,10 @@ export class FunctionsBrowser extends Control {
     this._shown = computed(() => filterFuncItems(this._source.value.value, this.query.value,
       this.checkedTags.value, this.checkedRoles.value));
 
-    const searchInput = this.run(() => new TextInput(
+    const searchInput = this.runInScope(() => new TextInput(
       {search: true, inline: true, placeholder: 'Search by name, #tag, or @role', bind: this.query}));
     // the toggle option mirrors showTags into aria-pressed and the pressed skin, however it flips
-    const filterIcon = this.run(() => iconButton('filter', () => {},
+    const filterIcon = this.runInScope(() => iconButton('filter', () => {},
       {tooltip: 'Toggle filter panel', toggle: this.showTags}));
     const searchRow = divH([searchInput, filterIcon], 'u2-fb-search');
     searchRow.dataset.u2 = 'fb-search';
@@ -214,7 +214,7 @@ export class FunctionsBrowser extends Control {
     panes.dataset.u2 = 'fb-panes';
 
     const contextActions = options.contextActions;
-    this._list = this.run(() => new VirtualList<FuncItem>({
+    this._list = this.runInScope(() => new VirtualList<FuncItem>({
       itemHeight: options.itemHeight ?? 28,
       keyOf: (item) => item.name,
       render: (item, _index, row) => this._renderRow(item, row),
@@ -224,7 +224,7 @@ export class FunctionsBrowser extends Control {
     this._list.setItems(this._shown);
 
     const emptyMessage = span('', 'u2-fb-empty-message');
-    const clearSearch = this.run(() => button('Clear search', () => this.query.value = ''));
+    const clearSearch = this.runInScope(() => button('Clear search', () => this.query.value = ''));
     clearSearch.classList.add('u2-fb-clear');
     clearSearch.dataset.u2 = 'fb-clear';
     const empty = divV([emptyMessage, clearSearch], 'u2-async-empty u2-fb-empty');

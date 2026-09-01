@@ -12,6 +12,11 @@ import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 
 import * as DG from 'datagrok-api/dg';
 
+import {setMonomersPerRow} from '@datagrok-libraries/hwe';
+
+import {HelmPackagePropertiesNames} from './constants';
+import {resolveMonomersPerRow} from './utils/wrap-width';
+
 import {_package} from './package';
 
 // hwe migration (Phase 7): the legacy Dojo / JSDraw2 / HELMWebEditor loader and
@@ -51,6 +56,38 @@ export class HelmPackage extends DG.Package {
   private _monomerLibSub?: Unsubscribable;
 
   private _initialized: boolean = false;
+
+  // -- Wrapping (line-break) width --
+
+  /**
+   * The package-wide default number of monomers per row, from the
+   * `MonomersPerRow` package property (see the `properties` section of
+   * package.json). This is the DEFAULT: the column widget in `helmPanel` can
+   * override it for the session without touching this value.
+   *
+   * Falls back to {@link DEFAULT_MONOMERS_PER_ROW} when settings are not
+   * loaded yet or hold something unparseable.
+   */
+  public get defaultMonomersPerRow(): number {
+    let raw: unknown;
+    try {
+      raw = this.settings?.[HelmPackagePropertiesNames.MonomersPerRow];
+    } catch {
+      // `settings` reaches into the platform; a package instance that is not
+      // registered yet (or the standalone test bundle's copy) has nothing to
+      // reach into. Fall back rather than break every render.
+      raw = undefined;
+    }
+    return resolveMonomersPerRow(raw);
+  }
+
+  /**
+   * Push {@link defaultMonomersPerRow} into hwe's process-wide layout setting,
+   * which every renderer / editor / adapter reads at layout time.
+   */
+  public applyDefaultMonomersPerRow(): void {
+    setMonomersPerRow(this.defaultMonomersPerRow);
+  }
 
   /** Requires Bio initialized (monomer library). */
   completeInit(helmHelper: IHelmHelper, libHelper: IMonomerLibHelper): void {

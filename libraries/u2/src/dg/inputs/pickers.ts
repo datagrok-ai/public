@@ -317,7 +317,7 @@ function importAction(input: Input<any, any>, pick: (name: string) => void): voi
   };
   picker.addEventListener('change', onChange);
   input.own(() => picker.removeEventListener('change', onChange));
-  const open = input.run(() => iconButton('folder-open', () => picker.click(), {tooltip: 'Open file'}));
+  const open = input.runInScope(() => iconButton('folder-open', () => picker.click(), {tooltip: 'Open file'}));
   optionsRail(input).append(picker, open);
 }
 
