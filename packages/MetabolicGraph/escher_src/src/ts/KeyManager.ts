@@ -33,6 +33,9 @@ export default class KeyManager {
   removeEscapeListener: any;
   settings: Settings | null;
   enabled: boolean;
+  /** When set, key events originating outside this element are left alone. Without it the
+   * document-level bindings swallow Ctrl+Z from the rest of the application. */
+  scope: Element | null = null;
   constructor(
     assignedKeys = {},
     inputList = [],
@@ -53,6 +56,8 @@ export default class KeyManager {
     this.mousetrap.stopCallback = (e, el) => {
       if (el instanceof HTMLInputElement)
         return true; // allow inputs to handle key events
+      if (this.scope && !this.scope.contains(el))
+        return true; // the event belongs to another part of the application
       return false
     };
 
