@@ -163,11 +163,15 @@ test('Grid — Cell Editing and Clipboard', async ({page}) => {
     await armEvent(page, 'grid', 'onCellValueEdited');
     await page.keyboard.press('Enter');
     await awaitEvent(page, 1500); 
-    await waitEditorCount(page, 0);
-    const r = await page.evaluate((ti) => {
+    // Committing the value and closing the editor are two stages of ONE gesture. Waiting only
+    // for the editor count — and discarding that wait's result — let a slow close arrive at the
+    // assertion as "still open" (expected false, received true). Wait on both, and keep the cap
+    // so a genuine failure still fails.
+    const settled = await v.pollValue(() => page.evaluate((ti) => {
       const df = grok.shell.tv.dataFrame;
-      return {age: df.col('AGE').get(ti), editorOpen: document.querySelectorAll('input.d4-value-editor').length > 0};
-    }, tableIdx);
+      return `${df.col('AGE').get(ti)}|${document.querySelectorAll('input.d4-value-editor').length}`;
+    }, tableIdx), (x: string) => x === '99|0', 3000, 50);
+    const r = {age: Number(settled.split('|')[0]), editorOpen: settled.split('|')[1] !== '0'};
     const editAfter = await editCount(page);
     expect(r.age).toBe(99);            
     expect(editAfter).toBe(editBefore + 1); 
