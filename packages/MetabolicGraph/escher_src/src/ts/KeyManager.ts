@@ -17,6 +17,17 @@ function addCmd(key: string | string[], ctrlEqualsCmd: boolean) {
   return newAr.length === keyAr.length ? key : newAr;
 }
 
+/** Elements that consume their own key events and must never trigger a shortcut. */
+function isTextEntry(el: Element | null): boolean {
+  if (!el) return false;
+  const tag = el.tagName;
+  return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' ||
+    (el as HTMLElement).isContentEditable === true;
+}
+
+/** Anything that takes focus on its own when clicked, so we must not steal it. */
+const FOCUSABLE_SELECTOR = 'input, textarea, select, button, a[href], [contenteditable=""], [contenteditable="true"], [tabindex]';
+
 /**
  * KeyManager - Manage key listeners and events.
  * @param assignedKeys (default: {}): An object defining keys to bind.
@@ -33,9 +44,9 @@ export default class KeyManager {
   removeEscapeListener: any;
   settings: Settings | null;
   enabled: boolean;
-  /** When set, key events originating outside this element are left alone. Without it the
-   * document-level bindings swallow Ctrl+Z from the rest of the application. */
-  scope: Element | null = null;
+  /** Container the shortcuts belong to; null means the whole document (standalone Escher). */
+  scopeNode: HTMLElement | null;
+  private removeScopeListener: (() => void) | null;
   constructor(
     assignedKeys = {},
     inputList = [],
@@ -48,17 +59,19 @@ export default class KeyManager {
     this.inputList = inputList;
     this.mousetrap = selection ? new Mousetrap(selection) : new Mousetrap();
     this.ctrlEqualsCmd = ctrlEqualsCmd;
+    this.scopeNode = null;
+    this.removeScopeListener = null;
 
     // Fix mousetrap behavior; by default, it ignore shortcuts when inputs are
     // in focus.
     // TODO NOT WORKING https://craig.is/killing/mice
     // consider swithching to https://github.com/PolicyStat/combokeys
     this.mousetrap.stopCallback = (e, el) => {
-      if (el instanceof HTMLInputElement)
-        return true; // allow inputs to handle key events
-      if (this.scope && !this.scope.contains(el))
-        return true; // the event belongs to another part of the application
-      return false
+      if (isTextEntry(el))
+        return true; // allow text entry to handle key events
+      // When Escher is embedded (see setScope), it is one component among many on the
+      // page, so it must not answer keys aimed at anything else.
+      return !this.inScope(el);
     };
 
     this.escapeQueue = [];
@@ -69,6 +82,51 @@ export default class KeyManager {
 
     this.enabled = true;
     this.update();
+  }
+
+  /**
+   * Restrict the shortcuts to a container: they only fire while the key event targets that
+   * container or something inside it holds focus. Without this the manager listens on the whole
+   * document, which is right for a standalone Escher page but hijacks keystrokes when Escher is
+   * embedded in a host application.
+   *
+   * The container is also made focusable and focused on click, since the map itself (svg) cannot
+   * hold focus — without that there would be no way for the map to ever become the active element.
+   *
+   * @param node The container to scope to, or null to go back to listening document-wide.
+   */
+  setScope(node: HTMLElement | null) {
+    if (this.removeScopeListener) {
+      this.removeScopeListener();
+      this.removeScopeListener = null;
+    }
+    this.scopeNode = node;
+    if (!node) return;
+
+    if (!node.hasAttribute('tabindex'))
+      node.setAttribute('tabindex', '-1');
+    node.style.outline = 'none'; // no focus ring around the whole map
+
+    const onMouseDown = (e: Event) => {
+      const target = e.target as Element | null;
+      // leave clicks on things that take focus themselves alone
+      const focusable = target?.closest?.(FOCUSABLE_SELECTOR);
+      if (focusable && focusable !== node) return;
+      if (!node.contains(document.activeElement))
+        node.focus({preventScroll: true});
+    };
+    // capture phase: the map's d3 zoom/drag/brush behaviors stop propagation on mousedown
+    node.addEventListener('mousedown', onMouseDown, true);
+    this.removeScopeListener = () => node.removeEventListener('mousedown', onMouseDown, true);
+  }
+
+  /** True when a key event belongs to this manager: it targets the scope, or the scope has focus. */
+  inScope(target: Element | null): boolean {
+    const scope = this.scopeNode;
+    if (!scope) return true; // not scoped: keys are document-wide, as in standalone Escher
+    if (target && scope.contains(target)) return true;
+    const active = document.activeElement;
+    return active !== null && scope.contains(active);
   }
 
   /**
