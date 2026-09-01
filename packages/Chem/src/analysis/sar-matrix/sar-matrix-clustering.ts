@@ -69,12 +69,6 @@ function isSubset(a: Set<number>, b: Set<number>): boolean {
 }
 
 /**
- * Step 4 — group series into matrix rows by cutting their cores a second time and grouping on the
- * remainder ("key of key"). This is exact and order-independent: cores differing at one point leave
- * the same remainder, with no fingerprint or threshold. A core joins one group per cuttable site (an
- * overlapping cover), and groups fully contained in a larger one are dropped.
- */
-/**
  * Group the series by a value the user supplies per compound: everything carrying the same value
  * becomes one matrix, labelled with that value. A core whose compounds carry different values is split
  * across them, so a compound never lands in a matrix whose name contradicts its own column. Compounds
@@ -421,10 +415,9 @@ export async function poolUngroupedSeries(clusters: CoreCluster[], threshold: nu
 /**
  * Group the compounds that never formed a matched series at all.
  *
- * {@link poolUngroupedSeries} can only rescue a series that exists; a compound whose every cut left
- * it without a partner has no core and no series, so nothing upstream ever offers it to a matrix.
- * Clustering those by whole-molecule similarity and letting an MCS find their common core is the only
- * route to them. A compound alone is no use here, so singleton groups are dropped rather than kept.
+ * {@link poolUngroupedSeries} can only rescue a series that exists; a compound whose every cut left it
+ * without a partner has no core, so nothing upstream ever offers it to a matrix. Singletons are
+ * dropped — one compound is no use here.
  *
  * Marked `requiresDecomposition`: the series below are placeholders carrying no real core, so without
  * a decomposition the single-position fallback would read each compound as its own bare core.

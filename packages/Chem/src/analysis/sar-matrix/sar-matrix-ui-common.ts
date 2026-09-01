@@ -133,6 +133,8 @@ export function paintMoleculeOnColor(canvas: HTMLCanvasElement, smiles: string, 
       {normalizeDepiction: true, straightenDepiction: true}, null,
       {clearBackground: true, backgroundColour: argbToRgba(argb)});
   } catch (e) {
+    // A structure RDKit cannot draw leaves the canvas at its background rather than failing the whole
+    // pane — one bad row must not blank a navigator full of good ones.
   }
 }
 

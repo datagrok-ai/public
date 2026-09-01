@@ -394,10 +394,7 @@ export class SarMatrixViewer extends DG.JsViewer {
     this.resetStructFilter();
     this.navSub?.unsubscribe();
     this.navSub = null;
-    try {
-      this.navView?.close();
-    } catch (e) {
-    }
+    this.navView?.detach();
     this.navView = null;
     this.navFrame = null;
     this.navFilters = null;
@@ -411,10 +408,7 @@ export class SarMatrixViewer extends DG.JsViewer {
   private resetStructFilter(): void {
     this.structSub?.unsubscribe();
     this.structSub = null;
-    try {
-      this.structView?.close();
-    } catch (e) {
-    }
+    this.structView?.detach();
     this.structView = null;
     this.structFrame = null;
     this.structFilters = null;
@@ -474,6 +468,10 @@ export class SarMatrixViewer extends DG.JsViewer {
 
   /** Re-rank the assembled matrices and redraw without re-fragmenting. */
   private reRank(): void {
+    // A compute in flight already re-ranks against the live properties when it lands, so re-sorting
+    // the set it is about to replace would only repaint a stale analysis over its own loader.
+    if (this.computing)
+      return;
     if (!this.matrices.length) {
       this.scheduleCompute();
       return;
@@ -481,9 +479,11 @@ export class SarMatrixViewer extends DG.JsViewer {
     this.matrices = rankMatrices(this.matrices, this.rankScheme as SarRankScheme, this.higherIsBetter);
     // Transfers index into `matrices` by position, so a reorder invalidates them.
     this.transferPanel.invalidateTransfers();
-    // Re-ranking lands the selection on a different matrix, and the cell filter is keyed by matrix
-    // id — kept, every key would miss and the pane would draw empty.
-    this.resetStructFilter();
+    // Both filter frames are stale, not just the cell one: the navigator's Best/Mean fold the activity
+    // direction in and Best R is a rank score, so a kept frame would filter the series on numbers the
+    // new scheme or direction has already replaced. The cell filter is keyed by matrix id, which
+    // re-ranking invalidates as well.
+    this.resetFilters();
     this.selIndex = 0;
     this.render();
   }
@@ -545,8 +545,12 @@ export class SarMatrixViewer extends DG.JsViewer {
       // Closed while the workers ran; rendering now would build a grid nothing releases.
       if (this.detached)
         return;
-      this.matrices = matrices;
-      this.matricesData = JSON.stringify(matrices);
+      // Ranked against the LIVE properties, not the ones snapshotted into `params` before the await:
+      // a scheme or direction changed while the workers ran would otherwise leave the order and the
+      // scores disagreeing with the property panel until the next rank change. rankMatrices recomputes
+      // the scores, so this reconciles both.
+      this.matrices = rankMatrices(matrices, this.rankScheme as SarRankScheme, this.higherIsBetter);
+      this.matricesData = JSON.stringify(this.matrices);
       this.collapseSeeded = false;
       this.selIndex = 0;
       // Must clear before render(): render() re-activates the transfer tab, which defers while
@@ -883,17 +887,13 @@ export class SarMatrixViewer extends DG.JsViewer {
   }
 
   /**
-   * Folds every scaffold onto the most general one present that contains it.
+   * Folds every scaffold onto the most general one present that contains it. One ring system appears
+   * under several keys when different positions are pinned rather than left open, so keying on
+   * structure alone would split it into separate groups. "More general" means strictly more open
+   * positions, which prunes the pairwise test and keeps the fold acyclic.
    *
-   * One ring system appears under several keys when different positions are pinned rather than left
-   * open — the same triazole reads as one scaffold with three free positions and as several with two —
-   * so keying on structure alone would split one scaffold into separate groups. A candidate must have
-   * strictly more open positions to count as more general, which prunes the pairwise test and keeps
-   * the fold acyclic.
-   *
-   * Each key is parsed once as both query and molecule and reused: parsing per pair costs tens of
-   * thousands of main-thread RDKit calls on a few hundred scaffolds. The memo is keyed on the sorted
-   * set, since `ordered` imposes its own total order and the navigator rebuilds this on every re-rank.
+   * Each key is parsed once as both query and molecule: parsing per pair costs tens of thousands of
+   * main-thread RDKit calls on a few hundred scaffolds.
    */
   private scaffoldRepresentatives(keys: string[]): Map<string, string> {
     const distinct = [...new Set(keys.filter((k) => k))];

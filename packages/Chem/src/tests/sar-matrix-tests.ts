@@ -265,8 +265,11 @@ category('SAR Matrix', () => {
     const aEt = matrix.cells[row('CoreA')][etIdx];
     expect(aEt.kind, 'unmeasured', 'a predicted number must not promote the compound to an unmade analog');
     expect(aEt.molIdx, 1, 'the cell still stands for the compound the set holds');
-    // rowMean(CoreA) = 10, colMean(Et) = 6, grandMean = (10 + 8 + 6 + 4) / 4 = 7.
-    expect(aEt.value !== null && Math.abs(aEt.value - 9) < 1e-6, true, 'rowMean + colMean - grandMean');
+    // Four measurements against four identifiable effects, so the fit reproduces every one of them
+    // exactly. Et reads -2 against Me where both are measured (CoreB: 6 vs 8), and CoreA measures 10 at
+    // Me, so A-Et is 8 — the only value with no residual anywhere.
+    expect(aEt.value !== null && Math.abs(aEt.value - 8) < 1e-6, true,
+      'CoreA at Me (10) shifted by the Et-vs-Me step (-2)');
     expect(matrix.cells.flat().filter((c) => c.kind === 'virtual').length, 1,
       'the count of analogs to synthesize is unchanged');
   });
@@ -280,10 +283,13 @@ category('SAR Matrix', () => {
     ];
     const predict = fitAdditiveModel(cells, 3, 3);
 
-    // rowMean(1) = 5, colMean(1) = 3, grandMean = (1+3+5)/3 = 3  ->  5 + 3 - 3 = 5
+    // Column 1 reads +2 against column 0 where both are measured (row 0: 3 vs 1), and row 1 measures 5
+    // at column 0, so the additive answer at (1,1) is 7 — the one value that reproduces all three
+    // measurements exactly. Averaging the margins in a single pass answers 5 instead, because row 0's
+    // mean folds column 1's +2 into row 0's own effect.
     const p11 = predict(1, 1);
     expect(p11 !== null, true);
-    expectFloat(p11!.value, 5);
+    expectFloat(p11!.value, 7);
     expect(p11!.support, 1, 'support = min(rowN=1, colN=1)');
 
     expect(predict(0, 2), null, 'column 2 has no observation — unpredictable');
@@ -337,7 +343,7 @@ category('SAR Matrix', () => {
     expectFloat(spearman([1, 2, 3, 4], [4, 3, 2, 1])!, -1, 0.001);
     // One extreme value can dominate Pearson but not the ranks — the ordering is still 1:1.
     expectFloat(spearman([1, 2, 3, 100], [1, 2, 3, 4])!, 1, 0.001);
-    // Guards: too few points (below MIN_COMMON = 3) and a constant side both give null.
+    // Guards: too few shared points and a constant side both give null.
     expect(spearman([1, 2], [1, 2]), null, 'fewer than the minimum shared points is null');
     expect(spearman([1, 1, 1, 1], [1, 2, 3, 4]), null, 'a constant side has no ordering to correlate');
   });
@@ -360,7 +366,7 @@ category('SAR Matrix', () => {
 
   test('transfer correlation floor', async () => {
     const matA = makeMatrix([xferRow([1, 2, 3, 4])]);
-    // Ranks 2,1,4,3 against 1,2,3,4 is a spearman of 0.6 — the trend is real but under the 0.7 floor.
+    // Ranks 2,1,4,3 against 1,2,3,4 is a spearman of 0.6 — a real trend, under the floor for four points.
     const below = makeMatrix([xferRow([2, 1, 4, 3], 'b')]);
     expect((await computeAllTransfers([matA, below], 0)).length, 0, 'a correlation under the floor is no transfer');
     // Same shapes and the same open similarity gate, so a passing correlation must still come through:
@@ -411,14 +417,17 @@ category('SAR Matrix', () => {
   });
 
   test('transferStats both sides', async () => {
-    // Both cores have an untested S4. The stronger is the leader's, and the leader is scanned second,
-    // so stopping at the first side with a candidate reports the weaker analog as the one to make.
-    const matA = makeMatrix([[...xferRow([1, 2, 3, 4]), virtualCell(20)]]);
-    const matB = makeMatrix([[...xferRow([2, 3, 4, 5], 'b'), virtualCell(10)]]);
+    // Each core is untested at the R-group the other one measured, so the pairing argues for an analog
+    // on both sides. The stronger is the leader's, and the leader is scanned second, so stopping at the
+    // first side with a candidate would report the weaker analog as the one to make.
+    const matA = makeMatrix([[...xferRow([1, 2, 3, 4]), virtualCell(20),
+      realCell(6, 5, XFER_MOLS_A[5])]]);
+    const matB = makeMatrix([[...xferRow([2, 3, 4, 5], 'b'), realCell(7, 104, XFER_MOLS_B[4]),
+      virtualCell(10)]]);
     const transfers = await computeAllTransfers([matA, matB], 0);
     expect(transfers.length, 1, 'the four measured pairs correlate, so the pair is a transfer');
     const stats = transferStats(transfers[0], true);
-    expect(stats.benefiting !== null, true, 'both sides carry a virtual analog');
+    expect(stats.benefiting !== null, true, 'the pairing argues for an analog on each side');
     expect(stats.benefiting!.side, 'a', 'the strongest analog wins wherever it sits');
     expectFloat(stats.benefiting!.value, 20, 0.01);
   });

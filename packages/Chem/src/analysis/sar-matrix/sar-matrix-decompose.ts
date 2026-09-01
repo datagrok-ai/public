@@ -225,20 +225,17 @@ function buildDecomposition(prep: ClusterPrep, res: IRGroupAnalysisResult | null
 
 /**
  * Decomposes every cluster against one shared anchor scaffold each, so R1, R2, ... come out aligned
- * by construction. Anchor priority per cluster: the site key the grouping already derived; else a
- * single shared Bemis-Murcko ring scaffold; else the generic MCS of several related scaffolds; else
- * the MCS of the whole molecules. Returns one entry per input cluster, or null where no useful clean
+ * by construction. Anchor priority per cluster: the site key the grouping already derived, else the
+ * MCS of the whole molecules. Returns one entry per input cluster, or null where no useful clean
  * anchor exists (caller falls back to the single-position construction). Batched through a
  * worker-per-cluster queue so independent clusters run in parallel.
  *
- * `siteKeys` is what keeps the MCS a genuine last resort: a cluster grouped by site was formed
- * BECAUSE its cores reduce to that remainder, so the shared scaffold is already known exactly and
- * rediscovering it by search would be both slower and less certain. The key is taken only when it
- * clears the same usability bar an MCS anchor faces, so a cluster whose key is too small reaches the
- * MCS like an unkeyed one — which is what `useMcsAnchors` false then gives up.
+ * `siteKeys` keeps the MCS a last resort: a cluster grouped by site reduces to that remainder by
+ * construction, so its scaffold is already known exactly. The key still has to clear the same
+ * usability bar an MCS anchor faces, so a key too small to anchor falls through to the MCS.
  */
 export async function decomposeClusters(clusterMembers: number[][], molecules: string[],
-  scaffolds: string[] = [], useMcsAnchors: boolean = true,
+  useMcsAnchors: boolean = true,
   siteKeys: string[] = []): Promise<(ClusterDecomposition | null)[]> {
   const results = new Array<ClusterDecomposition | null>(clusterMembers.length).fill(null);
   const rdkit = getRdKitModule();
@@ -246,7 +243,6 @@ export async function decomposeClusters(clusterMembers: number[][], molecules: s
 
   // Phase 1 — pick each cluster's anchor source, queueing the ones that need an MCS.
   const preps: ClusterPrep[] = [];
-  const scaffoldMcs: {input: string[], prep: ClusterPrep}[] = [];
   const wholeMolMcs: {input: string[], prep: ClusterPrep}[] = [];
   for (let i = 0; i < clusterMembers.length; i++) {
     const molIdx = clusterMembers[i];
@@ -257,8 +253,6 @@ export async function decomposeClusters(clusterMembers: number[][], molecules: s
     };
     preps.push(prep);
     const siteAnchor = siteKeyAnchor(siteKeys[i] ?? '');
-    const clusterScaffolds = scaffolds.length ?
-      [...new Set(molIdx.map((k) => scaffolds[k]).filter((s) => s))] : [];
     // Exact shared scaffold, already derived by the grouping. Measured against the same bar the MCS
     // anchors face and only taken when it clears it: a key can be a small fraction of the molecules
     // it keys, and a cluster the MCS could still anchor should reach the MCS.
@@ -266,41 +260,20 @@ export async function decomposeClusters(clusterMembers: number[][], molecules: s
       prep.anchor = siteAnchor;
       continue;
     }
-    if (clusterScaffolds.length === 1)
-      prep.anchor = clusterScaffolds[0]; // concrete substructure, no MCS needed
-    else if (!useMcsAnchors)
+    if (!useMcsAnchors)
       continue; // no anchor without an MCS; the assembler builds this cluster from a single position
-    else if (clusterScaffolds.length >= 2) {
+    // Left without an anchor when the cluster is past the ceiling; the assembler then builds it from
+    // a single position rather than a shared core.
+    const sample = mcsSample(prep.smiles, rdkit);
+    if (mcsIsAffordable(sample, rdkit)) {
       prep.anchorIsQuery = true;
-      scaffoldMcs.push({input: mcsSample(clusterScaffolds, rdkit), prep});
-    } else {
-      // Left without an anchor when the cluster is past the ceiling; the assembler then builds it
-      // from a single position rather than a shared core.
-      const sample = mcsSample(prep.smiles, rdkit);
-      if (mcsIsAffordable(sample, rdkit)) {
-        prep.anchorIsQuery = true;
-        wholeMolMcs.push({input: sample, prep});
-      }
+      wholeMolMcs.push({input: sample, prep});
     }
   }
 
-  // Phase 2 — MCS passes. Atoms compare by element (2nd arg), not generically: interchangeable atoms
+  // Phase 2 — MCS pass. Atoms compare by element (2nd arg), not generically: interchangeable atoms
   // are what make this search explode, and by element a benzene anchors a benzene, not any 6-ring.
   // `rawSmarts` (last arg) keeps RDKit's SMARTS, which a SMILES round-trip would not survive intact.
-  if (scaffoldMcs.length > 0) {
-    const t = performance.now();
-    const mcs = await service.clusterMCS(scaffoldMcs.map((q) => q.input), true, true, true);
-    logSarTime(`MCS anchors over scaffolds (${scaffoldMcs.length} clusters)`, t);
-    scaffoldMcs.forEach((q, j) => {
-      if (mcs[j]) {
-        q.prep.anchor = mcs[j];
-        return;
-      }
-      const sample = mcsSample(q.prep.smiles, rdkit); // scaffold MCS failed — retry over the molecules
-      if (mcsIsAffordable(sample, rdkit))
-        wholeMolMcs.push({input: sample, prep: q.prep});
-    });
-  }
   if (wholeMolMcs.length > 0) {
     const t = performance.now();
     const mcs = await service.clusterMCS(wholeMolMcs.map((q) => q.input), true, true, true);

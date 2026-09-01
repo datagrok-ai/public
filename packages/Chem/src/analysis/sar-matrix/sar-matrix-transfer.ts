@@ -13,8 +13,25 @@ import {SarMatrix, SarMatrixCell, logSarTime} from './sar-matrix-types';
  * whole-molecule Tanimoto cutoff.
  */
 
-const MIN_COMMON = 3;
-const MIN_CORRELATION = 0.7;
+const MIN_COMMON = 4;
+/**
+ * Most permissive Spearman ρ that still holds the per-pairing false-positive rate at or below 5%, by
+ * number of shared substituents, from exact enumeration of the n! rank permutations.
+ *
+ * Three shared points are absent because no threshold can reach 5% there: six permutations give only
+ * four possible ρ, so the smallest achievable tail is 1/6 = 16.7%, and the only value clearing any
+ * cutoff is ρ = 1.0 — the weakest possible pairing forced to display the strongest possible number.
+ * A flat cutoff hid that, and hid that it did not improve at n = 4 either: at 0.7 both admit 1/6.
+ */
+const SPEARMAN_CRITICAL: {[n: number]: number} = {4: 1.0, 5: 0.9, 6: 0.771, 7: 0.714, 8: 0.619};
+
+/** The ρ a pairing over `n` shared substituents must clear, or null when `n` cannot support one.
+ *  Past the tabulated sizes the normal approximation is close enough. */
+function minCorrelation(n: number): number | null {
+  if (n < MIN_COMMON)
+    return null;
+  return SPEARMAN_CRITICAL[n] ?? 1.645 / Math.sqrt(n - 1);
+}
 const MAX_TRANSFERS = 30;
 const MAX_PREDICTED = 6;
 export const DEFAULT_TRANSFER_SIMILARITY = 0;
@@ -249,7 +266,9 @@ export async function computeAllTransfers(matrices: SarMatrix[],
       if (matched.length < MIN_COMMON)
         continue;
       const corr = spearman(matched.map((m) => s1.points[m.ai].value), matched.map((m) => s2.points[m.bi].value));
-      if (corr === null || corr < MIN_CORRELATION)
+      // The bar rises as the overlap shrinks, because a short overlap reaches a high ρ by chance.
+      const floor = minCorrelation(matched.length);
+      if (corr === null || floor === null || corr < floor)
         continue;
       const a: TransferSide = {matrixIndex: s1.matrixIndex, rowIndex: s1.rowIndex, position: s1.position};
       const b: TransferSide = {matrixIndex: s2.matrixIndex, rowIndex: s2.rowIndex, position: s2.position};
@@ -316,11 +335,17 @@ export function transferStats(transfer: Transfer, higherIsBetter: boolean): Tran
   }
 
   let benefiting: {side: 'a' | 'b', substSmiles: string, value: number} | null = null;
+  // Only the analogs this pairing argues for: a virtual cell at a substituent the other side has
+  // measured. The rest of the series carries virtual cells too, but those rest on the matrix's own
+  // additive model and would be there whether or not this pairing existed.
+  const supported = new Set(transfer.predictedSubstituents);
   // Best across both sides. The two are answers to the same question, so stopping at whichever side
   // happens to hold an analog would report a weaker one than the transfer actually argues for. Strict
   // comparison keeps 'b' on ties, so the reported side does not depend on iteration order.
   for (const [side, analogs] of [['b', transfer.bVirtual], ['a', transfer.aVirtual]] as const) {
     for (const analog of analogs) {
+      if (!supported.has(analog.substSmiles))
+        continue;
       if (benefiting === null ||
         (higherIsBetter ? analog.value > benefiting.value : analog.value < benefiting.value))
         benefiting = {side, substSmiles: analog.substSmiles, value: analog.value};

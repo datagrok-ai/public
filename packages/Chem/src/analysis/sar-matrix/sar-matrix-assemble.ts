@@ -1,3 +1,4 @@
+import {_package} from '../../package';
 import {getRdKitService} from '../../utils/chem-common-rdkit';
 import {ClusterDecomposition, PositionRecord} from './sar-matrix-decompose';
 import {CoreCluster, MatchedSeries, SarMatrix, SarMatrixCell, SarMatrixCellKind, SarMatrixColumn,
@@ -5,39 +6,101 @@ import {CoreCluster, MatchedSeries, SarMatrix, SarMatrixCell, SarMatrixCellKind,
   from './sar-matrix-types';
 
 /**
+ * Rows and columns joined into components by the cells actually observed, as a union-find over
+ * `rowCount + columnCount` nodes: row `ri` is node `ri`, column `ci` is node `rowCount + ci`.
+ */
+function observedComponents(cells: SarMatrixCell[][], rowCount: number,
+  columnCount: number): Int32Array {
+  const parent = new Int32Array(rowCount + columnCount).map((_v, i) => i);
+  const find = (x: number): number => {
+    while (parent[x] !== x)
+      x = parent[x] = parent[parent[x]];
+    return x;
+  };
+  for (let ri = 0; ri < rowCount; ri++) {
+    for (let ci = 0; ci < columnCount; ci++) {
+      const cell = cells[ri][ci];
+      if (cell.kind === 'real' && cell.value !== null)
+        parent[find(ri)] = find(rowCount + ci);
+    }
+  }
+  return parent.map((_v, i) => find(i));
+}
+
+/**
  * Fit a two-way additive (Free-Wilson) model and predict empty cells as
- * `rowMean + columnMean - grandMean`. A cell is predictable only when its row and
- * column each have at least one observation.
+ * `rowMean + columnMean - grandMean`.
+ *
+ * A row and a column each having an observation is necessary but NOT sufficient: the model is only
+ * identifiable within a connected component of the observed-cell graph. Two designs that share no
+ * compound fix their row and column effects against unrelated baselines, so adding one's row effect to
+ * the other's column effect is arithmetic over incomparable offsets — and it errs toward the grand
+ * mean, which flatters exactly the core whose own measurements are worst.
  */
 export function fitAdditiveModel(cells: SarMatrixCell[][], rowCount: number,
   columnCount: number): (rowIdx: number, colIdx: number) =>
     {value: number, support: number, references: number} | null {
-  const rowSum = new Float64Array(rowCount);
+  const rowAcc = new Float64Array(rowCount);
   const rowN = new Int32Array(rowCount);
-  const colSum = new Float64Array(columnCount);
+  const colAcc = new Float64Array(columnCount);
   const colN = new Int32Array(columnCount);
   let grandSum = 0;
-  let grandN = 0;
+  // The fit sweeps the measured cells repeatedly and the grid is mostly holes, so they are collected
+  // once here rather than rescanned.
+  const obsRow: number[] = [];
+  const obsCol: number[] = [];
+  const obsVal: number[] = [];
 
   for (let ri = 0; ri < rowCount; ri++) {
     for (let ci = 0; ci < columnCount; ci++) {
       const cell = cells[ri][ci];
       if (cell.kind === 'real' && cell.value !== null) {
-        rowSum[ri] += cell.value;
         rowN[ri]++;
-        colSum[ci] += cell.value;
         colN[ci]++;
         grandSum += cell.value;
-        grandN++;
+        obsRow.push(ri);
+        obsCol.push(ci);
+        obsVal.push(cell.value);
       }
     }
   }
 
-  const grandMean = grandN ? grandSum / grandN : 0;
-  return (ri, ci) => (rowN[ri] && colN[ci]) ?
+  const grandMean = obsVal.length ? grandSum / obsVal.length : 0;
+  // Alternating least squares for value ≈ grand + row + column. Averaging the margins in one pass
+  // solves that model only when every row is measured at the same columns; with holes it is a
+  // different and worse estimator, and holes are the normal case here. Sweeping the two arms against
+  // each other converges on the least-squares fit, and reproduces the one-pass answer exactly when
+  // the design happens to be balanced.
+  const rowEffect = new Float64Array(rowCount);
+  const colEffect = new Float64Array(columnCount);
+  for (let iteration = 0; iteration < MAX_FIT_SWEEPS; iteration++) {
+    rowAcc.fill(0);
+    for (let k = 0; k < obsVal.length; k++)
+      rowAcc[obsRow[k]] += obsVal[k] - grandMean - colEffect[obsCol[k]];
+    for (let ri = 0; ri < rowCount; ri++) {
+      if (rowN[ri])
+        rowEffect[ri] = rowAcc[ri] / rowN[ri];
+    }
+    colAcc.fill(0);
+    for (let k = 0; k < obsVal.length; k++)
+      colAcc[obsCol[k]] += obsVal[k] - grandMean - rowEffect[obsRow[k]];
+    let shift = 0;
+    for (let ci = 0; ci < columnCount; ci++) {
+      if (!colN[ci])
+        continue;
+      const next = colAcc[ci] / colN[ci];
+      shift = Math.max(shift, Math.abs(next - colEffect[ci]));
+      colEffect[ci] = next;
+    }
+    if (shift < FIT_TOLERANCE)
+      break;
+  }
+
+  const root = observedComponents(cells, rowCount, columnCount);
+  return (ri, ci) => (rowN[ri] && colN[ci] && root[ri] === root[rowCount + ci]) ?
     // `support` is the weaker of the two arms (drives how faintly the cell draws); `references` is the
     // total measured compounds behind the estimate (what the panel lists and the filter counts).
-    {value: rowSum[ri] / rowN[ri] + colSum[ci] / colN[ci] - grandMean,
+    {value: grandMean + rowEffect[ri] + colEffect[ci],
       support: Math.min(rowN[ri], colN[ci]), references: rowN[ri] + colN[ci]} :
     null;
 }
@@ -124,31 +187,56 @@ const MAX_MATRIX_ROWS = 2000;
 /** Ceiling on columns, independent of the cell budget: the pane builds a grid column per substituent,
  *  so few rows must not buy unlimited width. */
 const MAX_MATRIX_COLS = 500;
+/** Sweep ceiling for the additive fit. It converges geometrically and reaches the tolerance in a
+ *  handful of sweeps; the cap only bounds a pathologically ill-conditioned design. */
+const MAX_FIT_SWEEPS = 50;
+/** Largest column-effect move that still counts as converged, well under any activity unit in use. */
+const FIT_TOLERANCE = 1e-9;
 
 /** Claim a cell for a compound the set holds but has no activity for, so `fillVirtualCells` cannot
  *  predict it and offer it as one to make. Never over a measured cell: two members can share a slot,
- *  and a measurement outranks a blank. */
+ *  and a measurement outranks a blank. A compound that WAS assayed but whose value the chosen scale
+ *  cannot represent is left alone — calling it untested would be a false claim about the data. */
 function claimUnmeasured(cells: SarMatrixCell[][], ri: number, ci: number, molIdx: number,
-  molecules: string[]): void {
+  molecules: string[], assayed?: Uint8Array): void {
+  if (assayed?.[molIdx])
+    return;
   if (cells[ri][ci].kind === 'empty')
     cells[ri][ci] = {kind: 'unmeasured', value: null, molIdx, smiles: molecules[molIdx]};
 }
 
 /**
- * Drop every row and column holding no measurement, in place.
+ * Cut the matrix down to the largest connected block of its observed cells, in place.
  *
- * The additive model can only reach a cell whose row AND column each have one, so such a line can
- * never be anything but blank — it is an axis the data never touched, carried in because a compound
- * decomposed onto that core or bore that R-group without ever being assayed. Removing them is what
- * makes the filled matrix dense: afterwards every remaining cell is measured or predictable.
+ * The additive model reaches a cell only when its row and column sit in the same component, so
+ * anything outside the largest one could never be filled and would draw as a permanent blank. A line
+ * with no measurement at all is a singleton component and goes the same way.
  *
- * No measured compound is lost, since the lines removed hold none by definition.
+ * This DOES drop measured compounds, unlike a plain empty-line prune: a design sharing no compound
+ * with the main block is not comparable to it, and showing both in one grid implies a comparison the
+ * data cannot support. What survives is one grid where every cell is measured or predictable.
  */
 function pruneUnobservedLines(rows: SarMatrixRow[], columns: SarMatrixColumn[],
   cells: SarMatrixCell[][]): void {
-  const observed = (cell: SarMatrixCell): boolean => cell.kind === 'real';
-  const keepRows = rows.map((_row, ri) => cells[ri].some(observed));
-  const keepCols = columns.map((_col, ci) => cells.some((row) => observed(row[ci])));
+  const root = observedComponents(cells, rows.length, columns.length);
+  const observedPerRoot = new Map<number, number>();
+  for (let ri = 0; ri < rows.length; ri++) {
+    for (let ci = 0; ci < columns.length; ci++) {
+      if (cells[ri][ci].kind === 'real')
+        observedPerRoot.set(root[ri], (observedPerRoot.get(root[ri]) ?? 0) + 1);
+    }
+  }
+  let best = -1;
+  let bestN = 0;
+  // Ties break on the lower root so the surviving block does not depend on iteration order.
+  for (const [r, n] of observedPerRoot) {
+    if (n > bestN || (n === bestN && r < best)) {
+      best = r;
+      bestN = n;
+    }
+  }
+  const keepRows = rows.map((_row, ri) => root[ri] === best);
+  const keepCols = columns.map((_col, ci) => root[rows.length + ci] === best);
   if (keepRows.every(Boolean) && keepCols.every(Boolean))
     return;
   for (let ri = cells.length - 1; ri >= 0; ri--) {
@@ -210,7 +298,7 @@ function boundedSeries(cluster: CoreCluster): MatchedSeries[] {
     return cluster.series;
   const ranked = [...cluster.series].sort((a, b) => b.members.length - a.members.length ||
     (a.coreSmiles < b.coreSmiles ? -1 : a.coreSmiles > b.coreSmiles ? 1 : 0));
-  console.warn(`SAR Matrix | a cluster of ${cluster.series.length} series was cut to ` +
+  _package.logger.warning(`SAR Matrix | a cluster of ${cluster.series.length} series was cut to ` +
     `${MAX_MATRIX_ROWS} rows; the rest carry the fewest compounds`);
   return ranked.slice(0, MAX_MATRIX_ROWS);
 }
@@ -222,11 +310,11 @@ function boundedSeries(cluster: CoreCluster): MatchedSeries[] {
  */
 export async function assembleMultiPositionMatrix(cluster: CoreCluster, molecules: string[],
   activities: Float32Array, predict: boolean, decomp: ClusterDecomposition | null,
-  predictUnmeasured = false): Promise<SarMatrix | null> {
+  predictUnmeasured = false, assayed?: Uint8Array): Promise<SarMatrix | null> {
   // Both ways into the fallback ask the same question, so the rule sits here rather than at the two
   // call sites: placeholder series have no real cores, and would read as one bare core per compound.
   const fallback = (): SarMatrix | null => cluster.requiresDecomposition ? null :
-    assembleSinglePositionMatrix(cluster, molecules, activities, predict, predictUnmeasured);
+    assembleSinglePositionMatrix(cluster, molecules, activities, predict, predictUnmeasured, assayed);
   if (!decomp)
     return fallback();
 
@@ -299,7 +387,7 @@ export async function assembleMultiPositionMatrix(cluster: CoreCluster, molecule
       if (ci === undefined)
         continue;
       if (!Number.isFinite(activity)) {
-        claimUnmeasured(cells, ri, ci, record.molIdx, molecules);
+        claimUnmeasured(cells, ri, ci, record.molIdx, molecules, assayed);
         continue;
       }
       cells[ri][ci] = {kind: 'real', value: activity, molIdx: record.molIdx, smiles: molecules[record.molIdx]};
@@ -396,7 +484,7 @@ async function linkVirtualCellStructures(rows: SarMatrixRow[], columns: SarMatri
  * empty cells filled with Free-Wilson predictions. Used when no usable shared anchor is found.
  */
 export function assembleSinglePositionMatrix(cluster: CoreCluster, molecules: string[], activities: Float32Array,
-  predict: boolean, predictUnmeasured = false): SarMatrix {
+  predict: boolean, predictUnmeasured = false, assayed?: Uint8Array): SarMatrix {
   const series = boundedSeries(cluster);
 
   const colIndex = new Map<string, number>();
@@ -410,7 +498,7 @@ export function assembleSinglePositionMatrix(cluster: CoreCluster, molecules: st
     const limit = Math.max(1, Math.min(MAX_MATRIX_COLS, Math.floor(MAX_MATRIX_CELLS / series.length)));
     if (ranked.length <= limit)
       return ranked;
-    console.warn(`SAR Matrix | a matrix of ${ranked.length} substituents was cut to ${limit} columns; ` +
+    _package.logger.warning(`SAR Matrix | a matrix of ${ranked.length} substituents was cut to ${limit} columns; ` +
       'the rest occur least often');
     return ranked.slice(0, limit);
   };
@@ -441,7 +529,7 @@ export function assembleSinglePositionMatrix(cluster: CoreCluster, molecules: st
       if (ci === undefined)
         continue;
       if (!Number.isFinite(activity)) {
-        claimUnmeasured(cells, ri, ci, member.molIdx, molecules);
+        claimUnmeasured(cells, ri, ci, member.molIdx, molecules, assayed);
         continue;
       }
       cells[ri][ci] = {kind: 'real', value: activity, molIdx: member.molIdx, smiles: molecules[member.molIdx]};

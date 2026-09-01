@@ -1,5 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 
+import {_package} from '../../package';
+
 /*
  * Every comparator across these modules ends in a content-derived tiebreak: fragments arrive in
  * worker-completion order, so resolving a tie by index or Map order makes the matrices depend on
@@ -7,7 +9,7 @@ import * as DG from 'datagrok-api/dg';
  */
 
 export function logSarTime(stage: string, t0: number): void {
-  console.log(`SAR Matrix | ${stage}: ${Math.round(performance.now() - t0)} ms`);
+  _package.logger.debug(`SAR Matrix | ${stage}: ${Math.round(performance.now() - t0)} ms`);
 }
 
 export interface SeriesMember {

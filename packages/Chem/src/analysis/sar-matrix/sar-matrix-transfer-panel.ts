@@ -2,6 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import {_package} from '../../package';
 import {computeAllTransfers, Transfer, TransferSide, transferStats, TransferStats}
   from './sar-matrix-transfer';
 import {SarMatrix} from './sar-matrix-types';
@@ -187,7 +188,7 @@ export class TransferPanel {
         detected = await computeAllTransfers(this.host.matrices, this.host.transferSimilarity,
           this.host.higherIsBetter);
       } catch (e) {
-        console.error('SAR Matrix | transfer detection failed', e);
+        _package.logger.error('SAR Matrix: transfer detection failed', {error: String(e)});
       }
       this.transfersComputing = false;
       ui.setUpdateIndicator(this.root, false);

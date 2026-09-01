@@ -1,4 +1,4 @@
-// import * as grok from 'datagrok-api/grok'; // only used by the disabled Murcko call (see below)
+import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import {_package} from '../../package';
@@ -184,30 +184,6 @@ export interface SarMatrixParams {
   rankScheme: SarRankScheme;
 }
 
-/**
- * Bemis-Murcko scaffolds — DISABLED. The server-side `Chem:MurckoScaffolds` script runs in an
- * on-demand container that costs ~30 s per call and effectively never resolves on large sets, stalling
- * the whole pipeline. It only sharpened the decomposition anchor; assembly falls back to whole-molecule
- * MCS without it. Returns [] so that fallback always runs. To re-enable, restore the body below and the
- * `grok` import (and a timeout so it can never block again).
- */
-async function computeMurckoScaffolds(_molList: string[]): Promise<string[]> {
-  return [];
-  /*
-  const MURCKO_TIMEOUT_MS = 10000;
-  const compute = (async (): Promise<string[]> => {
-    // MurckoScaffolds parses with MolFromSmiles, so convert molblock input to SMILES first.
-    const smilesList = await (await getRdKitService()).convertMolNotation(_molList, DG.chem.Notation.Smiles);
-    const tmp = DG.DataFrame.fromColumns([DG.Column.fromStrings('smiles', smilesList)]);
-    tmp.col('smiles')!.semType = DG.SEMTYPE.MOLECULE;
-    await grok.functions.call('Chem:MurckoScaffolds', {data: tmp, smiles: 'smiles'});
-    const scaffolds = tmp.col('scaffolds');
-    return scaffolds ? scaffolds.toList().map((s) => s ?? '') : [];
-  })().catch(() => [] as string[]);
-  const timeout = new Promise<string[]>((resolve) => setTimeout(() => resolve([]), MURCKO_TIMEOUT_MS));
-  return Promise.race([compute, timeout]);
-  */
-}
 
 /**
  * Run the full SAR Matrix pipeline: fragment molecules, build matched series, group related cores,
@@ -223,18 +199,34 @@ export async function runSarMatrix(molecules: DG.Column, activity: DG.Column<num
   // row count, not buffer length — column storage has spare capacity past the last row.
   const scaled = scaledCol.getRawData();
   const activities = new Float32Array(activity.length);
-  for (let i = 0; i < activities.length; i++)
-    activities[i] = activity.isNone(i) ? NaN : scaled[i];
+  // Whether the column holds a value at all, which is NOT the same as holding a usable one: a log
+  // scale turns a real zero or negative into ±Infinity or NaN. Such a compound was assayed, so it
+  // must not end up labelled untested — the assemblers read this to tell the two apart.
+  const assayed = new Uint8Array(activity.length);
+  let unscalable = 0;
+  for (let i = 0; i < activities.length; i++) {
+    if (activity.isNone(i)) {
+      activities[i] = NaN;
+      continue;
+    }
+    assayed[i] = 1;
+    activities[i] = scaled[i];
+    if (!Number.isFinite(scaled[i]))
+      unscalable++;
+  }
+  if (unscalable > 0) {
+    // Without this the whole analysis can come back empty with nothing to explain it: an all-negative
+    // column (ΔG, say) under the default −lg scaling leaves no observed cell anywhere.
+    const message = `SAR Matrix: ${unscalable} of ${activity.length} "${activity.name}" values cannot be ` +
+      `scaled by ${params.scaling}, which needs positive numbers. They are excluded from every matrix — ` +
+      'set Scaling to "none" to use them as they are.';
+    _package.logger.warning(message);
+    grok.shell.warning(message);
+  }
 
   const tFrag = performance.now();
-  const logAnd = <T>(stage: string) => (r: T): T => {
-    logSarTime(stage, tFrag);
-    return r;
-  };
-  const [[frags], scaffolds] = await Promise.all([
-    getMmpFrags(molList).then(logAnd(`MMP fragmentation (${molList.length} molecules)`)),
-    computeMurckoScaffolds(molList).then(logAnd('Murcko scaffolds')),
-  ]);
+  const [frags] = await getMmpFrags(molList);
+  logSarTime(`MMP fragmentation (${molList.length} molecules)`, tFrag);
   let t = performance.now();
   const series = buildMatchedSeries(frags, params.fragmentCutoff);
   logSarTime(`matched series (${series.length} series)`, t);
@@ -269,7 +261,7 @@ export async function runSarMatrix(molecules: DG.Column, activity: DG.Column<num
   // to the clusters that have none.
   const clusterSiteKeys = clusters.map((c) => c.siteKey);
   t = performance.now();
-  const decomps = await decomposeClusters(clusterMembers, molList, scaffolds, params.useMcsAnchors,
+  const decomps = await decomposeClusters(clusterMembers, molList, params.useMcsAnchors,
     clusterSiteKeys);
   logSarTime(`decomposition total (${decomps.filter(Boolean).length}/${clusters.length} clusters decomposed)`, t);
 
@@ -281,7 +273,7 @@ export async function runSarMatrix(molecules: DG.Column, activity: DG.Column<num
     matrix.rows.length >= 2;
   const assembled = (await Promise.all(clusters.map((cluster, i) =>
     assembleMultiPositionMatrix(cluster, molList, activities, params.predictVirtual, decomps[i],
-      params.predictUnmeasured))))
+      params.predictUnmeasured, assayed))))
     .filter(usable);
 
   // An anchor can decompose a cluster into fewer rows than it has series, and a matrix under two rows
@@ -292,7 +284,7 @@ export async function runSarMatrix(molecules: DG.Column, activity: DG.Column<num
   const rescued = (await Promise.all(clusters.map((cluster, i) =>
     decomps[i] !== null && !built.has(cluster.id) ?
       assembleMultiPositionMatrix(cluster, molList, activities, params.predictVirtual, null,
-        params.predictUnmeasured) : null)))
+        params.predictUnmeasured, assayed) : null)))
     .filter(usable);
   if (rescued.length) {
     assembled.push(...rescued);
