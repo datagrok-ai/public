@@ -1,8 +1,11 @@
 # Diff Studio changelog
 
-## v.next
+## 1.6.7 (2026-09-01)
 
 * Fixed model deep-link parsing after the platform started percent-encoding the path
+
+## 1.6.6 (2026-08-26)
+
 * Moved the DiffStudio Playwright E2E suite into the package (playwright/); helpers from @datagrok-libraries/test/src/playwright
 
 ## 1.6.5 (2026-06-26)
