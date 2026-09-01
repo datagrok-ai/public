@@ -182,6 +182,7 @@ class Builder {
       // View and build options
       identifiers_on_map: 'bigg_id',
       highlight_missing: false,
+      animate_flux: true,
       allow_building_duplicate_reactions: false,
       cofactors: [
         'atp', 'adp', 'nad', 'nadh', 'nadp', 'nadph', 'gtp', 'gdp', 'h', 'coa',
@@ -217,6 +218,7 @@ class Builder {
       'hide_all_labels',
       'allow_building_duplicate_reactions',
       'highlight_missing',
+      'animate_flux',
       'enable_tooltips',
       'reaction_scale_preset',
       'reaction_no_data_color',
