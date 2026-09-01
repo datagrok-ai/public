@@ -402,6 +402,11 @@ function showSarHint(i: number, previous?: HTMLElement): void {
     showSarHint(i + 1);
     return;
   }
+  // Cards sit wherever their rank puts them, and one low in the list leaves too little height beside
+  // it for the popup, which then runs past the bottom of the pane. Lifting it to the top of the
+  // scroller first gives the popup the full pane to open into.
+  if (anchor.closest('.chem-sar-nav-list'))
+    anchor.scrollIntoView({block: 'start'});
   const content = ui.div();
   content.append(ui.h3(hint.title));
   content.append(ui.divText(hint.text));
