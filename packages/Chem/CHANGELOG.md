@@ -7,6 +7,7 @@
 * Fixed Gasteiger Partial Charges panel on current RDKit — `GetSimilarityMapFromWeights` now requires an explicit `MolDraw2DCairo` drawer (passed by keyword, so pre-2023.09 RDKit still works)
 * GROK-20824: MPO: Fixed the profile description picking up the title's text styling when styled text was pasted into it
 * GROK-20821: MPO: Fixed the dataset list ignoring newly opened tables
+* GROK-20823: MPO: Fixed Edit opening duplicate editor tabs and leaving a stale profile preview in the context panel
 
 ## 1.17.14 (2026-08-13)
 

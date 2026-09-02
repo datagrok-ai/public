@@ -3309,6 +3309,8 @@ export class PackageFunctions {
         const item = treeNode.item(profile.name);
 
         item.onSelected.subscribe(() => {
+          if (MpoProfileCreateView.focusOpenEditor(profile.id))
+            return;
           openedView?.close();
           const editView = new MpoProfileCreateView(profile, false);
           openedView = editView.view;

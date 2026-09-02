@@ -37,6 +37,23 @@ const FIELD_DESCRIPTIONS: Record<string, string> = {
 };
 
 export class MpoProfileCreateView {
+  static readonly PROFILE_ID_TAG = 'chem-mpo-profile-id';
+
+  static focusOpenEditor(profileId: string): boolean {
+    const isEditor = (v: DG.ViewBase | null) => v?.temp?.[MpoProfileCreateView.PROFILE_ID_TAG] === profileId;
+    for (const v of grok.shell.views) {
+      if (isEditor(v)) {
+        grok.shell.v = v;
+        return true;
+      }
+    }
+    if (isEditor(grok.shell.preview as DG.View | null)) {
+      grok.shell.windows.showBrowse = true;
+      return true;
+    }
+    return false;
+  }
+
   readonly view: DG.View;
   readonly showMethod: boolean;
   readonly isEditMode: boolean;
@@ -88,8 +105,10 @@ export class MpoProfileCreateView {
     this.view = DG.View.create();
     this.showMethod = showMethod;
     this.isEditMode = !!existingProfile;
-    if (existingProfile && 'id' in existingProfile)
+    if (existingProfile && 'id' in existingProfile) {
       this.saved = existingProfile;
+      this.activeView.temp[MpoProfileCreateView.PROFILE_ID_TAG] = this.saved.id;
+    }
 
     this.profile = existingProfile ? structuredClone(existingProfile) : createDefaultProfile();
     this.originalProfile = structuredClone(this.profile);
@@ -315,6 +334,7 @@ export class MpoProfileCreateView {
     const result = await saveProfileInteractive(this.profile, this.saved);
     if (result) {
       this.saved = result;
+      this.activeView.temp[MpoProfileCreateView.PROFILE_ID_TAG] = result.id;
       this.originalProfile = structuredClone(this.profile);
       this.setModified(false);
       this.tableView.name = this.view.name = this.displayName;

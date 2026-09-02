@@ -50,12 +50,16 @@ export class MpoProfileHandler extends DG.ObjectHandler<MpoProfileInfo> {
   }
 
   static edit(profile: MpoProfileInfo): void {
+    grok.shell.setCurrentObject(null, false, true);
+    if (MpoProfileCreateView.focusOpenEditor(profile.id))
+      return;
     const view = new MpoProfileCreateView(profile, false);
     grok.shell.v = grok.shell.addView(view.view);
     view.setupBreadcrumbs();
   }
 
   static clone(profile: MpoProfileInfo): void {
+    grok.shell.setCurrentObject(null, false, true);
     const view = new MpoProfileCreateView(prepareProfileClone(profile), false);
     grok.shell.v = grok.shell.addView(view.view);
     view.setupBreadcrumbs();
