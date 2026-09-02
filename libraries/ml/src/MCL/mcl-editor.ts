@@ -69,7 +69,7 @@ export class MCLEditor extends MultiColumnDimReductionEditor {
 
     public get params() {
       return {
-        table: this.tableInput.value!,
+        table: this.tableInput.value ?? this.currentTable!,
         columns: this.columnsInput.value!,
         methodName: this.methodInput.value!,
         preprocessingFunctions: this.columnOptEditors.map((it) => it.preProcessingFunction),

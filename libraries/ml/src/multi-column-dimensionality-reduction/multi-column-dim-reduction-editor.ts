@@ -84,6 +84,8 @@ export type MultiColDimReductionParams = {
 export class MultiColumnDimReductionEditor {
     editorSettings: DimReductionEditorOptions = {};
     tableInput!: DG.InputBase<DG.DataFrame | null>;
+    // last resolved table: tableInput resolves value by name and loses the selection if the table is renamed
+    currentTable: DG.DataFrame | null = null;
     columnsInput!: DG.InputBase<DG.Column[]>;
     columnsInputRoot!: HTMLElement;
     columnOptEditors: DimReductionColumnEditor[] = [];
@@ -174,6 +176,7 @@ export class MultiColumnDimReductionEditor {
       const table = this.tableInput.value;
       if (!table)
         return;
+      this.currentTable = table;
       ui.empty(this.columnOptEditorsRoot);
 
       this.columnFunctionsMap = {};
@@ -332,7 +335,7 @@ export class MultiColumnDimReductionEditor {
       const usePlaceholders = this.columnOptEditors.length === 0 && columns && columns.length > 0;
       const n = columns?.length ?? 0;
       return {
-        table: this.tableInput.value!,
+        table: this.tableInput.value ?? this.currentTable!,
         columns,
         methodName: this.methodInput.value!,
         preprocessingFunctions: usePlaceholders ?

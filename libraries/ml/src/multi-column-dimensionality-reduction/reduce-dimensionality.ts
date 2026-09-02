@@ -33,6 +33,11 @@ export function getEmbeddingViewerName(columns: DG.Column[], method: DimReductio
   return `${method} (${colNames})`;
 }
 
+export function findTableView(table: DG.DataFrame): DG.TableView | undefined {
+  // match by stable .dart identity: tableViews returns a fresh toJs wrapper per access, and table names are nullable
+  return Array.from(grok.shell.tableViews).find((v) => v.dataFrame?.dart === table.dart);
+}
+
 export async function multiColReduceDimensionality(table: DG.DataFrame, columns: DG.Column[],
   method: DimReductionMethods, metrics: KnownMetrics[], weights: number[],
   preprocessingFunctions: (DG.Func | null | undefined)[],
@@ -53,7 +58,7 @@ export async function multiColReduceDimensionality(table: DG.DataFrame, columns:
       'must have the same length');
   }
 
-  const tv = plotEmbeddings ? (uiOptions.tableView ?? grok.shell.tableView(table.name) ?? grok.shell.addTableView(table)) : null;
+  const tv = plotEmbeddings ? (uiOptions.tableView ?? findTableView(table) ?? grok.shell.addTableView(table)) : null;
 
   const doReduce = async () => {
     const pg = DG.TaskBarProgressIndicator.create(

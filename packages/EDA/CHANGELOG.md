@@ -1,5 +1,9 @@
 # EDA changelog
 
+## v.next
+
+* 1687: Resolve target table views by DataFrame identity instead of nullable name in dim reduction and MCL flows
+
 ## 1.9.0 (2026-08-26)
 
 * Added SVM (classification and regression)

@@ -8,6 +8,7 @@ import {KnownMetrics} from '../typed-metrics';
 import {DistanceAggregationMethod} from '../distance-matrix/types';
 import {PreprocessFunctionReturnType} from '../functionEditors/dimensionality-reduction-editor';
 import {Options} from '@datagrok-libraries/utils/src/type-declarations';
+import {findTableView} from '../multi-column-dimensionality-reduction/reduce-dimensionality';
 import * as rxjs from 'rxjs';
 
 
@@ -38,7 +39,7 @@ export async function markovCluster(
   let tv: DG.TableView | null = null;
   let sc: DG.ScatterPlotViewer | undefined = scp;
   if (!sc) {
-    tv = grok.shell.tableView(df.name) ?? grok.shell.addTableView(df);
+    tv = findTableView(df) ?? grok.shell.addTableView(df);
     sc = tv.scatterPlot({...scatterPlotProps, title: 'MCL'});
   }
 

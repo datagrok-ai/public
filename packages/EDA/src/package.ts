@@ -19,7 +19,7 @@ import {getDbscanWorker} from '@datagrok-libraries/math';
 import {DistanceAggregationMethod, DistanceAggregationMethods} from '@datagrok-libraries/ml/src/distance-matrix/types';
 import {MultiColumnDimReductionEditor} from
   '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/multi-column-dim-reduction-editor';
-import {multiColReduceDimensionality} from
+import {multiColReduceDimensionality, findTableView} from
   '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/reduce-dimensionality';
 import {KnownMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
@@ -140,7 +140,7 @@ export class PackageFunctions {
     const resCol = await PackageFunctions.dbScan(df, col1, col2, epsilon, minimumPoints);
     df.changeColumnType(resCol, 'string');
     const colNames = [col1.name, col2.name];
-    const tv = grok.shell.tableView(df.name);
+    const tv = findTableView(df);
     if (!tv)
       return;
     for (const v of tv.viewers) {
@@ -278,7 +278,7 @@ export class PackageFunctions {
     @grok.decorators.param({'type': 'bool', 'options': {'initialValue': 'false', 'description': 'Run the computation on the GPU via WebGPU when available.'}}) useWebGPU: boolean = false,
     @grok.decorators.param({'type': 'double', 'options': {'initialValue': '2', 'description': 'Inflation factor controlling cluster granularity: higher values yield more, smaller clusters.'}}) inflate: number = 0,
     @grok.decorators.param({'type': 'int', 'options': {'initialValue': '5', 'description': 'Clusters smaller than this are merged into noise.'}}) minClusterSize: number = 5): Promise<MCLViewer> {
-    const tv = grok.shell.tableView(df.name) ?? grok.shell.addTableView(df);
+    const tv = findTableView(df) ?? grok.shell.addTableView(df);
     const serializedOptions: string = JSON.stringify({
       cols: cols.map((col) => col.name),
       metrics: metrics,
