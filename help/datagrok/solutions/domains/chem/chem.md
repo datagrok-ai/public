@@ -936,113 +936,91 @@ plots with regression lines and an identity line to assess model quality.
 
 ### SAR Matrix
 
-The **SAR Matrix** tool organizes a compound set into analog series and lays each one
-out as related cores (rows) against the substituents they share (columns), coloring
-every cell by potency.
+SAR Matrix organizes a compound set into analog series and lays each one out as related cores (rows)
+against the substituents they share (columns), coloring every cell by potency. Combinations nobody has
+made are filled in with a local [Free-Wilson](https://en.wikipedia.org/wiki/Free-Wilson_analysis)
+prediction, so one grid shows both what you measured and what the SAR implies.
+
+The results let you:
+
+* Analyze the substituents and cores that drive potency across a whole series
+* Read predicted analogs together with the evidence behind each prediction
+* Transfer an optimization from one scaffold to another where their SAR runs in parallel
+* Collect the analogs worth making into a separate table
 
 ![SAR Matrix](img/sar_matrix_overview.png)
-
-The series come from cutting each compound into a core and a substituent, so the compounds
-sharing a core vary at one position. Related cores are then grouped into a single matrix by
-cutting the cores a second time and collecting those that leave the same remainder, or
-optionally by fingerprint similarity, so every row of a matrix is a variation on one scaffold.
-
-Reading the matrix is reading the SAR: a substituent that helps on every core shows up
-as a colored column, and a productive core as a colored row.
-
-The combinations nobody has made are filled in with a local **Free-Wilson** model. Each
-prediction is the matrix average plus two corrections: a **core effect** for how that core
-performs relative to the average, and a **substituent effect** for how that substituent does.
-
-The two effects are fitted together rather than read off the row and column averages. Where
-a matrix has gaps — the normal case — a row average also carries the effects of whichever
-substituents that row happens to have been measured with, so the averages credit each other's
-work. Fitting both arms against each other separates them, and the terms the panel lists add
-up to exactly the number it predicts.
-
-Selecting a predicted cell shows all three terms with the number of measurements behind
-each, and their total as **reference points**: the measured compounds sharing that cell's
-core or its substituent. More reference points means a better-supported prediction: a cell
-whose core and substituent are both well measured rests on more evidence than one sitting at
-the sparse edge of the matrix.
-
-Filtering the matrix never narrows what the Context Panel reports. A filter chooses which
-cells you browse, while the panel answers what a compound's SAR is, and that answer should
-not change with the view.
-
-![Virtual analog in the Context Panel](img/sar_matrix_context_panel.png)
-
-Series are nested. **L1** is the finest view: one matrix per cut site, each row a single
-core with its substituents. **L2** folds the L1 matrices whose cores agree one cut deeper
-into a single, broader matrix, **L3** folds those again, and so on. The same compounds
-appear at every level, and a higher level trades more rows for a wider view of the chemistry,
-so start at L1 for a tight series and move up to see how it relates to its neighbours.
-
-Predicted analogs do not have to stay in the matrix. The **Design action** in the context
-panel adds the selected one to a separate table of virtual analogs, and the right-click menu
-exports a whole matrix, or every matrix at once as a new table - a make-list to triage for
-synthesis.
-
-A dedicated **SAR transfer** view finds pairs of cores whose potency trends run in
-parallel across the substituents they have both explored. Where the trends track, an
-optimization learned on one scaffold is expected to carry to the other.
-
-![SAR transfer between series](img/sar_matrix_transfer.png)
-
-The results are presented as a ranked list of series alongside the selected matrix,
-allowing you to:
-
-* Spot the substituents and cores that drive potency across a whole series
-* Read predicted analogs together with the evidence behind each prediction
-* Collect the analogs worth making into a separate table for synthesis triage
-* Carry an optimization from one scaffold to another where their SAR runs in parallel
 
 <details>
 <summary>How to use</summary>
 
 To run SAR Matrix analysis:
 
-1. In the **Top Menu**, select **Chem** > **Analyze** > **SAR Matrix...** to open the dialog.
-2. Select the **Table**, the **Molecules** column, and a numerical **Activity** column.
-3. Choose the activity **Scaling** (_none_, _log10_, or _-log10_). Use _-log10_ for IC50 or Ki values so that higher numbers mean more potent.
-4. To group by your own series rather than by structure, set **Series column (Optional)**. Compounds sharing a value become one matrix, named with that value. Leave it empty to group by structure.
-5. To also cover the compounds no shared core could group, turn on **Group leftovers by MCS**. See [Group leftovers by MCS](#group-leftovers-by-mcs) before you do — it is slower, and the matrices it produces can differ between runs over the same data.
-6. Click **OK**. The analysis opens with a ranked list of matrices on the left and the selected matrix on the right.
+1. In the **Top Menu**, select **Chem** > **Analyze** > **SAR Matrix...** to open the analysis dialog.
+1. In the dialog, configure the analysis by selecting:
+    * **Table**: the dataset you want to analyze
+    * **Molecules**: the column containing molecules
+    * **Activity**: a numerical column representing activity or property values
+    * **Scaling**: _none_, _log10_, or _-log10_. Use _-log10_ for raw IC50 or Ki values so that higher
+      numbers mean more potent; for pre-computed pIC50 use _none_ and set **Activity direction**
+      explicitly
+    * **Series column** (optional): group by your own series instead of by structure
+    * **Group leftovers by MCS** (optional): also cover compounds no shared core could group
+1. Click **OK**. The analysis opens with three tabs:
+
+Click **Next** to advance.
 
 ![SAR Matrix walkthrough](img/sar_matrix_demo.gif)
 
-Click a cell to inspect a measured compound or a predicted analog in the **Context Panel**.
+<Tabs>
+<TabItem value="matrix" label="SAR Matrix" default>
 
-A cell holding a compound you have is also linked to the source table: clicking it makes that
-compound the current row and selects it, so the rest of your data for it is one tab away. This
-includes the untested ones, whose compound is real even though its number is predicted. A virtual
-analog exists in no row, so clicking it clears the current row instead.
+A ranked list of series sits on the left, the selected matrix on the right. Cores run down the rows and
+substituents across the columns, so every column reads against the same core. A solid cell is a compound you have in the data provided, a dashed one a molecule nobody has made.
 
-![Matrix cell linked to its row in the source table](img/sar_matrix_data_link.png)
+Click a card to open that series, and a cell to inspect the compound or predicted analog in the
+**Context Panel**.
 
-For a predicted cell the panel shows a **Design action**: click **Add to Make list** to collect that
-analog, building the list up one compound at a time. To take more at once, right-click the matrix and
-add the predicted analogs of the current series, or of every series.
+Series nest. **L1** is the finest view: one matrix per cut site, each row a single core with its
+substituents. **L2** folds the L1 matrices whose cores agree one cut deeper, **L3** folds those again.
+A **Scaffold** row gathers the series built on one scaffold; they are listed rather than merged, because each varies a different position.
 
-The cart icon collects whichever cell is selected, so the Context Panel is not the only way in. It
-takes measured compounds as readily as predicted ones, and it works the same way on the **SAR
-Transfer** tab: click a cell on either side of a pairing and the cart takes that one.
+Use **Rank by** to reorder the series by potent compounds, SAR discontinuity or preferred substituent, and the funnel to narrow either the series or the cells.
+
+</TabItem>
+<TabItem value="transfer" label="SAR Transfer">
+
+The **SAR Transfer** tab finds pairs of cores whose potency trends run in parallel across the
+substituents they have both explored. Where the trends track, an optimization learned on one scaffold
+is expected to carry to the other, and the pairing proposes the analogs one core has never made.
+
+![SAR transfer](img/sar_matrix_transfer.png)
+
+Each card on the left is one source core, gathered under the series it belongs to. A source that
+transfers to several targets is one card: the dropdown above the grid switches between its targets
+while the source stays fixed. The columns captioned **predicted** are the ones only one core has tried.
+
+</TabItem>
+<TabItem value="makelist" label="Make list">
 
 Everything you collect lands in the **Make list** tab, each compound with its potency, the support
-behind it, and the series, core and substituent it came from. **Add to workspace** hands out a copy
-to save, export or join. **Clear** removes the selected compound, or empties the whole list when
-nothing is selected.
+behind it, and the series, core and substituent it came from.
 
-![Make list of virtual analogs](img/sar_matrix_make_list.png)
+![Make list](img/sar_matrix_make_list.png)
 
-Use the **Rank by** control to reorder the series by potent compounds, SAR discontinuity, or
-preferred substituent, and the filter icons to narrow the list by core substructure, potency
-or size.
+**Status** and **Method** are separate columns: Status says whether the compound exists (Synthesized,
+Untested or Virtual), Method says where its number came from (measured or predicted). An untested
+compound is made and predicted at once.
 
-A **Scaffold** row gathers the series built on one scaffold, drawn above them with every position it
-varies marked. They are listed rather than merged, because each varies a different position and
-substituents at different positions do not belong in one column. Open them in turn to read the same
-compounds from each position.
+To collect, click the cart icon on either the **SAR Matrix** or the **SAR Transfer** tab and the
+selected cell is added.
+
+**Add to workspace** hands out a copy to save, export or join, **Remove** drops the
+selected compound, and **Clear** empties the list.
+
+</TabItem>
+</Tabs>
+
+</details>
 
 #### Group leftovers by MCS
 
@@ -1062,21 +1040,6 @@ Weigh it before turning it on:
   and the others fold into the row.
 
 Leave it off unless you need the leftover compounds covered.
-
-Switch to the **SAR Transfer** tab for the pairs of cores whose potency trends run in parallel.
-Each entry shows the two series side by side over the substituents they share, the strength of
-the correlation, and the untested analogs the transfer argues for making.
-
-A pairing marked **nothing to make**, whose score reads `—`, is not a weak one: its correlation
-can be perfect. It means both cores have already been made with the same R-groups, so there is
-no untested combination left for the transfer to propose. A pairing proposes a compound only
-where one core has measured an R-group the other has never been made with.
-
-The transfer list carries the same filter as the series list, so a pairing can be narrowed by
-correlation, fold match, analogs gained or shared R-groups, and its source and target cores
-searched by substructure.
-
-</details>
 
 ## Docking
 
