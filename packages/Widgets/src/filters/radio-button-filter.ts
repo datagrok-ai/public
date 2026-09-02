@@ -10,8 +10,8 @@ import '../styles/widgets.css';
  * 2. Call dataFrame.rows.requestFilter when filtering criteria changes.
  * */
 export class RadioButtonFilter extends DG.Filter {
-  groupId = 0;
-  buttonId = 0;
+  static groupId = 0;
+  static buttonId = 0;
 
   constructor() {
     super();
@@ -19,13 +19,16 @@ export class RadioButtonFilter extends DG.Filter {
     this.subs = [];
   }
 
-  get isFiltering() {return true;}
+  get isFiltering() {return super.isFiltering && this.checkedCategoryId != null;}
 
-  get filterSummary() {return this.column!.getCategory(this.checkedCategoryId);}
+  get filterSummary() {
+    const categoryIdx = this.checkedCategoryId;
+    return categoryIdx == null ? '' : this.column!.getCategory(categoryIdx);
+  }
 
-  get checkedCategoryId() {
+  get checkedCategoryId(): number | null {
     const checkedInput = this.root.querySelector('input[type=\'radio\']:checked');
-    return parseInt(checkedInput!.getAttribute('data-category-id')!);
+    return checkedInput == null ? null : parseInt(checkedInput.getAttribute('data-category-id')!);
   }
 
   attach(dataFrame: DG.DataFrame) {
@@ -51,8 +54,10 @@ export class RadioButtonFilter extends DG.Filter {
   }
 
   applyFilter() {
-    const indexes = this.column!.getRawData();
     const categoryIdx = this.checkedCategoryId;
+    if (categoryIdx == null)
+      return;
+    const indexes = this.column!.getRawData();
     const filter = this.dataFrame!.filter;
     const rowCount = this.dataFrame!.rowCount;
 
@@ -63,12 +68,12 @@ export class RadioButtonFilter extends DG.Filter {
   }
 
   render() {
-    const name = `radio_${this.groupId++}`;
+    const name = `radio_${RadioButtonFilter.groupId++}`;
     $(this.root).empty();
 
     for (let i = 0; i < Math.min(20, this.column!.categories.length); i++) {
       const category = this.column!.categories[i];
-      const id = `rb_${this.buttonId++}`;
+      const id = `rb_${RadioButtonFilter.buttonId++}`;
       const radioButon = $(`<input type="radio" id="${id}" name="${name}" data-category-id="${i}">`)
         .on('change', () => this.dataFrame!.rows.requestFilter());
       const label = $(`<label for="${id}">${category}</label>`);
