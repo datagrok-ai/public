@@ -574,7 +574,21 @@ export async function focusQueryEditorTab(page: Page, queryName: string): Promis
     const editor = handles.find((h) => h.querySelector('[name="icon-data-query"]')) as HTMLElement | undefined;
     editor?.click();
   }, queryName);
-  await page.waitForTimeout(400);
+  await page.waitForSelector('[name="input-Name"]', { timeout: 15_000 });
+}
+
+/// `Run query...` opens a result table view whose ribbon also carries `[name="button-Save"]`, and
+/// clicking that one saves a project instead. The result view can also win the focus race after
+/// [focusQueryEditorTab] returns, so the editor has to be re-asserted right before Save.
+async function activateQueryEditorView(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    if (document.querySelector('[name="input-Name"]')) return;
+    (document.querySelector('.d4-dialog[name="dialog-Save-project"] .grok-font-icon-close') as HTMLElement)?.click();
+    const editor = Array.from(document.querySelectorAll('[name^="view-handle: "]'))
+      .find((h) => h.querySelector('[name="icon-data-query"]')) as HTMLElement | undefined;
+    editor?.click();
+  });
+  await page.waitForSelector('[name="input-Name"]', { timeout: 15_000 });
 }
 
 /** Click Save in the query editor ribbon and wait for the server commit. */
@@ -586,6 +600,7 @@ export async function saveQuery(page: Page, friendlyName: string): Promise<void>
   try {
     await expect(async () => {
       if (await findQueryByFriendlyName(page, friendlyName)) return;
+      await activateQueryEditorView(page);
       await page.locator('[name="button-Save"]').first().click({ timeout: 5_000 });
       await expect.poll(async () =>
         (await findQueryByFriendlyName(page, friendlyName)) !== null,
