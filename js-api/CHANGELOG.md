@@ -2,6 +2,8 @@
 
 ## v.next
 
+* Added `NodeApiClient.getBytes()` / `putBytes()` and `InternalDataSource` — a client for the internal entity routers that throws on the `ApiError` bodies they answer 200 with — to the Node dapi client (subset mirror of the CLI's `tools/bin/utils/node-dapi.ts`); `InternalDataSource` is exported from `datagrok-api/node-api`, `NodeDapi.client` is public, and `NodeDapi.queries|scripts|reports` now use the internal routes (the `/public/v1/` ones they used do not exist)
+
 * GROK-20799: Added `grok.meta.propertiesOf(type, {filterable})` — the curated property catalog of a platform entity type or a domain table, as descriptors whose names filters, facets and grids accept; null for an uncurated type or an unknown table
 * GROK-20799: Added `grok.meta.coreLocationOf(type)` — the read-only `Core` domain table serving a platform type's rows, or null
 * GROK-20799: Added `Property.refType` (the type an entity-valued property points at) and `Property.relationKind` (the new `DG.RELATION_KIND` enum; null when the property carries no database annotation)

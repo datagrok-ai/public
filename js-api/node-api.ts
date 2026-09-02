@@ -36,5 +36,6 @@ export * as grok from './grok';
 export {wu};
 export {dayjs};
 
-export {NodeDapi, NodeApiClient, NodeHttpDataSource, NodeFuncsDataSource, NodeFilesDataSource} from './src/node-dapi';
+export {NodeDapi, NodeApiClient, NodeHttpDataSource, NodeFuncsDataSource, NodeFilesDataSource,
+  InternalDataSource} from './src/node-dapi';
 export type {NodeApiError} from './src/node-dapi';
