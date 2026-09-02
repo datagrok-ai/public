@@ -370,8 +370,9 @@ Options:
 --src       generate: the sources to scan for @entity classes (default src)
 --out       ddl: write the DDL to this file instead of printing it
 --name      Migration name (migrate, squash)
---server    Diff against the snapshot recorded on the default (or named) server
-            instead of the sealed file
+--server    check/diff only: compare against the snapshot recorded on the default (or
+            named) server instead of the sealed file. Informational — migrations are
+            always generated from the sealed snapshot, never from a database
 --all       squash: every script of the schema
 --from/--to squash: the scripts numbered NNNN..NNNN (inclusive)
 --discard   squash --all: delete the scripts instead of folding them (needs --yes)

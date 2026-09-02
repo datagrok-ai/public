@@ -91,7 +91,9 @@ Read more about package development in [Datagrok's documentation](https://datagr
   `grok schema migrate --name <x>` scaffolds `databases/<schema>/NNNN_<x>.sql` (run on deploy) plus its `down/` twin
   carrying every physical change (additive ones too, so a script that moves data is self-contained).
   `grok schema squash --name <x> --all|--from N --to N` folds consecutive scripts into one, and `--all --discard --yes`
-  deletes them all (the manifest becomes the baseline). `--server [alias]` diffs against the snapshot recorded on a server.
+  deletes them all (the manifest becomes the baseline). `grok schema check|diff --server [alias]`
+  compare against the snapshot recorded on a stand — informational only: migrations are always generated from the
+  sealed `snapshot.json`, never from a database.
 - `publish` uploads a package to the specified server (pass either a URL or a server alias from the `config.yaml` file).
 Additionally, you can use placeholders in JSON files under the `/connections` folder to substitute environment variables.
 For more information on configuring connections, refer to the [Connections](https://datagrok.ai/help/develop#connections) article.

@@ -315,6 +315,12 @@ export async function schema(argv: SchemaArgs, packageDir: string = process.cwd(
   const verb: string | undefined = argv._[1];
   if (argv.help || verb == null || !VERBS.includes(verb))
     return false;
+  // Code serves many databases; a stand's recorded snapshot only says which version it is at.
+  if (argv.server && verb !== 'check' && verb !== 'diff') {
+    color.error('--server: migrations are generated from the sealed snapshot; use --server with diff or check ' +
+      'to compare against a stand');
+    return false;
+  }
   if (verb === 'squash') {
     if (argv.discard && !argv.all) {
       color.error('--discard applies to --all only');

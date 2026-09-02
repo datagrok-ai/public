@@ -532,6 +532,20 @@ describe('grok schema', () => {
       .toBe(buildSnapshot(JSON.parse(fs.readFileSync(path.join(dir, 'databases', 'testdb', 'schema.json'), 'utf8'))).hash);
   });
 
+  it('--server is informational: migrate and squash refuse it', async () => {
+    const dir = makePackage();
+    await run(dir, 'seal');
+    const message = 'migrations are generated from the sealed snapshot; use --server with diff or check ' +
+      'to compare against a stand';
+    let res = await run(dir, 'migrate', {name: 'x', server: true});
+    expect(res.result).toBe(false);
+    expect(res.output).toContain(message);
+    res = await run(dir, 'squash', {name: 'x', all: true, server: 'dev'});
+    expect(res.result).toBe(false);
+    expect(res.output).toContain(message);
+    expect(vi.mocked(createClient)).not.toHaveBeenCalled();
+  });
+
   it('--server diffs against the recorded snapshot; 404 means none recorded', async () => {
     const dir = makePackage();
     const get = vi.fn();
