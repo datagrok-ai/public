@@ -3,10 +3,11 @@ import path from 'path';
 import {findDomainManifests, loadDomainManifest} from './api';
 import {createClient} from '../utils/server-client';
 import * as color from '../utils/color-utils';
-import {buildSnapshot, describeChange, diff, emptySnapshot, hashOf, scaffold, serialize,
-  Change, Snapshot} from '../utils/domain-snapshot';
+import {buildSnapshot, chainGap, describeChange, diff, emptySnapshot, hashOf, parseMigrationHeader, scaffold,
+  serialize, squashScripts, Change, MigrationScript, Snapshot} from '../utils/domain-snapshot';
 
-const VERBS = ['seal', 'check', 'diff', 'migrate'];
+const VERBS = ['seal', 'check', 'diff', 'migrate', 'squash'];
+const scriptName = /^(\d+)_.*\.sql$/;
 
 interface SchemaArgs {
   _: string[];
@@ -15,6 +16,12 @@ interface SchemaArgs {
   name?: string;
   /** `--server` alone = the default host; `--server <alias|url>` = that one. */
   server?: string | boolean;
+  all?: boolean;
+  from?: number | string;
+  to?: number | string;
+  discard?: boolean;
+  yes?: boolean;
+  'force-missing-down'?: boolean;
 }
 
 function short(hash: string | undefined): string {
@@ -56,14 +63,89 @@ function seal(sealedPath: string, relPath: string, snapshot: Snapshot): void {
 /** The next migration number: one past the highest `NNNN_` prefix in [dir], from 0001. */
 function nextMigrationNumber(dir: string): number {
   let max = 0;
-  if (fs.existsSync(dir)) {
-    for (const f of fs.readdirSync(dir)) {
-      const m = /^(\d+)_.*\.sql$/.exec(f);
-      if (m != null)
-        max = Math.max(max, Number(m[1]));
-    }
+  for (const f of fs.readdirSync(dir)) {
+    const m = scriptName.exec(f);
+    if (m != null)
+      max = Math.max(max, Number(m[1]));
   }
   return max + 1;
+}
+
+/** The schema dir's `NNNN_*.sql` scripts carrying a transition header, in name order,
+ * each with its `down/` twin when there is one. */
+function readMigrationScripts(dir: string): (MigrationScript & {number: number})[] {
+  const scripts: (MigrationScript & {number: number})[] = [];
+  for (const file of fs.readdirSync(dir).sort()) {
+    const m = scriptName.exec(file);
+    if (m == null)
+      continue;
+    const up = fs.readFileSync(path.join(dir, file), 'utf8');
+    const header = parseMigrationHeader(up);
+    if (header == null)
+      continue;
+    const downPath = path.join(dir, 'down', file);
+    scripts.push({file, number: Number(m[1]), from: header.from, to: header.to, up,
+      down: fs.existsSync(downPath) ? fs.readFileSync(downPath, 'utf8') : undefined});
+  }
+  return scripts;
+}
+
+/** `squash`: folds a continuous chain of scripts into one (or, with --discard, deletes them
+ * all). False = a validation failure, reported. */
+function squash(dir: string, relDir: string, schema: string, argv: SchemaArgs): boolean {
+  const scripts = readMigrationScripts(dir);
+  const remove = (s: MigrationScript) => {
+    fs.rmSync(path.join(dir, s.file));
+    if (s.down != null)
+      fs.rmSync(path.join(dir, 'down', s.file));
+  };
+  if (argv.discard) {
+    if (!argv.yes) {
+      color.error(`${schema}: --discard deletes every migration script in ${relDir}; pass --yes to confirm`);
+      return false;
+    }
+    for (const s of scripts)
+      remove(s);
+    color.warn(`${schema}: deleted ${scripts.length} migration script(s) and their down twins — the manifest is ` +
+      'the baseline; stands behind the current declaration can no longer migrate by script');
+    return true;
+  }
+
+  const from = argv.from == null ? -Infinity : Number(argv.from);
+  const to = argv.to == null ? Infinity : Number(argv.to);
+  const selected = argv.all ? scripts : scripts.filter((s) => s.number >= from && s.number <= to);
+  if (selected.length === 0 && argv.all) {
+    console.log(`${schema}: no migration scripts in ${relDir}, nothing to squash`);
+    return true;
+  }
+  if (selected.length < 2) {
+    color.error(`${schema}: ${selected.length} script(s) selected in ${relDir}; squash needs at least two`);
+    return false;
+  }
+  const gap = chainGap(selected);
+  if (gap != null) {
+    color.error(`${schema}: the scripts do not chain — ${gap}`);
+    return false;
+  }
+  const missing = selected.filter((s) => s.down == null).map((s) => s.file);
+  if (missing.length > 0 && !argv['force-missing-down']) {
+    color.error(`${schema}: no down script for ${missing.join(', ')}; write them, or pass --force-missing-down ` +
+      'to leave a TODO in the squashed down script');
+    return false;
+  }
+
+  // Keeps the first script's number, so the result stays in place among unrelated scripts.
+  const file = `${scriptName.exec(selected[0].file)![1]}_${argv.name}.sql`;
+  const out = squashScripts(selected, schema, argv.name!);
+  for (const s of selected)
+    remove(s);
+  fs.mkdirSync(path.join(dir, 'down'), {recursive: true});
+  fs.writeFileSync(path.join(dir, file), out.up, 'utf8');
+  fs.writeFileSync(path.join(dir, 'down', file), out.down, 'utf8');
+  console.log(`${schema}: squashed ${selected.map((s) => s.file).join(', ')} into ${file}`);
+  console.log(`Wrote ${path.join(relDir, file)} and ${path.join(relDir, 'down', file)}; deleted ` +
+    `${selected.length} script(s) and their down twins — review before committing`);
+  return true;
 }
 
 async function run(argv: SchemaArgs, verb: string, packageDir: string): Promise<boolean> {
@@ -92,6 +174,11 @@ async function run(argv: SchemaArgs, verb: string, packageDir: string): Promise<
     const sealedRel = path.relative(packageDir, sealedPath);
     if (verb === 'seal') {
       seal(sealedPath, sealedRel, current);
+      continue;
+    }
+    if (verb === 'squash') {
+      if (!squash(dir, path.relative(packageDir, dir), manifest.name, argv))
+        ok = false;
       continue;
     }
 
@@ -140,6 +227,8 @@ async function run(argv: SchemaArgs, verb: string, packageDir: string): Promise<
       seal(sealedPath, sealedRel, current);
       continue;
     }
+    if (physical.every((c) => c.auto))
+      console.log('No change needs a migration script — `grok schema seal` is enough; scripts written for rollback.');
     // The up script sits next to schema.json, where the deployer runs NNNN_*.sql files
     // non-recursively; the down script goes in a subdirectory it skips.
     const downDir = path.join(dir, 'down');
@@ -164,8 +253,19 @@ export async function schema(argv: SchemaArgs, packageDir: string = process.cwd(
   const verb: string | undefined = argv._[1];
   if (argv.help || verb == null || !VERBS.includes(verb))
     return false;
-  if (verb === 'migrate' && !/^[A-Za-z0-9_-]+$/.test(String(argv.name ?? ''))) {
-    color.error('migrate needs --name <x> (letters, digits, _ and -)');
+  if (verb === 'squash') {
+    if (argv.discard && !argv.all) {
+      color.error('--discard applies to --all only');
+      return false;
+    }
+    if (!argv.all && argv.from == null && argv.to == null) {
+      color.error('squash needs --all, or --from NNNN and/or --to NNNN');
+      return false;
+    }
+  }
+  const needsName = verb === 'migrate' || (verb === 'squash' && !argv.discard);
+  if (needsName && !/^[A-Za-z0-9_-]+$/.test(String(argv.name ?? ''))) {
+    color.error(`${verb} needs --name <x> (letters, digits, _ and -)`);
     return false;
   }
   try {

@@ -4,8 +4,8 @@ import os from 'os';
 import path from 'path';
 import {createHash} from 'crypto';
 import {fileURLToPath} from 'url';
-import {buildSnapshot, canonical, diff, emptySnapshot, hashOf, scaffold, serialize, snapshotBody,
-  Change} from '../utils/domain-snapshot';
+import {buildSnapshot, canonical, diff, emptySnapshot, hashOf, parseMigrationHeader, scaffold, serialize,
+  snapshotBody, Change} from '../utils/domain-snapshot';
 import {schema} from '../commands/schema';
 import {createClient} from '../utils/server-client';
 
@@ -259,7 +259,7 @@ describe('diff', () => {
 describe('scaffold', () => {
   const from = buildSnapshot(fixture());
 
-  it('writes up statements for manual changes only, and reverses every physical change in the down', () => {
+  it('writes every physical change to the up, and reverses them in the down', () => {
     const to = buildSnapshot(fixture((m) => {
       delete m.tables.sample.columns.count;
       m.tables.sample.columns.note2 = {type: 'string'};
@@ -287,12 +287,13 @@ describe('scaffold', () => {
       `to ${to.hash!.substring(0, 12)}.\n`);
     expect(up).toContain('-- Registry-only changes (no SQL; converged by the next deploy):\n' +
       '--   * table-knob sample_event: audit false -> (none)\n');
-    expect(up).toContain('-- Applied by the deployer itself (no SQL here; reversed in the down script):\n' +
-      '--   * change-unique sample.status: unique false -> true [physical]\n' +
-      '--   * add-column sample.note2: added (string) [physical]\n');
+    expect(up).not.toContain('Applied by the deployer');
     expect(up).toContain('-- data loss\nALTER TABLE testdb.sample DROP COLUMN IF EXISTS count;\n');
-    expect(up).not.toContain('note2 text');
-    expect(up).not.toContain('ux_sample_status');
+    // additive changes too: a script that moves data between them must be self-contained
+    expect(up).toContain('-- change-unique sample.status: unique false -> true [physical]\n' +
+      'CREATE UNIQUE INDEX IF NOT EXISTS ux_sample_status ON testdb.sample (status) WHERE NOT is_deleted;\n');
+    expect(up).toContain('-- add-column sample.note2: added (string) [physical]\n' +
+      'ALTER TABLE testdb.sample ADD COLUMN IF NOT EXISTS note2 text;\n');
     expect(up).toContain('-- TODO: a required column with no default cannot be added to a populated table\n' +
       'ALTER TABLE testdb.sample ADD COLUMN IF NOT EXISTS code text NOT NULL;\n');
     expect(up).toContain('ALTER TABLE testdb.sample ALTER COLUMN name DROP NOT NULL;\n');
@@ -355,11 +356,10 @@ describe('scaffold', () => {
       '  END IF;\nEND$$;\n' +
       'CREATE INDEX IF NOT EXISTS ix_label_owner ON testdb.label (owner);\n' +
       'CREATE INDEX IF NOT EXISTS ix_label_data ON testdb.label USING gin (data jsonb_path_ops);\n');
-    // the additive direction is the deployer's: header only in the up, DROP TABLE in the down
+    // the additive direction is scripted too (the deployer's own CREATE TABLE is a no-op)
     const added = scaffold(diff(from, withLabel), 'testdb');
-    expect(added.up).toContain('--   * add-table label: created [physical]\n');
-    expect(added.up).toContain('-- No manual statement.\n');
-    expect(added.up).not.toContain('CREATE TABLE');
+    expect(added.up).toContain('-- add-table label: created [physical]\nCREATE TABLE IF NOT EXISTS testdb.label (\n');
+    expect(added.up).toContain('CREATE INDEX IF NOT EXISTS ix_label_data ON testdb.label USING gin (data jsonb_path_ops);\n');
     expect(added.down).toContain('-- data loss\nDROP TABLE IF EXISTS testdb.label;\n');
   });
 
@@ -427,6 +427,29 @@ describe('grok schema', () => {
   const schemaDir = (dir: string) => path.join(dir, 'databases', 'testdb');
   const sqlFiles = (dir: string) => fs.readdirSync(schemaDir(dir)).filter((f) => f.endsWith('.sql'));
 
+  /** Seals, keeps a legacy `0000_init.sql`, then writes three manual migrations
+   * 0001_a / 0002_b / 0003_c dropping `count`, `ratio` and `active`. */
+  async function threeMigrations(): Promise<string> {
+    const dir = makePackage();
+    await run(dir, 'seal');
+    fs.writeFileSync(path.join(schemaDir(dir), '0000_init.sql'), 'select 1;');
+    for (const [name, column] of [['a', 'count'], ['b', 'ratio'], ['c', 'active']]) {
+      mutateManifest(dir, (m) => delete m.tables.sample.columns[column]);
+      await run(dir, 'migrate', {name});
+    }
+    return dir;
+  }
+
+  const header = (dir: string, file: string) =>
+    parseMigrationHeader(fs.readFileSync(path.join(schemaDir(dir), file), 'utf8'))!;
+
+  /** Asserts [needles] all occur in [text], in that order. */
+  function expectInOrder(text: string, needles: string[]): void {
+    const order = needles.map((n) => text.indexOf(n));
+    expect(order.every((i) => i >= 0), needles.filter((n) => !text.includes(n)).join(' | ')).toBe(true);
+    expect([...order].sort((a, b) => a - b)).toEqual(order);
+  }
+
   afterEach(() => vi.mocked(createClient).mockReset());
 
   it('check fails without a seal, seal writes the snapshot, check passes after it', async () => {
@@ -490,14 +513,17 @@ describe('grok schema', () => {
       m.tables.sample.columns.note2 = {type: 'string'};
     })).hash;
     expect(up1).toContain(`-- ems-migration: from=${sealedBefore} to=${sealedAfter}\n`);
-    expect(up1).toContain('--   * add-column sample.note2: added (string) [physical]\n');
-    expect(up1).toContain('-- No manual statement.\n');
+    expect(res.output).toContain('No change needs a migration script — `grok schema seal` is enough; ' +
+      'scripts written for rollback.');
+    expect(up1).toContain('-- add-column sample.note2: added (string) [physical]\n' +
+      'ALTER TABLE testdb.sample ADD COLUMN IF NOT EXISTS note2 text;\n');
     expect(fs.readFileSync(path.join(schemaDir(dir), 'down', '0004_add_note.sql'), 'utf8'))
       .toContain('ALTER TABLE testdb.sample DROP COLUMN IF EXISTS note2;\n');
     expect((await run(dir, 'check')).exitCode).toBeUndefined();
 
     mutateManifest(dir, (m) => delete m.tables.sample.columns.count);
     res = await run(dir, 'migrate', {name: 'drop-count'});
+    expect(res.output).not.toContain('No change needs a migration script');
     expect(res.output).toContain(path.join('databases', 'testdb', '0005_drop-count.sql'));
     expect(fs.existsSync(path.join(schemaDir(dir), 'down', '0005_drop-count.sql'))).toBe(true);
     expect(fs.readFileSync(path.join(schemaDir(dir), '0005_drop-count.sql'), 'utf8'))
@@ -533,5 +559,91 @@ describe('grok schema', () => {
     expect(res.result).toBe(true);
     expect(res.exitCode).toBe(1);
     expect(res.output).toContain('boom');
+  });
+
+  it('squash --all folds the chain into one script numbered after the first and deletes the sources', async () => {
+    const dir = await threeMigrations();
+    const first = header(dir, '0001_a.sql'), last = header(dir, '0003_c.sql');
+    const res = await run(dir, 'squash', {name: 'v2', all: true});
+    expect(res.result).toBe(true);
+    expect(res.exitCode).toBeUndefined();
+    expect(res.output).toContain('squashed 0001_a.sql, 0002_b.sql, 0003_c.sql into 0001_v2.sql');
+    expect(sqlFiles(dir)).toEqual(['0000_init.sql', '0001_v2.sql']);
+    expect(fs.readdirSync(path.join(schemaDir(dir), 'down'))).toEqual(['0001_v2.sql']);
+
+    const up = fs.readFileSync(path.join(schemaDir(dir), '0001_v2.sql'), 'utf8');
+    expect(up.startsWith('-- testdb: v2 (squashed from 0001_a.sql .. 0003_c.sql)\n' +
+      `-- ems-migration: from=${first.from} to=${last.to}\n` +
+      '-- Generated by grok schema squash\n-- Review every statement before committing.\n\n' +
+      '-- ==== 0001_a.sql ====\n-- testdb: a\n-- Generated by grok schema migrate from snapshot')).toBe(true);
+    // one transition line — the sources' own are stripped, everything else is verbatim
+    expect(up.match(/ems-migration/g)).toHaveLength(1);
+    expectInOrder(up, ['-- ==== 0001_a.sql ====', 'DROP COLUMN IF EXISTS count;', '-- ==== 0002_b.sql ====',
+      'DROP COLUMN IF EXISTS ratio;', '-- ==== 0003_c.sql ====', 'DROP COLUMN IF EXISTS active;']);
+
+    const down = fs.readFileSync(path.join(schemaDir(dir), 'down', '0001_v2.sql'), 'utf8');
+    expect(down.startsWith('-- testdb: v2 (squashed from 0001_a.sql .. 0003_c.sql) (down)\n' +
+      `-- ems-migration: from=${last.to} to=${first.from}\n`)).toBe(true);
+    expect(down.match(/ems-migration/g)).toHaveLength(1);
+    expectInOrder(down, ['-- ==== down/0003_c.sql ====', 'ADD COLUMN IF NOT EXISTS active bool;',
+      '-- ==== down/0002_b.sql ====', 'ADD COLUMN IF NOT EXISTS ratio float8;',
+      '-- ==== down/0001_a.sql ====', 'ADD COLUMN IF NOT EXISTS count int;']);
+    // the seal is untouched
+    expect((await run(dir, 'check')).exitCode).toBeUndefined();
+  });
+
+  it('squash --from/--to takes an inclusive range and refuses a broken chain or a missing down', async () => {
+    const dir = await threeMigrations();
+    let res = await run(dir, 'squash', {name: 'bc', from: 2, to: 3});
+    expect(res.exitCode).toBeUndefined();
+    expect(sqlFiles(dir)).toEqual(['0000_init.sql', '0001_a.sql', '0002_bc.sql']);
+    expect(fs.readdirSync(path.join(schemaDir(dir), 'down'))).toEqual(['0001_a.sql', '0002_bc.sql']);
+    expect(header(dir, '0002_bc.sql').from).toBe(header(dir, '0001_a.sql').to);
+    // fewer than two selected, and no selection at all
+    expect((await run(dir, 'squash', {name: 'x', from: 1, to: 1})).exitCode).toBe(1);
+    expect((await run(dir, 'squash', {name: 'x'})).result).toBe(false);
+
+    const gap = await threeMigrations();
+    const second = path.join(schemaDir(gap), '0002_b.sql');
+    fs.writeFileSync(second, fs.readFileSync(second, 'utf8').replace(/to=\S+/, `to=${'2'.repeat(64)}`));
+    res = await run(gap, 'squash', {name: 'x', all: true});
+    expect(res.result).toBe(true);
+    expect(res.exitCode).toBe(1);
+    expect(res.output).toContain(`0002_b.sql ends at ${'2'.repeat(12)}… but 0003_c.sql starts from ` +
+      `${header(gap, '0003_c.sql').from.substring(0, 12)}…`);
+    expect(sqlFiles(gap)).toEqual(['0000_init.sql', '0001_a.sql', '0002_b.sql', '0003_c.sql']);
+
+    const noDown = await threeMigrations();
+    fs.rmSync(path.join(schemaDir(noDown), 'down', '0002_b.sql'));
+    res = await run(noDown, 'squash', {name: 'x', all: true});
+    expect(res.exitCode).toBe(1);
+    expect(res.output).toContain('no down script for 0002_b.sql');
+    expect(sqlFiles(noDown)).toHaveLength(4);
+    res = await run(noDown, 'squash', {name: 'x', all: true, 'force-missing-down': true});
+    expect(res.exitCode).toBeUndefined();
+    expect(sqlFiles(noDown)).toEqual(['0000_init.sql', '0001_x.sql']);
+    expect(fs.readFileSync(path.join(schemaDir(noDown), 'down', '0001_x.sql'), 'utf8'))
+      .toContain('-- ==== down/0002_b.sql ====\n-- TODO: no down script for 0002_b.sql\n');
+  });
+
+  it('squash --all --discard deletes every script, with --yes only', async () => {
+    const dir = await threeMigrations();
+    expect((await run(dir, 'squash', {discard: true})).result).toBe(false);
+    let res = await run(dir, 'squash', {all: true, discard: true});
+    expect(res.exitCode).toBe(1);
+    expect(res.output).toContain('--yes');
+    expect(sqlFiles(dir)).toHaveLength(4);
+    res = await run(dir, 'squash', {all: true, discard: true, yes: true});
+    expect(res.exitCode).toBeUndefined();
+    expect(res.output).toContain(
+      'the manifest is the baseline; stands behind the current declaration can no longer migrate by script');
+    expect(sqlFiles(dir)).toEqual(['0000_init.sql']);
+    expect(fs.readdirSync(path.join(schemaDir(dir), 'down'))).toEqual([]);
+  });
+
+  it('parseMigrationHeader accepts the Dart-side spelling variants', () => {
+    expect(parseMigrationHeader('-- t\r\n--  ems-migration:  from=abc   to=def\r\n-- x')).toEqual({from: 'abc', to: 'def'});
+    expect(parseMigrationHeader('-- ems-migration: from=none to=abc\n')).toEqual({from: 'none', to: 'abc'});
+    expect(parseMigrationHeader('-- no header\nselect 1;')).toBeNull();
   });
 });

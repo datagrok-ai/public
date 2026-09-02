@@ -329,7 +329,7 @@ Example:
 `;
 
 const HELP_SCHEMA = `
-Usage: grok schema <seal|check|diff|migrate>
+Usage: grok schema <seal|check|diff|migrate|squash>
 
 Entity schema snapshots for the package's \`databases/<schema>/schema.json\` manifests.
 A snapshot is the manifest in canonical form with a content hash, sealed next to it as
@@ -339,22 +339,40 @@ A snapshot is the manifest in canonical form with a content hash, sealed next to
     check               Exit 1 with the change list when the manifest differs from the seal
     diff                Print the changes between the seal and the manifest
     migrate --name <x>  Write databases/<schema>/NNNN_<x>.sql (up, run on deploy) and
-                        databases/<schema>/down/NNNN_<x>.sql, then reseal. Only the changes
-                        the deployer refuses (drops, type changes, ...) get up statements —
-                        the additive ones it applies itself. Nothing physical = no files.
+                        databases/<schema>/down/NNNN_<x>.sql, then reseal. The up carries
+                        every physical change — additive ones too, so a script that moves
+                        data is self-contained (the deployer's own repeat is a no-op); a
+                        transition without a [manual] change only needs the seal, and the
+                        command says so. Nothing physical = no files.
+    squash --name <x>   Fold consecutive scripts (NNNN_*.sql with an ems-migration header;
+                        --all, or --from NNNN --to NNNN inclusive) into one NNNN_<x>.sql
+                        numbered after the first, plus its down/ twin; the sources are
+                        deleted. The chain must be continuous and every script needs its
+                        down twin (--force-missing-down leaves a TODO instead).
+    squash --all --discard --yes
+                        Delete every migration script: the manifest becomes the baseline,
+                        and stands behind the current declaration can no longer migrate
+                        by script.
 
 Options:
 [--dir <databases/<schema>>] [--name <x>] [--server [<alias|url>]]
+[--all] [--from NNNN] [--to NNNN] [--discard --yes] [--force-missing-down]
 
 --dir       One schema directory instead of every databases/*/schema.json
---name      Migration name (migrate)
+--name      Migration name (migrate, squash)
 --server    Diff against the snapshot recorded on the default (or named) server
             instead of the sealed file
+--all       squash: every script of the schema
+--from/--to squash: the scripts numbered NNNN..NNNN (inclusive)
+--discard   squash --all: delete the scripts instead of folding them (needs --yes)
+--force-missing-down
+            squash: proceed when a script has no down twin
 
 Examples:
   grok schema check                         Fail the build when a manifest changed without a reseal
   grok schema migrate --name drop_legacy    Scaffold up/down scripts for the pending changes
   grok schema diff --server dev             What a deploy to 'dev' would change
+  grok schema squash --name v2 --all        Fold every script into one 0001_v2.sql
 `;
 
 const HELP_BUILD = `
