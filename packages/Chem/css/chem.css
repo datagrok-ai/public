@@ -1173,6 +1173,12 @@
 .chem-profile-description.chem-placeholder:focus::before {
   display: none;
 }
+.chem-profile-name-error {
+  color: var(--red-3);
+  font-size: 12px;
+  margin: -8px 0 8px;
+}
+
 .chem-profile-field-desc {
   color: var(--grey-4);
   font-size: 12px;

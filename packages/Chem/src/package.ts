@@ -115,7 +115,7 @@ import {MpoProfilesView} from './mpo/mpo-profiles-view';
 
 import $ from 'cash-dom';
 import {MpoProfileCreateView} from './mpo/mpo-create-profile';
-import {MpoProfileManager} from './mpo/mpo-profile-manager';
+import {mpoProfileStore, parseMpoProfile} from './mpo/mpo-profile-store';
 import {MpoProfileHandler} from './mpo/mpo-profile-handler';
 import {applyDesirabilityTags, collectMpoResultColumns, computeMpo, findSuitableProfiles, MPO_PROFILE_CHANGED_EVENT} from './mpo/utils';
 import {removeWaterAndSalts, runTransformationReaction} from './utils/reactions/reactions';
@@ -3081,7 +3081,7 @@ export class PackageFunctions {
     outputs: [{name: 'result', type: 'list<string>'}],
   })
   static async getMpoProfileNames(): Promise<string[]> {
-    return (await MpoProfileManager.load()).map((p) => p.name);
+    return (await mpoProfileStore.load()).map((p) => p.name);
   }
 
   /** The property names a profile scores — what a caller has to map to columns.
@@ -3093,7 +3093,7 @@ export class PackageFunctions {
   })
   static async getMpoProfileProperties(
     @grok.decorators.param({options: {caption: 'Profile', nullable: false, choices: 'Chem:getMpoProfileNames()'}}) profileName: string): Promise<string[]> {
-    const profile = (await MpoProfileManager.ensureLoaded()).find((p) => p.name === profileName);
+    const profile = (await mpoProfileStore.ensureLoaded()).find((p) => p.name === profileName);
     return profile ? Object.keys(profile.properties ?? {}) : [];
   }
 
@@ -3116,7 +3116,7 @@ export class PackageFunctions {
     @grok.decorators.param({type: 'string', options: {caption: 'Aggregation', nullable: false, initialValue: 'Average', choices: ['Average', 'Sum', 'Product', 'Geomean', 'Min', 'Max']}}) aggregation: WeightedAggregation = 'Average',
     @grok.decorators.param({options: {caption: 'Per-property columns', description: 'Also add one desirability column per scored property'}}) createDesirabilityColumns: boolean = false,
   ): Promise<DG.Column | null> {
-    const profiles = await MpoProfileManager.ensureLoaded();
+    const profiles = await mpoProfileStore.ensureLoaded();
     const profile = profiles.find((p) => p.name === profileName);
     if (!profile)
       throw new Error(`MPO profile "${profileName}" not found. Available: ${profiles.map((p) => p.name).join(', ')}`);
@@ -3234,6 +3234,26 @@ export class PackageFunctions {
     await biochemicalPropertiesDialog();
   }
 
+  @grok.decorators.func({
+    description: 'Saves a DesirabilityProfile JSON as an MPO profile. Returns the profile id.',
+    outputs: [{name: 'id', type: 'string'}],
+  })
+  static async saveMpoProfile(profileJson: string): Promise<string> {
+    const parsed = parseMpoProfile(profileJson);
+    if ('error' in parsed)
+      throw new Error(parsed.error);
+    const saved = await mpoProfileStore.save(parsed.profile);
+    return saved.id;
+  }
+
+  @grok.decorators.func({
+    description: 'Grants all users access to MPO profiles and seeds every profile in the System:AppData/Chem/mpo folder - the shipped defaults plus any profiles saved there by the old file-based storage. Idempotent - safe to run repeatedly.',
+    outputs: [{name: 'result', type: 'string'}],
+  })
+  static async seedMpoProfiles(): Promise<string> {
+    return mpoProfileStore.seedDefaults();
+  }
+
   @grok.decorators.app({
     'name': 'MPO profiles',
     'meta': {browsePath: 'Chem', icon: 'images/mpo.png'},
@@ -3252,10 +3272,10 @@ export class PackageFunctions {
     }
 
     const profileId = params.get('profileId');
-    const profiles = await MpoProfileManager.ensureLoaded();
+    const profiles = await mpoProfileStore.ensureLoaded();
     if (hasPath && profileId) {
       const profile = profiles.find((p) => p.name === decodeURIComponent(profileId));
-      const view = new MpoProfileCreateView(profile, false, profile?.fileName);
+      const view = new MpoProfileCreateView(profile, false);
       return view.view;
     }
 
@@ -3284,13 +3304,13 @@ export class PackageFunctions {
     const refresh = async () => {
       treeNode.items.forEach((item) => item.remove());
 
-      const profiles = await MpoProfileManager.ensureLoaded();
+      const profiles = await mpoProfileStore.ensureLoaded();
       for (const profile of profiles) {
         const item = treeNode.item(profile.name);
 
         item.onSelected.subscribe(() => {
           openedView?.close();
-          const editView = new MpoProfileCreateView(profile, false, profile.fileName);
+          const editView = new MpoProfileCreateView(profile, false);
           openedView = editView.view;
           grok.shell.addPreview(editView.view);
           editView.setupBreadcrumbs();
@@ -3299,10 +3319,10 @@ export class PackageFunctions {
         item.captionLabel.addEventListener('contextmenu', (ev) => {
           ev.stopImmediatePropagation();
           ev.preventDefault();
-          DG.Menu.popup()
-            .item('Clone', () => MpoProfileHandler.clone(profile))
-            .item('Delete', () => MpoProfileHandler.delete(profile))
-            .show({x: ev.clientX, y: ev.clientY, causedBy: ev});
+          const menu = DG.Menu.popup();
+          menu.item('Clone', () => MpoProfileHandler.clone(profile));
+          menu.item('Delete', () => MpoProfileHandler.delete(profile));
+          menu.show({x: ev.clientX, y: ev.clientY, causedBy: ev});
         });
       }
     };
@@ -3425,7 +3445,7 @@ export class PackageFunctions {
     resultDiv.appendChild(loader);
 
     const dataFrame = semValue.cell?.dataFrame ?? grok.shell.t;
-    const profiles = await MpoProfileManager.load();
+    const profiles = await mpoProfileStore.load();
     const suitableProfiles = findSuitableProfiles(dataFrame, profiles);
 
     if (suitableProfiles.length === 0) {
@@ -3440,8 +3460,8 @@ export class PackageFunctions {
     }
 
     const profileInput = ui.input.choice('Profile', {
-      items: suitableProfiles.map((p) => p.fileName),
-      value: suitableProfiles[0].fileName,
+      items: suitableProfiles.map((p) => p.name),
+      value: suitableProfiles[0].name,
       onValueChanged: () => calculateMpo(),
     });
 
@@ -3455,7 +3475,7 @@ export class PackageFunctions {
       if (!profileInput.value)
         return;
 
-      const selected = suitableProfiles.find((p) => p.fileName === profileInput.value);
+      const selected = suitableProfiles.find((p) => p.name === profileInput.value);
       if (!selected)
         return;
 

@@ -1481,6 +1481,19 @@ export async function biochemPropsWidget() : Promise<void> {
   await PackageFunctions.biochemPropsWidget();
 }
 
+//description: Saves a DesirabilityProfile JSON as an MPO profile. Returns the profile id.
+//input: string profileJson 
+//output: string id
+export async function saveMpoProfile(profileJson: string) : Promise<string> {
+  return await PackageFunctions.saveMpoProfile(profileJson);
+}
+
+//description: Grants all users access to MPO profiles and seeds every profile in the System:AppData/Chem/mpo folder - the shipped defaults plus any profiles saved there by the old file-based storage. Idempotent - safe to run repeatedly.
+//output: string result
+export async function seedMpoProfiles() : Promise<string> {
+  return await PackageFunctions.seedMpoProfiles();
+}
+
 //name: MPO profiles
 //input: string path { meta.url: true; optional: true }
 //output: view result
