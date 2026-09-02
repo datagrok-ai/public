@@ -1,7 +1,8 @@
 /* ---
 realizes: [tileviewer.cp.selection-classes-and-form-editor, tileviewer.int.show-selected-rows-is-viewer-local, tileviewer.int.autogenerate-is-a-state-flag]
 --- */
-import {test, expect} from '@playwright/test';
+import {expect} from '@playwright/test';
+import {test} from '../../shared-page';
 import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 

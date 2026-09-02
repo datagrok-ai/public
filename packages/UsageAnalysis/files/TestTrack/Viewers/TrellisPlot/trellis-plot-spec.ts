@@ -1,7 +1,8 @@
 /* ---
 realizes: [trellisplot.cp.split-and-pick-inner, trellisplot.cp.click-to-filter, trellisplot.cp.global-scale-inner-axes, trellisplot.cp.scroll-categories, trellisplot.cp.tiled-single-column, trellisplot.int.selectors-labels-visibility-coupling, trellisplot.int.undo-redo-viewer-lifecycle]
 --- */
-import {test, expect, Page} from '@playwright/test';
+import {expect, Page} from '@playwright/test';
+import {test} from '../../shared-page';
 import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 

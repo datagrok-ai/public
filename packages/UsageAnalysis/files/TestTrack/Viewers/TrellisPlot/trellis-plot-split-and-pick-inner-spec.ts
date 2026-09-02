@@ -1,7 +1,8 @@
 /* ---
 realizes: [trellisplot.cp.split-and-pick-inner, trellisplot.int.split-columns-drive-inner-viewer-grid, trellisplot.int.viewer-type-change-control-panel-axes]
 --- */
-import {test, expect, Page} from '@playwright/test';
+import {expect, Page} from '@playwright/test';
+import {test} from '../../shared-page';
 import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
 import {saveProjectViaUI, deleteProjectWithCleanup} from '../../helpers/projects';
 import * as v from '../../helpers/viewers';

@@ -1,7 +1,8 @@
 /* ---
 realizes: [linechart.cp.analytical-overlays]
 --- */
-import {test, expect, type Page} from '@playwright/test';
+import {expect, type Page} from '@playwright/test';
+import {test} from '../../shared-page';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 

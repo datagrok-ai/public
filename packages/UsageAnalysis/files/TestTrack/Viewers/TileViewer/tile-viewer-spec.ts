@@ -1,7 +1,8 @@
 /* ---
 realizes: [tileviewer.cp.tiles-font-applied-to-rendering, tileviewer.cp.auto-generate-on-columns-change, tileviewer.cp.table-rebind-regenerates-form, tileviewer.cp.context-menu-inventory, tileviewer.cp.viewer-local-filter-vs-dataframe-filter, tileviewer.cp.scroll-survives-added-viewer, tileviewer.int.viewer-local-filter-vs-df-filter]
 --- */
-import {test, expect} from '@playwright/test';
+import {expect} from '@playwright/test';
+import {test} from '../../shared-page';
 import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 

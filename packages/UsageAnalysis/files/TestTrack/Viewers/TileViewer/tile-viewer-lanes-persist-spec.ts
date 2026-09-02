@@ -1,7 +1,8 @@
 /* ---
 realizes: [tileviewer.cp.lanes-cells-and-layout-persist, tileviewer.int.lane-drag-writes-dataframe-cell, tileviewer.int.lanes-rebuild-vs-restyle-scope, tileviewer.int.column-rename-rewrites-sketch-state]
 --- */
-import {test, expect} from '@playwright/test';
+import {expect} from '@playwright/test';
+import {test} from '../../shared-page';
 import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 import {saveProjectViaUI, deleteProjectWithCleanup} from '../../helpers/projects';
