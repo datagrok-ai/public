@@ -21,6 +21,12 @@ export function combinedLLMSearchProvider() : any {
 
 //output: dynamic result
 //meta.role: aiEngine
+export function gemmaEngine() : any {
+  return PackageFunctions.gemmaEngine();
+}
+
+//output: dynamic result
+//meta.role: aiEngine
 export function claudeEngine() : any {
   return PackageFunctions.claudeEngine();
 }

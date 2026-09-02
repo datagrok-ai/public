@@ -8,6 +8,7 @@ import {findBestMatchingQuery, tableQueriesFunctionsSearchLlm} from './ai/search
 import {askWiki, smartExecution, setupAgentScriptsUI, setupAIQueryEditorUI, setupScriptsAIPanelUI, setupSearchUI, setupShellAIPanelUI, setupTableViewAIPanelUI, initAIWindow} from './ai/ui';
 import {CombinedAISearchAssistant} from './ai/search/combined-search';
 import {ClaudeEngine} from './ai/engine';
+import {GemmaEngine} from './ai/gemma-engine';
 import {UsageLimiter} from './ai/usage-limiter';
 import {ClaudeRuntimeClient} from './claude/runtime-client';
 import {genDBConnectionMeta, moveDBMetaToStickyMetaOhCoolItEvenRhymes} from './db/db-index-tools';
@@ -149,6 +150,11 @@ export class PackageFunctions {
         }
       }
     } satisfies DG.SearchProvider;
+  }
+
+  @grok.decorators.func({meta: {role: 'aiEngine'}})
+  static gemmaEngine(): DG.AIEngine {
+    return new GemmaEngine();
   }
 
   @grok.decorators.func({meta: {role: 'aiEngine'}})

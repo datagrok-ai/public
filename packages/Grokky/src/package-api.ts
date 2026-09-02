@@ -20,6 +20,10 @@ export namespace funcs {
     return await grok.functions.call('Grokky:CombinedLLMSearchProvider', {});
   }
 
+  export async function gemmaEngine(): Promise<any> {
+    return await grok.functions.call('Grokky:GemmaEngine', {});
+  }
+
   export async function claudeEngine(): Promise<any> {
     return await grok.functions.call('Grokky:ClaudeEngine', {});
   }
