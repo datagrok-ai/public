@@ -1473,3 +1473,6 @@
   vertical-align: middle;
 }
 
+.d4-dialog .d4-dialog-contents .grok-sketcher[style*="min-width: 0px"] {
+  min-width: 400px !important;
+}

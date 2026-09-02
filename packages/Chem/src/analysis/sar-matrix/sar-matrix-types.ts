@@ -55,9 +55,6 @@ export interface SarMatrixCell {
   support?: number;
   /** For virtual cells: sum of the row's and column's real-cell counts. */
   references?: number;
-  /** For real cells: the additive (Free-Wilson) fitted value; a large gap to `value` flags a
-   *  non-additive cell. Undefined when predictions weren't computed. */
-  fit?: number;
 }
 
 export interface SarMatrixRow {

@@ -37,9 +37,19 @@ function observedComponents(cells: SarMatrixCell[][], rowCount: number,
  * the other's column effect is arithmetic over incomparable offsets — and it errs toward the grand
  * mean, which flatters exactly the core whose own measurements are worst.
  */
-export function fitAdditiveModel(cells: SarMatrixCell[][], rowCount: number,
-  columnCount: number): (rowIdx: number, colIdx: number) =>
-    {value: number, support: number, references: number} | null {
+/** Fitted terms of `value ≈ grandMean + rowEffect + colEffect` and the counts behind each arm. Shared
+ *  with the context panel so it shows the numbers the prediction was built from. */
+export interface AdditiveFit {
+  grandMean: number;
+  rowEffect: Float64Array;
+  colEffect: Float64Array;
+  rowN: Int32Array;
+  colN: Int32Array;
+  observed: number;
+}
+
+export function fitAdditiveEffects(cells: SarMatrixCell[][], rowCount: number,
+  columnCount: number): AdditiveFit {
   const rowAcc = new Float64Array(rowCount);
   const rowN = new Int32Array(rowCount);
   const colAcc = new Float64Array(columnCount);
@@ -95,7 +105,13 @@ export function fitAdditiveModel(cells: SarMatrixCell[][], rowCount: number,
     if (shift < FIT_TOLERANCE)
       break;
   }
+  return {grandMean, rowEffect, colEffect, rowN, colN, observed: obsVal.length};
+}
 
+export function fitAdditiveModel(cells: SarMatrixCell[][], rowCount: number,
+  columnCount: number): (rowIdx: number, colIdx: number) =>
+    {value: number, support: number, references: number} | null {
+  const {grandMean, rowEffect, colEffect, rowN, colN} = fitAdditiveEffects(cells, rowCount, columnCount);
   const root = observedComponents(cells, rowCount, columnCount);
   return (ri, ci) => (rowN[ri] && colN[ci] && root[ri] === root[rowCount + ci]) ?
     // `support` is the weaker of the two arms (drives how faintly the cell draws); `references` is the

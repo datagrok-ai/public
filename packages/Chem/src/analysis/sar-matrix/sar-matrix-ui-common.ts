@@ -1,5 +1,6 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import {Subscription} from 'rxjs';
 
 import {drawMoleculeToCanvas} from '../../utils/chem-common-rdkit';
 import {SarMatrix} from './sar-matrix-types';
@@ -143,4 +144,73 @@ export function renderMoleculeOnColor(smiles: string, w: number, h: number, argb
   if (smiles)
     paintMoleculeOnColor(canvas as HTMLCanvasElement, smiles, w, h, argb);
   return canvas;
+}
+
+/** A filter panel over a hidden frame: the platform supplies the widgets, and the frame's own filter is
+ *  read back as the set of keys that survive. Built on first open — an unopened filter would otherwise
+ *  cost a fingerprinted column per matrix. */
+export class FrameFilter<K> {
+  private frame: DG.DataFrame | null = null;
+  private view: DG.TableView | null = null;
+  private group: DG.FilterGroup | null = null;
+  private sub: Subscription | null = null;
+  private keys: K[] = [];
+  private pass: Set<K> | null = null;
+
+  /** `configure` adds the filters the default set omits; `onChange` runs after every filter change. */
+  constructor(
+    private readonly build: () => {frame: DG.DataFrame, keys: K[]},
+    private readonly configure: ((group: DG.FilterGroup) => void) | null,
+    private readonly onChange: () => void) {}
+
+  get active(): boolean {
+    return this.pass !== null;
+  }
+
+  passes(key: K): boolean {
+    return this.pass === null || this.pass.has(key);
+  }
+
+  root(): HTMLElement {
+    if (this.group === null) {
+      const built = this.build();
+      this.frame = built.frame;
+      this.keys = built.keys;
+      this.view = DG.TableView.create(this.frame, false);
+      this.group = this.view.getFiltersGroup();
+      this.configure?.(this.group);
+      this.sub = DG.debounce(this.frame.onFilterChanged, 300).subscribe(() => this.sync());
+    }
+    return this.group.root;
+  }
+
+  private sync(): void {
+    const frame = this.frame;
+    if (frame === null)
+      return;
+    if (frame.filter.trueCount === frame.rowCount)
+      this.pass = null;
+    else {
+      const pass = new Set<K>();
+      for (let i = 0; i < frame.rowCount; i++) {
+        if (frame.filter.get(i))
+          pass.add(this.keys[i]);
+      }
+      this.pass = pass;
+    }
+    this.onChange();
+  }
+
+  /** Rebuild against current data; stale rows key the previous set. The view is detached, not just
+   *  dropped — the reference alone leaks the Dart-backed view. */
+  reset(): void {
+    this.sub?.unsubscribe();
+    this.sub = null;
+    this.view?.detach();
+    this.view = null;
+    this.frame = null;
+    this.group = null;
+    this.keys = [];
+    this.pass = null;
+  }
 }
