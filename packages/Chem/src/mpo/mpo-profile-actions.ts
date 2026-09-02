@@ -8,6 +8,11 @@ import {generateMpoFileName, getNextAvailable} from '@datagrok-libraries/statist
 import {mpoProfileStore, parseMpoProfile, toPlainProfile} from './mpo-profile-store';
 import {MpoProfileInfo, MpoProfileRef} from './utils';
 
+enum UploadConflictChoice {
+  Replace = 'Replace existing profile',
+  KeepBoth = 'Keep both profiles',
+}
+
 function takenNames(): Set<string> {
   return new Set(mpoProfileStore.items.map((p) => p.name));
 }
@@ -74,7 +79,7 @@ export async function importProfile(text: string, fallbackName: string): Promise
     const choice = await promptUploadConflict(profile.name);
     if (choice === null)
       return false;
-    if (choice === 'replace')
+    if (choice === UploadConflictChoice.Replace)
       return await saveProfileInteractive(profile, existing) != null;
     await mpoProfileStore.ensureLoaded();
     profile.name = getNextAvailable(profile.name, takenNames(), (b, n) => n ? `${b} (${n})` : b);
@@ -82,18 +87,15 @@ export async function importProfile(text: string, fallbackName: string): Promise
   return await saveProfileInteractive(profile) != null;
 }
 
-type UploadConflictChoice = 'replace' | 'keep-both';
-
 function promptUploadConflict(profileName: string): Promise<UploadConflictChoice | null> {
   return new Promise((resolve) => {
-    const REPLACE = 'Replace existing profile';
-    const KEEP_BOTH = 'Keep both profiles';
-    const choice = ui.input.radio('', {value: KEEP_BOTH, items: [REPLACE, KEEP_BOTH], nullable: false});
+    const choice = ui.input.radio('', {value: UploadConflictChoice.KeepBoth,
+      items: [UploadConflictChoice.Replace, UploadConflictChoice.KeepBoth], nullable: false});
     const dlg = ui.dialog('Upload options')
       .add(ui.divText(`A profile named "${profileName}" already exists.`))
       .add(choice)
       .addButton('Upload', () => {
-        resolve(choice.value === REPLACE ? 'replace' : 'keep-both');
+        resolve(choice.value as UploadConflictChoice);
         dlg.close();
       })
       .onCancel(() => resolve(null))
