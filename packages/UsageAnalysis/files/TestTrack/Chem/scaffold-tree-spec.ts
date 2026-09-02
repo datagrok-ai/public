@@ -55,7 +55,11 @@ test('Chem: Scaffold Tree filter + viewer smoke', async ({page}) => {
       return false;
     });
     if (!started) test.skip(true, 'magic-wand icon missing');
-    await page.waitForTimeout(30000);
+    // generation is what the 30s covered; the node count is what the step reads, so wait for it
+    await page.waitForFunction(() => {
+      const st = Array.from(grok.shell.tv.viewers).find((v: any) => /scaffold/i.test(v.type || ''));
+      return !!(st as any)?.root?.querySelectorAll('.d4-tree-view-node, .d4-scaffold-tree-node').length;
+    }, undefined, {timeout: 30000}).catch(() => {});
     const nodeCount = await page.evaluate(() => {
       const st = Array.from(grok.shell.tv.viewers).find((v: any) => /scaffold/i.test(v.type || ''));
       if (!st) return 0;

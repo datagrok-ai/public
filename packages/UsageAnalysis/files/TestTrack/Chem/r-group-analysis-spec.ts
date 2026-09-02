@@ -62,7 +62,10 @@ test('Chem: R-Groups Analysis Block A (GROK-16329) + Block B (Replace Latest mat
 
   await softStep('A5-6: Click OK → "No R-Groups were found" balloon, no trellis, no null-ref crash', async () => {
     await page.locator('.d4-dialog [name="button-OK"]').click();
-    await page.waitForTimeout(10000);
+    // the balloon is the positive signal; the "no trellis" half is an absence and cannot be
+    // polled for, so this still spends its budget when nothing arrives
+    await page.waitForFunction(() => !!document.querySelector('.d4-balloon'),
+      undefined, {timeout: 10000}).catch(() => {});
     const result = await page.evaluate(() => {
       const trellis = Array.from(grok.shell.tv?.viewers ?? []).some((v: any) => v.type === 'Trellis plot');
       const errs = ((window as any).__rg_errors ?? []) as string[];
@@ -90,7 +93,11 @@ test('Chem: R-Groups Analysis Block A (GROK-16329) + Block B (Replace Latest mat
 
   await softStep('B4: OK → trellis plot + R-group columns appended', async () => {
     await page.locator('.d4-dialog [name="button-OK"]').click();
-    await page.waitForTimeout(12000);
+    // the step reads the trellis and the R columns, so wait for those rather than for 12s
+    await page.waitForFunction(() => Array.from(grok.shell.tv?.viewers ?? [])
+      .some((v: any) => v.type === 'Trellis plot') &&
+      grok.shell.t.columns.toList().some((c: any) => /^R[1-4]$/.test(c.name)),
+    undefined, {timeout: 12000}).catch(() => {});
     const result = await page.evaluate(() => ({
       viewers: Array.from(grok.shell.tv.viewers).map((v: any) => v.type),
       colsHasR: grok.shell.t.columns.toList().some((c: any) => /^R[1-4]$/.test(c.name)),
@@ -107,7 +114,9 @@ test('Chem: R-Groups Analysis Block A (GROK-16329) + Block B (Replace Latest mat
       if (replaceLatest?.checked) replaceLatest.click();
     });
     await page.locator('.d4-dialog [name="button-OK"]').click();
-    await page.waitForTimeout(12000);
+    await page.waitForFunction((n) => Array.from(grok.shell.tv?.viewers ?? [])
+      .filter((v: any) => v.type === 'Trellis plot').length >= n,
+    2, {timeout: 12000}).catch(() => {});
     const trellisCount = await page.evaluate(() =>
       Array.from(grok.shell.tv.viewers).filter((v: any) => v.type === 'Trellis plot').length);
     expect(trellisCount).toBeGreaterThanOrEqual(2);
@@ -121,7 +130,9 @@ test('Chem: R-Groups Analysis Block A (GROK-16329) + Block B (Replace Latest mat
       if (replaceLatest && !replaceLatest.checked) replaceLatest.click();
     });
     await page.locator('.d4-dialog [name="button-OK"]').click();
-    await page.waitForTimeout(12000);
+    await page.waitForFunction((n) => Array.from(grok.shell.tv?.viewers ?? [])
+      .filter((v: any) => v.type === 'Trellis plot').length >= n,
+    1, {timeout: 12000}).catch(() => {});
     const trellisCount = await page.evaluate(() =>
       Array.from(grok.shell.tv.viewers).filter((v: any) => v.type === 'Trellis plot').length);
     expect(trellisCount).toBeGreaterThanOrEqual(1);

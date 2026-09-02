@@ -38,7 +38,13 @@ test('Chem: GROK-14028 Filter Panel Clear 3-layer cleanup invariant', async ({pa
   });
 
   await softStep('Wait 20s for Chem autostart cascade (semType + chem-filter widget registration)', async () => {
-    await page.waitForTimeout(20000);
+    // the cascade is observable: the step below reads the Molecule semType and the grid canvas
+    await page.waitForFunction(() => {
+      const t = grok.shell.t;
+      const sem = t && Array.from({length: t.columns.length}, (_, i) => t.columns.byIndex(i))
+        .some((c: any) => c.semType === 'Molecule');
+      return sem && !!document.querySelector('[name="viewer-Grid"] canvas');
+    }, undefined, {timeout: 20000}).catch(() => {});
   });
 
   await softStep('Verify Molecule semType detected + Grid renders', async () => {
