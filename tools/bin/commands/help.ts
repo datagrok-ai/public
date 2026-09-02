@@ -329,12 +329,18 @@ Example:
 `;
 
 const HELP_SCHEMA = `
-Usage: grok schema <seal|check|diff|migrate|squash>
+Usage: grok schema <generate|seal|check|diff|migrate|squash|ddl>
 
 Entity schema snapshots for the package's \`databases/<schema>/schema.json\` manifests.
 A snapshot is the manifest in canonical form with a content hash, sealed next to it as
 \`databases/<schema>/snapshot.json\` — the previous version a migration diffs against.
 
+    generate            Rewrite databases/<schema>/schema.json from the package's
+                        @grok.decorators.entity classes (src/**/*.ts). Property order is
+                        column order; the snapshot and the scripts are untouched, so
+                        seal/diff/migrate follow as usual
+    ddl                 Print the CREATE TABLE DDL of every table of the manifest(s), each
+                        after the tables it refs (--out <file> writes it instead)
     seal                Rewrite databases/<schema>/snapshot.json from the manifest
     check               Exit 1 with the change list when the manifest differs from the seal
     diff                Print the changes between the seal and the manifest
@@ -357,8 +363,12 @@ A snapshot is the manifest in canonical form with a content hash, sealed next to
 Options:
 [--dir <databases/<schema>>] [--name <x>] [--server [<alias|url>]]
 [--all] [--from NNNN] [--to NNNN] [--discard --yes] [--force-missing-down]
+[--src <dir>] [--out <file>]
 
 --dir       One schema directory instead of every databases/*/schema.json
+            (generate: the databases directory to write into, default databases)
+--src       generate: the sources to scan for @entity classes (default src)
+--out       ddl: write the DDL to this file instead of printing it
 --name      Migration name (migrate, squash)
 --server    Diff against the snapshot recorded on the default (or named) server
             instead of the sealed file
@@ -369,6 +379,8 @@ Options:
             squash: proceed when a script has no down twin
 
 Examples:
+  grok schema generate                      Derive the manifests from the @entity classes
+  grok schema ddl                           Read the initial DDL of every table
   grok schema check                         Fail the build when a manifest changed without a reseal
   grok schema migrate --name drop_legacy    Scaffold up/down scripts for the pending changes
   grok schema diff --server dev             What a deploy to 'dev' would change

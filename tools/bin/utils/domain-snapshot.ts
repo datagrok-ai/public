@@ -661,6 +661,10 @@ function shortHash(h: string | undefined): string {
   return h == null ? '(none)' : h.substring(0, 12);
 }
 
+function terminate(s: string): string {
+  return s.endsWith(';') || s.startsWith('--') ? s : `${s};`;
+}
+
 function script(schema: string, changes: Change[], rendered: Change[], isDown: boolean, o: ScaffoldOptions): string {
   const lines: string[] = [];
   const from = isDown ? o.to : o.from, to = isDown ? o.from : o.to;
@@ -685,7 +689,7 @@ function script(schema: string, changes: Change[], rendered: Change[], isDown: b
     if (statements.length === 0)
       lines.push('-- TODO: no statement could be inferred for this change.');
     for (const s of statements)
-      lines.push(s.endsWith(';') || s.startsWith('--') ? s : `${s};`);
+      lines.push(terminate(s));
   }
   return lines.join('\n') + '\n';
 }
@@ -755,4 +759,31 @@ export function squashScripts(scripts: MigrationScript[], schema: string, name: 
   for (const s of [...scripts].reverse())
     down.push(...section(`down/${s.file}`, s.down));
   return {up: up.join('\n'), down: down.join('\n')};
+}
+
+// --- Initial DDL ----------------------------------------------------------------------
+
+/** The CREATE TABLE DDL of every table of [s] (the scaffold's add-table renderer), each
+ * after the tables it refs — a self-reference does not count; a cycle is an error. */
+export function schemaDdl(s: Snapshot): string {
+  const out = [`-- ${s.schema} (${shortHash(s.hash ?? hashOf(s))})`];
+  const done = new Set<string>();
+  const visiting = new Set<string>();
+  const visit = (t: string, chain: string[]): void => {
+    if (done.has(t))
+      return;
+    if (visiting.has(t))
+      throw new Error(`reference cycle: ${[...chain, t].join(' -> ')}`);
+    visiting.add(t);
+    for (const c of s.tables[t].columns ?? []) {
+      if (c.type === 'ref' && c.ref != null && !c.ref.includes('.') && c.ref !== t && s.tables[c.ref] != null)
+        visit(c.ref, [...chain, t]);
+    }
+    visiting.delete(t);
+    done.add(t);
+    out.push('', ...createTable(s.schema, t, s.tables[t]).map(terminate));
+  };
+  for (const t of Object.keys(s.tables).sort())
+    visit(t, []);
+  return out.join('\n') + '\n';
 }

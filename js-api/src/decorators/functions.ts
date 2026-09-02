@@ -407,4 +407,85 @@ export namespace decorators {
       parameterIndex: number
     ): void { };
   }
+
+  /** Options of {@link entity}: the table a class maps to in the package's domain schema
+   * (`databases/<schema>/schema.json`), with every table key the manifest knows. */
+  export interface EntityOptions {
+    /** The domain schema — the `databases/<schema>/` directory the manifest lands in. */
+    schema: string;
+    /** Table name; defaults to the class name in snake_case (`PlateWell` → `plate_well`). */
+    table?: string;
+    securityMode?: 'table' | 'master' | 'row';
+    promotion?: 'lazy' | 'eager';
+    defaultRowVisibility?: 'table' | 'none';
+    delegate?: string;
+    softDelete?: boolean;
+    audit?: boolean;
+    extensible?: boolean;
+    idempotency?: boolean;
+    ginIndex?: boolean;
+    businessKey?: string[];
+    friendlyName?: string;
+    description?: string;
+    singularName?: string;
+    pluralName?: string;
+    filters?: {column: string, type?: 'categories' | 'histogram' | 'range' | 'text' | 'bool', bins?: number, label?: string}[];
+    relations?: {[name: string]: {via: string, target: string, viaSelf?: string, viaTarget?: string, allowCreate?: boolean}};
+    schemas?: string[];
+  }
+
+  export type EntityColumnType = 'string' | 'int' | 'float' | 'bool' | 'datetime' | 'string_list' | 'ref' | 'user' | 'group' | 'file';
+
+  /** Options of {@link column}: one manifest column. */
+  export interface ColumnOptions {
+    /** Manifest column name; defaults to the property name. */
+    name?: string;
+    /** Column type; inferred from the property type when omitted (`string`, `number` → `float`,
+     * `boolean` → `bool`, `Date` → `datetime`, `string[]` → `string_list`). */
+    type?: EntityColumnType;
+    /** Target table of a reference: its name, or `() => EntityClass` for an `@entity` class of
+     * the same schema. Makes the column a `ref` unless the type is `user` or `group`. */
+    ref?: string | (() => Function);
+    onDelete?: 'cascade' | 'restrict' | 'setnull';
+    required?: boolean;
+    unique?: boolean;
+    isName?: boolean;
+    min?: number;
+    max?: number;
+    choices?: string[];
+    semType?: string;
+    friendlyName?: string;
+    description?: string;
+    default?: any;
+    format?: string;
+  }
+
+  /** Maps a class to a table of the package's domain schema. A runtime no-op: `grok schema
+   * generate` reads the decorated classes statically and writes
+   * `databases/<schema>/schema.json` from them (property order = column order); `grok schema
+   * seal|diff|migrate` then derive the snapshot and the migration scripts as usual.
+   *
+   * ```ts
+   * @grok.decorators.entity({schema: 'lab', securityMode: 'row', businessKey: ['barcode']})
+   * export class Plate {
+   *   @grok.decorators.column({required: true, unique: true, isName: true})
+   *   barcode!: string;
+   *
+   *   @grok.decorators.column({type: 'int', min: 1})
+   *   rows!: number;
+   *
+   *   @grok.decorators.column({ref: () => Reader, onDelete: 'setnull'})
+   *   reader_id?: string;
+   * }
+   * ```
+   */
+  export function entity(options: EntityOptions) {
+    return function (constructor: Function) { };
+  }
+
+  /** Maps a property to a column of its {@link entity} table; a runtime no-op read by
+   * `grok schema generate`. Undecorated properties are not columns. */
+  export function column(options?: ColumnOptions) {
+    return function (target: any, propertyKey: string | symbol): void { };
+  }
 }

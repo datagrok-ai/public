@@ -82,7 +82,10 @@ Read more about package development in [Datagrok's documentation](https://datagr
   , `node`, `octave`, `python`, `r`. Available function tags: `panel`, `init`.
 - `api` creates wrapper functions for package scripts and queries. The output is stored in files `/src/scripts-api.ts`
   and `/src/queries-api.ts` respectively.
-- `schema` seals, checks, diffs and migrates the package's entity schema manifests (`databases/<schema>/schema.json`).
+- `schema` generates, seals, checks, diffs and migrates the package's entity schema manifests
+  (`databases/<schema>/schema.json`). `grok schema generate` derives the manifests from classes decorated
+  `@grok.decorators.entity` / `@grok.decorators.column` under `src/` (property order = column order), and
+  `grok schema ddl` prints the CREATE TABLE DDL of every table in dependency order.
   A snapshot is the manifest in canonical form with a content hash, kept next to it as
   `databases/<schema>/snapshot.json`; `grok schema check` fails when a manifest changed without a reseal, and
   `grok schema migrate --name <x>` scaffolds `databases/<schema>/NNNN_<x>.sql` (run on deploy) plus its `down/` twin

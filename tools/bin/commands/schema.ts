@@ -1,17 +1,20 @@
 import fs from 'fs';
 import path from 'path';
-import {findDomainManifests, loadDomainManifest} from './api';
+import {Project} from 'ts-morph';
+import {findDomainManifests, loadDomainManifest, validateDomainManifest} from './api';
 import {createClient} from '../utils/server-client';
 import * as color from '../utils/color-utils';
 import {buildSnapshot, chainGap, describeChange, diff, emptySnapshot, hashOf, parseMigrationHeader, scaffold,
-  serialize, squashScripts, Change, MigrationScript, Snapshot} from '../utils/domain-snapshot';
+  schemaDdl, serialize, squashScripts, Change, MigrationScript, Snapshot} from '../utils/domain-snapshot';
+import {buildManifests, readEntityClasses} from '../utils/entity-classes';
 
-const VERBS = ['seal', 'check', 'diff', 'migrate', 'squash'];
+const VERBS = ['seal', 'check', 'diff', 'migrate', 'squash', 'generate', 'ddl'];
 const scriptName = /^(\d+)_.*\.sql$/;
 
 interface SchemaArgs {
   _: string[];
   help?: boolean;
+  /** `databases/<schema>` for most verbs; the databases directory itself for `generate`. */
   dir?: string;
   name?: string;
   /** `--server` alone = the default host; `--server <alias|url>` = that one. */
@@ -22,6 +25,8 @@ interface SchemaArgs {
   discard?: boolean;
   yes?: boolean;
   'force-missing-down'?: boolean;
+  src?: string;
+  out?: string;
 }
 
 function short(hash: string | undefined): string {
@@ -148,6 +153,50 @@ function squash(dir: string, relDir: string, schema: string, argv: SchemaArgs): 
   return true;
 }
 
+/** `generate`: rewrites `databases/<schema>/schema.json` from the package's `@entity` classes.
+ * The snapshot and the scripts are untouched — seal/diff/migrate follow as usual. */
+function generate(argv: SchemaArgs, packageDir: string): boolean {
+  const srcRel = String(argv.src ?? 'src');
+  const srcDir = path.join(packageDir, srcRel);
+  if (!fs.existsSync(srcDir)) {
+    color.error(`No ${srcRel} directory. Run the command from the package directory, or pass --src`);
+    return false;
+  }
+  const project = new Project({skipAddingFilesFromTsConfig: true, skipFileDependencyResolution: true});
+  const glob = srcDir.replace(/\\/g, '/');
+  project.addSourceFilesAtPaths([`${glob}/**/*.ts`, `!${glob}/**/*.d.ts`]);
+  const classes = readEntityClasses(project);
+  if (classes.length === 0) {
+    color.warn(`No @grok.decorators.entity classes under ${srcRel}; nothing written`);
+    return true;
+  }
+  const version = JSON.parse(fs.readFileSync(path.join(packageDir, 'package.json'), 'utf8')).version ?? '0.0.0';
+  const manifests = buildManifests(classes, version);
+  const databasesDir = path.join(packageDir, String(argv.dir ?? 'databases'));
+  for (const schema of Object.keys(manifests)) {
+    const manifestPath = path.join(databasesDir, schema, 'schema.json');
+    const relPath = path.relative(packageDir, manifestPath);
+    const generated = manifests[schema];
+    // Sections a class cannot declare survive a regenerate.
+    const previous = fs.existsSync(manifestPath) ? JSON.parse(fs.readFileSync(manifestPath, 'utf8')) : {};
+    const manifest: any = {$schema: generated.$schema, name: generated.name, version: generated.version};
+    if (previous.extensible !== undefined)
+      manifest.extensible = previous.extensible;
+    manifest.tables = generated.tables;
+    for (const k of ['propertySchemas', 'migrations']) {
+      if (previous[k] !== undefined)
+        manifest[k] = previous[k];
+    }
+    if (!validateDomainManifest(manifest, relPath))
+      return false;
+    fs.mkdirSync(path.dirname(manifestPath), {recursive: true});
+    fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n', 'utf8');
+    console.log(`Wrote ${relPath} (${Object.keys(manifest.tables).length} table(s) from ` +
+      `${classes.filter((c) => c.schema === schema).length} class(es))`);
+  }
+  return true;
+}
+
 async function run(argv: SchemaArgs, verb: string, packageDir: string): Promise<boolean> {
   const manifestPaths = argv.dir
     ? [path.join(packageDir, String(argv.dir), 'schema.json')] : findDomainManifests(packageDir);
@@ -157,6 +206,7 @@ async function run(argv: SchemaArgs, verb: string, packageDir: string): Promise<
     return false;
   }
   let ok = true;
+  const ddl: string[] = [];
   for (const manifestPath of manifestPaths) {
     const relPath = path.relative(packageDir, manifestPath);
     const manifest = loadDomainManifest(manifestPath, relPath);
@@ -179,6 +229,10 @@ async function run(argv: SchemaArgs, verb: string, packageDir: string): Promise<
     if (verb === 'squash') {
       if (!squash(dir, path.relative(packageDir, dir), manifest.name, argv))
         ok = false;
+      continue;
+    }
+    if (verb === 'ddl') {
+      ddl.push(schemaDdl(current));
       continue;
     }
 
@@ -244,6 +298,14 @@ async function run(argv: SchemaArgs, verb: string, packageDir: string): Promise<
       `${path.relative(packageDir, path.join(downDir, file))} — review before committing`);
     seal(sealedPath, sealedRel, current);
   }
+  if (verb === 'ddl') {
+    const text = ddl.join('\n');
+    if (argv.out) {
+      fs.writeFileSync(path.join(packageDir, String(argv.out)), text, 'utf8');
+      console.log(`Wrote ${argv.out}`);
+    } else
+      console.log(text.trimEnd());
+  }
   if (!ok)
     process.exitCode = 1;
   return true;
@@ -269,7 +331,7 @@ export async function schema(argv: SchemaArgs, packageDir: string = process.cwd(
     return false;
   }
   try {
-    return await run(argv, verb, packageDir);
+    return verb === 'generate' ? generate(argv, packageDir) : await run(argv, verb, packageDir);
   } catch (x: any) {
     // A runtime failure is not a usage error: report it and exit non-zero without the help block.
     color.error(x.message ?? String(x));

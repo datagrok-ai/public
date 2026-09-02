@@ -230,10 +230,20 @@ export function findDomainManifests(packageDir: string): string[] {
 
 let _validateManifest: any;
 
-/** Parses and validates one manifest against `domain-schema.schema.json`; null (with the
- * errors reported) when it does not parse or validate. */
-export function loadDomainManifest(manifestPath: string, relPath: string = manifestPath): any | null {
+/** Validates a manifest object against `domain-schema.schema.json`, reporting the errors
+ * under [relPath]. */
+export function validateDomainManifest(manifest: any, relPath: string): boolean {
   _validateManifest ??= new Ajv().compile(JSON.parse(fs.readFileSync(domainSchemaPath, 'utf8')));
+  if (_validateManifest(manifest))
+    return true;
+  for (const err of _validateManifest.errors ?? [])
+    color.error(`${relPath}: ${err.instancePath || '/'} ${err.message}`);
+  return false;
+}
+
+/** Parses and validates one manifest file; null (with the errors reported) when it does
+ * not parse or validate. */
+export function loadDomainManifest(manifestPath: string, relPath: string = manifestPath): any | null {
   let manifest: any;
   try {
     manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
@@ -241,12 +251,7 @@ export function loadDomainManifest(manifestPath: string, relPath: string = manif
     color.error(`Failed to parse ${relPath}: ${x.message}`);
     return null;
   }
-  if (!_validateManifest(manifest)) {
-    for (const err of _validateManifest.errors ?? [])
-      color.error(`${relPath}: ${err.instancePath || '/'} ${err.message}`);
-    return null;
-  }
-  return manifest;
+  return validateDomainManifest(manifest, relPath) ? manifest : null;
 }
 
 /** Generates `src/generated/db.ts` with typed clients for the package's domain schemas
