@@ -73,6 +73,11 @@ export class TransferPanel {
   private rankScheme: string = XFER_RANK_POTENCY;
   /** Source series folded shut in the list, by matrix index. */
   private readonly collapsed = new Set<number>();
+  /** The open trend pane, so a selection change swaps it without rebuilding the list. */
+  private paneEl: HTMLElement | null = null;
+  /** The list's cards and the group each shows, so a selection change refreshes only the two
+   *  cards it touches instead of refilling the list (which would reset its scroll). */
+  private listCards: {el: HTMLElement, group: Transfer[]}[] = [];
   private navCollapsed = false;
   /** One row per pairing, filtered by the platform's panel — the same widgets as the series navigator. */
   private readonly xferFilter = new FrameFilter<Transfer>(
@@ -166,10 +171,30 @@ export class TransferPanel {
     return [...groups.values()];
   }
 
-  /** Select a transfer and redraw the trend view; only the transfer tab is rebuilt. */
+  /** Select a transfer: refresh the cards the change touches and swap the trend pane, leaving the
+   *  list (and its scroll position) alone. */
   private selectTransfer(transfer: Transfer): void {
+    const prev = this.transfers[this.transferIndex] ?? null;
     this.transferIndex = Math.max(0, this.transfers.indexOf(transfer));
-    this.renderTransferPanel();
+    if (this.paneEl === null || !this.paneEl.isConnected) {
+      this.renderTransferPanel();
+      return;
+    }
+    for (const entry of this.listCards) {
+      if (!((prev !== null && entry.group.includes(prev)) || entry.group.includes(transfer)))
+        continue;
+      // Rebuilt rather than re-classed: the card's stats line shows the group's selected transfer.
+      const fresh = this.buildTransferCard(entry.group);
+      if (entry.el.classList.contains('chem-sar-card-nested'))
+        fresh.classList.add('chem-sar-card-nested');
+      fresh.style.display = entry.el.style.display;
+      entry.el.replaceWith(fresh);
+      entry.el = fresh;
+    }
+    this.host.releaseSlot(this.transferSlot);
+    const pane = this.buildTransferPane(this.transfers[this.transferIndex]);
+    this.paneEl.replaceWith(pane);
+    this.paneEl = pane;
   }
 
   /** Bring the SAR Transfer tab up to date, computing the (quadratic) transfer list on first open
@@ -320,6 +345,7 @@ export class TransferPanel {
     // Release the tab's own grid (not the matrix's) so switching transfers doesn't stack up grids.
     this.host.releaseSlot(this.transferSlot);
     ui.empty(this.root);
+    this.paneEl = null;
     this.stats.clear();
     if (this.transfers.length === 0) {
       this.root.appendChild(ui.divText(this.host.matrices.length === 0 ?
@@ -332,7 +358,8 @@ export class TransferPanel {
     if (this.transferIndex >= this.transfers.length)
       this.transferIndex = 0;
     this.root.appendChild(this.buildTransferNav());
-    this.root.appendChild(this.buildTransferPane(this.transfers[this.transferIndex]));
+    this.paneEl = this.buildTransferPane(this.transfers[this.transferIndex]);
+    this.root.appendChild(this.paneEl);
   }
 
   /** The list panel: rank control, count chip and filter over a list that nests each source series'
@@ -401,6 +428,7 @@ export class TransferPanel {
   /** Cards grouped under the series their source core belongs to. A series contributing one core gets
    *  no header: a heading over a single item is noise, and the card already names its series. */
   private fillTransferList(list: HTMLElement, groups: Transfer[][]): void {
+    this.listCards = [];
     const byMatrix = new Map<number, Transfer[][]>();
     for (const g of groups) {
       const key = g[0].a.matrixIndex;
@@ -412,18 +440,27 @@ export class TransferPanel {
     }
     for (const [matrixIndex, cores] of byMatrix) {
       if (cores.length < 2) {
-        list.appendChild(this.buildTransferCard(cores[0]));
+        const card = this.buildTransferCard(cores[0]);
+        this.listCards.push({el: card, group: cores[0]});
+        list.appendChild(card);
         continue;
       }
       const matrix = this.host.matrices[matrixIndex];
       const open = !this.collapsed.has(matrixIndex);
+      // Toggling flips visibility of the prebuilt cards in place, like the matrix navigator's
+      // chevrons: a full renderTransferPanel() here would tear down the pane grid and reset the
+      // list's scroll position on every click. Entries, not elements: selection swaps a card's
+      // element under its entry, and a captured element would be a detached node by then.
+      const nested: {el: HTMLElement, group: Transfer[]}[] = [];
       const twisty = ui.iconFA(open ? 'chevron-down' : 'chevron-right', (e: MouseEvent) => {
         e.stopPropagation();
-        if (open)
+        const nowOpen = this.collapsed.delete(matrixIndex);
+        if (!nowOpen)
           this.collapsed.add(matrixIndex);
-        else
-          this.collapsed.delete(matrixIndex);
-        this.renderTransferPanel();
+        twisty.classList.toggle('fa-chevron-down', nowOpen);
+        twisty.classList.toggle('fa-chevron-right', !nowOpen);
+        for (const entry of nested)
+          entry.el.style.display = nowOpen ? '' : 'none';
       });
       twisty.classList.add('chem-sar-card-twisty');
       const core = renderMoleculeOnColor(matrix.rows[0].keySmiles, CARD_CORE_W, CARD_CORE_H, CORE_BG_ARGB);
@@ -433,11 +470,14 @@ export class TransferPanel {
         ui.divText(`${cores.length} cores transfer`, 'chem-sar-card-desc'),
       ], 'chem-sar-card-body')], 'chem-sar-card chem-sar-scaffold-card');
       list.appendChild(header);
-      if (!open)
-        continue;
       for (const g of cores) {
         const card = this.buildTransferCard(g);
         card.classList.add('chem-sar-card-nested');
+        if (!open)
+          card.style.display = 'none';
+        const entry = {el: card, group: g};
+        nested.push(entry);
+        this.listCards.push(entry);
         list.appendChild(card);
       }
     }
