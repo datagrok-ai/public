@@ -14,6 +14,7 @@ import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimen
 import {ScaffoldTreeViewer} from '../widgets/scaffold-tree';
 import {MatchedMolecularPairsViewer} from '../analysis/molecular-matched-pairs/mmp-viewer/mmp-viewer';
 import {dockSarMatrixTabs} from '../analysis/sar-matrix/sar-matrix-viewer';
+import {CELL_H, CELL_W, COL_HEADER_H, CORE_W} from '../analysis/sar-matrix/sar-matrix-ui-common';
 
 
 export async function _demoChemOverview(): Promise<void> {
@@ -206,6 +207,27 @@ function sarTabHeader(title: string): Element | null {
     .find((e) => e.textContent?.trim() === title) ?? null;
 }
 
+/** The matrix is a canvas grid, so its cells are not elements to anchor to. This lays a marker over
+ *  the first data cell — past the core column and the substituent header — so the hint about cells
+ *  opens against one instead of against the pane. Fixed-positioned and outside the grid so it cannot
+ *  disturb the layout it is measuring, and replaced on each call rather than accumulating. */
+function matrixCellAnchor(): Element | null {
+  const host = document.querySelector('.chem-sar-grid-host');
+  if (!(host instanceof HTMLElement))
+    return null;
+  document.querySelector('.chem-sar-hint-cell')?.remove();
+  const box = host.getBoundingClientRect();
+  const marker = ui.div([], 'chem-sar-hint-cell');
+  marker.style.position = 'fixed';
+  marker.style.pointerEvents = 'none';
+  marker.style.left = `${box.left + CORE_W}px`;
+  marker.style.top = `${box.top + COL_HEADER_H}px`;
+  marker.style.width = `${CELL_W}px`;
+  marker.style.height = `${CELL_H}px`;
+  document.body.appendChild(marker);
+  return marker;
+}
+
 const SAR_HINTS: SarHint[] = [
   {
     // The first card, not the list: the list runs the full height of the pane, so a popup beside it
@@ -245,7 +267,12 @@ const SAR_HINTS: SarHint[] = [
       'and Level to drop the thin or over-folded ones. Core searches by substructure.',
   },
   {
-    anchor: () => document.querySelector('.chem-sar-nav-list:not(.chem-sar-xfer-list) .chem-sar-scaffold-card') ??
+    // A card that actually folds: the chevron and the level badge are what the text is about, and a
+    // leaf card carries neither. The scaffold row has a chevron but no level, so it is not one either.
+    anchor: () => Array.from(document.querySelectorAll(
+      '.chem-sar-nav-list:not(.chem-sar-xfer-list) .chem-sar-card:not(.chem-sar-scaffold-card)'))
+      .find((card) => card.querySelector('.chem-sar-card-twisty.fa-chevron-down, ' +
+        '.chem-sar-card-twisty.fa-chevron-right')) ??
       document.querySelector('.chem-sar-nav-list:not(.chem-sar-xfer-list) .chem-sar-card'),
     position: ui.hints.POSITION.RIGHT,
     title: 'Select and unfold',
@@ -276,7 +303,7 @@ const SAR_HINTS: SarHint[] = [
       'annotates each substituent column with a metric - its mean potency or molecular weight.',
   },
   {
-    anchor: () => document.querySelector('.chem-sar-grid-host'),
+    anchor: () => matrixCellAnchor(),
     position: ui.hints.POSITION.RIGHT,
     title: 'Then click a cell',
     text: 'Cores run down the rows, substituents across the columns. The header over the first column ' +
@@ -394,8 +421,10 @@ const SAR_HINTS: SarHint[] = [
 
 function showSarHint(i: number, previous?: HTMLElement): void {
   previous?.remove();
-  if (i >= SAR_HINTS.length)
+  if (i >= SAR_HINTS.length) {
+    document.querySelector('.chem-sar-hint-cell')?.remove();
     return;
+  }
   const hint = SAR_HINTS[i];
   const anchor = hint.anchor();
   if (!(anchor instanceof HTMLElement)) {
@@ -413,7 +442,11 @@ function showSarHint(i: number, previous?: HTMLElement): void {
   const buttonHost = ui.divH([], {style: {justifyContent: 'flex-end'}});
   content.append(buttonHost);
   const popup = ui.hints.addHint(anchor, content, hint.position);
-  buttonHost.append(i === SAR_HINTS.length - 1 ? ui.button('Close', () => popup.remove()) :
+  buttonHost.append(i === SAR_HINTS.length - 1 ?
+    ui.button('Close', () => {
+      popup.remove();
+      document.querySelector('.chem-sar-hint-cell')?.remove();
+    }) :
     ui.button('Next', () => showSarHint(i + 1, popup)));
 }
 

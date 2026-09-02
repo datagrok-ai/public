@@ -7,13 +7,24 @@ import {computeAllTransfers, Transfer, TransferSide, transferStats, TransferStat
   from './sar-matrix-transfer';
 import {SarMatrix} from './sar-matrix-types';
 import {BENEFIT_MOL_H, BENEFIT_MOL_W, CARD_CORE_H, CARD_CORE_W, CELL_H, COL_HEADER_H, CORE_BG_ARGB,
-  GRID_SCROLLBAR_H, HEADER_ARGB, MatrixCellRef, PaneColumn, PaneGridSlot, PaneRow,
+  FrameFilter, GRID_SCROLLBAR_H, HEADER_ARGB, PaneColumn, PaneGridSlot, PaneRow,
   renderMoleculeOnColor} from './sar-matrix-ui-common';
 
 /** A transfer is identified by the core it starts from, so several targets collapse onto one card. */
 function transferSourceKey(t: Transfer): string {
   return `${t.a.matrixIndex}:${t.a.rowIndex}`;
 }
+
+/** Columns of the frame the transfer filter runs on — one row per pairing. Named as they read in the
+ *  filter panel, so the labels there are the ones the cards and tooltips use. */
+const XFER_SOURCE = 'Source';
+const XFER_TARGET = 'Target';
+const XFER_SOURCE_CORE = 'Source core';
+const XFER_TARGET_CORE = 'Target core';
+const XFER_R = 'Correlation';
+const XFER_FOLD = 'Fold match';
+const XFER_GAINED = 'Analogs gained';
+const XFER_SHARED = 'Shared R-groups';
 
 /** Ranks the transfer by the potency of the best analog it argues for — the matrix list's "Potent
  *  compounds" question asked of a transfer: which pairing points at the most promising unmade
@@ -42,7 +53,7 @@ export interface TransferPanelHost {
   readonly transferTabActive: boolean;
   releaseSlot(slot: PaneGridSlot): void;
   formatActivity(value: number): string;
-  addAnalogsToMakeList(cells: MatrixCellRef[], emptyMessage: string): void;
+  cartIcon(): HTMLElement;
   cardScoreBox(lines: {value: string, label: string}[], tip: () => string): HTMLElement;
   buildPaneGrid(rows: PaneRow[], columns: PaneColumn[], slot: PaneGridSlot): HTMLElement;
 }
@@ -63,8 +74,15 @@ export class TransferPanel {
   /** Source series folded shut in the list, by matrix index. */
   private readonly collapsed = new Set<number>();
   private navCollapsed = false;
-  /** Null when no filter is set; otherwise the floors a transfer must clear to be listed. */
-  private filter: {r: number, fold: number, gained: number} | null = null;
+  /** One row per pairing, filtered by the platform's panel — the same widgets as the series navigator. */
+  private readonly xferFilter = new FrameFilter<Transfer>(
+    () => this.buildTransferFrame(),
+    (group) => {
+      // Explicit for the same reasons as the series navigator's: named lookup, and core substructure.
+      group.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: XFER_SOURCE}, false);
+      group.updateOrAdd({type: 'Chem:substructureFilter', column: XFER_SOURCE_CORE}, false);
+    },
+    () => this.renderTransferPanel());
   /** Per-render cache: transferStats is not free and ranking asks for every transfer's score. */
   private stats = new Map<Transfer, TransferStats>();
 
@@ -80,9 +98,11 @@ export class TransferPanel {
     this.transferSlot.state?.grid.invalidate();
   }
 
-  /** Drop the tab’s grid and its subscriptions; the panel stays usable and rebuilds on next open. */
+  /** Drop the tab’s grid and its subscriptions; the panel stays usable and rebuilds on next open.
+   *  Only the viewer's detach calls this, so the filter's headless view goes with it. */
   release(): void {
     this.host.releaseSlot(this.transferSlot);
+    this.xferFilter.reset();
   }
 
   showMessage(text: string): void {
@@ -99,6 +119,7 @@ export class TransferPanel {
     this.transfers = [];
     this.transferIndex = 0;
     this.transfersComputed = false;
+    this.xferFilter.reset();
   }
 
   /** Core label: "Series B · Core 1" with the series prefix, or just "Core 1" without it. */
@@ -238,19 +259,49 @@ export class TransferPanel {
     return best === null ? NaN : (this.host.higherIsBetter ? best.value : -best.value);
   }
 
-  private passesFilter(t: Transfer): boolean {
-    if (this.filter === null)
-      return true;
-    const fold = this.statsOf(t).foldMatch;
-    return t.correlation >= this.filter.r &&
-      (fold === null ? this.filter.fold <= 0 : fold >= this.filter.fold) &&
-      t.predictedSubstituents.length >= this.filter.gained;
+  /** Cores ride as Molecule columns for the substructure sketcher; the labels stay plain strings so
+   *  each gets a searchable category list. */
+  private buildTransferFrame(): {frame: DG.DataFrame, keys: Transfer[]} {
+    const source: string[] = [];
+    const target: string[] = [];
+    const sourceCore: string[] = [];
+    const targetCore: string[] = [];
+    const r: number[] = [];
+    const fold: number[] = [];
+    const gained: number[] = [];
+    const shared: number[] = [];
+    for (const t of this.transfers) {
+      source.push(this.coreLabel(t.a, true));
+      target.push(this.coreLabel(t.b, true));
+      sourceCore.push(this.host.matrices[t.a.matrixIndex].rows[t.a.rowIndex].coreSmiles);
+      targetCore.push(this.host.matrices[t.b.matrixIndex].rows[t.b.rowIndex].coreSmiles);
+      r.push(t.correlation);
+      // No fold match is not a zero one: NaN keeps it off the histogram rather than piling it at the
+      // bottom, where a floor would then read as if it had been measured and failed.
+      fold.push(this.statsOf(t).foldMatch ?? NaN);
+      gained.push(t.predictedSubstituents.length);
+      shared.push(t.substituents.length);
+    }
+    const srcCol = DG.Column.fromStrings(XFER_SOURCE_CORE, sourceCore);
+    srcCol.semType = DG.SEMTYPE.MOLECULE;
+    const tgtCol = DG.Column.fromStrings(XFER_TARGET_CORE, targetCore);
+    tgtCol.semType = DG.SEMTYPE.MOLECULE;
+    return {frame: DG.DataFrame.fromColumns([
+      DG.Column.fromStrings(XFER_SOURCE, source),
+      DG.Column.fromStrings(XFER_TARGET, target),
+      srcCol,
+      tgtCol,
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, XFER_R, r),
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, XFER_FOLD, fold),
+      DG.Column.fromList(DG.COLUMN_TYPE.INT, XFER_GAINED, gained),
+      DG.Column.fromList(DG.COLUMN_TYPE.INT, XFER_SHARED, shared),
+    ]), keys: [...this.transfers]};
   }
 
   /** The listed transfers: filtered, then ordered by the chosen scheme. Unscorable ones sort last
    *  rather than vanishing, so a scheme change never silently drops a transfer from the list. */
   private rankedGroups(): Transfer[][] {
-    const groups = this.groupTransfersBySource(this.transfers.filter((t) => this.passesFilter(t)));
+    const groups = this.groupTransfersBySource(this.transfers.filter((t) => this.xferFilter.passes(t)));
     const best = (g: Transfer[]): number =>
       g.reduce((m, t) => {const s = this.score(t, this.rankScheme); return Number.isNaN(s) ? m : Math.max(m, s);},
         Number.NEGATIVE_INFINITY);
@@ -318,12 +369,12 @@ export class TransferPanel {
       'their targets having already explored the same R-groups.');
 
     const matchCount = ui.divText('', 'chem-sar-nav-matches');
-    const idleTip = 'Filter transfers by correlation, fold match and analogs gained';
+    const idleTip = 'Filter transfers by correlation, fold match, analogs gained and core';
     const filterIcon = ui.icons.filter(() => {
-      ui.showPopup(ui.div(this.filterRoot(), 'chem-sar-struct-filters'), filterIcon, {vertical: true});
+      ui.showPopup(ui.div(this.xferFilter.root(), 'chem-sar-struct-filters'), filterIcon, {vertical: true});
     }, idleTip);
     filterIcon.classList.add('chem-sar-struct-icon', 'chem-sar-filter-icon');
-    if (this.filter !== null) {
+    if (this.xferFilter.active) {
       const total = this.groupTransfersBySource(this.transfers).length;
       matchCount.innerText = `${shown.length} of ${total} match`;
       filterIcon.classList.add('chem-sar-filter-on');
@@ -390,25 +441,6 @@ export class TransferPanel {
         list.appendChild(card);
       }
     }
-  }
-
-  /** The filter popup: a floor per metric, since every one of them is "higher is better". */
-  private filterRoot(): HTMLElement {
-    const f = this.filter ?? {r: 0, fold: 0, gained: 0};
-    const rIn = ui.input.float('Min correlation', {value: f.r});
-    const foldIn = ui.input.float('Min fold match', {value: f.fold});
-    const gainedIn = ui.input.int('Min analogs gained', {value: f.gained});
-    ui.tooltip.bind(gainedIn.root, 'Set to 1 to hide the transfers that argue for nothing to make.');
-    const apply = ui.button('Apply', () => {
-      const next = {r: rIn.value ?? 0, fold: foldIn.value ?? 0, gained: gainedIn.value ?? 0};
-      this.filter = (next.r <= 0 && next.fold <= 0 && next.gained <= 0) ? null : next;
-      this.renderTransferPanel();
-    });
-    const clear = ui.button('Clear', () => {
-      this.filter = null;
-      this.renderTransferPanel();
-    });
-    return ui.divV([rIn.root, foldIn.root, gainedIn.root, ui.divH([apply, clear])]);
   }
 
   /** Every transfer sharing this one's source core — the pane's target-dropdown alternatives. */
@@ -492,21 +524,6 @@ export class TransferPanel {
     return ui.divH(items, 'chem-sar-chips');
   }
 
-  /** The cells this transfer argues for making. Each predicted pair has one measured side — the
-   *  evidence — and one side where the compound does not exist yet; only the latter is a proposal. */
-  private predictedCells(transfer: Transfer): MatrixCellRef[] {
-    const out: MatrixCellRef[] = [];
-    for (let i = 0; i < transfer.predictedSubstituents.length; i++) {
-      for (const [side, ci] of [[transfer.a, transfer.predictedACols[i]],
-        [transfer.b, transfer.predictedBCols[i]]] as const) {
-        const matrix = this.host.matrices[side.matrixIndex];
-        if (matrix.cells[side.rowIndex][ci].kind === 'virtual')
-          out.push({matrix, ri: side.rowIndex, ci});
-      }
-    }
-    return out;
-  }
-
   /** The SAR transfer view: two cores whose potency trends run in parallel, as two rows of the same
    *  virtualized grid, each resolving against its own matrix. */
   private buildTransferPane(transfer: Transfer): HTMLElement {
@@ -538,17 +555,7 @@ export class TransferPanel {
       controls.push(targetInput.root);
     }
 
-    // Collects what the pane argues for in one action, which is the whole point of opening a
-    // transfer; a single cell can still be added from its own Context Panel.
-    const addIcon = ui.iconFA('cart-plus', () => this.host.addAnalogsToMakeList(this.predictedCells(transfer),
-      'This transfer argues for no new compound — both cores have explored the same R-groups.'));
-    addIcon.classList.add('chem-sar-struct-icon', 'chem-sar-cart-icon');
-    ui.tooltip.bind(addIcon, () => {
-      const count = this.predictedCells(transfer).length;
-      return count === 0 ? 'Add to Make list — this transfer argues for no new compound.' :
-        `Add the ${count} analog(s) this transfer argues for to the Make list`;
-    });
-    controls.push(addIcon);
+    controls.push(this.host.cartIcon());
     const controlBar = ui.divH(controls, 'chem-sar-control-bar');
     controlBar.classList.add('chem-sar-control-inline');
     parts.push(controlBar);

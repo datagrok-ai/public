@@ -13,7 +13,7 @@ import {closeGridQuietly, finiteOrNaN, observedMolecules, SarMatrix, SarMatrixCe
 import {CARD_CORE_H, CARD_CORE_W, CELL_H, CELL_W, CELL_W_MAX,
   clearCssColorCache, COL_HEADER_H, CORE_BG_ARGB, CORE_W, MatrixCellRef, MatrixGridState,
   NAV_COLLAPSED_W, NAV_W,
-  paintMoleculeOnColor, PaneColumn, PaneGridSlot, PaneRow, renderMoleculeOnColor,
+  FrameFilter, paintMoleculeOnColor, PaneColumn, PaneGridSlot, PaneRow, renderMoleculeOnColor,
   TAB_MAKELIST, TAB_MATRIX, TAB_TRANSFER, TABLE_CHROME} from './sar-matrix-ui-common';
 import {buildAlignmentTemplate, clearDepictionCaches, coreDepictionBlock, matrixCore} from './sar-matrix-depict';
 import {MakeListPanel} from './sar-matrix-make-list';
@@ -175,31 +175,32 @@ export class SarMatrixViewer extends DG.JsViewer {
   /** Rasterizes a card's core only when it first scrolls into view. */
   private navCoreObserver: IntersectionObserver | null = null;
   private readonly navPendingCores: Map<Element, () => void> = new Map();
-  /** Cell keys passing the potency threshold, or null when unfiltered. */
-  private cellPass: Set<string> | null = null;
-  /** The matrix {@link cellPass} was built from; cells of any other are outside the filter. */
+  /** The matrix the cell filter was built from; cells of any other are outside it. */
   private cellPassMatrixId: string | null = null;
-  /** One row per series, backing the platform filter group over the navigator. */
-  private navFrame: DG.DataFrame | null = null;
-  private navFilters: DG.FilterGroup | null = null;
-  /** Headless view owning `navFilters`; held so it can be closed (dropping the reference alone leaks
-   *  the Dart-backed view and frame). */
-  private navView: DG.TableView | null = null;
-  private navSub: {unsubscribe(): void} | null = null;
-  /** Matrix ids the navigator filter admits, or null while it admits everything. */
-  private navPass: Set<string> | null = null;
-  /** Frame row index -> matrix id. */
-  private navKeys: string[] = [];
+  /** One row per series. */
+  private readonly navFilter = new FrameFilter<string>(
+    () => this.buildNavFrame(),
+    (group) => {
+      // Explicit: the default set omits an all-distinct category, whose search box finds a named
+      // series, and the sketcher matches the core rather than the compounds under it.
+      group.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: NAV_SERIES}, false);
+      group.updateOrAdd({type: 'Chem:substructureFilter', column: NAV_CORE}, false);
+    },
+    () => {
+      this.updateNavVisibility();
+      this.navMatchCount?.();
+    });
   /** Refreshes the navigator match count from outside its render. */
   private navMatchCount: (() => void) | null = null;
-  /** Frame row index -> cell key. */
-  private cellKeys: string[] = [];
-  /** One row per (core, substituent) cell, backing the platform filter group over the matrix. */
-  private structFrame: DG.DataFrame | null = null;
-  private structFilters: DG.FilterGroup | null = null;
-  /** Headless view owning `structFilters` (see {@link navView}). */
-  private structView: DG.TableView | null = null;
-  private structSub: {unsubscribe(): void} | null = null;
+  /** One row per (core, substituent) cell of the matrix on screen. */
+  private readonly cellFilter = new FrameFilter<string>(
+    () => this.buildStructFrame(),
+    null,
+    () => {
+      this.cellPassMatrixId = this.cellFilter.active ?
+        this.matrices[Math.min(this.selIndex, this.matrices.length - 1)]?.id ?? null : null;
+      this.applyCellFilter();
+    });
   /** Matrix-pane parts the potency threshold updates in place; null while no pane is on screen. */
   private paneGridHost: HTMLElement | null = null;
   private paneEmptyNote: HTMLElement | null = null;
@@ -387,33 +388,17 @@ export class SarMatrixViewer extends DG.JsViewer {
     this.paneDimsChip = null;
   }
 
-  /** Drop the lazy filter machinery so it rebuilds against the current matrices. Stale keys
-   *  (cellKeys/navKeys) partially match reused cluster ids, mis-filtering rather than failing cleanly;
-   *  closing the headless views also releases the Dart-backed views + frames. */
+  /** Rebuild the filters against the current matrices: stale keys partially match reused cluster ids,
+   *  which mis-filters rather than failing cleanly. */
   private resetFilters(): void {
     this.resetStructFilter();
-    this.navSub?.unsubscribe();
-    this.navSub = null;
-    this.navView?.detach();
-    this.navView = null;
-    this.navFrame = null;
-    this.navFilters = null;
+    this.navFilter.reset();
     this.navMatchCount = null;
-    this.navKeys = [];
-    this.navPass = null;
   }
 
-  /** Drop only the cell (structure) filter so it rebuilds against the current matrix; its rows and
-   *  keys belong to the previous matrix. */
+  /** Drop only the cell filter so it rebuilds against the current matrix; its rows key the previous one. */
   private resetStructFilter(): void {
-    this.structSub?.unsubscribe();
-    this.structSub = null;
-    this.structView?.detach();
-    this.structView = null;
-    this.structFrame = null;
-    this.structFilters = null;
-    this.cellKeys = [];
-    this.cellPass = null;
+    this.cellFilter.reset();
     this.cellPassMatrixId = null;
   }
 
@@ -625,28 +610,28 @@ export class SarMatrixViewer extends DG.JsViewer {
   }
 
   private get cellFilterActive(): boolean {
-    return this.cellPass !== null;
+    return this.cellFilter.active;
   }
 
   /** Whether a cell survives the cell filter. The filter is built from one matrix and the transfer
    *  view draws rows from others, which are outside it and so pass — a keyed lookup alone would miss
    *  every one and blank the grid. */
   cellVisible(matrix: SarMatrix, ri: number, ci: number): boolean {
-    if (this.cellPass === null || matrix.id !== this.cellPassMatrixId)
+    if (!this.cellFilter.active || matrix.id !== this.cellPassMatrixId)
       return true;
-    return this.cellPass.has(`${matrix.id}:${ri}:${ci}`);
+    return this.cellFilter.passes(`${matrix.id}:${ri}:${ci}`);
   }
 
   /** One row per cell of the SELECTED matrix (core/substituent as molecules, potency/refs/weight as
    *  numbers) so the platform supplies the filters. Scoped to the on-screen matrix to avoid
    *  fingerprinting cells the user can't see; rebuilds on a matrix switch. */
-  private buildStructFrame(): DG.DataFrame {
+  private buildStructFrame(): {frame: DG.DataFrame, keys: string[]} {
     const cores: string[] = [];
     const subs: string[] = [];
     const potency: number[] = [];
     const refs: number[] = [];
     const weights: number[] = [];
-    this.cellKeys = [];
+    const cellKeys: string[] = [];
     const matrix = this.matrices[Math.min(this.selIndex, this.matrices.length - 1)];
     if (matrix) {
       for (let ri = 0; ri < matrix.rows.length; ri++) {
@@ -661,7 +646,7 @@ export class SarMatrixViewer extends DG.JsViewer {
           refs.push(cell.references ?? this.observedNeighbours(matrix, ri, ci));
           const mw = substituentMW(matrix.columns[ci].substSmiles);
           weights.push(Number.isFinite(mw) ? mw : 0);
-          this.cellKeys.push(`${matrix.id}:${ri}:${ci}`);
+          cellKeys.push(`${matrix.id}:${ri}:${ci}`);
         }
       }
     }
@@ -669,13 +654,13 @@ export class SarMatrixViewer extends DG.JsViewer {
     const subCol = DG.Column.fromStrings(STRUCT_R, subs);
     coreCol.semType = DG.SEMTYPE.MOLECULE;
     subCol.semType = DG.SEMTYPE.MOLECULE;
-    return DG.DataFrame.fromColumns([
+    return {frame: DG.DataFrame.fromColumns([
       coreCol,
       subCol,
       DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, STRUCT_POTENCY, potency),
       DG.Column.fromList(DG.COLUMN_TYPE.INT, STRUCT_REFS, refs),
       DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, STRUCT_MW, weights),
-    ]);
+    ]), keys: cellKeys};
   }
 
   /** Measured compounds sharing this cell's row or column — what a prediction here would rest on. */
@@ -692,42 +677,9 @@ export class SarMatrixViewer extends DG.JsViewer {
     return n;
   }
 
-  /** Read the frame's filter into the passing-cell set, then repaint; null while everything passes. */
-  private syncStructFilter(): void {
-    const frame = this.structFrame;
-    if (frame === null)
-      return;
-    if (frame.filter.trueCount === frame.rowCount) {
-      this.cellPass = null;
-      this.cellPassMatrixId = null;
-    } else {
-      const pass = new Set<string>();
-      for (let i = 0; i < frame.rowCount; i++) {
-        if (frame.filter.get(i))
-          pass.add(this.cellKeys[i]);
-      }
-      this.cellPass = pass;
-      this.cellPassMatrixId = this.matrices[Math.min(this.selIndex, this.matrices.length - 1)]?.id ?? null;
-    }
-    this.applyCellFilter();
-  }
-
-  /** The cell frame's filter group, built on first use. A filter group belongs to a view, so a
-   *  headless one is created and never shown — only its filters are, in a popup. */
-  private structureFilterRoot(): HTMLElement {
-    if (this.structFilters === null) {
-      this.structFrame = this.buildStructFrame();
-      this.structView = DG.TableView.create(this.structFrame, false);
-      // Default set: the platform already gives molecule columns sketchers and numeric columns histograms.
-      this.structFilters = this.structView.getFiltersGroup();
-      this.structSub = DG.debounce(this.structFrame.onFilterChanged, 300).subscribe(() => this.syncStructFilter());
-    }
-    return this.structFilters.root;
-  }
-
   /** One row per series, carrying its core as a molecule and the numbers its card prints, so the
    *  platform supplies sketcher + histogram filters. */
-  private buildNavFrame(): DG.DataFrame {
+  private buildNavFrame(): {frame: DG.DataFrame, keys: string[]} {
     const series: string[] = [];
     const cores: string[] = [];
     const best: number[] = [];
@@ -737,7 +689,7 @@ export class SarMatrixViewer extends DG.JsViewer {
     const compounds: number[] = [];
     const coreCount: number[] = [];
     const level: number[] = [];
-    this.navKeys = [];
+    const navKeys: string[] = [];
     for (const matrix of this.matrices) {
       series.push(matrix.label);
       cores.push(matrixCore(matrix));
@@ -752,11 +704,11 @@ export class SarMatrixViewer extends DG.JsViewer {
       compounds.push(matrix.realCount);
       coreCount.push(matrix.rows.length);
       level.push(matrix.level - 1);
-      this.navKeys.push(matrix.id);
+      navKeys.push(matrix.id);
     }
     const coreCol = DG.Column.fromStrings(NAV_CORE, cores);
     coreCol.semType = DG.SEMTYPE.MOLECULE;
-    return DG.DataFrame.fromColumns([
+    return {frame: DG.DataFrame.fromColumns([
       // Plain string so the platform gives it a searchable category list, for looking up a named series.
       DG.Column.fromStrings(NAV_SERIES, series),
       coreCol,
@@ -767,48 +719,11 @@ export class SarMatrixViewer extends DG.JsViewer {
       DG.Column.fromList(DG.COLUMN_TYPE.INT, NAV_COMPOUNDS, compounds),
       DG.Column.fromList(DG.COLUMN_TYPE.INT, NAV_CORES, coreCount),
       DG.Column.fromList(DG.COLUMN_TYPE.INT, NAV_LEVEL, level),
-    ]);
-  }
-
-  /** Read the series frame's filter back into the passing-matrix set and reapply it to the cards. */
-  private syncNavFilter(): void {
-    const frame = this.navFrame;
-    if (frame === null)
-      return;
-    if (frame.filter.trueCount === frame.rowCount)
-      this.navPass = null;
-    else {
-      const pass = new Set<string>();
-      for (let i = 0; i < frame.rowCount; i++) {
-        if (frame.filter.get(i))
-          pass.add(this.navKeys[i]);
-      }
-      this.navPass = pass;
-    }
-    this.updateNavVisibility();
-    this.navMatchCount?.();
-  }
-
-  /** The series filter group, built on first use, mounted in a popup off the navigator's filter icon. */
-  private navFilterRoot(): HTMLElement {
-    if (this.navFilters === null) {
-      this.navFrame = this.buildNavFrame();
-      this.navView = DG.TableView.create(this.navFrame, false);
-      this.navFilters = this.navView.getFiltersGroup();
-      // Added explicitly: the default set omits an all-distinct category column, but its search box is
-      // how a named series is looked for.
-      this.navFilters.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: NAV_SERIES}, false);
-      // Likewise explicit, and the reason the core is carried as a Molecule column: "which series sit
-      // on this scaffold" is the navigator's structural question, and the sketcher answers it with the
-      // usual contains / included-in / exact modes. Matches the core, not the compounds under it.
-      this.navFilters.updateOrAdd({type: 'Chem:substructureFilter', column: NAV_CORE}, false);
-      this.navSub = DG.debounce(this.navFrame.onFilterChanged, 300).subscribe(() => this.syncNavFilter());
-    }
-    return this.navFilters.root;
+    ]), keys: navKeys};
   }
 
   private passesFilter(matrix: SarMatrix): boolean {
-    return this.navPass === null || this.navPass.has(matrix.id);
+    return this.navFilter.passes(matrix.id);
   }
 
   /** The score block on the right of a navigator card. Shared by series and transfer cards so both
@@ -1129,12 +1044,12 @@ export class SarMatrixViewer extends DG.JsViewer {
     const matchCount = ui.divText('', 'chem-sar-nav-matches');
     const navIdleTip = 'Filter series by core structure, potency, SAR spread, size';
     const navIcon = ui.icons.filter(() => {
-      ui.showPopup(ui.div(this.navFilterRoot(), 'chem-sar-struct-filters'), navIcon, {vertical: true});
+      ui.showPopup(ui.div(this.navFilter.root(), 'chem-sar-struct-filters'), navIcon, {vertical: true});
     }, navIdleTip);
     navIcon.classList.add('chem-sar-struct-icon');
     const refill = (): void => {
       this.updateNavVisibility();
-      const filtered = this.navPass !== null;
+      const filtered = this.navFilter.active;
       const hits = this.matrices.filter((matrix) => this.passesFilter(matrix)).length;
       matchCount.innerText = filtered ? `${hits} of ${this.matrices.length} match` : '';
       this.markFilterIcon(navIcon, filtered,
@@ -1270,7 +1185,7 @@ export class SarMatrixViewer extends DG.JsViewer {
    *  that fails the filter still shows when a descendant passes; collapse is ignored while filtering. */
   private updateNavVisibility(): void {
     const parents = this.navParents;
-    const filtering = this.navPass !== null;
+    const filtering = this.navFilter.active;
     const children = this.navChildren(parents);
     const hits = new Map<number, boolean>();
     const anyHit = (i: number): boolean => {
@@ -1600,8 +1515,28 @@ export class SarMatrixViewer extends DG.JsViewer {
   }
 
   /** Collect an explicit set of cells, for the transfer pane's cart. */
-  addAnalogsToMakeList(cells: MatrixCellRef[], emptyMessage: string): void {
-    this.makeListPanel.addCellsToMakeList(cells, emptyMessage);
+  /** The cart both panes carry. Adding sits with the grid rather than only in the make-list tab: the
+   *  cell to add is picked here, and a control that lives one tab away asks the user to leave what
+   *  they are looking at. Both grids come from `buildPaneGrid`, so a click in either sets the same
+   *  selected cell and one icon serves both. Left enabled with no selection so the reason lands as a
+   *  message instead of a dead icon. */
+  cartIcon(): HTMLElement {
+    const icon = ui.iconFA('cart-plus', () => this.makeListPanel.addSelectedToMakeList());
+    // Second class so the cart and the filter funnel, which share the icon styling, stay separable.
+    icon.classList.add('chem-sar-struct-icon', 'chem-sar-cart-icon');
+    ui.tooltip.bind(icon, () => {
+      const cell = this.selectedCell;
+      if (cell === null)
+        return 'Add to make list — click a cell first.';
+      const target = cell.matrix.cells[cell.ri][cell.ci];
+      if (target.smiles === null)
+        return 'Add to make list — the selected cell has no structure.';
+      const kind = target.kind === 'virtual' ? 'virtual analog' :
+        target.kind === 'unmeasured' ? 'untested compound' : 'synthesized compound';
+      return `Add ${cell.matrix.label} · ${cell.matrix.rows[cell.ri].label} × ` +
+        `${cell.matrix.columns[cell.ci].position} (${kind}) to the make list`;
+    });
+    return icon;
   }
 
   /** Open the platform's molecule context for a structure. The builder, when given, is gated into it
@@ -1773,6 +1708,16 @@ export class SarMatrixViewer extends DG.JsViewer {
     const gap = this.subSeriesGap(matrix);
     if (gap !== null)
       items.push(chip(`${gap.covered}/${matrix.realCount} in sub-series`, gap.tip, 'chem-sar-chip-partial'));
+    // Whether the additive model this matrix's predictions rest on actually holds here. Cross-validated
+    // out of sample, so it is the one number that can contradict the predictions rather than restate
+    // them, and a low value marks a matrix whose virtual cells should not be trusted.
+    const conf = matrix.confidence;
+    if (conf) {
+      const tip = `Leave-one-out R² ${conf.r2.toFixed(2)}, RMSE ${this.formatActivity(conf.rmse)} over ` +
+        `${conf.n} of ${conf.total} measured cells. Near 1 the substituent effects add up and the ` +
+        'predictions are trustworthy; near 0 or below they do not, and this matrix\'s analogs are guesses.';
+      items.push(chip(`R² ${conf.r2.toFixed(2)}`, tip, conf.r2 < 0.5 ? 'chem-sar-chip-partial' : ''));
+    }
     const idx = this.matrices.indexOf(matrix);
     // The panel keeps them sorted by correlation, so the first match is the strongest.
     const involving = this.transferPanel.transfersInvolving(idx);
@@ -1823,28 +1768,11 @@ export class SarMatrixViewer extends DG.JsViewer {
       '(μ) or molecular weight (MW). Columns keep their order; only the caption is added.');
     controls.push(labelInput.root);
 
-    // Adding sits with the matrix rather than only in the make-list tab: the cell to add is picked
-    // here, and a control that lives one tab away asks the user to leave what they are looking at.
-    // Left enabled with no selection so the reason lands as a message instead of a dead icon.
-    const addIcon = ui.iconFA('cart-plus', () => this.makeListPanel.addSelectedToMakeList());
-    // Second class so the cart and the filter funnel, which share the icon styling, stay separable.
-    addIcon.classList.add('chem-sar-struct-icon', 'chem-sar-cart-icon');
-    ui.tooltip.bind(addIcon, () => {
-      const cell = this.selectedCell;
-      if (cell === null)
-        return 'Add to make list — click a cell in the matrix first.';
-      const target = cell.matrix.cells[cell.ri][cell.ci];
-      if (target.smiles === null)
-        return 'Add to make list — the selected cell has no structure.';
-      const kind = target.kind === 'virtual' ? 'virtual analog' : 'synthesized compound';
-      return `Add ${cell.matrix.label} · ${cell.matrix.rows[cell.ri].label} × ` +
-        `${cell.matrix.columns[cell.ci].position} (${kind}) to the make list`;
-    });
-    controls.push(addIcon);
+    controls.push(this.cartIcon());
 
     // All filters behind one icon; the sketchers would dwarf the bar inline.
     const filterIcon = ui.icons.filter(() => {
-      this.showFilterPopup(ui.div(this.structureFilterRoot(), 'chem-sar-struct-filters'), filterIcon);
+      this.showFilterPopup(ui.div(this.cellFilter.root(), 'chem-sar-struct-filters'), filterIcon);
     }, 'Filter cells by potency, reference points, core and R-group');
     filterIcon.classList.add('chem-sar-struct-icon', 'chem-sar-filter-icon');
     this.matrixFilterIcon = filterIcon;

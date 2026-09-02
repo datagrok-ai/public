@@ -24,9 +24,8 @@ function looPredictSlice(cells: SarMatrixCell[][], rowCount: number, colIdxs: nu
  * R-position. R² near 1 means the additive assumption holds and the virtual predictions are
  * trustworthy; near 0 or negative means substituent effects are non-additive here.
  *
- * Side effect: every observed real cell gets its LOO fitted value on `cell.fit` (cleared when not
- * cross-validatable). It is out-of-sample deliberately — an in-sample fit would let a cliff pull the
- * model toward itself and hide its own deviation. Returns null when too few cells are cross-validatable.
+ * Out-of-sample deliberately: an in-sample fit would let a cliff pull the model toward itself and hide
+ * its own deviation. Returns null when too few cells are cross-validatable.
  */
 export function computeMatrixConfidence(matrix: SarMatrix): Confidence | null {
   const rowCount = matrix.rows.length;
@@ -42,11 +41,8 @@ export function computeMatrixConfidence(matrix: SarMatrix): Confidence | null {
           continue;
         total++;
         const predicted = looPredictSlice(matrix.cells, rowCount, colIdxs, ri, k);
-        if (predicted !== null) {
+        if (predicted !== null)
           pairs.push({observed: cell.value, predicted});
-          cell.fit = predicted;
-        } else
-          cell.fit = undefined;
       }
     }
   }

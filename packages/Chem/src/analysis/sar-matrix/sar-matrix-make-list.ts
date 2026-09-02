@@ -3,6 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {renderMolecule} from '../../rendering/render-molecule';
+import {fitAdditiveEffects} from './sar-matrix-assemble';
 import {closeGridQuietly, SarMatrix, SarMatrixCell} from './sar-matrix-types';
 import {ANALOG_W, CELL_H, CELL_W, CORE_W, MatrixCellRef} from './sar-matrix-ui-common';
 
@@ -36,7 +37,6 @@ export interface MakeListHost {
   readonly scalingLabel: string;
   readonly selectedCell: MatrixCellRef | null;
   formatActivity(value: number): string;
-  cellVisible(matrix: SarMatrix, ri: number, ci: number): boolean;
   showMoleculeContext(smiles: string, build?: () => HTMLElement): void;
 }
 
@@ -180,18 +180,45 @@ export class MakeListPanel {
       return;
     }
     // Handed out as a copy: the tab keeps collecting, and edits to the opened table can't corrupt it.
-    const open = ui.button('Open as table', () => grok.shell.addTableView(this.makeList!.clone()));
-    ui.tooltip.bind(open, 'Open a copy as a table, where it can be saved, exported or joined');
+    const open = ui.button('Add to workspace', () => grok.shell.addTableView(this.makeList!.clone()));
+    ui.tooltip.bind(open, 'Add a copy to the workspace as a table, where it can be saved, exported or joined');
+    // Two buttons rather than one that reads the selection: clicking a row is how the list drives the
+    // Context Panel, so a row is current from the first click onwards and a single button could never
+    // be asked to clear everything again.
+    const remove = ui.button('Remove', () => {
+      const picked = this.pickedRows();
+      if (picked.length === 0) {
+        grok.shell.info('Click a row in the list first, or use Clear to empty it.');
+        return;
+      }
+      // Highest index first, so the rows still to be dropped keep the positions they were found at.
+      for (const i of [...picked].sort((a, b) => b - a)) {
+        this.makeList!.rows.removeAt(i);
+        this.sources.splice(i, 1);
+      }
+      if (this.makeList!.rowCount === 0) {
+        this.makeList = null;
+        this.sources.length = 0;
+      }
+      this.renderMakeList();
+    });
+    ui.tooltip.bind(remove, () => {
+      const picked = this.pickedRows();
+      return picked.length === 0 ? 'Remove — click a row in the list first' :
+        picked.length === 1 ? 'Remove the selected compound from the list' :
+          `Remove the ${picked.length} selected compounds from the list`;
+    });
     const clear = ui.button('Clear', () => {
       this.makeList = null;
       this.sources.length = 0;
       this.renderMakeList();
     });
+    ui.tooltip.bind(clear, 'Empty the whole list');
     // Kept away from the collecting actions: it discards the whole list, one slip from undoing them.
     clear.classList.add('chem-sar-bar-end');
     this.root.appendChild(ui.divH([
       ui.divText(`${rows} compound${rows === 1 ? '' : 's'}`, 'chem-sar-main-title'),
-      ui.divH([open]),
+      ui.divH([open, remove]),
       clear,
     ], 'chem-sar-main-bar'));
     this.makeListGrid = DG.Viewer.grid(this.makeList);
@@ -253,6 +280,24 @@ export class MakeListPanel {
     grok.shell.info(added > 0 ? `${kind} added to the Make list (${total} total).` :
       `${kind} is already on the Make list (${total} total).`);
   }
+  /** Rows the Clear button acts on; empty discards the whole list. A cell click only moves the current
+   *  row, so that counts as picking it — otherwise clicking a compound then Clear would wipe everything. */
+  private pickedRows(): number[] {
+    const df = this.makeList;
+    if (df === null)
+      return [];
+    const selected = df.selection;
+    if (selected.trueCount > 0) {
+      const out: number[] = [];
+      for (let i = 0; i < df.rowCount; i++) {
+        if (selected.get(i))
+          out.push(i);
+      }
+      return out;
+    }
+    return df.currentRowIdx >= 0 && df.currentRowIdx < df.rowCount ? [df.currentRowIdx] : [];
+  }
+
   /** A context-panel section header with an optional provenance badge. */
   private cpSection(title: string, badge?: string): HTMLElement {
     const parts = [ui.divText(title, 'chem-sar-cp-section-title')];
@@ -300,40 +345,18 @@ export class MakeListPanel {
   /** Where a predicted value came from: the additive model `rowMean + colMean - grandMean` with the
    *  contributing cells and the arithmetic spelled out. */
   private cpPrediction(matrix: SarMatrix, rowIdx: number, colIdx: number): HTMLElement {
-    const sameCore: SarMatrixCell[] = [];
-    const sameSubstituent: SarMatrixCell[] = [];
-    let grandSum = 0;
-    let grandN = 0;
-    for (let ri = 0; ri < matrix.rows.length; ri++) {
-      for (let ci = 0; ci < matrix.columns.length; ci++) {
-        const c = matrix.cells[ri][ci];
-        if (c.kind !== 'real' || c.value === null)
-          continue;
-        grandSum += c.value;
-        grandN++;
-        if (ri === rowIdx)
-          sameCore.push(c);
-        if (ci === colIdx)
-          sameSubstituent.push(c);
-      }
-    }
-    const meanOf = (cells: SarMatrixCell[]): number =>
-      cells.length === 0 ? 0 : cells.reduce((s, c) => s + (c.value ?? 0), 0) / cells.length;
-    const rowMean = meanOf(sameCore);
-    const colMean = meanOf(sameSubstituent);
-    const grandMean = grandN === 0 ? 0 : grandSum / grandN;
-
-    // Shown as deviations from the matrix mean, which is what the model actually adds up.
-    const coreEffect = rowMean - grandMean;
-    const substEffect = colMean - grandMean;
+    // The effects the prediction was built from, not the row and column means: with holes the margins
+    // absorb each other, so deriving them here would print a sum contradicting the number above.
+    const {grandMean, rowEffect, colEffect, rowN, colN, observed} =
+      fitAdditiveEffects(matrix.cells, matrix.rows.length, matrix.columns.length);
+    const coreEffect = rowEffect[rowIdx];
+    const substEffect = colEffect[colIdx];
     const signed = (v: number): string => `${v < 0 ? '−' : '+'}${this.host.formatActivity(Math.abs(v))}`;
 
     const block = ui.divV([]);
-    block.appendChild(this.cpRow(`Matrix mean (n = ${grandN})`, this.host.formatActivity(grandMean)));
-    block.appendChild(this.cpRow(`Core effect (n = ${sameCore.length})`,
-      `${signed(coreEffect)}  (mean ${this.host.formatActivity(rowMean)})`));
-    block.appendChild(this.cpRow(`Substituent effect (n = ${sameSubstituent.length})`,
-      `${signed(substEffect)}  (mean ${this.host.formatActivity(colMean)})`));
+    block.appendChild(this.cpRow(`Matrix mean (n = ${observed})`, this.host.formatActivity(grandMean)));
+    block.appendChild(this.cpRow(`Core effect (n = ${rowN[rowIdx]})`, signed(coreEffect)));
+    block.appendChild(this.cpRow(`Substituent effect (n = ${colN[colIdx]})`, signed(substEffect)));
     block.appendChild(this.cpRow('Sum', `${this.host.formatActivity(grandMean)} ` +
       `${signed(coreEffect)} ${signed(substEffect)} = ` +
       `${this.host.formatActivity(grandMean + coreEffect + substEffect)}`));
@@ -341,8 +364,8 @@ export class MakeListPanel {
     block.appendChild(this.cpReferences(matrix, rowIdx, colIdx));
     return block;
   }
-  /** Observed compounds sharing this cell's core and substituent — its SAR context. The cell itself
-   *  is excluded and the cell filter applies; the badge reads "shown of total" when some are hidden. */
+  /** Observed compounds sharing this cell's core or substituent, the cell itself excluded. The matrix
+   *  filter does not apply: it narrows what you browse, not what a compound's SAR is. */
   private cpReferences(matrix: SarMatrix, rowIdx: number, colIdx: number): HTMLElement {
     const block = ui.divV([]);
     const self = matrix.cells[rowIdx][colIdx];
@@ -358,12 +381,10 @@ export class MakeListPanel {
       return found;
     };
     const section = (title: string, all: {cell: SarMatrixCell, ri: number, ci: number}[]): void => {
-      const shown = all.filter((e) => this.host.cellVisible(matrix, e.ri, e.ci));
-      if (shown.length === 0)
+      if (all.length === 0)
         return;
-      block.appendChild(this.cpSection(title,
-        shown.length === all.length ? `${all.length}` : `${shown.length} of ${all.length}`));
-      block.appendChild(ui.divH(shown.map((e) => this.cpFragment(e.cell.smiles, e.cell.value ?? 0)),
+      block.appendChild(this.cpSection(title, `${all.length}`));
+      block.appendChild(ui.divH(all.map((e) => this.cpFragment(e.cell.smiles, e.cell.value ?? 0)),
         'chem-sar-cp-decomp'));
     };
     section('Measured with this core', collect((ri) => ri === rowIdx));

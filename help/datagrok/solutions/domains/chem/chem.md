@@ -954,11 +954,21 @@ The combinations nobody has made are filled in with a local **Free-Wilson** mode
 prediction is the matrix average plus two corrections: a **core effect** for how that core
 performs relative to the average, and a **substituent effect** for how that substituent does.
 
+The two effects are fitted together rather than read off the row and column averages. Where
+a matrix has gaps — the normal case — a row average also carries the effects of whichever
+substituents that row happens to have been measured with, so the averages credit each other's
+work. Fitting both arms against each other separates them, and the terms the panel lists add
+up to exactly the number it predicts.
+
 Selecting a predicted cell shows all three terms with the number of measurements behind
 each, and their total as **reference points**: the measured compounds sharing that cell's
 core or its substituent. More reference points means a better-supported prediction: a cell
 whose core and substituent are both well measured rests on more evidence than one sitting at
 the sparse edge of the matrix.
+
+Filtering the matrix never narrows what the Context Panel reports. A filter chooses which
+cells you browse, while the panel answers what a compound's SAR is, and that answer should
+not change with the view.
 
 ![Virtual analog in the Context Panel](img/sar_matrix_context_panel.png)
 
@@ -1003,16 +1013,25 @@ To run SAR Matrix analysis:
 
 Click a cell to inspect a measured compound or a predicted analog in the **Context Panel**.
 
-For a predicted cell the panel shows a **Design action**: click **Add to make-list** to collect that
+A cell holding a compound you have is also linked to the source table: clicking it makes that
+compound the current row and selects it, so the rest of your data for it is one tab away. This
+includes the untested ones, whose compound is real even though its number is predicted. A virtual
+analog exists in no row, so clicking it clears the current row instead.
+
+![Matrix cell linked to its row in the source table](img/sar_matrix_data_link.png)
+
+For a predicted cell the panel shows a **Design action**: click **Add to Make list** to collect that
 analog, building the list up one compound at a time. To take more at once, right-click the matrix and
 add the predicted analogs of the current series, or of every series.
 
-The cart icon above the matrix collects whichever cell is selected, so the Context Panel is not the
-only way in. It takes measured compounds as readily as predicted ones.
+The cart icon collects whichever cell is selected, so the Context Panel is not the only way in. It
+takes measured compounds as readily as predicted ones, and it works the same way on the **SAR
+Transfer** tab: click a cell on either side of a pairing and the cart takes that one.
 
 Everything you collect lands in the **Make list** tab, each compound with its potency, the support
-behind it, and the series, core and substituent it came from. **Open as table** hands out a copy to
-save, export or join, and **Clear** empties the list.
+behind it, and the series, core and substituent it came from. **Add to workspace** hands out a copy
+to save, export or join. **Clear** removes the selected compound, or empties the whole list when
+nothing is selected.
 
 ![Make list of virtual analogs](img/sar_matrix_make_list.png)
 
@@ -1047,6 +1066,15 @@ Leave it off unless you need the leftover compounds covered.
 Switch to the **SAR Transfer** tab for the pairs of cores whose potency trends run in parallel.
 Each entry shows the two series side by side over the substituents they share, the strength of
 the correlation, and the untested analogs the transfer argues for making.
+
+A pairing marked **nothing to make**, whose score reads `—`, is not a weak one: its correlation
+can be perfect. It means both cores have already been made with the same R-groups, so there is
+no untested combination left for the transfer to propose. A pairing proposes a compound only
+where one core has measured an R-group the other has never been made with.
+
+The transfer list carries the same filter as the series list, so a pairing can be narrowed by
+correlation, fold match, analogs gained or shared R-groups, and its source and target cores
+searched by substructure.
 
 </details>
 

@@ -2567,12 +2567,15 @@ export class PackageFunctions {
     @grok.decorators.param({type: 'column', options: {type: 'numerical'}}) activity: DG.Column,
     @grok.decorators.param({
       type: 'string',
-      options: {choices: ['none', 'lg', '-lg'], initialValue: 'none', description: 'Activity scaling before assembly'},
+      // Same defaults the viewer's own properties carry, so adding it from the gallery and running it
+      // from this dialog read the assay the same way. They disagreed before, and the pair the dialog
+      // opened with — raw values called higher-is-better — inverts potency on a raw IC50 column.
+      options: {choices: ['none', 'lg', '-lg'], initialValue: '-lg', description: 'Activity scaling before assembly'},
     }) scaling: string = '-lg',
     @grok.decorators.param({
       type: 'string',
       options: {choices: ['Auto (from scaling)', 'Higher is better', 'Lower is better'],
-        initialValue: 'Higher is better',
+        initialValue: 'Auto (from scaling)',
         description: 'Which end of the activity is more potent (set explicitly for pre-computed pIC50/pKi)'},
     }) activityDirection: string = 'Auto (from scaling)',
     @grok.decorators.param({
