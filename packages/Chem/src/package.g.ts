@@ -1166,7 +1166,7 @@ export function sarSeriesColumnChoices() : string[] {
 //input: column molecules { semType: Molecule }
 //input: column activity { type: numerical }
 //input: string scaling = 'none' { choices: ["none","lg","-lg"]; description: Activity scaling before assembly }
-//input: string activityDirection = 'Higher is better' { choices: ["Auto (from scaling)","Higher is better","Lower is better"]; description: Which end of the activity is more potent (set explicitly for pre-computed pIC50/pKi) }
+//input: string activityDirection = 'Auto (from scaling)' { choices: ["Auto (from scaling)","Higher is better","Lower is better"]; description: Which end of the activity is more potent (set explicitly for pre-computed pIC50/pKi) }
 //input: double fragmentCutoff = 0.4 { description: Maximum fragment size relative to core }
 //input: int fragmentationLevels = 3 { caption: Series levels; min: 1; max: 5; description: Nested series tiers (L1/L2/L3): 1 is a flat list, each level folds matrices one cut broader }
 //input: bool predictVirtual = true 

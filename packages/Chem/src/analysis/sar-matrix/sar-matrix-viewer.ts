@@ -89,8 +89,7 @@ function substituentMW(smiles: string): number {
  *  gives each the view's full width; a split leaves the matrix showing two of its columns, and the
  *  navigator alone claims a fixed 320px of it. The table stays a tab away instead of being closed. */
 export function dockSarMatrixTabs(view: DG.TableView, viewer: DG.Viewer): void {
-  view.dockManager.dock(view.grid.root, DG.DOCK_TYPE.FILL, null, 'Data');
-  view.dockManager.dock(viewer.root, DG.DOCK_TYPE.FILL, null, 'SAR Matrix');
+  view.dockManager.dock(viewer, DG.DOCK_TYPE.FILL, null, 'SAR Matrix');
 }
 
 
@@ -328,7 +327,6 @@ export class SarMatrixViewer extends DG.JsViewer {
       if (!(sketcher instanceof HTMLElement))
         return;
       dialog.root.style.zIndex = `${SKETCHER_DIALOG_Z}`;
-      sketcher.style.minWidth = `${SKETCHER_MIN_W}px`;
     }));
     // Surface a clicked analog's SAR context in its panel; scoped to this.subs so it can't inject
     // panes platform-wide after the viewer closes.
