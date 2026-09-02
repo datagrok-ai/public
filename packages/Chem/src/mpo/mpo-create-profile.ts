@@ -171,7 +171,7 @@ export class MpoProfileCreateView {
     this.setModified(false);
 
     const editable = (el: HTMLElement, onChanged: () => void, singleLine = false) => {
-      el.contentEditable = 'true';
+      el.contentEditable = 'plaintext-only';
       el.addEventListener('input', () => {
         if (!this.updatingLayout) {
           onChanged();
