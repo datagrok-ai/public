@@ -53,10 +53,10 @@ beforeAll(async () => {
         dapi.groups.by(1).list(),
         dapi.functions.by(10).list(),   // Fetch more to find a callable function
         dapi.connections.by(1).list(),
-        dapi.queries.by(1).list(),
-        dapi.scripts.by(1).list(),
+        dapi.queries.list({limit: 1}),
+        dapi.scripts.list({limit: 1}),
         dapi.packages.by(1).list(),
-        dapi.reports.by(1).list(),
+        dapi.reports.list({limit: 1}),
       ]);
 
     if (users.status === 'fulfilled' && users.value.length) seed.userId = (users.value[0] as any).id;
@@ -282,7 +282,7 @@ describe('connections', () => {
 
 describe('queries', () => {
   stestEndpoint('list() returns an array', async () => {
-    const queries = await dapi.queries.by(5).list();
+    const queries = await dapi.queries.list({limit: 5});
     expect(Array.isArray(queries)).toBe(true);
   });
 
@@ -297,7 +297,7 @@ describe('queries', () => {
 
 describe('scripts', () => {
   stestEndpoint('list() returns an array', async () => {
-    const scripts = await dapi.scripts.by(5).list();
+    const scripts = await dapi.scripts.list({limit: 5});
     expect(Array.isArray(scripts)).toBe(true);
   });
 
@@ -343,7 +343,7 @@ describe('packages', () => {
 
 describe('reports', () => {
   stestEndpoint('list() returns an array', async () => {
-    const reports = await dapi.reports.by(5).list();
+    const reports = await dapi.reports.list({limit: 5});
     expect(Array.isArray(reports)).toBe(true);
   });
 

@@ -1,9 +1,15 @@
 /// Docs: [Grok Dapi](/docs/plans/grok-dapi/)
 import * as fs from 'fs';
 import * as path from 'path';
-import {NodeDapi, BatchRequest, BatchOperation, PackageOpResult} from '../utils/node-dapi';
+import {NodeDapi, BatchRequest, BatchOperation, InternalDataSource, PackageOpResult} from '../utils/node-dapi';
 import {createClient} from '../utils/server-client';
-import {printOutput, printBatchOutput, printError, OutputFormat} from '../utils/server-output';
+import {printOutput, printBatchOutput, printError, setOutputFormat, OutputFormat} from '../utils/server-output';
+import {handleMigrate} from './server-migrate';
+import {isUuid} from '../utils/migrate/registry';
+import {resolveEntity} from '../utils/migrate/walker';
+
+/** `queries|scripts get <nqName>` resolves through `/entities`, which needs the entity type. */
+const ENTITY_TYPES: Record<string, string> = {queries: 'DataQuery', scripts: 'Script', reports: 'UserReport'};
 
 const ENTITIES = ['users', 'groups', 'functions', 'connections', 'queries', 'scripts', 'packages', 'reports', 'files', 'tables'];
 const VERBS = ['list', 'get', 'delete'];
@@ -15,6 +21,7 @@ export async function server(argv: any): Promise<boolean> {
   const rest: string[] = args.slice(2);
 
   const output: OutputFormat = argv.output ?? argv.o ?? 'table';
+  setOutputFormat(output);
   const limit: number = Number(argv.limit ?? argv.l ?? 50);
   const offset: number = Number(argv.offset ?? 0);
   const filter: string = argv.filter ?? argv.f ?? '';
@@ -38,6 +45,8 @@ export async function server(argv: any): Promise<boolean> {
   try {
     // await each handler so a rejection lands in the catch below instead of
     // escaping to grok.js as an unhandled rejection (stack trace + exit 255)
+    if (['pull', 'push', 'migrate', 'diff', 'bundle'].includes(entity))
+      return await handleMigrate(dapi, entity, [verb, ...rest].filter(Boolean), argv, output);
     if (entity === 'batch') return await handleBatch(dapi, argv, verb, rest, output);
     if (entity === 'raw') return await handleRaw(dapi, verb, rest, output);
     if (entity === 'describe') return await handleDescribe(dapi, verb ?? rest[0], output);
@@ -95,18 +104,19 @@ export async function server(argv: any): Promise<boolean> {
     }
 
     if (verb === 'list') {
-      const page = Math.floor(offset / limit);
-      const results = await source
-        .filter(filter)
-        .by(limit)
-        .page(page)
-        .list();
+      const results = source instanceof InternalDataSource
+        ? await source.list({text: filter || undefined, limit, page: Math.floor(offset / limit) + 1})
+        : await source.filter(filter).by(limit).page(Math.floor(offset / limit)).list();
       printOutput(results, output);
       return true;
     }
     if (verb === 'get') {
       if (!rest[0]) { printError(new Error('Usage: grok s <entity> get <id>')); return false; }
-      const result = await source.find(rest[0]);
+      // The internal routers find by id only; a name has to be resolved through /entities first.
+      const id = source instanceof InternalDataSource && !isUuid(rest[0])
+        ? (await resolveEntity(dapi, rest[0], ENTITY_TYPES[entity])).id
+        : rest[0];
+      const result = await source.find(id);
       printOutput(result, output);
       return true;
     }
@@ -121,8 +131,11 @@ export async function server(argv: any): Promise<boolean> {
     printError(new Error(`Unknown verb: '${verb}'. Valid: ${VERBS.join(', ')}${extraVerbs}`));
     return false;
   } catch (err: any) {
-    printError(err);
-    return false;
+    // A runtime failure is not a usage error: report it and exit non-zero without
+    // making grok.js dump the help block (which it does for every `false` result).
+    printError(err, {verbose: !!argv.verbose});
+    process.exitCode = 1;
+    return true;
   }
 }
 
@@ -846,7 +859,7 @@ export function parseFuncCall(expr: string): {name: string; params: Record<strin
   return {name, params: Object.fromEntries(positional.map((v, i) => [String(i), v]))};
 }
 
-const HELP_SERVER = `
+export const HELP_SERVER = `
 Usage: grok server <entity> <verb> [args] [options]
        grok s <entity> <verb> [args] [options]
 
@@ -898,6 +911,11 @@ Special commands:
   grok s packages set-version <name> <version>        Activate a specific published version
   grok s packages share <name> <group>[,...] [--access View|Edit]
                                                       Share a package with one or more groups
+  grok s pull [<nqName|id>...] --out <dir>            Export entities into a bundle directory
+  grok s push <bundle-dir> [--dry-run]                Import a bundle into the target server
+  grok s migrate <selection> --from <a> --to <b>      Pull from one instance and push into another
+  grok s diff <bundle-dir>                            What a push would change (read-only, plans with skip)
+  grok s bundle ls <bundle-dir>                       List what a bundle contains
   grok s batch <entity> <verb> arg1 [arg2 ...]        Batch operation (one round-trip)
   grok s batch <entity> <verb> --json params.json     Batch from JSON array
   grok s batch manifest.json                          Run a workflow manifest
@@ -906,6 +924,34 @@ Special commands:
   grok s sync setup get <setup-id>                    Inspect a setup (selections, direction, last run)
   grok s sync run <setup-id>                          Trigger a push run; prints per-item outcome
 
+Pull / push / migrate options:
+  --out <dir>           Bundle directory to write (pull; merges into an existing bundle)
+  --type <t,t>          conn, query, script, project, dashboard, space, view, layout, table,
+                        file, group, job, notebook, model
+  --name <glob>         Entity name glob: 'Cereal*' matches by prefix, '*demo*' anywhere
+  --namespace <ns>      Everything under a namespace, recursively
+  --space <nqName>      The space itself plus everything under it
+  --author <login>      Entities authored by a login
+  --tag <tag>           Entities carrying a tag
+  --since <2w|date>     Entities updated since ('2w' means '-2w'; also --since=-2w)
+  --filter <expr>       Smart-filter expression ANDed with the other flags
+  --no-deps             Do not follow dependencies (never-travels rules still apply)
+  --no-include-data     Do not pull table data (.d42) for pulled tables
+  --include-files       Also pull the bytes of pulled files
+  --replace             Clear the bundle directory before writing
+  --dry-run             Push: print the plan and stop
+  --on-conflict <p>     Push: what to do when the name is taken on the target by another id —
+                        fail (default) aborts before any write, skip leaves the target alone
+                        (and fails whatever depends on it), adopt writes into the twin and
+                        records idmap.json, duplicate creates the bundle entity under its own
+                        id next to the twin (a UserGroup cannot be duplicated — group names
+                        are unique, so that row fails)
+  --creds <file.yaml>   Push: target-side connection secrets, 'Ns:Conn:' then '  password: \${VAR}'
+                        (a covered connection is always written, so a push rotates the secret)
+  --from <alias|url>    Migrate: source instance (pulled from, never written to)
+  --to <alias|url>      Migrate: target instance
+  --keep                Migrate: keep the temporary bundle and print its path on stderr
+
 Options:
   --host <alias|url>    Server alias from config or full URL
   --output <format>     Output format: table (default), json, csv, quiet
@@ -913,6 +959,7 @@ Options:
   --limit <n>           Page size (default: 50)
   --offset <n>          Start offset (default: 0)
   -r, --recursive       Recursive (for files list)
+  --verbose             Print the stack of a runtime failure, not just its message
   --json <file>         Read function parameters or batch params from JSON file
   -O, --output-file     Write table download to a file instead of stdout
   --type <t>            Function discriminator: script | query | function | package
@@ -959,6 +1006,16 @@ Examples:
   grok s groups remove-members Admins alice
   grok s groups list-members Admins --admin
   grok s groups list-memberships alice
+  grok s pull Admin:CerealDemog --out ./bundle --host dev
+  grok s pull Chemists --out ./bundle --host dev
+  grok s pull --type script --author alice --no-deps --out ./bundle
+  grok s bundle ls ./bundle
+  grok s push ./bundle --host local --dry-run
+  grok s push ./bundle --host local --on-conflict adopt
+  grok s pull --type space --namespace MySpace --include-files --out ./bundle
+  grok s push ./bundle --host prod --creds ./creds.yaml
+  grok s migrate Chem:TargetDashboard --from dev --to prod --dry-run
+  grok s diff ./bundle --host local
   grok s batch files delete "System:AppData/old.txt" "System:DemoFiles/tmp.txt"
   grok s batch users create --json users.json
   grok s batch manifest.json

@@ -3,6 +3,13 @@ import type {NodeApiError, BatchResponse} from './node-dapi';
 
 export type OutputFormat = 'table' | 'json' | 'csv' | 'quiet';
 
+let errorFormat: OutputFormat = 'table';
+
+/** Set once per run so every `printError` call site reports in the requested format. */
+export function setOutputFormat(format: OutputFormat): void {
+  errorFormat = format;
+}
+
 export function printOutput(data: any, format: OutputFormat): void {
   if (data === null || data === undefined) {
     if (format !== 'quiet') console.log('(empty)');
@@ -124,8 +131,14 @@ export function printBatchOutput(response: BatchResponse, format: OutputFormat):
     process.stderr.write(JSON.stringify(errors.map((r) => ({id: r.id, action: r.action, error: r.error})), null, 2) + '\n');
 }
 
-export function printError(err: any): void {
+export function printError(err: any, opts: {verbose?: boolean} = {}): void {
   const apiErr: NodeApiError | undefined = err?.apiError;
-  const out: any = apiErr ?? {error: String(err?.message ?? err)};
-  process.stderr.write(JSON.stringify(out, null, 2) + '\n');
+  const message = apiErr?.error ?? String(err?.message ?? err);
+  if (errorFormat === 'json') {
+    process.stderr.write(JSON.stringify({...apiErr, error: message}) + '\n');
+    return;
+  }
+  process.stderr.write(`${message}\n`);
+  if (opts.verbose && apiErr?.stackTrace)
+    process.stderr.write(apiErr.stackTrace + '\n');
 }

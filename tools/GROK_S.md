@@ -34,6 +34,7 @@ browser or a logged-in session.
 | Hit any undocumented endpoint                               | `grok s raw GET /api/users/current`                    |
 | Check server + per-module health                            | `grok s healthcheck [--module <name>]`                 |
 | Bulk operations in one round-trip                           | `grok s batch <entity> <verb> --json items.json`       |
+| Move entities dev to prod (bundle, or instance to instance) | `grok s pull ... --out ./bundle` / `grok s migrate ... --from dev --to prod` |
 
 ## Configuration
 
@@ -408,9 +409,194 @@ grok s groups list-members Chemists --no-admin
 
 Every subcommand above is idempotent — re-running the whole block is safe.
 
+## Migrating entities between instances (pull / push / migrate)
+
+Entities built in the UI on one instance — connections, queries, scripts, dashboards,
+spaces, layouts, tables, files, jobs, notebooks, models, and the groups and grants they
+need — are promoted to another instance through a **bundle**: a directory of one JSON file
+per entity that travels by any means (a commit, a PR, a USB stick).
+
+```bash
+grok s pull   <selection> --out ./bundle --host dev      # instance → directory
+grok s bundle ls ./bundle                                # what is in it
+grok s diff   ./bundle --host prod                       # what a push would change
+grok s push   ./bundle --host prod [--dry-run]           # directory → instance
+grok s migrate <selection> --from dev --to prod          # pull + push, temp dir in between
+```
+
+Every entity keeps the **same UUID** on both instances, so a push is idempotent: pushing an
+unchanged bundle a second time writes nothing, and 1.28's built-in server-to-server sync
+recognises what the CLI pushed as its own.
+
+### Bundle layout
+
+```
+bundle/
+  manifest.json                     # source url + version, pull history, FK-safe order
+  DataConnection/Chem.Chembl.json   # <Type>/<nqName with ':' and '/' as '.'>.json
+  DataQuery/Chem.CompoundsByTarget.json
+  Project/Chem.Dashboard.json
+  UserGroup/Chemists.json           # bare group + member logins, never member ids
+  FileInfo/reports.readme.md.json   # a file without a namespace is named by its path
+  tables/<id>.d42                   # table data (on by default for pulled tables)
+  files/<id>                        # file bytes (only with --include-files)
+  idmap.json                        # sourceId -> targetId, written by --on-conflict adopt and
+                                    # whenever a FileInfo save answers with an existing row's id
+```
+
+**Pulls accumulate.** Pulling into an existing bundle merges: entities already there are
+overwritten by id, new ones are added, nothing is removed, and `manifest.pulls[]` keeps one
+entry per invocation. `--replace` clears the directory first.
+
+```bash
+grok s pull Chem:TargetDashboard --out ./release --host dev
+grok s pull --type script --author alice --no-deps --out ./release --host dev
+grok s pull Chemists --out ./release --host dev
+grok s push ./release --host prod
+```
+
+### Selection
+
+| Flag | Selects |
+|---|---|
+| positional `Chem:Dashboard <uuid> ...` | exactly these entities, by nqName or id |
+| `--type conn,query,script,project,dashboard,space,view,layout,table,file,group,job,notebook,model` | which types to list (default: all of them) |
+| `--name <glob>` | free-text search, then a client-side glob on name and friendly name (`Cereal*`, `*demo*`) |
+| `--namespace Chem` | everything **under** the namespace, recursively — the space `Chem` itself is not one of them |
+| `--space Chem:Reports` | the space itself **plus** everything under it |
+| `--author alice` | entities authored by a login |
+| `--tag demo` | entities carrying a tag (types whose router has no `tags` param are skipped with a warning) |
+| `--since 2w` / `--since=-30d` / `--since 2026-08-01` | updated since (bare `2w` means `-2w`; the shell eats a leading `-` unless you use `=`) |
+| `--filter "<expr>"` | a smart-filter expression, ANDed with the rest |
+| `--no-deps` | do not follow dependencies (what never travels is still excluded — see below) |
+| `--no-include-data` | do not pull the `.d42` data of the tables that were pulled (data is on by default) |
+| `--include-files` | also pull the bytes of the files that were pulled (off by default) |
+| `--verbose` | print the stack of a runtime failure instead of the one-line message |
+
+`--type space` and `--type dashboard` are both `Project` with a different listing rule, so
+they cannot be combined in one command (neither can `--type project,space`).
+
+### What the walker adds, and what never travels
+
+A selected entity brings its dependencies with it: a project brings its relation children
+(recursively), their views, layouts and tables; a query brings its connection; a datasync
+table brings the connection its creation script opens; a notebook and a model bring their
+tables; every entity brings the non-personal groups that hold grants on it, and a group
+brings its parents and members. A **job** brings nothing — 1.27 does not persist the link
+between a job and the queries it runs, so pull those explicitly.
+
+The table below holds however the entity was chosen: `--no-deps` skips the walk, not these
+rules, and `push` refuses the same connections even if a bundle was hand-edited to carry one
+(`skip(platform_connection)` / `skip(personal_storage)` / `skip(space_files_connection)`).
+
+| Never travels | Row on the report |
+|---|---|
+| Passwords and other password-class connection parameters | `needs-credentials` (see `--creds`) |
+| Users — memberships are replayed by login and group name | `warn(member_not_found)` when a login is not on the target |
+| Package-owned entities — install the package instead | `warn(package_entity)`, `warn(package_not_installed)` |
+| `System:` connections, the personal `Home` share, a space's own `Files` connection | `info(platform_connection)` / `warn(personal_storage)` / `info(space_files_connection)` |
+| A trained model blob | `info(model_blob_skipped)` |
+
+### Credentials: `--creds`
+
+A pushed connection arrives without its secrets. Author a YAML file **for the target** and
+pass it to `push` or `migrate`; the values are merged into the connection's parameters before
+the save, and the server encrypts and masks them itself. Nothing is ever read back into the
+bundle.
+
+```yaml
+# creds.yaml — keys are connection nqNames as the bundle spells them
+Chem:Chembl:
+  password: ${CHEMBL_PROD_PASSWORD}
+Admin:Northwind:
+  password: ${NORTHWIND_PASSWORD}
+```
+
+```bash
+CHEMBL_PROD_PASSWORD=... grok s push ./release --host prod --creds ./creds.yaml
+```
+
+`${VAR}` is resolved from the environment exactly as `grok publish` resolves it in
+`connections/*.json` (the file is parsed as YAML first, so a `${VAR}` written in flow style
+needs quoting: `{password: "${VAR}"}`); a variable that is not set aborts the push before the
+first write. A connection the file covers gets no `needs-credentials` row, and is **always**
+written — a secret is invisible in the payload, so a connection that would otherwise be
+`identical` is planned as `update` with reason `credentials`. That is how a password is
+rotated: re-run the push with a new value.
+
+### Conflicts
+
+An entity whose id is absent on the target but whose name is taken by another id is a
+conflict. `--on-conflict` decides:
+
+| Policy | What happens |
+|---|---|
+| `fail` (default) | nothing is written; every conflict is listed and the command exits 1 |
+| `skip` | the twin is left alone; anything in the bundle that points at it is reported `failed(dependency_skipped)` |
+| `adopt` | the bundle entity is written **into** the twin, and `idmap.json` records `sourceId -> targetId` so every later reference and every later push follows it |
+| `duplicate` | the bundle entity is created under its own id next to the twin (the server renames it `Name_1`). A `UserGroup` cannot be duplicated — group names are unique on 1.27, so that row fails |
+
+### Reading the plan
+
+`diff` and `--dry-run` print the plan without writing (`diff` plans with `skip`, so a
+conflict does not abort it). Actions: `create`, `update` (with the changed top-level keys as
+the detail), `identical` (no write), `skip`, `failed`, plus the `warn` / `info` /
+`needs-credentials` notes. `--output json` emits the 1.28-compatible shape — the same one for
+`diff`, `push` and `migrate`, with `detail` always present (`""` when there is nothing to
+say):
+
+```json
+{
+  "items": [{"name": "Chem:Chembl", "entityType": "DataConnection", "action": "create", "reason": "", "detail": ""}],
+  "counts": {"create": 1, "identical": 4},
+  "status": "ok",
+  "remoteUrl": "https://prod.datagrok.ai/api"
+}
+```
+
+A push exits 1 if any row is `failed`.
+
+### 1.27 limits worth knowing
+
+- A **FileInfo that lives in a share** is a dead row on the target — only stand-alone blobs
+  migrate (`info(file_in_share_not_migratable)`), the same rule the 1.28 sync applies.
+- `metaParams` do not survive a save on connections and queries, so metadata attached there
+  does not travel.
+- `GET /projects/relations` fails on a project that links domain-table rows; the walker falls
+  back to the project's own `relations[]` and reports `warn(relations_degraded)`.
+- Relations are **merged**, never replaced: a link that exists only on the target is kept, so
+  removing a relation from a bundle never unlinks it there (`info(relation_not_removed)`).
+  Unlink it in the UI on the target instead.
+- A space delete leaves its `…:Files` connection behind, and it cannot be deleted through the
+  API. Deleting a group that still holds grants fails — revoke the grants first.
+
+### dev to prod, end to end
+
+```bash
+# 1. see what would come over, from dev, without touching prod
+grok s migrate Chem:TargetDashboard --from dev --to prod --dry-run
+
+# 2. promote it, filling in the target's secrets
+CHEMBL_PROD_PASSWORD=... grok s migrate Chem:TargetDashboard \
+  --from dev --to prod --creds ./creds.yaml --keep
+
+# 3. re-run: everything is `identical`, nothing is written
+grok s migrate Chem:TargetDashboard --from dev --to prod
+
+# 4. or keep the bundle under version control instead
+grok s pull Chem:TargetDashboard --out ./release --host dev
+git add release && git commit -m "release: target dashboard"
+grok s push ./release --host prod --creds ./creds.yaml
+```
+
+`migrate` pulls into a temporary directory and deletes it afterwards; `--keep` keeps it and
+prints its path on **stderr**, so `--output json` stays one parseable document. `--from` is
+only ever read from.
+
 ## Implementation notes
 
-- Source: `public/tools/bin/commands/server.ts`, `public/tools/bin/utils/node-dapi.ts`.
+- Source: `public/tools/bin/commands/server.ts`, `public/tools/bin/utils/node-dapi.ts`;
+  pull / push / migrate in `bin/commands/server-migrate.ts` + `bin/utils/migrate/`.
 - The Node client talks directly to `/public/v1/` — no Dart interop, no browser, no
   logged-in session required. Authentication uses the developer key from the config.
 - If `grok s` is not working, start by running `grok s healthcheck` — it verifies the
