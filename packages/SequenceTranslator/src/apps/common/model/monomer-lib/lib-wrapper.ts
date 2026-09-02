@@ -54,9 +54,9 @@ export class MonomerLibWrapper {
 
   private getMonomer(monomerSymbol: string): Monomer {
     const monomer = this.lib.getMonomer('RNA', monomerSymbol);
-    if (monomer === undefined)
+    if (!monomer)
       throw new Error(`SequenceTranslator: no monomer with symbol ${monomerSymbol}`);
-    return monomer!;
+    return monomer;
   }
 
   getMolfileBySymbol(monomerSymbol: string): string {

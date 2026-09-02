@@ -19,7 +19,10 @@ export const helmToNucleotides: Dict = {
   // TODO: Handle monomer .d([m5C])
   'RNA1{r(A)[sp].r(G)p.r(C)[sp].[fR](U)p.[fR](A)p.[fR](C)p.[fR](G)p.[25r](U)p.[25r](A)p.[25r](C)p.[25r](G)p}$$$$': 'AGCUACGUACG',
 
-  'RNA1{[25r](U)[sp].[25r](A)[sp].[25r](C)[sp].[25r](G)[sp].[fR](U)[sp].[fR](A)[sp].[fR](C)[sp].[fR](G)[sp].[fR](U)p.[fR](A)p.[fR](C)p.[fR](G)p.[25r](U)p.[25r](A)p.[25r](C)p.[25r](G)}$$$$': 'UACGUACGUACGUACG'
+  'RNA1{[25r](U)[sp].[25r](A)[sp].[25r](C)[sp].[25r](G)[sp].[fR](U)[sp].[fR](A)[sp].[fR](C)[sp].[fR](G)[sp].[fR](U)p.[fR](A)p.[fR](C)p.[fR](G)p.[25r](U)p.[25r](A)p.[25r](C)p.[25r](G)}$$$$': 'UACGUACGUACGUACG',
+
+  // branch monomer symbol absent from the monomer library renders as the unknown-symbol placeholder
+  'RNA1{[fR](U)p.[fR](XYZ123)p.[fR](G)}$$$$': 'U<?>G'
 };
 
 export const helmToMolfile: Dict = {};

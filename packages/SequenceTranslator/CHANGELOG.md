@@ -2,6 +2,7 @@
 
 ## v.next
 
+* 1876: Automated bug fix
 * AI: Exposed AI functions and briefings on the HELM Enumerator dialog and the Markush Enumerator dialog/app — state introspection, macromolecule/placeholder/core/R-group editing, options, and running the enumeration.
 
 * 2296: Delete the pattern selected in the Load block's Pattern combobox instead of the live editor name

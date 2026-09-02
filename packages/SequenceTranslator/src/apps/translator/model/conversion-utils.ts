@@ -46,7 +46,11 @@ export function getNucleotidesSequence(helmString: string, monomerLib: MonomerLi
     const stripped = branch.replace(/[\[\]()]/g, '');
     if (NUCLEOTIDES.includes(stripped))
       return stripped;
-    return monomerLib.getNaturalAnalogBySymbol(stripped);
+    try {
+      return monomerLib.getNaturalAnalogBySymbol(stripped);
+    } catch {
+      return null;
+    }
   }).map((el) => el ? el : UNKNOWN_SYMBOL).join('');
   return nucleotides;
 }
