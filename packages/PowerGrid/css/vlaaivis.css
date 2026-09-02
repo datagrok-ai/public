@@ -63,9 +63,8 @@
 }
 
 .power-grid-vlaaivis-add {
-  justify-content: flex-end;
-  padding: 4px 8px;
-  color: var(--blue-1);
+  display: block;
+  padding: 6px 0 8px 16px;
 }
 
 .power-grid-vlaaivis-tip {

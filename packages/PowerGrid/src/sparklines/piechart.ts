@@ -15,6 +15,7 @@ import {
   NormalizationType, getScaledNumber, scaleSettings, getSparklinesContextPanel
 } from './shared';
 import {VlaaiVisEditor} from '../vlaaivis/editor';
+import {STYLE_INFO} from '../vlaaivis/constants';
 
 let minRadius: number;
 
@@ -304,6 +305,10 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
       gc.settings[SparklineType.PieChart] ??= getSettings(gc);
 
     const elementsDiv = ui.div([]);
+    const styleInfo = ui.icons.info(() => {});
+    styleInfo.hidden = true;
+    ui.tooltip.bind(styleInfo,
+      () => ui.divV([ui.divText(STYLE_INFO.SUMMARY), ui.link(STYLE_INFO.LEARN_MORE, STYLE_INFO.HELP_URL)]));
     let editor: VlaaiVisEditor | null = null;
     let stashedSectors: PieChartSettings['sectors'];
 
@@ -312,6 +317,7 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
       editor = null;
       ui.empty(elementsDiv);
       const isVlaaivis = style === PieChartStyle.Vlaaivis;
+      styleInfo.hidden = !isVlaaivis;
       for (const input of scalingInputs)
         input.visible = !isVlaaivis;
       if (!isVlaaivis) {
@@ -335,13 +341,15 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
     });
 
     const style = settings.style ?? PieChartStyle.Radius;
+    const styleInput = ui.input.choice('Style', {value: style,
+      items: [PieChartStyle.Angle, PieChartStyle.Radius, PieChartStyle.Vlaaivis],
+      onValueChanged: (value) => {
+        settings.style = value;
+        showEditor(value);
+      }});
+    styleInput.addOptions(styleInfo);
     const inputs = ui.inputs([
-      ui.input.choice('Style', {value: style, items: [PieChartStyle.Angle, PieChartStyle.Radius, PieChartStyle.Vlaaivis],
-        onValueChanged: (value) => {
-          settings.style = value;
-          showEditor(value);
-        }
-      }),
+      styleInput,
       columnsInput,
       ...scalingInputs,
     ]);

@@ -29,8 +29,9 @@ export class VlaaiVisModel {
 
   bound(key: 'lowerBound' | 'upperBound'): number { return this.settings.sectors![key]; }
 
-  setBound(key: 'lowerBound' | 'upperBound', value: number): void {
-    this.settings.sectors![key] = value;
+  setBounds(lower: number, upper: number): void {
+    this.settings.sectors!.lowerBound = lower;
+    this.settings.sectors!.upperBound = upper;
     this.onChanged.next(VlaaiVisChange.Value);
   }
 

@@ -11,10 +11,6 @@ import {DEFAULTS, LABELS, PANE_HEADER_SELECTOR, TOOLTIPS} from './constants';
 
 import '../../css/vlaaivis.css';
 
-function clamp01(v: number | null): number {
-  return Math.max(0, Math.min(1, v ?? 0));
-}
-
 function draggedProperty(o: any): string | null {
   return typeof o?.vlaaivisProperty === 'string' ? o.vlaaivisProperty : null;
 }
@@ -66,16 +62,23 @@ export class VlaaiVisEditor {
   }
 
   private buildBoundsInputs(): DG.InputBase<number | null>[] {
-    const bound = (caption: string, key: 'lowerBound' | 'upperBound', tooltip: string) => {
-      const input = ui.input.float(caption, {value: this.model.bound(key), min: 0, max: 1, showSlider: false,
-        onValueChanged: (v) => this.model.setBound(key, clamp01(v))});
-      input.setTooltip(tooltip);
-      return input;
+    const bound = (caption: string, key: 'lowerBound' | 'upperBound', tooltip: string) =>
+      ui.input.float(caption, {value: this.model.bound(key), min: 0, max: 1, showSlider: false}).setTooltip(tooltip);
+    const lower = bound(LABELS.LOWER_BOUND, 'lowerBound', TOOLTIPS.LOWER_BOUND);
+    const upper = bound(LABELS.UPPER_BOUND, 'upperBound', TOOLTIPS.UPPER_BOUND);
+
+    const values = (): [number, number] => [lower.value ?? 0, upper.value ?? 0];
+    const inverted = () => values()[0] > values()[1];
+    lower.addValidator(() => inverted() ? LABELS.LOWER_ABOVE_UPPER : null);
+    upper.addValidator(() => inverted() ? LABELS.UPPER_BELOW_LOWER : null);
+
+    const apply = (other: DG.InputBase<number | null>) => {
+      other.validate();
+      if (!inverted())
+        this.model.setBounds(...values());
     };
-    return [
-      bound(LABELS.LOWER_BOUND, 'lowerBound', TOOLTIPS.LOWER_BOUND),
-      bound(LABELS.UPPER_BOUND, 'upperBound', TOOLTIPS.UPPER_BOUND),
-    ];
+    this.subs.push(lower.onChanged.subscribe(() => apply(upper)), upper.onChanged.subscribe(() => apply(lower)));
+    return [lower, upper];
   }
 
   private render(): void {
@@ -87,14 +90,15 @@ export class VlaaiVisEditor {
     const accordion = ui.accordion();
     for (const sector of this.model.sectors)
       this.addDropPane(accordion, sector, () => ui.divV(sector.subsectors.map((p) => this.buildRow(p.name))));
+    accordion.root.append(
+      ui.link(LABELS.ADD_SECTOR, () => this.addSector(), TOOLTIPS.NEW_SECTOR, 'power-grid-vlaaivis-add'));
 
     const unassigned = this.model.unassigned;
     this.addDropPane(accordion, null, () => unassigned.length > 0 ?
       ui.divV(unassigned.map((name) => this.makeDraggable(ui.divText(name), name))) :
       ui.divText(LABELS.NO_UNASSIGNED, 'power-grid-vlaaivis-empty'));
 
-    this.body.append(accordion.root,
-      ui.divH([ui.icons.add(() => this.addSector(), TOOLTIPS.NEW_SECTOR)], 'power-grid-vlaaivis-add'));
+    this.body.append(accordion.root);
   }
 
   private rememberCollapsed(): void {

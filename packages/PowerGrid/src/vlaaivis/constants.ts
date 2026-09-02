@@ -17,6 +17,9 @@ export const LABELS = {
   NO_UNASSIGNED: 'Every column is in a sector. Drag one here to leave it out.',
   LOWER_BOUND: 'Target min',
   UPPER_BOUND: 'Target max',
+  ADD_SECTOR: '+ Add sector',
+  LOWER_ABOVE_UPPER: 'Must be below Target max',
+  UPPER_BELOW_LOWER: 'Must be above Target min',
 };
 
 export const TOOLTIPS = {
@@ -30,4 +33,11 @@ export const TOOLTIPS = {
   COLOR: 'Sector color',
   RENAME: 'Rename sector',
   DELETE: 'Delete sector',
+};
+
+export const STYLE_INFO = {
+  SUMMARY: 'Shows how well a row meets an MPO profile: ' +
+    'each column becomes a wedge whose length is its 0–1 desirability score.',
+  LEARN_MORE: 'Learn more',
+  HELP_URL: 'https://datagrok.ai/help/datagrok/solutions/domains/chem/mpo',
 };
