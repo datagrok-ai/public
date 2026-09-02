@@ -956,7 +956,7 @@ The results let you:
 To run SAR Matrix analysis:
 
 1. In the **Top Menu**, select **Chem** > **Analyze** > **SAR Matrix...** to open the analysis dialog.
-1. In the dialog, configure the analysis by selecting:
+2. In the dialog, configure the analysis by selecting:
     * **Table**: the dataset you want to analyze
     * **Molecules**: the column containing molecules
     * **Activity**: a numerical column representing activity or property values
@@ -965,9 +965,7 @@ To run SAR Matrix analysis:
       explicitly
     * **Series column** (optional): group by your own series instead of by structure
     * **Group leftovers by MCS** (optional): also cover compounds no shared core could group
-1. Click **OK**. The analysis opens with three tabs:
-
-Click **Next** to advance.
+3. Click **OK**. The analysis opens with three tabs:
 
 ![SAR Matrix walkthrough](img/sar_matrix_demo.gif)
 
@@ -1020,8 +1018,6 @@ selected compound, and **Clear** empties the list.
 </TabItem>
 </Tabs>
 
-</details>
-
 #### Group leftovers by MCS
 
 Grouping by shared core cannot reach every compound. Series that no core gathered are left without a
@@ -1040,6 +1036,8 @@ Weigh it before turning it on:
   and the others fold into the row.
 
 Leave it off unless you need the leftover compounds covered.
+
+</details>
 
 ## Docking
 
