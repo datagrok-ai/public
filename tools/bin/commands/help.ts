@@ -24,6 +24,7 @@ Commands:
     test        Run package tests
     testall     Run packages tests
     migrate     Migrate legacy tags to meta.role
+    schema      Seal, check, diff and migrate entity schema manifests (databases/<schema>/schema.json)
     server (s)  Manage a Datagrok server (list/get/delete entities, run functions)
 
 To get help on a particular command, use:
@@ -327,6 +328,35 @@ Example:
   meta: { role: 'viewer,ml' }
 `;
 
+const HELP_SCHEMA = `
+Usage: grok schema <seal|check|diff|migrate>
+
+Entity schema snapshots for the package's \`databases/<schema>/schema.json\` manifests.
+A snapshot is the manifest in canonical form with a content hash, sealed next to it as
+\`databases/<schema>/snapshot.json\` — the previous version a migration diffs against.
+
+    seal                Rewrite databases/<schema>/snapshot.json from the manifest
+    check               Exit 1 with the change list when the manifest differs from the seal
+    diff                Print the changes between the seal and the manifest
+    migrate --name <x>  Write databases/<schema>/migrations/NNNN_<x>.sql (up) and
+                        migrations/down/NNNN_<x>.sql, then reseal. Only the changes the
+                        deployer refuses (drops, type changes, ...) get up statements —
+                        the additive ones it applies itself. Nothing physical = no files.
+
+Options:
+[--dir <databases/<schema>>] [--name <x>] [--server [<alias|url>]]
+
+--dir       One schema directory instead of every databases/*/schema.json
+--name      Migration name (migrate)
+--server    Diff against the snapshot recorded on the default (or named) server
+            instead of the sealed file
+
+Examples:
+  grok schema check                         Fail the build when a manifest changed without a reseal
+  grok schema migrate --name drop_legacy    Scaffold up/down scripts for the pending changes
+  grok schema diff --server dev             What a deploy to 'dev' would change
+`;
+
 const HELP_BUILD = `
 Usage: grok build
 
@@ -423,6 +453,7 @@ export const help = {
   test: HELP_TEST,
   testall: HELP_TESTALL,
   migrate: HELP_MIGRATE,
+  schema: HELP_SCHEMA,
   server: HELP_SERVER,
   s: HELP_SERVER,
   help: HELP,

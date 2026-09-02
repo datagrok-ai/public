@@ -218,22 +218,46 @@ function checkNameColision(name: string) {
   names.add(name);
 }
 
+/** The package's domain schema manifests: every `databases/<schema>/schema.json`. */
+export function findDomainManifests(packageDir: string): string[] {
+  const databasesDir = path.join(packageDir, 'databases');
+  if (!fs.existsSync(databasesDir))
+    return [];
+  return fs.readdirSync(databasesDir)
+    .map((dir) => path.join(databasesDir, dir, 'schema.json'))
+    .filter((p) => fs.existsSync(p));
+}
+
+let _validateManifest: any;
+
+/** Parses and validates one manifest against `domain-schema.schema.json`; null (with the
+ * errors reported) when it does not parse or validate. */
+export function loadDomainManifest(manifestPath: string, relPath: string = manifestPath): any | null {
+  _validateManifest ??= new Ajv().compile(JSON.parse(fs.readFileSync(domainSchemaPath, 'utf8')));
+  let manifest: any;
+  try {
+    manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+  } catch (x: any) {
+    color.error(`Failed to parse ${relPath}: ${x.message}`);
+    return null;
+  }
+  if (!_validateManifest(manifest)) {
+    for (const err of _validateManifest.errors ?? [])
+      color.error(`${relPath}: ${err.instancePath || '/'} ${err.message}`);
+    return null;
+  }
+  return manifest;
+}
+
 /** Generates `src/generated/db.ts` with typed clients for the package's domain schemas
  * (`databases/<schema>/schema.json` manifests), and — with [options].ui, or whenever the
  * file is already there — `src/generated/db-ui.ts` with the typed UI sugar over
  * `@datagrok-libraries/domain-ui`. No-op for packages without manifests. */
 export function generateDomainClients(packageDir: string = curDir, options?: {ui?: boolean}): boolean {
-  const databasesDir = path.join(packageDir, 'databases');
-  if (!fs.existsSync(databasesDir))
-    return true;
-
-  const manifestPaths = fs.readdirSync(databasesDir)
-    .map((dir) => path.join(databasesDir, dir, 'schema.json'))
-    .filter((p) => fs.existsSync(p));
+  const manifestPaths = findDomainManifests(packageDir);
   if (manifestPaths.length === 0)
     return true;
 
-  const validateManifest = new Ajv().compile(JSON.parse(fs.readFileSync(domainSchemaPath, 'utf8')));
   const genDir = path.join(packageDir, 'src', 'generated');
   // The `--ui` opt-in persists by presence: once emitted, the file is kept up to date by
   // every plain `grok api` run, so a package's build script needs no extra flag.
@@ -245,18 +269,9 @@ export function generateDomainClients(packageDir: string = curDir, options?: {ui
   const emittedTypes = new Set<string>();
   for (const manifestPath of manifestPaths) {
     const relPath = path.relative(packageDir, manifestPath);
-    let manifest: any;
-    try {
-      manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
-    } catch (x: any) {
-      color.error(`Failed to parse ${relPath}: ${x.message}`);
+    const manifest = loadDomainManifest(manifestPath, relPath);
+    if (manifest == null)
       return false;
-    }
-    if (!validateManifest(manifest)) {
-      for (const err of validateManifest.errors ?? [])
-        color.error(`${relPath}: ${err.instancePath || '/'} ${err.message}`);
-      return false;
-    }
     const code = generateDomainSchemaCode(manifest, relPath, emittedTypes);
     if (code == null)
       return false;
