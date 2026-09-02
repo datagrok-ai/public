@@ -414,7 +414,8 @@ describe('grok schema', () => {
   }
 
   const sealedPath = (dir: string) => path.join(dir, 'databases', 'testdb', 'snapshot.json');
-  const migrationsDir = (dir: string) => path.join(dir, 'databases', 'testdb', 'migrations');
+  const schemaDir = (dir: string) => path.join(dir, 'databases', 'testdb');
+  const sqlFiles = (dir: string) => fs.readdirSync(schemaDir(dir)).filter((f) => f.endsWith('.sql'));
 
   afterEach(() => vi.mocked(createClient).mockReset());
 
@@ -450,36 +451,40 @@ describe('grok schema', () => {
     expect((await run(dir, 'check', {dir: 'databases/nope'})).result).toBe(false);
   });
 
-  it('migrate numbers the scripts, reseals, and skips registry-only changes', async () => {
+  it('migrate numbers the scripts after the existing ones, reseals, and skips registry-only changes', async () => {
     const dir = makePackage();
     await run(dir, 'seal');
+    fs.writeFileSync(path.join(schemaDir(dir), '0003_legacy.sql'), 'select 1;');
     expect((await run(dir, 'migrate')).result).toBe(false);
     let res = await run(dir, 'migrate', {name: 'nothing'});
     expect(res.output).toContain('nothing to migrate');
-    expect(fs.existsSync(migrationsDir(dir))).toBe(false);
+    expect(sqlFiles(dir)).toEqual(['0003_legacy.sql']);
 
     mutateManifest(dir, (m) => m.tables.sample.friendlyName = 'Samples');
     res = await run(dir, 'migrate', {name: 'meta'});
     expect(res.output).toContain('nothing physical to migrate');
-    expect(fs.existsSync(migrationsDir(dir))).toBe(false);
+    expect(sqlFiles(dir)).toEqual(['0003_legacy.sql']);
     expect((await run(dir, 'check')).exitCode).toBeUndefined();
 
     mutateManifest(dir, (m) => m.tables.sample.columns.note2 = {type: 'string'});
     res = await run(dir, 'migrate', {name: 'add_note'});
     expect(res.result).toBe(true);
     expect(res.exitCode).toBeUndefined();
-    const up1 = fs.readFileSync(path.join(migrationsDir(dir), '0001_add_note.sql'), 'utf8');
+    // the up script sits next to schema.json (where the deployer runs NNNN_*.sql), the down one in down/
+    expect(sqlFiles(dir)).toEqual(['0003_legacy.sql', '0004_add_note.sql']);
+    const up1 = fs.readFileSync(path.join(schemaDir(dir), '0004_add_note.sql'), 'utf8');
     expect(up1).toContain('-- testdb: add_note\n');
     expect(up1).toContain('--   * add-column sample.note2: added (string) [physical]\n');
     expect(up1).toContain('-- No manual statement.\n');
-    expect(fs.readFileSync(path.join(migrationsDir(dir), 'down', '0001_add_note.sql'), 'utf8'))
+    expect(fs.readFileSync(path.join(schemaDir(dir), 'down', '0004_add_note.sql'), 'utf8'))
       .toContain('ALTER TABLE testdb.sample DROP COLUMN IF EXISTS note2;\n');
     expect((await run(dir, 'check')).exitCode).toBeUndefined();
 
     mutateManifest(dir, (m) => delete m.tables.sample.columns.count);
     res = await run(dir, 'migrate', {name: 'drop-count'});
-    expect(res.output).toContain(path.join('migrations', '0002_drop-count.sql'));
-    expect(fs.readFileSync(path.join(migrationsDir(dir), '0002_drop-count.sql'), 'utf8'))
+    expect(res.output).toContain(path.join('databases', 'testdb', '0005_drop-count.sql'));
+    expect(fs.existsSync(path.join(schemaDir(dir), 'down', '0005_drop-count.sql'))).toBe(true);
+    expect(fs.readFileSync(path.join(schemaDir(dir), '0005_drop-count.sql'), 'utf8'))
       .toContain('-- data loss\nALTER TABLE testdb.sample DROP COLUMN IF EXISTS count;\n');
     expect(JSON.parse(fs.readFileSync(sealedPath(dir), 'utf8')).hash)
       .toBe(buildSnapshot(JSON.parse(fs.readFileSync(path.join(dir, 'databases', 'testdb', 'schema.json'), 'utf8'))).hash);

@@ -140,17 +140,18 @@ async function run(argv: SchemaArgs, verb: string, packageDir: string): Promise<
       seal(sealedPath, sealedRel, current);
       continue;
     }
-    const migrationsDir = path.join(dir, 'migrations');
-    const downDir = path.join(migrationsDir, 'down');
-    const file = `${String(nextMigrationNumber(migrationsDir)).padStart(4, '0')}_${argv.name}.sql`;
+    // The up script sits next to schema.json, where the deployer runs NNNN_*.sql files
+    // non-recursively; the down script goes in a subdirectory it skips.
+    const downDir = path.join(dir, 'down');
+    const file = `${String(nextMigrationNumber(dir)).padStart(4, '0')}_${argv.name}.sql`;
     const scripts = scaffold(changes, manifest.name, {from: baseHash, to: current.hash,
       title: `${manifest.name}: ${argv.name}`, generatedBy: 'grok schema migrate'});
     fs.mkdirSync(downDir, {recursive: true});
-    fs.writeFileSync(path.join(migrationsDir, file), scripts.up, 'utf8');
+    fs.writeFileSync(path.join(dir, file), scripts.up, 'utf8');
     fs.writeFileSync(path.join(downDir, file), scripts.down, 'utf8');
     console.log(`${manifest.name}: ${physical.length} physical change(s), ${span}:`);
     printChanges(changes);
-    console.log(`Wrote ${path.relative(packageDir, path.join(migrationsDir, file))} and ` +
+    console.log(`Wrote ${path.relative(packageDir, path.join(dir, file))} and ` +
       `${path.relative(packageDir, path.join(downDir, file))} — review before committing`);
     seal(sealedPath, sealedRel, current);
   }

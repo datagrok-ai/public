@@ -85,7 +85,7 @@ Read more about package development in [Datagrok's documentation](https://datagr
 - `schema` seals, checks, diffs and migrates the package's entity schema manifests (`databases/<schema>/schema.json`).
   A snapshot is the manifest in canonical form with a content hash, kept next to it as
   `databases/<schema>/snapshot.json`; `grok schema check` fails when a manifest changed without a reseal, and
-  `grok schema migrate --name <x>` scaffolds `databases/<schema>/migrations/NNNN_<x>.sql` plus its `down/` twin for
+  `grok schema migrate --name <x>` scaffolds `databases/<schema>/NNNN_<x>.sql` (run on deploy) plus its `down/` twin for
   the changes the deployer refuses to apply itself. `--server [alias]` diffs against the snapshot recorded on a server.
 - `publish` uploads a package to the specified server (pass either a URL or a server alias from the `config.yaml` file).
 Additionally, you can use placeholders in JSON files under the `/connections` folder to substitute environment variables.

@@ -338,9 +338,9 @@ A snapshot is the manifest in canonical form with a content hash, sealed next to
     seal                Rewrite databases/<schema>/snapshot.json from the manifest
     check               Exit 1 with the change list when the manifest differs from the seal
     diff                Print the changes between the seal and the manifest
-    migrate --name <x>  Write databases/<schema>/migrations/NNNN_<x>.sql (up) and
-                        migrations/down/NNNN_<x>.sql, then reseal. Only the changes the
-                        deployer refuses (drops, type changes, ...) get up statements —
+    migrate --name <x>  Write databases/<schema>/NNNN_<x>.sql (up, run on deploy) and
+                        databases/<schema>/down/NNNN_<x>.sql, then reseal. Only the changes
+                        the deployer refuses (drops, type changes, ...) get up statements —
                         the additive ones it applies itself. Nothing physical = no files.
 
 Options:
