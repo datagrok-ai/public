@@ -349,6 +349,13 @@ test('Markers selector — picking a column works, including after a tooltip cyc
     await page.mouse.click(sel!.x, sel!.y);
     await page.waitForFunction(() =>
       document.querySelector('.d4-column-selector-backdrop') != null, {timeout: 8000}).catch(() => null);
+    // the backdrop is in the DOM before its column grid has been laid out, and a row click
+    // on the unsized grid is silently dropped — wait for the grid canvas to take its size
+    await page.waitForFunction(() => {
+      const backdrop = document.querySelector('.d4-column-selector-backdrop') as HTMLElement;
+      return backdrop != null && Array.from(backdrop.querySelectorAll('canvas'))
+        .some((c) => c.getBoundingClientRect().width > 350 && c.getBoundingClientRect().height > 300);
+    }, {timeout: 8000}).catch(() => null);
     const popup = await page.evaluate(() => {
       const backdrop = document.querySelector('.d4-column-selector-backdrop') as HTMLElement;
       if (!backdrop) return null;

@@ -192,6 +192,11 @@ test('Bio monomer_library source-class lifecycle: load → edit/save round-trip 
           const span = r.querySelector('span');
           return span ? (span.textContent || '').trim() : '';
         }).filter((s: string) => s.length > 0);
+        // GROK-20714 made manageMonomerLibraries focus an already-open Manage Monomer Libraries
+        // view instead of showing the dialog, and S1.3 leaves that view open.
+        for (const v of Array.from(grok.shell.views))
+          if (v.name === 'Manage Monomer Libraries') v.close();
+        await new Promise((r) => setTimeout(r, 500));
         try {
           // Fire-and-forget — awaiting would deadlock (promise resolves on dialog close).
           (grok as any).functions.call('Bio:manageMonomerLibraries', {}).catch(() => {});
