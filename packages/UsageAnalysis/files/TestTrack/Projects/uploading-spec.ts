@@ -1,4 +1,5 @@
-import {test, expect, type Page} from '@playwright/test';
+import {expect, type Page} from '@playwright/test';
+import {test} from '../shared-page';
 import {softStep, stepErrors} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
 import {

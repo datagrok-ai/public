@@ -1,4 +1,5 @@
-import {test, expect, Page} from '@playwright/test';
+import {expect, Page} from '@playwright/test';
+import {test} from '../shared-page';
 import {specTestOptions, softStep, stepErrors} from '../spec-login';
 import {armBalloonRecorder, readRecordedBalloons, proveBalloonChannel} from '../helpers/balloons';
 

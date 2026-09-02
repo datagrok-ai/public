@@ -1,7 +1,8 @@
 /* ---
 generated_from: lifecycle-api.md (no MCP) — references: projects.md
 --- */
-import {test, expect} from '@playwright/test';
+import {expect} from '@playwright/test';
+import {test} from '../shared-page';
 import {softStep, stepErrors} from '../spec-login';
 import {projectsTestOptions, evalJs, gotoApp, deleteProjectByName} from './_helpers';
 

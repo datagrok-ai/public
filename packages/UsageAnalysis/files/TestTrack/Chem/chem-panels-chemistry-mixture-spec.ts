@@ -1,7 +1,8 @@
 /* ---
 realizes: [chem.cp.panels-chemistry-mixture]
 --- */
-import {test, expect, Page} from '@playwright/test';
+import {expect, Page} from '@playwright/test';
+import {test} from '../shared-page';
 import {loginToDatagrok, specTestOptions, softStep, waitForMolecule} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
 import {withConsoleErrorCount} from '../helpers/forms';

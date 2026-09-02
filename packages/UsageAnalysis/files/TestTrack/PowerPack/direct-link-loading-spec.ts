@@ -1,4 +1,5 @@
-import {test, expect, BrowserContext, Page} from '@playwright/test';
+import {expect, BrowserContext, Page} from '@playwright/test';
+import {test} from '../shared-page';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors, baseUrl} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
 test.use(specTestOptions);

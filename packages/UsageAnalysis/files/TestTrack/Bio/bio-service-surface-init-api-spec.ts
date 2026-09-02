@@ -6,7 +6,8 @@
   - bio.api.get-monomer-lib-helper
   - bio.lifecycle.init
 --- */
-import {test, expect} from '@playwright/test';
+import {expect} from '@playwright/test';
+import {test} from '../shared-page';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 import {armBalloonRecorderProved, expectNoBalloonSinceArmed} from '../helpers/balloons';
 

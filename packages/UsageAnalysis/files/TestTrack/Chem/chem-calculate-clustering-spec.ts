@@ -1,7 +1,8 @@
 /* ---
 realizes: []
 --- */
-import {test, expect, Page} from '@playwright/test';
+import {expect, Page} from '@playwright/test';
+import {test} from '../shared-page';
 import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu, waitForMolecule} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
 import {openChemMenuItem} from '../helpers/chem';

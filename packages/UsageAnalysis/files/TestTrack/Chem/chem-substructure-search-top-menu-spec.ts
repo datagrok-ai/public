@@ -1,7 +1,8 @@
 /* ---
 realizes: [chem.cp.substructure-search-top-menu]
 --- */
-import {test, expect, Page} from '@playwright/test';
+import {expect, Page} from '@playwright/test';
+import {test} from '../shared-page';
 import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu, waitForMolecule} from '../spec-login';
 import {openChemMenuItem} from '../helpers/chem';
 import {finishSpec} from '../helpers/viewers';

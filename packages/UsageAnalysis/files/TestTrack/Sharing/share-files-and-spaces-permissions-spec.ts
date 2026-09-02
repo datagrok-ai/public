@@ -1,4 +1,5 @@
-import {test, expect, Page} from '@playwright/test';
+import {expect, Page} from '@playwright/test';
+import {test} from '../shared-page';
 import {
   loginToDatagrok, loginAsSecondUser, getSecondUserLogin,
   specTestOptions, softStep, stepErrors,

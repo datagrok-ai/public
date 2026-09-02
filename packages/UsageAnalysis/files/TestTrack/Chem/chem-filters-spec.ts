@@ -1,7 +1,8 @@
 /* ---
 realizes: [chem.cp.substructure-search-with-filter, filters.cp.chem-and-bio-filters]
 --- */
-import {test, expect, Page} from '@playwright/test';
+import {expect, Page} from '@playwright/test';
+import {test} from '../shared-page';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 import * as v from '../helpers/viewers';
 import * as fp from '../helpers/filter-panel';

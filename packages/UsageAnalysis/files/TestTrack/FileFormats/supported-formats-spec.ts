@@ -1,4 +1,5 @@
-import {test, expect, Page} from '@playwright/test';
+import {expect, Page} from '@playwright/test';
+import {test} from '../shared-page';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 
 test.use({...specTestOptions, viewport: {width: 1280, height: 2400}});

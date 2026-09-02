@@ -1,7 +1,8 @@
 /* ---
 realizes: [chem.int.empty-input-analyses]
 --- */
-import {test, expect, Page} from '@playwright/test';
+import {expect, Page} from '@playwright/test';
+import {test} from '../shared-page';
 import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu} from '../spec-login';
 import {finishSpec, closeAllAndWait} from '../helpers/viewers';
 import {knownOpenBug} from '../helpers/known-open-bug';
