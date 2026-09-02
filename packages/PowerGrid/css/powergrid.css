@@ -87,3 +87,54 @@
   margin-top: 2px;
   color: var(--blue-1);
 }
+
+.power-grid-sparkline-panel-title {
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.power-grid-sparkline-panel-values {
+  margin-top: 20px;
+}
+
+.power-grid-sparkline-grid {
+  display: grid;
+  grid-template-columns: auto auto;
+  column-gap: 10px;
+  justify-content: start;
+}
+
+.power-grid-sparkline-grid > .power-grid-sparkline-group {
+  display: contents;
+}
+
+.power-grid-sparkline-tooltip .power-grid-sparkline-name,
+.power-grid-sparkline-tooltip .power-grid-sparkline-group-name,
+.power-grid-sparkline-panel-values .power-grid-sparkline-value {
+  text-align: right;
+}
+
+.power-grid-sparkline-active {
+  font-weight: bold;
+}
+
+.power-grid-sparkline-group-name {
+  grid-column: 1 / -1;
+  margin-top: 6px;
+}
+
+.power-grid-sparkline-group:first-child > .power-grid-sparkline-group-name {
+  margin-top: 0;
+}
+
+.power-grid-sparkline-group > .power-grid-sparkline-name {
+  padding-left: 16px;
+}
+
+.power-grid-sparkline-swatch {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  margin-right: 6px;
+  border-radius: 2px;
+}

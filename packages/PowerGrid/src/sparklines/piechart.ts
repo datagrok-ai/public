@@ -4,6 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import {desirabilityScore, isNumerical, PropertyDesirability} from '@datagrok-libraries/statistics/src/mpo/mpo';
 
 import {
+  ColumnGroup,
   createBaseInputs,
   createTooltip, getRenderColor,
   getSettingsBase,
@@ -15,7 +16,7 @@ import {
   NormalizationType, getScaledNumber, scaleSettings, getSparklinesContextPanel
 } from './shared';
 import {VlaaiVisEditor} from '../vlaaivis/editor';
-import {STYLE_INFO} from '../vlaaivis/constants';
+import {LABELS, STYLE_INFO} from '../vlaaivis/constants';
 
 let minRadius: number;
 
@@ -118,9 +119,12 @@ function calculateSectorWeight(sector: { sectorColor: string; subsectors: Subsec
   return sector.subsectors.reduce((acc, subsector) => acc + subsector.weight, 0);
 }
 
-function onHit(gridCell: DG.GridCell, e: MouseEvent): Hit {
-  const settings = getSettings(gridCell.gridColumn);
-  const cols = gridCell.grid.dataFrame.columns.byNames(settings.columnNames).filter((c) => c != null);
+function getColumns(gridCell: DG.GridCell, settings: PieChartSettings): DG.Column[] {
+  return gridCell.grid.dataFrame.columns.byNames(settings.columnNames).filter((c) => c != null);
+}
+
+function onHit(gridCell: DG.GridCell, e: MouseEvent, settings: PieChartSettings): Hit {
+  const cols = getColumns(gridCell, settings);
   const vectorX = e.offsetX - gridCell.bounds.midX;
   const vectorY = e.offsetY - gridCell.bounds.midY;
   const distance = Math.sqrt(vectorX * vectorX + vectorY * vectorY);
@@ -194,6 +198,18 @@ function onHit(gridCell: DG.GridCell, e: MouseEvent): Hit {
   };
 }
 
+function columnGroups(settings: PieChartSettings, cols: DG.Column[]): ColumnGroup[] {
+  if (!settings.sectors)
+    return [{name: '', cols}];
+  const sectors = settings.sectors.sectors;
+  const assigned = new Set(sectors.flatMap((s) => s.subsectors.map((p) => p.name)));
+  return [
+    ...sectors.map((s) => ({name: s.name, color: s.sectorColor,
+      cols: s.subsectors.flatMap((p) => cols.filter((c) => c.name === p.name))})),
+    {name: LABELS.UNASSIGNED, cols: cols.filter((c) => !assigned.has(c.name))},
+  ].filter((g) => g.cols.length > 0);
+}
+
 export class PieChartCellRenderer extends DG.GridCellRenderer {
   get name() { return 'pie ts'; }
 
@@ -208,11 +224,14 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
   get defaultHeight(): number | null { return 80; }
 
   onMouseMove(gridCell: DG.GridCell, e: MouseEvent): void {
-    const hitData = onHit(gridCell, e);
-    if (hitData.isHit)
-      ui.tooltip.show(createTooltip(hitData.cols, hitData.activeColumn, hitData.row), e.x + 16, e.y + 16);
-    else
+    const settings = getSettings(gridCell.gridColumn);
+    const hitData = onHit(gridCell, e, settings);
+    if (!hitData.isHit) {
       ui.tooltip.hide();
+      return;
+    }
+    const groups = columnGroups(settings, hitData.cols);
+    ui.tooltip.show(createTooltip(hitData.cols, hitData.activeColumn, hitData.row, groups), e.x + 16, e.y + 16);
   }
 
   render(
@@ -226,7 +245,7 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
 
     const settings = getSettings(gridCell.gridColumn);
     let row: number = gridCell.cell.row.idx;
-    let cols = df.columns.byNames(settings.columnNames).filter((c) => c != null);
+    let cols = getColumns(gridCell, settings);
     const box = new DG.Rect(x, y, w, h).fitSquare().inflate(-2, -2);
     minRadius = Math.min(box.width, box.height) / 10;
     if (settings.style == PieChartStyle.Radius && !settings.sectors) {
@@ -361,6 +380,8 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
 
   hasContextValue(gridCell: DG.GridCell): boolean { return true; }
   async getContextValue(gridCell: DG.GridCell): Promise<any> {
-    return getSparklinesContextPanel(gridCell, getSettings(gridCell.gridColumn).columnNames);
+    const settings = getSettings(gridCell.gridColumn);
+    const groups = columnGroups(settings, getColumns(gridCell, settings));
+    return getSparklinesContextPanel(gridCell, settings.columnNames, groups);
   }
 }

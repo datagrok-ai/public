@@ -9,7 +9,7 @@ import {PieChartSettings, Sector} from '../sparklines/piechart';
 import {VlaaiVisChange, VlaaiVisModel} from './model';
 import {DEFAULTS, LABELS, PANE_HEADER_SELECTOR, TOOLTIPS} from './constants';
 
-import '../../css/vlaaivis.css';
+import '../../css/powergrid.css';
 
 function draggedProperty(o: any): string | null {
   return typeof o?.vlaaivisProperty === 'string' ? o.vlaaivisProperty : null;
