@@ -1067,6 +1067,20 @@ export namespace funcs {
     return await grok.functions.call('Chem:BiochemPropsWidget', {});
   }
 
+  /**
+  Saves a DesirabilityProfile JSON as an MPO profile. Returns the profile id.
+  */
+  export async function saveMpoProfile(profileJson: string ): Promise<string> {
+    return await grok.functions.call('Chem:SaveMpoProfile', { profileJson });
+  }
+
+  /**
+  Grants all users access to MPO profiles and seeds every profile in the System:AppData/Chem/mpo folder - the shipped defaults plus any profiles saved there by the old file-based storage. Idempotent - safe to run repeatedly.
+  */
+  export async function seedMpoProfiles(): Promise<string> {
+    return await grok.functions.call('Chem:SeedMpoProfiles', {});
+  }
+
   export async function mpoProfilesApp(path?: string ): Promise<DG.View> {
     return await grok.functions.call('Chem:MpoProfilesApp', { path });
   }
