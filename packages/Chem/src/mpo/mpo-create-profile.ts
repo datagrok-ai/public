@@ -59,6 +59,7 @@ export class MpoProfileCreateView {
   private descEl!: HTMLElement;
   private toolbarEl!: HTMLElement;
   private aggregationField!: HTMLElement;
+  private contentEl!: HTMLDivElement;
 
   tableView: DG.TableView;
   private tableViewVisible: boolean = false;
@@ -199,7 +200,8 @@ export class MpoProfileCreateView {
 
     this.toolbarEl = ui.divV([ui.divV(controls)], 'chem-profile-toolbar-wrap');
 
-    this.profileViewContainer = ui.divV([this.headerEl, this.nameErrorEl, this.descEl, this.toolbarEl]);
+    this.contentEl = ui.divV([], 'chem-profile-content');
+    this.profileViewContainer = ui.divV([this.headerEl, this.nameErrorEl, this.descEl, this.toolbarEl, this.contentEl]);
     this.profileViewContainer.classList.add('chem-profile-view');
 
     this.view.root.append(this.profileViewContainer);
@@ -418,7 +420,7 @@ export class MpoProfileCreateView {
       this.setModified(this.profileModified);
 
       if (!this.df) {
-        this.profileViewContainer.append(this.profileEditorContainer);
+        this.contentEl.append(this.profileEditorContainer);
         return;
       }
 
@@ -429,8 +431,8 @@ export class MpoProfileCreateView {
   }
 
   private clearPreviousLayout() {
-    ui.empty(this.profileViewContainer);
-    this.profileViewContainer.append(this.headerEl, this.nameErrorEl, this.descEl, this.toolbarEl);
+    this.profileEditorContainer.remove();
+    ui.empty(this.contentEl);
   }
 
   private async setupGridAndContextPanel() {
@@ -453,7 +455,7 @@ export class MpoProfileCreateView {
     const split = ui.splitH([editorPanel, gridPanel], {}, true);
     split.classList.add('chem-view-split');
 
-    this.profileViewContainer.append(split);
+    this.contentEl.append(split);
 
     if (this.df!.currentRowIdx === -1 && this.df!.rowCount > 0)
       this.df!.currentCell = this.df!.cell(0, this.df!.columns.byIndex(0).name);
@@ -499,7 +501,7 @@ export class MpoProfileCreateView {
     this.clearPreviousLayout();
     const errorDiv = ui.divText(message);
     errorDiv.classList.add('chem-mpo-error-message');
-    this.profileViewContainer.append(errorDiv);
+    this.contentEl.append(errorDiv);
   }
 
   // --- Data-driven MPO mode ---

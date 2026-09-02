@@ -6,6 +6,7 @@
 * Fixed the package build failing on `TS2610` — `name` is an accessor on the u2 `Component` base, so the viewer overrides it with its own accessor instead of redeclaring it as a property
 * Fixed Gasteiger Partial Charges panel on current RDKit — `GetSimilarityMapFromWeights` now requires an explicit `MolDraw2DCairo` drawer (passed by keyword, so pre-2023.09 RDKit still works)
 * GROK-20824: MPO: Fixed the profile description picking up the title's text styling when styled text was pasted into it
+* GROK-20821: MPO: Fixed the dataset list ignoring newly opened tables
 
 ## 1.17.14 (2026-08-13)
 
