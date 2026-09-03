@@ -93,7 +93,8 @@ Read more about package development in [Datagrok's documentation](https://datagr
   `grok schema squash --name <x> --all|--from N --to N` folds consecutive scripts into one, and `--all --discard --yes`
   deletes them all (the manifest becomes the baseline). `grok schema check|diff --server [alias]`
   compare against the snapshot recorded on a stand — informational only: migrations are always generated from the
-  sealed `snapshot.json`, never from a database.
+  sealed `snapshot.json`, never from a database. `grok schema` and `grok api` share the manifests: after
+  `generate` or `migrate`, run `grok api` so `src/generated/db.ts` follows the schema.
 - `publish` uploads a package to the specified server (pass either a URL or a server alias from the `config.yaml` file).
 Additionally, you can use placeholders in JSON files under the `/connections` folder to substitute environment variables.
 For more information on configuring connections, refer to the [Connections](https://datagrok.ai/help/develop#connections) article.
