@@ -305,3 +305,28 @@ describe('generate → seal → migrate', () => {
     expect((await run(dir, 'check')).exitCode).toBeUndefined();
   });
 });
+
+describe('grok schema generate — the server\'s quick-wins keys', () => {
+  it('carries json and immutable columns, constraints and grants into the manifest', () => {
+    const m = manifestOf(`
+import * as grok from 'datagrok-api/grok';
+
+@grok.decorators.entity({schema: 'lab', securityMode: 'row',
+  constraints: {weight_positive: {check: 'weight IS NULL OR weight > 0'}},
+  grants: {'#all-users': ['view']}})
+export class Term {
+  @grok.decorators.column({required: true, isName: true, immutable: true}) code!: string;
+  @grok.decorators.column() weight?: number;
+  @grok.decorators.column({type: 'json'}) meta?: object;
+  @grok.decorators.column() props?: object;
+}
+`);
+    const t = m.lab.tables.term;
+    expect(t.constraints).toEqual({weight_positive: {check: 'weight IS NULL OR weight > 0'}});
+    expect(t.grants).toEqual({'#all-users': ['view']});
+    expect(t.columns.code).toEqual({type: 'string', required: true, isName: true, immutable: true});
+    expect(t.columns.meta).toEqual({type: 'json'});
+    expect(t.columns.props).toEqual({type: 'json'});
+    expect(buildSnapshot(m.lab).tables.term.constraints).toEqual({weight_positive: 'weight is null or weight > 0'});
+  });
+});

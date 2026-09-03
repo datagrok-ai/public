@@ -4,7 +4,7 @@ import os from 'os';
 import path from 'path';
 import {createHash} from 'crypto';
 import {fileURLToPath} from 'url';
-import {buildSnapshot, canonical, diff, emptySnapshot, hashOf, parseMigrationHeader, scaffold, serialize,
+import {buildSnapshot, canonical, diff, emptySnapshot, hashOf, parseMigrationHeader, scaffold, schemaDdl, serialize,
   snapshotBody, Change} from '../utils/domain-snapshot';
 import {schema} from '../commands/schema';
 import {createClient} from '../utils/server-client';
@@ -659,5 +659,108 @@ describe('grok schema', () => {
     expect(parseMigrationHeader('-- t\r\n--  ems-migration:  from=abc   to=def\r\n-- x')).toEqual({from: 'abc', to: 'def'});
     expect(parseMigrationHeader('-- ems-migration: from=none to=abc\n')).toEqual({from: 'none', to: 'abc'});
     expect(parseMigrationHeader('-- no header\nselect 1;')).toBeNull();
+  });
+});
+
+/** The server's quick-wins keys (json columns, immutable, CHECK constraints, declared grants);
+ * the hash is what datlas computes for this very manifest (`DomainSnapshot.fromManifest`). */
+describe('check constraints, grants, immutable and json columns', () => {
+  const quickWins = {
+    name: 'qw', version: '1.0.0',
+    tables: {
+      term: {
+        securityMode: 'row', businessKey: ['code'],
+        constraints: {
+          weight_positive: {check: 'Weight IS NULL   OR weight > 0'},
+          window: {check: 'effective_to IS NULL OR effective_from < effective_to'},
+          label_ok: {check: "LOWER(label) <> 'x''y' AND length(label) <= 40"},
+        },
+        grants: {'#all-users': ['View', 'view', 'EDIT'], Developers: ['delete']},
+        columns: {
+          code: {type: 'string', required: true, isName: true, immutable: true},
+          label: {type: 'string'},
+          weight: {type: 'float'},
+          effective_from: {type: 'datetime'},
+          effective_to: {type: 'datetime'},
+          meta: {type: 'json', description: 'Opaque profile object.'},
+        },
+      },
+      note: {
+        columns: {
+          term_id: {type: 'ref', ref: 'term', required: true, onDelete: 'cascade', immutable: true},
+          body: {type: 'string'},
+        },
+      },
+    },
+  };
+  const copy = (): any => JSON.parse(JSON.stringify(quickWins));
+
+  it('hash exactly as the server does, in the server\'s normal form', () => {
+    const s = buildSnapshot(copy());
+    expect(hashOf(s)).toBe('d5f33a097b48f72fdb252058f9c4ddb5ced05f2c1b2d9416916e71ee0d719af7');
+    expect(s.tables.term.constraints).toEqual({
+      label_ok: "lower ( label ) <> 'x''y' and length ( label ) <= 40",
+      weight_positive: 'weight is null or weight > 0',
+      window: 'effective_to is null or effective_from < effective_to',
+    });
+    expect(s.tables.term.grants).toEqual({'#all-users': ['view', 'edit'], Developers: ['delete']});
+    expect(s.tables.term.columns[0]).toEqual({name: 'code', type: 'string', required: true, isName: true, immutable: true});
+    expect(s.tables.term.columns[5]).toEqual({name: 'meta', type: 'json', description: 'Opaque profile object.'});
+    expect(hashOf(JSON.parse(serialize(s)))).toBe(hashOf(s));
+  });
+
+  it('DDL emits jsonb columns and the CHECK constraints in the engine\'s form', () => {
+    const ddl = schemaDdl(buildSnapshot(copy()));
+    expect(ddl).toContain('meta jsonb');
+    expect(ddl).toContain("ADD CONSTRAINT ck_term_label_ok CHECK (lower ( label ) <> 'x''y' and length ( label ) <= 40)");
+    expect(ddl.indexOf('ck_term_label_ok')).toBeLessThan(ddl.indexOf('ck_term_weight_positive'));
+  });
+
+  it('adding a constraint is additive; changing or removing one is manual, DROP before ADD', () => {
+    const base = copy();
+    delete base.tables.term.constraints;
+    delete base.tables.term.grants;
+    base.tables.term.columns.code.immutable = false;
+    const s0 = buildSnapshot(base), s1 = buildSnapshot(copy());
+    const d = diff(s0, s1);
+    expect(d.map((c) => `${c.kind} ${c.table}${c.column != null ? `.${c.column}` : ''}`))
+      .toEqual(['table-knob term', 'constraints term', 'column-meta term.code']);
+    const added = d.find((c) => c.kind === 'constraints')!;
+    expect(added.detail).toBe('check constraints added label_ok, weight_positive, window');
+    expect(added.physical).toBe(true);
+    expect(added.auto).toBe(true);
+    expect(d.find((c) => c.kind === 'table-knob')!.auto).toBe(true);
+    const {up, down} = scaffold(d, 'qw');
+    expect(up).toContain('ADD CONSTRAINT ck_term_weight_positive CHECK (weight is null or weight > 0)');
+    expect(down).toContain('ALTER TABLE qw.term DROP CONSTRAINT IF EXISTS ck_term_weight_positive;');
+
+    const changed = copy();
+    changed.tables.term.constraints.weight_positive.check = 'weight >= 0';
+    const d2 = diff(s1, buildSnapshot(changed));
+    const ch = d2.find((c) => c.kind === 'constraints')!;
+    expect(ch.detail).toBe('check constraints changed weight_positive');
+    expect(ch.auto).toBe(false);
+    const up2 = scaffold(d2, 'qw').up;
+    expect(up2.indexOf('DROP CONSTRAINT IF EXISTS ck_term_weight_positive')).toBeLessThan(up2.indexOf('CHECK (weight >= 0)'));
+    expect(diff(s1, s0).find((c) => c.kind === 'constraints')!.auto).toBe(false);
+  });
+
+  it('refuses what the server refuses: unknown or json columns, stray characters, bad grants', () => {
+    const bad = (mutate: (m: any) => void) => {
+      const m = copy();
+      mutate(m);
+      return () => buildSnapshot(m);
+    };
+    expect(bad((m) => m.tables.term.constraints.window.check = 'nope > 0')).toThrow(/references "nope"/);
+    expect(bad((m) => m.tables.term.constraints.window.check = 'meta is null')).toThrow(/references "meta"/);
+    expect(bad((m) => m.tables.term.constraints.window.check = 'weight > 0; drop table x')).toThrow(/not allowed/);
+    expect(bad((m) => m.tables.term.constraints.window.check = "label = 'a$b'")).toThrow(/string literal/);
+    expect(bad((m) => m.tables.term.constraints.window.check = '(weight > 0')).toThrow(/parentheses/);
+    expect(bad((m) => m.tables.term.grants = {'#all-users': ['share']})).toThrow(/"share"/);
+    expect(bad((m) => {
+      m.tables.note.securityMode = 'master';
+      m.tables.note.delegate = 'term_id';
+      m.tables.note.grants = {'#all-users': ['view']};
+    })).toThrow(/master-mode/);
   });
 });

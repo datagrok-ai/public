@@ -15,6 +15,7 @@ export interface SnapshotColumn {
   required?: true;
   unique?: true;
   isName?: true;
+  immutable?: true;
   semType?: string;
   min?: number;
   max?: number;
@@ -54,6 +55,8 @@ export interface SnapshotTable {
   filters?: any[];
   relations?: SnapshotRelation[];
   schemas?: string[];
+  constraints?: {[name: string]: string};
+  grants?: {[group: string]: string[]};
   columns: SnapshotColumn[];
 }
 
@@ -80,19 +83,20 @@ export interface Change {
 
 const sqlTypes: {[type: string]: string} = {
   string: 'text', int: 'int', float: 'float8', bool: 'bool', datetime: 'timestamp without time zone',
-  string_list: 'text[]', ref: 'uuid', user: 'uuid', group: 'uuid', file: 'text',
+  string_list: 'text[]', ref: 'uuid', user: 'uuid', group: 'uuid', file: 'text', json: 'jsonb',
 };
 const coreRefTables: {[type: string]: string} = {user: 'users', group: 'groups'};
 
 /** Every table knob the diff compares, in report order (snapshot.dart `_knobs`). */
 const knobs = ['pgTable', 'securityMode', 'promotion', 'defaultRowVisibility', 'delegate', 'softDelete',
   'audit', 'extensible', 'idempotency', 'ginIndex', 'readOnly', 'entityBacked', 'systemColumns',
-  'businessKey', 'nameColumn', 'friendlyName', 'description', 'singularName', 'pluralName', 'schemas'];
+  'businessKey', 'nameColumn', 'friendlyName', 'description', 'singularName', 'pluralName', 'schemas', 'grants'];
 /** Registry-only knobs the plugin deploy engine refuses to change. */
 const refusedKnobs = ['securityMode', 'promotion', 'defaultRowVisibility', 'delegate', 'softDelete'];
 /** Knobs that add or drop an index (and a column, for idempotency). */
 const indexKnobs = ['businessKey', 'idempotency', 'ginIndex'];
-const columnMeta = ['semType', 'min', 'max', 'choices', 'default', 'friendlyName', 'description', 'format', 'isName'];
+const columnMeta = ['semType', 'min', 'max', 'choices', 'default', 'friendlyName', 'description', 'format', 'isName',
+  'immutable'];
 
 /** Compact JSON with recursively sorted keys and integral numbers printed as integers —
  * the one form both implementations hash. Keys sort by UTF-16 code units (default `<`). */
@@ -142,6 +146,8 @@ function columnOf(name: string, c: any): SnapshotColumn {
     m.unique = true;
   if (c.isName === true)
     m.isName = true;
+  if (c.immutable === true)
+    m.immutable = true;
   if (c.semType != null)
     m.semType = c.semType;
   if (typeof c.min === 'number')
@@ -239,6 +245,143 @@ function filtersOf(filters: any): any[] | undefined {
 
 /** The canonical table map: every knob at its engine default is omitted, so two
  * declarations that mean the same thing serialize identically. */
+const checkKeywords = ['and', 'or', 'not', 'is', 'null', 'true', 'false', 'in', 'between', 'like', 'ilike'];
+const checkFunctions = ['coalesce', 'length', 'lower', 'upper', 'abs', 'num_nonnulls'];
+/** Longest match first — '<=' must win over '<'. */
+const checkOperators = ['<=', '>=', '<>', '!=', '=', '<', '>', '+', '-', '*', '/', '%', ',', '(', ')'];
+
+/** The server's normal form of a CHECK expression (manifest.dart `DomainCheckExpression`): tokens
+ * joined by single spaces, identifiers and keywords lower-cased — so both implementations hash the
+ * same declaration. Identifiers must be [columns] (the table's relational, non-json physical names)
+ * or whitelisted keywords and functions; any other character is refused, which is what keeps `;`,
+ * comments, casts and subqueries out rather than filtering them. */
+export function normalizeCheck(expr: any, columns: Set<string>, where: string): string {
+  if (typeof expr !== 'string' || expr.trim() === '')
+    throw new Error(`${where}: check expression must be a non-empty string`);
+  const tokens: string[] = [];
+  let depth = 0;
+  let i = 0;
+  while (i < expr.length) {
+    const ch = expr[i];
+    if (ch === ' ' || ch === '\t' || ch === '\n' || ch === '\r') {
+      i++;
+      continue;
+    }
+    if (ch === "'") {
+      let literal = "'";
+      let j = i + 1;
+      let closed = false;
+      while (j < expr.length) {
+        if (expr[j] === "'") {
+          if (expr[j + 1] === "'") {
+            literal += "''";
+            j += 2;
+            continue;
+          }
+          closed = true;
+          j++;
+          break;
+        }
+        const cu = expr.charCodeAt(j);
+        if (cu < 0x20 || cu === 0x7f || expr[j] === '$' || expr[j] === '@' || expr[j] === '\\')
+          throw new Error(`${where}: character "${expr[j]}" is not allowed inside a check-expression string literal`);
+        literal += expr[j];
+        j++;
+      }
+      if (!closed)
+        throw new Error(`${where}: unterminated string literal in check expression`);
+      tokens.push(literal + "'");
+      i = j;
+      continue;
+    }
+    const rest = expr.slice(i);
+    const word = /^[a-zA-Z_][a-zA-Z0-9_]*/.exec(rest);
+    if (word != null) {
+      const w = word[0].toLowerCase();
+      if (!checkKeywords.includes(w) && !checkFunctions.includes(w) && !columns.has(w)) {
+        throw new Error(`${where}: check expression references "${word[0]}", which is neither a declared ` +
+          'relational column of this table nor a whitelisted keyword or function');
+      }
+      tokens.push(w);
+      i += word[0].length;
+      continue;
+    }
+    const num = /^[0-9]+(\.[0-9]+)?/.exec(rest);
+    if (num != null) {
+      tokens.push(num[0]);
+      i += num[0].length;
+      continue;
+    }
+    const op = checkOperators.find((o) => rest.startsWith(o));
+    if (op == null)
+      throw new Error(`${where}: character "${ch}" is not allowed in a check expression`);
+    if (op === '(')
+      depth++;
+    else if (op === ')')
+      depth--;
+    if (depth < 0)
+      throw new Error(`${where}: unbalanced parentheses in check expression`);
+    tokens.push(op);
+    i += op.length;
+  }
+  if (depth !== 0)
+    throw new Error(`${where}: unbalanced parentheses in check expression`);
+  return tokens.join(' ');
+}
+
+/** The table's declared CHECK constraints in the server's normal form, by name. */
+function constraintsOf(t: any, table: string): {[name: string]: string} | undefined {
+  if (t.constraints == null)
+    return undefined;
+  if (typeof t.constraints !== 'object' || Array.isArray(t.constraints))
+    throw new Error(`tables.${table}.constraints: "constraints" must be an object of check descriptors`);
+  const physical = new Set<string>();
+  for (const c of columnsOf(t.columns)) {
+    if (c.type !== 'json')
+      physical.add(physicalName(c));
+  }
+  const res: {[name: string]: string} = {};
+  for (const name of Object.keys(t.constraints).sort()) {
+    const d = t.constraints[name];
+    if (d == null || typeof d !== 'object' || Object.keys(d).some((k) => k !== 'check'))
+      throw new Error(`tables.${table}.constraints.${name}: a constraint descriptor is {"check": "<expression>"}`);
+    res[name] = normalizeCheck(d.check, physical, `tables.${table}.constraints.${name}`);
+  }
+  return Object.keys(res).length > 0 ? res : undefined;
+}
+
+const grantPermissions = ['view', 'edit', 'delete'];
+
+/** Declared grants the way the server records them (manifest.dart): permissions lower-cased and
+ * de-duplicated in their declared order; refused on a master-mode table, whose security is its
+ * delegate's. */
+function grantsOf(t: any, table: string): {[group: string]: string[]} | undefined {
+  if (t.grants == null)
+    return undefined;
+  if (typeof t.grants !== 'object' || Array.isArray(t.grants) || Object.keys(t.grants).length === 0)
+    throw new Error(`tables.${table}.grants: "grants" must be a non-empty object of group -> [permission...]`);
+  if ((t.securityMode ?? 'table') === 'master') {
+    throw new Error(`tables.${table}.grants: a master-mode table delegates its security — ` +
+      'declare the grants on the table it delegates to');
+  }
+  const res: {[group: string]: string[]} = {};
+  for (const group of Object.keys(t.grants)) {
+    const perms = t.grants[group];
+    if (!Array.isArray(perms) || perms.length === 0)
+      throw new Error(`tables.${table}.grants.${group}: a grant is a non-empty list of permissions`);
+    const list: string[] = [];
+    for (const p of perms) {
+      const perm = String(p).toLowerCase();
+      if (!grantPermissions.includes(perm))
+        throw new Error(`tables.${table}.grants.${group}: permission "${p}" is not one of ${grantPermissions.join(', ')}`);
+      if (!list.includes(perm))
+        list.push(perm);
+    }
+    res[group] = list;
+  }
+  return res;
+}
+
 function tableOf(manifest: any, name: string, t: any): SnapshotTable {
   // Key order mirrors snapshot.dart's tableOf (columns last), so sealed files match too.
   const m: Partial<SnapshotTable> = {};
@@ -284,6 +427,12 @@ function tableOf(manifest: any, name: string, t: any): SnapshotTable {
     m.relations = relations;
   if (Array.isArray(t.schemas) && t.schemas.length > 0)
     m.schemas = t.schemas.map(String).sort();
+  const constraints = constraintsOf(t, name);
+  if (constraints != null)
+    m.constraints = constraints;
+  const grants = grantsOf(t, name);
+  if (grants != null)
+    m.grants = grants;
   m.columns = columnsOf(t.columns);
   return m as SnapshotTable;
 }
@@ -384,6 +533,23 @@ function diffTable(changes: Change[], t: string, a: SnapshotTable, b: SnapshotTa
   }
   if (canonical(a.filters) !== canonical(b.filters))
     changes.push(change('filters', 'declared filters changed', {table: t}));
+  // CHECK constraints: adding one is additive; removing or changing one is the engine's
+  // `constraint-removed` / `constraint-changed` refusal.
+  const ca = a.constraints ?? {}, cb = b.constraints ?? {};
+  const ckAdded = Object.keys(cb).filter((k) => ca[k] == null);
+  const ckGone = Object.keys(ca).filter((k) => cb[k] == null);
+  const ckChanged = Object.keys(cb).filter((k) => ca[k] != null && ca[k] !== cb[k]);
+  if (ckAdded.length + ckGone.length + ckChanged.length > 0) {
+    const parts: string[] = [];
+    if (ckAdded.length > 0)
+      parts.push(`added ${ckAdded.join(', ')}`);
+    if (ckChanged.length > 0)
+      parts.push(`changed ${ckChanged.join(', ')}`);
+    if (ckGone.length > 0)
+      parts.push(`removed ${ckGone.join(', ')}`);
+    changes.push(change('constraints', `check constraints ${parts.join('; ')}`,
+      {table: t, physical: true, auto: ckGone.length === 0 && ckChanged.length === 0, before: a, after: b}));
+  }
   if (canonical(a.relations) !== canonical(b.relations))
     changes.push(change('relations', 'declared relations changed', {table: t}));
 
@@ -532,6 +698,23 @@ function tableConstraints(schema: string, table: string, columns: SnapshotColumn
   }
   if (t?.ginIndex === true)
     res.push(`CREATE INDEX IF NOT EXISTS ix_${table}_data ON ${qt} USING gin (data jsonb_path_ops)`);
+  for (const k of Object.keys(t?.constraints ?? {}))
+    res.push(addConstraint(qt, `ck_${table}_${k}`, `CHECK (${t!.constraints![k]})`));
+  return res;
+}
+
+/** DROP the CHECK constraints [from] has and [to] lacks or defines differently, then ADD the ones
+ * [to] has and [from] lacks or defines differently — the engine's names and DO-block form. */
+function checks(qt: string, table: string, from: {[name: string]: string}, to: {[name: string]: string}): string[] {
+  const res: string[] = [];
+  for (const k of Object.keys(from)) {
+    if (to[k] !== from[k])
+      res.push(`ALTER TABLE ${qt} DROP CONSTRAINT IF EXISTS ck_${table}_${k}`);
+  }
+  for (const k of Object.keys(to)) {
+    if (from[k] !== to[k])
+      res.push(addConstraint(qt, `ck_${table}_${k}`, `CHECK (${to[k]})`));
+  }
   return res;
 }
 
@@ -643,6 +826,11 @@ function render(schema: string, c: Change): {up: string[], down: string[]} {
       const create = uniqueIndex(schema, t, b);
       const drop = `DROP INDEX IF EXISTS ${schema}.ux_${t}_${physicalName(b)}`;
       return b.unique === true ? {up: [create], down: [drop]} : {up: [drop], down: [create]};
+    }
+    case 'constraints': {
+      const before: SnapshotTable = c.before, after: SnapshotTable = c.after;
+      return {up: checks(qt, t, before.constraints ?? {}, after.constraints ?? {}),
+        down: checks(qt, t, after.constraints ?? {}, before.constraints ?? {})};
     }
     case 'table-knob':
       return knobStatements(schema, c);

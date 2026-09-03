@@ -4,10 +4,16 @@
   "title": "Datagrok domain schema manifest",
   "description": "Declares entity-mapped tables of a plugin database schema (databases/<schema>/schema.json). Tables get platform row/column security, Datlas-managed CRUD, and an in-transaction audit trail.",
   "type": "object",
-  "required": ["name", "version", "tables"],
+  "required": [
+    "name",
+    "version",
+    "tables"
+  ],
   "additionalProperties": false,
   "properties": {
-    "$schema": {"type": "string"},
+    "$schema": {
+      "type": "string"
+    },
     "name": {
       "description": "Logical schema name; must match the databases/<name>/ directory.",
       "$ref": "#/definitions/identifier"
@@ -19,7 +25,9 @@
     "extensible": {
       "type": "object",
       "description": "Opt-in for user extensions of this schema. Users holding the Extend permission on the schema entity may then add their own tables; per-table column extension is opted in with the table's own 'extensible' flag. User objects are retained across plugin upgrades and never appear in generated typed clients.",
-      "required": ["tables"],
+      "required": [
+        "tables"
+      ],
       "additionalProperties": false,
       "properties": {
         "tables": {
@@ -32,18 +40,28 @@
       "type": "object",
       "description": "Entity-mapped tables keyed by table name.",
       "minProperties": 1,
-      "propertyNames": {"$ref": "#/definitions/identifier"},
-      "additionalProperties": {"$ref": "#/definitions/table"}
+      "propertyNames": {
+        "$ref": "#/definitions/identifier"
+      },
+      "additionalProperties": {
+        "$ref": "#/definitions/table"
+      }
     },
     "propertySchemas": {
       "type": "object",
       "description": "Named groups of dynamic (jsonb) properties; grant a schema to a group to control column visibility.",
-      "propertyNames": {"$ref": "#/definitions/identifier"},
+      "propertyNames": {
+        "$ref": "#/definitions/identifier"
+      },
       "additionalProperties": {
         "type": "object",
         "minProperties": 1,
-        "propertyNames": {"$ref": "#/definitions/columnName"},
-        "additionalProperties": {"$ref": "#/definitions/column"}
+        "propertyNames": {
+          "$ref": "#/definitions/columnName"
+        },
+        "additionalProperties": {
+          "$ref": "#/definitions/column"
+        }
       }
     },
     "migrations": {
@@ -60,27 +78,46 @@
     "columnName": {
       "description": "An identifier that additionally may not start with 'x_' — that prefix is reserved for the physical names of user-added extension columns.",
       "allOf": [
-        {"$ref": "#/definitions/identifier"},
-        {"not": {"type": "string", "pattern": "^x_"}}
+        {
+          "$ref": "#/definitions/identifier"
+        },
+        {
+          "not": {
+            "type": "string",
+            "pattern": "^x_"
+          }
+        }
       ]
     },
     "table": {
       "type": "object",
-      "required": ["columns"],
+      "required": [
+        "columns"
+      ],
       "additionalProperties": false,
       "properties": {
         "securityMode": {
-          "enum": ["table", "master", "row"],
+          "enum": [
+            "table",
+            "master",
+            "row"
+          ],
           "default": "table",
           "description": "table: one check against the table entity; master: delegate to the master row via the delegate column; row: per-row grants with lazy/eager promotion."
         },
         "promotion": {
-          "enum": ["lazy", "eager"],
+          "enum": [
+            "lazy",
+            "eager"
+          ],
           "default": "lazy",
           "description": "Row mode only. lazy: entities row created on first share; eager: at insert."
         },
         "defaultRowVisibility": {
-          "enum": ["table", "none"],
+          "enum": [
+            "table",
+            "none"
+          ],
           "default": "table",
           "description": "Row/master modes: whether table-level View shows unshared rows."
         },
@@ -88,7 +125,10 @@
           "$ref": "#/definitions/identifier",
           "description": "Master mode: the ref column whose target row's security applies."
         },
-        "softDelete": {"type": "boolean", "default": true},
+        "softDelete": {
+          "type": "boolean",
+          "default": true
+        },
         "audit": {
           "type": "boolean",
           "default": true,
@@ -111,12 +151,18 @@
         },
         "businessKey": {
           "type": "array",
-          "items": {"$ref": "#/definitions/identifier"},
+          "items": {
+            "$ref": "#/definitions/identifier"
+          },
           "minItems": 1,
           "description": "Natural key: powers dedup-on-insert, upsert matching, and entity handles."
         },
-        "friendlyName": {"type": "string"},
-        "description": {"type": "string"},
+        "friendlyName": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
         "singularName": {
           "type": "string",
           "maxLength": 256,
@@ -130,26 +176,38 @@
         "columns": {
           "type": "object",
           "description": "Relational columns keyed by column name. System columns (id, is_deleted, version, created_on, updated_on, author_id, idempotency_key, data) are generated and must not be declared.",
-          "propertyNames": {"$ref": "#/definitions/columnName"},
-          "additionalProperties": {"$ref": "#/definitions/column"}
+          "propertyNames": {
+            "$ref": "#/definitions/columnName"
+          },
+          "additionalProperties": {
+            "$ref": "#/definitions/column"
+          }
         },
         "schemas": {
           "type": "array",
-          "items": {"$ref": "#/definitions/identifier"},
+          "items": {
+            "$ref": "#/definitions/identifier"
+          },
           "description": "Property schemas contributing jsonb keys to this table."
         },
         "relations": {
           "type": "object",
           "description": "Many-to-many relations of this table keyed by relation name: each links the table to a target table through a junction table. The name shares one namespace with the columns (it is what expand and filter paths address), so it may not collide with a column of this table. Declaration order is preserved and is the order every UI surface lays the relations out in.",
-          "propertyNames": {"$ref": "#/definitions/columnName"},
-          "additionalProperties": {"$ref": "#/definitions/relation"}
+          "propertyNames": {
+            "$ref": "#/definitions/columnName"
+          },
+          "additionalProperties": {
+            "$ref": "#/definitions/relation"
+          }
         },
         "filters": {
           "type": "array",
           "description": "Default filter panel for this table (entity filters): declared columns pre-open in order. Absent = heuristics by column type, INCLUDING one facet per travelable many-to-many relation. Declaring this section replaces the whole heuristic set, relation facets included — to keep one, list it explicitly as {\"column\": \"<relation>.id\"}.",
           "items": {
             "type": "object",
-            "required": ["column"],
+            "required": [
+              "column"
+            ],
             "additionalProperties": false,
             "properties": {
               "column": {
@@ -157,7 +215,13 @@
                 "description": "Column name, a filterable system column (id, author_id, created_on, updated_on, version), or a dotted forward FK path (e.g. 'category_id.name', max 3 hops)."
               },
               "type": {
-                "enum": ["categories", "histogram", "range", "text", "bool"],
+                "enum": [
+                  "categories",
+                  "histogram",
+                  "range",
+                  "text",
+                  "bool"
+                ],
                 "description": "Filter kind; defaults by column type. histogram/range need a numeric or datetime column, text a string column, bool a bool column."
               },
               "bins": {
@@ -174,12 +238,45 @@
               }
             }
           }
+        },
+        "constraints": {
+          "type": "object",
+          "description": "Table CHECK constraints: name -> {check: expression} over this table's own relational, non-json columns.",
+          "additionalProperties": {
+            "type": "object",
+            "required": [
+              "check"
+            ],
+            "properties": {
+              "check": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "grants": {
+          "type": "object",
+          "minProperties": 1,
+          "description": "Declared grants on the table's entity: group -> permissions (view, edit, delete).",
+          "additionalProperties": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "pattern": "^(?:[Vv][Ii][Ee][Ww]|[Ee][Dd][Ii][Tt]|[Dd][Ee][Ll][Ee][Tt][Ee])$"
+            }
+          }
         }
       }
     },
     "relation": {
       "type": "object",
-      "required": ["via", "target"],
+      "required": [
+        "via",
+        "target"
+      ],
       "additionalProperties": false,
       "properties": {
         "via": {
@@ -207,14 +304,31 @@
     },
     "column": {
       "type": "object",
-      "required": ["type"],
+      "required": [
+        "type"
+      ],
       "additionalProperties": false,
       "properties": {
         "type": {
-          "enum": ["string", "int", "float", "bool", "datetime", "string_list", "ref", "user", "group", "file"],
+          "enum": [
+            "string",
+            "int",
+            "float",
+            "bool",
+            "datetime",
+            "string_list",
+            "ref",
+            "user",
+            "group",
+            "file",
+            "json"
+          ],
           "description": "Property type; ref = FK to another table in this manifest; user/group = FK to the core users/groups tables with the matching semantic type; file = a file://<connection>/<path> string into platform file storage (semantic type File)."
         },
-        "required": {"type": "boolean", "default": false},
+        "required": {
+          "type": "boolean",
+          "default": false
+        },
         "unique": {
           "type": "boolean",
           "default": false,
@@ -230,23 +344,45 @@
           "description": "Target table name (type = ref only). Cross-plugin refs are not allowed."
         },
         "onDelete": {
-          "enum": ["cascade", "restrict", "setnull"],
+          "enum": [
+            "cascade",
+            "restrict",
+            "setnull"
+          ],
           "description": "Engine-enforced referential action on soft delete (ref/user/group columns)."
         },
-        "min": {"type": "number"},
-        "max": {"type": "number"},
+        "min": {
+          "type": "number"
+        },
+        "max": {
+          "type": "number"
+        },
         "choices": {
           "type": "array",
-          "items": {"type": "string"},
+          "items": {
+            "type": "string"
+          },
           "description": "Controlled dictionary of allowed values."
         },
-        "semType": {"type": "string"},
-        "friendlyName": {"type": "string"},
-        "description": {"type": "string"},
+        "semType": {
+          "type": "string"
+        },
+        "friendlyName": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
         "default": {
           "description": "Default value for new rows / UI inputs."
         },
-        "format": {"type": "string"}
+        "format": {
+          "type": "string"
+        },
+        "immutable": {
+          "type": "boolean",
+          "description": "Write-once: the first non-null value wins; a later write may only repeat it."
+        }
       }
     }
   }

@@ -432,16 +432,22 @@ export namespace decorators {
     filters?: {column: string, type?: 'categories' | 'histogram' | 'range' | 'text' | 'bool', bins?: number, label?: string}[];
     relations?: {[name: string]: {via: string, target: string, viaSelf?: string, viaTarget?: string, allowCreate?: boolean}};
     schemas?: string[];
+    /** Table CHECK constraints: name → `{check}` over this table's own relational columns
+     * (`effective_to IS NULL OR effective_from < effective_to`). */
+    constraints?: {[name: string]: {check: string}};
+    /** Declared grants on the table's entity: group → permissions. */
+    grants?: {[group: string]: ('view' | 'edit' | 'delete')[]};
   }
 
-  export type EntityColumnType = 'string' | 'int' | 'float' | 'bool' | 'datetime' | 'string_list' | 'ref' | 'user' | 'group' | 'file';
+  export type EntityColumnType = 'string' | 'int' | 'float' | 'bool' | 'datetime' | 'string_list' | 'ref' | 'user' |
+    'group' | 'file' | 'json';
 
   /** Options of {@link column}: one manifest column. */
   export interface ColumnOptions {
     /** Manifest column name; defaults to the property name. */
     name?: string;
     /** Column type; inferred from the property type when omitted (`string`, `number` → `float`,
-     * `boolean` → `bool`, `Date` → `datetime`, `string[]` → `string_list`). */
+     * `boolean` → `bool`, `Date` → `datetime`, `string[]` → `string_list`, `object` → `json`). */
     type?: EntityColumnType;
     /** Target table of a reference: its name, or `() => EntityClass` for an `@entity` class of
      * the same schema. Makes the column a `ref` unless the type is `user` or `group`. */
@@ -450,6 +456,8 @@ export namespace decorators {
     required?: boolean;
     unique?: boolean;
     isName?: boolean;
+    /** Write-once: the first non-null value wins; a later write may only repeat it. */
+    immutable?: boolean;
     min?: number;
     max?: number;
     choices?: string[];

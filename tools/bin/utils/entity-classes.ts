@@ -25,13 +25,14 @@ const ourDecorator = /^(?:grok\.)?decorators\.(entity|column)$/;
 /** Manifest table keys, in the order the manifest lists them. */
 const tableKeys = ['securityMode', 'promotion', 'defaultRowVisibility', 'delegate', 'softDelete', 'audit',
   'extensible', 'idempotency', 'ginIndex', 'businessKey', 'friendlyName', 'description', 'singularName',
-  'pluralName', 'filters', 'relations', 'schemas'];
+  'pluralName', 'filters', 'relations', 'schemas', 'constraints', 'grants'];
 const columnKeys = ['type', 'ref', 'onDelete', 'required', 'unique', 'isName', 'min', 'max', 'choices', 'semType',
-  'friendlyName', 'description', 'default', 'format'];
-const columnTypes = ['string', 'int', 'float', 'bool', 'datetime', 'string_list', 'ref', 'user', 'group', 'file'];
+  'friendlyName', 'description', 'default', 'format', 'immutable'];
+const columnTypes = ['string', 'int', 'float', 'bool', 'datetime', 'string_list', 'ref', 'user', 'group', 'file',
+  'json'];
 const inferredTypes: {[tsType: string]: string} = {
   string: 'string', number: 'float', boolean: 'bool', Date: 'datetime', 'string[]': 'string_list',
-  'Array<string>': 'string_list',
+  'Array<string>': 'string_list', object: 'json', 'Record<string,any>': 'json', '{[key:string]:any}': 'json',
 };
 
 /** `PlateWell` → `plate_well`, `HTTPReader` → `http_reader`. */
