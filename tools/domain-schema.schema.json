@@ -234,8 +234,8 @@
       "additionalProperties": false,
       "properties": {
         "type": {
-          "enum": ["string", "int", "float", "bool", "datetime", "string_list", "ref", "user", "group", "file", "json"],
-          "description": "Property type; ref = FK to another table in this manifest; user/group = FK to the core users/groups tables with the matching semantic type; file = a file://<connection>/<path> string into platform file storage (semantic type File); json = a jsonb-backed opaque object (filters, sorts, facets and aggregates refuse it)."
+          "enum": ["string", "int", "float", "bool", "datetime", "string_list", "ref", "file", "json", "user", "group"],
+          "description": "Property type; ref = FK to another table in this manifest; user/group = aliases of ref Core.users / ref Core.groups (semantic type User / Group); file = a file://<connection>/<path> string into platform file storage (semantic type File); json = a jsonb-backed opaque object (filters, sorts, facets and aggregates refuse it)."
         },
         "required": {"type": "boolean", "default": false},
         "unique": {
@@ -254,8 +254,9 @@
           "description": "Marks the primary display-name column (string columns only; at most one per table). Its value titles cards, tooltips, and entity views, and becomes the friendly name of promoted rows. Convention fallback: a string column literally named 'name'."
         },
         "ref": {
-          "$ref": "#/definitions/identifier",
-          "description": "Target table name (type = ref only). Cross-plugin refs are not allowed."
+          "type": "string",
+          "pattern": "^([a-z][a-z0-9_]*|[A-Za-z][A-Za-z0-9_]*\\.[a-z][a-z0-9_]*)$",
+          "description": "Target table (type = ref only): a table of this schema, or the qualified '<Schema>.<table>' form for any registered table — a Core table such as 'Core.users' or 'Core.queries', or a table of another plugin's schema. The reference is a hard foreign key only for same-schema targets and Core.users/Core.groups; every other target is a soft reference (no FK constraint) that may dangle after the target is hard-deleted."
         },
         "onDelete": {
           "enum": ["cascade", "restrict", "setnull"],

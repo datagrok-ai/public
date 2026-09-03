@@ -212,6 +212,12 @@ corresponding access.
   one transaction — either everything applies or nothing does. While you have unsaved
   edits, the view asks before refreshing or discarding them.
 
+A column can reference rows of another table — of the same domain, of another plugin's
+domain, or platform entities such as users, groups, queries, connections, or spaces. Such
+cells work alike everywhere: the dialog and the grid open a picker over the referenced
+table (you see only the rows you have access to), and grids show the referenced row's name.
+If the referenced entity was deleted, the cell shows its id instead.
+
 If someone else changed a row while you were editing it, Datagrok shows a conflict dialog:
 reload their version or overwrite it.
 

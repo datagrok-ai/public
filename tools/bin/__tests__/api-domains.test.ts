@@ -366,6 +366,108 @@ describe('generateDomainClients', () => {
     expect(output).toContain(`must differ from the owner and the target table`);
   });
 
+  it('qualified refs: a Core target types the expand from the sealed Core declaration', () => {
+    const dir = makePackage();
+    mutateManifest(dir, (m) => {
+      m.tables.sample.columns.source_query = {type: 'ref', ref: 'Core.queries'};
+      m.tables.sample.columns.package = {type: 'ref', ref: 'Core.packages', required: true};
+    });
+    expect(generateDomainClients(dir)).toBe(true);
+    const code = fs.readFileSync(dbPath(dir), 'utf8');
+    expect(code).toContain('  source_query?: string;');
+    expect(code).toContain('  package: string;');
+    // the expand entry lists the target's declared columns with the same tsTypes
+    expect(code).toContain(`  'source_query': {'source_query.friendlyName'?: string; 'source_query.createdOn'?: Dayjs;`);
+    expect(code).toContain(`'source_query.updatedOn'?: Dayjs; 'source_query.author'?: string; ` +
+      `'source_query.connection'?: string};`);
+    // a Core column named like a generated system column is the target's own, not a collision
+    expect(code).toMatch(/'package': \{[^}]*'package\.version'\?: string;/);
+    // the external table exists only to type the expand: no accessor, types, or tx arms
+    expect(code).not.toContain('QueriesRow');
+    expect(code).not.toContain('PackagesRow');
+    expect(code).not.toMatch(/table: '(queries|packages)'/);
+    expect(code).not.toContain('Core.');
+  });
+
+  it('qualified refs: another plugin\'s table resolves from its installed manifest', () => {
+    const dir = makePackage();
+    const depDir = path.join(dir, 'node_modules', '@datagrok', 'other-plugin', 'databases', 'other');
+    fs.mkdirSync(depDir, {recursive: true});
+    fs.writeFileSync(path.join(depDir, 'schema.json'), JSON.stringify({
+      name: 'other', version: '1.0.0',
+      tables: {thing: {
+        columns: {name: {type: 'string', required: true}, kind: {type: 'string', choices: ['a', 'b']}},
+        schemas: ['extra', 'sealed'],
+      }},
+      // a manifest keys property-schema columns by name; a sealed declaration lists them
+      propertySchemas: {extra: {weight: {type: 'float'}}, sealed: [{name: 'rank', type: 'int'}]},
+    }));
+    mutateManifest(dir, (m) => m.tables.sample.columns.thing_id = {type: 'ref', ref: 'other.thing'});
+    expect(generateDomainClients(dir)).toBe(true);
+    const code = fs.readFileSync(dbPath(dir), 'utf8');
+    expect(code).toContain(`export type OtherThingKind = 'a' | 'b';`);
+    expect(code).toContain(`  'thing_id': {'thing_id.name'?: string; 'thing_id.kind'?: OtherThingKind; ` +
+      `'thing_id.weight'?: number;`);
+    expect(code).toContain(`'thing_id.rank'?: number};`);
+    expect(code).not.toContain('ThingRow');
+  });
+
+  it('qualified refs: type user/group is the same column as ref Core.users/Core.groups', () => {
+    const dir = makePackage();
+    mutateManifest(dir, (m) => {
+      m.tables.sample.columns.owner = {type: 'user', onDelete: 'setnull'};
+      m.tables.sample.columns.team = {type: 'group'};
+    });
+    expect(generateDomainClients(dir)).toBe(true);
+    const aliased = fs.readFileSync(dbPath(dir));
+    expect(aliased.toString()).toContain(`  'owner': {'owner.login'?: string; 'owner.firstName'?: string;`);
+    expect(aliased.toString()).toMatch(/'team': \{'team\.friendlyName'\?: string;/);
+
+    mutateManifest(dir, (m) => {
+      m.tables.sample.columns.owner = {type: 'ref', ref: 'Core.users'};
+      m.tables.sample.columns.team = {type: 'ref', ref: 'Core.groups'};
+    });
+    expect(generateDomainClients(dir)).toBe(true);
+    expect(fs.readFileSync(dbPath(dir)).equals(aliased)).toBe(true);
+  });
+
+  it('qualified refs: an unresolvable target is an error', () => {
+    const dir = makePackage();
+    mutateManifest(dir, (m) => m.tables.sample.columns.x = {type: 'ref', ref: 'nope.t'});
+    let res = runCapturingLog(dir);
+    expect(res.result).toBe(false);
+    expect(res.output).toContain(`table 'sample' column 'x' references 'nope.t', but no installed dependency ` +
+      `declares schema 'nope'`);
+    expect(res.output).toContain(`install the package that declares schema 'nope' as a dependency`);
+    expect(fs.existsSync(dbPath(dir))).toBe(false);
+
+    mutateManifest(dir, (m) => m.tables.sample.columns.x = {type: 'ref', ref: 'Core.nope'});
+    res = runCapturingLog(dir);
+    expect(res.result).toBe(false);
+    expect(res.output).toContain(`schema 'Core' declares no table 'nope'`);
+
+    mutateManifest(dir, (m) => m.tables.sample.columns.x = {type: 'ref'});
+    res = runCapturingLog(dir);
+    expect(res.result).toBe(false);
+    expect(res.output).toContain(`table 'sample' column 'x' is a ref column without a 'ref' target`);
+  });
+
+  it('qualified refs: a missing sealed Core declaration is an error, not a crash', () => {
+    // the fixture's `owner: {type: user}` is the first Core ref the generator meets
+    const dir = makePackage();
+    const exists = fs.existsSync;
+    const spy = vi.spyOn(fs, 'existsSync').mockImplementation((p) => !String(p).endsWith('Core.json') && exists(p));
+    try {
+      const {result, output} = runCapturingLog(dir);
+      expect(result).toBe(false);
+      expect(output).toMatch(
+        /column 'owner' references 'Core\.users', but the sealed Core declaration is missing: .*Core\.json/);
+      expect(fs.existsSync(dbPath(dir))).toBe(false);
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
   it('relation usage compiles under strict tsc', {timeout: 180_000}, () => {
     const dir = makePackage();
     mutateManifest(dir, (m) => addRelation(m));
