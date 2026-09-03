@@ -98,6 +98,12 @@ category('hierarchicalClustering', () => {
     tv.close();
   });
 
+  test('UI-no-table', async () => {
+    const viewCount = Array.from(grok.shell.tableViews).length;
+    await hierarchicalClusteringUI(null as unknown as DG.DataFrame, ['a', 'b'], DistanceMetric.Euclidean, 'average');
+    expect(Array.from(grok.shell.tableViews).length, viewCount);
+  });
+
   // test('hierarchicalClustering1', async () => {
   //   await _testHierarchicalClustering(data1, 'euclidean', 'average', tgt1NewickAverage);
   // });
