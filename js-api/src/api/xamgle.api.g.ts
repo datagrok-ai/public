@@ -108,6 +108,12 @@ export interface SettingsInterface {
 
   showAI: boolean;
 
+  /// Ordering rules as JSON — see [OrderRule]. A real property so it serializes and picks up the
+  /// settings view's personal / group / All-Users scoping; the Browse page renders it with a
+  /// dedicated list editor instead of the generic string input. Read it via [OrderRule.parseAll] —
+  /// a public getter here would be auto-promoted to a `@Prop` and leak into the JS API.
+  orderRules: string;
+
   enableBetaViewers: boolean;
 
   //@Prop(editor: 'Beta') bool enableViewerFunctions = false;
@@ -152,6 +158,10 @@ export interface SettingsInterface {
   /// Whenever an error occurs, automatically create report with extended logs and send it to the server. Use UsageAnalysis to browse them.
   /// This includes console logs, server logs, data connectivity logs, Docker logs, etc.
   autoReportErrors: boolean;
+
+
+
+
 
 
 }
