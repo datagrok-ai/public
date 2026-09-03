@@ -23,8 +23,8 @@ realizes: [viewers.scatter-plot, viewers.histogram, viewers.bar-chart, viewers.p
 //
 // Sister scenario: Charts/charts-api.md + Charts/charts-api.ts (also target_layer: apitest).
 // Closes documented follow-up from modernize-legacy-specs.md §4.
-import {test, expect} from '../../shared-page';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
+import {localTest as test, expect} from '../../shared-page';
+import {openDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 
 test.use(specTestOptions);
@@ -51,7 +51,7 @@ test('Legend — JS API contract', async ({page}) => {
   });
   page.on('pageerror', (err) => consoleErrors.push(`pageerror: ${err.message}`));
 
-  await loginToDatagrok(page);
+  await openDatagrok(page);
   await v.installEventWaits(page);
 
   // E-LAYER-COMPLIANCE-01 sub-rule for apitest: spec body MUST NOT contain
@@ -72,7 +72,7 @@ test('Legend — JS API contract', async ({page}) => {
       const grok = (window as any).grok;
       grok.shell.closeAll();
       await w.__poll(() => Array.from(grok.shell.tableViews).length, (n: number) => n === 0, 400);
-      const df = await grok.dapi.files.readCsv(path);
+      const df = await w.__readCsv(path);
       const tv = grok.shell.addTableView(df);
       await w.__poll(() => grok.shell.tv?.dataFrame?.rowCount ?? 0, (n: number) => n > 0, 1500);
       const out: Record<string, any> = {};
@@ -119,7 +119,7 @@ test('Legend — JS API contract', async ({page}) => {
       const grok = (window as any).grok;
       grok.shell.closeAll();
       await w.__poll(() => Array.from(grok.shell.tableViews).length, (n: number) => n === 0, 400);
-      const df = await grok.dapi.files.readCsv(path);
+      const df = await w.__readCsv(path);
       const tv = grok.shell.addTableView(df);
       await w.__poll(() => grok.shell.tv?.dataFrame?.rowCount ?? 0, (n: number) => n > 0, 1500);
       tv.addViewer('Scatter plot');
@@ -154,7 +154,7 @@ test('Legend — JS API contract', async ({page}) => {
       const grok = (window as any).grok;
       grok.shell.closeAll();
       await w.__poll(() => Array.from(grok.shell.tableViews).length, (n: number) => n === 0, 400);
-      const df = await grok.dapi.files.readCsv(path);
+      const df = await w.__readCsv(path);
       const tv = grok.shell.addTableView(df);
       await w.__poll(() => grok.shell.tv?.dataFrame?.rowCount ?? 0, (n: number) => n > 0, 1500);
       tv.addViewer('Scatter plot');
@@ -187,7 +187,7 @@ test('Legend — JS API contract', async ({page}) => {
       const grok = (window as any).grok;
       grok.shell.closeAll();
       await w.__poll(() => Array.from(grok.shell.tableViews).length, (n: number) => n === 0, 400);
-      const df = await grok.dapi.files.readCsv(path);
+      const df = await w.__readCsv(path);
       const tv = grok.shell.addTableView(df);
       await w.__poll(() => grok.shell.tv?.dataFrame?.rowCount ?? 0, (n: number) => n > 0, 1500);
       tv.addViewer('Scatter plot');
@@ -228,7 +228,7 @@ test('Legend — JS API contract', async ({page}) => {
       const grok = (window as any).grok;
       grok.shell.closeAll();
       await w.__poll(() => Array.from(grok.shell.tableViews).length, (n: number) => n === 0, 400);
-      const df = await grok.dapi.files.readCsv(path);
+      const df = await w.__readCsv(path);
       const tv = grok.shell.addTableView(df);
       await w.__poll(() => grok.shell.tv?.dataFrame?.rowCount ?? 0, (n: number) => n > 0, 1500);
       const out: Record<string, any> = {};
@@ -286,7 +286,7 @@ test('Legend — JS API contract', async ({page}) => {
       const grok = (window as any).grok;
       grok.shell.closeAll();
       await w.__poll(() => Array.from(grok.shell.tableViews).length, (n: number) => n === 0, 400);
-      const df = await grok.dapi.files.readCsv(path);
+      const df = await w.__readCsv(path);
       grok.shell.addTableView(df);
       await new Promise((r) => setTimeout(r, 1500));
       const col = df.col('Stereo Category');
@@ -318,7 +318,7 @@ test('Legend — JS API contract', async ({page}) => {
       const grok = (window as any).grok;
       grok.shell.closeAll();
       await w.__poll(() => Array.from(grok.shell.tableViews).length, (n: number) => n === 0, 400);
-      const df = await grok.dapi.files.readCsv(path);
+      const df = await w.__readCsv(path);
       const tv = grok.shell.addTableView(df);
       await w.__poll(() => grok.shell.tv?.dataFrame?.rowCount ?? 0, (n: number) => n > 0, 1500);
       tv.addViewer('Scatter plot');
@@ -354,7 +354,7 @@ test('Legend — JS API contract', async ({page}) => {
       const grok = (window as any).grok;
       grok.shell.closeAll();
       await w.__poll(() => Array.from(grok.shell.tableViews).length, (n: number) => n === 0, 400);
-      const df = await grok.dapi.files.readCsv(path);
+      const df = await w.__readCsv(path);
       const tv = grok.shell.addTableView(df);
       await w.__poll(() => grok.shell.tv?.dataFrame?.rowCount ?? 0, (n: number) => n > 0, 1500);
       tv.addViewer('Scatter plot');

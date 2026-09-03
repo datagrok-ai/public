@@ -7,6 +7,7 @@ realizes:
   - viewers.correlation-plot
 priority: p0
 target_layer: playwright
+boot_lane: mixed
 coverage_type: smoke
 related_bugs:
   - id: GROK-17480
@@ -75,6 +76,7 @@ expected_results:
       tolerance.
 realized_as:
   - correlation-plot-matrix-values-spec.ts
+  - correlation-plot-matrix-values-server-spec.ts
 ---
 
 # Correlation Plot — Matrix Values, Scope, and Persistence

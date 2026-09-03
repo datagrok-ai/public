@@ -7,6 +7,7 @@ realizes:
   - viewers.filters
 priority: p2
 target_layer: playwright
+boot_lane: mixed
 coverage_type: edge
 related_bugs:
   - id: GROK-17569
@@ -17,6 +18,7 @@ related_bugs:
     status: fixed
 realized_as:
   - cloned-view-sync-spec.ts
+  - cloned-view-sync-server-spec.ts
 scope_reductions:
   - id: SR-02
     check: E-TRACE-02

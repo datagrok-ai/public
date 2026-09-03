@@ -1,85 +1,68 @@
 /* ---
 realizes: [viewers.scatter-plot, viewers.line-chart, viewers.histogram, viewers.bar-chart, viewers.pie-chart, viewers.box-plot, viewers.pc-plot, viewers.filters]
 --- */
-import {test, expect, Page} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
+import {expect, Page} from '@playwright/test';
+import {localTest as test} from '../shared-page';
+import {openDatagrok, specTestOptions, softStep} from '../spec-login';
 import * as v from '../helpers/viewers';
+
+declare const grok: any;
+declare const DG: any;
 
 test.use(specTestOptions);
 
 const demogPath = 'System:DemoFiles/demog.csv';
 const spgiPath = 'System:AppData/Chem/tests/spgi-100.csv';
+const demogName = 'demog';
+const spgiName = 'spgi-100';
 
 const allRowSources = ['Filtered', 'All', 'Selected', 'SelectedOrCurrent', 'FilteredSelected', 'MouseOverGroup', 'CurrentRow', 'MouseOverRow'] as const;
 
-async function openDatasetsAndSetup(page: Page) {
-  await page.evaluate(async (args: {demogPath: string; spgiPath: string}) => {
-    document.body.classList.add('selenium');
-    grok.shell.settings.showFiltersIconsConstantly = true;
-    grok.shell.windows.simpleMode = false;
-    grok.shell.closeAll();
-
-    const df1 = await grok.dapi.files.readCsv(args.demogPath);
-    const tv1 = grok.shell.addTableView(df1);
-    await new Promise(resolve => {
-      const sub = df1.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(null); });
-      setTimeout(resolve, 3000);
-    });
-
-    const df2 = await grok.dapi.files.readCsv(args.spgiPath);
-    const tv2 = grok.shell.addTableView(df2);
-    await new Promise(resolve => {
-      const sub = df2.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(null); });
-      setTimeout(resolve, 3000);
-    });
-    const hasBioChem = Array.from({length: df2.columns.length}, (_, i) => df2.columns.byIndex(i))
-      .some((c: any) => c.semType === 'Molecule' || c.semType === 'Macromolecule');
-    if (hasBioChem) {
-      for (let i = 0; i < 50; i++) {
-        if (document.querySelector('[name="viewer-Grid"] canvas')) break;
-        await new Promise(r => setTimeout(r, 200));
-      }
-      await new Promise(r => setTimeout(r, 5000));
-    }
-
-    const views = Array.from(grok.shell.views);
-    const demogView = views.find((v: any) => v.name === 'Table');
-    if (demogView) grok.shell.v = demogView;
-    await new Promise(r => setTimeout(r, 500));
-  }, {demogPath, spgiPath});
-
-  await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30000});
+async function openDatasets(page: Page) {
+  await v.openTable(page, {path: demogPath, semTypeTimeoutMs: 3000});
+  await page.evaluate(async (args: {spgiPath: string; demogName: string; spgiName: string}) => {
+    const w = window as any;
+    const demog = grok.shell.t;
+    demog.name = args.demogName;
+    const demogView = grok.shell.tv;
+    const spgi = await w.__readCsv(args.spgiPath);
+    spgi.name = args.spgiName;
+    grok.shell.addTableView(spgi);
+    await w.__tableReady(5000);
+    grok.shell.v = demogView;
+    await w.__poll(() => grok.shell.tv?.dataFrame?.name, (n: string) => n === args.demogName, 2000, 25);
+  }, {spgiPath, demogName, spgiName});
+  await page.locator('.d4-grid[name="viewer-Grid"]').first().waitFor({timeout: 30000});
 }
 
 async function testDemogRowSources(page: Page, viewerType: string, filterPanelSex: string) {
   const result = await page.evaluate(async (args: {viewerType: string; filterPanelSex: string}) => {
+    const w = window as any;
     const tv = grok.shell.tv;
     const df = tv.dataFrame;
     const v = tv.viewers.find((vw: any) => vw.type === args.viewerType)!;
+    const rendered = (act: () => void, capMs: number) =>
+      w.__settled('viewer:' + args.viewerType + '.onViewerRendered', act, capMs);
     const r: any = {};
 
     const fg = tv.getFiltersGroup();
-    await new Promise(res => setTimeout(res, 300));
-    fg.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: 'SEX', selected: [args.filterPanelSex]});
-    await new Promise(res => setTimeout(res, 300));
+    await w.__filtered(() => fg.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: 'SEX', selected: [args.filterPanelSex]}),
+      300, df.filter.trueCount);
     r.filteredCount = df.filter.trueCount;
     r.rowSourceFiltered = v.props.rowSource;
 
-    fg.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: 'SEX', selected: df.col('SEX').categories});
-    await new Promise(res => setTimeout(res, 200));
+    await w.__filtered(() => fg.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: 'SEX', selected: df.col('SEX').categories}),
+      200, df.filter.trueCount);
 
-    v.props.rowSource = 'All';
-    await new Promise(res => setTimeout(res, 200));
+    await rendered(() => { v.props.rowSource = 'All'; }, 200);
     r.rsAll = v.props.rowSource;
 
     df.selection.setAll(false);
-    v.props.rowSource = 'Selected';
-    await new Promise(res => setTimeout(res, 200));
+    await rendered(() => { v.props.rowSource = 'Selected'; }, 200);
     r.rsSelected = v.props.rowSource;
     r.selEmpty = df.selection.trueCount;
 
-    df.selection.init((i: number) => i < 100);
-    await new Promise(res => setTimeout(res, 200));
+    await rendered(() => df.selection.init((i: number) => i < 100), 200);
     const ageCol = df.col('AGE');
     let selWithAge44 = 0;
     for (let i = 0; i < 100; i++)
@@ -87,28 +70,26 @@ async function testDemogRowSources(page: Page, viewerType: string, filterPanelSe
     r.selCount = df.selection.trueCount;
     r.selWithAgeGt44 = selWithAge44;
 
-    v.props.rowSource = 'SelectedOrCurrent';
-    await new Promise(res => setTimeout(res, 200));
+    await rendered(() => { v.props.rowSource = 'SelectedOrCurrent'; }, 200);
     r.rsSelectedOrCurrent = v.props.rowSource;
 
     df.selection.setAll(false);
     let curIdx = -1;
     for (let i = 0; i < df.rowCount; i++)
       if (ageCol.get(i) > 44) { curIdx = i; break; }
-    df.currentRowIdx = curIdx;
-    await new Promise(res => setTimeout(res, 200));
+    await rendered(() => { df.currentRowIdx = curIdx; }, 200);
     r.currentAge = ageCol.get(df.currentRowIdx);
 
-    v.props.rowSource = 'FilteredSelected';
-    df.selection.setAll(false);
-    await new Promise(res => setTimeout(res, 200));
+    await rendered(() => {
+      v.props.rowSource = 'FilteredSelected';
+      df.selection.setAll(false);
+    }, 200);
     r.rsFilteredSelected = v.props.rowSource;
 
-    df.selection.init((i: number) => {
+    await rendered(() => df.selection.init((i: number) => {
       const a = ageCol.get(i);
       return a >= 42 && a <= 47;
-    });
-    await new Promise(res => setTimeout(res, 200));
+    }), 200);
     r.filtSelCount = df.selection.trueCount;
     let ageGt44InSel = 0;
     for (let i = 0; i < df.rowCount; i++) {
@@ -118,22 +99,22 @@ async function testDemogRowSources(page: Page, viewerType: string, filterPanelSe
     r.filtSelAgeGt44 = ageGt44InSel;
     df.selection.setAll(false);
 
-    v.props.rowSource = 'MouseOverGroup';
-    await new Promise(res => setTimeout(res, 200));
+    await rendered(() => { v.props.rowSource = 'MouseOverGroup'; }, 200);
     r.rsMouseOverGroup = v.props.rowSource;
 
-    df.mouseOverGroup = DG.BitSet.create(df.rowCount, (i: number) => df.col('RACE').get(i) === 'Asian');
-    await new Promise(res => setTimeout(res, 300));
+    await rendered(() => {
+      df.mouseOverGroup = DG.BitSet.create(df.rowCount, (i: number) => df.col('RACE').get(i) === 'Asian');
+    }, 300);
     r.mogCount = df.mouseOverGroup.trueCount;
     df.mouseOverGroup = null;
 
-    v.props.rowSource = 'CurrentRow';
-    df.currentRowIdx = curIdx;
-    await new Promise(res => setTimeout(res, 200));
+    await rendered(() => {
+      v.props.rowSource = 'CurrentRow';
+      df.currentRowIdx = curIdx;
+    }, 200);
     r.rsCurrentRow = v.props.rowSource;
 
-    v.props.rowSource = 'MouseOverRow';
-    await new Promise(res => setTimeout(res, 200));
+    await rendered(() => { v.props.rowSource = 'MouseOverRow'; }, 200);
     r.rsMouseOverRow = v.props.rowSource;
 
     return r;
@@ -155,22 +136,24 @@ async function testDemogRowSources(page: Page, viewerType: string, filterPanelSe
 }
 
 async function testSpgiRowSources(page: Page, viewerType: string, colConfig: Record<string, any>) {
-  const result = await page.evaluate(async (args: {viewerType: string; colConfig: Record<string, any>}) => {
+  const result = await page.evaluate(async (args: {viewerType: string; colConfig: Record<string, any>; spgiName: string}) => {
+    const w = window as any;
     const tv = grok.shell.tv;
     const v = tv.viewers.find((vw: any) => vw.type === args.viewerType)!;
-    const views = Array.from(grok.shell.views);
-    const spgiView = views.find((vw: any) => vw.name === 'Table (2)');
-    const spgiDf = (spgiView as any)?.table;
+    const rendered = (act: () => void, capMs: number) =>
+      w.__settled('viewer:' + args.viewerType + '.onViewerRendered', act, capMs);
+    const spgiDf = (Array.from(grok.shell.tableViews) as any[])
+      .find((vw: any) => vw.dataFrame?.name === args.spgiName)?.dataFrame;
     if (!spgiDf) return {error: 'spgi not found'};
 
-    v.props.table = spgiDf.name;
-    await new Promise(r => setTimeout(r, 500));
+    await rendered(() => { v.props.table = spgiDf.name; }, 500);
 
-    for (const [key, val] of Object.entries(args.colConfig))
-      v.props[key] = val;
-    v.props.rowSource = 'Filtered';
-    v.props.filter = '${Stereo Category} in ["R_ONE", "S_UNKN"]';
-    await new Promise(r => setTimeout(r, 500));
+    await rendered(() => {
+      for (const [key, val] of Object.entries(args.colConfig))
+        v.props[key] = val;
+      v.props.rowSource = 'Filtered';
+      v.props.filter = '${Stereo Category} in ["R_ONE", "S_UNKN"]';
+    }, 500);
 
     const r: any = {tableSet: v.dataFrame?.name};
     for (const rs of ['Filtered', 'All', 'Selected', 'SelectedOrCurrent', 'FilteredSelected', 'MouseOverGroup', 'CurrentRow', 'MouseOverRow']) {
@@ -180,21 +163,17 @@ async function testSpgiRowSources(page: Page, viewerType: string, colConfig: Rec
 
     v.props.rowSource = 'MouseOverGroup';
     const scCol = spgiDf.col('Stereo Category');
-    spgiDf.mouseOverGroup = DG.BitSet.create(spgiDf.rowCount, (i: number) => scCol.get(i) === 'R_ONE');
-    await new Promise(res => setTimeout(res, 300));
+    await rendered(() => {
+      spgiDf.mouseOverGroup = DG.BitSet.create(spgiDf.rowCount, (i: number) => scCol.get(i) === 'R_ONE');
+    }, 300);
     r.mogCount = spgiDf.mouseOverGroup.trueCount;
     spgiDf.mouseOverGroup = null;
 
     v.close();
-    await new Promise(res => setTimeout(res, 300));
-    r.closed = !tv.viewers.some((vw: any) => vw.type === args.viewerType);
-
-    const demogView = Array.from(grok.shell.views).find((vw: any) => vw.name === 'Table');
-    if (demogView) grok.shell.v = demogView;
-    await new Promise(r => setTimeout(r, 200));
+    r.closed = await w.__poll(() => !tv.viewers.some((vw: any) => vw.type === args.viewerType), (c: boolean) => c, 300, 25);
 
     return r;
-  }, {viewerType, colConfig});
+  }, {viewerType, colConfig, spgiName});
 
   expect(result.tableSet).toBeTruthy();
   for (const rs of allRowSources)
@@ -207,13 +186,16 @@ async function testSpgiRowSources(page: Page, viewerType: string, colConfig: Rec
 
 async function addViewerWithFilter(page: Page, viewerType: string, props: Record<string, any>, filter: string) {
   const result = await page.evaluate(async (args: {viewerType: string; props: Record<string, any>; filter: string}) => {
+    const w = window as any;
     const tv = grok.shell.tv;
     const v = tv.addViewer(args.viewerType);
-    for (const [key, val] of Object.entries(args.props))
-      v.props[key] = val;
-    await new Promise(r => setTimeout(r, 500));
-    v.props.filter = args.filter;
-    await new Promise(r => setTimeout(r, 300));
+    const rendered = (act: () => void, capMs: number) =>
+      w.__settled('viewer:' + args.viewerType + '.onViewerRendered', act, capMs);
+    await rendered(() => {
+      for (const [key, val] of Object.entries(args.props))
+        v.props[key] = val;
+    }, 500);
+    await rendered(() => { v.props.filter = args.filter; }, 300);
     return {type: v.type, rowSource: v.props.rowSource, filter: v.props.filter};
   }, {viewerType, props, filter});
 
@@ -223,10 +205,10 @@ async function addViewerWithFilter(page: Page, viewerType: string, props: Record
 }
 
 test('Row Source tests', async ({page}) => {
-  test.setTimeout(900_000);
+  test.setTimeout(300_000);
 
-  await loginToDatagrok(page);
-  await openDatasetsAndSetup(page);
+  await openDatagrok(page);
+  await openDatasets(page);
 
   await page.evaluate(() => {
     grok.shell.tv.getFiltersGroup();

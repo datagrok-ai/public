@@ -69,13 +69,13 @@ async function resetXColumnsViaMenu(page: Page): Promise<boolean> {
       bubbles: true, cancelable: true, clientX: r.x + r.width / 2, clientY: r.y + r.height / 2, button: 2,
     }));
 
-    await new Promise((res) => setTimeout(res, 600));
-    const label = Array.from(document.querySelectorAll('.d4-menu-popup .d4-menu-item-label'))
+    const findLabel = () => Array.from(document.querySelectorAll('.d4-menu-popup .d4-menu-item-label'))
       .find((el) => {
         if ((el.textContent || '').trim() !== 'Reset X columns') return false;
         const box = el.getBoundingClientRect();
         return box.width > 0 && box.height > 0;
       });
+    const label = await (window as any).__poll(findLabel, (el: Element | undefined) => !!el, 600, 40);
     if (!label) { document.body.click(); return false; }
     (label.closest('.d4-menu-item') as HTMLElement).click();
     return true;
@@ -85,8 +85,7 @@ async function resetXColumnsViaMenu(page: Page): Promise<boolean> {
 }
 
 test('Trellis plot: category viewport paging (+/- icons and pack-categories coupling)', async ({page}) => {
-  test.setTimeout(600_000);
-  page.setDefaultTimeout(120_000);
+  test.setTimeout(180_000);
 
   const pageErrors: string[] = [];
   const consoleErrors: string[] = [];
@@ -97,21 +96,7 @@ test('Trellis plot: category viewport paging (+/- icons and pack-categories coup
   });
 
   await openDatagrok(page);
-  await page.waitForTimeout(5000); 
-
-  await page.evaluate(async (path) => {
-    document.body.classList.add('selenium');
-    try { grok.shell.settings.showFiltersIconsConstantly = true; } catch {}
-    try { grok.shell.windows.simpleMode = true; } catch {}
-    grok.shell.closeAll();
-    const df = await (window as any).__readCsv(path);
-    grok.shell.addTableView(df);
-    await new Promise((resolve) => {
-      const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(null); });
-      setTimeout(resolve, 3000);
-    });
-  }, datasetPath);
-  await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30000});
+  await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 3000});
 
   const cardinalities = await page.evaluate(() => {
     const df = grok.shell.tv.dataFrame;
@@ -178,7 +163,7 @@ test('Trellis plot: category viewport paging (+/- icons and pack-categories coup
     expect(atMin.minusEnabled).toBe(false);
     expect(atMin.plusEnabled).toBe(true);
 
-    expect(await realClickXIcon(page, 'minus', 5000)).toBe(false);
+    expect(await realClickXIcon(page, 'minus', 2000)).toBe(false);
     expect((await xAxisState(page)).cells).toBe(atMin.cells);
     expect(await realClickXIcon(page, 'plus', 20000)).toBe(true);
     expect((await xAxisState(page)).cells).toBe(atMin.cells + yCatCount);
@@ -193,7 +178,7 @@ test('Trellis plot: category viewport paging (+/- icons and pack-categories coup
     expect(atMax.plusEnabled).toBe(false);
     expect(atMax.minusEnabled).toBe(true);
 
-    expect(await realClickXIcon(page, 'plus', 5000)).toBe(false);
+    expect(await realClickXIcon(page, 'plus', 2000)).toBe(false);
     expect((await xAxisState(page)).cells).toBe(atMax.cells);
     expect(await realClickXIcon(page, 'minus', 20000)).toBe(true);
     expect((await xAxisState(page)).cells).toBe(atMax.cells - yCatCount);
@@ -333,5 +318,6 @@ test('Trellis plot: category viewport paging (+/- icons and pack-categories coup
     expect(errorsAfter).toBe(errorsBefore);
   });
 
+  await v.closeAllAndWait(page);
   v.finishSpec();
 });

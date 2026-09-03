@@ -7,6 +7,7 @@ realizes:
   - viewers.filters.free-text
 priority: p2
 target_layer: playwright
+boot_lane: mixed
 coverage_type: regression
 related_bugs:
   - id: GROK-20242
@@ -140,6 +141,7 @@ expected_results:
       the second half of this check unable to fail.
 realized_as:
   - expression-text-filters-spec.ts
+  - expression-text-filters-server-spec.ts
 ---
 
 # Filters — Expression filter and Text filter driven through their own UI

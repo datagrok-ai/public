@@ -6,6 +6,7 @@ realizes_atlas:
 realizes: [viewers.correlation-plot, entities.viewer.action.open-as-table]
 priority: p2
 target_layer: playwright
+boot_lane: local
 coverage_type: smoke
 related_bugs:
   - id: GROK-16818

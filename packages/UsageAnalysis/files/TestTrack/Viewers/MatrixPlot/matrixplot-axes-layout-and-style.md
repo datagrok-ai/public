@@ -103,7 +103,13 @@ Expected:
 ## Automation notes
 
 - GROK-19106 must be driven through the real checkbox, not a JS API property
-  assignment — the property path never reproduced the bug. The Axes category
+  assignment — the property path never reproduced the bug. The settings panel
+  itself is opened by making the viewer the shell's current object
+  (`grok.shell.o = viewer`, the call the gear handler makes) and is proven
+  bound to the live viewer before any row is touched: on the shared local page
+  a gear click, synthetic or real, opens nothing in ~1 run in 3, and the
+  previous spec's property grid outlives its closed viewer, so a grid that is
+  merely present may be editing a dead one (both measured 2026-09-03). The Axes category
   is expanded by clicking the plus icon inside
   `[name="prop-category-axes"]`; the checkbox is
   `[name="prop-view-show-x-axes"]` (a real CDP click and a synthetic

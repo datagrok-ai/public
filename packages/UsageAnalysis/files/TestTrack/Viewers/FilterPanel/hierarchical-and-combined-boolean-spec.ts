@@ -2,15 +2,17 @@
 realizes: [filters.cp.hierarchical-and-combined-boolean]
 --- */
 import {expect} from '@playwright/test';
-import {test} from '../../shared-page';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
+import {localTest as test} from '../../shared-page';
+import {openDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
 import * as v from '../../helpers/viewers';
-import {saveProjectViaApi, deleteProjectWithCleanup} from '../../helpers/projects';
+import {addHierarchicalCard, applyBoolState, applyHierarchyState, closeFilterPanelInPage, GLYPH, glyphName,
+  hierCaption, hierNode, openDemogWithSexBool, ROW_COUNT, trueCountOf} from './hierarchical-shared';
 
 declare const grok: any;
-declare const DG: any;
 declare const window: any;
 
+// The tree and combined-boolean gestures on the local lane. The layout and project round-trips
+// (Steps 10, 11, 17, 18) live in hierarchical-and-combined-boolean-server-spec.ts.
 test.use(specTestOptions);
 
 const datasetPath = 'System:DemoFiles/demog.csv';
@@ -27,89 +29,6 @@ async function readTreeState(page: any): Promise<{captions: string[], trueCount:
     return {captions, trueCount: grok.shell.tv.dataFrame.filter.trueCount};
   });
 }
-
-const GLYPH = {unchecked: 0xF0C8, checked: 0xF14A, indeterminate: 0xF146};
-
-interface HierNodeState {
-  found: boolean;
-  glyph: number;
-  expanded: boolean;
-  childCaptions: string[];
-  childHeaders: string[];
-}
-
-const glyphName = (g: number): string => 'U+' + g.toString(16).toUpperCase().padStart(4, '0');
-
-async function hierNode(page: any, path: string[],
-  action: 'probe' | 'read' | 'expand' | 'toggle'): Promise<HierNodeState> {
-  return await page.evaluate(({path, action}: {path: string[], action: string}) => {
-    const card = Array.from(document.querySelectorAll('[name="viewer-Filters"] .d4-filter'))
-      .find((c) => c.querySelector('.d4-filter-column-name')?.textContent?.includes('/'));
-    if (!card)
-      throw new Error('no hierarchical filter card is painted in the Filter Panel — its caption is the '
-        + 'only one carrying "/", and no card in the panel carries one');
-    const hostOf = (n: HTMLElement) =>
-      n.parentElement?.querySelector(':scope > .d4-tree-view-group-host') as HTMLElement | null;
-    const directChildren = (host: HTMLElement) => [...host.children].flatMap((c) =>
-      c.matches('.d4-tree-view-node') ? [c as HTMLElement]
-        : [...c.querySelectorAll(':scope > .d4-tree-view-node')] as HTMLElement[]);
-    const captionOf = (n: HTMLElement) =>
-      (n.querySelector('.d4-hierarchical-filter-caption-value')?.textContent ?? '').trim();
-    const headerLabelOf = (n: HTMLElement) =>
-      (n.querySelector('.d4-tree-view-item-label')?.textContent ?? n.textContent ?? '').trim();
-
-    let node: HTMLElement | null = null;
-    for (let level = 0; level < path.length; level++) {
-      const value = path[level];
-      let candidates: HTMLElement[];
-      if (level === 0) {
-        const rootHost = card.querySelector('.d4-tree-view-root > .d4-tree-view-group-host') as HTMLElement | null;
-        if (!rootHost)
-          throw new Error('the hierarchical filter card paints no tree root '
-            + '(.d4-tree-view-root > .d4-tree-view-group-host), so its level-0 nodes cannot be addressed');
-        candidates = directChildren(rootHost).filter((c) => captionOf(c) === value);
-      }
-      else {
-        const host = hostOf(node!);
-        candidates = host ? directChildren(host).filter((c) => captionOf(c) === value) : [];
-      }
-      if (candidates.length === 0) {
-        if (action === 'probe')
-          return {found: false, glyph: 0, expanded: false, childCaptions: [], childHeaders: []};
-        throw new Error(`hierarchical tree node "${value}" not found (path ${path.join(' / ')}) — `
-          + `it was looked for ${level === 0 ? 'inside the hierarchical card' : 'among the direct children of "' + path[level - 1] + '"'}`);
-      }
-      if (candidates.length > 1)
-        throw new Error(`hierarchical tree node "${value}" is AMBIGUOUS (path ${path.join(' / ')}): `
-          + `${candidates.length} nodes ${level === 0 ? 'inside the hierarchical card' : 'among the direct children of "' + path[level - 1] + '"'} `
-          + 'carry that caption, so addressing it by caption would silently pick one of them');
-      node = candidates[0];
-    }
-    const tri = node!.querySelector(':scope > .d4-tree-view-tri') as HTMLElement | null;
-    if (action === 'expand') {
-      if (!tri) throw new Error(`hierarchical tree node "${path.join(' / ')}" carries no expander`);
-      if (!tri.classList.contains('d4-tree-view-tri-expanded')) tri.click();
-    }
-    if (action === 'toggle') {
-      const cb = node!.querySelector('input.d4-hierarchical-filter-checkbox') as HTMLElement | null;
-      if (!cb) throw new Error(`hierarchical tree node "${path.join(' / ')}" carries no checkbox`);
-      cb.click();
-    }
-    const sub = node!.querySelector('.d4-hierarchical-filter-checkbox-substitute');
-    const host = hostOf(node!);
-    const children = host ? directChildren(host) : [];
-    return {
-      found: true,
-      glyph: (sub?.textContent ?? '').codePointAt(0) ?? 0,
-      expanded: !!tri?.classList.contains('d4-tree-view-tri-expanded'),
-      childCaptions: children.map(captionOf).filter((c) => c !== ''),
-      childHeaders: children.filter((c) => captionOf(c) === '').map(headerLabelOf),
-    };
-  }, {path, action});
-}
-
-const trueCountOf = async (page: any): Promise<number> =>
-  page.evaluate(() => grok.shell.tv.dataFrame.filter.trueCount);
 
 async function holdTrueCount(page: any, expected: number, why: string): Promise<void> {
   const samples: number[] = [];
@@ -142,27 +61,11 @@ test('Filter Panel — Hierarchical and Combined Boolean Filters', async ({page}
   test.setTimeout(600_000);
   stepErrors.length = 0;
 
-  const isAmbientNoise = (text: string) =>
-    /ProjectMeta\.publish/.test(text) ||
-    /project_meta\.dart/.test(text) ||
-    /could not be cloned/i.test(text) ||
-    /Failed to load resource/.test(text) ||
-    /favicon/.test(text);
-  const pageErrors: string[] = [];
-  page.on('console', (msg) => {
-    if (msg.type() === 'error' && !isAmbientNoise(msg.text())) pageErrors.push(msg.text());
-  });
-  page.on('pageerror', (err) => {
-    if (!isAmbientNoise(err.message)) pageErrors.push(`pageerror: ${err.message}`);
-  });
-
-  await loginToDatagrok(page);
-
+  await openDatagrok(page);
   await v.openTable(page, {path: datasetPath, withFilterPanel: true});
-  await v.installEventWaits(page);
 
   const rowCount = await page.evaluate(() => grok.shell.tv.dataFrame.rowCount);
-  expect(rowCount).toBe(5850);
+  expect(rowCount).toBe(ROW_COUNT);
 
   const derived = await page.evaluate(() => {
     const df = grok.shell.tv.dataFrame;
@@ -191,35 +94,10 @@ test('Filter Panel — Hierarchical and Combined Boolean Filters', async ({page}
     .toBeLessThan(rowCount);
 
   await softStep('Step 5: Add hierarchical filter (SEX / RACE), caption reflects columns', async () => {
-    await v.drivePanelMenuLeaf(page, 'Filters', 'Add Filter', 'Hierarchical');
-    await expect.poll(async () => page.evaluate(() =>
-      grok.shell.tv.getFiltersGroup().filters.filter((f: any) => f.filterType === 'hierarchical').length),
-    {timeout: 15_000, intervals: [400, 800, 1500]}).toBe(1);
-    await page.evaluate(async () => {
-      const fg = grok.shell.tv.getFiltersGroup();
-      for (const f of fg.filters) {
-        if (f.filterType === 'hierarchical') {
-          window.grok_GridFilterBase_ApplyState(f.dart || f, {
-            type: 'hierarchical', active: true, colNames: ['SEX', 'RACE'], allEnabled: true,
-          });
-          grok.shell.tv.dataFrame.rows.requestFilter();
-          break;
-        }
-      }
-    });
-    await expect.poll(async () => (await hierNode(page, ['F'], 'probe')).found,
-      {message: 'the SEX root node "F" never rendered — the hierarchy was not applied to the card',
-        timeout: 10_000, intervals: [300, 600, 1200]}).toBe(true);
-    const caption = await page.evaluate(() => {
-      for (const c of document.querySelectorAll('[name="viewer-Filters"] .d4-filter')) {
-        const cn = c.querySelector('.d4-filter-column-name');
-        if (cn && cn.textContent!.includes('/')) return cn.textContent!.trim();
-      }
-      return '';
-    });
-    expect(caption).toBe('SEX / RACE');
+    await addHierarchicalCard(page);
+    expect(await hierCaption(page)).toBe('SEX / RACE');
     const trueCount = await page.evaluate(() => grok.shell.tv.dataFrame.filter.trueCount);
-    expect(trueCount).toBe(5850);
+    expect(trueCount).toBe(ROW_COUNT);
   });
 
   await softStep('Step 6: Expand F, check Caucasian — Caucasian females filtered', async () => {
@@ -314,24 +192,8 @@ test('Filter Panel — Hierarchical and Combined Boolean Filters', async ({page}
 
   await softStep('Step 8b: three levels — unchecking a grandchild marks BOTH ancestors indeterminate', async () => {
     const levels = ['SEX', 'RACE', 'SEVERITY'];
-    await page.evaluate(async (colNames: string[]) => {
-      const fg = grok.shell.tv.getFiltersGroup();
-      for (const f of fg.filters) {
-        if (f.filterType === 'hierarchical') {
-          window.grok_GridFilterBase_ApplyState(f.dart || f, {colNames, allEnabled: true});
-          grok.shell.tv.dataFrame.rows.requestFilter();
-          break;
-        }
-      }
-    }, levels);
-    const readCaption = async () => page.evaluate(() => {
-      for (const c of document.querySelectorAll('[name="viewer-Filters"] .d4-filter')) {
-        const cn = c.querySelector('.d4-filter-column-name');
-        if (cn && cn.textContent!.includes('/')) return cn.textContent!.trim();
-      }
-      return '';
-    });
-    await expect.poll(readCaption,
+    await applyHierarchyState(page, {colNames: levels, allEnabled: true});
+    await expect.poll(() => hierCaption(page),
       {message: 'the card caption must name all three levels',
         timeout: 15_000, intervals: [300, 600, 1200]}).toBe(levels.join(' / '));
     await expect.poll(async () => (await hierNode(page, ['F'], 'probe')).found,
@@ -468,67 +330,9 @@ test('Filter Panel — Hierarchical and Combined Boolean Filters', async ({page}
     expect(after, 'unchecking one SEVERITY value must not empty the branch').toBeGreaterThan(0);
   });
 
-  let hlTrueCount = 0;
-  await softStep('Step 6-restore: re-establish SEX / RACE + Caucasian criterion for the layout save', async () => {
-    await page.evaluate(async () => {
-      const fg = grok.shell.tv.getFiltersGroup();
-      for (const f of fg.filters) {
-        if (f.filterType === 'hierarchical') {
-          window.grok_GridFilterBase_ApplyState(f.dart || f, {colNames: ['SEX', 'RACE'], allEnabled: true});
-          grok.shell.tv.dataFrame.rows.requestFilter();
-          break;
-        }
-      }
-    });
-    await expect.poll(async () => (await hierNode(page, ['F'], 'probe')).found,
-      {message: 'the SEX roots never rebuilt after the hierarchy was reset to SEX / RACE',
-        timeout: 15_000, intervals: [300, 600, 1200]}).toBe(true);
-    await hierNode(page, ['F'], 'expand');
-    await expect.poll(async () => (await hierNode(page, ['F'], 'read')).childCaptions,
-      {message: 'the RACE children of F never rendered after the expander click',
-        timeout: 10_000, intervals: [200, 400, 800]}).toContain('Caucasian');
-    await hierNode(page, ['F', 'Caucasian'], 'toggle');
-    await expect.poll(async () => trueCountOf(page),
-      {message: 'the criterion about to be saved is not the Caucasian-female one derived from the raw '
-        + `SEX / RACE columns (${derived.caucasianFemale})`,
-      timeout: 10_000, intervals: [200, 400, 800]}).toBe(derived.caucasianFemale);
-    hlTrueCount = await trueCountOf(page);
-  });
-
-  let hlLayoutId = '';
-  await softStep('Step 10: Save the layout with the hierarchical criterion active', async () => {
-    hlLayoutId = await page.evaluate(async () => {
-      const layout = grok.shell.tv.saveLayout();
-      await grok.dapi.layouts.save(layout);
-      return layout.id;
-    });
-    expect(hlLayoutId).toBeTruthy();
-    await expect.poll(async () => page.evaluate(async (id: string) => {
-      try { return !!(await grok.dapi.layouts.find(id)); }
-      catch (_) { return false; }
-    }, hlLayoutId),
-    {message: 'the saved layout cannot be fetched back from the server — saveLayout() stamps the id '
-      + 'client-side before the round-trip, so a dapi.layouts.save that silently failed leaves the id '
-      + 'just as non-empty and Step 11 would re-apply nothing',
-    timeout: 20_000, intervals: [500, 1000, 2000]}).toBe(true);
-  });
-
   await softStep('Step 9: GROK-16528 — reorder columns to RACE / SEX', async () => {
-    await page.evaluate(() => {
-      const fg = grok.shell.tv.getFiltersGroup();
-      for (const f of fg.filters) {
-        if (f.filterType === 'hierarchical') {
-          window.grok_GridFilterBase_ApplyState(f.dart || f, {colNames: ['RACE', 'SEX'], allEnabled: true});
-          grok.shell.tv.dataFrame.rows.requestFilter();
-          break;
-        }
-      }
-    });
-    await page.evaluate(() => (window as any).__poll(() => {
-      const c = Array.from(document.querySelectorAll('[name="viewer-Filters"] .d4-filter'))
-        .find((x) => x.querySelector('.d4-filter-column-name')?.textContent?.includes('/'));
-      return c?.querySelector('.d4-filter-column-name')?.textContent?.trim() ?? '';
-    }, (caption: string) => caption === 'RACE / SEX', 1200, 50));
+    await applyHierarchyState(page, {colNames: ['RACE', 'SEX'], allEnabled: true});
+    await expect.poll(() => hierCaption(page), {timeout: 10_000, intervals: [100, 200, 400]}).toBe('RACE / SEX');
     const state = await page.evaluate(() => {
       const card = Array.from(document.querySelectorAll('[name="viewer-Filters"] .d4-filter'))
         .find(c => c.querySelector('.d4-filter-column-name')?.textContent?.includes('/'));
@@ -546,84 +350,8 @@ test('Filter Panel — Hierarchical and Combined Boolean Filters', async ({page}
     expect(state.topCaptions).not.toContain('F');
   });
 
-  try {
-    await softStep('Step 11: Layout round-trip (hierarchical) — close panel, re-apply saved layout', async () => {
-      const beforeClose = await page.evaluate(async () => {
-        const was = grok.shell.tv.dataFrame.filter.trueCount;
-        const card = Array.from(document.querySelectorAll('[name="viewer-Filters"] .d4-filter'))
-          .find((c) => c.querySelector('.d4-filter-column-name')?.textContent?.includes('/'));
-        if (!card)
-          throw new Error('no hierarchical filter card is painted in the Filter Panel — its caption is the only '
-            + 'one carrying "/", and no card in the panel carries one');
-        let clicked = false;
-        for (const n of card.querySelectorAll('.d4-tree-view-node')) {
-          const val = n.querySelector('.d4-hierarchical-filter-caption-value');
-          if (val?.textContent?.trim() === 'Caucasian') {
-            const cb = n.querySelector('input.d4-hierarchical-filter-checkbox') as HTMLElement | null;
-            if (!cb)
-              throw new Error('the RACE root node "Caucasian" carries no checkbox, so it could not be ticked');
-            cb.click();
-            clicked = true;
-            break;
-          }
-        }
-        if (!clicked) throw new Error('RACE root node "Caucasian" not found in the hierarchical card');
-        return (window as any).__moved(() => grok.shell.tv.dataFrame.filter.trueCount, was, 900);
-      });
-      expect(beforeClose).toBeGreaterThan(0);
-      expect(beforeClose).toBeLessThan(rowCount);
-
-      const result = await page.evaluate(async (id: string) => {
-        const fv = document.querySelector('[name="viewer-Filters"]');
-        let el: any = fv;
-        while (el && !el.classList.contains('panel-base')) el = el.parentElement;
-        const closeBtn = el?.querySelector('[name="Close"]') as HTMLElement | null;
-        if (!closeBtn) throw new Error('Filter Panel titlebar [name="Close"] not found');
-        const w = window as any;
-        closeBtn.click();
-        await w.__poll(() => document.querySelectorAll('[name="viewer-Filters"]').length,
-          (n: number) => n === 0, 1000, 50);
-        const afterClose = grok.shell.tv.dataFrame.filter.trueCount;
-        const panelsAfterClose = document.querySelectorAll('[name="viewer-Filters"]').length;
-
-        const saved = await grok.dapi.layouts.find(id);
-        grok.shell.tv.loadLayout(saved);
-        grok.shell.tv.getFiltersGroup();
-        await w.__poll(() => Array.from(document.querySelectorAll('[name="viewer-Filters"] .d4-filter-column-name'))
-          .some((c) => (c.textContent ?? '').includes('/')), (there: boolean) => there, 3500, 50);
-        const afterRestore = await w.__moved(
-          () => grok.shell.tv.dataFrame.filter.trueCount, afterClose, 1000);
-
-        let caption = '';
-        for (const c of document.querySelectorAll('[name="viewer-Filters"] .d4-filter')) {
-          const cn = c.querySelector('.d4-filter-column-name');
-          if (cn && cn.textContent!.includes('/')) { caption = cn.textContent!.trim(); break; }
-        }
-        return {afterClose, panelsAfterClose, afterRestore, caption};
-      }, hlLayoutId);
-      expect(result.afterClose).toBe(rowCount);
-      expect(result.afterClose).toBeGreaterThan(beforeClose);
-      expect(result.panelsAfterClose).toBe(0);
-      expect(result.afterRestore).toBe(hlTrueCount);
-      expect(result.caption).toBe('SEX / RACE');
-    });
-  } finally {
-    await page.evaluate(async (id: string) => {
-      const saved = await grok.dapi.layouts.find(id);
-      if (saved) await grok.dapi.layouts.delete(saved);
-    }, hlLayoutId).catch(() => {});
-  }
-
   await softStep('Step 12: Open a fresh demog view and add a second boolean column (SEX_bool)', async () => {
-    const result = await page.evaluate(async () => {
-      grok.shell.closeAll();
-      const df = await grok.dapi.files.readCsv('System:DemoFiles/demog.csv');
-      grok.shell.addTableView(df);
-      await (window as any).__tableReady(1500);
-      await df.columns.addNewCalculated('SEX_bool', '${SEX} == "F"');
-      const col = df.col('SEX_bool');
-      return {type: col.type, hasControl: !!df.col('CONTROL')};
-    });
+    const result = await openDemogWithSexBool(page, datasetPath);
     expect(result.type).toBe('bool');
     expect(result.hasControl).toBe(true);
   });
@@ -648,7 +376,7 @@ test('Filter Panel — Hierarchical and Combined Boolean Filters', async ({page}
     });
     expect(state.boolCards).toBe(1);
     expect(state.indicator).toBe('0');
-    expect(state.trueCount).toBe(5850);
+    expect(state.trueCount).toBe(ROW_COUNT);
   });
 
   let trueCountOR2 = 0;
@@ -708,246 +436,14 @@ test('Filter Panel — Hierarchical and Combined Boolean Filters', async ({page}
     expect(expected.and).toBeLessThan(expected.or);
     expect(expected.or).toBeLessThan(rowCount);
 
-    trueCountOR2 = await page.evaluate(() => {
-      const fg = grok.shell.tv.getFiltersGroup();
-      for (const f of fg.filters) {
-        if (f.filterType === 'bool-columns') {
-          window.grok_GridFilterBase_ApplyState(f.dart ?? f, {'true': [true, true], 'false': [false, false], mode: 'OR'});
-          grok.shell.tv.dataFrame.rows.requestFilter();
-          break;
-        }
-      }
-      return grok.shell.tv.dataFrame.filter.trueCount;
-    });
+    trueCountOR2 = await applyBoolState(page, {'true': [true, true], 'false': [false, false], mode: 'OR'});
     expect(trueCountOR2).toBe(expected.or);
-    const trueCountAND = await page.evaluate(() => {
-      const fg = grok.shell.tv.getFiltersGroup();
-      for (const f of fg.filters) {
-        if (f.filterType === 'bool-columns') {
-          window.grok_GridFilterBase_ApplyState(f.dart ?? f, {'true': [true, true], 'false': [false, false], mode: 'AND'});
-          grok.shell.tv.dataFrame.rows.requestFilter();
-          break;
-        }
-      }
-      return grok.shell.tv.dataFrame.filter.trueCount;
-    });
+    const trueCountAND = await applyBoolState(page, {'true': [true, true], 'false': [false, false], mode: 'AND'});
     expect(trueCountAND).toBe(expected.and);
     expect(trueCountAND).toBeLessThan(trueCountOR2);
     expect(trueCountAND).toBeGreaterThan(0);
     expect(trueCountAND).toBeLessThan(rowCount);
   });
-
-  const probeProject = 'zz-grok16488-' + Date.now();
-  let boolProjectId = '';
-  try {
-    await softStep('Step 17: GROK-16488 — save project, reopen, remove combined boolean card, count returns to full, no console error', async () => {
-      await page.evaluate(async () => {
-        const was = grok.shell.tv.dataFrame.filter.trueCount;
-        const fg = grok.shell.tv.getFiltersGroup();
-        for (const f of fg.filters) {
-          if (f.filterType === 'bool-columns') {
-            window.grok_GridFilterBase_ApplyState(f.dart ?? f, {'true': [true, true], 'false': [true, true], mode: 'OR'});
-            grok.shell.tv.dataFrame.rows.requestFilter();
-            break;
-          }
-        }
-        await (window as any).__moved(() => grok.shell.tv.dataFrame.filter.trueCount, was, 500);
-      });
-      expect(await page.evaluate(() => grok.shell.tv.dataFrame.filter.trueCount),
-        'the combined boolean reset left the table filtered — the project would be saved narrowed')
-        .toBe(5850);
-
-      const saved = await saveProjectViaApi(page, probeProject);
-      boolProjectId = saved.projectId;
-
-      await page.evaluate(async (id: string) => {
-        grok.shell.closeAll();
-        const proj = await grok.dapi.projects.find(id);
-        await proj.open();
-        await (window as any).__tableReady(6000);
-        grok.shell.tv.getFiltersGroup();
-      }, boolProjectId);
-
-      await page.locator('.d4-bool-combined-filter').waitFor({timeout: 15000});
-      const afterReopen = await page.evaluate(() => ({
-        boolCards: document.querySelectorAll('.d4-bool-combined-filter').length,
-        filterPanel: document.querySelectorAll('[name="viewer-Filters"]').length,
-      }));
-      expect(afterReopen.filterPanel).toBeGreaterThan(0);
-      expect(afterReopen.boolCards).toBe(1);
-
-      const preRemoval = await page.evaluate(() => {
-        const df = grok.shell.tv.dataFrame;
-        const boolNames = df.columns.toList().filter((c: any) => c.type === 'bool').map((c: any) => c.name);
-        const expectedRows = df.col(boolNames[0]).toList().filter((v: any) => v === true).length;
-        const fg = grok.shell.tv.getFiltersGroup();
-        for (const f of fg.filters) {
-          if (f.filterType === 'bool-columns') {
-            window.grok_GridFilterBase_ApplyState(f.dart ?? f, {'true': [true, false], 'false': [false, false], mode: 'OR'});
-            grok.shell.tv.dataFrame.rows.requestFilter();
-            break;
-          }
-        }
-        return {expectedRows, trueCount: grok.shell.tv.dataFrame.filter.trueCount};
-      });
-      expect(preRemoval.expectedRows).toBeGreaterThan(0);
-      expect(preRemoval.expectedRows).toBeLessThan(5850);
-      expect(preRemoval.trueCount).toBe(preRemoval.expectedRows);
-
-      const errorsBefore = pageErrors.length;
-
-      await page.evaluate(() => {
-        const boolCard = document.querySelector('.d4-bool-combined-filter');
-        let host: any = boolCard;
-        while (host && !host.classList.contains('d4-filter')) host = host.parentElement;
-        const x = host?.querySelector('[name="icon-times"]') as HTMLElement | null;
-        if (!x) throw new Error('the combined boolean card carries no [name="icon-times"] remove icon — '
-          + 'the removal this step is about never happened');
-        x.click();
-      });
-
-      await expect.poll(async () => page.evaluate(() => ({
-        boolCards: document.querySelectorAll('.d4-bool-combined-filter').length,
-        trueCount: grok.shell.tv.dataFrame.filter.trueCount,
-      })),
-      {message: 'removing the combined boolean card did not both take the card away and release its '
-        + `narrowing back to the full ${rowCount} rows`,
-      timeout: 15_000, intervals: [200, 400, 800]}).toEqual({boolCards: 0, trueCount: rowCount});
-
-      const removalSamples: string[] = [];
-      for (let i = 0; i < 6; i++) {
-        await page.waitForTimeout(400);
-        removalSamples.push(JSON.stringify(pageErrors.slice(errorsBefore)));
-      }
-      expect(Array.from(new Set(removalSamples)),
-        'GROK-16488 — removing the combined boolean card must not throw at any point of a 2.4s window '
-        + `after the click, so an async throw arriving late is caught too; samples: ${removalSamples.join(' ; ')}`)
-        .toEqual(['[]']);
-    });
-  } finally {
-    await deleteProjectWithCleanup(page, {projectId: boolProjectId});
-  }
-
-  let boolLayoutId = '';
-  try {
-    await softStep('Step 18: Layout round-trip (combined boolean) — save active state, close, re-apply', async () => {
-      const removeClicks = await page.evaluate(() => {
-        let clicks = 0;
-        for (const boolCard of document.querySelectorAll('.d4-bool-combined-filter')) {
-          let host: any = boolCard;
-          while (host && !host.classList.contains('d4-filter')) host = host.parentElement;
-          const x = host?.querySelector('[name="icon-times"]') as HTMLElement | null;
-          if (!x) throw new Error('a .d4-bool-combined-filter card carries no [name="icon-times"] remove icon');
-          x.click();
-          clicks++;
-        }
-        return clicks;
-      });
-      await expect.poll(async () => page.evaluate(() => ({
-        cards: document.querySelectorAll('.d4-bool-combined-filter').length,
-        filters: grok.shell.tv.getFiltersGroup().filters
-          .filter((f: any) => f.filterType === 'bool-columns').length,
-      })),
-      {message: `the combined boolean card did not go away after ${removeClicks} remove-icon click(s) — ` +
-        'the menu drive below would then be satisfied by a card it did not create',
-      timeout: 15_000, intervals: [400, 800, 1500]}).toEqual({cards: 0, filters: 0});
-
-      const beforeAdd = await page.evaluate(() => ({
-        cards: document.querySelectorAll('.d4-bool-combined-filter').length,
-        filters: grok.shell.tv.getFiltersGroup().filters
-          .filter((f: any) => f.filterType === 'bool-columns').length,
-      }));
-      expect(beforeAdd,
-        'a combined boolean filter survived the removal, so the Add Filter > Combined Boolean drive ' +
-        `cannot be shown to have created anything; read ${JSON.stringify(beforeAdd)}`)
-        .toEqual({cards: 0, filters: 0});
-
-      await v.drivePanelMenuLeaf(page, 'Filters', 'Add Filter', 'Combined Boolean');
-      await expect.poll(async () => page.evaluate(() => ({
-        cards: document.querySelectorAll('.d4-bool-combined-filter').length,
-        filters: grok.shell.tv.getFiltersGroup().filters
-          .filter((f: any) => f.filterType === 'bool-columns').length,
-      })),
-      {message: 'Add Filter > Combined Boolean did not take the panel from 0 combined boolean cards to ' +
-        'exactly 1 — either the leaf created nothing, or it fired twice and left two identical cards',
-      timeout: 15_000, intervals: [400, 800, 1500]}).toEqual({cards: 1, filters: 1});
-      const result = await page.evaluate(async () => {
-        let stage = 'toggling the combined boolean card before the save';
-        try {
-        const countBeforeToggle = grok.shell.tv.dataFrame.filter.trueCount;
-        const fg = grok.shell.tv.getFiltersGroup();
-        for (const f of fg.filters) {
-          if (f.filterType === 'bool-columns') {
-            window.grok_GridFilterBase_ApplyState(f.dart ?? f, {'true': [true, false], 'false': [false, false], mode: 'OR'});
-            grok.shell.tv.dataFrame.rows.requestFilter();
-            break;
-          }
-        }
-        const savedCount = await (window as any).__moved(
-          () => grok.shell.tv.dataFrame.filter.trueCount, countBeforeToggle, 700);
-
-        stage = 'saving the layout';
-        const layout = grok.shell.tv.saveLayout();
-        await grok.dapi.layouts.save(layout);
-        const id = layout.id;
-        stage = 'fetching the saved layout back from the server';
-        let serverFound = false;
-        for (let i = 0; i < 20 && !serverFound; i++) {
-          try { serverFound = !!(await grok.dapi.layouts.find(id)); }
-          catch (_) { serverFound = false; }
-          if (!serverFound) await new Promise(r => setTimeout(r, 500));
-        }
-
-        stage = 'closing the Filter Panel';
-        const fv = document.querySelector('[name="viewer-Filters"]');
-        let el: any = fv;
-        while (el && !el.classList.contains('panel-base')) el = el.parentElement;
-        const closeBtn = el?.querySelector('[name="Close"]') as HTMLElement | null;
-        if (!closeBtn) throw new Error('the Filter Panel titlebar carries no [name="Close"] control — '
-          + 'the close gesture the restore below is measured against never happened');
-        const w = window as any;
-        closeBtn.click();
-        await w.__poll(() => document.querySelectorAll('[name="viewer-Filters"]').length,
-          (n: number) => n === 0, 1000, 50);
-        const afterClose = grok.shell.tv.dataFrame.filter.trueCount;
-        const cardsAfterClose = document.querySelectorAll('.d4-bool-combined-filter').length;
-
-        stage = 're-applying the saved layout';
-        const saved = await grok.dapi.layouts.find(id);
-        grok.shell.tv.loadLayout(saved);
-        grok.shell.tv.getFiltersGroup();
-        await w.__poll(() => document.querySelectorAll('.d4-bool-combined-filter').length,
-          (n: number) => n > 0, 3500, 50);
-        const afterRestore = await w.__moved(
-          () => grok.shell.tv.dataFrame.filter.trueCount, afterClose, 1000);
-        const hasBoolCard = document.querySelectorAll('.d4-bool-combined-filter').length;
-
-        return {id, serverFound, savedCount, afterClose, cardsAfterClose, afterRestore, hasBoolCard};
-        }
-        catch (e: any) {
-          throw new Error(`the combined boolean layout round-trip failed while ${stage}: ${e?.message ?? e}`);
-        }
-      });
-      boolLayoutId = result.id;
-      expect(result.serverFound,
-        'the saved layout could not be fetched back from the server — saveLayout() stamps the id '
-        + 'client-side before the round-trip, so a dapi.layouts.save that silently failed would leave '
-        + 'the re-apply below round-tripping nothing')
-        .toBe(true);
-      expect(result.savedCount).toBeGreaterThan(0);
-      expect(result.savedCount).toBeLessThan(rowCount);
-      expect(result.cardsAfterClose).toBe(0);
-      expect(result.afterClose).toBe(rowCount);
-      expect(result.hasBoolCard).toBeGreaterThan(0);
-      expect(result.afterRestore).toBe(result.savedCount);
-    });
-  } finally {
-    await page.evaluate(async (id: string) => {
-      if (!id) return;
-      const saved = await grok.dapi.layouts.find(id);
-      if (saved) await grok.dapi.layouts.delete(saved);
-    }, boolLayoutId).catch(() => {});
-  }
 
   await softStep('Step 19: Remove All then reopen — the combined boolean card is recreated on its own', async () => {
     await v.drivePanelMenuLeaf(page, 'Filters', null, 'Remove All');
@@ -962,15 +458,7 @@ test('Filter Panel — Hierarchical and Combined Boolean Filters', async ({page}
     expect(emptied.boolCards, 'the combined boolean card survived Remove All').toBe(0);
     expect(emptied.trueCount, 'Remove All must release all filtering').toBe(rowCount);
 
-    await page.evaluate(() => {
-      const fv = document.querySelector('[name="viewer-Filters"]');
-      let el: any = fv;
-      while (el && !el.classList.contains('panel-base')) el = el.parentElement;
-      const closeBtn = el?.querySelector('[name="Close"]') as HTMLElement | null;
-      if (!closeBtn) throw new Error('the Filter Panel titlebar carries no [name="Close"] control — the '
-        + 'close gesture the reopen below is measured against never happened');
-      closeBtn.click();
-    });
+    await page.evaluate(closeFilterPanelInPage);
     await expect.poll(async () => page.locator('[name="viewer-Filters"]').count(),
       {timeout: 10_000, intervals: [300, 600, 1200]}).toBe(0);
 

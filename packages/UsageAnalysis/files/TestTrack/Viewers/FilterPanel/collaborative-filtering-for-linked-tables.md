@@ -4,6 +4,7 @@ realizes_atlas: [ filters.cp.linked-tables-collaborative ]
 realizes: [ viewers.filters ]
 priority: p1
 target_layer: playwright
+boot_lane: server
 coverage_type: regression
 related_bugs:
   - id: GROK-19137

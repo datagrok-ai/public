@@ -1,6 +1,7 @@
 ---
 feature: markup
 target_layer: playwright
+boot_lane: server
 coverage_type: regression
 priority: p2
 realizes_atlas: []
@@ -9,7 +10,8 @@ realized_as:
   - markup-spec.ts
 related_bugs:
   - id: GROK-20637
-    status: open
+    status: fixed
+    fixed_in: 1.28.0
 ---
 
 # Markup (Playwright)
@@ -65,7 +67,7 @@ can: the **Edit content...** item in the viewer's context menu, and the
 
 1. With the content set to `Rows: #{t.rowCount}`, the expression renders as a number
 2. Uncheck **Markup Enabled** in **Misc** — the expression is left as written
-   (GROK-20637 — it stays resolved; the property is never read)
+   (GROK-20637, fixed in 1.28.0)
 3. Check it again
 
 ## Interpretation mode
@@ -81,15 +83,14 @@ modes are told apart by whether an `<h1>` is produced:
 4. **Markup** — Markdown again, whatever the content looks like
 
 With the content set to `<b>bold probe</b> plain probe`, **None** shows the
-source with its angle brackets (GROK-20637 — the tag is parsed instead, so the
-markers disappear).
+source with its angle brackets (GROK-20637, fixed in 1.28.0).
 
 ## Bold
 
 1. In **Markup** mode set the content to `**md bold** plain tail`
 2. A `<strong>` is produced, and *md bold* is visibly heavier than the tail
-   (GROK-20637 — it is not; `.grok-help` uses `font-weight: lighter`, and the
-   browser's relative `bolder` on `strong` cancels it back to ordinary weight)
+   (GROK-20637, fixed in 1.28.0 — the spec reads the computed weight rather than
+   trusting the element's presence)
 
 ## Title
 
@@ -101,47 +102,9 @@ markers disappear).
 
 1. Click **Close** on the viewer title bar — the viewer is gone
 
-## Open bugs guarded by this scenario
+## Bugs this scenario asserts against
 
-All three are parts of **GROK-20637**. Each is asserted for the DESIRED behaviour
-and wrapped in `knownOpenBug()`, so the step is green while the bug reproduces
-and goes loud once it is fixed.
-
-* **Markup Enabled does nothing.** The property is declared in
-  `markup_viewer_look.dart` and never read anywhere in `d4` — the content always
-  goes through the Markup engine. Switching it off leaves `#{t.rowCount}` and
-  friends rendering as numbers.
-* **Mode = None does not escape the content.** It wraps the text in `<pre>`
-  without escaping it, so the browser parses `<b>bold probe</b>` and the markers
-  vanish instead of being shown as source. Markdown is genuinely not interpreted,
-  which is what the spec asserts hard.
-* **Bold is never rendered bold.** `.grok-help` sets the relative
-  `font-weight: lighter`, which computes to 100; the browser's own
-  `b, strong { font-weight: bolder }` is relative too and resolves to 400 against
-  it. The two cancel, so emphasis lands on the document's ordinary weight — the
-  spec reads the computed weight rather than trusting the element's presence.
-
-## Manual scenarios (not automated)
-
-> Manual
-
-1. Add the viewer from the **Add viewer** dialog rather than the toolbox icon
-2. Embed an external page and check that it works inside the platform:
-
-   ```html
-   <iframe fremeborder="0" id="iframe_opkomst" src="https://dirkmjk.nl/files/articles/2016/opkomst/en.html"
-   width="100%" height="100%">
-   </iframe>
-   ```
-
-3. Add a **Markup view** from the **+** menu (a view, not a viewer), check the
-   sample text on it, and edit that text from the Context Panel
-4. **Stretch** — switch it on and off and watch how the content is laid out
-5. Edit the values of a row through `<input data-field="COLUMN">` fields placed
-   in the content — typing into them writes back into the current row
-
----
-{
-  "order": 26,
-  "datasets": ["System:DemoFiles/demog.csv"]
-}
+**GROK-20637** (fixed in 1.28.0, verified on dev 2026-09-03) covered three defects
+that are now asserted hard: **Markup Enabled** was never read, **Mode = None** did
+not escape the content, and `.grok-help`'s relative `font-weight: lighter` cancelled
+the browser's `bolder` on `strong` so emphasis landed on the ordinary weight.

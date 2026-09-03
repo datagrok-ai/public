@@ -1,8 +1,9 @@
 /* ---
 realizes: []
 --- */
-import {test, expect, Page} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
+import {expect, Page} from '@playwright/test';
+import {test} from '../../shared-page';
+import {openDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 
 test.use(specTestOptions);
@@ -34,8 +35,8 @@ const clearSelection = async (page: Page) => {
 
 async function wordPositions(page: Page): Promise<{x: number; y: number}[]> {
   return page.evaluate((sel) => {
-    const root = document.querySelector(sel) as HTMLElement;
-    const cv = root.querySelector('canvas') as HTMLCanvasElement;
+    const cv = document.querySelector(`${sel} canvas`) as HTMLCanvasElement | null;
+    if (!cv) return [];
     const r = cv.getBoundingClientRect();
     const img = cv.getContext('2d')!.getImageData(0, 0, cv.width, cv.height).data;
     const sx = cv.width / r.width, sy = cv.height / r.height;
@@ -71,7 +72,7 @@ async function columnCounts(page: Page, column: string): Promise<Record<string, 
 test('Word cloud', async ({page}) => {
   test.setTimeout(600_000);
 
-  await loginToDatagrok(page);
+  await openDatagrok(page);
   await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 3000});
 
   await softStep('Add Word cloud from the Viewers toolbox', async () => {
@@ -91,7 +92,6 @@ test('Word cloud', async ({page}) => {
   });
 
   await softStep('Column RACE draws one word per race with its row count', async () => {
-    await v.openViewerProperties(page, VIEWER_NAME);
     await category(page, 'data', 'column');
     await v.waitForCanvasQuiet(page, VIEWER_TYPE);
     await v.snapshotCanvasColors(page, VIEWER_TYPE);
@@ -190,6 +190,8 @@ test('Word cloud', async ({page}) => {
   });
 
   await softStep('Hovering a word shows its row count', async () => {
+    // the font restore above re-creates the echarts canvas; read the words off the new one
+    await v.waitForCanvasQuiet(page, VIEWER_TYPE);
     const words = await wordPositions(page);
     expect(words.length).toBeGreaterThan(0);
 
@@ -239,7 +241,9 @@ test('Word cloud', async ({page}) => {
     const after = await renderedWords(page);
     expect(after.map((w) => w.name).sort()).toEqual(before.map((w) => w.name).sort());
     expect(await page.locator(`${VIEWER} .d4-viewer-error`).count()).toBe(0);
-    expect((await v.countCanvasPixels(page, VIEWER_TYPE)).total).toBeGreaterThan(500);
+    // the filter re-creates the echarts canvas; the ink is read once it has been painted
+    await expect.poll(async () => (await v.countCanvasPixels(page, VIEWER_TYPE)).total, {timeout: 10_000})
+      .toBeGreaterThan(500);
 
     await v.resetFilters(page);
   });
@@ -249,6 +253,12 @@ test('Word cloud', async ({page}) => {
     await expect(page.locator(VIEWER)).toHaveCount(0);
   });
 
+  // the context panel keeps the closed viewer's property grid, and neither shell.o = null nor
+  // rebinding shell.o drops it (measured 2026-09-03); the next spec's openViewerProperties then
+  // skips the gear and edits a dead grid, so the stale node is removed here
+  await page.evaluate(() => {
+    for (const e of Array.from(document.querySelectorAll('.property-grid'))) e.remove();
+  });
   await v.closeAllAndWait(page);
 
   v.finishSpec();

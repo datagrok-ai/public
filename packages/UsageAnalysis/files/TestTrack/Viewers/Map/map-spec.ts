@@ -1,8 +1,9 @@
 /* ---
 realizes: [viewers.map-viewer, gis.import.kml, gis.import.geo-json, gis.import.kmz]
 --- */
-import {test, expect, Page} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
+import {expect, Page} from '@playwright/test';
+import {test} from '../../shared-page';
+import {openDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 
 test.use(specTestOptions);
@@ -44,13 +45,16 @@ test('Map viewer', async ({page}) => {
   test.setTimeout(600_000);
 
   const pageErrors: string[] = [];
-  page.on('pageerror', (e) => pageErrors.push(e.message));
-  page.on('console', (m) => {
-    if (m.type() === 'error') pageErrors.push(m.text());
-  });
+  const onPageError = (e: Error) => pageErrors.push(e.message);
+  const onConsole = (m: any) => { if (m.type() === 'error') pageErrors.push(m.text()); };
+  page.on('pageerror', onPageError);
+  page.on('console', onConsole);
 
-  await loginToDatagrok(page);
-  await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 5000});
+  await openDatagrok(page);
+  await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 15_000});
+  // the GIS detectors run ~5s after the table opens on a fresh page; the Map reads them at attach
+  await expect.poll(() => page.evaluate(() => (window as any).grok.shell.t.col('Latitude').semType),
+    {timeout: 30_000}).toBe('Latitude');
 
   await softStep('Add Map viewer from the Viewers toolbox', async () => {
     await page.locator('[name="icon-Map"]').first().click();
@@ -150,11 +154,14 @@ test('Map viewer', async ({page}) => {
     const before = await mapSignature(page);
 
     await page.keyboard.down('Control');
-    await page.mouse.move(box.x + box.width * 0.25, box.y + box.height * 0.25);
-    await page.mouse.down();
-    await page.mouse.move(box.x + box.width * 0.75, box.y + box.height * 0.75, {steps: 25});
-    await page.mouse.up();
-    await page.keyboard.up('Control');
+    try {
+      await page.mouse.move(box.x + box.width * 0.25, box.y + box.height * 0.25);
+      await page.mouse.down();
+      await page.mouse.move(box.x + box.width * 0.75, box.y + box.height * 0.75, {steps: 25});
+      await page.mouse.up();
+    } finally {
+      await page.keyboard.up('Control');
+    }
 
     const selected = () =>
       page.evaluate(() => (window as any).grok.shell.t.selection.trueCount as number);
@@ -200,11 +207,10 @@ test('Map viewer', async ({page}) => {
     for (const t of targets) {
       await page.mouse.move(t.x - 15, t.y - 15);
       await page.mouse.move(t.x, t.y, {steps: 6});
-      await page.waitForTimeout(400);
-      tooltip = await page.evaluate(() => {
+      tooltip = await v.pollValue(() => page.evaluate(() => {
         const el = document.querySelector('.d4-tooltip') as HTMLElement | null;
         return {visible: !!el && getComputedStyle(el).display !== 'none', text: el?.innerText ?? ''};
-      });
+      }), (tip) => tip.visible, 1000, 50);
       if (tooltip.visible) break;
     }
     expect(tooltip.visible).toBe(true);
@@ -221,10 +227,18 @@ test('Map viewer', async ({page}) => {
     await expect(page.locator('[name="viewer-Map"]')).toHaveCount(0);
 
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2 + 40);
-    await page.waitForTimeout(700);
+    await v.pollValue(async () => pageErrors.length, (n) => n > 0, 700, 50);
     expect(pageErrors.join('\n')).toBe('');
   });
 
+  page.off('pageerror', onPageError);
+  page.off('console', onConsole);
+  // the context panel keeps the closed viewer's property grid, and neither shell.o = null nor
+  // rebinding shell.o drops it (measured 2026-09-03); the next spec's openViewerProperties then
+  // skips the gear and edits a dead grid, so the stale node is removed here
+  await page.evaluate(() => {
+    for (const e of Array.from(document.querySelectorAll('.property-grid'))) e.remove();
+  });
   await v.cleanupShell(page);
 
   v.finishSpec();

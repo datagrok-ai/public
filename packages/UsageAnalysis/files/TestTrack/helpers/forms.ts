@@ -84,3 +84,29 @@ export async function waitForOrderStable(
     return stable;
   }, {timeout: opts.timeoutMs ?? 20_000, intervals: [250, 250, 250, 300, 500]}).toBe(true);
 }
+
+export async function sortIndicatorLabels(page: Page): Promise<string[]> {
+  return page.evaluate((host) => Array.from(document.querySelectorAll(`${host} .d4-multi-form-header .d4-multi-form-column-name`))
+    .filter((l) => l.querySelector('.d4-multi-form-column-sort-indicator'))
+    .map((l) => (l.querySelector('div[name^="div-"]') as HTMLElement)?.getAttribute('name') ?? '')
+    .filter((n) => n.length > 0), HOST);
+}
+
+export async function sortArrow(page: Page, column: string): Promise<string | null> {
+  return page.evaluate(({host, col}) => {
+    const label = Array.from(document.querySelectorAll(`${host} .d4-multi-form-header .d4-multi-form-column-name`))
+      .find((l) => l.querySelector(`div[name="div-${col}"]`));
+    const ind = label?.querySelector('.d4-multi-form-column-sort-indicator');
+    return ind ? (ind.textContent ?? '').trim() : null;
+  }, {host: HOST, col: column});
+}
+
+export async function cardContextMenu(
+  page: Page, cardSelector: string, cardIndex: number, itemName: string, columnField?: string,
+): Promise<void> {
+  const card = page.locator(cardSelector).nth(cardIndex);
+  const target = columnField ? card.locator(`[column="${columnField}"]`).first() : card;
+  await target.click({button: 'right'});
+  await page.locator(`[name="${itemName}"]`).first().waitFor({timeout: 5000});
+  await page.locator(`[name="${itemName}"]`).first().click();
+}

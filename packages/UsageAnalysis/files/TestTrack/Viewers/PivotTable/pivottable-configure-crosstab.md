@@ -8,9 +8,11 @@ realizes:
   - viewers.pivot-table
 priority: p0
 target_layer: playwright
+boot_lane: mixed
 coverage_type: smoke
 realized_as:
   - pivottable-configure-crosstab-spec.ts
+  - pivot-table-server-spec.ts
 related_bugs:
   - id: github-2535
     status: fixed

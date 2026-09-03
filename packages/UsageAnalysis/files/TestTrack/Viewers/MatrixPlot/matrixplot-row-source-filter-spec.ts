@@ -7,6 +7,7 @@ import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 
 declare const grok: any;
+declare const DG: any;
 
 test.use(specTestOptions);
 
@@ -146,6 +147,6 @@ test('Matrix Plot — Row Source and Filtering', async ({page}: {page: Page}) =>
     expect(restoreInk).toBe(baseline);
   });
 
-  await page.evaluate(() => grok.shell.closeAll());
+  await v.closeAllAndWait(page);
   v.finishSpec();
 });

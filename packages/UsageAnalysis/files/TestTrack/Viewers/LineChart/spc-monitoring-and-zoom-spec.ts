@@ -3,8 +3,8 @@ realizes: [linechart.cp.spc-monitoring-and-zoom]
 --- */
 import {expect, type Page} from '@playwright/test';
 import {localTest as test} from '../../shared-page';
-import {openDatagrok, specTestOptions, softStep, stepErrors, isLocalBootNoise} from '../../spec-login';
-import {setViewerProps} from '../../helpers/viewers';
+import {openDatagrok, specTestOptions, softStep, isLocalBootNoise} from '../../spec-login';
+import * as v from '../../helpers/viewers';
 
 declare const grok: any;
 
@@ -12,15 +12,8 @@ test.use(specTestOptions);
 
 const datasetPath = 'System:AppData/Chem/tests/spgi-100.csv';
 
-const pageErrors: string[] = [];
-const consoleErrors: string[] = [];
-
-function realErrors(): string[] {
-  return [...pageErrors, ...consoleErrors];
-}
-
 async function setProps(page: Page, props: Record<string, any>) {
-  await setViewerProps(page, 'Line chart', [{set: props, wait: 500}]);
+  await v.setViewerProps(page, 'Line chart', [{set: props, wait: 500}]);
 }
 
 async function getProps(page: Page, ...names: string[]): Promise<Record<string, any>> {
@@ -34,37 +27,16 @@ async function getProps(page: Page, ...names: string[]): Promise<Record<string, 
 
 test('Line Chart — SPC Monitoring and Zoom', async ({page}) => {
   test.setTimeout(300_000);
-  stepErrors.length = 0;
-  pageErrors.length = 0;
-  consoleErrors.length = 0;
 
+  const pageErrors: string[] = [];
+  const consoleErrors: string[] = [];
   page.on('pageerror', (e) => pageErrors.push(String(e)));
   page.on('console', (m) => { if (m.type() === 'error' && !isLocalBootNoise(m.text())) consoleErrors.push(m.text()); });
+  const errorCount = () => pageErrors.length + consoleErrors.length;
 
   await openDatagrok(page);
-
-  await page.evaluate(async (path) => {
-    document.body.classList.add('selenium');
-    grok.shell.settings.showFiltersIconsConstantly = true;
-    grok.shell.windows.simpleMode = true;
-    grok.shell.closeAll();
-    const df = await (window as any).__readCsv(path);
-    grok.shell.addTableView(df);
-    await new Promise((resolve) => {
-      const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(undefined); });
-      setTimeout(resolve, 3000);
-    });
-    for (let i = 0; i < 50; i++) {
-      if (document.querySelector('[name="viewer-Grid"] canvas')) break;
-      await new Promise((r) => setTimeout(r, 200));
-    }
-
-    await new Promise((r) => setTimeout(r, 5000));
-  }, datasetPath);
-  await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 60000});
-
-  await page.locator('[name="icon-line-chart"]').click();
-  await page.locator('[name="viewer-Line-chart"]').waitFor({timeout: 15000});
+  await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 3000});
+  await v.addViewerByIcon(page, 'line-chart', 'Line-chart', 15_000, 'Line chart');
 
   await setProps(page, {xColumnName: 'CAST Idea ID', yColumnNames: ['Chemical Space X']});
 
@@ -76,25 +48,25 @@ test('Line Chart — SPC Monitoring and Zoom', async ({page}) => {
   });
 
   await softStep('S1: enable SPC — page stays responsive, no freeze (GROK-20126)', async () => {
-    const before = realErrors().length;
+    const before = errorCount();
     await setProps(page, {showStatisticalProcessControl: true});
     expect((await getProps(page, 'showStatisticalProcessControl')).showStatisticalProcessControl).toBe(true);
 
     const alive = await page.evaluate(() => true);
     expect(alive).toBe(true);
 
-    expect(realErrors().length).toBe(before);
+    expect(errorCount()).toBe(before);
   });
 
   await softStep('S1: disable SPC — no-error teardown', async () => {
-    const before = realErrors().length;
+    const before = errorCount();
     await setProps(page, {showStatisticalProcessControl: false});
     expect((await getProps(page, 'showStatisticalProcessControl')).showStatisticalProcessControl).toBe(false);
-    expect(realErrors().length).toBe(before);
+    expect(errorCount()).toBe(before);
   });
 
   await softStep('S2: Reset View clears the wheel-zoom but keeps explicit X Min/Max', async () => {
-    const before = realErrors().length;
+    const before = errorCount();
     const full = await page.evaluate(() => {
       const col = grok.shell.tv.dataFrame.columns.byName('CAST Idea ID');
       return {min: col.min, max: col.max};
@@ -118,10 +90,10 @@ test('Line Chart — SPC Monitoring and Zoom', async ({page}) => {
       const cvs = Array.from(document.querySelectorAll('[name="viewer-Line-chart"] canvas')) as HTMLCanvasElement[];
       const t = cvs[cvs.length - 1];
       const r = t.getBoundingClientRect();
+      // the wheel steps are PACED: the zoom coalesces events that arrive inside one frame
       for (let i = 0; i < 5; i++) {
         t.dispatchEvent(new WheelEvent('wheel', {bubbles: true, cancelable: true,
           clientX: r.left + r.width / 2, clientY: r.top + r.height / 2, deltaY: -200}));
-
         await new Promise((res) => setTimeout(res, 120));
       }
       await until(() => zoomFired, 400);
@@ -139,9 +111,9 @@ test('Line Chart — SPC Monitoring and Zoom', async ({page}) => {
     const after = await getProps(page, 'xMin', 'xMax');
     expect(after.xMin).toBe(setMin);
     expect(after.xMax).toBe(setMax);
-    expect(realErrors().length).toBe(before);
+    expect(errorCount()).toBe(before);
   });
 
-  if (stepErrors.length > 0)
-    throw new Error(`Line Chart spc-monitoring-and-zoom failures:\n${stepErrors.join('\n')}`);
+  await v.cleanupShell(page);
+  v.finishSpec();
 });

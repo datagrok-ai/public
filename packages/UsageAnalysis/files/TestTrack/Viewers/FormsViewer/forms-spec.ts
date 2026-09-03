@@ -95,7 +95,6 @@ async function setRendererSizeViaPanel(page: Page, value: 'small' | 'normal' | '
   // re-open the gear for the CURRENT Forms viewer: a new openTable/addViewer leaves the
   // property grid bound to the previous view's viewer, so edits never reach this one
   await v.clickViewerTitlebarIcon(page, 'Forms', 'icon-font-icon-settings').catch(() => {});
-  await page.waitForTimeout(600);
   await v.ensurePropertyCategory(page, 'Forms', 'misc', 'renderer-size');
   // the row can sit in a COLLAPSED category: display stays 'table-row' but the box is 0x0,
   // so isVisible()-style gating passes while clicks and selectOption reach nothing. Expand
@@ -207,7 +206,7 @@ test('Forms viewer — colour coding and renderer presentation (p2)', async ({pa
 
   let smallW = 0; let smallH = 0; let normalW = 0; let normalH = 0;
   await softStep('Scenario 2 setup — open spgi-100, add Forms, set a current row', async () => {
-    await v.openTable(page, {path: spgiPath, semTypeTimeoutMs: 3000, settleMs: 2000});
+    await v.openTable(page, {path: spgiPath, semTypeTimeoutMs: 3000});
     await v.addViewerByIcon(page, 'Forms', 'Forms', 30_000, 'FormsViewer');
     await page.locator(HOST).first().waitFor({timeout: 30_000});
     await page.evaluate(() => { grok.shell.t.currentRowIdx = 0; });
@@ -315,10 +314,10 @@ test('Forms viewer — colour coding and renderer presentation (p2)', async ({pa
 
   await softStep('Scenario 4 setup — open curves, add Forms without touching Renderer Size, pick smiles + multiple prefit', async () => {
 
-    await v.openTable(page, {path: curvesPath, semTypeTimeoutMs: 3000, settleMs: 3000});
-    const hasFit = await page.evaluate(() =>
-      grok.shell.t.columns.names().some((n: string) => grok.shell.t.col(n).semType === 'fit'));
-    expect(hasFit).toBe(true);
+    await v.openTable(page, {path: curvesPath, semTypeTimeoutMs: 3000});
+    await expect.poll(() => page.evaluate(() =>
+      grok.shell.t.columns.names().some((n: string) => grok.shell.t.col(n).semType === 'fit')),
+    {timeout: 15_000}).toBe(true);
 
     await v.addViewerByIcon(page, 'Forms', 'Forms', 30_000, 'FormsViewer');
     await page.locator(HOST).first().waitFor({timeout: 30_000});
@@ -360,7 +359,10 @@ test('Forms viewer — colour coding and renderer presentation (p2)', async ({pa
   await softStep('Step 4b — smiles and multiple prefit both render as canvases; no raw-JSON input, no error', async () => {
     const errCount = await withConsoleErrorCount(page, async () => {
       await page.evaluate(() => { grok.shell.t.currentRowIdx = 2; grok.shell.t.currentRowIdx = 0; });
-      await page.waitForTimeout(800);
+      await expect.poll(() => page.evaluate((sel) => {
+        const card = document.querySelector(sel);
+        return ['smiles', 'multiple prefit'].every((c) => card?.querySelector(`[column="${c}"]`)?.tagName === 'CANVAS');
+      }, CURRENT), {timeout: 15_000}).toBe(true);
     });
     const kinds = await page.evaluate((sel) => {
       const card = document.querySelector(sel);
@@ -419,7 +421,7 @@ test('Forms viewer — colour coding and renderer presentation (p2)', async ({pa
   const filterErrHandler = (msg: {type(): string}) => { if (msg.type() === 'error') filterRepaintErrors++; };
 
   await softStep('Scenario 5 setup — open spgi-100, add Forms, select four rows split by a substructure query', async () => {
-    await v.openTable(page, {path: spgiPath, semTypeTimeoutMs: 3000, settleMs: 3000});
+    await v.openTable(page, {path: spgiPath, semTypeTimeoutMs: 3000});
     await v.addViewerByIcon(page, 'Forms', 'Forms', 30_000, 'FormsViewer');
     await page.locator(HOST).first().waitFor({timeout: 30_000});
 

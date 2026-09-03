@@ -3,7 +3,7 @@ realizes: [ filters.cp.linked-tables-collaborative, GROK-19137 ]
 --- */
 import {expect, Page} from '@playwright/test';
 import {test} from '../../shared-page';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
+import {openDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 
 test.use(specTestOptions);
@@ -43,11 +43,20 @@ async function frameState(page: Page, name: string): Promise<FrameState> {
   return state!;
 }
 
-async function expectUnmoved(page: Page, name: string, expected: FrameState, why: string): Promise<void> {
-  expect(await readFrame(page, name), why).toEqual(expected);
-  await page.waitForTimeout(BYSTANDER_SETTLE_MS);
-  expect(await readFrame(page, name), `${why} (second reading, ${BYSTANDER_SETTLE_MS} ms later)`)
-    .toEqual(expected);
+interface Bystander { name: string; expected: FrameState; why: string; }
+
+// A hold over every bystander at once: each frame must still read its expected state at the
+// end of the same window, so the window is spent once rather than once per frame.
+async function expectUnmoved(page: Page, ...bystanders: Bystander[]): Promise<void> {
+  for (const b of bystanders) expect(await readFrame(page, b.name), b.why).toEqual(b.expected);
+  const moved = await v.pollValue(
+    async () => Promise.all(bystanders.map((b) => readFrame(page, b.name))),
+    (states) => states.some((s, i) => JSON.stringify(s) !== JSON.stringify(bystanders[i].expected)),
+    BYSTANDER_SETTLE_MS, 150);
+  for (let i = 0; i < bystanders.length; i++) {
+    expect(moved[i], `${bystanders[i].why} (second reading, ${BYSTANDER_SETTLE_MS} ms later)`)
+      .toEqual(bystanders[i].expected);
+  }
 }
 
 async function filteredCountOf(page: Page, name: string): Promise<number> {
@@ -162,7 +171,7 @@ test('Collaborative Filtering for Linked Tables', async ({page}) => {
   test.setTimeout(600_000);
   stepErrors.length = 0;
 
-  await loginToDatagrok(page);
+  await openDatagrok(page);
   await v.installEventWaits(page);
 
   let fx: Fixture = {
@@ -197,12 +206,10 @@ test('Collaborative Filtering for Linked Tables', async ({page}) => {
         grok.shell.addTableView(df2);
         grok.shell.addTableView(df3);
 
-        for (const df of [df1, df2, df3]) {
-          await new Promise((resolve) => {
-            const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(null); });
-            setTimeout(resolve, 5000);
-          });
-        }
+        await Promise.all([df1, df2, df3].map((df) => new Promise((resolve) => {
+          const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(null); });
+          setTimeout(resolve, 5000);
+        })));
         const hasBioChem = [df1, df2, df3].some((df) =>
           Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i))
             .some((c: any) => c.semType === 'Molecule' || c.semType === 'Macromolecule'));
@@ -286,12 +293,13 @@ test('Collaborative Filtering for Linked Tables', async ({page}) => {
       const view = await page.evaluate(() => (window as any).grok.shell.tv.dataFrame.name);
       expect(view, 'the active view is not SPGI-linked1 — the later panel steps would target the wrong frame')
         .toBe('SPGI-linked1');
-      await expectUnmoved(page, 'SPGI-linked2', linked2Rest,
+      await expectUnmoved(page,
+        {name: 'SPGI-linked2', expected: linked2Rest, why:
         'SPGI-linked2 moved when the spgi-100 selection propagated to SPGI-linked1 — it is on the other ' +
-        'end of a filter-to-filter link and nothing was asked of it');
-      await expectUnmoved(page, 'spgi-100', masterSelected,
+        'end of a filter-to-filter link and nothing was asked of it'},
+        {name: 'spgi-100', expected: masterSelected, why:
         'spgi-100 moved while its own selection propagated outward — the selection-to-filter link fed ' +
-        'back into its master');
+        'back into its master'});
     });
 
     await softStep('Step 5: Filter link column 3 to "v ii" on SPGI-linked2', async () => {
@@ -305,9 +313,10 @@ test('Collaborative Filtering for Linked Tables', async ({page}) => {
       expect(categories, 'SPGI-linked2 or its "link column 3" column is missing').not.toBeNull();
       expect(categories, 'rows outside the "v ii" category survived the criterion').toEqual(['v ii']);
       linked2Rest = await frameState(page, 'SPGI-linked2');
-      await expectUnmoved(page, 'spgi-100', masterSelected,
+      await expectUnmoved(page,
+        {name: 'spgi-100', expected: masterSelected, why:
         'spgi-100 moved when a criterion was applied two links away on SPGI-linked2 — no link runs in ' +
-        'that direction');
+        'that direction'});
     });
 
     await softStep('Step 6: SPGI-linked1 shows 5 filtered rows', async () => {
@@ -316,12 +325,13 @@ test('Collaborative Filtering for Linked Tables', async ({page}) => {
         timeout: 15_000,
         message: 'the filter-to-filter link did not propagate the SPGI-linked2 criterion down to SPGI-linked1',
       }).toBe(fx.linkAndFilterCount);
-      await expectUnmoved(page, 'SPGI-linked2', linked2Rest,
+      await expectUnmoved(page,
+        {name: 'SPGI-linked2', expected: linked2Rest, why:
         'SPGI-linked2 changed while its own criterion propagated to SPGI-linked1 — the filter-to-filter ' +
-        'link fed back into its source');
-      await expectUnmoved(page, 'spgi-100', masterSelected,
+        'link fed back into its source'},
+        {name: 'spgi-100', expected: masterSelected, why:
         'spgi-100 changed while SPGI-linked1 was narrowed by the link — nothing propagates back to the ' +
-        'selection master');
+        'selection master'});
     });
 
     await softStep('Step 8: PAMPA Classification = "inconclusive" — 2 rows', async () => {
@@ -334,12 +344,13 @@ test('Collaborative Filtering for Linked Tables', async ({page}) => {
       expect(categories, 'SPGI-linked1 or its "PAMPA Classification" column is missing').not.toBeNull();
       expect(categories, 'rows outside the "inconclusive" category survived the panel criterion')
         .toEqual(['inconclusive']);
-      await expectUnmoved(page, 'SPGI-linked2', linked2Rest,
+      await expectUnmoved(page,
+        {name: 'SPGI-linked2', expected: linked2Rest, why:
         'SPGI-linked2 narrowed when a panel criterion was applied on SPGI-linked1 — the filter-to-filter ' +
-        'link ran backwards, which is the cross-contamination the link direction exists to prevent');
-      await expectUnmoved(page, 'spgi-100', masterSelected,
+        'link ran backwards, which is the cross-contamination the link direction exists to prevent'},
+        {name: 'spgi-100', expected: masterSelected, why:
         'spgi-100 moved when a panel criterion was applied on SPGI-linked1 — the selection-to-filter ' +
-        'link ran backwards into its master');
+        'link ran backwards into its master'});
     });
 
     await softStep('Step 9: Clearing the spgi-100 selection releases only the link-driven narrowing',
@@ -357,11 +368,12 @@ test('Collaborative Filtering for Linked Tables', async ({page}) => {
           `${fx.noSelectionBaseline} rows its "v ii" and "inconclusive" criteria alone select — the ` +
           'release either dropped criteria it should have kept or kept narrowing it should have dropped')
           .toBe(fx.noSelectionBaseline);
-        await expectUnmoved(page, 'SPGI-linked2', linked2Rest,
-          'SPGI-linked2 moved when the spgi-100 selection was cleared — it is on neither end of that link');
-        await expectUnmoved(page, 'spgi-100', masterCleared,
+        await expectUnmoved(page,
+          {name: 'SPGI-linked2', expected: linked2Rest, why:
+          'SPGI-linked2 moved when the spgi-100 selection was cleared — it is on neither end of that link'},
+          {name: 'spgi-100', expected: masterCleared, why:
           'spgi-100 did not settle at zero selected rows over its full 100 rows after its selection was ' +
-          'cleared');
+          'cleared'});
       });
 
     await softStep('Step 10: Re-selecting the same 5 rows narrows SPGI-linked1 back to 2', async () => {
@@ -379,10 +391,11 @@ test('Collaborative Filtering for Linked Tables', async ({page}) => {
         message: 'the selection link no longer narrows SPGI-linked1, so "the narrowing is gone" in Step 11 ' +
           'would prove nothing',
       }).toBe(fx.bothCriteriaCount);
-      await expectUnmoved(page, 'SPGI-linked2', linked2Rest,
-        'SPGI-linked2 moved when the spgi-100 selection was restored — it is on neither end of that link');
-      await expectUnmoved(page, 'spgi-100', masterSelected,
-        'spgi-100 narrowed itself on its own selection — selection leaked into its own filter');
+      await expectUnmoved(page,
+        {name: 'SPGI-linked2', expected: linked2Rest, why:
+        'SPGI-linked2 moved when the spgi-100 selection was restored — it is on neither end of that link'},
+        {name: 'spgi-100', expected: masterSelected, why:
+        'spgi-100 narrowed itself on its own selection — selection leaked into its own filter'});
     });
 
     await softStep('Step 11: Changing the link type clears the previous type\'s filtering (GROK-19137)',
@@ -432,12 +445,13 @@ test('Collaborative Filtering for Linked Tables', async ({page}) => {
           'SPGI-linked1 is still carrying the selection-to-filter narrowing after the link type changed ' +
           '(GROK-19137)')
           .not.toBe(fx.bothCriteriaCount);
-        await expectUnmoved(page, 'SPGI-linked2', linked2Rest,
+        await expectUnmoved(page,
+          {name: 'SPGI-linked2', expected: linked2Rest, why:
           'SPGI-linked2 moved when the spgi-100 -> SPGI-linked1 link type changed — it is on neither end ' +
-          'of that link');
-        await expectUnmoved(page, 'spgi-100', masterSelected,
+          'of that link'},
+          {name: 'spgi-100', expected: masterSelected, why:
           'spgi-100 lost its own 5-row selection or narrowed itself when the link type changed — the new ' +
-          'selection-to-selection link fed back into its master');
+          'selection-to-selection link fed back into its master'});
       });
   } finally {
     await softStep('Teardown: close the Link Tables dialog and the probe tables', async () => {

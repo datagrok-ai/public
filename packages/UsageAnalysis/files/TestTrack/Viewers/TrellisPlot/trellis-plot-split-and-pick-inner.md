@@ -8,7 +8,7 @@ realizes:
   - viewers.trellis-plot
 priority: p0
 target_layer: playwright
-boot_lane: server
+boot_lane: mixed
 coverage_type: smoke
 related_bugs:
   - id: github-964
@@ -31,6 +31,7 @@ related_bugs:
     status: fixed
 realized_as:
   - trellis-plot-split-and-pick-inner-spec.ts
+  - trellis-plot-split-and-pick-inner-server-spec.ts
 expected_results:
   - anchor: "Scenario 1 Step 1"
     expectation: >-

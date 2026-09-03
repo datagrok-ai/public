@@ -3,8 +3,9 @@ realizes: [scatterplot.cp.labels-tooltip, viewers.scatter-plot]
 --- */
 import {expect, Page} from '@playwright/test';
 import {localTest as test} from '../../shared-page';
-import {openDatagrok, specTestOptions, softStep, isLocalBootNoise} from '../../spec-login';
+import {openDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
+import * as sp from './scatterplot-shared';
 
 declare const grok: any;
 
@@ -28,107 +29,15 @@ const OVERLAY_RESTORE_TOLERANCE = 150;
 
 const MARKER_AIM_TOLERANCE = 0.05;
 
-const isAmbientError = (text: string) =>
-  /WebSocket/.test(text) || /Failed to load resource/.test(text) || /404 \(\)/.test(text) ||
-  /favicon/.test(text) || /Failed to connect to Claude runtime/.test(text) ||
-  /powerPreference option is currently ignored/.test(text) ||
-  /willReadFrequently/.test(text);
-
-const isBenignError = (text: string) => isAmbientError(text);
-
 const CRASH_SIGNATURE = /Infinity\.ceil/i;
 
-interface Rect {x: number; y: number; width: number; height: number}
+const setTooltipChoice = (page: Page, rowName: string, value: string) =>
+  sp.setChoiceProp(page, rowName, 'tooltip', value);
 
-const canvasRect = (page: Page): Promise<Rect> => page.evaluate(() => {
-  const root = [...document.querySelectorAll('[name="viewer-Scatter-plot"]')]
-    .find((e) => !e.closest('.d4-dialog'))!;
-  const r = root.querySelector('canvas[name="canvas"]')!.getBoundingClientRect();
-  return {x: r.x, y: r.y, width: r.width, height: r.height};
-});
+const setListProp = (page: Page, name: string, value: string | string[]) =>
+  v.setViewerProps(page, sp.SP_TYPE, [{set: {[name]: value}, wait: 400}]);
 
-const pickOnViewer = (page: Page, role: string, column: string) =>
-  v.pickColumnViaSelectorTrusted(page, {role, columnName: column});
-
-/** [rebind] re-opens the gear even when a panel is already built: after openTable adds a
- *  NEW view + viewer, the existing panel still edits the PREVIOUS view's viewer, so writes
- *  silently land on a viewer nothing is asserting against. */
-async function openSettings(page: Page, _rebind = false): Promise<void> {
-  await v.openViewerSettings(page, 'Scatter plot');
-}
-
-async function revealPropEditor(page: Page, editorSelector: string, category: string): Promise<void> {
-  for (let i = 0; i < 8; i++) {
-    const ready = await v.pollValue(() => page.evaluate((sel: string) => {
-      const el = document.querySelector(sel) as HTMLElement | null;
-      if (!el || !el.offsetParent) return false;
-      const b = el.getBoundingClientRect();
-      return b.width > 0 && b.height > 0;
-    }, editorSelector), (ok) => ok, i === 0 ? 300 : 900, 100);
-    if (ready) return;
-    const header = page.locator(`[name="prop-category-${category}"]`);
-    if (await header.count() > 0 && await header.isVisible()) await header.click();
-  }
-  throw new Error(`property editor ${editorSelector} never became reachable`);
-}
-
-async function setChoiceProp(
-  page: Page, rowName: string, viewCell: string, category: string, value: string,
-): Promise<void> {
-  await openSettings(page);
-  await revealPropEditor(page, `[name="${viewCell}"]`, category);
-  const cell = page.locator(`[name="${viewCell}"]`);
-  await cell.scrollIntoViewIfNeeded();
-  await cell.click();
-  const editor = page.locator(`[name="${rowName}"] select.property-grid-item-editor-spinner`);
-  await editor.waitFor({state: 'visible', timeout: 4000});
-  await editor.selectOption(value);
-  const prop = rowName.replace(/^prop-/, '').replace(/-([a-z])/g, (_, c: string) => c.toUpperCase());
-  await v.pollValue(() => readProp(page, prop), (x) => x === value, 2500, 100);
-  await v.waitForViewerRendered(page, 'Scatter plot', 250);
-}
-
-const readProp = (page: Page, name: string) => page.evaluate((n: string) => {
-  const sp = grok.shell.tv.viewers.find((x: any) => x.type === 'Scatter plot') as any;
-  return sp.props[n];
-}, name);
-
-async function setListProp(page: Page, name: string, value: string | string[]): Promise<void> {
-  await v.setViewerProps(page, 'Scatter plot', [{set: {[name]: value}, wait: 400}]);
-}
-
-const canvasInk = (page: Page, layer: 'canvas' | 'overlay') => page.evaluate((name: string) => {
-  const root = [...document.querySelectorAll('[name="viewer-Scatter-plot"]')]
-    .find((e) => !e.closest('.d4-dialog'));
-  const c = root?.querySelector(`canvas[name="${name}"]`) as HTMLCanvasElement | null;
-  const ctx = c?.getContext('2d');
-  if (!c || !ctx) return -1;
-  let data: Uint8ClampedArray;
-  try { data = ctx.getImageData(0, 0, c.width, c.height).data; } catch (_) { return -1; }
-  let n = 0;
-  for (let k = 0; k < data.length; k += 16)
-    if (data[k + 3] !== 0 && !(data[k] >= 250 && data[k + 1] >= 250 && data[k + 2] >= 250)) n++;
-  return n;
-}, layer);
-
-async function parkPointer(page: Page): Promise<void> {
-  await page.mouse.move(4, 4);
-  await v.waitForViewerRendered(page, 'Scatter plot', 250);
-}
-
-async function settledInk(page: Page, layer: 'canvas' | 'overlay'): Promise<number> {
-  await parkPointer(page);
-  let prev = await canvasInk(page, layer);
-  let cur = prev;
-  for (let i = 0; i < 12; i++) {
-
-    await page.waitForTimeout(250);
-    cur = await canvasInk(page, layer);
-    if (cur >= 0 && Math.abs(cur - prev) <= INK_SETTLE) break;
-    prev = cur;
-  }
-  return cur;
-}
+const settledOverlay = (page: Page) => sp.settledInk(page, 'overlay', INK_SETTLE);
 
 interface TooltipEntry {name: string; value: string}
 
@@ -158,36 +67,32 @@ interface HoverResult {
   viewportHeight: number;
 }
 
-async function hoverReferenceMarker(
-  page: Page, row: number, expectTooltip = true,
-): Promise<HoverResult> {
-  const rect = await canvasRect(page);
+async function hoverReferenceMarker(page: Page, row: number, expectTooltip = true): Promise<HoverResult> {
+  const rect = await sp.canvasRect(page);
   await page.mouse.move(rect.x + rect.width * 0.03, rect.y + rect.height * 0.03);
-  const parked = await v.pollValue(() => tooltipText(page), (t) => t.length === 0, 800, 100);
+  const parked = await v.pollValue(() => tooltipText(page), (t) => t.length === 0, 800, 50);
   const aim = await page.evaluate((i: number) => {
-    const root = [...document.querySelectorAll('[name="viewer-Scatter-plot"]')]
-      .find((e) => !e.closest('.d4-dialog'))!;
-    const sp = grok.shell.tv.viewers.find((x: any) => x.type === 'Scatter plot') as any;
+    const s = grok.shell.tv.viewers.find((x: any) => x.type === 'Scatter plot') as any;
     const df = grok.shell.tv.dataFrame;
-    const s = sp.worldToScreen(df.col(sp.props.xColumnName).get(i), df.col(sp.props.yColumnName).get(i));
-    const b = root.querySelector('canvas[name="canvas"]')!.getBoundingClientRect();
-    return {x: b.x + s.x, y: b.y + s.y};
+    const pt = s.worldToScreen(df.col(s.props.xColumnName).get(i), df.col(s.props.yColumnName).get(i));
+    const b = s.root.querySelector('canvas[name="canvas"]').getBoundingClientRect();
+    return {x: b.x + pt.x, y: b.y + pt.y};
   }, row);
+  const before = await page.evaluate(() => grok.shell.tv.dataFrame.mouseOverRowIdx as number);
   await page.mouse.move(aim.x, aim.y, {steps: 8});
   if (expectTooltip) {
-    await v.pollValue(() => tooltipText(page), (t) => t.length > 0 && t !== parked, 3000, 100);
-
+    await v.pollValue(() => tooltipText(page), (t) => t.length > 0 && t !== parked, 3000, 50);
     await v.pollValue(() => tooltipEntries(page), (e) => e.length > 0, 200, 50);
   } else
-
-    await v.waitForViewerRendered(page, 'Scatter plot', 1600);
+    await v.pollValue(() => page.evaluate(() => grok.shell.tv.dataFrame.mouseOverRowIdx as number),
+      (r) => r >= 0 && r !== before, 1600, 50);
   const state = await page.evaluate((i: number) => {
-    const sp = grok.shell.tv.viewers.find((x: any) => x.type === 'Scatter plot') as any;
+    const s = grok.shell.tv.viewers.find((x: any) => x.type === 'Scatter plot') as any;
     const df = grok.shell.tv.dataFrame;
     const hit = df.mouseOverRowIdx as number;
-    const xc = df.col(sp.props.xColumnName);
-    const yc = df.col(sp.props.yColumnName);
-    const vp = sp.viewport;
+    const xc = df.col(s.props.xColumnName);
+    const yc = df.col(s.props.yColumnName);
+    const vp = s.viewport;
     return {
       hitRow: hit,
       aimOffsetX: hit >= 0 ? Math.abs(xc.get(hit) - xc.get(i)) : -1,
@@ -210,85 +115,7 @@ const rowValues = (page: Page, row: number, columns: string[]) =>
     return out;
   }, {i: row, cols: columns});
 
-interface Frac {fx: number; fy: number}
-
-const at = (r: Rect, p: Frac) => ({x: r.x + r.width * p.fx, y: r.y + r.height * p.fy});
-
-async function dragCanvas(page: Page, from: Frac, to: Frac, mods: string[] = []): Promise<void> {
-  const r = await canvasRect(page);
-  const p1 = at(r, from);
-  const p2 = at(r, to);
-  const shown1 = await v.armEvent(page, 'grok.events.onTooltipShown', 100);
-
-  await page.mouse.move(p1.x, p1.y);
-  await shown1();
-  for (const m of mods) await page.keyboard.down(m);
-  await page.mouse.down();
-  await page.mouse.move((p1.x + p2.x) / 2, (p1.y + p2.y) / 2, {steps: 8});
-  const shown2 = await v.armEvent(page, 'grok.events.onTooltipShown', 150);
-
-  await page.mouse.move(p2.x, p2.y, {steps: 8});
-  await shown2();
-  await page.mouse.up();
-  for (const m of [...mods].reverse()) await page.keyboard.up(m);
-  await v.waitForViewerRendered(page, 'Scatter plot', 300);
-}
-
-async function clickCanvas(page: Page, p: Frac): Promise<void> {
-  const r = await canvasRect(page);
-  const pt = at(r, p);
-  await page.mouse.click(pt.x, pt.y);
-  await v.waitForViewerRendered(page, 'Scatter plot', 250);
-}
-
-const liveCount = (page: Page, kind: 'selection' | 'filter') =>
-  page.evaluate((k: string) =>
-    (k === 'selection' ? grok.shell.tv.dataFrame.selection.trueCount
-      : grok.shell.tv.dataFrame.filter.trueCount) as number, kind);
-
-async function settledCount(page: Page, kind: 'selection' | 'filter'): Promise<number> {
-  let last = -1;
-  let stable = 0;
-  for (let i = 0; i < 30; i++) {
-    const c = await liveCount(page, kind);
-    if (c === last) {
-      stable++;
-      if (stable >= 2) return c;
-    } else {
-      stable = 0;
-      last = c;
-    }
-
-    await page.waitForTimeout(200);
-  }
-  return last;
-}
-
-async function settledCountAfterChange(
-  page: Page, kind: 'selection' | 'filter', from: number, timeoutMs = 7000,
-): Promise<number> {
-  const deadline = Date.now() + timeoutMs;
-  let prev = from;
-  while (Date.now() < deadline) {
-    const c = await liveCount(page, kind);
-    if (c !== from) {
-      if (c === prev) return c;
-      prev = c;
-    }
-
-    await page.waitForTimeout(120);
-  }
-  return await liveCount(page, kind);
-}
-
 const rowCount = (page: Page) => page.evaluate(() => grok.shell.tv.dataFrame.rowCount as number);
-
-async function filterCardIndex(page: Page, column: string, timeoutMs = 45_000): Promise<number> {
-  return v.pollValue(() => page.evaluate((col: string) =>
-    [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter')]
-      .findIndex((c) => (c.querySelector('.d4-filter-column-name')?.textContent ?? '').trim() === col),
-  column), (idx) => idx >= 0, timeoutMs, 300);
-}
 
 interface CategoryState {filtered: number; survivors: string[]}
 
@@ -305,61 +132,32 @@ const categoryState = (page: Page, column: string): Promise<CategoryState> =>
     };
   }, column);
 
-async function resetFilterPanel(page: Page, from?: number): Promise<void> {
+async function resetFilterPanel(page: Page, from: number): Promise<void> {
   const reset = page.locator('[name="viewer-Filters"] [name="icon-arrow-rotate-left"]').first();
   await reset.scrollIntoViewIfNeeded();
   await reset.click();
-
-  if (from === undefined) await v.waitForViewerRendered(page, 'Scatter plot', 800);
-  else await settledCountAfterChange(page, 'filter', from, 8000);
-}
-
-async function narrowToOneCategory(
-  page: Page, cardIndex: number, column: string, fullRows: number,
-): Promise<CategoryState | null> {
-  const card = page.locator('[name="viewer-Filters"] .d4-filter').nth(cardIndex);
-  const canvas = card.locator('canvas').last();
-  for (const fy of [0.5, 0.3, 0.7, 0.15, 0.85]) {
-    await canvas.scrollIntoViewIfNeeded();
-    const box = await canvas.boundingBox();
-    if (!box || box.width === 0 || box.height === 0) break;
-    await canvas.click({position: {x: box.width / 2, y: box.height * fy}});
-    await settledCountAfterChange(page, 'filter', fullRows, 3500);
-    const state = await categoryState(page, column);
-    if (state.survivors.length === 1 && state.filtered > 0 && state.filtered < fullRows) return state;
-    await resetFilterPanel(page, state.filtered === fullRows ? undefined : state.filtered);
-  }
-  return null;
+  await sp.filterMoved(page, from, 8000);
 }
 
 test('Scatter Plot — Marker Labels and Tooltip', async ({page}: {page: Page}) => {
-  test.setTimeout(1_500_000);
+  test.setTimeout(600_000);
 
-  const pageErrors: string[] = [];
-  const consoleErrors: string[] = [];
   const allMessages: string[] = [];
-  page.on('pageerror', (e) => {
-    allMessages.push(String(e));
-    if (!isBenignError(String(e))) pageErrors.push(String(e));
-  });
-  page.on('console', (m) => {
-    if (m.type() !== 'error') return;
-    allMessages.push(m.text());
-    if (!isBenignError(m.text()) && !isLocalBootNoise(m.text())) consoleErrors.push(m.text());
-  });
-  const errCount = () => pageErrors.length + consoleErrors.length;
+  page.on('pageerror', (e) => allMessages.push(String(e)));
+  page.on('console', (m) => { if (m.type() === 'error') allMessages.push(m.text()); });
+  const errors = sp.trackErrors(page);
+  const errCount = errors.count;
   const crashCount = () => allMessages.filter((t) => CRASH_SIGNATURE.test(t)).length;
 
   await openDatagrok(page);
   await v.openTable(page, {path: demogPath, semTypeTimeoutMs: 3000});
-  await v.addViewerByIcon(page, 'scatter-plot', 'Scatter-plot');
-  await v.waitForViewerRendered(page, 'Scatter plot', 500);
-  await pickOnViewer(page, 'x', SETUP_X);
-  await pickOnViewer(page, 'y', SETUP_Y);
-  expect(await readProp(page, 'xColumnName')).toBe(SETUP_X);
-  expect(await readProp(page, 'yColumnName')).toBe(SETUP_Y);
-  expect(await readProp(page, 'showTooltip')).toBe('inherit from table');
-  expect(await readProp(page, 'labelColumnNames')).toEqual([]);
+  await sp.addScatterPlot(page);
+  await sp.pickOnViewer(page, 'x', SETUP_X);
+  await sp.pickOnViewer(page, 'y', SETUP_Y);
+  expect(await sp.readProp(page, 'xColumnName')).toBe(SETUP_X);
+  expect(await sp.readProp(page, 'yColumnName')).toBe(SETUP_Y);
+  expect(await sp.readProp(page, 'showTooltip')).toBe('inherit from table');
+  expect(await sp.readProp(page, 'labelColumnNames')).toEqual([]);
 
   await softStep('Tooltip inherited from the table', async () => {
     const errBefore = errCount();
@@ -386,12 +184,12 @@ test('Scatter Plot — Marker Labels and Tooltip', async ({page}: {page: Page}) 
 
   await softStep('Custom tooltip column list', async () => {
     const errBefore = errCount();
-    await setChoiceProp(page, 'prop-show-tooltip', 'prop-view-show-tooltip', 'tooltip', 'show custom tooltip');
-    expect(await readProp(page, 'showTooltip')).toBe('show custom tooltip');
+    await setTooltipChoice(page, 'prop-show-tooltip', 'show custom tooltip');
+    expect(await sp.readProp(page, 'showTooltip')).toBe('show custom tooltip');
     await setListProp(page, 'rowTooltip', CUSTOM_TOOLTIP_COLUMNS.join('\n'));
-    expect(await readProp(page, 'rowTooltip')).toBe(CUSTOM_TOOLTIP_COLUMNS.join('\n'));
-    await setChoiceProp(page, 'prop-data-values', 'prop-view-data-values', 'tooltip', 'Do not add');
-    expect(await readProp(page, 'dataValues')).toBe('Do not add');
+    expect(await sp.readProp(page, 'rowTooltip')).toBe(CUSTOM_TOOLTIP_COLUMNS.join('\n'));
+    await setTooltipChoice(page, 'prop-data-values', 'Do not add');
+    expect(await sp.readProp(page, 'dataValues')).toBe('Do not add');
 
     const custom = await hoverReferenceMarker(page, REFERENCE_ROW);
     expect(custom.hitRow).toBeGreaterThanOrEqual(0);
@@ -401,17 +199,17 @@ test('Scatter Plot — Marker Labels and Tooltip', async ({page}: {page: Page}) 
     expect(custom.entries.map((e) => e.value))
       .toEqual(CUSTOM_TOOLTIP_COLUMNS.map((c) => configured[c]));
 
-    await setChoiceProp(page, 'prop-show-tooltip', 'prop-view-show-tooltip', 'tooltip', 'do not show');
-    expect(await readProp(page, 'showTooltip')).toBe('do not show');
+    await setTooltipChoice(page, 'prop-show-tooltip', 'do not show');
+    expect(await sp.readProp(page, 'showTooltip')).toBe('do not show');
     const silent = await hoverReferenceMarker(page, REFERENCE_ROW, false);
     expect(silent.hitRow).toBeGreaterThanOrEqual(0);
     expect(silent.entries).toEqual([]);
 
-    await setChoiceProp(page, 'prop-show-tooltip', 'prop-view-show-tooltip', 'tooltip', 'inherit from table');
+    await setTooltipChoice(page, 'prop-show-tooltip', 'inherit from table');
     await setListProp(page, 'rowTooltip', '');
-    await setChoiceProp(page, 'prop-data-values', 'prop-view-data-values', 'tooltip', 'Merge');
-    expect(await readProp(page, 'showTooltip')).toBe('inherit from table');
-    expect(await readProp(page, 'rowTooltip')).toBe('');
+    await setTooltipChoice(page, 'prop-data-values', 'Merge');
+    expect(await sp.readProp(page, 'showTooltip')).toBe('inherit from table');
+    expect(await sp.readProp(page, 'rowTooltip')).toBe('');
 
     const restored = await hoverReferenceMarker(page, REFERENCE_ROW);
     expect(restored.hitRow).toBeGreaterThanOrEqual(0);
@@ -428,40 +226,42 @@ test('Scatter Plot — Marker Labels and Tooltip', async ({page}: {page: Page}) 
     // a corner click is not a reliable "clear selection": earlier steps can leave a row
     // selected and (0.02, 0.02) may still land on a marker. Clear it outright, then confirm.
     await page.evaluate(() => grok.shell.tv.dataFrame.selection.setAll(false));
-    await v.waitForViewerRendered(page, 'Scatter plot', 300);
-    expect(await settledCount(page, 'selection')).toBe(0);
-    const baseline = await settledInk(page, 'overlay');
-
+    await v.waitForViewerRendered(page, sp.SP_TYPE, 300);
+    expect(await sp.selectionHeld(page)).toBe(0);
+    const baseline = await settledOverlay(page);
     expect(baseline).toBeGreaterThanOrEqual(0);
 
     await setListProp(page, 'labelColumnNames', [LABEL_COLUMN]);
-    expect(await readProp(page, 'labelColumnNames')).toEqual([LABEL_COLUMN]);
-    await setChoiceProp(page, 'prop-show-labels-for', 'prop-view-show-labels-for', 'labels', 'Selected');
-    expect(await readProp(page, 'showLabelsFor')).toBe('Selected');
+    expect(await sp.readProp(page, 'labelColumnNames')).toEqual([LABEL_COLUMN]);
+    // Show Labels For is still at its default, All, so every row is labelled here; Selected
+    // takes those labels away again, and that is the change waited for
+    const allLabelled = await settledOverlay(page);
+    await sp.setChoiceProp(page, 'prop-show-labels-for', 'labels', 'Selected');
+    expect(await sp.readProp(page, 'showLabelsFor')).toBe('Selected');
 
-    const configured = await settledInk(page, 'overlay');
+    const configured = await sp.settledInk(page, 'overlay', INK_SETTLE, allLabelled);
     expect(Math.abs(configured - baseline)).toBeLessThan(OVERLAY_RESTORE_TOLERANCE);
 
-    await dragCanvas(page, {fx: 0.3, fy: 0.3}, {fx: 0.7, fy: 0.7}, ['Shift']);
-    const selected = await settledCountAfterChange(page, 'selection', 0);
+    await sp.dragCanvas(page, {fx: 0.3, fy: 0.3}, {fx: 0.7, fy: 0.7}, ['Shift']);
+    const selected = await sp.selectionMoved(page, 0);
     expect(selected).toBeGreaterThan(0);
-    const labelled = await settledInk(page, 'overlay');
+    const labelled = await sp.settledInk(page, 'overlay', INK_SETTLE, baseline);
     console.log(`label overlay ink: baseline=${baseline} configured=${configured} ` +
       `labelled=${labelled} selected=${selected}`);
 
     expect(labelled - baseline).toBeGreaterThanOrEqual(LABEL_INK_DELTA);
     expect(errCount()).toBe(errBefore);
 
-    await clickCanvas(page, {fx: 0.02, fy: 0.02});
-    expect(await settledCountAfterChange(page, 'selection', selected)).toBe(0);
-    const cleared = await settledInk(page, 'overlay');
+    await sp.clickCanvas(page, {fx: 0.02, fy: 0.02});
+    expect(await sp.selectionMoved(page, selected)).toBe(0);
+    const cleared = await sp.settledInk(page, 'overlay', INK_SETTLE, labelled);
     console.log(`label overlay ink: cleared=${cleared}`);
     expect(Math.abs(cleared - baseline)).toBeLessThan(OVERLAY_RESTORE_TOLERANCE);
 
     await setListProp(page, 'labelColumnNames', []);
-    await setChoiceProp(page, 'prop-show-labels-for', 'prop-view-show-labels-for', 'labels', 'All');
-    expect(await readProp(page, 'labelColumnNames')).toEqual([]);
-    expect(await readProp(page, 'showLabelsFor')).toBe('All');
+    await sp.setChoiceProp(page, 'prop-show-labels-for', 'labels', 'All');
+    expect(await sp.readProp(page, 'labelColumnNames')).toEqual([]);
+    expect(await sp.readProp(page, 'showLabelsFor')).toBe('All');
     expect(errCount()).toBe(errBefore);
   });
 
@@ -469,53 +269,50 @@ test('Scatter Plot — Marker Labels and Tooltip', async ({page}: {page: Page}) 
     await v.openTable(page, {path: spgiPath});
     const fullRows = await rowCount(page);
     expect(fullRows).toBeGreaterThan(0);
-    await v.addViewerByIcon(page, 'scatter-plot', 'Scatter-plot');
-    await v.waitForViewerRendered(page, 'Scatter plot', 600);
-    // this is a NEW view + viewer; rebind the settings panel or later prop writes go to
-    // the previous view's scatter plot and this one keeps its defaults
-    await openSettings(page, true);
-    await pickOnViewer(page, 'x', SPGI_X);
-    await pickOnViewer(page, 'y', SPGI_Y);
-    expect(await readProp(page, 'xColumnName')).toBe(SPGI_X);
-    expect(await readProp(page, 'yColumnName')).toBe(SPGI_Y);
+    await sp.addScatterPlot(page);
+    await sp.pickOnViewer(page, 'x', SPGI_X);
+    await sp.pickOnViewer(page, 'y', SPGI_Y);
+    expect(await sp.readProp(page, 'xColumnName')).toBe(SPGI_X);
+    expect(await sp.readProp(page, 'yColumnName')).toBe(SPGI_Y);
 
     expect(await page.evaluate((c: string) =>
       String(grok.shell.tv.dataFrame.col(c).type), SPGI_X)).toBe('datetime');
 
     await setListProp(page, 'labelColumnNames', [SPGI_LABEL_COLUMN]);
-    await setChoiceProp(page, 'prop-show-labels-for', 'prop-view-show-labels-for', 'labels', 'Selected');
-    expect(await readProp(page, 'labelColumnNames')).toEqual([SPGI_LABEL_COLUMN]);
-    expect(await readProp(page, 'showLabelsFor')).toBe('Selected');
+    await sp.setChoiceProp(page, 'prop-show-labels-for', 'labels', 'Selected');
+    expect(await sp.readProp(page, 'labelColumnNames')).toEqual([SPGI_LABEL_COLUMN]);
+    expect(await sp.readProp(page, 'showLabelsFor')).toBe('Selected');
 
     const errBefore = errCount();
     const crashBefore = crashCount();
-    await v.openFilterPanel(page);
-    const cardIndex = await filterCardIndex(page, SPGI_Y);
-    expect(cardIndex).toBeGreaterThanOrEqual(0);
-    const narrowed = await narrowToOneCategory(page, cardIndex, SPGI_Y, fullRows);
-    expect(narrowed).not.toBeNull();
+    await sp.openFilterPanel(page);
+    const firstCategory = await page.evaluate((col: string) =>
+      grok.shell.tv.dataFrame.col(col).categories[0] as string, SPGI_Y);
+    await v.applyCategoricalFilter(page, SPGI_Y, [firstCategory], 600);
+    const narrowedCount = await sp.filterMoved(page, fullRows);
+    const narrowed = await categoryState(page, SPGI_Y);
 
-    console.log(`stereo category filter: kept=${narrowed!.survivors[0]} ` +
-      `rows=${narrowed!.filtered}/${fullRows}`);
-    expect(narrowed!.survivors.length).toBe(1);
-    expect(narrowed!.filtered).toBeGreaterThan(0);
-    expect(narrowed!.filtered).toBeLessThan(fullRows);
+    console.log(`stereo category filter: kept=${narrowed.survivors[0]} rows=${narrowed.filtered}/${fullRows}`);
+    expect(narrowed.filtered).toBe(narrowedCount);
+    expect(narrowed.survivors).toEqual([firstCategory]);
+    expect(narrowed.filtered).toBeGreaterThan(0);
+    expect(narrowed.filtered).toBeLessThan(fullRows);
 
-    await dragCanvas(page, {fx: 0.2, fy: 0.2}, {fx: 0.8, fy: 0.8}, ['Shift']);
-    const selected = await settledCountAfterChange(page, 'selection', 0);
+    await sp.dragCanvas(page, {fx: 0.03, fy: 0.03}, {fx: 0.97, fy: 0.97}, ['Shift']);
+    const selected = await sp.selectionMoved(page, 0);
     expect(selected).toBeGreaterThan(0);
 
-    await v.waitForViewerRendered(page, 'Scatter plot', 2000);
+    await v.waitForViewerQuiet(page, sp.SP_TYPE, {gapMs: 300, capMs: 2000});
     expect(crashCount()).toBe(crashBefore);
     expect(errCount()).toBe(errBefore);
 
-    await resetFilterPanel(page, narrowed!.filtered);
-    await clickCanvas(page, {fx: 0.02, fy: 0.02});
-    expect(await settledCountAfterChange(page, 'selection', selected)).toBe(0);
-    expect(await settledCount(page, 'filter')).toBe(fullRows);
+    await resetFilterPanel(page, narrowed.filtered);
+    await sp.clickCanvas(page, {fx: 0.02, fy: 0.02});
+    expect(await sp.selectionMoved(page, selected)).toBe(0);
+    expect(await sp.filterHeld(page, 500)).toBe(fullRows);
     expect(crashCount()).toBe(crashBefore);
   });
 
-  await page.evaluate(() => grok.shell.closeAll());
+  await v.cleanupShell(page);
   v.finishSpec();
 });

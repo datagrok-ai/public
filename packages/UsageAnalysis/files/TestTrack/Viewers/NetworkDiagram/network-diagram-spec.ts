@@ -1,8 +1,9 @@
 /* ---
 realizes: [viewers.network-diagram, entities.viewer.action.close-viewer]
 --- */
-import {test, expect, Page} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
+import {expect, Page} from '@playwright/test';
+import {localTest as test} from '../../shared-page';
+import {openDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 
 test.use(specTestOptions);
@@ -24,16 +25,8 @@ const clearSelection = async (page: Page) => {
   await expect.poll(() => selectionCount(page), {timeout: 5000}).toBe(0);
 };
 
-async function selectionSettles(page: Page): Promise<number> {
-  let last = -1;
-  for (let i = 0; i < 8; i++) {
-    await page.waitForTimeout(150);
-    const now = await selectionCount(page);
-    if (now === last && now > 0) return now;
-    last = now;
-  }
-  return last;
-}
+const selectionSettles = (page: Page, capMs = 1200) =>
+  v.pollValue(() => selectionCount(page), (n) => n > 0, capMs, 50);
 
 async function selectorText(page: Page, role: string): Promise<string> {
   return (await page.locator(`${VIEWER} [name="div-column-combobox-${role}"]`).first().innerText())
@@ -71,7 +64,7 @@ async function nodePositions(page: Page): Promise<{x: number; y: number; n: numb
 test('Network diagram', async ({page}) => {
   test.setTimeout(600_000);
 
-  await loginToDatagrok(page);
+  await openDatagrok(page);
   await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 3000});
 
   await softStep('Add Network diagram from the Viewers toolbox', async () => {
@@ -86,7 +79,6 @@ test('Network diagram', async ({page}) => {
   });
 
   await softStep('Suspend simulation freezes the layout', async () => {
-    await v.openViewerProperties(page, VIEWER_NAME);
     await category(page, 'misc', 'suspend-simulation');
     expect(await v.togglePropertyGridCheckbox(page, 'suspend-simulation', 'misc')).toBe(true);
 
@@ -157,7 +149,7 @@ test('Network diagram', async ({page}) => {
     const nodes = await nodePositions(page);
     for (const node of nodes.slice(0, 4)) {
       await page.mouse.click(node.x, node.y);
-      await selectionSettles(page);
+      await selectionSettles(page, 800);
     }
     expect(await selectionCount(page)).toBe(0);
 
@@ -227,6 +219,12 @@ test('Network diagram', async ({page}) => {
     await expect(page.locator(VIEWER)).toHaveCount(0);
   });
 
+  // the context panel keeps the closed viewer's property grid, and neither shell.o = null nor
+  // rebinding shell.o drops it (measured 2026-09-03); the next spec's openViewerProperties then
+  // skips the gear and edits a dead grid, so the stale node is removed here
+  await page.evaluate(() => {
+    for (const e of Array.from(document.querySelectorAll('.property-grid'))) e.remove();
+  });
   await v.cleanupShell(page);
 
   v.finishSpec();

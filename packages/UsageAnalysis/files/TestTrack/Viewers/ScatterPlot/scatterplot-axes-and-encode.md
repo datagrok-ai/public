@@ -6,7 +6,7 @@ realizes:
   - viewers.scatter-plot
 priority: p0
 target_layer: playwright
-boot_lane: server
+boot_lane: mixed
 coverage_type: smoke
 related_bugs:
   - id: GROK-18945
@@ -21,6 +21,7 @@ related_bugs:
     status: fixed
 realized_as:
   - scatterplot-axes-and-encode-spec.ts
+  - scatterplot-axes-and-encode-server-spec.ts
 expected_results:
   - anchor: "Set the axes and the encodings through the on-viewer selectors"
     expectation: "Each pick made through an on-viewer selector is reflected by the

@@ -6,6 +6,7 @@ realizes_atlas:
   - linechart.cp.multi-axis-and-split
 priority: p1
 target_layer: playwright
+boot_lane: server
 coverage_type: regression
 related_bugs:
   - id: github-2904

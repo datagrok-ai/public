@@ -6,9 +6,11 @@ realizes:
   - viewers.line-chart
 priority: p1
 target_layer: playwright
+boot_lane: mixed
 coverage_type: regression
 realized_as:
   - legend-color-and-persistence-spec.ts
+  - line-chart-server-spec.ts
 related_bugs:
   - id: github-1498
     status: fixed

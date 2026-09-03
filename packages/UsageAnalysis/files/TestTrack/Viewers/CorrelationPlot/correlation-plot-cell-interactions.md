@@ -7,6 +7,7 @@ realizes:
   - viewers.correlation-plot
 priority: p1
 target_layer: playwright
+boot_lane: local
 coverage_type: regression
 related_bugs:
   - id: GROK-20125

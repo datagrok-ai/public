@@ -2,10 +2,11 @@
 realizes: [boxplot.cp.pointer-select-highlight]
 --- */
 import {expect, Page} from '@playwright/test';
-import {test} from '../../shared-page';
-import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
+import {localTest as test} from '../../shared-page';
+import {openDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 import {armBalloonRecorderProved, expectNoBalloonSinceArmed} from '../../helpers/balloons';
+import {BOX, Rect, bpProp, canvasRect} from './boxplot-helpers';
 
 declare const grok: any;
 
@@ -16,29 +17,24 @@ const datasetPath = 'System:DemoFiles/demog.csv';
 const LABEL_Y_FRACS = [0.89, 0.885, 0.88, 0.895, 0.875, 0.9];
 let labelYFrac = 0;
 
-async function canvasRect(page: Page): Promise<{x: number; y: number; w: number; h: number}> {
-  return page.evaluate(() => {
-    const root = document.querySelector('[name="viewer-Box-plot"]')!;
-    const c = root.querySelector('canvas[name="canvas"]')!.getBoundingClientRect();
-    return {x: c.x, y: c.y, w: c.width, h: c.height};
-  });
-}
-
-async function bpProp(page: Page, prop: string): Promise<any> {
-  return page.evaluate((p) => {
-    const bp = grok.shell.tv.viewers.find((x: any) => x.type === 'Box plot');
-    return bp?.props?.[p];
-  }, prop);
-}
-
 async function selectionCount(page: Page): Promise<number> {
   return page.evaluate(() => grok.shell.t.selection.trueCount);
 }
 
 async function clearSelection(page: Page): Promise<void> {
-  await page.evaluate(() => grok.shell.t.selection.setAll(false));
+  await page.evaluate(async () => {
+    const df = grok.shell.t;
+    if (df.selection.trueCount === 0) return;
+    await (window as any).__settled('viewer:Box plot.onViewerRendered', () => df.selection.setAll(false), 300);
+  });
+}
 
-  await page.waitForTimeout(300);
+// A hold proving the canvas did NOT repaint: waits up to capMs for a change of at least
+// minDelta and reports the delta either way, so the cap is the sleep it replaces, never longer.
+async function heldCanvasDelta(page: Page, capMs: number, minDelta = 300): Promise<number> {
+  const moved = await v.waitForCanvasChange(page, 'Box plot', {minDelta, timeoutMs: capMs})
+    .then((d) => d, () => null);
+  return moved ?? (await v.diffCanvasColors(page, 'Box plot')).deltaPx;
 }
 
 async function raceCatCount(page: Page, cat: string): Promise<number> {
@@ -66,7 +62,6 @@ async function measureGeometry(page: Page): Promise<void> {
   const r = await canvasRect(page);
 
   for (const frac of LABEL_Y_FRACS) {
-    // the plot area starts after the value-axis margin; scan plausible left edges
     for (const left of [0.15, 0.12, 0.18, 0.10, 0.20, 0.0]) {
       const width = 1 - left - 0.05;
       const centers = cats.map((_, i) => left + width * ((i + 0.5) / cats.length));
@@ -97,10 +92,7 @@ async function catCenter(page: Page, i: number): Promise<number> {
   return catCenters[i];
 }
 
-async function shiftDragBand(
-  page: Page, r: {x: number; y: number; w: number; h: number},
-  x0: number, y0: number, x1: number, y1: number,
-): Promise<void> {
+async function shiftDragBand(page: Page, r: Rect, x0: number, y0: number, x1: number, y1: number): Promise<void> {
   await page.keyboard.down('Shift');
   await page.mouse.move(r.x + r.w * x0, r.y + r.h * y0);
   await page.mouse.down();
@@ -111,9 +103,9 @@ async function shiftDragBand(
 }
 
 test('Box plot pointer selection and highlight', async ({page}) => {
-  test.setTimeout(600_000);
+  test.setTimeout(300_000);
 
-  await loginToDatagrok(page);
+  await openDatagrok(page);
   await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 3000});
 
   await page.evaluate(() => {
@@ -123,7 +115,7 @@ test('Box plot pointer selection and highlight', async ({page}) => {
     bp.props.category1ColumnName = 'RACE';
     bp.props.markerSize = 10;
   });
-  await page.locator('[name="viewer-Box-plot"]').waitFor({timeout: 10000});
+  await page.locator(BOX).waitFor({timeout: 10000});
   await v.waitForViewerRendered(page, 'Box plot', 1500);
   await v.waitForViewerQuiet(page, 'Box plot');
 
@@ -140,7 +132,6 @@ test('Box plot pointer selection and highlight', async ({page}) => {
     let currentRow = -1;
     for (const [fx, fy] of [[0.62, 0.55], [0.62, 0.45], [0.62, 0.65], [0.55, 0.5], [0.7, 0.5]]) {
       await page.mouse.click(r.x + r.w * fx, r.y + r.h * fy);
-
       currentRow = await v.pollValue(
         () => page.evaluate(() => grok.shell.t.currentRowIdx), (n) => n >= 0, 500, 50);
       if (currentRow >= 0) break;
@@ -166,7 +157,6 @@ test('Box plot pointer selection and highlight', async ({page}) => {
   });
 
   await softStep('Scenario 2 / Step 5: selection hue survives non-default categorical coloring (github-3066)', async () => {
-
     await clearSelection(page);
 
     await v.setViewerProps(page, 'Box plot', [{set: {markerColorColumnName: 'SEX'}, wait: 800}]);
@@ -329,7 +319,6 @@ test('Box plot pointer selection and highlight', async ({page}) => {
     let tipPresent = false;
     for (const [fx, fy] of [[0.62, 0.55], [0.62, 0.45], [0.6, 0.6], [0.55, 0.5]]) {
       await page.mouse.move(r.x + r.w * fx, r.y + r.h * fy);
-
       tipPresent = await v.pollValue(
         () => page.evaluate(() => !!document.querySelector('.d4-tooltip')), (p) => p, 700, 50);
       if (tipPresent) break;
@@ -347,8 +336,7 @@ test('Box plot pointer selection and highlight', async ({page}) => {
     await v.snapshotCanvasColors(page, 'Box plot');
     await page.mouse.move(r.x + r.w * 0.62, r.y + r.h * 0.55);
 
-    await page.waitForTimeout(700);
-    const {deltaPx} = await v.diffCanvasColors(page, 'Box plot');
+    const deltaPx = await heldCanvasDelta(page, 700);
 
     expect(deltaPx).toBeGreaterThanOrEqual(0);
     expect(deltaPx).toBeLessThan(300);
@@ -377,8 +365,7 @@ test('Box plot pointer selection and highlight', async ({page}) => {
     });
     await page.mouse.move(barRect.x + barRect.w * 0.3, barRect.y + barRect.h * 0.6);
 
-    await page.waitForTimeout(900);
-    const {deltaPx} = await v.diffCanvasColors(page, 'Box plot');
+    const deltaPx = await heldCanvasDelta(page, 900);
     expect(deltaPx).toBeGreaterThanOrEqual(0);
     expect(deltaPx).toBeLessThan(300);
     console.log('Step 20 cross-viewer hover box plot deltaPx:', deltaPx);
@@ -428,6 +415,6 @@ test('Box plot pointer selection and highlight', async ({page}) => {
     expect(await bpProp(page, 'markerColorColumnName')).toBe('RACE');
   });
 
-  await page.evaluate(() => grok.shell.closeAll());
+  await v.closeAllAndWait(page);
   v.finishSpec();
 });

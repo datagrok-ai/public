@@ -1,9 +1,9 @@
 /* ---
 realizes: []
 --- */
-import {test, expect, Page} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
-import {knownOpenBug} from '../../helpers/known-open-bug';
+import {expect, Page} from '@playwright/test';
+import {test} from '../../shared-page';
+import {openDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 
 test.use(specTestOptions);
@@ -60,7 +60,7 @@ async function editContentViaPropertyGrid(page: Page, text: string): Promise<voi
 test('Markup', async ({page}) => {
   test.setTimeout(600_000);
 
-  await loginToDatagrok(page);
+  await openDatagrok(page);
   await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 3000});
 
   await softStep('Add Markup from the Viewers toolbox', async () => {
@@ -135,10 +135,8 @@ test('Markup', async ({page}) => {
 
     expect(await v.propertyGridValue(page, 'markup-enabled', 'misc')).toBe('false');
 
-    await knownOpenBug('GROK-20637', async () => {
-      await expect.poll(async () => await content(page).innerText(), {timeout: 8000})
-        .toContain('#{t.rowCount}');
-    });
+    await expect.poll(async () => await content(page).innerText(), {timeout: 8000})
+      .toContain('#{t.rowCount}');
 
     await v.setPropertyGridCheckbox(page, 'markup-enabled', true, 'misc');
   });
@@ -171,10 +169,8 @@ test('Markup', async ({page}) => {
     await v.selectPropertyGridChoice(page, 'mode', 'None', 'misc');
     await expect(content(page).locator('pre')).toHaveCount(1);
 
-    await knownOpenBug('GROK-20637', async () => {
-      expect(await content(page).locator('b').count()).toBe(0);
-      await expect(content(page).locator('pre')).toContainText('<b>bold probe</b>');
-    });
+    expect(await content(page).locator('b').count()).toBe(0);
+    await expect(content(page).locator('pre')).toContainText('<b>bold probe</b>');
 
     await v.selectPropertyGridChoice(page, 'mode', 'Auto', 'misc');
   });
@@ -186,9 +182,7 @@ test('Markup', async ({page}) => {
 
     const weight = await content(page).locator('strong').first()
       .evaluate((el) => Number(getComputedStyle(el).fontWeight));
-    await knownOpenBug('GROK-20637', () => {
-      expect(weight).toBeGreaterThanOrEqual(700);
-    });
+    expect(weight).toBeGreaterThanOrEqual(700);
 
     await v.selectPropertyGridChoice(page, 'mode', 'Auto', 'misc');
   });
@@ -212,6 +206,12 @@ test('Markup', async ({page}) => {
     await expect(page.locator(VIEWER)).toHaveCount(0);
   });
 
+  // the context panel keeps the closed viewer's property grid, and neither shell.o = null nor
+  // rebinding shell.o drops it (measured 2026-09-03); the next spec's openViewerProperties then
+  // skips the gear and edits a dead grid, so the stale node is removed here
+  await page.evaluate(() => {
+    for (const e of Array.from(document.querySelectorAll('.property-grid'))) e.remove();
+  });
   await v.cleanupShell(page);
 
   v.finishSpec();

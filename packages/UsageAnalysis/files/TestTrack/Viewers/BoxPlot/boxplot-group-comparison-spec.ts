@@ -2,9 +2,10 @@
 realizes: [boxplot.cp.group-comparison-ladder, boxplot.cp.covariate-adjust-baseline, boxplot.int.covariate-sets-adjustment]
 --- */
 import {expect, Page} from '@playwright/test';
-import {test} from '../../shared-page';
-import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
+import {localTest as test} from '../../shared-page';
+import {openDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
+import {BOX, Pt, bpProp, canvasRect, clickToggleIcon, pValuePoint} from './boxplot-helpers';
 
 declare const grok: any;
 
@@ -12,39 +13,13 @@ test.use(specTestOptions);
 
 const datasetPath = 'System:DemoFiles/demog.csv';
 
-async function revealIcon(page: Page, iconName: string): Promise<{x: number; y: number}> {
-  const origin = await page.evaluate(() => {
-    const root = document.querySelector('[name="viewer-Box-plot"]')!;
-    const c = root.querySelector('canvas[name="canvas"]')!.getBoundingClientRect();
-    return {x: c.x, y: c.y};
-  });
-  for (const [dx, dy] of [[35, 15], [40, 17], [30, 14], [45, 16]]) {
-    const shown1 = await v.armEvent(page, 'grok.events.onTooltipShown', 150);
-
-    await page.mouse.move(origin.x + dx, origin.y + dy);
-    await shown1();
-  }
-  return page.evaluate((name) => {
-    const el = document.querySelector(`[name="${name}"]`) as HTMLElement;
-    const r = el.getBoundingClientRect();
-    return {x: r.x + r.width / 2, y: r.y + r.height / 2};
-  }, iconName);
-}
-
-async function bpProp(page: Page, prop: string): Promise<any> {
-  return page.evaluate((p) => {
-    const bp = grok.shell.tv.viewers.find((x: any) => x.type === 'Box plot');
-    return bp?.props?.[p];
-  }, prop);
-}
-
 async function driveSelect(page: Page, which: string, value: string): Promise<void> {
-  await page.evaluate(({which, value}) => {
-    const root = document.querySelector('[name="viewer-Box-plot"]')!;
-    let sel: HTMLSelectElement | undefined;
+  await page.evaluate(({sel, which, value}) => {
+    const root = document.querySelector(sel)!;
+    let s: HTMLSelectElement | undefined;
     if (which === 'adjust') {
-      sel = Array.from(root.querySelectorAll('select')).find((s) =>
-        Array.from(s.options).some((o) => o.value === 'ratio' || o.value === 'regressOut'));
+      s = Array.from(root.querySelectorAll('select')).find((el) =>
+        Array.from(el.options).some((o) => o.value === 'ratio' || o.value === 'regressOut'));
     } else {
       const controls = document.querySelector('.d4-box-plot-group-comparison-controls')!;
       const selects = Array.from(controls.querySelectorAll('select'));
@@ -53,20 +28,29 @@ async function driveSelect(page: Page, which: string, value: string): Promise<vo
       // selects[0]/[1] drift onto the wrong control and `value = ...` is then a
       // silent no-op (an unknown value leaves value === '').
       if (which === 'baseline')
-        sel = selects.find((s) => Array.from(s.options).some((o) => o.value === 'pooled'));
+        s = selects.find((el) => Array.from(el.options).some((o) => o.value === 'pooled'));
       else
-        sel = selects.find((s) => Array.from(s.options).some((o) => o.value === value));
+        s = selects.find((el) => Array.from(el.options).some((o) => o.value === value));
     }
-    if (!sel) {
+    if (!s) {
       const offered = Array.from(document.querySelectorAll('.d4-box-plot-group-comparison-controls select'))
-        .map((s) => Array.from((s as HTMLSelectElement).options).map((o) => o.value).join('|'));
+        .map((el) => Array.from((el as HTMLSelectElement).options).map((o) => o.value).join('|'));
       throw new Error(`group-comparison select "${which}" offering "${value}" not found; offered: ${JSON.stringify(offered)}`);
     }
-    sel.value = value;
-    sel.dispatchEvent(new Event('input', {bubbles: true}));
-  }, {which, value});
+    s.value = value;
+    s.dispatchEvent(new Event('input', {bubbles: true}));
+  }, {sel: BOX, which, value});
 
   await v.waitForViewerRendered(page, 'Box plot', 1200);
+}
+
+// the comparison strip's menu is opened on the overall p-value text; the band it is drawn in
+// is the fallback when the viewer has not placed its reveal icon yet
+async function stripSpots(page: Page): Promise<Pt[]> {
+  const pv = await pValuePoint(page);
+  if (pv) return [pv];
+  const r = await canvasRect(page);
+  return [[42, 16], [50, 16], [60, 14], [80, 14], [42, 30]].map(([dx, dy]) => ({x: r.x + dx, y: r.y + dy}));
 }
 
 async function addComparisonTable(page: Page): Promise<string> {
@@ -75,13 +59,8 @@ async function addComparisonTable(page: Page): Promise<string> {
   const homeDf: string = await page.evaluate(() => grok.shell.tv.dataFrame.name);
   let lastLabels: string[] = [];
   let itemName: string | null = null;
-  for (const [dx, dy] of [[42, 16], [50, 16], [60, 14], [80, 14], [42, 30]]) {
-    const o = await page.evaluate(() => {
-      const root = document.querySelector('[name="viewer-Box-plot"]')!;
-      const c = root.querySelector('canvas[name="canvas"]')!.getBoundingClientRect();
-      return {x: c.x, y: c.y};
-    });
-    await page.mouse.click(o.x + dx, o.y + dy, {button: 'right'});
+  for (const spot of await stripSpots(page)) {
+    await page.mouse.click(spot.x, spot.y, {button: 'right'});
 
     await v.pollValue(() => page.evaluate(() =>
       (Array.from(document.querySelectorAll('.d4-menu-item')) as HTMLElement[]).some((i) => {
@@ -105,9 +84,8 @@ async function addComparisonTable(page: Page): Promise<string> {
     if (found.itemName) { itemName = found.itemName; break; }
 
     await page.keyboard.press('Escape');
-
     await v.pollStable(() => page.evaluate(() => document.querySelectorAll('.d4-menu-popup').length),
-    (a, b) => a === b, 300, 100);
+      (a, b) => a === b, 300, 100);
   }
   if (!itemName)
     throw new Error(`Add-table item not reached; last menu: [${lastLabels.join(' | ')}]`);
@@ -127,15 +105,15 @@ async function addComparisonTable(page: Page): Promise<string> {
     if (!home) throw new Error(`home TableView for ${dfName} not found after add-table`);
     grok.shell.v = home;
   }, homeDf);
-  await page.locator('[name="viewer-Box-plot"]').waitFor({timeout: 10000});
+  await page.locator(BOX).waitFor({timeout: 10000});
   await v.waitForViewerRendered(page, 'Box plot', 600);
   return name;
 }
 
 test('Box plot group comparison and covariate adjustment', async ({page}) => {
-  test.setTimeout(600_000);
+  test.setTimeout(300_000);
 
-  await loginToDatagrok(page);
+  await openDatagrok(page);
   await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 3000});
 
   await page.evaluate(() => {
@@ -144,7 +122,7 @@ test('Box plot group comparison and covariate adjustment', async ({page}) => {
     bp.props.valueColumnName = 'AGE';
     bp.props.category1ColumnName = 'SEX';
   });
-  await page.locator('[name="viewer-Box-plot"]').waitFor({timeout: 10000});
+  await page.locator(BOX).waitFor({timeout: 10000});
   await v.waitForViewerRendered(page, 'Box plot', 1500);
 
   await softStep('Scenario 1 Step 1: bare p overlay baseline', async () => {
@@ -153,23 +131,17 @@ test('Box plot group comparison and covariate adjustment', async ({page}) => {
   });
 
   await softStep('Scenario 1 Step 3: enable group comparison via reveal icon', async () => {
-    const pt = await revealIcon(page, 'show-group-stats');
-    await page.mouse.click(pt.x, pt.y);
-
-    await v.waitForViewerRendered(page, 'Box plot', 1500);
+    await clickToggleIcon(page, 'show-group-stats');
     expect(await bpProp(page, 'showGroupComparison')).toBe(true);
   });
 
   await softStep('Scenario 1 Step 4: overall-p tooltip test conclusion', async () => {
-    const origin = await page.evaluate(() => {
-      const root = document.querySelector('[name="viewer-Box-plot"]')!;
-      const c = root.querySelector('canvas[name="canvas"]')!.getBoundingClientRect();
-      return {x: c.x, y: c.y};
-    });
+    const spots = await stripSpots(page);
+    const origin = await canvasRect(page);
+    for (const [dx, dy] of [[46, 16], [50, 16], [40, 15], [54, 16]]) spots.push({x: origin.x + dx, y: origin.y + dy});
     let tip = '';
-    for (const [dx, dy] of [[42, 16], [46, 16], [50, 16], [40, 15], [54, 16]]) {
-      await page.mouse.move(origin.x + dx, origin.y + dy);
-
+    for (const s of spots) {
+      await page.mouse.move(s.x, s.y);
       tip = await v.pollValue(() => page.evaluate(() => {
         const tt = document.querySelector('.d4-tooltip');
         return (tt?.textContent ?? '').trim();
@@ -199,7 +171,6 @@ test('Box plot group comparison and covariate adjustment', async ({page}) => {
   });
 
   await softStep('Scenario 1 Step 7: pick control group (control comparisons)', async () => {
-
     await driveSelect(page, 'control', 'Caucasian');
     expect(await bpProp(page, 'controlComparisons')).toBe(true);
     expect(await bpProp(page, 'controlGroup')).toBe('Caucasian');
@@ -239,11 +210,7 @@ test('Box plot group comparison and covariate adjustment', async ({page}) => {
 
     expect(tableInfo!.firstP).not.toBeNull();
 
-    const origin = await page.evaluate(() => {
-      const root = document.querySelector('[name="viewer-Box-plot"]')!;
-      const c = root.querySelector('canvas[name="canvas"]')!.getBoundingClientRect();
-      return {x: c.x, y: c.y, w: c.width, h: c.height};
-    });
+    const origin = await canvasRect(page);
     let accordionPanes: string[] = [];
     for (const [fx, fy] of [[0.10, 0.86], [0.14, 0.86], [0.18, 0.86], [0.10, 0.80], [0.22, 0.86]]) {
       await page.mouse.click(origin.x + origin.w * fx, origin.y + origin.h * fy);
@@ -293,8 +260,7 @@ test('Box plot group comparison and covariate adjustment', async ({page}) => {
   });
 
   await softStep('Scenario 1 Step 10: close group comparison', async () => {
-    const pt = await revealIcon(page, 'close-group-stats');
-    await page.mouse.click(pt.x, pt.y);
+    await clickToggleIcon(page, 'close-group-stats');
 
     await v.pollValue(() => page.evaluate(() => {
       const controls = document.querySelector('.d4-box-plot-group-comparison-controls');
@@ -309,6 +275,8 @@ test('Box plot group comparison and covariate adjustment', async ({page}) => {
     expect(controlsHidden).toBe(true);
   });
 
+  // The reveal-icon path is Scenario 1 Step 3's subject; here the comparison is a precondition and
+  // is set through the property.
   await softStep('Scenario 2 Setup: WEIGHT / SEX, group comparison on', async () => {
     await page.evaluate(async () => {
       const w = window as any;
@@ -320,14 +288,10 @@ test('Box plot group comparison and covariate adjustment', async ({page}) => {
         bp.props.covariateColumnName = '';
         bp.props.category1ColumnName = 'SEX';
         bp.props.valueColumnName = 'WEIGHT';
+        bp.props.showGroupComparison = true;
       }, 1000);
     });
-    if (await bpProp(page, 'showGroupComparison') !== true) {
-      const pt = await revealIcon(page, 'show-group-stats');
-      await page.mouse.click(pt.x, pt.y);
-
-      await v.waitForViewerRendered(page, 'Box plot', 1200);
-    }
+    await v.pollValue(() => bpProp(page, 'showGroupComparison'), (on) => on === true, 1200, 50);
     expect(await bpProp(page, 'showGroupComparison')).toBe(true);
   });
 
@@ -340,8 +304,8 @@ test('Box plot group comparison and covariate adjustment', async ({page}) => {
       }, 1500);
     });
     expect(await bpProp(page, 'adjustmentMode')).toBe('regressOut');
-    const dom = await page.evaluate(() => {
-      const root = document.querySelector('[name="viewer-Box-plot"]')!;
+    const dom = await page.evaluate((sel) => {
+      const root = document.querySelector(sel)!;
       const caption = Array.from(root.querySelectorAll('.d4-column-selector-caption'))
         .some((c) => /Adjust by:/i.test(c.textContent ?? ''));
       const toggle = Array.from(root.querySelectorAll('select')).find((s) =>
@@ -349,7 +313,7 @@ test('Box plot group comparison and covariate adjustment', async ({page}) => {
       const selectors = Array.from(root.querySelectorAll('.d4-column-selector'))
         .map((s) => (s.textContent ?? '').replace(/\s+/g, ' ').trim());
       return {caption, toggleValue: toggle?.value ?? '', selectors};
-    });
+    }, BOX);
     expect(dom.caption).toBe(true);
     expect(dom.toggleValue).toBe('regressOut');
     console.log('Step 2 axis selectors:', JSON.stringify(dom.selectors));
@@ -361,12 +325,12 @@ test('Box plot group comparison and covariate adjustment', async ({page}) => {
   await softStep('Scenario 2 Step 3: flip adjustment to Ratio', async () => {
     await driveSelect(page, 'adjust', 'ratio');
     expect(await bpProp(page, 'adjustmentMode')).toBe('ratio');
-    const toggleValue = await page.evaluate(() => {
-      const root = document.querySelector('[name="viewer-Box-plot"]')!;
+    const toggleValue = await page.evaluate((sel) => {
+      const root = document.querySelector(sel)!;
       const t = Array.from(root.querySelectorAll('select')).find((s) =>
         Array.from(s.options).some((o) => o.value === 'ratio'));
       return t?.value ?? '';
-    });
+    }, BOX);
     expect(toggleValue).toBe('ratio');
   });
 
@@ -384,8 +348,8 @@ test('Box plot group comparison and covariate adjustment', async ({page}) => {
     expect(await bpProp(page, 'method')).toBe('ANCOVA');
     // The control strip is rebuilt on a later pass than the render event driveSelect
     // waits on, so a single read catches the adjust toggle still up.
-    const dom = await v.pollValue(() => page.evaluate(() => {
-      const root = document.querySelector('[name="viewer-Box-plot"]')!;
+    const dom = await v.pollValue(() => page.evaluate((sel) => {
+      const root = document.querySelector(sel)!;
       const toggle = Array.from(root.querySelectorAll('select')).find((s) =>
         Array.from(s.options).some((o) => o.value === 'regressOut' || o.value === 'ratio'));
       const box = toggle?.getBoundingClientRect();
@@ -393,7 +357,7 @@ test('Box plot group comparison and covariate adjustment', async ({page}) => {
       const caption = Array.from(root.querySelectorAll('.d4-column-selector-caption'))
         .some((c) => /Adjust by:/i.test(c.textContent ?? ''));
       return {toggleHidden, caption};
-    }), (d) => d.toggleHidden && d.caption, 2500, 100);
+    }, BOX), (d) => d.toggleHidden && d.caption, 2500, 100);
     expect(dom.toggleHidden).toBe(true);
     expect(dom.caption).toBe(true);
     expect(await bpProp(page, 'adjustmentMode')).toBe('ratio');
@@ -482,17 +446,17 @@ test('Box plot group comparison and covariate adjustment', async ({page}) => {
       await driveSelect(page, 'control', 'M');
       expect(await bpProp(page, 'baselineMode')).toBe('matched');
 
-      await v.pollValue(() => page.evaluate(() => {
-        const root = document.querySelector('[name="viewer-Box-plot"]');
+      await v.pollValue(() => page.evaluate((sel) => {
+        const root = document.querySelector(sel);
         const spans = Array.from(root?.querySelectorAll('span') ?? []) as HTMLElement[];
         const cue = spans.find((el) => (el.textContent ?? '').trim() === '!'
           && getComputedStyle(el).color === 'rgb(235, 103, 103)');
         if (!cue) return false;
         const r = cue.getBoundingClientRect();
         return getComputedStyle(cue).display !== 'none' && r.width > 0 && r.height > 0;
-      }), (shown) => shown, 20000, 250);
-      const cue = await page.evaluate(() => {
-        const root = document.querySelector('[name="viewer-Box-plot"]');
+      }, BOX), (shown) => shown, 20000, 250);
+      const cue = await page.evaluate((sel) => {
+        const root = document.querySelector(sel);
         const spans = Array.from(root?.querySelectorAll('span') ?? []) as HTMLElement[];
         const el = spans.find((s) => (s.textContent ?? '').trim() === '!'
           && getComputedStyle(s).color === 'rgb(235, 103, 103)');
@@ -500,7 +464,7 @@ test('Box plot group comparison and covariate adjustment', async ({page}) => {
         const r = el.getBoundingClientRect();
         return {display: getComputedStyle(el).display, w: r.width, h: r.height,
           x: r.x + r.width / 2, y: r.y + r.height / 2};
-      });
+      }, BOX);
       console.log('Step 6 Simpson cue:', JSON.stringify(cue));
       expect(cue).not.toBeNull();
       expect(cue!.display).not.toBe('none');
@@ -512,7 +476,6 @@ test('Box plot group comparison and covariate adjustment', async ({page}) => {
       console.log('Step 6 Simpson tooltip:', tip);
       expect(tip).toMatch(/Pooling cancels opposite within-stratum trends/i);
     } finally {
-
       const names = await page.evaluate(async () => {
         const w = window as any;
         const bp = grok.shell.tv.viewers.find((x: any) => x.type === 'Box plot');
@@ -546,6 +509,6 @@ test('Box plot group comparison and covariate adjustment', async ({page}) => {
     expect(await bpProp(page, 'method')).toBe('');
   });
 
-  await page.evaluate(() => grok.shell.closeAll());
+  await v.closeAllAndWait(page);
   v.finishSpec();
 });

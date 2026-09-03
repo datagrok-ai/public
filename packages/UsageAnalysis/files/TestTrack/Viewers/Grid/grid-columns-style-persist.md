@@ -6,12 +6,14 @@ realizes:
 - viewers.grid
 priority: p0
 target_layer: playwright
+boot_lane: mixed
 coverage_type: smoke
 related_bugs:
 - id: GROK-19753
   status: fixed
 realized_as:
 - grid-columns-style-persist-spec.ts
+- grid-server-spec.ts
 expected_results:
 - anchor: Step 4
   expectation: After the first double-click on AGE, grid.props.sortByColumnNames contains 'AGE' and

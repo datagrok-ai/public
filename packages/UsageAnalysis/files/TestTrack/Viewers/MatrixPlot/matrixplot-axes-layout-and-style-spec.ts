@@ -60,6 +60,21 @@ async function setFontSize(page: Page, size: number) {
     (f) => new RegExp(`(^|\\s)${size}px`).test(f ?? ''), 700, 50);
 }
 
+// The gear's click handler is AppEvents.setCurrentObject(viewer), which is what grok.shell.o
+// does; the gear itself is not the subject here and a click on it, synthetic or real, opens
+// nothing on a shared local page in ~1 run in 3 (measured 2026-09-03). The panel is proven
+// bound to THIS viewer, since the previous spec's grid outlives its closed viewer.
+async function openGear(page: Page) {
+  const bound = () => page.evaluate(() => {
+    const mp = grok.shell.tv.viewers.find((vw: any) => vw.type === 'Matrix plot');
+    return !!document.querySelector('.property-grid [name="prop-view-x"]') && !!mp && grok.shell.o?.dart === mp.dart;
+  });
+  await page.evaluate(() => { grok.shell.o = grok.shell.tv.viewers.find((vw: any) => vw.type === 'Matrix plot'); });
+  if (await v.pollValue(bound, (b) => b, 3000, 100)) return;
+  await v.clickViewerTitlebarIcon(page, 'Matrix-plot', 'icon-font-icon-settings');
+  expect(await v.pollValue(bound, (b) => b, 3000, 100)).toBe(true);
+}
+
 test('Matrix Plot — Axes Visibility, Auto Layout, Font', async ({page}: {page: Page}) => {
   test.setTimeout(600_000);
 
@@ -69,20 +84,11 @@ test('Matrix Plot — Axes Visibility, Auto Layout, Font', async ({page}: {page:
   await openDatagrok(page);
   await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 3000});
   await v.addViewerByIcon(page, 'matrix-plot', 'Matrix-plot');
-  await v.openViewerGear(page, 'Matrix plot');
-
-  await page.evaluate(() => {
-    const cat = document.querySelector('[name="prop-category-axes"]') as HTMLElement | null;
-    if (cat && cat.querySelector('.property-grid-icon-plus')) cat.click();
-  });
-
-  await v.pollValue(() => page.evaluate(() => {
-    const cat = document.querySelector('[name="prop-category-axes"]');
-    return !!cat && !cat.querySelector('.property-grid-icon-plus');
-  }), (expanded) => expanded, 400, 25);
+  await openGear(page);
+  await v.ensurePropertyCategory(page, 'Matrix-plot', 'axes', 'show-x-axes');
+  await v.ensurePropertyCategory(page, 'Matrix-plot', 'style', 'auto-layout');
 
   await softStep('Scenario 1 — Show X Axes checkbox with Auto Layout on (GROK-19106)', async () => {
-
     expect(await readProp(page, 'autoLayout')).toBe(true);
     const wShown = await stripWidth(page, 'top');
     expect(wShown).toBeGreaterThan(0);
@@ -126,6 +132,6 @@ test('Matrix Plot — Axes Visibility, Auto Layout, Font', async ({page}: {page:
     expect(await labelFont(page)).toMatch(/(^|\s)10px/);
   });
 
-  await page.evaluate(() => grok.shell.closeAll());
+  await v.closeAllAndWait(page);
   v.finishSpec();
 });

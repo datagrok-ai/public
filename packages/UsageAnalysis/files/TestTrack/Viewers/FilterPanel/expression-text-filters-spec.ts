@@ -2,38 +2,26 @@
 realizes: [filters.cp.expression-and-text-ui]
 --- */
 import {expect, Page} from '@playwright/test';
-import {test} from '../../shared-page';
-import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
+import {localTest as test} from '../../shared-page';
+import {openDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
-import {addCardViaColumnSelector, cardCount, clickResetCriteriaIcon, trueCount} from '../../helpers/filter-panel';
+import {clickResetCriteriaIcon, trueCount} from '../../helpers/filter-panel';
+import {andOrControl, filterSummaryText, removeAllCards} from './expression-text-shared';
 
 declare const grok: any;
-declare const DG: any;
 
+// Scenario 1, the Expression filter on demog, on the local lane. Scenario 2, the Text filter
+// on beer.csv (no local copy), lives in expression-text-filters-server-spec.ts.
 test.use(specTestOptions);
 
 const demogPath = 'System:DemoFiles/demog.csv';
-const beerPath = 'System:DemoFiles/beer.csv';
 const fullCount_demog = 5850;
-const fullCount_beer = 118;
 
 async function expressionRuleCount(page: Page): Promise<number> {
   return page.evaluate(() => {
     const st = grok.shell.tv.getFiltersGroup().getStates(null, 'expression');
     return st?.[0]?.gridNames?.length ?? 0;
   });
-}
-
-async function filterSummaryText(page: Page): Promise<string> {
-  return page.evaluate(() => {
-    const el = grok.shell.tv.getFiltersGroup().getFilterSummary();
-    return (el?.textContent ?? '').trim();
-  });
-}
-
-async function removeAllCards(page: Page): Promise<void> {
-  await v.drivePanelMenuLeaf(page, 'Filters', null, 'Remove All');
-  await expect.poll(async () => cardCount(page), {timeout: 20_000, intervals: [400, 800, 1500]}).toBe(0);
 }
 
 async function resetToExpressionCard(page: Page): Promise<void> {
@@ -83,36 +71,41 @@ async function commitFormRule(page: Page, column: string, op: string, value: str
   }, {col: column, operation: op, val: value});
 }
 
-async function andOrControl(page: Page, column: string | null, toggle: boolean): Promise<string> {
-  return page.evaluate(async ({col, doToggle}) => {
-    const name = col === null ? 'expression' : col;
-    const card = col === null
-      ? (document.querySelector('.d4-expression-filter') as HTMLElement | null)?.closest('.d4-filter')
-      : [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter')]
-        .find((c) => ((c.querySelector('.d4-filter-column-name'))?.textContent ?? '').trim() === col);
-    if (!card) throw new Error(`the panel carries no ${name} card to read its AND/OR control on`);
-    const header = card.querySelector('.d4-filter-header');
-    if (!header) throw new Error(`the ${name} card carries no .d4-filter-header`);
-    const read = () => [...header.querySelectorAll('div')]
-      .find((d) => { const t = (d.textContent ?? '').trim(); return t === 'OR' || t === 'AND'; }) as HTMLElement | undefined;
-    const before = read();
-    if (!before) throw new Error(`the ${name} card header carries no AND/OR control to read or click`);
-    const was = (before.textContent ?? '').trim();
-    if (!doToggle) return was;
-    before.click();
-    return (window as any).__poll(() => (read()?.textContent ?? '').trim(),
-      (t: string) => t !== '' && t !== was, 1500, 50);
-  }, {col: column, doToggle: toggle});
+// The rule grid lays its rows out from ~11px down at a 27px pitch and the checkbox answers only
+// within ~8px of the row centre (probed 2026-09-03: rows 0/1/2 flip at y 17-32, 44-59, 71-74),
+// so the rows are addressed by that pitch rather than by canvas-height / rows, which lands on a
+// band edge once the canvas is taller than its rows.
+const RULE_GRID_HEADER_H = 10;
+const RULE_GRID_ROW_PITCH = 27;
+
+async function ruleRowPoint(page: Page, rowIndex: number, ruleCount: number, xInset: number):
+    Promise<{x: number; y: number}> {
+  const pt = await page.evaluate(async ({idx, count, inset, header, pitch}) => {
+    const card = (document.querySelector('.d4-expression-filter') as HTMLElement).closest('.d4-filter')!;
+    const overlay = card.querySelector('[name="viewer-Grid"] [name="overlay"]') as HTMLElement | null;
+    const canvas = card.querySelector('[name="viewer-Grid"] canvas[name="canvas"]') as HTMLCanvasElement | null;
+    if (!overlay || !canvas) return {error: 'the rule grid has no overlay or canvas'};
+    // the canvas grows to its rows a frame after the rule lands in the state
+    const tall = await (window as any).__poll(() => canvas.getBoundingClientRect().height,
+      (h: number) => h >= header + pitch * count, 3000, 50);
+    const cr = canvas.getBoundingClientRect();
+    if (tall < header + pitch * count)
+      return {error: `the rule grid canvas is ${cr.width}x${cr.height}, too short for ${count} rows of ${pitch}px under a ${header}px header`};
+    const or = overlay.getBoundingClientRect();
+    return {
+      x: Math.round(inset < 0 ? or.left + or.width / 2 : or.left + inset),
+      y: Math.round(cr.top + header + pitch * idx + pitch / 2),
+    };
+  }, {idx: rowIndex, count: ruleCount, inset: xInset, header: RULE_GRID_HEADER_H, pitch: RULE_GRID_ROW_PITCH});
+  if ('error' in pt) throw new Error(`rule row ${rowIndex}: ${pt.error}`);
+  return pt;
 }
 
 async function removeQueryRow(page: Page, rowIndex: number, ruleCount: number): Promise<boolean> {
-  return page.evaluate(async ({idx, count}) => {
+  const pt = await ruleRowPoint(page, rowIndex, ruleCount, -1);
+  return page.evaluate(async ({x, y}) => {
     const card = (document.querySelector('.d4-expression-filter') as HTMLElement).closest('.d4-filter')!;
     const overlay = card.querySelector('[name="viewer-Grid"] [name="overlay"]') as HTMLElement;
-    const r = overlay.getBoundingClientRect();
-    const rowH = r.height / Math.max(count, 1);
-    const x = Math.round(r.left + r.width / 2);
-    const y = Math.round(r.top + idx * rowH + rowH / 2);
     overlay.dispatchEvent(new PointerEvent('pointermove', {bubbles: true, clientX: x, clientY: y}));
     overlay.dispatchEvent(new MouseEvent('mousemove', {bubbles: true, clientX: x, clientY: y}));
     await new Promise((res) => setTimeout(res, 400));
@@ -121,12 +114,9 @@ async function removeQueryRow(page: Page, rowIndex: number, ruleCount: number): 
       const popup = [...document.querySelectorAll('.d4-menu-popup')].pop();
       return [...(popup?.querySelectorAll('.d4-menu-item-label') ?? [])];
     };
-    const deadline = Date.now() + 5000;
-    let leaf: Element | null = null;
-    while (!leaf && Date.now() < deadline) {
-      await new Promise((res) => setTimeout(res, 100));
-      leaf = items().find((it) => (it.textContent ?? '').trim() === 'Remove Query')?.closest('.d4-menu-item') ?? null;
-    }
+    const leaf = await (window as any).__poll(
+      () => items().find((it) => (it.textContent ?? '').trim() === 'Remove Query')?.closest('.d4-menu-item') ?? null,
+      (l: Element | null) => l !== null, 5000, 100);
     if (!leaf) {
       const visible = items().map((it) => (it.textContent ?? '').trim()).join(' | ');
       document.body.click();
@@ -138,17 +128,14 @@ async function removeQueryRow(page: Page, rowIndex: number, ruleCount: number): 
       () => (grok.shell.tv.getFiltersGroup().getStates(null, 'expression')[0]?.gridNames ?? []).length,
       (n: number) => n < rowsBefore, 1300, 50);
     return true;
-  }, {idx: rowIndex, count: ruleCount});
+  }, pt);
 }
 
 async function toggleRuleCheckbox(page: Page, rowIndex: number, ruleCount: number): Promise<boolean[]> {
-  return page.evaluate(async ({idx, count}) => {
+  const pt = await ruleRowPoint(page, rowIndex, ruleCount, 8);
+  return page.evaluate(async ({x, y}) => {
     const card = (document.querySelector('.d4-expression-filter') as HTMLElement).closest('.d4-filter')!;
     const overlay = card.querySelector('[name="viewer-Grid"] [name="overlay"]') as HTMLElement;
-    const r = overlay.getBoundingClientRect();
-    const rowH = r.height / Math.max(count, 1);
-    const x = Math.round(r.left + 8);
-    const y = Math.round(r.top + idx * rowH + rowH / 2);
     for (const type of ['pointermove', 'mousemove'])
       overlay.dispatchEvent(new MouseEvent(type, {bubbles: true, clientX: x, clientY: y}));
     await new Promise((res) => setTimeout(res, 300));
@@ -160,7 +147,7 @@ async function toggleRuleCheckbox(page: Page, rowIndex: number, ruleCount: numbe
     await (window as any).__poll(values, (v: string) => v !== valuesBefore, 1200, 50);
     const s = grok.shell.tv.getFiltersGroup().getStates(null, 'expression')[0];
     return (s?.gridValues ?? []) as boolean[];
-  }, {idx: rowIndex, count: ruleCount});
+  }, pt);
 }
 
 async function toggleExpressionMode(page: Page): Promise<string> {
@@ -262,58 +249,11 @@ async function pasteRegexValueAndCommit(page: Page, column: string, pasted: stri
   }, {col: column, text: pasted});
 }
 
-async function resetToAromaTextFilter(page: Page): Promise<void> {
-  await removeAllCards(page);
-  await addCardViaColumnSelector(page, 'Aroma');
-  await page.waitForFunction(() => {
-    const card = [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter')]
-      .find((c) => ((c.querySelector('.d4-filter-column-name'))?.textContent ?? '').trim() === 'Aroma');
-    if (!card) return false;
-    if (!card.querySelector('.d4-text-filter')) return false;
-    if (card.querySelector('.d4-update-shadow')) return false;
-    return !!card.querySelector('input.d4-search-input') && !!card.querySelector('input[type="range"]');
-  }, null, {timeout: 120_000, polling: 250});
-}
-
-async function addAromaTerm(page: Page, term: string): Promise<number> {
-  return page.evaluate(async (t) => {
-    const card = [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter')]
-      .find((c) => ((c.querySelector('.d4-filter-column-name'))?.textContent || '').trim() === 'Aroma') as HTMLElement;
-    const input = card.querySelector('.d4-search-input') as HTMLInputElement;
-    const setInp = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')!.set!;
-    const before = grok.shell.tv.dataFrame.filter.trueCount;
-    input.focus();
-    setInp.call(input, t);
-    input.dispatchEvent(new Event('input', {bubbles: true}));
-    input.dispatchEvent(new KeyboardEvent('keydown', {bubbles: true, key: 'Enter', code: 'Enter', keyCode: 13} as any));
-    input.dispatchEvent(new KeyboardEvent('keyup', {bubbles: true, key: 'Enter', code: 'Enter', keyCode: 13} as any));
-    return (window as any).__moved(() => grok.shell.tv.dataFrame.filter.trueCount, before, 1700);
-  }, term);
-}
-
-async function setAromaFuzziness(page: Page, value: number): Promise<number> {
-  return page.evaluate(async (val) => {
-    const card = [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter')]
-      .find((c) => ((c.querySelector('.d4-filter-column-name'))?.textContent || '').trim() === 'Aroma') as HTMLElement;
-    const range = card.querySelector('input[type="range"]') as HTMLInputElement;
-    const setInp = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')!.set!;
-    const before = grok.shell.tv.dataFrame.filter.trueCount;
-    range.focus();
-    setInp.call(range, String(val));
-    return (window as any).__filtered(() => {
-      range.dispatchEvent(new Event('input', {bubbles: true}));
-      range.dispatchEvent(new Event('change', {bubbles: true}));
-    }, 1800, before);
-  }, value);
-}
-
-test('Filter Panel — Expression filter and Text filter driven through their own UI', async ({page}) => {
+test('Filter Panel — Expression filter driven through its own UI', async ({page}) => {
   test.setTimeout(900_000);
 
-  await loginToDatagrok(page);
-
+  await openDatagrok(page);
   await v.openTable(page, {path: demogPath, withFilterPanel: true});
-  await v.installEventWaits(page);
 
   await softStep('Setup — record the full demog row count', async () => {
     expect(await trueCount(page), 'baseline is the full demog row set').toBe(fullCount_demog);
@@ -534,65 +474,6 @@ test('Filter Panel — Expression filter and Text filter driven through their ow
     const afterRecheck = await toggleRuleCheckbox(page, 1, 2);
     expect(afterRecheck[1], 'the second rule must read as switched back on').toBe(true);
     expect(await trueCount(page), 're-checking the rule restores the exact two-rule count').toBe(bothRules);
-  });
-
-  await v.openTable(page, {path: beerPath, withFilterPanel: true});
-
-  let trueCount_or_beer = 0;
-  let trueCount_and_beer = 0;
-
-  await softStep('Scenario 2 Step 13 — Aroma text filter: a term drops the beer row count', async () => {
-    await resetToAromaTextFilter(page);
-    expect(await trueCount(page), 'baseline is the full beer row set').toBe(fullCount_beer);
-    await setAromaFuzziness(page, 0);
-    const afterMalt = await addAromaTerm(page, 'malt');
-    expect(afterMalt, 'typing a term and pressing Enter drops the beer row count').toBeLessThan(fullCount_beer);
-    expect(afterMalt).toBeGreaterThan(0);
-    expect(await filterSummaryText(page), 'the summary reflects the active Aroma term').toContain('malt');
-
-    const content = await page.evaluate(() => {
-      const df = grok.shell.tv.dataFrame;
-      const col = df.col('Aroma');
-      let passingWithTerm = 0, passingWithoutTerm = 0, excludedWithTerm = 0;
-      for (let i = 0; i < df.rowCount; i++) {
-        const has = String(col.get(i) ?? '').toLowerCase().includes('malt');
-        if (df.filter.get(i)) has ? passingWithTerm++ : passingWithoutTerm++;
-        else if (has) excludedWithTerm++;
-      }
-      return {passingWithTerm, passingWithoutTerm, excludedWithTerm};
-    });
-    expect(content.passingWithTerm, 'no row containing the term survived — the term is not the criterion')
-      .toBeGreaterThan(0);
-    expect(content.passingWithoutTerm, 'rows whose Aroma does not contain the term passed the filter')
-      .toBe(0);
-    expect(content.excludedWithTerm, 'rows whose Aroma contains the term were filtered out').toBe(0);
-  });
-
-  await softStep('Scenario 2 Step 14 — two terms: AND is strictly stricter than OR', async () => {
-    await addAromaTerm(page, 'hop');
-    expect(await andOrControl(page, 'Aroma', false), 'the two-term card starts in OR mode').toBe('OR');
-    trueCount_or_beer = await trueCount(page);
-    const afterToggle = await andOrControl(page, 'Aroma', true);
-    expect(afterToggle, 'the header toggle switches OR to AND').toBe('AND');
-    trueCount_and_beer = await trueCount(page);
-    expect(trueCount_and_beer, 'AND is strictly stricter than OR for the same two terms — the control is wired')
-      .toBeLessThan(trueCount_or_beer);
-  });
-
-  await softStep('Scenario 2 Step 15 — fuzziness 0 yields zero matches; raising the slider raises the count above 0 and grows it', async () => {
-    await resetToAromaTextFilter(page);
-    expect(await trueCount(page),
-      'the fresh Aroma card must be carrying no criterion — without a proven full beer row set here, a leftover filter already sitting at zero rows would satisfy the near-miss check below on its own')
-      .toBe(fullCount_beer);
-    const atReset = await setAromaFuzziness(page, 0);
-    expect(atReset, 'pinning fuzziness to 0 filters nothing on its own').toBe(fullCount_beer);
-    const atZero = await addAromaTerm(page, 'maltx');
-    expect(atZero, 'at fuzziness 0 a non-matching near-miss term yields zero matches').toBe(0);
-    const atMid = await setAromaFuzziness(page, 0.5);
-    const atHigh = await setAromaFuzziness(page, 0.8);
-    expect(atMid, 'raising fuzziness recovers matches — the count rises above 0').toBeGreaterThan(0);
-    expect(atHigh, 'raising fuzziness further grows the matched set').toBeGreaterThan(atMid);
-    expect(atHigh).toBeLessThanOrEqual(fullCount_beer);
   });
 
   await softStep('Teardown', async () => {

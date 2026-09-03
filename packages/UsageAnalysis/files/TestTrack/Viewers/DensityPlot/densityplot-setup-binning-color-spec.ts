@@ -57,16 +57,11 @@ test('Density Plot — Setup, Axis Columns, Binning, Color Mapping, Persistence'
   });
   const errCount = () => pageErrors.length + consoleErrors.length;
 
-  const settledPx = async () => {
-    let prev = (await v.countCanvasPixels(page, 'Density plot')).total;
-    let cur = prev;
-    for (let i = 0; i < 8; i++) {
-      await page.waitForTimeout(350);
-      cur = (await v.countCanvasPixels(page, 'Density plot')).total;
-      if (Math.abs(cur - prev) < 500) break;
-      prev = cur;
-    }
-    return cur;
+  const px = async () => (await v.countCanvasPixels(page, 'Density plot')).total;
+  const pxStable = () => v.pollStable(px, (a, b) => a === b, 2000, 50);
+  const pxMoved = async (before: number) => {
+    await v.pollValue(px, (c) => c !== before, 2000, 50);
+    return pxStable();
   };
 
   const selectorLabel = (axis: 'x' | 'y') => page.evaluate((a: string) => {
@@ -132,27 +127,27 @@ test('Density Plot — Setup, Axis Columns, Binning, Color Mapping, Persistence'
     const errBefore = errCount();
 
     await setBinsViaSlider(page, 50);
-    const px50ref = await settledPx();
+    const px50ref = await pxStable();
     await setBinsViaSlider(page, 1);
     const bins1Prop = await readProp('bins');
-    const px1 = await settledPx();
+    const px1 = await pxMoved(px50ref);
     console.log(`DensityPlot bins=1 edge: px50ref=${px50ref} px1=${px1} delta=${px1 - px50ref}`);
     expect(bins1Prop).toBe(1);
     expect(px1).toBeGreaterThan(0);
 
     expect(px1 - px50ref).toBeGreaterThan(70000);
     await setBinsViaSlider(page, 50);
-    const px50back = await settledPx();
+    const px50back = await pxMoved(px1);
     expect(await readProp('bins')).toBe(50);
 
     expect(px1 - px50back).toBeGreaterThan(70000);
 
     await setBinsViaSlider(page, 5);
     const bins5Prop = await readProp('bins');
-    const px5 = await settledPx();
+    const px5 = await pxMoved(px50back);
     await setBinsViaSlider(page, 200);
     const bins200Prop = await readProp('bins');
-    const px200 = await settledPx();
+    const px200 = await pxMoved(px5);
     console.log(`DensityPlot bins px: px5=${px5} px200=${px200} delta=${px5 - px200}`);
     expect(bins5Prop).toBe(5);
     expect(bins200Prop).toBe(200);
@@ -164,7 +159,7 @@ test('Density Plot — Setup, Axis Columns, Binning, Color Mapping, Persistence'
 
     await setPropSelect(page, 'prop-bin-shape', 'rectangle');
     const shape = await readProp('binShape');
-    const pxRect = await settledPx();
+    const pxRect = await pxMoved(px200);
     console.log(`DensityPlot shape px: pxRect=${pxRect}`);
     expect(shape).toBe('rectangle');
     expect(pxRect).toBeGreaterThan(0);
@@ -174,13 +169,13 @@ test('Density Plot — Setup, Axis Columns, Binning, Color Mapping, Persistence'
 
   await softStep('Scenario 3 — Invert Color Scheme (strong repaint) and Color Transform Type', async () => {
     const errBefore = errCount();
-    const pxBefore = await settledPx();
+    const pxBefore = await pxStable();
     await page.evaluate(() => {
       (document.querySelector(
         '[name="prop-invert-color-scheme"] input[type="checkbox"]') as HTMLInputElement)?.click();
     });
     const invert = await v.pollValue(() => readProp('invertColorScheme'), (b) => b === true, 400, 100);
-    const pxInvert = await settledPx();
+    const pxInvert = await pxMoved(pxBefore);
     console.log(`DensityPlot invert px: pxBefore=${pxBefore} pxInvert=${pxInvert} delta=${pxInvert - pxBefore}`);
     expect(invert).toBe(true);
 
@@ -214,13 +209,12 @@ test('Density Plot — Setup, Axis Columns, Binning, Color Mapping, Persistence'
     await v.pollValue(backdropCount, (n) => n > 0, 3000, 100);
 
     await page.keyboard.press('s');
-    await page.waitForTimeout(100); 
+    await v.pollValue(() => page.evaluate(() => document.querySelectorAll('.d4-combo-popup li').length),
+      (n) => n > 0, 300, 25);
     await page.keyboard.type('ex');
     await page.keyboard.press('ArrowDown');
     await page.keyboard.press('Enter');
-    await page.waitForTimeout(300); 
-
-    const xAfter = (await readXY()).x;
+    const xAfter = (await v.pollValue(readXY, (xy) => xy.x !== xBefore, 300, 50)).x;
 
     await page.evaluate(() => document.body.dispatchEvent(new MouseEvent('mousedown', {bubbles: true})));
     await v.pollValue(backdropCount, (n) => n === 0, 200, 100);
@@ -254,7 +248,7 @@ test('Density Plot — Setup, Axis Columns, Binning, Color Mapping, Persistence'
       expect((await readXY()).x).toBe(constCol);
 
       await setPropSelect(page, 'prop-bin-shape', 'rectangle');
-      const pxRect = await settledPx();
+      const pxRect = await pxStable();
       const rectAttached = await page.evaluate(() => {
         const d = grok.shell.tv.viewers.find((vw: any) => vw.type === 'Density plot') as any;
         return document.body.contains(d.root);
@@ -265,7 +259,7 @@ test('Density Plot — Setup, Axis Columns, Binning, Color Mapping, Persistence'
       expect(pxRect).toBeGreaterThan(0);
 
       await setPropSelect(page, 'prop-bin-shape', 'hexagon');
-      const pxHex = await settledPx();
+      const pxHex = await pxMoved(pxRect);
       const hexAttached = await page.evaluate(() => {
         const d = grok.shell.tv.viewers.find((vw: any) => vw.type === 'Density plot') as any;
         return document.body.contains(d.root);

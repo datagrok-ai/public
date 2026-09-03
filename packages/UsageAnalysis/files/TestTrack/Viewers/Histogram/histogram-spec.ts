@@ -2,9 +2,12 @@
 realizes: []
 --- */
 
-import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
+import {expect} from '@playwright/test';
+import {localTest as test} from '../../shared-page';
+import {openDatagrok, specTestOptions, softStep, isLocalBootNoise} from '../../spec-login';
 import * as v from '../../helpers/viewers';
+
+declare const grok: any;
 
 test.use(specTestOptions);
 
@@ -15,14 +18,16 @@ test('Histogram tests', async ({page}) => {
 
   const pageErrors: string[] = [];
   const consoleErrors: string[] = [];
-  page.on('pageerror', (e) => pageErrors.push(String(e)));
-  page.on('console', (m) => { if (m.type() === 'error') consoleErrors.push(m.text()); });
+  const onPageError = (e: Error) => pageErrors.push(String(e));
+  const onConsole = (m: any) => { if (m.type() === 'error' && !isLocalBootNoise(m.text())) consoleErrors.push(m.text()); };
+  page.on('pageerror', onPageError);
+  page.on('console', onConsole);
   const errorCount = () => pageErrors.length + consoleErrors.length;
   const viewerAlive = () => page.evaluate(() =>
     !!grok.shell.tv.viewers.find(v => v.type === 'Histogram')
     && !!document.querySelector('[name="viewer-Histogram"]'));
 
-  await loginToDatagrok(page);
+  await openDatagrok(page);
 
   await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 3000});
 
@@ -200,7 +205,7 @@ test('Histogram tests', async ({page}) => {
     const errBefore = errorCount();
     await v.closeAllAndWait(page);
     await page.evaluate(async () => {
-      const df = await grok.dapi.files.readCsv('System:AppData/Chem/tests/spgi-100.csv');
+      const df = await (window as any).__readCsv('System:AppData/Chem/tests/spgi-100.csv');
       df.name = 'SPGI';
       const tv = grok.shell.addTableView(df);
       await new Promise(resolve => {
@@ -243,7 +248,7 @@ test('Histogram tests', async ({page}) => {
     const errBefore = errorCount();
     await v.closeAllAndWait(page);
     await page.evaluate(async () => {
-      const df = await grok.dapi.files.readCsv('System:DemoFiles/demog.csv');
+      const df = await (window as any).__readCsv('System:DemoFiles/demog.csv');
       const tv = grok.shell.addTableView(df);
       await new Promise(resolve => {
         const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(undefined); });
@@ -258,15 +263,9 @@ test('Histogram tests', async ({page}) => {
     });
     await v.setViewerProps(page, 'Histogram', [{set: {valueColumnName: 'AGE', filter: ''}, wait: 600}]);
 
-    let prevPx = (await v.countCanvasPixels(page, 'Histogram')).total;
-    let clearedPx = prevPx;
-    for (let i = 0; i < 5; i++) {
-
-      await page.waitForTimeout(300);
-      clearedPx = (await v.countCanvasPixels(page, 'Histogram')).total;
-      if (Math.abs(clearedPx - prevPx) < 200) break;
-      prevPx = clearedPx;
-    }
+    let prevPx = -1;
+    const clearedPx = await v.pollStable(async () => (await v.countCanvasPixels(page, 'Histogram')).total,
+      (a, b) => { prevPx = a; return Math.abs(a - b) < 200; }, 1500, 300);
     expect(Math.abs(clearedPx - prevPx)).toBeLessThan(200);
     const cleared = await page.evaluate(() => {
       const h = grok.shell.tv.viewers.find(v => v.type === 'Histogram')!;
@@ -298,7 +297,7 @@ test('Histogram tests', async ({page}) => {
   await softStep('Data — table switching', async () => {
     await v.closeAllAndWait(page);
     const result = await page.evaluate(async () => {
-      const dfSpgi = await grok.dapi.files.readCsv('System:AppData/Chem/tests/spgi-100.csv');
+      const dfSpgi = await (window as any).__readCsv('System:AppData/Chem/tests/spgi-100.csv');
       dfSpgi.name = 'SPGI';
       grok.shell.addTableView(dfSpgi);
       await new Promise(resolve => {
@@ -312,7 +311,7 @@ test('Histogram tests', async ({page}) => {
         await new Promise(r => setTimeout(r, 25));
       }
 
-      const dfDemog = await grok.dapi.files.readCsv('System:DemoFiles/demog.csv');
+      const dfDemog = await (window as any).__readCsv('System:DemoFiles/demog.csv');
       dfDemog.name = 'demog';
       grok.shell.addTableView(dfDemog);
       for (let i = 0; i < 32; i++) {
@@ -339,6 +338,16 @@ test('Histogram tests', async ({page}) => {
     expect(result.after.value).not.toBe(result.before.value);
     expect(result.demogHasValueCol).toBe(true);
   });
+
+  page.off('pageerror', onPageError);
+  page.off('console', onConsole);
+  // the context panel keeps the closed viewer's property grid, and neither shell.o = null nor
+  // rebinding shell.o drops it (measured 2026-09-03); the next spec's openViewerProperties then
+  // skips the gear and edits a dead grid, so the stale node is removed here
+  await page.evaluate(() => {
+    for (const e of Array.from(document.querySelectorAll('.property-grid'))) e.remove();
+  });
+  await v.cleanupShell(page);
 
   v.finishSpec();
 });

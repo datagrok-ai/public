@@ -7,6 +7,7 @@ realizes:
   - viewers.filters
 priority: p1
 target_layer: playwright
+boot_lane: local
 coverage_type: regression
 related_bugs:
   - id: GROK-19516

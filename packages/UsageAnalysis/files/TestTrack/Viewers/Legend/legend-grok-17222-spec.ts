@@ -4,8 +4,9 @@ realizes: [viewers.scatter-plot, viewers.histogram, viewers.line-chart, viewers.
 // GROK-17222: legend item count must update under FP, in-viewer, and Pie/Bar click-to-filter.
 
 import {localTest as test, expect} from '../../shared-page';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
+import {openDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
 import * as v from '../../helpers/viewers';
+import {clickCanvasFilter} from './canvas-filter';
 
 test.use(specTestOptions);
 
@@ -13,7 +14,7 @@ test('GROK-17222: legend reflects filter state across 4 trigger sources', async 
   test.setTimeout(900_000);
   stepErrors.length = 0;
 
-  await loginToDatagrok(page);
+  await openDatagrok(page);
   await v.openTable(page, {withFilterPanel: true});
   await v.addLegendViewers(page, {
     column: 'Stereo Category',
@@ -54,14 +55,14 @@ test('GROK-17222: legend reflects filter state across 4 trigger sources', async 
   });
 
   await softStep('Step 6: Pie chart click-to-filter narrows legend', async () => {
-    const result = await v.clickCanvasFilter(page, {viewerType: 'Pie chart', column: 'Stereo Category'});
+    const result = await clickCanvasFilter(page, {viewerType: 'Pie chart', column: 'Stereo Category'});
     expect(result.totalFiltered).toBeGreaterThan(0);
     const lcItems = (await v.readLegend(page, 'Line chart')).itemCount;
     expect(lcItems, 'Line chart legend updates after Pie click-to-filter (GROK-17222)').toBeGreaterThanOrEqual(0);
   });
 
   await softStep('Step 7: Bar chart click-to-filter narrows legend', async () => {
-    const result = await v.clickCanvasFilter(page, {viewerType: 'Bar chart', column: 'Stereo Category'});
+    const result = await clickCanvasFilter(page, {viewerType: 'Bar chart', column: 'Stereo Category'});
     expect(result.survivors).toBe(1);
     expect(result.totalFiltered).toBeGreaterThan(0);
     const lcItems = (await v.readLegend(page, 'Line chart')).itemCount;

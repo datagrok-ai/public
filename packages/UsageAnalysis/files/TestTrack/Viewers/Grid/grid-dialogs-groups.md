@@ -6,6 +6,7 @@ realizes:
   - viewers.grid
 priority: p2
 target_layer: playwright
+boot_lane: mixed
 coverage_type: edge
 related_bugs:
   - id: GROK-20167
@@ -30,6 +31,7 @@ related_bugs:
     status: fixed
 realized_as:
   - grid-dialogs-groups-spec.ts
+  - grid-server-spec.ts
 expected_results:
   - anchor: Step 4
     expectation: After clicking OK in the Sort dialog configured with SEX then AGE,

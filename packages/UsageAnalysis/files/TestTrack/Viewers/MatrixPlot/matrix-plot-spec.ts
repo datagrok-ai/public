@@ -185,6 +185,6 @@ test('Matrix plot tests', async ({page}: {page: Page}) => {
     expect(errCount()).toBe(errBefore);
   });
 
-  await page.evaluate(() => grok.shell.closeAll());
+  await v.closeAllAndWait(page);
   v.finishSpec();
 });

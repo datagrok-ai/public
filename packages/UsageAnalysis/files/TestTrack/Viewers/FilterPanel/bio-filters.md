@@ -6,6 +6,7 @@ realizes:
   - viewers.filters
 priority: p2
 target_layer: playwright
+boot_lane: server
 coverage_type: regression
 related_bugs: []
 realized_as:

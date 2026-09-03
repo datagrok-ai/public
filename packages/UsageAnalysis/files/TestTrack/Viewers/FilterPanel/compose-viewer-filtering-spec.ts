@@ -2,58 +2,22 @@
 realizes: [filters.cp.compose-with-viewer-filtering, filters.int.and-combination]
 --- */
 import {expect, Page} from '@playwright/test';
-import {test} from '../../shared-page';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
+import {localTest as test} from '../../shared-page';
+import {openDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 import {expectHeaderCounter, expectHeaderCounterNow, trueCount} from '../../helpers/filter-panel';
+import {addViewer, FULL, PANEL_CATEGORY, raceSelectedCategories, seedPanelCriterion, viewerCanvasRect,
+  zoomScatterPlot} from './compose-viewer-shared';
 
 declare const grok: any;
 
+// Scenarios 1, 3 and 4 on the local lane. Scenario 2 (the layout saved to the gallery and
+// re-applied over the API) lives in compose-viewer-filtering-server-spec.ts.
 test.use(specTestOptions);
 
 const datasetPath = 'System:DemoFiles/demog.csv';
-const FULL = 5850;
-const PANEL_CATEGORY = 'Asian';
 const SPLIT_COLUMN = 'SEX';
 const RACE_CARD_CANVAS = '.d4-filter [name="canvas"]';
-
-async function raceSelectedCategories(page: Page): Promise<string[] | null> {
-  return page.evaluate(() => {
-    const states = grok.shell.tv.getFiltersGroup().getStates('RACE', 'categorical') as any[];
-    if (!states || states.length === 0) return null;
-    const s = states[0];
-    return Array.isArray(s.selected) ? s.selected.map((c: any) => String(c)) : null;
-  });
-}
-
-async function seedPanelCriterion(page: Page, category: string): Promise<number> {
-  await page.evaluate(() => { grok.shell.tv.dataFrame.selection.setAll(false); });
-  await v.resetFilters(page, {clearScatterFilter: true});
-  const {filteredCount} = await v.applyCategoricalFilter(page, 'RACE', [category]);
-  return filteredCount;
-}
-
-async function addViewer(page: Page, type: string): Promise<void> {
-  await page.evaluate(async (t: string) => {
-    const w = window as any;
-    const viewer = grok.shell.tv.addViewer(t);
-    await w.__poll(() => Array.from(grok.shell.tv.viewers).includes(viewer),
-      (there: boolean) => there, 1500, 25);
-    await w.__eventFired(`viewer:${t}.onViewerRendered`, 1500).catch(() => {});
-  }, type);
-}
-
-async function viewerCanvasRect(page: Page, type: string):
-    Promise<{x: number; y: number; w: number; h: number} | null> {
-  return page.evaluate((t: string) => {
-    const vw = grok.shell.tv.viewers.find((x: any) => x.type === t);
-    if (!vw) return null;
-    const cv = vw.root.querySelector('canvas[name="canvas"]') || vw.root.querySelector('canvas');
-    if (!cv) return null;
-    const r = cv.getBoundingClientRect();
-    return {x: r.x, y: r.y, w: r.width, h: r.height};
-  }, type);
-}
 
 async function closeViewerByTitlebar(page: Page, viewerName: string, type: string): Promise<void> {
   await v.clickViewerTitlebarIcon(page, viewerName, 'Close');
@@ -68,22 +32,15 @@ async function driveViewerContextMenuLeaf(page: Page, type: string, path: string
   await page.mouse.click(rect.x + rect.w / 2, rect.y + rect.h / 2, {button: 'right'});
   await page.locator('.d4-menu-popup').last().waitFor({timeout: 15_000});
   return page.evaluate(async (segments: string[]) => {
+    const w = window as any;
     const findLabel = (text: string) => {
       const popup = [...document.querySelectorAll('.d4-menu-popup')].pop();
       return [...(popup?.querySelectorAll('.d4-menu-item-label') ?? [])]
         .find((l) => (l.textContent ?? '').trim() === text) as HTMLElement | undefined;
     };
-    const waitForLabel = async (text: string) => {
-      const deadline = Date.now() + 5000;
-      let l = findLabel(text);
-      while (!l && Date.now() < deadline) {
-        await new Promise((res) => setTimeout(res, 100));
-        l = findLabel(text);
-      }
-      return l;
-    };
     for (let i = 0; i < segments.length; i++) {
-      const label = await waitForLabel(segments[i]);
+      const label = await w.__poll(() => findLabel(segments[i]),
+        (l: HTMLElement | undefined) => l !== undefined, 5000, 50);
       if (!label) return false;
       const item = (label.closest('.d4-menu-item') ?? label.closest('.d4-menu-group')) as HTMLElement | null;
       if (!item) return false;
@@ -93,10 +50,10 @@ async function driveViewerContextMenuLeaf(page: Page, type: string, path: string
       const opened = document.querySelectorAll('.d4-menu-popup').length;
       item.dispatchEvent(new MouseEvent('mouseenter', at));
       item.dispatchEvent(new MouseEvent('mousemove', at));
-      await (window as any).__poll(() => document.querySelectorAll('.d4-menu-popup').length,
+      await w.__poll(() => document.querySelectorAll('.d4-menu-popup').length,
         (n: number) => n > opened, 400, 25);
     }
-    await (window as any).__stable(() => document.querySelectorAll('.d4-menu-popup').length, 500, 50);
+    await w.__stable(() => document.querySelectorAll('.d4-menu-popup').length, 500, 50);
     return true;
   }, path);
 }
@@ -159,21 +116,12 @@ async function resetSliderByDoubleClick(page: Page, rootSelector: string): Promi
   return true;
 }
 
-async function pollUntil<T>(
-  read: () => Promise<T>, accept: (v: T) => boolean, timeoutMs = 6000,
-): Promise<T> {
-  const deadline = Date.now() + timeoutMs;
-  for (;;) {
-    const value = await read();
-    if (accept(value) || Date.now() >= deadline) return value;
-    await new Promise((r) => setTimeout(r, 200));
-  }
-}
-
 const HISTOGRAM_CANVAS = '[name="viewer-Histogram"] canvas[name="canvas"]';
 const HISTOGRAM_SLIDER_INSET = 25;
 const PC_SLIDER = '[name="viewer-PC-Plot"] .d4-pc-plot-filter-slider svg[type="range-slider"]';
 
+// The cursor is set by the histogram's own mousemove handler, which has run by the time the
+// move resolves — so every position is read once, and the scan is a sweep, not a chain of waits.
 async function findHistogramMaxHandleX(
   page: Page, rect: {x: number; y: number; w: number; h: number}, y: number,
 ): Promise<number | null> {
@@ -183,7 +131,7 @@ async function findHistogramMaxHandleX(
   for (let pass = 0; pass < 2; pass++) {
     for (let x = rect.x + rect.w - 2; x > rect.x; x -= 3) {
       await page.mouse.move(x, y);
-      if (await pollUntil(readCursor, (c) => c === 'ew-resize', 200) === 'ew-resize') return x;
+      if (await v.pollValue(readCursor, (c) => c === 'ew-resize', 40, 20) === 'ew-resize') return x;
     }
   }
   return null;
@@ -215,12 +163,12 @@ async function clickTrellisCellFiltering(page: Page): Promise<boolean> {
     const box = await cells.nth(i).boundingBox();
     if (!box) continue;
     await page.mouse.click(box.x + box.width * 0.5, box.y + box.height * TRELLIS_CELL_CLICK_FY);
-    if (await pollUntil(() => trellisCurrentCells(page), (n) => n > 0, 3000) === 0) continue;
+    if (await v.pollValue(() => trellisCurrentCells(page), (n) => n > 0, 3000, 200) === 0) continue;
     delivered = true;
-    const now = await pollUntil(() => trueCount(page), (n) => n !== base, 6000);
+    const now = await v.pollValue(() => trueCount(page), (n) => n !== base, 6000, 200);
     if (now > 0 && now < base) return true;
     await page.keyboard.press('Escape');
-    const reverted = await pollUntil(() => trueCount(page), (n) => n === base, 6000);
+    const reverted = await v.pollValue(() => trueCount(page), (n) => n === base, 6000, 200);
     expect(reverted, 'Escape did not put the filtered row count back to the value the Trellis cell ' +
       'was clicked from, so the next cell would be measured against a baseline that is no longer the ' +
       'pre-click count').toBe(base);
@@ -310,28 +258,12 @@ const VIEWER_CHANNELS: Array<{
   },
 ];
 
-async function closeFilterPanel(page: Page): Promise<void> {
-  await page.locator('[name="viewer-Filters"]').first().hover();
-  let clicked = false;
-  for (const icon of ['icon-times', 'Close']) {
-    try {
-      await v.clickViewerTitlebarIcon(page, 'Filters', icon);
-      clicked = true;
-      break;
-    } catch (_) { /* try the other title-bar close control */ }
-  }
-  expect(clicked, 'the Filters panel exposes no title-bar close control').toBe(true);
-  await expect.poll(async () => page.locator('[name="viewer-Filters"]').count(),
-    {timeout: 10_000, intervals: [300, 600, 1200]}).toBe(0);
-}
-
 test('Filters — Composition of Filter Panel with Viewer-Driven Filtering', async ({page}) => {
   test.setTimeout(900_000);
   stepErrors.length = 0;
 
-  await loginToDatagrok(page);
+  await openDatagrok(page);
   await v.openTable(page, {path: datasetPath, withFilterPanel: true});
-  await v.installEventWaits(page);
 
   const total = await trueCount(page);
   expect(total).toBe(FULL);
@@ -359,13 +291,7 @@ test('Filters — Composition of Filter Panel with Viewer-Driven Filtering', asy
       const before = await trueCount(page);
       expect(before).toBe(truePanel);
 
-      const x1 = rect!.x + rect!.w * 0.30, y1 = rect!.y + rect!.h * 0.30;
-      const x2 = rect!.x + rect!.w * 0.70, y2 = rect!.y + rect!.h * 0.70;
-      await page.mouse.move(x1, y1);
-      await page.mouse.down();
-      await page.mouse.move((x1 + x2) / 2, (y1 + y2) / 2, {steps: 6});
-      await page.mouse.move(x2, y2, {steps: 8});
-      await page.mouse.up();
+      await zoomScatterPlot(page, rect!);
       await expect.poll(async () => trueCount(page),
         {timeout: 15_000, intervals: [400, 800, 1500]}).toBeLessThan(truePanel);
       trueAfterZoom = await trueCount(page);
@@ -529,163 +455,6 @@ test('Filters — Composition of Filter Panel with Viewer-Driven Filtering', asy
           `closing the ${viewer.type} leaves the panel criterion alone filtering, so the counter reads 1`);
       });
     }
-
-    await softStep('Scenario 2 Step 5 Layout round-trip with combined filtering → no error, count restored', async () => {
-      let savedLayout: any = null;
-      try {
-        await seedPanelCriterion(page, PANEL_CATEGORY);
-        await addViewer(page, 'Scatter plot');
-        const rect = await viewerCanvasRect(page, 'Scatter plot');
-        expect(rect).not.toBeNull();
-        await page.mouse.move(rect!.x + rect!.w * 0.30, rect!.y + rect!.h * 0.30);
-        await page.mouse.down();
-        await page.mouse.move(rect!.x + rect!.w * 0.70, rect!.y + rect!.h * 0.70, {steps: 8});
-        await page.mouse.up();
-        await expect.poll(async () => trueCount(page),
-          {timeout: 15_000, intervals: [400, 800, 1500]}).toBeLessThan(truePanel);
-        const zoomed = await trueCount(page);
-        const beforeSave = await page.evaluate(() => {
-          const tv = grok.shell.tv;
-          const sp = tv.viewers.find((x: any) => x.type === 'Scatter plot');
-          return {
-            filtered: tv.dataFrame.filter.trueCount,
-            zoomAndFilter: sp?.props?.zoomAndFilter ?? null,
-            xMin: sp?.props?.xMin ?? null, xMax: sp?.props?.xMax ?? null,
-            yMin: sp?.props?.yMin ?? null, yMax: sp?.props?.yMax ?? null,
-            spFilter: sp ? String(sp.props.filter ?? '') : null,
-          };
-        });
-
-        const pageErrors: string[] = [];
-        const onPageError = (e: Error) => pageErrors.push(e.message);
-        page.on('pageerror', onPageError);
-        await page.evaluate(() => {
-          const w = window as any;
-          w.__errBalloons = [];
-          const seen = new WeakSet<Element>();
-          const record = (el: Element) => {
-            if (seen.has(el)) return;
-            seen.add(el);
-            w.__errBalloons.push((el.textContent ?? '').trim());
-          };
-          const scan = (n: Node) => {
-            if (!(n instanceof Element)) return;
-            if (n.matches('.d4-balloon.error')) record(n);
-            for (const el of Array.from(n.querySelectorAll('.d4-balloon.error'))) record(el);
-          };
-          w.__errBalloonObs = new MutationObserver((records: MutationRecord[]) => {
-            for (const r of records) {
-              if (r.type === 'attributes') {
-                const t = r.target as Element;
-                if (t.matches('.d4-balloon.error')) record(t);
-              } else
-                for (const n of Array.from(r.addedNodes)) scan(n);
-            }
-          });
-          w.__errBalloonObs.observe(document.body,
-            {childList: true, subtree: true, attributes: true, attributeFilter: ['class']});
-        });
-
-        const beforeIds = await page.evaluate(async () => {
-          const me = String(grok.shell.user.id);
-          const ls = (await grok.dapi.layouts.getApplicable(grok.shell.tv.dataFrame)) ?? [];
-          return ls.filter((l: any) => !l.author || !l.author.id || String(l.author.id) === me).map((l: any) => String(l.id));
-        });
-
-        expect(await v.driveTopMenuLeaf(page, ['View', 'Layout', 'Save to Gallery'])).toBe(true);
-        let fresh: string[] = [];
-        await expect.poll(async () => {
-          fresh = (await page.evaluate(async (prev: string[]) => {
-            const me = String(grok.shell.user.id);
-            const ls = (await grok.dapi.layouts.getApplicable(grok.shell.tv.dataFrame)) ?? [];
-            return ls.filter((l: any) => !l.author || !l.author.id || String(l.author.id) === me)
-              .map((l: any) => String(l.id)).filter((id: string) => !prev.includes(id));
-          }, beforeIds));
-          return fresh.length;
-        }, {timeout: 25_000, intervals: [500, 1000, 2000, 3000]}).toBeGreaterThanOrEqual(1);
-        expect(fresh.length, `expected exactly 1 new layout, got ${fresh.length}`).toBe(1);
-        savedLayout = fresh[0];
-
-        await closeFilterPanel(page);
-
-        await page.evaluate(async (layoutId: string) => {
-          const saved = await grok.dapi.layouts.find(layoutId);
-          const applied = new Promise<void>((resolve) => {
-            const sub = grok.events.onViewLayoutApplied.subscribe(() => { sub.unsubscribe(); resolve(); });
-            setTimeout(resolve, 8000);
-          });
-          grok.shell.tv.loadLayout(saved);
-          await applied;
-        }, savedLayout);
-
-        await expect.poll(async () => page.locator('[name="viewer-Filters"] .d4-filter').count(),
-          {timeout: 20_000, intervals: [500, 1000, 2000, 3000]}).toBeGreaterThanOrEqual(1);
-        await expect.poll(async () => raceSelectedCategories(page),
-          {timeout: 15_000, intervals: [500, 1000, 2000]}).toEqual([PANEL_CATEGORY]);
-        const afterLayout = await page.evaluate(() => {
-          const tv = grok.shell.tv;
-          const sp = tv.viewers.find((x: any) => x.type === 'Scatter plot');
-          return {
-            viewers: Array.from(tv.viewers).map((x: any) => x.type),
-            filtered: tv.dataFrame.filter.trueCount,
-            zoomAndFilter: sp?.props?.zoomAndFilter ?? null,
-            xMin: sp?.props?.xMin ?? null, xMax: sp?.props?.xMax ?? null,
-            yMin: sp?.props?.yMin ?? null, yMax: sp?.props?.yMax ?? null,
-            spFilter: sp ? String(sp.props.filter ?? '') : null,
-          };
-        });
-        expect(afterLayout.viewers,
-          'the re-applied layout did not bring the Scatter Plot back, so the row count settling at ' +
-          'the panel-only value below says nothing about a dropped zoom — it would be the count of a ' +
-          `view with no scatter plot in it at all; viewers: [${afterLayout.viewers.join(', ')}]`)
-          .toContain('Scatter plot');
-        expect(afterLayout.zoomAndFilter,
-          'the restored Scatter Plot is no longer routing its zoom to the dataframe filter, so the ' +
-          'panel-only row count below would be explained by the viewer being disarmed rather than by ' +
-          'the zoom itself being dropped from the layout').toBe('filter by zoom');
-        expect(zoomed, 'the pre-save zoom was not narrower than the panel criterion alone, so the ' +
-          'round-trip bound below could not tell a restored zoom from a lost one').toBeLessThan(truePanel);
-        await expect.poll(async () => trueCount(page), {
-          timeout: 30_000,
-          intervals: [500, 1000, 2000, 3000],
-          message: 'the re-applied layout did not settle at the panel-only row count: ' +
-            `before=${JSON.stringify(beforeSave)} after=${JSON.stringify(afterLayout)}`,
-        }).toBe(truePanel);
-        const restored = await trueCount(page);
-        expect(restored,
-          'the layout round-trip no longer settles at the panel-only row count. Below it means the ' +
-          'scatter-plot zoom is now restored with the layout (scope_reductions SR-06 is obsolete — ' +
-          'tighten this to toBeLessThan(truePanel)); above it means the panel criterion itself was ' +
-          `lost. before=${JSON.stringify(beforeSave)} after=${JSON.stringify(afterLayout)}`)
-          .toBe(truePanel);
-
-        const errBalloons = await page.evaluate(async () => {
-          const w = window as any;
-          let last = (w.__errBalloons ?? []).length;
-          let since = Date.now();
-          while (Date.now() - since < 2500) {
-            await new Promise((r) => setTimeout(r, 200));
-            const n = (w.__errBalloons ?? []).length;
-            if (n !== last) { last = n; since = Date.now(); }
-          }
-          w.__errBalloonObs?.disconnect();
-          return (w.__errBalloons ?? []) as string[];
-        });
-        page.off('pageerror', onPageError);
-        expect(errBalloons,
-          `error balloons appeared during the layout round-trip — GROK-18281: ${errBalloons.join(' | ')}`)
-          .toEqual([]);
-        expect(pageErrors, `layout re-apply raised page errors — GROK-18281: ${pageErrors.join('; ')}`).toEqual([]);
-      } finally {
-        await page.evaluate(() => { try { (window as any).__errBalloonObs?.disconnect(); } catch (_) {} });
-        if (savedLayout) {
-          await page.evaluate(async (layoutId: string) => {
-            try { const s = await grok.dapi.layouts.find(layoutId); await grok.dapi.layouts.delete(s); } catch (_) {}
-          }, savedLayout);
-        }
-        await page.evaluate(() => { try { grok.shell.tv.viewers.find((x: any) => x.type === 'Scatter plot')?.close(); } catch (_) {} });
-      }
-    });
 
     await softStep('Scenario 3 Step 2 Select the visible rows → selection equals the panel-filtered set', async () => {
       const seeded = await seedPanelCriterion(page, PANEL_CATEGORY);

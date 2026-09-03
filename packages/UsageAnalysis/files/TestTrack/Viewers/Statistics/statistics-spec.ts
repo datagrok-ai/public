@@ -1,8 +1,9 @@
 /* ---
 realizes: []
 --- */
-import {test, expect, Page} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
+import {expect, Page} from '@playwright/test';
+import {localTest as test} from '../../shared-page';
+import {openDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 
 test.use(specTestOptions);
@@ -27,7 +28,7 @@ async function menuItemState(page: Page, item: string): Promise<'on' | 'off'> {
 test('Statistics viewer', async ({page}) => {
   test.setTimeout(600_000);
 
-  await loginToDatagrok(page);
+  await openDatagrok(page);
   await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 3000});
 
   await softStep('Add, close and re-add the viewer', async () => {
@@ -62,7 +63,6 @@ test('Statistics viewer', async ({page}) => {
   });
 
   await softStep('Row Source Filtered follows the table filter', async () => {
-    await v.openViewerProperties(page, VIEWER_NAME);
     await v.ensurePropertyCategory(page, VIEWER_NAME, 'data', 'row-source');
     await v.selectPropertyGridChoice(page, 'row-source', 'Filtered');
     expect(await v.propertyGridValue(page, 'row-source')).toBe('Filtered');
@@ -112,6 +112,12 @@ test('Statistics viewer', async ({page}) => {
     await expect(page.locator(VIEWER)).toHaveCount(0);
   });
 
+  // the context panel keeps the closed viewer's property grid, and neither shell.o = null nor
+  // rebinding shell.o drops it (measured 2026-09-03); the next spec's openViewerProperties then
+  // skips the gear and edits a dead grid, so the stale node is removed here
+  await page.evaluate(() => {
+    for (const e of Array.from(document.querySelectorAll('.property-grid'))) e.remove();
+  });
   await v.cleanupShell(page);
 
   v.finishSpec();

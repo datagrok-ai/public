@@ -7,6 +7,7 @@ realizes:
   - viewers.filters.bool-columns
 priority: p2
 target_layer: playwright
+boot_lane: mixed
 coverage_type: regression
 related_bugs:
   - id: GROK-19968
@@ -18,6 +19,7 @@ related_bugs:
 source_text_fixes: []
 realized_as:
   - hierarchical-and-combined-boolean-spec.ts
+  - hierarchical-and-combined-boolean-server-spec.ts
 candidate_helpers: []
 unresolved_ambiguities: []
 scope_reductions:

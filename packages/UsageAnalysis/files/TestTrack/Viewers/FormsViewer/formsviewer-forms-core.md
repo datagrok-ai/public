@@ -11,6 +11,7 @@ realizes:
   - viewers.form
 priority: p0
 target_layer: playwright
+boot_lane: server
 coverage_type: smoke
 related_bugs:
   - id: GROK-20026
@@ -23,6 +24,7 @@ related_bugs:
     status: open
 realized_as:
   - formsviewer-forms-core-spec.ts
+  - formsviewer-forms-core-server-spec.ts
 expected_results:
   - anchor: "Step 1"
     expectation: >-

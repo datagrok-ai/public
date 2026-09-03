@@ -1,16 +1,18 @@
 /* ---
 realizes: [viewers.scatter-plot, viewers.histogram, viewers.line-chart, viewers.bar-chart, viewers.pie-chart, viewers.trellis-plot, viewers.box-plot]
 --- */
-import {test, expect} from '../../shared-page';
-import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
+import {localTest as test, expect} from '../../shared-page';
+import {openDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 
+// The layout and project round-trips (Sc7, Sc8 5-6, Sc10 7-8, Sc11) live in
+// visibility-and-positioning-server-spec.ts.
 test.use(specTestOptions);
 
 test('Legend visibility and positioning', async ({page}) => {
   test.setTimeout(900_000);
 
-  await loginToDatagrok(page);
+  await openDatagrok(page);
   await v.openTable(page);
   await v.installEventWaits(page);
 
@@ -210,30 +212,6 @@ test('Legend visibility and positioning', async ({page}) => {
     expect(result.itemCount).toBeGreaterThan(0);
   });
 
-  // Sc7: layout round-trip — column, custom colors, visibility persist.
-  let layoutId1: string | null = null;
-  await softStep('Sc7 steps 1-3: save+reapply layout, state persists', async () => {
-    const res = await page.evaluate(async () => {
-      const tv = (window as any).grok.shell.tv;
-      const layout = tv.saveLayout();
-      layout.name = 'LegendVP_' + Date.now();
-      const w = window as any;
-      const saved = await w.grok.dapi.layouts.save(layout);
-      const found = await w.__findSaved(() => w.grok.dapi.layouts.find(saved.id));
-      const gen = w.__viewerGen();
-      tv.loadLayout(found);
-      await w.__rebuilt(gen, () => {
-        const vs = Array.from(w.grok.shell.tv?.viewers ?? []) as any[];
-        return `${vs.length}|${vs.some((x) => x.type === 'Scatter plot')}`;
-      }, 4500);
-      const sp = (window as any).grok.shell.tv.viewers.find((x: any) => x.type === 'Scatter plot');
-      return {layoutId: saved.id, viewerCount: (window as any).grok.shell.tv.viewers.length, spExists: !!sp};
-    });
-    layoutId1 = res.layoutId;
-    expect(typeof layoutId1).toBe('string');
-    expect(res.spExists).toBe(true);
-  });
-
   // Sc8: Visibility=Always + Position=Auto across viewers.
   await softStep('Sc8 steps 1-6: Visibility=Always + Position=Auto across viewers', async () => {
     const ok = await page.evaluate(async () => {
@@ -260,29 +238,6 @@ test('Legend visibility and positioning', async ({page}) => {
       return sp.root.getBoundingClientRect().width;
     });
     expect(Math.round(width)).toBe(300);
-  });
-
-  let layoutId2: string | null = null;
-  await softStep('Sc8 steps 5-6: layout round-trip (Always + Auto persist)', async () => {
-    const res = await page.evaluate(async () => {
-      const tv = (window as any).grok.shell.tv;
-      const layout = tv.saveLayout();
-      layout.name = 'LegendVP2_' + Date.now();
-      const w = window as any;
-      const saved = await w.grok.dapi.layouts.save(layout);
-      const found = await w.__findSaved(() => w.grok.dapi.layouts.find(saved.id));
-      const gen = w.__viewerGen();
-      tv.loadLayout(found);
-      await w.__rebuilt(gen, () => {
-        const v = (Array.from(w.grok.shell.tv?.viewers ?? []) as any[])
-          .find((x) => x.type === 'Scatter plot');
-        return `${v?.props?.legendVisibility ?? ''}|${v?.props?.legendPosition ?? ''}`;
-      }, 4500);
-      const sp = (window as any).grok.shell.tv.viewers.find((x: any) => x.type === 'Scatter plot');
-      return {layoutId: saved.id, vis: sp?.props?.legendVisibility, pos: sp?.props?.legendPosition};
-    });
-    layoutId2 = res.layoutId;
-    expect(res.vis).toBe('Always');
   });
 
   // Sc9: Visibility=Auto + resize hides/shows + mini-icon equivalent.
@@ -349,96 +304,7 @@ test('Legend visibility and positioning', async ({page}) => {
     }
   });
 
-  let layoutId3: string | null = null;
-  await softStep('Sc10 steps 7-8: layout round-trip (corner position persists)', async () => {
-    const res = await page.evaluate(async () => {
-      const tv = (window as any).grok.shell.tv;
-      const layout = tv.saveLayout();
-      layout.name = 'LegendVP3_' + Date.now();
-      const w = window as any;
-      const saved = await w.grok.dapi.layouts.save(layout);
-      const found = await w.__findSaved(() => w.grok.dapi.layouts.find(saved.id));
-      const gen = w.__viewerGen();
-      tv.loadLayout(found);
-      await w.__rebuilt(gen, () => {
-        const v = (Array.from(w.grok.shell.tv?.viewers ?? []) as any[])
-          .find((x) => x.type === 'Scatter plot');
-        return `${v?.props?.legendPosition ?? ''}`;
-      }, 4500);
-      const sp = (window as any).grok.shell.tv.viewers.find((x: any) => x.type === 'Scatter plot');
-      return {layoutId: saved.id, pos: sp?.props?.legendPosition};
-    });
-    layoutId3 = res.layoutId;
-    expect(res.pos).toBeTruthy();
-  });
-
-  // Sc11: project round-trip (FK graceful-degrade).
-  let projectId: string | null = null;
-  await softStep('Sc11 steps 1-3: project save+close+reopen (FK graceful-degrade)', async () => {
-    const res = await page.evaluate(async () => {
-      const w = window as any;
-      let pid: string | null = null;
-      try {
-        const grok = (window as any).grok;
-        const DG = (window as any).DG;
-        const tv = grok.shell.tv;
-        const df = tv.dataFrame;
-        const proj = DG.Project.create();
-        proj.name = 'LegendVPProj_' + Date.now();
-        const tableInfo = df.getTableInfo();
-        const viewInfo = tv.getInfo();
-        proj.addChild(tableInfo);
-        proj.addChild(viewInfo);
-        // a relation must point at an entity already persisted server-side, or projects.save
-        // throws a project_relations FK violation — upload/save the table and view first
-        await grok.dapi.tables.uploadDataFrame(df);
-        await grok.dapi.tables.save(tableInfo);
-        await grok.dapi.views.save(viewInfo);
-        const saved = await grok.dapi.projects.save(proj);
-        pid = saved.id;
-      } catch (e: any) {
-        return {phase: 'save', ok: false, error: String(e).slice(0, 200)};
-      }
-      (window as any).grok.shell.closeAll();
-      await w.__poll(() => Array.from((window as any).grok.shell.tableViews).length,
-        (c: number) => c === 0, 1200);
-      try {
-        const reopened = await (window as any).grok.dapi.projects.find(pid);
-        await reopened.open();
-      } catch (e: any) {
-        return {phase: 'reopen', ok: false, error: String(e).slice(0, 200), projectId: pid};
-      }
-      const stamp = () => {
-        const t = w.grok.shell.tv;
-        const v = (Array.from(t?.viewers ?? []) as any[]).find((x) => x.type === 'Scatter plot');
-        return `${!!t}|${v?.props?.legendVisibility ?? ''}|${v?.props?.legendPosition ?? ''}`;
-      };
-      await w.__poll(stamp, (x: string) => /^true\|[^|]+\|[^|]+$/.test(x), 3500, 25);
-      await w.__settledFor(stamp, 250, 1000, 25);
-      const tv = (window as any).grok.shell.tv;
-      if (!tv) return {phase: 'reopen', ok: false, error: 'no tv after reopen', projectId: pid};
-      const sp = tv.viewers.find((x: any) => x.type === 'Scatter plot');
-      return {phase: 'verified', ok: true, projectId: pid,
-        vis: sp?.props?.legendVisibility, pos: sp?.props?.legendPosition};
-    });
-    expect(res.ok, res.ok ? '' : `project save+reopen failed in phase '${res.phase}': ${res.error}`).toBe(true);
-    projectId = res.projectId ?? null;
-    expect(res.vis).toBeTruthy();
-    expect(res.pos).toBeTruthy();
-  });
-
-  await softStep('Cleanup: drop layouts/projects + closeAll', async () => {
-    await page.evaluate(async ([l1, l2, l3, pid]: [string | null, string | null, string | null, string | null]) => {
-      const w = window as any;
-      for (const id of [l1, l2, l3]) {
-        if (id) try { await (window as any).grok.dapi.layouts.delete(await (window as any).grok.dapi.layouts.find(id)); } catch (_) {}
-      }
-      if (pid) try { await (window as any).grok.dapi.projects.delete(await (window as any).grok.dapi.projects.find(pid)); } catch (_) {}
-      (window as any).grok.shell.closeAll();
-      await w.__poll(() => Array.from((window as any).grok.shell.tableViews).length,
-        (c: number) => c === 0, 500);
-    }, [layoutId1, layoutId2, layoutId3, projectId]);
-  });
+  await softStep('Cleanup', async () => { await v.cleanupShell(page); });
 
   v.finishSpec();
 });

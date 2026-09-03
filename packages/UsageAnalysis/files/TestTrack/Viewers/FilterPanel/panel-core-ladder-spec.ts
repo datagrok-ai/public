@@ -1,67 +1,25 @@
 /* ---
 realizes: [filters.cp.panel-core-ladder, filters.int.and-combination, filters.int.master-active-toggle, filters.int.active-counter-counts-filtering-only, filters.int.header-search-hides-cards, filters.int.esc-toggles-not-resets]
 --- */
-// Own page, deliberately: on the shared page this spec inherits reapplied filter
-// state and opens demog already filtered (157 rows against its expected 5850).
-import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
+import {expect, Page} from '@playwright/test';
+import {localTest as test} from '../../shared-page';
+import {openDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
 import * as v from '../../helpers/viewers';
-import {saveProjectViaApi, deleteProjectWithCleanup} from '../../helpers/projects';
-import {addCardViaColumnSelector, cardCount, clickResetCriteriaIcon, driveOpenMenuLeaf,
-  expectHeaderCounter, expectHeaderCounterNow, expectHeaderCounterQuiet, headerCounterTarget,
-  trueCount} from '../../helpers/filter-panel';
+import {cardCount, clickResetCriteriaIcon, driveOpenMenuLeaf, expectHeaderCounter, expectHeaderCounterNow,
+  expectHeaderCounterQuiet, headerCounterTarget, trueCount} from '../../helpers/filter-panel';
+import {addCardViaPicker} from './column-picker';
+import {cardCaptions, categoryRowPoint, checkboxCensus, collapseHeaderSearch, driveHeaderSearch, filterState, FULL,
+  headerSearchState, RACE_CATEGORY, removeAllViaPanelMenu, visibleCardCaptions, waitForPanelSettled} from './panel-core-ladder-shared';
 
 declare const grok: any;
-declare const DG: any;
 
+// Steps 1-9 of the ladder on the local lane. The layout and project round-trips (Steps 10, 11,
+// 11-negative, 13) live in panel-core-ladder-server-spec.ts.
 test.use(specTestOptions);
 
 const datasetPath = 'System:DemoFiles/demog.csv';
-const FULL = 5850;
-const RACE_CATEGORY = 'Black';
-const projectName = `filters-ladder-${Date.now()}`;
-const runTag = `ladder-${Date.now()}-${Math.floor(Math.random() * 1e9)}`;
 
-async function cardCaptions(page: import('@playwright/test').Page): Promise<string[]> {
-  return page.evaluate(() =>
-    Array.from(document.querySelectorAll('[name="viewer-Filters"] .d4-filter-column-name'))
-      .map((c) => c.textContent?.trim() ?? ''));
-}
-
-async function visibleCardCaptions(page: import('@playwright/test').Page): Promise<string[]> {
-  return page.evaluate(() =>
-    Array.from(document.querySelectorAll('[name="viewer-Filters"] .d4-filter'))
-      .filter((card) => (card as HTMLElement).offsetParent !== null)
-      .map((card) => card.querySelector('.d4-filter-column-name')?.textContent?.trim() ?? ''));
-}
-
-async function checkboxCensus(page: import('@playwright/test').Page):
-    Promise<{cards: number; boxes: number; checked: number}> {
-  return page.evaluate(() => {
-    const cards = Array.from(document.querySelectorAll('[name="viewer-Filters"] .d4-filter'));
-    const boxes = cards
-      .map((c) => c.querySelector('input[type="checkbox"].ui-input-editor') as HTMLInputElement | null)
-      .filter((cb) => cb !== null) as HTMLInputElement[];
-    return {cards: cards.length, boxes: boxes.length, checked: boxes.filter((cb) => cb.checked).length};
-  });
-}
-
-async function filterState(page: import('@playwright/test').Page, column: string, type: string):
-    Promise<{selected: string[] | null; min: number | null; max: number | null} | null> {
-  return page.evaluate(({column, type}) => {
-    const states = grok.shell.tv.getFiltersGroup().getStates(column, type) as any[];
-    if (!states || states.length === 0) return null;
-    const s = states[0];
-    return {
-      selected: Array.isArray(s.selected) ? s.selected.map((c: any) => String(c)) : null,
-      min: typeof s.min === 'number' ? s.min : null,
-      max: typeof s.max === 'number' ? s.max : null,
-    };
-  }, {column, type});
-}
-
-async function toggleCardCheckbox(page: import('@playwright/test').Page, column: string):
-    Promise<{count: number; checked: boolean}> {
+async function toggleCardCheckbox(page: Page, column: string): Promise<{count: number; checked: boolean}> {
   return page.evaluate(async (column: string) => {
     const card = Array.from(document.querySelectorAll('[name="viewer-Filters"] .d4-filter'))
       .find((c) => c.querySelector('.d4-filter-column-name')?.textContent?.trim() === column);
@@ -69,170 +27,13 @@ async function toggleCardCheckbox(page: import('@playwright/test').Page, column:
     const cb = card.querySelector('input[type="checkbox"].ui-input-editor') as HTMLInputElement | null;
     if (!cb) throw new Error(`toggleCardCheckbox: the ${column} card carries no enable/disable checkbox`);
     const was = grok.shell.tv.dataFrame.filter.trueCount;
-    const count = await (window as any).__filtered(() => cb.click(), 800, was);
+    const count = await (window as any).__filtered(() => cb.click(), 3000, was);
     return {count, checked: cb.checked};
   }, column);
 }
 
-async function waitForPanelSettled(page: import('@playwright/test').Page,
-  opts: {changedFrom?: number; timeoutMs?: number} = {}): Promise<number> {
-  const timeoutMs = opts.timeoutMs ?? 60_000;
-  const deadline = Date.now() + timeoutMs;
-  let stable = 0;
-  let last = Number.NaN;
-  for (;;) {
-    const now = await page.evaluate(() => ({
-      ready: !!document.querySelector('[name="viewer-Filters"]') &&
-        document.querySelectorAll('[name="viewer-Filters"] .d4-filter').length > 0,
-      count: grok.shell.tv?.dataFrame?.filter?.trueCount ?? -1,
-    }));
-    const moved = opts.changedFrom === undefined || now.count !== opts.changedFrom;
-    stable = now.ready && now.count === last ? stable + 1 : 0;
-    last = now.count;
-    if (now.ready && moved && stable >= 2) return now.count;
-    if (Date.now() > deadline) {
-      throw new Error(`waitForPanelSettled: the panel never settled within ${timeoutMs}ms ` +
-        `(last row count ${last}, waiting for it to leave ${opts.changedFrom})`);
-    }
-    await page.waitForTimeout(500);
-  }
-}
 
-async function driveHeaderSearch(page: import('@playwright/test').Page, text: string): Promise<{
-  visibleBefore: string[]; visibleAfter: string[]; countBefore: number; countAfter: number; typed: string;
-}> {
-  const visibleBefore = await visibleCardCaptions(page);
-  const countBefore = await trueCount(page);
-  const input = page.locator('[name="viewer-Filters"] input.d4-search-input[placeholder="Search filters"]');
-  if (!(await input.isVisible())) {
-    const opened = await page.evaluate(() => {
-      const icon = document.querySelector(
-        '[name="viewer-Filters"] .d4-filter-group-header [name="icon-search"]') as HTMLElement | null;
-      if (!icon) return false;
-      icon.click();
-      return true;
-    });
-    if (!opened)
-      throw new Error('driveHeaderSearch: the panel header carries no search icon — the search cannot be opened');
-  }
-  await input.waitFor({state: 'visible', timeout: 15_000});
-  await input.click();
-  await page.keyboard.press('Control+a');
-  await page.keyboard.type(text, {delay: 40});
-  const typed = await input.inputValue();
-  const wasVisible = visibleBefore.join(' ');
-  await v.pollValue(async () => (await visibleCardCaptions(page)).join(' '),
-    (now) => now !== wasVisible, 800, 50);
-  return {
-    visibleBefore,
-    visibleAfter: await visibleCardCaptions(page),
-    countBefore,
-    countAfter: await trueCount(page),
-    typed,
-  };
-}
-
-async function collapseHeaderSearch(page: import('@playwright/test').Page): Promise<void> {
-  const input = page.locator('[name="viewer-Filters"] input.d4-search-input[placeholder="Search filters"]');
-  if (!(await input.isVisible()))
-    throw new Error('collapseHeaderSearch: the header search box is not open, so it cannot be closed');
-  await page.evaluate(() => {
-    const icon = document.querySelector(
-      '[name="viewer-Filters"] .d4-filter-group-header [name="icon-search"]') as HTMLElement | null;
-    if (!icon) throw new Error('collapseHeaderSearch: the panel header carries no search icon');
-    icon.click();
-  });
-  await input.waitFor({state: 'hidden', timeout: 10_000});
-  await v.pollStable(async () => (await visibleCardCaptions(page)).join(' '),
-    (a, b) => a === b, 400, 50);
-}
-
-async function headerSearchState(page: import('@playwright/test').Page):
-    Promise<{value: string; visible: boolean} | null> {
-  return page.evaluate(() => {
-    const el = document.querySelector(
-      '[name="viewer-Filters"] input.d4-search-input[placeholder="Search filters"]') as HTMLInputElement | null;
-    return el === null ? null : {value: el.value, visible: el.offsetParent !== null};
-  });
-}
-
-async function removeAllViaPanelMenu(page: import('@playwright/test').Page): Promise<void> {
-  await v.drivePanelMenuLeaf(page, 'Filters', null, 'Remove All');
-  await expect.poll(async () => cardCount(page),
-    {timeout: 20_000, intervals: [300, 600, 1200],
-      message: 'the panel menu\'s "Remove All" leaf was driven but the panel still carries cards'})
-    .toBe(0);
-}
-
-async function myApplicableLayouts(page: import('@playwright/test').Page):
-    Promise<Array<{id: string; name: string}>> {
-  return page.evaluate(async () => {
-    const me = String(grok.shell.user.id);
-    const ls = (await grok.dapi.layouts.getApplicable(grok.shell.tv.dataFrame)) ?? [];
-    return ls
-      .filter((l: any) => !l.author || !l.author.id || String(l.author.id) === me)
-      .map((l: any) => ({id: String(l.id), name: String(l.friendlyName ?? l.name ?? '')}));
-  });
-}
-
-function carriesMarker(name: string, marker: string): boolean {
-  return name === marker || name.startsWith(`${marker} (`);
-}
-
-async function stampTableName(page: import('@playwright/test').Page, marker: string): Promise<void> {
-  const applied = await page.evaluate((name: string) => {
-    grok.shell.tv.dataFrame.name = name;
-    return String(grok.shell.tv.dataFrame.name);
-  }, marker);
-  expect(applied, 'the open table did not take this run\'s marker name, so a layout saved from it ' +
-    'could not be told apart from one another process saved as this same user').toBe(marker);
-}
-
-async function saveLayoutToGallery(page: import('@playwright/test').Page, marker: string): Promise<string> {
-  const stamped = await page.evaluate(() => String(grok.shell.tv?.dataFrame?.name ?? ''));
-  expect(stamped, 'the table is not carrying this run\'s marker at save time, so the layout the ' +
-    'save produces would be unattributable').toBe(marker);
-
-  const beforeIds = (await myApplicableLayouts(page)).map((l) => l.id);
-  expect(await v.driveTopMenuLeaf(page, ['View', 'Layout', 'Save to Gallery']),
-    'the View | Layout | Save to Gallery leaf could not be driven, so no layout was saved').toBe(true);
-
-  let mine: Array<{id: string; name: string}> = [];
-  await expect.poll(async () => {
-    mine = (await myApplicableLayouts(page))
-      .filter((l) => !beforeIds.includes(l.id) && carriesMarker(l.name, marker));
-    return mine.length;
-  }, {
-    timeout: 25_000,
-    intervals: [500, 1000, 2000, 3000],
-    message: `the gallery save produced no new applicable layout named after this run's marker "${marker}"`,
-  }).toBeGreaterThanOrEqual(1);
-  if (mine.length !== 1) {
-    throw new Error(
-      `The gallery save produced ${mine.length} new applicable layouts carrying this run's marker ` +
-      `"${marker}" (${mine.map((l) => `${l.id}:${l.name}`).join(', ')}), expected exactly 1 — ` +
-      'refusing to guess which one is ours; deleting none.');
-  }
-  return mine[0].id;
-}
-
-async function categoryRowPoint(page: import('@playwright/test').Page, column: string, category: string) {
-  return page.evaluate(({column, category}) => {
-    const cards = Array.from(document.querySelectorAll('[name="viewer-Filters"] .d4-filter'));
-    const card = cards.find((c) => c.querySelector('.d4-filter-column-name')?.textContent?.trim() === column);
-    if (!card) return null;
-    const canvas = card.querySelector('[name="canvas"]') as HTMLCanvasElement | null;
-    if (!canvas) return null;
-    const cats: string[] = grok.shell.tv.dataFrame.col(column).categories;
-    const idx = cats.indexOf(category);
-    if (idx < 0) return null;
-    const rect = canvas.getBoundingClientRect();
-    const rowHeight = rect.height / cats.length;
-    return {x: rect.left + 12, y: rect.top + idx * rowHeight + rowHeight / 2};
-  }, {column, category});
-}
-
-async function tooltipStates(page: import('@playwright/test').Page): Promise<Array<{
+async function tooltipStates(page: Page): Promise<Array<{
   display: string; visibility: string; text: string; cells: string[];
 }>> {
   return page.evaluate(() =>
@@ -247,7 +48,7 @@ async function tooltipStates(page: import('@playwright/test').Page): Promise<Arr
     }));
 }
 
-async function raiseCounterTooltipCells(page: import('@playwright/test').Page): Promise<string[]> {
+async function raiseCounterTooltipCells(page: Page): Promise<string[]> {
   const target = await headerCounterTarget(page);
   if (!target.present)
     throw new Error('the header active-filter counter is not in the DOM — there is nothing to hover');
@@ -268,16 +69,12 @@ async function raiseCounterTooltipCells(page: import('@playwright/test').Page): 
   await page.waitForTimeout(150);
   await page.mouse.move(target.x, target.y + 1, {steps: 2});
 
-  const deadline = Date.now() + 6_000;
   let states: Array<{display: string; visibility: string; text: string; cells: string[]}> = [];
-  for (;;) {
+  const shown = await v.pollValue(async () => {
     states = await tooltipStates(page);
-    const idx = states.findIndex((t, i) =>
-      t.display !== 'none' && t.visibility !== 'hidden' && fresh(i, t.text));
-    if (idx >= 0) return states[idx].cells;
-    if (Date.now() > deadline) break;
-    await page.waitForTimeout(200);
-  }
+    return states.findIndex((t, i) => t.display !== 'none' && t.visibility !== 'hidden' && fresh(i, t.text));
+  }, (idx) => idx >= 0, 6000, 200);
+  if (shown >= 0) return states[shown].cells;
   const after = await headerCounterTarget(page);
   const menus = await page.evaluate(() => document.querySelectorAll('.d4-menu-popup').length);
   const seen = states.length === 0 ? 'none' : states
@@ -295,17 +92,17 @@ test('Filter Panel — Panel Core Ladder', async ({page}) => {
   test.setTimeout(600_000);
   stepErrors.length = 0;
 
-  await loginToDatagrok(page);
+  await openDatagrok(page);
   await v.openTable(page, {path: datasetPath, withFilterPanel: true});
-  await v.installEventWaits(page);
 
-  expect(await trueCount(page)).toBe(FULL);
+  // the shared page can hand over a panel that reapplies an earlier spec's filter state
   await removeAllViaPanelMenu(page);
+  await v.resetFilters(page);
+  await expect.poll(() => trueCount(page), {timeout: 10_000}).toBe(FULL);
   expect(await cardCaptions(page)).toEqual([]);
   expect(await cardCount(page)).toBe(0);
-  expect(await trueCount(page)).toBe(FULL);
 
-  await addCardViaColumnSelector(page, 'SEX');
+  await addCardViaPicker(page, 'SEX');
   expect(await cardCaptions(page)).toEqual(['SEX']);
   expect(await cardCount(page)).toBe(1);
   expect(await trueCount(page)).toBe(FULL);
@@ -316,8 +113,6 @@ test('Filter Panel — Panel Core Ladder', async ({page}) => {
 
   let trueCountRaceOnly = -1;
   let trueCountAgeOnly = -1;
-  let trueCountSaved = -1;
-  let projectId = '';
 
   try {
     await softStep('Step 1 Drag RACE column header onto the panel → RACE card appears', async () => {
@@ -350,15 +145,25 @@ test('Filter Panel — Panel Core Ladder', async ({page}) => {
         Array.from(document.querySelectorAll('[name="viewer-Filters"] .d4-filter-column-name'))
           .some((c) => c.textContent?.trim() === 'RACE')), (seen) => seen, 900, 50);
       expect(hasRace).toBe(true);
+      // the panel keeps its drop state a beat after the release, and a card in that state takes no click
+      await v.pollValue(() => page.evaluate(() =>
+        document.body.classList.contains('d4-drag') || document.querySelectorAll('.d4-drop-zone').length > 0),
+      (dragging) => !dragging, 2000, 50);
+      await page.mouse.move(0, 0);
     });
 
     await softStep('Step 3 Click a RACE category row on the card canvas → filter narrows to it, counter reads 1', async () => {
       const before = await trueCount(page);
       const pt = await categoryRowPoint(page, 'RACE', RACE_CATEGORY);
-      expect(pt).not.toBeNull();
+      expect(pt, 'the RACE card never painted a body tall enough to carry the category rows').not.toBeNull();
+      // a real pointer gesture: the card resolves the click through the row under the pointer,
+      // which a dispatched click on a freshly dropped card does not set
+      await page.mouse.move(pt!.x, pt!.y, {steps: 4});
+      await page.waitForTimeout(150);
       await page.mouse.click(pt!.x, pt!.y);
-      const after = await v.pollValue(() => trueCount(page), (c) => c !== before, 900, 50);
-      expect(after).not.toBe(before);
+      const after = await v.pollValue(() => trueCount(page), (c) => c !== before, 3000, 50);
+      expect(after, `the category click at (${Math.round(pt!.x)}, ${Math.round(pt!.y)}) left the rows at ${before}; ` +
+        `RACE state ${JSON.stringify(await filterState(page, 'RACE', 'categorical'))}`).not.toBe(before);
       expect(after).toBeLessThan(FULL);
       expect(after).toBeGreaterThan(0);
       await expectHeaderCounter(page, '1', 'the category click left one filtering card, so the header counter must read 1');
@@ -373,7 +178,7 @@ test('Filter Panel — Panel Core Ladder', async ({page}) => {
 
     await softStep('Step 4 Add the AGE card via the panel header column selector, Step 5 window incl. ' +
       'out-of-range end → counter reads 2, slider still moves', async () => {
-      await addCardViaColumnSelector(page, 'AGE');
+      await addCardViaPicker(page, 'AGE');
 
       const ageCard = page.locator('[name="viewer-Filters"] .d4-filter')
         .filter({has: page.locator('.d4-filter-column-name', {hasText: /^AGE$/})});
@@ -406,6 +211,7 @@ test('Filter Panel — Panel Core Ladder', async ({page}) => {
       await ageMax.fill('55');
       await ageMax.press('Enter');
       const atMoved = await rowsAfter(at999);
+      await ageMax.blur();
       expect(atMoved).not.toBe(at999);
       expect(atMoved).toBeLessThan(trueCountRaceOnly);
       expect(atMoved).toBeGreaterThan(0);
@@ -444,19 +250,27 @@ test('Filter Panel — Panel Core Ladder', async ({page}) => {
     });
 
     await softStep('Step 7 Disable RACE card checkbox → trueCount rises to AGE-only, counter reads 1', async () => {
-      const {before, after, present, disabledClass} = await page.evaluate(async () => {
+      const {before, after, present, disabledClass, checked, active, filtering} = await page.evaluate(async () => {
+        const w = window as any;
         const df = grok.shell.tv.dataFrame;
         const before = df.filter.trueCount;
         const cards = Array.from(document.querySelectorAll('[name="viewer-Filters"] .d4-filter'));
         const race = cards.find((c) => c.querySelector('.d4-filter-column-name')?.textContent?.trim() === 'RACE')!;
-        const after = await (window as any).__filtered(() =>
-          (race.querySelector('input[type="checkbox"].ui-input-editor') as HTMLInputElement).click(), 800, before);
+        const cb = race.querySelector('input[type="checkbox"].ui-input-editor') as HTMLInputElement;
+        const raceFilter = () => grok.shell.tv.getFiltersGroup().filters
+          .find((f: any) => { try { return f.filterColumnName === 'RACE' && f.filterType === 'categorical'; } catch (_) { return false; } });
+        cb.click();
+        const active = await w.__poll(() => raceFilter()?.isActive, (a: any) => a === false, 3000, 50);
+        const after = await w.__moved(() => df.filter.trueCount, before, 3000);
         const stillPresent = Array.from(document.querySelectorAll('[name="viewer-Filters"] .d4-filter-column-name'))
           .some((c) => c.textContent?.trim() === 'RACE');
-        return {before, after, present: stillPresent, disabledClass: race.classList.contains('d4-filter-disabled')};
+        return {before, after, present: stillPresent, disabledClass: race.classList.contains('d4-filter-disabled'),
+          checked: cb.checked, active, filtering: raceFilter()?.isFiltering};
       });
       trueCountAgeOnly = after;
-      expect(after).toBeGreaterThan(before);
+      expect(active, `the RACE card's checkbox click did not switch its filter off (checkbox checked=${checked}, ` +
+        `isActive=${active}, isFiltering=${filtering}, rows ${before} -> ${after})`).toBe(false);
+      expect(after, `the RACE filter is off (isFiltering=${filtering}) but the rows did not come back`).toBeGreaterThan(before);
       expect(after).toBeLessThan(FULL);
       await expectHeaderCounter(page, '1', 'disabling the RACE card leaves AGE alone filtering, so the counter must drop to 1');
       expect(present).toBe(true);
@@ -486,7 +300,7 @@ test('Filter Panel — Panel Core Ladder', async ({page}) => {
         const panel = document.querySelector('[name="viewer-Filters"]')!;
         const was = grok.shell.tv.dataFrame.filter.trueCount;
         const after = await (window as any).__filtered(() =>
-          (panel.querySelector('.d4-filter-group-header input[type="checkbox"]') as HTMLInputElement).click(), 800, was);
+          (panel.querySelector('.d4-filter-group-header input[type="checkbox"]') as HTMLInputElement).click(), 3000, was);
         return {after, disabled: panel.classList.contains('d4-filters-disabled')};
       });
       expect(after).toBe(FULL);
@@ -519,7 +333,7 @@ test('Filter Panel — Panel Core Ladder', async ({page}) => {
         const panel = document.querySelector('[name="viewer-Filters"]')!;
         const was = grok.shell.tv.dataFrame.filter.trueCount;
         const after = await (window as any).__filtered(() =>
-          (panel.querySelector('.d4-filter-group-header input[type="checkbox"]') as HTMLInputElement).click(), 800, was);
+          (panel.querySelector('.d4-filter-group-header input[type="checkbox"]') as HTMLInputElement).click(), 3000, was);
         const race = Array.from(document.querySelectorAll('[name="viewer-Filters"] .d4-filter'))
           .find((c) => c.querySelector('.d4-filter-column-name')?.textContent?.trim() === 'RACE')!;
         return {
@@ -600,7 +414,7 @@ test('Filter Panel — Panel Core Ladder', async ({page}) => {
         'nothing is filtering on the way into the reset, so the settle barrier below could not tell ' +
         'a completed reset from a stale reading').toBeLessThan(FULL);
       await clickResetCriteriaIcon(page, {via: 'dom'});
-      const rows = await waitForPanelSettled(page, {changedFrom: searched.countBefore});
+      const rows = await waitForPanelSettled(page, {changedFrom: searched.countBefore, timeoutMs: 10_000});
       expect(rows).toBe(FULL);
       expect(await page.evaluate(() => !!document.querySelector('.d4-dialog'))).toBe(false);
       await expectHeaderCounterQuiet(page,
@@ -620,184 +434,8 @@ test('Filter Panel — Panel Core Ladder', async ({page}) => {
       expect(search.visible ? search.value : '',
         `header search after reset: visible=${search.visible}, value=${JSON.stringify(search.value)}`).toBe('');
     });
-
-    await softStep('Step 10 Re-establish the two-filter state and save the layout, Step 11 layout ' +
-      'round-trip → filters restored to the saved value', async () => {
-      const mainMarker = `${runTag}-main`;
-      let savedLayout: any = null;
-      try {
-        await stampTableName(page, mainMarker);
-        trueCountSaved = await page.evaluate(async (category: string) => {
-          const w = window as any;
-          const fg = grok.shell.tv.getFiltersGroup();
-          const full = grok.shell.tv.dataFrame.filter.trueCount;
-          const afterRace = await w.__filtered(() =>
-            fg.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: 'RACE', selected: [category]}), 600, full);
-          return w.__filtered(() =>
-            fg.updateOrAdd({type: 'histogram', column: 'AGE', min: 18, max: 60}), 700, afterRace);
-        }, RACE_CATEGORY);
-        await expectHeaderCounter(page, '2', 'the two-filter state is re-established, so the counter must read 2 before the layout is saved');
-
-        savedLayout = await saveLayoutToGallery(page, mainMarker);
-
-        await page.evaluate(async () => {
-          const was = grok.shell.tv.dataFrame.filter.trueCount;
-          await (window as any).__filtered(() => {
-            grok.shell.tv.dataFrame.resetFilter();
-            try { grok.shell.tv.addViewer('Bar chart'); } catch (_) {}
-          }, 800, was);
-        });
-        const perturbed = await trueCount(page);
-        expect(perturbed).not.toBe(trueCountSaved);
-
-        await page.evaluate(async (layoutId: string) => {
-          const saved = await grok.dapi.layouts.find(layoutId);
-          grok.shell.tv.loadLayout(saved);
-        }, savedLayout);
-        const settled = await waitForPanelSettled(page, {changedFrom: perturbed});
-        const caps = await cardCaptions(page);
-        expect(await page.evaluate(() => !!document.querySelector('[name="viewer-Filters"]'))).toBe(true);
-        expect(caps).toContain('RACE');
-        expect(caps).toContain('AGE');
-        const census = await checkboxCensus(page);
-        expect(census.boxes).toBeGreaterThan(0);
-        expect(census.boxes).toBe(census.cards);
-        expect(census.checked).toBe(census.boxes);
-        const raceRestored = await filterState(page, 'RACE', 'categorical');
-        expect(raceRestored, 'the re-applied layout left the RACE card with no filter state')
-          .not.toBeNull();
-        expect(raceRestored!.selected,
-          'the re-applied RACE card carries no category selection — the criterion did not survive')
-          .not.toBeNull();
-        expect(raceRestored!.selected).toEqual([RACE_CATEGORY]);
-        const ageRestored = await filterState(page, 'AGE', 'histogram');
-        expect(ageRestored, 'the re-applied layout left the AGE card with no filter state')
-          .not.toBeNull();
-        expect(ageRestored!.max, 'the re-applied AGE card carries no upper bound — its window was lost')
-          .not.toBeNull();
-        const ageColMaxAfterLayout = await page.evaluate(() => grok.shell.tv.dataFrame.col('AGE').max);
-        expect(ageRestored!.max!).toBeLessThan(ageColMaxAfterLayout);
-        expect(settled).toBe(trueCountSaved);
-      } finally {
-        if (savedLayout) {
-          await page.evaluate(async (layoutId: string) => {
-            try { const s = await grok.dapi.layouts.find(layoutId); await grok.dapi.layouts.delete(s); } catch (_) {}
-          }, savedLayout);
-        }
-      }
-    });
-
-    await softStep('Step 11-negative GROK-16677 reset-then-save layout → full count, panel search empty', async () => {
-      const resetMarker = `${runTag}-reset`;
-      let resetLayout: any = null;
-      try {
-        await stampTableName(page, resetMarker);
-        const cardsBefore = await cardCount(page);
-        const countBeforeReset = await trueCount(page);
-        expect(countBeforeReset,
-          'nothing is filtering on the way into this reset, so the settle barrier below could not ' +
-          'tell a completed reset from a stale reading').toBeLessThan(FULL);
-        await clickResetCriteriaIcon(page, {via: 'dom'});
-        const resetCount = await waitForPanelSettled(page, {changedFrom: countBeforeReset});
-        expect(cardsBefore).toBeGreaterThan(0);
-        expect(await cardCount(page)).toBe(cardsBefore);
-        expect(resetCount).toBe(FULL);
-
-        const searched = await driveHeaderSearch(page, 'RACE');
-        expect(searched.typed).toBe('RACE');
-        expect(searched.visibleAfter.length).toBeLessThan(searched.visibleBefore.length);
-        expect(searched.countAfter).toBe(searched.countBefore);
-
-        resetLayout = await saveLayoutToGallery(page, resetMarker);
-
-        const perturbed = await page.evaluate(async () => {
-          const was = grok.shell.tv.dataFrame.filter.trueCount;
-          return (window as any).__filtered(() => grok.shell.tv.getFiltersGroup()
-            .updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: 'RACE', selected: ['Asian']}), 900, was);
-        });
-        expect(perturbed).not.toBe(FULL);
-        await page.evaluate(async (layoutId: string) => {
-          const saved = await grok.dapi.layouts.find(layoutId);
-          grok.shell.tv.loadLayout(saved);
-        }, resetLayout);
-        const settled = await waitForPanelSettled(page, {changedFrom: perturbed});
-        expect(settled).toBe(FULL);
-        const search = await headerSearchState(page);
-        if (search === null) {
-          throw new Error(
-            'Step 11-negative: the re-applied panel has no header search input — its value cannot be read');
-        }
-        expect(search.value).toBe('');
-        const census = await checkboxCensus(page);
-        expect(census.cards).toBeGreaterThan(0);
-        expect((await visibleCardCaptions(page)).length).toBe(census.cards);
-      } finally {
-        if (resetLayout) {
-          await page.evaluate(async (layoutId: string) => {
-            try { const s = await grok.dapi.layouts.find(layoutId); await grok.dapi.layouts.delete(s); } catch (_) {}
-          }, resetLayout);
-        }
-      }
-    });
-
-    await softStep('Step 13 Project round-trip → panel reopens, filters restored (GROK-19152 barrier)', async () => {
-      trueCountSaved = await page.evaluate(async (category: string) => {
-        const w = window as any;
-        const fg = grok.shell.tv.getFiltersGroup();
-        const full = grok.shell.tv.dataFrame.filter.trueCount;
-        const afterRace = await w.__filtered(() =>
-          fg.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: 'RACE', selected: [category]}), 600, full);
-        return w.__filtered(() =>
-          fg.updateOrAdd({type: 'histogram', column: 'AGE', min: 18, max: 60}), 700, afterRace);
-      }, RACE_CATEGORY);
-
-      const saved = await saveProjectViaApi(page, projectName);
-      projectId = saved.projectId;
-
-      await v.closeAllAndWait(page);
-
-      await page.evaluate(async (id: string) => {
-        const project = await grok.dapi.projects.find(id);
-        await project.open();
-      }, projectId);
-      await page.waitForFunction(() => {
-        const el = document.querySelector('[name="viewer-Filters"]') as HTMLElement | null;
-        return !!el && el.offsetParent !== null;
-      }, {timeout: 60_000});
-
-      const reopened = await page.evaluate(async () => {
-        const capsOf = () => Array.from(document.querySelectorAll('[name="viewer-Filters"] .d4-filter-column-name'))
-          .map((c) => c.textContent?.trim());
-        await (window as any).__poll(() => capsOf(),
-          (c: string[]) => c.includes('RACE') && c.includes('AGE'), 1500, 50);
-        const caps = capsOf();
-        return {
-          panel: !!document.querySelector('[name="viewer-Filters"]'),
-          hasRace: caps.includes('RACE'),
-          hasAge: caps.includes('AGE'),
-          count: grok.shell.tv.dataFrame.filter.trueCount,
-        };
-      });
-      expect(reopened.panel).toBe(true);
-      expect(reopened.hasRace).toBe(true);
-      expect(reopened.hasAge).toBe(true);
-      const raceReopened = await filterState(page, 'RACE', 'categorical');
-      expect(raceReopened, 'the reopened project left the RACE card with no filter state')
-        .not.toBeNull();
-      expect(raceReopened!.selected,
-        'the reopened RACE card carries no category selection — the criterion was not persisted')
-        .not.toBeNull();
-      expect(raceReopened!.selected).toEqual([RACE_CATEGORY]);
-      const ageReopened = await filterState(page, 'AGE', 'histogram');
-      expect(ageReopened, 'the reopened project left the AGE card with no filter state').not.toBeNull();
-      expect(ageReopened!.max, 'the reopened AGE card carries no upper bound — its window was not persisted')
-        .not.toBeNull();
-      const ageColMaxReopened = await page.evaluate(() => grok.shell.tv.dataFrame.col('AGE').max);
-      expect(ageReopened!.max!).toBeLessThan(ageColMaxReopened);
-      expect(reopened.count).toBe(trueCountSaved);
-    });
   } finally {
-    await deleteProjectWithCleanup(page, {projectId});
+    await v.cleanupShell(page);
   }
 
   v.finishSpec();

@@ -7,6 +7,7 @@ realizes:
   - viewers.pivot-table
 priority: p1
 target_layer: playwright
+boot_lane: mixed
 coverage_type: regression
 related_bugs:
   - id: GROK-16299
@@ -15,6 +16,7 @@ related_bugs:
     status: fixed
 realized_as:
   - pivottable-inner-grid-look-spec.ts
+  - pivot-table-server-spec.ts
 expected_results:
   - anchor: "Scenario 1 Step 4"
     expectation: >-

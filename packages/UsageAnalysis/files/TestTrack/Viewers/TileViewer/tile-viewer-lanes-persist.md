@@ -9,6 +9,7 @@ realizes:
   - viewers.tile-viewer
 priority: p0
 target_layer: playwright
+boot_lane: mixed
 coverage_type: smoke
 related_bugs:
   - id: GROK-20096
@@ -25,6 +26,7 @@ related_bugs:
     status: fixed
 realized_as:
   - tile-viewer-lanes-persist-spec.ts
+  - tile-viewer-lanes-persist-server-spec.ts
 expected_results:
   - anchor: "Scenario 1 Step 2"
     expectation: >-
@@ -209,28 +211,29 @@ Steps:
 
 ### Scenario 4: Peak configuration persists through layout save and project save
 
-Precondition (carried from Scenario 3 Step 4): DEMOG and SEVERITY have been
-removed and are not restored, so this scenario runs on the resulting nine-column
-frame. Lane structure and persistence are independent of those two columns.
+This scenario is the server-lane half of the pair (see "Step-to-spec mapping"): it runs in
+its own spec on a freshly opened demog and a freshly added, auto-generated Tile Viewer, i.e.
+on the full eleven-column frame rather than the nine-column frame Scenario 3 Step 4 leaves
+behind. Lane structure and persistence are independent of those two columns.
 
 Steps:
 1. Configure the peak: set the **Lanes Column** to **RACE** in the Tile Viewer
    property panel, then set the explicit lanes list to ['Black', 'Asian',
    'Caucasian'] (see Automation notes for how to set the explicit list), and
    confirm **Show Empty Lanes** is on. Confirm the three-lane structure appears.
-2. Save the current view layout through the **View | Layout | Save to Gallery**
-   top-menu leaf (driven with the real mouse). Locate the saved layout by diffing
-   the table's applicable-layout ids before and after the save.
+2. Save the current view layout (`tv.saveLayout()` + `dapi.layouts.save`, the call the
+   View | Layout | Save to Gallery leaf makes) and confirm the saved layout reads back
+   by id.
 3. Modify the current view: close the Tile Viewer and add a Grid viewer. The view
    now differs from the saved layout.
 4. Re-apply the saved layout (Home > Layouts, select the layout, Apply). Wait for
    the viewer to finish rendering. Verify the lane structure is restored.
 5. Delete the probe layout in the teardown (even on failure).
 6. From the layout-restored state (Tile Viewer with RACE lanes), save the project
-   using the ribbon **Save** button. Note the project name. Close All. Reopen the
-   project from the workspace (Browse > Recent Projects or the file browser).
-   Spot-check a tile's field value against the grid's displayed cell text for
-   that row. Delete the probe project in the teardown.
+   through the JS API (`saveProjectViaApi`: table upload, view info and project save —
+   what the ribbon Save does internally). Note the project name. Close All. Reopen the
+   project by id. Spot-check a tile's field value against the grid's displayed cell text
+   for that row. Delete the probe project in the teardown.
 
 ## Step-to-spec mapping
 
@@ -248,6 +251,15 @@ missing coverage:
 Scenario 4 has no Step 5 in the spec's numbering for that reason; the sequence there is
 1, 2, 3, 4, 6.
 
+The scenario is `boot_lane: mixed` and is realized as two specs:
+
+- `tile-viewer-lanes-persist-spec.ts` (local lane, `?mode=local`): Setup and Scenarios 1-3 —
+  the lanes ladder, the drags and the tile-content mirroring, none of which touches the server.
+- `tile-viewer-lanes-persist-server-spec.ts` (server lane): Scenario 4, whose subject IS server
+  state (a layout and a project surviving a round-trip), plus Scenario 3 Step 5 of
+  `tile-viewer-selection-form-editor.md`, the section's other server-backed step. It sets the
+  peak up directly (Scenario 4 Step 1) on a fresh viewer rather than re-driving the ladder.
+
 ## Automation notes
 
 - PRODUCT FACTS ARE NOT REPEATED HERE. Selectors, slugs, caps, defaults, menu
@@ -257,15 +269,20 @@ Scenario 4 has no Step 5 in the spec's numbering for that reason; the sequence t
 - TARGET LAYER playwright: the lane DRAGS need real input — a dispatched event does not
   reach that path, and it fails the same way the allowDragBetweenLanes=false negative case
   does, so a substitution there would look like a pass (refdoc: "Drag between lanes",
-  "Selection and current-row rendering"). The property-grid toggles, the View | Layout |
-  Save to Gallery leaf and the ribbon Save are driven for real for a different reason: they
-  are the surfaces under test, and an apitest round-trip would not exercise them at all.
+  "Selection and current-row rendering"). The property-grid toggles are driven for real for
+  a different reason: they are the surfaces under test, and an apitest round-trip would not
+  exercise them at all.
 - DRIVEN FOR REAL: the toggle TRANSITIONS UNDER TEST (Scenario 1 Step 6 off→on,
   Scenario 2 Step 4 off / Step 5 on) as property-grid checkboxes
   (input[name="prop-view-show-empty-lanes"] / prop-view-allow-drag-between-lanes, via
   ensurePropertyCategory + setPropertyGridCheckbox); the lane drags as page.mouse
-  gestures; the layout SAVE as the View | Layout | Save to Gallery top-menu leaf
-  (driveTopMenuLeaf); the project SAVE as the ribbon Save (saveProjectViaUI).
+  gestures.
+- LANES: local for Scenarios 1-3 (core viewer, demog has a local copy, no dapi call); server for
+  Scenario 4. No fixed sleeps: every property set is armed on the viewer's own
+  `onViewerRendered` before the set; the two "the cell does NOT change" drags (Scenario 2 Steps
+  3-4) hold as a capped poll for the change, never longer than the 800 ms they replaced; the
+  layout apply is armed on `onViewLayoutApplied` and the reopen waits for the tile input to
+  carry a value.
 - The one-time enablement of Allow Drag Between Lanes before Scenario 2's first drag is
   a props PRECONDITION, not a gesture: the default is not assumed, and the assert is
   that the drag WRITES a cell.
@@ -291,11 +308,16 @@ Scenario 4 has no Step 5 in the spec's numbering for that reason; the sequence t
     REMOVEs (df.columns.remove): fixture shaping only, seating the frame on the field
     cap (refdoc: the cap and the last-added rule under "Tile internals (the read
     channel)"). ASSERT = the promoted field's value vs the grid cell text.
-  - layout APPLY (tv.loadLayout): no captured selector for one gallery layout, so the
-    apply leg uses the JS-API path; the SAVE leg it guards is the real menu.
-  - project REOPEN (grok.dapi.projects.find + open): no captured selector for a
-    per-project Browse node; the JS-API open reaches the same project-open path. The
-    project SAVE it depends on is real.
+  - layout SAVE (tv.saveLayout + dapi.layouts.save) and APPLY (tv.loadLayout): the
+    Save to Gallery leaf and the Layouts gallery are generic application chrome, out of
+    this viewer's scope; awaiting `layouts.save` is the completion signal the menu leaf
+    ends in, and no captured selector addresses one gallery layout. ASSERT = the lane
+    structure the re-applied layout rebuilt, and a clean console.
+  - project SAVE (saveProjectViaApi) and REOPEN (grok.dapi.projects.find + open): the
+    ribbon Save and the Browse node are generic application chrome; the API path uploads
+    the table, saves the view info and the project exactly as the ribbon does internally,
+    and the reopen reaches the same project-open path. ASSERT = the lane structure and a
+    tile value against the grid cell text after the session boundary.
 - FIXTURE — promoting a newly added column onto the card needs TWO freed slots; freeing
   one leaves COMPUTED_H off the card and the step vacuous (refdoc: "Tile internals
   (the read channel)" for why).

@@ -145,31 +145,21 @@ test('Pie Chart — Aggregation Tour, Validation Messages, DateTime Category Map
         const w = window as any;
         const pie = Array.from(grok.shell.tv.viewers).find((vw: any) => vw.type === 'Pie chart') as any;
         const df = grok.shell.tv.dataFrame;
-        await w.__settled('viewer:Pie chart.onViewerRendered', () => {
-          df.columns.addNewFloat('NEG_PROBE').init((i: number) => i % 2 === 0 ? -5 : 3);
-          df.columns.addNewFloat('ZERO_PROBE').init(() => 0);
-        }, 2000);
+        df.columns.addNewFloat('NEG_PROBE').init((i: number) => i % 2 === 0 ? -5 : 3);
+        df.columns.addNewFloat('ZERO_PROBE').init(() => 0);
         const readError = () => {
           const el = pie.root.querySelector('.d4-viewer-error');
           return el ? (el.textContent || '').trim() : '';
         };
-        await w.__settled('viewer:Pie chart.onViewerRendered', () => {
-          pie.props.segmentAngleColumnName = 'NEG_PROBE';
-          pie.props.segmentAngleAggrType = 'min';
-        }, 2000);
-        const negMsg = readError();
-        await w.__settled('viewer:Pie chart.onViewerRendered', () => {
-          pie.props.segmentAngleColumnName = 'ZERO_PROBE';
-          pie.props.segmentAngleAggrType = 'sum';
-        }, 2000);
-        const zeroMsg = readError();
-        await w.__settled('viewer:Pie chart.onViewerRendered', () => {
-          pie.props.segmentAngleAggrType = d.angle;
-        }, 2000);
-        await w.__settled('viewer:Pie chart.onViewerRendered', () => {
-          pie.props.segmentAngleColumnName = '';
-        }, 2000);
-        const clearedMsg = readError();
+        pie.props.segmentAngleColumnName = 'NEG_PROBE';
+        pie.props.segmentAngleAggrType = 'min';
+        const negMsg = await w.__poll(readError, (e: string) => e.includes('NEG_PROBE'), 2000, 25);
+        pie.props.segmentAngleColumnName = 'ZERO_PROBE';
+        pie.props.segmentAngleAggrType = 'sum';
+        const zeroMsg = await w.__poll(readError, (e: string) => e.includes('ZERO_PROBE'), 2000, 25);
+        pie.props.segmentAngleAggrType = d.angle;
+        pie.props.segmentAngleColumnName = '';
+        const clearedMsg = await w.__poll(readError, (e: string) => e === '', 2000, 25);
         return {negMsg, zeroMsg, clearedMsg};
       }, aggrDefaults);
       expect(result.negMsg).toContain('contains negative values');
@@ -185,18 +175,16 @@ test('Pie Chart — Aggregation Tour, Validation Messages, DateTime Category Map
         const w = window as any;
         const pie = Array.from(grok.shell.tv?.viewers ?? []).find((vw: any) => vw.type === 'Pie chart') as any;
         if (pie) {
-          await w.__settled('viewer:Pie chart.onViewerRendered', () => {
-            try {
-              pie.props.segmentAngleAggrType = d.angle;
-              pie.props.segmentAngleColumnName = '';
-            } catch (_) {}
-          }, 2000);
+          try {
+            pie.props.segmentAngleAggrType = d.angle;
+            pie.props.segmentAngleColumnName = '';
+          } catch (_) {}
         }
         const df = grok.shell.tv?.dataFrame;
-        await w.__settled('viewer:Pie chart.onViewerRendered', () => {
-          for (const name of ['NEG_PROBE', 'ZERO_PROBE'])
-            try { df.columns.remove(name); } catch (_) {}
-        }, 2000);
+        for (const name of ['NEG_PROBE', 'ZERO_PROBE'])
+          try { df.columns.remove(name); } catch (_) {}
+        await w.__poll(() => df.columns.names().some((n: string) => n === 'NEG_PROBE' || n === 'ZERO_PROBE'),
+          (present: boolean) => !present, 1000, 25);
       }, aggrDefaults);
     }
   });
@@ -305,27 +293,28 @@ test('Pie Chart — Aggregation Tour, Validation Messages, DateTime Category Map
         ? {display: getComputedStyle(populated).display, text: (populated.textContent || '').trim()}
         : {display: 'missing', text: ''};
     });
-    const resetAndMove = (fx: number, fy: number) => page.evaluate(async (p) => {
-      const w = window as any;
-      const pie = Array.from(grok.shell.tv.viewers).find((vw: any) => vw.type === 'Pie chart') as any;
-      const canvas = pie.root.querySelector('canvas') as HTMLCanvasElement;
-      const rect = canvas.getBoundingClientRect();
-      const mm = (x: number, y: number) => canvas.dispatchEvent(
-        new MouseEvent('mousemove', {bubbles: true, clientX: x, clientY: y}));
-      await w.__settled('grok.events.onTooltipClosed', () => mm(rect.left + 2, rect.top + 2), 250);
-      for (const t of Array.from(document.querySelectorAll('.d4-tooltip')))
-        t.textContent = '';
-      await w.__settled('grok.events.onTooltipShown',
-        () => mm(rect.left + rect.width * p.fx, rect.top + rect.height * p.fy), 2000);
-    }, {fx, fy});
-
+    // The disc is centred on its canvas, so a point just off the centre is inside a slice
+    // whatever the segment lengths are (the old outer positions missed shortened slices).
+    // The previous hover's tooltip is closed first: re-entering the same slice under an open
+    // tooltip raises no new one.
     const hoverSlice = async () => {
-      for (const [fx, fy] of [[0.65, 0.4], [0.45, 0.4], [0.5, 0.35], [0.6, 0.5], [0.4, 0.5], [0.5, 0.6]]) {
-        await resetAndMove(fx, fy);
-        const tt = await readTooltip();
-        if (tt.text.length > 0) return tt;
-      }
-      return {display: 'missing', text: ''};
+      await page.evaluate(async () => {
+        const w = window as any;
+        const pie = Array.from(grok.shell.tv.viewers).find((vw: any) => vw.type === 'Pie chart') as any;
+        const canvas = pie.root.querySelector('canvas') as HTMLCanvasElement;
+        const rect = canvas.getBoundingClientRect();
+        const mm = (x: number, y: number) => canvas.dispatchEvent(
+          new MouseEvent('mousemove', {bubbles: true, clientX: x, clientY: y}));
+        const visibleText = () => (Array.from(document.querySelectorAll('.d4-tooltip')) as HTMLElement[])
+          .filter((t) => getComputedStyle(t).display !== 'none')
+          .map((t) => (t.textContent || '').trim()).find((s) => s.length > 0) ?? '';
+        mm(rect.left + 2, rect.top + 2);
+        canvas.dispatchEvent(new MouseEvent('mouseleave', {bubbles: true}));
+        await w.__poll(visibleText, (s: string) => s === '', 1000, 25);
+        mm(rect.left + rect.width * 0.55, rect.top + rect.height * 0.45);
+        await w.__poll(visibleText, (s: string) => s.length > 0, 2000, 25);
+      });
+      return readTooltip();
     };
     const setPie = (props: Record<string, any>) => page.evaluate(async (p) => {
       const w = window as any;

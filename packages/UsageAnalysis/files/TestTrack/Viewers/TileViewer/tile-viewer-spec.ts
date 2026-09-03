@@ -1,37 +1,41 @@
 /* ---
-realizes: [tileviewer.cp.tiles-font-applied-to-rendering, tileviewer.cp.auto-generate-on-columns-change, tileviewer.cp.table-rebind-regenerates-form, tileviewer.cp.context-menu-inventory, tileviewer.cp.viewer-local-filter-vs-dataframe-filter, tileviewer.cp.scroll-survives-added-viewer, tileviewer.int.viewer-local-filter-vs-df-filter]
+realizes: [tileviewer.cp.tiles-font-applied-to-rendering, tileviewer.cp.auto-generate-on-columns-change, tileviewer.cp.table-rebind-regenerates-form, tileviewer.cp.context-menu-inventory, tileviewer.cp.viewer-local-filter-vs-dataframe-filter, tileviewer.int.viewer-local-filter-vs-df-filter]
 --- */
-import {expect} from '@playwright/test';
-import {test} from '../../shared-page';
-import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
+import {localTest as test, expect} from '../../shared-page';
+import {openDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 
 declare const grok: any;
 declare const DG: any;
 
+// The scroll-survives-added-viewer step lives in tile-viewer-lanes-persist-server-spec.ts: the
+// lane's scroll position is restored after a dock resize only on the authenticated client
+// (measured 2026-09-03, both lanes on dev), so that step is lane-bound.
 test.use(specTestOptions);
+
+const datasetPath = 'System:DemoFiles/demog.csv';
+const spgiPath = 'System:AppData/Chem/tests/spgi-100.csv';
+const ROOT = '[name="viewer-Tile-Viewer"]';
 
 test('Tile Viewer tests', async ({page}) => {
   test.setTimeout(300_000);
 
-  await loginToDatagrok(page);
-
-  await page.evaluate(async () => {
-    document.body.classList.add('selenium');
-    grok.shell.settings.showFiltersIconsConstantly = true;
-    grok.shell.windows.simpleMode = true;
-    grok.shell.closeAll();
-    const df = await grok.dapi.files.readCsv('System:DemoFiles/demog.csv');
-    grok.shell.addTableView(df);
-    await new Promise((resolve) => {
-      const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(undefined); });
-      setTimeout(resolve, 3000);
-    });
-  });
-  await page.locator('.d4-grid[name="viewer-Grid"]').first().waitFor({timeout: 30000});
+  await openDatagrok(page);
+  await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 3000});
   await v.addViewerByIcon(page, 'tile-viewer', 'Tile-Viewer', 10000, 'Tile Viewer');
+  await page.locator(`${ROOT} .d4-tile-viewer-form`).nth(5).waitFor({timeout: 10000});
+  await page.evaluate(() => {
+    (window as any).__tileStamp = () => {
+      const root = document.querySelector('[name="viewer-Tile-Viewer"]')!;
+      const df = grok.shell.tv.dataFrame;
+      const tiles = Array.from(root.querySelectorAll('.d4-tile-viewer-form'));
+      return [df.currentRowIdx, df.selection.trueCount,
+        tiles.findIndex((t) => t.classList.contains('d4-current')),
+        tiles.filter((t) => t.classList.contains('d4-selected')).length].join('|');
+    };
+  });
 
-  const openViewerMenu = async (rootSelector = '[name="viewer-Tile-Viewer"]'): Promise<void> => {
+  const openViewerMenu = async (rootSelector = ROOT): Promise<void> => {
     await page.locator(`${rootSelector} .d4-tile-viewer-form .d4-sketch`).first().focus();
     await page.keyboard.press('ContextMenu');
     await page.locator('.d4-menu-popup[name="viewer"]').waitFor({timeout: 15000});
@@ -42,17 +46,16 @@ test('Tile Viewer tests', async ({page}) => {
     const slug = columnSlug(col);
     await page.locator(`${rootSelector} .d4-tile-viewer-form input[name="input-${slug}"]`).first()
       .click({button: 'right'});
-    const popup = page.locator(`.d4-menu-popup[name="${slug}"]`);
-    await popup.first().waitFor({timeout: 15000});
-    await popup.first().locator('.d4-menu-item[name="div-Remove"]').first().click();
-
-    await page.waitForTimeout(300);
+    const popup = page.locator(`.d4-menu-popup[name="${slug}"]`).first();
+    await popup.waitFor({timeout: 15000});
+    await popup.locator('.d4-menu-item[name="div-Remove"]').first().click();
+    await popup.waitFor({state: 'hidden', timeout: 5000});
   };
 
   // tiles stack far below the fold (y grows past 2000px), so a tile's box can sit outside
   // the viewport entirely — scroll it in before taking coordinates, or the click misses
   const tileBox = async (displayIdx: number) => {
-    const tiles = await page.locator('[name="viewer-Tile-Viewer"] .d4-tile-viewer-form').all();
+    const tiles = await page.locator(`${ROOT} .d4-tile-viewer-form`).all();
     const tile = tiles[displayIdx];
     if (!tile) throw new Error(`tile ${displayIdx} does not exist (only ${tiles.length} rendered)`);
     await tile.scrollIntoViewIfNeeded();
@@ -61,13 +64,15 @@ test('Tile Viewer tests', async ({page}) => {
     return box;
   };
 
+  // the DataFrame moves first and the tile classes a repaint later, so the wait is for the
+  // stamp to move AND go quiet, not for the first change
   const clickTile = async (displayIdx: number, modifiers: string[] = []): Promise<void> => {
     const box = await tileBox(displayIdx);
+    const before: string = await page.evaluate(() => (window as any).__tileStamp());
     for (const m of modifiers) await page.keyboard.down(m);
     await page.mouse.click(box.x + 15, box.y + 15);
     for (const m of [...modifiers].reverse()) await page.keyboard.up(m);
-
-    await page.waitForTimeout(300);
+    await page.evaluate((from) => (window as any).__moved((window as any).__tileStamp, from, 300), before);
   };
 
   const rowsMatchingTile = async (displayIdx: number): Promise<number[]> => page.evaluate((idx: number) => {
@@ -94,8 +99,6 @@ test('Tile Viewer tests', async ({page}) => {
       if (await row.isVisible().catch(() => false))
         return row;
       await v.clickViewerTitlebarIcon(page, 'Tile-Viewer', 'icon-font-icon-settings').catch(() => {});
-
-      await page.waitForTimeout(700);
       if (category != null)
         await v.ensurePropertyCategory(page, 'Tile-Viewer', category, prop).catch(() => {});
       await row.waitFor({state: 'visible', timeout: 5000}).catch(() => {});
@@ -160,7 +163,6 @@ test('Tile Viewer tests', async ({page}) => {
   });
 
   await softStep('Row selection: plain click sets current, Shift adds one row to the selection', async () => {
-    const tiles = await page.locator('[name="viewer-Tile-Viewer"] .d4-tile-viewer-form').all();
     await page.evaluate(() => grok.shell.tv.dataFrame.selection.setAll(false));
 
     await clickTile(0);
@@ -177,12 +179,7 @@ test('Tile Viewer tests', async ({page}) => {
     expect(plain.currentTiles).toBe(1);
     expect(plain.idx).toBe(firstTileRow);
 
-    const box2 = await tileBox(2);
-    await page.keyboard.down('Shift');
-    await page.mouse.click(box2.x + 10, box2.y + 10);
-    await page.keyboard.up('Shift');
-
-    await page.waitForTimeout(300);
+    await clickTile(2, ['Shift']);
 
     const r = await page.evaluate(() => {
       const root = document.querySelector('[name="viewer-Tile-Viewer"]')!;
@@ -204,14 +201,8 @@ test('Tile Viewer tests', async ({page}) => {
   });
 
   await softStep('Row selection: Ctrl-click adds the fifth tile to the selection', async () => {
-    const tiles = await page.locator('[name="viewer-Tile-Viewer"] .d4-tile-viewer-form').all();
     const before = await page.evaluate(() => grok.shell.tv.dataFrame.selection.trueCount);
-    const box = await tileBox(4);
-    await page.keyboard.down('Control');
-    await page.mouse.click(box.x + 10, box.y + 10);
-    await page.keyboard.up('Control');
-
-    await page.waitForTimeout(300);
+    await clickTile(4, ['Control']);
     const r = await page.evaluate(() => {
       const root = document.querySelector('[name="viewer-Tile-Viewer"]')!;
       const df = grok.shell.tv.dataFrame;
@@ -231,13 +222,11 @@ test('Tile Viewer tests', async ({page}) => {
     await page.evaluate(() => grok.shell.tv.dataFrame.selection.setAll(false));
   });
 
-  const setTileProp = async (prop: string, value: any, capMs = 900): Promise<void> => {
-    await page.evaluate((args: {prop: string, value: any}) => {
-      const tileV = grok.shell.tv.viewers.find((x: any) => x.type === 'Tile Viewer');
-      tileV.props[args.prop] = args.value;
-    }, {prop, value});
-    await v.waitForViewerRendered(page, 'Tile Viewer', capMs);
-  };
+  const setTileProp = (prop: string, value: any, capMs = 900): Promise<void> =>
+    page.evaluate(({prop, value, capMs}) =>
+      (window as any).__settled('viewer:Tile Viewer.onViewerRendered', () => {
+        grok.shell.tv.viewers.find((x: any) => x.type === 'Tile Viewer').props[prop] = value;
+      }, capMs), {prop, value, capMs});
 
   await softStep('Lanes: set RACE → one lane per category, headers match RACE categories', async () => {
     await propRow('lanes');
@@ -298,21 +287,21 @@ test('Tile Viewer tests', async ({page}) => {
     });
     await propRow('row-source');
     await v.selectPropertyGridChoice(page, 'row-source', 'Selected');
-    await v.waitForViewerRendered(page, 'Tile Viewer', 900);
-    const r = await page.evaluate(async () => {
+    const r = await page.evaluate(() => {
+      const w = window as any;
       const root = document.querySelector('[name="viewer-Tile-Viewer"]')!;
       const df = grok.shell.tv.dataFrame;
       const selectedIdx = [0, 1, 2, 3, 4];
-
-      const tileAges = Array.from(root.querySelectorAll('.d4-tile-viewer-form input[name="input-AGE"]'))
-        .map((i) => (i as HTMLInputElement).value).sort();
       const selectedAges = selectedIdx.map((i) => df.col('AGE').getString(i)).sort();
-      return {
+      const read = () => ({
         visibleTiles: root.querySelectorAll('.d4-tile-viewer-form').length,
         selectedRows: selectedIdx.length,
-        tileAges,
+        tileAges: Array.from(root.querySelectorAll('.d4-tile-viewer-form input[name="input-AGE"]'))
+          .map((i) => (i as HTMLInputElement).value).sort(),
         selectedAges,
-      };
+      });
+      return w.__poll(read, (x: any) => x.visibleTiles === x.selectedRows &&
+        JSON.stringify(x.tileAges) === JSON.stringify(x.selectedAges), 900, 50);
     });
 
     expect(r.visibleTiles).toBe(r.selectedRows);
@@ -323,23 +312,22 @@ test('Tile Viewer tests', async ({page}) => {
     await propRow('row-source');
     await v.selectPropertyGridChoice(page, 'row-source', 'Filtered');
     const r = await page.evaluate(async () => {
+      const w = window as any;
       const root = document.querySelector('[name="viewer-Tile-Viewer"]')!;
       const df = grok.shell.tv.dataFrame;
       const fg = grok.shell.tv.getFiltersGroup();
-
-      const filtered = new Promise((res) => {
-        const sub = df.onRowsFiltered.subscribe(() => { sub.unsubscribe(); res(undefined); });
-        setTimeout(res, 1500);
-      });
-      fg.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: 'SEX', selected: ['M']});
-      await filtered;
-      const tiles = Array.from(root.querySelectorAll('.d4-tile-viewer-form'));
-      return {
-        filterCount: df.filter.trueCount,
-        total: df.rowCount,
-        visibleTiles: tiles.length,
-        allTilesM: tiles.every((t) => (t.querySelector('input[name="input-SEX"]') as HTMLInputElement)?.value === 'M'),
+      await w.__settled('df.onRowsFiltered', () =>
+        fg.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: 'SEX', selected: ['M']}), 1500);
+      const read = () => {
+        const tiles = Array.from(root.querySelectorAll('.d4-tile-viewer-form'));
+        return {
+          filterCount: df.filter.trueCount,
+          total: df.rowCount,
+          visibleTiles: tiles.length,
+          allTilesM: tiles.every((t) => (t.querySelector('input[name="input-SEX"]') as HTMLInputElement)?.value === 'M'),
+        };
       };
+      return w.__poll(read, (x: any) => x.visibleTiles > 0 && x.allTilesM, 1500, 50);
     });
     expect(r.filterCount).toBeLessThan(r.total);
     expect(r.visibleTiles).toBeGreaterThan(0);
@@ -356,18 +344,21 @@ test('Tile Viewer tests', async ({page}) => {
     });
     await propRow('row-source');
     await v.selectPropertyGridChoice(page, 'row-source', 'All');
-    await v.waitForViewerRendered(page, 'Tile Viewer', 900);
 
-    const isolated = await page.evaluate(async () => {
+    const isolated = await page.evaluate(() => {
+      const w = window as any;
       const root = document.querySelector('[name="viewer-Tile-Viewer"]')!;
       const df = grok.shell.tv.dataFrame;
-      const tiles = Array.from(root.querySelectorAll('.d4-tile-viewer-form'));
-      return {
-        tiles: tiles.length,
-        hasFemale: tiles.some((t) => (t.querySelector('input[name="input-SEX"]') as HTMLInputElement)?.value === 'F'),
-        filterCount: df.filter.trueCount,
-        total: df.rowCount,
+      const read = () => {
+        const tiles = Array.from(root.querySelectorAll('.d4-tile-viewer-form'));
+        return {
+          tiles: tiles.length,
+          hasFemale: tiles.some((t) => (t.querySelector('input[name="input-SEX"]') as HTMLInputElement)?.value === 'F'),
+          filterCount: df.filter.trueCount,
+          total: df.rowCount,
+        };
       };
+      return w.__poll(read, (x: any) => x.tiles > 0 && x.hasFemale, 900, 50);
     });
 
     expect(isolated.tiles).toBeGreaterThan(0);
@@ -375,17 +366,14 @@ test('Tile Viewer tests', async ({page}) => {
 
     expect(isolated.filterCount).toBeLessThan(isolated.total);
     const r = await page.evaluate(async () => {
+      const w = window as any;
       const root = document.querySelector('[name="viewer-Tile-Viewer"]')!;
       const df = grok.shell.tv.dataFrame;
       const fg = grok.shell.tv.getFiltersGroup();
-
-      const restored = new Promise((res) => {
-        const sub = df.onRowsFiltered.subscribe(() => { sub.unsubscribe(); res(undefined); });
-        setTimeout(res, 1500);
-      });
-      for (const f of [...fg.filters]) fg.remove(f);
-      df.selection.setAll(false);
-      await restored;
+      await w.__settled('df.onRowsFiltered', () => {
+        for (const f of [...fg.filters]) fg.remove(f);
+        df.selection.setAll(false);
+      }, 1500);
 
       const afterTiles = Array.from(root.querySelectorAll('.d4-tile-viewer-form'));
       const afterHasFemale = afterTiles.some((t) => (t.querySelector('input[name="input-SEX"]') as HTMLInputElement)?.value === 'F');
@@ -398,26 +386,24 @@ test('Tile Viewer tests', async ({page}) => {
   });
 
   const fontRow = () => page.locator('.property-grid tr[name="prop-tiles-font"]');
+  const readHeader = () => page.evaluate(() => {
+    const root = document.querySelector('[name="viewer-Tile-Viewer"]')!;
+    const h = root.querySelector('.d4-tile-viewer-lane-header') as HTMLElement | null;
+    const tileInput = root.querySelector('.d4-tile-viewer-form input[name="input-AGE"]') as HTMLElement | null;
+    return {
+      size: h?.style.fontSize ?? '', line: h?.style.lineHeight ?? '', font: h?.style.font ?? '',
+      tile: tileInput ? getComputedStyle(tileInput).fontSize : '',
+      tileFamily: tileInput ? getComputedStyle(tileInput).fontFamily : '',
+    };
+  });
   await softStep('Tiles font: size 18px grows the lane headers and tile text', async () => {
 
     await setTileProp('lanesColumnName', 'RACE');
     await propRow('tiles-font', 'style');
-    const readHeader = () => page.evaluate(() => {
-      const root = document.querySelector('[name="viewer-Tile-Viewer"]')!;
-      const h = root.querySelector('.d4-tile-viewer-lane-header') as HTMLElement;
-      const tileInput = root.querySelector('.d4-tile-viewer-form input[name="input-AGE"]') as HTMLElement;
-      return {
-        size: h.style.fontSize, line: h.style.lineHeight,
-
-        tile: getComputedStyle(tileInput).fontSize,
-      };
-    });
     await fontRow().locator('input.d4-font-size-input').fill('13');
-    await v.waitForViewerRendered(page, 'Tile Viewer', 900);
-    const base = await readHeader();
+    const base = await v.pollValue(readHeader, (h) => h.size === '13px', 900, 50);
     await fontRow().locator('input.d4-font-size-input').fill('18');
-    await v.waitForViewerRendered(page, 'Tile Viewer', 900);
-    const grown = await readHeader();
+    const grown = await v.pollValue(readHeader, (h) => h.size === '18px' && h.tile === '18px', 900, 50);
 
     expect(base.size).toBe('13px');
     expect(base.line).toBe('18.2px');
@@ -430,15 +416,10 @@ test('Tile Viewer tests', async ({page}) => {
   await softStep('Tiles font: the family choice reaches the lane header and the tiles', async () => {
     await propRow('tiles-font', 'style');
     await fontRow().locator('select').selectOption('Arial');
-    await v.waitForViewerRendered(page, 'Tile Viewer', 900);
-    const r = await page.evaluate(() => {
-      const root = document.querySelector('[name="viewer-Tile-Viewer"]')!;
-      const h = root.querySelector('.d4-tile-viewer-lane-header') as HTMLElement;
-      const tileInput = root.querySelector('.d4-tile-viewer-form input[name="input-AGE"]') as HTMLElement;
-      return {inlineFont: h.style.font, tileFamily: getComputedStyle(tileInput).fontFamily};
-    });
+    const r = await v.pollValue(readHeader,
+      (h) => h.font.includes('Arial') && h.tileFamily.includes('Arial'), 900, 50);
 
-    expect(r.inlineFont).toContain('Arial');
+    expect(r.font).toContain('Arial');
 
     expect(r.tileFamily).toContain('Arial');
   });
@@ -446,26 +427,9 @@ test('Tile Viewer tests', async ({page}) => {
   await softStep('Tiles font: reset to default 13px Roboto restores the header font', async () => {
     await propRow('tiles-font', 'style');
     await fontRow().locator('select').selectOption('Roboto');
-    await v.waitForViewerRendered(page, 'Tile Viewer', 900);
+    await v.pollValue(readHeader, (h) => /Roboto/.test(h.font), 900, 50);
     await fontRow().locator('input.d4-font-size-input').fill('13');
-    await v.waitForViewerRendered(page, 'Tile Viewer', 900);
-    const r = await page.evaluate(async () => {
-      const root = document.querySelector('[name="viewer-Tile-Viewer"]')!;
-
-      let size = '';
-      let line = '';
-      let font = '';
-      for (let i = 0; i < 20; i++) {
-        await new Promise((res) => setTimeout(res, 150));
-        const h = root.querySelector('.d4-tile-viewer-lane-header') as HTMLElement | null;
-        if (!h) continue;
-        size = h.style.fontSize;
-        line = h.style.lineHeight;
-        font = h.style.font;
-        if (size === '13px' && /Roboto/.test(font)) break;
-      }
-      return {size, line, font};
-    });
+    const r = await v.pollValue(readHeader, (h) => h.size === '13px' && /Roboto/.test(h.font), 3000, 50);
     expect(r.size).toBe('13px');
     expect(r.line).toBe('18.2px');
     expect(r.font).toContain('Roboto');
@@ -475,6 +439,7 @@ test('Tile Viewer tests', async ({page}) => {
   try {
     await softStep('Auto-generate (auto state): deleting a fielded column removes it and frees a slot for an excluded column', async () => {
       const entry = await page.evaluate(async (frameName: string) => {
+        const w = window as any;
         const t = grok.shell.tv.dataFrame.clone();
         t.name = frameName;
         const view = grok.shell.addTableView(t);
@@ -490,12 +455,7 @@ test('Tile Viewer tests', async ({page}) => {
             .map((i) => i.getAttribute('name')));
           return t.columns.names().filter((c: string) => hosts.has(slug(c)));
         };
-        let renderedBefore: string[] = [];
-        for (let i = 0; i < 20; i++) {
-          await new Promise((res) => setTimeout(res, 500));
-          renderedBefore = rendered();
-          if (renderedBefore.length > 0) break;
-        }
+        const renderedBefore: string[] = await w.__poll(rendered, (r: string[]) => r.length > 0, 10000, 50);
         return {
 
           autoGenerateTrue: tileV.props.autoGenerate === true,
@@ -514,7 +474,8 @@ test('Tile Viewer tests', async ({page}) => {
       if (entry.victim != null)
         await removeColumnViaFieldMenu(entry.victim, '[data-ag-fixture="1"]');
       const after = await page.evaluate(async (args: {frameName: string, victim: string | null, excluded: string[]}) => {
-        const view = Array.from(grok.shell.views).find((x: any) => x.name === args.frameName);
+        const w = window as any;
+        const view = Array.from(grok.shell.views).find((x: any) => x.name === args.frameName) as any;
         const t = view.dataFrame;
         const tileV = view.viewers.find((x: any) => x.type === 'Tile Viewer');
         const root = tileV.root as Element;
@@ -529,20 +490,17 @@ test('Tile Viewer tests', async ({page}) => {
             .map((i) => i.getAttribute('name')));
           return t.columns.names().filter((c: string) => hosts.has(slug(c)));
         };
-        let renderedAfter = rendered();
-        let refilled: string[] = [];
-        for (let i = 0; i < 24 && args.victim != null; i++) {
-          renderedAfter = rendered();
-          refilled = renderedAfter.filter((c: string) => args.excluded.includes(c));
+        const read = () => {
+          const renderedAfter = rendered();
+          return {renderedAfter, refilled: renderedAfter.filter((c: string) => args.excluded.includes(c)), victimHosts: victimHosts()};
+        };
+        const s = args.victim == null ? read()
+          : await w.__poll(read, (x: any) => x.victimHosts === 0 && x.refilled.length > 0, 12000, 50);
 
-          if (victimHosts() === 0 && refilled.length > 0) break;
-          await new Promise((res) => setTimeout(res, 500));
-        }
-
-        const keeper = renderedAfter[0] ?? null;
+        const keeper = s.renderedAfter[0] ?? null;
         const tile = root.querySelector('.d4-tile-viewer-form');
         return {
-          renderedAfter, refilled, keeper,
+          renderedAfter: s.renderedAfter, refilled: s.refilled, keeper,
           keeperValue: keeper == null ? null
             : (tile?.querySelector(`input[name="${slug(keeper)}"]`) as HTMLInputElement)?.value,
           keeperDisplay: keeper == null ? null : t.col(keeper).getString(0),
@@ -583,7 +541,7 @@ test('Tile Viewer tests', async ({page}) => {
     await softStep('Auto-generate (designed state): the same column delete does not refill the freed slot', async () => {
 
       const picked = await page.evaluate((frameName: string) => {
-        const view = Array.from(grok.shell.views).find((x: any) => x.name === frameName);
+        const view = Array.from(grok.shell.views).find((x: any) => x.name === frameName) as any;
         grok.shell.v = view;
         const tileV = view.viewers.find((x: any) => x.type === 'Tile Viewer');
         const onCard = Array.from((tileV.root as Element)
@@ -600,42 +558,47 @@ test('Tile Viewer tests', async ({page}) => {
       await page.locator('.d4-menu-popup[name="viewer"] .d4-menu-item[name="div-Edit-Form..."]').click();
       await page.locator('.grok-view-sketch').waitFor({timeout: 15000});
 
-      await page.locator(`.grok-view-sketch .d4-host[name="div-${picked.designCol}"]`)
-        .filter({has: page.locator(`input[name="input-${picked.designCol}"]`)}).first().click();
+      const designHost = page.locator(`.grok-view-sketch .d4-host[name="div-${picked.designCol}"]`)
+        .filter({has: page.locator(`input[name="input-${picked.designCol}"]`)}).first();
+      await designHost.click();
       await page.keyboard.press('Delete');
-
-      await page.waitForTimeout(300);
+      await designHost.waitFor({state: 'hidden', timeout: 2000});
       await page.locator('[name="button-CLOSE-AND-APPLY"]').click();
       await page.locator('.grok-view-sketch').waitFor({state: 'detached', timeout: 15000});
-      await v.waitForViewerRendered(page, 'Tile Viewer', 900);
 
       const pre = await page.evaluate((args: {frameName: string, designCol: string, frameCol: string}) => {
-        const view = Array.from(grok.shell.views).find((x: any) => x.name === args.frameName);
+        const w = window as any;
+        const view = Array.from(grok.shell.views).find((x: any) => x.name === args.frameName) as any;
         grok.shell.v = view;
         const t = view.dataFrame;
         const tileV = view.viewers.find((x: any) => x.type === 'Tile Viewer');
         const root = tileV.root as Element;
         const slug = (c: string) => `input-${c.replace(/[^A-Za-z0-9]/g, '-')}`;
 
-        const before = (() => {
+        const fieldsOnTile = () => {
           const tile = root.querySelector('.d4-tile-viewer-form');
           return tile == null ? []
             : Array.from(tile.querySelectorAll('input[name^="input-"]')).map((i) => i.getAttribute('name'));
-        })();
-        return {
+        };
+        const read = () => ({
           autoGenerateFalse: tileV.props.autoGenerate === false,
           formDesignedTrue: tileV.props.sketchState?.['formDesigned'] === true,
-          designFieldRemoved: !before.includes(slug(args.designCol)),
-          before,
+          before: fieldsOnTile(),
+        });
+        return w.__poll(read, (x: any) => x.formDesignedTrue && x.before.length > 0 &&
+          !x.before.includes(slug(args.designCol)), 900, 50).then((x: any) => ({
+          ...x,
+          designFieldRemoved: !x.before.includes(slug(args.designCol)),
 
-          excludedBefore: t.columns.names().filter((c: string) => !before.includes(slug(c))).map(slug),
+          excludedBefore: t.columns.names().filter((c: string) => !x.before.includes(slug(c))).map(slug),
           victimField: slug(args.frameCol),
-        };
+        }));
       }, {frameName: AG_FIXTURE, designCol: picked.designCol!, frameCol: picked.frameCol!});
 
       await removeColumnViaFieldMenu(picked.frameCol!, '[data-ag-fixture="1"]');
       const post = await page.evaluate(async (args: {frameName: string, victimField: string, excluded: string[]}) => {
-        const view = Array.from(grok.shell.views).find((x: any) => x.name === args.frameName);
+        const w = window as any;
+        const view = Array.from(grok.shell.views).find((x: any) => x.name === args.frameName) as any;
         const tileV = view.viewers.find((x: any) => x.type === 'Tile Viewer');
         const root = tileV.root as Element;
         const fieldsOnTile = () => {
@@ -643,12 +606,8 @@ test('Tile Viewer tests', async ({page}) => {
           return tile == null ? []
             : Array.from(tile.querySelectorAll('input[name^="input-"]')).map((i) => i.getAttribute('name'));
         };
-        let after = fieldsOnTile();
-        for (let i = 0; i < 20; i++) {
-          after = fieldsOnTile();
-          if (!after.includes(args.victimField)) break;
-          await new Promise((res) => setTimeout(res, 300));
-        }
+        const after: (string | null)[] = await w.__poll(fieldsOnTile,
+          (a: (string | null)[]) => !a.includes(args.victimField), 6000, 50);
         return {
           after,
           refilled: after.filter((n) => args.excluded.includes(n!)),
@@ -656,7 +615,7 @@ test('Tile Viewer tests', async ({page}) => {
             .every((tl) => !tl.querySelector(`input[name="${args.victimField}"]`)),
         };
       }, {frameName: AG_FIXTURE, victimField: pre.victimField, excluded: pre.excludedBefore});
-      const r = {...pre, ...post, survivorsBefore: pre.before.filter((n) => n !== pre.victimField)};
+      const r = {...pre, ...post, survivorsBefore: pre.before.filter((n: string | null) => n !== pre.victimField)};
       expect(r.autoGenerateFalse).toBe(true);
       expect(r.formDesignedTrue).toBe(true);
       expect(r.designFieldRemoved).toBe(true);
@@ -671,52 +630,56 @@ test('Tile Viewer tests', async ({page}) => {
     });
   } finally {
     await page.evaluate((frameName: string) => {
-      const view = Array.from(grok.shell.views).find((x: any) => x.name === frameName);
+      const w = window as any;
+      const view = Array.from(grok.shell.views).find((x: any) => x.name === frameName) as any;
       if (view) view.close();
-      const demog = Array.from(grok.shell.views).find((x: any) => x.name === 'Table');
+      const demog = Array.from(grok.shell.views).find((x: any) => x.name === 'Table') as any;
       if (demog) grok.shell.v = demog;
+      return w.__poll(() => grok.shell.tv?.dataFrame?.name, (n: string) => n === 'Table', 300, 25);
     }, AG_FIXTURE);
-
-    await page.waitForTimeout(300);
   }
 
   await softStep('Multiple table switching: Table property → spgi-100 shows spgi-100 rows', async () => {
-    await page.evaluate(async () => {
-      const spgi = await grok.dapi.files.readCsv('System:AppData/Chem/tests/spgi-100.csv');
+    await page.evaluate(async (path: string) => {
+      const w = window as any;
+      const spgi = await w.__readCsv(path);
       spgi.name = 'spgi-100';
       grok.shell.addTableView(spgi);
-
-      await new Promise((res) => {
-        const sub = spgi.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); res(undefined); });
-        setTimeout(res, 2000);
-      });
-      const demogView = Array.from(grok.shell.views).find((x: any) => x.name === 'Table');
-      if (demogView) grok.shell.v = demogView;
-
-      await new Promise((res) => setTimeout(res, 300));
-    });
-    await propRow('table');
+      const demogView = Array.from(grok.shell.views).find((x: any) => x.name === 'Table') as any;
+      if (demogView)
+        await w.__settled('grok.events.onCurrentViewChanged', () => { grok.shell.v = demogView; }, 300);
+      // the property grid lists the tables it saw when it was built: point the panel elsewhere so
+      // propRow's gear click rebuilds it (clearing it instead leaves the first click building nothing)
+      grok.shell.o = grok.shell.tv.dataFrame;
+    }, spgiPath);
+    const tableRow = await propRow('table');
+    await v.pollValue(() => tableRow.locator('select option').allTextContents(), (o) => o.includes('spgi-100'), 3000, 100);
     await v.selectPropertyGridChoice(page, 'table', 'spgi-100');
-    await v.waitForViewerRendered(page, 'Tile Viewer', 900);
-    const r = await page.evaluate(async () => {
+    const r = await page.evaluate(() => {
+      const w = window as any;
       const root = document.querySelector('[name="viewer-Tile-Viewer"]')!;
       const tileV = grok.shell.tv.viewers.find((x: any) => x.type === 'Tile Viewer');
-      const fields = Array.from(root.querySelectorAll('.d4-tile-viewer-form input[name^="input-"]'))
-        .map((i) => i.getAttribute('name'));
+      const read = () => {
+        const fields = Array.from(root.querySelectorAll('.d4-tile-viewer-form input[name^="input-"]'))
+          .map((i) => i.getAttribute('name'));
 
-      const bound = tileV.dataFrame;
-      const names = bound?.columns?.names() ?? [];
-      const shown = names.find((n: string) => fields.includes(`input-${n.replace(/[^A-Za-z0-9]/g, '-')}`)) ?? null;
-      const tile = root.querySelector('.d4-tile-viewer-form');
-      return {
-        boundTable: bound?.name,
-        demogFieldAbsent: !fields.includes('input-SEX'),
-        hasFields: fields.length > 0,
-        shown,
-        tileValue: shown == null ? null
-          : (tile?.querySelector(`input[name="input-${shown.replace(/[^A-Za-z0-9]/g, '-')}"]`) as HTMLInputElement)?.value,
-        cellValue: shown == null ? null : bound.col(shown).getString(0),
+        const bound = tileV.dataFrame;
+        const names = bound?.columns?.names() ?? [];
+        // an <input> cannot hold a newline, so a multi-line molblock is not a comparable display string
+        const shown = names.find((n: string) => fields.includes(`input-${n.replace(/[^A-Za-z0-9]/g, '-')}`) &&
+          !String(bound.col(n).getString(0)).includes('\n')) ?? null;
+        const tile = root.querySelector('.d4-tile-viewer-form');
+        return {
+          boundTable: bound?.name,
+          demogFieldAbsent: !fields.includes('input-SEX'),
+          hasFields: fields.length > 0,
+          shown,
+          tileValue: shown == null ? null
+            : (tile?.querySelector(`input[name="input-${shown.replace(/[^A-Za-z0-9]/g, '-')}"]`) as HTMLInputElement)?.value,
+          cellValue: shown == null ? null : bound.col(shown).getString(0),
+        };
       };
+      return w.__poll(read, (x: any) => x.boundTable === 'spgi-100' && x.hasFields && x.demogFieldAbsent, 900, 50);
     });
     expect(r.boundTable).toBe('spgi-100');
     expect(r.hasFields).toBe(true);
@@ -729,17 +692,20 @@ test('Tile Viewer tests', async ({page}) => {
   await softStep('Multiple table switching: Table property → demog shows demog rows again', async () => {
     await propRow('table');
     await v.selectPropertyGridChoice(page, 'table', 'Table');
-    await v.waitForViewerRendered(page, 'Tile Viewer', 900);
-    const r = await page.evaluate(async () => {
+    const r = await page.evaluate(() => {
+      const w = window as any;
       const root = document.querySelector('[name="viewer-Tile-Viewer"]')!;
       const tileV = grok.shell.tv.viewers.find((x: any) => x.type === 'Tile Viewer');
-      const tile = root.querySelector('.d4-tile-viewer-form');
-      return {
-        boundTable: tileV.dataFrame?.name,
-        hasSex: !!tile?.querySelector('input[name="input-SEX"]'),
-        tileSex: (tile?.querySelector('input[name="input-SEX"]') as HTMLInputElement)?.value,
-        cellSex: tileV.dataFrame?.col('SEX')?.getString(0),
+      const read = () => {
+        const tile = root.querySelector('.d4-tile-viewer-form');
+        return {
+          boundTable: tileV.dataFrame?.name,
+          hasSex: !!tile?.querySelector('input[name="input-SEX"]'),
+          tileSex: (tile?.querySelector('input[name="input-SEX"]') as HTMLInputElement)?.value,
+          cellSex: tileV.dataFrame?.col('SEX')?.getString(0),
+        };
       };
+      return w.__poll(read, (x: any) => x.boundTable === 'Table' && x.hasSex, 900, 50);
     });
     expect(r.boundTable).toBe('Table');
     expect(r.hasSex).toBe(true);
@@ -771,7 +737,7 @@ test('Tile Viewer tests', async ({page}) => {
     await v.setPropertyGridValue(page, 'title', 'Patient Cards');
     await v.setPropertyGridValue(page, 'description', 'Demographic data per patient');
 
-    await page.locator('[name="viewer-Tile-Viewer"] .d4-viewer-description')
+    await page.locator(`${ROOT} .d4-viewer-description`)
       .filter({hasText: 'Demographic data per patient'}).first().waitFor({timeout: 5000});
     const r = await page.evaluate(() => {
       const root = document.querySelector('[name="viewer-Tile-Viewer"]')!;
@@ -807,19 +773,18 @@ test('Tile Viewer tests', async ({page}) => {
     await propRow('title', 'description');
 
     const clearRow = async (prop: string): Promise<void> => {
-      await page.locator(`.property-grid tr[name="prop-${prop}"]`).first().locator('td').last().click();
-
-      await page.waitForTimeout(400);
+      const row = page.locator(`.property-grid tr[name="prop-${prop}"]`).first();
+      await row.locator('td').last().click();
+      await v.pollValue(() => row.locator('input:not([type="checkbox"])').count(), (n) => n > 0, 400, 50);
       await page.keyboard.press('Control+a');
       await page.keyboard.press('Delete');
       await page.keyboard.press('Enter');
-
-      await page.waitForTimeout(700);
+      await v.pollValue(() => v.propertyGridValue(page, prop), (t) => t === '', 700, 50);
     };
     await clearRow('title');
     await clearRow('description');
 
-    await page.locator('[name="viewer-Tile-Viewer"] .d4-viewer-description')
+    await page.locator(`${ROOT} .d4-viewer-description`)
       .waitFor({state: 'detached', timeout: 5000}).catch(() => {});
     const r = await page.evaluate(() => {
       const root = document.querySelector('[name="viewer-Tile-Viewer"]')!;
@@ -841,26 +806,27 @@ test('Tile Viewer tests', async ({page}) => {
     await propRow('row-source');
     await v.selectPropertyGridChoice(page, 'row-source', 'Filtered');
     const r = await page.evaluate(async () => {
+      const w = window as any;
       const root = document.querySelector('[name="viewer-Tile-Viewer"]')!;
       const df = grok.shell.tv.dataFrame;
       const fg = grok.shell.tv.getFiltersGroup();
-      for (const f of [...fg.filters]) fg.remove(f);
-      df.filter.setAll(true);
-      await new Promise((res) => setTimeout(res, 400));
+      await w.__settled('df.onRowsFiltered', () => {
+        for (const f of [...fg.filters]) fg.remove(f);
+        df.filter.setAll(true);
+      }, 400);
       const total = df.filter.trueCount;
-      const filtered = new Promise((res) => {
-        const sub = df.onRowsFiltered.subscribe(() => { sub.unsubscribe(); res(undefined); });
-        setTimeout(res, 1500);
-      });
-      fg.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: 'SEX', selected: ['M']});
-      await filtered;
-      const tiles = Array.from(root.querySelectorAll('.d4-tile-viewer-form'));
-      return {
-        total, afterSex: df.filter.trueCount,
+      await w.__settled('df.onRowsFiltered', () =>
+        fg.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: 'SEX', selected: ['M']}), 1500);
+      const read = () => {
+        const tiles = Array.from(root.querySelectorAll('.d4-tile-viewer-form'));
+        return {
+          total, afterSex: df.filter.trueCount,
 
-        filterWidgets: document.querySelectorAll('[name="viewer-Filters"] .d4-filter').length,
-        allTilesM: tiles.length > 0 && tiles.every((t) => (t.querySelector('input[name="input-SEX"]') as HTMLInputElement)?.value === 'M'),
+          filterWidgets: document.querySelectorAll('[name="viewer-Filters"] .d4-filter').length,
+          allTilesM: tiles.length > 0 && tiles.every((t) => (t.querySelector('input[name="input-SEX"]') as HTMLInputElement)?.value === 'M'),
+        };
       };
+      return w.__poll(read, (x: any) => x.allTilesM && x.filterWidgets > 0, 1500, 50);
     });
     expect(r.afterSex).toBeLessThan(r.total);
     expect(r.filterWidgets).toBeGreaterThan(0);
@@ -869,6 +835,7 @@ test('Tile Viewer tests', async ({page}) => {
 
   await softStep('Filter interaction: adding AGE > 50 reduces the tiles further', async () => {
     const r = await page.evaluate(async () => {
+      const w = window as any;
       const root = document.querySelector('[name="viewer-Tile-Viewer"]')!;
       const df = grok.shell.tv.dataFrame;
       const ageOnTiles = () => Array.from(root.querySelectorAll('.d4-tile-viewer-form'))
@@ -877,20 +844,19 @@ test('Tile Viewer tests', async ({page}) => {
       const before = df.filter.trueCount;
       const tilesBefore = root.querySelectorAll('.d4-tile-viewer-form').length;
       const fg = grok.shell.tv.getFiltersGroup();
-      const filtered = new Promise((res) => {
-        const sub = df.onRowsFiltered.subscribe(() => { sub.unsubscribe(); res(undefined); });
-        setTimeout(res, 1500);
-      });
-      fg.updateOrAdd({type: 'histogram', column: 'AGE', min: 51, max: 200});
-      await filtered;
-      const ages = ageOnTiles();
-      return {
-        before, after: df.filter.trueCount,
-        tilesBefore, tilesAfter: root.querySelectorAll('.d4-tile-viewer-form').length,
+      await w.__settled('df.onRowsFiltered', () =>
+        fg.updateOrAdd({type: 'histogram', column: 'AGE', min: 51, max: 200}), 1500);
+      const read = () => {
+        const ages = ageOnTiles();
+        return {
+          before, after: df.filter.trueCount,
+          tilesBefore, tilesAfter: root.querySelectorAll('.d4-tile-viewer-form').length,
 
-        ageReadCount: ages.length,
-        allTilesOver50: ages.length > 0 && ages.every((a) => a > 50),
+          ageReadCount: ages.length,
+          allTilesOver50: ages.length > 0 && ages.every((a) => a > 50),
+        };
       };
+      return w.__poll(read, (x: any) => x.allTilesOver50 && x.after < x.before, 1500, 50);
     });
     expect(r.after).toBeLessThan(r.before);
     expect(r.after).toBeGreaterThan(0);
@@ -901,6 +867,7 @@ test('Tile Viewer tests', async ({page}) => {
 
   await softStep('Filter interaction: removing all filters restores every tile', async () => {
     const r = await page.evaluate(async () => {
+      const w = window as any;
       const root = document.querySelector('[name="viewer-Tile-Viewer"]')!;
       const df = grok.shell.tv.dataFrame;
       const fg = grok.shell.tv.getFiltersGroup();
@@ -909,19 +876,11 @@ test('Tile Viewer tests', async ({page}) => {
       const beforeAllMale = beforeTiles.length > 0 &&
         beforeTiles.every((t) => (t.querySelector('input[name="input-SEX"]') as HTMLInputElement)?.value === 'M');
 
-      const restored = new Promise((res) => {
-        const sub = df.onRowsFiltered.subscribe(() => { sub.unsubscribe(); res(undefined); });
-        setTimeout(res, 1500);
-      });
-      for (const f of [...fg.filters]) fg.remove(f);
-      await restored;
+      await w.__settled('df.onRowsFiltered', () => { for (const f of [...fg.filters]) fg.remove(f); }, 1500);
 
       const hasFemale = () => Array.from(root.querySelectorAll('.d4-tile-viewer-form'))
         .some((t) => (t.querySelector('input[name="input-SEX"]') as HTMLInputElement)?.value === 'F');
-      const deadline = Date.now() + 3000;
-      while (!hasFemale() && Date.now() < deadline)
-        await new Promise((res) => setTimeout(res, 100));
-      const afterHasFemale = hasFemale();
+      const afterHasFemale: boolean = await w.__poll(hasFemale, (f: boolean) => f, 3000, 100);
       return {beforeAllMale, afterHasFemale, filterCount: df.filter.trueCount, total: df.rowCount};
     });
 
@@ -958,8 +917,7 @@ test('Tile Viewer tests', async ({page}) => {
     const box = row.locator('input.property-grid-ellipsis-editor-input').first();
     await box.fill('${AGE} > 50');
     await box.press('Enter');
-    await v.waitForViewerRendered(page, 'Tile Viewer', 900);
-    const after = await readAges();
+    const after = await v.pollValue(readAges, (a) => a.ages.length > 0 && a.ages.every((x) => x > 50), 900, 50);
 
     expect(before.ages.length).toBeGreaterThan(0);
     expect(before.ages.some((a) => a <= 50)).toBe(true);
@@ -974,54 +932,11 @@ test('Tile Viewer tests', async ({page}) => {
     const box2 = row2.locator('input.property-grid-ellipsis-editor-input').first();
     await box2.fill('');
     await box2.press('Enter');
-    await v.waitForViewerRendered(page, 'Tile Viewer', 900);
-    const cleared = await readAges();
+    const cleared = await v.pollValue(readAges, (a) => a.ages.some((x) => x <= 50), 900, 50);
     expect(cleared.ages.some((a) => a <= 50)).toBe(true);
     expect(cleared.filterCount).toBe(cleared.total);
   });
 
-  await softStep('Scroll position: a scrolled lane keeps its position and its rows when another viewer is added', async () => {
-
-    await setTileProp('lanesColumnName', null);
-    const lane = page.locator('[name="viewer-Tile-Viewer"] .d4-tile-viewer-lane-content').first();
-    const box = await lane.boundingBox();
-    await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2);
-    for (let i = 0; i < 10; i++) {
-      await page.mouse.wheel(0, 300);
-
-      await page.waitForTimeout(120);
-    }
-
-    await page.waitForTimeout(1000);
-    const readLane = () => page.evaluate(() => {
-      const l = document.querySelector('[name="viewer-Tile-Viewer"] .d4-tile-viewer-lane-content') as HTMLElement;
-      const first = l?.querySelector('.d4-tile-viewer-form');
-      const val = (n: string) => (first?.querySelector(`input[name="input-${n}"]`) as HTMLInputElement)?.value ?? null;
-      return {scrollTop: l?.scrollTop ?? -1, age: val('AGE'), sex: val('SEX'), weight: val('WEIGHT')};
-    });
-    const before = await readLane();
-    await page.evaluate(async () => {
-
-      const added = new Promise((res) => {
-        const sub = grok.events.onViewerAdded.subscribe(() => { sub.unsubscribe(); res(undefined); });
-        setTimeout(res, 2500);
-      });
-      grok.shell.tv.addViewer('Histogram');
-      await added;
-
-      await new Promise((res) => setTimeout(res, 2000));
-    });
-    const after = await readLane();
-
-    expect(before.scrollTop).toBeGreaterThan(0);
-    expect(before.age).not.toBeNull();
-
-    expect(after.scrollTop).toBeGreaterThan(0);
-    expect(Math.abs(after.scrollTop - before.scrollTop)).toBeLessThanOrEqual(2);
-    expect(after.age).toBe(before.age);
-    expect(after.sex).toBe(before.sex);
-    expect(after.weight).toBe(before.weight);
-  });
-
+  await v.cleanupShell(page);
   v.finishSpec();
 });

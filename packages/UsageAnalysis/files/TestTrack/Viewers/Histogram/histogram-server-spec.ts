@@ -42,7 +42,6 @@ test('Histogram tests — layout persistence', async ({page}) => {
       const layout = tv.saveLayout();
       await grok.dapi.layouts.save(layout);
       const layoutId = layout.id;
-      await new Promise(res => setTimeout(res, 1000)); 
 
       h.close();
       for (let i = 0; i < 20 && Array.from(tv.viewers).some((x: any) => x.type === 'Histogram'); i++)

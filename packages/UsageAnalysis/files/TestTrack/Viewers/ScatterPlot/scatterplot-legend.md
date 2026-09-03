@@ -6,7 +6,7 @@ realizes:
   - viewers.scatter-plot
 priority: p0
 target_layer: playwright
-boot_lane: server
+boot_lane: mixed
 coverage_type: smoke
 related_bugs:
   - id: GROK-17227
@@ -23,6 +23,7 @@ related_bugs:
     status: fixed
 realized_as:
   - scatterplot-legend-spec.ts
+  - scatterplot-legend-server-spec.ts
 expected_results:
   - anchor: "Color legend and the joint Color plus Marker legend"
     expectation: "Setting Color to a categorical column renders one legend entry per

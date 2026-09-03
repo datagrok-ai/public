@@ -13,6 +13,7 @@ realizes:
   - viewers.filters.histogram
 priority: p0
 target_layer: playwright
+boot_lane: mixed
 coverage_type: smoke
 pyramid_layer: ui-smoke
 related_bugs:
@@ -26,6 +27,7 @@ related_bugs:
     status: fixed
 realized_as:
   - panel-core-ladder-spec.ts
+  - panel-core-ladder-server-spec.ts
 scope_reductions:
   - id: SR-01
     check: E-LAYER-COMPLIANCE-01

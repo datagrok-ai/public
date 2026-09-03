@@ -2,9 +2,10 @@
 realizes: [boxplot.cp.render-stats-color-sync, boxplot.int.violin-needs-bins-and-style, boxplot.int.pvalue-toggle-key-and-menu]
 --- */
 import {expect, Page} from '@playwright/test';
-import {test} from '../../shared-page';
-import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
+import {localTest as test} from '../../shared-page';
+import {openDatagrok, specTestOptions, softStep, isLocalBootNoise} from '../../spec-login';
 import * as v from '../../helpers/viewers';
+import {BOX, bpProp, setBpProp, canvasRect, revealToggleIcon} from './boxplot-helpers';
 
 declare const grok: any;
 declare const DG: any;
@@ -13,64 +14,22 @@ test.use(specTestOptions);
 
 const datasetPath = 'System:DemoFiles/demog.csv';
 
-async function bpProp(page: Page, prop: string): Promise<any> {
-  return page.evaluate((p) => {
-    const bp = grok.shell.tv.viewers.find((x: any) => x.type === 'Box plot');
-    return bp?.props?.[p];
-  }, prop);
-}
-
-async function setBpProp(page: Page, prop: string, value: any, settleMs = 900): Promise<void> {
-  await v.setViewerProps(page, 'Box plot', [{set: {[prop]: value}, wait: settleMs}]);
-}
-
-async function canvasRect(page: Page): Promise<{x: number; y: number; w: number; h: number}> {
-  return page.evaluate(() => {
-    const root = document.querySelector('[name="viewer-Box-plot"]')!;
-    const c = root.querySelector('canvas[name="canvas"]')!.getBoundingClientRect();
-    return {x: c.x, y: c.y, w: c.width, h: c.height};
-  });
-}
-
-async function revealGroupStatsIcon(page: Page): Promise<string> {
-  const origin = await page.evaluate(() => {
-    const root = document.querySelector('[name="viewer-Box-plot"]')!;
-    const c = root.querySelector('canvas[name="canvas"]')!.getBoundingClientRect();
-    return {x: c.x, y: c.y};
-  });
-  for (const [dx, dy] of [[35, 15], [40, 17], [30, 14], [45, 16]]) {
-    const shown1 = await v.armEvent(page, 'grok.events.onTooltipShown', 150);
-
-    await page.mouse.move(origin.x + dx, origin.y + dy);
-    await shown1();
-  }
-
-  return v.pollValue(() => page.evaluate(() => {
-    const el = document.querySelector('[name="show-group-stats"]') as HTMLElement | null;
-    return el ? getComputedStyle(el).visibility : 'absent';
-  }), (vis) => vis === 'visible', 300, 100);
-}
-
 async function waitIconHidden(page: Page, capMs: number): Promise<string> {
-  return v.pollValue(() => page.evaluate(() => {
-    const el = document.querySelector('[name="show-group-stats"]') as HTMLElement | null;
+  return v.pollValue(() => page.evaluate((sel) => {
+    const el = document.querySelector(`${sel} [name="show-group-stats"]`) as HTMLElement | null;
     return el ? getComputedStyle(el).visibility : 'absent';
-  }), (vis) => vis !== 'visible', capMs, 100);
-}
-
-async function colMax(page: Page, col: string): Promise<number> {
-  return page.evaluate((c) => grok.shell.t.col(c).stats.max, col);
+  }, BOX), (vis) => vis !== 'visible', capMs, 100);
 }
 
 test('Box Plot rendering, statistics, and grid color synchronization', async ({page}) => {
-  test.setTimeout(600_000);
+  test.setTimeout(300_000);
 
   const consoleErrors: string[] = [];
   const pageErrors: string[] = [];
-  page.on('console', (m) => { if (m.type() === 'error') consoleErrors.push(m.text()); });
-  page.on('pageerror', (e) => { pageErrors.push(String(e)); });
+  page.on('console', (m) => { if (m.type() === 'error' && !isLocalBootNoise(m.text())) consoleErrors.push(m.text()); });
+  page.on('pageerror', (e) => { if (!isLocalBootNoise(String(e))) pageErrors.push(String(e)); });
 
-  await loginToDatagrok(page);
+  await openDatagrok(page);
   await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 3000});
 
   await page.evaluate(() => {
@@ -79,12 +38,11 @@ test('Box Plot rendering, statistics, and grid color synchronization', async ({p
     bp.props.valueColumnName = 'AGE';
     bp.props.category1ColumnName = 'SEX';
   });
-  await page.locator('[name="viewer-Box-plot"]').waitFor({timeout: 10000});
+  await page.locator(BOX).waitFor({timeout: 10000});
   await v.waitForViewerRendered(page, 'Box plot', 1500);
   await v.waitForViewerQuiet(page, 'Box plot');
 
   await softStep('[anchor: Scenario 1 Step 2] Box coloring baseline: whiskerColor=null gives per-category sequential hues', async () => {
-
     expect(await bpProp(page, 'whiskerColor')).toBeNull();
     const distinctHues = await page.evaluate(() => {
       const bp = grok.shell.tv.viewers.find((x: any) => x.type === 'Box plot');
@@ -96,10 +54,9 @@ test('Box Plot rendering, statistics, and grid color synchronization', async ({p
         if (a === 0 || (r >= 250 && g >= 250 && b >= 250)) continue;
         colors.set((r << 16) | (g << 8) | b, (colors.get((r << 16) | (g << 8) | b) ?? 0) + 1);
       }
-
       const top = [...colors.entries()].filter(([, n]) => n >= 500).map(([k]) => k);
-      const bluish = top.some((k) => ((k >> 16) & 255) < ((k) & 255));      
-      const orangish = top.some((k) => ((k >> 16) & 255) > ((k) & 255) + 8); 
+      const bluish = top.some((k) => ((k >> 16) & 255) < ((k) & 255));
+      const orangish = top.some((k) => ((k >> 16) & 255) > ((k) & 255) + 8);
       return {dominantCount: top.length, bluish, orangish};
     });
     console.log('Scenario 1 Step 2 dominant hue families:', JSON.stringify(distinctHues));
@@ -108,7 +65,6 @@ test('Box Plot rendering, statistics, and grid color synchronization', async ({p
   });
 
   await softStep('[anchor: Scenario 1 Step 3] Resize wide so the statistics strip is visible (_statsValuesFit gate) with default stats present', async () => {
-
     expect(await bpProp(page, 'showStatistics')).toBe(true);
     const geom = await page.evaluate(() => {
       const bp = grok.shell.tv.viewers.find((x: any) => x.type === 'Box plot');
@@ -168,7 +124,6 @@ test('Box Plot rendering, statistics, and grid color synchronization', async ({p
     await setBpProp(page, 'whiskerColor', 0xFF1F77B4, 300);
     const deltaPx = await v.waitForCanvasChange(page, 'Box plot', {minDelta: 2000, timeoutMs: 15000});
     console.log('Scenario 1 Step 9 whiskerColor canvas deltaPx:', deltaPx);
-
     expect(deltaPx).toBeGreaterThanOrEqual(0);
     expect(deltaPx).toBeGreaterThan(2000);
     expect(await bpProp(page, 'whiskerColor')).toBe(0xFF1F77B4);
@@ -176,13 +131,12 @@ test('Box Plot rendering, statistics, and grid color synchronization', async ({p
   });
 
   await softStep('[anchor: Scenario 2 Step 3] Bare p-value hover reveals the show-group-stats icon, no test-name tooltip', async () => {
-
     await setBpProp(page, 'showGroupComparison', false, 500);
     await setBpProp(page, 'showPValue', true, 600);
     expect(await bpProp(page, 'showGroupComparison')).toBe(false);
-    const iconVis = await revealGroupStatsIcon(page);
-    console.log('Scenario 2 Step 3 show-group-stats visibility on bare-p hover:', iconVis);
-    expect(iconVis).toBe('visible');
+    const icon = await revealToggleIcon(page, 'show-group-stats');
+    console.log('Scenario 2 Step 3 show-group-stats revealed on bare-p hover:', JSON.stringify(icon));
+    expect(icon).not.toBeNull();
 
     const tooltipText = await page.evaluate(() => {
       const tip = document.querySelector('.d4-tooltip');
@@ -196,7 +150,6 @@ test('Box Plot rendering, statistics, and grid color synchronization', async ({p
   });
 
   await softStep('[anchor: Scenario 2 Step 5] T key toggles Show P Value (transition signal; pvalue-toggle-key-and-menu)', async () => {
-
     const r = await canvasRect(page);
     await setBpProp(page, 'showPValue', false, 500);
     expect(await bpProp(page, 'showPValue')).toBe(false);
@@ -221,9 +174,9 @@ test('Box Plot rendering, statistics, and grid color synchronization', async ({p
     console.log('Scenario 2 Step 7 RACE category count:', raceCats);
     expect(raceCats).toBeGreaterThanOrEqual(3);
     expect(await bpProp(page, 'category1ColumnName')).toBe('RACE');
-    const iconVis = await revealGroupStatsIcon(page);
-    console.log('Scenario 2 Step 7 icon visibility (3+ cats):', iconVis);
-    expect(iconVis).toBe('visible');
+    const icon = await revealToggleIcon(page, 'show-group-stats');
+    console.log('Scenario 2 Step 7 icon revealed (3+ cats):', JSON.stringify(icon));
+    expect(icon).not.toBeNull();
     const r = await canvasRect(page);
     await page.mouse.move(r.x + r.w * 0.5, r.y - 40);
     await waitIconHidden(page, 300);
@@ -437,6 +390,6 @@ test('Box Plot rendering, statistics, and grid color synchronization', async ({p
     expect(pageErrors.slice(pageErrBefore2)).toEqual([]);
   });
 
-  await page.evaluate(() => grok.shell.closeAll());
+  await v.closeAllAndWait(page);
   v.finishSpec();
 });

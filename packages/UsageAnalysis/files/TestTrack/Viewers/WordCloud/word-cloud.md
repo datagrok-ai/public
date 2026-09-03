@@ -1,6 +1,7 @@
 ---
 feature: word-cloud
 target_layer: playwright
+boot_lane: server
 coverage_type: regression
 priority: p2
 realizes_atlas: []

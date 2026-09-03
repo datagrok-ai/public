@@ -124,8 +124,7 @@ async function propertyGridChoices(page: Page, prop: string): Promise<string[]> 
 }
 
 test('Trellis plot: click-to-filter, click-to-select, events, keyboard navigation', async ({page}) => {
-  test.setTimeout(900_000);
-  page.setDefaultTimeout(120_000);
+  test.setTimeout(240_000);
 
   const pageErrors: string[] = [];
   const consoleErrors: string[] = [];
@@ -951,5 +950,6 @@ test('Trellis plot: click-to-filter, click-to-select, events, keyboard navigatio
     await v.waitForViewerRendered(page, 'Trellis plot', 900);
   });
 
+  await v.closeAllAndWait(page);
   v.finishSpec();
 });

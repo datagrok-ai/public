@@ -37,8 +37,7 @@ async function establishSetup(page: Page): Promise<void> {
   await expect.poll(() => page.evaluate((sel) => {
     const df = grok.shell.t;
     const usub = (r: number) => df.col('USUBJID').get(r);
-    const selected: number[] = [];
-    for (let i = 0; i < df.rowCount; i++) if (df.selection.get(i)) selected.push(i);
+    const selected = Array.from(df.selection.getSelectedIndexes());
     const expectedStable = [usub(df.currentRowIdx), ...selected.map(usub)];
     const actual = Array.from(document.querySelectorAll(sel)).map((c) =>
       ((c as HTMLElement).querySelector('[column="USUBJID"]') as HTMLInputElement | null)?.value ?? null);
@@ -168,8 +167,7 @@ test('Forms viewer — mouse interactions and row binding (p1)', async ({page}) 
 
     await expect.poll(() => page.evaluate((r) => {
       const df = grok.shell.t;
-      const sel: number[] = [];
-      for (let i = 0; i < df.rowCount; i++) if (df.selection.get(i)) sel.push(i);
+      const sel = Array.from(df.selection.getSelectedIndexes());
       const expected: number[] = [];
       for (let i = 0; i <= r; i++) expected.push(i);
       return JSON.stringify(sel) === JSON.stringify(expected);
@@ -256,10 +254,9 @@ test('Forms viewer — mouse interactions and row binding (p1)', async ({page}) 
     const currentUsub = await page.evaluate(() =>
       grok.shell.t.col('USUBJID').get(grok.shell.t.currentRowIdx));
     await page.evaluate(() => { grok.shell.t.mouseOverRowIdx = 40; });
-
-    await page.waitForTimeout(1500);
     const hovered40 = await page.evaluate(() => grok.shell.t.col('USUBJID').get(40));
-    const shown = await fieldValuesByPosition(page, 'USUBJID');
+    const shown = await v.pollValue(() => fieldValuesByPosition(page, 'USUBJID'),
+      (vals) => vals.includes(hovered40), 1500, 100);
     expect(shown).not.toContain(hovered40);
     expect(await cardFieldValue(page, 0, 'USUBJID', CURRENT)).toBe(currentUsub);
   });

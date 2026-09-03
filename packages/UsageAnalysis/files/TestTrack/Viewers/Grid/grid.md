@@ -1,12 +1,14 @@
 ---
 feature: grid
 target_layer: playwright
+boot_lane: mixed
 coverage_type: regression
 priority: p2
 realizes_atlas: []
 realizes: [viewers.grid, grid.sort, grid.column-resizing, grid.column-reordering, grid.row-selection, grid.column-selection, grid.editors, grid.copy-paste, grid.popup-menu, grid.column-tools, grid.keyboard-navigation, grid.special-rows, powergrid.action.sparklines, powergrid.cell.sparklines, viewers.scatter-plot]
 realized_as:
 - grid-spec.ts
+- grid-server-spec.ts
 related_bugs:
 - id: GROK-18256
   status: fixed

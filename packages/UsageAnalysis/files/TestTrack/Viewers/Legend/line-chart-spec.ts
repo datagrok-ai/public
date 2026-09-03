@@ -1,16 +1,17 @@
 /* ---
 realizes: [viewers.line-chart]
 --- */
-import {test, expect} from '../../shared-page';
-import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
+import {localTest as test, expect} from '../../shared-page';
+import {openDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 
+// The layout and project round-trips live in line-chart-server-spec.ts.
 test.use(specTestOptions);
 
 test('Line chart legend', async ({page}) => {
   test.setTimeout(900_000);
 
-  await loginToDatagrok(page);
+  await openDatagrok(page);
   await v.openTable(page);
   await v.installEventWaits(page);
 
@@ -54,30 +55,6 @@ test('Line chart legend', async ({page}) => {
     expect(res.multiAxis).toBe(true);
   });
 
-  let layoutId1: string | null = null;
-  await softStep('Sc3 steps 1-3: save+reapply layout (multiAxis+split persist)', async () => {
-    const res = await page.evaluate(async () => {
-      const tv = (window as any).grok.shell.tv;
-      const layout = tv.saveLayout();
-      layout.name = 'LineChart_' + Date.now();
-      const w = window as any;
-      const saved = await w.grok.dapi.layouts.save(layout);
-      const found = await w.__findSaved(() => w.grok.dapi.layouts.find(saved.id));
-      const gen = w.__viewerGen();
-      tv.loadLayout(found);
-      await w.__rebuilt(gen, () => {
-        const v = (Array.from(w.grok.shell.tv?.viewers ?? []) as any[])
-          .find((x) => x.type === 'Line chart');
-        return `${v?.props?.multiAxis}|${v?.props?.splitColumnName ?? ''}`;
-      }, 4500);
-      const lc = (window as any).grok.shell.tv.viewers.find((x: any) => x.type === 'Line chart');
-      return {layoutId: saved.id, multiAxis: lc?.props.multiAxis, split: lc?.props.splitColumnName};
-    });
-    layoutId1 = res.layoutId;
-    expect(res.multiAxis).toBe(true);
-    expect(res.split).toBe('Series');
-  });
-
   await softStep('Sc4 steps 1-2: yColumnNames = [Average Mass, TPSA]', async () => {
     const res = await page.evaluate(async () => {
       const lc = (window as any).grok.shell.tv.viewers.find((x: any) => x.type === 'Line chart');
@@ -100,100 +77,7 @@ test('Line chart legend', async ({page}) => {
     expect(res.yCols).toEqual(['Average Mass', 'NIBR logP']);
   });
 
-  let layoutId2: string | null = null;
-  await softStep('Sc4 steps 4-5: save+reapply layout (new Y persists)', async () => {
-    const res = await page.evaluate(async () => {
-      const tv = (window as any).grok.shell.tv;
-      const layout = tv.saveLayout();
-      layout.name = 'LineChart2_' + Date.now();
-      const w = window as any;
-      const saved = await w.grok.dapi.layouts.save(layout);
-      const found = await w.__findSaved(() => w.grok.dapi.layouts.find(saved.id));
-      const gen = w.__viewerGen();
-      tv.loadLayout(found);
-      await w.__rebuilt(gen, () => {
-        const v = (Array.from(w.grok.shell.tv?.viewers ?? []) as any[])
-          .find((x) => x.type === 'Line chart');
-        return `${(v?.props?.yColumnNames ?? []).join(',')}`;
-      }, 4500);
-      const lc = (window as any).grok.shell.tv.viewers.find((x: any) => x.type === 'Line chart');
-      return {layoutId: saved.id, yCols: lc?.props.yColumnNames};
-    });
-    layoutId2 = res.layoutId;
-    expect(res.yCols).toEqual(['Average Mass', 'NIBR logP']);
-  });
-
-  let projectId: string | null = null;
-  await softStep('Sc3 steps 4-5 / Sc4 steps 6-7: project save+close+reopen (FK graceful-degrade)', async () => {
-    const res = await page.evaluate(async () => {
-      const w = window as any;
-      let pid: string | null = null;
-      try {
-        const grok = (window as any).grok;
-        const DG = (window as any).DG;
-        const tv = grok.shell.tv;
-        const df = tv.dataFrame;
-        const proj = DG.Project.create();
-        proj.name = 'LineChartProj_' + Date.now();
-        const tableInfo = df.getTableInfo();
-        const viewInfo = tv.getInfo();
-        proj.addChild(tableInfo);
-        proj.addChild(viewInfo);
-        // a relation must point at an entity already persisted server-side, or projects.save
-        // throws a project_relations FK violation — upload/save the table and view first
-        await grok.dapi.tables.uploadDataFrame(df);
-        await grok.dapi.tables.save(tableInfo);
-        await grok.dapi.views.save(viewInfo);
-        const saved = await grok.dapi.projects.save(proj);
-        pid = saved.id;
-      } catch (e: any) {
-        return {phase: 'save', ok: false, error: String(e).slice(0, 200)};
-      }
-      (window as any).grok.shell.closeAll();
-      await w.__poll(() => Array.from((window as any).grok.shell.tableViews).length,
-        (c: number) => c === 0, 1200);
-      try {
-        const reopened = await (window as any).grok.dapi.projects.find(pid);
-        await reopened.open();
-      } catch (e: any) {
-        return {phase: 'reopen', ok: false, error: String(e).slice(0, 200), projectId: pid};
-      }
-      // a reopened project lands the view, the dataFrame and the restored look in that
-      // order, so readiness is the table and the settle is on what the step reads
-      await w.__tableReady(3500);
-      await w.__settledFor(() => {
-        const v = (Array.from(w.grok.shell.tv?.viewers ?? []) as any[])
-          .find((x) => x.type === 'Line chart');
-        return `${v?.props?.multiAxis}|${(v?.props?.yColumnNames ?? []).join(',')}`;
-      }, 250, 1500, 25);
-      const tv = (window as any).grok.shell.tv;
-      if (!tv) return {phase: 'reopen', ok: false, error: 'no tv after reopen', projectId: pid};
-      const lc = tv.viewers.find((x: any) => x.type === 'Line chart');
-      return {
-        phase: 'verified', ok: true, projectId: pid,
-        multiAxis: lc?.props.multiAxis, split: lc?.props.splitColumnName,
-        yCols: lc?.props.yColumnNames,
-      };
-    });
-    expect(res.ok, res.ok ? '' : `project save+reopen failed in phase '${res.phase}': ${res.error}`).toBe(true);
-    projectId = res.projectId ?? null;
-    expect(res.multiAxis).toBe(true);
-    expect(res.split).toBe('Series');
-    expect(res.yCols).toEqual(['Average Mass', 'NIBR logP']);
-  });
-
-  await softStep('Cleanup', async () => {
-    await page.evaluate(async ([lid1, lid2, pid]: [string | null, string | null, string | null]) => {
-      const w = window as any;
-      for (const id of [lid1, lid2]) {
-        if (id) try { await (window as any).grok.dapi.layouts.delete(await (window as any).grok.dapi.layouts.find(id)); } catch (_) {}
-      }
-      if (pid) try { await (window as any).grok.dapi.projects.delete(await (window as any).grok.dapi.projects.find(pid)); } catch (_) {}
-      (window as any).grok.shell.closeAll();
-      await w.__poll(() => Array.from((window as any).grok.shell.tableViews).length,
-        (c: number) => c === 0, 500);
-    }, [layoutId1, layoutId2, projectId]);
-  });
+  await softStep('Cleanup', async () => { await v.cleanupShell(page); });
 
   v.finishSpec();
 });

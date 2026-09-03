@@ -146,8 +146,8 @@ test('Histogram — Core setup, tuning, and bin selection', async ({page}) => {
   await softStep('S1: current-row indicator is functional; hovering a bin raises no error', async () => {
     const errsBefore = pageErrors.length;
     await page.locator('[name="viewer-Histogram"] canvas').first().hover({position: {x: 166, y: 612}});
-
-    await page.waitForTimeout(400);
+    await v.pollValue(() => page.evaluate(() => grok.shell.tv.dataFrame.rows.mouseOverRowFunc != null),
+      (over) => over, 400, 25);
 
     const {clearedCur, setCur, valInRange} = await page.evaluate(() => {
       const df = grok.shell.tv.dataFrame;

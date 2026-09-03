@@ -1,22 +1,18 @@
 /* ---
 realizes: [linechart.cp.multi-axis-and-split]
 --- */
-import {test, expect, type Page} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
+import {expect, type Page} from '@playwright/test';
+import {test} from '../../shared-page';
+import {openDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 
 declare const grok: any;
 
+// Server lane on purpose: the 38000-px blank threshold below is calibrated against the
+// authenticated client's rendering and reads 3/3 below it under ?mode=local.
 test.use(specTestOptions);
 
 const datasetPath = 'System:AppData/Chem/tests/spgi-100.csv';
-
-const pageErrors: string[] = [];
-const consoleErrors: string[] = [];
-
-function realErrors(): string[] {
-  return [...pageErrors, ...consoleErrors];
-}
 
 async function setProps(page: Page, props: Record<string, any>) {
   await v.setViewerProps(page, 'Line chart', [{set: props}], 500);
@@ -49,8 +45,6 @@ async function chartContextMenuClickByLabel(page: Page, label: string) {
   await page.evaluate(() => {
     document.querySelectorAll('.d4-menu-popup').forEach((m) => m.remove());
   });
-
-  await page.waitForTimeout(200);
   const center = await chartCanvasCenter(page);
   await page.mouse.click(center.x, center.y, {button: 'right'});
 
@@ -67,26 +61,26 @@ async function chartContextMenuClickByLabel(page: Page, label: string) {
   await v.waitForViewerRendered(page, 'Line chart', 500);
 }
 
+// A split repaints in a burst: the first onViewerRendered lands on a cleared canvas, so the ink
+// is waited for rather than read once.
 async function chartCanvasNonEmpty(page: Page): Promise<boolean> {
-
-  return (await v.countCanvasPixels(page, 'Line chart')).total > 38000;
+  const total = await v.pollValue(async () => (await v.countCanvasPixels(page, 'Line chart')).total,
+    (n) => n > 38000, 2000, 100);
+  return total > 38000;
 }
 
 test('Line Chart — Multi-Axis and Split', async ({page}) => {
   test.setTimeout(300_000);
-  stepErrors.length = 0;
-  pageErrors.length = 0;
-  consoleErrors.length = 0;
 
+  const pageErrors: string[] = [];
+  const consoleErrors: string[] = [];
   page.on('pageerror', (e) => pageErrors.push(String(e)));
   page.on('console', (m) => { if (m.type() === 'error') consoleErrors.push(m.text()); });
+  const errorCount = () => pageErrors.length + consoleErrors.length;
 
-  await loginToDatagrok(page);
-
+  await openDatagrok(page);
   await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 3000});
-
-  await page.locator('[name="icon-line-chart"]').click();
-  await page.locator('[name="viewer-Line-chart"]').waitFor({timeout: 15000});
+  await v.addViewerByIcon(page, 'line-chart', 'Line-chart', 15_000, 'Line chart');
 
   await setProps(page, {xColumnName: 'CAST Idea ID', yColumnNames: ['Chemical Space X', 'Chemical Space Y']});
 
@@ -99,22 +93,22 @@ test('Line Chart — Multi-Axis and Split', async ({page}) => {
   expect(cvDims.h, 'canvas height changed — recalibrate the 38000-px blank threshold in chartCanvasNonEmpty').toBeGreaterThan(200);
 
   await softStep('S1: enable Multi Axis with 2 Y columns', async () => {
-    const before = realErrors().length;
+    const before = errorCount();
     await setProps(page, {multiAxis: true});
     expect((await getProps(page, 'multiAxis')).multiAxis).toBe(true);
-    expect(realErrors().length).toBe(before);
+    expect(errorCount()).toBe(before);
   });
 
   await softStep('S1: first split column, chart stays non-empty', async () => {
-    const before = realErrors().length;
+    const before = errorCount();
     await setProps(page, {splitColumnNames: ['Stereo Category']});
     expect((await getProps(page, 'splitColumnNames')).splitColumnNames).toEqual(['Stereo Category']);
     expect(await chartCanvasNonEmpty(page)).toBe(true);
-    expect(realErrors().length).toBe(before);
+    expect(errorCount()).toBe(before);
   });
 
   await softStep('S1: second split column, chart does not go blank', async () => {
-    const before = realErrors().length;
+    const before = errorCount();
     await setProps(page, {splitColumnNames: ['Stereo Category', 'Series']});
     expect((await getProps(page, 'splitColumnNames')).splitColumnNames).toHaveLength(2);
     expect(await chartCanvasNonEmpty(page)).toBe(true);
@@ -123,9 +117,9 @@ test('Line Chart — Multi-Axis and Split', async ({page}) => {
 
     const hover = await chartCanvasCenter(page);
     await page.mouse.move(hover.x, hover.y, {steps: 5});
-
+    // a hold: the hover over a two-way split must raise nothing within the window
     await page.waitForTimeout(600);
-    expect(realErrors().length).toBe(before);
+    expect(errorCount()).toBe(before);
   });
 
   await softStep('S2: 3 Y columns survive an edit, not reset to 1', async () => {
@@ -135,7 +129,6 @@ test('Line Chart — Multi-Axis and Split', async ({page}) => {
     await setProps(page, {yColumnNames: ['Chemical Space X', 'Chemical Space Y', 'TPSA']});
 
     const clickYDots = () => page.evaluate(() => {
-
       const rows = Array.from(document.querySelectorAll('table.property-grid tr.property-grid-item')) as HTMLElement[];
       const yRow = rows.find((tr) => !tr.classList.contains('property-grid-category') &&
         (tr.querySelector('td.property-grid-item-name')?.textContent ?? '').trim() === 'Y');
@@ -153,7 +146,6 @@ test('Line Chart — Multi-Axis and Split', async ({page}) => {
         const panelBase = el.closest('.panel-base') as HTMLElement;
         (panelBase?.querySelector('[name="icon-font-icon-settings"]') as HTMLElement)?.click();
       });
-
       dotsClicked = await v.pollValue(clickYDots, (ok) => ok, 900, 100);
     }
     expect(dotsClicked).toBe(true);
@@ -166,9 +158,12 @@ test('Line Chart — Multi-Axis and Split', async ({page}) => {
         .map((el) => (el.textContent ?? '').trim())
         .find((t) => /^\d+ checked$/.test(t)) ?? null);
     expect(checkedLabel).toBe('3 checked');
+    const gridRows = () => page.evaluate(() =>
+      Array.from(document.querySelectorAll('.d4-dialog .d4-column-grid .d4-column-grid-row, .d4-dialog .d4-column-grid tr'))
+        .filter((r) => (r as HTMLElement).offsetParent !== null).length);
+    const rowsBefore = await gridRows();
     await search.fill('Chemical');
-
-    await page.waitForTimeout(600);
+    await v.pollValue(gridRows, (n) => n !== rowsBefore, 600, 50);
 
     await page.locator('.d4-dialog button', {hasText: 'CANCEL'}).first().click();
 
@@ -183,7 +178,7 @@ test('Line Chart — Multi-Axis and Split', async ({page}) => {
   });
 
   await softStep('S2: search input is inside the selector bounds', async () => {
-    const before = realErrors().length;
+    const before = errorCount();
     await page.evaluate(() => {
       const lc = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Line chart') as any;
       const combos = Array.from(lc.root.querySelectorAll('[name^="div-column-combobox"]')) as HTMLElement[];
@@ -209,13 +204,13 @@ test('Line Chart — Multi-Axis and Split', async ({page}) => {
       return {present: true, contained};
     });
     if (result.present)
-      expect(result.contained).toBe(true); 
+      expect(result.contained).toBe(true);
     else
-      expect(realErrors().length).toBe(before); 
+      expect(errorCount()).toBe(before);
   });
 
   await softStep('S2b: Hide other charts — per-chart menu reduces Y columns to one', async () => {
-    const before = realErrors().length;
+    const before = errorCount();
     expect((await getProps(page, 'multiAxis')).multiAxis).toBe(true);
     const yBefore = (await getProps(page, 'yColumnNames')).yColumnNames as string[];
     expect(yBefore).toHaveLength(3);
@@ -223,26 +218,26 @@ test('Line Chart — Multi-Axis and Split', async ({page}) => {
     const yAfter = (await getProps(page, 'yColumnNames')).yColumnNames as string[];
     expect(yAfter).toHaveLength(1);
     expect(yBefore).toContain(yAfter[0]);
-    expect(realErrors().length).toBe(before);
+    expect(errorCount()).toBe(before);
 
     await setProps(page, {yColumnNames: yBefore});
     expect((await getProps(page, 'yColumnNames')).yColumnNames).toEqual(yBefore);
   });
 
   await softStep('S3: disable Multi Axis', async () => {
-    const before = realErrors().length;
+    const before = errorCount();
     await setProps(page, {multiAxis: false});
     expect((await getProps(page, 'multiAxis')).multiAxis).toBe(false);
-    expect(realErrors().length).toBe(before);
+    expect(errorCount()).toBe(before);
   });
 
   await softStep('S3: clear all split columns', async () => {
-    const before = realErrors().length;
+    const before = errorCount();
     await setProps(page, {splitColumnNames: []});
     expect((await getProps(page, 'splitColumnNames')).splitColumnNames).toHaveLength(0);
-    expect(realErrors().length).toBe(before);
+    expect(errorCount()).toBe(before);
   });
 
-  if (stepErrors.length > 0)
-    throw new Error(`Line Chart multi-axis-and-split failures:\n${stepErrors.join('\n')}`);
+  await v.cleanupShell(page);
+  v.finishSpec();
 });

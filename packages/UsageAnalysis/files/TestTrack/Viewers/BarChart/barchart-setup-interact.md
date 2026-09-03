@@ -17,7 +17,7 @@ related_bugs:
     status: fixed
 realized_as:
   - barchart-setup-interact-spec.ts
-  - barchart-setup-interact-server-spec.ts
+  - bar-chart-server-spec.ts
 expected_results:
   - anchor: "Scenario 1 Step 1"
     expectation: >-

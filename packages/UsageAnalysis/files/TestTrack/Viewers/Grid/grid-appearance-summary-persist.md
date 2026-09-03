@@ -6,6 +6,7 @@ realizes:
   - viewers.grid
 priority: p0
 target_layer: playwright
+boot_lane: mixed
 coverage_type: smoke
 related_bugs:
   - id: GROK-19769
@@ -14,6 +15,7 @@ related_bugs:
     status: fixed
 realized_as:
   - grid-appearance-summary-persist-spec.ts
+  - grid-server-spec.ts
 expected_results:
   - anchor: Step 4
     expectation: Applying Linear through the AGE column header menu leaves Linear as

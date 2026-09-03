@@ -85,25 +85,10 @@ async function waitForControlPanelDisplay(
 }
 
 test('Trellis plot: tiled single-column geometry and auto-layout control-panel coupling', async ({page}) => {
-  test.setTimeout(600_000);
-  page.setDefaultTimeout(120_000);
+  test.setTimeout(180_000);
 
   await openDatagrok(page);
-  await page.waitForTimeout(5000); 
-
-  await page.evaluate(async (path) => {
-    document.body.classList.add('selenium');
-    try { grok.shell.settings.showFiltersIconsConstantly = true; } catch {}
-    try { grok.shell.windows.simpleMode = true; } catch {}
-    grok.shell.closeAll();
-    const df = await (window as any).__readCsv(path);
-    grok.shell.addTableView(df);
-    await new Promise((resolve) => {
-      const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(null); });
-      setTimeout(resolve, 3000);
-    });
-  }, datasetPath);
-  await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30000});
+  await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 3000});
 
   const splitCats = await page.evaluate(
     (name) => grok.shell.tv.dataFrame.col(name).categories.length, splitColumn);
@@ -123,7 +108,7 @@ test('Trellis plot: tiled single-column geometry and auto-layout control-panel c
     '.panel-base:has([name="viewer-Trellis-plot"]) .panel-titlebar [name="icon-font-icon-settings"]',
   ).first();
   await gear.click();
-  await page.waitForTimeout(1200); 
+  await page.locator('.property-grid').first().waitFor({state: 'visible', timeout: 10000});
 
   const tiledAtEntry = await page.evaluate(() => {
     const tp = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Trellis plot') as any;
@@ -250,5 +235,6 @@ test('Trellis plot: tiled single-column geometry and auto-layout control-panel c
     await waitForControlPanelDisplay(page, false);
   });
 
+  await v.closeAllAndWait(page);
   v.finishSpec();
 });

@@ -12,12 +12,60 @@ const VIEWER_NAME = '3d-scatter-plot';
 const VIEWER = `[name="viewer-${VIEWER_NAME}"]`;
 const VIEWER_TYPE = '3d scatter plot';
 const datasetPath = 'System:DemoFiles/demog.csv';
+const HOME_CAMERA = [0, 0, 4];
 
-const signature = (page: Page) => v.viewerSignature(page, VIEWER_NAME);
-const repaints = (page: Page, before: string) => v.waitForViewerRepaint(page, VIEWER_NAME, before);
+// The plot is a three.js WebGL canvas without preserveDrawingBuffer, so its pixels are readable
+// only in the task that painted them: the signature forces a paint and reads the buffer in one
+// evaluate. An element screenshot cost ~1s and every step paid it at least twice.
+async function installSignature(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const w = window as any;
+    const proto = w.JsScatterPlot3dCore.prototype;
+    if (!proto.__sp3dHooked) {
+      const render = proto.render;
+      proto.render = function(this: any) { w.__sp3d = this; return render.apply(this, arguments as any); };
+      proto.__sp3dHooked = true;
+    }
+    w.__sp3dSig = () => {
+      const plot = w.__sp3d;
+      if (!plot) return null;
+      plot.render();
+      const gl = plot.renderer.getContext();
+      const cv = plot.renderer.domElement;
+      const buf = new Uint8Array(cv.width * cv.height * 4);
+      gl.readPixels(0, 0, cv.width, cv.height, gl.RGBA, gl.UNSIGNED_BYTE, buf);
+      let h = 0;
+      for (let i = 0; i < buf.length; i += 16) h = (h * 31 + buf[i] + buf[i + 1] * 7 + buf[i + 2] * 13) % 2147483647;
+      return h;
+    };
+    w.__sp3dCamera = () => {
+      const p = w.__sp3d?.camera?.position;
+      return p ? [p.x, p.y, p.z].map((x: number) => Math.round(x * 1000) / 1000) : null;
+    };
+    const canvas = document.querySelector('[name="viewer-3d-scatter-plot"] canvas');
+    canvas?.dispatchEvent(new MouseEvent('mousemove', {bubbles: true}));
+  });
+  await v.pollValue(() => page.evaluate(() => !!(window as any).__sp3d), (ok) => ok, 5000, 50);
+}
+
+const signature = (page: Page) => page.evaluate(() => (window as any).__sp3dSig() as number);
+const camera = (page: Page) => page.evaluate(() => (window as any).__sp3dCamera() as number[]);
+const repaints = (page: Page, before: number) =>
+  v.pollValue(() => signature(page), (s) => s !== before, 3000, 50);
 const shownValue = (page: Page, prop: string) => v.propertyGridValue(page, prop);
-const category = (page: Page, cat: string, probe: string) =>
-  v.ensurePropertyCategory(page, VIEWER_NAME, cat, probe);
+async function category(page: Page, cat: string, probe: string): Promise<void> {
+  const row = page.locator(`.property-grid tr[name="prop-${probe}"]`).first();
+  const header = page.locator(`[name="prop-category-${cat}"]`).first();
+  for (let attempt = 0; attempt < 3 && !(await row.isVisible()); attempt++) {
+    if (await header.count() === 0) {
+      await v.clickViewerTitlebarIcon(page, VIEWER_NAME, 'icon-font-icon-settings').catch(() => {});
+      await header.waitFor({timeout: 3000}).catch(() => {});
+    } else
+      await header.click().catch(() => {});
+    await v.pollValue(() => row.isVisible(), (visible) => visible, 1500, 50);
+  }
+  expect(await row.isVisible()).toBe(true);
+}
 
 async function selectorText(page: Page, role: string): Promise<string> {
   return (await page.locator(`${VIEWER} [name="div-column-combobox-${role}"]`).first().innerText())
@@ -29,6 +77,38 @@ async function plotCentre(page: Page): Promise<{x: number; y: number; box: any}>
   return {x: box.x + box.width / 2, y: box.y + box.height / 2, box};
 }
 
+// The point to hover on the bar chart is read from its pixels: the bars are the only saturated
+// colour on that canvas, so their centroid lands on a bar whatever the split column draws.
+const barCentroid = (page: Page) => page.evaluate(() => {
+  const cv = document.querySelector('[name="viewer-Bar-chart"] canvas') as HTMLCanvasElement | null;
+  const ctx = cv?.getContext('2d');
+  if (!cv || !ctx) return null;
+  const d = ctx.getImageData(0, 0, cv.width, cv.height).data;
+  let sx = 0, sy = 0, n = 0;
+  for (let i = 0; i < d.length; i += 4) {
+    const r = d[i], g = d[i + 1], b = d[i + 2];
+    if (Math.max(r, g, b) - Math.min(r, g, b) < 60) continue;
+    const px = (i / 4) % cv.width;
+    sx += px; sy += (i / 4 - px) / cv.width; n++;
+  }
+  if (n === 0) return null;
+  const rect = cv.getBoundingClientRect();
+  return {x: rect.x + (sx / n) * rect.width / cv.width, y: rect.y + (sy / n) * rect.height / cv.height};
+});
+
+const clickMenuItem = (page: Page, label: string) => page.evaluate((text) => {
+  const item = Array.from(document.querySelectorAll('.d4-menu-item'))
+    .find((el) => el.querySelector('.d4-menu-item-label')?.textContent?.trim() === text) as HTMLElement | undefined;
+  item?.click();
+}, label);
+
+const legendBox = (page: Page) => page.evaluate(() => {
+  const el = document.querySelector('[name="viewer-3d-scatter-plot"] .d4-legend') as HTMLElement | null;
+  if (!el) return null;
+  const r = el.getBoundingClientRect();
+  return {x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height), cls: el.className};
+});
+
 test('3D scatter plot', async ({page}) => {
   test.setTimeout(600_000);
 
@@ -38,6 +118,8 @@ test('3D scatter plot', async ({page}) => {
   await softStep('Add 3D scatter plot from the Viewers toolbox', async () => {
     await page.locator('[name="icon-3d-scatter-plot"]').first().click();
     await page.locator(VIEWER).first().waitFor({timeout: 30_000});
+    await page.locator(`${VIEWER} canvas`).first().waitFor({timeout: 30_000});
+    await installSignature(page);
 
     await expect.poll(() => selectorText(page, 'x'), {timeout: 30_000}).toBe('X: AGE');
     expect(await selectorText(page, 'y')).toBe('Y: HEIGHT');
@@ -54,7 +136,7 @@ test('3D scatter plot', async ({page}) => {
     });
     expect(await selectorText(page, 'x')).toBe('X: WEIGHT');
     expect(await selectorText(page, 'z')).toBe('Z: AGE');
-    await repaints(page, before);
+    expect(await repaints(page, before)).not.toBe(before);
 
     await v.pickColumnViaSelectorTrusted(page, {
       role: 'x', columnName: 'AGE', viewerType: VIEWER_TYPE, propName: 'xColumnName',
@@ -73,7 +155,7 @@ test('3D scatter plot', async ({page}) => {
     await expect.poll(async () => (await v.readLegend(page, VIEWER_TYPE)).labels.sort(),
       {timeout: 10_000}).toEqual(['F', 'M']);
     expect((await v.readLegend(page, VIEWER_TYPE)).legendRendered).toBe(true);
-    await repaints(page, before);
+    expect(await repaints(page, before)).not.toBe(before);
   });
 
   await softStep('Color by AGE switches the legend to a gradient', async () => {
@@ -84,18 +166,20 @@ test('3D scatter plot', async ({page}) => {
 
     await expect.poll(async () => (await v.readLegend(page, VIEWER_TYPE)).labels,
       {timeout: 10_000}).not.toEqual(['F', 'M']);
-    await repaints(page, before);
+    expect(await repaints(page, before)).not.toBe(before);
   });
 
   await softStep('Marker type redraws the markers', async () => {
     await v.openViewerProperties(page, VIEWER_NAME);
     await category(page, 'marker', 'marker-type');
 
-    const shapes: Record<string, string> = {};
+    const shapes: Record<string, number> = {};
+    let current = await signature(page);
     for (const shape of ['box', 'sphere', 'cylinder']) {
       await v.selectPropertyGridChoice(page, 'marker-type', shape);
       expect(await shownValue(page, 'marker-type')).toBe(shape);
-      shapes[shape] = await signature(page);
+      current = await repaints(page, current);
+      shapes[shape] = current;
     }
     expect(shapes['box']).not.toBe(shapes['sphere']);
     expect(shapes['cylinder']).not.toBe(shapes['sphere']);
@@ -106,8 +190,10 @@ test('3D scatter plot', async ({page}) => {
     const before = await signature(page);
     await v.setPropertyGridValue(page, 'marker-opacity', '25');
     expect(await shownValue(page, 'marker-opacity')).toBe('25');
-    await repaints(page, before);
+    const faded = await repaints(page, before);
+    expect(faded).not.toBe(before);
     await v.setPropertyGridValue(page, 'marker-opacity', '100');
+    await repaints(page, faded);
   });
 
   await softStep('Show Axes hides and restores the axes', async () => {
@@ -115,9 +201,10 @@ test('3D scatter plot', async ({page}) => {
     const before = await signature(page);
     expect(await v.togglePropertyGridCheckbox(page, 'show-axes')).toBe(false);
     const withoutAxes = await repaints(page, before);
+    expect(withoutAxes).not.toBe(before);
 
     expect(await v.togglePropertyGridCheckbox(page, 'show-axes')).toBe(true);
-    await repaints(page, withoutAxes);
+    expect(await repaints(page, withoutAxes)).not.toBe(withoutAxes);
   });
 
   await softStep('X axis type switches to logarithmic', async () => {
@@ -125,39 +212,48 @@ test('3D scatter plot', async ({page}) => {
     const before = await signature(page);
     await v.selectPropertyGridChoice(page, 'x-axis-type', 'logarithmic');
     expect(await shownValue(page, 'x-axis-type')).toBe('logarithmic');
-    await repaints(page, before);
+    const log = await repaints(page, before);
+    expect(log).not.toBe(before);
     await v.selectPropertyGridChoice(page, 'x-axis-type', 'linear');
     expect(await shownValue(page, 'x-axis-type')).toBe('linear');
+    await repaints(page, log);
   });
 
   await softStep('Drag rotates the scene and Reset View restores it', async () => {
     const {x, y, box} = await plotCentre(page);
     const before = await signature(page);
+    const cameraBefore = await camera(page);
 
     await page.mouse.move(x, y);
     await page.mouse.down();
-    await page.mouse.move(box.x + box.width * 0.75, box.y + box.height * 0.3, {steps: 20});
+    // every mouse step costs ~0.6s of hit-testing in the plot, and the rotation is the same
+    await page.mouse.move(box.x + box.width * 0.75, box.y + box.height * 0.3, {steps: 3});
     await page.mouse.up();
     const rotated = await repaints(page, before);
+    expect(rotated).not.toBe(before);
+    expect(await camera(page)).not.toEqual(cameraBefore);
 
     await page.mouse.click(x, y, {button: 'right'});
     await page.locator('.d4-menu-popup').first().waitFor({timeout: 5000});
-    await page.locator('.d4-menu-item')
-      .filter({has: page.locator('.d4-menu-item-label', {hasText: /^Reset View$/})}).first().click();
+    await clickMenuItem(page, 'Reset View');
     await expect(page.locator('.d4-menu-popup')).toHaveCount(0);
-    await repaints(page, rotated);
+    expect(await repaints(page, rotated)).not.toBe(rotated);
+    expect(await camera(page)).toEqual(HOME_CAMERA);
   });
 
   await softStep('Mouse wheel zooms the scene', async () => {
     const {x, y} = await plotCentre(page);
     await page.mouse.move(x, y);
     const before = await signature(page);
+    const distanceBefore = (await camera(page))[2];
 
     await page.mouse.wheel(0, -600);
     const zoomedIn = await repaints(page, before);
+    expect(zoomedIn).not.toBe(before);
+    expect((await camera(page))[2]).toBeLessThan(distanceBefore);
 
     await page.mouse.wheel(0, 600);
-    await repaints(page, zoomedIn);
+    expect(await repaints(page, zoomedIn)).not.toBe(zoomedIn);
   });
 
   await softStep('Click makes a row current, Shift+click selects it', async () => {
@@ -195,7 +291,7 @@ test('3D scatter plot', async ({page}) => {
     await category(page, 'data', 'show-filtered-out-points');
     const filteredOnly = await signature(page);
     expect(await v.togglePropertyGridCheckbox(page, 'show-filtered-out-points')).toBe(true);
-    await repaints(page, filteredOnly);
+    expect(await repaints(page, filteredOnly)).not.toBe(filteredOnly);
 
     expect(await v.togglePropertyGridCheckbox(page, 'show-filtered-out-points')).toBe(false);
     await v.resetFilters(page);
@@ -208,9 +304,11 @@ test('3D scatter plot', async ({page}) => {
       (await v.countCanvasPixels(page, 'Bar chart')).total, {timeout: 30_000}).toBeGreaterThan(1000);
 
     const bar = (await page.locator('[name="viewer-Bar-chart"]').boundingBox())!;
+    const target = (await barCentroid(page))!;
+    expect(target).not.toBeNull();
     const idle = await signature(page);
-    await page.mouse.move(bar.x + bar.width * 0.3, bar.y + bar.height * 0.6);
-    await repaints(page, idle);
+    await page.mouse.move(target.x, target.y);
+    expect(await repaints(page, idle)).not.toBe(idle);
 
     await page.mouse.move(bar.x + bar.width * 0.9, bar.y + bar.height * 0.05);
     await category(page, 'selection', 'show-mouse-over-row-group');
@@ -224,9 +322,8 @@ test('3D scatter plot', async ({page}) => {
   });
 
   await softStep('Legend position moves the legend', async () => {
-    // an earlier step left Color = AGE (numeric), which renders NO legend element at all —
-    // there is nothing to move, so the repaint could never happen. Colour by a CATEGORICAL
-    // column first so a legend exists to reposition.
+    // an earlier step left Color = AGE (numeric), which renders no legend element at all,
+    // so colour by a categorical column first to have a legend to reposition
     await v.pickColumnViaSelectorTrusted(page, {
       role: 'color', columnName: 'SEX', viewerType: VIEWER_TYPE, propName: 'colorColumnName',
     });
@@ -236,12 +333,20 @@ test('3D scatter plot', async ({page}) => {
     await category(page, 'legend', 'legend-position');
     await v.selectPropertyGridChoice(page, 'legend-visibility', 'Always');
     const before = await signature(page);
+    const legendBefore = await legendBox(page);
     await v.selectPropertyGridChoice(page, 'legend-position', 'Left');
     expect(await shownValue(page, 'legend-position')).toBe('Left');
-    await repaints(page, before);
+    expect(await repaints(page, before)).not.toBe(before);
+    const legendLeft = await v.pollValue(() => legendBox(page), (b) => !!b && b.cls.includes('d4-legend-left'), 3000, 50);
+    expect(legendLeft).not.toEqual(legendBefore);
+    expect(legendLeft!.cls).toContain('d4-legend-left');
     await v.selectPropertyGridChoice(page, 'legend-position', 'Auto');
   });
 
+  await page.evaluate(() => {
+    const w = window as any;
+    delete w.__sp3d; delete w.__sp3dSig; delete w.__sp3dCamera;
+  });
   await v.cleanupShell(page);
 
   v.finishSpec();

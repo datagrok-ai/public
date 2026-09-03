@@ -148,18 +148,25 @@ Expected:
 
 - Slider handles: `svg[name="x-slider"]` / `svg[name="y-slider"]` with
   children `[name="pan-handle"]`, `[name="min-handle"]`, `[name="max-handle"]`.
-  Synthetic dispatched mousedown -> document-mousemove steps ->
-  document-mouseup DO drive the drag (same widget family as the PC Plot axis
-  sliders). The sliders are present already at 4x4.
+  Synthetic dispatched mousedown -> document-mousemove -> document-mouseup DO
+  drive the drag (same widget family as the PC Plot axis sliders). The sliders
+  are present already at 4x4. Every mousemove that changes the integer viewport
+  re-tiles the whole visible matrix (measured 2026-09-03: 0.1 s at 25 cells, 3 s
+  at 240), so each drag is ONE move to a computed position, not a paced 15 px
+  sweep — the sweep cost 36 s of re-tiles and, because its end point landed on
+  15 of 16 columns, never actually reached the cap. The handle centres sit one
+  handle diameter apart beyond the value span, which gives the px-per-column;
+  the landing is proven by the exact cell count (80 after X to 16 columns, 240
+  after Y to 15 rows) and the cap by the 16th row leaving the count at 240.
 - The 250-cell cap portion runs on a fixture-extended demog: 12 derived
   float columns (AGE + i, i = 1..12) are added via the JS API in Setup so
   the eligible numeric set reaches 16. Recon on the 16x16 set: the initial
   re-tiled viewport renders a small window (fewer than 80 cells; 25 observed);
-  opening the x slider fully grows the count (viewport-dependent); opening
-  the y slider fully settles below the cap, NEVER 256 — the cap rejects the
-  final increments and the drag stops short. Assert the invariant: every
-  sampled visible cell count stays <= 250 and never reaches 256; the exact
-  settle value is viewport-dependent (224 and 240 observed live). The fixture
+  opening the x slider fully grows the count to 80; opening the y slider to
+  15 rows gives 240, and the move to the 16th row (256) is rejected — the
+  cap leaves the viewport unchanged. Assert the invariant: every sampled
+  visible cell count stays <= 250 and never reaches 256, and the rejected
+  increment leaves the count at 240. The fixture
   columns are removed from the dataframe in a `finally` teardown so the
   extended demog never leaks past the run.
 - Cell indexing is row-major over the VISIBLE sets:

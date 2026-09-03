@@ -11,11 +11,12 @@ realizes_atlas:
 realizes: [viewers.trellis-plot, entities.viewer.action.use-in-trellis, curves.viewer.multi-curve]
 priority: p0
 target_layer: playwright
-boot_lane: server
+boot_lane: mixed
 coverage_type: smoke
 precondition_guards: []
 realized_as:
   - trellis-plot-spec.ts
+  - trellis-plot-server-spec.ts
 related_bugs:
   - id: GROK-20432
     status: fixed

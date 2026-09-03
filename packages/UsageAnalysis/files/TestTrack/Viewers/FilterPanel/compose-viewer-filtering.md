@@ -7,9 +7,11 @@ realizes:
   - viewers.filters
 priority: p1
 target_layer: playwright
+boot_lane: mixed
 coverage_type: regression
 realized_as:
   - compose-viewer-filtering-spec.ts
+  - compose-viewer-filtering-server-spec.ts
 related_bugs:
   - id: github-2642
     status: fixed

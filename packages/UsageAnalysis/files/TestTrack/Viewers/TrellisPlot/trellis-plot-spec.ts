@@ -2,25 +2,211 @@
 realizes: [trellisplot.cp.split-and-pick-inner, trellisplot.cp.click-to-filter, trellisplot.cp.global-scale-inner-axes, trellisplot.cp.scroll-categories, trellisplot.cp.tiled-single-column, trellisplot.int.selectors-labels-visibility-coupling, trellisplot.int.undo-redo-viewer-lifecycle]
 --- */
 import {expect, Page} from '@playwright/test';
-import {test} from '../../shared-page';
-import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
+import {localTest as test} from '../../shared-page';
+import {openDatagrok, specTestOptions, softStep, isLocalBootNoise} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 
 declare const grok: any;
 declare const DG: any;
 
+// The client-side ladder of the trellis scenario, one test per scenario group so a failure does
+// not run the remaining groups and two workers can share the file. The layout/project round-trip,
+// the Multi Curve step (curves.csv, a package viewer) and To Script (a package-contributed menu,
+// absent from the local client) are in trellis-plot-server-spec.ts.
 test.use(specTestOptions);
 
 const datasetPath = 'System:DemoFiles/demog.csv';
-const curvesPath = 'System:DemoFiles/curves.csv';
+const CELLS = '[name="viewer-Trellis-plot"] .d4-trellis-plot-cell';
 
 function axisViewportCount(n: number, oneColumnOnly: boolean): number {
   return Math.min(oneColumnOnly ? 5 : (n < 5 * 1.5 ? n : 5), n);
 }
 
+interface Ctx {
+  fullRowCount: number;
+  canonicalCellCount: number;
+  pageErrors: string[];
+  consoleErrors: string[];
+  dispose: () => void;
+}
+
+async function installTrellisWaits(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const w = window as any;
+    if (w.__tpApply) return;
+    w.__tp = () => Array.from(w.grok.shell.tv.viewers).find((x: any) => x.type === 'Trellis plot');
+    w.__tpCells = () => document.querySelectorAll('[name="viewer-Trellis-plot"] .d4-trellis-plot-cell').length;
+    const labelNodes = () => Array.from(document.querySelectorAll(
+      '[name="viewer-Trellis-plot"] .d4-trellis-plot-cat-item-horz, [name="viewer-Trellis-plot"] .d4-trellis-plot-cat-item-vert'));
+    w.__tpLabelCount = () => labelNodes().length;
+    w.__tpLabelAngles = () => labelNodes().map((n) => n.getAttribute('transform')).join('|');
+    w.__tpSelectorCount = () => {
+      const root = document.querySelector('[name="viewer-Trellis-plot"]');
+      if (!root) return -1;
+      const reallyVisible = (el: Element) => {
+        const b = el.getBoundingClientRect();
+        if (b.width <= 0 || b.height <= 0) return false;
+        for (let n: Element | null = el; n && n !== document.documentElement; n = n.parentElement) {
+          const st = getComputedStyle(n);
+          if (st.visibility === 'hidden' || st.visibility === 'collapse' || st.display === 'none') return false;
+        }
+        return true;
+      };
+      return Array.from(root.querySelectorAll('[name="div-column-combobox-"]')).filter(reallyVisible).length;
+    };
+    w.__tpDescriptionSlot = () => {
+      const root = document.querySelector('[name="viewer-Trellis-plot"]');
+      const el = root && root.querySelector('.d4-viewer-description');
+      const side = el && el.closest('.d4-layout-left, .d4-layout-right, .d4-layout-top, .d4-layout-bottom');
+      if (!side) return null;
+      return ['left', 'right', 'top', 'bottom'].find((x) => side.classList.contains('d4-layout-' + x)) ?? null;
+    };
+    // A trellis prop change repaints once, synchronously inside the setter (measured 2026-09-03: every
+    // settle armed after the act saw 0 renders and burned its cap), so the subscription is armed first.
+    w.__tpRendered = (act: () => any, cap = 1500, gap = 250, viewer?: any) => new Promise<number>((resolve) => {
+      const vw = viewer ?? w.__tp();
+      let seen = 0;
+      let timer: any = null;
+      let sub: any = null;
+      const done = () => {
+        clearTimeout(timer);
+        clearTimeout(capT);
+        try { sub?.unsubscribe(); } catch (_) {}
+        resolve(seen);
+      };
+      const capT = setTimeout(done, cap);
+      try { sub = vw.onViewerRendered.subscribe(() => { seen++; clearTimeout(timer); timer = setTimeout(done, gap); }); }
+      catch (_) {}
+      act();
+    });
+    w.__tpApply = async (act: () => any, read?: () => any, cap = 1500, viewer?: any) => {
+      const t0 = Date.now();
+      await w.__tpRendered(act, cap, 250, viewer);
+      if (!read) return undefined;
+      return w.__settledFor(read, 150, Math.max(50, cap - (Date.now() - t0)), 25);
+    };
+  });
+}
+
+function tpApply(page: Page, props: Record<string, any>, cap = 1500): Promise<number> {
+  return page.evaluate(({props, cap}) => {
+    const w = window as any;
+    return w.__tpApply(() => {
+      const tp = w.__tp();
+      for (const k of Object.keys(props)) tp.props[k] = props[k];
+    }, w.__tpCells, cap);
+  }, {props, cap});
+}
+
+async function hashesMoved(page: Page, idxs: number[], before: (number | null)[], cap: number): Promise<(number | null)[]> {
+  return v.pollValue(() => v.trellisCellHashes(page, idxs),
+    (h) => h.every((x, i) => x !== null && x !== before[i]), cap, 50);
+}
+
+// The trellis keeps ONE active inner slider per axis (features/inner_viewer_axes.dart) plus hidden
+// per-column copies whose handles are never shown; the active one is revealed by cell.onMouseEnter
+// and stays revealed on the axis strip, and takes mousedown on its handle elements only.
+async function dragInnerRangeSlider(page: Page, axis: 'x' | 'y', rootIndex = 0): Promise<boolean> {
+  const cell = await page.evaluate((rootIdx) => {
+    const root = document.querySelectorAll('[name="viewer-Trellis-plot"]')[rootIdx];
+    const c = Array.from(root?.querySelectorAll('.d4-trellis-plot-cell') ?? []).find((x) => x.querySelector('canvas'));
+    if (!c) return null;
+    const b = c.getBoundingClientRect();
+    return {x: b.x + b.width / 2, y: b.y + b.height / 2};
+  }, rootIndex);
+  if (!cell) return false;
+  // the reveal is cell.onMouseEnter, so the pointer has to come from outside the cell
+  await page.mouse.move(2, 2);
+  await page.mouse.move(cell.x, cell.y);
+  const geo = await v.pollValue(() => page.evaluate(({rootIdx, ax}) => {
+    const root = document.querySelectorAll('[name="viewer-Trellis-plot"]')[rootIdx];
+    const svgs = Array.from(root?.querySelectorAll(`.d4-range-selector > svg[type="range-slider"][name="${ax}-slider"]`) ?? []) as SVGElement[];
+    const shownHandles = (svg: SVGElement) => ['min-handle', 'max-handle']
+      .map((n) => svg.querySelector(`[name="${n}"]`) as SVGElement | null)
+      .filter((h) => !!h && getComputedStyle(h).display !== 'none' && h.getBoundingClientRect().width > 0)
+      .map((h) => { const b = h!.getBoundingClientRect(); return {x: b.x + b.width / 2, y: b.y + b.height / 2}; });
+    for (const svg of svgs) {
+      const wrap = svg.closest('.d4-range-selector') as HTMLElement | null;
+      if (!wrap || getComputedStyle(wrap).visibility === 'hidden' || getComputedStyle(svg).visibility === 'hidden') continue;
+      const hs = shownHandles(svg);
+      if (hs.length !== 2) continue;
+      const b = svg.getBoundingClientRect();
+      const end = hs.sort((p, q) => ax === 'x' ? q.x - p.x : q.y - p.y)[0];
+      return {end, svg: {x: b.x, y: b.y, w: b.width, h: b.height}};
+    }
+    return null;
+  }, {rootIdx: rootIndex, ax: axis}), (g) => g !== null, 1500, 30);
+  if (!geo) return false;
+  await page.mouse.move(geo.end.x, geo.end.y, {steps: 4});
+  await page.mouse.down();
+  if (axis === 'x') await page.mouse.move(geo.svg.x + geo.svg.w * 0.45, geo.end.y, {steps: 12});
+  else await page.mouse.move(geo.end.x, geo.svg.y + geo.svg.h * 0.45, {steps: 12});
+  await page.mouse.up();
+  return true;
+}
+
+async function setUp(page: Page): Promise<Ctx> {
+  const pageErrors: string[] = [];
+  const consoleErrors: string[] = [];
+  const onPageError = (e: Error) => { pageErrors.push(String(e)); };
+  const onConsole = (m: any) => { if (m.type() === 'error' && !isLocalBootNoise(m.text())) consoleErrors.push(m.text()); };
+  page.on('pageerror', onPageError);
+  page.on('console', onConsole);
+
+  await openDatagrok(page);
+  await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 3000});
+  await installTrellisWaits(page);
+
+  const setup = await page.evaluate(() => {
+    const df = grok.shell.tv.dataFrame;
+    return {rowCount: df.rowCount, sex: df.col('SEX').categories.length, race: df.col('RACE').categories.length};
+  });
+  expect(setup).toEqual({rowCount: 5850, sex: 2, race: 4});
+  const canonicalCellCount = axisViewportCount(setup.sex, false) * axisViewportCount(setup.race, false);
+
+  await v.addViewerByIcon(page, 'trellis-plot', 'Trellis-plot', 15000);
+  await restoreCanonical(page);
+  await expect(page.locator(CELLS)).toHaveCount(canonicalCellCount);
+
+  return {
+    fullRowCount: setup.rowCount, canonicalCellCount, pageErrors, consoleErrors,
+    dispose: () => { page.off('pageerror', onPageError); page.off('console', onConsole); },
+  };
+}
+
+async function tearDown(page: Page, ctx: Ctx): Promise<void> {
+  ctx.dispose();
+  await page.setViewportSize({width: 1920, height: 1080});
+  await v.closeAllAndWait(page);
+  v.finishSpec();
+}
+
+async function restoreCanonical(page: Page): Promise<void> {
+  await page.evaluate(async () => {
+    const w = window as any;
+    try {
+      for (const vw of Array.from(grok.shell.tv.viewers) as any[])
+        if (vw.type !== 'Grid' && vw.type !== 'Trellis plot') vw.close();
+      const trellises = Array.from(grok.shell.tv.viewers).filter((x: any) => x.type === 'Trellis plot') as any[];
+      for (let i = 1; i < trellises.length; i++) trellises[i].close();
+      let tp = trellises[0];
+      if (!tp) tp = grok.shell.tv.addViewer('Trellis plot');
+      await w.__tpApply(() => {
+        tp.props.globalScale = false;
+        tp.props.showXAxes = 'Auto';
+        tp.props.showYAxes = 'Auto';
+        tp.props.onClick = 'None';
+        tp.props.viewerType = 'Scatter plot';
+        tp.props.xColumnNames = ['SEX'];
+        tp.props.yColumnNames = ['RACE'];
+      }, w.__tpCells, 1500, tp);
+    } catch (_) {  }
+  });
+}
+
 async function cellIndexFor(page: Page, xValue: string, yValue: string): Promise<number> {
   return page.evaluate(({xValue, yValue}) => {
-    const tp = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Trellis plot') as any;
+    const tp = (window as any).__tp();
     const df = grok.shell.tv.dataFrame;
     const xCol = df.col(tp.props.xColumnNames[0]);
     const yCol = df.col(tp.props.yColumnNames[0]);
@@ -47,10 +233,6 @@ async function comboRowCount(page: Page, xCol: string, xValue: string, yCol: str
   }, {xCol, xValue, yCol, yValue});
 }
 
-// Both delegate to the installed in-page __menuLeaf (the same navigator drivePanelMenuLeaf /
-// driveContextMenuLeaf use) — a submenu tree is DOM-present but zero-size until a real pointer
-// hover expands each level, which __menuLeaf performs. The menu is opened by the caller's real
-// right-click; these only navigate the already-open .d4-menu-popup.
 async function clickMenuItemInGroup(page: Page, group: string, item: string): Promise<void> {
   await page.locator('.d4-menu-popup').last().waitFor({timeout: 10000});
   await page.evaluate(({g, l}) => (window as any).__menuLeaf(g, l), {g: group, l: item});
@@ -62,9 +244,6 @@ async function clickTopLevelMenuItem(page: Page, item: string): Promise<void> {
 }
 
 async function ensureStyleExpanded(page: Page): Promise<void> {
-  // The Style section is collapsed by default and its rows are zero-height until expanded
-  // (refdoc: pitfall 16); ensurePropertyCategory expands the owning category and settles on the
-  // probe row becoming visible, replacing the fixed 600ms wait after a header click.
   await v.ensurePropertyCategory(page, 'Trellis-plot', 'style', 'show-all-categories').catch(() => {});
 }
 
@@ -82,8 +261,6 @@ async function openBoxPlotTab(page: Page): Promise<void> {
       .find((h) => (h as HTMLElement).innerText.trim() === 'Box plot') as HTMLElement | undefined;
     tab?.click();
   });
-  // the Box plot tab renders its property grid asynchronously; settle on the show-all-categories
-  // row appearing rather than a fixed 800ms
   await page.locator('.property-grid tr[name="prop-show-all-categories"]').first()
     .waitFor({state: 'attached', timeout: 10000}).catch(() => {});
 }
@@ -92,9 +269,7 @@ async function setShowAllCategories(page: Page, desired: boolean): Promise<boole
   await ensureStyleExpanded(page);
   const box = page.locator('.property-grid tr[name="prop-show-all-categories"] input[type="checkbox"]');
   if (await box.count() === 0) return null;
-  // CLICK the checkbox (never setOptions — a props write lands in the saved look and makes the
-  // GROK-20432 guard true by construction); setPropertyGridCheckbox clicks and settles on the
-  // read-back matching desired, replacing the 900ms sleep.
+  // a props write would land in the saved look and make the GROK-20432 guard true by construction
   await v.setPropertyGridCheckbox(page, 'show-all-categories', desired, 'style').catch(() => {});
   return box.isChecked();
 }
@@ -108,7 +283,7 @@ async function legendCategories(page: Page): Promise<string[]> {
     const root = document.querySelector('[name="viewer-Trellis-plot"]') as HTMLElement;
     return Array.from(root.querySelectorAll('[name="legend"] .d4-legend-item'))
       .map((it) => (it.querySelector('.d4-legend-value')?.textContent ?? '').trim())
-      .filter((v) => v.length > 0);
+      .filter((x) => x.length > 0);
   });
 }
 
@@ -129,17 +304,20 @@ async function legendItemState(page: Page, category: string): Promise<LegendItem
   }, category);
 }
 
-async function uncheckLegendCategory(page: Page, category: string): Promise<LegendItemState> {
-  const clicked = await page.evaluate((cat) => {
+async function clickLegendPart(page: Page, category: string, part: '.d4-legend-cross' | '.d4-legend-value'): Promise<boolean> {
+  return page.evaluate(({cat, part}) => {
     const root = document.querySelector('[name="viewer-Trellis-plot"]') as HTMLElement;
     const item = Array.from(root.querySelectorAll('[name="legend"] .d4-legend-item'))
       .find((it) => (it.querySelector('.d4-legend-value')?.textContent ?? '').trim() === cat);
-    const cross = item?.querySelector('.d4-legend-cross') as HTMLElement | null;
-    if (!cross) return false;
-    cross.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true, view: window, button: 0}));
+    const el = item?.querySelector(part) as HTMLElement | null;
+    if (!el) return false;
+    el.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true, view: window, button: 0}));
     return true;
-  }, category);
-  if (!clicked) return {clicked: false, present: false, active: false, opacity: -1};
+  }, {cat: category, part});
+}
+
+async function uncheckLegendCategory(page: Page, category: string): Promise<LegendItemState> {
+  if (!await clickLegendPart(page, category, '.d4-legend-cross')) return {clicked: false, present: false, active: false, opacity: -1};
   await page.waitForFunction((cat) => {
     const root = document.querySelector('[name="viewer-Trellis-plot"]') as HTMLElement | null;
     const item = root && Array.from(root.querySelectorAll('[name="legend"] .d4-legend-item'))
@@ -150,16 +328,7 @@ async function uncheckLegendCategory(page: Page, category: string): Promise<Lege
 }
 
 async function selectOnlyLegendCategory(page: Page, category: string): Promise<LegendItemState> {
-  const clicked = await page.evaluate((cat) => {
-    const root = document.querySelector('[name="viewer-Trellis-plot"]') as HTMLElement;
-    const item = Array.from(root.querySelectorAll('[name="legend"] .d4-legend-item'))
-      .find((it) => (it.querySelector('.d4-legend-value')?.textContent ?? '').trim() === cat);
-    const label = item?.querySelector('.d4-legend-value') as HTMLElement | null;
-    if (!label) return false;
-    label.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true, view: window, button: 0}));
-    return true;
-  }, category);
-  if (!clicked) return {clicked: false, present: false, active: false, opacity: -1};
+  if (!await clickLegendPart(page, category, '.d4-legend-value')) return {clicked: false, present: false, active: false, opacity: -1};
   await page.waitForFunction((cat) => {
     const root = document.querySelector('[name="viewer-Trellis-plot"]') as HTMLElement | null;
     if (!root) return false;
@@ -176,7 +345,6 @@ async function legendSnapshot(page: Page): Promise<{name: string; opacity: numbe
   return page.evaluate(() => {
     const root = document.querySelector('[name="viewer-Trellis-plot"]') as HTMLElement | null;
     if (!root) return [];
-
     return Array.from(root.querySelectorAll('[name="legend"] .d4-legend-item')).map((it) => ({
       name: (it.querySelector('.d4-legend-value')?.textContent ?? '').trim(),
       opacity: parseFloat(getComputedStyle(it).opacity),
@@ -186,16 +354,7 @@ async function legendSnapshot(page: Page): Promise<{name: string; opacity: numbe
 }
 
 async function resetLegendViaLastCross(page: Page, category: string): Promise<boolean> {
-  const clicked = await page.evaluate((cat) => {
-    const root = document.querySelector('[name="viewer-Trellis-plot"]') as HTMLElement;
-    const item = Array.from(root.querySelectorAll('[name="legend"] .d4-legend-item'))
-      .find((it) => (it.querySelector('.d4-legend-value')?.textContent ?? '').trim() === cat);
-    const cross = item?.querySelector('.d4-legend-cross') as HTMLElement | null;
-    if (!cross) return false;
-    cross.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true, view: window, button: 0}));
-    return true;
-  }, category);
-  if (!clicked) return false;
+  if (!await clickLegendPart(page, category, '.d4-legend-cross')) return false;
   await page.waitForFunction(() => {
     const root = document.querySelector('[name="viewer-Trellis-plot"]') as HTMLElement | null;
     if (!root) return false;
@@ -207,8 +366,7 @@ async function resetLegendViaLastCross(page: Page, category: string): Promise<bo
 }
 
 async function trellisCount(page: Page): Promise<number> {
-  return page.evaluate(() =>
-    grok.shell.tv.viewers.filter((x: any) => x.type === 'Trellis plot').length);
+  return page.evaluate(() => grok.shell.tv.viewers.filter((x: any) => x.type === 'Trellis plot').length);
 }
 
 async function waitForTrellisCount(page: Page, target: number, capMs: number): Promise<void> {
@@ -309,7 +467,7 @@ async function focusChartsGrid(page: Page): Promise<void> {
 
 async function comboFromLastCellChange(page: Page): Promise<Record<string, string>> {
   return page.evaluate(() => {
-    const tp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Trellis plot') as any;
+    const tp = (window as any).__tp();
     const df = grok.shell.tv.dataFrame;
     const cols: string[] = [...tp.props.xColumnNames, ...tp.props.yColumnNames];
     const cats: string[][] = cols.map((c) => Array.from(df.col(c).categories));
@@ -346,81 +504,32 @@ async function awaitArmedDfEvent(page: Page, capMs: number): Promise<void> {
   await page.evaluate(() => { try { (window as any).__dfEvt?.sub?.unsubscribe(); } catch (_) {} });
 }
 
-test('Trellis plot tests', async ({page}) => {
+const resetRows = (page: Page) => page.evaluate(() => (window as any).__settled('df.onRowsFiltered', () => {
+  const df = grok.shell.tv.dataFrame;
+  df.filter.setAll(true); df.selection.setAll(false); df.rows.requestFilter();
+}, 500));
 
-  test.setTimeout(900_000);
-  page.setDefaultTimeout(120_000);
-
-  const pageErrors: string[] = [];
-  const consoleErrors: string[] = [];
-  page.on('pageerror', (e) => pageErrors.push(String(e)));
-  page.on('console', (m) => { if (m.type() === 'error') consoleErrors.push(m.text()); });
-
-  await loginToDatagrok(page);
-
-  await v.openTable(page, {path: datasetPath});
-  await v.installEventWaits(page);
-
-  const setup = await page.evaluate(() => {
-    const df = grok.shell.tv.dataFrame;
-    return {rowCount: df.rowCount, sex: df.col('SEX').categories.length, race: df.col('RACE').categories.length};
-  });
-  const fullRowCount = setup.rowCount;
-  expect(setup).toEqual({rowCount: 5850, sex: 2, race: 4});
-
-  const canonicalCellCount = axisViewportCount(setup.sex, false) * axisViewportCount(setup.race, false);
-
-  await v.addViewerByIcon(page, 'trellis-plot', 'Trellis-plot', 15000);
-
-  const restoreCanonical = async () => {
-    await page.evaluate(async () => {
-      try {
-        for (const vw of Array.from(grok.shell.tv.viewers) as any[])
-          if (vw.type !== 'Grid' && vw.type !== 'Trellis plot') vw.close();
-        const trellises = Array.from(grok.shell.tv.viewers).filter((v: any) => v.type === 'Trellis plot') as any[];
-        for (let i = 1; i < trellises.length; i++) trellises[i].close();
-        let tp = trellises[0];
-        if (!tp) tp = grok.shell.tv.addViewer('Trellis plot');
-        tp.props.globalScale = false;
-        tp.props.showXAxes = 'Auto';
-        tp.props.showYAxes = 'Auto';
-        tp.props.onClick = 'None';
-        tp.props.viewerType = 'Scatter plot';
-        tp.props.xColumnNames = ['SEX'];
-        tp.props.yColumnNames = ['RACE'];
-        await (window as any).__quiet('viewer:Trellis plot.onViewerRendered', 300, 1500);
-      } catch (_) {  }
-    });
-  };
+test('Trellis plot — inner viewer types, properties, gridlines, context menu', async ({page}) => {
+  test.setTimeout(240_000);
+  const ctx = await setUp(page);
 
   await softStep('Inner viewer types', async () => {
     const result = await page.evaluate(async () => {
-      const tp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Trellis plot') as any;
-      const root = document.querySelector('[name="viewer-Trellis-plot"]') as HTMLElement;
-
-      const settle = (cap: number) => (window as any).__quiet('viewer:Trellis plot.onViewerRendered', 300, cap);
       const w = window as any;
-      tp.props.xColumnNames = ['SEX'];
-      tp.props.yColumnNames = ['RACE'];
-      await settle(1500);
+      const tp = w.__tp();
+      const root = document.querySelector('[name="viewer-Trellis-plot"]') as HTMLElement;
       const r: any[] = [];
       const cellsHaveCanvas = () => {
-        const cells = root.querySelectorAll('.d4-trellis-plot-cell');
         let withCanvas = 0;
-        for (const c of Array.from(cells)) if (c.querySelector('canvas')) withCanvas++;
+        for (const c of Array.from(root.querySelectorAll('.d4-trellis-plot-cell'))) if (c.querySelector('canvas')) withCanvas++;
         return withCanvas;
       };
-
       const uiSwitch = async (icon: string) => {
         const vs = root.querySelector('[name="viewer selector"]') as HTMLElement;
-        // open the combo and settle on its drop-down attaching rather than a fixed 600ms
         vs.dispatchEvent(new MouseEvent('mousedown', {bubbles: true, button: 0}));
         await w.__poll(() => document.querySelector('.d4-combo-drop-down'), (e: Element | null) => !!e, 1000, 40);
         const item = document.querySelector(`.d4-combo-drop-down [name="${icon}"]`);
-        // switching the inner type is a heavy rebuild — race its repaint burst going quiet
-        await w.__settled('viewer:Trellis plot.onViewerRendered',
-          () => (item?.closest('.d4-list-item') as HTMLElement | null)?.click(), 1600);
-        await settle(1600);
+        await w.__tpRendered(() => (item?.closest('.d4-list-item') as HTMLElement | null)?.click(), 1600, 300);
       };
       const types: Array<[string, string, any]> = [
         ['Scatter plot', 'icon-scatter-plot', {xColumnName: 'WEIGHT', yColumnName: 'HEIGHT', colorColumnName: 'RACE'}],
@@ -433,14 +542,13 @@ test('Trellis plot tests', async ({page}) => {
         ['Summary', 'icon-summary', {visualization: 'bars'}],
         ['Sparklines', 'icon-sparklines', {sparklineType: 'Bar Chart'}],
         ['PC Plot', 'icon-pc-plot', {colorColumnName: 'SEX'}],
-
         ['Heatmap', 'icon-heat-map', {columnNames: ['AGE', 'HEIGHT', 'WEIGHT']}],
       ];
       for (const [, icon, look] of types) {
         await uiSwitch(icon);
-        try { tp.setOptions({innerViewerLook: look}); } catch {}
-        await settle(900);
-        r.push({type: tp.props.viewerType, cellsWithCanvas: cellsHaveCanvas()});
+        await w.__tpRendered(() => { try { tp.setOptions({innerViewerLook: look}); } catch {} }, 900);
+        r.push({type: tp.props.viewerType,
+          cellsWithCanvas: await w.__poll(cellsHaveCanvas, (n: number) => n > 0, 600, 40)});
       }
       return r;
     });
@@ -450,28 +558,16 @@ test('Trellis plot tests', async ({page}) => {
     expect(result.map((x: any) => x.type)).toEqual(expectedTypes);
     for (const x of result) expect(x.cellsWithCanvas).toBeGreaterThan(0);
 
-    await page.evaluate(async () => {
-      const tp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Trellis plot') as any;
-      await (window as any).__settled('viewer:Trellis plot.onViewerRendered',
-        () => tp.setOptions({innerViewerLook: {columnNames: ['AGE', 'HEIGHT', 'WEIGHT']}}), 1400);
-      await (window as any).__quiet('viewer:Trellis plot.onViewerRendered', 300, 1400);
-    });
+    await page.evaluate(() => (window as any).__tpRendered(
+      () => (window as any).__tp().setOptions({innerViewerLook: {columnNames: ['AGE', 'HEIGHT', 'WEIGHT']}}), 1400));
     const pointsBefore = await v.trellisCellHashes(page, [0, 1]);
     const appliedAfter = await page.evaluate(async () => {
-      const tp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Trellis plot') as any;
-      await (window as any).__settled('viewer:Trellis plot.onViewerRendered',
-        () => tp.setOptions({innerViewerLook: {columnNames: ['AGE']}}), 1400);
-      await (window as any).__quiet('viewer:Trellis plot.onViewerRendered', 300, 1400);
+      const tp = (window as any).__tp();
+      await (window as any).__tpRendered(() => tp.setOptions({innerViewerLook: {columnNames: ['AGE']}}), 1400);
       return tp.getOptions().look.innerViewerLook.columnNames;
     });
-    const pointsAfter = await v.trellisCellHashes(page, [0, 1]);
-    await page.evaluate(async () => {
-      const tp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Trellis plot') as any;
-      tp.props.viewerType = 'Scatter plot';
-      tp.props.xColumnNames = ['SEX'];
-      tp.props.yColumnNames = ['RACE'];
-      await (window as any).__quiet('viewer:Trellis plot.onViewerRendered', 300, 1400);
-    });
+    const pointsAfter = await hashesMoved(page, [0, 1], pointsBefore, 1400);
+    await restoreCanonical(page);
     expect(appliedAfter).toEqual(['AGE']);
 
     expect(pointsBefore[0]).not.toBeNull();
@@ -482,264 +578,20 @@ test('Trellis plot tests', async ({page}) => {
     expect(pointsAfter[1]).not.toBe(pointsBefore[1]);
   });
 
-  await softStep('Global scale', async () => {
-   try {
-
-    await page.evaluate(async () => {
-      const tp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Trellis plot') as any;
-      tp.props.viewerType = 'Scatter plot';
-      tp.props.xColumnNames = ['SEX'];
-      tp.props.yColumnNames = ['RACE'];
-      tp.setOptions({innerViewerLook: {xColumnName: 'WEIGHT', yColumnName: 'HEIGHT'}});
-      tp.props.globalScale = false;
-      await (window as any).__quiet('viewer:Trellis plot.onViewerRendered', 300, 3000);
-    });
-    const idxA = await cellIndexFor(page, 'F', 'Caucasian');
-    const idxB = await cellIndexFor(page, 'M', 'Caucasian');
-    const cellHashes = async () => {
-      const h = await v.trellisCellHashes(page, [idxA, idxB]);
-      return {a: h[0], b: h[1]};
-    };
-
-    const idleBefore = await cellHashes();
-    // the idle driven-guard: with nothing touched the cells must NOT repaint on their own, so a
-    // subsequent delta cannot be booked by ambient repaint. There is no event to await for the
-    // absence of a repaint — __quiet returns 0 when nothing fires, which is exactly the guard.
-    const idleRenders = await page.evaluate(() =>
-      (window as any).__quiet('viewer:Trellis plot.onViewerRendered', 400, 1500));
-    const idleAfter = await cellHashes();
-    expect(idleRenders).toBe(0);
-    expect(idleBefore.a).not.toBeNull();
-    expect(idleBefore.b).not.toBeNull();
-    expect(idleAfter.a).toBe(idleBefore.a);
-    expect(idleAfter.b).toBe(idleBefore.b);
-
-    const flip = async (value: boolean) => {
-      await page.evaluate(async (val) => {
-        const tp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Trellis plot') as any;
-        await (window as any).__settled('viewer:Trellis plot.onViewerRendered',
-          () => { tp.props.globalScale = val; }, 1600);
-        await (window as any).__quiet('viewer:Trellis plot.onViewerRendered', 300, 1600);
-      }, value);
-      return cellHashes();
-    };
-
-    const on = await flip(true);
-    expect(on.a).not.toBeNull();
-    expect(on.b).not.toBeNull();
-    expect(on.a).not.toBe(idleAfter.a);
-    expect(on.b).not.toBe(idleAfter.b);
-
-    const off = await flip(false);
-    expect(off.a).not.toBeNull();
-    expect(off.b).not.toBeNull();
-    expect(off.a).not.toBe(on.a);
-    expect(off.b).not.toBe(on.b);
-
-    const onAgain = await flip(true);
-    expect(onAgain.a).not.toBeNull();
-    expect(onAgain.b).not.toBeNull();
-    expect(onAgain.a).not.toBe(off.a);
-    expect(onAgain.b).not.toBe(off.b);
-   } finally {
-
-    await restoreCanonical();
-   }
-  });
-
-  await softStep('Axes visibility', async () => {
-   try {
-
-    const result = await page.evaluate(async () => {
-      const tp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Trellis plot') as any;
-      const root = document.querySelector('[name="viewer-Trellis-plot"]') as HTMLElement;
-
-      const settle = (cap: number) => (window as any).__quiet('viewer:Trellis plot.onViewerRendered', 300, cap);
-      tp.props.xColumnNames = ['SEX'];
-      tp.props.yColumnNames = ['RACE'];
-      tp.props.viewerType = 'Scatter plot';
-      tp.props.globalScale = true;
-      await settle(1500);
-
-      const innerSliderCount = () => root.querySelectorAll('.d4-range-selector > svg[type="range-slider"]').length;
-
-      const axisSliders = (ax: string) =>
-        Array.from(root.querySelectorAll(`.d4-range-selector > svg[type="range-slider"][name="${ax}-slider"]`))
-          .filter((el) => {
-            const b = el.getBoundingClientRect();
-            return b.width > 0 && b.height > 0;
-          }).length;
-      tp.props.showRangeSliders = true;
-      tp.props.showYAxes = 'Always';
-      await settle(1200);
-      const r: any[] = [];
-      const xByMode: Record<string, number> = {};
-      for (const val of ['Always', 'Never', 'Auto']) {
-        tp.props.showXAxes = val;
-        await settle(1200);
-        r.push(tp.props.showXAxes);
-        xByMode[val] = axisSliders('x');
-      }
-      tp.props.showXAxes = 'Always';
-      await settle(1200);
-      const yByMode: Record<string, number> = {};
-      for (const val of ['Always', 'Never', 'Auto']) {
-        tp.props.showYAxes = val;
-        await settle(1200);
-        r.push(tp.props.showYAxes);
-        yByMode[val] = axisSliders('y');
-      }
-      tp.props.showXAxes = 'Always';
-      tp.props.showYAxes = 'Always';
-      tp.props.showRangeSliders = false;
-      await settle(1200);
-      const slidersOff = innerSliderCount();
-      tp.props.showRangeSliders = true;
-      await settle(1200);
-      const slidersOn = innerSliderCount();
-      return {modes: r, xByMode, yByMode, slidersOff, slidersOn};
-    });
-    expect(result.modes).toEqual(['Always', 'Never', 'Auto', 'Always', 'Never', 'Auto']);
-
-    expect(result.xByMode.Always).toBeGreaterThan(0);
-    expect(result.xByMode.Never).toBe(0);
-    expect(result.yByMode.Always).toBeGreaterThan(0);
-    expect(result.yByMode.Never).toBe(0);
-
-    expect(result.xByMode.Auto).toBe(result.xByMode.Always);
-    expect(result.yByMode.Auto).toBe(result.yByMode.Always);
-
-    expect(result.slidersOff).toBe(0);
-    expect(result.slidersOn).toBeGreaterThan(0);
-   } finally {
-
-    await page.evaluate(async () => {
-      try {
-        const tp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Trellis plot') as any;
-        tp.props.showRangeSliders = true;
-        await new Promise((res) => setTimeout(res, 400));
-      } catch (_) {  }
-    });
-    await restoreCanonical();
-   }
-  });
-
-  await softStep('Range sliders with global scale', async () => {
-   try {
-
-    await page.evaluate(async () => {
-      const tp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Trellis plot') as any;
-      tp.props.xColumnNames = ['SEX'];
-      tp.props.yColumnNames = ['RACE'];
-      tp.props.viewerType = 'Scatter plot';
-      tp.setOptions({innerViewerLook: {xColumnName: 'WEIGHT', yColumnName: 'HEIGHT'}});
-      tp.props.globalScale = true;
-      tp.props.showRangeSliders = true;
-      tp.props.showXAxes = 'Always';
-      tp.props.showYAxes = 'Always';
-      await (window as any).__quiet('viewer:Trellis plot.onViewerRendered', 300, 2200);
-    });
-
-    const sliderBox = await page.evaluate(async () => {
-      const root = document.querySelector('[name="viewer-Trellis-plot"]') as HTMLElement;
-      const innerX = root.querySelector('.d4-range-selector > svg[type="range-slider"][name="x-slider"]') as SVGElement | null;
-      if (!innerX) return null;
-      const wrap = innerX.closest('.d4-range-selector') as HTMLElement;
-      const wb = wrap.getBoundingClientRect();
-      wrap.dispatchEvent(new MouseEvent('mousemove', {bubbles: true, clientX: wb.left + wb.width / 2, clientY: wb.top + wb.height / 2}));
-      await new Promise((r) => setTimeout(r, 400));
-      const b = innerX.getBoundingClientRect();
-      return {x: b.x, y: b.y, w: b.width, h: b.height};
-    });
-    expect(sliderBox).not.toBeNull();
-    expect(sliderBox!.w).toBeGreaterThan(0);
-
-    const idxA = await cellIndexFor(page, 'F', 'Caucasian');
-    const idxB = await cellIndexFor(page, 'M', 'Caucasian');
-    const beforeH = await v.trellisCellHashes(page, [idxA, idxB]);
-    const before = {a: beforeH[0], b: beforeH[1]};
-    await page.mouse.move(sliderBox!.x + sliderBox!.w - 4, sliderBox!.y + sliderBox!.h / 2);
-    await page.mouse.down();
-    await page.mouse.move(sliderBox!.x + sliderBox!.w * 0.45, sliderBox!.y + sliderBox!.h / 2, {steps: 12});
-    await page.mouse.up();
-    await v.waitForViewerRendered(page, 'Trellis plot', 900);
-    const afterH = await v.trellisCellHashes(page, [idxA, idxB]);
-    const after = {a: afterH[0], b: afterH[1]};
-
-    expect(before.a).not.toBeNull();
-    expect(before.b).not.toBeNull();
-    expect(after.a).not.toBeNull();
-    expect(after.b).not.toBeNull();
-    expect(after.a).not.toBe(before.a);
-    expect(after.b).not.toBe(before.b);
-
-    await page.locator('[name="viewer-Trellis-plot"] .d4-trellis-plot-cell').first().click({button: 'right', position: {x: 6, y: 6}});
-    await clickTopLevelMenuItem(page, 'Reset Inner Range Sliders');
-    await v.waitForViewerRendered(page, 'Trellis plot', 1200);
-    const resetH = await v.trellisCellHashes(page, [idxA, idxB]);
-    const reset = {restoredA: resetH[0] === before.a, restoredB: resetH[1] === before.b};
-    expect(reset.restoredA).toBe(true);
-    expect(reset.restoredB).toBe(true);
-
-    await page.evaluate(async () => {
-      const tp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Trellis plot') as any;
-      await (window as any).__settled('viewer:Trellis plot.onViewerRendered',
-        () => { tp.props.showYAxes = 'Always'; }, 1200);
-      await (window as any).__quiet('viewer:Trellis plot.onViewerRendered', 300, 1200);
-    });
-    const ySliderBox = await page.evaluate(async () => {
-      const root = document.querySelector('[name="viewer-Trellis-plot"]') as HTMLElement;
-      const innerY = root.querySelector('.d4-range-selector > svg[type="range-slider"][name="y-slider"]') as SVGElement | null;
-      if (!innerY) return null;
-      const wrap = innerY.closest('.d4-range-selector') as HTMLElement;
-      const wb = wrap.getBoundingClientRect();
-      wrap.dispatchEvent(new MouseEvent('mousemove', {bubbles: true, clientX: wb.left + wb.width / 2, clientY: wb.top + wb.height / 2}));
-      await new Promise((r) => setTimeout(r, 400));
-      const b = innerY.getBoundingClientRect();
-      return {x: b.x, y: b.y, w: b.width, h: b.height};
-    });
-    expect(ySliderBox).not.toBeNull();
-    expect(ySliderBox!.h).toBeGreaterThan(0);
-    const yBeforeH = await v.trellisCellHashes(page, [idxA, idxB]);
-    const yBefore = {a: yBeforeH[0], b: yBeforeH[1]};
-    await page.mouse.move(ySliderBox!.x + ySliderBox!.w / 2, ySliderBox!.y + ySliderBox!.h - 4);
-    await page.mouse.down();
-    await page.mouse.move(ySliderBox!.x + ySliderBox!.w / 2, ySliderBox!.y + ySliderBox!.h * 0.45, {steps: 12});
-    await page.mouse.up();
-    await v.waitForViewerRendered(page, 'Trellis plot', 900);
-    const yAfterH = await v.trellisCellHashes(page, [idxA, idxB]);
-    const yAfter = {a: yAfterH[0], b: yAfterH[1]};
-    expect(yBefore.a).not.toBeNull();
-    expect(yBefore.b).not.toBeNull();
-    expect(yAfter.a).not.toBeNull();
-    expect(yAfter.b).not.toBeNull();
-    expect(yAfter.a).not.toBe(yBefore.a);
-    expect(yAfter.b).not.toBe(yBefore.b);
-   } finally {
-
-    await restoreCanonical();
-   }
-  });
-
   await softStep('Gridlines', async () => {
-
     const result = await page.evaluate(async () => {
-      const tp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Trellis plot') as any;
+      const w = window as any;
+      const tp = w.__tp();
       const root = document.querySelector('[name="viewer-Trellis-plot"]') as HTMLElement;
-      const settle = (cap: number) => (window as any).__quiet('viewer:Trellis plot.onViewerRendered', 250, cap);
       const hasGrid = () => !!root.querySelector('.d4-trellis-plot-charts-grid');
       const r: {mode: string; prop: string; grid: boolean}[] = [];
       for (const val of ['always', 'never', 'auto']) {
-        tp.props.showGridlines = val;
-        await settle(600);
-        r.push({mode: val, prop: tp.props.showGridlines, grid: hasGrid()});
+        const grid = await w.__tpApply(() => { tp.props.showGridlines = val; }, hasGrid, 600);
+        r.push({mode: val, prop: tp.props.showGridlines, grid});
       }
-      tp.props.viewerType = 'Bar chart';
-      await settle(1200);
-      const autoNonScatter = hasGrid();
-      tp.props.viewerType = 'Scatter plot';
-      await settle(1200);
-      return {r, autoNonScatter, autoScatter: hasGrid()};
+      const autoNonScatter = await w.__tpApply(() => { tp.props.viewerType = 'Bar chart'; }, hasGrid, 1200);
+      const autoScatter = await w.__tpApply(() => { tp.props.viewerType = 'Scatter plot'; }, hasGrid, 1200);
+      return {r, autoNonScatter, autoScatter};
     });
     expect(result.r.map((x) => x.prop)).toEqual(['always', 'never', 'auto']);
     expect(result.r.map((x) => x.grid)).toEqual([true, false, true]);
@@ -747,106 +599,342 @@ test('Trellis plot tests', async ({page}) => {
     expect(result.autoScatter).toBe(true);
   });
 
+  await softStep('Context menu', async () => {
+    const result = await page.evaluate(async () => {
+      const w = window as any;
+      await w.__tpRendered(() => { w.__tp().props.viewerType = 'Scatter plot'; }, 800);
+      const root = document.querySelector('[name="viewer-Trellis-plot"]') as HTMLElement;
+      const cell = root.querySelectorAll('.d4-trellis-plot-cell')[0];
+      const r = cell.getBoundingClientRect();
+      cell.dispatchEvent(new MouseEvent('contextmenu', {bubbles: true, cancelable: true, button: 2, clientX: r.left + r.width / 2, clientY: r.top + r.height / 2}));
+      await w.__poll(() => document.querySelector('.d4-menu-popup .d4-menu-item-label'),
+        (e: Element | null) => !!e, 900, 40);
+      const labels = Array.from(document.querySelectorAll('.d4-menu-item-label')).map((el) => (el as HTMLElement).textContent?.trim());
+      document.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true}));
+      return {
+        hasInnerGroup: labels.includes('Scatter plot'),
+        hasProperties: labels.includes('Properties...'),
+        hasLasso: labels.includes('Lasso Tool'),
+        hasRegression: labels.includes('Show Regression Line'),
+      };
+    });
+    expect(result.hasInnerGroup).toBe(true);
+    expect(result.hasProperties).toBe(true);
+    expect(result.hasLasso).toBe(true);
+    expect(result.hasRegression).toBe(true);
+  });
+
+  await softStep('Inner viewer properties', async () => {
+    try {
+      await page.evaluate(() => {
+        const w = window as any;
+        return w.__tpApply(() => {
+          const tp = w.__tp();
+          tp.props.viewerType = 'Scatter plot';
+          tp.props.xColumnNames = ['SEX'];
+          tp.props.yColumnNames = ['RACE'];
+          tp.setOptions({innerViewerLook: {xColumnName: 'WEIGHT', yColumnName: 'HEIGHT'}});
+        }, w.__tpCells, 1200);
+      });
+
+      await v.openViewerGear(page, 'Trellis plot');
+      await page.locator('.property-grid').first().waitFor({timeout: 10000});
+
+      const tabs = await page.evaluate(() => ({
+        hasTrellisTab: !!document.querySelector('.d4-tab-header[name="Trellis"]'),
+        hasInnerTab: !!document.querySelector('.d4-tab-header[name="Scatter plot"]'),
+      }));
+      expect(tabs.hasTrellisTab).toBe(true);
+      expect(tabs.hasInnerTab).toBe(true);
+
+      const idxs = await page.evaluate(() => {
+        const root = document.querySelector('[name="viewer-Trellis-plot"]') as HTMLElement;
+        const cells = root.querySelectorAll('.d4-trellis-plot-cell');
+        const out: number[] = [];
+        for (let i = 0; i < cells.length && out.length < 2; i++) if (cells[i].querySelector('canvas')) out.push(i);
+        return out;
+      });
+      const before = await v.trellisCellHashes(page, idxs);
+      const after = await page.evaluate(async () => {
+        const tp = (window as any).__tp();
+        await (window as any).__tpRendered(() => tp.setOptions({innerViewerLook: {xColumnName: 'AGE', yColumnName: 'WEIGHT'}}), 1500);
+        return {type: tp.props.viewerType};
+      });
+      const afterHashes = await hashesMoved(page, idxs, before, 1500);
+      expect(after.type).toBe('Scatter plot');
+      expect(idxs.length).toBeGreaterThan(0);
+      for (let i = 0; i < idxs.length; i++) {
+        expect(before[i]).not.toBeNull();
+        expect(afterHashes[i]).not.toBeNull();
+        expect(afterHashes[i]).not.toBe(before[i]);
+      }
+    } finally {
+      await restoreCanonical(page);
+    }
+  });
+
+  await tearDown(page, ctx);
+});
+
+test('Trellis plot — global scale, axes visibility, range sliders', async ({page}) => {
+  test.setTimeout(240_000);
+  const ctx = await setUp(page);
+
+  await softStep('Global scale', async () => {
+    try {
+      await page.evaluate(() => {
+        const w = window as any;
+        return w.__tpApply(() => {
+          const tp = w.__tp();
+          tp.props.viewerType = 'Scatter plot';
+          tp.props.xColumnNames = ['SEX'];
+          tp.props.yColumnNames = ['RACE'];
+          tp.setOptions({innerViewerLook: {xColumnName: 'WEIGHT', yColumnName: 'HEIGHT'}});
+          tp.props.globalScale = false;
+        }, w.__tpCells, 3000);
+      });
+      const idxA = await cellIndexFor(page, 'F', 'Caucasian');
+      const idxB = await cellIndexFor(page, 'M', 'Caucasian');
+      const cellHashes = async () => {
+        const h = await v.trellisCellHashes(page, [idxA, idxB]);
+        return {a: h[0], b: h[1]};
+      };
+
+      const idleBefore = await cellHashes();
+      // the idle guard: with nothing touched the cells must NOT repaint on their own; __quiet
+      // returns 0 when nothing fires, which is exactly the check
+      const idleRenders = await page.evaluate(() =>
+        (window as any).__quiet('viewer:Trellis plot.onViewerRendered', 400, 1500));
+      const idleAfter = await cellHashes();
+      expect(idleRenders).toBe(0);
+      expect(idleBefore.a).not.toBeNull();
+      expect(idleBefore.b).not.toBeNull();
+      expect(idleAfter.a).toBe(idleBefore.a);
+      expect(idleAfter.b).toBe(idleBefore.b);
+
+      const flip = async (value: boolean, prev: {a: number | null; b: number | null}) => {
+        await page.evaluate((val) => (window as any).__tpRendered(() => { (window as any).__tp().props.globalScale = val; }, 1600), value);
+        const h = await hashesMoved(page, [idxA, idxB], [prev.a, prev.b], 1600);
+        return {a: h[0], b: h[1]};
+      };
+
+      const on = await flip(true, idleAfter);
+      expect(on.a).not.toBeNull();
+      expect(on.b).not.toBeNull();
+      expect(on.a).not.toBe(idleAfter.a);
+      expect(on.b).not.toBe(idleAfter.b);
+
+      const off = await flip(false, on);
+      expect(off.a).not.toBeNull();
+      expect(off.b).not.toBeNull();
+      expect(off.a).not.toBe(on.a);
+      expect(off.b).not.toBe(on.b);
+
+      const onAgain = await flip(true, off);
+      expect(onAgain.a).not.toBeNull();
+      expect(onAgain.b).not.toBeNull();
+      expect(onAgain.a).not.toBe(off.a);
+      expect(onAgain.b).not.toBe(off.b);
+    } finally {
+      await restoreCanonical(page);
+    }
+  });
+
+  await softStep('Axes visibility', async () => {
+    try {
+      const result = await page.evaluate(async () => {
+        const w = window as any;
+        const tp = w.__tp();
+        const root = document.querySelector('[name="viewer-Trellis-plot"]') as HTMLElement;
+        await w.__tpApply(() => {
+          tp.props.xColumnNames = ['SEX'];
+          tp.props.yColumnNames = ['RACE'];
+          tp.props.viewerType = 'Scatter plot';
+          tp.props.globalScale = true;
+        }, w.__tpCells, 1500);
+
+        const innerSliderCount = () => root.querySelectorAll('.d4-range-selector > svg[type="range-slider"]').length;
+        const axisSliders = (ax: string) =>
+          Array.from(root.querySelectorAll(`.d4-range-selector > svg[type="range-slider"][name="${ax}-slider"]`))
+            .filter((el) => {
+              const b = el.getBoundingClientRect();
+              return b.width > 0 && b.height > 0;
+            }).length;
+        await w.__tpApply(() => { tp.props.showRangeSliders = true; tp.props.showYAxes = 'Always'; }, innerSliderCount, 1200);
+        const r: any[] = [];
+        const xByMode: Record<string, number> = {};
+        for (const val of ['Always', 'Never', 'Auto']) {
+          xByMode[val] = await w.__tpApply(() => { tp.props.showXAxes = val; }, () => axisSliders('x'), 1200);
+          r.push(tp.props.showXAxes);
+        }
+        await w.__tpApply(() => { tp.props.showXAxes = 'Always'; }, () => axisSliders('x'), 1200);
+        const yByMode: Record<string, number> = {};
+        for (const val of ['Always', 'Never', 'Auto']) {
+          yByMode[val] = await w.__tpApply(() => { tp.props.showYAxes = val; }, () => axisSliders('y'), 1200);
+          r.push(tp.props.showYAxes);
+        }
+        const slidersOff = await w.__tpApply(() => {
+          tp.props.showXAxes = 'Always';
+          tp.props.showYAxes = 'Always';
+          tp.props.showRangeSliders = false;
+        }, innerSliderCount, 1200);
+        const slidersOn = await w.__tpApply(() => { tp.props.showRangeSliders = true; }, innerSliderCount, 1200);
+        return {modes: r, xByMode, yByMode, slidersOff, slidersOn};
+      });
+      expect(result.modes).toEqual(['Always', 'Never', 'Auto', 'Always', 'Never', 'Auto']);
+
+      expect(result.xByMode.Always).toBeGreaterThan(0);
+      expect(result.xByMode.Never).toBe(0);
+      expect(result.yByMode.Always).toBeGreaterThan(0);
+      expect(result.yByMode.Never).toBe(0);
+
+      expect(result.xByMode.Auto).toBe(result.xByMode.Always);
+      expect(result.yByMode.Auto).toBe(result.yByMode.Always);
+
+      expect(result.slidersOff).toBe(0);
+      expect(result.slidersOn).toBeGreaterThan(0);
+    } finally {
+      await page.evaluate(() => (window as any).__tpRendered(() => { (window as any).__tp().props.showRangeSliders = true; }, 400)).catch(() => {});
+      await restoreCanonical(page);
+    }
+  });
+
+  await softStep('Range sliders with global scale', async () => {
+    try {
+      await page.evaluate(() => {
+        const w = window as any;
+        return w.__tpApply(() => {
+          const tp = w.__tp();
+          tp.props.xColumnNames = ['SEX'];
+          tp.props.yColumnNames = ['RACE'];
+          tp.props.viewerType = 'Scatter plot';
+          tp.setOptions({innerViewerLook: {xColumnName: 'WEIGHT', yColumnName: 'HEIGHT'}});
+          tp.props.globalScale = true;
+          tp.props.showRangeSliders = true;
+          tp.props.showXAxes = 'Always';
+          tp.props.showYAxes = 'Always';
+        }, () => document.querySelectorAll('[name="viewer-Trellis-plot"] .d4-range-selector > svg[type="range-slider"]').length, 2200);
+      });
+
+      const idxA = await cellIndexFor(page, 'F', 'Caucasian');
+      const idxB = await cellIndexFor(page, 'M', 'Caucasian');
+      const before = await v.trellisCellHashes(page, [idxA, idxB]);
+      expect(await dragInnerRangeSlider(page, 'x')).toBe(true);
+      const after = await hashesMoved(page, [idxA, idxB], before, 3000);
+
+      expect(before[0]).not.toBeNull();
+      expect(before[1]).not.toBeNull();
+      expect(after[0]).not.toBeNull();
+      expect(after[1]).not.toBeNull();
+      expect(after[0]).not.toBe(before[0]);
+      expect(after[1]).not.toBe(before[1]);
+
+      await page.locator(CELLS).first().click({button: 'right', position: {x: 6, y: 6}});
+      await clickTopLevelMenuItem(page, 'Reset Inner Range Sliders');
+      const resetH = await v.pollValue(() => v.trellisCellHashes(page, [idxA, idxB]),
+        (h) => h[0] === before[0] && h[1] === before[1], 1500, 50);
+      expect(resetH[0] === before[0]).toBe(true);
+      expect(resetH[1] === before[1]).toBe(true);
+
+      await page.evaluate(() => (window as any).__tpRendered(() => { (window as any).__tp().props.showYAxes = 'Always'; }, 1200));
+      const yBefore = await v.trellisCellHashes(page, [idxA, idxB]);
+      expect(await dragInnerRangeSlider(page, 'y')).toBe(true);
+      const yAfter = await hashesMoved(page, [idxA, idxB], yBefore, 3000);
+      expect(yBefore[0]).not.toBeNull();
+      expect(yBefore[1]).not.toBeNull();
+      expect(yAfter[0]).not.toBeNull();
+      expect(yAfter[1]).not.toBeNull();
+      expect(yAfter[0]).not.toBe(yBefore[0]);
+      expect(yAfter[1]).not.toBe(yBefore[1]);
+    } finally {
+      await restoreCanonical(page);
+    }
+  });
+
+  await tearDown(page, ctx);
+});
+
+test('Trellis plot — tiles, categories, packing, scrolling, label orientation', async ({page}) => {
+  test.setTimeout(240_000);
+  const ctx = await setUp(page);
+
   await softStep('Tiles mode', async () => {
-   try {
+    try {
+      const setup = await page.evaluate(async () => {
+        const w = window as any;
+        const tp = w.__tp();
+        await w.__tpApply(() => {
+          tp.props.globalScale = false;
+          tp.props.viewerType = 'Scatter plot';
+          tp.props.xColumnNames = ['RACE'];
+          tp.props.yColumnNames = [];
+        }, w.__tpCells, 1500);
+        await w.__tpApply(() => { tp.props.useTiledView = true; }, w.__tpCells, 1800);
+        return {raceCats: grok.shell.tv.dataFrame.col('RACE').categories.length,
+          tilesPerRow: tp.props.tilesPerRow};
+      });
 
-    const setup = await page.evaluate(async () => {
-      const tp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Trellis plot') as any;
-      const settle = (cap: number) => (window as any).__quiet('viewer:Trellis plot.onViewerRendered', 300, cap);
-      tp.props.globalScale = false;
-      tp.props.viewerType = 'Scatter plot';
-      tp.props.xColumnNames = ['RACE'];
-      tp.props.yColumnNames = [];
-      await settle(1500);
-      tp.props.useTiledView = true;
-      await settle(1800);
-      return {raceCats: grok.shell.tv.dataFrame.col('RACE').categories.length,
-        tilesPerRow: tp.props.tilesPerRow};
-    });
+      expect(setup.raceCats).toBeGreaterThanOrEqual(3);
+      expect(setup.raceCats).toBeLessThanOrEqual(6);
 
-    expect(setup.raceCats).toBeGreaterThanOrEqual(3);
-    expect(setup.raceCats).toBeLessThanOrEqual(6);
+      const tiledGeometry = (n: number, tilesPerRow: number) => {
+        const xRaw = Math.min(tilesPerRow, n);
+        const w = axisViewportCount(xRaw, true);
+        const h = axisViewportCount(Math.ceil(n / xRaw), true);
+        return {count: w * h, rows: h, maxPerRow: w};
+      };
+      const tilesOn = await gridGeometry(page);
+      expect({count: tilesOn.count, rows: tilesOn.rows, maxPerRow: tilesOn.maxPerRow})
+        .toEqual(tiledGeometry(setup.raceCats, setup.tilesPerRow));
 
-    const tiledGeometry = (n: number, tilesPerRow: number) => {
-      const xRaw = Math.min(tilesPerRow, n);
-      const w = axisViewportCount(xRaw, true);
-      const h = axisViewportCount(Math.ceil(n / xRaw), true);
-      return {count: w * h, rows: h, maxPerRow: w};
-    };
-    const tilesOn = await gridGeometry(page);
-    expect({count: tilesOn.count, rows: tilesOn.rows, maxPerRow: tilesOn.maxPerRow})
-      .toEqual(tiledGeometry(setup.raceCats, setup.tilesPerRow));
+      const setTiles = async (n: number) => {
+        await tpApply(page, {tilesPerRow: n}, 1600);
+        return gridGeometry(page);
+      };
 
-    const setTiles = async (n: number) => {
-      await page.evaluate(async (val) => {
-        const tp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Trellis plot') as any;
-        tp.props.tilesPerRow = val;
-        await (window as any).__quiet('viewer:Trellis plot.onViewerRendered', 300, 1600);
-      }, n);
-      return gridGeometry(page);
-    };
+      const atTwo = await setTiles(2);
+      expect({count: atTwo.count, rows: atTwo.rows, maxPerRow: atTwo.maxPerRow})
+        .toEqual(tiledGeometry(setup.raceCats, 2));
+      expect(atTwo.maxPerRow).toBeLessThanOrEqual(2);
+      expect(atTwo.rows).toBeGreaterThan(1);
 
-    const atTwo = await setTiles(2);
-    expect({count: atTwo.count, rows: atTwo.rows, maxPerRow: atTwo.maxPerRow})
-      .toEqual(tiledGeometry(setup.raceCats, 2));
-    expect(atTwo.maxPerRow).toBeLessThanOrEqual(2);
-    expect(atTwo.rows).toBeGreaterThan(1);
+      const atSix = await setTiles(6);
+      expect({count: atSix.count, rows: atSix.rows, maxPerRow: atSix.maxPerRow})
+        .toEqual(tiledGeometry(setup.raceCats, 6));
+      expect(atSix.rows).toBe(1);
 
-    const atSix = await setTiles(6);
-    expect({count: atSix.count, rows: atSix.rows, maxPerRow: atSix.maxPerRow})
-      .toEqual(tiledGeometry(setup.raceCats, 6));
-    expect(atSix.rows).toBe(1);
+      const backToTwo = await setTiles(2);
+      expect(backToTwo.rows).toBeGreaterThan(1);
+      await tpApply(page, {useTiledView: false}, 1800);
+      const untiled = await page.evaluate(() => (window as any).__tp().props.useTiledView);
+      const offGeometry = await gridGeometry(page);
+      expect(untiled).toBe(false);
 
-    const backToTwo = await setTiles(2);
-    expect(backToTwo.rows).toBeGreaterThan(1);
-    const untiled = await page.evaluate(async () => {
-      const tp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Trellis plot') as any;
-      tp.props.useTiledView = false;
-      await (window as any).__quiet('viewer:Trellis plot.onViewerRendered', 300, 1800);
-      return tp.props.useTiledView;
-    });
-    const offGeometry = await gridGeometry(page);
-    expect(untiled).toBe(false);
-
-    expect(offGeometry.count).toBe(axisViewportCount(setup.raceCats, true));
-    expect({rows: offGeometry.rows, maxPerRow: offGeometry.maxPerRow})
-      .not.toEqual({rows: backToTwo.rows, maxPerRow: backToTwo.maxPerRow});
-   } finally {
-    await page.evaluate(async () => {
-      const tp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Trellis plot') as any;
-      try {
-        tp.props.useTiledView = true;
-        tp.props.tilesPerRow = 4;
-        await (window as any).__quiet('viewer:Trellis plot.onViewerRendered', 300, 600);
-      } catch (_) {  }
-    });
-    await restoreCanonical();
-   }
+      expect(offGeometry.count).toBe(axisViewportCount(setup.raceCats, true));
+      expect({rows: offGeometry.rows, maxPerRow: offGeometry.maxPerRow})
+        .not.toEqual({rows: backToTwo.rows, maxPerRow: backToTwo.maxPerRow});
+    } finally {
+      await tpApply(page, {useTiledView: true, tilesPerRow: 4}, 600).catch(() => {});
+      await restoreCanonical(page);
+    }
   });
 
   await softStep('Category management', async () => {
-
     const result = await page.evaluate(async () => {
-      const tp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Trellis plot') as any;
-      const root = document.querySelector('[name="viewer-Trellis-plot"]') as HTMLElement;
-      const cells = () => root.querySelectorAll('.d4-trellis-plot-cell').length;
+      const w = window as any;
+      const tp = w.__tp();
       const r: any[] = [];
-
-      const settle = (cap: number) => (window as any).__quiet('viewer:Trellis plot.onViewerRendered', 300, cap);
-      tp.props.viewerType = 'Scatter plot';
-      tp.props.xColumnNames = ['SEX'];
-      tp.props.yColumnNames = ['RACE'];
-      await settle(1500);
-      r.push({x: [...tp.props.xColumnNames], cells: cells()});
-
-      tp.props.xColumnNames = ['SEX', 'DIS_POP'];
-      await settle(1500);
-      r.push({x: [...tp.props.xColumnNames], cells: cells()});
-
-      tp.props.xColumnNames = ['SEX'];
-      await settle(1500);
-      r.push({x: [...tp.props.xColumnNames], cells: cells()});
-
+      const step = async (x: string[]) => {
+        const cells = await w.__tpApply(() => {
+          tp.props.viewerType = 'Scatter plot';
+          tp.props.xColumnNames = x;
+          tp.props.yColumnNames = ['RACE'];
+        }, w.__tpCells, 1500);
+        r.push({x: [...tp.props.xColumnNames], cells});
+      };
+      await step(['SEX']);
+      await step(['SEX', 'DIS_POP']);
+      await step(['SEX']);
       return r;
     });
 
@@ -873,11 +961,15 @@ test('Trellis plot tests', async ({page}) => {
     expect(labelsOn.y.length).toBeGreaterThan(0);
 
     const setLabels = async (x: boolean, y: boolean) => {
-      await page.evaluate(async (v) => {
-        const tp = Array.from(grok.shell.tv.viewers).find((vw: any) => vw.type === 'Trellis plot') as any;
-        tp.props.showXLabels = v.x;
-        tp.props.showYLabels = v.y;
-        await (window as any).__quiet('viewer:Trellis plot.onViewerRendered', 300, 1600);
+      await page.evaluate((val) => {
+        const w = window as any;
+        const labelCount = () => document.querySelectorAll(
+          '[name="viewer-Trellis-plot"] .d4-trellis-plot-cat-item-horz, [name="viewer-Trellis-plot"] .d4-trellis-plot-cat-item-vert').length;
+        return w.__tpApply(() => {
+          const tp = w.__tp();
+          tp.props.showXLabels = val.x;
+          tp.props.showYLabels = val.y;
+        }, labelCount, 1600);
       }, {x, y});
       return categoryLabels(page);
     };
@@ -892,38 +984,27 @@ test('Trellis plot tests', async ({page}) => {
   });
 
   await softStep('Pack categories', async () => {
-
     const result = await page.evaluate(async () => {
-      const tp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Trellis plot') as any;
-      const root = document.querySelector('[name="viewer-Trellis-plot"]') as HTMLElement;
-      const df = grok.shell.tv.dataFrame;
-      const cells = () => root.querySelectorAll('.d4-trellis-plot-cell').length;
-      tp.props.viewerType = 'Scatter plot';
-      tp.props.xColumnNames = ['SEX'];
-      tp.props.yColumnNames = ['RACE'];
       const w = window as any;
-      const settle = (cap: number) => w.__quiet('viewer:Trellis plot.onViewerRendered', 300, cap);
-      tp.props.packCategories = true;
-      await settle(1600);
-      const baseCells = cells();
+      const tp = w.__tp();
+      const df = grok.shell.tv.dataFrame;
+      const baseCells = await w.__tpApply(() => {
+        tp.props.viewerType = 'Scatter plot';
+        tp.props.xColumnNames = ['SEX'];
+        tp.props.yColumnNames = ['RACE'];
+        tp.props.packCategories = true;
+      }, w.__tpCells, 1600);
 
       grok.shell.tv.getFiltersGroup();
       await w.__quiet('viewer:Trellis plot.onViewerRendered', 300, 1500);
       const fg = grok.shell.tv.getFiltersGroup();
       const cats = df.col('RACE').categories;
-      // filter out one category — settle on the rows-filtered event, then the trellis repaint
-      await w.__settled('df.onRowsFiltered',
-        () => fg.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: 'RACE', selected: cats.filter((c: string) => c !== 'Asian')}), 1500);
-      await settle(1500);
-      const packedOnCells = cells();
+      const packedOnCells = await w.__tpApply(
+        () => fg.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: 'RACE', selected: cats.filter((c: string) => c !== 'Asian')}),
+        w.__tpCells, 1500);
 
-      tp.props.packCategories = false;
-      await settle(1200);
-      const packedOffCells = cells();
-
-      tp.props.packCategories = true;
-      await settle(1200);
-      const packedOnAgainCells = cells();
+      const packedOffCells = await w.__tpApply(() => { tp.props.packCategories = false; }, w.__tpCells, 1200);
+      const packedOnAgainCells = await w.__tpApply(() => { tp.props.packCategories = true; }, w.__tpCells, 1200);
 
       await w.__settled('df.onRowsFiltered',
         () => fg.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: 'RACE', selected: cats}), 800);
@@ -934,24 +1015,141 @@ test('Trellis plot tests', async ({page}) => {
     expect(result.packedOnAgainCells).toBe(result.packedOnCells);
   });
 
+  await softStep('Scrolling', async () => {
+    try {
+      const cardinality = (cols: string[]) => page.evaluate((cs) => {
+        const df = grok.shell.tv.dataFrame;
+        return cs.reduce((n: number, c: string) => n * df.col(c).categories.length, 1);
+      }, cols);
+      const configure = (x: string[], y: string[]) => page.evaluate(async (cols) => {
+        const w = window as any;
+        const tp = w.__tp();
+        await w.__tpApply(() => {
+          tp.props.packCategories = false;
+          tp.props.viewerType = 'Scatter plot';
+          tp.props.xColumnNames = cols.x;
+          tp.props.yColumnNames = cols.y;
+        }, w.__tpCells, 2500);
+        return {x: [...tp.props.xColumnNames], y: [...tp.props.yColumnNames]};
+      }, {x, y});
+
+      const fitting = await configure(['SEX'], ['RACE']);
+      expect(fitting.x).toEqual(['SEX']);
+      const fitsRawX = await cardinality(['SEX']);
+      const fitsRawY = await cardinality(['RACE']);
+      const fitsGeom = await gridGeometry(page);
+      expect(fitsGeom.cols).toBe(axisViewportCount(fitsRawX, false));
+      expect(fitsGeom.cols).toBe(fitsRawX);
+      expect(fitsGeom.rows).toBe(fitsRawY);
+      const fitsX = await scrollSliderExtent(page, 'x');
+      const fitsY = await scrollSliderExtent(page, 'y');
+      expect(fitsX.present).toBeGreaterThan(0);
+      expect(fitsY.present).toBeGreaterThan(0);
+      expect(fitsX.ratio).toBeGreaterThan(0.5);
+      expect(fitsY.ratio).toBeGreaterThan(0.5);
+
+      const overX = await configure(['SEX', 'DIS_POP', 'RACE'], ['SEVERITY']);
+      expect(overX.x).toEqual(['SEX', 'DIS_POP', 'RACE']);
+      const overRawX = await cardinality(['SEX', 'DIS_POP', 'RACE']);
+      const overGeomX = await gridGeometry(page);
+
+      expect(overGeomX.cols).toBe(axisViewportCount(overRawX, false));
+      expect(overGeomX.cols).toBeLessThan(overRawX);
+      const scrolledX = await scrollSliderExtent(page, 'x');
+      expect(scrolledX.present).toBeGreaterThan(0);
+      expect(scrolledX.ratio).toBeGreaterThan(0);
+      expect(scrolledX.ratio).toBeLessThan(fitsX.ratio);
+
+      const overY = await configure(['SEX'], ['RACE', 'DIS_POP', 'SEVERITY']);
+      expect(overY.y).toEqual(['RACE', 'DIS_POP', 'SEVERITY']);
+      const overRawY = await cardinality(['RACE', 'DIS_POP', 'SEVERITY']);
+      const overGeomY = await gridGeometry(page);
+      expect(overGeomY.rows).toBe(axisViewportCount(overRawY, false));
+      expect(overGeomY.rows).toBeLessThan(overRawY);
+      const scrolledY = await scrollSliderExtent(page, 'y');
+      expect(scrolledY.present).toBeGreaterThan(0);
+      expect(scrolledY.ratio).toBeGreaterThan(0);
+      expect(scrolledY.ratio).toBeLessThan(fitsY.ratio);
+    } finally {
+      await tpApply(page, {packCategories: true}, 600).catch(() => {});
+      await restoreCanonical(page);
+    }
+  });
+
+  await softStep('Label orientation', async () => {
+    try {
+      await page.evaluate(() => {
+        const w = window as any;
+        return w.__tpApply(() => {
+          const tp = w.__tp();
+          tp.props.xColumnNames = ['RACE'];
+          tp.props.yColumnNames = ['SEX'];
+          tp.props.showXLabels = true;
+          tp.props.showYLabels = true;
+        }, w.__tpLabelAngles, 1800);
+      });
+      const setOrientation = async (axis: 'x' | 'y', value: string) => {
+        await page.evaluate((o) => {
+          const w = window as any;
+          return w.__tpApply(() => {
+            const tp = w.__tp();
+            if (o.axis === 'x') tp.props.xLabelsOrientation = o.value;
+            else tp.props.yLabelsOrientation = o.value;
+          }, w.__tpLabelAngles, 1500);
+        }, {axis, value});
+        return categoryLabels(page);
+      };
+
+      const xHorz = await setOrientation('x', 'Horz');
+      expect(xHorz.xAngles.length).toBeGreaterThan(0);
+      expect(xHorz.xAngles.every((a) => a === 0)).toBe(true);
+      const xVert = await setOrientation('x', 'Vert');
+      expect(xVert.xAngles.length).toBeGreaterThan(0);
+      expect(xVert.xAngles.every((a) => a === -90)).toBe(true);
+
+      const yHorz = await setOrientation('y', 'Horz');
+      expect(yHorz.yAngles.length).toBeGreaterThan(0);
+      expect(yHorz.yAngles.every((a) => a === 0)).toBe(true);
+      const yVert = await setOrientation('y', 'Vert');
+      expect(yVert.yAngles.length).toBeGreaterThan(0);
+      expect(yVert.yAngles.every((a) => a === -90)).toBe(true);
+
+      const xAuto = await setOrientation('x', 'Auto');
+      expect(xAuto.xAngles.length).toBeGreaterThan(0);
+      expect(xAuto.xAngles.every((a) => a === 0 || a === -90)).toBe(true);
+      const yAuto = await setOrientation('y', 'Auto');
+      expect(yAuto.yAngles.length).toBeGreaterThan(0);
+      expect(yAuto.yAngles.every((a) => a === 0 || a === -90)).toBe(true);
+    } finally {
+      await restoreCanonical(page);
+    }
+  });
+
+  await tearDown(page, ctx);
+});
+
+test('Trellis plot — on click, keyboard navigation, filter formula, undo/redo', async ({page}) => {
+  test.setTimeout(240_000);
+  const ctx = await setUp(page);
+  const {fullRowCount, canonicalCellCount} = ctx;
+
   await softStep('On Click functionality', async () => {
-    const cellLocator = page.locator('[name="viewer-Trellis-plot"] .d4-trellis-plot-cell');
-    await page.evaluate(async () => {
-      const df = grok.shell.tv.dataFrame;
-      const tp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Trellis plot') as any;
-      tp.props.viewerType = 'Scatter plot';
-      tp.props.xColumnNames = ['SEX'];
-      tp.props.yColumnNames = ['RACE'];
-      df.filter.setAll(true); df.selection.setAll(false); df.rows.requestFilter();
-      await (window as any).__quiet('viewer:Trellis plot.onViewerRendered', 300, 1500);
+    const cellLocator = page.locator(CELLS);
+    await page.evaluate(() => {
+      const w = window as any;
+      return w.__tpApply(() => {
+        const df = grok.shell.tv.dataFrame;
+        const tp = w.__tp();
+        tp.props.viewerType = 'Scatter plot';
+        tp.props.xColumnNames = ['SEX'];
+        tp.props.yColumnNames = ['RACE'];
+        df.filter.setAll(true); df.selection.setAll(false); df.rows.requestFilter();
+      }, w.__tpCells, 1500);
     });
     await expect(cellLocator).toHaveCount(canonicalCellCount);
 
-    await page.evaluate(async () => {
-      const tp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Trellis plot') as any;
-      await (window as any).__settled('viewer:Trellis plot.onPropertyValueChanged',
-        () => { tp.props.onClick = 'Select'; }, 600);
-    });
+    await page.evaluate(() => (window as any).__settled('viewer:Trellis plot.onPropertyValueChanged',
+      () => { (window as any).__tp().props.onClick = 'Select'; }, 600));
     const selExpected = await comboRowCount(page, 'SEX', 'F', 'RACE', 'Caucasian');
     let idx = await cellIndexFor(page, 'F', 'Caucasian');
     await armDfEvent(page, 'onSelectionChanged');
@@ -961,14 +1159,14 @@ test('Trellis plot tests', async ({page}) => {
     expect(selAfterClick).toBe(selExpected);
 
     const selAfterTypeChange = await page.evaluate(async () => {
-      const tp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Trellis plot') as any;
-      const settle = (cap: number) => (window as any).__quiet('viewer:Trellis plot.onViewerRendered', 300, cap);
-      tp.props.viewerType = 'Bar chart';
-      tp.setOptions({innerViewerLook: {splitColumnName: 'RACE', valueColumnName: 'AGE'}});
-      await settle(1200);
+      const w = window as any;
+      const tp = w.__tp();
+      await w.__tpRendered(() => {
+        tp.props.viewerType = 'Bar chart';
+        tp.setOptions({innerViewerLook: {splitColumnName: 'RACE', valueColumnName: 'AGE'}});
+      }, 1200);
       const sel = grok.shell.tv.dataFrame.selection.trueCount;
-      tp.props.viewerType = 'Scatter plot';
-      await settle(1000);
+      await w.__tpRendered(() => { tp.props.viewerType = 'Scatter plot'; }, 1000);
       return sel;
     });
     expect(selAfterTypeChange).toBe(selExpected);
@@ -983,24 +1181,18 @@ test('Trellis plot tests', async ({page}) => {
     expect(selAfterOther).not.toBe(selExpected);
 
     const selAfterAxis = await page.evaluate(async () => {
-      const tp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Trellis plot') as any;
-      const settle = (cap: number) => (window as any).__quiet('viewer:Trellis plot.onViewerRendered', 300, cap);
-      tp.props.yColumnNames = ['SEVERITY'];
-      await settle(1200);
+      const w = window as any;
+      const tp = w.__tp();
+      await w.__tpApply(() => { tp.props.yColumnNames = ['SEVERITY']; }, w.__tpCells, 1200);
       const sel = grok.shell.tv.dataFrame.selection.trueCount;
-      tp.props.yColumnNames = ['RACE'];
-      await settle(1000);
+      await w.__tpApply(() => { tp.props.yColumnNames = ['RACE']; }, w.__tpCells, 1000);
       return sel;
     });
     expect(selAfterAxis).toBe(mBlackExpected);
 
-    await page.evaluate(async () => {
-      const df = grok.shell.tv.dataFrame;
-      df.filter.setAll(true); df.selection.setAll(false); df.rows.requestFilter();
-      const tp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Trellis plot') as any;
-      await (window as any).__settled('viewer:Trellis plot.onPropertyValueChanged',
-        () => { tp.props.onClick = 'Filter'; }, 700);
-    });
+    await resetRows(page);
+    await page.evaluate(() => (window as any).__settled('viewer:Trellis plot.onPropertyValueChanged',
+      () => { (window as any).__tp().props.onClick = 'Filter'; }, 700));
     const filterExpected = await comboRowCount(page, 'SEX', 'F', 'RACE', 'Caucasian');
     idx = await cellIndexFor(page, 'F', 'Caucasian');
     await armDfEvent(page, 'onRowsFiltered');
@@ -1018,14 +1210,14 @@ test('Trellis plot tests', async ({page}) => {
     expect(filterAfterClick.filters).toContain('RACE: Caucasian');
 
     const filterAfterType = await page.evaluate(async () => {
-      const tp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Trellis plot') as any;
-      const settle = (cap: number) => (window as any).__quiet('viewer:Trellis plot.onViewerRendered', 300, cap);
-      tp.props.viewerType = 'Pie chart';
-      tp.setOptions({innerViewerLook: {categoryColumnName: 'RACE'}});
-      await settle(1200);
+      const w = window as any;
+      const tp = w.__tp();
+      await w.__tpRendered(() => {
+        tp.props.viewerType = 'Pie chart';
+        tp.setOptions({innerViewerLook: {categoryColumnName: 'RACE'}});
+      }, 1200);
       const c = grok.shell.tv.dataFrame.filter.trueCount;
-      tp.props.viewerType = 'Scatter plot';
-      await settle(1000);
+      await w.__tpRendered(() => { tp.props.viewerType = 'Scatter plot'; }, 1000);
       return c;
     });
     expect(filterAfterType).toBe(filterExpected);
@@ -1046,22 +1238,16 @@ test('Trellis plot tests', async ({page}) => {
     expect(filterAfterOther.filters).toContain('RACE: Black');
 
     const filterAfterAxis = await page.evaluate(async () => {
-      const tp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Trellis plot') as any;
-      const settle = (cap: number) => (window as any).__quiet('viewer:Trellis plot.onViewerRendered', 300, cap);
-      tp.props.xColumnNames = ['CONTROL'];
-      await settle(1500);
-      const c = grok.shell.tv.dataFrame.filter.trueCount;
-      tp.props.xColumnNames = ['SEX'];
-      await settle(1500);
+      const w = window as any;
+      const tp = w.__tp();
+      await w.__tpApply(() => { tp.props.xColumnNames = ['CONTROL']; }, w.__tpCells, 1500);
+      const c = await w.__poll(() => grok.shell.tv.dataFrame.filter.trueCount, (n: number) => n === grok.shell.tv.dataFrame.rowCount, 1000, 50);
+      await w.__tpApply(() => { tp.props.xColumnNames = ['SEX']; }, w.__tpCells, 1500);
       return c;
     });
     expect(filterAfterAxis).toBe(fullRowCount);
 
-    await page.evaluate(async () => {
-      const df = grok.shell.tv.dataFrame;
-      df.filter.setAll(true); df.selection.setAll(false); df.rows.requestFilter();
-      await new Promise((r) => setTimeout(r, 500));
-    });
+    await resetRows(page);
     idx = await cellIndexFor(page, 'F', 'Caucasian');
     await armDfEvent(page, 'onRowsFiltered');
     await cellLocator.nth(idx).click({position: {x: 6, y: 6}});
@@ -1089,7 +1275,7 @@ test('Trellis plot tests', async ({page}) => {
 
     await page.evaluate(async () => {
       const df = grok.shell.tv.dataFrame;
-      const tp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Trellis plot') as any;
+      const tp = (window as any).__tp();
       tp.props.onClick = 'Select';
       (window as any).__escCc = [];
       (window as any).__escCcSub = tp.onEvent('d4-trellis-plot-current-cell-changed').subscribe((a: any) => {
@@ -1121,8 +1307,7 @@ test('Trellis plot tests', async ({page}) => {
     await page.evaluate(async () => {
       const df = grok.shell.tv.dataFrame;
       (window as any).__escCcSub?.unsubscribe?.();
-      const tp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Trellis plot') as any;
-      tp.props.onClick = 'Filter';
+      (window as any).__tp().props.onClick = 'Filter';
       await (window as any).__settled('df.onRowsFiltered',
         () => { df.filter.setAll(true); df.selection.setAll(false); df.rows.requestFilter(); }, 700);
     });
@@ -1156,15 +1341,13 @@ test('Trellis plot tests', async ({page}) => {
     const noneResult = await page.evaluate(async () => {
       const df = grok.shell.tv.dataFrame;
       (window as any).__panelSub?.unsubscribe?.();
-      const tp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Trellis plot') as any;
       await (window as any).__settled('df.onRowsFiltered',
         () => { df.filter.setAll(true); df.selection.setAll(false); df.rows.requestFilter(); }, 700);
-      tp.props.onClick = 'None';
+      (window as any).__tp().props.onClick = 'None';
       return {filterBefore: df.filter.trueCount, selBefore: df.selection.trueCount};
     });
     idx = await cellIndexFor(page, 'F', 'Caucasian');
-    // On Click = None: the click must change nothing. Arm both df channels, click, and confirm
-    // neither fired within the window — a stronger negative than a blind sleep-then-read.
+    // On Click = None: the click must change nothing, so both df channels are armed and must stay silent
     const noneEvents = await v.armEvent(page, 'df.onSelectionChanged', 900);
     const noneFilterEvt = await v.armEvent(page, 'df.onRowsFiltered', 900);
     await cellLocator.nth(idx).click({position: {x: 6, y: 6}});
@@ -1180,569 +1363,706 @@ test('Trellis plot tests', async ({page}) => {
     expect(noneAfter.selAfter).toBe(noneResult.selBefore);
   });
 
-  await softStep('Selectors', async () => {
-   try {
-
+  await softStep('Viewer filter formula', async () => {
     const result = await page.evaluate(async () => {
-      const tp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Trellis plot') as any;
-      const root = document.querySelector('[name="viewer-Trellis-plot"]') as HTMLElement;
+      const w = window as any;
+      const tp = w.__tp();
+      const df = grok.shell.tv.dataFrame;
+      await w.__settled('df.onRowsFiltered', () => { df.filter.setAll(true); df.rows.requestFilter(); }, 500);
+      const dfBefore = df.filter.trueCount;
+      const r: any[] = [];
+      await w.__tpRendered(() => { tp.props.filter = '${AGE} > 40'; }, 600);
+      r.push({filter: tp.props.filter, dfCount: df.filter.trueCount});
+      await w.__tpRendered(() => { tp.props.filter = ''; }, 600);
+      r.push({filter: tp.props.filter, dfCount: df.filter.trueCount});
+      return {r, dfBefore};
+    });
+    expect(result.r[0].filter).toBe('${AGE} > 40');
+    expect(result.r[1].filter).toBe('');
+    expect(result.r[0].dfCount).toBe(result.dfBefore);
+  });
 
-      const settle = (cap: number) => (window as any).__quiet('viewer:Trellis plot.onViewerRendered', 300, cap);
-      tp.props.viewerType = 'Scatter plot';
-      tp.props.xColumnNames = ['SEX'];
-      tp.props.yColumnNames = ['RACE'];
-      tp.props.showControlPanel = true;
-      await settle(1500);
-      const vsVisible = () => {
-        const el = root.querySelector('[name="viewer selector"]') as HTMLElement | null;
+  await softStep('Keyboard navigation', async () => {
+    const cellLocator = page.locator(CELLS);
+
+    await page.evaluate(async () => {
+      const w = window as any;
+      for (const vw of Array.from(grok.shell.tv.viewers) as any[]) if (vw.type === 'Trellis plot') vw.close();
+      await w.__poll(() => document.querySelector('[name="viewer-Trellis-plot"]'), (e: Element | null) => !e, 600, 40);
+      const tp = grok.shell.tv.addViewer('Trellis plot') as any;
+      await w.__tpApply(() => {
+        tp.props.viewerType = 'Scatter plot';
+        tp.props.xColumnNames = ['SEX'];
+        tp.props.yColumnNames = ['RACE'];
+        tp.props.onClick = 'None';
+        const df = grok.shell.tv.dataFrame;
+        df.filter.setAll(true); df.selection.setAll(false); df.rows.requestFilter();
+      }, w.__tpCells, 1800, tp);
+    });
+    await expect(cellLocator).toHaveCount(canonicalCellCount);
+
+    const navCats = await page.evaluate(() => {
+      const df = grok.shell.tv.dataFrame;
+      return {x: [...df.col('SEX').categories], y: [...df.col('RACE').categories]};
+    });
+    expect(navCats.x.length).toBeGreaterThanOrEqual(2);
+    expect(navCats.y.length).toBeGreaterThanOrEqual(2);
+    const idx = await cellIndexFor(page, navCats.x[0], navCats.y[0]);
+    const idxRight = await cellIndexFor(page, navCats.x[1], navCats.y[0]);
+    const idxDown = await cellIndexFor(page, navCats.x[0], navCats.y[1]);
+    expect(idxRight).not.toBe(idx);
+    expect(idxDown).not.toBe(idx);
+    await cellLocator.nth(idx).click({position: {x: 6, y: 6}});
+
+    await page.waitForFunction((i) => {
+      const root = document.querySelector('[name="viewer-Trellis-plot"]') as HTMLElement | null;
+      if (!root) return false;
+      return Array.from(root.querySelectorAll('.d4-trellis-plot-cell'))
+        .findIndex((c) => c.classList.contains('d4-trellis-cell-current')) === i;
+    }, idx, {timeout: 700}).catch(() => {});
+    expect(await currentCellIndex(page)).toBe(idx);
+    await page.evaluate(() => {
+      const tp = (window as any).__tp();
+      (window as any).__cc = [];
+      (window as any).__ccSub = tp.onEvent('d4-trellis-plot-current-cell-changed').subscribe((a: any) => {
+        const mc = (a && a.args && a.args.matchCondition) ? a.args.matchCondition : (a && a.matchCondition ? a.matchCondition : a);
+        (window as any).__cc.push(mc);
+      });
+    });
+
+    const arrow = async (key: string) => {
+      await focusChartsGrid(page);
+      const before = await page.evaluate(() => ((window as any).__cc?.length ?? 0));
+      await page.keyboard.press(key);
+      await page.waitForFunction((n) => ((window as any).__cc?.length ?? 0) > n, before, {timeout: 500}).catch(() => {});
+      return currentCellIndex(page);
+    };
+    const afterRight = await arrow('ArrowRight');
+    const afterLeft = await arrow('ArrowLeft');
+    const afterDown = await arrow('ArrowDown');
+    const afterUp = await arrow('ArrowUp');
+    const events = await page.evaluate(() => {
+      (window as any).__ccSub?.unsubscribe?.();
+      return (window as any).__cc as any[];
+    });
+    expect(afterRight).toBe(idxRight);
+    expect(afterLeft).toBe(idx);
+    expect(afterDown).toBe(idxDown);
+    expect(afterUp).toBe(idx);
+
+    expect(events.length).toBeGreaterThanOrEqual(4);
+    expect(JSON.stringify(events[1])).toBe(JSON.stringify(events[3]));
+    expect(JSON.stringify(events[0])).not.toBe(JSON.stringify(events[1]));
+    expect(JSON.stringify(events[2])).not.toBe(JSON.stringify(events[1]));
+    expect(JSON.stringify(events[0])).not.toBe(JSON.stringify(events[2]));
+
+    await page.evaluate(() => {
+      (window as any).__tp().props.onClick = 'Filter';
+      return (window as any).__settled('df.onRowsFiltered', () => {
+        const df = grok.shell.tv.dataFrame;
+        df.filter.setAll(true); df.rows.requestFilter();
+      }, 500);
+    });
+    await armDfEvent(page, 'onRowsFiltered');
+    await cellLocator.nth(idx).click({position: {x: 6, y: 6}});
+    await awaitArmedDfEvent(page, 700);
+    const filteredBeforeEsc = await page.evaluate(() => grok.shell.tv.dataFrame.filter.trueCount);
+    expect(filteredBeforeEsc).toBeLessThan(fullRowCount);
+
+    await focusChartsGrid(page);
+    await armDfEvent(page, 'onRowsFiltered');
+    await page.keyboard.press('Escape');
+    await awaitArmedDfEvent(page, 900);
+    const filteredAfterEsc = await page.evaluate(() => grok.shell.tv.dataFrame.filter.trueCount);
+    expect(filteredAfterEsc).toBe(fullRowCount);
+    await page.evaluate(() => (window as any).__settled('viewer:Trellis plot.onPropertyValueChanged',
+      () => { (window as any).__tp().props.onClick = 'None'; }, 400));
+  });
+
+  await softStep('Undo/redo', async () => {
+    try {
+      await restoreCanonical(page);
+      await expect(page.locator('[name="viewer-Trellis-plot"]')).toBeVisible();
+      expect(await page.locator(CELLS).count()).toBeGreaterThan(0);
+      expect(await trellisCount(page)).toBe(1);
+
+      await closeTrellis(page);
+      await waitForTrellisCount(page, 0, 1500);
+      expect(await trellisCount(page)).toBe(0);
+      await expect(page.locator('[name="viewer-Trellis-plot"]')).toHaveCount(0);
+
+      let errBefore = ctx.consoleErrors.length;
+      let pageErrBefore = ctx.pageErrors.length;
+      await page.keyboard.press('Control+z');
+      await waitForTrellisCount(page, 1, 1800);
+      expect(await trellisCount(page)).toBe(1);
+      await expect(page.locator('[name="viewer-Trellis-plot"]')).toBeVisible();
+      expect(ctx.consoleErrors.length).toBe(errBefore);
+      expect(ctx.pageErrors.length).toBe(pageErrBefore);
+
+      errBefore = ctx.consoleErrors.length;
+      pageErrBefore = ctx.pageErrors.length;
+      await page.keyboard.press('Control+Shift+z');
+      await waitForTrellisCount(page, 0, 1800);
+      expect(await trellisCount(page)).toBe(0);
+      expect(ctx.consoleErrors.length).toBe(errBefore);
+      expect(ctx.pageErrors.length).toBe(pageErrBefore);
+      expect(await page.locator('.d4-balloon.error').count()).toBe(0);
+
+      await page.keyboard.press('Control+z');
+      await waitForTrellisCount(page, 1, 1800);
+      expect(await trellisCount(page)).toBe(1);
+
+      errBefore = ctx.consoleErrors.length;
+      pageErrBefore = ctx.pageErrors.length;
+      await page.keyboard.press('Control+Shift+z');
+      await waitForTrellisCount(page, 0, 1800);
+      expect(await trellisCount(page)).toBe(0);
+      expect(ctx.consoleErrors.length).toBe(errBefore);
+      expect(ctx.pageErrors.length).toBe(pageErrBefore);
+      expect(await page.locator('.d4-balloon.error').count()).toBe(0);
+    } finally {
+      await restoreCanonical(page);
+    }
+  });
+
+  await tearDown(page, ctx);
+});
+
+test('Trellis plot — selectors, full screen, auto layout, title, legend', async ({page}) => {
+  test.setTimeout(240_000);
+  const ctx = await setUp(page);
+  const {canonicalCellCount} = ctx;
+
+  await softStep('Selectors', async () => {
+    try {
+      const result = await page.evaluate(async () => {
+        const w = window as any;
+        const tp = w.__tp();
+        const root = document.querySelector('[name="viewer-Trellis-plot"]') as HTMLElement;
+        const vsVisible = () => {
+          const el = root.querySelector('[name="viewer selector"]') as HTMLElement | null;
+          if (!el) return false;
+          const b = el.getBoundingClientRect();
+          return b.width > 0 && b.height > 0;
+        };
+        await w.__tpApply(() => {
+          tp.props.viewerType = 'Scatter plot';
+          tp.props.xColumnNames = ['SEX'];
+          tp.props.yColumnNames = ['RACE'];
+          tp.props.showControlPanel = true;
+        }, vsVisible, 1500);
+        const offVs = await w.__tpApply(() => {
+          tp.props.showXSelectors = false;
+          tp.props.showYSelectors = false;
+          tp.props.showControlPanel = false;
+        }, vsVisible, 1200);
+        const off = {props: {x: tp.props.showXSelectors, y: tp.props.showYSelectors, cp: tp.props.showControlPanel}, vs: offVs};
+        const onVs = await w.__tpApply(() => {
+          tp.props.showXSelectors = true;
+          tp.props.showYSelectors = true;
+          tp.props.showControlPanel = true;
+        }, vsVisible, 1200);
+        const on = {props: {x: tp.props.showXSelectors, y: tp.props.showYSelectors, cp: tp.props.showControlPanel}, vs: onVs};
+        return {off, on};
+      });
+      expect(result.off.props).toEqual({x: false, y: false, cp: false});
+      expect(result.on.props).toEqual({x: true, y: true, cp: true});
+      expect(result.off.vs).toBe(false);
+      expect(result.on.vs).toBe(true);
+
+      const columnSelectorCount = () => page.evaluate(() => (window as any).__tpSelectorCount());
+      const controlPanelVisible = () => page.evaluate(() => {
+        const root = document.querySelector('[name="viewer-Trellis-plot"]') as HTMLElement | null;
+        const el = root?.querySelector('[name="viewer selector"]') as HTMLElement | null;
         if (!el) return false;
         const b = el.getBoundingClientRect();
         return b.width > 0 && b.height > 0;
-      };
-      tp.props.showXSelectors = false;
-      tp.props.showYSelectors = false;
-      tp.props.showControlPanel = false;
-      await settle(1200);
-      const off = {props: {x: tp.props.showXSelectors, y: tp.props.showYSelectors, cp: tp.props.showControlPanel}, vs: vsVisible()};
-      tp.props.showXSelectors = true;
-      tp.props.showYSelectors = true;
-      tp.props.showControlPanel = true;
-      await settle(1200);
-      const on = {props: {x: tp.props.showXSelectors, y: tp.props.showYSelectors, cp: tp.props.showControlPanel}, vs: vsVisible()};
-      return {off, on};
-    });
-    expect(result.off.props).toEqual({x: false, y: false, cp: false});
-    expect(result.on.props).toEqual({x: true, y: true, cp: true});
-    expect(result.off.vs).toBe(false);
-    expect(result.on.vs).toBe(true);
+      });
+      await page.evaluate(() => (window as any).__tpApply(() => { (window as any).__tp().props.autoLayout = true; }, (window as any).__tpSelectorCount, 1200));
 
-    const columnSelectorCount = () => page.evaluate(() => {
-      const root = document.querySelector('[name="viewer-Trellis-plot"]') as HTMLElement | null;
-      if (!root) return -1;
-      const reallyVisible = (el: Element) => {
+      const bothSelectors = await columnSelectorCount();
+      expect(bothSelectors).toBe(2);
+
+      await page.evaluate(() => (window as any).__tpApply(() => { (window as any).__tp().props.showXSelectors = false; }, (window as any).__tpSelectorCount, 1500));
+      const xTurnedOff = await columnSelectorCount();
+      expect(xTurnedOff).toBe(1);
+
+      await page.setViewportSize({width: 500, height: 400});
+      await page.waitForFunction(() => {
+        const root = document.querySelector('[name="viewer-Trellis-plot"]') as HTMLElement | null;
+        const el = root?.querySelector('[name="viewer selector"]') as HTMLElement | null;
+        if (!el) return false;
         const b = el.getBoundingClientRect();
-        if (b.width <= 0 || b.height <= 0) return false;
-        for (let n: Element | null = el; n && n !== document.documentElement; n = n.parentElement) {
-          const s = getComputedStyle(n);
-          if (s.visibility === 'hidden' || s.visibility === 'collapse' || s.display === 'none') return false;
-        }
-        return true;
-      };
+        return !(b.width > 0 && b.height > 0);
+      }, null, {timeout: 2000}).catch(() => {});
+      const shrunkPanel = await controlPanelVisible();
+      const shrunkSelectors = await columnSelectorCount();
+      await page.setViewportSize({width: 1920, height: 1080});
+      await page.waitForFunction(() => {
+        const root = document.querySelector('[name="viewer-Trellis-plot"]') as HTMLElement | null;
+        const el = root?.querySelector('[name="viewer selector"]') as HTMLElement | null;
+        if (!el) return false;
+        const b = el.getBoundingClientRect();
+        return b.width > 0 && b.height > 0;
+      }, null, {timeout: 2000}).catch(() => {});
+      const restoredPanel = await controlPanelVisible();
+      const afterCycle = await columnSelectorCount();
 
-      return Array.from(root.querySelectorAll('[name="div-column-combobox-"]'))
-        .filter(reallyVisible).length;
-    });
-    const controlPanelVisible = () => page.evaluate(() => {
-      const root = document.querySelector('[name="viewer-Trellis-plot"]') as HTMLElement | null;
-      const el = root?.querySelector('[name="viewer selector"]') as HTMLElement | null;
-      if (!el) return false;
-      const b = el.getBoundingClientRect();
-      return b.width > 0 && b.height > 0;
-    });
-    await page.evaluate(async () => {
-      const tp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Trellis plot') as any;
-      await (window as any).__quiet('viewer:Trellis plot.onViewerRendered', 300, 1200);
-      tp.props.autoLayout = true;
-      await (window as any).__quiet('viewer:Trellis plot.onViewerRendered', 300, 1200);
-    });
+      expect(shrunkPanel).toBe(false);
+      expect(shrunkSelectors).toBe(0);
+      expect(restoredPanel).toBe(true);
+      expect(afterCycle).toBe(xTurnedOff);
 
-    const bothSelectors = await columnSelectorCount();
-    expect(bothSelectors).toBe(2);
-
-    await page.evaluate(async () => {
-      const tp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Trellis plot') as any;
-      tp.props.showXSelectors = false;
-      await (window as any).__quiet('viewer:Trellis plot.onViewerRendered', 300, 1500);
-    });
-    const xTurnedOff = await columnSelectorCount();
-    expect(xTurnedOff).toBe(1);
-
-    await page.setViewportSize({width: 500, height: 400});
-
-    await page.waitForFunction(() => {
-      const root = document.querySelector('[name="viewer-Trellis-plot"]') as HTMLElement | null;
-      const el = root?.querySelector('[name="viewer selector"]') as HTMLElement | null;
-      if (!el) return false;
-      const b = el.getBoundingClientRect();
-      return !(b.width > 0 && b.height > 0);
-    }, null, {timeout: 2000}).catch(() => {});
-    const shrunkPanel = await controlPanelVisible();
-    const shrunkSelectors = await columnSelectorCount();
-    await page.setViewportSize({width: 1920, height: 1080});
-    await page.waitForFunction(() => {
-      const root = document.querySelector('[name="viewer-Trellis-plot"]') as HTMLElement | null;
-      const el = root?.querySelector('[name="viewer selector"]') as HTMLElement | null;
-      if (!el) return false;
-      const b = el.getBoundingClientRect();
-      return b.width > 0 && b.height > 0;
-    }, null, {timeout: 2000}).catch(() => {});
-    const restoredPanel = await controlPanelVisible();
-    const afterCycle = await columnSelectorCount();
-
-    expect(shrunkPanel).toBe(false);
-    expect(shrunkSelectors).toBe(0);
-    expect(restoredPanel).toBe(true);
-
-    expect(afterCycle).toBe(xTurnedOff);
-
-    await page.evaluate(async () => {
-      const tp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Trellis plot') as any;
-      tp.props.showXSelectors = true;
-      await (window as any).__quiet('viewer:Trellis plot.onViewerRendered', 300, 1200);
-    });
-    expect(await columnSelectorCount()).toBe(bothSelectors);
-   } finally {
-
-    await page.setViewportSize({width: 1920, height: 1080});
-    await v.waitForViewerRendered(page, 'Trellis plot', 1000);
-    await page.evaluate(async () => {
-      try {
-        const tp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Trellis plot') as any;
+      await page.evaluate(() => (window as any).__tpApply(() => { (window as any).__tp().props.showXSelectors = true; }, (window as any).__tpSelectorCount, 1200));
+      expect(await columnSelectorCount()).toBe(bothSelectors);
+    } finally {
+      await page.setViewportSize({width: 1920, height: 1080});
+      await v.waitForViewerRendered(page, 'Trellis plot', 1000);
+      await page.evaluate(() => (window as any).__tpRendered(() => {
+        const tp = (window as any).__tp();
         tp.props.showXSelectors = true;
         tp.props.showYSelectors = true;
         tp.props.showControlPanel = true;
-        await new Promise((r) => setTimeout(r, 500));
-      } catch (_) {  }
-    });
-   }
+      }, 500)).catch(() => {});
+    }
   });
 
   await softStep('Allow viewer full screen', async () => {
-   try {
+    try {
+      await page.mouse.move(5, 5);
+      const result = await page.evaluate(async () => {
+        const w = window as any;
+        const tp = w.__tp();
+        const rootEl = () => document.querySelector('[name="viewer-Trellis-plot"]') as HTMLElement | null;
+        const cells = () => Array.from(rootEl()?.querySelectorAll('.d4-trellis-plot-cell') ?? []);
+        const iconCount = () =>
+          (rootEl()?.querySelectorAll('.d4-viewer-icon[name="icon-expand-arrows"]') ?? []).length;
+        await w.__tpApply(() => {
+          tp.props.viewerType = 'Scatter plot';
+          tp.props.xColumnNames = ['SEX'];
+          tp.props.yColumnNames = ['RACE'];
+          tp.props.allowViewerFullScreen = true;
+        }, w.__tpCells, 1500);
+        // the pointer was just parked outside the viewer: the hover icon must have cleared
+        await w.__poll(iconCount, (n: number) => n === 0, 400, 25);
 
-    await page.mouse.move(5, 5);
-    await page.waitForTimeout(400); // technical: park pointer, no event to await before the baseline
-    const result = await page.evaluate(async () => {
-      const tp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Trellis plot') as any;
+        const iconState = () => {
+          const list = Array.from(rootEl()?.querySelectorAll('.d4-viewer-icon[name="icon-expand-arrows"]') ?? []) as HTMLElement[];
+          if (list.length !== 1) return {count: list.length, parent: -1, top: -1, left: -1};
+          const b = list[0].getBoundingClientRect();
+          return {count: 1, parent: cells().indexOf(list[0].parentElement as Element),
+            top: Math.round(b.top), left: Math.round(b.left)};
+        };
+        const pointer = async (idx: number, into: boolean) => {
+          const cell = cells()[idx];
+          if (!cell) return;
+          const r = cell.getBoundingClientRect();
+          const o = {bubbles: true, cancelable: true, clientX: r.left + r.width / 2, clientY: r.top + r.height / 2};
+          for (const t of into ? ['mouseenter', 'mouseover', 'mousemove'] : ['mouseout', 'mouseleave'])
+            cell.dispatchEvent(new MouseEvent(t, o));
+          await w.__poll(iconCount, (n: number) => (into ? n >= 1 : n === 0), 800, 40);
+        };
 
-      tp.props.viewerType = 'Scatter plot';
-      tp.props.xColumnNames = ['SEX'];
-      tp.props.yColumnNames = ['RACE'];
-      tp.props.allowViewerFullScreen = true;
-      await (window as any).__quiet('viewer:Trellis plot.onViewerRendered', 300, 1500);
+        const all = cells();
+        const firstIdx = all.findIndex((c) => !!c.querySelector('canvas'));
+        const firstTop = firstIdx >= 0 ? Math.round(all[firstIdx].getBoundingClientRect().top) : -1;
+        const secondIdx = all.findIndex((c, i) => i !== firstIdx && !!c.querySelector('canvas') &&
+          Math.round(c.getBoundingClientRect().top) !== firstTop);
+        const out: any = {cellsFound: false, firstIdx, secondIdx,
+          beforeHover: iconState().count, onFirst: {count: -1, parent: -1, top: -1, left: -1},
+          onSecond: {count: -1, parent: -1, top: -1, left: -1}, afterLeave: -1,
+          modalOpened: false, modalTitle: null as string | null, iconWhenOff: true};
+        if (firstIdx < 0 || secondIdx < 0) return out;
+        out.cellsFound = true;
 
-      const rootEl = () => document.querySelector('[name="viewer-Trellis-plot"]') as HTMLElement | null;
-      const cells = () => Array.from(rootEl()?.querySelectorAll('.d4-trellis-plot-cell') ?? []);
-      const iconState = () => {
-        const list = Array.from(rootEl()?.querySelectorAll('.d4-viewer-icon[name="icon-expand-arrows"]') ?? []) as HTMLElement[];
-        if (list.length !== 1) return {count: list.length, parent: -1, top: -1, left: -1};
-        const b = list[0].getBoundingClientRect();
-        return {count: 1, parent: cells().indexOf(list[0].parentElement as Element),
-          top: Math.round(b.top), left: Math.round(b.left)};
-      };
-      const w = window as any;
-      const iconCount = () =>
-        (rootEl()?.querySelectorAll('.d4-viewer-icon[name="icon-expand-arrows"]') ?? []).length;
-      const pointer = async (idx: number, into: boolean) => {
-        const cell = cells()[idx];
-        if (!cell) return;
-        const r = cell.getBoundingClientRect();
-        const o = {bubbles: true, cancelable: true, clientX: r.left + r.width / 2, clientY: r.top + r.height / 2};
-        for (const t of into ? ['mouseenter', 'mouseover', 'mousemove'] : ['mouseout', 'mouseleave'])
-          cell.dispatchEvent(new MouseEvent(t, o));
-        // settle on the hover icon appearing (into) or clearing (out), capped — not a blind 800ms
-        await w.__poll(iconCount, (n: number) => (into ? n >= 1 : n === 0), 800, 40);
-      };
+        await pointer(firstIdx, true);
+        out.onFirst = iconState();
 
-      const all = cells();
-      const firstIdx = all.findIndex((c) => !!c.querySelector('canvas'));
-      const firstTop = firstIdx >= 0 ? Math.round(all[firstIdx].getBoundingClientRect().top) : -1;
+        await pointer(firstIdx, false);
+        await pointer(secondIdx, true);
+        out.onSecond = iconState();
 
-      const secondIdx = all.findIndex((c, i) => i !== firstIdx && !!c.querySelector('canvas') &&
-        Math.round(c.getBoundingClientRect().top) !== firstTop);
-      const out: any = {cellsFound: false, firstIdx, secondIdx,
-        beforeHover: iconState().count, onFirst: {count: -1, parent: -1, top: -1, left: -1},
-        onSecond: {count: -1, parent: -1, top: -1, left: -1}, afterLeave: -1,
-        modalOpened: false, modalTitle: null as string | null, iconWhenOff: true};
-      if (firstIdx < 0 || secondIdx < 0) return out;
-      out.cellsFound = true;
+        await pointer(secondIdx, false);
+        out.afterLeave = iconState().count;
 
-      await pointer(firstIdx, true);
-      out.onFirst = iconState();
-
-      await pointer(firstIdx, false);
-      await pointer(secondIdx, true);
-      out.onSecond = iconState();
-
-      await pointer(secondIdx, false);
-      out.afterLeave = iconState().count;
-
-      await pointer(firstIdx, true);
-      const icon = rootEl()?.querySelector('.d4-viewer-icon[name="icon-expand-arrows"]') as HTMLElement | null;
-      if (icon) {
-        const ib = icon.getBoundingClientRect();
-        const io = {bubbles: true, cancelable: true, button: 0, clientX: ib.left + ib.width / 2, clientY: ib.top + ib.height / 2};
-        icon.dispatchEvent(new MouseEvent('mousedown', io));
-        icon.dispatchEvent(new MouseEvent('mouseup', io));
-        icon.dispatchEvent(new MouseEvent('click', io));
-        // settle on the full-screen dialog attaching, capped
-        const dlg = await w.__poll(() => document.querySelector('.d4-dialog'),
-          (e: Element | null) => !!e, 1200, 50) as Element | null;
-        out.modalOpened = !!dlg;
-        if (dlg) {
-          out.modalTitle = (dlg.querySelector('.d4-dialog-title') as HTMLElement | null)?.textContent?.trim() ?? null;
-          const cancel = (dlg.querySelector('[name="button-CANCEL"]') as HTMLElement | null)
-            ?? (dlg.querySelector('.d4-dialog-header [name="icon-times"]') as HTMLElement | null);
-          if (cancel) cancel.click(); else document.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true}));
-          await w.__poll(() => document.querySelector('.d4-dialog'), (e: Element | null) => !e, 500, 40);
+        await pointer(firstIdx, true);
+        const icon = rootEl()?.querySelector('.d4-viewer-icon[name="icon-expand-arrows"]') as HTMLElement | null;
+        if (icon) {
+          const ib = icon.getBoundingClientRect();
+          const io = {bubbles: true, cancelable: true, button: 0, clientX: ib.left + ib.width / 2, clientY: ib.top + ib.height / 2};
+          icon.dispatchEvent(new MouseEvent('mousedown', io));
+          icon.dispatchEvent(new MouseEvent('mouseup', io));
+          icon.dispatchEvent(new MouseEvent('click', io));
+          const dlg = await w.__poll(() => document.querySelector('.d4-dialog'),
+            (e: Element | null) => !!e, 1200, 50) as Element | null;
+          out.modalOpened = !!dlg;
+          if (dlg) {
+            out.modalTitle = (dlg.querySelector('.d4-dialog-title') as HTMLElement | null)?.textContent?.trim() ?? null;
+            const cancel = (dlg.querySelector('[name="button-CANCEL"]') as HTMLElement | null)
+              ?? (dlg.querySelector('.d4-dialog-header [name="icon-times"]') as HTMLElement | null);
+            if (cancel) cancel.click(); else document.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true}));
+            await w.__poll(() => document.querySelector('.d4-dialog'), (e: Element | null) => !e, 500, 40);
+          }
         }
-      }
-      await pointer(firstIdx, false);
+        await pointer(firstIdx, false);
 
-      await w.__settled('viewer:Trellis plot.onPropertyValueChanged',
-        () => { tp.props.allowViewerFullScreen = false; }, 800);
-      await pointer(firstIdx, true);
-      out.iconWhenOff = iconState().count > 0;
-      await pointer(firstIdx, false);
-      tp.props.allowViewerFullScreen = true;
-      return out;
-    });
-    expect(result.cellsFound).toBe(true);
+        await w.__settled('viewer:Trellis plot.onPropertyValueChanged',
+          () => { tp.props.allowViewerFullScreen = false; }, 800);
+        await pointer(firstIdx, true);
+        out.iconWhenOff = iconState().count > 0;
+        await pointer(firstIdx, false);
+        tp.props.allowViewerFullScreen = true;
+        return out;
+      });
+      expect(result.cellsFound).toBe(true);
 
-    expect(result.beforeHover).toBe(0);
-    expect(result.onFirst.count).toBe(1);
-    expect(result.onFirst.parent).toBe(result.firstIdx);
-    expect(result.onSecond.count).toBe(1);
-    expect(result.onSecond.parent).toBe(result.secondIdx);
-    expect(result.onSecond.top === result.onFirst.top && result.onSecond.left === result.onFirst.left).toBe(false);
-    expect(result.afterLeave).toBe(0);
-    expect(result.modalOpened).toBe(true);
+      expect(result.beforeHover).toBe(0);
+      expect(result.onFirst.count).toBe(1);
+      expect(result.onFirst.parent).toBe(result.firstIdx);
+      expect(result.onSecond.count).toBe(1);
+      expect(result.onSecond.parent).toBe(result.secondIdx);
+      expect(result.onSecond.top === result.onFirst.top && result.onSecond.left === result.onFirst.left).toBe(false);
+      expect(result.afterLeave).toBe(0);
+      expect(result.modalOpened).toBe(true);
 
-    expect(result.modalTitle).toContain('SEX');
-    expect(result.iconWhenOff).toBe(false);
-   } finally {
-
-    await page.evaluate(async () => {
-      const root = document.querySelector('[name="viewer-Trellis-plot"]') as HTMLElement | null;
-      for (const c of Array.from(root?.querySelectorAll('.d4-trellis-plot-cell') ?? [])) {
-        const r = c.getBoundingClientRect();
-        const o = {bubbles: true, cancelable: true, clientX: r.left + r.width / 2, clientY: r.top + r.height / 2};
-        c.dispatchEvent(new MouseEvent('mouseout', o));
-        c.dispatchEvent(new MouseEvent('mouseleave', o));
-      }
-      const tp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Trellis plot') as any;
-      if (tp) tp.props.allowViewerFullScreen = true;
-      await new Promise((r) => setTimeout(r, 400));
-    });
-    await page.mouse.move(5, 5);
-
-    await page.waitForTimeout(400);
-   }
+      expect(result.modalTitle).toContain('SEX');
+      expect(result.iconWhenOff).toBe(false);
+    } finally {
+      await page.evaluate(async () => {
+        const w = window as any;
+        const root = document.querySelector('[name="viewer-Trellis-plot"]') as HTMLElement | null;
+        for (const c of Array.from(root?.querySelectorAll('.d4-trellis-plot-cell') ?? [])) {
+          const r = c.getBoundingClientRect();
+          const o = {bubbles: true, cancelable: true, clientX: r.left + r.width / 2, clientY: r.top + r.height / 2};
+          c.dispatchEvent(new MouseEvent('mouseout', o));
+          c.dispatchEvent(new MouseEvent('mouseleave', o));
+        }
+        const tp = w.__tp();
+        if (tp) tp.props.allowViewerFullScreen = true;
+        await w.__poll(() => (root?.querySelectorAll('.d4-viewer-icon[name="icon-expand-arrows"]') ?? []).length,
+          (n: number) => n === 0, 400, 25);
+      });
+      await page.mouse.move(5, 5);
+    }
   });
 
-  await softStep('Scrolling', async () => {
-   try {
+  await softStep('Auto layout', async () => {
+    try {
+      await page.evaluate(() => (window as any).__tpApply(() => {
+        const tp = (window as any).__tp();
+        tp.props.autoLayout = true;
+        tp.props.showXLabels = true;
+        tp.props.showYLabels = true;
+      }, (window as any).__tpLabelCount, 600));
+      const vsVisible = () => page.evaluate(() => {
+        const root = document.querySelector('[name="viewer-Trellis-plot"]') as HTMLElement;
+        const el = root?.querySelector('[name="viewer selector"]') as HTMLElement | null;
+        if (!el) return false;
+        const b = el.getBoundingClientRect();
+        return b.width > 0 && b.height > 0;
+      });
+      const viewerWidth = () => page.evaluate(() => {
+        const root = document.querySelector('[name="viewer-Trellis-plot"]') as HTMLElement | null;
+        return root ? Math.round(root.getBoundingClientRect().width) : -1;
+      });
 
-    const cardinality = (cols: string[]) => page.evaluate((cs) => {
-      const df = grok.shell.tv.dataFrame;
-      return cs.reduce((n: number, c: string) => n * df.col(c).categories.length, 1);
-    }, cols);
-    const configure = (x: string[], y: string[]) => page.evaluate(async (cols) => {
-      const tp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Trellis plot') as any;
-      tp.props.packCategories = false;
-      tp.props.viewerType = 'Scatter plot';
-      tp.props.xColumnNames = cols.x;
-      tp.props.yColumnNames = cols.y;
-      await (window as any).__quiet('viewer:Trellis plot.onViewerRendered', 400, 2500);
-      return {x: [...tp.props.xColumnNames], y: [...tp.props.yColumnNames]};
-    }, {x, y});
+      const cards = await page.evaluate(() => {
+        const df = grok.shell.tv.dataFrame;
+        return {sex: df.col('SEX').categories.length, race: df.col('RACE').categories.length};
+      });
+      const expectedX = axisViewportCount(cards.sex, false);
+      const expectedY = axisViewportCount(cards.race, false);
 
-    const fitting = await configure(['SEX'], ['RACE']);
-    expect(fitting.x).toEqual(['SEX']);
-    const fitsRawX = await cardinality(['SEX']);
-    const fitsRawY = await cardinality(['RACE']);
-    const fitsGeom = await gridGeometry(page);
-    expect(fitsGeom.cols).toBe(axisViewportCount(fitsRawX, false));
-    expect(fitsGeom.cols).toBe(fitsRawX);
-    expect(fitsGeom.rows).toBe(fitsRawY);
-    const fitsX = await scrollSliderExtent(page, 'x');
-    const fitsY = await scrollSliderExtent(page, 'y');
-    expect(fitsX.present).toBeGreaterThan(0);
-    expect(fitsY.present).toBeGreaterThan(0);
-    expect(fitsX.ratio).toBeGreaterThan(0.5);
-    expect(fitsY.ratio).toBeGreaterThan(0.5);
+      expect(await vsVisible()).toBe(true);
+      const wideLabels = await categoryLabels(page);
+      expect(wideLabels.x.length).toBe(expectedX);
+      expect(wideLabels.y.length).toBe(expectedY);
 
-    const overX = await configure(['SEX', 'DIS_POP', 'RACE'], ['SEVERITY']);
-    expect(overX.x).toEqual(['SEX', 'DIS_POP', 'RACE']);
-    const overRawX = await cardinality(['SEX', 'DIS_POP', 'RACE']);
-    const overGeomX = await gridGeometry(page);
+      await page.setViewportSize({width: 500, height: 400});
+      await page.waitForFunction(() => {
+        const root = document.querySelector('[name="viewer-Trellis-plot"]') as HTMLElement | null;
+        if (!root) return false;
+        return Array.from(root.querySelectorAll('.d4-trellis-plot-cat-item-horz'))
+          .filter((n) => n.tagName.toLowerCase() === 'text').length === 0;
+      }, null, {timeout: 1500}).catch(() => {});
+      const smallVisible = await vsVisible();
+      const smallLabels = await categoryLabels(page);
+      expect(smallVisible).toBe(false);
+      expect(smallLabels.x.length).toBe(0);
+      expect(smallLabels.y.length).toBe(0);
 
-    expect(overGeomX.cols).toBe(axisViewportCount(overRawX, false));
-    expect(overGeomX.cols).toBeLessThan(overRawX);
-    const scrolledX = await scrollSliderExtent(page, 'x');
-    expect(scrolledX.present).toBeGreaterThan(0);
+      await page.setViewportSize({width: 1920, height: 1080});
+      await page.waitForFunction((n) => {
+        const root = document.querySelector('[name="viewer-Trellis-plot"]') as HTMLElement | null;
+        if (!root) return false;
+        return Array.from(root.querySelectorAll('.d4-trellis-plot-cat-item-horz'))
+          .filter((el) => el.tagName.toLowerCase() === 'text').length === n;
+      }, expectedX, {timeout: 1500}).catch(() => {});
+      const largeVisible = await vsVisible();
+      const restoredLabels = await categoryLabels(page);
+      expect(largeVisible).toBe(true);
+      expect(restoredLabels.x.length).toBe(expectedX);
+      expect(restoredLabels.y.length).toBe(expectedY);
 
-    expect(scrolledX.ratio).toBeGreaterThan(0);
-    expect(scrolledX.ratio).toBeLessThan(fitsX.ratio);
+      // The band search keeps its fixed settles: waitForViewerRendered returns before the resize
+      // relayout finishes, so an event-waited probe reads an intermediate viewer width and the
+      // ~20px band is never observed. Measured 2026-08-31 (2/8 passes event-waited).
+      const wideWidth = await viewerWidth();
+      await page.setViewportSize({width: 1420, height: 1080});
+      await page.waitForTimeout(1200);
+      const midWidth = await viewerWidth();
+      const slope = Math.max((wideWidth - midWidth) / 500, 0.05);
 
-    const overY = await configure(['SEX'], ['RACE', 'DIS_POP', 'SEVERITY']);
-    expect(overY.y).toEqual(['RACE', 'DIS_POP', 'SEVERITY']);
-    const overRawY = await cardinality(['RACE', 'DIS_POP', 'SEVERITY']);
-    const overGeomY = await gridGeometry(page);
-    expect(overGeomY.rows).toBe(axisViewportCount(overRawY, false));
-    expect(overGeomY.rows).toBeLessThan(overRawY);
-    const scrolledY = await scrollSliderExtent(page, 'y');
-    expect(scrolledY.present).toBeGreaterThan(0);
-    expect(scrolledY.ratio).toBeGreaterThan(0);
-    expect(scrolledY.ratio).toBeLessThan(fitsY.ratio);
-   } finally {
+      console.log(`[Auto layout] band calibration: wideWidth=${wideWidth} midWidth=${midWidth} slope=${slope.toFixed(3)}`);
+      let band: {window: number; viewer: number; x: number; y: number} | null = null;
+      for (let target = 235; target >= 150 && !band; target -= 5) {
+        const win = Math.round(Math.min(1900, Math.max(420, 1420 - (midWidth - target) / slope)));
+        await page.setViewportSize({width: win, height: 1080});
+        await page.waitForTimeout(1000);
+        const seen = await categoryLabels(page);
+        console.log(`[Auto layout] band probe: targetViewer=${target} window=${win} viewer=${await viewerWidth()} ` +
+          `x=${seen.x.length} y=${seen.y.length}`);
+        if (seen.x.length > 0 || seen.y.length === 0) continue;
 
-    await page.evaluate(async () => {
-      const tp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Trellis plot') as any;
-      try {
-        tp.props.packCategories = true;
-        await (window as any).__quiet('viewer:Trellis plot.onViewerRendered', 300, 600);
-      } catch (_) {  }
-    });
-    await restoreCanonical();
-   }
+        await page.waitForTimeout(900);
+        const confirmed = await categoryLabels(page);
+        console.log(`[Auto layout] band candidate re-read: window=${win} viewer=${await viewerWidth()} ` +
+          `x=${confirmed.x.length} y=${confirmed.y.length}`);
+        if (confirmed.x.length === 0 && confirmed.y.length > 0)
+          band = {window: win, viewer: await viewerWidth(), x: confirmed.x.length, y: confirmed.y.length};
+      }
+      console.log(`[Auto layout] band search finished: ${JSON.stringify(band)}`);
+      expect(band).not.toBeNull();
+      expect(band!.x).toBe(0);
+      expect(band!.y).toBe(expectedY);
+
+      await page.setViewportSize({width: 1920, height: 1080});
+      await v.waitForViewerRendered(page, 'Trellis plot', 1200);
+
+      await page.evaluate(() => (window as any).__tpRendered(() => { (window as any).__tp().props.autoLayout = false; }, 500));
+      await page.setViewportSize({width: 500, height: 400});
+      await page.waitForFunction((n) => {
+        const root = document.querySelector('[name="viewer-Trellis-plot"]') as HTMLElement | null;
+        if (!root) return false;
+        return Array.from(root.querySelectorAll('.d4-trellis-plot-cat-item-horz'))
+          .filter((el) => el.tagName.toLowerCase() === 'text').length === n;
+      }, expectedX, {timeout: 1500}).catch(() => {});
+      const offSmallVisible = await vsVisible();
+      const offSmallLabels = await categoryLabels(page);
+      expect(offSmallVisible).toBe(true);
+      expect(offSmallLabels.x.length).toBe(expectedX);
+      expect(offSmallLabels.y.length).toBe(expectedY);
+    } finally {
+      await page.setViewportSize({width: 1920, height: 1080});
+      await v.waitForViewerRendered(page, 'Trellis plot', 1000);
+      await page.evaluate(() => (window as any).__tpRendered(() => {
+        const tp = (window as any).__tp();
+        if (tp) {
+          tp.props.autoLayout = true;
+          tp.props.showXLabels = true;
+          tp.props.showYLabels = true;
+        }
+      }, 500)).catch(() => {});
+    }
+  });
+
+  await softStep('Title and description', async () => {
+    try {
+      const titleShown = (text: string) => page.evaluate((t) => {
+        const root = document.querySelector('[name="viewer-Trellis-plot"]') as HTMLElement | null;
+        if (!root) return false;
+        const el = root.querySelector('.d4-viewer-title') as HTMLElement | null;
+        if (el) {
+          const editor = el.querySelector('textarea, input') as HTMLInputElement | null;
+          const shown = ((editor ? editor.value : el.textContent) ?? '').trim();
+          return shown === t && el.getBoundingClientRect().height > 0;
+        }
+        return Array.from(root.querySelectorAll('*')).some((n) =>
+          n.children.length === 0 && (n.textContent ?? '').trim() === t);
+      }, text);
+      const descriptionSlot = () => page.evaluate(() => (window as any).__tpDescriptionSlot());
+
+      await page.evaluate(() => (window as any).__tpApply(() => {
+        const tp = (window as any).__tp();
+        tp.props.showTitle = true;
+        tp.props.title = 'My Trellis';
+        tp.props.description = 'Test description';
+      }, () => !!document.querySelector('[name="viewer-Trellis-plot"] .d4-viewer-title'), 1500));
+      expect(await titleShown('My Trellis')).toBe(true);
+
+      const slots: (string | null)[] = [];
+      for (const pos of ['Bottom', 'Top', 'Left', 'Right']) {
+        await page.evaluate((p) => (window as any).__tpApply(
+          () => { (window as any).__tp().props.descriptionPosition = p; }, (window as any).__tpDescriptionSlot, 1200), pos);
+        slots.push(await descriptionSlot());
+      }
+      expect(slots).toEqual(['bottom', 'top', 'left', 'right']);
+
+      await page.evaluate(() => (window as any).__tpApply(() => { (window as any).__tp().props.showTitle = false; },
+        () => !!document.querySelector('[name="viewer-Trellis-plot"] .d4-viewer-title'), 1200));
+      expect(await titleShown('My Trellis')).toBe(false);
+    } finally {
+      await page.evaluate(() => (window as any).__tpRendered(() => {
+        const tp = (window as any).__tp();
+        tp.props.description = '';
+        tp.props.title = '';
+        tp.props.showTitle = false;
+      }, 600)).catch(() => {});
+    }
   });
 
   await softStep('Legend', async () => {
-   try {
+    try {
+      const result = await page.evaluate(async () => {
+        const w = window as any;
+        const tp = w.__tp();
+        const legendVisible = () => {
+          const el = tp.root.querySelector('[name="legend"]') as HTMLElement | null;
+          if (!el) return false;
+          const cs = getComputedStyle(el);
+          const rect = el.getBoundingClientRect();
+          return cs.display !== 'none' && cs.visibility !== 'hidden' &&
+            el.offsetParent !== null && rect.width > 0 && rect.height > 0;
+        };
+        const legendSlot = () => {
+          const el = tp.root.querySelector('[name="legend"]');
+          const side = el && el.closest('.d4-layout-left, .d4-layout-right, .d4-layout-top, .d4-layout-bottom');
+          if (!side) return null;
+          return ['left', 'right', 'top', 'bottom'].find((s) => side.classList.contains(`d4-layout-${s}`)) || null;
+        };
+        await w.__tpRendered(() => {
+          tp.props.viewerType = 'Scatter plot';
+          tp.setOptions({innerViewerLook: {colorColumnName: 'SEX'}});
+        }, 1000);
 
-    const result = await page.evaluate(async () => {
-      const tp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Trellis plot') as any;
-      const legendVisible = () => {
-        const el = tp.root.querySelector('[name="legend"]') as HTMLElement | null;
-        if (!el) return false;
-        const cs = getComputedStyle(el);
-        const rect = el.getBoundingClientRect();
-        return cs.display !== 'none' && cs.visibility !== 'hidden' &&
-          el.offsetParent !== null && rect.width > 0 && rect.height > 0;
-      };
-      const settle = (cap: number) => (window as any).__quiet('viewer:Trellis plot.onViewerRendered', 300, cap);
-      tp.props.viewerType = 'Scatter plot';
-      tp.setOptions({innerViewerLook: {colorColumnName: 'SEX'}});
-      await settle(1000);
+        const alwaysRendered = await w.__tpApply(() => { tp.props.legendVisibility = 'Always'; }, legendVisible, 600);
+        const always = {vis: tp.props.legendVisibility, rendered: alwaysRendered};
 
-      tp.props.legendVisibility = 'Always';
-      await settle(600);
-      const always = {vis: tp.props.legendVisibility, rendered: legendVisible()};
+        const positions: string[] = [];
+        const slots: (string | null)[] = [];
+        for (const pos of ['Left', 'Right', 'Top', 'Bottom']) {
+          slots.push(await w.__tpApply(() => { tp.props.legendPosition = pos; }, legendSlot, 900));
+          positions.push(tp.props.legendPosition);
+        }
 
-      const legendSlot = () => {
-        const el = tp.root.querySelector('[name="legend"]');
-        const side = el && el.closest('.d4-layout-left, .d4-layout-right, .d4-layout-top, .d4-layout-bottom');
-        if (!side) return null;
-        return ['left', 'right', 'top', 'bottom'].find((s) => side.classList.contains(`d4-layout-${s}`)) || null;
-      };
-      const positions: string[] = [];
-      const slots: (string | null)[] = [];
-      for (const pos of ['Left', 'Right', 'Top', 'Bottom']) {
-        tp.props.legendPosition = pos;
-        await settle(900);
-        positions.push(tp.props.legendPosition);
-        slots.push(legendSlot());
-      }
+        const neverRendered = await w.__tpApply(() => { tp.props.legendVisibility = 'Never'; }, legendVisible, 600);
+        const never = {vis: tp.props.legendVisibility, rendered: neverRendered};
+        return {always, positions, slots, never};
+      });
+      expect(result.always.vis).toBe('Always');
+      expect(result.always.rendered).toBe(true);
+      expect(result.positions).toEqual(['Left', 'Right', 'Top', 'Bottom']);
+      expect(result.slots).toEqual(['left', 'right', 'top', 'bottom']);
+      expect(result.never.vis).toBe('Never');
+      expect(result.never.rendered).toBe(false);
 
-      tp.props.legendVisibility = 'Never';
-      await settle(600);
-      const never = {vis: tp.props.legendVisibility, rendered: legendVisible()};
-      return {always, positions, slots, never};
-    });
-    expect(result.always.vis).toBe('Always');
-    expect(result.always.rendered).toBe(true);
-    expect(result.positions).toEqual(['Left', 'Right', 'Top', 'Bottom']);
-    expect(result.slots).toEqual(['left', 'right', 'top', 'bottom']);
-    expect(result.never.vis).toBe('Never');
-    expect(result.never.rendered).toBe(false);
+      await page.evaluate(() => (window as any).__tpApply(() => {
+        const tp = (window as any).__tp();
+        tp.props.xColumnNames = ['SEX'];
+        tp.props.yColumnNames = ['RACE'];
+        tp.props.viewerType = 'Box plot';
+        tp.props.legendVisibility = 'Always';
+      }, (window as any).__tpCells, 2500));
+      await expect(page.locator(CELLS)).toHaveCount(canonicalCellCount);
 
-    await page.evaluate(async () => {
-      const tp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Trellis plot') as any;
-      tp.props.xColumnNames = ['SEX'];
-      tp.props.yColumnNames = ['RACE'];
-      tp.props.viewerType = 'Box plot';
-      tp.props.legendVisibility = 'Always';
-      await (window as any).__quiet('viewer:Trellis plot.onViewerRendered', 300, 2500);
-    });
-    await expect(page.locator('[name="viewer-Trellis-plot"] .d4-trellis-plot-cell')).toHaveCount(canonicalCellCount);
+      await openBoxPlotTab(page);
+      await expect(
+        page.locator('[name="viewer-Trellis-plot"] [name="legend"] .d4-legend-item .d4-legend-cross').first(),
+      ).toBeAttached({timeout: 15000});
 
-    await openBoxPlotTab(page);
-    await expect(
-      page.locator('[name="viewer-Trellis-plot"] [name="legend"] .d4-legend-item .d4-legend-cross').first(),
-    ).toBeAttached({timeout: 15000});
+      const setAll = await setShowAllCategories(page, true);
+      expect(setAll).toBe(true);
 
-    const setAll = await setShowAllCategories(page, true);
-    expect(setAll).toBe(true);
+      const cats = await legendCategories(page);
+      console.log(`[Legend] legend categories = ${JSON.stringify(cats)}`);
 
-    const cats = await legendCategories(page);
-    console.log(`[Legend] legend categories = ${JSON.stringify(cats)}`);
+      expect(cats.length).toBeGreaterThanOrEqual(3);
+      const pristine = await legendSnapshot(page);
+      expect(pristine.every((it) => it.opacity >= 1)).toBe(true);
+      expect(pristine.some((it) => it.current)).toBe(false);
+      const firstBefore = await legendItemState(page, cats[0]);
+      expect(firstBefore.present).toBe(true);
+      expect(firstBefore.opacity).toBe(1);
+      expect(firstBefore.active).toBe(false);
+      const firstUnchecked = await uncheckLegendCategory(page, cats[0]);
+      expect(firstUnchecked.clicked).toBe(true);
+      expect(firstUnchecked.opacity).toBeLessThan(1);
 
-    expect(cats.length).toBeGreaterThanOrEqual(3);
-    const pristine = await legendSnapshot(page);
-    expect(pristine.every((it) => it.opacity >= 1)).toBe(true);
-    expect(pristine.some((it) => it.current)).toBe(false);
-    const firstBefore = await legendItemState(page, cats[0]);
-    expect(firstBefore.present).toBe(true);
-    expect(firstBefore.opacity).toBe(1);
-    expect(firstBefore.active).toBe(false);
-    const firstUnchecked = await uncheckLegendCategory(page, cats[0]);
-    expect(firstUnchecked.clicked).toBe(true);
-    expect(firstUnchecked.opacity).toBeLessThan(1);
+      const afterFirstSnap = await legendSnapshot(page);
+      expect(afterFirstSnap.filter((it) => it.name !== cats[0]).every((it) => it.current && it.opacity >= 1)).toBe(true);
 
-    const afterFirstSnap = await legendSnapshot(page);
-    expect(afterFirstSnap.filter((it) => it.name !== cats[0]).every((it) => it.current && it.opacity >= 1)).toBe(true);
+      const afterFirst = await showAllCategoriesState(page);
+      console.log(`[Legend] showAllCategories after single uncheck = ${afterFirst}`);
+      expect(afterFirst).toBe(true);
 
-    const afterFirst = await showAllCategoriesState(page);
-    console.log(`[Legend] showAllCategories after single uncheck = ${afterFirst}`);
-    expect(afterFirst).toBe(true);
+      const errBeforeSeq = ctx.consoleErrors.length;
+      const pageErrBeforeSeq = ctx.pageErrors.length;
+      const secondBefore = await legendItemState(page, cats[1]);
 
-    const errBeforeSeq = consoleErrors.length;
-    const pageErrBeforeSeq = pageErrors.length;
-    const secondBefore = await legendItemState(page, cats[1]);
+      expect(secondBefore.opacity).toBe(1);
+      expect(secondBefore.active).toBe(true);
+      const secondUnchecked = await uncheckLegendCategory(page, cats[1]);
+      expect(secondUnchecked.clicked).toBe(true);
+      expect(secondUnchecked.opacity).toBeLessThan(1);
 
-    expect(secondBefore.opacity).toBe(1);
-    expect(secondBefore.active).toBe(true);
-    const secondUnchecked = await uncheckLegendCategory(page, cats[1]);
-    expect(secondUnchecked.clicked).toBe(true);
-    expect(secondUnchecked.opacity).toBeLessThan(1);
+      const firstStillOff = await legendItemState(page, cats[0]);
+      expect(firstStillOff.present).toBe(true);
+      expect(firstStillOff.opacity).toBeLessThan(1);
+      const afterSecond = await showAllCategoriesState(page);
+      console.log(`[Legend] showAllCategories after two sequential unchecks = ${afterSecond}`);
+      expect(afterSecond).toBe(true);
+      expect(ctx.consoleErrors.length).toBe(errBeforeSeq);
+      expect(ctx.pageErrors.length).toBe(pageErrBeforeSeq);
 
-    const firstStillOff = await legendItemState(page, cats[0]);
-    expect(firstStillOff.present).toBe(true);
-    expect(firstStillOff.opacity).toBeLessThan(1);
-    const afterSecond = await showAllCategoriesState(page);
-    console.log(`[Legend] showAllCategories after two sequential unchecks = ${afterSecond}`);
-    expect(afterSecond).toBe(true);
-    expect(consoleErrors.length).toBe(errBeforeSeq);
-    expect(pageErrors.length).toBe(pageErrBeforeSeq);
+      const onlyFirst = await selectOnlyLegendCategory(page, cats[0]);
+      expect(onlyFirst.clicked).toBe(true);
+      expect(onlyFirst.opacity).toBeGreaterThanOrEqual(1);
+      expect(onlyFirst.active).toBe(true);
+      const exclusiveSnap = await legendSnapshot(page);
+      expect(exclusiveSnap.filter((it) => it.opacity >= 1).map((it) => it.name)).toEqual([cats[0]]);
+      expect(exclusiveSnap.find((it) => it.name === cats[2])!.opacity).toBeLessThan(1);
 
-    const onlyFirst = await selectOnlyLegendCategory(page, cats[0]);
-    expect(onlyFirst.clicked).toBe(true);
-    expect(onlyFirst.opacity).toBeGreaterThanOrEqual(1);
-    expect(onlyFirst.active).toBe(true);
-    const exclusiveSnap = await legendSnapshot(page);
-    expect(exclusiveSnap.filter((it) => it.opacity >= 1).map((it) => it.name)).toEqual([cats[0]]);
-    expect(exclusiveSnap.find((it) => it.name === cats[2])!.opacity).toBeLessThan(1);
+      expect(await resetLegendViaLastCross(page, cats[0])).toBe(true);
+      const resetSnap = await legendSnapshot(page);
+      expect(resetSnap.length).toBe(cats.length);
+      expect(resetSnap.every((it) => it.opacity >= 1)).toBe(true);
+      expect(resetSnap.some((it) => it.current)).toBe(false);
 
-    expect(await resetLegendViaLastCross(page, cats[0])).toBe(true);
-    const resetSnap = await legendSnapshot(page);
-    expect(resetSnap.length).toBe(cats.length);
-    expect(resetSnap.every((it) => it.opacity >= 1)).toBe(true);
-    expect(resetSnap.some((it) => it.current)).toBe(false);
-
-    const afterRecheck = await showAllCategoriesState(page);
-    console.log(`[Legend] showAllCategories after exclusive select + reset = ${afterRecheck}`);
-    expect(afterRecheck).toBe(true);
-    expect(consoleErrors.length).toBe(errBeforeSeq);
-    expect(pageErrors.length).toBe(pageErrBeforeSeq);
-   } finally {
-
-    await page.evaluate(async () => {
-      try {
-        const tp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Trellis plot') as any;
-        tp.props.legendVisibility = 'Never';
-        await new Promise((r) => setTimeout(r, 400));
-      } catch (_) {  }
-    });
-    await restoreCanonical();
-   }
-  });
-
-  await softStep('Context menu', async () => {
-    const result = await page.evaluate(async () => {
-      const w = window as any;
-      const tp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Trellis plot') as any;
-      tp.props.viewerType = 'Scatter plot';
-      await w.__quiet('viewer:Trellis plot.onViewerRendered', 300, 800);
-      const root = document.querySelector('[name="viewer-Trellis-plot"]') as HTMLElement;
-      const cell = root.querySelectorAll('.d4-trellis-plot-cell')[0];
-      const r = cell.getBoundingClientRect();
-      cell.dispatchEvent(new MouseEvent('contextmenu', {bubbles: true, cancelable: true, button: 2, clientX: r.left + r.width / 2, clientY: r.top + r.height / 2}));
-      // settle on the context menu popup attaching, capped
-      await w.__poll(() => document.querySelector('.d4-menu-popup .d4-menu-item-label'),
-        (e: Element | null) => !!e, 900, 40);
-
-      const labels = Array.from(document.querySelectorAll('.d4-menu-item-label')).map((el) => (el as HTMLElement).textContent?.trim());
-      document.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true}));
-      return {
-        hasInnerGroup: labels.includes('Scatter plot'),
-        hasProperties: labels.includes('Properties...'),
-
-        hasLasso: labels.includes('Lasso Tool'),
-        hasRegression: labels.includes('Show Regression Line'),
-      };
-    });
-
-    expect(result.hasInnerGroup).toBe(true);
-    expect(result.hasProperties).toBe(true);
-    expect(result.hasLasso).toBe(true);
-    expect(result.hasRegression).toBe(true);
-  });
-
-  await softStep('Inner viewer properties', async () => {
-   try {
-
-    await page.evaluate(async () => {
-      const tp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Trellis plot') as any;
-      tp.props.viewerType = 'Scatter plot';
-      tp.props.xColumnNames = ['SEX'];
-      tp.props.yColumnNames = ['RACE'];
-      tp.setOptions({innerViewerLook: {xColumnName: 'WEIGHT', yColumnName: 'HEIGHT'}});
-      await (window as any).__quiet('viewer:Trellis plot.onViewerRendered', 300, 1200);
-    });
-
-    await v.openViewerGear(page, 'Trellis plot');
-    await page.locator('.property-grid').first().waitFor({timeout: 10000});
-
-    const tabs = await page.evaluate(() => ({
-      hasTrellisTab: !!document.querySelector('.d4-tab-header[name="Trellis"]'),
-      hasInnerTab: !!document.querySelector('.d4-tab-header[name="Scatter plot"]'),
-    }));
-    expect(tabs.hasTrellisTab).toBe(true);
-    expect(tabs.hasInnerTab).toBe(true);
-
-    const idxs = await page.evaluate(() => {
-      const root = document.querySelector('[name="viewer-Trellis-plot"]') as HTMLElement;
-      const cells = root.querySelectorAll('.d4-trellis-plot-cell');
-      const out: number[] = [];
-      for (let i = 0; i < cells.length && out.length < 2; i++) if (cells[i].querySelector('canvas')) out.push(i);
-      return out;
-    });
-    const before = await v.trellisCellHashes(page, idxs);
-    const after = await page.evaluate(async () => {
-      const tp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Trellis plot') as any;
-      await (window as any).__settled('viewer:Trellis plot.onViewerRendered',
-        () => tp.setOptions({innerViewerLook: {xColumnName: 'AGE', yColumnName: 'WEIGHT'}}), 1500);
-      await (window as any).__quiet('viewer:Trellis plot.onViewerRendered', 300, 1500);
-      return {type: tp.props.viewerType};
-    });
-    const afterHashes = await v.trellisCellHashes(page, idxs);
-    expect(after.type).toBe('Scatter plot');
-    expect(idxs.length).toBeGreaterThan(0);
-    for (let i = 0; i < idxs.length; i++) {
-      expect(before[i]).not.toBeNull();
-      expect(afterHashes[i]).not.toBeNull();
-      expect(afterHashes[i]).not.toBe(before[i]);
+      const afterRecheck = await showAllCategoriesState(page);
+      console.log(`[Legend] showAllCategories after exclusive select + reset = ${afterRecheck}`);
+      expect(afterRecheck).toBe(true);
+      expect(ctx.consoleErrors.length).toBe(errBeforeSeq);
+      expect(ctx.pageErrors.length).toBe(pageErrBeforeSeq);
+    } finally {
+      await page.evaluate(() => (window as any).__tpRendered(() => { (window as any).__tp().props.legendVisibility = 'Never'; }, 400)).catch(() => {});
+      await restoreCanonical(page);
     }
-   } finally {
-    await restoreCanonical();
-   }
   });
+
+  await tearDown(page, ctx);
+});
+
+test('Trellis plot — Use in Trellis, Pick Up / Apply', async ({page}) => {
+  test.setTimeout(240_000);
+  const ctx = await setUp(page);
 
   await softStep('Use in Trellis', async () => {
-
     try {
-
       await page.evaluate(async () => {
         const w = window as any;
-        const tp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Trellis plot') as any;
+        const tp = w.__tp();
         if (tp) tp.close();
         await w.__poll(() => document.querySelector('[name="viewer-Trellis-plot"]'), (e: Element | null) => !e, 600, 40);
         const sp = grok.shell.tv.addViewer('Scatter plot') as any;
         sp.setOptions({xColumnName: 'AGE', yColumnName: 'HEIGHT', colorColumnName: 'SEX'});
-        // settle on the scatter plot attaching, capped
         await w.__poll(() => document.querySelector('[name="viewer-Scatter-plot"]'), (e: Element | null) => !!e, 1200, 60);
       });
       await page.locator('[name="viewer-Scatter-plot"]').first().click({button: 'right'});
       await clickMenuItemInGroup(page, 'General', 'Use in Trellis');
       const scatterResult = await page.evaluate(async () => {
         const w = window as any;
-        let newTp: any = null;
-        for (let i = 0; i < 40 && !newTp; i++) {
-          newTp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Trellis plot');
-          if (!newTp) await new Promise((res) => setTimeout(res, 250));
-        }
-        // settle on the new trellis finishing its first paint, capped
+        const newTp = await w.__poll(w.__tp, (t: any) => !!t, 10000, 100);
         await w.__quiet('viewer:Trellis plot.onViewerRendered', 300, 800);
 
         let ivl: any = null;
@@ -1775,11 +2095,7 @@ test('Trellis plot tests', async ({page}) => {
         await clickMenuItemInGroup(page, 'General', 'Use in Trellis');
         return page.evaluate(async (viewerType) => {
           const w = window as any;
-          let newTp: any = null;
-          for (let i = 0; i < 40 && !newTp; i++) {
-            newTp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Trellis plot');
-            if (!newTp) await new Promise((res) => setTimeout(res, 250));
-          }
+          const newTp = await w.__poll(w.__tp, (t: any) => !!t, 10000, 100);
           await w.__quiet('viewer:Trellis plot.onViewerRendered', 300, 800);
           const innerType = newTp?.props.viewerType;
           for (const vw of Array.from(grok.shell.tv.viewers) as any[]) if (vw.type === viewerType) vw.close();
@@ -1803,717 +2119,116 @@ test('Trellis plot tests', async ({page}) => {
       expect(boxResult.trellisCreated).toBe(true);
       expect(boxResult.innerType).toBe('Box plot');
     } finally {
-
       await page.keyboard.press('Escape').catch(() => {});
-      await restoreCanonical();
+      await restoreCanonical(page);
     }
-  });
-
-  await softStep('Auto layout', async () => {
-   try {
-
-    await page.evaluate(async () => {
-      const tp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Trellis plot') as any;
-      tp.props.autoLayout = true;
-      tp.props.showXLabels = true;
-      tp.props.showYLabels = true;
-      await (window as any).__quiet('viewer:Trellis plot.onViewerRendered', 300, 600);
-    });
-    const vsVisible = () => page.evaluate(() => {
-      const root = document.querySelector('[name="viewer-Trellis-plot"]') as HTMLElement;
-      const el = root?.querySelector('[name="viewer selector"]') as HTMLElement | null;
-      if (!el) return false;
-      const b = el.getBoundingClientRect();
-      return b.width > 0 && b.height > 0;
-    });
-    const viewerWidth = () => page.evaluate(() => {
-      const root = document.querySelector('[name="viewer-Trellis-plot"]') as HTMLElement | null;
-      return root ? Math.round(root.getBoundingClientRect().width) : -1;
-    });
-
-    const cards = await page.evaluate(() => {
-      const df = grok.shell.tv.dataFrame;
-      return {sex: df.col('SEX').categories.length, race: df.col('RACE').categories.length};
-    });
-    const expectedX = axisViewportCount(cards.sex, false);
-    const expectedY = axisViewportCount(cards.race, false);
-
-    expect(await vsVisible()).toBe(true);
-    const wideLabels = await categoryLabels(page);
-    expect(wideLabels.x.length).toBe(expectedX);
-    expect(wideLabels.y.length).toBe(expectedY);
-
-    await page.setViewportSize({width: 500, height: 400});
-
-    await page.waitForFunction(() => {
-      const root = document.querySelector('[name="viewer-Trellis-plot"]') as HTMLElement | null;
-      if (!root) return false;
-      return Array.from(root.querySelectorAll('.d4-trellis-plot-cat-item-horz'))
-        .filter((n) => n.tagName.toLowerCase() === 'text').length === 0;
-    }, null, {timeout: 1500}).catch(() => {});
-    const smallVisible = await vsVisible();
-    const smallLabels = await categoryLabels(page);
-    expect(smallVisible).toBe(false);
-    expect(smallLabels.x.length).toBe(0);
-    expect(smallLabels.y.length).toBe(0);
-
-    await page.setViewportSize({width: 1920, height: 1080});
-
-    await page.waitForFunction((n) => {
-      const root = document.querySelector('[name="viewer-Trellis-plot"]') as HTMLElement | null;
-      if (!root) return false;
-      return Array.from(root.querySelectorAll('.d4-trellis-plot-cat-item-horz'))
-        .filter((el) => el.tagName.toLowerCase() === 'text').length === n;
-    }, expectedX, {timeout: 1500}).catch(() => {});
-    const largeVisible = await vsVisible();
-    const restoredLabels = await categoryLabels(page);
-    expect(largeVisible).toBe(true);
-    expect(restoredLabels.x.length).toBe(expectedX);
-    expect(restoredLabels.y.length).toBe(expectedY);
-
-    // The band search keeps HEAD's fixed settles: waitForViewerRendered returns before the
-    // resize relayout finishes, so an event-waited probe reads an intermediate viewer width
-    // and the ~20px band is never observed. Measured 2026-08-31 (2/8 passes event-waited).
-    const wideWidth = await viewerWidth();
-    await page.setViewportSize({width: 1420, height: 1080});
-
-    await page.waitForTimeout(1200);
-    const midWidth = await viewerWidth();
-    const slope = Math.max((wideWidth - midWidth) / 500, 0.05);
-
-    console.log(`[Auto layout] band calibration: wideWidth=${wideWidth} midWidth=${midWidth} slope=${slope.toFixed(3)}`);
-    let band: {window: number; viewer: number; x: number; y: number} | null = null;
-    for (let target = 235; target >= 150 && !band; target -= 5) {
-      const win = Math.round(Math.min(1900, Math.max(420, 1420 - (midWidth - target) / slope)));
-      await page.setViewportSize({width: win, height: 1080});
-
-      await page.waitForTimeout(1000);
-      const seen = await categoryLabels(page);
-      console.log(`[Auto layout] band probe: targetViewer=${target} window=${win} viewer=${await viewerWidth()} ` +
-        `x=${seen.x.length} y=${seen.y.length}`);
-      if (seen.x.length > 0 || seen.y.length === 0) continue;
-
-      await page.waitForTimeout(900);
-      const confirmed = await categoryLabels(page);
-      console.log(`[Auto layout] band candidate re-read: window=${win} viewer=${await viewerWidth()} ` +
-        `x=${confirmed.x.length} y=${confirmed.y.length}`);
-      if (confirmed.x.length === 0 && confirmed.y.length > 0)
-        band = {window: win, viewer: await viewerWidth(), x: confirmed.x.length, y: confirmed.y.length};
-    }
-    console.log(`[Auto layout] band search finished: ${JSON.stringify(band)}`);
-    expect(band).not.toBeNull();
-    expect(band!.x).toBe(0);
-    expect(band!.y).toBe(expectedY);
-
-    await page.setViewportSize({width: 1920, height: 1080});
-    await v.waitForViewerRendered(page, 'Trellis plot', 1200);
-
-    await page.evaluate(async () => {
-      const tp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Trellis plot') as any;
-      tp.props.autoLayout = false;
-      await new Promise((r) => setTimeout(r, 500));
-    });
-    await page.setViewportSize({width: 500, height: 400});
-
-    await page.waitForFunction((n) => {
-      const root = document.querySelector('[name="viewer-Trellis-plot"]') as HTMLElement | null;
-      if (!root) return false;
-      return Array.from(root.querySelectorAll('.d4-trellis-plot-cat-item-horz'))
-        .filter((el) => el.tagName.toLowerCase() === 'text').length === n;
-    }, expectedX, {timeout: 1500}).catch(() => {});
-    const offSmallVisible = await vsVisible();
-    const offSmallLabels = await categoryLabels(page);
-    expect(offSmallVisible).toBe(true);
-    expect(offSmallLabels.x.length).toBe(expectedX);
-    expect(offSmallLabels.y.length).toBe(expectedY);
-   } finally {
-
-    await page.setViewportSize({width: 1920, height: 1080});
-    await v.waitForViewerRendered(page, 'Trellis plot', 1000);
-    await page.evaluate(async () => {
-      const tp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Trellis plot') as any;
-      if (tp) {
-        tp.props.autoLayout = true;
-        tp.props.showXLabels = true;
-        tp.props.showYLabels = true;
-      }
-      await new Promise((r) => setTimeout(r, 500));
-    });
-   }
-  });
-
-  await softStep('Title and description', async () => {
-   try {
-
-    const titleShown = (text: string) => page.evaluate((t) => {
-      const root = document.querySelector('[name="viewer-Trellis-plot"]') as HTMLElement | null;
-      if (!root) return false;
-      const el = root.querySelector('.d4-viewer-title') as HTMLElement | null;
-      if (el) {
-        const editor = el.querySelector('textarea, input') as HTMLInputElement | null;
-        const shown = ((editor ? editor.value : el.textContent) ?? '').trim();
-        return shown === t && el.getBoundingClientRect().height > 0;
-      }
-      return Array.from(root.querySelectorAll('*')).some((n) =>
-        n.children.length === 0 && (n.textContent ?? '').trim() === t);
-    }, text);
-    const descriptionSlot = () => page.evaluate(() => {
-      const root = document.querySelector('[name="viewer-Trellis-plot"]') as HTMLElement | null;
-      const el = root?.querySelector('.d4-viewer-description');
-      const side = el && el.closest('.d4-layout-left, .d4-layout-right, .d4-layout-top, .d4-layout-bottom');
-      if (!side) return null;
-      return ['left', 'right', 'top', 'bottom'].find((s) => side.classList.contains(`d4-layout-${s}`)) ?? null;
-    });
-
-    await page.evaluate(async () => {
-      const tp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Trellis plot') as any;
-      tp.props.showTitle = true;
-      tp.props.title = 'My Trellis';
-      tp.props.description = 'Test description';
-      await (window as any).__quiet('viewer:Trellis plot.onViewerRendered', 300, 1500);
-    });
-    expect(await titleShown('My Trellis')).toBe(true);
-
-    const slots: (string | null)[] = [];
-    for (const pos of ['Bottom', 'Top', 'Left', 'Right']) {
-      await page.evaluate(async (p) => {
-        const tp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Trellis plot') as any;
-        tp.props.descriptionPosition = p;
-        await (window as any).__quiet('viewer:Trellis plot.onViewerRendered', 300, 1200);
-      }, pos);
-      slots.push(await descriptionSlot());
-    }
-    expect(slots).toEqual(['bottom', 'top', 'left', 'right']);
-
-    await page.evaluate(async () => {
-      const tp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Trellis plot') as any;
-      tp.props.showTitle = false;
-      await (window as any).__quiet('viewer:Trellis plot.onViewerRendered', 300, 1200);
-    });
-    expect(await titleShown('My Trellis')).toBe(false);
-   } finally {
-    await page.evaluate(async () => {
-      const tp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Trellis plot') as any;
-      try {
-        tp.props.description = '';
-        tp.props.title = '';
-        tp.props.showTitle = false;
-        await (window as any).__quiet('viewer:Trellis plot.onViewerRendered', 300, 600);
-      } catch (_) {  }
-    });
-   }
-  });
-
-  await softStep('Label orientation', async () => {
-   try {
-
-    await page.evaluate(async () => {
-      const tp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Trellis plot') as any;
-      tp.props.xColumnNames = ['RACE'];
-      tp.props.yColumnNames = ['SEX'];
-      tp.props.showXLabels = true;
-      tp.props.showYLabels = true;
-      await (window as any).__quiet('viewer:Trellis plot.onViewerRendered', 300, 1800);
-    });
-    const setOrientation = async (axis: 'x' | 'y', value: string) => {
-      await page.evaluate(async (o) => {
-        const tp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Trellis plot') as any;
-        if (o.axis === 'x') tp.props.xLabelsOrientation = o.value;
-        else tp.props.yLabelsOrientation = o.value;
-        await (window as any).__quiet('viewer:Trellis plot.onViewerRendered', 300, 1500);
-      }, {axis, value});
-      return categoryLabels(page);
-    };
-
-    const xHorz = await setOrientation('x', 'Horz');
-    expect(xHorz.xAngles.length).toBeGreaterThan(0);
-    expect(xHorz.xAngles.every((a) => a === 0)).toBe(true);
-    const xVert = await setOrientation('x', 'Vert');
-    expect(xVert.xAngles.length).toBeGreaterThan(0);
-    expect(xVert.xAngles.every((a) => a === -90)).toBe(true);
-
-    const yHorz = await setOrientation('y', 'Horz');
-    expect(yHorz.yAngles.length).toBeGreaterThan(0);
-    expect(yHorz.yAngles.every((a) => a === 0)).toBe(true);
-    const yVert = await setOrientation('y', 'Vert');
-    expect(yVert.yAngles.length).toBeGreaterThan(0);
-    expect(yVert.yAngles.every((a) => a === -90)).toBe(true);
-
-    const xAuto = await setOrientation('x', 'Auto');
-    expect(xAuto.xAngles.length).toBeGreaterThan(0);
-    expect(xAuto.xAngles.every((a) => a === 0 || a === -90)).toBe(true);
-    const yAuto = await setOrientation('y', 'Auto');
-    expect(yAuto.yAngles.length).toBeGreaterThan(0);
-    expect(yAuto.yAngles.every((a) => a === 0 || a === -90)).toBe(true);
-   } finally {
-    await restoreCanonical();
-   }
   });
 
   await softStep('Pick Up / Apply', async () => {
-   try {
-
-    await page.evaluate(async () => {
-      const tp1 = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Trellis plot') as any;
-      grok.shell.tv.addViewer('Trellis plot');
-      await (window as any).__quiet('viewer:Trellis plot.onViewerRendered', 300, 1200);
-
-      tp1.props.yColumnNames = ['RACE'];
-      tp1.props.viewerType = 'Bar chart';
-      tp1.setOptions({innerViewerLook: {splitColumnName: 'RACE', valueColumnName: 'AGE'}});
-      tp1.props.legendVisibility = 'Always';
-      tp1.props.legendPosition = 'Top';
-      tp1.props.showTitle = true;
-      tp1.props.title = 'First Trellis';
-      await (window as any).__quiet('viewer:Trellis plot.onViewerRendered', 300, 1000);
-    });
-
-    const trellisCell = (n: number) => page.locator('[name="viewer-Trellis-plot"]').nth(n).locator('.d4-trellis-plot-cell').first();
-    await trellisCell(0).click({button: 'right', position: {x: 6, y: 6}});
-    await clickMenuItemInGroup(page, 'Pick Up / Apply', 'Pick Up');
-    // the picked-up look is held in memory; settle on the menu closing before re-opening it
-    await page.locator('.d4-menu-popup').last().waitFor({state: 'detached', timeout: 800}).catch(() => {});
-    await trellisCell(1).click({button: 'right', position: {x: 6, y: 6}});
-    await clickMenuItemInGroup(page, 'Pick Up / Apply', 'Apply');
-    await v.waitForViewerRendered(page, 'Trellis plot', 900);
-
-    const result: any = await page.evaluate(async () => {
-      const tps = Array.from(grok.shell.tv.viewers).filter((v: any) => v.type === 'Trellis plot') as any[];
-      const applied = {type: tps[1]?.props.viewerType, title: tps[1]?.props.title, legendPos: tps[1]?.props.legendPosition,
-        x: [...(tps[1]?.props.xColumnNames ?? [])], y: [...(tps[1]?.props.yColumnNames ?? [])]};
-      const source = {x: [...tps[0].props.xColumnNames], y: [...tps[0].props.yColumnNames]};
-
-      const tp2TypeBefore = tps[1]?.props.viewerType;
-      tps[0].props.xColumnNames = ['CONTROL'];
-      await (window as any).__quiet('viewer:Trellis plot.onViewerRendered', 300, 1000);
-      const tp2XAfterFirstChange = [...tps[1].props.xColumnNames];
-      const tp2Independent = tps[1]?.props.viewerType === tp2TypeBefore;
-
-      return {applied, source, tp2XAfterFirstChange, tp2Independent};
-    });
-    expect(result.applied.type).toBe('Bar chart');
-    expect(result.applied.title).toBe('First Trellis');
-    expect(result.applied.legendPos).toBe('Top');
-    expect(result.applied.x).toEqual(result.source.x);
-    expect(result.applied.y).toEqual(result.source.y);
-    expect(result.tp2Independent).toBe(true);
-    expect(result.tp2XAfterFirstChange).not.toContain('CONTROL');
-
-    const step8Setup = await page.evaluate(async () => {
-      const tps = Array.from(grok.shell.tv.viewers).filter((v: any) => v.type === 'Trellis plot') as any[];
-      const tp1 = tps[0], tp2 = tps[1];
-      tp1.props.viewerType = 'Scatter plot';
-      tp1.props.xColumnNames = ['SEX'];
-      tp1.props.yColumnNames = ['RACE'];
-
-      tp2.props.viewerType = 'Scatter plot';
-      tp2.props.xColumnNames = ['SEX'];
-      tp2.props.yColumnNames = ['RACE'];
-      tp2.setOptions({innerViewerLook: {xColumnName: 'WEIGHT', yColumnName: 'HEIGHT'}});
-      tp2.props.globalScale = true;
-      tp2.props.showRangeSliders = true;
-      tp2.props.showXAxes = 'Always';
-      await (window as any).__quiet('viewer:Trellis plot.onViewerRendered', 300, 2200);
-      const root2 = document.querySelectorAll('[name="viewer-Trellis-plot"]')[1] as HTMLElement;
-      const innerX = root2.querySelector('.d4-range-selector > svg[type="range-slider"][name="x-slider"]') as SVGElement | null;
-      let box: {x: number; y: number; w: number; h: number} | null = null;
-      if (innerX) {
-        const wrap = innerX.closest('.d4-range-selector') as HTMLElement;
-        const wb = wrap.getBoundingClientRect();
-        wrap.dispatchEvent(new MouseEvent('mousemove', {bubbles: true, clientX: wb.left + wb.width / 2, clientY: wb.top + wb.height / 2}));
-        await new Promise((r) => setTimeout(r, 200));
-        const b = innerX.getBoundingClientRect();
-        box = {x: b.x, y: b.y, w: b.width, h: b.height};
-      }
-      return {box, look1: JSON.stringify(tp1.getOptions(true)?.look ?? null)};
-    });
-    const setupHash1 = await v.trellisAllCellHashes(page, {rootIndex: 0});
-    const setupHash2 = await v.trellisAllCellHashes(page, {rootIndex: 1});
-    expect(step8Setup.box).not.toBeNull();
-    expect(step8Setup.box!.w).toBeGreaterThan(0);
-    await page.mouse.move(step8Setup.box!.x + step8Setup.box!.w - 4, step8Setup.box!.y + step8Setup.box!.h / 2);
-    await page.mouse.down();
-    await page.mouse.move(step8Setup.box!.x + step8Setup.box!.w * 0.45, step8Setup.box!.y + step8Setup.box!.h / 2, {steps: 12});
-    await page.mouse.up();
-
-    await v.waitForViewerRendered(page, 'Trellis plot', 1500);
-    const afterHash1 = await v.trellisAllCellHashes(page, {rootIndex: 0});
-    const afterHash2 = await v.trellisAllCellHashes(page, {rootIndex: 1});
-    const step8After = {
-      hash1: afterHash1,
-      hash2: afterHash2,
-      look1: await page.evaluate(() => {
-        const tps = Array.from(grok.shell.tv.viewers).filter((v: any) => v.type === 'Trellis plot') as any[];
-        return JSON.stringify(tps[0].getOptions(true)?.look ?? null);
-      }),
-    };
-    const setupHashes = {hash1: setupHash1, hash2: setupHash2, look1: step8Setup.look1};
-    const secondChanged = setupHashes.hash2.some((h, i) => h !== null && step8After.hash2[i] !== null && h !== step8After.hash2[i]);
-    expect(secondChanged).toBe(true);
-
-    const comparable1 = setupHashes.hash1.filter((h, i) => h !== null && step8After.hash1[i] !== null).length;
-    const firstMoved = setupHashes.hash1
-      .map((h, i) => (h !== null && step8After.hash1[i] !== null && h !== step8After.hash1[i] ? i : -1))
-      .filter((i) => i >= 0);
-    expect(comparable1).toBeGreaterThan(0);
-    expect(firstMoved).toEqual([]);
-
-    expect(step8After.look1).toBe(setupHashes.look1);
-   } finally {
-
-    await restoreCanonical();
-   }
-  });
-
-  await softStep('Layout and Project save/restore', async () => {
-   try {
-
-    const result = await page.evaluate(async () => {
-      const r: any = {};
-      const layout = grok.shell.tv.saveLayout();
-      await grok.dapi.layouts.save(layout);
-      const layoutId = layout.id;
-      r.viewersAtSave = Array.from(grok.shell.tv.viewers).map((v: any) => v.type).sort();
-
-      const beforeAddCount = grok.shell.tv.viewers.length;
-      grok.shell.tv.addViewer('Histogram');
-      grok.shell.tv.addViewer('Bar chart');
-      // settle on both viewers actually attaching, capped — not a blind 1200ms
-      await (window as any).__poll(() => grok.shell.tv.viewers.length,
-        (n: number) => n >= beforeAddCount + 2, 1200, 60);
-      r.viewersBefore = Array.from(grok.shell.tv.viewers).map((v: any) => v.type).sort();
-
-      const saved = await grok.dapi.layouts.find(layoutId);
-
-      const applied = new Promise<void>((res) => {
-        let sub: any = null;
-        try { sub = grok.events.onViewLayoutApplied.subscribe(() => { sub.unsubscribe(); res(); }); }
-        catch (_) {  }
-        setTimeout(() => { try { sub?.unsubscribe(); } catch (_) {} res(); }, 3000);
+    try {
+      await page.evaluate(async () => {
+        const w = window as any;
+        const tp1 = w.__tp();
+        await w.__settled('grok.events.onViewerAdded', () => grok.shell.tv.addViewer('Trellis plot'), 1200);
+        await w.__poll(() => document.querySelectorAll('[name="viewer-Trellis-plot"]').length, (n: number) => n === 2, 1200, 40);
+        await w.__tpApply(() => {
+          tp1.props.yColumnNames = ['RACE'];
+          tp1.props.viewerType = 'Bar chart';
+          tp1.setOptions({innerViewerLook: {splitColumnName: 'RACE', valueColumnName: 'AGE'}});
+          tp1.props.legendVisibility = 'Always';
+          tp1.props.legendPosition = 'Top';
+          tp1.props.showTitle = true;
+          tp1.props.title = 'First Trellis';
+        }, () => document.querySelectorAll('[name="viewer-Trellis-plot"] .d4-trellis-plot-cell').length, 1000, tp1);
       });
-      grok.shell.tv.loadLayout(saved);
-      await applied;
-      r.viewersAfter = Array.from(grok.shell.tv.viewers).map((v: any) => v.type).sort();
 
-      await grok.dapi.layouts.delete(saved);
-      return r;
-    });
-    expect(result.viewersBefore.length).toBeGreaterThan(result.viewersAfter.length);
-    expect(result.viewersAfter).toEqual(result.viewersAtSave);
-    expect(result.viewersAfter).toContain('Trellis plot');
+      const trellisCell = (n: number) => page.locator('[name="viewer-Trellis-plot"]').nth(n).locator('.d4-trellis-plot-cell').first();
+      await trellisCell(0).click({button: 'right', position: {x: 6, y: 6}});
+      await clickMenuItemInGroup(page, 'Pick Up / Apply', 'Pick Up');
+      await page.locator('.d4-menu-popup').last().waitFor({state: 'detached', timeout: 800}).catch(() => {});
+      await trellisCell(1).click({button: 'right', position: {x: 6, y: 6}});
+      const tp2Type = () => page.evaluate(() => {
+        const tps = Array.from(grok.shell.tv.viewers).filter((x: any) => x.type === 'Trellis plot') as any[];
+        return tps[1]?.props.viewerType ?? null;
+      });
+      await clickMenuItemInGroup(page, 'Pick Up / Apply', 'Apply');
+      await v.pollValue(tp2Type, (t) => t === 'Bar chart', 900, 50);
 
-    const errBeforeSave = consoleErrors.length;
-    const pageErrBeforeSave = pageErrors.length;
-    const saveBtn = page.locator('[name="button-Save"]').first();
-    await saveBtn.waitFor({state: 'visible', timeout: 15000});
-    await saveBtn.click();
+      const result: any = await page.evaluate(async () => {
+        const w = window as any;
+        const tps = Array.from(grok.shell.tv.viewers).filter((x: any) => x.type === 'Trellis plot') as any[];
+        const applied = {type: tps[1]?.props.viewerType, title: tps[1]?.props.title, legendPos: tps[1]?.props.legendPosition,
+          x: [...(tps[1]?.props.xColumnNames ?? [])], y: [...(tps[1]?.props.yColumnNames ?? [])]};
+        const source = {x: [...tps[0].props.xColumnNames], y: [...tps[0].props.yColumnNames]};
 
-    await page.locator('.d4-dialog').first().waitFor({state: 'visible', timeout: 2000}).catch(() => {});
-    const dialogOpen = await page.evaluate(() => !!document.querySelector('.d4-dialog'));
-    const errAfterSave = consoleErrors.length;
-    const pageErrAfterSave = pageErrors.length;
+        const tp2TypeBefore = tps[1]?.props.viewerType;
+        await w.__tpApply(() => { tps[0].props.xColumnNames = ['CONTROL']; },
+          () => tps[0].root.querySelectorAll('.d4-trellis-plot-cell').length, 1000, tps[0]);
+        const tp2XAfterFirstChange = [...tps[1].props.xColumnNames];
+        const tp2Independent = tps[1]?.props.viewerType === tp2TypeBefore;
 
-    await page.locator('[name="button-CANCEL"]').first().click({timeout: 5000}).catch(() => {});
-    await page.locator('.d4-dialog').first().waitFor({state: 'detached', timeout: 500}).catch(() => {});
-    expect(dialogOpen).toBe(true);
-    expect(errAfterSave).toBe(errBeforeSave);
-    expect(pageErrAfterSave).toBe(pageErrBeforeSave);
-   } finally {
+        return {applied, source, tp2XAfterFirstChange, tp2Independent};
+      });
+      expect(result.applied.type).toBe('Bar chart');
+      expect(result.applied.title).toBe('First Trellis');
+      expect(result.applied.legendPos).toBe('Top');
+      expect(result.applied.x).toEqual(result.source.x);
+      expect(result.applied.y).toEqual(result.source.y);
+      expect(result.tp2Independent).toBe(true);
+      expect(result.tp2XAfterFirstChange).not.toContain('CONTROL');
 
-    await restoreCanonical();
-   }
-  });
+      const step8Setup = await page.evaluate(async () => {
+        const w = window as any;
+        const tps = Array.from(grok.shell.tv.viewers).filter((x: any) => x.type === 'Trellis plot') as any[];
+        const tp1 = tps[0], tp2 = tps[1];
+        await w.__tpApply(() => {
+          tp1.props.viewerType = 'Scatter plot';
+          tp1.props.xColumnNames = ['SEX'];
+          tp1.props.yColumnNames = ['RACE'];
+        }, () => tp1.root.querySelectorAll('.d4-trellis-plot-cell').length, 1500, tp1);
+        const root2 = tp2.root as HTMLElement;
+        await w.__tpApply(() => {
+          tp2.props.viewerType = 'Scatter plot';
+          tp2.props.xColumnNames = ['SEX'];
+          tp2.props.yColumnNames = ['RACE'];
+          tp2.setOptions({innerViewerLook: {xColumnName: 'WEIGHT', yColumnName: 'HEIGHT'}});
+          tp2.props.globalScale = true;
+          tp2.props.showRangeSliders = true;
+          tp2.props.showXAxes = 'Always';
+        }, () => root2.querySelectorAll('.d4-range-selector > svg[type="range-slider"]').length, 2200, tp2);
+        return {look1: JSON.stringify(tp1.getOptions(true)?.look ?? null)};
+      });
+      const setupHash1 = await v.trellisAllCellHashes(page, {rootIndex: 0});
+      const setupHash2 = await v.trellisAllCellHashes(page, {rootIndex: 1});
+      expect(await dragInnerRangeSlider(page, 'x', 1)).toBe(true);
 
-  await softStep('Viewer filter formula', async () => {
-
-    const result = await page.evaluate(async () => {
-      const tp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Trellis plot') as any;
-      const df = grok.shell.tv.dataFrame;
-      df.filter.setAll(true); df.rows.requestFilter();
-      await new Promise((r) => setTimeout(r, 500));
-      const dfBefore = df.filter.trueCount;
-      const r: any[] = [];
-      tp.props.filter = '${AGE} > 40';
-      await (window as any).__quiet('viewer:Trellis plot.onViewerRendered', 300, 600);
-      r.push({filter: tp.props.filter, dfCount: df.filter.trueCount});
-      tp.props.filter = '';
-      await (window as any).__quiet('viewer:Trellis plot.onViewerRendered', 300, 600);
-      r.push({filter: tp.props.filter, dfCount: df.filter.trueCount});
-      return {r, dfBefore};
-    });
-    expect(result.r[0].filter).toBe('${AGE} > 40');
-    expect(result.r[1].filter).toBe('');
-    expect(result.r[0].dfCount).toBe(result.dfBefore);
-  });
-
-  await softStep('Multi Curve inner viewer', async () => {
-    const result = await page.evaluate(async (cPath) => {
-
-      const hasSexRace = (view: any) => { try { const df = view.dataFrame; return !!(df && df.col('SEX') && df.col('RACE')); } catch { return false; } };
-      const hasTrellis = (view: any) => { try { return Array.from(view.viewers ?? []).some((x: any) => x.type === 'Trellis plot'); } catch { return false; } };
-      const anchorDemog = (): any => {
-        const views = Array.from(grok.shell.views ?? []) as any[];
-        const withTrellis = views.find((v) => hasSexRace(v) && hasTrellis(v));
-        const target = withTrellis ?? views.find(hasSexRace);
-        if (target) { grok.shell.v = target; return target; }
-        return grok.shell.tv;
+      const afterHash2 = await v.pollValue(() => v.trellisAllCellHashes(page, {rootIndex: 1}),
+        (h) => setupHash2.some((s, i) => s !== null && h[i] !== null && s !== h[i]), 1500, 50);
+      const afterHash1 = await v.trellisAllCellHashes(page, {rootIndex: 0});
+      const step8After = {
+        hash1: afterHash1,
+        hash2: afterHash2,
+        look1: await page.evaluate(() => {
+          const tps = Array.from(grok.shell.tv.viewers).filter((x: any) => x.type === 'Trellis plot') as any[];
+          return JSON.stringify(tps[0].getOptions(true)?.look ?? null);
+        }),
       };
-      const w = window as any;
-      const settle = (cap: number) => w.__quiet('viewer:Trellis plot.onViewerRendered', 300, cap);
-      const demogView = anchorDemog();
-      await settle(600);
-      const demogName = grok.shell.tv.dataFrame.name;
-      const tp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Trellis plot') as any;
-      if (!tp) return {error: 'Trellis plot not found on demog view'};
-      tp.props.viewerType = 'Scatter plot';
-      tp.props.xColumnNames = ['SEX'];
-      tp.props.yColumnNames = ['RACE'];
-      await settle(1200);
+      const setupHashes = {hash1: setupHash1, hash2: setupHash2, look1: step8Setup.look1};
+      const secondChanged = setupHashes.hash2.some((h, i) => h !== null && step8After.hash2[i] !== null && h !== step8After.hash2[i]);
+      expect(secondChanged).toBe(true);
 
-      const dfCurves = await grok.dapi.files.readCsv(cPath);
-      grok.shell.addTableView(dfCurves);
-      // settle on the new grid attaching, capped
-      await w.__poll(() => document.querySelector('.d4-grid[name="viewer-Grid"]'),
-        (e: Element | null) => !!e, 1800, 80);
-      grok.shell.v = demogView;
-      await settle(800);
+      const comparable1 = setupHashes.hash1.filter((h, i) => h !== null && step8After.hash1[i] !== null).length;
+      const firstMoved = setupHashes.hash1
+        .map((h, i) => (h !== null && step8After.hash1[i] !== null && h !== step8After.hash1[i] ? i : -1))
+        .filter((i) => i >= 0);
+      expect(comparable1).toBeGreaterThan(0);
+      expect(firstMoved).toEqual([]);
 
-      let switchError: string | null = null;
-      // rebind the trellis to the curves table — settle on its repaint, capped
-      await w.__settled('viewer:Trellis plot.onViewerRendered', () => {
-        try { tp.props.table = dfCurves.name; } catch (e) { switchError = String(e); }
-      }, 1500);
-      await settle(1500);
-
-      const boundToCurves = (() => {
-        try { const d = tp.dataFrame; return {name: d?.name ?? null, rows: d?.rowCount ?? -1}; }
-        catch { return {name: null, rows: -1}; }
-      })();
-
-      const root = document.querySelector('[name="viewer-Trellis-plot"]') as HTMLElement;
-      const vs = root.querySelector('[name="viewer selector"]') as HTMLElement;
-      vs.dispatchEvent(new MouseEvent('mousedown', {bubbles: true, button: 0}));
-      await w.__poll(() => document.querySelector('.d4-combo-drop-down'), (e: Element | null) => !!e, 600, 40);
-      const mc = document.querySelector('.d4-combo-drop-down [name="icon-multicurveviewer"]');
-      const mcClicked = !!mc;
-      await w.__settled('viewer:Trellis plot.onViewerRendered',
-        () => (mc?.closest('.d4-list-item') as HTMLElement | null)?.click(), 1800);
-      await settle(1800);
-      const vt = tp.props.viewerType;
-
-      let gearOpenedPropGrid = false;
-      const panel = root.closest('.panel-base') as HTMLElement | null;
-      const gear = panel?.querySelector('.panel-titlebar [name="icon-font-icon-settings"]') as HTMLElement | null;
-      if (gear) {
-        gear.click();
-        await w.__poll(() => document.querySelector('.property-grid'), (e: Element | null) => !!e, 1200, 60);
-        gearOpenedPropGrid = !!document.querySelector('.property-grid');
-      }
-
-      let restoreError: string | null = null;
-      await w.__settled('viewer:Trellis plot.onViewerRendered', () => {
-        try { tp.props.table = demogName; } catch (e) { restoreError = String(e); }
-      }, 1800);
-      await settle(1800);
-      tp.props.viewerType = 'Scatter plot';
-      tp.props.xColumnNames = ['SEX'];
-      tp.props.yColumnNames = ['RACE'];
-      await settle(1800);
-      const boundBack = (() => { try { return tp.dataFrame?.name ?? null; } catch { return null; } })();
-      const restoredCells = document.querySelectorAll('[name="viewer-Trellis-plot"] .d4-trellis-plot-cell').length;
-      return {viewerType: vt, mcClicked, switchError, boundToCurves, restoreError, boundBack,
-        curvesName: dfCurves.name, curvesRows: dfCurves.rowCount, demogName,
-        restoredCells, gearOpenedPropGrid};
-    }, curvesPath);
-    expect(result.mcClicked).toBe(true);
-    expect(['MultiCurveViewer', 'Multi curve viewer', 'Curves'].includes(result.viewerType)).toBe(true);
-    expect(result.gearOpenedPropGrid).toBe(true);
-
-    console.log(`[Multi Curve] table switch: error=${result.switchError} ` +
-      `bound=${JSON.stringify(result.boundToCurves)} expected={"name":"${result.curvesName}","rows":${result.curvesRows}}`);
-    console.log(`[Multi Curve] restore: error=${result.restoreError} boundBack=${result.boundBack} expected=${result.demogName}`);
-    expect(result.switchError).toBeNull();
-    expect(result.boundToCurves.name).toBe(result.curvesName);
-    expect(result.boundToCurves.rows).toBe(result.curvesRows);
-    expect(result.restoreError).toBeNull();
-    expect(result.boundBack).toBe(result.demogName);
-    expect(result.restoredCells).toBe(canonicalCellCount);
+      expect(step8After.look1).toBe(setupHashes.look1);
+    } finally {
+      await restoreCanonical(page);
+    }
   });
 
-  await softStep('To Script', async () => {
-
-    await page.locator('[name="viewer-Trellis-plot"] .d4-trellis-plot-cell').first().click({button: 'right', position: {x: 6, y: 6}});
-    await clickMenuItemInGroup(page, 'To Script', 'To JavaScript');
-    const result = await page.evaluate(async () => {
-      // settle on the To-Script balloon appearing, capped — not a blind 1500ms
-      const balloon = await (window as any).__poll(() => document.querySelector('.d4-balloon'),
-        (e: Element | null) => !!e, 1500, 60) as Element | null;
-      const generated = !!balloon;
-      if (balloon) {
-        const close = balloon.querySelector('.close') || balloon.querySelector('[name="icon-times"]');
-        if (close) (close as HTMLElement).click();
-      }
-      return {scriptGenerated: generated};
-    });
-    expect(result.scriptGenerated).toBe(true);
-  });
-
-  await softStep('Keyboard navigation', async () => {
-    const cellLocator = page.locator('[name="viewer-Trellis-plot"] .d4-trellis-plot-cell');
-
-    await page.evaluate(async () => {
-      const hasSexRace = (view: any) => { try { const df = view.dataFrame; return !!(df && df.col('SEX') && df.col('RACE')); } catch { return false; } };
-      const hasTrellis = (view: any) => { try { return Array.from(view.viewers ?? []).some((x: any) => x.type === 'Trellis plot'); } catch { return false; } };
-      const w = window as any;
-      const views = Array.from(grok.shell.views ?? []) as any[];
-      const target = views.find((v) => hasSexRace(v) && hasTrellis(v)) ?? views.find(hasSexRace);
-      if (target) { try { grok.shell.v = target; } catch {} }
-      await new Promise((r) => setTimeout(r, 400));
-
-      for (const vw of Array.from(grok.shell.tv.viewers) as any[]) if (vw.type === 'Trellis plot') vw.close();
-      await w.__poll(() => document.querySelector('[name="viewer-Trellis-plot"]'), (e: Element | null) => !e, 600, 40);
-      const tp = grok.shell.tv.addViewer('Trellis plot') as any;
-      tp.props.viewerType = 'Scatter plot';
-      tp.props.xColumnNames = ['SEX'];
-      tp.props.yColumnNames = ['RACE'];
-      tp.props.onClick = 'None';
-      const df = grok.shell.tv.dataFrame;
-      df.filter.setAll(true); df.selection.setAll(false); df.rows.requestFilter();
-      await w.__quiet('viewer:Trellis plot.onViewerRendered', 300, 1800);
-    });
-    await expect(cellLocator).toHaveCount(canonicalCellCount);
-
-    const navCats = await page.evaluate(() => {
-      const df = grok.shell.tv.dataFrame;
-      return {x: [...df.col('SEX').categories], y: [...df.col('RACE').categories]};
-    });
-    expect(navCats.x.length).toBeGreaterThanOrEqual(2);
-    expect(navCats.y.length).toBeGreaterThanOrEqual(2);
-    const idx = await cellIndexFor(page, navCats.x[0], navCats.y[0]);
-    const idxRight = await cellIndexFor(page, navCats.x[1], navCats.y[0]);
-    const idxDown = await cellIndexFor(page, navCats.x[0], navCats.y[1]);
-    expect(idxRight).not.toBe(idx);
-    expect(idxDown).not.toBe(idx);
-    await cellLocator.nth(idx).click({position: {x: 6, y: 6}});
-
-    await page.waitForFunction((i) => {
-      const root = document.querySelector('[name="viewer-Trellis-plot"]') as HTMLElement | null;
-      if (!root) return false;
-      return Array.from(root.querySelectorAll('.d4-trellis-plot-cell'))
-        .findIndex((c) => c.classList.contains('d4-trellis-cell-current')) === i;
-    }, idx, {timeout: 700}).catch(() => {});
-    expect(await currentCellIndex(page)).toBe(idx);
-    await page.evaluate(() => {
-      const tp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Trellis plot') as any;
-      (window as any).__cc = [];
-      (window as any).__ccSub = tp.onEvent('d4-trellis-plot-current-cell-changed').subscribe((a: any) => {
-        const mc = (a && a.args && a.args.matchCondition) ? a.args.matchCondition : (a && a.matchCondition ? a.matchCondition : a);
-        (window as any).__cc.push(mc);
-      });
-    });
-    const focusGrid = () => focusChartsGrid(page);
-
-    const arrow = async (key: string) => {
-      await focusGrid();
-      const before = await page.evaluate(() => ((window as any).__cc?.length ?? 0));
-      await page.keyboard.press(key);
-
-      await page.waitForFunction((n) => ((window as any).__cc?.length ?? 0) > n, before, {timeout: 500}).catch(() => {});
-      return currentCellIndex(page);
-    };
-    const afterRight = await arrow('ArrowRight');
-    const afterLeft = await arrow('ArrowLeft');
-    const afterDown = await arrow('ArrowDown');
-    const afterUp = await arrow('ArrowUp');
-    const events = await page.evaluate(() => {
-      (window as any).__ccSub?.unsubscribe?.();
-      return (window as any).__cc as any[];
-    });
-    expect(afterRight).toBe(idxRight);
-    expect(afterLeft).toBe(idx);
-    expect(afterDown).toBe(idxDown);
-    expect(afterUp).toBe(idx);
-
-    expect(events.length).toBeGreaterThanOrEqual(4);
-    expect(JSON.stringify(events[1])).toBe(JSON.stringify(events[3]));
-    expect(JSON.stringify(events[0])).not.toBe(JSON.stringify(events[1]));
-    expect(JSON.stringify(events[2])).not.toBe(JSON.stringify(events[1]));
-    expect(JSON.stringify(events[0])).not.toBe(JSON.stringify(events[2]));
-
-    await page.evaluate(async () => {
-      const df = grok.shell.tv.dataFrame;
-      const tp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Trellis plot') as any;
-      tp.props.onClick = 'Filter';
-      df.filter.setAll(true); df.rows.requestFilter();
-      await new Promise((r) => setTimeout(r, 500));
-    });
-    await armDfEvent(page, 'onRowsFiltered');
-    await cellLocator.nth(idx).click({position: {x: 6, y: 6}});
-    await awaitArmedDfEvent(page, 700);
-    const filteredBeforeEsc = await page.evaluate(() => grok.shell.tv.dataFrame.filter.trueCount);
-    expect(filteredBeforeEsc).toBeLessThan(fullRowCount);
-
-    await focusGrid();
-    await armDfEvent(page, 'onRowsFiltered');
-    await page.keyboard.press('Escape');
-    await awaitArmedDfEvent(page, 900);
-    const filteredAfterEsc = await page.evaluate(() => grok.shell.tv.dataFrame.filter.trueCount);
-    expect(filteredAfterEsc).toBe(fullRowCount);
-    await page.evaluate(async () => {
-      const tp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Trellis plot') as any;
-      tp.props.onClick = 'None';
-      await new Promise((r) => setTimeout(r, 400));
-    });
-  });
-
-  await softStep('Undo/redo', async () => {
-   try {
-
-    await restoreCanonical();
-    await expect(page.locator('[name="viewer-Trellis-plot"]')).toBeVisible();
-    expect(await page.locator('[name="viewer-Trellis-plot"] .d4-trellis-plot-cell').count()).toBeGreaterThan(0);
-    expect(await trellisCount(page)).toBe(1);
-
-    await closeTrellis(page);
-    await waitForTrellisCount(page, 0, 1500);
-    expect(await trellisCount(page)).toBe(0);
-    await expect(page.locator('[name="viewer-Trellis-plot"]')).toHaveCount(0);
-
-    let errBefore = consoleErrors.length;
-    let pageErrBefore = pageErrors.length;
-    await page.keyboard.press('Control+z');
-    await waitForTrellisCount(page, 1, 1800);
-    expect(await trellisCount(page)).toBe(1);
-    await expect(page.locator('[name="viewer-Trellis-plot"]')).toBeVisible();
-    expect(consoleErrors.length).toBe(errBefore);
-    expect(pageErrors.length).toBe(pageErrBefore);
-
-    errBefore = consoleErrors.length;
-    pageErrBefore = pageErrors.length;
-    await page.keyboard.press('Control+Shift+z');
-    await waitForTrellisCount(page, 0, 1800);
-    expect(await trellisCount(page)).toBe(0);
-    expect(consoleErrors.length).toBe(errBefore);
-    expect(pageErrors.length).toBe(pageErrBefore);
-    expect(await page.locator('.d4-balloon.error').count()).toBe(0);
-
-    await page.keyboard.press('Control+z');
-    await waitForTrellisCount(page, 1, 1800);
-    expect(await trellisCount(page)).toBe(1);
-
-    errBefore = consoleErrors.length;
-    pageErrBefore = pageErrors.length;
-    await page.keyboard.press('Control+Shift+z');
-    await waitForTrellisCount(page, 0, 1800);
-    expect(await trellisCount(page)).toBe(0);
-    expect(consoleErrors.length).toBe(errBefore);
-    expect(pageErrors.length).toBe(pageErrBefore);
-    expect(await page.locator('.d4-balloon.error').count()).toBe(0);
-   } finally {
-
-    await restoreCanonical();
-   }
-  });
-
-  v.finishSpec();
+  await tearDown(page, ctx);
 });

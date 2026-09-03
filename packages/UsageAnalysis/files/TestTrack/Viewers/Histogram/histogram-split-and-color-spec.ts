@@ -84,10 +84,13 @@ test('Histogram — Split vs Color-coding Transition', async ({page}) => {
     const errsBefore = pageErrors.length;
     const {filtered, rowCount} = await page.evaluate(async () => {
       const h = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Histogram') as any;
+      const df = grok.shell.tv.dataFrame;
+      const before = df.filter.trueCount;
       h.props.valueMin = 20;
       h.props.valueMax = 60;
-      await new Promise((r) => setTimeout(r, 700));
-      const df = grok.shell.tv.dataFrame;
+      const deadline = Date.now() + 700;
+      while (df.filter.trueCount === before && Date.now() < deadline)
+        await new Promise((r) => setTimeout(r, 25));
       return {filtered: df.filter.trueCount, rowCount: df.rowCount};
     });
 
@@ -99,9 +102,13 @@ test('Histogram — Split vs Color-coding Transition', async ({page}) => {
 
   await page.evaluate(async () => {
     const h = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Histogram') as any;
+    const df = grok.shell.tv.dataFrame;
+    const before = df.filter.trueCount;
     h.props.valueMin = null;
     h.props.valueMax = null;
-    await new Promise((r) => setTimeout(r, 400));
+    const deadline = Date.now() + 400;
+    while (df.filter.trueCount === before && Date.now() < deadline)
+      await new Promise((r) => setTimeout(r, 25));
   });
 
   await softStep('S1: clear split re-activates Color rows (opacity 1.0 round-trip)', async () => {

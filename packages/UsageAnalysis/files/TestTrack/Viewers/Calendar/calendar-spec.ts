@@ -1,8 +1,9 @@
 /* ---
 realizes: [viewers.calendar]
 --- */
-import {test, expect, Page} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
+import {expect, Page} from '@playwright/test';
+import {localTest as test} from '../../shared-page';
+import {openDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 
 test.use(specTestOptions);
@@ -107,7 +108,7 @@ const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Frida
 test('Calendar', async ({page}) => {
   test.setTimeout(600_000);
 
-  await loginToDatagrok(page);
+  await openDatagrok(page);
   await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 3000});
 
   await softStep('Add Calendar from the Viewers toolbox', async () => {
@@ -178,20 +179,19 @@ test('Calendar', async ({page}) => {
 
     const tuesday = await hover(page, r.weekday(2));
     await page.keyboard.down('Shift');
-    await page.mouse.click(r.weekday(2).x, r.weekday(2).y);
-    await page.keyboard.up('Shift');
+    try { await page.mouse.click(r.weekday(2).x, r.weekday(2).y); }
+    finally { await page.keyboard.up('Shift'); }
     await expect.poll(() => selectionCount(page), {timeout: 8000})
       .toBe(monday!.rows + tuesday!.rows);
 
     await page.keyboard.down('Control');
-    await page.mouse.click(r.weekday(2).x, r.weekday(2).y);
-    await page.keyboard.up('Control');
+    try { await page.mouse.click(r.weekday(2).x, r.weekday(2).y); }
+    finally { await page.keyboard.up('Control'); }
     await expect.poll(() => selectionCount(page), {timeout: 8000}).toBe(monday!.rows);
     await clearSelection(page);
   });
 
   await softStep('On Click set to Filter makes the same click filter instead', async () => {
-    await v.openViewerProperties(page, VIEWER_NAME, '[name="prop-on-click"]');
     await category(page, 'data', 'on-click');
     await v.selectPropertyGridChoice(page, 'on-click', 'Filter', 'data');
     expect(await v.propertyGridValue(page, 'on-click', 'data')).toBe('Filter');
@@ -275,6 +275,12 @@ test('Calendar', async ({page}) => {
     await expect(page.locator(VIEWER)).toHaveCount(0);
   });
 
+  // the context panel keeps the closed viewer's property grid, and neither shell.o = null nor
+  // rebinding shell.o drops it (measured 2026-09-03); the next spec's openViewerProperties then
+  // skips the gear and edits a dead grid, so the stale node is removed here
+  await page.evaluate(() => {
+    for (const e of Array.from(document.querySelectorAll('.property-grid'))) e.remove();
+  });
   await v.cleanupShell(page);
 
   v.finishSpec();

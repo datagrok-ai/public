@@ -16,6 +16,12 @@ const isBenignError = (text: string) =>
   /Failed to load resource/.test(text) || /404 \(\)/.test(text) || /favicon/.test(text) ||
   /Unable to find element in cloned iframe/.test(text);
 
+// a cell whose canvas has not been painted yet hashes to 0; a baseline read there compares a blank
+// canvas with the painted one and books the paint as a zoom
+async function paintedHash(page: Page, idx: number): Promise<number | null> {
+  return v.pollValue(async () => (await cellHashes(page, [idx]))[0], (h) => h !== null && h !== 0, 2000, 50);
+}
+
 async function cellHashes(page: Page, idxs: number[]): Promise<(number | null)[]> {
   return page.evaluate((idxs) => {
     const root = document.querySelector('[name="viewer-Trellis-plot"]') as HTMLElement;
@@ -37,21 +43,24 @@ async function cellHashes(page: Page, idxs: number[]): Promise<(number | null)[]
 
 async function trellisMenuLabels(page: Page): Promise<string[]> {
   const labels = await page.evaluate(async () => {
+    const w = window as any;
     const root = document.querySelector('[name="viewer-Trellis-plot"]') as HTMLElement;
     const grid = (root.querySelector('.d4-trellis-plot-charts-grid') as HTMLElement) ?? root;
     const gr = grid.getBoundingClientRect();
+    const items = () => Array.from(document.querySelectorAll('.d4-menu-popup .d4-menu-item-label'))
+      .map((e) => (e as HTMLElement).innerText.trim());
     grid.dispatchEvent(new MouseEvent('contextmenu', {bubbles: true, cancelable: true,
       clientX: gr.left + 4, clientY: gr.top + 4}));
-    await new Promise((r) => setTimeout(r, 800)); 
-
-    const out = Array.from(document.querySelectorAll('.d4-menu-popup .d4-menu-item-label'))
-      .map((e) => (e as HTMLElement).innerText.trim());
-
+    // the menu is built in stages (inner viewer items first, trellis items after), so settle on
+    // the label list holding still rather than on its first item
+    await w.__poll(() => items().length, (n: number) => n > 0, 800, 40);
+    await w.__settledFor(() => items().join('|'), 250, 800, 25);
+    const out = items();
     document.body.dispatchEvent(new MouseEvent('mousedown', {bubbles: true}));
     document.body.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true}));
+    await w.__poll(() => document.querySelectorAll('.d4-menu-popup').length, (n: number) => n === 0, 400, 40);
     return out;
   });
-  await page.waitForTimeout(400); 
   return labels;
 }
 
@@ -96,6 +105,48 @@ async function assertInnerTypeSwitched(page: Page, viewerType: string,
     .not.toBe(beforeSwitch);
 }
 
+// The trellis keeps ONE active inner slider per axis (features/inner_viewer_axes.dart) plus hidden
+// per-column copies whose handles are never shown; the active one is revealed by cell.onMouseEnter
+// and stays revealed on the axis strip, and takes mousedown on its handle elements only.
+async function dragInnerRangeSlider(page: Page, axis: 'x' | 'y', rootIndex = 0): Promise<boolean> {
+  const cell = await page.evaluate((rootIdx) => {
+    const root = document.querySelectorAll('[name="viewer-Trellis-plot"]')[rootIdx];
+    const c = Array.from(root?.querySelectorAll('.d4-trellis-plot-cell') ?? []).find((x) => x.querySelector('canvas'));
+    if (!c) return null;
+    const b = c.getBoundingClientRect();
+    return {x: b.x + b.width / 2, y: b.y + b.height / 2};
+  }, rootIndex);
+  if (!cell) return false;
+  // the reveal is cell.onMouseEnter, so the pointer has to come from outside the cell
+  await page.mouse.move(2, 2);
+  await page.mouse.move(cell.x, cell.y);
+  const geo = await v.pollValue(() => page.evaluate(({rootIdx, ax}) => {
+    const root = document.querySelectorAll('[name="viewer-Trellis-plot"]')[rootIdx];
+    const svgs = Array.from(root?.querySelectorAll(`.d4-range-selector > svg[type="range-slider"][name="${ax}-slider"]`) ?? []) as SVGElement[];
+    const shownHandles = (svg: SVGElement) => ['min-handle', 'max-handle']
+      .map((n) => svg.querySelector(`[name="${n}"]`) as SVGElement | null)
+      .filter((h) => !!h && getComputedStyle(h).display !== 'none' && h.getBoundingClientRect().width > 0)
+      .map((h) => { const b = h!.getBoundingClientRect(); return {x: b.x + b.width / 2, y: b.y + b.height / 2}; });
+    for (const svg of svgs) {
+      const wrap = svg.closest('.d4-range-selector') as HTMLElement | null;
+      if (!wrap || getComputedStyle(wrap).visibility === 'hidden' || getComputedStyle(svg).visibility === 'hidden') continue;
+      const hs = shownHandles(svg);
+      if (hs.length !== 2) continue;
+      const b = svg.getBoundingClientRect();
+      const end = hs.sort((p, q) => ax === 'x' ? q.x - p.x : q.y - p.y)[0];
+      return {end, svg: {x: b.x, y: b.y, w: b.width, h: b.height}};
+    }
+    return null;
+  }, {rootIdx: rootIndex, ax: axis}), (g) => g !== null, 1500, 30);
+  if (!geo) return false;
+  await page.mouse.move(geo.end.x, geo.end.y, {steps: 4});
+  await page.mouse.down();
+  if (axis === 'x') await page.mouse.move(geo.svg.x + geo.svg.w * 0.45, geo.end.y, {steps: 12});
+  else await page.mouse.move(geo.end.x, geo.svg.y + geo.svg.h * 0.45, {steps: 12});
+  await page.mouse.up();
+  return true;
+}
+
 const innerTypeTabs = ['Scatter plot', 'Bar chart', 'Box plot', 'Histogram', 'Line chart', 'Pie chart'];
 
 async function openInnerViewerTab(page: Page, tabName?: string): Promise<void> {
@@ -108,12 +159,11 @@ async function openInnerViewerTab(page: Page, tabName?: string): Promise<void> {
       headers.find((h) => names.includes(h.innerText.trim()));
     tab?.click();
   }, {name: tabName ?? '', names: innerTypeTabs});
-  await page.waitForTimeout(800); 
-
   const row = page.locator('.property-grid tr[name="prop-allow-zoom"]');
+  await row.first().waitFor({state: 'attached', timeout: 800}).catch(() => {});
   if (await row.count() > 0 && !(await row.isVisible())) {
     await page.locator('.property-grid tr[name="prop-category-misc"]').first().click();
-    await page.waitForTimeout(500); 
+    await row.first().waitFor({state: 'visible', timeout: 500}).catch(() => {});
   }
 }
 
@@ -139,20 +189,20 @@ async function setAllowZoom(page: Page, desired: boolean, tabName = 'Scatter plo
   return box.isChecked();
 }
 
-async function wheelOver(page: Page, pt: {x: number; y: number}, steps = 5): Promise<void> {
+// the post-wheel window is the assertion for the no-zoom arms (nothing may repaint), so it
+// stays as a capped poll for the hash leaving `before`; the zoom arm exits on the first change
+async function wheelOver(page: Page, pt: {x: number; y: number}, before: number | null, steps = 5): Promise<number | null> {
   await page.mouse.move(pt.x, pt.y);
-  await page.waitForTimeout(200); 
+  await page.waitForTimeout(200);
   for (let i = 0; i < steps; i++) {
     await page.mouse.wheel(0, 120);
-    await page.waitForTimeout(60); 
+    await page.waitForTimeout(60);
   }
-
-  await page.waitForTimeout(600);
+  return v.pollValue(async () => (await cellHashes(page, [0]))[0], (h) => h !== before, 600, 50);
 }
 
 test('Trellis plot: global scale, inner axes, range slider reset', async ({page}) => {
-  test.setTimeout(900_000);
-  page.setDefaultTimeout(120_000);
+  test.setTimeout(240_000);
 
   const pageErrors: string[] = [];
   const consoleErrors: string[] = [];
@@ -163,20 +213,7 @@ test('Trellis plot: global scale, inner axes, range slider reset', async ({page}
   });
 
   await openDatagrok(page);
-
-  await page.evaluate(async (path) => {
-    document.body.classList.add('selenium');
-    try { grok.shell.settings.showFiltersIconsConstantly = true; } catch {}
-    try { grok.shell.windows.simpleMode = true; } catch {}
-    grok.shell.closeAll();
-    const df = await (window as any).__readCsv(path);
-    grok.shell.addTableView(df);
-    await new Promise((resolve) => {
-      const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(null); });
-      setTimeout(resolve, 3000);
-    });
-  }, datasetPath);
-  await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30000});
+  await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 3000});
 
   const setup = await page.evaluate(() => {
     const df = grok.shell.tv.dataFrame;
@@ -286,27 +323,10 @@ test('Trellis plot: global scale, inner axes, range slider reset', async ({page}
     expect(baseline.every((h) => h !== null)).toBe(true);
     expect(baseline[0]).not.toBe(baseline[1]);
 
-    const track = await page.evaluate(async () => {
-      const root = document.querySelector('[name="viewer-Trellis-plot"]') as HTMLElement;
-      const sliders = Array.from(root.querySelectorAll(
-        '.d4-range-selector > svg[type="range-slider"][name="x-slider"]')) as SVGElement[];
-      if (sliders.length === 0) return null;
-      const s = sliders[0];
-      const r = s.getBoundingClientRect();
-      s.dispatchEvent(new MouseEvent('mousemove', {bubbles: true, clientX: r.left + r.width / 2, clientY: r.top + 5}));
-      return {left: r.left, top: r.top, width: r.width, height: r.height};
-    });
-    expect(track).not.toBeNull();
-    const t = track!;
-    const y = t.top + t.height / 2;
-    await page.mouse.move(t.left + t.width - 6, y);
-    await page.mouse.down();
-    await page.mouse.move(t.left + t.width * 0.75, y, {steps: 6});
-    await page.mouse.move(t.left + t.width * 0.5, y, {steps: 8});
-    await page.mouse.up();
-    await v.waitForViewerRendered(page, 'Trellis plot', 900);
-
-    const after = await cellHashes(page, probes);
+    const dragged = await dragInnerRangeSlider(page, 'x');
+    expect(dragged).toBe(true);
+    const after = await v.pollValue(() => cellHashes(page, probes),
+      (h) => h[0] !== baseline[0] && h[1] !== baseline[1], 2000, 50);
     console.log(`[Scenario 2 Step 4] baseline=${JSON.stringify(baseline)} after=${JSON.stringify(after)}`);
     expect(after.every((h) => h !== null)).toBe(true);
 
@@ -335,14 +355,13 @@ test('Trellis plot: global scale, inner axes, range slider reset', async ({page}
       const gr = grid.getBoundingClientRect();
       grid.dispatchEvent(new MouseEvent('contextmenu', {bubbles: true, cancelable: true,
         clientX: gr.left + 4, clientY: gr.top + 4}));
-      await new Promise((r) => setTimeout(r, 800)); 
-
-      const target = Array.from(document.querySelectorAll('.d4-menu-popup .d4-menu-item-label'))
+      const find = () => Array.from(document.querySelectorAll('.d4-menu-popup .d4-menu-item-label'))
         .find((e) => (e as HTMLElement).innerText.trim() === 'Reset Inner Range Sliders');
+      const target = await (window as any).__poll(find, (e: Element | undefined) => !!e, 800, 40);
       (target?.closest('.d4-menu-item') as HTMLElement | null)?.click();
     });
-    await v.waitForViewerRendered(page, 'Trellis plot', 900);
-    const after = await cellHashes(page, probes);
+    const after = await v.pollValue(() => cellHashes(page, probes),
+      (h) => h[0] === baseline[0] && h[1] === baseline[1], 2000, 50);
     console.log(`[Scenario 2 Step 5] baseline=${JSON.stringify(baseline)} narrowed=${JSON.stringify(narrowed)} ` +
       `after=${JSON.stringify(after)}`);
     expect(after.every((h) => h !== null)).toBe(true);
@@ -378,10 +397,9 @@ test('Trellis plot: global scale, inner axes, range slider reset', async ({page}
       expect(pt).not.toBeNull();
       const errBefore = consoleErrors.length;
       const pageErrBefore = pageErrors.length;
-      const [before] = await cellHashes(page, [0]);
+      const before = await paintedHash(page, 0);
       expect(before).not.toBeNull();
-      await wheelOver(page, pt!);
-      const [after] = await cellHashes(page, [0]);
+      const after = await wheelOver(page, pt!, before);
       console.log(`[Scenario 3 Step 2] scatter before=${before} after=${after}`);
       expect(after).not.toBeNull();
       expect(after).toBe(before);
@@ -400,10 +418,9 @@ test('Trellis plot: global scale, inner axes, range slider reset', async ({page}
       expect(pt).not.toBeNull();
       const errBefore = consoleErrors.length;
       const pageErrBefore = pageErrors.length;
-      const [before] = await cellHashes(page, [0]);
+      const before = await paintedHash(page, 0);
       expect(before).not.toBeNull();
-      await wheelOver(page, pt!);
-      const [after] = await cellHashes(page, [0]);
+      const after = await wheelOver(page, pt!, before);
       console.log(`[Scenario 3 Step 3] bar before=${before} after=${after}`);
       expect(after).not.toBeNull();
       expect(after).toBe(before);
@@ -421,10 +438,9 @@ test('Trellis plot: global scale, inner axes, range slider reset', async ({page}
       expect(pt).not.toBeNull();
       const errBefore = consoleErrors.length;
       const pageErrBefore = pageErrors.length;
-      const [before] = await cellHashes(page, [0]);
+      const before = await paintedHash(page, 0);
       expect(before).not.toBeNull();
-      await wheelOver(page, pt!);
-      const [after] = await cellHashes(page, [0]);
+      const after = await wheelOver(page, pt!, before);
       console.log(`[Scenario 3 Step 4] box before=${before} after=${after}`);
       expect(after).not.toBeNull();
       expect(after).toBe(before);
@@ -441,10 +457,9 @@ test('Trellis plot: global scale, inner axes, range slider reset', async ({page}
       expect(pt).not.toBeNull();
       const errBefore = consoleErrors.length;
       const pageErrBefore = pageErrors.length;
-      const [before] = await cellHashes(page, [0]);
+      const before = await paintedHash(page, 0);
       expect(before).not.toBeNull();
-      await wheelOver(page, pt!);
-      const [after] = await cellHashes(page, [0]);
+      const after = await wheelOver(page, pt!, before);
       console.log(`[Scenario 3 Step 5] allowZoom=true before=${before} after=${after}`);
       expect(after).not.toBeNull();
 
@@ -461,10 +476,9 @@ test('Trellis plot: global scale, inner axes, range slider reset', async ({page}
       expect(pt).not.toBeNull();
       const errBefore = consoleErrors.length;
       const pageErrBefore = pageErrors.length;
-      const [before] = await cellHashes(page, [0]);
+      const before = await paintedHash(page, 0);
       expect(before).not.toBeNull();
-      await wheelOver(page, pt!);
-      const [after] = await cellHashes(page, [0]);
+      const after = await wheelOver(page, pt!, before);
       console.log(`[Scenario 3 Step 6] allowZoom=false before=${before} after=${after}`);
       expect(after).not.toBeNull();
       expect(after).toBe(before);
@@ -476,5 +490,6 @@ test('Trellis plot: global scale, inner axes, range slider reset', async ({page}
     await setAllowZoom(page, false).catch(() => {});
   }
 
+  await v.closeAllAndWait(page);
   v.finishSpec();
 });

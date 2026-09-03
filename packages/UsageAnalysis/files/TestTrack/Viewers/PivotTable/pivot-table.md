@@ -7,6 +7,7 @@ realizes_atlas:
 realizes: [viewers.pivot-viewer]
 priority: p2
 target_layer: playwright
+boot_lane: local
 coverage_type: regression
 related_bugs:
   - id: GROK-17122

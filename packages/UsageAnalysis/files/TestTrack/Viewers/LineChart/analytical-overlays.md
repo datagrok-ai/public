@@ -6,6 +6,7 @@ realizes_atlas:
   - linechart.cp.analytical-overlays
 priority: p1
 target_layer: playwright
+boot_lane: mixed
 coverage_type: regression
 related_bugs:
   - id: GROK-19732
@@ -18,6 +19,7 @@ related_bugs:
     status: fixed
 realized_as:
   - analytical-overlays-spec.ts
+  - line-chart-server-spec.ts
 expected_results:
   - anchor: "S1 steps 1-3: enable regression line, no-error floor"
     expectation: >-

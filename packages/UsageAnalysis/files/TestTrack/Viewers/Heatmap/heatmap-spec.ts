@@ -1,8 +1,9 @@
 /* ---
 realizes: [viewers.heat-map, viewers.filters.histogram]
 --- */
-import {test, expect, Page} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
+import {expect, Page} from '@playwright/test';
+import {localTest as test} from '../../shared-page';
+import {openDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 import {knownOpenBug} from '../../helpers/known-open-bug';
 
@@ -42,7 +43,7 @@ async function sliderSpan(page: Page, slider: 'x' | 'y'): Promise<number> {
 test('Heat map', async ({page}) => {
   test.setTimeout(600_000);
 
-  await loginToDatagrok(page);
+  await openDatagrok(page);
   await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 3000});
 
   await softStep('Add Heat map from the Viewers toolbox', async () => {
@@ -52,7 +53,6 @@ test('Heat map', async ({page}) => {
       (await v.countCanvasPixels(page, VIEWER_TYPE, {canvasSelector: CONTENT_CANVAS})).total,
     {timeout: 30_000}).toBeGreaterThan(1000);
 
-    await v.openViewerProperties(page, VIEWER_NAME);
     await category(page, 'misc', 'is-heatmap');
     expect(await shownValue(page, 'is-heatmap')).toBe('true');
   });
@@ -132,7 +132,7 @@ test('Heat map', async ({page}) => {
   });
 
   await softStep('Row Height is not offered in heatmap mode', async () => {
-    await v.openViewerProperties(page, VIEWER_NAME);
+    await category(page, 'misc', 'is-heatmap');
 
     await knownOpenBug('GROK-20619', async () => {
       expect(await page.locator('.property-grid tr[name="prop-row-height"]').count()).toBe(0);
@@ -157,11 +157,14 @@ test('Heat map', async ({page}) => {
     await snapshot(page);
 
     await page.keyboard.down('Alt');
-    await page.mouse.move(box.x + box.width * 0.3, box.y + box.height * 0.3);
-    await page.mouse.down();
-    await page.mouse.move(box.x + box.width * 0.6, box.y + box.height * 0.6, {steps: 20});
-    await page.mouse.up();
-    await page.keyboard.up('Alt');
+    try {
+      await page.mouse.move(box.x + box.width * 0.3, box.y + box.height * 0.3);
+      await page.mouse.down();
+      await page.mouse.move(box.x + box.width * 0.6, box.y + box.height * 0.6, {steps: 20});
+      await page.mouse.up();
+    } finally {
+      await page.keyboard.up('Alt');
+    }
 
     await expect.poll(() => sliderSpan(page, 'y'), {timeout: 10_000}).toBeLessThan(before);
     await repaint(page, 500);
@@ -186,6 +189,12 @@ test('Heat map', async ({page}) => {
     await expect(page.locator(VIEWER)).toHaveCount(0);
   });
 
+  // the context panel keeps the closed viewer's property grid, and neither shell.o = null nor
+  // rebinding shell.o drops it (measured 2026-09-03); the next spec's openViewerProperties then
+  // skips the gear and edits a dead grid, so the stale node is removed here
+  await page.evaluate(() => {
+    for (const e of Array.from(document.querySelectorAll('.property-grid'))) e.remove();
+  });
   await v.cleanupShell(page);
 
   v.finishSpec();

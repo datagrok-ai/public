@@ -521,7 +521,7 @@ export async function ensurePropertyCategory(
       await page.locator(headerSelector).first().waitFor({timeout: 3000}).catch(() => {});
     } else
       await header.first().click().catch(() => {});
-    await page.waitForTimeout(400);
+    await page.waitForTimeout(150);
   }
   throw new Error(`property-grid category "${category}" never exposed prop-${probeProp}`);
 }
@@ -1164,7 +1164,7 @@ export async function clickCanvasFilter(
       await new Promise((r) => setTimeout(r, 300));
     });
     try {
-      await page.locator(`[name="viewer-${opts.viewerType}"] canvas`).first()
+      await page.locator(`[name="viewer-${opts.viewerType.replace(/\s+/g, '-')}"] canvas`).first()
         .click({position: {x: pos.x, y: pos.y}, timeout: 3000});
       await page.waitForTimeout(opts.viewerType === 'Bar chart' ? 800 : 900);
       const probe = await page.evaluate((col) => {
@@ -1299,6 +1299,9 @@ export async function resetFilters(page: Page, opts: {clearScatterFilter?: boole
       const sub = df.onRowsFiltered.subscribe(() => { sub.unsubscribe(); resolve(); });
       setTimeout(resolve, 500);
     });
+    // props throws "Property not found" on a viewer without onClick, so the read is guarded too
+    for (const v of Array.from(tv.viewers) as any[])
+      try { if (v.props.onClick === 'Filter') v.props.onClick = 'Select'; } catch (_) {}
     df.filter.setAll(true);
     const fg = tv.getFiltersGroup();
     for (const f of Array.from(fg.filters as any)) { try { fg.remove(f); } catch (_) {} }

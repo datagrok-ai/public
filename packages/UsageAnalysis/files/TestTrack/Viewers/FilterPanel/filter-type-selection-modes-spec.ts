@@ -2,11 +2,11 @@
 realizes: [filters.cp.filter-type-and-selection-modes]
 --- */
 import {expect, Page} from '@playwright/test';
-import {test} from '../../shared-page';
-import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
+import {localTest as test} from '../../shared-page';
+import {isLocalBootNoise, openDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
-import {addCardViaColumnSelector, cardCount, expectHeaderCounterNow, headerCounterTarget,
-  trueCount} from '../../helpers/filter-panel';
+import {cardCount, expectHeaderCounterNow, headerCounterTarget, trueCount} from '../../helpers/filter-panel';
+import {addCardViaPicker} from './column-picker';
 
 declare const grok: any;
 declare const DG: any;
@@ -177,10 +177,14 @@ type RowClick = {rowIndex: number; y: number; before: CardState; after: CardStat
 
 const fmt = (s: CardState): string => `selected=[${(s.selected ?? []).join(',')}] trueCount=${s.count}`;
 
+// A click that lands moves the card state within a few hundred ms; a probe of a row the card does
+// not paint (the row-scan of cardRenderedCategories) spends the whole cap, so it is sized for that.
+const ROW_CLICK_CAP_MS = 1500;
+
 async function clickCategoryRow(page: Page, column: string, rowIndex: number,
   target: 'checkbox' | 'name'): Promise<RowClick> {
   const y = rowCentreY(rowIndex);
-  const res = await page.evaluate(async ({col, cx, cy}) => {
+  const res = await page.evaluate(async ({col, cx, cy, cap}) => {
     const card = [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter')]
       .find((c) => (c.querySelector('.d4-filter-column-name')?.textContent ?? '').trim() === col);
     const overlay = card?.querySelector('[name="viewer-Grid"] [name="overlay"]') as HTMLElement | null;
@@ -205,17 +209,9 @@ async function clickCategoryRow(page: Page, column: string, rowIndex: number,
     overlay.dispatchEvent(new MouseEvent('mousedown', o));
     overlay.dispatchEvent(new MouseEvent('mouseup', o));
     overlay.dispatchEvent(new MouseEvent('click', o));
-    let after = before;
-    let prevKey = key(before);
-    for (let waited = 0; waited < 4000; waited += 100) {
-      await new Promise((r) => setTimeout(r, 100));
-      after = read();
-      const k = key(after);
-      if (k !== key(before) && k === prevKey) break;
-      prevKey = k;
-    }
-    return {before, after};
-  }, {col: column, cx: target === 'checkbox' ? X_CHECKBOX : X_NAME, cy: y});
+    await (window as any).__moved(() => key(read()), key(before), cap, 50);
+    return {before, after: read()};
+  }, {col: column, cx: target === 'checkbox' ? X_CHECKBOX : X_NAME, cy: y, cap: ROW_CLICK_CAP_MS});
   expect(res, `the ${column} card must expose a categorical [name="overlay"] body to click`).not.toBeNull();
   return {rowIndex, y, before: res!.before, after: res!.after};
 }
@@ -257,13 +253,10 @@ async function cardSelectedCategories(page: Page, column: string): Promise<strin
   }, column);
 }
 
+// A hold: the count must not leave `expected` for the whole window, so the window is spent
+// watching for the move it hopes not to see.
 async function heldTrueCount(page: Page, expected: number, why: string, holdMs = 2500): Promise<void> {
-  const deadline = Date.now() + holdMs;
-  for (;;) {
-    expect(await trueCount(page), why).toBe(expected);
-    if (Date.now() >= deadline) return;
-    await page.waitForTimeout(250);
-  }
+  expect(await v.pollValue(() => trueCount(page), (c) => c !== expected, holdMs, 250), why).toBe(expected);
 }
 
 async function inCardSearch(page: Page, column: string, fragment: string): Promise<number> {
@@ -345,21 +338,23 @@ async function pasteInCardSearch(page: Page, column: string, values: string[], t
 test('Filter Panel — Filter type switching and category selection modes', async ({page}) => {
   test.setTimeout(900_000);
 
-  await loginToDatagrok(page);
+  await openDatagrok(page);
 
   await v.openTable(page, {path: datasetPath, withFilterPanel: true});
-  await v.installEventWaits(page);
 
   const consoleErrors: string[] = [];
-  page.on('console', (msg) => { if (msg.type() === 'error') consoleErrors.push(msg.text()); });
+  const onConsole = (msg: import('@playwright/test').ConsoleMessage) => {
+    if (msg.type() === 'error') consoleErrors.push(msg.text());
+  };
+  page.on('console', onConsole);
   const AMBIENT = 'Permissions policy violation: compute-pressure';
-  const errorSet = () => new Set(consoleErrors.filter((t) => !t.includes(AMBIENT)));
+  const errorSet = () => new Set(consoleErrors.filter((t) => !t.includes(AMBIENT) && !isLocalBootNoise(t)));
 
   await softStep('Setup: empty the panel and add an AGE histogram card', async () => {
     await v.drivePanelMenuLeaf(page, 'Filters', null, 'Remove All');
     await expect.poll(async () => cardCount(page), {timeout: 20_000, intervals: [400, 800, 1500]}).toBe(0);
     expect(await trueCount(page), 'removing every card leaves the table unfiltered').toBe(fullRowCount);
-    await addCardViaColumnSelector(page, 'AGE');
+    await addCardViaPicker(page, 'AGE');
     expect(await orderedCaptions(page)).toEqual(['AGE']);
     expect(await cardFilterType(page, 'AGE'), 'AGE is numerical, so its default card is a histogram')
       .toBe('histogram');
@@ -643,7 +638,7 @@ test('Filter Panel — Filter type switching and category selection modes', asyn
 
   await softStep('Scenario 2 setup — add RACE, Select all, record category count', async () => {
     const captionsBefore = await orderedCaptions(page);
-    await addCardViaColumnSelector(page, 'RACE');
+    await addCardViaPicker(page, 'RACE');
     const captionsAfter = await orderedCaptions(page);
     expect(captionsAfter, 'the RACE card joined the panel').toContain('RACE');
     expect(captionsAfter.length, 'adding RACE grows the card count by exactly one — nothing else was rebuilt')
@@ -732,7 +727,7 @@ test('Filter Panel — Filter type switching and category selection modes', asyn
       await (window as any).__poll(() => !!grok.shell.tv.dataFrame.col('probe_constant'),
         (there: boolean) => there, 800, 25);
     });
-    await addCardViaColumnSelector(page, 'probe_constant');
+    await addCardViaPicker(page, 'probe_constant');
     expect(await orderedCaptions(page)).toContain('probe_constant');
 
     const canvas = await cardCanvasBox(page, 'probe_constant');
@@ -787,6 +782,7 @@ test('Filter Panel — Filter type switching and category selection modes', asyn
     });
     await v.closeAllAndWait(page);
   });
+  page.off('console', onConsole);
 
   v.finishSpec();
 });

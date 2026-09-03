@@ -119,7 +119,6 @@ test('Bar Chart — Selected / Filtered Rows overlays with cumulative aggregatio
       bc.props.showFilteredRows = true;
     });
     await v.waitForCanvasQuiet(page, 'Bar chart', {timeoutMs: 900, optional: true});
-    await v.waitForCanvasQuiet(page, 'Bar chart', {timeoutMs: 900, optional: true});
     expect(await v.snapshotCanvasColors(page, 'Bar chart')).toBe(true);
     const settle = await v.diffCanvasColors(page, 'Bar chart');
     expect(settle.deltaPx).toBeGreaterThanOrEqual(0);
@@ -253,7 +252,6 @@ test('Bar Chart — Selected / Filtered Rows overlays with cumulative aggregatio
       bc.props.rowSource = 'All';
       bc.props.showFilteredRows = true;
     });
-    await v.waitForCanvasQuiet(page, 'Bar chart', {timeoutMs: 900, optional: true});
     await v.waitForCanvasQuiet(page, 'Bar chart', {timeoutMs: 900, optional: true});
     expect(await v.snapshotCanvasColors(page, 'Bar chart')).toBe(true);
     const settle = await v.diffCanvasColors(page, 'Bar chart');

@@ -1,8 +1,9 @@
 /* ---
 realizes: []
 --- */
-import {test, expect, Page} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
+import {expect, Page} from '@playwright/test';
+import {localTest as test} from '../../shared-page';
+import {openDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 
 test.use(specTestOptions);
@@ -33,6 +34,8 @@ async function categoryCounts(page: Page, column: string, filteredOnly = false):
   }, {col: column, filtered: filteredOnly});
 }
 
+const LEAF_TOOLTIP = /^(.+?)\s*\n\s*(\d+)\s+rows/;
+
 async function hoverLeaf(page: Page): Promise<{name: string; rows: number; x: number; y: number}> {
   const box = (await page.locator(VIEWER).boundingBox())!;
   for (const [dx, dy] of [[0.3, 0.3], [0.7, 0.3], [0.5, 0.7], [0.2, 0.6], [0.85, 0.7]]) {
@@ -40,12 +43,11 @@ async function hoverLeaf(page: Page): Promise<{name: string; rows: number; x: nu
     const y = box.y + box.height * dy;
     await page.mouse.move(x - 20, y - 20);
     await page.mouse.move(x, y, {steps: 5});
-    await page.waitForTimeout(400);
-    const text = await page.evaluate(() => {
+    const text = await v.pollValue(() => page.evaluate(() => {
       const t = document.querySelector('.d4-tooltip') as HTMLElement | null;
       return t && getComputedStyle(t).display !== 'none' ? t.innerText : '';
-    });
-    const match = text.match(/^(.+?)\s*\n\s*(\d+)\s+rows/);
+    }), (t) => LEAF_TOOLTIP.test(t), 1000, 50);
+    const match = text.match(LEAF_TOOLTIP);
     if (match) return {name: match[1].trim(), rows: Number(match[2]), x, y};
   }
   throw new Error('no leaf tooltip appeared anywhere on the tree map');
@@ -54,7 +56,7 @@ async function hoverLeaf(page: Page): Promise<{name: string; rows: number; x: nu
 test('Tree map', async ({page}) => {
   test.setTimeout(600_000);
 
-  await loginToDatagrok(page);
+  await openDatagrok(page);
   await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 3000});
 
   await softStep('Add Tree map from the Viewers toolbox', async () => {
@@ -103,7 +105,6 @@ test('Tree map', async ({page}) => {
   });
 
   await softStep('Colour by AGE and switch the aggregation', async () => {
-    await v.openViewerProperties(page, VIEWER_NAME);
     await category(page, 'data', 'color');
     await v.snapshotCanvasColors(page, VIEWER_TYPE);
 
@@ -180,6 +181,12 @@ test('Tree map', async ({page}) => {
     await expect(page.locator(VIEWER)).toHaveCount(0);
   });
 
+  // the context panel keeps the closed viewer's property grid, and neither shell.o = null nor
+  // rebinding shell.o drops it (measured 2026-09-03); the next spec's openViewerProperties then
+  // skips the gear and edits a dead grid, so the stale node is removed here
+  await page.evaluate(() => {
+    for (const e of Array.from(document.querySelectorAll('.property-grid'))) e.remove();
+  });
   await v.cleanupShell(page);
 
   v.finishSpec();

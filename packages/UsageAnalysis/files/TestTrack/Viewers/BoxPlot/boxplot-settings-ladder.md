@@ -7,6 +7,7 @@ realizes:
   - viewers.box-plot
 priority: p0
 target_layer: playwright
+boot_lane: mixed
 coverage_type: smoke
 related_bugs:
   - id: GROK-18876
@@ -25,6 +26,7 @@ related_bugs:
     status: fixed
 realized_as:
   - boxplot-settings-ladder-spec.ts
+  - boxplot-settings-ladder-server-spec.ts
 expected_results:
   - anchor: PRE-LADDER
     expectation: >-
@@ -254,5 +256,10 @@ Expected:
   console/pageerror delta across the Axis Type=Log switch is the no-throw
   channel (GROK-18515); the GROK-20397 bound check reads the value-axis
   viewport against the positive data max.
-- Project save must go through the real ribbon Save button
-  (helpers/projects.ts saveProjectViaUI), not the JS API.
+- Lane split (2026-09-03): Scenarios 1-4 run on the local lane in
+  boxplot-settings-ladder-spec.ts (the layout round-trip is in memory via
+  tv.saveLayout / tv.loadLayout); Scenario 5 is
+  boxplot-settings-ladder-server-spec.ts, which sets the ladder up through
+  the properties and saves the project through the JS API
+  (helpers/projects.ts saveProjectViaApi — the same tv.getInfo() ViewInfo the
+  ribbon Save writes), since the ribbon is not the subject.

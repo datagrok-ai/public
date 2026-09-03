@@ -44,7 +44,6 @@ test('Density Plot — layout and project persistence', async ({page}: {page: Pa
       return layout.id as string;
     });
     try {
-      await page.waitForTimeout(1000); 
       await page.evaluate(() => { grok.shell.tv.addViewer('Scatter plot'); });
       await v.pollValue(
         () => page.evaluate(() => grok.shell.tv.viewers.some((vw: any) => vw.type === 'Scatter plot')),
@@ -110,7 +109,7 @@ test('Density Plot — layout and project persistence', async ({page}: {page: Pa
           bins: dp?.props.bins, binShape: dp?.props.binShape,
           invert: dp?.props.invertColorScheme,
         };
-      }), (r) => r.types.includes('Density plot'), 20000, 1000);
+      }), (r) => r.types.includes('Density plot'), 20000, 100);
 
       expect(result.types).toContain('Density plot');
       expect(result.x).toBe('AGE');

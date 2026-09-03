@@ -93,25 +93,18 @@ test('Density Plot — Bin Selection, Zoom, Bin To Range, Axis Configuration', a
     return d?.props[p];
   }, prop);
 
-  const settledPx = async () => {
-    let prev = (await v.countCanvasPixels(page, 'Density plot')).total;
-    let cur = prev;
-    for (let i = 0; i < 8; i++) {
-
-      await page.waitForTimeout(350);
-      cur = (await v.countCanvasPixels(page, 'Density plot')).total;
-      if (Math.abs(cur - prev) < 500) break;
-      prev = cur;
-    }
-    return cur;
+  const px = async () => (await v.countCanvasPixels(page, 'Density plot')).total;
+  const pxStable = () => v.pollStable(px, (a, b) => a === b, 2000, 50);
+  const pxMoved = async (before: number) => {
+    await v.pollValue(px, (c) => c !== before, 2000, 50);
+    return pxStable();
   };
 
   const measureColorDelta = async (action: () => Promise<void>) => {
-    await settledPx();
+    await pxStable();
     await v.snapshotCanvasColors(page, 'Density plot');
     await action();
-    await settledPx();
-    return (await v.diffCanvasColors(page, 'Density plot')).deltaPx;
+    return v.waitForCanvasChange(page, 'Density plot', {minDelta: 1, timeoutMs: 2000}).catch(() => 0);
   };
 
   const zoomInOneStep = () => page.evaluate(() => {
@@ -172,9 +165,9 @@ test('Density Plot — Bin Selection, Zoom, Bin To Range, Axis Configuration', a
 
   await softStep('Scenario 2 — mouse-wheel zoom and Reset View from the context menu', async () => {
     const errBefore = errCount();
-    const basePx = await settledPx();
+    const basePx = await pxStable();
     await zoomInOneStep();
-    const zoomPx = await settledPx();
+    const zoomPx = await pxMoved(basePx);
     console.log(`DensityPlot zoom px: basePx=${basePx} zoomPx=${zoomPx} delta=${Math.abs(zoomPx - basePx)}`);
 
     expect(basePx).toBeGreaterThan(0);
@@ -196,7 +189,7 @@ test('Density Plot — Bin Selection, Zoom, Bin To Range, Axis Configuration', a
         .find((el) => el.textContent?.trim() === 'Reset View') as HTMLElement;
       item?.click();
     });
-    const resetPx = await settledPx();
+    const resetPx = await pxMoved(zoomPx);
     console.log(`DensityPlot reset px: resetPx=${resetPx} |reset-base|=${Math.abs(resetPx - basePx)} |zoom-base|=${Math.abs(zoomPx - basePx)}`);
 
     expect(Math.abs(resetPx - basePx)).toBeLessThan(Math.abs(zoomPx - basePx));
@@ -220,20 +213,15 @@ test('Density Plot — Bin Selection, Zoom, Bin To Range, Axis Configuration', a
 
   await softStep('Scenario 3 — Bin To Range toggled while zoomed', async () => {
     const errBefore = errCount();
+    const unzoomedPx = await pxStable();
     await zoomInOneStep();
-    await settledPx();
+    await pxMoved(unzoomedPx);
     const toggleBinToRange = () => page.evaluate(() => {
       (document.querySelector('[name="prop-bin-to-range"] input[type="checkbox"]') as HTMLInputElement)?.click();
     });
-    const onDelta = await measureColorDelta(async () => {
-      await toggleBinToRange();
-      await v.waitForViewerRendered(page, 'Density plot', 400);
-    });
+    const onDelta = await measureColorDelta(toggleBinToRange);
     const onProp = await readProp('binToRange');
-    const offDelta = await measureColorDelta(async () => {
-      await toggleBinToRange();
-      await v.waitForViewerRendered(page, 'Density plot', 400);
-    });
+    const offDelta = await measureColorDelta(toggleBinToRange);
     const offProp = await readProp('binToRange');
     console.log(`DensityPlot binToRange color delta: onDelta=${onDelta} offDelta=${offDelta}`);
     expect(onProp).toBe(true);
@@ -260,12 +248,12 @@ test('Density Plot — Bin Selection, Zoom, Bin To Range, Axis Configuration', a
         .find((el) => el.textContent?.trim() === 'Reset View') as HTMLElement;
       item?.click();
     });
-    await settledPx();
+    await pxStable();
   });
 
   await softStep('Scenario 4 — explicit axis bounds with Bin To Range', async () => {
     const errBefore = errCount();
-    const basePx = await settledPx();
+    const basePx = await pxStable();
     await setBound(page, 'prop-view-x-min', 30);
     await setBound(page, 'prop-view-x-max', 60);
     await setBound(page, 'prop-view-y-min', 150);
@@ -275,7 +263,7 @@ test('Density Plot — Bin Selection, Zoom, Bin To Range, Axis Configuration', a
       return {xMin: d.props.xMin, xMax: d.props.xMax, yMin: d.props.yMin, yMax: d.props.yMax};
     });
     expect(bounds).toEqual({xMin: 30, xMax: 60, yMin: 150, yMax: 190});
-    const boundedPx = await settledPx();
+    const boundedPx = await pxMoved(basePx);
 
     const toggleBinToRange = () => page.evaluate(() => {
       (document.querySelector('[name="prop-bin-to-range"] input[type="checkbox"]') as HTMLInputElement)?.click();
@@ -299,7 +287,7 @@ test('Density Plot — Bin Selection, Zoom, Bin To Range, Axis Configuration', a
       const nn = (x: any) => (x === null || x === undefined);
       return {xMin: nn(d.props.xMin), xMax: nn(d.props.xMax), yMin: nn(d.props.yMin), yMax: nn(d.props.yMax)};
     });
-    const clearedPx = await settledPx();
+    const clearedPx = await pxMoved(boundedPx);
     console.log(`DensityPlot bounds px: basePx=${basePx} boundedPx=${boundedPx} clearedPx=${clearedPx}`);
     expect(cleared).toEqual({xMin: true, xMax: true, yMin: true, yMax: true});
 

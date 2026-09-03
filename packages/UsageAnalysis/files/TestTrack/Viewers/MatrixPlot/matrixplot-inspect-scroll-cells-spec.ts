@@ -38,7 +38,6 @@ async function settledCellInk(page: Page, idx: number): Promise<number> {
   let prev = await cellInk(page, idx);
   let cur = prev;
   for (let i = 0; i < 10; i++) {
-
     await page.waitForTimeout(300);
     cur = await cellInk(page, idx);
     if (cur >= 0 && Math.abs(cur - prev) < 40) break;
@@ -47,79 +46,30 @@ async function settledCellInk(page: Page, idx: number): Promise<number> {
   return cur;
 }
 
-async function dragSliderMax(page: Page, slider: 'x-slider' | 'y-slider', axis: 'x' | 'y', fraction: number): Promise<number> {
-  await page.evaluate(async (args: {slider: string; axis: string; fraction: number}) => {
-    const root = document.querySelector('[name="viewer-Matrix-plot"]')!;
-    const svg = root.querySelector(`svg[name="${args.slider}"]`)!;
-    const sr = svg.getBoundingClientRect();
-    const max = svg.querySelector('[name="max-handle"]')!;
-    const b = max.getBoundingClientRect();
-    let cx = b.x + b.width / 2, cy = b.y + b.height / 2;
-    const mk = (x: number, y: number) => ({bubbles: true, cancelable: true, clientX: x, clientY: y, button: 0});
-    max.dispatchEvent(new MouseEvent('mousedown', mk(cx, cy)));
-
-    await new Promise((r) => setTimeout(r, 50));
-    if (args.axis === 'x') {
-      const target = sr.x + sr.width * args.fraction - 1;
-      const step = target < cx ? -15 : 15;
-      for (let x = cx; (step < 0 ? x >= target : x <= target); x += step) {
-        document.dispatchEvent(new MouseEvent('mousemove', mk(x, cy)));
-        svg.dispatchEvent(new MouseEvent('mousemove', mk(x, cy)));
-        await new Promise((r) => setTimeout(r, 20)); 
-      }
-      document.dispatchEvent(new MouseEvent('mouseup', mk(target, cy)));
-    } else {
-      const target = sr.y + sr.height * args.fraction - 1;
-      const step = target < cy ? -15 : 15;
-      for (let y = cy; (step < 0 ? y >= target : y <= target); y += step) {
-        document.dispatchEvent(new MouseEvent('mousemove', mk(cx, y)));
-        svg.dispatchEvent(new MouseEvent('mousemove', mk(cx, y)));
-        await new Promise((r) => setTimeout(r, 20)); 
-      }
-      document.dispatchEvent(new MouseEvent('mouseup', mk(cx, target)));
-    }
-  }, {slider, axis, fraction});
-  await v.waitForViewerRendered(page, 'Matrix plot', 800);
+// One drag of a viewport slider's max handle from `from` visible columns to `to`. Every
+// mousemove that changes the integer viewport re-tiles the whole visible matrix (0.1s at
+// 25 cells, 3s at 240), so the gesture is a single move to the computed position rather
+// than a paced sweep; the value is proven by the cell count the caller asserts.
+async function dragMaxTo(page: Page, slider: 'x-slider' | 'y-slider', from: number, to: number,
+  expectRender: boolean): Promise<number> {
+  await page.evaluate(async (a: {slider: string; from: number; to: number; expectRender: boolean}) => {
+    const w = window as any;
+    const svg = document.querySelector(`[name="viewer-Matrix-plot"] svg[name="${a.slider}"]`)!;
+    const min = svg.querySelector('[name="min-handle"]')!.getBoundingClientRect();
+    const max = svg.querySelector('[name="max-handle"]') as HTMLElement;
+    const mb = max.getBoundingClientRect();
+    const vertical = a.slider === 'y-slider';
+    const centre = (b: DOMRect) => vertical ? b.y + b.height / 2 : b.x + b.width / 2;
+    // the handle centres sit one handle diameter apart beyond the value span
+    const pxPerUnit = (centre(mb) - centre(min) - mb.width) / a.from;
+    const d = (a.to - a.from) * pxPerUnit;
+    const cx = mb.x + mb.width / 2, cy = mb.y + mb.height / 2;
+    const act = () => w.__drag(max, {x: cx, y: cy}, {x: vertical ? cx : cx + d, y: vertical ? cy + d : cy},
+      {steps: 1, stepMs: 0, holdMs: 0});
+    if (a.expectRender) await w.__settled('viewer:Matrix plot.onViewerRendered', act, 5000);
+    else await act();
+  }, {slider, from, to, expectRender});
   return cellCount(page);
-}
-
-async function dragFullSampled(page: Page, slider: 'x-slider' | 'y-slider', axis: 'x' | 'y'): Promise<{samples: number[]; final: number}> {
-  const samples = await page.evaluate(async (args: {slider: string; axis: string}) => {
-    const root = document.querySelector('[name="viewer-Matrix-plot"]')!;
-    const svg = root.querySelector(`svg[name="${args.slider}"]`)!;
-    const sr = svg.getBoundingClientRect();
-    const max = svg.querySelector('[name="max-handle"]')!;
-    const b = max.getBoundingClientRect();
-    const cx = b.x + b.width / 2, cy = b.y + b.height / 2;
-    const mk = (x: number, y: number) => ({bubbles: true, cancelable: true, clientX: x, clientY: y, button: 0});
-    const cellN = () => document.querySelectorAll('[name="viewer-Matrix-plot"] canvas.d4-matrix-plot-inner-viewer').length;
-    const samples: number[] = [];
-    max.dispatchEvent(new MouseEvent('mousedown', mk(cx, cy)));
-
-    await new Promise((r) => setTimeout(r, 50));
-    if (args.axis === 'x') {
-      const end = sr.x + sr.width - 1;
-      for (let x = cx; x <= end; x += 15) {
-        document.dispatchEvent(new MouseEvent('mousemove', mk(x, cy)));
-        svg.dispatchEvent(new MouseEvent('mousemove', mk(x, cy)));
-        await new Promise((r) => setTimeout(r, 25)); 
-        samples.push(cellN());
-      }
-      document.dispatchEvent(new MouseEvent('mouseup', mk(end, cy)));
-    } else {
-      const end = sr.y + sr.height - 1;
-      for (let y = cy; y <= end; y += 15) {
-        document.dispatchEvent(new MouseEvent('mousemove', mk(cx, y)));
-        svg.dispatchEvent(new MouseEvent('mousemove', mk(cx, y)));
-        await new Promise((r) => setTimeout(r, 25)); 
-        samples.push(cellN());
-      }
-      document.dispatchEvent(new MouseEvent('mouseup', mk(cx, end)));
-    }
-    return samples;
-  }, {slider, axis});
-  await v.waitForViewerRendered(page, 'Matrix plot', 800);
-  return {samples, final: await cellCount(page)};
 }
 
 const topLabelSet = (page: Page) => page.evaluate(() => {
@@ -174,14 +124,14 @@ test('Matrix Plot — Viewport Scrolling and Cell Inspection', async ({page}: {p
         !!document.querySelector('[name="viewer-Matrix-plot"] svg[name="y-slider"]'))).toBe(true);
       expect(await v.pollValue(() => cellCount(page), (n) => n === 16, 3000, 150)).toBe(16);
 
-      const mid = await dragSliderMax(page, 'x-slider', 'x', 0.5);
+      const mid = await dragMaxTo(page, 'x-slider', 4, 2, true);
       expect(mid).toBeLessThan(16);
       expect(mid).toBeGreaterThanOrEqual(4);
       const midLabels = await topLabelSet(page);
       expect(midLabels.length).toBeLessThan(4);
       expect(midLabels.length).toBeGreaterThanOrEqual(1);
 
-      const back = await dragSliderMax(page, 'x-slider', 'x', 1.0);
+      const back = await dragMaxTo(page, 'x-slider', 2, 4, true);
       expect(back).toBe(16);
       expect((await topLabelSet(page)).length).toBe(4);
 
@@ -189,20 +139,23 @@ test('Matrix Plot — Viewport Scrolling and Cell Inspection', async ({page}: {p
       await setSets(page, allCols, 1500);
 
       const initial = await v.pollValue(() => cellCount(page), (n) => n > 0, 3000, 150);
-
       expect(initial).toBeLessThan(80);
 
-      const xFull = await dragFullSampled(page, 'x-slider', 'x');
-      expect(xFull.final).toBeGreaterThan(initial);
+      const xFull = await dragMaxTo(page, 'x-slider', 5, 16, true);
+      expect(xFull).toBeGreaterThan(initial);
 
-      const yFull = await dragFullSampled(page, 'y-slider', 'y');
-      const allSamples = [...xFull.samples, ...yFull.samples, xFull.final, yFull.final];
-      const maxSeen = Math.max(...allSamples);
-      console.log(`MatrixPlot cap: initial=${initial} xFull=${xFull.final} yFull=${yFull.final} maxSeen=${maxSeen}`);
+      const yNearCap = await dragMaxTo(page, 'y-slider', 5, 15, true);
+      // the 16th row would make 256 cells: the increment is rejected and nothing repaints
+      await dragMaxTo(page, 'y-slider', 15, 16, false);
+      const yFull = await v.pollValue(() => cellCount(page), (n) => n !== yNearCap, 1000, 100);
+      const samples = [initial, xFull, yNearCap, yFull];
+      const maxSeen = Math.max(...samples);
+      console.log(`MatrixPlot cap: initial=${initial} xFull=${xFull} yNearCap=${yNearCap} yFull=${yFull} maxSeen=${maxSeen}`);
 
-      expect(yFull.final).toBeGreaterThan(xFull.final);
+      expect(yFull).toBeGreaterThan(xFull);
+      expect(yFull).toBe(yNearCap);
       expect(maxSeen).toBeLessThanOrEqual(250);
-      expect(allSamples.includes(256)).toBe(false);
+      expect(samples.includes(256)).toBe(false);
 
       await setSets(page, BASE_COLS, 1500);
       expect(await v.pollValue(() => cellCount(page), (n) => n === 16, 3000, 150)).toBe(16);
@@ -211,7 +164,7 @@ test('Matrix Plot — Viewport Scrolling and Cell Inspection', async ({page}: {p
     await softStep('Scenario 2 — hover a cell: tooltip identity and expand icon reveal', async () => {
       const visBefore = await page.evaluate(() => {
         const cells = document.querySelectorAll('[name="viewer-Matrix-plot"] canvas.d4-matrix-plot-inner-viewer');
-        const cell = cells[1] as HTMLElement; 
+        const cell = cells[1] as HTMLElement;
         const iconBefore = cell.parentElement!.querySelector('[name="icon-expand-arrows"]') as HTMLElement | null;
         const visBefore = iconBefore ? getComputedStyle(iconBefore).visibility : null;
         const r = cell.getBoundingClientRect();
@@ -312,17 +265,17 @@ test('Matrix Plot — Viewport Scrolling and Cell Inspection', async ({page}: {p
       expect(Math.abs(targetZoom - targetBase)).toBeGreaterThan(300);
       expect(Math.abs(neighbourZoom - neighbourBase)).toBeLessThan(100);
 
-      await wheel(1, 300); 
+      await wheel(1, 300);
       await v.waitForViewerRendered(page, 'Matrix plot', 400);
       await settledCellInk(page, 1);
       expect(errCount()).toBe(errBefore);
     });
   } finally {
-    await page.evaluate(async (names: string[]) => {
+    await page.evaluate((names: string[]) => {
       const df = grok.shell.tv?.dataFrame;
       if (df) for (const nm of names) if (df.columns.names().includes(nm)) df.columns.remove(nm);
-      grok.shell.closeAll();
     }, fixtureCols);
+    await v.closeAllAndWait(page);
   }
 
   v.finishSpec();

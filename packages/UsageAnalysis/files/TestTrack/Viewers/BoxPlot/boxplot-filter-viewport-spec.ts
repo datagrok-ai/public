@@ -2,9 +2,10 @@
 realizes: [boxplot.cp.filter-viewport]
 --- */
 import {expect, Page} from '@playwright/test';
-import {test} from '../../shared-page';
-import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
+import {localTest as test} from '../../shared-page';
+import {openDatagrok, specTestOptions, softStep, isLocalBootNoise} from '../../spec-login';
 import * as v from '../../helpers/viewers';
+import {BOX, Rect, bpProp} from './boxplot-helpers';
 
 declare const grok: any;
 declare const DG: any;
@@ -17,17 +18,9 @@ const OVERLAY = 'canvas[name="overlay"]';
 
 async function viewportRect(page: Page): Promise<{y: number; height: number}> {
   return page.evaluate(() => {
-    const bp = grok.shell.tv.viewers.find((x: any) => x.type === 'Box plot');
-    const vp = bp.viewport;
+    const vp = grok.shell.tv.viewers.find((x: any) => x.type === 'Box plot').viewport;
     return {y: vp.y, height: vp.height};
   });
-}
-
-async function bpProp(page: Page, prop: string): Promise<any> {
-  return page.evaluate((p) => {
-    const bp = grok.shell.tv.viewers.find((x: any) => x.type === 'Box plot');
-    return bp?.props?.[p];
-  }, prop);
 }
 
 async function setBpProp(page: Page, prop: string, value: any, settleMs = 1200): Promise<void> {
@@ -50,20 +43,14 @@ async function resetFilter(page: Page): Promise<void> {
     (c) => c.n === c.total, 800, 100);
 }
 
-async function averageMassFilterCanvas(page: Page): Promise<{x: number; y: number; w: number; h: number}> {
+async function averageMassFilterCanvas(page: Page): Promise<Rect> {
   await page.evaluate(() => {
     const fg = grok.shell.tv.getFiltersGroup();
     fg.updateOrAdd({type: DG.FILTER_TYPE.HISTOGRAM, column: 'Average Mass'});
   });
-  await v.pollValue(() => page.evaluate(() => {
-    const filtersRoot = document.querySelector('[name="viewer-Filters"]');
-    return Array.from(filtersRoot?.querySelectorAll('.d4-filter') ?? []).some((c) =>
-      c.querySelector('.d4-filter-column-name')?.textContent?.trim() === 'Average Mass');
-  }), (present) => present, 1500, 100);
   const readRect = () => page.evaluate(() => {
-    const filtersRoot = document.querySelector('[name="viewer-Filters"]')!;
-    const cards = Array.from(filtersRoot.querySelectorAll('.d4-filter'));
-    const card = cards.find((c) =>
+    const filtersRoot = document.querySelector('[name="viewer-Filters"]');
+    const card = Array.from(filtersRoot?.querySelectorAll('.d4-filter') ?? []).find((c) =>
       c.querySelector('.d4-filter-column-name')?.textContent?.trim() === 'Average Mass');
     if (!card) return null;
     card.scrollIntoView();
@@ -72,93 +59,57 @@ async function averageMassFilterCanvas(page: Page): Promise<{x: number; y: numbe
     const r = cv.getBoundingClientRect();
     return {x: r.x, y: r.y, w: r.width, h: r.height};
   });
-  let rect: {x: number; y: number; w: number; h: number} | null = null;
-  let prev = '';
-  for (let i = 0; i < 20; i++) {
-    rect = await readRect();
-    const sig = JSON.stringify(rect);
-    if (rect && rect.w > 0 && rect.h > 0 && sig === prev) break;
-    prev = sig;
-    await v.pollStable(readRect, (a, b) => JSON.stringify(a) === JSON.stringify(b), 400, 100);
-  }
-  if (!rect) throw new Error('Average Mass histogram filter canvas not found');
+  await v.pollValue(readRect, (r) => !!r && r.w > 0 && r.h > 0, 3000, 100);
+  const rect = await v.pollStable(readRect, (a, b) => JSON.stringify(a) === JSON.stringify(b), 2000, 100);
+  if (!rect || rect.w === 0) throw new Error('Average Mass histogram filter canvas not found');
   return rect;
 }
 
-async function openFilterPanelWithBudget(page: Page, budgetMs = 90_000): Promise<void> {
-  const deadline = Date.now() + budgetMs;
-  for (let attempt = 1; ; attempt++) {
-    await page.evaluate(() => grok.shell.tv.getFiltersGroup());
-    const hasCards = await page.waitForFunction(
-      () => document.querySelectorAll('[name="viewer-Filters"] .d4-filter').length > 0,
-      null, {timeout: 10_000, polling: 300},
-    ).then(() => true).catch(() => false);
-    const count = await page.evaluate(() =>
-      document.querySelectorAll('[name="viewer-Filters"] .d4-filter').length);
-    console.log(`Filter panel open attempt ${attempt}: ${count} filter cards`);
-    if (hasCards) {
-
-      await page.locator('[name="viewer-Filters"] .d4-filter').first().hover().catch(() => {});
-      return;
-    }
-    if (Date.now() >= deadline)
-      throw new Error(`Filter panel produced no filter cards within ${budgetMs}ms (${attempt} attempts)`);
-
-    await page.evaluate(() => {
-      const f = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Filters') as any;
-      if (f) f.close();
-    });
-    await v.pollValue(
-      () => page.evaluate(() => Array.from(grok.shell.tv.viewers).some((x: any) => x.type === 'Filters')),
-      (present) => !present, 1000, 100);
-  }
-}
-
-async function dragFilterHandle(
-  page: Page, rect: {x: number; y: number; w: number; h: number},
-  side: 'min' | 'max', targetFrac: number,
-): Promise<boolean> {
-  await page.mouse.move(rect.x + rect.w * 0.5, rect.y + rect.h * 0.5);
-
-  await v.pollStable(() => page.evaluate(() => getComputedStyle(document.body).cursor),
-    (a, b) => a === b, 400, 60);
-  const cursorNow = () => page.evaluate(() => {
-    const filtersRoot = document.querySelector('[name="viewer-Filters"]')!;
-    const cards = Array.from(filtersRoot.querySelectorAll('.d4-filter'));
-    const card = cards.find((c) =>
-      c.querySelector('.d4-filter-column-name')?.textContent?.trim() === 'Average Mass');
-    const cv = card?.querySelector('canvas[name="canvas"]') as HTMLCanvasElement | null;
-    return cv?.style.cursor ?? '';
-  });
-  for (let fy = 0.5; fy <= 0.98; fy += 0.06) {
-    for (let px = 2; px <= 24; px += 3) {
-      const x = side === 'min' ? rect.x + px : rect.x + rect.w - px;
-      const y = rect.y + rect.h * fy;
-      await page.mouse.move(x, y);
-      await v.pollStable(() => page.evaluate(() => getComputedStyle(document.body).cursor),
-        (a, b) => a === b, 60, 20);
-      if (await cursorNow() === 'ew-resize') {
-        const before = await filterTrueCount(page);
-        await page.mouse.down();
-        await page.mouse.move(rect.x + rect.w * targetFrac, y, {steps: 12});
-        await page.mouse.up();
-
-        await v.pollValue(() => filterTrueCount(page), (n) => n !== before, 1200, 100);
-        return true;
-      }
-    }
-  }
-  return false;
+async function openFilterPanel(page: Page): Promise<void> {
+  await page.evaluate(() => grok.shell.tv.getFiltersGroup());
+  const card = page.locator('[name="viewer-Filters"] .d4-filter').first();
+  await card.waitFor({timeout: 15_000});
+  await card.hover().catch(() => {});
 }
 
 async function filterTrueCount(page: Page): Promise<number> {
   return page.evaluate(() => grok.shell.t.filter.trueCount);
 }
 
+// The histogram filter's slider is a 5px band in the bottom 15px of its canvas with 10px handles
+// at each end (histogram_core.dart rangeSlider.attach); the handle hit sets the canvas cursor
+// synchronously on mousemove, so the handle is located with synthetic moves in one evaluate and
+// only the drag itself goes through the real pointer.
+async function dragFilterHandle(page: Page, rect: Rect, side: 'min' | 'max', targetFrac: number): Promise<boolean> {
+  const handle = await page.evaluate((s) => {
+    const filtersRoot = document.querySelector('[name="viewer-Filters"]')!;
+    const card = Array.from(filtersRoot.querySelectorAll('.d4-filter')).find((c) =>
+      c.querySelector('.d4-filter-column-name')?.textContent?.trim() === 'Average Mass');
+    const cv = card?.querySelector('canvas[name="canvas"]') as HTMLCanvasElement | null;
+    if (!cv) return null;
+    const r = cv.getBoundingClientRect();
+    for (let dy = 4; dy <= 40; dy += 2)
+      for (let dx = 1; dx <= 30; dx += 2) {
+        const x = s === 'min' ? r.left + dx : r.right - dx;
+        const y = r.bottom - dy;
+        cv.dispatchEvent(new MouseEvent('mousemove', {bubbles: true, clientX: x, clientY: y}));
+        if (cv.style.cursor === 'ew-resize') return {x, y};
+      }
+    return null;
+  }, side);
+  if (!handle) return false;
+  const before = await filterTrueCount(page);
+  await page.mouse.move(handle.x, handle.y);
+  await page.mouse.down();
+  await page.mouse.move(rect.x + rect.w * targetFrac, handle.y, {steps: 12});
+  await page.mouse.up();
+  await v.pollValue(() => filterTrueCount(page), (n) => n !== before, 1200, 100);
+  return true;
+}
+
 async function categoryBandColors(page: Page): Promise<Record<string, number>> {
-  return page.evaluate(() => {
-    const root = document.querySelector('[name="viewer-Box-plot"]')!;
-    const cv = root.querySelector('canvas[name="canvas"]') as HTMLCanvasElement;
+  return page.evaluate((sel) => {
+    const cv = document.querySelector(`${sel} canvas[name="canvas"]`) as HTMLCanvasElement;
     const ctx = cv.getContext('2d')!;
     const y0 = Math.floor(cv.height * 0.80);
     const img = ctx.getImageData(0, y0, cv.width, cv.height - y0).data;
@@ -168,7 +119,7 @@ async function categoryBandColors(page: Page): Promise<Record<string, number>> {
       colors[key] = (colors[key] ?? 0) + 1;
     }
     return colors;
-  });
+  }, BOX);
 }
 
 function bandColorsDelta(a: Record<string, number>, b: Record<string, number>): number {
@@ -196,15 +147,16 @@ async function hasEmptyValuedCategory(page: Page): Promise<boolean> {
 }
 
 test('Box Plot filter semantics and viewport response', async ({page}) => {
-  test.setTimeout(600_000);
+  test.setTimeout(300_000);
 
   const consoleErrors: string[] = [];
   const pageErrors: string[] = [];
-  page.on('console', (m) => { if (m.type() === 'error') consoleErrors.push(m.text()); });
-  page.on('pageerror', (e) => { pageErrors.push(String(e)); });
+  page.on('console', (m) => { if (m.type() === 'error' && !isLocalBootNoise(m.text())) consoleErrors.push(m.text()); });
+  page.on('pageerror', (e) => { if (!isLocalBootNoise(String(e))) pageErrors.push(String(e)); });
 
-  await loginToDatagrok(page);
-  await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 5000});
+  await openDatagrok(page);
+  // nothing here depends on a semantic type, and the local client loads no Chem detector to fire the event
+  await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 800});
 
   const rowCount = await page.evaluate(() => grok.shell.t.rowCount);
   expect(rowCount).toBe(100);
@@ -214,11 +166,11 @@ test('Box Plot filter semantics and viewport response', async ({page}) => {
     bp.props.valueColumnName = 'Average Mass';
     bp.props.category1ColumnName = 'Series';
   });
-  await page.locator('[name="viewer-Box-plot"]').waitFor({timeout: 10000});
+  await page.locator(BOX).waitFor({timeout: 10000});
   await v.waitForViewerRendered(page, 'Box plot', 1500);
   await v.waitForViewerQuiet(page, 'Box plot');
 
-  await openFilterPanelWithBudget(page);
+  await openFilterPanel(page);
 
   await softStep('Scenario 1 Step 4: narrowing the filter narrows the viewport; trueCount < 100; zoomValuesByFilter reads true', async () => {
     await resetFilter(page);
@@ -258,7 +210,6 @@ test('Box Plot filter semantics and viewport response', async ({page}) => {
   });
 
   await softStep('Scenario 2 Step 8: switching zoomValuesByFilter back to true narrows the viewport to the filtered range', async () => {
-
     const before = await viewportRect(page);
     await setBpProp(page, 'zoomValuesByFilter', true);
     await v.waitForViewerQuiet(page, 'Box plot');
@@ -290,7 +241,6 @@ test('Box Plot filter semantics and viewport response', async ({page}) => {
   let fixtureAdded = false;
   try {
     await softStep('Scenario 4 Step 5: disabling showEmptyCategories drops the empty-valued category (axis re-layout)', async () => {
-
       const fx = await page.evaluate(async () => {
         const df = grok.shell.t;
         const series = df.col('Series');
@@ -379,7 +329,6 @@ test('Box Plot filter semantics and viewport response', async ({page}) => {
   });
 
   await softStep('Scenario 5 Step 5: color scale recomputes to the filtered TPSA range (overlay repaint)', async () => {
-
     const ranges = await page.evaluate(() => {
       const df = grok.shell.t;
       const t = df.col('TPSA');
@@ -406,6 +355,6 @@ test('Box Plot filter semantics and viewport response', async ({page}) => {
     await resetFilter(page);
   });
 
-  await page.evaluate(() => grok.shell.closeAll());
+  await v.closeAllAndWait(page);
   v.finishSpec();
 });

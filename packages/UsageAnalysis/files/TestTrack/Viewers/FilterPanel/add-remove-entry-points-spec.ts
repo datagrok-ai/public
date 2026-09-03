@@ -2,10 +2,10 @@
 realizes: [filters.cp.add-remove-entry-points]
 --- */
 import {expect, Page} from '@playwright/test';
-import {test} from '../../shared-page';
-import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
+import {localTest as test} from '../../shared-page';
+import {isLocalBootNoise, openDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
-import {cardCount, driveOpenMenuLeaf, expectHeaderCounter, expectHeaderCounterQuiet,
+import {cardCount, clickResetCriteriaIcon, driveOpenMenuLeaf, expectHeaderCounter, expectHeaderCounterQuiet,
   expectHeaderCounterQuietNow, trueCount} from '../../helpers/filter-panel';
 
 declare const grok: any;
@@ -28,13 +28,10 @@ async function orderedCaptions(page: Page): Promise<string[]> {
       .map((e) => (e.textContent ?? '').trim()));
 }
 
+// A hold: the count must not leave `expected` for the whole window, so the window is spent
+// watching for the move it hopes not to see.
 async function holdTrueCount(page: Page, expected: number, why: string, ms = 3000): Promise<void> {
-  const deadline = Date.now() + ms;
-  for (;;) {
-    expect(await trueCount(page), why).toBe(expected);
-    if (Date.now() > deadline) return;
-    await page.waitForTimeout(500);
-  }
+  expect(await v.pollValue(() => trueCount(page), (c) => c !== expected, ms, 250), why).toBe(expected);
 }
 
 async function gridHeaderPoint(page: Page, column: string): Promise<{x: number; y: number}> {
@@ -218,22 +215,38 @@ async function addViaHeaderCombo(page: Page, column: string): Promise<void> {
   }).toBe(0);
 }
 
+// The Filter section of the column properties hosts a live filter for that column, and the
+// accordion remembers it open in localStorage ("Accordion:column"): left expanded, every later
+// spec on this page gets a second, panel-independent filter on whichever column becomes
+// current, so the section is collapsed again once the link has been used.
 async function addViaColumnProperties(page: Page, column: string): Promise<void> {
   await page.evaluate((col) => { grok.shell.o = grok.shell.tv.dataFrame.col(col); }, column);
   const cardsBefore = await cardCount(page);
-  await page.evaluate(async () => {
+  const opened = await page.evaluate(async () => {
     const w = window as any;
     const linkVisible = () => [...document.querySelectorAll('label.d4-link-action')]
       .some((e) => (e.textContent ?? '').trim().toLowerCase() === 'add filter' && e.getBoundingClientRect().width > 0);
     const header = await w.__poll(() => [...document.querySelectorAll('[name="div-section--Filter"]')]
       .find((e) => e.getBoundingClientRect().width > 0), (e: HTMLElement | undefined) => e !== undefined, 1000, 25);
-    if (!linkVisible()) (header as HTMLElement | undefined)?.click();
+    const opened = !linkVisible();
+    if (opened) (header as HTMLElement | undefined)?.click();
     await w.__poll(linkVisible, (there: boolean) => there, 800, 25);
     const link = [...document.querySelectorAll('label.d4-link-action')]
       .find((e) => (e.textContent ?? '').trim().toLowerCase() === 'add filter' && e.getBoundingClientRect().width > 0) as HTMLElement | undefined;
     link?.click();
+    return opened;
   });
   await v.pollValue(() => cardCount(page), (n) => n > cardsBefore, 900, 50);
+  if (opened) {
+    await page.evaluate(async () => {
+      const w = window as any;
+      const linkVisible = () => [...document.querySelectorAll('label.d4-link-action')]
+        .some((e) => (e.textContent ?? '').trim().toLowerCase() === 'add filter' && e.getBoundingClientRect().width > 0);
+      ([...document.querySelectorAll('[name="div-section--Filter"]')]
+        .find((e) => e.getBoundingClientRect().width > 0) as HTMLElement | undefined)?.click();
+      await w.__poll(linkVisible, (there: boolean) => !there, 800, 25);
+    });
+  }
 }
 
 async function narrowToTopCategory(page: Page, column: string): Promise<number> {
@@ -422,7 +435,7 @@ async function appliedRowFilters(page: Page): Promise<string[]> {
 async function openCleanDemogView(page: Page, path: string): Promise<void> {
   await page.evaluate(async (p) => {
     const previous = grok.shell.v;
-    const df = await grok.dapi.files.readCsv(p);
+    const df = await (window as any).__readCsv(p);
     grok.shell.addTableView(df);
     // Left as fixed settles on purpose: every event-based readiness condition tried here let the
     // previous view close too early, and Scenario 6 then typed into a column selector listing the
@@ -597,10 +610,9 @@ async function rebuildPanelFromColumnVisibility(page: Page): Promise<void> {
 test('Filter Panel — Add, Reorder, and Remove Entry Points', async ({page}) => {
   test.setTimeout(600_000);
 
-  await loginToDatagrok(page);
+  await openDatagrok(page);
 
   await v.openTable(page, {path: datasetPath, withFilterPanel: true});
-  await v.installEventWaits(page);
 
   await softStep('Setup — the zero-card baseline: empty the Filter Panel and confirm it carries no cards', async () => {
     await removeAllViaHamburger(page);
@@ -741,9 +753,12 @@ test('Filter Panel — Add, Reorder, and Remove Entry Points', async ({page}) =>
   });
 
   const consoleErrors: string[] = [];
-  page.on('console', (msg) => { if (msg.type() === 'error') consoleErrors.push(msg.text()); });
+  const onConsole = (msg: import('@playwright/test').ConsoleMessage) => {
+    if (msg.type() === 'error') consoleErrors.push(msg.text());
+  };
+  page.on('console', onConsole);
   const AMBIENT = 'Permissions policy violation: compute-pressure';
-  const errorSet = () => new Set(consoleErrors.filter((t) => !t.includes(AMBIENT)));
+  const errorSet = () => new Set(consoleErrors.filter((t) => !t.includes(AMBIENT) && !isLocalBootNoise(t)));
 
   let orderBeforeReorder: string[] = [];
   let trueCountBeforeReorder = 0;
@@ -951,19 +966,25 @@ test('Filter Panel — Add, Reorder, and Remove Entry Points', async ({page}) =>
   let baselineTrueCount = -1;
 
   await softStep('Scenario 6 Step 1 — Select Columns... drives the card set both ways', async () => {
+    // Remove All on the reopened panel drops the cards but leaves the criterion Scenario 5 restored
+    // filtering, and it re-applies over a bare filter.setAll(true) — the group's own filter list
+    // no longer names it either. The header reset icon clears the restored criteria first, the
+    // way Step 9 of the core ladder proves it does, so nothing is filtering when the cards go.
+    await clickResetCriteriaIcon(page, {via: 'dom'});
+    await expect.poll(() => trueCount(page),
+      {timeout: 10_000, intervals: [200, 400, 800],
+        message: 'the header reset must release the criterion the reopened panel restored'})
+      .toBe(fullRowCount);
     await removeAllViaHamburger(page);
     expect(await cardCount(page), 'the picker is measured from an empty panel, so Remove All must '
       + 'leave zero cards or the "All" result below would not be attributable').toBe(0);
-    // Remove All drops the cards first and RELEASES their filters a moment later — reading
-    // the baseline immediately captures the still-filtered count, which then never matches
-    // the (correctly unfiltered) count the picker leaves behind
-    // Remove All empties the PANEL but does not release a criterion the previous scenario
-    // restored — the dataframe filter survives with zero cards present, so the baseline
-    // must be taken from an explicitly cleared filter or the picker's no-op reads as a change
-    await page.evaluate(() => (window as any).grok.shell.tv.dataFrame.filter.setAll(true));
-    baselineTrueCount = await v.pollStable(() => trueCount(page), (a, b) => a === b, 5000, 200);
-    expect(baselineTrueCount, 'the row count at the start of this scenario must be a positive '
-      + `number to compare the picker's effect against; got ${baselineTrueCount}`).toBeGreaterThan(0);
+    await expect.poll(() => trueCount(page),
+      {timeout: 10_000, intervals: [200, 400, 800],
+        message: 'the fresh panel must show every row before the picker is measured against it'})
+      .toBe(fullRowCount);
+    baselineTrueCount = await v.pollValue(() => trueCount(page), (c) => c !== fullRowCount, 1500, 200);
+    expect(baselineTrueCount, 'the row count at the start of this scenario must be the full table '
+      + `and hold there; got ${baselineTrueCount}`).toBe(fullRowCount);
 
     const pickedColumns = await columnNames(page);
     expect(pickedColumns.length, `the table exposes no columns for the picker to offer; got `
@@ -1257,6 +1278,9 @@ test('Filter Panel — Add, Reorder, and Remove Entry Points', async ({page}) =>
     expect(await columnNames(page), 'the column this step added must be gone again; columns before '
       + `were [${columnsBefore.join(', ')}]`).toEqual(columnsBefore);
   });
+
+  page.off('console', onConsole);
+  await v.cleanupShell(page);
 
   v.finishSpec();
 });

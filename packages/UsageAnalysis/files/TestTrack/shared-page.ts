@@ -78,6 +78,12 @@ export async function resetShell(page: Page): Promise<void> {
       tick();
     });
 
+    // a closed viewer's property grid outlives it in the context panel and `shell.o = null` is
+    // ignored, so the next spec's property helpers edit a dead grid; the accordion section state
+    // is persisted per column and gives later specs a live filter widget they never opened
+    for (const g of Array.from(document.querySelectorAll('.property-grid'))) g.remove();
+    try { for (const k of Object.keys(localStorage)) if (k.startsWith('Accordion:')) localStorage.removeItem(k); } catch (_) {}
+
     try { grok.shell.windows.simpleMode = false; } catch (_) {}
     try { grok.shell.settings.showFiltersIconsConstantly = false; } catch (_) {}
     try { grok.shell.o = null; } catch (_) {}
@@ -112,6 +118,9 @@ function laneTest(lane: 'local' | 'server') {
 
     page: async ({browser, contextOptions, shared}, use) => {
       if (!shared.page) {
+        // the boot runs inside the first test's budget; a slow stand (60s+ at two workers) must not
+        // fail that test at the 60s config timeout before its first step
+        base.info().setTimeout(base.info().timeout + 120_000);
         const context = await browser.newContext(contextOptions);
         context.setDefaultTimeout(specTestOptions.actionTimeout);
         context.setDefaultNavigationTimeout(specTestOptions.navigationTimeout);

@@ -1,43 +1,36 @@
 /* ---
 realizes: [tileviewer.cp.selection-classes-and-form-editor, tileviewer.int.show-selected-rows-is-viewer-local, tileviewer.int.autogenerate-is-a-state-flag]
 --- */
-import {expect} from '@playwright/test';
-import {test} from '../../shared-page';
-import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
+import {localTest as test, expect} from '../../shared-page';
+import {isLocalBootNoise, openDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 
 declare const grok: any;
 declare const DG: any;
 
+// The layout round-trip of Scenario 3 Step 5 lives in tile-viewer-lanes-persist-server-spec.ts,
+// the section's server sibling; everything here is client-side.
 test.use(specTestOptions);
 
+const datasetPath = 'System:DemoFiles/demog.csv';
+const ROOT = '[name="viewer-Tile-Viewer"]';
+
 test('Tile Viewer — Row-state rendering and Edit Form designer', async ({page}) => {
-  test.setTimeout(600_000);
+  test.setTimeout(300_000);
 
-  await loginToDatagrok(page);
-
-  await page.evaluate(async () => {
-    document.body.classList.add('selenium');
-    grok.shell.settings.showFiltersIconsConstantly = true;
-    grok.shell.windows.simpleMode = true;
-    grok.shell.closeAll();
-    const df = await grok.dapi.files.readCsv('System:DemoFiles/demog.csv');
-    grok.shell.addTableView(df);
-    await new Promise((resolve) => {
-      const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(undefined); });
-      setTimeout(resolve, 3000);
-    });
-  });
-  await page.locator('.d4-grid[name="viewer-Grid"]').first().waitFor({timeout: 30000});
+  await openDatagrok(page);
+  await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 3000});
   await v.addViewerByIcon(page, 'tile-viewer', 'Tile-Viewer', 10000, 'Tile Viewer');
+  await page.locator(`${ROOT} .d4-tile-viewer-form`).nth(5).waitFor({timeout: 10000});
 
   const AMBIENT = /Permissions policy violation: compute-pressure/i;
   const consoleErrors: string[] = [];
-  page.on('console', (m) => { if (m.type() === 'error') consoleErrors.push(m.text()); });
-
-  page.on('pageerror', (e) => { const t = String(e); if (!AMBIENT.test(t)) consoleErrors.push(t); });
+  const onConsole = (m: any) => { if (m.type() === 'error') consoleErrors.push(m.text()); };
+  const onPageError = (e: any) => { const t = String(e); if (!AMBIENT.test(t)) consoleErrors.push(t); };
+  page.on('console', onConsole);
+  page.on('pageerror', onPageError);
   const productErrors = (from: number): string[] =>
-    consoleErrors.slice(from).filter((t) => !AMBIENT.test(t));
+    consoleErrors.slice(from).filter((t) => !AMBIENT.test(t) && !isLocalBootNoise(t));
 
   await softStep('Setup: the freshly added viewer is auto-generated on both channels', async () => {
     const r = await page.evaluate(() => {
@@ -52,25 +45,27 @@ test('Tile Viewer — Row-state rendering and Edit Form designer', async ({page}
     expect(r.formNotDesigned).toBe(true);
   });
 
-  const clickTile = async (displayIdx: number, modifiers: string[]): Promise<void> => {
-    const tiles = await page.locator('[name="viewer-Tile-Viewer"] .d4-tile-viewer-form').all();
-    const box = await tiles[displayIdx].boundingBox();
+  await page.evaluate(() => {
+    (window as any).__tileStamp = () => {
+      const root = document.querySelector('[name="viewer-Tile-Viewer"]')!;
+      const df = grok.shell.tv.dataFrame;
+      const tiles = Array.from(root.querySelectorAll('.d4-tile-viewer-form'));
+      return [df.currentRowIdx, df.selection.trueCount,
+        tiles.findIndex((t) => t.classList.contains('d4-current')),
+        tiles.filter((t) => t.classList.contains('d4-selected')).length].join('|');
+    };
+  });
 
-    await page.evaluate(() => {
-      const df = (window as any).grok.shell.tv.dataFrame;
-      (window as any).__tileClickSettled = new Promise<void>((resolve) => {
-        const subs = [
-          df.onSelectionChanged.subscribe(() => { done(); }),
-          df.onCurrentRowChanged.subscribe(() => { done(); }),
-        ];
-        const cap = setTimeout(() => done(), 300);
-        function done() { clearTimeout(cap); for (const s of subs) s.unsubscribe(); resolve(); }
-      });
-    });
+  // the DataFrame moves first and the tile classes a repaint later, so the wait is for the
+  // stamp to move AND go quiet, not for the first change
+  const clickTile = async (displayIdx: number, modifiers: string[]): Promise<void> => {
+    const tiles = await page.locator(`${ROOT} .d4-tile-viewer-form`).all();
+    const box = await tiles[displayIdx].boundingBox();
+    const before: string = await page.evaluate(() => (window as any).__tileStamp());
     for (const m of modifiers) await page.keyboard.down(m);
     await page.mouse.click(box!.x + 15, box!.y + 15);
     for (const m of [...modifiers].reverse()) await page.keyboard.up(m);
-    await page.evaluate(() => (window as any).__tileClickSettled);
+    await page.evaluate((from) => (window as any).__moved((window as any).__tileStamp, from, 300), before);
   };
 
   const rowOfTile = async (displayIdx: number): Promise<number> => {
@@ -202,14 +197,13 @@ test('Tile Viewer — Row-state rendering and Edit Form designer', async ({page}
   });
 
   await softStep('Scenario 2 Step 1: two tiles selected, selection count is 2', async () => {
-    await page.evaluate(() => {
+    await page.evaluate(() => (window as any).__settled('viewer:Tile Viewer.onViewerRendered', () => {
       const df = grok.shell.tv.dataFrame;
       const tileV = grok.shell.tv.viewers.find((x: any) => x.type === 'Tile Viewer');
       df.selection.setAll(false);
       tileV.props.showSelectedRows = true;
       tileV.props.rowSource = 'Filtered';
-    });
-    await v.waitForViewerRendered(page, 'Tile Viewer', 900);
+    }, 900));
 
     await clickTile(0, []);
     await clickTile(1, ['Control']);
@@ -243,22 +237,19 @@ test('Tile Viewer — Row-state rendering and Edit Form designer', async ({page}
     await v.ensurePropertyCategory(page, 'Tile-Viewer', 'selection', 'show-selected-rows');
     await v.setPropertyGridCheckbox(page, 'show-selected-rows', false, 'selection');
     const r = await page.evaluate(async () => {
+      const w = window as any;
       const root = document.querySelector('[name="viewer-Tile-Viewer"]')!;
       const df = grok.shell.tv.dataFrame;
       const selTile = () => root.querySelector('.d4-tile-viewer-form.d4-selected') as HTMLElement;
       const unselTile = () => Array.from(root.querySelectorAll('.d4-tile-viewer-form'))
         .find((t) => !t.classList.contains('d4-selected')) as HTMLElement;
-      let hostHasClass = false; let bgNeutralised = false;
-      for (let i = 0; i < 25; i++) {
-        await new Promise((res) => setTimeout(res, 200));
-        const host = root.querySelector('.d4-tile-viewer-lanes-host')!;
-        hostHasClass = host.classList.contains('d4-tile-viewer-hide-selected');
-        bgNeutralised = getComputedStyle(selTile()).backgroundColor === getComputedStyle(unselTile()).backgroundColor;
-        if (hostHasClass && bgNeutralised) break;
-      }
+      const read = () => ({
+        hostHasClass: root.querySelector('.d4-tile-viewer-lanes-host')!.classList.contains('d4-tile-viewer-hide-selected'),
+        bgNeutralised: getComputedStyle(selTile()).backgroundColor === getComputedStyle(unselTile()).backgroundColor,
+      });
+      const s = await w.__poll(read, (x: any) => x.hostHasClass && x.bgNeutralised, 5000, 50);
       return {
-        hostHasClass,
-        bgNeutralised,
+        ...s,
         selCountAfter: df.selection.trueCount,
         selectedTilesStill: root.querySelectorAll('.d4-tile-viewer-form.d4-selected').length,
       };
@@ -274,20 +265,17 @@ test('Tile Viewer — Row-state rendering and Edit Form designer', async ({page}
 
     await v.ensurePropertyCategory(page, 'Tile-Viewer', 'selection', 'show-selected-rows');
     await v.setPropertyGridCheckbox(page, 'show-selected-rows', true, 'selection');
-    const r = await page.evaluate(async () => {
+    const r = await page.evaluate(() => {
+      const w = window as any;
       const root = document.querySelector('[name="viewer-Tile-Viewer"]')!;
       const selTile = () => root.querySelector('.d4-tile-viewer-form.d4-selected') as HTMLElement;
       const unselTile = () => Array.from(root.querySelectorAll('.d4-tile-viewer-form'))
         .find((t) => !t.classList.contains('d4-selected')) as HTMLElement;
-      let hostHasClass = true; let bgDiffers = false;
-      for (let i = 0; i < 25; i++) {
-        await new Promise((res) => setTimeout(res, 200));
-        const host = root.querySelector('.d4-tile-viewer-lanes-host')!;
-        hostHasClass = host.classList.contains('d4-tile-viewer-hide-selected');
-        bgDiffers = getComputedStyle(selTile()).backgroundColor !== getComputedStyle(unselTile()).backgroundColor;
-        if (!hostHasClass && bgDiffers) break;
-      }
-      return {hostHasClass, bgDiffers};
+      const read = () => ({
+        hostHasClass: root.querySelector('.d4-tile-viewer-lanes-host')!.classList.contains('d4-tile-viewer-hide-selected'),
+        bgDiffers: getComputedStyle(selTile()).backgroundColor !== getComputedStyle(unselTile()).backgroundColor,
+      });
+      return w.__poll(read, (x: any) => !x.hostHasClass && x.bgDiffers, 5000, 50);
     });
     expect(r.hostHasClass).toBe(false);
     expect(r.bgDiffers).toBe(true);
@@ -298,6 +286,7 @@ test('Tile Viewer — Row-state rendering and Edit Form designer', async ({page}
     await v.openViewerProperties(page, 'Tile-Viewer', '[name="prop-category-selection"]');
     await v.ensurePropertyCategory(page, 'Tile-Viewer', 'selection', 'show-selected-rows');
     const r = await page.evaluate(async () => {
+      const w = window as any;
       const root = document.querySelector('[name="viewer-Tile-Viewer"]')!;
       const df = grok.shell.tv.dataFrame;
       const tileV = grok.shell.tv.viewers.find((x: any) => x.type === 'Tile Viewer');
@@ -321,16 +310,11 @@ test('Tile Viewer — Row-state rendering and Edit Form designer', async ({page}
       const hostSuppressed = () => root.querySelector('.d4-tile-viewer-lanes-host')!.classList
         .contains('d4-tile-viewer-hide-selected');
       const selBefore = df.selection.trueCount;
-      const before = rowState(); 
-      tileV.props.showSelectedRows = true; 
+      const before = rowState();
+      tileV.props.showSelectedRows = true;
       tileV.props.rowSource = 'Selected';
-      let hostHasClass = false; let dimmed = rowState();
-      for (let i = 0; i < 25; i++) {
-        await new Promise((res) => setTimeout(res, 200));
-        hostHasClass = hostSuppressed();
-        dimmed = rowState();
-        if (hostHasClass && dimmed && dimmed.opacity === 0.5) break;
-      }
+      const on = await w.__poll(() => ({hostHasClass: hostSuppressed(), dimmed: rowState()}),
+        (x: any) => x.hostHasClass && x.dimmed && x.dimmed.opacity === 0.5, 5000, 50);
 
       const selectedIdx: number[] = [];
       for (let i = 0; i < df.rowCount; i++) if (df.selection.get(i)) selectedIdx.push(i);
@@ -340,16 +324,12 @@ test('Tile Viewer — Row-state rendering and Edit Form designer', async ({page}
       const visibleTiles = root.querySelectorAll('.d4-tile-viewer-form').length;
 
       tileV.props.rowSource = 'Filtered';
-      let hostClassGone = false; let restored = rowState();
-      for (let i = 0; i < 25; i++) {
-        await new Promise((res) => setTimeout(res, 200));
-        hostClassGone = !hostSuppressed();
-        restored = rowState();
-        if (hostClassGone && restored && restored.opacity === 1) break;
-      }
+      const back = await w.__poll(() => ({hostClassGone: !hostSuppressed(), restored: rowState()}),
+        (x: any) => x.hostClassGone && x.restored && x.restored.opacity === 1, 5000, 50);
       return {
-        hostHasClass, before, dimmed, restored, tileAges, selectedAges, visibleTiles,
-        hostClassGone,
+        hostHasClass: on.hostHasClass, before, dimmed: on.dimmed, restored: back.restored,
+        tileAges, selectedAges, visibleTiles,
+        hostClassGone: back.hostClassGone,
         selBefore, selAfter: df.selection.trueCount,
         selectedCount: selectedIdx.length,
       };
@@ -377,15 +357,14 @@ test('Tile Viewer — Row-state rendering and Edit Form designer', async ({page}
     expect(r.restored?.boxChecked).toBe(r.before?.boxChecked);
   });
 
-  await page.evaluate(() => {
+  await page.evaluate(() => (window as any).__settled('viewer:Tile Viewer.onViewerRendered', () => {
     const tileV = grok.shell.tv.viewers.find((x: any) => x.type === 'Tile Viewer');
     tileV.props.rowSource = 'All';
     tileV.props.showSelectedRows = true;
     grok.shell.tv.dataFrame.selection.setAll(false);
-  });
-  await v.waitForViewerRendered(page, 'Tile Viewer', 900);
+  }, 900));
 
-  const openEditForm = async (rootSelector = '[name="viewer-Tile-Viewer"]'): Promise<void> => {
+  const openEditForm = async (rootSelector = ROOT): Promise<void> => {
     await page.locator(`${rootSelector} .d4-tile-viewer-form .d4-sketch`).first().focus();
     await page.keyboard.press('ContextMenu');
     await page.locator('.d4-menu-popup[name="viewer"] .d4-menu-item[name="div-Edit-Form..."]').click();
@@ -404,6 +383,20 @@ test('Tile Viewer — Row-state rendering and Edit Form designer', async ({page}
       const labels = hosts.filter((h) => !values.includes(h) && h.querySelector('input.d4-sketch-column-name'));
       return {values: values.map(nameOf).sort(), labels: labels.map(nameOf).sort(), total: hosts.length};
     });
+  };
+
+  const valueHost = (name: string) => page.locator(`.grok-view-sketch .d4-host[name="div-${name}"]`)
+    .filter({has: page.locator(`input[name="input-${name}"]`)}).first();
+
+  const deleteHost = async (host: ReturnType<typeof valueHost>): Promise<void> => {
+    await host.click();
+    await page.keyboard.press('Delete');
+    await host.waitFor({state: 'hidden', timeout: 2000});
+  };
+
+  const closeAndApply = async (): Promise<void> => {
+    await page.locator('[name="button-CLOSE-AND-APPLY"]').click();
+    await page.locator('.grok-view-sketch').waitFor({state: 'detached', timeout: 15000});
   };
 
   await softStep('Scenario 3 Step 2: the designer opens on the correct table', async () => {
@@ -470,46 +463,46 @@ test('Tile Viewer — Row-state rendering and Edit Form designer', async ({page}
     const opened = await designerHosts();
     expect(opened.values.length).toBeGreaterThan(0);
     const removed = opened.values[0];
-    await page.locator(`.grok-view-sketch .d4-host[name="div-${removed}"]`)
-      .filter({has: page.locator(`input[name="input-${removed}"]`)}).first().click();
-    await page.keyboard.press('Delete');
-    await page.waitForTimeout(300); 
-    await page.locator('[name="button-CLOSE-AND-APPLY"]').click();
-    await page.locator('.grok-view-sketch').waitFor({state: 'detached', timeout: 15000});
-    await page.waitForTimeout(700); 
+    await deleteHost(valueHost(removed));
+    await closeAndApply();
 
     const r = await page.evaluate((gone: string) => {
+      const w = window as any;
       const root = document.querySelector('[name="viewer-Tile-Viewer"]')!;
       const df = grok.shell.tv.dataFrame;
       const tileV = grok.shell.tv.viewers.find((x: any) => x.type === 'Tile Viewer');
-      const tiles = Array.from(root.querySelectorAll('.d4-tile-viewer-form'));
-      const removedAbsent = tiles.every((t) => !t.querySelector(`input[name="input-${gone}"]`));
-      const tile = tiles[0];
-      const fieldCols = Array.from(tile.querySelectorAll('input[name^="input-"]'))
-        .map((i) => (i.getAttribute('name') || '').replace('input-', ''));
-      const valueOf = (c: string) => (tile.querySelector(`input[name="input-${c}"]`) as HTMLInputElement);
+      const read = () => {
+        const tiles = Array.from(root.querySelectorAll('.d4-tile-viewer-form'));
+        const removedAbsent = tiles.every((t) => !t.querySelector(`input[name="input-${gone}"]`));
+        const tile = tiles[0];
+        const fieldCols = tile ? Array.from(tile.querySelectorAll('input[name^="input-"]'))
+          .map((i) => (i.getAttribute('name') || '').replace('input-', '')) : [];
+        const valueOf = (c: string) => (tile.querySelector(`input[name="input-${c}"]`) as HTMLInputElement);
 
-      const probes = fieldCols.filter((c) => {
-        const input = valueOf(c);
-        return input && input.type !== 'checkbox' && df.col(c);
-      }).slice(0, 2);
-      let boundRow = -1;
-      for (let i = 0; i < df.rowCount; i++)
-        if (probes.every((c) => df.col(c).getString(i) === valueOf(c).value)) { boundRow = i; break; }
-      const mismatches: string[] = [];
-      for (const c of fieldCols) {
-        const input = valueOf(c);
-        if (!input || input.type === 'checkbox') continue; 
-        if (df.col(c) && input.value !== df.col(c).getString(boundRow)) mismatches.push(c);
-      }
-      return {
-        removedAbsent,
-        autoGenerateFalse: tileV.props.autoGenerate === false,
-        formDesignedTrue: tileV.props.sketchState?.['formDesigned'] === true,
-        boundRow,
-        probeCount: probes.length,
-        mismatches,
+        const probes = fieldCols.filter((c) => {
+          const input = valueOf(c);
+          return input && input.type !== 'checkbox' && df.col(c);
+        }).slice(0, 2);
+        let boundRow = -1;
+        for (let i = 0; i < df.rowCount && probes.length > 0; i++)
+          if (probes.every((c) => df.col(c).getString(i) === valueOf(c).value)) { boundRow = i; break; }
+        const mismatches: string[] = [];
+        for (const c of fieldCols) {
+          const input = valueOf(c);
+          if (!input || input.type === 'checkbox') continue;
+          if (df.col(c) && input.value !== df.col(c).getString(boundRow)) mismatches.push(c);
+        }
+        return {
+          removedAbsent,
+          autoGenerateFalse: tileV.props.autoGenerate === false,
+          formDesignedTrue: tileV.props.sketchState?.['formDesigned'] === true,
+          boundRow,
+          probeCount: probes.length,
+          mismatches,
+        };
       };
+      return w.__poll(read, (x: any) => x.removedAbsent && x.autoGenerateFalse && x.formDesignedTrue &&
+        x.boundRow >= 0 && x.mismatches.length === 0, 700, 50);
     }, removed);
     expect(r.removedAbsent).toBe(true);
     expect(r.probeCount).toBeGreaterThan(0);
@@ -531,41 +524,43 @@ test('Tile Viewer — Row-state rendering and Edit Form designer', async ({page}
     const target = opened.labels.find((n) => opened.values.includes(n));
     expect(target).toBeTruthy();
     expect(opened.values.length + opened.labels.length).toBe(opened.total);
-    await page.locator(`.grok-view-sketch .d4-host[name="div-${target}"]`)
+    const labelHost = page.locator(`.grok-view-sketch .d4-host[name="div-${target}"]`)
       .filter({has: page.locator('input.d4-sketch-column-name')})
-      .filter({hasNot: page.locator(`input[name="input-${target}"]`)}).first().click();
-    await page.keyboard.press('Delete');
-    await page.waitForTimeout(300); 
+      .filter({hasNot: page.locator(`input[name="input-${target}"]`)}).first();
+    await deleteHost(labelHost);
     const afterDelete = await designerHosts();
 
     await page.locator('[name="button-RESET"]').click();
-    await page.waitForTimeout(700); 
-    const afterReset = await designerHosts();
+    const afterReset = await v.pollValue(designerHosts,
+      (h) => JSON.stringify(h) === JSON.stringify(opened), 700, 50);
 
-    await page.locator('[name="button-CLOSE-AND-APPLY"]').click();
-    await page.locator('.grok-view-sketch').waitFor({state: 'detached', timeout: 15000});
-    await page.waitForTimeout(700); 
+    await closeAndApply();
 
     const applied = await page.evaluate((t: string) => {
+      const w = window as any;
       const root = document.querySelector('[name="viewer-Tile-Viewer"]')!;
       const df = grok.shell.tv.dataFrame;
       const tileV = grok.shell.tv.viewers.find((x: any) => x.type === 'Tile Viewer');
-      const tiles = Array.from(root.querySelectorAll('.d4-tile-viewer-form'));
-      const tile = tiles[0];
-      const wt = (tile.querySelector('input[name="input-WEIGHT"]') as HTMLInputElement)?.value;
-      let boundRow = -1;
-      for (let i = 0; i < df.rowCount; i++)
-        if (df.col('WEIGHT').getString(i) === wt) { boundRow = i; break; }
-      const targetInput = tile.querySelector(`input[name="input-${t}"]`) as HTMLInputElement;
-      return {
-        labelBack: tiles.every((tl) =>
-          !!tl.querySelector(`.d4-host[name="div-${t}"] input.d4-sketch-column-name`)),
-        valuePresent: tiles.every((tl) => !!tl.querySelector(`input[name="input-${t}"]`)),
-        targetEqualsDisplay: df.col(t) ? targetInput?.value === df.col(t).getString(boundRow) : null,
-        boundRow,
-        autoGenerateFalse: tileV.props.autoGenerate === false,
-        formDesignedTrue: tileV.props.sketchState?.['formDesigned'] === true,
+      const read = () => {
+        const tiles = Array.from(root.querySelectorAll('.d4-tile-viewer-form'));
+        const tile = tiles[0];
+        const wt = (tile?.querySelector('input[name="input-WEIGHT"]') as HTMLInputElement)?.value;
+        let boundRow = -1;
+        for (let i = 0; i < df.rowCount; i++)
+          if (df.col('WEIGHT').getString(i) === wt) { boundRow = i; break; }
+        const targetInput = tile?.querySelector(`input[name="input-${t}"]`) as HTMLInputElement;
+        return {
+          labelBack: tiles.length > 0 && tiles.every((tl) =>
+            !!tl.querySelector(`.d4-host[name="div-${t}"] input.d4-sketch-column-name`)),
+          valuePresent: tiles.length > 0 && tiles.every((tl) => !!tl.querySelector(`input[name="input-${t}"]`)),
+          targetEqualsDisplay: df.col(t) ? targetInput?.value === df.col(t).getString(boundRow) : null,
+          boundRow,
+          autoGenerateFalse: tileV.props.autoGenerate === false,
+          formDesignedTrue: tileV.props.sketchState?.['formDesigned'] === true,
+        };
       };
+      return w.__poll(read, (x: any) => x.labelBack && x.valuePresent && x.boundRow >= 0 &&
+        x.targetEqualsDisplay === true, 700, 50);
     }, target!);
 
     expect(afterDelete.labels).toEqual(opened.labels.filter((n) => n !== target));
@@ -581,60 +576,6 @@ test('Tile Viewer — Row-state rendering and Edit Form designer', async ({page}
     expect(applied.autoGenerateFalse).toBe(true);
     expect(applied.formDesignedTrue).toBe(true);
 
-    expect(productErrors(errBefore)).toEqual([]);
-  });
-
-  await softStep('Scenario 3 Step 5: designed field set survives a layout save + re-apply', async () => {
-    const errBefore = consoleErrors.length;
-
-    await openEditForm();
-    const opened = await designerHosts();
-    expect(opened.values.length).toBeGreaterThan(0);
-    const target = opened.values[0];
-    await page.locator(`.grok-view-sketch .d4-host[name="div-${target}"]`)
-      .filter({has: page.locator(`input[name="input-${target}"]`)}).first().click();
-    await page.keyboard.press('Delete');
-    await page.waitForTimeout(300); 
-    await page.locator('[name="button-CLOSE-AND-APPLY"]').click();
-    await page.locator('.grok-view-sketch').waitFor({state: 'detached', timeout: 15000});
-
-    await page.locator(`[name="viewer-Tile-Viewer"] input[name="input-${target}"]`)
-      .first().waitFor({state: 'detached', timeout: 15000});
-
-    const layoutId = await page.evaluate(async () => {
-      const layout = grok.shell.tv.saveLayout();
-      await grok.dapi.layouts.save(layout);
-      await new Promise((res) => setTimeout(res, 1000)); 
-      return layout.id;
-    });
-
-    await page.evaluate(async () => {
-      const tileV = grok.shell.tv.viewers.find((x: any) => x.type === 'Tile Viewer');
-      if (tileV) tileV.close();
-      grok.shell.tv.addViewer('Grid');
-      await new Promise((res) => setTimeout(res, 600)); 
-    });
-
-    const r = await page.evaluate(async ({id, t}) => {
-      const saved = await grok.dapi.layouts.find(id);
-      grok.shell.tv.loadLayout(saved);
-
-      for (let i = 0; i < 40; i++) {
-        const back = document.querySelector('[name="viewer-Tile-Viewer"]');
-        const gridGone = !grok.shell.tv.viewers.find((x: any) => x.type === 'Grid' && x !== grok.shell.tv.grid);
-        if (back && back.querySelectorAll('.d4-tile-viewer-form').length > 0 && gridGone) break;
-        await new Promise((res) => setTimeout(res, 250));
-      }
-      const root = document.querySelector('[name="viewer-Tile-Viewer"]')!;
-      const tiles = Array.from(root.querySelectorAll('.d4-tile-viewer-form'));
-      const removedAbsent = tiles.every((tl) => !tl.querySelector(`input[name="input-${t}"]`));
-      const hasTiles = tiles.length > 0;
-      await grok.dapi.layouts.delete(saved);
-      return {removedAbsent, hasTiles};
-    }, {id: layoutId, t: target});
-
-    expect(r.hasTiles).toBe(true);
-    expect(r.removedAbsent).toBe(true);
     expect(productErrors(errBefore)).toEqual([]);
   });
 
@@ -663,8 +604,9 @@ test('Tile Viewer — Row-state rendering and Edit Form designer', async ({page}
   const removeColumnByFieldMenu = async (rootSelector: string, slug: string): Promise<void> => {
     await page.locator(`${rootSelector} .d4-tile-viewer-form input[name="input-${slug}"]`).first()
       .click({button: 'right'});
-    await page.locator(`.d4-menu-popup[name="${slug}"] .d4-menu-item[name="div-Remove"]`).click();
-    await page.waitForTimeout(300); 
+    const popup = page.locator(`.d4-menu-popup[name="${slug}"]`).first();
+    await popup.locator('.d4-menu-item[name="div-Remove"]').click();
+    await popup.waitFor({state: 'hidden', timeout: 5000});
   };
   try {
     await softStep('Scenario 4 Step 2: auto-generated state — delete regenerates without the field', async () => {
@@ -702,6 +644,7 @@ test('Tile Viewer — Row-state rendering and Edit Form designer', async ({page}
       await removeColumnByFieldMenu('[data-ag-fixture="1"]', victim);
 
       const r = await page.evaluate(async (v: string) => {
+        const w = window as any;
         const view = Array.from(grok.shell.views).find((x: any) => x.name === 'ag-fixture') as any;
         const t = view.dataFrame;
         const tileV = view.viewers.find((x: any) => x.type === 'Tile Viewer');
@@ -712,24 +655,19 @@ test('Tile Viewer — Row-state rendering and Edit Form designer', async ({page}
           return t.columns.names().filter((c: string) => hosts.has(`input-${c}`));
         };
 
-        let renderedAfter = rendered();
+        const renderedAfter: string[] = await w.__poll(rendered, (r: string[]) => !r.includes(v), 12000, 50);
         let survivorsOk = false;
         let labelGone = false;
-        for (let i = 0; i < 30; i++) {
-          if (!renderedAfter.includes(v)) {
-            const tiles = Array.from(root.querySelectorAll('.d4-tile-viewer-form'));
-            const tile = tiles[0];
-            survivorsOk = renderedAfter.every((c: string) => {
-              const input = tile.querySelector(`input[name="input-${c}"]`) as HTMLInputElement;
-              return input && input.value === t.col(c).getString(0);
-            });
+        if (!renderedAfter.includes(v)) {
+          const tiles = Array.from(root.querySelectorAll('.d4-tile-viewer-form'));
+          const tile = tiles[0];
+          survivorsOk = renderedAfter.every((c: string) => {
+            const input = tile.querySelector(`input[name="input-${c}"]`) as HTMLInputElement;
+            return input && input.value === t.col(c).getString(0);
+          });
 
-            labelGone = tiles.every((tl) =>
-              !tl.querySelector(`.d4-host[name="div-${v}"] input.d4-sketch-column-name`));
-            break;
-          }
-          await new Promise((res) => setTimeout(res, 400));
-          renderedAfter = rendered();
+          labelGone = tiles.every((tl) =>
+            !tl.querySelector(`.d4-host[name="div-${v}"] input.d4-sketch-column-name`));
         }
         return {
           columnGoneFromDf: !t.columns.names().includes(v),
@@ -754,6 +692,7 @@ test('Tile Viewer — Row-state rendering and Edit Form designer', async ({page}
 
       const EXTRA_COLS = ['COLG', 'COLH', 'COLI', 'COLJ', 'COLK', 'COLL', 'COLM', 'COLN'];
       await page.evaluate(async (cols: string[]) => {
+        const w = window as any;
         const view = Array.from(grok.shell.views).find((x: any) => x.name === 'ag-fixture') as any;
         grok.shell.v = view;
         const t = view.dataFrame;
@@ -763,46 +702,38 @@ test('Tile Viewer — Row-state rendering and Edit Form designer', async ({page}
         const nameOf = (i: Element) => (i.getAttribute('name') || '').replace('input-', '');
         const covered = () => new Set(Array.from(root
           .querySelectorAll('.d4-tile-viewer-form input[name^="input-"]')).map(nameOf));
-        for (let i = 0; i < 30; i++) {
+        await w.__poll(() => {
           const cov = covered();
-          const uncovered = t.columns.names().filter((c: string) => !cov.has(c));
-          if (cov.size >= 10 && uncovered.length > 0) break;
-          await new Promise((res) => setTimeout(res, 250));
-        }
+          return {size: cov.size, uncovered: t.columns.names().filter((c: string) => !cov.has(c)).length};
+        }, (x: any) => x.size >= 10 && x.uncovered > 0, 7500, 50);
       }, EXTRA_COLS);
       const grown = await fixtureFields();
 
       await openEditForm('[data-ag-fixture="1"]');
       const hosts = await designerHosts();
       const designerTarget = hosts.values[0];
-      await page.locator(`.grok-view-sketch .d4-host[name="div-${designerTarget}"]`)
-        .filter({has: page.locator(`input[name="input-${designerTarget}"]`)}).first().click();
-      await page.keyboard.press('Delete');
-      await page.waitForTimeout(300); 
-      await page.locator('[name="button-CLOSE-AND-APPLY"]').click();
-      await page.locator('.grok-view-sketch').waitFor({state: 'detached', timeout: 15000});
-      await page.waitForTimeout(700); 
+      await deleteHost(valueHost(designerTarget));
+      await closeAndApply();
 
-      const before = await fixtureFields();
+      const before = await v.pollValue(fixtureFields,
+        (f) => f.tiles > 0 && f.order.length > 0 && !f.order.includes(designerTarget), 700, 50);
 
       const victim = before.order[0];
       await removeColumnByFieldMenu('[data-ag-fixture="1"]', victim);
       const r = await page.evaluate(async (v: string) => {
+        const w = window as any;
         const view = Array.from(grok.shell.views).find((x: any) => x.name === 'ag-fixture') as any;
         const t = view.dataFrame;
         const tileV = view.viewers.find((x: any) => x.type === 'Tile Viewer');
 
-        for (let i = 0; i < 24; i++) {
-          if (!t.columns.names().includes(v)) break;
-          await new Promise((res) => setTimeout(res, 250));
-        }
+        await w.__poll(() => t.columns.names().includes(v), (present: boolean) => !present, 6000, 50);
         return {
           columnGoneFromDf: !t.columns.names().includes(v),
           autoGenerateFalse: tileV.props.autoGenerate === false,
           formDesignedTrue: tileV.props.sketchState?.['formDesigned'] === true,
         };
       }, victim);
-      const after = await fixtureFields();
+      const after = await v.pollValue(fixtureFields, (f) => !f.covered.includes(victim), 2000, 50);
 
       expect(grown.uncovered.length).toBeGreaterThan(0);
       expect(before.tiles).toBeGreaterThan(0);
@@ -823,13 +754,17 @@ test('Tile Viewer — Row-state rendering and Edit Form designer', async ({page}
     });
   } finally {
     await page.evaluate(() => {
-      const view = Array.from(grok.shell.views).find((x: any) => x.name === 'ag-fixture');
+      const w = window as any;
+      const view = Array.from(grok.shell.views).find((x: any) => x.name === 'ag-fixture') as any;
       if (view) view.close();
-      const demog = Array.from(grok.shell.views).find((x: any) => x.name === 'Table');
+      const demog = Array.from(grok.shell.views).find((x: any) => x.name === 'Table') as any;
       if (demog) grok.shell.v = demog;
+      return w.__poll(() => grok.shell.tv?.dataFrame?.name, (n: string) => n === 'Table', 300, 25);
     });
-    await page.waitForTimeout(300); 
   }
 
+  page.off('console', onConsole);
+  page.off('pageerror', onPageError);
+  await v.cleanupShell(page);
   v.finishSpec();
 });

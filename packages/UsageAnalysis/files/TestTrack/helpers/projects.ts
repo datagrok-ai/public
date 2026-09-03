@@ -638,12 +638,16 @@ export async function reopenAndAssertProvenance(
 export async function saveProjectViaApi(
   page: Page,
   name: string,
+  opts: {saveWithData?: boolean} = {},
 ): Promise<{projectId: string; resolvedName: string}> {
-  const result = await page.evaluate(async (n) => {
+  const result = await page.evaluate(async ({n, withData}) => {
     const grok = (window as any).grok;
     const DG = (window as any).DG;
     const errAt = (step: string, e: any) =>
       `at ${step}: ${e?.message ?? e?.toString?.() ?? e} | stack=${String(e?.stack ?? '').slice(0, 300)}`;
+    // a dev stall must fail by name instead of holding the spec: one save was seen at 330s
+    const bounded = <T,>(p: Promise<T>, what: string) => Promise.race([p,
+      new Promise<T>((_, rej) => setTimeout(() => rej(new Error(what + ' timed out after 30s')), 30_000))]);
     const tv = grok.shell.tv;
     if (!tv?.dataFrame)
       return {error: 'no active TableView'};
@@ -655,22 +659,27 @@ export async function saveProjectViaApi(
     catch (e) { return {error: errAt('df.getTableInfo', e)}; }
     try { viewInfo = tv.getInfo(); }
     catch (e) { return {error: errAt('tv.getInfo', e)}; }
+    // tv.getInfo() drops state excluded from layouts (a box plot viewport) unless the view is
+    // flagged as in a project; saveLayout with data keeps it
+    if (withData)
+      try { viewInfo.viewState = tv.saveLayout({saveWithData: true}).viewState; }
+      catch (e) { return {error: errAt('saveLayout(saveWithData)', e)}; }
     try { project.addChild(tableInfo); }
     catch (e) { return {error: errAt('addChild(tableInfo)', e)}; }
     try { project.addChild(viewInfo); }
     catch (e) { return {error: errAt('addChild(viewInfo)', e)}; }
-    try { await grok.dapi.tables.uploadDataFrame(df); }
+    try { await bounded(grok.dapi.tables.uploadDataFrame(df), 'tables.uploadDataFrame'); }
     catch (e) { return {error: errAt('tables.uploadDataFrame', e)}; }
-    try { await grok.dapi.tables.save(tableInfo); }
+    try { await bounded(grok.dapi.tables.save(tableInfo), 'tables.save'); }
     catch (e) { return {error: errAt('tables.save', e)}; }
     // a project relation must point at an entity that already exists server-side —
     // the ViewInfo needs its own save, the same way a linked ViewLayout does
-    try { await grok.dapi.views.save(viewInfo); }
+    try { await bounded(grok.dapi.views.save(viewInfo), 'views.save'); }
     catch (e) { return {error: errAt('views.save', e)}; }
-    try { await grok.dapi.projects.save(project); }
+    try { await bounded(grok.dapi.projects.save(project), 'projects.save'); }
     catch (e) { return {error: errAt('projects.save', e)}; }
     return {projectId: String(project.id), resolvedName: String(project.name)};
-  }, name);
+  }, {n: name, withData: opts.saveWithData ?? false});
   if ('error' in result)
     throw new Error(`saveProjectViaApi failed ${result.error}`);
   return result;
@@ -720,23 +729,16 @@ export async function deleteProjectWithCleanup(
 ): Promise<void> {
   await page.evaluate(async (i) => {
     const grok = (window as any).grok;
-    if (i.projectId) {
+    const drop = async (ds: any, id?: string) => {
+      if (!id) return;
       try {
-        const p = await grok.dapi.projects.find(i.projectId);
-        if (p) await grok.dapi.projects.delete(p);
+        const e = await ds.find(id);
+        if (e) await ds.delete(e);
       } catch (_) {  }
-    }
-    if (i.tableInfoId) {
-      try {
-        const ti = await grok.dapi.tables.find(i.tableInfoId);
-        if (ti) await grok.dapi.tables.delete(ti);
-      } catch (_) {  }
-    }
-    if (i.scriptId) {
-      try {
-        const s = await grok.dapi.scripts.find(i.scriptId);
-        if (s) await grok.dapi.scripts.delete(s);
-      } catch (_) {  }
-    }
+    };
+    const all = Promise.all([
+      drop(grok.dapi.projects, i.projectId), drop(grok.dapi.tables, i.tableInfoId), drop(grok.dapi.scripts, i.scriptId),
+    ]);
+    await Promise.race([all, new Promise((r) => setTimeout(r, 30_000))]);
   }, ids).catch(() => {});
 }

@@ -179,22 +179,12 @@ test('PC Plot — Setup, Column Selection, Color, In-Chart Range Filter, Log Sca
 
     const errBefore = pageErrors.length + consoleErrors.length;
     const menu = await page.evaluate(async () => {
+      const w = window as any;
       const pc = grok.shell.tv.viewers.find((vw: any) => vw.type === 'PC Plot')!;
 
-      const wait = (ms = 300) => new Promise((r) => setTimeout(r, ms));
       const viewer = document.querySelector('[name="viewer-PC-Plot"]')!;
       const canvas = viewer.querySelector('canvas[name="canvas"]')!;
       const rect = canvas.getBoundingClientRect();
-      const openMenu = async () => {
-        canvas.dispatchEvent(new MouseEvent('contextmenu', {
-          bubbles: true, cancelable: true, button: 2,
-          clientX: rect.left + rect.width / 2, clientY: rect.top + rect.height / 2}));
-        await wait(500);
-      };
-      const closeMenu = async () => {
-        document.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true}));
-        await wait(300);
-      };
       const findColorGroup = () => {
         for (const lbl of Array.from(document.querySelectorAll('.d4-menu-item-label'))) {
           if (lbl.textContent!.trim() !== 'Color Scheme') continue;
@@ -203,42 +193,50 @@ test('PC Plot — Setup, Column Selection, Color, In-Chart Range Filter, Log Sca
         }
         return null;
       };
-      const clickColorSub = async (child: string) => {
-        await openMenu();
-        const group = findColorGroup();
+      const menuOpen = () => document.querySelectorAll('.d4-menu-popup').length > 0;
+      const openMenu = async () => {
+        canvas.dispatchEvent(new MouseEvent('contextmenu', {
+          bubbles: true, cancelable: true, button: 2,
+          clientX: rect.left + rect.width / 2, clientY: rect.top + rect.height / 2}));
+        return w.__poll(findColorGroup, (g: Element | null) => g !== null, 500, 25);
+      };
+      const closeMenu = async () => {
+        document.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true}));
+        await w.__poll(menuOpen, (open: boolean) => !open, 300, 25);
+      };
+      const clickColorSub = async (child: string, landed: () => boolean) => {
+        const group: Element | null = await openMenu();
         if (!group) { await closeMenu(); return false; }
         group.dispatchEvent(new MouseEvent('mousemove', {bubbles: true}));
         group.dispatchEvent(new MouseEvent('mouseenter', {bubbles: true}));
-        await wait(350);
-        const c = Array.from(group.querySelectorAll('.d4-menu-item-label'))
-          .find((el) => el.textContent!.trim() === child);
-        if (c) { (c.closest('.d4-menu-item') as HTMLElement).click(); await wait(400); }
+        const c = await w.__poll(() => Array.from(group.querySelectorAll('.d4-menu-item-label'))
+          .find((el) => el.textContent!.trim() === child) ?? null, (el: Element | null) => el !== null, 350, 25);
+        if (c) { (c.closest('.d4-menu-item') as HTMLElement).click(); await w.__poll(landed, (ok: boolean) => ok, 400, 25); }
         else await closeMenu();
         return !!c;
       };
-      pc.props.colorColumnName = 'AGE';
-      await wait(600);
+      const rendered = (act: () => void, capMs: number) => w.__settled('viewer:PC Plot.onViewerRendered', act, capMs);
+      await rendered(() => { pc.props.colorColumnName = 'AGE'; }, 600);
       const invertBefore = pc.props.invertColorScheme;
-      const invClicked1 = await clickColorSub('Invert Color Scheme');
+      const invClicked1 = await clickColorSub('Invert Color Scheme', () => pc.props.invertColorScheme !== invertBefore);
       const invertToggled = pc.props.invertColorScheme;
-      const invClicked2 = await clickColorSub('Invert Color Scheme');
+      const invClicked2 = await clickColorSub('Invert Color Scheme', () => pc.props.invertColorScheme === invertBefore);
       const invertRestored = pc.props.invertColorScheme;
-      const editClicked = await clickColorSub('Edit...');
-      await wait(500);
-      const dlg = document.querySelector('.d4-dialog');
+      const editClicked = await clickColorSub('Edit...', () => !!document.querySelector('.d4-dialog'));
+      const dlg = await w.__poll(() => document.querySelector('.d4-dialog'), (d: Element | null) => !!d, 500, 25);
       const dialogHeader = dlg ? ((dlg.querySelector('.d4-dialog-header') as HTMLElement)?.innerText ?? '').trim() : '';
       const closeBtn = dlg?.querySelector('button[name="button-CLOSE"]') as HTMLElement | null;
       if (closeBtn)
         closeBtn.click();
-      await wait(500);
-      const dialogClosed = !document.querySelector('.d4-dialog');
+      const dialogClosed = await w.__poll(() => !document.querySelector('.d4-dialog'), (gone: boolean) => gone, 500, 25);
 
-      pc.props.colorAxisType = 'logarithmic'; await wait();
-      pc.props.colorMin = 30; pc.props.colorMax = 60; await wait();
-      pc.props.colorMin = null; pc.props.colorMax = null;
-      pc.props.colorAxisType = 'linear';
-      pc.props.colorColumnName = '';
-      await wait();
+      await rendered(() => { pc.props.colorAxisType = 'logarithmic'; }, 300);
+      await rendered(() => { pc.props.colorMin = 30; pc.props.colorMax = 60; }, 300);
+      await rendered(() => {
+        pc.props.colorMin = null; pc.props.colorMax = null;
+        pc.props.colorAxisType = 'linear';
+        pc.props.colorColumnName = '';
+      }, 300);
       return {invertBefore, invClicked1, invertToggled, invClicked2, invertRestored,
         editClicked, dialogHeader, dialogClosed};
     });

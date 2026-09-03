@@ -103,19 +103,17 @@ async function setNumberFormatViaPanel(page: Page, value: string): Promise<void>
 
   await page.evaluate(() => { grok.shell.windows.showContextPanel = false; });
 
-  await page.waitForTimeout(300);
-  await page.evaluate(() => {
-    const vw = grok.shell.tv.viewers.find((x: any) => x.type === 'FormsViewer');
-    (vw?.root?.closest('.panel-base')
-      ?.querySelector('.panel-titlebar [name="icon-font-icon-settings"]') as HTMLElement | null)?.click();
-  });
-  await page.locator('[name="prop-number-format"]').first().waitFor({state: 'visible', timeout: 8000}).catch(() => {});
-
+  // the gear opens the property grid for THIS viewer; a click that lands while the context
+  // panel is still closing shows nothing, so it is re-issued until the row exists
   await expect.poll(async () => page.evaluate((v) => {
     const vw = grok.shell.tv.viewers.find((x: any) => x.type === 'FormsViewer');
     if (vw.props.numberFormat === v) return true;
     const row = document.querySelector('[name="prop-number-format"]') as HTMLElement | null;
-    if (!row) return false;
+    if (!row) {
+      (vw?.root?.closest('.panel-base')
+        ?.querySelector('.panel-titlebar [name="icon-font-icon-settings"]') as HTMLElement | null)?.click();
+      return false;
+    }
 
     if (row.offsetParent === null) {
       (document.querySelector('[name="prop-category-misc"]') as HTMLElement | null)?.click();
@@ -131,8 +129,6 @@ async function setNumberFormatViaPanel(page: Page, value: string): Promise<void>
     sel.dispatchEvent(new Event('change', {bubbles: true}));
     return false;
   }, value), {timeout: 12_000, intervals: [250, 300, 400, 600, 800]}).toBe(true);
-
-  await page.waitForTimeout(300);
 }
 
 async function removeFieldViaHeaderCloseIcon(page: Page, column: string): Promise<void> {
@@ -319,8 +315,7 @@ test('Forms viewer — field lifecycle and number format', async ({page}) => {
       return vw.props.numberFormat;
     });
     expect(defaultFmt).toBe('Same as grid');
-
-    await page.waitForTimeout(800);
+    await pollValue(() => page.evaluate(() => !!grok.shell.tv.grid.col('COMPUTED_H')), (ok) => ok, 3000, 100);
 
     const gridText = await gridCellText(page, 'COMPUTED_H', 0);
     expect(gridText.length).toBeGreaterThan(0);
@@ -346,8 +341,8 @@ test('Forms viewer — field lifecycle and number format', async ({page}) => {
       grok.shell.t.currentRowIdx = 0;
     });
     await setNumberFormatViaPanel(page, 'Same as grid');
-
-    await page.waitForTimeout(400);
+    await expect.poll(() => cardFieldText(page, 'COMPUTED_H'), {timeout: 15_000})
+      .toBe(await gridCellText(page, 'COMPUTED_H', 0));
     const ageBefore = await cardFieldText(page, 'AGE');
     const sexBefore = await cardFieldText(page, 'SEX');
 

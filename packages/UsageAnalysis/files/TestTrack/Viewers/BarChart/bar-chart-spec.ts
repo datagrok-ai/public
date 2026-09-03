@@ -47,13 +47,21 @@ test('Bar chart tests', async ({page}) => {
   });
   await v.pollValue(() => page.locator('.property-grid').count(), (n) => n > 0, 500, 100);
 
+  // a HEIGHT split paints again after the render-event gap, so the rest state is re-read until it holds
   async function canvasBaseline(): Promise<number> {
-    await v.waitForCanvasQuiet(page, 'Bar chart', {timeoutMs: 900, optional: true});
-    await v.snapshotCanvasColors(page, 'Bar chart');
-    return (await v.diffCanvasColors(page, 'Bar chart')).deltaPx;
+    const deadline = Date.now() + 2000;
+    let delta: number;
+    do {
+      await v.waitForViewerQuiet(page, 'Bar chart', {gapMs: 300, capMs: 900});
+      await v.snapshotCanvasColors(page, 'Bar chart');
+      delta = (await v.diffCanvasColors(page, 'Bar chart')).deltaPx;
+    } while (delta >= PRECHECK_CEIL && Date.now() < deadline);
+    return delta;
   }
-  async function canvasDelta(): Promise<number> {
-    return (await v.diffCanvasColors(page, 'Bar chart')).deltaPx;
+  // the assertion is about pixels, so the wait is too: onViewerRendered lands before the paint
+  async function canvasDelta(min: number): Promise<number> {
+    return v.waitForCanvasChange(page, 'Bar chart', {minDelta: min + 1, timeoutMs: 2000})
+      .catch(async () => (await v.diffCanvasColors(page, 'Bar chart')).deltaPx);
   }
 
   await softStep('Color coding', async () => {
@@ -72,8 +80,7 @@ test('Bar chart tests', async ({page}) => {
       bc.props.colorColumnName = 'HEIGHT';
       return {colorColumnName: bc.props.colorColumnName, aggr: bc.props.colorAggrType};
     });
-    await v.waitForViewerRendered(page, 'Bar chart', 600);
-    const colorDelta = await canvasDelta();
+    const colorDelta = await canvasDelta(T.colorColumn);
     console.log(`[bar-chart] colorDelta=${colorDelta}`);
 
     const aggrReads = await v.setViewerProps(page, 'Bar chart', [
@@ -87,8 +94,7 @@ test('Bar chart tests', async ({page}) => {
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
       bc.props.invertColorScheme = true;
     });
-    await v.waitForViewerRendered(page, 'Bar chart', 600);
-    const invertDelta = await canvasDelta();
+    const invertDelta = await canvasDelta(T.invertScheme);
     console.log(`[bar-chart] invertDelta=${invertDelta}`);
 
     const colColRead = await page.evaluate(() => {
@@ -124,8 +130,7 @@ test('Bar chart tests', async ({page}) => {
       bc.props.includeNulls = false;
       return bc.props.includeNulls;
     });
-    await v.waitForViewerRendered(page, 'Bar chart', 500);
-    const offDelta = await canvasDelta();
+    const offDelta = await canvasDelta(T.includeNulls);
     console.log(`[bar-chart] includeNulls offDelta=${offDelta}`);
 
     const preOn = await canvasBaseline();
@@ -134,8 +139,7 @@ test('Bar chart tests', async ({page}) => {
       bc.props.includeNulls = true;
       return bc.props.includeNulls;
     });
-    await v.waitForViewerRendered(page, 'Bar chart', 500);
-    const onDelta = await canvasDelta();
+    const onDelta = await canvasDelta(T.includeNulls);
     console.log(`[bar-chart] includeNulls onDelta=${onDelta}`);
 
     expect(offRead).toBe(false);
@@ -162,8 +166,7 @@ test('Bar chart tests', async ({page}) => {
       bc.props.barBorderLineWidth = 2;
       return bc.props.barBorderLineWidth;
     });
-    await v.waitForViewerRendered(page, 'Bar chart', 500);
-    const borderDelta = await canvasDelta();
+    const borderDelta = await canvasDelta(T.barBorder);
     console.log(`[bar-chart] borderDelta=${borderDelta}`);
 
     const preHeight = await canvasBaseline();
@@ -172,8 +175,7 @@ test('Bar chart tests', async ({page}) => {
       bc.props.maxBarHeight = 20;
       return bc.props.maxBarHeight;
     });
-    await v.waitForViewerRendered(page, 'Bar chart', 500);
-    const heightDelta = await canvasDelta();
+    const heightDelta = await canvasDelta(T.maxBarHeight);
     console.log(`[bar-chart] heightDelta=${heightDelta}`);
 
     const styleReads = await v.setViewerProps(page, 'Bar chart', [
@@ -219,8 +221,7 @@ test('Bar chart tests', async ({page}) => {
       bc.props.showLabels = 'never';
       return bc.props.showLabels;
     });
-    await v.waitForViewerRendered(page, 'Bar chart', 500);
-    const labelsDelta = await canvasDelta();
+    const labelsDelta = await canvasDelta(T.labels);
     console.log(`[bar-chart] labelsDelta=${labelsDelta}`);
 
     const labelReads = await v.setViewerProps(page, 'Bar chart', [
@@ -271,13 +272,13 @@ test('Bar chart tests', async ({page}) => {
     const preAggr = await canvasBaseline();
     const aggrRead = (await v.setViewerProps(page, 'Bar chart',
       [{set: {valueAggrType: 'max'}, wait: 500, read: 'valueAggrType'}]))[0];
-    const aggrDelta = await canvasDelta();
+    const aggrDelta = await canvasDelta(T.aggrType);
     console.log(`[bar-chart] aggrDelta=${aggrDelta}`);
 
     const preSwitch = await canvasBaseline();
     const valueRead = (await v.setViewerProps(page, 'Bar chart',
       [{set: {valueColumnName: 'WEIGHT'}, wait: 500, read: 'valueColumnName'}]))[0];
-    const switchDelta = await canvasDelta();
+    const switchDelta = await canvasDelta(T.valueSwitch);
     console.log(`[bar-chart] switchDelta=${switchDelta}`);
 
     expect(aggrRead).toBe('max');
@@ -410,8 +411,7 @@ test('Bar chart tests', async ({page}) => {
       bc.props.showValuesInsteadOfCategories = true;
       return bc.props.showValuesInsteadOfCategories;
     });
-    const showDelta = await v.waitForCanvasChange(page, 'Bar chart', {minDelta: 1, timeoutMs: 3000})
-      .catch(() => 0);
+    const showDelta = await canvasDelta(T.showValues);
     console.log(`[bar-chart] showValuesDelta=${showDelta}`);
 
     const offRead = await page.evaluate(() => {
@@ -476,5 +476,6 @@ test('Bar chart tests', async ({page}) => {
     expect(pageErrors).toEqual([]);
   });
 
+  await v.closeAllAndWait(page);
   v.finishSpec();
 });

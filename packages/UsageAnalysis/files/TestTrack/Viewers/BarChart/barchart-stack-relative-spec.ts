@@ -45,9 +45,12 @@ test('Bar Chart — Stacking, Relative Values, and Negative Aggregates', async (
   await v.setViewerProps(page, 'Bar chart',
     [{set: {splitColumnName: splitCol, valueColumnName: valueCol, valueAggrType: 'sum'}, wait: 900}]);
 
-  const legendItemCount = () => page.evaluate(() => {
+  const legendActive = () => page.evaluate(() => {
     const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
-    return bc.root.querySelectorAll('[name="legend"] .d4-legend-item').length as number;
+    const el = bc.root.querySelector('[name="legend"]') as HTMLElement | null;
+    const laidOut = !!el && getComputedStyle(el).display !== 'none' &&
+      el.getBoundingClientRect().height > 0 && el.offsetParent !== null;
+    return laidOut && bc.root.querySelectorAll('[name="legend"] .d4-legend-item').length >= 2;
   });
   const legendGone = () => page.evaluate(() => {
     const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
@@ -67,17 +70,15 @@ test('Bar Chart — Stacking, Relative Values, and Negative Aggregates', async (
 
     await setStackColumn(stackCol);
 
-    await v.waitForCanvasQuiet(page, 'Bar chart', {timeoutMs: 900, optional: true});
+    await v.waitForViewerQuiet(page, 'Bar chart', {gapMs: 300, capMs: 900});
     const pre = await page.evaluate(() => {
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
       return {stackDefaultRel: bc.props.relativeValues};
     });
 
-    await v.waitForCanvasQuiet(page, 'Bar chart', {timeoutMs: 900, optional: true});
-
     expect(await v.snapshotCanvasColors(page, 'Bar chart')).toBe(true);
     const settle = await v.diffCanvasColors(page, 'Bar chart');
-    expect(settle.deltaPx).toBeGreaterThanOrEqual(0); 
+    expect(settle.deltaPx).toBeGreaterThanOrEqual(0);
     expect(settle.deltaPx).toBeLessThan(500);
     await page.evaluate(() => {
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
@@ -166,11 +167,11 @@ test('Bar Chart — Stacking, Relative Values, and Negative Aggregates', async (
 
   await softStep('Scenario 1 Step 9: disabling Relative Values reverts bars to absolute widths (canvas delta)', async () => {
 
-    await v.waitForCanvasQuiet(page, 'Bar chart', {timeoutMs: 900, optional: true});
+    await v.waitForViewerQuiet(page, 'Bar chart', {gapMs: 300, capMs: 900});
 
     expect(await v.snapshotCanvasColors(page, 'Bar chart')).toBe(true);
     const settle = await v.diffCanvasColors(page, 'Bar chart');
-    expect(settle.deltaPx).toBeGreaterThanOrEqual(0); 
+    expect(settle.deltaPx).toBeGreaterThanOrEqual(0);
     expect(settle.deltaPx).toBeLessThan(500);
     await page.evaluate(() => {
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
@@ -263,7 +264,7 @@ test('Bar Chart — Stacking, Relative Values, and Negative Aggregates', async (
   await softStep('Scenario 2 Step 5-6: setting a Stack column activates stacking — bars normalize to equal width (canvas delta), legend renders', async () => {
     const errBefore = pageErrors.length + consoleErrors.length;
 
-    await v.waitForCanvasQuiet(page, 'Bar chart', {timeoutMs: 900, optional: true});
+    await v.waitForViewerQuiet(page, 'Bar chart', {gapMs: 300, capMs: 900});
 
     expect(await v.snapshotCanvasColors(page, 'Bar chart')).toBe(true);
     const settle = await v.diffCanvasColors(page, 'Bar chart');
@@ -314,7 +315,7 @@ test('Bar Chart — Stacking, Relative Values, and Negative Aggregates', async (
       };
     });
     await setStackColumn(stackCol);
-    await v.pollValue(legendItemCount, (n) => n >= 2, 900, 100);
+    await v.pollValue(legendActive, (on) => on, 1500, 100);
     const info = await page.evaluate((removed: typeof afterRemove) => {
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
       const el = bc.root.querySelector('[name="legend"]') as HTMLElement | null;
@@ -372,5 +373,6 @@ test('Bar Chart — Stacking, Relative Values, and Negative Aggregates', async (
     expect(errAfter).toBe(errBefore);
   });
 
+  await v.closeAllAndWait(page);
   v.finishSpec();
 });

@@ -4,8 +4,9 @@ realizes: [viewers.line-chart]
 // GROK-17278: legend color customizations serialize into both layout and project state.
 
 import {test, expect} from '../../shared-page';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
+import {openDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
 import * as v from '../../helpers/viewers';
+import {deleteEntities} from './persistence';
 
 test.use(specTestOptions);
 
@@ -13,7 +14,7 @@ test('GROK-17278: line chart legend color persists across layout + project round
   test.setTimeout(900_000);
   stepErrors.length = 0;
 
-  await loginToDatagrok(page);
+  await openDatagrok(page);
   await v.openTable(page);
   await v.installEventWaits(page);
 
@@ -140,14 +141,7 @@ test('GROK-17278: line chart legend color persists across layout + project round
   });
 
   await softStep('Cleanup', async () => {
-    await page.evaluate(async ([lid, pid]: [string | null, string | null]) => {
-      const w = window as any;
-      if (lid) try { await (window as any).grok.dapi.layouts.delete(await (window as any).grok.dapi.layouts.find(lid)); } catch (_) {}
-      if (pid) try { await (window as any).grok.dapi.projects.delete(await (window as any).grok.dapi.projects.find(pid)); } catch (_) {}
-      (window as any).grok.shell.closeAll();
-      await w.__poll(() => Array.from((window as any).grok.shell.tableViews).length,
-        (c: number) => c === 0, 500);
-    }, [layoutId, projectId]);
+    await deleteEntities(page, {layoutIds: [layoutId], projectId});
   });
 
   v.finishSpec();

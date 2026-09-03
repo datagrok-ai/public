@@ -1,20 +1,23 @@
 /* ---
-realizes: [formsviewer.cp.forms-core, formsviewer.int.sort-mirrors-grid, formsviewer.int.pinned-rows-persist-by-value, formsviewer.int.selection-intersects-filter, formsviewer.edge.pin-non-unique-value-warns, formsviewer.edge.pinned-row-absent-from-ordinary-cards]
+realizes: [formsviewer.cp.forms-core, formsviewer.int.sort-mirrors-grid, formsviewer.int.selection-intersects-filter, formsviewer.edge.pin-non-unique-value-warns, formsviewer.edge.pinned-row-absent-from-ordinary-cards]
 --- */
 import {expect, Page} from '@playwright/test';
 import {test} from '../../shared-page';
-import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
+import {openDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 import {knownOpenBug} from '../../helpers/known-open-bug';
-import * as projects from '../../helpers/projects';
 import {
   HOST, ORDINARY, CURRENT, PINNED, PINNED_PANE,
   cardFieldValue, cardIndexByValue, balloonCount, drawnLabelNames, waitForOrderStable,
-  fieldValuesByPosition, withConsoleErrorCount,
+  fieldValuesByPosition, sortIndicatorLabels, sortArrow, cardContextMenu,
 } from '../../helpers/forms';
 
 declare const grok: any;
 
+// The viewer ladder of the forms-core scenario. The layout and project round-trips (Steps 7a-7c)
+// live in formsviewer-forms-core-server-spec.ts so the dev round-trips stay out of this one.
+// Both halves run on the server lane: Forms is a PowerGrid package viewer, and the local client
+// serves no packages, so its toolbox has no Forms icon (measured 2026-09-03, icon-Forms null).
 test.use(specTestOptions);
 
 const datasetPath = 'System:DemoFiles/demog.csv';
@@ -33,47 +36,22 @@ async function ordinaryHeights(page: Page, offset: number): Promise<number[]> {
     .filter((x) => !Number.isNaN(x)), {sel: ORDINARY, off: offset});
 }
 
-async function sortIndicatorLabels(page: Page): Promise<string[]> {
-  return page.evaluate((host) => Array.from(document.querySelectorAll(`${host} .d4-multi-form-header .d4-multi-form-column-name`))
-    .filter((l) => l.querySelector('.d4-multi-form-column-sort-indicator'))
-    .map((l) => (l.querySelector('div[name^="div-"]') as HTMLElement)?.getAttribute('name') ?? '')
-    .filter((n) => n.length > 0), HOST);
+function setForms(page: Page, options: Record<string, any>): Promise<void> {
+  return page.evaluate((o) => {
+    grok.shell.tv.viewers.find((x: any) => x.type === 'FormsViewer').setOptions(o);
+  }, options);
 }
 
-async function sortArrow(page: Page, column: string): Promise<string | null> {
-  return page.evaluate(({host, col}) => {
-    const label = Array.from(document.querySelectorAll(`${host} .d4-multi-form-header .d4-multi-form-column-name`))
-      .find((l) => l.querySelector(`div[name="div-${col}"]`));
-    const ind = label?.querySelector('.d4-multi-form-column-sort-indicator');
-    return ind ? (ind.textContent ?? '').trim() : null;
-  }, {host: HOST, col: column});
-}
-
-async function cardContextMenu(
-  page: Page, cardSelector: string, cardIndex: number, itemName: string, columnField?: string,
-): Promise<void> {
-  const card = page.locator(cardSelector).nth(cardIndex);
-  const target = columnField ? card.locator(`[column="${columnField}"]`).first() : card;
-  await target.click({button: 'right'});
-  await page.locator(`[name="${itemName}"]`).first().waitFor({timeout: 5000});
-  await page.locator(`[name="${itemName}"]`).first().click();
-}
-
-async function expectNoBalloonSustained(page: Page, windowMs = 15_000): Promise<void> {
-  const deadline = Date.now() + windowMs;
-  let seen = 0;
-  do {
-    seen = await balloonCount(page);
-    if (seen > 0) break;
-    await page.waitForTimeout(500); 
-  } while (Date.now() < deadline);
-  expect(seen).toBe(0);
+// The non-unique warning is raised inside the pin itself (Step 6c sees it on its first poll), so a
+// unique pin has either shown a balloon within the hold or never will.
+async function expectNoBalloon(page: Page, holdMs = 1000): Promise<void> {
+  expect(await v.pollValue(() => balloonCount(page), (n) => n > 0, holdMs, 100)).toBe(0);
 }
 
 test('Forms viewer — core ladder (p0)', async ({page}) => {
-  test.setTimeout(600_000);
+  test.setTimeout(300_000);
 
-  await loginToDatagrok(page);
+  await openDatagrok(page);
   await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 3000});
 
   await softStep('Step 1 — Add the Forms viewer; default field set is the first 20 visible columns', async () => {
@@ -83,18 +61,12 @@ test('Forms viewer — core ladder (p0)', async ({page}) => {
     const expectedFields = await page.evaluate(() =>
       grok.shell.t.columns.names().filter((n: string) => !n.startsWith('~')).slice(0, 20));
 
-    const drawn = await v.pollValue(() => drawnLabelNames(page),
-      (d) => JSON.stringify(d) === JSON.stringify(expectedFields), 20_000, 200);
-    expect(drawn).toEqual(expectedFields);
-    expect(drawn.some((n) => n.startsWith('~'))).toBe(false);
-    // an ambient "Debugging packages" balloon from the dev-session start can still be
-    // clearing at this point — poll for it to settle rather than reading once
-    const balloons = await v.pollValue(() => balloonCount(page), (n) => n === 0, 4000, 250);
-    expect(balloons).toBe(0);
+    await expect.poll(() => drawnLabelNames(page), {timeout: 20_000}).toEqual(expectedFields);
+    expect(expectedFields.some((n: string) => n.startsWith('~'))).toBe(false);
+    expect(await v.pollValue(() => balloonCount(page), (n) => n === 0, 4000, 250)).toBe(0);
   });
 
   await softStep('Step 2 — The current-row card shows the grid value and follows the current row', async () => {
-
     const startRow = 12;
     await page.evaluate((r) => { grok.shell.t.currentRowIdx = r; }, startRow);
     const gridStart = await page.evaluate((r) => grok.shell.tv.grid.cell('HEIGHT', r).cell.valueString, startRow);
@@ -106,11 +78,8 @@ test('Forms viewer — core ladder (p0)', async ({page}) => {
   });
 
   await softStep('Step 3 — Show Selected Rows renders one card per selected row beyond the two leading cards', async () => {
-
-    const defaultOn = await page.evaluate(() => {
-      const vw = grok.shell.tv.viewers.find((x: any) => x.type === 'FormsViewer');
-      return vw.props.showSelectedRows;
-    });
+    const defaultOn = await page.evaluate(() =>
+      grok.shell.tv.viewers.find((x: any) => x.type === 'FormsViewer').props.showSelectedRows);
     expect(defaultOn).toBe(true);
 
     const picked = await page.evaluate(() => {
@@ -177,10 +146,7 @@ test('Forms viewer — core ladder (p0)', async ({page}) => {
   });
 
   await softStep('Step 5b — sortByColumnName overrides the grid sort; the indicator moves to WEIGHT', async () => {
-    await page.evaluate(() => {
-      const vw = grok.shell.tv.viewers.find((x: any) => x.type === 'FormsViewer');
-      vw.setOptions({sortByColumnName: 'WEIGHT'});
-    });
+    await setForms(page, {sortByColumnName: 'WEIGHT'});
     await expect.poll(() => sortIndicatorLabels(page), {timeout: 20_000}).toEqual(['div-WEIGHT']);
 
     const weightArrow = await sortArrow(page, 'WEIGHT');
@@ -200,21 +166,18 @@ test('Forms viewer — core ladder (p0)', async ({page}) => {
   });
 
   await softStep('Step 5c — Turning Use Grid Sort OFF stops mirroring the grid sort (GROK-20380 known-red)', async () => {
-
-    await page.evaluate(() => {
-      const vw = grok.shell.tv.viewers.find((x: any) => x.type === 'FormsViewer');
-      vw.setOptions({sortByColumnName: null});
-    });
+    await setForms(page, {sortByColumnName: null});
 
     await expect.poll(async () => {
       const heights = await ordinaryHeights(page, 2);
       return heights.length >= 2 && heights.every((h, i, a) => i === 0 || a[i - 1] <= h);
     }, {timeout: 20_000}).toBe(true);
 
+    const tailBefore = JSON.stringify(await ordinaryUsubjids(page));
     await v.ensurePropertyCategory(page, 'Forms', 'misc', 'use-grid-sort');
     await v.setPropertyGridCheckbox(page, 'use-grid-sort', false, 'misc');
-
-    await page.waitForTimeout(3500);
+    // the cards either leave the grid order or (GROK-20380) keep it; a change is waited for, not slept for
+    await v.pollValue(async () => JSON.stringify(await ordinaryUsubjids(page)), (t) => t !== tailBefore, 2000, 100);
 
     const mirror = JSON.parse(await page.evaluate((sel) => {
       const df = grok.shell.t;
@@ -235,53 +198,40 @@ test('Forms viewer — core ladder (p0)', async ({page}) => {
   });
 
   await softStep('Step 5d — Double-clicking the sort label cycles the indicator; a different label does not move it', async () => {
-
     await v.ensurePropertyCategory(page, 'Forms', 'misc', 'use-grid-sort');
     await v.setPropertyGridCheckbox(page, 'use-grid-sort', true, 'misc');
-    await page.evaluate(() => {
-      const vw = grok.shell.tv.viewers.find((x: any) => x.type === 'FormsViewer');
-      vw.setOptions({sortByColumnName: 'AGE'});
-    });
+    await setForms(page, {sortByColumnName: 'AGE'});
     await expect.poll(() => sortArrow(page, 'AGE'), {timeout: 20_000}).not.toBeNull();
 
     const ageLabel = page.locator(`${HOST} .d4-multi-form-header [name="div-AGE"]`).first();
 
     const seq: (string | null)[] = [];
     for (let i = 0; i < 3; i++) {
+      const before = await sortArrow(page, 'AGE');
       await ageLabel.dblclick();
-
-      await page.waitForTimeout(1500);
-      seq.push(await sortArrow(page, 'AGE'));
+      seq.push(await v.pollValue(() => sortArrow(page, 'AGE'), (a) => a !== before, 1500, 50));
     }
     expect(new Set(seq).size).toBe(3);
     expect(seq).toContain(null);
     expect(seq.filter((s) => s !== null).length).toBe(2);
 
-    await page.evaluate(() => {
-      const vw = grok.shell.tv.viewers.find((x: any) => x.type === 'FormsViewer');
-      vw.setOptions({sortByColumnName: null});
-    });
-
+    await setForms(page, {sortByColumnName: null});
     await v.pollValue(() => sortArrow(page, 'AGE'), (a) => a === null, 1500, 100);
     await ageLabel.dblclick();
-
-    await page.waitForTimeout(1500);
     await expect.poll(() => sortArrow(page, 'AGE'), {timeout: 15_000}).toBe('↓');
     await expect.poll(() => sortIndicatorLabels(page), {timeout: 15_000}).toEqual(['div-AGE']);
 
     await page.locator(`${HOST} .d4-multi-form-header [name="div-HEIGHT"]`).first().dblclick();
-
-    await page.waitForTimeout(1500);
-    expect(await sortIndicatorLabels(page)).toEqual(['div-AGE']);
+    const labels = await v.pollValue(() => sortIndicatorLabels(page),
+      (l) => JSON.stringify(l) !== JSON.stringify(['div-AGE']), 1000, 100);
+    expect(labels).toEqual(['div-AGE']);
   });
 
   await softStep('Step 6a — Pin Row moves the card to the pinned pane and removes it from the ordinary set', async () => {
-
     await v.ensurePropertyCategory(page, 'Forms', 'misc', 'show-mouse-over-row');
     await v.setPropertyGridCheckbox(page, 'show-mouse-over-row', false, 'misc');
+    await setForms(page, {sortByColumnName: null});
     await page.evaluate(() => {
-      const vw = grok.shell.tv.viewers.find((x: any) => x.type === 'FormsViewer');
-      vw.setOptions({sortByColumnName: null});
       const df = grok.shell.t;
       df.mouseOverRowIdx = -1;
       df.currentRowIdx = 0;
@@ -300,7 +250,7 @@ test('Forms viewer — core ladder (p0)', async ({page}) => {
     expect(anchor).not.toBeNull();
 
     await cardContextMenu(page, ORDINARY, targetPos6a, 'div-Pin-Row', 'USUBJID');
-    await expectNoBalloonSustained(page);
+    await expectNoBalloon(page);
 
     await expect.poll(async () =>
       page.evaluate((sel) => getComputedStyle(document.querySelector(sel) as HTMLElement).display, PINNED_PANE),
@@ -311,10 +261,8 @@ test('Forms viewer — core ladder (p0)', async ({page}) => {
 
     await expect.poll(() => page.locator(ORDINARY).count(), {timeout: 15_000}).toBe(beforeCount - 1);
     expect(await ordinaryUsubjids(page)).not.toContain(anchor);
-    expect(await page.evaluate(() => {
-      const vw = grok.shell.tv.viewers.find((x: any) => x.type === 'FormsViewer');
-      return vw.props.pinnedRowValues;
-    })).toEqual([anchor]);
+    expect(await page.evaluate(() =>
+      grok.shell.tv.viewers.find((x: any) => x.type === 'FormsViewer').props.pinnedRowValues)).toEqual([anchor]);
 
     expect(await page.evaluate((usub) => {
       const df = grok.shell.t;
@@ -349,17 +297,14 @@ test('Forms viewer — core ladder (p0)', async ({page}) => {
     const rePinPos = byPos6b.findIndex((val, i) => i >= 1 && val !== null);
     expect(rePinPos).toBeGreaterThanOrEqual(0);
     await cardContextMenu(page, ORDINARY, rePinPos, 'div-Pin-Row', 'USUBJID');
-    await expectNoBalloonSustained(page);
+    await expectNoBalloon(page);
     await expect.poll(() => page.evaluate((sel) => Array.from(document.querySelectorAll(sel)).length, PINNED),
       {timeout: 15_000}).toBe(1);
   });
 
   await softStep('Step 6c — Pinning through a NON-UNIQUE field raises the exact warning; the single pin is preserved', async () => {
-
-    const pinnedBefore = await page.evaluate(() => {
-      const vw = grok.shell.tv.viewers.find((x: any) => x.type === 'FormsViewer');
-      return Array.from(vw.props.pinnedRowValues as string[]);
-    });
+    const pinnedBefore = await page.evaluate(() =>
+      Array.from(grok.shell.tv.viewers.find((x: any) => x.type === 'FormsViewer').props.pinnedRowValues as string[]));
     expect(pinnedBefore.length).toBe(1);
 
     const target = await page.evaluate(() => {
@@ -389,162 +334,16 @@ test('Forms viewer — core ladder (p0)', async ({page}) => {
       document.querySelector('.d4-balloon.warning .d4-balloon-content')?.textContent ?? null),
     {timeout: 15_000}).toBe("You have pinned a non-unique value. It won't be applied from the layout.");
 
-    expect(await page.evaluate(() => {
-      const vw = grok.shell.tv.viewers.find((x: any) => x.type === 'FormsViewer');
-      return Array.from(vw.props.pinnedRowValues as string[]);
-    })).toContain(target.sex);
+    expect(await page.evaluate(() =>
+      Array.from(grok.shell.tv.viewers.find((x: any) => x.type === 'FormsViewer').props.pinnedRowValues as string[])))
+      .toContain(target.sex);
 
     const pinnedSexIdx = await cardIndexByValue(page, 'USUBJID', target.usub, PINNED);
     expect(pinnedSexIdx).toBeGreaterThanOrEqual(0);
     await cardContextMenu(page, PINNED, pinnedSexIdx, 'div-Unpin-Row');
-    await expect.poll(() => page.evaluate(() => {
-      const vw = grok.shell.tv.viewers.find((x: any) => x.type === 'FormsViewer');
-      return Array.from(vw.props.pinnedRowValues as string[]);
-    }), {timeout: 15_000}).toEqual(pinnedBefore);
-  });
-
-  await softStep('Step 7a / Step 7b — Re-applying the saved layout over a deliberately corrupted view restores the field set, sort-label identity and pinned row by value, and drops a foreign viewer not in the layout', async () => {
-
-    const chosenFields = await page.evaluate(() => {
-      const vw = grok.shell.tv.viewers.find((x: any) => x.type === 'FormsViewer');
-      const all = Array.from(vw.props.fieldsColumnNames as string[]);
-      const must = ['USUBJID', 'AGE'];
-      const rest = all.filter((n) => !must.includes(n));
-      const picked = [...must, ...rest.slice(0, Math.max(1, rest.length - 2))].reverse();
-      vw.setOptions({fieldsColumnNames: picked});
-      return picked;
-    });
-    await expect.poll(() => drawnLabelNames(page), {timeout: 20_000}).toEqual(chosenFields);
-
-    await page.evaluate(() => {
-      const vw = grok.shell.tv.viewers.find((x: any) => x.type === 'FormsViewer');
-      vw.setOptions({sortByColumnName: 'AGE'});
-    });
-    await expect.poll(() => sortIndicatorLabels(page), {timeout: 20_000}).toEqual(['div-AGE']);
-
-    const preLabels = await drawnLabelNames(page);
-    const pre = await page.evaluate(() => {
-      const vw = grok.shell.tv.viewers.find((x: any) => x.type === 'FormsViewer');
-      return {
-        fields: Array.from(vw.props.fieldsColumnNames as string[]),
-        pinnedValues: Array.from(vw.props.pinnedRowValues as string[]),
-      };
-    });
-    const preIndicator = await sortIndicatorLabels(page);
-
-    expect(preLabels.length).toBeGreaterThan(0);
-    expect(pre.pinnedValues.length).toBeGreaterThan(0);
-    expect(preIndicator.length).toBeGreaterThan(0);
-
-    const currentUserId = await page.evaluate(() => String(grok.shell.user.id));
-    const applicableLayouts = async (): Promise<{id: string; authorId: string | null}[]> =>
-      page.evaluate(async () => ((await grok.dapi.layouts.getApplicable(grok.shell.t)) ?? [])
-        .map((l: any) => ({id: String(l.id), authorId: l.author && l.author.id ? String(l.author.id) : null})));
-    const beforeIds = (await applicableLayouts()).map((l) => l.id);
-
-    expect(await v.driveTopMenuLeaf(page, ['View', 'Layout', 'Save to Gallery'])).toBe(true);
-
-    let fresh: string[] = [];
-    await expect.poll(async () => {
-
-      fresh = (await applicableLayouts())
-        .filter((l) => !beforeIds.includes(l.id) && l.authorId === currentUserId).map((l) => l.id);
-      return fresh.length;
-    }, {timeout: 20_000, intervals: [500, 1000, 2000, 3000]}).toBeGreaterThanOrEqual(1);
-    if (fresh.length !== 1) {
-      throw new Error(
-        `Layout save produced ${fresh.length} new applicable layouts authored by the current user ` +
-        `(${fresh.join(', ')}), expected exactly 1 — refusing to guess which is ours; deleting none. ` +
-        `A concurrent layout creation on the same dataset is the likely cause.`);
-    }
-    const layoutId = fresh[0];
-
-    try {
-
-      await page.evaluate(() => {
-        const tv = grok.shell.tv;
-        const forms = tv.viewers.find((x: any) => x.type === 'FormsViewer');
-        if (forms) forms.close();
-        tv.addViewer('Histogram');
-      });
-
-      await expect.poll(() => page.locator('[name="viewer-Histogram"]').count(), {timeout: 20_000}).toBe(1);
-      await expect.poll(() => page.locator(HOST).count(), {timeout: 20_000}).toBe(0);
-
-      const applyErrTexts: string[] = [];
-      const applyErrCount = await withConsoleErrorCount(page, async () => {
-        await page.evaluate(async (id) => {
-          const saved = await grok.dapi.layouts.find(id);
-          grok.shell.tv.loadLayout(saved);
-        }, layoutId);
-        await page.locator(HOST).first().waitFor({timeout: 30_000});
-      }, undefined, applyErrTexts);
-      expect(applyErrCount, `layout-apply console errors: ${JSON.stringify(applyErrTexts)}`).toBe(0);
-
-      await expect.poll(() => page.locator('[name="viewer-Histogram"]').count(), {timeout: 20_000}).toBe(0);
-      expect(await page.evaluate(() => grok.shell.tv.viewers
-        .filter((x: any) => x.type === 'Histogram').length)).toBe(0);
-      await expect.poll(() => drawnLabelNames(page), {timeout: 20_000}).toEqual(preLabels);
-      await expect.poll(() => page.evaluate(() => {
-        const vw = grok.shell.tv.viewers.find((x: any) => x.type === 'FormsViewer');
-        return vw ? Array.from(vw.props.fieldsColumnNames as string[]) : null;
-      }), {timeout: 20_000}).toEqual(pre.fields);
-
-      await expect.poll(() => sortIndicatorLabels(page), {timeout: 20_000}).toEqual(preIndicator);
-
-      await expect.poll(() => page.evaluate((sel) => Array.from(document.querySelectorAll(sel))
-        .map((c) => ((c as HTMLElement).querySelector('[column="USUBJID"]') as HTMLInputElement)?.value), PINNED),
-      {timeout: 20_000}).toEqual(pre.pinnedValues);
-    } finally {
-      await page.evaluate(async (id) => {
-        const saved = await grok.dapi.layouts.find(id);
-        if (saved) await grok.dapi.layouts.delete(saved);
-      }, layoutId);
-    }
-  });
-
-  await softStep('Step 7c — A project round-trip preserves the field set and the pinned row across a session boundary', async () => {
-    const preLabels = await drawnLabelNames(page);
-    const pre = await page.evaluate(() => {
-      const vw = grok.shell.tv.viewers.find((x: any) => x.type === 'FormsViewer');
-
-      return {
-        fields: Array.from(vw.props.fieldsColumnNames as string[]),
-        pinnedValues: Array.from(vw.props.pinnedRowValues as string[]),
-      };
-    });
-    const preIndicator = await sortIndicatorLabels(page);
-
-    expect(preLabels.length).toBeGreaterThan(0);
-    expect(pre.fields.length).toBeGreaterThan(0);
-    expect(pre.pinnedValues.length).toBeGreaterThan(0);
-    expect(preIndicator.length).toBeGreaterThan(0);
-
-    const projName = `zz-formsviewer-core-${Date.now()}`;
-    let projectId: string | null = null;
-    try {
-
-      const saved = await projects.saveProjectViaApi(page, projName);
-      projectId = saved.projectId;
-
-      await projects.reopenAndAssertProvenance(page, projectId as string);
-      await page.locator(HOST).first().waitFor({timeout: 30_000});
-
-      await expect.poll(() => drawnLabelNames(page), {timeout: 30_000}).toEqual(preLabels);
-      await expect.poll(() => page.evaluate(() => {
-        const vw = grok.shell.tv?.viewers?.find((x: any) => x.type === 'FormsViewer');
-        return vw ? Array.from(vw.props.fieldsColumnNames as string[]) : null;
-      }), {timeout: 30_000}).toEqual(pre.fields);
-
-      await expect.poll(() => page.evaluate((sel) => Array.from(document.querySelectorAll(sel))
-        .map((c) => ((c as HTMLElement).querySelector('[column="USUBJID"]') as HTMLInputElement)?.value), PINNED),
-      {timeout: 30_000}).toEqual(pre.pinnedValues);
-
-      await expect.poll(() => sortIndicatorLabels(page), {timeout: 30_000}).toEqual(preIndicator);
-    } finally {
-      if (projectId)
-        await projects.deleteProjectWithCleanup(page, {projectId});
-    }
+    await expect.poll(() => page.evaluate(() =>
+      Array.from(grok.shell.tv.viewers.find((x: any) => x.type === 'FormsViewer').props.pinnedRowValues as string[])),
+    {timeout: 15_000}).toEqual(pinnedBefore);
   });
 
   await v.cleanupShell(page);

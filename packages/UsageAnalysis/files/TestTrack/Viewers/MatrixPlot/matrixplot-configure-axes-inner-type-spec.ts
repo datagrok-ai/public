@@ -2,30 +2,21 @@
 realizes: [matrixplot.cp.configure-axes-inner-type, matrixplot.int.axes-drive-inner-grid, viewers.matrix-plot]
 --- */
 import {expect, Page} from '@playwright/test';
-import {test} from '../../shared-page';
-import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
+import {localTest as test} from '../../shared-page';
+import {openDatagrok, specTestOptions, softStep, isLocalBootNoise} from '../../spec-login';
 import * as v from '../../helpers/viewers';
-import {saveProjectViaApi, deleteProjectWithCleanup} from '../../helpers/projects';
 
 declare const grok: any;
 
+// Scenarios 1-4 of the configure scenario. The layout and project round-trips (Scenario 5)
+// live in matrixplot-configure-axes-inner-type-server-spec.ts on the server lane.
 test.use(specTestOptions);
 
 const datasetPath = 'System:DemoFiles/demog.csv';
 
-const isAmbientError = (text: string) =>
+const isBenignError = (text: string) =>
   /WebSocket/.test(text) || /Failed to load resource/.test(text) || /404 \(\)/.test(text) ||
   /favicon/.test(text);
-
-let inProjectSaveWindow = false;
-const isBenignError = (text: string) => {
-  if (isAmbientError(text)) return true;
-  if (inProjectSaveWindow)
-    return /Unable to find element in cloned iframe/.test(text) ||
-      /Stack trace [A-Za-z]+/.test(text) ||
-      /NullError: method not found: '\w+' on null/.test(text);
-  return false;
-};
 
 const cellInk = (page: Page, idx: number) => page.evaluate((i: number) => {
   const cells = document.querySelectorAll('[name="viewer-Matrix-plot"] canvas.d4-matrix-plot-inner-viewer');
@@ -45,7 +36,7 @@ async function settledCellInk(page: Page, idx: number): Promise<number> {
   let prev = await cellInk(page, idx);
   let cur = prev;
   for (let i = 0; i < 10; i++) {
-    await page.waitForTimeout(300);   
+    await page.waitForTimeout(300);
     cur = await cellInk(page, idx);
     if (cur >= 0 && Math.abs(cur - prev) < 40) break;
     prev = cur;
@@ -97,18 +88,33 @@ async function setCellPlotType(page: Page, value: string) {
   await v.waitForViewerRendered(page, 'Matrix plot', 800);
 }
 
-test('Matrix Plot — Column Sets, Cell Plot Type, Persistence', async ({page}: {page: Page}) => {
+// The gear's click handler is AppEvents.setCurrentObject(viewer), which is what grok.shell.o
+// does; the gear itself is not the subject here and a click on it, synthetic or real, opens
+// nothing on a shared local page in ~1 run in 3 (measured 2026-09-03). The panel is proven
+// bound to THIS viewer, since the previous spec's grid outlives its closed viewer.
+async function openGear(page: Page) {
+  const bound = () => page.evaluate(() => {
+    const mp = grok.shell.tv.viewers.find((vw: any) => vw.type === 'Matrix plot');
+    return !!document.querySelector('.property-grid [name="prop-view-x"]') && !!mp && grok.shell.o?.dart === mp.dart;
+  });
+  await page.evaluate(() => { grok.shell.o = grok.shell.tv.viewers.find((vw: any) => vw.type === 'Matrix plot'); });
+  if (await v.pollValue(bound, (b) => b, 3000, 100)) return;
+  await v.clickViewerTitlebarIcon(page, 'Matrix-plot', 'icon-font-icon-settings');
+  expect(await v.pollValue(bound, (b) => b, 3000, 100)).toBe(true);
+}
+
+test('Matrix Plot — Column Sets, Cell Plot Type', async ({page}: {page: Page}) => {
   test.setTimeout(600_000);
 
   const pageErrors: string[] = [];
-  page.on('pageerror', (e) => { if (!isBenignError(String(e))) pageErrors.push(String(e)); });
+  page.on('pageerror', (e) => { if (!isBenignError(String(e)) && !isLocalBootNoise(String(e))) pageErrors.push(String(e)); });
   const consoleErrors: string[] = [];
   page.on('console', (m) => {
-    if (m.type() === 'error' && !isBenignError(m.text())) consoleErrors.push(m.text());
+    if (m.type() === 'error' && !isBenignError(m.text()) && !isLocalBootNoise(m.text())) consoleErrors.push(m.text());
   });
   const errCount = () => pageErrors.length + consoleErrors.length;
 
-  await loginToDatagrok(page);
+  await openDatagrok(page);
   await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 3000});
   await v.addViewerByIcon(page, 'matrix-plot', 'Matrix-plot');
 
@@ -121,10 +127,9 @@ test('Matrix Plot — Column Sets, Cell Plot Type, Persistence', async ({page}: 
     expect(sets.cellPlotType).toBe('Density plot');
   });
 
-  await v.openViewerGear(page, 'Matrix plot');
+  await openGear(page);
 
   await softStep('Scenario 2 — change X via the Select columns dialog (real clicks; GROK-20438 labels)', async () => {
-
     await page.locator('[name="prop-view-x"] button').click();
     await page.locator('[name^="dialog-Select-columns"]').waitFor({timeout: 8000});
     const rect = await page.evaluate(() => {
@@ -151,7 +156,7 @@ test('Matrix Plot — Column Sets, Cell Plot Type, Persistence', async ({page}: 
     const sets = await v.pollValue(() => readSets(page), (s) => s.x.length === 2, 3000, 150);
     expect(sets.x).toEqual(['AGE', 'HEIGHT']);
     const cells = await v.pollValue(() => cellCount(page), (n) => n === 8, 3000, 150);
-    expect(cells).toBe(8); 
+    expect(cells).toBe(8);
 
     const labels = new Set(await v.pollValue(() => columnLabels(page),
       (l) => l.includes('AGE') && l.includes('HEIGHT') && !l.includes('WEIGHT') && !l.includes('STARTED'),
@@ -174,7 +179,6 @@ test('Matrix Plot — Column Sets, Cell Plot Type, Persistence', async ({page}: 
   });
 
   await softStep('Scenario 4 — switch Cell Plot Type: off-diagonal cell repaints', async () => {
-
     const densInk = await settledCellInk(page, 1);
     await setCellPlotType(page, 'Scatter plot');
     const scatInk = await settledCellInk(page, 1);
@@ -188,100 +192,6 @@ test('Matrix Plot — Column Sets, Cell Plot Type, Persistence', async ({page}: 
     expect(Math.abs(backInk - scatInk)).toBeGreaterThan(500);
   });
 
-  await softStep('Scenario 5a — layout round-trip restores the saved viewer set and config', async () => {
-    await v.setViewerProps(page, 'Matrix plot', [{set: {
-      xColumnNames: ['AGE', 'HEIGHT'],
-      yColumnNames: ['AGE', 'HEIGHT', 'WEIGHT'],
-      cellPlotType: 'Scatter plot',
-    }}], 900);
-    const layoutId = await page.evaluate(async () => {
-      const layout = grok.shell.tv.saveLayout();
-      await grok.dapi.layouts.save(layout);
-      return layout.id as string;
-    });
-    try {
-      const result = await page.evaluate(async (id) => {
-        const tv = grok.shell.tv;
-
-        await new Promise((r) => setTimeout(r, 1000));
-        tv.addViewer('Scatter plot');
-        const tAdd = Date.now();
-        while (Date.now() - tAdd < 800 && !tv.viewers.some((vw: any) => vw.type === 'Scatter plot'))
-          await new Promise((r) => setTimeout(r, 100));
-        const saved = await grok.dapi.layouts.find(id);
-        tv.loadLayout(saved);
-
-        const tLoad = Date.now();
-        while (Date.now() - tLoad < 3000) {
-          if (tv.viewers.some((vw: any) => vw.type === 'Matrix plot') &&
-              !tv.viewers.some((vw: any) => vw.type === 'Scatter plot')) break;
-          await new Promise((r) => setTimeout(r, 100));
-        }
-        const hasScatter = tv.viewers.some((vw: any) => vw.type === 'Scatter plot');
-        const hasMatrix = tv.viewers.some((vw: any) => vw.type === 'Matrix plot');
-        const mp = tv.viewers.find((vw: any) => vw.type === 'Matrix plot');
-        return {
-          hasScatter, hasMatrix,
-          x: mp?.props.xColumnNames, y: mp?.props.yColumnNames, cellPlotType: mp?.props.cellPlotType,
-        };
-      }, layoutId);
-
-      expect(result.hasMatrix).toBe(true);
-      expect(result.hasScatter).toBe(false);
-      expect(result.x).toEqual(['AGE', 'HEIGHT']);
-      expect(result.y).toEqual(['AGE', 'HEIGHT', 'WEIGHT']);
-      expect(result.cellPlotType).toBe('Scatter plot');
-    } finally {
-      await page.evaluate(async (id) => {
-        try {
-          const saved = await grok.dapi.layouts.find(id);
-          if (saved) await grok.dapi.layouts.delete(saved);
-        } catch (_) {}
-      }, layoutId);
-    }
-  });
-
-  await softStep('Scenario 5b — project save / Close All / reopen restores the Matrix plot (GROK-10925)', async () => {
-    const projName = 'zz-matrixplot-persistence-probe-' + Date.now();
-    let projectId: string | null = null;
-    inProjectSaveWindow = true;
-    try {
-      const saved = await saveProjectViaApi(page, projName);
-      projectId = saved.projectId;
-      expect(projectId).toBeTruthy();
-
-      await v.closeAllAndWait(page);
-      const result = await page.evaluate(async (id) => {
-        const full = await grok.dapi.projects.find(id);
-        await full.open();
-        let types: string[] = [];
-        for (let t = 0; t < 20; t++) {
-          await new Promise((r) => setTimeout(r, 1000));   
-          types = [];
-          for (const view of grok.shell.tableViews)
-            for (const vw of view.viewers) types.push(vw.type);
-          if (types.includes('Matrix plot')) break;
-        }
-        let mp: any = null;
-        for (const view of grok.shell.tableViews)
-          for (const vw of view.viewers)
-            if (vw.type === 'Matrix plot') mp = vw;
-        return {
-          types,
-          x: mp?.props.xColumnNames, y: mp?.props.yColumnNames, cellPlotType: mp?.props.cellPlotType,
-        };
-      }, projectId);
-
-      expect(result.types).toContain('Matrix plot');
-      expect(result.x).toEqual(['AGE', 'HEIGHT']);
-      expect(result.y).toEqual(['AGE', 'HEIGHT', 'WEIGHT']);
-      expect(result.cellPlotType).toBe('Scatter plot');
-    } finally {
-      inProjectSaveWindow = false;
-      if (projectId) await deleteProjectWithCleanup(page, {projectId});
-    }
-  });
-
-  await page.evaluate(() => grok.shell.closeAll());
+  await v.closeAllAndWait(page);
   v.finishSpec();
 });

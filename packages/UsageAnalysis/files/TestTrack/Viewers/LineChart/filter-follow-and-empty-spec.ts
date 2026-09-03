@@ -3,7 +3,7 @@ realizes: [linechart.cp.filter-follow-and-empty]
 --- */
 import {expect, type Page} from '@playwright/test';
 import {localTest as test} from '../../shared-page';
-import {openDatagrok, specTestOptions, softStep, stepErrors, isLocalBootNoise} from '../../spec-login';
+import {openDatagrok, specTestOptions, softStep, isLocalBootNoise} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 
 declare const grok: any;
@@ -71,7 +71,6 @@ async function trueCount(page: Page): Promise<number> {
 
 test('Line Chart — Filter Follow and Empty-Chart Resilience', async ({page}) => {
   test.setTimeout(300_000);
-  stepErrors.length = 0;
   pageErrors.length = 0;
   consoleErrors.length = 0;
 
@@ -168,6 +167,6 @@ test('Line Chart — Filter Follow and Empty-Chart Resilience', async ({page}) =
     expect(restored).toBe(baseline);
   });
 
-  if (stepErrors.length > 0)
-    throw new Error(`Line Chart filter-follow-and-empty failures:\n${stepErrors.join('\n')}`);
+  await v.cleanupShell(page);
+  v.finishSpec();
 });

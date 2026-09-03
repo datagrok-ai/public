@@ -3,7 +3,7 @@ realizes: [filters.cp.chem-and-bio-filters]
 --- */
 import {expect, Page} from '@playwright/test';
 import {test} from '../../shared-page';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
+import {openDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 
 declare const grok: any;
@@ -74,15 +74,15 @@ async function probeBioFactory(page: Page): Promise<BioFactoryProbe> {
 
 async function macromoleculeColumn(page: Page): Promise<string | null> {
   return page.evaluate(async () => {
-    for (let i = 0; i < 40; i++) {
+    const find = () => {
       const df = grok.shell.tv.dataFrame;
       for (let j = 0; j < df.columns.length; j++) {
         const c = df.columns.byIndex(j);
         if (c.semType === 'Macromolecule') return c.name as string;
       }
-      await new Promise((r) => setTimeout(r, 500));
-    }
-    return null;
+      return null;
+    };
+    return (window as any).__poll(find, (name: string | null) => name !== null, 20_000, 100);
   });
 }
 
@@ -97,20 +97,11 @@ async function bioCardCount(page: Page, column: string): Promise<number> {
   }, column);
 }
 
+// The Bio card is built asynchronously after the panel opens, so the card count is settled on a
+// real quiet gap rather than read once.
 async function waitForPanelSettled(page: Page): Promise<number> {
-  return page.evaluate(async () => {
-    const count = () => document.querySelectorAll('[name="viewer-Filters"] .d4-filter').length;
-    let stable = 0;
-    let last = -1;
-    for (let i = 0; i < 60; i++) {
-      const now = count();
-      stable = now === last ? stable + 1 : 0;
-      last = now;
-      if (stable >= 4) return now;
-      await new Promise((r) => setTimeout(r, 500));
-    }
-    return last;
-  });
+  return page.evaluate(() => (window as any).__settledFor(
+    () => document.querySelectorAll('[name="viewer-Filters"] .d4-filter').length, 1000, 30_000, 100));
 }
 
 async function filterGroupSize(page: Page): Promise<number> {
@@ -164,7 +155,7 @@ test('Filter panel — Bio package filters', async ({page}) => {
   test.setTimeout(600_000);
   stepErrors.length = 0;
 
-  await loginToDatagrok(page);
+  await openDatagrok(page);
 
   try {
     await v.openTable(page, {path: BIO_PATH, semType: 'Macromolecule'});

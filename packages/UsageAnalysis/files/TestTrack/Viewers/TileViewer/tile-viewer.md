@@ -1,6 +1,7 @@
 ---
 feature: tileviewer
 target_layer: playwright
+boot_lane: mixed
 coverage_type: regression
 priority: p1
 realizes_atlas:
@@ -14,6 +15,7 @@ realizes_atlas:
 realizes: [viewers.tile-viewer]
 realized_as:
   - tile-viewer-spec.ts
+  - tile-viewer-lanes-persist-server-spec.ts
 related_bugs:
   - id: GROK-20096
     status: fixed
@@ -183,6 +185,25 @@ Switching the table always rebuilds the card for the new table's columns, whethe
   - selecting rows 1–5 for the Row source section — set on the DataFrame's selection, because
     the grid is canvas with no per-row selector. ASSERT = the tile population the product
     rendered.
+- LANE: mixed. `tile-viewer-spec.ts` runs on the local lane (`?mode=local`, shared page): every
+  dataset it opens (demog, spgi-100) has a checked-in copy behind the `__readCsv` seam and it makes
+  no `grok.dapi` call. The second table is read through that seam, and no semantic-type settle is
+  awaited on it: local mode loads no Chem package, so that event never fires, and the rebind
+  assertion does not depend on it. The spot-check column of that rebind is one whose display string
+  has no newline: without Chem the molecule column renders as a plain `<input>`, which cannot hold a
+  molblock's line breaks.
+- LANE-BOUND STEP: "Scroll position when another viewer is added" is realized in the section's
+  server sibling, `tile-viewer-lanes-persist-server-spec.ts` (step `Scroll position (tile-viewer)`).
+  Measured 2026-09-03 on dev with the same gesture on both lanes: docking a histogram halves the
+  tile viewer's height and rebuilds the lane at scrollTop 0 on BOTH clients; the authenticated
+  client puts the position back ~800 ms later, the `?mode=local` client never does and stays on
+  row 0. The step therefore waits for the lane read to return to its pre-dock value (capped at the
+  2 s it replaced) and scrolls to mid-range rather than to the clamp, where the browser itself moves
+  scrollTop when the lane shortens.
+- WAITS: no fixed sleeps. A tile click waits for the current-row/selection stamp to move; a
+  property change waits for the viewer's own `onViewerRendered` (armed before the set) or polls the
+  exact predicate the step asserts, capped at the sleep it replaced; the scroll step settles the
+  lane read for a real quiet gap before the wheel gesture.
 - COLUMN-REMOVING GESTURE IS REAL: right-click the field's value on a tile and pick the removal
   leaf the refdoc names under "Field (column) menu — what a real right-click opens". A
   programmatic removal reaches the same downstream listener while leaving the control

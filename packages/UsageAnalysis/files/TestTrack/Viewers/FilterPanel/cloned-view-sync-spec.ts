@@ -2,41 +2,20 @@
 realizes: [filters.cp.cloned-view-sync, filters.int.same-column-sync]
 --- */
 import {expect} from '@playwright/test';
-import {test} from '../../shared-page';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
+import {localTest as test} from '../../shared-page';
+import {openDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
 import * as v from '../../helpers/viewers';
+import {activateView, clickCardCheckboxIn, FULL, installViewResolver, trueCountOf} from './cloned-view-shared';
+import {typeColumnIntoHeaderPicker} from './column-picker';
 
 declare const grok: any;
 declare const DG: any;
 
+// Scenarios 1-3 on the local lane. Scenario 4, the layout saved and re-applied through the
+// server, lives in cloned-view-sync-server-spec.ts.
 test.use(specTestOptions);
 
 const datasetPath = 'System:DemoFiles/demog.csv';
-const FULL = 5850;
-
-async function installViewResolver(page: import('@playwright/test').Page): Promise<void> {
-  await page.evaluate(() => {
-    (window as any).__tv = (vn: string) => {
-      const tvs: any[] = [];
-      for (const x of grok.shell.tableViews) tvs.push(x);
-      const hits = tvs.filter((t: any) => t.name === vn);
-      if (hits.length !== 1)
-        throw new Error(`TableView "${vn}" matched ${hits.length} views (open: ${tvs.map((t: any) => t.name).join(' | ')})`);
-      return hits[0];
-    };
-    (window as any).__cards = (vn: string): HTMLElement[] => {
-      const root = (window as any).__tv(vn).root as HTMLElement;
-      return Array.from(root.querySelectorAll('[name="viewer-Filters"] .d4-filter')) as HTMLElement[];
-    };
-    (window as any).__card = (vn: string, caption: string): HTMLElement => {
-      const hits = (window as any).__cards(vn).filter((x: HTMLElement) =>
-        x.querySelector('.d4-filter-column-name')?.textContent?.trim() === caption);
-      if (hits.length !== 1)
-        throw new Error(`the Filter Panel of view "${vn}" paints ${hits.length} cards captioned "${caption}", expected exactly one`);
-      return hits[0];
-    };
-  });
-}
 
 async function viewNames(page: import('@playwright/test').Page): Promise<string[]> {
   return page.evaluate(() => {
@@ -76,23 +55,6 @@ async function cardDisabledIn(
   return page.evaluate(({vn, col}) =>
     (window as any).__card(vn, col).classList.contains('d4-filter-disabled'),
   {vn: viewName, col: column});
-}
-
-async function clickCardCheckboxIn(
-  page: import('@playwright/test').Page, viewName: string, column: string,
-): Promise<void> {
-  await activateView(page, viewName);
-  await page.evaluate(({vn, col}) => {
-    const box = (window as any).__card(vn, col)
-      .querySelector('input[type="checkbox"].ui-input-editor') as HTMLElement | null;
-    if (!box)
-      throw new Error(`the "${col}" card in view "${vn}" carries no enable/disable checkbox — the toggle gesture never happened`);
-    box.click();
-  }, {vn: viewName, col: column});
-}
-
-async function trueCountOf(page: import('@playwright/test').Page, viewName: string): Promise<number> {
-  return page.evaluate((vn: string) => (window as any).__tv(vn).dataFrame.filter.trueCount, viewName);
 }
 
 async function selectedOf(
@@ -147,19 +109,6 @@ const CAT_ROW_TOP = 10;
 const CAT_ROW_PITCH = 27;
 const CAT_ROW_CENTRE = 13;
 const CAT_NAME_X = 60;
-
-async function activateView(page: import('@playwright/test').Page, viewName: string): Promise<void> {
-  await page.evaluate((vn: string) => { grok.shell.v = (window as any).__tv(vn); }, viewName);
-  await expect.poll(async () => page.evaluate((vn: string) => {
-    const el = ((window as any).__tv(vn).root as HTMLElement)
-      .querySelector('[name="viewer-Filters"]') as HTMLElement | null;
-    return el != null && el.offsetParent !== null;
-  }, viewName), {
-    message: `the Filter Panel of view "${viewName}" never became the laid-out one after switching to it — `
-      + 'every :visible panel read below would have addressed the other view',
-    timeout: 15_000, intervals: [300, 600, 1200],
-  }).toBe(true);
-}
 
 async function clickCategoryNameRowIn(
   page: import('@playwright/test').Page, viewName: string, column: string, rowIndex: number,
@@ -284,37 +233,13 @@ async function laidOutPanelCaptions(page: import('@playwright/test').Page): Prom
   });
 }
 
-interface ComboPick { opened: boolean; accepted: string; added: string[]; }
+interface ComboPick { accepted: string; added: string[]; }
 
 async function drivePanelColumnCombo(
   page: import('@playwright/test').Page, column: string,
 ): Promise<ComboPick> {
   const before = await laidOutPanelCaptions(page);
-  await page.evaluate(() => {
-    const panels = Array.from(document.querySelectorAll('[name="viewer-Filters"]'))
-      .filter((e) => (e as HTMLElement).offsetParent !== null);
-    if (panels.length !== 1)
-      throw new Error(`expected exactly one laid-out Filter Panel to drive, found ${panels.length}`);
-    const combo = panels[0].querySelector('.d4-filter-group-header [name="div-column-combobox-"]');
-    if (!combo)
-      throw new Error('the laid-out Filter Panel header exposes no [name="div-column-combobox-"]');
-    document.body.dispatchEvent(new MouseEvent('mousedown', {bubbles: true}));
-    const label = combo.querySelector('.d4-column-selector-column');
-    (label ?? combo).dispatchEvent(new MouseEvent('mousedown', {bubbles: true, button: 0}));
-  });
-  const opened = await page.waitForFunction(
-    () => !!document.querySelector('.d4-column-selector-backdrop'), null, {timeout: 8000})
-    .then(() => true).catch(() => false);
-  if (!opened) return {opened: false, accepted: '', added: []};
-  await page.keyboard.press(column[0].toLowerCase());
-  const search = page.locator('input.d4-column-selector-search-input').first();
-  await expect(search,
-    `the open column picker never produced its search box after "${column[0]}" was typed at it, so the pick `
-    + 'could not be addressed by name and Enter would commit whichever row the picker happened to highlight')
-    .toBeAttached({timeout: 10_000});
-  await page.keyboard.press('Control+a');
-  await page.keyboard.type(column, {delay: 40});
-  const accepted = await search.inputValue();
+  const accepted = await typeColumnIntoHeaderPicker(page, column);
   await page.keyboard.press('Enter');
   await expect.poll(async () => page.locator('.d4-column-selector-backdrop').count(), {
     message: `the column picker never closed after "${column}" was committed with Enter — the pick did not land`,
@@ -328,16 +253,26 @@ async function drivePanelColumnCombo(
     if (at === -1) added.push(caption);
     else rest.splice(at, 1);
   }
-  return {opened: true, accepted, added};
+  return {accepted, added};
+}
+
+// A hold: the value must read the same at every sample of the window, so the window is spent.
+async function sampleHeld<T>(page: import('@playwright/test').Page, read: () => Promise<T>,
+  samples: number, gapMs: number): Promise<string[]> {
+  const out: string[] = [];
+  for (let i = 0; i < samples; i++) {
+    if (i > 0) await page.waitForTimeout(gapMs);
+    out.push(JSON.stringify(await read()));
+  }
+  return out;
 }
 
 test('Filters — Cloned View Synchronization', async ({page}) => {
   test.setTimeout(600_000);
   stepErrors.length = 0;
 
-  await loginToDatagrok(page);
+  await openDatagrok(page);
   await v.openTable(page, {path: datasetPath, withFilterPanel: true});
-  await v.installEventWaits(page);
   await installViewResolver(page);
 
   const ORIG = 'demog';
@@ -570,16 +505,12 @@ test('Filters — Cloned View Synchronization', async ({page}) => {
       expect(origAfter.count).toBe(1);
       expect(origAfter.active).toBe(true);
 
-      const origSamples: string[] = [];
-      for (let i = 0; i < 6; i++) {
-        await page.waitForTimeout(400);
-        origSamples.push(JSON.stringify(await page.evaluate((vn: string) => {
-          const view = (window as any).__tv(vn);
-          const st = view.getFiltersGroup().getStates('AGE', 'histogram');
-          return {count: st ? st.length : 0, active: st && st.length ? st[0].active : null,
-            trueCount: view.dataFrame.filter.trueCount};
-        }, ORIG)));
-      }
+      const origSamples = await sampleHeld(page, () => page.evaluate((vn: string) => {
+        const view = (window as any).__tv(vn);
+        const st = view.getFiltersGroup().getStates('AGE', 'histogram');
+        return {count: st ? st.length : 0, active: st && st.length ? st[0].active : null,
+          trueCount: view.dataFrame.filter.trueCount};
+      }, ORIG), 6, 400);
       expect(Array.from(new Set(origSamples)),
         'the ORIGINAL\'s AGE histogram card and the narrowing it holds had to stay put at every sample of '
         + 'a 2.4s window after the clone-side toggle — a mirror that crosses filter types on a longer '
@@ -719,9 +650,6 @@ test('Filters — Cloned View Synchronization', async ({page}) => {
         + 'could legitimately add and the positive control below cannot be run')
         .toBeTruthy();
       const positive = await drivePanelColumnCombo(page, cardless);
-      expect(positive.opened,
-        `the panel column picker never opened in the clone for the card-less column "${cardless}"`)
-        .toBe(true);
       expect(positive.accepted,
         `the clone's column picker did not hold "${cardless}" when Enter committed the pick — the picker commits `
         + 'the name its search box carries (column_combo_box.dart:361-364), so a commit made against any other '
@@ -746,9 +674,6 @@ test('Filters — Cloned View Synchronization', async ({page}) => {
         .toBe(FULL - 1);
 
       const refusal = await drivePanelColumnCombo(page, 'AGE');
-      expect(refusal.opened,
-        'the panel column picker never opened in the clone, so the product\'s refusal to add a second AGE card was never exercised')
-        .toBe(true);
       expect(refusal.accepted,
         'the clone\'s column picker did not hold "AGE" when Enter committed the pick, so AGE was never the column '
         + 'the picker was asked for and the card set holding still below says nothing about a second AGE instance '
@@ -757,11 +682,7 @@ test('Filters — Cloned View Synchronization', async ({page}) => {
       expect(refusal.added,
         `picking AGE added a card captioned ${refusal.added.join(', ')} — the pick landed on some other column`)
         .toEqual([]);
-      const cloneSamples: string[] = [];
-      for (let i = 0; i < 8; i++) {
-        await page.waitForTimeout(500);
-        cloneSamples.push(JSON.stringify(await panelCounts(page, MV_CLONE)));
-      }
+      const cloneSamples = await sampleHeld(page, () => panelCounts(page, MV_CLONE), 8, 500);
       expect(Array.from(new Set(cloneSamples)),
         'picking AGE in the clone\'s column selector changed the clone\'s card set over a sustained 4s window; '
         + 'addDefaultFilter (filters_core.dart:829-841) dedupes on (column, default filter type) and only scrolls '
@@ -785,10 +706,10 @@ test('Filters — Cloned View Synchronization', async ({page}) => {
     });
 
     await softStep('Scenario 3 - Step 4 filtering the host frame leaves the shared-column frame untouched', async () => {
-      const before = await page.evaluate(async () => {
+      const before = await page.evaluate(async (path: string) => {
         const w = window as any;
         grok.shell.closeAll();
-        const t1 = await grok.dapi.files.readCsv('System:DemoFiles/demog.csv');
+        const t1 = await w.__readCsv(path);
         const v1 = grok.shell.addTableView(t1);
         v1.name = 'HostView';
         await w.__poll(() => w.__tv('HostView'), (view: any) => !!view, 1200, 25);
@@ -804,7 +725,7 @@ test('Filters — Cloned View Synchronization', async ({page}) => {
         v1.getFiltersGroup();
         return {t1: t1.filter.trueCount, t2: t2.filter.trueCount, t2rows: t2.rowCount,
           sharesColumnObject, firstCat: String(t1.col('SEX').categories[0])};
-      });
+      }, datasetPath);
       await activateView(page, 'HostView');
       await v.applyCategoricalFilter(page, 'SEX', [before.firstCat]);
       const samples: {t1: number; t2: number}[] = [];
@@ -828,140 +749,6 @@ test('Filters — Cloned View Synchronization', async ({page}) => {
         + `the host frame was filtered, so its isolation is not a snapshot taken before contamination arrived `
         + `(every sample had to read ${outcome.before.t2rows}; samples: ${samples.map((s) => s.t2).join(', ')})`)
         .toEqual([outcome.before.t2rows]);
-    });
-
-    await softStep('Scenario 4 - Step 3 saved layout restores panel, cards and trueCount', async () => {
-      let layoutId: string | null = null;
-      const LAYOUT_VIEW = 'LayoutHost';
-      try {
-        await page.evaluate(async (vn: string) => {
-          grok.shell.closeAll();
-          const df = await grok.dapi.files.readCsv('System:DemoFiles/demog.csv');
-          const view = grok.shell.addTableView(df);
-          df.name = vn;
-          view.name = vn;
-          await (window as any).__poll(() => (window as any).__tv(vn), (v2: any) => !!v2, 1500, 25);
-          view.getFiltersGroup();
-        }, LAYOUT_VIEW);
-        await v.resetFilters(page);
-        await activateView(page, LAYOUT_VIEW);
-        await v.applyCategoricalFilter(page, 'RACE', ['Asian']);
-        const withBothCards = await v.applyNumericFilter(page, 'AGE', 30, 60);
-
-        await clickCardCheckboxIn(page, LAYOUT_VIEW, 'RACE');
-        await expect.poll(async () => page.evaluate((vn: string) =>
-          (window as any).__tv(vn).getFiltersGroup().getStates('RACE', 'categorical')[0]?.active, LAYOUT_VIEW),
-        {message: 'unticking the RACE card\'s own checkbox did not switch that card off, so the layout '
-          + 'about to be saved does not carry the one-card-off state the restore is measured against',
-        timeout: 20_000, intervals: [400, 800, 1500]}).toBe(false);
-
-        const saved = await page.evaluate(async (vn: string) => {
-          const view = (window as any).__tv(vn);
-          const fg = view.getFiltersGroup();
-          const raceEl = (window as any).__card(vn, 'RACE') as HTMLElement;
-          const ageEl = (window as any).__card(vn, 'AGE') as HTMLElement;
-          const layout = view.saveLayout();
-          await grok.dapi.layouts.save(layout);
-          let serverFound = false;
-          for (let i = 0; i < 20 && !serverFound; i++) {
-            try { serverFound = !!(await grok.dapi.layouts.find(layout.id)); }
-            catch (_) { serverFound = false; }
-            if (!serverFound) await new Promise((r) => setTimeout(r, 500));
-          }
-          return {
-            serverFound,
-            savedTrueCount: view.dataFrame.filter.trueCount,
-            captions: ((window as any).__cards(vn) as HTMLElement[])
-              .map((e) => (e.querySelector('.d4-filter-column-name')?.textContent ?? '').trim()),
-            layoutId: layout.id,
-            raceActive: fg.getStates('RACE', 'categorical')[0]?.active,
-            ageActive: fg.getStates('AGE', 'histogram')[0]?.active,
-            raceDisabledClass: raceEl.classList.contains('d4-filter-disabled'),
-            ageDisabledClass: ageEl.classList.contains('d4-filter-disabled'),
-          };
-        }, LAYOUT_VIEW);
-        layoutId = saved.layoutId;
-        expect(saved.serverFound,
-          'the saved layout cannot be fetched back from the server — saveLayout() stamps the id '
-          + 'client-side before the round-trip, so the re-apply below would restore nothing')
-          .toBe(true);
-        expect(saved.raceActive).toBe(false);
-        expect(saved.raceDisabledClass).toBe(true);
-        expect(saved.ageActive).toBe(true);
-        expect(saved.ageDisabledClass).toBe(false);
-        expect(saved.savedTrueCount).toBeGreaterThan(withBothCards);
-        expect(saved.savedTrueCount).toBeGreaterThan(0);
-        expect(saved.savedTrueCount).toBeLessThan(FULL);
-        expect(saved.captions.length).toBeGreaterThan(0);
-
-        await v.applyNumericFilter(page, 'AGE', 0, 200);
-        await page.evaluate(async (vn: string) => {
-          const w = window as any;
-          const view = w.__tv(vn);
-          const root = view.root as HTMLElement;
-          view.getFiltersGroup().close();
-          await w.__poll(() => root.querySelectorAll('[name="viewer-Filters"]').length,
-            (n: number) => n === 0, 800, 25);
-          const added = view.addViewer('Bar chart');
-          await w.__poll(() => Array.from(view.viewers).includes(added),
-            (there: boolean) => there, 1500, 25);
-        }, LAYOUT_VIEW);
-        expect(await page.locator('[name="viewer-Filters"]').count()).toBe(0);
-        const perturbed = await trueCountOf(page, LAYOUT_VIEW);
-        expect(perturbed,
-          'the perturbation left df.filter.trueCount at the saved value — the restore assert below could not fail')
-          .not.toBe(saved.savedTrueCount);
-
-        const restored = await page.evaluate(async ({id, vn, cap}) => {
-          const view = (window as any).__tv(vn);
-          const s = await grok.dapi.layouts.find(id);
-          if (!s) throw new Error(`the saved layout ${id} is not on the server, so nothing can be re-applied`);
-          const applied = new Promise<void>((resolve) => {
-            const sub = grok.events.onViewLayoutApplied.subscribe(() => { sub.unsubscribe(); resolve(); });
-            setTimeout(resolve, cap);
-          });
-          view.loadLayout(s);
-          await applied;
-          const root = view.root as HTMLElement;
-          for (let i = 0; i < 50; i++) {
-            if (root.querySelector('[name="viewer-Filters"] .d4-filter') != null) break;
-            await new Promise((r) => setTimeout(r, 100));
-          }
-          const panelOpen = root.querySelector('[name="viewer-Filters"]') != null;
-          const cards = (window as any).__cards(vn) as HTMLElement[];
-          const captions = cards.map((e) => (e.querySelector('.d4-filter-column-name')?.textContent ?? '').trim());
-          const cardEl = (caption: string) =>
-            cards.find((x) => x.querySelector('.d4-filter-column-name')?.textContent?.trim() === caption);
-          const raceEl = cardEl('RACE');
-          const ageEl = cardEl('AGE');
-          const fg = view.getFiltersGroup();
-          return {
-            panelOpen,
-            captions,
-            trueCount: view.dataFrame.filter.trueCount,
-            raceActive: fg.getStates('RACE', 'categorical')[0]?.active,
-            ageActive: fg.getStates('AGE', 'histogram')[0]?.active,
-            raceDisabledClass: raceEl ? raceEl.classList.contains('d4-filter-disabled') : null,
-            ageDisabledClass: ageEl ? ageEl.classList.contains('d4-filter-disabled') : null,
-          };
-        }, {id: layoutId, vn: LAYOUT_VIEW, cap: 5000});
-
-        expect(restored.panelOpen).toBe(true);
-        expect(restored.captions).toEqual(saved.captions);
-        expect(restored.raceActive).toBe(false);
-        expect(restored.raceDisabledClass).toBe(true);
-        expect(restored.ageActive).toBe(true);
-        expect(restored.ageDisabledClass,
-          'the AGE card came back painted disabled — the re-apply did not restore per-card state')
-          .toBe(false);
-        expect(restored.trueCount).toBe(saved.savedTrueCount);
-      } finally {
-        if (layoutId) {
-          await page.evaluate(async (id: string) => {
-            try { const s = await grok.dapi.layouts.find(id); await grok.dapi.layouts.delete(s); } catch (_) { /* */ }
-          }, layoutId);
-        }
-      }
     });
   } finally {
     await v.cleanupShell(page);

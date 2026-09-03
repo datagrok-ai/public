@@ -1,8 +1,9 @@
 /* ---
 realizes: [viewers.form]
 --- */
-import {test, expect, Page} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
+import {expect, Page} from '@playwright/test';
+import {localTest as test} from '../../shared-page';
+import {openDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 
 test.use(specTestOptions);
@@ -39,7 +40,7 @@ const currentRow = (page: Page) => page.evaluate(() => (window as any).grok.shel
 test('Form viewer', async ({page}) => {
   test.setTimeout(600_000);
 
-  await loginToDatagrok(page);
+  await openDatagrok(page);
   await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 3000});
 
   await softStep('Add Form from the Viewers toolbox', async () => {
@@ -102,7 +103,6 @@ test('Form viewer', async ({page}) => {
   });
 
   await softStep('Show Navigation hides the toolbar', async () => {
-    await v.openViewerProperties(page, VIEWER_NAME);
     await v.ensurePropertyCategory(page, VIEWER_NAME, 'misc', 'show-navigation');
     expect(await v.togglePropertyGridCheckbox(page, 'show-navigation')).toBe(false);
     await expect(page.locator(`${VIEWER} [name="icon-chevron-right"]`).first()).toBeHidden();
@@ -126,6 +126,12 @@ test('Form viewer', async ({page}) => {
     await expect(page.locator(VIEWER)).toHaveCount(0);
   });
 
+  // the context panel keeps the closed viewer's property grid, and neither shell.o = null nor
+  // rebinding shell.o drops it (measured 2026-09-03); the next spec's openViewerProperties then
+  // skips the gear and edits a dead grid, so the stale node is removed here
+  await page.evaluate(() => {
+    for (const e of Array.from(document.querySelectorAll('.property-grid'))) e.remove();
+  });
   await v.cleanupShell(page);
 
   v.finishSpec();

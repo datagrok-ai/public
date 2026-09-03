@@ -7,8 +7,10 @@ realizes:
   - viewers.matrix-plot
 realized_as:
   - matrixplot-configure-axes-inner-type-spec.ts
+  - matrixplot-configure-axes-inner-type-server-spec.ts
 priority: p0
 target_layer: playwright
+boot_lane: mixed
 coverage_type: smoke
 related_bugs:
   - id: GROK-16473
@@ -170,6 +172,10 @@ Expected:
   `grok.shell.tv.viewers.find(v => v.type === 'Matrix plot')`. The re-tile
   signal is the count of
   `[name="viewer-Matrix-plot"] canvas.d4-matrix-plot-inner-viewer` elements.
+- The settings panel is opened by making the viewer the shell's current object
+  (`grok.shell.o = viewer`, the call the gear handler makes) and proven bound to
+  the live viewer before any row is touched — see the axes scenario's note on
+  the shared-page gear click.
 - Scenario 2 drives the real dialog: the `...` button on the
   `[name="prop-x"]` row opens `[name="dialog-Select-columns..."]` only on a
   REAL click (synthetic clicks are swallowed or hit the shell view-selector).
@@ -200,6 +206,10 @@ Expected:
   count over the target cell canvas, re-read until two consecutive readings
   agree; cell canvas backing-store pixels differ from CSS px (device pixel
   ratio) — scale coordinates by `rect.width / canvas.width`.
+- Scenarios 1-4 run on the local lane (`matrixplot-configure-axes-inner-type-spec.ts`);
+  Scenario 5 is the server lane sibling `matrixplot-configure-axes-inner-type-server-spec.ts`,
+  which builds the peak configuration through `tv.addViewer('Matrix plot', {...})` rather
+  than re-driving the dialog and property panel, and asserts the same round-trip values.
 - Scenario 5: the layout is saved and re-applied via the JS API
   (`tv.saveLayout()` / `grok.dapi.layouts.save` / `tv.loadLayout`); the
   project is saved via the JS API too — `saveProjectViaApi` from

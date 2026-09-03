@@ -8,6 +8,7 @@ realizes:
   - viewers.tile-viewer
 priority: p1
 target_layer: playwright
+boot_lane: mixed
 coverage_type: regression
 produced_from: atlas-driven
 related_bugs:
@@ -139,6 +140,7 @@ expected_results:
       false and sketchState.formDesigned reads true.
 realized_as:
   - tile-viewer-selection-form-editor-spec.ts
+  - tile-viewer-lanes-persist-server-spec.ts
 ---
 
 # Tile Viewer — Row-state rendering and Edit Form designer
@@ -287,6 +289,13 @@ not take the gaps for missing coverage:
 One spec step has no prose step number of its own: `Scenario 3 Step 2b` was inserted while
 the designer is already open, and its anchor carries the same name.
 
+The scenario is `boot_lane: mixed`: everything above runs on the local lane in
+`tile-viewer-selection-form-editor-spec.ts`; **Scenario 3 Step 5** (the layout save / re-apply
+whose subject is server state) is realized in the section's server sibling,
+`tile-viewer-lanes-persist-server-spec.ts`, as the step named `Scenario 3 Step 5
+(selection-form-editor)`. That spec enters the designed state on a fresh viewer the same way
+Step 3 does (designer, delete one value host, CLOSE AND APPLY) before saving the layout.
+
 ## Automation notes
 
 - PRODUCT FACTS ARE NOT REPEATED HERE. Selectors, slugs, designer button names, menu
@@ -315,7 +324,12 @@ the designer is already open, and its anchor carries the same name.
     the view, re-apply, delete): the subject is whether the FORM COMPOSITION survives the
     cycle; the Save Layout button and the Layouts gallery are generic application chrome,
     out of this viewer's scope, and would add gallery-navigation flake to an assert about
-    field sets.
+    field sets. It is the only server-backed step, so it lives in the server-lane sibling
+    (see "Step-to-spec mapping"); the rest of the scenario runs on the local lane.
+- WAITS: no fixed sleeps. A designer host deleted with the Delete key is waited for to leave the
+  sketch; after CLOSE AND APPLY the step polls the exact tile predicate it asserts (removed field
+  absent, state flags, values matching the display strings), capped at the settle it replaced;
+  RESET is waited for on the designer host sets returning to the opening ones.
 - TARGET LAYER playwright: the tile click semantics and the designer's field selection
   need real mouse and keyboard input (refdoc: "Clicks need REAL input" under "Selection
   and current-row rendering", and "Editing fields on the sketch canvas — class-1"); the

@@ -6,12 +6,14 @@ realizes:
   - viewers.filters
 priority: p1
 target_layer: playwright
+boot_lane: mixed
 coverage_type: regression
 related_bugs:
   - id: GROK-20386
     status: fixed
 realized_as:
   - save-and-reapply-state-spec.ts
+  - save-and-reapply-state-server-spec.ts
 scope_reductions:
   - id: SR-01
     check: E-LAYER-COMPLIANCE-01
