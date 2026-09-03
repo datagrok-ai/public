@@ -1,5 +1,5 @@
 /* eslint-disable max-len */
-import {AnalysisCondition, AnalysisProperty, getPlateUniquePropertyValues, getWellUniquePropertyValues, initPlates, PlateQuery, PlateTemplate, PropertyCondition, getAnalysisRunGroups} from '../plates-crud';
+import {AnalysisCondition, AnalysisProperty, getPlateUniquePropertyValues, getWellUniquePropertyValues, initPlates, loadUniquePropertyValues, PlateQuery, PlateTemplate, PropertyCondition, getAnalysisRunGroups} from '../plates-crud';
 
 import * as grok from 'datagrok-api/grok';
 import {AnalysisManager} from '../../plate/analyses/analysis-manager';
@@ -313,6 +313,7 @@ function getSearchView(viewName: string,
   mainView.root.appendChild(splitter);
 
   setTemplate(plateTemplates[0]);
+  loadUniquePropertyValues().then(() => refreshUI());
   setTimeout(() => {
     refreshAnalysisUI();
   }, 1500);

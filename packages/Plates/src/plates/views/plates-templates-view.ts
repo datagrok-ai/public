@@ -30,7 +30,7 @@ export function createTemplatesView(): DG.View {
           {name: 'Volume', type: DG.COLUMN_TYPE.FLOAT},
           {name: 'Sample', type: DG.COLUMN_TYPE.STRING},
         ],
-        id: -1,
+        id: '',
         required_props: []
       };
 

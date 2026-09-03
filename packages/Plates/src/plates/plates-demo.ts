@@ -1,5 +1,6 @@
 /* eslint-disable max-len */
-import {PlateProperty, plateTemplates, plateTypes, savePlate, PlateTemplate} from './plates-crud';
+import {PlateProperty, plateTemplates, plateTypes, savePlate, PlateTemplate, allProperties} from './plates-crud';
+import {pltsDb} from '../generated/db';
 import {
   initPlates, createAnalysisRun, saveAnalysisRunParameter,
   getOrCreateProperty, saveAnalysisResult,
@@ -19,6 +20,15 @@ export async function __createDummyPlateData() {
   await createDummyPlatesFromExcel();
 
   await initPlates(true);
+}
+
+
+async function anyPlatesWithProperty(name: string, scope: 'plate' | 'well'): Promise<boolean> {
+  const prop = allProperties.find((p) => p.name === name && p.scope === scope);
+  if (!prop)
+    return false;
+  const values = scope === 'plate' ? pltsDb.plateDetailses : pltsDb.plateWellValueses;
+  return await values.exists(DG.cond('property_id', '=', prop.id));
 }
 
 async function createDummyPlates() {
@@ -43,14 +53,7 @@ async function createDummyPlates() {
     createCcPlates = true;
   } else {
     console.log('"Cell counting" template found.');
-    const ccPlatesCheck = await grok.data.db.query('Plates:Plts', `
-      SELECT p.id FROM plts.plates p
-      JOIN plts.plate_details pd ON p.id = pd.plate_id
-      JOIN plts.properties prop ON pd.property_id = prop.id
-      WHERE prop.name = 'Imaging device'
-      LIMIT 1
-    `);
-    if (ccPlatesCheck.rowCount === 0) {
+    if (!await anyPlatesWithProperty('Imaging device', 'plate')) {
       console.log('No plates found for "Cell counting", creating them...');
       createCcPlates = true;
     }
@@ -83,14 +86,7 @@ async function createDummyPlates() {
     createDrPlates = true;
   } else {
     console.log('"Dose-response" template found.');
-    const drPlatesCheck = await grok.data.db.query('Plates:Plts', `
-      SELECT p.id FROM plts.plates p
-      JOIN plts.plate_details pd ON p.id = pd.plate_id
-      JOIN plts.properties prop ON pd.property_id = prop.id
-      WHERE prop.name = 'Project'
-      LIMIT 1
-    `);
-    if (drPlatesCheck.rowCount === 0) {
+    if (!await anyPlatesWithProperty('Project', 'plate')) {
       console.log('No plates found for "Dose-response", creating them...');
       createDrPlates = true;
     }
@@ -283,14 +279,7 @@ async function createDummyPlatesFromExcel() {
     createExcelPlates = true;
   } else {
     console.log('"Excel" template found.');
-    const excelPlatesCheck = await grok.data.db.query('Plates:Plts', `
-      SELECT p.id FROM plts.plates p
-      JOIN plts.plate_well_values pwv ON p.id = pwv.plate_id
-      JOIN plts.properties prop ON pwv.property_id = prop.id
-      WHERE prop.name = 'raw data'
-      LIMIT 1
-    `);
-    if (excelPlatesCheck.rowCount === 0) {
+    if (!await anyPlatesWithProperty('raw data', 'well')) {
       console.log('No plates found for "Excel", creating them...');
       createExcelPlates = true;
     }

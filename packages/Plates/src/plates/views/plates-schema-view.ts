@@ -27,7 +27,7 @@ export function propertySchemaView(template: PlateTemplate): DG.View {
     grok.shell.info('Template saved');
   });
 
-  const updateSaveVisibility = () => saveButton.style.display = template.id !== -1 ? 'none' : 'block';
+  const updateSaveVisibility = () => saveButton.style.display = template.id !== '' ? 'none' : 'block';
   updateSaveVisibility();
 
   merge(platePropEditor.table.onChanged, wellPropEditor.table.onChanged).subscribe((_) => updateSaveVisibility());

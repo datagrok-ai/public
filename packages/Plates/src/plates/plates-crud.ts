@@ -6,7 +6,8 @@ import * as grok from 'datagrok-api/grok';
 import {Plate} from '../plate/plate';
 import {Matcher, NumericMatcher} from './matchers';
 import {Subject} from 'rxjs';
-import * as api from '../package-api';
+import {pltsDb, PlateDetailsInsert, PlateWellValuesInsert, AnalysisRunParametersInsert,
+  AnalysisResultsInsert, PltsTransactionOp} from '../generated/db';
 
 export const events: Subject<CrudEvent> = new Subject();
 /** Events emitted by the plates CRUD layer. */
@@ -28,7 +29,7 @@ export enum TYPE {
 export const entityTypes: string[] = [TYPE.PLATE, TYPE.WELL, TYPE.TEMPLATE, TYPE.PROPERTY];
 
 export type PlateType = {
-  id: number;
+  id: string;
   name: string;
   rows: number;
   cols: number;
@@ -36,7 +37,7 @@ export type PlateType = {
 }
 
 export interface PlateProperty extends DG.IProperty {
-  id: number;
+  id: string;
   name: string;
   type: string;
   // template_id?: number;
@@ -57,12 +58,12 @@ export type PlateQuery = {
 }
 
 export type PlateTemplate = {
-  id: number;
+  id: string;
   name: string;
   description: string;
   plateProperties: Partial<PlateProperty>[];
   wellProperties: Partial<PlateProperty>[];
-  required_props: [number, string][];
+  required_props: [string, string][];
 }
 export type PlateTemplateInput = Partial<Omit<PlateTemplate, 'plateProperties' | 'wellProperties' | 'required_props' | 'id'>> & {
   name: string;
@@ -94,9 +95,9 @@ export type AnalysisCondition = {
 export let allProperties: PlateProperty[] = [];
 export let plateTemplates: PlateTemplate[] = [];
 export let plateTypes: PlateType[] = [
-  {id: 1, name: 'Generic 96 wells', rows: 8, cols: 12},
-  {id: 2, name: 'Generic 384 wells', rows: 16, cols: 24},
-  {id: 3, name: 'Generic 1536 wells', rows: 32, cols: 48},
+  {id: '', name: 'Generic 96 wells', rows: 8, cols: 12},
+  {id: '', name: 'Generic 384 wells', rows: 16, cols: 24},
+  {id: '', name: 'Generic 1536 wells', rows: 32, cols: 48},
 ];
 
 export let plateUniquePropertyValues: DG.DataFrame = DG.DataFrame.create();
@@ -119,27 +120,24 @@ export async function initPlates(force: boolean = false) {
   if (!_initialized)
     events.subscribe((event) => grok.shell.info(`${event.on} ${event.eventType} ${event.objectType}`));
 
-  plateTemplates = (await api.queries.getPlateTemplates()).toJson();
-  allProperties = (await api.queries.getProperties()).toJson();
-  plateTypes = (await api.queries.getPlateTypes()).toJson();
+  allProperties = await pltsDb.propertieses.query().orderBy('created_on').top(10000) as unknown as PlateProperty[];
+  plateTypes = (await pltsDb.plateTypeses.query().orderBy('created_on').top(1000))
+    .map((pt) => ({id: pt.id, name: pt.name, rows: pt.rows, cols: pt.cols, maxVolume: pt.max_volume}));
+  plateTemplates = (await pltsDb.templateses.query().orderBy('created_on').top(10000))
+    .map((t) => ({id: t.id, name: t.name, description: t.description ?? '',
+      plateProperties: [], wellProperties: [], required_props: []} as PlateTemplate));
 
+  const templatePropRows = await pltsDb.templatePropertieses.query().top(100000);
   for (const template of plateTemplates) {
-    const platePropsDf = await api.queries.getTemplatePlateProperties(template.id);
-    // await grok.functions.call('Curves:getTemplatePlateProperties', {templateId: template.id});
-    const wellPropsDf = await api.queries.getTemplateWellProperties(template.id);
-    // await grok.functions.call('Curves:getTemplateWellProperties', {templateId: template.id});
+    const props = templatePropRows
+      .filter((tp) => tp.template_id === template.id)
+      .map((tp) => ({...allProperties.find((p) => p.id === tp.property_id),
+        is_required: tp.is_required ?? false, default_value: tp.default_value ?? null}))
+      .sort((a, b) => a.name!.localeCompare(b.name!));
 
-    const plateProps: any[] = platePropsDf.toJson();
-    const wellProps: any[] = wellPropsDf.toJson();
-
-    template.plateProperties = plateProps;
-    template.wellProperties = wellProps;
-
-    template.required_props = [];
-    for (const prop of [...plateProps, ...wellProps]) {
-      if (prop.is_required)
-        template.required_props.push([prop.id, prop.name]);
-    }
+    template.plateProperties = props.filter((p) => p.scope === 'plate');
+    template.wellProperties = props.filter((p) => p.scope === 'well');
+    template.required_props = props.filter((p) => p.is_required).map((p) => [p.id!, p.name!]);
   }
 
   _initialized = true;
@@ -161,11 +159,8 @@ export async function createNewPlateForTemplate(plateType: PlateType, plateTempl
 }
 
 
-export function findProp(props: PlateProperty[], id: number | string): PlateProperty {
-  if (typeof id === 'number')
-    return props.find((p) => p.id == id)!;
-  else
-    return props.find((p) => p.name.toLowerCase() == id.toLowerCase())!;
+export function findProp(props: PlateProperty[], name: string): PlateProperty {
+  return props.find((p) => p.name.toLowerCase() == name.toLowerCase())!;
 }
 
 export function getUniquePropertyValues(prop: PlateProperty, df: DG.DataFrame): string[] {
@@ -189,9 +184,8 @@ export function getWellUniquePropertyValues(prop: PlateProperty): string[] {
 
 export async function getAnalysisRunGroups(analysisType: string): Promise<string[]> {
   await initPlates();
-  const df = await api.queries.getAnalysisRunGroups(analysisType);
-  // await grok.functions.call('Curves:getAnalysisRunGroups', {analysisType: analysisType});
-  return df.col('group')?.toList() ?? [];
+  const runs = await pltsDb.analysisRunses.query().where({analysis_type: analysisType}).top(100000);
+  return [...new Set(runs.flatMap((r) => r.groups ?? []))].sort();
 }
 
 function getValueType(x: any): string {
@@ -205,221 +199,93 @@ function getValueType(x: any): string {
 }
 
 
-function sqlStr(s?: string | number): string {
-  if (!s)
-    return 'null';
-  if (typeof s == 'string')
-    return `'${s}'`;
-  else
-    return `${s}`;
-}
-
-
-export async function getPlateById(id: number): Promise<Plate> {
-  const df: DG.DataFrame = await api.queries.getWellValuesById(id);
-  // await grok.functions.call('Curves:getWellValuesById', {id: id});
+export async function getPlateById(id: string): Promise<Plate> {
+  await initPlates();
+  const df = await pltsDb.plateWellValueses.query()
+    .where({plate_id: id})
+    .orderBy('property_id').orderBy('row').orderBy('col')
+    .top(1000000).df();
   const plate = Plate.fromDbDataFrame(df);
+  plate.id = id;
   events.next({on: 'after', eventType: 'read', objectType: TYPE.PLATE, object: plate});
   return plate;
 }
 
 
-function getPlateSearchSql(query: PlateQuery): string {
-  const existsClauses: string[] = [];
+type ValueRow = {plate_id?: string; property_id: string; row?: number; col?: number;
+  value_num?: number; value_string?: string; value_bool?: boolean; value_jsonb?: string};
 
-  for (const condition of query.plateMatchers) {
-    const dbColumn = plateDbColumn[condition.property.type];
-    existsClauses.push(`
-      EXISTS (
-        SELECT 1 FROM plts.plate_details pd_f
-        WHERE pd_f.plate_id = p.id
-        AND pd_f.property_id = ${condition.property.id}
-        AND (${condition.matcher.toSql(`pd_f.${dbColumn}`)})
-      )`);
-  }
+function rowValue(row: ValueRow, prop: Partial<PlateProperty>): any {
+  return (row as any)[plateDbColumn[prop.type!] ?? plateDbJsonColumn];
+}
 
-  for (const condition of query.wellMatchers) {
-    const dbColumn = plateDbColumn[condition.property.type];
-    existsClauses.push(`
-      EXISTS (
-        SELECT 1 FROM plts.plate_well_values pwv
-        WHERE pwv.plate_id = p.id
-        AND pwv.property_id = ${condition.property.id}
-        AND (${condition.matcher.toSql(`pwv.${dbColumn}`)})
-      )`);
+function intersect(a: Set<string> | null, b: Set<string>): Set<string> {
+  return a === null ? b : new Set([...a].filter((id) => b.has(id)));
+}
+
+/** Intersects the row sets matched by each condition; null = no conditions (everything passes). */
+function matchingIds<T extends ValueRow>(rows: T[], conditions: PropertyCondition[],
+  key: (r: T) => string): Set<string> | null {
+  let ids: Set<string> | null = null;
+  for (const condition of conditions) {
+    const passed = new Set<string>(rows
+      .filter((r) => r.property_id === condition.property.id && condition.matcher.match(rowValue(r, condition.property)))
+      .map(key));
+    ids = intersect(ids, passed);
   }
+  return ids;
+}
+
+async function matchingAnalysisPlateIds(analysisMatchers: AnalysisCondition[]): Promise<Set<string> | null> {
+  if (analysisMatchers.length === 0)
+    return null;
 
   const analysisConditionsByType = new Map<string, AnalysisCondition[]>();
-  for (const condition of query.analysisMatchers) {
+  for (const condition of analysisMatchers) {
     if (!analysisConditionsByType.has(condition.analysisName))
       analysisConditionsByType.set(condition.analysisName, []);
     analysisConditionsByType.get(condition.analysisName)!.push(condition);
   }
 
+  let plateIds: Set<string> | null = null;
   for (const [analysisName, conditions] of analysisConditionsByType.entries()) {
-    const groupCondition = conditions.find((c) => c.group);
-    const selectedGroup = groupCondition?.group;
+    const selectedGroup = conditions.find((c) => c.group)?.group;
+    const groups = selectedGroup ? (Array.isArray(selectedGroup) ? selectedGroup : [selectedGroup]) : [];
     const propertyConditions = conditions.filter((c) => c.property);
 
-    let groupsArray = '';
-    const groups = selectedGroup ?
-      (Array.isArray(selectedGroup) ? selectedGroup : [selectedGroup]) :
-      [];
+    let runs = await pltsDb.analysisRunses.query().where({analysis_type: analysisName}).top(100000);
+    if (groups.length > 0 && propertyConditions.length === 0)
+      runs = runs.filter((r) => (r.groups ?? []).some((g) => groups.includes(g)));
 
-    const hasGroupFilter = groups.length > 0;
-
-    if (hasGroupFilter)
-      groupsArray = groups.map((g) => `'${g.replace(/'/g, '\'\'')}'`).join(',');
-
-    let analysisSubClauses: string[] = [];
-
-    for (const condition of propertyConditions) {
-      const prop = allProperties.find((p) => p.name === condition.property!.name);
-      if (!prop) continue;
-
-      const dbColumn = plateDbColumn[prop.type] ?? plateDbJsonColumn;
-
-      let subClause = `
-        EXISTS (
-          SELECT 1 FROM plts.analysis_results res
-          WHERE res.analysis_run_id = ar.id
-          AND res.property_id = ${prop.id}
-          AND (${condition.matcher!.toSql(`res.${dbColumn}`)})
-      `;
-
-      if (hasGroupFilter)
-        subClause += ` AND res.group_combination && ARRAY[${groupsArray}]`;
-
-
-      subClause += `)`;
-      analysisSubClauses.push(subClause);
+    let runIds = new Set(runs.map((r) => r.id));
+    if (propertyConditions.length > 0) {
+      const results = (await pltsDb.analysisResultses.query().top(1000000))
+        .filter((r) => runIds.has(r.analysis_run_id) &&
+          (groups.length === 0 || (r.group_combination ?? []).some((g) => groups.includes(g))));
+      for (const condition of propertyConditions) {
+        const prop = allProperties.find((p) => p.name === condition.property!.name);
+        if (!prop) continue;
+        const passed = new Set<string>(results
+          .filter((r) => r.property_id === prop.id && condition.matcher!.match(rowValue(r, prop)))
+          .map((r) => r.analysis_run_id));
+        runIds = intersect(runIds, passed);
+      }
     }
 
-    let analysisClause = `
-      EXISTS (
-        SELECT 1 FROM plts.analysis_runs ar
-        WHERE ar.plate_id = p.id AND ar.analysis_type = '${analysisName}'
-    `;
-
-    if (hasGroupFilter && propertyConditions.length === 0)
-      analysisClause += ` AND ar.groups && ARRAY[${groupsArray}]`;
-
-
-    if (analysisSubClauses.length > 0)
-      analysisClause += ` AND ${analysisSubClauses.join(' AND ')}`;
-
-    analysisClause += `)`;
-    existsClauses.push(analysisClause);
+    const typePlateIds = new Set(runs.filter((r) => runIds.has(r.id)).map((r) => r.plate_id));
+    plateIds = intersect(plateIds, typePlateIds);
   }
-
-  const whereFilter = existsClauses.length > 0 ? `WHERE ${existsClauses.join(' AND ')}` : '';
-
-  return `
-WITH filtered_plates AS (
-    SELECT p.id, p.barcode, p.description
-    FROM plts.plates p
-    ${whereFilter}
-)
-SELECT
-    fp.id AS plate_id,
-    fp.barcode,
-    fp.description,
-    COALESCE(
-        jsonb_object_agg(
-            pr.name,
-            CASE
-                WHEN pd.value_string IS NOT NULL THEN to_jsonb(pd.value_string)
-                WHEN pd.value_num IS NOT NULL THEN to_jsonb(pd.value_num)
-                WHEN pd.value_bool IS NOT NULL THEN to_jsonb(pd.value_bool)
-                ELSE 'null'::jsonb
-            END
-        ) FILTER (WHERE pr.id IS NOT NULL),
-        '{}'::jsonb
-    )::text AS properties
-FROM filtered_plates fp
-LEFT JOIN plts.plate_details pd ON pd.plate_id = fp.id
-LEFT JOIN plts.properties pr ON pr.id = pd.property_id
-GROUP BY fp.id, fp.barcode, fp.description
-ORDER BY fp.id;
-    `.trim();
+  return plateIds;
 }
 
-
-function getWellSearchSql(query: PlateQuery): string {
-  const whereClauses: string[] = [];
-
-  // Handle plate-level property conditions
-  for (const condition of query.plateMatchers) {
-    const dbColumn = plateDbColumn[condition.property.type];
-    whereClauses.push(`
-      EXISTS (
-        SELECT 1
-        FROM plts.plate_details pd_f
-        WHERE pd_f.plate_id = pwv.plate_id
-          AND pd_f.property_id = ${condition.property.id}
-          AND (${condition.matcher.toSql(`pd_f.${dbColumn}`)})
-      )`);
-  }
-
-  // Handle well-level property conditions
-  for (const condition of query.wellMatchers) {
-    const dbColumn = plateDbColumn[condition.property.type];
-    whereClauses.push(`
-      EXISTS (
-        SELECT 1
-        FROM plts.plate_well_values pwv_f
-        WHERE pwv_f.plate_id = pwv.plate_id
-          AND pwv_f.row = pwv.row
-          AND pwv_f.col = pwv.col
-          AND pwv_f.property_id = ${condition.property.id}
-          AND (${condition.matcher.toSql(`pwv_f.${dbColumn}`)})
-      )`);
-  }
-
-  const whereFilter = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
-
-  return `
-SELECT
-    pwv.plate_id,
-    p.barcode,
-    pwv.row,
-    pwv.col,
-    COALESCE(jsonb_object_agg(
-        pr.name,
-        CASE
-            WHEN pwv.value_string IS NOT NULL THEN to_jsonb(pwv.value_string)
-            WHEN pwv.value_num    IS NOT NULL THEN to_jsonb(pwv.value_num)
-            WHEN pwv.value_bool   IS NOT NULL THEN to_jsonb(pwv.value_bool)
-            ELSE 'null'::jsonb
-        END
-    ) FILTER (WHERE pr.id IS NOT NULL), '{}'::jsonb)::text AS properties
-FROM
-    plts.plate_well_values pwv
-JOIN
-    plts.plates p ON p.id = pwv.plate_id
-LEFT JOIN
-    plts.properties pr ON pr.id = pwv.property_id
-${whereFilter}
-GROUP BY
-    pwv.plate_id, p.barcode, pwv.row, pwv.col
-ORDER BY
-    pwv.plate_id, pwv.row, pwv.col;
-`.trim();
+function propertyNamesById(): Map<string, string> {
+  return new Map(allProperties.map((p) => [p.id, p.name]));
 }
 
-export async function queryWells(query: PlateQuery): Promise<DG.DataFrame> {
-  const df = await grok.data.db.query('Plates:Plts', getWellSearchSql(query));
-  DG.Utils.jsonToColumns(df.col('properties')!);
-  df.col('properties')!.name = '~properties';
-  return df;
-}
-
-export async function queryPlates(query: PlateQuery): Promise<DG.DataFrame> {
-  const df = await grok.data.db.query('Plates:Plts', getPlateSearchSql(query));
-
-
+function pivotedDf(rows: {[key: string]: any}[], options?: {explode?: boolean}): DG.DataFrame {
+  const df = rows.length > 0 ? DG.DataFrame.fromObjects(rows)! : DG.DataFrame.create();
   const propsCol = df.col('properties');
-  if (propsCol && df.rowCount > 0) {
+  if ((options?.explode ?? true) && propsCol && df.rowCount > 0) {
     try {
       DG.Utils.jsonToColumns(propsCol);
       propsCol.name = '~properties';
@@ -427,21 +293,79 @@ export async function queryPlates(query: PlateQuery): Promise<DG.DataFrame> {
       console.error('Failed to parse properties JSON:', e);
     }
   }
-
   return df;
+}
+
+export async function queryWells(query: PlateQuery): Promise<DG.DataFrame> {
+  await initPlates();
+  const wellRows = await pltsDb.plateWellValueses.query().top(1000000);
+  const detailRows = query.plateMatchers.length > 0 ? await pltsDb.plateDetailses.query().top(1000000) : [];
+  const plateIds = matchingIds(detailRows, query.plateMatchers, (r) => r.plate_id);
+  const wellKey = (r: ValueRow) => `${r.plate_id}|${r.row}|${r.col}`;
+  const wellIds = matchingIds(wellRows, query.wellMatchers, wellKey);
+
+  const barcodes = new Map((await pltsDb.plateses.query().top(1000000)).map((p) => [p.id, p.barcode ?? '']));
+  const propNames = propertyNamesById();
+
+  const wells = new Map<string, {plate_id: string; row: number; col: number; props: {[key: string]: any}}>();
+  for (const r of wellRows) {
+    if (plateIds !== null && !plateIds.has(r.plate_id))
+      continue;
+    const key = wellKey(r);
+    if (wellIds !== null && !wellIds.has(key))
+      continue;
+    const well = wells.get(key) ?? {plate_id: r.plate_id, row: r.row, col: r.col, props: {}};
+    const name = propNames.get(r.property_id);
+    if (name)
+      well.props[name] = r.value_string ?? r.value_num ?? r.value_bool ?? null;
+    wells.set(key, well);
+  }
+
+  const sorted = [...wells.values()]
+    .sort((a, b) => a.plate_id.localeCompare(b.plate_id) || a.row - b.row || a.col - b.col);
+  return pivotedDf(sorted.map((w) => ({plate_id: w.plate_id, barcode: barcodes.get(w.plate_id) ?? '',
+    row: w.row, col: w.col, properties: JSON.stringify(w.props)})));
+}
+
+export async function queryPlates(query: PlateQuery): Promise<DG.DataFrame> {
+  await initPlates();
+  const plateRows = await pltsDb.plateses.query().orderBy('created_on').top(1000000);
+  const detailRows = await pltsDb.plateDetailses.query().top(1000000);
+
+  const idFilters = [
+    matchingIds(detailRows, query.plateMatchers, (r) => r.plate_id),
+    query.wellMatchers.length > 0 ?
+      matchingIds(await pltsDb.plateWellValueses.query().top(1000000), query.wellMatchers, (r) => r.plate_id) : null,
+    await matchingAnalysisPlateIds(query.analysisMatchers),
+  ];
+  let filtered = plateRows;
+  for (const ids of idFilters) {
+    if (ids !== null)
+      filtered = filtered.filter((p) => ids.has(p.id));
+  }
+
+  const propNames = propertyNamesById();
+  const detailsByPlate = new Map<string, {[key: string]: any}>();
+  for (const d of detailRows) {
+    const name = propNames.get(d.property_id);
+    if (!name) continue;
+    const props = detailsByPlate.get(d.plate_id) ?? {};
+    props[name] = d.value_string ?? d.value_num ?? d.value_bool ?? null;
+    detailsByPlate.set(d.plate_id, props);
+  }
+
+  return pivotedDf(filtered.map((p) => ({plate_id: p.id, barcode: p.barcode ?? '',
+    description: p.description ?? '', properties: JSON.stringify(detailsByPlate.get(p.id) ?? {})})));
 }
 
 
 export async function createProperty(prop: Partial<PlateProperty>): Promise<PlateProperty> {
-  prop.id = await api.queries.createProperty(prop.name!, prop.type!, prop.scope!, prop.choices ? JSON.stringify(prop.choices) : null, prop.min ?? null, prop.max ?? null);
-  // await grok.functions.call('Curves:createProperty', {
-  //   propertyName: prop.name!,
-  //   valueType: prop.type!,
-  //   scope: prop.scope,
-  //   choices: prop.choices ? JSON.stringify(prop.choices) : null,
-  //   min: prop.min,
-  //   max: prop.max,
-  // });
+  const report = (await pltsDb.propertieses.insert({
+    name: prop.name!, type: prop.type! as any, scope: prop.scope!,
+    choices: prop.choices ? JSON.stringify(prop.choices) : undefined,
+    min: prop.min ?? undefined, max: prop.max ?? undefined,
+  }))[0];
+  prop.id = report.existingId ?? report.id;
 
   events.next({on: 'after', eventType: 'created', objectType: TYPE.PROPERTY, object: prop});
   allProperties.push(prop as PlateProperty);
@@ -452,11 +376,10 @@ export async function savePlate(plate: Plate, options?: { autoCreateProperties?:
   const autoCreateProperties = options?.autoCreateProperties ?? true;
   await initPlates();
 
-  const plateSql =
- `insert into plts.plates(plate_type_id, barcode)
-  values(${plate.plateTypeId}, ${sqlStr(plate.barcode)})
- returning id`;
-  plate.id = (await grok.data.db.query('Plates:Plts', plateSql)).get('id', 0);
+  if (!plate.plateTypeId)
+    plate.plateTypeId = plateTypes.find((pt) => pt.rows === plate.rows && pt.cols === plate.cols)?.id;
+  if (!plate.plateTypeId)
+    throw new Error(`No plate type for ${plate.rows}x${plate.cols} plates. Are plate_types seeded in the database?`);
 
   const globalPlateProperties = allProperties.filter((p) => p.scope === 'plate');
   const globalWellProperties = allProperties.filter((p) => p.scope === 'well');
@@ -466,7 +389,6 @@ export async function savePlate(plate: Plate, options?: { autoCreateProperties?:
     if (autoCreateProperties && !prop) {
       const valueType = getValueType(plate.details[layer]);
       await createProperty({name: layer, type: valueType, scope: 'plate'});
-      // grok.shell.info('Global plate property created: ' + layer);
     } else if (!prop) {
       throw new Error(`Global property ${layer} not found`);
     }
@@ -476,73 +398,65 @@ export async function savePlate(plate: Plate, options?: { autoCreateProperties?:
     const prop = findProp(globalWellProperties, col.name);
     if (autoCreateProperties && !prop)
       await createProperty({name: col.name, type: col.type, scope: 'well'});
-      // grok.shell.info('Global well property created: ' + col.name);
     else if (!prop)
       throw new Error(`Global property ${col.name} not found`);
   }
 
   await initPlates(true);
-  const sql = getPlateInsertSql(plate);
-  await grok.data.db.query('Plates:Plts', sql);
 
-  events.next({on: 'after', eventType: 'created', objectType: TYPE.PLATE, object: plate});
-  // grok.shell.info('Plate saved');
-}
-
-// This should be expanded on as a part of the "Template from data" feature, but currently uses obsolete layout field.
-// export async function savePlateAsTemplate(plate: Plate, template: PlateTemplate) {
-//   await savePlate(plate);
-//   const sql = `update plts.templates set plate_layout_id = ${plate.id} where id = ${template.id}`;
-//   await grok.data.db.query('Plates:Plts', sql);
-// }
-
-
-function getPlateInsertSql(plate: Plate): string {
-  let sql = 'insert into plts.plate_wells(plate_id, row, col) values ' +
-        plate.wells.map((pw) => `  (${plate.id}, ${pw.row}, ${pw.col})`).toArray().join(',\n') + ';';
-
+  const detailOps: PltsTransactionOp[] = [];
   for (const layer of Object.keys(plate.details)) {
     const property = allProperties.find((p) => p.scope === 'plate' && p.name.toLowerCase() == layer.toLowerCase());
-
     if (!property) {
       console.warn(`Property '${layer}' not found in cache. Skipping save for this plate-level property.`);
       continue;
     }
-
-    const dbCol = plateDbColumn[property.type];
-    sql += `\n insert into plts.plate_details(plate_id, property_id, ${dbCol}) values ` +
-           `(${plate.id}, ${property.id}, ${sqlStr(plate.details[layer])});`;
+    detailOps.push({op: 'insert', table: 'plate_details',
+      values: {plate_id: '$plate', property_id: property.id,
+        ...({[plateDbColumn[property.type]]: plate.details[layer]} as Partial<PlateDetailsInsert>)}});
   }
 
+  const results = await pltsDb.transaction([
+    {op: 'insert', table: 'plates', ref: 'plate',
+      values: {plate_type_id: plate.plateTypeId, barcode: plate.barcode, template_id: plate.plateTemplateId}},
+    ...detailOps,
+  ]);
+  plate.id = results[0].id;
+
+  const wellRows: PlateWellValuesInsert[] = [];
   for (const layer of plate.getLayerNames()) {
     const property = allProperties.find((p) => p.scope === 'well' && p.name.toLowerCase() == layer.toLowerCase());
-
     if (!property) {
       console.warn(`Property '${layer}' not found in cache. Skipping save for this well-level property.`);
       continue;
     }
-
-    const dbCol = plateDbColumn[property.type];
-    sql += `\n\n insert into plts.plate_well_values(plate_id, row, col, property_id, ${dbCol}) values\n` +
-           plate.wells
-             .map((pw) => `  (${plate.id}, ${pw.row}, ${pw.col}, ${property.id}, ${sqlStr(pw[layer])})`)
-             .toArray().join(',\n') + ';';
+    const valueColumn = plateDbColumn[property.type];
+    for (const pw of plate.wells) {
+      wellRows.push({plate_id: plate.id, row: pw.row, col: pw.col, property_id: property.id,
+        ...({[valueColumn]: pw[layer] ?? undefined} as Partial<PlateWellValuesInsert>)});
+    }
+  }
+  if (wellRows.length > 0) {
+    try {
+      await pltsDb.plateWellValueses.batch(wellRows);
+    } catch (e) {
+      await pltsDb.plateses.delete(plate.id);
+      plate.id = undefined;
+      throw e;
+    }
   }
 
-  return sql;
+  events.next({on: 'after', eventType: 'created', objectType: TYPE.PLATE, object: plate});
 }
 
 
 export async function createPlateTemplate(template: PlateTemplateInput): Promise<PlateTemplate> {
-  const templateId = await api.queries.createTemplate(template.name, template.description || '');
-  // await grok.functions.call('Curves:createTemplate', {
-  //   name: template.name,
-  //   description: template.description
-  // });
+  const templateId = (await pltsDb.templateses.insert({
+    name: template.name, description: template.description || ''}))[0].id;
 
   const createdPlateProperties: Partial<PlateProperty>[] = [];
   const createdWellProperties: Partial<PlateProperty>[] = [];
-  const required_props: [number, string][] = [];
+  const required_props: [string, string][] = [];
 
   const getOrCreateGlobalProperty = async (prop: Partial<PlateProperty>): Promise<PlateProperty> => {
     await initPlates();
@@ -557,13 +471,8 @@ export async function createPlateTemplate(template: PlateTemplateInput): Promise
     const newProp = await getOrCreateGlobalProperty(property);
 
     const isRequired = property.is_required ?? false;
-    await api.queries.addTemplatePlateProperty(templateId, newProp.id, isRequired, property.default_value ?? null);
-    // await grok.functions.call('Curves:addTemplatePlateProperty', {
-    //   templateId: templateId,
-    //   propertyId: newProp.id,
-    //   isRequired: isRequired,
-    //   defaultValue: property.default_value ?? null
-    // });
+    await pltsDb.templatePropertieses.upsert({template_id: templateId, property_id: newProp.id,
+      is_required: isRequired, default_value: property.default_value ?? undefined});
 
     createdPlateProperties.push(newProp);
     if (isRequired)
@@ -575,14 +484,8 @@ export async function createPlateTemplate(template: PlateTemplateInput): Promise
     const newProp = await getOrCreateGlobalProperty(property);
 
     const isRequired = property.is_required ?? false;
-
-    await api.queries.addTemplateWellProperty(templateId, newProp.id, isRequired, property.default_value ?? null);
-    // await grok.functions.call('Curves:addTemplateWellProperty', {
-    //   templateId: templateId,
-    //   propertyId: newProp.id,
-    //   isRequired: isRequired,
-    //   defaultValue: property.default_value ?? null
-    // });
+    await pltsDb.templatePropertieses.upsert({template_id: templateId, property_id: newProp.id,
+      is_required: isRequired, default_value: property.default_value ?? undefined});
 
     createdWellProperties.push(newProp);
     if (isRequired)
@@ -602,113 +505,67 @@ export async function createPlateTemplate(template: PlateTemplateInput): Promise
   events.next({on: 'after', eventType: 'created', objectType: TYPE.TEMPLATE, object: finalTemplate});
   return finalTemplate;
 }
-/** Checks if a plate template's properties are being used in any plates */
-export async function plateTemplatePropertiesUsed(template: PlateTemplate): Promise<boolean> {
-  // Check if any plates are using this template's properties by looking for
-  // property IDs that belong to this template.
-  const sql = `
-    SELECT EXISTS (
-      SELECT 1 FROM plts.plate_details pd
-      WHERE pd.property_id IN (SELECT id FROM plts.properties WHERE template_id = ${template.id})
-      UNION
-      SELECT 1 FROM plts.plate_well_values pwv
-      WHERE pwv.property_id IN (SELECT id FROM plts.properties WHERE template_id = ${template.id})
-    ) as is_used`;
-
-  const result = await grok.data.db.query('Plates:Plts', sql);
-  return result.get('is_used', 0);
-}
-
-/** Deletes a plate template and its associated properties */
+/** Deletes a plate template; its template_property links go with it (cascade). */
 export async function deletePlateTemplate(template: PlateTemplate): Promise<void> {
-  // The database cascade on the foreign key from properties to templates
-  // should handle deleting the properties. If not, you'd delete them first.
-  // A simple approach is to delete properties owned by the template, then the template itself.
-  const deleteSql = `
-    DELETE FROM plts.properties WHERE template_id = ${template.id};
-    DELETE FROM plts.templates WHERE id = ${template.id};
-  `;
-
-  await grok.data.db.query('Plates:Plts', deleteSql);
+  await pltsDb.templateses.delete(template.id);
   events.next({on: 'after', eventType: 'deleted', objectType: TYPE.TEMPLATE, object: template});
   await initPlates(true); // Refresh the cache
 }
 
-export async function createAnalysisRun(plateId: number, analysisType: string, groups: string[]): Promise<number> {
+export async function createAnalysisRun(plateId: string, analysisType: string, groups: string[]): Promise<string> {
   if (!plateId)
     throw new Error('Cannot create analysis run: plateId is missing.');
 
-  const runId: number = await api.queries.createAnalysisRun(plateId, analysisType, groups);
-  // await grok.functions.call('Curves:createAnalysisRun', {
-  //   plateId: plateId,
-  //   analysisType: analysisType,
-  //   groups: groups,
-  // });
-
-  if (typeof runId !== 'number' || runId <= 0)
-    throw new Error(`Failed to create a valid analysis run. Received runId: ${runId}`);
-
-  return runId;
+  const [report] = await pltsDb.analysisRunses.insert({plate_id: plateId, analysis_type: analysisType, groups: groups});
+  return report.id;
 }
 
 
 export async function saveAnalysisRunParameter(params: {
-    runId: number,
+    runId: string,
     propertyName: string,
     propertyType: DG.TYPE,
     value: any
 }) {
   const prop = await getOrCreateProperty(params.propertyName, params.propertyType);
-  const callParams: any = {
-    analysisRunId: params.runId,
-    propertyId: prop.id,
-    valueString: null, valueNum: null, valueBool: null, valueJsonb: null
-  };
-
-  const dbColumnKey = Object.keys(plateDbColumn).find((key) => key === params.propertyType);
-  if (!dbColumnKey)
+  const dbColumn = plateDbColumn[params.propertyType];
+  if (!dbColumn)
     throw new Error(`Unsupported property type for parameter: ${params.propertyType}`);
 
-  const dbColumn = plateDbColumn[dbColumnKey];
-  if (dbColumn === 'value_string') callParams.valueString = String(params.value);
-  else if (dbColumn === 'value_num') callParams.valueNum = params.value;
-  else if (dbColumn === 'value_bool') callParams.valueBool = params.value;
+  const values: AnalysisRunParametersInsert = {analysis_run_id: params.runId, property_id: prop.id};
+  if (dbColumn === 'value_string') values.value_string = String(params.value);
+  else if (dbColumn === 'value_num') values.value_num = params.value;
+  else if (dbColumn === 'value_bool') values.value_bool = params.value;
 
-  await api.queries.saveAnalysisRunParameter(callParams.analysisRunId, callParams.propertyId, callParams.valueString, callParams.valueNum, callParams.valueBool, callParams.valueJsonb);
-  // await grok.functiosns.call('Curves:saveAnalysisRunParameter', callParams);
+  await pltsDb.analysisRunParameterses.insert(values);
 }
 
 export async function saveAnalysisResult(params: {
-    runId: number,
-    propertyId: number,
+    runId: string,
+    propertyId: string,
     propertyName: string,
     propertyType: string,
     value: any,
     groupCombination: string[]
 }): Promise<void> {
-  const callParams: any = {
-    analysisRunId: params.runId,
-    propertyId: params.propertyId,
-    groupCombination: params.groupCombination,
-    valueString: null, valueNum: null, valueBool: null, valueJsonb: null
-  };
+  const values: AnalysisResultsInsert = {analysis_run_id: params.runId, property_id: params.propertyId,
+    group_combination: params.groupCombination};
 
   if (params.propertyName.toLowerCase().includes('curve') && typeof params.value === 'string') {
-    callParams.valueJsonb = params.value;
+    values.value_jsonb = params.value;
   } else {
-    const dbColumnKey = Object.keys(plateDbColumn).find((key) => key === params.propertyType);
-    if (!dbColumnKey)
+    const dbColumn = plateDbColumn[params.propertyType];
+    if (!dbColumn)
       throw new Error(`Unsupported property type for DB storage: ${params.propertyType}`);
 
-    const dbColumn = plateDbColumn[dbColumnKey];
-    if (dbColumn === 'value_string') callParams.valueString = String(params.value);
-    else if (dbColumn === 'value_num') callParams.valueNum = params.value;
-    else if (dbColumn === 'value_bool') callParams.valueBool = params.value;
+    if (dbColumn === 'value_string') values.value_string = String(params.value);
+    else if (dbColumn === 'value_num') values.value_num = params.value;
+    else if (dbColumn === 'value_bool') values.value_bool = params.value;
   }
 
-  await api.queries.saveAnalysisResult(callParams.analysisRunId, callParams.groupCombination, callParams.propertyId, callParams.valueString, callParams.valueNum, callParams.valueBool, callParams.valueJsonb);
-  // await grok.functions.call('Curves:saveAnalysisResult', callParams);
+  await pltsDb.analysisResultses.insert(values);
 }
+
 
 export async function getOrCreateProperty(name: string, type: DG.TYPE, scope: 'plate' | 'well' = 'plate'): Promise<PlateProperty> {
   await initPlates();
@@ -722,152 +579,76 @@ export async function getOrCreateProperty(name: string, type: DG.TYPE, scope: 'p
   return allProperties.find((p) => p.id === newProp.id)!;
 }
 
+const SEP = String.fromCharCode(1);
+
 export async function queryAnalysesGeneric(query: AnalysisQuery): Promise<DG.DataFrame> {
   await initPlates();
   const selectedGroups = Array.isArray(query.group) ? query.group :
     (query.group ? [query.group] : []);
 
-  let sqlQuery: string;
+  const runs = await pltsDb.analysisRunses.query()
+    .where({analysis_type: query.analysisName}).orderBy('created_on').top(100000);
+  const runIds = new Set(runs.map((r) => r.id));
+  const results = (await pltsDb.analysisResultses.query().top(1000000))
+    .filter((r) => runIds.has(r.analysis_run_id));
 
-  if (selectedGroups.length > 0) {
-    const groupsArray = selectedGroups.map((g) => `'${g.replace(/'/g, '\'\'')}'`).join(',');
-
-    const crossJoinWithGroupFilter = `
-      CROSS JOIN LATERAL (
-        SELECT
-          res.group_combination,
-          jsonb_object_agg(
-            prop.name,
-            CASE
-              WHEN res.value_jsonb IS NOT NULL THEN to_jsonb(res.value_jsonb::text)
-              WHEN res.value_string IS NOT NULL THEN to_jsonb(res.value_string)
-              WHEN res.value_num IS NOT NULL THEN to_jsonb(res.value_num)
-              WHEN res.value_bool IS NOT NULL THEN to_jsonb(res.value_bool)
-              ELSE 'null'::jsonb
-            END
-          )::text as properties
-        FROM
-          plts.analysis_results res
-        JOIN
-          plts.properties prop ON res.property_id = prop.id
-        WHERE
-          res.analysis_run_id = ar.id
-          AND res.group_combination && ARRAY[${groupsArray}]
-        GROUP BY
-          res.group_combination
-      ) as res_pivot`;
-
-    const whereClauses: string[] = [];
-    whereClauses.push(`ar.analysis_type = '${query.analysisName.replace(/'/g, '\'\'')}'`);
-
-    for (const condition of query.propertyMatchers) {
-      const prop = allProperties.find((p) => p.name === condition.property.name);
-      if (!prop) continue;
-      const dbColumn = plateDbColumn[prop.type] ?? plateDbJsonColumn;
-
-      const existsClause = `
-        EXISTS (
-            SELECT 1
-            FROM plts.analysis_results filter_res
-            WHERE filter_res.analysis_run_id = ar.id
-              AND filter_res.group_combination = res_pivot.group_combination
-              AND filter_res.property_id = ${prop.id}
-              AND (${condition.matcher.toSql(`filter_res.${dbColumn}`)})
-        )`;
-
-      whereClauses.push(existsClause);
-    }
-
-    const finalWhereClause = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
-
-    sqlQuery = `
-      SELECT
-        ar.id as run_id,
-        p.id as plate_id,
-        p.barcode,
-        array_to_string(res_pivot.group_combination, ', ') as group_combination,
-        res_pivot.properties
-      FROM
-        plts.analysis_runs ar
-      JOIN
-        plts.plates p ON ar.plate_id = p.id
-      ${crossJoinWithGroupFilter}
-      ${finalWhereClause}
-      ORDER BY ar.id, res_pivot.group_combination;
-    `;
-  } else {
-    const whereClauses: string[] = [];
-    whereClauses.push(`ar.analysis_type = '${query.analysisName.replace(/'/g, '\'\'')}'`);
-
-    for (const condition of query.propertyMatchers) {
-      const prop = allProperties.find((p) => p.name === condition.property.name);
-      if (!prop) continue;
-      const dbColumn = plateDbColumn[prop.type] ?? plateDbJsonColumn;
-
-      const existsClause = `
-        EXISTS (
-            SELECT 1
-            FROM plts.analysis_results filter_res
-            WHERE filter_res.analysis_run_id = ar.id
-              AND filter_res.group_combination = res_pivot.group_combination
-              AND filter_res.property_id = ${prop.id}
-              AND (${condition.matcher.toSql(`filter_res.${dbColumn}`)})
-        )`;
-
-      whereClauses.push(existsClause);
-    }
-
-    const finalWhereClause = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
-
-    sqlQuery = `
-      SELECT
-        ar.id as run_id,
-        p.id as plate_id,
-        p.barcode,
-        array_to_string(res_pivot.group_combination, ', ') as group_combination,
-        res_pivot.properties
-      FROM
-        plts.analysis_runs ar
-      JOIN
-        plts.plates p ON ar.plate_id = p.id
-      CROSS JOIN LATERAL (
-        SELECT
-          res.group_combination,
-          jsonb_object_agg(
-            prop.name,
-            CASE
-              WHEN res.value_jsonb IS NOT NULL THEN to_jsonb(res.value_jsonb::text)
-              WHEN res.value_string IS NOT NULL THEN to_jsonb(res.value_string)
-              WHEN res.value_num IS NOT NULL THEN to_jsonb(res.value_num)
-              WHEN res.value_bool IS NOT NULL THEN to_jsonb(res.value_bool)
-              ELSE 'null'::jsonb
-            END
-          )::text as properties
-        FROM
-          plts.analysis_results res
-        JOIN
-          plts.properties prop ON res.property_id = prop.id
-        WHERE
-          res.analysis_run_id = ar.id
-        GROUP BY
-          res.group_combination
-      ) as res_pivot
-      ${finalWhereClause}
-      ORDER BY ar.id, res_pivot.group_combination;
-    `;
+  const propNames = propertyNamesById();
+  type Combo = {runId: string; combo: string[]; props: {[key: string]: any}; rows: ValueRow[]};
+  const combos = new Map<string, Combo>();
+  for (const r of results) {
+    if (selectedGroups.length > 0 && !(r.group_combination ?? []).some((g) => selectedGroups.includes(g)))
+      continue;
+    const key = `${r.analysis_run_id}${SEP}${(r.group_combination ?? []).join(SEP)}`;
+    const combo = combos.get(key) ?? {runId: r.analysis_run_id, combo: r.group_combination ?? [], props: {}, rows: []};
+    const name = propNames.get(r.property_id);
+    if (name)
+      combo.props[name] = r.value_jsonb ?? r.value_string ?? r.value_num ?? r.value_bool ?? null;
+    combo.rows.push({plate_id: '', property_id: r.property_id, value_num: r.value_num,
+      value_string: r.value_string, value_bool: r.value_bool, value_jsonb: r.value_jsonb});
+    combos.set(key, combo);
   }
 
-  console.log('Generated SQL Query:', sqlQuery);
-
-  try {
-    const df = await grok.data.db.query('Plates:Plts', sqlQuery);
-    console.log('Query returned dataframe with', df.rowCount, 'rows');
-    if (df.rowCount > 0)
-      console.log('Group combinations in result:', df.getCol('group_combination')?.toList());
-
-    return df;
-  } catch (error) {
-    console.error('Query failed:', error);
-    throw error;
+  let filtered = [...combos.values()];
+  for (const condition of query.propertyMatchers) {
+    const prop = allProperties.find((p) => p.name === condition.property.name);
+    if (!prop) continue;
+    filtered = filtered.filter((c) =>
+      c.rows.some((r) => r.property_id === prop.id && condition.matcher.match(rowValue(r, prop))));
   }
+
+  const runOrder = new Map(runs.map((r, i) => [r.id, i]));
+  const plateByRun = new Map(runs.map((r) => [r.id, r.plate_id]));
+  const barcodes = new Map((await pltsDb.plateses.query().top(1000000)).map((p) => [p.id, p.barcode ?? '']));
+  filtered.sort((a, b) => (runOrder.get(a.runId)! - runOrder.get(b.runId)!) ||
+    a.combo.join(', ').localeCompare(b.combo.join(', ')));
+
+  return pivotedDf(filtered.map((c) => ({run_id: c.runId, plate_id: plateByRun.get(c.runId) ?? '',
+    barcode: barcodes.get(plateByRun.get(c.runId) ?? '') ?? '',
+    group_combination: c.combo.join(', '), properties: JSON.stringify(c.props)})), {explode: false});
+}
+
+/** Loads distinct string values of plate- and well-level properties for search-form suggestions. */
+export async function loadUniquePropertyValues(): Promise<void> {
+  await initPlates();
+  const stringPropNames = new Map(allProperties
+    .filter((p) => p.type === DG.COLUMN_TYPE.STRING).map((p) => [p.id, p.name]));
+  const toDf = (rows: {property_id: string; value_string?: string}[]) => {
+    const pairs = new Set<string>();
+    for (const r of rows) {
+      const name = stringPropNames.get(r.property_id);
+      if (name && r.value_string != null)
+        pairs.add(`${name}${SEP}${r.value_string}`);
+    }
+    const names: string[] = [];
+    const values: string[] = [];
+    for (const pair of pairs) {
+      const [name, value] = pair.split(SEP);
+      names.push(name);
+      values.push(value);
+    }
+    return DG.DataFrame.fromColumns([
+      DG.Column.fromStrings('name', names), DG.Column.fromStrings('value_string', values)]);
+  };
+  plateUniquePropertyValues = toDf(await pltsDb.plateDetailses.query().top(100000));
+  wellUniquePropertyValues = toDf(await pltsDb.plateWellValueses.query().top(100000));
 }

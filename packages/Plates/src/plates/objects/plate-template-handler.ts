@@ -4,6 +4,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as crud from '../plates-crud';
 import {propertySchemaView} from '../views/plates-schema-view';
+import {pltsDb} from '../../generated/db';
 
 export class PlateTemplateHandler extends DG.ObjectHandler<DG.SemanticValue<crud.PlateTemplate>> {
   get type() { return crud.TYPE.TEMPLATE; }
@@ -38,11 +39,11 @@ export class PlateTemplateHandler extends DG.ObjectHandler<DG.SemanticValue<crud
   }
 
   static async openCloneTemplateView(template: crud.PlateTemplate) {
-    grok.shell.addPreview(propertySchemaView({...template, id: -1}));
+    grok.shell.addPreview(propertySchemaView({...template, id: ''}));
   }
 
   static async tryDeleteTemplate(template: crud.PlateTemplate): Promise<boolean> {
-    if (await crud.plateTemplatePropertiesUsed(template)) {
+    if (await pltsDb.plateses.count(DG.cond('template_id', '=', template.id)) > 0) {
       grok.shell.info('Template is used in plates, cannot delete');
       return false;
     }

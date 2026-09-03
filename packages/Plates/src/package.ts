@@ -11,11 +11,11 @@ import {PlateCellHandler} from './plate/plate-cell-renderer';
 import {Plate} from './plate/plate';
 import {PlateReader} from './plate/plate-reader';
 import {initPlatesAppTree, platesAppView} from './plates/plates-app';
-import {initPlates} from './plates/plates-crud';
+import {initPlates, getPlateById} from './plates/plates-crud';
+import {pltsDb} from './generated/db';
 import {__createDummyPlateData} from './plates/plates-demo';
 import {getPlatesFolderPreview} from './plate/plates-folder-preview';
 import {PlateTemplateHandler} from './plates/objects/plate-template-handler';
-import * as api from './package-api';
 import {PlateWidget} from './plate/plate-widget/plate-widget';
 import {DrcAnalysis} from './plate/analyses/drc/drc-analysis';
 import {autoDetectDrcMappings} from './plate/analyses/drc/utils';
@@ -38,7 +38,7 @@ export class PackageFunctions {
     DG.ObjectHandler.register(new PlateCellHandler());
     DG.ObjectHandler.register(new PlateTemplateHandler());
 
-    const plates = await api.queries.getPlatesCount();
+    const plates = await pltsDb.plateses.count();
     if (plates == 0) {
       grok.shell.info('Populating plates with dummy data, might take a minute or two...');
       await __createDummyPlateData();
@@ -242,8 +242,10 @@ static checkFileIsPlate(content: string): boolean {
   @grok.decorators.func()
   static async getPlateByBarcode(barcode: string): Promise<Plate> {
     await initPlates();
-    const df: DG.DataFrame = await api.queries.getWellValuesByBarcode(barcode);
-    return Plate.fromDbDataFrame(df);
+    const plateRow = await pltsDb.plateses.query().where({barcode: barcode}).first();
+    if (!plateRow)
+      throw new Error(`Plate with barcode '${barcode}' not found`);
+    return await getPlateById(plateRow.id);
   }
 
   @grok.decorators.func()

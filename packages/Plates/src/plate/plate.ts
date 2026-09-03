@@ -45,9 +45,9 @@ export const PLATE_OUTLIER_WELL_NAME = 'Outlier';
 
 /** Represents experimental plate (typically 96-, 384-, or 1536-well assay plates) */
 export class Plate {
-  id?: number;
-  plateTemplateId?: number;
-  plateTypeId?: number;
+  id?: string;
+  plateTemplateId?: string;
+  plateTypeId?: string;
   barcode?: string;
 
   data: DG.DataFrame;

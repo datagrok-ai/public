@@ -1,0 +1,152 @@
+{
+  "$schema": "https://datagrok.ai/schemas/domain-schema.schema.json",
+  "name": "plts",
+  "version": "1.0.0",
+  "tables": {
+    "plate_types": {
+      "securityMode": "table",
+      "businessKey": ["name"],
+      "description": "Plate formats: geometry and physical constraints",
+      "columns": {
+        "name": {"type": "string", "required": true, "isName": true},
+        "rows": {"type": "int", "required": true},
+        "cols": {"type": "int", "required": true},
+        "max_volume": {"type": "float"}
+      }
+    },
+    "properties": {
+      "securityMode": "table",
+      "businessKey": ["name", "scope"],
+      "description": "Global registry of plate- and well-level properties",
+      "columns": {
+        "name": {"type": "string", "required": true, "isName": true},
+        "type": {"type": "string", "choices": ["int", "double", "bool", "datetime", "string"]},
+        "scope": {"type": "string", "required": true, "choices": ["plate", "well"]},
+        "nullable": {"type": "bool", "default": true},
+        "semtype": {"type": "string"},
+        "usereditable": {"type": "bool"},
+        "units": {"type": "string"},
+        "min": {"type": "float"},
+        "max": {"type": "float"},
+        "step": {"type": "float"},
+        "showslider": {"type": "float"},
+        "showplusminus": {"type": "float"},
+        "inputtype": {"type": "string"},
+        "category": {"type": "string"},
+        "format": {"type": "string"},
+        "choices": {"type": "string"},
+        "validators": {"type": "string"},
+        "friendlyname": {"type": "string"},
+        "options": {"type": "string"}
+      }
+    },
+    "templates": {
+      "securityMode": "row",
+      "promotion": "lazy",
+      "defaultRowVisibility": "table",
+      "description": "Plate templates: named sets of plate- and well-level properties",
+      "columns": {
+        "name": {"type": "string", "required": true, "isName": true},
+        "description": {"type": "string"}
+      }
+    },
+    "template_properties": {
+      "securityMode": "master",
+      "delegate": "template_id",
+      "businessKey": ["template_id", "property_id"],
+      "description": "Template properties junction; the plate/well split comes from property.scope",
+      "columns": {
+        "template_id": {"type": "ref", "ref": "templates", "onDelete": "cascade", "required": true},
+        "property_id": {"type": "ref", "ref": "properties", "onDelete": "cascade", "required": true},
+        "is_required": {"type": "bool"},
+        "default_value": {"type": "string"}
+      }
+    },
+    "plates": {
+      "securityMode": "row",
+      "promotion": "lazy",
+      "defaultRowVisibility": "table",
+      "description": "Plate instances",
+      "columns": {
+        "plate_type_id": {"type": "ref", "ref": "plate_types", "onDelete": "restrict", "required": true},
+        "barcode": {"type": "string"},
+        "description": {"type": "string"},
+        "template_id": {"type": "ref", "ref": "templates", "onDelete": "setnull"}
+      }
+    },
+    "analysis_runs": {
+      "securityMode": "master",
+      "delegate": "plate_id",
+      "description": "Analysis runs",
+      "columns": {
+        "plate_id": {"type": "ref", "ref": "plates", "onDelete": "cascade", "required": true},
+        "analysis_type": {"type": "string", "required": true},
+        "groups": {"type": "string_list"}
+      }
+    },
+    "plate_details": {
+      "securityMode": "master",
+      "delegate": "plate_id",
+      "audit": false,
+      "description": "Plate-level property values",
+      "columns": {
+        "plate_id": {"type": "ref", "ref": "plates", "onDelete": "cascade", "required": true},
+        "property_id": {"type": "ref", "ref": "properties", "onDelete": "restrict", "required": true},
+        "value_datetime": {"type": "datetime"},
+        "value_uuid": {"type": "string"},
+        "value_num": {"type": "float"},
+        "value_string": {"type": "string"},
+        "value_bool": {"type": "bool"},
+        "value_jsonb": {"type": "string"},
+        "analysis_run_id": {"type": "ref", "ref": "analysis_runs", "onDelete": "setnull"}
+      }
+    },
+    "plate_well_values": {
+      "securityMode": "master",
+      "delegate": "plate_id",
+      "audit": false,
+      "description": "Well-level property values",
+      "columns": {
+        "plate_id": {"type": "ref", "ref": "plates", "onDelete": "cascade", "required": true},
+        "row": {"type": "int", "required": true},
+        "col": {"type": "int", "required": true},
+        "property_id": {"type": "ref", "ref": "properties", "onDelete": "restrict", "required": true},
+        "value_num": {"type": "float"},
+        "value_string": {"type": "string"},
+        "value_bool": {"type": "bool"},
+        "analysis_run_id": {"type": "ref", "ref": "analysis_runs", "onDelete": "setnull"}
+      }
+    },
+    "analysis_run_parameters": {
+      "securityMode": "master",
+      "delegate": "analysis_run_id",
+      "businessKey": ["analysis_run_id", "property_id"],
+      "description": "Analysis run input parameters",
+      "columns": {
+        "analysis_run_id": {"type": "ref", "ref": "analysis_runs", "onDelete": "cascade", "required": true},
+        "property_id": {"type": "ref", "ref": "properties", "onDelete": "restrict", "required": true},
+        "value_num": {"type": "float"},
+        "value_string": {"type": "string"},
+        "value_bool": {"type": "bool"},
+        "value_datetime": {"type": "datetime"},
+        "value_jsonb": {"type": "string"}
+      }
+    },
+    "analysis_results": {
+      "securityMode": "master",
+      "delegate": "analysis_run_id",
+      "audit": false,
+      "description": "Analysis output values per group combination",
+      "columns": {
+        "analysis_run_id": {"type": "ref", "ref": "analysis_runs", "onDelete": "cascade", "required": true},
+        "group_combination": {"type": "string_list"},
+        "property_id": {"type": "ref", "ref": "properties", "onDelete": "restrict", "required": true},
+        "value_num": {"type": "float"},
+        "value_string": {"type": "string"},
+        "value_bool": {"type": "bool"},
+        "value_datetime": {"type": "datetime"},
+        "value_jsonb": {"type": "string"}
+      }
+    }
+  }
+}
