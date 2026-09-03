@@ -77,6 +77,7 @@ export enum SparklineType {
   Sparkline = 'sparkline',
   Form = 'smartform',
   Tags = 'tags',
+  VlaaiVis = 'vlaaivis',
 }
 
 export const sparklineTypes: string[] = [
@@ -84,7 +85,8 @@ export const sparklineTypes: string[] = [
   SparklineType.PieChart,
   SparklineType.Radar,
   SparklineType.Sparkline,
-  SparklineType.Form
+  SparklineType.Form,
+  SparklineType.VlaaiVis
 ];
 
 type AxisScaleSettings = ScaleSettings & {

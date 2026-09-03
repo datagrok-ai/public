@@ -16,7 +16,8 @@ import {
   NormalizationType, getScaledNumber, scaleSettings, getSparklinesContextPanel
 } from './shared';
 import {VlaaiVisEditor} from '../vlaaivis/editor';
-import {LABELS, STYLE_INFO} from '../vlaaivis/constants';
+import {VlaaiVisModel} from '../vlaaivis/model';
+import {DEFAULTS, LABELS, STYLE_INFO} from '../vlaaivis/constants';
 
 let minRadius: number;
 
@@ -52,12 +53,19 @@ export interface PieChartSettings extends SummarySettingsBase {
 
 function getSettings(gc: DG.GridColumn): PieChartSettings {
   const sectors = gc.settings.sectors;
+  const isVlaaivis = gc.cellType === SparklineType.VlaaiVis;
+  const type = isVlaaivis ? SparklineType.VlaaiVis : SparklineType.PieChart;
   const settings: PieChartSettings = isSummarySettingsBase(gc.settings) ? gc.settings :
-    gc.settings[SparklineType.PieChart] ??= getSettingsBase(gc, SparklineType.PieChart);
-  settings.style ??= PieChartStyle.Radius;
+    gc.settings[type] ??= getSettingsBase(gc, type);
+  settings.style ??= isVlaaivis ? PieChartStyle.Vlaaivis : PieChartStyle.Radius;
   settings.sectors ??= sectors;
   settings.colorCode ??= SummaryColumnColoringType.Bins;
   settings.normalization ??= NormalizationType.Column;
+  if (isVlaaivis && !settings.sectors) {
+    const model = new VlaaiVisModel(settings, gc.grid.dataFrame);
+    if (model.sectors.length === 0)
+      model.autoGroup(DEFAULTS.AUTO_GROUP_COLUMNS);
+  }
   return settings;
 }
 
@@ -321,8 +329,7 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
   }
 
   renderSettings(gc: DG.GridColumn): Element {
-    const settings: PieChartSettings = isSummarySettingsBase(gc.settings) ? gc.settings :
-      gc.settings[SparklineType.PieChart] ??= getSettings(gc);
+    const settings = getSettings(gc);
 
     const elementsDiv = ui.div([]);
     const styleInfo = ui.icons.info(() => {});
@@ -362,7 +369,8 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
 
     const style = settings.style ?? PieChartStyle.Radius;
     const styleInput = ui.input.choice('Style', {value: style,
-      items: [PieChartStyle.Angle, PieChartStyle.Radius, PieChartStyle.Vlaaivis],
+      items: gc.cellType === SparklineType.VlaaiVis ? [PieChartStyle.Vlaaivis] :
+        [PieChartStyle.Angle, PieChartStyle.Radius, PieChartStyle.Vlaaivis],
       onValueChanged: (value) => {
         settings.style = value;
         showEditor(value);
@@ -385,4 +393,10 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
     const groups = columnGroups(settings, getColumns(gridCell, settings));
     return getSparklinesContextPanel(gridCell, settings.columnNames, groups);
   }
+}
+
+export class VlaaiVisCellRenderer extends PieChartCellRenderer {
+  get name() { return 'vlaaivis ts'; }
+
+  get cellType() { return SparklineType.VlaaiVis; }
 }
