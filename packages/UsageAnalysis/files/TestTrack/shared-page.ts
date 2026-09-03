@@ -20,8 +20,6 @@ import {installLedger, ledgerAnnotations, openDatagrok, setLane, specTestOptions
 // shared-page click timeout in scatter-plot, statistics and tile-viewer.
 const OVERLAYS = ['.d4-menu-popup', '.d4-tooltip', '.d4-dialog', '.d4-balloon'];
 
-const WINDOW_FLAGS = ['showToolbox', 'showProperties', 'showHelp', 'showConsole', 'showVariables',
-  'showTables', 'showColumns', 'showStatusBar', 'showRibbon', 'showSidebar', 'presentationMode'];
 
 // The column-selector backdrop is deliberately absent from OVERLAYS: the platform puts that
 // class on a wrapper AROUND the viewer, so removing the element removes the viewer. Left
@@ -80,10 +78,6 @@ export async function resetShell(page: Page): Promise<void> {
       tick();
     });
 
-    // shell windows the specs flip (toolbox, context panel, simple mode): a spec written for a
-    // fresh page assumes the boot layout, so put back what the boot had
-    for (const k of Object.keys(w.__bootWindows ?? {}))
-      try { if (grok.shell.windows[k] !== w.__bootWindows[k]) grok.shell.windows[k] = w.__bootWindows[k]; } catch (_) {}
     try { grok.shell.windows.simpleMode = false; } catch (_) {}
     try { grok.shell.settings.showFiltersIconsConstantly = false; } catch (_) {}
     try { grok.shell.o = null; } catch (_) {}
@@ -125,11 +119,6 @@ function laneTest(lane: 'local' | 'server') {
         setLane(shared.page, lane);
         installLedger(shared.page);
         await timed('fixture: boot ' + lane, () => openDatagrok(shared.page!));
-        await shared.page.evaluate((keys: string[]) => {
-          const w = window as any;
-          w.__bootWindows = {};
-          for (const k of keys) try { w.__bootWindows[k] = w.grok.shell.windows[k]; } catch (_) {}
-        }, WINDOW_FLAGS);
       }
       // a spec may raise the page's default timeouts for itself (trellis: 120s); they must not
       // outlive it, or every failed locator in the next spec waits 120s instead of 15s
