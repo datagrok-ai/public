@@ -3,6 +3,7 @@
 ## 1.10.3 (WIP)
 
 GROK-20799: New `dapi/entity-properties.ts` pins the `grok.meta` discovery surface — catalog order and labels, the filterable subset, `refType`/`relationKind`, the domain-table branch, the uniform null miss, `coreLocationOf`, no secret in any catalog, the drift probe (every filterable User property filters through the Core query route), the no-oracle refusal of a secret column, the session→user hop agreeing with dinq, and the structured 403 on a Core write.
+GROK-20799: `dapi/domain-lifecycle.ts` pins the server-composed `travelableRelations` and `securingTable` of `DomainTableClient.capabilities()` (declared relation travelable for admin and not for an ungranted user; a master-mode junction secured by its delegate target)
 
 GROK-20753: `functions/param-eval.ts` adds the W4 pins — `Functions: ParamValidators` (client-registered sync validators run via `FuncCall.evalParamValidators` against the call's current value: passing results omitted, `false` → the "didn't pass the <friendlyName> check" message with `isError: true`, a string result becomes the message, declaration-order results, unknown-name and async-registered rejections with the sync-required message) and a `ScriptSync` comparison-expression pin over a variables map.
 

@@ -50,6 +50,7 @@ const domainSystemColumns: [string, string][] = [
 const domainTypeMap: {[type: string]: string} = {
   string: 'string', int: 'number', float: 'number', bool: 'boolean', datetime: 'Dayjs',
   string_list: 'string[]', ref: 'string', user: 'string', group: 'string', file: 'string',
+  json: '{[key: string]: any}',
 };
 
 function normEol(s: string): string {
@@ -379,12 +380,11 @@ function generateDomainSchemaCode(manifest: any, manifestPath: string, emittedTy
     tableColumns[tableName] = columns;
   }
 
-  // Pass 1.5: resolve declared many-to-many relations. Same rules the server's
-  // manifest parser applies (manifest.dart 'relations'), so a manifest that
-  // generates here is one that deploys: via/target declared in this manifest,
-  // via distinct from owner and target, self-referential relations explicit,
-  // FK sides unique-or-explicit, and a junction business key covering both —
-  // that key is what keeps re-linking the same pair idempotent.
+  // Pass 1.5: declared many-to-many relations. Only what the generated code needs
+  // is checked here: the target table must be declared (its name lands in the
+  // generated doc comments) and the name must not collide with a column (relations
+  // and columns share one expand/filter namespace). Everything else about a
+  // relation (via, viaSelf/viaTarget, the junction business key) is the deploy's gate.
   const tableRelations: {[table: string]: DomainGenRelation[]} = {};
   for (const tableName of tableNames) {
     const relations: DomainGenRelation[] = [];
@@ -401,56 +401,8 @@ function generateDomainSchemaCode(manifest: any, manifestPath: string, emittedTy
           `share one expand/filter namespace`);
         return null;
       }
-      if (manifest.tables[r.via] == null) {
-        color.error(`${where}: junction table '${r.via}' is not declared in this manifest`);
-        return null;
-      }
       if (manifest.tables[r.target] == null) {
         color.error(`${where}: target table '${r.target}' is not declared in this manifest`);
-        return null;
-      }
-      if (r.via === tableName || r.via === r.target) {
-        color.error(`${where}: junction table '${r.via}' must differ from the owner and the target table`);
-        return null;
-      }
-      if (r.target === tableName && (r.viaSelf == null || r.viaTarget == null)) {
-        color.error(`${where}: a self-referential relation must name both 'viaSelf' and 'viaTarget'`);
-        return null;
-      }
-      // One side of the junction: the declared column when explicit, otherwise
-      // the single ref column of `via` pointing at `to`.
-      const resolveSide = (key: string, explicit: string | undefined, to: string): string | null => {
-        const candidates = tableColumns[r.via].filter((c) => c.ref === to).map((c) => c.name);
-        if (explicit != null) {
-          if (candidates.includes(explicit))
-            return explicit;
-          color.error(`${where}: '${explicit}' is not a ref column of junction table '${r.via}' ` +
-            `targeting '${to}'`);
-          return null;
-        }
-        if (candidates.length === 0) {
-          color.error(`${where}: junction table '${r.via}' has no ref column targeting '${to}'`);
-          return null;
-        }
-        if (candidates.length > 1) {
-          color.error(`${where}: junction table '${r.via}' has more than one ref column targeting ` +
-            `'${to}' (${candidates.join(', ')}) — declare '${key}' explicitly`);
-          return null;
-        }
-        return candidates[0];
-      };
-      const viaSelf = resolveSide('viaSelf', r.viaSelf, tableName);
-      const viaTarget = resolveSide('viaTarget', r.viaTarget, r.target);
-      if (viaSelf == null || viaTarget == null)
-        return null;
-      if (viaSelf === viaTarget) {
-        color.error(`${where}: 'viaSelf' and 'viaTarget' must be different columns of '${r.via}'`);
-        return null;
-      }
-      const businessKey: string[] = manifest.tables[r.via].businessKey ?? [];
-      if (!businessKey.includes(viaSelf) || !businessKey.includes(viaTarget)) {
-        color.error(`${where}: junction table '${r.via}' must declare a 'businessKey' containing ` +
-          `both '${viaSelf}' and '${viaTarget}', so linking the same pair twice stays idempotent`);
         return null;
       }
       relations.push({name: name, target: r.target});

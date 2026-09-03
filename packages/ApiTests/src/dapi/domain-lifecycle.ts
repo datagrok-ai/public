@@ -249,6 +249,18 @@ category('Dapi: domain capabilities', () => {
     expect((await items().capabilities()).canEdit, true, 'recompute after invalidation must succeed');
   });
 
+  test('travelableRelations and securingTable are server-composed', async () => {
+    const caps = await items().capabilities();
+    expect(caps.travelableRelations.includes('tags'), true,
+      `the declared tags relation must be travelable for admin: ${JSON.stringify(caps.travelableRelations)}`);
+    expect(caps.securingTable, 'apitests.item', 'a row-mode table secures itself');
+    // Master mode: the securing table is the delegate target, not the table itself.
+    const junction = await grok.dapi.domains.table('apitests.item_tag').capabilities();
+    expect(junction.securityMode, 'master');
+    expect(junction.securingTable, 'apitests.item', JSON.stringify(junction));
+    expect(junction.travelableRelations.length, 0, 'the junction declares no relations');
+  });
+
   test('unknown table rejects with a typed validation error', async () => {
     const e = await thrown(() => grok.dapi.domains.table('apitests.nosuch').capabilities());
     expect(e instanceof DG.DomainValidationError, true,
@@ -268,6 +280,12 @@ category('Dapi: domain capabilities', () => {
         const before = await asUser();
         expect(before.canInsert, false, `no grant yet, canInsert must deny: ${JSON.stringify(before)}`);
         expect(before.canEdit, false, 'no grant yet, canEdit must deny');
+        // Travel is gated like the reads it rides (§6.2): a ROW-secured junction and
+        // target pass for any authenticated caller and let the row predicate hide the
+        // links, so the relation stays travelable without a single grant.
+        expect(before.travelableRelations.includes('tags'), true,
+          `row-secured tags must stay travelable for an ungranted user: ${JSON.stringify(before.travelableRelations)}`);
+        expect(before.securingTable, 'apitests.item', 'securingTable is identity, not permission');
         // KNOWN LIMITATION, asserted so it cannot drift unnoticed: writableColumns is
         // admin-fast-pathed off the SESSION's Auth.adminMode, which a cookie swap does
         // not change — under an admin session it stays full even for the ungranted

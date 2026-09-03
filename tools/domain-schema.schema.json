@@ -138,6 +138,29 @@
           "items": {"$ref": "#/definitions/identifier"},
           "description": "Property schemas contributing jsonb keys to this table."
         },
+        "constraints": {
+          "type": "object",
+          "description": "Table-level CHECK constraints keyed by constraint name. The expression may reference this table's relational columns, literals, comparison/arithmetic operators and a whitelist of keywords and immutable functions; it is normalized before it reaches the DDL.",
+          "propertyNames": {"$ref": "#/definitions/identifier"},
+          "additionalProperties": {
+            "type": "object",
+            "required": ["check"],
+            "additionalProperties": false,
+            "properties": {
+              "check": {"type": "string"}
+            }
+          }
+        },
+        "grants": {
+          "type": "object",
+          "description": "Permissions granted on the table entity at deploy time, keyed by group name (a platform group such as 'All users' or 'Developers'); each lists the permissions to grant.",
+          "minProperties": 1,
+          "additionalProperties": {
+            "type": "array",
+            "minItems": 1,
+            "items": {"enum": ["view", "edit", "delete"]}
+          }
+        },
         "relations": {
           "type": "object",
           "description": "Many-to-many relations of this table keyed by relation name: each links the table to a target table through a junction table. The name shares one namespace with the columns (it is what expand and filter paths address), so it may not collide with a column of this table. Declaration order is preserved and is the order every UI surface lays the relations out in.",
@@ -211,14 +234,19 @@
       "additionalProperties": false,
       "properties": {
         "type": {
-          "enum": ["string", "int", "float", "bool", "datetime", "string_list", "ref", "user", "group", "file"],
-          "description": "Property type; ref = FK to another table in this manifest; user/group = FK to the core users/groups tables with the matching semantic type; file = a file://<connection>/<path> string into platform file storage (semantic type File)."
+          "enum": ["string", "int", "float", "bool", "datetime", "string_list", "ref", "user", "group", "file", "json"],
+          "description": "Property type; ref = FK to another table in this manifest; user/group = FK to the core users/groups tables with the matching semantic type; file = a file://<connection>/<path> string into platform file storage (semantic type File); json = a jsonb-backed opaque object (filters, sorts, facets and aggregates refuse it)."
         },
         "required": {"type": "boolean", "default": false},
         "unique": {
           "type": "boolean",
           "default": false,
           "description": "Unique among live (not soft-deleted) rows."
+        },
+        "immutable": {
+          "type": "boolean",
+          "default": false,
+          "description": "Write-once: the first non-null value wins; a later change is refused."
         },
         "isName": {
           "type": "boolean",
