@@ -80,8 +80,9 @@ export abstract class AIChat {
         try {
             let step = await s.next();
             while (!step.done) {
-                _events.onChunk.next({...event, chunk: step.value});
-                yield step.value;
+                const chunk = step.value as string;
+                _events.onChunk.next({...event, chunk});
+                yield chunk;
                 step = await s.next();
             }
             settled = true;
