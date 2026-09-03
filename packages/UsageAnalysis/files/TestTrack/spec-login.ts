@@ -19,6 +19,51 @@ export const specTestOptions = {
 
 export interface StepError { step: string; error: string; }
 
+/** test.step when a test is running, a plain call otherwise (worker fixtures, global setup). */
+export function phase<T>(title: string, fn: () => Promise<T>): Promise<T> {
+  try { return test.step(title, fn); }
+  catch (_) { return fn(); }
+}
+
+export interface LedgerEntry { kind: string; ms: number; what: string; }
+
+/**
+ * Records every page.evaluate / waitForFunction / waitForTimeout the current test makes, so the
+ * JSON report can say where the time outside test.step went. Attached as annotations.
+ */
+export function installLedger(page: Page): LedgerEntry[] {
+  const ledger: LedgerEntry[] = [];
+  const p = page as any;
+  if (p.__ledgerInstalled) return p.__ledger;
+  p.__ledgerInstalled = true;
+  p.__ledger = ledger;
+  const snippet = (fn: any) => String(typeof fn === 'function' ? fn.toString() : fn)
+    .replace(/\s+/g, ' ').slice(0, 140);
+  for (const kind of ['evaluate', 'waitForFunction', 'waitForTimeout'] as const) {
+    const orig = p[kind].bind(page);
+    p[kind] = async (...args: any[]) => {
+      const t0 = Date.now();
+      try { return await orig(...args); }
+      finally { ledger.push({kind, ms: Date.now() - t0, what: kind === 'waitForTimeout' ? String(args[0]) : snippet(args[0])}); }
+    };
+  }
+  return ledger;
+}
+
+export function ledgerAnnotations(ledger: LedgerEntry[]): {type: string; description: string}[] {
+  const out: {type: string; description: string}[] = [];
+  const byKind: Record<string, {ms: number; n: number}> = {};
+  for (const e of ledger) {
+    byKind[e.kind] = byKind[e.kind] ?? {ms: 0, n: 0};
+    byKind[e.kind].ms += e.ms; byKind[e.kind].n++;
+  }
+  for (const k of Object.keys(byKind)) out.push({type: 'ledger-' + k, description: `${byKind[k].ms}ms/${byKind[k].n}`});
+  for (const e of [...ledger].sort((a, b) => b.ms - a.ms).slice(0, 12))
+    out.push({type: 'ledger-top', description: `${e.ms}ms ${e.kind} ${e.what}`});
+  ledger.length = 0;
+  return out;
+}
+
 export const stepErrors: StepError[] = [];
 
 export async function softStep(name: string, fn: () => Promise<void>) {
@@ -133,8 +178,14 @@ export async function installCsvBridge(page: Page) {
   await page.evaluate(({csv, local}) => {
     const w = window as any;
     w.__csv = csv;
+    // a server read of demog.csv costs 1-5s on dev; the bytes do not change between the tests
+    // of one worker, so the text is fetched once and parsed per call
+    w.__csvText = w.__csvText ?? {};
     w.__readCsv = async (p: string) => {
-      if (!local) return w.grok.dapi.files.readCsv(p);
+      if (!local) {
+        if (!(p in w.__csvText)) w.__csvText[p] = await w.grok.dapi.files.readAsText(p);
+        return w.DG.DataFrame.fromCsv(w.__csvText[p]);
+      }
       if (!(p in w.__csv))
         throw new Error(`No local copy of "${p}" — add it to LOCAL_DATASETS or run this spec on a server`);
       return w.DG.DataFrame.fromCsv(w.__csv[p]);

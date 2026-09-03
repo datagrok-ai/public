@@ -1,6 +1,6 @@
 import {Page, expect} from '@playwright/test';
 import {createHash} from 'crypto';
-import {installCsvBridge, stepErrors, StepError} from '../spec-login';
+import {installCsvBridge, phase, stepErrors, StepError} from '../spec-login';
 
 export interface OpenTableOptions {
 
@@ -17,11 +17,16 @@ export interface OpenTableOptions {
   semTypeTimeoutMs?: number;
 }
 
-export async function openTable(page: Page, options?: OpenTableOptions): Promise<void> {
+export function openTable(page: Page, options?: OpenTableOptions): Promise<void> {
+  return phase('openTable ' + (options?.path ?? 'spgi-100'), () => openTableImpl(page, options));
+}
+
+async function openTableImpl(page: Page, options?: OpenTableOptions): Promise<void> {
   // Most specs build their own page and never call openDatagrok, so the read seam has to be
   // established here rather than assumed: on a server page it resolves to dapi.files.readCsv,
   // which is what this helper always did.
   await installCsvBridge(page);
+  await installEventWaits(page);
   const p = options?.path ?? 'System:AppData/Chem/tests/spgi-100.csv';
   const useOpenFile = options?.sdf === true || /\.(sdf|nwk|pdb)$/i.test(p);
   const semTypeTimeoutMs = options?.semTypeTimeoutMs ?? 5000;
@@ -63,7 +68,8 @@ export async function openTable(page: Page, options?: OpenTableOptions): Promise
         if (grid?.querySelector('canvas')) break;
         await new Promise((r) => setTimeout(r, 200));
       }
-      await new Promise((r) => setTimeout(r, 5000));
+      // the molecule renderer repaints the grid once it has loaded; wait for that burst to end
+      await (window as any).__quiet('viewer:Grid.onAfterDrawContent', 400, 5000);
     }
   }, {path: p, openFile: useOpenFile, semTypeTimeoutMs});
   await page.locator('.d4-grid[name="viewer-Grid"]').first().waitFor({timeout: 30000});

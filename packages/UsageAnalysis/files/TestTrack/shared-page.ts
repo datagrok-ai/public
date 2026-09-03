@@ -1,5 +1,5 @@
 import {test as base, Page} from '@playwright/test';
-import {openDatagrok, setLane, specTestOptions, stepErrors} from './spec-login';
+import {installLedger, ledgerAnnotations, openDatagrok, setLane, specTestOptions, stepErrors} from './spec-login';
 
 /**
  * A Datagrok that is booted once per worker instead of once per spec.
@@ -19,6 +19,9 @@ import {openDatagrok, setLane, specTestOptions, stepErrors} from './spec-login';
 // container eats the clicks — "d4-balloon-container intercepts pointer events" was the
 // shared-page click timeout in scatter-plot, statistics and tile-viewer.
 const OVERLAYS = ['.d4-menu-popup', '.d4-tooltip', '.d4-dialog', '.d4-balloon'];
+
+const WINDOW_FLAGS = ['showToolbox', 'showProperties', 'showHelp', 'showConsole', 'showVariables',
+  'showTables', 'showColumns', 'showStatusBar', 'showRibbon', 'showSidebar', 'presentationMode'];
 
 // The column-selector backdrop is deliberately absent from OVERLAYS: the platform puts that
 // class on a wrapper AROUND the viewer, so removing the element removes the viewer. Left
@@ -44,7 +47,10 @@ export async function resetShell(page: Page): Promise<void> {
     for (const d of Array.from(grok.shell.dialogs ?? [])) {
       try { (d as any).close(); } catch (_) {}
     }
-    const stuck = () => overlays.flatMap((s) => Array.from(document.querySelectorAll(s)));
+    // visible ones only: the tooltip is a persistent singleton that merely hides, and treating
+    // it as stuck burned the full 1s here on every test and then ripped the node out
+    const stuck = () => overlays.flatMap((s) => Array.from(document.querySelectorAll(s)))
+      .filter((e) => (e as HTMLElement).offsetParent !== null);
     await new Promise<void>((resolve) => {
       const t0 = Date.now();
       const tick = () => {
@@ -54,6 +60,10 @@ export async function resetShell(page: Page): Promise<void> {
       tick();
     });
     for (const el of stuck()) el.remove();
+    // the hidden tooltip singleton keeps its last text, and a later "no tooltip" read sees it
+    try { w.ui.tooltip.hide(); } catch (_) {}
+    for (const t of Array.from(document.querySelectorAll('.d4-tooltip')))
+      if ((t as HTMLElement).offsetParent === null) (t as HTMLElement).innerHTML = '';
     for (const e of Array.from(document.querySelectorAll('.d4-column-selector-backdrop')))
       e.classList.remove('d4-column-selector-backdrop');
     // the container itself is what intercepts, and it outlives its children
@@ -70,8 +80,10 @@ export async function resetShell(page: Page): Promise<void> {
       tick();
     });
 
-    // shell settings the specs flip: openTable sets both, and leaving them on changes
-    // what the NEXT spec sees before it has run a line
+    // shell windows the specs flip (toolbox, context panel, simple mode): a spec written for a
+    // fresh page assumes the boot layout, so put back what the boot had
+    for (const k of Object.keys(w.__bootWindows ?? {}))
+      try { if (grok.shell.windows[k] !== w.__bootWindows[k]) grok.shell.windows[k] = w.__bootWindows[k]; } catch (_) {}
     try { grok.shell.windows.simpleMode = false; } catch (_) {}
     try { grok.shell.settings.showFiltersIconsConstantly = false; } catch (_) {}
     try { grok.shell.o = null; } catch (_) {}
@@ -85,14 +97,21 @@ export async function resetShell(page: Page): Promise<void> {
   }, OVERLAYS);
 }
 
+// fixture-side steps are dropped by the JSON reporter, so their cost is recorded as an annotation
+async function timed(title: string, fn: () => Promise<void>): Promise<void> {
+  const t0 = Date.now();
+  try { await fn(); }
+  finally { try { base.info().annotations.push({type: 'fixture', description: `${Date.now() - t0}ms ${title}`}); } catch (_) {} }
+}
+
 function laneTest(lane: 'local' | 'server') {
-  return base.extend<{page: Page}, {shared: {page: Page | null}}>({
+  return base.extend<{page: Page}, {shared: {page: Page | null; dirty: boolean}}>({
     // Worker-scoped holder rather than a worker-scoped page: the context has to be built
     // from `contextOptions`, which is test-scoped, and building it by hand instead dropped
     // every project-level `use` — the Desktop Chrome device settings among them, which
     // changed how viewers rendered and failed specs that pass on their own.
     shared: [async ({}, use) => {
-      const holder: {page: Page | null} = {page: null};
+      const holder: {page: Page | null; dirty: boolean} = {page: null, dirty: true};
       await use(holder);
       await holder.page?.context().close().catch(() => {});
     }, {scope: 'worker'}],
@@ -104,12 +123,26 @@ function laneTest(lane: 'local' | 'server') {
         context.setDefaultNavigationTimeout(specTestOptions.navigationTimeout);
         shared.page = await context.newPage();
         setLane(shared.page, lane);
-        await openDatagrok(shared.page);
+        installLedger(shared.page);
+        await timed('fixture: boot ' + lane, () => openDatagrok(shared.page!));
+        await shared.page.evaluate((keys: string[]) => {
+          const w = window as any;
+          w.__bootWindows = {};
+          for (const k of keys) try { w.__bootWindows[k] = w.grok.shell.windows[k]; } catch (_) {}
+        }, WINDOW_FLAGS);
       }
+      // a spec may raise the page's default timeouts for itself (trellis: 120s); they must not
+      // outlive it, or every failed locator in the next spec waits 120s instead of 15s
+      shared.page.setDefaultTimeout(specTestOptions.actionTimeout);
+      shared.page.setDefaultNavigationTimeout(specTestOptions.navigationTimeout);
       stepErrors.length = 0;
-      await revive(shared.page);
+      // the page is clean unless the previous test's teardown never completed
+      if (shared.dirty) await timed('fixture: revive before', () => revive(shared.page!));
+      shared.dirty = true;
       await use(shared.page);
-      await revive(shared.page);
+      await timed('fixture: revive after', () => revive(shared.page!));
+      shared.dirty = false;
+      for (const a of ledgerAnnotations((shared.page as any).__ledger)) base.info().annotations.push(a);
     },
   });
 }
@@ -153,7 +186,7 @@ async function revive(page: Page): Promise<void> {
  * Specs then failed on `expect(errCount()).toBe(errBefore)` with counts they never caused,
  * which is what "Expected: 0, Received: 2" was in the shared-page run.
  */
-async function drainErrors(page: Page, quietMs = 500, capMs = 3000): Promise<void> {
+async function drainErrors(page: Page, quietMs = 300, capMs = 3000): Promise<void> {
   let last = Date.now();
   const bump = () => { last = Date.now(); };
   page.on('console', bump);

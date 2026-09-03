@@ -20,7 +20,7 @@ export default defineConfig({
     viewport: {width: 1920, height: 1080},
     actionTimeout: 15_000,
     navigationTimeout: 60_000,
-    trace: 'retain-on-failure',
+    trace: (process.env.PW_TRACE as any) ?? 'retain-on-failure',
     screenshot: 'only-on-failure',
   },
   projects: [

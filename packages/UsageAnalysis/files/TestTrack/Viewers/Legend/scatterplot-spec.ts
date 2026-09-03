@@ -135,10 +135,13 @@ test('Legend scatterplot — Color + Marker combined', async ({page}) => {
         proj.addChild(viewInfo);
         // a relation must point at an entity already persisted server-side, or projects.save
         // throws a project_relations FK violation — upload/save the table and view first
-        await grok.dapi.tables.uploadDataFrame(df);
-        await grok.dapi.tables.save(tableInfo);
-        await grok.dapi.views.save(viewInfo);
-        const saved = await grok.dapi.projects.save(proj);
+        // a dev stall once held this step for 383s; a 30s server call is a failure, not a wait
+        const to = <T>(pr: Promise<T>, label: string): Promise<T> => Promise.race([pr,
+          new Promise<T>((_, rej) => setTimeout(() => rej(new Error(label + ' timed out after 30s')), 30000))]);
+        await to(grok.dapi.tables.uploadDataFrame(df), 'tables.uploadDataFrame');
+        await to(grok.dapi.tables.save(tableInfo), 'tables.save');
+        await to(grok.dapi.views.save(viewInfo), 'views.save');
+        const saved = await to(grok.dapi.projects.save(proj), 'projects.save');
         pid = saved.id;
       } catch (e: any) {
         return {phase: 'save', ok: false, error: String(e).slice(0, 200)};
@@ -147,8 +150,10 @@ test('Legend scatterplot — Color + Marker combined', async ({page}) => {
       await w.__poll(() => Array.from((window as any).grok.shell.tableViews).length,
         (c: number) => c === 0, 1200);
       try {
-        const reopened = await (window as any).grok.dapi.projects.find(pid);
-        await reopened.open();
+        const to = <T>(pr: Promise<T>, label: string): Promise<T> => Promise.race([pr,
+          new Promise<T>((_, rej) => setTimeout(() => rej(new Error(label + ' timed out after 30s')), 30000))]);
+        const reopened = await to((window as any).grok.dapi.projects.find(pid), 'projects.find');
+        await to(reopened.open(), 'project.open');
       } catch (e: any) {
         return {phase: 'reopen', ok: false, error: String(e).slice(0, 200), projectId: pid};
       }
@@ -621,10 +626,13 @@ test('Legend scatterplot — grid color coding linear/categorical', async ({page
         proj.addChild(viewInfo);
         // a relation must point at an entity already persisted server-side, or projects.save
         // throws a project_relations FK violation — upload/save the table and view first
-        await grok.dapi.tables.uploadDataFrame(df);
-        await grok.dapi.tables.save(tableInfo);
-        await grok.dapi.views.save(viewInfo);
-        const saved = await grok.dapi.projects.save(proj);
+        // a dev stall once held this step for 383s; a 30s server call is a failure, not a wait
+        const to = <T>(pr: Promise<T>, label: string): Promise<T> => Promise.race([pr,
+          new Promise<T>((_, rej) => setTimeout(() => rej(new Error(label + ' timed out after 30s')), 30000))]);
+        await to(grok.dapi.tables.uploadDataFrame(df), 'tables.uploadDataFrame');
+        await to(grok.dapi.tables.save(tableInfo), 'tables.save');
+        await to(grok.dapi.views.save(viewInfo), 'views.save');
+        const saved = await to(grok.dapi.projects.save(proj), 'projects.save');
         pid = saved.id;
       } catch (e: any) {
         return {phase: 'save', ok: false, error: String(e).slice(0, 200)};
@@ -633,8 +641,10 @@ test('Legend scatterplot — grid color coding linear/categorical', async ({page
       await w.__poll(() => Array.from((window as any).grok.shell.tableViews).length,
         (c: number) => c === 0, 1200);
       try {
-        const reopened = await (window as any).grok.dapi.projects.find(pid);
-        await reopened.open();
+        const to = <T>(pr: Promise<T>, label: string): Promise<T> => Promise.race([pr,
+          new Promise<T>((_, rej) => setTimeout(() => rej(new Error(label + ' timed out after 30s')), 30000))]);
+        const reopened = await to((window as any).grok.dapi.projects.find(pid), 'projects.find');
+        await to(reopened.open(), 'project.open');
       } catch (e: any) {
         return {phase: 'reopen', ok: false, error: String(e).slice(0, 200), projectId: pid};
       }
