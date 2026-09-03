@@ -42,6 +42,7 @@ export interface PieChartSettings extends SummarySettingsBase {
   radius: number;
   style: PieChartStyle.Radius | PieChartStyle.Angle | PieChartStyle.Vlaaivis;
   sectors?: {
+      name?: string;
       lowerBound: number;
       upperBound: number;
       sectors: Sector[]; // Use the Sector interface here
@@ -348,7 +349,7 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
       }
       settings.sectors ??= stashedSectors;
       editor = new VlaaiVisEditor(settings, gc);
-      inputs.append(...editor.boundsInputs.map((input) => input.root));
+      inputs.append(editor.profileInput.root, ...editor.boundsInputs.map((input) => input.root));
       elementsDiv.appendChild(editor.root);
       gc.grid.invalidate();
     };

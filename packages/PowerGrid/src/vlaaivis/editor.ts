@@ -1,7 +1,9 @@
 import * as DG from 'datagrok-api/dg';
+import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 
 import {createMpoRow, MpoRow} from '@datagrok-libraries/statistics/src/mpo/editors/mpo-property-row';
+import {generateMpoFileName} from '@datagrok-libraries/statistics/src/mpo/utils';
 
 import {Subscription} from 'rxjs';
 
@@ -19,6 +21,7 @@ function draggedProperty(o: any): string | null {
 export class VlaaiVisEditor {
   readonly root = ui.div([], 'power-grid-vlaaivis');
   readonly boundsInputs: DG.InputBase<number | null>[];
+  readonly profileInput: DG.InputBase<string>;
 
   private model: VlaaiVisModel;
   private gc: DG.GridColumn;
@@ -35,6 +38,7 @@ export class VlaaiVisEditor {
     if (this.model.sectors.length === 0)
       this.model.autoGroup(DEFAULTS.AUTO_GROUP_COLUMNS);
     this.boundsInputs = this.buildBoundsInputs();
+    this.profileInput = this.buildProfileInput();
     this.root.append(
       ui.divH([ui.iconFA('info-circle'), ui.divText(LABELS.TIP)], 'power-grid-vlaaivis-tip'),
       this.body);
@@ -47,6 +51,7 @@ export class VlaaiVisEditor {
   }
 
   detach(): void {
+    this.profileInput.root.remove();
     for (const input of this.boundsInputs)
       input.root.remove();
     this.disposeRows();
@@ -79,6 +84,38 @@ export class VlaaiVisEditor {
     };
     this.subs.push(lower.onChanged.subscribe(() => apply(upper)), upper.onChanged.subscribe(() => apply(lower)));
     return [lower, upper];
+  }
+
+  private buildProfileInput(): DG.InputBase<string> {
+    const input = ui.input.string(LABELS.PROFILE,
+      {value: this.model.profileName, placeholder: LABELS.PROFILE_PLACEHOLDER});
+    input.addOptions(ui.iconFA('folder-open', () => this.openProfile(), TOOLTIPS.OPEN_PROFILE));
+    input.addOptions(ui.iconFA('save', () => this.saveProfile(), TOOLTIPS.SAVE_PROFILE));
+    input.root.classList.add('power-grid-vlaaivis-profile');
+    this.subs.push(input.onChanged.subscribe(() => this.model.setProfileName(input.value)));
+    return input;
+  }
+
+  private saveProfile(): void {
+    const name = this.model.profileName || this.gc.name;
+    DG.Utils.download(generateMpoFileName(name, new Set()),
+      JSON.stringify(this.model.exportProfile(name), null, 2), 'application/json');
+  }
+
+  private openProfile(): void {
+    DG.Utils.openFile({accept: '.json', open: async (file) => {
+      const result = VlaaiVisModel.parseProfile(await file.text(), file.name.replace(/\.json$/i, ''));
+      if ('error' in result) {
+        grok.shell.warning(`Open failed: ${result.error}`);
+        return;
+      }
+      const skipped = this.model.applyProfile(result.profile);
+      this.profileInput.value = result.profile.name;
+      this.boundsInputs[0].value = result.profile.lowerBound;
+      this.boundsInputs[1].value = result.profile.upperBound;
+      if (skipped.length > 0)
+        grok.shell.info(`No columns named: ${skipped.join(', ')}`);
+    }});
   }
 
   private render(): void {

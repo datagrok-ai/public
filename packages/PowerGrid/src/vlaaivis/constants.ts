@@ -1,5 +1,8 @@
 export const VLAAIVIS_METADATA_TAG = '.vlaaivis-metadata';
 
+export const VLAAIVIS_PROFILE_TYPE = 'VlaaiVis Profile';
+export const VLAAIVIS_PROFILE_VERSION = 1;
+
 export const PANE_HEADER_SELECTOR = '.d4-accordion-pane-header';
 
 export const DEFAULTS = {
@@ -18,6 +21,8 @@ export const LABELS = {
   LOWER_BOUND: 'Target min',
   UPPER_BOUND: 'Target max',
   ADD_SECTOR: '+ Add sector',
+  PROFILE: 'Profile',
+  PROFILE_PLACEHOLDER: 'Name this profile',
   LOWER_ABOVE_UPPER: 'Must be below Target max',
   UPPER_BELOW_LOWER: 'Must be above Target min',
 };
@@ -33,6 +38,8 @@ export const TOOLTIPS = {
   COLOR: 'Sector color',
   RENAME: 'Rename sector',
   DELETE: 'Delete sector',
+  SAVE_PROFILE: 'Save profile to a file',
+  OPEN_PROFILE: 'Load profile from a file',
 };
 
 export const STYLE_INFO = {
