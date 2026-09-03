@@ -32,6 +32,7 @@ The CLI uses a modular command pattern. Each command is a separate module that:
 - `link.ts` - Link libraries for plugin development
 - `claude.ts` - Launch a Dockerized dev environment with Datagrok + Claude Code
 - `migrate.ts` - Update legacy packages
+- `schema.ts` - Generate (from `@grok.decorators.entity` classes, read with ts-morph in `utils/entity-classes.ts`), seal, check, diff, migrate, squash and print the DDL of entity schema manifests (`databases/<schema>/schema.json`); the pure snapshot/diff/scaffold library is `utils/domain-snapshot.ts`
 - `init.ts` - Apply configuration to existing packages
 
 The commands `api`, `check`, `link`, `publish`, and `test` support the `--all` flag to run recursively across all packages in the current directory.

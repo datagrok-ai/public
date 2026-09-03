@@ -82,6 +82,19 @@ Read more about package development in [Datagrok's documentation](https://datagr
   , `node`, `octave`, `python`, `r`. Available function tags: `panel`, `init`.
 - `api` creates wrapper functions for package scripts and queries. The output is stored in files `/src/scripts-api.ts`
   and `/src/queries-api.ts` respectively.
+- `schema` generates, seals, checks, diffs and migrates the package's entity schema manifests
+  (`databases/<schema>/schema.json`). `grok schema generate` derives the manifests from classes decorated
+  `@grok.decorators.entity` / `@grok.decorators.column` under `src/` (property order = column order), and
+  `grok schema ddl` prints the CREATE TABLE DDL of every table in dependency order.
+  A snapshot is the manifest in canonical form with a content hash, kept next to it as
+  `databases/<schema>/snapshot.json`; `grok schema check` fails when a manifest changed without a reseal, and
+  `grok schema migrate --name <x>` scaffolds `databases/<schema>/NNNN_<x>.sql` (run on deploy) plus its `down/` twin
+  carrying every physical change (additive ones too, so a script that moves data is self-contained).
+  `grok schema squash --name <x> --all|--from N --to N` folds consecutive scripts into one, and `--all --discard --yes`
+  deletes them all (the manifest becomes the baseline). `grok schema check|diff --server [alias]`
+  compare against the snapshot recorded on a stand — informational only: migrations are always generated from the
+  sealed `snapshot.json`, never from a database. `grok schema` and `grok api` share the manifests: after
+  `generate` or `migrate`, run `grok api` so `src/generated/db.ts` follows the schema.
 - `publish` uploads a package to the specified server (pass either a URL or a server alias from the `config.yaml` file).
 Additionally, you can use placeholders in JSON files under the `/connections` folder to substitute environment variables.
 For more information on configuring connections, refer to the [Connections](https://datagrok.ai/help/develop#connections) article.

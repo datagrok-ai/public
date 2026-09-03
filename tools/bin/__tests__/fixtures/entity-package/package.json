@@ -1,0 +1,5 @@
+{
+  "name": "@datagrok/entity-package",
+  "version": "1.2.3",
+  "description": "Fixture: entities declared as decorated classes"
+}

@@ -420,6 +420,18 @@ describe('generateDomainClients', () => {
     expect(fs.existsSync(dbPath(dir))).toBe(false);
   });
 
+  it('accepts json, immutable, constraints and grants, mapping a json column to an object', () => {
+    const dir = makePackage();
+    mutateManifest(dir, (m) => {
+      m.tables.sample.columns.meta = {type: 'json'};
+      m.tables.sample.columns.count.immutable = true;
+      m.tables.sample.constraints = {count_positive: {check: 'count IS NULL OR count > 0'}};
+      m.tables.sample.grants = {'#all-users': ['view']};
+    });
+    expect(generateDomainClients(dir)).toBe(true);
+    expect(fs.readFileSync(dbPath(dir), 'utf8')).toContain('meta?: {[key: string]: any};');
+  });
+
   it('rejects a manifest that violates the JSON Schema', () => {
     const dir = makePackage();
     mutateManifest(dir, (m) => m.tables.sample.columns.count.type = 'text');

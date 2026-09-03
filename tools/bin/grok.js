@@ -30,6 +30,7 @@ const commands = {
   testall: require('./commands/test-all').testAll,
   stresstest: require('./commands/stress-tests').stressTests,
   migrate: require('./commands/migrate').migrate,
+  schema: require('./commands/schema').schema,
   server: require('./commands/server').server,
   s: require('./commands/server').server,
 };

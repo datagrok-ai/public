@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-20799: Added `grok.decorators.entity(options)` and `grok.decorators.column(options)` — runtime no-op decorators that map a class and its properties to a table of the package's domain schema (`EntityOptions` / `ColumnOptions` carry every manifest table and column key); `grok schema generate` (datagrok-tools) derives `databases/<schema>/schema.json` from them.
 * Renamed the u2 `Component.run(fn)` scope helper to `runInScope(fn)` — `run` is inherited by every view and widget and collided with the long-standing `run()` on `FunctionView` and `Tutorial`, breaking those package builds with `TS2416`
 * Added `NodeApiClient.getBytes()` / `putBytes()` and `InternalDataSource` — a client for the internal entity routers that throws on the `ApiError` bodies they answer 200 with — to the Node dapi client (subset mirror of the CLI's `tools/bin/utils/node-dapi.ts`); `InternalDataSource` is exported from `datagrok-api/node-api`, `NodeDapi.client` is public, and `NodeDapi.queries|scripts|reports` now use the internal routes (the `/public/v1/` ones they used do not exist)
 * GROK-20753: Added `DG.SEMTYPE.FUNCTION_NAME` (`'FunctionName'`) — the standard semantic type for a namespace-qualified function name.
