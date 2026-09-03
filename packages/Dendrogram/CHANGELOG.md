@@ -2,6 +2,7 @@
 
 ## v.next
 
+* 2011: Open a table view for an unattached DataFrame in hierarchicalClusteringUI
 * Moved the Dendrogram Playwright E2E suite into the package (playwright/); helpers from @datagrok-libraries/test/src/playwright
 
 ## 1.4.15 (2026-06-23)

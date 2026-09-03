@@ -279,7 +279,8 @@ export class PackageFunctions {
     'type': 'list'
     }
     ],
-    'name': 'Import Newick',
+    'name': 'importNwk',
+    'friendlyName': 'Import Newick',
     'description': 'Parse a Newick (.nwk/.newick) tree file into a dataframe and open it as a dendrogram.'
     })
   static async importNewick(
