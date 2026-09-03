@@ -10,7 +10,8 @@ import {
 import {MpoProfileCreateView} from '../mpo/mpo-create-profile';
 import {MpoProfilesView} from '../mpo/mpo-profiles-view';
 import {MpoProfileHandler} from '../mpo/mpo-profile-handler';
-import {MpoProfileManager} from '../mpo/mpo-profile-manager';
+import {mpoProfileStore} from '../mpo/mpo-profile-store';
+import {importProfile} from '../mpo/mpo-profile-actions';
 import {computeMpo, MpoMethod, MpoProfileInfo} from '../mpo/utils';
 
 const _funcs = new Map<string, DG.Func>();
@@ -101,7 +102,7 @@ function columnOf(view: MpoProfileCreateView, column: string): FoundColumn {
 }
 
 async function profileOf(name: string): Promise<FoundProfile> {
-  const profiles = await MpoProfileManager.ensureLoaded();
+  const profiles = await mpoProfileStore.ensureLoaded();
   const wanted = name?.trim().toLowerCase();
   const profile = profiles.find((p) => p.name.toLowerCase() === wanted);
   return profile ? {profile} : {error: `No profile '${name}' - call listMpoProfiles for the ones there are`};
@@ -298,16 +299,16 @@ export function mpoFunctions(): DG.Func[] {
       }),
 
     aiFunc('saveMpoProfile', 'dynamic saveMpoProfile(view view, string name)',
-      'Save the profile. Pass name to save it under a different name, which leaves the original untouched - that is how a profile is cloned. Without a name it overwrites the profile being edited, and asks the user to confirm',
+      'Save the profile. Pass name to save it under a different name, which leaves the original untouched - that is how a profile is cloned. Without a name it overwrites the profile being edited',
       async (view, name?: string) => {
         const newName = name?.trim();
         if (newName && newName !== view.profile.name) {
           view.setProfileName(newName);
-          view.fileName = null;
+          view.saved = null;
         }
         if (!await view.save())
           return {success: false, error: `Profile '${view.profile.name}' was not saved`};
-        return {success: true, name: view.profile.name, fileName: view.fileName};
+        return {success: true, name: view.profile.name, profileId: view.saved?.id};
       }),
 
     aiFunc('resetMpoProfile', 'dynamic resetMpoProfile(view view)',
@@ -340,13 +341,13 @@ const MPO_PROFILES_AI_DESCRIPTION = 'MPO profile list - the saved multi-paramete
 export function mpoProfilesFunctions(): DG.Func[] {
   return [
     profilesAiFunc('listMpoProfiles', 'dynamic listMpoProfiles(view view)',
-      'Every saved MPO profile - its name, description, file, the properties it scores and how they aggregate. Call this first; the other functions address a profile by the name reported here',
+      'Every saved MPO profile - its name, description, the properties it scores and how they aggregate. Call this first; the other functions address a profile by the name reported here',
       async () => {
-        const profiles = await MpoProfileManager.ensureLoaded();
+        const profiles = await mpoProfileStore.ensureLoaded();
         return profiles.map((p) => ({
           name: p.name,
           description: p.description,
-          fileName: p.fileName,
+          id: p.id,
           aggregation: p.aggregation ?? null,
           properties: Object.keys(p.properties ?? {}),
         }));
@@ -400,13 +401,13 @@ export function mpoProfilesFunctions(): DG.Func[] {
       }),
 
     profilesAiFunc('importMpoProfile', 'dynamic importMpoProfile(view view, string file)',
-      'Add a profile from a JSON file on the server, given its path, e.g. System:AppData/Chem/mpo/lipinski.json. A name already taken asks the user whether to replace that profile or keep both',
+      'Add a profile from a JSON file on the server, given its path, e.g. System:AppData/Home/lipinski.json. A name already taken asks the user whether to replace that profile or keep both',
       async (_view, file: string) => {
         const path = file?.trim();
         if (!path)
           return {success: false, error: 'Pass file - the path of the .json profile to import'};
         const name = path.split(/[\\/]/).pop()!.replace(/\.json$/i, '');
-        if (!await MpoProfileManager.importProfile(await grok.dapi.files.readAsText(path), name))
+        if (!await importProfile(await grok.dapi.files.readAsText(path), name))
           return {success: false, error: `'${path}' was not imported - it is not a valid MPO profile, or the user cancelled`};
         return {success: true, imported: path};
       }),

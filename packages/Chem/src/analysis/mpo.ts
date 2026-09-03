@@ -11,13 +11,13 @@ import {MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profi
 import {MPO_SCORE_CHANGED_EVENT} from '@datagrok-libraries/statistics/src/mpo/utils';
 
 import {MpoContextPanel} from '../mpo/mpo-context-panel';
-import {MpoProfileManager} from '../mpo/mpo-profile-manager';
+import {mpoProfileStore} from '../mpo/mpo-profile-store';
+import {saveProfileInteractive} from '../mpo/mpo-profile-actions';
 import {PackageFunctions} from '../package';
 import {
   computeMpo, MpoProfileInfo, deepEqual, findSuitableProfiles,
   isEdaPackageInstalled, MpoMethod, UNTITLED_PROFILE,
-  createProfileForDf,
-} from '../mpo/utils';
+  createProfileForDf, MpoProfileRef} from '../mpo/utils';
 import {checkPackage} from '../utils/elemental-analysis-utils';
 
 const CREATE_NEW_PROFILE_ITEM = '+ Create New...';
@@ -31,7 +31,7 @@ export class MpoProfileDialog {
   addRadarInCell: DG.InputBase<boolean>;
   mpoProfiles: MpoProfileInfo[] = [];
   currentProfile: DesirabilityProfile | null = null;
-  currentProfileFileName: string | null = null;
+  saved: MpoProfileRef | null = null;
   manageButton: HTMLElement;
   saveButton: HTMLButtonElement;
 
@@ -114,7 +114,7 @@ export class MpoProfileDialog {
       },
     });
     this.nameInput.addValidator((name) => {
-      if (this.mpoProfiles.some((p) => p.name === name && p.fileName !== this.currentProfileFileName))
+      if (this.mpoProfiles.some((p) => p.name === name && p.id !== this.saved?.id))
         return 'A profile with this name already exists';
       return null;
     });
@@ -202,7 +202,7 @@ export class MpoProfileDialog {
     this.pmpoSettingsIcon.classList.add('chem-mpo-d-none');
     this.pmpoSettingsContainer.classList.add('chem-mpo-d-none');
 
-    this.currentProfileFileName = profileInfo.fileName;
+    this.saved = profileInfo;
     this.currentProfile = structuredClone(profileInfo);
     this.designModeInput.value = false;
     this.mpoProfileEditor.setProfile(this.currentProfile);
@@ -234,13 +234,13 @@ export class MpoProfileDialog {
   private createManualProfile(): void {
     this.currentProfile = createProfileForDf(this.dataFrame);
     this.applyNameAndDescription(this.currentProfile);
-    this.currentProfileFileName = null;
+    this.saved = null;
     this.originalProfile = null;
     this.isNewProfile = true;
 
     this.mpoProfileEditor.setProfile(this.currentProfile);
     this.designModeInput.value = true;
-    this.saveButton.classList.remove('chem-mpo-d-none');
+    this.updateSaveButtonVisibility();
     this.updateOkButtonState();
   }
 
@@ -263,12 +263,12 @@ export class MpoProfileDialog {
 
       this.currentProfile = pMpoItems.profile;
       this.applyNameAndDescription(this.currentProfile!);
-      this.currentProfileFileName = null;
+      this.saved = null;
       this.originalProfile = null;
       this.isNewProfile = true;
       this.mpoProfileEditor.setProfile(this.currentProfile!);
       this.designModeInput.value = true;
-      this.saveButton.classList.remove('chem-mpo-d-none');
+      this.updateSaveButtonVisibility();
       this.updateOkButtonState();
     } catch (e) {
       grok.shell.warning(`Data-driven MPO training failed: ${e instanceof Error ? e.message : e}`);
@@ -336,9 +336,9 @@ export class MpoProfileDialog {
     if (!this.currentProfile)
       return;
 
-    const result = await MpoProfileManager.saveProfile(this.currentProfile, this.currentProfileFileName);
-    if (result.saved) {
-      this.currentProfileFileName = result.fileName;
+    const result = await saveProfileInteractive(this.currentProfile, this.saved);
+    if (result) {
+      this.saved = result;
       this.isNewProfile = false;
       this.pmpoSettingsOpened = false;
       this.pmpoSettingsIcon.classList.add('chem-mpo-d-none');
@@ -350,7 +350,7 @@ export class MpoProfileDialog {
   }
 
   private async refreshProfilesDropdown(selectName?: string | (() => string)): Promise<void> {
-    this.mpoProfiles = await MpoProfileManager.load();
+    this.mpoProfiles = await mpoProfileStore.load();
     this.suitableProfileNames = findSuitableProfiles(this.dataFrame, this.mpoProfiles).map((p) => p.name);
     this.profileInput.items = [CREATE_NEW_PROFILE_ITEM, ...this.mpoProfiles.map((p) => p.name)];
     requestAnimationFrame(() => {

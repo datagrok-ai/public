@@ -1165,8 +1165,8 @@ export function sarSeriesColumnChoices() : string[] {
 //input: dataframe table 
 //input: column molecules { semType: Molecule }
 //input: column activity { type: numerical }
-//input: string scaling = 'none' { choices: ["none","lg","-lg"]; description: Activity scaling before assembly }
-//input: string activityDirection = 'Higher is better' { choices: ["Auto (from scaling)","Higher is better","Lower is better"]; description: Which end of the activity is more potent (set explicitly for pre-computed pIC50/pKi) }
+//input: string scaling = '-lg' { choices: ["none","lg","-lg"]; description: Activity scaling before assembly }
+//input: string activityDirection = 'Auto (from scaling)' { choices: ["Auto (from scaling)","Higher is better","Lower is better"]; description: Which end of the activity is more potent (set explicitly for pre-computed pIC50/pKi) }
 //input: double fragmentCutoff = 0.4 { description: Maximum fragment size relative to core }
 //input: int fragmentationLevels = 3 { caption: Series levels; min: 1; max: 5; description: Nested series tiers (L1/L2/L3): 1 is a flat list, each level folds matrices one cut broader }
 //input: bool predictVirtual = true 
@@ -1479,6 +1479,19 @@ export async function mixtureTreeWidget(mixture: string) : Promise<any> {
 //top-menu: Chem | Calculate | Chemical Properties...
 export async function biochemPropsWidget() : Promise<void> {
   await PackageFunctions.biochemPropsWidget();
+}
+
+//description: Saves a DesirabilityProfile JSON as an MPO profile. Returns the profile id.
+//input: string profileJson 
+//output: string id
+export async function saveMpoProfile(profileJson: string) : Promise<string> {
+  return await PackageFunctions.saveMpoProfile(profileJson);
+}
+
+//description: Grants all users access to MPO profiles and seeds every profile in the System:AppData/Chem/mpo folder - the shipped defaults plus any profiles saved there by the old file-based storage. Idempotent - safe to run repeatedly.
+//output: string result
+export async function seedMpoProfiles() : Promise<string> {
+  return await PackageFunctions.seedMpoProfiles();
 }
 
 //name: MPO profiles

@@ -6,6 +6,7 @@ import {findMutations, MutationCliffsOptions} from '../utils/algorithms';
 import * as type from '../utils/types';
 import {extractColInfo} from '../utils/misc';
 import {PeptideUtils} from '../peptideUtils';
+import {getStats} from '../utils/statistics';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 
 category('Algorithms', () => {
@@ -59,5 +60,24 @@ category('Algorithms', () => {
     settings.filter = filter.buffer;
     mutationCliffsInfo = await findMutations(activityCol, monomerColumns, settings);
     expect(mutationCliffsInfo.size, 0, `MutationCliffsInfo should be empty for target '1'`);
+  });
+
+  test('getStats: capacity-padded raw data', async () => {
+    // Raw data buffers keep their capacity after row removal, so they can be longer than the mask
+    const data = new Float64Array([1, 2, 3, 4, 5, 100, 100]);
+    const mask = new BitArray(5, false);
+    mask.setBit(2, true);
+    const stats = getStats(data, mask);
+    expect(stats.count, 1, 'Stats should be computed when raw data is longer than the mask');
+    expect(stats.mean, 3, 'Mean should only consider rows within the mask length');
+    expect(stats.meanDifference, 0, 'Mean difference should ignore padded values beyond the mask length');
+
+    let error = '';
+    try {
+      getStats(new Float64Array(3), new BitArray(5, false));
+    } catch (e) {
+      error = String(e);
+    }
+    expect(error.includes('different lengths'), true, 'Data shorter than the mask should still throw');
   });
 });
