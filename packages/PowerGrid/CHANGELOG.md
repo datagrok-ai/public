@@ -5,6 +5,7 @@
 * [#3765](https://github.com/datagrok-ai/public/issues/3765): Forms viewer: Added the ability to pin rows via the context menu; pinned forms stay in place when scrolling
 * Vlaaivis manager: Fixed the `mpo-line-editor` import path, which broke the build after the editor moved into `mpo/editors/`
 * Vlaaivis: Fixed the build against the MPO desirability union — `Subsector` is an intersection now (an interface cannot extend a union), and `VlaaivisColumnMetadata` is typed on the numerical member it has always been
+* VlaaiVis: Redesigned the configuration editor
 
 ## 1.8.3 (2026-07-09)
 
