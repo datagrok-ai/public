@@ -32,7 +32,8 @@ test('XGBoost 1: Classification on iris.csv', async ({page}) => {
       const df = grok.shell.tv.dataFrame;
       const subDf = df.clone(null, ['Sepal.Length', 'Sepal.Width', 'Petal.Length', 'Petal.Width', 'Species']);
       const result = await grok.functions.call('eda:trainXGBooster', {
-        df: subDf, predictColumn: subDf.col('Species')
+        df: subDf, predictColumn: subDf.col('Species'),
+        iterations: 20, eta: 0.3, maxDepth: 6, lambda: 1, alpha: 0
       });
       return {success: result != null};
     });

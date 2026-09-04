@@ -37,7 +37,8 @@ test('XGBoost 2: Regression on cars.csv', async ({page}) => {
       }
       const numDf = df.clone(null, numCols);
       const result = await grok.functions.call('eda:trainXGBooster', {
-        df: numDf, predictColumn: numDf.col('price')
+        df: numDf, predictColumn: numDf.col('price'),
+        iterations: 20, eta: 0.3, maxDepth: 6, lambda: 1, alpha: 0
       });
       return {success: result != null};
     });
