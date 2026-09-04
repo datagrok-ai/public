@@ -2,7 +2,8 @@ import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
 
 //name: Chemistry | Retrosynthesis
-//input: string smiles { semType: Molecule }
+//description: Predict retrosynthesis routes for a molecule using AiZynthFinder.
+//input: string smiles { semType: Molecule; description: Target molecule to plan a synthesis route for }
 //output: widget result
 //meta.allowAddAsColumn: false
 //meta.role: widgets,panel

@@ -10,7 +10,7 @@ view; the heavy lifting runs server-side in a Celery container.
 | File | Role |
 |---|---|
 | [src/package.ts](src/package.ts) | Registers `Chemistry \| Retrosynthesis` panel and `Retrosynthesis Demo`. Debounces molecule changes through an `rxjs` `Subject` (2 s) before calling `updateRetrosynthesisWidget`. |
-| [src/utils.ts](src/utils.ts) | `updateRetrosynthesisWidget`: validates the input, calls the backend `run_aizynthfind` function, builds the tabbed tree UI, and wires the "add paths to workspace" / settings icons. |
+| [src/utils.ts](src/utils.ts) | `updateRetrosynthesisWidget`: awaits Chem's initialisation (`Chem:initChemAutostart`) before the synchronous `DG.chem` checks, validates the input, calls the backend `run_aizynthfind` function, builds the tabbed tree UI, and wires the "add paths to workspace" / settings icons. |
 | [src/tree-creation-utils.ts](src/tree-creation-utils.ts) | Builds tab control + SVG layout from a `Tree[]`. `TAB_ID` attribute on each pane content links a pane back to its precursors object. |
 | [src/config-utils.ts](src/config-utils.ts) | User-config storage (`grok.userSettings`) + dialog. Lists config folders under `System:AppData/Retrosynthesis/configs/`, reads `config.yml`, reconciles stored selections against currently available expansion/stock/filter policies. |
 | [src/aizynth-api.ts](src/aizynth-api.ts) | TypeScript shape of the Python backend response (`Tree`, `TreeNode`, `Scores`, `ReactionMetadata`, `DataEntry`). |
