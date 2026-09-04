@@ -112,6 +112,11 @@ test('Legend scatterplot — Color + Marker combined', async ({page}) => {
         // project is saved — otherwise project_relations.entity_id has nothing to reference.
         await (window as any).grok.dapi.tables.uploadDataFrame(df);
         await (window as any).grok.dapi.tables.save(tableInfo);
+        // A project holding only the table restores the data but no viewers, so the layout
+        // has to be a child too for the reopened view to carry the viewer state back.
+        const savedLayout = await (window as any).grok.dapi.layouts.save(
+          (window as any).grok.shell.tv.saveLayout());
+        proj.addChild(savedLayout);
         const saved = await (window as any).grok.dapi.projects.save(proj);
         pid = saved.id;
       } catch (e: any) {
@@ -539,6 +544,11 @@ test('Legend scatterplot — grid color coding linear/categorical', async ({page
         // project is saved — otherwise project_relations.entity_id has nothing to reference.
         await (window as any).grok.dapi.tables.uploadDataFrame(df);
         await (window as any).grok.dapi.tables.save(tableInfo);
+        // A project holding only the table restores the data but no viewers, so the layout
+        // has to be a child too for the reopened view to carry the viewer state back.
+        const savedLayout = await (window as any).grok.dapi.layouts.save(
+          (window as any).grok.shell.tv.saveLayout());
+        proj.addChild(savedLayout);
         const saved = await (window as any).grok.dapi.projects.save(proj);
         pid = saved.id;
       } catch (e: any) {
