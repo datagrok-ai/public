@@ -82,6 +82,7 @@ export async function resetShell(page: Page): Promise<void> {
     delete w.__lastRender;
     delete w.__canvasColorSnap;
     delete w.__canvasQuiet;
+    delete w.__immediateRendering;
   }, OVERLAYS);
 }
 

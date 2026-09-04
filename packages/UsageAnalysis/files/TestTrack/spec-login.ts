@@ -106,6 +106,7 @@ export function laneOf(page: Page): 'local' | 'server' {
 // so category counts, tooltips and legend labels assert the same values in both lanes.
 const LOCAL_DATASETS: Record<string, string> = {
   'System:DemoFiles/demog.csv': '../../../ApiTests/files/datasets/demog.csv',
+  'System:DemoFiles/demog-1000.csv': '../../../ApiTests/files/datasets/demog-1000.csv',
   'System:AppData/Chem/tests/spgi-100.csv': '../../../UITests/files/SPGI_v2_100.csv',
 };
 

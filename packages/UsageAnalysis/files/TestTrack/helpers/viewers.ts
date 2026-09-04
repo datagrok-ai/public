@@ -1336,8 +1336,11 @@ export async function setViewerProps(
   page: Page, viewerType: string, steps: ViewerPropStep[], delayMs = 300,
 ): Promise<any[]> {
   return page.evaluate(async ({viewerType, steps, delayMs}) => {
-    const h = Array.from((window as any).grok.shell.tv.viewers)
-      .find((x: any) => x.type === viewerType) as any;
+    const w = window as any;
+    const norm = (s: string) => s.replace(/[\s-]+/g, ' ').toLowerCase();
+    const h = Array.from(w.grok.shell.tv.viewers)
+      .find((x: any) => norm(x.type) === norm(viewerType)) as any;
+    const immediate = h.immediateRendering === true;
     const out: any[] = [];
     for (var step of steps) {
 
@@ -1348,6 +1351,9 @@ export async function setViewerProps(
         setTimeout(() => { try { sub?.unsubscribe(); } catch (_) {} resolve(); }, step.wait ?? delayMs);
       });
       for (var k of Object.keys(step.set)) h.props[k] = step.set[k];
+      // an immediately-rendering viewer repaints on a zero-delay timer armed during the set, so one
+      // macrotask later the render event above has already resolved `settled`
+      if (immediate) await new Promise((r) => setTimeout(r, 0));
       await settled;
       if (step.read === undefined) continue;
       if (Array.isArray(step.read)) {
@@ -1365,20 +1371,22 @@ export async function waitForViewerRendered(page: Page, viewerType: string, capM
   await page.evaluate(({type, capMs}) => new Promise<void>((resolve) => {
     const w = window as any;
     const t0 = Date.now();
-    const v = Array.from(w.grok.shell.tv.viewers).find((x: any) => x.type === type) as any;
+    const norm = (s: string) => s.replace(/[\s-]+/g, ' ').toLowerCase();
+    const v = Array.from(w.grok.shell.tv.viewers).find((x: any) => norm(x.type) === norm(type)) as any;
     if (!v) { setTimeout(resolve, 0); return; }
 
+    const key = v.type;
     w.__lastRender = w.__lastRender ?? {};
     if (!v.__renderStamped) {
       try {
-        v.onViewerRendered.subscribe(() => { w.__lastRender[type] = Date.now(); });
+        v.onViewerRendered.subscribe(() => { w.__lastRender[key] = Date.now(); });
         v.__renderStamped = true;
       } catch (_) {  }
     }
-    const before = w.__lastRender[type] ?? 0;
+    const before = w.__lastRender[key] ?? 0;
     if (before && Date.now() - before < 400) { resolve(); return; }
     const tick = () => {
-      if ((w.__lastRender[type] ?? 0) > before || Date.now() - t0 >= capMs) { resolve(); return; }
+      if ((w.__lastRender[key] ?? 0) > before || Date.now() - t0 >= capMs) { resolve(); return; }
       setTimeout(tick, 25);
     };
     tick();
@@ -1407,23 +1415,25 @@ export async function waitForViewerQuiet(
     // subscription opened at that point has already missed the burst it is waiting for.
     // The stamp is installed once per viewer and survives, so "when did it last paint"
     // is answerable retroactively. Same reason waitForViewerRendered stamps.
+    const key = v.type;
     w.__renderCount = w.__renderCount ?? {};
     w.__lastRender = w.__lastRender ?? {};
     if (!v.__quietStamped) {
       try {
         v.onViewerRendered.subscribe(() => {
-          w.__lastRender[type] = Date.now();
-          w.__renderCount[type] = (w.__renderCount[type] ?? 0) + 1;
+          w.__lastRender[key] = Date.now();
+          w.__renderCount[key] = (w.__renderCount[key] ?? 0) + 1;
         });
         v.__quietStamped = true;
       } catch (_) { return resolve(0); }
     }
-    const before = w.__renderCount[type] ?? 0;
+    const before = w.__renderCount[key] ?? 0;
     const t0 = Date.now();
+    // no paint since the stamp was installed counts as quiet after gapMs, not after the cap
     const tick = () => {
-      const last = w.__lastRender[type] ?? 0;
-      const seen = (w.__renderCount[type] ?? 0) - before;
-      if (last && Date.now() - last >= gap) return resolve(seen);
+      const last = w.__lastRender[key] ?? t0;
+      const seen = (w.__renderCount[key] ?? 0) - before;
+      if (Date.now() - last >= gap) return resolve(seen);
       if (Date.now() - t0 >= cap) return resolve(seen);
       setTimeout(tick, 50);
     };
@@ -1588,7 +1598,18 @@ export async function closeAllAndWait(page: Page): Promise<void> {
  * means the channel does not fire for that action — a product gap to record, not a cap to raise.
  * Cleanup: N/A (idempotent, re-installed on navigation).
  */
-export async function installEventWaits(page: Page): Promise<void> {
+export async function installEventWaits(
+  page: Page, opts: {immediateRendering?: boolean} = {},
+): Promise<void> {
+  // Opt-in per spec (and cleared by resetShell): every viewer of the page, present or added later,
+  // repaints on a zero-delay timer instead of an animation frame (viewer.immediateRendering).
+  if (opts.immediateRendering)
+    await page.evaluate(() => {
+      const w = window as any;
+      w.__immediateRendering = true;
+      for (const v of Array.from(w.grok.shell.tv?.viewers ?? []) as any[])
+        try { v.immediateRendering = true; } catch (_) {  }
+    });
   await page.evaluate(() => {
     const w = window as any;
     if (w.__settled) return;
@@ -1732,6 +1753,49 @@ export async function installEventWaits(page: Page): Promise<void> {
         value = read();
       }
       return value;
+    };
+
+    // Paints are stamped from the moment a viewer is added, so waitForViewerRendered /
+    // waitForViewerQuiet armed after the first paint still see it instead of burning their cap.
+    const stampRenders = (v: any) => {
+      if (!v || v.__renderStamped) return;
+      if (w.__immediateRendering)
+        try { v.immediateRendering = true; } catch (_) {  }
+      try {
+        v.onViewerRendered.subscribe(() => {
+          w.__lastRender = w.__lastRender ?? {};
+          w.__renderCount = w.__renderCount ?? {};
+          w.__lastRender[v.type] = Date.now();
+          w.__renderCount[v.type] = (w.__renderCount[v.type] ?? 0) + 1;
+        });
+        v.__renderStamped = v.__quietStamped = true;
+      } catch (_) {  }
+    };
+    for (const v of Array.from(w.grok.shell.tv?.viewers ?? [])) stampRenders(v);
+    w.grok.events.onViewerAdded.subscribe((a: any) => stampRenders(a?.args?.viewer));
+
+    // onContextMenu fires BEFORE the popup exists (Menu.show defers the DOM work to a timer), so the
+    // DOM-ready signal is onContextMenuShown; a client without it falls back to watching the popup's
+    // item count settle. Items a subscriber appends asynchronously land after either signal — poll
+    // for a specific item at the call site. Closing is a body click: Escape does not reach the
+    // popup's key handler from a dispatched context menu.
+    const popupItems = () => document.querySelectorAll('.d4-menu-popup .d4-menu-item').length;
+    w.__openContextMenu = async (el: Element, cx: number, cy: number, capMs = 3000) => {
+      const open = () => el.dispatchEvent(new MouseEvent('contextmenu',
+        {bubbles: true, cancelable: true, clientX: cx, clientY: cy, button: 2}));
+      if (w.grok.events.onContextMenuShown) {
+        if (await w.__settled('grok.events.onContextMenuShown', open, capMs) !== undefined) return true;
+      } else
+        open();
+      let prev = -1;
+      await w.__poll(popupItems, (n: number) => { const quiet = n > 0 && n === prev; prev = n; return quiet; }, capMs, 100);
+      return popupItems() > 0;
+    };
+    w.__closeContextMenu = async (capMs = 1000) => {
+      if (document.querySelectorAll('.d4-menu-popup').length === 0) return;
+      const closed = await w.__settled('grok.events.onContextMenuClosed', () => document.body.click(), capMs);
+      if (closed === undefined)
+        await w.__poll(() => document.querySelectorAll('.d4-menu-popup').length, (n: number) => n === 0, capMs, 50);
     };
   });
 }
