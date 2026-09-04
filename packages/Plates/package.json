@@ -8,14 +8,14 @@
     "email": "oserhiienko@datagrok.ai"
   },
   "dependencies": {
-    "@datagrok-libraries/statistics": "../../libraries/statistics",
+    "@datagrok-libraries/statistics": "^1.12.12",
     "@datagrok-libraries/test": "^1.1.0",
     "@datagrok-libraries/utils": "^4.7.0",
     "@types/wu": "^2.1.42",
     "@typescript-eslint/eslint-plugin": "^5.62.0",
     "@typescript-eslint/parser": "^5.62.0",
     "cash-dom": "^8.0.0",
-    "datagrok-api": "^1.27.6",
+    "datagrok-api": "^1.27.9",
     "dayjs": "^1.11.7",
     "eslint": "^8.1.0",
     "eslint-config-google": "^0.14.0",

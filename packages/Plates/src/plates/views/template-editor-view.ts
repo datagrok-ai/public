@@ -13,7 +13,7 @@ import {PlateWidget} from '../../plate/plate-widget/plate-widget';
  */
 export function propertySchemaView(template: PlateTemplate): DG.View {
   const view = DG.View.create();
-  view.name = template.id === -1 ? 'New Template' : `Edit: ${template.name}`;
+  view.name = template.id === '' ? 'New Template' : `Edit: ${template.name}`;
   view.box = true; // Adds a bit of padding around the view
 
   // --- Left Panel: Template Property Editor ---
