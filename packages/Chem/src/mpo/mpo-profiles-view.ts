@@ -22,6 +22,13 @@ export class MpoProfilesView {
   private tableContainer = ui.divV([]);
   private subs: Subscription[] = [];
   private previewedId: string | null = null;
+  private descriptionObserver = new ResizeObserver((entries) => {
+    for (const entry of entries) {
+      const span = entry.target as HTMLElement;
+      span.classList.toggle('chem-mpo-description-expandable',
+        span.classList.contains('expanded') || span.scrollHeight > span.clientHeight);
+    }
+  });
 
   constructor() {
     this.view = DG.View.fromRoot(this.root);
@@ -80,6 +87,7 @@ export class MpoProfilesView {
   }
 
   private rerenderTable(): void {
+    this.descriptionObserver.disconnect();
     ui.empty(this.tableContainer);
 
     if (mpoProfileStore.items.length === 0) {
@@ -131,12 +139,11 @@ export class MpoProfilesView {
 
   private buildDescription(text: string): HTMLElement {
     const span = ui.divText(text, 'chem-mpo-description');
-    requestAnimationFrame(() => {
-      if (span.scrollHeight > span.clientHeight) {
-        span.classList.add('chem-mpo-description-expandable');
-        span.onclick = () => span.classList.toggle('expanded');
-      }
-    });
+    span.onclick = () => {
+      if (span.classList.contains('chem-mpo-description-expandable'))
+        span.classList.toggle('expanded');
+    };
+    this.descriptionObserver.observe(span);
     return span;
   }
 
@@ -173,6 +180,7 @@ export class MpoProfilesView {
   }
 
   private detach(): void {
+    this.descriptionObserver.disconnect();
     this.subs.forEach((sub) => sub.unsubscribe());
     this.subs = [];
   }

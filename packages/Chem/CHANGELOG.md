@@ -9,6 +9,7 @@
 * GROK-20821: MPO: Fixed the dataset list ignoring newly opened tables
 * GROK-20823: MPO: Fixed Edit opening duplicate editor tabs and leaving a stale profile preview in the context panel
 * GROK-20832: MPO: Fixed Save being disabled on a freshly cloned profile — the copy could not be kept
+* GROK-20831: MPO: Fixed truncated profile descriptions not expanding on click after saving a profile
 
 ## 1.17.14 (2026-08-13)
 
