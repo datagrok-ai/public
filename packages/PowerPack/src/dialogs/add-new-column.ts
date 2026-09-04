@@ -1609,10 +1609,23 @@ export class AddNewColumnDialog {
         const type = this.widget ? this.call.getParamValue('type') : this.getSelectedType()[0];
         const treatAsString = this.widget ? this.call.getParamValue('treatAsString') : this.getSelectedType()[1];
         const expression = this.codeMirror!.state.doc.toString();
-        await colToUpdate.applyFormula(treatAsString ? expression : expression.trim(), type, treatAsString);
-        if (name !== colToUpdate.name)
-          colToUpdate.name = this.sourceDf?.columns.getUnusedName(name) ?? name;
-        grok.shell.o = colToUpdate;
+        const oldName = colToUpdate.name;
+        const formula = treatAsString ? expression : expression.trim();
+        const editFunc = DG.Func.find({name: 'EditColumnFormula'})[0];
+        if (editFunc)
+          await editFunc
+            .prepare({table: this.sourceDf, name: oldName, expression: formula, type, treatAsString})
+            .call(false, undefined, {processed: false});
+        else
+          await colToUpdate.applyFormula(formula, type, treatAsString);
+        let finalName = oldName;
+        if (name !== oldName) {
+          finalName = this.sourceDf!.columns.getUnusedName(name);
+          await DG.Func.byName('RenameColumn')
+            .prepare({table: this.sourceDf, oldColName: oldName, newColName: finalName})
+            .call(false, undefined, {processed: false});
+        }
+        grok.shell.o = this.sourceDf!.col(finalName);
       } else
         grok.shell.error(`Column ${this.call!.getParamValue('name')} is missing in the table`);
     } else {
