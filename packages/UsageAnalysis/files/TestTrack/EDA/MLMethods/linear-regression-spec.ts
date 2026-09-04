@@ -71,8 +71,15 @@ test('Linear Regression: Train on cars.csv', async ({page}) => {
       Array.from(grok.shell.views).filter(v => v.type === 'PredictiveModel').forEach(v => v.close());
       // Train directly via eda:trainLinearRegression
       const df = grok.shell.tv.dataFrame;
+      const numCols: string[] = [];
+      for (let i = 0; i < df.columns.length; i++) {
+        const c = df.columns.byIndex(i);
+        if (c.type !== 'string') numCols.push(c.name);
+      }
+      const numDf = df.clone(null, numCols);
       const result = await grok.functions.call('eda:trainLinearRegression', {
-        df: df, predictColumn: df.col('price')
+        df: numDf, predictColumn: numDf.col('price'),
+        rate: 0.1, iterations: 1000, alpha: 0, lambda: 0
       });
       return {success: result != null};
     });

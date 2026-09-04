@@ -19,8 +19,15 @@ test('ML Methods - Linear Regression, PLS, Softmax, XGBoost', async ({page}) => 
       const df = await grok.dapi.files.readCsv('System:DemoFiles/cars.csv');
       grok.shell.addTableView(df);
       await new Promise(r => setTimeout(r, 1000));
+      const numCols: string[] = [];
+      for (let i = 0; i < df.columns.length; i++) {
+        const c = df.columns.byIndex(i);
+        if (c.type !== 'string') numCols.push(c.name);
+      }
+      const numDf = df.clone(null, numCols);
       const result = await grok.functions.call('eda:trainLinearRegression', {
-        df: df, predictColumn: df.col('price')
+        df: numDf, predictColumn: numDf.col('price'),
+        rate: 0.1, iterations: 1000, alpha: 0, lambda: 0
       });
       return { success: result != null };
     });
@@ -79,7 +86,8 @@ test('ML Methods - Linear Regression, PLS, Softmax, XGBoost', async ({page}) => 
       await new Promise(r => setTimeout(r, 1000));
       const subDf = df.clone(null, ['Sepal.Length', 'Sepal.Width', 'Petal.Length', 'Petal.Width', 'Species']);
       const result = await grok.functions.call('eda:trainXGBooster', {
-        df: subDf, predictColumn: subDf.col('Species')
+        df: subDf, predictColumn: subDf.col('Species'),
+        iterations: 20, eta: 0.3, maxDepth: 6, lambda: 1, alpha: 0
       });
       return { success: result != null };
     });
@@ -100,7 +108,8 @@ test('ML Methods - Linear Regression, PLS, Softmax, XGBoost', async ({page}) => 
       }
       const numDf = df.clone(null, numCols);
       const result = await grok.functions.call('eda:trainXGBooster', {
-        df: numDf, predictColumn: numDf.col('price')
+        df: numDf, predictColumn: numDf.col('price'),
+        iterations: 20, eta: 0.3, maxDepth: 6, lambda: 1, alpha: 0
       });
       return { success: result != null };
     });
