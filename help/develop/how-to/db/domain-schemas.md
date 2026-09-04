@@ -104,9 +104,11 @@ Every table automatically gets the system columns `id` (UUID, also the row's ent
 ### Column options
 
 Column `type` is one of `string`, `int`, `float`, `bool`, `datetime`, `string_list`,
-`ref` (foreign key to another table in the same manifest), `user` or `group`
-(foreign keys to platform users/groups, rendered with the matching pickers), or
-`file` (a user-uploaded file in platform file storage).
+`ref` (a [reference](#references) to a row of another table — in this manifest, a Core
+table, or another plugin's schema), `file` (a user-uploaded file in platform file storage),
+or `json` (an opaque object; filters and aggregates refuse it). `user` and `group` are
+still accepted as aliases of `ref: "Core.users"` and
+`ref: "Core.groups"`.
 
 A `file` column stores a `file://<connection>/<path>` string. Row dialogs render a
 file input: picking a local file uploads it to the shared `System:DomainFiles`
@@ -123,17 +125,59 @@ the row and column security of the column that carries it.
 |----------------|---------------------------------------------------------------------------------|
 | `required`     | Rejects null values                                                             |
 | `unique`       | Unique among live (not soft-deleted) rows                                       |
-| `ref`          | Target table name (for `type: "ref"`); cross-plugin references are not allowed  |
+| `ref`          | Target table (for `type: "ref"`): a table of this manifest, or `<Schema>.<table>` for any registered table (`Core.queries`, `grit.issue`) |
 | `onDelete`     | Referential action on delete: `cascade`, `restrict`, or `setnull`               |
 | `min`, `max`   | Numeric range validation                                                        |
 | `choices`      | Controlled dictionary of allowed values (renders as a combo box)                |
 | `default`      | Default value for new rows and dialog inputs                                    |
+| `autoNumber`   | `true` or `{"scope": "<ref column>", "start": N}`: the engine numbers new rows from a counter (`int` only, see [Auto-numbering](#auto-numbering)) |
 | `isName`       | Marks the primary display-name column (one per table, `string` only); its value titles cards, tooltips, and entity views. Without it, a string column literally named `name` is used by convention |
 | `semType`, `friendlyName`, `description`, `format` | Display and semantic metadata                     |
 
 Validation runs twice with the same code: client-side in dialogs (instant feedback) and
 server-side on every write (authoritative). Integrity constraints (`unique`, foreign keys,
 `required`) are additionally enforced by the database.
+
+### Auto-numbering
+
+An `int` column with `autoNumber` gets its value from a server-side counter — globally per
+table (`"autoNumber": true`), or per master row when `scope` names a `ref` column of the
+same table: Grit numbers issues per project, so `GRIT-1`, `GRIT-2`, ... and `PUB-1` count
+independently. `start` (default 1) is the first number handed out.
+
+```json
+"issue": {
+  "businessKey": ["project_id", "number"],
+  "columns": {
+    "project_id": {"type": "ref", "ref": "project", "required": true},
+    "number": {"type": "int", "autoNumber": {"scope": "project_id"}}
+  }
+}
+```
+
+The rules:
+
+* A row inserted without the column (or with `null`) is numbered inside the insert; a
+  supplied value is **kept** — imports and ingestion scripts bring their own numbers — and
+  the counter catches up, so the next blank insert continues after it. Numbers are never
+  reused: a deleted row keeps its number, and a unique index over `(scope, number)`
+  enforces that.
+* `autoNumber` implies `immutable`: once a row has a number, changing it is refused. Do not
+  combine it with `required` or `unique` — the counter fills every new row, and the index is
+  implied. The scope column must be `required`; one auto-numbered column per table.
+* The typed clients reflect this: `<T>Row.number` is a `number`, `<T>Insert.number` is
+  optional. Batch `upsert` payloads must carry the column (the engine cannot know which rows
+  will match); batch `insert` may omit it. A batch payload that names the column must give
+  every row a value — rows without one are refused per row.
+* Adding a new auto-numbered column is an ordinary additive change. Turning auto-numbering
+  on or off for an *existing* column (or changing its scope) is a structural change: a
+  plugin publish needs a migration script next to `schema.json` (the deploy is refused and
+  names the required transition otherwise), and a runtime schema change asks for
+  confirmation. Turning it on seeds the counters from the existing maximum per scope.
+  Existing duplicates (deleted rows keep their numbers) are checked before anything runs by
+  a runtime apply and a debug publish, which refuse; a release publish runs your migration
+  script as written, so deduplicate the column in the script or beforehand — otherwise the
+  unique index creation fails.
 
 ### Property schemas and column security
 
@@ -161,6 +205,44 @@ see `cas_number` and `hazard_class`, while procurement sees `unit_cost` — on t
 Hidden columns never leave the server: they are absent from query results, exports, and
 filters. Relational columns belong to the table's built-in "core" schema, which is granted to
 all users on deployment.
+
+### References
+
+A `ref` column links each row to one row of a target table. The target is a table of the
+same manifest by name, or any registered table in the qualified `<Schema>.<table>` form: a
+Core table (`Core.users`, `Core.groups`, `Core.queries`, `Core.connections`, `Core.scripts`,
+`Core.spaces`, ...) or a table of another plugin's schema (`grit.issue`). Every reference behaves the same
+way — filters and facets travel it, `expand` returns the target's columns, row dialogs pick
+from the target's catalog, and grids show the target's display name:
+
+```json
+"source_query": {"type": "ref", "ref": "Core.queries"},
+"issue":        {"type": "ref", "ref": "grit.issue"}
+```
+
+How strongly the reference is enforced follows from the target — it is never declared:
+
+* A target in the **same schema**, or `Core.users` / `Core.groups`, is a **hard** reference:
+  a physical foreign key, so a referenced row cannot be hard-deleted while rows point at it.
+* Any **other** target is a **soft** reference: an indexed id column with no foreign key, so
+  the platform's own lifecycle of the target (garbage collection, package uninstall, core
+  migrations) is never blocked by your rows. Such a reference may **dangle** after its target
+  is hard-deleted: the row keeps the id, grids show that id instead of a name, and filters
+  through the reference match no rows. Nothing sweeps dangling references. `onDelete` is not
+  available on a soft reference.
+
+A cross-plugin reference needs its target registered first — deploying the referrer before
+the target plugin is refused. While another schema references one of your tables, dropping
+that table or purging your schema is refused, naming the referrer.
+
+`type: "user"` and `type: "group"` remain accepted as aliases of `ref: "Core.users"` and
+`ref: "Core.groups"` — both spellings produce the same column, with the `User` / `Group`
+semantic type that drives the platform's user renderer and picker.
+
+`grok api` resolves a qualified reference at build time — Core tables from the declaration
+shipped with the CLI, another plugin's tables from its `databases/<schema>/schema.json` in
+`node_modules` (so that plugin must be a dependency) — and types the `<Table>Expand` entry
+exactly like a same-schema reference.
 
 ### Many-to-many relations
 

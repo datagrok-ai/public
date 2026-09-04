@@ -2,6 +2,11 @@
 
 ## 1.10.3 (WIP)
 
+GROK-20298: `dapi/domains.ts` — `grit.issue.number` is auto-numbered since Grit 2.1.0, so its row property is expected nullable (the server fills it)
+GROK-20298: New `dapi/domain-cross-schema-refs.ts` pins the soft cross-schema ref through PlatesFixture's `plate.source_query` (`ref: Core.queries`): an insert with a visible query id is accepted and an unknown id is refused with the per-row `fk` error (409), `source_query.friendlyName` filters and expands through the ref, a categories facet on the ref column carries the query's name, and deleting the query leaves the row readable with the dangling id while expand and filter find nothing.
+GROK-20799: New `dapi/entity-properties.ts` pins the `grok.meta` discovery surface — catalog order and labels, the filterable subset, `refType`/`relationKind`, the domain-table branch, the uniform null miss, `coreLocationOf`, no secret in any catalog, the drift probe (every filterable User property filters through the Core query route), the no-oracle refusal of a secret column, the session→user hop agreeing with dinq, and the structured 403 on a Core write.
+GROK-20799: `dapi/domain-lifecycle.ts` pins the server-composed `travelableRelations` and `securingTable` of `DomainTableClient.capabilities()` (declared relation travelable for admin and not for an ungranted user; a master-mode junction secured by its delegate target)
+
 GROK-20753: `functions/param-eval.ts` adds the W4 pins — `Functions: ParamValidators` (client-registered sync validators run via `FuncCall.evalParamValidators` against the call's current value: passing results omitted, `false` → the "didn't pass the <friendlyName> check" message with `isError: true`, a string result becomes the message, declaration-order results, unknown-name and async-registered rejections with the sync-required message) and a `ScriptSync` comparison-expression pin over a variables map.
 
 GROK-20753: New `utils/string-utils.ts` pins `DG.StringUtils.levenshteinDistance`/`jaroWinklerDistance` (pure-function values).

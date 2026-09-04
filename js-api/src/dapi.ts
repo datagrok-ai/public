@@ -1588,12 +1588,12 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
     return domainCall(api.grok_Dapi_Domains_IsWatching(this.dart, this.schema, this.table, id ?? null));
   }
 
-  /** Effective {@link DomainTableCapabilities} of the CURRENT user on this table:
-   * server-truth permission probes on the final securing entity plus the writable-column
-   * mirror of column security. Cached per registry generation + user; grant changes made
-   * through this client drop the cache automatically, out-of-band changes require
-   * {@link DomainsDataSource.invalidateUiCaches}. Rejects with a
-   * {@link DomainValidationError} for unknown tables. */
+  /** Effective {@link DomainTableCapabilities} of the CURRENT user on this table,
+   * composed by the server from the predicates its reads and writes apply
+   * (`GET /domains/{schema}/{table}/capabilities`). Cached per registry generation +
+   * user; grant changes made through this client drop the cache automatically,
+   * out-of-band changes require {@link DomainsDataSource.invalidateUiCaches}. Rejects
+   * with a {@link DomainValidationError} for unknown tables. */
   capabilities(): Promise<DomainTableCapabilities> {
     return domainCall(api.grok_Domains_TableCapabilities(this.schema, this.table));
   }

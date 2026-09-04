@@ -140,6 +140,19 @@ export enum TYPE {
   NOTEBOOK = 'Notebook'
 }
 
+/** How a property relates to its owner in the database ({@link Property.relationKind}).
+ * @enum {RELATION_KIND} */
+export enum RELATION_KIND {
+  FIELD = 'Field',
+  BELONGS_TO = 'BelongsTo',
+  USES = 'Uses',
+  OWNS = 'Owns',
+  USED_BY = 'UsedBy',
+  USES_MANY = 'UsesMany',
+  CALCULATED_FIELD = 'CalculatedField',
+  INHERITS = 'Inherits',
+}
+
 export enum GRID_COLUMN_TAGS {
 
 }

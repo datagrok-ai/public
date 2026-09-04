@@ -212,8 +212,19 @@ corresponding access.
   one transaction — either everything applies or nothing does. While you have unsaved
   edits, the view asks before refreshing or discarding them.
 
+A column can reference rows of another table — of the same domain, of another plugin's
+domain, or platform entities such as users, groups, queries, connections, or spaces. Such
+cells work alike everywhere: the dialog and the grid open a picker over the referenced
+table (you see only the rows you have access to), and grids show the referenced row's name.
+If the referenced entity was deleted, the cell shows its id instead.
+
 If someone else changed a row while you were editing it, Datagrok shows a conflict dialog:
 reload their version or overwrite it.
+
+Some tables number their rows automatically — an issue tracker's per-project issue numbers,
+for example. Leave the number blank when creating a row and it appears once you save, as the
+next number in sequence; a number you type in is kept. After that the number cannot be
+changed, and the edit dialog no longer offers it.
 
 To change several rows at once, select them and use the bulk **Edit**, **Delete**, or
 **Share** actions — each applies as a single all-or-nothing operation.

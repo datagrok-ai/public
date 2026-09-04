@@ -22,6 +22,7 @@
       "columns": {
         "barcode": {"type": "string", "required": true, "unique": true},
         "plate_type_id": {"type": "ref", "ref": "plate_type", "onDelete": "restrict"},
+        "source_query": {"type": "ref", "ref": "Core.queries", "friendlyName": "Source query"},
         "row_count": {"type": "int", "min": 1},
         "col_count": {"type": "int", "min": 1}
       },

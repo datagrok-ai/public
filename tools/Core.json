@@ -1,0 +1,1007 @@
+{
+  "format": 1,
+  "schema": "Core",
+  "version": "4.d4b64f5b388b",
+  "hash": "d4b64f5b388ba1101a2d4371b7cb18574269418e4b60e0ad9a28980bab5e42a1",
+  "tables": {
+    "connections": {
+      "securityMode": "row",
+      "defaultRowVisibility": "none",
+      "audit": false,
+      "readOnly": true,
+      "entityBacked": true,
+      "systemColumns": [
+        "id",
+        "created_on",
+        "updated_on",
+        "author_id"
+      ],
+      "nameColumn": "friendlyName",
+      "columns": [
+        {
+          "name": "friendlyName",
+          "type": "string",
+          "dbName": "friendly_name",
+          "friendlyName": "Name"
+        },
+        {
+          "name": "dataSource",
+          "type": "string",
+          "dbName": "data_source",
+          "description": "@Uses(field: \"password_key_id\") KeyPair passwordKey;"
+        },
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "author",
+          "type": "ref",
+          "dbName": "author_id",
+          "ref": "users"
+        },
+        {
+          "name": "createdOn",
+          "type": "datetime",
+          "dbName": "created_on"
+        },
+        {
+          "name": "updatedOn",
+          "type": "datetime",
+          "dbName": "updated_on"
+        }
+      ]
+    },
+    "dashboards": {
+      "pgTable": "projects",
+      "securityMode": "row",
+      "defaultRowVisibility": "none",
+      "audit": false,
+      "readOnly": true,
+      "entityBacked": true,
+      "systemColumns": [
+        "id",
+        "created_on",
+        "updated_on",
+        "author_id"
+      ],
+      "nameColumn": "friendlyName",
+      "filters": [
+        {
+          "column": "author"
+        },
+        {
+          "column": "createdOn"
+        },
+        {
+          "column": "updatedOn"
+        }
+      ],
+      "columns": [
+        {
+          "name": "friendlyName",
+          "type": "string",
+          "dbName": "friendly_name",
+          "friendlyName": "Name"
+        },
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "author",
+          "type": "ref",
+          "dbName": "author_id",
+          "ref": "users"
+        },
+        {
+          "name": "createdOn",
+          "type": "datetime",
+          "dbName": "created_on"
+        },
+        {
+          "name": "updatedOn",
+          "type": "datetime",
+          "dbName": "updated_on"
+        },
+        {
+          "name": "isDashboard",
+          "type": "bool",
+          "dbName": "is_dashboard"
+        },
+        {
+          "name": "isRoot",
+          "type": "bool",
+          "dbName": "is_root"
+        },
+        {
+          "name": "isEntity",
+          "type": "bool",
+          "dbName": "is_entity"
+        },
+        {
+          "name": "isPackage",
+          "type": "bool",
+          "dbName": "is_package"
+        }
+      ]
+    },
+    "docker_containers": {
+      "securityMode": "row",
+      "defaultRowVisibility": "none",
+      "audit": false,
+      "readOnly": true,
+      "entityBacked": true,
+      "systemColumns": [
+        "id",
+        "created_on",
+        "updated_on",
+        "author_id"
+      ],
+      "nameColumn": "friendlyName",
+      "filters": [
+        {
+          "column": "status"
+        },
+        {
+          "column": "author"
+        },
+        {
+          "column": "lastActive"
+        }
+      ],
+      "columns": [
+        {
+          "name": "friendlyName",
+          "type": "string",
+          "dbName": "friendly_name",
+          "friendlyName": "Name"
+        },
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "status",
+          "type": "string"
+        },
+        {
+          "name": "dockerImage",
+          "type": "string",
+          "dbName": "docker_image"
+        },
+        {
+          "name": "serviceName",
+          "type": "string",
+          "dbName": "service_name"
+        },
+        {
+          "name": "desiredInstances",
+          "type": "int",
+          "dbName": "desired_instances"
+        },
+        {
+          "name": "address",
+          "type": "string"
+        },
+        {
+          "name": "port",
+          "type": "int"
+        },
+        {
+          "name": "lastActive",
+          "type": "datetime",
+          "dbName": "last_active"
+        },
+        {
+          "name": "author",
+          "type": "ref",
+          "dbName": "author_id",
+          "ref": "users"
+        },
+        {
+          "name": "createdOn",
+          "type": "datetime",
+          "dbName": "created_on"
+        },
+        {
+          "name": "updatedOn",
+          "type": "datetime",
+          "dbName": "updated_on"
+        }
+      ]
+    },
+    "docker_funcs": {
+      "securityMode": "row",
+      "defaultRowVisibility": "none",
+      "audit": false,
+      "readOnly": true,
+      "entityBacked": true,
+      "systemColumns": [
+        "id",
+        "created_on",
+        "updated_on",
+        "author_id"
+      ],
+      "nameColumn": "friendlyName",
+      "columns": [
+        {
+          "name": "friendlyName",
+          "type": "string",
+          "dbName": "friendly_name",
+          "friendlyName": "Name"
+        },
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "container",
+          "type": "ref",
+          "dbName": "container_id",
+          "ref": "docker_containers"
+        },
+        {
+          "name": "author",
+          "type": "ref",
+          "dbName": "author_id",
+          "ref": "users"
+        },
+        {
+          "name": "createdOn",
+          "type": "datetime",
+          "dbName": "created_on"
+        },
+        {
+          "name": "updatedOn",
+          "type": "datetime",
+          "dbName": "updated_on"
+        }
+      ]
+    },
+    "func_calls": {
+      "securityMode": "master",
+      "defaultRowVisibility": "none",
+      "delegate": "func_id",
+      "audit": false,
+      "readOnly": true,
+      "entityBacked": true,
+      "systemColumns": [
+        "id"
+      ],
+      "nameColumn": "friendlyName",
+      "filters": [
+        {
+          "column": "func.friendlyName"
+        },
+        {
+          "column": "status"
+        },
+        {
+          "column": "started"
+        }
+      ],
+      "columns": [
+        {
+          "name": "friendlyName",
+          "type": "string",
+          "dbName": "friendly_name",
+          "friendlyName": "Name"
+        },
+        {
+          "name": "func",
+          "type": "ref",
+          "dbName": "func_id",
+          "ref": "funcs"
+        },
+        {
+          "name": "status",
+          "type": "string"
+        },
+        {
+          "name": "started",
+          "type": "datetime"
+        },
+        {
+          "name": "finished",
+          "type": "datetime",
+          "dbName": "ended"
+        },
+        {
+          "name": "errorMessage",
+          "type": "string",
+          "dbName": "error_message"
+        },
+        {
+          "name": "source",
+          "type": "string"
+        },
+        {
+          "name": "session",
+          "type": "ref",
+          "dbName": "session_id",
+          "ref": "users_sessions"
+        }
+      ]
+    },
+    "funcs": {
+      "securityMode": "row",
+      "defaultRowVisibility": "none",
+      "audit": false,
+      "readOnly": true,
+      "entityBacked": true,
+      "systemColumns": [
+        "id",
+        "created_on",
+        "updated_on",
+        "author_id"
+      ],
+      "nameColumn": "friendlyName",
+      "filters": [
+        {
+          "column": "source"
+        },
+        {
+          "column": "author"
+        },
+        {
+          "column": "createdOn"
+        }
+      ],
+      "columns": [
+        {
+          "name": "friendlyName",
+          "type": "string",
+          "dbName": "friendly_name",
+          "friendlyName": "Name"
+        },
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "source",
+          "type": "string"
+        },
+        {
+          "name": "helpUrl",
+          "type": "string",
+          "dbName": "help_url"
+        },
+        {
+          "name": "author",
+          "type": "ref",
+          "dbName": "author_id",
+          "ref": "users"
+        },
+        {
+          "name": "createdOn",
+          "type": "datetime",
+          "dbName": "created_on"
+        },
+        {
+          "name": "updatedOn",
+          "type": "datetime",
+          "dbName": "updated_on"
+        },
+        {
+          "name": "lastRunTime",
+          "type": "datetime",
+          "dbName": "last_run_time"
+        },
+        {
+          "name": "nextRunTime",
+          "type": "datetime",
+          "dbName": "next_run_time"
+        }
+      ]
+    },
+    "groups": {
+      "audit": false,
+      "readOnly": true,
+      "entityBacked": true,
+      "systemColumns": [
+        "id",
+        "created_on",
+        "updated_on",
+        "author_id"
+      ],
+      "nameColumn": "friendlyName",
+      "relations": [
+        {
+          "name": "members",
+          "via": "groups_relations",
+          "target": "groups",
+          "viaSelf": "parent",
+          "viaTarget": "child",
+          "allowCreate": false
+        },
+        {
+          "name": "memberships",
+          "via": "groups_relations",
+          "target": "groups",
+          "viaSelf": "child",
+          "viaTarget": "parent",
+          "allowCreate": false
+        }
+      ],
+      "columns": [
+        {
+          "name": "friendlyName",
+          "type": "string",
+          "dbName": "friendly_name",
+          "friendlyName": "Name"
+        },
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "author",
+          "type": "ref",
+          "dbName": "author_id",
+          "ref": "users"
+        }
+      ]
+    },
+    "groups_relations": {
+      "softDelete": false,
+      "audit": false,
+      "readOnly": true,
+      "systemColumns": [
+        "id"
+      ],
+      "columns": [
+        {
+          "name": "parent",
+          "type": "ref",
+          "dbName": "parent_id",
+          "ref": "groups"
+        },
+        {
+          "name": "child",
+          "type": "ref",
+          "dbName": "child_id",
+          "ref": "groups"
+        },
+        {
+          "name": "isAdmin",
+          "type": "bool",
+          "dbName": "is_admin"
+        }
+      ]
+    },
+    "jobs": {
+      "securityMode": "row",
+      "defaultRowVisibility": "none",
+      "audit": false,
+      "readOnly": true,
+      "entityBacked": true,
+      "systemColumns": [
+        "id",
+        "created_on",
+        "updated_on",
+        "author_id"
+      ],
+      "nameColumn": "friendlyName",
+      "columns": [
+        {
+          "name": "friendlyName",
+          "type": "string",
+          "dbName": "friendly_name",
+          "friendlyName": "Name"
+        },
+        {
+          "name": "author",
+          "type": "ref",
+          "dbName": "author_id",
+          "ref": "users"
+        },
+        {
+          "name": "createdOn",
+          "type": "datetime",
+          "dbName": "created_on"
+        },
+        {
+          "name": "updatedOn",
+          "type": "datetime",
+          "dbName": "updated_on"
+        }
+      ]
+    },
+    "models": {
+      "securityMode": "row",
+      "defaultRowVisibility": "none",
+      "audit": false,
+      "readOnly": true,
+      "entityBacked": true,
+      "systemColumns": [
+        "id",
+        "created_on",
+        "updated_on",
+        "author_id"
+      ],
+      "nameColumn": "friendlyName",
+      "columns": [
+        {
+          "name": "friendlyName",
+          "type": "string",
+          "dbName": "friendly_name",
+          "friendlyName": "Name"
+        },
+        {
+          "name": "description",
+          "type": "string",
+          "description": "Model description"
+        },
+        {
+          "name": "author",
+          "type": "ref",
+          "dbName": "author_id",
+          "ref": "users"
+        },
+        {
+          "name": "createdOn",
+          "type": "datetime",
+          "dbName": "created_on"
+        },
+        {
+          "name": "updatedOn",
+          "type": "datetime",
+          "dbName": "updated_on"
+        }
+      ]
+    },
+    "notebooks": {
+      "securityMode": "row",
+      "defaultRowVisibility": "none",
+      "audit": false,
+      "readOnly": true,
+      "entityBacked": true,
+      "systemColumns": [
+        "id",
+        "created_on",
+        "updated_on",
+        "author_id"
+      ],
+      "nameColumn": "friendlyName",
+      "columns": [
+        {
+          "name": "friendlyName",
+          "type": "string",
+          "dbName": "friendly_name",
+          "friendlyName": "Name"
+        },
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "author",
+          "type": "ref",
+          "dbName": "author_id",
+          "ref": "users"
+        },
+        {
+          "name": "createdOn",
+          "type": "datetime",
+          "dbName": "created_on"
+        },
+        {
+          "name": "updatedOn",
+          "type": "datetime",
+          "dbName": "updated_on"
+        }
+      ]
+    },
+    "packages": {
+      "pgTable": "published_packages",
+      "audit": false,
+      "readOnly": true,
+      "entityBacked": true,
+      "systemColumns": [
+        "id",
+        "created_on",
+        "updated_on",
+        "author_id"
+      ],
+      "nameColumn": "friendlyName",
+      "filters": [
+        {
+          "column": "isLocal"
+        },
+        {
+          "column": "debug"
+        },
+        {
+          "column": "publishedOn"
+        }
+      ],
+      "columns": [
+        {
+          "name": "friendlyName",
+          "type": "string",
+          "dbName": "friendly_name",
+          "friendlyName": "Name"
+        },
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "version",
+          "type": "string"
+        },
+        {
+          "name": "isLocal",
+          "type": "bool",
+          "dbName": "is_local"
+        },
+        {
+          "name": "isLatest",
+          "type": "bool",
+          "dbName": "is_latest"
+        },
+        {
+          "name": "isDisabled",
+          "type": "bool",
+          "dbName": "is_disabled"
+        },
+        {
+          "name": "debug",
+          "type": "bool"
+        },
+        {
+          "name": "packageAuthor",
+          "type": "string",
+          "dbName": "package_author"
+        },
+        {
+          "name": "publishedOn",
+          "type": "datetime",
+          "dbName": "published_on"
+        },
+        {
+          "name": "author",
+          "type": "ref",
+          "dbName": "author_id",
+          "ref": "users"
+        },
+        {
+          "name": "createdOn",
+          "type": "datetime",
+          "dbName": "created_on"
+        },
+        {
+          "name": "updatedOn",
+          "type": "datetime",
+          "dbName": "updated_on"
+        }
+      ]
+    },
+    "queries": {
+      "securityMode": "row",
+      "defaultRowVisibility": "none",
+      "audit": false,
+      "readOnly": true,
+      "entityBacked": true,
+      "systemColumns": [
+        "id",
+        "created_on",
+        "updated_on",
+        "author_id"
+      ],
+      "nameColumn": "friendlyName",
+      "filters": [
+        {
+          "column": "connection.dataSource"
+        },
+        {
+          "column": "connection.friendlyName"
+        },
+        {
+          "column": "author"
+        },
+        {
+          "column": "createdOn"
+        }
+      ],
+      "columns": [
+        {
+          "name": "friendlyName",
+          "type": "string",
+          "dbName": "friendly_name",
+          "friendlyName": "Name"
+        },
+        {
+          "name": "createdOn",
+          "type": "datetime",
+          "dbName": "created_on"
+        },
+        {
+          "name": "updatedOn",
+          "type": "datetime",
+          "dbName": "updated_on"
+        },
+        {
+          "name": "author",
+          "type": "ref",
+          "dbName": "author_id",
+          "ref": "users"
+        },
+        {
+          "name": "connection",
+          "type": "ref",
+          "dbName": "connection_id",
+          "ref": "connections"
+        }
+      ]
+    },
+    "scripts": {
+      "securityMode": "row",
+      "defaultRowVisibility": "none",
+      "audit": false,
+      "readOnly": true,
+      "entityBacked": true,
+      "systemColumns": [
+        "id",
+        "created_on",
+        "updated_on",
+        "author_id"
+      ],
+      "nameColumn": "friendlyName",
+      "columns": [
+        {
+          "name": "friendlyName",
+          "type": "string",
+          "dbName": "friendly_name",
+          "friendlyName": "Name"
+        },
+        {
+          "name": "language",
+          "type": "string"
+        },
+        {
+          "name": "author",
+          "type": "ref",
+          "dbName": "author_id",
+          "ref": "users"
+        },
+        {
+          "name": "createdOn",
+          "type": "datetime",
+          "dbName": "created_on"
+        },
+        {
+          "name": "updatedOn",
+          "type": "datetime",
+          "dbName": "updated_on"
+        }
+      ]
+    },
+    "spaces": {
+      "pgTable": "projects",
+      "securityMode": "row",
+      "defaultRowVisibility": "none",
+      "audit": false,
+      "readOnly": true,
+      "entityBacked": true,
+      "systemColumns": [
+        "id",
+        "created_on",
+        "updated_on",
+        "author_id"
+      ],
+      "nameColumn": "friendlyName",
+      "filters": [
+        {
+          "column": "author"
+        },
+        {
+          "column": "createdOn"
+        },
+        {
+          "column": "updatedOn"
+        }
+      ],
+      "columns": [
+        {
+          "name": "friendlyName",
+          "type": "string",
+          "dbName": "friendly_name",
+          "friendlyName": "Name"
+        },
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "author",
+          "type": "ref",
+          "dbName": "author_id",
+          "ref": "users"
+        },
+        {
+          "name": "createdOn",
+          "type": "datetime",
+          "dbName": "created_on"
+        },
+        {
+          "name": "updatedOn",
+          "type": "datetime",
+          "dbName": "updated_on"
+        },
+        {
+          "name": "isDashboard",
+          "type": "bool",
+          "dbName": "is_dashboard"
+        },
+        {
+          "name": "isRoot",
+          "type": "bool",
+          "dbName": "is_root"
+        },
+        {
+          "name": "isEntity",
+          "type": "bool",
+          "dbName": "is_entity"
+        },
+        {
+          "name": "isPackage",
+          "type": "bool",
+          "dbName": "is_package"
+        },
+        {
+          "name": "storage",
+          "type": "ref",
+          "dbName": "storage_connection_id",
+          "ref": "connections"
+        }
+      ]
+    },
+    "users": {
+      "audit": false,
+      "readOnly": true,
+      "entityBacked": true,
+      "systemColumns": [
+        "id",
+        "created_on",
+        "updated_on",
+        "author_id"
+      ],
+      "nameColumn": "login",
+      "filters": [
+        {
+          "column": "status"
+        },
+        {
+          "column": "createdOn"
+        },
+        {
+          "column": "login"
+        }
+      ],
+      "columns": [
+        {
+          "name": "login",
+          "type": "string"
+        },
+        {
+          "name": "firstName",
+          "type": "string",
+          "dbName": "first_name"
+        },
+        {
+          "name": "lastName",
+          "type": "string",
+          "dbName": "last_name"
+        },
+        {
+          "name": "status",
+          "type": "string"
+        },
+        {
+          "name": "createdOn",
+          "type": "datetime",
+          "dbName": "created_on",
+          "friendlyName": "Joined"
+        },
+        {
+          "name": "picture",
+          "type": "string"
+        },
+        {
+          "name": "group",
+          "type": "ref",
+          "dbName": "group_id",
+          "ref": "groups",
+          "friendlyName": "Personal group"
+        },
+        {
+          "name": "author",
+          "type": "ref",
+          "dbName": "author_id",
+          "ref": "users"
+        }
+      ]
+    },
+    "users_sessions": {
+      "softDelete": false,
+      "audit": false,
+      "readOnly": true,
+      "systemColumns": [
+        "id"
+      ],
+      "columns": [
+        {
+          "name": "user",
+          "type": "ref",
+          "dbName": "user_id",
+          "ref": "users"
+        },
+        {
+          "name": "started",
+          "type": "datetime"
+        },
+        {
+          "name": "ended",
+          "type": "datetime"
+        },
+        {
+          "name": "type",
+          "type": "string"
+        }
+      ]
+    },
+    "view_layouts": {
+      "securityMode": "row",
+      "defaultRowVisibility": "none",
+      "audit": false,
+      "readOnly": true,
+      "entityBacked": true,
+      "systemColumns": [
+        "id",
+        "created_on",
+        "updated_on",
+        "author_id"
+      ],
+      "nameColumn": "friendlyName",
+      "columns": [
+        {
+          "name": "friendlyName",
+          "type": "string",
+          "dbName": "friendly_name",
+          "friendlyName": "Name"
+        },
+        {
+          "name": "author",
+          "type": "ref",
+          "dbName": "author_id",
+          "ref": "users"
+        },
+        {
+          "name": "createdOn",
+          "type": "datetime",
+          "dbName": "created_on"
+        },
+        {
+          "name": "updatedOn",
+          "type": "datetime",
+          "dbName": "updated_on"
+        }
+      ]
+    }
+  }
+}

@@ -138,6 +138,29 @@
           "items": {"$ref": "#/definitions/identifier"},
           "description": "Property schemas contributing jsonb keys to this table."
         },
+        "constraints": {
+          "type": "object",
+          "description": "Table-level CHECK constraints keyed by constraint name. The expression may reference this table's relational columns, literals, comparison/arithmetic operators and a whitelist of keywords and immutable functions; it is normalized before it reaches the DDL.",
+          "propertyNames": {"$ref": "#/definitions/identifier"},
+          "additionalProperties": {
+            "type": "object",
+            "required": ["check"],
+            "additionalProperties": false,
+            "properties": {
+              "check": {"type": "string"}
+            }
+          }
+        },
+        "grants": {
+          "type": "object",
+          "description": "Permissions granted on the table entity at deploy time, keyed by group name (a platform group such as 'All users' or 'Developers'); each lists the permissions to grant.",
+          "minProperties": 1,
+          "additionalProperties": {
+            "type": "array",
+            "minItems": 1,
+            "items": {"enum": ["view", "edit", "delete"]}
+          }
+        },
         "relations": {
           "type": "object",
           "description": "Many-to-many relations of this table keyed by relation name: each links the table to a target table through a junction table. The name shares one namespace with the columns (it is what expand and filter paths address), so it may not collide with a column of this table. Declaration order is preserved and is the order every UI surface lays the relations out in.",
@@ -211,8 +234,8 @@
       "additionalProperties": false,
       "properties": {
         "type": {
-          "enum": ["string", "int", "float", "bool", "datetime", "string_list", "ref", "user", "group", "file"],
-          "description": "Property type; ref = FK to another table in this manifest; user/group = FK to the core users/groups tables with the matching semantic type; file = a file://<connection>/<path> string into platform file storage (semantic type File)."
+          "enum": ["string", "int", "float", "bool", "datetime", "string_list", "ref", "file", "json", "user", "group"],
+          "description": "Property type; ref = FK to another table in this manifest; user/group = aliases of ref Core.users / ref Core.groups (semantic type User / Group); file = a file://<connection>/<path> string into platform file storage (semantic type File); json = a jsonb-backed opaque object (filters, sorts, facets and aggregates refuse it)."
         },
         "required": {"type": "boolean", "default": false},
         "unique": {
@@ -220,14 +243,42 @@
           "default": false,
           "description": "Unique among live (not soft-deleted) rows."
         },
+        "immutable": {
+          "type": "boolean",
+          "default": false,
+          "description": "Write-once: the first non-null value wins; a later change is refused."
+        },
+        "autoNumber": {
+          "description": "Auto-numbering (int columns only; implies immutable): a blank value on insert is assigned from a monotonic counter, a supplied value is kept (the counter catches up). true = one counter per table; {scope} = one counter per master row of the named ref column of this table. Changing it on an existing column (on, off, or a scope change) is a physical change that needs a migration.",
+          "oneOf": [
+            {"enum": [true]},
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "scope": {
+                  "$ref": "#/definitions/identifier",
+                  "description": "A required ref column of this table; numbering restarts per referenced row."
+                },
+                "start": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "default": 1,
+                  "description": "First number assigned by a fresh counter."
+                }
+              }
+            }
+          ]
+        },
         "isName": {
           "type": "boolean",
           "default": false,
           "description": "Marks the primary display-name column (string columns only; at most one per table). Its value titles cards, tooltips, and entity views, and becomes the friendly name of promoted rows. Convention fallback: a string column literally named 'name'."
         },
         "ref": {
-          "$ref": "#/definitions/identifier",
-          "description": "Target table name (type = ref only). Cross-plugin refs are not allowed."
+          "type": "string",
+          "pattern": "^([a-z][a-z0-9_]*|[A-Za-z][A-Za-z0-9_]*\\.[a-z][a-z0-9_]*)$",
+          "description": "Target table (type = ref only): a table of this schema, or the qualified '<Schema>.<table>' form for any registered table — a Core table such as 'Core.users' or 'Core.queries', or a table of another plugin's schema. The reference is a hard foreign key only for same-schema targets and Core.users/Core.groups; every other target is a soft reference (no FK constraint) that may dangle after the target is hard-deleted."
         },
         "onDelete": {
           "enum": ["cascade", "restrict", "setnull"],
