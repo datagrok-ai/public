@@ -8,6 +8,7 @@
 * GROK-20824: MPO: Fixed the profile description picking up the title's text styling when styled text was pasted into it
 * GROK-20821: MPO: Fixed the dataset list ignoring newly opened tables
 * GROK-20823: MPO: Fixed Edit opening duplicate editor tabs and leaving a stale profile preview in the context panel
+* GROK-20832: MPO: Fixed Save being disabled on a freshly cloned profile — the copy could not be kept
 
 ## 1.17.14 (2026-08-13)
 

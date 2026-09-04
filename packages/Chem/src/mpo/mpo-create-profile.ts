@@ -391,7 +391,7 @@ export class MpoProfileCreateView {
 
   private setModified(modified: boolean): void {
     this.profileModified = modified;
-    this.saveButton!.classList.toggle('d4-disabled', !modified || !this.validateName());
+    this.saveButton!.classList.toggle('d4-disabled', (!modified && this.saved != null) || !this.validateName());
     this.resetButton!.classList.toggle('d4-disabled', !modified);
   }
 
