@@ -1,10 +1,13 @@
 /* eslint-disable max-len */
+import type {DomainCondition, DomainConditionTree} from 'datagrok-api/dg';
+
 type Nullable<T> = T | null;
 
+export type MatcherCondition = DomainCondition<any> | DomainConditionTree<any> | null;
 
 export abstract class Matcher {
   abstract match(x: any): boolean;
-  abstract toSql(variable: string): string;
+  abstract toCondition(column: string): MatcherCondition;
 }
 
 export class StringInListMatcher extends Matcher {
@@ -21,14 +24,8 @@ export class StringInListMatcher extends Matcher {
     return this.values.includes(x);
   }
 
-  toSql(variable: string): string {
-    if (this.values.length === 0)
-      return '(1 = 1)';
-
-    const escapedValues = this.values
-      .map((v) => `'${v.replace(/'/g, '\'\'')}'`)
-      .join(', ');
-    return `(${variable} IN (${escapedValues}))`;
+  toCondition(column: string): MatcherCondition {
+    return this.values.length === 0 ? null : {property: column, operator: '=', value: this.values};
   }
 }
 
@@ -175,19 +172,23 @@ export class NumericMatcher {
     return `Unknown operation "${this.op}"`;
   }
 
-  toSql(variable: string): string {
-    switch (this.op) {
+  toCondition(column: string): MatcherCondition {
+    switch ((this.op || '').trim()) {
       case NumericMatcher.RANGE:
-        return `(${variable} >= ${this.v1} AND ${variable} <= ${this.v2})`;
+        return [{property: column, operator: '>=', value: this.v1!}, 'and',
+          {property: column, operator: '<=', value: this.v2!}];
       case NumericMatcher.IN:
-        return `(${variable} IN (${this.values.join(',')}))`;
+        return {property: column, operator: '=', value: this.values};
+      case NumericMatcher.NOT_IN:
+        return {property: column, operator: '!=', value: this.values};
       case NumericMatcher.NONE:
-        return `(1 = 1)`;
+        return null;
       case NumericMatcher.IS_NULL:
+        return {property: column, operator: 'is', value: null};
       case NumericMatcher.IS_NOT_NULL:
-        return `(${variable} ${this.op})`;
+        return {property: column, operator: 'is not', value: null};
       default:
-        return `(${variable} ${this.op} ${this.v1})`;
+        return {property: column, operator: this.op as DomainCondition['operator'], value: this.v1!};
     }
   }
 }
@@ -206,8 +207,7 @@ export class StringMatcher extends Matcher {
     return x.toLowerCase().includes(this.value.toLowerCase());
   }
 
-  toSql(variable: string): string {
-    const escapedValue = this.value.replace(/'/g, '\'\'');
-    return `(${variable} ILIKE '%${escapedValue}%')`;
+  toCondition(column: string): MatcherCondition {
+    return {property: column, operator: '~*', value: this.value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')};
   }
 }

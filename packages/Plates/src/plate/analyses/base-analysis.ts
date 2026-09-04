@@ -12,6 +12,7 @@ import {
 } from '../../plates/plates-crud';
 import {AnalysisRequiredFields} from '../../plates/views/components/analysis-mapping/analysis-mapping-panel';
 import {_package} from '../../package';
+import {pltsDb} from '../../generated/db';
 import {PlateWidget} from '../plate-widget/plate-widget';
 
 export interface IAnalysisProperty {
@@ -104,7 +105,7 @@ export abstract class AnalysisBase implements IPlateAnalysis {
       }
 
       const pi = DG.TaskBarProgressIndicator.create(`Saving ${this.friendlyName} results...`);
-      let runId: number | null = null;
+      let runId: string | null = null;
 
       try {
         const {groupColumn, groups} = this._getGroups(resultsDf);
@@ -157,7 +158,7 @@ export abstract class AnalysisBase implements IPlateAnalysis {
         _package.logger.debug(errorMessage);
         if (runId) {
           try {
-            await grok.data.db.query('Plates:Plts', `DELETE FROM plts.analysis_runs WHERE id = ${runId};`);
+            await pltsDb.analysisRuns.delete(runId);
           } catch (cleanupError: any) {
             const cleanupMessage = `CRITICAL: Failed to clean up analysis run ${runId} after a save error: ${cleanupError.message}`;
             grok.shell.error(cleanupMessage);
