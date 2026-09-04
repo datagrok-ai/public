@@ -33,6 +33,7 @@ export async function plan(dapi: NodeDapi, bundle: Bundle,
   const conflicts: string[] = [];
   const idmap = opts.idmap ?? {};
   const orphans = new Set<string>();
+  const referrers = new Map<string, string[]>();
   const onTarget = new Set<string>();
   const pusherNamespace = await currentNamespace(dapi);
 
@@ -54,7 +55,12 @@ export async function plan(dapi: NodeDapi, bundle: Bundle,
 
   for (const entry of bundle.manifest.order) {
     const {type, json: source} = bundle.entities.get(entry.id)!;
-    const json = rewrite(source, idmap, orphans);
+    const mine = new Set<string>();
+    const json = rewrite(source, idmap, mine);
+    for (const orphan of mine) {
+      orphans.add(orphan);
+      referrers.set(orphan, [...(referrers.get(orphan) ?? []), nqNameOf(json)]);
+    }
     const row: Row = {name: nqNameOf(json), entityType: type, action: 'create', reason: ''};
     rows.push(row);
     planned.set(entry.id, row);
@@ -108,10 +114,18 @@ export async function plan(dapi: NodeDapi, bundle: Bundle,
     for (const nested of nestedIds(e.json))
       known.add(nested);
   }
-  for (const orphan of orphans)
-    if (!known.has(orphan))
-      rows.push({name: orphan, entityType: 'Entity', action: 'info', reason: 'orphan_ref',
-        detail: 'referenced by the bundle but not in it — left pointing at the source id'});
+  // An id the bundle points at but does not carry is only harmless if the target happens to hold
+  // it too (a platform row keeps its id everywhere). One that exists on neither side is dangling
+  // on the source, and whatever needs it will be refused there with the server's own error.
+  for (const orphan of orphans) {
+    if (known.has(orphan)) continue;
+    const by = [...new Set(referrers.get(orphan) ?? [])].join(', ');
+    rows.push(await findEntity(dapi, orphan)
+      ? {name: orphan, entityType: 'Entity', action: 'info', reason: 'orphan_ref',
+        detail: `not in the bundle, but the target has this id — referenced by ${by}`}
+      : {name: orphan, entityType: 'Entity', action: 'warn', reason: 'dependency_missing',
+        detail: `on neither the source nor the target; the save of ${by} may be refused`});
+  }
   return {rows, ops: ops.filter((o) => ['create', 'update'].includes(o.row.action)), planned, effective};
 }
 

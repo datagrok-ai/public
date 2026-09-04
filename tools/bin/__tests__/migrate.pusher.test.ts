@@ -598,6 +598,26 @@ describe('a skipped entity takes its dependants with it', () => {
     expect(rowOf(result, 'Project').action).toBe('create');
   });
 
+  // A reference the bundle does not carry is only harmless when the target holds that id itself.
+  it('tells a dangling reference apart from one the target already has', async () => {
+    const ON_TARGET = '11111111-2222-3333-4444-555555555555';
+    const DANGLING = '66666666-7777-8888-9999-000000000000';
+    const query = (id: string, name: string, connId: string): [string, BundleEntity] =>
+      [id, {type: 'DataQuery', json: {'#type': 'DataQuery', id, name, namespace: 'Admin:',
+        query: 'select 1', connection: {id: connId}}}];
+    const bundle = bundleOf([query(QUERY_ID, 'Good', ON_TARGET), query(TWIN_ID, 'Bad', DANGLING)]);
+    const {dapi} = makeDapi((_m, path) => {
+      if (path.startsWith(`/entities/${ON_TARGET}`)) return [{'#type': 'DataConnection', id: ON_TARGET, name: 'Shared'}];
+      if (path.startsWith('/entities?')) return [];
+      return notFound();
+    });
+    const {rows} = await plan(dapi, bundle, {onConflict: 'fail'});
+    expect(rows.find((r) => r.name === ON_TARGET)).toMatchObject({action: 'info', reason: 'orphan_ref'});
+    const missing = rows.find((r) => r.name === DANGLING)!;
+    expect(missing).toMatchObject({action: 'warn', reason: 'dependency_missing'});
+    expect(missing.detail).toContain('Admin:Bad');
+  });
+
   it('fails a file whose connection was skipped', async () => {
     const file: [string, BundleEntity] = ['f1', {type: 'FileInfo', json: {
       '#type': 'FileInfo', id: 'f1', name: 'a.csv', isFile: true, connection: {id: CONN_ID},
