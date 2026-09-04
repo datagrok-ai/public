@@ -130,12 +130,54 @@ the row and column security of the column that carries it.
 | `min`, `max`   | Numeric range validation                                                        |
 | `choices`      | Controlled dictionary of allowed values (renders as a combo box)                |
 | `default`      | Default value for new rows and dialog inputs                                    |
+| `autoNumber`   | `true` or `{"scope": "<ref column>", "start": N}`: the engine numbers new rows from a counter (`int` only, see [Auto-numbering](#auto-numbering)) |
 | `isName`       | Marks the primary display-name column (one per table, `string` only); its value titles cards, tooltips, and entity views. Without it, a string column literally named `name` is used by convention |
 | `semType`, `friendlyName`, `description`, `format` | Display and semantic metadata                     |
 
 Validation runs twice with the same code: client-side in dialogs (instant feedback) and
 server-side on every write (authoritative). Integrity constraints (`unique`, foreign keys,
 `required`) are additionally enforced by the database.
+
+### Auto-numbering
+
+An `int` column with `autoNumber` gets its value from a server-side counter — globally per
+table (`"autoNumber": true`), or per master row when `scope` names a `ref` column of the
+same table: Grit numbers issues per project, so `GRIT-1`, `GRIT-2`, ... and `PUB-1` count
+independently. `start` (default 1) is the first number handed out.
+
+```json
+"issue": {
+  "businessKey": ["project_id", "number"],
+  "columns": {
+    "project_id": {"type": "ref", "ref": "project", "required": true},
+    "number": {"type": "int", "autoNumber": {"scope": "project_id"}}
+  }
+}
+```
+
+The rules:
+
+* A row inserted without the column (or with `null`) is numbered inside the insert; a
+  supplied value is **kept** — imports and ingestion scripts bring their own numbers — and
+  the counter catches up, so the next blank insert continues after it. Numbers are never
+  reused: a deleted row keeps its number, and a unique index over `(scope, number)`
+  enforces that.
+* `autoNumber` implies `immutable`: once a row has a number, changing it is refused. Do not
+  combine it with `required` or `unique` — the counter fills every new row, and the index is
+  implied. The scope column must be `required`; one auto-numbered column per table.
+* The typed clients reflect this: `<T>Row.number` is a `number`, `<T>Insert.number` is
+  optional. Batch `upsert` payloads must carry the column (the engine cannot know which rows
+  will match); batch `insert` may omit it. A batch payload that names the column must give
+  every row a value — rows without one are refused per row.
+* Adding a new auto-numbered column is an ordinary additive change. Turning auto-numbering
+  on or off for an *existing* column (or changing its scope) is a structural change: a
+  plugin publish needs a migration script next to `schema.json` (the deploy is refused and
+  names the required transition otherwise), and a runtime schema change asks for
+  confirmation. Turning it on seeds the counters from the existing maximum per scope.
+  Existing duplicates (deleted rows keep their numbers) are checked before anything runs by
+  a runtime apply and a debug publish, which refuse; a release publish runs your migration
+  script as written, so deduplicate the column in the script or beforehand — otherwise the
+  unique index creation fails.
 
 ### Property schemas and column security
 

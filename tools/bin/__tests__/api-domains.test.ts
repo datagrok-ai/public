@@ -389,6 +389,29 @@ describe('generateDomainClients', () => {
     expect(code).not.toContain('Core.');
   });
 
+  it('autoNumber: server-assigned on insert — present on Row, optional on Insert', () => {
+    const dir = makePackage();
+    mutateManifest(dir, (m) => {
+      m.tables.sample_event.columns.number = {type: 'int', autoNumber: {scope: 'sample_id', start: 1000}};
+      m.tables.sample.columns.seq = {type: 'int', autoNumber: true};
+    });
+    expect(generateDomainClients(dir)).toBe(true);
+    const code = fs.readFileSync(dbPath(dir), 'utf8');
+    expect(code).toMatch(/interface SampleEventRow \{[^}]*  number: number;/);
+    expect(code).toMatch(/interface SampleEventInsert \{[^}]*  number\?: number;/);
+    expect(code).toMatch(/interface SampleRow \{[^}]*  seq: number;/);
+    expect(code).toMatch(/interface SampleInsert \{[^}]*  seq\?: number;/);
+  });
+
+  it('autoNumber: the JSON Schema rejects false, unknown keys and start below 1', () => {
+    for (const bad of [false, {step: 1}, {start: 0}]) {
+      const dir = makePackage();
+      mutateManifest(dir, (m) => m.tables.sample.columns.count.autoNumber = bad);
+      expect(runCapturingLog(dir).result).toBe(false);
+      expect(fs.existsSync(dbPath(dir))).toBe(false);
+    }
+  });
+
   it('qualified refs: another plugin\'s table resolves from its installed manifest', () => {
     const dir = makePackage();
     const depDir = path.join(dir, 'node_modules', '@datagrok', 'other-plugin', 'databases', 'other');

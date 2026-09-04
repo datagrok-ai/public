@@ -305,6 +305,7 @@ interface DomainGenColumn {
   tsType: string;       // Row-side type (choices alias / Dayjs applied)
   insertType: string;   // Insert-side type (datetime accepts `Dayjs | string`)
   required: boolean;
+  autoNumber?: boolean; // counter-filled on insert: always present on Row, optional on Insert
   ref?: string;         // target table for 'ref' columns: in-manifest name, or qualified '<Schema>.<table>'
 }
 
@@ -447,7 +448,7 @@ function generateDomainSchemaCode(manifest: any, manifestPath: string, emittedTy
       columns.push({
         name: name, rawType: column.type, tsType: tsType,
         insertType: column.type === 'datetime' ? 'Dayjs | string' : tsType,
-        required: column.required === true, ref: ref,
+        required: column.required === true, autoNumber: column.autoNumber != null, ref: ref,
       });
       return true;
     };
@@ -524,7 +525,7 @@ function generateDomainSchemaCode(manifest: any, manifestPath: string, emittedTy
     for (const [name, tsType] of domainSystemColumns)
       rowLines.push(`  ${name}: ${tsType};`);
     for (const c of columns)
-      rowLines.push(`  ${c.name}${c.required ? '' : '?'}: ${c.tsType};`);
+      rowLines.push(`  ${c.name}${c.required || c.autoNumber ? '' : '?'}: ${c.tsType};`);
     rowLines.push('}');
     decls.push(rowLines.join(sep));
 

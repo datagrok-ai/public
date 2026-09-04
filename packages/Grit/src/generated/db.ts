@@ -130,7 +130,7 @@ export interface IssueRow {
 /** Insert payload for `grit.issue`. */
 export interface IssueInsert {
   project_id: string;
-  number: number;
+  number?: number;
   title: string;
   description?: string;
   status_id?: string;

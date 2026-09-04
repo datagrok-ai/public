@@ -248,6 +248,28 @@
           "default": false,
           "description": "Write-once: the first non-null value wins; a later change is refused."
         },
+        "autoNumber": {
+          "description": "Auto-numbering (int columns only; implies immutable): a blank value on insert is assigned from a monotonic counter, a supplied value is kept (the counter catches up). true = one counter per table; {scope} = one counter per master row of the named ref column of this table. Changing it on an existing column (on, off, or a scope change) is a physical change that needs a migration.",
+          "oneOf": [
+            {"enum": [true]},
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "scope": {
+                  "$ref": "#/definitions/identifier",
+                  "description": "A required ref column of this table; numbering restarts per referenced row."
+                },
+                "start": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "default": 1,
+                  "description": "First number assigned by a fresh counter."
+                }
+              }
+            }
+          ]
+        },
         "isName": {
           "type": "boolean",
           "default": false,

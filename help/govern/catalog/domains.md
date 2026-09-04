@@ -221,6 +221,11 @@ If the referenced entity was deleted, the cell shows its id instead.
 If someone else changed a row while you were editing it, Datagrok shows a conflict dialog:
 reload their version or overwrite it.
 
+Some tables number their rows automatically — an issue tracker's per-project issue numbers,
+for example. Leave the number blank when creating a row and it appears once you save, as the
+next number in sequence; a number you type in is kept. After that the number cannot be
+changed, and the edit dialog no longer offers it.
+
 To change several rows at once, select them and use the bulk **Edit**, **Delete**, or
 **Share** actions — each applies as a single all-or-nothing operation.
 
