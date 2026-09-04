@@ -8,6 +8,10 @@ import * as DG from 'datagrok-api/dg';
 
 
 export namespace funcs {
+  export async function autostart(): Promise<void> {
+    return await grok.functions.call('Plates:Autostart', {});
+  }
+
   /**
   Assasy plates with concentration, layout and readout data
   */

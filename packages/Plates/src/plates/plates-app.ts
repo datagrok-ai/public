@@ -34,9 +34,7 @@ export async function initPlatesAppTree(treeNode: DG.TreeViewGroup): Promise<voi
   await crud.initPlates();
 
   try {
-    console.log('Plates: Initializing AnalysisManager...');
     await AnalysisManager.instance.init();
-    console.log('Plates: AnalysisManager initialized successfully.');
   } catch (e) {
     console.error('Plates: Failed to initialize AnalysisManager:', e);
   }

@@ -3,7 +3,7 @@
   "name": "plts",
   "version": "1.0.0",
   "tables": {
-    "plate_types": {
+    "plate_type": {
       "securityMode": "table",
       "businessKey": ["name"],
       "description": "Plate formats: geometry and physical constraints",
@@ -14,7 +14,7 @@
         "max_volume": {"type": "float"}
       }
     },
-    "properties": {
+    "property": {
       "securityMode": "table",
       "businessKey": ["name", "scope"],
       "description": "Global registry of plate- and well-level properties",
@@ -40,7 +40,7 @@
         "options": {"type": "string"}
       }
     },
-    "templates": {
+    "template": {
       "securityMode": "row",
       "promotion": "lazy",
       "defaultRowVisibility": "table",
@@ -50,81 +50,81 @@
         "description": {"type": "string"}
       }
     },
-    "template_properties": {
+    "template_property": {
       "securityMode": "master",
       "delegate": "template_id",
       "businessKey": ["template_id", "property_id"],
       "description": "Template properties junction; the plate/well split comes from property.scope",
       "columns": {
-        "template_id": {"type": "ref", "ref": "templates", "onDelete": "cascade", "required": true},
-        "property_id": {"type": "ref", "ref": "properties", "onDelete": "cascade", "required": true},
+        "template_id": {"type": "ref", "ref": "template", "onDelete": "cascade", "required": true},
+        "property_id": {"type": "ref", "ref": "property", "onDelete": "cascade", "required": true},
         "is_required": {"type": "bool"},
         "default_value": {"type": "string"}
       }
     },
-    "plates": {
+    "plate": {
       "securityMode": "row",
       "promotion": "lazy",
       "defaultRowVisibility": "table",
       "description": "Plate instances",
       "columns": {
-        "plate_type_id": {"type": "ref", "ref": "plate_types", "onDelete": "restrict", "required": true},
+        "plate_type_id": {"type": "ref", "ref": "plate_type", "onDelete": "restrict", "required": true},
         "barcode": {"type": "string"},
         "description": {"type": "string"},
-        "template_id": {"type": "ref", "ref": "templates", "onDelete": "setnull"}
+        "template_id": {"type": "ref", "ref": "template", "onDelete": "setnull"}
       }
     },
-    "analysis_runs": {
+    "analysis_run": {
       "securityMode": "master",
       "delegate": "plate_id",
       "description": "Analysis runs",
       "columns": {
-        "plate_id": {"type": "ref", "ref": "plates", "onDelete": "cascade", "required": true},
+        "plate_id": {"type": "ref", "ref": "plate", "onDelete": "cascade", "required": true},
         "analysis_type": {"type": "string", "required": true},
         "groups": {"type": "string_list"}
       }
     },
-    "plate_details": {
+    "plate_detail": {
       "securityMode": "master",
       "delegate": "plate_id",
       "audit": false,
       "description": "Plate-level property values",
       "columns": {
-        "plate_id": {"type": "ref", "ref": "plates", "onDelete": "cascade", "required": true},
-        "property_id": {"type": "ref", "ref": "properties", "onDelete": "restrict", "required": true},
+        "plate_id": {"type": "ref", "ref": "plate", "onDelete": "cascade", "required": true},
+        "property_id": {"type": "ref", "ref": "property", "onDelete": "restrict", "required": true},
         "value_datetime": {"type": "datetime"},
         "value_uuid": {"type": "string"},
         "value_num": {"type": "float"},
         "value_string": {"type": "string"},
         "value_bool": {"type": "bool"},
         "value_jsonb": {"type": "string"},
-        "analysis_run_id": {"type": "ref", "ref": "analysis_runs", "onDelete": "setnull"}
+        "analysis_run_id": {"type": "ref", "ref": "analysis_run", "onDelete": "setnull"}
       }
     },
-    "plate_well_values": {
+    "plate_well_value": {
       "securityMode": "master",
       "delegate": "plate_id",
       "audit": false,
       "description": "Well-level property values",
       "columns": {
-        "plate_id": {"type": "ref", "ref": "plates", "onDelete": "cascade", "required": true},
+        "plate_id": {"type": "ref", "ref": "plate", "onDelete": "cascade", "required": true},
         "row": {"type": "int", "required": true},
         "col": {"type": "int", "required": true},
-        "property_id": {"type": "ref", "ref": "properties", "onDelete": "restrict", "required": true},
+        "property_id": {"type": "ref", "ref": "property", "onDelete": "restrict", "required": true},
         "value_num": {"type": "float"},
         "value_string": {"type": "string"},
         "value_bool": {"type": "bool"},
-        "analysis_run_id": {"type": "ref", "ref": "analysis_runs", "onDelete": "setnull"}
+        "analysis_run_id": {"type": "ref", "ref": "analysis_run", "onDelete": "setnull"}
       }
     },
-    "analysis_run_parameters": {
+    "analysis_run_parameter": {
       "securityMode": "master",
       "delegate": "analysis_run_id",
       "businessKey": ["analysis_run_id", "property_id"],
       "description": "Analysis run input parameters",
       "columns": {
-        "analysis_run_id": {"type": "ref", "ref": "analysis_runs", "onDelete": "cascade", "required": true},
-        "property_id": {"type": "ref", "ref": "properties", "onDelete": "restrict", "required": true},
+        "analysis_run_id": {"type": "ref", "ref": "analysis_run", "onDelete": "cascade", "required": true},
+        "property_id": {"type": "ref", "ref": "property", "onDelete": "restrict", "required": true},
         "value_num": {"type": "float"},
         "value_string": {"type": "string"},
         "value_bool": {"type": "bool"},
@@ -132,15 +132,15 @@
         "value_jsonb": {"type": "string"}
       }
     },
-    "analysis_results": {
+    "analysis_result": {
       "securityMode": "master",
       "delegate": "analysis_run_id",
       "audit": false,
       "description": "Analysis output values per group combination",
       "columns": {
-        "analysis_run_id": {"type": "ref", "ref": "analysis_runs", "onDelete": "cascade", "required": true},
+        "analysis_run_id": {"type": "ref", "ref": "analysis_run", "onDelete": "cascade", "required": true},
         "group_combination": {"type": "string_list"},
-        "property_id": {"type": "ref", "ref": "properties", "onDelete": "restrict", "required": true},
+        "property_id": {"type": "ref", "ref": "property", "onDelete": "restrict", "required": true},
         "value_num": {"type": "float"},
         "value_string": {"type": "string"},
         "value_bool": {"type": "bool"},

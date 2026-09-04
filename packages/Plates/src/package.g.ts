@@ -2,6 +2,11 @@ import {PlateGridCellRenderer} from './plate/plate-cell-renderer';
 import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
 
+//meta.role: autostart
+export async function autostart() : Promise<void> {
+  await PackageFunctions.autostart();
+}
+
 //name: Assay Plates
 //description: Assasy plates with concentration, layout and readout data
 //meta.demoPath: Plates | Assay Plates

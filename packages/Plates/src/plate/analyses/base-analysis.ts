@@ -158,7 +158,7 @@ export abstract class AnalysisBase implements IPlateAnalysis {
         _package.logger.debug(errorMessage);
         if (runId) {
           try {
-            await pltsDb.analysisRunses.delete(runId);
+            await pltsDb.analysisRuns.delete(runId);
           } catch (cleanupError: any) {
             const cleanupMessage = `CRITICAL: Failed to clean up analysis run ${runId} after a save error: ${cleanupError.message}`;
             grok.shell.error(cleanupMessage);

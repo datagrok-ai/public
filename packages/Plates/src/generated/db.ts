@@ -7,12 +7,12 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import type {Dayjs} from 'dayjs';
 
-export type PropertiesType = 'int' | 'double' | 'bool' | 'datetime' | 'string';
+export type PropertyType = 'int' | 'double' | 'bool' | 'datetime' | 'string';
 
-export type PropertiesScope = 'plate' | 'well';
+export type PropertyScope = 'plate' | 'well';
 
-/** Row of `plts.plate_types`. */
-export interface PlateTypesRow {
+/** Row of `plts.plate_type`. */
+export interface PlateTypeRow {
   id: string;
   version: number;
   created_on: Dayjs;
@@ -24,32 +24,32 @@ export interface PlateTypesRow {
   max_volume?: number;
 }
 
-/** Insert payload for `plts.plate_types`. */
-export interface PlateTypesInsert {
+/** Insert payload for `plts.plate_type`. */
+export interface PlateTypeInsert {
   name: string;
   rows: number;
   cols: number;
   max_volume?: number;
 }
 
-export type PlateTypesColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'name' | 'rows' |
+export type PlateTypeColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'name' | 'rows' |
   'cols' | 'max_volume';
 
-/** Expand keys of `plts.plate_types` → fields each adds to the row (consumed by query()/builder). */
-export type PlateTypesExpand = {
-  'details:plates': {plates?: PlatesRow[]};
+/** Expand keys of `plts.plate_type` → fields each adds to the row (consumed by query()/builder). */
+export type PlateTypeExpand = {
+  'details:plate': {plate?: PlateRow[]};
 };
 
-/** Row of `plts.properties`. */
-export interface PropertiesRow {
+/** Row of `plts.property`. */
+export interface PropertyRow {
   id: string;
   version: number;
   created_on: Dayjs;
   updated_on: Dayjs;
   author_id: string;
   name: string;
-  type?: PropertiesType;
-  scope: PropertiesScope;
+  type?: PropertyType;
+  scope: PropertyScope;
   nullable?: boolean;
   semtype?: string;
   usereditable?: boolean;
@@ -68,11 +68,11 @@ export interface PropertiesRow {
   options?: string;
 }
 
-/** Insert payload for `plts.properties`. */
-export interface PropertiesInsert {
+/** Insert payload for `plts.property`. */
+export interface PropertyInsert {
   name: string;
-  type?: PropertiesType;
-  scope: PropertiesScope;
+  type?: PropertyType;
+  scope: PropertyScope;
   nullable?: boolean;
   semtype?: string;
   usereditable?: boolean;
@@ -91,21 +91,21 @@ export interface PropertiesInsert {
   options?: string;
 }
 
-export type PropertiesColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'name' | 'type' |
+export type PropertyColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'name' | 'type' |
   'scope' | 'nullable' | 'semtype' | 'usereditable' | 'units' | 'min' | 'max' | 'step' | 'showslider' |
   'showplusminus' | 'inputtype' | 'category' | 'format' | 'choices' | 'validators' | 'friendlyname' | 'options';
 
-/** Expand keys of `plts.properties` → fields each adds to the row (consumed by query()/builder). */
-export type PropertiesExpand = {
-  'details:template_properties': {template_properties?: TemplatePropertiesRow[]};
-  'details:plate_details': {plate_details?: PlateDetailsRow[]};
-  'details:plate_well_values': {plate_well_values?: PlateWellValuesRow[]};
-  'details:analysis_run_parameters': {analysis_run_parameters?: AnalysisRunParametersRow[]};
-  'details:analysis_results': {analysis_results?: AnalysisResultsRow[]};
+/** Expand keys of `plts.property` → fields each adds to the row (consumed by query()/builder). */
+export type PropertyExpand = {
+  'details:template_property': {template_property?: TemplatePropertyRow[]};
+  'details:plate_detail': {plate_detail?: PlateDetailRow[]};
+  'details:plate_well_value': {plate_well_value?: PlateWellValueRow[]};
+  'details:analysis_run_parameter': {analysis_run_parameter?: AnalysisRunParameterRow[]};
+  'details:analysis_result': {analysis_result?: AnalysisResultRow[]};
 };
 
-/** Row of `plts.templates`. */
-export interface TemplatesRow {
+/** Row of `plts.template`. */
+export interface TemplateRow {
   id: string;
   version: number;
   created_on: Dayjs;
@@ -115,22 +115,22 @@ export interface TemplatesRow {
   description?: string;
 }
 
-/** Insert payload for `plts.templates`. */
-export interface TemplatesInsert {
+/** Insert payload for `plts.template`. */
+export interface TemplateInsert {
   name: string;
   description?: string;
 }
 
-export type TemplatesColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'name' | 'description';
+export type TemplateColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'name' | 'description';
 
-/** Expand keys of `plts.templates` → fields each adds to the row (consumed by query()/builder). */
-export type TemplatesExpand = {
-  'details:template_properties': {template_properties?: TemplatePropertiesRow[]};
-  'details:plates': {plates?: PlatesRow[]};
+/** Expand keys of `plts.template` → fields each adds to the row (consumed by query()/builder). */
+export type TemplateExpand = {
+  'details:template_property': {template_property?: TemplatePropertyRow[]};
+  'details:plate': {plate?: PlateRow[]};
 };
 
-/** Row of `plts.template_properties`. */
-export interface TemplatePropertiesRow {
+/** Row of `plts.template_property`. */
+export interface TemplatePropertyRow {
   id: string;
   version: number;
   created_on: Dayjs;
@@ -142,22 +142,22 @@ export interface TemplatePropertiesRow {
   default_value?: string;
 }
 
-/** Insert payload for `plts.template_properties`. */
-export interface TemplatePropertiesInsert {
+/** Insert payload for `plts.template_property`. */
+export interface TemplatePropertyInsert {
   template_id: string;
   property_id: string;
   is_required?: boolean;
   default_value?: string;
 }
 
-export type TemplatePropertiesColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'template_id' |
+export type TemplatePropertyColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'template_id' |
   'property_id' | 'is_required' | 'default_value';
 
-/** Expand keys of `plts.template_properties` → fields each adds to the row (consumed by query()/builder). */
-export type TemplatePropertiesExpand = {
+/** Expand keys of `plts.template_property` → fields each adds to the row (consumed by query()/builder). */
+export type TemplatePropertyExpand = {
   'template_id': {'template_id.name'?: string; 'template_id.description'?: string};
-  'property_id': {'property_id.name'?: string; 'property_id.type'?: PropertiesType;
-    'property_id.scope'?: PropertiesScope; 'property_id.nullable'?: boolean; 'property_id.semtype'?: string;
+  'property_id': {'property_id.name'?: string; 'property_id.type'?: PropertyType;
+    'property_id.scope'?: PropertyScope; 'property_id.nullable'?: boolean; 'property_id.semtype'?: string;
     'property_id.usereditable'?: boolean; 'property_id.units'?: string; 'property_id.min'?: number;
     'property_id.max'?: number; 'property_id.step'?: number; 'property_id.showslider'?: number;
     'property_id.showplusminus'?: number; 'property_id.inputtype'?: string; 'property_id.category'?: string;
@@ -165,8 +165,8 @@ export type TemplatePropertiesExpand = {
     'property_id.friendlyname'?: string; 'property_id.options'?: string};
 };
 
-/** Row of `plts.plates`. */
-export interface PlatesRow {
+/** Row of `plts.plate`. */
+export interface PlateRow {
   id: string;
   version: number;
   created_on: Dayjs;
@@ -178,29 +178,29 @@ export interface PlatesRow {
   template_id?: string;
 }
 
-/** Insert payload for `plts.plates`. */
-export interface PlatesInsert {
+/** Insert payload for `plts.plate`. */
+export interface PlateInsert {
   plate_type_id: string;
   barcode?: string;
   description?: string;
   template_id?: string;
 }
 
-export type PlatesColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'plate_type_id' |
+export type PlateColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'plate_type_id' |
   'barcode' | 'description' | 'template_id';
 
-/** Expand keys of `plts.plates` → fields each adds to the row (consumed by query()/builder). */
-export type PlatesExpand = {
+/** Expand keys of `plts.plate` → fields each adds to the row (consumed by query()/builder). */
+export type PlateExpand = {
   'plate_type_id': {'plate_type_id.name'?: string; 'plate_type_id.rows'?: number; 'plate_type_id.cols'?: number;
     'plate_type_id.max_volume'?: number};
   'template_id': {'template_id.name'?: string; 'template_id.description'?: string};
-  'details:analysis_runs': {analysis_runs?: AnalysisRunsRow[]};
-  'details:plate_details': {plate_details?: PlateDetailsRow[]};
-  'details:plate_well_values': {plate_well_values?: PlateWellValuesRow[]};
+  'details:analysis_run': {analysis_run?: AnalysisRunRow[]};
+  'details:plate_detail': {plate_detail?: PlateDetailRow[]};
+  'details:plate_well_value': {plate_well_value?: PlateWellValueRow[]};
 };
 
-/** Row of `plts.analysis_runs`. */
-export interface AnalysisRunsRow {
+/** Row of `plts.analysis_run`. */
+export interface AnalysisRunRow {
   id: string;
   version: number;
   created_on: Dayjs;
@@ -211,28 +211,28 @@ export interface AnalysisRunsRow {
   groups?: string[];
 }
 
-/** Insert payload for `plts.analysis_runs`. */
-export interface AnalysisRunsInsert {
+/** Insert payload for `plts.analysis_run`. */
+export interface AnalysisRunInsert {
   plate_id: string;
   analysis_type: string;
   groups?: string[];
 }
 
-export type AnalysisRunsColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'plate_id' |
+export type AnalysisRunColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'plate_id' |
   'analysis_type' | 'groups';
 
-/** Expand keys of `plts.analysis_runs` → fields each adds to the row (consumed by query()/builder). */
-export type AnalysisRunsExpand = {
+/** Expand keys of `plts.analysis_run` → fields each adds to the row (consumed by query()/builder). */
+export type AnalysisRunExpand = {
   'plate_id': {'plate_id.plate_type_id'?: string; 'plate_id.barcode'?: string; 'plate_id.description'?: string;
     'plate_id.template_id'?: string};
-  'details:plate_details': {plate_details?: PlateDetailsRow[]};
-  'details:plate_well_values': {plate_well_values?: PlateWellValuesRow[]};
-  'details:analysis_run_parameters': {analysis_run_parameters?: AnalysisRunParametersRow[]};
-  'details:analysis_results': {analysis_results?: AnalysisResultsRow[]};
+  'details:plate_detail': {plate_detail?: PlateDetailRow[]};
+  'details:plate_well_value': {plate_well_value?: PlateWellValueRow[]};
+  'details:analysis_run_parameter': {analysis_run_parameter?: AnalysisRunParameterRow[]};
+  'details:analysis_result': {analysis_result?: AnalysisResultRow[]};
 };
 
-/** Row of `plts.plate_details`. */
-export interface PlateDetailsRow {
+/** Row of `plts.plate_detail`. */
+export interface PlateDetailRow {
   id: string;
   version: number;
   created_on: Dayjs;
@@ -249,8 +249,8 @@ export interface PlateDetailsRow {
   analysis_run_id?: string;
 }
 
-/** Insert payload for `plts.plate_details`. */
-export interface PlateDetailsInsert {
+/** Insert payload for `plts.plate_detail`. */
+export interface PlateDetailInsert {
   plate_id: string;
   property_id: string;
   value_datetime?: Dayjs | string;
@@ -262,16 +262,16 @@ export interface PlateDetailsInsert {
   analysis_run_id?: string;
 }
 
-export type PlateDetailsColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'plate_id' |
+export type PlateDetailColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'plate_id' |
   'property_id' | 'value_datetime' | 'value_uuid' | 'value_num' | 'value_string' | 'value_bool' | 'value_jsonb' |
   'analysis_run_id';
 
-/** Expand keys of `plts.plate_details` → fields each adds to the row (consumed by query()/builder). */
-export type PlateDetailsExpand = {
+/** Expand keys of `plts.plate_detail` → fields each adds to the row (consumed by query()/builder). */
+export type PlateDetailExpand = {
   'plate_id': {'plate_id.plate_type_id'?: string; 'plate_id.barcode'?: string; 'plate_id.description'?: string;
     'plate_id.template_id'?: string};
-  'property_id': {'property_id.name'?: string; 'property_id.type'?: PropertiesType;
-    'property_id.scope'?: PropertiesScope; 'property_id.nullable'?: boolean; 'property_id.semtype'?: string;
+  'property_id': {'property_id.name'?: string; 'property_id.type'?: PropertyType;
+    'property_id.scope'?: PropertyScope; 'property_id.nullable'?: boolean; 'property_id.semtype'?: string;
     'property_id.usereditable'?: boolean; 'property_id.units'?: string; 'property_id.min'?: number;
     'property_id.max'?: number; 'property_id.step'?: number; 'property_id.showslider'?: number;
     'property_id.showplusminus'?: number; 'property_id.inputtype'?: string; 'property_id.category'?: string;
@@ -281,8 +281,8 @@ export type PlateDetailsExpand = {
     'analysis_run_id.groups'?: string[]};
 };
 
-/** Row of `plts.plate_well_values`. */
-export interface PlateWellValuesRow {
+/** Row of `plts.plate_well_value`. */
+export interface PlateWellValueRow {
   id: string;
   version: number;
   created_on: Dayjs;
@@ -298,8 +298,8 @@ export interface PlateWellValuesRow {
   analysis_run_id?: string;
 }
 
-/** Insert payload for `plts.plate_well_values`. */
-export interface PlateWellValuesInsert {
+/** Insert payload for `plts.plate_well_value`. */
+export interface PlateWellValueInsert {
   plate_id: string;
   row: number;
   col: number;
@@ -310,15 +310,15 @@ export interface PlateWellValuesInsert {
   analysis_run_id?: string;
 }
 
-export type PlateWellValuesColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'plate_id' |
+export type PlateWellValueColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'plate_id' |
   'row' | 'col' | 'property_id' | 'value_num' | 'value_string' | 'value_bool' | 'analysis_run_id';
 
-/** Expand keys of `plts.plate_well_values` → fields each adds to the row (consumed by query()/builder). */
-export type PlateWellValuesExpand = {
+/** Expand keys of `plts.plate_well_value` → fields each adds to the row (consumed by query()/builder). */
+export type PlateWellValueExpand = {
   'plate_id': {'plate_id.plate_type_id'?: string; 'plate_id.barcode'?: string; 'plate_id.description'?: string;
     'plate_id.template_id'?: string};
-  'property_id': {'property_id.name'?: string; 'property_id.type'?: PropertiesType;
-    'property_id.scope'?: PropertiesScope; 'property_id.nullable'?: boolean; 'property_id.semtype'?: string;
+  'property_id': {'property_id.name'?: string; 'property_id.type'?: PropertyType;
+    'property_id.scope'?: PropertyScope; 'property_id.nullable'?: boolean; 'property_id.semtype'?: string;
     'property_id.usereditable'?: boolean; 'property_id.units'?: string; 'property_id.min'?: number;
     'property_id.max'?: number; 'property_id.step'?: number; 'property_id.showslider'?: number;
     'property_id.showplusminus'?: number; 'property_id.inputtype'?: string; 'property_id.category'?: string;
@@ -328,8 +328,8 @@ export type PlateWellValuesExpand = {
     'analysis_run_id.groups'?: string[]};
 };
 
-/** Row of `plts.analysis_run_parameters`. */
-export interface AnalysisRunParametersRow {
+/** Row of `plts.analysis_run_parameter`. */
+export interface AnalysisRunParameterRow {
   id: string;
   version: number;
   created_on: Dayjs;
@@ -344,8 +344,8 @@ export interface AnalysisRunParametersRow {
   value_jsonb?: string;
 }
 
-/** Insert payload for `plts.analysis_run_parameters`. */
-export interface AnalysisRunParametersInsert {
+/** Insert payload for `plts.analysis_run_parameter`. */
+export interface AnalysisRunParameterInsert {
   analysis_run_id: string;
   property_id: string;
   value_num?: number;
@@ -355,15 +355,15 @@ export interface AnalysisRunParametersInsert {
   value_jsonb?: string;
 }
 
-export type AnalysisRunParametersColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' |
+export type AnalysisRunParameterColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' |
   'analysis_run_id' | 'property_id' | 'value_num' | 'value_string' | 'value_bool' | 'value_datetime' | 'value_jsonb';
 
-/** Expand keys of `plts.analysis_run_parameters` → fields each adds to the row (consumed by query()/builder). */
-export type AnalysisRunParametersExpand = {
+/** Expand keys of `plts.analysis_run_parameter` → fields each adds to the row (consumed by query()/builder). */
+export type AnalysisRunParameterExpand = {
   'analysis_run_id': {'analysis_run_id.plate_id'?: string; 'analysis_run_id.analysis_type'?: string;
     'analysis_run_id.groups'?: string[]};
-  'property_id': {'property_id.name'?: string; 'property_id.type'?: PropertiesType;
-    'property_id.scope'?: PropertiesScope; 'property_id.nullable'?: boolean; 'property_id.semtype'?: string;
+  'property_id': {'property_id.name'?: string; 'property_id.type'?: PropertyType;
+    'property_id.scope'?: PropertyScope; 'property_id.nullable'?: boolean; 'property_id.semtype'?: string;
     'property_id.usereditable'?: boolean; 'property_id.units'?: string; 'property_id.min'?: number;
     'property_id.max'?: number; 'property_id.step'?: number; 'property_id.showslider'?: number;
     'property_id.showplusminus'?: number; 'property_id.inputtype'?: string; 'property_id.category'?: string;
@@ -371,8 +371,8 @@ export type AnalysisRunParametersExpand = {
     'property_id.friendlyname'?: string; 'property_id.options'?: string};
 };
 
-/** Row of `plts.analysis_results`. */
-export interface AnalysisResultsRow {
+/** Row of `plts.analysis_result`. */
+export interface AnalysisResultRow {
   id: string;
   version: number;
   created_on: Dayjs;
@@ -388,8 +388,8 @@ export interface AnalysisResultsRow {
   value_jsonb?: string;
 }
 
-/** Insert payload for `plts.analysis_results`. */
-export interface AnalysisResultsInsert {
+/** Insert payload for `plts.analysis_result`. */
+export interface AnalysisResultInsert {
   analysis_run_id: string;
   group_combination?: string[];
   property_id: string;
@@ -400,16 +400,16 @@ export interface AnalysisResultsInsert {
   value_jsonb?: string;
 }
 
-export type AnalysisResultsColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' |
-  'analysis_run_id' | 'group_combination' | 'property_id' | 'value_num' | 'value_string' | 'value_bool' |
-  'value_datetime' | 'value_jsonb';
+export type AnalysisResultColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'analysis_run_id' |
+  'group_combination' | 'property_id' | 'value_num' | 'value_string' | 'value_bool' | 'value_datetime' |
+  'value_jsonb';
 
-/** Expand keys of `plts.analysis_results` → fields each adds to the row (consumed by query()/builder). */
-export type AnalysisResultsExpand = {
+/** Expand keys of `plts.analysis_result` → fields each adds to the row (consumed by query()/builder). */
+export type AnalysisResultExpand = {
   'analysis_run_id': {'analysis_run_id.plate_id'?: string; 'analysis_run_id.analysis_type'?: string;
     'analysis_run_id.groups'?: string[]};
-  'property_id': {'property_id.name'?: string; 'property_id.type'?: PropertiesType;
-    'property_id.scope'?: PropertiesScope; 'property_id.nullable'?: boolean; 'property_id.semtype'?: string;
+  'property_id': {'property_id.name'?: string; 'property_id.type'?: PropertyType;
+    'property_id.scope'?: PropertyScope; 'property_id.nullable'?: boolean; 'property_id.semtype'?: string;
     'property_id.usereditable'?: boolean; 'property_id.units'?: string; 'property_id.min'?: number;
     'property_id.max'?: number; 'property_id.step'?: number; 'property_id.showslider'?: number;
     'property_id.showplusminus'?: number; 'property_id.inputtype'?: string; 'property_id.category'?: string;
@@ -418,68 +418,68 @@ export type AnalysisResultsExpand = {
 };
 
 export type PltsTransactionOp =
-  {op: 'insert'; table: 'plate_types'; ref?: string; values: DG.DomainTxValues<PlateTypesInsert>} |
-  {op: 'update'; table: 'plate_types'; id: string; values: DG.DomainTxValues<Partial<PlateTypesRow>>; expectedVersion?: number} |
-  {op: 'delete'; table: 'plate_types'; id: string} |
-  {op: 'insert'; table: 'properties'; ref?: string; values: DG.DomainTxValues<PropertiesInsert>} |
-  {op: 'update'; table: 'properties'; id: string; values: DG.DomainTxValues<Partial<PropertiesRow>>; expectedVersion?: number} |
-  {op: 'delete'; table: 'properties'; id: string} |
-  {op: 'insert'; table: 'templates'; ref?: string; values: DG.DomainTxValues<TemplatesInsert>} |
-  {op: 'update'; table: 'templates'; id: string; values: DG.DomainTxValues<Partial<TemplatesRow>>; expectedVersion?: number} |
-  {op: 'delete'; table: 'templates'; id: string} |
-  {op: 'insert'; table: 'template_properties'; ref?: string; values: DG.DomainTxValues<TemplatePropertiesInsert>} |
-  {op: 'update'; table: 'template_properties'; id: string; values: DG.DomainTxValues<Partial<TemplatePropertiesRow>>; expectedVersion?: number} |
-  {op: 'delete'; table: 'template_properties'; id: string} |
-  {op: 'insert'; table: 'plates'; ref?: string; values: DG.DomainTxValues<PlatesInsert>} |
-  {op: 'update'; table: 'plates'; id: string; values: DG.DomainTxValues<Partial<PlatesRow>>; expectedVersion?: number} |
-  {op: 'delete'; table: 'plates'; id: string} |
-  {op: 'insert'; table: 'analysis_runs'; ref?: string; values: DG.DomainTxValues<AnalysisRunsInsert>} |
-  {op: 'update'; table: 'analysis_runs'; id: string; values: DG.DomainTxValues<Partial<AnalysisRunsRow>>; expectedVersion?: number} |
-  {op: 'delete'; table: 'analysis_runs'; id: string} |
-  {op: 'insert'; table: 'plate_details'; ref?: string; values: DG.DomainTxValues<PlateDetailsInsert>} |
-  {op: 'update'; table: 'plate_details'; id: string; values: DG.DomainTxValues<Partial<PlateDetailsRow>>; expectedVersion?: number} |
-  {op: 'delete'; table: 'plate_details'; id: string} |
-  {op: 'insert'; table: 'plate_well_values'; ref?: string; values: DG.DomainTxValues<PlateWellValuesInsert>} |
-  {op: 'update'; table: 'plate_well_values'; id: string; values: DG.DomainTxValues<Partial<PlateWellValuesRow>>; expectedVersion?: number} |
-  {op: 'delete'; table: 'plate_well_values'; id: string} |
-  {op: 'insert'; table: 'analysis_run_parameters'; ref?: string; values: DG.DomainTxValues<AnalysisRunParametersInsert>} |
-  {op: 'update'; table: 'analysis_run_parameters'; id: string; values: DG.DomainTxValues<Partial<AnalysisRunParametersRow>>; expectedVersion?: number} |
-  {op: 'delete'; table: 'analysis_run_parameters'; id: string} |
-  {op: 'insert'; table: 'analysis_results'; ref?: string; values: DG.DomainTxValues<AnalysisResultsInsert>} |
-  {op: 'update'; table: 'analysis_results'; id: string; values: DG.DomainTxValues<Partial<AnalysisResultsRow>>; expectedVersion?: number} |
-  {op: 'delete'; table: 'analysis_results'; id: string};
+  {op: 'insert'; table: 'plate_type'; ref?: string; values: DG.DomainTxValues<PlateTypeInsert>} |
+  {op: 'update'; table: 'plate_type'; id: string; values: DG.DomainTxValues<Partial<PlateTypeRow>>; expectedVersion?: number} |
+  {op: 'delete'; table: 'plate_type'; id: string} |
+  {op: 'insert'; table: 'property'; ref?: string; values: DG.DomainTxValues<PropertyInsert>} |
+  {op: 'update'; table: 'property'; id: string; values: DG.DomainTxValues<Partial<PropertyRow>>; expectedVersion?: number} |
+  {op: 'delete'; table: 'property'; id: string} |
+  {op: 'insert'; table: 'template'; ref?: string; values: DG.DomainTxValues<TemplateInsert>} |
+  {op: 'update'; table: 'template'; id: string; values: DG.DomainTxValues<Partial<TemplateRow>>; expectedVersion?: number} |
+  {op: 'delete'; table: 'template'; id: string} |
+  {op: 'insert'; table: 'template_property'; ref?: string; values: DG.DomainTxValues<TemplatePropertyInsert>} |
+  {op: 'update'; table: 'template_property'; id: string; values: DG.DomainTxValues<Partial<TemplatePropertyRow>>; expectedVersion?: number} |
+  {op: 'delete'; table: 'template_property'; id: string} |
+  {op: 'insert'; table: 'plate'; ref?: string; values: DG.DomainTxValues<PlateInsert>} |
+  {op: 'update'; table: 'plate'; id: string; values: DG.DomainTxValues<Partial<PlateRow>>; expectedVersion?: number} |
+  {op: 'delete'; table: 'plate'; id: string} |
+  {op: 'insert'; table: 'analysis_run'; ref?: string; values: DG.DomainTxValues<AnalysisRunInsert>} |
+  {op: 'update'; table: 'analysis_run'; id: string; values: DG.DomainTxValues<Partial<AnalysisRunRow>>; expectedVersion?: number} |
+  {op: 'delete'; table: 'analysis_run'; id: string} |
+  {op: 'insert'; table: 'plate_detail'; ref?: string; values: DG.DomainTxValues<PlateDetailInsert>} |
+  {op: 'update'; table: 'plate_detail'; id: string; values: DG.DomainTxValues<Partial<PlateDetailRow>>; expectedVersion?: number} |
+  {op: 'delete'; table: 'plate_detail'; id: string} |
+  {op: 'insert'; table: 'plate_well_value'; ref?: string; values: DG.DomainTxValues<PlateWellValueInsert>} |
+  {op: 'update'; table: 'plate_well_value'; id: string; values: DG.DomainTxValues<Partial<PlateWellValueRow>>; expectedVersion?: number} |
+  {op: 'delete'; table: 'plate_well_value'; id: string} |
+  {op: 'insert'; table: 'analysis_run_parameter'; ref?: string; values: DG.DomainTxValues<AnalysisRunParameterInsert>} |
+  {op: 'update'; table: 'analysis_run_parameter'; id: string; values: DG.DomainTxValues<Partial<AnalysisRunParameterRow>>; expectedVersion?: number} |
+  {op: 'delete'; table: 'analysis_run_parameter'; id: string} |
+  {op: 'insert'; table: 'analysis_result'; ref?: string; values: DG.DomainTxValues<AnalysisResultInsert>} |
+  {op: 'update'; table: 'analysis_result'; id: string; values: DG.DomainTxValues<Partial<AnalysisResultRow>>; expectedVersion?: number} |
+  {op: 'delete'; table: 'analysis_result'; id: string};
 
 /** Typed clients for the `plts` domain schema tables (lazy — no import-time side effects). */
 export const pltsDb = {
-  get plateTypeses() {
-    return grok.dapi.domains.table<PlateTypesRow, PlateTypesInsert, PlateTypesColumn, PlateTypesExpand>('plts.plate_types');
+  get plateTypes() {
+    return grok.dapi.domains.table<PlateTypeRow, PlateTypeInsert, PlateTypeColumn, PlateTypeExpand>('plts.plate_type');
   },
-  get propertieses() {
-    return grok.dapi.domains.table<PropertiesRow, PropertiesInsert, PropertiesColumn, PropertiesExpand>('plts.properties');
+  get properties() {
+    return grok.dapi.domains.table<PropertyRow, PropertyInsert, PropertyColumn, PropertyExpand>('plts.property');
   },
-  get templateses() {
-    return grok.dapi.domains.table<TemplatesRow, TemplatesInsert, TemplatesColumn, TemplatesExpand>('plts.templates');
+  get templates() {
+    return grok.dapi.domains.table<TemplateRow, TemplateInsert, TemplateColumn, TemplateExpand>('plts.template');
   },
-  get templatePropertieses() {
-    return grok.dapi.domains.table<TemplatePropertiesRow, TemplatePropertiesInsert, TemplatePropertiesColumn, TemplatePropertiesExpand>('plts.template_properties');
+  get templateProperties() {
+    return grok.dapi.domains.table<TemplatePropertyRow, TemplatePropertyInsert, TemplatePropertyColumn, TemplatePropertyExpand>('plts.template_property');
   },
-  get plateses() {
-    return grok.dapi.domains.table<PlatesRow, PlatesInsert, PlatesColumn, PlatesExpand>('plts.plates');
+  get plates() {
+    return grok.dapi.domains.table<PlateRow, PlateInsert, PlateColumn, PlateExpand>('plts.plate');
   },
-  get analysisRunses() {
-    return grok.dapi.domains.table<AnalysisRunsRow, AnalysisRunsInsert, AnalysisRunsColumn, AnalysisRunsExpand>('plts.analysis_runs');
+  get analysisRuns() {
+    return grok.dapi.domains.table<AnalysisRunRow, AnalysisRunInsert, AnalysisRunColumn, AnalysisRunExpand>('plts.analysis_run');
   },
-  get plateDetailses() {
-    return grok.dapi.domains.table<PlateDetailsRow, PlateDetailsInsert, PlateDetailsColumn, PlateDetailsExpand>('plts.plate_details');
+  get plateDetails() {
+    return grok.dapi.domains.table<PlateDetailRow, PlateDetailInsert, PlateDetailColumn, PlateDetailExpand>('plts.plate_detail');
   },
-  get plateWellValueses() {
-    return grok.dapi.domains.table<PlateWellValuesRow, PlateWellValuesInsert, PlateWellValuesColumn, PlateWellValuesExpand>('plts.plate_well_values');
+  get plateWellValues() {
+    return grok.dapi.domains.table<PlateWellValueRow, PlateWellValueInsert, PlateWellValueColumn, PlateWellValueExpand>('plts.plate_well_value');
   },
-  get analysisRunParameterses() {
-    return grok.dapi.domains.table<AnalysisRunParametersRow, AnalysisRunParametersInsert, AnalysisRunParametersColumn, AnalysisRunParametersExpand>('plts.analysis_run_parameters');
+  get analysisRunParameters() {
+    return grok.dapi.domains.table<AnalysisRunParameterRow, AnalysisRunParameterInsert, AnalysisRunParameterColumn, AnalysisRunParameterExpand>('plts.analysis_run_parameter');
   },
-  get analysisResultses() {
-    return grok.dapi.domains.table<AnalysisResultsRow, AnalysisResultsInsert, AnalysisResultsColumn, AnalysisResultsExpand>('plts.analysis_results');
+  get analysisResults() {
+    return grok.dapi.domains.table<AnalysisResultRow, AnalysisResultInsert, AnalysisResultColumn, AnalysisResultExpand>('plts.analysis_result');
   },
   transaction<T extends PltsTransactionOp[]>(ops: [...T]):
       Promise<{[K in keyof T]: DG.DomainOpResultFor<T[K]>}> {

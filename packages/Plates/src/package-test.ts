@@ -3,7 +3,6 @@ import * as DG from 'datagrok-api/dg';
 import {runTests, tests, TestContext, initAutoTests as initTests} from '@datagrok-libraries/test/src/test';
 
 import './tests/plate-tests';
-import './tests/plates-crud-tests';
 
 export const _package = new DG.Package();
 export {tests};

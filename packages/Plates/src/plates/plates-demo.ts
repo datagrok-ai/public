@@ -27,9 +27,48 @@ async function anyPlatesWithProperty(name: string, scope: 'plate' | 'well'): Pro
   const prop = allProperties.find((p) => p.name === name && p.scope === scope);
   if (!prop)
     return false;
-  const values = scope === 'plate' ? pltsDb.plateDetailses : pltsDb.plateWellValueses;
+  const values = scope === 'plate' ? pltsDb.plateDetails : pltsDb.plateWellValues;
   return await values.exists(DG.cond('property_id', '=', prop.id));
 }
+
+const ccTemplateInput = {
+  name: 'Cell counting',
+  description: 'Microscopy-based cell counting',
+  plateProperties: [
+    {name: 'Imaging device', choices: ['Kodak', 'Nikon'], type: DG.COLUMN_TYPE.STRING, is_required: true},
+    {name: 'Status', choices: ['Pending', 'Filling', 'Measuring', 'Done'], type: DG.COLUMN_TYPE.STRING, is_required: true, default_value: 'Pending'},
+    {name: 'Plate cell count', min: 0, max: 10000, type: DG.COLUMN_TYPE.INT, is_required: false}
+  ],
+  wellProperties: [
+    {name: 'Well cell count', min: 0, max: 100, type: DG.COLUMN_TYPE.INT, is_required: false},
+    {name: 'Sample', choices: ['GRK-1', 'GRK-2', 'GRK-3', 'GRK-4', 'GRK-5', 'GRK-6'], type: DG.COLUMN_TYPE.STRING, is_required: true}
+  ]
+};
+
+const drTemplateInput = {
+  name: 'Dose-response',
+  description: 'Dose-response campaign',
+  plateProperties: [
+    {name: 'Project', type: DG.COLUMN_TYPE.STRING, choices: ['Modulators of mGluR5', 'Agonists for GPCR GPR139', 'Glutaminase Inhibitors for TNBC'], is_required: true},
+    {name: 'Stage', type: DG.COLUMN_TYPE.STRING, choices: ['Lead generation', 'Lead optimization'], is_required: false},
+    {name: 'Chemist', type: DG.COLUMN_TYPE.STRING, choices: ['John Marlowski', 'Mary Hopton'], is_required: true},
+    {name: 'Biologist', type: DG.COLUMN_TYPE.STRING, choices: ['Anna Fei', 'Joan Dvorak'], is_required: true},
+    {name: 'QC Passed', type: DG.COLUMN_TYPE.BOOL, is_required: true, default_value: 'false'},
+    {name: 'Z-Score', min: 0, max: 3, type: DG.COLUMN_TYPE.FLOAT, is_required: false},
+  ],
+  wellProperties: [
+    {name: 'Sample', choices: ['GRK-1', 'GRK-2', 'GRK-3', 'GRK-4', 'GRK-5', 'GRK-6'], type: DG.COLUMN_TYPE.STRING, is_required: false},
+    {name: 'Role', choices: ['Control', 'Treatment'], type: DG.COLUMN_TYPE.STRING, is_required: true, default_value: 'Treatment'},
+    {name: 'Concentration', min: 0, max: 100, type: DG.COLUMN_TYPE.FLOAT, is_required: true},
+    {name: 'Volume', min: 0, max: 100, type: DG.COLUMN_TYPE.FLOAT, is_required: false},
+    {name: 'Activity', min: 0, max: 100, type: DG.COLUMN_TYPE.FLOAT, is_required: true},
+  ]
+};
+
+const demoPropertyMeta = new Map<string, Partial<PlateProperty>>(
+  [...ccTemplateInput.plateProperties, ...ccTemplateInput.wellProperties,
+    ...drTemplateInput.plateProperties, ...drTemplateInput.wellProperties]
+    .map((p) => [p.name, p as Partial<PlateProperty>]));
 
 async function createDummyPlates() {
   let cellCountingTemplate = plateTemplates.find((t) => t.name === 'Cell counting');
@@ -37,19 +76,7 @@ async function createDummyPlates() {
 
   if (!cellCountingTemplate) {
     console.log('Creating "Cell counting" template...');
-    cellCountingTemplate = await createPlateTemplate({
-      name: 'Cell counting',
-      description: 'Microscopy-based cell counting',
-      plateProperties: [
-        {name: 'Imaging device', choices: ['Kodak', 'Nikon'], type: DG.COLUMN_TYPE.STRING, is_required: true},
-        {name: 'Status', choices: ['Pending', 'Filling', 'Measuring', 'Done'], type: DG.COLUMN_TYPE.STRING, is_required: true, default_value: 'Pending'},
-        {name: 'Plate cell count', min: 0, max: 10000, type: DG.COLUMN_TYPE.INT, is_required: false}
-      ],
-      wellProperties: [
-        {name: 'Well cell count', min: 0, max: 100, type: DG.COLUMN_TYPE.INT, is_required: false},
-        {name: 'Sample', choices: ['GRK-1', 'GRK-2', 'GRK-3', 'GRK-4', 'GRK-5', 'GRK-6'], type: DG.COLUMN_TYPE.STRING, is_required: true}
-      ]
-    });
+    cellCountingTemplate = await createPlateTemplate(ccTemplateInput);
     createCcPlates = true;
   } else {
     console.log('"Cell counting" template found.');
@@ -64,25 +91,7 @@ async function createDummyPlates() {
 
   if (!doseResponseTemplate) {
     console.log('Creating "Dose-response" template...');
-    doseResponseTemplate = await createPlateTemplate({
-      name: 'Dose-response',
-      description: 'Dose-response campaign',
-      plateProperties: [
-        {name: 'Project', type: DG.COLUMN_TYPE.STRING, choices: ['Modulators of mGluR5', 'Agonists for GPCR GPR139', 'Glutaminase Inhibitors for TNBC'], is_required: true},
-        {name: 'Stage', type: DG.COLUMN_TYPE.STRING, choices: ['Lead generation', 'Lead optimization'], is_required: false},
-        {name: 'Chemist', type: DG.COLUMN_TYPE.STRING, choices: ['John Marlowski', 'Mary Hopton'], is_required: true},
-        {name: 'Biologist', type: DG.COLUMN_TYPE.STRING, choices: ['Anna Fei', 'Joan Dvorak'], is_required: true},
-        {name: 'QC Passed', type: DG.COLUMN_TYPE.BOOL, is_required: true, default_value: 'false'},
-        {name: 'Z-Score', min: 0, max: 3, type: DG.COLUMN_TYPE.FLOAT, is_required: false},
-      ],
-      wellProperties: [
-        {name: 'Sample', choices: ['GRK-1', 'GRK-2', 'GRK-3', 'GRK-4', 'GRK-5', 'GRK-6'], type: DG.COLUMN_TYPE.STRING, is_required: false},
-        {name: 'Role', choices: ['Control', 'Treatment'], type: DG.COLUMN_TYPE.STRING, is_required: true, default_value: 'Treatment'},
-        {name: 'Concentration', min: 0, max: 100, type: DG.COLUMN_TYPE.FLOAT, is_required: true},
-        {name: 'Volume', min: 0, max: 100, type: DG.COLUMN_TYPE.FLOAT, is_required: false},
-        {name: 'Activity', min: 0, max: 100, type: DG.COLUMN_TYPE.FLOAT, is_required: true},
-      ]
-    });
+    doseResponseTemplate = await createPlateTemplate(drTemplateInput);
     createDrPlates = true;
   } else {
     console.log('"Dose-response" template found.');
@@ -98,14 +107,16 @@ async function createDummyPlates() {
     doseResponseTemplate = plateTemplates.find((t) => t.name === 'Dose-response')!;
   }
 
-  const getDemoValue = (property: PlateProperty) =>
-    property.choices ? DG.Utils.random(typeof property.choices == 'string' ? JSON.parse(property.choices) : property.choices) :
+  const getDemoValue = (dbProperty: PlateProperty) => {
+    const property = {...dbProperty, ...demoPropertyMeta.get(dbProperty.name)};
+    return property.choices ? DG.Utils.random(typeof property.choices == 'string' ? JSON.parse(property.choices) : property.choices) :
       property.type === DG.COLUMN_TYPE.BOOL ? Math.random() > 0.5 :
-        property.min !== undefined && property.max !== undefined ?
+        property.min != null && property.max != null ?
           property.type === DG.COLUMN_TYPE.INT ?
             Math.floor(property.min + Math.random() * (property.max - property.min)) :
             property.min + Math.random() * (property.max - property.min) :
           null;
+  };
 
   const templatesToProcess: [PlateTemplate | undefined, boolean][] = [
     [cellCountingTemplate, createCcPlates],

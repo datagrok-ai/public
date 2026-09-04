@@ -43,7 +43,7 @@ export class PlateTemplateHandler extends DG.ObjectHandler<DG.SemanticValue<crud
   }
 
   static async tryDeleteTemplate(template: crud.PlateTemplate): Promise<boolean> {
-    if (await pltsDb.plateses.count(DG.cond('template_id', '=', template.id)) > 0) {
+    if (await pltsDb.plates.count(DG.cond('template_id', '=', template.id)) > 0) {
       grok.shell.info('Template is used in plates, cannot delete');
       return false;
     }
