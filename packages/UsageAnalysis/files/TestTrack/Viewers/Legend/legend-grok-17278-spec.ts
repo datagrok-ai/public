@@ -76,7 +76,13 @@ test('GROK-17278: line chart legend color persists across layout + project round
         const DG = (window as any).DG;
         const proj = DG.Project.create();
         proj.name = 'GROK17278Proj_' + Date.now();
-        proj.addChild((window as any).grok.shell.tv.dataFrame);
+        const df = (window as any).grok.shell.tv.dataFrame;
+        const tableInfo = df.getTableInfo();
+        proj.addChild(tableInfo);
+        // The relation points at the table ENTITY, so it has to exist server-side before the
+        // project is saved — otherwise project_relations.entity_id has nothing to reference.
+        await (window as any).grok.dapi.tables.uploadDataFrame(df);
+        await (window as any).grok.dapi.tables.save(tableInfo);
         const saved = await (window as any).grok.dapi.projects.save(proj);
         pid = saved.id;
       } catch (e: any) {
