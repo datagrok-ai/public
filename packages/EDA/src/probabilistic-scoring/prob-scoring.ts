@@ -20,7 +20,8 @@ import {MIN_SAMPLES_COUNT, PMPO_NON_APPLICABLE, DescriptorStatistics, P_VAL_TRES
   EQUALITY_SIGN, SIGN_OPTIONS, THRESHOLDED_DESIRABILITY_COL_NAME, PMPO_COMPUTE_FAILED,
   PmpoInputId, TooltipContent, PmpoValidationResult} from './pmpo-defs';
 import {addSelectedDescriptorsCol, getDescriptorStatisticsTable, getFilteredByPvalue, getFilteredByCorrelations,
-  getModelParams, getDescrTooltip, saveModel, getScoreTooltip, getDesirabilityProfileJson, getCorrelationTriples,
+  getModelParams, getDescrTooltip, saveModel, savePmpoFile, getScoreTooltip, getDesirabilityProfileJson,
+  getCorrelationTriples,
   addCorrelationColumns, setPvalColumnColorCoding, setCorrColumnColorCoding, PmpoError, getInitCol,
   getBoolDesirabilityColData, isDesirabilityValid,
   getDesirabilityColumnFromCategories,
@@ -39,7 +40,7 @@ export type PmpoTrainingResult = {
 };
 
 /** Type for pMPO training controls */
-export type Controls = {form: HTMLElement, saveBtn: HTMLButtonElement};
+export type Controls = {form: HTMLElement};
 
 /** Type for pMPO elements */
 export type PmpoAppItems = {
@@ -47,7 +48,8 @@ export type PmpoAppItems = {
   rocCurve: DG.Viewer;
   confusionMatrix: DG.Viewer;
   controls: Controls;
-  profile: DesirabilityProfile | null;
+  getProfile: () => DesirabilityProfile | null;
+  savePmpoFile: (name: string, description: string) => Promise<string>;
 };
 
 /** Class implementing probabilistic MPO (pMPO) model training and prediction */
@@ -700,7 +702,8 @@ export class Pmpo {
       rocCurve: this.rocCurve,
       confusionMatrix: this.confusionMatrix,
       controls,
-      profile: this.desirabilityProfile,
+      getProfile: () => this.desirabilityProfile,
+      savePmpoFile: (name, description) => savePmpoFile(this.params!, name, description),
     };
   } // getViewers
 
@@ -1150,26 +1153,22 @@ export class Pmpo {
       }, 10);
     });
 
-    // Save model button
-    const saveBtn = ui.button('Save', async () => {
-      if (this.params == null) {
-        grok.shell.warning('Failed to save pMPO model: null parameters.');
-        return;
-      }
+    if (addBtn) {
+      const saveBtn = ui.button('Save', async () => {
+        if (this.params == null) {
+          grok.shell.warning('Failed to save pMPO model: null parameters.');
+          return;
+        }
 
-      saveModel(this.params, this.table.name, useSigmoidInput.value);
-    }, 'Save model as platform file.');
-
-    if (addBtn)
+        saveModel(this.params, this.table.name, useSigmoidInput.value);
+      }, 'Save model as platform file.');
       form.append(saveBtn);
+    }
 
     const div = ui.div([form]);
     div.classList.add('eda-pmpo-input-form');
 
-    return {
-      form: div,
-      saveBtn: saveBtn,
-    };
+    return {form: div};
   } // getInputForm
 
   /** Validates all pMPO inputs and returns structured errors without mutating the DOM */

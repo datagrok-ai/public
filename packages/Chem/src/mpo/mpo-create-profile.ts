@@ -94,8 +94,12 @@ export class MpoProfileCreateView {
     confusionMatrix?: DG.DockNode;
     controls?: {
       form: DG.DockNode;
-      saveBtn?: HTMLElement;
     };
+  } | null = null;
+
+  private pMpoItems: {
+    getProfile: () => DesirabilityProfile | null;
+    savePmpoFile: (name: string, description: string) => Promise<string>;
   } | null = null;
 
   constructor(
@@ -331,16 +335,41 @@ export class MpoProfileCreateView {
   }
 
   async save(): Promise<boolean> {
+    if (!this.isManualMode) {
+      const trained = this.pMpoItems?.getProfile();
+      if (!trained) {
+        grok.shell.warning('Data-driven MPO model is not trained yet.');
+        return false;
+      }
+      this.profile = {...structuredClone(trained), name: this.profile.name, description: this.profile.description};
+    }
     const result = await saveProfileInteractive(this.profile, this.saved);
     if (result) {
-      this.saved = result;
-      this.activeView.temp[MpoProfileCreateView.PROFILE_ID_TAG] = result.id;
-      this.originalProfile = structuredClone(this.profile);
-      this.setModified(false);
-      this.tableView.name = this.view.name = this.displayName;
-      this.setupBreadcrumbs();
+      this.applySaved(result);
+      if (!this.isManualMode)
+        await this.savePmpoModelFile();
     }
     return result != null;
+  }
+
+  private applySaved(result: MpoProfileRef): void {
+    this.saved = result;
+    this.activeView.temp[MpoProfileCreateView.PROFILE_ID_TAG] = result.id;
+    this.originalProfile = structuredClone(this.profile);
+    this.setModified(false);
+    this.tableView.name = this.view.name = this.displayName;
+    this.setupBreadcrumbs();
+  }
+
+  private async savePmpoModelFile(): Promise<void> {
+    if (!this.pMpoItems)
+      return;
+    try {
+      const path = await this.pMpoItems.savePmpoFile(this.displayName, this.profile.description ?? '');
+      grok.shell.info(`pMPO model saved to ${path}`);
+    } catch (e) {
+      grok.shell.warning(`Failed to save the pMPO model file: ${e instanceof Error ? e.message : e}`);
+    }
   }
 
   private applyProfileName(newName: string): void {
@@ -561,8 +590,8 @@ export class MpoProfileCreateView {
       const gridTabNode = dockMng.findNode(this.tableView.grid.root);
       const confusionNode = dockMng.dock(pMpoAppItems.confusionMatrix, DG.DOCK_TYPE.FILL, gridTabNode);
 
-      if (pMpoAppItems.controls.saveBtn)
-        this.tableView.setRibbonPanels([[pMpoAppItems.controls.saveBtn]]);
+      this.pMpoItems = pMpoAppItems;
+      this.setupRibbon();
 
       this.pMpoDockedItems = {
         statsGrid: statGridNode,
@@ -570,7 +599,6 @@ export class MpoProfileCreateView {
         confusionMatrix: confusionNode,
         controls: {
           form: controlsNode,
-          saveBtn: pMpoAppItems.controls.saveBtn,
         },
       };
     } finally {
@@ -592,14 +620,11 @@ export class MpoProfileCreateView {
     if (confusionMatrix)
       dockMng.close(confusionMatrix);
 
-    if (controls) {
-      if (controls.form)
-        dockMng.close(controls.form);
-      if (controls.saveBtn)
-        controls.saveBtn.remove();
-    }
+    if (controls?.form)
+      dockMng.close(controls.form);
 
     this.pMpoDockedItems = null;
+    this.pMpoItems = null;
   }
 
   private prepareManualLayout(): void {
