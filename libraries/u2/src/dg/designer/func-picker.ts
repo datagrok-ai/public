@@ -155,7 +155,7 @@ export function funcPicker(options: FuncPickerOptions): Dialog {
   dialog.root.classList.add('u2-func-picker');
   const entries = funcEntries(DG.Func.find({}) as unknown as FuncLike[]);
   const renderer = handlerRenderer<FuncLike>();
-  const search = dialog.run(() =>
+  const search = dialog.runInScope(() =>
     new TextInput({search: true, inline: true, placeholder: 'Search functions'}));
   const empty = span('', 'u2-picker-empty');
   const host = div([], 'u2-func-picker-params');
@@ -199,7 +199,7 @@ export function funcPicker(options: FuncPickerOptions): Dialog {
         continue;
       input.root.setAttribute('data-u2-prop', name);
       // owned by the dialog, not by the pane the pick rebuilds — the bind picker outlives it
-      bindPickerButton(input, name, () => dialog.run(() => bindPicker(options.instance, (path) => {
+      bindPickerButton(input, name, () => dialog.runInScope(() => bindPicker(options.instance, (path) => {
         binds[name] = path;
         showParams();
       })));
@@ -207,7 +207,7 @@ export function funcPicker(options: FuncPickerOptions): Dialog {
     host.append(form.root);
   };
 
-  const list = dialog.run(() => new VirtualList<FuncEntry>({
+  const list = dialog.runInScope(() => new VirtualList<FuncEntry>({
     itemHeight: 28,
     keyOf: (entry) => entry.name,
     render: (entry, _index, row) => {

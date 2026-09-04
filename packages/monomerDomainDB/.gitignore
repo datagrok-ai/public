@@ -1,0 +1,12 @@
+# Developer keys
+upload.keys.json
+
+# Dependency directories
+node_modules/
+
+# Webpack outputs
+dist/
+
+# Emitted *.js files
+src/**/*.js
+**/*.d.ts

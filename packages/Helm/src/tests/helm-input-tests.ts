@@ -133,6 +133,37 @@ category('HelmInput', () => {
     }
   });
 
+  test('editor dialog OK updates the value and fires onChanged', async () => {
+    // Regression: the editor dialog's OK used to update only the drawing
+    // (`viewer.editor.setHelm`) — `stringValue` stayed stale (often empty) and
+    // `onChanged` never fired, so a consumer wired to the input (e.g. a Flow
+    // Helm Input node) read back an empty value after sketching.
+    const helmValue = 'PEPTIDE1{[meY].A.G.T}$$$$';
+    const helmInput = (await ui.input.helmAsync('Macromolecule')) as HelmInput;
+    let changed = 0;
+    const changedSub = helmInput.onChanged.subscribe(() => changed++);
+    const hostDlg = ui.dialog('Helm Editor OK Test').add(helmInput).show();
+    try {
+      await delay(300);
+      // The broken state: the drawing holds a molecule the value never saw.
+      helmInput.viewer.editor.setHelm(helmValue);
+      expect(helmInput.stringValue, '', 'precondition: the value is still empty');
+      helmInput.showEditorDialog();
+      await delay(2000); // the full web editor app builds asynchronously
+      const editorDlg = DG.Dialog.getOpenDialogs().find((d) => d.root !== hostDlg.root);
+      expect(editorDlg != null, true, 'the editor dialog opened');
+      editorDlg!.getButton('OK').click();
+      await delay(300);
+      const v = helmInput.stringValue;
+      expect(v.startsWith('PEPTIDE1{') && v.includes('meY'), true,
+        `OK propagates the sketched HELM into the value (was "${v}")`);
+      expect(changed > 0, true, 'onChanged fired so listeners see the edit');
+    } finally {
+      changedSub.unsubscribe();
+      hostDlg.close();
+    }
+  }, {timeout: 60000});
+
   test('tooltip', async () => {
     await _testTooltipOnHelmInput();
   }, {timeout: 300000});

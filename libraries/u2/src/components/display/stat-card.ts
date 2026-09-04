@@ -40,7 +40,7 @@ export class StatCard extends Control {
     this.root.dataset.u2 = 'stat-card';
     this._valueEl = div(undefined, 'u2-stat-value');
     this._deltaEl = options.delta === undefined ? undefined : div(undefined, 'u2-stat-delta');
-    this.run(() => {
+    this.runInScope(() => {
       if (options.icon !== undefined)
         this.root.append(icon(options.icon, {cls: 'u2-stat-icon'}));
       this.root.append(this._valueEl, span(options.label, 'u2-stat-label'));

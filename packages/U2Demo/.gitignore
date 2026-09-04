@@ -32,3 +32,8 @@ dist/
 !src/css.d.ts
 # Emitted *.js files
 src/**/*.js
+!src/raw.d.ts
+# bdd (grok-bdd) run artifacts
+bdd/test-results/
+bdd/e2e/
+bdd/.auth.json

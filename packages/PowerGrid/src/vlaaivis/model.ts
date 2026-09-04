@@ -7,9 +7,20 @@ import {
 } from '@datagrok-libraries/statistics/src/mpo/mpo';
 
 import {PieChartSettings, Sector, Subsector} from '../sparklines/piechart';
-import {DEFAULTS, VLAAIVIS_METADATA_TAG} from './constants';
+import {DEFAULTS, VLAAIVIS_METADATA_TAG, VLAAIVIS_PROFILE_TYPE, VLAAIVIS_PROFILE_VERSION} from './constants';
 
 type ColumnMetadata = PropertyDesirability & {groupName?: string; sectorColor?: string};
+
+export type VlaaiVisProfile = {
+  type: typeof VLAAIVIS_PROFILE_TYPE;
+  version: number;
+  name: string;
+  lowerBound: number;
+  upperBound: number;
+  sectors: Sector[];
+};
+
+export type VlaaiVisProfileParseResult = {profile: VlaaiVisProfile} | {error: string};
 
 export enum VlaaiVisChange { Structure, Value }
 
@@ -27,10 +38,20 @@ export class VlaaiVisModel {
 
   get sectors(): Sector[] { return this.settings.sectors!.sectors; }
 
+  get profileName(): string { return this.settings.sectors!.name ?? ''; }
+
+  setProfileName(name: string): void { this.settings.sectors!.name = name; }
+
+  get unassigned(): string[] {
+    const assigned = new Set(this.assignedNames);
+    return this.settings.columnNames.filter((name) => !assigned.has(name));
+  }
+
   bound(key: 'lowerBound' | 'upperBound'): number { return this.settings.sectors![key]; }
 
-  setBound(key: 'lowerBound' | 'upperBound', value: number): void {
-    this.settings.sectors![key] = value;
+  setBounds(lower: number, upper: number): void {
+    this.settings.sectors!.lowerBound = lower;
+    this.settings.sectors!.upperBound = upper;
     this.onChanged.next(VlaaiVisChange.Value);
   }
 
@@ -45,11 +66,6 @@ export class VlaaiVisModel {
         return {sector, property};
     }
     return null;
-  }
-
-  get unassigned(): string[] {
-    const assigned = new Set(this.assignedNames);
-    return this.settings.columnNames.filter((name) => !assigned.has(name));
   }
 
   addSector(name: string): Sector {
@@ -92,6 +108,36 @@ export class VlaaiVisModel {
     for (const name of this.unassigned.slice(0, count))
       this.newSector(name).subsectors.push(this.createProperty(name));
     this.changed(VlaaiVisChange.Structure, []);
+  }
+
+  exportProfile(name: string): VlaaiVisProfile {
+    const {lowerBound, upperBound, sectors} = this.settings.sectors!;
+    return {type: VLAAIVIS_PROFILE_TYPE, version: VLAAIVIS_PROFILE_VERSION, name, lowerBound, upperBound, sectors};
+  }
+
+  static parseProfile(text: string, fallbackName: string): VlaaiVisProfileParseResult {
+    let parsed: any;
+    try {
+      parsed = JSON.parse(text);
+    } catch (e) {
+      return {error: `invalid JSON: ${e instanceof Error ? e.message : e}`};
+    }
+    if (parsed?.type !== VLAAIVIS_PROFILE_TYPE || !Array.isArray(parsed.sectors))
+      return {error: 'not a VlaaiVis profile'};
+    if ((parsed.version ?? 0) > VLAAIVIS_PROFILE_VERSION)
+      return {error: 'created with a newer version of the application'};
+    parsed.name ||= fallbackName;
+    return {profile: parsed};
+  }
+
+  applyProfile(profile: VlaaiVisProfile): string[] {
+    const names = profile.sectors.flatMap((s) => s.subsectors.map((p) => p.name));
+    const matched = names.filter((name) => this.column(name) !== null);
+    this.settings.columnNames = [...new Set([...this.settings.columnNames, ...matched])];
+    Object.assign(this.settings.sectors!, {name: profile.name,
+      lowerBound: profile.lowerBound, upperBound: profile.upperBound, sectors: profile.sectors});
+    this.syncColumns();
+    return names.filter((name) => this.column(name) === null);
   }
 
   /// The desirability editors mutate the property in place; this republishes what they changed.

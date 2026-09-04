@@ -269,11 +269,14 @@ export const RichFunctionView = Vue.defineComponent({
       type: Boolean,
       default: false,
     },
-    // adds a "Publish to program" icon (emits `publishRun`); hosts gate it on the
-    // ArtifactAlignment package + the enableArtifactPublishing setting
+    // adds a share icon (emits `publishRun`); hosts gate it on the sharingMethod package setting
     showPublish: {
       type: Boolean,
       default: false,
+    },
+    publishTooltip: {
+      type: String,
+      default: 'Share run',
     },
     showRunButton: {
       type: Boolean,
@@ -729,7 +732,7 @@ export const RichFunctionView = Vue.defineComponent({
           /> }
           { props.showPublish && !uiBlocked.value && <IconFA
             name='share-alt'
-            tooltip='Publish to program'
+            tooltip={props.publishTooltip}
             onClick={() => emit('publishRun', currentCall.value)}
           /> }
           { (props.historyEnabled || props.stepHistory) && <IconFA

@@ -2731,6 +2731,18 @@ export interface IPieChartSettings {
 
   includeNulls: boolean;
 
+  /// Pie or donut
+  mode: string;
+
+  /// Show text in the donut hole
+  showCenterLabel: boolean;
+
+  /// Text in the donut hole; the category column name if empty
+  centerLabel: string;
+
+  /// Font of the text in the donut hole
+  centerLabelFont: string;
+
   labelPosition: string;
 
   autoLayout: boolean;

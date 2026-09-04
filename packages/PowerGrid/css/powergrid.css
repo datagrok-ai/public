@@ -1,0 +1,144 @@
+.power-grid-pie-settings > .ui-form {
+  padding-bottom: 12px;
+}
+
+.power-grid-vlaaivis .statistics-mpo-row {
+  min-height: 0;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--grey-1);
+}
+
+.power-grid-vlaaivis .statistics-mpo-property-cell {
+  width: 90px;
+  max-width: 90px;
+}
+
+.power-grid-vlaaivis .statistics-mpo-weight-input {
+  width: 60px;
+}
+
+.power-grid-vlaaivis .statistics-mpo-property-cell,
+.power-grid-vlaaivis .statistics-mpo-weight-cell {
+  align-self: center;
+  margin-bottom: 0 !important;
+}
+
+.power-grid-vlaaivis .statistics-mpo-row > div:last-child {
+  flex: 1;
+  gap: 8px;
+  min-width: 120px;
+}
+
+.power-grid-vlaaivis .statistics-mpo-editor-fill {
+  flex: 1;
+  width: auto;
+  min-width: 0;
+}
+
+.power-grid-vlaaivis-swatch {
+  width: 12px;
+  height: 12px;
+  margin-right: 6px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.power-grid-vlaaivis-sector-buttons {
+  margin-left: 12px;
+  gap: 8px;
+  color: var(--blue-1);
+  visibility: hidden;
+}
+
+.d4-accordion-pane-header:hover .power-grid-vlaaivis-sector-buttons {
+  visibility: visible;
+}
+
+.power-grid-vlaaivis-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: grab;
+}
+
+.power-grid-vlaaivis-add {
+  display: block;
+  padding: 6px 0 8px 16px;
+}
+
+.power-grid-vlaaivis-profile .ui-input-editor {
+  max-width: 150px;
+}
+
+.power-grid-vlaaivis-tip {
+  align-items: flex-start;
+  gap: 7px;
+  margin-bottom: 10px;
+  padding: 8px 10px;
+  border-radius: 4px;
+  background: var(--steel-1);
+  color: var(--grey-5);
+  line-height: 1.45;
+}
+
+.power-grid-vlaaivis-empty {
+  padding: 2px 4px 6px;
+  color: var(--grey-4);
+}
+
+.power-grid-vlaaivis-tip .fa-info-circle {
+  margin-top: 2px;
+  color: var(--blue-1);
+}
+
+.power-grid-sparkline-panel-title {
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.power-grid-sparkline-panel-values {
+  margin-top: 20px;
+}
+
+.power-grid-sparkline-grid {
+  display: grid;
+  grid-template-columns: auto auto;
+  column-gap: 10px;
+  justify-content: start;
+}
+
+.power-grid-sparkline-grid > .power-grid-sparkline-group {
+  display: contents;
+}
+
+.power-grid-sparkline-tooltip .power-grid-sparkline-name,
+.power-grid-sparkline-tooltip .power-grid-sparkline-group-name,
+.power-grid-sparkline-panel-values .power-grid-sparkline-value {
+  text-align: right;
+}
+
+.power-grid-sparkline-active {
+  font-weight: bold;
+}
+
+.power-grid-sparkline-group-name {
+  grid-column: 1 / -1;
+  margin-top: 6px;
+}
+
+.power-grid-sparkline-group:first-child > .power-grid-sparkline-group-name {
+  margin-top: 0;
+}
+
+.power-grid-sparkline-group > .power-grid-sparkline-name {
+  padding-left: 16px;
+}
+
+.power-grid-sparkline-swatch {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  margin-right: 6px;
+  border-radius: 2px;
+}

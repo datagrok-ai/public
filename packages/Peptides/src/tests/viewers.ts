@@ -4,9 +4,9 @@ import {after, before, category, delay, expect, test, testViewer} from '@datagro
 import {PeptidesModel, VIEWER_TYPE} from '../model';
 import {_package} from '../package-test';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {scaleActivity} from '../utils/misc';
+import {highlightMonomerPosition, scaleActivity} from '../utils/misc';
 import {startAnalysis} from '../widgets/peptides';
-import {MonomerPosition, MostPotentResidues, SELECTION_MODE} from '../viewers/sar-viewer';
+import {MonomerPosition, MostPotentResidues, SAR_PROPERTIES, SELECTION_MODE} from '../viewers/sar-viewer';
 import {SCALING_METHODS} from '../utils/constants';
 import {CLUSTER_TYPE, LogoSummaryTable, LST_PROPERTIES} from '../viewers/logo-summary';
 import {PositionHeight} from '@datagrok-libraries/bio/src/viewers/web-logo';
@@ -96,6 +96,31 @@ category('Viewers: Monomer-Position', () => {
     mpViewer.mode = SELECTION_MODE.MUTATION_CLIFFS;
     expect(mpViewer.mode, SELECTION_MODE.MUTATION_CLIFFS,
       `Monomer-Position mode is not ${SELECTION_MODE.MUTATION_CLIFFS} after switching`);
+  });
+
+  test('Highlighting after row removal', async () => {
+    const monomerPosition = mpViewer.getMonomerPosition(mpViewer.viewerGrid.cell('9', 6));
+    df.rows.removeAt(0, 2);
+    await delay(100);
+
+    // Highlighting or's a fresh row-count-sized mask with the cached ones, so stale masks throw 'Array lengths differ'
+    highlightMonomerPosition(monomerPosition, df, mpViewer.monomerPositionStats);
+  });
+
+  test('Highlighting after row removal with viewer-specific scaling', async () => {
+    // Scaling differing from the analysis settings makes the viewer compute stats from its own cached activity column
+    mpViewer.getProperty(SAR_PROPERTIES.ACTIVITY_SCALING)!.set(mpViewer, SCALING_METHODS.LG);
+    await delay(50);
+    expect(mpViewer.monomerPositionStats != null, true, 'Stats should be computed with viewer-specific scaling');
+    df.rows.removeAt(0, 2);
+    await delay(100);
+
+    const stats = mpViewer.monomerPositionStats;
+    const position = Object.keys(stats).find((key) => key !== 'general')!;
+    const monomer = Object.keys(stats[position]).find((key) => key !== 'general')!;
+    expect(stats[position][monomer].mask.length, df.rowCount,
+      'Recomputed masks should match the row count after removal');
+    highlightMonomerPosition({monomerOrCluster: monomer, positionOrClusterType: position}, df, stats);
   });
 }, {clear: false});
 

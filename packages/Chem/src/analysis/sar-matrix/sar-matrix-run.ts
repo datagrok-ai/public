@@ -1,0 +1,330 @@
+import * as grok from 'datagrok-api/grok';
+import * as DG from 'datagrok-api/dg';
+
+import {_package} from '../../package';
+import {getRdKitService} from '../../utils/chem-common-rdkit';
+import {getMmpFrags} from '../molecular-matched-pairs/mmp-analysis/mmpa-fragments';
+import {SCALING_METHODS} from '../molecular-matched-pairs/mmp-viewer/mmp-constants';
+import {scaleActivity} from '../molecular-matched-pairs/mmp-viewer/mmpa-utils';
+import {assembleMultiPositionMatrix} from './sar-matrix-assemble';
+import {decomposeClusters} from './sar-matrix-decompose';
+import {computeMatrixConfidence} from './sar-matrix-confidence';
+import {buildMatchedSeries, buildCoarserLevels, clusterRelatedCores, groupSeriesByColumn, groupSeriesBySite,
+  poolUngroupedSeries, poolUngroupedMolecules}
+  from './sar-matrix-clustering';
+import {rankMatrices, SarRankScheme} from './sar-matrix-ranking';
+import {logSarTime, observedMolecules, SarMatrix, SarMatrixCell} from './sar-matrix-types';
+
+/**
+ * Link each virtual analog's row core to its column substituent in one batched worker call.
+ *
+ * Single-cut matrices only (empty `refValues`): `mmpLinkFragments` substitutes `[*:1]` alone, so a
+ * multi-attachment core would return unresolved `[*:2]…` dummies. Decomposed matrices are linked during
+ * assembly instead. `positions` holds only the VARYING positions, so it cannot be the discriminator.
+ */
+async function linkVirtualStructures(matrices: SarMatrix[]): Promise<void> {
+  const cores: string[] = [];
+  const fragments: string[] = [];
+  const targets: SarMatrixCell[] = [];
+
+  for (const matrix of matrices) {
+    if (Object.keys(matrix.refValues).length > 0)
+      continue;
+    for (let ri = 0; ri < matrix.rows.length; ri++) {
+      for (let ci = 0; ci < matrix.columns.length; ci++) {
+        const cell = matrix.cells[ri][ci];
+        if (cell.kind === 'virtual' && cell.smiles === null) {
+          cores.push(matrix.rows[ri].coreSmiles);
+          fragments.push(matrix.columns[ci].substSmiles);
+          targets.push(cell);
+        }
+      }
+    }
+  }
+  if (targets.length === 0)
+    return;
+
+  const linked = await (await getRdKitService()).mmpLinkFragments(cores, fragments);
+  for (let i = 0; i < targets.length; i++)
+    targets[i].smiles = linked[i] ? linked[i] : null;
+}
+
+/** Row cores, column substituents and observed compounds of an assembled matrix, as comparable sets. */
+function matrixContent(matrix: SarMatrix): {rows: Set<string>, cols: Set<string>, mols: Set<number>} {
+  return {
+    rows: new Set(matrix.rows.map((r) => r.keySmiles)),
+    cols: new Set(matrix.columns.map((c) => `${c.position}${c.substSmiles}`)),
+    mols: observedMolecules(matrix),
+  };
+}
+
+/**
+ * Drop matrices whose rows, columns and compounds are all subsets of a larger one. All three must
+ * match: a different core/substituent split over the same compounds is a distinct view, not a crop.
+ * Runs on assembled matrices, since two differently-keyed groups can assemble into the same table.
+ */
+function dropCroppedMatrices(matrices: SarMatrix[]): SarMatrix[] {
+  const content = matrices.map(matrixContent);
+  // Position-independent identity: which of two equal matrices survives follows what they hold, not
+  // where they sit in the array.
+  const rank = matrices.map((matrix, i) => [
+    [...content[i].rows].sort().join(''),
+    [...content[i].cols].sort().join(''),
+    [...content[i].mols].sort((x, y) => x - y).join(','),
+    matrix.level,
+    matrix.siteKey,
+  ].join(''));
+  const subset = <T>(a: Set<T>, b: Set<T>): boolean => a.size <= b.size && [...a].every((x) => b.has(x));
+  return matrices.filter((_matrix, i) => !matrices.some((_other, j) => {
+    if (i === j)
+      return false;
+    const a = content[i];
+    const b = content[j];
+    if (matrices[i].level !== matrices[j].level) {
+      // A coarser matrix containing finer ones is the hierarchy, not redundancy; drop it only when it
+      // restates a finer matrix exactly, keeping the finer one.
+      const identical = a.rows.size === b.rows.size && a.cols.size === b.cols.size &&
+        a.mols.size === b.mols.size;
+      if (!identical || matrices[i].level < matrices[j].level)
+        return false;
+    }
+    const smaller = a.rows.size < b.rows.size || a.cols.size < b.cols.size || a.mols.size < b.mols.size;
+    // Of two equal matrices exactly one must go, or they eliminate each other. The index only settles
+    // pairs alike in content, level and key, which are interchangeable anyway.
+    const tie = rank[j] < rank[i] || (rank[j] === rank[i] && j < i);
+    if (!smaller && !(a.rows.size === b.rows.size && a.cols.size === b.cols.size && tie))
+      return false;
+    return subset(a.rows, b.rows) && subset(a.cols, b.cols) && subset(a.mols, b.mols);
+  }));
+}
+
+/** Number the series by their place in the fold hierarchy: "Series 3_2" is the second matrix inside
+ *  "Series 3". Walked from the roots so a parent is always labelled before its children; a matrix
+ *  whose parent did not survive is itself a root. */
+function assignSeriesLabels(matrices: SarMatrix[]): void {
+  const present = new Set(matrices.map((matrix) => matrix.id));
+  const children = new Map<string, SarMatrix[]>();
+  const roots: SarMatrix[] = [];
+  for (const matrix of matrices) {
+    const parentId = matrix.parentId !== undefined && present.has(matrix.parentId) ? matrix.parentId : null;
+    if (parentId === null)
+      roots.push(matrix);
+    else
+      children.set(parentId, [...(children.get(parentId) ?? []), matrix]);
+  }
+  const label = (matrix: SarMatrix, path: string): void => {
+    matrix.label = `Series ${path}`;
+    (children.get(matrix.id) ?? []).forEach((child, i) => label(child, `${path}_${i + 1}`));
+  };
+  roots.forEach((matrix, i) => label(matrix, `${i + 1}`));
+}
+
+/** The user's series value per compound, or null when no column was given. Read through the column's
+ *  own formatting so a numeric column groups as "1", "2", "3" rather than "1.0000" — the names must
+ *  match the cells. Empty and missing values stay null and are left ungrouped. */
+function readSeriesValues(column: DG.Column | null, rowCount: number): (string | null)[] | null {
+  if (column === null)
+    return null;
+  const values: (string | null)[] = new Array(rowCount).fill(null);
+  for (let i = 0; i < rowCount; i++) {
+    if (column.isNone(i))
+      continue;
+    const text = column.getString(i).trim();
+    values[i] = text === '' ? null : text;
+  }
+  return values;
+}
+
+/** How series become the rows of one matrix. */
+export enum SarGrouping {
+  /** Cut the cores a second time and group the ones that leave the same remainder. */
+  Site = 'Site',
+  /** Cluster the cores by fingerprint similarity. */
+  Similarity = 'Similarity',
+}
+
+/** Ceiling on {@link SarMatrixParams.fragmentationLevels}: each level is another fragmentation pass,
+ *  and deep tiers mostly restate the ones below (a key reduced to a bare ring cannot strip further). */
+export const MAX_SERIES_LEVELS = 5;
+
+export interface SarMatrixParams {
+  scaling: SCALING_METHODS;
+  fragmentCutoff: number;
+  predictVirtual: boolean;
+  grouping: SarGrouping;
+  /** Tiers of matrices, counted as the UI numbers them (3 => navigator shows L1, L2, L3). Each tier
+   *  past 1 relates whole matrices by cutting their keys again, giving fewer and broader ones. */
+  fragmentationLevels: number;
+  /** Whether higher scaled activity is more potent. Passed in rather than re-derived from `scaling`
+   *  so ranking and the cards' best/mean text agree with the direction the user set. */
+  higherIsBetter: boolean;
+  /** Core-similarity clustering threshold (lower groups more distant cores). Similarity grouping only. */
+  threshold: number;
+  /** Fewest MEASURED compounds a matrix must hold to be kept. One measured compound gives no row
+   *  effect, no column effect, no correlation and nothing to predict from, so such a matrix is a row
+   *  of blanks around a single value. Matrices are grouped by structure before activity is attached,
+   *  which is how they arise: the compounds are there, the measurements are not. */
+  minCompounds: number;
+  /** Whether to predict the activity of a compound the set already holds but has no measurement for.
+   *  Same additive model as an unexplored cell, and only where its row and column both have
+   *  measurements to fit — it just never becomes something to synthesize. */
+  predictUnmeasured: boolean;
+  /** Optional: series the user assigned themselves, one value per compound. Replaces `grouping`
+   *  entirely and skips the automatic tiers, which would otherwise fold the user's series by
+   *  chemistry into matrices they did not ask for. */
+  seriesColumn?: DG.Column | null;
+  /** Whether to also cover the compounds no shared core could group, by pooling those series and
+   *  searching for a common core with an MCS. No matrix is lost and no compound is dropped by turning
+   *  it on, but a cluster whose site key is too small to anchor also falls through to the MCS, so a
+   *  core-grouped matrix can come out multi-position instead of single-position. Off leaves the
+   *  ungrouped compounds out entirely, which is also the only setting whose output cannot vary between
+   *  runs — an MCS that overruns retires its worker, and the clusters queued behind it go
+   *  undecomposed. */
+  useMcsAnchors: boolean;
+  rankScheme: SarRankScheme;
+}
+
+
+/**
+ * Run the full SAR Matrix pipeline: fragment molecules, build matched series, group related cores,
+ * assemble a potency matrix per group (predicting virtual analogs), and return them ranked.
+ */
+export async function runSarMatrix(molecules: DG.Column, activity: DG.Column<number>,
+  params: SarMatrixParams): Promise<SarMatrix[]> {
+  const tTotal = performance.now();
+  const molList = molecules.toList();
+  const scaledCol = params.scaling === SCALING_METHODS.NONE ? activity : scaleActivity(activity, params.scaling);
+  // Map missing activities to NaN so assemblers skip them: scaleActivity passes the null sentinel
+  // through unchanged, and read as a number it would poison the Free-Wilson fit. Bound the scan by
+  // row count, not buffer length — column storage has spare capacity past the last row.
+  const scaled = scaledCol.getRawData();
+  const activities = new Float32Array(activity.length);
+  // Whether the column holds a value at all, which is NOT the same as holding a usable one: a log
+  // scale turns a real zero or negative into ±Infinity or NaN. Such a compound was assayed, so it
+  // must not end up labelled untested — the assemblers read this to tell the two apart.
+  const assayed = new Uint8Array(activity.length);
+  let unscalable = 0;
+  for (let i = 0; i < activities.length; i++) {
+    if (activity.isNone(i)) {
+      activities[i] = NaN;
+      continue;
+    }
+    assayed[i] = 1;
+    activities[i] = scaled[i];
+    if (!Number.isFinite(scaled[i]))
+      unscalable++;
+  }
+  if (unscalable > 0) {
+    // Without this the whole analysis can come back empty with nothing to explain it: an all-negative
+    // column (ΔG, say) under the default −lg scaling leaves no observed cell anywhere.
+    const message = `SAR Matrix: ${unscalable} of ${activity.length} "${activity.name}" values cannot be ` +
+      `scaled by ${params.scaling}, which needs positive numbers. They are excluded from every matrix — ` +
+      'set Scaling to "none" to use them as they are.';
+    _package.logger.warning(message);
+    grok.shell.warning(message);
+  }
+
+  const tFrag = performance.now();
+  const [frags] = await getMmpFrags(molList);
+  logSarTime(`MMP fragmentation (${molList.length} molecules)`, tFrag);
+  let t = performance.now();
+  const series = buildMatchedSeries(frags, params.fragmentCutoff);
+  logSarTime(`matched series (${series.length} series)`, t);
+  t = performance.now();
+  // A column of user-assigned series wins over both automatic groupings.
+  const assigned = readSeriesValues(params.seriesColumn ?? null, molecules.length);
+  let base = assigned !== null ? groupSeriesByColumn(series, assigned) :
+    params.grouping === SarGrouping.Site ?
+      await groupSeriesBySite(series) :
+      await clusterRelatedCores(series, params.threshold);
+  // A series no core grouping could place is alone in its cluster, so it holds one row and never
+  // reaches a matrix. Pooling those is what the MCS is for, and the user asks for it: unasked,
+  // compounds without a shared core are left out rather than grouped by a search.
+  if (params.useMcsAnchors && assigned === null) {
+    base = await poolUngroupedSeries(base, params.threshold);
+    base = await poolUngroupedMolecules(base, molList, params.threshold);
+  }
+  logSarTime(`grouping by ${assigned !== null ? 'series column' : params.grouping.toLowerCase()} ` +
+    `(${base.length} groups)`, t);
+  // Clamped, not trusted: a programmatic caller can pass any number and each level costs a pass. The
+  // user's own series are never folded further: the tiers above them would mix series they named.
+  const levels = assigned !== null ? 1 : Math.min(MAX_SERIES_LEVELS, Math.max(1, params.fragmentationLevels));
+  t = performance.now();
+  const clusters = await buildCoarserLevels(base, levels - 1);
+  logSarTime(`coarser levels (${clusters.length} clusters)`, t);
+
+  // Decompose all clusters in one batched pass before assembly so they run parallel across workers;
+  // per-cluster calls under the Promise.all below would serialize on one worker. A null decomposition
+  // falls back to single-position construction inside the assembler.
+  const clusterMembers = clusters.map((c) => [...new Set(c.series.flatMap((s) => s.members.map((m) => m.molIdx)))]);
+  // The grouping already knows each cluster's shared scaffold; handing it over is what keeps the MCS
+  // to the clusters that have none.
+  const clusterSiteKeys = clusters.map((c) => c.siteKey);
+  t = performance.now();
+  const decomps = await decomposeClusters(clusterMembers, molList, params.useMcsAnchors,
+    clusterSiteKeys);
+  logSarTime(`decomposition total (${decomps.filter(Boolean).length}/${clusters.length} clusters decomposed)`, t);
+
+  // A matrix needs >=2 rows to compare cores; folding can collapse several series onto one row, so
+  // this is checked after assembly. The floor counts MEASURED compounds, not clustered members.
+  t = performance.now();
+  const usable = (matrix: SarMatrix | null): matrix is SarMatrix =>
+    matrix !== null && matrix.realCount >= params.minCompounds && matrix.columns.length > 0 &&
+    matrix.rows.length >= 2;
+  const assembled = (await Promise.all(clusters.map((cluster, i) =>
+    assembleMultiPositionMatrix(cluster, molList, activities, params.predictVirtual, decomps[i],
+      params.predictUnmeasured, assayed))))
+    .filter(usable);
+
+  // An anchor can decompose a cluster into fewer rows than it has series, and a matrix under two rows
+  // is dropped — so a cluster that yields a matrix without an anchor could lose it to having one. The
+  // MCS may only add, so those are rebuilt the way they would have been built without it; a cluster
+  // whose series are placeholders returns null from that build and simply stays absent.
+  const built = new Set(assembled.map((matrix) => matrix.id));
+  const rescued = (await Promise.all(clusters.map((cluster, i) =>
+    decomps[i] !== null && !built.has(cluster.id) ?
+      assembleMultiPositionMatrix(cluster, molList, activities, params.predictVirtual, null,
+        params.predictUnmeasured, assayed) : null)))
+    .filter(usable);
+  if (rescued.length) {
+    assembled.push(...rescued);
+    _package.logger.debug(`SAR Matrix: rebuilt ${rescued.length} matrices the anchor would have cost`);
+  }
+  logSarTime(`assembly (${assembled.length} matrices)`, t);
+  const matrices = dropCroppedMatrices(assembled);
+  if (matrices.length < assembled.length)
+    _package.logger.debug(`SAR Matrix: dropped ${assembled.length - matrices.length} cropped matrices`);
+
+  // Re-link each survivor to its nearest surviving ancestor so dropping a matrix does not orphan the
+  // ones below it. The chain is read from clusters, which hold links through groups that never assembled.
+  const clusterParent = new Map(clusters.map((cluster) => [cluster.id, cluster.parentId]));
+  const survived = new Set(matrices.map((matrix) => matrix.id));
+  for (const matrix of matrices) {
+    let parent = clusterParent.get(matrix.id);
+    while (parent !== undefined && !survived.has(parent))
+      parent = clusterParent.get(parent);
+    matrix.parentId = parent;
+  }
+
+  // Labels assigned before ranking so re-ranking never renames a matrix. Series the user grouped
+  // themselves already carry their own name and must keep it.
+  if (assigned === null)
+    assignSeriesLabels(matrices);
+  // Started before the confidence pass rather than after it: linking is a worker round-trip and the
+  // fit is main-thread, so run in sequence each waits on the other for no reason. They touch disjoint
+  // fields — the fit reads `kind`/`value` and writes `fit`, linking writes `smiles` on virtual cells —
+  // and the fit contains no await, so it runs to completion before the link's continuation resumes.
+  t = performance.now();
+  const linking = params.predictVirtual ? linkVirtualStructures(matrices) : null;
+  matrices.forEach((matrix) => matrix.confidence = computeMatrixConfidence(matrix));
+  logSarTime('confidence (leave-one-out)', t);
+  if (linking !== null) {
+    t = performance.now();
+    await linking;
+    logSarTime('virtual structure linking (overlapped)', t);
+  }
+
+  const ranked = rankMatrices(matrices, params.rankScheme, params.higherIsBetter);
+  logSarTime(`TOTAL (${ranked.length} matrices)`, tTotal);
+  return ranked;
+}

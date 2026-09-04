@@ -1145,6 +1145,38 @@ export async function mmpAnalysis(table: DG.DataFrame, molecules: DG.Column, act
   await PackageFunctions.mmpAnalysis(table, molecules, activities, diffTypes, scalings, fragmentCutoff, runOnFilteredData);
 }
 
+//name: SAR Matrix Viewer
+//description: SAR Matrix viewer
+//output: viewer result
+//meta.showInGallery: false
+//meta.role: viewer
+export function sarMatrixViewer() : any {
+  return PackageFunctions.sarMatrixViewer();
+}
+
+//description: Column names available for SAR Matrix series grouping
+//output: list<string> result
+export function sarSeriesColumnChoices() : string[] {
+  return PackageFunctions.sarSeriesColumnChoices();
+}
+
+//name: SAR Matrix
+//description: Groups related compound series into potency-colored matrices and predicts virtual analogs.
+//input: dataframe table 
+//input: column molecules { semType: Molecule }
+//input: column activity { type: numerical }
+//input: string scaling = '-lg' { choices: ["none","lg","-lg"]; description: Activity scaling before assembly }
+//input: string activityDirection = 'Auto (from scaling)' { choices: ["Auto (from scaling)","Higher is better","Lower is better"]; description: Which end of the activity is more potent (set explicitly for pre-computed pIC50/pKi) }
+//input: double fragmentCutoff = 0.4 { description: Maximum fragment size relative to core }
+//input: int fragmentationLevels = 3 { caption: Series levels; min: 1; max: 5; description: Nested series tiers (L1/L2/L3): 1 is a flat list, each level folds matrices one cut broader }
+//input: bool predictVirtual = true 
+//input: bool useMcsAnchors = false { caption: Group leftovers by MCS; description: Off leaves out the compounds no shared core could group. On searches those for a common core and adds the matrices it finds, keeping every matrix the core grouping already produced. Slower on large sets }
+//input: string seriesColumn { nullable: true; caption: Series column (Optional); choices: Chem:sarSeriesColumnChoices(); description: Optional. Your own grouping: compounds sharing a value become one matrix named with that value. Leave empty to group by structure }
+//top-menu: Chem | Analyze | SAR Matrix...
+export async function sarMatrixAnalysis(table: DG.DataFrame, molecules: DG.Column, activity: DG.Column, scaling: string, activityDirection: string, fragmentCutoff: number, fragmentationLevels: number, predictVirtual: boolean, useMcsAnchors: boolean, seriesColumn: string) : Promise<void> {
+  await PackageFunctions.sarMatrixAnalysis(table, molecules, activity, scaling, activityDirection, fragmentCutoff, fragmentationLevels, predictVirtual, useMcsAnchors, seriesColumn);
+}
+
 //name: Scaffold Tree Filter
 //description: Scaffold Tree filter
 //output: filter result
@@ -1183,6 +1215,13 @@ export async function demoSimilarityDiversitySearch() : Promise<void> {
 //meta.demoPath: Cheminformatics | Matched Molecular Pairs
 export async function demoMMPA() : Promise<void> {
   await PackageFunctions.demoMMPA();
+}
+
+//name: Demo SAR Matrix
+//description: Group analog series into potency matrices and predict the analogs worth making next
+//meta.demoPath: Cheminformatics | SAR Matrix
+export async function demoSarMatrix() : Promise<void> {
+  await PackageFunctions.demoSarMatrix();
 }
 
 //name: Demo R Group Analysis
@@ -1440,6 +1479,19 @@ export async function mixtureTreeWidget(mixture: string) : Promise<any> {
 //top-menu: Chem | Calculate | Chemical Properties...
 export async function biochemPropsWidget() : Promise<void> {
   await PackageFunctions.biochemPropsWidget();
+}
+
+//description: Saves a DesirabilityProfile JSON as an MPO profile. Returns the profile id.
+//input: string profileJson 
+//output: string id
+export async function saveMpoProfile(profileJson: string) : Promise<string> {
+  return await PackageFunctions.saveMpoProfile(profileJson);
+}
+
+//description: Grants all users access to MPO profiles and seeds every profile in the System:AppData/Chem/mpo folder - the shipped defaults plus any profiles saved there by the old file-based storage. Idempotent - safe to run repeatedly.
+//output: string result
+export async function seedMpoProfiles() : Promise<string> {
+  return await PackageFunctions.seedMpoProfiles();
 }
 
 //name: MPO profiles

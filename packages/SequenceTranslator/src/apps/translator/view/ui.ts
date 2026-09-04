@@ -157,7 +157,7 @@ class TranslatorAppLayout {
       return;
     }
 
-    const newColumnName = `${sequenceColumn.name} (${outputFormat})`;
+    const newColumnName = selectedTable.columns.getUnusedName(`${sequenceColumn.name} (${outputFormat})`);
     const translatedColumn = DG.Column.fromList(
       DG.TYPE.STRING,
       newColumnName,

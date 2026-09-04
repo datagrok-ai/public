@@ -120,7 +120,7 @@ export enum COLORS {
 export const TINY = 1e-8;
 
 /** Folder path for storing pMPO models */
-export const FOLDER = 'System:AppData/Chem/mpo';
+export const PMPO_FOLDER = 'System:AppData/EDA/pmpo';
 
 /** Desirability profile properties type */
 export type DesirabilityProfileProperties = Record<string, {

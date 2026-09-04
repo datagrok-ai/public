@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Extract Region: Fixed disabled Start/End position selectors for columns without region annotations
 * AI: Exposed AI view functions on the monomer-management views — Manage Monomer Libraries (activate/deactivate, delete, merge, resolve duplicates), Manage Monomers (browse, edit-form fill/save, delete, create library), and Monomer Collections (list, create, update, delete).
 
 * To Atomic Level panel: Added scrollable windowed structure view for long linear single-chain sequences — shows a 20-monomer window with a slider and 1-based start/end position indicators

@@ -94,7 +94,7 @@ export class MessageInput extends Control {
     editor.dataset.placeholder = options.placeholder ?? '';
     editor.style.maxHeight = `${options.maxHeight ?? 160}px`;
 
-    this.run(() => {
+    this.runInScope(() => {
       const tools = document.createElement('div');
       tools.className = 'u2-msg-tools';
       for (const provider of this._providers) {

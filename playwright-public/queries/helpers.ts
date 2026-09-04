@@ -556,25 +556,86 @@ export async function runQueryViaActions(page: Page, queryName: string): Promise
     .click();
   await page.waitForFunction(({ sel, prev }) =>
     document.querySelectorAll(sel).length > prev, { sel: selector, prev: before }, { timeout: 30_000 });
+  // The count ticks up while the platform is still swapping views, so returning here hands
+  // back a half-finished transition and the editor tab can vanish immediately after.
+  let previous = '';
+  for (let i = 0; i < 12; i++) {
+    const current = await viewHandleNames(page);
+    if (current === previous)
+      break;
+    previous = current;
+    await page.waitForTimeout(400);
+  }
+}
+
+const viewHandleNames = (page: Page): Promise<string> =>
+  page.evaluate(() => Array.from(document.querySelectorAll('[name^="view-handle: "]'))
+    .map((h) => h.getAttribute('name')).join(' | '));
+
+/** Every open view, marking the ones that are query editors, plus the current view. */
+function openViewsReport(page: Page): Promise<string> {
+  return page.evaluate(() => {
+    const handles = Array.from(document.querySelectorAll('[name^="view-handle: "]'))
+      .map((h) => `${h.getAttribute('name')}${h.querySelector('[name="icon-data-query"]') ? ' [editor]' : ''}`);
+    const g = (window as unknown as { grok: any }).grok;
+    return `open views: ${handles.length ? handles.join(' | ') : '(none)'}; current: ${g?.shell?.v?.name ?? '(unknown)'}`;
+  });
 }
 
 /**
- * Switch back to the query editor tab (the one with `icon-data-query`).
+ * Click the view handle carrying `icon-data-query`; false when no view is a query editor.
  *
- * Implementation note: with `grok.shell.windows.simpleMode = true` (Tabs mode, our default),
- * the active view's content is what's painted — the inactive view-handles exist in the DOM
- * but Playwright's `.waitFor({ state: 'visible' })` rejects them as offscreen, so a real
- * `locator.click()` cannot be used. Per grok-browser SKILL ("UI attempt failed → fall back
- * to JS API, record reason"), dispatch the click at the DOM level — the platform listens at
- * the document level and switches the active tab regardless.
+ * With `grok.shell.windows.simpleMode = true` (Tabs mode, our default) only the active view is
+ * painted, so Playwright rejects the inactive handles as offscreen and a real `locator.click()`
+ * cannot be used. Per grok-browser SKILL ("UI attempt failed → fall back to JS API, record
+ * reason"), dispatch the click at the DOM level — the platform listens at the document level.
+ *
+ * The handle is matched on the badge alone, not on the query name: after `Run query...` the
+ * result view carries the same name as the editor, and a name-matched lookup then finds the
+ * wrong one, or none at all.
+ */
+function clickQueryEditorHandle(page: Page): Promise<boolean> {
+  return page.evaluate(() => {
+    (document.querySelector('.d4-dialog[name="dialog-Save-project"] .grok-font-icon-close') as HTMLElement)?.click();
+    const editor = Array.from(document.querySelectorAll('[name^="view-handle: "]'))
+      .find((h) => h.querySelector('[name="icon-data-query"]')) as HTMLElement | undefined;
+    editor?.click();
+    return editor !== undefined;
+  });
+}
+
+/**
+ * Switch back to the query editor tab, retrying while the view swap settles.
+ *
+ * A bare click-and-wait reports `[name="input-Name"]` never appearing, which is true and
+ * useless: the editor view is simply not open any more. Say that instead, and list what is.
  */
 export async function focusQueryEditorTab(page: Page, queryName: string): Promise<void> {
-  await page.evaluate((name) => {
-    const handles = Array.from(document.querySelectorAll(`[name="view-handle: ${name}"]`));
-    const editor = handles.find((h) => h.querySelector('[name="icon-data-query"]')) as HTMLElement | undefined;
-    editor?.click();
-  }, queryName);
-  await page.waitForTimeout(400);
+  const nameInput = page.locator('[name="input-Name"]').first();
+  const deadline = Date.now() + 30_000;
+  while (Date.now() < deadline) {
+    if (await clickQueryEditorHandle(page)) {
+      try {
+        await nameInput.waitFor({ state: 'visible', timeout: 5_000 });
+        return;
+      }
+      catch {
+        // The editor is mid-swap — fall through and click it again.
+      }
+    }
+    await page.waitForTimeout(500);
+  }
+  throw new Error(`focusQueryEditorTab("${queryName}"): no open view carries [name="icon-data-query"], ` +
+    `so there is no query editor to switch back to. ${await openViewsReport(page)}`);
+}
+
+/// `Run query...` opens a result table view whose ribbon also carries `[name="button-Save"]`, and
+/// clicking that one saves a project instead. The result view can also win the focus race after
+/// [focusQueryEditorTab] returns, so the editor has to be re-asserted right before Save.
+async function activateQueryEditorView(page: Page): Promise<void> {
+  if (await page.locator('[name="input-Name"]').count() > 0)
+    return;
+  await focusQueryEditorTab(page, '(re-assert before Save)');
 }
 
 /** Click Save in the query editor ribbon and wait for the server commit. */
@@ -586,6 +647,7 @@ export async function saveQuery(page: Page, friendlyName: string): Promise<void>
   try {
     await expect(async () => {
       if (await findQueryByFriendlyName(page, friendlyName)) return;
+      await activateQueryEditorView(page);
       await page.locator('[name="button-Save"]').first().click({ timeout: 5_000 });
       await expect.poll(async () =>
         (await findQueryByFriendlyName(page, friendlyName)) !== null,

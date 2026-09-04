@@ -182,6 +182,7 @@ class Builder {
       // View and build options
       identifiers_on_map: 'bigg_id',
       highlight_missing: false,
+      animate_flux: true,
       allow_building_duplicate_reactions: false,
       cofactors: [
         'atp', 'adp', 'nad', 'nadh', 'nadp', 'nadph', 'gtp', 'gdp', 'h', 'coa',
@@ -217,6 +218,7 @@ class Builder {
       'hide_all_labels',
       'allow_building_duplicate_reactions',
       'highlight_missing',
+      'animate_flux',
       'enable_tooltips',
       'reaction_scale_preset',
       'reaction_no_data_color',
@@ -499,8 +501,10 @@ class Builder {
     const svg = this.zoom_container.svg;
 
     // remove the old map side effects
-    if (this.map)
+    if (this.map) {
       this.map.key_manager.toggle(false);
+      this.map.key_manager.setScope(null); // drop its click-to-focus listener
+    }
 
 
     if (mapData !== null) {
@@ -573,6 +577,10 @@ class Builder {
     );
 
     // Set up key manager
+    // Escher may be embedded in a host application (as a view, a tab, ...), so the shortcuts are
+    // scoped to the builder container: they only fire while the map is focused or targeted, and
+    // never while the user types elsewhere on the page.
+    this.map.key_manager.setScope(this.selection.node() as HTMLElement);
     this.map.key_manager.assignedKeys = this.getKeys();
     // Tell the key manager about the reaction input and search bar
     this.map.key_manager.inputList = [

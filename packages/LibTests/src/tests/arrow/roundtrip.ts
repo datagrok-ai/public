@@ -22,6 +22,15 @@ async function roundtrip(df: DG.DataFrame): Promise<DG.DataFrame> {
   return fromFeather(await toFeather(df));
 }
 
+async function roundtripWithNulls(col: DG.Column, type: DG.ColumnType): Promise<DG.Column> {
+  expect(col.stats.missingValueCount > 0, true, 'precondition: source column must contain nulls');
+  const back = (await roundtrip(DG.DataFrame.fromColumns([col]))).col(col.name)!;
+  expect(back.type, type, 'type differs');
+  for (let i = 0; i < col.length; ++i)
+    expect(back.isNone(i), col.isNone(i), `row ${i} null-ness differs`);
+  return back;
+}
+
 category('Arrow / IPC round-trip', () => {
   test('roundtrip_int_column', async () => {
     const col = DG.Column.fromInt32Array('vals', new Int32Array([1, 2, 3, -7, 0, 999]));
@@ -140,6 +149,30 @@ category('Arrow / IPC round-trip', () => {
       {floatTolerance: 1e-12},
     );
     expectDeepEqual(back.col('label')!.toList(), df.col('label')!.toList());
+  });
+
+  test('roundtrip_int_column_with_nulls', async () => {
+    const back = await roundtripWithNulls(
+      DG.Column.fromInt32Array('vals', new Int32Array([1, DG.INT_NULL, 3, DG.INT_NULL, 0])), DG.COLUMN_TYPE.INT);
+    expect(back.get(0), 1);
+    expect(back.get(2), 3);
+    expect(back.get(4), 0, 'a measured zero must stay distinct from null');
+  });
+
+  test('roundtrip_float_column_with_nulls', async () => {
+    const back = await roundtripWithNulls(
+      DG.Column.fromFloat64Array('vals', new Float64Array([1.5, DG.FLOAT_NULL, 2.5, DG.FLOAT_NULL, 0])),
+      DG.COLUMN_TYPE.FLOAT);
+    expectFloat(back.get(0) as number, 1.5, 1e-12);
+    expectFloat(back.get(4) as number, 0, 1e-12);
+  });
+
+  test('roundtrip_datetime_column_with_nulls', async () => {
+    const dates = [new Date('2020-01-15T12:00:00Z'), null, new Date('2021-03-05T08:30:45Z')];
+    const back = await roundtripWithNulls(
+      DG.Column.fromList(DG.COLUMN_TYPE.DATE_TIME, 'vals', dates as any), DG.COLUMN_TYPE.DATE_TIME);
+    expect((back.get(0) as any).valueOf(), dates[0]!.valueOf());
+    expect((back.get(2) as any).valueOf(), dates[2]!.valueOf());
   });
 
   test('roundtrip_byte_array_serialization', async () => {

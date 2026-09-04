@@ -23,9 +23,12 @@ import {
   createProfileForDf,
   mergeProfileWithDf,
   isEdaPackageInstalled,
+  MpoProfileInfo,
+  MpoProfileRef,
   UNTITLED_PROFILE,
 } from './utils';
-import {MpoProfileManager} from './mpo-profile-manager';
+import {mpoProfileStore} from './mpo-profile-store';
+import {saveProfileInteractive} from './mpo-profile-actions';
 
 const FIELD_DESCRIPTIONS: Record<string, string> = {
   'Method': 'Manual desirability curve editing or data-driven MPO trained from labeled data',
@@ -34,6 +37,23 @@ const FIELD_DESCRIPTIONS: Record<string, string> = {
 };
 
 export class MpoProfileCreateView {
+  static readonly PROFILE_ID_TAG = 'chem-mpo-profile-id';
+
+  static focusOpenEditor(profileId: string): boolean {
+    const isEditor = (v: DG.ViewBase | null) => v?.temp?.[MpoProfileCreateView.PROFILE_ID_TAG] === profileId;
+    for (const v of grok.shell.views) {
+      if (isEditor(v)) {
+        grok.shell.v = v;
+        return true;
+      }
+    }
+    if (isEditor(grok.shell.preview as DG.View | null)) {
+      grok.shell.windows.showBrowse = true;
+      return true;
+    }
+    return false;
+  }
+
   readonly view: DG.View;
   readonly showMethod: boolean;
   readonly isEditMode: boolean;
@@ -47,14 +67,16 @@ export class MpoProfileCreateView {
   profileViewContainer!: HTMLDivElement;
   methodInput?: DG.ChoiceInput<string | null>;
   datasetInput?: DG.InputBase;
-  fileName?: string | null = null;
+  saved: MpoProfileRef | null = null;
   saveButton: HTMLElement | null = null;
   resetButton: HTMLElement | null = null;
 
   private headerEl!: HTMLElement;
+  private nameErrorEl!: HTMLElement;
   private descEl!: HTMLElement;
   private toolbarEl!: HTMLElement;
   private aggregationField!: HTMLElement;
+  private contentEl!: HTMLDivElement;
 
   tableView: DG.TableView;
   private tableViewVisible: boolean = false;
@@ -77,16 +99,18 @@ export class MpoProfileCreateView {
   } | null = null;
 
   constructor(
-    existingProfile?: DesirabilityProfile,
+    existingProfile?: DesirabilityProfile | MpoProfileInfo,
     showMethod: boolean = true,
-    fileName?: string,
   ) {
     this.view = DG.View.create();
     this.showMethod = showMethod;
     this.isEditMode = !!existingProfile;
-    this.fileName = fileName;
+    if (existingProfile && 'id' in existingProfile) {
+      this.saved = existingProfile;
+      this.activeView.temp[MpoProfileCreateView.PROFILE_ID_TAG] = this.saved.id;
+    }
 
-    this.profile = existingProfile ?? createDefaultProfile();
+    this.profile = existingProfile ? structuredClone(existingProfile) : createDefaultProfile();
     this.originalProfile = structuredClone(this.profile);
     this.editor = new MpoProfileEditor(undefined, true);
     this.editor.setProfile(this.profile);
@@ -163,10 +187,11 @@ export class MpoProfileCreateView {
 
     this.saveButton = ui.button('Save', () => this.save());
     this.resetButton = ui.button('Reset', () => this.resetProfile());
+    this.nameErrorEl = ui.divText('', 'chem-profile-name-error');
     this.setModified(false);
 
     const editable = (el: HTMLElement, onChanged: () => void, singleLine = false) => {
-      el.contentEditable = 'true';
+      el.contentEditable = 'plaintext-only';
       el.addEventListener('input', () => {
         if (!this.updatingLayout) {
           onChanged();
@@ -194,10 +219,15 @@ export class MpoProfileCreateView {
 
     this.toolbarEl = ui.divV([ui.divV(controls)], 'chem-profile-toolbar-wrap');
 
-    this.profileViewContainer = ui.divV([this.headerEl, this.descEl, this.toolbarEl]);
+    this.contentEl = ui.divV([], 'chem-profile-content');
+    this.profileViewContainer = ui.divV([this.headerEl, this.nameErrorEl, this.descEl, this.toolbarEl, this.contentEl]);
     this.profileViewContainer.classList.add('chem-profile-view');
 
     this.view.root.append(this.profileViewContainer);
+    this.setupRibbon();
+  }
+
+  private setupRibbon(): void {
     this.activeView.setRibbonPanels([[this.saveButton!, this.resetButton!]]);
   }
 
@@ -301,15 +331,16 @@ export class MpoProfileCreateView {
   }
 
   async save(): Promise<boolean> {
-    const result = await MpoProfileManager.saveProfile(this.profile, this.fileName);
-    if (result.saved) {
-      this.fileName = result.fileName;
+    const result = await saveProfileInteractive(this.profile, this.saved);
+    if (result) {
+      this.saved = result;
+      this.activeView.temp[MpoProfileCreateView.PROFILE_ID_TAG] = result.id;
       this.originalProfile = structuredClone(this.profile);
       this.setModified(false);
       this.tableView.name = this.view.name = this.displayName;
       this.setupBreadcrumbs();
     }
-    return result.saved;
+    return result != null;
   }
 
   private applyProfileName(newName: string): void {
@@ -360,8 +391,16 @@ export class MpoProfileCreateView {
 
   private setModified(modified: boolean): void {
     this.profileModified = modified;
-    this.saveButton!.classList.toggle('d4-disabled', !modified);
+    this.saveButton!.classList.toggle('d4-disabled', !modified || !this.validateName());
     this.resetButton!.classList.toggle('d4-disabled', !modified);
+  }
+
+  private validateName(): boolean {
+    const name = this.profile.name?.trim() ?? '';
+    const taken = mpoProfileStore.items.some((p) => p.name === name && p.id !== this.saved?.id);
+    this.nameErrorEl.textContent = taken ? 'A profile with this name already exists' : '';
+    this.nameErrorEl.classList.toggle('chem-mpo-d-none', !taken);
+    return !taken;
   }
 
   async resetProfile(): Promise<void> {
@@ -397,11 +436,11 @@ export class MpoProfileCreateView {
         this.updatingLayout = false;
       }
 
-      this.activeView.setRibbonPanels([[this.saveButton!, this.resetButton!]]);
+      this.setupRibbon();
       this.setModified(this.profileModified);
 
       if (!this.df) {
-        this.profileViewContainer.append(this.profileEditorContainer);
+        this.contentEl.append(this.profileEditorContainer);
         return;
       }
 
@@ -412,8 +451,8 @@ export class MpoProfileCreateView {
   }
 
   private clearPreviousLayout() {
-    ui.empty(this.profileViewContainer);
-    this.profileViewContainer.append(this.headerEl, this.descEl, this.toolbarEl);
+    this.profileEditorContainer.remove();
+    ui.empty(this.contentEl);
   }
 
   private async setupGridAndContextPanel() {
@@ -436,7 +475,7 @@ export class MpoProfileCreateView {
     const split = ui.splitH([editorPanel, gridPanel], {}, true);
     split.classList.add('chem-view-split');
 
-    this.profileViewContainer.append(split);
+    this.contentEl.append(split);
 
     if (this.df!.currentRowIdx === -1 && this.df!.rowCount > 0)
       this.df!.currentCell = this.df!.cell(0, this.df!.columns.byIndex(0).name);
@@ -482,7 +521,7 @@ export class MpoProfileCreateView {
     this.clearPreviousLayout();
     const errorDiv = ui.divText(message);
     errorDiv.classList.add('chem-mpo-error-message');
-    this.profileViewContainer.append(errorDiv);
+    this.contentEl.append(errorDiv);
   }
 
   // --- Data-driven MPO mode ---
@@ -621,7 +660,7 @@ export class MpoProfileCreateView {
     }));
 
     this.subs.push(grok.events.onCustomEvent(MPO_PROFILE_DELETED_EVENT).subscribe((data) => {
-      if (data?.fileName === this.fileName)
+      if (data?.id === this.saved?.id)
         this.closeView();
     }));
 

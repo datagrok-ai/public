@@ -16,6 +16,8 @@
     "dayjs": "^1.11.13"
   },
   "devDependencies": {
+    "@datagrok-libraries/bdd": "^0.1.0",
+    "@playwright/test": "^1.62.1",
     "css-loader": "^7.1.2",
     "datagrok-tools": "^5.1.5",
     "style-loader": "^4.0.0",
@@ -39,7 +41,8 @@
     "release-u2demo-dev8082": "webpack && grok publish dev8082 --release",
     "debug-u2demo-localhost": "webpack && grok publish localhost",
     "release-u2demo-localhost": "webpack && grok publish localhost --release",
-    "build-all": "npm --prefix ./../../libraries/u2 run build && npm run build"
+    "build-all": "npm --prefix ./../../libraries/u2 run build && npm run build",
+    "test:bdd": "grok-bdd run"
   },
   "canEdit": [
     "Developers"

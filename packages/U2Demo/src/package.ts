@@ -120,7 +120,7 @@ export function u2DemoApp(path?: string): DG.ViewBase {
   content.own(disposePanel);
   const view = appView({
     name: 'U2 Demo', content, status,
-    ribbon: [content.run(() => demoRibbon(shell))],
+    ribbon: [content.runInScope(() => demoRibbon(shell))],
     path: computed(() => APP_PATH + pathOf(shell.current.value)),
   });
   demoView = view;

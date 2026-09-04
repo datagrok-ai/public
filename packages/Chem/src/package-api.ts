@@ -855,6 +855,27 @@ export namespace funcs {
   }
 
   /**
+  SAR Matrix viewer
+  */
+  export async function sarMatrixViewer(): Promise<any> {
+    return await grok.functions.call('Chem:SarMatrixViewer', {});
+  }
+
+  /**
+  Column names available for SAR Matrix series grouping
+  */
+  export async function sarSeriesColumnChoices(): Promise<any> {
+    return await grok.functions.call('Chem:SarSeriesColumnChoices', {});
+  }
+
+  /**
+  Groups related compound series into potency-colored matrices and predicts virtual analogs.
+  */
+  export async function sarMatrixAnalysis(table: DG.DataFrame , molecules: DG.Column , activity: DG.Column , scaling: string , activityDirection: string , fragmentCutoff: number , fragmentationLevels: number , predictVirtual: boolean , useMcsAnchors: boolean , seriesColumn: string | null): Promise<void> {
+    return await grok.functions.call('Chem:SarMatrixAnalysis', { table, molecules, activity, scaling, activityDirection, fragmentCutoff, fragmentationLevels, predictVirtual, useMcsAnchors, seriesColumn });
+  }
+
+  /**
   Scaffold Tree filter
   */
   export async function scaffoldTreeFilter(): Promise<any> {
@@ -881,6 +902,13 @@ export namespace funcs {
   */
   export async function demoMMPA(): Promise<void> {
     return await grok.functions.call('Chem:DemoMMPA', {});
+  }
+
+  /**
+  Group analog series into potency matrices and predict the analogs worth making next
+  */
+  export async function demoSarMatrix(): Promise<void> {
+    return await grok.functions.call('Chem:DemoSarMatrix', {});
   }
 
   /**
@@ -1037,6 +1065,20 @@ export namespace funcs {
   */
   export async function biochemPropsWidget(): Promise<void> {
     return await grok.functions.call('Chem:BiochemPropsWidget', {});
+  }
+
+  /**
+  Saves a DesirabilityProfile JSON as an MPO profile. Returns the profile id.
+  */
+  export async function saveMpoProfile(profileJson: string ): Promise<string> {
+    return await grok.functions.call('Chem:SaveMpoProfile', { profileJson });
+  }
+
+  /**
+  Grants all users access to MPO profiles and seeds every profile in the System:AppData/Chem/mpo folder - the shipped defaults plus any profiles saved there by the old file-based storage. Idempotent - safe to run repeatedly.
+  */
+  export async function seedMpoProfiles(): Promise<string> {
+    return await grok.functions.call('Chem:SeedMpoProfiles', {});
   }
 
   export async function mpoProfilesApp(path?: string ): Promise<DG.View> {

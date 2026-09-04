@@ -19,6 +19,7 @@ import formsSource from './pages/forms?raw';
 import inputsSource from './pages/inputs?raw';
 import overviewSource from './pages/overview?raw';
 import platformSource from './pages/platform?raw';
+import msaWorkbenchSource from './pages/msa-workbench?raw';
 import '../css/u2demo-source.css';
 
 const BLOB = 'https://github.com/datagrok-ai/public/blob/master/';
@@ -37,6 +38,7 @@ const SOURCES: Record<string, string> = {
   [`${SRC_ROOT}/pages/inputs.ts`]: inputsSource,
   [`${SRC_ROOT}/pages/overview.ts`]: overviewSource,
   [`${SRC_ROOT}/pages/platform.ts`]: platformSource,
+  [`${SRC_ROOT}/pages/msa-workbench.ts`]: msaWorkbenchSource,
 };
 
 /** From `function <symbol>(` to the first line that is exactly `}` — every page factory in this

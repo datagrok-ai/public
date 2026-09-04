@@ -13,7 +13,7 @@ import {ViewersHook} from '@datagrok-libraries/compute-utils/reactive-tree-drive
 import {compositorOverlay} from '../directives/compositor-overlay';
 import {canUseResults, pinView} from '../utils';
 import {parseUrlInputs, applyUrlInputs, missingMandatoryInputs, buildInputsUrl, copyText} from '../url-inputs';
-import {_package} from '../package-instance';
+import {getShareAction} from '../sharing/sharing';
 
 const RUN_DEBOUNCE_TIME = 250;
 const OUTPUT_OUTDATED_PATH = 'OUTPUT_OUTDATED';
@@ -200,32 +200,33 @@ export const RFVApp = Vue.defineComponent({
         runRequests$.next(true);
     };
 
-    const saveRun = async () => {
-      // Invoked by RichFunctionView's shared save-to-history icon (onSaveToHistory). Block
-      // saving a stale/in-flight run with a shell message.
+    const saveRunWithDialog = async (): Promise<string | null> => {
+      // Invoked by RichFunctionView's shared save-to-history icon (onSaveToHistory) and by the
+      // save-then-share flow. Block saving a stale/in-flight run with a shell message.
       if (!canUseResults(currentCallState.value, 'saving'))
-        return;
+        return null;
       const dialog = new EditRunMetadataDialog({
         title: currentFuncCall.value.options['title'] ?? '',
         description: currentFuncCall.value.options['description'] ?? '',
         tags: currentFuncCall.value.options['tags'] ?? [],
       });
-      dialog.onMetadataEdit.pipe(take(1)).subscribe(async (editOptions) => {
-        currentFuncCall.value.options['title'] = editOptions.title;
-        currentFuncCall.value.options['description'] = editOptions.description;
-        currentFuncCall.value.options['tags'] = editOptions.tags;
-        currentFuncCall.value.newId();
-        await historyUtils.saveRun(currentFuncCall.value);
-        await saveIsFavorite(currentFuncCall.value, !!editOptions.isFavorite);
-        // saveRun persists the run under currentFuncCall's id (set by newId() above), so map that
-        // id straight to the URL. Set it here rather than via triggerRef -> the currentFuncCall
-        // watcher, whose `fc.author` gate would clear it (a just-saved call has no author yet).
-        const fc = currentFuncCall.value;
-        const modelName = fc.func?.friendlyName ?? fc.func?.name;
-        setViewName(fc.options['title'] ? `${modelName} - ${fc.options['title']}` : modelName);
-        searchParams.id = fc.id;
-      });
-      dialog.show({center: true, width: 500});
+      const editOptions = await dialog.awaitMetadata();
+      if (!editOptions)
+        return null;
+      currentFuncCall.value.options['title'] = editOptions.title;
+      currentFuncCall.value.options['description'] = editOptions.description;
+      currentFuncCall.value.options['tags'] = editOptions.tags;
+      currentFuncCall.value.newId();
+      await historyUtils.saveRun(currentFuncCall.value);
+      await saveIsFavorite(currentFuncCall.value, !!editOptions.isFavorite);
+      // saveRun persists the run under currentFuncCall's id (set by newId() above), so map that
+      // id straight to the URL. Set it here rather than via triggerRef -> the currentFuncCall
+      // watcher, whose `fc.author` gate would clear it (a just-saved call has no author yet).
+      const fc = currentFuncCall.value;
+      const modelName = fc.func?.friendlyName ?? fc.func?.name;
+      setViewName(fc.options['title'] ? `${modelName} - ${fc.options['title']}` : modelName);
+      searchParams.id = fc.id;
+      return fc.id;
     };
 
     const onUpdateForm = () => {
@@ -233,20 +234,20 @@ export const RFVApp = Vue.defineComponent({
         runRequests$.next(true);
     };
 
-    // Optional artifact publishing, double-gated: the ArtifactAlignment package must be
-    // installed (its dialog function resolves) AND the enableArtifactPublishing package
-    // setting must be on.
-    const publishFunc = _package.settings?.['enableArtifactPublishing'] === true ?
-      (DG.Func.find({name: 'publishWorkflowRunDialog'})[0] ?? null) : null;
+    const shareAction = getShareAction();
 
-    const publishRun = async () => {
-      if (!canUseResults(currentCallState.value, 'publishing'))
+    const shareRun = async () => {
+      if (!canUseResults(currentCallState.value, 'sharing'))
         return;
-      const fc = currentFuncCall.value;
-      await publishFunc!.prepare({
-        sourceCall: fc,
-        defaultName: fc.options['title'] ?? fc.func?.friendlyName ?? fc.func?.name,
-      }).call();
+      await shareAction!.run({
+        liveCall: () => currentFuncCall.value,
+        savedCallId: () => searchParams.id ?? null,
+        saveRun: saveRunWithDialog,
+        defaultName: () => {
+          const fc = currentFuncCall.value;
+          return fc.options['title'] ?? fc.func?.friendlyName ?? fc.func?.name;
+        },
+      });
     };
 
     Vue.onUnmounted(() => {
@@ -274,9 +275,10 @@ export const RFVApp = Vue.defineComponent({
           urlExportHandler={copyUrlWithInputs}
           onFormValidationChanged={(val) => isFormValid$.next(val)}
           onFormInputChanged={onInputChanged}
-          onSaveToHistory={() => saveRun()}
-          showPublish={publishFunc != null}
-          onPublishRun={() => publishRun()}
+          onSaveToHistory={() => saveRunWithDialog()}
+          showPublish={shareAction != null}
+          publishTooltip={shareAction?.tooltip}
+          onPublishRun={() => shareRun()}
           historyEnabled={true}
           localValidation={true}
           skipInit={false}

@@ -20,6 +20,14 @@ export namespace funcs {
     return await grok.functions.call('Grokky:CombinedLLMSearchProvider', {});
   }
 
+  export async function gemmaEngine(): Promise<any> {
+    return await grok.functions.call('Grokky:GemmaEngine', {});
+  }
+
+  export async function claudeEngine(): Promise<any> {
+    return await grok.functions.call('Grokky:ClaudeEngine', {});
+  }
+
   /**
   Get answers from AI assistant based on Datagrok documentation and public code.
   */

@@ -65,6 +65,7 @@ import {chemSimilaritySearch, ChemSimilarityViewer} from './analysis/chem-simila
 import {chemSpace, runChemSpace} from './analysis/chem-space';
 import {RGroupDecompRes, RGroupParams, rGroupAnalysis, rGroupDecomp} from './analysis/r-group-analysis';
 import {MatchedMolecularPairsViewer} from './analysis/molecular-matched-pairs/mmp-viewer/mmp-viewer';
+import {dockSarMatrixTabs, SarMatrixViewer} from './analysis/sar-matrix/sar-matrix-viewer';
 
 //file importers
 import {_importTripos} from './file-importers/mol2-importer';
@@ -76,7 +77,7 @@ import {RDKitReactionRenderer} from './rendering/rdkit-reaction-renderer';
 import {structure3dWidget} from './widgets/structure3d';
 import {BitArrayMetrics, BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {
-  _demoActivityCliffs, _demoActivityCliffsLayout, _demoChemicalSpace, _demoChemOverview, _demoMMPA,
+  _demoActivityCliffs, _demoActivityCliffsLayout, _demoChemicalSpace, _demoChemOverview, _demoMMPA, _demoSarMatrix,
   _demoRgroupAnalysis, _demoRGroups, _demoScaffoldTree, _demoSimilarityDiversitySearch,
 } from './demo/demo';
 import {getStructuralAlertsByRules, RuleSet, STRUCT_ALERTS_RULES_NAMES} from './panels/structural-alerts';
@@ -114,7 +115,7 @@ import {MpoProfilesView} from './mpo/mpo-profiles-view';
 
 import $ from 'cash-dom';
 import {MpoProfileCreateView} from './mpo/mpo-create-profile';
-import {MpoProfileManager} from './mpo/mpo-profile-manager';
+import {mpoProfileStore, parseMpoProfile} from './mpo/mpo-profile-store';
 import {MpoProfileHandler} from './mpo/mpo-profile-handler';
 import {applyDesirabilityTags, collectMpoResultColumns, computeMpo, findSuitableProfiles, MPO_PROFILE_CHANGED_EVENT} from './mpo/utils';
 import {removeWaterAndSalts, runTransformationReaction} from './utils/reactions/reactions';
@@ -175,6 +176,13 @@ export let _properties: any;
 
 let _rdRenderer: RDKitCellRenderer;
 export let renderer: GridCellRendererProxy;
+
+/** The one molecule cell renderer the platform uses for every Molecule column, so callers that draw
+ *  molecules onto their own canvases (e.g. the SAR Matrix viewer) reuse its shared mol + raster LRU
+ *  caches instead of standing up a private one. Undefined until `initChemInt` has run. */
+export function getMoleculeRenderer(): RDKitCellRenderer | undefined {
+  return _rdRenderer;
+}
 let _initChemPromise: Promise<void> | null = null;
 
 let mpoTreeBrowserSub: Subscription | null = null;
@@ -2527,6 +2535,104 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
+    name: 'SAR Matrix Viewer',
+    description: 'SAR Matrix viewer',
+    outputs: [{name: 'result', type: 'viewer'}],
+    meta: {showInGallery: 'false', role: 'viewer'},
+  })
+  static sarMatrixViewer(): SarMatrixViewer {
+    return new SarMatrixViewer();
+  }
+
+  /** Column names offered for SAR Matrix's optional series grouping, led by a blank so "no grouping of
+   *  my own" is the value the dialog opens on. Read from the current table, which is the one the
+   *  dialog's Table input also defaults to; `sarMatrixAnalysis` re-resolves the name against whatever
+   *  table is actually chosen and reports it if the two disagree. */
+  @grok.decorators.func({
+    description: 'Column names available for SAR Matrix series grouping',
+    outputs: [{name: 'result', type: 'list<string>'}],
+  })
+  static sarSeriesColumnChoices(): string[] {
+    return ['', ...(grok.shell.t?.columns.names() ?? [])];
+  }
+
+  @grok.decorators.func({
+    'name': 'SAR Matrix',
+    'description': 'Groups related compound series into potency-colored matrices and predicts virtual analogs.',
+    'top-menu': 'Chem | Analyze | SAR Matrix...',
+  })
+  static async sarMatrixAnalysis(
+    table: DG.DataFrame,
+    @grok.decorators.param({options: {semType: 'Molecule'}}) molecules: DG.Column,
+    @grok.decorators.param({type: 'column', options: {type: 'numerical'}}) activity: DG.Column,
+    @grok.decorators.param({
+      type: 'string',
+      // Same defaults the viewer's own properties carry, so adding it from the gallery and running it
+      // from this dialog read the assay the same way. They disagreed before, and the pair the dialog
+      // opened with — raw values called higher-is-better — inverts potency on a raw IC50 column.
+      options: {choices: ['none', 'lg', '-lg'], initialValue: '-lg', description: 'Activity scaling before assembly'},
+    }) scaling: string = '-lg',
+    @grok.decorators.param({
+      type: 'string',
+      options: {choices: ['Auto (from scaling)', 'Higher is better', 'Lower is better'],
+        initialValue: 'Auto (from scaling)',
+        description: 'Which end of the activity is more potent (set explicitly for pre-computed pIC50/pKi)'},
+    }) activityDirection: string = 'Auto (from scaling)',
+    @grok.decorators.param({
+      type: 'double',
+      options: {initialValue: '0.4', description: 'Maximum fragment size relative to core'},
+    }) fragmentCutoff: number = 0.4,
+    // The description has to be a single string literal with no ';' in it: the metadata generator
+    // evaluates literals only, so a '+'-joined one arrives empty, and the annotation it emits is
+    // itself ';'-separated, so a semicolon inside the text would read as the start of a new option.
+    @grok.decorators.param({
+      type: 'int',
+      options: {initialValue: '3', caption: 'Series levels', min: '1', max: '5',
+        description: 'Nested series tiers (L1/L2/L3): 1 is a flat list, each level folds matrices one cut broader'},
+    }) fragmentationLevels: number = 3,
+    @grok.decorators.param({options: {initialValue: 'true'}}) predictVirtual: boolean = true,
+    @grok.decorators.param({
+      options: {initialValue: 'false', caption: 'Group leftovers by MCS',
+        description: 'Off leaves out the compounds no shared core could group. On searches those for a common core and adds the matrices it finds, keeping every matrix the core grouping already produced. Slower on large sets'},
+    }) useMcsAnchors: boolean = false,
+    // Last, and picked by name rather than as a column: a column-typed input cannot start empty here,
+    // because the column selector always resolves to the first matching column — which would silently
+    // group every compound by its own structure for anyone who left the field alone.
+    @grok.decorators.param({
+      type: 'string',
+      options: {nullable: true, initialValue: '', caption: 'Series column (Optional)',
+        choices: 'Chem:sarSeriesColumnChoices()',
+        description: 'Optional. Your own grouping: compounds sharing a value become one matrix named with that value. Leave empty to group by structure'},
+    }) seriesColumn: string = '',
+  ): Promise<void> {
+    // A DateTime column reports isNumerical and so passes the 'numerical' input filter (dates are
+    // numeric internally, which is what lets them serve as a plot axis). Potency arithmetic on a
+    // timestamp would produce silent nonsense, so reject it here — this also covers programmatic
+    // callers, which never see the dialog at all.
+    if (!activity.isNumerical || activity.type === DG.COLUMN_TYPE.DATE_TIME) {
+      grok.shell.error(`SAR Matrix: "${activity.name}" is a ${activity.type} column. ` +
+        'Pick a numeric activity column (int, float, bigint or qnum).');
+      return;
+    }
+    // Omitted by a programmatic caller arrives as null, which is the same as "group by structure".
+    const seriesName = seriesColumn ?? '';
+    // The choices came from the current table; if a different one was picked the name may not exist
+    // there, and silently ignoring it would group by structure under a heading that says otherwise.
+    if (seriesName !== '' && !table.col(seriesName)) {
+      grok.shell.error(`SAR Matrix: "${seriesName}" is not a column of "${table.name}". ` +
+        'Pick a series column from that table, or leave it empty to group by structure.');
+      return;
+    }
+    checkCurrentView(table);
+    const view = grok.shell.tv as DG.TableView;
+    const viewer = view.addViewer('SAR Matrix Viewer', {moleculesColumnName: molecules.name,
+      activityColumnName: activity.name,
+      seriesColumnName: seriesName,
+      scaling, activityDirection, fragmentCutoff, fragmentationLevels, predictVirtual, useMcsAnchors});
+    dockSarMatrixTabs(view, viewer);
+  }
+
+  @grok.decorators.func({
     name: 'Scaffold Tree Filter',
     description: 'Scaffold Tree filter',
     outputs: [{name: 'result', type: 'filter'}],
@@ -2596,6 +2702,15 @@ export class PackageFunctions {
   })
   static async demoMMPA(): Promise<void> {
     await _demoMMPA();
+  }
+
+  @grok.decorators.func({
+    name: 'Demo SAR Matrix',
+    description: 'Group analog series into potency matrices and predict the analogs worth making next',
+    meta: {demoPath: 'Cheminformatics | SAR Matrix'},
+  })
+  static async demoSarMatrix(): Promise<void> {
+    await _demoSarMatrix();
   }
 
   @grok.decorators.func({
@@ -2966,7 +3081,7 @@ export class PackageFunctions {
     outputs: [{name: 'result', type: 'list<string>'}],
   })
   static async getMpoProfileNames(): Promise<string[]> {
-    return (await MpoProfileManager.load()).map((p) => p.name);
+    return (await mpoProfileStore.load()).map((p) => p.name);
   }
 
   /** The property names a profile scores — what a caller has to map to columns.
@@ -2978,7 +3093,7 @@ export class PackageFunctions {
   })
   static async getMpoProfileProperties(
     @grok.decorators.param({options: {caption: 'Profile', nullable: false, choices: 'Chem:getMpoProfileNames()'}}) profileName: string): Promise<string[]> {
-    const profile = (await MpoProfileManager.ensureLoaded()).find((p) => p.name === profileName);
+    const profile = (await mpoProfileStore.ensureLoaded()).find((p) => p.name === profileName);
     return profile ? Object.keys(profile.properties ?? {}) : [];
   }
 
@@ -3001,7 +3116,7 @@ export class PackageFunctions {
     @grok.decorators.param({type: 'string', options: {caption: 'Aggregation', nullable: false, initialValue: 'Average', choices: ['Average', 'Sum', 'Product', 'Geomean', 'Min', 'Max']}}) aggregation: WeightedAggregation = 'Average',
     @grok.decorators.param({options: {caption: 'Per-property columns', description: 'Also add one desirability column per scored property'}}) createDesirabilityColumns: boolean = false,
   ): Promise<DG.Column | null> {
-    const profiles = await MpoProfileManager.ensureLoaded();
+    const profiles = await mpoProfileStore.ensureLoaded();
     const profile = profiles.find((p) => p.name === profileName);
     if (!profile)
       throw new Error(`MPO profile "${profileName}" not found. Available: ${profiles.map((p) => p.name).join(', ')}`);
@@ -3119,6 +3234,26 @@ export class PackageFunctions {
     await biochemicalPropertiesDialog();
   }
 
+  @grok.decorators.func({
+    description: 'Saves a DesirabilityProfile JSON as an MPO profile. Returns the profile id.',
+    outputs: [{name: 'id', type: 'string'}],
+  })
+  static async saveMpoProfile(profileJson: string): Promise<string> {
+    const parsed = parseMpoProfile(profileJson);
+    if ('error' in parsed)
+      throw new Error(parsed.error);
+    const saved = await mpoProfileStore.save(parsed.profile);
+    return saved.id;
+  }
+
+  @grok.decorators.func({
+    description: 'Grants all users access to MPO profiles and seeds every profile in the System:AppData/Chem/mpo folder - the shipped defaults plus any profiles saved there by the old file-based storage. Idempotent - safe to run repeatedly.',
+    outputs: [{name: 'result', type: 'string'}],
+  })
+  static async seedMpoProfiles(): Promise<string> {
+    return mpoProfileStore.seedDefaults();
+  }
+
   @grok.decorators.app({
     'name': 'MPO profiles',
     'meta': {browsePath: 'Chem', icon: 'images/mpo.png'},
@@ -3137,10 +3272,10 @@ export class PackageFunctions {
     }
 
     const profileId = params.get('profileId');
-    const profiles = await MpoProfileManager.ensureLoaded();
+    const profiles = await mpoProfileStore.ensureLoaded();
     if (hasPath && profileId) {
       const profile = profiles.find((p) => p.name === decodeURIComponent(profileId));
-      const view = new MpoProfileCreateView(profile, false, profile?.fileName);
+      const view = new MpoProfileCreateView(profile, false);
       return view.view;
     }
 
@@ -3169,13 +3304,15 @@ export class PackageFunctions {
     const refresh = async () => {
       treeNode.items.forEach((item) => item.remove());
 
-      const profiles = await MpoProfileManager.ensureLoaded();
+      const profiles = await mpoProfileStore.ensureLoaded();
       for (const profile of profiles) {
         const item = treeNode.item(profile.name);
 
         item.onSelected.subscribe(() => {
+          if (MpoProfileCreateView.focusOpenEditor(profile.id))
+            return;
           openedView?.close();
-          const editView = new MpoProfileCreateView(profile, false, profile.fileName);
+          const editView = new MpoProfileCreateView(profile, false);
           openedView = editView.view;
           grok.shell.addPreview(editView.view);
           editView.setupBreadcrumbs();
@@ -3184,10 +3321,10 @@ export class PackageFunctions {
         item.captionLabel.addEventListener('contextmenu', (ev) => {
           ev.stopImmediatePropagation();
           ev.preventDefault();
-          DG.Menu.popup()
-            .item('Clone', () => MpoProfileHandler.clone(profile))
-            .item('Delete', () => MpoProfileHandler.delete(profile))
-            .show({x: ev.clientX, y: ev.clientY, causedBy: ev});
+          const menu = DG.Menu.popup();
+          menu.item('Clone', () => MpoProfileHandler.clone(profile));
+          menu.item('Delete', () => MpoProfileHandler.delete(profile));
+          menu.show({x: ev.clientX, y: ev.clientY, causedBy: ev});
         });
       }
     };
@@ -3310,7 +3447,7 @@ export class PackageFunctions {
     resultDiv.appendChild(loader);
 
     const dataFrame = semValue.cell?.dataFrame ?? grok.shell.t;
-    const profiles = await MpoProfileManager.load();
+    const profiles = await mpoProfileStore.load();
     const suitableProfiles = findSuitableProfiles(dataFrame, profiles);
 
     if (suitableProfiles.length === 0) {
@@ -3325,8 +3462,8 @@ export class PackageFunctions {
     }
 
     const profileInput = ui.input.choice('Profile', {
-      items: suitableProfiles.map((p) => p.fileName),
-      value: suitableProfiles[0].fileName,
+      items: suitableProfiles.map((p) => p.name),
+      value: suitableProfiles[0].name,
       onValueChanged: () => calculateMpo(),
     });
 
@@ -3340,7 +3477,7 @@ export class PackageFunctions {
       if (!profileInput.value)
         return;
 
-      const selected = suitableProfiles.find((p) => p.fileName === profileInput.value);
+      const selected = suitableProfiles.find((p) => p.name === profileInput.value);
       if (!selected)
         return;
 

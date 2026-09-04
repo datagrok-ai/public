@@ -9,6 +9,7 @@ export const ClaudeModel = {
 export type ClaudeModel = typeof ClaudeModel[keyof typeof ClaudeModel];
 
 export type ChunkEvent = {sessionId: string, content: string};
+export type ImageAttachment = {mediaType: 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp', data: string};
 /** `name` is the bare tool name (mcp prefix stripped); absent for progress-only activity. */
 export type ToolActivityEvent = {sessionId: string, summary: string, name?: string};
 /** A runtime gate blocked the turn's Stop — a revision is being generated behind the visible
@@ -202,7 +203,8 @@ export class ClaudeRuntimeClient {
   }
 
   send(sessionId: string, message: string, options?: {outputSchema?: object; systemPromptMode?: string; model?: ClaudeModel;
-    taskId?: string; clientTools?: {name: string; description: string; inputSchema?: object}[]}): void {
+    taskId?: string; clientTools?: {name: string; description: string; inputSchema?: object}[];
+    images?: ImageAttachment[]}): void {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN)
       throw new Error('ClaudeRuntimeClient: WebSocket is not connected');
     this.ws.send(JSON.stringify({
@@ -215,6 +217,7 @@ export class ClaudeRuntimeClient {
       ...(options?.model ? {model: options.model} : {}),
       ...(options?.taskId ? {taskId: options.taskId} : {}),
       ...(options?.clientTools?.length ? {clientTools: options.clientTools} : {}),
+      ...(options?.images?.length ? {images: options.images} : {}),
     }));
   }
 

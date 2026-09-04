@@ -22,6 +22,8 @@ const FOCUSABLE = 'input, textarea, select, button, [tabindex]';
 /** Platform chrome shares the aligned label column: a bridged input brings its own `ui-` label. */
 const LABELS = '.u2-input-label, .ui-input-label';
 
+const _warnedUnkeyed = new Set<string>();
+
 /** Vertical input layout with an aligned label column and aggregated validity. The form does not
  * own the inputs it lays out: each one is already adopted by the scope that created it. */
 export class Form extends Control {
@@ -76,6 +78,16 @@ export class Form extends Control {
   /** `host` lays the row out elsewhere — a Section body, say — while the input still joins the
    * form's label column, validity and Enter navigation. */
   add(input: Input<any>, host?: HTMLElement): Form {
+    // dev-mode nudge (once per input kind): a keyless input has no getValues entry and no
+    // automation id — nothing can address it
+    if (input.name === undefined) {
+      const kind = input.root.dataset.u2 ?? 'input';
+      if (!_warnedUnkeyed.has(kind)) {
+        _warnedUnkeyed.add(kind);
+        console.warn(`u2: a ${kind} with neither name nor label was added to a form — ` +
+          'it has no form key and no automation id; give it a name');
+      }
+    }
     this._inputs.push(input);
     (host ?? this._rows).append(input.root);
     this._rebuildValidity();

@@ -20,6 +20,8 @@ keywords:
   - structural alerts
   - Matched molecular pairs
   - MMP
+  - SAR Matrix
+  - SAR transfer
   - docking
   - admetox
   - admet
@@ -58,6 +60,7 @@ design.
 * **SAR analysis**  
   * [Activity cliffs](#structure-relationship-analysis)
   * [Matched molecular pairs](#matched-molecular-pairs)
+  * [SAR Matrix](#sar-matrix)
 * **Predictive and generative modeling**
   * [QSAR/QSPR modeling](#qsar-and-qspr-modeling) and [ADMET predictions](#admet-predictions)
   * [Docking](#docking) using AutoDock Vina
@@ -929,6 +932,111 @@ plots with regression lines and an identity line to assess model quality.
 
 </TabItem>
 </Tabs>
+</details>
+
+### SAR Matrix
+
+SAR Matrix organizes a compound set into analog series and lays each one out as related cores (rows)
+against the substituents they share (columns), coloring every cell by potency. Combinations nobody has
+made are filled in with a local [Free-Wilson](https://en.wikipedia.org/wiki/Free-Wilson_analysis)
+prediction, so one grid shows both what you measured and what the SAR implies.
+
+The results let you:
+
+* Analyze the substituents and cores that drive potency across a whole series
+* Read predicted analogs together with the evidence behind each prediction
+* Transfer an optimization from one scaffold to another where their SAR runs in parallel
+* Collect the analogs worth making into a separate table
+
+![SAR Matrix](img/sar_matrix_overview.png)
+
+<details>
+<summary>How to use</summary>
+
+To run SAR Matrix analysis:
+
+1. In the **Top Menu**, select **Chem** > **Analyze** > **SAR Matrix...** to open the analysis dialog.
+2. In the dialog, configure the analysis by selecting:
+    * **Table**: the dataset you want to analyze
+    * **Molecules**: the column containing molecules
+    * **Activity**: a numerical column representing activity or property values
+    * **Scaling**: _none_, _log10_, or _-log10_. Use _-log10_ for raw IC50 or Ki values so that higher
+      numbers mean more potent; for pre-computed pIC50 use _none_ and set **Activity direction**
+      explicitly
+    * **Series column** (optional): group by your own series instead of by structure
+    * **Group leftovers by MCS** (optional): also cover compounds no shared core could group
+3. Click **OK**. The analysis opens with three tabs:
+
+![SAR Matrix walkthrough](img/sar_matrix_demo.gif)
+
+<Tabs>
+<TabItem value="matrix" label="SAR Matrix" default>
+
+A ranked list of series sits on the left, the selected matrix on the right. Cores run down the rows and
+substituents across the columns, so every column reads against the same core. A solid cell is a compound you have in the data provided, a dashed one a molecule nobody has made.
+
+Click a card to open that series, and a cell to inspect the compound or predicted analog in the
+**Context Panel**.
+
+Series nest. **L1** is the finest view: one matrix per cut site, each row a single core with its
+substituents. **L2** folds the L1 matrices whose cores agree one cut deeper, **L3** folds those again.
+A **Scaffold** row gathers the series built on one scaffold; they are listed rather than merged, because each varies a different position.
+
+Use **Rank by** to reorder the series by potent compounds, SAR discontinuity or preferred substituent, and the funnel to narrow either the series or the cells.
+
+</TabItem>
+<TabItem value="transfer" label="SAR Transfer">
+
+The **SAR Transfer** tab finds pairs of cores whose potency trends run in parallel across the
+substituents they have both explored. Where the trends track, an optimization learned on one scaffold
+is expected to carry to the other, and the pairing proposes the analogs one core has never made.
+
+![SAR transfer](img/sar_matrix_transfer.png)
+
+Each card on the left is one source core, gathered under the series it belongs to. A source that
+transfers to several targets is one card: the dropdown above the grid switches between its targets
+while the source stays fixed. The columns captioned **predicted** are the ones only one core has tried.
+
+</TabItem>
+<TabItem value="makelist" label="Make list">
+
+Everything you collect lands in the **Make list** tab, each compound with its potency, the support
+behind it, and the series, core and substituent it came from.
+
+![Make list](img/sar_matrix_make_list.png)
+
+**Status** and **Method** are separate columns: Status says whether the compound exists (Synthesized,
+Untested or Virtual), Method says where its number came from (measured or predicted). An untested
+compound is made and predicted at once.
+
+To collect, click the cart icon on either the **SAR Matrix** or the **SAR Transfer** tab and the
+selected cell is added.
+
+**Add to workspace** hands out a copy to save, export or join, **Remove** drops the
+selected compound, and **Clear** empties the list.
+
+</TabItem>
+</Tabs>
+
+#### Group leftovers by MCS
+
+Grouping by shared core cannot reach every compound. Series that no core gathered are left without a
+matrix. Turn on **Group leftovers by MCS** to pool those series and search for a common core with a
+maximum common substructure, so those compounds are covered too.
+
+Weigh it before turning it on:
+
+* It is slower on a large set, because the pooled series go through a substructure search.
+* The set of matrices can differ between runs over the same data, so a result is not reproducible.
+  With the option off, the same data always gives the same matrices.
+* It never removes a matrix or drops a compound. It can change a core-grouped series from one varying
+  position to several, because a series whose shared core is too small to anchor is pooled with the
+  leftovers.
+* It does not add a second axis to the grid. A matrix still enumerates one position in its columns,
+  and the others fold into the row.
+
+Leave it off unless you need the leftover compounds covered.
+
 </details>
 
 ## Docking

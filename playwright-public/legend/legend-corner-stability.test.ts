@@ -210,7 +210,8 @@ test('Zoom stability, icon clipping, large-dataset gate (demog)', async ({page})
       const df = grok.data.demo.demog(25000);
       grok.shell.addTableView(df);
       await new Promise((r) => setTimeout(r, 1500));
-      (window as any).grok.shell.tv.addViewer('Pie chart', {categoryColumnName: 'race'});
+      // labels off: a pie whose every segment is labeled hides its Auto legend (GROK-20793)
+      (window as any).grok.shell.tv.addViewer('Pie chart', {categoryColumnName: 'race', showLabel: false});
     });
     await v.waitForLegendIdle(page, 'Pie chart');
     await v.resizeViewer(page, 'Pie chart', 1100, 500);

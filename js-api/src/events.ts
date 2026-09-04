@@ -128,6 +128,9 @@ export class Events {
 
   get onContextMenuClosed(): rxjs.Observable<any> { return __obs(EVENT_TYPE.CONTEXT_MENU_CLOSED); }
 
+  /** Fires once a context menu popup is in the DOM; {@link onContextMenu} fires before the popup is built. */
+  get onContextMenuShown(): rxjs.Observable<any> { return __obs(EVENT_TYPE.CONTEXT_MENU_SHOWN); }
+
   get onCurrentViewChanged(): rxjs.Observable<EventData<ViewChangeArgs>> { return __obs(EVENT_TYPE.CURRENT_VIEW_CHANGED); }
 
   get onCurrentViewChanging(): rxjs.Observable<EventData<ViewArgs>> { return __obs(EVENT_TYPE.CURRENT_VIEW_CHANGING); }

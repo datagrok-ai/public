@@ -1,21 +1,30 @@
 export const VLAAIVIS_METADATA_TAG = '.vlaaivis-metadata';
 
+export const VLAAIVIS_PROFILE_TYPE = 'VlaaiVis Profile';
+export const VLAAIVIS_PROFILE_VERSION = 1;
+
 export const PANE_HEADER_SELECTOR = '.d4-accordion-pane-header';
 
 export const DEFAULTS = {
   WEIGHT: 1,
   LOWER_BOUND: 0.8,
   UPPER_BOUND: 0.9,
-  /// Auto-grouping takes this many columns; the rest stay unassigned for the user to place.
+  /// Columns put into their own sector when the editor opens on an unconfigured chart.
   AUTO_GROUP_COLUMNS: 3,
   PLOT_HEIGHT: 64,
 };
 
 export const LABELS = {
   UNASSIGNED: 'Unassigned columns',
-  DROP_HINT: 'Drag a property here to take it out of its sector',
-  LOWER_BOUND: 'Reference range, min',
-  UPPER_BOUND: 'Reference range, max',
+  TIP: 'Drag a column name onto a sector to move it. Unassigned columns aren\'t drawn.',
+  NO_UNASSIGNED: 'Every column is in a sector. Drag one here to leave it out.',
+  LOWER_BOUND: 'Target min',
+  UPPER_BOUND: 'Target max',
+  ADD_SECTOR: '+ Add sector',
+  PROFILE: 'Profile',
+  PROFILE_PLACEHOLDER: 'Name this profile',
+  LOWER_ABOVE_UPPER: 'Must be below Target max',
+  UPPER_BELOW_LOWER: 'Must be above Target min',
 };
 
 export const TOOLTIPS = {
@@ -29,4 +38,13 @@ export const TOOLTIPS = {
   COLOR: 'Sector color',
   RENAME: 'Rename sector',
   DELETE: 'Delete sector',
+  SAVE_PROFILE: 'Save profile to a file',
+  OPEN_PROFILE: 'Load profile from a file',
+};
+
+export const STYLE_INFO = {
+  SUMMARY: 'Shows how well a row meets an MPO profile: ' +
+    'each column becomes a wedge whose length is its 0–1 desirability score.',
+  LEARN_MORE: 'Learn more',
+  HELP_URL: 'https://datagrok.ai/help/datagrok/solutions/domains/chem/mpo',
 };

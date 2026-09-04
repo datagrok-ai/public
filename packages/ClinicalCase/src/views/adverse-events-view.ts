@@ -149,8 +149,7 @@ export class AdverseEventsView extends ClinicalCaseViewBase {
     if (this.aeWithArm.col(studies[this.studyId].viewsConfig.config[this.name][TRT_ARM_FIELD])) {
       const legend = DG.Legend.create(this.aeWithArm.columns
         .byName(studies[this.studyId].viewsConfig.config[this.name][TRT_ARM_FIELD]));
-      legend.root.style.width = '500px';
-      legend.root.style.height = '35px';
+      legend.position = DG.LEGEND_POSITION.BOTTOM;
       return legend.root;
     }
     return null;

@@ -2,6 +2,9 @@
 
 ## v.next
 
+* Automation: Added the `bdd/` project (Gherkin features, package bindings, generated Playwright specs) driven by `grok-bdd`
+* Automation: Added one behavioral feature per sub-demo under `bdd/features/demo/**` (inputs, pickers, layout, popups, lists and trees, cards, feedback, tables, sections and wizard, messaging, forms, property grid, object form, functions, run history, dataframes, files, entities, molecules, bridge, the demo shell) on a `U2 Demo` context with a package-local `readout` kind
+* GROK-20753: Added the MSA workbench sub-demo under a new Automation area — a small toolbar/form/dialog/tabs app addressed purely through the u2 automation contract by the behavioral features in `libraries/bdd`
 * GROK-20753: Added the Run history sub-demo — a `FunctionInput` over a `funcForm` with the standard `showRun` (Run executes the call and saves it into the server history) and `showHistory` (the popup lists saved runs via FuncCallMeta; a click copies that run's values back into the form) properties
 
 * GROK-20753: Added the Overview front door under a new Start area — what u2 is, what each area covers and three "start here" pointers; it is the default leaf when nothing is remembered and the URL carries no path (a remembered leaf and an explicit deep link still win)

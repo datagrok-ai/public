@@ -56,6 +56,10 @@ export namespace funcs {
     return await grok.functions.call('PowerGrid:PiechartCellRenderer', {});
   }
 
+  export async function vlaaivisCellRenderer(): Promise<any> {
+    return await grok.functions.call('PowerGrid:VlaaivisCellRenderer', {});
+  }
+
   export async function radarCellRenderer(): Promise<any> {
     return await grok.functions.call('PowerGrid:RadarCellRenderer', {});
   }

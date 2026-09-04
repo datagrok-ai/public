@@ -16,8 +16,8 @@ import {_package} from '../package';
 import {makeEditor, destroyEditor, until} from './test-utils';
 
 const TEMPLATE_SLUGS = ['workflow-demo', 'interactive-viewers'];
-const IV_NODES = 16;
-const IV_CONNECTIONS = 13;
+const IV_NODES = 19;
+const IV_CONNECTIONS = 15;
 
 category('Flow: start templates', () => {
   before(async () => {

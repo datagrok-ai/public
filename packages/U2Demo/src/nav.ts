@@ -13,6 +13,7 @@ import {overviewPage} from './pages/overview';
 import {formPage, propertyGridPage, objectFormPage} from './pages/forms';
 import {filesPage, dataframesPage, entitiesPage, spacesPage, moleculesPage, bridgePage}
   from './pages/platform';
+import {msaWorkbenchPage} from './pages/msa-workbench';
 
 /** Repo-relative root of this package's sources; the source panel keys its bundled text by it. */
 export const SRC_ROOT = 'packages/U2Demo/src';
@@ -178,6 +179,12 @@ export const DEMO_TREE: DemoGroup[] = [
       description: 'DartInput bridge and the leak detector',
       build: () => bridgePage(),
       source: {file: `${SRC_ROOT}/pages/platform.ts`, symbol: 'bridgePage'}},
+  ]),
+  group('automation', 'Automation', [
+    {id: 'msa-workbench', label: 'MSA workbench',
+      description: 'A small app the behavioral tests in libraries/bdd drive: toolbar, form, dialog, tabs, list',
+      build: () => msaWorkbenchPage(),
+      source: {file: `${SRC_ROOT}/pages/msa-workbench.ts`, symbol: 'msaWorkbenchPage'}},
   ]),
 ];
 

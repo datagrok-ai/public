@@ -3,6 +3,7 @@ import {bindTypeOf} from './widget-like.js';
 import type {BindProp, BindSource} from './widget-like.js';
 import {Control} from './component.js';
 import {div, label, span} from './elements.js';
+import type {IWidgetStatus} from './widget-like.js';
 
 /** An input chrome option: a literal applied once, or a signal followed live (UB-10). */
 export type LiveOption<T> = T | ReadonlySignal<T>;
@@ -70,7 +71,12 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
     this.options = options;
     this.value = options.bind ?? signal(options.value ?? defaultValue);
     this.validity = this._validity;
-    this.name = options.name ?? labelText(options.label);
+    // an explicit name is a deliberate identity and stamps data-u2-name; the label fallback is a
+    // form key only — captions get reworded, so they never become automation ids
+    if (options.name !== undefined)
+      this.name = options.name;
+    else
+      this.deriveName(labelText(options.label));
 
     this.root.classList.add('u2-input-root');
     if (options.inline)
@@ -78,8 +84,11 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
 
     this._inputBox = div([], 'u2-input-box');
     this._optionsRail = div([], 'u2-input-options');
-    this._editor = this.run(() => this.createEditor());
+    this._optionsRail.dataset.u2Part = 'options';
+    this._error.dataset.u2Part = 'error';
+    this._editor = this.runInScope(() => this.createEditor());
     this._editor.classList.add('u2-input-editor');
+    this._editor.dataset.u2Part = 'editor';
     // prepended: a subclass that filled the rail from createEditor already attached it
     this._inputBox.prepend(this._editor);
     this.root.append(this._inputBox, this._error);
@@ -147,8 +156,21 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
       this._labelEl.textContent = x;
     else if (!this.options.inline) {
       this._labelEl = label(x, 'u2-input-label');
+      this._labelEl.dataset.u2Part = 'label';
       this.root.prepend(this._labelEl);
     }
+  }
+
+  /** The base status plus the structural parts every input shares — the same elements the
+   * `data-u2-part` attributes mark, so pixel-driving and state-reading automation agree. */
+  getWidgetStatus(): IWidgetStatus {
+    const status = super.getWidgetStatus();
+    status.parts = {editor: this._editor, error: this._error};
+    if (this._labelEl)
+      status.parts.label = this._labelEl;
+    if (this._optionsRail.parentElement !== null)
+      status.parts.options = this._optionsRail;
+    return status;
   }
 
   get tooltipText(): string {

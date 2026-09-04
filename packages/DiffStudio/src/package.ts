@@ -10,6 +10,7 @@ import {DiffStudioFacetViewer} from './diff-studio-facet-viewer';
 import {DiffStudioHub} from './hub';
 import {getIVP, IVP, getScriptLines, getScriptParams} from './scripting-tools';
 
+import {findParamsIdx} from './utils';
 import {getBallFlightSim} from './demo/ball-flight';
 
 export {Model} from './model';
@@ -122,7 +123,7 @@ export class PackageFunctions {
     DiffStudio.isStartingUriProcessed = true;
 
     const isDeepLink = path.includes(PATH.MODEL) ||
-      path.includes(PATH.PARAM) ||
+      findParamsIdx(path) > -1 ||
       path.includes(`/${TITLE.TEMPL}`) ||
       path.includes(`/${TITLE.LIBRARY}`) ||
       path.includes(`/${TITLE.RECENT}`);

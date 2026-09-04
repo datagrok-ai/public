@@ -73,7 +73,8 @@ test('Legend selection resets when the source changes, survives when it does not
       const tv = (window as any).grok.shell.tv;
       tv.addViewer('Pie chart');
       await new Promise((r) => setTimeout(r, 1200));
-      tv.viewers.find((x: any) => x.type === 'Pie chart').setOptions({categoryColumnName: 'DIS_POP'});
+      // labels off: a pie whose every segment is labeled hides its Auto legend (GROK-20793)
+      tv.viewers.find((x: any) => x.type === 'Pie chart').setOptions({categoryColumnName: 'DIS_POP', showLabel: false});
     });
     await v.waitForLegendIdle(page, 'Pie chart');
     await clickItem('Pie chart', 'Indigestion');

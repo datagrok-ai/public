@@ -1,0 +1,11 @@
+# Developer keys
+upload.keys.json
+
+# Dependency directories
+node_modules/
+
+# IDEs
+.vscode/*
+.idea/
+
+**/*.d.ts

@@ -2,7 +2,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
-import wu from 'wu';
+import '../../css/powergrid.css';
 
 type getSettingsFunc<Type extends SummarySettingsBase> = (gs: DG.GridColumn) => Type;
 
@@ -54,10 +54,7 @@ export function getSettingsBase<T extends SummarySettingsBase>(
   const settings = isSummarySettingsBase(gc.settings) ?
     (gc.settings as unknown as T) :
     (gc.settings[sparklineType] ??= {
-      columnNames: names(
-        wu(gc.grid.dataFrame.columns.numerical)
-          .filter((c: DG.Column) => c.type !== DG.TYPE.DATE_TIME)
-      ).slice(0, 10),
+      columnNames: names(gc.grid.dataFrame.columns.numericalNoDateTime).slice(0, 10),
     } as unknown as T);
 
   if (!settings.minValues || !settings.maxValues) {
@@ -80,6 +77,7 @@ export enum SparklineType {
   Sparkline = 'sparkline',
   Form = 'smartform',
   Tags = 'tags',
+  VlaaiVis = 'vlaaivis',
 }
 
 export const sparklineTypes: string[] = [
@@ -87,7 +85,8 @@ export const sparklineTypes: string[] = [
   SparklineType.PieChart,
   SparklineType.Radar,
   SparklineType.Sparkline,
-  SparklineType.Form
+  SparklineType.Form,
+  SparklineType.VlaaiVis
 ];
 
 type AxisScaleSettings = ScaleSettings & {
@@ -193,12 +192,38 @@ export function getScaledNumber(
   return invertScale ? 1 - normalized : normalized;
 }
 
-export function getSparklinesContextPanel(gridCell: DG.GridCell, colNames: string[]): HTMLDivElement {
-  const df = gridCell.grid.dataFrame;
+export interface ColumnGroup {
+  name: string;
+  cols: DG.Column[];
+  color?: string;
+}
+
+function appendGroups(root: HTMLElement, groups: ColumnGroup[], value: (col: DG.Column) => string, active?: DG.Column): void {
+  for (const group of groups) {
+    const name = ui.divText(group.name, 'power-grid-sparkline-group-name');
+    if (group.color)
+      name.prepend(ui.span([], {classes: 'power-grid-sparkline-swatch', style: {background: group.color}}));
+    const host = group.name ? ui.div([name], 'power-grid-sparkline-group') : root;
+    for (const col of group.cols) {
+      const cls = col === active ? ' power-grid-sparkline-active' : '';
+      host.append(ui.divText(col.name, 'power-grid-sparkline-name' + cls), ui.divText(value(col), 'power-grid-sparkline-value' + cls));
+    }
+    if (host !== root)
+      root.append(host);
+  }
+}
+
+export function getSparklinesContextPanel(gridCell: DG.GridCell, colNames: string[], groups?: ColumnGroup[]): HTMLDivElement {
   const row = gridCell.cell.row.idx;
-  const cols = df.columns.byNames(colNames).filter((c) => c !== null);
-  const columnName = ui.div(gridCell.gridColumn.name, {style: {textAlign: 'center', marginBottom: '10px'}});
-  const values = ui.divV(cols.map((col) => ui.divText(col.name + ': ' + col.getString(row))), {style: {marginTop: '20px'}});
+  const columnName = ui.div(gridCell.gridColumn.name, 'power-grid-sparkline-panel-title');
+  const values = ui.div([], 'power-grid-sparkline-panel-values');
+  if (groups) {
+    values.classList.add('power-grid-sparkline-grid');
+    appendGroups(values, groups, (col) => col.getString(row));
+  } else {
+    const cols = gridCell.grid.dataFrame.columns.byNames(colNames).filter((c) => c != null);
+    values.append(...cols.map((col) => ui.divText(col.name + ': ' + col.getString(row))));
+  }
   return ui.div([columnName, DG.GridCellWidget.fromGridCell(gridCell).root, values]);
 }
 
@@ -209,23 +234,11 @@ export class Hit {
   isHit: boolean = false;
 }
 
-export function createTooltip(cols: DG.Column[], activeColumn: number, row: number): HTMLDivElement {
-  const keysDiv = ui.divV([], {style: {marginRight: '10px', fontWeight: 'bold', textAlign: 'right'}});
-  const valuesDiv = ui.divV([], {style: {fontWeight: 'normal'}});
-
-  for (let i = 0; i < cols.length; i++) {
-    if (cols[i] === null) continue;
-
-    const isActive = activeColumn === i;
-    keysDiv.appendChild(ui.divText(`${cols[i].name}`, {
-      style: {fontWeight: isActive ? 'bold' : 'normal'}
-    }));
-    valuesDiv.appendChild(ui.divText(`${Math.floor(cols[i].getNumber(row) * 100) / 100}`, {
-      style: {fontWeight: isActive ? 'bold' : 'normal'}
-    }));
-  }
-
-  return ui.divH([keysDiv, valuesDiv], {style: {display: 'flex'}});
+export function createTooltip(cols: DG.Column[], activeColumn: number, row: number, groups?: ColumnGroup[]): HTMLDivElement {
+  const root = ui.div([], 'power-grid-sparkline-grid power-grid-sparkline-tooltip');
+  appendGroups(root, groups ?? [{name: '', cols}],
+    (col) => col.isNumerical ? `${Math.floor(col.getNumber(row) * 100) / 100}` : col.getString(row), cols[activeColumn]);
+  return root;
 }
 
 export function createBaseInputs(gridColumn: DG.GridColumn, settings: SummarySettingsBase, isSmartForm: boolean = false): DG.InputBase[] {
@@ -286,11 +299,11 @@ export function createBaseInputs(gridColumn: DG.GridColumn, settings: SummarySet
   }
 
   function createColumnsInput(): DG.InputBase {
-    const columnNames = settings?.columnNames ?? names(df.columns.numerical);
+    const columnNames = settings?.columnNames ?? names(df.columns.numericalNoDateTime);
     const options: any = {
       value: df.columns.byNames(columnNames),
       table: df,
-      available: isSmartForm ? names(df.columns) : names(df.columns.numerical),
+      available: isSmartForm ? names(df.columns) : names(df.columns.numericalNoDateTime),
       onValueChanged: (value: DG.Column[]) => {
         settings.columnNames = names(value);
         invalidate();

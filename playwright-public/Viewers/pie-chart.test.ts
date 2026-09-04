@@ -1,4 +1,4 @@
-import {test, expect} from '@playwright/test';
+import {test, expect, Page} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep} from '@datagrok-libraries/test/src/playwright/spec-login';
 import * as v from '@datagrok-libraries/test/src/playwright/viewers';
 
@@ -6,6 +6,31 @@ test.use(specTestOptions);
 
 const datasetPath = 'System:DemoFiles/demog.csv';
 const spgiPath = 'System:DemoFiles/chem/SPGI.csv';
+
+// The pie shrinks to make room for outside labels, so a fixed fraction of the canvas is not
+// reliably on a slice. Aim at the middle of the drawn ring instead.
+async function slicePoint(page: Page): Promise<{x: number, y: number}> {
+  return page.evaluate(() => {
+    const pieEl = document.querySelector('[name="viewer-Pie-chart"]') as HTMLElement;
+    const canvas = pieEl.querySelector('canvas') as HTMLCanvasElement;
+    const rect = canvas.getBoundingClientRect();
+    const img = canvas.getContext('2d')!.getImageData(0, 0, canvas.width, canvas.height);
+    const dpr = canvas.width / rect.width;
+    const painted = (lx: number, ly: number) => {
+      const i = (Math.round(ly * dpr) * canvas.width + Math.round(lx * dpr)) * 4;
+      return img.data[i + 3] > 10 && !(img.data[i] > 240 && img.data[i + 1] > 240 && img.data[i + 2] > 240);
+    };
+    const cx = rect.width / 2, cy = rect.height / 2, k = Math.SQRT1_2;
+    let inner = -1, outer = 0;
+    for (let d = 1; d < Math.min(cx, cy); d++)
+      if (painted(cx + d * k, cy - d * k)) {
+        if (inner < 0) inner = d;
+        outer = d;
+      }
+    const dist = (inner + outer) / 2;
+    return {x: rect.left + cx + dist * k, y: rect.top + cy - dist * k};
+  });
+}
 
 test('Pie chart tests', async ({page}) => {
   test.setTimeout(600_000);
@@ -145,6 +170,36 @@ test('Pie chart tests', async ({page}) => {
       {set: {legendVisibility: 'Auto'}, wait: 200, read: 'legendVisibility'},
     ]);
     expect(result).toEqual(['Always', 'LeftTop', 'RightBottom', 'Never', 'Auto']);
+  });
+
+  // #### Donut mode
+  await softStep('Donut mode', async () => {
+    const result = await page.evaluate(async () => {
+      const pie = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Pie chart') as any;
+      const canvas = pie.root.querySelector('canvas[name="canvas"]') as HTMLCanvasElement;
+      const sleep = (ms: number) => new Promise(res => setTimeout(res, ms));
+      const r: any[] = [];
+
+      const asPie = canvas.toDataURL();
+      pie.props.mode = 'Donut';
+      await sleep(500);
+      r.push(pie.props.mode, canvas.toDataURL() !== asPie);
+
+      pie.props.centerLabel = 'Race';
+      await sleep(300);
+      const withCenterLabel = canvas.toDataURL();
+      pie.props.showCenterLabel = false;
+      await sleep(300);
+      r.push(pie.props.showCenterLabel, canvas.toDataURL() !== withCenterLabel);
+
+      pie.props.showCenterLabel = true;
+      pie.props.centerLabel = '';
+      pie.props.mode = 'Pie';
+      await sleep(300);
+      r.push(pie.props.mode);
+      return r;
+    });
+    expect(result, 'mode round-trip, donut repaints, center label toggles').toEqual(['Donut', true, false, true, 'Pie']);
   });
 
   // #### Category map (dates)
@@ -294,9 +349,14 @@ test('Pie chart tests', async ({page}) => {
 
   // #### Selection and interaction
   await softStep('Selection and interaction', async () => {
-    const result = await page.evaluate(async () => {
+    await page.evaluate(async () => {
       const pie = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Pie chart') as any;
       pie.props.categoryColumnName = 'RACE';
+      await new Promise(r => setTimeout(r, 500));
+    });
+    const pt = await slicePoint(page);
+    const result = await page.evaluate(async (pt) => {
+      const pie = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Pie chart') as any;
       const df = grok.shell.tv.dataFrame;
 
       const pieEl = document.querySelector('[name="viewer-Pie-chart"]') as HTMLElement;
@@ -304,8 +364,8 @@ test('Pie chart tests', async ({page}) => {
       const rect = canvas.getBoundingClientRect();
 
       // Click slice
-      const x = rect.left + rect.width * 0.65;
-      const y = rect.top + rect.height * 0.4;
+      const x = pt.x;
+      const y = pt.y;
       canvas.dispatchEvent(new MouseEvent('mousedown', {bubbles: true, clientX: x, clientY: y}));
       canvas.dispatchEvent(new MouseEvent('mouseup', {bubbles: true, clientX: x, clientY: y}));
       canvas.dispatchEvent(new MouseEvent('click', {bubbles: true, clientX: x, clientY: y}));
@@ -326,7 +386,7 @@ test('Pie chart tests', async ({page}) => {
 
       df.selection.setAll(false);
       return {sel1, sOff, sOn, mOff, mOn};
-    });
+    }, pt);
     expect(result.sel1).toBeGreaterThan(0);
     expect(result.sOff).toBe(false);
     expect(result.sOn).toBe(true);
@@ -336,9 +396,14 @@ test('Pie chart tests', async ({page}) => {
 
   // #### On Click modes
   await softStep('On Click modes', async () => {
-    const result = await page.evaluate(async () => {
+    await page.evaluate(async () => {
       const pie = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Pie chart') as any;
       pie.props.categoryColumnName = 'RACE';
+      await new Promise(r => setTimeout(r, 500));
+    });
+    const pt = await slicePoint(page);
+    const result = await page.evaluate(async (pt) => {
+      const pie = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Pie chart') as any;
       const df = grok.shell.tv.dataFrame;
       const r: any[] = [];
 
@@ -346,8 +411,8 @@ test('Pie chart tests', async ({page}) => {
       const pieEl = document.querySelector('[name="viewer-Pie-chart"]') as HTMLElement;
       const canvas = pieEl.querySelector('canvas') as HTMLCanvasElement;
       const rect = canvas.getBoundingClientRect();
-      const x = rect.left + rect.width * 0.65;
-      const y = rect.top + rect.height * 0.4;
+      const x = pt.x;
+      const y = pt.y;
 
       canvas.dispatchEvent(new MouseEvent('mousedown', {bubbles: true, clientX: x, clientY: y}));
       canvas.dispatchEvent(new MouseEvent('mouseup', {bubbles: true, clientX: x, clientY: y}));
@@ -374,7 +439,7 @@ test('Pie chart tests', async ({page}) => {
       pie.props.onClick = 'Select';
       df.selection.setAll(false);
       return r;
-    });
+    }, pt);
     expect(result[0].selected).toBeGreaterThan(0);
     expect(result[1].filtered).toBeLessThan(result[1].total);
     expect(result[2].filtered).toBe(result[1].total);
@@ -382,7 +447,8 @@ test('Pie chart tests', async ({page}) => {
 
   // #### Selection between grid and pie chart
   await softStep('Selection between grid and pie chart', async () => {
-    const result = await page.evaluate(async () => {
+    const pt = await slicePoint(page);
+    const result = await page.evaluate(async (pt) => {
       const df = grok.shell.tv.dataFrame;
       df.selection.init((i: number) => i < 50);
       await new Promise(res => setTimeout(res, 300));
@@ -391,8 +457,8 @@ test('Pie chart tests', async ({page}) => {
       const pieEl = document.querySelector('[name="viewer-Pie-chart"]') as HTMLElement;
       const canvas = pieEl.querySelector('canvas') as HTMLCanvasElement;
       const rect = canvas.getBoundingClientRect();
-      const x = rect.left + rect.width * 0.65;
-      const y = rect.top + rect.height * 0.4;
+      const x = pt.x;
+      const y = pt.y;
       canvas.dispatchEvent(new MouseEvent('mousedown', {bubbles: true, clientX: x, clientY: y}));
       canvas.dispatchEvent(new MouseEvent('mouseup', {bubbles: true, clientX: x, clientY: y}));
       canvas.dispatchEvent(new MouseEvent('click', {bubbles: true, clientX: x, clientY: y}));
@@ -401,7 +467,7 @@ test('Pie chart tests', async ({page}) => {
 
       df.selection.setAll(false);
       return {gridSel, pieSel};
-    });
+    }, pt);
     expect(result.gridSel).toBe(50);
     expect(result.pieSel).toBeGreaterThan(0);
   });

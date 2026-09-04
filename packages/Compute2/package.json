@@ -62,7 +62,7 @@
     "build-compute2": "webpack",
     "typecheck": "tsgo --noEmit -p tsconfig.json",
     "debug-vue-dev-tools": "webpack --env enable_vue_dev_tools && grok publish local --release",
-    "build": "concurrently -n bundle,types --raw \"rspack build\" \"tsgo --noEmit -p tsconfig.json\"",
+    "build": "tsc -p tsconfig.detectors.json && concurrently -n bundle,types --raw \"rspack build\" \"tsgo --noEmit -p tsconfig.json\"",
     "build-webpack": "grok api && grok check --soft && webpack",
     "lint": "eslint . --ext .ts,.tsx",
     "lint-fix": "eslint . --ext .ts,.tsx --fix",
@@ -83,11 +83,16 @@
       "description": "Use the faster role-only model filter (drops the legacy #model tag branch)"
     },
     {
-      "name": "enableArtifactPublishing",
-      "propertyType": "bool",
-      "defaultValue": false,
+      "name": "sharingMethod",
+      "propertyType": "string",
+      "choices": [
+        "none",
+        "artifact-alignment",
+        "workspaces"
+      ],
+      "defaultValue": "none",
       "nullable": false,
-      "description": "Show the \"Publish to program\" action in the Tree Wizard (requires the ArtifactAlignment package)"
+      "description": "Share action for runs: none \u2014 hidden; artifact-alignment \u2014 'Publish to program' (requires the ArtifactAlignment package); workspaces \u2014 link the run into an existing space"
     }
   ],
   "canEdit": [

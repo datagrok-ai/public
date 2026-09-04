@@ -18,7 +18,10 @@ export async function softStep(name: string, fn: () => Promise<void>): Promise<v
   catch (e: any) {
     // `test.skip()` inside a step signals itself by throwing TestSkipError; recording
     // that as a step error reports a deliberate skip as a failed test.
-    if (e?.constructor?.name === 'TestSkipError' || String(e?.message).startsWith('Test is skipped:'))
+    // A plain `Test is skipped:` throw is the suites' declared-skip idiom instead — every
+    // caller drops it from its end-of-test `realErrors` filter — so re-throwing it here
+    // escaped the step and turned the declared skip into a Playwright failure.
+    if (e?.constructor?.name === 'TestSkipError')
       throw e;
     stepErrors.push({step: name, error: e?.message ?? String(e)});
     console.error(`[STEP FAILED] ${name}: ${e?.message ?? e}`);

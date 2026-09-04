@@ -36,7 +36,7 @@ export class Card extends Control {
     this.selected = options.selected instanceof Signal ? options.selected : signal(!!options.selected);
     this.root.classList.add('u2-card');
     this.root.dataset.u2 = 'card';
-    this.body = this.run(() => this._build(options));
+    this.body = this.runInScope(() => this._build(options));
     this._wire(options);
   }
 

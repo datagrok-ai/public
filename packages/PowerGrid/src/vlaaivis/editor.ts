@@ -1,7 +1,9 @@
 import * as DG from 'datagrok-api/dg';
+import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 
 import {createMpoRow, MpoRow} from '@datagrok-libraries/statistics/src/mpo/editors/mpo-property-row';
+import {generateMpoFileName} from '@datagrok-libraries/statistics/src/mpo/utils';
 
 import {Subscription} from 'rxjs';
 
@@ -9,11 +11,7 @@ import {PieChartSettings, Sector} from '../sparklines/piechart';
 import {VlaaiVisChange, VlaaiVisModel} from './model';
 import {DEFAULTS, LABELS, PANE_HEADER_SELECTOR, TOOLTIPS} from './constants';
 
-import '../../css/vlaaivis.css';
-
-function clamp01(v: number | null): number {
-  return Math.max(0, Math.min(1, v ?? 0));
-}
+import '../../css/powergrid.css';
 
 function draggedProperty(o: any): string | null {
   return typeof o?.vlaaivisProperty === 'string' ? o.vlaaivisProperty : null;
@@ -22,6 +20,8 @@ function draggedProperty(o: any): string | null {
 /// One accordion pane per sector, each holding the MPO rows the profile editor builds from.
 export class VlaaiVisEditor {
   readonly root = ui.div([], 'power-grid-vlaaivis');
+  readonly boundsInputs: DG.InputBase<number | null>[];
+  readonly profileInput: DG.InputBase<string>;
 
   private model: VlaaiVisModel;
   private gc: DG.GridColumn;
@@ -35,7 +35,13 @@ export class VlaaiVisEditor {
   constructor(settings: PieChartSettings, gc: DG.GridColumn) {
     this.gc = gc;
     this.model = new VlaaiVisModel(settings, gc.grid.dataFrame);
-    this.root.append(this.buildBoundsForm(), this.body);
+    if (this.model.sectors.length === 0)
+      this.model.autoGroup(DEFAULTS.AUTO_GROUP_COLUMNS);
+    this.boundsInputs = this.buildBoundsInputs();
+    this.profileInput = this.buildProfileInput();
+    this.root.append(
+      ui.divH([ui.iconFA('info-circle'), ui.divText(LABELS.TIP)], 'power-grid-vlaaivis-tip'),
+      this.body);
     this.subs.push(this.model.onChanged.subscribe((change) => this.onModelChanged(change)));
     this.render();
   }
@@ -45,6 +51,9 @@ export class VlaaiVisEditor {
   }
 
   detach(): void {
+    this.profileInput.root.remove();
+    for (const input of this.boundsInputs)
+      input.root.remove();
     this.disposeRows();
     for (const sub of this.subs)
       sub.unsubscribe();
@@ -57,17 +66,56 @@ export class VlaaiVisEditor {
     this.gc.grid.invalidate();
   }
 
-  private buildBoundsForm(): HTMLElement {
-    const bound = (caption: string, key: 'lowerBound' | 'upperBound', tooltip: string) => {
-      const input = ui.input.float(caption, {value: this.model.bound(key), min: 0, max: 1, showSlider: false,
-        onValueChanged: (v) => this.model.setBound(key, clamp01(v))});
-      input.setTooltip(tooltip);
-      return input;
+  private buildBoundsInputs(): DG.InputBase<number | null>[] {
+    const bound = (caption: string, key: 'lowerBound' | 'upperBound', tooltip: string) =>
+      ui.input.float(caption, {value: this.model.bound(key), min: 0, max: 1, showSlider: false}).setTooltip(tooltip);
+    const lower = bound(LABELS.LOWER_BOUND, 'lowerBound', TOOLTIPS.LOWER_BOUND);
+    const upper = bound(LABELS.UPPER_BOUND, 'upperBound', TOOLTIPS.UPPER_BOUND);
+
+    const values = (): [number, number] => [lower.value ?? 0, upper.value ?? 0];
+    const inverted = () => values()[0] > values()[1];
+    lower.addValidator(() => inverted() ? LABELS.LOWER_ABOVE_UPPER : null);
+    upper.addValidator(() => inverted() ? LABELS.UPPER_BELOW_LOWER : null);
+
+    const apply = (other: DG.InputBase<number | null>) => {
+      other.validate();
+      if (!inverted())
+        this.model.setBounds(...values());
     };
-    return ui.divV([
-      bound(LABELS.LOWER_BOUND, 'lowerBound', TOOLTIPS.LOWER_BOUND),
-      bound(LABELS.UPPER_BOUND, 'upperBound', TOOLTIPS.UPPER_BOUND),
-    ]);
+    this.subs.push(lower.onChanged.subscribe(() => apply(upper)), upper.onChanged.subscribe(() => apply(lower)));
+    return [lower, upper];
+  }
+
+  private buildProfileInput(): DG.InputBase<string> {
+    const input = ui.input.string(LABELS.PROFILE,
+      {value: this.model.profileName, placeholder: LABELS.PROFILE_PLACEHOLDER});
+    input.addOptions(ui.iconFA('folder-open', () => this.openProfile(), TOOLTIPS.OPEN_PROFILE));
+    input.addOptions(ui.iconFA('save', () => this.saveProfile(), TOOLTIPS.SAVE_PROFILE));
+    input.root.classList.add('power-grid-vlaaivis-profile');
+    this.subs.push(input.onChanged.subscribe(() => this.model.setProfileName(input.value)));
+    return input;
+  }
+
+  private saveProfile(): void {
+    const name = this.model.profileName || this.gc.name;
+    DG.Utils.download(generateMpoFileName(name, new Set()),
+      JSON.stringify(this.model.exportProfile(name), null, 2), 'application/json');
+  }
+
+  private openProfile(): void {
+    DG.Utils.openFile({accept: '.json', open: async (file) => {
+      const result = VlaaiVisModel.parseProfile(await file.text(), file.name.replace(/\.json$/i, ''));
+      if ('error' in result) {
+        grok.shell.warning(`Open failed: ${result.error}`);
+        return;
+      }
+      const skipped = this.model.applyProfile(result.profile);
+      this.profileInput.value = result.profile.name;
+      this.boundsInputs[0].value = result.profile.lowerBound;
+      this.boundsInputs[1].value = result.profile.upperBound;
+      if (skipped.length > 0)
+        grok.shell.info(`No columns named: ${skipped.join(', ')}`);
+    }});
   }
 
   private render(): void {
@@ -76,22 +124,18 @@ export class VlaaiVisEditor {
     this.panes.clear();
     ui.empty(this.body);
 
-    if (this.model.sectors.length === 0) {
-      this.body.append(this.buildEmptyState());
-      return;
-    }
-
     const accordion = ui.accordion();
     for (const sector of this.model.sectors)
       this.addDropPane(accordion, sector, () => ui.divV(sector.subsectors.map((p) => this.buildRow(p.name))));
+    accordion.root.append(
+      ui.link(LABELS.ADD_SECTOR, () => this.addSector(), TOOLTIPS.NEW_SECTOR, 'power-grid-vlaaivis-add'));
 
     const unassigned = this.model.unassigned;
     this.addDropPane(accordion, null, () => unassigned.length > 0 ?
       ui.divV(unassigned.map((name) => this.makeDraggable(ui.divText(name), name))) :
-      ui.divText(LABELS.DROP_HINT, 'power-grid-vlaaivis-hint'));
+      ui.divText(LABELS.NO_UNASSIGNED, 'power-grid-vlaaivis-empty'));
 
-    this.body.append(accordion.root,
-      ui.divH([ui.icons.add(() => this.addSector(), TOOLTIPS.NEW_SECTOR)], 'power-grid-vlaaivis-add'));
+    this.body.append(accordion.root);
   }
 
   private rememberCollapsed(): void {
@@ -103,19 +147,6 @@ export class VlaaiVisEditor {
     for (const row of this.rows)
       row.sub.unsubscribe();
     this.rows = [];
-  }
-
-  private buildEmptyState(): HTMLElement {
-    return ui.divV([
-      ui.iconFA('chart-pie'),
-      ui.h3('No sectors yet'),
-      ui.p('A sector is a colored group of columns. The length of each wedge is that column\'s desirability ' +
-        'score, and the sector\'s share of the circle is the sum of its weights.'),
-      ui.divH([
-        ui.bigButton(`Auto-group first ${DEFAULTS.AUTO_GROUP_COLUMNS}`, () => this.autoGroup()),
-        ui.button('New sector', () => this.addSector()),
-      ], 'power-grid-vlaaivis-actions'),
-    ], 'statistics-mpo-empty-state');
   }
 
   private addDropPane(accordion: DG.Accordion, sector: Sector | null, content: () => HTMLElement): void {
@@ -203,10 +234,6 @@ export class VlaaiVisEditor {
       },
       dropSuggestion: sector ? `Add to ${sector.name}` : 'Remove from sector',
     });
-  }
-
-  private autoGroup(): void {
-    this.model.autoGroup(DEFAULTS.AUTO_GROUP_COLUMNS);
   }
 
   private addSector(): void {

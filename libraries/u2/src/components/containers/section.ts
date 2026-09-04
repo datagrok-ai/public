@@ -30,7 +30,7 @@ export class Section extends Control {
     this.expanded = options.expanded instanceof Signal ? options.expanded :
       signal(options.expanded !== false);
     const collapsible = options.collapsible !== false;
-    const title = this.run(() => span(options.title, 'u2-section-title'));
+    const title = this.runInScope(() => span(options.title, 'u2-section-title'));
     this.header = div([title], 'u2-section-header');
     this.header.id = `${id}-header`;
     this.body = div([], 'u2-section-body');

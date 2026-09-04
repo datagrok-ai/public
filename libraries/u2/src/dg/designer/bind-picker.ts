@@ -102,9 +102,9 @@ export function bindPicker(instance: SpecInstance, onPick: (path: string) => boo
   const dialog = new Dialog(options.prop === undefined ? 'Bind to' : `${options.prop} — bind to`);
   dialog.root.classList.add('u2-bind-picker');
   const groups = bindGroups(instance, bindTree(instance));
-  const search = dialog.run(() =>
+  const search = dialog.runInScope(() =>
     new TextInput({search: true, inline: true, placeholder: 'Search bindings'}));
-  const tree = dialog.run(() => new VirtualTree<BindTreeNode>());
+  const tree = dialog.runInScope(() => new VirtualTree<BindTreeNode>());
   const empty = span('', 'u2-picker-empty');
   tree.expanded.value = new Set(groups.map((group) => group.title));
   dialog.effect(() => {

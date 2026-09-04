@@ -66,6 +66,12 @@ export class Component implements BindSource {
    * (not a field), so a platform descendant's own `name` accessors override it legally (TS2611). */
   get name(): string | undefined { return this._u2.name; }
   set name(x: string | undefined) { this._u2.name = x; }
+
+  /** Sets the introspection/form key without claiming an automation id — the label-fallback path:
+   * a caption is not a stable identity, so it never reaches `data-u2-name`. */
+  protected deriveName(x: string | undefined): void {
+    this._u2.name = x;
+  }
   /** The registry metadata of the tag that built this component, stamped by the spec renderer —
    * the single source the introspection surface below is generated from. */
   componentMeta?: ComponentMetaBase;
@@ -121,7 +127,7 @@ export class Component implements BindSource {
     return proto === Object.prototype || proto === null;
   }
 
-  run<T>(fn: () => T): T {
+  runInScope<T>(fn: () => T): T {
     return Scope.runWith(this.scope, fn);
   }
 
@@ -453,6 +459,28 @@ export class Control extends Component {
   set root(x: HTMLElement) {
     this._root = x;
     Control._byRoot.set(x, this);
+    this._stampName();
+  }
+
+  /** A named control carries its name in the DOM: `data-u2-name` is the stable automation id
+   * selectors, tutorials and agents address the control by — the same attribute the spec renderer
+   * stamps on named nodes, so hand-built and spec-built UI share one selector vocabulary.
+   * Derived names (an input's label fallback) never stamp — see {@link Component.deriveName}. */
+  get name(): string | undefined {
+    return this._u2.name;
+  }
+
+  set name(x: string | undefined) {
+    this._u2.name = x;
+    this._stampName();
+  }
+
+  private _stampName(): void {
+    const name = this._u2.name;
+    if (name === undefined)
+      delete this._root.dataset.u2Name;
+    else
+      this._root.dataset.u2Name = name;
   }
 
   /** The nearest control owning `el` — the DOM → component door for tooling, automation and
