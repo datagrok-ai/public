@@ -2,7 +2,7 @@
 
 export type BytesKind = 'tables' | 'files';
 
-export interface Ref {type: string; id?: string; nqName?: string}
+export interface Ref {type?: string; id?: string; nqName?: string}
 
 export interface TypeSpec {
   route: string;
@@ -44,10 +44,24 @@ export const PASSWORD_PLACEHOLDER = '_____________';
 export const SAME_PASSWORD = 'not—changed';
 
 /**
+ * Seeded by `core/server/db/create_admin.sql` under these ids on every instance, so they are the
+ * target's own rows, not content. Matched by id, not name: `Developers` is seeded nowhere and is
+ * an ordinary group a customer may own, which has to travel like any other.
+ */
+const BUILTIN_GROUP_IDS = new Set([
+  'a4b45840-9a50-11e6-9cc9-8546b8bf62e6',
+  '1ab8b38d-9c4e-4b1e-81c3-ae2bde3e12c5',
+]);
+
+export const isBuiltinGroup = (g: any): boolean => BUILTIN_GROUP_IDS.has(String(g?.id ?? ''));
+
+/**
  * Never travels, whichever side asks: the platform's own connections, a space's `Files`
  * connection, and the personal `Home` share belong to the instance, not to the content.
  */
 export function untransferableReason(type: string, json: any): {action: 'warn' | 'info'; reason: string} | null {
+  if (type === 'UserGroup')
+    return isBuiltinGroup(json) ? {action: 'info', reason: 'platform_group'} : null;
   if (type !== 'DataConnection') return null;
   if (json?.namespace === 'System:') return {action: 'info', reason: 'platform_connection'};
   if (json?.parameters?.isProject === true) return {action: 'info', reason: 'space_files_connection'};
@@ -67,7 +81,9 @@ export function stripCredentials(c: any): void {
 }
 
 const FILE_CALL_RE = /Open(?:ServerFile|File|Folder)[A-Za-z]*\s*\(\s*["']([^"']+)["']/g;
+const NS_CALL_RE = /\b([A-Za-z]\w*(?::[A-Za-z]\w*)+)\s*\(/g;
 
+/** What a datasync script needs to re-run: the shares it opens, and the entities it calls. */
 export function datasyncConnectionRefs(t: any): Ref[] {
   if (t.metaParams?.['.data-sync'] !== 'sync') return [];
   const script: string = t.metaParams?.['.script'] ?? '';
@@ -77,6 +93,10 @@ export function datasyncConnectionRefs(t: any): Ref[] {
     if (nqName)
       refs.push({type: 'DataConnection', nqName});
   }
+  // A query- or script-backed sync names its source as `Namespace:Name(...)`. Which type
+  // answers to that nqName is not knowable from the script, so it is resolved, not assumed.
+  for (const m of script.matchAll(NS_CALL_RE))
+    refs.push({nqName: m[1]});
   return refs;
 }
 
@@ -138,6 +158,7 @@ export const TYPES: Record<string, TypeSpec> = {
 
 /** A root space is skipped by the default `/projects` listing — it has no namespace of its own. */
 export const TYPE_OPTIONS: Record<string, TypeOptions> = {
+  project: {params: {includeRoot: 'true'}},
   dashboard: {clause: 'isDashboard = true'},
   space: {clause: 'isDashboard = false and isEntity = false', params: {includeRoot: 'true'}},
 };

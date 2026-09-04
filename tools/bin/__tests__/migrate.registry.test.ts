@@ -1,7 +1,7 @@
 import {describe, it, expect} from 'vitest';
 import {
-  PASSWORD_PLACEHOLDER, SAME_PASSWORD, TYPES, datasyncConnectionRefs, fileNameFor, nqNameOf, rankOf, resolveType,
-  resolveTypes, stripCredentials, typeOptionsOf,
+  DEFAULT_TYPES, PASSWORD_PLACEHOLDER, SAME_PASSWORD, TYPES, datasyncConnectionRefs, fileNameFor, nqNameOf, rankOf,
+  resolveType, resolveTypes, stripCredentials, typeOptionsOf, untransferableReason,
 } from '../utils/migrate/registry';
 
 describe('stripCredentials', () => {
@@ -98,7 +98,23 @@ describe('files, jobs, notebooks and models', () => {
     expect(typeOptionsOf('dashboard')).toEqual({clause: 'isDashboard = true'});
     expect(typeOptionsOf('space')).toEqual({
       clause: 'isDashboard = false and isEntity = false', params: {includeRoot: 'true'}});
-    expect(typeOptionsOf('project')).toBeUndefined();
+    expect(typeOptionsOf('project')).toEqual({params: {includeRoot: 'true'}});
+  });
+
+  it('lists root spaces for the default selection, which has no alias to carry the rule', () => {
+    expect(resolveTypes(DEFAULT_TYPES).typeOptions['Project']).toEqual({params: {includeRoot: 'true'}});
+  });
+});
+
+describe('untransferableReason', () => {
+  it('leaves the seeded groups to the instance that owns them, by id', () => {
+    expect(untransferableReason('UserGroup', {id: 'a4b45840-9a50-11e6-9cc9-8546b8bf62e6', name: 'AllUsers'}))
+      .toEqual({action: 'info', reason: 'platform_group'});
+    expect(untransferableReason('UserGroup', {id: '1ab8b38d-9c4e-4b1e-81c3-ae2bde3e12c5', name: 'Administrators'}))
+      .toEqual({action: 'info', reason: 'platform_group'});
+    // Seeded nowhere, so a customer may own it — it travels like any other group.
+    expect(untransferableReason('UserGroup', {id: '324a3ea0-c210-11ef-aebf-a557e2ffe797', name: 'Developers'})).toBeNull();
+    expect(untransferableReason('UserGroup', {id: 'c0ffee00-0000-4000-8000-000000000001', name: 'Chemists'})).toBeNull();
   });
 });
 
@@ -113,6 +129,17 @@ describe('datasyncConnectionRefs', () => {
 
   it('ignores tables that are not datasync', () => {
     expect(datasyncConnectionRefs({metaParams: {'.script': 'OpenFile("Chem:Files/a.csv")'}})).toEqual([]);
+  });
+
+  it('follows a query-backed sync by nqName, leaving the type to be resolved', () => {
+    const t = {metaParams: {'.data-sync': 'sync', '.script': 'Result = Samples:CustomersInCountry("France")'}};
+    expect(datasyncConnectionRefs(t)).toEqual([{nqName: 'Samples:CustomersInCountry'}]);
+  });
+
+  // A derived sync names its inputs by display name, which is not resolvable to an entity.
+  it('does not mistake a derived-table recipe for a dependency', () => {
+    const t = {metaParams: {'.data-sync': 'sync', '.script': 'Result = JoinTables("demog", "demog (2)", [])'}};
+    expect(datasyncConnectionRefs(t)).toEqual([]);
   });
 });
 

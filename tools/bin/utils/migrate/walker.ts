@@ -1,6 +1,6 @@
 /// Docs: [Entity export / import](/docs/features/grok-tool/export-import/DESIGN.md)
 import {NodeDapi} from '../node-dapi';
-import {BytesKind, TYPES, Ref, TypeOptions, UUID_RE, inNamespace, nqNameOf, untransferableReason} from './registry';
+import {BytesKind, TYPES, Ref, TypeOptions, UUID_RE, inNamespace, isBuiltinGroup, nqNameOf, untransferableReason} from './registry';
 import {BundleEntity} from './bundle';
 
 export interface Selection {
@@ -79,6 +79,16 @@ export async function findEntity(dapi: NodeDapi, id: string): Promise<any> {
   return (Array.isArray(found) ? found[0] : found) ?? null;
 }
 
+/** One unreachable entity is a warning, not the end of the run. */
+async function tryFind(dapi: NodeDapi, type: string, id: string, name: string, note: Note): Promise<any> {
+  try {
+    return await dapi.internal(TYPES[type].route).find(id);
+  } catch (err: any) {
+    note({name, entityType: type, action: 'warn', reason: 'fetch_failed', detail: err?.message ?? String(err)});
+    return null;
+  }
+}
+
 /** UUID, or `namespace:name` (`name` alone for entities in the root namespace). */
 export async function resolveEntity(dapi: NodeDapi, token: string, type?: string): Promise<any> {
   if (UUID_RE.test(token)) {
@@ -132,7 +142,7 @@ export async function select(dapi: NodeDapi, sel: Selection, note: Note): Promis
       return;
     }
     if (picked.has(lite.id)) return;
-    const json = await dapi.internal(TYPES[type].route).find(lite.id);
+    const json = await tryFind(dapi, type, lite.id, nqNameOf(lite), note);
     if (json && !await untransferable(dapi, type, json, note, packageNames))
       picked.set(lite.id, {type, json});
   };
@@ -170,6 +180,8 @@ export async function expand(dapi: NodeDapi, selected: Map<string, BundleEntity>
   const seen = new Set<string>();
   const queue: {type: string; id: string; json?: any}[] = [];
   const packageNames = new Map<string, string>();
+  // Datasync scripts name the same query over and over; one lookup per nqName is enough.
+  const resolved = new Map<string, any>();
 
   const enqueue = (type: string, id: string, json?: any) => {
     if (!id || seen.has(id) || !TYPES[type]) return;
@@ -182,7 +194,7 @@ export async function expand(dapi: NodeDapi, selected: Map<string, BundleEntity>
 
   while (queue.length) {
     const {type, id, json: known} = queue.shift()!;
-    const json = known ?? await dapi.internal(TYPES[type].route).find(id);
+    const json = known ?? await tryFind(dapi, type, id, id, note);
     if (!json) continue;
 
     if (await untransferable(dapi, type, json, note, packageNames)) continue;
@@ -196,8 +208,18 @@ export async function expand(dapi: NodeDapi, selected: Map<string, BundleEntity>
           enqueue(v['#type'], v.id);
     }
 
-    for (const dep of TYPES[type].deps?.(json) ?? [])
-      enqueue(dep.type, dep.id ?? (dep.nqName ? await resolveDepId(dapi, dep, note) : ''));
+    for (const dep of TYPES[type].deps?.(json) ?? []) {
+      if (dep.id || !dep.nqName) {
+        enqueue(dep.type ?? '', dep.id ?? '');
+        continue;
+      }
+      const key = `${dep.type ?? ''}|${dep.nqName}`;
+      if (!resolved.has(key))
+        resolved.set(key, await resolveDep(dapi, dep, note));
+      const found = resolved.get(key);
+      if (found)
+        enqueue(found['#type'], found.id);
+    }
   }
   await expandGrants(dapi, out, note);
   return out;
@@ -218,12 +240,12 @@ async function projectRelations(dapi: NodeDapi, id: string, json: any, note: Not
   }
 }
 
-async function resolveDepId(dapi: NodeDapi, dep: Ref, note: Note): Promise<string> {
+async function resolveDep(dapi: NodeDapi, dep: Ref, note: Note): Promise<any> {
   try {
-    return (await resolveEntity(dapi, dep.nqName!, dep.type)).id;
+    return await resolveEntity(dapi, dep.nqName!, dep.type);
   } catch (err: any) {
-    note({name: dep.nqName ?? '', entityType: dep.type, action: 'warn', reason: 'dependency_not_found', detail: err?.message});
-    return '';
+    note({name: dep.nqName ?? '', entityType: dep.type ?? 'Entity', action: 'warn', reason: 'dependency_not_found', detail: err?.message});
+    return null;
   }
 }
 
@@ -285,6 +307,11 @@ async function expandGrants(dapi: NodeDapi, out: Map<string, BundleEntity>, note
     const g = queue.shift()!;
     if (done.has(g.id)) continue;
     done.add(g.id);
+    // The grant still travels by name; the group itself belongs to the target instance.
+    if (isBuiltinGroup(g)) {
+      note({name: g.friendlyName ?? g.name, entityType: 'UserGroup', action: 'info', reason: 'platform_group'});
+      continue;
+    }
     if (!out.has(g.id))
       out.set(g.id, {type: 'UserGroup', json: g});
     const json = out.get(g.id)!.json;

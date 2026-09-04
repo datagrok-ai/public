@@ -583,6 +583,21 @@ describe('a skipped entity takes its dependants with it', () => {
     expect(rowOf(result, 'Project')).toMatchObject({action: 'failed', reason: 'dependency_skipped', detail: 'Admin:Chemists'});
   });
 
+  // A platform group is on every instance under its own id, so a grant naming it always lands.
+  it('does not fail a project granted to a platform group the bundle still carries', async () => {
+    const builtin: [string, BundleEntity] = ['a4b45840-9a50-11e6-9cc9-8546b8bf62e6', {type: 'UserGroup', json: {
+      '#type': 'UserGroup', id: 'a4b45840-9a50-11e6-9cc9-8546b8bf62e6', name: 'AllUsers', friendlyName: 'All users',
+    }}];
+    const project: [string, BundleEntity] = [PROJECT_ID, {type: 'Project', json: {
+      '#type': 'Project', id: PROJECT_ID, name: 'Dash', namespace: 'Admin:', isDashboard: true,
+      _grants: [{group: 'All users', permission: 'View'}],
+    }}];
+    const {dapi} = storingDapi();
+    const result = await push(dapi, bundleOf([builtin, project]), {onConflict: 'fail'}, () => {});
+    expect(rowOf(result, 'UserGroup')).toMatchObject({action: 'skip', reason: 'platform_group'});
+    expect(rowOf(result, 'Project').action).toBe('create');
+  });
+
   it('fails a file whose connection was skipped', async () => {
     const file: [string, BundleEntity] = ['f1', {type: 'FileInfo', json: {
       '#type': 'FileInfo', id: 'f1', name: 'a.csv', isFile: true, connection: {id: CONN_ID},

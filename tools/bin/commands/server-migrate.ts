@@ -32,7 +32,7 @@ const hasSelection = (rest: string[], argv: any): boolean =>
   !!rest.length || !!argv.type || ['name', 'namespace', 'space', 'author', 'tag', 'since', 'filter', 'f'].some((f) => argv[f]);
 
 async function handlePull(dapi: NodeDapi, rest: string[], argv: any, output: OutputFormat,
-                          print: boolean = true): Promise<boolean> {
+                          print: boolean = true, report?: {dropped: number}): Promise<boolean> {
   const out: string = argv.out ?? '';
   if (!out || !hasSelection(rest, argv)) {
     printError(new Error(out ? `Refusing to pull the whole server — pass entity names, --type, or a filter flag.\n${PULL_USAGE}` : PULL_USAGE));
@@ -76,7 +76,18 @@ async function handlePull(dapi: NodeDapi, rest: string[], argv: any, output: Out
   const rows: Row[] = [...notes];
   for (const [, {type, json}] of entities)
     rows.push({name: nqNameOf(json), entityType: type, action: 'info', reason: 'pulled'});
-  if (print)
+  // An entity the server would not hand over — or whose bytes it would not — is missing from
+  // the bundle, and pushing it would quietly promote less than was asked for.
+  const dropped = notes.filter((n) => n.reason === 'fetch_failed' || n.reason === 'no_data').length;
+  if (dropped) {
+    rows.push({name: out, entityType: 'Bundle', action: 'failed', reason: 'incomplete',
+      detail: `${dropped} entities could not be read in full`});
+    process.exitCode = 1;
+    if (report)
+      report.dropped = dropped;
+  }
+  // `migrate` silences the pull's own report, but a refusal has to say why.
+  if (print || dropped)
     printOutput(rows, output);
   return true;
 }
@@ -155,15 +166,22 @@ async function handleTransfer(rest: string[], argv: any, output: OutputFormat): 
     printError(new Error(MIGRATE_USAGE));
     return false;
   }
-  const from = new NodeDapi(await createClient(String(argv.from)));
-  const to = new NodeDapi(await createClient(String(argv.to)));
+  const from = new NodeDapi(await createClient(String(argv.from), !!argv.admin));
+  const to = new NodeDapi(await createClient(String(argv.to), !!argv.admin));
   if (from.client.baseUrl === to.client.baseUrl)
     throw new Error(`--from and --to are the same server (${to.client.baseUrl}) — nothing to migrate`);
 
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'grok-migrate-'));
   try {
-    return await handlePull(from, rest, {...argv, out: dir}, output, output !== 'json') &&
-      await handlePush(to, [dir], argv, output);
+    const report = {dropped: 0};
+    if (!await handlePull(from, rest, {...argv, out: dir}, output, output !== 'json', report))
+      return false;
+    if (report.dropped) {
+      printError(new Error(`Refusing to push a partial bundle: ${report.dropped} entities could not be read. ` +
+        'Re-run, or pull with --keep and push the bundle yourself.'));
+      return true;
+    }
+    return await handlePush(to, [dir], argv, output);
   } finally {
     // stderr: `--output json` must stay one parseable document.
     if (argv.keep)

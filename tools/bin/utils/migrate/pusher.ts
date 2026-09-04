@@ -12,7 +12,7 @@ export type ConflictPolicy = 'fail' | 'skip' | 'duplicate' | 'adopt';
 
 export interface Row {name: string; entityType: string; action: Action; reason: string; detail?: string}
 
-export interface Op {id: string; type: string; json: any; row: Row; creds?: Record<string, any>}
+export interface Op {id: string; type: string; json: any; row: Row; creds?: Record<string, any>; expectedNamespace?: string}
 
 export interface PushOptions {
   dryRun?: boolean;
@@ -92,7 +92,7 @@ export async function plan(dapi: NodeDapi, bundle: Bundle,
     }
     if (!['create', 'update'].includes(row.action)) continue;
     if (type === 'DataConnection' && !planCredentials(json, row, rows, creds)) continue;
-    ops.push({id: entry.id, type, json, row, creds});
+    ops.push({id: entry.id, type, json, row, creds, expectedNamespace: expectedNamespace(bundle, json)});
   }
 
   if (conflicts.length)
@@ -160,8 +160,9 @@ function failDependants(effective: Map<string, BundleEntity>, planned: Map<strin
   for (const [id, {type, json}] of effective) {
     if (type === 'UserGroup')
       groupIds.set(json.friendlyName ?? json.name, json.id);
-    // A connection skipped because every parameter was masked is still on the target.
-    if (planned.get(id)?.action === 'skip' && !onTarget.has(json.id))
+    // A connection skipped because every parameter was masked is still on the target. A platform
+    // group is too, under whatever id that instance gave it — grants name it, so it never blocks.
+    if (planned.get(id)?.action === 'skip' && !onTarget.has(json.id) && planned.get(id)!.reason !== 'platform_group')
       blocked.set(json.id, planned.get(id)!);
   }
   for (let changed = true; changed;) {
@@ -178,6 +179,15 @@ function failDependants(effective: Map<string, BundleEntity>, planned: Map<strin
       changed = true;
     }
   }
+}
+
+/**
+ * Where the entity should end up, or undefined where the target legitimately decides: a personal
+ * namespace becomes the pusher's, and a root space has none to keep.
+ */
+function expectedNamespace(bundle: Bundle, json: any): string | undefined {
+  const source: string = json.namespace ?? '';
+  return !source || source === bundle.manifest.source.userNamespace ? undefined : source;
 }
 
 /**
@@ -283,6 +293,11 @@ async function saveOne(dapi: NodeDapi, bundle: Bundle, op: Op, rows: Row[], idma
     }
     if (verified.name !== op.json.name)
       rows.push({name: op.row.name, entityType: op.type, action: 'warn', reason: 'renamed', detail: `${op.json.name} → ${verified.name}`});
+    // A namespace is a label; placement comes from the owning space's relations, so an entity
+    // whose space is absent (or that is not among its relations) lands under the pusher instead.
+    if (op.expectedNamespace !== undefined && (verified.namespace ?? '') !== op.expectedNamespace)
+      rows.push({name: op.row.name, entityType: op.type, action: 'warn', reason: 'namespace_not_preserved',
+        detail: `${op.expectedNamespace} → ${verified.namespace ?? ''}; pull the owning space so the entity travels in its relations`});
     if (op.type === 'PredictiveModelInfo')
       rows.push({name: op.row.name, entityType: op.type, action: 'info', reason: 'model_blob_skipped',
         detail: 'the trained model itself stays on the source — retrain or copy it separately'});
@@ -492,6 +507,7 @@ async function currentNamespace(dapi: NodeDapi): Promise<string> {
  * own namespace on the target, so that is where a same-name twin would be.
  */
 async function findByNqName(dapi: NodeDapi, bundle: Bundle, type: string, json: any, pusherNamespace: string): Promise<any> {
+  // Not `expectedNamespace`: a twin for a namespace-less entity is looked up in the root.
   const sourceNamespace: string = json.namespace ?? '';
   const namespace = sourceNamespace === bundle.manifest.source.userNamespace ? pusherNamespace : sourceNamespace;
   const matches = await dapi.internal('/entities').list({namespace, name: json.name});

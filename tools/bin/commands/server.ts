@@ -35,7 +35,7 @@ export async function server(argv: any): Promise<boolean> {
 
   let client;
   try {
-    client = await createClient(host);
+    client = await createClient(host, !!argv.admin);
   } catch (err: any) {
     printError(err);
     return false;
@@ -954,6 +954,9 @@ Pull / push / migrate options:
 
 Options:
   --host <alias|url>    Server alias from config or full URL
+  --admin               Ask the server for an admin session, so the run sees entities the key's
+                        own account cannot (other people's spaces). Refused unless the account
+                        may start one; lasts for this command only
   --output <format>     Output format: table (default), json, csv, quiet
   --filter <text>       Smart filter expression
   --limit <n>           Page size (default: 50)

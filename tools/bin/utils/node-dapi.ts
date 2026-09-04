@@ -45,6 +45,42 @@ export interface NodeApiError {
   innerError?: NodeApiError;
 }
 
+const setting = (name: string, fallback: number): number => {
+  const value = Number(process.env[`GROK_HTTP_${name}`]);
+  return Number.isFinite(value) && value >= 0 ? value : fallback;
+};
+
+const BYTES_TIMEOUT_MS = setting('BYTES_TIMEOUT', 600000);
+
+/** Load shedding, not a verdict on the request: the same call succeeds once the queue drains. */
+const RETRIABLE_STATUS = new Set([429, 502, 503, 504]);
+
+/**
+ * Without a deadline one unresponsive entity stalls a whole pull — `GET /projects/{id}` on a
+ * space holding tens of thousands of children never answers. A request that hung or dropped is
+ * retried, since a deadline is as often a server busy with this very pull as a dead one; a reply
+ * the server actually sent is not. The deadline covers the body too, so a transfer that is slow
+ * by nature rather than stuck (`.d42` table data) asks for a longer one.
+ */
+async function fetchOrRetry(url: string, opts: RequestInit, retriable: boolean,
+                            timeoutMs: number = setting('TIMEOUT', 60000)): Promise<Response> {
+  const retries = setting('RETRIES', 3);
+  for (let attempt = 0; ; attempt++) {
+    const last = !retriable || attempt >= retries;
+    try {
+      const res = await fetch(url, {...opts, signal: AbortSignal.timeout(timeoutMs)});
+      if (last || !RETRIABLE_STATUS.has(res.status))
+        return res;
+      await res.body?.cancel();
+    } catch (err: any) {
+      if (last)
+        throw new Error(`${opts.method ?? 'GET'} ${url}: ` +
+          (err?.name === 'TimeoutError' ? `no answer in ${timeoutMs}ms` : err?.message ?? err));
+    }
+    await new Promise((resolve) => setTimeout(resolve, setting('BACKOFF', 1000) * Math.pow(2, attempt)));
+  }
+}
+
 export class NodeApiClient {
   constructor(public baseUrl: string, public token: string) {}
 
@@ -69,7 +105,7 @@ export class NodeApiClient {
     if (body !== undefined)
       opts.body = JSON.stringify(body);
 
-    const res = await fetch(url, opts);
+    const res = await fetchOrRetry(url, opts, method === 'GET');
 
     if (!res.ok)
       await throwHttpError(res);
@@ -94,14 +130,14 @@ export class NodeApiClient {
    */
   async putBytes(path: string, bytes: Uint8Array | Buffer,
                  contentType: string = 'application/octet-stream'): Promise<any> {
-    const res = await fetch(`${this.baseUrl}${path}`, {
+    const res = await fetchOrRetry(`${this.baseUrl}${path}`, {
       method: 'POST',
       headers: {
         'Authorization': this.token,
         'Content-Type': contentType,
       },
       body: bytes as any,
-    });
+    }, false, BYTES_TIMEOUT_MS);
     if (!res.ok)
       await throwHttpError(res);
     const ct = res.headers.get('content-type') ?? '';
@@ -112,7 +148,7 @@ export class NodeApiClient {
 
   /** GET raw bytes — d42 table data, file content, model blobs. */
   async getBytes(path: string): Promise<Buffer> {
-    const res = await fetch(`${this.baseUrl}${path}`, {headers: {'Authorization': this.token}});
+    const res = await fetchOrRetry(`${this.baseUrl}${path}`, {headers: {'Authorization': this.token}}, true, BYTES_TIMEOUT_MS);
     if (!res.ok)
       await throwHttpError(res);
     return Buffer.from(await res.arrayBuffer());
@@ -123,7 +159,10 @@ export class NodeApiClient {
 async function throwHttpError(res: Response): Promise<never> {
   const rawText = await res.text();
   let errBody: any;
-  try { errBody = JSON.parse(rawText); } catch { errBody = {error: rawText || `HTTP ${res.status}`}; }
+  // A gateway answers overload with an HTML page, where the status is the only real information.
+  const markup = rawText.trimStart().startsWith('<') || rawText.length > 200;
+  try { errBody = JSON.parse(rawText); }
+  catch { errBody = {error: markup || !rawText ? `HTTP ${res.status} ${res.statusText}`.trim() : rawText}; }
   const err: NodeApiError = {
     error: errBody?.message ?? errBody?.error ?? `HTTP ${res.status}`,
     source: errBody?.source ?? 'Server',
