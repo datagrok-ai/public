@@ -854,6 +854,7 @@ export enum EVENT_TYPE {
   // Context menu events
   CONTEXT_MENU = 'd4-context-menu',
   CONTEXT_MENU_CLOSED = 'd4-menu-closed',
+  CONTEXT_MENU_SHOWN = 'd4-menu-shown',
 
   // View events
   CURRENT_VIEW_CHANGED = 'd4-current-view-changed',
