@@ -82,17 +82,38 @@ async function fetchOrRetry(url: string, opts: RequestInit, retriable: boolean,
 }
 
 export class NodeApiClient {
-  constructor(public baseUrl: string, public token: string) {}
+  /** Set by `createClient` when the run asked for an admin session, so a re-login restores it. */
+  adminMode: boolean = false;
+
+  constructor(public baseUrl: string, public token: string, private devKey?: string) {}
 
   static async login(baseUrl: string, devKey: string): Promise<NodeApiClient> {
     const res = await fetch(`${baseUrl}/users/login/dev/${devKey}`, {method: 'POST'});
     const json = await res.json() as any;
     if (!json.token)
       throw new Error('Login failed. Check your developer key.');
-    return new NodeApiClient(baseUrl, json.token);
+    return new NodeApiClient(baseUrl, json.token, devKey);
   }
 
-  async request(method: string, path: string, body?: any, headers?: Record<string, string>): Promise<any> {
+  /**
+   * A stand serving several isolates can reject a session one of them does not know, and an
+   * hour-long walk has no way to ask the operator to log in again. The developer key is good
+   * for a new session, so one is taken rather than losing the run.
+   */
+  private async reauthenticate(): Promise<boolean> {
+    if (!this.devKey)
+      return false;
+    const fresh = await NodeApiClient.login(this.baseUrl, this.devKey).catch(() => null);
+    if (!fresh)
+      return false;
+    this.token = fresh.token;
+    if (this.adminMode)
+      this.token = (await fresh.post('/users/sessions/current/admin'))?.token ?? this.token;
+    return true;
+  }
+
+  async request(method: string, path: string, body?: any, headers?: Record<string, string>,
+                reauthed: boolean = false): Promise<any> {
     const url = `${this.baseUrl}${path}`;
     const opts: RequestInit = {
       method,
@@ -107,6 +128,8 @@ export class NodeApiClient {
 
     const res = await fetchOrRetry(url, opts, method === 'GET');
 
+    if (res.status === 401 && !reauthed && await this.reauthenticate())
+      return this.request(method, path, body, headers, true);
     if (!res.ok)
       await throwHttpError(res);
 

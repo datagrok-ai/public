@@ -17,5 +17,6 @@ export async function createClient(hostArg?: string, admin: boolean = false): Pr
   if (!token)
     throw new Error(`${url} refused an admin session — the account behind this key cannot start one`);
   client.token = token;
+  client.adminMode = true;
   return client;
 }

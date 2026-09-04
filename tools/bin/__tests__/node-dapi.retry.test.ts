@@ -44,6 +44,21 @@ describe('fetchOrRetry', () => {
     expect(spy).toHaveBeenCalledTimes(1);
   });
 
+  // A stand serving several isolates can reject a session one of them does not know.
+  it('takes a new session when one is rejected mid-run, and replays the request', async () => {
+    const denied = () => new Response('{"message":"Invalid session"}', {status: 401, headers: {'content-type': 'application/json'}});
+    stub(denied, () => ok({token: 'fresh'}), () => ok({id: 'x'}));
+    const client = new NodeApiClient(URL, 'stale', 'dev-key');
+    expect(await client.get('/projects/x')).toEqual({id: 'x'});
+    expect(client.token).toBe('fresh');
+  });
+
+  it('gives up when it has no key to re-authenticate with', async () => {
+    stub(() => new Response('{"message":"Invalid session"}', {status: 401, headers: {'content-type': 'application/json'}}));
+    const client = new NodeApiClient(URL, 'stale');
+    await expect(client.get('/projects/x')).rejects.toThrow('Invalid session');
+  });
+
   it('names the route when a request never answers', async () => {
     stub(() => { throw Object.assign(new Error('timed out'), {name: 'TimeoutError'}); });
     const client = new NodeApiClient(URL, 'token');
