@@ -116,7 +116,7 @@ test('Legend color consistency', async ({page}) => {
   });
 
   await softStep('Project round-trip — save + close + reopen + verify palette', async () => {
-    const res = await page.evaluate(async () => {
+    const res = await page.evaluate(async (lid: string | null) => {
       let projectId: string | null = null;
       try {
         const DG = (window as any).DG;
@@ -145,6 +145,16 @@ test('Legend color consistency', async ({page}) => {
       await new Promise((r) => setTimeout(r, 3500));
       const tv = (window as any).grok.shell.tv;
       if (!tv) return {phase: 'reopen', ok: false, error: 'no tv after reopen', projectId};
+      // A programmatically saved project carries the table but no view layout — Project.layout
+      // is only populated by the interactive save dialog — so the viewers do not come back on
+      // their own. Re-apply the layout this spec saved earlier, which is the supported way to
+      // restore viewer state, before asserting on it.
+      if (lid) {
+        try {
+          tv.loadLayout(await (window as any).grok.dapi.layouts.find(lid));
+          await new Promise((r) => setTimeout(r, 2500));
+        } catch (_) { /* fall through to the assertions below */ }
+      }
       const col = tv.dataFrame.col('Stereo Category');
       const tag = JSON.parse(col.tags['.color-coding-categorical'] ?? '{}');
       const colorAfter = String(tag['R_ONE'] ?? '').toLowerCase();
@@ -156,7 +166,7 @@ test('Legend color consistency', async ({page}) => {
         viewerColors[x.type] = rOneItem ? getComputedStyle(rOneItem).color : null;
       }
       return {phase: 'verified', ok: true, projectId, colorAfter, viewerColors};
-    });
+    }, (globalThis as any).__ccLayoutId ?? null);
     expect(res.ok, res.ok ? '' : `project save+reopen failed in phase '${res.phase}': ${res.error}`).toBe(true);
     (globalThis as any).__ccProjectId = res.projectId;
     expect(res.colorAfter).toBe('#1f77b4');

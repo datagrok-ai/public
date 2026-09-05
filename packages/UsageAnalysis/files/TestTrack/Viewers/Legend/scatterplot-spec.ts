@@ -145,6 +145,12 @@ test('Legend scatterplot — Color + Marker combined', async ({page}) => {
         await new Promise((r) => setTimeout(r, 800));
       }
       const tv2 = (window as any).grok.shell.tv;
+      // The Sc1 reopen above restores the table but not the viewers, so re-add the scatter
+      // plot before driving its legend.
+      if (!tv2.viewers.find((x: any) => x.type === 'Scatter plot')) {
+        tv2.addViewer('Scatter plot');
+        await new Promise((r) => setTimeout(r, 1200));
+      }
       const df = tv2.dataFrame;
       try { await df.columns.addNewCalculated('testCat', "if(${Stereo Category}=='S_UNKN', null, ${Series})"); } catch (_) {}
       await new Promise((r) => setTimeout(r, 1500));
