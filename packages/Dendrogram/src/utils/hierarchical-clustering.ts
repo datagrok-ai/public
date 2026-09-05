@@ -86,6 +86,10 @@ export async function hierarchicalClusteringUI(
   neighborWidth: number = 300,
   options?: {tableView?: DG.TableView}
 ): Promise<void> {
+  if (!df) {
+    grok.shell.warning('Please open a table for hierarchical clustering.');
+    return;
+  }
   const linkageCode = Object.values(LinkageMethod).findIndex((method) => method === linkage);
 
   const colNameSet: Set<string> = new Set(colNameList);
