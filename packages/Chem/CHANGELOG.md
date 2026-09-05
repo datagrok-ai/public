@@ -2,6 +2,7 @@
 
 ## v.next
 
+* 2326: Guard isBitsetStale against the valueless root tree group
 * SAR Matrix: Fixed the SAR Transfer tab rebuilding the whole panel (grid flicker, list scroll jumping to the top) on expanding/collapsing a series or selecting a transfer — the list now toggles and swaps in place like the SAR Matrix navigator
 * Fixed the package build failing on `TS2610` — `name` is an accessor on the u2 `Component` base, so the viewer overrides it with its own accessor instead of redeclaring it as a property
 * Fixed Gasteiger Partial Charges panel on current RDKit — `GetSimilarityMapFromWeights` now requires an explicit `MolDraw2DCairo` drawer (passed by keyword, so pre-2023.09 RDKit still works)

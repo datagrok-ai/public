@@ -97,6 +97,22 @@ category('scaffold tree', () => {
     expect(table.filter.trueCount, 928);
   }, {skipReason: 'GROK-16714'});
   
+  test('bitset staleness ignores the valueless root group', async () => {
+    const tv = await createTableView('tests/sar-small_test.csv');
+    const scaffoldTree = new ScaffoldTreeViewer();
+    const table = tv.dataFrame;
+
+    scaffoldTree.dataFrame = table;
+    scaffoldTree.molCol = table.columns.bySemType(DG.SEMTYPE.MOLECULE);
+    tv.dockManager.dock(scaffoldTree.root);
+
+    const group = scaffoldTree.createGroup('c1ccccc1', scaffoldTree.tree);
+    scaffoldTree.tree.currentItem = scaffoldTree.tree;
+    expect(scaffoldTree.tree.currentItem.value, null);
+    expect(scaffoldTree.isBitsetStale(scaffoldTree.tree.currentItem), false);
+    expect(scaffoldTree.isBitsetStale(group), false);
+  });
+
   async function editStructure(scaffoldTree: ScaffoldTreeViewer, group: DG.TreeViewGroup, smiles: string) {
     await scaffoldTree.openEditSketcher(group);
     scaffoldTree.wrapper?.sketcher.setSmiles(smiles);
