@@ -1985,6 +1985,12 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     return bs ? bs.length !== this.dataFrame.rowCount : false;
   }
 
+  /** An empty-area click makes the root the current item, and the root carries no scaffold value. */
+  isTreeStale(): boolean {
+    const current = this.tree.currentItem;
+    return this.isBitsetStale(current?.value != null ? current : this.tree.items[0]);
+  }
+
   setNotBitOperation(group: TreeViewGroup, isNot: boolean) : void {
     if ((group.value as ITreeNode).bitwiseNot === isNot)
       return;
@@ -2551,7 +2557,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       if (thisViewer.tree.items.length < 1)
         return;
 
-      const stale = this.isBitsetStale(this.tree.currentItem ?? this.tree.items[0]);
+      const stale = this.isTreeStale();
       await updateVisibleNodes(thisViewer, {updateBitset: stale, includeExpanded: true, includeChecked: true});
       this.bitsetUpdateInProgress = false;
       this.updateFilters(false);
