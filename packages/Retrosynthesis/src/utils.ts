@@ -24,6 +24,8 @@ export async function updateRetrosynthesisWidget(molecule: string, w: DG.Widget)
       updateWidgetRoot(ui.divText('Molecule is empty'));
       return;
     }
+    // DG.chem.isSmarts/convert call Chem synchronously and throw until Chem's package is initialized
+    await grok.functions.call('Chem:initChemAutostart');
     if (DG.chem.isSmarts(molecule) || isFragment(molecule)) {
       updateWidgetRoot(ui.divText('Not applicable for smarts or molecular fragments'));
       return;
