@@ -244,7 +244,9 @@ test('Bio cell-context actions + Context Pane info panels + custom editors', asy
     });
     expect(balloonError, 'no error balloon must be emitted by either Context Pane panel').toBe(0);
   });
-  // Scenario 3 — Get Region editor. Menu label "Extract Region..."; dialog name [name="dialog-Get-Region"].
+  // Scenario 3 — Get Region editor. Menu label "Extract Region..."; the menu runs the
+  // `Get Sequence Region` func through Bio:GetRegionEditor, so the dialog is named after
+  // that func, not after the getRegion API.
   await softStep('Scenario 3 Step 1-2: click Bio > Calculate > Extract Region — GetRegionEditor dialog opens', async () => {
     await page.evaluate(async () => {
       (document.querySelector('[name="div-Bio"]') as HTMLElement).click();
@@ -258,17 +260,17 @@ test('Bio cell-context actions + Context Pane info panels + custom editors', asy
       if (!leaf) throw new Error('[name="div-Bio---Calculate---Extract-Region..."] leaf not found');
       (leaf as HTMLElement).click();
     });
-    await page.locator('[name="dialog-Get-Region"]').waitFor({state: 'visible', timeout: 60_000});
+    await page.locator('[name="dialog-Get-Sequence-Region"], [name="dialog-Get-Region"]').waitFor({state: 'visible', timeout: 60_000});
   });
   await softStep('Scenario 3 Step 3: GetRegionEditor sequence-column selector is populated with the FASTA column', async () => {
     const seqInputPresent = await page.locator(
-      '[name="dialog-Get-Region"] [name="input-host-Sequence"]').count();
+      '[name="dialog-Get-Sequence-Region"] [name="input-host-Sequence"], [name="dialog-Get-Region"] [name="input-host-Sequence"]').count();
     expect(seqInputPresent,
       'GetRegionEditor MUST render a sequence-column selector input (bio.md:344)').toBeGreaterThan(0);
   });
   await softStep('Scenario 3 Step 4: Cancel via Escape closes the dialog with no balloon error', async () => {
     await page.keyboard.press('Escape');
-    await page.locator('[name="dialog-Get-Region"]').waitFor({state: 'hidden', timeout: 10_000});
+    await page.locator('[name="dialog-Get-Sequence-Region"], [name="dialog-Get-Region"]').waitFor({state: 'hidden', timeout: 10_000});
     const balloonError = await page.locator('.d4-balloon.error, .grok-balloon-error').count();
     expect(balloonError,
       'Cancel must close GetRegionEditor with no error balloon').toBe(0);
