@@ -100,7 +100,6 @@ export class MoleculeImage {
     // Draw zoomed-out molecule
     canvas.style.width = `${canvasWidth}px`;
     canvas.style.height = `${canvasHeight}px`;
-    canvas.style.cursor = 'zoom-in';
     /*
     canvas.style.borderStyle = 'solid';
     canvas.style.borderRadius = '1px';
@@ -109,7 +108,13 @@ export class MoleculeImage {
     */
     this.drawMolBlockOnCanvas(canvas);
 
+    if (this.molblock === '') {
+      moleculeImgDiv.append(canvas);
+      return;
+    }
+
     // Dialog with zoomed-in molecule
+    canvas.style.cursor = 'zoom-in';
     canvas.addEventListener('click', async () => {
       await this.zoomIn();
     });

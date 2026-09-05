@@ -2,6 +2,7 @@
 
 ## v.next
 
+* 2224: Skip click-to-zoom wiring in MoleculeImage.drawMolecule when the molblock is empty
 * 2187: Uniquify Bulk Convert output column name via columns.getUnusedName
 * AI: Exposed AI functions and briefings on the HELM Enumerator dialog and the Markush Enumerator dialog/app — state introspection, macromolecule/placeholder/core/R-group editing, options, and running the enumeration.
 
