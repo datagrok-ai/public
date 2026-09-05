@@ -97,6 +97,24 @@ category('scaffold tree', () => {
     expect(table.filter.trueCount, 928);
   }, {skipReason: 'GROK-16714'});
   
+  test('stale check with the tree root selected', async () => {
+    const tv = await createTableView('tests/sar-small_test.csv');
+    const table = tv.dataFrame;
+    const scaffoldTree = new ScaffoldTreeViewer();
+    scaffoldTree.dataFrame = table;
+    scaffoldTree.molCol = table.columns.bySemType(DG.SEMTYPE.MOLECULE);
+    const group = scaffoldTree.createGroup('c1ccccc1', scaffoldTree.tree)!;
+
+    scaffoldTree.tree.currentItem = scaffoldTree.tree;
+    expect(scaffoldTree.tree.currentItem.value, null);
+    expect(scaffoldTree.isTreeStale(), false);
+    value(group).bitset = DG.BitSet.create(table.rowCount + 1);
+    expect(scaffoldTree.isTreeStale(), true);
+
+    scaffoldTree.detach();
+    tv.close();
+  });
+
   async function editStructure(scaffoldTree: ScaffoldTreeViewer, group: DG.TreeViewGroup, smiles: string) {
     await scaffoldTree.openEditSketcher(group);
     scaffoldTree.wrapper?.sketcher.setSmiles(smiles);
