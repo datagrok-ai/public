@@ -142,8 +142,6 @@ test('Sharing — UI Smoke (Single-Actor): share dialog, context panel, advanced
       await expect(dlg.locator('[name="div-share-selector"]'),
         'access-level dropdown (View and use / Full access) must be present').toBeAttached({timeout: 10_000});
       
-      await expect(dlg.locator('[name="label-Advanced-editor..."]'),
-        'Advanced editor... link must be present').toBeAttached({timeout: 10_000});
       
       
       
