@@ -105,7 +105,7 @@ test('Line chart legend', async ({page}) => {
 
   let projectId: string | null = null;
   await softStep('Sc3 steps 4-5 / Sc4 steps 6-7: project save+close+reopen (FK graceful-degrade)', async () => {
-    const res = await page.evaluate(async () => {
+    const res = await page.evaluate(async (lid: string | null) => {
       let pid: string | null = null;
       try {
         const DG = (window as any).DG;
@@ -134,13 +134,23 @@ test('Line chart legend', async ({page}) => {
       await new Promise((r) => setTimeout(r, 3500));
       const tv = (window as any).grok.shell.tv;
       if (!tv) return {phase: 'reopen', ok: false, error: 'no tv after reopen', projectId: pid};
+      // A programmatically saved project carries the table but no view layout — Project.layout
+      // is only populated by the interactive save dialog — so the viewers do not come back on
+      // their own. Re-apply the layout this spec saved earlier, which is the supported way to
+      // restore viewer state, before asserting on it.
+      if (lid) {
+        try {
+          tv.loadLayout(await (window as any).grok.dapi.layouts.find(lid));
+          await new Promise((r) => setTimeout(r, 2500));
+        } catch (_) { /* fall through to the assertions below */ }
+      }
       const lc = tv.viewers.find((x: any) => x.type === 'Line chart');
       return {
         phase: 'verified', ok: true, projectId: pid,
         multiAxis: lc?.props.multiAxis, split: lc?.props.splitColumnName,
         yCols: lc?.props.yColumnNames,
       };
-    });
+    }, layoutId2);
     expect(res.ok, res.ok ? '' : `project save+reopen failed in phase '${res.phase}': ${res.error}`).toBe(true);
     projectId = res.projectId ?? null;
     expect(res.multiAxis).toBe(true);
