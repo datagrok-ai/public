@@ -207,11 +207,11 @@ test('Sharing — UI Smoke (Single-Actor): share dialog, context panel, advanced
     
     
     await softStep('Scenario 4: Advanced editor... opens the PermissionsView matrix', async () => {
-      await openShareDialogViaPane(page, projId!);
-      const dlg = page.locator('.d4-dialog');
-      const advLabel = dlg.locator('[name="label-Advanced-editor..."]');
-      await expect(advLabel, 'Advanced editor... link must be present').toBeAttached({timeout: 10_000});
-      await advLabel.click();
+      // The `Advanced editor...` link was removed from the Share dialog by cf12c6c96c
+      // (GROK-20322, umbrella sharing UI). PermissionsView is unchanged, so route to it
+      // directly and keep asserting on the matrix surface below.
+      await page.evaluate((id) => { try { (window as any).grok.shell.route(`/permissions/${id}`); } catch (_) { } }, projId!);
+      await page.waitForFunction(() => /\/permissions\/[0-9a-f-]+/.test(window.location.href), null, {timeout: 15_000});
       
       
       
