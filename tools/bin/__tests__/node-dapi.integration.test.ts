@@ -12,7 +12,7 @@
  */
 
 import {beforeAll, describe, expect, it} from 'vitest';
-import {NodeApiClient, NodeDapi} from '../utils/node-dapi';
+import {NodeApiClient, NodeDapi, mapPositionalParams} from '../utils/node-dapi';
 import {getDevKey} from '../utils/test-utils';
 
 // ─── Config ──────────────────────────────────────────────────────────────────
@@ -148,10 +148,19 @@ describe('users', () => {
       expect(u).toMatchObject({id: expect.any(String), login: expect.any(String)});
   });
 
-  stest('count() returns a non-negative integer', async () => {
+  stest('count() returns a positive integer (a server always has users)', async () => {
     const n = await dapi.users.count();
     expect(typeof n).toBe('number');
-    expect(n).toBeGreaterThanOrEqual(0);
+    expect(n).toBeGreaterThan(0);
+  });
+
+  stest('by(1) is honoured: one row comes back', async () => {
+    const users = await dapi.users.by(1).list();
+    expect(users.length).toBe(1);
+  });
+
+  stest('find() of an unknown login rejects instead of returning an ApiError body', async () => {
+    await expect(dapi.users.find('no.such.user.xyz')).rejects.toThrow(/not found/i);
   });
 
   stest('filter() narrows results', async () => {
@@ -189,8 +198,8 @@ describe('users', () => {
     expect(user).toHaveProperty('login');
   });
 
-  stest('delete() throws for a non-existent ID', async () => {
-    await expect(dapi.users.delete('non-existent-id-xyz')).rejects.toThrow();
+  stest('delete() refuses: the platform has no user deletion, only blocking', async () => {
+    await expect(dapi.users.delete('non-existent-id-xyz')).rejects.toThrow(/users block/);
   });
 });
 
@@ -255,6 +264,29 @@ describe('functions', () => {
   stest('run() throws a structured error for a non-existent function', async () => {
     await expect(dapi.functions.run('NonExistentPkg:nonExistentFunc', {}))
       .rejects.toThrow();
+  });
+
+  stest('positional arguments map onto parameterInfos and reach the core Sin function', async () => {
+    const sin = await dapi.functions.find('Sin');
+    const params = mapPositionalParams({0: 1}, sin.parameterInfos, 'Sin');
+    expect(params).toEqual({x: 1});
+    expect(await dapi.functions.run('Sin', params)).toBeCloseTo(Math.sin(1), 6);
+  });
+
+  stest('find() of an unknown name rejects', async () => {
+    await expect(dapi.functions.find('NoSuchFunctionXyz')).rejects.toThrow(/not found/i);
+  });
+});
+
+// ─── tables ───────────────────────────────────────────────────────────────────
+
+describe('tables', () => {
+  stest('list() returns an array through the internal router', async () => {
+    expect(Array.isArray(await dapi.tables.by(5).list())).toBe(true);
+  });
+
+  stest('find() of an unknown name rejects with a clear message', async () => {
+    await expect(dapi.tables.find('no-such-table-xyz')).rejects.toThrow("No table named 'no-such-table-xyz'");
   });
 });
 
@@ -368,17 +400,19 @@ describe('files', () => {
     return [];
   }
 
-  stest(`list() returns a defined result for ${TEST_FILES_PATH}`, async () => {
+  stest(`list() returns FileInfo records for ${TEST_FILES_PATH}`, async () => {
     const result = await dapi.files.list(TEST_FILES_PATH);
-    expect(result).toBeDefined();
-    // Log actual shape to aid diagnosis
-    const shape = Array.isArray(result) ? `array(${result.length})` : typeof result;
-    console.log(`files.list shape: ${shape}`);
+    expect(Array.isArray(result)).toBe(true);
+    for (const f of result)
+      expect(f).toMatchObject({path: expect.any(String), isFile: expect.any(Boolean)});
   });
 
-  stest('list() with recursive=true returns a defined result', async () => {
-    const result = await dapi.files.list(TEST_FILES_PATH, true);
-    expect(result).toBeDefined();
+  stest('list() with recursive=true returns an array', async () => {
+    expect(Array.isArray(await dapi.files.list(TEST_FILES_PATH, true))).toBe(true);
+  });
+
+  stest('list() of an unknown connector rejects', async () => {
+    await expect(dapi.files.list('System:NoSuchShareXyz')).rejects.toThrow();
   });
 
   stest('list() non-recursive returns fewer or equal files than recursive', async () => {
@@ -412,36 +446,56 @@ describe('NodeDapi.raw', () => {
     expect(text.toLowerCase()).toMatch(/login|admin|user/);
   });
 
-  stest('GET /api/info returns server info', async () => {
-    const result = await dapi.raw('GET', '/api/info');
-    expect(result).toBeDefined();
+  stest('GET /api/info/server returns the version', async () => {
+    const result = await dapi.raw('GET', '/api/info/server');
+    const info = typeof result === 'string' ? JSON.parse(result) : result;
+    expect(info).toHaveProperty('Version');
   });
 
   stest('accepts lowercase method names', async () => {
     const result = await dapi.raw('get', '/api/users/current');
     expect(result).toBeDefined();
   });
+
+  stest('accepts an API-relative path without the /api prefix', async () => {
+    const result = await dapi.raw('GET', '/users/current') as any;
+    expect(result).toHaveProperty('login');
+  });
+
+  stest('rejects a non-2xx answer with the HTTP status', async () => {
+    try {
+      await dapi.raw('GET', '/api/no-such-endpoint-xyz');
+      throw new Error('expected a rejection');
+    } catch (e: any) {
+      expect(e.apiError?.errorCode).toBe(404);
+    }
+  });
+
+  stest('sends a JSON body', async () => {
+    expect(Number(await dapi.raw('POST', '/public/v1/functions/Sin/call', {x: 0}))).toBe(0);
+  });
 });
 
 // ─── NodeDapi.describe ────────────────────────────────────────────────────────
 
 describe('NodeDapi.describe', () => {
-  stest('describe("connections") returns a schema object', async () => {
-    const schema = await dapi.describe('connections');
-    expect(schema).toBeDefined();
+  stest('describe("connections") lists the connection fields', async () => {
+    const d = await dapi.describe('connections');
+    expect(d.type?.name).toBe('DataConnection');
+    const names = d.fields.map((f) => f.field);
+    expect(names).toEqual(expect.arrayContaining(['#type', 'name', 'dataSource', 'parameters']));
   });
 
-  stest('describe("users") returns a schema object', async () => {
-    const schema = await dapi.describe('users');
-    expect(schema).toBeDefined();
+  stest('describe("users") lists login and status', async () => {
+    const names = (await dapi.describe('users')).fields.map((f) => f.field);
+    expect(names).toEqual(expect.arrayContaining(['login', 'status', 'id']));
   });
 
-  stest('describe("nonexistentEntity") throws or returns null', async () => {
-    // Either behavior is acceptable — the important thing is it does not hang
-    try {
-      await dapi.describe('nonexistentEntity-xyz');
-    } catch {
-      // Expected
-    }
+  stest('describe accepts a type name', async () => {
+    expect((await dapi.describe('Project')).type?.name).toBe('Project');
+  });
+
+  stest('describe("nonexistentEntity") rejects', async () => {
+    await expect(dapi.describe('nonexistentEntity-xyz')).rejects.toThrow(/Unknown entity type/);
   });
 });

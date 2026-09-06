@@ -747,6 +747,30 @@ Runnable in the platform's samples gallery:
 [schema](https://public.datagrok.ai/js/samples/dapi/domains/schema),
 [platform-grid](https://public.datagrok.ai/js/samples/dapi/domains/platform-grid).
 
+## From the command line
+
+The [`grok s`](https://github.com/datagrok-ai/public/blob/master/tools/GROK_S.md) CLI
+(`npm install -g datagrok-tools`) reaches the same server API without a browser, so
+scripts, CI jobs and one-off fixes can read and write domain tables with the same
+permissions and audit trail as the UI. A schema is addressed as `<schema>`, a table as
+`<schema>.<table>`:
+
+```bash
+grok s domains list                                            # registered schemas
+grok s domains get grit.issue                                  # a table's columns
+grok s domains query grit.issue --filter 'status = "open"' --sort '!created_on' --limit 20
+grok s domains insert grit.issue title="Crash on save" status=open
+grok s domains update grit.issue <row-id> status=closed --version 3
+grok s domains upload grit.issue ./issues.csv --upsert         # csv, d42 or json; merge by business key
+grok s domains download grit.issue -O ./issues.csv --filter 'status = "open"'
+grok s domains grant grit.issue Chemists --access Edit
+grok s domains create inventory && grok s domains apply inventory --json schema.json --dry-run
+```
+
+Validation errors are printed per row, a schema `apply` shows its change plan with `--dry-run`
+and refuses destructive changes until `--confirm-destructive`, and `--output json` makes every
+command scriptable.
+
 ## Customizing the UI
 
 The default UI (cards, tooltips, context panel, entity view) works for every table with no

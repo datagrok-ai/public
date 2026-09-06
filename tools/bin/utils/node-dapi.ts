@@ -43,6 +43,8 @@ export interface NodeApiError {
   errorCode?: number;
   stackTrace?: string;
   innerError?: NodeApiError;
+  /** The decoded error envelope, for callers that read structured fields (per-row reports, plans). */
+  body?: any;
 }
 
 const setting = (name: string, fallback: number): number => {
@@ -89,9 +91,11 @@ export class NodeApiClient {
 
   static async login(baseUrl: string, devKey: string): Promise<NodeApiClient> {
     const res = await fetch(`${baseUrl}/users/login/dev/${devKey}`, {method: 'POST'});
-    const json = await res.json() as any;
+    const json = (res.headers.get('content-type') ?? '').includes('application/json') ? await res.json() as any : null;
+    if (!json)
+      throw new Error(`Login failed at ${baseUrl} (HTTP ${res.status}): not a Datagrok API URL — it should end with /api`);
     if (!json.token)
-      throw new Error('Login failed. Check your developer key.');
+      throw new Error(`Login failed at ${baseUrl}: ${json.message ?? 'check your developer key'}`);
     return new NodeApiClient(baseUrl, json.token, devKey);
   }
 
@@ -137,9 +141,7 @@ export class NodeApiClient {
       return null;
 
     const ct = res.headers.get('content-type') ?? '';
-    if (ct.includes('application/json'))
-      return res.json();
-    return res.text();
+    return throwIfApiError(ct.includes('application/json') ? await res.json() : await res.text());
   }
 
   get(path: string): Promise<any> { return this.request('GET', path); }
@@ -164,9 +166,19 @@ export class NodeApiClient {
     if (!res.ok)
       await throwHttpError(res);
     const ct = res.headers.get('content-type') ?? '';
-    if (ct.includes('application/json'))
-      return res.json();
-    return res.text();
+    return throwIfApiError(ct.includes('application/json') ? await res.json() : await res.text());
+  }
+
+  /** POST a JSON body and read the response as raw bytes (d42 query results). */
+  async postForBytes(path: string, body: any): Promise<Buffer> {
+    const res = await fetch(`${this.baseUrl}${path}`, {
+      method: 'POST',
+      headers: {'Authorization': this.token, 'Content-Type': 'application/json'},
+      body: JSON.stringify(body),
+    });
+    if (!res.ok)
+      await throwHttpError(res);
+    return Buffer.from(await res.arrayBuffer());
   }
 
   /** GET raw bytes — d42 table data, file content, model blobs. */
@@ -191,8 +203,33 @@ async function throwHttpError(res: Response): Promise<never> {
     source: errBody?.source ?? 'Server',
     errorCode: errBody?.errorCode ?? res.status,
     stackTrace: errBody?.stackTrace,
+    body: errBody,
   };
   throw Object.assign(new Error(err.error), {apiError: err});
+}
+
+/**
+ * The server answers many failures with HTTP 200 and an `ApiError` body — as an object, or as
+ * a JSON string when the handler returned text. Every response passes through here so a
+ * missing entity, a rejected save or an unknown function throws instead of printing as data.
+ */
+export function throwIfApiError<T>(payload: T): T {
+  const parsed: any = typeof payload === 'string' ? tryParseJson(payload) : payload;
+  if (parsed?.['#type'] === 'ApiError') {
+    const err: NodeApiError = {error: parsed.message ?? 'Request failed', source: 'Server',
+      errorCode: parsed.errorCode, stackTrace: parsed.stackTrace, body: parsed};
+    throw Object.assign(new Error(err.error), {apiError: err});
+  }
+  return payload;
+}
+
+/**
+ * `grok s raw` paths are API-relative; a leading `/api` is accepted and dropped, so the same
+ * path works against an nginx-fronted `.../api` base and a bare Datlas root.
+ */
+export function apiPath(path: string): string {
+  const p = path.startsWith('/') ? path : `/${path}`;
+  return p === '/api' ? '/' : p.startsWith('/api/') ? p.slice(4) : p;
 }
 
 /** Empty values are sent verbatim — an empty `namespace` selects the root namespace. */
@@ -202,27 +239,34 @@ export function buildQuery(params: Record<string, any>): string {
   return '?' + entries.map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`).join('&');
 }
 
+/**
+ * A public-API entity. `find`/`save`/`delete` go to `/public/v1/<path>`; `list` and `count` go to
+ * [listRoute] when given — the internal router that pages (`limit`, 1-based `page`, `order`) and
+ * has `/count`, which the public list routes of users, groups, connections and functions do not.
+ */
 export class NodeHttpDataSource<T = any> {
   protected _filter: string = '';
   protected _limit: number = 50;
   protected _page: number = 0;
   protected _order: string = '';
 
-  constructor(protected client: NodeApiClient, protected path: string) {}
+  constructor(protected client: NodeApiClient, protected path: string, protected listRoute?: string) {}
 
   filter(w: string): this { this._filter = w; return this; }
   by(n: number): this { this._limit = n; return this; }
+  /** Zero-based page of `by(n)` rows. */
   page(n: number): this { this._page = n; return this; }
-  order(field: string, desc: boolean = false): this { this._order = desc ? `-${field}` : field; return this; }
+  /** Smart-order syntax: `!field` is descending. */
+  order(field: string, desc: boolean = false): this { this._order = desc ? `!${field}` : field; return this; }
 
   async list(): Promise<T[]> {
     const q = buildQuery({
       text: this._filter || undefined,
       limit: this._limit,
-      page: this._page || undefined,
+      page: this._page + 1,
       order: this._order || undefined,
     });
-    return this.client.get(`/public/v1/${this.path}${q}`);
+    return this.client.get(`${this.listRoute ?? `/public/v1/${this.path}`}${q}`);
   }
 
   async find(id: string): Promise<T> {
@@ -231,8 +275,8 @@ export class NodeHttpDataSource<T = any> {
 
   async count(): Promise<number> {
     const q = buildQuery({text: this._filter || undefined});
-    const res = await this.client.get(`/public/v1/${this.path}/count${q}`);
-    return typeof res === 'number' ? res : (res?.count ?? 0);
+    const res = await this.client.get(`${this.listRoute ?? `/public/v1/${this.path}`}/count${q}`);
+    return typeof res === 'number' ? res : Number(res?.count ?? res ?? 0);
   }
 
   async delete(idOrEntity: string | {id?: string}): Promise<void> {
@@ -258,17 +302,15 @@ export class InternalDataSource {
    */
   private async call(method: string, path: string, body?: any): Promise<any> {
     const res = await this.client.request(method, path, body);
-    const parsed = typeof res === 'string' ? tryParseJson(res) : res;
-    if (parsed?.['#type'] === 'ApiError') {
-      const err: NodeApiError = {error: parsed.message ?? 'Request failed', source: 'Server',
-        errorCode: parsed.errorCode ?? 500, stackTrace: parsed.stackTrace};
-      throw Object.assign(new Error(err.error), {apiError: err});
-    }
-    return parsed ?? res;
+    return (typeof res === 'string' ? tryParseJson(res) : res) ?? res;
   }
 
   list(params: Record<string, any> = {}): Promise<any[]> {
     return this.call('GET', `${this.route}${buildQuery(params)}`);
+  }
+
+  async count(params: Record<string, any> = {}): Promise<number> {
+    return Number(await this.call('GET', `${this.route}/count${buildQuery(params)}`));
   }
 
   /** Server paging is 1-based (`repository_query.dart` `paging`), so page 0 would repeat page 1. */
@@ -319,7 +361,7 @@ export interface MemberRemoveResult {
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export class NodeGroupsDataSource extends NodeHttpDataSource {
-  constructor(client: NodeApiClient) { super(client, 'groups'); }
+  constructor(client: NodeApiClient) { super(client, 'groups', '/groups'); }
 
   async save(group: any, saveRelations: boolean = false): Promise<any> {
     const q = buildQuery({saveRelations: saveRelations ? 'true' : undefined});
@@ -338,6 +380,10 @@ export class NodeGroupsDataSource extends NodeHttpDataSource {
     let candidates = matches;
     if (opts.personalOnly)
       candidates = matches.filter((g) => g?.personal === true);
+    // lookup is a substring search ('admin' also finds 'Administrators'): an exact name wins
+    const want = idOrName.toLowerCase();
+    const exact = candidates.filter((g) => [g?.name, g?.friendlyName].some((n) => (n ?? '').toLowerCase() === want));
+    if (exact.length) candidates = exact;
     if (!candidates.length) {
       const suffix = opts.personalOnly ? ' (personal)' : '';
       throw new Error(`No group matching '${idOrName}'${suffix}`);
@@ -423,14 +469,14 @@ export class NodeGroupsDataSource extends NodeHttpDataSource {
     return results;
   }
 
-  async getMembers(group: string, admin?: boolean): Promise<any[]> {
-    const parent = await this.resolve(group);
+  async getMembers(group: string, admin?: boolean, personalOnly: boolean = false): Promise<any[]> {
+    const parent = await this.resolve(group, {personalOnly});
     const q = buildQuery({admin: admin === undefined ? undefined : String(admin)});
     return this.client.get(`/public/v1/groups/${encodeURIComponent(parent.id)}/members${q}`);
   }
 
-  async getMemberships(group: string, admin?: boolean): Promise<any[]> {
-    const parent = await this.resolve(group);
+  async getMemberships(group: string, admin?: boolean, personalOnly: boolean = false): Promise<any[]> {
+    const parent = await this.resolve(group, {personalOnly});
     const q = buildQuery({admin: admin === undefined ? undefined : String(admin)});
     return this.client.get(`/public/v1/groups/${encodeURIComponent(parent.id)}/memberships${q}`);
   }
@@ -445,17 +491,28 @@ export class NodeSharesDataSource {
     return this.client.post(`/public/v1/entities/${name}/shares${q}`);
   }
 
+  /** `all` walks the entity's project links the way the browser's sharing dialog does; a bare `entityId` answers nothing for most entities. */
   async list(entityId: string): Promise<any[]> {
-    const q = buildQuery({entityId});
+    const q = buildQuery({entityId, all: 'true'});
     return this.client.get(`/privileges/permissions${q}`);
   }
 }
 
 export class NodeUsersDataSource extends NodeHttpDataSource {
-  constructor(client: NodeApiClient) { super(client, 'users'); }
+  constructor(client: NodeApiClient) { super(client, 'users', '/users'); }
 
   async save(user: any): Promise<any> {
     return this.client.post('/public/v1/users', ensureBodyId(user));
+  }
+
+  /**
+   * Datagrok has no user deletion: the server offers no route, the UI only blocks, and removing
+   * the entity record (`DELETE /entities/{id}`, what the batch API does) leaves the `users` row,
+   * the personal group and the root project behind, so the login can never be re-created.
+   */
+  async delete(idOrLogin: string | {id?: string}): Promise<void> {
+    const login = typeof idOrLogin === 'string' ? idOrLogin : (idOrLogin?.id ?? '');
+    throw new Error(`Users cannot be deleted through the API; block the account instead: grok s users block ${login}`);
   }
 
   async block(user: any): Promise<void> {
@@ -468,11 +525,17 @@ export class NodeUsersDataSource extends NodeHttpDataSource {
 }
 
 export class NodeConnectionsDataSource extends NodeHttpDataSource {
-  constructor(client: NodeApiClient) { super(client, 'connections'); }
+  constructor(client: NodeApiClient) { super(client, 'connections', '/connectors/connections'); }
 
   async save(conn: any, saveCredentials: boolean = false): Promise<any> {
     const q = buildQuery({saveCredentials: saveCredentials ? 'true' : undefined});
     return this.client.post(`/public/v1/connections${q}`, conn);
+  }
+
+  /** The route answers 200 for an unknown id, so look the connection up first. */
+  async delete(idOrName: string | {id?: string}): Promise<void> {
+    const conn = typeof idOrName === 'string' ? await this.find(idOrName) : idOrName;
+    await super.delete(conn?.id ?? '');
   }
 
   async test(conn: any): Promise<void> {
@@ -484,17 +547,39 @@ export class NodeConnectionsDataSource extends NodeHttpDataSource {
 }
 
 export class NodeFuncsDataSource extends NodeHttpDataSource {
+  constructor(client: NodeApiClient) { super(client, 'functions', '/log/funcs'); }
+
   async run(name: string, params?: Record<string, any>): Promise<any> {
     const normalizedName = name.replace(':', '.');
-    const result = await this.client.post(`/public/v1/functions/${encodeURIComponent(normalizedName)}/call`, params ?? {});
-    // Datagrok returns HTTP 200 with an ApiError body when the function doesn't exist
-    const parsed = typeof result === 'string' ? tryParseJson(result) : result;
-    if (parsed?.['#type'] === 'ApiError') {
-      const err: NodeApiError = {error: parsed.message ?? 'Function call failed', errorCode: parsed.errorCode, stackTrace: parsed.stackTrace};
-      throw Object.assign(new Error(err.error), {apiError: err});
-    }
-    return result;
+    return this.client.post(`/public/v1/functions/${encodeURIComponent(normalizedName)}/call`, params ?? {});
   }
+
+  /** The public API has no DELETE for functions; scripts and queries go to their own routers. */
+  async delete(idOrName: string | {id?: string}): Promise<void> {
+    const func: any = typeof idOrName === 'string' ? await this.find(idOrName) : idOrName;
+    const route = func?.['#type'] === 'Script' ? '/scripts' : func?.['#type'] === 'DataQuery' ? '/connectors/queries' : null;
+    if (!route)
+      throw new Error(`Only scripts and queries can be deleted; '${func?.name ?? idOrName}' is a ${func?.['#type'] ?? 'function'} (package functions go away with their package)`);
+    await this.client.del(`${route}/${encodeURIComponent(func.id)}`);
+  }
+}
+
+/**
+ * The server binds a call's arguments by parameter name, so positional values have to be
+ * mapped onto the function's inputs (`parameterInfos`, declared order; outputs carry
+ * `isInput: false`) before the call.
+ */
+export function mapPositionalParams(params: Record<string, any>, parameterInfos: Record<string, any> | undefined,
+                                    funcName: string): Record<string, any> {
+  const positional = Object.keys(params).filter((k) => /^\d+$/.test(k)).sort((a, b) => Number(a) - Number(b));
+  if (!positional.length) return params;
+  const inputs = Object.values(parameterInfos ?? {}).filter((p: any) => p?.isInput !== false).map((p: any) => p.name);
+  if (positional.length > inputs.length)
+    throw new Error(`${funcName} takes ${inputs.length} input${inputs.length === 1 ? '' : 's'} (${inputs.join(', ')}), got ${positional.length}`);
+  const mapped: Record<string, any> = {};
+  for (const [k, v] of Object.entries(params))
+    mapped[/^\d+$/.test(k) ? inputs[Number(k)] : k] = v;
+  return mapped;
 }
 
 function tryParseJson(s: string): any {
@@ -520,6 +605,11 @@ export class NodePackagesDataSource extends NodeHttpDataSource {
     return this.client.get(`/packages${buildQuery({text})}`);
   }
 
+  /** No `/count` route for packages; the catalog is small enough to count client-side. */
+  async count(): Promise<number> {
+    return (await this.listFull(this._filter || undefined)).length;
+  }
+
   /** Resolve by UUID, name, or friendlyName (case-insensitive). Returns null when
       not found so callers can pass the raw string through and let the server's own
       'Package not found' surface. */
@@ -542,7 +632,7 @@ export class NodePackagesDataSource extends NodeHttpDataSource {
       'latest' marks the package for server-side auto-update. Synchronous — returns
       the new published-package id, or null when nothing changed. */
   async install(name: string, desiredVersion: string = 'latest'): Promise<string | null> {
-    const result = await new NodeFuncsDataSource(this.client, 'functions')
+    const result = await new NodeFuncsDataSource(this.client)
       .run('DeployPackageVersion', {name, desiredVersion});
     const value = (result && typeof result === 'object') ? (result.result ?? result.id ?? null) : result;
     const text = typeof value === 'string' ? value.replace(/^"|"$/g, '') : '';
@@ -621,11 +711,18 @@ export class NodeFilesDataSource {
     return {connector, path};
   }
 
+  /**
+   * The public files route only downloads, so listing goes through the internal
+   * `/connectors/connections/{id}/files/<path>` the file browser uses (a trailing `/`
+   * is what makes it a listing). Resolves to `FileInfo` records (`path`, `isFile`, `size`).
+   */
   async list(filePath: string, recursive: boolean = false): Promise<any[]> {
     const {connector, path} = this.splitPath(filePath);
+    const conn = await new NodeConnectionsDataSource(this.client).find(connector);
     const q = buildQuery({recursive: recursive ? 'true' : undefined});
-    const seg = path ? `${connector}/${path}` : connector;
-    return this.client.get(`/public/v1/files/${seg}${q}`);
+    const seg = path ? `${path.replace(/\/+$/, '')}/` : '';
+    const res = await this.client.get(`/connectors/connections/${encodeURIComponent(conn.id)}/files/${seg}${q}`);
+    return Array.isArray(res) ? res : [];
   }
 
   async get(filePath: string): Promise<any> {
@@ -655,20 +752,36 @@ export class NodeFilesDataSource {
   }
 }
 
-export class NodeTablesDataSource {
-  constructor(private client: NodeApiClient) {}
+/**
+ * Tables live under a project namespace (`Admin:MyTable:MyTable`), so a table is addressed by
+ * UUID, by that full name, or by its bare name when only one table carries it.
+ */
+export class NodeTablesDataSource extends NodeHttpDataSource {
+  constructor(client: NodeApiClient) { super(client, 'tables', '/tables'); }
 
-  /** GET /public/v1/tables/{name} — returns CSV text. Name accepts UUID or `namespace:name`. */
-  async download(name: string): Promise<string> {
-    const seg = encodeURIComponent(name.replace(/:/g, '.'));
-    const result = await this.client.get(`/public/v1/tables/${seg}`);
-    // Datagrok returns HTTP 200 + ApiError JSON when the table isn't found.
-    const parsed = typeof result === 'string' ? tryParseJson(result) : result;
-    if (parsed && typeof parsed === 'object' && parsed['#type'] === 'ApiError') {
-      const err: NodeApiError = {error: parsed.message ?? 'Table download failed', errorCode: parsed.errorCode, stackTrace: parsed.stackTrace};
-      throw Object.assign(new Error(err.error), {apiError: err});
+  async find(idOrName: string): Promise<any> {
+    if (UUID_RE.test(idOrName))
+      return this.client.get(`/tables/${encodeURIComponent(idOrName)}`);
+    const all: any[] = await this.client.get(`/tables${buildQuery({text: idOrName, limit: 100})}`);
+    const matches = all.filter((t) => t?.name === idOrName || `${t?.namespace ?? ''}${t?.name ?? ''}` === idOrName);
+    if (!matches.length)
+      throw new Error(`No table named '${idOrName}'`);
+    if (matches.length > 1) {
+      const list = matches.map((t) => `  ${t.id}  ${t.namespace ?? ''}${t.name}`).join('\n');
+      throw new Error(`Multiple tables match '${idOrName}':\n${list}\nUse the full name or the ID.`);
     }
-    return result as string;
+    return matches[0];
+  }
+
+  async delete(idOrName: string | {id?: string}): Promise<void> {
+    const table = typeof idOrName === 'string' ? await this.find(idOrName) : idOrName;
+    await this.client.del(`/tables/${encodeURIComponent(table?.id ?? '')}`);
+  }
+
+  /** GET /public/v1/tables/{id} — returns CSV text. */
+  async download(idOrName: string): Promise<string> {
+    const table = await this.find(idOrName);
+    return this.client.get(`/public/v1/tables/${encodeURIComponent(table.id)}`) as Promise<string>;
   }
 
   /**
@@ -684,12 +797,190 @@ export class NodeTablesDataSource {
   }
 }
 
+export type DomainAddress = {schema: string; table?: string};
+
+/** `'<schema>'` or `'<schema>.<table>'` — the address every `grok s domains` verb takes. */
+export function parseDomainAddress(s: string, opts: {table?: boolean} = {}): DomainAddress {
+  const str = String(s ?? '');
+  const dot = str.indexOf('.');
+  const address = dot === -1 ? {schema: str} : {schema: str.slice(0, dot), table: str.slice(dot + 1)};
+  if (!address.schema || (dot !== -1 && !address.table))
+    throw new Error(`Invalid domain address '${str}': expected <schema> or <schema>.<table>`);
+  if (opts.table === true && !address.table)
+    throw new Error(`'${str}' names a schema; this command needs a table: <schema>.<table>`);
+  if (opts.table === false && address.table)
+    throw new Error(`'${str}' names a table; this command needs a schema`);
+  return address;
+}
+
+export interface DomainBatchOptions {
+  mode?: 'insert' | 'upsert';
+  allOrNothing?: boolean;
+  errorOnDuplicate?: boolean;
+}
+
+/**
+ * Client for entity-mapped domain tables (`/domains/...`, DomainsRouter). Rows are plain
+ * JSON objects; the server validates, permission-checks and audits every write. Errors
+ * arrive as HTTP 4xx with a JSON envelope, so `client.request` throws with `apiError.body`
+ * carrying the structured fields (per-row `rows`, a dry-run `plan`, version numbers).
+ */
+export class NodeDomainsDataSource {
+  constructor(private client: NodeApiClient) {}
+
+  private rows(schema: string, table: string): string {
+    return `/domains/${encodeURIComponent(schema)}/${encodeURIComponent(table)}`;
+  }
+
+  /** Registered schemas with their tables (`GET /domains/schemas`); [text] is a smart filter. */
+  schemas(text?: string): Promise<any[]> {
+    return this.client.get(`/domains/schemas${buildQuery({text: text || undefined})}`);
+  }
+
+  async schema(name: string): Promise<any> {
+    const all: any[] = await this.schemas();
+    const s = all.find((x) => x?.name === name);
+    if (!s) throw new Error(`Domain schema '${name}' not found`);
+    return s;
+  }
+
+  /** Registry entity id of a schema or a table — the target of the grants endpoints. */
+  async entityId(address: DomainAddress): Promise<string> {
+    const s = await this.schema(address.schema);
+    if (!address.table) return s.id;
+    const t = (s.tables ?? []).find((x: any) => x?.name === address.table);
+    if (!t) throw new Error(`Domain table '${address.schema}.${address.table}' not found`);
+    return t.id;
+  }
+
+  manifest(schema: string): Promise<any> {
+    return this.client.get(`/domains/schemas/${encodeURIComponent(schema)}/manifest`);
+  }
+
+  createSchema(name: string, friendlyName?: string, description?: string): Promise<any> {
+    return this.client.post('/domains/schemas', {name, friendlyName, description});
+  }
+
+  applySchema(schema: string, body: any, dryRun: boolean = false): Promise<any> {
+    const q = buildQuery({dryRun: dryRun ? 'true' : undefined});
+    return this.client.post(`/domains/schemas/${encodeURIComponent(schema)}/apply${q}`, body);
+  }
+
+  deleteSchema(schema: string): Promise<any> {
+    return this.client.del(`/domains/schemas/${encodeURIComponent(schema)}`);
+  }
+
+  schemaAudit(schema: string, limit?: number): Promise<any[]> {
+    return this.client.get(`/domains/schemas/${encodeURIComponent(schema)}/audit${buildQuery({limit})}`);
+  }
+
+  tableAudit(schema: string, table: string, limit?: number): Promise<any[]> {
+    return this.client.get(`${this.rows(schema, table)}/audit${buildQuery({limit})}`);
+  }
+
+  rowAudit(schema: string, table: string, id: string): Promise<any[]> {
+    return this.client.get(`${this.rows(schema, table)}/${encodeURIComponent(id)}/audit`);
+  }
+
+  grants(entityId: string): Promise<any[]> {
+    return this.client.get(`/domains/grants/${encodeURIComponent(entityId)}`);
+  }
+
+  grant(entityId: string, group: string, permission: string): Promise<any> {
+    return this.client.post(`/domains/grants/${encodeURIComponent(entityId)}`, {group, permission});
+  }
+
+  revoke(entityId: string, group: string, permission?: string): Promise<any> {
+    return this.client.del(`/domains/grants/${encodeURIComponent(entityId)}${buildQuery({group, permission})}`);
+  }
+
+  capabilities(schema: string, table: string): Promise<any> {
+    return this.client.get(`${this.rows(schema, table)}/capabilities`);
+  }
+
+  /** JSON rows; spec = {filter, sort, columns, expand, limit, offset} (10k row cap). */
+  query(schema: string, table: string, spec: Record<string, any> = {}): Promise<any[]> {
+    return this.client.post(`${this.rows(schema, table)}/query`, spec);
+  }
+
+  /** The same query as a d42 DataFrame blob (10M row cap). */
+  queryD42(schema: string, table: string, spec: Record<string, any> = {}): Promise<Buffer> {
+    return this.client.postForBytes(`${this.rows(schema, table)}/query`, {...spec, format: 'd42'});
+  }
+
+  aggregate(schema: string, table: string, spec: Record<string, any>): Promise<any[]> {
+    return this.client.post(`${this.rows(schema, table)}/aggregate`, spec);
+  }
+
+  async count(schema: string, table: string, filter?: any): Promise<number> {
+    const spec: Record<string, any> = {measures: [{fn: 'count'}]};
+    if (filter) spec.filter = filter;
+    const rows = await this.aggregate(schema, table, spec);
+    return Number(rows?.[0]?.count ?? 0);
+  }
+
+  /** One row, or null when it does not exist or is not visible (the server answers 404). */
+  async getRow(schema: string, table: string, id: string): Promise<any> {
+    try {
+      return await this.client.get(`${this.rows(schema, table)}/${encodeURIComponent(id)}`);
+    } catch (err: any) {
+      if (err?.apiError?.errorCode === 404) return null;
+      throw err;
+    }
+  }
+
+  /** [rows] is one row object or an array; resolves to per-row `{id, created}` reports. */
+  async insert(schema: string, table: string, rows: any, errorOnDuplicate: boolean = false): Promise<any[]> {
+    const q = buildQuery({errorOnDuplicate: errorOnDuplicate ? 'true' : undefined});
+    const res = await this.client.post(`${this.rows(schema, table)}${q}`, rows);
+    return Array.isArray(res) ? res : [res];
+  }
+
+  update(schema: string, table: string, id: string, values: any, version?: number): Promise<any> {
+    const body: Record<string, any> = {values};
+    if (version !== undefined) body.version = version;
+    return this.client.request('PATCH', `${this.rows(schema, table)}/${encodeURIComponent(id)}`, body);
+  }
+
+  deleteRow(schema: string, table: string, id: string): Promise<any> {
+    return this.client.del(`${this.rows(schema, table)}/${encodeURIComponent(id)}`);
+  }
+
+  /** Soft-deletes up to [limit] (≤1000) matching rows in one transaction; `{deleted, hasMore}`. */
+  deleteWhere(schema: string, table: string, filter: any, limit?: number): Promise<{deleted: number; hasMore: boolean}> {
+    const body: Record<string, any> = {filter};
+    if (limit !== undefined) body.limit = limit;
+    return this.client.post(`${this.rows(schema, table)}/delete`, body);
+  }
+
+  /**
+   * Bulk upload: [bytes] is the file content and [contentType] selects how the server
+   * reads it — `text/csv`, `application/octet-stream` (d42), or `application/json` (a row
+   * array, bare or under `rows`). Resolves to the batch report `{inserted, updated,
+   * skipped, errorCount, rows}`; a report-carrying failure rejects with the report in
+   * `apiError.body`.
+   */
+  batch(schema: string, table: string, bytes: Buffer, contentType: string, options: DomainBatchOptions = {}): Promise<any> {
+    const q = buildQuery({
+      mode: options.mode ?? 'insert',
+      allOrNothing: options.allOrNothing === false ? 'false' : 'true',
+      errorOnDuplicate: options.errorOnDuplicate ? 'true' : undefined,
+    });
+    return this.client.putBytes(`${this.rows(schema, table)}/batch${q}`, bytes, contentType);
+  }
+
+  /** Ordered ops (`{op, table, ref?, values?, id?, expectedVersion?}`) applied atomically. */
+  transaction(schema: string, ops: any[]): Promise<any[]> {
+    return this.client.post(`/domains/${encodeURIComponent(schema)}/transaction`, ops);
+  }
+}
+
 export class NodeDapi {
   constructor(public client: NodeApiClient) {}
 
   get users(): NodeUsersDataSource { return new NodeUsersDataSource(this.client); }
   get groups(): NodeGroupsDataSource { return new NodeGroupsDataSource(this.client); }
-  get functions(): NodeFuncsDataSource { return new NodeFuncsDataSource(this.client, 'functions'); }
+  get functions(): NodeFuncsDataSource { return new NodeFuncsDataSource(this.client); }
   get connections(): NodeConnectionsDataSource { return new NodeConnectionsDataSource(this.client); }
   get queries(): InternalDataSource { return this.internal('/connectors/queries'); }
   get scripts(): InternalDataSource { return this.internal('/scripts'); }
@@ -698,6 +989,7 @@ export class NodeDapi {
   get files(): NodeFilesDataSource { return new NodeFilesDataSource(this.client); }
   get shares(): NodeSharesDataSource { return new NodeSharesDataSource(this.client); }
   get tables(): NodeTablesDataSource { return new NodeTablesDataSource(this.client); }
+  get domains(): NodeDomainsDataSource { return new NodeDomainsDataSource(this.client); }
 
   internal(route: string): InternalDataSource { return new InternalDataSource(this.client, route); }
 
@@ -707,34 +999,67 @@ export class NodeDapi {
     return {version: info?.Version ?? '', commit: info?.Commit};
   }
 
+  /** Any API endpoint; [path] is API-relative (`/users/current`), a leading `/api` is accepted. */
   async raw(method: string, path: string, body?: any): Promise<any> {
-    // Raw paths are relative to server root (e.g. /api/users/current).
-    // Strip the trailing /api from baseUrl to avoid double prefix.
-    const serverRoot = this.client.baseUrl.replace(/\/api\/?$/, '');
-    const url = `${serverRoot}${path}`;
-    const opts: RequestInit = {
-      method: method.toUpperCase(),
-      headers: {
-        'Authorization': this.client.token,
-        'Content-Type': 'application/json',
-      } as Record<string, string>,
-    };
-    if (body !== undefined) opts.body = JSON.stringify(body);
-    const res = await fetch(url, opts);
-    const ct = res.headers.get('content-type') ?? '';
-    if (ct.includes('application/json')) return res.json();
-    return res.text();
+    return this.client.request(method.toUpperCase(), apiPath(path), body);
   }
 
   async batch(request: BatchRequest): Promise<BatchResponse> {
     return this.client.post('/public/v1/batch', request);
   }
 
-  async describe(entityType: string): Promise<any> {
-    try {
-      return await this.client.get(`/public/v1/entity-types/${encodeURIComponent(entityType)}`);
-    } catch {
-      return await this.client.get(`/entities/types${buildQuery({name: entityType})}`);
-    }
+  /**
+   * The shape of an entity type: its registry record (`/entities/types`) plus the top-level
+   * fields of one existing entity of that type, since the server publishes no JSON schema.
+   * [nameOrAlias] is a `grok s` entity (`connections`) or a type name (`DataConnection`).
+   */
+  async describe(nameOrAlias: string): Promise<{type: any; fields: DescribedField[]; sample: any}> {
+    const alias = DESCRIBE_ALIASES[nameOrAlias.toLowerCase()];
+    const typeName = alias?.type ?? nameOrAlias;
+    const types: any[] = await this.client.get(`/entities/types${buildQuery({showSystem: 'true', text: `name="${typeName}"`, limit: 5})}`);
+    const type = types.find((t) => (t?.name ?? '').toLowerCase() === typeName.toLowerCase()) ?? null;
+    const sampleFrom = alias?.sample ?? DESCRIBE_SAMPLES[typeName];
+    if (!type && !sampleFrom)
+      throw new Error(`Unknown entity type '${nameOrAlias}'. Try one of: ${Object.keys(DESCRIBE_ALIASES).join(', ')}, or a type name such as Project`);
+    const sample = sampleFrom ? (await sampleFrom(this))[0] ?? null : null;
+    const fields = sample ? Object.entries(sample).map(([field, v]) => ({field, type: describeType(v), example: describeExample(v)})) : [];
+    return {type, fields, sample};
   }
+}
+
+export interface DescribedField { field: string; type: string; example: string }
+
+type SampleFetch = (dapi: NodeDapi) => Promise<any[]>;
+
+const DESCRIBE_SAMPLES: Record<string, SampleFetch> = {
+  User: (d) => d.users.by(1).list(),
+  UserGroup: (d) => d.groups.by(1).list(),
+  DataConnection: (d) => d.connections.by(1).list(),
+  DataQuery: (d) => d.queries.list({limit: 1}),
+  Script: (d) => d.scripts.list({limit: 1}),
+  Func: (d) => d.functions.by(1).list(),
+  Package: (d) => d.packages.by(1).list(),
+  UserReport: (d) => d.reports.list({limit: 1}),
+  TableInfo: (d) => d.tables.by(1).list(),
+  Project: (d) => d.internal('/projects').list({limit: 1}),
+  FileInfo: (d) => d.internal('/files').list({limit: 1}),
+};
+
+const DESCRIBE_ALIASES: Record<string, {type: string; sample?: SampleFetch}> = {
+  users: {type: 'User'}, groups: {type: 'UserGroup'}, connections: {type: 'DataConnection'},
+  queries: {type: 'DataQuery'}, scripts: {type: 'Script'}, functions: {type: 'Func'},
+  packages: {type: 'Package'}, reports: {type: 'UserReport'}, tables: {type: 'TableInfo'},
+  projects: {type: 'Project'}, files: {type: 'FileInfo'},
+};
+
+function describeType(v: any): string {
+  if (v === null || v === undefined) return 'null';
+  if (Array.isArray(v)) return `array(${v.length})`;
+  if (typeof v === 'object') return v['#type'] ?? (v.id ? 'ref' : 'object');
+  return typeof v;
+}
+
+function describeExample(v: any): string {
+  const s = v === null || v === undefined ? '' : typeof v === 'object' ? JSON.stringify(v) : String(v);
+  return s.length > 60 ? `${s.slice(0, 57)}...` : s;
 }
