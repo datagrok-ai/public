@@ -227,6 +227,13 @@ export namespace funcs {
     return await grok.functions.call('Chem:SubstructureFilter', {});
   }
 
+  /**
+  Substructure, superstructure, exact, stereo-agnostic and similarity operators for Molecule columns in the filter builder
+  */
+  export async function moleculeFilterOperators(): Promise<any> {
+    return await grok.functions.call('Chem:MoleculeFilterOperators', {});
+  }
+
   export async function canvasMol(x: number , y: number , w: number , h: number , canvas: any , molString: string , scaffoldMolString: string , options?: any , renderingOptions?: any ): Promise<void> {
     return await grok.functions.call('Chem:CanvasMol', { x, y, w, h, canvas, molString, scaffoldMolString, options, renderingOptions });
   }

@@ -2,6 +2,9 @@
 
 ## v.next
 
+* GROK-20753: Filters: Added the "Filter Builder" filter (`PowerPack:filterBuilder`, the u2 schema-driven query builder) — one columnless filter over the whole table (no column dialog; a picked column only seeds the first row), builder + `</>` query-input toggle, only complete rows filter; the gray query/status line under the rows is off by default (`showStatus` in the state turns it on)
+* GROK-20753: Filter Builder: the saved state is `{model, query}` — `model` (the typed tree, lossless across layout reloads) is applied first, `query` (the smart-filter string) is the hand-written form; a state written as `{type, query}` filters
+* GROK-20753: Filter Builder: semantic-type operators come from `meta.role: filterOperators` package functions discovered when the filter attaches (Chem's `moleculeFilterOperators` — substructure, superstructure, exact, stereo-agnostic, similarity for Molecule columns); the package depends on `@datagrok-libraries/u2 ^0.1.0` and `datagrok-api ^1.27.10` from npm (`npm run link-u2` for local development)
 * 2297: Route every current-user-group lookup through getCurrentUserGroup() and handle an unavailable group instead of dereferencing it
 * GROK-20631: Fire one open per Workspace row double-click and await the in-flight project preview before opening
 * Add New Column: Fixed "No such column: name" when picking a column in the columns list — the ColumnGrid internal name column is now `__name`, so read it through `ColumnGrid.nameCol` instead of by hardcoded name

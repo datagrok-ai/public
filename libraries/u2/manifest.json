@@ -1886,6 +1886,256 @@
       }
     },
     {
+      "tag": "u2-filter-builder",
+      "category": "Inputs",
+      "description": "Schema-driven query builder: condition rows (property, operator, value) joined by one and/or toggle, \"+\" adds and \"−\" removes; the value is a filter tree, `query` its string.",
+      "usage": "Use for a user-editable condition over a schema (columns, entity properties, a domain table). Emit the filter as `value` (`{op: \"and\", nodes: [{property, operator, value}]}`) or read `query`, the canonical string. Grammar: `prop op value` joined by `and`/`or`, parentheses and `not (…)` for groups; ops `= != > >= < <= like !like starts ends matches in not in between`, `= null` / `!= null` for empty; values: numbers, \"strings\", true/false/null, ISO dates, relative spans `-1w 2d now`. Examples: `age > 30 and sex = \"F\"`; `created > -1w and (status in (\"Open\", \"Blocked\") or owner = @current)`; `mw between 200 and 500`. Prefer `u2-filter-query-input` for a one-line search box; this control for visible criteria rows.",
+      "props": [
+        {
+          "name": "label",
+          "type": "string",
+          "bindable": true
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "description": "Stable key for forms and dumps; defaults to the label."
+        },
+        {
+          "name": "value",
+          "type": "object",
+          "bindable": true,
+          "twoWay": true
+        },
+        {
+          "name": "inline",
+          "type": "bool",
+          "description": "Compact one-row variant without a label."
+        },
+        {
+          "name": "postfix",
+          "type": "string",
+          "bindable": true,
+          "description": "Units or a short suffix shown after the editor."
+        },
+        {
+          "name": "tooltipText",
+          "type": "string",
+          "bindable": true
+        },
+        {
+          "name": "enabled",
+          "type": "bool",
+          "bindable": true,
+          "description": "false grays the input out and blocks edits."
+        },
+        {
+          "name": "schema",
+          "type": "object",
+          "description": "`{properties: IProperty[], values?: {<name>: scalar[]}}` — what can be filtered on."
+        },
+        {
+          "name": "mode",
+          "type": "string",
+          "choices": [
+            "simple",
+            "advanced"
+          ],
+          "bindable": true,
+          "twoWay": true,
+          "description": "simple: one flat and/or group; advanced: nested groups, not, drag handles."
+        },
+        {
+          "name": "orientation",
+          "type": "string",
+          "choices": [
+            "vertical",
+            "horizontal"
+          ],
+          "description": "horizontal lays the rows out inline with a connector chip between them."
+        },
+        {
+          "name": "template",
+          "type": "object",
+          "description": "`{root, allowedProperties?, allowedOperators?, allowAdvanced?, allowAdd?}` — locks and limits: `allowAdvanced: false` keeps the builder simple, `allowAdd: false` fixes the rows."
+        },
+        {
+          "name": "showQuery",
+          "type": "bool",
+          "description": "Footer line with the canonical query string; off by default."
+        },
+        {
+          "name": "target",
+          "type": "string",
+          "choices": [
+            "domain",
+            "dataframe"
+          ],
+          "description": "What the tree must be expressible for; validation only."
+        },
+        {
+          "name": "query",
+          "type": "string",
+          "bindable": true,
+          "description": "The canonical query string (read-only)."
+        }
+      ],
+      "events": [
+        "change"
+      ],
+      "example": {
+        "tag": "u2-filter-builder",
+        "props": {
+          "label": "Criteria",
+          "schema": {
+            "properties": [
+              {
+                "name": "name",
+                "type": "string"
+              },
+              {
+                "name": "age",
+                "type": "int",
+                "min": 0,
+                "max": 120
+              },
+              {
+                "name": "sex",
+                "type": "string",
+                "choices": [
+                  "F",
+                  "M"
+                ]
+              }
+            ]
+          },
+          "value": {
+            "op": "and",
+            "nodes": [
+              {
+                "property": "age",
+                "operator": ">",
+                "value": 30
+              }
+            ]
+          },
+          "showQuery": true
+        }
+      }
+    },
+    {
+      "tag": "u2-filter-query-input",
+      "category": "Inputs",
+      "description": "One-line query box over a schema with completion at the caret (properties, operators, values, and/or); Enter or blur parses the text into the filter tree, `query` is the text.",
+      "usage": "Use for a compact search box over a schema (columns, entity properties, a domain table) where the user types the condition. Emit the filter as `value` (`{op: \"and\", nodes: [{property, operator, value}]}`) or read `query`, the text. Grammar: `prop op value` joined by `and`/`or`, parentheses and `not (…)` for groups; ops `= != > >= < <= like !like starts ends matches in not in between`, `= null` / `!= null` for empty; values: numbers, \"strings\", true/false/null, ISO dates, relative spans `-1w 2d now`. Examples: `age > 30 and sex = \"F\"`; `created > -1w and (status in (\"Open\", \"Blocked\") or owner = @current)`; `mw between 200 and 500`. Prefer `u2-filter-builder` for visible criteria rows; this control for a one-line search box.",
+      "props": [
+        {
+          "name": "label",
+          "type": "string",
+          "bindable": true
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "description": "Stable key for forms and dumps; defaults to the label."
+        },
+        {
+          "name": "value",
+          "type": "object",
+          "bindable": true,
+          "twoWay": true
+        },
+        {
+          "name": "inline",
+          "type": "bool",
+          "description": "Compact one-row variant without a label."
+        },
+        {
+          "name": "postfix",
+          "type": "string",
+          "bindable": true,
+          "description": "Units or a short suffix shown after the editor."
+        },
+        {
+          "name": "tooltipText",
+          "type": "string",
+          "bindable": true
+        },
+        {
+          "name": "enabled",
+          "type": "bool",
+          "bindable": true,
+          "description": "false grays the input out and blocks edits."
+        },
+        {
+          "name": "schema",
+          "type": "object",
+          "description": "`{properties: IProperty[], values?: {<name>: scalar[]}}` — what can be filtered on."
+        },
+        {
+          "name": "placeholder",
+          "type": "string"
+        },
+        {
+          "name": "target",
+          "type": "string",
+          "choices": [
+            "domain",
+            "dataframe"
+          ],
+          "description": "What the tree must be expressible for; validation only."
+        },
+        {
+          "name": "query",
+          "type": "string",
+          "bindable": true,
+          "description": "The draft text (per keystroke, may be unparsable; read-only)."
+        }
+      ],
+      "events": [
+        "change"
+      ],
+      "example": {
+        "tag": "u2-filter-query-input",
+        "props": {
+          "label": "Search",
+          "schema": {
+            "properties": [
+              {
+                "name": "name",
+                "type": "string"
+              },
+              {
+                "name": "age",
+                "type": "int",
+                "min": 0,
+                "max": 120
+              },
+              {
+                "name": "sex",
+                "type": "string",
+                "choices": [
+                  "F",
+                  "M"
+                ]
+              }
+            ]
+          },
+          "value": {
+            "op": "and",
+            "nodes": [
+              {
+                "property": "age",
+                "operator": ">",
+                "value": 30
+              }
+            ]
+          },
+          "placeholder": "age > 30 and sex = \"F\""
+        }
+      }
+    },
+    {
       "tag": "u2-state",
       "category": "Data",
       "visual": false,

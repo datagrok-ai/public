@@ -24,6 +24,8 @@ import {
   SMARTS_MOLECULE_MESSAGE, elementsTable,
   CHEM_SPACE_EMBEDDING_COL,
   CHEM_SPACE_CLUSTER_COL,
+  SubstructureSearchType,
+  FilterOperatorSet,
 } from './constants';
 import {MAX_SMILES_LENGTH} from './utils/chem-constants';
 import {similarityMetric} from '@datagrok-libraries/ml/src/distance-metrics-methods';
@@ -172,6 +174,14 @@ const PREVIOUS_SKETCHER_NAMES: { [key: string]: string } = {
 let container: DG.DockerContainer;
 
 export const _package: DG.Package = new DG.Package();
+
+const MOLECULE_FILTER_OPERATORS: [SubstructureSearchType, string][] = [
+  [SubstructureSearchType.CONTAINS, 'has substructure'],
+  [SubstructureSearchType.INCLUDED_IN, 'is substructure of'],
+  [SubstructureSearchType.EXACT_MATCH, 'matches exactly'],
+  [SubstructureSearchType.STEREO_AGNOSTIC, 'matches ignoring stereo'],
+  [SubstructureSearchType.IS_SIMILAR, 'is similar to'],
+];
 export let _properties: any;
 
 let _rdRenderer: RDKitCellRenderer;
@@ -288,6 +298,24 @@ export class PackageFunctions {
   })
   static substructureFilter(): SubstructureFilter {
     return new SubstructureFilter();
+  }
+
+  @grok.decorators.func({
+    description: 'Substructure, superstructure, exact, stereo-agnostic and similarity operators for Molecule columns in the filter builder',
+    meta: {role: 'filterOperators', semType: 'Molecule'},
+    outputs: [{name: 'result', type: 'object'}],
+  })
+  static moleculeFilterOperators(): FilterOperatorSet {
+    const operators: FilterOperatorSet['operators'] = MOLECULE_FILTER_OPERATORS.map(([searchType, label]) => ({
+      id: searchType, label, arity: 1,
+      bitset: async (col, cond) => {
+        const cutoff = searchType === SubstructureSearchType.IS_SIMILAR ? Number(cond.options?.threshold ?? 0.8) : undefined;
+        const result = await chemSearches.chemSubstructureSearchLibrary(col, String(cond.value ?? ''), '',
+          chemSearches.FILTER_TYPES.substructure, false, true, searchType, cutoff);
+        return {bits: result.buffer, length: col.length};
+      },
+    }));
+    return {semType: DG.SEMTYPE.MOLECULE, exclusive: true, operators};
   }
 
   @grok.decorators.func()

@@ -197,6 +197,9 @@ export async function resolve(specifier, context, next) {
   const stub = URLS[specifier];
   if (stub)
     return {url: stub[0], format: 'module', shortCircuit: true};
+  // js-api's compiled ESM sits under a typeless package.json — a node without syntax detection reads it as CommonJS
+  if (specifier === DISTANCES)
+    return {url: DISTANCES, format: 'module', shortCircuit: true};
   return next(specifier, context);
 }
 

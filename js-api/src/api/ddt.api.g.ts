@@ -384,6 +384,9 @@ export class FuncOptions {
   /// When set to 'true', the function is higher-priority to be set in Filters Panel
   static PrimaryFilter = 'primaryFilter';
 
+  /// When set to 'true', the Filters Panel adds the filter without the column-selection dialog (a columnless filter)
+  static ColumnlessFilter = 'columnlessFilter';
+
   /// Function that returns a Widget that gets added as a tab to the "Inspector" window
   static InspectorPanel = 'inspectorPanel';
 

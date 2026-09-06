@@ -369,8 +369,20 @@ export class UnreadableFileInfo extends FileInfo {
 
 export class BitSet {
   constructor(length = 0) { this.dart = {length}; }
+
+  /** The bytes are kept as given — what a test asserts the mask adapter handed over. */
+  static fromBytes(buffer, bitLength) {
+    const bitset = new BitSet(bitLength);
+    bitset.dart.buffer = buffer;
+    return bitset;
+  }
+
+  get(i) { return (new Uint32Array(this.dart.buffer)[i >>> 5] & (1 << (i & 31))) !== 0; }
 }
 getters(BitSet, 'length');
+
+const INT_NULL = -2147483648;
+const FLOAT_NULL = 2.6789344063684636e-34;
 
 // datetime counts as numerical, as in ddt (date_time_column.dart:16)
 const NUMERICAL = new Set(['int', 'double', 'bigint', 'qnum', 'datetime']);
@@ -396,6 +408,42 @@ export class Column {
   get categories() {
     const frame = this.dart.frame;
     return frame == null ? [] : [...new Set(frame.dart.rows.map((r) => r[this.dart.name]))];
+  }
+
+  get length() { return this.dart.frame?.dart.rows.length ?? 0; }
+
+  get(i) { return this.dart.frame.dart.rows[i][this.dart.name] ?? null; }
+
+  get min() { return Math.min(...this._numbers()); }
+  get max() { return Math.max(...this._numbers()); }
+
+  _numbers() { return this.categories.filter((v) => typeof v === 'number'); }
+
+  /** The platform's raw layouts derived from the frame rows: ints and
+   * category indexes as Int32Array, floats as Float32Array, datetimes as Float64Array µs,
+   * bools as an LSB-first Uint32Array. */
+  getRawData() {
+    const values = Array.from({length: this.length}, (_, i) => this.get(i));
+    switch (this.dart.type) {
+      case 'int':
+        return Int32Array.from(values, (v) => v == null ? INT_NULL : v);
+      case 'double': case 'qnum':
+        return Float32Array.from(values, (v) => v == null ? FLOAT_NULL : v);
+      case 'datetime':
+        return Float64Array.from(values, (v) => v == null ? FLOAT_NULL : v.getTime() * 1000);
+      case 'bool': {
+        const bits = new Uint32Array((values.length + 31) >>> 5);
+        values.forEach((v, i) => {
+          if (v)
+            bits[i >>> 5] |= 1 << (i & 31);
+        });
+        return bits;
+      }
+      default: {
+        const categories = this.categories;
+        return Int32Array.from(values, (v) => categories.indexOf(v));
+      }
+    }
   }
 }
 getters(Column, 'type', 'semType');
