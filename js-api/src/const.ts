@@ -118,6 +118,7 @@ export enum TYPE {
   DYNAMIC = 'dynamic',
   VIEWER = 'viewer',  // [ViewerBase] subclasses
   LIST = 'list',
+  /** @deprecated Same as {@link TYPE.SEMANTIC_VALUE}. */
   SEM_VALUE = 'semantic_value',
   FUNC = 'func',
   FUNC_CALL = 'funccall',
@@ -151,10 +152,6 @@ export enum RELATION_KIND {
   USES_MANY = 'UsesMany',
   CALCULATED_FIELD = 'CalculatedField',
   INHERITS = 'Inherits',
-}
-
-export enum GRID_COLUMN_TAGS {
-
 }
 
 /** Commonly used options on the function level */
@@ -984,13 +981,13 @@ export enum EVENT_TYPE {
  **/
 
 export type AggregationType = `${AGG}`;
-export type ColumnAggregationType = `${AGG}` | `${STR_AGG}` | string;
+export type ColumnAggregationType = `${AGG}` | `${STR_AGG}` | (string & {});
 export type SyncType = `${SYNC_TYPE}`;
 export type JoinType = `${JOIN_TYPE}`;
 export type ColumnType = `${COLUMN_TYPE}`;
 export type ColumnTypeFilter = ColumnType | `${COLUMN_TYPE_FILTER}`;
-export type ViewerType = `${VIEWER}` | string;
-export type ViewType = `${VIEW_TYPE}` | string;
+export type ViewerType = `${VIEWER}` | (string & {});
+export type ViewType = `${VIEW_TYPE}` | (string & {});
 export type ObjectType = string;
 export type ViewerPropertyType = string;
 export type Type = `${TYPE}`;

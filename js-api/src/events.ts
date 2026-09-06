@@ -95,7 +95,10 @@ export class Events {
     this.customEventBus = new EventBus();
   }
 
-  /** Observes platform events with the specified eventId.
+  /** Observes platform events with the specified eventId (such as 'd4-current-view-changed';
+   * see {@link EVENT_TYPE}). To find an event's id, open the Inspector (Alt+I), go to the
+   * "Client Log" tab, perform the action you want to intercept, and click the event to see its
+   * parameters; the context panel also generates the JavaScript handler code for it.
    * Sample: {@link https://public.datagrok.ai/js/samples/ui/ui-events} */
   onEvent(eventId: string): rxjs.Observable<any> {
     return __obs(eventId);
@@ -107,16 +110,8 @@ export class Events {
     return this.customEventBus.onEvent(eventId);
   }
 
-  /** Observes events with the specified eventId.
-   * To see which events are getting fired, use the Inspector tool.
-   * Open it (Alt+I), go to the "Client Log" tab, and perform the action that you want to
-   * intercept. In the panel, you will see one or more of the events,
-   *  click on them to inspect event parameters. To simplify the development process,
-   * we also generate JavaScript code for handling this particular event,
-   * copy-paste it from the context panel into your code if needed.
-   * Sample: {@link https://public.datagrok.ai/js/samples/events/custom-events}
-   * @param {string} eventId - such as 'd4-current-view-changed'
-   * @param args - event arguments*/
+  /** Fires a custom event that {@link onCustomEvent} subscribers receive.
+   * Sample: {@link https://public.datagrok.ai/js/samples/events/custom-events} */
   fireCustomEvent(eventId: string, args: any): void { this.customEventBus.fire(eventId, args); }
 
   /** Sample: {@link https://public.datagrok.ai/js/samples/events/viewer-events} */

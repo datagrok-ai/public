@@ -54,6 +54,8 @@ if (typeof HTMLCanvasElement != 'undefined') {
     return this;
   }
 
+  // Polyfilled only where the browser lacks the native roundRect, which takes radii and returns void.
+  if (!CanvasRenderingContext2D.prototype.roundRect)
   CanvasRenderingContext2D.prototype.roundRect = function (x: number, y: number, w: number, h: number, r: number) {
     if (w < 2 * r) r = w / 2;
     if (h < 2 * r) r = h / 2;
@@ -286,8 +288,8 @@ export class Utils {
     }
   }
 
+  /** Runs the specified package tests and aggregates their results (used by the test runner). @internal */
   static async executeTests(testsParams: { package: any, params: any }[], stopOnFail?: boolean): Promise<any> {
-    console.log(`********** Entered executeTests func`);
     let failed = false;
     let csv = "";
     let verbosePassed = "";
@@ -355,10 +357,6 @@ export class Utils {
         if ((success !== true && skipped !== true) && stopOnFail)
           break;
       }
-      if (DG.Test.isInDebug) {
-        console.log('on browser closing debug point');
-        debugger
-      }
       res = Utils.createResultsCsv(resultDF);
 
     } catch (e) {
@@ -392,6 +390,7 @@ export class Utils {
     return api.grok_Utils_DetectColumnHierarchy(columns.map((c) => c.dart), maxDepth);
   }
 
+  /** @internal */
   static createResultsCsv(resultDF?: DataFrame): string {
     if (resultDF) {
       const bs = DG.BitSet.create(resultDF.rowCount)
@@ -735,9 +734,10 @@ export namespace Test {
   }
 }
 
+/** Usage-analytics helpers for click tracking. @internal */
 export namespace ClickUtils {
-  /// Returns a DataFrame with aggregated click data.
-  /// `UsageAnalysis` package should be installed.
+  /** Returns a DataFrame with aggregated click data.
+   * `UsageAnalysis` package should be installed. */
   export async function getAggregatedClicks(): Promise<DataFrame> {
     return await grok.data.query('UsageAnalysis:GetAggregatedClicks', {});
   }

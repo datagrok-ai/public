@@ -9,7 +9,7 @@ const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) a
  * API for {@link https://datagrok.ai/help/govern/catalog/sticky-meta | Sticky meta}. Allows attaching arbitrary metadata on custom entities.
  * Can be applied to a column of entities based on semtype or column tags.
  * 
- * See samples: {@link https://public.datagrok.ai/js/samples/dapi/sticky-meta-tags}
+ * See samples: {@link https://public.datagrok.ai/js/samples/dapi/sticky-meta-1-tags}
  * 
  * @example
  * var schema = await dapi.stickyMeta.createSchema('test-schema', {name: 'molecule', matchBy: 'semtype=molecule'}, {name: 'prop', type: 'string'});

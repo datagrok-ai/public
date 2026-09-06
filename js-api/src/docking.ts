@@ -35,7 +35,7 @@ export class DockNode {
   /** Removes a child node.
    * @param {DockNode} childNode */
   removeChild(childNode: DockNode): void {
-    return api.grok_DockNode_RemoveChild(this.dart, childNode);
+    return api.grok_DockNode_RemoveChild(this.dart, childNode.dart);
   }
 
   /** @returns {DockNode} */
@@ -154,7 +154,7 @@ export class DockManager {
    * @param {DockType} dockType - Dock type (left | right | top | down | fill).
    * @param {DockNode|null} refNode - reference node
    * @param {number} ratio - Ratio of the area to take (relative to the reference node).
-   * @param {string=} title - Name of the resulting column. Default value is agg(colName).
+   * @param {string=} title - Caption of the docked panel.
    * @returns {DockNode}
    * */
   dock(element: HTMLElement | Viewer, dockType: DockType = DG.DOCK_TYPE.LEFT, refNode: DockNode | null = null,

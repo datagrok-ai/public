@@ -47,8 +47,8 @@ export class Column<T = any, TInit = T> {
    * @param {string} name - Column name
    * @param {Array} list - List of column values
    *
-   * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/construction/create-from-columns}
-   * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/construction/create-from-arrays}
+   * {@link https://public.datagrok.ai/js/samples/data-frame/construction/create-from-columns}
+   * {@link https://public.datagrok.ai/js/samples/data-frame/construction/create-from-arrays}
    *
    */
   static fromStrings(name: string, list: string[]): Column {

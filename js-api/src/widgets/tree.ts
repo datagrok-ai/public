@@ -77,7 +77,7 @@ export class TagElement {
 
 
 /** Tree view node.
- * Sample: {@link https://public.datagrok.ai/js/samples/ui/tree-view}
+ * Sample: {@link https://public.datagrok.ai/js/samples/ui/components/tree-view}
  * */
 export class TreeViewNode<T = any> {
   dart: any;

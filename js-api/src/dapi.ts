@@ -167,7 +167,7 @@ export class Dapi {
     return new ViewsDataSource(api.grok_Dapi_Views());
   }
 
-  /** Data Table Infos API (finding, uploadeing, deleting tables) */
+  /** Data Table Infos API (finding, uploading, deleting tables) */
   get tables(): TablesDataSource {
     return new TablesDataSource(api.grok_Dapi_Tables());
   }
@@ -193,8 +193,7 @@ export class Dapi {
     return new HttpDataSource(api.grok_Dapi_Scripts(), 'Function');
   }
 
-  /** Projects API endpoint
-   *  @type {HttpDataSource<Project>} */
+  /** Projects API (finding, opening, and saving projects; recent projects). */
   get projects(): ProjectsDataSource {
     return new ProjectsDataSource(api.grok_Dapi_Projects(), 'Project');
   }
@@ -242,7 +241,7 @@ export class Dapi {
   }
 
   /** Proxies URL request via Datagrok server with same interface as "fetch".
-   * Useful for cicrumventing CORS restrictions, and for caching results.
+   * Useful for circumventing CORS restrictions, and for caching results.
    * @see [sample](../../../../../packages/ApiSamples/scripts/dapi/fetch.js)
    * @param {number} maxAge - forces server to send Cache-Control in response with configured max-age directive */
   async fetchProxy(url: string, params?: RequestInit, maxAge?: number): Promise<Response> {
@@ -287,8 +286,7 @@ export class Dapi {
     return new LogDataSource(api.grok_Dapi_Log());
   }
 
-  /** Logging API endpoint
-   *  @type {HttpDataSource<LogEventType>} */
+  /** Log event types API endpoint */
   get logTypes(): HttpDataSource<LogEventType> {
     return new HttpDataSource(api.grok_Dapi_LogTypes());
   }
@@ -334,7 +332,7 @@ export class HttpDataSource<T> {
     return api.grok_DataSource_Count(this.dart);
   }
 
-  /** Returns fist entity that satisfies the filtering criteria (see {@link filter}). */
+  /** Returns the first entity that satisfies the filtering criteria (see {@link filter}). */
   first(): Promise<T> {
     return api.grok_DataSource_First(this.dart);
   }
@@ -546,7 +544,6 @@ export interface ServiceInfo {
  * @extends HttpDataSource
  * */
 export class GroupsDataSource extends HttpDataSource<Group> {
-  /** @constructs CredentialsDataSource*/
   constructor(s: any, clsName: string) {
     super(s, clsName);
     this.include('members');
@@ -560,9 +557,8 @@ export class GroupsDataSource extends HttpDataSource<Group> {
     return this.save(g);
   }
 
-  /** Returns group user
-   *  @returns {Promise<Group>} - Group. */
-  getUser(group: Group): Promise<Group> {
+  /** Returns the user behind a personal group. */
+  getUser(group: Group): Promise<User> {
     return api.grok_Dapi_Get_GroupUser(group.dart);
   }
 
@@ -639,7 +635,6 @@ export class GroupsDataSource extends HttpDataSource<Group> {
  * @extends HttpDataSource
  * */
 export class EntitiesDataSource extends HttpDataSource<Entity> {
-  /** @constructs CredentialsDataSource*/
   constructor(s: any) {
     super(s);
   }
@@ -686,7 +681,6 @@ export class EntitiesDataSource extends HttpDataSource<Entity> {
  * @extends HttpDataSource
  * */
 export class DataConnectionsDataSource extends HttpDataSource<DataConnection> {
-  /** @constructs DataConnectionsDataSource*/
   constructor(s: any) {
     super(s);
   }
@@ -732,7 +726,6 @@ export class DataConnectionsDataSource extends HttpDataSource<DataConnection> {
  * @extends HttpDataSource
  * */
 export class FuncsDataSource extends HttpDataSource<Func> {
-  /** @constructs DataConnectionsDataSource*/
   constructor(s: any) {
     super(s);
   }
@@ -749,7 +742,6 @@ export class FuncsDataSource extends HttpDataSource<Func> {
  * @extends HttpDataSource
  * */
 export class CredentialsDataSource extends HttpDataSource<Credentials> {
-  /** @constructs CredentialsDataSource*/
   constructor(s: any) {
     super(s);
   }
@@ -759,7 +751,7 @@ export class CredentialsDataSource extends HttpDataSource<Credentials> {
     return api.grok_CredentialsDataSource_ForEntity(this.dart, e.dart);
   }
 
-  /** Saves a credentials.
+  /** Saves credentials.
    * Note, that in order to work correct, credentials should be connected
    * to other entity that owns them. So the best way to modify Credentials is load by {@link forEntity}, change
    * {@link Credentials.parameters} and after that call this method.
@@ -802,11 +794,8 @@ export class PermissionsDataSource {
   constructor() {
   };
 
-  /** Gets all the permissions granted on entity
-   * @returns {Promise<Map>} permissions
-   * */
-  // { [key:string]:number; }
-  async get(e: Entity): Promise<Map<string, Group[]>> {
+  /** Groups that can view the entity and groups that can edit it. */
+  async get(e: Entity): Promise<{view: Group[], edit: Group[]}> {
     let data = await api.grok_Dapi_Get_Permissions(e.dart);
     data.view = toJs(data.view);
     data.edit = toJs(data.edit);
@@ -828,9 +817,10 @@ export class PermissionsDataSource {
     return api.grok_Dapi_Set_Permission(e.dart, g.dart, edit);
   }
 
-  /** Revokes permission on entity from the group
-   * */
-  revoke(g: Group, e: Entity): Promise<any> {
+  /** Revokes the group's permission on the entity. Accepts the arguments in either order;
+   * prefer `revoke(entity, group)`, matching {@link grant}. */
+  revoke(a: Group | Entity, b: Entity | Group): Promise<any> {
+    const [g, e] = a instanceof Group ? [a, b] : [b, a];
     return api.grok_Dapi_Delete_Permission(e.dart, g.dart);
   }
 }
@@ -895,7 +885,6 @@ export class UserDataStorage {
  * @extends HttpDataSource
  * */
 export class ProjectsDataSource extends HttpDataSource<Project> {
-  /** @constructs TablesDataSource*/
   constructor(s: any, clsName: string) {
     super(s, clsName);
     this.include('children');
@@ -1029,8 +1018,13 @@ export class SpaceChildrenClient extends HttpDataSource<Entity> {
    * @param includeLinked - If true, includes linked references in addition to owned children (default: false)
    * @returns A new SpaceChildrenClient with the filter applied
    */
-  filter(types: string, includeLinked: boolean = false): SpaceChildrenClient {
+  ofTypes(types: string, includeLinked: boolean = false): SpaceChildrenClient {
     return new SpaceChildrenClient(api.grok_SpaceChildrenClient_Filter(this.dart, types, includeLinked));
+  }
+
+  /** @deprecated Use {@link ofTypes}: unlike {@link HttpDataSource.filter}, this takes entity types, not a smart filter. */
+  filter(types: string, includeLinked: boolean = false): SpaceChildrenClient {
+    return this.ofTypes(types, includeLinked);
   }
 }
 
@@ -1062,7 +1056,7 @@ export class SpaceFilesClient {
   }
 
   /** Uploads file content */
-  write(file: FileInfo | string, bytes: number[]): Promise<void> {
+  write(file: FileInfo | string, bytes: Uint8Array | number[]): Promise<void> {
     return api.grok_SpaceFilesClient_Upload(this.dart, file instanceof FileInfo ? file.dart : file, bytes);
   }
 
@@ -1750,7 +1744,6 @@ export class DomainSavedFiltersClient {
  * @extends HttpDataSource
  * */
 export class TablesDataSource extends HttpDataSource<TableInfo> {
-  /** @constructs TablesDataSource*/
   constructor(s: any) {
     super(s);
   }
@@ -2267,7 +2260,7 @@ export class FilesDataSource {
 
   /** Writes a file.
    * Sample: {@link https://public.datagrok.ai/js/samples/dapi/files} */
-  write(file: FileInfo | string, blob?: number[]): Promise<void> {
+  write(file: FileInfo | string, blob?: Uint8Array | number[]): Promise<void> {
     if (!blob && ((file instanceof FileInfo && !file.data) || typeof file === 'string'))
       throw new Error('blob parameter should be presented');
     return api.grok_Dapi_UserFiles_Write(toDart(file), blob ?? (file as FileInfo).data);

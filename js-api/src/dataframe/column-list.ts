@@ -36,7 +36,8 @@ export class ColumnList {
   /** Number of columns. */
   get length(): number { return api.grok_ColumnList_Length(this.dart); }
 
-  /** Column with the corresponding name (case-insensitive). */
+  /** Column with the corresponding name (case-insensitive), or null if there is no such column.
+   * See also {@link DataFrame.getCol}, which throws instead. */
   byName(name: string): Column { return toJs(api.grok_ColumnList_ByName(this.dart, name)); }
 
   /** Maps names to columns. */
@@ -189,7 +190,7 @@ export class ColumnList {
   addNewString(name: string): Column<string> { return this.addNew(name, TYPE.STRING); }
 
   /** Creates and adds an integer column
-   *  {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/modification/add-columns} */
+   *  {@link https://public.datagrok.ai/js/samples/data-frame/modification/add-columns} */
   addNewInt(name: string): Column<number> { return this.addNew(name, TYPE.INT); }
 
   /** Creates and adds a float column */
@@ -198,7 +199,7 @@ export class ColumnList {
   /** Creates and adds a qualified number column.
    * If [options] is provided, populates the column by combining a qualifier column
    * (string values: '<', '>', '', '=') with a numeric value column at each row.
-   * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/modification/add-columns}
+   * {@link https://public.datagrok.ai/js/samples/data-frame/modification/add-columns}
    * */
   addNewQnum(name: string, options?: QnumColumnCreationOptions): Column<number> {
     const col = this.addNew(name, TYPE.QNUM);
@@ -211,17 +212,17 @@ export class ColumnList {
   }
 
   /** Creates and adds a datetime column
-   * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/modification/add-columns}
+   * {@link https://public.datagrok.ai/js/samples/data-frame/modification/add-columns}
    * */
   addNewDateTime(name: string): DateTimeColumn { return this.addNew(name, TYPE.DATE_TIME); }
 
   /** Creates and adds a boolean column
-   * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/modification/add-columns}
+   * {@link https://public.datagrok.ai/js/samples/data-frame/modification/add-columns}
    * */
   addNewBool(name: string): Column<boolean> { return this.addNew(name, TYPE.BOOL); }
 
   /** Creates and adds a byte array column
-   * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/modification/add-columns}
+   * {@link https://public.datagrok.ai/js/samples/data-frame/modification/add-columns}
    * */
   addNewBytes(name: string): Column<Uint8Array> { return this.addNew(name, TYPE.BYTE_ARRAY); }
 
@@ -232,8 +233,8 @@ export class ColumnList {
    * @param {String} type - column type
    * @returns {Column}
    *
-   * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/advanced/virtual-int-column}
-   * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/advanced/virtual-columns}
+   * {@link https://public.datagrok.ai/js/samples/data-frame/advanced/virtual-int-column}
+   * {@link https://public.datagrok.ai/js/samples/data-frame/advanced/virtual-columns}
    * */
   addNewVirtual(
       name: string,

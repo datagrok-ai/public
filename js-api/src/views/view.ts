@@ -489,29 +489,28 @@ export class TableView extends View {
     return new DockManager(api.grok_View_Get_DockManager(this.dart));
   }
 
-  /** This and some of the following methods are "softly deprecated" (will likely be deprecated in 1.21):
-   *  deprecated: use addViewer(Viewer.histogram(options)).
+  /** @deprecated Use {@link addViewer} with {@link Viewer.histogram}.
    *  Adds a {@link https://datagrok.ai/help/visualize/viewers/histogram | histogram}.
    *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/types/histogram} */
   histogram(options?: Partial<IHistogramSettings>): Viewer {
     return this.addViewer(VIEWER.HISTOGRAM, options);
   }
 
-  /** deprecated: use addViewer(Viewer.barChart(options))
+  /** @deprecated Use {@link addViewer} with {@link Viewer.barChart}.
    *  Adds a {@link https://datagrok.ai/help/visualize/viewers/bar-chart | bar chart}.
    *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/types/bar-chart} */
   barChart(options?: Partial<IBarChartSettings>): Viewer {
     return this.addViewer(VIEWER.BAR_CHART, options);
   }
 
-  /** deprecated: use addViewer(Viewer.boxPlot(options))
+  /** @deprecated Use {@link addViewer} with {@link Viewer.boxPlot}.
    *  Adds a {@link https://datagrok.ai/help/visualize/viewers/box-plot | box plot}.
    *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/types/box-plot} */
   boxPlot(options?: Partial<IBoxPlotSettings>): Viewer {
     return this.addViewer(VIEWER.BOX_PLOT, options);
   }
 
-  /** deprecated: use addViewer(Viewer.calendar(options))
+  /** @deprecated Use {@link addViewer} with {@link Viewer.calendar}.
    *  Adds a {@link https://datagrok.ai/help/visualize/viewers/calendar | calendar}.
    *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/types/calendar}
    *  @param options
@@ -520,126 +519,126 @@ export class TableView extends View {
     return this.addViewer(VIEWER.CALENDAR, options);
   }
 
-  /** deprecated: use addViewer(Viewer.corrPlot(options))
+  /** @deprecated Use {@link addViewer} with {@link Viewer.correlationPlot}.
    *  Adds a {@link https://datagrok.ai/help/visualize/viewers/correlation-plot | correlation plot}.
    *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/types/corr-plot} */
   corrPlot(options?: Partial<ICorrelationPlotSettings>): Viewer {
     return this.addViewer(VIEWER.CORR_PLOT, options);
   }
 
-  /** deprecated: use addViewer(Viewer.densityPlot(options))
+  /** @deprecated Use {@link addViewer} with {@link Viewer.densityPlot}.
    *  Adds a {@link https://datagrok.ai/help/visualize/viewers/density-plot | density plot}.
    *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/types/density-plot} */
   densityPlot(options?: Partial<IDensityPlotSettings>): Viewer {
     return this.addViewer(VIEWER.DENSITY_PLOT, options);
   }
 
-  /** deprecated: use addViewer(Viewer.filters(options))
+  /** @deprecated Use {@link addViewer} with {@link Viewer.filters}.
    *  Adds {@link https://datagrok.ai/help/visualize/viewers/filters | filters}.
    *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/types/filters} */
   filters(options?: Partial<IFiltersSettings>): Viewer {
     return this.addViewer(VIEWER.FILTERS, options);
   }
 
-  /** deprecated: use addViewer(Viewer.form(options))
+  /** @deprecated Use {@link addViewer} with {@link Viewer.form}.
    *  Adds default {@link https://datagrok.ai/help/visualize/viewers/form | form}.
    *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/types/form} */
   form(options?: Partial<IFormSettings>): Viewer {
     return this.addViewer(VIEWER.FORM, options);
   }
 
-  /** deprecated: use addViewer(Viewer.heatMap(options))
+  /** @deprecated Use {@link addViewer} with {@link Viewer.heatMap}.
    *  Adds a {@link https://datagrok.ai/help/visualize/viewers/heat-map | heat map}.
    *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/types/heat-map} */
   heatMap(options?: Partial<IGridSettings>): Viewer {
     return this.addViewer(VIEWER.HEAT_MAP, options);
   }
 
-  /** deprecated: use addViewer(Viewer.histogram(options))
+  /** @deprecated Use {@link addViewer} with {@link Viewer.lineChart}.
    *  Adds a {@link https://datagrok.ai/help/visualize/viewers/line-chart | line chart}.
    *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/types/line-chart}  */
   lineChart(options?: Partial<ILineChartSettings>): Viewer {
     return this.addViewer(VIEWER.LINE_CHART, options);
   }
 
-  /** deprecated: use addViewer(Viewer.shapeMap(options))
+  /** @deprecated Use {@link addViewer} with `DG.VIEWER.SHAPE_MAP`.
    *  Adds a {@link https://datagrok.ai/help/visualize/viewers/shape-map | shape map}.
    *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/types/shape-map}  */
   shapeMap(options?: Partial<IMapViewerSettings>): Viewer {
     return this.addViewer(VIEWER.SHAPE_MAP, options);
   }
 
-  /** deprecated: use addViewer(Viewer.markup(options))
+  /** @deprecated Use {@link addViewer} with {@link Viewer.markup}.
    *  Adds a {@link https://datagrok.ai/help/visualize/viewers/markup | markup viewer}.
    *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/types/markup} */
   markup(options?: Partial<IMarkupViewerSettings>): Viewer {
     return this.addViewer(VIEWER.MARKUP, options);
   }
 
-  /** deprecated: use addViewer(Viewer.matrixPlot(options))
+  /** @deprecated Use {@link addViewer} with {@link Viewer.matrixPlot}.
    *  Adds a {@link https://datagrok.ai/help/visualize/viewers/matrix-plot | matrix plot}.
    *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/types/matrix-plot} */
   matrixPlot(options?: Partial<IMatrixPlotSettings>): Viewer {
     return this.addViewer(VIEWER.MATRIX_PLOT, options);
   }
 
-  /** deprecated: use addViewer(Viewer.networkDiagram(options))
+  /** @deprecated Use {@link addViewer} with {@link Viewer.network}.
    *  Adds a {@link https://datagrok.ai/help/visualize/viewers/network-diagram | network diagram}.
    *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/types/network-diagram} */
   networkDiagram(options?: Partial<INetworkDiagramSettings>): Viewer {
     return this.addViewer(VIEWER.NETWORK_DIAGRAM, options);
   }
 
-  /** deprecated: use addViewer(Viewer.pcPlot(options))
+  /** @deprecated Use {@link addViewer} with {@link Viewer.pcPlot}.
    *  Adds a {@link https://datagrok.ai/help/visualize/viewers/pc-plot | parallel coordinates plot}.
    *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/types/pc-plot} */
   pcPlot(options?: Partial<IPcPlotSettings>): Viewer {
     return this.addViewer(VIEWER.PC_PLOT, options);
   }
 
-  /** deprecated: use addViewer(Viewer.pieChart(options))
+  /** @deprecated Use {@link addViewer} with {@link Viewer.pieChart}.
    *  Adds a {@link https://datagrok.ai/help/visualize/viewers/pie-chart | pie chart}.
    *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/types/pie-chart} */
   pieChart(options?: Partial<IPieChartSettings>): Viewer {
     return this.addViewer(VIEWER.PIE_CHART, options);
   }
 
-  /** deprecated: use addViewer(Viewer.scatterPlot(options))
+  /** @deprecated Use {@link addViewer} with {@link Viewer.scatterPlot}.
    *  Adds a {@link https://datagrok.ai/help/visualize/viewers/scatter-plot | scatter plot}.
    *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/types/scatter-plot} */
   scatterPlot(options?: Partial<IScatterPlotSettings>): ScatterPlotViewer {
     return <ScatterPlotViewer>this.addViewer(VIEWER.SCATTER_PLOT, options);
   }
 
-  /** deprecated: use addViewer(Viewer.scatterPlot3d(options))
+  /** @deprecated Use {@link addViewer} with {@link Viewer.scatterPlot3d}.
    *  Adds a {@link https://datagrok.ai/help/visualize/viewers/3d-scatter-plot | 3D scatter plot}.
    *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/types/scatter-plot-3d} */
   scatterPlot3d(options?: Partial<IScatterPlot3dSettings>): Viewer {
     return this.addViewer(VIEWER.SCATTER_PLOT_3D, options);
   }
 
-  /** deprecated: use addViewer(Viewer.statistics(options))
+  /** @deprecated Use {@link addViewer} with {@link Viewer.statistics}.
    *  Adds a {@link https://datagrok.ai/help/visualize/viewers/statistics | statistics}.
    *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/types/statistics} */
   statistics(options?: Partial<IStatsViewerSettings>): Viewer {
     return this.addViewer(VIEWER.STATISTICS, options);
   }
 
-  /** deprecated: use addViewer(Viewer.histogram(options))
+  /** @deprecated Use {@link addViewer} with {@link Viewer.tile}.
    *  Adds a {@link https://datagrok.ai/help/visualize/viewers/tile-viewer | tile viewer}.
    *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/types/tile-viewer} */
   tileViewer(options?: Partial<ITileViewerSettings>): Viewer {
     return this.addViewer(VIEWER.TILE_VIEWER, options);
   }
 
-  /** deprecated: use addViewer(Viewer.treeMap(options))
+  /** @deprecated Use {@link addViewer} with {@link Viewer.treeMap}.
    *  Adds a {@link https://datagrok.ai/help/visualize/viewers/tree-map | tree map}.
    *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/types/tree-map} */
   treeMap(options?: Partial<ITreeMapSettings>): Viewer {
     return this.addViewer(VIEWER.TREE_MAP, options);
   }
 
-  /** deprecated: use addViewer(Viewer.trellisPlot(options))
+  /** @deprecated Use {@link addViewer} with {@link Viewer.trellisPlot}.
    *  Adds a {@link https://datagrok.ai/help/visualize/viewers/trellis-plot | trellis plot}.
    *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/types/trellis-plot} */
   trellisPlot(options?: Partial<ITrellisPlotSettings>): Viewer {

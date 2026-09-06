@@ -138,14 +138,25 @@ export class Functions {
     return new Func(api.grok_RegisterFunc(func));
   }
 
-  registerParamFunc(name: string, type: Type, run: Function, check: boolean | null = null, description: string | null = null): void {
+  /** Registers a function of one parameter of the specified [type]. It is offered for matching
+   * objects in context menus and in the "Actions" pane; [check] is an optional applicability predicate. */
+  registerParamFunc(name: string, type: Type | (string & {}), run: Function, check: ((x: any) => boolean) | boolean | null = null, description: string | null = null): void {
     api.grok_RegisterParamFunc(name, type, run, check, description);
   }
 
+  /** Calls the function [name] (namespace-qualified, such as `'Chem:SmilesToMw'`) with the named
+   * [parameters], loading the owning package first if necessary.
+   * The result depends on the number of declared outputs: exactly one output resolves to that value
+   * (for instance a DataFrame); several outputs resolve to an object keyed by output name
+   * (`res.result1`, `res.result2`); no outputs resolve to `undefined`.
+   * @example
+   * const mw = await grok.functions.call('Chem:SmilesToMw', {smiles: 'CCO'}); */
   async call(name: string, parameters: object = {}, showProgress: boolean = false, progress: ProgressIndicator | null = null): Promise<any> {
     return toJs(await api.grok_CallFunc(name, parameters, showProgress, toDart(progress)));
   }
 
+  /** Evaluates a GrokScript expression (or a bare function name) in [context] and returns the result;
+   * for a bare function name that is the {@link Func} itself (see {@link find}). */
   async eval(name: string, context?: Context): Promise<any> {
     return toJs(await api.grok_EvalFunc(name, context?.dart));
   }
@@ -208,7 +219,7 @@ export class ClientCache {
   /** Removes expired records. Normally, Datagrok does it automatically when needed. */
   cleanup(): Promise<void> { return api.grok_ClientCache_Cleanup(); }
 
-  /** Returns the number of */
+  /** Returns the number of cached records. */
   getRecordCount(): Promise<number> { return api.grok_ClientCache_GetRecordCount(); }
 
   /** Indicates whether the caching service is running. */
@@ -232,7 +243,7 @@ export class FuncCallParam {
 
   get value(): any { return toJs(api.grok_FuncCallParam_Get_Value(this.dart)); }
 
-  /** A property that re*/
+  /** Property (metadata) of this parameter: name, type, options. */
   get property(): Property { return toJs(api.grok_FuncCallParam_Get_Param(this.dart)); }
 
   processOutput(): void {

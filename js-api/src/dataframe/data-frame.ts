@@ -40,7 +40,7 @@ const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) a
  *
  * In the API, the terms "Table" and "DataFrame" are used interchangeably.
  *
- * Usage samples: {@link https://public.datagrok.ai/js/samples/data-frame/manipulate}
+ * Usage samples: {@link https://public.datagrok.ai/js/samples/data-frame/modification/manipulate}
  * Usage details: {@link https://datagrok.ai/help/develop/advanced/data-frame}
  * Implementation details: {@link https://datagrok.ai/help/develop/admin/architecture#in-memory-database}
  */
@@ -97,7 +97,7 @@ export class DataFrame {
    * number of objects could be big), consider using {@link fromColumns} instead.
    *
    * @param {object[]} list - List of objects.
-   * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/construction/create-from-objects}
+   * {@link https://public.datagrok.ai/js/samples/data-frame/construction/create-from-objects}
    * */
   static fromObjects(list: object[]): DataFrame | undefined {
     let table = DataFrame.create(list.length);
@@ -118,7 +118,7 @@ export class DataFrame {
 
   /** Constructs {@link DataFrame} from a comma-separated values string
    * @param {string} csv - The content of the comma-separated values file.
-   * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/construction/create-from-csv}
+   * {@link https://public.datagrok.ai/js/samples/data-frame/construction/create-from-csv}
    * */
   static fromCsv(csv: string, options?: CsvImportOptions): DataFrame {
     return grok.data.parseCsv(csv, options);
@@ -126,7 +126,7 @@ export class DataFrame {
 
   /** Constructs {@link DataFrame} from the specified JSON string.
    * @param {string} json - JSON document.
-   * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/construction/create-from-json}
+   * {@link https://public.datagrok.ai/js/samples/data-frame/construction/create-from-json}
    * */
   static fromJson(json: string): DataFrame {
     return new DataFrame(api.grok_DataFrame_FromJson(json));
@@ -487,7 +487,7 @@ export class DataFrame {
 
   /** Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/events} */
   get onDataChanged(): Observable<any> {
-    return rxjs.concat(this.onValuesChanged, this.onColumnsAdded,
+    return rxjs.merge(this.onValuesChanged, this.onColumnsAdded,
       this.onColumnsRemoved, this.onRowsAdded, this.onRowsRemoved);
   }
 

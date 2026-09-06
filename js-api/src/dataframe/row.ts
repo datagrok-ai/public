@@ -79,7 +79,7 @@ export class Row {
     return new Proxy(this, {
       set(target, name: string, value) {
         if (target.hasOwnProperty(name)) {
-          Object.entries(target)[<any>name] = value;
+          (target as any)[name] = value;
           return true;
         }
         target.table.set(name, target.idx, value);

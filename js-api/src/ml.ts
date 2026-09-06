@@ -15,7 +15,7 @@ export namespace ml {
    * @param {string} name - Model namespace path.
    * @param {DataFrame} table - Data table.
    * @param {object} columnNamesMap - Columns map.
-   * @param {boolean} showProgress - Maximum number of results to return.
+   * @param {boolean} showProgress - Whether to show a progress indicator.
    * */
   export async function applyModel(name: string, table: DataFrame, columnNamesMap: object = {}, showProgress: boolean = true): Promise<DataFrame> {
     await api.grok_ML_ApplyModel(name, table.dart, columnNamesMap, showProgress);

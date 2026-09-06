@@ -30,7 +30,6 @@ export * from './src/ml';
 export * from './src/utils';
 export * from './src/proxies';
 export * from './src/utils_convert';
-export * from './src/ui/tree-view';
 
 export * as grok from './grok';
 export {wu};

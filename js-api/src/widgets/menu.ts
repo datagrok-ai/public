@@ -25,8 +25,8 @@ const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) a
 
 /**
  * Menu (either top menu or popup menu).
- * Top menu sample: {@link https://public.datagrok.ai/js/samples/ui/menu}
- * Popup menu sample: {@link https://public.datagrok.ai/js/samples/ui/popup-menu}
+ * Top menu sample: {@link https://public.datagrok.ai/js/samples/ui/components/menu}
+ * Popup menu sample: {@link https://public.datagrok.ai/js/samples/ui/components/popup-menu}
  *
  * @example
  * DG.Menu.popup()

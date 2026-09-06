@@ -42,11 +42,13 @@ export class Shell {
   settings: Settings & SettingsInterface = new Settings() as Settings & SettingsInterface;
   build: AppBuildInfo = new AppBuildInfo();
 
-  testError(s: String): void {
+  /** @internal */
+  testError(s: string): void {
     return api.grok_Test_Error(s);
   }
 
-  async reportTest(type: String, params: object): Promise<void> {
+  /** @internal */
+  async reportTest(type: string, params: object): Promise<void> {
     const isNode = typeof process !== 'undefined';
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (isNode)
@@ -288,7 +290,7 @@ export class Shell {
   // }
 
   /** Registers a viewer.
-   * Sample: {@link https://public.datagrok.ai/js/samples/scripts/functions/custom-viewers}
+   * Sample: {@link https://public.datagrok.ai/js/samples/functions/custom-viewers/viewers}
    * @param {string} viewerTypeName
    * @param {string} description
    * @param {Function} createViewer - a function that returns {@link JsViewer} */
@@ -570,8 +572,6 @@ export class Settings {
         return toJs(api.grok_PropMixin_GetPropertyValue(api.grok_Get_Settings(), prop));
       },
       set: function (target, prop: string, value) {
-        if (target.hasOwnProperty(prop))
-          return target[prop];
         if (target.hasOwnProperty(prop)) {
           target[prop] = value;
           return true;

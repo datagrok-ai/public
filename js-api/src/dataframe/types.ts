@@ -53,7 +53,7 @@ export interface CsvExportOptions {
   /** Expands qualified numbers into two columns: `qual(column)` and `column` */
   qualifierAsColumn?: boolean;
 
-  /// Saves MOLBLOCKS as SMILES.
+  /** Saves MOLBLOCKS as SMILES. */
   moleculesAsSmiles?: boolean;
 
   /** Column-specific formats (column name -> format).

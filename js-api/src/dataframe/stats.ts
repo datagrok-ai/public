@@ -138,7 +138,7 @@ export class Stats {
  * When the query is constructed, execute it by calling {@link aggregate}, which will
  * produce a {@link DataFrame}.
  *
- * See samples: {@link https://public.datagrok.ai/js/samples/data-frame/aggregation}
+ * See samples: {@link https://public.datagrok.ai/js/samples/data-frame/aggregation/aggregate}
  *
  * @example
  * let avgAgesByRaceAndSex = demographicsTable
@@ -191,8 +191,8 @@ export class GroupByBuilder {
     return this.add(AGG.PIVOT, srcColName, resultColName);
   }
 
-  /** Adds an aggregation that counts rows, including these will null values.
-   * See also {@link count}, {@link valueCount}, {@link uniqueCount}, {@link missingValueCount}
+  /** Adds an aggregation that counts rows, including those with null values.
+   * See also {@link valueCount}, {@link uniqueCount}, {@link missingValueCount}
    * Call {@link aggregate} when the query is constructed.
    * @param {string} [resultColName] - column name in the resulting DataFrame
    * @returns {GroupByBuilder} - this for chaining */
@@ -220,8 +220,8 @@ export class GroupByBuilder {
     return this.add(AGG.MISSING_VALUE_COUNT, srcColName, resultColName);
   }
 
-  /** Adds an aggregation that counts rows, including these will null values.
-   * See also {@link count}, {@link valueCount}, {@link uniqueCount}, {@link missingValueCount}
+  /** Adds an aggregation that counts non-null values in the specified column.
+   * See also {@link count}, {@link uniqueCount}, {@link missingValueCount}
    * Call {@link aggregate} when the query is constructed.
    * @param {string} srcColName - column name in the source table
    * @param {string} [resultColName] - column name in the resulting DataFrame
@@ -284,7 +284,7 @@ export class GroupByBuilder {
     return this.add(AGG.STDEV, srcColName, resultColName);
   }
 
-  /** Adds an aggregation that calculates varians for the specified column.
+  /** Adds an aggregation that calculates variance for the specified column.
    * Call {@link aggregate} when the query is constructed.
    * @param {string} srcColName - column name in the source table
    * @param {string} [resultColName] - column name in the resulting DataFrame
@@ -329,9 +329,8 @@ export class GroupByBuilder {
     return this.add(AGG.FIRST, srcColName, resultColName);
   }
 
-  /** Gets groups of DataFrames
-   * @returns {Map} - where keys are stings in format 'columnName=value' and values are DataFrames */
-  getGroups(): Map<string, DataFrame> {
+  /** Gets groups of DataFrames as a plain object keyed by 'columnName=value' strings. */
+  getGroups(): {[key: string]: DataFrame} {
     return api.grok_GroupByBuilder_GetGroups(this.dart);
   }
 

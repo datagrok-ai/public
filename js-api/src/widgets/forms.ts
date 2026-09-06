@@ -17,11 +17,10 @@ const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) a
 
 /**
  * A non-modal dialog.
- * Sample: https://public.datagrok.ai/js/samples/ui/dialogs
+ * Sample: https://public.datagrok.ai/js/samples/ui/dialogs/dialogs
  *
  * @example
  * ui.dialog('Windows')
- *   .add(ui.)
  *   .add(ui.span(['People of Earth, your attention, please… ']))
  *   .onOK(() => { grok.shell.info('OK!'); })
  *   .show();

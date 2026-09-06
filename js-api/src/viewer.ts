@@ -77,13 +77,8 @@ export class WidgetDescriptor {
  * @see Use Viewer to control the viewers. To develop a custom viewer, {@link JsViewer}.
  *
  * @example
- * let view = grok.shell.addTableView(grok.data.demo.demog());
- * view.scatterPlot({
-     x: 'height',
-     y: 'weight',
-     size: 'age',
-     color: 'race',
-   });
+ * const view = grok.shell.addTableView(grok.data.demo.demog());
+ * view.addViewer(DG.Viewer.scatterPlot(view.dataFrame, {x: 'height', y: 'weight', size: 'age', color: 'race'}));
  **/
 export class Viewer<TSettings = any> extends Widget<TSettings> {
 
@@ -99,7 +94,7 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
   private _filter: BitSet | null = null;
   /** combined filter of the viewer */
   get filter(): BitSet {
-    return this._filter ?? this.dart ? toJs(api.grok_Viewer_Get_Filter(this.dart)) : BitSet.create(0);
+    return this._filter ?? (this.dart ? toJs(api.grok_Viewer_Get_Filter(this.dart)) : BitSet.create(0));
   }
   set filter(f: BitSet) {
     this._filter = f;
@@ -130,7 +125,7 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
   get onDataEvent(): rxjs.Observable<ViewerEvent> { return this.onEvent('d4-data-event'); }
   get onTooltipCreated(): rxjs.Observable<ViewerEvent> { return this.onEvent('d4-data-event').pipe(filter((e) => e.type == 'd4-tooltip')); }
   get onDataSelected(): rxjs.Observable<ViewerEvent> { return this.onEvent('d4-data-event').pipe(filter((e) => e.type == 'd4-select')); }
-  /// current row clicked
+  /** current row clicked */
   get onDataRowClicked(): rxjs.Observable<ViewerEvent> { return this.onEvent('d4-data-event').pipe(filter((e) => e.type == 'd4-row-click')); }
   get onPropertyValueChanged(): rxjs.Observable<EventData<Property>> { return this.onEvent('d4-property-value-changed'); }
 
@@ -761,7 +756,7 @@ export class ScatterPlotViewer extends Viewer<interfaces.IScatterPlotSettings> {
   worldToScreen(x: number, y: number): Point { return DG.Point.fromXY(api.grok_ScatterPlotViewer_WorldToScreen(this.dart, x, y)); }
   screenToWorld(x: number, y: number): Point { return DG.Point.fromXY(api.grok_ScatterPlotViewer_ScreenToWorld(this.dart, x, y)); }
 
-  /// 32-bit integer with X in the hi 16 bits, and Y in the lo 16 bits
+  /** 32-bit integer with X in the hi 16 bits, and Y in the lo 16 bits */
   pointToScreen(index: number): Point { return DG.Point.fromXY(api.grok_ScatterPlotViewer_PointToScreen(this.dart, index)); }
 
   render(g: CanvasRenderingContext2D): void { api.grok_ScatterPlotViewer_Render(this.dart, g); }
@@ -960,32 +955,32 @@ export class ConfusionMatrix extends Viewer<interfaces.IConfusionMatrixSettings>
     super(dart);
   }
 
-  /// Whether the matrix is binary (exactly two categories).
+  /** Whether the matrix is binary (exactly two categories). */
   get isBinary(): boolean { return api.grok_ConfusionMatrix_Get_IsBinary(this.dart); }
 
-  /// The list of class categories present in the matrix.
+  /** The list of class categories present in the matrix. */
   get categories(): string[] { return api.grok_ConfusionMatrix_Get_Categories(this.dart); }
 
-  /// Overall accuracy: (sum of diagonal) / total.
+  /** Overall accuracy: (sum of diagonal) / total. */
   get accuracy(): number { return api.grok_ConfusionMatrix_Get_Accuracy(this.dart); }
 
-  /// Sensitivity (recall) — binary only; returns 0 when not binary.
+  /** Sensitivity (recall) — binary only; returns 0 when not binary. */
   get sensitivity(): number { return api.grok_ConfusionMatrix_Get_Sensitivity(this.dart); }
 
-  /// Specificity — binary only; derived from getRowShare(1).
-  get specificity(): number { return this.getRowShare(1); }
+  /** Specificity — binary only; derived from getRowShare(1). */
+  get specificity(): number | null { return this.getRowShare(1); }
 
-  /// Precision — binary only; derived from getColumnShare(0).
-  get precision(): number { return this.getColumnShare(0); }
+  /** Precision — binary only; derived from getColumnShare(0). */
+  get precision(): number | null { return this.getColumnShare(0); }
 
-  /// Negative predicted value — binary only; derived from getColumnShare(1).
-  get negativePredictedValue(): number { return this.getColumnShare(1); }
+  /** Negative predicted value — binary only; derived from getColumnShare(1). */
+  get negativePredictedValue(): number | null { return this.getColumnShare(1); }
 
-  /// Share of correctly predicted objects within the actual class at [i] (row). Null when the row is empty.
-  getRowShare(i: number): number { return api.grok_ConfusionMatrix_GetRowShare(this.dart, i) ?? null; }
+  /** Share of correctly predicted objects within the actual class at [i] (row). Null when the row is empty. */
+  getRowShare(i: number): number | null { return api.grok_ConfusionMatrix_GetRowShare(this.dart, i) ?? null; }
 
-  /// Share of correct predictions within the predicted class at [i] (column). Null when the column is empty.
-  getColumnShare(i: number): number { return api.grok_ConfusionMatrix_GetColumnShare(this.dart, i) ?? null; }
+  /** Share of correct predictions within the predicted class at [i] (column). Null when the column is empty. */
+  getColumnShare(i: number): number | null { return api.grok_ConfusionMatrix_GetColumnShare(this.dart, i) ?? null; }
 }
 
 export class RocCurve extends Viewer<interfaces.IRocCurveSettings> {
@@ -993,8 +988,8 @@ export class RocCurve extends Viewer<interfaces.IRocCurveSettings> {
     super(dart);
   }
 
-  /// Area under the ROC curve for [prediction] scores against the binary [target] column,
-  /// treating [positiveClass] as the positive label. May be NaN on degenerate (single-class) input.
+  /** Area under the ROC curve for [prediction] scores against the binary [target] column,
+   * treating [positiveClass] as the positive label. May be NaN on degenerate (single-class) input. */
   auc(target: Column, prediction: Column, positiveClass: string): number {
     return api.grok_RocCurve_CalculateAuc(toDart(target), toDart(prediction), positiveClass);
   }

@@ -32,7 +32,7 @@ export function paramsToJs(params: any): any {
  * @see {@link ./dart-interop.md} for type conversion rules
  */
 export function toJs(dart: any, check: boolean = false): any {
-  return DG.toJs(dart);
+  return DG.toJs(dart, check);
 }
 
 /**

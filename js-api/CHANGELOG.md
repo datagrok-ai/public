@@ -2,6 +2,17 @@
 
 ## v.next
 
+* Fixed `DataFrame.onDataChanged` — it merged its sources with `concat`, so it only ever emitted value changes; column and row additions/removals now emit too
+* Fixed `TableQueryBuilder.leftJoin/rightJoin/innerJoin/outerJoin` — `rightTableAlias` was dropped and `leftTable` was sent as the alias
+* Fixed `FormulaLinesHelper.removeAt` / `AnnotationRegionsHelper.removeAt` — they kept the removed window instead of removing it (`removeAt(0)` emptied the list)
+* Fixed `Rect.getGridPart` — the cell height divided by the cell index instead of `yCount`; `Rect.fromCenterSize` is now static (the instance form is deprecated)
+* Fixed `ui.iconImage` producing the literal path `/images/$path`, `ui.tools.sendKeyboardEvent` ignoring `keyCode`, `ui.box` logging to the console, `DG.toJs(x, check)` dropping `check`, `viewer.props` reporting every name as present, `DockNode.removeChild` passing the wrapper instead of the Dart node, `Color.hexToPercentRgb` dividing by 256
+* Removed a `debugger` statement and stray console output from `Utils.executeTests`; the canvas `roundRect` extension is now installed only where the browser has no native `roundRect`
+* Typing: `PermissionsDataSource.get()` returns `{view, edit}` (what it always returned); `revoke()` accepts `(entity, group)` like `grant()`; `GridColumn.backColor` is a `number`; `GridColumn.column` keeps the column subclass (e.g. `DateTimeColumn`); `ConfusionMatrix.getRowShare/getColumnShare` are `number | null`; `FilesDataSource.write` / `SpaceFilesClient.write` accept `Uint8Array`; `ui.input.userGroups` is typed over `Group`; `ViewerType`/`ViewType`/`ColumnAggregationType` keep their enum completions (`string & {}`)
+* Added `SpaceChildrenClient.ofTypes()`; its `filter(types)` override is deprecated (it shadowed `HttpDataSource.filter` with different semantics)
+* Documented `grok.functions.call` (result shape by number of outputs), `grok.functions.eval`, `registerParamFunc`; fixed pasted or truncated JSDoc on `Grid.onCellRender`, `Rect.maxY`, `GroupByBuilder.count/valueCount`, `BitSet.findPrev/fromBytes`, `Wizard.next`, `ml.applyModel`, `DockManager.dock`, `Dialog` example, and the `dapi` data-source constructors; `///` comments converted to JSDoc so they show in hover and the reference
+* Removed dead surface: the empty `DG.x` namespace, `grok.dapi2`/`dapi2Init` (type-only, never populated), the empty `GRID_COLUMN_TAGS` enum; `TYPE.SEM_VALUE` is deprecated in favor of `TYPE.SEMANTIC_VALUE`
+
 * Renamed the u2 `Component.run(fn)` scope helper to `runInScope(fn)` — `run` is inherited by every view and widget and collided with the long-standing `run()` on `FunctionView` and `Tutorial`, breaking those package builds with `TS2416`
 * Added `NodeApiClient.getBytes()` / `putBytes()` and `InternalDataSource` — a client for the internal entity routers that throws on the `ApiError` bodies they answer 200 with — to the Node dapi client (subset mirror of the CLI's `tools/bin/utils/node-dapi.ts`); `InternalDataSource` is exported from `datagrok-api/node-api`, `NodeDapi.client` is public, and `NodeDapi.queries|scripts|reports` now use the internal routes (the `/public/v1/` ones they used do not exist)
 * GROK-20799: Added `grok.meta.propertiesOf(type, {filterable})` — the curated property catalog of a platform entity type or a domain table, as descriptors whose names filters, facets and grids accept; null for an uncurated type or an unknown table

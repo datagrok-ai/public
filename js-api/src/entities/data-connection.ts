@@ -193,7 +193,7 @@ export class TableQueryBuilder {
   /** Adds an aggregation that counts rows for the specified column. Equivalent to count(field).
    * @param field - Column name.
    * @param fieldAlias Name of the resulting column. Default value is count.
-   * @returns {GroupByBuilder} */
+   * @returns {TableQueryBuilder} */
   valueCount(field: string, fieldAlias: string = 'count'): TableQueryBuilder {
     return this.selectAggr(AGG.VALUE_COUNT, field, fieldAlias);
   }
@@ -231,7 +231,7 @@ export class TableQueryBuilder {
    * @param leftTable {string}
    */
   leftJoin(rightTable: string, leftTableKeys: string[], rightTableKeys: string[], rightTableAlias?: string, leftTable?: string): TableQueryBuilder {
-    return this.join(rightTable, JOIN_TYPE.LEFT, leftTableKeys, rightTableKeys, leftTable)
+    return this.join(rightTable, JOIN_TYPE.LEFT, leftTableKeys, rightTableKeys, rightTableAlias, leftTable);
   }
 
   /**
@@ -243,7 +243,7 @@ export class TableQueryBuilder {
    * @param leftTable {string}
    */
   rightJoin(rightTable: string, leftTableKeys: string[], rightTableKeys: string[], rightTableAlias?: string, leftTable?: string): TableQueryBuilder {
-    return this.join(rightTable, JOIN_TYPE.RIGHT, leftTableKeys, rightTableKeys, leftTable)
+    return this.join(rightTable, JOIN_TYPE.RIGHT, leftTableKeys, rightTableKeys, rightTableAlias, leftTable);
   }
 
   /**
@@ -255,7 +255,7 @@ export class TableQueryBuilder {
    * @param leftTable {string}
    */
   innerJoin(rightTable: string, leftTableKeys: string[], rightTableKeys: string[], rightTableAlias?: string, leftTable?: string): TableQueryBuilder {
-    return this.join(rightTable, JOIN_TYPE.INNER, leftTableKeys, rightTableKeys, leftTable)
+    return this.join(rightTable, JOIN_TYPE.INNER, leftTableKeys, rightTableKeys, rightTableAlias, leftTable);
   }
 
   /**
@@ -267,7 +267,7 @@ export class TableQueryBuilder {
    * @param leftTable {string}
    */
   outerJoin(rightTable: string, leftTableKeys: string[], rightTableKeys: string[], rightTableAlias?: string, leftTable?: string): TableQueryBuilder {
-    return this.join(rightTable, JOIN_TYPE.OUTER, leftTableKeys, rightTableKeys, leftTable)
+    return this.join(rightTable, JOIN_TYPE.OUTER, leftTableKeys, rightTableKeys, rightTableAlias, leftTable);
   }
 
   /** Groups rows that have the same values into summary values

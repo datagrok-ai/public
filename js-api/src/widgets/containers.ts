@@ -15,7 +15,7 @@ const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) a
 
 /**
  * Accordion control with collapsible/expandable panes.
- * Samples: {@link https://public.datagrok.ai/js/samples/ui/accordion}
+ * Samples: {@link https://public.datagrok.ai/js/samples/ui/components/accordion}
  * @extends {DartWidget}
  * */
 export class Accordion extends DartWidget {

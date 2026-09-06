@@ -420,7 +420,7 @@ export class Data {
    * // Returns a DataFrame (default)
    * const df = await grok.data.query("DbTests:PostgresqlTable");
    *
-   * Sample: {@link https://public.datagrok.ai/js/samples/data-access/parameterized-query}
+   * Sample: {@link https://public.datagrok.ai/js/samples/data-access/db/parameterized-query}
    */
   async query<T = DataFrame>(queryName: string,
                              queryParameters: object | null = null,

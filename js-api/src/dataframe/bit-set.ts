@@ -13,7 +13,7 @@ const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) a
 
 /**
  * Efficient bit storage and manipulation.
- * See samples: {@link https://public.datagrok.ai/js/samples/data-frame/aggregation}
+ * See samples: {@link https://public.datagrok.ai/js/samples/data-frame/aggregation/aggregate}
  */
 export class BitSet {
   public dart: any;
@@ -31,7 +31,7 @@ export class BitSet {
   }
 
   /** Creates a {@link BitSet} from the ArrayBuffer representing the bitset.
-   * @param {ArrayBuffer} buffer - An array containing 1 and 0.
+   * @param {ArrayBuffer} buffer - Packed bits, least significant bit first.
    * @param {Number} bitLength - count of bits.
    * @returns {BitSet} */
   static fromBytes(buffer: ArrayBuffer, bitLength: number): BitSet {
@@ -140,7 +140,7 @@ export class BitSet {
     return api.grok_BitSet_FindNext(this.dart, i, x);
   }
 
-  /** Finds the first index of value x, going forward from i-th position, or -1 if not found.
+  /** Finds the first index of value x, going backward from i-th position, or -1 if not found.
    * @param {number} i - Index to start searching from.
    * @param {boolean} x - Value to search for.
    * @returns {number} - index of the first bit set to x, or -1 if not found */

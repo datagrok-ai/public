@@ -101,7 +101,6 @@ export class ProjectsView extends CardView {
 
 /** Scripts view */
 export class ScriptsView extends CardView {
-  /** @constructs ProjectsView */
   constructor(dart: any) {
     super(dart);
   }

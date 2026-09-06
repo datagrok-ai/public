@@ -128,9 +128,14 @@ export class Rect {
     return api.grok_Rect_Unpack(_bytes);
   }
 
-  /** Rectangle of the specified size, with the specified center */
-  fromCenterSize(cx: number, cy: number, width: number, height: number): Rect {
+  /** Rectangle of the specified size, with the specified center. */
+  static fromCenterSize(cx: number, cy: number, width: number, height: number): Rect {
     return new Rect(cx - width / 2, cy - height / 2, width, height);
+  }
+
+  /** @deprecated Use the static {@link Rect.fromCenterSize}; this instance form ignores the receiver. */
+  fromCenterSize(cx: number, cy: number, width: number, height: number): Rect {
+    return Rect.fromCenterSize(cx, cy, width, height);
   }
 
   /** The midpoint of the rectangle along the x-axis. */
@@ -152,7 +157,7 @@ export class Rect {
   /** Same as (y) */
   get minY(): number { return this.y; }
 
-  /** Same as x + width */
+  /** Same as (y + height), or (bottom) */
   get maxY(): number { return this.bottom; }
 
   /** Left border position of the rectangle along the x-axis. */
@@ -417,7 +422,7 @@ export class Rect {
   getGridPart(xCount: number, yCount: number, x: number, y: number): Rect {
     return new Rect(
       this.left + (this.width / xCount) * x, this.top + (this.height / yCount) * y,
-      this.width / xCount, this.height / y);
+      this.width / xCount, this.height / yCount);
   }
 
   // --
@@ -466,8 +471,8 @@ export class Rect {
    * Positioned in the center. Useful for rendering images in cells. */
   fit(width: number, height: number): Rect {
     return width / height > this.width / this.height
-      ? this.fromCenterSize(this.midX, this.midY, this.width, height * (this.width / width))
-      : this.fromCenterSize(this.midX, this.midY, width * (this.height / height), this.height)
+      ? Rect.fromCenterSize(this.midX, this.midY, this.width, height * (this.width / width))
+      : Rect.fromCenterSize(this.midX, this.midY, width * (this.height / height), this.height)
   }
 
   /** Checks if this Rect contains the point (x; y) inside */
@@ -596,7 +601,7 @@ export class GridCell<TData = any> {
   get color(): number { return api.grok_GridCell_Get_Color(this.dart); }
 
   /** Grid cell bounds.
-   * Sample: {@link https://public.datagrok.ai/js/samples/grid/cell-bounds}
+   * Sample: {@link https://public.datagrok.ai/js/samples/grid/advanced/cell-bounds}
    */
   get bounds(): Rect {
     return Rect.fromDart(api.grok_GridCell_Get_Bounds(this.dart));
@@ -688,7 +693,7 @@ export class GridColumn<TData = any> {
   /** @returns {Column} Corresponding table column, or null. */
   get column(): Column<TData> | null {
     let col = api.grok_GridColumn_Get_Column(this.dart);
-    return col === null ? null : new Column(col);
+    return col === null ? null : toJs(col);
   }
 
   /** Index of the column. */
@@ -710,16 +715,16 @@ export class GridColumn<TData = any> {
   get headerCellStyle(): GridCellStyle { return api.grok_GridColumn_Get_HeaderCellStyle(this.dart); }
 
   /** Column width in pixels.
-   * Sample: {@link https://public.datagrok.ai/js/samples/grid/resize-columns} */
+   * Sample: {@link https://public.datagrok.ai/js/samples/grid/resize/resize-columns} */
   get width(): number { return api.grok_GridColumn_Get_Width(this.dart); }
   set width(x: number) { api.grok_GridColumn_Set_Width(this.dart, x); }
 
-  /** Background column as a 4-byte ARGB number. */
-  get backColor(): Color { return api.grok_GridColumn_Get_BackColor(this.dart); }
-  set backColor(x: Color) { api.grok_GridColumn_Set_BackColor(this.dart, x); }
+  /** Background color as a 4-byte ARGB number (see {@link Color}). */
+  get backColor(): number { return api.grok_GridColumn_Get_BackColor(this.dart); }
+  set backColor(x: number) { api.grok_GridColumn_Set_BackColor(this.dart, x); }
 
   /** Column format.
-   * Sample: {@link https://public.datagrok.ai/js/samples/grid/html-markup-cells} */
+   * Sample: {@link https://public.datagrok.ai/js/samples/grid/html-cells/html-markup-cells} */
   get format(): string { return api.grok_GridColumn_Get_Format(this.dart); }
   set format(x: string) { api.grok_GridColumn_Set_Format(this.dart, x); }
 
@@ -736,7 +741,7 @@ export class GridColumn<TData = any> {
   set visible(x: boolean) { api.grok_GridColumn_Set_Visible(this.dart, x); }
 
   /** Custom colors for categories.
-   * Sample: {@link https://public.datagrok.ai/js/samples/grid/category-colors}
+   * Sample: {@link https://public.datagrok.ai/js/samples/grid/color-coding/category-colors}
    *  @returns {Object.<string, number>} */
   get categoryColors(): { [s: string]: number } { return api.grok_GridColumn_Get_CategoryColors(this.dart); }
   set categoryColors(x: { [s: string]: number }) { api.grok_GridColumn_Set_CategoryColors(this.dart, x); }
@@ -838,14 +843,14 @@ export class GridColumnList {
   }
 
   /** Sets column order.
-   * Sample: {@link https://public.datagrok.ai/js/samples/grid/order-columns}
+   * Sample: {@link https://public.datagrok.ai/js/samples/grid/order/order-columns}
    *  @param {string[]} columnNames - Order of columns. */
   setOrder(columnNames: string[]): void {
     api.grok_GridColumnList_SetOrder(this.dart, columnNames);
   }
 
   /** Shows the specified columns (and hides the rest).
-   * Sample: {@link https://public.datagrok.ai/js/samples/grid/hide-columns}
+   * Sample: {@link https://public.datagrok.ai/js/samples/grid/resize/hide-columns}
    *  @param {string[]} columnNames - Names of the columns to show. */
   setVisible(columnNames: string[]): void {
     api.grok_GridColumnList_SetVisible(this.dart, columnNames);
@@ -970,8 +975,9 @@ export class Grid extends Viewer<IGridSettings> {
   }
 
   /**
-   * Occurs after the grid cell has been rendered. Do `args.preventDefault()` to prevent standard rendering.
-   * Sample: {@link https://public.datagrok.ai/js/samples/grid/custom-cell-rendering-indexes}
+   * Occurs before the grid cell is rendered. Call `args.preventDefault()` to suppress the standard
+   * rendering and draw your own via `args.g` within `args.bounds`.
+   * Sample: {@link https://public.datagrok.ai/js/samples/grid/events/custom-cell-rendering-indexes}
    * See also {@link onCellRendered}. */
   get onCellRender(): Observable<GridCellRenderArgs> {
     return __obs('d4-grid-cell-render', this.dart);
@@ -1001,7 +1007,7 @@ export class Grid extends Viewer<IGridSettings> {
   get sortTypes(): boolean[] { return api.grok_Grid_Get_SortTypes(this.dart); }
 
   /**
-   * Sample: {@link https://public.datagrok.ai/js/samples/grid/custom-cell-prepare}
+   * Sample: {@link https://public.datagrok.ai/js/samples/grid/events/custom-cell-prepare}
    */
   onCellPrepare(callback: (cell: GridCell) => any): StreamSubscription {
     return _sub(api.grok_Grid_OnCellPrepare(this.dart, (dcell: any) => {
@@ -1010,7 +1016,7 @@ export class Grid extends Viewer<IGridSettings> {
   }
 
   /**
-   * Sample: {@link https://public.datagrok.ai/js/samples/grid/custom-cell-tooltip}
+   * Sample: {@link https://public.datagrok.ai/js/samples/grid/events/custom-cell-tooltip}
    */
   onCellTooltip(callback: (cell: GridCell, x: number, y: number) => any): StreamSubscription {
     return _sub(api.grok_Grid_OnCellTooltip(this.dart, (dcell: any, x: any, y: any) => {
@@ -1019,21 +1025,21 @@ export class Grid extends Viewer<IGridSettings> {
   }
 
   /** Returns a grid cell at the specified position, or null if there is none.
-   * Sample: {@link https://public.datagrok.ai/js/samples/grid/hit-test} */
+   * Sample: {@link https://public.datagrok.ai/js/samples/grid/advanced/hit-test} */
   hitTest(x: number, y: number): GridCell | null {
     return toJs(api.grok_Grid_HitTest(this.dart, x, y));
   }
 
-  /** Sorts rows by the specified [columnIds].
-   *  Specify sort directions via [asc] array (true = ascending, false = descending)
-   *  If [asc] is not specified, sorts in ascending order. */
+  /** Sorts rows by the specified [columns] (names or objects).
+   *  Specify sort directions via the [orders] array (true = ascending, false = descending);
+   *  when [orders] is omitted, sorts in ascending order. */
   sort(columns: string[] | Column[], orders: boolean[] | null = null): Grid {
     api.grok_Grid_Sort(this.dart, (columns as any[]).map((c: string | Column) => c instanceof Column ? c.dart : c), orders);
     return this;
   }
 
   /** Sorts the rows, using the specified comparer that accepts indexes.
-   * Sample: {@link https://public.datagrok.ai/js/samples/grid/order-rows-by-comparer}
+   * Sample: {@link https://public.datagrok.ai/js/samples/grid/order/order-rows-by-comparer}
    * Also, @see setRowOrder */
   sortIndexes(indexComparer: (a: number, b: number) => number): Grid {
     let indexes = _identityInt32(this.table.rowCount);
@@ -1048,7 +1054,7 @@ export class Grid extends Viewer<IGridSettings> {
   }
 
   /** Sets the order or rows in the table.
-   * Sample: {@link https://public.datagrok.ai/js/samples/grid/order-rows}
+   * Sample: {@link https://public.datagrok.ai/js/samples/grid/order/order-rows}
    * Also, @see sortIndexes */
   setRowOrder(indexes: number[]): Grid {
     api.grok_Grid_SetRowOrder(this.dart, indexes);
@@ -1062,14 +1068,14 @@ export class Grid extends Viewer<IGridSettings> {
   }
 
   /** Returns a grid cell at the specified position.
-   * Sample: {@link https://public.datagrok.ai/js/samples/grid/scroll-to-cell}
+   * Sample: {@link https://public.datagrok.ai/js/samples/grid/navigate/scroll-to-cell}
    */
   scrollToCell(column: string | Column, row: number): void {
     api.grok_Grid_ScrollToCell(this.dart, toDart(column), row);
   }
 
   /** Scrolls the grid to the specified position.
-   * Sample: {@link https://public.datagrok.ai/js/samples/grid/scroll-to-pixels}
+   * Sample: {@link https://public.datagrok.ai/js/samples/grid/navigate/scroll-to-pixels}
    */
   scrollToPixels(x: number, y: number): void {
     api.grok_Grid_ScrollToPixels(this.dart, x, y);
@@ -1081,7 +1087,7 @@ export class Grid extends Viewer<IGridSettings> {
   invalidate(): void { api.grok_Grid_Invalidate(this.dart); }
 
   /** Vertical scroll bar.
-   * Sample: {@link https://public.datagrok.ai/js/samples/grid/scroll-bars}
+   * Sample: {@link https://public.datagrok.ai/js/samples/grid/navigate/scroll-bars}
    */
   get vertScroll(): RangeSlider {
     return toJs(api.grok_Grid_Get_VertScroll(this.dart));
@@ -1118,16 +1124,16 @@ export class Grid extends Viewer<IGridSettings> {
   }
 
   /**
-   * Sample: {@link https://public.datagrok.ai/js/samples/grid/resize-events}
+   * Sample: {@link https://public.datagrok.ai/js/samples/grid/resize/resize-events}
    */
   get onColumnResized(): Observable<any> {
     return __obs('d4-grid-column-resized', this.dart);
   }
 
-  /** Sample: {@link https://public.datagrok.ai/js/samples/grid/resize-events} */
+  /** Sample: {@link https://public.datagrok.ai/js/samples/grid/resize/resize-events} */
   get onRowsResized(): Observable<any> { return __obs('d4-grid-rows-resized', this.dart); }
 
-  /** Sample: {@link https://public.datagrok.ai/js/samples/grid/order-rows} */
+  /** Sample: {@link https://public.datagrok.ai/js/samples/grid/order/order-rows} */
   get onRowsSorted(): Observable<any> { return __obs('d4-grid-rows-sorted', this.dart); }
   get onPinnedRowsChanged(): Observable<any> { return __obs('d4-grid-pinned_rows-changed', this.dart); }
 
@@ -1199,7 +1205,7 @@ export class GridCellStyle {
   get marker(): string { return api.grok_GridCellStyle_Get_Marker(this.dart) ?? ''; }
   set marker(x: string) { api.grok_GridCellStyle_Set_Marker(this.dart, x); }
 
-  get marginLeft(): number { return api.grok_GridCellStyle_Get_MarginLeft(this.dart) ?? ''; }
+  get marginLeft(): number { return api.grok_GridCellStyle_Get_MarginLeft(this.dart) ?? 0; }
   set marginLeft(x: number) { api.grok_GridCellStyle_Set_MarginLeft(this.dart, x); }
 
   /** Text color (RGBA-encoded) */
@@ -1247,7 +1253,8 @@ export class GridCellRenderArgs extends EventData {
 
   /** Cell bounds to render to. */
   get bounds(): Rect {
-    return api.grok_GridCellRenderArgs_Get_Bounds(this.dart);
+    const b = api.grok_GridCellRenderArgs_Get_Bounds(this.dart);
+    return new Rect(b.x, b.y, b.width, b.height);
   }
 }
 

@@ -96,7 +96,7 @@ export class ObjectPropertyBag {
         return props.getProperties().map((p: Property) => p.name);
       },
       has(target: any, name: string) {
-        return props.getProperties().find((p: Property) => p.name === name) !== null;
+        return props.getProperties().find((p: Property) => p.name === name) !== undefined;
       },
       getOwnPropertyDescriptor(target: any, key: any) {
         return {

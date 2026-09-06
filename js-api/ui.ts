@@ -145,10 +145,7 @@ export function _backColor(x: HTMLElement, s: string): HTMLElement {
   return x;
 }
 
-/**
- * @param {number} height
- * @param {number} width
- * @returns {HTMLCanvasElement} */
+/** Creates a canvas element, optionally sized to `width` × `height` pixels (both CSS and bitmap size). */
 export function canvas(width: number | null = null, height: number | null = null): HTMLCanvasElement {
   let result = element('CANVAS');
   if (height != null && width != null) {
@@ -278,7 +275,7 @@ export function iconImage(name: string, path: string,
   i.classList.add('grok-icon');
   i.classList.add('image-icon');
   if (!path.startsWith('http') && !path.startsWith('/') && !path.startsWith('data:'))
-    path = '/images/$path';
+    path = `/images/${path}`;
   i.style.backgroundImage = `url(${path})`;
   if (handler !== null)
     i.addEventListener('click', handler);
@@ -565,9 +562,7 @@ export function tableFromProperties(items: any[], properties: Property[]) {
 }
 
 /** Creates a visual table based on [items] and [renderer].
- * BE WARE: Indexing in the renderer function, due to HTML being totally awesome starts from 1, not 0.
- * Because... What's a better way to make developers life miserable, right?
-*/
+ * Note: the `ind` passed to [renderer] is 1-based (HTML table row indexing), not 0-based. */
 export function table<T>(items: T[], renderer: ((item: T, ind: number) => any) | null, columnNames: string[] | null = null): HTMLTableElement {
   return toJs(api.grok_HtmlTable(items, renderer !== null ? (object: any, ind: number) => renderer(toJs(object), ind) : null, columnNames)).root;
 }
@@ -1187,7 +1182,7 @@ export namespace input {
   }
 
 
-  export function userGroups(name: string, options?: TagsInputConfig<User[]>): InputBase<User[] | null> {
+  export function userGroups(name: string, options?: TagsInputConfig<Group[]>): InputBase<Group[] | null> {
     return _create(d4.InputType.UserGroups, name, options);
   }
 
@@ -1319,7 +1314,7 @@ export class tools {
 
   static sendKeyboardEvent(el: HTMLElement , keyCode: number) {
     const opts = {
-      keyCode: 37,
+      keyCode: keyCode,
       bubbles: true,
       cancelable: true,
     };
@@ -1904,7 +1899,6 @@ export class ObjectHandler<T = any> {
    * @param run - a function that takes exactly one parameter
    * */
   registerParamFunc(name: string, run: (param: any) => any): void {
-    // @ts-ignore
     new Functions().registerParamFunc(name, this.type, run, this.isApplicable);
   }
 }
@@ -1950,10 +1944,8 @@ export function box(item: Widget | InputBase | HTMLElement | null = null, option
   if (item instanceof Widget) {
     item = item.root;
   }
-  if (item instanceof InputBase) {
-    console.log('inputbase');
+  if (item instanceof InputBase)
     item = item.root;
-  }
   if (item != null && $(item).hasClass('ui-box')) {
     return item as HTMLDivElement;
   }
@@ -2340,6 +2332,8 @@ export namespace forms {
   }
 }
 
+/** Creates a form: a vertical list of labeled inputs with auto-sized labels.
+ * `autosize` is accepted for compatibility and ignored. */
 export function form(inputs: InputBase[], options: {} | null = null, autosize: boolean = true): HTMLElement {
   const form = InputForm.forInputs(inputs);
   const d = form.root;
