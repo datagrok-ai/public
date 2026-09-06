@@ -6,10 +6,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# uv from PyPI, not a ghcr.io cross-registry COPY: every other image in this
-# package builds from Docker Hub plus PyPI and succeeds on the CI stand, while
-# this one never produced an image (builds #120-#124).
-RUN pip install --no-cache-dir uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
 RUN useradd -m datagrok
 
