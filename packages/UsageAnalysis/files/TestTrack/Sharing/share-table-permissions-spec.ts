@@ -67,34 +67,9 @@ async function pollPermission(
 }
 
 async function openAdvancedEditorToPermissionsRoute(page: Page, tableId: string) {
-  const label = page.locator('[name="label-Advanced-editor..."]');
-  await label.waitFor({state: 'visible', timeout: 15_000});
-  
-  await expect.poll(async () => page.evaluate(() => {
-    const e = document.querySelector('[name="label-Advanced-editor..."]') as HTMLElement | null;
-    if (!e) return false;
-    const r = e.getBoundingClientRect();
-    return e.offsetParent !== null && r.width > 0 && r.height > 0;
-  }), {timeout: 15_000, intervals: [200, 400, 800]}).toBe(true);
-
-  
-  
-  const uiDeadline = Date.now() + 8_000;
-  while (Date.now() < uiDeadline) {
-    const onPermRoute = await page.evaluate(() => /\/permissions\/[0-9a-f-]+/.test(window.location.href));
-    if (onPermRoute) return;
-    const advStillThere = await page.locator('[name="label-Advanced-editor..."]').count();
-    if (advStillThere > 0)
-      await page.locator('[name="label-Advanced-editor..."]').dispatchEvent('click').catch(() => {});
-    try {
-      await page.waitForFunction(() => /\/permissions\/[0-9a-f-]+/.test(window.location.href),
-        null, {timeout: 2_000});
-      return; 
-    } catch (_) {  }
-  }
-
-  
-  
+  // The `Advanced editor...` link was removed from the Share dialog by cf12c6c96c
+  // (GROK-20322, umbrella sharing UI); PermissionsView itself is unchanged, so route to it
+  // directly instead of waiting on an element the dialog no longer renders.
   await page.evaluate((id) => { try { grok.shell.route(`/permissions/${id}`); } catch (_) {  } }, tableId);
   await page.waitForFunction(() => /\/permissions\/[0-9a-f-]+/.test(window.location.href),
     null, {timeout: 15_000});
@@ -195,7 +170,6 @@ test('Sharing & Permissions — Table', async ({page}) => {
     await expect(dlg.locator('.d4-dialog-title')).toContainText('Share');
     await expect(page.locator('input[placeholder="User, group, or email"]')).toBeVisible();
     await expect(page.locator('[name="div-share-selector"]')).toBeVisible();
-    await expect(page.locator('[name="label-Advanced-editor..."]')).toBeVisible();
     await expect(page.locator('[name="button-OK"]')).toBeVisible();
     await expect(page.locator('[name="button-CANCEL"]')).toBeVisible();
     

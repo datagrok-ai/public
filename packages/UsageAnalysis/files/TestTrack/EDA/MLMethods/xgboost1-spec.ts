@@ -1,22 +1,10 @@
-import {test, expect, chromium} from '@playwright/test';
-import {specTestOptions, softStep, stepErrors} from '../../spec-login';
+import {test, expect} from '@playwright/test';
+import {specTestOptions, softStep, stepErrors, loginToDatagrok} from '../../spec-login';
 
 test.use(specTestOptions);
 
-const baseUrl = process.env.DATAGROK_URL ?? 'https://dev.datagrok.ai';
-
-test('XGBoost 1: Classification on iris.csv', async () => {
-  const browser = await chromium.connectOverCDP('http://localhost:9222');
-  const context = browser.contexts()[0];
-  let page = context.pages().find(p => p.url().includes('datagrok'));
-  if (!page) {
-    page = await context.newPage();
-    await page.goto(baseUrl, {waitUntil: 'networkidle', timeout: 60000});
-    await page.waitForFunction(() => {
-      try { return typeof grok !== 'undefined' && typeof grok.shell.closeAll === 'function'; }
-      catch { return false; }
-    }, {timeout: 45000});
-  }
+test('XGBoost 1: Classification on iris.csv', async ({page}) => {
+  await loginToDatagrok(page);
 
   // Step 1: Open iris.csv
   await softStep('Open iris.csv', async () => {
@@ -44,7 +32,8 @@ test('XGBoost 1: Classification on iris.csv', async () => {
       const df = grok.shell.tv.dataFrame;
       const subDf = df.clone(null, ['Sepal.Length', 'Sepal.Width', 'Petal.Length', 'Petal.Width', 'Species']);
       const result = await grok.functions.call('eda:trainXGBooster', {
-        df: subDf, predictColumn: subDf.col('Species')
+        df: subDf, predictColumn: subDf.col('Species'),
+        iterations: 20, eta: 0.3, maxDepth: 6, lambda: 1, alpha: 0
       });
       return {success: result != null};
     });

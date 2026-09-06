@@ -353,13 +353,19 @@ test('Legend visibility and positioning', async ({page}) => {
   // Sc11: project round-trip (FK graceful-degrade).
   let projectId: string | null = null;
   await softStep('Sc11 steps 1-3: project save+close+reopen (FK graceful-degrade)', async () => {
-    const res = await page.evaluate(async () => {
+    const res = await page.evaluate(async (lid: string | null) => {
       let pid: string | null = null;
       try {
         const DG = (window as any).DG;
         const proj = DG.Project.create();
         proj.name = 'LegendVPProj_' + Date.now();
-        proj.addChild((window as any).grok.shell.tv.dataFrame);
+        const df = (window as any).grok.shell.tv.dataFrame;
+        const tableInfo = df.getTableInfo();
+        proj.addChild(tableInfo);
+        // The relation points at the table ENTITY, so it has to exist server-side before the
+        // project is saved — otherwise project_relations.entity_id has nothing to reference.
+        await (window as any).grok.dapi.tables.uploadDataFrame(df);
+        await (window as any).grok.dapi.tables.save(tableInfo);
         const saved = await (window as any).grok.dapi.projects.save(proj);
         pid = saved.id;
       } catch (e: any) {
@@ -376,10 +382,20 @@ test('Legend visibility and positioning', async ({page}) => {
       await new Promise((r) => setTimeout(r, 3500));
       const tv = (window as any).grok.shell.tv;
       if (!tv) return {phase: 'reopen', ok: false, error: 'no tv after reopen', projectId: pid};
+      // A programmatically saved project carries the table but no view layout — Project.layout
+      // is only populated by the interactive save dialog — so the viewers do not come back on
+      // their own. Re-apply the layout this spec saved earlier, which is the supported way to
+      // restore viewer state, before asserting on it.
+      if (lid) {
+        try {
+          tv.loadLayout(await (window as any).grok.dapi.layouts.find(lid));
+          await new Promise((r) => setTimeout(r, 2500));
+        } catch (_) { /* fall through to the assertions below */ }
+      }
       const sp = tv.viewers.find((x: any) => x.type === 'Scatter plot');
       return {phase: 'verified', ok: true, projectId: pid,
         vis: sp?.props?.legendVisibility, pos: sp?.props?.legendPosition};
-    });
+    }, layoutId3);
     expect(res.ok, res.ok ? '' : `project save+reopen failed in phase '${res.phase}': ${res.error}`).toBe(true);
     projectId = res.projectId ?? null;
     expect(res.vis).toBeTruthy();

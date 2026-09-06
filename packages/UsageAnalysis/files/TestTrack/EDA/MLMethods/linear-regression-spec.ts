@@ -1,22 +1,10 @@
-import {test, expect, chromium} from '@playwright/test';
-import {specTestOptions, softStep, stepErrors} from '../../spec-login';
+import {test, expect} from '@playwright/test';
+import {specTestOptions, softStep, stepErrors, loginToDatagrok} from '../../spec-login';
 
 test.use(specTestOptions);
 
-const baseUrl = process.env.DATAGROK_URL ?? 'https://dev.datagrok.ai';
-
-test('Linear Regression: Train on cars.csv', async () => {
-  const browser = await chromium.connectOverCDP('http://localhost:9222');
-  const context = browser.contexts()[0];
-  let page = context.pages().find(p => p.url().includes('datagrok'));
-  if (!page) {
-    page = await context.newPage();
-    await page.goto(baseUrl, {waitUntil: 'networkidle', timeout: 60000});
-    await page.waitForFunction(() => {
-      try { return typeof grok !== 'undefined' && typeof grok.shell.closeAll === 'function'; }
-      catch { return false; }
-    }, {timeout: 45000});
-  }
+test('Linear Regression: Train on cars.csv', async ({page}) => {
+  await loginToDatagrok(page);
 
   // Step 1: Open cars.csv
   await softStep('Open cars.csv', async () => {
@@ -83,8 +71,15 @@ test('Linear Regression: Train on cars.csv', async () => {
       Array.from(grok.shell.views).filter(v => v.type === 'PredictiveModel').forEach(v => v.close());
       // Train directly via eda:trainLinearRegression
       const df = grok.shell.tv.dataFrame;
+      const numCols: string[] = [];
+      for (let i = 0; i < df.columns.length; i++) {
+        const c = df.columns.byIndex(i);
+        if (c.type !== 'string') numCols.push(c.name);
+      }
+      const numDf = df.clone(null, numCols);
       const result = await grok.functions.call('eda:trainLinearRegression', {
-        df: df, predictColumn: df.col('price')
+        df: numDf, predictColumn: numDf.col('price'),
+        rate: 0.1, iterations: 1000, alpha: 0, lambda: 0
       });
       return {success: result != null};
     });

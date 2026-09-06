@@ -105,7 +105,13 @@ test('Legend scatterplot — Color + Marker combined', async ({page}) => {
         const DG = (window as any).DG;
         const proj = DG.Project.create();
         proj.name = 'ScatterCombinedProj_' + Date.now();
-        proj.addChild((window as any).grok.shell.tv.dataFrame);
+        const df = (window as any).grok.shell.tv.dataFrame;
+        const tableInfo = df.getTableInfo();
+        proj.addChild(tableInfo);
+        // The relation points at the table ENTITY, so it has to exist server-side before the
+        // project is saved — otherwise project_relations.entity_id has nothing to reference.
+        await (window as any).grok.dapi.tables.uploadDataFrame(df);
+        await (window as any).grok.dapi.tables.save(tableInfo);
         const saved = await (window as any).grok.dapi.projects.save(proj);
         pid = saved.id;
       } catch (e: any) {
@@ -139,6 +145,12 @@ test('Legend scatterplot — Color + Marker combined', async ({page}) => {
         await new Promise((r) => setTimeout(r, 800));
       }
       const tv2 = (window as any).grok.shell.tv;
+      // The Sc1 reopen above restores the table but not the viewers, so re-add the scatter
+      // plot before driving its legend.
+      if (!tv2.viewers.find((x: any) => x.type === 'Scatter plot')) {
+        tv2.addViewer('Scatter plot');
+        await new Promise((r) => setTimeout(r, 1200));
+      }
       const df = tv2.dataFrame;
       try { await df.columns.addNewCalculated('testCat', "if(${Stereo Category}=='S_UNKN', null, ${Series})"); } catch (_) {}
       await new Promise((r) => setTimeout(r, 1500));
@@ -526,7 +538,13 @@ test('Legend scatterplot — grid color coding linear/categorical', async ({page
         const DG = (window as any).DG;
         const proj = DG.Project.create();
         proj.name = 'ScatterGridColorProj_' + Date.now();
-        proj.addChild((window as any).grok.shell.tv.dataFrame);
+        const df = (window as any).grok.shell.tv.dataFrame;
+        const tableInfo = df.getTableInfo();
+        proj.addChild(tableInfo);
+        // The relation points at the table ENTITY, so it has to exist server-side before the
+        // project is saved — otherwise project_relations.entity_id has nothing to reference.
+        await (window as any).grok.dapi.tables.uploadDataFrame(df);
+        await (window as any).grok.dapi.tables.save(tableInfo);
         const saved = await (window as any).grok.dapi.projects.save(proj);
         pid = saved.id;
       } catch (e: any) {
