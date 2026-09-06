@@ -45,6 +45,8 @@ never from a component's file path.
 
 ## Install
 
+Not on npm yet — packages in this repo depend on it by relative path (`"@datagrok-libraries/u2": "../../libraries/u2"`) and install with `--install-links=false`.
+
 ```bash
 npm install @datagrok-libraries/u2
 ```
