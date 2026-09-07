@@ -107,6 +107,16 @@ describe('files, jobs, notebooks and models', () => {
 });
 
 describe('untransferableReason', () => {
+  it('leaves the platform its own projects — package namespaces and entity wrappers', () => {
+    expect(untransferableReason('Project', {name: 'Chem', isPackage: true, isRoot: true, isEntity: true}))
+      .toEqual({action: 'info', reason: 'platform_project'});
+    expect(untransferableReason('Project', {name: 'Categories', isEntity: true}))
+      .toEqual({action: 'info', reason: 'platform_project'});
+    // A space and a dashboard are content, and carry neither flag.
+    expect(untransferableReason('Project', {name: 'Team 1', isRoot: true})).toBeNull();
+    expect(untransferableReason('Project', {name: 'Sales', isDashboard: true})).toBeNull();
+  });
+
   it('leaves the seeded groups to the instance that owns them, by id', () => {
     expect(untransferableReason('UserGroup', {id: 'a4b45840-9a50-11e6-9cc9-8546b8bf62e6', name: 'AllUsers'}))
       .toEqual({action: 'info', reason: 'platform_group'});

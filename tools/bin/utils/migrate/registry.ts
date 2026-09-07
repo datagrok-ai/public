@@ -60,6 +60,12 @@ export const isBuiltinGroup = (g: any): boolean => BUILTIN_GROUP_IDS.has(String(
  * connection, and the personal `Home` share belong to the instance, not to the content.
  */
 export function untransferableReason(type: string, json: any): {action: 'warn' | 'info'; reason: string} | null {
+  // A project the platform keeps for something else — the namespace an installed package occupies,
+  // or the wrapper it maintains around a saved entity. The target builds its own, and a pushed one
+  // is accepted and then simply not there (113 of them on a real 1.27 → 1.27 push). Its own space
+  // listing draws the same line: `isDashboard = false and isEntity = false`.
+  if (type === 'Project' && (json?.isEntity === true || json?.isPackage === true))
+    return {action: 'info', reason: 'platform_project'};
   if (type === 'UserGroup')
     return isBuiltinGroup(json) ? {action: 'info', reason: 'platform_group'} : null;
   if (type !== 'DataConnection') return null;

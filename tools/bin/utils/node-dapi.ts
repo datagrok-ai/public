@@ -186,7 +186,13 @@ export class NodeApiClient {
     const res = await fetchOrRetry(`${this.baseUrl}${path}`, {headers: {'Authorization': this.token}}, true, BYTES_TIMEOUT_MS);
     if (!res.ok)
       await throwHttpError(res);
-    return Buffer.from(await res.arrayBuffer());
+    const bytes = Buffer.from(await res.arrayBuffer());
+    // A table whose data file is missing answers 200 — as text/plain — with an ApiError body.
+    // Writing that into the bundle ships an error message as a table and only fails on the far
+    // stand at push time; d42 never starts with `{`, so an envelope here is an error, not data.
+    if (bytes[0] === 0x7B)
+      throwIfApiError(bytes.toString('utf8'));
+    return bytes;
   }
 }
 
