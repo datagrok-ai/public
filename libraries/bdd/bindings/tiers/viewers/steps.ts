@@ -9,6 +9,7 @@
 import {expect, Page} from '@playwright/test';
 import {Given, Then, When} from '../../../src/registry.js';
 import type {ElementRef} from '../../../src/runtime/args.js';
+import {normalizeKey} from '../../../src/runtime/gestures.js';
 import {takeErrors} from '../../../src/runtime/harness.js';
 import * as v from '../../../src/runtime/viewers.js';
 
@@ -53,6 +54,16 @@ export const propertyShouldBe = Then('{string} property of {widget} should be {s
 export const propertyShouldNotBe = Then('{string} property of {widget} should not be {string}', (page: Page, caption: string, target: ElementRef, value: string) =>
   v.expectProperty(page, target, caption, value, true));
 
+export const propertiesShouldBe = Then('properties of {widget} should be:', async (page: Page, target: ElementRef, table: string[][]) => {
+  for (const [caption, value] of table)
+    await v.expectProperty(page, target, caption, value);
+}, {description: '| property caption | value | rows, each read back through the property bag'});
+
+export const saveLayout = When('user saves the layout of the current table view', (page: Page) => v.saveLayout(page),
+  {tier: 'api', description: 'tv.saveLayout(), kept for "loads the saved layout" later in the feature'});
+
+export const loadLayout = When('user loads the saved layout', (page: Page) => v.loadLayout(page), {tier: 'api'});
+
 // --- context menus and hit areas ------------------------------------------------------------------
 
 export const pickFromContextMenu = When('user picks {string} from the context menu of {element}', async (page: Page, path: string, target: ElementRef) => {
@@ -87,10 +98,27 @@ export const doubleClickArea = When('user double-clicks on the {string} area of 
 }, {tier: 'ui'});
 
 export const hoverArea = When('user hovers over the {string} area of {widget}', async (page: Page, area: string, target: ElementRef) => {
-  const c = v.centerOf(await v.hitArea(page, target, area));
+  const c = v.centerOf(await v.hitArea(page, target, area, true));
   await page.mouse.move(c.x - 3, c.y - 3);
   await page.mouse.move(c.x, c.y);
-}, {tier: 'ui'});
+}, {tier: 'ui', description: 'snapshots the canvas first, so "should not have repainted" can follow'});
+
+export const clickAreaHolding = When('user clicks on the {string} area of {widget} holding {key}', async (page: Page, area: string, target: ElementRef, key: string) => {
+  const c = v.centerOf(await v.hitArea(page, target, area, true));
+  await page.keyboard.down(normalizeKey(key));
+  await page.mouse.click(c.x, c.y);
+  await page.keyboard.up(normalizeKey(key));
+}, {tier: 'ui', description: 'a click with a modifier held: Control adds to the selection, Shift extends it'});
+
+export const dragSelectionOverArea = When('user drags a selection box over the {string} area of {widget}', async (page: Page, area: string, target: ElementRef) => {
+  const b = await v.hitArea(page, target, area, true);
+  await page.keyboard.down('Shift');
+  await page.mouse.move(b.x + b.width * 0.1, b.y + b.height * 0.1);
+  await page.mouse.down();
+  await page.mouse.move(b.x + b.width * 0.9, b.y + b.height * 0.9, {steps: 3});
+  await page.mouse.up();
+  await page.keyboard.up('Shift');
+}, {tier: 'ui', description: 'a Shift-drag across the inner 80% of the area — the platform\'s rectangle selection'});
 
 export const pointerAway = When('user moves the pointer away from {element}', async (page: Page, target: ElementRef) => {
   const box = await (await v.viewerLocator(page, target)).boundingBox();
@@ -126,6 +154,52 @@ export const moreInk = Then('{widget} should have more ink than before', (page: 
 export const painted = Then('{widget} should be painted', (page: Page, target: ElementRef) => v.expectInk(page, target, 'some'),
   {description: 'the canvas has painted pixels'});
 
+export const notRepainted = Then('{widget} should not have repainted', (page: Page, target: ElementRef) => v.expectNotRepainted(page, target),
+  {description: 'no render event and no canvas change since the snapshot before the last gesture, read after the frame a repaint would land on'});
+
+export const paintedInColors = Then('{widget} should be painted in at least {int} colors', (page: Page, target: ElementRef, count: number) =>
+  v.expectPalette(page, target, count), {description: 'distinct colors covering 500 pixels or more, white aside'});
+
+export const areaPainted = Then('the {string} area of {widget} should be painted', (page: Page, area: string, target: ElementRef) =>
+  v.expectAreaPainted(page, target, area), {description: 'painted pixels inside a hit area the viewer reports ("M values", "bar Asian")'});
+
+export const hasArea = Then('{widget} should have a(n) {string} area', (page: Page, target: ElementRef, area: string) => v.expectHasArea(page, target, area),
+  {description: 'the viewer reports the hit area right now — the statistics strip, a category, a comparison row'});
+
+export const hasNoArea = Then('{widget} should not have a(n) {string} area', (page: Page, target: ElementRef, area: string) =>
+  v.expectHasArea(page, target, area, true));
+
+export const moreHighlight = Then('{widget} should show more selection highlight than before', (page: Page, target: ElementRef) =>
+  v.expectHighlight(page, target, 'more'), {description: 'more pixels in the selected-rows color than the snapshot before the last change'});
+
+export const lessHighlight = Then('{widget} should show less selection highlight than before', (page: Page, target: ElementRef) =>
+  v.expectHighlight(page, target, 'less'));
+
+export const someHighlight = Then('{widget} should show a selection highlight', (page: Page, target: ElementRef) => v.expectHighlight(page, target, 'some'),
+  {description: 'pixels in the selected-rows color'});
+
+export const noHighlight = Then('{widget} should show no selection highlight', (page: Page, target: ElementRef) => v.expectHighlight(page, target, 'none'),
+  {description: 'not one pixel in the selected-rows color'});
+
+// --- the value range ---------------------------------------------------------------------------------
+
+export const narrowerRange = Then('{widget} should show a narrower value range than before', (page: Page, target: ElementRef) =>
+  v.expectValueRange(page, target, 'narrower'), {description: 'the viewport the viewer reports, against the snapshot before the last change'});
+
+export const sameRange = Then('{widget} should show the same value range as before', (page: Page, target: ElementRef) =>
+  v.expectValueRange(page, target, 'same'));
+
+export const widerRange = Then('{widget} should show a wider value range than before', (page: Page, target: ElementRef) =>
+  v.expectValueRange(page, target, 'wider'));
+
+export const rangeWithinColumn = Then('the value range of {widget} should lie within {string} column', (page: Page, target: ElementRef, column: string) =>
+  v.expectValueRangeWithin(page, target, column), {description: 'no empty space beyond the column\'s min and max (a tenth of slack)'});
+
+export const rememberRange = When('user remembers the value range of {widget}', (page: Page, target: ElementRef) => v.rememberRange(page, target),
+  {tier: 'api', description: 'kept by viewer type, so "the remembered value range" holds across a close and a reopen (a project round-trip)'});
+
+export const rememberedRange = Then('{widget} should show the remembered value range', (page: Page, target: ElementRef) => v.expectRememberedRange(page, target));
+
 // --- events and errors -----------------------------------------------------------------------------
 
 export const listenFor = Given('user listens for {string} event on {widget}', (page: Page, event: string, target: ElementRef) =>
@@ -134,9 +208,17 @@ export const listenFor = Given('user listens for {string} event on {widget}', (p
 export const eventFired = Then('{string} event should have fired on {widget}', (page: Page, event: string, target: ElementRef) =>
   v.expectFired(page, target, event), {description: 'at least once since "listens for"; reading it ends the subscription'});
 
+export const eventNotFired = Then('{string} event should not have fired on {widget}', (page: Page, event: string, target: ElementRef) =>
+  v.expectNotFired(page, target, event), {description: 'not once since "listens for"; the subscription stays'});
+
 export const noErrors = Then('no errors should have been logged', (page: Page) => {
   expect(takeErrors(page), 'console errors and page errors since the last check').toEqual([]);
 }, {description: 'console errors and uncaught exceptions since the previous check (or the scenario start); checking clears them'});
+
+export const noBalloons = Then('no error or warning balloon should have been shown', async (page: Page) => {
+  const shown = (await v.takeBalloons(page)).filter((b) => b.type === 'error' || b.type === 'warning');
+  expect(shown.map((b) => `${b.type}: ${b.message}`), 'error and warning balloons since the last check').toEqual([]);
+}, {description: 'the platform\'s balloons (d4-balloon-shown) since the previous check or the login; checking clears them'});
 
 // --- tooltips --------------------------------------------------------------------------------------
 

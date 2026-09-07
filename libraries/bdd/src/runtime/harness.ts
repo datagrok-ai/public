@@ -67,6 +67,15 @@ const LEFTOVERS = '[data-u2="dialog"], [data-u2="menu"], [data-u2="tooltip"], [d
   '.d4-dialog, .d4-menu-popup, .d4-balloon, .d4-tooltip';
 
 const errors = new WeakMap<Page, string[]>();
+const cleanups = new WeakMap<Page, (() => Promise<void>)[]>();
+
+/** Runs when the feature's page closes, whatever its scenarios did — for state a step created on
+ * the server (a project, an uploaded table). */
+export function atFeatureEnd(page: Page, cleanup: () => Promise<void>): void {
+  const list = cleanups.get(page) ?? [];
+  cleanups.set(page, list);
+  list.push(cleanup);
+}
 
 /** Starts collecting the page's console errors and uncaught exceptions. */
 export function watchErrors(page: Page): void {
@@ -101,6 +110,10 @@ export function feature(test: Test, path = '', specUrl = ''): FeatureSession {
     }
   });
   test.afterAll(async () => {
+    if (page && !page.isClosed()) {
+      for (const cleanup of cleanups.get(page) ?? [])
+        await cleanup().catch((e) => console.warn(`cleanup failed: ${(e as Error).message}`));
+    }
     await page?.context().close().catch(() => undefined);
     page = undefined;
   });

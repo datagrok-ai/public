@@ -25,7 +25,7 @@ src/cli.ts         init | compile [--check] | lint | list-steps | run [playwrigh
 src/runtime/       args (el/ds/enter/leave), locate, gestures, assertions, harness (feature session + resetShell + error floor), viewers (in-page `window.__bdd`: immediate rendering, render settles, properties by caption, hit areas, canvas ink, context menus), global-setup, index
 src/index.ts       what package bindings import from '@datagrok-libraries/bdd'
 bindings/common/   parameter-types, kinds (ALL u2 data-u2 kinds + Dart conventions), steps, session — base, always loaded
-bindings/platform/ the shell: elements (reserved names), datasets, steps — base, always loaded
+bindings/platform/ the shell: elements (reserved names), datasets, steps (open a dataset, switch views, projects), data (the current table's selection, filter, rows, columns, colors, workspace tables) — base, always loaded
 bindings/tiers/<t>/ opt-in tiers (`viewers`: add/configure viewers, properties by caption, context menus and hit areas, canvas ink, events, the error floor); a project names them in bdd.config.json
 features/ generated/ bdd.config.json   the library's own project (platform smoke feature, tier viewers)
 playwright.config.ts  the one config every project runs with (BDD_ROOT → testDir/outputDir/storageState under the project)
@@ -35,7 +35,8 @@ tests/             node:test via tsx (nouns, compile, project, init)
 
 A package project: `<pkg>/bdd/{package.json {"type":"module"}, bdd.config.json, features/, bindings/,
 generated/}`; sample `packages/U2Demo/bdd`; the first production project is `packages/UsageAnalysis/bdd`
-(`features/viewers/box-plot.feature`, 13 scenarios, the whole of the old TestTrack box-plot spec).
+(`features/viewers/box-plot*.feature`: six journeys, 50 scenarios, the whole of the six TestTrack
+box plot specs under `files/TestTrack/Viewers/BoxPlot/` and their helpers, 63 s for all six).
 
 ## We test our own platform, not a black box
 
@@ -213,6 +214,31 @@ nobody filed.
   this); `user is logged in` does NOT await it — the lead's call, it would cost up to 3 s per
   feature — so a feature that depends on what an autostart sets up (a package's top menu, a
   registered editor) awaits it in its own step.
+- **The other five box plot specs became five journeys (2026-09-07 evening, 37 scenarios, 50 s;
+  all six run in 63 s)** and each hack they carried became a core name or signal:
+  `getWidgetStatus().hitAreas` gained `category <label>` / `<label> values` per category (the
+  pointer-select spec used to click candidate label-band offsets until one selected a whole
+  category), `p value of <group>` and `<effect> effect` under group comparison (the click that
+  opens the stats in the context panel), `p value` maps to the comparison's overall result when
+  the t-test box is gone; the bar chart got `getWidgetStatus` with `bar <category>`; the on-chart
+  comparison selects are `input-host-method` / `control-group` / `adjustment` / `baseline` (the
+  spec used to find them by their option values), the Simpson cue is `icon-simpson-warning`;
+  balloons fire `AppEvents.BALLOON_SHOWN` (`d4-balloon-shown`, args type/message — the balloons
+  helper was a MutationObserver over `body`), read by `no error or warning balloon should have
+  been shown`, cleared at login. The data steps (`platform/data.ts`: selection, filter, rows,
+  calculated columns, column colors, workspace tables) snapshot every viewer (`baselineAll`)
+  before they act. `properties of {widget} should be:` is the ladder's read-back. A project
+  round-trip saves through dapi with the view state of `saveLayout({saveWithData: true})` (a plain
+  `getInfo()` drops the viewport) and registers its deletion with `atFeatureEnd` (harness.ts).
+  `should not have repainted` is the canvas after one animation frame and one task: a mouse-over
+  runs a render pass that draws the same picture, so the render count is reported, not asserted.
+  Facts that cost a run each: the range slider's `max-handle` is the BOTTOM handle on an inverted
+  axis (drag whichever handle is higher), and the slider lays out only once the pointer entered
+  the axis strip; a viewer's title-bar close icon is `name="Close"`; `expectValue` on a `<select>`
+  is the option's text, not its value; the bare p-value hover DOES show the test name (the old
+  spec hovered the icon slot instead); the `T` key is `root.onKeyPress` on the viewer, so click
+  the plot before pressing; the ANCOVA table's control row has no p-value (do not assert
+  completeness there); `demog-1000`'s auto-picked category is DIS_POP.
 - **The error floor** (`harness.ts` `watchErrors`/`takeErrors`): console errors and page errors
   from page open; `user is logged in` clears what the stand logs while booting, `resetShell`
   clears the teardown's, `no errors should have been logged` reads and clears. `Failed to load

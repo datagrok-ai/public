@@ -5,7 +5,7 @@
 import type {Page} from '@playwright/test';
 import {Given} from '../../src/registry.js';
 import {takeErrors} from '../../src/runtime/harness.js';
-import {installViewerRuntime} from '../../src/runtime/viewers.js';
+import {installViewerRuntime, takeBalloons} from '../../src/runtime/viewers.js';
 
 declare const grok: any;
 
@@ -23,6 +23,8 @@ export const loggedIn = Given('user is logged in', async (page: Page) => {
   // closeAll re-adds the Home view asynchronously; a table opened before it lands ends up behind it
   await page.waitForFunction(() => grok.shell.v?.type === 'datagrok', null, {timeout: 60000});
   await installViewerRuntime(page);
-  // what the stand logs while booting (a broken package's autostart) is not the scenario's
+  // what the stand logs or shows while booting (a broken package's autostart, "Debugging
+  // packages") is not the scenario's
   takeErrors(page);
+  await takeBalloons(page);
 }, {tier: 'ui', description: 'the error floor starts here: "no errors should have been logged" counts from this step'});

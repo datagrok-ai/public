@@ -281,6 +281,28 @@ Then  {element} should be/become {state}  {element} should not be/become {state}
       the following elements should be {state}:  | element |
 Given user is logged in                   user opens {dataset} dataset          user waits for {element}
       user waits for {int} millisecond(s)   (a probe while writing a feature; a committed one needing it is missing a signal)
+When  user switches to (the ){string} table view   user closes all views
+      user saves the current view as project {string}   (deleted again when the feature ends)
+      user opens the {string} project
+```
+
+The current table's rows and columns (`bindings/platform/data.ts`), through the JS API the way a
+viewer sees them; a step that changes rows or colors snapshots every open viewer first, so the
+viewer checks that follow compare with the state before it:
+
+```
+When  user clears the row selection       user deletes the selected rows
+      user filters rows where {string} is between {float} and {float}    user filters out rows where {string} is {string}
+      user resets the filter              user adds a calculated column {string} with formula {string}
+      user removes {string} column        user removes the coloring of {string} column
+      user colors {string} column linearly from {string} to {string} (over {float} to {float})
+      user colors {string} column conditionally:  | range | color |     user colors {string} column categorically:  | category | color |
+Then  no/some rows should be selected     all/only/some/no rows where {string} is {string} should be selected
+      the table should have a current row   the table should have {int} row(s)   the table should have no rows where {string} is {string}
+      {int} row(s) should pass the filter   fewer than {int} rows should pass the filter   all rows should pass the filter
+      the filter should pass exactly the rows where {string} is between {float} and {float}
+      table {string} should be open       table {string} should have columns {string}    table {string} should have {int} row(s)
+      table {string} should have no missing values in {string} column
 ```
 
 States: visible, hidden, present, absent, enabled, disabled, checked, unchecked, selected, empty,
@@ -331,9 +353,10 @@ like any other; nothing to register.
 
 Viewers on the current table view, written the way the platform sees them — properties by their
 caption, context menus by their path, canvas regions by the names the viewer reports, repaints by
-the viewer's own render event. The first feature written with it is
-`packages/UsageAnalysis/bdd/features/viewers/box-plot.feature`: 13 scenarios, the whole of a
-hand-written Playwright spec, in 14 s as one `@journey`.
+the viewer's own render event. The first features written with it are the six box plot journeys
+under `packages/UsageAnalysis/bdd/features/viewers/` (property surface, group comparison,
+selection, filter, statistics and coloring, settings ladder): 50 scenarios, the whole of six
+hand-written Playwright specs and their helpers, in 63 s.
 
 ```gherkin
 Background:
@@ -361,23 +384,37 @@ When  user sets {string} property of {widget} to {string}       user sets proper
       user picks {string} from the context menu of the {string} area of {widget}
       user opens the context menu of {element}      user right-clicks on the {string} area of {widget}
       user closes the context menu                  user clicks / double-clicks / hovers over the {string} area of {widget}
+      user clicks on the {string} area of {widget} holding {key}    user drags a selection box over the {string} area of {widget}
       user moves the pointer away from {element}    user resizes {widget} to {int} by {int}    user resizes {widget} to {int} wide
-      user restores the size of {widget}            user takes a snapshot of {widget}
+      user restores the size of {widget}            user takes a snapshot of {widget}          user remembers the value range of {widget}
+      user saves the layout of the current table view   user loads the saved layout
 Then  {string} property of {widget} should be {string}          {string} property of {widget} should not be {string}
-      {widget} should have repainted                {widget} should have less/more ink than before    {widget} should be painted
-      {string} event should have fired on {widget}  no errors should have been logged
+      properties of {widget} should be:  | caption | value |
+      {widget} should have repainted                {widget} should not have repainted           {widget} should be painted
+      {widget} should have less/more ink than before    {widget} should be painted in at least {int} colors
+      the {string} area of {widget} should be painted   {widget} should (not )have a(n) {string} area
+      {widget} should show more/less selection highlight than before    {widget} should show a/no selection highlight
+      {widget} should show a narrower/wider value range than before     {widget} should show the same value range as before
+      the value range of {widget} should lie within {string} column     {widget} should show the remembered value range
+      {string} event should have fired on {widget}  {string} event should not have fired on {widget}
+      no errors should have been logged             no error or warning balloon should have been shown
       the tooltip should show columns {string}      the tooltip should not show columns {string}
 ```
 
 A property is named by its caption as the property panel shows it (`Value`, `Category 1`,
 `Show Markers`, `Marker Size Column`) or by its name (`showInsideValues`); values are `true`/`false`,
-numbers, `#rrggbb` for colors, `""` for none, `\n` for a line break. A menu path is
-`"Group > Item"`. A hit area is a name the viewer reports (`grok-bdd lint` cannot list them yet;
-the box plot has `view`, `x axis`, `y axis`, `stats`, `p value`, `group comparison`, `color scale`,
-`marker`). Every property set, menu pick, area click and resize snapshots the canvas first, so
-`should have repainted` and `less/more ink than before` compare with the state before the last
-change. `no errors should have been logged` is the page's console errors and uncaught exceptions
-since the previous check (or the login step); a resource the stand does not serve is not an error.
+numbers, `#rrggbb` for colors (read back the same way), `""` for none, `\n` for a line break. A
+menu path is `"Group > Item"`. A hit area is a name the viewer reports (`grok-bdd lint` cannot
+list them yet; the box plot has `view`, `x axis`, `y axis`, `stats`, `p value`, `group comparison`,
+`color scale`, `marker`, `category <label>` and `<label> values` per category, `p value of <group>`
+and `<effect> effect` under group comparison; the bar chart `view`, `x axis`, `y axis`, `bar
+<category>`). Every property set, menu pick, area click, hover and resize snapshots the canvas,
+the selection-colored pixels and the value range first, so `should have repainted`, `less/more
+ink`, `more/less selection highlight` and `a narrower/wider/the same value range than before`
+compare with the state before the last change; the data steps snapshot every viewer. `no errors
+should have been logged` is the page's console errors and uncaught exceptions since the previous
+check (or the login step); a resource the stand does not serve is not an error. `no error or
+warning balloon should have been shown` reads the platform's `d4-balloon-shown` events the same way.
 
 Viewers on a bdd page render immediately — `viewer.immediateRendering` is set on every viewer the
 page holds or adds — so nothing in the tier sleeps: a change is followed by the viewer's render

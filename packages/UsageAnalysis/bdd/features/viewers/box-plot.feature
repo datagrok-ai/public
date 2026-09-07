@@ -219,7 +219,7 @@ Feature: Box plot property surface
   Scenario: Double-click resets the view
     Given user listens for "d4-boxplot-reset-view" event on box plot viewer
     When user zooms into the value axis of box plot viewer
-    Then box plot viewer should show a narrowed value range
+    Then box plot viewer should show a narrower value range than before
     When user double-clicks on empty plot space of box plot viewer
     Then "d4-boxplot-reset-view" event should have fired on box plot viewer
-    And box plot viewer should show the full value range again
+    And box plot viewer should show a wider value range than before

@@ -20,11 +20,33 @@ export interface Box {
 }
 
 /** A viewer's canvas after a change: `delta` is the histogram distance from the snapshot taken
- * before the change, `ink` the painted pixels now, `inkBefore` those of the snapshot. */
+ * before the change, `ink` the painted pixels now, `inkBefore` those of the snapshot, `hue` and
+ * `hueBefore` the pixels in the selection hue. */
 export interface CanvasChange {
   delta: number;
   ink: number;
   inkBefore: number;
+  hue: number;
+  hueBefore: number;
+}
+
+/** A viewer's value range (its viewport) now and at the snapshot before the last change. */
+export interface RangeChange {
+  before?: Range;
+  now?: Range;
+}
+
+export interface Range {
+  top: number;
+  bottom: number;
+  height: number;
+  left: number;
+  right: number;
+}
+
+export interface Balloon {
+  type: string;
+  message: string;
 }
 
 const POPUP = '.d4-menu-popup';
@@ -37,12 +59,18 @@ function install(): void {
   if (w.__bdd)
     return;
   const renders = new WeakMap<Element, {count: number; last: number; sub?: any}>();
-  const snapshots = new WeakMap<Element, {colors: Map<number, number>; ink: number}>();
+  const snapshots = new WeakMap<Element, {colors: Map<number, number>; ink: number; hue: number; renders: number; range?: Range}>();
   const sizes = new WeakMap<Element, {width: string; height: string}>();
   const listeners = new WeakMap<Element, Record<string, {count: number; sub: any}>>();
   const armed: Record<string, Promise<unknown>> = {};
+  const balloons: Balloon[] = [];
+  const remembered: Record<string, Range | undefined> = {};
+  let layout: any;
   let tokens = 0;
   const norm = (s: unknown) => String(s ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  // the platform's selected-rows orange, as the pixels of a marker or a box drawn in it
+  const isHue = (r: number, g: number, b: number) => r >= 150 && g >= 100 && g <= 200 && b <= 110;
+  const isBlank = (r: number, g: number, b: number, a: number) => a === 0 || (r >= 250 && g >= 250 && b >= 250);
 
   const viewers = (): any[] => {
     const all: any[] = [];
@@ -104,13 +132,39 @@ function install(): void {
     const data = cv.getContext('2d')!.getImageData(0, 0, cv.width, cv.height).data;
     const colors = new Map<number, number>();
     let ink = 0;
+    let hue = 0;
     for (let i = 0; i < data.length; i += 4) {
       const key = (data[i] << 16) | (data[i + 1] << 8) | data[i + 2];
       colors.set(key, (colors.get(key) ?? 0) + 1);
-      if (data[i + 3] !== 0 && !(data[i] >= 250 && data[i + 1] >= 250 && data[i + 2] >= 250))
-        ink++;
+      if (isBlank(data[i], data[i + 1], data[i + 2], data[i + 3]))
+        continue;
+      ink++;
+      if (isHue(data[i], data[i + 1], data[i + 2]))
+        hue++;
     }
-    return {colors, ink};
+    return {colors, ink, hue};
+  };
+  /** The colors drawn in at least `minPx` pixels, blanks and near-whites aside. */
+  const palette = (el: Element, minPx: number): number => {
+    const data = canvasOf(viewerOf(el)).getContext('2d')!.getImageData(0, 0, 1, 1) && histogram(canvasOf(viewerOf(el)));
+    let n = 0;
+    for (const [c, count] of data.colors) {
+      const r = (c >> 16) & 255;
+      const g = (c >> 8) & 255;
+      const b = c & 255;
+      if (count >= minPx && !(r >= 250 && g >= 250 && b >= 250) && c !== 0)
+        n++;
+    }
+    return n;
+  };
+  const rangeOf = (v: any): Range | undefined => {
+    try {
+      const vp = v.viewport;
+      return vp ? {top: vp.top, bottom: vp.bottom, height: vp.height, left: vp.left, right: vp.right} : undefined;
+    }
+    catch {
+      return undefined;
+    }
   };
   const property = (v: any, caption: string): any => {
     const want = norm(caption);
@@ -144,6 +198,7 @@ function install(): void {
     }
     return p;
   };
+  const HEX = /^#?([0-9a-f]{6})$/i;
   const convert = (p: any, text: string): unknown => {
     const s = text.replace(/\\n/g, '\n');
     const type = String(p.propertyType ?? '');
@@ -152,7 +207,7 @@ function install(): void {
     if (type === 'int' || type === 'double' || type === 'num' || type === 'bigint') {
       if (s === '')
         return null;
-      const hex = /^#?([0-9a-f]{6})$/i.exec(s);
+      const hex = HEX.exec(s);
       if (hex && type === 'int')
         return (0xFF000000 | parseInt(hex[1], 16)) >>> 0;
       return Number(s);
@@ -161,17 +216,25 @@ function install(): void {
       return s === '' ? [] : s.split(/\s*,\s*/);
     return s;
   };
-  const readProperty = (el: Element, caption: string): string => {
+  /** The property as text: "" for none, lists comma-joined, an int read against a `#rrggbb`
+   * expectation as `#rrggbb` (colors are ints in the property bag). */
+  const readProperty = (el: Element, caption: string, expected = ''): string => {
     const v = viewerOf(el);
-    const value = v.props[property(v, caption).name];
+    const p = property(v, caption);
+    const value = v.props[p.name];
     if (value == null)
       return '';
-    return Array.isArray(value) ? value.join(', ') : String(value);
+    if (Array.isArray(value))
+      return value.join(', ');
+    if (typeof value === 'number' && String(p.propertyType) === 'int' && HEX.test(expected))
+      return '#' + (value & 0xFFFFFF).toString(16).padStart(6, '0').toUpperCase();
+    return String(value);
   };
   const snapshot = (el: Element): number => {
     const v = viewerOf(el);
+    arm(v);
     const shot = histogram(canvasOf(v));
-    snapshots.set(v.root, shot);
+    snapshots.set(v.root, {...shot, renders: renders.get(v.root)!.count, range: rangeOf(v)});
     return shot.ink;
   };
   // the baseline "should have repainted" compares with: the canvas before the change
@@ -179,6 +242,12 @@ function install(): void {
     try {
       snapshot(el);
     } catch { /* a viewer without a canvas */ }
+  };
+  /** Every viewer's baseline at once — before a change that reaches them all (a filter, a
+   * selection, a column's colors). */
+  const baselineAll = (): void => {
+    for (const v of viewers())
+      baseline(v.root);
   };
   const writeProperties = async (el: Element, entries: [string, string][], capMs: number): Promise<number> => {
     const v = viewerOf(el);
@@ -191,6 +260,10 @@ function install(): void {
     }
     return settled;
   };
+  const canvasBox = (v: any): Box => {
+    const r = canvasOf(v).getBoundingClientRect();
+    return {x: r.x, y: r.y, width: r.width, height: r.height};
+  };
   /** The named hit area in client coordinates, or the names the viewer reports instead. */
   const findArea = (el: Element, name: string, beforeChange = false): {box?: Box; has: string[]} => {
     const v = viewerOf(el);
@@ -202,7 +275,7 @@ function install(): void {
     if (!key)
       return {has};
     const r = areas[key];
-    const cv = canvasOf(v).getBoundingClientRect();
+    const cv = canvasBox(v);
     return {box: {x: cv.x + r.x, y: cv.y + r.y, width: r.width, height: r.height}, has};
   };
   const hitArea = (el: Element, name: string, beforeChange = false): Box => {
@@ -210,6 +283,25 @@ function install(): void {
     if (!found.box)
       throw new Error(`${viewerOf(el).type} has no "${name}" area right now; it has: ${found.has.join(', ') || 'none'}`);
     return found.box;
+  };
+  /** Painted pixels inside a hit area (the canvas may be scaled to the device). */
+  const areaInk = (el: Element, name: string): number => {
+    const v = viewerOf(el);
+    const areas: Record<string, Box> = v.getWidgetStatus()?.hitAreas ?? {};
+    const key = Object.keys(areas).find((k) => norm(k) === norm(name));
+    if (!key)
+      throw new Error(`${v.type} has no "${name}" area right now; it has: ${Object.keys(areas).join(', ') || 'none'}`);
+    const r = areas[key];
+    const cv = canvasOf(v);
+    const scale = cv.width / cv.getBoundingClientRect().width;
+    const data = cv.getContext('2d')!.getImageData(Math.floor(r.x * scale), Math.floor(r.y * scale),
+      Math.max(1, Math.floor(r.width * scale)), Math.max(1, Math.floor(r.height * scale))).data;
+    let n = 0;
+    for (let i = 0; i < data.length; i += 4) {
+      if (!isBlank(data[i], data[i + 1], data[i + 2], data[i + 3]))
+        n++;
+    }
+    return n;
   };
   const change = (el: Element): CanvasChange => {
     const v = viewerOf(el);
@@ -224,7 +316,32 @@ function install(): void {
       if (!now.colors.has(c))
         delta += n;
     }
-    return {delta, ink: now.ink, inkBefore: before.ink};
+    return {delta, ink: now.ink, inkBefore: before.ink, hue: now.hue, hueBefore: before.hue};
+  };
+  const rangeChange = (el: Element): RangeChange => {
+    const v = viewerOf(el);
+    return {before: snapshots.get(v.root)?.range, now: rangeOf(v)};
+  };
+  /** A range kept by the viewer's type, so it survives the viewer being closed and reopened (a
+   * project round-trip). */
+  const rememberRange = (el: Element): void => {
+    const v = viewerOf(el);
+    remembered[String(v.type)] = rangeOf(v);
+  };
+  const rememberedRange = (el: Element): RangeChange => {
+    const v = viewerOf(el);
+    return {before: remembered[String(v.type)], now: rangeOf(v)};
+  };
+  /** Whether the viewer painted since its snapshot, read after the frame a change would land on:
+   * a repaint is scheduled on the next task, so one animation frame and one task later there is
+   * nothing left to wait for. */
+  const stillness = async (el: Element): Promise<{renders: number; delta: number}> => {
+    const v = viewerOf(el);
+    const before = snapshots.get(v.root);
+    if (!before)
+      throw new Error(`${v.type}: no snapshot to compare with`);
+    await new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve, 0)));
+    return {renders: renders.get(v.root)!.count - before.renders, delta: change(el).delta};
   };
   /** One subscription per viewer and event, alive from "listens for" until `unlisten` (the
    * "should have fired" read, or the viewer closing). */
@@ -344,12 +461,22 @@ function install(): void {
       throw new Error(`no viewer type "${type}"; the platform has: ${types.join(', ')}`);
     arm(grok.shell.tv.addViewer(exact));
   };
+  /** The balloons shown since the last read, and clears them. */
+  const takeBalloons = (): Balloon[] => balloons.splice(0, balloons.length);
+  const saveLayout = (): void => { layout = grok.shell.tv.saveLayout(); };
+  const loadLayout = (): void => {
+    if (!layout)
+      throw new Error('no layout saved in this feature');
+    grok.shell.tv.loadLayout(layout);
+  };
 
-  w.__bdd = {viewerOf, arm, stampAll, settle, readProperty, writeProperties, findArea, hitArea, snapshot, change,
-    listen, unlisten, firedCount, resize, restoreSize, armEvent, waitArmed, closeMenu, openMenu, menuPoint, addViewer};
+  w.__bdd = {viewerOf, arm, stampAll, settle, readProperty, writeProperties, findArea, hitArea, areaInk, snapshot, baselineAll,
+    change, rangeChange, rememberRange, rememberedRange, stillness, palette, listen, unlisten, firedCount, resize, restoreSize,
+    armEvent, waitArmed, closeMenu, openMenu, menuPoint, addViewer, takeBalloons, saveLayout, loadLayout};
   stampAll();
   grok.events.onViewerAdded.subscribe((a: any) => arm(a?.args?.viewer));
   grok.events.onViewerClosed.subscribe((a: any) => a?.args?.viewer && forget(a.args.viewer));
+  grok.events.onEvent('d4-balloon-shown').subscribe((a: any) => balloons.push({type: String(a?.args?.type ?? ''), message: String(a?.args?.message ?? '')}));
 }
 
 const installed = new WeakSet<Page>();
@@ -394,6 +521,16 @@ export async function hitArea(page: Page, target: ElementRef, name: string, befo
   return found.box!;
 }
 
+export async function expectHasArea(page: Page, target: ElementRef, name: string, negate = false): Promise<void> {
+  await installViewerRuntime(page);
+  const loc = await viewerLocator(page, target);
+  const find = (): Promise<{box?: Box; has: string[]}> => loc.evaluate((el, n) => (window as any).__bdd.findArea(el, n, false), name);
+  let found = await find();
+  const poll = expect.poll(async () => (found = await find()).box !== undefined,
+    {timeout: 5000, message: `${target.phrase} ${negate ? 'still reports' : 'reports no'} "${name}" area; it has: ${found.has.join(', ') || 'none'}`});
+  await (negate ? poll.not : poll).toBe(true);
+}
+
 export function centerOf(box: Box): {x: number; y: number} {
   return {x: box.x + box.width / 2, y: box.y + box.height / 2};
 }
@@ -414,14 +551,14 @@ export async function setProperties(page: Page, target: ElementRef, entries: [st
   await loc.evaluate((el, [e, cap]) => (window as any).__bdd.writeProperties(el, e, cap), [entries, capMs] as [[string, string][], number]);
 }
 
-export async function readProperty(page: Page, target: ElementRef, caption: string): Promise<string> {
+export async function readProperty(page: Page, target: ElementRef, caption: string, expected = ''): Promise<string> {
   await installViewerRuntime(page);
   const loc = await viewerLocator(page, target);
-  return loc.evaluate((el, c) => (window as any).__bdd.readProperty(el, c), caption);
+  return loc.evaluate((el, [c, x]) => (window as any).__bdd.readProperty(el, c, x), [caption, expected] as [string, string]);
 }
 
 export async function expectProperty(page: Page, target: ElementRef, caption: string, value: string, negate = false): Promise<void> {
-  const poll = expect.poll(() => readProperty(page, target, caption), {timeout: 5000, message: `"${caption}" of ${target.phrase}`});
+  const poll = expect.poll(() => readProperty(page, target, caption, value), {timeout: 5000, message: `"${caption}" of ${target.phrase}`});
   await (negate ? poll.not : poll).toBe(value.replace(/\\n/g, '\n'));
 }
 
@@ -429,6 +566,13 @@ export async function snapshot(page: Page, target: ElementRef): Promise<number> 
   await installViewerRuntime(page);
   const loc = await viewerLocator(page, target);
   return loc.evaluate((el) => (window as any).__bdd.snapshot(el));
+}
+
+/** Every viewer of every open table view gets its baseline — before a change that is not one
+ * viewer's own (a filter, a selection, a column's colors). */
+export async function baselineAll(page: Page): Promise<void> {
+  await installViewerRuntime(page);
+  await page.evaluate(() => { (window as any).__bdd.baselineAll(); });
 }
 
 export async function canvasChange(page: Page, target: ElementRef): Promise<CanvasChange> {
@@ -442,6 +586,15 @@ export async function expectRepainted(page: Page, target: ElementRef): Promise<v
   await snapshot(page, target);
 }
 
+/** The canvas is what it was at the snapshot, read after the frame a repaint would have landed
+ * on (a viewer may run a render pass that draws the same picture — the mouse-over row does). */
+export async function expectNotRepainted(page: Page, target: ElementRef): Promise<void> {
+  await installViewerRuntime(page);
+  const loc = await viewerLocator(page, target);
+  const still: {renders: number; delta: number} = await loc.evaluate((el) => (window as any).__bdd.stillness(el));
+  expect(still.delta, `${target.phrase} repainted: ${still.delta} px changed in ${still.renders} render(s)`).toBe(0);
+}
+
 export async function expectInk(page: Page, target: ElementRef, compare: 'less' | 'more' | 'some'): Promise<void> {
   if (compare === 'some') {
     await expect.poll(() => snapshot(page, target), {timeout: 10000, message: `${target.phrase} is blank`}).toBeGreaterThan(0);
@@ -452,6 +605,98 @@ export async function expectInk(page: Page, target: ElementRef, compare: 'less' 
     return compare === 'less' ? c.ink < c.inkBefore : c.ink > c.inkBefore;
   }, {timeout: 10000, message: `${target.phrase} does not have ${compare} ink than before`}).toBe(true);
   await snapshot(page, target);
+}
+
+/** Pixels in the selection hue against the snapshot: `more`/`less` than before, `some`, or `none`. */
+export async function expectHighlight(page: Page, target: ElementRef, compare: 'more' | 'less' | 'some' | 'none'): Promise<void> {
+  const wrong = {none: 'shows a selection highlight', some: 'shows no selection highlight',
+    more: 'does not show more selection highlight than before', less: 'does not show less selection highlight than before'};
+  await expect.poll(async () => {
+    const c = await canvasChange(page, target);
+    return compare === 'none' ? c.hue === 0 : compare === 'some' ? c.hue > 0 : compare === 'more' ? c.hue > c.hueBefore : c.hue < c.hueBefore;
+  }, {timeout: 10000, message: `${target.phrase} ${wrong[compare]}`}).toBe(true);
+  await snapshot(page, target);
+}
+
+export async function rememberRange(page: Page, target: ElementRef): Promise<void> {
+  await installViewerRuntime(page);
+  const loc = await viewerLocator(page, target);
+  await loc.evaluate((el) => { (window as any).__bdd.rememberRange(el); });
+}
+
+/** The value range equals the one remembered for this viewer type — across a close and a reopen. */
+export async function expectRememberedRange(page: Page, target: ElementRef): Promise<void> {
+  await installViewerRuntime(page);
+  const loc = await viewerLocator(page, target);
+  let last: RangeChange = {};
+  const holds = async (): Promise<boolean> => {
+    last = await loc.evaluate((el) => (window as any).__bdd.rememberedRange(el));
+    return !!last.before && !!last.now && Math.abs(last.before.top - last.now.top) < 0.5 && Math.abs(last.before.bottom - last.now.bottom) < 0.5;
+  };
+  try {
+    await expect.poll(holds, {timeout: 5000}).toBe(true);
+  }
+  catch {
+    throw new Error(`${target.phrase} does not show the remembered value range (remembered ${JSON.stringify(last.before)}, now ${JSON.stringify(last.now)})`);
+  }
+}
+
+export async function expectPalette(page: Page, target: ElementRef, min: number): Promise<void> {
+  await installViewerRuntime(page);
+  const loc = await viewerLocator(page, target);
+  await expect.poll(() => loc.evaluate((el) => (window as any).__bdd.palette(el, 500)),
+    {timeout: 5000, message: `${target.phrase} is painted in fewer than ${min} colors`}).toBeGreaterThanOrEqual(min);
+}
+
+export async function expectAreaPainted(page: Page, target: ElementRef, area: string): Promise<void> {
+  await hitArea(page, target, area);
+  const loc = await viewerLocator(page, target);
+  await expect.poll(() => loc.evaluate((el, a) => (window as any).__bdd.areaInk(el, a), area),
+    {timeout: 5000, message: `the "${area}" area of ${target.phrase} is blank`}).toBeGreaterThan(0);
+}
+
+export async function rangeChange(page: Page, target: ElementRef): Promise<RangeChange> {
+  await installViewerRuntime(page);
+  const loc = await viewerLocator(page, target);
+  return loc.evaluate((el) => (window as any).__bdd.rangeChange(el));
+}
+
+/** The value range (viewport) against the snapshot before the last change. */
+export async function expectValueRange(page: Page, target: ElementRef, compare: 'narrower' | 'same' | 'wider'): Promise<void> {
+  const same = (a: Range, b: Range) => Math.abs(a.top - b.top) < 1e-6 && Math.abs(a.bottom - b.bottom) < 1e-6;
+  let last: RangeChange = {};
+  const holds = async (): Promise<boolean | string> => {
+    last = await rangeChange(page, target);
+    if (!last.before || !last.now)
+      return 'no range';
+    if (compare === 'same')
+      return same(last.before, last.now);
+    return compare === 'narrower' ? last.now.height < last.before.height * 0.95 : last.now.height > last.before.height * 1.05;
+  };
+  try {
+    await expect.poll(holds, {timeout: 5000}).toBe(true);
+  }
+  catch {
+    throw new Error(`${target.phrase} does not show ${compare === 'same' ? 'the same' : `a ${compare}`} value range` +
+      ` (before ${JSON.stringify(last.before)}, now ${JSON.stringify(last.now)})`);
+  }
+  await snapshot(page, target);
+}
+
+/** The value range lies within the column's values: no empty space beyond the data. */
+export async function expectValueRangeWithin(page: Page, target: ElementRef, column: string): Promise<void> {
+  const loc = await viewerLocator(page, target);
+  const r = await loc.evaluate((el, c) => {
+    const b = (window as any).__bdd;
+    const v = b.viewerOf(el);
+    const col = v.dataFrame.col(c);
+    if (!col)
+      throw new Error(`no "${c}" column in ${v.dataFrame.name}`);
+    return {range: b.rangeChange(el).now, min: col.stats.min, max: col.stats.max};
+  }, column);
+  expect(r.range, `${target.phrase} reports no value range`).toBeTruthy();
+  expect(r.range!.top, `${target.phrase}'s range starts below "${column}" (${r.range!.top} < ${r.min})`).toBeGreaterThanOrEqual(r.min * 0.9);
+  expect(r.range!.bottom, `${target.phrase}'s range ends above "${column}" (${r.range!.bottom} > ${r.max})`).toBeLessThanOrEqual(r.max * 1.1);
 }
 
 export async function listenFor(page: Page, target: ElementRef, event: string): Promise<void> {
@@ -468,6 +713,14 @@ export async function expectFired(page: Page, target: ElementRef, event: string)
   await loc.evaluate((el, e) => { const b = (window as any).__bdd; b.unlisten(b.viewerOf(el), e); }, event);
 }
 
+/** Not fired so far; the subscription stays for a later "should have fired". */
+export async function expectNotFired(page: Page, target: ElementRef, event: string): Promise<void> {
+  await installViewerRuntime(page);
+  const loc = await viewerLocator(page, target);
+  const count: number = await loc.evaluate((el, e) => (window as any).__bdd.firedCount(el, e), event);
+  expect(count, count < 0 ? `"${event}" is not listened for on ${target.phrase}` : `"${event}" fired ${count} time(s) on ${target.phrase}`).toBe(0);
+}
+
 export async function resize(page: Page, target: ElementRef, width: number | null, height: number | null): Promise<void> {
   await installViewerRuntime(page);
   const loc = await viewerLocator(page, target);
@@ -478,6 +731,22 @@ export async function restoreSize(page: Page, target: ElementRef): Promise<void>
   await installViewerRuntime(page);
   const loc = await viewerLocator(page, target);
   await loc.evaluate((el) => (window as any).__bdd.restoreSize(el, 500));
+}
+
+export async function saveLayout(page: Page): Promise<void> {
+  await installViewerRuntime(page);
+  await page.evaluate(() => { (window as any).__bdd.saveLayout(); });
+}
+
+export async function loadLayout(page: Page): Promise<void> {
+  await installViewerRuntime(page);
+  await page.evaluate(() => { (window as any).__bdd.loadLayout(); });
+}
+
+/** The balloons (info, warning, error) shown since the last read; reading clears them. */
+export async function takeBalloons(page: Page): Promise<Balloon[]> {
+  await installViewerRuntime(page);
+  return page.evaluate(() => (window as any).__bdd.takeBalloons());
 }
 
 // --- context menus ----------------------------------------------------------------------------------

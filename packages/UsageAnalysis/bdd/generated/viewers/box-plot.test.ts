@@ -11,11 +11,11 @@ import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {doubleClickEmptySpace, fullRange, narrowedRange, zoomValueAxis} from '../../bindings/box-plot.js';
+import {doubleClickEmptySpace, zoomValueAxis} from '../../bindings/box-plot.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, hoverOver, shouldBe, shouldContainText, shouldHaveText, shouldNotContainText} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {openDataset, switchTableView} from '@datagrok-libraries/bdd/bindings/platform/steps';
-import {addViewerWith, closeContextMenu, eventFired, hoverArea, lessInk, listenFor, moreInk, noErrors, openContextMenu, painted, pickFromContextMenu, pointerAway, propertyShouldBe, propertyShouldNotBe, repainted, resizeTo, resizeWidth, restoreSize, rightClickArea, setProperties, setProperty, tooltipColumns, tooltipNotColumns} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {addViewerWith, closeContextMenu, eventFired, hoverArea, lessInk, listenFor, moreInk, narrowerRange, noErrors, openContextMenu, painted, pickFromContextMenu, pointerAway, propertyShouldBe, propertyShouldNotBe, repainted, resizeTo, resizeWidth, restoreSize, rightClickArea, setProperties, setProperty, tooltipColumns, tooltipNotColumns, widerRange} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Box plot property surface", () => {
@@ -198,10 +198,10 @@ test.describe("Box plot property surface", () => {
     await run.scenario("Double-click resets the view", async () => {
       await session.step(220, "Given user listens for \"d4-boxplot-reset-view\" event on box plot viewer", () => listenFor(page, "d4-boxplot-reset-view", el("box plot viewer")));
       await session.step(221, "When user zooms into the value axis of box plot viewer", () => zoomValueAxis(page, el("box plot viewer")));
-      await session.step(222, "Then box plot viewer should show a narrowed value range", () => narrowedRange(page, el("box plot viewer")));
+      await session.step(222, "Then box plot viewer should show a narrower value range than before", () => narrowerRange(page, el("box plot viewer")));
       await session.step(223, "When user double-clicks on empty plot space of box plot viewer", () => doubleClickEmptySpace(page, el("box plot viewer")));
       await session.step(224, "Then \"d4-boxplot-reset-view\" event should have fired on box plot viewer", () => eventFired(page, "d4-boxplot-reset-view", el("box plot viewer")));
-      await session.step(225, "And box plot viewer should show the full value range again", () => fullRange(page, el("box plot viewer")));
+      await session.step(225, "And box plot viewer should show a wider value range than before", () => widerRange(page, el("box plot viewer")));
     });
     run.finish();
   });

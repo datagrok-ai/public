@@ -273,7 +273,7 @@ kind('viewer', {
     title: `${PANEL}//*[contains(@class, "panel-titlebar-text")]`,
     'settings icon': `${PANEL}//*[contains(@class, "panel-titlebar")]//*[@name="icon-font-icon-settings"]`,
     'menu icon': `${PANEL}//*[contains(@class, "panel-titlebar")]//*[@name="icon-font-icon-menu"]`,
-    'close icon': `${PANEL}//*[contains(@class, "panel-titlebar")]//*[@name="icon-font-icon-close"]`,
+    'close icon': `${PANEL}//*[contains(@class, "panel-titlebar")]//*[@name="Close" or @name="icon-font-icon-close"]`,
     description: '.d4-viewer-description',
     canvas: 'canvas[name="canvas"]',
   },
