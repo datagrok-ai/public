@@ -109,6 +109,7 @@ export interface IFunctionRegistrationData {
   tags?: string;        // comma-separated tags
   isAsync?: boolean;    // whether is can be called synchronously
   namespace?: string;
+  /** Function options (the meta annotations) as key-value pairs. */
   options?: {[key: string]: string};
 }
 

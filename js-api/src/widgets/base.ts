@@ -438,7 +438,9 @@ export class DartWidget extends Widget {
   get propertyTarget(): unknown { return this.dart; }
   protected _wireLifecycle(): void { this._wireDartLifecycle(); }
   getProperties(): Property[] { return toJs(api.grok_PropMixin_GetProperties(this.dart)); }
+  /** Functions applicable to the Dart widget, as the context menu and the AI assistant see them. */
   getFunctions(): Func[] { return toJs(api.grok_Widget_GetFunctions(this.dart)); }
+  /** Runtime snapshot of the Dart widget: named parts, hit areas, shortcuts, events, a state description and the validation error. */
   getWidgetStatus(): IWidgetStatus { return api.grok_Widget_GetWidgetStatus(this.dart); }
 
   /** AI briefing of the underlying Dart widget. */

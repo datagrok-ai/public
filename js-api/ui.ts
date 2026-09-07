@@ -1120,6 +1120,7 @@ export namespace input {
     return _create(d4.InputType.Folder, name, options);
   }
 
+  /** Input for a list of values, typed as comma-separated text (or one per line in its text-area mode). */
   export function list(name: string, options?: IInputInitOptions<Array<any>>): InputBase<Array<any> | null> {
     return _create(d4.InputType.List, name, options);
   }
@@ -1139,6 +1140,7 @@ export namespace input {
     return _create(d4.InputType.Columns, name, options);
   }
 
+  /** Picker for one of the open tables. */
   export function table(name: string, options?: IChoiceInputInitOptions<DataFrame>): InputBase<DataFrame | null> {
     return _create(d4.InputType.Table, name, options);
   }
@@ -1169,10 +1171,12 @@ export namespace input {
     return _create(d4.InputType.UserGroups, name, options);
   }
 
+  /** Image input; the value is the image URL (or data URL). */
   export function image(name: string, options?: IInputInitOptions<string>): InputBase<string | null> {
     return _create(d4.InputType.Image, name, options);
   }
 
+  /** Markdown editor input; the editor loads lazily. */
   export function markdown(caption?: string, options?: MarkdownConfig): MarkdownInput {
     return MarkdownInput.create(caption, options);
   }

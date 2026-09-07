@@ -6,6 +6,8 @@
 * JSDoc cleanup: removed the JS-era `@param {Type}` / `@returns {Type}` / `@type` / `@constructs` / `@extends` annotations (types come from the signatures) — about 560 blocks
 * Generated files (`src/api/*.g.ts`, `src/interfaces/*.ts`) now carry `/** */` documentation instead of `///`, so viewer-settings descriptions show in hover and in the reference (generator change in `core/shared/prop_gen`)
 * Added `README.md` (package map) and `CONVENTIONS.md` (API conventions) to the package
+* Documented `DG.chem.Sketcher` (molecule accessors, filter options, events), the `grok.ai` surface (`AIEngine`, `AIChat`, engine registry, turn events, config), `Widget.getFunctions/getWidgetStatus`, and the `ui.input.list/table/image/markdown` factories; removed a stray console.log from `Sketcher.isInPopupContainer`
+* Added `npm run check-links` (every ApiSamples link in the JSDoc must name an existing sample); the JS API workflow runs it
 * Fixed `DataFrame.onDataChanged` — it merged its sources with `concat`, so it only ever emitted value changes; column and row additions/removals now emit too
 * Fixed `TableQueryBuilder.leftJoin/rightJoin/innerJoin/outerJoin` — `rightTableAlias` was dropped and `leftTable` was sent as the alias
 * Fixed `FormulaLinesHelper.removeAt` / `AnnotationRegionsHelper.removeAt` — they kept the removed window instead of removing it (`removeAt(0)` emptied the list)

@@ -102,8 +102,8 @@ Rules:
 
 ## 6. Tests and samples
 
-- A new public member ships with an `ApiTests` test (category named after the class) and, if it has more than one
-  parameter or returns a UI element, an `ApiSamples` sample linked from its JSDoc
+- A new public member ships with an `ApiTests` test (category named after the class) and, if it represents
+  a new feature or important option likely to be used by client developers, an `ApiSamples` sample linked from its JSDoc
   (`/grok-add-api-coverage` scaffolds both).
 - Samples live under a stable path; moving one requires updating every `@see` that points at it (the link checker
   fails the build otherwise).

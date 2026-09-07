@@ -132,9 +132,14 @@ export namespace chem {
   }
 
 
-  /**
-   * Molecule sketcher that supports multiple dynamically initialized implementations.
-   * */
+  /** Molecule sketcher with pluggable implementations (OpenChemLib, Ketcher, Marvin, ...), inplace or as a
+   * thumbnail that opens the sketcher in a dialog. Read the molecule with {@link getSmiles}, {@link getMolFile}
+   * or {@link getSmarts}, set it with {@link setMolecule}, listen on {@link onChanged}.
+   * @example
+   * const sketcher = new DG.chem.Sketcher();
+   * sketcher.setMolecule('c1ccccc1');
+   * sketcher.onChanged.subscribe(() => grok.shell.info(sketcher.getSmiles()));
+   * ui.dialog('Sketch').add(sketcher.root).show(); */
   export class Sketcher extends Widget {
 
     molInput: HTMLInputElement = ui.element('input');
@@ -142,8 +147,11 @@ export namespace chem {
     host: HTMLDivElement = ui.box(null, 'grok-sketcher chem-sketcher-host');
     changedSub: Subscription | null = null;
     sketcher: SketcherBase | null = null;
+    /** Fires on every change of the sketched molecule. */
     onChanged: Subject<any> = new Subject<any>();
+    /** Fires when the "align" substructure-filter option is toggled. */
     onAlignedChanged: Subject<boolean> = new Subject<boolean>();
+    /** Fires when the "highlight" substructure-filter option is toggled. */
     onHighlightChanged: Subject<boolean> = new Subject<boolean>();
     sketcherFunctions: Func[] = [];
     sketcherDialogOpened = false;
@@ -156,6 +164,7 @@ export namespace chem {
     _smiles: string | null = null;
     _molfile: string | null = null;
     _smarts: string | null = null;
+    /** Molblock notation of the last value set: V2000 or V3000. */
     molFileUnits = Notation.MolBlock;
 
     loader: HTMLDivElement = ui.loader();
@@ -172,36 +181,44 @@ export namespace chem {
     _isSubstructureFilter = false;
     _align = true;
     _highlight = true;
+    /** Message from the validation function for the last value set, or null. */
     error: string | null = null;
     errorDiv = ui.divText('Malformed molecule');
     alighInput: InputBase;
     highlightInput: InputBase;
     filterOnChangeInput: InputBase;
 
+    /** Switches the sketcher implementation by name (one of the registered sketcher functions). */
     set sketcherType(type: string) {
       this._setSketcherType(type);
     }
 
+    /** Width of the current implementation in pixels (500 before one is initialized). */
     get width(): number {
       return this.sketcher ? this.sketcher.width : 500;
     }
 
+    /** Height of the current implementation in pixels (400 before one is initialized). */
     get height(): number {
       return this.sketcher ? this.sketcher.height : 400;
     }
 
+    /** True once {@link resize} has been applied to an initialized implementation. */
     get isResizing(): boolean {
       return this.resized;
     }
 
+    /** Whether the sketcher sizes itself to its host. */
     get autoResized(): boolean {
       return this._autoResized;
     }
 
+    /** True after the user switched the implementation. */
     get sketcherTypeChanged(): boolean {
       return this._sketcherTypeChanged;
     }
 
+    /** Shows the loader while a value is being resolved (e.g. a compound name to a structure). */
     get calculating(): boolean {return this.loader.classList.contains('chem-sketcher-loader-show');}
     set calculating(value: boolean) {
       if (value) {
@@ -213,6 +230,7 @@ export namespace chem {
       }
     }
 
+    /** When true, the sketcher acts as a substructure filter and shows the align/highlight options. */
     get isSubstructureFilter(): boolean {return this._isSubstructureFilter;}
     set isSubstructureFilter(value: boolean) {
       this._isSubstructureFilter = value;
@@ -222,20 +240,26 @@ export namespace chem {
       } else
         ui.empty(this.filterOptionsDiv);
     }
+    /** Substructure-filter option: align matched molecules to the pattern. */
     get align(): boolean {return this.alighInput!.value!;}
     set align(value: boolean) {this.alighInput!.value = value;}
+    /** Substructure-filter option: highlight the matched substructure. */
     get highlight(): boolean {return this.highlightInput!.value!;}
     set highlight(value: boolean) {this.highlightInput!.value = value;}
+    /** Substructure-filter option: re-filter on every change instead of on demand. */
     get filterOnChange(): boolean {return this.filterOnChangeInput!.value!;}
     set filterOnChange(value: boolean) {this.filterOnChangeInput!.value = value;}
+    /** Host element of the substructure-filter options. */
     get filterOptions(): HTMLElement {return this.filterOptionsDiv;}
 
+    /** Current molecule as SMILES, converted from the stored molblock or SMARTS when needed. */
     getSmiles(): string {
       return this.sketcher?.isInitialized ? this.sketcher.smiles : this._smiles === null ?
         this._molfile !== null ? convert(this._molfile, Notation.MolBlock, Notation.Smiles) :
         this._smarts !== null ? smilesFromSmartsWarning() : '' : this._smiles;
     }
 
+    /** Sets the molecule from SMILES; runs validation. */
     setSmiles(x: string): void {
       this.validate(x);
       this._smiles = x;
@@ -245,6 +269,7 @@ export namespace chem {
         this.sketcher!.smiles = x;
     }
 
+    /** Current molecule as a molblock: V2000, or V3000 when the last value set was V3000. */
     getMolFile(): string {
       if (this.sketcher?.isInitialized) {
         return this.molFileUnits === Notation.MolBlock ? this.sketcher.molFile : this.sketcher.molV3000;
@@ -257,6 +282,7 @@ export namespace chem {
       }
     }
 
+    /** Sets the molecule from a molblock, V2000 or V3000; runs validation. */
     setMolFile(x: string): void {
       this.validate(x);
       this._molfile = x;
@@ -268,12 +294,14 @@ export namespace chem {
       }
     }
 
+    /** Current molecule as SMARTS; async because some implementations compute it on demand. */
     async getSmarts(): Promise<string | null> {
       return this.sketcher?.isInitialized ? await this.sketcher.getSmarts() : this._smarts === null ?
         this._smiles !== null ? convert(this._smiles, Notation.Smiles, Notation.Smarts) :
         this._molfile !== null ? convert(this._molfile, Notation.MolBlock, Notation.Smarts) : '' : this._smarts;
     }
 
+    /** Sets the query pattern from SMARTS; runs validation. */
     setSmarts(x: string): void {
       this.validate(x);
       this._smarts = x;
@@ -283,10 +311,12 @@ export namespace chem {
         this.sketcher!.smarts = x;
     }
 
+    /** Export formats of the current implementation; empty before one is initialized. */
     get supportedExportFormats(): string[] {
       return this.sketcher ? this.sketcher.supportedExportFormats : [];
     }
 
+    /** True when nothing is drawn. */
     isEmpty(): boolean {
       return Sketcher.isEmptyMolfile(this.sketcher?.explicitMol?.value ?? this.getMolFile());
     }
@@ -302,6 +332,7 @@ export namespace chem {
       }
     }
 
+    /** Registers a change callback; only the latest one is wired to the current implementation. Prefer {@link onChanged}. */
     setChangeListenerCallback(callback: () => void) {
       this.changedSub?.unsubscribe();
       this.listeners.push(callback);
@@ -334,6 +365,7 @@ export namespace chem {
             this.setMolecule(x);
     }
 
+    /** Runs the validation function from the constructor, sets {@link error} and toggles the warning. */
     validate(x: string): void {
       if (Sketcher.isEmptyMolfile(x))
         this.molInput.value = '';
@@ -341,6 +373,7 @@ export namespace chem {
       this.updateInvalidMoleculeWarning();
     }
 
+    /** Creates a sketcher. [mode]: inplace (default) or external, a thumbnail that opens the sketcher in a dialog; [validationFunc] returns an error message or null. */
     constructor(mode?: SKETCHER_MODE, validationFunc?: (s: string) => string | null) {
       super(ui.div());
       if (mode)
@@ -405,11 +438,12 @@ export namespace chem {
         this._mode = SKETCHER_MODE.EXTERNAL;
     }
 
+    /** True when the sketcher is hosted in a popup. */
     isInPopupContainer(): boolean {
-      console.log(this.root.closest('.d4-popup-host'))
       return !!this.root.closest('.d4-popup-host');
     }
 
+    /** Resizes the current implementation to its host. */
     resize() {
       if (this.sketcher?.isInitialized) {
         this.sketcher?.resize();
