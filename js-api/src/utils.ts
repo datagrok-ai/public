@@ -171,7 +171,7 @@ export namespace Paint {
 }
 
 export class Utils {
-  /** @param {Iterable} iterable*/
+
   static firstOrNull<T>(iterable: Iterable<T>): T | null {
     let first = iterable[Symbol.iterator]().next();
     return first.done ? null : first.value;
@@ -384,8 +384,7 @@ export class Utils {
    * as it exits early if missmatch is found.
    * @param columns - List of columns to detect hierarchy in.
    * @param maxDepth - Maximum depth of the hierarchy to detect.
-   * @returns
-   */
+   * @returns */
   static detectColumnHierarchy(columns: Column[], maxDepth: number = 3): string[] {
     return api.grok_Utils_DetectColumnHierarchy(columns.map((c) => c.dart), maxDepth);
   }
@@ -475,10 +474,9 @@ export function identity(length: number) {
 };*/
 
 /** Times the execution of function f
- * @param {string} name - a label for the execution time to display
- * @param {Function} f - function with no parameters that will get measured
- * @returns {value} - a value which f returns
- * */
+ * @param name - a label for the execution time to display
+ * @param f - function with no parameters that will get measured
+ * @returns a value which f returns */
 export function time(name: string, f: Function) {
   let start = new Date();
   let result = f();
@@ -491,11 +489,9 @@ export function time(name: string, f: Function) {
 }
 
 /** Times the execution of asyncronous function f
- * @async
- * @param {string} name - a label for the execution time to display
- * @param {Function} f - async function with no parameters that will get measured
- * @returns {Promise<value>} - a promise for the value which f returns
- * */
+ * @param name - a label for the execution time to display
+ * @param f - async function with no parameters that will get measured
+ * @returns a promise for the value which f returns */
 export async function timeAsync(name: string, f: Function) {
   let start = new Date();
   let result = await f();
@@ -546,9 +542,7 @@ export class LruCache<K = any, V = any> {
 
   /**
    * Splays a value on top.
-   * @param {number} pointer - Pointer of the value to splay on top.
-   * @return {LruCache}
-   */
+   * @param pointer - Pointer of the value to splay on top. */
   splayOnTop(pointer: number): LruCache<K, V> {
     let oldHead = this.head;
 
@@ -575,8 +569,7 @@ export class LruCache<K = any, V = any> {
   /**
    * Checks whether the key exists in the cache.
    *
-   * @param  {any} key   - Key.
-   */
+   * @param key - Key. */
   has(key: any): boolean {
     return key in this.items;
   }
@@ -584,9 +577,8 @@ export class LruCache<K = any, V = any> {
   /**
    * Sets the value for the given key in the cache.
    *
-   * @param  {any} key   - Key.
-   * @param  {any} value - Value.
-   */
+   * @param key - Key.
+   * @param value - Value. */
   set(key: any, value: any): void {
 
     // The key already exists, we just need to update the value and splay on top
@@ -630,8 +622,7 @@ export class LruCache<K = any, V = any> {
   /**
    * Gets the value attached to the given key, and makes it the most recently used item.
    *
-   * @param  {any} key - Key.
-   */
+   * @param key - Key. */
   get(key: any): V | undefined {
     // @ts-ignore
     let pointer = this.items[key];
@@ -648,10 +639,8 @@ export class LruCache<K = any, V = any> {
    * Returns the value with the specified key, if it already exists in the cache,
    * or creates a new one by calling the provided function.
    *
-   * @param  {any} key   - Key.
-   * @param  {Function} createFromKey - Function to create a new item.
-   * @return {any}
-   */
+   * @param key - Key.
+   * @param createFromKey - Function to create a new item. */
   getOrCreate(key: K, createFromKey: (key: K) => V): V {
     let value = this.get(key);
     if (value !== undefined)

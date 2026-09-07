@@ -1,4 +1,4 @@
-/// this file was generated automatically from ddt classes declarations
+// this file was generated automatically from ddt classes declarations
 import { toDart } from "../wrappers";
 let api = (typeof window !== 'undefined' ? window : global.window) as any;
 
@@ -8,7 +8,7 @@ export function histogram(col: any, bitset: any, flag: boolean, options?: {bins?
 export class Tags {
   static Description = 'description';
 
-  /// A user that created this entity
+  /** A user that created this entity */
   static CreatedBy = 'createdBy';
 
   static SemanticDetectionDuration = '.semantic-detection-duration';
@@ -73,7 +73,7 @@ export class Tags {
 
   static CellRenderer = 'cell.renderer';
 
-  /// Comma-separated list of domains the entity belongs to
+  /** Comma-separated list of domains the entity belongs to */
   static Domains = 'domains';
 
   static Quality = 'quality';
@@ -100,12 +100,12 @@ export class Tags {
 
   static IgnoreFormulaColumnRecalculation = '.%ignore-formula-column-recalculation';
 
-  /// JSON-encoded list of strings to be used in a cell editor.
-  /// Applicable for string columns only.
-  /// See also [AutoChoices].
+  /** JSON-encoded list of strings to be used in a cell editor.
+   * Applicable for string columns only.
+   * See also [AutoChoices]. */
   static Choices = '.choices';
 
-  /// JSON-encoded order of categories. Applicable to string columns only.
+  /** JSON-encoded order of categories. Applicable to string columns only. */
   static CategoryOrder = '.category-order';
 
   static DefaultFilter = '.default-filter';
@@ -120,10 +120,10 @@ export class Tags {
 
   static Charts = '.charts';
 
-  /// When set to 'true', switches the cell editor to a combo box that only allows to choose values
-  /// from a list of already existing values in the column.
-  /// Applicable for string columns only.
-  /// See also [Choices].
+  /** When set to 'true', switches the cell editor to a combo box that only allows to choose values
+   * from a list of already existing values in the column.
+   * Applicable for string columns only.
+   * See also [Choices]. */
   static AutoChoices = '.auto-choices';
 
   static ImportTime = 'import-time';
@@ -184,7 +184,7 @@ export class Tags {
 
   static QueryJson = '.query-json';
 
-  /// Expression that was used to derive the column.
+  /** Expression that was used to derive the column. */
   static Expression = 'expression';
 
   static TableCatalog = 'table_catalog';
@@ -257,197 +257,197 @@ export class Tags {
 
   static ValueValidators = '.value-validators';
 
-  /// Applies to default filters for string columns only.
-  /// When specified, treats the split strings as separate values in the filter
+  /** Applies to default filters for string columns only.
+   * When specified, treats the split strings as separate values in the filter */
   static MultiValueSeparator = '.multi-value-separator';
 
-  /// Name to be shown in the UI
+  /** Name to be shown in the UI */
   static FriendlyName = 'friendlyName';
 
-  /// Whether users can rename this table from the UI
+  /** Whether users can rename this table from the UI */
   static AllowRename = '.allow-rename';
 
-  /// Applies to columns or dataframes.
-  /// Comma-separated list of user or group names that are allowed to make changes to that column.
+  /** Applies to columns or dataframes.
+   * Comma-separated list of user or group names that are allowed to make changes to that column. */
   static EditableBy = 'editableBy';
 
-  /// Pin this column if you are specifically an editor (see "editable by").
+  /** Pin this column if you are specifically an editor (see "editable by"). */
   static PinIfEditable = 'pinIfEditable';
 
-  /// Boolean flag that specifies whether the column is exported as part of the CSV file. Defaults to true.
+  /** Boolean flag that specifies whether the column is exported as part of the CSV file. Defaults to true. */
   static IncludeInCsvExport = '.includeInCsvExport';
 
-  /// Boolean flag that Specifies whether the column is exported as part of the binary file. Defaults to true.
+  /** Boolean flag that Specifies whether the column is exported as part of the binary file. Defaults to true. */
   static IncludeInBinaryExport = '.includeInBinaryExport';
 
-  /// Specifies the behavior of link click (open in new tab, open in context panel, custom)
+  /** Specifies the behavior of link click (open in new tab, open in context panel, custom) */
   static LinkClickBehavior = '.linkClickBehavior';
 
-  /// Pipe-separated path that defines where this column is within the hierarchy
-  /// Used for dynamic forms construction, etc. Applies to columns.
+  /** Pipe-separated path that defines where this column is within the hierarchy
+   * Used for dynamic forms construction, etc. Applies to columns. */
   static Group = 'group';
 
-  /// JSON string containing [JS API: GroupsDescription].
-  /// Used to initialize the grid with group columns, colors, etc
+  /** JSON string containing [JS API: GroupsDescription].
+   * Used to initialize the grid with group columns, colors, etc */
   static ColumnGroups = '.columnGroups';
 
-  /// Links column and db property
+  /** Links column and db property */
   static DbPropertyName = 'dbPropertyName';
 
-  /// Links column and db property schema
+  /** Links column and db property schema */
   static DbPropertySchema = 'dbPropertySchema';
 
-  /// Specifies the column that has entity key
+  /** Specifies the column that has entity key */
   static DbPropertyReference = 'dbPropertyReference';
 
-  /// Specifies entity type that reference entity had
+  /** Specifies entity type that reference entity had */
   static DbPropertyReferenceType = 'dbPropertyReferenceType';
 
-  /// Specifies if calculated columns are subscribed
+  /** Specifies if calculated columns are subscribed */
   static CalculatedColumnsSubscribed = '.calculatedColumnsSubscribed';
 
-  /// Specifies list of subscriptions for calculated columns
+  /** Specifies list of subscriptions for calculated columns */
   static CalculatedColumnsSubscriptions = '.calculatedColumnsSubscriptions';
 
-  /// Boolean flag that allows not to show property panel for the cell/column
+  /** Boolean flag that allows not to show property panel for the cell/column */
   static ShowPropPanels = '.show-prop-panels';
 
-  /// Indicates whether the column should be excluded from the filter selection dialog
+  /** Indicates whether the column should be excluded from the filter selection dialog */
   static ExcludeFromFilterColumnSelect = '.exclude-from-filter-column-select';
 
-  /// Specifies if the color picker control should appear in the legend to allow color selection
+  /** Specifies if the color picker control should appear in the legend to allow color selection */
   static AllowColorPicking = '.allow-color-picking';
 
-  /// Used to preserve the column's original name, set only once (on the first rename)
+  /** Used to preserve the column's original name, set only once (on the first rename) */
   static ColumnInitialName = '.%initialName';
 
-  /// When set to true, visually obscures the column content using a blur effect.
-  /// Useful for anonymizing data in screenshots.
+  /** When set to true, visually obscures the column content using a blur effect.
+   * Useful for anonymizing data in screenshots. */
   static BlurContent = '.blur-content';
 
 }
 export class FuncOptions {
-  /// Fully qualified name of the function that edits corresponding function calls
+  /** Fully qualified name of the function that edits corresponding function calls */
   static Editor = 'editor';
 
-  /// Shows the function in the 'Action' pane
+  /** Shows the function in the 'Action' pane */
   static Action = 'action';
 
-  /// Shows the function in the toolbox
+  /** Shows the function in the toolbox */
   static Toolbox = 'toolbox';
 
   static AutostartImmediate = 'autostartImmediate';
 
   static IncludeInCreationScript = 'includeInCreationScript';
 
-  /// Applies to [FuncTypes.CellRenderer].
-  /// Comma-separated list of key-value pairs that represent
-  /// required tags for a column to be picked up by the renderer.
+  /** Applies to [FuncTypes.CellRenderer].
+   * Comma-separated list of key-value pairs that represent
+   * required tags for a column to be picked up by the renderer. */
   static CellRendererColumnTags = 'columnTags';
 
-  /// Applies to [FuncTypes.CellRenderer].
-  /// Cell type (name of the renderer to be used in the UI).
+  /** Applies to [FuncTypes.CellRenderer].
+   * Cell type (name of the renderer to be used in the UI). */
   static CellRendererCellType = 'cellType';
 
-  /// Applies to [FuncTypes.ValueEditor]. Refers to [Types].
+  /** Applies to [FuncTypes.ValueEditor]. Refers to [Types]. */
   static InputPropertyType = 'propertyType';
 
-  /// Applies to [FuncTypes.ValueEditor].
+  /** Applies to [FuncTypes.ValueEditor]. */
   static SemType = 'semType';
 
-  /// Applies to [FuncTypes.Panel]
+  /** Applies to [FuncTypes.Panel] */
   static VisibilityCondition = 'condition';
 
-  /// Demo path, such as 'Viewers | Radar'
+  /** Demo path, such as 'Viewers | Radar' */
   static DemoPath = 'demoPath';
 
-  /// When set to 'true', the app operates in 'browseOnly' mode, using the browse tree for navigation
-  /// and displaying results only within the browse view
+  /** When set to 'true', the app operates in 'browseOnly' mode, using the browse tree for navigation
+   * and displaying results only within the browse view */
   static BrowseOnly = 'browseOnly';
 
-  /// Path in the browse tree, such as 'Oligo'
+  /** Path in the browse tree, such as 'Oligo' */
   static BrowsePath = 'browsePath';
 
-  /// Viewer path in the top menu, should include the viewer name (Add | JavaScript Viewers | <ViewerPath>)
+  /** Viewer path in the top menu, should include the viewer name (Add | JavaScript Viewers | <ViewerPath>) */
   static ViewerPath = 'viewerPath';
 
-  /// When set to 'true', the function is shown in the grid context menu: Add | Summary Columns | ...
+  /** When set to 'true', the function is shown in the grid context menu: Add | Summary Columns | ... */
   static GridChart = 'gridChart';
 
-  /// Boolean value that controls whether a function should be executed when the input changes.
+  /** Boolean value that controls whether a function should be executed when the input changes. */
   static RunOnInput = 'runOnInput';
 
-  /// Boolean value that controls whether a function should be executed when the function preview opens.
-  /// Applicable to models as well.
+  /** Boolean value that controls whether a function should be executed when the function preview opens.
+   * Applicable to models as well. */
   static RunOnOpen = 'runOnOpen';
 
-  /// When set to 'true', the function is higher-priority to be set in Filters Panel
+  /** When set to 'true', the function is higher-priority to be set in Filters Panel */
   static PrimaryFilter = 'primaryFilter';
 
-  /// Function that returns a Widget that gets added as a tab to the "Inspector" window
+  /** Function that returns a Widget that gets added as a tab to the "Inspector" window */
   static InspectorPanel = 'inspectorPanel';
 
-  /// Runs a package JS function as a celery task in a docker-based worker.
-  /// 'true' — an auto-created Node worker container; a name — the package's dockerfiles/[name] container.
+  /** Runs a package JS function as a celery task in a docker-based worker.
+   * 'true' — an auto-created Node worker container; a name — the package's dockerfiles/[name] container. */
   static Queue = 'queue';
 
-  /// When set to 'true', runs a package JS function server-side in the default
-  /// worker queue — an alias of [Queue] = 'true'.
+  /** When set to 'true', runs a package JS function server-side in the default
+   * worker queue — an alias of [Queue] = 'true'. */
   static Server = 'server';
 
-  /// Function that should be cached
+  /** Function that should be cached */
   static Cache = 'cache';
 
-  /// Cron string that specifies when the cache is invalidated
+  /** Cron string that specifies when the cache is invalidated */
   static CacheInvalidateOn = 'cache.invalidateOn';
 
-  /// Specifies the position of the viewer (top, bottom, left, right, fill, auto)
+  /** Specifies the position of the viewer (top, bottom, left, right, fill, auto) */
   static ViewerPosition = 'viewerPosition';
 
-  /// Specifies language of this [FuncTypes.ScriptHandler].
-  /// Mandatory options if tag [FuncTypes.ScriptHandler] is present.
+  /** Specifies language of this [FuncTypes.ScriptHandler].
+   * Mandatory options if tag [FuncTypes.ScriptHandler] is present. */
   static ScriptHandlerLanguage = 'scriptHandler.language';
 
-  /// Specifies comma separated extensions that this [FuncTypes.ScriptHandler] supports.
-  /// Mandatory options if tag [FuncTypes.ScriptHandler] is present.
+  /** Specifies comma separated extensions that this [FuncTypes.ScriptHandler] supports.
+   * Mandatory options if tag [FuncTypes.ScriptHandler] is present. */
   static ScriptHandlerExtensions = 'scriptHandler.extensions';
 
-  /// Specifies friendlyName of this [FuncTypes.ScriptHandler] to be used in UI.
-  /// Defaults to language
+  /** Specifies friendlyName of this [FuncTypes.ScriptHandler] to be used in UI.
+   * Defaults to language */
   static ScriptHandlerName = 'scriptHandler.friendlyName';
 
-  /// Specifies comment start sign for this [FuncTypes.ScriptHandler]. Default: #
+  /** Specifies comment start sign for this [FuncTypes.ScriptHandler]. Default: # */
   static ScriptHandlerComment = 'scriptHandler.commentStart';
 
-  /// Specifies function that will handle vectorizations of scripts for this [FuncTypes.ScriptHandler].
-  /// The function should accept Script and return String with code that is vectorized.
-  /// Scalar script inputs in this case are corresponding to dataframe column names. Dataframe that has [VectorScript.vecInputTableName]
-  /// name should be used as target.
+  /** Specifies function that will handle vectorizations of scripts for this [FuncTypes.ScriptHandler].
+   * The function should accept Script and return String with code that is vectorized.
+   * Scalar script inputs in this case are corresponding to dataframe column names. Dataframe that has [VectorScript.vecInputTableName]
+   * name should be used as target. */
   static ScriptHandlerVectorization = 'scriptHandler.vectorizationFunction';
 
-  /// Specifies function that will handle parsing of text into Scritp object.
+  /** Specifies function that will handle parsing of text into Scritp object. */
   static ScriptHandlerParserFunc = 'scriptHandler.parserFunction';
 
-  /// Specifies template script for this [FuncTypes.ScriptHandler].
+  /** Specifies template script for this [FuncTypes.ScriptHandler]. */
   static ScriptHandlerTemplate = 'scriptHandler.templateScript';
 
-  /// Specifies code editor mode that will be used in CodeMirror for this [FuncTypes.ScriptHandler].
-  /// Defaults to language.
+  /** Specifies code editor mode that will be used in CodeMirror for this [FuncTypes.ScriptHandler].
+   * Defaults to language. */
   static ScriptHandlerEditorMode = 'scriptHandler.codeEditorMode';
 
-  /// Specifies a package function (qualified name, e.g. 'Flow:flowScriptEditor')
-  /// that opens a custom editor view for scripts of this [FuncTypes.ScriptHandler]'s
-  /// language. The function takes one script parameter and returns a view.
-  /// When absent, or when the function is not present, the default CodeMirror
-  /// script editor is used.
+  /** Specifies a package function (qualified name, e.g. 'Flow:flowScriptEditor')
+   * that opens a custom editor view for scripts of this [FuncTypes.ScriptHandler]'s
+   * language. The function takes one script parameter and returns a view.
+   * When absent, or when the function is not present, the default CodeMirror
+   * script editor is used. */
   static ScriptHandlerEditorFunc = 'scriptHandler.editorFunction';
 
-  /// Allows to add this function results as a column from the context menu
+  /** Allows to add this function results as a column from the context menu */
   static AllowAddAsColumn = 'allowAddAsColumn';
 
-  /// A way to invoke this function using the natural (English) language. Used by the AI.
-  /// Passed parameters would be substituted accordingly.
-  /// Example: "compound activity details for target ${target}"
+  /** A way to invoke this function using the natural (English) language. Used by the AI.
+   * Passed parameters would be substituted accordingly.
+   * Example: "compound activity details for target ${target}" */
   static SearchPattern = 'searchPattern';
 
   static ExcludeActionsPanel = 'exclude-actions-panel';
@@ -496,23 +496,23 @@ export class FuncParamOptions {
 
   static EditorParam = 'editorParam';
 
-  /// Column filter.
-  /// Applies to dataframes and columns
-  /// Example: `{columns: numerical}`
+  /** Column filter.
+   * Applies to dataframes and columns
+   * Example: `{columns: numerical}` */
   static Columns = 'columns';
 
-  /// A viewer that visualizes the result
-  /// Example: `viewer: Line chart(x: "time", y: "temperature")`
+  /** A viewer that visualizes the result
+   * Example: `viewer: Line chart(x: "time", y: "temperature")` */
   static Viewer = 'viewer';
 
-  /// Works together with choices. When set to "all", changing of the choice
-  /// would trigger propagation of this choice's default values for other parameters.
-  /// Example: Compute/cars.js
+  /** Works together with choices. When set to "all", changing of the choice
+   * would trigger propagation of this choice's default values for other parameters.
+   * Example: Compute/cars.js */
   static PropagateChoice = 'propagateChoice';
 
-  /// Column and table level metadata for dataframe outputs. If the keys are column names and the value is an object,
-  /// the object’s key–value pairs will be set as column tags. Otherwise, the value will be set as a dataframe tag.
-  /// Example: `meta: {"mol": {"DbTable": "structures", "DbSchema": "public", "DbColumn": "mol"}, ".data-connection": "System:Datagrok"}`
+  /** Column and table level metadata for dataframe outputs. If the keys are column names and the value is an object,
+   * the object’s key–value pairs will be set as column tags. Otherwise, the value will be set as a dataframe tag.
+   * Example: `meta: {"mol": {"DbTable": "structures", "DbSchema": "public", "DbColumn": "mol"}, ".data-connection": "System:Datagrok"}` */
   static Meta = 'meta';
 
 }

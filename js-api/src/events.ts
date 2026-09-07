@@ -40,8 +40,7 @@ export function debounce<T>(observable: rxjs.Observable<T>, milliseconds: number
  * // Direct usage (advanced):
  * __obs(EVENT_TYPE.TABLE_ADDED).subscribe(e => console.log(e));
  *
- * @internal
- */
+ * @internal */
 export function __obs<T = any>(eventId: string, object: any = null): Observable<T> {
   if (object == null) {
     return rxjs.fromEventPattern(
@@ -117,50 +116,70 @@ export class Events {
   /** Sample: {@link https://public.datagrok.ai/js/samples/events/viewer-events} */
   get onContextMenu(): rxjs.Observable<any> { return __obs(EVENT_TYPE.CONTEXT_MENU); }
 
+  /** Fires when the user asks to abort the running AI generation (the stop control of the AI panel). */
   get onAIGenerationAbortRequest(): rxjs.Observable<any> { return __obs(EVENT_TYPE.AI_GENERATION_ABORT); }
 
+  /** Fires when something asks the AI panel to open or close; emits the requesting widget. */
   get onAIPanelToggleRequest(): rxjs.Observable<Widget> { return __obs(EVENT_TYPE.AI_PANEL_TOGGLE); }
 
+  /** Fires after a context menu closes. */
   get onContextMenuClosed(): rxjs.Observable<any> { return __obs(EVENT_TYPE.CONTEXT_MENU_CLOSED); }
 
   /** Fires once a context menu popup is in the DOM; {@link onContextMenu} fires before the popup is built. */
   get onContextMenuShown(): rxjs.Observable<any> { return __obs(EVENT_TYPE.CONTEXT_MENU_SHOWN); }
 
+  /** Fires after the current view changes; `args.previous` and `args.current` are the two views. */
   get onCurrentViewChanged(): rxjs.Observable<EventData<ViewChangeArgs>> { return __obs(EVENT_TYPE.CURRENT_VIEW_CHANGED); }
 
+  /** Fires before the current view changes; `preventDefault()` keeps the current one. */
   get onCurrentViewChanging(): rxjs.Observable<EventData<ViewArgs>> { return __obs(EVENT_TYPE.CURRENT_VIEW_CHANGING); }
 
+  /** Fires when the current object (the one shown in the context panel) changes. */
   get onCurrentObjectChanged(): rxjs.Observable<EventData<EventArgs>> { return __obs(EVENT_TYPE.CURRENT_OBJECT_CHANGED); }
 
+  /** Fires when the current cell of the current table changes. */
   get onCurrentCellChanged(): rxjs.Observable<any> { return __obs(EVENT_TYPE.CURRENT_CELL_CHANGED); }
 
+  /** Fires when a platform input is created, before it is shown — the hook for decorating inputs globally. */
   get onInputCreated(): rxjs.Observable<InputBase> { return __obs(EVENT_TYPE.INPUT_CREATED); }
 
+  /** Fires when a {@link Dialog} is shown. */
   get onDialogShown(): rxjs.Observable<Dialog> { return __obs(EVENT_TYPE.DIALOG_SHOWN); }
 
   /** Sample: {@link https://public.datagrok.ai/js/samples/events/global-events} */
   get onTableAdded(): rxjs.Observable<EventData<DataFrameArgs>> { return __obs(EVENT_TYPE.TABLE_ADDED); }
 
+  /** Fires when a table is closed and leaves the workspace. */
   get onTableRemoved(): rxjs.Observable<EventData<DataFrameArgs>> { return __obs(EVENT_TYPE.TABLE_REMOVED); }
 
+  /** Fires when a data query starts executing. */
   get onQueryStarted(): rxjs.Observable<any> { return __obs(EVENT_TYPE.QUERY_STARTED); }
 
+  /** Fires when a data query finishes, whether it succeeded or failed. */
   get onQueryFinished(): rxjs.Observable<any> { return __obs(EVENT_TYPE.QUERY_FINISHED); }
 
+  /** Fires after the set of views in the current project changes; see also {@link onCurrentViewChanged} for the active view. */
   get onViewChanged(): rxjs.Observable<any> { return __obs(EVENT_TYPE.VIEW_CHANGED); }
 
+  /** Fires before the set of views in the current project changes. */
   get onViewChanging(): rxjs.Observable<any> { return __obs(EVENT_TYPE.VIEW_CHANGING); }
 
+  /** Fires after a view is added to the workspace. */
   get onViewAdded(): rxjs.Observable<View> { return __obs(EVENT_TYPE.VIEW_ADDED); }
 
+  /** Fires before a view is added to the workspace. */
   get onViewAdding(): rxjs.Observable<View> { return __obs(EVENT_TYPE.VIEW_ADDING); }
 
+  /** Fires after a view is closed. */
   get onViewRemoved(): rxjs.Observable<View> { return __obs(EVENT_TYPE.VIEW_REMOVED); }
 
+  /** Fires before a view is closed; `preventDefault()` keeps it open. */
   get onViewRemoving(): rxjs.Observable<EventData<ViewArgs>> { return __obs(EVENT_TYPE.VIEW_REMOVING); }
 
+  /** Fires after a view is renamed. */
   get onViewRenamed(): rxjs.Observable<View> { return __obs(EVENT_TYPE.VIEW_RENAMED); }
 
+  /** Fires when the user asks to reset all filters of the current table. */
   get onResetFilterRequest(): rxjs.Observable<any> { return __obs(EVENT_TYPE.RESET_FILTER_REQUEST); }
 
   /** Sample: {@link https://public.datagrok.ai/js/samples/events/layout-events} */
@@ -175,32 +194,46 @@ export class Events {
   /** File in the file share has been edited and saved by the user. */
   get onFileEdited(): rxjs.Observable<FileInfo> { return __obs(EVENT_TYPE.FILE_EDITED); }
 
+  /** Fires when the current project changes. */
   get onCurrentProjectChanged(): rxjs.Observable<any> { return __obs(EVENT_TYPE.CURRENT_PROJECT_CHANGED); }
 
+  /** Same event as {@link onProjectSaved}: fires after a project is saved to the server. */
   get onProjectUploaded(): rxjs.Observable<any> { return __obs(EVENT_TYPE.PROJECT_SAVED); }
 
+  /** Fires after a project is saved to the server. */
   get onProjectSaved(): rxjs.Observable<any> { return __obs(EVENT_TYPE.PROJECT_SAVED); }
 
+  /** Fires before a project is saved to the server. */
   get onProjectSaving(): rxjs.Observable<any> { return __obs(EVENT_TYPE.PROJECT_SAVING); }
 
+  /** Fires after a project is opened in the workspace. */
   get onProjectOpened(): rxjs.Observable<any> { return __obs(EVENT_TYPE.PROJECT_OPENED); }
 
+  /** Fires before a project is closed. */
   get onProjectClosing(): rxjs.Observable<any> { return __obs(EVENT_TYPE.PROJECT_CLOSING); }
 
+  /** Fires after a project is closed. */
   get onProjectClosed(): rxjs.Observable<any> { return __obs(EVENT_TYPE.PROJECT_CLOSED); }
 
+  /** Fires when an open project becomes dirty (its tables or views changed). */
   get onProjectModified(): rxjs.Observable<any> { return __obs(EVENT_TYPE.PROJECT_MODIFIED); }
 
+  /** Fires when a tooltip is about to be shown; handlers can `preventDefault()` to suppress it. */
   get onTooltipRequest(): rxjs.Observable<any> { return __obs(EVENT_TYPE.TOOLTIP_REQUEST); }
 
+  /** Fires after a tooltip is shown. */
   get onTooltipShown(): rxjs.Observable<any> { return __obs(EVENT_TYPE.TOOLTIP_SHOWN); }
 
+  /** Fires after a tooltip closes. */
   get onTooltipClosed(): rxjs.Observable<any> { return __obs(EVENT_TYPE.TOOLTIP_CLOSED); }
 
+  /** Fires after a viewer is added to a view; `args.viewer` is the viewer. */
   get onViewerAdded(): rxjs.Observable<EventData<ViewerArgs>> { return __obs(EVENT_TYPE.VIEWER_ADDED); }
 
+  /** Fires after a viewer is closed. */
   get onViewerClosed(): rxjs.Observable<EventData<ViewerArgs>> { return __obs(EVENT_TYPE.VIEWER_CLOSED); }
 
+  /** Fires when the default row form is being built; change `args.columns` to control its fields. */
   get onFormCreating(): rxjs.Observable<EventData<ColumnsArgs>> { return __obs(EVENT_TYPE.FORM_CREATING); }
 
   /** You can use it to dynamically add panes for the context panel */
@@ -220,14 +253,18 @@ export class Events {
   /** Occurs when an entity is shared with users or groups via the share dialog. */
   get onEntityShared(): rxjs.Observable<Entity> { return __obs(EVENT_TYPE.ENTITY_SHARED); }
 
+  /** Fires when a link inside any grid cell is clicked; `args.gridCell` and `args.link`. */
   get onGridCellLinkClicked(): rxjs.Observable<EventData<GridCellArgs>> {return __obs(EVENT_TYPE.GRID_CELL_LINK_CLICKED); }
 
+  /** Fires when a node is added to the Browse tree — the hook for decorating or extending it. */
   get onBrowseNodeCreated(): rxjs.Observable<TreeViewNode> {
     return __obs<TreeViewNode>(EVENT_TYPE.TREE_VIEW_NODE_ADDED).pipe(filter(n => n.rootNode.tag == 'Browse' ));
   }
 
+  /** Every log message the client produces (debug, info, warning, error, audit, usage). */
   get onLog(): Observable<LogMessage> { return api.grok_Logger_OnLog(); }
 
+  /** Messages the server pushes over the web socket; `eventType` names the message kind, `message` carries the payload. */
   get onServerMessage(): Observable<IServerMessageEventArgs> { return __obs(EVENT_TYPE.SERVER_MESSAGE); }
 }
 
@@ -272,7 +309,7 @@ export class EventData<TArgs = any> {
     this.dart = dart;
   }
 
-  /** @type {UIEvent} */
+
   get causedBy(): UIEvent {
     return api.grok_EventData_Get_CausedBy(this.dart);
   }
@@ -382,8 +419,7 @@ export class EventBus {
  * Wraps a Dart stream subscription as a JavaScript StreamSubscription.
  * @param dart - Dart subscription handle
  * @returns StreamSubscription wrapper
- * @internal
- */
+ * @internal */
 export function _sub(dart: any): StreamSubscription {
   return new StreamSubscription(dart);
 }

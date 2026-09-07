@@ -198,8 +198,7 @@ export class Dapi {
     return new ProjectsDataSource(api.grok_Dapi_Projects(), 'Project');
   }
 
-  /** Environments API endpoint
-   *  @type {HttpDataSource<ScriptEnvironment>} */
+  /** Environments API endpoint */
   get environments(): HttpDataSource<ScriptEnvironment> {
     return new HttpDataSource(api.grok_Dapi_Environments());
   }
@@ -226,8 +225,7 @@ export class Dapi {
   }
 
 
-  /** Users Files management API endpoint
-   *  @type {FilesDataSource} */
+  /** Users Files management API endpoint */
   get files(): FilesDataSource {
     return new FilesDataSource();
   }
@@ -243,7 +241,7 @@ export class Dapi {
   /** Proxies URL request via Datagrok server with same interface as "fetch".
    * Useful for circumventing CORS restrictions, and for caching results.
    * @see [sample](../../../../../packages/ApiSamples/scripts/dapi/fetch.js)
-   * @param {number} maxAge - forces server to send Cache-Control in response with configured max-age directive */
+   * @param maxAge - forces server to send Cache-Control in response with configured max-age directive */
   async fetchProxy(url: string, params?: RequestInit, maxAge?: number): Promise<Response> {
     params ??= {};
     params.headers ??= {};
@@ -268,20 +266,17 @@ export class Dapi {
     return fetch(proxyUrl, params);
   }
 
-  /** Administering API endpoint
-   *  @type {AdminDataSource} */
+  /** Administering API endpoint */
   get admin(): AdminDataSource {
     return new AdminDataSource(api.grok_Dapi_Admin());
   }
 
-  /** Server info API endpoint
-   *  @type {InfoDataSource} */
+  /** Server info API endpoint */
   get info(): InfoDataSource {
     return new InfoDataSource(api.grok_Dapi_Info());
   }
 
-  /** Logging API endpoint
-   *  @type {HttpDataSource<LogEvent>} */
+  /** Logging API endpoint */
   get log(): LogDataSource {
     return new LogDataSource(api.grok_Dapi_Log());
   }
@@ -299,12 +294,19 @@ export class Dapi {
  * Common functionality for handling collections of entities stored on the server.
  * Works with Datagrok REST API, allows to get filtered and paginated lists of entities,
  * Can be extended with specific methods. (i.e. {@link UsersDataSource})
+ *
+ * The fluent methods ({@link filter}, {@link order}, {@link page}, {@link by}, {@link include})
+ * MUTATE this source and return it, and every `grok.dapi.<name>` getter creates a fresh source, so
+ * chain on one instance: `grok.dapi.users.filter('login = "admin"').list()` — a filter applied to
+ * `grok.dapi.users` on one line does not carry over to `grok.dapi.users` on the next.
+ * @example
+ * const recent = await grok.dapi.projects.filter('createdOn > -1w').order('createdOn', true).list({pageSize: 20});
  */
 export class HttpDataSource<T> {
   dart: any;
   clsName: string;
 
-  /** @constructs HttpDataSource */
+
   constructor(s: any, clsName?: string | null) {
     this.dart = s;
     this.clsName = clsName ?? '';
@@ -340,8 +342,8 @@ export class HttpDataSource<T> {
   /** Returns an entity with the specified id.
    *  Throws an exception if an entity does not exist, or is not accessible in the current context.
    *  Sample: {@link https://public.datagrok.ai/js/samples/data-access/save-and-load-df}
-   *  @param {string} id - GUID of the corresponding object
-   *  @returns `{Promise<object>}` - entity. */
+   *  @param id - GUID of the corresponding object
+   *  @returns `{Promise<object>}` - entity.  */
   find(id: string): Promise<T> {
     return api.grok_DataSource_Find(this.dart, id);
   }
@@ -407,9 +409,7 @@ export class HttpDataSource<T> {
 /**
  * Functionality for handling Users collection from server and working with Users remote endpoint
  * Allows to load current user and list of all Datagrok users with filtering and pagination
- * See example: {@link https://public.datagrok.ai/js/samples/dapi/who-am-i}
- * @extends HttpDataSource
- * */
+ * See example: {@link https://public.datagrok.ai/js/samples/dapi/who-am-i} */
 export class UsersDataSource extends HttpDataSource<User> {
 
   constructor(s: any) {
@@ -435,7 +435,7 @@ export class UsersDataSource extends HttpDataSource<User> {
 
 export class AdminDataSource {
   dart: any;
-  /** @constructs AdminDataSource*/
+
   constructor(dart: any) {
     this.dart = dart;
   }
@@ -454,8 +454,7 @@ export class AdminDataSource {
 
   /**
    * Sends email
-   * @param email - message that will be sent using configured SMTP service
-   */
+   * @param email - message that will be sent using configured SMTP service */
   async sendEmail(email: Email): Promise<void> {
     if (email.to.length === 0)
       throw new Error('Recipients list shouldn\'t be empty');
@@ -486,7 +485,7 @@ export class AdminDataSource {
 
 export class InfoDataSource {
   dart: any;
-  /** @constructs InfoDataSource */
+
   constructor(dart: any) {
     this.dart = dart;
   }
@@ -540,9 +539,7 @@ export interface ServiceInfo {
 
 /**
  * Functionality for handling groups collection from server
- * Allows to manage {@link Group}
- * @extends HttpDataSource
- * */
+ * Allows to manage {@link Group} */
 export class GroupsDataSource extends HttpDataSource<Group> {
   constructor(s: any, clsName: string) {
     super(s, clsName);
@@ -551,7 +548,7 @@ export class GroupsDataSource extends HttpDataSource<Group> {
   }
 
   /** Creates a new group
-   *  @returns {Promise<Group>} - Group. */
+   *  @returns Group. */
   createNew(name: string): Promise<Group> {
     let g = new Group(api.grok_Group(name));
     return this.save(g);
@@ -606,7 +603,7 @@ export class GroupsDataSource extends HttpDataSource<Group> {
   }
 
   /** Saves a group with relations
-   *  @returns {Promise<Group>} - Group. */
+   *  @returns Group. */
   saveRelations(e: Group): Promise<Group> {
     return api.grok_GroupsDataSource_Save(this.dart, e.dart);
   }
@@ -631,9 +628,7 @@ export class GroupsDataSource extends HttpDataSource<Group> {
 
 /**
  * Functionality for handling entities collection from server
- * Allows to manage {@link Entity}
- * @extends HttpDataSource
- * */
+ * Allows to manage {@link Entity} */
 export class EntitiesDataSource extends HttpDataSource<Entity> {
   constructor(s: any) {
     super(s);
@@ -663,7 +658,7 @@ export class EntitiesDataSource extends HttpDataSource<Entity> {
   }
 
   /** Returns entity properties
-   * @returns {Promise<Map>} props */
+   * @returns props */
   getProperties(entity: Entity): Promise<Map<Property, any>> {
     return api.grok_EntitiesDataSource_GetProperties(this.dart, entity.dart);
   }
@@ -677,9 +672,7 @@ export class EntitiesDataSource extends HttpDataSource<Entity> {
 /**
  * Functionality for handling connections collection from server and working with credentials remote endpoint
  * Allows to manage {@link DataConnection}
- * See also: {@link https://datagrok.ai/help/datagrok/solutions/enterprise/security}
- * @extends HttpDataSource
- * */
+ * See also: {@link https://datagrok.ai/help/datagrok/solutions/enterprise/security} */
 export class DataConnectionsDataSource extends HttpDataSource<DataConnection> {
   constructor(s: any) {
     super(s);
@@ -722,9 +715,7 @@ export class DataConnectionsDataSource extends HttpDataSource<DataConnection> {
 
 /**
  * Functionality for handling functions collection from server
- * Allows managing {@link Func}
- * @extends HttpDataSource
- * */
+ * Allows managing {@link Func} */
 export class FuncsDataSource extends HttpDataSource<Func> {
   constructor(s: any) {
     super(s);
@@ -738,9 +729,7 @@ export class FuncsDataSource extends HttpDataSource<Func> {
 /**
  * Functionality for handling credentials collection from server and working with credentials remote endpoint
  * Allows to manage {@link Credentials}
- * See also: {@link https://datagrok.ai/help/datagrok/solutions/enterprise/security#credentials}
- * @extends HttpDataSource
- * */
+ * See also: {@link https://datagrok.ai/help/datagrok/solutions/enterprise/security#credentials} */
 export class CredentialsDataSource extends HttpDataSource<Credentials> {
   constructor(s: any) {
     super(s);
@@ -763,11 +752,9 @@ export class CredentialsDataSource extends HttpDataSource<Credentials> {
 
 /**
  * Functionality for handling layouts collection from server
- * Allows to manage {@link ViewLayout}
- * @extends HttpDataSource
- * */
+ * Allows to manage {@link ViewLayout} */
 export class LayoutsDataSource extends HttpDataSource<ViewLayout> {
-  /** @constructs LayoutsDataSource*/
+
   constructor(s: any) {
     super(s);
   }
@@ -780,11 +767,9 @@ export class LayoutsDataSource extends HttpDataSource<ViewLayout> {
 
 /**
  * Functionality for handling views information from server
- * Allows to manage {@link ViewInfo}
- * @extends HttpDataSource
- * */
+ * Allows to manage {@link ViewInfo} */
 export class ViewsDataSource extends HttpDataSource<ViewInfo> {
-  /** @constructs ViewsDataSource*/
+
   constructor(s: any) {
     super(s);
   }
@@ -803,24 +788,26 @@ export class PermissionsDataSource {
   }
 
   /** Checks if current user has permission {permission} for entity {e}
-   * @param {Entity} e Entity to check permission for
-   * @param {'Edit' | 'View' | 'Share' | 'Delete'} permission Permission type
-   * @returns {boolean} Result */
+   * @param e - Entity to check permission for
+   * @param permission - Permission type
+   * @returns Result */
   check(e: Entity, permission: 'Edit' | 'View' | 'Share' | 'Delete'): Promise<boolean> {
     return api.grok_Dapi_Check_Permissions(e.dart, permission);
   }
 
   /** Grants permission on entity to the group
-   * @param {boolean} edit allow to edit entity
-   * */
+   * @param edit - allow to edit entity */
   grant(e: Entity, g: Group, edit: boolean): Promise<any> {
     return api.grok_Dapi_Set_Permission(e.dart, g.dart, edit);
   }
 
-  /** Revokes the group's permission on the entity. Accepts the arguments in either order;
-   * prefer `revoke(entity, group)`, matching {@link grant}. */
-  revoke(a: Group | Entity, b: Entity | Group): Promise<any> {
-    const [g, e] = a instanceof Group ? [a, b] : [b, a];
+  /** Revokes the group's permission on the entity. */
+  revoke(e: Entity, g: Group): Promise<any>;
+  /** @deprecated Use `revoke(entity, group)`, matching {@link grant}. */
+  revoke(g: Group, e: Entity): Promise<any>;
+  revoke(a: Entity | Group, b: Group | Entity): Promise<any> {
+    // Both orders reach here; when both arguments are groups the legacy (group, entity) reading wins.
+    const [e, g] = b instanceof Group && !(a instanceof Group) ? [a, b] : [b, a];
     return api.grok_Dapi_Delete_Permission(e.dart, g.dart);
   }
 }
@@ -835,45 +822,42 @@ export class UserDataStorage {
   }
 
   /** Saves a single value to Users Data Storage
-   * @param {string} name Storage name
-   * @param {boolean} currentUser Value should be available only for current user. If false, shared storage is used. */
+   * @param name - Storage name
+   * @param currentUser - Value should be available only for current user. If false, shared storage is used. */
   postValue(name: string, key: string, value: string, currentUser: boolean = true): Promise<void> {
     return api.grok_Dapi_UserDataStorage_PostValue(name, key, value, currentUser);
   }
 
   /** Saves a map to Users Data Storage, will be appended to existing data
-   * @param {boolean} currentUser Value should be available only for current user. If false, shared storage is used. */
+   * @param currentUser - Value should be available only for current user. If false, shared storage is used. */
   post(name: string, data: any, currentUser: boolean = true): Promise<void> {
     return api.grok_Dapi_UserDataStorage_Post(name, data, currentUser);
   }
 
   /** Saves a map to Users Data Storage, will replace existing data
-   * @param {boolean} currentUser Value should be available only for current user. If false, shared storage is used. */
+   * @param currentUser - Value should be available only for current user. If false, shared storage is used. */
   put(name: string, data: any, currentUser: boolean = true): Promise<void> {
     return api.grok_Dapi_UserDataStorage_Put(name, data, currentUser);
   }
 
   /** Retrieves a map from Users Data Storage
-   * @param {boolean} currentUser - get a value from a current user storage. If false, shared storage is used.
-   * @returns {Promise<Map>} */
+   * @param currentUser - get a value from a current user storage. If false, shared storage is used. */
   get(name: string, currentUser: boolean = true): Promise<any> {
     return api.grok_Dapi_UserDataStorage_Get(name, currentUser);
   }
 
   /** Retrieves a single value from Users Data Storage
-   * @param {string} name Storage name
-   * @param {string} key Value key
-   * @param {boolean} currentUser get a value from a current user storage. If false, shared storage is used.
-   * @returns {Promise<string>} */
+   * @param name - Storage name
+   * @param key - Value key
+   * @param currentUser - get a value from a current user storage. If false, shared storage is used. */
   getValue(name: string, key: string, currentUser: boolean = true): Promise<string> {
     return api.grok_Dapi_UserDataStorage_GetValue(name, key, currentUser);
   }
 
   /** Removes a single value from Users Data Storage
-   * @param {string} name Storage name
-   * @param {string} key Value key
-   * @param {boolean} currentUser get a value from a current user storage. If false, shared storage is used.
-   * @returns {Promise} */
+   * @param name - Storage name
+   * @param key - Value key
+   * @param currentUser - get a value from a current user storage. If false, shared storage is used. */
   remove(name: string, key: string, currentUser: boolean = true): Promise<void> {
     return api.grok_Dapi_UserDataStorage_Delete(name, key, currentUser);
   }
@@ -881,9 +865,7 @@ export class UserDataStorage {
 
 
 /**
- * Functionality for working with remote projects
- * @extends HttpDataSource
- * */
+ * Functionality for working with remote projects */
 export class ProjectsDataSource extends HttpDataSource<Project> {
   constructor(s: any, clsName: string) {
     super(s, clsName);
@@ -937,7 +919,7 @@ export class SpacesDataSource extends HttpDataSource<Project> {
   /**
    * Returns a SpaceClient for the space with the specified ID.
    * Use the returned client to manage subspaces, entities, and files within the space.
-   * @param spaceId - The unique identifier of the space {@link Project.id} */
+   * @param spaceId - The unique identifier of the space {@link Project.id}  */
   id(spaceId: string): SpaceClient {
     return new SpaceClient(api.grok_Dapi_Spaces_Id(this.dart, spaceId));
   }
@@ -961,7 +943,7 @@ export class SpaceClient {
    * or reference will be created.
    * @param childSpace - The subspace name or an existing space.
    * @param link - If true, creates a link reference instead of moving the subspace (default: false). When only the subspace name is provided,
-   * this parameter is ignored. */
+   * this parameter is ignored.  */
   addSubspace(childSpace: Project | string, link: boolean = false): Promise<Project> {
     return toJs(api.grok_SpaceClient_AddSubspace(this.dart, childSpace instanceof Project ? childSpace.dart : childSpace, link));
   }
@@ -977,7 +959,7 @@ export class SpaceClient {
    * When link is true, creates a reference without moving - the entity can appear in multiple spaces.
    * Moving a space preserves all its files, nested subspaces, and contained entities.
    * @param entityId - The unique identifier of the entity to add
-   * @param link - If true, creates a link reference instead of moving the entity (default: false) */
+   * @param link - If true, creates a link reference instead of moving the entity (default: false)  */
   addEntity(entityId: string, link: boolean = false): Promise<void> {
     return api.grok_SpaceClient_AddEntity(this.dart, entityId, link);
   }
@@ -985,8 +967,7 @@ export class SpaceClient {
   /**
    * Removes an entity from this space.
    * Note: If the entity is linked, only reference will be deleted.
-   * @param entityId - {@link Entity.id}
-   */
+   * @param entityId - {@link Entity.id} */
   removeEntity(entityId: string): Promise<void> {
     return api.grok_SpaceClient_RemoveEntity(this.dart, entityId);
   }
@@ -1016,8 +997,7 @@ export class SpaceChildrenClient extends HttpDataSource<Entity> {
    * By default, only directly owned children are returned (not links).
    * @param types - Comma-separated list of entity types to include (e.g., 'Script,DataQuery')
    * @param includeLinked - If true, includes linked references in addition to owned children (default: false)
-   * @returns A new SpaceChildrenClient with the filter applied
-   */
+   * @returns A new SpaceChildrenClient with the filter applied */
   ofTypes(types: string, includeLinked: boolean = false): SpaceChildrenClient {
     return new SpaceChildrenClient(api.grok_SpaceChildrenClient_Filter(this.dart, types, includeLinked));
   }
@@ -1740,9 +1720,7 @@ export class DomainSavedFiltersClient {
 }
 
 /**
- * Functionality for working with remote tables
- * @extends HttpDataSource
- * */
+ * Functionality for working with remote tables */
 export class TablesDataSource extends HttpDataSource<TableInfo> {
   constructor(s: any) {
     super(s);
@@ -1756,21 +1734,19 @@ export class TablesDataSource extends HttpDataSource<TableInfo> {
 
   /** Loads a dataframe by id.
    * Sample: {@link https://public.datagrok.ai/js/samples/data-access/save-and-load-df}
-   * @param {string} id - dataframe id */
+   * @param id - dataframe id */
   getTable(id: string): Promise<DataFrame> {
     return api.grok_Dapi_TablesDataSource_GetTable(this.dart, id);
   }
 }
 
 export class DockerDataSource {
-  /**DockerImages API endpoint
-   * @type {HttpDataSource<DockerImage>} */
+  /** DockerImages API endpoint */
   get dockerImages(): DockerImagesDataSource {
     return new DockerImagesDataSource(api.grok_Dapi_DockerImages());
   }
 
-  /**Dockerfiles API endpoint
-   * @type {HttpDataSource<DockerImage>} */
+  /** Dockerfiles API endpoint */
   get dockerContainers(): DockerContainersDataSource {
     return new DockerContainersDataSource(api.grok_Dapi_DockerContainers());
   }
@@ -1784,8 +1760,7 @@ export class DockerDataSource {
   }
 }
 
-/** Functionality to work with Docker images. See also {@link DockerContainersDataSource}.
- * @extends HttpDataSource */
+/** Functionality to work with Docker images. See also {@link DockerContainersDataSource}. */
 export class DockerImagesDataSource extends HttpDataSource<DockerImage> {
 
   constructor(s: any) {
@@ -1795,16 +1770,14 @@ export class DockerImagesDataSource extends HttpDataSource<DockerImage> {
   /**
    * Revalidates Docker image (checks that image exists and is pullable).
    * @param imageId - ID of the {@link DockerImage} to revalidate.
-   * @returns {Promise<void>} - promise that resolves with void or throws Exception if something went wrong.
-   */
+   * @returns promise that resolves with void or throws Exception if something went wrong. */
   revalidate(imageId: string): Promise<void> {
     return api.grok_Dapi_DockerImagesDataSource_Rebuild(this.dart, imageId);
   }
 }
 
 /** Functionality to work with Docker containers.
- * See help: {@link https://datagrok.ai/help/develop/how-to/docker_containers}.
- * @extends HttpDataSource */
+ * See help: {@link https://datagrok.ai/help/develop/how-to/docker_containers}. */
 export class DockerContainersDataSource extends HttpDataSource<DockerContainer> {
   constructor(s: any) {
     super(s);
@@ -1815,8 +1788,7 @@ export class DockerContainersDataSource extends HttpDataSource<DockerContainer> 
    * @param containerId - ID of the {@link DockerContainer} to be run.
    * @param awaitStart - if [true] promise will not be resolved until the container is started,
    * otherwise, it doesn't wait for start and resolves immediately after the container is queued for start.
-   * @returns {Promise<void>} - promise that resolves with void or throws Exception if something went wrong.
-   */
+   * @returns promise that resolves with void or throws Exception if something went wrong. */
   run(containerId: string, awaitStart: boolean = false): Promise<void> {
     return api.grok_Dapi_DockerContainersDataSource_Run(this.dart, containerId, awaitStart);
   }
@@ -1826,8 +1798,7 @@ export class DockerContainersDataSource extends HttpDataSource<DockerContainer> 
    * @param containerId - ID of the {@link DockerContainer} to be stopped.
    * @param awaitStop - if [true] promise will not be resolved until the container is stopped,
    * otherwise, it doesn't wait for a stop and resolves immediately after the container is queued for a stop.
-   * @returns {Promise<void>} or throws Exception if something went wrong.
-   */
+   * @returns or throws Exception if something went wrong. */
   stop(containerId: string, awaitStop: boolean = false): Promise<void> {
     return api.grok_Dapi_DockerContainersDataSource_Stop(this.dart, containerId, awaitStop);
   }
@@ -1841,8 +1812,7 @@ export class DockerContainersDataSource extends HttpDataSource<DockerContainer> 
    * @param containerId - ID of the {@link DockerContainer} to which the http request should be sent.
    * @param path - URI without scheme and authority component.
    * @param params - parameters of the request.
-   * @returns {Promise<Response>} - promise that resolves with [Response](https://developer.mozilla.org/en-US/docs/Web/API/Response).
-   */
+   * @returns promise that resolves with [Response](https://developer.mozilla.org/en-US/docs/Web/API/Response). */
   async fetchProxy(containerId: string, path: string, params?: RequestInit): Promise<Response> {
     params ??= {};
     params.method ??= 'GET';
@@ -1858,8 +1828,7 @@ export class DockerContainersDataSource extends HttpDataSource<DockerContainer> 
    * proxied Docker WebSocket connection.
    * @param containerId - ID of the {@link DockerContainer} to which the WebSocket connection will be established.
    * @param path - URI without scheme and authority component that points to endpoint inside  the Docker container
-   * @param timeout - Timeout in ms for initial connection establishment. Set it to higher values if you are using container with on_demand configuration set to `true`.
-   */
+   * @param timeout - Timeout in ms for initial connection establishment. Set it to higher values if you are using container with on_demand configuration set to `true`. */
   async webSocketProxy(containerId: string, path: string, timeout: number = 60000): Promise<WebSocket> {
     if (!path.startsWith('/')) path = `/${path}`;
 
@@ -1913,8 +1882,7 @@ export class DockerContainersDataSource extends HttpDataSource<DockerContainer> 
    * a message right away, consider using the asynchronous version.
    * @param containerId - ID of the {@link DockerContainer} to which the WebSocket connection will be established.
    * @param path - URI without scheme and authority component that points to endpoint inside  the Docker container
-   * @param timeout - Timeout in ms for initial connection establishment. Set it to higher values if you are using container with on_demand configuration set to `true`.
-   */
+   * @param timeout - Timeout in ms for initial connection establishment. Set it to higher values if you are using container with on_demand configuration set to `true`. */
   webSocketProxySync(containerId: string, path: string, timeout: number = 60000): WebSocket {
     const socket = new WebSocket(`${api.grok_Dapi_WS_Root()}/docker/containers/proxy-ws/${containerId}${path}`);
     new Promise((resolve, reject) => {
@@ -1962,8 +1930,7 @@ export class DockerContainersDataSource extends HttpDataSource<DockerContainer> 
    * Returns container's logs or throws Exception with the cause.
    * @param containerId - ID of the {@link DockerContainer} whose logs is to be obtained.
    * @param limit - maximum line count of logs.
-   * @returns string - container logs or null if there are no logs.
-   */
+   * @returns string - container logs or null if there are no logs. */
   getContainerLogs(containerId: string, limit: number = 10000): Promise<string | null> {
     return api.grok_Dapi_DockerContainersDataSource_GetContainerLogs(this.dart, containerId, limit);
   }
@@ -2013,8 +1980,7 @@ export class LogDataSource extends HttpDataSource<LogEvent> {
     super(s);
   }
 
-  /** Activity API endpoint
-   *  @type {ActivityDataSource} */
+  /** Activity API endpoint */
   get activity(): ActivityDataSource {
     return new ActivityDataSource(api.grok_Dapi_Activity());
   }
@@ -2145,9 +2111,9 @@ export class FilesDataSource {
 
   /** Lists files according to a search pattern.
    * Sample: {@link https://public.datagrok.ai/js/samples/dapi/files}
-   * @param {FileInfo | string} file - folder
-   * @param {boolean} recursive - whether to search in folders recursively
-   * @param {string} searchPattern - search pattern, such as part of a filename or extension, e.g., "filename-prefix" and "csv" */
+   * @param file - folder
+   * @param recursive - whether to search in folders recursively
+   * @param searchPattern - search pattern, such as part of a filename or extension, e.g., "filename-prefix" and "csv" */
   async list(file: FileInfo | string, recursive: boolean = false, searchPattern: string | null = null): Promise<FileInfo[]> {
     file = this.setRoot(file);
     return toJs(await api.grok_Dapi_UserFiles_List(file, recursive, searchPattern, this.root));
@@ -2157,8 +2123,7 @@ export class FilesDataSource {
    * Reads the entire contents of a folder and returns an object.
    * The resulting object's keys are the file names relative to the folder path, and the corresponding values are of the Blob type.
    * @param recursive - whether to read files in folders recursively
-   * @param ext - files extension
-   */
+   * @param ext - files extension */
   async readFilesAsBlobs(folder: FileInfo | string, recursive: boolean = false, ext: string | undefined = undefined): Promise<{[key: string]: Blob}> {
     const folderPath = this.setRoot(folder);
     const conn = folderPath.replace(":", ".").split('/')[0];
@@ -2187,8 +2152,7 @@ export class FilesDataSource {
    * The resulting object's keys are the file names relative to the folder path, and the corresponding values are JSON objects.
    * If conversion to a JSON fails, the file will be skipped.
    * @param recursive - whether to read files in folders recursively
-   * @param ext - files extension
-   */
+   * @param ext - files extension */
   async readFilesAsJson(folder: FileInfo | string, recursive: boolean = false, ext: string | undefined = undefined): Promise<{[key: string]: any}> {
     const filesBlobs: {[key: string]: Blob} = await this.readFilesAsBlobs(folder, recursive, ext);
     const jsons: {[key: string]: any} = {};
@@ -2205,8 +2169,7 @@ export class FilesDataSource {
    * The resulting object's keys are the file names relative to the folder path, and the corresponding values are strings.
    * If conversion to a string fails, the file will be skipped.
    * @param recursive - whether to read files in folders recursively
-   * @param ext - files extension
-   */
+   * @param ext - files extension */
   async readFilesAsString(folder: FileInfo | string, recursive: boolean = false, ext: string | undefined = undefined): Promise<{[key: string]: string}> {
     const filesBlobs: {[key: string]: Blob} = await this.readFilesAsBlobs(folder, recursive, ext);
     const files: {[key: string]: string} = {};

@@ -243,8 +243,7 @@ export const AI = {
      * @returns A list of entities ordered by descending similarity
      *   (1.0 = perfect match).
      *
-     * @throws Error if AI indexing is disabled or no AI provider is configured.
-     */
+     * @throws Error if AI indexing is disabled or no AI provider is configured. */
     async searchEntities(
         text: string,
         threshold: number = 0.5,

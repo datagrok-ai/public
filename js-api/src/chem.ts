@@ -715,13 +715,11 @@ export namespace chem {
   /**
    * Computes similarity scores for molecules in the input vector based on a preferred similarity score.
    * See example: {@link https://public.datagrok.ai/js/samples/domains/chem/similarity-scoring-scores}
-   * @async
-   * @param {Column} column - Column with molecules to search in
-   * @param {string} molecule - Reference molecule in one of formats supported by RDKit:
+   * @param column - Column with molecules to search in
+   * @param molecule - Reference molecule in one of formats supported by RDKit:
    *   smiles, cxsmiles, molblock, v3Kmolblock, and inchi
-   * @param {Object} settings - Properties for the similarity function (type, parameters, etc.)
-   * @returns {Promise<Column>} - Column of corresponding similarity scores
-   * */
+   * @param settings - Properties for the similarity function (type, parameters, etc.)
+   * @returns Column of corresponding similarity scores */
   export async function getSimilarities(column: Column, molecule: string = '', settings: object = {}): Promise<Column | null> {
 
     const result = await grok.functions.call('Chem:getSimilarities', {
@@ -736,19 +734,17 @@ export namespace chem {
   /**
    * Computes similarity scores for molecules in the input vector based on a preferred similarity score.
    * See example: {@link https://public.datagrok.ai/js/samples/domains/chem/similarity-scoring-sorted}
-   * @async
-   * @param {Column} column - Column with molecules to search in
-   * @param {string} molecule - Reference molecule in one of formats supported by RDKit:
+   * @param column - Column with molecules to search in
+   * @param molecule - Reference molecule in one of formats supported by RDKit:
    *   smiles, cxsmiles, molblock, v3Kmolblock, and inchi
-   * @param {Object} settings - Properties for the similarity function
-   * @param {int} settings.limit - Would return top limit molecules based on the score
-   * @param {int} settings.cutoff - Would drop molecules which score is lower than cutoff
-   * @returns {Promise<DataFrame>} - DataFrame with 3 columns:
+   * @param settings - Properties for the similarity function
+   * @param settings.limit - Would return top limit molecules based on the score
+   * @param settings.cutoff - Would drop molecules which score is lower than cutoff
+   * @returns DataFrame with 3 columns:
    *   - molecule: original molecules string representation from the input column
    *   - score: similarity scores within the range from 0.0 to 1.0;
    *            DataFrame is sorted descending by this column
-   *   - index: indices of the molecules in the original input column
-   * */
+   *   - index: indices of the molecules in the original input column */
   export async function findSimilar(column: Column, molecule: string = '', settings = {
     limit: Number.MAX_VALUE,
     cutoff: 0.0
@@ -766,13 +762,11 @@ export namespace chem {
   /**
    * Returns the specified number of most diverse molecules in the column.
    * See example: {@link https://datagrok.ai/help/datagrok/solutions/domains/chem/#similarity-and-diversity-search}
-   * @async
-   * @param {Column} column - Column with molecules to search in
-   * @param {Object} settings - Settings
-   * @param {int} settings.limit - Would return top limit molecules
-   * @returns {Promise<DataFrame>} - DataFrame with 1 column:
-   *   - molecule: set of diverse structures
-   * */
+   * @param column - Column with molecules to search in
+   * @param settings - Settings
+   * @param settings.limit - Would return top limit molecules
+   * @returns DataFrame with 1 column:
+   *   - molecule: set of diverse structures */
   export async function diversitySearch(column: Column, settings = {limit: Number.MAX_VALUE}): Promise<DataFrame> {
     const result = await grok.functions.call('Chem:getDiversities', {
       'molStringsColumn': column,
@@ -784,11 +778,9 @@ export namespace chem {
   /**
    * Searches for a molecular pattern in a given column, returning a bitset with hits.
    * See example: {@link https://public.datagrok.ai/js/samples/domains/chem/substructure-search}
-   * @async
-   * @param {Column} column - Column with molecules to search
-   * @param {string} pattern - Pattern, either one of which RDKit supports
-   * @param settings
-   * */
+   * @param column - Column with molecules to search
+   * @param pattern - Pattern, either one of which RDKit supports
+   * @param settings */
   export async function searchSubstructure(column: Column, pattern: string = '', settings: {
     molBlockFailover?: string;
   } = {}): Promise<BitSet> {
@@ -803,11 +795,9 @@ export namespace chem {
   /**
    * Performs R-group analysis.
    * See example: {@link https://public.datagrok.ai/js/samples/domains/chem/descriptors}
-   * @async
-   * @param {DataFrame} table - Table.
-   * @param {string} column - Column name with molecules to analyze.
-   * @param {string} core - Core molecule.
-   * */
+   * @param table - Table.
+   * @param column - Column name with molecules to analyze.
+   * @param core - Core molecule. */
   export async function rGroup(table: DataFrame, column: string, core: string): Promise<DataFrame> {
     return await grok.functions.call('Chem:FindRGroups', {
       molecules: column, df: table, core: core, prefix: 'R'
@@ -817,9 +807,7 @@ export namespace chem {
   /**
    * Finds Most Common Substructure in the specified column.
    * See example: {@link https://public.datagrok.ai/js/samples/domains/chem/mcs}
-   * @async
-   * @param {Column} column - Column with SMILES to analyze.
-   * */
+   * @param column - Column with SMILES to analyze. */
   export async function mcs(table: DataFrame, column: string, returnSmarts: boolean = false,
     exactAtomSearch = true, exactBondSearch = true): Promise<string> {
     return await grok.functions.call('Chem:FindMCS', {
@@ -835,11 +823,9 @@ export namespace chem {
    * Calculates specified descriptors for the molecular column.
    * See example: {@link https://public.datagrok.ai/js/samples/domains/chem/descriptors}
    *
-   * @async
-   * @param {DataFrame} table - Table.
-   * @param {string} column - Column name with SMILES to calculate descriptors for.
-   * @param {string[]} descriptors - RDKit descriptors to calculate.
-   * */
+   * @param table - Table.
+   * @param column - Column name with SMILES to calculate descriptors for.
+   * @param descriptors - RDKit descriptors to calculate. */
   export async function descriptors(table: DataFrame, column: string, descriptors: string[]): Promise<DataFrame> {
     await grok.functions.call('Chem:chemDescriptors', {'table': table,
       'molecules': table.columns.byName(column), 'descriptors': descriptors});
@@ -857,9 +843,8 @@ export namespace chem {
   /**
    * Renders a molecule to SVG
    * See example: {@link https://public.datagrok.ai/js/samples/domains/chem/mol-rendering}
-   * @param {string} smiles - accepts smiles/molfile format
-   * @param {object} options - OCL.IMoleculeToSVGOptions
-   * */
+   * @param smiles - accepts smiles/molfile format
+   * @param options - OCL.IMoleculeToSVGOptions */
   export function svgMol(
     smiles: string, width: number = 300, height: number = 200,
     options?: { [key: string]: boolean | number | string }
@@ -904,9 +889,8 @@ export namespace chem {
 
   /**
    * Sketches Molecule sketcher.
-   * @param {function} onChangedCallback - a function that accepts (smiles, molfile)
-   * @param {string} smiles Initial molecule
-   * */
+   * @param onChangedCallback - a function that accepts (smiles, molfile)
+   * @param smiles - Initial molecule */
   export function sketcher(onChangedCallback: Function, smiles: string = ''): HTMLElement {
     return api.grok_Chem_Sketcher(onChangedCallback, smiles);
   }

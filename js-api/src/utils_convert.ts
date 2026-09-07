@@ -31,8 +31,7 @@ export function _toJson(x: any) {
  * Allows using Dart collections in for...of loops.
  * @param dart - Dart iterable object
  * @returns JavaScript Iterable wrapper
- * @internal
- */
+ * @internal */
 export function _toIterable(dart: any): Iterable<any> {
     let iterable = {};
     // @ts-ignore
@@ -45,8 +44,7 @@ export function _toIterable(dart: any): Iterable<any> {
  * Creates a JavaScript iterator from a Dart iterator.
  * @param dart - Dart iterator object
  * @returns JavaScript iterator with next() method
- * @internal
- */
+ * @internal */
 export function _getIterator(dart: any) {
     let iterator = api.grok_Iterable_Get_Iterator(dart);
     return {

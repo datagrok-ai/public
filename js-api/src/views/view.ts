@@ -49,10 +49,9 @@ export class ViewBase extends Widget {
   private _closing: boolean;
 
   /**
-   * @constructs ViewBase
-   * @param {Object} params - URL parameters.
-   * @param {string} path - URL path.
-   * @param {boolean} createHost - Create JS host wrapper. */
+   * @param params - URL parameters.
+   * @param path - URL path.
+   * @param createHost - Create JS host wrapper. */
   constructor(params: object | null = null, path: string = '', createHost: boolean = true) {
     super(ui.panel([], 'grok-view'))
     if (createHost)
@@ -61,7 +60,7 @@ export class ViewBase extends Widget {
     this.name = 'New view';
     this._root.tabIndex = 0;
 
-    /** @type {StreamSubscription[]} */
+
     this.subs = [];  // stream subscriptions - will be canceled when the view is detached
 
     this._closing = false;
@@ -84,7 +83,7 @@ export class ViewBase extends Widget {
     return 'js-view-base';
   }
 
-  /** @returns {string|null} View help URL. */
+  /** @returns View help URL. */
   get helpUrl(): string | null {
     return this._helpUrl;
   }
@@ -105,7 +104,7 @@ export class ViewBase extends Widget {
 
   protected _name: string = 'New View';
 
-  /** @type {string} */
+
   get name(): string {
     return this._name;
   }
@@ -150,9 +149,8 @@ export class ViewBase extends Widget {
   set closing(c: boolean) { this._closing = c; }
 
   /** Sets custom view panels on the ribbon.
-   * @param {Array<Array<HTMLElement>>} panels
-   * @param {boolean} clear Clear all previous before setup
-   * Sample: {@link https://public.datagrok.ai/js/samples/ui/views/ribbon} */
+   * @param clear - Clear all previous before setup
+   * Sample: {@link https://public.datagrok.ai/js/samples/ui/views/ribbon}  */
   setRibbonPanels(panels: HTMLElement[][], clear: boolean = true): void {
     api.grok_View_SetRibbonPanels(this.dart, panels, clear);
   }
@@ -161,12 +159,12 @@ export class ViewBase extends Widget {
     return api.grok_View_GetRibbonPanels(this.dart);
   }
 
-  /** @returns {HTMLElement} View icon. Override in subclasses. */
+  /** @returns View icon. Override in subclasses. */
   getIcon(): HTMLElement | null { return null; }
 
   setIcon(icon: HTMLElement) {api.grok_View_SetIcon(this.dart, icon)};
 
-  /** @returns {Object} Viewer state map. Override in subclasses. */
+  /** @returns Viewer state map. Override in subclasses. */
   saveStateMap(): object | null { return null; }
 
   /** Loads view state map. Override in subclasses. */
@@ -195,22 +193,19 @@ export class ViewBase extends Widget {
   handlePath(_urlPath: string): void { }
 
   /** Checks if URL path is acceptable. Override in subclasses.
-   *
    * [_urlPath] is the path WITHOUT the query string: a view claims a URL by its
    * path, and decides what the parameters mean in {@link handlePath}.
-   * @returns {boolean} "true" if path is acceptable, "false" otherwise. */
+   * @returns "true" if path is acceptable, "false" otherwise. */
   acceptsPath(_urlPath: string): boolean { return false; }
 
   /**
-   * Appends an item to this view. Use {@link appendAll} for appending multiple elements.
-   * @param {Object} item */
+   * Appends an item to this view. Use {@link appendAll} for appending multiple elements. */
   append(item: any): HTMLElement {
     return this.appendAll([ui.render(item)]);
   }
 
   /**
-   * Appends multiple elements this view. Use {@link append} for appending a single element.
-   * @param {object[]} items */
+   * Appends multiple elements this view. Use {@link append} for appending a single element. */
   appendAll(items: HTMLElement[]): HTMLElement {
     return ui.appendAll(this.root, items.map(x => ui.render(x)));
   }
@@ -237,7 +232,7 @@ export class View extends ViewBase {
   /** Contains auxiliary information */
   public temp: any;
 
-  /** @constructs View */
+
   constructor(dart: any) {
     super(null, '', false);
     this.dart = dart;
@@ -285,9 +280,7 @@ export class View extends ViewBase {
     return view;
   }
 
-  /** Creates a new empty view.
-   * @param {string | ElementOptions | null} options
-   * @returns {View} */
+  /** Creates a new empty view. */
   static create(options?: string | {} | null): View {
     let v = api.grok_View == null ? new View(null) : new View(api.grok_View());
     _options(v.root, 'ui-panel');
@@ -324,7 +317,7 @@ export class View extends ViewBase {
   get description(): string { return api.grok_View_Get_Description(this.dart); }
   set description(s: string) { api.grok_View_Set_Description(this.dart, s); }
 
-  /** @returns {string|null} View help URL. */
+  /** @returns View help URL. */
   get helpUrl(): string | null { return api.grok_View_Get_HelpUrl(this.dart); }
   set helpUrl(url: string | null) { api.grok_View_Set_HelpUrl(this.dart, url); }
 
@@ -338,21 +331,18 @@ export class View extends ViewBase {
 
   /**
    *  Saves view layout as a string. Only applicable to certain views, such as {@link TableView}.
-   *  See also {@link loadLayout}
-   *  @returns {ViewLayout} */
+   *  See also {@link loadLayout} */
   saveLayout(options?: { saveWithData?: boolean }): ViewLayout {
     return toJs(api.grok_View_Save_Layout(this.dart, options?.saveWithData ?? false));
   }
 
   /**
-   *  Saves view as a ViewInfo. Only applicable to certain views, such as {@link TableView}.
-   *  @returns {ViewInfo} */
+   *  Saves view as a ViewInfo. Only applicable to certain views, such as {@link TableView}. */
   getInfo(): ViewLayout {
     return toJs(api.grok_View_Get_Info(this.dart));
   }
 
-  /** View name. It gets shown in the tab handle.
-   * @type {string} */
+  /** View name. It gets shown in the tab handle. */
   get name(): string {
     // @ts-ignore
     return api.grok_View_Get_Name == null ? this._name : api.grok_View_Get_Name(this.dart);
@@ -413,11 +403,9 @@ export class View extends ViewBase {
  * A {@link View} that is associated with a {@link DataFrame} and exposes
  * exploratory data analysis functionality. This view gets opened whenever
  * a new table is added to the workspace when a user drag-and-drops a CSV file,
- * or opens a table in any other way.
- * @extends View
- */
+ * or opens a table in any other way. */
 export class TableView extends View {
-  /** @constructs TableView */
+
   constructor(dart: any) {
     super(dart);
   }
@@ -476,15 +464,13 @@ export class TableView extends View {
 
   /** A dock node for this view.
    *  Use `grok.shell.dockManager` to manipulate it; {@link dockManager} is for controlling
-   *  windows that reside inside this view.
-   *  @type {DockNode} */
+   *  windows that reside inside this view. */
   get dockNode(): DockNode {
     return new DockNode(api.grok_View_Get_DockNode(this.dart));
   }
 
   /**
-   * View's dock manager. Only defined for DockView descendants such as {@link TableView}, UsersView, etc.
-   * @type {DockManager} */
+   * View's dock manager. Only defined for DockView descendants such as {@link TableView}, UsersView, etc. */
   get dockManager(): DockManager {
     return new DockManager(api.grok_View_Get_DockManager(this.dart));
   }
@@ -513,8 +499,7 @@ export class TableView extends View {
   /** @deprecated Use {@link addViewer} with {@link Viewer.calendar}.
    *  Adds a {@link https://datagrok.ai/help/visualize/viewers/calendar | calendar}.
    *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/types/calendar}
-   *  @param options
-   *  @returns {Viewer} */
+   *  @param options */
   calendar(options?: Partial<ICalendarSettings>): Viewer {
     return this.addViewer(VIEWER.CALENDAR, options);
   }
@@ -699,7 +684,7 @@ export interface IViewStateApplicationOptions {
 
 /** Script view */
 export class ScriptView extends View {
-  /** @constructs ScriptView */
+
   constructor(dart: any) {
     super(dart);
   }

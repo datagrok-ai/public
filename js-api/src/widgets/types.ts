@@ -82,13 +82,11 @@ export interface IMenuColorPaletteOptions {
   getInitialValue?: () => number[];
 
   /** Called when color is selected by click.
-   * @param {number[]} list - A sequence of selected color palette.
-  */
+   * @param list - A sequence of selected color palette. */
   onSelect?: (list: number[]) => void;
 
   /** Called when color is hovered or reset.
-   * @param {number[]} list - A sequence of selected color palette.
-  */
+   * @param list - A sequence of selected color palette. */
   onPreview?: (list: number[]) => void;
 
   /** Either the current item is a separate subgroup by defined `string` name or inside main menu. */
@@ -157,10 +155,9 @@ export interface IMenuColumnSelectorOptions<T> {
 export interface IMenuSingleColumnSelectorOptions extends IMenuColumnSelectorOptions<string> {
 
   /** Called when selector value is changed.
-   * @param {ColumnGrid} g - selector column grid instance.
-   * @param {Column} c - A column to be selected.
-   * @param {boolean} currentRowChanged - Either the current row is changed by click or just selected on hover.
-  */
+   * @param g - selector column grid instance.
+   * @param c - A column to be selected.
+   * @param currentRowChanged - Either the current row is changed by click or just selected on hover. */
   onChange?: (grid: ColumnGrid, column: Column, currentRowChanged: boolean) => void;
 
   /** Whether selector contains empty value to indicate none selected. */
@@ -177,8 +174,7 @@ export interface IMenuSingleColumnSelectorOptions extends IMenuColumnSelectorOpt
 export interface IMenuMultiColumnSelectorOptions extends IMenuColumnSelectorOptions<string[]> {
 
   /** Called when selector value is changed.
-   * @param {ColumnGrid} g - selector column grid instance.
-  */
+   * @param g - selector column grid instance. */
   onChange?: (grid: ColumnGrid) => void;
 }
 

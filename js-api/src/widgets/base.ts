@@ -83,7 +83,7 @@ export class ObjectPropertyBag {
 
   constructor(source: any, x: any = null) {
 
-    /** @member {Object} */
+
     this.source = source;
 
     if (x == null)
@@ -126,19 +126,13 @@ export class ObjectPropertyBag {
   }
 
   /**
-   * Gets the value of the specified property
-   * @param {string} propertyName
-   * @returns {object}
-   * */
+   * Gets the value of the specified property */
   get(propertyName: string): object {
     return this.getProperty(propertyName).get(this.source);
   }
 
   /**
-   * Sets the value of the specified property
-   * @param {string} propertyName
-   * @param {object} propertyValue
-   * */
+   * Sets the value of the specified property */
   set(propertyName: string, propertyValue: object) {
     this.getProperty(propertyName).set(this.source, propertyValue);
   }
@@ -149,14 +143,12 @@ export class ObjectPropertyBag {
       this.set(k, v);
   }
 
-  /** @returns {Property[]} */
+
   getProperties(): Property[] {
     return this.source.getProperties();
   }
 
-  /** Gets property by name (case-sensitive).
-   * @param {string} name
-   * @returns {Property} */
+  /** Gets property by name (case-sensitive). */
   getProperty(name: string): Property {
     let property = this.getProperties().find((p) => p.name === name);
     if (typeof property == 'undefined')
@@ -164,9 +156,7 @@ export class ObjectPropertyBag {
     return property;
   }
 
-  /**
-   * @param {string} name
-   * @returns {boolean} */
+
   hasProperty(name: string): boolean {
     return this.getProperties().findIndex((p) => p.name === name) !== -1;
   }
@@ -175,7 +165,7 @@ export class ObjectPropertyBag {
   * instances of this type. Equivalent to the "Pick Up / Apply | Set as Default" context menu command.
   * Read more about viewer commands: https://datagrok.ai/help/visualize/viewers/#common-actions
   * @param data indicates if data settings should be copied.
-  * @param style indicates if style (non-data) settings should be copied. */
+  * @param style indicates if style (non-data) settings should be copied.  */
   setDefault(data: boolean = false, style: boolean = true) {
     if (this.source instanceof DG.Viewer)
       api.grok_Viewer_Props_SetDefault(this.source.dart, data, style);
@@ -212,12 +202,15 @@ export class Widget<TSettings = any> extends Control {
 
   protected _properties: Property[] = [];
   protected _functions: Func[] = [];
+  /** Property bag over this widget's properties; read and write them by name. */
   props: TSettings & ObjectPropertyBag; //ObjectPropertyBag;
+  /** Subscriptions cancelled when the widget is detached. */
   subs: Subscription[];
   dart: any;
+  /** Whether {@link detach} has been called. */
   isDetached: boolean = false;
 
-  /** @constructs Widget and initializes its root. */
+
   constructor(widgetRoot: HTMLElement) {
     super(widgetRoot);
     // @ts-ignore
@@ -243,21 +236,19 @@ export class Widget<TSettings = any> extends Control {
     api.grok_Widget_RegisterCleanup(element, cleanup);
   }
 
+  /** The Dart handle of this widget, created on first use. */
   toDart() {
     if (this.dart == null)
       this.dart = api.grok_Widget_Wrap(this);
     return this.dart;
   }
 
-  /** Registers a subscription to an external event.
-   * @param {Subscription} subscription */
+  /** Registers a subscription to an external event. */
   sub(subscription: Subscription): void {
     this.subs.push(subscription);
   }
 
-  /**
-   * @param {Object} properties
-   * @returns {Widget} */
+
   apply(properties: object): Widget {
     for (let name of Object.keys(properties))
       if (typeof name !== 'undefined')
@@ -283,15 +274,18 @@ export class Widget<TSettings = any> extends Control {
   getFunctions(): Func[] { return this._functions;  }
 
   /** Gets called when viewer's property is changed.
-   * @param {Property} property - or null, if multiple properties were changed. */
+   * @param property - or null, if multiple properties were changed. */
   onPropertyChanged(property: Property | null): void { this._notifyPropertyChange(property); }
 
+  /** Dart handles of the properties that have one. */
   getDartProperties(): any[] {
     return this.getProperties().filter((p) => p.dart != null).map((p) => p.dart);
   }
 
+  /** Called when the rows the widget shows change; override to refresh. */
   sourceRowsChanged(): void {};
 
+  /** Called when a DataFrame is attached; override to bind data. */
   onFrameAttached(dataFrame: DataFrame): void {
     if (this.props.hasProperty('dataFrame'))
       this.props.set('dataFrame', dataFrame);
@@ -375,13 +369,7 @@ export class Widget<TSettings = any> extends Control {
    *  `fieldName` field access); the change notification ({@link onPropertyChanged}) always fires
    *  on write, and a `{get}`-only options yields a custom read with the default `fieldName` write.
    *
-   * @param {string} propertyName
-   * @param {TYPE} propertyType
-   * @param defaultValue
-   * @param {Object} options
-   * @returns {*}
-   * @private
-   */
+   * @param defaultValue */
   addProperty(propertyName: string, propertyType: Type, defaultValue: any = null, options: { [key: string]: any } & IProperty | null = null): any {
     const fieldName = options?.fieldName ?? propertyName;
 

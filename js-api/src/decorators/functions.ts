@@ -31,8 +31,7 @@ export namespace decorators {
    *     console.log('Viewer constructed');
    *   }
    * }
-   * ```
-   */
+   * ``` */
   export function viewer(options?: {
     name?: string,
     description?: string,
@@ -49,8 +48,7 @@ export namespace decorators {
    * @param description - function description in UI.
    * @param semType - semantic type name (e.g., "Molecule"). See [DG.SEMTYPE](https://datagrok.ai/js-api/enums/dg.SEMTYPE)
    * 
-   * See also: {@link https://datagrok.ai/help/develop/how-to/custom-filters}
-   */
+   * See also: {@link https://datagrok.ai/help/develop/how-to/custom-filters} */
   export function filter(options?: {
     name?: string,
     description?: string,
@@ -67,8 +65,7 @@ export namespace decorators {
    *   Key-value pairs look like this: "quality=Macromolecule, units=separator".
    * @param virtual - a flag to enable rendering in virtual columns.
    * 
-   * See also: {@link https://datagrok.ai/help/develop/how-to/custom-cell-renderers}
-   */
+   * See also: {@link https://datagrok.ai/help/develop/how-to/custom-cell-renderers} */
   export function cellRenderer(options?: {
     name?: string,
     description?: string,

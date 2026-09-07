@@ -1,4 +1,4 @@
-/// this file was generated automatically from xamgle classes declarations
+// this file was generated automatically from xamgle classes declarations
 
 
 export interface IDetailedLogSettings {
@@ -22,43 +22,43 @@ export interface IDetailedLogSettings {
 
   reporterId: string;
 
-  /// details
+  /** details */
   details: Map<string, any>;
 
   sendEmail: boolean;
 
-  /// reports email
+  /** reports email */
   reportEmail: string;
 
   clientSettings: Array<Map<string, any>>;
 
   serverSettings: Array<Map<string, any>>;
 
-  /// errors
+  /** errors */
   errors: Array<Map<string, any>>;
 
-  /// client logs
+  /** client logs */
   clientLog: Array<Map<string, any>>;
 
-  /// server logs
+  /** server logs */
   serverLog: Array<Map<string, any>>;
 
-  /// console logs
+  /** console logs */
   console: Array<Map<string, any>>;
 
-  /// query logs
+  /** query logs */
   grokConnectLog: Array<Map<string, any>>;
 
-  /// scripting logs
+  /** scripting logs */
   scriptingLog: Array<Map<string, any>>;
 
-  /// containers logs
+  /** containers logs */
   containersLog: Array<Map<string, any>>;
 
-  /// images logs
+  /** images logs */
   imagesLog: Array<Map<string, any>>;
 
-  /// services info
+  /** services info */
   services: Array<Map<string, any>>;
 
   data: Array<any>;

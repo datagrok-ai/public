@@ -228,6 +228,14 @@ server to avoid CORS. Raw `fetch()` should never be used in plugin code.
 
 See samples: `packages/ApiSamples/scripts/dapi/`
 
+## Conventions
+
+New or changed surface follows [CONVENTIONS.md](CONVENTIONS.md): options object after two parameters, no
+positional booleans, `(row, column)` order, most-specific return types with `| null` where null happens, no
+`any`/`Function` on exports, `/** */` JSDoc only (never `///` or trailing `//`), one `@example` per non-trivial
+member, `@see {@link https://public.datagrok.ai/js/samples/<path>}` sample links, and `@deprecated Use {@link X}`
+instead of prose. [README.md](README.md) is the package map for consumers.
+
 ## Canonical code samples
 
 See [API usage samples](../packages/ApiSamples/scripts) 

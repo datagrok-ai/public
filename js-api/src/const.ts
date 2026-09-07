@@ -953,32 +953,7 @@ export enum EVENT_TYPE {
   PANELS_CHANGED = 'grok-panels-changed',
 }
 
-/**
- * @typedef {string} AggregationType
- * @typedef {string} SyncType
- * @typedef {string} JoinType
- * @typedef {string} ColumnType
- * @typedef {string} ViewerType
- * @typedef {string} ObjectType
- * @typedef {string} ViewerPropertyType
- * @typedef {string} Type
- * @typedef {string} SemType
- * @typedef {string} SimilarityMetric
- * @typedef {string} DockType
- *
- * @typedef {Object} ElementOptions
- * @property {string} id
- * @property {string} classes
- * @property {Object} style
- *
- * @typedef {Object} CsvImportOptions
- * @property {string} delimiter
- * @property {string} decimalSeparator
- * @property {string} thousandSeparator
- *
- * @typedef {function(number): boolean} IndexPredicate
- * @typedef {function(String): boolean} StringPredicate
- **/
+
 
 export type AggregationType = `${AGG}`;
 export type ColumnAggregationType = `${AGG}` | `${STR_AGG}` | (string & {});

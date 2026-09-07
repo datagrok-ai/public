@@ -19,9 +19,7 @@ type Package = any;
 
 
 /** Represents a function
- * @extends Entity
- * {@link https://datagrok.ai/help/datagrok/functions/function}
- * */
+ * {@link https://datagrok.ai/help/datagrok/functions/function} */
 export class Func extends Entity {
   public aux: any;
   public options: { [key: string]: any; };
@@ -125,14 +123,13 @@ export class Func extends Entity {
 }
 
 
-/** @extends Func
- * Represents a Script
- * */
+/**
+ * Represents a Script */
 export class Script extends Func {
   public static readonly vecInputTableName = 'in_vec_table';
   public static readonly vecOutputTableName = 'out_vec_table';
 
-  /** @constructs Script */
+
   constructor(dart: any) {
     super(dart);
   }

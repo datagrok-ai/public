@@ -57,9 +57,7 @@ interface IRoot {
 }
 
 /** Creates an instance of the element for the specified tag, and optionally assigns it a CSS class.
- * @param {string} tagName The name of an element.
- * @param {string | null} className
- * @returns {HTMLElement} */
+ * @param tagName - The name of an element. */
 export function element(tagName: string, className: string | null = null): HTMLElement & any {
   let x = document.createElement(tagName);
   if (className !== null)
@@ -68,11 +66,7 @@ export function element(tagName: string, className: string | null = null): HTMLE
 }
 
 /** Appends multiple elements to root, and returns root.
- *  An element could be either {@link HTMLElement} or {@link Viewer}.
- *
- * @param {HTMLElement} root
- * @param {(HTMLElement | Viewer)[]} elements
- * @returns {HTMLElement} */
+ *  An element could be either {@link HTMLElement} or {@link Viewer}. */
 export function appendAll(root: HTMLElement, elements: (HTMLElement | Viewer)[]): HTMLElement {
   let fragment = document.createDocumentFragment();
   for (let e of elements)
@@ -91,6 +85,7 @@ export function empty(e: HTMLElement): HTMLElement {
   return e;
 }
 
+/** Adds [classes] to [e] when [flag] is true, removes them otherwise. */
 export function setClass(e: HTMLElement, classes: string, flag: boolean) {
   if (flag)
     $(e).addClass(classes);
@@ -158,8 +153,7 @@ export function canvas(width: number | null = null, height: number | null = null
 }
 
 /**
- * Example: {@link https://public.datagrok.ai/js/samples/ui/components/typography}
- * @returns {HTMLHeadingElement} */
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/typography} */
 export function h1(s: string | Element, options: string | ElementOptions | null = null): HTMLHeadingElement {
   let x = element('h1');
   if (typeof s === 'string')
@@ -170,8 +164,7 @@ export function h1(s: string | Element, options: string | ElementOptions | null 
 }
 
 /**
- * Example: {@link https://public.datagrok.ai/js/samples/ui/components/typography}
- * @returns {HTMLHeadingElement} */
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/typography} */
 export function h2(s: string | Element, options: string | ElementOptions | null = null): HTMLHeadingElement {
   let x = element('h2');
   if (typeof s === 'string')
@@ -182,8 +175,7 @@ export function h2(s: string | Element, options: string | ElementOptions | null 
 }
 
 /**
- * Example: {@link https://public.datagrok.ai/js/samples/ui/components/typography}
- * @returns {HTMLHeadingElement} */
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/typography} */
 export function h3(s: string | Element, options: string | ElementOptions | null = null): HTMLHeadingElement {
   let x = element('h3');
   if (typeof s === 'string')
@@ -194,8 +186,7 @@ export function h3(s: string | Element, options: string | ElementOptions | null 
 }
 
 /** Creates an accordion with dynamically populated panes.
- * Example: {@link https://public.datagrok.ai/js/samples/ui/components/accordion}
- * @returns {Accordion} */
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/accordion} */
 export function accordion(key: any = null): Accordion {
   return Accordion.create(key);
 }
@@ -204,8 +195,7 @@ export function accordion(key: any = null): Accordion {
  * Example: {@link https://public.datagrok.ai/js/samples/ui/components/tab-control}
  * @param pages - list of page factories
  * @param options - see {@link ITabControlOptions}. Passing a boolean (`vertical`) is deprecated.
- * @param key - deprecated, use `options.key` instead.
- * @returns {TabControl} */
+ * @param key - deprecated, use `options.key` instead. */
 export function tabControl(pages: { [key: string]: any; } | null = null,
                            options: boolean | ITabControlOptions = {}, key: string | null = null): TabControl {
   let tabs = TabControl.create(options, key);
@@ -219,10 +209,7 @@ export function tabControl(pages: { [key: string]: any; } | null = null,
 }
 
 /** Returns DivElement with the specified inner text.
- * Example: {@link https://public.datagrok.ai/js/samples/ui/components/typography}
- * @param {string} text
- * @param {string | ElementOptions | null} options
- * @returns {HTMLDivElement} */
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/typography} */
 export function divText(text: string, options: string | ElementOptions | any | null = null): HTMLDivElement {
   let e = element('div');
   e.innerText = text;
@@ -230,6 +217,7 @@ export function divText(text: string, options: string | ElementOptions | any | n
   return e as HTMLDivElement;
 }
 
+/** Renders the tags of an entity as chips. */
 export function tags(entity: Entity): HTMLElement {
   return api.grok_UI_Tags(entity.dart);
 }
@@ -243,10 +231,7 @@ export function markdown(text: string): HTMLElement {
 
 /** Returns a font-awesome icon with the specified name, handler, and tooltip.
  * Example: {@link https://public.datagrok.ai/js/samples/ui/components/icons}
- * @param {string} name - icon name (omit the "fa-" prefix)
- * @param {Function} handler
- * @param {String} tooltipMsg
- * @returns {HTMLElement} */
+ * @param name - icon name (omit the "fa-" prefix) */
 export function iconFA(name: string, handler: ((this: HTMLElement, ev: MouseEvent) => any) | null = null, tooltipMsg: string | null = null): HTMLElement {
   let i = element('i');
   i.classList.add('grok-icon');
@@ -266,6 +251,7 @@ export function iconFAB(name: string, handler: ((this: HTMLElement, ev: MouseEve
   return _options(iconFA(name, handler, tooltipMsg), {classes: 'grok-icon-blue'});
 }
 
+/** An icon with a background image: [path] is a URL, an absolute path, a data URI, or a file name under `/images/`. */
 export function iconImage(name: string, path: string,
                           handler: ((this: HTMLElement, ev: MouseEvent) => any) | null = null,
                           tooltipMsg: string | null = null,
@@ -312,6 +298,7 @@ export function iconSvg(name: string, handler: ((this: HTMLElement, ev: MouseEve
   return i;
 }
 
+/** Resolves a widget, an object with a `root`, or a cash/jQuery set to its DOM element; other values pass through. */
 export function extractRoot(x: any): HTMLElement | null {
   if (x == null)
     return null;
@@ -343,25 +330,18 @@ export function render(x: any, options?: ElementOptions): HTMLElement {
   return _options(renderImpl(), options);
 }
 
-/** Renders a table cell to html element, taking into account grid's formatting and color-coding.
- * @param {Cell} tableCell
- * @returns {HTMLElement} */
+/** Renders a table cell to html element, taking into account grid's formatting and color-coding. */
 // export function renderCell(tableCell) {
 //
 // }
 
 /** Renders a table cell to html element,
- * Takes into account grid's formatting and color-coding.
- * @param {Row} table
- * @param {string[]} columnNames
- * @returns {HTMLElement} */
+ * Takes into account grid's formatting and color-coding. */
 // export function renderForm(table, columnNames = null) {
 //   return null;
 // }
 
-/** Renders object to html card.
- * @param {object} x
- * @returns {HTMLElement}. */
+/** Renders object to html card. */
 export function renderCard(x: object, inGallery: boolean = true): HTMLElement {
   if (inGallery)
     return api.grok_UI_RenderCardInGallery(x);
@@ -373,6 +353,7 @@ export function span(x: any[], options: string | ElementOptions | null = null): 
   return _options(api.grok_UI_Span(x), options);
 }
 
+/** Renders [x] through its {@link ObjectHandler} markup renderer, falling back to {@link render}. */
 export function renderInline(x: HTMLElement): HTMLElement {
   let handler = ObjectHandler.forEntity(x);
   return handler == null ? render(x) : handler.renderMarkup(x);
@@ -380,17 +361,12 @@ export function renderInline(x: HTMLElement): HTMLElement {
 
 
 /** Renders inline text, calling [renderMarkup] for each non-HTMLElement.
- * Example: {@link https://public.datagrok.ai/js/samples/ui/components/typography}
- * @param {object[]} objects
- * @returns {HTMLElement}. */
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/typography} */
 export function inlineText(objects: any[]): HTMLElement {
   return span(objects.map((item) => renderInline(item)));
 }
 
-/**
- * @param {object[]} children
- * @param {string | ElementOptions} options
- * @returns {HTMLDivElement} */
+
 export function div(children: any[] | string | HTMLElement = [], options: string | ElementOptions | null = null): HTMLDivElement {
   if (!Array.isArray(children))
     children = [children];
@@ -437,19 +413,13 @@ export function info(children: HTMLElement[] | HTMLElement | string, header: str
 }
 
 /** Div flex-box container that positions child elements vertically.
- * Example: {@link https://public.datagrok.ai/js/samples/ui/containers/flexbox}
- * @param {object[]} items
- * @param {string | ElementOptions} options
- * @returns {HTMLDivElement} */
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/containers/flexbox} */
 export function divV(items: any[], options: string | ElementOptions | null = null): HTMLDivElement {
   return <HTMLDivElement>_options(api.grok_UI_DivV(items == null ? null : items.map(x => render(x)), 'ui-div'), options);
 }
 
 /** Div flex-box container that positions child elements horizontally.
- * Example: {@link https://public.datagrok.ai/js/samples/ui/containers/flexbox}
- * @param {object[]} items
- * @param {string | ElementOptions} options
- * @returns {HTMLDivElement} */
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/containers/flexbox} */
 export function divH(items: (HTMLElement | null)[], options: string | ElementOptions | null = null): HTMLDivElement {
   return <HTMLDivElement>_options(api.grok_UI_DivH(items == null ? null : items.map(x => render(x)), 'ui-div'), options);
 }
@@ -469,25 +439,19 @@ export function loader(): any {
 /**
  * Sets an update indicator on the specified element.
  * Example: {@link https://public.datagrok.ai/js/samples/ui/components/update-indicator}
- * @param {HTMLElement} element
- * @param {boolean} updating - whether the indicator should be shown
- * @param {string} message
- */
+ * @param updating - whether the indicator should be shown */
 export function setUpdateIndicator(element: HTMLElement, updating: boolean = true, message: string = 'Updating...', onCancel?: Function): void {
   return api.grok_UI_SetUpdateIndicator(element, updating, message, onCancel);
 }
 
 /**
  * Creates a button with the specified text, click handler, and tooltip.
- * Example: {@link https://public.datagrok.ai/js/samples/ui/components/buttons}
- * @param {string | Element | Array<string | Element>} content
- * @param {Function} handler
- * @param {string} tooltip
- * @returns {HTMLButtonElement} */
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/buttons} */
 export function button(content: string | Element | (string | Element)[], handler: Function, tooltip: string | null = null): HTMLButtonElement {
   return api.grok_UI_Button(content, handler, tooltip);
 }
 
+/** A large (primary) button. */
 export function bigButton(text: string, handler: Function, tooltip: string | null = null): HTMLButtonElement {
   return api.grok_UI_BigButton(text, handler, tooltip);
 }
@@ -498,8 +462,7 @@ export function bigButton(text: string, handler: Function, tooltip: string | nul
  * Wrap a set of these in {@link toggleButtonGroup} to get the group container styling.
  * @param caption  Button text.
  * @param handler  Invoked on click after the active state is updated.
- * @param tooltip  Tooltip shown on hover.
- */
+ * @param tooltip  Tooltip shown on hover. */
 export function toggleButton(caption: string, handler: Function | null = null, tooltip: string | null = null): HTMLDivElement {
   return api.grok_UI_ToggleButton(caption, handler, tooltip);
 }
@@ -507,8 +470,7 @@ export function toggleButton(caption: string, handler: Function | null = null, t
 /**
  * Wraps a list of {@link toggleButton}s in a vertical `d4-toggle-button-group` container.
  * @param buttons      Toggle buttons to group.
- * @param toggleFirst  If true, marks the first button as `d4-current`.
- */
+ * @param toggleFirst  If true, marks the first button as `d4-current`. */
 export function toggleButtonGroup(buttons: HTMLDivElement[], toggleFirst: boolean = false): HTMLDivElement {
   return api.grok_UI_ToggleButtonGroup(buttons, toggleFirst);
 }
@@ -516,20 +478,14 @@ export function toggleButtonGroup(buttons: HTMLDivElement[], toggleFirst: boolea
 /**
  * Creates a combo popup with the specified icons and items.
  * Example: {@link https://public.datagrok.ai/js/samples/ui/components/combo-popup}
- * @param {string | HTMLElement} caption
- * @param {Array<string>} items
- * @param {Function} handler (item) => {...}
- * @param {Function} renderer (item) => {...}
- * @returns {HTMLElement} */
+ * @param handler - (item) => {...}
+ * @param renderer - (item) => {...} */
 export function comboPopup(caption: string | HTMLElement, items: string[], handler: (item: any) => void, renderer?: ((item: any) => HTMLElement) | null): HTMLElement {
   return api.grok_UI_ComboPopup(caption, items, handler, renderer ? (item: any) => renderer(toJs(item)) : null);
 }
 
 /**
- * Creates a combo popup with the specified icons and items
- * @param {string | HTMLElement} caption
- * @param {Map<string>} items
- * @returns {HTMLElement} */
+ * Creates a combo popup with the specified icons and items */
 export function comboPopupItems(caption: string | HTMLElement, items: { [key: string]: Function }): HTMLElement {
   return api.grok_UI_ComboPopup(caption, Object.keys(items), (key: string) => items[key](), null);
 }
@@ -707,11 +663,9 @@ export function rangeSlider(minRange: number, maxRange: number, min: number, max
 /**
  * Creates a virtual list widget.
  * Example: {@link https://public.datagrok.ai/js/samples/ui/views/virtual-view}
- * @param {number} length - number of elements
- * @param {Function} renderer
- * @param {boolean} verticalScroll - vertical or horizontal scrolling
- * @param {number} maxColumns - maximum number of items on the non-scrolling axis
- * @returns {VirtualView} */
+ * @param length - number of elements
+ * @param verticalScroll - vertical or horizontal scrolling
+ * @param maxColumns - maximum number of items on the non-scrolling axis */
 export function virtualView(length: number, renderer: (index: number) => HTMLElement, verticalScroll: boolean = true, maxColumns: number = 1000): VirtualView {
   let view = VirtualView.create(verticalScroll, maxColumns);
   view.setData(length, renderer);
@@ -813,6 +767,7 @@ export interface IDragAndDropOptions<T = any> {
   dropIndication?: boolean;
 }
 
+/** Makes [e] a drop target; see {@link IDragAndDropOptions} for the callbacks. */
 export function makeDroppable<T = any>(e: Element, options?: IDragAndDropOptions<T>): void {
   const wrapObj = <R>(cb?: (o: T) => R) =>
       cb ? (o: any) => cb(toJs(o)) : null;
@@ -840,6 +795,7 @@ export function makeDroppable<T = any>(e: Element, options?: IDragAndDropOptions
   );
 }
 
+/** Keeps the string values of [inputs] in sync: a change in one is copied to the others. */
 export function bindInputs(inputs: InputBase[]): rxjs.Subscription[] {
   let s: rxjs.Subscription[] = [];
   inputs.map((i) => {
@@ -855,13 +811,13 @@ export function bindInputs(inputs: InputBase[]): rxjs.Subscription[] {
   return s;
 }
 
+/** A form built from [inputs]; same as {@link form}. */
 export function inputs(inputs: Iterable<InputBase>, options: any = null) {
   return form([...inputs], options, true);
 }
 
 /** Creates new nodes tree.
- * Example: {@link https://public.datagrok.ai/js/samples/ui/components/tree-view}
- * @returns {TreeViewGroup} */
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/tree-view} */
 export function tree(): TreeViewGroup {
   return TreeViewGroup.tree();
 }
@@ -1045,6 +1001,7 @@ export namespace input {
     }));
   }
 
+  /** Sets the properties edited for each additional column of a columns input. */
   export function setAdditionalColumnProperties(input: InputBase, properties: Property[]): void {
     api.grok_ColumnsInput_SetAdditionalColumnProperties(input.dart, properties.map((toDart)));
   }
@@ -1056,10 +1013,12 @@ export namespace input {
     return input;
   }
 
+  /** Creates an input of the specified {@link InputType}. */
   export function forInputType(inputType: d4.InputType | string): InputBase {
     return InputBase.forInputType(inputType);
   }
 
+  /** An editable grid of [items] with one input per property. */
   export function grid(items: any[], properties: Property[]): ItemsGrid {
     return new ItemsGrid(items, properties);
   }
@@ -1081,66 +1040,82 @@ export namespace input {
     return input;
   }
 
+  /** Integer input. */
   export function int(name: string, options?: INumberInputInitOptions<number>): InputBase<number | null> {
     return _create(d4.InputType.Int, name, options);
   }
 
+  /** BigInt input. */
   export function bigInt(name: string, options?: IInputInitOptions<BigInt>): InputBase<BigInt | null> {
     return _create(d4.InputType.BigInt, name, options);
   }
 
+  /** Qualified-number input (a value with a `<`, `=`, or `>` qualifier). */
   export function qNum(name: string, options?: IInputInitOptions): InputBase<number | null> {
     return _create(d4.InputType.QNum, name, options);
   }
 
+  /** Numeric input rendered as a slider. */
   export function slider(name: string, options?: INumberInputInitOptions<number>): InputBase<number | null> {
     return _create(d4.InputType.Slider, name, options);
   }
 
+  /** Single-choice input (combo box) over [options.items]. */
   export function choice<T>(name: string, options?: IChoiceInputInitOptions<T>): ChoiceInput<T | null> {
     return _create(d4.InputType.Choice, name, options) as ChoiceInput<T>;
   }
 
+  /** Multi-choice input (check boxes) over [options.items]. */
   export function multiChoice<T>(name: string, options?: IMultiChoiceInputInitOptions<T>): MultiChoiceInput<T> {
     return _create(d4.InputType.MultiChoice, name, options) as MultiChoiceInput<T>;
   }
 
+  /** Single-line text input. */
   export function string(name: string, options?: IStringInputInitOptions<string>): InputBase<string> {
     return _create(d4.InputType.Text, name, options);
   }
 
+  /** Search input (text with a search icon). */
   export function search(name: string, options?: IStringInputInitOptions<string>): InputBase<string> {
     return _create(d4.InputType.Search, name, options);
   }
 
+  /** Floating-point input. */
   export function float(name: string, options?: INumberInputInitOptions<number>): InputBase<number | null> {
     return _create(d4.InputType.Float, name, options);
   }
 
+  /** Date input; the value is a dayjs object. */
   export function date(name: string, options?: IInputInitOptions<dayjs.Dayjs>): DateInput {
     return _create(d4.InputType.Date, name, options);
   }
 
+  /** Key-value map editor. */
   export function map(name: string, options?: IInputInitOptions<Map<string, string>>): InputBase<Map<string, string> | null> {
     return _create(d4.InputType.Map, name, options);
   }
 
+  /** Check box. */
   export function bool(name: string, options?: IInputInitOptions<boolean>): InputBase<boolean> {
     return _create(d4.InputType.Bool, name, options);
   }
 
+  /** On/off switch. */
   export function toggle(name: string, options?: IInputInitOptions<boolean>): InputBase<boolean> {
     return _create(d4.InputType.Switch, name, options);
   }
 
+  /** Picker for one file from the file shares. */
   export function file(name: string, options?: IInputInitOptions<FileInfo>): InputBase<FileInfo | null> {
     return _create(d4.InputType.File, name, options);
   }
 
+  /** Picker for several files from the file shares. */
   export function files(name: string, options?: IFilesInputInitOptions<FileInfo[]>): InputBase<FileInfo[] | null> {
     return _create(d4.InputType.Files, name, options);
   }
 
+  /** Picker for a folder from the file shares. */
   export function folder(name: string, options?: IInputInitOptions<FileInfo>): InputBase<FileInfo | null> {
     return _create(d4.InputType.Folder, name, options);
   }
@@ -1149,14 +1124,17 @@ export namespace input {
     return _create(d4.InputType.List, name, options);
   }
 
+  /** Molecule input (opens the sketcher). */
   export function molecule(name: string, options?: IInputInitOptions<string>): InputBase<string> {
     return _create(d4.InputType.Molecule, name, options);
   }
 
+  /** Picker for one column of [options.table]. */
   export function column(name: string, options?: IColumnInputInitOptions<Column>): InputBase<Column | null> {
     return _create(d4.InputType.Column, name, options);
   }
 
+  /** Picker for several columns of [options.table]. */
   export function columns(name: string, options?: IColumnsInputInitOptions<Column[]>): InputBase<Column[]> {
     return _create(d4.InputType.Columns, name, options);
   }
@@ -1165,23 +1143,28 @@ export namespace input {
     return _create(d4.InputType.Table, name, options);
   }
 
+  /** Multi-line text input. */
   export function textArea(name: string, options?: ITextAreaInputInitOptions<string>): InputBase<string> {
     return _create(d4.InputType.TextArea, name, options);
   }
 
+  /** Color picker; the value is an HTML color string. */
   export function color(name: string, options?: IColorInputInitOptions<string>): InputBase<string> {
     return _create(d4.InputType.Color, name, options);
   }
 
+  /** Single-choice input rendered as radio buttons. */
   export function radio(name: string, options?: IChoiceInputInitOptions<string>): InputBase<string | null> {
     return _create(d4.InputType.Radio, name, options);
   }
 
+  /** Picker for users. */
   export function user(name: string, options?: TagsInputConfig<User[]>): InputBase<User[] | null> {
     return _create(d4.InputType.User, name, options);
   }
 
 
+  /** Picker for user groups. */
   export function userGroups(name: string, options?: TagsInputConfig<Group[]>): InputBase<Group[] | null> {
     return _create(d4.InputType.UserGroups, name, options);
   }
@@ -1194,6 +1177,7 @@ export namespace input {
     return MarkdownInput.create(caption, options);
   }
 
+  /** Code editor input. */
   export function code(name: string, options?: CodeConfig): CodeInput {
     return new CodeInput(name, options);
   }
@@ -1205,6 +1189,7 @@ export namespace input {
     return _create(d4.InputType.Tags, name, config);
   }
 
+  /** Renders [markdown] to an element (loads the renderer on first use). */
   export async function markdownPreview(markdown: string): Promise<HTMLDivElement> {
     await Utils.loadJsCss(['/js/common/quill/marked.min.js']);
     const markdownPreview = div([], { style: { padding: '12px' } });
@@ -1215,6 +1200,7 @@ export namespace input {
 
 }
 
+/** A labeled row that lays [inputs] out horizontally. */
 export function inputsRow(name: string, inputs: InputBase[]): HTMLElement {
   let d = div([label(name, 'ui-label ui-input-label')], 'ui-input-root ui-input-row');
   d.appendChild(div(inputs));
@@ -1233,18 +1219,18 @@ export function showColorPicker(color: number, onChanged: (color: number) => voi
   api.grok_ColorPicker_Show(color, onChanged, onOk, onCancel);
 }
 
+/** Legend editor for categorical color patterns ({category: color}). */
 export function patternsInput(colors: { [key: string]: string }): HTMLElement {
   return api.grok_UI_PatternsInput(colors);
 }
 
+/** Editor for a linear color scheme (a gradient of ARGB colors). */
 export function schemeInput(gradient: number[]): HTMLElement {
   return api.grok_UI_SchemeInput(gradient);
 }
 
 /**
- * Example: {@link https://public.datagrok.ai/js/samples/ui/ui-events}
- * @param {HTMLElement} element
- * @returns {rxjs.Observable} */
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/ui-events} */
 export function onSizeChanged(element: HTMLElement): rxjs.Observable<any> {
 
   if (_isDartium()) {
@@ -1647,6 +1633,7 @@ export class Tooltip {
     }, delay);
   }
 
+  /** Shows the standard tooltip for the rows of [dataFrame] that satisfy [indexPredicate]. */
   showRowGroup(dataFrame: DataFrame, indexPredicate: IndexPredicate, x: number, y: number): void {
     api.grok_Tooltip_ShowRowGroup(dataFrame.dart, indexPredicate, x, y);
   }
@@ -1656,10 +1643,14 @@ export class Tooltip {
     return api.grok_Tooltip_Get_Root();
   }
 
+  /** Whether a tooltip is currently shown. */
   get isVisible(): boolean { return api.grok_Tooltip_Get_IsVisible(); }
 
+  /** Fires when a tooltip is about to be shown. */
   get onTooltipRequest(): rxjs.Observable<any> { return __obs('d4-tooltip-request'); }
+  /** Fires after a tooltip is shown. */
   get onTooltipShown(): rxjs.Observable<any> { return __obs('d4-tooltip-shown'); }
+  /** Fires after the tooltip closes. */
   get onTooltipClosed(): rxjs.Observable<any> { return __obs('d4-tooltip-closed'); }
 }
 
@@ -1726,25 +1717,23 @@ export class ObjectHandler<T = any> {
   }
   /**
    * Override this method to check whether this meta class should handle the specified object.
-   * @param x - specified object.
-   * @returns {boolean} */
+   * @param x - specified object. */
   isApplicable(x: any): boolean {
     throw 'Not defined.';
   }
 
   /** String representation of the [item], by default item.toString().
-   * @param x - item
-   * @returns {string} */
+   * @param x - item */
   getCaption(x: T): string {
     return `${x}`;
   }
 
-  /** @returns {CanvasRenderer} */
+
   getCanvasRenderer(): CanvasRenderer | null {
     return null;
   }
 
-  /** @returns {GridCellRenderer} */
+
   getGridCellRenderer(): GridCellRenderer | null {
     return null;
   }
@@ -1895,9 +1884,8 @@ export class ObjectHandler<T = any> {
    *
    * Example: {@link https://public.datagrok.ai/js/samples/ui/docking/docking}
    *
-   * @param {string} name - function name
-   * @param run - a function that takes exactly one parameter
-   * */
+   * @param name - function name
+   * @param run - a function that takes exactly one parameter */
   registerParamFunc(name: string, run: (param: any) => any): void {
     new Functions().registerParamFunc(name, this.type, run, this.isApplicable);
   }
@@ -1955,6 +1943,7 @@ export function box(item: Widget | InputBase | HTMLElement | null = null, option
   return c;
 }
 
+/** A {@link box} that does not grow with its flex container. */
 export function boxFixed(item: Widget | InputBase | HTMLElement | null, options: ElementOptions | null = null): HTMLDivElement {
   let c = box(item, options);
   $(c).addClass('ui-box-fixed');
@@ -2267,6 +2256,7 @@ export function label(text: string | null, options: {} | null = null): HTMLLabel
   return c;
 }
 
+/** A link-styled label that runs [onClick]. */
 export function actionLink(text: string, onClick?: Function, tooltipMessage?: string): HTMLLabelElement {
   let c = document.createElement('label');
   c.textContent = text;
@@ -2279,24 +2269,29 @@ export function actionLink(text: string, onClick?: Function, tooltipMessage?: st
 }
 
 export namespace panels {
+  /** The context panel (accordion of info panes) for [x]. */
   export function infoPanel(x: any): Accordion { return api.grok_InfoPanels_GetAccordion(toDart(x)); }
 }
 
 
 export namespace forms {
 
+  /** A form with the default layout; same as {@link form}. */
   export function normal(children: InputBase[], options: {} | null = null){
     return form(children, options, true);
   }
 
+  /** A form with labels above inputs; same as {@link narrowForm}. */
   export function condensed(children: InputBase[], options: {} | null = null){
     return narrowForm(children, options);
   }
 
+  /** A form with two columns; same as {@link wideForm}. */
   export function wide(children: InputBase[], options: {} | null = null){
     return wideForm(children, options);
   }
 
+  /** Appends a row of buttons to [form]. */
   export function addButtons(form: HTMLElement, children: HTMLButtonElement[] = []) {
     if (!Array.isArray(children))
       children = [children];
@@ -2319,6 +2314,7 @@ export namespace forms {
     }
   }
 
+  /** Appends a titled group of inputs to [form]. */
   export function addGroup(form: HTMLElement, title: string, children: InputBase[] = []) {
     if (!Array.isArray(children))
       children = [children];
@@ -2342,18 +2338,21 @@ export function form(inputs: InputBase[], options: {} | null = null, autosize: b
   return d;
 }
 
+/** A form with labels above the inputs (for narrow hosts). */
 export function narrowForm(children: InputBase[] = [], options: {} | null = null): HTMLElement {
   let d = form(children, options, false);
   $(d).addClass('ui-form-condensed');
   return d;
 }
 
+/** A form laid out in two columns. */
 export function wideForm(children: InputBase[] = [], options: {} | null = null): HTMLElement {
   let d = form(children, options, false);
   $(d).addClass('ui-form-wide');
   return d;
 }
 
+/** A form row holding [children] buttons, aligned with the input column. */
 export function buttonsInput(children: HTMLButtonElement[] = []): HTMLDivElement {
   if (!Array.isArray(children))
     children = [children];
@@ -2370,10 +2369,12 @@ export function buttonsInput(children: HTMLButtonElement[] = []): HTMLDivElement
   return d;
 }
 
+/** The context actions (menu commands) applicable to [x], rendered as a list. */
 export function contextActions(x: any): HTMLElement {
   return api.grok_UI_Context_Actions(x);
 }
 
+/** A "favorite" star toggle for the entity with the given [id]. */
 export function star(id: string): HTMLElement {
   return api.grok_UI_Star(id);
 }
@@ -2455,6 +2456,7 @@ export function dropDown(
 //   typeahead(typeAheadConfig);
 // }
 
+/** A text input with type-ahead suggestions; see {@link TypeAheadConfig}. */
 export function typeAhead(name: string, config: TypeAheadConfig): TypeAhead {
   return new TypeAhead(name, config);
 }
@@ -2481,10 +2483,12 @@ export let icons = {
     tools.bind(tools.parseHtml('<div class="grok-loader"><div></div><div></div><div></div><div></div></div>'), handler, tooltipMsg),
 }
 
+/** Shows or hides all [elements]. */
 export function setDisplayAll(elements: HTMLElement[], show: boolean): void {
   elements.forEach((e) => setDisplay(e, show));
 }
 
+/** Shows or hides [element] by toggling its `display` style. */
 export function setDisplay(element: HTMLElement, show: boolean) {
   if (show)
     element.style.removeProperty('display');
@@ -2493,6 +2497,7 @@ export function setDisplay(element: HTMLElement, show: boolean) {
   return element;
 }
 
+/** Disables or enables [element] (adds `d4-disabled`); an optional tooltip explains why it is disabled. */
 export function setDisabled(element: HTMLElement, disabled:boolean, tooltip?: string | null | (() => string | HTMLElement | null)): void {
   if (!disabled) {
     element.classList.remove('d4-disabled');
@@ -2549,16 +2554,19 @@ export function fileBrowser(params: {path?: string, dataSourceFilter?: fileShare
 }
 
 export namespace time {
+  /** Renders [time] as a relative span ("3 hours ago") that updates itself. */
   export function timeSpan(time: dayjs.Dayjs): HTMLSpanElement {
     return api.grok_UI_Time(toDart(time));
   }
 
+  /** Renders [time] as a short timestamp. */
   export function shortTimestamp(time: dayjs.Dayjs): HTMLElement {
     return api.grok_UI_ShortTimestamp(toDart(time));
   }
 }
 
 export namespace tools {
+  /** Adds a click [handler] to [e] and returns [e]. */
   export function click<T extends HTMLElement>(e: T, handler: () => void): T {
     e.addEventListener('click', handler);
     return e;

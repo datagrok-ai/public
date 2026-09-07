@@ -313,6 +313,7 @@ export class FuncCall extends Entity {
   public outputParams: FuncCallParams;
 
   public aux: any;
+  /** Call options as key-value pairs. */
   public options: any;
 
   constructor(dart: any) {
@@ -334,9 +335,11 @@ export class FuncCall extends Entity {
   get func(): Func { return toJs(api.grok_FuncCall_Get_Func(this.dart)); }
   set func(func: Func) { api.grok_FuncCall_Set_Func(this.dart, func.dart); }
 
+  /** The call this one was made from, or null for a top-level call. */
   get parentCall(): FuncCall { return toJs(api.grok_FuncCall_Get_ParentCall(this.dart)); }
   set parentCall(c: FuncCall) { api.grok_FuncCall_Set_ParentCall(this.dart, c.dart); }
 
+  /** When the call started. */
   get started(): dayjs.Dayjs { return dayjs(api.grok_FuncCall_Get_Started(this.dart)); }
 
   set started(value: dayjs.Dayjs) {
@@ -345,15 +348,20 @@ export class FuncCall extends Entity {
     api.grok_FuncCall_Set_Started(this.dart, value?.valueOf());
   }
 
+  /** When the call finished. */
   get finished(): dayjs.Dayjs { return dayjs(api.grok_FuncCall_Get_Finished(this.dart)); }
 
+  /** Execution status: `Created`, `Running`, `Completed`, `Error`, or `Canceled`. */
   get status(): string { return api.grok_FuncCall_Get_Status(this.dart); }
   set status(newStatus: string) { api.grok_FuncCall_Set_Status(this.dart, newStatus)}
+  /** Whether the call was made ad hoc (not persisted in the history). */
   get adHoc(): boolean { return api.grok_FuncCall_Get_AdHoc(this.dart); }
   set adHoc(a: boolean) { api.grok_FuncCall_Set_AdHoc(this.dart, a); }
 
+  /** The user who made the call. */
   override get author(): User { return toJs(api.grok_FuncCall_Get_Author(this.dart)); }
 
+  /** Logger whose records are attached to this call. */
   get debugLogger(): Logger { return new Logger(undefined, {dartLogger: api.grok_FuncCall_Get_DebugLogger(this.dart)}); }
 
   /** Returns function call parameter value */
@@ -373,10 +381,12 @@ export class FuncCall extends Entity {
     return toJs(api.grok_FuncCall_Get_Output_Param_Value(this.dart));
   }
 
+  /** Sets an auxiliary value on this call (see {@link aux}). */
   setAuxValue(name: string, value: any): void {
     api.grok_FuncCall_Set_Aux_Value(this.dart, name, toDart(value));
   }
 
+  /** Sets the input parameter value; same as `inputs[name] = value`. */
   setParamValue(name: string, value: any): void {
     api.grok_FuncCall_Set_Param_Value(this.dart, name, toDart(value));
   }
@@ -415,6 +425,7 @@ export class FuncCall extends Entity {
     return this;
   }
 
+  /** Requests cancellation of a running call. */
   cancel(): Promise<void> {
     return api.grok_FuncCall_Cancel(this.dart);
   }
@@ -427,10 +438,12 @@ export class FuncCall extends Entity {
   /** Shows the corresponding dialog (or view). */
   edit() { api.grok_FuncCall_Edit(this.dart); }
 
+  /** Builds the standard input editor for this call and returns its root; see also {@link buildEditor}. */
   getEditor(condensed?: boolean, showTableSelectors?: boolean): Promise<HTMLDivElement> {
     return api.grok_FuncCall_Get_Editor(this.dart, condensed, showTableSelectors);
   }
 
+  /** Builds the standard input editor into [root] and returns the inputs it created. */
   buildEditor(root: HTMLDivElement, options?: {condensed?: boolean, showTableSelectors?: boolean}): Promise<InputBase[]> {
     return api.grok_FuncCall_Build_Editor(this.dart, root, options?.condensed, options?.showTableSelectors);
   }

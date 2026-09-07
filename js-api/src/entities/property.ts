@@ -43,9 +43,7 @@ export class Property implements IProperty {
   }
 
   /** Property getter is a function that accepts one parameter (item)
-   * and returns the property value.
-   *
-   * @returns {PropertyGetter} */
+   * and returns the property value. */
   get get(): PropertyGetter { return api.grok_Property_Get_Get(this.dart); }
   set get(x: PropertyGetter) { api.grok_Property_Set_Get(this.dart, x); }
 
@@ -158,8 +156,7 @@ export class Property implements IProperty {
   set showPlusMinus(s: boolean) { api.grok_Property_Set_ShowPlusMinus(this.dart, s); }
 
   /** List of possible values of that property.
-   *  PropertyGrid will use it to populate combo boxes.
-   *  @returns {Array<string>} */
+   *  PropertyGrid will use it to populate combo boxes. */
   get choices(): string[] { return api.grok_Property_Get_Choices(this.dart); }
   set choices(x: string[]) { api.grok_Property_Set_Choices(this.dart, x); }
 
@@ -168,8 +165,10 @@ export class Property implements IProperty {
   get validators(): string[] { return api.grok_Property_Get_Validators(this.dart); }
   set validators(x: string[]) { api.grok_Property_Set_Validators(this.dart, x); }
 
+  /** Whether a function parameter of this type can accept a whole column. */
   get isVectorizable(): boolean { return api.grok_Property_Get_IsVectorizable(this.dart); }
 
+  /** Name of the vector (column) counterpart of this parameter. */
   get vectorName(): string { return api.grok_Property_Get_VectorName(this.dart); }
 
   /** Column type filter (previously "columnFilter") */
@@ -226,10 +225,15 @@ export class Property implements IProperty {
       options?.defaultValue).fromOptions(options && rest);
   }
 
+  /** Integer property backed by the JavaScript field [name]. */
   static jsInt(name: string, options?: IProperty): Property { return Property.js(name, TYPE.INT, options); }
+  /** Boolean property backed by the JavaScript field [name]. */
   static jsBool(name: string, options?: IProperty): Property { return Property.js(name, TYPE.BOOL, options); }
+  /** Float property backed by the JavaScript field [name]. */
   static jsFloat(name: string, options?: IProperty): Property { return Property.js(name, TYPE.FLOAT, options); }
+  /** String property backed by the JavaScript field [name]. */
   static jsString(name: string, options?: IProperty): Property { return Property.js(name, TYPE.STRING, options); }
+  /** Datetime property backed by the JavaScript field [name]. */
   static jsDateTime(name: string, options?: IProperty): Property { return Property.js(name, TYPE.DATE_TIME, options); }
 
   static fromOptions(options: IProperty): Property { return Property.js(options.name!, options.type! as TYPE, options); }
@@ -241,6 +245,7 @@ export class Property implements IProperty {
     api.grok_Property_RegisterAttachedProperty(typeName, property.dart);
   }
 
+  /** Metadata of the property options themselves (what a property editor shows for each option). */
   static propertyOptions:{[name in keyof IProperty]: IProperty & IPropertyAnnotation } = {
     'name': { name: 'name', type: TYPE.STRING, nullable: false },
     'type': { name: 'type', type: TYPE.STRING, nullable: false, description: 'Property data type, such as "int" or "string".' },

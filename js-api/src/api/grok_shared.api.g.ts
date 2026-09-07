@@ -1,33 +1,33 @@
-/// this file was generated automatically from grok_shared classes declarations
+// this file was generated automatically from grok_shared classes declarations
 import { toDart } from "../wrappers";
 let api = (typeof window !== 'undefined' ? window : global.window) as any;
 
 export class ServerMessageTypes {
-  /// Chat message sent.
+  /** Chat message sent. */
   static CHAT_MESSAGE_SENT = 'chat-message-sent';
 
-  /// Notification sent to a user.
+  /** Notification sent to a user. */
   static NOTIFICATION_SENT = 'notification-sent';
 
-  /// Notebook table updated.
+  /** Notebook table updated. */
   static NOTEBOOK_TABLE_UPDATED = 'notebook-table-updated';
 
-  /// Docker image built.
+  /** Docker image built. */
   static DOCKER_IMAGE_BUILT = 'docker-image-built';
 
-  /// Docker container updated.
+  /** Docker container updated. */
   static DOCKER_CONTAINER_UPDATED = 'docker-container-updated';
 
-  /// Package repository error.
+  /** Package repository error. */
   static PACKAGE_REPOSITORY_ERROR = 'package-repository-error';
 
-  /// Logger settings changed.
+  /** Logger settings changed. */
   static LOGGER_SETTINGS_CHANGED = 'logger-settings-changed';
 
-  /// Package installed.
+  /** Package installed. */
   static PACKAGE_INSTALLED = 'package-installed';
 
-  /// A step of a long-running server operation. Payload: [ServerTaskProgress].
+  /** A step of a long-running server operation. Payload: [ServerTaskProgress]. */
   static TASK_PROGRESS = 'task-progress';
 
 }
@@ -78,8 +78,8 @@ export class DataSourceType {
 
   static Postgres = 'Postgres';
 
-  /// Virtual, credential-less source over an entity-mapped domain schema.
-  /// Executed in-process by DomainDataProvider; never reaches grok_connect.
+  /** Virtual, credential-less source over an entity-mapped domain schema.
+   * Executed in-process by DomainDataProvider; never reaches grok_connect. */
   static Domain = 'Domain';
 
   static Redshift = 'Redshift';
@@ -134,7 +134,7 @@ export class DataSourceType {
 
 }
 export class Permission {
-  // ===== Admin =====
+  /** ===== Admin ===== */
   static CREATE_USER = 'CreateUser';
 
   static EDIT_USER = 'EditUser';
@@ -167,7 +167,7 @@ export class Permission {
 
   static CREATE_ROLE = 'CreateRole';
 
-  // ===== Create =====
+  /** ===== Create ===== */
   static SAVE_ENTITY_TYPE = 'SaveEntityType';
 
   static CREATE_ENTITY = 'CreateEntity';
@@ -188,14 +188,14 @@ export class Permission {
 
   static CREATE_DOMAIN_SCHEMA = 'CreateDomainSchema';
 
-  // ===== General =====
+  /** ===== General ===== */
   static INVITE_USER = 'InviteUser';
 
   static SHARE_WITH_EVERYONE = 'ShareWithEveryone';
 
   static SEND_EMAIL = 'SendEmail';
 
-  // ===== Browse =====
+  /** ===== Browse ===== */
   static BROWSE_FILE_CONNECTIONS = 'BrowseFileConnections';
 
   static BROWSE_DATABASE_CONNECTIONS = 'BrowseDatabaseConnections';
@@ -230,7 +230,7 @@ export class Permission {
 
   static BROWSE_SHARED_DATA = 'BrowseSharedData';
 
-  // ===== Entity: Common =====
+  /** ===== Entity: Common ===== */
   static VIEW = 'View';
 
   static EDIT = 'Edit';
@@ -239,14 +239,14 @@ export class Permission {
 
   static SHARE = 'Share';
 
-  // ===== Entity: DataConnection =====
+  /** ===== Entity: DataConnection ===== */
   static DATA_CONNECTION_QUERY = 'DataConnection.Query';
 
   static DATA_CONNECTION_GET_SCHEMA = 'DataConnection.GetSchema';
 
   static DATA_CONNECTION_LIST_FILES = 'DataConnection.ListFiles';
 
-  // Fine-grained structured-write privileges (UI group 'Write').
+  /** Fine-grained structured-write privileges (UI group 'Write'). */
   static DATA_CONNECTION_ADD_ROWS = 'DataConnection.AddRows';
 
   static DATA_CONNECTION_CHANGE_VALUES = 'DataConnection.ChangeValues';
@@ -255,23 +255,23 @@ export class Permission {
 
   static DATA_CONNECTION_TRUNCATE_TABLE = 'DataConnection.TruncateTable';
 
-  // Fine-grained schema-change privileges (UI group 'Ddl').
+  /** Fine-grained schema-change privileges (UI group 'Ddl'). */
   static DATA_CONNECTION_CREATE_TABLE = 'DataConnection.CreateTable';
 
   static DATA_CONNECTION_ALTER_SCHEMA = 'DataConnection.AlterSchema';
 
   static DATA_CONNECTION_DROP_TABLE = 'DataConnection.DropTable';
 
-  // ===== Entity: DataQuery =====
+  /** ===== Entity: DataQuery ===== */
   static DATA_QUERY_EXECUTE = 'DataQuery.Execute';
 
-  // ===== Entity: DataQuery =====
+  /** ===== Entity: DataQuery ===== */
   static SCRIPT_EXECUTE = 'Script.Execute';
 
-  // ===== Entity: TableInfo =====
+  /** ===== Entity: TableInfo ===== */
   static TABLE_READ_DATA = 'Table.ReadData';
 
-  // ===== Entity: DomainSchema =====
+  /** ===== Entity: DomainSchema ===== */
   static EXTEND = 'Extend';
 
 }
@@ -331,7 +331,7 @@ export class DockerImage extends Entity {
   set updatedBy(x: string) {api.grok_DockerImage_Set_updatedBy(this.dart, toDart(x)); }
   get logs(): string { return api.grok_DockerImage_Get_logs(this.dart); };
   set logs(x: string) {api.grok_DockerImage_Set_logs(this.dart, toDart(x)); }
-  /// Published image this entity points at, for packages that reference one instead of building it.
+  /** Published image this entity points at, for packages that reference one instead of building it. */
   get imageRef(): string { return api.grok_DockerImage_Get_imageRef(this.dart); };
   set imageRef(x: string) {api.grok_DockerImage_Set_imageRef(this.dart, toDart(x)); }
   get completed(): boolean { return api.grok_DockerImage_Get_completed(this.dart); };

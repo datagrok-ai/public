@@ -27,11 +27,13 @@ export class Project extends Entity {
     this.meta = new MapProxy(api.grok_Project_Get_Meta(this.dart), 'meta') as any;
   }
 
+  /** Project options as key-value pairs. */
   public options: any;
 
   /** Project metadata (`metaParams`) — user-facing key:value bag, e.g. `demoPath`. */
   public meta: {[key: string]: string};
 
+  /** Creates a new, unsaved project. */
   static create(): Project {return toJs(api.grok_Project_From_Id(null)); };
 
   /** Opens the "Save project" dialog for the given tables only (no workspace scan), with
@@ -47,6 +49,7 @@ export class Project extends Entity {
       typeof options.project === 'string' ? options.project : options.project?.id ?? '');
   }
 
+  /** URL of the project picture. */
   get pictureUrl(): string {
     return api.grok_PictureMixin_Get_PictureUrl(this.dart);
   }
@@ -55,10 +58,12 @@ export class Project extends Entity {
     return api.grok_Project_Get_Path(this.dart);
   }
 
+  /** Whether the project has been saved to the server. */
   get isOnServer(): string {
     return api.grok_Project_Get_IsOnServer(this.dart);
   }
 
+  /** Whether the project exists only in this session. */
   get isLocal(): string {
     return api.grok_Project_Get_IsLocal(this.dart);
   }
@@ -82,10 +87,12 @@ export class Project extends Entity {
     return api.grok_Project_IsEmpty(this.dart);
   }
 
+  /** Whether the project is a dashboard. */
   get isDashboard(): boolean {
     return api.grok_Project_IsDashboard(this.dart);
   }
 
+  /** Whether the project belongs to a package. */
   get isPackage(): boolean {
     return api.grok_Project_IsPackage(this.dart);
   }
@@ -95,6 +102,7 @@ export class Project extends Entity {
     return api.grok_Project_Get_IsSpace(this.dart);
   }
 
+  /** The markup that references this project. */
   toMarkup(): string {
     return api.grok_Project_ToMarkup(this.dart);
   }
@@ -110,30 +118,36 @@ export class Project extends Entity {
     api.grok_Project_Close(this.dart);
   }
 
+  /** Entities linked to the project (shared, not owned). */
   get links(): Entity[] {
     return toJs(api.grok_Project_GetRelations(this.dart, true));
   }
 
+  /** Entities owned by the project. */
   get children(): Entity[] {
     return toJs(api.grok_Project_GetRelations(this.dart, false));
   }
 
+  /** Links an entity (or the table info of a DataFrame) to the project. */
   addLink(entity: Entity | DataFrame): void {
     if (entity instanceof DataFrame)
       entity = entity.getTableInfo();
     api.grok_Project_AddRelation(this.dart, entity.dart, true);
   }
 
+  /** Adds an entity (or the table info of a DataFrame) as a child of the project. */
   addChild(entity: Entity |DataFrame): void {
     if (entity instanceof DataFrame)
       entity = entity.getTableInfo();
     api.grok_Project_AddRelation(this.dart, entity.dart, false);
   }
 
+  /** Removes a link. */
   removeLink(entity: Entity): void {
     api.grok_Project_RemoveRelation(this.dart, entity.dart);
   }
 
+  /** Removes a child. */
   removeChild(entity: Entity): void {
     api.grok_Project_RemoveRelation(this.dart, entity.dart);
   }

@@ -19,43 +19,38 @@ export class StickyMeta {
 
   /**
    * Fetch available sticky meta configurations
-   * @returns list of schemas
-   */
+   * @returns list of schemas */
   async getSchemas(): Promise<Schema[]> {
     return toJs(await api.grok_Sticky_GetSchemas());
   }
 
   /**
    * Saves sticky meta values for list of entities.
-   * @param {Schema} schema - a configuration of sticky meta to be applied
-   * @param {Column} keys - a column with identifiers of entities.
+   * @param schema - a configuration of sticky meta to be applied
+   * @param keys - a column with identifiers of entities.
    * This column should be configured with tags so type of entity would be recognizable.
-   * @param {DataFrame} values - a dataframe with metadata values to set.
-   * Names of columns in this dataframe should match property names of schema.
-   */
+   * @param values - a dataframe with metadata values to set.
+   * Names of columns in this dataframe should match property names of schema. */
   async setAllValues(schema: Schema, keys: Column, values: DataFrame): Promise<void> {
     return api.grok_Sticky_SetAllValues(toDart(schema), toDart(keys), toDart(values));
   }
 
   /**
    * Fetches sticky meta values for list of entities.
-   * @param {Schema} schema - configuration of sticky meta to fetch data for.
-   * @param {Column} keys - column with identifiers of entities.
+   * @param schema - configuration of sticky meta to fetch data for.
+   * @param keys - column with identifiers of entities.
    * This column should be configured with tags so type of entity would be recognizable.
-   * @returns {DataFrame}, where properties for keys are stored in columns with respective name
-   */
+   * @returns , where properties for keys are stored in columns with respective name */
   async getAllValues(schema: Schema, keys: Column): Promise<DataFrame> {
     return toJs(api.grok_Sticky_GetAllValues(toDart(schema), toDart(keys)));
   }
 
   /**
    * Creates a new schema, which is an instance of sticky meta configuration
-   * @param {string} name - specifies name of new schema
+   * @param name - specifies name of new schema
    * @param {{name: string, matchBy: string[]}} types - list of types that schema is applied to.
    * Every type has a name and a matching expression it applies to.
-   * @param {{name: string, type: string[]}} properties - list of typed properties that can be stored within the schema 
-   * @returns {Schema}.
-   */
+   * @param {{name: string, type: string[]}} properties - list of typed properties that can be stored within the schema  */
   async createSchema(name: string, types: {name: string, matchBy: string}[], properties: {name: string, type: string}[]): Promise<Schema> {
     var schema = Schema.create(name);
     let entityTypes: Array<EntityType> = [];
@@ -75,16 +70,14 @@ export class StickyMeta {
 
   /**
    * Saves modified schema.
-   * @param {Schema} schema - modified schema
-   */
+   * @param schema - modified schema */
   async saveSchema(schema: Schema): Promise<void> {
     return api.grok_Sticky_SaveSchema(toDart(schema));
   }
 
   /**
    * Deletes schema by ID
-   * @param {string} id - identifier of a schema
-   */
+   * @param id - identifier of a schema */
   deleteSchema(id: string): Promise<void> {
     return api.grok_Sticky_DeleteSchema(id);
   }

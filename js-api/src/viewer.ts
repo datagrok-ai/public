@@ -82,10 +82,11 @@ export class WidgetDescriptor {
  **/
 export class Viewer<TSettings = any> extends Widget<TSettings> {
 
+  /** Viewer tags: a string map persisted with the layout. */
   public tags: any;
   private _meta: ViewerMetaHelper | undefined;
 
-  /** @constructs Viewer */
+
   constructor(dart: any, root?: HTMLElement) {
     super(root ?? api.grok_Viewer_Root(dart));
     this.initDartObject(dart);
@@ -122,11 +123,15 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
       super.aiDescription = x;
   }
 
+  /** All data events of this viewer (selection, row click, tooltip); filter by `e.type`. */
   get onDataEvent(): rxjs.Observable<ViewerEvent> { return this.onEvent('d4-data-event'); }
+  /** Fires when the viewer shows a data tooltip. */
   get onTooltipCreated(): rxjs.Observable<ViewerEvent> { return this.onEvent('d4-data-event').pipe(filter((e) => e.type == 'd4-tooltip')); }
+  /** Fires when the user selects data in the viewer. */
   get onDataSelected(): rxjs.Observable<ViewerEvent> { return this.onEvent('d4-data-event').pipe(filter((e) => e.type == 'd4-select')); }
   /** current row clicked */
   get onDataRowClicked(): rxjs.Observable<ViewerEvent> { return this.onEvent('d4-data-event').pipe(filter((e) => e.type == 'd4-row-click')); }
+  /** Fires after any viewer property changes; `args.property` is the property. */
   get onPropertyValueChanged(): rxjs.Observable<EventData<Property>> { return this.onEvent('d4-property-value-changed'); }
 
   /** Fires when the viewer's underlying DataFrame is replaced (table attached). */
@@ -150,7 +155,7 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
     this.dart = dart;
 
     if (dart != null) {
-      /** @member {ObjectPropertyBag} */
+
       // @ts-ignore
       this.props = new ObjectPropertyBag(this, api.grok_Viewer_Get_Look(this.dart));
       this.tags = new MapProxy(api.grok_Viewer_Get_Tags(this.dart), 'tags', 'string');
@@ -158,10 +163,7 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
   }
 
   /** Creates a new viewer of the specified type.
-   * @param {ViewerType} viewerType
-   * @param {DataFrame} table
-   * @param options
-   * @returns {Viewer} */
+   * @param options */
   static fromType(viewerType: ViewerType, table: DataFrame, options: object | null = null): Viewer {
     return toJs(api.grok_Viewer_FromType(viewerType, table.dart, _toJson(options)));
   }
@@ -177,8 +179,7 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
 
   /**
    *  Sets viewer options. See also {@link getOptions}
-   *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/types/scatter-plot}
-   *  @param {object} map */
+   *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/types/scatter-plot} */
   // add tsettings
   setOptions(map: { type?: ViewerType, [key: string]: any }): void {
     api.grok_Viewer_Options(this.dart, JSON.stringify(map));
@@ -190,16 +191,17 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
    * properties makes it more clean and efficient for serialization purposes.
    *
    * See also {@link setOptions}
-   *  Sample: https://public.datagrok.ai/js/samples/ui/viewers/types/scatter-plot
-   *  @returns {object} */
+   *  Sample: https://public.datagrok.ai/js/samples/ui/viewers/types/scatter-plot */
   getOptions(includeDefaults: boolean = false): {id: string, type: ViewerType, look: {[key: string]: any}} {
     return JSON.parse(api.grok_Viewer_Serialize(this.dart, includeDefaults));
   }
 
+  /** Viewer internals exposed for diagnostics and tests (canvas, overlay, and more), keyed by name. */
   getInfo(): { [index: string]: any } {
     return api.grok_Viewer_GetInfo(this.dart);
   }
 
+  /** All properties of this viewer, including the data-bound ones. */
   getProperties(): Property[] {
     return api.grok_Viewer_Get_Properties(this.dart);
   }
@@ -251,24 +253,24 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
     api.grok_Viewer_Close(this.dart);
   }
 
-  /** Visual root.
-   * @type {HTMLElement} */
+  /** Visual root. */
   get root(): HTMLElement {
     return api.grok_Viewer_Root(this.dart);
   }
 
+  /** Formula lines and annotation regions of this viewer. */
   get meta(): ViewerMetaHelper {
     if (this._meta == undefined)
       this._meta = new ViewerMetaHelper(this);
     return this._meta;
   }
 
-  /** Returns viewer type (see VIEWER constants)
-   * @returns {string} */
+  /** Returns viewer type (see VIEWER constants) */
   get type(): ViewerType {
     return api.grok_Viewer_Get_Type(this.dart);
   }
 
+  /** The DataFrame this viewer is attached to. Same as {@link dataFrame}. */
   get table(): DataFrame {
     return toJs(api.grok_Viewer_Get_DataFrame(this.dart));
   }
@@ -283,7 +285,7 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
     return toJs(api.grok_Viewer_Get_View(this.dart));
   }
 
-  /** @type {DataFrame} */
+
   get dataFrame(): DataFrame { return toJs(api.grok_Viewer_Get_DataFrame(this.dart)); }
   set dataFrame(t: DataFrame) { api.grok_Viewer_Set_DataFrame(this.dart, t == null ? null : t.dart); }
 
@@ -297,98 +299,122 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
   get immediateRendering(): boolean { return api.grok_Viewer_Get_ImmediateRendering(this.dart); }
   set immediateRendering(x: boolean) { api.grok_Viewer_Set_ImmediateRendering(this.dart, x); }
 
+  /** Creates a {@link Grid} for the table. */
   static grid(t: DataFrame, options?: Partial<interfaces.IGridSettings>): Grid {
     return new DG.Grid(api.grok_Viewer_Grid(t.dart, _toJson(options)));
   }
 
+  /** Creates a histogram. */
   static histogram(t: DataFrame, options?: Partial<interfaces.IHistogramSettings>): HistogramViewer {
     return new HistogramViewer(api.grok_Viewer_Histogram(t.dart, _toJson(options)));
   }
 
+  /** Creates a bar chart. */
   static barChart(t: DataFrame, options?: Partial<interfaces.IBarChartSettings>): Viewer<interfaces.IBarChartSettings> {
     return <Viewer>Viewer.fromType(VIEWER.BAR_CHART, t, options);
   }
 
+  /** Creates a confusion matrix. */
   static confusionMatrix(t: DataFrame, options?: Partial<interfaces.IConfusionMatrixSettings>): ConfusionMatrix {
     return <ConfusionMatrix>Viewer.fromType(VIEWER.CONFUSION_MATRIX, t, options);
   }
 
+  /** Creates a ROC curve. */
   static rocCurve(t: DataFrame, options?: Partial<interfaces.IRocCurveSettings>): RocCurve {
     return <RocCurve>Viewer.fromType(VIEWER.ROC_CURVE, t, options);
   }
 
+  /** Creates a heat map (a {@link Grid} in heat-map mode). */
   static heatMap(t: DataFrame, options?: Partial<interfaces.IGridSettings>): Grid {
     return new DG.Grid(Viewer.fromType(VIEWER.HEAT_MAP, t, options).dart);
   }
 
+  /** Creates a box plot. */
   static boxPlot(t: DataFrame, options?: Partial<interfaces.IBoxPlotSettings>): BoxPlot {
     return new BoxPlot(api.grok_Viewer_BoxPlot(t.dart, _toJson(options)));
   }
 
+  /** Creates a filter panel. */
   static filters(t: DataFrame, options?: Partial<interfaces.IFiltersSettings>): Viewer<interfaces.IFiltersSettings> {
     return new Viewer(api.grok_Viewer_Filters(t.dart, _toJson(options)));
   }
 
+  /** Creates a scatter plot. */
   static scatterPlot(t: DataFrame, options?: Partial<interfaces.IScatterPlotSettings>): ScatterPlotViewer {
     return new ScatterPlotViewer(api.grok_Viewer_ScatterPlot(t.dart, _toJson(options)));
   }
 
+  /** Creates a line chart. */
   static lineChart(t: DataFrame, options?: Partial<interfaces.ILineChartSettings>): LineChartViewer {
     return new LineChartViewer(api.grok_Viewer_LineChart(t.dart, _toJson(options)));
   }
 
+  /** Creates a network diagram. */
   static network(t: DataFrame, options?: Partial<interfaces.INetworkDiagramSettings>): NetworkDiagramViewer {
     return new NetworkDiagramViewer((Viewer.fromType(VIEWER.NETWORK_DIAGRAM, t, options) as Viewer).dart);
   }
 
+  /** Creates a calendar. */
   static calendar(t: DataFrame, options?: Partial<interfaces.ICalendarSettings>): CalendarViewer {
     return new CalendarViewer(api.grok_Viewer_Calendar(t.dart, _toJson(options)));
   }
 
+  /** Creates a correlation plot. */
   static correlationPlot(t: DataFrame, options?: Partial<interfaces.ICorrelationPlotSettings>): Viewer<interfaces.ICorrelationPlotSettings> {
     return <Viewer>Viewer.fromType(VIEWER.CORR_PLOT, t, options);
   }
 
+  /** Creates a density plot. */
   static densityPlot(t: DataFrame, options?: Partial<interfaces.IDensityPlotSettings>): DensityPlotViewer {
     return <DensityPlotViewer>Viewer.fromType(VIEWER.DENSITY_PLOT, t, options);
   }
 
+  /** Creates a form viewer. */
   static form(t: DataFrame, options?: Partial<interfaces.IFormSettings>): FormViewer {
     return new DG.FormViewer(api.grok_Viewer_Form(t.dart, _toJson(options)));
   }
 
+  /** Creates a markup viewer. */
   static markup(t: DataFrame, options?: Partial<interfaces.IMarkupViewerSettings>): Viewer<interfaces.IMarkupViewerSettings> {
     return <Viewer>Viewer.fromType(VIEWER.MARKUP, t, options);
   }
 
+  /** Creates a matrix plot. */
   static matrixPlot(t: DataFrame, options?: Partial<interfaces.IMatrixPlotSettings>): MatrixPlot {
     return <MatrixPlot>Viewer.fromType(VIEWER.MATRIX_PLOT, t, options);
   }
 
+  /** Creates a parallel-coordinates plot. */
   static pcPlot(t: DataFrame, options?: Partial<interfaces.IPcPlotSettings>): Viewer<interfaces.IPcPlotSettings> {
     return <Viewer>Viewer.fromType(VIEWER.PC_PLOT, t, options);
   }
 
+  /** Creates a pie chart. */
   static pieChart(t: DataFrame, options?: Partial<interfaces.IPieChartSettings>): Viewer<interfaces.IPieChartSettings> {
     return <Viewer>Viewer.fromType(VIEWER.PIE_CHART, t, options);
   }
 
+  /** Creates a 3D scatter plot. */
   static scatterPlot3d(t: DataFrame, options?: Partial<interfaces.IScatterPlot3dSettings>): Viewer<interfaces.IScatterPlot3dSettings> {
     return <Viewer>Viewer.fromType(VIEWER.SCATTER_PLOT_3D, t, options);
   }
 
+  /** Creates a statistics viewer. */
   static statistics(t: DataFrame, options?: Partial<interfaces.IStatsViewerSettings>): Viewer<interfaces.IStatsViewerSettings> {
     return <Viewer>Viewer.fromType(VIEWER.STATISTICS, t, options);
   }
 
+  /** Creates a tile viewer. */
   static tile(t: DataFrame, options?: Partial<interfaces.ITileViewerSettings>): TileViewer {
     return <TileViewer>Viewer.fromType(VIEWER.TILE_VIEWER, t, options);
   }
 
+  /** Creates a tree map. */
   static treeMap(t: DataFrame, options?: Partial<interfaces.ITreeMapSettings>): TreeMap {
     return <TreeMap>Viewer.fromType(VIEWER.TREE_MAP, t, options);
   }
 
+  /** Creates a trellis plot. */
   static trellisPlot(t: DataFrame, options?: Partial<interfaces.ITrellisPlotSettings>): Viewer<interfaces.ITrellisPlotSettings> {
     return <Viewer>Viewer.fromType(VIEWER.TRELLIS_PLOT, t, options);
   }
@@ -398,6 +424,7 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
     return <Viewer>Viewer.fromType(VIEWER.WORD_CLOUD, t, options);
   }
 
+  /** Fires when the viewer builds its context menu; add items to the emitted {@link Menu}. */
   get onContextMenu(): rxjs.Observable<Menu> {
     return this.onEvent('d4-context-menu').pipe(map(x => x.args.menu));
   }
@@ -420,10 +447,12 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
     );
   }
 
+  /** Switches the viewer to the compact look used inside a trellis plot. */
   toCompactLook() {
     api.grok_Viewer_To_Trellis_Look(this.dart);
   }
 
+  /** Low-level stream of property changes on the Dart side; prefer {@link onPropertyValueChanged}. */
   get onDartPropertyChanged(): rxjs.Observable<null> {
     let dartStream = api.grok_Viewer_Get_PropertyChanged_Events(this.dart);
     return rxjs.fromEventPattern(
@@ -441,18 +470,22 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
   /** Occurs when viewer is detached. */
   get onDetached(): rxjs.Observable<any> { return api.grok_Viewer_OnDetached(this.dart); }
 
+  /** Copies all settings (the look) from [other] into this viewer. */
   copyViewersLook(other: Viewer) {
     api.grok_Viewer_Copy_Viewers_Look(this.dart, other.dart);
   }
 
+  /** Removes the viewer from its view without disposing it. */
   removeFromView() {
     return toJs(api.grok_Viewer_Remove_From_View(this.dart));
   }
 
+  /** Returns null when a viewer of [viewerType] can show [dataFrame], or the reason it cannot. */
   static canVisualize(viewerType: string, dataFrame: DataFrame): string | null {
     return api.grok_Viewer_CanVisualize(viewerType, dataFrame.dart);
   }
 
+  /** Viewer types that ship with the platform and are available synchronously. */
   static CORE_VIEWER_TYPES: string[] = [
     VIEWER.HISTOGRAM, VIEWER.BAR_CHART, VIEWER.BOX_PLOT, VIEWER.CALENDAR,
     VIEWER.CORR_PLOT, VIEWER.DENSITY_PLOT, VIEWER.FILTERS, VIEWER.FORM,
@@ -478,7 +511,7 @@ export class JsViewer extends Viewer {
   rowSource: string | undefined;
   formulaFilter: string | undefined;
 
-  /** @constructs JsViewer */
+
   constructor() {
     let _root = ui.box();
     super(null, _root);
@@ -487,12 +520,12 @@ export class JsViewer extends Viewer {
     this.initDartObject(this.dart);
     this._root = _root;
 
-    /** @type {StreamSubscription[]} */
+
     this.subs = [];  // stream subscriptions - will be canceled when the viewer is detached
 
     this.obs = [];
 
-    /** @member {ObjectPropertyBag} */
+
     this.props = new ObjectPropertyBag(this);
   }
 
@@ -534,9 +567,7 @@ export class JsViewer extends Viewer {
     this._u2.scope?.dispose();
   }
 
-  /** Gets property by name (case-sensitive).
-   * @param {string} name
-   * @returns {Property} */
+  /** Gets property by name (case-sensitive). */
   getProperty(name: string): Property | undefined {
     return this.getProperties().find((p) => p.name === name);
   }
@@ -617,18 +648,22 @@ export class FilterGroup extends Viewer {
     super(dart);
   }
 
+  /** States of all filters of [filterType] on [columnName], as plain objects. */
   getStates(columnName: string, filterType: String): Array<Object> {
     return api.grok_FilterGroup_GetStates(this.dart, columnName, filterType);
   }
 
+  /** Adds a filter described by [state]; see {@link FilterState}. */
   add<T extends FilterState>(state: T) {
     api.grok_FilterGroup_Add(this.dart, state);
   }
 
+  /** Updates the filter matching [state] (same column and type) or adds it; [requestFilter] false defers filtering. */
   updateOrAdd<T extends FilterState>(state: T, requestFilter?: boolean) {
     api.grok_FilterGroup_UpdateOrAdd(this.dart, state, requestFilter);
   }
 
+  /** A DOM element summarizing the active filters. */
   getFilterSummary(): Element {
     return api.grok_FilterGroup_GetFilterSummary(this.dart);
   }
@@ -638,27 +673,37 @@ export class FilterGroup extends Viewer {
     return toJs(api.grok_FilterGroup_Get_Filters(this.dart));
   }
 
+  /** Enables or disables one filter. */
   setEnabled(filter: Filter | Widget | FilterState, active: boolean) {
     api.grok_FilterGroup_SetEnabled(this.dart, filter, active);
   }
 
+  /** Expands or collapses one filter. */
   setExpanded(filter: Filter | Widget, active: boolean) {
     api.grok_FilterGroup_SetExpanded(this.dart, filter, active);
   }
 
+  /** Enables or disables the whole group. */
   setActive(active: boolean, notify = true) {
     api.grok_FilterGroup_SetActive(this.dart, active, notify);
   }
 
+  /** Removes a filter from the group. */
   remove(filter: Filter | Widget) {
     api.grok_FilterGroup_Remove(this.dart, filter);
   }
 
+  /** Fires after a filter is added to the group. */
   get onFilterAdded(): rxjs.Observable<EventData<any>> { return this.onEvent('d4-filter-added'); }
+  /** Fires after a filter is removed from the group. */
   get onFilterRemoved(): rxjs.Observable<EventData<any>> { return this.onEvent('d4-filter-removed'); }
+  /** Fires when any filter changes its criteria. */
   get onFilterCriteriaChanged(): rxjs.Observable<EventData<any>> { return this.onEvent('d4-filter-criteria-changed'); }
+  /** Fires when a filter is enabled or disabled. */
   get onFilterEnabledChanged(): rxjs.Observable<EventData<any>> { return this.onEvent('d4-filter-enabled-changed'); }
+  /** Fires when the group synchronizes its filters with the table state. */
   get onFilterSync(): rxjs.Observable<EventData<any>> { return this.onEvent('d4-filter-sync'); }
+  /** Fires when the formula (expression) filter changes. */
   get onFormulaFilterChanged(): rxjs.Observable<EventData<any>> { return this.onEvent('d4-formula-filter-changed'); }
 }
 
@@ -701,17 +746,22 @@ export class LineChartViewer extends Viewer<interfaces.ILineChartSettings> {
     return DG.Point.fromXY(api.grok_LineChartViewer_WorldToScreen(this.dart, x, y, chartIdx));
   }
 
+  /** Converts canvas coordinates to data coordinates. */
   screenToWorld(x: number, y: number): Point { return DG.Point.fromXY(api.grok_LineChartViewer_ScreenToWorld(this.dart, x, y));}
 
+  /** Fires after the user zooms. */
   get onZoomed(): rxjs.Observable<null> { return this.onEvent('d4-linechart-zoomed'); }
   get onLineSelected(): rxjs.Observable<EventData<LineChartLineArgs>> { return this.onEvent('d4-linechart-line-selected'); }
+  /** Fires when the view is reset to the full data range. */
   get onResetView(): rxjs.Observable<null> { return this.onEvent('d4-linechart-reset-view'); }
 
+  /** Lets the user draw an annotation region (rectangle, or lasso when [lassoMode]); [onAfterDraw] receives the region. */
   enableAnnotationRegionDrawing(lassoMode?: boolean, onAfterDraw?: (region: { [key: string]: unknown }) => void): void {
     api.grok_LineChartViewer_EnableAnnotationRegionDrawing(this.dart, lassoMode ?? null,
       onAfterDraw ? (region: unknown) => onAfterDraw(DG.toJs(region)) : null);
   }
 
+  /** Turns off annotation-region drawing. */
   disableAnnotationRegionDrawing(): void { api.grok_LineChartViewer_DisableAnnotationRegionDrawing(this.dart); }
 }
 
@@ -721,7 +771,9 @@ export class ScatterPlotViewer extends Viewer<interfaces.IScatterPlotSettings> {
     super(dart);
   }
 
+  /** The main canvas. */
   get canvas(): HTMLCanvasElement { return this.getInfo()['canvas']; }
+  /** The overlay canvas (selection, hover). */
   get overlay(): HTMLCanvasElement { return this.getInfo()['overlay']; }
 
   /** Rerender plot */
@@ -739,10 +791,14 @@ export class ScatterPlotViewer extends Viewer<interfaces.IScatterPlotSettings> {
     api.grok_ScatterPlotViewer_Zoom(this.dart, x1, y1, x2, y2);
   }
 
+  /** Plot area in canvas coordinates. */
   get viewBox(): Rect { return toJs(api.grok_ScatterPlotViewer_Get_ViewBox(this.dart)); }
+  /** X-axis area in canvas coordinates. */
   get xAxisBox(): Rect { return toJs(api.grok_ScatterPlotViewer_Get_XAxisBox(this.dart)); }
+  /** Y-axis area in canvas coordinates. */
   get yAxisBox(): Rect { return toJs(api.grok_ScatterPlotViewer_Get_YAxisBox(this.dart)); }
 
+  /** Visible region in world (data) coordinates; set it to zoom programmatically. */
   get viewport(): Rect { return toJs(api.grok_CanvasViewportViewer_Get_Viewport(this.dart)); }
   set viewport(viewport: Rect) { api.grok_CanvasViewportViewer_SetViewport(this.dart, viewport.x, viewport.y, viewport.width, viewport.height); }
 
@@ -759,13 +815,21 @@ export class ScatterPlotViewer extends Viewer<interfaces.IScatterPlotSettings> {
   /** 32-bit integer with X in the hi 16 bits, and Y in the lo 16 bits */
   pointToScreen(index: number): Point { return DG.Point.fromXY(api.grok_ScatterPlotViewer_PointToScreen(this.dart, index)); }
 
+  /** Renders the plot into [g]. */
   render(g: CanvasRenderingContext2D): void { api.grok_ScatterPlotViewer_Render(this.dart, g); }
+  /** The tooltip element the plot shows for [rowIdx]. */
   getRowTooltip(rowIdx: number): HTMLDivElement { return api.grok_ScatterPlotViewer_GetRowTooltip(this.dart, rowIdx); }
+  /** Marker size of [rowIdx], in pixels. */
   getMarkerSize(rowIdx: number): number { return api.grok_ScatterPlotViewer_GetMarkerSize(this.dart, rowIdx); }
+  /** Marker sizes of all rows, in pixels. */
   getMarkerSizes(): Float32Array { return api.grok_ScatterPlotViewer_GetMarkerSizes(this.dart); }
+  /** Marker type of [rowIdx] (see {@link MARKER_TYPE}). */
   getMarkerType(rowIdx: number): string { return api.grok_ScatterPlotViewer_GetMarkerType(this.dart, rowIdx); }
+  /** Marker type indexes of all rows. */
   getMarkerTypes(): Uint32Array { return api.grok_ScatterPlotViewer_GetMarkerTypes(this.dart); }
+  /** Marker color of [rowIdx] as ARGB. */
   getMarkerColor(rowIdx: number): number { return api.grok_ScatterPlotViewer_GetMarkerColor(this.dart, rowIdx); }
+  /** Marker colors of all rows as ARGB. */
   getMarkerColors(): Uint32Array { return api.grok_ScatterPlotViewer_GetMarkerColors(this.dart); }
   enableAnnotationRegionDrawing(lassoMode?: boolean, onAfterDraw?: (region: { [key: string]: unknown }) => void): void {
     api.grok_ScatterPlotViewer_EnableAnnotationRegionDrawing(this.dart, lassoMode ?? null,
@@ -775,9 +839,13 @@ export class ScatterPlotViewer extends Viewer<interfaces.IScatterPlotSettings> {
   
   get onZoomed(): rxjs.Observable<Rect> { return this.onEvent('d4-scatterplot-zoomed'); }
   get onResetView(): rxjs.Observable<null> { return this.onEvent('d4-scatterplot-reset-view'); }
+  /** Fires whenever the visible region changes (zoom, pan, reset). */
   get onViewportChanged(): rxjs.Observable<Rect> { return this.onEvent('d4-viewport-changed'); }
+  /** Fires when a point is clicked; `args.rowId` is the row. */
   get onPointClicked(): rxjs.Observable<EventData<RowDataArgs>> { return this.onEvent('d4-scatterplot-point-click'); }
+  /** Fires when a point is double-clicked. */
   get onPointDoubleClicked(): rxjs.Observable<EventData<RowDataArgs>> { return this.onEvent('d4-scatterplot-point-double-click'); }
+  /** Fires after the user selects points (lasso or rectangle). */
   get onPointsSelected(): rxjs.Observable<EventData<any>> { return this.onEvent('d4-scatterplot-points-selected'); }
 }
 

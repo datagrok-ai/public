@@ -82,7 +82,7 @@ export class TagElement {
 export class TreeViewNode<T = any> {
   dart: any;
 
-  /** @constructs {TreeView} from the Dart object */
+
   constructor(dart: any) {
     this.dart = dart;
   }
@@ -149,6 +149,7 @@ export class TreeViewGroup extends TreeViewNode {
     return toJs(api.grok_TreeViewNode_Tree());
   }
 
+  /** Builds a tree that groups [items] by the values of [props], one level per property, with the items as leaves. */
   static fromItemCategories(items: any[], props: string[], options?: {
     removeEmpty: boolean, itemToElement?: (item:any) => Element, itemToString?: (item: any) => string, itemToValue?: (item: any) => any
   }): TreeViewGroup {
@@ -250,18 +251,29 @@ export class TreeViewGroup extends TreeViewNode {
   }
 
 
+  /** Fires before this group expands — the place to load children lazily. */
   get onNodeExpanding(): Observable<TreeViewGroup> { return __obs('d4-tree-view-node-expanding', this.dart); }
+  /** Fires after a node is added anywhere under this group. */
   get onNodeAdded(): Observable<TreeViewNode> { return __obs('d4-tree-view-node-added', this.dart); }
+  /** Fires when a check box under this group is toggled; emits the node. */
   get onNodeCheckBoxToggled(): Observable<TreeViewNode> { return __obs('d4-tree-view-node-checkbox-toggled', this.dart); }
+  /** Fires when a child group is expanded or collapsed. */
   get onChildNodeExpandedChanged(): Observable<TreeViewGroup> { return __obs('d4-tree-view-child-node-expanded-changed', this.dart); }
+  /** Fires before a child group expands. */
   get onChildNodeExpanding(): Observable<TreeViewGroup> { return __obs('d4-tree-view-child-node-expanding', this.dart); }
   // get onChildNodeContextMenu(): Observable<TreeViewNode> { return __obs('d4-tree-view-child-node-context-menu', this.dart); }
+  /** Fires when a node under this group is right-clicked. */
   get onNodeContextMenu(): Observable<TreeViewNode> { return __obs('d4-tree-view-node-context-menu', this.dart); }
+  /** Fires when the selected node changes. */
   get onSelectedNodeChanged(): Observable<TreeViewNode> { return __obs('d4-tree-view-selected-node-changed', this.dart); }
+  /** Fires when the mouse enters a node. */
   get onNodeMouseEnter(): Observable<TreeViewNode> { return __obs('d4-tree-view-child-node-mouse-enter', this.dart); }
+  /** Fires when the mouse leaves a node. */
   get onNodeMouseLeave(): Observable<TreeViewNode> { return __obs('d4-tree-view-child-node-mouse-leave', this.dart); }
+  /** Fires when Enter is pressed on the selected node. */
   get onNodeEnter(): Observable<TreeViewNode> { return __obs('d4-tree-view-node-enter', this.dart); }
 
+  /** Populates this group from a server data source (one node per entity). */
   async loadSources(source: HttpDataSource<any>): Promise<void> {
     return api.grok_TreeViewGroup_Load_Sources(this.dart, source.dart);
   }

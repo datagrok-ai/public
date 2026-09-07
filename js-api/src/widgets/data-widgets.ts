@@ -50,17 +50,12 @@ export class RangeSlider extends DartWidget {
    *  their per-axis rule (e.g. `isCustomRange && (!autoLayout || showAxis)`). */
   get visible(): boolean { return api.grok_RangeSlider_Get_Visible(this.dart); }
 
-  /** Sets values to range slider.
-   * @param {number} minRange
-   * @param {number} maxRange
-   * @param {number} min
-   * @param {number} max */
+  /** Sets values to range slider. */
   setValues(minRange: number, maxRange: number, min: number, max: number): void {
     api.grok_RangeSlider_SetValues(this.dart, minRange, maxRange, min, max);
   }
 
-  /** Sets showHandles in range slider.
-   * @param {boolean} value */
+  /** Sets showHandles in range slider. */
   setShowHandles(value: boolean): void {
     api.grok_RangeSlider_SetShowHandles(this.dart, value);
   }
@@ -71,7 +66,7 @@ export class RangeSlider extends DartWidget {
   /** Shifts min and max values by the specified delta. */
   scrollBy(delta: number): void { return api.grok_RangeSlider_ScrollBy(this.dart, delta); }
 
-  /** @returns {Observable} */
+
   get onValuesChanged(): Observable<any> {
     return observeStream(api.grok_RangeSlider_Get_OnValuesChanged(this.dart));
   }
@@ -80,7 +75,7 @@ export class RangeSlider extends DartWidget {
 
 export class HtmlTable extends DartWidget {
 
-  /** @constructs {HtmlTable} */
+
   constructor(dart: any) {
     super(dart);
   }
@@ -100,7 +95,7 @@ export class HtmlTable extends DartWidget {
 /** A combo box with columns as item.
  * Supports sorting, searching, custom tooltips, column-specific rendering, drag-and-drop, etc */
 export class ColumnComboBox extends DartWidget {
-  /** @constructs {ColumnComboBox} */
+
   constructor(dart: any) {
     super(dart);
   }
@@ -110,7 +105,7 @@ export class ColumnComboBox extends DartWidget {
     return toJs(api.grok_ColumnComboBox(dataframe.dart, (x: any) => predicate(toJs(x))));
   }
 
-  /** @type {boolean} */
+
   get vertical(): boolean {
     return api.grok_ColumnComboBox_Get_Vertical(this.dart);
   }
@@ -119,7 +114,7 @@ export class ColumnComboBox extends DartWidget {
   get caption(): string { return api.grok_ColumnComboBox_Get_Caption(this.dart); }
   set caption(c: string) { api.grok_ColumnComboBox_Set_Caption(this.dart, c); }
 
-  /** @type {Property} */
+
   get property(): Property {
     return toJs(api.grok_ColumnComboBox_Get_Property(this.dart));
   }

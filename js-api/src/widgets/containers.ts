@@ -15,12 +15,10 @@ const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) a
 
 /**
  * Accordion control with collapsible/expandable panes.
- * Samples: {@link https://public.datagrok.ai/js/samples/ui/components/accordion}
- * @extends {DartWidget}
- * */
+ * Samples: {@link https://public.datagrok.ai/js/samples/ui/components/accordion} */
 export class Accordion extends DartWidget {
 
-  /** @constructs Accordion */
+
   constructor(dart: any) {
     super(dart);
   }
@@ -38,7 +36,7 @@ export class Accordion extends DartWidget {
     return toJs(api.grok_Accordion(key));
   }
 
-  /** @type {AccordionPane[]} */
+
   get panes(): AccordionPane[] {
     return api.grok_TabControlBase_Get_Panes(this.dart).map(toJs);
   }
@@ -51,9 +49,7 @@ export class Accordion extends DartWidget {
   get autoHideTabHeader(): boolean { return api.grok_Accordion_Get_AutoHideTabHeader(this.dart); }
   set autoHideTabHeader(x) { api.grok_Accordion_Set_AutoHideTabHeader(this.dart, x); }
 
-  /** Returns a pane with the specified name.
-   * @param {string} name
-   * @returns {AccordionPane} */
+  /** Returns a pane with the specified name. */
   getPane(name: string): AccordionPane {
     return toJs(api.grok_TabControlBase_GetPane(this.dart, name));
   }
@@ -96,8 +92,7 @@ export class AccordionPane extends DartWidget {
     super(dart);
   }
 
-  /** Expanded state
-   * @type {boolean} */
+  /** Expanded state */
   get expanded(): boolean {
     return api.grok_AccordionPane_Get_Expanded(this.dart);
   }
@@ -106,7 +101,7 @@ export class AccordionPane extends DartWidget {
     api.grok_AccordionPane_Set_Expanded(this.dart, v);
   }
 
-  /** @type {string} */
+
   get name(): string {
     return api.grok_AccordionPane_Get_Name(this.dart);
   }
@@ -129,7 +124,7 @@ export class TabControl extends DartWidget {
    * When [options.key] is provided, the currently selected pane is persisted across sessions
    * in localStorage. Without a key, state is not remembered.
    * @param options - see {@link ITabControlOptions}. Passing a boolean (`vertical`) is deprecated.
-   * @param key - deprecated, use `options.key` instead. */
+   * @param key - deprecated, use `options.key` instead.  */
   static create(options: boolean | ITabControlOptions = {}, key: string | null = null): TabControl {
     const o: ITabControlOptions = typeof options === 'boolean' ? {vertical: options} : (options ?? {});
     return toJs(api.grok_TabControl(o.vertical ?? false, o.key ?? key));

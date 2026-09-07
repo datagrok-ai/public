@@ -1,14 +1,14 @@
-/// this file was generated automatically from grok_shared classes declarations
+// this file was generated automatically from grok_shared classes declarations
 
 
 export interface IUserReport {
   sendEmail: boolean;
 
-  /// Creation date.
+  /** Creation date. */
   createdOn: any;
 
-  /// Data source name (such as 'Oracle'). [DataConnection.dataSource] refers to it.
-  /// See also [DataSourceType].
+  /** Data source name (such as 'Oracle'). [DataConnection.dataSource] refers to it.
+   * See also [DataSourceType]. */
   type: string;
 
   jiraTicket: string;
@@ -19,9 +19,9 @@ export interface IUserReport {
 
   number: number;
 
-  /** Property description. It will be shown in the UI where possible. */
-  /// Model description
-  /// Free-text description.
+  /** Property description. It will be shown in the UI where possible.
+   * Model description
+   * Free-text description. */
   description: string;
 
   reporter: any;
@@ -36,53 +36,53 @@ export interface IUserReport {
 
   labels: Array<string>;
 
-  /// Future-proof config (direction, schedule, etc.). Maps to `options jsonb`.
-  /// Options.
+  /** Future-proof config (direction, schedule, etc.). Maps to `options jsonb`.
+   * Options. */
   options: {[index: string]: any};
 
   data: any;
 
   friendlyName: any;
 
-  /// Name;
-  /** Property name. */
-  /** Property name. */
+  /** Name;
+   * Property name.
+   * Property name. */
   name: string;
 
-  /// Identifier
+  /** Identifier */
   id: string;
 
   securityObject: any;
 
   projectRelations: Array<any>;
 
-  /// True is this object was deleted.
-  /// True is this object was deleted.
-  /// True is this object was deleted.
-  /// True is this object was deleted.
-  /// True is this object was deleted.
-  /// True is this object was deleted.
-  /// True is this object was deleted.
-  /// True is this object was deleted.
-  /// True is this object was deleted.
-  /// True is this object was deleted.
-  /// True is this object was deleted.
-  /// True is this object was deleted.
-  /// True is this object was deleted.
-  /// True is this object was deleted.
-  /// True is this object was deleted.
-  /// True is this object was deleted.
-  /// True is this object was deleted.
-  /// True is this object was deleted.
-  /// True is this object was deleted.
-  /// True is this object was deleted.
-  /// True is this object was deleted.
-  /// True is this object was deleted.
-  /// True is this object was deleted.
-  /// True is this object was deleted.
-  /// True is this object was deleted.
-  /// True is this object was deleted.
-  /// True is this object was deleted.
+  /** True is this object was deleted.
+   * True is this object was deleted.
+   * True is this object was deleted.
+   * True is this object was deleted.
+   * True is this object was deleted.
+   * True is this object was deleted.
+   * True is this object was deleted.
+   * True is this object was deleted.
+   * True is this object was deleted.
+   * True is this object was deleted.
+   * True is this object was deleted.
+   * True is this object was deleted.
+   * True is this object was deleted.
+   * True is this object was deleted.
+   * True is this object was deleted.
+   * True is this object was deleted.
+   * True is this object was deleted.
+   * True is this object was deleted.
+   * True is this object was deleted.
+   * True is this object was deleted.
+   * True is this object was deleted.
+   * True is this object was deleted.
+   * True is this object was deleted.
+   * True is this object was deleted.
+   * True is this object was deleted.
+   * True is this object was deleted.
+   * True is this object was deleted. */
   isDeleted: boolean;
 
   bindId: string;
