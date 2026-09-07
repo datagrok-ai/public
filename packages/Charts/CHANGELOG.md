@@ -10,6 +10,7 @@
 * GROK-20084: Radar, Tree, Timelines: Broken help page
 * GROK-19362: Charts: Radar: Inherits ordinary column coloring but not linked
 * Charts | Globe: Fixed crash when columns are removed from the underlying dataframe
+* GROK-20846: Charts: Timelines: X axis labels overlap and are unreadable
 
 ## 1.7.0 (2026-03-20)
 

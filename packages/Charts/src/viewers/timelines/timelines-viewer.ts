@@ -581,14 +581,14 @@ export class TimelinesViewer extends EChartViewer {
     this.option.xAxis = {
       type: 'time',
       boundaryGap: ['5%', '5%'],
-      axisLabel: {formatter: this.dateFormat},
+      axisLabel: {formatter: this.dateFormat, hideOverlap: true},
     };
   }
 
   removeTimeOptions(): void {
     this.option.xAxis = {
       type: 'value',
-      axisLabel: {formatter: null},
+      axisLabel: {formatter: null, hideOverlap: true},
       min: 'dataMin',
       max: (value: { min: number; max: number; }) => this.dataMax = value.max,
     };
