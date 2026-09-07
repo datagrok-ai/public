@@ -58,18 +58,24 @@ export function buildCombinationLimitFields(initial: EnumeratorConfig): {
   inputs: DG.InputBase<unknown>[];
   syncToConfig: (target: EnumeratorConfig) => void;
 } {
-  const keepBBs = boolInput('Keep building blocks in output', initial.keep_building_blocks_in_final_output,
-    'Include the original building blocks (round 0) in the final product list.');
+  const maxComponents = intInput('Max # components', initial.max_num_components,
+    'Templates with more reactant components than this are skipped. Leave blank for no cap.', 1);
+  const maxRoutes = intInput('Max routes per compound', initial.max_num_routes_per_compound,
+    'Cap on the number of routes saved per product. Leave blank for no cap.', 1);
   const maxCombos = intInput('Max combinations per template', initial.max_num_combinations_per_template,
-    'Per template per round: cap on the number of reactant combinations actually run. If the ' +
+    'Per template per step: cap on the number of reactant combinations actually run. If the ' +
     'cartesian product exceeds this, the enumerator runs the first N and stops. Leave blank for no cap.', 1);
+  const keepBBs = boolInput('Keep building blocks in output', initial.keep_building_blocks_in_final_output,
+    'Include the original building blocks (step 0) in the final product list.');
 
   const syncToConfig = (target: EnumeratorConfig): void => {
-    target.keep_building_blocks_in_final_output = keepBBs.get();
+    target.max_num_components = maxComponents.get();
+    target.max_num_routes_per_compound = maxRoutes.get();
     target.max_num_combinations_per_template = maxCombos.get();
+    target.keep_building_blocks_in_final_output = keepBBs.get();
   };
 
-  return {inputs: [keepBBs.input, maxCombos.input], syncToConfig};
+  return {inputs: [maxComponents.input, maxRoutes.input, maxCombos.input, keepBBs.input], syncToConfig};
 }
 
 // Product-level filters: atom counts, charge/radical/isotope rejection.

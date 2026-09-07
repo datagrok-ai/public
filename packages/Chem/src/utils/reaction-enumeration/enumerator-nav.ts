@@ -30,8 +30,6 @@ export interface EnumeratorNavDeps {
   exclusionInput: DG.InputBase<DG.DataFrame | null>;
   exclusionColInput: DG.InputBase<DG.Column | null>;
   numRoundsInput: DG.InputBase<number | null>;
-  maxComponentsInput: DG.InputBase<number | null>;
-  maxRoutesInput: DG.InputBase<number | null>;
   depthFirstInput: DG.InputBase<boolean>;
   configInfoIcon: HTMLElement;
   // Getters, not snapshots: both field groups are rebuilt wholesale on every YAML load, so the
@@ -97,7 +95,7 @@ export class EnumeratorNav {
       ui.span([' Reagents mode active — set via a reagents file in Extras.'])],
     {style: {fontSize: '11px', color: 'var(--grey-6)', gap: '6px', alignItems: 'center',
       padding: '6px 10px', display: 'none'}});
-    ui.tooltip.bind(this.reagentsModeNote, 'Every round uses exactly one building block or earlier-round product, ' +
+    ui.tooltip.bind(this.reagentsModeNote, 'Every step uses exactly one building block or earlier-step product, ' +
       'with reagents filling the remaining slots. Automatically selected as soon as a reagents file is loaded ' +
       'in the Extras tab — to go back to Depth-first/Breadth-first, clear the reagents file there.');
 
@@ -198,7 +196,7 @@ export class EnumeratorNav {
         this.deps.configInfoIcon,
       ], {style: {alignItems: 'center', gap: '4px'}}),
       ui.divV([this.stratDepthCard.root, this.stratBreadthCard.root, this.reagentsModeNote], {style: {gap: '6px'}}),
-      ui.div([ui.form([this.deps.numRoundsInput, this.deps.maxComponentsInput, this.deps.maxRoutesInput])],
+      ui.div([ui.form([this.deps.numRoundsInput])],
         {style: {marginLeft: `${CHEM_ENUM_NESTED_ACCORDION_INDENT}px`}}),
       limitsAccordion.root,
       // First pane in the chain — no Back target.
@@ -253,9 +251,9 @@ export class EnumeratorNav {
       const root = ui.divH([dot, textEl], {classes: 'chem-enum-chip', style: {alignItems: 'center', gap: '4px'}});
       return {root, textEl, dot};
     };
-    this.chipReactionsC = cfgChipEl('One or more rounds use a custom subset of reaction templates.');
-    this.chipBbsC = cfgChipEl('One or more rounds use a custom subset of building blocks.');
-    this.chipExtrasC = cfgChipEl('One or more rounds use a custom subset of reagents.');
+    this.chipReactionsC = cfgChipEl('One or more steps use a custom subset of reaction templates.');
+    this.chipBbsC = cfgChipEl('One or more steps use a custom subset of building blocks.');
+    this.chipExtrasC = cfgChipEl('One or more steps use a custom subset of reagents.');
     this.chipCombineC = cfgChipEl('Changed from platform defaults.');
     this.cfgEstEl = ui.divText('');
     this.cfgEstEl.className = 'chem-enum-chip';

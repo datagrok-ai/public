@@ -91,13 +91,13 @@ export interface DataPanelDeps {
   refreshCfgRibbon: () => void;
 }
 
-/** One grid plus a round-tab strip: "All rounds" shows the full library (with the global "Subset by
- * selection"); "Round k" shows a display-only clone whose rows are that round's subset. Switching
+/** One grid plus a step-tab strip: "All steps" shows the full library (with the global "Subset by
+ * selection"); "Step k" shows a display-only clone whose rows are that step's subset. Switching
  * tabs swaps what the single grid displays — there is never a second grid. */
 export class DataPanel {
   readonly panel: HTMLElement;
 
-  private selStep = 0; // 0 = All rounds; 1..rounds = that round's subset
+  private selStep = 0; // 0 = All steps; 1..rounds = that round's subset
   private filtersOn = false;
   // host -> what was last mounted there, so the second of the two renders a table swap triggers
   // (input.onChanged plus the caller's own explicit render) is a no-op.
@@ -109,7 +109,7 @@ export class DataPanel {
   private readonly stepState: StepState[] = [];
   private readonly stepTabsHost: HTMLElement;
   private stepTabsSub: Subscription | null = null;
-  private readonly stepDots: (HTMLElement | null)[] = []; // index 0 ("All rounds") unused
+  private readonly stepDots: (HTMLElement | null)[] = []; // index 0 ("All steps") unused
   // Each pane owns its own barHost/gridHost — relocating a live grid between panes corrupts it.
   private paneHosts: {barHost: HTMLElement; gridHost: HTMLElement}[] = [];
 
@@ -191,7 +191,7 @@ export class DataPanel {
     if (!global) return null;
     // Display-only clone, never registered in the workspace.
     const work = global.clone(null);
-    work.name = `${global.name} · round ${k}`;
+    work.name = `${global.name} · step ${k}`;
     detectChemSemTypes(work);
     this.setStepWork(k, work);
     return work;
@@ -202,7 +202,7 @@ export class DataPanel {
     const w = this.stepState[k - 1]?.df;
     if (!w) return;
     const subset = cloneSubsetByRows(w,
-      `${SELECT_ROWS_OR_FILTER} to use only those ${this.opts.noun} in round ${k}.`);
+      `${SELECT_ROWS_OR_FILTER} to use only those ${this.opts.noun} in step ${k}.`);
     if (!subset) return;
     this.setStepWork(k, subset);
     this.stepState[k - 1].committed = true;
@@ -211,7 +211,7 @@ export class DataPanel {
     this.deps.viewerHost.deferredFilterReset(subset);
   }
 
-  // Drops the clone entirely so the round re-derives from "All rounds" lazily.
+  // Drops the clone entirely so the step re-derives from "All steps" lazily.
   private useAllForStep(k: number): void {
     this.setStepWork(k, null);
     this.stepState[k - 1].committed = false;
@@ -303,15 +303,15 @@ export class DataPanel {
       return ui.div([barHost, gridHost], {style: {
         height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden'}});
     };
-    const allPane = tc.addPane('All rounds', makePaneContent(0));
-    ui.tooltip.bind(allPane.header, 'Narrow this component for one round only. "All rounds" is the full ' +
-      'library used by every round; pick a round to restrict just that round. Per-round building-block ' +
-      'subsets apply in depth-first / reagents mode; in breadth-first mode a round draws from all earlier ' +
+    const allPane = tc.addPane('All steps', makePaneContent(0));
+    ui.tooltip.bind(allPane.header, 'Narrow this component for one step only. "All steps" is the full ' +
+      'library used by every step; pick a step to restrict just that step. Per-step building-block ' +
+      'subsets apply in depth-first / reagents mode; in breadth-first mode a step draws from all earlier ' +
       'products, so a BB subset has no effect. Resets when you swap the input file (in-range overrides ' +
-      'survive a round-count change).');
+      'survive a step-count change).');
     this.stepDots.push(null);
     for (let k = 1; k <= this.roundCount(); k++) {
-      const pane = tc.addPane(`Round ${k}`, makePaneContent(k));
+      const pane = tc.addPane(`Step ${k}`, makePaneContent(k));
       // Absolute, with a positive left offset (a negative one bleeds into the flush adjacent tab)
       // and a fixed top (the header box shrinks ~7px when selected, so a percentage would drift).
       const dot = ui.div([], {style: {...CHANGED_DOT_STYLE, position: 'absolute', left: '5px', top: '12px',
@@ -358,19 +358,19 @@ export class DataPanel {
         const prevValue = this.opts.input.value;
         action();
         if (hadOverride && !isSameTrackedTable(prevValue, this.opts.input.value)) {
-          grok.shell.info(`Per-round ${this.opts.noun} overrides were cleared — every round now uses the ` +
+          grok.shell.info(`Per-step ${this.opts.noun} overrides were cleared — every step now uses the ` +
             `${clearedSuffix}.`);
         }
       };
       const btn = ui.link('Subset by selection', () => doGlobalAction(
         () => this.doSubsetBySelection(), `new ${this.opts.noun} subset`));
       ui.tooltip.bind(btn, `Replace the ${this.opts.noun} library with only the selected rows, or — if nothing ` +
-        `is selected — the currently filtered rows (applies to every round). Click "Use all" to restore the ` +
+        `is selected — the currently filtered rows (applies to every step). Click "Use all" to restore the ` +
         `full set.`);
       const useAll = ui.link('Use all', () => doGlobalAction(
         () => this.doRestoreFullTable(), `full ${this.opts.noun} library again`));
       ui.tooltip.bind(useAll, `Restore the full ${this.opts.noun} library (undo "Subset by selection").`);
-      barHost.append(hintEl(`Full ${this.opts.noun} library — used by every round unless a round overrides it.`),
+      barHost.append(hintEl(`Full ${this.opts.noun} library — used by every step unless a step overrides it.`),
         filterIcon, btn, useAll);
     } else {
       const entry = this.stepState[this.selStep - 1];
@@ -391,15 +391,15 @@ export class DataPanel {
       const status = ui.divText(statusText,
         {style: {fontSize: '11px', color: 'var(--grey-5)', flex: '0 0 auto'}});
       const btn = ui.link('Subset by selection', () => this.subsetStepBySelection(this.selStep));
-      ui.tooltip.bind(btn, `Narrow round ${this.selStep} to only the selected rows (Ctrl/Shift+click), or — if ` +
+      ui.tooltip.bind(btn, `Narrow step ${this.selStep} to only the selected rows (Ctrl/Shift+click), or — if ` +
         `nothing is selected — the currently filtered rows. Click "Use all" to go back to the full ` +
         `${this.opts.noun} library.`);
       const useAll = ui.link('Use all', () => this.useAllForStep(this.selStep));
-      ui.tooltip.bind(useAll, `Undo "Subset by selection" so round ${this.selStep} uses the full ${this.opts.noun} ` +
-        `library (same as "All rounds").`);
+      ui.tooltip.bind(useAll, `Undo "Subset by selection" so step ${this.selStep} uses the full ${this.opts.noun} ` +
+        `library (same as "All steps").`);
       barHost.append(
         hintEl(`${SELECT_ROWS_OR_FILTER}, then "Subset by selection" to use only those ${this.opts.noun} in ` +
-          `round ${this.selStep}.`),
+          `step ${this.selStep}.`),
         status, filterIcon, btn, useAll);
     }
   }
