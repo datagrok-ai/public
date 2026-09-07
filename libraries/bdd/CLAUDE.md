@@ -149,6 +149,12 @@ nobody filed.
   beats `user right-clicks (on ){element}` (which would otherwise swallow the whole phrase into
   `{element}`); `{key}` has no spaces so `user presses {key} in {element}` cannot lose to
   `user presses {key}`. Changed 2026-09-06; U2Demo's 25 specs compiled identically.
+- **A phrase says what it needs** (2026-09-07, the lead's ruling): a step that reads or changes a
+  viewer takes `{widget}` (`parameter-types.ts`: an element phrase ending in "viewer" or "widget",
+  compiled like `{element}`), and the property steps spell it out — `user sets {string} property of
+  {widget} to {string}`, `{string} property of {widget} should be {string}`. `{string} of {element}
+  should be {string}` is too general to own: it would swallow every later "X of Y should be Z"
+  phrase. Context-menu and pointer steps take any element because they work on any element.
 - **Gestures act on the visible match** (`locateActionable` = `filter({visible: true})`, ordinals
   exempt). The Dart context menu mirrors every property under a zero-size "Properties..." submenu,
   a closed view leaves its viewers behind — both duplicate the labels a phrase names. Several
@@ -164,13 +170,22 @@ nobody filed.
   the item, Dart its children), so a `has:` over descendants makes "As CSV" match the Export group
   too, and "Markers" the group, the "Properties..." group and its nested mirror. Text-first was
   no better: the exact text of "Markers" is only the hidden mirror's.
-- **Hover travels, and never sleeps**: the gesture leaves the element to its left on the same
-  line, then moves into its centre in steps, then checks two animation frames later that the
-  element is still where it was (a view still docking moves it out from under the pointer).
-  A Dart menu group opens its submenu from the pointer's path (a jump to the centre after a leave
-  does not open it; leaving upwards crosses the neighbouring row and closes the submenu the item
-  sits in). Verified 2026-09-06 with five hover styles; the 250 ms sleep it had went 2026-09-07
-  (U2Demo 64/64 without it). Scrolling into view only when the box is outside the viewport.
+- **Hover is two pointer events, and never sleeps**: the gesture leaves the element to its left on
+  the same line, lands on its centre in one move, then checks that the element is still where it
+  was (a view still docking moves it out from under the pointer). Every pointer event costs a
+  frame (~16 ms; a six-step move was 100 ms), and the animation-frame wait it had was another two
+  frames for nothing: hover-driven layout is synchronous. Leaving upwards would cross the
+  neighbouring row and close the submenu the item sits in. The stepped move existed because a
+  Dart menu group did not open on the first `mousemove` when another group's submenu state was
+  stale — fixed in the core (`menu.dart` `_initItem`: the move that closes a sibling's submenu
+  opens this one; `hide()` clears `_expandedItem`), 2026-09-07. Scrolling into view only when
+  the box is outside the viewport.
+- **A step ends when the platform is done, not when the DOM shows** (`platform/steps.ts`
+  `openDataset`): opening a table starts semantic-type detection in the background (package
+  detectors — Chem's SMILES detector took 300–500 ms on spgi-100), which used to land on
+  whichever step came next (a 500 ms "Table" read, a 500 ms property set). The step now waits
+  for the platform's own `ddt-semantic-type-detected` event for that data frame (identity by the
+  Dart handle — the same file opened twice is two tables).
 - **The error floor** (`harness.ts` `watchErrors`/`takeErrors`): console errors and page errors
   from page open; `user is logged in` clears what the stand logs while booting, `resetShell`
   clears the teardown's, `no errors should have been logged` reads and clears. `Failed to load
@@ -179,6 +194,10 @@ nobody filed.
 - **Viewer settles are armed before the change** (`writeProperties`, `resize`): the repaint an
   action causes lands on the next task, so a settle subscribed after the action already missed it
   and burns its cap (that was 1.5 s per resize).
+- **Viewer event subscriptions have a lifetime** (`viewers.ts` `listen`/`unlisten`/`forget`): one
+  subscription per viewer and event, replaced by a repeated "listens for", ended by the "should have
+  fired" read or by `grok.events.onViewerClosed` (which also drops the render stamp). Before
+  2026-09-07 every "listens for" stacked another subscription that lived as long as the viewer.
 - **Codegen** emits names, never selectors; `\n` line endings, no timestamps, EOL-normalized drift
   check; orphaned generated files are removed on compile and reported on `--check`.
 - **Session readiness**: `user is logged in` skips navigation when the page is already in the shell

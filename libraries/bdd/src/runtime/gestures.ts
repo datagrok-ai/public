@@ -43,9 +43,9 @@ export async function rightclick(page: Page, target: ElementRef): Promise<void> 
 
 /** Leaves the element first, to its left on the same line — a pointer already resting on it (the
  * previous click) produces no pointerenter, and tooltips listen for that; leaving upwards would
- * cross a neighbouring menu row and close the submenu the element sits in — then travels into it
- * in steps (a Dart menu group opens its submenu from the pointer's path, not from a jump to its
- * centre) and checks two frames later that the element is still where it was: a shift under the
+ * cross a neighbouring menu row and close the submenu the element sits in — then lands on its
+ * centre in one move (every pointer event costs a frame, and a Dart menu group opens on the first
+ * move since 2026-09-07) and checks that the element is still where it was: a shift under the
  * pointer right after the move (a view still docking) leaves it again, unseen. */
 export async function hover(page: Page, target: ElementRef): Promise<void> {
   const loc = await locate(page, target);
@@ -62,8 +62,7 @@ export async function hover(page: Page, target: ElementRef): Promise<void> {
     }
     const cy = before.y + before.height / 2;
     await page.mouse.move(Math.max(0, before.x - 8), cy);
-    await page.mouse.move(before.x + before.width / 2, cy, {steps: 6});
-    await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+    await page.mouse.move(before.x + before.width / 2, cy);
     const after = await loc.boundingBox();
     if (!after || (before.x === after.x && before.y === after.y))
       return;

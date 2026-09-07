@@ -41,6 +41,7 @@ let fns: Record<string, StepFn>;
 beforeEach(() => {
   resetRegistry();
   defineParameterType({name: 'element', regexp: /.+?/});
+  defineParameterType({name: 'widget', regexp: /.+? (?:viewer|widget)(?: in .+?)?/});
   defineParameterType({name: 'dataset', regexp: /[\w./:-]+?/});
   defineParameterType({name: 'state', regexp: /visible|hidden/});
   kind('icon', {selector: '[name^="icon-"]', match: ['dart'], dartNames: ['icon-{q}']});
@@ -84,6 +85,20 @@ test('a @journey feature is one test: the background once, every scenario a soft
   assert.match(code, /await run\.scenario\("Several viewers \[viewer=bar chart\]", async \(\) => \{/);
   assert.match(code, /\n    run\.finish\(\);\n  \}\);\n\}\);\n$/);
   assert.match(code, /import \{ds, el, feature, journey\} from '@datagrok-libraries\/bdd\/runtime';/);
+});
+
+test('{widget} is an element phrase that names a viewer or a widget', () => {
+  fns.setProp = When('user sets {string} property of {widget} to {string}', async () => undefined);
+  const {code, diagnostics} = compile(`Feature: A
+  Scenario: B
+    When user sets "Value" property of scatter plot viewer to "AGE"
+    When user sets "Value" property of toolbox to "AGE"
+`);
+  assert.match(code, /setProp\(page, "Value", el\("scatter plot viewer"\), "AGE"\)/);
+  const errors = diagnostics.filter((d) => d.level === 'error');
+  assert.equal(errors.length, 1);
+  assert.equal(errors[0].line, 4);
+  assert.match(errors[0].message, /no step definition matches/);
 });
 
 test('registry modules are side-effect imports: library ones by package subpath, project ones relative', () => {

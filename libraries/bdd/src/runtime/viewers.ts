@@ -36,10 +36,10 @@ function install(): void {
   const w = window as any;
   if (w.__bdd)
     return;
-  const renders = new WeakMap<Element, {count: number; last: number}>();
+  const renders = new WeakMap<Element, {count: number; last: number; sub?: any}>();
   const snapshots = new WeakMap<Element, {colors: Map<number, number>; ink: number}>();
   const sizes = new WeakMap<Element, {width: string; height: string}>();
-  const fired = new WeakMap<Element, Record<string, number>>();
+  const listeners = new WeakMap<Element, Record<string, {count: number; sub: any}>>();
   const armed: Record<string, Promise<unknown>> = {};
   let tokens = 0;
   const norm = (s: unknown) => String(s ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -61,13 +61,13 @@ function install(): void {
   const arm = (v: any): void => {
     if (!v || renders.has(v.root))
       return;
-    const stamp = {count: 0, last: 0};
+    const stamp: {count: number; last: number; sub?: any} = {count: 0, last: 0};
     renders.set(v.root, stamp);
     try {
       v.immediateRendering = true;
     } catch { /* a JS viewer without the flag */ }
     try {
-      v.onViewerRendered.subscribe(() => {
+      stamp.sub = v.onViewerRendered.subscribe(() => {
         stamp.count++;
         stamp.last = Date.now();
       });
@@ -207,14 +207,32 @@ function install(): void {
     }
     return {delta, ink: now.ink, inkBefore: before.ink};
   };
+  /** One subscription per viewer and event, alive from "listens for" until `unlisten` (the
+   * "should have fired" read, or the viewer closing). */
+  const unlisten = (v: any, event?: string): void => {
+    const all = listeners.get(v.root);
+    if (!all)
+      return;
+    for (const e of event === undefined ? Object.keys(all) : [event]) {
+      all[e]?.sub.unsubscribe();
+      delete all[e];
+    }
+  };
   const listen = (el: Element, event: string): void => {
     const v = viewerOf(el);
-    const counts = fired.get(v.root) ?? {};
-    fired.set(v.root, counts);
-    counts[event] = 0;
-    v.onEvent(event).subscribe(() => { counts[event]++; });
+    unlisten(v, event);
+    const all = listeners.get(v.root) ?? {};
+    listeners.set(v.root, all);
+    const entry = {count: 0, sub: undefined as any};
+    entry.sub = v.onEvent(event).subscribe(() => { entry.count++; });
+    all[event] = entry;
   };
-  const firedCount = (el: Element, event: string): number => fired.get(viewerOf(el).root)?.[event] ?? -1;
+  const firedCount = (el: Element, event: string): number => listeners.get(viewerOf(el).root)?.[event]?.count ?? -1;
+  const forget = (v: any): void => {
+    unlisten(v);
+    renders.get(v.root)?.sub?.unsubscribe();
+    renders.delete(v.root);
+  };
   // the repaint a resize causes lands on the next task, so the settle is armed before the event
   const resize = (el: Element, width: number | null, height: number | null, capMs: number): Promise<number> => {
     const root = viewerOf(el).root as HTMLElement;
@@ -309,9 +327,10 @@ function install(): void {
   };
 
   w.__bdd = {viewerOf, arm, stampAll, settle, readProperty, writeProperties, findArea, hitArea, snapshot, change,
-    listen, firedCount, resize, restoreSize, armEvent, waitArmed, closeMenu, openMenu, menuPoint, addViewer};
+    listen, unlisten, firedCount, resize, restoreSize, armEvent, waitArmed, closeMenu, openMenu, menuPoint, addViewer};
   stampAll();
   grok.events.onViewerAdded.subscribe((a: any) => arm(a?.args?.viewer));
+  grok.events.onViewerClosed.subscribe((a: any) => a?.args?.viewer && forget(a.args.viewer));
 }
 
 const installed = new WeakSet<Page>();
@@ -427,6 +446,7 @@ export async function expectFired(page: Page, target: ElementRef, event: string)
   const loc = await viewerLocator(page, target);
   await expect.poll(() => loc.evaluate((el, e) => (window as any).__bdd.firedCount(el, e), event),
     {timeout: 5000, message: `"${event}" did not fire on ${target.phrase} (listen for it before the gesture)`}).toBeGreaterThan(0);
+  await loc.evaluate((el, e) => { const b = (window as any).__bdd; b.unlisten(b.viewerOf(el), e); }, event);
 }
 
 export async function resize(page: Page, target: ElementRef, width: number | null, height: number | null): Promise<void> {

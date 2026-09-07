@@ -1,5 +1,5 @@
 /* Feature model → one Playwright spec. Deterministic: the output is a pure function of the feature
-   text and the loaded bindings; element phrases are emitted as `el('…')` and datasets as `ds('…')`
+   text and the loaded bindings; element phrases (`{element}`, `{widget}`) are emitted as `el('…')` and datasets as `ds('…')`
    (names, never selectors), so a registry fix never forces a regeneration. A feature's scenarios
    share one browser page through `feature(test)` (see runtime/harness.ts): Playwright still runs
    one test per scenario. A step declared with `enters` switches the vocabulary: the compiler
@@ -78,7 +78,8 @@ export function compileFeature(feature: FeatureModel, ctx: CompileContext): Comp
 
   const emitArg = (arg: MatchedArg, step: StepModel, context: ContextEntry | undefined): string => {
     switch (arg.type) {
-      case 'element': {
+      case 'element':
+      case 'widget': {
         helpers.add('el');
         const phrase = String(arg.value);
         try {

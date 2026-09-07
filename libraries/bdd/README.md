@@ -226,8 +226,12 @@ export const openDataset = Given('user opens {dataset} dataset', async (page: Pa
 }, {tier: 'api', description: 'OpenFile through the JS API — provenance as in the UI'});
 ```
 
-Parameter types: `{element}` (any phrase), `{dataset}` (a registered alias or a platform path),
-`{viewer}`, `{key}` (`Enter`, `Control+A`, `ArrowDown`), `{state}`, plus Cucumber's `{string}`,
+(The real one also waits for the platform's semantic-type-detected event for that table: a step is
+over when the platform is done with it, so background work never lands on the next step.)
+
+Parameter types: `{element}` (any phrase), `{widget}` (a phrase naming a viewer or a widget — the
+`viewers` tier takes nothing else where it reads or changes one), `{dataset}` (a registered alias or a
+platform path), `{viewer}` (a viewer type), `{key}` (`Enter`, `Control+A`, `ArrowDown`), `{state}`, plus Cucumber's `{string}`,
 `{int}`, `{float}`. Runtime helpers for your own steps come from `@datagrok-libraries/bdd/runtime`:
 `locate(page, el('…'))`, `gestures.*`, `expectState`, `expectText`, `expectValue`, `expectCount`.
 
@@ -256,9 +260,9 @@ Background:
 
 Scenario: Context menus as property paths
   When user picks "Misc > Show Inside Values" from the context menu of box plot viewer
-  Then "Show Inside Values" of box plot viewer should be "false"
+  Then "Show Inside Values" property of box plot viewer should be "false"
   And box plot viewer should have less ink than before
-  When user sets "Marker Size Column" of box plot viewer to "WEIGHT"
+  When user sets "Marker Size Column" property of box plot viewer to "WEIGHT"
   And user opens the context menu of box plot viewer
   And user hovers over Markers menu item in context menu
   Then "Markers > Size" menu item in context menu should be disabled
@@ -266,17 +270,17 @@ Scenario: Context menus as property paths
 
 ```
 Given user adds (a ){viewer} viewer                 user adds (a ){viewer} viewer with:  | caption | value |
-      user listens for {string} event on {element} user switches to (the ){string} table view
-When  user sets {string} of {element} to {string}   user sets properties of {element}:  | caption | value |
+      user listens for {string} event on {widget}  user switches to (the ){string} table view
+When  user sets {string} property of {widget} to {string}       user sets properties of {widget}:  | caption | value |
       user picks {string} from the context menu of {element}
-      user picks {string} from the context menu of the {string} area of {element}
-      user opens the context menu of {element}      user right-clicks on the {string} area of {element}
-      user closes the context menu                  user clicks / double-clicks / hovers over the {string} area of {element}
-      user moves the pointer away from {element}    user resizes {element} to {int} by {int}   user resizes {element} to {int} wide
-      user restores the size of {element}           user takes a snapshot of {element}
-Then  {string} of {element} should be {string}      {string} of {element} should not be {string}
-      {element} should have repainted               {element} should have less/more ink than before   {element} should be painted
-      {string} event should have fired on {element} no errors should have been logged
+      user picks {string} from the context menu of the {string} area of {widget}
+      user opens the context menu of {element}      user right-clicks on the {string} area of {widget}
+      user closes the context menu                  user clicks / double-clicks / hovers over the {string} area of {widget}
+      user moves the pointer away from {element}    user resizes {widget} to {int} by {int}    user resizes {widget} to {int} wide
+      user restores the size of {widget}            user takes a snapshot of {widget}
+Then  {string} property of {widget} should be {string}          {string} property of {widget} should not be {string}
+      {widget} should have repainted                {widget} should have less/more ink than before    {widget} should be painted
+      {string} event should have fired on {widget}  no errors should have been logged
       the tooltip should show columns {string}      the tooltip should not show columns {string}
 ```
 
@@ -294,7 +298,9 @@ Viewers on a bdd page render immediately — `viewer.immediateRendering` is set 
 page holds or adds — so nothing in the tier sleeps: a change is followed by the viewer's render
 event, a context menu by `onContextMenuShown`. **When a step would need a wait, the platform is
 missing a signal; it goes into the core, not into the step** (the library's `CLAUDE.md` keeps the
-list of what was added that way).
+list of what was added that way). `user listens for {string} event on {widget}` subscribes to the
+viewer's event once; `should have fired` reads the count and ends the subscription, and a viewer
+that closes drops its subscriptions itself.
 
 ## Generated specs
 
