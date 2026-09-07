@@ -61,7 +61,7 @@
     "typescript": "^5.0.4",
     "webpack": "^5.76.0",
     "webpack-cli": "^4.7.2",
-    "@datagrok-libraries/bdd": "^0.1.0"
+    "@datagrok-libraries/bdd": "file:../../libraries/bdd"
   },
   "canEdit": [
     "Administrators"

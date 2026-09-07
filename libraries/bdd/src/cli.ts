@@ -3,9 +3,11 @@
      compile [--check]     features/** → generated/**.test.ts; --check reports drift instead of writing
      lint                  diagnostics only
      list-steps            the vocabulary this project sees (base tiers + its tiers + its own bindings)
-     run [playwright args] compile --check, then Playwright over generated/ with the library's config */
+     run [playwright args] compile --check, then Playwright over generated/ with the library's config
+     link [--undo]         wire the package to this checkout of the library (one Playwright per run) */
 import {spawn} from 'node:child_process';
-import {existsSync, mkdirSync, readFileSync, rmSync, writeFileSync} from 'node:fs';
+import {existsSync, lstatSync, mkdirSync, readFileSync, realpathSync, renameSync, rmdirSync, rmSync, symlinkSync, unlinkSync,
+  writeFileSync} from 'node:fs';
 import {createRequire} from 'node:module';
 import {dirname, join, relative, sep} from 'node:path';
 import {compileFeature, CompiledFeature, Diagnostic} from './compile.js';
@@ -156,14 +158,82 @@ async function init(cwd: string): Promise<number> {
   return compile(loadProject(cwd), false);
 }
 
+/** Wires the package in `cwd` to this checkout of the library — `node_modules/@datagrok-libraries/bdd`
+ * to the library, and `node_modules/@playwright/test` to the library's copy, because Playwright
+ * refuses to be loaded twice in one run and the library's runtime resolves it from its own path.
+ * For a library that is linked or not on npm; the package's own copies go to
+ * `node_modules/.bdd-link-backup`, `--undo` (or an `npm ci`) puts them back. */
+function link(cwd: string, undo: boolean): number {
+  if (!existsSync(join(cwd, 'package.json'))) {
+    console.error('grok-bdd link: run it in the package directory');
+    return 2;
+  }
+  const nm = join(cwd, 'node_modules');
+  const backup = join(nm, '.bdd-link-backup');
+  const same = (a: string, b: string) => {
+    try { return realpathSync(a) === realpathSync(b); }
+    catch { return false; }
+  };
+  const kindOf = (path: string): 'link' | 'dir' | 'none' => {
+    try { return lstatSync(path).isSymbolicLink() ? 'link' : 'dir'; }
+    catch { return 'none'; }
+  };
+  const unlink = (path: string) => {
+    try { rmdirSync(path); }
+    catch { unlinkSync(path); }
+  };
+  const show = (path: string) => relative(cwd, path).split(sep).join('/');
+  const links: [string, string, string][] = [
+    [join(nm, '@datagrok-libraries', 'bdd'), LIB_ROOT, 'bdd'],
+    [join(nm, '@playwright', 'test'), join(LIB_ROOT, 'node_modules', '@playwright', 'test'), 'test'],
+  ];
+  for (const [path, target, name] of links) {
+    const kind = kindOf(path);
+    if (undo) {
+      if (kind === 'link')
+        unlink(path);
+      if (existsSync(join(backup, name))) {
+        renameSync(join(backup, name), path);
+        console.log(`restored ${show(path)}`);
+      }
+      else if (kind === 'link')
+        console.log(`removed ${show(path)} (nothing to restore: npm i puts the package's own copy back)`);
+      continue;
+    }
+    if (!existsSync(target)) {
+      console.log(`skipped ${show(path)}: ${target} is missing — npm ci && npm run build in the library first`);
+      continue;
+    }
+    if (kind === 'link' && same(path, target)) {
+      console.log(`already linked ${show(path)} → ${target}`);
+      continue;
+    }
+    if (kind === 'dir') {
+      mkdirSync(backup, {recursive: true});
+      rmSync(join(backup, name), {recursive: true, force: true});
+      renameSync(path, join(backup, name));
+    }
+    else if (kind === 'link')
+      unlink(path);
+    mkdirSync(dirname(path), {recursive: true});
+    symlinkSync(target, path, 'junction');
+    console.log(`linked ${show(path)} → ${target}`);
+  }
+  if (!undo)
+    console.log(`next: npx playwright install chromium in ${LIB_ROOT} (once per Playwright version), then grok-bdd run`);
+  return 0;
+}
+
 async function main(): Promise<number> {
   const [command = 'compile', ...flags] = process.argv.slice(2);
   if (command === '--help' || command === '-h' || command === 'help') {
-    console.log('grok-bdd init | compile [--check] | lint | list-steps | run [playwright args]');
+    console.log('grok-bdd init | link [--undo] | compile [--check] | lint | list-steps | run [playwright args]');
     return 0;
   }
   if (command === 'init')
     return init(process.cwd());
+  if (command === 'link')
+    return link(process.cwd(), flags.includes('--undo'));
   const project = loadProject(process.cwd());
   console.log(`bdd: ${project.name} at ${project.root}${project.tiers.length > 0 ? ` (tiers: ${project.tiers.join(', ')})` : ''}`);
   switch (command) {
@@ -179,7 +249,7 @@ async function main(): Promise<number> {
     case 'run':
       return run(project, flags);
     default:
-      console.error(`unknown command "${command}" — init | compile [--check] | lint | list-steps | run [playwright args]`);
+      console.error(`unknown command "${command}" — init | link [--undo] | compile [--check] | lint | list-steps | run [playwright args]`);
       return 2;
   }
 }

@@ -26,12 +26,70 @@ compiler reports every step, element or dataset it cannot resolve, with the line
 ## Using it in a package
 
 ```bash
-npm i -g @datagrok-libraries/bdd   # the `grok-bdd` command (until it is on npm: `npm link` from libraries/bdd)
+npm i -g @datagrok-libraries/bdd   # the `grok-bdd` command (until it is on npm: see "From a fresh checkout")
 cd <package>
 grok-bdd init                      # bootstraps bdd/ — see below — and the manifest entries
 npm i                              # installs @datagrok-libraries/bdd and @playwright/test as dev dependencies
 grok-bdd run                       # the smoke feature: logged in, Browse visible
 ```
+
+### From a fresh checkout
+
+The library is not on npm yet, so the packages that have features today (`UsageAnalysis`,
+`U2Demo`) depend on it by path — `"@datagrok-libraries/bdd": "file:../../libraries/bdd"`, what
+`grok-bdd init` writes when it runs from a checkout of the library — and npm links the directory
+into `node_modules` and puts `grok-bdd` in `node_modules/.bin`; `npm ci` needs no registry for
+it. Every step, from a clean clone of `public` on any OS — verified 2026-09-07 on Windows:
+
+```bash
+# 1. the library: its dependencies, its dist/ (not committed), its browser
+cd public/libraries/bdd
+npm ci
+npm run build
+npx playwright install chromium    # the browser of the library's Playwright, once per machine
+
+# 2. the package: its dependencies (the library among them), then ONE Playwright
+cd ../../packages/UsageAnalysis    # or U2Demo
+npm ci
+npx grok-bdd link                  # node_modules/@playwright/test → the library's copy (see below)
+
+# 3. the run
+npx grok-bdd compile --check       # the committed specs match the features
+npx grok-bdd run --reporter=list   # or: npm run test:bdd
+```
+
+`grok-bdd link` exists because Playwright refuses to be loaded twice in one process, and the
+library's runtime resolves `@playwright/test` from its own directory (`libraries/bdd/node_modules`)
+while the spec resolves it from the package's. The command moves the package's own copy to
+`node_modules/.bdd-link-backup/` and links the library's in its place; it is idempotent,
+`npx grok-bdd link --undo` puts the copy back, and an `npm ci` in the package undoes it too (run
+`link` again after one; without it the run stops at "Requiring @playwright/test second time"). The
+browser is installed from the library directory for the same reason: `npx playwright` in the
+package would install the build for the package's own Playwright. Once the library is published,
+the dependency becomes a version, npm shares the peer `@playwright/test`, and `link` goes away.
+
+**What the stand needs** (the default is `http://localhost:8888`, another stand through
+`DATAGROK_URL=https://… npx grok-bdd run`):
+
+- A platform built from `core` at or after `6983855e91` (2026-09-07): the viewer features rely on
+  signals the core gained for them — `aria-disabled` on menu items and property rows, the box
+  plot's `getWidgetStatus().hitAreas`, single-dash selector names, a menu group opening on the
+  first pointer move, and the semantic-type detection changes. On an older platform the
+  `viewers` features fail on those steps; the u2 features do not care.
+- A login. Global setup mints a token from the dev key of the `localhost` entry (or
+  `DATAGROK_SERVER=<name>`) in `~/.grok/config.yaml` — the file `grok config` writes, so a
+  `grok publish` setup already has it. Without a key it signs in through the login form with
+  `DATAGROK_LOGIN` / `DATAGROK_PASSWORD` (`admin` / `admin` by default), and a CI runner passes
+  `DATAGROK_AUTH_TOKEN` directly.
+- The datasets the features open (`bindings/platform/datasets.ts`): `demog-1000` is
+  `System:DemoFiles/demog-1000.csv` — not part of the demo files, upload it once:
+  `grok s files put public/packages/ApiTests/files/datasets/demog-1000.csv "System:DemoFiles/demog-1000.csv" --host localhost`;
+  `spgi` is `System:AppData/Chem/tests/spgi-100.csv`, which the published `Chem` package carries
+  (`grok s packages install Chem`). Chem also owns the SMILES detector and molecule renderer the
+  table-switching scenario exercises.
+- For `U2Demo`, the package itself published to the stand (`grok publish localhost` from
+  `packages/U2Demo`): its features open the U2 Demo app. `UsageAnalysis`'s viewer features use
+  only the platform and the two datasets.
 
 `grok-bdd init` runs in the package directory (it refuses anywhere without a `package.json`) and
 creates what is missing, never overwriting what is there: `bdd/package.json`, `bdd/bdd.config.json`,
@@ -53,6 +111,7 @@ everything as existing and changes nothing.
 
 ```bash
 grok-bdd init               # bootstrap bdd/ in the current package (idempotent)
+grok-bdd link [--undo]      # wire the package to this checkout of the library (until it is on npm)
 grok-bdd compile            # features/** → generated/**  (+ diagnostics)
 grok-bdd compile --check    # fails when a committed spec is stale — the CI gate
 grok-bdd lint               # diagnostics only

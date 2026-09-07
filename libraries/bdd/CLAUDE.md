@@ -78,9 +78,14 @@ nobody filed.
   Project `.ts` bindings load at compile time through `tsx/esm/api` `register()`; at run time
   Playwright transpiles them.
 - **One `@playwright/test` per run.** Specs import it from the package, the library's runtime from
-  its own real path; on a junction-linked checkout the package gets a junction to the library's copy
-  (`node_modules/@playwright/test`), on an npm install the peer dependency is shared. The harness
-  receives `test` from the spec and never imports it.
+  its own real path; a second copy fails with "Requiring @playwright/test second time". Until the
+  library is on npm, packages depend on it by path (`"file:../../libraries/bdd"`, written by
+  `init` from a checkout; npm symlinks the directory, `npm ci` needs no registry, `.bin/grok-bdd`
+  appears — a `^version` on the unpublished package broke `npm ci` with a 404) and `grok-bdd link`
+  (cli.ts) links the package's `node_modules/@playwright/test` to the library's copy (the package's
+  own goes to `node_modules/.bdd-link-backup`, `--undo` or an `npm ci` restores it; the library
+  link too when npm did not make it). On a registry install the peer dependency is shared. The
+  harness receives `test` from the spec and never imports it.
 - **One page per feature** (`src/runtime/harness.ts`): `feature(test)` registers `afterEach`
   (leave the context, `resetShell`) and `afterAll` (close the context); the page is created inside
   the first test (`session.page(browser)`), so Playwright merges the project's context options
