@@ -8,14 +8,18 @@ import {ElementRef, viewers} from '@datagrok-libraries/bdd/runtime';
 const Y_SLIDER = 'svg[type="range-slider"][name="y-slider"]';
 
 /** Drags the top handle of the value-axis slider down by 40% of the slider; the range before is
- * the snapshot "a narrower value range than before" reads. The slider lays itself out when the
- * pointer enters the axis strip, so the pointer goes there first. */
+ * the snapshot "a narrower value range than before" reads. The slider shows and lays itself out
+ * when the pointer enters the axis strip, so the pointer goes there first and the step waits for
+ * the slider to show: the browser delivers pointer moves frame-aligned, so on a busy page a DOM
+ * read issued right after the move can run before the move's handler — the slider still hidden,
+ * its handles at their unrendered positions, and the drag lands on empty plot space. */
 export const zoomValueAxis = When('user zooms into the value axis of {widget}', async (page: Page, target: ElementRef) => {
   const axis = viewers.centerOf(await viewers.hitArea(page, target, 'y axis', true));
   await page.mouse.move(axis.x - 3, axis.y);
   await page.mouse.move(axis.x, axis.y);
   const loc = await viewers.viewerLocator(page, target);
   const slider = loc.locator(Y_SLIDER);
+  await slider.waitFor({state: 'visible'});
   const track = await slider.boundingBox();
   // the handle on top is the max handle, or the min handle on an inverted axis
   const handles = [await slider.locator('[name="max-handle"]').boundingBox(), await slider.locator('[name="min-handle"]').boundingBox()];

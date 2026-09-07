@@ -212,7 +212,17 @@ nobody filed.
   Dart menu group did not open on the first `mousemove` when another group's submenu state was
   stale — fixed in the core (`menu.dart` `_initItem`: the move that closes a sibling's submenu
   opens this one; `hide()` clears `_expandedItem`), 2026-09-07. Scrolling into view only when
-  the box is outside the viewport.
+  the box is outside the viewport. **The browser delivers pointer moves frame-aligned**, so a
+  Playwright DOM read issued right after `mouse.move` can run before the move's handler on a busy
+  page: a step that reads the geometry of something the hover reveals (the box plot's axis
+  slider) first waits for it to be visible (`waitFor({state: 'visible'})`) — that is the effect,
+  not a sleep. Found 2026-09-08 as a 2-in-45 flake of the value-axis zoom under load (the drag
+  landed on plot space with the slider still hidden, the range unchanged). **And the browser
+  coalesces mouse moves queued while its main thread is busy**: the leave-then-enter pair can
+  collapse into the last move alone, which enters nothing when the pointer already rested inside
+  the element (the box plot's hover-revealed selectors stayed hidden once in 72 journeys under
+  load), so `hover` now waits in-page, a few frames at most, for the element's own `mouseenter`
+  and repeats the pair when it did not come — one evaluate more per hover, no sleep.
 - **A step ends when the platform is done, not when the DOM shows** (`platform/steps.ts`
   `openDataset`): opening a table starts semantic-type detection in the background (package
   detectors — Chem's SMILES detector took 300–500 ms on spgi-100), which used to land on

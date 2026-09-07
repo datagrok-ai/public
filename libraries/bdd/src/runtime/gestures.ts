@@ -46,7 +46,11 @@ export async function rightclick(page: Page, target: ElementRef): Promise<void> 
  * cross a neighbouring menu row and close the submenu the element sits in — then lands on its
  * centre in one move (every pointer event costs a frame, and a Dart menu group opens on the first
  * move since 2026-09-07) and checks that the element is still where it was: a shift under the
- * pointer right after the move (a view still docking) leaves it again, unseen. */
+ * pointer right after the move (a view still docking) leaves it again, unseen. The browser
+ * coalesces mouse moves queued while its main thread is busy, so the pair can collapse into the
+ * last move alone — one that enters nothing when the pointer already rested inside; the gesture
+ * therefore waits, in the page and for a few frames at most, for the element's own `mouseenter`,
+ * and repeats the pair when it did not come. */
 export async function hover(page: Page, target: ElementRef): Promise<void> {
   const loc = await locate(page, target);
   const viewport = page.viewportSize();
@@ -61,10 +65,19 @@ export async function hover(page: Page, target: ElementRef): Promise<void> {
       return;
     }
     const cy = before.y + before.height / 2;
+    await loc.evaluate((el) => {
+      (el as any).__bddEntered = false;
+      el.addEventListener('mouseenter', () => { (el as any).__bddEntered = true; }, {once: true});
+    });
     await page.mouse.move(Math.max(0, before.x - 8), cy);
     await page.mouse.move(before.x + before.width / 2, cy);
+    const entered = await loc.evaluate((el) => new Promise<boolean>((resolve) => {
+      let frames = 0;
+      const tick = () => (el as any).__bddEntered || frames++ > 4 ? resolve((el as any).__bddEntered === true) : requestAnimationFrame(tick);
+      tick();
+    }));
     const after = await loc.boundingBox();
-    if (!after || (before.x === after.x && before.y === after.y))
+    if (entered && (!after || (before.x === after.x && before.y === after.y)))
       return;
   }
 }

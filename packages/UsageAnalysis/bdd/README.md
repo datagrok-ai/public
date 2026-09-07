@@ -17,6 +17,7 @@ npx playwright install chromium                      # its browser, once per mac
 cd ../../packages/UsageAnalysis && npm ci            # the package; npm links the library in and puts grok-bdd in .bin
 npx grok-bdd link                                    # ONE Playwright: the library's copy into node_modules (redo after every npm ci)
 npx grok-bdd run --reporter=list                     # compile --check, then Playwright
+npx grok-bdd run --workers 2 generated/viewers       # any Playwright flag or path passes through (the default is 4 workers)
 ```
 
 The stand needs a platform from `core` at or after `6983855e91` (2026-09-07), the `Chem` package
