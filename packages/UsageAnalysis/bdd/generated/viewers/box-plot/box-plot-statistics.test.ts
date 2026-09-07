@@ -2,7 +2,7 @@
 /* eslint-disable comma-spacing */
 /* eslint-disable quotes */
 /* ---
-generated: features/viewers/box-plot-statistics.feature
+generated: features/viewers/box-plot/box-plot-statistics.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
 sub_features_covered: [viewers.box-plot]
 --- */
@@ -11,7 +11,7 @@ import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {clickEmptySpace} from '../../bindings/box-plot.js';
+import {clickEmptySpace} from '../../../bindings/box-plot.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {pressKey, shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {clearSelection, colorCategorical, colorConditional, colorLinear, colorLinearOver, colorOff, someSelected} from '@datagrok-libraries/bdd/bindings/platform/data';
@@ -20,7 +20,7 @@ import {addViewerWith, areaPainted, dragSelectionOverArea, hasArea, hoverArea, m
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Box plot statistics and coloring", () => {
-  const session = feature(test, "features/viewers/box-plot-statistics.feature", import.meta.url);
+  const session = feature(test, "features/viewers/box-plot/box-plot-statistics.feature", import.meta.url);
   test("Box plot statistics and coloring", {tag: ["@journey", "@viewers", "@realizes:viewers.box-plot"]}, async ({browser}) => {
     const page = await session.page(browser);
     const run = journey(test, 7);

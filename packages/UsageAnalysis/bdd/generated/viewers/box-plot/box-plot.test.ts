@@ -2,7 +2,7 @@
 /* eslint-disable comma-spacing */
 /* eslint-disable quotes */
 /* ---
-generated: features/viewers/box-plot.feature
+generated: features/viewers/box-plot/box-plot.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
 sub_features_covered: [viewers.box-plot]
 --- */
@@ -11,7 +11,7 @@ import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {doubleClickEmptySpace, zoomValueAxis} from '../../bindings/box-plot.js';
+import {doubleClickEmptySpace, zoomValueAxis} from '../../../bindings/box-plot.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, hoverOver, shouldBe, shouldContainText, shouldHaveText, shouldNotContainText} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {openDataset, switchTableView} from '@datagrok-libraries/bdd/bindings/platform/steps';
@@ -19,7 +19,7 @@ import {addViewerWith, closeContextMenu, eventFired, hoverArea, lessInk, listenF
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Box plot property surface", () => {
-  const session = feature(test, "features/viewers/box-plot.feature", import.meta.url);
+  const session = feature(test, "features/viewers/box-plot/box-plot.feature", import.meta.url);
   test("Box plot property surface", {tag: ["@journey", "@viewers", "@realizes:viewers.box-plot"]}, async ({browser}) => {
     const page = await session.page(browser);
     const run = journey(test, 13);

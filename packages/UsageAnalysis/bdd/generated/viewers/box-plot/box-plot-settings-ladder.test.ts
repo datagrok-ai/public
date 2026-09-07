@@ -2,7 +2,7 @@
 /* eslint-disable comma-spacing */
 /* eslint-disable quotes */
 /* ---
-generated: features/viewers/box-plot-settings-ladder.feature
+generated: features/viewers/box-plot/box-plot-settings-ladder.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
 sub_features_covered: [viewers.box-plot]
 --- */
@@ -11,7 +11,7 @@ import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {zoomValueAxis} from '../../bindings/box-plot.js';
+import {zoomValueAxis} from '../../../bindings/box-plot.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, shouldBe, shouldContainText} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {closeAllViews, openDataset, openProject, saveAsProject} from '@datagrok-libraries/bdd/bindings/platform/steps';
@@ -19,7 +19,7 @@ import {addViewer, addViewerWith, loadLayout, narrowerRange, noErrors, propertie
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Box plot settings ladder", () => {
-  const session = feature(test, "features/viewers/box-plot-settings-ladder.feature", import.meta.url);
+  const session = feature(test, "features/viewers/box-plot/box-plot-settings-ladder.feature", import.meta.url);
   test("Box plot settings ladder", {tag: ["@journey", "@viewers", "@realizes:viewers.box-plot"]}, async ({browser}) => {
     const page = await session.page(browser);
     const run = journey(test, 8);

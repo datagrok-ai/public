@@ -2,7 +2,7 @@
 /* eslint-disable comma-spacing */
 /* eslint-disable quotes */
 /* ---
-generated: features/viewers/box-plot-selection.feature
+generated: features/viewers/box-plot/box-plot-selection.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
 sub_features_covered: [viewers.box-plot]
 --- */
@@ -11,7 +11,7 @@ import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {clickEmptySpace, doubleClickEmptySpace} from '../../bindings/box-plot.js';
+import {clickEmptySpace, doubleClickEmptySpace} from '../../../bindings/box-plot.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {allOfSelected, clearSelection, deleteSelected, filterOut, hasCurrentRow, noRowsWhere, noneOfSelected, noneSelected, onlyOfSelected, resetFilter, someOfSelected, someSelected} from '@datagrok-libraries/bdd/bindings/platform/data';
@@ -20,7 +20,7 @@ import {addViewerWith, clickArea, clickAreaHolding, dragSelectionOverArea, event
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Box plot selection and highlight", () => {
-  const session = feature(test, "features/viewers/box-plot-selection.feature", import.meta.url);
+  const session = feature(test, "features/viewers/box-plot/box-plot-selection.feature", import.meta.url);
   test("Box plot selection and highlight", {tag: ["@journey", "@viewers", "@realizes:viewers.box-plot"]}, async ({browser}) => {
     const page = await session.page(browser);
     const run = journey(test, 9);

@@ -3,7 +3,7 @@
 Feature files bound to the u2/platform vocabulary, compiled deterministically into Playwright specs
 that packages own. Design record: `core/docs/features/ui2/automation/BRAINSTORM.md` (rulings by the
 lead: standard Gherkin; committed, drift-gated codegen; u2-centred; overridable composition;
-generic kinds; reserved platform names; packages own their tests; one page per feature; a global
+generic kinds; reserved platform names; packages own their tests; one page per feature folder; a global
 CLI; NOT wired into `grok test`; §8 there is the current state, gaps and next steps). The contract
 it consumes and the u2 findings: `core/docs/features/ui2/AUTOMATION.md`; the lane map:
 `core/docs/features/ui2/TESTING.md`.
@@ -35,8 +35,8 @@ tests/             node:test via tsx (nouns, compile, project, init)
 
 A package project: `<pkg>/bdd/{package.json {"type":"module"}, bdd.config.json, features/, bindings/,
 generated/}`; sample `packages/U2Demo/bdd`; the first production project is `packages/UsageAnalysis/bdd`
-(`features/viewers/box-plot*.feature`: six journeys, 50 scenarios, the whole of the six TestTrack
-box plot specs under `files/TestTrack/Viewers/BoxPlot/` and their helpers, 63 s for all six).
+(`features/viewers/box-plot/*.feature`: six journeys, 50 scenarios, the whole of the six TestTrack
+box plot specs under `files/TestTrack/Viewers/BoxPlot/` and their helpers, 36 s for all six on one page).
 
 ## We test our own platform, not a black box
 
@@ -87,11 +87,18 @@ nobody filed.
   own goes to `node_modules/.bdd-link-backup`, `--undo` or an `npm ci` restores it; the library
   link too when npm did not make it). On a registry install the peer dependency is shared. The
   harness receives `test` from the spec and never imports it.
-- **One page per feature** (`src/runtime/harness.ts`): `feature(test)` registers `afterEach`
-  (leave the context, `resetShell`) and `afterAll` (close the context); the page is created inside
-  the first test (`session.page(browser)`), so Playwright merges the project's context options
-  (storage state, viewport) and records traces/screenshots for it. The generated spec calls
-  `test()` itself so reports point at the spec line, not the harness; every step is
+- **One page per feature folder** (`src/runtime/harness.ts`, the lead's rule 2026-09-07: "one
+  folder, one tab"): `feature(test)` registers `afterEach` (leave the context, `resetShell`) and
+  `afterAll` (the feature's `atFeatureEnd` cleanups); the page is created inside the first test
+  (`session.page(browser)`), so Playwright merges the project's context options (storage state,
+  viewport), and kept in the module-level `shared` with its folder — the folder's next feature
+  file finds it and `user is logged in` only resets the shell (0.1 s instead of the ~4 s boot);
+  a feature from another folder closes that context first. Playwright 1.62 starts a trace chunk
+  on every existing context at each test start (`ArtifactsRecorder.willStartTest` →
+  `didCreateBrowserContext`), so every test still gets its own trace; a failed test restarts the
+  worker, which drops the page. NEVER leave several Datagrok pages open in one browser: six live
+  clients made every step 2–3× slower (measured 2026-09-07, 124 s for the suite). The generated
+  spec calls `test()` itself so reports point at the spec line, not the harness; every step is
   `session.step(line, title, fn)` (`feature(test, "features/x.feature", import.meta.url)`), a
   Playwright step whose `location` is the feature line.
 - **A failure is the feature line, the step, one sentence, and what was there instead**
@@ -121,10 +128,13 @@ nobody filed.
   `findArea(…, beforeChange)`); `installViewerRuntime` remembers the page (forgotten on main-frame
   navigation); `locateActionable` is `filter({visible: true})` with no count; `expectVisible` and
   `expectEnabled` are one query each. A step should be locate + one action.
-- **Traces keep no DOM snapshots** (`playwright.config.ts`: `{mode: 'retain-on-failure',
-  snapshots: false, screenshots: true}`): serializing the shell's DOM around every action was ~43%
-  of the box plot's scenario time (11.4 s → 6.5 s measured with `--trace off`). Actions, screenshots,
-  console and network stay in the trace; `grok-bdd run --trace on` records everything.
+- **Traces keep no DOM snapshots and no per-action screenshots** (`playwright.config.ts`:
+  `{mode: 'retain-on-failure', snapshots: false, screenshots: false}`): serializing the shell's
+  DOM around every action was ~43% of the box plot's scenario time (11.4 s → 6.5 s measured with
+  `--trace off`), and the screenshot per action another ~12 s over six features (2026-09-07, the
+  lead: "we only need error screenshots"). Actions, console and network stay in the trace, the
+  failure screenshot is the base config's `screenshot: 'only-on-failure'`; `grok-bdd run --trace
+  on` records everything, `--video on` a video.
 - **Hit areas are awaited like elements** (`viewers.ts` `hitArea`): a viewer that renders twice on
   a change (the box plot after a category switch) can report no `marker` between the two paints;
   the lookup polls up to 5 s and fails naming the areas it does report.

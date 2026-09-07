@@ -133,11 +133,16 @@ control the library has a kind for, driven the way its page presents it.
 
 ## How a feature runs
 
-One browser page per feature file: the first scenario opens it, every scenario ends with the shell
-reset (dialogs and popups closed, `grok.shell.closeAll()`, the Home view current), the last one
-closes it. Playwright still runs and reports one test per scenario (and per outline row), so
-`-g`, tags, retries, traces and screenshots work as usual. A `Background` runs before every
-scenario, as Gherkin says; `user is logged in` only navigates when the page is not in the shell yet.
+One browser page per feature folder: the first scenario of the folder's first feature opens it
+and boots the shell (about 4 s), every scenario ends with the shell reset (dialogs and popups
+closed, `grok.shell.closeAll()`, the Home view current), the folder's next feature starts on that
+reset shell — `user is logged in` only navigates when the page is not in the shell yet — and a
+feature from another folder closes it and opens its own. So group the features that share a
+subject in a folder (`features/viewers/box-plot/`). Playwright still runs and reports one test
+per scenario (and per outline row), so `-g`, tags, retries and traces work as usual, each test
+with its own trace; a trace keeps the actions, console and network, and a failed test its
+screenshot — `grok-bdd run --trace on` records DOM snapshots and a screenshot per action too,
+`--video on` a video. A `Background` runs before every scenario, as Gherkin says.
 
 **`@journey`** on the feature changes that: the feature is one test, the Background runs once, and
 the scenarios run in order on the same shell state, each a soft step — a failing scenario is
@@ -155,12 +160,12 @@ looked. Playwright prints the Gherkin around the line, since the step's location
 file, not the generated spec:
 
 ```
-StepFailure: features/viewers/box-plot.feature:43
+StepFailure: features/viewers/box-plot/box-plot.feature:43
   When user right-clicks on the "statsff" area of box plot viewer
 
 Box plot has no "statsff" area right now; it has: view, x axis, y axis, stats, p value, marker
 
-   at ../features/viewers/box-plot.feature:43
+   at ../features/viewers/box-plot/box-plot.feature:43
    42 |       | Show P Value          | true  |
  > 43 |     When user right-clicks on the "statsff" area of box plot viewer
 ```
@@ -354,9 +359,9 @@ like any other; nothing to register.
 Viewers on the current table view, written the way the platform sees them — properties by their
 caption, context menus by their path, canvas regions by the names the viewer reports, repaints by
 the viewer's own render event. The first features written with it are the six box plot journeys
-under `packages/UsageAnalysis/bdd/features/viewers/` (property surface, group comparison,
+under `packages/UsageAnalysis/bdd/features/viewers/box-plot/` (property surface, group comparison,
 selection, filter, statistics and coloring, settings ladder): 50 scenarios, the whole of six
-hand-written Playwright specs and their helpers, in 63 s.
+hand-written Playwright specs and their helpers, in 36 s on one page.
 
 ```gherkin
 Background:

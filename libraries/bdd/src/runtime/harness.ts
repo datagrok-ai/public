@@ -100,9 +100,16 @@ export function takeErrors(page: Page): string[] {
   return out;
 }
 
+/** One page per feature folder: the features of a folder run on the page the first of them
+ * opened (the shell boots once, ~4 s; the next feature starts from `user is logged in` on the
+ * shell it finds, reset), a feature from another folder closes it and opens its own. The browser
+ * fixture closes the last one with the worker. */
+let shared: {page: Page; folder: string} | undefined;
+
 export function feature(test: Test, path = '', specUrl = ''): FeatureSession {
   let page: Page | undefined;
   const file = path && specUrl ? featureFile(specUrl, path) : undefined;
+  const folder = path.replace(/\/[^/]*$/, '');
   test.afterEach(async () => {
     if (page && !page.isClosed()) {
       leave(page);
@@ -113,15 +120,22 @@ export function feature(test: Test, path = '', specUrl = ''): FeatureSession {
     if (page && !page.isClosed()) {
       for (const cleanup of cleanups.get(page) ?? [])
         await cleanup().catch((e) => console.warn(`cleanup failed: ${(e as Error).message}`));
+      cleanups.delete(page);
     }
-    await page?.context().close().catch(() => undefined);
     page = undefined;
   });
   return {
     async page(browser: Browser): Promise<Page> {
       if (!page || page.isClosed()) {
-        page = await browser.newPage();
-        watchErrors(page);
+        if (shared && (shared.folder !== folder || shared.page.isClosed() || shared.page.context().browser() !== browser)) {
+          await shared.page.context().close().catch(() => undefined);
+          shared = undefined;
+        }
+        if (!shared) {
+          shared = {page: await browser.newPage(), folder};
+          watchErrors(shared.page);
+        }
+        page = shared.page;
       }
       return page;
     },

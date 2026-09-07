@@ -2,9 +2,9 @@
 
 Gherkin features under `features/`, compiled by `@datagrok-libraries/bdd` (`public/libraries/bdd`)
 into the Playwright specs under `generated/` — committed, never edited by hand. Today: the viewer
-features (`features/viewers/`), the six TestTrack box plot specs as six `@journey` features
+features (`features/viewers/box-plot/`, one page for the folder), the six TestTrack box plot specs as six `@journey` features
 (property surface, group comparison, selection, filter, statistics and coloring, settings ladder;
-50 scenarios, about a minute for all six). The full guide, the vocabulary and the stand
+50 scenarios, 36 s for all six). The full guide, the vocabulary and the stand
 requirements are in the library's README.
 
 From a fresh checkout of `public`, against a local stand on `http://localhost:8888` (another one:

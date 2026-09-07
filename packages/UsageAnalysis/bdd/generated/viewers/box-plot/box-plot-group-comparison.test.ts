@@ -2,7 +2,7 @@
 /* eslint-disable comma-spacing */
 /* eslint-disable quotes */
 /* ---
-generated: features/viewers/box-plot-group-comparison.feature
+generated: features/viewers/box-plot/box-plot-group-comparison.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
 sub_features_covered: [viewers.box-plot]
 --- */
@@ -19,7 +19,7 @@ import {addViewerWith, clickArea, hasArea, hasNoArea, hoverArea, painted, pickFr
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Box plot group comparison", () => {
-  const session = feature(test, "features/viewers/box-plot-group-comparison.feature", import.meta.url);
+  const session = feature(test, "features/viewers/box-plot/box-plot-group-comparison.feature", import.meta.url);
   test("Box plot group comparison", {tag: ["@journey", "@viewers", "@realizes:viewers.box-plot"]}, async ({browser}) => {
     const page = await session.page(browser);
     const run = journey(test, 8);
