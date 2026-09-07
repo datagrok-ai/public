@@ -88,7 +88,7 @@ for (const ds of datasets) {
       await bio.openBioAnalyze(page, 'div-Bio---Analyze---Activity-Cliffs...');
       await page.locator('.d4-dialog [name="button-OK"]').waitFor({timeout: 60_000});
       const title = await page.locator('.d4-dialog .d4-dialog-title').textContent();
-      expect(title?.trim()).toBe('Activity Cliffs');
+      expect(title?.trim()).toBe('Sequence Activity Cliffs');
       const baseCols: number = await page.evaluate(() => grok.shell.tv.dataFrame.columns.length);
       await page.locator('.d4-dialog [name="button-OK"]').click();
       await page.waitForFunction(
