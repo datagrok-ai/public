@@ -1,24 +1,28 @@
-import {test, expect} from '@playwright/test';
-import {specTestOptions, softStep, stepErrors, loginToDatagrok} from '../../spec-login';
+import {expect} from '@playwright/test';
+import {test} from '../../shared-page';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
 
 test.use(specTestOptions);
 
 test('ML Methods - Linear Regression, PLS, Softmax, XGBoost', async ({page}) => {
+  test.setTimeout(300_000);
   await loginToDatagrok(page);
 
-  // Scenario 1: Linear Regression (cars.csv, predict=price)
   await softStep('Linear Regression: Train on cars.csv', async () => {
     const result = await page!.evaluate(async () => {
       document.querySelectorAll('.d4-dialog').forEach(d => {
         const cancel = d.querySelector('[name="button-CANCEL"]');
         if (cancel) (cancel as HTMLElement).click();
       });
-      // Close PredictiveModel views
+
       Array.from(grok.shell.views).filter(v => v.type === 'PredictiveModel').forEach(v => v.close());
       grok.shell.closeAll();
       const df = await grok.dapi.files.readCsv('System:DemoFiles/cars.csv');
       grok.shell.addTableView(df);
-      await new Promise(r => setTimeout(r, 1000));
+      for (let i = 0; i < 20; i++) {
+        if (document.querySelector('[name="viewer-Grid"] canvas')) break;
+        await new Promise(r => setTimeout(r, 50));
+      }
       const numCols: string[] = [];
       for (let i = 0; i < df.columns.length; i++) {
         const c = df.columns.byIndex(i);
@@ -34,13 +38,15 @@ test('ML Methods - Linear Regression, PLS, Softmax, XGBoost', async ({page}) => 
     expect(result.success).toBe(true);
   });
 
-  // Scenario 2: PLS Regression (cars.csv, predict=price)
   await softStep('PLS Regression: Train on cars.csv', async () => {
     const result = await page!.evaluate(async () => {
       grok.shell.closeAll();
       const df = await grok.dapi.files.readCsv('System:DemoFiles/cars.csv');
       grok.shell.addTableView(df);
-      await new Promise(r => setTimeout(r, 1000));
+      for (let i = 0; i < 20; i++) {
+        if (document.querySelector('[name="viewer-Grid"] canvas')) break;
+        await new Promise(r => setTimeout(r, 50));
+      }
       const numCols: string[] = [];
       for (let i = 0; i < df.columns.length; i++) {
         const c = df.columns.byIndex(i);
@@ -55,13 +61,15 @@ test('ML Methods - Linear Regression, PLS, Softmax, XGBoost', async ({page}) => 
     expect(result.success).toBe(true);
   });
 
-  // Scenario 3: Softmax (iris.csv, predict=Species) — known FAIL
   await softStep('Softmax: Train on iris.csv', async () => {
     const result = await page!.evaluate(async () => {
       grok.shell.closeAll();
       const df = await grok.dapi.files.readCsv('System:DemoFiles/iris.csv');
       grok.shell.addTableView(df);
-      await new Promise(r => setTimeout(r, 1000));
+      for (let i = 0; i < 20; i++) {
+        if (document.querySelector('[name="viewer-Grid"] canvas')) break;
+        await new Promise(r => setTimeout(r, 50));
+      }
       try {
         await grok.functions.call('eda:trainSoftmax', {
           df: df, predictColumn: df.col('Species'),
@@ -72,18 +80,19 @@ test('ML Methods - Linear Regression, PLS, Softmax, XGBoost', async ({page}) => 
         return { success: false, error: e.message };
       }
     });
-    // Known failure: trainSoftmax has a bug with feature type detection
-    // We record the failure but don't fail the whole suite
+
     console.log('Softmax result:', result);
   });
 
-  // Scenario 4: XGBoost 1 (iris.csv, predict=Species)
   await softStep('XGBoost Classification: Train on iris.csv', async () => {
     const result = await page!.evaluate(async () => {
       grok.shell.closeAll();
       const df = await grok.dapi.files.readCsv('System:DemoFiles/iris.csv');
       grok.shell.addTableView(df);
-      await new Promise(r => setTimeout(r, 1000));
+      for (let i = 0; i < 20; i++) {
+        if (document.querySelector('[name="viewer-Grid"] canvas')) break;
+        await new Promise(r => setTimeout(r, 50));
+      }
       const subDf = df.clone(null, ['Sepal.Length', 'Sepal.Width', 'Petal.Length', 'Petal.Width', 'Species']);
       const result = await grok.functions.call('eda:trainXGBooster', {
         df: subDf, predictColumn: subDf.col('Species'),
@@ -94,13 +103,15 @@ test('ML Methods - Linear Regression, PLS, Softmax, XGBoost', async ({page}) => 
     expect(result.success).toBe(true);
   });
 
-  // Scenario 5: XGBoost 2 (cars.csv, predict=price)
   await softStep('XGBoost Regression: Train on cars.csv', async () => {
     const result = await page!.evaluate(async () => {
       grok.shell.closeAll();
       const df = await grok.dapi.files.readCsv('System:DemoFiles/cars.csv');
       grok.shell.addTableView(df);
-      await new Promise(r => setTimeout(r, 1000));
+      for (let i = 0; i < 20; i++) {
+        if (document.querySelector('[name="viewer-Grid"] canvas')) break;
+        await new Promise(r => setTimeout(r, 50));
+      }
       const numCols: string[] = [];
       for (let i = 0; i < df.columns.length; i++) {
         const c = df.columns.byIndex(i);

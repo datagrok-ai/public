@@ -9,9 +9,6 @@ import {
   expandTreeGroup,
 } from './helpers';
 
-/**
- * Apps section smoke. Detailed "open every app" coverage lives in apps_matrix.test.ts (future).
- */
 test.describe('Browse Apps (Browse-Apps-*)', () => {
   test.beforeEach(async ({ page }) => {
     await goHome(page);
@@ -25,13 +22,10 @@ test.describe('Browse Apps (Browse-Apps-*)', () => {
     const t0 = Date.now();
     await expandTreeGroup(page, 'Apps');
 
-    // Wait until at least one known child item is visible (means the list is rendered).
     await expect(treeNodeByPath(page, ['Apps', 'Tutorials']),
       'A known Apps child should appear after expand').toBeVisible({ timeout: 30_000 });
     const elapsedMs = Date.now() - t0;
 
-    // The configured threshold for Apps list loading on dev. Raise it if dev gets slower
-    // for legitimate reasons; do not silently extend it.
     const THRESHOLD_MS = 5_000;
     expect(elapsedMs, `Apps list should load within ${THRESHOLD_MS} ms (took ${elapsedMs} ms)`)
       .toBeLessThan(THRESHOLD_MS);
@@ -60,7 +54,6 @@ test.describe('Browse Apps (Browse-Apps-*)', () => {
     const tutorials = treeNodeByPath(page, ['Apps', 'Tutorials']);
     await tutorials.waitFor({ state: 'visible', timeout: 10_000 });
 
-    // Hover triggers tooltip + context panel update; verify no errors.
     await tutorials.hover();
     await page.waitForTimeout(1500);
 

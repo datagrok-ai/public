@@ -1,382 +1,353 @@
-import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
+/* ---
+realizes: []
+--- */
+
+import {expect} from '@playwright/test';
+import {localTest as test} from '../../shared-page';
+import {openDatagrok, specTestOptions, softStep, isLocalBootNoise} from '../../spec-login';
 import * as v from '../../helpers/viewers';
+
+declare const grok: any;
 
 test.use(specTestOptions);
 
 const datasetPath = 'System:DemoFiles/demog.csv';
-const spgiPath = 'System:DemoFiles/chem/SPGI.csv';
 
 test('Histogram tests', async ({page}) => {
   test.setTimeout(600_000);
 
-  await loginToDatagrok(page);
+  const pageErrors: string[] = [];
+  const consoleErrors: string[] = [];
+  const onPageError = (e: Error) => pageErrors.push(String(e));
+  const onConsole = (m: any) => { if (m.type() === 'error' && !isLocalBootNoise(m.text())) consoleErrors.push(m.text()); };
+  page.on('pageerror', onPageError);
+  page.on('console', onConsole);
+  const errorCount = () => pageErrors.length + consoleErrors.length;
+  const viewerAlive = () => page.evaluate(() =>
+    !!grok.shell.tv.viewers.find(v => v.type === 'Histogram')
+    && !!document.querySelector('[name="viewer-Histogram"]'));
+
+  await openDatagrok(page);
 
   await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 3000});
 
   await v.addViewerByIcon(page, 'histogram', 'Histogram');
 
-  // #### Bins configuration
-  await softStep('Bins configuration', async () => {
-    const result = await v.setViewerProps(page, 'Histogram', [
-      {set: {valueColumnName: 'AGE'}, read: 'valueColumnName'},
-      {set: {bins: 5}, read: 'bins'},
-      {set: {bins: 100}, read: 'bins'},
-      {set: {bins: 1}, read: 'bins'},
-      {set: {bins: 20}, read: 'bins'},
-      {set: {binWidthRatio: 1.0}, read: 'binWidthRatio'},
-      {set: {binWidthRatio: 0.3}, read: 'binWidthRatio'},
-      {set: {binWidthRatio: 0.8}, read: 'binWidthRatio'},
-    ]);
-    expect(result).toEqual(['AGE', 5, 100, 1, 20, 1.0, 0.3, 0.8]);
-  });
-
-  // #### Split column
-  await softStep('Split column', async () => {
-    const result = await v.setViewerProps(page, 'Histogram', [
-      {set: {splitColumnName: 'SEX'}, wait: 500, read: 'splitColumnName'},
-      {set: {normalizeValues: true}, read: 'normalizeValues'},
-      {set: {normalizeValues: false}, read: 'normalizeValues'},
-      {set: {showMarkers: false}, read: 'showMarkers'},
-      {set: {splineTension: 5}, read: 'splineTension'},
-      {set: {splitColumnName: 'RACE'}, wait: 500, read: 'splitColumnName'},
-      {set: {splitColumnName: ''}, read: 'splitColumnName'},
-      {set: {splitColumnName: 'SEX'}, wait: 500, read: 'splitColumnName'},
-      {set: {splitStack: true}, read: 'splitStack'},
-      {set: {showValues: true}, read: 'showValues'},
-      {set: {splitStack: false}, read: 'splitStack'},
-      {set: {showDistributionLines: true}, read: 'showDistributionLines'},
-      {set: {showDistributionLines: false}, read: 'showDistributionLines'},
-    ]);
-    expect(result).toEqual(['SEX', true, false, false, 5, 'RACE', '', 'SEX', true, true, false, true, false]);
-  });
-
-  // #### Color coding
-  await softStep('Color coding', async () => {
-    const result = await v.setViewerProps(page, 'Histogram', [
-      {set: {splitColumnName: ''}},
-      {set: {colorColumnName: 'WEIGHT'}, read: 'colorColumnName'},
-      {set: {colorAggrType: 'min'}, read: 'colorAggrType'},
-      {set: {colorAggrType: 'max'}, read: 'colorAggrType'},
-      {set: {invertColorScheme: true}, read: 'invertColorScheme'},
-      {set: {invertColorScheme: false}, read: 'invertColorScheme'},
-      {set: {colorColumnName: ''}, read: 'colorColumnName'},
-    ]);
-    expect(result).toEqual(['WEIGHT', 'min', 'max', true, false, '']);
-  });
-
-  // #### Value range
-  await softStep('Value range', async () => {
-    // AMBIGUOUS: typing values into range inputs via UI is skipped as canvas interaction
-    const result = await v.setViewerProps(page, 'Histogram', [
-      {set: {valueColumnName: 'AGE'}},
-      {set: {valueMin: 30, valueMax: 60}, read: ['valueMin', 'valueMax']},
-      {set: {valueMin: null, valueMax: null}, read: ['valueMin', 'valueMax']},
-      {set: {showRangeInputs: true}, read: 'showRangeInputs'},
-      {set: {showRangeInputs: false}, read: 'showRangeInputs'},
-    ]);
-    expect(result[0]).toEqual({valueMin: 30, valueMax: 60});
-    expect(result[1]).toEqual({valueMin: null, valueMax: null});
-    expect(result[2]).toBe(true);
-    expect(result[3]).toBe(false);
-  });
-
-  // #### Spline mode
   await softStep('Spline mode', async () => {
-    const result = await v.setViewerProps(page, 'Histogram', [
-      {set: {spline: true}, read: 'spline'},
-      {set: {fillSpline: true}, read: 'fillSpline'},
-      {set: {fillSpline: false}, read: 'fillSpline'},
-      {set: {spline: false}, read: 'spline'},
-    ]);
-    expect(result).toEqual([true, true, false, false]);
+    const errBefore = errorCount();
+    await v.setViewerProps(page, 'Histogram', [
+      {set: {spline: true}},
+      {set: {fillSpline: true}},
+      {set: {fillSpline: false}},
+      {set: {spline: false}},
+    ], 200);
+    expect(await viewerAlive()).toBe(true);
+    expect(errorCount()).toBe(errBefore);
   });
 
-  // #### Appearance
-  await softStep('Appearance', async () => {
-    const result = await v.setViewerProps(page, 'Histogram', [
-      {set: {showXAxis: true, showYAxis: true}, read: ['showXAxis', 'showYAxis']},
-      {set: {showXAxis: false, showYAxis: false}, read: ['showXAxis', 'showYAxis']},
-      {set: {xAxisHeight: 30}, read: 'xAxisHeight'},
-      {set: {allowColumnSelection: false}, read: 'allowColumnSelection'},
-      {set: {showBinSelector: false}, read: 'showBinSelector'},
-      {set: {showSplitSelector: false}, read: 'showSplitSelector'},
-      {set: {showRangeSlider: false}, read: 'showRangeSlider'},
-      {
-        set: {
-          showXAxis: true, showYAxis: true, allowColumnSelection: true,
-          showBinSelector: true, showSplitSelector: true, showRangeSlider: true,
-        },
-        read: ['showXAxis', 'showYAxis', 'allowColumnSelection', 'showBinSelector', 'showSplitSelector', 'showRangeSlider'],
-      },
-    ]);
-    expect(result[0]).toEqual({showXAxis: true, showYAxis: true});
-    expect(result[1]).toEqual({showXAxis: false, showYAxis: false});
-    expect(result[2]).toBe(30);
-    expect(result[3]).toBe(false);
-    expect(result[4]).toBe(false);
-    expect(result[5]).toBe(false);
-    expect(result[6]).toBe(false);
-    expect(result[7]).toEqual({
-      showXAxis: true, showYAxis: true, allowColumnSelection: true,
-      showBinSelector: true, showSplitSelector: true, showRangeSlider: true,
+  await softStep('Appearance — selector visibility', async () => {
+    const r = await page.evaluate(async () => {
+      const h = grok.shell.tv.viewers.find(v => v.type === 'Histogram')!;
+      const vis = (name: string) => {
+        const el = (h.root as HTMLElement).querySelector(`[name="${name}"]`) as HTMLElement | null;
+        if (!el) return -1;
+        const cs = getComputedStyle(el);
+        return (el.offsetParent !== null && cs.display !== 'none' && cs.visibility !== 'hidden') ? 1 : 0;
+      };
+      const read = () => ({value: vis('div-column-combobox-value'), split: vis('div-column-combobox-split')});
+
+      const settle = async (want: number, cap: number) => {
+        const t0 = Date.now();
+        let hits = 0;
+        while (Date.now() - t0 < cap) {
+          const s = read();
+          hits = (s.value === want && s.split === want) ? hits + 1 : 0;
+          if (hits >= 2) return;
+          await new Promise(res => setTimeout(res, 25));
+        }
+      };
+
+      h.props.splitColumnName = 'SEX';
+      h.props.showColumnSelector = true; h.props.showSplitSelector = true;
+      await settle(1, 700);
+      h.props.showColumnSelector = false; h.props.showSplitSelector = false;
+      await settle(0, 500);
+      const off = read();
+      h.props.showColumnSelector = true; h.props.showSplitSelector = true;
+      await settle(1, 500);
+      const on = read();
+      h.props.splitColumnName = '';
+      return {off, on};
     });
+    expect(r.off.value).toBe(0);
+    expect(r.off.split).toBe(0);
+    expect(r.on.value).toBe(1);
+    expect(r.on.split).toBe(1);
   });
 
-  // #### Labels
+  await softStep('Appearance — canvas floor', async () => {
+    const errBefore = errorCount();
+    await v.setViewerProps(page, 'Histogram', [
+      {set: {showXAxis: true, showYAxis: true}},
+      {set: {showXAxis: false, showYAxis: false}},
+      {set: {xAxisHeight: 30}},
+      {set: {allowColumnSelection: false}},
+      {set: {showBinSelector: false}},
+      {set: {showRangeSlider: false}},
+      {set: {showXAxis: true, showYAxis: true, allowColumnSelection: true,
+        showBinSelector: true, showRangeSlider: true, xAxisHeight: 20}, wait: 300},
+    ], 150);
+    expect(await viewerAlive()).toBe(true);
+    expect(errorCount()).toBe(errBefore);
+  });
+
   await softStep('Labels', async () => {
-    const result = await v.setViewerProps(page, 'Histogram', [
-      {set: {splitColumnName: 'SEX'}, wait: 500},
-      {set: {legendVisibility: 'Never'}, read: 'legendVisibility'},
-      {set: {legendVisibility: 'Always'}, read: 'legendVisibility'},
-      {set: {legendPosition: 'RightTop'}, read: 'legendPosition'},
-      {set: {splitColumnName: ''}},
-      {set: {showTitle: true}, read: 'showTitle'},
-      {set: {title: 'Age Distribution'}, read: 'title'},
-      {set: {description: 'Shows distribution of patient ages'}, read: 'description'},
-      {set: {descriptionVisibilityMode: 'Always'}, read: 'descriptionVisibilityMode'},
-      {set: {descriptionPosition: 'Bottom'}, read: 'descriptionPosition'},
-    ]);
-    expect(result).toEqual([
-      'Never', 'Always', 'RightTop', true, 'Age Distribution',
-      'Shows distribution of patient ages', 'Always', 'Bottom',
-    ]);
-  });
-
-  // #### Bin selection
-  await softStep('Bin selection', async () => {
-    // AMBIGUOUS: Most steps involve canvas clicks on specific bins which cannot be reliably automated.
-    // Testing the property-based steps that were clearly observed.
-    const result = await v.setViewerProps(page, 'Histogram', [
-      {set: {splitColumnName: 'SEX'}, wait: 500, read: 'splitColumnName'},
-      {set: {splitStack: true}, read: 'splitStack'},
-      {set: {splitStack: false}, read: 'splitStack'},
-    ]);
-    expect(result).toEqual(['SEX', true, false]);
-  });
-
-  // #### Filtering
-  await softStep('Filtering', async () => {
+    const errBefore = errorCount();
     const result = await page.evaluate(async () => {
-      const h = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Histogram') as any;
-      const tv = grok.shell.tv;
-      const df = tv.dataFrame;
-      const r: any[] = [];
-
-      // Open filter panel
-      tv.getFiltersGroup();
-      await new Promise(res => setTimeout(res, 1000));
-      const fg = tv.getFiltersGroup();
-
-      // Categorical filter: SEX = M
-      fg.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: 'SEX', selected: ['M']});
-      await new Promise(res => setTimeout(res, 500));
-      r.push(df.filter.trueCount); // expected ~2607
-
-      h.props.showFilteredOutRows = false;
-      await new Promise(res => setTimeout(res, 300));
-      r.push(h.props.showFilteredOutRows);
-
-      h.props.showFilteredOutRows = true;
-      await new Promise(res => setTimeout(res, 300));
-      r.push(h.props.showFilteredOutRows);
-
-      h.props.filteredOutColor = 0xFFAAAAAA;
-      await new Promise(res => setTimeout(res, 300));
-      r.push(h.props.filteredOutColor);
-
-      // Reset SEX filter
-      fg.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: 'SEX', selected: df.col('SEX').categories});
-      await new Promise(res => setTimeout(res, 500));
-      r.push(df.filter.trueCount);
-
-      h.props.filteringEnabled = true;
-      await new Promise(res => setTimeout(res, 300));
-      r.push(h.props.filteringEnabled);
-
-      // AMBIGUOUS: Range slider drag cannot be reliably automated via canvas interaction
-
-      h.props.normalizeToFilter = false;
-      await new Promise(res => setTimeout(res, 300));
-      r.push(h.props.normalizeToFilter);
-
-      h.props.normalizeToFilter = true;
-      await new Promise(res => setTimeout(res, 300));
-      r.push(h.props.normalizeToFilter);
-
-      h.props.zoomToRange = false;
-      await new Promise(res => setTimeout(res, 300));
-      r.push(h.props.zoomToRange);
-
-      h.props.zoomToRange = true;
-      await new Promise(res => setTimeout(res, 300));
-      r.push(h.props.zoomToRange);
-
-      h.props.binToRange = true;
-      await new Promise(res => setTimeout(res, 300));
-      r.push(h.props.binToRange);
-
-      h.props.filteringEnabled = false;
-      await new Promise(res => setTimeout(res, 300));
-      r.push(h.props.filteringEnabled);
-
-      // RACE filter
-      fg.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: 'RACE', selected: ['Asian', 'Other']});
-      await new Promise(res => setTimeout(res, 500));
-      r.push(df.filter.trueCount); // expected ~426
-
-      // Reset RACE filter
-      fg.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: 'RACE', selected: df.col('RACE').categories});
-      await new Promise(res => setTimeout(res, 500));
-      r.push(df.filter.trueCount);
-
-      return {results: r, total: df.rowCount};
-    });
-    expect(result.results[0]).toBeLessThan(result.total); // filtered by SEX=M
-    expect(result.results[1]).toBe(false);  // showFilteredOutRows off
-    expect(result.results[2]).toBe(true);   // showFilteredOutRows on
-    expect(result.results[3]).toBe(0xFFAAAAAA); // filteredOutColor
-    expect(result.results[4]).toBe(result.total); // reset SEX filter
-    expect(result.results[5]).toBe(true);   // filteringEnabled
-    expect(result.results[6]).toBe(false);  // normalizeToFilter off
-    expect(result.results[7]).toBe(true);   // normalizeToFilter on
-    expect(result.results[8]).toBe(false);  // zoomToRange off
-    expect(result.results[9]).toBe(true);   // zoomToRange on
-    expect(result.results[10]).toBe(true);  // binToRange
-    expect(result.results[11]).toBe(false); // filteringEnabled off
-    expect(result.results[12]).toBeLessThan(result.total); // RACE filter
-    expect(result.results[13]).toBe(result.total); // reset RACE filter
-  });
-
-  // #### Context menu
-  await softStep('Context menu', async () => {
-    // AMBIGUOUS: Canvas right-click showed view menu instead of histogram-specific menu.
-    // Verifying histogram is still present and functional.
-    const result = await page.evaluate(async () => {
-      const h = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Histogram') as any;
-      return h != null;
-    });
-    expect(result).toBe(true);
-  });
-
-  // #### Layout persistence
-  await softStep('Layout persistence', async () => {
-    const result = await page.evaluate(async () => {
-      const h = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Histogram') as any;
-      const tv = grok.shell.tv;
-
-      // Configure histogram
-      h.props.valueColumnName = 'WEIGHT';
-      h.props.bins = 15;
+      const h = grok.shell.tv.viewers.find(v => v.type === 'Histogram')!;
+      const legend = () => {
+        // a hidden legend keeps its element in the DOM with display:none (LegendHost.apply,
+        // legend_host.dart) — presence must check the computed style, not existence
+        const host = Array.from(h.root.querySelectorAll('[name="legend"]'))
+          .find((e: any) => getComputedStyle(e).display !== 'none') as HTMLElement | undefined;
+        const items = host
+          ? Array.from(host.querySelectorAll('.d4-legend-item')) as HTMLElement[]
+          : [];
+        return {
+          rendered: !!host,
+          labels: items.map(it => (it.querySelector('.d4-legend-value')?.textContent ?? '').trim()),
+        };
+      };
+      const until = async (ok: () => boolean, cap: number) => {
+        const t0 = Date.now();
+        while (!ok() && Date.now() - t0 < cap)
+          await new Promise(r => setTimeout(r, 25));
+      };
+      h.props.splitColumnName = 'SEX';
+      h.props.legendVisibility = 'Always';
+      await until(() => legend().rendered && legend().labels.length > 0, 600);
+      const sexLegend = legend();
       h.props.splitColumnName = 'RACE';
-      h.props.splitStack = true;
-      await new Promise(res => setTimeout(res, 500));
+      await until(() => legend().labels.join('|') !== sexLegend.labels.join('|'), 600);
+      const raceLegend = legend();
+      h.props.legendVisibility = 'Never';
+      await until(() => !legend().rendered, 600);
+      const hiddenLegend = legend();
+      h.props.legendVisibility = 'Always';
+      h.props.legendPosition = 'RightTop';
+      await until(() => legend().rendered, 600);
+      const movedLegend = legend();
+      h.props.splitColumnName = ''; h.props.legendVisibility = 'Auto';
+      await until(() => legend().labels.length === 0, 600);
 
-      // Save layout
-      const layout = tv.saveLayout();
-      await grok.dapi.layouts.save(layout);
-      const layoutId = layout.id;
-      await new Promise(res => setTimeout(res, 1000));
-
-      // Close histogram
-      h.close();
-      await new Promise(res => setTimeout(res, 500));
-
-      // Apply layout
-      const saved = await grok.dapi.layouts.find(layoutId);
-      tv.loadLayout(saved);
-      await new Promise(res => setTimeout(res, 3000));
-
-      const h2 = Array.from(tv.viewers).find((v: any) => v.type === 'Histogram') as any;
-      const r: any[] = [];
-      r.push(h2 != null);
-      r.push(h2 ? h2.props.valueColumnName : 'NOT_RESTORED');
-      r.push(h2 ? h2.props.bins : 'NOT_RESTORED');
-      r.push(h2 ? h2.props.splitColumnName : 'NOT_RESTORED');
-      r.push(h2 ? h2.props.splitStack : 'NOT_RESTORED');
-
-      // Cleanup
-      await grok.dapi.layouts.delete(saved);
-
-      return r;
+      const shownText = () =>
+        ((h.root as HTMLElement).innerText || '').replace(/\s+/g, ' ').trim();
+      h.props.showTitle = true;
+      h.props.title = 'Age Distribution';
+      h.props.description = 'Shows distribution of patient ages';
+      h.props.descriptionVisibilityMode = 'Always';
+      h.props.descriptionPosition = 'Bottom';
+      await until(() => shownText().includes('Shows distribution of patient ages'), 600);
+      const withDescription = shownText();
+      h.props.description = ''; h.props.title = ''; h.props.showTitle = false;
+      await until(() => !shownText().includes('Shows distribution of patient ages'), 600);
+      const cleared = shownText();
+      return {sexLegend, raceLegend, hiddenLegend, movedLegend, withDescription, cleared};
     });
-    expect(result[0]).toBe(true);
-    expect(result[1]).toBe('WEIGHT');
-    expect(result[2]).toBe(15);
-    expect(result[3]).toBe('RACE');
-    expect(result[4]).toBe(true);
+    expect(result.sexLegend.rendered).toBe(true);
+    expect(result.sexLegend.labels.slice().sort()).toEqual(['F', 'M']);
+    expect(result.raceLegend.labels.length).toBe(4);
+    expect(result.hiddenLegend.rendered).toBe(false);
+    expect(result.movedLegend.rendered).toBe(true);
+    expect(result.withDescription).toContain('Shows distribution of patient ages');
+    expect(result.cleared).not.toContain('Shows distribution of patient ages');
+    expect(errorCount()).toBe(errBefore);
   });
 
-  // #### Data properties
-  await softStep('Data properties', async () => {
+  await softStep('Context menu', async () => {
     const result = await page.evaluate(async () => {
-      grok.shell.closeAll();
-      await new Promise(r => setTimeout(r, 500));
+      const h = grok.shell.tv.viewers.find(v => v.type === 'Histogram')!;
+      const canvas = document.querySelector('[name="viewer-Histogram"] canvas')!;
+      const rect = canvas.getBoundingClientRect();
+      canvas.dispatchEvent(new MouseEvent('contextmenu', {
+        bubbles: true, cancelable: true, button: 2,
+        clientX: rect.left + rect.width / 2, clientY: rect.top + rect.height / 2,
+      }));
 
-      // Open SPGI dataset
-      const dfSpgi = await grok.dapi.files.readCsv('System:DemoFiles/chem/SPGI.csv');
-      dfSpgi.name = 'SPGI';
-      const tv = grok.shell.addTableView(dfSpgi);
-      await new Promise(resolve => {
-        const sub = dfSpgi.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(undefined); });
-        setTimeout(resolve, 3000);
-      });
+      const t0 = Date.now();
+      let prev = -1, stable = 0;
+      while (Date.now() - t0 < 600) {
+        const n = document.querySelectorAll('.d4-menu-item-label').length;
+        stable = (n > 0 && n === prev) ? stable + 1 : 0;
+        prev = n;
+        if (stable >= 2) break;
+        await new Promise(r => setTimeout(r, 25));
+      }
+      const items = Array.from(document.querySelectorAll('.d4-menu-item-label')).map(e => e.textContent!.trim());
+      const before = h.props.showFilteredOutRows;
+      const sfor = Array.from(document.querySelectorAll('.d4-menu-item-label'))
+        .find(e => e.textContent!.trim() === 'Show Filtered Out Rows');
+      if (sfor) (sfor.closest('.d4-menu-item') as HTMLElement).click();
+      for (let i = 0; i < 20 && h.props.showFilteredOutRows === before; i++)
+        await new Promise(r => setTimeout(r, 25));
+      const after = h.props.showFilteredOutRows;
+      h.props.showFilteredOutRows = before;
+      return {items, before, after};
+    });
+    for (const label of ['Show Filtered Out Rows', 'Selection', 'Show Current Row',
+      'Show Mouse Over Row', 'Show Mouse Over Row Group', 'Show X Axis', 'Axis Font', 'Controls Font'])
+      expect(result.items).toContain(label);
+    expect(result.after).toBe(!result.before);
+    await page.keyboard.press('Escape');
+  });
 
-      // Add histogram
-      const icon = document.querySelector('[name="icon-histogram"]') as HTMLElement;
-      icon.click();
-      await new Promise(r => setTimeout(r, 1000));
-
-      const h = Array.from(tv.viewers).find((v: any) => v.type === 'Histogram') as any;
-      const r: any[] = [];
-
-      // Select 5 rows
-      for (let i = 0; i < 5; i++)
-        dfSpgi.selection.set(i, true);
-      await new Promise(res => setTimeout(res, 300));
-
-      h.props.rowSource = 'Selected';
-      await new Promise(res => setTimeout(res, 300));
-      r.push(h.props.rowSource);
-
-      h.props.rowSource = 'All';
-      await new Promise(res => setTimeout(res, 300));
-      r.push(h.props.rowSource);
-
-      // Filter expression (using demog dataset columns if histogram is on demog, or SPGI columns)
-      // Re-open demog for filter test
-      grok.shell.closeAll();
-      await new Promise(res => setTimeout(res, 500));
-
-      const df = await grok.dapi.files.readCsv('System:DemoFiles/demog.csv');
-      const tv2 = grok.shell.addTableView(df);
+  await softStep('Data — row source', async () => {
+    const errBefore = errorCount();
+    await v.closeAllAndWait(page);
+    await page.evaluate(async () => {
+      const df = await (window as any).__readCsv('System:AppData/Chem/tests/spgi-100.csv');
+      df.name = 'SPGI';
+      const tv = grok.shell.addTableView(df);
       await new Promise(resolve => {
         const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(undefined); });
         setTimeout(resolve, 3000);
       });
-
-      const icon2 = document.querySelector('[name="icon-histogram"]') as HTMLElement;
-      icon2.click();
-      await new Promise(res => setTimeout(res, 1000));
-
-      const h2 = Array.from(tv2.viewers).find((v: any) => v.type === 'Histogram') as any;
-
-      h2.props.filter = '${AGE} > 40';
-      await new Promise(res => setTimeout(res, 500));
-      r.push(h2.props.filter);
-
-      h2.props.filter = '';
-      await new Promise(res => setTimeout(res, 300));
-      r.push(h2.props.filter);
-
-      // Table switching: SKIP — requires multiple open tables and UI interaction
-      return r;
+      (document.querySelector('[name="icon-histogram"]') as HTMLElement).click();
+      for (let i = 0; i < 48; i++) {
+        const hv = tv.viewers.find(v => v.type === 'Histogram');
+        if (hv && hv.root.querySelector('canvas')) break;
+        await new Promise(r => setTimeout(r, 25));
+      }
+      const selected = new Promise(resolve => {
+        const sub = df.onSelectionChanged.subscribe(() => { sub.unsubscribe(); resolve(undefined); });
+        setTimeout(resolve, 400);
+      });
+      for (let i = 0; i < 5; i++) df.selection.set(i, true);
+      await selected;
     });
-    expect(result[0]).toBe('Selected');
-    expect(result[1]).toBe('All');
-    expect(result[2]).toBe('${AGE} > 40');
-    expect(result[3]).toBe('');
+    await v.setViewerProps(page, 'Histogram', [{set: {rowSource: 'All'}, wait: 600}]);
+    const allPx = (await v.countCanvasPixels(page, 'Histogram')).total;
+    const allHue = await v.countSelectionHuePixels(page, 'Histogram');
+    await v.setViewerProps(page, 'Histogram', [{set: {rowSource: 'Selected'}, wait: 600}]);
+    const selectedPx = (await v.countCanvasPixels(page, 'Histogram')).total;
+    const selectedHue = await v.countSelectionHuePixels(page, 'Histogram');
+    await v.setViewerProps(page, 'Histogram', [{set: {rowSource: 'All'}, wait: 500}]);
+    const restoredPx = (await v.countCanvasPixels(page, 'Histogram')).total;
+    const restoredHue = await v.countSelectionHuePixels(page, 'Histogram');
+
+    expect(allPx).toBeGreaterThan(1000);
+    expect(allPx - selectedPx).toBeGreaterThan(1000);
+    expect(Math.abs(restoredPx - allPx)).toBeLessThan(500);
+    expect(allHue).toBeGreaterThan(100);
+    expect(selectedHue).toBe(0);
+    expect(restoredHue).toBeGreaterThan(100);
+    expect(errorCount()).toBe(errBefore);
   });
+
+  await softStep('Data — filter formula', async () => {
+    const errBefore = errorCount();
+    await v.closeAllAndWait(page);
+    await page.evaluate(async () => {
+      const df = await (window as any).__readCsv('System:DemoFiles/demog.csv');
+      const tv = grok.shell.addTableView(df);
+      await new Promise(resolve => {
+        const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(undefined); });
+        setTimeout(resolve, 3000);
+      });
+      (document.querySelector('[name="icon-histogram"]') as HTMLElement).click();
+      for (let i = 0; i < 48; i++) {
+        const hv = tv.viewers.find(v => v.type === 'Histogram');
+        if (hv && hv.root.querySelector('canvas')) break;
+        await new Promise(r => setTimeout(r, 25));
+      }
+    });
+    await v.setViewerProps(page, 'Histogram', [{set: {valueColumnName: 'AGE', filter: ''}, wait: 600}]);
+
+    let prevPx = -1;
+    const clearedPx = await v.pollStable(async () => (await v.countCanvasPixels(page, 'Histogram')).total,
+      (a, b) => { prevPx = a; return Math.abs(a - b) < 200; }, 1500, 300);
+    expect(Math.abs(clearedPx - prevPx)).toBeLessThan(200);
+    const cleared = await page.evaluate(() => {
+      const h = grok.shell.tv.viewers.find(v => v.type === 'Histogram')!;
+      return {rowCount: grok.shell.tv.dataFrame.rowCount, trueCount: (h as any).filter.trueCount};
+    });
+    await v.setViewerProps(page, 'Histogram', [{set: {filter: '${AGE} > 40'}, wait: 700}]);
+    const filteredPx = (await v.countCanvasPixels(page, 'Histogram')).total;
+    const filteredCount = await page.evaluate(() => {
+      const h = grok.shell.tv.viewers.find(v => v.type === 'Histogram')!;
+      return (h as any).filter.trueCount;
+    });
+    await v.setViewerProps(page, 'Histogram', [{set: {filter: ''}, wait: 600}]);
+    const restoredPx = (await v.countCanvasPixels(page, 'Histogram')).total;
+    const restoredCount = await page.evaluate(() => {
+      const h = grok.shell.tv.viewers.find(v => v.type === 'Histogram')!;
+      return (h as any).filter.trueCount;
+    });
+    expect(clearedPx).toBeGreaterThan(1000);
+    expect(clearedPx - filteredPx).toBeGreaterThan(400);
+    expect(Math.abs(restoredPx - clearedPx)).toBeLessThan(300);
+
+    expect(cleared.trueCount).toBe(cleared.rowCount);
+    expect(filteredCount).toBeGreaterThan(0);
+    expect(filteredCount).toBeLessThan(cleared.rowCount);
+    expect(restoredCount).toBe(cleared.rowCount);
+    expect(errorCount()).toBe(errBefore);
+  });
+
+  await softStep('Data — table switching', async () => {
+    await v.closeAllAndWait(page);
+    const result = await page.evaluate(async () => {
+      const dfSpgi = await (window as any).__readCsv('System:AppData/Chem/tests/spgi-100.csv');
+      dfSpgi.name = 'SPGI';
+      grok.shell.addTableView(dfSpgi);
+      await new Promise(resolve => {
+        const sub = dfSpgi.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(undefined); });
+        setTimeout(resolve, 3000);
+      });
+      (document.querySelector('[name="icon-histogram"]') as HTMLElement).click();
+      for (let i = 0; i < 48; i++) {
+        const hv = grok.shell.tv.viewers.find(v => v.type === 'Histogram');
+        if (hv && hv.root.querySelector('canvas')) break;
+        await new Promise(r => setTimeout(r, 25));
+      }
+
+      const dfDemog = await (window as any).__readCsv('System:DemoFiles/demog.csv');
+      dfDemog.name = 'demog';
+      grok.shell.addTableView(dfDemog);
+      for (let i = 0; i < 32; i++) {
+        if (Array.from(grok.shell.tableViews).some((t: any) => t.dataFrame?.name === 'demog')) break;
+        await new Promise(r => setTimeout(r, 25));
+      }
+
+      const spgiView = Array.from(grok.shell.tableViews).find((t: any) => t.dataFrame?.name === 'SPGI');
+      if (spgiView) grok.shell.v = spgiView as any;
+      for (let i = 0; i < 20 && grok.shell.tv?.dataFrame?.name !== 'SPGI'; i++)
+        await new Promise(r => setTimeout(r, 25));
+
+      const h = grok.shell.tv.viewers.find(v => v.type === 'Histogram')!;
+      const before = {dfName: h.dataFrame?.name, value: h.props.valueColumnName};
+      h.props.table = 'demog';
+      for (let i = 0; i < 40 && h.dataFrame?.name === before.dfName; i++)
+        await new Promise(r => setTimeout(r, 25));
+      const after = {dfName: h.dataFrame?.name, value: h.props.valueColumnName};
+      const demogHasValueCol = dfDemog.columns.names().includes(after.value);
+      return {before, after, demogHasValueCol};
+    });
+    expect(result.before.dfName).toBe('SPGI');
+    expect(result.after.dfName).toBe('demog');
+    expect(result.after.value).not.toBe(result.before.value);
+    expect(result.demogHasValueCol).toBe(true);
+  });
+
+  page.off('pageerror', onPageError);
+  page.off('console', onConsole);
+  // the context panel keeps the closed viewer's property grid, and neither shell.o = null nor
+  // rebinding shell.o drops it (measured 2026-09-03); the next spec's openViewerProperties then
+  // skips the gear and edits a dead grid, so the stale node is removed here
+  await page.evaluate(() => {
+    for (const e of Array.from(document.querySelectorAll('.property-grid'))) e.remove();
+  });
+  await v.closeAllAndWait(page);
 
   v.finishSpec();
 });

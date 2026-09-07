@@ -1,7 +1,8 @@
 /* ---
 generated_from: lifecycle-api.md (no MCP) — references: projects.md
 --- */
-import {test, expect} from '@playwright/test';
+import {expect} from '@playwright/test';
+import {test} from '../shared-page';
 import {softStep, stepErrors} from '../spec-login';
 import {projectsTestOptions, evalJs, gotoApp, deleteProjectByName} from './_helpers';
 
@@ -60,12 +61,12 @@ test('Projects / Lifecycle API contract', async ({page}) => {
 
     await softStep('S2: batch save 3 projects with shared prefix', async () => {
       await evalJs(page, `(async () => {
-        for (const n of ${JSON.stringify(batchNames)}) {
+        await Promise.all(${JSON.stringify(batchNames)}.map(n => {
           const p = DG.Project.create();
           p.friendlyName = n;
           p.name = n;
-          await grok.dapi.projects.save(p);
-        }
+          return grok.dapi.projects.save(p);
+        }));
       })()`);
       const cnt = await evalJs<number>(page,
         `grok.dapi.projects.filter('name like "${batchPrefix}%"').count()`);
@@ -84,7 +85,7 @@ test('Projects / Lifecycle API contract', async ({page}) => {
     await softStep('S2 cleanup: delete batch, verify count returns to 0', async () => {
       await evalJs(page, `(async () => {
         const arr = await grok.dapi.projects.filter('name like "${batchPrefix}%"').list();
-        for (const p of arr) await grok.dapi.projects.delete(p);
+        await Promise.all(arr.map(p => grok.dapi.projects.delete(p)));
       })()`);
       const cnt = await evalJs<number>(page,
         `grok.dapi.projects.filter('name like "${batchPrefix}%"').count()`);
@@ -100,8 +101,7 @@ test('Projects / Lifecycle API contract', async ({page}) => {
           return {rejected: true};
         }
       })()`);
-      // Contract is "rejects"; some servers may return success-with-noop.
-      // Treat both as acceptable provided a subsequent find returns null.
+
       expect([true, false]).toContain(r.rejected);
     });
   } finally {

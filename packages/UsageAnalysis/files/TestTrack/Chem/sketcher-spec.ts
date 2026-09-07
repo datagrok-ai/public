@@ -1,6 +1,8 @@
-import {test, expect} from '@playwright/test';
+import {expect} from '@playwright/test';
+import {test} from '../shared-page';
 import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
+import {waitForChemMenuRoot, waitQuiet} from './chem-fast-helpers';
 
 test.use(specTestOptions);
 
@@ -8,7 +10,7 @@ test('Chem: Sketcher Favorites + Recent + Copy as SMILES/MOLBLOCK + input round-
   test.setTimeout(360_000);
 
   await loginToDatagrok(page);
-  await page.waitForTimeout(3000);
+  await waitForChemMenuRoot(page);
 
   await softStep('Step 1: Open smiles-50.csv + Molecule semType ready', async () => {
     await page.evaluate(async () => {
@@ -43,9 +45,17 @@ test('Chem: Sketcher Favorites + Recent + Copy as SMILES/MOLBLOCK + input round-
       const dialog = document.querySelector('.d4-dialog')!;
       const hamburger = dialog.querySelector('.fa-bars, [name="icon-font-icon-menu"], .grok-icon.fa-bars') as HTMLElement | null;
       if (!hamburger) return {ok: false, reason: 'hamburger icon not found'};
+      // Labels from a previously opened menu stay in the document, so a bare count check reads the
+      // OLD menu (the grid's Edit menu) and the assertions below then look for Favorites in it.
+      // Only nodes that were not already there belong to this hamburger's menu.
+      const stale = new Set(Array.from(document.querySelectorAll('.d4-menu-item-label')));
+      const fresh = () => Array.from(document.querySelectorAll('.d4-menu-item-label')).filter(l => !stale.has(l));
       hamburger.click();
-      await new Promise(r => setTimeout(r, 1200));
-      const labels = Array.from(document.querySelectorAll('.d4-menu-item-label')).map(l => l.textContent!.trim());
+      const deadline = Date.now() + 1200;
+      while (Date.now() < deadline && fresh().length === 0)
+        await new Promise(r => setTimeout(r, 25));
+      const nodes = fresh().length ? fresh() : Array.from(document.querySelectorAll('.d4-menu-item-label'));
+      const labels = nodes.map(l => l.textContent!.trim());
       return {ok: true, labels};
     });
     expect((items as any).ok, `Hamburger menu: ${JSON.stringify(items)}`).toBe(true);
@@ -84,13 +94,16 @@ test('Chem: Sketcher Favorites + Recent + Copy as SMILES/MOLBLOCK + input round-
     await smilesInput.click();
     await smilesInput.fill('C1CCCCC1');
     await smilesInput.press('Enter');
-    await page.waitForTimeout(2000);
+    await waitQuiet(page.waitForFunction(() => {
+      const i = document.querySelector('.d4-dialog input[placeholder*="SMILES" i]') as HTMLInputElement | null;
+      return !!i && i.value.trim() === 'C1CCCCC1';
+    }, null, {timeout: 2000, polling: 100}));
     const value = await smilesInput.inputValue();
     expect(value).toBe('C1CCCCC1');
   });
 
   await softStep('Step 6: SR-DEFERRED close+reopen cycle — ui.dialog wrapper has no OK/CANCEL', async () => {
-    // SR-DEFERRED: ui.dialog-wrapped sketcher has no OK/CANCEL button, so close-and-reopen (steps 6-7) can't be driven.
+
   });
 
   await softStep('Step 8-9: Click Copy as SMILES/MOLBLOCK on still-open dialog (best-effort)', async () => {
@@ -113,12 +126,11 @@ test('Chem: Sketcher Favorites + Recent + Copy as SMILES/MOLBLOCK + input round-
       await new Promise(r => setTimeout(r, 600));
       return {ok: true, copyAsSmilesFound: !!smilesItem, copyAsMolFound: !!molItem};
     });
-    // If the ui.dialog-wrapped sketcher closed after Step 5 (no OK/CANCEL to keep it open), this
-    // leg can't be driven — a documented soft-skip, not a pass-on-broken.
+
     if ((result as any).ok === 'soft-skip') {
       console.log(`[sketcher] Copy-as step skipped: ${JSON.stringify(result)}`);
     } else {
-      // Dialog still open: the Copy as SMILES / MOLBLOCK menu items must actually be present.
+
       expect((result as any).copyAsSmilesFound,
         `Copy as SMILES menu item not found: ${JSON.stringify(result)}`).toBe(true);
       expect((result as any).copyAsMolFound,
@@ -133,7 +145,7 @@ test('Chem: Sketcher Favorites + Recent + Copy as SMILES/MOLBLOCK + input round-
         if (cancel) (cancel as HTMLElement).click();
       });
     });
-    await page.waitForTimeout(1000);
+    await waitQuiet(page.locator('.d4-dialog').first().waitFor({state: 'detached', timeout: 1000}));
     const errs = await page.evaluate(() => ((window as any).__sk_errors ?? []) as string[]);
     const sketcherErrs = errs.filter(e => /sketcher|chem\.sketcher|copy as/i.test(e));
     expect(sketcherErrs.length,

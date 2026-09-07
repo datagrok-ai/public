@@ -1,8 +1,12 @@
+/* ---
+realizes: [viewers.line-chart]
+--- */
 // GROK-17278: legend color customizations serialize into both layout and project state.
 
-import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
+import {test, expect} from '../../shared-page';
+import {openDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
 import * as v from '../../helpers/viewers';
+import {deleteEntities} from './persistence';
 
 test.use(specTestOptions);
 
@@ -10,18 +14,23 @@ test('GROK-17278: line chart legend color persists across layout + project round
   test.setTimeout(900_000);
   stepErrors.length = 0;
 
-  await loginToDatagrok(page);
+  await openDatagrok(page);
   await v.openTable(page);
+  await v.installEventWaits(page);
 
   await softStep('Steps 2-3: add Line chart, Split = Stereo Category', async () => {
     const items = await page.evaluate(async () => {
+      const w = window as any;
       const tv = (window as any).grok.shell.tv;
       tv.addViewer('Line chart');
-      await new Promise((r) => setTimeout(r, 1000));
+      await w.__poll(() => (window as any).grok.shell.tv.viewers.filter((x: any) => x.type === 'Line chart').length,
+        (c: number) => c > 0, 1000);
       const lc = tv.viewers.find((x: any) => x.type === 'Line chart');
       lc.props.splitColumnName = 'Stereo Category';
       try { lc.props.legendVisibility = 'Always'; } catch (_) {}
-      await new Promise((r) => setTimeout(r, 1500));
+      let prev = -1;
+      await w.__poll(() => lc.root.querySelectorAll('[name="legend"] .d4-legend-item').length,
+        (c: number) => { const settled = c > 0 && c === prev; prev = c; return settled; }, 1500);
       return lc.root.querySelectorAll('[name="legend"] .d4-legend-item').length;
     });
     expect(items).toBeGreaterThan(0);
@@ -51,11 +60,17 @@ test('GROK-17278: line chart legend color persists across layout + project round
       const layout = tv.saveLayout();
       layout.name = 'GROK17278_' + Date.now();
       try {
-        const saved = await withTimeout((window as any).grok.dapi.layouts.save(layout), 30000, 'layouts.save');
-        await new Promise((r) => setTimeout(r, 1000));
-        const found = await withTimeout((window as any).grok.dapi.layouts.find(saved.id), 15000, 'layouts.find');
+        const w = window as any;
+        const saved = await withTimeout(w.grok.dapi.layouts.save(layout), 30000, 'layouts.save');
+        const found = await w.__findSaved(
+          () => withTimeout(w.grok.dapi.layouts.find(saved.id), 15000, 'layouts.find'));
+        const gen = w.__viewerGen();
         tv.loadLayout(found);
-        await new Promise((r) => setTimeout(r, 3500));
+        await w.__rebuilt(gen, () => {
+          const c = w.grok.shell.tv?.dataFrame?.col('Stereo Category');
+          const t = JSON.parse(c?.tags['.color-coding-categorical'] ?? '{}');
+          return String(t['R_ONE'] ?? '').toLowerCase();
+        }, 4500);
         const col = (window as any).grok.shell.tv.dataFrame.col('Stereo Category');
         const t = JSON.parse(col.tags['.color-coding-categorical'] ?? '{}');
         return {layoutId: saved.id, ok: true, rOneAfterReload: String(t['R_ONE'] ?? '').toLowerCase()};
@@ -71,32 +86,46 @@ test('GROK-17278: line chart legend color persists across layout + project round
   let projectId: string | null = null;
   await softStep('Steps 6-8 + Step 8 invariant: project save+closeAll+reopen, R_ONE remains blue', async () => {
     const res = await page.evaluate(async () => {
+      const w = window as any;
       let pid: string | null = null;
       try {
+        const grok = (window as any).grok;
         const DG = (window as any).DG;
+        const tv = grok.shell.tv;
+        const df = tv.dataFrame;
         const proj = DG.Project.create();
         proj.name = 'GROK17278Proj_' + Date.now();
-        const df = (window as any).grok.shell.tv.dataFrame;
         const tableInfo = df.getTableInfo();
+        const viewInfo = tv.getInfo();
         proj.addChild(tableInfo);
-        // The relation points at the table ENTITY, so it has to exist server-side before the
-        // project is saved — otherwise project_relations.entity_id has nothing to reference.
-        await (window as any).grok.dapi.tables.uploadDataFrame(df);
-        await (window as any).grok.dapi.tables.save(tableInfo);
-        const saved = await (window as any).grok.dapi.projects.save(proj);
+        proj.addChild(viewInfo);
+        // a relation must point at an entity already persisted server-side, or projects.save
+        // throws a project_relations FK violation — upload/save the table and view first
+        await grok.dapi.tables.uploadDataFrame(df);
+        await grok.dapi.tables.save(tableInfo);
+        await grok.dapi.views.save(viewInfo);
+        const saved = await grok.dapi.projects.save(proj);
         pid = saved.id;
       } catch (e: any) {
         return {phase: 'save', ok: false, error: String(e).slice(0, 200)};
       }
       (window as any).grok.shell.closeAll();
-      await new Promise((r) => setTimeout(r, 1200));
+      await w.__poll(() => Array.from((window as any).grok.shell.tableViews).length,
+        (c: number) => c === 0, 1200);
       try {
         const reopened = await (window as any).grok.dapi.projects.find(pid);
         await reopened.open();
       } catch (e: any) {
         return {phase: 'reopen', ok: false, error: String(e).slice(0, 200), projectId: pid};
       }
-      await new Promise((r) => setTimeout(r, 3500));
+      // a reopened project lands the view, the dataFrame and the restored look in that
+      // order, so readiness is the table and the settle is on what the step reads
+      await w.__tableReady(3500);
+      await w.__settledFor(() => {
+        const c = w.grok.shell.tv?.dataFrame?.col('Stereo Category');
+        const t = JSON.parse(c?.tags['.color-coding-categorical'] ?? '{}');
+        return String(t['R_ONE'] ?? '').toLowerCase();
+      }, 250, 1500, 25);
       const tv = (window as any).grok.shell.tv;
       if (!tv) return {phase: 'reopen', ok: false, error: 'no tv after reopen', projectId: pid};
       const col = tv.dataFrame.col('Stereo Category');
@@ -112,12 +141,7 @@ test('GROK-17278: line chart legend color persists across layout + project round
   });
 
   await softStep('Cleanup', async () => {
-    await page.evaluate(async ([lid, pid]: [string | null, string | null]) => {
-      if (lid) try { await (window as any).grok.dapi.layouts.delete(await (window as any).grok.dapi.layouts.find(lid)); } catch (_) {}
-      if (pid) try { await (window as any).grok.dapi.projects.delete(await (window as any).grok.dapi.projects.find(pid)); } catch (_) {}
-      (window as any).grok.shell.closeAll();
-      await new Promise((r) => setTimeout(r, 500));
-    }, [layoutId, projectId]);
+    await deleteEntities(page, {layoutIds: [layoutId], projectId});
   });
 
   v.finishSpec();

@@ -1,13 +1,78 @@
 ---
 feature: barchart
 target_layer: playwright
+boot_lane: mixed
 coverage_type: regression
 priority: p2
 realizes_atlas: []
 realizes: [viewers.bar-chart]
 realized_as:
   - bar-chart-spec.ts
+  - bar-chart-server-spec.ts
 related_bugs: []
+expected_results:
+  - anchor: "Color coding"
+    expectation: >-
+      Setting Color Column to HEIGHT recolors the bars (canvas per-color delta
+      well above the settle noise), and toggling Invert Color Scheme reverses the
+      gradient with a second measurable recolor; Color Column reads back empty
+      after reset.
+  - anchor: "Include nulls"
+    expectation: >-
+      With a split column carrying missing values (HEIGHT, 751 nulls), toggling
+      Include Nulls off removes the "missing" bar and back on restores it — each
+      toggle produces a large canvas repaint delta.
+  - anchor: "Bar style"
+    expectation: >-
+      Setting Bar Border Line Width 0 → 2 and Max Bar Height 50 → 20 each repaint
+      the chart (canvas delta above the settle floor); the remaining style props
+      read back their assigned values.
+  - anchor: "Labels"
+    expectation: >-
+      Switching Show Labels from inside to never removes the in-bar value labels,
+      changing the canvas; the other label modes read back correctly.
+  - anchor: "Controls visibility"
+    expectation: >-
+      Turning the show*Selector props off collapses the in-chart value/category/
+      stack selector nodes (computed display none, count 0) and turning them on
+      lays them out again (count > 0).
+  - anchor: "Aggregation types"
+    expectation: >-
+      Changing Value Aggr Type avg → max re-scales every bar and rebinding the
+      value column AGE → WEIGHT re-scales again — both produce a measurable
+      canvas delta; the props read back correctly.
+  - anchor: "Legend position"
+    expectation: >-
+      Setting a Stack column materializes the legend host (absent before, present
+      with ≥ 2 items after) and clearing the Stack column removes it again — a DOM
+      round-trip; Legend Position reads back each of Left/Right/Top/Bottom.
+  - anchor: "Title and description"
+    expectation: >-
+      With Show Title on, the title text "Demographics" appears in the viewer's
+      panel titlebar and the description "By race" appears in the viewer body
+      (DOM text asserts).
+  - anchor: "Show values instead of categories"
+    expectation: >-
+      Enabling Show Values Instead Of Categories repaints the category axis strip
+      (canvas delta above the settle floor); the prop reverts cleanly.
+  - anchor: "Context menu"
+    expectation: >-
+      Right-clicking the bar chart canvas opens its context menu; the menu tree
+      is materialized into the DOM, so the bar-chart-specific labels (Reset View,
+      Orientation, On Click, Order, Controls, Selection, Show Value Axis, Show
+      Category Values, Show Selected Rows, Include Nulls, Axis Type, Legend
+      Visibility, Legend Position) are all present, and toggling Show Value Axis
+      from the menu round-trips the prop.
+  - anchor: "Data panel"
+    expectation: >-
+      Row Source cycles through Filtered/Selected/All, the chart rebinds to the
+      spgi-100 table, the filter and color-column apply, and after save → close →
+      reload the layout restores both the color column and the filter (honest
+      layout round-trip).
+  - anchor: "No page errors"
+    expectation: >-
+      Across the whole run, no uncaught page errors and no console errors were
+      collected — the spec-wide no-error floor.
 ---
 
 # Bar chart tests (Playwright)
@@ -16,32 +81,6 @@ All scenarios should start with the following sequence of events:
 1. Close all
 2. Open demog
 3. Add Bar chart
-
-## Stack column
-
-1. Open Context Panel > **Stack** > set Stack to SEX — bars should split into stacked segments
-2. Set Stack to RACE — stacked segments should update to race categories
-3. Enable **Value > Relative Values** — all bars should become the same width
-4. Disable **Relative Values** — bars return to absolute widths
-5. Set Stack to None — stacking removed
-
-## Sorting
-
-1. Set Split to RACE
-2. Open Context Panel > **Value > Bar Sort Type** > set to **by value** — bars should reorder by height
-3. Set **Bar Sort Order** to **asc** — shortest bar first
-4. Set **Bar Sort Order** to **desc** — tallest bar first
-5. Set **Bar Sort Type** to **by category** — bars reorder alphabetically
-6. Set **Bar Sort Order** to **asc** — A-Z order
-7. Set **Bar Sort Order** to **desc** — Z-A order
-
-## Value axis type
-
-1. Set Value to HEIGHT, Split to RACE
-2. Open Context Panel > **Value > Axis Type** > set to **log** — value axis switches to logarithmic scale
-3. Set **Axis Type** back to **linear** — axis returns to normal
-4. Set custom **Min** and **Max** values — bars should clip to the specified range
-5. Clear Min and Max — auto range restored
 
 ## Color coding
 
@@ -54,7 +93,8 @@ All scenarios should start with the following sequence of events:
 
 ## Include nulls
 
-1. Set Split to a column that has missing values
+1. Set Split to a column that has missing values (HEIGHT — 751 nulls in demog;
+   the categorical columns have none)
 2. Open Context Panel > **Value > Include Nulls** — enabled by default, a "missing" bar should appear
 3. Disable **Include Nulls** — the missing values bar should disappear
 4. Re-enable — bar reappears
@@ -90,27 +130,14 @@ All scenarios should start with the following sequence of events:
 ## Aggregation types
 
 1. Set Split to RACE, Value to AGE
-2. Set **Value Aggr Type** to **avg** — bars show average AGE per category
-3. Switch to **min** — bars show minimum values
-4. Switch to **max** — bars show maximum values
-5. Switch to **sum** — bars show sum values
-6. Switch to **count** — bars show row counts
-7. Set Value to WEIGHT, Aggr Type back to **avg** — bars show average weight
+2. Set **Value Aggr Type** to **max** — bars show maximum AGE per category
+3. Set Value to WEIGHT — bars rebind to the new value column
 
-## Date/time split column
+## Legend position
 
-1. Set Split to STARTED — bars should group by date
-2. Open Context Panel > **Category > Split Map** > set to **Year** — bars group by year
-3. Change Split Map to **Month** — bars group by month
-4. Change to **Quarter** — bars group by quarter
-
-## Legend
-
-1. Set Stack to SEX — legend should appear showing stack categories
-2. Open Context Panel > **Legend > Legend Visibility** > set to **Always** — legend is always visible
-3. Set **Legend Position** to different positions (Left, Right, Top, Bottom) — legend moves
-4. Set Legend Visibility to **Never** — legend hides
-5. Remove Stack column — legend should disappear automatically
+1. Set Stack to SEX and Legend Visibility to **Always** — legend appears
+2. Set **Legend Position** to Left, Right, Top, Bottom — legend moves to each position
+3. Remove Stack column — legend disappears automatically
 
 ## Title and description
 
@@ -126,42 +153,73 @@ All scenarios should start with the following sequence of events:
 2. Open Context Panel > **Category > Show Values Instead Of Categories** — category labels switch to show aggregated values
 3. Disable — category names return
 
-## Orientation
+## Context menu
 
-1. Open Context Panel > **Orientation** > set to **horizontal** — bars render horizontally
-2. Set to **vertical** — bars render vertically (rotated 90 degrees)
-3. Set to **auto** — orientation chosen automatically based on viewer aspect ratio
+1. Set Split to RACE, Value to AGE, Stack to SEX
+2. Right-click the chart area — the full context menu appears with the bar-chart
+   groups (Reset View, Orientation, On Click, Order, Controls, Selection) and the
+   property tree (Show Value Axis, Show Category Values, Include Nulls, Axis Type,
+   Legend Visibility, Legend Position)
+3. Click **Show Value Axis** from the menu — the prop toggles
 
-## Data panel (SPGI dataset)
+## Data panel
 
-Setup: Close all, open demog and SPGI 
+Setup: Close all, open both demog and full spgi-100 (System:AppData/Chem/tests/spgi-100.csv)
 
 1. Go to the demog table
 2. Add Bar chart
 3. Open Context Panel > **Data > Row Source** — switch between All, Selected, Filtered
-4. On the Context Panel > Data > Table, switch table to SPGI — bar chart should rebind to new table
-5. Set **Filter** to `${CAST Idea ID} < 636500` — chart should show only matching rows
+4. On the Context Panel > Data > Table, switch table to spgi-100 — bar chart should rebind to new table
+5. Set **Filter** to `${CAST Idea ID} < 634835` — chart should show only matching rows
 6. Set **Color > Color Column** to Chemical Space Y
 7. Save layout via JS API
 8. Close viewer
 9. Apply the saved layout — filter, color coding, and all settings should restore
 10. Delete the saved layout
 
-## Filter Panel interaction
+## Automation notes
 
-1. Open the Filter Panel
-2. Apply a categorical filter — verify the bar chart updates
-3. Apply a numeric filter — verify collaborative filtering between the Filter Panel and bar chart
-4. Remove all filters
+Color coding: the recolor is asserted through the **Color Column** = HEIGHT
+and **Invert Color Scheme** canvas repaints. The **Color Aggr Type** min/max/med
+cycle is left read-back-only — each aggregation does recolor the bars, but the
+per-aggr canvas delta is not separately asserted; the two anchored repaints carry
+the visual proof.
 
-## Scrolling with range slider
+Bar style: exact bar width/thickness is not
+pixel-measurable headless, so the **Max Bar Height** and **Bar Border Line
+Width** changes are asserted through the per-color canvas repaint delta
+(`snapshotCanvasColors` + `diffCanvasColors`, with a settle-precheck to drain
+the late render before measuring) rather than a geometric width read — the
+delta is the drivable proxy for "the bars visibly changed". A precise width
+check stays a human-side variation. **Bar Corner Radius**, **Vertical Align**
+(Top/Bottom/Center), and **Show Category Zero Baseline** off are left
+read-back-only: their on-canvas effect is a human-side variation, so the spec
+covers them by property read-back rather than a canvas delta.
 
-1. Set Split to a column with many categories (e.g., Primary Scaffold Name)
-2. Use the vertical range slider to scroll through the categories — verify bars scroll smoothly
-3. Set Value to CAST Idea ID — verify scrolling still works with the new value column
+Labels: the **inside → never** transition is asserted through the canvas
+repaint (the in-bar label glyphs vanish). The **outside** and **auto** modes are
+left read-back-only — the never transition carries the visual proof.
+
+Controls visibility: the value/category/stack in-chart selectors
+are DOM nodes whose computed `display` toggles (flex ↔ none) with the
+show*Selector props — asserted by counting the laid-out selector nodes (3 when
+on, 0 when off). **Show Value Axis** and **Show Category
+Values** are canvas-drawn — they toggle no DOM node, so they
+stay covered by the property read-back; their on-canvas appearance is a
+human-side variation.
+
+Context menu: right-clicking the bar chart canvas opens its context menu, whose
+entire tree (top-level groups and their children) is materialized into the DOM as
+`.d4-menu-item-label` nodes at once — so the composition is asserted by reading the
+flat label list rather than expanding each submenu. The manual scenario's
+**value-axis** right-click (Axis Type / Include Nulls / Axis Font) and **legend**
+right-click (Legend Visibility / Legend Position) are reduced to the same labels
+surfaced in the main-area menu: a positional right-click on those zones is not
+reliable headless, and the labels the zone menus expose (Axis Type, Include Nulls,
+Legend Visibility, Legend Position) are already present in the main menu.
 
 ---
 {
   "order": 3,
-  "datasets": ["System:DemoFiles/demog.csv,System:DemoFiles/chem/SPGI.csv"]
+  "datasets": ["System:DemoFiles/demog.csv,System:AppData/Chem/tests/spgi-100.csv"]
 }

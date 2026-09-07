@@ -1,55 +1,40 @@
-/**
- * Playwright helpers shared by Viewers/Legend/* spec files.
- *
- * Each helper is a verbatim extraction of a block previously pasted into
- * every Legend spec — same selectors, same sleeps, same JS-API fallbacks.
- * Imported as: `import * as v from '../../helpers/viewers';`.
- *
- * Behavioral contract: a helper must produce the same observable end-state
- * as the inline block it replaces. Do not "improve" sleeps or selectors here
- * — those changes belong in a follow-up that replaces fixed setTimeout with
- * expect.poll across the suite (see review item 5).
- */
-
 import {Page, expect} from '@playwright/test';
-import {stepErrors, StepError} from '../spec-login';
-
-// ---------------------------------------------------------------------------
-// 1. openTable — canonical open prelude used by Legend + FilterPanel specs.
-// ---------------------------------------------------------------------------
+import {createHash} from 'crypto';
+import {installCsvBridge, phase, stepErrors, StepError} from '../spec-login';
 
 export interface OpenTableOptions {
-  /** Demo file path. Defaults to SPGI (the standard fixture for Legend specs). */
+
   path?: string;
-  /** When true, prime the Filter Panel (Filters viewer) after open. */
+
   withFilterPanel?: boolean;
-  /** Semantic type hint (unused by the open path; reserved for callers). */
+
   semType?: 'Molecule' | 'Macromolecule';
-  /** Force the OpenFile path (also auto-detected for .sdf/.nwk/.pdb). */
+
   sdf?: boolean;
-  /** Extra settle after the Grid is visible (ms). */
+
   settleMs?: number;
-  /** Cap on the semantic-type-detection race (ms). Defaults to 5000; pass 3000
-   * to match the shorter inline prelude that the Viewers specs hand-rolled. */
+
   semTypeTimeoutMs?: number;
 }
 
-/**
- * Open a demo table, attach the default TableView, wait for semantic-type
- * detection + Bio/Chem render settle, and (optionally) prime the Filter Panel.
- *
- * Superset of the prelude block pasted into every Legend / FilterPanel spec.
- * CSV sources go through `readCsv` + `addTableView`; .sdf/.nwk/.pdb (or
- * `sdf: true`) route through the OpenFile function-call recorder (verbatim from
- * openers.ts openTableFromFile). Selenium class + simpleMode +
- * showFiltersIconsConstantly are set the same way as in the inline form so
- * spec behavior is unchanged.
- */
-export async function openTable(page: Page, options?: OpenTableOptions): Promise<void> {
-  const p = options?.path ?? 'System:DemoFiles/chem/SPGI.csv';
+export function openTable(page: Page, options?: OpenTableOptions): Promise<void> {
+  return phase('openTable ' + (options?.path ?? 'spgi-100'), () => openTableImpl(page, options));
+}
+
+async function openTableImpl(page: Page, options?: OpenTableOptions): Promise<void> {
+  // Most specs build their own page and never call openDatagrok, so the read seam has to be
+  // established here rather than assumed: on a server page it resolves to dapi.files.readCsv,
+  // which is what this helper always did.
+  await installCsvBridge(page);
+  await installEventWaits(page);
+  const p = options?.path ?? 'System:AppData/Chem/tests/spgi-100.csv';
   const useOpenFile = options?.sdf === true || /\.(sdf|nwk|pdb)$/i.test(p);
-  const semTypeTimeoutMs = options?.semTypeTimeoutMs ?? 5000;
-  await page.evaluate(async ({path, openFile, semTypeTimeoutMs}) => {
+  // demog has no column any detector types, so the detected event never fires and every
+  // cap set for it (3-5s in most specs) is paid in full: 151 opens, 94s in the final Viewers run
+  const neverTypes = /\/demog\.csv$/i.test(p) && !options?.semType;
+  const semTypeTimeoutMs = neverTypes ? 0 : options?.semTypeTimeoutMs ?? 5000;
+  const freshDf = !!process.env.PW_FRESH_DF;
+  await page.evaluate(async ({path, openFile, semTypeTimeoutMs, freshDf}) => {
     document.body.classList.add('selenium');
     (window as any).grok.shell.settings.showFiltersIconsConstantly = true;
     (window as any).grok.shell.windows.simpleMode = true;
@@ -72,13 +57,22 @@ export async function openTable(page: Page, options?: OpenTableOptions): Promise
       }
       if (!df) throw new Error(`OpenFile("${path}") did not produce a TableView (12s settle)`);
     } else {
-      df = await (window as any).grok.dapi.files.readCsv(path);
-      (window as any).grok.shell.addTableView(df);
+      // parsed once per page and cloned per open: the bytes never change between the tests of
+      // one worker, and a clone keeps one test's column edits away from the next
+      const w = window as any;
+      w.__dfCache = w.__dfCache ?? {};
+      if (freshDf) df = await w.__readCsv(path);
+      else {
+        if (!(path in w.__dfCache)) w.__dfCache[path] = await w.__readCsv(path);
+        df = w.__dfCache[path].clone();
+      }
+      w.grok.shell.addTableView(df);
     }
-    await new Promise((resolve) => {
-      const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(null); });
-      setTimeout(resolve, semTypeTimeoutMs);
-    });
+    if (semTypeTimeoutMs > 0)
+      await new Promise((resolve) => {
+        const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(null); });
+        setTimeout(resolve, semTypeTimeoutMs);
+      });
     const hasBioChem = Array.from({length: df.columns.length}, (_, i: number) => df.columns.byIndex(i))
       .some((c: any) => c.semType === 'Molecule' || c.semType === 'Macromolecule');
     if (hasBioChem) {
@@ -87,53 +81,41 @@ export async function openTable(page: Page, options?: OpenTableOptions): Promise
         if (grid?.querySelector('canvas')) break;
         await new Promise((r) => setTimeout(r, 200));
       }
-      await new Promise((r) => setTimeout(r, 5000));
+      // the molecule renderer repaints the grid once it has loaded; wait for that burst to end
+      await (window as any).__quiet('viewer:Grid.onAfterDrawContent', 400, 5000);
     }
-  }, {path: p, openFile: useOpenFile, semTypeTimeoutMs});
+  }, {path: p, openFile: useOpenFile, semTypeTimeoutMs, freshDf});
   await page.locator('.d4-grid[name="viewer-Grid"]').first().waitFor({timeout: 30000});
   if (options?.settleMs) await page.waitForTimeout(options.settleMs);
   if (options?.withFilterPanel) await openFilterPanel(page);
 }
 
-/**
- * Prime the Filter Panel (Filters viewer) on the active TableView: open the
- * filters group, wait for the first `.d4-filter`, and hover it. Extracted from
- * the withFilterPanel half of the original openTable prelude.
- */
 export async function openFilterPanel(page: Page): Promise<void> {
   await page.evaluate(() => (window as any).grok.shell.tv.getFiltersGroup());
-  await page.locator('[name="viewer-Filters"] .d4-filter').first().waitFor({timeout: 15000});
-  // Real DOM gesture on the Filter Panel — exercises the documented
-  // hover-to-reveal header-icons interaction and adds an observable
-  // Playwright-driven call alongside JS-API operations.
+  // a molecule column builds a substructure filter here, which has been seen to take
+  // longer than 15s on dev — the wait exits on the element, so the higher cap is free
+  await page.locator('[name="viewer-Filters"] .d4-filter').first().waitFor({timeout: 30000});
+
   await page.locator('[name="viewer-Filters"] .d4-filter').first().hover();
 }
 
-/**
- * Add a viewer by clicking its ribbon/toolbox icon, then wait for the viewer to
- * attach. Verbatim equivalent of the `querySelector('[name="icon-<icon>"]')`
- * click + `[name="viewer-<name>"]` waitFor block pasted into the Viewers specs.
- * Pass a non-default `timeoutMs` only when a call-site used a different wait.
- */
 export async function addViewerByIcon(
-  page: Page, iconName: string, viewerName: string, timeoutMs = 5000,
+  page: Page, iconName: string, viewerName: string, timeoutMs = 5000, expectedType?: string,
 ): Promise<void> {
   await page.evaluate((n) => {
     (document.querySelector('[name="icon-' + n + '"]') as HTMLElement).click();
   }, iconName);
   await page.locator('[name="viewer-' + viewerName + '"]').waitFor({timeout: timeoutMs});
+
+  await page.waitForFunction((vn) => {
+    const tv = (window as any).grok?.shell?.tv;
+    if (!tv) return false;
+    const norm = (s: string) => s.replace(/[\s-]+/g, ' ').toLowerCase();
+    const v = Array.from(tv.viewers).find((x: any) => norm(x.type) === norm(vn));
+    return !!(v && (v as any).props);
+  }, expectedType ?? viewerName, {timeout: timeoutMs});
 }
 
-// ---------------------------------------------------------------------------
-// 2. addLegendViewers — uniform viewer-attach + legend-column binding.
-// ---------------------------------------------------------------------------
-
-/**
- * Mapping from viewer type to the property that binds the legend's category
- * source. Scalar columns: scatter/histogram/line/bar/pie. Array columns:
- * Trellis + Box plot. Pulled from the per-viewer if/else blocks duplicated
- * across filtering/color-consistency/visibility-and-positioning specs.
- */
 export const LEGEND_COLUMN_PROP: Record<string, {prop: string; array: boolean}> = {
   'Scatter plot':  {prop: 'colorColumnName', array: false},
   'Histogram':     {prop: 'splitColumnName', array: false},
@@ -145,24 +127,16 @@ export const LEGEND_COLUMN_PROP: Record<string, {prop: string; array: boolean}> 
 };
 
 export interface ViewerSpec {
-  /** Viewer type (e.g. 'Scatter plot'). */
+
   type: string;
-  /** Override column for this viewer (e.g. 'Series' for scatterplot). Default = options.column. */
+
   column?: string;
-  /** Override the prop (e.g. 'markersColumnName' for scatter markers). */
+
   prop?: string;
-  /** Force value to be an array (overrides LEGEND_COLUMN_PROP.array). */
+
   array?: boolean;
 }
 
-/**
- * Add a list of viewers to the active TableView and bind each one's
- * legend column. Sets `legendVisibility = 'Always'` for every non-Grid
- * viewer (matching the inline pattern in filtering-spec.ts etc).
- *
- * Verbatim equivalent of the `const names = [...]; for (const n of names) tv.addViewer(n); ...`
- * blocks duplicated across 7+ specs.
- */
 export async function addLegendViewers(
   page: Page,
   options: {column: string; viewers: (string | ViewerSpec)[]; settleMs?: number},
@@ -193,145 +167,291 @@ export async function addLegendViewers(
   }, {s: specs, defaultCol: options.column, settle: settleMs, map: LEGEND_COLUMN_PROP});
 }
 
-// ---------------------------------------------------------------------------
-// 2b. pickColumnViaSelector — type-and-search column selector (UI path).
-// ---------------------------------------------------------------------------
-
 export interface PickColumnOptions {
-  /**
-   * Suffix of the column-combobox name attribute. The selector matched is
-   * `[name="div-column-combobox-<suffix>"]` — see `references/viewers.md`.
-   * Examples (lowercase, multi-word uses double dash):
-   *   - `'color'`              Scatter plot color
-   *   - `'size'`               Scatter plot size
-   *   - `'split'`              Histogram / Bar / Line split
-   *   - `'split--by'`          Timelines split-by
-   *   - `'category'`           Pie chart category
-   *   - `'x'` / `'y'`          Generic XY axis
-   *   - `'stack'`              Bar chart stack
-   */
+
   comboboxSuffix: string;
-  /** Column name to type into the selector. */
+
   columnName: string;
-  /**
-   * Optional viewer type for fallback verification + scope (e.g. 'Scatter plot').
-   * When set, after the UI flow the helper reads `props[propName]` and, if it
-   * doesn't equal `columnName`, falls back to JS API. Pass propName too.
-   */
+
   viewerType?: string;
-  /**
-   * Property name to verify the change landed (e.g. 'colorColumnName',
-   * 'splitColumnName'). When set together with viewerType, enables the
-   * JS-API fallback safety net described in scatter-plot-spec.ts:25-47.
-   */
+
   propName?: string;
-  /**
-   * How to wait for the popup to open after the trigger mousedown:
-   *   - `'sleep'` (default) — fixed 500ms wait. Matches the original
-   *     scatter-plot-spec.ts:25-47 pattern.
-   *   - `'backdrop'` — poll for `.d4-column-selector-backdrop` (up to 3s).
-   *     Matches density-plot-spec.ts:29-38. More reliable when the popup
-   *     init is slow, but the backdrop element doesn't render on every
-   *     build/widget — fall back to sleep if it doesn't appear.
-   *   - `'either'` — race backdrop (3s) vs 500ms sleep, whichever first.
-   *     Robust default for new call sites that don't know which strategy
-   *     fits.
-   */
+
+  allowFallback?: boolean;
+
   popupWaitStrategy?: 'sleep' | 'backdrop' | 'either';
-  /**
-   * Optional scope for the column-combobox lookup. When provided, the
-   * helper restricts the `[name="div-column-combobox-<suffix>"]` query
-   * to descendants of this CSS selector — e.g. `[name="viewer-Density-plot"]`
-   * for density-plot, where the same combobox suffix can appear elsewhere
-   * on the page (gear panel, second viewer instance, etc).
-   */
+
   scopeSelector?: string;
 }
 
-/**
- * Drive the column-selector widget: open the popup, type the column name,
- * press Enter. Verbatim extraction of `setColumnViaSelector` from
- * scatter-plot-spec.ts:25-47 — same mousedown-on-`.d4-column-selector-column`
- * trigger, same first-key + rest-of-name typing rhythm (avoids the timing
- * bug where the popup's async-focused search input drops the first letter),
- * same ArrowDown + Enter commit, same prop-equality JS-API fallback.
- *
- * Assumes the viewer's properties Context Panel (gear) is already open, or
- * the target column-combobox is rendered somewhere on the page. Callers that
- * need to open the gear first should do so before invoking this helper.
- *
- * Reference: `.claude/skills/grok-browser/references/viewers.md` "Column
- * Selectors on Viewers" + `density-plot-run.md` rows 17-19 (UI flow
- * validated against dev).
- */
-export async function pickColumnViaSelector(page: Page, opts: PickColumnOptions): Promise<void> {
+export async function pickColumnViaSelector(
+  page: Page, opts: PickColumnOptions,
+): Promise<{usedFallback: boolean}> {
   const selectorName = `div-column-combobox-${opts.comboboxSuffix}`;
   const scope = opts.scopeSelector ?? null;
   const strategy = opts.popupWaitStrategy ?? 'sleep';
-  // Open the popup. Mousedown on .d4-column-selector-column is the proven
-  // trigger — direct click or focus does NOT reliably open the popup.
-  await page.evaluate(({name, sc}) => {
-    document.body.dispatchEvent(new MouseEvent('mousedown', {bubbles: true}));
-    const root: Document | Element = sc
-      ? (document.querySelector(sc) as Element | null) ?? document
-      : document;
-    const sel = root.querySelector(`[name="${name}"]`);
-    if (!sel) return;
-    const colLabel = sel.querySelector('.d4-column-selector-column');
-    (colLabel || sel).dispatchEvent(new MouseEvent('mousedown', {bubbles: true, button: 0}));
-  }, {name: selectorName, sc: scope});
-  if (strategy === 'sleep') {
-    await page.waitForTimeout(500);
-  } else if (strategy === 'backdrop') {
-    await page.waitForFunction(() => !!document.querySelector('.d4-column-selector-backdrop'),
-      null, {timeout: 3000}).catch(() => {});
-  } else { // 'either' — race
-    await Promise.race([
-      page.waitForFunction(() => !!document.querySelector('.d4-column-selector-backdrop'),
-        null, {timeout: 3000}).catch(() => {}),
-      page.waitForTimeout(500),
-    ]);
-  }
-  // Type the column name. First key separated by a 100ms wait — the popup
-  // focuses its search input asynchronously via Timer.run and the first
-  // letter sometimes drops if both keys land in the same tick.
-  await page.keyboard.press(opts.columnName[0].toLowerCase());
-  await page.waitForTimeout(100);
-  if (opts.columnName.length > 1)
-    await page.keyboard.type(opts.columnName.slice(1).toLowerCase());
-  await page.keyboard.press('ArrowDown');
-  await page.keyboard.press('Enter');
-  await page.waitForTimeout(300);
 
-  // JS-API fallback verify: if the UI didn't apply, set the prop directly so
-  // downstream assertions can proceed (mirrors scatter-plot-spec.ts pattern).
-  if (opts.viewerType && opts.propName) {
-    await page.evaluate(({vt, prop, col}) => {
+  const reopen = async () => {
+    await page.evaluate(({name, sc}) => {
+      document.body.dispatchEvent(new MouseEvent('mousedown', {bubbles: true}));
+      const root: Document | Element = sc
+        ? (document.querySelector(sc) as Element | null) ?? document
+        : document;
+      const sel = root.querySelector(`[name="${name}"]`);
+      if (!sel) return;
+      const colLabel = sel.querySelector('.d4-column-selector-column');
+      (colLabel || sel).dispatchEvent(new MouseEvent('mousedown', {bubbles: true, button: 0}));
+    }, {name: selectorName, sc: scope});
+    if (strategy === 'sleep') {
+      await page.waitForTimeout(500);
+    } else if (strategy === 'backdrop') {
+      await page.waitForFunction(() => !!document.querySelector('.d4-column-selector-backdrop'),
+        null, {timeout: 3000}).catch(() => {});
+    } else {
+      await Promise.race([
+        page.waitForFunction(() => !!document.querySelector('.d4-column-selector-backdrop'),
+          null, {timeout: 3000}).catch(() => {}),
+        page.waitForTimeout(500),
+      ]);
+    }
+    await pollValue(
+      () => page.evaluate(({name, sc}) => {
+        const root: Document | Element = sc ? (document.querySelector(sc) as Element | null) ?? document : document;
+        const sel = root.querySelector(`[name="${name}"]`) as HTMLElement | null;
+        if (!sel) return false;
+        if (document.activeElement !== sel) sel.focus();
+        return document.activeElement === sel;
+      }, {name: selectorName, sc: scope}),
+      (focused) => focused === true, 1000, 50);
+  };
+
+  await reopen();
+
+  const typeAndCommit = async () => {
+    await page.keyboard.press(opts.columnName[0].toLowerCase());
+    await page.waitForTimeout(100);
+    if (opts.columnName.length > 1)
+      await page.keyboard.type(opts.columnName.slice(1).toLowerCase());
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(300);
+  };
+  const committed = () => opts.viewerType && opts.propName
+    ? page.evaluate(({vt, prop, col}) => {
       const view = (window as any).grok.shell.tv?.viewers?.find((x: any) => x.type === vt);
-      if (view && (view.props as any)[prop] !== col)
-        (view.props as any)[prop] = col;
-    }, {vt: opts.viewerType, prop: opts.propName, col: opts.columnName});
+      return !!view && (view.props as any)[prop] === col;
+    }, {vt: opts.viewerType, prop: opts.propName, col: opts.columnName})
+    : Promise.resolve(true);
+
+  // The canvas can reclaim focus between the focus check above and the first key, which drops
+  // the leading character and leaves the column unchanged. Reopen and retype on a miss.
+  await typeAndCommit();
+  for (var retry = 0; retry < 2 && !(await committed()); retry++) {
+    await page.keyboard.press('Escape').catch(() => {});
+    await reopen();
+    await typeAndCommit();
   }
+
+  let usedFallback = false;
+  if (opts.viewerType && opts.propName) {
+    const applied = await committed();
+    if (!applied && opts.allowFallback === true) {
+      await page.evaluate(({vt, prop, col}) => {
+        const view = (window as any).grok.shell.tv?.viewers?.find((x: any) => x.type === vt);
+        if (view) (view.props as any)[prop] = col;
+      }, {vt: opts.viewerType, prop: opts.propName, col: opts.columnName});
+      usedFallback = true;
+    }
+  }
+  return {usedFallback};
 }
 
-/**
- * Open a viewer's properties Context Panel by clicking the gear icon. The
- * gear is scoped to the viewer's panel-titlebar to disambiguate across
- * multiple viewers on screen.
- *
- * Selectors from `references/viewers.md`:
- *   - viewer container: `[name="viewer-<Type>"]` (spaces preserved or dashed)
- *   - title-bar gear:   `.panel-titlebar [name="icon-font-icon-settings"]`
- */
+export interface TrustedPickColumnOptions {
+
+  role: string;
+
+  columnName: string;
+
+  target?: 'auto' | 'column';
+
+  viewerType?: string;
+
+  propName?: string;
+
+  scopeSelector?: string;
+
+  backdropTimeoutMs?: number;
+
+  commitSettleMs?: number;
+
+  requirePopup?: boolean;
+}
+
+export async function pickColumnViaSelectorTrusted(
+  page: Page, opts: TrustedPickColumnOptions,
+): Promise<{popupOpened: boolean}> {
+  const viewerType = opts.viewerType ?? 'Scatter plot';
+  const rootName = `viewer-${viewerType.replace(/\s+/g, '-')}`;
+  const target = opts.target ?? 'auto';
+  const propName = opts.propName ?? `${opts.role}ColumnName`;
+
+  // The element comes from the API, not from a DOM query: a closed view leaves viewers
+  // behind, and driving one of those silently edits a viewer nobody is looking at while
+  // the read-back below inspects grok.shell.tv — "expected WEIGHT, got AGE".
+  const canvas = await page.evaluate((vt: string) => {
+    const norm = (x: string) => x.replace(/[\s-]+/g, ' ').toLowerCase();
+    const v = Array.from((window as any).grok.shell.tv?.viewers ?? [])
+      .find((x: any) => norm(x.type) === norm(vt)) as any;
+    const root = v?.root as HTMLElement | undefined;
+    const el = root?.querySelector('canvas[name="canvas"]') ?? root;
+    if (!el) return null;
+    (window as any).__pickRoot = root;
+    const r = el.getBoundingClientRect();
+    return {x: r.x + r.width / 2, y: r.y + r.height / 2};
+  }, viewerType);
+  if (!canvas) throw new Error(`pickColumnViaSelectorTrusted: no ${viewerType} root on the page`);
+  await page.mouse.move(canvas.x, canvas.y);
+
+  const locate = ({rn, r, t, sc}: {rn: string; r: string; t: string; sc: string | null}) => {
+    // A scopeSelector must still resolve to the CURRENT view's viewer: querySelector takes
+    // the first match in the document, and a closed view leaves its own copy earlier in the
+    // tree. Prefer the element the API reported; fall back to a scoped one with size.
+    const api = (window as any).__pickRoot as Element | undefined;
+    let root: Element | null = api ?? null;
+    if (sc) {
+      const scoped = [...document.querySelectorAll(sc)];
+      root = scoped.find((e) => e === api || (api && e.contains(api)) || (api && api.contains(e)))
+        ?? scoped.find((e) => {
+          const b = e.getBoundingClientRect();
+          return b.width > 0 && b.height > 0;
+        })
+        ?? scoped[0] ?? null;
+    }
+    const sel = root?.querySelector(`[name="div-column-combobox-${r}"]`) as HTMLElement | null;
+    if (!sel) return null;
+    const candidates: Element[] = [];
+    const queries = t === 'column'
+      ? ['.d4-column-selector-column']
+      : ['.d4-column-selector-column', '.d4-column-selector-caption'];
+    for (const q of queries) {
+      const el = sel.querySelector(q);
+      if (el) candidates.push(el);
+    }
+    if (t !== 'column') candidates.push(sel);
+    for (const el of candidates) {
+      const b = el.getBoundingClientRect();
+      if (b.width > 0 && b.height > 0) return {x: b.x + b.width / 2, y: b.y + b.height / 2};
+    }
+    return null;
+  };
+  // the on-canvas selectors are hover-revealed, so the settle after mouse.move IS
+  // "the selector became clickable" — which this lookup already reports
+  const point = await pollValue(
+    () => page.evaluate(locate, {rn: rootName, r: opts.role, t: target, sc: opts.scopeSelector ?? null}),
+    (p) => p !== null, 400, 50);
+  if (!point)
+    throw new Error(`pickColumnViaSelectorTrusted: the ${opts.role} selector exposes no clickable text`);
+
+  let popupOpened = false;
+  for (let attempt = 0; attempt < 2 && !popupOpened; attempt++) {
+    if (attempt > 0) await page.waitForTimeout(500);
+    await page.mouse.click(point.x, point.y);
+    popupOpened = await page.waitForFunction(
+      () => !!document.querySelector('.d4-column-selector-backdrop'),
+      null, {timeout: opts.backdropTimeoutMs ?? 6000}).then(() => true).catch(() => false);
+  }
+  if (!popupOpened) {
+    if (opts.requirePopup === false) return {popupOpened: false};
+    throw new Error(`pickColumnViaSelectorTrusted: the ${opts.role} column popup did not open`);
+  }
+
+  const comboItems = () => page.evaluate(() => document.querySelectorAll('.d4-combo-popup li').length);
+  const text = opts.columnName.toLowerCase();
+
+  // The combobox builds its search box from the first keystroke, and the viewer canvas can
+  // reclaim focus in the gap between any focus check and the key itself — a CDP round-trip
+  // no pre-check closes. When it does, the leading character is lost ("weight" arrives as
+  // "eight"), nothing matches, and Enter commits the previous column. So drive it, read the
+  // property back, and reopen on a miss instead of racing.
+  const typeAndCommit = async () => {
+    await page.keyboard.press(text[0]);
+    await pollValue(comboItems, (n) => n > 0, 150, 50);
+    if (text.length > 1) await page.keyboard.type(text.slice(1));
+    await pollValue(comboItems, (n) => n > 0, 200, 50);
+    if (process.env.PICK_DEBUG) {
+      const st = await page.evaluate(() => {
+        const el = document.activeElement as HTMLInputElement | null;
+        return {
+          inputValue: el && el.tagName === 'INPUT' ? el.value : null,
+          activeEl: (document.activeElement?.tagName ?? '') + '.' + (document.activeElement?.className ?? ''),
+          comboLis: document.querySelectorAll('.d4-combo-popup li').length,
+        };
+      });
+      console.log('[pick] before Enter ' + JSON.stringify(st));
+    }
+    await page.keyboard.press('Enter');
+  };
+
+  const readApplied = () => page.evaluate(({vt, prop}: {vt: string; prop: string}) => {
+    const view = (window as any).grok.shell.tv?.viewers?.find((x: any) => x.type === vt);
+    return view ? ((view.props as any)[prop] ?? null) : null;
+  }, {vt: viewerType, prop: propName});
+
+  let applied: any = null;
+  for (var pick = 0; pick < 3; pick++) {
+    if (pick > 0) {
+      await page.keyboard.press('Escape').catch(() => {});
+      await pollValue(
+        () => page.evaluate(() => !document.querySelector('.d4-column-selector-backdrop')),
+        (closed) => closed === true, 500, 50);
+      await page.mouse.move(canvas.x, canvas.y);
+      await page.mouse.click(point.x, point.y);
+      await page.waitForFunction(() => !!document.querySelector('.d4-column-selector-backdrop'),
+        null, {timeout: 3000}).catch(() => {});
+    }
+    await typeAndCommit();
+    applied = await pollValue(readApplied, (a) => a === opts.columnName,
+      opts.commitSettleMs ?? 900, 50);
+    if (applied === opts.columnName) break;
+  }
+  if (applied !== opts.columnName) {
+    // "expected WEIGHT, got AGE" on its own says nothing about which half broke: the
+    // popup not filtering, the wrong viewer being driven, or the commit not landing.
+    const why = await page.evaluate((vt: string) => {
+      const norm = (x: string) => x.replace(/[\s-]+/g, ' ').toLowerCase();
+      const w = window as any;
+      return {
+        viewersOfType: Array.from(w.grok.shell.tv?.viewers ?? [])
+          .filter((x: any) => norm(x.type) === norm(vt)).length,
+        rootInCurrentView: !!w.__pickRoot && document.contains(w.__pickRoot),
+        popupItems: [...document.querySelectorAll('.d4-combo-popup li')].map((e) => e.textContent?.trim()).slice(0, 6),
+        backdrops: document.querySelectorAll('.d4-column-selector-backdrop').length,
+        activeEl: document.activeElement?.tagName + '.' + (document.activeElement?.className ?? ''),
+      };
+    }, viewerType);
+    throw new Error(`pickColumnViaSelectorTrusted: ${opts.role} did not take — ` +
+      `${propName} expected "${opts.columnName}", got "${applied}" — ${JSON.stringify(why)}`);
+  }
+  return {popupOpened: true};
+}
+
 export async function openViewerGear(page: Page, viewerType: string): Promise<void> {
   await page.evaluate((vt) => {
     const candidates = [
       `[name="viewer-${vt}"]`,
       `[name="viewer-${vt.replace(/\s+/g, '-')}"]`,
     ];
+    // A closed table view leaves its viewers in the DOM at zero size, ahead of the
+    // current view's. querySelector would pick that one and click a gear nobody can
+    // see, so every property edit that followed landed on the wrong viewer.
+    const sized = (e: Element) => {
+      const b = e.getBoundingClientRect();
+      return b.width > 0 && b.height > 0;
+    };
     let vEl: HTMLElement | null = null;
     for (const c of candidates) {
-      vEl = document.querySelector(c) as HTMLElement | null;
+      const all = [...document.querySelectorAll(c)] as HTMLElement[];
+      vEl = all.find(sized) ?? all[0] ?? null;
       if (vEl) break;
     }
     if (!vEl) return;
@@ -339,78 +459,533 @@ export async function openViewerGear(page: Page, viewerType: string): Promise<vo
     const gear = panel?.querySelector('.panel-titlebar [name="icon-font-icon-settings"]') as HTMLElement | null;
     gear?.click();
   }, viewerType);
-  await page.waitForTimeout(1000);
-}
-
-// ---------------------------------------------------------------------------
-// 3. readLegend — DOM read of a viewer's legend items.
-// ---------------------------------------------------------------------------
-
-export interface LegendInfo {
-  /** Count of `.d4-legend-item` elements in this viewer's [name="legend"] host. */
-  itemCount: number;
-  /** Per-item text labels (from `.d4-legend-value`). */
-  labels: string[];
-  /** Whether the [name="legend"] host is present at all. */
-  legendRendered: boolean;
+  // The property panel is a shared surface: switching viewers keeps .property-grid
+  // in the DOM and even the same leading prop rows, so its presence says nothing
+  // about WHICH viewer is showing. shell.o is what actually changes.
+  await pollValue(() => page.evaluate((vt: string) => {
+    const norm = (s: string) => s.replace(/[\s-]+/g, ' ').toLowerCase();
+    const o = (window as any).grok?.shell?.o;
+    return !!document.querySelector('.property-grid') && !!o?.type && norm(o.type) === norm(vt);
+  }, viewerType), (ready) => ready, 1000, 50);
 }
 
 /**
- * Read a viewer's legend (item count + labels) via DOM. Verbatim equivalent
- * of the `sp.root.querySelectorAll('[name="legend"] .d4-legend-item')` snippet
- * duplicated 60+ times across the Legend specs.
+ * Opens a viewer's settings in the property panel and waits for the panel to build.
+ *
+ * Never returns early on an already-built panel. The panel is a shared surface: once a
+ * second view or viewer is in play it can still be showing the previous one, and every
+ * edit made through it then lands on the wrong viewer while the assertions read
+ * grok.shell.tv. Five specs carried their own copy of this with an `if (built) return`,
+ * and each of them was one open panel away from editing something else — openViewerGear
+ * settles on shell.o, so re-targeting is both correct and cheap.
  */
+export async function openViewerSettings(
+  page: Page, viewerType: string, probe = 'prop-category-data',
+): Promise<void> {
+  for (let i = 0; i < 4; i++) {
+    await openViewerGear(page, viewerType);
+    const built = await pollValue(
+      () => page.evaluate((p: string) => !!document.querySelector(`[name="${p}"]`), probe),
+      (b) => b, 2500, 100);
+    if (built) return;
+  }
+  throw new Error(`the ${viewerType} settings panel did not build`);
+}
+
+export async function clickViewerTitlebarIcon(
+  page: Page, viewerName: string, iconName: string,
+): Promise<void> {
+  const point = await page.evaluate(({vn, icon}) => {
+    const el = document.querySelector(`[name="viewer-${vn}"]`) as HTMLElement | null;
+    const panel = el?.closest('.panel-base') as HTMLElement | null;
+    const target = panel?.querySelector(`.panel-titlebar [name="${icon}"]`) as HTMLElement | null;
+    if (!target) return null;
+    const r = target.getBoundingClientRect();
+    return {x: r.x + r.width / 2, y: r.y + r.height / 2};
+  }, {vn: viewerName, icon: iconName});
+  if (!point) throw new Error(`no ${iconName} icon on the ${viewerName} title bar`);
+  await page.mouse.click(point.x, point.y);
+}
+
+export async function openViewerProperties(
+  page: Page, viewerName: string, probeSelector = '.property-grid',
+): Promise<void> {
+  if (await page.locator(probeSelector).count() > 0) return;
+  await clickViewerTitlebarIcon(page, viewerName, 'icon-font-icon-settings');
+  await page.locator(probeSelector).first().waitFor({timeout: 10_000});
+  await pollValue(() => page.locator(`${probeSelector} tr[name^="prop-"]`).count(), (n) => n > 0, 500, 50);
+}
+
+export async function ensurePropertyCategory(
+  page: Page, viewerName: string, category: string, probeProp: string, timeoutMs = 20_000,
+): Promise<void> {
+  const headerSelector = `[name="prop-category-${category}"]`;
+  const header = page.locator(headerSelector);
+
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+
+    const index = await propertyRowIndex(page, probeProp, category);
+    if (index >= 0 &&
+        await page.locator(`.property-grid tr[name="prop-${probeProp}"]`).nth(index).isVisible())
+      return;
+    if (await header.count() === 0) {
+      await clickViewerTitlebarIcon(page, viewerName, 'icon-font-icon-settings').catch(() => {});
+      await page.locator(headerSelector).first().waitFor({timeout: 3000}).catch(() => {});
+    } else
+      await header.first().click().catch(() => {});
+    await page.waitForTimeout(150);
+  }
+  throw new Error(`property-grid category "${category}" never exposed prop-${probeProp}`);
+}
+
+async function propertyRowIndex(page: Page, prop: string, category?: string): Promise<number> {
+  if (!category) return 0;
+  return page.evaluate(({p, c}) => {
+    const rows = Array.from(document.querySelectorAll('.property-grid tr'));
+    const start = rows.findIndex((r) => r.getAttribute('name') === `prop-category-${c}`);
+    if (start < 0) return -1;
+    let seen = 0;
+    for (let i = 0; i < rows.length; i++) {
+      const name = rows[i].getAttribute('name');
+      if (name !== `prop-${p}`) continue;
+      if (i > start && !rows.slice(start + 1, i).some((r) => r.className.includes('property-grid-category')))
+        return seen;
+      seen++;
+    }
+    return -1;
+  }, {p: prop, c: category});
+}
+
+async function propertyRow(page: Page, prop: string, category?: string) {
+  const index = await propertyRowIndex(page, prop, category);
+  if (index < 0) throw new Error(`no prop-${prop} row inside category "${category}"`);
+  return page.locator(`.property-grid tr[name="prop-${prop}"]`).nth(index);
+}
+
+export async function propertyGridValue(page: Page, prop: string, category?: string): Promise<string> {
+  const index = await propertyRowIndex(page, prop, category);
+  if (index < 0) return '';
+  return page.evaluate(({p, i}) => {
+    const row = document.querySelectorAll(`.property-grid tr[name="prop-${p}"]`)[i];
+    if (!row) return '';
+    const check = row.querySelector('input[type="checkbox"]') as HTMLInputElement | null;
+    if (check) return String(check.checked);
+    const view = row.querySelector(`[name="prop-view-${p}"]`) as HTMLElement | null;
+    const input = row.querySelector('input:not([type="checkbox"])') as HTMLInputElement | null;
+    const text = view?.innerText?.trim() ?? '';
+    return text.length > 0 ? text : (input?.value ?? '');
+  }, {p: prop, i: index});
+}
+
+export async function setPropertyGridValue(
+  page: Page, prop: string, value: string, category?: string,
+): Promise<void> {
+  const row = await propertyRow(page, prop, category);
+  await row.locator('td').last().click();
+  await pollValue(() => row.locator('input:not([type="checkbox"])').count(), (n) => n > 0, 400, 50);
+  await page.keyboard.press('Control+a');
+  await page.keyboard.type(value);
+  await page.keyboard.press('Enter');
+  await pollValue(() => propertyGridValue(page, prop, category), (v) => v === value, 700, 50);
+}
+
+export async function selectPropertyGridChoice(
+  page: Page, prop: string, value: string, category?: string,
+): Promise<void> {
+  const row = await propertyRow(page, prop, category);
+  await row.locator('td').last().click();
+  await row.locator('select').selectOption(value);
+  // the cap, not an assertion: a choice whose display text differs from its option
+  // value never settles equal, and this helper has never been the one to fail on it
+  await pollValue(() => propertyGridValue(page, prop, category), (v) => v === value, 900, 50);
+}
+
+export async function setPropertyGridCheckbox(
+  page: Page, prop: string, desired: boolean, category?: string,
+): Promise<void> {
+  const row = await propertyRow(page, prop, category);
+  const box = row.locator('input[type="checkbox"]').first();
+  if (await box.isChecked() === desired) return;
+  await box.click();
+  await pollValue(() => box.isChecked(), (c) => c === desired, 700, 50);
+  expect(await box.isChecked()).toBe(desired);
+}
+
+export async function togglePropertyGridCheckbox(
+  page: Page, prop: string, category?: string,
+): Promise<boolean> {
+  const row = await propertyRow(page, prop, category);
+  const box = row.locator('input[type="checkbox"]').first();
+  const before = await box.isChecked();
+  await box.click();
+  await pollValue(() => box.isChecked(), (c) => c !== before, 700, 50);
+  return box.isChecked();
+}
+
+export async function driveTopMenuLeaf(
+  page: Page, path: string[], opts: {attempts?: number} = {},
+): Promise<boolean> {
+  const attempts = opts.attempts ?? 4;
+  const selAt = (depth: number) =>
+    `[name="div-${path.slice(0, depth + 1).map((s) => s.replace(/ /g, '-')).join('---')}"]`;
+
+  const liveCentre = async (sel: string): Promise<{x: number; y: number} | null> =>
+    page.evaluate((s) => {
+      const e = document.querySelector(s);
+      if (!e) return null;
+      const r = e.getBoundingClientRect();
+      if (r.width === 0 || r.height === 0) return null;
+      return {x: r.x + r.width / 2, y: r.y + r.height / 2};
+    }, sel);
+  const waitCentre = async (sel: string, ms: number): Promise<{x: number; y: number} | null> => {
+    const deadline = Date.now() + ms;
+    for (;;) {
+      const c = await liveCentre(sel);
+      if (c || Date.now() > deadline) return c;
+      await page.waitForTimeout(150);
+    }
+  };
+
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    const head = await liveCentre(selAt(0));
+    if (head) await page.mouse.click(head.x, head.y);
+    let ok = head != null;
+    for (let depth = 1; ok && depth < path.length; depth++) {
+
+      const c = await waitCentre(selAt(depth), 3000);
+      if (!c) { ok = false; break; }
+      if (depth < path.length - 1)
+        await page.mouse.move(c.x, c.y, {steps: 6}); 
+      else
+        await page.mouse.click(c.x, c.y);            
+    }
+    if (ok) return true;
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(300);
+  }
+  return false;
+}
+
+export async function viewerSignature(page: Page, viewerName: string): Promise<string> {
+  const shot = await page.locator(`[name="viewer-${viewerName}"]`).first().screenshot();
+  return createHash('md5').update(shot).digest('hex');
+}
+
+export interface LegendInfo {
+
+  itemCount: number;
+
+  labels: string[];
+
+  legendRendered: boolean;
+
+  laidOut: boolean;
+}
+
 export async function readLegend(page: Page, viewerType: string): Promise<LegendInfo> {
   return await page.evaluate((vt) => {
     const tv = (window as any).grok.shell.tv;
     const v = tv?.viewers?.find((x: any) => x.type === vt);
-    if (!v) return {itemCount: 0, labels: [], legendRendered: false};
-    const legendRoot = v.root.querySelector('[name="legend"]');
+    if (!v) return {itemCount: 0, labels: [], legendRendered: false, laidOut: false};
+    const legendRoot = v.root.querySelector('[name="legend"]') as HTMLElement | null;
     const items = Array.from(v.root.querySelectorAll('[name="legend"] .d4-legend-item')) as HTMLElement[];
+    const rect = legendRoot?.getBoundingClientRect();
+    const laidOut = !!legendRoot && getComputedStyle(legendRoot).display !== 'none' &&
+      legendRoot.offsetParent !== null && !!rect && rect.width > 0 && rect.height > 0;
     return {
       itemCount: items.length,
       labels: items.map((it) => (it.querySelector('.d4-legend-value')?.textContent ?? '').trim()),
       legendRendered: !!legendRoot,
+      laidOut,
     };
   }, viewerType);
 }
 
-// ---------------------------------------------------------------------------
-// 4. changeLegendItemColor — picker UI flow + JS-API fallback.
-// ---------------------------------------------------------------------------
+export interface RgbRange {
+  rMin: number; rMax: number;
+  gMin: number; gMax: number;
+  bMin: number; bMax: number;
+}
 
-export interface ChangeColorOptions {
-  /** Viewer type (e.g. 'Histogram', 'Scatter plot', 'Line chart'). */
-  viewerType: string;
-  /** Category label (e.g. 'R_ONE'). The dialog name is `dialog-<sanitized>`. */
-  category: string;
-  /** Target color as rgb tuple — used to locate the swatch via inline style. */
-  rgb: [number, number, number];
-  /** Target color as hex (e.g. '#1f77b4') — used for the tag-verify assertion. */
-  hex: string;
-  /** Column carrying `.color-coding-categorical` (e.g. 'Stereo Category'). */
-  column: string;
-  /**
-   * Additive map for fallback. The fallback applies setCategorical with the
-   * full map so previously-applied colors are not reset (github-3132 invariant).
-   * Default: the single {category: hex} pair.
-   */
-  additive?: Record<string, string>;
-  /** Optional alt viewer-container selectors (e.g. 'Line chart' uses both 'viewer-Line-chart' and 'viewer-Line chart'). */
-  altContainerNames?: string[];
+export interface CanvasPixelCounts {
+
+  total: number;
+
+  matched: number;
+}
+
+export async function countCanvasPixels(
+  page: Page, viewerType: string, opts?: {rgbRange?: RgbRange; canvasSelector?: string},
+): Promise<CanvasPixelCounts> {
+  return await page.evaluate(({vt, range, cs}) => {
+    try {
+      const tv = (window as any).grok?.shell?.tv;
+      const norm = (s: string) => s.replace(/[\s-]+/g, ' ').toLowerCase();
+      const v = tv ? Array.from(tv.viewers).find((x: any) => norm(x.type) === norm(vt)) as any : null;
+      const cv = v?.root?.querySelector(cs) as HTMLCanvasElement | null;
+      const ctx = cv?.getContext('2d');
+      if (!cv || !ctx) return {total: -1, matched: -1};
+      const data = ctx.getImageData(0, 0, cv.width, cv.height).data;
+      let total = 0, matched = 0;
+      for (let i = 0; i < data.length; i += 4) {
+        const r = data[i], g = data[i + 1], b = data[i + 2], a = data[i + 3];
+        if (a === 0 || (r >= 250 && g >= 250 && b >= 250)) continue;
+        total++;
+        if (!range || (r >= range.rMin && r <= range.rMax &&
+            g >= range.gMin && g <= range.gMax && b >= range.bMin && b <= range.bMax))
+          matched++;
+      }
+      return {total, matched};
+    } catch (_) {
+      return {total: -1, matched: -1};
+    }
+  }, {vt: viewerType, range: opts?.rgbRange ?? null, cs: opts?.canvasSelector ?? 'canvas'});
+}
+
+export const SELECTION_HUE_RANGE: RgbRange = {rMin: 150, rMax: 255, gMin: 100, gMax: 200, bMin: 0, bMax: 110};
+
+export async function countSelectionHuePixels(page: Page, viewerType: string): Promise<number> {
+  return (await countCanvasPixels(page, viewerType, {rgbRange: SELECTION_HUE_RANGE})).matched;
+}
+
+export async function snapshotCanvasColors(
+  page: Page, viewerType: string, canvasSelector = 'canvas',
+): Promise<boolean> {
+  return await page.evaluate(({vt, cs}) => {
+    const w = window as any;
+    const norm = (s: string) => s.replace(/[\s-]+/g, ' ').toLowerCase();
+    const v = Array.from(w.grok?.shell?.tv?.viewers ?? [])
+      .find((x: any) => norm(x.type) === norm(vt)) as any;
+    const cv = v?.root?.querySelector(cs) as HTMLCanvasElement | null;
+    if (!cv) return false;
+    try {
+      const img = cv.getContext('2d')!.getImageData(0, 0, cv.width, cv.height).data;
+      const colors = new Map<number, number>();
+      for (let i = 0; i < img.length; i += 4) {
+        const key = (img[i] << 16) | (img[i + 1] << 8) | img[i + 2];
+        colors.set(key, (colors.get(key) ?? 0) + 1);
+      }
+      w.__canvasColorSnap = w.__canvasColorSnap || {};
+      w.__canvasColorSnap[norm(vt)] = colors;
+      return true;
+    } catch {
+      return false;
+    }
+  }, {vt: viewerType, cs: canvasSelector});
+}
+
+export async function diffCanvasColors(
+  page: Page, viewerType: string, canvasSelector = 'canvas',
+): Promise<{deltaPx: number}> {
+  return await page.evaluate(({vt, cs}) => {
+    const w = window as any;
+    const norm = (s: string) => s.replace(/[\s-]+/g, ' ').toLowerCase();
+    const prev = w.__canvasColorSnap?.[norm(vt)] as Map<number, number> | undefined;
+    const v = Array.from(w.grok?.shell?.tv?.viewers ?? [])
+      .find((x: any) => norm(x.type) === norm(vt)) as any;
+    const cv = v?.root?.querySelector(cs) as HTMLCanvasElement | null;
+    if (!cv || !prev) return {deltaPx: -1};
+    try {
+      const img = cv.getContext('2d')!.getImageData(0, 0, cv.width, cv.height).data;
+      const colors = new Map<number, number>();
+      for (let i = 0; i < img.length; i += 4) {
+        const key = (img[i] << 16) | (img[i + 1] << 8) | img[i + 2];
+        colors.set(key, (colors.get(key) ?? 0) + 1);
+      }
+      let deltaPx = 0;
+      for (const [c, n] of colors) deltaPx += Math.abs(n - (prev.get(c) ?? 0));
+      for (const [c, n] of prev) if (!colors.has(c)) deltaPx += n;
+      w.__canvasColorSnap[norm(vt)] = colors;
+      return {deltaPx};
+    } catch {
+      return {deltaPx: -1};
+    }
+  }, {vt: viewerType, cs: canvasSelector});
+}
+
+export interface CanvasChangeOptions {
+
+  minDelta?: number;
+
+  canvasSelector?: string;
+
+  timeoutMs?: number;
+}
+
+export async function waitForCanvasChange(
+  page: Page, viewerType: string, opts: CanvasChangeOptions = {},
+): Promise<number> {
+  const minDelta = opts.minDelta ?? 1;
+  const canvasSelector = opts.canvasSelector ?? 'canvas';
+  await page.waitForFunction(({vt, cs, min}) => {
+    const w = window as any;
+    const norm = (s: string) => s.replace(/[\s-]+/g, ' ').toLowerCase();
+    const prev = w.__canvasColorSnap?.[norm(vt)] as Map<number, number> | undefined;
+    if (!prev) return false;
+    const v = Array.from(w.grok?.shell?.tv?.viewers ?? [])
+      .find((x: any) => norm(x.type) === norm(vt)) as any;
+    const cv = v?.root?.querySelector(cs) as HTMLCanvasElement | null;
+    if (!cv) return false;
+    try {
+      const img = cv.getContext('2d')!.getImageData(0, 0, cv.width, cv.height).data;
+      const colors = new Map<number, number>();
+      for (let i = 0; i < img.length; i += 4) {
+        const key = (img[i] << 16) | (img[i + 1] << 8) | img[i + 2];
+        colors.set(key, (colors.get(key) ?? 0) + 1);
+      }
+      let delta = 0;
+      for (const [c, n] of colors) delta += Math.abs(n - (prev.get(c) ?? 0));
+      for (const [c, n] of prev) if (!colors.has(c)) delta += n;
+      return delta >= min;
+    } catch {
+      return false;
+    }
+  }, {vt: viewerType, cs: canvasSelector, min: minDelta},
+  {timeout: opts.timeoutMs ?? 15_000, polling: 60});
+  return (await diffCanvasColors(page, viewerType, canvasSelector)).deltaPx;
 }
 
 /**
- * Change a legend item's color via right-click picker. Falls back to
- * `col.meta.colors.setCategorical` if the UI flow does not commit (validated
- * 2026-05-08 — both paths exist in every picker-using spec).
+ * Waits until the viewer's canvas stops changing.
  *
- * Verbatim extraction of the ~50-line block duplicated in legend-github-3132,
- * legend-grok-17278, legend-grok-17438, color-consistency, scatterplot,
- * line-chart, and visibility-and-positioning specs.
+ * `optional: true` reports a timeout as `false` instead of throwing — for a settle-precheck,
+ * "still painting" is what the delta assertion downstream is there to catch, not a reason to
+ * abort the step with a waitForFunction error. Default stays throwing: existing callers use it
+ * as an assertion that the canvas DID settle.
+ *
+ * Returns true when the canvas went quiet.
  */
+export async function waitForCanvasQuiet(
+  page: Page, viewerType: string,
+  opts: {canvasSelector?: string; stableReads?: number; timeoutMs?: number; optional?: boolean} = {},
+): Promise<boolean> {
+  await page.evaluate(() => { (window as any).__canvasQuiet = null; });
+  const quiet = page.waitForFunction(({vt, cs, need}) => {
+    const w = window as any;
+    const norm = (s: string) => s.replace(/[\s-]+/g, ' ').toLowerCase();
+    const v = Array.from(w.grok?.shell?.tv?.viewers ?? [])
+      .find((x: any) => norm(x.type) === norm(vt)) as any;
+    const cv = v?.root?.querySelector(cs) as HTMLCanvasElement | null;
+    if (!cv) return false;
+    try {
+      const img = cv.getContext('2d')!.getImageData(0, 0, cv.width, cv.height).data;
+      let sig = 0;
+      for (let i = 0; i < img.length; i += 4)
+        sig = (sig * 31 + ((img[i] << 16) | (img[i + 1] << 8) | img[i + 2])) % 2147483647;
+      const state = w.__canvasQuiet ?? {sig: null, count: 0};
+      if (state.sig === sig) state.count++;
+      else { state.sig = sig; state.count = 1; }
+      w.__canvasQuiet = state;
+      return state.count >= need;
+    } catch {
+      return false;
+    }
+  }, {vt: viewerType, cs: opts.canvasSelector ?? 'canvas', need: opts.stableReads ?? 2},
+  {timeout: opts.timeoutMs ?? 20_000, polling: 300});
+  if (!opts.optional) {
+    await quiet;
+    return true;
+  }
+  return quiet.then(() => true, () => false);
+}
+
+export async function waitForViewerRepaint(
+  page: Page, viewerName: string, baseline: string, timeoutMs = 15_000,
+): Promise<string> {
+  await expect.poll(() => viewerSignature(page, viewerName),
+    {timeout: timeoutMs, intervals: [200, 300, 500, 700, 1000]}).not.toBe(baseline);
+  return viewerSignature(page, viewerName);
+}
+
+export async function waitForPropertyValue(
+  page: Page, prop: string, expected: string, category?: string, timeoutMs = 10_000,
+): Promise<void> {
+  await expect.poll(() => propertyGridValue(page, prop, category),
+    {timeout: timeoutMs, intervals: [100, 200, 300, 500]}).toBe(expected);
+}
+
+/**
+ * Hashes the pixels of individual trellis CELL canvases, addressed by their index in the
+ * `.d4-trellis-plot-cell` list. Returns one hash per requested index, `null` when that cell has
+ * no canvas — the null is load-bearing: a caller diffs two frames and a vanished canvas must not
+ * satisfy an inequality with no repaint, so both endpoints are null-guarded at the call site.
+ *
+ * This is NOT snapshotCanvasColors/diffCanvasColors: those key on the WHOLE viewer's single
+ * canvas by viewer type, and the trellis assertions here need cell A vs cell B in DIFFERENT
+ * columns of one viewer — a per-cell address the viewer-type helpers cannot express. The inline
+ * copy of this loop appeared at eleven sites in one section, each re-deriving the FNV walk and
+ * the try/catch; consolidating it here keeps the null contract and the hash identical everywhere.
+ *
+ * `rootIndex` selects among multiple trellis viewers on the view (Pick Up / Apply has two).
+ * Failure modes: none thrown — an absent viewer or cell yields nulls, which the caller asserts on.
+ * Cleanup: N/A (read-only).
+ */
+export async function trellisCellHashes(
+  page: Page, indices: number[], opts: {rootIndex?: number} = {},
+): Promise<(number | null)[]> {
+  return page.evaluate(({idxs, rootIdx}) => {
+    const root = document.querySelectorAll('[name="viewer-Trellis-plot"]')[rootIdx] as HTMLElement | undefined;
+    const hash = (i: number) => {
+      const cv = root?.querySelectorAll('.d4-trellis-plot-cell')[i]?.querySelector('canvas') as HTMLCanvasElement | null;
+      if (!cv) return null;
+      try {
+        const img = cv.getContext('2d')!.getImageData(0, 0, cv.width, cv.height).data;
+        let h = 0;
+        for (let k = 0; k < img.length; k += 4)
+          h = (h * 31 + ((img[k] << 16) | (img[k + 1] << 8) | img[k + 2])) % 2147483647;
+        return h;
+      } catch { return null; }
+    };
+    return idxs.map(hash);
+  }, {idxs: indices, rootIdx: opts.rootIndex ?? 0});
+}
+
+/**
+ * Hashes EVERY cell canvas of one trellis viewer (by root index), in cell order. The leak check
+ * in Pick Up / Apply compares whole-viewer frames rather than two nominated cells, so it needs
+ * the full vector; same null-per-cell contract as trellisCellHashes.
+ */
+export async function trellisAllCellHashes(
+  page: Page, opts: {rootIndex?: number} = {},
+): Promise<(number | null)[]> {
+  return page.evaluate((rootIdx) => {
+    const root = document.querySelectorAll('[name="viewer-Trellis-plot"]')[rootIdx] as HTMLElement | undefined;
+    const hs: (number | null)[] = [];
+    for (const cell of Array.from(root?.querySelectorAll('.d4-trellis-plot-cell') ?? [])) {
+      const cv = cell.querySelector('canvas') as HTMLCanvasElement | null;
+      if (!cv) { hs.push(null); continue; }
+      try {
+        const img = cv.getContext('2d')!.getImageData(0, 0, cv.width, cv.height).data;
+        let h = 0;
+        for (let i = 0; i < img.length; i += 4)
+          h = (h * 31 + ((img[i] << 16) | (img[i + 1] << 8) | img[i + 2])) % 2147483647;
+        hs.push(h);
+      } catch { hs.push(null); }
+    }
+    return hs;
+  }, opts.rootIndex ?? 0);
+}
+
+export interface ChangeColorOptions {
+
+  viewerType: string;
+
+  category: string;
+
+  rgb: [number, number, number];
+
+  hex: string;
+
+  column: string;
+
+  additive?: Record<string, string>;
+
+  altContainerNames?: string[];
+}
+
 export async function changeLegendItemColor(page: Page, opts: ChangeColorOptions): Promise<void> {
-  // Dialog name sanitization mirrors the existing specs: `R_ONE` → `dialog-R-ONE`.
+
   const dlgName = 'dialog-' + opts.category.replace(/[_\s]/g, '-');
   const containers = [
     `viewer-${opts.viewerType}`,
@@ -419,6 +994,12 @@ export async function changeLegendItemColor(page: Page, opts: ChangeColorOptions
   ];
   const rgbStr = `rgb(${opts.rgb[0]}, ${opts.rgb[1]}, ${opts.rgb[2]})`;
   const lowerHex = opts.hex.toLowerCase();
+  const readTag = () => page.evaluate(({c, col}) => {
+    const dfCol = (window as any).grok.shell.tv.dataFrame.col(col);
+    const t = JSON.parse(dfCol.tags['.color-coding-categorical'] ?? '{}');
+    return String(t[c] ?? '').toLowerCase();
+  }, {c: opts.category, col: opts.column});
+  const committed = (tag: string) => tag === lowerHex || tag.includes(lowerHex.slice(1));
   let okCommitted = false;
   try {
     let item = page.locator(`[name="${containers[0]}"] [name="legend"] .d4-legend-item`)
@@ -443,13 +1024,7 @@ export async function changeLegendItemColor(page: Page, opts: ChangeColorOptions
     }, {dn: dlgName, rgb: rgbStr});
     await page.waitForTimeout(200);
     await page.locator(`.d4-dialog[name="${dlgName}"] [name="button-OK"]`).click({timeout: 5000});
-    await page.waitForTimeout(700);
-    const tag = await page.evaluate(({c, col}) => {
-      const dfCol = (window as any).grok.shell.tv.dataFrame.col(col);
-      const t = JSON.parse(dfCol.tags['.color-coding-categorical'] ?? '{}');
-      return String(t[c] ?? '').toLowerCase();
-    }, {c: opts.category, col: opts.column});
-    okCommitted = tag === lowerHex || tag.includes(lowerHex.slice(1));
+    okCommitted = committed(await pollValue(readTag, committed, 700, 50));
   } catch (_) {
     okCommitted = false;
   }
@@ -465,22 +1040,78 @@ export async function changeLegendItemColor(page: Page, opts: ChangeColorOptions
       for (const v of (window as any).grok.shell.tv.viewers)
         if (v.type !== 'Grid') try { v.invalidate?.(); } catch (_) {}
     }, {col: opts.column, add: additive});
-    await page.waitForTimeout(800);
+    await pollValue(readTag, (t) => t === lowerHex, 800, 50);
   }
-  // Final assert: the column tag carries the requested color for the category.
-  const final = await page.evaluate(({c, col}) => {
-    const dfCol = (window as any).grok.shell.tv.dataFrame.col(col);
-    const t = JSON.parse(dfCol.tags['.color-coding-categorical'] ?? '{}');
-    return String(t[c] ?? '').toLowerCase();
-  }, {c: opts.category, col: opts.column});
-  expect(final).toBe(lowerHex);
+
+  expect(await readTag()).toBe(lowerHex);
 }
 
-// ---------------------------------------------------------------------------
-// 5. clickCanvasFilter — Bar/Pie click-to-filter with multi-position retry.
-// ---------------------------------------------------------------------------
+/**
+ * Navigates an already-open `.d4-menu-popup` to `group > leaf` and clicks it.
+ *
+ * Shared by drivePanelMenuLeaf and driveContextMenuLeaf — the two differ only in how the popup
+ * is opened. Kept as one function on purpose: the registry records eleven copy-pasted copies of
+ * this block spreading through a single section, each inheriting the original's bugs and none of
+ * its fixes.
+ *
+ * Failure modes: throws naming the missing segment and listing the labels actually visible.
+ * Cleanup: N/A (leaves the menu closed by the click).
+ */
+async function navigateMenuPopup(page: Page, group: string | null, leaf: string): Promise<void> {
+  await installEventWaits(page);
+  await page.evaluate(({g, l}) => (window as any).__menuLeaf(g, l), {g: group, l: leaf});
+}
 
-/** Geometry positions for Bar / Pie hit-tests. Tuned to headless layouts. */
+/**
+ * Opens a viewer's PANEL menu (the titlebar burger) and clicks `group > leaf`.
+ *
+ * Failure modes: throws when the burger, the group, or the leaf is absent.
+ * Cleanup: N/A.
+ */
+export async function drivePanelMenuLeaf(
+  page: Page, viewerName: string, group: string | null, leaf: string,
+): Promise<void> {
+  await page.evaluate((vn: string) => {
+    const root = document.querySelector(`[name="viewer-${vn}"]`);
+    const titlebar = root?.closest('.panel-base')?.querySelector('.panel-titlebar');
+    const burger = titlebar?.querySelector('[name="icon-font-icon-menu"]') as HTMLElement | null;
+    if (!burger)
+      throw new Error(`no [name="icon-font-icon-menu"] in the .panel-titlebar of viewer-${vn}`);
+    burger.click();
+  }, viewerName);
+  await page.locator('.d4-menu-popup').last().waitFor({timeout: 15_000});
+  await navigateMenuPopup(page, group, leaf);
+}
+
+/**
+ * Right-clicks a viewer's canvas and clicks `group > leaf` in the CONTEXT menu.
+ *
+ * The context menu is a different surface from the panel burger menu — different opener, same
+ * popup structure — so drivePanelMenuLeaf cannot drive it. Specs were hand-rolling the
+ * dispatch-hover-click sequence with fixed sleeps at every site instead.
+ *
+ * Failure modes: throws when the canvas, the group, or the leaf is absent.
+ * Cleanup: N/A.
+ */
+export async function driveContextMenuLeaf(
+  page: Page, viewerName: string, group: string | null, leaf: string,
+  opts: {canvasSelector?: string} = {},
+): Promise<void> {
+  await page.evaluate(({vn, cs}) => {
+    const canvas = (document.querySelector(`[name="viewer-${vn}"]`) as HTMLElement | null)
+      ?.querySelector(cs) as HTMLCanvasElement | null;
+    if (!canvas)
+      throw new Error(`no ${cs} in viewer-${vn}`);
+    const r = canvas.getBoundingClientRect();
+    canvas.dispatchEvent(new MouseEvent('contextmenu', {
+      bubbles: true, cancelable: true, button: 2,
+      clientX: r.left + r.width / 2, clientY: r.top + r.height / 2,
+    }));
+  }, {vn: viewerName, cs: opts.canvasSelector ?? 'canvas'});
+  await page.locator('.d4-menu-popup').last().waitFor({timeout: 15_000});
+  await navigateMenuPopup(page, group, leaf);
+}
+
 const BAR_POSITIONS = (w: number, h: number, nCats: number) => [
   {x: w * 0.5, y: h * 0.2},
   {x: w * 0.5, y: h * 0.4},
@@ -498,29 +1129,21 @@ const PIE_POSITIONS = (w: number, h: number) => [
 ];
 
 export interface CanvasFilterOptions {
-  /** 'Bar chart' or 'Pie chart'. */
+
   viewerType: 'Bar chart' | 'Pie chart';
-  /** Column on which the categorical filter will narrow (e.g. 'Stereo Category'). */
+
   column: string;
 }
 
 export interface CanvasFilterResult {
-  /** Filtered-row count after the click (or after JS-API fallback). */
+
   totalFiltered: number;
-  /** For Bar chart: number of categories still represented (1 if narrowed). */
+
   survivors: number;
-  /** Whether the canvas click actually narrowed the filter (false → fallback used). */
+
   canvasClickWorked: boolean;
 }
 
-/**
- * Click-to-filter on Bar / Pie canvas with multi-position retry. If the
- * canvas click does not narrow the filter, falls back to a Filter Panel
- * categorical filter that produces the same user-observable contract.
- *
- * Verbatim extraction of the ~70-line block in filtering-spec.ts and
- * legend-grok-17222-spec.ts.
- */
 export async function clickCanvasFilter(
   page: Page, opts: CanvasFilterOptions,
 ): Promise<CanvasFilterResult> {
@@ -554,7 +1177,7 @@ export async function clickCanvasFilter(
       await new Promise((r) => setTimeout(r, 300));
     });
     try {
-      await page.locator(`[name="viewer-${opts.viewerType}"] canvas`).first()
+      await page.locator(`[name="viewer-${opts.viewerType.replace(/\s+/g, '-')}"] canvas`).first()
         .click({position: {x: pos.x, y: pos.y}, timeout: 3000});
       await page.waitForTimeout(opts.viewerType === 'Bar chart' ? 800 : 900);
       const probe = await page.evaluate((col) => {
@@ -572,10 +1195,10 @@ export async function clickCanvasFilter(
         ? probe.survivors === 1 && probe.totalFiltered > 0
         : probe.totalFiltered !== setup.before && probe.totalFiltered > 0;
       if (ok) { canvasClickWorked = true; break; }
-    } catch (_) { /* try next position */ }
+    } catch (_) {  }
   }
   if (!canvasClickWorked) {
-    // JS-API fallback: post-condition only — narrow to one category via FP.
+
     const probe = await page.evaluate(async (col) => {
       const tv = (window as any).grok.shell.tv;
       const df = tv.dataFrame;
@@ -602,42 +1225,96 @@ export async function clickCanvasFilter(
   return result;
 }
 
-// ---------------------------------------------------------------------------
-// 6. applyCategoricalFilter — fg.updateOrAdd with CATEGORICAL filter.
-// ---------------------------------------------------------------------------
-
-/**
- * Apply a categorical filter via the Filter Panel. Verbatim extraction of
- * the `fg.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, ...})` block
- * duplicated across filtering / legend-grok-17222 / legend-api specs.
- */
 export async function applyCategoricalFilter(
   page: Page, column: string, selected: string[], settleMs = 1500,
 ): Promise<{filteredCount: number}> {
   return await page.evaluate(async ({col, sel, settle}) => {
     const tv = (window as any).grok.shell.tv;
+    const df = tv.dataFrame;
     const fg = tv.getFiltersGroup();
     const DG = (window as any).DG;
+    const settled = new Promise<void>((resolve) => {
+      const sub = df.onRowsFiltered.subscribe(() => { sub.unsubscribe(); resolve(); });
+      setTimeout(resolve, settle);
+    });
     fg.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: col, selected: sel});
-    await new Promise((r) => setTimeout(r, settle));
-    return {filteredCount: tv.dataFrame.filter.trueCount};
+    await settled;
+    return {filteredCount: df.filter.trueCount};
   }, {col: column, sel: selected, settle: settleMs});
 }
 
-// ---------------------------------------------------------------------------
-// 7. resetFilters — clear all filters and reset df.filter to all-true.
-// ---------------------------------------------------------------------------
+export async function applyNumericFilter(
+  page: Page, column: string, min: number, max = 1e12, settleMs = 1500,
+): Promise<number> {
+  return await page.evaluate(async ({col, mn, mx, settle}) => {
+    const tv = (window as any).grok.shell.tv;
+    const df = tv.dataFrame;
+    const fg = tv.getFiltersGroup();
+    const settled = new Promise<void>((resolve) => {
+      const sub = df.onRowsFiltered.subscribe(() => { sub.unsubscribe(); resolve(); });
+      setTimeout(resolve, settle);
+    });
+    fg.updateOrAdd({type: 'histogram', column: col, min: mn, max: mx});
+    await settled;
+    return df.filter.trueCount;
+  }, {col: column, mn: min, mx: max, settle: settleMs});
+}
 
-/**
- * Reset every filter (FP + in-viewer) and set df.filter to all-true.
- * Verbatim extraction of the reset block used at the start of multiple
- * softSteps in filtering / legend-grok-17222 / scatterplot specs.
- */
+export interface LayoutRoundTripResult {
+
+  layoutId: string;
+
+  filteredAfter: number;
+
+  rowCountAfter: number;
+
+  viewersAfter: number;
+}
+
+export async function saveAndReloadLayout(
+  page: Page, namePrefix: string, applyCapMs = 3500,
+): Promise<LayoutRoundTripResult> {
+  return await page.evaluate(async ({prefix, cap}) => {
+    const grok = (window as any).grok;
+    const tv = grok.shell.tv;
+    const layout = tv.saveLayout();
+    layout.name = prefix + '_' + Date.now();
+    const saved = await grok.dapi.layouts.save(layout);
+    await new Promise((r) => setTimeout(r, 1000)); 
+    const applied = new Promise<void>((resolve) => {
+      const sub = grok.events.onViewLayoutApplied.subscribe(() => { sub.unsubscribe(); resolve(); });
+      setTimeout(resolve, cap);
+    });
+    tv.loadLayout(await grok.dapi.layouts.find(saved.id));
+    await applied;
+
+    for (let i = 0; i < 40; i++) {
+      const t = grok.shell.tv;
+      if (t?.dataFrame?.rowCount > 0 && t?.viewers?.length > 0) break;
+      await new Promise((r) => setTimeout(r, 100));
+    }
+    const now = grok.shell.tv;
+    return {
+      layoutId: saved.id,
+      filteredAfter: now.dataFrame.filter.trueCount,
+      rowCountAfter: now.dataFrame.rowCount,
+      viewersAfter: now.viewers.length,
+    };
+  }, {prefix: namePrefix, cap: applyCapMs});
+}
+
 export async function resetFilters(page: Page, opts: {clearScatterFilter?: boolean} = {}): Promise<void> {
   await page.evaluate(async (clearSp) => {
     const tv = (window as any).grok.shell.tv;
     if (!tv) return;
     const df = tv.dataFrame;
+    const settled = new Promise<void>((resolve) => {
+      const sub = df.onRowsFiltered.subscribe(() => { sub.unsubscribe(); resolve(); });
+      setTimeout(resolve, 500);
+    });
+    // props throws "Property not found" on a viewer without onClick, so the read is guarded too
+    for (const v of Array.from(tv.viewers) as any[])
+      try { if (v.props.onClick === 'Filter') v.props.onClick = 'Select'; } catch (_) {}
     df.filter.setAll(true);
     const fg = tv.getFiltersGroup();
     for (const f of Array.from(fg.filters as any)) { try { fg.remove(f); } catch (_) {} }
@@ -645,20 +1322,10 @@ export async function resetFilters(page: Page, opts: {clearScatterFilter?: boole
       const sp = tv.viewers.find((v: any) => v.type === 'Scatter plot');
       if (sp) try { sp.props.filter = ''; } catch (_) {}
     }
-    await new Promise((r) => setTimeout(r, 500));
+    await settled;
   }, opts.clearScatterFilter ?? false);
 }
 
-// ---------------------------------------------------------------------------
-// 8. cleanupShell — closeAll + 500ms settle, the canonical Cleanup softStep.
-// ---------------------------------------------------------------------------
-
-/**
- * Reset the shell: closeAll views + 500ms settle. Verbatim equivalent of the
- * Cleanup softStep body duplicated at the end of every Legend spec.
- *
- * Use inside `softStep('Cleanup', ...)` to preserve the soft-failure semantics.
- */
 export async function cleanupShell(
   page: Page,
   opts: {clearStereoCategoryColorCoding?: boolean} = {},
@@ -675,39 +1342,51 @@ export async function cleanupShell(
     }
     (window as any).grok.shell.closeAll();
   }, opts.clearStereoCategoryColorCoding ?? false);
-  await page.waitForTimeout(500);
+  // closeAll returns before the views drain; waiting for the drain is the same guarantee the
+  // trailing sleep was buying, and it returns as soon as it is true (48 call sites x 500 ms)
+  await page.evaluate(() => new Promise<void>((resolve) => {
+    const w = window as any;
+    const t0 = Date.now();
+    const tick = () => {
+      if (Array.from(w.grok.shell.tableViews).length === 0 || Date.now() - t0 > 500) return resolve();
+      setTimeout(tick, 25);
+    };
+    tick();
+  }));
 }
 
-// ---------------------------------------------------------------------------
-// 9. setViewerProps — drive a viewer's props through a set→wait→read-back ladder.
-// ---------------------------------------------------------------------------
-
 export interface ViewerPropStep {
-  /** Props to assign this step (one or many, in insertion order). */
+
   set: Record<string, any>;
-  /** Settle delay in ms after the assignment (default `delayMs`). */
+
   wait?: number;
-  /** Prop name → its value is collected; array → an object keyed by those names; omitted → nothing. */
+
   read?: string | string[];
 }
 
-/**
- * Collapses the repeated `h.props.x = v; await sleep; r.push(h.props.x)` ladders
- * that fill the viewer specs. Finds the current table view's viewer by `type`,
- * then for each step assigns `set`, waits, and reads back `read`. Returns the
- * collected values in order. Behaviourally identical to the hand-rolled blocks:
- * same set order, same per-step delay, read-back happens after the wait.
- */
 export async function setViewerProps(
-  page: Page, viewerType: string, steps: ViewerPropStep[], delayMs = 300,
+  page: Page, viewerType: string, steps: ViewerPropStep[], delayMs = 120,
 ): Promise<any[]> {
   return page.evaluate(async ({viewerType, steps, delayMs}) => {
-    const h = Array.from((window as any).grok.shell.tv.viewers)
-      .find((x: any) => x.type === viewerType) as any;
+    const w = window as any;
+    const norm = (s: string) => s.replace(/[\s-]+/g, ' ').toLowerCase();
+    const h = Array.from(w.grok.shell.tv.viewers)
+      .find((x: any) => norm(x.type) === norm(viewerType)) as any;
+    const immediate = h.immediateRendering === true;
     const out: any[] = [];
     for (var step of steps) {
+
+      const settled = new Promise<void>((resolve) => {
+        let sub: any = null;
+        try { sub = h.onViewerRendered.subscribe(() => { sub.unsubscribe(); resolve(); }); }
+        catch (_) {  }
+        setTimeout(() => { try { sub?.unsubscribe(); } catch (_) {} resolve(); }, step.wait ?? delayMs);
+      });
       for (var k of Object.keys(step.set)) h.props[k] = step.set[k];
-      await new Promise((res) => setTimeout(res, step.wait ?? delayMs));
+      // an immediately-rendering viewer repaints on a zero-delay timer armed during the set, so one
+      // macrotask later the render event above has already resolved `settled`
+      if (immediate) await new Promise((r) => setTimeout(r, 0));
+      await settled;
       if (step.read === undefined) continue;
       if (Array.isArray(step.read)) {
         const obj: Record<string, any> = {};
@@ -720,16 +1399,548 @@ export async function setViewerProps(
   }, {viewerType, steps, delayMs});
 }
 
-// ---------------------------------------------------------------------------
-// 10. finishSpec — trailing soft-step assertion (throws if any softStep failed).
-// ---------------------------------------------------------------------------
+export async function waitForViewerRendered(page: Page, viewerType: string, capMs = 1000): Promise<void> {
+  await page.evaluate(({type, capMs}) => new Promise<void>((resolve) => {
+    const w = window as any;
+    const t0 = Date.now();
+    const norm = (s: string) => s.replace(/[\s-]+/g, ' ').toLowerCase();
+    const v = Array.from(w.grok.shell.tv.viewers).find((x: any) => norm(x.type) === norm(type)) as any;
+    if (!v) { setTimeout(resolve, 0); return; }
+
+    const key = v.type;
+    w.__lastRender = w.__lastRender ?? {};
+    if (!v.__renderStamped) {
+      try {
+        v.onViewerRendered.subscribe(() => { w.__lastRender[key] = Date.now(); });
+        v.__renderStamped = true;
+      } catch (_) {  }
+    }
+    const before = w.__lastRender[key] ?? 0;
+    if (before && Date.now() - before < 400) { resolve(); return; }
+    const tick = () => {
+      if ((w.__lastRender[key] ?? 0) > before || Date.now() - t0 >= capMs) { resolve(); return; }
+      setTimeout(tick, 25);
+    };
+    tick();
+  }), {type: viewerType, capMs});
+}
 
 /**
- * Verbatim equivalent of the `if (stepErrors.length > 0) throw new Error(...)`
- * block at the end of every Legend spec. Reads from the shared `stepErrors`
- * array exported by spec-login. Pass a non-default `prefix` only if a spec
- * wants a different message header.
+ * Waits until a viewer stops repainting — gapMs with no further onViewerRendered.
+ *
+ * The event-driven replacement for waitForCanvasQuiet, which polls getImageData over the
+ * whole canvas every 300ms and hashes every pixel in JS to decide the same thing. Returns
+ * the number of renders observed: 0 means the cap expired with no repaint at all, which is
+ * a different fact from "it settled", and usually means the action never reached the viewer.
  */
+export async function waitForViewerQuiet(
+  page: Page, viewerType: string, opts: {gapMs?: number; capMs?: number} = {},
+): Promise<number> {
+  return page.evaluate(({type, gap, cap}) => new Promise<number>((resolve) => {
+    const w = window as any;
+    const norm = (s: string) => s.replace(/[\s-]+/g, ' ').toLowerCase();
+    const v = Array.from(w.grok.shell.tv?.viewers ?? [])
+      .find((x: any) => norm(x.type) === norm(type)) as any;
+    if (!v) return resolve(0);
+
+    // Stamped, not subscribed-on-demand: callers settle AFTER the action, and a
+    // subscription opened at that point has already missed the burst it is waiting for.
+    // The stamp is installed once per viewer and survives, so "when did it last paint"
+    // is answerable retroactively. Same reason waitForViewerRendered stamps.
+    const key = v.type;
+    w.__renderCount = w.__renderCount ?? {};
+    w.__lastRender = w.__lastRender ?? {};
+    if (!v.__quietStamped) {
+      try {
+        v.onViewerRendered.subscribe(() => {
+          w.__lastRender[key] = Date.now();
+          w.__renderCount[key] = (w.__renderCount[key] ?? 0) + 1;
+        });
+        v.__quietStamped = true;
+      } catch (_) { return resolve(0); }
+    }
+    const before = w.__renderCount[key] ?? 0;
+    const t0 = Date.now();
+    // no paint since the stamp was installed counts as quiet after gapMs, not after the cap
+    const tick = () => {
+      const last = w.__lastRender[key] ?? t0;
+      const seen = (w.__renderCount[key] ?? 0) - before;
+      if (Date.now() - last >= gap) return resolve(seen);
+      if (Date.now() - t0 >= cap) return resolve(seen);
+      setTimeout(tick, 50);
+    };
+    tick();
+  }), {type: viewerType, gap: opts.gapMs ?? 150, cap: opts.capMs ?? 1500});
+}
+
+/**
+ * Waits for a viewer property to actually take, racing the viewer's own
+ * onPropertyValueChanged rather than polling props in a loop.
+ *
+ * Returns the value seen at the end, so the caller asserts on it — a cap that expires
+ * returns the current value, not a throw.
+ */
+export async function waitForPropChange(
+  page: Page, viewerType: string, prop: string, expected: unknown, capMs = 2000,
+): Promise<unknown> {
+  await installEventWaits(page);
+  return page.evaluate(async ({type, p, want, cap}) => {
+    const w = window as any;
+    const read = () => {
+      const v = Array.from(w.grok.shell.tv.viewers).find((x: any) => x.type === type) as any;
+      return v ? (v.props as any)[p] ?? null : null;
+    };
+    if (read() === want) return read();
+    const deadline = Date.now() + cap;
+    while (Date.now() < deadline) {
+      await w.__eventFired(`viewer:${type}.onPropertyValueChanged`, deadline - Date.now());
+      if (read() === want) break;
+    }
+    return read();
+  }, {type: viewerType, p: prop, want: expected, cap: capMs});
+}
+
+/**
+ * Waits for the grid to finish painting its cells (onAfterDrawContent), quiet-gap style.
+ *
+ * The grid repaints in a burst like any other viewer, so the first event is not the last.
+ */
+export async function waitForGridPainted(
+  page: Page, opts: {gapMs?: number; capMs?: number} = {},
+): Promise<number> {
+  await installEventWaits(page);
+  return page.evaluate(({gap, cap}) =>
+    (window as any).__quiet('viewer:Grid.onAfterDrawContent', gap, cap),
+  {gap: opts.gapMs ?? 250, cap: opts.capMs ?? 3000});
+}
+
+export async function waitForViewerEvent(
+  page: Page, viewerType: string, eventProp: string, capMs = 3000,
+): Promise<void> {
+  await page.evaluate(({type, eventProp, capMs}) => new Promise<void>((resolve) => {
+    const v = Array.from((window as any).grok.shell.tv.viewers).find((x: any) => x.type === type) as any;
+    if (!v) { setTimeout(resolve, 0); return; }
+    let sub: any = null;
+    try { sub = v[eventProp].subscribe(() => { sub.unsubscribe(); resolve(); }); }
+    catch (_) {  }
+    setTimeout(() => { try { sub?.unsubscribe(); } catch (_) {} resolve(); }, capMs);
+  }), {type: viewerType, eventProp, capMs});
+}
+
+export async function pollValue<T>(
+  read: () => Promise<T>, ok: (value: T) => boolean, timeoutMs = 2500, intervalMs = 100,
+): Promise<T> {
+  const deadline = Date.now() + timeoutMs;
+  let value = await read();
+  while (!ok(value) && Date.now() < deadline) {
+    await new Promise((res) => setTimeout(res, intervalMs));
+    value = await read();
+  }
+  return value;
+}
+
+/**
+ * Polls `read` until two consecutive reads compare equal under `same`, and returns that value.
+ *
+ * The stability idiom the specs kept hand-rolling: read, tick, re-read, stop when nothing moved.
+ * Thirty-six copies of it existed across the viewer specs, each with its own iteration count and
+ * its own fixed tick — which is what a "fixed sleep" in these files usually was. The tick lives
+ * here now, in the helper layer, instead of at every call site.
+ *
+ * On timeout it returns the last value read rather than throwing: the caller's assertion is what
+ * decides whether an unsettled value is a failure, and it gives a far better message than a bare
+ * timeout would.
+ *
+ * Failure modes: none — always resolves. Cleanup: N/A.
+ */
+/**
+ * Arms a JS-API event subscription, then hands back a function that awaits it.
+ *
+ * The two-phase twin of the in-page `__settled`, for when the ACTION is Playwright-side —
+ * `page.mouse.move`, `page.keyboard.press`, `locator.click` — and so cannot be passed into the
+ * browser as a callback:
+ *
+ *   const shown = await armEvent(page, 'grok.events.onTooltipShown', 2000);
+ *   await page.mouse.move(x, y);          // the real gesture, driven from Playwright
+ *   const args = await shown();           // event payload, or undefined if the cap won
+ *
+ * Arming BEFORE the action is the whole point: subscribe-after-act races the event and always
+ * burns the cap. Without this, every Playwright-driven action had no rung-1 option at all, which
+ * is why those sites ended up polling the DOM for a symptom instead of listening for the fact.
+ *
+ * Failure modes: an unknown channel rejects when awaited. Cleanup: unsubscribes on both paths.
+ */
+export async function armEvent(
+  page: Page, channel: string, capMs = 2000,
+): Promise<() => Promise<any>> {
+  await installEventWaits(page);
+  const token = `__armed_${Date.now()}_${Math.floor(Math.random() * 1e6)}`;
+  await page.evaluate(({ch, cap, tok}) => {
+    const w = window as any;
+    w[tok] = w.__armed(ch, cap);
+  }, {ch: channel, cap: capMs, tok: token});
+  return async () => page.evaluate(async (tok) => {
+    const w = window as any;
+    const args = await w[tok];
+    delete w[tok];
+    return args ?? null;
+  }, token);
+}
+
+export async function pollStable<T>(
+  read: () => Promise<T>,
+  same: (a: T, b: T) => boolean,
+  timeoutMs = 3000,
+  intervalMs = 150,
+): Promise<T> {
+  const deadline = Date.now() + timeoutMs;
+  let prev = await read();
+  while (Date.now() < deadline) {
+    await new Promise((res) => setTimeout(res, intervalMs));
+    const cur = await read();
+    if (same(prev, cur)) return cur;
+    prev = cur;
+  }
+  return prev;
+}
+
+export async function closeAllAndWait(page: Page): Promise<void> {
+  await page.evaluate(() => (window as any).grok.shell.closeAll());
+  await page.waitForFunction(() => Array.from((window as any).grok.shell.tableViews).length === 0,
+    null, {timeout: 5000}).catch(() => {});
+}
+
+/**
+ * Installs the in-page channel awaiter used inside `page.evaluate` bodies.
+ *
+ * Browser-context code cannot reach the Playwright-side wait helpers, which is why fixed sleeps
+ * kept reappearing there. After this call a spec evaluates against named channels instead:
+ *
+ *   await w.__settled('df.onSelectionChanged', () => canvas.dispatchEvent(clickEvent));
+ *   const args = await w.__eventFired('grok.events.onContextMenu', 2000);
+ *
+ * `__settled` subscribes BEFORE running the action and resolves on the first event, so it cannot
+ * miss one fired synchronously; the cap is a ceiling, not a delay. Both resolve with the event
+ * payload, or `undefined` when the cap wins.
+ *
+ * Channel grammar: `df.<stream>` (current dataframe), `grok.events.<stream>`,
+ * `viewer:<Type>.<stream>` (viewer matched on its type, whitespace/dash-insensitive).
+ *
+ * Failure modes: an unknown channel throws inside the evaluate; a cap that is routinely consumed
+ * means the channel does not fire for that action — a product gap to record, not a cap to raise.
+ * Cleanup: N/A (idempotent, re-installed on navigation).
+ */
+export async function installEventWaits(
+  page: Page, opts: {immediateRendering?: boolean} = {},
+): Promise<void> {
+  // Opt-in per spec (and cleared by resetShell): every viewer of the page, present or added later,
+  // repaints on a zero-delay timer instead of an animation frame (viewer.immediateRendering).
+  if (opts.immediateRendering)
+    await page.evaluate(() => {
+      const w = window as any;
+      w.__immediateRendering = true;
+      for (const v of Array.from(w.grok.shell.tv?.viewers ?? []) as any[])
+        try { v.immediateRendering = true; } catch (_) {  }
+    });
+  await page.evaluate(() => {
+    const w = window as any;
+    if (w.__settled) return;
+
+    const norm = (s: string) => s.replace(/[\s-]+/g, ' ').toLowerCase();
+
+    w.__stream = (channel: string) => {
+      const dot = channel.indexOf('.');
+      const scope = channel.slice(0, dot);
+      const rest = channel.slice(dot + 1);
+      if (scope === 'df') return w.grok.shell.tv.dataFrame[rest];
+      if (scope === 'grok') return w.grok.events[rest.replace(/^events\./, '')];
+      if (scope.startsWith('viewer:')) {
+        const type = scope.slice('viewer:'.length);
+        const v = Array.from(w.grok.shell.tv.viewers).find((x: any) => norm(x.type) === norm(type)) as any;
+        if (!v) throw new Error(`__settled: no viewer of type "${type}"`);
+        return v[rest];
+      }
+      throw new Error(`__settled: unknown channel "${channel}"`);
+    };
+
+    w.__armed = (channel: string, capMs: number) => {
+      const stream = w.__stream(channel);
+      let sub: any = null;
+      return new Promise<any>((resolve) => {
+        sub = stream.subscribe((args: any) => { sub.unsubscribe(); resolve(args); });
+        setTimeout(() => { try { sub?.unsubscribe(); } catch (_) {} resolve(undefined); }, capMs);
+      });
+    };
+
+    w.__settled = async (channel: string, act: () => any, capMs = 2000) => {
+      const fired = w.__armed(channel, capMs);
+      await act();
+      return fired;
+    };
+
+    w.__eventFired = (channel: string, capMs = 2000) => w.__armed(channel, capMs);
+
+    // "Settled", as opposed to "fired once": resolves after gapMs passes with no further
+    // event on the channel. A repaint arrives as a BURST of onViewerRendered — racing the
+    // first one lands mid-render, which is why the canvas readers ended up hashing pixels
+    // on a timer instead. Resolves with the number of events seen, so a caller can tell a
+    // real settle (>0) from a cap with nothing at all (0).
+    w.__quiet = (channel: string, gapMs = 300, capMs = 3000) => new Promise<number>((resolve) => {
+      const stream = w.__stream(channel);
+      let seen = 0;
+      let timer: any = null;
+      let sub: any = null;
+      const done = () => {
+        clearTimeout(timer);
+        try { sub?.unsubscribe(); } catch (_) {}
+        clearTimeout(cap);
+        resolve(seen);
+      };
+      const cap = setTimeout(done, capMs);
+      // The gap timer only starts once something has actually fired. Arming it up front
+      // makes the no-event case resolve after gapMs — a sleep with an event's name on it,
+      // which is what the first version did and what the probe caught.
+      sub = stream.subscribe(() => {
+        seen++;
+        clearTimeout(timer);
+        timer = setTimeout(done, gapMs);
+      });
+    });
+
+    // In-page twin of pollValue, for state with no event behind it — a viewer
+    // appearing in tv.viewers after a project opens, a legend item rendering.
+    // Resolves with the first value that satisfies `ok`, or the last one read.
+    // A drag is a sequence of mousemove events PACED over time — the pacing is the gesture, not a
+    // wait for something to settle, so there is no channel to race and no event to await mid-drag.
+    // That makes it the one shape where a fixed sleep is correct, and it belongs here in the
+    // helper rather than repeated at every call site.
+    w.__drag = async (el: HTMLElement, from: {x: number; y: number}, to: {x: number; y: number},
+      opts: {steps?: number; stepMs?: number; holdMs?: number; hoverFirst?: boolean;
+        modifiers?: Record<string, boolean>} = {}) => {
+      const {steps = 4, stepMs = 25, holdMs = 30, hoverFirst = false, modifiers = {}} = opts;
+      const pause = (ms: number) => new Promise((r) => setTimeout(r, ms));
+      const mk = (x: number, y: number) => ({
+        bubbles: true, cancelable: true, clientX: x, clientY: y, button: 0, ...modifiers,
+      });
+      const at = (type: string, x: number, y: number, alsoDocument = false) => {
+        el.dispatchEvent(new MouseEvent(type, mk(x, y)));
+        if (alsoDocument) document.dispatchEvent(new MouseEvent(type, mk(x, y)));
+      };
+      if (hoverFirst) {
+        at('mousemove', from.x, from.y);
+        await pause(holdMs);
+      }
+      at('mousedown', from.x, from.y);
+      await pause(holdMs);
+      for (let i = 0; i <= steps; i++) {
+        // steps: 0 is the degenerate path a hover-and-click uses; 0/0 would be NaN.
+        const t = steps === 0 ? 1 : i / steps;
+        at('mousemove', from.x + (to.x - from.x) * t, from.y + (to.y - from.y) * t, true);
+        await pause(stepMs);
+      }
+      at('mouseup', to.x, to.y, true);
+    };
+
+    // Menu navigation, in-page so BOTH the Playwright helpers (drivePanelMenuLeaf /
+    // driveContextMenuLeaf, which delegate here) and a spec whose surrounding logic sits inside
+    // one evaluate use the same implementation. The alternative was a second copy in the browser
+    // context, which is how eleven divergent copies of a menu driver got into one section.
+    //
+    // The view's top menu carries identically-labelled items and precedes every popup in document
+    // order, so both segments are looked up inside the last-opened popup only. A panel menu is a
+    // SINGLE popup — hovering a group appends no second container, the level lives in the element
+    // name — so the same scope serves group leaves and top-level ones alike.
+    w.__menuLeaf = async (group: string | null, leaf: string) => {
+      const norm = (str: string | null | undefined) => (str ?? '').trim().toLowerCase();
+      const labels = () => {
+        const popup = [...document.querySelectorAll('.d4-menu-popup')].pop();
+        return [...(popup?.querySelectorAll('.d4-menu-item-label') ?? [])];
+      };
+      const visible = () => labels().map((i) => (i.textContent ?? '').trim()).join(' | ');
+      const find = (text: string) =>
+        labels().find((i) => norm(i.textContent) === norm(text))?.closest('.d4-menu-item') ?? null;
+      const waitFor = (text: string) => w.__poll(() => find(text), (i: Element | null) => i !== null, 5000);
+      if (group !== null) {
+        const groupItem = await waitFor(group);
+        if (!groupItem)
+          throw new Error(`menu: group "${group}" not found; visible: ${visible()}`);
+        const b = groupItem.getBoundingClientRect();
+        for (const type of ['mouseover', 'mousemove'])
+          groupItem.dispatchEvent(new MouseEvent(type, {bubbles: true, clientX: b.x + 5, clientY: b.y + 5}));
+      }
+      const leafItem = await waitFor(leaf);
+      if (!leafItem)
+        throw new Error(
+          `menu: leaf "${leaf}" not found in ${group === null ? 'the popup' : `the "${group}" submenu`}; `
+          + `visible: ${visible()}`);
+      (leafItem as HTMLElement).click();
+      return true;
+    };
+
+    w.__poll = async (read: () => any, ok: (v: any) => boolean, timeoutMs = 3000, intervalMs = 100) => {
+      const deadline = Date.now() + timeoutMs;
+      let value = read();
+      while (!ok(value) && Date.now() < deadline) {
+        await new Promise((r) => setTimeout(r, intervalMs));
+        value = read();
+      }
+      return value;
+    };
+
+    // In-page twin of pollStable: resolves once two consecutive reads agree, so a caller reads a
+    // value that has stopped moving instead of the first one it happened to catch. The comparison
+    // is strict equality — a read that builds an object has to stringify it.
+    //
+    // ONLY for a value that is not expected to move. Two reads of a gesture that has not landed
+    // yet also agree, so on a value that IS expected to move this returns the stale one — pass
+    // the pre-gesture value to __moved / __filtered there instead.
+    w.__stable = async (read: () => any, capMs = 1500, intervalMs = 50) => {
+      const deadline = Date.now() + capMs;
+      let prev = read();
+      while (Date.now() < deadline) {
+        await new Promise((r) => setTimeout(r, intervalMs));
+        const cur = read();
+        if (cur === prev) return cur;
+        prev = cur;
+      }
+      return prev;
+    };
+
+    // Resolves once `read` has held one value for gapMs uninterrupted, or at capMs.
+    //
+    // The reason this is not __stable: a panel gesture lands in stages — the row filter first, the
+    // header counter a repaint later — and two reads 25ms apart agree in the gap BETWEEN those
+    // stages. __stable returns there, mid-update, which is how a counter that reads "0" reached an
+    // assertion expecting "1". A real quiet gap is the only settle that spans a staged update.
+    w.__settledFor = async (read: () => any, gapMs = 150, capMs = 1500, intervalMs = 25) => {
+      const deadline = Date.now() + capMs;
+      let prev = read();
+      let since = Date.now();
+      while (Date.now() < deadline) {
+        await new Promise((r) => setTimeout(r, intervalMs));
+        const cur = read();
+        if (cur !== prev) { prev = cur; since = Date.now(); continue; }
+        if (Date.now() - since >= gapMs) return cur;
+      }
+      return prev;
+    };
+
+    // Wait for `read` to leave `from` and then go quiet, inside one budget. Both halves are
+    // needed: without the first, a settle returns the pre-gesture value; without the second, a
+    // change-poll returns the first of a staged update.
+    //
+    // `read` must stamp everything the caller's assertion goes on to read. Stamping the row count
+    // alone and then asserting on the header counter waits for the wrong thing.
+    w.__moved = async (read: () => any, from: any, capMs = 1500, intervalMs = 25) => {
+      const deadline = Date.now() + capMs;
+      await w.__poll(read, (v: any) => v !== from, capMs, intervalMs);
+      return w.__settledFor(read, 150, Math.max(0, deadline - Date.now()), intervalMs);
+    };
+
+    // Run a filtering gesture and report the row count it leaves behind.
+    //
+    // With `from` — the count before the gesture, for callers that assert it MOVED — this ignores
+    // the event and waits on the count itself. Gating on the event first and then polling the
+    // value out of what is left of the same budget means a gesture that raises no event burns the
+    // whole cap on the wait and reads the stale count with zero budget left, where the fixed sleep
+    // it replaced would have read the settled one.
+    //
+    // Without `from`, standing still is a legal outcome, so there is nothing to poll for: arm the
+    // event (before the act, or it races), then wait for quiet.
+    w.__filtered = async (act: () => any, capMs = 1500, from?: number) => {
+      const count = () => w.grok.shell.tv.dataFrame.filter.trueCount;
+      if (from !== undefined) {
+        await act();
+        return w.__moved(count, from, capMs);
+      }
+      await w.__settled('df.onRowsFiltered', act, capMs);
+      return w.__settledFor(count, 150, capMs);
+    };
+
+    // An open table view is not a readable one: the dataFrame lands after the view does, which is
+    // the gap closeAll, project open and addTableView all used a fixed sleep to cover.
+    w.__tableReady = (capMs = 5000) => w.__poll(
+      () => w.grok.shell.tv?.dataFrame?.rowCount ?? 0, (n: number) => n > 0, capMs, 50);
+
+    // dapi.save resolves before the entity always reads back, which is what the fixed second
+    // between a layouts.save and the layouts.find of the same id was covering. Retry the read
+    // instead: it costs nothing when the first attempt succeeds, and unlike the sleep it still
+    // works when the stand is slower than one second.
+    w.__findSaved = async (read: () => Promise<any>, capMs = 1000) => {
+      const deadline = Date.now() + capMs;
+      for (;;) {
+        const v = await read().catch(() => null);
+        if (v || Date.now() >= deadline) return v;
+        await new Promise((r) => setTimeout(r, 50));
+      }
+    };
+
+    // loadLayout and a project reopen REPLACE the viewer instances rather than repainting them,
+    // so neither a repaint clock stamped on the old viewer nor a settle on the asserted value is
+    // a usable signal: the clock belongs to a viewer that is gone, and the value still reads the
+    // old viewer's until the new one exists. Tag what is on screen now, and wait for something
+    // untagged.
+    w.__viewerGen = () => {
+      const gen = (w.__genSeq = (w.__genSeq ?? 0) + 1);
+      for (const v of Array.from(w.grok.shell.tv?.viewers ?? []) as any[]) v.__genTag = gen;
+      return gen;
+    };
+
+    // Wait for the viewers tagged by `gen` to be replaced, THEN let the caller's own stamp go
+    // quiet. `stamp` must read what the assertion reads — the rebuild landing is not the same
+    // event as the restored value being readable.
+    w.__rebuilt = async (gen: number, stamp: () => any, capMs = 4000, gapMs = 250) => {
+      const deadline = Date.now() + capMs;
+      const fresh = () => (Array.from(w.grok.shell.tv?.viewers ?? []) as any[])
+        .filter((v) => v.__genTag !== gen).length;
+      await w.__poll(fresh, (n: number) => n > 0, capMs, 25);
+      return w.__settledFor(stamp, gapMs, Math.max(0, deadline - Date.now()), 25);
+    };
+    // Paints are stamped from the moment a viewer is added, so waitForViewerRendered /
+    // waitForViewerQuiet armed after the first paint still see it instead of burning their cap.
+    const stampRenders = (v: any) => {
+      if (!v || v.__renderStamped) return;
+      if (w.__immediateRendering)
+        try { v.immediateRendering = true; } catch (_) {  }
+      try {
+        v.onViewerRendered.subscribe(() => {
+          w.__lastRender = w.__lastRender ?? {};
+          w.__renderCount = w.__renderCount ?? {};
+          w.__lastRender[v.type] = Date.now();
+          w.__renderCount[v.type] = (w.__renderCount[v.type] ?? 0) + 1;
+        });
+        v.__renderStamped = v.__quietStamped = true;
+      } catch (_) {  }
+    };
+    for (const v of Array.from(w.grok.shell.tv?.viewers ?? [])) stampRenders(v);
+    w.grok.events.onViewerAdded.subscribe((a: any) => stampRenders(a?.args?.viewer));
+
+    // onContextMenu fires BEFORE the popup exists (Menu.show defers the DOM work to a timer), so the
+    // DOM-ready signal is onContextMenuShown; a client without it falls back to watching the popup's
+    // item count settle. Items a subscriber appends asynchronously land after either signal — poll
+    // for a specific item at the call site. Closing is a body click: Escape does not reach the
+    // popup's key handler from a dispatched context menu.
+    const popupItems = () => document.querySelectorAll('.d4-menu-popup .d4-menu-item').length;
+    w.__openContextMenu = async (el: Element, cx: number, cy: number, capMs = 3000) => {
+      const open = () => el.dispatchEvent(new MouseEvent('contextmenu',
+        {bubbles: true, cancelable: true, clientX: cx, clientY: cy, button: 2}));
+      if (w.grok.events.onContextMenuShown) {
+        if (await w.__settled('grok.events.onContextMenuShown', open, capMs) !== undefined) return true;
+      } else
+        open();
+      let prev = -1;
+      await w.__poll(popupItems, (n: number) => { const quiet = n > 0 && n === prev; prev = n; return quiet; }, capMs, 100);
+      return popupItems() > 0;
+    };
+    w.__closeContextMenu = async (capMs = 1000) => {
+      if (document.querySelectorAll('.d4-menu-popup').length === 0) return;
+      const closed = await w.__settled('grok.events.onContextMenuClosed', () => document.body.click(), capMs);
+      if (closed === undefined)
+        await w.__poll(() => document.querySelectorAll('.d4-menu-popup').length, (n: number) => n === 0, capMs, 50);
+    };
+  });
+}
+
 export function finishSpec(prefix = 'Step failures'): void {
   if (stepErrors.length === 0) return;
   const summary = stepErrors.map((e: StepError) => `- ${e.step}: ${e.error}`).join('\n');

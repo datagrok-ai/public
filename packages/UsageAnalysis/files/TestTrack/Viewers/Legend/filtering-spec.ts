@@ -1,86 +1,70 @@
-import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
+/* ---
+realizes: [viewers.scatter-plot, viewers.histogram, viewers.line-chart, viewers.bar-chart, viewers.pie-chart, viewers.trellis-plot, viewers.box-plot, viewers.filters.histogram, viewers.filters.categorical, chem.filter.substructure-filter]
+--- */
+import {localTest as test, expect} from '../../shared-page';
+import {openDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
+import {addLegendViewers} from './legend-setup';
+import {clearClickFilters, clickCanvasFilter} from './canvas-filter';
 
+// The substructure filter and the two layout round-trips live in filtering-server-spec.ts.
 test.use(specTestOptions);
 
 test('Legend filtering', async ({page}) => {
   test.setTimeout(600_000);
 
-  await loginToDatagrok(page);
-  await v.openTable(page, {withFilterPanel: true});
-  await v.addLegendViewers(page, {
+  await openDatagrok(page);
+  await v.installEventWaits(page);
+  // no withFilterPanel: every step here reaches the filters through getFiltersGroup(),
+  // and opening the panel up front raced the substructure filter this dataset's molecule
+  // column builds — the .d4-filter wait then timed out before any assertion ran
+  await v.openTable(page);
+  await addLegendViewers(page, {
     column: 'Stereo Category',
     viewers: ['Scatter plot', 'Histogram', 'Line chart', 'Bar chart', 'Pie chart', 'Trellis plot', 'Box plot'],
   });
 
-  await softStep('Numerical filter: Average Mass > 400 (≈1588)', async () => {
-    const count = await page.evaluate(async () => {
-      const fg = (window as any).grok.shell.tv.getFiltersGroup();
+  await softStep('Numerical filter: Average Mass in [400, 10000]', async () => {
+    const res = await page.evaluate(async () => {
+      const df = (window as any).grok.shell.tv.dataFrame;
+      const col = df.col('Average Mass');
+      // counted off the column rather than nailed to a constant: the spec was pinned to
+      // the full SPGI's ~1588 and kept asserting it after the dataset moved to spgi-100
+      let inRange = 0;
+      for (let i = 0; i < df.rowCount; i++)
+        if (!col.isNone(i) && col.get(i) >= 400 && col.get(i) <= 10000) inRange++;
+      const w = window as any;
+      const fg = w.grok.shell.tv.getFiltersGroup();
+      const before = df.filter.trueCount;
       fg.updateOrAdd({type: 'histogram', column: 'Average Mass', min: 400, max: 10000});
-      await new Promise((r) => setTimeout(r, 1500));
-      return (window as any).grok.shell.tv.dataFrame.filter.trueCount;
+      // the filter group debounces and onRowsFiltered fires on intermediate row sets, so the
+      // settled one is the count that has moved off `before` and then held still
+      const filtered = await w.__moved(() => df.filter.trueCount, before, 1500);
+      return {inRange, filtered, rowCount: df.rowCount as number};
     });
-    expect(count).toBeGreaterThan(1500);
-    expect(count).toBeLessThan(1700);
+    expect(res.filtered).toBe(res.inRange);
+    // the range has to actually divide the table, or the comparison above is free
+    expect(res.inRange).toBeGreaterThan(0);
+    expect(res.inRange).toBeLessThan(res.rowCount);
   });
 
   await softStep('Categorical filter: R_ONE, S_UNKN only (legend=2)', async () => {
     await v.applyCategoricalFilter(page, 'Stereo Category', ['R_ONE', 'S_UNKN']);
-    const {itemCount} = await v.readLegend(page, 'Scatter plot');
+    const itemCount = await v.pollValue(async () => (await v.readLegend(page, 'Scatter plot')).itemCount,
+      (n) => n === 2, 2000, 50);
     expect(itemCount).toBe(2);
-  });
-
-  await softStep('Structure filter on Core — platform API available (env-dependent)', async () => {
-    const res = await page.evaluate(async () => {
-      const df = (window as any).grok.shell.tv.dataFrame;
-      const fg = (window as any).grok.shell.tv.getFiltersGroup();
-      const firstSmiles = df.col('Core').get(0);
-      try {
-        fg.updateOrAdd({type: 'Chem:substructureFilter', column: 'Core', columnName: 'Core', molBlock: firstSmiles});
-        await new Promise((r) => setTimeout(r, 2000));
-        return {applied: true, filterCount: df.filter.trueCount};
-      } catch (e: any) {
-        const msg = String(e?.message ?? e);
-        return {applied: false, chemMissing: msg.includes('Chem') || msg.includes('substructure')};
-      }
-    });
-    expect(res.applied || res.chemMissing).toBe(true);
-  });
-
-  await softStep('Save + re-apply layout (filter state + ≥3s settle)', async () => {
-    const res = await page.evaluate(async () => {
-      const fg = (window as any).grok.shell.tv.getFiltersGroup();
-      for (const f of Array.from(fg.filters as any)) { try { fg.remove(f); } catch (_) {} }
-      (window as any).grok.shell.tv.dataFrame.filter.setAll(true);
-      const DG = (window as any).DG;
-      fg.updateOrAdd({type: 'histogram', column: 'Average Mass', min: 400, max: 10000});
-      await new Promise((r) => setTimeout(r, 500));
-      fg.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: 'Stereo Category', selected: ['R_ONE', 'S_UNKN']});
-      await new Promise((r) => setTimeout(r, 1500));
-      const before = (window as any).grok.shell.tv.dataFrame.filter.trueCount;
-      const tv = (window as any).grok.shell.tv;
-      const layout = tv.saveLayout();
-      layout.name = 'Filtering_' + Date.now();
-      const saved = await (window as any).grok.dapi.layouts.save(layout);
-      await new Promise((r) => setTimeout(r, 1000));
-      tv.loadLayout(await (window as any).grok.dapi.layouts.find(saved.id));
-      await new Promise((r) => setTimeout(r, 3500));
-      (window as any).__filtLayoutId = saved.id;
-      return {before, after: (window as any).grok.shell.tv.dataFrame.filter.trueCount};
-    });
-    (globalThis as any).__filtLayoutId = await page.evaluate(() => (window as any).__filtLayoutId);
-    expect(res.after).toBe(res.before);
   });
 
   await softStep('Reset + in-viewer Scatter plot filter', async () => {
     const res = await page.evaluate(async () => {
-      const df = (window as any).grok.shell.tv.dataFrame;
+      const w = window as any;
+      const df = w.grok.shell.tv.dataFrame;
       df.filter.setAll(true);
-      await new Promise((r) => setTimeout(r, 500));
-      const sp = (window as any).grok.shell.tv.viewers.find((x: any) => x.type === 'Scatter plot');
+      await w.__poll(() => df.filter.trueCount, (n: number) => n === df.rowCount, 500, 25);
+      const sp = w.grok.shell.tv.viewers.find((x: any) => x.type === 'Scatter plot');
+      const quiet = w.__quiet('viewer:Scatter plot.onViewerRendered', 150, 1500);
       sp.props.filter = '${Stereo Category} in ("R_ONE", "S_UNKN")';
-      await new Promise((r) => setTimeout(r, 1500));
+      await quiet;
       return {filter: sp.props.filter};
     });
     expect(res.filter).toContain('Stereo Category');
@@ -88,12 +72,19 @@ test('Legend filtering', async ({page}) => {
 
   await softStep('Add Filter Panel filter Average Mass > 300 (composed)', async () => {
     const res = await page.evaluate(async () => {
-      const fg = (window as any).grok.shell.tv.getFiltersGroup();
+      const w = window as any;
+      const tv = w.grok.shell.tv;
+      const df = tv.dataFrame;
+      const sp = tv.viewers.find((x: any) => x.type === 'Scatter plot');
+      const stamp = () => `${df.filter.trueCount}|` +
+        `${sp.root.querySelectorAll('[name="legend"] .d4-legend-item').length}`;
+      const before = stamp();
+      const fg = tv.getFiltersGroup();
       fg.updateOrAdd({type: 'histogram', column: 'Average Mass', min: 300, max: 10000});
-      await new Promise((r) => setTimeout(r, 1500));
-      const sp = (window as any).grok.shell.tv.viewers.find((x: any) => x.type === 'Scatter plot');
-      const items = sp.root.querySelectorAll('[name="legend"] .d4-legend-item');
-      return {legendItems: items.length};
+      // the filter group debounces and the legend redraws a repaint later, so the stamp carries
+      // both halves the assertion reads — settled is when the pair stops moving
+      await w.__moved(stamp, before, 1500);
+      return {legendItems: sp.root.querySelectorAll('[name="legend"] .d4-legend-item').length};
     });
     expect(res.legendItems).toBe(2);
   });
@@ -106,13 +97,16 @@ test('Legend filtering', async ({page}) => {
       df.filter.setAll(true);
       const fg = tv.getFiltersGroup();
       for (const f of Array.from(fg.filters as any)) { try { fg.remove(f); } catch (_) {} }
+      const w = window as any;
       const sp = tv.viewers.find((x: any) => x.type === 'Scatter plot');
+      const items = () => sp.root.querySelectorAll('[name="legend"] .d4-legend-item').length;
       sp.props.filter = '';
-      await new Promise((r) => setTimeout(r, 500));
-      const beforeItems = sp.root.querySelectorAll('[name="legend"] .d4-legend-item').length;
+      await w.__poll(items, (n: number) => n > 0, 500, 25);
+      const beforeItems = await w.__settledFor(items, 150, 500, 25);
+      const quiet = w.__quiet('viewer:Scatter plot.onViewerRendered', 150, 1500);
       sp.props.filter = '${Average Mass} > 800 and ${Average Mass} < 1200';
-      await new Promise((r) => setTimeout(r, 1500));
-      const afterItems = sp.root.querySelectorAll('[name="legend"] .d4-legend-item').length;
+      await quiet;
+      const afterItems = await w.__settledFor(items, 150, 1500, 25);
       return {beforeItems, afterItems, filter: sp.props.filter};
     });
     expect(res.filter).toContain('Average Mass');
@@ -120,27 +114,30 @@ test('Legend filtering', async ({page}) => {
   });
 
   await softStep('Bar chart canvas click-to-filter narrows to one category', async () => {
-    const result = await v.clickCanvasFilter(page, {viewerType: 'Bar chart', column: 'Stereo Category'});
+    const result = await clickCanvasFilter(page, {viewerType: 'Bar chart', column: 'Stereo Category'});
     expect(result.survivors).toBe(1);
     expect(result.totalFiltered).toBeGreaterThan(0);
   });
 
   await softStep('Pie chart canvas click-to-filter narrows the dataset', async () => {
-    const result = await v.clickCanvasFilter(page, {viewerType: 'Pie chart', column: 'Stereo Category'});
+    const result = await clickCanvasFilter(page, {viewerType: 'Pie chart', column: 'Stereo Category'});
     expect(result.totalFiltered).toBeGreaterThan(0);
   });
 
   // Inner-viewer canvas doesn't propagate to the Trellis filter handler — dispatch on the cell DIV.
   await softStep('Trellis plot cell click-to-filter narrows the dataset', async () => {
     const result = await page.evaluate(async () => {
-      const tv = (window as any).grok.shell.tv;
+      const w = window as any;
+      const tv = w.grok.shell.tv;
       const df = tv.dataFrame;
       df.filter.setAll(true);
-      await new Promise((r) => setTimeout(r, 400));
+      await w.__poll(() => df.filter.trueCount, (n: number) => n === df.rowCount, 400, 25);
       const before = df.filter.trueCount;
       const tp = tv.viewers.find((x: any) => x.type === 'Trellis plot');
+      // a trellis prop setter repaints synchronously, so the quiet has to be armed before the set
+      const quiet = w.__quiet('viewer:Trellis plot.onViewerRendered', 150, 500);
       tp.props.onClick = 'Filter';
-      await new Promise((r) => setTimeout(r, 500));
+      await quiet;
       const cells = Array.from(tp.root.querySelectorAll('.d4-trellis-plot-cell')) as HTMLElement[];
       const cellsWithData = cells.filter((c) => c.querySelector('canvas'));
       const target = cellsWithData[Math.floor(cellsWithData.length / 2)] ?? cellsWithData[0];
@@ -153,55 +150,32 @@ test('Legend filtering', async ({page}) => {
       target.dispatchEvent(new PointerEvent('pointerup', {...opts, pointerType: 'mouse', pointerId: 1, isPrimary: true}));
       target.dispatchEvent(new MouseEvent('mouseup', opts));
       target.dispatchEvent(new MouseEvent('click', opts));
-      await new Promise((r2) => setTimeout(r2, 1000));
-      return {before, after: df.filter.trueCount, picked: cellsWithData.length};
+      const after = await w.__moved(() => df.filter.trueCount, before, 1000);
+      return {before, after, picked: cellsWithData.length};
     });
     expect(result.picked).toBeGreaterThan(0);
     expect(result.after).not.toBe(result.before);
   });
 
-  // Platform doesn't persist click-to-filter state across layout save/load — assert round-trip mechanics only.
-  await softStep('Layout persistence: click-to-filter state survives save+reload', async () => {
-    const res = await page.evaluate(async () => {
-      const tv = (window as any).grok.shell.tv;
-      const df = tv.dataFrame;
-      const before = df.filter.trueCount;
-      const layout = tv.saveLayout();
-      layout.name = 'FilteringClick_' + Date.now();
-      const saved = await (window as any).grok.dapi.layouts.save(layout);
-      await new Promise((r) => setTimeout(r, 1000));
-      tv.loadLayout(await (window as any).grok.dapi.layouts.find(saved.id));
-      await new Promise((r) => setTimeout(r, 3500));
-      (window as any).__filtClickLayoutId = saved.id;
-      const tvAfter = (window as any).grok.shell.tv;
-      return {
-        before,
-        after: df.filter.trueCount,
-        layoutId: saved.id,
-        rowCountAfter: tvAfter.dataFrame.rowCount,
-        viewersAfter: tvAfter.viewers.length,
-      };
-    });
-    (globalThis as any).__filtClickLayoutId = res.layoutId;
-    expect(typeof res.layoutId).toBe('string');
-    expect(res.layoutId.length).toBeGreaterThan(0);
-    expect(res.rowCountAfter).toBeGreaterThan(0);
-    expect(res.viewersAfter).toBeGreaterThan(1);
-  });
-
   await softStep('Scatter plot Row Source cycles', async () => {
+    await clearClickFilters(page);
     const res = await page.evaluate(async () => {
-      const sp = (window as any).grok.shell.tv.viewers.find((x: any) => x.type === 'Scatter plot');
-      const fg = (window as any).grok.shell.tv.getFiltersGroup();
+      const w = window as any;
+      const tv = w.grok.shell.tv;
+      const df = tv.dataFrame;
+      const sp = tv.viewers.find((x: any) => x.type === 'Scatter plot');
+      const fg = tv.getFiltersGroup();
       const DG = (window as any).DG;
+      const before = df.filter.trueCount;
       fg.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: 'Stereo Category', selected: ['R_ONE', 'S_UNKN']});
-      await new Promise((r) => setTimeout(r, 800));
+      // the filter group debounces; the settled row set is the one that moved and then held
+      await w.__moved(() => df.filter.trueCount, before, 800);
       const results: any = {};
       for (const src of ['All', 'Filtered', 'FilteredSelected', 'Selected']) {
+        const quiet = w.__quiet('viewer:Scatter plot.onViewerRendered', 150, 500);
         try { sp.props.rowSource = src; } catch (_) {}
-        await new Promise((r) => setTimeout(r, 500));
-        const items = sp.root.querySelectorAll('[name="legend"] .d4-legend-item');
-        results[src] = items.length;
+        await quiet;
+        results[src] = sp.root.querySelectorAll('[name="legend"] .d4-legend-item').length;
       }
       return results;
     });
@@ -211,37 +185,36 @@ test('Legend filtering', async ({page}) => {
   // Bar chart Stack with includeNulls=false — legend lists only still-drawn categories.
   await softStep('Bar chart stack edge case — includeNulls=false', async () => {
     const res = await page.evaluate(async () => {
-      const df = (window as any).grok.shell.tv.dataFrame;
+      const w = window as any;
+      const tv = w.grok.shell.tv;
+      const df = tv.dataFrame;
       df.filter.setAll(true);
-      const fg = (window as any).grok.shell.tv.getFiltersGroup();
+      const fg = tv.getFiltersGroup();
       for (const f of Array.from(fg.filters as any)) { try { fg.remove(f); } catch (_) {} }
-      await new Promise((r) => setTimeout(r, 500));
-      const bc = (window as any).grok.shell.tv.viewers.find((x: any) => x.type === 'Bar chart');
+      await w.__poll(() => df.filter.trueCount, (n: number) => n === df.rowCount, 500, 25);
+      const bc = tv.viewers.find((x: any) => x.type === 'Bar chart');
+      const quiet = w.__quiet('viewer:Bar chart.onViewerRendered', 150, 1500);
       bc.props.valueColumnName = 'CAST Idea ID';
       bc.props.splitColumnName = 'Stereo Category';
       bc.props.stackColumnName = 'Primary Scaffold Name';
       try { bc.props.includeNulls = false; } catch (_) {}
-      await new Promise((r) => setTimeout(r, 1500));
+      await quiet;
+      const items = () => bc.root.querySelector('[name="legend"]')?.querySelectorAll('.d4-legend-item').length ?? 0;
+      const stamp = () => `${df.filter.trueCount}|${items()}`;
+      const before = stamp();
       const scaffolds = df.col('Primary Scaffold Name').categories;
       const DG = (window as any).DG;
       fg.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: 'Primary Scaffold Name', selected: scaffolds.slice(0, 2)});
-      await new Promise((r) => setTimeout(r, 1500));
-      const legend = bc.root.querySelector('[name="legend"]');
-      const items = legend?.querySelectorAll('.d4-legend-item') ?? [];
-      return {legendItems: items.length};
+      // the filter group debounces and the bar legend redraws a repaint later
+      await w.__moved(stamp, before, 1500);
+      return {legendItems: items()};
     });
     expect(res.legendItems).toBeLessThanOrEqual(2);
   });
 
   await softStep('Cleanup', async () => {
-    await page.evaluate(async ([id1, id2]) => {
-      for (const id of [id1, id2]) {
-        if (!id) continue;
-        try { await (window as any).grok.dapi.layouts.delete(await (window as any).grok.dapi.layouts.find(id)); } catch (_) {}
-      }
-      (window as any).grok.shell.closeAll();
-      await new Promise((r) => setTimeout(r, 500));
-    }, [(globalThis as any).__filtLayoutId, (globalThis as any).__filtClickLayoutId]);
+    await v.resetFilters(page, {clearScatterFilter: true});
+    await v.cleanupShell(page);
   });
 
   v.finishSpec();

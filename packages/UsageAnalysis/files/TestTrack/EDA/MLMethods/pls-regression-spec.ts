@@ -1,12 +1,13 @@
-import {test, expect} from '@playwright/test';
-import {specTestOptions, softStep, stepErrors, loginToDatagrok} from '../../spec-login';
+import {expect} from '@playwright/test';
+import {test} from '../../shared-page';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
 
 test.use(specTestOptions);
 
 test('PLS Regression: Train on cars.csv', async ({page}) => {
+  test.setTimeout(300_000);
   await loginToDatagrok(page);
 
-  // Step 1: Open cars.csv
   await softStep('Open cars.csv', async () => {
     const result = await page!.evaluate(async () => {
       document.querySelectorAll('.d4-dialog').forEach(d => {
@@ -19,14 +20,16 @@ test('PLS Regression: Train on cars.csv', async ({page}) => {
       grok.shell.windows.simpleMode = false;
       const df = await grok.dapi.files.readCsv('System:DemoFiles/cars.csv');
       grok.shell.addTableView(df);
-      await new Promise(r => setTimeout(r, 1000));
+      for (let i = 0; i < 20; i++) {
+        if (document.querySelector('[name="viewer-Grid"] canvas')) break;
+        await new Promise(r => setTimeout(r, 50));
+      }
       return {rows: df.rowCount, cols: df.columns.length};
     });
     expect(result.rows).toBe(30);
     expect(result.cols).toBe(17);
   });
 
-  // Step 2: Open Train Model via ML > Models > Train Model
   await softStep('Open Train Model via menu', async () => {
     await page!.evaluate(async () => {
       const ml = document.querySelector('[name="div-ML"]') as HTMLElement;
@@ -46,7 +49,6 @@ test('PLS Regression: Train on cars.csv', async ({page}) => {
     expect(view).toBe(true);
   });
 
-  // Step 3: Set Predict = price via UI column selector
   await softStep('Set Predict to price', async () => {
     await page!.evaluate(async () => {
       const editor = document.querySelector('[name="input-host-Predict"] .ui-input-editor') as HTMLElement;
@@ -63,9 +65,6 @@ test('PLS Regression: Train on cars.csv', async ({page}) => {
     expect(predictText).toContain('price');
   });
 
-  // Step 4: Train PLS Regression (JS API fallback)
-  // - Canvas-based Features selector cannot be automated for individual column toggling
-  // - Model Engine dropdown not visible in Train Model UI
   await softStep('Train PLS Regression (JS API fallback)', async () => {
     const result = await page!.evaluate(async () => {
       Array.from(grok.shell.views).filter(v => v.type === 'PredictiveModel').forEach(v => v.close());

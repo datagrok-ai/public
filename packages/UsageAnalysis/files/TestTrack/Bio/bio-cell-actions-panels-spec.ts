@@ -1,4 +1,5 @@
-import {test, expect} from '@playwright/test';
+import {expect} from '@playwright/test';
+import {test} from '../shared-page';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
 test.use(specTestOptions);
@@ -154,7 +155,7 @@ test('Bio cell-context actions + Context Pane info panels + custom editors', asy
     expect(result.separatorOk || result.helmOk || result.bilnOk,
       'at least one cross-notation conversion (SEPARATOR/HELM/BILN) must succeed').toBe(true);
   });
-  // Scenario 2 — Composition analysis + Monomer info panels on the cell-level Context Pane.
+
   await softStep('Scenario 2 Step 1: single-click a Macromolecule cell so it becomes the current cell', async () => {
     await page.evaluate(() => {
       const g = (window as any).grok;
@@ -167,7 +168,7 @@ test('Bio cell-context actions + Context Pane info panels + custom editors', asy
       const cell = df.cell(0, macroCol.name);
       g.shell.o = DG.SemanticValue.fromTableCell(cell);
     });
-    // Context Pane reconcile is async — settle before reading the panels.
+
     await page.waitForTimeout(4000);
   });
   await softStep('Scenario 2 Step 2-3: locate the Composition analysis panel and verify non-empty content', async () => {
@@ -212,7 +213,7 @@ test('Bio cell-context actions + Context Pane info panels + custom editors', asy
       'Composition analysis pane MUST render non-empty content on expand').toBe(true);
   });
   await softStep('Scenario 2 Step 4: locate the Monomer info panel (semType Monomer; see Selector recon-notes)', async () => {
-    // monomerInfoPanel is semType:'Monomer' — may not surface on a Macromolecule cell; assert non-empty only if present.
+
     const result: {found: boolean; hasContent: boolean} = await page.evaluate(async () => {
       const headers = Array.from(document.querySelectorAll(
         '.grok-prop-panel .d4-accordion-pane-header, .d4-accordion-pane-header'));
@@ -275,7 +276,7 @@ test('Bio cell-context actions + Context Pane info panels + custom editors', asy
     expect(balloonError,
       'Cancel must close GetRegionEditor with no error balloon').toBe(0);
   });
-  // Scenario 4 — Split to Monomers editor.
+
   await softStep('Scenario 4 Step 1: click Bio > Transform > Split to Monomers — SplitToMonomersEditor dialog opens', async () => {
     await page.evaluate(async () => {
       (document.querySelector('[name="div-Bio"]') as HTMLElement).click();

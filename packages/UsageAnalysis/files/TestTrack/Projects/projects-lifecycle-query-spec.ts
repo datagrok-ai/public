@@ -1,6 +1,5 @@
-// Query-source lifecycle on a provisioned System:Datagrok query.
-// Step 4 = github-3550 reproduction: rename the owned query and assert reference-resolution invariant.
-import {test, expect} from '@playwright/test';
+import {expect} from '@playwright/test';
+import {test} from '../shared-page';
 import {softStep, stepErrors} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
 import {projectsTestOptions, evalJs, gotoApp, setupSession} from './_helpers';
@@ -13,12 +12,8 @@ import {
   ProvisionedQuery,
   SYSTEM_DATAGROK_QUERIES,
 } from '../helpers/openers';
-import {
-  saveProjectWithProvenance,
-  reopenAndAssertProvenance,
-  deleteProjectWithCleanup,
-  shareWithSecondUserAndVerify,
-} from '../helpers/projects';
+import {deleteProjectWithCleanup} from '../helpers/projects';
+import {saveProjectWithProvenance, reopenAndAssertProvenance, shareWithSecondUserAndVerify} from './projects-shared';
 
 test.use(projectsTestOptions);
 
@@ -85,8 +80,6 @@ test('Projects / Lifecycle Query: provisioned System:Datagrok query source', asy
       })()`);
       expect(renameOk).toBe(true);
 
-      // github-3550 invariant: after the query is renamed, reopen must EITHER auto-resolve OR fail with an
-      // explicit error. Silent null references (relations entries but table doesn't load) is the regression.
       const result = await evalJs<{
         tablesAfter: number;
         relationsCount: number;
@@ -131,7 +124,6 @@ test('Projects / Lifecycle Query: provisioned System:Datagrok query source', asy
       expect(r.persistedName).toBe(renamedProj);
     });
 
-    // Share is LAST step before finally — the helper reloads the page for second-user re-auth.
     await softStep('Step 6: share with second user (View-and-Use) + recipient open', async () => {
       if (!saved) return;
       const r = await shareWithSecondUserAndVerify(page, {id: saved.projectId, name: `${projectName}-renamed`}, {full: false});
