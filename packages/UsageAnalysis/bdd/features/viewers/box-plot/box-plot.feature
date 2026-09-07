@@ -50,11 +50,12 @@ Feature: Box plot property surface
     Then context menu should contain text "Show P Value"
     And context menu should not contain text "Statistics Format"
     When user closes the context menu
+    And user moves the pointer away from box plot viewer
     And user hovers over the "p value" area of box plot viewer
     And user clicks on show-group-stats icon in box plot viewer
     Then "Show Group Comparison" property of box plot viewer should be "true"
     When user right-clicks on the "group comparison" area of box plot viewer
-    Then context menu should contain text "Table"
+    Then "Add t-Test Table" menu item in context menu should be visible
     And "Show Assumption Checks" menu item in context menu should be enabled
     When user closes the context menu
     And user sets "Show Group Comparison" property of box plot viewer to "false"
@@ -111,19 +112,26 @@ Feature: Box plot property surface
     When user sets "Show Color Selector" property of box plot viewer to "false"
     Then "Marker Color" column input in box plot viewer should be hidden
     When user sets "Show Category Selector" property of box plot viewer to "false"
-    Then box plot viewer should have repainted
+    Then box plot viewer should have repainted by at least 2000 pixels
     When user sets "Show Value Axis" property of box plot viewer to "false"
-    Then box plot viewer should have repainted
+    Then box plot viewer should have repainted by at least 2000 pixels
+    And box plot viewer should not have a "y axis" area
     When user sets "Show Category Axis" property of box plot viewer to "false"
-    Then box plot viewer should have repainted
+    Then box plot viewer should have repainted by at least 2000 pixels
+    And box plot viewer should not have an "x axis" area
+    When user sets "Show Category Axis" property of box plot viewer to "true"
+    Then box plot viewer should have repainted by at least 2000 pixels
+    And box plot viewer should have an "x axis" area
+    When user sets "Show Value Axis" property of box plot viewer to "true"
+    Then box plot viewer should have repainted by at least 2000 pixels
+    And box plot viewer should have a "y axis" area
+    When user sets "Show Category Selector" property of box plot viewer to "true"
+    Then box plot viewer should have repainted by at least 2000 pixels
     When user sets properties of box plot viewer:
-      | Show Category Axis     | true  |
-      | Show Value Axis        | true  |
-      | Show Category Selector | true  |
       | Show Value Selector    | true  |
       | Show Color Selector    | true  |
       | Show Size Selector     | false |
-    Then box plot viewer should have repainted
+    Then box plot viewer should have repainted by at least 2000 pixels
     When user hovers over box plot viewer
     Then "Marker Size" column input in box plot viewer should be hidden
     And Value column input in box plot viewer should be visible
@@ -186,6 +194,7 @@ Feature: Box plot property surface
       | Category 1   | SEX                |
     And user hovers over the "marker" area of box plot viewer
     Then tooltip should be visible
+    And the tooltip should show some columns
     And the tooltip should not show columns "AGE, SEX, WEIGHT"
     When user moves the pointer away from box plot viewer
 
@@ -195,19 +204,21 @@ Feature: Box plot property surface
     When user sets "Category 2" property of box plot viewer to "RACE"
     Then "Category 2" property of box plot viewer should be "RACE"
     When user sets "Table" property of box plot viewer to "spgi-100"
-    Then "Category 2" property of box plot viewer should not be "RACE"
+    Then "Category 2" property of box plot viewer should be ""
     And no errors should have been logged
     When user sets properties of box plot viewer:
       | Value      | Average Mass |
       | Category 1 | Series       |
     Then "Table" property of box plot viewer should be "spgi-100"
-    And box plot viewer should be painted
+    And box plot viewer should be bound to table "spgi-100"
+    And box plot viewer should have a "category Triazoles" area
     When user sets "Table" property of box plot viewer to "demog-1000"
     And user sets properties of box plot viewer:
       | Value      | AGE |
       | Category 1 | SEX |
       | Category 2 |     |
     Then "Table" property of box plot viewer should be "demog-1000"
+    And box plot viewer should be bound to table "demog-1000"
 
   Scenario: Coloring keeps the render valid
     When user sets "Marker Color Column" property of box plot viewer to "RACE"
@@ -218,8 +229,9 @@ Feature: Box plot property surface
 
   Scenario: Double-click resets the view
     Given user listens for "d4-boxplot-reset-view" event on box plot viewer
+    And user remembers the value range of box plot viewer
     When user zooms into the value axis of box plot viewer
     Then box plot viewer should show a narrower value range than before
     When user double-clicks on empty plot space of box plot viewer
     Then "d4-boxplot-reset-view" event should have fired on box plot viewer
-    And box plot viewer should show a wider value range than before
+    And box plot viewer should show the remembered value range

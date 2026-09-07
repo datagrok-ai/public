@@ -37,7 +37,9 @@ Feature: Box plot settings ladder
       | Show Minor Categories | true |
       | Show All Categories   | true |
     And user sets "Value" property of box plot viewer to "WEIGHT"
-    Then properties of box plot viewer should be:
+    And user takes a snapshot of box plot viewer
+    Then box plot viewer should not have repainted
+    And properties of box plot viewer should be:
       | Value                 | WEIGHT |
       | Category 1            | SEX    |
       | Category 2            | RACE   |
@@ -60,6 +62,7 @@ Feature: Box plot settings ladder
       | Value Max | |
     And user sets "Axis Type" property of box plot viewer to "logarithmic"
     Then "Axis Type" property of box plot viewer should be "logarithmic"
+    And box plot viewer should have repainted
     And no errors should have been logged
     And the value range of box plot viewer should lie within "WEIGHT" column
     When user sets properties of box plot viewer:
@@ -68,6 +71,7 @@ Feature: Box plot settings ladder
     Then properties of box plot viewer should be:
       | Invert Y Axis | true   |
       | Plot Style    | violin |
+    And box plot viewer should have repainted
 
   Scenario: A zoom survives a coloring change
     When user zooms into the value axis of box plot viewer
@@ -84,7 +88,7 @@ Feature: Box plot settings ladder
     Then "Control Group" property of box plot viewer should be "F"
     When user sets "Adjust By" property of box plot viewer to "HEIGHT"
     Then "Adjust By" property of box plot viewer should be "HEIGHT"
-    And "Adjust by" column input in box plot viewer should contain text "HEIGHT"
+    And box plot viewer should have repainted
 
   Scenario: The ladder survives a layout round-trip
     When user sets properties of box plot viewer:

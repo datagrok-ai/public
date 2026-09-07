@@ -365,6 +365,7 @@ export interface IDartApi {
   grok_Viewer_Get_Look(v: any): any;
   grok_Viewer_Get_ImmediateRendering(v: any): any;
   grok_Viewer_Set_ImmediateRendering(v: any, x: Bool): any;
+  grok_Viewer_Get_IsRenderPending(v: any): any;
   grok_Viewer_Get_Properties(v: any): any;
   grok_Viewer_Get_Tags(v: any): any;
   grok_Viewer_Remove_From_View(v: any): any;

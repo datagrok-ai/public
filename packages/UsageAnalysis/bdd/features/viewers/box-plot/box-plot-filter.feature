@@ -16,8 +16,10 @@ Feature: Box plot filter semantics
   Scenario: The value range follows the filter
     Then all rows should pass the filter
     And "Zoom Values By Filter" property of box plot viewer should be "true"
+    And box plot viewer should show 100 rows
     When user filters rows where "Average Mass" is between 300 and 400
     Then fewer than 100 rows should pass the filter
+    And box plot viewer should show fewer rows than before
     And box plot viewer should show a narrower value range than before
     When user resets the filter
     Then all rows should pass the filter
@@ -35,14 +37,15 @@ Feature: Box plot filter semantics
   Scenario: The viewer's own filter leaves the table's alone
     When user filters rows where "Average Mass" is between 300 and 400
     And user sets "Filter" property of box plot viewer to "${Average Mass} > 350"
-    Then box plot viewer should have repainted
+    Then box plot viewer should show fewer rows than before
     And the filter should pass exactly the rows where "Average Mass" is between 300 and 400
     When user sets "Filter" property of box plot viewer to ""
     And user resets the filter
 
   Scenario: Show Empty Categories drops and restores an empty-valued category
     When user adds a calculated column "AverageMassFixture" with formula "if(${Series} == \"Triazoles\", null, ${Average Mass})"
-    And user sets "Value" property of box plot viewer to "AverageMassFixture"
+    Then table "spgi-100" should have missing values in "AverageMassFixture" column
+    When user sets "Value" property of box plot viewer to "AverageMassFixture"
     And user sets "Show Empty Categories" property of box plot viewer to "true"
     Then box plot viewer should have a "category Triazoles" area
     When user sets "Show Empty Categories" property of box plot viewer to "false"
@@ -61,6 +64,8 @@ Feature: Box plot filter semantics
     And box plot viewer should have a "color scale" area
     And no errors should have been logged
     When user resets the filter
-    Then box plot viewer should have repainted
-    And box plot viewer should have a "color scale" area
-    When user sets "Marker Color Column" property of box plot viewer to ""
+    Then the color scale of box plot viewer should cover a wider range than before
+    When user filters rows where "Average Mass" is between 300 and 400
+    Then the color scale of box plot viewer should cover a narrower range than before
+    When user resets the filter
+    And user sets "Marker Color Column" property of box plot viewer to ""

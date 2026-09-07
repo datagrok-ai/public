@@ -36,7 +36,8 @@ tests/             node:test via tsx (nouns, compile, project, init)
 A package project: `<pkg>/bdd/{package.json {"type":"module"}, bdd.config.json, features/, bindings/,
 generated/}`; sample `packages/U2Demo/bdd`; the first production project is `packages/UsageAnalysis/bdd`
 (`features/viewers/box-plot/*.feature`: six journeys, 50 scenarios, the whole of the six TestTrack
-box plot specs under `files/TestTrack/Viewers/BoxPlot/` and their helpers, 33 s for all six on one page).
+box plot specs under `files/TestTrack/Viewers/BoxPlot/` and their helpers, 36 s for all six on one page,
+reviewed against the specs they replaced on 2026-09-07 (late) — the `/bdd-translate` skill is that process).
 
 ## We test our own platform, not a black box
 
@@ -218,6 +219,12 @@ nobody filed.
   whichever step came next (a 500 ms "Table" read, a 500 ms property set). The step now waits
   for the platform's own `ddt-semantic-type-detected` event for that data frame (identity by the
   Dart handle — the same file opened twice is two tables).
+- **A bdd page runs in simple mode, so the view tabs are hidden**: `user is logged in` sets
+  `grok.shell.windows.simpleMode = true`, and the `view-handle: …` elements of every view are then
+  present but hidden. U2Demo's "clicks on "U2 Demo" view" passed for days only because the rogue
+  `Datagrokdsmf` autostart flipped simple mode off mid-run; with that package gone (2026-09-07) it
+  failed, and became `user switches to the "U2 Demo" view` (`platform/steps.ts` `switchView`,
+  `grok.shell.v = view` by name). A step that clicks a view tab is not a step on a bdd page.
 - **Package autostarts run 3 s after the app started, on whatever step is running then**
   (`func_sync.dart`; found 2026-09-07 when a stand package's autostart forced `simpleMode = false`
   mid-journey). The core now exposes `grok.shell.autostartsCompleted` (a promise, added for
@@ -265,12 +272,56 @@ nobody filed.
   31 ms, for every marker viewer with a continuous coloring.
 - **The error floor** (`harness.ts` `watchErrors`/`takeErrors`): console errors and page errors
   from page open; `user is logged in` clears what the stand logs while booting, `resetShell`
-  clears the teardown's, `no errors should have been logged` reads and clears. `Failed to load
-  resource` is not collected — a help page the stand does not serve is logged by the browser, not
-  raised by the platform.
+  clears the teardown's, `journey.scenario` clears errors and balloons at each scenario's start
+  (a scenario owns its floor; before 2026-09-07 (late) an earlier scenario's error failed a later one's
+  check), `no errors should have been logged` reads and clears. `Failed to load resource` is not
+  collected — a help page the stand does not serve is logged by the browser, not raised by the
+  platform.
 - **Viewer settles are armed before the change** (`writeProperties`, `resize`): the repaint an
   action causes lands on the next task, so a settle subscribed after the action already missed it
   and burns its cap (that was 1.5 s per resize).
+- **A settle ends when the viewer says nothing is pending, not when a cap runs out**
+  (`viewers.ts` `settle`/`quiet`, 2026-09-07 (late)): `viewer.isRenderPending` (core
+  `ViewerBase.isRenderPending`: a `debounced` timer armed, a resize the poll has not handled,
+  `_invalidateRequested`) is polled every task until false or a render lands; a property that
+  paints nothing returns at once, a repaint is waited for as long as it takes, one pending for
+  10 s is a platform failure and is thrown. The 300 ms cap remains only for a viewer without the
+  signal (a JS viewer). The old silent cap let a late repaint from step N satisfy step N+1's
+  "repainted". The data steps (`platform/data.ts` `changeTable`) baseline every viewer, act, then
+  `settleAll` — so the next step's baseline is the state after the change. Found while wiring it:
+  the resize path is a 100 ms polling `Resizer`, invisible to `_invalidateRequested` — hence
+  `Resizer.isResizePending` and `parent` on the Resizer.
+- **"Before" is before the last change, never after the last check** (2026-09-07 (late)): the
+  than-before family (`repainted`, `less/more ink`, area ink, highlight, value range, color scale)
+  does NOT move the snapshot when it passes; every change (property set, menu pick, gesture on a
+  hit area, data step, `takes a snapshot`) takes it. Before, `repainted` re-snapshotted after
+  passing, so `Then repainted / And the "M values" area more ink than before` compared the
+  after-state with itself (0 px difference, a false failure). The snapshot holds the histogram,
+  the ink of every hit area, the value range, the color scale's range and the viewer's `values`.
+- **What a check means, after the review of 2026-09-07 (late)** (six reviewers backward-matched the six
+  box plot features against the specs they replaced; findings in the `/bdd-translate` skill):
+  `repainted` is a change detector — one pixel — and stays one; a claim about a shape says it
+  (`the "stats" area … more ink than before`, `should have a "stats" area`, `should contain the
+  color`, `areas … painted in different colors`, `should show fewer rows than before` from the
+  `rows shown` reading); a chrome toggle takes `repainted by at least N pixels`. Highlight
+  checks carry a margin (`highlightMargin`: max(200, 2 × selected rows) × dpr², capped at a quarter
+  of the view) — the mouse-over halo alone moves the hue count by hundreds. Colors compare by hue
+  (`near`: ±20°, greys by lightness) because markers are drawn with alpha, so `#00FF00` lands as
+  `#A6FFA6`. `should be bound to table` reads `viewer.dataFrame`, not the Table property. The
+  positive data steps fail on a category no row has (a typo matched "0 of 0"). Negative checks
+  (`should not have repainted`, `the same value range as before`) read after `quiet`.
+- **The tooltip is one element, hidden between hovers** (2026-09-07 (late)): `contain text` on it passed
+  on the previous hover's text. Core: `Tooltip.hide()` empties `content`; binding: `expectText`
+  on the `tooltip` kind matches visible elements only. A viewer's `values`
+  (`WidgetStatus.values`, JS `IWidgetStatus.values`) are named readings a test compares before and
+  after — the box plot reports `rows shown` and `color scale min`/`max` (the range the scale
+  labels, the filtered rows' when they narrow it).
+- **Hit areas say what is shown**: the box plot reports `x axis`/`y axis` only while
+  `showCategoryAxis`/`showValueAxis` are on (the box existed, hidden, before), and the control
+  band as `control band` (pooled) or `control band <stratum>` for every stratum of a matched
+  band (adjacent strata share one band and it answers to each name). The covariate selector
+  (`Adjust by`) is hidden by design with two category levels (`covariateSelectorVisible` needs
+  `_singleCat`) — do not assert it visible in a two-level scenario.
 - **Viewer event subscriptions have a lifetime** (`viewers.ts` `listen`/`unlisten`/`forget`): one
   subscription per viewer and event, replaced by a repeated "listens for", ended by the "should have
   fired" read or by `grok.events.onViewerClosed` (which also drops the render stamp). Before

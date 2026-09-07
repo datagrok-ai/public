@@ -22,7 +22,7 @@ Feature: The demo shell
     When user clicks on "Demo tools" dropdown button
     And user clicks on "Add demog table" menu item
     Then grid should be visible
-    When user clicks on "U2 Demo" view
+    When user switches to the "U2 Demo" view
     And user clicks on "Demo tools" dropdown button
     And user clicks on "Close demo tables" menu item
     Then grid should be hidden

@@ -21,6 +21,7 @@ Feature: Box plot selection and highlight
     When user clicks on the "marker" area of box plot viewer
     Then "d4-boxplot-point-click" event should have fired on box plot viewer
     And the table should have a current row
+    And "RACE" of the current row should be "Asian"
 
   Scenario: A Shift-drag selects a band and highlights it
     When user clears the row selection
@@ -38,11 +39,10 @@ Feature: Box plot selection and highlight
 
   Scenario: Category labels select categories
     When user clears the row selection
-    And user drags a selection box over the "Caucasian values" area of box plot viewer
-    Then some rows where "RACE" is "Caucasian" should be selected
+    And user clicks on the "category Caucasian" area of box plot viewer
+    Then only rows where "RACE" is "Caucasian" should be selected
     When user clicks on the "category Black" area of box plot viewer holding Control
-    Then all rows where "RACE" is "Black" should be selected
-    And some rows where "RACE" is "Caucasian" should be selected
+    Then only rows where "RACE" is one of "Black, Caucasian" should be selected
     When user clicks on the "category Asian" area of box plot viewer
     Then only rows where "RACE" is "Asian" should be selected
     Given user listens for "d4-boxplot-reset-view" event on box plot viewer
@@ -68,9 +68,12 @@ Feature: Box plot selection and highlight
     And box plot viewer should show more selection highlight than before
     When user sets "Show Selected Rows" property of box plot viewer to "false"
     Then box plot viewer should show less selection highlight than before
+    And "Marker Color Column" property of box plot viewer should be "RACE"
     When user sets "Show Selected Rows" property of box plot viewer to "true"
-    And user sets "Row Source" property of box plot viewer to "Selected"
-    Then box plot viewer should show no selection highlight
+    Then box plot viewer should show more selection highlight than before
+    When user sets "Row Source" property of box plot viewer to "Selected"
+    Then the "Caucasian values" area of box plot viewer should be painted
+    And box plot viewer should show no selection highlight
     When user sets properties of box plot viewer:
       | Row Source          | All |
       | Marker Color Column |     |

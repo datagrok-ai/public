@@ -80,7 +80,7 @@ test('a @journey feature is one test: the background once, every scenario a soft
   const {code, diagnostics} = compile('@journey ' + FEATURE);
   assert.equal(diagnostics.filter((d) => d.level === 'error').length, 0);
   assert.equal((code.match(/^  test\(/gm) ?? []).length, 1);
-  assert.match(code, /test\("Toolbox", \{tag: \["@journey", "@demo", "@realizes:u2.dialog"\]\}, async \(\{browser\}\) => \{\n    const page = await session\.page\(browser\);\n    const run = journey\(test, 3\);\n    await session\.step\(4, "Given user opens spgi dataset"/);
+  assert.match(code, /test\("Toolbox", \{tag: \["@journey", "@demo", "@realizes:u2.dialog"\]\}, async \(\{browser\}\) => \{\n    const page = await session\.page\(browser\);\n    const run = journey\(test, 3, page\);\n    await session\.step\(4, "Given user opens spgi dataset"/);
   assert.equal((code.match(/openDataset\(page, ds\("spgi"\)\)/g) ?? []).length, 1);
   assert.match(code, /await run\.scenario\("Add a viewer", async \(\) => \{\n      await session\.step\(7, "When user clicks on scatter plot icon on toolbox"/);
   assert.match(code, /await run\.scenario\("Several viewers \[viewer=bar chart\]", async \(\) => \{/);

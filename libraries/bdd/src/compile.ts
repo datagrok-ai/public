@@ -220,7 +220,7 @@ function emitJourney(feature: FeatureModel, uniqueTitle: (s: string) => string, 
   const state: ScenarioState = {};
   out.push(`  test(${JSON.stringify(feature.name)}${tagOptions([...feature.tags, ...feature.scenarios.flatMap((s) => s.tags)])}, async ({browser}) => {`);
   out.push('    const page = await session.page(browser);');
-  out.push(`    const run = journey(test, ${feature.scenarios.length});`);
+  out.push(`    const run = journey(test, ${feature.scenarios.length}, page);`);
   for (const step of feature.background)
     out.push(...emitStep(step, '    ', state));
   for (const scenario of feature.scenarios) {

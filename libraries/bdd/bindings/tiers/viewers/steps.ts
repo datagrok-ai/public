@@ -144,7 +144,10 @@ export const takeSnapshot = When('user takes a snapshot of {widget}', async (pag
 }, {tier: 'api', description: 'the baseline for "should have repainted" — every property set, menu pick and resize takes one by itself'});
 
 export const repainted = Then('{widget} should have repainted', (page: Page, target: ElementRef) => v.expectRepainted(page, target),
-  {description: 'the canvas differs from the snapshot taken before the last change; the new state becomes the snapshot'});
+  {description: 'the canvas differs from the snapshot taken before the last change (a property set, a menu pick, a gesture, a data step); checks never move the snapshot, so several can follow one change'});
+
+export const repaintedBy = Then('{widget} should have repainted by at least {int} pixels', (page: Page, target: ElementRef, px: number) =>
+  v.expectRepainted(page, target, px), {description: 'a change of at least that many pixels — for a toggle with no shape of its own (an axis, a selector)'});
 
 export const lessInk = Then('{widget} should have less ink than before', (page: Page, target: ElementRef) => v.expectInk(page, target, 'less'),
   {description: 'fewer painted pixels than the snapshot before the last change'});
@@ -154,8 +157,33 @@ export const moreInk = Then('{widget} should have more ink than before', (page: 
 export const painted = Then('{widget} should be painted', (page: Page, target: ElementRef) => v.expectInk(page, target, 'some'),
   {description: 'the canvas has painted pixels'});
 
+export const areaLessInk = Then('the {string} area of {widget} should have less ink than before', (page: Page, area: string, target: ElementRef) =>
+  v.expectAreaInk(page, target, area, 'less'), {description: 'fewer painted pixels inside a hit area than the snapshot before the last change had there'});
+
+export const areaMoreInk = Then('the {string} area of {widget} should have more ink than before', (page: Page, area: string, target: ElementRef) =>
+  v.expectAreaInk(page, target, area, 'more'));
+
+export const areaColor = Then('the {string} area of {widget} should contain the color {string}', (page: Page, area: string, target: ElementRef, color: string) =>
+  v.expectAreaColor(page, target, area, color), {description: 'pixels of a #rrggbb color (a shade of anti-aliasing allowed) inside a hit area'});
+
+export const areasDiffer = Then('the {string} and {string} areas of {widget} should be painted in different colors',
+  (page: Page, a: string, b: string, target: ElementRef) => v.expectAreasDiffer(page, target, a, b),
+  {description: 'one area has a color the other does not — per-category coloring, not chrome'});
+
+export const boundTable = Then('{widget} should be bound to table {string}', (page: Page, target: ElementRef, name: string) => v.expectBoundTable(page, target, name),
+  {description: 'the table the viewer draws (viewer.dataFrame), not the Table property it was asked for'});
+
+export const showsRows = Then('{widget} should show {int} rows', (page: Page, target: ElementRef, count: number) =>
+  v.expectReading(page, target, 'rows shown', 'equal', count), {description: 'the rows the viewer draws after its own filter and the table\'s (the "rows shown" reading)'});
+
+export const showsFewerRows = Then('{widget} should show fewer rows than before', (page: Page, target: ElementRef) =>
+  v.expectReading(page, target, 'rows shown', 'lower'), {description: 'against the snapshot before the last change'});
+
+export const showsMoreRows = Then('{widget} should show more rows than before', (page: Page, target: ElementRef) =>
+  v.expectReading(page, target, 'rows shown', 'higher'));
+
 export const notRepainted = Then('{widget} should not have repainted', (page: Page, target: ElementRef) => v.expectNotRepainted(page, target),
-  {description: 'no render event and no canvas change since the snapshot before the last gesture, read after the frame a repaint would land on'});
+  {description: 'no canvas change since the snapshot before the last gesture, read once the viewer is quiet (a render pass that draws the same picture — the mouse-over row — is not a repaint)'});
 
 export const paintedInColors = Then('{widget} should be painted in at least {int} colors', (page: Page, target: ElementRef, count: number) =>
   v.expectPalette(page, target, count), {description: 'distinct colors covering 500 pixels or more, white aside'});
@@ -195,6 +223,15 @@ export const widerRange = Then('{widget} should show a wider value range than be
 export const rangeWithinColumn = Then('the value range of {widget} should lie within {string} column', (page: Page, target: ElementRef, column: string) =>
   v.expectValueRangeWithin(page, target, column), {description: 'no empty space beyond the column\'s min and max (a tenth of slack)'});
 
+export const scaleNarrower = Then('the color scale of {widget} should cover a narrower range than before', (page: Page, target: ElementRef) =>
+  v.expectScaleRange(page, target, 'narrower'), {description: 'the range the color scale labels (the filtered rows\' when they narrow it), against the snapshot before the last change'});
+
+export const scaleWider = Then('the color scale of {widget} should cover a wider range than before', (page: Page, target: ElementRef) =>
+  v.expectScaleRange(page, target, 'wider'));
+
+export const scaleSame = Then('the color scale of {widget} should cover the same range as before', (page: Page, target: ElementRef) =>
+  v.expectScaleRange(page, target, 'same'));
+
 export const rememberRange = When('user remembers the value range of {widget}', (page: Page, target: ElementRef) => v.rememberRange(page, target),
   {tier: 'api', description: 'kept by viewer type, so "the remembered value range" holds across a close and a reopen (a project round-trip)'});
 
@@ -213,12 +250,12 @@ export const eventNotFired = Then('{string} event should not have fired on {widg
 
 export const noErrors = Then('no errors should have been logged', (page: Page) => {
   expect(takeErrors(page), 'console errors and page errors since the last check').toEqual([]);
-}, {description: 'console errors and uncaught exceptions since the previous check (or the scenario start); checking clears them'});
+}, {description: 'console errors and uncaught exceptions since the previous check, the scenario start or the login; checking clears them'});
 
 export const noBalloons = Then('no error or warning balloon should have been shown', async (page: Page) => {
   const shown = (await v.takeBalloons(page)).filter((b) => b.type === 'error' || b.type === 'warning');
   expect(shown.map((b) => `${b.type}: ${b.message}`), 'error and warning balloons since the last check').toEqual([]);
-}, {description: 'the platform\'s balloons (d4-balloon-shown) since the previous check or the login; checking clears them'});
+}, {description: 'the platform\'s balloons (d4-balloon-shown) since the previous check, the scenario start or the login; checking clears them'});
 
 // --- tooltips --------------------------------------------------------------------------------------
 
@@ -227,3 +264,7 @@ export const tooltipColumns = Then('the tooltip should show columns {string}', (
 
 export const tooltipNotColumns = Then('the tooltip should not show columns {string}', (page: Page, list: string) => v.expectTooltipColumns(page, list, true),
   {description: 'the row tooltip lists a different set of columns'});
+
+export const tooltipSomeColumns = Then('the tooltip should show some columns', async (page: Page) => {
+  await expect.poll(() => v.tooltipColumns(page), {timeout: 5000, message: 'the row tooltip lists no column'}).not.toEqual([]);
+}, {description: 'the row tooltip lists at least one column — the table\'s default tooltip, whatever it holds'});

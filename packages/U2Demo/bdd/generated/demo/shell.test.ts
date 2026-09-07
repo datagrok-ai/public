@@ -14,6 +14,7 @@ import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
 import {openDemoPage} from '../../bindings/demo.js';
 import {clickOn, collapse, expand, shouldBe, shouldContainText} from '@datagrok-libraries/bdd/bindings/common/steps';
+import {switchView} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {el, enter, feature} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("The demo shell", () => {
@@ -41,7 +42,7 @@ test.describe("The demo shell", () => {
     await session.step(22, "When user clicks on \"Demo tools\" dropdown button", () => clickOn(page, el("\"Demo tools\" dropdown button")));
     await session.step(23, "And user clicks on \"Add demog table\" menu item", () => clickOn(page, el("\"Add demog table\" menu item")));
     await session.step(24, "Then grid should be visible", () => shouldBe(page, el("grid"), "visible"));
-    await session.step(25, "When user clicks on \"U2 Demo\" view", () => clickOn(page, el("\"U2 Demo\" view")));
+    await session.step(25, "When user switches to the \"U2 Demo\" view", () => switchView(page, "U2 Demo"));
     await session.step(26, "And user clicks on \"Demo tools\" dropdown button", () => clickOn(page, el("\"Demo tools\" dropdown button")));
     await session.step(27, "And user clicks on \"Close demo tables\" menu item", () => clickOn(page, el("\"Close demo tables\" menu item")));
     await session.step(28, "Then grid should be hidden", () => shouldBe(page, el("grid"), "hidden"));

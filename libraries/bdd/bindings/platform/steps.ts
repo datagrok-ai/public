@@ -43,6 +43,18 @@ export const switchTableView = Given('user switches to (the ){string} table view
   await page.waitForFunction((n) => (window as any).grok.shell.tv?.dataFrame?.name?.toLowerCase() === n.toLowerCase(), name);
 }, {tier: 'api', description: 'by table name — the view of a dataset opened earlier in the scenario'});
 
+export const switchView = Given('user switches to (the ){string} view', async (page: Page, name: string) => {
+  await page.evaluate((n) => {
+    const grok = (window as any).grok;
+    const views = Array.from(grok.shell.views) as any[];
+    const view = views.find((x) => String(x.name).toLowerCase() === n.toLowerCase());
+    if (!view)
+      throw new Error(`no "${n}" view; open: ${views.map((x) => x.name).join(', ')}`);
+    grok.shell.v = view;
+  }, name);
+  await page.waitForFunction((n) => String((window as any).grok.shell.v?.name).toLowerCase() === n.toLowerCase(), name);
+}, {tier: 'api', description: 'any open view by its name (an app view, Home) — the view tabs are hidden in the simple mode a bdd page runs in, so a click on one is not a step'});
+
 export const closeAllViews = When('user closes all views', async (page: Page) => {
   await page.evaluate(() => { grok.shell.closeAll(); });
   await page.waitForFunction(() => grok.shell.v?.type === 'datagrok');

@@ -150,7 +150,8 @@ recorded and the next one still runs, and the test fails at the end listing them
 property surface walked section by section, where re-opening the data and the viewer thirteen
 times would cost more than the checks (the box plot: 13 scenarios in 14 s, 6 of them the login and
 the open). Each scenario then puts back what it changed, so the next starts where the Background
-left off. `-g` selects the whole journey; the report shows every scenario and step under it.
+left off, and owns its error and balloon floors — what an earlier scenario logged is not charged to
+it. `-g` selects the whole journey; the report shows every scenario and step under it.
 
 ## Reading a failure
 
@@ -286,7 +287,7 @@ Then  {element} should be/become {state}  {element} should not be/become {state}
       the following elements should be {state}:  | element |
 Given user is logged in                   user opens {dataset} dataset          user waits for {element}
       user waits for {int} millisecond(s)   (a probe while writing a feature; a committed one needing it is missing a signal)
-When  user switches to (the ){string} table view   user closes all views
+When  user switches to (the ){string} table view   user switches to (the ){string} view   user closes all views
       user saves the current view as project {string}   (deleted again when the feature ends)
       user opens the {string} project
 ```
@@ -361,7 +362,8 @@ caption, context menus by their path, canvas regions by the names the viewer rep
 the viewer's own render event. The first features written with it are the six box plot journeys
 under `packages/UsageAnalysis/bdd/features/viewers/box-plot/` (property surface, group comparison,
 selection, filter, statistics and coloring, settings ladder): 50 scenarios, the whole of six
-hand-written Playwright specs and their helpers, in 33 s on one page.
+hand-written Playwright specs and their helpers, in 36 s on one page, backward-matched against
+the specs they replaced (see "Translating an existing spec" below).
 
 ```gherkin
 Background:
@@ -394,16 +396,23 @@ When  user sets {string} property of {widget} to {string}       user sets proper
       user restores the size of {widget}            user takes a snapshot of {widget}          user remembers the value range of {widget}
       user saves the layout of the current table view   user loads the saved layout
 Then  {string} property of {widget} should be {string}          {string} property of {widget} should not be {string}
-      properties of {widget} should be:  | caption | value |
-      {widget} should have repainted                {widget} should not have repainted           {widget} should be painted
+      properties of {widget} should be:  | caption | value |    {widget} should be bound to table {string}
+      {widget} should have repainted                {widget} should have repainted by at least {int} pixels
+      {widget} should not have repainted            {widget} should be painted
       {widget} should have less/more ink than before    {widget} should be painted in at least {int} colors
-      the {string} area of {widget} should be painted   {widget} should (not )have a(n) {string} area
+      the {string} area of {widget} should be painted   the {string} area of {widget} should have less/more ink than before
+      the {string} area of {widget} should contain the color {string}
+      the {string} and {string} areas of {widget} should be painted in different colors
+      {widget} should (not )have a(n) {string} area
       {widget} should show more/less selection highlight than before    {widget} should show a/no selection highlight
       {widget} should show a narrower/wider value range than before     {widget} should show the same value range as before
       the value range of {widget} should lie within {string} column     {widget} should show the remembered value range
+      the color scale of {widget} should cover a narrower/wider range than before
+      the color scale of {widget} should cover the same range as before
       {string} event should have fired on {widget}  {string} event should not have fired on {widget}
       no errors should have been logged             no error or warning balloon should have been shown
       the tooltip should show columns {string}      the tooltip should not show columns {string}
+      the tooltip should show some columns
 ```
 
 A property is named by its caption as the property panel shows it (`Value`, `Category 1`,
@@ -413,21 +422,48 @@ menu path is `"Group > Item"`. A hit area is a name the viewer reports (`grok-bd
 list them yet; the box plot has `view`, `x axis`, `y axis`, `stats`, `p value`, `group comparison`,
 `color scale`, `marker`, `category <label>` and `<label> values` per category, `p value of <group>`
 and `<effect> effect` under group comparison; the bar chart `view`, `x axis`, `y axis`, `bar
-<category>`). Every property set, menu pick, area click, hover and resize snapshots the canvas,
-the selection-colored pixels and the value range first, so `should have repainted`, `less/more
-ink`, `more/less selection highlight` and `a narrower/wider/the same value range than before`
-compare with the state before the last change; the data steps snapshot every viewer. `no errors
-should have been logged` is the page's console errors and uncaught exceptions since the previous
-check (or the login step); a resource the stand does not serve is not an error. `no error or
-warning balloon should have been shown` reads the platform's `d4-balloon-shown` events the same way.
+<category>`; under group comparison with a control, `control band` or `control band <stratum>`).
+Every property set, menu pick, area click, hover and resize snapshots the canvas, the ink of every
+hit area, the selection-colored pixels, the value range and the color scale's range first, so
+`should have repainted`, `less/more ink` (of the canvas or of one area), `more/less selection
+highlight`, `a narrower/wider/the same value range than before` and `the color scale … than before`
+compare with the state before the last change; the data steps snapshot every viewer, and return
+once every viewer has drawn the change.
+
+Say what the claim is. `should have repainted` is a change detector — any pixel — and proves a
+toggle reached the canvas, nothing about what was drawn; a chrome toggle with no shape of its own
+(an axis, a selector) takes `by at least N pixels`. A shape gets its own evidence: `the "M values"
+area … more ink than before` for a violin, `should have a "stats" area` for the strip, `should
+contain the color` for a coloring, `the "M values" and "F values" areas … different colors` for
+per-category hues, `should be bound to table` for a rebind (the Table property is what was asked,
+`viewer.dataFrame` what happened). `more/less selection highlight` needs a margin the selection
+warrants (a floor of 200 device pixels, two per selected row, capped at a quarter of the view) —
+one more orange pixel is the hover halo, not a selection. The negative checks — `should not have
+repainted`, `the same value range as before` — read once the viewer is quiet, so a reset that
+lands a tick after the change fails them instead of slipping past. `no errors should have been
+logged` is the page's console errors and uncaught exceptions since the previous check, the
+scenario's start (a journey scenario owns its floor) or the login; a resource the stand does not
+serve is not an error. `no error or warning balloon should have been shown` reads the platform's
+`d4-balloon-shown` events the same way.
 
 Viewers on a bdd page render immediately — `viewer.immediateRendering` is set on every viewer the
-page holds or adds — so nothing in the tier sleeps: a change is followed by the viewer's render
-event, a context menu by `onContextMenuShown`. **When a step would need a wait, the platform is
-missing a signal; it goes into the core, not into the step** (the library's `CLAUDE.md` keeps the
-list of what was added that way). `user listens for {string} event on {widget}` subscribes to the
-viewer's event once; `should have fired` reads the count and ends the subscription, and a viewer
-that closes drops its subscriptions itself.
+page holds or adds — so nothing in the tier sleeps: a change is followed by the viewer's own word
+that nothing is pending any more (`viewer.isRenderPending`: a debounced refresh armed or a repaint
+requested), a context menu by `onContextMenuShown`. A property that paints nothing costs no wait,
+a repaint is waited for as long as it takes, and a repaint that never lands is reported as the
+platform failure it is. **When a step would need a wait, the platform is missing a signal; it goes
+into the core, not into the step** (the library's `CLAUDE.md` keeps the list of what was added that
+way). `user listens for {string} event on {widget}` subscribes to the viewer's event once; `should
+have fired` reads the count and ends the subscription, and a viewer that closes drops its
+subscriptions itself.
+
+**Translating an existing spec** into a feature, and proving the feature tests what it claims, is
+the `/bdd-translate` skill (`public/.claude/skills/bdd-translate/SKILL.md`): translate, then have
+one independent reviewer per old-spec/feature pair backward-match every old assertion and try to
+break every new one, then fix in the core, the library and the feature, in that order. The first
+round on the box plot found the checks that were green for the wrong reason (a one-pixel
+"repainted", a tooltip that kept its last text, a "same range" read before the reset landed, a
+settle cap that hid a late repaint) and fixed each where it belonged.
 
 ## Generated specs
 

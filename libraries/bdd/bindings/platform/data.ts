@@ -2,10 +2,11 @@
    deleting rows, calculated columns, column colors, and the tables the workspace holds. A step
    that changes rows or colors takes every open viewer's baseline first, so the viewer checks that
    follow ("should have repainted", "a narrower value range than before") read against the state
-   before the change. */
+   before the change, and returns once every viewer has drawn the change, so the next step's
+   baseline is the state after it. */
 import {expect, Page} from '@playwright/test';
 import {Then, When} from '../../src/registry.js';
-import {baselineAll} from '../../src/runtime/viewers.js';
+import {baselineAll, settleAll} from '../../src/runtime/viewers.js';
 
 declare const grok: any;
 declare const DG: any;
@@ -16,9 +17,10 @@ interface Match {
   selectedTotal: number;
 }
 
-/** Rows where the column reads the value, and how many of them (and of all rows) are selected. */
-function matchSelection(page: Page, column: string, value: string): Promise<Match> {
-  return page.evaluate(([c, v]) => {
+/** Rows where the column reads one of the values, and how many of them (and of all rows) are
+ * selected. */
+function matchSelection(page: Page, column: string, values: string[]): Promise<Match> {
+  return page.evaluate(([c, vs]) => {
     const df = grok.shell.t;
     const col = df.col(c);
     if (!col)
@@ -26,25 +28,42 @@ function matchSelection(page: Page, column: string, value: string): Promise<Matc
     let matching = 0;
     let selected = 0;
     for (let i = 0; i < df.rowCount; i++) {
-      if (String(col.get(i) ?? '') !== v)
+      if (!vs.includes(String(col.get(i) ?? '')))
         continue;
       matching++;
       if (df.selection.get(i))
         selected++;
     }
     return {matching, selected, selectedTotal: df.selection.trueCount};
-  }, [column, value] as [string, string]);
+  }, [column, values] as [string, string[]]);
 }
 
+/** The match, or a failure when no row reads the value at all: a category that does not exist
+ * (a typo) must not pass a check about its rows. */
+async function matchSome(page: Page, column: string, values: string[]): Promise<Match> {
+  const m = await matchSelection(page, column, values);
+  if (m.matching === 0)
+    throw new Error(`no row of ${await tableName(page)} has ${column} ${values.length > 1 ? `in ${values.join(', ')}` : `= ${values[0]}`}`);
+  return m;
+}
+
+const tableName = (page: Page): Promise<string> => page.evaluate(() => String(grok.shell.t.name));
 const selectedCount = (page: Page): Promise<number> => page.evaluate(() => grok.shell.t.selection.trueCount as number);
 const filteredCount = (page: Page): Promise<number> => page.evaluate(() => grok.shell.t.filter.trueCount as number);
+const list = (s: string): string[] => s.split(/\s*,\s*/).filter((x) => x.length > 0);
+
+/** A change to the table every viewer answers: baselines first, the change, then every viewer
+ * has drawn it. */
+async function changeTable(page: Page, body: (arg: any) => void, arg: unknown): Promise<void> {
+  await baselineAll(page);
+  await page.evaluate(body, arg);
+  await settleAll(page);
+}
 
 // --- selection ---------------------------------------------------------------------------------------
 
-export const clearSelection = When('user clears the row selection', async (page: Page) => {
-  await baselineAll(page);
-  await page.evaluate(() => { grok.shell.t.selection.setAll(false); });
-}, {tier: 'api'});
+export const clearSelection = When('user clears the row selection', (page: Page) =>
+  changeTable(page, () => { grok.shell.t.selection.setAll(false); }, null), {tier: 'api'});
 
 export const noneSelected = Then('no rows should be selected', (page: Page) =>
   expect.poll(() => selectedCount(page), {message: 'rows selected'}).toBe(0));
@@ -54,57 +73,69 @@ export const someSelected = Then('some rows should be selected', (page: Page) =>
 
 export const allOfSelected = Then('all rows where {string} is {string} should be selected', async (page: Page, column: string, value: string) => {
   await expect.poll(async () => {
-    const m = await matchSelection(page, column, value);
+    const m = await matchSome(page, column, [value]);
     return `${m.selected} of ${m.matching}`;
   }, {message: `rows where ${column} is ${value} selected`}).toMatch(/^(\d+) of \1$/);
 }, {description: 'every row of the category, whatever else is selected'});
 
 export const onlyOfSelected = Then('only rows where {string} is {string} should be selected', async (page: Page, column: string, value: string) => {
   await expect.poll(async () => {
-    const m = await matchSelection(page, column, value);
+    const m = await matchSome(page, column, [value]);
     return m.selected === m.matching && m.selectedTotal === m.matching ? 'exactly' : `${m.selected} of ${m.matching}, ${m.selectedTotal} in all`;
   }, {message: `rows where ${column} is ${value} selected`}).toBe('exactly');
 }, {description: 'every row of the category and nothing else'});
 
+export const onlyOfAnySelected = Then('only rows where {string} is one of {string} should be selected', async (page: Page, column: string, values: string) => {
+  await expect.poll(async () => {
+    const m = await matchSome(page, column, list(values));
+    return m.selected === m.matching && m.selectedTotal === m.matching ? 'exactly' : `${m.selected} of ${m.matching}, ${m.selectedTotal} in all`;
+  }, {message: `rows where ${column} is one of ${values} selected`}).toBe('exactly');
+}, {description: 'every row of these categories (comma-separated) and nothing else — a union built with Control clicks'});
+
 export const noneOfSelected = Then('no rows where {string} is {string} should be selected', async (page: Page, column: string, value: string) => {
-  await expect.poll(async () => (await matchSelection(page, column, value)).selected, {message: `rows where ${column} is ${value} selected`}).toBe(0);
+  await expect.poll(async () => (await matchSome(page, column, [value])).selected, {message: `rows where ${column} is ${value} selected`}).toBe(0);
 });
 
 export const someOfSelected = Then('some rows where {string} is {string} should be selected', async (page: Page, column: string, value: string) => {
-  await expect.poll(async () => (await matchSelection(page, column, value)).selected, {message: `rows where ${column} is ${value} selected`}).toBeGreaterThan(0);
+  await expect.poll(async () => (await matchSome(page, column, [value])).selected, {message: `rows where ${column} is ${value} selected`}).toBeGreaterThan(0);
 });
 
 export const hasCurrentRow = Then('the table should have a current row', (page: Page) =>
   expect.poll(() => page.evaluate(() => grok.shell.t.currentRowIdx as number), {message: 'the current row index'}).toBeGreaterThanOrEqual(0));
 
+export const currentRowValue = Then('{string} of the current row should be {string}', async (page: Page, column: string, value: string) => {
+  await expect.poll(() => page.evaluate((c) => {
+    const df = grok.shell.t;
+    const col = df.col(c);
+    if (!col)
+      throw new Error(`no "${c}" column in ${df.name}; it has: ${df.columns.names().join(', ')}`);
+    return df.currentRowIdx < 0 ? '(no current row)' : String(col.get(df.currentRowIdx) ?? '');
+  }, column), {message: `"${column}" of the current row`}).toBe(value);
+}, {description: 'the column\'s value in the current row, as text'});
+
 // --- filter ------------------------------------------------------------------------------------------
 
-export const filterBetween = When('user filters rows where {string} is between {float} and {float}', async (page: Page, column: string, lo: number, hi: number) => {
-  await baselineAll(page);
-  await page.evaluate(([c, a, b]) => {
+export const filterBetween = When('user filters rows where {string} is between {float} and {float}', (page: Page, column: string, lo: number, hi: number) =>
+  changeTable(page, ([c, a, b]) => {
     const df = grok.shell.t;
     const col = df.col(c);
     if (!col)
       throw new Error(`no "${c}" column in ${df.name}; it has: ${df.columns.names().join(', ')}`);
     df.filter.init((i: number) => { const x = col.get(i); return x != null && x >= a && x <= b; });
-  }, [column, lo, hi] as [string, number, number]);
-}, {tier: 'api', description: 'the table\'s filter bitset, as a filter viewer would set it'});
+  }, [column, lo, hi] as [string, number, number]),
+{tier: 'api', description: 'the table\'s filter bitset, as a filter viewer would set it; the filter panel\'s own handles are not driven'});
 
-export const filterOut = When('user filters out rows where {string} is {string}', async (page: Page, column: string, value: string) => {
-  await baselineAll(page);
-  await page.evaluate(([c, v]) => {
+export const filterOut = When('user filters out rows where {string} is {string}', (page: Page, column: string, value: string) =>
+  changeTable(page, ([c, v]) => {
     const df = grok.shell.t;
     const col = df.col(c);
     if (!col)
       throw new Error(`no "${c}" column in ${df.name}; it has: ${df.columns.names().join(', ')}`);
     df.filter.init((i: number) => String(col.get(i) ?? '') !== v);
-  }, [column, value] as [string, string]);
-}, {tier: 'api'});
+  }, [column, value] as [string, string]), {tier: 'api', description: 'the table\'s filter bitset'});
 
-export const resetFilter = When('user resets the filter', async (page: Page) => {
-  await baselineAll(page);
-  await page.evaluate(() => { grok.shell.t.filter.setAll(true); });
-}, {tier: 'api'});
+export const resetFilter = When('user resets the filter', (page: Page) =>
+  changeTable(page, () => { grok.shell.t.filter.setAll(true); }, null), {tier: 'api'});
 
 export const filterPasses = Then('{int} row(s) should pass the filter', (page: Page, count: number) =>
   expect.poll(() => filteredCount(page), {message: 'rows passing the filter'}).toBe(count));
@@ -133,20 +164,18 @@ export const filterIsExactly = Then('the filter should pass exactly the rows whe
 
 // --- rows --------------------------------------------------------------------------------------------
 
-export const deleteSelected = When('user deletes the selected rows', async (page: Page) => {
-  await baselineAll(page);
-  await page.evaluate(() => {
+export const deleteSelected = When('user deletes the selected rows', (page: Page) =>
+  changeTable(page, () => {
     const df = grok.shell.t;
     const set = new Set<number>(Array.from(df.selection.getSelectedIndexes() as Iterable<number>));
     df.rows.removeWhereIdx((i: number) => set.has(i));
-  });
-}, {tier: 'api'});
+  }, null), {tier: 'api', description: 'df.rows.removeWhereIdx — the UI path is the grid\'s Delete Rows command'});
 
 export const rowCount = Then('the table should have {int} row(s)', (page: Page, count: number) =>
   expect.poll(() => page.evaluate(() => grok.shell.t.rowCount as number), {message: 'rows in the table'}).toBe(count));
 
 export const noRowsWhere = Then('the table should have no rows where {string} is {string}', async (page: Page, column: string, value: string) => {
-  await expect.poll(async () => (await matchSelection(page, column, value)).matching, {message: `rows where ${column} is ${value}`}).toBe(0);
+  await expect.poll(async () => (await matchSelection(page, column, [value])).matching, {message: `rows where ${column} is ${value}`}).toBe(0);
 });
 
 // --- columns -----------------------------------------------------------------------------------------
@@ -165,9 +194,8 @@ export const removeColumn = When('user removes {string} column', async (page: Pa
   }, name);
 }, {tier: 'api'});
 
-async function color(page: Page, column: string, apply: string, arg: unknown): Promise<void> {
-  await baselineAll(page);
-  await page.evaluate(([c, how, a]) => {
+function color(page: Page, column: string, apply: string, arg: unknown): Promise<void> {
+  return changeTable(page, ([c, how, a]) => {
     const df = grok.shell.t;
     const col = df.col(c);
     if (!col)
@@ -239,8 +267,8 @@ export const tableRows = Then('table {string} should have {int} row(s)', async (
   expect(info.rows, `rows of "${name}"`).toBe(count);
 });
 
-export const tableColumnComplete = Then('table {string} should have no missing values in {string} column', async (page: Page, name: string, column: string) => {
-  const missing = await page.evaluate(([n, c]) => {
+function missingCount(page: Page, name: string, column: string): Promise<number> {
+  return page.evaluate(([n, c]) => {
     const t = grok.shell.tables.find((x: any) => x.name === n);
     if (!t)
       throw new Error(`table "${n}" is not open; open: ${grok.shell.tables.map((x: any) => x.name).join(' | ')}`);
@@ -254,5 +282,12 @@ export const tableColumnComplete = Then('table {string} should have no missing v
     }
     return missing;
   }, [name, column] as [string, string]);
-  expect(missing, `missing values in "${column}" of "${name}"`).toBe(0);
-});
+}
+
+export const tableColumnComplete = Then('table {string} should have no missing values in {string} column', async (page: Page, name: string, column: string) => {
+  expect(await missingCount(page, name, column), `missing values in "${column}" of "${name}"`).toBe(0);
+}, {description: 'a computed column is filled in, not blank — a result table whose fit failed has the right shape and no numbers'});
+
+export const tableColumnIncomplete = Then('table {string} should have missing values in {string} column', async (page: Page, name: string, column: string) => {
+  expect(await missingCount(page, name, column), `missing values in "${column}" of "${name}"`).toBeGreaterThan(0);
+}, {description: 'at least one blank — the precondition of a scenario about empty categories'});

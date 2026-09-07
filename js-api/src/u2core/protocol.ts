@@ -53,6 +53,9 @@ export interface IInputStatus {
 export interface IWidgetStatus {
   parts: {[name: string]: Element};
   hitAreas: {[name: string]: IRectBounds};
+  /** Named readings of the widget's state a test compares before and after a change (a color
+   * scale's shown range). */
+  values?: {[name: string]: number | string | boolean};
   shortcuts: {[key: string]: string};
   events: IEventType[];
   description: string | null;

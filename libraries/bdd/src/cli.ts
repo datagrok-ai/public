@@ -169,11 +169,12 @@ async function init(cwd: string): Promise<number> {
  * For a library that is linked or not on npm; the package's own copies go to
  * `node_modules/.bdd-link-backup`, `--undo` (or an `npm ci`) puts them back. */
 function link(cwd: string, undo: boolean): number {
-  if (!existsSync(join(cwd, 'package.json'))) {
-    console.error('grok-bdd link: run it in the package directory');
+  const nm = join(cwd, 'node_modules');
+  // a project's bdd/ has a package.json of its own ({"type": "module"}) but no node_modules
+  if (!existsSync(join(cwd, 'package.json')) || !existsSync(nm)) {
+    console.error('grok-bdd link: run it in the package directory (the one with node_modules)');
     return 2;
   }
-  const nm = join(cwd, 'node_modules');
   const backup = join(nm, '.bdd-link-backup');
   const same = (a: string, b: string) => {
     try { return realpathSync(a) === realpathSync(b); }

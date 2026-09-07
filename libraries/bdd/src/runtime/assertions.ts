@@ -2,7 +2,7 @@
 import {expect, Locator, Page} from '@playwright/test';
 import type {ElementRef} from './args.js';
 import {editorOf} from './gestures.js';
-import {exactText, locate, locateActionable} from './locate.js';
+import {exactText, locate, locateActionable, refOf} from './locate.js';
 
 export type State = 'visible' | 'hidden' | 'present' | 'absent' | 'enabled' | 'disabled' | 'checked' |
   'unchecked' | 'selected' | 'empty' | 'expanded' | 'collapsed' | 'focused';
@@ -90,9 +90,11 @@ async function expectChecked(loc: Locator, checked: boolean): Promise<void> {
 }
 
 /** Several matches (stacked notifications, repeated rows) mean "any of them" for a positive check
- * and "none of them" for a negative one; a single match is checked as itself. */
+ * and "none of them" for a negative one; a single match is checked as itself. A tooltip is what
+ * is shown now: the platform keeps one tooltip element, hidden between hovers. */
 export async function expectText(page: Page, target: ElementRef, text: string, options: {exact?: boolean; negate?: boolean} = {}): Promise<void> {
-  const loc = await locate(page, target);
+  const plan = refOf(page, target).plan;
+  const loc = plan.type === 'kind' && plan.kind.name === 'tooltip' ? await locateActionable(page, target) : await locate(page, target);
   if (await loc.count() > 1) {
     const matching = loc.filter({hasText: options.exact ? exactText(text) : new RegExp(escapeRegExp(text), 'i')});
     await (options.negate ? expect(matching).toHaveCount(0) : expect(matching).not.toHaveCount(0));

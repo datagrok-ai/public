@@ -12,6 +12,7 @@ import type {Browser, Page, PlaywrightTestArgs, PlaywrightTestOptions, Playwrigh
 import {leave} from './args.js';
 import {failure, isWaitFailure, journeyFailure} from './failure.js';
 import {explain} from './locate.js';
+import {takeBalloons} from './viewers.js';
 
 type Test = TestType<PlaywrightTestArgs & PlaywrightTestOptions, PlaywrightWorkerArgs & PlaywrightWorkerOptions>;
 
@@ -33,14 +34,19 @@ export interface Journey {
 
 /** A `@journey` feature: one test, the Background once, the scenarios in order on the same shell
  * state — the way a hand-written spec chains `softStep`s. Each scenario leaves the state it changed
- * as it found it, so the next one starts where the Background left off. The test's budget is the
+ * as it found it, so the next one starts where the Background left off, and owns its error and
+ * balloon floors: what an earlier scenario logged is not charged to it. The test's budget is the
  * per-test timeout times the scenario count. */
-export function journey(test: Test, scenarios: number): Journey {
+export function journey(test: Test, scenarios: number, page?: Page): Journey {
   test.setTimeout(test.info().timeout * scenarios);
   const failed: {name: string; error: unknown}[] = [];
   return {
     async scenario(name: string, body: () => Promise<void>): Promise<void> {
       try {
+        if (page) {
+          takeErrors(page);
+          await takeBalloons(page).catch(() => undefined);
+        }
         await test.step(name, body);
       }
       catch (e) {

@@ -21,13 +21,42 @@ export interface Box {
 
 /** A viewer's canvas after a change: `delta` is the histogram distance from the snapshot taken
  * before the change, `ink` the painted pixels now, `inkBefore` those of the snapshot, `hue` and
- * `hueBefore` the pixels in the selection hue. */
+ * `hueBefore` the pixels in the selection hue; `selected` rows and the `view` area in device
+ * pixels size the highlight a selection must paint. */
 export interface CanvasChange {
   delta: number;
   ink: number;
   inkBefore: number;
   hue: number;
   hueBefore: number;
+  selected: number;
+  viewPx: number;
+  dpr: number;
+}
+
+/** A named hit area's painted pixels now and at the snapshot before the last change, and the
+ * bitmap rectangle read (for the report when a reading is off). */
+export interface AreaChange {
+  ink: number;
+  inkBefore: number;
+  rect: {x: number; y: number; w: number; h: number};
+}
+
+/** A color drawn in an area and how many pixels of it. */
+export interface AreaColor {
+  hex: string;
+  count: number;
+}
+
+export interface ScaleRange {
+  min: number;
+  max: number;
+}
+
+/** The range a viewer's color scale labels now and at the snapshot before the last change. */
+export interface ScaleChange {
+  before?: ScaleRange;
+  now?: ScaleRange;
 }
 
 /** A viewer's value range (its viewport) now and at the snapshot before the last change. */
@@ -59,7 +88,10 @@ function install(): void {
   if (w.__bdd)
     return;
   const renders = new WeakMap<Element, {count: number; last: number; sub?: any}>();
-  const snapshots = new WeakMap<Element, {colors: Map<number, number>; ink: number; hue: number; renders: number; range?: Range}>();
+  const snapshots = new WeakMap<Element, {colors: Map<number, number>; ink: number; hue: number; renders: number; range?: Range;
+    areas: Record<string, number>; scale?: ScaleRange; values: Record<string, unknown>}>();
+  // how long a repaint the viewer says is pending may take before that is a platform failure
+  const PENDING_CAP = 10000;
   const sizes = new WeakMap<Element, {width: string; height: string}>();
   const listeners = new WeakMap<Element, Record<string, {count: number; sub: any}>>();
   const armed: Record<string, Promise<unknown>> = {};
@@ -105,21 +137,56 @@ function install(): void {
     for (const v of viewers())
       arm(v);
   };
+  /** Whether the viewer says a change is on its way to its canvas; undefined for a viewer without
+   * the signal (a JS viewer). */
+  const pending = (v: any): boolean | undefined => {
+    try {
+      const p = v.isRenderPending;
+      return typeof p === 'boolean' ? p : undefined;
+    }
+    catch {
+      return undefined;
+    }
+  };
+  /** Resolves with the renders since the call once the viewer has nothing on its way: the platform
+   * says whether a refresh or a repaint is pending, so a property that paints nothing returns at
+   * once and a repaint is waited for as long as it takes (a pending one that never lands is a
+   * platform failure, reported after `PENDING_CAP`). A viewer without the signal falls back to a
+   * render event within `capMs`. */
   const settle = (el: Element, capMs: number): Promise<number> => {
     const v = viewerOf(el);
     arm(v);
     const stamp = renders.get(v.root)!;
     const before = stamp.count;
     const t0 = Date.now();
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       const tick = () => {
-        if (stamp.count > before || Date.now() - t0 >= capMs)
-          resolve(stamp.count - before);
-        else
-          setTimeout(tick, 10);
+        if (stamp.count > before)
+          return resolve(stamp.count - before);
+        const p = pending(v);
+        if (p === false)
+          return resolve(0);
+        if (p === undefined) {
+          if (Date.now() - t0 >= capMs)
+            return resolve(0);
+          return setTimeout(tick, 10);
+        }
+        if (Date.now() - t0 >= PENDING_CAP)
+          return reject(new Error(`${v.type}: a repaint has been pending for ${PENDING_CAP} ms`));
+        setTimeout(tick, 0);
       };
       setTimeout(tick, 0);
     });
+  };
+  /** After the frame a change would land on, and until the viewer has nothing pending. */
+  const quiet = async (v: any): Promise<void> => {
+    await new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve, 0)));
+    const t0 = Date.now();
+    while (pending(v) === true) {
+      if (Date.now() - t0 >= PENDING_CAP)
+        throw new Error(`${v.type}: a repaint has been pending for ${PENDING_CAP} ms`);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
   };
   const canvasOf = (v: any): HTMLCanvasElement => {
     const part = v.getWidgetStatus?.()?.parts?.canvas;
@@ -128,8 +195,9 @@ function install(): void {
       throw new Error(`${v.type} has no canvas`);
     return cv;
   };
-  const histogram = (cv: HTMLCanvasElement) => {
-    const data = cv.getContext('2d')!.getImageData(0, 0, cv.width, cv.height).data;
+  const pixels = (cv: HTMLCanvasElement): ImageData => cv.getContext('2d')!.getImageData(0, 0, cv.width, cv.height);
+  const histogram = (img: ImageData) => {
+    const data = img.data;
     const colors = new Map<number, number>();
     let ink = 0;
     let hue = 0;
@@ -144,9 +212,43 @@ function install(): void {
     }
     return {colors, ink, hue};
   };
+  const areasOf = (v: any): Record<string, Box> => v.getWidgetStatus()?.hitAreas ?? {};
+  const areaKey = (v: any, name: string): string => {
+    const areas = areasOf(v);
+    const key = Object.keys(areas).find((k) => norm(k) === norm(name));
+    if (!key)
+      throw new Error(`${v.type} has no "${name}" area right now; it has: ${Object.keys(areas).join(', ') || 'none'}`);
+    return key;
+  };
+  /** A hit area (canvas coordinates) as device pixels of the canvas bitmap. */
+  const deviceRect = (cv: HTMLCanvasElement, r: Box): {x: number; y: number; w: number; h: number} => {
+    const scale = cv.width / cv.getBoundingClientRect().width;
+    return {x: Math.floor(r.x * scale), y: Math.floor(r.y * scale), w: Math.max(1, Math.floor(r.width * scale)), h: Math.max(1, Math.floor(r.height * scale))};
+  };
+  /** The colors drawn inside a rectangle of the bitmap, by pixel count, blanks aside. */
+  const colorsIn = (img: ImageData, r: {x: number; y: number; w: number; h: number}): Map<number, number> => {
+    const colors = new Map<number, number>();
+    const data = img.data;
+    for (let y = r.y; y < Math.min(r.y + r.h, img.height); y++) {
+      for (let x = r.x; x < Math.min(r.x + r.w, img.width); x++) {
+        const i = (y * img.width + x) * 4;
+        if (isBlank(data[i], data[i + 1], data[i + 2], data[i + 3]))
+          continue;
+        const key = (data[i] << 16) | (data[i + 1] << 8) | data[i + 2];
+        colors.set(key, (colors.get(key) ?? 0) + 1);
+      }
+    }
+    return colors;
+  };
+  const inkIn = (img: ImageData, r: {x: number; y: number; w: number; h: number}): number => {
+    let n = 0;
+    for (const count of colorsIn(img, r).values())
+      n += count;
+    return n;
+  };
   /** The colors drawn in at least `minPx` pixels, blanks and near-whites aside. */
   const palette = (el: Element, minPx: number): number => {
-    const data = canvasOf(viewerOf(el)).getContext('2d')!.getImageData(0, 0, 1, 1) && histogram(canvasOf(viewerOf(el)));
+    const data = histogram(pixels(canvasOf(viewerOf(el))));
     let n = 0;
     for (const [c, count] of data.colors) {
       const r = (c >> 16) & 255;
@@ -157,6 +259,33 @@ function install(): void {
     }
     return n;
   };
+  const hex = (c: number): string => '#' + c.toString(16).padStart(6, '0').toUpperCase();
+  /** The colors drawn inside a hit area, most pixels first, with the bitmap rectangle read. */
+  const areaColors = (el: Element, name: string): {colors: AreaColor[]; rect: {x: number; y: number; w: number; h: number}; bitmap: number[]} => {
+    const v = viewerOf(el);
+    const cv = canvasOf(v);
+    const rect = deviceRect(cv, areasOf(v)[areaKey(v, name)]);
+    const colors = colorsIn(pixels(cv), rect);
+    return {colors: [...colors.entries()].sort((a, b) => b[1] - a[1]).map(([c, count]) => ({hex: hex(c), count})), rect, bitmap: [cv.width, cv.height]};
+  };
+  /** The viewer's named readings (`getWidgetStatus().values`). */
+  const valuesOf = (v: any): Record<string, unknown> => v.getWidgetStatus?.()?.values ?? {};
+  const scaleRange = (v: any): ScaleRange | undefined => {
+    const values = valuesOf(v);
+    const min = values['color scale min'];
+    const max = values['color scale max'];
+    return typeof min === 'number' && typeof max === 'number' ? {min, max} : undefined;
+  };
+  /** A named reading now and at the snapshot before the last change. */
+  const valueChange = (el: Element, name: string): {before?: unknown; now?: unknown; has: string[]} => {
+    const v = viewerOf(el);
+    const now = valuesOf(v);
+    const key = Object.keys(now).find((k) => norm(k) === norm(name));
+    const before = snapshots.get(v.root)?.values ?? {};
+    const keyBefore = Object.keys(before).find((k) => norm(k) === norm(name));
+    return {before: keyBefore === undefined ? undefined : before[keyBefore], now: key === undefined ? undefined : now[key], has: Object.keys(now)};
+  };
+  const tableOf = (el: Element): string => String(viewerOf(el).dataFrame?.name ?? '');
   const rangeOf = (v: any): Range | undefined => {
     try {
       const vp = v.viewport;
@@ -230,11 +359,19 @@ function install(): void {
       return '#' + (value & 0xFFFFFF).toString(16).padStart(6, '0').toUpperCase();
     return String(value);
   };
+  /** The canvas now — its histogram, the ink of every hit area, the value range, the color scale's
+   * range — as the baseline the "than before" checks compare with. */
   const snapshot = (el: Element): number => {
     const v = viewerOf(el);
     arm(v);
-    const shot = histogram(canvasOf(v));
-    snapshots.set(v.root, {...shot, renders: renders.get(v.root)!.count, range: rangeOf(v)});
+    const cv = canvasOf(v);
+    const img = pixels(cv);
+    const shot = histogram(img);
+    const areas: Record<string, number> = {};
+    const hit = areasOf(v);
+    for (const key of Object.keys(hit))
+      areas[norm(key)] = inkIn(img, deviceRect(cv, hit[key]));
+    snapshots.set(v.root, {...shot, renders: renders.get(v.root)!.count, range: rangeOf(v), areas, scale: scaleRange(v), values: {...valuesOf(v)}});
     return shot.ink;
   };
   // the baseline "should have repainted" compares with: the canvas before the change
@@ -287,25 +424,25 @@ function install(): void {
   /** Painted pixels inside a hit area (the canvas may be scaled to the device). */
   const areaInk = (el: Element, name: string): number => {
     const v = viewerOf(el);
-    const areas: Record<string, Box> = v.getWidgetStatus()?.hitAreas ?? {};
-    const key = Object.keys(areas).find((k) => norm(k) === norm(name));
-    if (!key)
-      throw new Error(`${v.type} has no "${name}" area right now; it has: ${Object.keys(areas).join(', ') || 'none'}`);
-    const r = areas[key];
     const cv = canvasOf(v);
-    const scale = cv.width / cv.getBoundingClientRect().width;
-    const data = cv.getContext('2d')!.getImageData(Math.floor(r.x * scale), Math.floor(r.y * scale),
-      Math.max(1, Math.floor(r.width * scale)), Math.max(1, Math.floor(r.height * scale))).data;
-    let n = 0;
-    for (let i = 0; i < data.length; i += 4) {
-      if (!isBlank(data[i], data[i + 1], data[i + 2], data[i + 3]))
-        n++;
-    }
-    return n;
+    return inkIn(pixels(cv), deviceRect(cv, areasOf(v)[areaKey(v, name)]));
+  };
+  /** A hit area's ink now against the snapshot's (the area must have been reported then too). */
+  const areaChange = (el: Element, name: string): AreaChange => {
+    const v = viewerOf(el);
+    const before = snapshots.get(v.root);
+    if (!before)
+      throw new Error(`${v.type}: no snapshot to compare with`);
+    const inkBefore = before.areas[norm(name)];
+    if (inkBefore === undefined)
+      throw new Error(`${v.type} reported no "${name}" area at the snapshot; it had: ${Object.keys(before.areas).join(', ') || 'none'}`);
+    const cv = canvasOf(v);
+    return {ink: areaInk(el, name), inkBefore, rect: deviceRect(cv, areasOf(v)[areaKey(v, name)])};
   };
   const change = (el: Element): CanvasChange => {
     const v = viewerOf(el);
-    const now = histogram(canvasOf(v));
+    const cv = canvasOf(v);
+    const now = histogram(pixels(cv));
     const before = snapshots.get(v.root);
     if (!before)
       throw new Error(`${v.type}: no snapshot to compare with`);
@@ -316,11 +453,21 @@ function install(): void {
       if (!now.colors.has(c))
         delta += n;
     }
-    return {delta, ink: now.ink, inkBefore: before.ink, hue: now.hue, hueBefore: before.hue};
+    const view = areasOf(v)['view'];
+    const viewPx = view ? deviceRect(cv, view).w * deviceRect(cv, view).h : cv.width * cv.height;
+    let selected = 0;
+    try {
+      selected = v.dataFrame.selection.trueCount;
+    } catch { /* a viewer without a table */ }
+    return {delta, ink: now.ink, inkBefore: before.ink, hue: now.hue, hueBefore: before.hue, selected, viewPx, dpr: window.devicePixelRatio};
   };
   const rangeChange = (el: Element): RangeChange => {
     const v = viewerOf(el);
     return {before: snapshots.get(v.root)?.range, now: rangeOf(v)};
+  };
+  const scaleChange = (el: Element): ScaleChange => {
+    const v = viewerOf(el);
+    return {before: snapshots.get(v.root)?.scale, now: scaleRange(v)};
   };
   /** A range kept by the viewer's type, so it survives the viewer being closed and reopened (a
    * project round-trip). */
@@ -332,16 +479,21 @@ function install(): void {
     const v = viewerOf(el);
     return {before: remembered[String(v.type)], now: rangeOf(v)};
   };
-  /** Whether the viewer painted since its snapshot, read after the frame a change would land on:
-   * a repaint is scheduled on the next task, so one animation frame and one task later there is
-   * nothing left to wait for. */
+  /** Whether the viewer painted since its snapshot, read once it is quiet: after the frame a
+   * change would land on, and after whatever it says is still pending. */
   const stillness = async (el: Element): Promise<{renders: number; delta: number}> => {
     const v = viewerOf(el);
     const before = snapshots.get(v.root);
     if (!before)
       throw new Error(`${v.type}: no snapshot to compare with`);
-    await new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve, 0)));
+    await quiet(v);
     return {renders: renders.get(v.root)!.count - before.renders, delta: change(el).delta};
+  };
+  /** The value range against the snapshot's, read once the viewer is quiet (a reset that lands a
+   * tick after the change is read, not missed). */
+  const quietRangeChange = async (el: Element): Promise<RangeChange> => {
+    await quiet(viewerOf(el));
+    return rangeChange(el);
   };
   /** One subscription per viewer and event, alive from "listens for" until `unlisten` (the
    * "should have fired" read, or the viewer closing). */
@@ -470,9 +622,10 @@ function install(): void {
     grok.shell.tv.loadLayout(layout);
   };
 
-  w.__bdd = {viewerOf, arm, stampAll, settle, readProperty, writeProperties, findArea, hitArea, areaInk, snapshot, baselineAll,
-    change, rangeChange, rememberRange, rememberedRange, stillness, palette, listen, unlisten, firedCount, resize, restoreSize,
-    armEvent, waitArmed, closeMenu, openMenu, menuPoint, addViewer, takeBalloons, saveLayout, loadLayout};
+  w.__bdd = {viewerOf, arm, stampAll, settle, quiet, readProperty, writeProperties, findArea, hitArea, areaInk, areaChange, areaColors,
+    snapshot, baselineAll, change, rangeChange, quietRangeChange, scaleChange, valueChange, rememberRange, rememberedRange, stillness,
+    palette, tableOf, listen, unlisten, firedCount, resize, restoreSize, armEvent, waitArmed, closeMenu, openMenu, menuPoint, addViewer,
+    takeBalloons, saveLayout, loadLayout};
   stampAll();
   grok.events.onViewerAdded.subscribe((a: any) => arm(a?.args?.viewer));
   grok.events.onViewerClosed.subscribe((a: any) => a?.args?.viewer && forget(a.args.viewer));
@@ -542,9 +695,10 @@ export async function addViewer(page: Page, type: string): Promise<void> {
 }
 
 /** Sets properties by caption in one go: one settle for the group (the sets coalesce into a
- * single repaint under immediate rendering; the cap only matters for a property that paints
- * nothing). The canvas is snapshotted first, so `should have repainted` compares with the state
- * before the change. One roundtrip: `locator.evaluate` waits for the element itself. */
+ * single repaint under immediate rendering; the viewer says whether one is pending, the cap only
+ * matters for a viewer without that signal). The canvas is snapshotted first, so `should have
+ * repainted` compares with the state before the change. One roundtrip: `locator.evaluate` waits
+ * for the element itself. */
 export async function setProperties(page: Page, target: ElementRef, entries: [string, string][], capMs = 300): Promise<void> {
   await installViewerRuntime(page);
   const loc = await viewerLocator(page, target);
@@ -575,15 +729,192 @@ export async function baselineAll(page: Page): Promise<void> {
   await page.evaluate(() => { (window as any).__bdd.baselineAll(); });
 }
 
+/** Waits until no viewer of any open table view has a refresh or a repaint pending — after a
+ * change that reaches them all, so the next step's baseline is the state after it. */
+export async function settleAll(page: Page): Promise<void> {
+  await installViewerRuntime(page);
+  await page.evaluate(async () => {
+    const b = (window as any).__bdd;
+    for (const view of Array.from(grok.shell.tableViews ?? []) as any[]) {
+      for (const v of Array.from(view.viewers ?? []) as any[])
+        await b.quiet(v);
+    }
+  });
+}
+
 export async function canvasChange(page: Page, target: ElementRef): Promise<CanvasChange> {
   const loc = await viewerLocator(page, target);
   return loc.evaluate((el) => (window as any).__bdd.change(el));
 }
 
-/** Waits until the canvas differs from the last snapshot, then makes the new state the snapshot. */
-export async function expectRepainted(page: Page, target: ElementRef): Promise<void> {
-  await expect.poll(async () => (await canvasChange(page, target)).delta, {timeout: 10000, message: `${target.phrase} did not repaint`}).toBeGreaterThan(0);
-  await snapshot(page, target);
+/** Waits until the canvas differs from the last snapshot by at least `minPx` pixels, then makes
+ * the new state the snapshot. */
+export async function expectRepainted(page: Page, target: ElementRef, minPx = 1): Promise<void> {
+  await expect.poll(async () => (await canvasChange(page, target)).delta,
+    {timeout: 10000, message: minPx > 1 ? `${target.phrase} did not repaint by ${minPx} pixels` : `${target.phrase} did not repaint`}).toBeGreaterThanOrEqual(minPx);
+}
+
+/** The table the viewer draws (`viewer.dataFrame`), not the property it was asked to bind. */
+export async function expectBoundTable(page: Page, target: ElementRef, name: string): Promise<void> {
+  await installViewerRuntime(page);
+  const loc = await viewerLocator(page, target);
+  await expect.poll(() => loc.evaluate((el) => (window as any).__bdd.tableOf(el)), {timeout: 5000, message: `the table ${target.phrase} is bound to`}).toBe(name);
+}
+
+/** A hit area's ink against the snapshot before the last change. */
+export async function expectAreaInk(page: Page, target: ElementRef, area: string, compare: 'less' | 'more'): Promise<void> {
+  await installViewerRuntime(page);
+  const loc = await viewerLocator(page, target);
+  let last: AreaChange | undefined;
+  const holds = async (): Promise<boolean> => {
+    const c: AreaChange = last = await loc.evaluate((el, a) => (window as any).__bdd.areaChange(el, a), area);
+    return compare === 'less' ? c.ink < c.inkBefore : c.ink > c.inkBefore;
+  };
+  try {
+    await expect.poll(holds, {timeout: 10000}).toBe(true);
+  }
+  catch {
+    throw new Error(`the "${area}" area of ${target.phrase} does not have ${compare} ink than before` +
+      (last ? ` (${last.inkBefore} px before, ${last.ink} now, in ${JSON.stringify(last.rect)} of the bitmap)` : ''));
+  }
+}
+
+const COLOR_MIN_PX = 10;
+const HUE_TOLERANCE = 20;
+const GREY_SATURATION = 0.15;
+const LIGHTNESS_TOLERANCE = 0.15;
+
+function hsl(color: string): {h: number; s: number; l: number} {
+  const c = parseInt(color.slice(1), 16);
+  const r = ((c >> 16) & 255) / 255;
+  const g = ((c >> 8) & 255) / 255;
+  const b = (c & 255) / 255;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const l = (max + min) / 2;
+  const d = max - min;
+  const s = d === 0 ? 0 : d / (1 - Math.abs(2 * l - 1));
+  const h = d === 0 ? 0 : max === r ? 60 * (((g - b) / d) % 6) : max === g ? 60 * ((b - r) / d + 2) : 60 * ((r - g) / d + 4);
+  return {h: (h + 360) % 360, s, l};
+}
+
+/** Two colors are the same paint: markers are drawn with alpha and edges anti-aliased, so a
+ * color lands on the canvas as its hue at less saturation — the hue is what survives. Greys
+ * (no hue) compare by lightness. */
+function near(a: string, b: string): boolean {
+  const x = hsl(a);
+  const y = hsl(b);
+  if (x.s < GREY_SATURATION || y.s < GREY_SATURATION)
+    return x.s < GREY_SATURATION && y.s < GREY_SATURATION && Math.abs(x.l - y.l) <= LIGHTNESS_TOLERANCE;
+  const dh = Math.abs(x.h - y.h);
+  return Math.min(dh, 360 - dh) <= HUE_TOLERANCE;
+}
+
+interface AreaColors {
+  colors: AreaColor[];
+  rect: {x: number; y: number; w: number; h: number};
+  bitmap: number[];
+}
+
+async function areaColors(page: Page, target: ElementRef, area: string): Promise<AreaColors> {
+  await installViewerRuntime(page);
+  const loc = await viewerLocator(page, target);
+  return loc.evaluate((el, a) => (window as any).__bdd.areaColors(el, a), area);
+}
+
+const describeColors = (read: AreaColors | undefined): string => read ?
+  `its colors: ${read.colors.slice(0, 5).map((c) => `${c.hex} (${c.count})`).join(', ') || 'none'} in ${JSON.stringify(read.rect)} of a ${read.bitmap.join('x')} bitmap` : '';
+
+/** The color (within a shade of anti-aliasing) covers some pixels of the area. */
+export async function expectAreaColor(page: Page, target: ElementRef, area: string, color: string): Promise<void> {
+  const want = '#' + color.replace(/^#/, '').toUpperCase();
+  if (!/^#[0-9A-F]{6}$/.test(want))
+    throw new Error(`"${color}" is not a #rrggbb color`);
+  await hitArea(page, target, area);
+  let last: AreaColors | undefined;
+  const count = async (): Promise<number> => {
+    const read: AreaColors = last = await areaColors(page, target, area);
+    return read.colors.filter((c) => near(c.hex, want)).reduce((n, c) => n + c.count, 0);
+  };
+  try {
+    await expect.poll(count, {timeout: 5000}).toBeGreaterThanOrEqual(COLOR_MIN_PX);
+  }
+  catch {
+    throw new Error(`the "${area}" area of ${target.phrase} is not painted in ${want}; ${describeColors(last)}`);
+  }
+}
+
+const SIGNIFICANT_PX = 30;
+
+/** Two areas are painted in different colors: one of them has a color (covering some pixels) the
+ * other has nothing near. */
+export async function expectAreasDiffer(page: Page, target: ElementRef, a: string, b: string): Promise<void> {
+  await hitArea(page, target, a);
+  await hitArea(page, target, b);
+  let shownA: AreaColors | undefined;
+  let shownB: AreaColors | undefined;
+  const own = (mine: AreaColor[], theirs: AreaColor[]): boolean =>
+    mine.some((c) => c.count >= SIGNIFICANT_PX && !theirs.some((d) => d.count >= COLOR_MIN_PX && near(c.hex, d.hex)));
+  const differ = async (): Promise<boolean> => {
+    const ra: AreaColors = shownA = await areaColors(page, target, a);
+    const rb: AreaColors = shownB = await areaColors(page, target, b);
+    return own(ra.colors, rb.colors) || own(rb.colors, ra.colors);
+  };
+  try {
+    await expect.poll(differ, {timeout: 5000}).toBe(true);
+  }
+  catch {
+    throw new Error(`the "${a}" and "${b}" areas of ${target.phrase} are painted in the same colors; "${a}" ${describeColors(shownA)}; "${b}" ${describeColors(shownB)}`);
+  }
+}
+
+/** A numeric reading of the viewer (`getWidgetStatus().values`, "rows shown") equals a value, or
+ * is lower/higher than at the snapshot before the last change. */
+export async function expectReading(page: Page, target: ElementRef, name: string, compare: 'equal' | 'lower' | 'higher', value?: number): Promise<void> {
+  await installViewerRuntime(page);
+  const loc = await viewerLocator(page, target);
+  let last: {before?: unknown; now?: unknown; has: string[]} = {has: []};
+  const holds = async (): Promise<boolean | string> => {
+    last = await loc.evaluate((el, n) => (window as any).__bdd.valueChange(el, n), name);
+    if (typeof last.now !== 'number')
+      return `no "${name}" reading`;
+    if (compare === 'equal')
+      return last.now === value;
+    if (typeof last.before !== 'number')
+      return `no "${name}" reading at the snapshot`;
+    return compare === 'lower' ? last.now < last.before : last.now > last.before;
+  };
+  try {
+    await expect.poll(holds, {timeout: 5000}).toBe(true);
+  }
+  catch {
+    const what = compare === 'equal' ? `${value}` : `${compare} than before (${String(last.before)})`;
+    throw new Error(`"${name}" of ${target.phrase} is ${String(last.now)}, not ${what}` +
+      (typeof last.now !== 'number' ? `; the viewer reports: ${last.has.join(', ') || 'no readings'}` : ''));
+  }
+}
+
+/** The range the color scale labels against the snapshot before the last change. */
+export async function expectScaleRange(page: Page, target: ElementRef, compare: 'narrower' | 'same' | 'wider'): Promise<void> {
+  await installViewerRuntime(page);
+  const loc = await viewerLocator(page, target);
+  const span = (r: ScaleRange) => r.max - r.min;
+  let last: ScaleChange = {};
+  const holds = async (): Promise<boolean | string> => {
+    last = await loc.evaluate((el) => (window as any).__bdd.scaleChange(el));
+    if (!last.before || !last.now)
+      return `no color scale ${!last.before ? 'at the snapshot' : 'now'}`;
+    if (compare === 'same')
+      return Math.abs(span(last.before) - span(last.now)) < 1e-6;
+    return compare === 'narrower' ? span(last.now) < span(last.before) : span(last.now) > span(last.before);
+  };
+  try {
+    await expect.poll(holds, {timeout: 5000}).toBe(true);
+  }
+  catch {
+    throw new Error(`the color scale of ${target.phrase} does not cover ${compare === 'same' ? 'the same' : `a ${compare}`} range` +
+      ` (before ${JSON.stringify(last.before)}, now ${JSON.stringify(last.now)})`);
+  }
 }
 
 /** The canvas is what it was at the snapshot, read after the frame a repaint would have landed
@@ -604,18 +935,35 @@ export async function expectInk(page: Page, target: ElementRef, compare: 'less' 
     const c = await canvasChange(page, target);
     return compare === 'less' ? c.ink < c.inkBefore : c.ink > c.inkBefore;
   }, {timeout: 10000, message: `${target.phrase} does not have ${compare} ink than before`}).toBe(true);
-  await snapshot(page, target);
 }
 
-/** Pixels in the selection hue against the snapshot: `more`/`less` than before, `some`, or `none`. */
+const HIGHLIGHT_FLOOR = 200;
+const HIGHLIGHT_PER_ROW = 2;
+
+/** The highlight a selection must add or drop, in device pixels: a floor for a handful of rows,
+ * a share per selected row for more, capped at a quarter of the view (markers overlap). */
+export function highlightMargin(c: CanvasChange): number {
+  return Math.min(Math.max(HIGHLIGHT_FLOOR, HIGHLIGHT_PER_ROW * c.selected) * c.dpr * c.dpr, c.viewPx / 4);
+}
+
+/** Pixels in the selection hue against the snapshot: `more`/`less` than before by the margin the
+ * selection warrants, `some`, or `none`. */
 export async function expectHighlight(page: Page, target: ElementRef, compare: 'more' | 'less' | 'some' | 'none'): Promise<void> {
   const wrong = {none: 'shows a selection highlight', some: 'shows no selection highlight',
     more: 'does not show more selection highlight than before', less: 'does not show less selection highlight than before'};
-  await expect.poll(async () => {
-    const c = await canvasChange(page, target);
-    return compare === 'none' ? c.hue === 0 : compare === 'some' ? c.hue > 0 : compare === 'more' ? c.hue > c.hueBefore : c.hue < c.hueBefore;
-  }, {timeout: 10000, message: `${target.phrase} ${wrong[compare]}`}).toBe(true);
-  await snapshot(page, target);
+  let last: CanvasChange | undefined;
+  const holds = async (): Promise<boolean> => {
+    const c = last = await canvasChange(page, target);
+    const margin = highlightMargin(c);
+    return compare === 'none' ? c.hue === 0 : compare === 'some' ? c.hue > 0 : compare === 'more' ? c.hue >= c.hueBefore + margin : c.hue <= c.hueBefore - margin;
+  };
+  try {
+    await expect.poll(holds, {timeout: 10000}).toBe(true);
+  }
+  catch {
+    throw new Error(`${target.phrase} ${wrong[compare]}` +
+      (last ? ` (${last.hueBefore} px in the selection color before, ${last.hue} now, ${last.selected} rows selected, margin ${Math.round(highlightMargin(last))})` : ''));
+  }
 }
 
 export async function rememberRange(page: Page, target: ElementRef): Promise<void> {
@@ -661,12 +1009,14 @@ export async function rangeChange(page: Page, target: ElementRef): Promise<Range
   return loc.evaluate((el) => (window as any).__bdd.rangeChange(el));
 }
 
-/** The value range (viewport) against the snapshot before the last change. */
+/** The value range (viewport) against the snapshot before the last change; `same` is read once the
+ * viewer is quiet, so a reset that lands a tick later fails it rather than slipping past. */
 export async function expectValueRange(page: Page, target: ElementRef, compare: 'narrower' | 'same' | 'wider'): Promise<void> {
   const same = (a: Range, b: Range) => Math.abs(a.top - b.top) < 1e-6 && Math.abs(a.bottom - b.bottom) < 1e-6;
+  const loc = await viewerLocator(page, target);
   let last: RangeChange = {};
   const holds = async (): Promise<boolean | string> => {
-    last = await rangeChange(page, target);
+    last = compare === 'same' ? await loc.evaluate((el) => (window as any).__bdd.quietRangeChange(el)) : await rangeChange(page, target);
     if (!last.before || !last.now)
       return 'no range';
     if (compare === 'same')
@@ -680,7 +1030,6 @@ export async function expectValueRange(page: Page, target: ElementRef, compare: 
     throw new Error(`${target.phrase} does not show ${compare === 'same' ? 'the same' : `a ${compare}`} value range` +
       ` (before ${JSON.stringify(last.before)}, now ${JSON.stringify(last.now)})`);
   }
-  await snapshot(page, target);
 }
 
 /** The value range lies within the column's values: no empty space beyond the data. */
