@@ -930,14 +930,12 @@ export class Grid extends Viewer<IGridSettings> {
     return this.columns.byName(name);
   }
 
-  /** Returns a grid cell at the specified position. */
-  cell(columnName: string, gridRow: number): GridCell {
-    return GridCell.fromColumnRow(this, columnName, gridRow);
-  }
-
-  /** Same as {@link cell}; the (row, column) order matches {@link DataFrame.cellAt}. */
-  cellAt(gridRow: number, columnName: string): GridCell {
-    return this.cell(columnName, gridRow);
+  /** Returns the grid cell at the specified position; both argument orders are accepted, the (row, column)
+   * one matches {@link DataFrame.cell}. */
+  cell(gridRow: number, columnName: string): GridCell;
+  cell(columnName: string, gridRow: number): GridCell;
+  cell(a: string | number, b: number | string): GridCell {
+    return typeof a === 'number' ? GridCell.fromColumnRow(this, b as string, a) : GridCell.fromColumnRow(this, a, b as number);
   }
 
   /**

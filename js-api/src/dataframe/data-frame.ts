@@ -226,10 +226,6 @@ export class DataFrame {
     return new Cell(api.grok_DataFrame_Cell(this.dart, idx, name));
   }
 
-  /** Same as {@link cell}; the (row, column) order matches {@link Grid.cellAt}. */
-  cellAt(row: number, columnName: string): Cell {
-    return this.cell(row, columnName);
-  }
 
   /** Same as {@link col}, but throws Error if column is not found
    * @param name - Column name. */

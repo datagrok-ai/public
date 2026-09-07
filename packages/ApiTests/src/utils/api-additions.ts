@@ -31,11 +31,10 @@ category('JS API: additions', () => {
     expect(df.tags.has('.columnGroups'), false);
   });
 
-  test('cellAt takes (row, column) on DataFrame and Grid', async () => {
-    const df = table();
-    expect(df.cellAt(1, 'name').value, df.cell(1, 'name').value);
-    const grid = DG.Viewer.grid(df);
-    expect(grid.cellAt(2, 'x').cell.value, grid.cell('x', 2).cell.value);
+  test('Grid.cell accepts (row, column) like DataFrame.cell', async () => {
+    const grid = DG.Viewer.grid(table());
+    expect(grid.cell(2, 'x').cell.value, grid.cell('x', 2).cell.value);
+    expect(grid.cell(2, 'x').cell.value, 3);
   });
 
   test('toCsvAsync equals toCsvEx', async () => {
