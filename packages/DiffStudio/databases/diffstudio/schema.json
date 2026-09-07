@@ -1,0 +1,19 @@
+{
+  "$schema": "https://datagrok.ai/schemas/domain-schema.schema.json",
+  "name": "diffstudio",
+  "version": "1.0.0",
+  "tables": {
+    "library_model": {
+      "securityMode": "table",
+      "businessKey": ["name"],
+      "friendlyName": "Library model",
+      "columns": {
+        "name":        {"type": "string", "required": true, "isName": true},
+        "description": {"type": "string"},
+        "category":    {"type": "string"},
+        "source":      {"type": "string", "required": true},
+        "icon":        {"type": "string"}
+      }
+    }
+  }
+}

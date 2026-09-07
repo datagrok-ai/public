@@ -9,8 +9,15 @@ import {MISC, INPUTS_DF, LOOKUP_DF_FAIL, LOOKUP_EXPR_FAIL, TITLE, PATH, UI_TIME,
 import {CONTROL_EXPR, CONTROL_TAG, METHOD_KEY_WORD} from './constants';
 import {CONTROL_SEP, BRACE_OPEN, BRACE_CLOSE, BRACKET_OPEN, BRACKET_CLOSE, ANNOT_SEPAR} from './scripting-tools';
 import {DEFAULT_OPTIONS} from './solver-tools';
+import {_package} from './package';
 
 const ERR_POSTFIX = `check ${CONTROL_EXPR.INPUTS}'-line.`;
+
+/** Whether the EMS domain-schema storage path is enabled via the `diffStudioEms` package property.
+ *  When off, Diff Studio keeps using file-based model storage (the fallback during migration). */
+export function isEmsEnabled(): boolean {
+  return _package.settings?.['diffStudioEms'] === true;
+}
 
 /** Return max absolute deviation between the corresponding float values of 2 dataframes */
 export function error(df1: DG.DataFrame, df2: DG.DataFrame): number {

@@ -6,6 +6,7 @@ import './tests/parser-tests';
 import './tests/platform-funcs-tests';
 import './tests/pipeline-tests';
 import './tests/demo-models-tests';
+import './tests/ems-library-tests';
 
 export const _package = new DG.Package();
 export {tests};

@@ -9,7 +9,8 @@ import {u2} from '@datagrok-libraries/utils/src/u2';
 import {_package} from './package';
 import {getCachedRecentModelsTable, prefetchRecentModelsTable,
   getCachedExternalLibraryEntries, prefetchExternalLibraryEntries,
-  getCachedFileInfo, prefetchFolderListing, invalidateFolderListing} from './utils';
+  getCachedFileInfo, prefetchFolderListing, invalidateFolderListing, isEmsEnabled} from './utils';
+import {diffstudioDb} from './generated/db';
 import {TITLE, MODEL_HINT, TEMPLATE_TITLES, EXAMPLE_TITLES, MODEL_ICON, MISC, PATH, LINK,
   LIBRARY_CHANGED_EVENT} from './ui-constants';
 import {DiffStudio, EDITOR_STATE, STATE_BY_TITLE, getLink} from './app';
@@ -188,9 +189,25 @@ export class DiffStudioHub {
     this.root.append(ui.h1('Templates'), this.buildCardsContainer(cards));
   }
 
-  /** Build the "Library" section (built-in use cases + custom entries) */
+  /** Build the "Library" section. Behind the `diffStudioEms` flag the cards come solely from the
+   *  `library_model` EMS table (the source of truth for the built-in library). In the file-based
+   *  fallback the built-in use-cases are shown plus the custom `external-models.json` entries; the
+   *  latter is a file-only mechanism that does not fit the read-only EMS table, so it is not shown
+   *  in EMS mode (its migration is a separate decision). */
   private async buildLibrary(): Promise<void> {
-    const cards = EXAMPLE_TITLES.map((title) => {
+    if (isEmsEnabled()) {
+      this.root.append(ui.h1('Library'), this.buildCardsContainer(await this.buildEmsLibraryCards()));
+      return;
+    }
+
+    const cards = this.buildStaticLibraryCards();
+    cards.push(...(await this.buildExternalModelCards()));
+    this.root.append(ui.h1('Library'), this.buildCardsContainer(cards));
+  }
+
+  /** Built-in Library cards from the static use-cases (`EXAMPLE_TITLES`) — the file-based path */
+  private buildStaticLibraryCards(): HTMLElement[] {
+    return EXAMPLE_TITLES.map((title) => {
       const description = MODEL_HINT.get(title) ?? '';
       const iconPath = this.getIconUrl(title);
       const state = STATE_BY_TITLE.get(title) ?? EDITOR_STATE.BASIC_TEMPLATE;
@@ -202,12 +219,23 @@ export class DiffStudioHub {
       this.addModelContextMenu(card, TITLE.LIBRARY, state, run);
       return card;
     });
-
-    const externalCards = await this.buildExternalModelCards();
-    cards.push(...externalCards);
-
-    this.root.append(ui.h1('Library'), this.buildCardsContainer(cards));
   }
+
+  /** Built-in Library cards from the EMS `library_model` table (templates are excluded — they have
+   *  their own section). Each model opens by parsing its stored `.ivp` source, like a file upload. */
+  private async buildEmsLibraryCards(): Promise<HTMLElement[]> {
+    const models = (await diffstudioDb.libraryModels.query({})).filter((m) => m.category !== 'Template');
+    return models.map((m) => {
+      const run = async () => {
+        const solver = new DiffStudio();
+        // No showEditor(): open in the default inputs/run view like the built-in use-cases,
+        // not the equations editor (which is what a file upload wants).
+        await solver.runSolverApp(m.source, EDITOR_STATE.FROM_FILE);
+      };
+      const iconPath = m.icon ? `${_package.webRoot}files/${m.icon}` : undefined;
+      return this.buildModelCard(m.name, m.description ?? '', run, iconPath);
+    });
+  } // buildEmsLibraryCards
 
   /** Build cards for custom Library models listed in `external-models.json` */
   private async buildExternalModelCards(): Promise<HTMLElement[]> {

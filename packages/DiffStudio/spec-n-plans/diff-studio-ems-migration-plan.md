@@ -8,10 +8,15 @@ out of the box, managed CRUD with permission checks, row/column-level security, 
 filtering, history, sharing, and a typed JS API — with no hand-written SQL or backend code.
 
 Run history (`run`) as first-class entities was considered the headline addition, but is
-**deferred to a future version** (see [Deferred: run history](#deferred-run-history)): it
-structurally depends on models already living in the DB and cannot cover built-in library models
-or unsaved drafts without extra machinery. **v1 is scoped to migrating model storage** from files
-to the domain schema.
+**deferred to a future version** (see [Deferred: run history](#deferred-run-history)).
+
+**v1 is re-scoped (decision 2026-09-04) to the public model library only** — table `library_model`.
+Migrating **user models** to a private `model` table is **blocked in EMS v1**: there is no
+row-mode configuration that makes a row private to its author yet visible to that author (proven on
+dev — see the ⛔ note under [Table `model`](#table-model--user-models-private-per-author--blocked-in-ems-v1)).
+This gap was escalated in the EMS battle-testing thread (#pharm-sphere, 2026-09-04, building on the
+already-raised "author-owned rows" item). Until EMS grants row authors access to their own rows,
+user models stay in files as today; only the public, read-only library moves to EMS.
 
 EMS status at time of writing: **Beta**, behind a feature flag, v1 merged into master
 2026-08-13, targeted for the 1.27 release. For that reason the migration is planned to be
@@ -45,10 +50,38 @@ Schema `diffstudio`, file `databases/diffstudio/schema.json`. **Two tables in v1
 `library_model`); `scenario` is optional/later; `run` is deferred (see
 [Deferred: run history](#deferred-run-history)).
 
-### Table `model` — user models (private, shared per row)
+### Table `model` — user models (private per author) — ⛔ BLOCKED in EMS v1
 
-- `securityMode: "row"` + `defaultRowVisibility: "none"` — reproduces MyFiles semantics:
-  a row is visible only to its author until they share it.
+> **Verified on dev (Stage 0), proven in core code:** EMS v1 (current dev build) has **no
+> configuration that makes a row private to its author yet visible to that author.** The
+> `model` table as designed here is **not implementable on the current build.** Escalate to the
+> EMS owner before continuing this table (see the blocker note below). The public `library_model`
+> table (table mode) is unaffected.
+
+The intended shape was `securityMode: "row"` + `defaultRowVisibility: "none"` so each user's
+models are private to them but visible to them (MyFiles semantics). The dead end:
+
+- Row visibility comes only from the predicate's three branches — a **table grant**, a **direct
+  row grant** (`permissions`), or membership in an accessible **Space/project**
+  (core ARCHITECTURE.md §2, `repository.dart` predicate).
+- Under `defaultRowVisibility: "none"` a table grant **does not reach rows** (ApiTests
+  `hidden_item` fixture), and on insert **nothing is granted to the author**: `promotion: "eager"`
+  is validated by the manifest but **not wired into the insert path** (`_insertOne`,
+  `repository.dart:1732` — no promote, no entity, no grant), and the usual "author sees own via
+  personal project" path is **deliberately skipped for domain rows** (§2, no `addToUserProject`).
+- So a freshly-inserted row is visible to **nobody, including its author**. Every repair path is
+  itself gated by pre-existing visibility: `getEntities(id)` → empty; `POST /domains/grants/{id}`
+  → 400 "Unknown or inaccessible entity"; `POST /domains/{s}/{t}/{id}/promote` → 404 (its guard,
+  `repository.dart:2244`, requires the row to pass the predicate **with Share** first). The only
+  code that grants the author (the promoter, `repository.dart:2296`) runs inside `_promote`, which
+  is unreachable for a never-visible row. Total deadlock.
+- Switching to `defaultRowVisibility: "table"` is not an answer either — then table-View grantees
+  see **everyone's** rows, which is not private.
+
+Also note: promotion/security options **cannot be changed in place** — that change is refused for
+everyone with no `migrations` escape (§7.3; plugin deploys are `allowDestructive: false`); only a
+full admin **purge** (`retainData:false` uninstall / `dev dropDb` / admin purge) can reset a
+package-managed schema. So this must be solved *before* committing to a `model` table shape.
 - **No `businessKey`**: model names may collide across users, whereas a business key / `unique`
   applies globally across live rows. Deduplication is not needed for user models. Overwrite
   semantics are reproduced by tracking the row id in the editor (see Stage 1), not by a natural key.

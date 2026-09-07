@@ -16,6 +16,13 @@ export namespace funcs {
     return await grok.functions.call('DiffStudio:Init', {});
   }
 
+  /**
+   * Grant All users read access to the Diff Studio model library and seed it from the curated built-in library (use-cases + templates). Idempotent.
+   */
+  export async function seedLibraryModels(): Promise<string> {
+    return await grok.functions.call('DiffStudio:SeedLibraryModels', {});
+  }
+
   export async function dock(): Promise<void> {
     return await grok.functions.call('DiffStudio:Dock', {});
   }

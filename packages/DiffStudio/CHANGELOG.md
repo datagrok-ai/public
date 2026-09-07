@@ -1,5 +1,9 @@
 # Diff Studio changelog
 
+## v.next
+
+* GROK-20816: EMS: Added the `diffstudio` domain schema with a public `library_model` table and `seedLibraryModels` to seed it from the packaged `.ivp` files (behind the `diffStudioEms` package setting)
+
 ## 1.6.8 (2026-09-01)
 
 * Fixed demo tests failing when a corrupt/legacy recent-models `.d42` file surfaced a read error to the shell

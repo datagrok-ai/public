@@ -5,18 +5,19 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {solveDefault, solveIVP} from './solver-tools';
-import {DiffStudio} from './app';
+import {DiffStudio, STATE_BY_TITLE, MODEL_BY_STATE} from './app';
 import {DiffStudioFacetViewer} from './diff-studio-facet-viewer';
 import {DiffStudioHub} from './hub';
 import {getIVP, IVP, getScriptLines, getScriptParams} from './scripting-tools';
 
 import {findParamsIdx} from './utils';
 import {getBallFlightSim} from './demo/ball-flight';
+import {diffstudioDb, LibraryModelInsert} from './generated/db';
 
 export {Model} from './model';
 
 import {DF_NAME} from './constants';
-import {PATH, TITLE, UI_TIME} from './ui-constants';
+import {PATH, TITLE, UI_TIME, EXAMPLE_TITLES, TEMPLATE_TITLES, MODEL_HINT, MODEL_ICON} from './ui-constants';
 
 import {ODEs, SolverOptions} from 'diff-grok';
 import {Model, ModelInfo} from './model';
@@ -59,6 +60,42 @@ export class PackageFunctions {
   static async init() {
     dayjs.extend(utc);
   }
+
+  /** Grants All users View on the public model library and (re)seeds it from the **curated built-in
+   *  library** (the same titles/descriptions/icons the static hub shows, keyed by `TITLE`, with the
+   *  model text from `MODEL_BY_STATE`). Idempotent — `batch` upserts by the `name` business key, so
+   *  re-running syncs edits without duplicates. Run once by an admin after deploy. */
+  @grok.decorators.func({
+    name: 'seedLibraryModels',
+    description: 'Grant All users read access to the Diff Studio model library and seed it from the curated built-in library (use-cases + templates). Idempotent.',
+    outputs: [{name: 'result', type: 'string'}],
+  })
+  static async seedLibraryModels(): Promise<string> {
+    await diffstudioDb.libraryModels.grant(DG.Group.defaultGroupsIds['All users'], 'View');
+
+    const toRow = (title: TITLE, category?: string): LibraryModelInsert | null => {
+      const state = STATE_BY_TITLE.get(title);
+      const source = state ? MODEL_BY_STATE.get(state) as string : undefined;
+      if (!source)
+        return null;
+      return {
+        name: title,
+        description: MODEL_HINT.get(title) ?? undefined,
+        source,
+        category,
+        icon: MODEL_ICON.get(title) ?? undefined,
+      };
+    };
+
+    const rows = [
+      ...EXAMPLE_TITLES.map((t) => toRow(t)),
+      ...TEMPLATE_TITLES.map((t) => toRow(t, 'Template')),
+    ].filter((r): r is LibraryModelInsert => r !== null);
+
+    const report = await diffstudioDb.libraryModels.batch(rows, {mode: 'upsert', allOrNothing: false});
+    return `Diff Studio library: ${report.inserted} added, ${report.updated} updated` +
+      (report.errorCount ? `, ${report.errorCount} failed` : '');
+  } // seedLibraryModels
 
   @grok.decorators.func({})
   static dock(): void {
