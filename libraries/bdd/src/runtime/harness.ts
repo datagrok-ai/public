@@ -100,10 +100,12 @@ export function takeErrors(page: Page): string[] {
   return out;
 }
 
-/** One page per feature folder: the features of a folder run on the page the first of them
- * opened (the shell boots once, ~4 s; the next feature starts from `user is logged in` on the
- * shell it finds, reset), a feature from another folder closes it and opens its own. The browser
- * fixture closes the last one with the worker. */
+/** One page per feature folder, in one browser context per worker: the features of a folder run
+ * on the page the first of them opened (the shell boots once, ~4 s; the next feature starts from
+ * `user is logged in` on the shell it finds, reset), a feature from another folder closes that
+ * page and opens its own in the same context — the context keeps the storage state and the
+ * HTTP cache, so the second boot is a second faster. The browser fixture closes the context with
+ * the worker. */
 let shared: {page: Page; folder: string} | undefined;
 
 export function feature(test: Test, path = '', specUrl = ''): FeatureSession {
@@ -127,12 +129,18 @@ export function feature(test: Test, path = '', specUrl = ''): FeatureSession {
   return {
     async page(browser: Browser): Promise<Page> {
       if (!page || page.isClosed()) {
-        if (shared && (shared.folder !== folder || shared.page.isClosed() || shared.page.context().browser() !== browser)) {
+        if (shared && shared.page.context().browser() !== browser) {
           await shared.page.context().close().catch(() => undefined);
           shared = undefined;
         }
+        if (shared && (shared.folder !== folder || shared.page.isClosed())) {
+          const context = shared.page.context();
+          await shared.page.close().catch(() => undefined);
+          shared = {page: await context.newPage(), folder};
+          watchErrors(shared.page);
+        }
         if (!shared) {
-          shared = {page: await browser.newPage(), folder};
+          shared = {page: await (await browser.newContext()).newPage(), folder};
           watchErrors(shared.page);
         }
         page = shared.page;

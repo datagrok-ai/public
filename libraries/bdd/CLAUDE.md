@@ -36,7 +36,7 @@ tests/             node:test via tsx (nouns, compile, project, init)
 A package project: `<pkg>/bdd/{package.json {"type":"module"}, bdd.config.json, features/, bindings/,
 generated/}`; sample `packages/U2Demo/bdd`; the first production project is `packages/UsageAnalysis/bdd`
 (`features/viewers/box-plot/*.feature`: six journeys, 50 scenarios, the whole of the six TestTrack
-box plot specs under `files/TestTrack/Viewers/BoxPlot/` and their helpers, 36 s for all six on one page).
+box plot specs under `files/TestTrack/Viewers/BoxPlot/` and their helpers, 33 s for all six on one page).
 
 ## We test our own platform, not a black box
 
@@ -249,6 +249,20 @@ nobody filed.
   spec hovered the icon slot instead); the `T` key is `root.onKeyPress` on the viewer, so click
   the plot before pressing; the ANCOVA table's control row has no p-value (do not assert
   completeness there); `demog-1000`'s auto-picked category is DIS_POP.
+- **What a step costs, measured (2026-09-07 evening)**: the Playwright floor on this machine is
+  2.4 ms for `page.evaluate`, 6 ms for `locator.evaluate`, ~2 ms for `expect.poll`, and
+  `test.step`/`session.step` add nothing measurable; the trace (retain-on-failure, no snapshots,
+  no screenshots) adds nothing measurable either. So a Gherkin step is the viewer's real render
+  plus ~10 ms: property sets p50 43 ms (the settle waits for the paint of 1000 markers), property
+  read-backs p50 13 ms, and the page is near idle after a settle (63 ms busy in a 250 ms window).
+  The six box plot features: 510 steps, 33 s wall, of which one 4 s shell boot (0.8 s to first
+  byte, 3.2 s of client boot on the 27 MB dev bundle, 0.2 s reset) and ~4 s of Playwright and
+  global-setup start-up. Profile a slow step with a CDP `Profiler` (scratchpad `probe/profile.mjs`)
+  rather than guessing: the one outlier, a numeric marker-color column at 600–700 ms, was
+  `Marker.draw`'s sprite cache — a miss drew into the 16000-pixel cache canvas mid-frame and
+  every following `drawImage` re-uploaded it; fixed in the core (`marker.dart` `_Cache.add`: a
+  miss draws directly and the sprite lands in the cache in a microtask after the frame), 597 →
+  31 ms, for every marker viewer with a continuous coloring.
 - **The error floor** (`harness.ts` `watchErrors`/`takeErrors`): console errors and page errors
   from page open; `user is logged in` clears what the stand logs while booting, `resetShell`
   clears the teardown's, `no errors should have been logged` reads and clears. `Failed to load

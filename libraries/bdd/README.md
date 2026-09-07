@@ -361,7 +361,7 @@ caption, context menus by their path, canvas regions by the names the viewer rep
 the viewer's own render event. The first features written with it are the six box plot journeys
 under `packages/UsageAnalysis/bdd/features/viewers/box-plot/` (property surface, group comparison,
 selection, filter, statistics and coloring, settings ladder): 50 scenarios, the whole of six
-hand-written Playwright specs and their helpers, in 36 s on one page.
+hand-written Playwright specs and their helpers, in 33 s on one page.
 
 ```gherkin
 Background:
