@@ -1,4 +1,5 @@
-import {isRef, isSpan} from './model.js';
+import {TYPE} from 'datagrok-api/u2core';
+import {KIND, isRef, isSpan} from './model.js';
 import type {FilterKind, FilterValue} from './model.js';
 import type {FilterProperty} from './schema.js';
 import {resolveSpan} from '../span.js';
@@ -9,15 +10,15 @@ export function kindOf(prop: FilterProperty): FilterKind {
   if (prop.kind)
     return prop.kind;
   if (prop.ref)
-    return 'ref';
+    return KIND.REF;
   switch (prop.propertyType ?? prop.type) {
-    case 'int': return 'int';
-    case 'bigint': return 'bigint';
-    case 'double': case 'float': case 'num': case 'qnum': return 'float';
-    case 'bool': return 'bool';
-    case 'datetime': return 'datetime';
-    case 'list': case 'string_list': return 'string_list';
-    default: return 'string';
+    case TYPE.INT: return KIND.INT;
+    case TYPE.BIG_INT: return KIND.BIG_INT;
+    case TYPE.FLOAT: case KIND.FLOAT: case TYPE.NUM: case TYPE.QNUM: return KIND.FLOAT;
+    case TYPE.BOOL: return KIND.BOOL;
+    case TYPE.DATE_TIME: return KIND.DATE_TIME;
+    case TYPE.LIST: case TYPE.STRING_LIST: return KIND.STRING_LIST;
+    default: return KIND.STRING;
   }
 }
 

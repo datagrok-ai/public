@@ -1,4 +1,4 @@
-import {isGroup, isRef, isSpan, walk} from './model.js';
+import {KIND, isGroup, isRef, isSpan, walk} from './model.js';
 import type {FilterCondition, FilterGroup, FilterKind, FilterNode, FilterProblem, FilterScalar} from './model.js';
 import {checkLocks, property} from './schema.js';
 import type {FilterProperty, FilterSchema, FilterTemplate} from './schema.js';
@@ -14,28 +14,28 @@ const DIGITS = /^-?\d+$/;
 function badScalar(v: FilterScalar, kind: FilterKind, prop: FilterProperty, op: FilterOperator): string | null {
   const bad = (expected: string) => `Expected ${expected} for "${prop.name}"`;
   switch (kind) {
-    case 'int':
+    case KIND.INT:
       if (typeof v !== 'number' || !Number.isInteger(v))
         return bad('an integer');
       break;
-    case 'float':
+    case KIND.FLOAT:
       if (typeof v !== 'number' || !Number.isFinite(v))
         return bad('a number');
       break;
-    case 'bigint':
+    case KIND.BIG_INT:
       if (!(typeof v === 'number' && Number.isInteger(v)) && !(typeof v === 'string' && DIGITS.test(v)))
         return bad('an integer');
       break;
-    case 'datetime':
+    case KIND.DATE_TIME:
       if (v instanceof Date ? Number.isNaN(v.getTime()) : isSpan(v) ? !isSpanText(v.span) :
         typeof v !== 'string' || Number.isNaN(Date.parse(v)))
         return bad('a date or a time span');
       break;
-    case 'bool':
+    case KIND.BOOL:
       if (typeof v !== 'boolean')
         return bad('true or false');
       break;
-    case 'ref':
+    case KIND.REF:
       if (!isRef(v) && typeof v !== 'string')
         return bad('a reference');
       break;

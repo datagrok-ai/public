@@ -1,14 +1,15 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {Filters} from '../src/core/filter/index.js';
+import {TYPE} from 'datagrok-api/u2core';
 
-const users = Filters.schema([{name: 'login', type: 'string'}, {name: 'group', type: 'string', ref: 'Core.groups'}]);
+const users = Filters.schema([{name: 'login', type: TYPE.STRING}, {name: 'group', type: TYPE.STRING, ref: 'Core.groups'}]);
 users.resolveRef = async (prop) => prop.ref === 'Core.groups' ?
-  Filters.schema([{name: 'name', type: 'string'}]) : Promise.reject(new Error('no such ref'));
+  Filters.schema([{name: 'name', type: TYPE.STRING}]) : Promise.reject(new Error('no such ref'));
 const issues = Filters.schema([
-  {name: 'title', type: 'string'},
-  {name: 'author', type: 'string', ref: 'Core.users'},
-  {type: 'int'},
+  {name: 'title', type: TYPE.STRING},
+  {name: 'author', type: TYPE.STRING, ref: 'Core.users'},
+  {type: TYPE.INT},
 ], {title: ['Alpha', 'beta', 'Gamma']});
 issues.resolveRef = async () => users;
 
@@ -48,11 +49,11 @@ test('property: the head segment of a path', () => {
 });
 
 test('property: another case resolves when exactly one property spells the name that way', () => {
-  const upper = Filters.schema([{name: 'AGE', type: 'int'}, {name: 'Name', type: 'string'}]);
+  const upper = Filters.schema([{name: 'AGE', type: TYPE.INT}, {name: 'Name', type: TYPE.STRING}]);
   assert.equal(Filters.property(upper, 'age').name, 'AGE');
   assert.equal(Filters.property(upper, 'Age.x').name, 'AGE', 'the head segment only');
   assert.equal(Filters.property(upper, 'NAME').name, 'Name');
-  const variants = Filters.schema([{name: 'Age', type: 'int'}, {name: 'age', type: 'int'}]);
+  const variants = Filters.schema([{name: 'Age', type: TYPE.INT}, {name: 'age', type: TYPE.INT}]);
   assert.equal(Filters.property(variants, 'age').name, 'age', 'exact wins');
   assert.equal(Filters.property(variants, 'Age').name, 'Age');
   assert.equal(Filters.property(variants, 'AGE'), null, 'two case variants stay unknown');

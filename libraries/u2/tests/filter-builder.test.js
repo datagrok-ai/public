@@ -10,17 +10,18 @@ import {Scope, signal, Filters, FilterBuilder, TextInput, Control} from '../src/
 import {Registry} from '../src/spec/registry.js';
 import {SpecContext, renderSpec} from '../src/spec/spec.js';
 import {registerAll} from '../src/spec/registrations.js';
+import {TYPE} from 'datagrok-api/u2core';
 
 const SCHEMA = Filters.schema([
-  {name: 'name', type: 'string', friendlyName: 'Name'},
-  {name: 'age', type: 'int', min: 0, max: 120},
-  {name: 'mw', type: 'double'},
-  {name: 'big', type: 'bigint'},
-  {name: 'sex', type: 'string', choices: ['F', 'M']},
-  {name: 'active', type: 'bool'},
-  {name: 'created', type: 'datetime'},
+  {name: 'name', type: TYPE.STRING, friendlyName: 'Name'},
+  {name: 'age', type: TYPE.INT, min: 0, max: 120},
+  {name: 'mw', type: TYPE.FLOAT},
+  {name: 'big', type: TYPE.BIG_INT},
+  {name: 'sex', type: TYPE.STRING, choices: ['F', 'M']},
+  {name: 'active', type: TYPE.BOOL},
+  {name: 'created', type: TYPE.DATE_TIME},
 ]);
-const WITH_VALUES = Filters.schema([{name: 'status', type: 'string'}], {status: ['Open', 'Blocked', 'Closed']});
+const WITH_VALUES = Filters.schema([{name: 'status', type: TYPE.STRING}], {status: ['Open', 'Blocked', 'Closed']});
 
 const mounted = [];
 
@@ -594,8 +595,8 @@ smoke('showQuery footer, getWidgetStatus and the onChanged hook', () => {
 
 smoke('bindStep answers query (read-only) and mode (writable); bindProps advertises both', () => {
   const fb = mount(new FilterBuilder({schema: SCHEMA, value: tree(Filters.cond('age', '>', 30))}));
-  fb.componentMeta = {tag: 'u2-filter-builder', props: [{name: 'value', type: 'object'},
-    {name: 'query', type: 'string'}, {name: 'mode', type: 'string'}]};
+  fb.componentMeta = {tag: 'u2-filter-builder', props: [{name: 'value', type: TYPE.OBJECT},
+    {name: 'query', type: TYPE.STRING}, {name: 'mode', type: TYPE.STRING}]};
   assert.equal(fb.bindStep('query').value, 'age > 30');
   assert.equal(fb.bindStep('mode') === fb.mode, true);
   assert.equal(fb.bindStep('') === fb.value, true);

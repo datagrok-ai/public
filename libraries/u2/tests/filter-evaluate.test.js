@@ -1,12 +1,13 @@
-/* `Filters.toMask` and the `Masks` helpers (schema-filters WO-4): every core operator per column
+/* `Filters.toMask` and the `ColumnEvaluator` leaves (schema-filters WO-4): every core operator per column
    kind over literal raw-data fakes (`INT_NULL`, `FLOAT_NULL`, category indexes, bool bits, bigint
    `get`), per-category string evaluation, group combination with the tail beyond `length`, async
    `bitset` operators, abort. */
 
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {Filters, FilterError, Masks} from '../src/core/filter/index.js';
-import {INT_NULL, FLOAT_NULL} from '../src/core/filter/mask.js';
+import {BitArray, SEMTYPE, TYPE} from 'datagrok-api/u2core';
+import {Filters, FilterError, ColumnEvaluator, KIND} from '../src/core/filter/index.js';
+import {INT_NULL, FLOAT_NULL} from '../src/core/filter/evaluate.js';
 
 const NOW = new Date('2026-09-04T12:00:00.000Z');
 const ctx = {now: NOW};
@@ -25,18 +26,18 @@ function bits(values) {
   return raw;
 }
 
-const ints = column('n', 'int', Int32Array.from([1, 5, INT_NULL, 10, -3]));
-const floats32 = column('f', 'double', Float32Array.from([0.1, 2.5, FLOAT_NULL, NaN, 7]));
-const floats64 = column('g', 'double', Float64Array.from([0.1, 2.5, FLOAT_NULL, NaN, 7]));
-const dates = column('d', 'datetime', Float64Array.from([
+const ints = column('n', TYPE.INT, Int32Array.from([1, 5, INT_NULL, 10, -3]));
+const floats32 = column('f', TYPE.FLOAT, Float32Array.from([0.1, 2.5, FLOAT_NULL, NaN, 7]));
+const floats64 = column('g', TYPE.FLOAT, Float64Array.from([0.1, 2.5, FLOAT_NULL, NaN, 7]));
+const dates = column('d', TYPE.DATE_TIME, Float64Array.from([
   micros('2026-09-01T00:00:00Z'), micros('2026-09-03T12:00:00Z'), FLOAT_NULL, micros('2026-09-04T12:00:00Z'),
   micros('2025-01-01T00:00:00Z')]));
-const bools = column('b', 'bool', bits([true, false, true, false, false]), {length: 5});
-const strings = column('s', 'string', Int32Array.from([0, 1, 2, 0, 3, 1]),
+const bools = column('b', TYPE.BOOL, bits([true, false, true, false, false]), {length: 5});
+const strings = column('s', TYPE.STRING, Int32Array.from([0, 1, 2, 0, 3]),
   {categories: ['Aspirin', 'ibuprofen', '', 'Asp']});
-const bigs = column('big', 'bigint', new Int32Array(0),
-  {length: 4, get: (i) => [12345678901234567890n, null, 5n, -1n][i]});
-const lists = column('tags', 'list', new Int32Array(0),
+const bigs = column('big', TYPE.BIG_INT, new Int32Array(0),
+  {length: 5, get: (i) => [12345678901234567890n, null, 5n, -1n, 7n][i]});
+const lists = column('tags', TYPE.LIST, new Int32Array(0),
   {length: 5, get: (i) => [['Aspirin', 'nsaid'], null, [], ['Ibuprofen'], ['x', 'ASP']][i]});
 const frame = {
   rowCount: 5,
@@ -45,25 +46,25 @@ const frame = {
 
 async function rows(nodes, options = {}) {
   const root = Array.isArray(nodes) ? Filters.group(options.op ?? 'and', nodes, options.not ? {not: true} : undefined) : nodes;
-  return Masks.toIndexes(await Filters.toMask(frame, root, {now: NOW, ...options}));
+  return Array.from((await Filters.toMask(frame, root, {now: NOW, ...options})).getSelectedIndexes());
 }
 
 const one = (property, operator, value, options) => rows([Filters.cond(property, operator, value, options)]);
 
-test('Masks: create, and, or, not keep the tail beyond length clear; fromPredicate and toIndexes', () => {
-  const all = Masks.create(35, true);
-  assert.equal(all.bits.length, 2);
-  assert.equal(all.bits[1], 0b111);
-  assert.deepEqual(Masks.toIndexes(Masks.create(35)), []);
-  const even = Masks.fromPredicate(35, (i) => i % 2 === 0);
-  const odd = Masks.not(even);
-  assert.deepEqual(Masks.toIndexes(odd), [...Array(35).keys()].filter((i) => i % 2 === 1));
-  assert.equal(odd.bits[1] >>> 3, 0, 'not clears the tail');
-  assert.deepEqual(Masks.toIndexes(Masks.and(even, Masks.fromPredicate(35, (i) => i < 4))), [0, 2]);
-  assert.deepEqual(Masks.toIndexes(Masks.or(Masks.fromPredicate(35, (i) => i === 34), Masks.fromPredicate(35, (i) => i === 1))),
+test('BitArray: fill, invert, and, or keep the tail beyond length clear', () => {
+  const all = new BitArray(35, true);
+  assert.equal(all.getBuffer().length, 2);
+  assert.equal(all.getBuffer()[1], 0b111);
+  assert.deepEqual(Array.from(new BitArray(35).getSelectedIndexes()), []);
+  const even = BitArray.create(35, (i) => i % 2 === 0);
+  const odd = even.clone().invert();
+  assert.deepEqual(Array.from(odd.getSelectedIndexes()), [...Array(35).keys()].filter((i) => i % 2 === 1));
+  assert.equal(odd.getBuffer()[1] >>> 3, 0, 'invert clears the tail');
+  assert.deepEqual(Array.from(even.clone().and(BitArray.create(35, (i) => i < 4)).getSelectedIndexes()), [0, 2]);
+  assert.deepEqual(Array.from(BitArray.create(35, (i) => i === 34).or(BitArray.create(35, (i) => i === 1)).getSelectedIndexes()),
     [1, 34]);
-  assert.equal(Masks.get(even, 34), true);
-  assert.equal(Masks.get(even, 33), false);
+  assert.equal(even.get(34), true);
+  assert.equal(even.get(33), false);
 });
 
 test('int: every operator; INT_NULL matches only is null', async () => {
@@ -103,8 +104,8 @@ test('datetime: Date values against µs raw data, spans against the injected now
   assert.deepEqual(await one('d', 'between', [{span: '-1w'}, new Date('2026-09-03T12:00:00Z')]), [0, 1]);
   assert.deepEqual(await one('d', 'is null'), [2]);
   assert.deepEqual(await one('d', 'is not null'), [0, 1, 3, 4]);
-  const later = Masks.toIndexes(await Filters.toMask(frame,
-    Filters.group('and', [Filters.cond('d', '>', {span: '-1d'})]), {now: new Date('2026-09-10T00:00:00Z')}));
+  const later = Array.from((await Filters.toMask(frame,
+    Filters.group('and', [Filters.cond('d', '>', {span: '-1d'})]), {now: new Date('2026-09-10T00:00:00Z')})).getSelectedIndexes());
   assert.deepEqual(later, [], 'the span resolves at call time');
 });
 
@@ -120,45 +121,45 @@ test('bool: bits LSB-first; is null never matches, is not null always', async ()
 test('string: = is exact, like/starts/ends/matches are case-insensitive, "" is null, lists, raw LIKE patterns', async () => {
   assert.deepEqual(await one('s', '=', 'Aspirin'), [0, 3]);
   assert.deepEqual(await one('s', '=', 'aspirin'), []);
-  assert.deepEqual(await one('s', '!=', 'Aspirin'), [1, 4, 5], 'the null category never matches');
+  assert.deepEqual(await one('s', '!=', 'Aspirin'), [1, 4], 'the null category never matches');
   assert.deepEqual(await one('s', 'like', 'ASP'), [0, 3, 4]);
-  assert.deepEqual(await one('s', '!like', 'asp'), [1, 5]);
-  assert.deepEqual(await one('s', 'starts', 'ib'), [1, 5]);
+  assert.deepEqual(await one('s', '!like', 'asp'), [1]);
+  assert.deepEqual(await one('s', 'starts', 'ib'), [1]);
   assert.deepEqual(await one('s', 'ends', 'RIN'), [0, 3]);
   assert.deepEqual(await one('s', 'matches', '^a.*n$'), [0, 3]);
-  assert.deepEqual(await one('s', '!matches', '^a'), [1, 5]);
-  assert.deepEqual(await one('s', 'in', ['Asp', 'ibuprofen']), [1, 4, 5]);
+  assert.deepEqual(await one('s', '!matches', '^a'), [1]);
+  assert.deepEqual(await one('s', 'in', ['Asp', 'ibuprofen']), [1, 4]);
   assert.deepEqual(await one('s', 'not in', ['Asp', 'ibuprofen']), [0, 3]);
   assert.deepEqual(await one('s', 'is null'), [2]);
-  assert.deepEqual(await one('s', 'is not null'), [0, 1, 3, 4, 5]);
+  assert.deepEqual(await one('s', 'is not null'), [0, 1, 3, 4]);
   assert.deepEqual(await one('s', 'like', 'a%n', {options: {raw: true}}), [0, 3]);
   assert.deepEqual(await one('s', 'like', 'as_', {options: {raw: true}}), [4]);
   assert.deepEqual(await one('s', '!like', '%i%', {options: {raw: true}}), [4]);
-  assert.equal(Masks.likeRegExp('50\\%').test('50%'), true, 'an escaped wildcard is literal');
-  assert.equal(Masks.likeRegExp('50\\%').test('500'), false);
-  assert.equal(Masks.likeRegExp('a.b%').test('A.BC'), true, 'regex metacharacters are literal');
-  assert.equal(Masks.likeRegExp('a.b%').test('axb'), false);
+  assert.equal(ColumnEvaluator.likeRegExp('50\\%').test('50%'), true, 'an escaped wildcard is literal');
+  assert.equal(ColumnEvaluator.likeRegExp('50\\%').test('500'), false);
+  assert.equal(ColumnEvaluator.likeRegExp('a.b%').test('A.BC'), true, 'regex metacharacters are literal');
+  assert.equal(ColumnEvaluator.likeRegExp('a.b%').test('axb'), false);
   assert.deepEqual(await one('s', '=', {type: 'User', id: 'Asp'}), [4], 'a ref compares by id');
 });
 
 test('string: the predicate runs once per category, not per row', () => {
   let calls = 0;
-  const col = column('s', 'string', Int32Array.from([0, 1, 0, 1, 0, 1, 2]), {categories: ['a', 'b', '']});
-  const mask = Masks.where(col, Filters.cond('s', '=', 'a'), ctx, (cell, value) => (calls++, cell === value));
+  const col = column('s', TYPE.STRING, Int32Array.from([0, 1, 0, 1, 0, 1, 2]), {categories: ['a', 'b', '']});
+  const mask = ColumnEvaluator.where(col, Filters.cond('s', '=', 'a'), ctx, (cell, value) => (calls++, cell === value));
   assert.equal(calls, 2, 'the null category is skipped');
-  assert.deepEqual(Masks.toIndexes(mask), [0, 2, 4]);
+  assert.deepEqual(Array.from(mask.getSelectedIndexes()), [0, 2, 4]);
 });
 
 test('bigint: rows go through get(i); number and digit-string values compare as BigInt', async () => {
   assert.deepEqual(await one('big', '=', '12345678901234567890'), [0]);
   assert.deepEqual(await one('big', '=', 5), [2]);
-  assert.deepEqual(await one('big', '>', 0), [0, 2]);
+  assert.deepEqual(await one('big', '>', 0), [0, 2, 4]);
   assert.deepEqual(await one('big', '<=', 5), [2, 3]);
   assert.deepEqual(await one('big', 'between', ['-1', '5']), [2, 3]);
   assert.deepEqual(await one('big', 'in', ['5', -1]), [2, 3]);
-  assert.deepEqual(await one('big', 'not in', [5]), [0, 3]);
+  assert.deepEqual(await one('big', 'not in', [5]), [0, 3, 4]);
   assert.deepEqual(await one('big', 'is null'), [1]);
-  assert.deepEqual(await one('big', 'is not null'), [0, 2, 3]);
+  assert.deepEqual(await one('big', 'is not null'), [0, 2, 3, 4]);
 });
 
 test('string list: rows go through get(i); like is "some element contains", !like "none does"; null is null', async () => {
@@ -182,32 +183,32 @@ test('groups: and, or, not, nesting; an empty group is all-true; the tail beyond
   assert.deepEqual(await rows([], {not: true}), []);
   assert.deepEqual(await rows([Filters.group('and', []), gt1]), [1, 3], 'an empty sub-group constrains nothing');
   const wide = {rowCount: 40, column: (name) => name === 'x' ?
-    column('x', 'int', Int32Array.from({length: 40}, (_v, i) => i)) : null};
+    column('x', TYPE.INT, Int32Array.from({length: 40}, (_v, i) => i)) : null};
   const mask = await Filters.toMask(wide, Filters.group('and', [Filters.cond('x', '<', 3)], {not: true}));
   assert.equal(mask.length, 40);
-  assert.equal(mask.bits.length, 2);
-  assert.equal(mask.bits[1] >>> 8, 0);
-  assert.deepEqual(Masks.toIndexes(mask).length, 37);
+  assert.equal(mask.getBuffer().length, 2);
+  assert.equal(mask.getBuffer()[1] >>> 8, 0);
+  assert.equal(mask.trueCount, 37);
 });
 
 test('bitset operators run async between sync ones and see the column and the signal', async () => {
   const seen = [];
   const off = Filters.operators.register({
-    id: 'Contains', label: 'Contains', arity: 1, kinds: ['string'], semType: 'Molecule', editor: 'default',
+    id: 'Contains', label: 'Contains', arity: 1, kinds: [KIND.STRING], semType: SEMTYPE.MOLECULE, editor: 'default',
     bitset: async (col, c, signal) => {
       seen.push([col.name, c.value, signal instanceof AbortSignal]);
       await Promise.resolve();
-      return Masks.fromPredicate(col.length, (i) => (col.categories[col.getRawData()[i]] ?? '').includes(c.value));
+      return BitArray.create(col.length, (i) => (col.categories[col.getRawData()[i]] ?? '').includes(c.value));
     },
   });
   try {
-    const mol = {...strings, name: 'smiles', semType: 'Molecule'};
-    const f = {rowCount: 6, column: (name) => name === 'smiles' ? mol : name === 'n' ? ints : null};
+    const mol = {...strings, name: 'smiles', semType: SEMTYPE.MOLECULE};
+    const f = {rowCount: 5, column: (name) => name === 'smiles' ? mol : name === 'n' ? ints : null};
     const root = Filters.group('and', [Filters.cond('smiles', 'Contains', 'sp'), Filters.cond('n', '>=', 5)]);
-    assert.deepEqual(Masks.toIndexes(await Filters.toMask(f, root)), [3]);
+    assert.deepEqual(Array.from((await Filters.toMask(f, root)).getSelectedIndexes()), [3]);
     assert.deepEqual(seen, [['smiles', 'sp', true]]);
-    assert.deepEqual(Masks.toIndexes(await Filters.toMask(f, Filters.group('or', [Filters.cond('smiles', 'like', 'ibu'),
-      Filters.cond('smiles', 'Contains', 'sp')]))), [0, 1, 3, 4, 5], 'core operators still apply to the semType');
+    assert.deepEqual(Array.from((await Filters.toMask(f, Filters.group('or', [Filters.cond('smiles', 'like', 'ibu'),
+      Filters.cond('smiles', 'Contains', 'sp')]))).getSelectedIndexes()), [0, 1, 3, 4], 'core operators still apply to the semType');
   } finally {
     off();
   }
@@ -223,6 +224,23 @@ test('errors: an unknown column and an operator without a DataFrame form throw F
   await assert.rejects(rows([Filters.cond('s', 'no-such-op', 'x')]), FilterError);
 });
 
+test('errors: a mask of the wrong length is a FilterError on its leaf, not a RangeError from the group', async () => {
+  const off = Filters.operators.register({
+    id: 'Short', label: 'Short', arity: 1, kinds: [KIND.STRING], semType: SEMTYPE.MOLECULE, editor: 'default',
+    bitset: async () => new BitArray(3),
+  });
+  try {
+    const mol = {...strings, name: 'smiles', semType: SEMTYPE.MOLECULE};
+    const f = {rowCount: 5, column: (name) => name === 'smiles' ? mol : name === 'n' ? ints : null};
+    Filters.resetIds('');
+    const root = Filters.group('and', [Filters.cond('n', '>=', 5), Filters.cond('smiles', 'Short', 'x')]);
+    await assert.rejects(Filters.toMask(f, root), (e) => e instanceof FilterError &&
+      e.problems[0].code === 'evaluation' && e.problems[0].nodeId === 'f2' && /"smiles Short".*3 bits.*5 rows/.test(e.message));
+  } finally {
+    off();
+  }
+});
+
 test('abort: an aborted signal rejects before the first leaf and between leaves', async () => {
   const aborted = new AbortController();
   aborted.abort();
@@ -230,16 +248,16 @@ test('abort: an aborted signal rejects before the first leaf and between leaves'
   const controller = new AbortController();
   let leaves = 0;
   const off = Filters.operators.register({
-    id: 'slow', label: 'slow', arity: 1, kinds: ['string'], semType: 'T', editor: 'default',
+    id: 'slow', label: 'slow', arity: 1, kinds: [KIND.STRING], semType: 'T', editor: 'default',
     bitset: async (col) => {
       leaves++;
       controller.abort();
-      return Masks.create(col.length, true);
+      return new BitArray(col.length, true);
     },
   });
   try {
     const t = {...strings, semType: 'T'};
-    const f = {rowCount: 6, column: () => t};
+    const f = {rowCount: 5, column: () => t};
     const root = Filters.group('and', [Filters.cond('s', 'slow', 'x'), Filters.cond('s', 'slow', 'y')]);
     await assert.rejects(Filters.toMask(f, root, {signal: controller.signal}), (e) => e.name === 'AbortError');
     assert.equal(leaves, 1, 'the second leaf never ran');

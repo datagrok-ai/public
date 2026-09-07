@@ -1,17 +1,18 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {Filters} from '../src/core/filter/index.js';
+import {Filters, KIND} from '../src/core/filter/index.js';
+import {TYPE, SEMTYPE} from 'datagrok-api/u2core';
 
 const schema = Filters.schema([
-  {name: 'name', type: 'string'},
-  {name: 'status', type: 'string', choices: ['Open', 'Closed']},
-  {name: 'age', type: 'int', min: 0, max: 150},
-  {name: 'mw', type: 'double'},
-  {name: 'big', type: 'bigint'},
-  {name: 'created', type: 'datetime'},
-  {name: 'active', type: 'bool'},
-  {name: 'author', type: 'string', ref: 'Core.users'},
-  {name: 'tags', type: 'list'},
+  {name: 'name', type: TYPE.STRING},
+  {name: 'status', type: TYPE.STRING, choices: ['Open', 'Closed']},
+  {name: 'age', type: TYPE.INT, min: 0, max: 150},
+  {name: 'mw', type: TYPE.FLOAT},
+  {name: 'big', type: TYPE.BIG_INT},
+  {name: 'created', type: TYPE.DATE_TIME},
+  {name: 'active', type: TYPE.BOOL},
+  {name: 'author', type: TYPE.STRING, ref: 'Core.users'},
+  {name: 'tags', type: TYPE.LIST},
 ]);
 
 function problems(nodes, target, template) {
@@ -94,9 +95,9 @@ test('dotted paths: the head must exist; a ref hop skips the operator and value 
 });
 
 test('target domain: every core operator has a form, a bitset-only semType operator does not', () => {
-  const off = Filters.operators.register({id: 'Contains', label: 'Contains', arity: 1, kinds: ['string'],
-    semType: 'Molecule', editor: 'default', bitset: async () => ({bits: new Uint32Array(0), length: 0})});
-  const mol = Filters.schema([{name: 'smiles', type: 'string', semType: 'Molecule'}]);
+  const off = Filters.operators.register({id: 'Contains', label: 'Contains', arity: 1, kinds: [KIND.STRING],
+    semType: SEMTYPE.MOLECULE, editor: 'default', bitset: async () => ({bits: new Uint32Array(0), length: 0})});
+  const mol = Filters.schema([{name: 'smiles', type: TYPE.STRING, semType: SEMTYPE.MOLECULE}]);
   try {
     Filters.resetIds('');
     const root = Filters.group('and', [Filters.cond('smiles', 'Contains', 'c1ccccc1'), Filters.cond('smiles', 'fuzzy', 'x')]);
@@ -117,12 +118,12 @@ test('target dataframe: every core operator but fuzzy has a mask', () => {
 
 test('target dataframe: mask or bitset', () => {
   const off = Filters.operators.register([
-    {id: 'm', label: 'm', arity: 1, kinds: ['string'], semType: 'T', editor: 'default', mask: () => ({bits: new Uint32Array(0), length: 0})},
-    {id: 'b', label: 'b', arity: 1, kinds: ['string'], semType: 'T', editor: 'default', bitset: async () => ({bits: new Uint32Array(0), length: 0})},
-    {id: 'd', label: 'd', arity: 1, kinds: ['string'], semType: 'T', editor: 'default', domain: () => ({property: 'p', operator: '='})},
+    {id: 'm', label: 'm', arity: 1, kinds: [KIND.STRING], semType: 'T', editor: 'default', mask: () => ({bits: new Uint32Array(0), length: 0})},
+    {id: 'b', label: 'b', arity: 1, kinds: [KIND.STRING], semType: 'T', editor: 'default', bitset: async () => ({bits: new Uint32Array(0), length: 0})},
+    {id: 'd', label: 'd', arity: 1, kinds: [KIND.STRING], semType: 'T', editor: 'default', domain: () => ({property: 'p', operator: '='})},
   ]);
   try {
-    const s = Filters.schema([{name: 'p', type: 'string', semType: 'T'}]);
+    const s = Filters.schema([{name: 'p', type: TYPE.STRING, semType: 'T'}]);
     Filters.resetIds('');
     const root = Filters.group('and', [Filters.cond('p', 'm', 'x'), Filters.cond('p', 'b', 'x'), Filters.cond('p', 'd', 'x')]);
     assert.deepEqual(Filters.validate(root, s, 'dataframe').map((p) => p.nodeId), ['f3']);

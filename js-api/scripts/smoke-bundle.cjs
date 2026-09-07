@@ -47,7 +47,7 @@ function stub(name) {
   });
 }
 
-const REQUIRED = ['Viewer', 'Grid', 'FormViewer', 'Point', 'DataFrame', 'Column'];
+const REQUIRED = ['Viewer', 'Grid', 'FormViewer', 'Point', 'DataFrame', 'Column', 'BitArray'];
 
 function fail(message, detail) {
   console.error('\njs-api bundle smoke test FAILED');
@@ -97,6 +97,15 @@ if (missing.length)
 
 if (typeof DG.U2?.Control !== 'function' || typeof DG.U2?.signal !== 'function')
   fail('DG.U2 is missing its u2core exports (Control, signal)');
+
+if (DG.BitArray !== DG.U2.BitArray)
+  fail('DG.BitArray and DG.U2.BitArray are different classes');
+
+// setLength growing inside an adopted over-long buffer must not surface its stale words
+const grown = new DG.BitArray(new Uint32Array([0x7, 0xffffffff, 0xffffffff]), 3);
+grown.setLength(40);
+if (grown.trueCount !== 3)
+  fail('DG.BitArray.setLength leaks adopted words: trueCount ' + grown.trueCount + ' != 3');
 
 for (const name of ['Widget', 'Viewer']) {
   if (typeof DG[name] !== 'function' || !(DG[name].prototype instanceof DG.U2.Control))

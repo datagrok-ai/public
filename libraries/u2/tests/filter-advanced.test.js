@@ -6,12 +6,13 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {Scope, signal, Filters, FilterBuilder} from '../src/index.js';
+import {TYPE} from 'datagrok-api/u2core';
 
 const SCHEMA = Filters.schema([
-  {name: 'name', type: 'string', friendlyName: 'Name'},
-  {name: 'age', type: 'int', min: 0, max: 120},
-  {name: 'mw', type: 'double'},
-  {name: 'sex', type: 'string', choices: ['F', 'M']},
+  {name: 'name', type: TYPE.STRING, friendlyName: 'Name'},
+  {name: 'age', type: TYPE.INT, min: 0, max: 120},
+  {name: 'mw', type: TYPE.FLOAT},
+  {name: 'sex', type: TYPE.STRING, choices: ['F', 'M']},
 ]);
 
 const mounted = [];

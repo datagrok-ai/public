@@ -3,8 +3,8 @@
    plugin imports carry no extension), and the platform base classes call into dart in their
    constructors.
 
-   The stub is the platform's own contract, nothing more: the `DG.TYPE` strings copied from
-   js-api's `const.ts`, the `JsInputBase` surface `DartInput` uses (root, caption, addValidator,
+   The stub is the platform's own contract, nothing more: the real `DG.TYPE` / `DG.SEMTYPE` constants
+   (through `datagrok-api/u2core`), the `JsInputBase` surface `DartInput` uses (root, caption, addValidator,
    fireInput/fireChanged, and `property`, which throws off a dart handle when nothing is bound),
    the base classes u2 subclasses, and the `grok.dapi.files` / `grok.shell` calls the inputs make.
    The entities, the widgets, the viewers and the shell are the getter-backed doubles of
@@ -39,17 +39,7 @@ export class StringUtils {
   static jaroWinklerDistance = jaroWinklerDistance;
 }
 
-export const TYPE = {
-  STRING: 'string', INT: 'int', FLOAT: 'double', NUM: 'num', BOOL: 'bool', DATE_TIME: 'datetime',
-  BIG_INT: 'bigint', QNUM: 'qnum', OBJECT: 'object', FILE: 'file', DATA_FRAME: 'dataframe',
-};
-
-/** What the column renderer the dg pickers share reads at import (column-renderer.ts:13). */
-export const COLUMN_TYPE = {
-  STRING: 'string', INT: 'int', FLOAT: 'double', BOOL: 'bool', BYTE_ARRAY: 'byte_array',
-  DATE_TIME: 'datetime', BIG_INT: 'bigint', QNUM: 'qnum', DATA_FRAME: 'dataframe',
-  OBJECT: 'object',
-};
+export {TYPE, COLUMN_TYPE, SEMTYPE} from '${DOUBLES}';
 
 /** A 2-role sample of js-api's \`functionRoles\` (const.ts:456) — what the functions browser's
  * roles pane is fed. */

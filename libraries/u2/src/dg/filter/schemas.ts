@@ -43,7 +43,7 @@ class EntityRefRenderer extends HandlerRenderer<unknown> {
 
 function rendererFor(prop: FilterProperty, refRenderer: ObjectRenderer<unknown> = REF_RENDERER):
   ObjectRenderer<any> | undefined {
-  if (prop.semType === 'Molecule')
+  if (prop.semType === DG.SEMTYPE.MOLECULE)
     return moleculeRenderer();
   return prop.ref ? refRenderer : undefined;
 }

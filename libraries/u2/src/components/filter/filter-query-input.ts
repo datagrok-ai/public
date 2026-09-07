@@ -11,7 +11,7 @@ import {SuggestionList} from '../../core/suggestion-list.js';
 import type {AsyncState} from '../../core/async-source.js';
 import type {IWidgetStatus} from '../../core/widget-like.js';
 import {icon} from '../display/icon.js';
-import {Filters} from '../../core/filter/index.js';
+import {Filters, KIND} from '../../core/filter/index.js';
 import type {FilterCompletion, FilterGroup, FilterKind, FilterOperator, FilterProblem, FilterProperty,
   FilterScalar, FilterSchema, FilterTarget, FilterValueItem} from '../../core/filter/index.js';
 
@@ -38,11 +38,11 @@ interface Option {
 }
 
 const KIND_ICON: Record<FilterKind, string> = {
-  string: 'font', int: 'hashtag', float: 'hashtag', bigint: 'hashtag', datetime: 'calendar',
-  bool: 'check-square', string_list: 'list', ref: 'link',
+  [KIND.STRING]: 'font', [KIND.INT]: 'hashtag', [KIND.FLOAT]: 'hashtag', [KIND.BIG_INT]: 'hashtag',
+  [KIND.DATE_TIME]: 'calendar', [KIND.BOOL]: 'check-square', [KIND.STRING_LIST]: 'list', [KIND.REF]: 'link',
 };
 const KIND_HINTS: Partial<Record<FilterKind, string[]>> = {
-  bool: ['true', 'false'], datetime: ['now', '-1d', '-1w', '-1m'], ref: ['@current'],
+  [KIND.BOOL]: ['true', 'false'], [KIND.DATE_TIME]: ['now', '-1d', '-1w', '-1m'], [KIND.REF]: ['@current'],
 };
 /** The model-only operators, spelled the way the grammar reads them. */
 const SPELLED: Record<string, string> = {'is null': '= null', 'is not null': '!= null'};
@@ -301,7 +301,7 @@ export class FilterQueryInput extends Input<FilterGroup, FilterQueryInputOptions
   /** `number 0–120` for a numeric property with bounds. */
   private static _rangeHint(prop: FilterProperty): string | null {
     const kind = Filters.kindOf(prop);
-    if ((kind !== 'int' && kind !== 'float') || (prop.min === undefined && prop.max === undefined))
+    if ((kind !== KIND.INT && kind !== KIND.FLOAT) || (prop.min === undefined && prop.max === undefined))
       return null;
     const range = prop.min !== undefined && prop.max !== undefined ? `${prop.min}–${prop.max}` :
       prop.min !== undefined ? `≥ ${prop.min}` : `≤ ${prop.max}`;

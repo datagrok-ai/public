@@ -1,5 +1,9 @@
 # utils changelog
 
+## 4.7.10 (WIP)
+
+* BitArray: Became a deprecated compatibility wrapper over `DG.BitArray` (`datagrok-api/src/u2core/bit-array`); `trueCount()` is no longer stale after `setTrue`/`setFast`/`getRawData()`/`buffer` writes; zero-caller members removed
+
 ## 4.7.9 (2026-08-27)
 
 * Added FuncCallParamsEditor: adapts a `getParams()`-style dialog editor to the canonical `DG.FuncCallEditor` contract

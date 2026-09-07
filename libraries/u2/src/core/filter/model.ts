@@ -1,4 +1,12 @@
-export type FilterKind = 'string' | 'int' | 'float' | 'bigint' | 'datetime' | 'bool' | 'string_list' | 'ref';
+import {TYPE} from 'datagrok-api/u2core';
+
+/** The kinds the filter feature tells apart: the platform types they coincide with, plus u2's own
+ * `float` (double, num, qnum) and `ref`. */
+export const KIND = {
+  STRING: TYPE.STRING, INT: TYPE.INT, FLOAT: 'float', BIG_INT: TYPE.BIG_INT, DATE_TIME: TYPE.DATE_TIME,
+  BOOL: TYPE.BOOL, STRING_LIST: TYPE.STRING_LIST, REF: 'ref',
+} as const;
+export type FilterKind = typeof KIND[keyof typeof KIND];
 export type Lock = 'none' | 'value' | 'all';
 export interface FilterRef { type: string; id: string; name?: string }
 /** A relative date — `'-1w'`, `'2d'`, `'now'` — resolved against `now` only when the tree leaves
@@ -25,7 +33,7 @@ export interface FilterProblem {
   /** null = the whole string (syntax). */
   nodeId: string | null;
   code: 'syntax' | 'unknown-property' | 'operator-not-applicable' | 'missing-value' | 'invalid-value' |
-    'not-expressible' | 'locked';
+    'not-expressible' | 'evaluation' | 'locked';
   message: string;
   /** Syntax problems only: offsets into the text. */
   position?: {start: number, end: number};
