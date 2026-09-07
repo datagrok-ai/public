@@ -41,7 +41,8 @@ export function tTest(sample1: Population, sample2: Population, devKnown=false, 
     } else {
       const dof = length1 + length2 - 2;
       const totalVariance = (variance1 * (length1 - 1) + variance2 * (length2 - 1)) / dof;
-      const criticalValue = Math.sqrt(length1 * length2 / (length1 + length2)) * (mean1 - mean2) / Math.sqrt(totalVariance);
+      const criticalValue = Math.sqrt(length1 * length2 / (length1 + length2)) *
+        (mean1 - mean2) / Math.sqrt(totalVariance);
 
       pMore = 1 - jStat.studentt.cdf(criticalValue, dof);
       pLess = jStat.studentt.cdf(criticalValue, dof);
