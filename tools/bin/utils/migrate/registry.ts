@@ -127,6 +127,14 @@ export const TYPES: Record<string, TypeSpec> = {
     deps: (q) => [ref('DataConnection', q.connection?.id)],
   },
   Script: {route: '/scripts', rank: 3, tags: true},
+  // A visual query has no listing of its own and is only visible to an admin session, which is
+  // why it never showed up before `--admin`.
+  TableQuery: {
+    route: '/connectors/table_queries', rank: 3,
+    listVia: 'entities', typeId: '34d867a0-e870-11e6-af38-653465436553',
+    strip: (q) => { q.connection = idOnly(q.connection); },
+    deps: (q) => [ref('DataConnection', q.connection?.id)],
+  },
   TableInfo: {
     route: '/tables', rank: 4, tags: true,
     bytes: {kind: 'tables', get: (id) => `/tables/${id}/data`, put: (id) => `/tables/data?id=${id}`},

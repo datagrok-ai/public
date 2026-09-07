@@ -222,7 +222,24 @@ export async function expand(dapi: NodeDapi, selected: Map<string, BundleEntity>
     }
   }
   await expandGrants(dapi, out, note);
+  await markPersonalProjects(dapi, out);
   return out;
+}
+
+/**
+ * A user's personal root project is created with the user and cannot be pushed — whichever order
+ * you try, the name collides. Marking whose it is lets the push point at the target's own copy
+ * instead, so everything that lives under it keeps its place.
+ */
+async function markPersonalProjects(dapi: NodeDapi, out: Map<string, BundleEntity>): Promise<void> {
+  if (![...out.values()].some((e) => e.type === 'Project')) return;
+  const owner = new Map<string, string>();
+  for (const user of await dapi.internal('/users').listAll({limit: 500}))
+    if (user?.project?.id && user.login)
+      owner.set(user.project.id, user.login);
+  for (const [id, e] of out)
+    if (e.type === 'Project' && owner.has(id))
+      e.json._personalOf = owner.get(id);
 }
 
 /**

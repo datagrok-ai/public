@@ -117,7 +117,7 @@ export class NodeApiClient {
   }
 
   async request(method: string, path: string, body?: any, headers?: Record<string, string>,
-                reauthed: boolean = false): Promise<any> {
+                reauthed: boolean = false, timeoutMs?: number): Promise<any> {
     const url = `${this.baseUrl}${path}`;
     const opts: RequestInit = {
       method,
@@ -130,10 +130,10 @@ export class NodeApiClient {
     if (body !== undefined)
       opts.body = JSON.stringify(body);
 
-    const res = await fetchOrRetry(url, opts, method === 'GET');
+    const res = await fetchOrRetry(url, opts, method === 'GET', timeoutMs);
 
     if (res.status === 401 && !reauthed && await this.reauthenticate())
-      return this.request(method, path, body, headers, true);
+      return this.request(method, path, body, headers, true, timeoutMs);
     if (!res.ok)
       await throwHttpError(res);
 
@@ -145,7 +145,9 @@ export class NodeApiClient {
   }
 
   get(path: string): Promise<any> { return this.request('GET', path); }
-  post(path: string, body?: any): Promise<any> { return this.request('POST', path, body); }
+  post(path: string, body?: any, timeoutMs?: number): Promise<any> {
+    return this.request('POST', path, body, undefined, false, timeoutMs);
+  }
   del(path: string): Promise<any> { return this.request('DELETE', path); }
 
   /**
