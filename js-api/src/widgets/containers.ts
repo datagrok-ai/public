@@ -72,7 +72,7 @@ export class Accordion extends DartWidget {
   addPane(name: string, getContent: () => HTMLElement, expanded?: boolean, before?: AccordionPane | null, allowDragOut?: boolean): AccordionPane;
   addPane(name: string, getContent: () => HTMLElement, expanded: boolean | AccordionPaneOptions = false, before: AccordionPane | null = null,
     allowDragOut: boolean = true): AccordionPane {
-    const o = typeof expanded === 'object' && expanded !== null ? expanded : {expanded: expanded ?? false, before, allowDragOut};
+    const o: AccordionPaneOptions = typeof expanded === 'boolean' ? {expanded, before, allowDragOut} : expanded ?? {};
     return toJs(api.grok_Accordion_AddPane(this.dart, name, getContent, o.expanded ?? false, o.before?.dart ?? null, null, o.allowDragOut ?? true));
   }
 
@@ -81,7 +81,7 @@ export class Accordion extends DartWidget {
   addCountPane(name: string, getContent: () => HTMLElement, getCount: () => number, expanded?: boolean, before?: AccordionPane | null, allowDragOut?: boolean): AccordionPane;
   addCountPane(name: string, getContent: () => HTMLElement, getCount: () => number, expanded: boolean | AccordionPaneOptions = false, before: AccordionPane | null = null,
     allowDragOut: boolean = true): AccordionPane {
-    const o = typeof expanded === 'object' && expanded !== null ? expanded : {expanded: expanded ?? false, before, allowDragOut};
+    const o: AccordionPaneOptions = typeof expanded === 'boolean' ? {expanded, before, allowDragOut} : expanded ?? {};
     return toJs(api.grok_Accordion_AddPane(this.dart, name, getContent, o.expanded ?? false, o.before?.dart ?? null, getCount, o.allowDragOut ?? true));
   }
 

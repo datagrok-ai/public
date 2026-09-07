@@ -28,7 +28,7 @@ import {ColumnList} from "./column-list";
 import {Row, RowList, Cell} from "./row";
 import {Column} from "./column";
 import {GroupByBuilder} from "./stats";
-import type {CsvExportOptions, ColumnId, GroupsDescription} from "./types";
+import type {CloneOptions, CsvExportOptions, ColumnId, GroupsDescription, JoinOptions} from "./types";
 import {DataFrameFormulaLinesHelper, DataFrameAnnotationRegionsHelper} from "./formula-helpers";
 
 declare let grok: any;
@@ -291,10 +291,10 @@ export class DataFrame {
    * @param columns - Names of the columns to include.
    * @param saveSelection - Whether the selection is copied.
    * @param saveTags - Whether the tags are copied (default). */
-  clone(options?: {rows?: BitSet | null, columns?: string[] | null, saveSelection?: boolean, saveTags?: boolean}): DataFrame;
+  clone(options?: CloneOptions): DataFrame;
   clone(rowMask?: BitSet | null, columnIds?: string[] | null, saveSelection?: boolean, saveTags?: boolean): DataFrame;
-  clone(rowMask: BitSet | null | {rows?: BitSet | null, columns?: string[] | null, saveSelection?: boolean, saveTags?: boolean} = null, columnIds: string[] | null = null, saveSelection: boolean = false, saveTags: boolean = true): DataFrame {
-    const o = rowMask !== null && !(rowMask instanceof BitSet) ? rowMask : {rows: rowMask, columns: columnIds, saveSelection, saveTags};
+  clone(rowMask: BitSet | CloneOptions | null = null, columnIds: string[] | null = null, saveSelection: boolean = false, saveTags: boolean = true): DataFrame {
+    const o: CloneOptions = rowMask === null || rowMask instanceof BitSet ? {rows: rowMask, columns: columnIds, saveSelection, saveTags} : rowMask;
     return new DataFrame(api.grok_DataFrame_Clone(this.dart, toDart(o.rows ?? null), o.columns ?? null, o.saveSelection ?? false, o.saveTags ?? true));
   }
 
@@ -389,10 +389,10 @@ export class DataFrame {
    * @param joinType - inner, outer, left, or right. See [DG.JOIN_TYPE]
    * @param inPlace - merges content in-place into the source table
    * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/join-link/join-tables} */
-  join(t2: DataFrame, options: {keys: string[], keys2?: string[], columns?: string[] | null, columns2?: string[] | null, type?: JoinType, inPlace?: boolean}): DataFrame;
+  join(t2: DataFrame, options: JoinOptions): DataFrame;
   join(t2: DataFrame, keyColumns1: string[], keyColumns2: string[], valueColumns1?: string[] | null, valueColumns2?: string[] | null, joinType?: JoinType, inPlace?: boolean): DataFrame;
-  join(t2: DataFrame, keyColumns1: string[] | {keys: string[], keys2?: string[], columns?: string[] | null, columns2?: string[] | null, type?: JoinType, inPlace?: boolean}, keyColumns2: string[] = [], valueColumns1: string[] | null = null, valueColumns2: string[] | null = null, joinType: JoinType = JOIN_TYPE.INNER, inPlace: boolean = false): DataFrame {
-    const o = keyColumns1 !== null && !Array.isArray(keyColumns1) && typeof keyColumns1 === 'object' ? keyColumns1 : {keys: keyColumns1, keys2: keyColumns2, columns: valueColumns1, columns2: valueColumns2, type: joinType, inPlace};
+  join(t2: DataFrame, keyColumns1: string[] | JoinOptions, keyColumns2: string[] = [], valueColumns1: string[] | null = null, valueColumns2: string[] | null = null, joinType: JoinType = JOIN_TYPE.INNER, inPlace: boolean = false): DataFrame {
+    const o: JoinOptions = Array.isArray(keyColumns1) ? {keys: keyColumns1, keys2: keyColumns2, columns: valueColumns1, columns2: valueColumns2, type: joinType, inPlace} : keyColumns1;
     return new DataFrame(api.grok_JoinTables(this.dart, t2.dart, o.keys, o.keys2 ?? o.keys, o.columns ?? null, o.columns2 ?? null, o.type ?? JOIN_TYPE.INNER, o.inPlace ?? false));
   }
 

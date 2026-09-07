@@ -79,6 +79,14 @@ export class ComponentBuildInfo {
   version: string = '';
 }
 
+/** Options of {@link FilesDataSource.list}. */
+export interface FileListOptions {
+  /** Descend into subfolders. */
+  recursive?: boolean;
+  /** Part of a file name or an extension, such as "csv". */
+  pattern?: string | null;
+}
+
 /**
  * Exposes Datagrok's server-side functionality.
  *
@@ -2114,10 +2122,10 @@ export class FilesDataSource {
    * @param file - folder
    * @param recursive - whether to search in folders recursively
    * @param searchPattern - search pattern, such as part of a filename or extension, e.g., "filename-prefix" and "csv" */
-  list(file: FileInfo | string, options?: {recursive?: boolean, pattern?: string | null}): Promise<FileInfo[]>;
+  list(file: FileInfo | string, options?: FileListOptions): Promise<FileInfo[]>;
   list(file: FileInfo | string, recursive?: boolean, searchPattern?: string | null): Promise<FileInfo[]>;
-  async list(file: FileInfo | string, recursive: boolean | {recursive?: boolean, pattern?: string | null} = false, searchPattern: string | null = null): Promise<FileInfo[]> {
-    const o = typeof recursive === 'object' && recursive !== null ? recursive : {recursive: recursive ?? false, pattern: searchPattern};
+  async list(file: FileInfo | string, recursive: boolean | FileListOptions = false, searchPattern: string | null = null): Promise<FileInfo[]> {
+    const o: FileListOptions = typeof recursive === 'boolean' ? {recursive, pattern: searchPattern} : recursive ?? {};
     file = this.setRoot(file);
     return toJs(await api.grok_Dapi_UserFiles_List(file, o.recursive ?? false, o.pattern ?? null, this.root));
   }

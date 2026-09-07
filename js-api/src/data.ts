@@ -295,6 +295,14 @@ export class DbTable {
  * Creating, loading, querying, manipulating, joining tables.
  * */
 
+/** Options of {@link Data.linkTables}. */
+export interface LinkTablesOptions {
+  /** Apply the link to the current state right away instead of on the first change. */
+  initialSync?: boolean;
+  /** With a selection link: filter everything out when nothing is selected. */
+  filterAllOnNoRowsSelected?: boolean;
+}
+
 export class Data {
   public demo: DemoDatasets = new DemoDatasets();
   public files: Files = new Files();
@@ -334,10 +342,10 @@ export class Data {
    * Links tables by the specified key columns using the specified link types (such as "current row to filter", see {@link DG.SYNC_TYPE}).
    * Tables are synchronized on the first change, set the {@link initialSync} option to reflect the current table state according to the sync type.
    * */
-  linkTables(t1: DataFrame, t2: DataFrame, keyColumns1: string[], keyColumns2: string[], linkTypes: SyncType[], options?: {initialSync?: boolean, filterAllOnNoRowsSelected?: boolean}): void;
+  linkTables(t1: DataFrame, t2: DataFrame, keyColumns1: string[], keyColumns2: string[], linkTypes: SyncType[], options?: LinkTablesOptions): void;
   linkTables(t1: DataFrame, t2: DataFrame, keyColumns1: string[], keyColumns2: string[], linkTypes: SyncType[], initialSync?: boolean, filterAllOnNoRowsSelected?: boolean): void;
-  linkTables(t1: DataFrame, t2: DataFrame, keyColumns1: string[], keyColumns2: string[], linkTypes: SyncType[], initialSync: boolean | {initialSync?: boolean, filterAllOnNoRowsSelected?: boolean} = false, filterAllOnNoRowsSelected = false): void {
-    const o = typeof initialSync === 'object' && initialSync !== null ? initialSync : {initialSync: initialSync ?? false, filterAllOnNoRowsSelected};
+  linkTables(t1: DataFrame, t2: DataFrame, keyColumns1: string[], keyColumns2: string[], linkTypes: SyncType[], initialSync: boolean | LinkTablesOptions = false, filterAllOnNoRowsSelected = false): void {
+    const o: LinkTablesOptions = typeof initialSync === 'boolean' ? {initialSync, filterAllOnNoRowsSelected} : initialSync ?? {};
     api.grok_LinkTables(t1.dart, t2.dart, keyColumns1, keyColumns2, linkTypes, o.initialSync ?? false, o.filterAllOnNoRowsSelected ?? false);
   };
 

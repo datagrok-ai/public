@@ -8,6 +8,16 @@ import {IDartApi} from "./api/grok_api.g";
 
 const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
 
+/** Options of {@link ml.pca}. */
+export interface PcaOptions {
+  /** Number of principal components to add. */
+  components: number;
+  /** Center the features first. */
+  center?: boolean;
+  /** Scale the features first. */
+  scale?: boolean;
+}
+
 export namespace ml {
   /** Applies predictive model to the specified table.
    * See example: {@link https://public.datagrok.ai/js/samples/domains/data-science/predictive-model}
@@ -48,10 +58,10 @@ export namespace ml {
    * @param components - Number of components.
    * @param center - Center features data before PCA.
    * @param scale - Scale features data before PCA. */
-  export async function pca(table: DataFrame, features: string[], options: {components: number, center?: boolean, scale?: boolean}): Promise<DataFrame>;
+  export async function pca(table: DataFrame, features: string[], options: PcaOptions): Promise<DataFrame>;
   export async function pca(table: DataFrame, features: string[], components: number, center: boolean, scale: boolean): Promise<DataFrame>;
-  export async function pca(table: DataFrame, features: string[], components: number | {components: number, center?: boolean, scale?: boolean}, center: boolean = false, scale: boolean = false): Promise<DataFrame> {
-    const o = typeof components === 'object' && components !== null ? components : {components, center, scale};
+  export async function pca(table: DataFrame, features: string[], components: number | PcaOptions, center: boolean = false, scale: boolean = false): Promise<DataFrame> {
+    const o: PcaOptions = typeof components === 'number' ? {components, center, scale} : components;
     await api.grok_ML_PCA(table.dart, features, o.components, o.center ?? false, o.scale ?? false);
     return table;
   }

@@ -5,6 +5,8 @@
 
 import type {Row} from './row';
 import type {Column} from './column';
+import type {BitSet} from './bit-set';
+import type {JoinType} from '../const';
 
 export type RowPredicate = (row: Row) => boolean;
 export type Comparer = (a: any, b: any) => number;
@@ -18,6 +20,32 @@ export interface ColumnsFormatCsvExportOptions {
 }
 
 /** Csv export options to be used in {@link DataFrame.toCsv} */
+/** Options of {@link DataFrame.clone}; everything is copied when omitted. */
+export interface CloneOptions {
+  rows?: BitSet | null;
+  /** Names of the columns to include. */
+  columns?: string[] | null;
+  saveSelection?: boolean;
+  /** Default true. */
+  saveTags?: boolean;
+}
+
+/** Options of {@link DataFrame.join}. */
+export interface JoinOptions {
+  /** Key column names in this table. */
+  keys: string[];
+  /** Key column names in the other table; same as [keys] when omitted. */
+  keys2?: string[];
+  /** Columns to take from this table: null for all, [] for none. */
+  columns?: string[] | null;
+  /** Columns to take from the other table: null for all, [] for none. */
+  columns2?: string[] | null;
+  /** Inner (default), left, right or outer. */
+  type?: JoinType;
+  /** Merge into this table instead of creating a new one. */
+  inPlace?: boolean;
+}
+
 export interface CsvExportOptions {
 
   /** Field delimiter; comma if not specified */

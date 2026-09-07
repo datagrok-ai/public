@@ -678,7 +678,7 @@ export interface RangeSliderOptions {
 export function rangeSlider(options: RangeSliderOptions): RangeSlider;
 export function rangeSlider(minRange: number, maxRange: number, min: number, max: number, vertical?: boolean, style?: RangeSliderStyle | SliderOptions): RangeSlider;
 export function rangeSlider(minRange: number | RangeSliderOptions, maxRange: number = 0, min: number = 0, max: number = 0, vertical: boolean = false, style: RangeSliderStyle | SliderOptions = 'barbell'): RangeSlider {
-  const o = typeof minRange === 'object' ? minRange : {minRange, maxRange, min, max, vertical, style};
+  const o: RangeSliderOptions = typeof minRange === 'number' ? {minRange, maxRange, min, max, vertical, style} : minRange;
   const rs = RangeSlider.create(o.vertical ?? false, o.style ?? 'barbell');
   rs.setValues(o.minRange, o.maxRange, o.min ?? o.minRange, o.max ?? o.maxRange);
   return rs;
