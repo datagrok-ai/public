@@ -207,6 +207,12 @@ nobody filed.
   whichever step came next (a 500 ms "Table" read, a 500 ms property set). The step now waits
   for the platform's own `ddt-semantic-type-detected` event for that data frame (identity by the
   Dart handle — the same file opened twice is two tables).
+- **Package autostarts run 3 s after the app started, on whatever step is running then**
+  (`func_sync.dart`; found 2026-09-07 when a stand package's autostart forced `simpleMode = false`
+  mid-journey). The core now exposes `grok.shell.autostartsCompleted` (a promise, added for
+  this); `user is logged in` does NOT await it — the lead's call, it would cost up to 3 s per
+  feature — so a feature that depends on what an autostart sets up (a package's top menu, a
+  registered editor) awaits it in its own step.
 - **The error floor** (`harness.ts` `watchErrors`/`takeErrors`): console errors and page errors
   from page open; `user is logged in` clears what the stand logs while booting, `resetShell`
   clears the teardown's, `no errors should have been logged` reads and clears. `Failed to load

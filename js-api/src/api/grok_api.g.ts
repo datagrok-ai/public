@@ -38,6 +38,7 @@ export interface IDartApi {
   grok_Set_PresentationMode(v: Bool): any;
   grok_Set_SimpleMode(s: Bool): any;
   grok_Get_SimpleMode(): any;
+  grok_Shell_Get_AutostartsCompleted(): Promise<any>;
   grok_Get_HideTabsInPresentationMode(): any;
   grok_Set_HideTabsInPresentationMode(v: Bool): any;
   grok_GetDemoTable(path: String): Promise<any>;
