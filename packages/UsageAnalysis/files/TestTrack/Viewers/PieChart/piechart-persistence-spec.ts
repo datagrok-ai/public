@@ -87,7 +87,10 @@ test('Pie Chart — Layout and Project Persistence', async ({page}) => {
         shift: pie2.props.shift,
       } : null;
 
-      await grok.dapi.layouts.delete(saved);
+      w.__pendingDeletes = w.__pendingDeletes ?? [];
+      w.__pendingDeletes.push((async () => {
+        try { await grok.dapi.layouts.delete(saved); } catch (_) {}
+      })());
       return {before, after};
     });
     expect(result.after).toEqual(result.before);
@@ -140,11 +143,17 @@ test('Pie Chart — Layout and Project Persistence', async ({page}) => {
       expect(result.title).toBe('Pie Persistence Probe');
       expect(result.asianSwatch).toBe('rgb(214, 39, 40)');
     } finally {
-      await page.evaluate(async (id) => {
-        try {
-          const saved = await grok.dapi.layouts.find(id);
-          if (saved) await grok.dapi.layouts.delete(saved);
-        } catch (_) {}
+      // detached, like deleteProjectWithCleanup: the layout is never read again and the
+      // worker fixture drains __pendingDeletes before it closes the page
+      await page.evaluate((id) => {
+        const w = window as any;
+        w.__pendingDeletes = w.__pendingDeletes ?? [];
+        w.__pendingDeletes.push((async () => {
+          try {
+            const saved = await grok.dapi.layouts.find(id);
+            if (saved) await grok.dapi.layouts.delete(saved);
+          } catch (_) {}
+        })());
       }, layoutId);
     }
   });

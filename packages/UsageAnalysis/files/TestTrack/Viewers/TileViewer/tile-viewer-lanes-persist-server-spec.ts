@@ -14,6 +14,10 @@ declare const grok: any;
 // of tile-viewer.md, which is lane-bound: after a dock resize the lane is rebuilt at scrollTop 0
 // and only the authenticated client puts the position back (measured 2026-09-03 on dev).
 // The ladders that prove the viewer itself are the local-lane siblings.
+// expect.poll's default cadence (100/250/500/1000ms) overshoots a settled UI by up to a
+// second per call; this ladder is fast early and still coarse for the long product waits
+const POLL = {intervals: [50, 50, 100, 200, 400, 800]};
+
 test.use(specTestOptions);
 
 const datasetPath = 'System:DemoFiles/demog.csv';
@@ -63,21 +67,30 @@ test('Tile Viewer — layout and project persistence', async ({page}) => {
       const w = window as any;
       return w.__settledFor(w.__laneRead, 250, 1000, 25).then((s: string) => JSON.parse(s));
     });
-    const laneScroll = () => page.evaluate(() => {
-      const l = document.querySelector('[name="viewer-Tile-Viewer"] .d4-tile-viewer-lane-content') as HTMLElement;
-      return {top: l.scrollTop, max: l.scrollHeight - l.clientHeight};
-    });
+    // one round trip per wheel: the previous scrollTop is left in the page, so the read after
+    // the wheel is also the arming read for the next one
+    const laneScroll = (armOnly: boolean) => page.evaluate((arm: boolean) => {
+      const w = window as any;
+      const read = () => {
+        const l = document.querySelector('[name="viewer-Tile-Viewer"] .d4-tile-viewer-lane-content') as HTMLElement;
+        return {top: l.scrollTop, max: l.scrollHeight - l.clientHeight};
+      };
+      const done = (s: {top: number; max: number}) => { w.__laneTop = s.top; return s; };
+      if (arm) return Promise.resolve(done(read()));
+      const was = w.__laneTop;
+      return w.__poll(read, (s: any) => s.top !== was, 120, 20).then(done);
+    }, armOnly);
     const lane = page.locator(`${ROOT} .d4-tile-viewer-lane-content`).first();
     const box = await lane.boundingBox();
     await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2);
     // a paced sequence, like a drag, stopping mid-range: a lane parked at its scroll clamp is
     // moved by the browser when docking another viewer shortens it, which is not the re-basing
     // this step is about
-    const target = Math.min(1500, (await laneScroll()).max / 2);
-    for (let i = 0; i < 10 && (await laneScroll()).top < target; i++) {
-      const at = (await laneScroll()).top;
+    let scrolled = await laneScroll(true);
+    const target = Math.min(1500, scrolled.max / 2);
+    for (let i = 0; i < 10 && scrolled.top < target; i++) {
       await page.mouse.wheel(0, 300);
-      await v.pollValue(async () => (await laneScroll()).top, (t) => t !== at, 120, 20);
+      scrolled = await laneScroll(false);
     }
     const before = await readLane();
     // docking the histogram rebuilds the lane at scrollTop 0 and the viewer puts the position
@@ -100,7 +113,7 @@ test('Tile Viewer — layout and project persistence', async ({page}) => {
 
     await page.evaluate(() => grok.shell.tv.viewers.find((x: any) => x.type === 'Histogram')?.close());
     await expect.poll(() => page.evaluate(() =>
-      grok.shell.tv.viewers.filter((x: any) => x.type === 'Histogram').length), {timeout: 15_000}).toBe(0);
+      grok.shell.tv.viewers.filter((x: any) => x.type === 'Histogram').length), {timeout: 15_000, ...POLL}).toBe(0);
     // the resize rebuilds the lane a beat later; the next step focuses a tile, so leave the lane
     // rebuilt, at the top, and holding still
     await page.evaluate(() => {
@@ -110,10 +123,10 @@ test('Tile Viewer — layout and project persistence', async ({page}) => {
         const l = lane();
         return l ? `${l.querySelectorAll('.d4-tile-viewer-form').length}|${l.scrollHeight}|${l.scrollTop}` : '';
       };
-      return w.__settledFor(shape, 300, 3000, 50).then(() => {
+      return w.__settledFor(shape, 200, 3000, 25).then(() => {
         const l = lane();
         if (l) l.scrollTop = 0;
-        return w.__settledFor(shape, 300, 3000, 50);
+        return w.__settledFor(shape, 200, 3000, 25);
       });
     });
   });
@@ -149,7 +162,7 @@ test('Tile Viewer — layout and project persistence', async ({page}) => {
         tv.addViewer('Grid');
       });
       await expect.poll(() => page.evaluate(() =>
-        grok.shell.tv.viewers.filter((x: any) => x.type === 'Tile Viewer').length), {timeout: 15_000}).toBe(0);
+        grok.shell.tv.viewers.filter((x: any) => x.type === 'Tile Viewer').length), {timeout: 15_000, ...POLL}).toBe(0);
 
       const r = await page.evaluate(async ({id, t}) => {
         const w = window as any;
@@ -172,9 +185,13 @@ test('Tile Viewer — layout and project persistence', async ({page}) => {
       expect(r.removedAbsent).toBe(true);
       expect(productErrors(errBefore)).toEqual([]);
     } finally {
-      await page.evaluate(async (id) => {
-        const saved = await grok.dapi.layouts.find(id);
-        if (saved) await grok.dapi.layouts.delete(saved);
+      // detached: nothing later in the spec reads this layout, and awaiting the round trip
+      // cost 1-4s of the test
+      await page.evaluate((id) => {
+        const drop = async () => {
+          try { const l = await grok.dapi.layouts.find(id); if (l) await grok.dapi.layouts.delete(l); } catch (_) {  }
+        };
+        drop();
       }, layoutId).catch(() => {});
     }
   });
@@ -185,23 +202,22 @@ test('Tile Viewer — layout and project persistence', async ({page}) => {
     await softStep('Scenario 4 Step 1: configure the peak on a fresh viewer (RACE lanes, explicit list, showEmptyLanes)', async () => {
       await page.evaluate(() => grok.shell.tv.viewers.find((x: any) => x.type === 'Tile Viewer')?.close());
       await expect.poll(() => page.evaluate(() =>
-        grok.shell.tv.viewers.filter((x: any) => x.type === 'Tile Viewer').length), {timeout: 15_000}).toBe(0);
+        grok.shell.tv.viewers.filter((x: any) => x.type === 'Tile Viewer').length), {timeout: 15_000, ...POLL}).toBe(0);
       await v.addViewerByIcon(page, 'tile-viewer', 'Tile-Viewer', 10000, 'Tile Viewer');
 
-      const r = await page.evaluate(async () => {
+      const r = await page.evaluate(() => {
         const w = window as any;
         const viewer = grok.shell.tv.viewers.find((x: any) => x.type === 'Tile Viewer');
         viewer.props.lanesColumnName = 'RACE';
-        await w.__settled('viewer:Tile Viewer.onViewerRendered', () => {
-          viewer.props.lanes = ['Black', 'Asian', 'Caucasian'];
-        }, 1200);
+        viewer.props.lanes = ['Black', 'Asian', 'Caucasian'];
         const root = document.querySelector('[name="viewer-Tile-Viewer"]')!;
-        return {
+        const read = () => ({
           autoGenerate: viewer.props.autoGenerate,
           laneCount: root.querySelectorAll('.d4-tile-viewer-lane').length,
           headers: Array.from(root.querySelectorAll('.d4-tile-viewer-lane-header')).map((h) => h.textContent),
           showEmptyLanes: viewer.props.showEmptyLanes,
-        };
+        });
+        return w.__poll(read, (x: any) => x.laneCount === 3, 2000, 25);
       });
       expect(r.autoGenerate).toBe(true);
       expect(r.laneCount).toBe(3);
@@ -284,9 +300,13 @@ test('Tile Viewer — layout and project persistence', async ({page}) => {
       }, saved.projectId);
       await page.locator(ROOT).waitFor({timeout: 30000});
 
+      // a reopened project has no current row, and with lanes the first tile in the DOM is the
+      // first of the "Black" lane rather than row 0, so the row is pinned and its tile is the
+      // one compared
+      await page.evaluate(() => { grok.shell.tv.dataFrame.currentRowIdx = 0; });
       await page.waitForFunction(() => {
         const root = document.querySelector('[name="viewer-Tile-Viewer"]');
-        const tile = root?.querySelector('.d4-tile-viewer-form.d4-current') || root?.querySelector('.d4-tile-viewer-form');
+        const tile = root?.querySelector('.d4-tile-viewer-form.d4-current');
         const inp = tile?.querySelector('input[name="input-HEIGHT"]') as HTMLInputElement | null;
         return !!inp && !!inp.value;
       }, null, {timeout: 20_000}).catch(() => {});
@@ -296,9 +316,9 @@ test('Tile Viewer — layout and project persistence', async ({page}) => {
         const viewer = tv.viewers.find((x: any) => x.type === 'Tile Viewer');
         const root = document.querySelector('[name="viewer-Tile-Viewer"]')!;
         const df = tv.dataFrame;
-        const tile = root.querySelector('.d4-tile-viewer-form.d4-current') || root.querySelector('.d4-tile-viewer-form')!;
-        const heightInput = tile.querySelector('input[name="input-HEIGHT"]') as HTMLInputElement | null;
-        const idx = df.currentRowIdx >= 0 ? df.currentRowIdx : 0;
+        const tile = root.querySelector('.d4-tile-viewer-form.d4-current')!;
+        const heightInput = tile?.querySelector('input[name="input-HEIGHT"]') as HTMLInputElement | null;
+        const idx = df.currentRowIdx;
         let gridText: string | null = null;
         try { gridText = tv.grid.cell('HEIGHT', idx).cell.valueString; } catch (_) { gridText = null; }
         return {
@@ -316,8 +336,11 @@ test('Tile Viewer — layout and project persistence', async ({page}) => {
   } finally {
 
     if (probeLayoutId) {
-      await page.evaluate(async (id) => {
-        try { const l = await grok.dapi.layouts.find(id); if (l) await grok.dapi.layouts.delete(l); } catch (_) {  }
+      await page.evaluate((id) => {
+        const drop = async () => {
+          try { const l = await grok.dapi.layouts.find(id); if (l) await grok.dapi.layouts.delete(l); } catch (_) {  }
+        };
+        drop();
       }, probeLayoutId).catch(() => {});
     }
     if (probeProject.id)

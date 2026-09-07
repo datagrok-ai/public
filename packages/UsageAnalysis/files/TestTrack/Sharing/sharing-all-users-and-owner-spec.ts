@@ -1,9 +1,7 @@
 import {expect, Page} from '@playwright/test';
 import {test} from '../shared-page';
-import {
-  loginToDatagrok, loginAsSecondUser, getSecondUserLogin,
-  specTestOptions, softStep, stepErrors,
-} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {recipientPage, secondUserLogin} from './_actors';
 
 test.use(specTestOptions);
 
@@ -45,7 +43,8 @@ test('Sharing & Permissions: All users (everyone) & owner-retains-access (two-ac
 
   const ownerLogin = await readLogin(page);
 
-  const recipientLogin = await getSecondUserLogin();
+  const recipientLogin = await secondUserLogin();
+  const rp = await recipientPage(page);
   console.log(`[two-actor] owner='${ownerLogin}', recipient='${recipientLogin}' (from token claim)`);
   expect(recipientLogin, 'recipient login must resolve').toBeTruthy();
   expect(recipientLogin, 'recipient must differ from owner').not.toBe(ownerLogin);
@@ -139,14 +138,13 @@ test('Sharing & Permissions: All users (everyone) & owner-retains-access (two-ac
     });
 
     await softStep('Block A (recipient): recipient reaches the entity at view-and-use; delete/re-share denied', async () => {
-      await loginAsSecondUser(page);
-      try {
-        const live = await readLogin(page);
+      {
+        const live = await readLogin(rp);
         expect(live).toBe(recipientLogin);
 
-        await pollRecipientView(page, projId!, true);
+        await pollRecipientView(rp, projId!, true);
 
-        const neg = await evalJs(page, `(async () => {
+        const neg = await evalJs(rp, `(async () => {
           const g = window.grok;
           try {
             const p = await g.dapi.projects.find('${projId}');
@@ -162,9 +160,6 @@ test('Sharing & Permissions: All users (everyone) & owner-retains-access (two-ac
         expect(neg.canDelete, 'view-and-use must NOT grant Delete (re-share/delete denied)').toBe(false);
         expect(neg.canShare, 'view-and-use must NOT grant Share (re-share denied)').toBe(false);
         console.log(`[two-actor] Block A (recipient): canView=${neg.canView}, delete/share denied (canDelete=${neg.canDelete}, canShare=${neg.canShare})`);
-      } finally {
-        await loginToDatagrok(page);
-        await setupSession(page);
       }
     });
 
@@ -187,17 +182,11 @@ test('Sharing & Permissions: All users (everyone) & owner-retains-access (two-ac
     });
 
     await softStep('Block B (recipient): recipient loses access after All users grant removed', async () => {
-      await loginAsSecondUser(page);
-      try {
-        const live = await readLogin(page);
-        expect(live).toBe(recipientLogin);
+      const live = await readLogin(rp);
+      expect(live).toBe(recipientLogin);
 
-        await pollRecipientView(page, projId!, false);
-        console.log(`[two-actor] Block B (recipient): recipient lost View after All users revoke`);
-      } finally {
-        await loginToDatagrok(page);
-        await setupSession(page);
-      }
+      await pollRecipientView(rp, projId!, false);
+      console.log(`[two-actor] Block B (recipient): recipient lost View after All users revoke`);
     });
 
     await softStep('Block C (UI): owner opens the Advanced editor (PermissionsView) for the project', async () => {
@@ -256,13 +245,12 @@ test('Sharing & Permissions: All users (everyone) & owner-retains-access (two-ac
     });
 
     await softStep('Block C: a non-owner with no grant cannot access the project', async () => {
-      await loginAsSecondUser(page);
-      try {
-        const live = await readLogin(page);
+      {
+        const live = await readLogin(rp);
         expect(live).toBe(recipientLogin);
 
-        await pollRecipientView(page, projId!, false);
-        const res = await evalJs(page, `(async () => {
+        await pollRecipientView(rp, projId!, false);
+        const res = await evalJs(rp, `(async () => {
           const g = window.grok;
           try {
             const p = await g.dapi.projects.find('${projId}').catch(() => null);
@@ -274,9 +262,6 @@ test('Sharing & Permissions: All users (everyone) & owner-retains-access (two-ac
         expect(res.ok, `non-owner check must run (${res.reason ?? ''})`).toBe(true);
         expect(res.canView, 'non-owner with no grant must NOT have View access').toBe(false);
         console.log(`[two-actor] Block C: non-owner recipient denied access (canView=${res.canView}) — owner-only at this point`);
-      } finally {
-        await loginToDatagrok(page);
-        await setupSession(page);
       }
     });
   } finally {

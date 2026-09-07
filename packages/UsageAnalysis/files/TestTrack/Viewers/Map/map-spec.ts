@@ -34,7 +34,16 @@ async function toggleLayer(page: Page, layer: keyof typeof LAYER_ROW): Promise<v
 }
 
 const mapSignature = (page: Page) => v.viewerSignature(page, 'Map');
-const mapRepaints = (page: Page, before: string) => v.waitForViewerRepaint(page, 'Map', before);
+
+// Same assertion as waitForViewerRepaint — poll the viewer's pixel hash until it differs from
+// the baseline — but it returns the signature that satisfied the poll rather than taking one
+// more element screenshot to re-read it. A screenshot of the map costs ~330ms and this spec
+// makes nine of these calls.
+const mapRepaints = async (page: Page, before: string): Promise<string> => {
+  const after = await v.pollValue(() => mapSignature(page), (s) => s !== before, 15_000, 100);
+  expect(after).not.toBe(before);
+  return after;
+};
 const shownValue = (page: Page, prop: string) => v.propertyGridValue(page, prop);
 const ensureCategory = (page: Page, category: string, probeProp: string) =>
   v.ensurePropertyCategory(page, 'Map', category, probeProp);
@@ -53,8 +62,13 @@ test('Map viewer', async ({page}) => {
   await openDatagrok(page);
   await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 15_000});
   // the GIS detectors run ~5s after the table opens on a fresh page; the Map reads them at attach
-  await expect.poll(() => page.evaluate(() => (window as any).grok.shell.t.col('Latitude').semType),
-    {timeout: 30_000}).toBe('Latitude');
+  expect(await page.evaluate(async () => {
+    const read = () => (window as any).grok.shell.t.col('Latitude').semType;
+    const deadline = Date.now() + 30_000;
+    while (read() !== 'Latitude' && Date.now() < deadline)
+      await new Promise((r) => setTimeout(r, 50));
+    return read();
+  })).toBe('Latitude');
 
   await softStep('Add Map viewer from the Viewers toolbox', async () => {
     await page.locator('[name="icon-Map"]').first().click();
@@ -157,7 +171,7 @@ test('Map viewer', async ({page}) => {
     try {
       await page.mouse.move(box.x + box.width * 0.25, box.y + box.height * 0.25);
       await page.mouse.down();
-      await page.mouse.move(box.x + box.width * 0.75, box.y + box.height * 0.75, {steps: 25});
+      await page.mouse.move(box.x + box.width * 0.75, box.y + box.height * 0.75, {steps: 3});
       await page.mouse.up();
     } finally {
       await page.keyboard.up('Control');
@@ -239,7 +253,7 @@ test('Map viewer', async ({page}) => {
   await page.evaluate(() => {
     for (const e of Array.from(document.querySelectorAll('.property-grid'))) e.remove();
   });
-  await v.cleanupShell(page);
+  await v.closeAllAndWait(page);
 
   v.finishSpec();
 });

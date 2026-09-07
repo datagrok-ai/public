@@ -62,7 +62,10 @@ test('Chem: GROK-14028 Filter Panel Clear 3-layer cleanup invariant', async ({pa
   await softStep('Open Filter Panel and wait for Structure filter sketch-link', async () => {
     await page.evaluate(async () => {
       grok.shell.tv.getFiltersGroup();
-      await new Promise(r => setTimeout(r, 5000));
+      // The next line waits on the first filter card; wait for the same thing here.
+      const deadline = Date.now() + 5000;
+      while (Date.now() < deadline && !document.querySelector('[name="viewer-Filters"] .d4-filter'))
+        await new Promise(r => setTimeout(r, 100));
     });
     await page.locator('[name="viewer-Filters"] .d4-filter').first().waitFor({timeout: 30000});
     const probeResult = await page.evaluate(async () => {
@@ -129,10 +132,19 @@ test('Chem: GROK-14028 Filter Panel Clear 3-layer cleanup invariant', async ({pa
       smilesInput.dispatchEvent(new Event('input', {bubbles: true}));
       smilesInput.dispatchEvent(new Event('change', {bubbles: true}));
       smilesInput.dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter', bubbles: true}));
-      await new Promise(r => setTimeout(r, 2500));
+      // Wait for the typed SMILES to be committed to the field, then for the filter the
+      // assertions below read; each capped at the sleep it replaces.
+      const commitDeadline = Date.now() + 2500;
+      while (Date.now() < commitDeadline && smilesInput.value.trim() !== 'c1ccccc1')
+        await new Promise(r => setTimeout(r, 50));
       const okBtn = document.querySelector('.d4-dialog [name="button-OK"]') as HTMLElement | null;
       if (okBtn) okBtn.click();
-      await new Promise(r => setTimeout(r, 4000));
+      const total = grok.shell.t.rowCount;
+      const filterDeadline = Date.now() + 4000;
+      while (Date.now() < filterDeadline &&
+             !(grok.shell.t.filter.trueCount < total && grok.shell.t.filter.trueCount > 0 &&
+               document.querySelector('[name="viewer-Filters"] .d4-filter .chem-clear-sketcher-button')))
+        await new Promise(r => setTimeout(r, 100));
     });
     const filterApplied = await page.evaluate(() => ({
       filtered: grok.shell.t.filter.trueCount,
@@ -150,8 +162,12 @@ test('Chem: GROK-14028 Filter Panel Clear 3-layer cleanup invariant', async ({pa
     await page.evaluate(async () => {
       const clearBtn = document.querySelector('[name="viewer-Filters"] .d4-filter .chem-clear-sketcher-button') as HTMLElement | null;
       if (!clearBtn) throw new Error('Clear button not found — filter may not have been applied successfully');
+      const total = grok.shell.t.rowCount;
       clearBtn.click();
-      await new Promise(r => setTimeout(r, 2000));
+      // Clearing restores every row; wait for that, capped at the sleep replaced.
+      const deadline = Date.now() + 2000;
+      while (Date.now() < deadline && grok.shell.t.filter.trueCount !== total)
+        await new Promise(r => setTimeout(r, 100));
     });
   });
 

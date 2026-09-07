@@ -46,8 +46,15 @@ export const readProp = (page: Page, name: string) => page.evaluate((n: string) 
   return sp ? sp.props[n] ?? null : null;
 }, name);
 
+/** Polls the property in the page rather than over the wire: a miss costs one round trip, not one per read. */
 export const propIs = (page: Page, propName: string, value: unknown, timeoutMs = 2500) =>
-  v.pollValue(() => readProp(page, propName), (x) => x === value, timeoutMs, 50);
+  page.evaluate(({n, want, cap}) => {
+    const read = () => {
+      const sp = grok.shell.tv.viewers.find((x: any) => x.type === 'Scatter plot') as any;
+      return sp ? sp.props[n] ?? null : null;
+    };
+    return (window as any).__poll(read, (x: any) => x === want, cap, 50);
+  }, {n: propName, want: value, cap: timeoutMs});
 
 export const pickOnViewer = (page: Page, role: string, column: string) =>
   v.pickColumnViaSelectorTrusted(page, {role, columnName: column});
@@ -82,6 +89,9 @@ async function commitColumn(page: Page, column: string): Promise<void> {
 // name; an empty search text committed with Enter resolves to that row (ColumnGrid.currentColumnName).
 async function commitEmptyColumn(page: Page): Promise<void> {
   await openSearchBox(page);
+  // the opening letter can land twice; a lone Backspace then leaves a letter that Enter commits
+  // as the first column containing it (RACE for "a")
+  await page.keyboard.press('Control+A');
   await page.keyboard.press('Backspace');
   await page.keyboard.press('Enter');
 }
@@ -252,7 +262,7 @@ export const filterMoved = (page: Page, from: number, capMs = 5000): Promise<num
     (window as any).__moved(() => grok.shell.tv.dataFrame.filter.trueCount, from, cap), {from, cap: capMs});
 
 /** A hold proving the filtered row count does NOT move: a capped poll for a change. */
-export const filterHeld = (page: Page, capMs = 1000): Promise<number> =>
+export const filterHeld = (page: Page, capMs = 300): Promise<number> =>
   page.evaluate((cap) => {
     const read = () => grok.shell.tv.dataFrame.filter.trueCount as number;
     const first = read();
@@ -351,14 +361,44 @@ export const canvasInk = (page: Page, layer: 'canvas' | 'overlay') => page.evalu
 /**
  * The ink of a layer once it has settled: with `from`, after it has first moved away from that
  * value by more than `tolerance`; without, after two reads agree within `tolerance`.
+ *
+ * The whole settle runs in the page — a read is a canvas scan, and paying a round trip per read
+ * cost more than the scans did.
  */
 export async function settledInk(
   page: Page, layer: 'canvas' | 'overlay', tolerance: number, from?: number, capMs = 4000,
 ): Promise<number> {
-  await parkPointer(page);
-  if (from !== undefined)
-    await v.pollValue(() => canvasInk(page, layer), (cur) => cur >= 0 && Math.abs(cur - from) > tolerance, capMs, 100);
-  return v.pollStable(() => canvasInk(page, layer), (a, b) => a >= 0 && Math.abs(a - b) <= tolerance, capMs, 150);
+  await page.mouse.move(4, 4);
+  return page.evaluate(async ({name, tol, from, cap}) => {
+    const w = window as any;
+    const read = () => {
+      const sp = grok.shell.tv.viewers.find((x: any) => x.type === 'Scatter plot') as any;
+      const c = sp?.root.querySelector(`canvas[name="${name}"]`) as HTMLCanvasElement | null;
+      const ctx = c?.getContext('2d');
+      if (!c || !ctx) return -1;
+      let data: Uint8ClampedArray;
+      try { data = ctx.getImageData(0, 0, c.width, c.height).data; } catch (_) { return -1; }
+      let n = 0;
+      for (let k = 0; k < data.length; k += 16)
+        if (data[k + 3] !== 0 && !(data[k] >= 250 && data[k + 1] >= 250 && data[k + 2] >= 250)) n++;
+      return n;
+    };
+    const deadline = Date.now() + cap;
+    // the un-hover repaint the pointer move above starts has to land before the first sample
+    await w.__poll(() => (w.__lastRender ?? {})['Scatter plot'] ?? 0,
+      (last: number) => !last || Date.now() - last >= 120, 1000, 25);
+    if (from !== undefined)
+      await w.__poll(read, (cur: number) => cur >= 0 && Math.abs(cur - from) > tol,
+        Math.max(0, deadline - Date.now()), 100);
+    let prev = read();
+    while (Date.now() < deadline) {
+      await new Promise((r) => setTimeout(r, 100));
+      const cur = read();
+      if (cur >= 0 && Math.abs(cur - prev) <= tol) return cur;
+      prev = cur;
+    }
+    return prev;
+  }, {name: layer, tol: tolerance, from, cap: capMs});
 }
 
 export const selectionCount = (page: Page) =>

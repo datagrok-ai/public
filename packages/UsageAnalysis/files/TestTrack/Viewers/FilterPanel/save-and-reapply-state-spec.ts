@@ -156,6 +156,7 @@ test('Filters — Save and re-apply named filter state', async ({page}) => {
 
       await expect.poll(async () => page.evaluate(() => grok.shell.tv.dataFrame.filter.trueCount), {
         timeout: 15_000,
+        intervals: [30, 60, 120, 250, 500, 1000],
         message: 'the re-applied state did not restore the filtered row count recorded before the perturbation',
       }).toBe(trueCountSaved);
       await expectHeaderCounter(page, '2',

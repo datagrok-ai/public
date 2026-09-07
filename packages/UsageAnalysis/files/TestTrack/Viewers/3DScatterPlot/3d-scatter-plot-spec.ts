@@ -26,6 +26,8 @@ async function installSignature(page: Page): Promise<void> {
       proto.render = function(this: any) { w.__sp3d = this; return render.apply(this, arguments as any); };
       proto.__sp3dHooked = true;
     }
+    // The whole drawing buffer, not a sample of it: sampling three full-width bands hashed the
+    // axes shown and the axes hidden identically, and "Show Axes repaints" stopped detecting.
     w.__sp3dSig = () => {
       const plot = w.__sp3d;
       if (!plot) return null;
@@ -36,6 +38,17 @@ async function installSignature(page: Page): Promise<void> {
       gl.readPixels(0, 0, cv.width, cv.height, gl.RGBA, gl.UNSIGNED_BYTE, buf);
       let h = 0;
       for (let i = 0; i < buf.length; i += 16) h = (h * 31 + buf[i] + buf[i + 1] * 7 + buf[i + 2] * 13) % 2147483647;
+      return h;
+    };
+    // The poll runs in the page: every read of the signature was a round trip queued behind the
+    // scene's own render loop, and the read itself is a GPU sync worth spacing out.
+    w.__sp3dRepaint = async (before: number, capMs: number) => {
+      const deadline = Date.now() + capMs;
+      let h = w.__sp3dSig();
+      while (h === before && Date.now() < deadline) {
+        await new Promise((r) => setTimeout(r, 75));
+        h = w.__sp3dSig();
+      }
       return h;
     };
     w.__sp3dCamera = () => {
@@ -51,20 +64,47 @@ async function installSignature(page: Page): Promise<void> {
 const signature = (page: Page) => page.evaluate(() => (window as any).__sp3dSig() as number);
 const camera = (page: Page) => page.evaluate(() => (window as any).__sp3dCamera() as number[]);
 const repaints = (page: Page, before: number) =>
-  v.pollValue(() => signature(page), (s) => s !== before, 3000, 50);
+  page.evaluate((b) => (window as any).__sp3dRepaint(b, 3000) as Promise<number>, before);
 const shownValue = (page: Page, prop: string) => v.propertyGridValue(page, prop);
+// The probe read, the category expand and the settle are one in-page call: every read here was
+// a Playwright actionability round trip queued behind the scene's render loop.
+const rowVisible = (page: Page, probe: string) => page.evaluate((p) => {
+  const row = document.querySelector(`.property-grid tr[name="prop-${p}"]`);
+  return !!row && row.getClientRects().length > 0;
+}, probe);
+
 async function category(page: Page, cat: string, probe: string): Promise<void> {
-  const row = page.locator(`.property-grid tr[name="prop-${probe}"]`).first();
-  const header = page.locator(`[name="prop-category-${cat}"]`).first();
-  for (let attempt = 0; attempt < 3 && !(await row.isVisible()); attempt++) {
-    if (await header.count() === 0) {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const state = await page.evaluate(async ({c, p}) => {
+      const w = window as any;
+      const row = () => document.querySelector(`.property-grid tr[name="prop-${p}"]`);
+      const shown = () => !!row() && row()!.getClientRects().length > 0;
+      if (shown()) return 'shown';
+      const header = document.querySelector(`[name="prop-category-${c}"]`) as HTMLElement | null;
+      if (!header) return 'no-header';
+      header.click();
+      await w.__poll(shown, (ok: boolean) => ok, 1500, 25);
+      return shown() ? 'shown' : 'hidden';
+    }, {c: cat, p: probe});
+    if (state === 'shown') break;
+    if (state === 'no-header') {
       await v.clickViewerTitlebarIcon(page, VIEWER_NAME, 'icon-font-icon-settings').catch(() => {});
-      await header.waitFor({timeout: 3000}).catch(() => {});
-    } else
-      await header.click().catch(() => {});
-    await v.pollValue(() => row.isVisible(), (visible) => visible, 1500, 50);
+      await page.locator(`[name="prop-category-${cat}"]`).first().waitFor({timeout: 3000}).catch(() => {});
+    }
   }
-  expect(await row.isVisible()).toBe(true);
+  expect(await rowVisible(page, probe)).toBe(true);
+}
+
+// Restoring a column the step has already asserted on is plumbing, not coverage: a trusted
+// selector drive is ~1.3s of typing and commit polling, and the four picks the assertions read
+// still go through the on-viewer selector.
+async function setColumns(page: Page, props: Record<string, string>): Promise<void> {
+  await page.evaluate(({vt, p}) => {
+    const norm = (s: string) => s.replace(/[\s-]+/g, ' ').toLowerCase();
+    const view = Array.from((window as any).grok.shell.tv.viewers)
+      .find((x: any) => norm(x.type) === norm(vt)) as any;
+    for (const k of Object.keys(p)) view.props[k] = p[k];
+  }, {vt: VIEWER_TYPE, p: props});
 }
 
 async function selectorText(page: Page, role: string): Promise<string> {
@@ -138,12 +178,7 @@ test('3D scatter plot', async ({page}) => {
     expect(await selectorText(page, 'z')).toBe('Z: AGE');
     expect(await repaints(page, before)).not.toBe(before);
 
-    await v.pickColumnViaSelectorTrusted(page, {
-      role: 'x', columnName: 'AGE', viewerType: VIEWER_TYPE, propName: 'xColumnName',
-    });
-    await v.pickColumnViaSelectorTrusted(page, {
-      role: 'z', columnName: 'WEIGHT', viewerType: VIEWER_TYPE, propName: 'zColumnName',
-    });
+    await setColumns(page, {xColumnName: 'AGE', zColumnName: 'WEIGHT'});
   });
 
   await softStep('Color by SEX shows a categorical legend', async () => {
@@ -226,8 +261,8 @@ test('3D scatter plot', async ({page}) => {
 
     await page.mouse.move(x, y);
     await page.mouse.down();
-    // every mouse step costs ~0.6s of hit-testing in the plot, and the rotation is the same
-    await page.mouse.move(box.x + box.width * 0.75, box.y + box.height * 0.3, {steps: 3});
+    // every mouse step costs ~0.9s of hit-testing in the plot, and the rotation is the same
+    await page.mouse.move(box.x + box.width * 0.75, box.y + box.height * 0.3, {steps: 2});
     await page.mouse.up();
     const rotated = await repaints(page, before);
     expect(rotated).not.toBe(before);
@@ -324,9 +359,7 @@ test('3D scatter plot', async ({page}) => {
   await softStep('Legend position moves the legend', async () => {
     // an earlier step left Color = AGE (numeric), which renders no legend element at all,
     // so colour by a categorical column first to have a legend to reposition
-    await v.pickColumnViaSelectorTrusted(page, {
-      role: 'color', columnName: 'SEX', viewerType: VIEWER_TYPE, propName: 'colorColumnName',
-    });
+    await setColumns(page, {colorColumnName: 'SEX'});
     await expect.poll(async () => (await v.readLegend(page, VIEWER_TYPE)).legendRendered,
       {timeout: 10_000}).toBe(true);
 
@@ -345,7 +378,7 @@ test('3D scatter plot', async ({page}) => {
 
   await page.evaluate(() => {
     const w = window as any;
-    delete w.__sp3d; delete w.__sp3dSig; delete w.__sp3dCamera;
+    delete w.__sp3d; delete w.__sp3dSig; delete w.__sp3dCamera; delete w.__sp3dRepaint;
   });
   await v.cleanupShell(page);
 

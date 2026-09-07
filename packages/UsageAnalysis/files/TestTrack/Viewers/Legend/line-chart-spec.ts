@@ -47,9 +47,11 @@ test('Line chart legend', async ({page}) => {
 
   await softStep('Sc2 steps 1-2: enable Multi Axis (multiAxis=true)', async () => {
     const res = await page.evaluate(async () => {
-      const lc = (window as any).grok.shell.tv.viewers.find((x: any) => x.type === 'Line chart');
+      const w = window as any;
+      const lc = w.grok.shell.tv.viewers.find((x: any) => x.type === 'Line chart');
+      const quiet = w.__quiet('viewer:Line chart.onViewerRendered', 150, 1500);
       try { lc.props.multiAxis = true; } catch (e) { return {multiAxis: false, err: String(e)}; }
-      await new Promise((r) => setTimeout(r, 1500));
+      await quiet;
       return {multiAxis: lc.props.multiAxis};
     });
     expect(res.multiAxis).toBe(true);
@@ -57,11 +59,13 @@ test('Line chart legend', async ({page}) => {
 
   await softStep('Sc4 steps 1-2: yColumnNames = [Average Mass, TPSA]', async () => {
     const res = await page.evaluate(async () => {
-      const lc = (window as any).grok.shell.tv.viewers.find((x: any) => x.type === 'Line chart');
+      const w = window as any;
+      const lc = w.grok.shell.tv.viewers.find((x: any) => x.type === 'Line chart');
+      const items = () => lc.root.querySelectorAll('[name="legend"] .d4-legend-item').length;
+      const quiet = w.__quiet('viewer:Line chart.onViewerRendered', 150, 2000);
       lc.props.yColumnNames = ['Average Mass', 'TPSA'];
-      await new Promise((r) => setTimeout(r, 2000));
-      const items = lc.root.querySelectorAll('[name="legend"] .d4-legend-item');
-      return {yCols: lc.props.yColumnNames, totalItems: items.length};
+      await quiet;
+      return {yCols: lc.props.yColumnNames, totalItems: await w.__settledFor(items, 150, 2000, 25)};
     });
     expect(res.yCols).toEqual(['Average Mass', 'TPSA']);
     expect(res.totalItems).toBeGreaterThan(0);
@@ -69,10 +73,13 @@ test('Line chart legend', async ({page}) => {
 
   await softStep('Sc4 step 3: replace Y column → NIBR logP', async () => {
     const res = await page.evaluate(async () => {
-      const lc = (window as any).grok.shell.tv.viewers.find((x: any) => x.type === 'Line chart');
+      const w = window as any;
+      const lc = w.grok.shell.tv.viewers.find((x: any) => x.type === 'Line chart');
+      const items = () => lc.root.querySelectorAll('[name="legend"] .d4-legend-item').length;
+      const quiet = w.__quiet('viewer:Line chart.onViewerRendered', 150, 1800);
       lc.props.yColumnNames = ['Average Mass', 'NIBR logP'];
-      await new Promise((r) => setTimeout(r, 1800));
-      return {yCols: lc.props.yColumnNames, items: lc.root.querySelectorAll('[name="legend"] .d4-legend-item').length};
+      await quiet;
+      return {yCols: lc.props.yColumnNames, items: await w.__settledFor(items, 150, 1800, 25)};
     });
     expect(res.yCols).toEqual(['Average Mass', 'NIBR logP']);
   });

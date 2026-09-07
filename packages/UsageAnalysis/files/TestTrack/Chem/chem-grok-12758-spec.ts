@@ -2,6 +2,7 @@ import {expect} from '@playwright/test';
 import {test} from '../shared-page';
 import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu, waitForMolecule} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
+import {waitForChemMenuRoot} from './chem-fast-helpers';
 
 test.use(specTestOptions);
 
@@ -9,7 +10,7 @@ test('Chem: GROK-12758 Scaffold Tree node Edit-then-Filter does not corrupt subs
   test.setTimeout(180_000);
 
   await loginToDatagrok(page);
-  await page.waitForTimeout(3000);
+  await waitForChemMenuRoot(page);
 
   await softStep('Open spgi-100.csv + wait for Chem menu', async () => {
     await page.evaluate(async () => {
@@ -74,7 +75,6 @@ test('Chem: GROK-12758 Scaffold Tree node Edit-then-Filter does not corrupt subs
       }
     });
     expect((ok as any).ok, `Tree generation failed: ${JSON.stringify(ok)}`).toBe(true);
-    await page.waitForTimeout(3000);
   });
 
   await softStep('Wait for scaffold tree to populate with ≥4 visible nodes (poll up to 90s)', async () => {

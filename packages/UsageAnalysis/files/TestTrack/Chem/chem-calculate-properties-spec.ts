@@ -5,7 +5,7 @@ import {expect, Page} from '@playwright/test';
 import {test} from '../shared-page';
 import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu, waitForMolecule} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
-import {openChemMenuItem} from '../helpers/chem';
+import {openChemMenuItemFast as openChemMenuItem} from './chem-fast-helpers';
 
 declare const grok: any;
 
@@ -75,6 +75,15 @@ test('Chem: Calculate — Chemical Properties, Toxicity Risks, To InChI, To InCh
       try { (grok as any).shell.settings.showFiltersIconsConstantly = true; } catch (e) {}
       try { (grok as any).shell.windows.simpleMode = true; } catch (e) {}
       grok.shell.closeAll();
+      // The shared page can arrive carrying a dialog a previous spec left open. Two dialogs of the
+      // same name make every [name="dialog-..."] read below strict-mode-ambiguous, which is how the
+      // Chemical Properties step below failed on a doubled molecule selector and then burned two
+      // 60 s column waits on a calculation that had never been started.
+      for (const d of Array.from(grok.shell.dialogs ?? [])) { try { (d as any).close(); } catch (e) {} }
+      document.querySelectorAll('.d4-dialog').forEach((d) => {
+        const cancel = d.querySelector('[name="button-CANCEL"]') as HTMLElement | null;
+        if (cancel) cancel.click();
+      });
       const df = await grok.dapi.files.readCsv('System:DemoFiles/chem/smiles.csv');
       const detected = new Promise<void>((resolve) => {
         const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
@@ -96,8 +105,14 @@ test('Chem: Calculate — Chemical Properties, Toxicity Risks, To InChI, To InCh
   await softStep('S1.1-3: Chem → Calculate → Chemical Properties → dialog opens, MW only, OK', async () => {
     await openChemMenuItem(page, 'Chemical Properties...', {delayMs: 700});
     await page.locator('[name="dialog-Chemical-Properties"]').waitFor({timeout: 15000});
-    const molHost = await page.locator('[name="dialog-Chemical-Properties"] [name="input-host-Molecules"] .d4-column-selector-column').textContent();
-    expect(molHost?.trim(), 'the Chemical Properties molecule selector must auto-detect the Molecule column').toBe(MOL_COL);
+    const molHost = await page.locator(
+      '[name="dialog-Chemical-Properties"] [name="input-host-Molecules"] .d4-column-selector-column')
+      .allTextContents();
+    expect(molHost.length,
+      'the Chemical Properties dialog must expose a molecule column selector').toBeGreaterThan(0);
+    expect(molHost.map((t) => t.trim()),
+      'the Chemical Properties molecule selector must auto-detect the Molecule column')
+      .toEqual(molHost.map(() => MOL_COL));
     for (const b of ['input-HBA', 'input-HBD', 'input-Log-P', 'input-Log-S', 'input-PSA',
       'input-Rotatable-bonds', 'input-Stereo-centers', 'input-Molecule-charge'])
       await expect(page.locator(`[name="dialog-Chemical-Properties"] [name="${b}"]`),

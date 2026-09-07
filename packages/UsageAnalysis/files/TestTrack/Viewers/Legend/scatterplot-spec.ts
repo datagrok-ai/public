@@ -153,11 +153,12 @@ test('Legend scatterplot — axis change', async ({page}) => {
 
   await softStep('Sc2 steps 6-7: X axis = col2 → legend reflects new subset', async () => {
     const res = await page.evaluate(async () => {
-      const sp = (window as any).grok.shell.tv.viewers.find((x: any) => x.type === 'Scatter plot');
-      const a = sp.root.querySelectorAll('[name="legend"] .d4-legend-item').length;
+      const w = window as any;
+      const sp = w.grok.shell.tv.viewers.find((x: any) => x.type === 'Scatter plot');
+      const items = () => sp.root.querySelectorAll('[name="legend"] .d4-legend-item').length;
+      const a = items();
       sp.props.xColumnName = 'col2';
-      await new Promise((r) => setTimeout(r, 1500));
-      const b = sp.root.querySelectorAll('[name="legend"] .d4-legend-item').length;
+      const b = await w.__moved(items, a, 1500);
       return {a, b};
     });
     expect(res.a).not.toBe(res.b);
@@ -166,17 +167,23 @@ test('Legend scatterplot — axis change', async ({page}) => {
   await softStep('Sc2 steps 8-9: filter narrows subset, legend stays consistent', async () => {
     const res = await page.evaluate(async () => {
       const w = window as any;
-      const fg = (window as any).grok.shell.tv.getFiltersGroup();
-      const df = (window as any).grok.shell.tv.dataFrame;
+      const tv = w.grok.shell.tv;
+      const fg = tv.getFiltersGroup();
+      const df = tv.dataFrame;
+      const sp = tv.viewers.find((x: any) => x.type === 'Scatter plot');
       const cats = df.col('Stereo Category').categories.filter((c: string) => c !== 'S_UNKN').slice(0, 1);
       const DG = (window as any).DG;
+      const stamp = () => `${df.filter.trueCount}|` +
+        `${sp.root.querySelectorAll('[name="legend"] .d4-legend-item').length}`;
+      const before = stamp();
       fg.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: 'Stereo Category', selected: cats});
-      // technical: the filter group debounces, so onRowsFiltered fires on an
-      // intermediate row set — no channel marks the settled one
-      await new Promise((r) => setTimeout(r, 1500));
-      const sp = (window as any).grok.shell.tv.viewers.find((x: any) => x.type === 'Scatter plot');
-      const items = sp.root.querySelectorAll('[name="legend"] .d4-legend-item');
-      return {legendItems: items.length, filterCount: df.filter.trueCount};
+      // the filter group debounces and the legend redraws a repaint later, so the stamp carries
+      // both halves the assertion reads
+      await w.__moved(stamp, before, 1500);
+      return {
+        legendItems: sp.root.querySelectorAll('[name="legend"] .d4-legend-item').length,
+        filterCount: df.filter.trueCount,
+      };
     });
     expect(res.legendItems).toBeGreaterThan(0);
     expect(res.filterCount).toBeGreaterThan(0);
@@ -203,12 +210,14 @@ test('Legend scatterplot — in-viewer filter', async ({page}) => {
       await w.__poll(() => (window as any).grok.shell.tv.viewers.filter((x: any) => x.type === 'Scatter plot').length,
         (c: number) => c > 0, 600);
       const sp = tv.viewers.find((x: any) => x.type === 'Scatter plot');
+      const items = () => sp.root.querySelectorAll('[name="legend"] .d4-legend-item').length;
+      const quiet = w.__quiet('viewer:Scatter plot.onViewerRendered', 150, 1800);
       sp.props.markersColumnName = 'Stereo Category';
       sp.props.colorColumnName = 'Stereo Category';
       try { sp.props.legendVisibility = 'Always'; } catch (_) {}
       sp.props.filter = '${Stereo Category} in ("R_ONE", "S_UNKN")';
-      await new Promise((r) => setTimeout(r, 1800));
-      return {legendItems: sp.root.querySelectorAll('[name="legend"] .d4-legend-item').length};
+      await quiet;
+      return {legendItems: await w.__poll(items, (n: number) => n > 0, 1800, 25)};
     });
     expect(res.legendItems).toBeGreaterThan(0);
   });
@@ -226,7 +235,11 @@ test('Legend scatterplot — in-viewer filter', async ({page}) => {
       sp2.props.colorColumnName = 'Stereo Category';
       sp2.props.filter = '${Stereo Category} in ("R_ONE", "S_UNKN")';
       try { sp2.props.legendVisibility = 'Always'; } catch (_) {}
-      await new Promise((r) => setTimeout(r, 1500));
+      // the second scatter is not the one `viewer:Scatter plot` resolves to, so the settle
+      // reads its own legend rather than racing a channel that belongs to the first
+      const items = () => sp2.root.querySelectorAll('[name="legend"] .d4-legend-item').length;
+      await w.__poll(items, (n: number) => n > 0, 1500, 25);
+      await w.__settledFor(items, 150, 1500, 25);
       return {count: sps.length};
     });
     expect(res.count).toBeGreaterThanOrEqual(2);
@@ -259,7 +272,7 @@ test('Legend scatterplot — filter panel + click-to-filter', async ({page}) => 
       sp.props.markersColumnName = 'Stereo Category';
       try { sp.props.legendVisibility = 'Always'; } catch (_) {}
       tv.getFiltersGroup();
-      await new Promise((r) => setTimeout(r, 1500));
+      await w.__quiet('viewer:Scatter plot.onViewerRendered', 150, 1500);
     });
     await page.locator('[name="viewer-Filters"]').first().waitFor({timeout: 15000});
   });
@@ -274,18 +287,21 @@ test('Legend scatterplot — filter panel + click-to-filter', async ({page}) => 
           new Promise<T>((_, rej) => { t = setTimeout(() => rej(new Error(`Timeout ${ms}ms: ${label}`)), ms); }),
         ]).finally(() => clearTimeout(t));
       };
-      const df = (window as any).grok.shell.tv.dataFrame;
-      const fg = (window as any).grok.shell.tv.getFiltersGroup();
+      const w = window as any;
+      const df = w.grok.shell.tv.dataFrame;
+      const fg = w.grok.shell.tv.getFiltersGroup();
       const DG = (window as any).DG;
       const scaffolds = df.col('Primary Scaffold Name').categories;
       const targetSubset = scaffolds.slice(0, 2);
+      const rows = () => df.filter.trueCount;
       let usedFallback = false;
       try {
+        const before = rows();
         await withTimeout(
           new Promise<void>((resolve, reject) => {
             try {
               fg.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: 'Primary Scaffold Name', selected: targetSubset});
-              setTimeout(() => resolve(), 1500);
+              w.__moved(rows, before, 1500).then(() => resolve());
             } catch (e) { reject(e); }
           }),
           15000, 'fg.updateOrAdd Primary Scaffold Name',
@@ -293,14 +309,15 @@ test('Legend scatterplot — filter panel + click-to-filter', async ({page}) => 
       } catch (_) {
         usedFallback = true;
         const col = df.col('Primary Scaffold Name');
+        const before = rows();
         df.filter.setAll(false);
         for (let i = 0; i < df.rowCount; i++) {
           if (targetSubset.includes(col.get(i))) df.filter.set(i, true, false);
         }
         df.filter.fireChanged();
-        await new Promise((r) => setTimeout(r, 800));
+        await w.__moved(rows, before, 800);
       }
-      const sp = (window as any).grok.shell.tv.viewers.find((x: any) => x.type === 'Scatter plot');
+      const sp = w.grok.shell.tv.viewers.find((x: any) => x.type === 'Scatter plot');
       const items = sp.root.querySelectorAll('[name="legend"] .d4-legend-item');
       return {legendItems: items.length, filtered: df.filter.trueCount, usedFallback};
     });
@@ -310,10 +327,12 @@ test('Legend scatterplot — filter panel + click-to-filter', async ({page}) => 
 
   await softStep('Sc4 steps 7-8: click R_ONE in legend → composes with FP filter (GROK-17222)', async () => {
     await page.evaluate(async () => {
-      const sp = (window as any).grok.shell.tv.viewers.find((x: any) => x.type === 'Scatter plot');
+      const w = window as any;
+      const sp = w.grok.shell.tv.viewers.find((x: any) => x.type === 'Scatter plot');
+      const quiet = w.__quiet('viewer:Scatter plot.onViewerRendered', 150, 1500);
       sp.props.colorColumnName = 'Stereo Category';
       try { sp.props.legendVisibility = 'Always'; } catch (_) {}
-      await new Promise((r) => setTimeout(r, 1500));
+      await quiet;
     });
     const before = await page.evaluate(() => (window as any).grok.shell.tv.dataFrame.filter.trueCount);
     const legendItem = page.locator('[name="viewer-Scatter-plot"] [name="legend"] .d4-legend-item')
@@ -321,23 +340,27 @@ test('Legend scatterplot — filter panel + click-to-filter', async ({page}) => 
     if (await legendItem.count() > 0) {
       await legendItem.scrollIntoViewIfNeeded();
       await legendItem.click({timeout: 5000});
-      await page.waitForTimeout(1200);
-      const after = await page.evaluate(() => {
-        const df = (window as any).grok.shell.tv.dataFrame;
+      const after = await page.evaluate(async (from) => {
+        const w = window as any;
+        const df = w.grok.shell.tv.dataFrame;
+        await w.__moved(() => df.filter.trueCount, from, 1200);
         const col = df.col('Stereo Category');
         const counts: Record<string, number> = {};
         for (const c of col.categories) counts[c] = 0;
         for (let i = 0; i < df.rowCount; i++) if (df.filter.get(i)) counts[col.get(i)]++;
         const survivors = Object.entries(counts).filter(([_, n]) => n > 0).map(([c]) => c);
         return {trueCount: df.filter.trueCount, survivors};
-      });
+      }, before);
       expect(after.trueCount).toBeLessThanOrEqual(before);
       expect(after.trueCount).toBeGreaterThan(0);
     } else {
       const firstItem = page.locator('[name="viewer-Scatter-plot"] [name="legend"] .d4-legend-item').first();
       await firstItem.click({timeout: 5000});
-      await page.waitForTimeout(1000);
-      const after = await page.evaluate(() => (window as any).grok.shell.tv.dataFrame.filter.trueCount);
+      const after = await page.evaluate(async (from) => {
+        const w = window as any;
+        const df = w.grok.shell.tv.dataFrame;
+        return w.__moved(() => df.filter.trueCount, from, 1000);
+      }, before);
       expect(after).toBeLessThanOrEqual(before);
     }
   });
@@ -365,20 +388,23 @@ test('Legend scatterplot — grid color coding linear/categorical', async ({page
       await w.__poll(() => (window as any).grok.shell.tv.viewers.filter((x: any) => x.type === 'PC Plot').length,
         (c: number) => c > 0, 1500);
       const sp = tv.viewers.find((x: any) => x.type === 'Scatter plot');
+      const quiet = w.__quiet('viewer:Scatter plot.onViewerRendered', 150, 1500);
       sp.props.colorColumnName = 'Chemical Space X';
       try { sp.props.legendVisibility = 'Always'; } catch (_) {}
-      await new Promise((r) => setTimeout(r, 1500));
+      await quiet;
     });
   });
 
   await softStep('Sc5 steps 4-5: linear color coding on Chemical Space X (numerical scheme)', async () => {
     const res = await page.evaluate(async () => {
-      const df = (window as any).grok.shell.tv.dataFrame;
+      const w = window as any;
+      const df = w.grok.shell.tv.dataFrame;
       const col = df.col('Chemical Space X');
+      const quiet = w.__quiet('viewer:Scatter plot.onViewerRendered', 150, 1500);
       col.tags['.color-coding-type'] = 'Linear';
-      for (const x of (window as any).grok.shell.tv.viewers)
+      for (const x of w.grok.shell.tv.viewers)
         if (x.type !== 'Grid') try { x.invalidate?.(); } catch (_) {}
-      await new Promise((r) => setTimeout(r, 1500));
+      await quiet;
       return {colorCodingType: col.tags['.color-coding-type']};
     });
     expect(res.colorCodingType).toBe('Linear');
@@ -386,8 +412,10 @@ test('Legend scatterplot — grid color coding linear/categorical', async ({page
 
   await softStep('Sc5 steps 6-7: scheme/invert/text-apply round-trip via column metadata', async () => {
     const res = await page.evaluate(async () => {
-      const df = (window as any).grok.shell.tv.dataFrame;
+      const w = window as any;
+      const df = w.grok.shell.tv.dataFrame;
       const col = df.col('Chemical Space X');
+      const quiet = w.__quiet('viewer:Scatter plot.onViewerRendered', 150, 1500);
       const beforeScheme = col.tags['.color-coding-scheme'] ?? null;
       col.tags['.color-coding-scheme'] = '[1, 8388607, 16711680]';
       const afterScheme = col.tags['.color-coding-scheme'];
@@ -403,9 +431,9 @@ test('Legend scatterplot — grid color coding linear/categorical', async ({page
       } catch (_) {}
       col.tags['.color-coding-text'] = 'true';
       const textApplied = col.tags['.color-coding-text'];
-      for (const x of (window as any).grok.shell.tv.viewers)
+      for (const x of w.grok.shell.tv.viewers)
         if (x.type !== 'Grid') try { x.invalidate?.(); } catch (_) {}
-      await new Promise((r) => setTimeout(r, 1500));
+      await quiet;
       return {beforeScheme, afterScheme, inverted, textApplied};
     });
     expect(res.afterScheme).toBeTruthy();
@@ -414,8 +442,10 @@ test('Legend scatterplot — grid color coding linear/categorical', async ({page
 
   await softStep('Sc5 steps 10-11: grid coding → Categorical, modify category colors', async () => {
     const res = await page.evaluate(async () => {
-      const df = (window as any).grok.shell.tv.dataFrame;
+      const w = window as any;
+      const df = w.grok.shell.tv.dataFrame;
       const col = df.col('Stereo Category');
+      const quiet = w.__quiet('viewer:Scatter plot.onViewerRendered', 150, 1500);
       col.tags['.color-coding-type'] = 'Categorical';
       const cats = col.categories;
       const map: Record<string, number> = {};
@@ -425,12 +455,13 @@ test('Legend scatterplot — grid color coding linear/categorical', async ({page
         else map[c] = 0xFF808080;
       }
       try { col.meta.colors.setCategorical(map); } catch (_) {}
-      const sp = (window as any).grok.shell.tv.viewers.find((x: any) => x.type === 'Scatter plot');
+      const sp = w.grok.shell.tv.viewers.find((x: any) => x.type === 'Scatter plot');
       sp.props.colorColumnName = 'Stereo Category';
       try { sp.props.legendVisibility = 'Always'; } catch (_) {}
-      for (const x of (window as any).grok.shell.tv.viewers)
+      for (const x of w.grok.shell.tv.viewers)
         if (x.type !== 'Grid') try { x.invalidate?.(); } catch (_) {}
-      await new Promise((r) => setTimeout(r, 1500));
+      await quiet;
+      await w.__settledFor(() => sp.root.querySelectorAll('[name="legend"] .d4-legend-item').length, 150, 1500, 25);
       const idxROne = cats.indexOf('R_ONE');
       const idxSUnkn = cats.indexOf('S_UNKN');
       const items = Array.from(sp.root.querySelectorAll('[name="legend"] .d4-legend-item')) as HTMLElement[];

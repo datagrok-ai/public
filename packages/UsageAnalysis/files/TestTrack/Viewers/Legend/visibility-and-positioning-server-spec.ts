@@ -4,6 +4,7 @@ realizes: [viewers.scatter-plot, viewers.histogram]
 import {test, expect} from '../../shared-page';
 import {openDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
+import {addLegendViewers} from './legend-setup';
 import {deleteEntities, layoutRoundTrip, projectRoundTrip} from './persistence';
 
 // The server lane of the visibility-and-positioning scenario: Sc7, Sc8 steps 5-6, Sc10 steps 7-8
@@ -30,7 +31,7 @@ test('Legend visibility and positioning — layout and project persistence', asy
   await openDatagrok(page);
   await v.openTable(page);
   await v.installEventWaits(page);
-  await v.addLegendViewers(page, {column: 'Stereo Category', viewers: ['Scatter plot', 'Histogram'], settleMs: 500});
+  await addLegendViewers(page, {column: 'Stereo Category', viewers: ['Scatter plot', 'Histogram'], capMs: 500});
 
   await softStep('Setup: Stereo Category legend, R_ONE recoloured, Visibility=Always, Position=Auto', async () => {
     await page.evaluate(() => {

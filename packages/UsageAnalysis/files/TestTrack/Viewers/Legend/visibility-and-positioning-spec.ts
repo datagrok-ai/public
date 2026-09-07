@@ -4,6 +4,7 @@ realizes: [viewers.scatter-plot, viewers.histogram, viewers.line-chart, viewers.
 import {localTest as test, expect} from '../../shared-page';
 import {openDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
+import {addLegendViewers, holdFilterCount} from './legend-setup';
 
 // The layout and project round-trips (Sc7, Sc8 5-6, Sc10 7-8, Sc11) live in
 // visibility-and-positioning-server-spec.ts.
@@ -17,7 +18,7 @@ test('Legend visibility and positioning', async ({page}) => {
   await v.installEventWaits(page);
 
   await softStep('Setup steps 2-4: 7 viewers + Stereo Category legend on each', async () => {
-    await v.addLegendViewers(page, {
+    await addLegendViewers(page, {
       column: 'Stereo Category',
       viewers: ['Scatter plot', 'Histogram', 'Line chart', 'Bar chart', 'Pie chart', 'Trellis plot', 'Box plot'],
     });
@@ -41,12 +42,15 @@ test('Legend visibility and positioning', async ({page}) => {
       allowFallback: true,
     });
     const result = await page.evaluate(async () => {
-      const sp = (window as any).grok.shell.tv.viewers.find((x: any) => x.type === 'Scatter plot');
-      await new Promise((r) => setTimeout(r, 800));
-      const a = sp.root.querySelectorAll('[name="legend"] .d4-legend-item').length;
+      const w = window as any;
+      const sp = w.grok.shell.tv.viewers.find((x: any) => x.type === 'Scatter plot');
+      const items = () => sp.root.querySelectorAll('[name="legend"] .d4-legend-item').length;
+      await w.__poll(items, (n: number) => n > 0, 800, 25);
+      const a = await w.__settledFor(items, 150, 800, 25);
+      const quiet = w.__quiet('viewer:Scatter plot.onViewerRendered', 150, 800);
       sp.props.colorColumnName = 'Stereo Category';
-      await new Promise((r) => setTimeout(r, 800));
-      const b = sp.root.querySelectorAll('[name="legend"] .d4-legend-item').length;
+      await quiet;
+      const b = await w.__poll(items, (n: number) => n > 0, 800, 25);
       return {a, b, current: sp.props.colorColumnName};
     });
     expect(result.current).toBe('Stereo Category');
@@ -57,10 +61,12 @@ test('Legend visibility and positioning', async ({page}) => {
   // Sc3: legend splitter resize (UI-driven via Playwright drag).
   await softStep('Sc3 steps 1-4: legend splitter resize (real Playwright drag)', async () => {
     await page.evaluate(async () => {
-      const h = (window as any).grok.shell.tv.viewers.find((x: any) => x.type === 'Histogram');
+      const w = window as any;
+      const h = w.grok.shell.tv.viewers.find((x: any) => x.type === 'Histogram');
+      const quiet = w.__quiet('viewer:Histogram.onViewerRendered', 150, 1000);
       try { h.props.legendPosition = 'Right'; } catch (_) {}
       try { h.props.legendVisibility = 'Always'; } catch (_) {}
-      await new Promise((r) => setTimeout(r, 1000));
+      await quiet;
     });
     const splitter = page.locator('[name="viewer-Histogram"] [name="legend-splitter"]').first();
     if (await splitter.count() > 0) {
@@ -75,11 +81,14 @@ test('Legend visibility and positioning', async ({page}) => {
         await page.mouse.down();
         await page.mouse.move(box.x - 40, box.y + box.height / 2, {steps: 10});
         await page.mouse.up();
-        await page.waitForTimeout(800);
         const afterBox = await page.evaluate(() => {
-          const h = (window as any).grok.shell.tv.viewers.find((x: any) => x.type === 'Histogram');
-          const legend = h.root.querySelector('[name="legend"]');
-          return legend ? legend.getBoundingClientRect().width : null;
+          const w = window as any;
+          const width = () => {
+            const h = w.grok.shell.tv.viewers.find((x: any) => x.type === 'Histogram');
+            const legend = h.root.querySelector('[name="legend"]');
+            return legend ? legend.getBoundingClientRect().width : null;
+          };
+          return w.__settledFor(width, 150, 800, 25);
         });
         expect(typeof afterBox).toBe('number');
         expect(typeof beforeBox).toBe('number');
@@ -94,11 +103,11 @@ test('Legend visibility and positioning', async ({page}) => {
       .filter({has: page.locator('.d4-legend-value', {hasText: /^R_ONEx?$/})}).first();
     if (await item.count() > 0) {
       await item.click({modifiers: ['Control'], timeout: 5000}).catch(() => {});
-      await page.waitForTimeout(500);
+      await holdFilterCount(page, 500);
       const cross = item.locator('.d4-legend-cross').first();
       if (await cross.count() > 0) {
         await cross.click({timeout: 3000}).catch(() => {});
-        await page.waitForTimeout(500);
+        await holdFilterCount(page, 500);
       }
     }
     const after = await page.evaluate(() => (window as any).grok.shell.tv.dataFrame.filter.trueCount);
@@ -139,9 +148,8 @@ test('Legend visibility and positioning', async ({page}) => {
           sw.dispatchEvent(new MouseEvent('click', opts));
         }
       }, {dn: dlgName});
-      await page.waitForTimeout(200);
       await page.locator(`.d4-dialog[name="${dlgName}"] [name="button-CANCEL"]`).click({timeout: 5000});
-      await page.waitForTimeout(500);
+      await page.locator(`.d4-dialog[name="${dlgName}"]`).waitFor({state: 'detached', timeout: 2000});
     } catch (_) { /* best-effort UI; the tag-unchanged assertion below holds regardless */ }
     // Cancel must NOT commit the user's attempted (red) pick. Activating categorical
     // color-coding may materialize the DEFAULT palette into the tag, so the tag can become
@@ -200,14 +208,16 @@ test('Legend visibility and positioning', async ({page}) => {
   // Sc6: (no value) swatch on null-bearing column.
   await softStep('Sc6 steps 1-5: (no value) swatch on null-bearing column', async () => {
     const result = await page.evaluate(async () => {
-      const tv = (window as any).grok.shell.tv;
+      const w = window as any;
+      const tv = w.grok.shell.tv;
       const sp = tv.viewers.find((x: any) => x.type === 'Scatter plot');
+      const quiet = w.__quiet('viewer:Scatter plot.onViewerRendered', 150, 1500);
       sp.props.colorColumnName = 'Primary Scaffold Name';
       try { sp.props.legendVisibility = 'Always'; } catch (_) {}
       try { (sp.props as any).includeNulls = true; } catch (_) {}
-      await new Promise((r) => setTimeout(r, 1500));
-      const items = Array.from(sp.root.querySelectorAll('[name="legend"] .d4-legend-item')) as HTMLElement[];
-      return {itemCount: items.length};
+      await quiet;
+      const count = () => sp.root.querySelectorAll('[name="legend"] .d4-legend-item').length;
+      return {itemCount: await w.__poll(count, (n: number) => n > 0, 1500, 25)};
     });
     expect(result.itemCount).toBeGreaterThan(0);
   });
@@ -215,15 +225,17 @@ test('Legend visibility and positioning', async ({page}) => {
   // Sc8: Visibility=Always + Position=Auto across viewers.
   await softStep('Sc8 steps 1-6: Visibility=Always + Position=Auto across viewers', async () => {
     const ok = await page.evaluate(async () => {
-      const tv = (window as any).grok.shell.tv;
+      const w = window as any;
+      const tv = w.grok.shell.tv;
       const sp = tv.viewers.find((x: any) => x.type === 'Scatter plot');
+      const quiet = w.__quiet('viewer:Scatter plot.onViewerRendered', 150, 1000);
       try { sp.props.colorColumnName = 'Stereo Category'; } catch (_) {}
       for (const view of tv.viewers) {
         if (view.type === 'Grid') continue;
         try { view.props.legendVisibility = 'Always'; } catch (_) {}
         try { view.props.legendPosition = 'Auto'; } catch (_) {}
       }
-      await new Promise((r) => setTimeout(r, 1000));
+      await quiet;
       return tv.viewers.filter((view: any) => view.type !== 'Grid')
         .every((view: any) => view.props.legendVisibility === 'Always');
     });
@@ -232,10 +244,11 @@ test('Legend visibility and positioning', async ({page}) => {
 
   await softStep('Sc8 steps 3-4: resize Scatter to 300px (Auto-position reflows)', async () => {
     const width = await page.evaluate(async () => {
-      const sp = (window as any).grok.shell.tv.viewers.find((x: any) => x.type === 'Scatter plot');
+      const w = window as any;
+      const sp = w.grok.shell.tv.viewers.find((x: any) => x.type === 'Scatter plot');
       sp.root.style.width = '300px';
-      await new Promise((r) => setTimeout(r, 800));
-      return sp.root.getBoundingClientRect().width;
+      return w.__poll(() => sp.root.getBoundingClientRect().width,
+        (px: number) => Math.round(px) === 300, 800, 25);
     });
     expect(Math.round(width)).toBe(300);
   });
@@ -243,19 +256,24 @@ test('Legend visibility and positioning', async ({page}) => {
   // Sc9: Visibility=Auto + resize hides/shows + mini-icon equivalent.
   await softStep('Sc9 steps 1-5: Visibility=Auto + 200px hides + 400px restores + mini-icon', async () => {
     const result = await page.evaluate(async () => {
-      const tv = (window as any).grok.shell.tv;
+      const w = window as any;
+      const tv = w.grok.shell.tv;
+      const sp = tv.viewers.find((x: any) => x.type === 'Scatter plot');
+      const quiet = w.__quiet('viewer:Scatter plot.onViewerRendered', 150, 800);
       for (const view of tv.viewers) {
         if (view.type === 'Grid') continue;
         try { view.props.legendVisibility = 'Auto'; } catch (_) {}
       }
-      await new Promise((r) => setTimeout(r, 800));
-      const sp = tv.viewers.find((x: any) => x.type === 'Scatter plot');
+      await quiet;
+      const stamp = () => `${Math.round(sp.root.getBoundingClientRect().width)}|` +
+        `${!!sp.root.querySelector('[name="legend"]')}|${!!sp.root.querySelector('.d4-corner-legend-icon')}`;
       sp.root.style.width = '200px';
-      await new Promise((r) => setTimeout(r, 800));
+      await w.__poll(stamp, (v: string) => v.startsWith('200|'), 800, 25);
+      await w.__settledFor(stamp, 150, 800, 25);
       const small = !!sp.root.querySelector('[name="legend"]');
       const smallMiniIcon = !!sp.root.querySelector('.d4-corner-legend-icon');
       sp.root.style.width = '400px';
-      await new Promise((r) => setTimeout(r, 800));
+      await w.__poll(stamp, (v: string) => v === '400|true|false' || v === '400|true|true', 800, 25);
       const big = !!sp.root.querySelector('[name="legend"]');
       sp.root.style.width = '';
       return {small, smallMiniIcon, big};
@@ -266,9 +284,11 @@ test('Legend visibility and positioning', async ({page}) => {
   // Sc10: corner positions + chevron + mini-icon.
   await softStep('Sc10 steps 1-4: corner positions LeftTop/LeftBottom/RightTop/RightBottom', async () => {
     const positions = await page.evaluate(async () => {
-      const tv = (window as any).grok.shell.tv;
+      const w = window as any;
+      const tv = w.grok.shell.tv;
       const corners = ['LeftTop', 'LeftBottom', 'RightTop', 'RightBottom'];
       const out: Record<string, string> = {};
+      const quiet = w.__quiet('viewer:Scatter plot.onViewerRendered', 150, 1500);
       let i = 0;
       for (const view of tv.viewers) {
         if (view.type === 'Grid') continue;
@@ -278,7 +298,7 @@ test('Legend visibility and positioning', async ({page}) => {
         out[view.type] = view.props.legendPosition;
         i++;
       }
-      await new Promise((r) => setTimeout(r, 1500));
+      await quiet;
       return out;
     });
     expect(Object.keys(positions).length).toBeGreaterThan(0);
@@ -288,17 +308,19 @@ test('Legend visibility and positioning', async ({page}) => {
     const cornerLegend = page.locator('.d4-corner-legend').first();
     if (await cornerLegend.count() > 0) {
       await cornerLegend.hover();
-      await page.waitForTimeout(400);
       const chevron = page.locator('[name="icon-hide-corner-legend"]').first();
+      await chevron.waitFor({state: 'visible', timeout: 400}).catch(() => {});
       if (await chevron.count() > 0) {
         await chevron.click({timeout: 5000}).catch(() => {});
-        await page.waitForTimeout(800);
+        await page.locator('.d4-corner-legend-icon').first()
+          .waitFor({state: 'attached', timeout: 800}).catch(() => {});
         const miniIconCount = await page.locator('.d4-corner-legend-icon').count();
         expect(miniIconCount).toBeGreaterThanOrEqual(0);
         const miniIcon = page.locator('.d4-corner-legend-icon').first();
         if (await miniIcon.count() > 0) {
           await miniIcon.click({timeout: 3000}).catch(() => {});
-          await page.waitForTimeout(500);
+          await page.locator('.d4-corner-legend').first()
+            .waitFor({state: 'visible', timeout: 500}).catch(() => {});
         }
       }
     }

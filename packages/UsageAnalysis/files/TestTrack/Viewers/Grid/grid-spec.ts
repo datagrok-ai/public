@@ -230,7 +230,7 @@ test('Grid tests', async ({page}) => {
       await g.focusGrid(page);
       await page.mouse.move(ageBorder.x, ageBorder.y);
       await page.mouse.down();
-      await page.mouse.move(ageBorder.x + 40, ageBorder.y, {steps: 6});
+      await page.mouse.move(ageBorder.x + 40, ageBorder.y, {steps: 3});
       await page.mouse.up();
       const linked = await v.pollValue(() => page.evaluate(() => ({
         age: grok.shell.tv.grid.columns.byName('AGE').width,
@@ -254,7 +254,7 @@ test('Grid tests', async ({page}) => {
       await g.focusGrid(page);
       await page.mouse.move(ageBorder2.x, ageBorder2.y);
       await page.mouse.down();
-      await page.mouse.move(ageBorder2.x + 30, ageBorder2.y, {steps: 5});
+      await page.mouse.move(ageBorder2.x + 30, ageBorder2.y, {steps: 3});
       await page.mouse.up();
       const single = await v.pollValue(() => page.evaluate(() => ({
         age: grok.shell.tv.grid.columns.byName('AGE').width,
@@ -277,7 +277,7 @@ test('Grid tests', async ({page}) => {
       await g.focusGrid(page);
       await page.mouse.move(rhGeom.x, rhGeom.y);
       await page.mouse.down();
-      await page.mouse.move(rhGeom.x, rhGeom.y + 30, {steps: 6});
+      await page.mouse.move(rhGeom.x, rhGeom.y + 30, {steps: 3});
       await page.mouse.up();
       const rhAfter = await v.pollValue(() => page.evaluate(() => grok.shell.tv.grid.props.rowHeight), (h) => h !== rhBefore, 400, 50);
       expect(rhAfter).toBe(rhBefore + 30);
@@ -298,7 +298,7 @@ test('Grid tests', async ({page}) => {
       await g.focusGrid(page);
       await page.mouse.move(weightHideGeom.borderX, weightHideGeom.y);
       await page.mouse.down();
-      await page.mouse.move(weightHideGeom.leftEdgeX, weightHideGeom.y, {steps: 6});
+      await page.mouse.move(weightHideGeom.leftEdgeX, weightHideGeom.y, {steps: 3});
       await page.mouse.up();
       const weightHidden = await v.pollValue(() => page.evaluate(() => ({
         width: grok.shell.tv.grid.columns.byName('WEIGHT').width,

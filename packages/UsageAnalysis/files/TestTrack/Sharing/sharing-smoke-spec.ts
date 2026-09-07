@@ -1,6 +1,7 @@
 import {expect, Page} from '@playwright/test';
 import {test} from '../shared-page';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {openPermissionsView} from './_actors';
 
 test.use(specTestOptions);
 
@@ -129,8 +130,11 @@ test('Sharing — UI Smoke (Single-Actor): share dialog, context panel, advanced
       await expect(dlg.locator('[name="div-share-selector"]'),
         'access-level dropdown (View and use / Full access) must be present').toBeAttached({timeout: 10_000});
 
-      await expect(dlg.locator('[name="label-Advanced-editor..."]'),
-        'Advanced editor... link must be present').toBeAttached({timeout: 10_000});
+      // GROK-20322 removed the Advanced editor... link from this dialog
+      // (core/client/xamgle/lib/src/commands/file/share_dataset.dart); the PermissionsEditor's
+      // grant list is what the widget renders in its place.
+      await expect(dlg.locator('.grok-permissions-existing'),
+        'PermissionsEditor grant list must be present').toBeAttached({timeout: 10_000});
 
       await expect(dlg.locator('textarea[placeholder="Type in message here"]'),
         'notification message textarea must be present').toBeAttached({timeout: 10_000});
@@ -181,9 +185,9 @@ test('Sharing — UI Smoke (Single-Actor): share dialog, context panel, advanced
     await softStep('Scenario 4: Advanced editor... opens the PermissionsView matrix', async () => {
       await openShareDialogViaPane(page, projId!);
       const dlg = page.locator('.d4-dialog');
-      const advLabel = dlg.locator('[name="label-Advanced-editor..."]');
-      await expect(advLabel, 'Advanced editor... link must be present').toBeAttached({timeout: 10_000});
-      await advLabel.click();
+      await expect(dlg.locator('.grok-permissions-existing'),
+        'Share dialog must host the PermissionsEditor before the matrix is opened').toBeAttached({timeout: 10_000});
+      await openPermissionsView(page, projId!);
 
       const loaded = page.locator(
         '[name="button-Calculate-resulting-permissions-for-this-entity"], ' +

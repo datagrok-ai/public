@@ -30,16 +30,25 @@ async function readTreeState(page: any): Promise<{captions: string[], trueCount:
   });
 }
 
+// The window is sampled in the page at 25ms rather than over 400ms round trips: a move that lands
+// and self-corrects now has nowhere to hide between two reads, and the window itself stays an order
+// of magnitude above the 50ms criteria debounce of filters_core.dart:278.
+const HOLD_MS = 900;
+
 async function holdTrueCount(page: any, expected: number, why: string): Promise<void> {
-  const samples: number[] = [];
-  for (let i = 0; i < 7; i++) {
-    if (i > 0) await page.waitForTimeout(400);
-    samples.push(await trueCountOf(page));
-  }
+  const samples: number[] = await page.evaluate(async (cap: number) => {
+    const t0 = Date.now();
+    const seen: number[] = [];
+    while (Date.now() - t0 < cap) {
+      seen.push((window as any).grok.shell.tv.dataFrame.filter.trueCount);
+      await new Promise((r) => setTimeout(r, 25));
+    }
+    return seen;
+  }, HOLD_MS);
   expect(Array.from(new Set(samples)),
-    `${why} — the row filter had to read ${expected} at every sample of a 2.4s window, so a regression `
-    + 'that moves the filter on a longer debounce, or moves it and self-corrects, cannot slip between '
-    + `two reads; samples: ${samples.join(', ')}`)
+    `${why} — the row filter had to read ${expected} at every sample of a ${HOLD_MS}ms window, so a `
+    + 'regression that moves the filter on a longer debounce, or moves it and self-corrects, cannot '
+    + `slip between two reads; samples: ${samples.length} readings`)
     .toEqual([expected]);
 }
 
@@ -104,12 +113,12 @@ test('Filter Panel — Hierarchical and Combined Boolean Filters', async ({page}
     await hierNode(page, ['F'], 'expand');
     await expect.poll(async () => (await hierNode(page, ['F'], 'read')).childCaptions,
       {message: 'the RACE children of F never rendered after the expander click',
-        timeout: 10_000, intervals: [200, 400, 800]}).toContain('Caucasian');
+        timeout: 10_000, intervals: [30, 60, 120, 250, 500, 1000]}).toContain('Caucasian');
     await hierNode(page, ['F', 'Caucasian'], 'toggle');
     await expect.poll(async () => trueCountOf(page),
       {message: 'checking F / Caucasian did not narrow the table to the Caucasian-female rows derived '
         + `from the raw SEX / RACE columns (${derived.caucasianFemale})`,
-      timeout: 10_000, intervals: [200, 400, 800]}).toBe(derived.caucasianFemale);
+      timeout: 10_000, intervals: [30, 60, 120, 250, 500, 1000]}).toBe(derived.caucasianFemale);
     const state = await hierNode(page, ['F', 'Caucasian'], 'read');
     expect(state.glyph,
       'a checked leaf must render the checked glyph U+F14A, not the unchecked or indeterminate one')
@@ -124,7 +133,7 @@ test('Filter Panel — Hierarchical and Combined Boolean Filters', async ({page}
     await expect.poll(async () => trueCountOf(page),
       {message: 'checking the whole F branch did not select every female row derived from the raw SEX '
         + `column (${derived.allF})`,
-      timeout: 10_000, intervals: [200, 400, 800]}).toBe(derived.allF);
+      timeout: 10_000, intervals: [30, 60, 120, 250, 500, 1000]}).toBe(derived.allF);
     expect((await hierNode(page, ['F'], 'read')).glyph,
       'a fully checked branch must read checked (U+F14A) before one of its children is unchecked')
       .toBe(GLYPH.checked);
@@ -133,7 +142,7 @@ test('Filter Panel — Hierarchical and Combined Boolean Filters', async ({page}
     await expect.poll(async () => trueCountOf(page),
       {message: 'unchecking F / Caucasian did not drop the Caucasian-female rows: expected the derived '
         + `${derived.allF} female rows minus the derived ${derived.caucasianFemale} Caucasian-female ones = ${otherFemale}`,
-      timeout: 10_000, intervals: [200, 400, 800]}).toBe(otherFemale);
+      timeout: 10_000, intervals: [30, 60, 120, 250, 500, 1000]}).toBe(otherFemale);
     const state = await hierNode(page, ['F'], 'read');
     expect(state.glyph,
       'the F parent must read indeterminate (U+F146) after one of its RACE children is unchecked')
@@ -173,7 +182,7 @@ test('Filter Panel — Hierarchical and Combined Boolean Filters', async ({page}
     await expect.poll(async () => (await readTreeState(page)).captions,
       {message: 'typing "Cau" never hid the non-matching tree nodes — the search term reached the input '
         + 'but the tree was never re-rendered',
-      timeout: 15_000, intervals: [200, 400, 800]}).not.toContain('Asian');
+      timeout: 15_000, intervals: [30, 60, 120, 250, 500, 1000]}).not.toContain('Asian');
 
     const after = await readTreeState(page);
     expect(after.captions).toContain('Caucasian');
@@ -185,7 +194,7 @@ test('Filter Panel — Hierarchical and Combined Boolean Filters', async ({page}
     expect(await typeTreeSearch(page, '')).toBe('');
     await expect.poll(async () => (await readTreeState(page)).captions,
       {message: 'clearing the tree search did not bring back exactly the pre-search visible node set',
-        timeout: 15_000, intervals: [200, 400, 800]}).toEqual(before.captions);
+        timeout: 15_000, intervals: [30, 60, 120, 250, 500, 1000]}).toEqual(before.captions);
     await holdTrueCount(page, before.trueCount,
       'clearing the tree search must leave the row filter exactly where the search found it');
   });
@@ -195,10 +204,10 @@ test('Filter Panel — Hierarchical and Combined Boolean Filters', async ({page}
     await applyHierarchyState(page, {colNames: levels, allEnabled: true});
     await expect.poll(() => hierCaption(page),
       {message: 'the card caption must name all three levels',
-        timeout: 15_000, intervals: [300, 600, 1200]}).toBe(levels.join(' / '));
+        timeout: 15_000, intervals: [30, 60, 120, 250, 500, 1000]}).toBe(levels.join(' / '));
     await expect.poll(async () => (await hierNode(page, ['F'], 'probe')).found,
       {message: 'the SEX roots never rebuilt after the three-column hierarchy was applied',
-        timeout: 15_000, intervals: [300, 600, 1200]}).toBe(true);
+        timeout: 15_000, intervals: [30, 60, 120, 250, 500, 1000]}).toBe(true);
 
     const grandchild = 'None';
     const expected = await page.evaluate((severity: string) => {
@@ -255,7 +264,7 @@ test('Filter Panel — Hierarchical and Combined Boolean Filters', async ({page}
     await expect.poll(async () => trueCountOf(page),
       {message: 'checking the F branch under the three-level hierarchy did not select every female row ' +
         `(expected the ${expected.femaleRows} rows with SEX = F)`,
-      timeout: 10_000, intervals: [200, 400, 800]}).toBe(expected.femaleRows);
+      timeout: 10_000, intervals: [30, 60, 120, 250, 500, 1000]}).toBe(expected.femaleRows);
     const allF = await trueCountOf(page);
     expect((await hierNode(page, ['F'], 'read')).glyph,
       'a fully checked branch reads checked (U+F14A), not partial').toBe(GLYPH.checked);
@@ -263,17 +272,17 @@ test('Filter Panel — Hierarchical and Combined Boolean Filters', async ({page}
     await hierNode(page, ['F'], 'expand');
     await expect.poll(async () => (await hierNode(page, ['F'], 'read')).childCaptions,
       {message: 'the RACE level under F never rendered',
-        timeout: 10_000, intervals: [200, 400, 800]}).toContain('Caucasian');
+        timeout: 10_000, intervals: [30, 60, 120, 250, 500, 1000]}).toContain('Caucasian');
     await hierNode(page, ['F', 'Caucasian'], 'expand');
     await expect.poll(async () => (await hierNode(page, ['F', 'Caucasian'], 'read')).childCaptions.length,
       {message: 'the SEVERITY level under F / Caucasian never rendered — the third level is missing',
-        timeout: 10_000, intervals: [200, 400, 800]}).toBeGreaterThan(0);
+        timeout: 10_000, intervals: [30, 60, 120, 250, 500, 1000]}).toBeGreaterThan(0);
 
     await expect.poll(async () =>
       (await hierNode(page, ['F', 'Caucasian'], 'read')).childCaptions.slice().sort(),
     {message: 'the SEVERITY values listed under F / Caucasian must be exactly the ones the data holds ' +
       `for that branch: ${JSON.stringify(expectedSeverities)}`,
-    timeout: 10_000, intervals: [200, 400, 800]}).toEqual(expectedSeverities);
+    timeout: 10_000, intervals: [30, 60, 120, 250, 500, 1000]}).toEqual(expectedSeverities);
 
     const caucasian = await hierNode(page, ['F', 'Caucasian'], 'read');
     expect(caucasian.childCaptions,
@@ -295,7 +304,7 @@ test('Filter Panel — Hierarchical and Combined Boolean Filters', async ({page}
       {message: 'unchecking the SEVERITY grandchild did not drop its rows from the filter: expected ' +
         `${expected.femaleRows} female rows minus the ${expected.femaleCaucasianGrandchild} that are ` +
         `Caucasian / ${grandchild} = ${postUncheck}`,
-      timeout: 10_000, intervals: [200, 400, 800]}).toBe(postUncheck);
+      timeout: 10_000, intervals: [30, 60, 120, 250, 500, 1000]}).toBe(postUncheck);
     const after = await trueCountOf(page);
 
     const afterUncheck = await hierNode(page, ['F', 'Caucasian'], 'read');
@@ -332,7 +341,7 @@ test('Filter Panel — Hierarchical and Combined Boolean Filters', async ({page}
 
   await softStep('Step 9: GROK-16528 — reorder columns to RACE / SEX', async () => {
     await applyHierarchyState(page, {colNames: ['RACE', 'SEX'], allEnabled: true});
-    await expect.poll(() => hierCaption(page), {timeout: 10_000, intervals: [100, 200, 400]}).toBe('RACE / SEX');
+    await expect.poll(() => hierCaption(page), {timeout: 10_000, intervals: [30, 60, 120, 250, 500, 1000]}).toBe('RACE / SEX');
     const state = await page.evaluate(() => {
       const card = Array.from(document.querySelectorAll('[name="viewer-Filters"] .d4-filter'))
         .find(c => c.querySelector('.d4-filter-column-name')?.textContent?.includes('/'));
@@ -448,7 +457,7 @@ test('Filter Panel — Hierarchical and Combined Boolean Filters', async ({page}
   await softStep('Step 19: Remove All then reopen — the combined boolean card is recreated on its own', async () => {
     await v.drivePanelMenuLeaf(page, 'Filters', null, 'Remove All');
     await expect.poll(async () => page.locator('[name="viewer-Filters"] .d4-filter').count(),
-      {timeout: 10_000, intervals: [300, 600, 1200]}).toBe(0);
+      {timeout: 10_000, intervals: [30, 60, 120, 250, 500, 1000]}).toBe(0);
     const emptied = await page.evaluate(() => ({
       cards: document.querySelectorAll('[name="viewer-Filters"] .d4-filter').length,
       boolCards: document.querySelectorAll('.d4-bool-combined-filter').length,
@@ -460,7 +469,7 @@ test('Filter Panel — Hierarchical and Combined Boolean Filters', async ({page}
 
     await page.evaluate(closeFilterPanelInPage);
     await expect.poll(async () => page.locator('[name="viewer-Filters"]').count(),
-      {timeout: 10_000, intervals: [300, 600, 1200]}).toBe(0);
+      {timeout: 10_000, intervals: [30, 60, 120, 250, 500, 1000]}).toBe(0);
 
     await page.locator('.d4-ribbon-panel [name="icon-filter"]').first().click();
     await page.locator('.d4-bool-combined-filter').first().waitFor({timeout: 20_000});

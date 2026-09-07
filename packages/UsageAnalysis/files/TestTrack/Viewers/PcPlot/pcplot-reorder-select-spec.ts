@@ -113,14 +113,15 @@ test('PC Plot — Axis Reorder, Polyline Selection, and Current-Row Sync', async
   });
 
   await softStep('Scenario 1 Step 11 — click a polyline sets current row off -1', async () => {
+    // the previous step's click can land its current-row change after this reset, so the reset
+    // is repeated until it holds for a beat
     const before = await page.evaluate(async () => {
       const df = grok.shell.tv.dataFrame;
-      const settled = new Promise((res) => {
-        const sub = df.onCurrentRowChanged.subscribe(() => { sub.unsubscribe(); res(undefined); });
-        setTimeout(res, 200);
-      });
-      df.currentRowIdx = -1;
-      await settled;
+      for (let i = 0; i < 4; i++) {
+        df.currentRowIdx = -1;
+        await new Promise((r) => setTimeout(r, 150));
+        if (df.currentRowIdx === -1) break;
+      }
       return df.currentRowIdx;
     });
     await page.evaluate(async () => {

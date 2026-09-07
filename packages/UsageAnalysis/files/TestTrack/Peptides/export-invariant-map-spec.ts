@@ -32,7 +32,7 @@ test('Peptides — Export Invariant Map to a new TableView (SARViewer-base contr
       try { await grok.functions.call('Peptides:initPeptides'); }
       catch (e) { console.log('[note] Peptides:initPeptides pre-warm threw (non-fatal):', String(e)); }
     }, datasetPath);
-    await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30000});
+    await page.locator('.d4-grid[name="viewer-Grid"]').first().waitFor({timeout: 30000});
   });
   await softStep('Setup (step 2): launch SAR from the Peptides context panel', async () => {
     const setup = await page.evaluate(async () => {

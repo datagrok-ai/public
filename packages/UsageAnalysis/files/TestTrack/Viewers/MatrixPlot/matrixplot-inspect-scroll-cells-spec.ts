@@ -5,6 +5,7 @@ import {expect, Page} from '@playwright/test';
 import {localTest as test} from '../../shared-page';
 import {openDatagrok, specTestOptions, softStep, isLocalBootNoise} from '../../spec-login';
 import * as v from '../../helpers/viewers';
+import {INNER_CELLS, cellCount, settledCellInks, stampRenders} from './matrix-helpers';
 
 declare const grok: any;
 
@@ -17,42 +18,13 @@ const isBenignError = (text: string) =>
   /WebSocket/.test(text) || /Failed to load resource/.test(text) || /404 \(\)/.test(text) ||
   /favicon/.test(text) || /Stack trace [A-Za-z]+/.test(text);
 
-const cellCount = (page: Page) => page.evaluate(() =>
-  document.querySelectorAll('[name="viewer-Matrix-plot"] canvas.d4-matrix-plot-inner-viewer').length);
-
-const cellInk = (page: Page, idx: number) => page.evaluate((i: number) => {
-  const cells = document.querySelectorAll('[name="viewer-Matrix-plot"] canvas.d4-matrix-plot-inner-viewer');
-  const c = cells[i] as HTMLCanvasElement | undefined;
-  if (!c) return -1;
-  const ctx = c.getContext('2d');
-  if (!ctx) return -1;
-  let data: Uint8ClampedArray;
-  try { data = ctx.getImageData(0, 0, c.width, c.height).data; } catch (_) { return -2; }
-  let n = 0;
-  for (let k = 0; k < data.length; k += 16)
-    if (data[k + 3] !== 0 && !(data[k] >= 250 && data[k + 1] >= 250 && data[k + 2] >= 250)) n++;
-  return n;
-}, idx);
-
-async function settledCellInk(page: Page, idx: number): Promise<number> {
-  let prev = await cellInk(page, idx);
-  let cur = prev;
-  for (let i = 0; i < 10; i++) {
-    await page.waitForTimeout(300);
-    cur = await cellInk(page, idx);
-    if (cur >= 0 && Math.abs(cur - prev) < 40) break;
-    prev = cur;
-  }
-  return cur;
-}
-
 // One drag of a viewport slider's max handle from `from` visible columns to `to`. Every
 // mousemove that changes the integer viewport re-tiles the whole visible matrix (0.1s at
 // 25 cells, 3s at 240), so the gesture is a single move to the computed position rather
 // than a paced sweep; the value is proven by the cell count the caller asserts.
 async function dragMaxTo(page: Page, slider: 'x-slider' | 'y-slider', from: number, to: number,
   expectRender: boolean): Promise<number> {
-  await page.evaluate(async (a: {slider: string; from: number; to: number; expectRender: boolean}) => {
+  return page.evaluate(async (a: {slider: string; from: number; to: number; expectRender: boolean; cells: string}) => {
     const w = window as any;
     const svg = document.querySelector(`[name="viewer-Matrix-plot"] svg[name="${a.slider}"]`)!;
     const min = svg.querySelector('[name="min-handle"]')!.getBoundingClientRect();
@@ -68,8 +40,8 @@ async function dragMaxTo(page: Page, slider: 'x-slider' | 'y-slider', from: numb
       {steps: 1, stepMs: 0, holdMs: 0});
     if (a.expectRender) await w.__settled('viewer:Matrix plot.onViewerRendered', act, 5000);
     else await act();
-  }, {slider, from, to, expectRender});
-  return cellCount(page);
+    return document.querySelectorAll(a.cells).length;
+  }, {slider, from, to, expectRender, cells: INNER_CELLS});
 }
 
 const topLabelSet = (page: Page) => page.evaluate(() => {
@@ -116,6 +88,7 @@ test('Matrix Plot — Viewport Scrolling and Cell Inspection', async ({page}: {p
 
   try {
     await v.addViewerByIcon(page, 'matrix-plot', 'Matrix-plot');
+    await stampRenders(page);
     await setSets(page, BASE_COLS);
 
     await softStep('Scenario 1 — move the viewport with the sliders and hit the 250-cell cap', async () => {
@@ -244,8 +217,7 @@ test('Matrix Plot — Viewport Scrolling and Cell Inspection', async ({page}: {p
 
     await softStep('Scenario 4 — wheel zoom is per-cell', async () => {
       const errBefore = errCount();
-      const targetBase = await settledCellInk(page, 1);
-      const neighbourBase = await settledCellInk(page, 2);
+      const [targetBase, neighbourBase] = await settledCellInks(page, [1, 2]);
       const wheel = (idx: number, dy: number) => page.evaluate((args: {i: number; dy: number}) => {
         const cells = document.querySelectorAll('[name="viewer-Matrix-plot"] canvas.d4-matrix-plot-inner-viewer');
         const c = cells[args.i] as HTMLElement;
@@ -258,8 +230,7 @@ test('Matrix Plot — Viewport Scrolling and Cell Inspection', async ({page}: {p
 
       await wheel(1, -300);
       await v.waitForViewerRendered(page, 'Matrix plot', 400);
-      const targetZoom = await settledCellInk(page, 1);
-      const neighbourZoom = await settledCellInk(page, 2);
+      const [targetZoom, neighbourZoom] = await settledCellInks(page, [1, 2]);
       console.log(`MatrixPlot wheel zoom: target ${targetBase}->${targetZoom} neighbour ${neighbourBase}->${neighbourZoom}`);
 
       expect(Math.abs(targetZoom - targetBase)).toBeGreaterThan(300);
@@ -267,7 +238,7 @@ test('Matrix Plot — Viewport Scrolling and Cell Inspection', async ({page}: {p
 
       await wheel(1, 300);
       await v.waitForViewerRendered(page, 'Matrix plot', 400);
-      await settledCellInk(page, 1);
+      await settledCellInks(page, [1]);
       expect(errCount()).toBe(errBefore);
     });
   } finally {

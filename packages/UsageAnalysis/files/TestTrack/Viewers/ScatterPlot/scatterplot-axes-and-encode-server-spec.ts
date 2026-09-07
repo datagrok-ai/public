@@ -106,7 +106,7 @@ test('Scatter Plot — Axes and Encodings Persistence', async ({page}: {page: Pa
     const errBefore = errCount();
     const probeName = 'AGE_PROBE';
 
-    await sp.pickOnViewer(page, 'y', 'AGE');
+    await sp.pickPanelColumn(page, 'prop-y', 'div-column-combobox-y', 'y', 'AGE');
     const both = await readConfig(page);
     expect(both.x).toBe('AGE');
     expect(both.y).toBe('AGE');
@@ -138,7 +138,7 @@ test('Scatter Plot — Axes and Encodings Persistence', async ({page}: {page: Pa
       await v.pollValue(() => formulaEditorValues(page), (cur) => cur !== withLine, 2500, 50);
       await page.locator(`${FORMULA_DIALOG} [name="button-OK"]`).click();
       await v.pollValue(() => formulaLineCount(page), (n) => n === 0, 4000, 50);
-      await sp.pickOnViewer(page, 'y', 'HEIGHT');
+      await sp.pickPanelColumn(page, 'prop-y', 'div-column-combobox-y', 'y', 'HEIGHT');
     }
     const reverted = await readConfig(page);
     expect(reverted.x).toBe('AGE');

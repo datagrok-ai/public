@@ -16,13 +16,8 @@ import {
   resetShell,
   PROVENANCE_PATTERNS,
 } from '../helpers/openers';
-import {
-  saveAllTablesWithProvenance,
-  reopenAndAssertProvenance,
-  shareWithSecondUserAndVerify,
-  deleteProjectWithCleanup,
-  SavedAllTables,
-} from '../helpers/projects';
+import {deleteProjectWithCleanup, SavedAllTables} from '../helpers/projects';
+import {saveAllTablesWithProvenance, reopenAndAssertProvenance, shareWithSecondUserAndVerify} from './projects-shared';
 
 test.use(projectsTestOptions);
 

@@ -167,7 +167,7 @@ test('Grid — Cell Appearance and Color Resolution Order', async ({page}) => {
       });
       await page.mouse.move(drag.rightBorderX, drag.y, {steps: 2});
       await page.mouse.down();
-      await page.mouse.move(drag.targetX, drag.y, {steps: 12});
+      await page.mouse.move(drag.targetX, drag.y, {steps: 3});
       await page.mouse.up();
       const after = await v.pollValue(readAge, (x) => x.width < before.width, 1500, 50);
       expect(after.width).toBeLessThan(before.width);

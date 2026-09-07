@@ -5,7 +5,7 @@ import {expect, Page} from '@playwright/test';
 import {localTest as test} from '../../shared-page';
 import {openDatagrok, specTestOptions, softStep, isLocalBootNoise} from '../../spec-login';
 import * as v from '../../helpers/viewers';
-import {BOX, Rect, bpProp} from './boxplot-helpers';
+import {BOX, Rect, bpProp, bpPainted} from './boxplot-helpers';
 
 declare const grok: any;
 declare const DG: any;
@@ -37,10 +37,11 @@ async function narrowAverageMass(page: Page, lo: number, hi: number): Promise<nu
 }
 
 async function resetFilter(page: Page): Promise<void> {
-  await page.evaluate(() => grok.shell.t.filter.setAll(true));
-  await v.pollValue(
-    () => page.evaluate(() => ({n: grok.shell.t.filter.trueCount, total: grok.shell.t.rowCount})),
-    (c) => c.n === c.total, 800, 100);
+  await page.evaluate(async () => {
+    grok.shell.t.filter.setAll(true);
+    await (window as any).__poll(() => grok.shell.t.filter.trueCount === grok.shell.t.rowCount,
+      (ok: boolean) => ok, 800, 25);
+  });
 }
 
 async function averageMassFilterCanvas(page: Page): Promise<Rect> {
@@ -101,7 +102,7 @@ async function dragFilterHandle(page: Page, rect: Rect, side: 'min' | 'max', tar
   const before = await filterTrueCount(page);
   await page.mouse.move(handle.x, handle.y);
   await page.mouse.down();
-  await page.mouse.move(rect.x + rect.w * targetFrac, handle.y, {steps: 12});
+  await page.mouse.move(rect.x + rect.w * targetFrac, handle.y, {steps: 3});
   await page.mouse.up();
   await v.pollValue(() => filterTrueCount(page), (n) => n !== before, 1200, 100);
   return true;
@@ -167,7 +168,7 @@ test('Box Plot filter semantics and viewport response', async ({page}) => {
     bp.props.category1ColumnName = 'Series';
   });
   await page.locator(BOX).waitFor({timeout: 10000});
-  await v.waitForViewerRendered(page, 'Box plot', 1500);
+  await bpPainted(page);
   await v.waitForViewerQuiet(page, 'Box plot');
 
   await openFilterPanel(page);

@@ -52,8 +52,20 @@ async function saveLayoutToGallery(page: Page, marker: string): Promise<string> 
   expect(stamped, 'the table is not carrying this run\'s marker at save time, so the layout the ' +
     'save produces would be unattributable').toBe(marker);
 
+  // The command makes the saved layout the current object only after dapi.layouts.save resolves
+  // (xamgle/lib/src/commands/view/layout.dart:34). getApplicable costs 2-7s a call on dev, so the
+  // listing waits for that rather than paying for a first call that is guaranteed to find nothing.
+  await page.evaluate(() => {
+    const w = window as any;
+    w.__layoutSaved = false;
+    const sub = grok.events.onCurrentObjectChanged.subscribe(() => { w.__layoutSaved = true; sub.unsubscribe(); });
+  });
+
   expect(await v.driveTopMenuLeaf(page, ['View', 'Layout', 'Save to Gallery']),
     'the View | Layout | Save to Gallery leaf could not be driven, so no layout was saved').toBe(true);
+
+  await page.evaluate(() => (window as any).__poll(() => (window as any).__layoutSaved,
+    (done: boolean) => done, 20_000, 50));
 
   let mine: Array<{id: string; name: string}> = [];
   await expect.poll(async () => {
@@ -61,7 +73,7 @@ async function saveLayoutToGallery(page: Page, marker: string): Promise<string> 
     return mine.length;
   }, {
     timeout: 25_000,
-    intervals: [500, 1000, 2000, 3000],
+    intervals: [30, 60, 120, 250, 500, 1000],
     message: `the gallery save produced no new applicable layout named after this run's marker "${marker}"`,
   }).toBeGreaterThanOrEqual(1);
   if (mine.length !== 1) {
@@ -87,10 +99,10 @@ test('Filter Panel — Panel Core Ladder: layout and project round-trips', async
   await openDatagrok(page);
   await v.openTable(page, {path: datasetPath, withFilterPanel: true});
   await v.resetFilters(page);
-  await expect.poll(() => trueCount(page), {timeout: 10_000}).toBe(FULL);
+  await expect.poll(() => trueCount(page), {timeout: 10_000, intervals: [30, 60, 120, 250, 500, 1000]}).toBe(FULL);
   await page.evaluate(() => grok.shell.tv.getFiltersGroup()
     .updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: 'SEX'}));
-  await expect.poll(() => cardCaptions(page), {timeout: 10_000}).toEqual(['SEX']);
+  await expect.poll(() => cardCaptions(page), {timeout: 10_000, intervals: [30, 60, 120, 250, 500, 1000]}).toEqual(['SEX']);
 
   let trueCountSaved = -1;
   let projectId = '';

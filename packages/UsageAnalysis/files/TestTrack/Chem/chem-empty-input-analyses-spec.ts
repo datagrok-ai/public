@@ -7,6 +7,7 @@ import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu} from '../sp
 import {finishSpec, closeAllAndWait} from '../helpers/viewers';
 import {knownOpenBug} from '../helpers/known-open-bug';
 import * as chem from '../helpers/chem';
+import {openChemMenuItemFast} from './chem-fast-helpers';
 
 declare const grok: any;
 declare const DG: any;
@@ -62,7 +63,7 @@ async function gridCellPoint(page: Page, column: string, gridRow: number):
 }
 
 async function openRGroupsDialog(page: Page): Promise<void> {
-  await chem.openChemMenuItem(page, 'R-Groups Analysis...', {delayMs: 700});
+  await openChemMenuItemFast(page, 'R-Groups Analysis...', {delayMs: 700});
   await page.locator('.d4-dialog:has([name="button-MCS"])').waitFor({timeout: 15000});
 }
 
@@ -263,7 +264,7 @@ test('Chem: Empty-input boundary — R-Groups no-decomposition + Chemical Space 
   });
 
   await softStep('S2.2: Chem → Analyze → Chemical Space → dialog opens with a title', async () => {
-    await chem.openChemMenuItem(page, 'Chemical Space...', {delayMs: 700});
+    await openChemMenuItemFast(page, 'Chemical Space...', {delayMs: 700});
     await page.locator('.d4-dialog:has-text("Chem Space")').first().waitFor({timeout: 15000});
     const title = await page.evaluate(() =>
       document.querySelector('.d4-dialog .d4-dialog-header, .d4-dialog .d4-dialog-title')

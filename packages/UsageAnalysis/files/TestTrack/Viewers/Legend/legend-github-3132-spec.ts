@@ -6,6 +6,7 @@ realizes: [viewers.scatter-plot, viewers.histogram, viewers.line-chart, viewers.
 import {localTest as test, expect} from '../../shared-page';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
 import * as v from '../../helpers/viewers';
+import {addLegendViewers} from './legend-setup';
 
 test.use(specTestOptions);
 
@@ -15,7 +16,7 @@ test('github-3132: sequential legend color changes persist independently', async
 
   await loginToDatagrok(page);
   await v.openTable(page);
-  await v.addLegendViewers(page, {column: 'Stereo Category', viewers: ['Histogram', 'Scatter plot']});
+  await addLegendViewers(page, {column: 'Stereo Category', viewers: ['Histogram', 'Scatter plot']});
 
   await softStep('Step 3: change R_ONE to red via legend picker', async () => {
     await v.changeLegendItemColor(page, {

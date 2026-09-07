@@ -36,6 +36,14 @@ test("Queries — columns inspection on PostgresDart NorthwindTest and Postgres 
         connection: string;
       }) => {
         const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+        const poll = async (fn: () => boolean, capMs: number) => {
+          const deadline = Date.now() + capMs;
+          while (Date.now() < deadline) {
+            if (fn()) return true;
+            await wait(25);
+          }
+          return false;
+        };
 
         const expandIfNeeded = (node: Element | null) => {
           if (!node) return false;
@@ -68,6 +76,11 @@ test("Queries — columns inspection on PostgresDart NorthwindTest and Postgres 
             | HTMLElement
             | undefined);
 
+        const hostOf = (label: Element | null | undefined) =>
+          label
+            ?.closest(".d4-tree-view-group")
+            ?.querySelector(":scope > .d4-tree-view-group-host");
+
         const stages: string[] = [];
         const tables: {
           table?: string;
@@ -75,18 +88,17 @@ test("Queries — columns inspection on PostgresDart NorthwindTest and Postgres 
           clicks: number;
         }[] = [];
 
-        const waitForSelector = async (sel: string, maxIter = 40) => {
-          for (let i = 0; i < maxIter; i++) {
-            const el = document.querySelector(sel);
-            if (el) return el;
-            await wait(300);
-          }
-          return null;
+        const waitForSelector = async (sel: string, capMs = 12_000) => {
+          await poll(() => !!document.querySelector(sel), capMs);
+          return document.querySelector(sel);
         };
 
         const dbGroup = document.querySelector('[name="tree-Databases"]');
         expandIfNeeded(dbGroup);
-        await wait(700);
+        await poll(
+          () => !!document.querySelector(`[name="tree-Databases---${provider}"]`),
+          700,
+        );
         stages.push("Databases");
 
         const providerNode = await waitForSelector(
@@ -101,33 +113,36 @@ test("Queries — columns inspection on PostgresDart NorthwindTest and Postgres 
         );
         if (!connNode) return { ok: false, stage: connection, stages };
         expandIfNeeded(connNode);
-        await wait(2500);
+        const connGroup = connNode.closest(".d4-tree-view-group");
+        const connHostAt = () =>
+          connGroup?.querySelector(":scope > .d4-tree-view-group-host");
+        await poll(() => !!findLabelInHost(connHostAt(), "Schemas"), 2500);
         stages.push(connection);
 
-        const connGroup = connNode.closest(".d4-tree-view-group");
-        const connHost = connGroup?.querySelector(
-          ":scope > .d4-tree-view-group-host",
-        );
+        const connHost = connHostAt();
         const schemasLabel = findLabelInHost(connHost, "Schemas");
         if (!schemasLabel) return { ok: false, stage: "Schemas", stages };
         stages.push("Schemas");
         expandIfNeeded(schemasLabel.closest(".d4-tree-view-node"));
-        await wait(2500);
-
-        const schemasGroup = schemasLabel.closest(".d4-tree-view-group");
-        const schemasHost = schemasGroup?.querySelector(
-          ":scope > .d4-tree-view-group-host",
+        await poll(
+          () => !!findLabelInHost(hostOf(schemasLabel), "public"),
+          2500,
         );
+
+        const schemasHost = hostOf(schemasLabel);
         const publicLabel = findLabelInHost(schemasHost, "public");
         if (!publicLabel) return { ok: false, stage: "public", stages };
         stages.push("public");
         expandIfNeeded(publicLabel.closest(".d4-tree-view-node"));
-        await wait(3500);
+        await poll(() => {
+          const h = hostOf(publicLabel);
+          return (
+            !!h &&
+            h.querySelectorAll(":scope > .d4-tree-view-group").length > 0
+          );
+        }, 3500);
 
-        const publicGroup = publicLabel.closest(".d4-tree-view-group");
-        const publicHost = publicGroup?.querySelector(
-          ":scope > .d4-tree-view-group-host",
-        );
+        const publicHost = hostOf(publicLabel);
         const tableGroups = publicHost
           ? Array.from(
               publicHost.querySelectorAll(":scope > .d4-tree-view-group"),
@@ -135,6 +150,7 @@ test("Queries — columns inspection on PostgresDart NorthwindTest and Postgres 
           : [];
         stages.push(`tables:${tableGroups.length}`);
 
+        const w: any = window;
         for (const tg of tableGroups) {
           const label = tg
             .querySelector(
@@ -147,26 +163,44 @@ test("Queries — columns inspection on PostgresDart NorthwindTest and Postgres 
           ) as HTMLElement | null;
           if (tri) tri.click();
           else (tnode as HTMLElement | null)?.click();
-          await wait(900);
-          const thost = tg.querySelector(":scope > .d4-tree-view-group-host");
-          const colEls = thost
-            ? Array.from(
-                thost.querySelectorAll(
-                  ".d4-tree-view-item-label, .d4-tree-view-group-label",
-                ),
-              )
-            : [];
+          const colsAt = () => {
+            const thost = tg.querySelector(
+              ":scope > .d4-tree-view-group-host",
+            );
+            return thost
+              ? Array.from(
+                  thost.querySelectorAll(
+                    ".d4-tree-view-item-label, .d4-tree-view-group-label",
+                  ),
+                )
+              : [];
+          };
+          await poll(() => colsAt().length > 0, 900);
+          const colEls = colsAt();
           let clicks = 0;
           for (const c of colEls) {
+            const expected = (c.textContent ?? "").trim();
             (c as HTMLElement).click();
             clicks++;
-            await wait(120);
+            // the click sets the current object; wait for that rather than a flat 120ms
+            await poll(() => {
+              const o = w.grok?.shell?.o;
+              return !!o && (o.name ?? String(o)) === expected;
+            }, 120);
           }
           tables.push({ table: label, columnCount: colEls.length, clicks });
           if (tri) tri.click();
-          await wait(150);
+          await poll(() => colsAt().length === 0, 150);
         }
 
+        // give a balloon raised by the last click its chance to land before reading
+        await poll(
+          () =>
+            Array.from(
+              document.querySelectorAll(".d4-balloon, .grok-balloon"),
+            ).some((b) => (b as HTMLElement).offsetParent !== null),
+          400,
+        );
         const balloons = Array.from(
           document.querySelectorAll(".d4-balloon, .grok-balloon"),
         )
@@ -216,7 +250,7 @@ test("Queries — columns inspection on PostgresDart NorthwindTest and Postgres 
     },
   );
 
-  await page.evaluate(() => {
+  await page.evaluate(async () => {
     const node = document.querySelector(
       '[name="tree-Databases---PostgresDart---NorthwindTest"]',
     ) as HTMLElement | null;
@@ -224,8 +258,13 @@ test("Queries — columns inspection on PostgresDart NorthwindTest and Postgres 
       ".d4-tree-view-tri.d4-tree-view-tri-expanded",
     ) as HTMLElement | null;
     if (tri) tri.click();
+    const group = node?.closest(".d4-tree-view-group");
+    for (let i = 0; i < 20; i++) {
+      const host = group?.querySelector(":scope > .d4-tree-view-group-host");
+      if (!host || host.children.length === 0) break;
+      await new Promise((r) => setTimeout(r, 25));
+    }
   });
-  await page.waitForTimeout(500);
 
   let part2: any;
   await softStep(

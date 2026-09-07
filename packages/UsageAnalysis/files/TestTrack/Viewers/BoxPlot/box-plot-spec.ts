@@ -5,7 +5,7 @@ import {expect, Page} from '@playwright/test';
 import {localTest as test} from '../../shared-page';
 import {openDatagrok, specTestOptions, softStep, isLocalBootNoise} from '../../spec-login';
 import * as v from '../../helpers/viewers';
-import {BOX, Pt, bpProp, setBpProp, canvasRect, viewportRect, clickToggleIcon, pValuePoint, dragTopHandle} from './boxplot-helpers';
+import {BOX, Pt, bpProp, setBpProp, setBpProps, canvasRect, viewportRect, clickToggleIcon, pValuePoint, dragTopHandle, bpPainted} from './boxplot-helpers';
 
 declare const grok: any;
 
@@ -14,11 +14,17 @@ test.use(specTestOptions);
 const datasetPath = 'System:DemoFiles/demog.csv';
 const spgiPath = 'System:AppData/Chem/tests/spgi-100.csv';
 
+// The platform leaves the dismissed popup's items in the DOM, so waiting for `.d4-menu-item`
+// to reach zero burned the whole cap on every menu (2.1s over nine menus, measured 2026-09-04).
+// Wait for the popups to go invisible instead, then drop the residue so the next read is clean.
 async function dismissMenu(page: Page, capMs: number): Promise<void> {
   await page.keyboard.press('Escape');
-  await page.evaluate(() => document.body.click());
-  await v.pollValue(() => page.evaluate(() => document.querySelectorAll('.d4-menu-item').length),
-    (n) => n === 0, capMs, 50);
+  await page.evaluate(async (cap) => {
+    document.body.click();
+    await (window as any).__poll(() => Array.from(document.querySelectorAll('.d4-menu-popup'))
+      .every((p: any) => p.offsetParent === null), (gone: boolean) => gone, cap, 25);
+    for (const p of Array.from(document.querySelectorAll('.d4-menu-popup'))) p.remove();
+  }, capMs);
 }
 
 async function canvasInk(page: Page): Promise<number> {
@@ -43,7 +49,7 @@ async function clickMainMenuLeaf(page: Page, leafName: string): Promise<boolean>
     cv.dispatchEvent(new MouseEvent('contextmenu', {bubbles: true, clientX: cx, clientY: cy, button: 2}));
     const leaf: HTMLElement | null = await (window as any).__poll(
       () => document.querySelector(`[name="${name}"]`),
-      (el: HTMLElement | null) => el !== null, 4000, 100);
+      (el: HTMLElement | null) => el !== null, 4000, 25);
     if (leaf) leaf.click();
     return !!leaf;
   }, {name: leafName, cx: r.x + r.w * 0.5, cy: r.y + r.h * 0.5});
@@ -64,7 +70,7 @@ async function menuItemsAtPoint(page: Page, pt: Pt): Promise<MenuItem[]> {
       const quiet = n > 0 && n === prev;
       prev = n;
       return quiet;
-    }, 4500, 150);
+    }, 4500, 60);
     return Array.from(document.querySelectorAll('.d4-menu-item')).map((i) => ({
       name: i.getAttribute('name'),
       d4name: i.getAttribute('d4-name'),
@@ -117,7 +123,7 @@ test('Box plot property surface smoke', async ({page}) => {
   await page.locator(BOX).waitFor({timeout: 10000});
 
   await v.installEventWaits(page);
-  await v.waitForViewerRendered(page, 'Box plot', 1500);
+  await bpPainted(page);
   await v.waitForViewerQuiet(page, 'Box plot');
 
   await softStep('[anchor: Context menus as property paths] Misc menu Show Inside/Outside Values flip the prop AND the drawn points; Markers menu Size grays with a size column', async () => {
@@ -157,9 +163,7 @@ test('Box plot property surface smoke', async ({page}) => {
   });
 
   await softStep('[anchor: Statistics and group-comparison menu regions] Stats-region menu grays Group Comparison items while off; enabling GC ungrays them and adds an "Add ... Table" item', async () => {
-    await setBpProp(page, 'showStatistics', true, 500);
-    await setBpProp(page, 'showGroupComparison', false, 600);
-    await setBpProp(page, 'showPValue', true, 400);
+    await setBpProps(page, {showStatistics: true, showGroupComparison: false, showPValue: true}, 600);
 
     const width = await page.evaluate((sel) => document.querySelector(sel)!.getBoundingClientRect().width, BOX);
     expect(width).toBeGreaterThan(300);
@@ -234,9 +238,7 @@ test('Box plot property surface smoke', async ({page}) => {
   });
 
   await softStep('[anchor: Resize and auto layout] Auto Layout hides the column selectors at a small size and restores them; a narrow resize with a coloring raises no error (GROK-18677)', async () => {
-    await setBpProp(page, 'valueColumnName', 'AGE', 400);
-    await setBpProp(page, 'category1ColumnName', 'SEX', 500);
-    await setBpProp(page, 'autoLayout', true, 500);
+    await setBpProps(page, {valueColumnName: 'AGE', category1ColumnName: 'SEX', autoLayout: true}, 600);
     const visibleSelectors = () => page.evaluate((sel) =>
       Array.from(document.querySelectorAll(`${sel} [name^="div-column-combobox-"]`))
         .filter((s) => { const b = s.getBoundingClientRect(); return b.width > 0 && b.height > 0; }).length, BOX);
@@ -353,8 +355,7 @@ test('Box plot property surface smoke', async ({page}) => {
     console.log('Control Band Color set error deltas:', JSON.stringify(errDelta), JSON.stringify(pageErrDelta));
     expect(errDelta).toEqual([]);
     expect(pageErrDelta).toEqual([]);
-    await setBpProp(page, 'whiskerLineWidth', 2, 200);
-    await setBpProp(page, 'whiskerWidthRatio', 0.5, 400);
+    await setBpProps(page, {whiskerLineWidth: 2, whiskerWidthRatio: 0.5}, 400);
   });
 
   await softStep('[anchor: Controls visibility] Size selector absent by default; each visibility toggle adds/removes its chrome (DOM for the selectors, canvas repaint for the canvas-drawn chrome); the round trip restores the default baseline', async () => {
@@ -394,9 +395,7 @@ test('Box plot property surface smoke', async ({page}) => {
     await canvasToggle('showCategoryAxis', true);
     await canvasToggle('showValueAxis', true);
     await canvasToggle('showCategorySelector', true);
-    await setBpProp(page, 'showValueSelector', true, 300);
-    await setBpProp(page, 'showColorSelector', true, 300);
-    await setBpProp(page, 'showSizeSelector', false, 700);
+    await setBpProps(page, {showValueSelector: true, showColorSelector: true, showSizeSelector: false}, 700);
     const sizeRestored = await v.pollValue(() => selectorState(page, 'marker--size'),
       (s) => s.display === 'none', 3000, 150);
     const valueRestored = await v.pollValue(() => selectorState(page, 'value'),
@@ -411,8 +410,7 @@ test('Box plot property surface smoke', async ({page}) => {
   });
 
   await softStep('[anchor: Title and description] Title text appears in the panel titlebar; description appears while Always, moves to Bottom, and disappears while Never', async () => {
-    await setBpProp(page, 'showTitle', true, 400);
-    await setBpProp(page, 'title', 'Age by Race', 800);
+    await setBpProps(page, {showTitle: true, title: 'Age by Race'}, 800);
     const readTitle = () => page.evaluate((sel) => {
       const panel = document.querySelector(sel)!.closest('.panel-base');
       return (panel?.querySelector('.panel-titlebar-text')?.textContent ?? '').trim();
@@ -420,8 +418,7 @@ test('Box plot property surface smoke', async ({page}) => {
     const titleText = await v.pollValue(readTitle, (t) => t === 'Age by Race', 3000, 150);
     console.log('Panel titlebar text:', JSON.stringify(titleText));
     expect(titleText).toBe('Age by Race');
-    await setBpProp(page, 'description', 'Box plot of patient ages', 300);
-    await setBpProp(page, 'descriptionVisibilityMode', 'Always', 700);
+    await setBpProps(page, {description: 'Box plot of patient ages', descriptionVisibilityMode: 'Always'}, 700);
     const readDesc = () => page.evaluate((sel) => {
       const el = document.querySelector(`${sel} .d4-viewer-description`);
       return el ? (el.textContent ?? '').trim() : null;
@@ -436,11 +433,8 @@ test('Box plot property surface smoke', async ({page}) => {
     const descNever = await v.pollValue(readDesc, (d) => d === null, 3000, 150) !== null;
     console.log('Description host present when Never:', descNever);
     expect(descNever).toBe(false);
-    await setBpProp(page, 'showTitle', false, 200);
-    await setBpProp(page, 'title', '', 200);
-    await setBpProp(page, 'description', '', 200);
-    await setBpProp(page, 'descriptionVisibilityMode', 'Auto', 200);
-    await setBpProp(page, 'descriptionPosition', 'Top', 400);
+    await setBpProps(page, {showTitle: false, title: '', description: '',
+      descriptionVisibilityMode: 'Auto', descriptionPosition: 'Top'}, 400);
   });
 
   await softStep('[anchor: Axis font] Changing Axis Font repaints the labels with no error — no Infinity.floor (GROK-19297); restoring completes without error', async () => {
@@ -486,11 +480,8 @@ test('Box plot property surface smoke', async ({page}) => {
   });
 
   await softStep('[anchor: Custom tooltip] Row Tooltip AGE, SEX, WEIGHT shows exactly those three columns on marker hover; resetting to inherit restores the default tooltip', async () => {
-    await setBpProp(page, 'valueColumnName', 'AGE', 400);
-    await setBpProp(page, 'category1ColumnName', 'RACE', 600);
-    await setBpProp(page, 'markerSize', 10, 500);
-    await setBpProp(page, 'rowTooltip', 'AGE\nSEX\nWEIGHT', 300);
-    await setBpProp(page, 'showTooltip', 'show custom tooltip', 600);
+    await setBpProps(page, {valueColumnName: 'AGE', category1ColumnName: 'RACE', markerSize: 10,
+      rowTooltip: 'AGE\nSEX\nWEIGHT', showTooltip: 'show custom tooltip'}, 800);
     expect(await bpProp(page, 'rowTooltip')).toBe('AGE\nSEX\nWEIGHT');
     const readTipCols = () => page.evaluate(() => {
       const tip = document.querySelector('.d4-tooltip table.d4-row-tooltip-table');
@@ -513,8 +504,7 @@ test('Box plot property surface smoke', async ({page}) => {
     expect(uniqueCols.sort()).toEqual(['AGE', 'SEX', 'WEIGHT']);
     await page.mouse.move(r.x + r.w * 0.5, r.y - 40);
     await tipGone();
-    await setBpProp(page, 'showTooltip', 'inherit from table', 300);
-    await setBpProp(page, 'rowTooltip', '', 500);
+    await setBpProps(page, {showTooltip: 'inherit from table', rowTooltip: ''}, 500);
     expect(await bpProp(page, 'rowTooltip')).toBe('');
     let defaultCols: string[] = [];
     for (const [fx, fy] of [[0.62, 0.55], [0.3, 0.5], [0.5, 0.55], [0.4, 0.45], [0.6, 0.6]]) {
@@ -548,9 +538,7 @@ test('Box plot property surface smoke', async ({page}) => {
       grok.shell.tv?.dataFrame?.name === 'demog'
       && !!grok.shell.tv.viewers.find((x: any) => x.type === 'Box plot')),
     (ready) => ready, 600, 100);
-    await setBpProp(page, 'valueColumnName', 'AGE', 400);
-    await setBpProp(page, 'category1ColumnName', 'SEX', 400);
-    await setBpProp(page, 'category2ColumnName', 'RACE', 800);
+    await setBpProps(page, {valueColumnName: 'AGE', category1ColumnName: 'SEX', category2ColumnName: 'RACE'}, 800);
     expect(await bpProp(page, 'category2ColumnName')).toBe('RACE');
     const errBefore = consoleErrors.length;
     const pageErrBefore = pageErrors.length;
@@ -573,17 +561,14 @@ test('Box plot property surface smoke', async ({page}) => {
     console.log('GROK-18361 table-switch error deltas:', JSON.stringify(errDelta), JSON.stringify(pageErrDelta));
     expect(errDelta).toEqual([]);
     expect(pageErrDelta).toEqual([]);
-    await setBpProp(page, 'valueColumnName', 'Average Mass', 500);
-    await setBpProp(page, 'category1ColumnName', 'Series', 800);
+    await setBpProps(page, {valueColumnName: 'Average Mass', category1ColumnName: 'Series'}, 800);
     const afterDf = await page.evaluate(() => {
       const bp = grok.shell.tv.viewers.find((x: any) => x.type === 'Box plot');
       return bp.dataFrame?.name;
     });
     expect(afterDf).toBe('spgi-100');
     await setBpProp(page, 'table', 'demog', 1500);
-    await setBpProp(page, 'valueColumnName', 'AGE', 400);
-    await setBpProp(page, 'category1ColumnName', 'SEX', 400);
-    await setBpProp(page, 'category2ColumnName', '', 600);
+    await setBpProps(page, {valueColumnName: 'AGE', category1ColumnName: 'SEX', category2ColumnName: ''}, 600);
   });
 
   await softStep('[anchor: Legend minimum under coloring] A legend-bearing coloring keeps the render valid: canvas keeps ink, warnings delta zero, markerColorColumnName stays applied', async () => {

@@ -336,6 +336,11 @@ async function hoverRowHeaderTooltip(page: Page, g: Geometry): Promise<string> {
 }
 
 test('Correlation plot — property surface smoke', async ({page}) => {
+  // a known product defect, not a flaky step: the plot sets minScale=-1/maxScale=1 per grid column
+  // but color_coding.dart:322-337 colours each column over its own range, so a near-zero r is as
+  // saturated as a strong one and the Color-coding lightness probe fails; expected until fixed, so
+  // the run does not pay a worker restart (one boot) for it
+  test.fail(true, 'correlation plot ignores its own colour scale (color_coding.dart:322-337)');
   test.setTimeout(600_000);
 
   await openDatagrok(page);

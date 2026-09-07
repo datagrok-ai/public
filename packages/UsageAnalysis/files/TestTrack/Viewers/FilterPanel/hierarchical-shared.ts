@@ -130,11 +130,11 @@ export async function addHierarchicalCard(page: Page): Promise<void> {
   await v.drivePanelMenuLeaf(page, 'Filters', 'Add Filter', 'Hierarchical');
   await expect.poll(async () => page.evaluate(() =>
     grok.shell.tv.getFiltersGroup().filters.filter((f: any) => f.filterType === 'hierarchical').length),
-  {timeout: 15_000, intervals: [400, 800, 1500]}).toBe(1);
+  {timeout: 15_000, intervals: [30, 60, 120, 250, 500, 1000]}).toBe(1);
   await applyHierarchyState(page, {type: 'hierarchical', active: true, colNames: ['SEX', 'RACE'], allEnabled: true});
   await expect.poll(async () => (await hierNode(page, ['F'], 'probe')).found,
     {message: 'the SEX root node "F" never rendered — the hierarchy was not applied to the card',
-      timeout: 10_000, intervals: [300, 600, 1200]}).toBe(true);
+      timeout: 10_000, intervals: [30, 60, 120, 250, 500, 1000]}).toBe(true);
 }
 
 // Step 12: a fresh demog view with a second boolean column beside CONTROL.

@@ -21,7 +21,11 @@ async function expandTreeAndContextMenu(
     w.grok.shell.windows.showBrowse = true;
     if (document.querySelectorAll(".d4-tree-view-group-label").length < 5) {
       document.querySelector<HTMLElement>('[name="Browse"]')?.click();
-      await new Promise((r) => setTimeout(r, 1500));
+      for (let i = 0; i < 30; i++) {
+        if (document.querySelectorAll(".d4-tree-view-group-label").length > 5)
+          break;
+        await new Promise((r) => setTimeout(r, 50));
+      }
     }
   });
   await page.waitForFunction(
@@ -63,7 +67,6 @@ async function expandTreeAndContextMenu(
 
         const deadline = Date.now() + 25_000;
         while (Date.now() < deadline) {
-          await new Promise((r) => setTimeout(r, 200));
           if (nextLabel) {
             const found = findChildGroupByLabel(group, nextLabel);
             if (found) return true;
@@ -73,6 +76,7 @@ async function expandTreeAndContextMenu(
             );
             if (host && host.children.length > 0) return true;
           }
+          await new Promise((r) => setTimeout(r, 50));
         }
         return false;
       };
@@ -111,7 +115,10 @@ async function expandTreeAndContextMenu(
           ".d4-tree-view-group-label",
         ) as HTMLElement | null
       )?.click();
-      await new Promise((r) => setTimeout(r, 250));
+      for (let i = 0; i < 10; i++) {
+        if (w.grok?.shell?.o) break;
+        await new Promise((r) => setTimeout(r, 25));
+      }
       tableNode.dispatchEvent(
         new MouseEvent("contextmenu", {
           bubbles: true,
@@ -123,13 +130,13 @@ async function expandTreeAndContextMenu(
       let target: HTMLElement | undefined;
       const menuDeadline = Date.now() + 8_000;
       while (Date.now() < menuDeadline) {
-        await new Promise((r) => setTimeout(r, 150));
         target = Array.from(
           document.querySelectorAll(".d4-menu-popup .d4-menu-item-label"),
         ).find((el) => el.textContent?.trim() === menuLabel) as
           | HTMLElement
           | undefined;
         if (target) break;
+        await new Promise((r) => setTimeout(r, 50));
       }
       if (!target) {
         const items = Array.from(
@@ -142,8 +149,8 @@ async function expandTreeAndContextMenu(
       const expectAtLeast = menuLabel === "Get Top 100" ? 100 : 200;
       let last = 0;
       let stable = 0;
-      for (let i = 0; i < 120; i++) {
-        await new Promise((r) => setTimeout(r, 300));
+      for (let i = 0; i < 360; i++) {
+        await new Promise((r) => setTimeout(r, 100));
         const rc = w.grok.shell.tv?.dataFrame?.rowCount ?? 0;
         if (rc >= expectAtLeast && rc === last) {
           stable++;
@@ -180,7 +187,11 @@ test("Queries — Get All / Get Top 100 (PostgresDart NorthwindTest, Postgres No
     w.grok.shell.closeAll();
     w.grok.shell.windows.showBrowse = true;
   });
-  await page.waitForTimeout(800);
+  await page.waitForFunction(
+    () => document.querySelectorAll(".d4-tree-view-group-label").length > 3,
+    null,
+    { timeout: 30_000 },
+  );
 
   await softStep(
     "Part 1 — PostgresDart > NorthwindTest > Schemas > public > orders > Get All",

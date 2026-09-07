@@ -5,6 +5,7 @@ import {expect, Page} from '@playwright/test';
 import {test} from '../../shared-page';
 import {openDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
+import {addLegendViewers} from './legend-setup';
 import {deleteEntities, layoutRoundTrip, projectRoundTrip} from './persistence';
 
 // The server lane of the color-consistency scenario: the custom palette surviving a layout and a
@@ -36,7 +37,7 @@ test('Legend color consistency — palette persists across layout and project', 
 
   await openDatagrok(page);
   await v.openTable(page);
-  await v.addLegendViewers(page, {column: 'Stereo Category', viewers: ['Histogram', 'Line chart'], settleMs: 500});
+  await addLegendViewers(page, {column: 'Stereo Category', viewers: ['Histogram', 'Line chart'], capMs: 500});
 
   await softStep('Setup: custom palette R_ONE=blue, S_UNKN=green from the grid coding', async () => {
     const tag = await page.evaluate(async (blue) => {

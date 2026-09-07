@@ -10,12 +10,8 @@ import {
   resetShell,
   PROVENANCE_PATTERNS,
 } from '../helpers/openers';
-import {
-  saveProjectWithProvenance,
-  reopenAndAssertProvenance,
-  deleteProjectWithCleanup,
-  shareWithSecondUserAndVerify,
-} from '../helpers/projects';
+import {deleteProjectWithCleanup} from '../helpers/projects';
+import {saveProjectWithProvenance, reopenAndAssertProvenance, shareWithSecondUserAndVerify} from './projects-shared';
 
 test.use(projectsTestOptions);
 

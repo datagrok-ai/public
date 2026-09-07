@@ -1,7 +1,7 @@
 import {expect} from '@playwright/test';
 import {test} from '../shared-page';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
-import {finishSpec} from '../helpers/viewers';
+import {finishSpec, openTable} from '../helpers/viewers';
 
 test.use(specTestOptions);
 
@@ -11,21 +11,7 @@ test('PowerPack: Add new column (Demog smoke - dialog + autofill from Recent Act
 
   await loginToDatagrok(page);
 
-  await page.evaluate(async () => {
-    const grok = (window as any).grok;
-    document.body.classList.add('selenium');
-    grok.shell.settings.showFiltersIconsConstantly = true;
-    grok.shell.windows.simpleMode = true;
-    try { grok.shell.closeAll(); } catch (_) {}
-    const df = await grok.dapi.files.readCsv('System:DemoFiles/demog.csv');
-    grok.shell.addTableView(df);
-    await new Promise<void>((resolve) => {
-      const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
-      setTimeout(resolve, 3000);
-    });
-  });
-  await page.locator('[name="viewer-Grid"]').waitFor({timeout: 60_000});
-  await page.waitForTimeout(1000);
+  await openTable(page, {path: 'System:DemoFiles/demog.csv'});
 
   const cols = await page.evaluate(() => {
     const df = (window as any).grok.shell.tv?.dataFrame;

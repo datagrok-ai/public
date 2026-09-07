@@ -139,8 +139,8 @@ test('Grid — Column Geometry: Sort, Order, Visibility, Width, Pinning and Pers
 
       await page.mouse.move(src.x, src.y);
       await page.mouse.down();
-      await page.mouse.move((src.x + tgt.x) / 2, src.y, {steps: 5});
-      await page.mouse.move(tgt.x, tgt.y, {steps: 5});
+      await page.mouse.move((src.x + tgt.x) / 2, src.y, {steps: 2});
+      await page.mouse.move(tgt.x, tgt.y, {steps: 3});
       await page.mouse.up();
       const after = await v.pollValue(readOrder, (x) => JSON.stringify(x.order) !== JSON.stringify(before.order), 700, 50);
       expect(after.heightIdx).toBeGreaterThan(before.heightIdx);
@@ -190,7 +190,7 @@ test('Grid — Column Geometry: Sort, Order, Visibility, Width, Pinning and Pers
 
       await page.mouse.move(geom.borderX, geom.headerY);
       await page.mouse.down();
-      await page.mouse.move(geom.borderX + 60, geom.headerY, {steps: 6});
+      await page.mouse.move(geom.borderX + 60, geom.headerY, {steps: 3});
       await page.mouse.up();
       const after = await v.pollValue(readWidth, (w) => w > before, 500, 50);
       expect(after).toBeGreaterThan(before);
@@ -218,8 +218,8 @@ test('Grid — Column Geometry: Sort, Order, Visibility, Width, Pinning and Pers
           await (window as any).__quiet('viewer:Grid.onAfterDrawContent', 200, 600);
         });
       });
-      // the error window after the scroll is the assertion
-      await page.waitForTimeout(600);
+      // the error window after the scroll is the assertion; the grid's own paint closes it
+      await v.waitForGridPainted(page, {gapMs: 150, capMs: 600});
       const consistent = await page.evaluate(() => {
         const grid = grok.shell.tv.grid;
         let ok = true;

@@ -90,7 +90,7 @@ export async function driveHeaderSearch(page: Page, text: string): Promise<{
   await input.waitFor({state: 'visible', timeout: 15_000});
   await input.click();
   await page.keyboard.press('Control+a');
-  await page.keyboard.type(text, {delay: 40});
+  await page.keyboard.type(text, {delay: 15});
   const typed = await v.pollValue(() => input.inputValue(), (val) => val === text, 800, 50);
   const wasVisible = visibleBefore.join(' ');
   await v.pollValue(async () => (await visibleCardCaptions(page)).join(' '),
@@ -131,7 +131,7 @@ export async function headerSearchState(page: Page): Promise<{value: string; vis
 export async function removeAllViaPanelMenu(page: Page): Promise<void> {
   await v.drivePanelMenuLeaf(page, 'Filters', null, 'Remove All');
   await expect.poll(async () => cardCount(page),
-    {timeout: 20_000, intervals: [300, 600, 1200],
+    {timeout: 20_000, intervals: [30, 60, 120, 250, 500, 1000],
       message: 'the panel menu\'s "Remove All" leaf was driven but the panel still carries cards'})
     .toBe(0);
 }

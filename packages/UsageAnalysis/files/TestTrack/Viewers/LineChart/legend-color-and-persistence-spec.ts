@@ -94,6 +94,15 @@ test('Line Chart — legend filter-color and layout persistence', async ({page})
     expect(errorCount()).toBe(before);
   });
 
-  await v.cleanupShell(page, {clearStereoCategoryColorCoding: true});
+  // cleanupShell's own 500ms sleep, replaced by the condition it stood for: closeAllAndWait
+  // waits for the table views to actually go away
+  await page.evaluate(() => {
+    const col = (window as any).grok.shell.tv?.dataFrame.col('Stereo Category');
+    if (col) {
+      delete col.tags['.color-coding-categorical'];
+      delete col.tags['.color-coding-type'];
+    }
+  });
+  await v.closeAllAndWait(page);
   v.finishSpec();
 });

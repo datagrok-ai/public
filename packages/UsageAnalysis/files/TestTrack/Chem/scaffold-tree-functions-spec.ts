@@ -2,6 +2,7 @@ import {expect} from '@playwright/test';
 import {test} from '../shared-page';
 import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu, waitForMolecule} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
+import {waitForChemMenuRoot} from './chem-fast-helpers';
 
 test.use(specTestOptions);
 
@@ -9,7 +10,7 @@ test('Chem: Scaffold Tree add + generate + node-click filter + toolbox + propert
   test.setTimeout(360_000);
 
   await loginToDatagrok(page);
-  await page.waitForTimeout(3000);
+  await waitForChemMenuRoot(page);
 
   await softStep('Step 1: Open smiles-50.csv', async () => {
     await page.evaluate(async () => {
@@ -32,12 +33,23 @@ test('Chem: Scaffold Tree add + generate + node-click filter + toolbox + propert
   await softStep('Step 2-3: Chem → Analyze → Scaffold Tree → viewer mounted (empty state)', async () => {
     await page.evaluate(async () => {
       const chemMenu = document.querySelector('[name="div-Chem"]') as HTMLElement;
+      // Labels from a previously opened menu stay in the document, so only a node that was not
+      // already there is this menu's leaf; clicking a stale one actuates nothing.
+      const stale = new Set(Array.from(document.querySelectorAll('.d4-menu-item-label')));
       chemMenu.dispatchEvent(new MouseEvent('click', {bubbles: true}));
-      await new Promise(r => setTimeout(r, 600));
-      const item = Array.from(document.querySelectorAll('.d4-menu-item-label'))
-        .find(m => m.textContent!.trim() === 'Scaffold Tree') as HTMLElement;
-      (item.closest('.d4-menu-item') as HTMLElement).dispatchEvent(new MouseEvent('click', {bubbles: true}));
-      await new Promise(r => setTimeout(r, 5000));
+      const find = () => Array.from(document.querySelectorAll('.d4-menu-item-label'))
+        .find(m => !stale.has(m) && m.textContent!.trim() === 'Scaffold Tree') as HTMLElement | undefined;
+      const menuDeadline = Date.now() + 600;
+      let item = find();
+      while (!item && Date.now() < menuDeadline) { await new Promise(r => setTimeout(r, 25)); item = find(); }
+      if (!item)
+        item = Array.from(document.querySelectorAll('.d4-menu-item-label'))
+          .find(m => m.textContent!.trim() === 'Scaffold Tree') as HTMLElement | undefined;
+      (item!.closest('.d4-menu-item') as HTMLElement).dispatchEvent(new MouseEvent('click', {bubbles: true}));
+      // The next line waits on [name="viewer-Scaffold-Tree"]; wait for the same thing here.
+      const attachDeadline = Date.now() + 5000;
+      while (Date.now() < attachDeadline && !document.querySelector('[name="viewer-Scaffold-Tree"]'))
+        await new Promise(r => setTimeout(r, 100));
     });
     await page.locator('[name="viewer-Scaffold-Tree"]').waitFor({timeout: 15000});
     const emptyState = await page.evaluate(() => {
@@ -75,8 +87,12 @@ test('Chem: Scaffold Tree add + generate + node-click filter + toolbox + propert
       if (nodes.length === 0) return {ok: false, reason: 'no visible nodes'};
       const checkbox = nodes[0].querySelector('input[type="checkbox"]') as HTMLInputElement;
       if (!checkbox) return {ok: false, reason: 'no checkbox on first node'};
+      const beforeTrue = grok.shell.t.filter.trueCount;
       checkbox.click();
-      await new Promise(r => setTimeout(r, 3000));
+      // The caller asserts the row set narrowed; wait for that, capped at the sleep replaced.
+      const filterDeadline = Date.now() + 3000;
+      while (Date.now() < filterDeadline && grok.shell.t.filter.trueCount >= beforeTrue)
+        await new Promise(r => setTimeout(r, 100));
       return {ok: true};
     });
     expect((click as any).ok).toBe(true);
@@ -95,8 +111,12 @@ test('Chem: Scaffold Tree add + generate + node-click filter + toolbox + propert
   await softStep('Step 9: Open property panel via viewer click + Properties...', async () => {
     await page.evaluate(async () => {
       const viewer = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Scaffold Tree');
-      grok.shell.o = viewer;
-      await new Promise(r => setTimeout(r, 2000));
+      const deadline = Date.now() + 2000;
+      while (Date.now() < deadline) {
+        grok.shell.o = viewer;
+        await new Promise(r => setTimeout(r, 100));
+        if (document.querySelectorAll('.d4-accordion-pane-header').length > 0) break;
+      }
     });
 
     const hasPanes = await page.evaluate(() =>

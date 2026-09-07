@@ -1,9 +1,7 @@
 import {expect, Page} from '@playwright/test';
 import {test} from '../shared-page';
-import {
-  loginToDatagrok, loginAsSecondUser, getSecondUserLogin,
-  specTestOptions, softStep, stepErrors, baseUrl,
-} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors, baseUrl} from '../spec-login';
+import {recipientPage, secondUserLogin} from './_actors';
 
 test.use(specTestOptions);
 
@@ -118,7 +116,10 @@ test('Sharing & Permissions — Script', async ({page}) => {
     grok.shell.windows.simpleMode = true;
   });
 
-  const recipientLogin = await getSecondUserLogin();
+  const recipientLogin = await secondUserLogin();
+  const rp = await recipientPage(page);
+  await waitForDapiReady(rp);
+  await waitForIdentity(rp, recipientLogin);
   const scriptId = await createScript(page, SCRIPT_SRC, SCRIPT_NAME);
   await setCurrentObjectToScript(page, SCRIPT_NAME);
 
@@ -141,7 +142,10 @@ test('Sharing & Permissions — Script', async ({page}) => {
     await expect(dlg.locator('.d4-dialog-title')).toContainText('Share');
     await expect(page.locator('input[placeholder="User, group, or email"]')).toBeVisible();
     await expect(page.locator('[name="div-share-selector"]')).toBeVisible();
-    await expect(page.locator('[name="label-Advanced-editor..."]')).toBeVisible();
+    // GROK-20322 removed the Share dialog's "Advanced editor..." link
+    // (core/client/xamgle/lib/src/commands/file/share_dataset.dart); the grant list the
+    // PermissionsEditor renders is what the dialog must show now.
+    await expect(page.locator('.d4-dialog .grok-permissions')).toBeVisible();
     await expect(page.locator('[name="button-OK"]')).toBeVisible();
     await expect(page.locator('[name="button-CANCEL"]')).toBeVisible();
 
@@ -244,13 +248,10 @@ test('Sharing & Permissions — Script', async ({page}) => {
   });
 
   await softStep('Block D.2: Recipient sees the shared script under Shared with me', async () => {
-    await loginAsSecondUser(page);
-    await waitForDapiReady(page); 
-    await waitForIdentity(page, recipientLogin); 
+    await waitForIdentity(rp, recipientLogin);
 
-    await page.locator('[name="tree-My-stuff---Shared-with-me"]').click({timeout: 8_000}).catch(() => {});
-    await page.waitForTimeout(1500);
-    const reachable = await page.evaluate(async (sName) => {
+    await rp.locator('[name="tree-My-stuff---Shared-with-me"]').click({timeout: 8_000}).catch(() => {});
+    const reachable = await rp.evaluate(async (sName) => {
       const s = await grok.dapi.scripts.filter(`name = "${sName}"`).first();
       return {found: !!s};
     }, SCRIPT_NAME);
@@ -259,7 +260,7 @@ test('Sharing & Permissions — Script', async ({page}) => {
 
   await softStep('Block D.3: Recipient has View (and Execute) on the shared script', async () => {
 
-    const canView = await pollPermission(page, SCRIPT_NAME, 'View', true);
+    const canView = await pollPermission(rp, SCRIPT_NAME, 'View', true);
     expect(canView).toBe(true); 
 
     test.info().annotations.push({type: 'remark',
@@ -270,8 +271,8 @@ test('Sharing & Permissions — Script', async ({page}) => {
 
   await softStep('Block E: Recipient lacks Edit / Delete / Share on the shared script', async () => {
 
-    const viewReady = await pollPermission(page, SCRIPT_NAME, 'View', true);
-    const checks = await page.evaluate(async (sName) => {
+    const viewReady = await pollPermission(rp, SCRIPT_NAME, 'View', true);
+    const checks = await rp.evaluate(async (sName) => {
       const s = await grok.dapi.scripts.filter(`name = "${sName}"`).first();
       if (!s) return {found: false};
       const canEdit = await grok.dapi.permissions.check(s, 'Edit');
@@ -287,9 +288,7 @@ test('Sharing & Permissions — Script', async ({page}) => {
   });
 
   await softStep('Block F.1-2: Owner revokes recipient grant; pane shows owner-only', async () => {
-    await loginToDatagrok(page); 
-    await waitForDapiReady(page); 
-    await waitForIdentity(page, ownerLogin); 
+    await waitForIdentity(page, ownerLogin);
     const revoked = await page.evaluate(async (args) => {
       const {sName, login} = args;
       const s = await grok.dapi.scripts.filter(`name = "${sName}"`).first();
@@ -306,17 +305,13 @@ test('Sharing & Permissions — Script', async ({page}) => {
   });
 
   await softStep('Block F.3-4: Recipient can no longer view/run the script (access revoked)', async () => {
-    await loginAsSecondUser(page);
-    await waitForDapiReady(page); 
-    await waitForIdentity(page, recipientLogin); 
+    await waitForIdentity(rp, recipientLogin);
 
-    const canView = await pollPermission(page, SCRIPT_NAME, 'View', false);
+    const canView = await pollPermission(rp, SCRIPT_NAME, 'View', false);
     expect(canView).toBe(false);
   });
 
-  await loginToDatagrok(page);
-  await waitForDapiReady(page); 
-  await waitForIdentity(page, ownerLogin); 
+  await waitForIdentity(page, ownerLogin);
   await page.evaluate(async (sName) => {
     try {
       const s = await grok.dapi.scripts.filter(`name = "${sName}"`).first();

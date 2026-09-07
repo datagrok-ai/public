@@ -43,7 +43,7 @@ test('Filters — a saved filter state is not offered on a mismatched table', as
         (grok.shell.tv.root as HTMLElement)
           .querySelectorAll('[name="viewer-Filters"] .d4-filter-group-header').length), {
         timeout: 20_000,
-        intervals: [500, 1000, 2000],
+        intervals: [30, 60, 120, 250, 500, 1000],
         message: 'the beer table view never grew a Filter Panel to read the Save or Apply submenu from',
       }).toBe(1);
       const leaves = await readSaveOrApplyLeaves(page);

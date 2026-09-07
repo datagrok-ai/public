@@ -15,57 +15,114 @@ declare const grok: any;
 const demogPath = 'System:DemoFiles/demog.csv';
 const FORMULA_REGION_CAPTIONS = ['Region - Formula Lines', 'Formula Region', 'Region', 'Formula - Region'];
 
-const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-const VISIBLE_LABELS = '.d4-menu-popup:visible .d4-menu-item-label';
-const menuLabel = (page: Page, text: string) =>
-  page.locator(VISIBLE_LABELS, {hasText: new RegExp(`^${escapeRe(text)}$`)});
-const formulaLinesDialog = (page: Page) => page.locator('.d4-dialog .d4-dialog-title', {hasText: 'Formula Lines'});
 const canvasOf = (viewerType: string) => `[name="viewer-${viewerType.replace(/\s+/g, '-')}"] canvas`;
 
 // Menu.show removes the previous popup as it appends the new one, so the popup count is no
 // signal; the popups already there are marked and a visible unmarked one is awaited.
-const NEW_POPUP = '.d4-menu-popup:visible:not([data-seen])';
+//
+// The popup and menu reads all run in one in-page bundle rather than through Playwright's
+// `:visible` selector engine, which recomputes layout for every popup the platform leaves in
+// the tree — 87 locator calls were 15s of the 38s this spec took.
+async function installPopupHelpers(page: Page) {
+  await page.evaluate(() => {
+    const w = window as any;
+    if (w.__arPopups) return;
+    w.__arPopups = () => Array.from(document.querySelectorAll('.d4-menu-popup'))
+      .filter((p: any) => p.offsetParent !== null);
+    w.__arMark = () => {
+      for (const p of Array.from(document.querySelectorAll('.d4-menu-popup'))) p.setAttribute('data-seen', '1');
+    };
+    w.__arNewPopup = (ms: number) => w.__poll(
+      () => Array.from(document.querySelectorAll('.d4-menu-popup:not([data-seen])'))
+        .some((p: any) => p.offsetParent !== null), (ok: boolean) => ok, ms, 25);
+    w.__arLabels = () => w.__arPopups()
+      .flatMap((p: Element) => Array.from(p.querySelectorAll('.d4-menu-item-label')))
+      .map((l: Element) => (l.textContent ?? '').trim());
+    // locator.evaluate auto-waited for the item; the popup is shown before its rows lay out,
+    // so the wait has to be kept when the click moves in-page
+    w.__arClickItem = async (text: string) => {
+      const find = () => w.__arPopups()
+        .flatMap((p: Element) => Array.from(p.querySelectorAll('.d4-menu-item-label')))
+        .find((l: any) => (l.textContent ?? '').trim() === text);
+      const label = await w.__poll(find, (l: any) => !!l, 2000, 25);
+      label?.closest('.d4-menu-item')?.click();
+      return !!label;
+    };
+    // a dialog title sits in a fixed-positioned host, where offsetParent is null even when it
+    // is on screen, so visibility is read off the client rects
+    w.__arDialog = (ms: number) => w.__poll(
+      () => Array.from(document.querySelectorAll('.d4-dialog .d4-dialog-title'))
+        .some((t: any) => t.getClientRects().length > 0 && (t.textContent ?? '').includes('Formula Lines')),
+      (ok: boolean) => ok, ms, 25);
+    w.__arRect = (sel: string, i: number) => {
+      const el = document.querySelectorAll(sel)[i];
+      if (!el) return null;
+      const r = el.getBoundingClientRect();
+      return {x: r.x, y: r.y, width: r.width, height: r.height};
+    };
+  });
+}
+
+async function awaitNewPopup(page: Page, timeoutMs = 5000) {
+  if (!await page.evaluate((ms) => (window as any).__arNewPopup(ms), timeoutMs))
+    throw new Error('no new menu popup opened');
+}
 
 async function openPopup(page: Page, act: () => Promise<void>) {
-  await page.evaluate(() => {
-    for (const p of Array.from(document.querySelectorAll('.d4-menu-popup'))) p.setAttribute('data-seen', '1');
-  });
+  await page.evaluate(() => (window as any).__arMark());
   await act();
-  await page.locator(NEW_POPUP).first().waitFor({timeout: 5000});
+  await awaitNewPopup(page);
 }
 
 // A context menu whose item opened the Formula Lines dialog stays open under the dialog, at
 // the very point the next right-click lands on, so the trusted click hits the popup instead of
 // the canvas: close it first.
-async function dismissPopups(page: Page) {
-  const visible = page.locator('.d4-menu-popup:visible');
-  if (await visible.count() === 0) return;
+async function dismissPopups(page: Page, alreadyVisible?: boolean) {
+  const visible = alreadyVisible ?? await page.evaluate(() => (window as any).__arPopups().length > 0);
+  if (!visible) return;
   await page.keyboard.press('Escape');
-  await visible.first().waitFor({state: 'hidden', timeout: 2000}).catch(() => page.evaluate(() => {
-    for (const p of Array.from(document.querySelectorAll('.d4-menu-popup'))) p.remove();
-  }));
+  const gone = await page.evaluate(() => (window as any).__poll(
+    () => (window as any).__arPopups().length === 0, (ok: boolean) => ok, 2000, 25));
+  if (!gone)
+    await page.evaluate(() => {
+      for (const p of Array.from(document.querySelectorAll('.d4-menu-popup'))) p.remove();
+    });
+}
+
+async function canvasBox(page: Page, viewerType: string, index = 0) {
+  const box = await page.evaluate(({sel, i}) => (window as any).__arRect(sel, i),
+    {sel: canvasOf(viewerType), i: index});
+  if (!box) throw new Error(`no element: ${canvasOf(viewerType)}`);
+  return box as {x: number; y: number; width: number; height: number};
 }
 
 // a synthetic contextmenu event bypasses the Dart canvas hit-test and always opens the
 // whole-viewer menu; only a trusted click resolves the axis/region under the pointer
 async function rightClick(page: Page, viewerType: string, dx = 100, dy = 100) {
-  const selector = canvasOf(viewerType);
-  const box = await page.locator(selector).first().boundingBox();
-  if (!box) throw new Error(`no element: ${selector}`);
-  await dismissPopups(page);
-  await openPopup(page, () => page.mouse.click(box.x + dx, box.y + dy, {button: 'right'}));
+  const state = await page.evaluate((sel) => {
+    const w = window as any;
+    const open = w.__arPopups().length > 0;
+    w.__arMark();
+    return {rect: w.__arRect(sel, 0), open};
+  }, canvasOf(viewerType));
+  if (!state.rect) throw new Error(`no element: ${canvasOf(viewerType)}`);
+  await dismissPopups(page, state.open);
+  await page.mouse.click(state.rect.x + dx, state.rect.y + dy, {button: 'right'});
+  await awaitNewPopup(page);
 }
 
 async function clickMenuItem(page: Page, text: string) {
-  await menuLabel(page, text).first().evaluate((el) => (el.closest('.d4-menu-item') as HTMLElement).click());
+  if (!await page.evaluate((t) => (window as any).__arClickItem(t), text))
+    throw new Error(`no visible menu item "${text}"`);
 }
 
 async function menuLabels(page: Page): Promise<string[]> {
-  return page.evaluate(() =>
-    Array.from(document.querySelectorAll('.d4-menu-popup'))
-      .filter((p) => (p as HTMLElement).offsetParent !== null)
-      .flatMap((p) => Array.from(p.querySelectorAll('.d4-menu-item-label')))
-      .map((l) => (l.textContent ?? '').trim()));
+  return page.evaluate(() => (window as any).__arLabels() as string[]);
+}
+
+async function awaitFormulaDialog(page: Page, timeoutMs = 5000) {
+  if (!await page.evaluate((ms) => (window as any).__arDialog(ms), timeoutMs))
+    throw new Error('the Formula Lines dialog did not open');
 }
 
 async function noPopups(page: Page) {
@@ -167,10 +224,12 @@ async function addFormulaRegionInDialog(page: Page) {
 // on a 500 ms product timer; the dialog has to be waited for and dismissed or it sits over the
 // next step.
 async function axisAnnotationsItem(page: Page, leaf: string) {
-  await page.evaluate((l) => (window as any).__menuLeaf('Annotations', l), leaf);
-  const dialog = formulaLinesDialog(page);
-  await dialog.waitFor({timeout: 2000}).catch(() => {});
-  if (await dialog.count() > 0) {
+  const opened = await page.evaluate(async (l) => {
+    const w = window as any;
+    await w.__menuLeaf('Annotations', l);
+    return w.__arDialog(2000);
+  }, leaf);
+  if (opened) {
     await page.locator('.d4-dialog [name="button-OK"]').click();
     await page.waitForFunction(() => document.querySelectorAll('.d4-dialog').length === 0, null, {timeout: 5000});
   }
@@ -190,6 +249,7 @@ test('Annotation regions scenario', async ({page}) => {
 
   await openDatagrok(page);
   await v.openTable(page, {path: demogPath, semTypeTimeoutMs: 1000});
+  await installPopupHelpers(page);
 
   await softStep('1.1 Draw rectangle region + edit properties', async () => {
     await v.addViewerByIcon(page, 'scatter-plot', 'Scatter-plot', 15_000, 'Scatter plot');
@@ -200,10 +260,10 @@ test('Annotation regions scenario', async ({page}) => {
     await rightClick(page, 'Scatter plot');
     await startDrawing(page, 'Scatter plot', 300);
 
-    const box = (await page.locator('[name="viewer-Scatter-plot"] canvas').first().boundingBox())!;
+    const box = await canvasBox(page, 'Scatter plot');
     await dragRect(page, [box.x + box.width * 0.3, box.y + box.height * 0.3], [box.x + box.width * 0.6, box.y + box.height * 0.6]);
 
-    await formulaLinesDialog(page).waitFor({timeout: 5000});
+    await awaitFormulaDialog(page);
     await page.locator('[name="input-host-Title"] input').fill('My Rect Region');
     await page.locator('[name="input-host-Description"] textarea').fill('Rectangle description');
     await page.locator('[name="input-host-Region-Color"] input').fill('#ff8800');
@@ -227,7 +287,7 @@ test('Annotation regions scenario', async ({page}) => {
     await rightClick(page, 'Scatter plot');
     await startDrawing(page, 'Scatter plot', 300);
 
-    const box = (await page.locator('[name="viewer-Scatter-plot"] canvas').first().boundingBox())!;
+    const box = await canvasBox(page, 'Scatter plot');
     await dragPolygon(page, [
       [box.x + box.width * 0.65, box.y + box.height * 0.2],
       [box.x + box.width * 0.85, box.y + box.height * 0.3],
@@ -236,7 +296,7 @@ test('Annotation regions scenario', async ({page}) => {
       [box.x + box.width * 0.65, box.y + box.height * 0.4],
     ]);
 
-    await formulaLinesDialog(page).waitFor({timeout: 5000});
+    await awaitFormulaDialog(page);
     await page.locator('.d4-dialog [name="button-CANCEL"]').click();
   });
 
@@ -309,7 +369,7 @@ test('Annotation regions scenario', async ({page}) => {
   });
 
   await softStep('4.1 Right-click region → Edit opens dialog', async () => {
-    const box = (await page.locator('[name="viewer-Scatter-plot"] canvas').first().boundingBox())!;
+    const box = await canvasBox(page, 'Scatter plot');
     await rightClick(page, 'Scatter plot', box.width * 0.45, box.height * 0.45);
     const hasEdit = (await menuLabels(page)).includes('Edit');
     console.log(`[4.1] "Edit" menu item found: ${hasEdit}`);
@@ -321,7 +381,7 @@ test('Annotation regions scenario', async ({page}) => {
   await softStep('4.2 Modify region via dialog: reopen and edit Outline Width / Opacity / Header Color', async () => {
     await rightClick(page, 'Scatter plot');
     await clickMenuItem(page, 'Formula Lines...');
-    await formulaLinesDialog(page).waitFor({timeout: 5000});
+    await awaitFormulaDialog(page);
 
     const title = page.locator('.d4-dialog [name="input-host-Title"] input');
     const gridBox = (await page.locator('.d4-dialog .d4-grid').boundingBox())!;
@@ -361,7 +421,7 @@ test('Annotation regions scenario', async ({page}) => {
     await page.locator('[name="viewer-Line-chart"] canvas').first().waitFor();
     await v.setViewerProps(page, 'Line chart', [{set: {multiAxis: true}}]);
     await rightClick(page, 'Line chart');
-    expect(await menuLabel(page, 'Draw Annotation Region').count()).toBe(0);
+    expect((await menuLabels(page)).filter((l) => l === 'Draw Annotation Region').length).toBe(0);
     await page.keyboard.press('Escape');
   });
 
@@ -369,13 +429,13 @@ test('Annotation regions scenario', async ({page}) => {
     await v.setViewerProps(page, 'Line chart', [{set: {multiAxis: false, yColumnNames: ['HEIGHT']}}]);
 
     await rightClick(page, 'Line chart');
-    expect(await menuLabel(page, 'Draw Annotation Region').count()).toBeGreaterThan(0);
+    expect((await menuLabels(page)).filter((l) => l === 'Draw Annotation Region').length).toBeGreaterThan(0);
     await startDrawing(page, 'Line chart', 300);
 
-    const box = (await page.locator('[name="viewer-Line-chart"] canvas').first().boundingBox())!;
+    const box = await canvasBox(page, 'Line chart');
     await dragRect(page, [box.x + box.width * 0.25, box.y + box.height * 0.25], [box.x + box.width * 0.55, box.y + box.height * 0.55]);
 
-    await formulaLinesDialog(page).waitFor({timeout: 5000});
+    await awaitFormulaDialog(page);
     await page.locator('[name="input-host-Title"] input').fill('LC Rect Region');
     await page.locator('.d4-dialog [name="button-OK"]').click();
 
@@ -384,7 +444,7 @@ test('Annotation regions scenario', async ({page}) => {
 
     await rightClick(page, 'Line chart');
     await clickMenuItem(page, 'Formula Lines...');
-    await formulaLinesDialog(page).waitFor({timeout: 5000});
+    await awaitFormulaDialog(page);
     await addFormulaRegionInDialog(page);
 
     const afterFormula = (await v.pollValue(() => regions(page, 'Line chart'), (r) => r.length > afterRect, 500)).length;
@@ -404,10 +464,10 @@ test('Annotation regions scenario', async ({page}) => {
     await rightClick(page, 'Density plot');
     await startDrawing(page, 'Density plot', 600);
 
-    const box = (await page.locator('[name="viewer-Density-plot"] canvas').first().boundingBox())!;
+    const box = await canvasBox(page, 'Density plot');
     await dragRect(page, [box.x + box.width * 0.3, box.y + box.height * 0.3], [box.x + box.width * 0.6, box.y + box.height * 0.6]);
 
-    await formulaLinesDialog(page).waitFor({timeout: 5000});
+    await awaitFormulaDialog(page);
     await page.locator('.d4-dialog [name="button-CANCEL"]').click();
 
     expect((await regions(page, 'Density plot')).length).toBeGreaterThan(0);
@@ -418,7 +478,7 @@ test('Annotation regions scenario', async ({page}) => {
     await rightClick(page, 'Density plot');
     await startDrawing(page, 'Density plot', 300);
 
-    const box = (await page.locator('[name="viewer-Density-plot"] canvas').first().boundingBox())!;
+    const box = await canvasBox(page, 'Density plot');
     await dragPolygon(page, [
       [box.x + box.width * 0.65, box.y + box.height * 0.2],
       [box.x + box.width * 0.85, box.y + box.height * 0.3],
@@ -427,7 +487,7 @@ test('Annotation regions scenario', async ({page}) => {
       [box.x + box.width * 0.65, box.y + box.height * 0.4],
     ]);
 
-    await formulaLinesDialog(page).waitFor({timeout: 5000});
+    await awaitFormulaDialog(page);
     await page.locator('.d4-dialog [name="button-CANCEL"]').click();
   });
 
@@ -461,11 +521,11 @@ test('Annotation regions scenario', async ({page}) => {
     await rightClick(page, 'Box plot');
     await startDrawing(page, 'Box plot', 800);
 
-    const ob = (await page.locator('[name="viewer-Box-plot"] canvas').nth(1).boundingBox())!;
+    const ob = await canvasBox(page, 'Box plot', 1);
     const cx = ob.x + ob.width * 0.5;
     await dragRect(page, [cx - 5, ob.y + ob.height * 0.30], [cx + 5, ob.y + ob.height * 0.55], 8);
 
-    await formulaLinesDialog(page).waitFor({timeout: 8000});
+    await awaitFormulaDialog(page, 8000);
     await page.locator('.d4-dialog [name="button-OK"]').click();
 
     const region = (await regions(page, 'Box plot'))[0];
@@ -478,7 +538,7 @@ test('Annotation regions scenario', async ({page}) => {
   await softStep('8.3 Box Plot — Y axis Annotations group → Add Line creates ${AGE} = q2', async () => {
     const before = (await formulaLines(page, 'Box plot')).length;
 
-    const bpBox = (await page.locator('[name="viewer-Box-plot"] canvas').first().boundingBox())!;
+    const bpBox = await canvasBox(page, 'Box plot');
     await rightClick(page, 'Box plot', bpBox.width * 0.05, bpBox.height * 0.5);
     await axisAnnotationsItem(page, 'Add Line');
 
@@ -490,7 +550,7 @@ test('Annotation regions scenario', async ({page}) => {
   });
 
   await softStep('8.4 Box Plot — X axis (categorical) has NO Annotations group', async () => {
-    const box = (await page.locator('[name="viewer-Box-plot"] canvas').first().boundingBox())!;
+    const box = await canvasBox(page, 'Box plot');
     await rightClick(page, 'Box plot', box.width / 2, box.height - 12);
     expect((await menuLabels(page)).includes('Annotations')).toBe(false);
     await page.keyboard.press('Escape');
@@ -515,11 +575,11 @@ test('Annotation regions scenario', async ({page}) => {
     await rightClick(page, 'Histogram');
     await startDrawing(page, 'Histogram', 500);
 
-    const box = (await page.locator('[name="viewer-Histogram"] canvas').first().boundingBox())!;
+    const box = await canvasBox(page, 'Histogram');
     const cy = box.y + box.height * 0.5;
     await dragRect(page, [box.x + box.width * 0.35, cy - 5], [box.x + box.width * 0.65, cy + 5], 4);
 
-    await formulaLinesDialog(page).waitFor({timeout: 8000});
+    await awaitFormulaDialog(page, 8000);
     await page.locator('.d4-dialog [name="button-OK"]').click();
 
     const region = (await regions(page, 'Histogram'))[0];
@@ -531,7 +591,7 @@ test('Annotation regions scenario', async ({page}) => {
 
   await softStep('9.3 Histogram — X axis Annotations group → Add Line creates vertical line', async () => {
     const before = (await formulaLines(page, 'Histogram')).length;
-    const box = (await page.locator('[name="viewer-Histogram"] canvas').first().boundingBox())!;
+    const box = await canvasBox(page, 'Histogram');
 
     await rightClick(page, 'Histogram', box.width / 2, box.height - 18);
     await axisAnnotationsItem(page, 'Add Line');
@@ -564,11 +624,11 @@ test('Annotation regions scenario', async ({page}) => {
     await rightClick(page, 'Bar chart');
     await startDrawing(page, 'Bar chart', 500);
 
-    const box = (await page.locator('[name="viewer-Bar-chart"] canvas').first().boundingBox())!;
+    const box = await canvasBox(page, 'Bar chart');
     const cx = box.x + box.width * 0.5;
     await dragRect(page, [cx - 5, box.y + box.height * 0.25], [cx + 5, box.y + box.height * 0.55], 4);
 
-    await formulaLinesDialog(page).waitFor({timeout: 8000});
+    await awaitFormulaDialog(page, 8000);
     await page.locator('.d4-dialog [name="button-OK"]').click();
 
     const region = (await regions(page, 'Bar chart'))[0];
@@ -614,7 +674,7 @@ test('Annotation regions scenario', async ({page}) => {
     await page.locator('[name="viewer-Histogram"] canvas').first().waitFor({timeout: 10_000});
     await v.setViewerProps(page, 'Histogram', [{set: {valueColumnName: 'AGE'}}]);
 
-    const box = (await page.locator('[name="viewer-Histogram"] canvas').first().boundingBox())!;
+    const box = await canvasBox(page, 'Histogram');
     const before = (await formulaLines(page, 'Histogram')).length;
     await rightClick(page, 'Histogram', box.width / 2, box.height - 18);
     await axisAnnotationsItem(page, 'Add Band');
@@ -629,7 +689,7 @@ test('Annotation regions scenario', async ({page}) => {
 
   await softStep('11.2 Histogram axis Add Region creates formula annotationRegion', async () => {
     const before = (await regions(page, 'Histogram')).length;
-    const box = (await page.locator('[name="viewer-Histogram"] canvas').first().boundingBox())!;
+    const box = await canvasBox(page, 'Histogram');
     await rightClick(page, 'Histogram', box.width / 2, box.height - 18);
     await axisAnnotationsItem(page, 'Add Region');
 

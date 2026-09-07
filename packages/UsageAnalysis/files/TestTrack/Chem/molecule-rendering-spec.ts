@@ -5,6 +5,7 @@ import {expect, Page} from '@playwright/test';
 import {test} from '../shared-page';
 import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu, waitForMolecule} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
+import {settleGridPaint} from './chem-fast-helpers';
 
 declare const grok: any;
 declare const DG: any;
@@ -35,7 +36,7 @@ async function openChemTable(page: Page, path: string): Promise<void> {
     await page.waitForTimeout(200);
   }
   await page.locator('[name="viewer-Grid"] canvas').first().waitFor({timeout: 30_000, state: 'attached'});
-  await page.waitForTimeout(4000);
+  await settleGridPaint(page, 4000);
 }
 
 // Separates a painted canvas from a blank or unreadable one, and nothing finer:

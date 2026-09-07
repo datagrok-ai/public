@@ -111,9 +111,9 @@ async function createColumnGroup(
       if (gl && gl.getBoundingClientRect().width > 0) return gl;
       // the Actions pane may come collapsed with its links already rendered; expand it, once per settle
       const hdr = document.querySelector('.grok-prop-panel [name="pane-Actions"] .d4-accordion-pane-header') as HTMLElement | null;
-      if (hdr && Date.now() - lastExpand > 1500) { lastExpand = Date.now(); click(hdr); }
+      if (hdr && Date.now() - lastExpand > 500) { lastExpand = Date.now(); click(hdr); }
       return null;
-    }, (e: any) => !!e, 11_000, 450);
+    }, (e: any) => !!e, 11_000, 120);
     if (!link) {
       const cur = grok.shell.o;
       return 'no Group columns link; shell.o=' + (Array.isArray(cur) ? cur.map((c: any) => c?.name).join('+') : String(cur?.name ?? cur)) +
@@ -139,20 +139,22 @@ async function createColumnGroup(
 
   await synthClick(page, '.d4-dialog [name="div-Color"] .d4-color-bar');
   await page.locator('.d4-dialog[name="dialog-Color"]').waitFor({timeout: 5000});
-  await page.evaluate((rgb) => {
+  // swatch and OK share one evaluate: the click handler is synchronous, and the frames between
+  // them are what the 300ms sleep here was standing in for
+  await page.evaluate(async (rgb) => {
+    const click = (el: HTMLElement) => {
+      const r = el.getBoundingClientRect();
+      const o = {bubbles: true, cancelable: true, clientX: r.x + r.width / 2, clientY: r.y + r.height / 2, button: 0} as any;
+      for (const t of ['mousedown', 'mouseup', 'click']) el.dispatchEvent(new MouseEvent(t, o));
+    };
     const cd = document.querySelector('.d4-dialog[name="dialog-Color"]') as HTMLElement;
     const sw = (Array.from(cd.querySelectorAll('.d4-color-bar')) as HTMLElement[])
       .find((s) => getComputedStyle(s).backgroundColor === rgb);
-    if (sw) {
-      const r = sw.getBoundingClientRect();
-      const o = {bubbles: true, cancelable: true, clientX: r.x + r.width / 2, clientY: r.y + r.height / 2, button: 0} as any;
-      sw.dispatchEvent(new MouseEvent('mousedown', o));
-      sw.dispatchEvent(new MouseEvent('mouseup', o));
-      sw.dispatchEvent(new MouseEvent('click', o));
-    }
+    if (sw) click(sw);
+    await new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(res as any)));
+    const ok = cd.querySelector('[name="button-OK"]') as HTMLElement | null;
+    if (ok) click(ok);
   }, swatchRgb);
-  await page.waitForTimeout(300);
-  await synthClick(page, '.d4-dialog[name="dialog-Color"] [name="button-OK"]');
   await page.locator('.d4-dialog[name="dialog-Color"]').waitFor({state: 'detached', timeout: 2000}).catch(() => {});
 
   await synthClick(page, '.d4-dialog [name="input-Group"]');
@@ -274,8 +276,8 @@ test('Grid — Dialogs, Hamburger Menu, and Column Groups', async ({page}) => {
       await page.locator('[name="dialog-Order-or-Hide-Columns"]').waitFor({timeout: 6000});
       await openTypeFilterMenu(page);
       await driveTypeFilter(page, 'string');
-      // the error window after the type filter is the assertion
-      await page.waitForTimeout(600);
+      // the error window after the type filter is the assertion; the dialog's own repaint closes it
+      await v.waitForGridPainted(page, {gapMs: 150, capMs: 600});
 
       await closeColumnsDialog(page);
       expect(errors.list.slice(before)).toEqual([]);
@@ -324,7 +326,7 @@ test('Grid — Dialogs, Hamburger Menu, and Column Groups', async ({page}) => {
         return {ageCCType: age.getTag('.color-coding-type'), colorsPanePresent: !!paneHost};
       });
       // the error window after the panel sync is the assertion
-      await page.waitForTimeout(300);
+      await v.waitForGridPainted(page, {gapMs: 100, capMs: 300});
       expect(r.ageCCType).toBe('Linear');
       expect(r.colorsPanePresent).toBe(true);
       const syncErrs = errors.list.slice(before).filter((e) => /color|coding|panel|grid/i.test(e));
@@ -366,11 +368,11 @@ test('Grid — Dialogs, Hamburger Menu, and Column Groups', async ({page}) => {
           overlay.dispatchEvent(new MouseEvent('mousedown', o));
           overlay.dispatchEvent(new MouseEvent('mouseup', o));
           overlay.dispatchEvent(new MouseEvent('click', o));
-          await new Promise((r) => setTimeout(r, 300));
+          await (window as any).__quiet('viewer:Grid.onAfterDrawContent', 60, 300);
         }
       }, g.OVERLAY);
       // the error window after the clicks is the assertion
-      await page.waitForTimeout(400);
+      await v.waitForGridPainted(page, {gapMs: 120, capMs: 400});
       expect(errors.list.slice(before)).toEqual([]);
     });
 
@@ -387,10 +389,10 @@ test('Grid — Dialogs, Hamburger Menu, and Column Groups', async ({page}) => {
         overlay.dispatchEvent(new MouseEvent('mousedown', o));
         overlay.dispatchEvent(new MouseEvent('mouseup', o));
         overlay.dispatchEvent(new MouseEvent('click', o));
-        await new Promise((r) => setTimeout(r, 300));
+        await (window as any).__quiet('viewer:Grid.onAfterDrawContent', 60, 300);
       }, g.OVERLAY);
       // the error window after the click is the assertion
-      await page.waitForTimeout(400);
+      await v.waitForGridPainted(page, {gapMs: 120, capMs: 400});
       expect(errors.list.slice(before)).toEqual([]);
     });
 
@@ -406,11 +408,11 @@ test('Grid — Dialogs, Hamburger Menu, and Column Groups', async ({page}) => {
         const df = grok.shell.tv.dataFrame;
         grok.shell.o = [df.col('AGE'), df.col('HEIGHT')];
       });
-      await page.waitForTimeout(500);
+      await v.waitForGridPainted(page, {gapMs: 120, capMs: 500});
       await g.focusGrid(page);
       await page.keyboard.press('Escape');
       // the error window after Esc is the assertion
-      await page.waitForTimeout(500);
+      await v.waitForGridPainted(page, {gapMs: 120, capMs: 500});
       expect(errors.list.slice(before)).toEqual([]);
     });
   } finally {

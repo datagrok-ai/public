@@ -1,5 +1,6 @@
 import {test as base, Page} from '@playwright/test';
 import {installLedger, ledgerAnnotations, openDatagrok, setLane, specTestOptions, stepErrors} from './spec-login';
+import {drainPendingDeletes} from './helpers/projects';
 
 /**
  * A Datagrok that is booted once per worker instead of once per spec.
@@ -85,6 +86,9 @@ export async function resetShell(page: Page): Promise<void> {
     try { for (const k of Object.keys(localStorage)) if (k.startsWith('Accordion:')) localStorage.removeItem(k); } catch (_) {}
 
     try { grok.shell.windows.simpleMode = false; } catch (_) {}
+    // with the context panel hidden, `grok.shell.o = viewer` is ignored and no property grid is
+    // built, which is how a spec that hides it starved the next one's property-panel step
+    try { grok.shell.windows.showContextPanel = true; } catch (_) {}
     try { grok.shell.settings.showFiltersIconsConstantly = false; } catch (_) {}
     try { grok.shell.o = null; } catch (_) {}
     document.body.classList.remove('selenium');
@@ -113,6 +117,7 @@ function laneTest(lane: 'local' | 'server') {
     shared: [async ({}, use) => {
       const holder: {page: Page | null; dirty: boolean} = {page: null, dirty: true};
       await use(holder);
+      if (holder.page) await drainPendingDeletes(holder.page);
       await holder.page?.context().close().catch(() => {});
     }, {scope: 'worker'}],
 
@@ -135,10 +140,17 @@ function laneTest(lane: 'local' | 'server') {
       shared.page.setDefaultNavigationTimeout(specTestOptions.navigationTimeout);
       stepErrors.length = 0;
       // the page is clean unless the previous test's teardown never completed
-      if (shared.dirty) await timed('fixture: revive before', () => revive(shared.page!));
+      if (shared.dirty) await timed('fixture: revive before', () => revive(shared.page!, true));
       shared.dirty = true;
-      await use(shared.page);
-      await timed('fixture: revive after', () => revive(shared.page!));
+      // the error drain after the test only earns its 300ms quiet window when the test produced
+      // errors; a clean test had nothing in flight to wait out (155 x 0.3s in the final run)
+      let noisy = false;
+      const mark = (m: any) => { if (typeof m?.type !== 'function' || m.type() === 'error') noisy = true; };
+      shared.page.on('console', mark);
+      shared.page.on('pageerror', mark);
+      try { await use(shared.page); }
+      finally { shared.page.off('console', mark); shared.page.off('pageerror', mark); }
+      await timed('fixture: revive after', () => revive(shared.page!, noisy));
       shared.dirty = false;
       for (const a of ledgerAnnotations((shared.page as any).__ledger)) base.info().annotations.push(a);
     },
@@ -165,10 +177,10 @@ export const localTest = laneTest('local');
  * throws inside the fixture, and every remaining test in the file fails on a corpse. That
  * is the cost sharing adds over a per-test context, so it has to be paid back here.
  */
-async function revive(page: Page): Promise<void> {
+async function revive(page: Page, drain: boolean): Promise<void> {
   try {
     await resetShell(page);
-    await drainErrors(page);
+    if (drain) await drainErrors(page);
     return;
   } catch (_) { /* fall through to a re-boot */ }
   await openDatagrok(page).catch(() => {});

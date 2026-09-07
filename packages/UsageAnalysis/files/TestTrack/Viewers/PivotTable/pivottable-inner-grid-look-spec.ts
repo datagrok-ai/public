@@ -135,6 +135,6 @@ test('Pivot Table — Inner grid look and viewer columns', async ({page}) => {
   });
 
   page.off('console', onConsole);
-  await v.cleanupShell(page);
+  await v.closeAllAndWait(page);
   v.finishSpec();
 });

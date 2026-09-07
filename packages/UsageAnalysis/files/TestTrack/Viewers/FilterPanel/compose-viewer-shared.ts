@@ -49,7 +49,7 @@ export async function zoomScatterPlot(page: Page, rect: {x: number; y: number; w
   const x2 = rect.x + rect.w * 0.70, y2 = rect.y + rect.h * 0.70;
   await page.mouse.move(x1, y1);
   await page.mouse.down();
-  await page.mouse.move((x1 + x2) / 2, (y1 + y2) / 2, {steps: 6});
-  await page.mouse.move(x2, y2, {steps: 8});
+  await page.mouse.move((x1 + x2) / 2, (y1 + y2) / 2, {steps: 2});
+  await page.mouse.move(x2, y2, {steps: 3});
   await page.mouse.up();
 }

@@ -1,9 +1,7 @@
 import {expect, Page} from '@playwright/test';
 import {test} from '../shared-page';
-import {
-  loginToDatagrok, loginAsSecondUser, getSecondUserLogin,
-  specTestOptions, softStep, stepErrors, baseUrl,
-} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors, baseUrl} from '../spec-login';
+import {recipientPage, secondUserLogin} from './_actors';
 
 test.use(specTestOptions);
 
@@ -13,13 +11,27 @@ let modelId = '';
 
 async function createModel(page: Page, name: string): Promise<string> {
   return await page.evaluate(async (mName) => {
-    const list = await grok.dapi.models.list({pageSize: 1});
+    // The fixture clones whatever model the server hands back first, and that model is not
+    // always re-savable: one run threw out of models.save, another sat in it until the test
+    // timed out. Two candidates, each bounded, so a bad one costs 30s instead of the spec.
+    const list = await grok.dapi.models.list({pageSize: 2});
     if (!list.length) throw new Error('no source model on server to clone');
-    const src: any = list[0];
-    src.name = mName;
-    try { src.id = null; } catch (_) {  }
-    const saved = await grok.dapi.models.save(src);
-    return saved.id as string;
+    const reasons: string[] = [];
+    for (const src of list as any[]) {
+      try {
+        src.name = mName;
+        src.id = null;
+        const saved = await Promise.race([
+          grok.dapi.models.save(src),
+          new Promise((_, rej) => setTimeout(() => rej(new Error('models.save timed out after 30s')), 30_000)),
+        ]) as any;
+        if (saved?.id) return saved.id as string;
+        reasons.push('save returned no id');
+      } catch (e) {
+        reasons.push(String(e).slice(0, 100));
+      }
+    }
+    throw new Error('no source model could be cloned: ' + reasons.join(' | '));
   }, name);
 }
 
@@ -118,7 +130,10 @@ test('Sharing & Permissions — Model', async ({page}) => {
     grok.shell.windows.simpleMode = true;
   });
 
-  const recipientLogin = await getSecondUserLogin();
+  const recipientLogin = await secondUserLogin();
+  const rp = await recipientPage(page);
+  await waitForDapiReady(rp);
+  await waitForIdentity(rp, recipientLogin);
   modelId = await createModel(page, MODEL_NAME);
   await setCurrentObjectToModel(page, modelId);
 
@@ -141,7 +156,10 @@ test('Sharing & Permissions — Model', async ({page}) => {
     await expect(dlg.locator('.d4-dialog-title')).toContainText('Share');
     await expect(page.locator('input[placeholder="User, group, or email"]')).toBeVisible();
     await expect(page.locator('[name="div-share-selector"]')).toBeVisible();
-    await expect(page.locator('[name="label-Advanced-editor..."]')).toBeVisible();
+    // GROK-20322 removed the Share dialog's "Advanced editor..." link
+    // (core/client/xamgle/lib/src/commands/file/share_dataset.dart); the grant list the
+    // PermissionsEditor renders is what the dialog must show now.
+    await expect(page.locator('.d4-dialog .grok-permissions')).toBeVisible();
     await expect(page.locator('[name="button-OK"]')).toBeVisible();
     await expect(page.locator('[name="button-CANCEL"]')).toBeVisible();
 
@@ -245,17 +263,14 @@ test('Sharing & Permissions — Model', async ({page}) => {
   });
 
   await softStep('Block D.2: Recipient sees the shared model under Shared with me', async () => {
-    await loginAsSecondUser(page);
-    await waitForDapiReady(page); 
-    await waitForIdentity(page, recipientLogin); 
+    await waitForIdentity(rp, recipientLogin);
 
-    await page.locator('[name="tree-My-stuff---Shared-with-me"]').click({timeout: 8_000}).catch(() => {});
-    await page.waitForTimeout(1500);
+    await rp.locator('[name="tree-My-stuff---Shared-with-me"]').click({timeout: 8_000}).catch(() => {});
 
     const reachableDeadline = Date.now() + 60_000;
     let found = false;
     while (Date.now() < reachableDeadline) {
-      const r = await page.evaluate(async (args) => {
+      const r = await rp.evaluate(async (args) => {
         const {mId, who} = args;
         const cur = await grok.dapi.users.current();
         if (!cur || cur.login !== who) return null; 
@@ -263,14 +278,14 @@ test('Sharing & Permissions — Model', async ({page}) => {
         return !!m;
       }, {mId: modelId, who: recipientLogin});
       if (r === true) { found = true; break; }
-      await page.waitForTimeout(1500);
+      await rp.waitForTimeout(1500);
     }
     expect(found).toBe(true); 
   });
 
   await softStep('Block D.3: Recipient has View (and can apply) the shared model', async () => {
 
-    const canView = await pollPermission(page, modelId, 'View', true, recipientLogin);
+    const canView = await pollPermission(rp, modelId, 'View', true, recipientLogin);
     expect(canView).toBe(true); 
 
     test.info().annotations.push({type: 'remark',
@@ -281,7 +296,7 @@ test('Sharing & Permissions — Model', async ({page}) => {
 
   await softStep('Block E: Only the model itself was shared — no additional dependent entity', async () => {
 
-    const view = await pollPermission(page, modelId, 'View', true, recipientLogin);
+    const view = await pollPermission(rp, modelId, 'View', true, recipientLogin);
     expect(view).toBe(true); 
     test.info().annotations.push({type: 'remark',
       description: 'No outbound cascade for a standalone model: the recipient gains access to the model ' +
@@ -291,8 +306,8 @@ test('Sharing & Permissions — Model', async ({page}) => {
 
   await softStep('Block F: Recipient lacks Edit / Delete / Share on the shared model', async () => {
 
-    const viewReady = await pollPermission(page, modelId, 'View', true, recipientLogin);
-    const checks = await page.evaluate(async (mId) => {
+    const viewReady = await pollPermission(rp, modelId, 'View', true, recipientLogin);
+    const checks = await rp.evaluate(async (mId) => {
       const m = await grok.dapi.models.find(mId);
       if (!m) return {found: false};
       const canEdit = await grok.dapi.permissions.check(m, 'Edit');
@@ -308,9 +323,7 @@ test('Sharing & Permissions — Model', async ({page}) => {
   });
 
   await softStep('Block G.1-2: Owner revokes recipient grant; pane shows owner-only', async () => {
-    await loginToDatagrok(page); 
-    await waitForDapiReady(page); 
-    await waitForIdentity(page, ownerLogin); 
+    await waitForIdentity(page, ownerLogin);
     const revoked = await page.evaluate(async (args) => {
       const {mId, login} = args;
       const m = await grok.dapi.models.find(mId);
@@ -327,17 +340,13 @@ test('Sharing & Permissions — Model', async ({page}) => {
   });
 
   await softStep('Block G.3-4: Recipient can no longer view/apply the model (access revoked)', async () => {
-    await loginAsSecondUser(page);
-    await waitForDapiReady(page); 
-    await waitForIdentity(page, recipientLogin); 
+    await waitForIdentity(rp, recipientLogin);
 
-    const canView = await pollPermission(page, modelId, 'View', false, recipientLogin);
+    const canView = await pollPermission(rp, modelId, 'View', false, recipientLogin);
     expect(canView).toBe(false);
   });
 
-  await loginToDatagrok(page);
-  await waitForDapiReady(page); 
-  await waitForIdentity(page, ownerLogin); 
+  await waitForIdentity(page, ownerLogin);
   await page.evaluate(async (mId) => {
     try {
       const m = await grok.dapi.models.find(mId);

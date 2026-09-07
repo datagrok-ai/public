@@ -114,6 +114,6 @@ test('Line Chart — SPC Monitoring and Zoom', async ({page}) => {
     expect(errorCount()).toBe(before);
   });
 
-  await v.cleanupShell(page);
+  await v.closeAllAndWait(page);
   v.finishSpec();
 });

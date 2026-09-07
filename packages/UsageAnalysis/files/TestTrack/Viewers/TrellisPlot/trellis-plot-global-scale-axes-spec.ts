@@ -139,10 +139,12 @@ async function dragInnerRangeSlider(page: Page, axis: 'x' | 'y', rootIndex = 0):
     return null;
   }, {rootIdx: rootIndex, ax: axis}), (g) => g !== null, 1500, 30);
   if (!geo) return false;
-  await page.mouse.move(geo.end.x, geo.end.y, {steps: 4});
+  await page.mouse.move(geo.end.x, geo.end.y, {steps: 2});
   await page.mouse.down();
-  if (axis === 'x') await page.mouse.move(geo.svg.x + geo.svg.w * 0.45, geo.end.y, {steps: 12});
-  else await page.mouse.move(geo.end.x, geo.svg.y + geo.svg.h * 0.45, {steps: 12});
+  // each intermediate mousemove repaints the trellis synchronously (~70ms a step), so the drag
+  // carries the fewest moves the range selector still tracks
+  if (axis === 'x') await page.mouse.move(geo.svg.x + geo.svg.w * 0.45, geo.end.y, {steps: 3});
+  else await page.mouse.move(geo.end.x, geo.svg.y + geo.svg.h * 0.45, {steps: 3});
   await page.mouse.up();
   return true;
 }
@@ -193,7 +195,8 @@ async function setAllowZoom(page: Page, desired: boolean, tabName = 'Scatter plo
 // stays as a capped poll for the hash leaving `before`; the zoom arm exits on the first change
 async function wheelOver(page: Page, pt: {x: number; y: number}, before: number | null, steps = 5): Promise<number | null> {
   await page.mouse.move(pt.x, pt.y);
-  await page.waitForTimeout(200);
+  // the hover reveals the inner range sliders, which repaints; let that burst end before wheeling
+  await v.waitForViewerQuiet(page, 'Trellis plot', {gapMs: 80, capMs: 200});
   for (let i = 0; i < steps; i++) {
     await page.mouse.wheel(0, 120);
     await page.waitForTimeout(60);

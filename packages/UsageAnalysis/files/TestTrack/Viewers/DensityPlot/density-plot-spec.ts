@@ -56,6 +56,7 @@ test('Density plot tests', async ({page}: {page: Page}) => {
   await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 3000});
 
   await v.addViewerByIcon(page, 'density-plot', 'Density-plot');
+  await v.waitForViewerRendered(page, 'Density plot', 50);
 
   const propRowPresent = () => page.evaluate(() =>
     !!document.querySelector('[name="prop-show-color-scale"] input[type="checkbox"]'));

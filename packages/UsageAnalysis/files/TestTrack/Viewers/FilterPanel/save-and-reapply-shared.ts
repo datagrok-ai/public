@@ -81,7 +81,7 @@ async function visibleMenuPopups(page: Page): Promise<number> {
 export async function dismissPanelMenu(page: Page): Promise<void> {
   for (let attempt = 0; attempt < 3; attempt++) {
     await page.keyboard.press('Escape');
-    if (await v.pollValue(() => visibleMenuPopups(page), (n) => n === 0, 3000, 100) === 0) return;
+    if (await v.pollValue(() => visibleMenuPopups(page), (n) => n === 0, 3000, 40) === 0) return;
   }
   expect(await visibleMenuPopups(page),
     'the panel menu popup stayed on screen and would intercept the next gesture').toBe(0);
@@ -100,24 +100,38 @@ export async function saveStateViaMenu(page: Page, probeName: string): Promise<v
 
   await v.drivePanelMenuLeaf(page, 'Filters', 'Save or Apply', 'Save...');
 
-  const dlg = page.locator('.d4-dialog[name="dialog-Save-filter-state"]');
+  const dlg = page.locator('.d4-dialog[name="dialog-Save-filter-preset"]');
   await dlg.waitFor({timeout: 10_000});
   const nameInput = dlg.locator('input[name="input-Name"]');
-  await nameInput.click();
-  await nameInput.fill('');
-  await nameInput.pressSequentially(probeName, {delay: 15});
+  // Modal.editValue defers focus()+select() to a Timer.run (d4 widgets/dialog/dialog.dart:321).
+  // Under two workers that timer lands in the middle of a per-character type, and the next
+  // character replaces the whole selection — the dialog then saves under a truncated name, which
+  // is why the probe never reached localStorage. Wait the timer out, then set the name in one
+  // assignment so a later select() has nothing left to swallow.
+  await page.evaluate(() => (window as any).__poll(() => {
+    const el = document.querySelector('.d4-dialog[name="dialog-Save-filter-preset"] input[name="input-Name"]') as
+      HTMLInputElement | null;
+    return !!el && document.activeElement === el && el.selectionStart === 0 &&
+      el.selectionEnd === (el.value ?? '').length;
+  }, (ready: boolean) => ready, 1200, 25));
+  await nameInput.fill(probeName);
+  expect(await v.pollValue(() => nameInput.inputValue(), (val) => val === probeName, 2000, 50),
+    'the Save filter preset dialog\'s Name box does not hold the probe name, so OK would save the state ' +
+    'under some other name').toBe(probeName);
   await dlg.locator('[name="button-OK"]').click();
   await expect.poll(async () => dlg.count(), {
     timeout: 10_000,
-    message: 'the Save filter state dialog did not close after OK',
+    intervals: [30, 60, 120, 250, 500, 1000],
+    message: 'the Save filter preset dialog did not close after OK',
   }).toBe(0);
 
-  const stored = await page.evaluate((name) => {
+  // the entry is written a beat after the dialog closes, so a one-shot read races it under load
+  const stored = await v.pollValue(() => page.evaluate((name) => {
     const raw = window.localStorage.getItem('filter-states');
     if (raw === null) return {parsed: false, has: false};
     const states = JSON.parse(raw);
     return {parsed: true, has: Object.prototype.hasOwnProperty.call(states, name)};
-  }, probeName);
+  }, probeName), (r) => r.has, 3000, 100);
   expect(stored.parsed,
     'the "filter-states" localStorage entry is absent after the save — nothing was stored').toBe(true);
   expect(stored.has,

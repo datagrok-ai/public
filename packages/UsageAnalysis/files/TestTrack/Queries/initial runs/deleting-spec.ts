@@ -54,19 +54,19 @@ test("Queries — delete new_test_query via context menu", async ({ page }) => {
         pg.dispatchEvent(
           new MouseEvent("dblclick", { bubbles: true, cancelable: true }),
         );
-        for (let i = 0; i < 30; i++) {
+        for (let i = 0; i < 90; i++) {
           if (find("NorthwindTest")) break;
-          await new Promise((r) => setTimeout(r, 300));
+          await new Promise((r) => setTimeout(r, 100));
         }
         const nw = find("NorthwindTest");
         if (!nw) return { ok: false, stage: "no-nw" };
         nw.dispatchEvent(
           new MouseEvent("dblclick", { bubbles: true, cancelable: true }),
         );
-        for (let i = 0; i < 50; i++) {
+        for (let i = 0; i < 150; i++) {
           if ((window as any).grok.shell.v?.type === "queries")
             return { ok: true };
-          await new Promise((r) => setTimeout(r, 300));
+          await new Promise((r) => setTimeout(r, 100));
         }
         return { ok: false, stage: "no-queries-view" };
       });
@@ -127,12 +127,12 @@ test("Queries — delete new_test_query via context menu", async ({ page }) => {
       await deleteBtn.click();
 
       const gone = await page.evaluate(async (id) => {
-        for (let i = 0; i < 40; i++) {
+        for (let i = 0; i < 80; i++) {
           const q = await (window as any).grok.dapi.queries
             .find(id)
             .catch(() => null);
           if (!q) return true;
-          await new Promise((r) => setTimeout(r, 300));
+          await new Promise((r) => setTimeout(r, 150));
         }
         return false;
       }, seedId);
@@ -144,7 +144,17 @@ test("Queries — delete new_test_query via context menu", async ({ page }) => {
     "Refresh Browse — verify query is no longer present",
     async () => {
       const visible = await page.evaluate(async () => {
-        await new Promise((r) => setTimeout(r, 1000));
+        const present = () =>
+          Array.from(document.querySelectorAll("*")).some(
+            (el) =>
+              el.children.length === 0 &&
+              (el as HTMLElement).textContent?.trim() === "new_test_query" &&
+              (el as HTMLElement).offsetParent !== null,
+          );
+        for (let i = 0; i < 20; i++) {
+          if (!present()) break;
+          await new Promise((r) => setTimeout(r, 50));
+        }
         return Array.from(document.querySelectorAll("*")).some(
           (el) =>
             el.children.length === 0 &&

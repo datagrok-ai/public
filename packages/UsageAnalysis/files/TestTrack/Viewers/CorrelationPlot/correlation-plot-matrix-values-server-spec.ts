@@ -94,11 +94,17 @@ test('Correlation Plot — Layout and Project Persistence', async ({page}) => {
         expect(r.yCols).toEqual(['AGE', 'HEIGHT']);
         expect(r.filter === '' || r.filter == null).toBe(true);
       } finally {
-        await page.evaluate(async (id) => {
-          try {
-            const saved = await grok.dapi.layouts.find(id);
-            if (saved) await grok.dapi.layouts.delete(saved);
-          } catch (_) {}
+        // detached, like deleteProjectWithCleanup: nothing reads the layout again and the
+        // worker fixture drains __pendingDeletes before it closes the page
+        await page.evaluate((id) => {
+          const w = window as any;
+          w.__pendingDeletes = w.__pendingDeletes ?? [];
+          w.__pendingDeletes.push((async () => {
+            try {
+              const saved = await grok.dapi.layouts.find(id);
+              if (saved) await grok.dapi.layouts.delete(saved);
+            } catch (_) {}
+          })());
         }, layoutId);
       }
     });

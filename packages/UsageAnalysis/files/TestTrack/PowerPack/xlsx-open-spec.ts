@@ -90,8 +90,10 @@ async function verifyXlsxOpenedSuccessfully(
   page: Page,
 ): Promise<{rowCount: number; colCount: number; sheetCount: number; errorBalloons: number}> {
   await page.locator('[name="viewer-Grid"]').waitFor({timeout: 30_000, state: 'visible'});
-  await page.waitForTimeout(500); 
-  const obs = await page.evaluate(() => {
+  const obs = await page.evaluate(async () => {
+    const t0 = Date.now();
+    while (!document.querySelector('[name="viewer-Grid"] canvas') && Date.now() - t0 < 500)
+      await new Promise((r) => setTimeout(r, 25));
     const grok = (window as any).grok;
     const tv = grok.shell.tv;
     const df = tv?.dataFrame;
@@ -106,13 +108,15 @@ async function verifyXlsxOpenedSuccessfully(
 }
 
 async function resetShellState(page: Page): Promise<void> {
-  await page.evaluate(() => {
+  await page.evaluate(async () => {
     const grok = (window as any).grok;
     try { grok.shell.closeAll(); } catch (_) {}
     document.querySelectorAll('.d4-toast, .d4-menu-popup, .d4-balloon')
       .forEach((el) => { try { (el as HTMLElement).remove(); } catch (_) {} });
+    const t0 = Date.now();
+    while (Array.from(grok.shell.tableViews ?? []).length > 0 && Date.now() - t0 < 800)
+      await new Promise((r) => setTimeout(r, 25));
   }).catch(() => {});
-  await page.waitForTimeout(800);
 }
 
 async function readXlsxBytes(page: Page, fullPath: string): Promise<number> {
@@ -202,7 +206,6 @@ test('PowerPack: GROK-19329 XLSX opens across all 5 entry paths (regression)', a
     grok.shell.windows.simpleMode = true;
     try { grok.shell.closeAll(); } catch (_) {}
   });
-  await page.waitForTimeout(300);
 
   await ensurePowerPackLoaded(page);
 

@@ -4,7 +4,8 @@ import {softStep, stepErrors} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
 import {projectsTestOptions, evalJs, gotoApp, setupSession} from './_helpers';
 import {openTableFromFile, resetShell, assertProvenanceScript} from '../helpers/openers';
-import {saveProjectWithProvenance, deleteProjectWithCleanup} from '../helpers/projects';
+import {deleteProjectWithCleanup} from '../helpers/projects';
+import {saveProjectWithProvenance} from './projects-shared';
 
 test.use(projectsTestOptions);
 
@@ -22,6 +23,17 @@ test('Projects / Complex Move: move project across namespaces via JS API', async
   await setupSession(page);
   await resetShell(page);
 
+  // The capability probe belongs here, not inside a softStep: test.skip() throws, softStep
+  // catches it as a step error, and finishSpec then reported the env-skip as a failure.
+  const api = await evalJs<{move: boolean; spaces: boolean}>(page, `(() => ({
+    move: typeof grok.dapi.projects.move === 'function',
+    spaces: typeof grok.dapi.spaces?.createRootSpace === 'function',
+  }))()`);
+  test.skip(!api.move || !api.spaces,
+    'no namespace move on this build: grok.dapi.projects.move ' +
+    (api.move ? 'exists' : 'is absent (public/js-api/src/dapi.ts declares no ProjectsDataSource.move)') +
+    ', grok.dapi.spaces.createRootSpace ' + (api.spaces ? 'exists' : 'is absent'));
+
   try {
     await softStep('Step 1-2: open demog with provenance + save with Sync ON', async () => {
       const opened = await openTableFromFile(page, 'System:DemoFiles/demog.csv');
@@ -36,8 +48,6 @@ test('Projects / Complex Move: move project across namespaces via JS API', async
       const r = await evalJs<{ok: boolean; reason?: string}>(page, `(async () => {
         try {
           const p = await grok.dapi.projects.find('${saved.projectId}');
-          if (typeof grok.dapi.projects.move !== 'function')
-            return {ok: false, reason: 'projects.move not implemented'};
           await grok.dapi.projects.move(p, 'Home');
           return {ok: true};
         } catch (e) {
@@ -45,10 +55,6 @@ test('Projects / Complex Move: move project across namespaces via JS API', async
         }
       })()`);
 
-      if (!r.ok && r.reason === 'projects.move not implemented') {
-        test.skip(true, 'projects.move not implemented on this build');
-        return;
-      }
       expect(r.ok, r.ok ? '' : `project move to Home failed: ${r.reason}`).toBe(true);
     });
 
@@ -57,12 +63,8 @@ test('Projects / Complex Move: move project across namespaces via JS API', async
       const r = await evalJs<{ok: boolean; reason?: string; spaceId?: string}>(page, `(async () => {
         try {
           // Shipped API is createRootSpace(name), NOT createRoot.
-          if (typeof grok.dapi.spaces?.createRootSpace !== 'function')
-            return {ok: false, reason: 'spaces.createRootSpace not implemented'};
           const space = await grok.dapi.spaces.createRootSpace('${spaceName}');
           const p = await grok.dapi.projects.find('${saved.projectId}');
-          if (typeof grok.dapi.projects.move !== 'function')
-            return {ok: false, reason: 'projects.move not implemented', spaceId: space.id};
           await grok.dapi.projects.move(p, 'Spaces:' + space.name);
           return {ok: true, spaceId: space.id};
         } catch (e) {
@@ -71,10 +73,6 @@ test('Projects / Complex Move: move project across namespaces via JS API', async
       })()`);
       if (r.spaceId) createdSpaceId = r.spaceId;
 
-      if (!r.ok && (r.reason === 'spaces.createRootSpace not implemented' || r.reason === 'projects.move not implemented')) {
-        test.skip(true, r.reason);
-        return;
-      }
       expect(r.ok, r.ok ? '' : `space create + move failed: ${r.reason}`).toBe(true);
     });
   } finally {

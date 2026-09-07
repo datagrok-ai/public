@@ -121,6 +121,7 @@ test('Density Plot — Bin Selection, Zoom, Bin To Range, Axis Configuration', a
   await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 3000});
 
   await v.addViewerByIcon(page, 'density-plot', 'Density-plot');
+  await v.waitForViewerRendered(page, 'Density plot', 50);
 
   const [props] = await v.setViewerProps(page, 'Density plot', [{
     set: {xColumnName: 'AGE', yColumnName: 'HEIGHT', bins: 50, binShape: 'hexagon'},

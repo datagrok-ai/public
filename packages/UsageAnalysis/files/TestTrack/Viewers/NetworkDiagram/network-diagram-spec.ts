@@ -149,8 +149,11 @@ test('Network diagram', async ({page}) => {
     const nodes = await nodePositions(page);
     for (const node of nodes.slice(0, 4)) {
       await page.mouse.click(node.x, node.y);
-      await selectionSettles(page, 800);
+      expect(await selectionCount(page)).toBe(0);
     }
+    // one settle window for the four clicks: nothing is expected to change, so a poll after
+    // every click could only ever burn its whole cap
+    await selectionSettles(page, 800);
     expect(await selectionCount(page)).toBe(0);
 
     await category(page, 'misc', 'select-rows-on-click');
@@ -225,7 +228,7 @@ test('Network diagram', async ({page}) => {
   await page.evaluate(() => {
     for (const e of Array.from(document.querySelectorAll('.property-grid'))) e.remove();
   });
-  await v.cleanupShell(page);
+  await v.closeAllAndWait(page);
 
   v.finishSpec();
 });

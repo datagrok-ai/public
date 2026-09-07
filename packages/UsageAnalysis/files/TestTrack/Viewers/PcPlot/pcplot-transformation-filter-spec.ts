@@ -134,7 +134,7 @@ test('PC Plot — Transformation and Filter/Selection Integrity', async ({page})
 
         h.dispatchEvent(new MouseEvent('mousedown', mk(cx, cy)));
         await w.__drag(svg as HTMLElement, {x: cx, y: cy + dir * 20}, {x: cx, y: cy + dir * dist},
-          {steps: Math.max(1, Math.ceil((dist - 20) / 30)), stepMs: 20, holdMs: 50});
+          {steps: 3, stepMs: 20, holdMs: 50});
         await settle(df.onRowsFiltered, 600, () =>
           document.dispatchEvent(new MouseEvent('mouseup', mk(cx, cy + dir * dist))));
       };
@@ -187,7 +187,7 @@ test('PC Plot — Transformation and Filter/Selection Integrity', async ({page})
 
       mh.dispatchEvent(new MouseEvent('mousedown', mk(cx, cy)));
       await w.__drag(svg as HTMLElement, {x: cx, y: cy + 20}, {x: cx, y: cy + 300},
-        {steps: 10, stepMs: 20, holdMs: 50});
+        {steps: 3, stepMs: 20, holdMs: 50});
       await settle(df.onRowsFiltered, 600, () =>
         document.dispatchEvent(new MouseEvent('mouseup', mk(cx, cy + 300))));
       const filteredCount = df.filter.trueCount;

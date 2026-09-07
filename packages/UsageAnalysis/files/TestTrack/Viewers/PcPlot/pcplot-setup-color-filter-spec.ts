@@ -28,6 +28,7 @@ test('PC Plot — Setup, Column Selection, Color, In-Chart Range Filter, Log Sca
   await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 3000});
 
   await v.addViewerByIcon(page, 'pc-plot', 'PC-Plot', 15000);
+  await v.waitForViewerRendered(page, 'PC Plot', 50);
 
   await v.installEventWaits(page);
 
@@ -87,7 +88,7 @@ test('PC Plot — Setup, Column Selection, Color, In-Chart Range Filter, Log Sca
         ({bubbles: true, cancelable: true, clientX: x, clientY: y, button: 0});
       maxHandle.dispatchEvent(new MouseEvent('mousedown', mk(cx, cy)));
       await w.__drag(svg as HTMLElement, {x: cx, y: cy + 20}, {x: cx, y: cy + 300},
-        {steps: 10, stepMs: 20, holdMs: 50});
+        {steps: 3, stepMs: 20, holdMs: 50});
     });
     const filteredCount = await v.pollValue(filterCount, (n) => n < fullCount, 600, 100);
 

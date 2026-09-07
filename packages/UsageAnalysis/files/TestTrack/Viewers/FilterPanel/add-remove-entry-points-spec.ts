@@ -31,7 +31,7 @@ async function orderedCaptions(page: Page): Promise<string[]> {
 // A hold: the count must not leave `expected` for the whole window, so the window is spent
 // watching for the move it hopes not to see.
 async function holdTrueCount(page: Page, expected: number, why: string, ms = 3000): Promise<void> {
-  expect(await v.pollValue(() => trueCount(page), (c) => c !== expected, ms, 250), why).toBe(expected);
+  expect(await v.pollValue(() => trueCount(page), (c) => c !== expected, ms, 50), why).toBe(expected);
 }
 
 async function gridHeaderPoint(page: Page, column: string): Promise<{x: number; y: number}> {
@@ -56,16 +56,16 @@ async function dragColumnHeaderToPanel(page: Page, column: string): Promise<void
   });
   await page.mouse.move(src.x, src.y);
   await page.mouse.down();
-  for (let i = 1; i <= 8; i++) {
-    const x = Math.round(src.x + (panel.cx - src.x) * i / 8);
-    const y = Math.round(src.y + (panel.cy - src.y) * i / 8);
-    await page.mouse.move(x, y, {steps: 3});
-    await page.waitForTimeout(30);
+  for (let i = 1; i <= 4; i++) {
+    const x = Math.round(src.x + (panel.cx - src.x) * i / 4);
+    const y = Math.round(src.y + (panel.cy - src.y) * i / 4);
+    await page.mouse.move(x, y, {steps: 2});
+    await page.waitForTimeout(25);
   }
   try {
     await page.waitForFunction(() => [...document.querySelectorAll('.d4-drop-zone')]
       .some((z) => z.parentElement === document.body && (z.textContent ?? '').trim() === 'Add filter'),
-    null, {timeout: 5000, polling: 100});
+    null, {timeout: 5000, polling: 30});
   }
   catch {
     await page.mouse.up();
@@ -77,11 +77,11 @@ async function dragColumnHeaderToPanel(page: Page, column: string): Promise<void
     const r = dz.getBoundingClientRect();
     return {x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2)};
   });
-  await page.mouse.move(zone.x, zone.y, {steps: 4});
-  await page.waitForTimeout(120);
+  await page.mouse.move(zone.x, zone.y, {steps: 2});
+  await page.waitForTimeout(80);
   const cardsBefore = await cardCount(page);
   await page.mouse.up();
-  await v.pollValue(() => cardCount(page), (n) => n > cardsBefore, 700, 50);
+  await v.pollValue(() => cardCount(page), (n) => n > cardsBefore, 700, 25);
 }
 
 async function dragCaptionAboveCard(page: Page, fromCaption: string, targetIndex: number): Promise<void> {
@@ -106,11 +106,11 @@ async function dragCaptionAboveCard(page: Page, fromCaption: string, targetIndex
     .toBeGreaterThan(0);
   await page.mouse.move(pts.sx, pts.sy);
   await page.mouse.down();
-  for (let i = 1; i <= 8; i++) {
-    const x = Math.round(pts.sx + (pts.tx - pts.sx) * i / 8);
-    const y = Math.round(pts.sy + (pts.ty - pts.sy) * i / 8);
-    await page.mouse.move(x, y, {steps: 3});
-    await page.waitForTimeout(30);
+  for (let i = 1; i <= 4; i++) {
+    const x = Math.round(pts.sx + (pts.tx - pts.sx) * i / 4);
+    const y = Math.round(pts.sy + (pts.ty - pts.sy) * i / 4);
+    await page.mouse.move(x, y, {steps: 2});
+    await page.waitForTimeout(25);
   }
   try {
     await page.waitForFunction((before: string[]) => {
@@ -122,7 +122,7 @@ async function dragCaptionAboveCard(page: Page, fromCaption: string, targetIndex
         })
         .map((e) => window.getComputedStyle(e).backgroundColor);
       return now.some((c, i) => c !== before[i]);
-    }, stripsBefore, {timeout: 5000, polling: 100});
+    }, stripsBefore, {timeout: 5000, polling: 30});
   }
   catch {
     await page.mouse.up();
@@ -131,7 +131,7 @@ async function dragCaptionAboveCard(page: Page, fromCaption: string, targetIndex
       + 'is registered with dropIndication:false, so .d4-drop-zone never appears on it and those two '
       + 'are the only indications the product gives.');
   }
-  await page.mouse.move(pts.tx, pts.ty, {steps: 4});
+  await page.mouse.move(pts.tx, pts.ty, {steps: 2});
   try {
     await page.waitForFunction((before: string[]) => {
       const now = [...document.querySelectorAll('[name="viewer-Filters"] *')]
@@ -141,7 +141,7 @@ async function dragCaptionAboveCard(page: Page, fromCaption: string, targetIndex
         })
         .map((e) => window.getComputedStyle(e).backgroundColor);
       return now.some((c, i) => c !== before[i] && /^rgba?\(0, 0, 0/.test(c));
-    }, stripsBefore, {timeout: 5000, polling: 100});
+    }, stripsBefore, {timeout: 5000, polling: 30});
   }
   catch {
     await page.mouse.up();
@@ -151,7 +151,7 @@ async function dragCaptionAboveCard(page: Page, fromCaption: string, targetIndex
   }
   await page.mouse.up();
   await expect.poll(async () => page.evaluate(() => document.body.classList.contains('d4-drag')),
-    {timeout: 10_000, intervals: [100, 200, 400],
+    {timeout: 10_000, intervals: [30, 60, 120, 250, 500, 1000],
       message: `dragCaptionAboveCard(${fromCaption}): document.body still carries d4-drag after the `
         + 'release, so the drop never completed'}).toBe(false);
 }
@@ -179,7 +179,7 @@ async function reorderToMatch(page: Page, desiredOrder: string[]): Promise<numbe
 async function removeAllViaHamburger(page: Page): Promise<void> {
   await v.drivePanelMenuLeaf(page, 'Filters', null, 'Remove All');
   await expect.poll(async () => cardCount(page),
-    {timeout: 20_000, intervals: [300, 600, 1200],
+    {timeout: 20_000, intervals: [30, 60, 120, 250, 500, 1000],
       message: 'the "Remove All" leaf of the panel menu was driven but the panel still carries cards'})
     .toBe(0);
 }
@@ -198,7 +198,7 @@ async function addViaHeaderCombo(page: Page, column: string): Promise<void> {
   await page.waitForFunction(() => !!document.querySelector('input.d4-column-selector-search-input'),
     null, {timeout: 10_000});
   await page.keyboard.press('Control+a');
-  await page.keyboard.type(column, {delay: 40});
+  await page.keyboard.type(column, {delay: 15});
   expect(await page.evaluate(() =>
     (document.querySelector('input.d4-column-selector-search-input') as HTMLInputElement).value),
   `the header combo's search box does not hold ${column}, so the commit below would add whatever `
@@ -206,11 +206,12 @@ async function addViaHeaderCombo(page: Page, column: string): Promise<void> {
   await page.keyboard.press('Enter');
   await expect.poll(async () => (await orderedCaptions(page)).includes(column), {
     timeout: 20_000,
-    intervals: [500, 1000, 2000],
+    intervals: [30, 60, 120, 250, 500, 1000],
     message: `no ${column} card came out of the header combo commit`,
   }).toBe(true);
   await expect.poll(async () => page.locator('.d4-column-selector-backdrop').count(), {
     timeout: 10_000,
+    intervals: [30, 60, 120, 250, 500, 1000],
     message: 'the header combo popup stayed open and would intercept the next gesture',
   }).toBe(0);
 }
@@ -267,11 +268,11 @@ async function narrowToTopCategory(page: Page, column: string): Promise<number> 
 async function openColumnVisibilityDialog(page: Page, column: string): Promise<void> {
   const pt = await gridHeaderPoint(page, column);
   await page.mouse.click(pt.x, pt.y, {button: 'right'});
-  await v.pollValue(() => page.locator('.d4-menu-popup').count(), (n) => n > 0, 600, 50);
+  await v.pollValue(() => page.locator('.d4-menu-popup').count(), (n) => n > 0, 600, 25);
   await driveOpenMenuLeaf(page, null, 'Order or Hide Columns...');
   const dialog = page.locator('.d4-dialog').filter({hasText: 'Order or Hide Columns'}).first();
   await dialog.waitFor({timeout: 10_000});
-  await v.pollValue(() => dialog.locator('[name="viewer-Grid"] canvas').count(), (n) => n > 0, 600, 50);
+  await v.pollValue(() => dialog.locator('[name="viewer-Grid"] canvas').count(), (n) => n > 0, 600, 25);
 }
 
 const COLUMN_GRID_ROW_PITCH = 28.1;
@@ -280,7 +281,7 @@ async function waitForColumnVisibility(page: Page, column: string, expected: boo
   const deadline = Date.now() + 8000;
   let visible = await gridColumnVisible(page, column);
   while (visible !== expected && Date.now() < deadline) {
-    await page.waitForTimeout(200);
+    await page.waitForTimeout(50);
     visible = await gridColumnVisible(page, column);
   }
   return visible;
@@ -294,9 +295,9 @@ async function setColumnVisibilityInDialog(page: Page, column: string, expected:
   const search = page.locator('.d4-dialog input.d4-search-input').first();
   await search.click();
   await search.fill('');
-  await page.keyboard.type(column, {delay: 40});
+  await page.keyboard.type(column, {delay: 15});
   await page.waitForFunction((c) => (document.querySelector('.d4-dialog input.d4-search-input') as
-    HTMLInputElement | null)?.value === c, column, {timeout: 5000, polling: 100});
+    HTMLInputElement | null)?.value === c, column, {timeout: 5000, polling: 30});
   await page.evaluate(() => new Promise<void>((r) =>
     requestAnimationFrame(() => requestAnimationFrame(() => r()))));
 
@@ -328,7 +329,7 @@ async function closeColumnVisibilityDialog(page: Page): Promise<void> {
     close?.click();
   });
   await expect.poll(async () => page.locator('.d4-dialog').filter({hasText: 'Order or Hide Columns'}).count(),
-    {timeout: 10_000, intervals: [300, 600, 1200]}).toBe(0);
+    {timeout: 10_000, intervals: [30, 60, 120, 250, 500, 1000]}).toBe(0);
 }
 
 async function gridColumnVisible(page: Page, column: string): Promise<boolean> {
@@ -343,14 +344,14 @@ async function closePanel(page: Page): Promise<void> {
   }
   expect(clicked, 'the Filter Panel exposes no title-bar close control').toBe(true);
   await expect.poll(async () => page.locator('[name="viewer-Filters"]').count(),
-    {timeout: 10_000, intervals: [300, 600, 1200]}).toBe(0);
+    {timeout: 10_000, intervals: [30, 60, 120, 250, 500, 1000]}).toBe(0);
 }
 
 async function reopenPanel(page: Page): Promise<void> {
   await page.locator('.d4-ribbon-panel [name="icon-filter"]').first().click();
   await page.locator('[name="viewer-Filters"]').first().waitFor({timeout: 15_000});
   await expect.poll(async () => cardCount(page),
-    {timeout: 20_000, intervals: [400, 800, 1500]}).toBeGreaterThan(0);
+    {timeout: 20_000, intervals: [30, 60, 120, 250, 500, 1000]}).toBeGreaterThan(0);
 }
 
 async function columnNames(page: Page): Promise<string[]> {
@@ -371,7 +372,7 @@ async function pickerCheckedCount(page: Page): Promise<number> {
 
 async function dialogGone(page: Page, selector: string): Promise<void> {
   await expect.poll(async () => page.locator(selector).count(),
-    {timeout: 15_000, intervals: [200, 400, 800],
+    {timeout: 15_000, intervals: [30, 60, 120, 250, 500, 1000],
       message: `the dialog ${selector} is still on screen, so its OK click did not commit`}).toBe(0);
 }
 
@@ -413,7 +414,7 @@ async function addMultiValueFixtureColumn(page: Page): Promise<void> {
     df.columns.add(DG.Column.fromStrings(name, values));
   }, {name: MVF_COLUMN, pattern: MVF_PATTERN, sep: MVF_SEPARATOR});
   await expect.poll(async () => columnNames(page),
-    {timeout: 20_000, intervals: [200, 400, 800],
+    {timeout: 20_000, intervals: [30, 60, 120, 250, 500, 1000],
       message: `the "${MVF_COLUMN}" fixture column never appeared on the table, so the dialog below `
         + 'would have nothing multi-value to be pointed at'}).toContain(MVF_COLUMN);
 }
@@ -448,12 +449,12 @@ async function openCleanDemogView(page: Page, path: string): Promise<void> {
   await page.locator('[name="viewer-Filters"] .d4-filter').first().waitFor({timeout: 30_000});
   await expect.poll(async () => page.evaluate(() =>
     document.querySelectorAll('[name="viewer-Filters"]').length),
-  {timeout: 20_000, intervals: [300, 600, 1200],
+  {timeout: 20_000, intervals: [30, 60, 120, 250, 500, 1000],
     message: 'the previous table view must be gone, or every [name="viewer-Filters"] reading below '
       + 'would span two panels at once'}).toBe(1);
   await removeAllViaHamburger(page);
   await expect.poll(async () => cardCount(page),
-    {timeout: 20_000, intervals: [300, 600, 1200],
+    {timeout: 20_000, intervals: [30, 60, 120, 250, 500, 1000],
       message: 'the fresh table view\'s panel must be emptied before the Multi Value add, or the '
         + 'card produced below would not be attributable'}).toBe(0);
   const applied = await appliedRowFilters(page);
@@ -461,7 +462,7 @@ async function openCleanDemogView(page: Page, path: string): Promise<void> {
     + `reads [${applied.join(', ')}], so every row count below would be measuring that filter too`)
     .toEqual([]);
   await expect.poll(async () => trueCount(page),
-    {timeout: 20_000, intervals: [300, 600, 1200],
+    {timeout: 20_000, intervals: [30, 60, 120, 250, 500, 1000],
       message: `the fresh demog view must show all ${fullRowCount} rows before any token is ticked`})
     .toBe(fullRowCount);
 }
@@ -686,7 +687,7 @@ test('Filter Panel — Add, Reorder, and Remove Entry Points', async ({page}) =>
   await softStep('Scenario 1 Step 5 — add path (d) context menu Expression adds first', async () => {
     await v.drivePanelMenuLeaf(page, 'Filters', 'Add Filter', 'Expression');
     await expect.poll(async () => orderedCaptions(page),
-      {timeout: 20_000, intervals: [300, 600, 1200],
+      {timeout: 20_000, intervals: [30, 60, 120, 250, 500, 1000],
         message: 'the Add Filter > Expression leaf was driven but no Expression card appeared'})
       .toContain('Expression');
     const captions = await orderedCaptions(page);
@@ -833,7 +834,7 @@ test('Filter Panel — Add, Reorder, and Remove Entry Points', async ({page}) =>
     const cardsBefore = await cardCount(page);
     await driveOpenMenuLeaf(page, null, 'Remove others');
     await expect.poll(async () => cardCount(page),
-      {timeout: 20_000, intervals: [300, 600, 1200],
+      {timeout: 20_000, intervals: [30, 60, 120, 250, 500, 1000],
         message: `"Remove others" was driven but the panel still carries all ${cardsBefore} cards`})
       .toBeLessThan(cardsBefore);
 
@@ -937,7 +938,7 @@ test('Filter Panel — Add, Reorder, and Remove Entry Points', async ({page}) =>
   await softStep('Scenario 5 Step 2 — closing the panel releases its filtering', async () => {
     await closePanel(page);
     await expect.poll(async () => page.evaluate(() => grok.shell.tv.dataFrame.filter.trueCount),
-      {timeout: 10_000, intervals: [300, 600, 1200]}).toBe(fullRowCount);
+      {timeout: 10_000, intervals: [30, 60, 120, 250, 500, 1000]}).toBe(fullRowCount);
   });
 
   await softStep('Scenario 5 Step 3 — reopening restores per-card state: criterion, disabled card and removal', async () => {
@@ -972,17 +973,17 @@ test('Filter Panel — Add, Reorder, and Remove Entry Points', async ({page}) =>
     // way Step 9 of the core ladder proves it does, so nothing is filtering when the cards go.
     await clickResetCriteriaIcon(page, {via: 'dom'});
     await expect.poll(() => trueCount(page),
-      {timeout: 10_000, intervals: [200, 400, 800],
+      {timeout: 10_000, intervals: [30, 60, 120, 250, 500, 1000],
         message: 'the header reset must release the criterion the reopened panel restored'})
       .toBe(fullRowCount);
     await removeAllViaHamburger(page);
     expect(await cardCount(page), 'the picker is measured from an empty panel, so Remove All must '
       + 'leave zero cards or the "All" result below would not be attributable').toBe(0);
     await expect.poll(() => trueCount(page),
-      {timeout: 10_000, intervals: [200, 400, 800],
+      {timeout: 10_000, intervals: [30, 60, 120, 250, 500, 1000],
         message: 'the fresh panel must show every row before the picker is measured against it'})
       .toBe(fullRowCount);
-    baselineTrueCount = await v.pollValue(() => trueCount(page), (c) => c !== fullRowCount, 1500, 200);
+    baselineTrueCount = await v.pollValue(() => trueCount(page), (c) => c !== fullRowCount, 1500, 50);
     expect(baselineTrueCount, 'the row count at the start of this scenario must be the full table '
       + `and hold there; got ${baselineTrueCount}`).toBe(fullRowCount);
 
@@ -997,14 +998,14 @@ test('Filter Panel — Add, Reorder, and Remove Entry Points', async ({page}) =>
 
     await page.locator(`${SELECT_COLUMNS_DIALOG} [name="label-All"]`).click();
     await expect.poll(async () => pickerCheckedCount(page),
-      {timeout: 10_000, intervals: [200, 400, 800],
+      {timeout: 10_000, intervals: [30, 60, 120, 250, 500, 1000],
         message: `the "All" link must check every one of the ${pickedColumns.length} columns `
           + `[${pickedColumns.join(', ')}]`}).toBe(pickedColumns.length);
 
     await page.locator(`${SELECT_COLUMNS_DIALOG} [name="button-OK"]`).click();
     await dialogGone(page, SELECT_COLUMNS_DIALOG);
     await expect.poll(async () => cardCount(page),
-      {timeout: 20_000, intervals: [300, 600, 1200],
+      {timeout: 20_000, intervals: [30, 60, 120, 250, 500, 1000],
         message: `the picker committed ${pickedColumns.length} checked columns, so the panel must `
           + 'carry that many cards'}).toBe(pickedColumns.length);
 
@@ -1013,7 +1014,7 @@ test('Filter Panel — Add, Reorder, and Remove Entry Points', async ({page}) =>
       + `got [${captions.join(', ')}] for columns [${pickedColumns.join(', ')}]`)
       .toEqual([...pickedColumns].sort());
     await expect.poll(async () => trueCount(page),
-      {timeout: 20_000, intervals: [300, 600, 1200],
+      {timeout: 20_000, intervals: [30, 60, 120, 250, 500, 1000],
         message: `the ${pickedColumns.length} cards the picker committed are all unconfigured, so `
           + `choosing which columns get cards must leave the ${baselineTrueCount} shown rows alone`})
       .toBe(baselineTrueCount);
@@ -1025,17 +1026,17 @@ test('Filter Panel — Add, Reorder, and Remove Entry Points', async ({page}) =>
 
     await page.locator(`${SELECT_COLUMNS_DIALOG} [name="label-None"]`).click();
     await expect.poll(async () => pickerCheckedCount(page),
-      {timeout: 10_000, intervals: [200, 400, 800],
+      {timeout: 10_000, intervals: [30, 60, 120, 250, 500, 1000],
         message: 'the "None" link must clear every check'}).toBe(0);
 
     await page.locator(`${SELECT_COLUMNS_DIALOG} [name="button-OK"]`).click();
     await dialogGone(page, SELECT_COLUMNS_DIALOG);
     await expect.poll(async () => cardCount(page),
-      {timeout: 20_000, intervals: [300, 600, 1200],
+      {timeout: 20_000, intervals: [30, 60, 120, 250, 500, 1000],
         message: 'committing an empty check set must take every card away again'}).toBe(0);
     expect(await orderedCaptions(page), 'the panel must be empty after the "None" commit').toEqual([]);
     await expect.poll(async () => trueCount(page),
-      {timeout: 20_000, intervals: [300, 600, 1200],
+      {timeout: 20_000, intervals: [30, 60, 120, 250, 500, 1000],
         message: `taking every card away through the picker must leave the ${baselineTrueCount} `
           + 'shown rows alone — none of those cards was filtering'}).toBe(baselineTrueCount);
   });
@@ -1108,13 +1109,13 @@ test('Filter Panel — Add, Reorder, and Remove Entry Points', async ({page}) =>
           ?.dispatchEvent(new MouseEvent('mousedown', {bubbles: true, button: 0}));
       }, MULTI_VALUE_DIALOG);
       await page.waitForFunction(() => !!document.querySelector('.d4-column-selector-backdrop'),
-        null, {timeout: 10_000, polling: 100});
-      await page.keyboard.type(MVF_COLUMN.toLowerCase(), {delay: 40});
+        null, {timeout: 10_000, polling: 30});
+      await page.keyboard.type(MVF_COLUMN.toLowerCase(), {delay: 15});
       await page.keyboard.press('ArrowDown');
       await page.keyboard.press('Enter');
       await expect.poll(async () => page.evaluate((sel) =>
         (document.querySelector(`${sel} .d4-column-selector-column`)?.textContent ?? '').trim(), MULTI_VALUE_DIALOG),
-      {timeout: 15_000, intervals: [200, 400, 800],
+      {timeout: 15_000, intervals: [30, 60, 120, 250, 500, 1000],
         message: `the dialog must now be pointed at "${MVF_COLUMN}"; it opened on "${dialog.column}", and `
           + 'a dialog that silently kept that column would build a card over the wrong values'})
         .toBe(MVF_COLUMN);
@@ -1123,13 +1124,13 @@ test('Filter Panel — Add, Reorder, and Remove Entry Points', async ({page}) =>
       await page.keyboard.type(MVF_SEPARATOR);
       await expect.poll(async () => page.evaluate((sel) =>
         !document.querySelector(`${sel} [name="button-OK"]`)!.classList.contains('disabled'), MULTI_VALUE_DIALOG),
-      {timeout: 10_000, intervals: [200, 400, 800],
+      {timeout: 10_000, intervals: [30, 60, 120, 250, 500, 1000],
         message: `entering the "${MVF_SEPARATOR}" separator must enable OK; it stayed disabled`}).toBe(true);
 
       await page.locator(`${MULTI_VALUE_DIALOG} [name="button-OK"]`).click();
       await dialogGone(page, MULTI_VALUE_DIALOG);
       await expect.poll(async () => cardCount(page),
-        {timeout: 20_000, intervals: [300, 600, 1200],
+        {timeout: 20_000, intervals: [30, 60, 120, 250, 500, 1000],
           message: 'the Multi Value commit must add exactly one card to the empty panel'}).toBe(1);
 
       const after = await multiValueFilterColumns(page, MULTI_VALUE_FILTER_TYPE);
@@ -1139,7 +1140,7 @@ test('Filter Panel — Add, Reorder, and Remove Entry Points', async ({page}) =>
       expect(await orderedCaptions(page), 'the only caption must be the column the dialog was pointed at')
         .toEqual([MVF_COLUMN]);
       await expect.poll(async () => trueCount(page),
-        {timeout: 20_000, intervals: [300, 600, 1200],
+        {timeout: 20_000, intervals: [30, 60, 120, 250, 500, 1000],
           message: 'a multi-value filter with nothing selected must exclude no further row, so the '
             + `count must stay at ${fullRowCount}`}).toBe(fullRowCount);
 
@@ -1254,7 +1255,7 @@ test('Filter Panel — Add, Reorder, and Remove Entry Points', async ({page}) =>
       created = proposed;
       await dialogGone(page, FILTER_TO_COLUMN_DIALOG);
       await expect.poll(async () => columnNames(page),
-        {timeout: 20_000, intervals: [300, 600, 1200],
+        {timeout: 20_000, intervals: [30, 60, 120, 250, 500, 1000],
           message: `no "${proposed}" column appeared on the table after the commit`}).toContain(proposed);
 
       const type = await page.evaluate((c) => grok.shell.tv.dataFrame.col(c)?.type ?? '', proposed);

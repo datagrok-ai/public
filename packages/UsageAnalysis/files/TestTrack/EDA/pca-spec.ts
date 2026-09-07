@@ -47,7 +47,6 @@ test('PCA scenario', async ({page}) => {
       const el = document.querySelector('[name="div-ML---Analyze---PCA..."]') as HTMLElement | null;
       if (el) el.click();
     });
-    await page.waitForTimeout(1200);
     await page.locator('.d4-dialog').waitFor({timeout: 10000});
     await expect(page.locator('.d4-dialog')).toContainText('PCA');
 
@@ -61,10 +60,8 @@ test('PCA scenario', async ({page}) => {
   await softStep('Step 3 — Select all Features, set Components = 3', async () => {
 
     await page.locator('[name="input-host-Features"] .ui-input-editor').first().click();
-    await page.waitForTimeout(700);
 
     await page.locator('[name="label-All"]').click();
-    await page.waitForTimeout(200);
 
     await page.locator('[name="button-OK"]').last().click();
     await page.waitForTimeout(600);
@@ -117,14 +114,11 @@ test('PCA scenario', async ({page}) => {
       const el = document.querySelector('[name="div-ML---Analyze---PCA..."]') as HTMLElement | null;
       if (el) el.click();
     });
-    await page.waitForTimeout(1200);
     await page.locator('.d4-dialog').waitFor({timeout: 10000});
     await expect(page.locator('.d4-dialog')).toContainText('PCA');
 
     await page.locator('[name="input-host-Features"] .ui-input-editor').first().click();
-    await page.waitForTimeout(700);
     await page.locator('[name="label-All"]').click();
-    await page.waitForTimeout(200);
     await page.locator('[name="button-OK"]').last().click();
     await page.waitForTimeout(600);
 
@@ -144,7 +138,6 @@ test('PCA scenario', async ({page}) => {
         }
       }
     });
-    await page.waitForTimeout(200);
 
     await page.locator('.d4-dialog [name="button-OK"]').last().click();
 

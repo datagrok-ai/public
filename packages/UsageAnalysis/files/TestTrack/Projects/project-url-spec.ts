@@ -4,7 +4,8 @@ import {softStep, stepErrors} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
 import {projectsTestOptions, BASE_URL, evalJs, gotoApp, setupSession} from './_helpers';
 import {openTableFromFile, resetShell, assertProvenanceScript} from '../helpers/openers';
-import {saveProjectWithProvenance, deleteProjectWithCleanup} from '../helpers/projects';
+import {deleteProjectWithCleanup} from '../helpers/projects';
+import {saveProjectWithProvenance} from './projects-shared';
 
 test.use(projectsTestOptions);
 
@@ -52,23 +53,29 @@ test('Projects / Project URL: deep-link reopen for representative project', asyn
         const grok = (window as any).grok;
         let lastProjId: string | null = null;
         let lastRc: number | null = null;
+        let lastName: string | null = null;
+        let lastTables: number | null = null;
         for (let i = 0; i < 90; i++) {
           const projId = grok?.shell?.project?.id;
           const rc = grok?.shell?.tv?.dataFrame?.rowCount;
           lastProjId = projId ?? null;
           lastRc = typeof rc === 'number' ? rc : null;
+          lastName = grok?.shell?.project?.name ?? null;
+          lastTables = grok?.shell?.tables?.length ?? null;
           if (projId === pid && typeof rc === 'number' && rc > 0)
-            return {ok: true, signal: 'matched-id+rowCount', projId, rc};
+            return {ok: true, signal: 'matched-id+rowCount', projId, rc, projName: lastName, tables: lastTables};
           await new Promise((r) => setTimeout(r, 500));
         }
-        return {ok: false, signal: 'timeout', projId: lastProjId, rc: lastRc, expected: pid};
+        return {ok: false, signal: 'timeout', projId: lastProjId, rc: lastRc, expected: pid,
+          projName: lastName, tables: lastTables};
       }, {pid: expectedId});
       console.log('Project URL load result: ' + JSON.stringify(result));
 
       expect(
         result.ok,
-        result.ok ? '' : `deep-link did not open the expected project within 45s: ` +
-          `got project.id=${result.projId} (expected ${expectedId}), rowCount=${result.rc}`,
+        result.ok ? '' : `deep-link ${projectPath} did not open the expected project within 45s: ` +
+          `got project.id=${result.projId} name="${result.projName}" (expected ${expectedId}), ` +
+          `rowCount=${result.rc}, tables=${result.tables}`,
       ).toBe(true);
     });
   } finally {

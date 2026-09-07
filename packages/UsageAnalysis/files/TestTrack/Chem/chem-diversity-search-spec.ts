@@ -4,7 +4,7 @@ realizes: [chem.cp.diversity-search-viewer]
 import {expect, Page} from '@playwright/test';
 import {test} from '../shared-page';
 import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu, waitForMolecule} from '../spec-login';
-import {openChemMenuItem} from '../helpers/chem';
+import {openChemMenuItemFast as openChemMenuItem} from './chem-fast-helpers';
 import {finishSpec, ensurePropertyCategory, openViewerGear, propertyGridValue,
   selectPropertyGridChoice} from '../helpers/viewers';
 import {addCardViaColumnSelector, cardCaptions} from '../helpers/filter-panel';

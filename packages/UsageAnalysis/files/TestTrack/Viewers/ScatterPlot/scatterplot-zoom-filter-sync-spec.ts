@@ -208,7 +208,7 @@ test('Scatter Plot — Zoom and Filter Synchronization', async ({page}: {page: P
     await sp.openFilterPanel(page);
     // opening the panel clears the plot's own zoom contribution a beat AFTER the panel itself
     // appears; zooming into that window makes the count dip and bounce back
-    expect(await sp.filterHeld(page)).toBe(fullRowCount);
+    expect(await sp.filterHeld(page, 1000)).toBe(fullRowCount);
 
     await wheelZoomIn(page, 2);
     const zoomed = await sp.filterMoved(page, fullRowCount);

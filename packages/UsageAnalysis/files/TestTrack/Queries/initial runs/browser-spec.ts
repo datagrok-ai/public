@@ -68,9 +68,9 @@ test("Queries — browse NorthwindTest and find new_test_query", async ({
       const db = find("Databases");
       if (!db) return { ok: false, stage: "no-db" };
       db.click();
-      for (let i = 0; i < 20; i++) {
+      for (let i = 0; i < 60; i++) {
         if (find("Postgres")) return { ok: true };
-        await new Promise((r) => setTimeout(r, 300));
+        await new Promise((r) => setTimeout(r, 100));
       }
       return { ok: false, stage: "no-pg" };
     });
@@ -90,9 +90,9 @@ test("Queries — browse NorthwindTest and find new_test_query", async ({
       pg.dispatchEvent(
         new MouseEvent("dblclick", { bubbles: true, cancelable: true }),
       );
-      for (let i = 0; i < 30; i++) {
+      for (let i = 0; i < 90; i++) {
         if (find("NorthwindTest")) return { ok: true };
-        await new Promise((r) => setTimeout(r, 300));
+        await new Promise((r) => setTimeout(r, 100));
       }
       return { ok: false, stage: "no-nw" };
     });
@@ -130,7 +130,10 @@ test("Queries — browse NorthwindTest and find new_test_query", async ({
       input.dispatchEvent(
         new KeyboardEvent("keyup", { bubbles: true, key: "t" }),
       );
-      await new Promise((r) => setTimeout(r, 1500));
+      for (let i = 0; i < 30; i++) {
+        if (/(\d+)\s*\/\s*(\d+)/.test(document.body.innerText)) break;
+        await new Promise((r) => setTimeout(r, 50));
+      }
       const countMatch = document.body.innerText.match(/(\d+)\s*\/\s*(\d+)/);
       return { ok: true, value: input.value, hasCountDisplay: !!countMatch };
     });
@@ -142,7 +145,21 @@ test("Queries — browse NorthwindTest and find new_test_query", async ({
     const tabs = await page.evaluate(async (id) => {
       const q = await (window as any).grok.dapi.queries.find(id);
       (window as any).grok.shell.o = q;
-      await new Promise((r) => setTimeout(r, 1500));
+      const required = [
+        "Details",
+        "Run",
+        "Query",
+        "Transformations",
+        "Usage",
+        "Sharing",
+      ];
+      for (let i = 0; i < 300; i++) {
+        const h = Array.from(
+          document.querySelectorAll(".d4-accordion-pane-header"),
+        ).map((x) => (x.textContent ?? "").trim().replace(/\d+$/, ""));
+        if (required.every((r2) => h.includes(r2))) break;
+        await new Promise((r) => setTimeout(r, 50));
+      }
 
       const headers = Array.from(
         document.querySelectorAll(".d4-accordion-pane-header"),

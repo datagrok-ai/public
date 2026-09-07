@@ -1,9 +1,7 @@
 import {expect, Page} from '@playwright/test';
 import {test} from '../shared-page';
-import {
-  loginToDatagrok, loginAsSecondUser, getSecondUserLogin,
-  specTestOptions, softStep, stepErrors, baseUrl,
-} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors, baseUrl} from '../spec-login';
+import {recipientPage, secondUserLogin} from './_actors';
 
 test.use(specTestOptions);
 
@@ -121,7 +119,10 @@ test('Sharing & Permissions — Layout', async ({page}) => {
     grok.shell.windows.simpleMode = true;
   });
 
-  const recipientLogin = await getSecondUserLogin();
+  const recipientLogin = await secondUserLogin();
+  const rp = await recipientPage(page);
+  await waitForDapiReady(rp);
+  await waitForIdentity(rp, recipientLogin);
   LAYOUT_ID = await createLayout(page, LAYOUT_NAME);
   await setCurrentObjectToLayout(page, LAYOUT_ID);
 
@@ -145,7 +146,10 @@ test('Sharing & Permissions — Layout', async ({page}) => {
     await expect(dlg.locator('.d4-dialog-title')).toContainText('Share');
     await expect(page.locator('input[placeholder="User, group, or email"]')).toBeVisible();
     await expect(page.locator('[name="div-share-selector"]')).toBeVisible();
-    await expect(page.locator('[name="label-Advanced-editor..."]')).toBeVisible();
+    // GROK-20322 removed the Share dialog's "Advanced editor..." link
+    // (core/client/xamgle/lib/src/commands/file/share_dataset.dart); the grant list the
+    // PermissionsEditor renders is what the dialog must show now.
+    await expect(page.locator('.d4-dialog .grok-permissions')).toBeVisible();
     await expect(page.locator('[name="button-OK"]')).toBeVisible();
     await expect(page.locator('[name="button-CANCEL"]')).toBeVisible();
 
@@ -251,21 +255,19 @@ test('Sharing & Permissions — Layout', async ({page}) => {
   });
 
   await softStep('Block D.2-3: Recipient gains View; shared layout reachable + applicable', async () => {
-    await loginAsSecondUser(page);
-    await waitForDapiReady(page);                      
-    await waitForIdentity(page, recipientLogin);       
+    await waitForIdentity(rp, recipientLogin);
 
-    const found = await page.evaluate(async (lId) =>
+    const found = await rp.evaluate(async (lId) =>
       !!(await grok.dapi.layouts.find(lId).catch(() => null)), LAYOUT_ID);
-    const canView = await pollPermission(page, LAYOUT_ID, 'View', true);
+    const canView = await pollPermission(rp, LAYOUT_ID, 'View', true);
     expect(found).toBe(true);    
     expect(canView).toBe(true);  
   });
 
   await softStep('Block E: Recipient lacks Edit / Delete / Share on the shared layout', async () => {
 
-    await waitForIdentity(page, recipientLogin);
-    const checks = await page.evaluate(async (lId) => {
+    await waitForIdentity(rp, recipientLogin);
+    const checks = await rp.evaluate(async (lId) => {
       const deadline = Date.now() + 30_000;
       let found = false;
       let canView = false; let canEdit = true; let canDelete = true; let canShare = true;
@@ -292,9 +294,7 @@ test('Sharing & Permissions — Layout', async ({page}) => {
   });
 
   await softStep('Block F.1-2: Owner revokes recipient grant; pane shows owner-only', async () => {
-    await loginToDatagrok(page); 
-    await waitForDapiReady(page); 
-    await waitForIdentity(page, ownerLogin); 
+    await waitForIdentity(page, ownerLogin);
     const revoked = await page.evaluate(async (args) => {
       const {lId, login} = args;
       const l = await grok.dapi.layouts.find(lId); 
@@ -311,17 +311,13 @@ test('Sharing & Permissions — Layout', async ({page}) => {
   });
 
   await softStep('Block F.3-4: Recipient can no longer view/apply the layout (access revoked)', async () => {
-    await loginAsSecondUser(page);
-    await waitForDapiReady(page);                 
-    await waitForIdentity(page, recipientLogin);  
+    await waitForIdentity(rp, recipientLogin);
 
-    const canView = await pollPermission(page, LAYOUT_ID, 'View', false);
+    const canView = await pollPermission(rp, LAYOUT_ID, 'View', false);
     expect(canView).toBe(false);
   });
 
-  await loginToDatagrok(page);
-  await waitForDapiReady(page); 
-  await waitForIdentity(page, ownerLogin); 
+  await waitForIdentity(page, ownerLogin);
   await page.evaluate(async (lId) => {
     try {
       const l = await grok.dapi.layouts.find(lId); 

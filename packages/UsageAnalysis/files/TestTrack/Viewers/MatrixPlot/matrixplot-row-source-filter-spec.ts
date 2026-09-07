@@ -5,6 +5,7 @@ import {expect, Page} from '@playwright/test';
 import {test} from '../../shared-page';
 import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
+import {settledMatrixInk, settledMatrixInkAfterChange, stampRenders} from './matrix-helpers';
 
 declare const grok: any;
 declare const DG: any;
@@ -13,43 +14,13 @@ test.use(specTestOptions);
 
 const datasetPath = 'System:DemoFiles/demog.csv';
 
-const matrixInk = (page: Page) => page.evaluate(() => {
-  const cells = document.querySelectorAll('[name="viewer-Matrix-plot"] canvas.d4-matrix-plot-inner-viewer');
-  let total = 0;
-  for (const c of Array.from(cells) as HTMLCanvasElement[]) {
-    const ctx = c.getContext('2d');
-    if (!ctx) continue;
-    let data: Uint8ClampedArray;
-    try { data = ctx.getImageData(0, 0, c.width, c.height).data; } catch (_) { continue; }
-    for (let k = 0; k < data.length; k += 16)
-      if (data[k + 3] !== 0 && !(data[k] >= 250 && data[k + 1] >= 250 && data[k + 2] >= 250)) total++;
-  }
-  return total;
-});
-
-async function settledMatrixInk(page: Page): Promise<number> {
-  let prev = await matrixInk(page);
-  let cur = prev;
-  for (let i = 0; i < 12; i++) {
-    await page.waitForTimeout(300); 
-    cur = await matrixInk(page);
-    if (Math.abs(cur - prev) < 80) break;
-    prev = cur;
-  }
-  return cur;
-}
-
-async function settledMatrixInkAfterChange(page: Page, from: number, capMs: number): Promise<number> {
-  await v.pollValue(() => matrixInk(page), (ink) => Math.abs(ink - from) >= 80, capMs, 100);
-  return settledMatrixInk(page);
-}
-
 test('Matrix Plot — Row Source and Filtering', async ({page}: {page: Page}) => {
   test.setTimeout(600_000);
 
   await loginToDatagrok(page);
   await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 3000});
   await v.addViewerByIcon(page, 'matrix-plot', 'Matrix-plot');
+  await stampRenders(page);
 
   const filterTrueCount = () => page.evaluate(() => grok.shell.tv.dataFrame.filter.trueCount as number);
 

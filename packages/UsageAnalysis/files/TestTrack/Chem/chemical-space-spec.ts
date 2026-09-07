@@ -2,6 +2,7 @@ import {expect, Page} from '@playwright/test';
 import {test} from '../shared-page';
 import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
+import {waitForChemMenuRoot} from './chem-fast-helpers';
 
 test.use(specTestOptions);
 
@@ -108,8 +109,12 @@ async function runChemicalSpaceWalk(page: Page, label: string, datasetPath: stri
   await clickOkAndWaitForEmbedding(page, `${label}/custom`, defaultSuffix);
 
   await softStep(`[${label}] Close active view`, async () => {
-    await page.evaluate(() => grok.shell.closeAll());
-    await page.waitForTimeout(1500);
+    await page.evaluate(async () => {
+      grok.shell.closeAll();
+      const deadline = Date.now() + 1500;
+      while (Date.now() < deadline && Array.from(grok.shell.tableViews).length > 0)
+        await new Promise((r) => setTimeout(r, 50));
+    });
   });
 }
 
@@ -117,7 +122,7 @@ test('Chem: Chemical Space multi-format walk (smiles-50 / molV2000 / molV3000)',
   test.setTimeout(900_000); 
 
   await loginToDatagrok(page);
-  await page.waitForTimeout(3000);
+  await waitForChemMenuRoot(page);
 
   await runChemicalSpaceWalk(page, 'D1 smiles-50', 'System:AppData/Chem/tests/smiles-50.csv', 'method');
   await runChemicalSpaceWalk(page, 'D2 molV2000', 'System:AppData/Chem/mol1K.sdf', 'method');

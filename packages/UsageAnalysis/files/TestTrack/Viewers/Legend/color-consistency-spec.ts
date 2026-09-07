@@ -7,6 +7,7 @@ realizes: [viewers.histogram, viewers.line-chart, viewers.bar-chart, viewers.pie
 import {localTest as test, expect} from '../../shared-page';
 import {openDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
+import {addLegendViewers} from './legend-setup';
 
 test.use(specTestOptions);
 
@@ -16,23 +17,29 @@ test('Legend color consistency', async ({page}) => {
   await openDatagrok(page);
   await v.openTable(page);
   await v.installEventWaits(page);
-  await v.addLegendViewers(page, {
+  await addLegendViewers(page, {
     column: 'Stereo Category',
     viewers: ['Histogram', 'Line chart', 'Bar chart', 'Pie chart', 'Trellis plot', 'Box plot'],
   });
 
   await softStep('Categorical color coding from grid: R_ONE=red, S_UNKN=green', async () => {
     const res = await page.evaluate(async () => {
-      const df = (window as any).grok.shell.tv.dataFrame;
+      const w = window as any;
+      const df = w.grok.shell.tv.dataFrame;
       const col = df.col('Stereo Category');
+      const swatches = () => Array.from(w.grok.shell.tv.viewers)
+        .filter((x: any) => x.type !== 'Grid')
+        .map((x: any) => Array.from(x.root.querySelectorAll('[name="legend"] .d4-legend-item'))
+          .map((el: any) => getComputedStyle(el).color).join(',')).join(';');
       col.tags['.color-coding-type'] = 'Categorical';
       col.meta.colors.setCategorical(
         {'R_ONE': '#FF0000', 'S_UNKN': '#00FF00'},
         {fallbackColor: '#808080'},
       );
-      for (const x of (window as any).grok.shell.tv.viewers)
+      for (const x of w.grok.shell.tv.viewers)
         if (x.type !== 'Grid') try { x.invalidate?.(); } catch (_) {}
-      await new Promise((r) => setTimeout(r, 1500));
+      // the next step reads the rendered swatch colours, so the settle is on them, not the tag
+      await w.__settledFor(swatches, 150, 1500, 25);
       let tagColors: Record<string, any> = {};
       try { tagColors = JSON.parse(col.tags['.color-coding-categorical'] ?? '{}'); } catch (_) {}
       return {

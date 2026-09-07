@@ -17,6 +17,16 @@ export async function setBpProp(page: Page, prop: string, value: any, capMs = 90
   await v.setViewerProps(page, 'Box plot', [{set: {[prop]: value}, wait: capMs}]);
 }
 
+/**
+ * Sets several properties in one go and settles once.
+ *
+ * For a run of sets whose intermediate states nothing asserts — a step's restore tail, a
+ * value/category pair — this is one round trip and one render wait instead of N of each.
+ */
+export async function setBpProps(page: Page, sets: Record<string, any>, capMs = 900): Promise<void> {
+  await v.setViewerProps(page, 'Box plot', [{set: sets, wait: capMs}]);
+}
+
 export function canvasRect(page: Page): Promise<Rect> {
   return page.evaluate((sel) => {
     const c = document.querySelector(`${sel} canvas[name="canvas"]`)!.getBoundingClientRect();
@@ -142,11 +152,44 @@ export async function verticalSliderHandles(page: Page): Promise<{top: Pt; botto
   return {top: s!.top, bottom: s!.bottom};
 }
 
-/** Drags the top value-axis handle down by `frac` of the handle span, narrowing the viewport. */
+/**
+ * Drags the top value-axis handle down by `frac` of the handle span, narrowing the viewport.
+ *
+ * Three intermediate moves, not sixteen: the slider tracks the pointer on every mousemove, so the
+ * extra thirteen only bought thirteen more actionability round trips (2.1s, measured 2026-09-04).
+ */
 export async function dragTopHandle(page: Page, frac: number): Promise<void> {
   const h = await verticalSliderHandles(page);
   await page.mouse.move(h.top.x, h.top.y);
   await page.mouse.down();
-  await page.mouse.move(h.top.x, h.top.y + (h.bottom.y - h.top.y) * frac, {steps: 16});
+  await page.mouse.move(h.top.x, h.top.y + (h.bottom.y - h.top.y) * frac, {steps: 3});
   await page.mouse.up();
 }
+
+/**
+ * Resolves once the box plot has painted, and installs the render stamp while doing it.
+ *
+ * The plain waitForViewerRendered subscribes when it is called, so the very first settle after
+ * addViewer has already missed the paint it waits for and burns its whole cap.
+ */
+export async function bpPainted(page: Page, capMs = 3000): Promise<number> {
+  await v.waitForViewerRendered(page, 'Box plot', 0);
+  return v.pollValue(() => bpCanvasInk(page), (n) => n > 0, capMs, 50);
+}
+
+/** Non-white, non-transparent pixels on the box plot canvas. */
+export function bpCanvasInk(page: Page): Promise<number> {
+  return page.evaluate(() => {
+    const bp = grok.shell.tv.viewers.find((x: any) => x.type === 'Box plot');
+    const cv = bp?.root?.querySelector('canvas[name="canvas"]') as HTMLCanvasElement | null;
+    if (!cv) return 0;
+    const data = cv.getContext('2d')!.getImageData(0, 0, cv.width, cv.height).data;
+    let n = 0;
+    for (let i = 0; i < data.length; i += 4) {
+      const r = data[i], g = data[i + 1], b = data[i + 2], a = data[i + 3];
+      if (a !== 0 && !(r >= 250 && g >= 250 && b >= 250)) n++;
+    }
+    return n;
+  });
+}
+

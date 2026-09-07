@@ -18,7 +18,8 @@ import {
   SYSTEM_DATAGROK_NQNAME,
   SYSTEM_DATAGROK_QUERIES,
 } from '../helpers/openers';
-import {saveAllTablesWithProvenance, deleteProjectWithCleanup, SavedAllTables} from '../helpers/projects';
+import {deleteProjectWithCleanup, SavedAllTables} from '../helpers/projects';
+import {saveAllTablesWithProvenance} from './projects-shared';
 
 async function openFileColonForm(page: Page, fullPath: string): Promise<{rowCount: number; script: string}> {
   return await page.evaluate(async (p) => {

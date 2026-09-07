@@ -5,7 +5,7 @@ import {expect} from '@playwright/test';
 import {test} from '../shared-page';
 import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu, waitForMolecule} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
-import {openChemMenuItem} from '../helpers/chem';
+import {openChemMenuItemFast as openChemMenuItem} from './chem-fast-helpers';
 
 declare const grok: any;
 declare const DG: any;
@@ -97,9 +97,27 @@ async function openDatasetWithChem(page: any) {
     });
     for (let i = 0; i < 50; i++) {
       if (document.querySelector('[name="viewer-Grid"] canvas')) break;
-      await new Promise((r) => setTimeout(r, 200));
+      await new Promise((r) => setTimeout(r, 100));
     }
-    await new Promise((r) => setTimeout(r, 5000)); // missing-event: grid-first-paint-settled
+    // The grid is settled when its own pixels stop changing, which is the state the 5 s sleep was
+    // standing in for: hash a horizontal strip and hold it, capped at the sleep it replaces.
+    const paintDeadline = Date.now() + 5000;
+    let lastHash = -1;
+    let stable = 0;
+    while (Date.now() < paintDeadline) {
+      const cv = document.querySelector('[name="viewer-Grid"] canvas') as HTMLCanvasElement | null;
+      let h = -1;
+      if (cv && cv.width > 0 && cv.height > 0) {
+        const ctx = cv.getContext('2d');
+        const d = ctx!.getImageData(0, 0, cv.width, Math.min(cv.height, 120)).data;
+        h = 0;
+        for (let i = 0; i < d.length; i += 997) h = (h * 31 + d[i]) | 0;
+      }
+      if (h !== -1 && h === lastHash) { if (++stable >= 3) break; }
+      else stable = 0;
+      lastHash = h;
+      await new Promise((r) => setTimeout(r, 100));
+    }
     (window as any).__errors = [];
     if (!(window as any).__errorTrapInstalled) {
       (window as any).__errorTrapInstalled = true;
@@ -150,7 +168,7 @@ async function generateTreeViaMagicWand(page: any, expectedRows: number) {
       nodes = Array.from(viewer.root.querySelectorAll('.d4-tree-view-node'))
         .filter((n: any) => n.querySelector('canvas.chem-canvas')).length;
       if (nodes > 0) break;
-      await new Promise((r) => setTimeout(r, 500));
+      await new Promise((r) => setTimeout(r, 150));
     }
     return {viewerFound: true, distinct, iconFound: true, inactive, clicked: dispatched, threw, reason, nodes};
   }, {rows: expectedRows, limit: MAX_DISTINCT_MOLECULES, cap: 60_000});
@@ -169,7 +187,7 @@ async function waitForSettledTrueCount(page: any, expected: number, capMs: numbe
     let eventsAtHit = -1;
     while (Date.now() - started < cap) {
       if (d.filter.trueCount !== want) {
-        await new Promise((r) => setTimeout(r, 500));
+        await new Promise((r) => setTimeout(r, 150));
         continue;
       }
       eventsAtHit = (window as any).__filterEvents ?? -1;
@@ -310,7 +328,7 @@ async function saveOpenProject(page: any, name: string) {
     const dlgWaitStarted = Date.now();
     while (Date.now() - dlgWaitStarted < dlgCap) {
       if (!document.querySelector('[name="dialog-Save-project"]')) break;
-      await new Promise((r) => setTimeout(r, 250));
+      await new Promise((r) => setTimeout(r, 100));
     }
     const dlgClosed = !document.querySelector('[name="dialog-Save-project"]');
     const dlgCloseMs = Date.now() - dlgWaitStarted;
@@ -321,7 +339,7 @@ async function saveOpenProject(page: any, name: string) {
         const p = await grok.dapi.projects.filter('name = "' + projectName + '"').first();
         if (p) { savedId = p.id; break; }
       } catch (e) { }
-      await new Promise((r) => setTimeout(r, 500));
+      await new Promise((r) => setTimeout(r, 150));
     }
     return {
       nameFound: !!nameInput,
@@ -351,7 +369,16 @@ async function closeAllAndReopen(page: any, name: string) {
       record();
     }
     grok.shell.closeAll();
-    await new Promise((r) => setTimeout(r, 2500)); // missing-event: shell-close-all-settled
+    // closeAll is not synchronous with the views leaving the shell. Wait for the count to reach
+    // zero and hold, capped at the 2.5 s sleep this replaces; a stuck view still reads non-zero
+    // into tvAfterClose, which is what the caller asserts on.
+    const closeDeadline = Date.now() + 2500;
+    let zeroes = 0;
+    while (Date.now() < closeDeadline) {
+      if (Array.from(grok.shell.tableViews).length === 0) { if (++zeroes >= 3) break; }
+      else zeroes = 0;
+      await new Promise((r) => setTimeout(r, 100));
+    }
     const tvAfterClose = Array.from(grok.shell.tableViews).length;
     const project = await grok.dapi.projects.filter('name = "' + projectName + '"').first();
     const found = !!project;
@@ -362,7 +389,7 @@ async function closeAllAndReopen(page: any, name: string) {
         const tv = grok.shell.tv;
         if (tv && tv.dataFrame && Array.from(tv.viewers).some((v: any) => /Scaffold Tree/i.test(v.type || '')) &&
             (window as any).__scaffoldEl()) break;
-        await new Promise((r) => setTimeout(r, 250));
+        await new Promise((r) => setTimeout(r, 100));
       }
     }
     const tv = grok.shell.tv;
@@ -645,13 +672,19 @@ test('Chem: project save and reopen with Chem state (GROK-17595)', async ({page}
       expectNoReopenErrors(await readErrorChannels(page), 'scaffold-only reopen');
     });
   } finally {
-    await page.evaluate(async (names: string[]) => {
-      for (const name of names) {
-        try {
-          const p = await grok.dapi.projects.filter('name = "' + name + '"').first();
-          if (p) await grok.dapi.projects.delete(p);
-        } catch (e) { console.log('[cleanup] project delete threw (non-fatal):', String(e)); }
-      }
+    // The two projects still have to go, but nothing below this point reads them: hand the
+    // find+delete to the worker fixture's drain queue instead of paying for it in the spec.
+    await page.evaluate((names: string[]) => {
+      const w = window as any;
+      w.__pendingDeletes = w.__pendingDeletes ?? [];
+      w.__pendingDeletes.push((async () => {
+        for (const name of names) {
+          try {
+            const p = await grok.dapi.projects.filter('name = "' + name + '"').first();
+            if (p) await grok.dapi.projects.delete(p);
+          } catch (e) { console.log('[cleanup] project delete threw (non-fatal):', String(e)); }
+        }
+      })());
       grok.shell.closeAll();
     }, [roundtripProject, scaffoldOnlyProject]).catch(() => {});
   }

@@ -98,7 +98,7 @@ test('Filter Panel — Panel Core Ladder', async ({page}) => {
   // the shared page can hand over a panel that reapplies an earlier spec's filter state
   await removeAllViaPanelMenu(page);
   await v.resetFilters(page);
-  await expect.poll(() => trueCount(page), {timeout: 10_000}).toBe(FULL);
+  await expect.poll(() => trueCount(page), {timeout: 10_000, intervals: [30, 60, 120, 250, 500, 1000]}).toBe(FULL);
   expect(await cardCaptions(page)).toEqual([]);
   expect(await cardCount(page)).toBe(0);
 
@@ -357,7 +357,7 @@ test('Filter Panel — Panel Core Ladder', async ({page}) => {
       await panel.click({position: {x: 5, y: 5}});
       await page.keyboard.press('Escape');
       await expect.poll(async () => page.evaluate(() => grok.shell.tv.dataFrame.filter.trueCount),
-        {timeout: 10_000, intervals: [300, 600, 1200]}).toBe(FULL);
+        {timeout: 10_000, intervals: [30, 60, 120, 250, 500, 1000]}).toBe(FULL);
 
       const off = await page.evaluate(() => ({
         rows: grok.shell.tv.dataFrame.filter.trueCount,
@@ -377,7 +377,7 @@ test('Filter Panel — Panel Core Ladder', async ({page}) => {
       await panel.click({position: {x: 5, y: 5}});
       await page.keyboard.press('Escape');
       await expect.poll(async () => page.evaluate(() => grok.shell.tv.dataFrame.filter.trueCount),
-        {timeout: 10_000, intervals: [300, 600, 1200]}).toBe(before);
+        {timeout: 10_000, intervals: [30, 60, 120, 250, 500, 1000]}).toBe(before);
       expect(await page.evaluate(() =>
         document.querySelector('[name="viewer-Filters"]')!.classList.contains('d4-filters-disabled')))
         .toBe(false);

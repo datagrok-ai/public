@@ -47,6 +47,30 @@ export function installLedger(page: Page): LedgerEntry[] {
       finally { ledger.push({kind, ms: Date.now() - t0, what: kind === 'waitForTimeout' ? String(args[0]) : snippet(args[0])}); }
     };
   }
+  // the Playwright-side actions were the one unmeasured bucket (435s of a 1,923s Viewers run):
+  // mouse and keyboard calls, and the locator actions, are timed the same way
+  const wrap = (obj: any, kind: string, names: string[], label: (name: string, args: any[]) => string) => {
+    for (const name of names) {
+      const orig = obj[name]?.bind(obj);
+      if (!orig) continue;
+      obj[name] = async (...args: any[]) => {
+        const t0 = Date.now();
+        try { return await orig(...args); }
+        finally { ledger.push({kind, ms: Date.now() - t0, what: label(name, args)}); }
+      };
+    }
+  };
+  wrap(page.mouse, 'mouse', ['move', 'click', 'dblclick', 'down', 'up', 'wheel'],
+    (n, a) => `${n} ${typeof a[0] === 'number' ? Math.round(a[0]) + ',' + Math.round(a[1]) : ''}${a[2]?.steps ? ' steps=' + a[2].steps : ''}`);
+  wrap(page.keyboard, 'keyboard', ['press', 'type', 'insertText'], (n, a) => `${n} ${String(a[0]).slice(0, 30)}`);
+  const origLocator = p.locator.bind(page);
+  p.locator = (...args: any[]) => {
+    const loc = origLocator(...args);
+    wrap(loc, 'locator', ['click', 'dblclick', 'hover', 'fill', 'press', 'pressSequentially', 'waitFor', 'scrollIntoViewIfNeeded',
+      'count', 'isVisible', 'textContent', 'innerText', 'boundingBox', 'evaluate', 'evaluateAll', 'check', 'selectOption'],
+    (n) => `${n} ${String(args[0]).slice(0, 80)}`);
+    return loc;
+  };
   return ledger;
 }
 
@@ -183,7 +207,11 @@ export async function installCsvBridge(page: Page) {
     w.__csvText = w.__csvText ?? {};
     w.__readCsv = async (p: string) => {
       if (!local) {
-        if (!(p in w.__csvText)) w.__csvText[p] = await w.grok.dapi.files.readAsText(p);
+        // a dev stall in the read must fail by name, not hold the spec to its timeout
+        // (forms-spec once sat 560s in readAsText of curves.csv)
+        if (!(p in w.__csvText))
+          w.__csvText[p] = await Promise.race([w.grok.dapi.files.readAsText(p),
+            new Promise<string>((_, rej) => setTimeout(() => rej(new Error(`readAsText("${p}") timed out after 30s`)), 30_000))]);
         return w.DG.DataFrame.fromCsv(w.__csvText[p]);
       }
       if (!(p in w.__csv))

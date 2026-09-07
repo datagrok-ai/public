@@ -6,6 +6,7 @@ realizes: [viewers.scatter-plot, viewers.histogram, viewers.line-chart, viewers.
 import {localTest as test, expect} from '../../shared-page';
 import {openDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
 import * as v from '../../helpers/viewers';
+import {addLegendViewers} from './legend-setup';
 import {clickCanvasFilter} from './canvas-filter';
 
 test.use(specTestOptions);
@@ -16,7 +17,7 @@ test('GROK-17222: legend reflects filter state across 4 trigger sources', async 
 
   await openDatagrok(page);
   await v.openTable(page, {withFilterPanel: true});
-  await v.addLegendViewers(page, {
+  await addLegendViewers(page, {
     column: 'Stereo Category',
     viewers: ['Line chart', 'Scatter plot', 'Pie chart', 'Bar chart'],
   });
@@ -40,13 +41,16 @@ test('GROK-17222: legend reflects filter state across 4 trigger sources', async 
       df.filter.setAll(true);
       const fg = tv.getFiltersGroup();
       for (const f of Array.from(fg.filters as any)) { try { fg.remove(f); } catch (_) {} }
+      const w = window as any;
       const sp = tv.viewers.find((x: any) => x.type === 'Scatter plot');
+      const items = () => sp.root.querySelectorAll('[name="legend"] .d4-legend-item').length;
       sp.props.filter = '';
-      await new Promise((r) => setTimeout(r, 500));
-      const beforeItems = sp.root.querySelectorAll('[name="legend"] .d4-legend-item').length;
+      await w.__poll(items, (n: number) => n > 0, 500, 25);
+      const beforeItems = await w.__settledFor(items, 150, 500, 25);
+      const quiet = w.__quiet('viewer:Scatter plot.onViewerRendered', 150, 1500);
       sp.props.filter = '${Stereo Category} in ("R_ONE", "S_UNKN")';
-      await new Promise((r) => setTimeout(r, 1500));
-      const afterItems = sp.root.querySelectorAll('[name="legend"] .d4-legend-item').length;
+      await quiet;
+      const afterItems = await w.__settledFor(items, 150, 1500, 25);
       return {beforeItems, afterItems, filter: sp.props.filter};
     });
     expect(res.filter).toContain('Stereo Category');

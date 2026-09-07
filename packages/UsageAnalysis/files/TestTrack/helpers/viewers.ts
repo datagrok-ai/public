@@ -29,8 +29,12 @@ async function openTableImpl(page: Page, options?: OpenTableOptions): Promise<vo
   await installEventWaits(page);
   const p = options?.path ?? 'System:AppData/Chem/tests/spgi-100.csv';
   const useOpenFile = options?.sdf === true || /\.(sdf|nwk|pdb)$/i.test(p);
-  const semTypeTimeoutMs = options?.semTypeTimeoutMs ?? 5000;
-  await page.evaluate(async ({path, openFile, semTypeTimeoutMs}) => {
+  // demog has no column any detector types, so the detected event never fires and every
+  // cap set for it (3-5s in most specs) is paid in full: 151 opens, 94s in the final Viewers run
+  const neverTypes = /\/demog\.csv$/i.test(p) && !options?.semType;
+  const semTypeTimeoutMs = neverTypes ? 0 : options?.semTypeTimeoutMs ?? 5000;
+  const freshDf = !!process.env.PW_FRESH_DF;
+  await page.evaluate(async ({path, openFile, semTypeTimeoutMs, freshDf}) => {
     document.body.classList.add('selenium');
     (window as any).grok.shell.settings.showFiltersIconsConstantly = true;
     (window as any).grok.shell.windows.simpleMode = true;
@@ -53,13 +57,22 @@ async function openTableImpl(page: Page, options?: OpenTableOptions): Promise<vo
       }
       if (!df) throw new Error(`OpenFile("${path}") did not produce a TableView (12s settle)`);
     } else {
-      df = await (window as any).__readCsv(path);
-      (window as any).grok.shell.addTableView(df);
+      // parsed once per page and cloned per open: the bytes never change between the tests of
+      // one worker, and a clone keeps one test's column edits away from the next
+      const w = window as any;
+      w.__dfCache = w.__dfCache ?? {};
+      if (freshDf) df = await w.__readCsv(path);
+      else {
+        if (!(path in w.__dfCache)) w.__dfCache[path] = await w.__readCsv(path);
+        df = w.__dfCache[path].clone();
+      }
+      w.grok.shell.addTableView(df);
     }
-    await new Promise((resolve) => {
-      const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(null); });
-      setTimeout(resolve, semTypeTimeoutMs);
-    });
+    if (semTypeTimeoutMs > 0)
+      await new Promise((resolve) => {
+        const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(null); });
+        setTimeout(resolve, semTypeTimeoutMs);
+      });
     const hasBioChem = Array.from({length: df.columns.length}, (_, i: number) => df.columns.byIndex(i))
       .some((c: any) => c.semType === 'Molecule' || c.semType === 'Macromolecule');
     if (hasBioChem) {
@@ -71,7 +84,7 @@ async function openTableImpl(page: Page, options?: OpenTableOptions): Promise<vo
       // the molecule renderer repaints the grid once it has loaded; wait for that burst to end
       await (window as any).__quiet('viewer:Grid.onAfterDrawContent', 400, 5000);
     }
-  }, {path: p, openFile: useOpenFile, semTypeTimeoutMs});
+  }, {path: p, openFile: useOpenFile, semTypeTimeoutMs, freshDf});
   await page.locator('.d4-grid[name="viewer-Grid"]').first().waitFor({timeout: 30000});
   if (options?.settleMs) await page.waitForTimeout(options.settleMs);
   if (options?.withFilterPanel) await openFilterPanel(page);
@@ -829,7 +842,7 @@ export async function waitForCanvasChange(
       return false;
     }
   }, {vt: viewerType, cs: canvasSelector, min: minDelta},
-  {timeout: opts.timeoutMs ?? 15_000, polling: 250});
+  {timeout: opts.timeoutMs ?? 15_000, polling: 60});
   return (await diffCanvasColors(page, viewerType, canvasSelector)).deltaPx;
 }
 
@@ -1329,7 +1342,17 @@ export async function cleanupShell(
     }
     (window as any).grok.shell.closeAll();
   }, opts.clearStereoCategoryColorCoding ?? false);
-  await page.waitForTimeout(500);
+  // closeAll returns before the views drain; waiting for the drain is the same guarantee the
+  // trailing sleep was buying, and it returns as soon as it is true (48 call sites x 500 ms)
+  await page.evaluate(() => new Promise<void>((resolve) => {
+    const w = window as any;
+    const t0 = Date.now();
+    const tick = () => {
+      if (Array.from(w.grok.shell.tableViews).length === 0 || Date.now() - t0 > 500) return resolve();
+      setTimeout(tick, 25);
+    };
+    tick();
+  }));
 }
 
 export interface ViewerPropStep {
@@ -1342,7 +1365,7 @@ export interface ViewerPropStep {
 }
 
 export async function setViewerProps(
-  page: Page, viewerType: string, steps: ViewerPropStep[], delayMs = 300,
+  page: Page, viewerType: string, steps: ViewerPropStep[], delayMs = 120,
 ): Promise<any[]> {
   return page.evaluate(async ({viewerType, steps, delayMs}) => {
     const h = Array.from((window as any).grok.shell.tv.viewers)
@@ -1437,7 +1460,7 @@ export async function waitForViewerQuiet(
       setTimeout(tick, 50);
     };
     tick();
-  }), {type: viewerType, gap: opts.gapMs ?? 300, cap: opts.capMs ?? 3000});
+  }), {type: viewerType, gap: opts.gapMs ?? 150, cap: opts.capMs ?? 1500});
 }
 
 /**

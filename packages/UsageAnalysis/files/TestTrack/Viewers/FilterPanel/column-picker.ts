@@ -16,8 +16,8 @@ export async function typeIntoOpenPicker(page: Page, column: string): Promise<st
   await page.keyboard.press(column[0].toLowerCase());
   await page.locator(SEARCH).first().waitFor({state: 'attached', timeout: 10_000});
   await page.keyboard.press('Control+a');
-  await page.keyboard.type(column, {delay: 40});
-  return v.pollValue(() => pickerSearchValue(page), (val) => val === column, 800, 50);
+  await page.keyboard.type(column, {delay: 15});
+  return v.pollValue(() => pickerSearchValue(page), (val) => val === column, 800, 30);
 }
 
 // Escape is only sent while the popup is up: with the panel focused it toggles the filter group.
@@ -26,6 +26,7 @@ export async function closePicker(page: Page): Promise<void> {
   await page.keyboard.press('Escape');
   await expect.poll(() => page.locator(BACKDROP).count(), {
     timeout: 10_000,
+    intervals: [30, 60, 120, 250, 500, 1000],
     message: 'the column picker popup stayed open and would intercept the next gesture',
   }).toBe(0);
 }
@@ -73,12 +74,21 @@ export async function addCardViaPicker(page: Page, column: string): Promise<void
       .toBe(column);
     await page.keyboard.press('Enter');
     added = await v.pollValue(async () => (await cardCaptions(page)).includes(column),
-      (there) => there, attempt === 0 ? 5000 : 15_000, 250);
+      (there) => there, attempt === 0 ? 5000 : 15_000, 50);
     if (!added) await closePicker(page);
   }
   expect(added, `no ${column} card came out of the column-picker commit`).toBe(true);
+  // The caption lands before the card has finished growing, and a caller that measures a category
+  // row off the fresh card would address a band the layout is about to move.
+  await page.evaluate((col) => (window as any).__settledFor(() => {
+    const card = [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter')]
+      .find((c) => ((c.querySelector('.d4-filter-column-name') as HTMLElement | null)?.textContent ?? '').trim() === col);
+    const r = card?.getBoundingClientRect();
+    return r ? `${Math.round(r.top)}|${Math.round(r.height)}` : '';
+  }, 150, 3000, 25), column);
   await expect.poll(() => page.locator(BACKDROP).count(), {
     timeout: 10_000,
+    intervals: [30, 60, 120, 250, 500, 1000],
     message: 'the column picker popup stayed open and would intercept the next gesture',
   }).toBe(0);
 }

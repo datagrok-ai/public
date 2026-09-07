@@ -30,7 +30,7 @@ async function closeFilterPanel(page: Page): Promise<void> {
   }
   expect(clicked, 'the Filters panel exposes no title-bar close control').toBe(true);
   await expect.poll(async () => page.locator('[name="viewer-Filters"]').count(),
-    {timeout: 10_000, intervals: [300, 600, 1200]}).toBe(0);
+    {timeout: 10_000, intervals: [30, 60, 120, 250, 500, 1000]}).toBe(0);
 }
 
 async function myLayoutsCarrying(page: Page, marker: string): Promise<string[]> {
@@ -70,7 +70,7 @@ test('Filters — layout round-trip with panel and viewer filtering combined', a
         expect(rect).not.toBeNull();
         await zoomScatterPlot(page, rect!);
         await expect.poll(async () => trueCount(page),
-          {timeout: 15_000, intervals: [400, 800, 1500]}).toBeLessThan(truePanel);
+          {timeout: 15_000, intervals: [30, 60, 120, 250, 500, 1000]}).toBeLessThan(truePanel);
         const zoomed = await trueCount(page);
         const beforeSave = await page.evaluate(() => {
           const tv = grok.shell.tv;
@@ -121,12 +121,23 @@ test('Filters — layout round-trip with panel and viewer filtering combined', a
           return String(grok.shell.tv.dataFrame.name);
         }, runTag);
         expect(stamped).toBe(runTag);
+        // The command makes the saved layout the current object only after dapi.layouts.save
+        // resolves (xamgle/lib/src/commands/view/layout.dart:34). getApplicable costs seconds a
+        // call on dev, so the listing waits for that instead of paying for a first call that is
+        // guaranteed to find nothing.
+        await page.evaluate(() => {
+          const w = window as any;
+          w.__layoutSaved = false;
+          const sub = grok.events.onCurrentObjectChanged.subscribe(() => { w.__layoutSaved = true; sub.unsubscribe(); });
+        });
         expect(await v.driveTopMenuLeaf(page, ['View', 'Layout', 'Save to Gallery'])).toBe(true);
+        await page.evaluate(() => (window as any).__poll(() => (window as any).__layoutSaved,
+          (done: boolean) => done, 20_000, 50));
         let fresh: string[] = [];
         await expect.poll(async () => {
           fresh = await myLayoutsCarrying(page, runTag);
           return fresh.length;
-        }, {timeout: 25_000, intervals: [500, 1000, 2000, 3000]}).toBeGreaterThanOrEqual(1);
+        }, {timeout: 25_000, intervals: [30, 60, 120, 250, 500, 1000]}).toBeGreaterThanOrEqual(1);
         expect(fresh.length, `expected exactly 1 new layout, got ${fresh.length}`).toBe(1);
         savedLayout = fresh[0];
 
@@ -143,9 +154,9 @@ test('Filters — layout round-trip with panel and viewer filtering combined', a
         }, savedLayout);
 
         await expect.poll(async () => page.locator('[name="viewer-Filters"] .d4-filter').count(),
-          {timeout: 20_000, intervals: [500, 1000, 2000, 3000]}).toBeGreaterThanOrEqual(1);
+          {timeout: 20_000, intervals: [30, 60, 120, 250, 500, 1000]}).toBeGreaterThanOrEqual(1);
         await expect.poll(async () => raceSelectedCategories(page),
-          {timeout: 15_000, intervals: [500, 1000, 2000]}).toEqual([PANEL_CATEGORY]);
+          {timeout: 15_000, intervals: [30, 60, 120, 250, 500, 1000]}).toEqual([PANEL_CATEGORY]);
         const afterLayout = await page.evaluate(() => {
           const tv = grok.shell.tv;
           const sp = tv.viewers.find((x: any) => x.type === 'Scatter plot');
@@ -171,7 +182,7 @@ test('Filters — layout round-trip with panel and viewer filtering combined', a
           'round-trip bound below could not tell a restored zoom from a lost one').toBeLessThan(truePanel);
         await expect.poll(async () => trueCount(page), {
           timeout: 30_000,
-          intervals: [500, 1000, 2000, 3000],
+          intervals: [30, 60, 120, 250, 500, 1000],
           message: 'the re-applied layout did not settle at the panel-only row count: ' +
             `before=${JSON.stringify(beforeSave)} after=${JSON.stringify(afterLayout)}`,
         }).toBe(truePanel);

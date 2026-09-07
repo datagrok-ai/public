@@ -28,38 +28,51 @@ export function focusGrid(page: Page): Promise<void> {
 }
 
 export async function openGridMenu(page: Page, at: Point): Promise<void> {
-  await page.evaluate(({x, y, sel}) => {
+  await page.evaluate(async ({x, y, sel}) => {
+    const w = window as any;
     const overlay = document.querySelector(sel) as HTMLElement;
     const cm = {bubbles: true, cancelable: true, clientX: x, clientY: y, button: 2, buttons: 2} as any;
-    overlay.dispatchEvent(new MouseEvent('mousedown', cm));
-    overlay.dispatchEvent(new MouseEvent('mouseup', cm));
-    overlay.dispatchEvent(new MouseEvent('contextmenu', cm));
+    for (const t of ['mousedown', 'mouseup', 'contextmenu']) overlay.dispatchEvent(new MouseEvent(t, cm));
+    await w.__poll(() => document.querySelector('.d4-menu-popup .d4-menu-item'), (e: any) => !!e, 5000, 25);
   }, {x: at.x, y: at.y, sel: OVERLAY});
-  await page.locator('.d4-menu-popup .d4-menu-item').first().waitFor({timeout: 5000});
 }
 
 export async function closeGridMenu(page: Page): Promise<void> {
-  await page.evaluate(() => {
+  await page.evaluate(async () => {
+    const w = window as any;
     document.body.dispatchEvent(new MouseEvent('mousedown', {bubbles: true, clientX: 5, clientY: 5}));
+    await w.__poll(() => Array.from(document.querySelectorAll('.d4-menu-popup'))
+      .every((p: any) => p.offsetParent === null), (gone: boolean) => gone, 1000, 25);
+    for (const p of Array.from(document.querySelectorAll('.d4-menu-popup'))) p.remove();
   });
-  await v.pollValue(() => page.evaluate(() => Array.from(document.querySelectorAll('.d4-menu-popup'))
-    .every((p) => (p as HTMLElement).offsetParent === null)), (gone) => gone, 1000, 50);
-  await page.evaluate(() => { for (const p of Array.from(document.querySelectorAll('.d4-menu-popup'))) p.remove(); });
 }
 
 /**
  * Opens the grid context menu at `at`, walks the `groups` chain and clicks `leaf`.
  * Submenu containers are shown directly instead of hover-revealed, so the walk has no timing;
  * the caller waits for whatever the leaf sets in motion.
+ *
+ * Open, walk, click and dismiss share one evaluate: the popup poll ran at a 50ms Playwright-side
+ * tick, so a menu the platform builds in one frame still cost a round trip per probe.
  */
 export async function clickMenuLeaf(page: Page, at: Point, groups: string[], leaf: string): Promise<boolean> {
-  await openGridMenu(page, at);
-  const clicked = await page.evaluate(async ({groups, leaf}) => {
+  return page.evaluate(async ({x, y, sel, groups, leaf}) => {
     const w = window as any;
+    const dismiss = async () => {
+      document.body.dispatchEvent(new MouseEvent('mousedown', {bubbles: true, clientX: 5, clientY: 5}));
+      await w.__poll(() => Array.from(document.querySelectorAll('.d4-menu-popup'))
+        .every((p: any) => p.offsetParent === null), (gone: boolean) => gone, 1000, 25);
+      for (const p of Array.from(document.querySelectorAll('.d4-menu-popup'))) p.remove();
+    };
+    const overlay = document.querySelector(sel) as HTMLElement;
+    const cm = {bubbles: true, cancelable: true, clientX: x, clientY: y, button: 2, buttons: 2} as any;
+    for (const t of ['mousedown', 'mouseup', 'contextmenu']) overlay.dispatchEvent(new MouseEvent(t, cm));
     const popup = () => Array.from(document.querySelectorAll('.d4-menu-popup')).pop();
+    if (!await w.__poll(() => popup()?.querySelector('.d4-menu-item') ?? null, (e: any) => !!e, 5000, 25))
+      return false;
     for (const g of groups) {
-      const group = await w.__poll(() => popup()?.querySelector(`[name="${g}"]`) ?? null, (e: any) => !!e, 3000, 50);
-      if (!group) return false;
+      const group = await w.__poll(() => popup()?.querySelector(`[name="${g}"]`) ?? null, (e: any) => !!e, 3000, 25);
+      if (!group) { await dismiss(); return false; }
       const b = group.getBoundingClientRect();
       for (const t of ['mouseover', 'mousemove'])
         group.dispatchEvent(new MouseEvent(t, {bubbles: true, clientX: b.x + 5, clientY: b.y + 5}));
@@ -69,19 +82,61 @@ export async function clickMenuLeaf(page: Page, at: Point, groups: string[], lea
     const item = await w.__poll(() => {
       const el = popup()?.querySelector(`[name="${leaf}"]`) as HTMLElement | null;
       return el && el.getBoundingClientRect().width > 0 ? el : null;
-    }, (e: any) => !!e, 3000, 50);
+    }, (e: any) => !!e, 3000, 25);
     if (!item) {
       console.error(`[clickMenuLeaf] no leaf ${leaf}; items: ` + Array.from(popup()?.querySelectorAll('[name^="div-"]') ?? [])
         .map((e) => e.getAttribute('name')).filter((n) => n && n.startsWith(groups[groups.length - 1] ?? 'div-')).join(', '));
+      await dismiss();
       return false;
     }
     const r = item.getBoundingClientRect();
     const o = {bubbles: true, cancelable: true, clientX: r.x + r.width / 2, clientY: r.y + r.height / 2, button: 0} as any;
     for (const t of ['mousedown', 'mouseup', 'click']) item.dispatchEvent(new MouseEvent(t, o));
+    // the dismissing mousedown used to land a round trip later; a frame keeps an async leaf
+    // handler (a dialog opening) ahead of it
+    await new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(res as any)));
+    await dismiss();
     return true;
-  }, {groups, leaf});
-  await closeGridMenu(page);
-  return clicked;
+  }, {x: at.x, y: at.y, sel: OVERLAY, groups, leaf});
+}
+
+/**
+ * The ribbon Save, with the server-side visibility poll run in one evaluate at a 250ms tick.
+ *
+ * The shared saveProjectViaUI sleeps 3.8s before its first probe and then re-probes every 1.2s
+ * with a projects.list() scan behind every filter(); the project is normally visible long before
+ * that. The follow-up dialog is dismissed as soon as it appears rather than on a timer.
+ * Wanted here because saveProjectViaApi drops the dataframe-level .columnGroups tag.
+ */
+export async function saveProjectViaRibbon(page: Page, name: string): Promise<string> {
+  await page.locator('[name="button-Save"]:visible').first().click();
+  const nameInput = page.locator('.d4-dialog input[type="text"]').first();
+  await nameInput.waitFor({timeout: 8000});
+  await nameInput.fill(name);
+  await page.locator('.d4-dialog .ui-btn-ok, .d4-dialog-footer button').filter({hasText: /^OK$/i}).first().click({force: true});
+
+  const found = await page.evaluate(async (n) => {
+    const w = window as any;
+    let cancelled = false;
+    const cancel = () => {
+      const btn = Array.from(document.querySelectorAll('.d4-dialog .ui-btn, .d4-dialog button'))
+        .find((b) => /^CANCEL$/i.test((b.textContent ?? '').trim())) as HTMLElement | undefined;
+      if (btn) { btn.click(); cancelled = true; }
+    };
+    const deadline = Date.now() + 30_000;
+    while (Date.now() < deadline) {
+      if (!cancelled) cancel();
+      try {
+        const p = await w.grok.dapi.projects.filter(`name = "${n}"`).first();
+        if (p) { cancel(); return {id: String(p.id), name: String(p.name)}; }
+      } catch (_) {  }
+      await new Promise((r) => setTimeout(r, 250));
+    }
+    return null;
+  }, name);
+  if (!found)
+    throw new Error(`saveProjectViaRibbon: project "${name}" not visible server-side 30s after the ribbon save`);
+  return found.id;
 }
 
 export function pinViaMenu(page: Page, at: Point, leaf: string): Promise<boolean> {
@@ -102,7 +157,7 @@ export async function openGridSettings(page: Page, probe = 'prop-row-height'): P
   const box = await gearAt();
   if (box) {
     await page.mouse.move(box.x - 40, box.y + 20);
-    await page.mouse.move(box.x, box.y, {steps: 6});
+    await page.mouse.move(box.x, box.y, {steps: 2});
     await page.mouse.click(box.x, box.y);
     if (await built()) return true;
   }
@@ -198,3 +253,4 @@ export async function leaveShellClean(page: Page, flags: ShellFlags): Promise<vo
     grok.shell.o = null;
   }, flags).catch(() => {});
 }
+

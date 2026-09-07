@@ -1,9 +1,7 @@
 import {expect, Page} from '@playwright/test';
 import {test} from '../shared-page';
-import {
-  loginToDatagrok, loginAsSecondUser, getSecondUserLogin,
-  specTestOptions, softStep, stepErrors, baseUrl,
-} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors, baseUrl} from '../spec-login';
+import {recipientPage, secondUserLogin} from './_actors';
 
 test.use(specTestOptions);
 
@@ -83,7 +81,9 @@ test('Sharing & Permissions — Connection', async ({page}) => {
     grok.shell.windows.simpleMode = true;
   });
 
-  const recipientLogin = await getSecondUserLogin();
+  const recipientLogin = await secondUserLogin();
+  const rp = await recipientPage(page);
+  await waitForDapiReady(rp);
   const connId = await createConnection(page, CONN_NAME);
   await setCurrentObjectToConnection(page, CONN_NAME);
 
@@ -107,7 +107,10 @@ test('Sharing & Permissions — Connection', async ({page}) => {
     await expect(dlg.locator('.d4-dialog-title')).toContainText('Share');
     await expect(page.locator('input[placeholder="User, group, or email"]')).toBeVisible();
     await expect(page.locator('[name="div-share-selector"]')).toBeVisible();
-    await expect(page.locator('[name="label-Advanced-editor..."]')).toBeVisible();
+    // GROK-20322 removed the Share dialog's "Advanced editor..." link
+    // (core/client/xamgle/lib/src/commands/file/share_dataset.dart); the grant list the
+    // PermissionsEditor renders is what the dialog must show now.
+    await expect(page.locator('.d4-dialog .grok-permissions')).toBeVisible();
     await expect(page.locator('[name="button-OK"]')).toBeVisible();
     await expect(page.locator('[name="button-CANCEL"]')).toBeVisible();
 
@@ -207,9 +210,7 @@ test('Sharing & Permissions — Connection', async ({page}) => {
   });
 
   await softStep('Block D.2-4: Recipient gains View; use-permissions (Query/GetSchema) granted', async () => {
-    await loginAsSecondUser(page);
-    await waitForDapiReady(page); 
-    const result = await page.evaluate(async (cName) => {
+    const result = await rp.evaluate(async (cName) => {
 
       const c = await grok.dapi.connections.filter(`name = "${cName}"`).first();
       if (!c) return {found: false};
@@ -221,7 +222,7 @@ test('Sharing & Permissions — Connection', async ({page}) => {
   });
 
   await softStep('Block E: Recipient lacks Edit / Delete / Share on the shared connection', async () => {
-    const checks = await page.evaluate(async (cName) => {
+    const checks = await rp.evaluate(async (cName) => {
       const c = await grok.dapi.connections.filter(`name = "${cName}"`).first();
       if (!c) return {found: false};
       const canEdit = await grok.dapi.permissions.check(c, 'Edit');
@@ -238,8 +239,6 @@ test('Sharing & Permissions — Connection', async ({page}) => {
   });
 
   await softStep('Block F.1-2: Owner revokes recipient grant; pane shows owner-only', async () => {
-    await loginToDatagrok(page); 
-    await waitForDapiReady(page); 
     const revoked = await page.evaluate(async (args) => {
       const {cName, login} = args;
       const c = await grok.dapi.connections.filter(`name = "${cName}"`).first();
@@ -255,9 +254,7 @@ test('Sharing & Permissions — Connection', async ({page}) => {
   });
 
   await softStep('Block F.3-4: Recipient can no longer view/use the connection (access revoked)', async () => {
-    await loginAsSecondUser(page);
-    await waitForDapiReady(page); 
-    const result = await page.evaluate(async (cName) => {
+    const result = await rp.evaluate(async (cName) => {
       const c = await grok.dapi.connections.filter(`name = "${cName}"`).first();
       if (!c) return {found: false, canView: false}; 
       const canView = await grok.dapi.permissions.check(c, 'View');
@@ -267,8 +264,6 @@ test('Sharing & Permissions — Connection', async ({page}) => {
     expect(result.canView).toBe(false);
   });
 
-  await loginToDatagrok(page);
-  await waitForDapiReady(page); 
   await page.evaluate(async (cName) => {
     try {
       const c = await grok.dapi.connections.filter(`name = "${cName}"`).first();

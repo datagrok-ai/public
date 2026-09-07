@@ -105,15 +105,34 @@ test('PowerPack: Power Search Enter-key dispatch is null-safe across 8 paths (GR
     }
   }
 
+  /** Holds until the welcome view stops mutating, capped at the sleep it replaces:
+   *  the suggestion list and the dispatch result both land as DOM changes there. */
+  async function settleWelcomeView(p: Page, capMs: number): Promise<void> {
+    await p.evaluate(async (cap) => {
+      const root = document.querySelector('.power-pack-welcome-view');
+      if (!root) { await new Promise((r) => setTimeout(r, cap)); return; }
+      let last = 0;
+      const obs = new MutationObserver(() => { last = Date.now(); });
+      obs.observe(root, {childList: true, subtree: true, characterData: true});
+      const t0 = Date.now();
+      try {
+        while (Date.now() - t0 < cap) {
+          await new Promise((r) => setTimeout(r, 40));
+          if (last && Date.now() - last > 150) return;
+        }
+      } finally { obs.disconnect(); }
+    }, capMs);
+  }
+
   async function dispatchProbe(p: Page, probe: Probe): Promise<void> {
     await clearSearchInput(p);
     const baseline = errorSnapshot();
     const input = p.locator('input.power-search-search-everywhere-input').first();
     await input.click({timeout: 10_000});
     await p.keyboard.type(probe.query, {delay: 40});
-    await p.waitForTimeout(900); 
+    await settleWelcomeView(p, 900);
     await p.keyboard.press('Enter');
-    await p.waitForTimeout(700); 
+    await settleWelcomeView(p, 700);
     assertNoNewErrors(probe.query, baseline);
     const shellErr = await readShellLastError(p);
     if (shellErr && /reported error\s*:\s*null/i.test(shellErr))
@@ -167,7 +186,7 @@ test('PowerPack: Power Search Enter-key dispatch is null-safe across 8 paths (GR
     const input = page.locator('input.power-search-search-everywhere-input').first();
     await input.click({timeout: 10_000});
     await page.keyboard.type('dem', {delay: 50});
-    await page.waitForTimeout(900);
+    await settleWelcomeView(page, 900);
   });
 
   await softStep('Scenario 3 Step 3: press ArrowDown to highlight first suggestion (if any present)', async () => {
@@ -207,7 +226,7 @@ test('PowerPack: Power Search Enter-key dispatch is null-safe across 8 paths (GR
       return root.querySelector('.d4-menu-item-hover') != null;
     });
     await page.keyboard.press('Enter');
-    await page.waitForTimeout(800);
+    await settleWelcomeView(page, 800);
     assertNoNewErrors('Enter-on-highlighted-suggestion', baseline);
     void hadHighlighted; 
   });

@@ -117,8 +117,10 @@ test('Line Chart — Multi-Axis and Split', async ({page}) => {
 
     const hover = await chartCanvasCenter(page);
     await page.mouse.move(hover.x, hover.y, {steps: 5});
-    // a hold: the hover over a two-way split must raise nothing within the window
-    await page.waitForTimeout(600);
+    // a hold: the hover over a two-way split must raise nothing within the window — two
+    // painted frames and a macrotask after them, instead of the flat 600ms
+    await page.evaluate(() => new Promise<void>((r) =>
+      requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(r, 100)))));
     expect(errorCount()).toBe(before);
   });
 
@@ -238,6 +240,6 @@ test('Line Chart — Multi-Axis and Split', async ({page}) => {
     expect(errorCount()).toBe(before);
   });
 
-  await v.cleanupShell(page);
+  await v.closeAllAndWait(page);
   v.finishSpec();
 });

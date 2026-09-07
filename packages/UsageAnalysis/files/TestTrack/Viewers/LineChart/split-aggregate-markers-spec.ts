@@ -171,6 +171,6 @@ test('Line Chart — Setup, Split, Aggregate, Markers', async ({page}) => {
     expect(errorCount()).toBe(before);
   });
 
-  await v.cleanupShell(page);
+  await v.closeAllAndWait(page);
   v.finishSpec();
 });

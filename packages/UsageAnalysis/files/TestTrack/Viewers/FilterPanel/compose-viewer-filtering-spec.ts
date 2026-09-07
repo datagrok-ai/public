@@ -6,6 +6,7 @@ import {localTest as test} from '../../shared-page';
 import {openDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 import {expectHeaderCounter, expectHeaderCounterNow, trueCount} from '../../helpers/filter-panel';
+import {installFilterWaits} from './fp-waits';
 import {addViewer, FULL, PANEL_CATEGORY, raceSelectedCategories, seedPanelCriterion, viewerCanvasRect,
   zoomScatterPlot} from './compose-viewer-shared';
 
@@ -23,7 +24,7 @@ async function closeViewerByTitlebar(page: Page, viewerName: string, type: strin
   await v.clickViewerTitlebarIcon(page, viewerName, 'Close');
   await expect.poll(async () => page.evaluate((t: string) =>
     Array.from(grok.shell.tv.viewers).filter((x: any) => x.type === t).length, type),
-  {timeout: 10_000, intervals: [300, 600, 1200]}).toBe(0);
+  {timeout: 10_000, intervals: [30, 60, 120, 250, 500, 1000]}).toBe(0);
 }
 
 async function driveViewerContextMenuLeaf(page: Page, type: string, path: string[]): Promise<boolean> {
@@ -47,11 +48,15 @@ async function driveViewerContextMenuLeaf(page: Page, type: string, path: string
       if (i === segments.length - 1) { item.click(); break; }
       const r = item.getBoundingClientRect();
       const at = {clientX: r.x + r.width / 2, clientY: r.y + r.height / 2, bubbles: true};
-      const opened = document.querySelectorAll('.d4-menu-popup').length;
+      // a submenu can open as its own popup carrying fewer items than its parent, so waiting for
+      // the popup count to grow spent the whole cap on every hover; the labels on screen always move
+      const stamp = () => [...document.querySelectorAll('.d4-menu-popup')]
+        .map((pp) => [...pp.querySelectorAll('.d4-menu-item-label')].map((l) => (l.textContent ?? '').trim()).join(','))
+        .join('|');
+      const opened = stamp();
       item.dispatchEvent(new MouseEvent('mouseenter', at));
       item.dispatchEvent(new MouseEvent('mousemove', at));
-      await w.__poll(() => document.querySelectorAll('.d4-menu-popup').length,
-        (n: number) => n > opened, 400, 25);
+      await w.__poll(stamp, (t: string) => t !== opened, 400, 25);
     }
     await w.__stable(() => document.querySelectorAll('.d4-menu-popup').length, 500, 50);
     return true;
@@ -72,13 +77,14 @@ async function dragSliderHandle(
   }, {sel: rootSelector, hn: handleName});
   if (!box) return false;
   const countBefore = await trueCount(page);
+  await page.evaluate(() => (window as any).__fpArm());
   await page.mouse.move(box.x, box.y);
   await page.mouse.down();
-  await page.mouse.move(box.x + dx / 3, box.y + dy / 3, {steps: 4});
-  await page.mouse.move(box.x + dx, box.y + dy, {steps: 10});
+  await page.mouse.move(box.x + dx / 3, box.y + dy / 3, {steps: 2});
+  await page.mouse.move(box.x + dx, box.y + dy, {steps: 3});
   await page.mouse.up();
-  await page.evaluate((was: number) => (window as any).__moved(
-    () => grok.shell.tv.dataFrame.filter.trueCount, was, 900), countBefore);
+  await page.evaluate((was: number) => (window as any).__fpWait(
+    () => grok.shell.tv.dataFrame.filter.trueCount, was, 900, 400), countBefore);
   return true;
 }
 
@@ -87,16 +93,17 @@ async function armOnClickFilter(page: Page, type: string): Promise<void> {
     `the ${type} context menu has no On Click > Filter leaf`).toBe(true);
   await expect.poll(async () => page.evaluate((t: string) =>
     grok.shell.tv.viewers.find((x: any) => x.type === t)?.props?.onClick, type),
-  {timeout: 10_000, intervals: [300, 600, 1200]}).toBe('Filter');
+  {timeout: 10_000, intervals: [30, 60, 120, 250, 500, 1000]}).toBe('Filter');
 }
 
 async function clickViewerAt(page: Page, type: string, fx: number, fy: number): Promise<boolean> {
   const rect = await viewerCanvasRect(page, type);
   if (!rect) return false;
   const countBefore = await trueCount(page);
+  await page.evaluate(() => (window as any).__fpArm());
   await page.mouse.click(rect.x + rect.w * fx, rect.y + rect.h * fy);
-  await page.evaluate((was: number) => (window as any).__moved(
-    () => grok.shell.tv.dataFrame.filter.trueCount, was, 900), countBefore);
+  await page.evaluate((was: number) => (window as any).__fpWait(
+    () => grok.shell.tv.dataFrame.filter.trueCount, was, 900, 400), countBefore);
   return true;
 }
 
@@ -110,9 +117,10 @@ async function resetSliderByDoubleClick(page: Page, rootSelector: string): Promi
   }, rootSelector);
   if (!at) return false;
   const countBefore = await trueCount(page);
+  await page.evaluate(() => (window as any).__fpArm());
   await page.mouse.dblclick(at.x, at.y);
-  await page.evaluate((was: number) => (window as any).__moved(
-    () => grok.shell.tv.dataFrame.filter.trueCount, was, 900), countBefore);
+  await page.evaluate((was: number) => (window as any).__fpWait(
+    () => grok.shell.tv.dataFrame.filter.trueCount, was, 900, 400), countBefore);
   return true;
 }
 
@@ -140,7 +148,7 @@ async function findHistogramMaxHandleX(
 async function dragHistogramHandle(page: Page, fromX: number, y: number, toX: number): Promise<void> {
   await page.mouse.move(fromX, y);
   await page.mouse.down();
-  const steps = 12;
+  const steps = 4;
   for (let i = 1; i <= steps; i++)
     await page.mouse.move(fromX + (toX - fromX) * i / steps, y);
   await page.mouse.up();
@@ -163,12 +171,12 @@ async function clickTrellisCellFiltering(page: Page): Promise<boolean> {
     const box = await cells.nth(i).boundingBox();
     if (!box) continue;
     await page.mouse.click(box.x + box.width * 0.5, box.y + box.height * TRELLIS_CELL_CLICK_FY);
-    if (await v.pollValue(() => trellisCurrentCells(page), (n) => n > 0, 3000, 200) === 0) continue;
+    if (await v.pollValue(() => trellisCurrentCells(page), (n) => n > 0, 3000, 50) === 0) continue;
     delivered = true;
-    const now = await v.pollValue(() => trueCount(page), (n) => n !== base, 6000, 200);
+    const now = await v.pollValue(() => trueCount(page), (n) => n !== base, 6000, 50);
     if (now > 0 && now < base) return true;
     await page.keyboard.press('Escape');
-    const reverted = await v.pollValue(() => trueCount(page), (n) => n === base, 6000, 200);
+    const reverted = await v.pollValue(() => trueCount(page), (n) => n === base, 6000, 50);
     expect(reverted, 'Escape did not put the filtered row count back to the value the Trellis cell ' +
       'was clicked from, so the next cell would be measured against a baseline that is no longer the ' +
       'pre-click count').toBe(base);
@@ -264,6 +272,7 @@ test('Filters — Composition of Filter Panel with Viewer-Driven Filtering', asy
 
   await openDatagrok(page);
   await v.openTable(page, {path: datasetPath, withFilterPanel: true});
+  await installFilterWaits(page);
 
   const total = await trueCount(page);
   expect(total).toBe(FULL);
@@ -293,7 +302,7 @@ test('Filters — Composition of Filter Panel with Viewer-Driven Filtering', asy
 
       await zoomScatterPlot(page, rect!);
       await expect.poll(async () => trueCount(page),
-        {timeout: 15_000, intervals: [400, 800, 1500]}).toBeLessThan(truePanel);
+        {timeout: 15_000, intervals: [30, 60, 120, 250, 500, 1000]}).toBeLessThan(truePanel);
       trueAfterZoom = await trueCount(page);
 
       expect(trueAfterZoom).toBeLessThan(truePanel);
@@ -326,7 +335,7 @@ test('Filters — Composition of Filter Panel with Viewer-Driven Filtering', asy
       expect(beforeClose).toBeLessThan(truePanel);
       await closeViewerByTitlebar(page, 'Scatter-plot', 'Scatter plot');
       await expect.poll(async () => trueCount(page),
-        {timeout: 10_000, intervals: [400, 800, 1500]}).toBe(truePanel);
+        {timeout: 10_000, intervals: [30, 60, 120, 250, 500, 1000]}).toBe(truePanel);
       expect(await trueCount(page)).toBe(truePanel);
       await expectHeaderCounterNow(page, '1',
         'closing the scatter plot leaves the panel criterion alone filtering, so the counter must read 1');
@@ -376,9 +385,10 @@ test('Filters — Composition of Filter Panel with Viewer-Driven Filtering', asy
       let landed: {survivors: string[]; expected: number; filtered: number} | null = null;
       for (const pos of positions) {
         const probeBefore = await trueCount(page);
+        await page.evaluate(() => (window as any).__fpArm());
         await page.mouse.click(pos.x, pos.y);
-        await page.evaluate((was: number) => (window as any).__moved(
-          () => grok.shell.tv.dataFrame.filter.trueCount, was, 900), probeBefore);
+        await page.evaluate((was: number) => (window as any).__fpWait(
+          () => grok.shell.tv.dataFrame.filter.trueCount, was, 900, 400), probeBefore);
         const probe = await probeBars();
         if (probe.survivors.length === 1 && probe.filtered > 0 && probe.filtered < truePanel) {
           landed = probe;
@@ -405,7 +415,7 @@ test('Filters — Composition of Filter Panel with Viewer-Driven Filtering', asy
         .toBeLessThan(truePanel);
       await closeViewerByTitlebar(page, 'Bar-chart', 'Bar chart');
       await expect.poll(async () => trueCount(page),
-        {timeout: 10_000, intervals: [400, 800, 1500]}).toBe(truePanel);
+        {timeout: 10_000, intervals: [30, 60, 120, 250, 500, 1000]}).toBe(truePanel);
       expect(await trueCount(page)).toBe(truePanel);
       await expectHeaderCounterNow(page, '1',
         'closing the bar chart leaves the panel criterion alone filtering, so the counter must read 1');
@@ -431,7 +441,7 @@ test('Filters — Composition of Filter Panel with Viewer-Driven Filtering', asy
             'slider handle or cell box) was not on screen').toBe(true);
 
           await expect.poll(async () => trueCount(page),
-            {timeout: 15_000, intervals: [400, 800, 1500]}).toBeLessThan(truePanel);
+            {timeout: 15_000, intervals: [30, 60, 120, 250, 500, 1000]}).toBeLessThan(truePanel);
           const composed = await trueCount(page);
           expect(composed).toBeLessThan(truePanel);
           expect(composed, `the ${viewer.type} gesture filtered every row away`).toBeGreaterThan(0);
@@ -443,14 +453,14 @@ test('Filters — Composition of Filter Panel with Viewer-Driven Filtering', asy
             `the ${viewer.type} revert gesture could not be ISSUED — its target was not on screen`)
             .toBe(true);
           await expect.poll(async () => trueCount(page),
-            {timeout: 15_000, intervals: [400, 800, 1500]}).toBe(truePanel);
+            {timeout: 15_000, intervals: [30, 60, 120, 250, 500, 1000]}).toBe(truePanel);
           expect(await trueCount(page)).toBe(truePanel);
           expect(await raceSelectedCategories(page)).toEqual([PANEL_CATEGORY]);
         } finally {
           await closeViewerByTitlebar(page, viewer.domName, viewer.type);
         }
         await expect.poll(async () => trueCount(page),
-          {timeout: 10_000, intervals: [400, 800, 1500]}).toBe(truePanel);
+          {timeout: 10_000, intervals: [30, 60, 120, 250, 500, 1000]}).toBe(truePanel);
         await expectHeaderCounterNow(page, '1',
           `closing the ${viewer.type} leaves the panel criterion alone filtering, so the counter reads 1`);
       });
@@ -501,7 +511,7 @@ test('Filters — Composition of Filter Panel with Viewer-Driven Filtering', asy
       expect(await v.driveTopMenuLeaf(page, ['Select', 'Invert']),
         'the Select > Invert menu leaf was not actuated').toBe(true);
       await expect.poll(async () => page.evaluate(() => grok.shell.tv.dataFrame.selection.trueCount),
-        {timeout: 10_000, intervals: [300, 600, 1200]}).toBe(rowCount - selectionAfterAdd);
+        {timeout: 10_000, intervals: [30, 60, 120, 250, 500, 1000]}).toBe(rowCount - selectionAfterAdd);
       inverted = await page.evaluate(() => grok.shell.tv.dataFrame.selection.trueCount);
       expect(inverted, 'the inversion did not leave exactly the complement').toBe(rowCount - selectionAfterAdd);
       expect(inverted).toBeGreaterThan(0);
@@ -547,18 +557,19 @@ test('Filters — Composition of Filter Panel with Viewer-Driven Filtering', asy
       await v.waitForCanvasQuiet(page, 'Filters', {canvasSelector: RACE_CARD_CANVAS, stableReads: 3});
       expect(await v.snapshotCanvasColors(page, 'Filters', RACE_CARD_CANVAS),
         'the RACE card canvas could not be read — the repaint guard below would be vacuous').toBe(true);
-      await page.waitForTimeout(1500);
+      await page.waitForTimeout(600);
       const idle = await v.diffCanvasColors(page, 'Filters', RACE_CARD_CANVAS);
       expect(idle.deltaPx,
         'the RACE card canvas kept changing while nothing acted on it (or could not be read: -1) — ' +
         'a post-command delta would not be attributable to the command')
         .toBe(0);
 
+      await page.evaluate(() => (window as any).__fpArm());
       expect(await v.driveTopMenuLeaf(page, ['Select', 'Selection to Filter']),
         'the Select > Selection to Filter menu leaf was not actuated').toBe(true);
       await page.mouse.move(park.x, park.y);
-      await page.evaluate((was: number) => (window as any).__moved(
-        () => grok.shell.tv.dataFrame.filter.trueCount, was, 1500), inverted);
+      await page.evaluate((was: number) => (window as any).__fpWait(
+        () => grok.shell.tv.dataFrame.filter.trueCount, was, 1500, 500), inverted);
 
       const outcome = await page.evaluate(() => {
         const df = grok.shell.tv.dataFrame;

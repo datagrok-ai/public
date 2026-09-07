@@ -137,12 +137,17 @@ test('PC Plot — To Script, layout and project persistence', async ({page}) => 
       expect(result.color).toBe('RACE');
       expect(result.title).toBe('PC Persistence Probe');
     } finally {
-      await page.evaluate(async (id) => {
-        try {
-          const saved = await grok.dapi.layouts.find(id);
-          if (saved)
-            await grok.dapi.layouts.delete(saved);
-        } catch (_) {}
+      // the saved layout is never read again: the delete runs detached on the page and the
+      // worker fixture drains it, instead of the test paying 0.5-1.3s for a find + delete
+      await page.evaluate((id) => {
+        const w = window as any;
+        w.__pendingDeletes = w.__pendingDeletes ?? [];
+        w.__pendingDeletes.push((async () => {
+          try {
+            const saved = await w.grok.dapi.layouts.find(id);
+            if (saved) await w.grok.dapi.layouts.delete(saved);
+          } catch (_) {}
+        })());
       }, layoutId);
     }
   });

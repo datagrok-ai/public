@@ -106,7 +106,10 @@ test('Line Chart — Filter Follow and Empty-Chart Resilience', async ({page}) =
     const before = realErrors().length;
     await page.locator('[name="viewer-Line-chart"]').hover();
 
-    await page.waitForTimeout(800);
+    // the hold, sized to what a hover can raise: two painted frames and a macrotask after
+    // them, instead of the flat 800ms
+    await page.evaluate(() => new Promise<void>((r) =>
+      requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(r, 100)))));
     expect(realErrors().length).toBe(before);
   });
 
@@ -167,6 +170,6 @@ test('Line Chart — Filter Follow and Empty-Chart Resilience', async ({page}) =
     expect(restored).toBe(baseline);
   });
 
-  await v.cleanupShell(page);
+  await v.closeAllAndWait(page);
   v.finishSpec();
 });

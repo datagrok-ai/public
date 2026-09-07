@@ -44,7 +44,7 @@ test('Filters — Cloned View Synchronization: saved layout restores per-card st
           (window as any).__tv(vn).getFiltersGroup().getStates('RACE', 'categorical')[0]?.active, LAYOUT_VIEW),
         {message: 'unticking the RACE card\'s own checkbox did not switch that card off, so the layout '
           + 'about to be saved does not carry the one-card-off state the restore is measured against',
-        timeout: 20_000, intervals: [400, 800, 1500]}).toBe(false);
+        timeout: 20_000, intervals: [30, 60, 120, 250, 500, 1000]}).toBe(false);
 
         const saved = await page.evaluate(async (vn: string) => {
           const view = (window as any).__tv(vn);

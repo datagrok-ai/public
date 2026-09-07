@@ -6,6 +6,7 @@ import {test} from '../shared-page';
 import {loginToDatagrok, specTestOptions, softStep, waitForMolecule} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
 import {withConsoleErrorCount} from '../helpers/forms';
+import {waitForSemType} from './chem-fast-helpers';
 
 declare const grok: any;
 declare const DG: any;
@@ -277,7 +278,9 @@ test('Chem: Chemistry Mixture / MixtureTree panels differentiate mixture input a
         const df = await grok.dapi.files.readCsv(path);
         grok.shell.addTableView(df);
       }, MIXTURES_PATH);
-      await waitForMolecule(page).catch(() => {});
+      // test_mixtures.csv carries no Molecule column at all, so waitForMolecule can only ever burn
+      // its 45 s cap here; wait on the semantic type this table does declare.
+      await waitForSemType(page, 'ChemicalMixture').catch(() => {});
       const name = await page.evaluate(() => {
         const c = grok.shell.t.columns.toList().find((x: any) => x.semType === 'ChemicalMixture');
         return c ? c.name : null;

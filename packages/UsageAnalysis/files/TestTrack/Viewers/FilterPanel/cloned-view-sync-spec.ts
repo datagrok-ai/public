@@ -149,7 +149,7 @@ async function openAgeCardMenu(page: import('@playwright/test').Page): Promise<v
   await page.mouse.click(iBox.x + iBox.width / 2, iBox.y + iBox.height / 2);
   await expect.poll(async () => page.locator('.d4-menu-popup').count(), {
     message: 'clicking the AGE card\'s indicator did not leave exactly one .d4-menu-popup open',
-    timeout: 10_000, intervals: [200, 400, 800],
+    timeout: 10_000, intervals: [30, 60, 120, 250, 500, 1000],
   }).toBe(1);
   await expect(page.locator('.d4-menu-popup [name="div-Missing-values"]').first(),
     'the open card menu carries no [name="div-Missing-values"] group')
@@ -218,7 +218,7 @@ async function dismissCardMenu(page: import('@playwright/test').Page): Promise<v
   await page.mouse.click(pt.x, pt.y);
   await expect.poll(async () => page.locator('.d4-menu-popup').count(), {
     message: `clicking inert chrome at (${pt.x}, ${pt.y}) did not close the card menu`,
-    timeout: 10_000, intervals: [200, 400, 800],
+    timeout: 10_000, intervals: [30, 60, 120, 250, 500, 1000],
   }).toBe(0);
 }
 
@@ -243,7 +243,7 @@ async function drivePanelColumnCombo(
   await page.keyboard.press('Enter');
   await expect.poll(async () => page.locator('.d4-column-selector-backdrop').count(), {
     message: `the column picker never closed after "${column}" was committed with Enter — the pick did not land`,
-    timeout: 15_000, intervals: [300, 600, 1200],
+    timeout: 15_000, intervals: [30, 60, 120, 250, 500, 1000],
   }).toBe(0);
   const after = await laidOutPanelCaptions(page);
   const rest = [...before];
@@ -257,6 +257,9 @@ async function drivePanelColumnCombo(
 }
 
 // A hold: the value must read the same at every sample of the window, so the window is spent.
+// The gap is 150ms rather than half a second — an order of magnitude above the 50ms criteria
+// debounce a card mirror runs on (filters_core.dart:278) — so the same number of samples covers a
+// window that is short enough to pay for and dense enough to catch a value that self-corrects.
 async function sampleHeld<T>(page: import('@playwright/test').Page, read: () => Promise<T>,
   samples: number, gapMs: number): Promise<string[]> {
   const out: string[] = [];
@@ -326,7 +329,7 @@ test('Filters — Cloned View Synchronization', async ({page}) => {
       expect(await v.driveTopMenuLeaf(page, ['View', 'Layout', 'Clone View']),
         'the View | Layout | Clone View menu leaf was not actuated').toBe(true);
       await expect.poll(async () => (await viewNames(page)).length,
-        {timeout: 15_000, intervals: [400, 800, 1500]}).toBe(namesBefore.length + 1);
+        {timeout: 15_000, intervals: [30, 60, 120, 250, 500, 1000]}).toBe(namesBefore.length + 1);
       const namesAfter = await viewNames(page);
       const addedNames = namesAfter.filter((n) => !namesBefore.includes(n));
       expect(addedNames,
@@ -336,7 +339,7 @@ test('Filters — Cloned View Synchronization', async ({page}) => {
 
       await expect.poll(async () => page.evaluate((vn: string) =>
         ((window as any).__tv(vn).root as HTMLElement).querySelectorAll('[name="viewer-Filters"]').length, CLONE),
-      {timeout: 10_000, intervals: [400, 800, 1500]}).toBeGreaterThan(0);
+      {timeout: 10_000, intervals: [30, 60, 120, 250, 500, 1000]}).toBeGreaterThan(0);
       expect(await page.evaluate((vn: string) => {
         const el = ((window as any).__tv(vn).root as HTMLElement)
           .querySelector('[name="viewer-Filters"]') as HTMLElement;
@@ -383,7 +386,7 @@ test('Filters — Cloned View Synchronization', async ({page}) => {
         {message: 'clicking a category name row in the RACE card of the ORIGINAL view did not narrow that card to a '
           + 'single category — the exclusive-select gesture never landed, so nothing was changed for the '
           + 'clone to follow',
-        timeout: 20_000, intervals: [300, 600, 1200]}).toBe(1);
+        timeout: 20_000, intervals: [30, 60, 120, 250, 500, 1000]}).toBe(1);
       const origRaceAfter = await selectedOf(page, ORIG, 'RACE');
       const narrowed = await trueCountOf(page, ORIG);
       expect(narrowed).not.toBe(before);
@@ -396,7 +399,7 @@ test('Filters — Cloned View Synchronization', async ({page}) => {
           + 'DataFrame event bus and copied into every other card on the same (column, filter type) — '
           + 'grid_filter_base.dart:111-125 fires FILTER_CRITERIA_CHANGED, grid_filter_base.dart:71-81 '
           + 'applies the saveState() of the sender onto this card — so the clone had to reach that same set',
-        timeout: 20_000, intervals: [300, 600, 1200]}).toBe(JSON.stringify(origRaceAfter));
+        timeout: 20_000, intervals: [30, 60, 120, 250, 500, 1000]}).toBe(JSON.stringify(origRaceAfter));
       const cloneFiltering = (await readFilters(page, CLONE)).filter((f) => f.isFiltering);
       expect(cloneFiltering.map((f) => f.col)).toEqual(['RACE']);
     });
@@ -434,7 +437,7 @@ test('Filters — Cloned View Synchronization', async ({page}) => {
       await expect.poll(isActiveOfSex,
         {message: 'unticking the SEX card\'s own checkbox in the ORIGINAL did not switch that card off in '
           + 'both views — the isActive mirror never crossed to the clone\'s filter group',
-        timeout: 20_000, intervals: [400, 800, 1500]}).toEqual({orig: false, clone: false});
+        timeout: 20_000, intervals: [30, 60, 120, 250, 500, 1000]}).toEqual({orig: false, clone: false});
       const tcAfterDisable = await trueCountOf(page, ORIG);
       expect(tcAfterDisable,
         'disabling the SEX card did not restore the rows its criterion had removed').toBe(tcBeforeNarrow);
@@ -494,7 +497,7 @@ test('Filters — Cloned View Synchronization', async ({page}) => {
       await clickCardCheckboxIn(page, CLONE, 'AGE');
       await expect.poll(cloneAgeIsActive,
         {message: 'unticking the AGE card\'s own checkbox in the CLONE did not switch that card off',
-          timeout: 20_000, intervals: [400, 800, 1500]}).toBe(false);
+          timeout: 20_000, intervals: [30, 60, 120, 250, 500, 1000]}).toBe(false);
 
       const origAfter = await page.evaluate((vn: string) => {
         const st = (window as any).__tv(vn).getFiltersGroup().getStates('AGE', 'histogram');
@@ -510,10 +513,10 @@ test('Filters — Cloned View Synchronization', async ({page}) => {
         const st = view.getFiltersGroup().getStates('AGE', 'histogram');
         return {count: st ? st.length : 0, active: st && st.length ? st[0].active : null,
           trueCount: view.dataFrame.filter.trueCount};
-      }, ORIG), 6, 400);
+      }, ORIG), 7, 150);
       expect(Array.from(new Set(origSamples)),
         'the ORIGINAL\'s AGE histogram card and the narrowing it holds had to stay put at every sample of '
-        + 'a 2.4s window after the clone-side toggle — a mirror that crosses filter types on a longer '
+        + 'a 0.9s window after the clone-side toggle — a mirror that crosses filter types on a longer '
         + `debounce would otherwise land after a single snapshot was taken; samples: ${origSamples.join(' ; ')}`)
         .toEqual([JSON.stringify({count: 1, active: true, trueCount: tcBeforeToggle})]);
       const tcAfter = await trueCountOf(page, ORIG);
@@ -526,14 +529,14 @@ test('Filters — Cloned View Synchronization', async ({page}) => {
       await expect.poll(async () => (await readFilters(page, ORIG))
         .find((f) => f.col === 'SEX' && f.type === 'categorical')?.isActive,
       {message: 'ticking the SEX card\'s own checkbox back on in the original did not re-enable it',
-        timeout: 20_000, intervals: [400, 800, 1500]}).toBe(true);
+        timeout: 20_000, intervals: [30, 60, 120, 250, 500, 1000]}).toBe(true);
       await activateView(page, ORIG);
       await v.applyCategoricalFilter(page, 'SEX', [sexFirst]);
       const armedCategory = String(sexFirst);
       await expect.poll(async () => (await readFilters(page, ORIG))
         .find((f) => f.col === 'SEX' && f.type === 'categorical')?.isFiltering,
       {message: 'the SEX card in the original must be filtering before the removal',
-        timeout: 20_000, intervals: [400, 800, 1500]}).toBe(true);
+        timeout: 20_000, intervals: [30, 60, 120, 250, 500, 1000]}).toBe(true);
       const tcBeforeRemoval = await trueCountOf(page, ORIG);
 
       await activateView(page, CLONE);
@@ -547,7 +550,7 @@ test('Filters — Cloned View Synchronization', async ({page}) => {
         ((window as any).__cards(vn) as HTMLElement[])
           .map((e) => e.querySelector('.d4-filter-column-name')?.textContent?.trim()), CLONE),
       {message: 'the SEX card is still in the clone — the X click did not remove it',
-        timeout: 20_000, intervals: [400, 800, 1500]}).not.toContain('SEX');
+        timeout: 20_000, intervals: [30, 60, 120, 250, 500, 1000]}).not.toContain('SEX');
 
       expect(await panelCaptionsOf(page, ORIG),
         'removing the card in the clone also removed it from the original').toContain('SEX');
@@ -595,14 +598,14 @@ test('Filters — Cloned View Synchronization', async ({page}) => {
       await page.mouse.move(groupBox.x + groupBox.width / 2, groupBox.y + groupBox.height / 2, {steps: 6});
       await expect.poll(async () => missingValuesGroupDisplay(page), {
         message: 'hovering the Missing values group did not expand it — its nested .d4-menu-item-container never left display:none',
-        timeout: 10_000, intervals: [200, 400, 800],
+        timeout: 10_000, intervals: [30, 60, 120, 250, 500, 1000],
       }).toBe('flex');
 
       const leafBox = await boxOf(page, '.d4-menu-popup [name="div-Missing-values---Filter-out-missing-values"]');
       await page.mouse.click(leafBox.x + leafBox.width / 2, leafBox.y + leafBox.height / 2);
       await expect.poll(async () => trueCountOf(page, MV), {
         message: `choosing "Filter out missing values" on the AGE card did not remove the single missing-value row (expected ${FULL - 1})`,
-        timeout: 20_000, intervals: [300, 600, 1200],
+        timeout: 20_000, intervals: [30, 60, 120, 250, 500, 1000],
       }).toBe(FULL - 1);
 
       await dismissCardMenu(page);
@@ -621,7 +624,7 @@ test('Filters — Cloned View Synchronization', async ({page}) => {
         'the View | Layout | Clone View menu leaf was not actuated').toBe(true);
       await expect.poll(async () => (await viewNames(page)).length, {
         message: 'Clone View did not add a second TableView',
-        timeout: 15_000, intervals: [400, 800, 1500],
+        timeout: 15_000, intervals: [30, 60, 120, 250, 500, 1000],
       }).toBe(mvNamesBefore.length + 1);
       const mvNamesAfter = await viewNames(page);
       const mvAdded = mvNamesAfter.filter((n) => !mvNamesBefore.includes(n));
@@ -659,7 +662,7 @@ test('Filters — Cloned View Synchronization', async ({page}) => {
         {message: `picking the card-less column "${cardless}" in the clone's column selector added no card — `
           + 'the picker adds nothing for ANY column, so the refusal asserted below for AGE would be the '
           + 'picker being broken rather than the product declining a second instance on the same column',
-        timeout: 20_000, intervals: [400, 800, 1500]}).toBe(cloneBefore.cards + 1);
+        timeout: 20_000, intervals: [30, 60, 120, 250, 500, 1000]}).toBe(cloneBefore.cards + 1);
       expect(positive.added,
         `the card the picker added is not captioned "${cardless}" — the column is deliberately the LAST card-free `
         + 'one rather than the first, so a picker that ignored the typed name and committed whichever row it had '
@@ -682,9 +685,9 @@ test('Filters — Cloned View Synchronization', async ({page}) => {
       expect(refusal.added,
         `picking AGE added a card captioned ${refusal.added.join(', ')} — the pick landed on some other column`)
         .toEqual([]);
-      const cloneSamples = await sampleHeld(page, () => panelCounts(page, MV_CLONE), 8, 500);
+      const cloneSamples = await sampleHeld(page, () => panelCounts(page, MV_CLONE), 7, 150);
       expect(Array.from(new Set(cloneSamples)),
-        'picking AGE in the clone\'s column selector changed the clone\'s card set over a sustained 4s window; '
+        'picking AGE in the clone\'s column selector changed the clone\'s card set over a sustained 0.9s window; '
         + 'addDefaultFilter (filters_core.dart:829-841) dedupes on (column, default filter type) and only scrolls '
         + `the existing card into view, so every sample must read ${JSON.stringify(cloneWithExtra)}; samples: ${cloneSamples.join(' ; ')}`)
         .toEqual([JSON.stringify(cloneWithExtra)]);
@@ -729,8 +732,8 @@ test('Filters — Cloned View Synchronization', async ({page}) => {
       await activateView(page, 'HostView');
       await v.applyCategoricalFilter(page, 'SEX', [before.firstCat]);
       const samples: {t1: number; t2: number}[] = [];
-      for (let i = 0; i < 8; i++) {
-        if (i > 0) await page.waitForTimeout(500);
+      for (let i = 0; i < 7; i++) {
+        if (i > 0) await page.waitForTimeout(150);
         samples.push(await page.evaluate(() => ({
           t1: (window as any).__tv('HostView').dataFrame.filter.trueCount,
           t2: (window as any).__tv('SharedColView').dataFrame.filter.trueCount,
@@ -745,7 +748,7 @@ test('Filters — Cloned View Synchronization', async ({page}) => {
       expect(outcome.after.t1).toBeLessThan(FULL);
       expect(outcome.after.t1).toBeGreaterThan(0);
       expect(Array.from(new Set(samples.map((s) => s.t2))),
-        'the frame that merely shares the SEX column object moved at some point in a sustained 3.5s window after '
+        'the frame that merely shares the SEX column object moved at some point in a sustained 0.9s window after '
         + `the host frame was filtered, so its isolation is not a snapshot taken before contamination arrived `
         + `(every sample had to read ${outcome.before.t2rows}; samples: ${samples.map((s) => s.t2).join(', ')})`)
         .toEqual([outcome.before.t2rows]);

@@ -5,7 +5,7 @@ import {expect, Page} from '@playwright/test';
 import {localTest as test} from '../../shared-page';
 import {openDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
-import {BOX, Pt, bpProp, canvasRect, clickToggleIcon, pValuePoint} from './boxplot-helpers';
+import {BOX, Pt, bpProp, canvasRect, clickToggleIcon, pValuePoint, bpPainted} from './boxplot-helpers';
 
 declare const grok: any;
 
@@ -123,7 +123,7 @@ test('Box plot group comparison and covariate adjustment', async ({page}) => {
     bp.props.category1ColumnName = 'SEX';
   });
   await page.locator(BOX).waitFor({timeout: 10000});
-  await v.waitForViewerRendered(page, 'Box plot', 1500);
+  await bpPainted(page);
 
   await softStep('Scenario 1 Step 1: bare p overlay baseline', async () => {
     expect(await bpProp(page, 'showPValue')).toBe(true);

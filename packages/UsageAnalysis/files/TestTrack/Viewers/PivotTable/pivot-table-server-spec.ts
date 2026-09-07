@@ -57,9 +57,17 @@ test('Pivot Table — layout and project persistence', async ({page}) => {
       expect(restored.agg).toContain('AGE');
       expect(restored.aggTypes).toContain('med');
     } finally {
-      await page.evaluate(async (id) => {
-        const saved = await grok.dapi.layouts.find(id);
-        if (saved) await grok.dapi.layouts.delete(saved);
+      // the saved layout is never read again: the delete runs detached on the page and the
+      // worker fixture drains it, instead of the test paying 0.5-1.3s for a find + delete
+      await page.evaluate((id) => {
+        const w = window as any;
+        w.__pendingDeletes = w.__pendingDeletes ?? [];
+        w.__pendingDeletes.push((async () => {
+          try {
+            const saved = await w.grok.dapi.layouts.find(id);
+            if (saved) await w.grok.dapi.layouts.delete(saved);
+          } catch (_) {}
+        })());
       }, layoutId);
     }
   });
@@ -135,9 +143,17 @@ test('Pivot Table — layout and project persistence', async ({page}) => {
         (c) => c?.colorCodingType === 'Linear', 3000, 100);
       expect(restoredCol?.colorCodingType).toBe('Linear');
     } finally {
-      await page.evaluate(async (id) => {
-        const saved = await grok.dapi.layouts.find(id);
-        if (saved) await grok.dapi.layouts.delete(saved);
+      // the saved layout is never read again: the delete runs detached on the page and the
+      // worker fixture drains it, instead of the test paying 0.5-1.3s for a find + delete
+      await page.evaluate((id) => {
+        const w = window as any;
+        w.__pendingDeletes = w.__pendingDeletes ?? [];
+        w.__pendingDeletes.push((async () => {
+          try {
+            const saved = await w.grok.dapi.layouts.find(id);
+            if (saved) await w.grok.dapi.layouts.delete(saved);
+          } catch (_) {}
+        })());
       }, layoutId);
     }
   });
@@ -160,6 +176,6 @@ test('Pivot Table — layout and project persistence', async ({page}) => {
     }
   });
 
-  await v.cleanupShell(page);
+  await v.closeAllAndWait(page);
   v.finishSpec();
 });

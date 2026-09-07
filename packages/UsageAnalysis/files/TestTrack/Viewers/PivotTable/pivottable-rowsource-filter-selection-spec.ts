@@ -285,6 +285,6 @@ test('Pivot Table — Row Source, filter and selection links', async ({page}) =>
     expect(after.filt).toBe(filterBefore);
   });
 
-  await v.cleanupShell(page);
+  await v.closeAllAndWait(page);
   v.finishSpec();
 });

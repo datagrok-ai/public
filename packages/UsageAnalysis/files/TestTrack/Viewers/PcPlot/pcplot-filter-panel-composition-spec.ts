@@ -83,7 +83,7 @@ test('PC Plot — Filter Panel + In-Chart Filter AND-Composition and Reset Scopi
 
         maxHandle.dispatchEvent(new MouseEvent('mousedown', mk(cx, cy)));
         await w.__drag(svg as HTMLElement, {x: cx, y: cy + 20}, {x: cx, y: cy + 200},
-          {steps: 6, stepMs: 20, holdMs: 50});
+          {steps: 3, stepMs: 20, holdMs: 50});
         await settledFilterCount(500, () =>
           document.dispatchEvent(new MouseEvent('mouseup', mk(cx, cy + 200))));
         return true;

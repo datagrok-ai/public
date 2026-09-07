@@ -673,7 +673,8 @@ export async function saveProjectViaApi(
     try { await bounded(grok.dapi.tables.save(tableInfo), 'tables.save'); }
     catch (e) { return {error: errAt('tables.save', e)}; }
     // a project relation must point at an entity that already exists server-side —
-    // the ViewInfo needs its own save, the same way a linked ViewLayout does
+    // the ViewInfo needs its own save, the same way a linked ViewLayout does; and the view row
+    // references the table row (views_table_id_fkey), so this cannot overlap tables.save
     try { await bounded(grok.dapi.views.save(viewInfo), 'views.save'); }
     catch (e) { return {error: errAt('views.save', e)}; }
     try { await bounded(grok.dapi.projects.save(project), 'projects.save'); }
@@ -693,12 +694,15 @@ export async function saveProjectViaUI(
   await page.locator('.d4-dialog input[type="text"]').first().waitFor({timeout: 8000});
   await page.locator('.d4-dialog input[type="text"]').first().fill(name);
   await page.locator('.d4-dialog .ui-btn-ok, .d4-dialog-footer button').filter({hasText: /^OK$/i}).first().click({force: true});
-  await page.waitForTimeout(3000);
+  // the save dialog closes when the save is accepted; the follow-up share dialog (if any) appears
+  // right after. Both are observable, so neither needs a fixed sleep — this cost 3.8s per call.
+  await page.locator('.d4-dialog').first().waitFor({state: 'detached', timeout: 3000}).catch(() => {});
 
   const cancel = page.locator('.d4-dialog .ui-btn, .d4-dialog button').filter({hasText: /^CANCEL$/i}).first();
-  if (await cancel.count() > 0)
+  if (await cancel.count() > 0) {
     await cancel.click({force: true});
-  await page.waitForTimeout(800);
+    await page.locator('.d4-dialog').first().waitFor({state: 'detached', timeout: 800}).catch(() => {});
+  }
 
   const found = await page.evaluate(async (n) => {
     const grok = (window as any).grok;
@@ -727,8 +731,11 @@ export async function deleteProjectWithCleanup(
   page: Page,
   ids: {projectId?: string; tableInfoId?: string; scriptId?: string},
 ): Promise<void> {
-  await page.evaluate(async (i) => {
-    const grok = (window as any).grok;
+  // the deletes run detached on the page: the test does not wait 5s on dev for a find+delete
+  // of something it will never read again; the worker fixture drains them before it closes
+  await page.evaluate((i) => {
+    const w = window as any;
+    const grok = w.grok;
     const drop = async (ds: any, id?: string) => {
       if (!id) return;
       try {
@@ -736,9 +743,18 @@ export async function deleteProjectWithCleanup(
         if (e) await ds.delete(e);
       } catch (_) {  }
     };
-    const all = Promise.all([
+    w.__pendingDeletes = w.__pendingDeletes ?? [];
+    w.__pendingDeletes.push(Promise.all([
       drop(grok.dapi.projects, i.projectId), drop(grok.dapi.tables, i.tableInfoId), drop(grok.dapi.scripts, i.scriptId),
-    ]);
-    await Promise.race([all, new Promise((r) => setTimeout(r, 30_000))]);
+    ]));
   }, ids).catch(() => {});
+}
+
+export async function drainPendingDeletes(page: Page, capMs = 30_000): Promise<void> {
+  await page.evaluate((cap) => {
+    const w = window as any;
+    const all = Promise.all(w.__pendingDeletes ?? []);
+    w.__pendingDeletes = [];
+    return Promise.race([all, new Promise((r) => setTimeout(r, cap))]);
+  }, capMs).catch(() => {});
 }

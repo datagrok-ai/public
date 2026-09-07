@@ -5,7 +5,7 @@ import {expect, Page} from '@playwright/test';
 import {test} from '../../shared-page';
 import {openDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
-import {saveProjectViaApi, saveProjectViaUI, deleteProjectWithCleanup} from '../../helpers/projects';
+import {saveProjectViaApi, deleteProjectWithCleanup} from '../../helpers/projects';
 import * as g from './grid-helpers';
 
 declare const grok: any;
@@ -180,10 +180,13 @@ test('Grid — appearance, summary columns and stats rows persist across layout 
         const added = await g.clickMenuLeaf(page, await g.cellCenter(page, 'AGE', 0),
           ['div-Add', 'div-Add---Summary-Columns'], `div-Add---Summary-Columns---${t.leaf}`);
         const expectedLen = count + 1;
-        const state = await v.pollValue(() => page.evaluate(() => {
-          const grid = grok.shell.tv.grid;
-          return {len: grid.columns.length, lastType: grid.columns.byIndex(grid.columns.length - 1).cellType};
-        }), (x) => x.len === expectedLen && x.lastType === t.cellType, 2000, 50);
+        const state = await page.evaluate(async ({want, cellType}) => {
+          const read = () => {
+            const grid = grok.shell.tv.grid;
+            return {len: grid.columns.length, lastType: grid.columns.byIndex(grid.columns.length - 1).cellType};
+          };
+          return (window as any).__poll(read, (x: any) => x.len === want && x.lastType === cellType, 2000, 25);
+        }, {want: expectedLen, cellType: t.cellType});
         results.push({leaf: t.leaf, added, cellType: state.lastType});
         if (added && state.len === count + 1) count = state.len;
       }
@@ -201,8 +204,8 @@ test('Grid — appearance, summary columns and stats rows persist across layout 
       for (const stat of ['min', 'max']) {
         expect(await g.clickMenuLeaf(page, await g.cellCenter(page, 'AGE', 0),
           ['div-Add', 'div-Add---Column-Stats'], `div-Add---Column-Stats---${stat}`)).toBe(true);
-        // the error window after each stats row is the assertion
-        await page.waitForTimeout(500);
+        // the error window after each stats row is the assertion; the grid's own paint closes it
+        await v.waitForGridPainted(page, {gapMs: 120, capMs: 500});
       }
       const colsAfter = await page.evaluate(() => grok.shell.tv.grid.columns.length);
       expect(colsAfter).toBe(colsAfterSummary);
@@ -387,7 +390,7 @@ test('Grid — column groups persist across a project round-trip (GROK-17441)', 
     await softStep('Step 33 — Save the view as a project via the ribbon Save button', async () => {
       // saveProjectViaApi (uploadDataFrame + tables.save) keeps column tags but drops the dataframe-level
       // .columnGroups tag, measured 2026-09-03; the ribbon save keeps it
-      projectId = (await saveProjectViaUI(page, 'grid-dialogs-groups-' + Date.now())).projectId;
+      projectId = await g.saveProjectViaRibbon(page, 'grid-dialogs-groups-' + Date.now());
       expect(projectId).not.toBeNull();
       expect((await errorBalloons(page)).filter((t) => !g.BENIGN_NOISE(t))).toEqual([]);
     });

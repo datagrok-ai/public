@@ -160,7 +160,7 @@ test('Heat map', async ({page}) => {
     try {
       await page.mouse.move(box.x + box.width * 0.3, box.y + box.height * 0.3);
       await page.mouse.down();
-      await page.mouse.move(box.x + box.width * 0.6, box.y + box.height * 0.6, {steps: 20});
+      await page.mouse.move(box.x + box.width * 0.6, box.y + box.height * 0.6, {steps: 3});
       await page.mouse.up();
     } finally {
       await page.keyboard.up('Alt');
@@ -195,7 +195,7 @@ test('Heat map', async ({page}) => {
   await page.evaluate(() => {
     for (const e of Array.from(document.querySelectorAll('.property-grid'))) e.remove();
   });
-  await v.cleanupShell(page);
+  await v.closeAllAndWait(page);
 
   v.finishSpec();
 });

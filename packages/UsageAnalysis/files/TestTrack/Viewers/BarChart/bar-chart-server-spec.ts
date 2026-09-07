@@ -41,9 +41,11 @@ test('Bar chart tests — data panel and colour-coding layout round-trip', async
     const w = window as any;
     document.body.classList.add('selenium');
     grok.shell.windows.simpleMode = true;
-    grok.shell.addTableView(await w.__readCsv(demog));
+    // the two reads are independent server round-trips; sequencing them cost this spec its
+    // slowest evaluate, and the views still have to be added one at a time
+    const [df1, df2] = await Promise.all([w.__readCsv(demog), w.__readCsv(spgi)]);
+    grok.shell.addTableView(df1);
     await w.__tableReady();
-    const df2 = await w.__readCsv(spgi);
     df2.name = 'SPGI';
     grok.shell.addTableView(df2);
     await w.__tableReady();
@@ -103,7 +105,11 @@ test('Bar chart tests — data panel and colour-coding layout round-trip', async
         if (bc2) await w.__settled('grok.events.onViewerClosed', () => bc2.close(), 500);
       }
       finally {
-        await grok.dapi.layouts.delete(saved);
+        // detached: the layout is never read again, and the worker fixture drains __pendingDeletes
+        w.__pendingDeletes = w.__pendingDeletes ?? [];
+        w.__pendingDeletes.push((async () => {
+          try { await grok.dapi.layouts.delete(saved); } catch (_) {}
+        })());
       }
       return r;
     });
@@ -193,11 +199,16 @@ test('Bar chart tests — data panel and colour-coding layout round-trip', async
       expect(rt.reopened).toBe(true);
     }
     finally {
-      await page.evaluate(async ({id}) => {
+      await page.evaluate(({id}) => {
         const w = window as any;
-        const saved = w.__savedLayout ?? await grok.dapi.layouts.find(id);
-        delete w.__savedLayout;
-        if (saved) await grok.dapi.layouts.delete(saved);
+        w.__pendingDeletes = w.__pendingDeletes ?? [];
+        w.__pendingDeletes.push((async () => {
+          try {
+            const saved = w.__savedLayout ?? await grok.dapi.layouts.find(id);
+            delete w.__savedLayout;
+            if (saved) await grok.dapi.layouts.delete(saved);
+          } catch (_) {}
+        })());
       }, {id: layoutId});
     }
   });

@@ -480,8 +480,9 @@ test('Line chart tests (Playwright) — UI-first', async ({page}) => {
     expect(preSel).toBeLessThan(200);
     await v.snapshotCanvasColors(page, 'Line chart');
     await page.evaluate(() => {
-      const df = grok.shell.tv.dataFrame;
-      for (let i = 0; i < 100; i++) df.selection.set(i, true);
+      // one notification for the whole selection: 100 individual set() calls raised 100 of
+      // them and the viewer repainted against each
+      grok.shell.tv.dataFrame.selection.init((i: number) => i < 100);
     });
 
     const selDelta = await v.waitForCanvasChange(page, 'Line chart', {minDelta: 1000, timeoutMs: 1000});
@@ -637,6 +638,6 @@ test('Line chart tests (Playwright) — UI-first', async ({page}) => {
     await lcSetProps(page, {packCategories: true, multiAxis: false});
   });
 
-  await v.cleanupShell(page);
+  await v.closeAllAndWait(page);
   v.finishSpec();
 });

@@ -25,12 +25,12 @@ import {
   SYSTEM_DATAGROK_NQNAME,
   SYSTEM_DATAGROK_QUERIES,
 } from '../helpers/openers';
+import {deleteProjectWithCleanup, SavedAllTables} from '../helpers/projects';
 import {
   saveAllTablesWithProvenance,
   reopenAndAssertProvenance,
-  deleteProjectWithCleanup,
-  SavedAllTables,
-} from '../helpers/projects';
+  deleteAtWorkerClose,
+} from './projects-shared';
 
 test.use(projectsTestOptions);
 
@@ -42,18 +42,39 @@ async function stripProvenance(page: Page): Promise<void> {
   })()`);
 }
 
+type SpaceProvisioning = {fixture: SpaceFixture} | {blocked: true; reason: string};
+
+// Six of the cases below open demog.csv "from a Space", and each was standing up a Space of
+// its own — 4-13s of createRootSpace + copy per test for a fixture none of them writes to.
+// One Space serves the file, and its delete is queued for the worker's close rather than run
+// between the tests that still need it.
+let sharedSpace: SpaceProvisioning | null = null;
+let sharedQuery: ProvisionedQuery | null = null;
+
 async function provisionSpaceWithDemog(
   page: Page, namePrefix: string,
-): Promise<{fixture: SpaceFixture} | {blocked: true; reason: string}> {
+): Promise<SpaceProvisioning> {
+  if (sharedSpace) return sharedSpace;
   const probe = await provisionSpaceFixture(page, {
     namePrefix,
     fileName: 'demog.csv',
   });
   if (probe.blocked || !probe.fixture) {
     if (probe.fixture) await releaseSpaceFixture(page, probe.fixture);
-    return {blocked: true, reason: probe.reason};
+    return (sharedSpace = {blocked: true, reason: probe.reason});
   }
-  return {fixture: probe.fixture};
+  await deleteAtWorkerClose(page, 'spaces', probe.fixture.spaceId);
+  return (sharedSpace = {fixture: probe.fixture});
+}
+
+async function provisionSharedQuery(page: Page, nameStem: string): Promise<ProvisionedQuery> {
+  if (sharedQuery) return sharedQuery;
+  const q = await provisionSystemDatagrokQuery(page, {
+    nameStem,
+    sql: SYSTEM_DATAGROK_QUERIES.GROUPS_SAMPLE,
+  });
+  await deleteAtWorkerClose(page, 'queries', q.queryId);
+  return (sharedQuery = q);
 }
 
 function throwOnStepErrors() {
@@ -127,10 +148,7 @@ async function runCase2(page: Page, sync: 'on' | 'off') {
 
   try {
     await softStep('provision query and run twice (two query result tables)', async () => {
-      provisioned = await provisionSystemDatagrokQuery(page, {
-        nameStem: 'case2_query',
-        sql: SYSTEM_DATAGROK_QUERIES.GROUPS_SAMPLE,
-      });
+      provisioned = await provisionSharedQuery(page, 'case2_query');
       expect(provisioned.queryId).toBeTruthy();
       const t1 = await openTableFromDbQuery(page, provisioned.queryNqName);
       expect(t1.rowCount).toBeGreaterThan(0);
@@ -159,7 +177,6 @@ async function runCase2(page: Page, sync: 'on' | 'off') {
       for (const tableInfoId of saved.tableInfoIds)
         await deleteProjectWithCleanup(page, {tableInfoId});
     }
-    if (provisioned) await provisioned.cleanup();
   }
 
   throwOnStepErrors();
@@ -188,10 +205,7 @@ async function runCase3(page: Page, sync: 'on' | 'off') {
 
   try {
     await softStep('provision query, run it, and open spgi-100 file', async () => {
-      provisioned = await provisionSystemDatagrokQuery(page, {
-        nameStem: 'case3_query',
-        sql: SYSTEM_DATAGROK_QUERIES.GROUPS_SAMPLE,
-      });
+      provisioned = await provisionSharedQuery(page, 'case3_query');
       expect(provisioned.queryId).toBeTruthy();
       const t1 = await openTableFromDbQuery(page, provisioned.queryNqName);
       expect(t1.rowCount).toBeGreaterThan(0);
@@ -219,7 +233,6 @@ async function runCase3(page: Page, sync: 'on' | 'off') {
       for (const tableInfoId of saved.tableInfoIds)
         await deleteProjectWithCleanup(page, {tableInfoId});
     }
-    if (provisioned) await provisioned.cleanup();
   }
 
   throwOnStepErrors();
@@ -286,7 +299,6 @@ async function runCase4(page: Page, sync: 'on' | 'off') {
       for (const tableInfoId of saved.tableInfoIds)
         await deleteProjectWithCleanup(page, {tableInfoId});
     }
-    if (fixture) await releaseSpaceFixture(page, fixture);
   }
 
   throwOnStepErrors();
@@ -354,7 +366,6 @@ async function runCase5(page: Page, sync: 'on' | 'off') {
       for (const tableInfoId of saved.tableInfoIds)
         await deleteProjectWithCleanup(page, {tableInfoId});
     }
-    if (fixture) await releaseSpaceFixture(page, fixture);
   }
 
   throwOnStepErrors();
@@ -396,10 +407,7 @@ async function runCase6(page: Page, sync: 'on' | 'off') {
       const t1 = await openTableFromFile(page, fixture!.filePath);
       expect(t1.rowCount).toBeGreaterThan(0);
       await assertProvenanceScript(page, 'files', t1.script);
-      provisioned = await provisionSystemDatagrokQuery(page, {
-        nameStem: 'case6_query',
-        sql: SYSTEM_DATAGROK_QUERIES.GROUPS_SAMPLE,
-      });
+      provisioned = await provisionSharedQuery(page, 'case6_query');
       expect(provisioned.queryId).toBeTruthy();
       const t2 = await openTableFromDbQuery(page, provisioned.queryNqName);
       expect(t2.rowCount).toBeGreaterThan(0);
@@ -427,8 +435,6 @@ async function runCase6(page: Page, sync: 'on' | 'off') {
       for (const tableInfoId of saved.tableInfoIds)
         await deleteProjectWithCleanup(page, {tableInfoId});
     }
-    if (provisioned) await provisioned.cleanup();
-    if (fixture) await releaseSpaceFixture(page, fixture);
   }
 
   throwOnStepErrors();

@@ -5,7 +5,7 @@ import {expect} from '@playwright/test';
 import {localTest as test} from '../../shared-page';
 import {openDatagrok, specTestOptions, softStep, isLocalBootNoise} from '../../spec-login';
 import * as v from '../../helpers/viewers';
-import {BOX, bpProp, setBpProp, viewportRect, readLadder, clickToggleIcon, dragTopHandle} from './boxplot-helpers';
+import {BOX, bpProp, setBpProp, setBpProps, viewportRect, readLadder, clickToggleIcon, dragTopHandle, bpPainted} from './boxplot-helpers';
 
 declare const grok: any;
 
@@ -32,19 +32,24 @@ test('Box Plot settings ladder and layout round-trip', async ({page}) => {
     bp.props.valueColumnName = 'AGE';
   });
   await page.locator(BOX).waitFor({timeout: 10000});
-  await v.waitForViewerRendered(page, 'Box plot', 1500);
+  await bpPainted(page);
 
   await softStep('[anchor: PRE-LADDER] Scenario 1: datetime Value disables the property-panel Axis Type (GROK-20395)', async () => {
     await setBpProp(page, 'valueColumnName', 'STARTED', 1200);
 
-    await page.evaluate(() => {
-      grok.shell.o = grok.shell.tv.viewers.find((x: any) => x.type === 'Box plot');
+    // the first `shell.o = viewer` right after a table open on the shared page can be dropped
+    // (o reads null a beat later, no grid is built); a later one takes, so it is re-applied
+    // until the grid shows the row
+    const axisTypeOpacity = await page.evaluate(async () => {
+      const bp = grok.shell.tv.viewers.find((x: any) => x.type === 'Box plot');
+      const row = () => document.querySelector('.property-grid tr[name="prop-axis-type"]') as HTMLElement | null;
+      const t0 = Date.now();
+      while (!row() && Date.now() - t0 < 10000) {
+        grok.shell.o = bp;
+        await (window as any).__poll(row, (r: HTMLElement | null) => r !== null, 1000, 100);
+      }
+      return row() ? getComputedStyle(row()!).opacity : null;
     });
-
-    const axisTypeOpacity = await v.pollValue(() => page.evaluate(() => {
-      const row = document.querySelector('.property-grid tr[name="prop-axis-type"]') as HTMLElement | null;
-      return row ? getComputedStyle(row).opacity : null;
-    }), (o) => o !== null, 10000, 250);
     console.log('Scenario 1 Axis Type row opacity (datetime value):', axisTypeOpacity);
     expect(axisTypeOpacity).not.toBeNull();
     expect(parseFloat(axisTypeOpacity as string)).toBeLessThan(1);
@@ -61,9 +66,7 @@ test('Box Plot settings ladder and layout round-trip', async ({page}) => {
 
   await softStep('Scenario 2 Step 4-5: explicit Marker Color HEIGHT, invert scheme, color min/max', async () => {
     await setBpProp(page, 'markerColorColumnName', 'HEIGHT', 800);
-    await setBpProp(page, 'invertColorScheme', true, 500);
-    await setBpProp(page, 'colorMin', 20, 500);
-    await setBpProp(page, 'colorMax', 80, 700);
+    await setBpProps(page, {invertColorScheme: true, colorMin: 20, colorMax: 80}, 700);
     expect(await bpProp(page, 'markerColorColumnName')).toBe('HEIGHT');
     expect(await bpProp(page, 'invertColorScheme')).toBe(true);
     expect(await bpProp(page, 'colorMin')).toBe(20);
@@ -89,15 +92,13 @@ test('Box Plot settings ladder and layout round-trip', async ({page}) => {
   });
 
   await softStep('Scenario 2 Step 11: Value Min 20, Value Max 60', async () => {
-    await setBpProp(page, 'valueMin', 20, 500);
-    await setBpProp(page, 'valueMax', 60, 700);
+    await setBpProps(page, {valueMin: 20, valueMax: 60}, 700);
     expect(await bpProp(page, 'valueMin')).toBe(20);
     expect(await bpProp(page, 'valueMax')).toBe(60);
   });
 
   await softStep('[anchor: Step 8] Scenario 2 Step 13: Axis Type Log throws no console error, range within data bounds (GROK-18515, GROK-20397)', async () => {
-    await setBpProp(page, 'valueMin', null, 400);
-    await setBpProp(page, 'valueMax', null, 700);
+    await setBpProps(page, {valueMin: null, valueMax: null}, 700);
     const errBefore = consoleErrors.length;
     const pageErrBefore = pageErrors.length;
     await setBpProp(page, 'axisType', 'logarithmic', 1400);
@@ -117,8 +118,7 @@ test('Box Plot settings ladder and layout round-trip', async ({page}) => {
   });
 
   await softStep('Scenario 2 Step 14-15: Invert Y Axis on, Plot Style violin', async () => {
-    await setBpProp(page, 'invertYAxis', true, 600);
-    await setBpProp(page, 'plotStyle', 'violin', 800);
+    await setBpProps(page, {invertYAxis: true, plotStyle: 'violin'}, 800);
     expect(await bpProp(page, 'invertYAxis')).toBe(true);
     expect(await bpProp(page, 'plotStyle')).toBe('violin');
   });
@@ -170,9 +170,7 @@ test('Box Plot settings ladder and layout round-trip', async ({page}) => {
   });
 
   await softStep('[anchor: LAYOUT-ROUND-TRIP] Scenario 4: layout round-trip restores the Box Plot ladder, Scatter re-arm absent', async () => {
-    await setBpProp(page, 'covariateColumnName', '', 700);
-    await setBpProp(page, 'controlComparisons', false, 500);
-    await setBpProp(page, 'showGroupComparison', false, 800);
+    await setBpProps(page, {covariateColumnName: '', controlComparisons: false, showGroupComparison: false}, 800);
     const ladderBefore = await readLadder(page);
     await page.evaluate(() => { (window as any).__probeLayout = grok.shell.tv.saveLayout(); });
 

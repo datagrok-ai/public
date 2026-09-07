@@ -34,6 +34,7 @@ test('PC Plot — Normalization and Density Overlay', async ({page}) => {
   await page.locator('[name="viewer-PC-Plot"]').waitFor({timeout: 15000});
 
   await v.installEventWaits(page);
+  await v.waitForViewerRendered(page, 'PC Plot', 50);
 
   await v.setViewerProps(page, 'PC Plot', [{set: {columnNames: ['AGE', 'HEIGHT', 'WEIGHT']}}], 500);
 

@@ -10,7 +10,11 @@ test.use(specTestOptions);
 
 const LINK_DIALOG = '.d4-dialog[name="dialog-Link-Tables"]';
 const LINK_TYPE_EDITOR = `${LINK_DIALOG} select[name="input-Link-Type"]`;
-const BYSTANDER_SETTLE_MS = 1500;
+// Link propagation carries no timer of its own (ddt/lib/src/data_frame/tools/link.dart), and the
+// slowest clock anywhere downstream is the 50ms criteria debounce of filters_core.dart:278, so the
+// window a bystander has to stay put for is measured in those rather than guessed at a second and a
+// half — and it is sampled at 50ms, so it catches a frame that moves and self-corrects.
+const BYSTANDER_SETTLE_MS = 500;
 
 interface FrameState {
   rowCount: number;
@@ -49,13 +53,33 @@ interface Bystander { name: string; expected: FrameState; why: string; }
 // end of the same window, so the window is spent once rather than once per frame.
 async function expectUnmoved(page: Page, ...bystanders: Bystander[]): Promise<void> {
   for (const b of bystanders) expect(await readFrame(page, b.name), b.why).toEqual(b.expected);
-  const moved = await v.pollValue(
-    async () => Promise.all(bystanders.map((b) => readFrame(page, b.name))),
-    (states) => states.some((s, i) => JSON.stringify(s) !== JSON.stringify(bystanders[i].expected)),
-    BYSTANDER_SETTLE_MS, 150);
-  for (let i = 0; i < bystanders.length; i++) {
-    expect(moved[i], `${bystanders[i].why} (second reading, ${BYSTANDER_SETTLE_MS} ms later)`)
-      .toEqual(bystanders[i].expected);
+  // Sampled in the page rather than over one round trip per frame per tick: the whole window costs
+  // a single evaluate, so it can be walked at 25ms and a frame that moves and corrects itself
+  // inside a tick is caught rather than stepped over.
+  const strayed = await page.evaluate(async ({names, cap}) => {
+    const read = (n: string) => {
+      for (const view of (window as any).grok.shell.tableViews) {
+        const df = view.dataFrame;
+        if (df.name === n)
+          return {rowCount: df.rowCount, filtered: df.filter.trueCount, selected: df.selection.trueCount};
+      }
+      return null;
+    };
+    const seen: Record<string, string[]> = {};
+    for (const n of names) seen[n] = [];
+    const t0 = Date.now();
+    while (Date.now() - t0 < cap) {
+      for (const n of names) {
+        const s = JSON.stringify(read(n));
+        if (!seen[n].includes(s)) seen[n].push(s);
+      }
+      await new Promise((r) => setTimeout(r, 25));
+    }
+    return seen;
+  }, {names: bystanders.map((b) => b.name), cap: BYSTANDER_SETTLE_MS});
+  for (const b of bystanders) {
+    expect(strayed[b.name], `${b.why} (at every sample of the ${BYSTANDER_SETTLE_MS} ms window that follows)`)
+      .toEqual([JSON.stringify(b.expected)]);
   }
 }
 
@@ -139,6 +163,7 @@ async function switchToView(page: Page, name: string): Promise<void> {
     .toBe(true);
   await expect.poll(() => page.evaluate(() => (window as any).grok.shell.tv?.dataFrame?.name ?? ''), {
     timeout: 15_000,
+    intervals: [30, 60, 120, 250, 500, 1000],
     message: `grok.shell.tv never became ${name} after the view switch`,
   }).toBe(name);
 }
@@ -288,6 +313,7 @@ test('Collaborative Filtering for Linked Tables', async ({page}) => {
       await switchToView(page, 'SPGI-linked1');
       await expect.poll(() => filteredCountOf(page, 'SPGI-linked1'), {
         timeout: 15_000,
+        intervals: [30, 60, 120, 250, 500, 1000],
         message: 'the selection-to-filter link did not narrow SPGI-linked1 to the key-matched rows',
       }).toBe(fx.linkedRowCount);
       const view = await page.evaluate(() => (window as any).grok.shell.tv.dataFrame.name);
@@ -323,6 +349,7 @@ test('Collaborative Filtering for Linked Tables', async ({page}) => {
       await switchToView(page, 'SPGI-linked1');
       await expect.poll(() => filteredCountOf(page, 'SPGI-linked1'), {
         timeout: 15_000,
+        intervals: [30, 60, 120, 250, 500, 1000],
         message: 'the filter-to-filter link did not propagate the SPGI-linked2 criterion down to SPGI-linked1',
       }).toBe(fx.linkAndFilterCount);
       await expectUnmoved(page,
@@ -359,6 +386,7 @@ test('Collaborative Filtering for Linked Tables', async ({page}) => {
         await page.evaluate(() => (window as any).grok.shell.tv.dataFrame.selection.setAll(false));
         await expect.poll(() => filteredCountOf(page, 'SPGI-linked1'), {
           timeout: 15_000,
+          intervals: [30, 60, 120, 250, 500, 1000],
           message: 'clearing the spgi-100 selection did not widen SPGI-linked1 — either the link never ' +
             'narrowed it or the release did not propagate, and Step 11 could not tell those apart',
         }).toBeGreaterThan(fx.bothCriteriaCount);
@@ -388,6 +416,7 @@ test('Collaborative Filtering for Linked Tables', async ({page}) => {
       expect(result.selected, 'the top 5 rows of spgi-100 are not selected again').toBe(5);
       await expect.poll(() => filteredCountOf(page, 'SPGI-linked1'), {
         timeout: 15_000,
+        intervals: [30, 60, 120, 250, 500, 1000],
         message: 'the selection link no longer narrows SPGI-linked1, so "the narrowing is gone" in Step 11 ' +
           'would prove nothing',
       }).toBe(fx.bothCriteriaCount);
@@ -421,21 +450,25 @@ test('Collaborative Filtering for Linked Tables', async ({page}) => {
 
         await expect.poll(() => linkTypeEditorsWithValue(page, 'selection to selection'), {
           timeout: 10_000,
+          intervals: [30, 60, 120, 250, 500, 1000],
           message: 'no Link Type editor reads "selection to selection" — the change did not commit',
         }).not.toHaveLength(0);
         await expect.poll(() => linkTypeEditorsWithValue(page, 'selection to filter'), {
           timeout: 10_000,
+          intervals: [30, 60, 120, 250, 500, 1000],
           message: 'a Link Type editor still reads "selection to filter" — the old type was not replaced',
         }).toHaveLength(0);
 
         await expect.poll(async () => (await readFrame(page, 'SPGI-linked1'))?.selected ?? -1, {
           timeout: 15_000,
+          intervals: [30, 60, 120, 250, 500, 1000],
           message: 'SPGI-linked1 selection does not hold the key-matched rows — the new ' +
             'selection-to-selection link was not applied',
         }).toBe(fx.linkedRowCount);
 
         await expect.poll(() => filteredCountOf(page, 'SPGI-linked1'), {
           timeout: 15_000,
+          intervals: [30, 60, 120, 250, 500, 1000],
           message: 'SPGI-linked1 did not return to the no-selection-link count derived from its own ' +
             'columns after the link type changed — the previous link type\'s filtering was left in ' +
             'place (GROK-19137)',
@@ -460,12 +493,14 @@ test('Collaborative Filtering for Linked Tables', async ({page}) => {
         await closeButton.first().click();
       await expect.poll(async () => page.locator(LINK_DIALOG).count(), {
         timeout: 10_000,
+        intervals: [30, 60, 120, 250, 500, 1000],
         message: 'the Link Tables dialog stayed open and would bleed into the next spec',
       }).toBe(0);
       await page.evaluate(() => (window as any).grok.shell.closeAll());
       await expect.poll(async () => page.evaluate(() =>
         Array.from((window as any).grok.shell.tableViews).length), {
         timeout: 10_000,
+        intervals: [30, 60, 120, 250, 500, 1000],
         message: 'the probe table views did not close, so the probe links stay attached',
       }).toBe(0);
     });

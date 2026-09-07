@@ -1,9 +1,7 @@
 import {expect, Page} from '@playwright/test';
 import {test} from '../shared-page';
-import {
-  loginToDatagrok, loginAsSecondUser, getSecondUserLogin,
-  specTestOptions, softStep, stepErrors, baseUrl,
-} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors, baseUrl} from '../spec-login';
+import {recipientPage, secondUserLogin} from './_actors';
 
 test.use(specTestOptions);
 
@@ -68,7 +66,8 @@ test('Sharing & Permissions — Query', async ({page}) => {
     grok.shell.windows.simpleMode = true;
   });
 
-  const recipientLogin = await getSecondUserLogin();
+  const recipientLogin = await secondUserLogin();
+  const rp = await recipientPage(page);
   const queryId = await createQuery(page, QUERY_NAME);
   await setCurrentObjectToQuery(page, QUERY_NAME);
 
@@ -92,7 +91,10 @@ test('Sharing & Permissions — Query', async ({page}) => {
     await expect(dlg.locator('.d4-dialog-title')).toContainText('Share');
     await expect(page.locator('input[placeholder="User, group, or email"]')).toBeVisible();
     await expect(page.locator('[name="div-share-selector"]')).toBeVisible();
-    await expect(page.locator('[name="label-Advanced-editor..."]')).toBeVisible();
+    // GROK-20322 removed the Share dialog's "Advanced editor..." link
+    // (core/client/xamgle/lib/src/commands/file/share_dataset.dart); the grant list the
+    // PermissionsEditor renders is what the dialog must show now.
+    await expect(page.locator('.d4-dialog .grok-permissions')).toBeVisible();
     await expect(page.locator('[name="button-OK"]')).toBeVisible();
     await expect(page.locator('[name="button-CANCEL"]')).toBeVisible();
 
@@ -183,9 +185,7 @@ test('Sharing & Permissions — Query', async ({page}) => {
   });
 
   await softStep('Block D.2-3: Recipient sees shared query and can run it', async () => {
-    await loginAsSecondUser(page);
-    await page.waitForTimeout(2000);
-    const result = await page.evaluate(async (qName) => {
+    const result = await rp.evaluate(async (qName) => {
 
       const q = await grok.dapi.queries.filter(`name = "${qName}"`).first();
       if (!q) return {found: false};
@@ -201,7 +201,7 @@ test('Sharing & Permissions — Query', async ({page}) => {
   });
 
   await softStep('Block E: Recipient lacks Edit / Delete / Share on the shared query', async () => {
-    const checks = await page.evaluate(async (qName) => {
+    const checks = await rp.evaluate(async (qName) => {
       const q = await grok.dapi.queries.filter(`name = "${qName}"`).first();
       if (!q) return {found: false};
       const canEdit = await grok.dapi.permissions.check(q, 'Edit');
@@ -218,8 +218,6 @@ test('Sharing & Permissions — Query', async ({page}) => {
   });
 
   await softStep('Block F.1-2: Owner revokes recipient grant; pane shows owner-only', async () => {
-    await loginToDatagrok(page); 
-    await page.waitForTimeout(2000);
     const revoked = await page.evaluate(async (args) => {
       const {qName, login} = args;
       const q = await grok.dapi.queries.filter(`name = "${qName}"`).first();
@@ -235,9 +233,7 @@ test('Sharing & Permissions — Query', async ({page}) => {
   });
 
   await softStep('Block F.3-4: Recipient can no longer execute the query (access revoked)', async () => {
-    await loginAsSecondUser(page);
-    await page.waitForTimeout(2000);
-    const result = await page.evaluate(async (qName) => {
+    const result = await rp.evaluate(async (qName) => {
       const q = await grok.dapi.queries.filter(`name = "${qName}"`).first();
       if (!q) return {found: false, ran: false}; 
       try {
@@ -251,8 +247,6 @@ test('Sharing & Permissions — Query', async ({page}) => {
     expect(result.ran).toBe(false);
   });
 
-  await loginToDatagrok(page);
-  await page.waitForTimeout(1500);
   await page.evaluate(async (qName) => {
     try {
       const q = await grok.dapi.queries.filter(`name = "${qName}"`).first();

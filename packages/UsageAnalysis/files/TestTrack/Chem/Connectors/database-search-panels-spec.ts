@@ -25,9 +25,12 @@ test('Chem | Context Panel — External Database Search Panels', async ({page}) 
     });
     for (let i = 0; i < 50; i++) {
       if (document.querySelector('[name="viewer-Grid"] canvas')) break;
-      await new Promise((r) => setTimeout(r, 200));
+      await new Promise((r) => setTimeout(r, 100));
     }
-    await new Promise((r) => setTimeout(r, 3000));
+    // The flat settle stood in for the Molecule semType landing on the opened frame.
+    const semDeadline = Date.now() + 3000;
+    while (Date.now() < semDeadline && !df.columns.toList().some((c: any) => c.semType === 'Molecule'))
+      await new Promise((r) => setTimeout(r, 100));
   });
   await page.locator('[name="viewer-Grid"] canvas').first().waitFor({timeout: 30_000});
 

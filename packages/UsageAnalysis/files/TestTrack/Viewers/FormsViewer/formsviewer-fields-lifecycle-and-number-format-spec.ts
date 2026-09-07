@@ -164,6 +164,10 @@ async function removeFieldViaHeaderCloseIcon(page: Page, column: string): Promis
   }, {timeout: 20_000, intervals: [150, 150, 250, 400, 600]}).toBe(true);
 }
 
+// expect.poll's default cadence (100/250/500/1000ms) overshoots a settled UI by up to a
+// second per call; this ladder is fast early and still coarse for the long product waits
+const POLL = {intervals: [50, 50, 100, 200, 400, 800]};
+
 test.use(specTestOptions);
 
 test('Forms viewer — field lifecycle and number format', async ({page}) => {
@@ -197,16 +201,16 @@ test('Forms viewer — field lifecycle and number format', async ({page}) => {
       const vw = grok.shell.tv.viewers.find((x: any) => x.type === 'FormsViewer');
       vw.setOptions({fieldsColumnNames: ['RACE', 'AGE', 'SEX']});
     });
-    await expect.poll(() => drawnLabelNames(page), {timeout: 20_000}).toEqual(['RACE', 'AGE', 'SEX']);
-    await expect.poll(() => cardFieldColumns(page), {timeout: 20_000}).toEqual(['RACE', 'AGE', 'SEX']);
+    await expect.poll(() => drawnLabelNames(page), {timeout: 20_000, ...POLL}).toEqual(['RACE', 'AGE', 'SEX']);
+    await expect.poll(() => cardFieldColumns(page), {timeout: 20_000, ...POLL}).toEqual(['RACE', 'AGE', 'SEX']);
   });
 
   await softStep('Scenario 1 Step 4 — Removing the AGE field drops its label and elements; order kept', async () => {
     await removeFieldViaHeaderCloseIcon(page, 'AGE');
 
-    await expect.poll(() => drawnLabelNames(page), {timeout: 20_000}).toEqual(['RACE', 'SEX']);
+    await expect.poll(() => drawnLabelNames(page), {timeout: 20_000, ...POLL}).toEqual(['RACE', 'SEX']);
     expect(await page.locator(`${HOST} [column="AGE"]`).count()).toBe(0);
-    await expect.poll(() => cardFieldColumns(page), {timeout: 20_000}).toEqual(['RACE', 'SEX']);
+    await expect.poll(() => cardFieldColumns(page), {timeout: 20_000, ...POLL}).toEqual(['RACE', 'SEX']);
   });
 
   await softStep('Scenario 1 Step 5 — Dropping RACE from the dataframe prunes its field with no error', async () => {
@@ -214,8 +218,8 @@ test('Forms viewer — field lifecycle and number format', async ({page}) => {
       await removeColumnViaGridUI(page, 'RACE');
     });
     expect(await page.evaluate(() => grok.shell.t.columns.names().includes('RACE'))).toBe(false);
-    await expect.poll(() => drawnLabelNames(page), {timeout: 20_000}).toEqual(['SEX']);
-    expect(await page.locator(`${HOST} [column="RACE"]`).count()).toBe(0);
+    await expect.poll(() => drawnLabelNames(page), {timeout: 20_000, ...POLL}).toEqual(['SEX']);
+    await expect.poll(() => page.locator(`${HOST} [column="RACE"]`).count(), {timeout: 5_000, ...POLL}).toBe(0);
     expect(errCount).toBe(0);
     expect(await page.locator('.d4-balloon.error').count()).toBe(0);
   });
@@ -224,8 +228,8 @@ test('Forms viewer — field lifecycle and number format', async ({page}) => {
     const errCount = await withConsoleErrorCount(page, async () => {
       await renameColumnViaGridUI(page, 'SEX', 'GENDER');
     });
-    await expect.poll(() => drawnLabelNames(page), {timeout: 20_000}).toEqual(['GENDER']);
-    await expect.poll(() => cardFieldColumns(page), {timeout: 20_000}).toEqual(['GENDER']);
+    await expect.poll(() => drawnLabelNames(page), {timeout: 20_000, ...POLL}).toEqual(['GENDER']);
+    await expect.poll(() => cardFieldColumns(page), {timeout: 20_000, ...POLL}).toEqual(['GENDER']);
     expect(await page.evaluate(() => grok.shell.t.columns.names().includes('GENDER'))).toBe(true);
     expect(errCount).toBe(0);
   });
@@ -253,7 +257,7 @@ test('Forms viewer — field lifecycle and number format', async ({page}) => {
     await addViewerByIcon(page, 'Forms', 'Forms', 30_000, 'FormsViewer');
     await page.locator(HOST).first().waitFor({timeout: 30_000});
 
-    await expect.poll(() => drawnLabelNames(page).then((l) => l.length), {timeout: 20_000}).toBe(20);
+    await expect.poll(() => drawnLabelNames(page).then((l) => l.length), {timeout: 20_000, ...POLL}).toBe(20);
     expect(await cardFieldColumns(page)).toHaveLength(20);
     expect((await drawnLabelNames(page)).some((n) => n.startsWith('~'))).toBe(false);
     expect(await balloonCount(page)).toBe(0);
@@ -268,7 +272,7 @@ test('Forms viewer — field lifecycle and number format', async ({page}) => {
     const errCount = await withConsoleErrorCount(page, async () => {
       await renameColumnViaGridUI(page, 'C05', '~SERVICE');
     });
-    await expect.poll(() => drawnLabelNames(page).then((l) => l.length), {timeout: 20_000}).toBe(beforeCount - 1);
+    await expect.poll(() => drawnLabelNames(page).then((l) => l.length), {timeout: 20_000, ...POLL}).toBe(beforeCount - 1);
     const labels = await drawnLabelNames(page);
     expect(labels.some((n) => n.startsWith('~'))).toBe(false);
     expect(labels).not.toContain('C05');
@@ -289,7 +293,7 @@ test('Forms viewer — field lifecycle and number format', async ({page}) => {
       await page.locator(dlg).waitFor({state: 'visible', timeout: 10_000});
       await page.locator(`${dlg} [name="label-None"]`).click();
       await page.locator(`${dlg} [name="button-OK"]`).click();
-      await expect.poll(() => drawnLabelNames(page).then((l) => l.length), {timeout: 20_000}).toBe(0);
+      await expect.poll(() => drawnLabelNames(page).then((l) => l.length), {timeout: 20_000, ...POLL}).toBe(0);
     });
     expect(await drawnLabelNames(page)).toEqual([]);
     expect(await page.locator(`${HOST} [column]`).count()).toBe(0);
@@ -319,14 +323,14 @@ test('Forms viewer — field lifecycle and number format', async ({page}) => {
 
     const gridText = await gridCellText(page, 'COMPUTED_H', 0);
     expect(gridText.length).toBeGreaterThan(0);
-    await expect.poll(() => cardFieldText(page, 'COMPUTED_H'), {timeout: 15_000}).toBe(gridText);
+    await expect.poll(() => cardFieldText(page, 'COMPUTED_H'), {timeout: 15_000, ...POLL}).toBe(gridText);
   });
 
   await softStep('Scenario 2 Step 6 — An explicit float mask changes COMPUTED_H and differs from the grid', async () => {
 
     const before = await page.evaluate(() => grok.shell.t.col('COMPUTED_H').get(0));
     await setNumberFormatViaPanel(page, '3 digits after comma');
-    await expect.poll(() => cardFieldText(page, 'COMPUTED_H'), {timeout: 15_000})
+    await expect.poll(() => cardFieldText(page, 'COMPUTED_H'), {timeout: 15_000, ...POLL})
       .toMatch(/^-?\d+\.\d{3}$/);
     const gridText = await gridCellText(page, 'COMPUTED_H', 0);
     expect(await cardFieldText(page, 'COMPUTED_H')).not.toBe(gridText);
@@ -341,7 +345,7 @@ test('Forms viewer — field lifecycle and number format', async ({page}) => {
       grok.shell.t.currentRowIdx = 0;
     });
     await setNumberFormatViaPanel(page, 'Same as grid');
-    await expect.poll(() => cardFieldText(page, 'COMPUTED_H'), {timeout: 15_000})
+    await expect.poll(() => cardFieldText(page, 'COMPUTED_H'), {timeout: 15_000, ...POLL})
       .toBe(await gridCellText(page, 'COMPUTED_H', 0));
     const ageBefore = await cardFieldText(page, 'AGE');
     const sexBefore = await cardFieldText(page, 'SEX');
@@ -351,7 +355,7 @@ test('Forms viewer — field lifecycle and number format', async ({page}) => {
 
     await setNumberFormatViaPanel(page, '3 digits after comma');
 
-    await expect.poll(() => cardFieldText(page, 'COMPUTED_H'), {timeout: 15_000}).toMatch(/^-?\d+\.\d{3}$/);
+    await expect.poll(() => cardFieldText(page, 'COMPUTED_H'), {timeout: 15_000, ...POLL}).toMatch(/^-?\d+\.\d{3}$/);
     expect(await cardFieldText(page, 'AGE')).toBe(ageBefore);
     expect(await cardFieldText(page, 'SEX')).toBe(sexBefore);
   });

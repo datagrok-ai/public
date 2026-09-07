@@ -187,7 +187,7 @@ test('Tree map', async ({page}) => {
   await page.evaluate(() => {
     for (const e of Array.from(document.querySelectorAll('.property-grid'))) e.remove();
   });
-  await v.cleanupShell(page);
+  await v.closeAllAndWait(page);
 
   v.finishSpec();
 });

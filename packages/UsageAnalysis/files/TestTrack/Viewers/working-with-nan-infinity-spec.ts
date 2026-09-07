@@ -20,6 +20,21 @@ async function saveCurrentLayout(page: Page): Promise<string> {
   });
 }
 
+// The toolbox click, the wait for the new viewer and the column assignment are one in-page
+// round trip: four calls per step became one.
+async function addHistogramOn(page: Page, column: string): Promise<string> {
+  return page.evaluate(async (col: string) => {
+    const w = window as any;
+    const hists = () => grok.shell.tv.viewers.filter((x: any) => x.type === 'Histogram');
+    const before = hists().length;
+    (document.querySelector('[name="icon-histogram"]') as HTMLElement).click();
+    await w.__poll(() => hists().length, (n: number) => n > before, 8000, 25);
+    const hist = hists()[hists().length - 1];
+    hist.props.valueColumnName = col;
+    return hist.props.valueColumnName;
+  }, column);
+}
+
 test('Working with NaN and Infinity values in viewers', async ({page}) => {
   test.setTimeout(300_000);
 
@@ -114,45 +129,12 @@ test('Working with NaN and Infinity values in viewers', async ({page}) => {
     });
 
     await softStep('7. Add Histogram on height column (NaN column)', async () => {
-      const histCountBefore = await page.evaluate(() =>
-        grok.shell.tv.viewers.filter((x: any) => x.type === 'Histogram').length,
-      );
-      await page.evaluate(() => {
-        const icon = document.querySelector('[name="icon-histogram"]') as HTMLElement;
-        icon?.click();
-      });
-
-      await page.waitForFunction((before: number) =>
-        grok.shell.tv.viewers.filter((x: any) => x.type === 'Histogram').length > before,
-      histCountBefore, {timeout: 8000},
-      );
-      const col = await page.evaluate(() => {
-        const hists = grok.shell.tv.viewers.filter((x: any) => x.type === 'Histogram') as any[];
-        const hist = hists[hists.length - 1];
-        hist.props.valueColumnName = 'height';
-        return hist.props.valueColumnName;
-      });
+      const col = await addHistogramOn(page, 'height');
       expect(col).toBe('height');
     });
 
     await softStep('8. Add Histogram on weight column (Infinity column)', async () => {
-      const histCountBefore = await page.evaluate(() =>
-        grok.shell.tv.viewers.filter((x: any) => x.type === 'Histogram').length,
-      );
-      await page.evaluate(() => {
-        const icon = document.querySelector('[name="icon-histogram"]') as HTMLElement;
-        icon?.click();
-      });
-      await page.waitForFunction((before: number) =>
-        grok.shell.tv.viewers.filter((x: any) => x.type === 'Histogram').length > before,
-      histCountBefore, {timeout: 8000},
-      );
-      const col = await page.evaluate(() => {
-        const hists = grok.shell.tv.viewers.filter((x: any) => x.type === 'Histogram') as any[];
-        const hist = hists[hists.length - 1];
-        hist.props.valueColumnName = 'weight';
-        return hist.props.valueColumnName;
-      });
+      const col = await addHistogramOn(page, 'weight');
       expect(col).toBe('weight');
     });
 

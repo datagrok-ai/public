@@ -85,6 +85,7 @@ test('Density Plot — Setup, Axis Columns, Binning, Color Mapping, Persistence'
   await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 3000});
 
   await v.addViewerByIcon(page, 'density-plot', 'Density-plot');
+  await v.waitForViewerRendered(page, 'Density plot', 50);
 
   await softStep('Scenario 1 — pick axis columns through the on-viewer selectors (GROK-16612)', async () => {
     const errBefore = errCount();

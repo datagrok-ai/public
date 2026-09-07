@@ -1,7 +1,7 @@
 import {expect} from '@playwright/test';
 import {test} from '../shared-page';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
-import {finishSpec} from '../helpers/viewers';
+import {finishSpec, openTable} from '../helpers/viewers';
 
 test.use(specTestOptions);
 
@@ -12,58 +12,25 @@ test('PowerPack: Add new column functions-panel sorting (SPGI — by type, by na
 
   await loginToDatagrok(page);
 
-  await page.evaluate(async () => {
-    const grok = (window as any).grok;
-    document.body.classList.add('selenium');
-    grok.shell.settings.showFiltersIconsConstantly = true;
-    grok.shell.windows.simpleMode = true;
-    try { grok.shell.closeAll(); } catch (_) {  }
+  await openTable(page, {path: 'System:DemoFiles/chem/SPGI.csv', semType: 'Molecule'});
 
-    let df: any = null;
-    try {
-      df = await grok.dapi.files.readCsv('System:DemoFiles/chem/SPGI.csv');
-    } catch (_) {
-      df = await grok.dapi.files.readCsv('System:DemoFiles/chem/SPGI.csv');
-    }
-    grok.shell.addTableView(df);
-
-    let detected = false;
-    for (let i = 0; i < 75; i++) {
-      const structureCol = df.col('Structure');
-      if (structureCol && structureCol.semType === 'Molecule') { detected = true; break; }
-      const anyMolecule = Array.from({length: df.columns.length}, (_, j) => df.columns.byIndex(j))
-        .some((c: any) => c.semType === 'Molecule' || c.semType === 'Macromolecule');
-      if (anyMolecule) { detected = true; break; }
-      await new Promise((r) => setTimeout(r, 200));
-    }
-
-    const hasMolecule = detected || Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i))
-      .some((c: any) => c.semType === 'Molecule' || c.semType === 'Macromolecule');
-    if (hasMolecule) {
-      for (let i = 0; i < 50; i++) {
-        if (document.querySelector('[name="viewer-Grid"] canvas')) break;
-        await new Promise((r) => setTimeout(r, 200));
-      }
-      await new Promise((r) => setTimeout(r, 2000));
-    }
-  });
-  await page.locator('[name="viewer-Grid"]').waitFor({timeout: 60_000});
-  await page.waitForTimeout(300);
-
-  let cols: {names: string[]; semTypes: Record<string, string>} = {names: [], semTypes: {}};
-  const semTypeStart = Date.now();
-  while (Date.now() - semTypeStart < 10_000) {
-    cols = await page.evaluate(() => {
+  const cols = await page.evaluate(async () => {
+    const read = () => {
       const df = (window as any).grok.shell.tv?.dataFrame;
-      if (!df) return {names: [], semTypes: {} as Record<string, string>};
+      if (!df) return {names: [] as string[], semTypes: {} as Record<string, string>};
       const names: string[] = df.columns.names();
       const semTypes: Record<string, string> = {};
       for (const n of names) semTypes[n] = df.col(n)?.semType ?? '';
       return {names, semTypes};
-    });
-    if (cols.semTypes['Structure'] === 'Molecule') break;
-    await page.waitForTimeout(250);
-  }
+    };
+    const t0 = Date.now();
+    let v = read();
+    while (v.semTypes['Structure'] !== 'Molecule' && Date.now() - t0 < 10_000) {
+      await new Promise((r) => setTimeout(r, 100));
+      v = read();
+    }
+    return v;
+  });
   expect(cols.names).toContain('Structure');
   expect(cols.semTypes['Structure']).toBe('Molecule');
   expect(cols.names.length).toBeGreaterThan(2);

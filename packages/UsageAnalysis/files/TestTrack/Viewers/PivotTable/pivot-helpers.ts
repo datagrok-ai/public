@@ -60,6 +60,9 @@ export async function addColumnViaPlus(page: Page, plusName: string, columnName:
   const plus = `${PIVOT} [name="${plusName}"]`;
   await page.locator(plus).click();
   await page.waitForSelector('.d4-column-selector-backdrop', {timeout: 6000});
+  // Enter commits the row under the pointer over the typed text (column_combo_box.dart:312-323),
+  // and the click left the pointer over the popup's first rows
+  await page.mouse.move(0, 0);
   // the popup focuses the plus icon on a timer, and the keydown that creates the search box is on that icon
   await v.pollValue(() => page.evaluate((s) => {
     const origin = document.querySelector(s)?.firstElementChild as HTMLElement | null;

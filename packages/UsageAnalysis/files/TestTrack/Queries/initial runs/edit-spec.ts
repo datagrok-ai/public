@@ -68,14 +68,14 @@ test("Queries — edit an existing SQL query", async ({ page }) => {
         }),
       );
       let editItem: HTMLElement | undefined;
-      for (let i = 0; i < 30; i++) {
+      for (let i = 0; i < 120; i++) {
         editItem = Array.from(
           document.querySelectorAll(".d4-menu-item-label"),
         ).find((el) => el.textContent?.trim() === "Edit...") as
           | HTMLElement
           | undefined;
         if (editItem) break;
-        await new Promise((r) => setTimeout(r, 200));
+        await new Promise((r) => setTimeout(r, 50));
       }
       if (!editItem) return { ok: false, stage: "no-edit-item" };
       editItem.click();
@@ -100,18 +100,26 @@ test("Queries — edit an existing SQL query", async ({ page }) => {
     await page.keyboard.press("Control+a");
     await page.keyboard.type("new_test_query");
     await page.keyboard.press("Tab");
-    await page.waitForTimeout(300);
+    await page
+      .waitForFunction(
+        () =>
+          (document.querySelector('input[name="input-Name"]') as HTMLInputElement)
+            ?.value === "new_test_query",
+        null,
+        { timeout: 3000 },
+      )
+      .catch(() => {});
 
     await page.locator('[name="button-Save"]').first().click();
 
     const persisted = await page.evaluate(async (id) => {
-      for (let i = 0; i < 50; i++) {
+      for (let i = 0; i < 100; i++) {
         const q = await (window as any).grok.dapi.queries
           .find(id)
           .catch(() => null);
         if (q && q.friendlyName === "new_test_query")
           return { name: q.name, friendly: q.friendlyName };
-        await new Promise((r) => setTimeout(r, 300));
+        await new Promise((r) => setTimeout(r, 150));
       }
       const q = await (window as any).grok.dapi.queries.find(id);
       return { name: q.name, friendly: q.friendlyName };
@@ -161,10 +169,10 @@ test("Queries — edit an existing SQL query", async ({ page }) => {
         if (!label) return { ok: false, stage: "no-run-query" };
         label.click();
         let viewsAfter = viewsBefore;
-        for (let i = 0; i < 80; i++) {
+        for (let i = 0; i < 200; i++) {
           viewsAfter = Array.from((window as any).grok.shell.views).length;
           if (viewsAfter > viewsBefore) break;
-          await new Promise((r) => setTimeout(r, 250));
+          await new Promise((r) => setTimeout(r, 100));
         }
         if (viewsAfter <= viewsBefore)
           return { ok: false, stage: "no-new-view" };
@@ -187,10 +195,10 @@ test("Queries — edit an existing SQL query", async ({ page }) => {
       if (qv) (window as any).grok.shell.v = qv;
 
       let cm: any = null;
-      for (let i = 0; i < 50; i++) {
+      for (let i = 0; i < 100; i++) {
         cm = (document.querySelector(".CodeMirror") as any)?.CodeMirror;
         if (cm && cm.getValue() === "select * from orders") break;
-        await new Promise((r) => setTimeout(r, 200));
+        await new Promise((r) => setTimeout(r, 100));
       }
       if (!cm) return { ok: false, stage: "no-cm-after-switch" };
 
@@ -203,7 +211,7 @@ test("Queries — edit an existing SQL query", async ({ page }) => {
       ) as HTMLElement | null;
       if (!saveBtn) return { ok: false, stage: "no-save-btn" };
       saveBtn.click();
-      for (let i = 0; i < 50; i++) {
+      for (let i = 0; i < 100; i++) {
         const qq = await (window as any).grok.dapi.queries.find(id);
         if (
           qq.query === "select * from orders" &&
@@ -215,7 +223,7 @@ test("Queries — edit an existing SQL query", async ({ page }) => {
             friendly: qq.friendlyName,
             body: qq.query,
           };
-        await new Promise((r) => setTimeout(r, 300));
+        await new Promise((r) => setTimeout(r, 150));
       }
       const qq = await (window as any).grok.dapi.queries.find(id);
       return {

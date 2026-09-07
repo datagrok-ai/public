@@ -4,6 +4,7 @@ realizes: [viewers.scatter-plot, viewers.histogram, viewers.line-chart, viewers.
 import {test, expect} from '../../shared-page';
 import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
+import {addLegendViewers} from './legend-setup';
 
 test.use(specTestOptions);
 
@@ -17,10 +18,10 @@ test('Legend structure rendering', async ({page}) => {
   await v.installEventWaits(page);
 
   await softStep('Add 7 viewers, set legend column to Core, Always visible', async () => {
-    await v.addLegendViewers(page, {
+    await addLegendViewers(page, {
       column: 'Core',
       viewers: ['Scatter plot', 'Histogram', 'Line chart', 'Bar chart', 'Pie chart', 'Trellis plot', 'Box plot'],
-      settleMs: 2500,
+      capMs: 2500,
     });
     const types = await page.evaluate(() => (window as any).grok.shell.tv.viewers.map((x: any) => x.type));
     expect(types.length).toBeGreaterThanOrEqual(8);
@@ -90,13 +91,15 @@ test('Legend structure rendering', async ({page}) => {
 
   await softStep('Scatter plot — Color=Series, Marker stays Core', async () => {
     const res = await page.evaluate(async () => {
-      const tv = (window as any).grok.shell.tv;
+      const w = window as any;
+      const tv = w.grok.shell.tv;
       const sp = tv.viewers.find((x: any) => x.type === 'Scatter plot');
+      const count = () => sp.root.querySelector('[name="legend"]')?.querySelectorAll('.d4-legend-item').length ?? 0;
+      const quiet = w.__quiet('viewer:Scatter plot.onViewerRendered', 150, 1000);
       sp.props.colorColumnName = 'Series';
-      await new Promise((r) => setTimeout(r, 1000));
-      const legend = sp.root.querySelector('[name="legend"]');
-      const items = legend?.querySelectorAll('.d4-legend-item') ?? [];
-      return {items: items.length, markers: sp.props.markersColumnName, color: sp.props.colorColumnName};
+      await quiet;
+      const items = await w.__settledFor(count, 150, 1000, 25);
+      return {items, markers: sp.props.markersColumnName, color: sp.props.colorColumnName};
     });
     expect(res.markers).toBe('Core');
     expect(res.color).toBe('Series');

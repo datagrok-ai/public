@@ -24,21 +24,36 @@ test('Chem: Scaffold Tree filter + viewer smoke', async ({page}) => {
     });
     for (let i = 0; i < 50; i++) {
       if (document.querySelector('[name="viewer-Grid"] canvas')) break;
-      await new Promise(r => setTimeout(r, 200));
+      await new Promise(r => setTimeout(r, 100));
     }
-    await new Promise(r => setTimeout(r, 5000));
+    // The flat settle stood in for the Molecule semType landing on the opened frame.
+    const semDeadline = Date.now() + 5000;
+    while (Date.now() < semDeadline && !df.columns.toList().some((c: any) => c.semType === 'Molecule'))
+      await new Promise(r => setTimeout(r, 100));
   });
   await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30000});
 
   await softStep('Scaffold Tree viewer launches from Chem menu', async () => {
     await page.evaluate(async () => {
       const chemMenu = document.querySelector('[name="div-Chem"]') as HTMLElement;
+      // Labels from a previously opened menu stay in the document, so only a node that was not
+      // already there is this menu's leaf; clicking a stale one actuates nothing.
+      const stale = new Set(Array.from(document.querySelectorAll('.d4-menu-item-label')));
       chemMenu.dispatchEvent(new MouseEvent('click', {bubbles: true}));
-      await new Promise(r => setTimeout(r, 500));
-      const st = Array.from(document.querySelectorAll('.d4-menu-item-label'))
-        .find(m => m.textContent!.trim() === 'Scaffold Tree') as HTMLElement;
-      (st.closest('.d4-menu-item') as HTMLElement).dispatchEvent(new MouseEvent('click', {bubbles: true}));
-      await new Promise(r => setTimeout(r, 5000));
+      const find = () => Array.from(document.querySelectorAll('.d4-menu-item-label'))
+        .find(m => !stale.has(m) && m.textContent!.trim() === 'Scaffold Tree') as HTMLElement | undefined;
+      const menuDeadline = Date.now() + 500;
+      let st = find();
+      while (!st && Date.now() < menuDeadline) { await new Promise(r => setTimeout(r, 25)); st = find(); }
+      if (!st)
+        st = Array.from(document.querySelectorAll('.d4-menu-item-label'))
+          .find(m => m.textContent!.trim() === 'Scaffold Tree') as HTMLElement | undefined;
+      (st!.closest('.d4-menu-item') as HTMLElement).dispatchEvent(new MouseEvent('click', {bubbles: true}));
+      // Wait for the viewer the assertion below reads, not for a flat interval.
+      const attachDeadline = Date.now() + 5000;
+      while (Date.now() < attachDeadline &&
+             !Array.from(grok.shell.tv.viewers).some((v: any) => /scaffold/i.test(v.type || '')))
+        await new Promise(r => setTimeout(r, 100));
     });
     const hasScaffold = await page.evaluate(() => {
       return Array.from(grok.shell.tv.viewers).some((v: any) => /scaffold/i.test(v.type || ''));

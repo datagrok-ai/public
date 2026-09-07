@@ -4,13 +4,8 @@ import {softStep, stepErrors} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
 import {projectsTestOptions, evalJs, gotoApp, setupSession} from './_helpers';
 import {openTableFromFile, resetShell, assertProvenanceScript} from '../helpers/openers';
-import {
-  saveProjectWithProvenance,
-  saveCopy,
-  shareProjectViaContextMenu,
-  shareWithSecondUserAndVerify,
-  deleteProjectWithCleanup,
-} from '../helpers/projects';
+import {saveCopy, shareProjectViaContextMenu, deleteProjectWithCleanup} from '../helpers/projects';
+import {saveProjectWithProvenance, shareWithSecondUserAndVerify} from './projects-shared';
 
 test.use(projectsTestOptions);
 
@@ -31,7 +26,6 @@ async function reopenProjectById(page: any, projectId: string) {
       await new Promise(r => setTimeout(r, 400));
     }
   })()`);
-  await page.waitForTimeout(400);
 }
 
 async function addViewerSafely(page: any, viewerName: string): Promise<void> {
@@ -46,16 +40,21 @@ async function addViewerSafely(page: any, viewerName: string): Promise<void> {
     }
     throw new Error('grok.shell.tv.addViewer never became a function (reopen did not materialize a TableView)');
   })()`);
-  await page.waitForTimeout(400);
 }
 
-async function rehydrateOriginal(page: any, name: string): Promise<{projectId: string; tableInfoId: string}> {
-  await evalJs(page, `(async () => {
-    try {
-      const list = await grok.dapi.projects.filter('name like "${name}"').list();
-      for (const p of list) await grok.dapi.projects.delete(p);
-    } catch (_) {}
-  })()`);
+// The superseded original has to be gone before the next one is saved under the same name, or
+// the gallery grows two tiles with the same name= and the pvc share picks neither. Deleting the
+// one id we hold does that; the filter('name like').list() sweep it replaces cost 7-16s a call.
+async function rehydrateOriginal(
+  page: any, name: string, previousId?: string): Promise<{projectId: string; tableInfoId: string}> {
+  if (previousId) {
+    await evalJs(page, `(async () => {
+      try {
+        const p = await grok.dapi.projects.find('${previousId}');
+        if (p) await grok.dapi.projects.delete(p);
+      } catch (_) {}
+    })()`);
+  }
   await evalJs(page, 'grok.shell.closeAll()');
   await page.waitForTimeout(500);
   const opened = await openTableFromFile(page, 'System:DemoFiles/demog.csv');
@@ -144,11 +143,10 @@ test('Projects / Copy Clone — full UI-driven 4-sub-flow + GROK-19750 invariant
         name: names.original,
       });
       await evalJs(page, 'grok.shell.closeAll()');
-      await page.waitForTimeout(300);
     });
 
     await softStep('4b prep: rehydrate original (post-4a-overwrite GROK-19750 workaround)', async () => {
-      ids.original = await rehydrateOriginal(page, names.original);
+      ids.original = await rehydrateOriginal(page, names.original, ids.original?.projectId);
       expect(ids.original.projectId).toBeTruthy();
     });
 
@@ -165,7 +163,6 @@ test('Projects / Copy Clone — full UI-driven 4-sub-flow + GROK-19750 invariant
       expect(ids.linkCopy.projectId).toBeTruthy();
       expect(ids.linkCopy.projectId).not.toBe(ids.original!.projectId);
       await evalJs(page, 'grok.shell.closeAll()');
-      await page.waitForTimeout(300);
     });
 
     await softStep('4b step 5-6: reopen <name>-link → table re-materializes → closeAll', async () => {
@@ -173,7 +170,6 @@ test('Projects / Copy Clone — full UI-driven 4-sub-flow + GROK-19750 invariant
       const rc = await reopenedRowCount(page);
       expect(rc, 'sub-flow 4b: link copy reopen returned rowCount=0 — Save Copy with Link did not persist the linked table reference').toBeGreaterThan(0);
       await evalJs(page, 'grok.shell.closeAll()');
-      await page.waitForTimeout(300);
     });
 
     await softStep('4b step 7 — GROK-19750 INVARIANT: reopen original → table + viewers intact', async () => {
@@ -186,11 +182,10 @@ test('Projects / Copy Clone — full UI-driven 4-sub-flow + GROK-19750 invariant
       if (vc === 0)
         console.warn('GROK-19750 regression detected on dev: original lost all viewers after Save-Copy-with-Link');
       await evalJs(page, 'grok.shell.closeAll()');
-      await page.waitForTimeout(300);
     });
 
     await softStep('4c prep: rehydrate original (GROK-19750 workaround)', async () => {
-      ids.original = await rehydrateOriginal(page, names.original);
+      ids.original = await rehydrateOriginal(page, names.original, ids.original?.projectId);
       expect(ids.original.projectId).toBeTruthy();
     });
 
@@ -208,7 +203,6 @@ test('Projects / Copy Clone — full UI-driven 4-sub-flow + GROK-19750 invariant
       expect(ids.cloneCopy.projectId).not.toBe(ids.original!.projectId);
       expect(ids.cloneCopy.projectId).not.toBe(ids.linkCopy?.projectId);
       await evalJs(page, 'grok.shell.closeAll()');
-      await page.waitForTimeout(300);
     });
 
     await softStep('4c step 5-6: reopen <name>-clone → table re-materializes (independent copy) → closeAll', async () => {
@@ -216,11 +210,10 @@ test('Projects / Copy Clone — full UI-driven 4-sub-flow + GROK-19750 invariant
       const rc = await reopenedRowCount(page);
       expect(rc, 'sub-flow 4c: clone copy reopen returned rowCount=0 — Save Copy with Clone did not persist the cloned table bytes').toBeGreaterThan(0);
       await evalJs(page, 'grok.shell.closeAll()');
-      await page.waitForTimeout(300);
     });
 
     await softStep('4d prep: rehydrate original (defensive)', async () => {
-      ids.original = await rehydrateOriginal(page, names.original);
+      ids.original = await rehydrateOriginal(page, names.original, ids.original?.projectId);
       expect(ids.original.projectId).toBeTruthy();
     });
 
@@ -242,7 +235,6 @@ test('Projects / Copy Clone — full UI-driven 4-sub-flow + GROK-19750 invariant
       };
       expect(ids.pvcCopy.projectId).toBeTruthy();
       await evalJs(page, 'grok.shell.closeAll()');
-      await page.waitForTimeout(300);
     });
 
     await softStep('4d step 5-6: reopen <name>-personal-view-customizations → table re-materializes → closeAll', async () => {
@@ -250,7 +242,6 @@ test('Projects / Copy Clone — full UI-driven 4-sub-flow + GROK-19750 invariant
       const rc = await reopenedRowCount(page);
       expect(rc, 'sub-flow 4d: PVC variant reopen returned rowCount=0 — PVC mode failed to preserve the linked source-table reference').toBeGreaterThan(0);
       await evalJs(page, 'grok.shell.closeAll()');
-      await page.waitForTimeout(300);
     });
 
     await softStep('Step 5: re-share each of 3 variants via right-click → Share (UI)', async () => {
@@ -283,14 +274,27 @@ test('Projects / Copy Clone — full UI-driven 4-sub-flow + GROK-19750 invariant
         return tiles.map(t => t.getAttribute('name')).filter(n => /demog/i.test(n)).slice(0, 20);
       })()`);
 
+      // the gallery names a tile after the project's friendly name, which is what was typed
+      // into Save Copy — shellProj.name comes back normalized ("Demog<stamp>Link"), and each
+      // of those spent the helper's full 30s tile wait finding nothing
       const variants = [
-        {name: ids.linkCopy?.serverName ?? names.linkCopy, label: 'link'},
-        {name: ids.cloneCopy?.serverName ?? names.cloneCopy, label: 'clone'},
-        {name: ids.pvcCopy?.serverName ?? names.pvcCopy, label: 'pvc'},
+        {name: names.linkCopy, label: 'link'},
+        {name: names.cloneCopy, label: 'clone'},
+        {name: ids.pvcCopy?.serverName ?? names.original, label: 'pvc'},
       ];
+      // Save Copy's products do not show up as Dashboards tiles on dev, and the share helper
+      // spends its full 30s tile wait on each one that is missing. One poll for the first
+      // variant covers a slow gallery; after that an absent tile is a fact, not a wait.
+      await page.locator(`[name="div-${variants[0].name}"]`).first()
+        .waitFor({timeout: 10_000}).catch(() => {});
+
       let sharedCount = 0;
       const shareErrors: string[] = [];
       for (const v of variants) {
+        if (await page.locator(`[name="div-${v.name}"], [name="div-${v.name.toLowerCase()}"]`).count() === 0) {
+          shareErrors.push(`${v.label} (${v.name}): no gallery tile to right-click`);
+          continue;
+        }
         try {
           await shareProjectViaContextMenu(page, v.name, {
             recipient,

@@ -9,6 +9,10 @@ import {HOST, ORDINARY, CURRENT, cardFieldValue, fieldValuesByPosition, waitForO
 
 declare const grok: any;
 
+// expect.poll's default cadence (100/250/500/1000ms) overshoots a settled UI by up to a
+// second per call; this ladder is fast early and still coarse for the long product waits
+const POLL = {intervals: [50, 50, 100, 200, 400, 800]};
+
 test.use(specTestOptions);
 
 const datasetPath = 'System:DemoFiles/demog.csv';
@@ -22,28 +26,34 @@ async function rowOfValue(page: Page, column: string, value: string): Promise<nu
 }
 
 async function establishSetup(page: Page): Promise<void> {
-  await page.evaluate(() => {
+  // every step re-enters this setup, and each show-toggle write costs a full re-render even when
+  // the toggle is already on: write only what differs, then hold the wait inside the page
+  const seeded = await page.evaluate((sel) => {
+    const w = window as any;
     const df = grok.shell.t;
     const vw = grok.shell.tv.viewers.find((x: any) => x.type === 'FormsViewer');
-    vw.props.showSelectedRows = true;
-    vw.props.showCurrentRow = true;
-    vw.props.showMouseOverRow = true;
-    df.mouseOverRowIdx = -1;
-    df.currentRowIdx = 5;
-    df.selection.setAll(false);
-    [2, 5, 10, 15].forEach((r) => df.selection.set(r, true));
-  });
-
-  await expect.poll(() => page.evaluate((sel) => {
-    const df = grok.shell.t;
-    const usub = (r: number) => df.col('USUBJID').get(r);
-    const selected = Array.from(df.selection.getSelectedIndexes());
-    const expectedStable = [usub(df.currentRowIdx), ...selected.map(usub)];
-    const actual = Array.from(document.querySelectorAll(sel)).map((c) =>
-      ((c as HTMLElement).querySelector('[column="USUBJID"]') as HTMLInputElement | null)?.value ?? null);
-    const actualStable = actual.length >= 2 ? [actual[0], ...actual.slice(2)] : actual;
-    return JSON.stringify(actualStable) === JSON.stringify(expectedStable);
-  }, ORDINARY), {timeout: 15_000}).toBe(true);
+    for (const p of ['showSelectedRows', 'showCurrentRow', 'showMouseOverRow'])
+      if (vw.props[p] !== true) vw.props[p] = true;
+    if (df.mouseOverRowIdx !== -1) df.mouseOverRowIdx = -1;
+    if (df.currentRowIdx !== 5) df.currentRowIdx = 5;
+    const want = [2, 5, 10, 15];
+    const have = Array.from(df.selection.getSelectedIndexes()) as number[];
+    if (have.length !== want.length || want.some((r, i) => have[i] !== r)) {
+      df.selection.setAll(false);
+      for (const r of want) df.selection.set(r, true);
+    }
+    const read = () => {
+      const usub = (r: number) => df.col('USUBJID').get(r);
+      const selected = Array.from(df.selection.getSelectedIndexes()) as number[];
+      const expectedStable = [usub(df.currentRowIdx), ...selected.map(usub)];
+      const actual = Array.from(document.querySelectorAll(sel)).map((c) =>
+        ((c as HTMLElement).querySelector('[column="USUBJID"]') as HTMLInputElement | null)?.value ?? null);
+      const actualStable = actual.length >= 2 ? [actual[0], ...actual.slice(2)] : actual;
+      return JSON.stringify(actualStable) === JSON.stringify(expectedStable);
+    };
+    return w.__poll(read, (x: boolean) => x, 15_000, 50);
+  }, ORDINARY);
+  expect(seeded).toBe(true);
 }
 
 async function parkPointerBelowViewer(page: Page): Promise<void> {
@@ -51,7 +61,9 @@ async function parkPointerBelowViewer(page: Page): Promise<void> {
   const viewportH = page.viewportSize()?.height ?? Math.round(hostBox.y + hostBox.height + 40);
   const x = Math.round(hostBox.x + hostBox.width / 2);
   const y = Math.round(Math.min(hostBox.y + hostBox.height + 10, viewportH - 6));
-  await page.mouse.move(x, y, {steps: 10});
+  // the product only needs the pointer to leave the card; intermediate mousemoves are 9 extra
+  // CDP round trips per park
+  await page.mouse.move(x, y, {steps: 2});
 }
 
 test('Forms viewer — mouse interactions and row binding (p1)', async ({page}) => {
@@ -87,7 +99,7 @@ test('Forms viewer — mouse interactions and row binding (p1)', async ({page}) 
 
     await page.locator(ORDINARY).nth(2).click();
 
-    await expect.poll(() => page.evaluate(() => grok.shell.t.currentRowIdx), {timeout: 10_000}).toBe(targetRow);
+    await expect.poll(() => page.evaluate(() => grok.shell.t.currentRowIdx), {timeout: 10_000, ...POLL}).toBe(targetRow);
     const sexOfCurrent = await page.evaluate(() =>
       grok.shell.t.get('SEX', grok.shell.t.currentRowIdx));
     expect(clickedSex).toBe(sexOfCurrent);
@@ -104,14 +116,14 @@ test('Forms viewer — mouse interactions and row binding (p1)', async ({page}) 
     await expect.poll(() => page.evaluate(() => {
       const cc = grok.shell.t.currentCell;
       return JSON.stringify({col: cc?.column?.name ?? null, row: cc?.rowIndex ?? null});
-    }), {timeout: 10_000}).toBe(JSON.stringify({col: 'AGE', row: cardRow}));
+    }), {timeout: 10_000, ...POLL}).toBe(JSON.stringify({col: 'AGE', row: cardRow}));
   });
 
   await softStep('Scenario 3 — Clicking the HEIGHT header label sets df.currentCol to HEIGHT', async () => {
     await establishSetup(page);
     await page.locator(`${HOST} .d4-multi-form-header [name="div-HEIGHT"]`).first().click();
     await expect.poll(() => page.evaluate(() => grok.shell.t.currentCol?.name ?? null),
-      {timeout: 10_000}).toBe('HEIGHT');
+      {timeout: 10_000, ...POLL}).toBe('HEIGHT');
   });
 
   await softStep('Scenario 4a — Ctrl+clicking a card toggles df.selection.get(row) off then back on', async () => {
@@ -125,19 +137,19 @@ test('Forms viewer — mouse interactions and row binding (p1)', async ({page}) 
       df.selection.set(r, true);
     }, row);
     await expect.poll(() => page.evaluate((r) => grok.shell.t.selection.get(r), row),
-      {timeout: 10_000}).toBe(true);
+      {timeout: 10_000, ...POLL}).toBe(true);
     await expect.poll(() => cardFieldValue(page, 0, 'USUBJID', CURRENT),
-      {timeout: 10_000}).toBe(await page.evaluate((r) => grok.shell.t.col('USUBJID').get(r), row));
+      {timeout: 10_000, ...POLL}).toBe(await page.evaluate((r) => grok.shell.t.col('USUBJID').get(r), row));
 
     await waitForOrderStable(page);
     await page.locator(CURRENT).first().click({modifiers: ['Control']});
     await expect.poll(() => page.evaluate((r) => grok.shell.t.selection.get(r), row),
-      {timeout: 10_000}).toBe(false);
+      {timeout: 10_000, ...POLL}).toBe(false);
 
     await waitForOrderStable(page);
     await page.locator(CURRENT).first().click({modifiers: ['Control']});
     await expect.poll(() => page.evaluate((r) => grok.shell.t.selection.get(r), row),
-      {timeout: 10_000}).toBe(true);
+      {timeout: 10_000, ...POLL}).toBe(true);
   });
 
   await softStep('Scenario 4b — Shift+clicking the row-12 card selects exactly rows 0..12 inclusive', async () => {
@@ -151,7 +163,7 @@ test('Forms viewer — mouse interactions and row binding (p1)', async ({page}) 
       [3, 7, 12, 18, 22].forEach((i) => df.selection.set(i, true));
     }, row);
     await expect.poll(() => cardFieldValue(page, 0, 'USUBJID', CURRENT),
-      {timeout: 10_000}).toBe(await page.evaluate((r) => grok.shell.t.col('USUBJID').get(r), row));
+      {timeout: 10_000, ...POLL}).toBe(await page.evaluate((r) => grok.shell.t.col('USUBJID').get(r), row));
     const tailSeeded = await page.evaluate(() => [18, 22].every((i) => grok.shell.t.selection.get(i)));
     expect(tailSeeded).toBe(true);
 
@@ -171,7 +183,7 @@ test('Forms viewer — mouse interactions and row binding (p1)', async ({page}) 
       const expected: number[] = [];
       for (let i = 0; i <= r; i++) expected.push(i);
       return JSON.stringify(sel) === JSON.stringify(expected);
-    }, row), {timeout: 40_000}).toBe(true);
+    }, row), {timeout: 40_000, ...POLL}).toBe(true);
   });
 
   await softStep('Scenario 4c — Ctrl+Shift+clicking the row-8 card clears rows 0..8; rows above stay selected', async () => {
@@ -183,7 +195,7 @@ test('Forms viewer — mouse interactions and row binding (p1)', async ({page}) 
       df.currentRowIdx = r;
     }, row);
     await expect.poll(() => cardFieldValue(page, 0, 'USUBJID', CURRENT),
-      {timeout: 10_000}).toBe(await page.evaluate((r) => grok.shell.t.col('USUBJID').get(r), row));
+      {timeout: 10_000, ...POLL}).toBe(await page.evaluate((r) => grok.shell.t.col('USUBJID').get(r), row));
     const nineToTwelveBefore = await page.evaluate(() =>
       [9, 10, 11, 12].every((r) => grok.shell.t.selection.get(r)));
     expect(nineToTwelveBefore).toBe(true);
@@ -196,7 +208,7 @@ test('Forms viewer — mouse interactions and row binding (p1)', async ({page}) 
       const cleared = Array.from({length: r + 1}, (_, i) => i).every((i) => !df.selection.get(i));
       const keptAbove = [9, 10, 11, 12].every((i) => df.selection.get(i));
       return JSON.stringify({cleared, keptAbove});
-    }, row), {timeout: 10_000}).toBe(JSON.stringify({cleared: true, keptAbove: true}));
+    }, row), {timeout: 10_000, ...POLL}).toBe(JSON.stringify({cleared: true, keptAbove: true}));
   });
 
   await softStep('Scenario 5a — Hovering an ordinary card sets df.mouseOverRowIdx to that card row', async () => {
@@ -210,16 +222,16 @@ test('Forms viewer — mouse interactions and row binding (p1)', async ({page}) 
 
     await page.locator(ORDINARY).nth(2).hover();
     await expect.poll(() => page.evaluate(() => grok.shell.t.mouseOverRowIdx),
-      {timeout: 10_000}).toBe(targetRow);
+      {timeout: 10_000, ...POLL}).toBe(targetRow);
 
     await parkPointerBelowViewer(page);
     await expect.poll(() => page.evaluate(() => grok.shell.t.mouseOverRowIdx),
-      {timeout: 10_000}).toBe(-1);
+      {timeout: 10_000, ...POLL}).toBe(-1);
 
-    await expect.poll(() => cardFieldValue(page, 1, 'USUBJID'), {timeout: 10_000}).toBeNull();
+    await expect.poll(() => cardFieldValue(page, 1, 'USUBJID'), {timeout: 10_000, ...POLL}).toBeNull();
 
     const currentUsub5a = await page.evaluate(() => grok.shell.t.col('USUBJID').get(grok.shell.t.currentRowIdx));
-    await expect.poll(() => cardFieldValue(page, 0, 'USUBJID'), {timeout: 10_000}).toBe(currentUsub5a);
+    await expect.poll(() => cardFieldValue(page, 0, 'USUBJID'), {timeout: 10_000, ...POLL}).toBe(currentUsub5a);
     expect(await page.locator(CURRENT).count()).toBe(1);
   });
 
@@ -228,15 +240,15 @@ test('Forms viewer — mouse interactions and row binding (p1)', async ({page}) 
     await parkPointerBelowViewer(page);
     await page.evaluate(() => { grok.shell.t.mouseOverRowIdx = -1; });
 
-    await expect.poll(() => cardFieldValue(page, 1, 'USUBJID'), {timeout: 10_000}).toBeNull();
+    await expect.poll(() => cardFieldValue(page, 1, 'USUBJID'), {timeout: 10_000, ...POLL}).toBeNull();
 
     const hoverRow = 33;
     await page.evaluate((r) => { grok.shell.t.mouseOverRowIdx = r; }, hoverRow);
     const expected = await page.evaluate((r) => grok.shell.t.col('USUBJID').get(r), hoverRow);
-    await expect.poll(() => cardFieldValue(page, 1, 'USUBJID'), {timeout: 10_000}).toBe(expected);
+    await expect.poll(() => cardFieldValue(page, 1, 'USUBJID'), {timeout: 10_000, ...POLL}).toBe(expected);
 
     await page.evaluate(() => { grok.shell.t.mouseOverRowIdx = -1; });
-    await expect.poll(() => cardFieldValue(page, 1, 'USUBJID'), {timeout: 10_000}).toBeNull();
+    await expect.poll(() => cardFieldValue(page, 1, 'USUBJID'), {timeout: 10_000, ...POLL}).toBeNull();
   });
 
   let baseCount = 0;
@@ -247,9 +259,9 @@ test('Forms viewer — mouse interactions and row binding (p1)', async ({page}) 
 
     await v.ensurePropertyCategory(page, 'Forms', 'misc', 'show-mouse-over-row');
     await v.setPropertyGridCheckbox(page, 'show-mouse-over-row', false, 'misc');
-    await expect.poll(() => page.locator(ORDINARY).count(), {timeout: 15_000}).toBe(baseCount - 1);
+    await expect.poll(() => page.locator(ORDINARY).count(), {timeout: 15_000, ...POLL}).toBe(baseCount - 1);
     await expect.poll(() => page.locator(`${ORDINARY} .d4-multi-form-form-indicator-mouse-over-row`).count(),
-      {timeout: 15_000}).toBe(0);
+      {timeout: 15_000, ...POLL}).toBe(0);
 
     const currentUsub = await page.evaluate(() =>
       grok.shell.t.col('USUBJID').get(grok.shell.t.currentRowIdx));
@@ -266,19 +278,19 @@ test('Forms viewer — mouse interactions and row binding (p1)', async ({page}) 
     await page.evaluate(() => { grok.shell.t.mouseOverRowIdx = -1; });
     await v.ensurePropertyCategory(page, 'Forms', 'misc', 'show-mouse-over-row');
     await v.setPropertyGridCheckbox(page, 'show-mouse-over-row', true, 'misc');
-    await expect.poll(() => page.locator(ORDINARY).count(), {timeout: 15_000}).toBe(baseCount);
+    await expect.poll(() => page.locator(ORDINARY).count(), {timeout: 15_000, ...POLL}).toBe(baseCount);
   });
 
   await softStep('Scenario 6b — Turning Show Current Row OFF removes the current-row card and its green indicator', async () => {
     await establishSetup(page);
     await expect.poll(() => page.locator(CURRENT).count(),
-      {timeout: 15_000}).toBe(1);
+      {timeout: 15_000, ...POLL}).toBe(1);
 
     await v.ensurePropertyCategory(page, 'Forms', 'misc', 'show-current-row');
     await v.setPropertyGridCheckbox(page, 'show-current-row', false, 'misc');
 
     await expect.poll(() => page.locator(CURRENT).count(),
-      {timeout: 15_000}).toBe(0);
+      {timeout: 15_000, ...POLL}).toBe(0);
 
     await v.ensurePropertyCategory(page, 'Forms', 'misc', 'show-current-row');
     await v.setPropertyGridCheckbox(page, 'show-current-row', true, 'misc');

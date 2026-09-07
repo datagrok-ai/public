@@ -5,7 +5,7 @@ import {expect, Page} from '@playwright/test';
 import {localTest as test} from '../../shared-page';
 import {openDatagrok, specTestOptions, softStep, isLocalBootNoise} from '../../spec-login';
 import * as v from '../../helpers/viewers';
-import {BOX, bpProp, setBpProp, canvasRect, revealToggleIcon} from './boxplot-helpers';
+import {BOX, bpProp, setBpProp, setBpProps, canvasRect, revealToggleIcon, bpPainted} from './boxplot-helpers';
 
 declare const grok: any;
 declare const DG: any;
@@ -39,7 +39,7 @@ test('Box Plot rendering, statistics, and grid color synchronization', async ({p
     bp.props.category1ColumnName = 'SEX';
   });
   await page.locator(BOX).waitFor({timeout: 10000});
-  await v.waitForViewerRendered(page, 'Box plot', 1500);
+  await bpPainted(page);
   await v.waitForViewerQuiet(page, 'Box plot');
 
   await softStep('[anchor: Scenario 1 Step 2] Box coloring baseline: whiskerColor=null gives per-category sequential hues', async () => {
@@ -82,12 +82,8 @@ test('Box Plot rendering, statistics, and grid color synchronization', async ({p
   await softStep('[anchor: Scenario 1 Step 6] Enable the statistics ladder: total/inliers/outliers/stdev/Q1/Q3 each read true, no console error', async () => {
     const errBefore = consoleErrors.length;
     const pageErrBefore = pageErrors.length;
-    await setBpProp(page, 'showTotalCount', true, 300);
-    await setBpProp(page, 'showInliersCount', true, 300);
-    await setBpProp(page, 'showOutliersCount', true, 300);
-    await setBpProp(page, 'showStdev', true, 300);
-    await setBpProp(page, 'showQ1', true, 300);
-    await setBpProp(page, 'showQ3', true, 500);
+    await setBpProps(page, {showTotalCount: true, showInliersCount: true, showOutliersCount: true,
+      showStdev: true, showQ1: true, showQ3: true}, 500);
     await v.waitForViewerQuiet(page, 'Box plot');
     expect(await bpProp(page, 'showTotalCount')).toBe(true);
     expect(await bpProp(page, 'showInliersCount')).toBe(true);
@@ -131,8 +127,7 @@ test('Box Plot rendering, statistics, and grid color synchronization', async ({p
   });
 
   await softStep('[anchor: Scenario 2 Step 3] Bare p-value hover reveals the show-group-stats icon, no test-name tooltip', async () => {
-    await setBpProp(page, 'showGroupComparison', false, 500);
-    await setBpProp(page, 'showPValue', true, 600);
+    await setBpProps(page, {showGroupComparison: false, showPValue: true}, 600);
     expect(await bpProp(page, 'showGroupComparison')).toBe(false);
     const icon = await revealToggleIcon(page, 'show-group-stats');
     console.log('Scenario 2 Step 3 show-group-stats revealed on bare-p hover:', JSON.stringify(icon));
@@ -168,8 +163,7 @@ test('Box Plot rendering, statistics, and grid color synchronization', async ({p
   await softStep('[anchor: Scenario 2 Step 7] Category1=RACE activates the 3+ category (Alexander-Govern) branch; bare p present', async () => {
     await setBpProp(page, 'category1ColumnName', 'RACE', 1200);
 
-    await setBpProp(page, 'markerColorColumnName', 'SEX', 800);
-    await setBpProp(page, 'showPValue', true, 600);
+    await setBpProps(page, {markerColorColumnName: 'SEX', showPValue: true}, 800);
     const raceCats = await page.evaluate(() => grok.shell.t.col('RACE').categories.length);
     console.log('Scenario 2 Step 7 RACE category count:', raceCats);
     expect(raceCats).toBeGreaterThanOrEqual(3);
@@ -220,8 +214,7 @@ test('Box Plot rendering, statistics, and grid color synchronization', async ({p
   });
 
   await softStep('[anchor: Scenario 3 Step 3] Plot Style violin: large canvas diff and both SEX distributions present (github-2966)', async () => {
-    await setBpProp(page, 'category1ColumnName', 'SEX', 800);
-    await setBpProp(page, 'plotStyle', 'box', 600);
+    await setBpProps(page, {category1ColumnName: 'SEX', plotStyle: 'box'}, 800);
     await v.waitForViewerQuiet(page, 'Box plot');
     await v.snapshotCanvasColors(page, 'Box plot');
     await setBpProp(page, 'plotStyle', 'violin', 300);
@@ -293,9 +286,7 @@ test('Box Plot rendering, statistics, and grid color synchronization', async ({p
   });
 
   await softStep('[anchor: Scenario 4 Step 4] Marker Color=WEIGHT with a linear grid scheme; min/max change repaints the box plot (GROK-17506)', async () => {
-    await setBpProp(page, 'plotStyle', 'box', 600);
-    await setBpProp(page, 'valueColumnName', 'AGE', 700);
-    await setBpProp(page, 'category1ColumnName', 'SEX', 800);
+    await setBpProps(page, {plotStyle: 'box', valueColumnName: 'AGE', category1ColumnName: 'SEX'}, 800);
     await page.evaluate(() => {
       const weight = grok.shell.t.col('WEIGHT');
       weight.meta.colors.setLinear([DG.Color.blue, DG.Color.red]);
@@ -321,7 +312,7 @@ test('Box Plot rendering, statistics, and grid color synchronization', async ({p
     await page.keyboard.down('Shift');
     await page.mouse.move(r.x + r.w * 0.55, r.y + r.h * 0.30);
     await page.mouse.down();
-    await page.mouse.move(r.x + r.w * 0.72, r.y + r.h * 0.80, {steps: 14});
+    await page.mouse.move(r.x + r.w * 0.72, r.y + r.h * 0.80, {steps: 3});
     await page.mouse.up();
     await page.keyboard.up('Shift');
 

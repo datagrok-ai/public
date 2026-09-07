@@ -37,6 +37,7 @@ test('PC Plot tests', async ({page}) => {
   await page.locator('[name="viewer-PC-Plot"]').waitFor({timeout: 10000});
 
   await v.installEventWaits(page);
+  await v.waitForViewerRendered(page, 'PC Plot', 50);
 
   await softStep('Axis scale via the context menu', async () => {
     const menuResult = await page.evaluate(async () => {
@@ -163,14 +164,12 @@ test('PC Plot tests', async ({page}) => {
 
   await softStep('Style & layout', async () => {
     const errBefore = errorCount();
+    // every prop below still gets set, in this order and to these values; they are grouped so
+    // the ladder pays one render per group instead of one per assignment (8.2s at eight steps)
     await v.setViewerProps(page, 'PC Plot', [
-      {set: {lineWidth: 3}},
-      {set: {currentLineWidth: 5}},
-      {set: {mouseOverLineWidth: 5}},
-      {set: {labelsOrientation: 'Vert'}},
-      {set: {minMaxOrientation: 'Vert'}},
-      {set: {horzMargin: 60}},
-      {set: {autoLayout: false}},
+      {set: {lineWidth: 3, currentLineWidth: 5, mouseOverLineWidth: 5}},
+      {set: {labelsOrientation: 'Vert', minMaxOrientation: 'Vert'}},
+      {set: {horzMargin: 60, autoLayout: false}},
       {set: {
         lineWidth: 0.5, currentLineWidth: 2, mouseOverLineWidth: 2,
         labelsOrientation: 'Auto', minMaxOrientation: 'Auto',
@@ -319,7 +318,7 @@ test('PC Plot tests', async ({page}) => {
       const mk = (x: number, y: number) => ({bubbles: true, cancelable: true, clientX: x, clientY: y, button: 0});
       maxHandle.dispatchEvent(new MouseEvent('mousedown', mk(cx, cy)));
       await w.__drag(svg as HTMLElement, {x: cx, y: cy + 20}, {x: cx, y: cy + 200},
-        {steps: 6, stepMs: 20, holdMs: 50});
+        {steps: 3, stepMs: 20, holdMs: 50});
       return true;
     });
     const filteredByPc2 = await v.pollValue(

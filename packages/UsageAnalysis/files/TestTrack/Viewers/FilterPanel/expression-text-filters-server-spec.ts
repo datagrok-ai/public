@@ -27,7 +27,7 @@ async function resetToAromaTextFilter(page: Page): Promise<void> {
     if (!card.querySelector('.d4-text-filter')) return false;
     if (card.querySelector('.d4-update-shadow')) return false;
     return !!card.querySelector('input.d4-search-input') && !!card.querySelector('input[type="range"]');
-  }, null, {timeout: 120_000, polling: 250});
+  }, null, {timeout: 120_000, polling: 60});
 }
 
 async function addAromaTerm(page: Page, term: string): Promise<number> {
@@ -52,6 +52,8 @@ async function setAromaFuzziness(page: Page, value: number): Promise<number> {
       .find((c) => ((c.querySelector('.d4-filter-column-name'))?.textContent || '').trim() === 'Aroma') as HTMLElement;
     const range = card.querySelector('input[type="range"]') as HTMLInputElement;
     const setInp = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')!.set!;
+    // The text filter matches asynchronously, so a settle that gives up as soon as the frame has
+    // raised no filter pass reads the pre-slider count: the whole budget is the wait here.
     const before = grok.shell.tv.dataFrame.filter.trueCount;
     range.focus();
     setInp.call(range, String(val));

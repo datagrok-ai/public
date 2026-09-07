@@ -48,7 +48,6 @@ test('Multivariate Analysis scenario', async ({page}) => {
       const el = document.querySelector('[name="div-ML---Analyze---Multivariate-Analysis..."]') as HTMLElement | null;
       if (el) el.click();
     });
-    await page.waitForTimeout(1200);
     await page.locator('.d4-dialog').waitFor({timeout: 10000});
     await expect(page.locator('.d4-dialog')).toContainText('Multivariate Analysis');
 

@@ -91,6 +91,6 @@ test('Line Chart — Analytical Overlays', async ({page}) => {
     await setProps(page, {formulaLines: ''});
   });
 
-  await v.cleanupShell(page);
+  await v.closeAllAndWait(page);
   v.finishSpec();
 });

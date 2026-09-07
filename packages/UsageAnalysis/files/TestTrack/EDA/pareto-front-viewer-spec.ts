@@ -69,7 +69,10 @@ test('Pareto Front viewer scenario', async ({page}) => {
       });
       const paretoV = tv.addViewer('Pareto Front');
 
-      await new Promise((r) => setTimeout(r, 1500));
+      for (let i = 0; i < 30; i++) {
+        if (paretoV.root?.querySelector('canvas')) break;
+        await new Promise((r) => setTimeout(r, 50));
+      }
       return {
         type: paretoV.type,
         labelColumnsColumnNames: paretoV.props.labelColumnsColumnNames,
@@ -95,7 +98,10 @@ test('Pareto Front viewer scenario', async ({page}) => {
         setTimeout(resolve, 3000);
       });
       const paretoV = tv.addViewer('Pareto Front');
-      await new Promise((r) => setTimeout(r, 1500));
+      for (let i = 0; i < 30; i++) {
+        if (paretoV.root?.querySelector('canvas')) break;
+        await new Promise((r) => setTimeout(r, 50));
+      }
 
       const labelCols: string[] = paretoV.props.labelColumnsColumnNames ?? [];
       const rowCount: number = df.rowCount;
@@ -130,7 +136,10 @@ test('Pareto Front viewer scenario', async ({page}) => {
         setTimeout(resolve, 3000);
       });
       const paretoV = tv.addViewer('Pareto Front');
-      await new Promise((r) => setTimeout(r, 1500));
+      for (let i = 0; i < 30; i++) {
+        if (paretoV.root?.querySelector('canvas')) break;
+        await new Promise((r) => setTimeout(r, 50));
+      }
       const allProps = paretoV.props.getProperties() as Array<any>;
       const categories = new Set<string>(
         allProps.map((p: any) => p?.category ?? p?._category ?? '').filter((c: string) => !!c));

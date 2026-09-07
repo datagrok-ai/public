@@ -15,11 +15,21 @@ const datasetPath = 'System:DemoFiles/demog.csv';
 const content = (page: Page) => page.locator(`${VIEWER} .grok-help`);
 
 async function category(page: Page, cat: string, probe: string): Promise<void> {
-  const own = page.locator('.property-grid tr[name="prop-markup-enabled"]');
-  if (await own.count() === 0) {
+  // the gear click opens nothing on a shared page now and then, and the first `shell.o = viewer`
+  // after a table open can be dropped, so the object is set and re-checked until the grid shows
+  const shown = await page.evaluate(async (type) => {
+    const w = window as any;
+    const row = () => document.querySelector('.property-grid tr[name="prop-markup-enabled"]');
+    const t0 = Date.now();
+    while (!row() && Date.now() - t0 < 10000) {
+      w.grok.shell.o = Array.from(w.grok.shell.tv.viewers).find((x: any) => x.type === type) ?? null;
+      await w.__poll(row, (r: Element | null) => r !== null, 1000, 100);
+    }
+    return !!row();
+  }, VIEWER_NAME);
+  if (!shown) {
     await v.clickViewerTitlebarIcon(page, VIEWER_NAME, 'icon-font-icon-settings');
-
-    await own.first().waitFor({state: 'attached', timeout: 10_000});
+    await page.locator('.property-grid tr[name="prop-markup-enabled"]').first().waitFor({state: 'attached', timeout: 10_000});
   }
   await v.ensurePropertyCategory(page, VIEWER_NAME, cat, probe);
 }
@@ -212,7 +222,7 @@ test('Markup', async ({page}) => {
   await page.evaluate(() => {
     for (const e of Array.from(document.querySelectorAll('.property-grid'))) e.remove();
   });
-  await v.cleanupShell(page);
+  await v.closeAllAndWait(page);
 
   v.finishSpec();
 });

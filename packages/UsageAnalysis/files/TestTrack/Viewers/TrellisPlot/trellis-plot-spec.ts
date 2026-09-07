@@ -54,6 +54,32 @@ async function installTrellisWaits(page: Page): Promise<void> {
       };
       return Array.from(root.querySelectorAll('[name="div-column-combobox-"]')).filter(reallyVisible).length;
     };
+    // A viewport resize relayouts the trellis asynchronously and in stages: the root width lands
+    // first, the category strip a repaint later, so an event-wait on the first render reads an
+    // intermediate width. Wait for the width to LEAVE its pre-resize value, then hold width and
+    // label counts still — the same guarantee the fixed settles bought, at a fraction of the cost.
+    w.__tpAfterResize = async (prevW: number, cap = 1000, hold = 200, winW = -1) => {
+      const rootW = () => {
+        const r = document.querySelector('[name="viewer-Trellis-plot"]');
+        return r ? Math.round(r.getBoundingClientRect().width) : -1;
+      };
+      const texts = (cls: string) => (Array.from(document.querySelectorAll(
+        '[name="viewer-Trellis-plot"] .' + cls)) as Element[])
+        .filter((n) => n.tagName.toLowerCase() === 'text').map((n) => (n.textContent ?? '').trim());
+      const t0 = Date.now();
+      if (winW >= 0) await w.__poll(() => window.innerWidth, (x: number) => x === winW, cap, 20);
+      if (prevW >= 0) await w.__poll(rootW, (x: number) => x !== prevW, cap, 20);
+      let prev: string | null = null;
+      let since = Date.now();
+      while (Date.now() - t0 < cap) {
+        const cur = rootW() + '/' + texts('d4-trellis-plot-cat-item-horz').length +
+          '/' + texts('d4-trellis-plot-cat-item-vert').length;
+        if (cur !== prev) { prev = cur; since = Date.now(); }
+        else if (Date.now() - since >= hold) break;
+        await new Promise((r) => setTimeout(r, 20));
+      }
+      return {width: rootW(), x: texts('d4-trellis-plot-cat-item-horz'), y: texts('d4-trellis-plot-cat-item-vert')};
+    };
     w.__tpDescriptionSlot = () => {
       const root = document.querySelector('[name="viewer-Trellis-plot"]');
       const el = root && root.querySelector('.d4-viewer-description');
@@ -63,27 +89,31 @@ async function installTrellisWaits(page: Page): Promise<void> {
     };
     // A trellis prop change repaints once, synchronously inside the setter (measured 2026-09-03: every
     // settle armed after the act saw 0 renders and burned its cap), so the subscription is armed first.
-    w.__tpRendered = (act: () => any, cap = 1500, gap = 250, viewer?: any) => new Promise<number>((resolve) => {
+    w.__tpRendered = (act: () => any, cap = 1500, gap = 150, viewer?: any) => new Promise<number>((resolve) => {
       const vw = viewer ?? w.__tp();
       let seen = 0;
       let timer: any = null;
       let sub: any = null;
+      let capT: any = null;
       const done = () => {
         clearTimeout(timer);
         clearTimeout(capT);
         try { sub?.unsubscribe(); } catch (_) {}
         resolve(seen);
       };
-      const capT = setTimeout(done, cap);
+      capT = setTimeout(done, cap);
       try { sub = vw.onViewerRendered.subscribe(() => { seen++; clearTimeout(timer); timer = setTimeout(done, gap); }); }
       catch (_) {}
       act();
+      // the repaint lands synchronously inside the setter, so zero renders here means the act was a
+      // no-op for this viewer; the async paths (viewer construction, relayout) get a grace, not the cap
+      if (seen === 0) { clearTimeout(capT); capT = setTimeout(done, Math.min(cap, 400)); }
     });
     w.__tpApply = async (act: () => any, read?: () => any, cap = 1500, viewer?: any) => {
       const t0 = Date.now();
-      await w.__tpRendered(act, cap, 250, viewer);
+      await w.__tpRendered(act, cap, 150, viewer);
       if (!read) return undefined;
-      return w.__settledFor(read, 150, Math.max(50, cap - (Date.now() - t0)), 25);
+      return w.__settledFor(read, 100, Math.max(50, cap - (Date.now() - t0)), 25);
     };
   });
 }
@@ -137,10 +167,12 @@ async function dragInnerRangeSlider(page: Page, axis: 'x' | 'y', rootIndex = 0):
     return null;
   }, {rootIdx: rootIndex, ax: axis}), (g) => g !== null, 1500, 30);
   if (!geo) return false;
-  await page.mouse.move(geo.end.x, geo.end.y, {steps: 4});
+  await page.mouse.move(geo.end.x, geo.end.y, {steps: 2});
   await page.mouse.down();
-  if (axis === 'x') await page.mouse.move(geo.svg.x + geo.svg.w * 0.45, geo.end.y, {steps: 12});
-  else await page.mouse.move(geo.end.x, geo.svg.y + geo.svg.h * 0.45, {steps: 12});
+  // each intermediate mousemove repaints the trellis synchronously (~70ms a step), so the drag
+  // carries the fewest moves the range selector still tracks
+  if (axis === 'x') await page.mouse.move(geo.svg.x + geo.svg.w * 0.45, geo.end.y, {steps: 3});
+  else await page.mouse.move(geo.end.x, geo.svg.y + geo.svg.h * 0.45, {steps: 3});
   await page.mouse.up();
   return true;
 }
@@ -185,21 +217,26 @@ async function restoreCanonical(page: Page): Promise<void> {
   await page.evaluate(async () => {
     const w = window as any;
     try {
+      let touched = false;
       for (const vw of Array.from(grok.shell.tv.viewers) as any[])
-        if (vw.type !== 'Grid' && vw.type !== 'Trellis plot') vw.close();
+        if (vw.type !== 'Grid' && vw.type !== 'Trellis plot') { vw.close(); touched = true; }
       const trellises = Array.from(grok.shell.tv.viewers).filter((x: any) => x.type === 'Trellis plot') as any[];
-      for (let i = 1; i < trellises.length; i++) trellises[i].close();
+      for (let i = 1; i < trellises.length; i++) { trellises[i].close(); touched = true; }
       let tp = trellises[0];
-      if (!tp) tp = grok.shell.tv.addViewer('Trellis plot');
-      await w.__tpApply(() => {
-        tp.props.globalScale = false;
-        tp.props.showXAxes = 'Auto';
-        tp.props.showYAxes = 'Auto';
-        tp.props.onClick = 'None';
-        tp.props.viewerType = 'Scatter plot';
-        tp.props.xColumnNames = ['SEX'];
-        tp.props.yColumnNames = ['RACE'];
-      }, w.__tpCells, 1500, tp);
+      if (!tp) { tp = grok.shell.tv.addViewer('Trellis plot'); touched = true; }
+      const want: Record<string, any> = {
+        globalScale: false, showXAxes: 'Auto', showYAxes: 'Auto', onClick: 'None',
+        viewerType: 'Scatter plot', xColumnNames: ['SEX'], yColumnNames: ['RACE'],
+      };
+      const same = (a: any, b: any) => Array.isArray(b) ?
+        (Array.isArray(a) && a.length === b.length && a.every((x: any, i: number) => x === b[i])) : a === b;
+      const diff = Object.keys(want).filter((k) => !same(tp.props[k], want[k]));
+      // most restores land on a viewer that is already canonical: setting the props again fires no
+      // render, so the apply would spend its whole cap waiting for one that cannot come
+      if (diff.length === 0 && !touched)
+        await w.__settledFor(w.__tpCells, 100, 400, 25);
+      else
+        await w.__tpApply(() => { for (const k of diff) tp.props[k] = want[k]; }, w.__tpCells, 1500, tp);
     } catch (_) {  }
   });
 }
@@ -524,12 +561,13 @@ test('Trellis plot — inner viewer types, properties, gridlines, context menu',
         for (const c of Array.from(root.querySelectorAll('.d4-trellis-plot-cell'))) if (c.querySelector('canvas')) withCanvas++;
         return withCanvas;
       };
-      const uiSwitch = async (icon: string) => {
+      const uiSwitch = async (icon: string, want: string) => {
         const vs = root.querySelector('[name="viewer selector"]') as HTMLElement;
         vs.dispatchEvent(new MouseEvent('mousedown', {bubbles: true, button: 0}));
-        await w.__poll(() => document.querySelector('.d4-combo-drop-down'), (e: Element | null) => !!e, 1000, 40);
+        await w.__poll(() => document.querySelector('.d4-combo-drop-down'), (e: Element | null) => !!e, 1000, 25);
         const item = document.querySelector(`.d4-combo-drop-down [name="${icon}"]`);
-        await w.__tpRendered(() => (item?.closest('.d4-list-item') as HTMLElement | null)?.click(), 1600, 300);
+        await w.__tpRendered(() => (item?.closest('.d4-list-item') as HTMLElement | null)?.click(), 1600, 80);
+        await w.__poll(() => tp.props.viewerType, (t: string) => t === want, 1400, 25);
       };
       const types: Array<[string, string, any]> = [
         ['Scatter plot', 'icon-scatter-plot', {xColumnName: 'WEIGHT', yColumnName: 'HEIGHT', colorColumnName: 'RACE'}],
@@ -544,11 +582,11 @@ test('Trellis plot — inner viewer types, properties, gridlines, context menu',
         ['PC Plot', 'icon-pc-plot', {colorColumnName: 'SEX'}],
         ['Heatmap', 'icon-heat-map', {columnNames: ['AGE', 'HEIGHT', 'WEIGHT']}],
       ];
-      for (const [, icon, look] of types) {
-        await uiSwitch(icon);
-        await w.__tpRendered(() => { try { tp.setOptions({innerViewerLook: look}); } catch {} }, 900);
+      for (const [want, icon, look] of types) {
+        await uiSwitch(icon, want);
+        await w.__tpRendered(() => { try { tp.setOptions({innerViewerLook: look}); } catch {} }, 900, 80);
         r.push({type: tp.props.viewerType,
-          cellsWithCanvas: await w.__poll(cellsHaveCanvas, (n: number) => n > 0, 600, 40)});
+          cellsWithCanvas: await w.__poll(cellsHaveCanvas, (n: number) => n > 0, 600, 25)});
       }
       return r;
     });
@@ -1618,7 +1656,9 @@ test('Trellis plot — selectors, full screen, auto layout, title, legend', asyn
       expect(await columnSelectorCount()).toBe(bothSelectors);
     } finally {
       await page.setViewportSize({width: 1920, height: 1080});
-      await v.waitForViewerRendered(page, 'Trellis plot', 1000);
+      // the restore has to land before the props below are read back, and the first repaint arrives
+      // mid-relayout: wait for the window to be wide again, then for the trellis layout to hold still
+      await page.evaluate(() => (window as any).__tpAfterResize(-1, 1000, 200, 1920));
       await page.evaluate(() => (window as any).__tpRendered(() => {
         const tp = (window as any).__tp();
         tp.props.showXSelectors = true;
@@ -1805,32 +1845,38 @@ test('Trellis plot — selectors, full screen, auto layout, title, legend', asyn
       expect(restoredLabels.x.length).toBe(expectedX);
       expect(restoredLabels.y.length).toBe(expectedY);
 
-      // The band search keeps its fixed settles: waitForViewerRendered returns before the resize
-      // relayout finishes, so an event-waited probe reads an intermediate viewer width and the
-      // ~20px band is never observed. Measured 2026-08-31 (2/8 passes event-waited).
+      // waitForViewerRendered returns before the resize relayout finishes, so the probe waits for
+      // the viewer width to leave its pre-resize value and then for width and label counts to hold
+      // still; each read is capped at the fixed settle it replaces.
+      const afterResize = (prevW: number, cap: number, hold = 200) =>
+        page.evaluate(({p, c, h}) => (window as any).__tpAfterResize(p, c, h), {p: prevW, c: cap, h: hold}) as
+          Promise<{width: number; x: string[]; y: string[]}>;
+
       const wideWidth = await viewerWidth();
       await page.setViewportSize({width: 1420, height: 1080});
-      await page.waitForTimeout(1200);
-      const midWidth = await viewerWidth();
+      const midWidth = (await afterResize(wideWidth, 1200)).width;
       const slope = Math.max((wideWidth - midWidth) / 500, 0.05);
 
       console.log(`[Auto layout] band calibration: wideWidth=${wideWidth} midWidth=${midWidth} slope=${slope.toFixed(3)}`);
       let band: {window: number; viewer: number; x: number; y: number} | null = null;
+      let prevWidth = midWidth;
+      let prevWin = 1420;
       for (let target = 235; target >= 150 && !band; target -= 5) {
         const win = Math.round(Math.min(1900, Math.max(420, 1420 - (midWidth - target) / slope)));
+        if (win === prevWin) continue;
         await page.setViewportSize({width: win, height: 1080});
-        await page.waitForTimeout(1000);
-        const seen = await categoryLabels(page);
-        console.log(`[Auto layout] band probe: targetViewer=${target} window=${win} viewer=${await viewerWidth()} ` +
+        prevWin = win;
+        const seen = await afterResize(prevWidth, 1000);
+        prevWidth = seen.width;
+        console.log(`[Auto layout] band probe: targetViewer=${target} window=${win} viewer=${seen.width} ` +
           `x=${seen.x.length} y=${seen.y.length}`);
         if (seen.x.length > 0 || seen.y.length === 0) continue;
 
-        await page.waitForTimeout(900);
-        const confirmed = await categoryLabels(page);
-        console.log(`[Auto layout] band candidate re-read: window=${win} viewer=${await viewerWidth()} ` +
+        const confirmed = await afterResize(-1, 900, 400);
+        console.log(`[Auto layout] band candidate re-read: window=${win} viewer=${confirmed.width} ` +
           `x=${confirmed.x.length} y=${confirmed.y.length}`);
         if (confirmed.x.length === 0 && confirmed.y.length > 0)
-          band = {window: win, viewer: await viewerWidth(), x: confirmed.x.length, y: confirmed.y.length};
+          band = {window: win, viewer: confirmed.width, x: confirmed.x.length, y: confirmed.y.length};
       }
       console.log(`[Auto layout] band search finished: ${JSON.stringify(band)}`);
       expect(band).not.toBeNull();
@@ -1838,7 +1884,7 @@ test('Trellis plot — selectors, full screen, auto layout, title, legend', asyn
       expect(band!.y).toBe(expectedY);
 
       await page.setViewportSize({width: 1920, height: 1080});
-      await v.waitForViewerRendered(page, 'Trellis plot', 1200);
+      await page.evaluate(() => (window as any).__tpAfterResize(-1, 1200, 200, 1920));
 
       await page.evaluate(() => (window as any).__tpRendered(() => { (window as any).__tp().props.autoLayout = false; }, 500));
       await page.setViewportSize({width: 500, height: 400});
@@ -1855,7 +1901,9 @@ test('Trellis plot — selectors, full screen, auto layout, title, legend', asyn
       expect(offSmallLabels.y.length).toBe(expectedY);
     } finally {
       await page.setViewportSize({width: 1920, height: 1080});
-      await v.waitForViewerRendered(page, 'Trellis plot', 1000);
+      // the restore has to land before the props below are read back, and the first repaint arrives
+      // mid-relayout: wait for the window to be wide again, then for the trellis layout to hold still
+      await page.evaluate(() => (window as any).__tpAfterResize(-1, 1000, 200, 1920));
       await page.evaluate(() => (window as any).__tpRendered(() => {
         const tp = (window as any).__tp();
         if (tp) {
@@ -2063,7 +2111,11 @@ test('Trellis plot — Use in Trellis, Pick Up / Apply', async ({page}) => {
       const scatterResult = await page.evaluate(async () => {
         const w = window as any;
         const newTp = await w.__poll(w.__tp, (t: any) => !!t, 10000, 100);
-        await w.__quiet('viewer:Trellis plot.onViewerRendered', 300, 800);
+        // the created trellis carries the source viewer over asynchronously; the inner type and the
+        // first painted cell are the two things read below, so they are what the wait is on
+        await w.__poll(() => newTp?.props.viewerType, (t: string) => t === 'Scatter plot', 800, 25);
+        await w.__poll(() => newTp?.root?.querySelectorAll('.d4-trellis-plot-cell').length ?? 0,
+          (n: number) => n > 0, 800, 25);
 
         let ivl: any = null;
         try {
@@ -2096,7 +2148,9 @@ test('Trellis plot — Use in Trellis, Pick Up / Apply', async ({page}) => {
         return page.evaluate(async (viewerType) => {
           const w = window as any;
           const newTp = await w.__poll(w.__tp, (t: any) => !!t, 10000, 100);
-          await w.__quiet('viewer:Trellis plot.onViewerRendered', 300, 800);
+          await w.__poll(() => newTp?.props.viewerType, (t: string) => t === viewerType, 800, 25);
+          await w.__poll(() => newTp?.root?.querySelectorAll('.d4-trellis-plot-cell').length ?? 0,
+            (n: number) => n > 0, 800, 25);
           const innerType = newTp?.props.viewerType;
           for (const vw of Array.from(grok.shell.tv.viewers) as any[]) if (vw.type === viewerType) vw.close();
           return {trellisCreated: !!newTp, innerType};

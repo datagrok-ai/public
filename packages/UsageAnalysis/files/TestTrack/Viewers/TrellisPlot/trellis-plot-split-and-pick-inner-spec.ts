@@ -81,21 +81,39 @@ async function findRowByPreview(page: Page, column: string): Promise<{hx: number
   return null;
 }
 
-// Types `column` into the popup's search box (which appears on the first letter and takes the
-// keyboard focus), so the list is filtered to that column and its row is row 0.
-async function searchPopup(page: Page, column: string): Promise<void> {
-  const searchFocused = () => page.evaluate(() =>
-    document.activeElement?.classList.contains('d4-column-selector-search-input') ?? false);
-  for (let i = 0; i < 2 && !await searchFocused(); i++) {
-    await page.keyboard.press(column[0].toLowerCase());
-    await v.pollValue(searchFocused, (ok) => ok, 1000, 25);
+const SEARCH_INPUT = 'input.d4-column-selector-search-input';
+
+// Types `column` into the popup's search box, so the list is filtered to that column and its row
+// is row 0. The box is created by the first letter and takes the keyboard focus a tick BEFORE
+// that letter lands in its value, so a clear issued on focus alone leaves the letter sitting in
+// front of the typed text ("ccontrol"). Enter commits the row under the pointer over the typed
+// text (column_combo_box.dart:321), so the pointer is parked off the popup first. A miss reopens
+// the picker once rather than committing a stray pick.
+async function searchPopup(page: Page, column: string, reopen: () => Promise<boolean>): Promise<void> {
+  const want = column.toLowerCase();
+  const searchValue = () => page.evaluate((sel) =>
+    (document.querySelector(sel) as HTMLInputElement | null)?.value ?? '', SEARCH_INPUT);
+  const searchFocused = () => page.evaluate((sel) => document.activeElement?.matches(sel) === true, SEARCH_INPUT);
+  let held = '';
+  for (let attempt = 0; attempt < 2 && held !== want; attempt++) {
+    if (attempt > 0) {
+      await closePopup(page);
+      expect(await reopen(), 'the column selector popup did not reopen for a second search attempt').toBe(true);
+    }
+    await page.mouse.move(0, 0);
+    for (let i = 0; i < 2 && !await searchFocused(); i++) {
+      await page.keyboard.press(want[0]);
+      await v.pollValue(searchFocused, (ok) => ok, 1000, 25);
+    }
+    expect(await searchFocused(), 'the column popup search box did not open').toBe(true);
+    await v.pollValue(searchValue, (t) => t.length > 0, 800, 25);
+    await page.keyboard.press('Control+A');
+    await page.keyboard.press('Backspace');
+    await v.pollValue(searchValue, (t) => t === '', 800, 25);
+    await page.keyboard.type(want, {delay: 15});
+    held = await v.pollValue(searchValue, (t) => t === want, 1000, 25);
   }
-  expect(await searchFocused(), 'the column popup search box did not open').toBe(true);
-  await page.keyboard.press('Control+A');
-  await page.keyboard.type(column.toLowerCase());
-  const typed = await v.pollValue(() => page.evaluate(() =>
-    (document.activeElement as HTMLInputElement | null)?.value ?? ''), (t) => t === column.toLowerCase(), 1000, 25);
-  expect(typed).toBe(column.toLowerCase());
+  expect(held, `the column popup search box holds "${held}", so Enter would commit some other pick`).toBe(want);
 }
 
 test('Trellis plot: split columns, inner-type switching', async ({page}) => {
@@ -203,7 +221,7 @@ test('Trellis plot: split columns, inner-type switching', async ({page}) => {
 
       expect(await openAddXPopup(),
         'the (+) add-X-column control did not reopen the column selector popup').toBe(true);
-      await searchPopup(page, 'CONTROL');
+      await searchPopup(page, 'CONTROL', openAddXPopup);
       await page.keyboard.press('Enter');
       await backdrop.waitFor({state: 'detached', timeout: 6000});
 

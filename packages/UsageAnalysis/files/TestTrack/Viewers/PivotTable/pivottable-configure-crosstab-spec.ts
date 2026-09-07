@@ -230,9 +230,10 @@ test('Pivot Table — Configure cross-tab values', async ({page}) => {
 
   const panelCount = (row: string) => page.locator(`[name="prop-view-${row}"] label`).innerText();
 
-  // a cheap stamp of the dialog grid's first rows, so the click waits for the search filter to repaint them
+  // a cheap stamp of the dialog grid's first rows, so the click waits for the search filter to
+  // repaint them; the named canvas is the content one — the unnamed sibling is the empty overlay
   const dialogGridStamp = () => page.evaluate((sel) => {
-    const cv = document.querySelector(`${sel} .d4-grid canvas`) as HTMLCanvasElement | null;
+    const cv = document.querySelector(`${sel} .d4-grid canvas[name="canvas"]`) as HTMLCanvasElement | null;
     const ctx = cv?.getContext('2d');
     if (!cv || !ctx || cv.width === 0 || cv.height === 0) return -1;
     const data = ctx.getImageData(0, 0, cv.width, Math.min(cv.height, 80)).data;
@@ -240,6 +241,38 @@ test('Pivot Table — Configure cross-tab values', async ({page}) => {
     for (let i = 0; i < data.length; i += 16) sum = (sum + data[i] * 31 + i) % 1e9;
     return sum;
   }, SELECT_DLG);
+
+  // The search is typed for real — the filter is a Dart control and a synthetic value set does
+  // not reach it — but everything around the typing is one in-page pass: waiting for the grid to
+  // repaint, waiting for it to stop, and reading the grid rect and the panel count it will change.
+  const gridSettled = (before: number, row: string) => page.evaluate(async (a) => {
+    const stamp = () => {
+      const cv = document.querySelector(`${a.sel} .d4-grid canvas[name="canvas"]`) as HTMLCanvasElement | null;
+      const ctx = cv?.getContext('2d');
+      if (!cv || !ctx || cv.width === 0 || cv.height === 0) return -1;
+      const data = ctx.getImageData(0, 0, cv.width, Math.min(cv.height, 80)).data;
+      let sum = 0;
+      for (let i = 0; i < data.length; i += 16) sum = (sum + data[i] * 31 + i) % 1e9;
+      return sum;
+    };
+    const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+    let deadline = Date.now() + 1000;
+    while (stamp() === a.before && Date.now() < deadline) await sleep(25);
+    deadline = Date.now() + 1000;
+    let prev = stamp();
+    while (Date.now() < deadline) {
+      await sleep(100);
+      const cur = stamp();
+      if (cur === prev) break;
+      prev = cur;
+    }
+    const grid = document.querySelector(`${a.sel} .d4-grid`) as HTMLElement | null;
+    const r = grid?.getBoundingClientRect();
+    return {
+      rect: r && r.width > 0 ? {x: r.x, y: r.y, width: r.width, height: r.height} : null,
+      count: (document.querySelector(`[name="prop-view-${a.row}"] label`) as HTMLElement | null)?.innerText ?? '',
+    };
+  }, {sel: SELECT_DLG, before, row});
 
   async function toggleFirstRow(row: string, col: string) {
     const dlg = page.locator(SELECT_DLG);
@@ -249,14 +282,16 @@ test('Pivot Table — Configure cross-tab values', async ({page}) => {
     await page.keyboard.press('Delete');
     const stampBefore = await dialogGridStamp();
     await page.keyboard.type(col);
-    await v.pollValue(dialogGridStamp, (s) => s !== stampBefore, 1000, 25);
-    await v.pollStable(dialogGridStamp, (a, b) => a === b, 1000, 100);
-    const rect = await dlg.locator('.d4-grid').boundingBox();
+    const {rect, count: countBefore} = await gridSettled(stampBefore, row);
     if (!rect) throw new Error('Select-columns grid not visible');
 
-    const countBefore = await panelCount(row);
     await page.mouse.click(rect.x + rect.width - 39, rect.y + 34);
-    await v.pollValue(() => panelCount(row), (t) => t !== countBefore, 2000, 50);
+    await page.evaluate(async (a) => {
+      const read = () => (document.querySelector(`[name="prop-view-${a.row}"] label`) as HTMLElement | null)?.innerText ?? '';
+      const deadline = Date.now() + 2000;
+      while (read() === a.before && Date.now() < deadline)
+        await new Promise((r) => setTimeout(r, 50));
+    }, {row, before: countBefore});
   }
 
   await softStep('Scenario 4 Step 3: the viewer property panel exposes the group-by / aggregate / pivot column-list editors', async () => {
@@ -328,6 +363,6 @@ test('Pivot Table — Configure cross-tab values', async ({page}) => {
   await page.evaluate(() => { grok.shell.o = null; });
   page.off('console', onConsole);
   page.off('pageerror', onPageError);
-  await v.cleanupShell(page);
+  await v.closeAllAndWait(page);
   v.finishSpec();
 });

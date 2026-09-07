@@ -13,10 +13,8 @@ import {
   ProvisionedScript,
   SYSTEM_DATAGROK_QUERIES,
 } from '../helpers/openers';
-import {
-  saveProjectWithProvenance,
-  deleteProjectWithCleanup,
-} from '../helpers/projects';
+import {deleteProjectWithCleanup} from '../helpers/projects';
+import {saveProjectWithProvenance} from './projects-shared';
 import {projectsTestOptions, evalJs, gotoApp, setupSession} from './_helpers';
 
 test.use(projectsTestOptions);

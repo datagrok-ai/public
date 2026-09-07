@@ -74,7 +74,8 @@ async function openTrellisPropertyGrid(page: Page, probeProp: string): Promise<v
   const tab = page.locator('.d4-tab-header[name="Trellis"]');
   if (await tab.count() > 0) {
     await tab.first().click();
-    await page.waitForTimeout(300); 
+    await page.waitForFunction(() => !!document.querySelector('.d4-tab-header[name="Trellis"].selected'),
+      null, {timeout: 2000}).catch(() => {});
   }
   await page.locator(`.property-grid tr[name="prop-${probeProp}"]`).first()
     .waitFor({state: 'attached', timeout: 15000});
@@ -119,7 +120,7 @@ async function propertyGridChoices(page: Page, prop: string): Promise<string[]> 
   await row.locator('select').waitFor({state: 'attached', timeout: 3000});
   const options = await row.locator('select option').allTextContents();
   await page.keyboard.press('Escape');
-  await page.waitForTimeout(300); 
+  await row.locator('select').waitFor({state: 'detached', timeout: 1000}).catch(() => {});
   return options.map((s) => s.trim()).filter((s) => s.length > 0);
 }
 

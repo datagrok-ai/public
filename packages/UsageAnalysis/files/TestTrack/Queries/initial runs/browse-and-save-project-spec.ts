@@ -20,6 +20,14 @@ test("Queries: browse and save project", async ({ page }) => {
     w.grok.shell.settings.showFiltersIconsConstantly = true;
     w.grok.shell.windows.simpleMode = true;
     w.grok.shell.closeAll();
+    w.__poll = async (fn: () => boolean, capMs: number) => {
+      const deadline = Date.now() + capMs;
+      while (Date.now() < deadline) {
+        if (fn()) return true;
+        await new Promise((r) => setTimeout(r, 50));
+      }
+      return false;
+    };
   });
 
   await softStep("Step 1: Navigate to Databases > Postgres", async () => {
@@ -62,8 +70,12 @@ test("Queries: browse and save project", async ({ page }) => {
         );
         const nwDf = await nwQ.executeTable();
         const chDf = await chQ.executeTable();
+        const before = Array.from(w.grok.shell.tableViews).length;
         w.grok.shell.addTableView(nwDf);
-        await new Promise((r) => setTimeout(r, 600));
+        await w.__poll(
+          () => Array.from(w.grok.shell.tableViews).length > before,
+          2000,
+        );
         w.grok.shell.addTableView(chDf);
         return { nwRows: nwDf.rowCount, chRows: chDf.rowCount };
       });
@@ -78,18 +90,29 @@ test("Queries: browse and save project", async ({ page }) => {
       const tabs = await page.evaluate(async () => {
         const w = window as any;
         w.grok.shell.closeAll();
-        await new Promise((r) => setTimeout(r, 800));
+        await w.__poll(
+          () => Array.from(w.grok.shell.tableViews).length === 0,
+          800,
+        );
         const all = await w.grok.dapi.queries.list({ pageSize: 1000 });
         const q = all.find(
           (x: any) => x.name === "FracClassificationWithSubstructure",
         );
 
         w.grok.shell.o = q;
-        await new Promise((r) => setTimeout(r, 1500));
-        const headers = Array.from(
-          document.querySelectorAll(".d4-accordion-pane-header"),
-        ).map((h) => h.textContent?.trim() || "");
-        return headers;
+        const headerTexts = () =>
+          Array.from(
+            document.querySelectorAll(".d4-accordion-pane-header"),
+          ).map((h) => h.textContent?.trim() || "");
+        await w.__poll(() => {
+          const h = headerTexts();
+          return (
+            h.some((t: string) => t.startsWith("Run")) &&
+            h.some((t: string) => t.startsWith("Query")) &&
+            h.some((t: string) => t.startsWith("Transformations"))
+          );
+        }, 1500);
+        return headerTexts();
       });
       expect(tabs.some((t) => t.startsWith("Run"))).toBe(true);
       expect(tabs.some((t) => t.startsWith("Query"))).toBe(true);
@@ -101,35 +124,51 @@ test("Queries: browse and save project", async ({ page }) => {
     "Step 4: Open FRAC run dialog; first param change clears dependent params",
     async () => {
       const result = await page.evaluate(async () => {
+        const w = window as any;
         const runHdr = Array.from(
           document.querySelectorAll(".d4-accordion-pane-header"),
         ).find((h) => h.textContent?.trim().toLowerCase().startsWith("run")) as
           | HTMLElement
           | undefined;
         runHdr?.click();
-        await new Promise((r) => setTimeout(r, 800));
+        await w.__poll(
+          () => !!document.querySelector('[name="button-RUN"]'),
+          800,
+        );
         const runBtn = document.querySelector<HTMLElement>(
           '[name="button-RUN"]',
         );
         runBtn?.click();
-        await new Promise((r) => setTimeout(r, 2000));
+        await w.__poll(() => {
+          const d = document.querySelector(".d4-dialog");
+          return !!d?.querySelector('[name="input-host-Level1"] select');
+        }, 2000);
         const dlg = document.querySelector(".d4-dialog");
         const sel1 = dlg?.querySelector<HTMLSelectElement>(
           '[name="input-host-Level1"] select',
         );
+        await w.__poll(() => (sel1?.options.length ?? 0) > 1, 2000);
         const opts = Array.from(sel1?.options || []).map((o) => o.value);
         const newVal = opts.find((v) => v && v !== sel1?.value);
         if (sel1 && newVal) {
           sel1.value = newVal;
           sel1.dispatchEvent(new Event("change", { bubbles: true }));
         }
-        await new Promise((r) => setTimeout(r, 1500));
-        const vals = ["Level1", "Level2", "Level3", "Level4"].map((n) => {
-          const h = dlg?.querySelector(
+        const level = (n: string) =>
+          (dlg?.querySelector(
             `[name="input-host-${n}"] select`,
-          ) as HTMLSelectElement | null;
-          return { n, v: h?.value };
-        });
+          ) as HTMLSelectElement | null)?.value;
+        await w.__poll(
+          () =>
+            level("Level2") === "" &&
+            level("Level3") === "" &&
+            level("Level4") === "",
+          1500,
+        );
+        const vals = ["Level1", "Level2", "Level3", "Level4"].map((n) => ({
+          n,
+          v: level(n),
+        }));
         return { hasDialog: !!dlg, vals };
       });
       expect(result.hasDialog).toBe(true);
@@ -152,10 +191,17 @@ test("Queries: browse and save project", async ({ page }) => {
           sel1.value = "STEROL BIOSYNTHESIS IN MEMBRANES";
           sel1.dispatchEvent(new Event("change", { bubbles: true }));
         }
-        await new Promise((r) => setTimeout(r, 1500));
-        const sel2 = dlg?.querySelector<HTMLSelectElement>(
-          '[name="input-host-Level2"] select',
+        const sel2At = () =>
+          dlg?.querySelector<HTMLSelectElement>(
+            '[name="input-host-Level2"] select',
+          );
+        await w.__poll(
+          () =>
+            Array.from(sel2At()?.options ?? []).filter((o: any) => o.value)
+              .length > 0,
+          1500,
         );
+        const sel2 = sel2At();
         if (sel2) {
           const opts = Array.from(sel2.options)
             .map((o) => o.value)
@@ -165,14 +211,21 @@ test("Queries: browse and save project", async ({ page }) => {
             sel2.dispatchEvent(new Event("change", { bubbles: true }));
           }
         }
-        await new Promise((r) => setTimeout(r, 1500));
+        const level3Opts = () =>
+          (dlg?.querySelector(
+            '[name="input-host-Level3"] select',
+          ) as HTMLSelectElement | null)?.options.length ?? 0;
+        const before3 = level3Opts();
+        await w.__poll(() => level3Opts() !== before3, 1500);
         const ok = dlg?.querySelector<HTMLElement>('[name="button-OK"]');
         ok?.click();
-        for (let i = 0; i < 30; i++) {
-          await new Promise((r) => setTimeout(r, 1000));
-          if (!document.querySelector(".d4-dialog")) break;
-        }
-        await new Promise((r) => setTimeout(r, 3000));
+        await w.__poll(() => !document.querySelector(".d4-dialog"), 30000);
+        await w.__poll(
+          () =>
+            w.grok.shell.v?.type === "TableView" &&
+            (w.grok.shell.tv?.dataFrame?.rowCount ?? 0) > 0,
+          3000,
+        );
         const tv = w.grok.shell.tv;
         return {
           viewType: w.grok.shell.v?.type,
@@ -191,7 +244,13 @@ test("Queries: browse and save project", async ({ page }) => {
         '[name="icon-trellis-plot"]',
       );
       tp?.click();
-      await new Promise((r) => setTimeout(r, 2500));
+      await w.__poll(() => {
+        const tv = w.grok.shell.tv;
+        return (
+          !!tv &&
+          Array.from(tv.viewers).some((v: any) => v.type === "Trellis plot")
+        );
+      }, 2500);
       const tv = w.grok.shell.tv;
       const viewers =
         tv && tv.viewers ? Array.from(tv.viewers).map((v: any) => v.type) : [];
@@ -207,7 +266,7 @@ test("Queries: browse and save project", async ({ page }) => {
         '[name="button-Save"]',
       );
       saveBtn?.click();
-      await new Promise((r) => setTimeout(r, 3000));
+      await w.__poll(() => !!document.querySelector(".d4-dialog"), 3000);
       const dlg = document.querySelector(".d4-dialog");
       const inputs = Array.from(
         dlg?.querySelectorAll('input[type="text"], input:not([type])') || [],
@@ -226,17 +285,16 @@ test("Queries: browse and save project", async ({ page }) => {
         nameInput.dispatchEvent(new Event("input", { bubbles: true }));
         nameInput.dispatchEvent(new Event("change", { bubbles: true }));
       }
-      await new Promise((r) => setTimeout(r, 600));
       const ok = dlg?.querySelector<HTMLElement>('[name="button-OK"]');
       ok?.click();
-      for (let i = 0; i < 30; i++) {
-        await new Promise((r) => setTimeout(r, 1000));
-        if (!document.querySelector(".d4-dialog")) break;
+      await w.__poll(() => !document.querySelector(".d4-dialog"), 30000);
+      let proj: any = null;
+      const deadline = Date.now() + 3000;
+      while (Date.now() < deadline) {
+        proj = await w.grok.dapi.projects.filter("FRAC scenario test").first();
+        if (proj) break;
+        await new Promise((r) => setTimeout(r, 250));
       }
-      await new Promise((r) => setTimeout(r, 3000));
-      const proj = await w.grok.dapi.projects
-        .filter("FRAC scenario test")
-        .first();
       return { savedId: proj?.id, savedName: proj?.name };
     });
     expect(result.savedId).toBeTruthy();
@@ -248,18 +306,25 @@ test("Queries: browse and save project", async ({ page }) => {
       const result = await page.evaluate(async () => {
         const w = window as any;
         w.grok.shell.closeAll();
-        await new Promise((r) => setTimeout(r, 2000));
+        await w.__poll(
+          () => Array.from(w.grok.shell.tableViews).length === 0,
+          2000,
+        );
         const proj = await w.grok.dapi.projects
           .filter("FRAC scenario test")
           .first();
         if (!proj) return { viewers: [], rows: 0 };
         await proj.open();
-        for (let i = 0; i < 60; i++) {
-          await new Promise((r) => setTimeout(r, 1000));
+        await w.__poll(() => {
           const tv = w.grok.shell.tv;
-          if (tv && tv.viewers && Array.from(tv.viewers).length > 1) break;
-        }
-        await new Promise((r) => setTimeout(r, 4000));
+          if (!tv || !tv.viewers) return false;
+          const types = Array.from(tv.viewers).map((v: any) => v.type);
+          return (
+            types.includes("Trellis plot") &&
+            types.includes("Grid") &&
+            (tv.dataFrame?.rowCount ?? 0) > 0
+          );
+        }, 64000);
         const tv = w.grok.shell.tv;
         const viewers =
           tv && tv.viewers

@@ -25,7 +25,7 @@ test('Projects / UI Smoke: open file → save w/ data sync → share → reopen 
     grok.shell.closeAll();
     grok.shell.windows.showBrowse = true;
   })()`);
-  await page.waitForTimeout(1500);
+  await page.locator('.d4-tree-view-root').waitFor({timeout: 30_000});
 
   await softStep('Step 1: open demog.csv (UI — Browse-tree right-click → Open)', async () => {
 
@@ -87,7 +87,8 @@ test('Projects / UI Smoke: open file → save w/ data sync → share → reopen 
     });
 
     await page.locator('[name="viewer-Grid"]').waitFor({timeout: 60_000});
-    await page.waitForTimeout(1500);
+    await expect.poll(async () => evalJs<number>(page, `grok.shell.tv?.dataFrame?.rowCount ?? 0`),
+      {timeout: 15_000, intervals: [100, 250, 500]}).toBeGreaterThan(0);
     const info = await evalJs<{rows: number; name: string; script?: string}>(page, `(() => {
       const df = grok.shell.tv?.dataFrame;
       return df ? {rows: df.rowCount, name: df.name, script: df.tags['.script']} : {};
@@ -294,8 +295,7 @@ test('Projects / UI Smoke: open file → save w/ data sync → share → reopen 
     await confirmDlg.locator('[name="button-DELETE"]').click();
 
     await expect(confirmDlg).toBeHidden({timeout: 60_000});
-    await page.waitForTimeout(2000);
-    await expect(tile).toHaveCount(0, {timeout: 15_000});
+    await expect(tile).toHaveCount(0, {timeout: 30_000});
   });
 
   await evalJs(page, `(async () => {

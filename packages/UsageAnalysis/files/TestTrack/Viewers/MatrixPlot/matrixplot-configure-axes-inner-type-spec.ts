@@ -5,6 +5,7 @@ import {expect, Page} from '@playwright/test';
 import {localTest as test} from '../../shared-page';
 import {openDatagrok, specTestOptions, softStep, isLocalBootNoise} from '../../spec-login';
 import * as v from '../../helpers/viewers';
+import {cellCount, settledCellInk, stampRenders} from './matrix-helpers';
 
 declare const grok: any;
 
@@ -17,35 +18,6 @@ const datasetPath = 'System:DemoFiles/demog.csv';
 const isBenignError = (text: string) =>
   /WebSocket/.test(text) || /Failed to load resource/.test(text) || /404 \(\)/.test(text) ||
   /favicon/.test(text);
-
-const cellInk = (page: Page, idx: number) => page.evaluate((i: number) => {
-  const cells = document.querySelectorAll('[name="viewer-Matrix-plot"] canvas.d4-matrix-plot-inner-viewer');
-  const c = cells[i] as HTMLCanvasElement | undefined;
-  if (!c) return -1;
-  const ctx = c.getContext('2d');
-  if (!ctx) return -1;
-  let data: Uint8ClampedArray;
-  try { data = ctx.getImageData(0, 0, c.width, c.height).data; } catch (_) { return -2; }
-  let n = 0;
-  for (let k = 0; k < data.length; k += 16)
-    if (data[k + 3] !== 0 && !(data[k] >= 250 && data[k + 1] >= 250 && data[k + 2] >= 250)) n++;
-  return n;
-}, idx);
-
-async function settledCellInk(page: Page, idx: number): Promise<number> {
-  let prev = await cellInk(page, idx);
-  let cur = prev;
-  for (let i = 0; i < 10; i++) {
-    await page.waitForTimeout(300);
-    cur = await cellInk(page, idx);
-    if (cur >= 0 && Math.abs(cur - prev) < 40) break;
-    prev = cur;
-  }
-  return cur;
-}
-
-const cellCount = (page: Page) => page.evaluate(() =>
-  document.querySelectorAll('[name="viewer-Matrix-plot"] canvas.d4-matrix-plot-inner-viewer').length);
 
 const columnLabels = (page: Page) => page.evaluate(() => {
   const root = document.querySelector('[name="viewer-Matrix-plot"]')!;
@@ -117,6 +89,7 @@ test('Matrix Plot — Column Sets, Cell Plot Type', async ({page}: {page: Page})
   await openDatagrok(page);
   await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 3000});
   await v.addViewerByIcon(page, 'matrix-plot', 'Matrix-plot');
+  await stampRenders(page);
 
   await softStep('Scenario 1 — default state: 16 cells, demog auto-pick, Density plot', async () => {
     const cells = await cellCount(page);

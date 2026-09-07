@@ -47,7 +47,6 @@ test('ANOVA scenario', async ({page}) => {
       const el = document.querySelector('[name="div-ML---Analyze---ANOVA..."]') as HTMLElement | null;
       if (el) el.click();
     });
-    await page.waitForTimeout(1200);
     await page.locator('.d4-dialog').waitFor({timeout: 10000});
     await expect(page.locator('.d4-dialog')).toContainText('ANOVA');
     await expect(page.locator('[name="input-host-Category"]')).toBeVisible();

@@ -18,6 +18,10 @@ declare const grok: any;
 // project surviving a round-trip through the server. The ladder that proves the viewer itself
 // (fields, sort, pinning) is formsviewer-forms-core-spec.ts on the local lane; the configured
 // state is set up here directly rather than re-driven step by step.
+// expect.poll's default cadence (100/250/500/1000ms) overshoots a settled UI by up to a
+// second per call; this ladder is fast early and still coarse for the long product waits
+const POLL = {intervals: [50, 50, 100, 200, 400, 800]};
+
 test.use(specTestOptions);
 
 const datasetPath = 'System:DemoFiles/demog.csv';
@@ -40,15 +44,15 @@ async function formsState(page: Page): Promise<FormsState> {
 }
 
 async function expectFormsState(page: Page, pre: FormsState, timeout: number): Promise<void> {
-  await expect.poll(() => drawnLabelNames(page), {timeout}).toEqual(pre.labels);
+  await expect.poll(() => drawnLabelNames(page), {timeout, ...POLL}).toEqual(pre.labels);
   await expect.poll(() => page.evaluate(() => {
     const vw = grok.shell.tv?.viewers?.find((x: any) => x.type === 'FormsViewer');
     return vw ? Array.from(vw.props.fieldsColumnNames as string[]) : null;
-  }), {timeout}).toEqual(pre.fields);
-  await expect.poll(() => sortIndicatorLabels(page), {timeout}).toEqual(pre.indicator);
+  }), {timeout, ...POLL}).toEqual(pre.fields);
+  await expect.poll(() => sortIndicatorLabels(page), {timeout, ...POLL}).toEqual(pre.indicator);
   await expect.poll(() => page.evaluate((sel) => Array.from(document.querySelectorAll(sel))
     .map((c) => ((c as HTMLElement).querySelector('[column="USUBJID"]') as HTMLInputElement)?.value), PINNED),
-  {timeout}).toEqual(pre.pinnedValues);
+  {timeout, ...POLL}).toEqual(pre.pinnedValues);
 }
 
 test('Forms viewer — layout and project persistence', async ({page}) => {
@@ -75,9 +79,9 @@ test('Forms viewer — layout and project persistence', async ({page}) => {
       df.selection.set(5, true); df.selection.set(10, true); df.selection.set(20, true);
       return picked;
     });
-    await expect.poll(() => drawnLabelNames(page), {timeout: 20_000}).toEqual(chosenFields);
-    await expect.poll(() => sortIndicatorLabels(page), {timeout: 20_000}).toEqual(['div-AGE']);
-    await expect.poll(() => page.locator(ORDINARY).count(), {timeout: 15_000}).toBe(4);
+    await expect.poll(() => drawnLabelNames(page), {timeout: 20_000, ...POLL}).toEqual(chosenFields);
+    await expect.poll(() => sortIndicatorLabels(page), {timeout: 20_000, ...POLL}).toEqual(['div-AGE']);
+    await expect.poll(() => page.locator(ORDINARY).count(), {timeout: 15_000, ...POLL}).toBe(4);
     await waitForOrderStable(page);
 
     const pos = (await fieldValuesByPosition(page, 'USUBJID')).findIndex((val, i) => i >= 1 && val !== null);
@@ -86,9 +90,9 @@ test('Forms viewer — layout and project persistence', async ({page}) => {
     await cardContextMenu(page, ORDINARY, pos, 'div-Pin-Row', 'USUBJID');
     await expect.poll(async () =>
       page.evaluate((sel) => getComputedStyle(document.querySelector(sel) as HTMLElement).display, PINNED_PANE),
-    {timeout: 15_000}).not.toBe('none');
+    {timeout: 15_000, ...POLL}).not.toBe('none');
     await expect.poll(() => page.evaluate(() =>
-      grok.shell.tv.viewers.find((x: any) => x.type === 'FormsViewer').props.pinnedRowValues), {timeout: 15_000})
+      grok.shell.tv.viewers.find((x: any) => x.type === 'FormsViewer').props.pinnedRowValues), {timeout: 15_000, ...POLL})
       .toEqual([anchor]);
   });
 
@@ -111,8 +115,8 @@ test('Forms viewer — layout and project persistence', async ({page}) => {
         tv.viewers.find((x: any) => x.type === 'FormsViewer')?.close();
         tv.addViewer('Histogram');
       });
-      await expect.poll(() => page.locator('[name="viewer-Histogram"]').count(), {timeout: 20_000}).toBe(1);
-      await expect.poll(() => page.locator(HOST).count(), {timeout: 20_000}).toBe(0);
+      await expect.poll(() => page.locator('[name="viewer-Histogram"]').count(), {timeout: 20_000, ...POLL}).toBe(1);
+      await expect.poll(() => page.locator(HOST).count(), {timeout: 20_000, ...POLL}).toBe(0);
 
       const applyErrTexts: string[] = [];
       const applyErrCount = await withConsoleErrorCount(page, async () => {
@@ -123,14 +127,17 @@ test('Forms viewer — layout and project persistence', async ({page}) => {
       }, undefined, applyErrTexts);
       expect(applyErrCount, `layout-apply console errors: ${JSON.stringify(applyErrTexts)}`).toBe(0);
 
-      await expect.poll(() => page.locator('[name="viewer-Histogram"]').count(), {timeout: 20_000}).toBe(0);
+      await expect.poll(() => page.locator('[name="viewer-Histogram"]').count(), {timeout: 20_000, ...POLL}).toBe(0);
       expect(await page.evaluate(() => grok.shell.tv.viewers
         .filter((x: any) => x.type === 'Histogram').length)).toBe(0);
       await expectFormsState(page, pre, 20_000);
     } finally {
-      await page.evaluate(async (id) => {
-        const saved = await grok.dapi.layouts.find(id);
-        if (saved) await grok.dapi.layouts.delete(saved);
+      // detached: nothing later reads this layout, and awaiting the round trip cost ~1.2s
+      await page.evaluate((id) => {
+        const drop = async () => {
+          try { const l = await grok.dapi.layouts.find(id); if (l) await grok.dapi.layouts.delete(l); } catch (_) {  }
+        };
+        drop();
       }, layoutId);
     }
   });

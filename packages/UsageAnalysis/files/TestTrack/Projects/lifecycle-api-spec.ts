@@ -61,12 +61,12 @@ test('Projects / Lifecycle API contract', async ({page}) => {
 
     await softStep('S2: batch save 3 projects with shared prefix', async () => {
       await evalJs(page, `(async () => {
-        for (const n of ${JSON.stringify(batchNames)}) {
+        await Promise.all(${JSON.stringify(batchNames)}.map(n => {
           const p = DG.Project.create();
           p.friendlyName = n;
           p.name = n;
-          await grok.dapi.projects.save(p);
-        }
+          return grok.dapi.projects.save(p);
+        }));
       })()`);
       const cnt = await evalJs<number>(page,
         `grok.dapi.projects.filter('name like "${batchPrefix}%"').count()`);
@@ -85,7 +85,7 @@ test('Projects / Lifecycle API contract', async ({page}) => {
     await softStep('S2 cleanup: delete batch, verify count returns to 0', async () => {
       await evalJs(page, `(async () => {
         const arr = await grok.dapi.projects.filter('name like "${batchPrefix}%"').list();
-        for (const p of arr) await grok.dapi.projects.delete(p);
+        await Promise.all(arr.map(p => grok.dapi.projects.delete(p)));
       })()`);
       const cnt = await evalJs<number>(page,
         `grok.dapi.projects.filter('name like "${batchPrefix}%"').count()`);

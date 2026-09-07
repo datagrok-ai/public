@@ -44,7 +44,7 @@ test("Queries — adding a new SQL query", async ({ page }) => {
         | undefined;
       if (!db) return { ok: false, stage: "Databases" };
       db.click();
-      for (let i = 0; i < 30; i++) {
+      for (let i = 0; i < 90; i++) {
         const pg = Array.from(
           document.querySelectorAll(".d4-tree-view-group-label"),
         ).find((el) => el.textContent?.trim() === "Postgres") as
@@ -57,14 +57,14 @@ test("Queries — adding a new SQL query", async ({ page }) => {
           );
           break;
         }
-        await new Promise((r) => setTimeout(r, 300));
+        await new Promise((r) => setTimeout(r, 100));
       }
-      for (let i = 0; i < 30; i++) {
+      for (let i = 0; i < 90; i++) {
         const nw = Array.from(
           document.querySelectorAll(".d4-tree-view-group-label"),
         ).find((el) => el.textContent?.trim() === "NorthwindTest");
         if (nw) return { ok: true, stage: "NorthwindTest-visible" };
-        await new Promise((r) => setTimeout(r, 300));
+        await new Promise((r) => setTimeout(r, 100));
       }
       return { ok: false, stage: "NorthwindTest" };
     });
@@ -88,7 +88,7 @@ test("Queries — adding a new SQL query", async ({ page }) => {
           button: 2,
         }),
       );
-      for (let i = 0; i < 20; i++) {
+      for (let i = 0; i < 80; i++) {
         const item = Array.from(
           document.querySelectorAll(".d4-menu-item-label"),
         ).find((el) => el.textContent?.trim() === "New Query...") as
@@ -98,7 +98,7 @@ test("Queries — adding a new SQL query", async ({ page }) => {
           item.click();
           return { ok: true };
         }
-        await new Promise((r) => setTimeout(r, 200));
+        await new Promise((r) => setTimeout(r, 50));
       }
       return { ok: false, stage: "menu-item-missing" };
     });
@@ -162,14 +162,14 @@ test("Queries — adding a new SQL query", async ({ page }) => {
         ) as HTMLElement | undefined;
         if (!label) return { ok: false, stage: "run-query-missing" };
         label.click();
-        for (let i = 0; i < 80; i++) {
+        for (let i = 0; i < 200; i++) {
           const views = Array.from((window as any).grok.shell.views) as any[];
           if (
             views.length > viewsBefore ||
             views.some((v) => v.type === "TableView" && v.name === "test_query")
           )
             return { ok: true, viewsBefore, viewsAfter: views.length };
-          await new Promise((r) => setTimeout(r, 250));
+          await new Promise((r) => setTimeout(r, 100));
         }
         return { ok: false, stage: "new-view-missing" };
       });
@@ -179,17 +179,21 @@ test("Queries — adding a new SQL query", async ({ page }) => {
 
   await softStep("Save the query", async () => {
 
-    await page.evaluate(() => {
-      const views = Array.from((window as any).grok.shell.views) as any[];
+    await page.evaluate(async () => {
+      const w = window as any;
+      const views = Array.from(w.grok.shell.views) as any[];
       const qv = views.find((v) => v.type === "DataQueryView");
-      if (qv) (window as any).grok.shell.v = qv;
+      if (qv) w.grok.shell.v = qv;
+      for (let i = 0; i < 20; i++) {
+        if (w.grok.shell.v?.type === "DataQueryView") break;
+        await new Promise((r) => setTimeout(r, 25));
+      }
     });
-    await page.waitForTimeout(500);
 
     await page.locator('[name="button-Save"]').first().click();
 
     const saved = await page.evaluate(async () => {
-      for (let i = 0; i < 40; i++) {
+      for (let i = 0; i < 80; i++) {
         const q = await (window as any).grok.dapi.queries
           .filter('name in ("test_query", "TestQuery")')
           .first()
@@ -202,7 +206,7 @@ test("Queries — adding a new SQL query", async ({ page }) => {
             connName: q.connection.name,
             body: q.query,
           };
-        await new Promise((r) => setTimeout(r, 300));
+        await new Promise((r) => setTimeout(r, 150));
       }
       return { ok: false };
     });

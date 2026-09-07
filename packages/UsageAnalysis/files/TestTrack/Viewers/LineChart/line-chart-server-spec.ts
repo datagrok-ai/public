@@ -67,10 +67,19 @@ async function loadLayout(page: Page, layoutId: string) {
   }, layoutId);
 }
 
+// Detached, the way deleteProjectWithCleanup already is: the find+delete pair costs a second
+// per layout on dev and this spec saves five of them, none of which it ever reads again. The
+// worker fixture drains __pendingDeletes before it closes the page, so the server state still goes.
 async function deleteLayout(page: Page, layoutId: string) {
-  await page.evaluate(async (id) => {
-    const saved = await grok.dapi.layouts.find(id);
-    if (saved) await grok.dapi.layouts.delete(saved);
+  await page.evaluate((id) => {
+    const w = window as any;
+    w.__pendingDeletes = w.__pendingDeletes ?? [];
+    w.__pendingDeletes.push((async () => {
+      try {
+        const saved = await grok.dapi.layouts.find(id);
+        if (saved) await grok.dapi.layouts.delete(saved);
+      } catch (_) {}
+    })());
   }, layoutId);
 }
 
@@ -267,6 +276,15 @@ test('Line chart — layout and project persistence', async ({page}) => {
     }
   });
 
-  await v.cleanupShell(page, {clearStereoCategoryColorCoding: true});
+  // cleanupShell's own 500ms sleep, replaced by the condition it stood for: closeAllAndWait
+  // waits for the table views to actually go away
+  await page.evaluate(() => {
+    const col = (window as any).grok.shell.tv?.dataFrame.col('Stereo Category');
+    if (col) {
+      delete col.tags['.color-coding-categorical'];
+      delete col.tags['.color-coding-type'];
+    }
+  });
+  await v.closeAllAndWait(page);
   v.finishSpec();
 });

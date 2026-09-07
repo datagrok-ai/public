@@ -319,6 +319,6 @@ test('Pivot table chrome, history and drag-driven configuration', async ({page})
 
   await page.evaluate((k) => window.localStorage.removeItem(k), HISTORY_KEY);
   page.off('pageerror', onPageError);
-  await v.cleanupShell(page);
+  await v.closeAllAndWait(page);
   v.finishSpec();
 });

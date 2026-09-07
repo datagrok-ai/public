@@ -6,7 +6,7 @@ import {localTest as test} from '../../shared-page';
 import {openDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 import {armBalloonRecorderProved, expectNoBalloonSinceArmed} from '../../helpers/balloons';
-import {BOX, Rect, bpProp, canvasRect} from './boxplot-helpers';
+import {BOX, Rect, bpProp, canvasRect, bpPainted} from './boxplot-helpers';
 
 declare const grok: any;
 
@@ -96,7 +96,7 @@ async function shiftDragBand(page: Page, r: Rect, x0: number, y0: number, x1: nu
   await page.keyboard.down('Shift');
   await page.mouse.move(r.x + r.w * x0, r.y + r.h * y0);
   await page.mouse.down();
-  await page.mouse.move(r.x + r.w * x1, r.y + r.h * y1, {steps: 14});
+  await page.mouse.move(r.x + r.w * x1, r.y + r.h * y1, {steps: 3});
   await page.mouse.up();
   await page.keyboard.up('Shift');
   await v.waitForViewerRendered(page, 'Box plot', 800);
@@ -116,7 +116,7 @@ test('Box plot pointer selection and highlight', async ({page}) => {
     bp.props.markerSize = 10;
   });
   await page.locator(BOX).waitFor({timeout: 10000});
-  await v.waitForViewerRendered(page, 'Box plot', 1500);
+  await bpPainted(page);
   await v.waitForViewerQuiet(page, 'Box plot');
 
   await softStep('Scenario 1 / Step 3: marker click sets currentRowIdx and fires d4-boxplot-point-click', async () => {
@@ -252,7 +252,7 @@ test('Box plot pointer selection and highlight', async ({page}) => {
     await page.keyboard.down('Shift');
     await page.mouse.move(r.x + r.w * 0.05, r.y + r.h * 0.30);
     await page.mouse.down();
-    await page.mouse.move(r.x + r.w * 0.95, r.y + r.h * 0.80, {steps: 22});
+    await page.mouse.move(r.x + r.w * 0.95, r.y + r.h * 0.80, {steps: 4});
     await page.mouse.up();
     await page.keyboard.up('Shift');
     await v.waitForViewerRendered(page, 'Box plot', 800);

@@ -17,7 +17,9 @@ async function openSmilesAndWaitForChem(page: Page) {
       try { (grok as any).shell.settings.showFiltersIconsConstantly = true; } catch (e) {}
       try { (grok as any).shell.windows.simpleMode = true; } catch (e) {}
       grok.shell.closeAll();
-      await new Promise((r) => setTimeout(r, 1000)); 
+      const closeDeadline = Date.now() + 1000;
+      while (Date.now() < closeDeadline && Array.from(grok.shell.tableViews).length > 0)
+        await new Promise((r) => setTimeout(r, 50));
       const df = await grok.dapi.files.readCsv(path);
       grok.shell.addTableView(df);
       await new Promise((resolve) => {
@@ -26,9 +28,13 @@ async function openSmilesAndWaitForChem(page: Page) {
       });
       for (let i = 0; i < 50; i++) {
         if (document.querySelector('[name="viewer-Grid"] canvas')) break;
-        await new Promise((r) => setTimeout(r, 200)); 
+        await new Promise((r) => setTimeout(r, 100));
       }
-      await new Promise((r) => setTimeout(r, 4000)); 
+      // The flat settle stood in for the Molecule semType landing on the opened frame; the
+      // waitForMolecule barrier below is what actually gates the reads.
+      const semDeadline = Date.now() + 4000;
+      while (Date.now() < semDeadline && !df.columns.toList().some((c: any) => c.semType === 'Molecule'))
+        await new Promise((r) => setTimeout(r, 100));
       return {rowCount: df.rowCount};
     }, SMILES_CSV);
     await waitForChemMenu(page);

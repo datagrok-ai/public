@@ -7,6 +7,7 @@ import {isLocalBootNoise, openDatagrok, specTestOptions, softStep} from '../../s
 import * as v from '../../helpers/viewers';
 import {cardCount, expectHeaderCounterNow, headerCounterTarget, trueCount} from '../../helpers/filter-panel';
 import {addCardViaPicker} from './column-picker';
+import {installFilterWaits} from './fp-waits';
 
 declare const grok: any;
 declare const DG: any;
@@ -110,12 +111,18 @@ async function cardIndicatorMenu(page: Page, column: string,
 
     const seen = texts();
     const merge = () => { for (const t of texts()) if (!seen.includes(t)) seen.push(t); };
+    // The submenu opens as its own popup, so it becomes the LAST popup and its item count is
+    // usually smaller than the parent's — waiting for the count to grow spent the whole cap on
+    // every hover. What always changes is the set of labels on screen.
+    const popupStamp = () => [...document.querySelectorAll('.d4-menu-popup')]
+      .map((p) => [...p.querySelectorAll('.d4-menu-item-label')].map((i) => (i.textContent ?? '').trim()).join(','))
+      .join('|');
     const hoverItem = async (item: Element) => {
       const b = item.getBoundingClientRect();
-      const before = items().length;
+      const before = popupStamp();
       for (const type of ['mouseover', 'mousemove'])
         item.dispatchEvent(new MouseEvent(type, {bubbles: true, clientX: b.x + 5, clientY: b.y + 5}));
-      await (window as any).__poll(() => items().length, (n: number) => n > before, 700, 25);
+      await (window as any).__poll(popupStamp, (s: string) => s !== before, 700, 25);
     };
 
     for (const g of hover ?? []) {
@@ -143,9 +150,7 @@ async function cardIndicatorMenu(page: Page, column: string,
           return `${grok.shell.tv.dataFrame.filter.trueCount}|${e?.textContent?.trim() ?? ''}` +
             `|${e ? window.getComputedStyle(e).visibility : ''}`;
         };
-        const was = stamp();
-        (item as HTMLElement).click();
-        await (window as any).__moved(stamp, was, 800);
+        await (window as any).__fpQuick(stamp, () => (item as HTMLElement).click(), 1200);
       }
     }
 
@@ -206,10 +211,11 @@ async function clickCategoryRow(page: Page, column: string, rowIndex: number,
       clientX: rect.left + cx,
       clientY: rect.top + cy,
     };
-    overlay.dispatchEvent(new MouseEvent('mousedown', o));
-    overlay.dispatchEvent(new MouseEvent('mouseup', o));
-    overlay.dispatchEvent(new MouseEvent('click', o));
-    await (window as any).__moved(() => key(read()), key(before), cap, 50);
+    await (window as any).__fpQuick(() => key(read()), () => {
+      overlay.dispatchEvent(new MouseEvent('mousedown', o));
+      overlay.dispatchEvent(new MouseEvent('mouseup', o));
+      overlay.dispatchEvent(new MouseEvent('click', o));
+    }, cap);
     return {before, after: read()};
   }, {col: column, cx: target === 'checkbox' ? X_CHECKBOX : X_NAME, cy: y, cap: ROW_CLICK_CAP_MS});
   expect(res, `the ${column} card must expose a categorical [name="overlay"] body to click`).not.toBeNull();
@@ -254,9 +260,20 @@ async function cardSelectedCategories(page: Page, column: string): Promise<strin
 }
 
 // A hold: the count must not leave `expected` for the whole window, so the window is spent
-// watching for the move it hopes not to see.
-async function heldTrueCount(page: Page, expected: number, why: string, holdMs = 2500): Promise<void> {
-  expect(await v.pollValue(() => trueCount(page), (c) => c !== expected, holdMs, 250), why).toBe(expected);
+// watching for the move it hopes not to see. Sampled in the page at 25ms rather than over 250ms
+// round trips, so the window catches a move that lands and self-corrects inside one tick; the
+// window itself is 18x the 50ms criteria debounce of filters_core.dart:278.
+async function heldTrueCount(page: Page, expected: number, why: string, holdMs = 900): Promise<void> {
+  const strayed = await page.evaluate(async (cap: number) => {
+    const t0 = Date.now();
+    const seen: number[] = [];
+    while (Date.now() - t0 < cap) {
+      seen.push(grok.shell.tv.dataFrame.filter.trueCount);
+      await new Promise((r) => setTimeout(r, 25));
+    }
+    return [...new Set(seen)];
+  }, holdMs);
+  expect(strayed, why).toEqual([expected]);
 }
 
 async function inCardSearch(page: Page, column: string, fragment: string): Promise<number> {
@@ -278,9 +295,7 @@ async function inCardSearch(page: Page, column: string, fragment: string): Promi
     input.focus();
     const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')!.set!;
     setter.call(input, frag);
-    const was = stamp();
-    input.dispatchEvent(new Event('input', {bubbles: true}));
-    await w.__moved(stamp, was, 1200);
+    await w.__fpQuick(stamp, () => input.dispatchEvent(new Event('input', {bubbles: true})), 1500);
     return grok.shell.tv.dataFrame.filter.trueCount;
   }, {col: column, frag: fragment});
 }
@@ -296,10 +311,10 @@ async function clearInCardSearch(page: Page, column: string): Promise<void> {
       const ind = () => document.querySelector(
         '[name="viewer-Filters"] .d4-filter-group-header .d4-filter-indicator') as HTMLElement | null;
       const stamp = () => `${grok.shell.tv.dataFrame.filter.trueCount}|${ind()?.textContent?.trim() ?? ''}`;
-      const was = stamp();
-      setter.call(input, '');
-      input.dispatchEvent(new Event('input', {bubbles: true}));
-      await w.__moved(stamp, was, 800);
+      await w.__fpQuick(stamp, () => {
+        setter.call(input, '');
+        input.dispatchEvent(new Event('input', {bubbles: true}));
+      }, 1200);
     }
   }, column);
 }
@@ -328,9 +343,9 @@ async function pasteInCardSearch(page: Page, column: string, values: string[], t
     const text = vals.join('\n') + (trail ? '\n' : '');
     const dt = new DataTransfer();
     dt.setData('text', text);
-    const was = stamp();
-    input.dispatchEvent(new ClipboardEvent('paste', {bubbles: true, cancelable: true, clipboardData: dt}));
-    await w.__moved(stamp, was, 1500);
+    await w.__fpQuick(stamp,
+      () => input.dispatchEvent(new ClipboardEvent('paste', {bubbles: true, cancelable: true, clipboardData: dt})),
+      1800);
     return grok.shell.tv.dataFrame.filter.trueCount;
   }, {col: column, vals: values, trail: trailingSep});
 }
@@ -341,6 +356,7 @@ test('Filter Panel — Filter type switching and category selection modes', asyn
   await openDatagrok(page);
 
   await v.openTable(page, {path: datasetPath, withFilterPanel: true});
+  await installFilterWaits(page);
 
   const consoleErrors: string[] = [];
   const onConsole = (msg: import('@playwright/test').ConsoleMessage) => {
@@ -352,7 +368,7 @@ test('Filter Panel — Filter type switching and category selection modes', asyn
 
   await softStep('Setup: empty the panel and add an AGE histogram card', async () => {
     await v.drivePanelMenuLeaf(page, 'Filters', null, 'Remove All');
-    await expect.poll(async () => cardCount(page), {timeout: 20_000, intervals: [400, 800, 1500]}).toBe(0);
+    await expect.poll(async () => cardCount(page), {timeout: 20_000, intervals: [30, 60, 120, 250, 500, 1000]}).toBe(0);
     expect(await trueCount(page), 'removing every card leaves the table unfiltered').toBe(fullRowCount);
     await addCardViaPicker(page, 'AGE');
     expect(await orderedCaptions(page)).toEqual(['AGE']);
@@ -718,7 +734,7 @@ test('Filter Panel — Filter type switching and category selection modes', asyn
   await softStep('Step 11 — zero-variance column filter renders and clicks without console errors', async () => {
     const errorsBefore = errorSet();
     await v.drivePanelMenuLeaf(page, 'Filters', null, 'Remove All');
-    await expect.poll(async () => cardCount(page), {timeout: 20_000, intervals: [400, 800, 1500]}).toBe(0);
+    await expect.poll(async () => cardCount(page), {timeout: 20_000, intervals: [30, 60, 120, 250, 500, 1000]}).toBe(0);
     countBeforeProbeAdded = await trueCount(page);
     expect(countBeforeProbeAdded, 'the table is unfiltered before the probe column is added').toBe(fullRowCount);
 
@@ -744,13 +760,15 @@ test('Filter Panel — Filter type switching and category selection modes', asyn
       if (!canvas) throw new Error('the probe_constant card lost its canvas between the presence check and the click');
       const r = canvas.getBoundingClientRect();
       const o = {bubbles: true, cancelable: true, clientX: r.left + r.width / 2, clientY: r.top + r.height / 2};
-      const was = grok.shell.tv.dataFrame.filter.trueCount;
-      for (const type of ['mousedown', 'mouseup', 'click'])
-        canvas.dispatchEvent(new MouseEvent(type, o));
-      // Standing still is the expected outcome, so this spends the whole budget looking for a move
-      // it hopes not to see — a settle would agree with itself immediately and pass a card that
-      // filtered a moment later, which is the defect the step exists to catch.
-      await (window as any).__moved(() => grok.shell.tv.dataFrame.filter.trueCount, was, 1500);
+      // Standing still is the expected outcome, so a settle would agree with itself immediately and
+      // pass a card that filtered a moment later, which is the defect the step exists to catch. The
+      // card's own filter pass is what this waits on: it raises ddt-rows-filtered whether or not the
+      // count moves, so a criterion it invents is still caught, and a card that does nothing at all
+      // no longer costs the whole cap.
+      await (window as any).__fpQuick(() => grok.shell.tv.dataFrame.filter.trueCount, () => {
+        for (const type of ['mousedown', 'mouseup', 'click'])
+          canvas.dispatchEvent(new MouseEvent(type, o));
+      }, 1500);
       return true;
     });
     expect(clicked, 'the zero-variance card body was actually clicked').toBe(true);

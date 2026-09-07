@@ -89,7 +89,16 @@ async function openChemFile(page: Page, path: string): Promise<string> {
     if (!ready) await page.waitForTimeout(200);
   }
   expect(ready, `the current view's grid canvas must appear after opening ${path}`).toBe(true);
-  await page.waitForTimeout(3000);
+  // What the flat settle stood in for is semantic-type detection landing on the CURRENT view's
+  // dataframe; poll for that instead, capped at the sleep it replaces.
+  await page.evaluate(async (cap) => {
+    const deadline = Date.now() + cap;
+    while (Date.now() < deadline) {
+      const df = grok.shell.tv ? grok.shell.tv.dataFrame : null;
+      if (df && df.columns.toList().some((c: any) => c.semType === 'Molecule')) return;
+      await new Promise((r) => setTimeout(r, 100));
+    }
+  }, 3000);
   return table;
 }
 
@@ -510,7 +519,9 @@ test('Chem: Import/Export Formats (SDF/mol import, Save as SDF round-trip, InChI
       if (!df) return {present, blocks, rows: -1, semType: null};
       grok.shell.closeAll();
       grok.shell.addTableView(df);
-      await new Promise((r) => setTimeout(r, 3000));
+      const molDeadline = Date.now() + 3000;
+      while (Date.now() < molDeadline && !df.columns.toList().some((c: any) => c.semType === 'Molecule'))
+        await new Promise((r) => setTimeout(r, 100));
       const col = df.columns.toList().find((c: any) => c.semType === 'Molecule') ?? null;
       return {present, blocks, rows: df.rowCount, semType: col ? col.semType : null};
     }, MOL2_PATH);
@@ -535,7 +546,10 @@ test('Chem: Import/Export Formats (SDF/mol import, Save as SDF round-trip, InChI
         if (!df) return {rows: -1, semType: null, nonEmptyValues: -1, dfName: 'NONE'};
         grok.shell.closeAll();
         grok.shell.addTableView(df);
-        await new Promise((r) => setTimeout(r, 4000));
+        const molDeadline = Date.now() + 4000;
+        while (Date.now() < molDeadline &&
+               !grok.shell.t.columns.toList().some((c: any) => c.semType === 'Molecule'))
+          await new Promise((r) => setTimeout(r, 100));
         const t = grok.shell.t;
         const molCol = t.columns.toList().find((c: any) => c.semType === 'Molecule');
         return {

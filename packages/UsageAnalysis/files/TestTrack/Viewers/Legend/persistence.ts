@@ -123,19 +123,22 @@ export async function projectRoundTrip(page: Page, namePrefix: string, spec: Sta
   }, {prefix: namePrefix, spec});
 }
 
-/** Deletes what a spec created, all deletes in flight together, then closes the shell. */
+/** Deletes what a spec created, then closes the shell. */
 export async function deleteEntities(
   page: Page, ids: {layoutIds?: (string | null)[]; projectId?: string | null},
 ): Promise<void> {
   await page.evaluate(async ({layoutIds, projectId}) => {
     const w = window as any;
     const grok = w.grok;
+    // detached the same way deleteProjectWithCleanup is: a find+delete pair costs 4-5s per entity
+    // on dev, and nothing in the spec reads them again — the worker fixture drains these on close
     const jobs: Promise<void>[] = [];
     for (const id of layoutIds ?? [])
       if (id) jobs.push(grok.dapi.layouts.find(id).then((l: any) => l && grok.dapi.layouts.delete(l)).catch(() => {}));
     if (projectId)
       jobs.push(grok.dapi.projects.find(projectId).then((p: any) => p && grok.dapi.projects.delete(p)).catch(() => {}));
-    await Promise.all(jobs);
+    w.__pendingDeletes = w.__pendingDeletes ?? [];
+    w.__pendingDeletes.push(Promise.all(jobs));
     grok.shell.closeAll();
     await w.__poll(() => Array.from(grok.shell.tableViews).length, (c: number) => c === 0, 500);
   }, {layoutIds: ids.layoutIds ?? [], projectId: ids.projectId ?? null});

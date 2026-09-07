@@ -4,6 +4,7 @@ realizes: [viewers.scatter-plot, viewers.bar-chart, viewers.filters.histogram, v
 import {test, expect} from '../../shared-page';
 import {openDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
+import {addLegendViewers} from './legend-setup';
 import {clickCanvasFilter} from './canvas-filter';
 import {deleteEntities} from './persistence';
 
@@ -17,19 +18,21 @@ test('Legend filtering — substructure filter and layout round-trips', async ({
   await openDatagrok(page);
   await v.installEventWaits(page);
   await v.openTable(page);
-  await v.addLegendViewers(page, {column: 'Stereo Category', viewers: ['Scatter plot', 'Bar chart'], settleMs: 500});
+  await addLegendViewers(page, {column: 'Stereo Category', viewers: ['Scatter plot', 'Bar chart'], capMs: 500});
 
   await softStep('Structure filter on Core — platform API available (env-dependent)', async () => {
     const res = await page.evaluate(async () => {
-      const df = (window as any).grok.shell.tv.dataFrame;
-      const fg = (window as any).grok.shell.tv.getFiltersGroup();
+      const w = window as any;
+      const df = w.grok.shell.tv.dataFrame;
+      const fg = w.grok.shell.tv.getFiltersGroup();
       const firstSmiles = df.col('Core').get(0);
       try {
+        const before = df.filter.trueCount;
         fg.updateOrAdd({type: 'Chem:substructureFilter', column: 'Core', columnName: 'Core', molBlock: firstSmiles});
-        // technical: the filter group debounces, so onRowsFiltered fires on an
-        // intermediate row set — no channel marks the settled one
-        await new Promise((r) => setTimeout(r, 2000));
-        return {applied: true, filterCount: df.filter.trueCount};
+        // the substructure filter resolves through Chem and the group debounces on top of it, so
+        // the settled row set is the count that moved off `before` and then held
+        const filterCount = await w.__moved(() => df.filter.trueCount, before, 2000);
+        return {applied: true, filterCount};
       } catch (e: any) {
         const msg = String(e?.message ?? e);
         return {applied: false, chemMissing: msg.includes('Chem') || msg.includes('substructure')};
@@ -42,17 +45,19 @@ test('Legend filtering — substructure filter and layout round-trips', async ({
   await softStep('Save + re-apply layout (filter state + ≥3s settle)', async () => {
     const res = await page.evaluate(async () => {
       const w = window as any;
-      const fg = (window as any).grok.shell.tv.getFiltersGroup();
+      const fg = w.grok.shell.tv.getFiltersGroup();
+      const df = w.grok.shell.tv.dataFrame;
       for (const f of Array.from(fg.filters as any)) { try { fg.remove(f); } catch (_) {} }
-      (window as any).grok.shell.tv.dataFrame.filter.setAll(true);
+      df.filter.setAll(true);
       const DG = (window as any).DG;
+      const wasAll = df.filter.trueCount;
       fg.updateOrAdd({type: 'histogram', column: 'Average Mass', min: 400, max: 10000});
-      // technical: the filter group debounces, so onRowsFiltered fires on an
-      // intermediate row set — no channel marks the settled one
-      await new Promise((r) => setTimeout(r, 500));
+      // the filter group debounces; each updateOrAdd is settled once the count moved and held
+      await w.__moved(() => df.filter.trueCount, wasAll, 500);
+      const afterRange = df.filter.trueCount;
       fg.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: 'Stereo Category', selected: ['R_ONE', 'S_UNKN']});
-      await new Promise((r) => setTimeout(r, 1500));
-      const before = (window as any).grok.shell.tv.dataFrame.filter.trueCount;
+      await w.__moved(() => df.filter.trueCount, afterRange, 1500);
+      const before = df.filter.trueCount;
       const tv = (window as any).grok.shell.tv;
       const layout = tv.saveLayout();
       layout.name = 'Filtering_' + Date.now();

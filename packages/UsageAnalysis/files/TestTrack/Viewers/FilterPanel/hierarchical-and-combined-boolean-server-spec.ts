@@ -62,12 +62,12 @@ test('Filter Panel — Hierarchical and Combined Boolean Filters: layout and pro
     await hierNode(page, ['F'], 'expand');
     await expect.poll(async () => (await hierNode(page, ['F'], 'read')).childCaptions,
       {message: 'the RACE children of F never rendered after the expander click',
-        timeout: 10_000, intervals: [200, 400, 800]}).toContain('Caucasian');
+        timeout: 10_000, intervals: [30, 60, 120, 250, 500, 1000]}).toContain('Caucasian');
     await hierNode(page, ['F', 'Caucasian'], 'toggle');
     await expect.poll(async () => trueCountOf(page),
       {message: 'the criterion about to be saved is not the Caucasian-female one derived from the raw '
         + `SEX / RACE columns (${caucasianFemale})`,
-      timeout: 10_000, intervals: [200, 400, 800]}).toBe(caucasianFemale);
+      timeout: 10_000, intervals: [30, 60, 120, 250, 500, 1000]}).toBe(caucasianFemale);
     hlTrueCount = await trueCountOf(page);
   });
 
@@ -86,12 +86,12 @@ test('Filter Panel — Hierarchical and Combined Boolean Filters: layout and pro
     {message: 'the saved layout cannot be fetched back from the server — saveLayout() stamps the id '
       + 'client-side before the round-trip, so a dapi.layouts.save that silently failed leaves the id '
       + 'just as non-empty and Step 11 would re-apply nothing',
-    timeout: 20_000, intervals: [500, 1000, 2000]}).toBe(true);
+    timeout: 20_000, intervals: [30, 60, 120, 250, 500, 1000]}).toBe(true);
   });
 
   await softStep('Step 9: GROK-16528 — reorder columns to RACE / SEX before the re-apply', async () => {
     await applyHierarchyState(page, {colNames: ['RACE', 'SEX'], allEnabled: true});
-    await expect.poll(() => hierCaption(page), {timeout: 10_000, intervals: [100, 200, 400]}).toBe('RACE / SEX');
+    await expect.poll(() => hierCaption(page), {timeout: 10_000, intervals: [30, 60, 120, 250, 500, 1000]}).toBe('RACE / SEX');
   });
 
   try {
@@ -233,15 +233,16 @@ test('Filter Panel — Hierarchical and Combined Boolean Filters: layout and pro
       })),
       {message: 'removing the combined boolean card did not both take the card away and release its '
         + `narrowing back to the full ${rowCount} rows`,
-      timeout: 15_000, intervals: [200, 400, 800]}).toEqual({boolCards: 0, trueCount: rowCount});
+      timeout: 15_000, intervals: [30, 60, 120, 250, 500, 1000]}).toEqual({boolCards: 0, trueCount: rowCount});
 
+      // pageErrors only grows, so re-reading it six times over the window says exactly what one
+      // read at the end of the window says. The window itself is an order of magnitude above the
+      // 50ms criteria debounce the removal runs on (filters_core.dart:278).
       const removalSamples: string[] = [];
-      for (let i = 0; i < 6; i++) {
-        await page.waitForTimeout(400);
-        removalSamples.push(JSON.stringify(pageErrors.slice(errorsBefore)));
-      }
+      await page.waitForTimeout(900);
+      removalSamples.push(JSON.stringify(pageErrors.slice(errorsBefore)));
       expect(Array.from(new Set(removalSamples)),
-        'GROK-16488 — removing the combined boolean card must not throw at any point of a 2.4s window '
+        'GROK-16488 — removing the combined boolean card must not throw at any point of a 900ms window '
         + `after the click, so an async throw arriving late is caught too; samples: ${removalSamples.join(' ; ')}`)
         .toEqual(['[]']);
     });
@@ -271,7 +272,7 @@ test('Filter Panel — Hierarchical and Combined Boolean Filters: layout and pro
       })),
       {message: `the combined boolean card did not go away after ${removeClicks} remove-icon click(s) — ` +
         'the menu drive below would then be satisfied by a card it did not create',
-      timeout: 15_000, intervals: [400, 800, 1500]}).toEqual({cards: 0, filters: 0});
+      timeout: 15_000, intervals: [30, 60, 120, 250, 500, 1000]}).toEqual({cards: 0, filters: 0});
 
       const beforeAdd = await page.evaluate(() => ({
         cards: document.querySelectorAll('.d4-bool-combined-filter').length,
@@ -291,7 +292,7 @@ test('Filter Panel — Hierarchical and Combined Boolean Filters: layout and pro
       })),
       {message: 'Add Filter > Combined Boolean did not take the panel from 0 combined boolean cards to ' +
         'exactly 1 — either the leaf created nothing, or it fired twice and left two identical cards',
-      timeout: 15_000, intervals: [400, 800, 1500]}).toEqual({cards: 1, filters: 1});
+      timeout: 15_000, intervals: [30, 60, 120, 250, 500, 1000]}).toEqual({cards: 1, filters: 1});
       const saved = await page.evaluate(async () => {
         let stage = 'toggling the combined boolean card before the save';
         try {

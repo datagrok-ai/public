@@ -3,20 +3,46 @@ import {test} from '../shared-page';
 import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
 import * as chem from '../helpers/chem';
+import {openChemMenuItemFast, waitForChemMenuRoot} from './chem-fast-helpers';
 
 test.use(specTestOptions);
 
 async function openRGroupsDialog(page: any) {
-  await chem.openChemMenuItem(page, 'R-Groups Analysis...', {delayMs: 600});
+  await openChemMenuItemFast(page, 'R-Groups Analysis...', {delayMs: 600});
   await page.locator('.d4-dialog').waitFor({timeout: 10000});
 }
 
 async function clickMCS(page: any) {
   await page.evaluate(async () => {
+    // MCS is done when the dialog's sketcher has painted the core it computed. Hash the dialog
+    // canvases and wait for a non-blank result to hold, capped at the 8 s the flat sleep spent;
+    // a computation that never lands still spends the cap, as it did before.
+    const hash = () => {
+      let h = 0;
+      let ink = 0;
+      for (const cv of Array.from(document.querySelectorAll('.d4-dialog canvas')) as HTMLCanvasElement[]) {
+        if (!cv.width || !cv.height) continue;
+        const d = cv.getContext('2d')!.getImageData(0, 0, cv.width, cv.height).data;
+        for (let i = 0; i < d.length; i += 401) {
+          h = (h * 31 + d[i]) | 0;
+          if (d[i + 3] > 0 && d[i] < 200) ink++;
+        }
+      }
+      return {h, ink};
+    };
     const mcs = Array.from(document.querySelectorAll('.d4-dialog button'))
       .find(b => b.textContent!.trim() === 'MCS') as HTMLElement;
     mcs?.click();
-    await new Promise(r => setTimeout(r, 8000));
+    const deadline = Date.now() + 8000;
+    let last = 0;
+    let stable = 0;
+    while (Date.now() < deadline) {
+      const {h, ink} = hash();
+      if (ink > 0 && h === last) { if (++stable >= 3) return; }
+      else stable = 0;
+      last = h;
+      await new Promise(r => setTimeout(r, 150));
+    }
   });
 }
 
@@ -24,7 +50,7 @@ test('Chem: R-Groups Analysis Block A (GROK-16329) + Block B (Replace Latest mat
   test.setTimeout(600_000);
 
   await loginToDatagrok(page);
-  await page.waitForTimeout(3000);
+  await waitForChemMenuRoot(page);
 
   await softStep('A1: Open smiles.csv (DIVERSE dataset — required for GROK-16329 empty-MCS trigger)', async () => {
 

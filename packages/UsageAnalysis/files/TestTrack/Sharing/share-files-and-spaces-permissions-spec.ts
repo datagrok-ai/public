@@ -1,9 +1,7 @@
 import {expect, Page} from '@playwright/test';
 import {test} from '../shared-page';
-import {
-  loginToDatagrok, loginAsSecondUser, getSecondUserLogin,
-  specTestOptions, softStep, stepErrors,
-} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {recipientPage, secondUserLogin} from './_actors';
 
 test.use(specTestOptions);
 
@@ -34,7 +32,8 @@ test('Sharing & Permissions: file shares & Spaces (two-actor grant / negatives /
 
   const ownerLogin = await readLogin(page);
 
-  const recipientLogin = await getSecondUserLogin();
+  const recipientLogin = await secondUserLogin();
+  const rp = await recipientPage(page);
   console.log(`[two-actor] owner='${ownerLogin}', recipient='${recipientLogin}' (from token claim)`);
   expect(recipientLogin, 'recipient login must resolve').toBeTruthy();
   expect(recipientLogin, 'recipient must differ from owner').not.toBe(ownerLogin);
@@ -55,7 +54,9 @@ test('Sharing & Permissions: file shares & Spaces (two-actor grant / negatives /
         // (a) owner's user file share (DataConnection, dataSource: Files)
         const conns = await g.dapi.connections.list({limit: 200});
         const myLogin = (await g.dapi.users.current()).login;
-        const fileConn = conns.find(c => c.dataSource === 'Files'
+        // a user's home file share is backed by whichever storage the stand uses — on dev it
+        // is S3, so pinning dataSource to 'Files' resolved nothing and the whole spec fell over
+        const fileConn = conns.find(c => ['Files', 'S3', 'GoogleCloud', 'Azure', 'Dropbox'].includes(c.dataSource)
           && c.nqName && c.nqName.toLowerCase().startsWith(myLogin.toLowerCase() + ':')
           && /home/i.test(c.name));
         out.fileConnId = fileConn ? fileConn.id : null;
@@ -150,11 +151,10 @@ test('Sharing & Permissions: file shares & Spaces (two-actor grant / negatives /
     });
 
     await softStep('Block A (recipient): recipient gains View access on the shared file share', async () => {
-      await loginAsSecondUser(page);
-      try {
-        const live = await readLogin(page);
+      {
+        const live = await readLogin(rp);
         expect(live).toBe(recipientLogin);
-        const res = await evalJs(page, `(async () => {
+        const res = await evalJs(rp, `(async () => {
           const g = window.grok;
           try {
             const conn = await g.dapi.connections.find('${fileConnId}');
@@ -169,7 +169,7 @@ test('Sharing & Permissions: file shares & Spaces (two-actor grant / negatives /
         console.log(`[two-actor] Block A (recipient): canView=${res.canView}, canEdit=${res.canEdit}`);
 
         await softStep('Block B (recipient): edit / re-share are denied', async () => {
-          const neg = await evalJs(page, `(async () => {
+          const neg = await evalJs(rp, `(async () => {
             const g = window.grok;
             try {
               const conn = await g.dapi.connections.find('${fileConnId}');
@@ -185,9 +185,6 @@ test('Sharing & Permissions: file shares & Spaces (two-actor grant / negatives /
           expect(neg.canDelete, 'view-and-use must NOT grant Delete').toBe(false);
           console.log(`[two-actor] Block B (recipient): edit/share/delete all denied — view-and-use is read-only`);
         });
-      } finally {
-        await loginToDatagrok(page);
-        await setupSession(page);
       }
     });
 
@@ -229,16 +226,15 @@ test('Sharing & Permissions: file shares & Spaces (two-actor grant / negatives /
     });
 
     await softStep('Block C (recipient): shared Space appears and its contents are viewable', async () => {
-      await loginAsSecondUser(page);
-      try {
-        const live = await readLogin(page);
+      {
+        const live = await readLogin(rp);
         expect(live).toBe(recipientLogin);
 
-        await expect.poll(async () => evalJs(page,
+        await expect.poll(async () => evalJs(rp,
           `(async () => { const p = await grok.dapi.projects.find('${spaceId}').catch(() => null); return p != null; })()`,
         ), {timeout: 30_000, intervals: [1000, 2000, 5000]}).toBe(true);
 
-        const res = await evalJs(page, `(async () => {
+        const res = await evalJs(rp, `(async () => {
           const g = window.grok;
           try {
             const space = await g.dapi.projects.find('${spaceId}');
@@ -251,7 +247,7 @@ test('Sharing & Permissions: file shares & Spaces (two-actor grant / negatives /
         console.log(`[two-actor] Block C (recipient): shared Space visible; canView=${res.canView}`);
 
         await softStep('Block D (recipient): edit / delete / re-share on the Space are denied', async () => {
-          const neg = await evalJs(page, `(async () => {
+          const neg = await evalJs(rp, `(async () => {
             const g = window.grok;
             try {
               const space = await g.dapi.projects.find('${spaceId}');
@@ -267,9 +263,6 @@ test('Sharing & Permissions: file shares & Spaces (two-actor grant / negatives /
           expect(neg.canShare, 'view-and-use must NOT grant Share on the Space').toBe(false);
           console.log(`[two-actor] Block D (recipient): edit/delete/share on Space all denied`);
         });
-      } finally {
-        await loginToDatagrok(page);
-        await setupSession(page);
       }
     });
 

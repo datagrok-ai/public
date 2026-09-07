@@ -6,7 +6,7 @@ import {test} from '../../shared-page';
 import {openDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 import {deleteProjectWithCleanup} from '../../helpers/projects';
-import {BOX, bpProp, viewportRect, readLadder, dragTopHandle} from './boxplot-helpers';
+import {BOX, bpProp, viewportRect, readLadder, dragTopHandle, bpPainted} from './boxplot-helpers';
 
 declare const grok: any;
 declare const DG: any;
@@ -50,7 +50,7 @@ test('Box Plot settings ladder — project round-trip', async ({page}) => {
     bp.props.valueColumnName = 'AGE';
   });
   await page.locator(BOX).waitFor({timeout: 10000});
-  await v.waitForViewerRendered(page, 'Box plot', 1500);
+  await bpPainted(page);
 
   let projectIds: {projectId: string} | null = null;
   try {

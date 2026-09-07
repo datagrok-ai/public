@@ -5,6 +5,7 @@ import {expect, Page} from '@playwright/test';
 import {test} from '../shared-page';
 import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu, waitForMolecule} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
+import {settleGridPaint} from './chem-fast-helpers';
 import {armBalloonRecorder, readRecordedBalloons} from '../helpers/balloons';
 
 declare const grok: any;
@@ -29,12 +30,8 @@ async function openChemTable(page: Page, path: string): Promise<void> {
   }, path);
   await waitForChemMenu(page);
   await waitForMolecule(page);
-  for (let i = 0; i < 50; i++) {
-    if (await page.locator('[name="viewer-Grid"] canvas').count() > 0) break;
-    await page.waitForTimeout(200);
-  }
   await page.locator('[name="viewer-Grid"] canvas').first().waitFor({timeout: 30_000, state: 'attached'});
-  await page.waitForTimeout(4000);
+  await settleGridPaint(page, 4000);
 }
 
 async function molCellPoint(page: Page, visualRow: number): Promise<{x: number; y: number}> {

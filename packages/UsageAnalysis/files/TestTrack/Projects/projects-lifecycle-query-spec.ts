@@ -12,12 +12,8 @@ import {
   ProvisionedQuery,
   SYSTEM_DATAGROK_QUERIES,
 } from '../helpers/openers';
-import {
-  saveProjectWithProvenance,
-  reopenAndAssertProvenance,
-  deleteProjectWithCleanup,
-  shareWithSecondUserAndVerify,
-} from '../helpers/projects';
+import {deleteProjectWithCleanup} from '../helpers/projects';
+import {saveProjectWithProvenance, reopenAndAssertProvenance, shareWithSecondUserAndVerify} from './projects-shared';
 
 test.use(projectsTestOptions);
 

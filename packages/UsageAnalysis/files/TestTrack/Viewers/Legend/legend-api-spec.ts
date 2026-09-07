@@ -241,8 +241,9 @@ test('Legend — JS API contract', async ({page}) => {
         if (h) {
           h.props.splitColumnName = 'Primary Scaffold Name';
           try { h.props.legendVisibility = 'Always'; } catch (_) {}
+          const quiet = w.__quiet('viewer:Histogram.onViewerRendered', 150, 500);
           h.props.includeNulls = true;
-          await new Promise((r) => setTimeout(r, 500));
+          await quiet;
           const trueEcho = h.props.includeNulls;
           h.props.includeNulls = false;
           const falseEcho = h.props.includeNulls;
@@ -258,8 +259,9 @@ test('Legend — JS API contract', async ({page}) => {
         if (bc) {
           bc.props.splitColumnName = 'Primary Scaffold Name';
           try { bc.props.legendVisibility = 'Always'; } catch (_) {}
+          const quiet = w.__quiet('viewer:Bar chart.onViewerRendered', 150, 500);
           bc.props.includeNulls = true;
-          await new Promise((r) => setTimeout(r, 500));
+          await quiet;
           const trueEcho = bc.props.includeNulls;
           bc.props.includeNulls = false;
           const falseEcho = bc.props.includeNulls;
@@ -288,7 +290,7 @@ test('Legend — JS API contract', async ({page}) => {
       await w.__poll(() => Array.from(grok.shell.tableViews).length, (n: number) => n === 0, 400);
       const df = await w.__readCsv(path);
       grok.shell.addTableView(df);
-      await new Promise((r) => setTimeout(r, 1500));
+      await w.__poll(() => grok.shell.tv?.dataFrame?.rowCount ?? 0, (n: number) => n > 0, 1500);
       const col = df.col('Stereo Category');
       const cats: string[] = Array.from(col.categories);
       const map: Record<string, string> = {};
@@ -326,13 +328,14 @@ test('Legend — JS API contract', async ({page}) => {
         (c: number) => c > 0, 800);
       const sp = tv.viewers.find((v: any) => v.type === 'Scatter plot');
       if (!sp) return {ok: false};
+      const quiet = w.__quiet('viewer:Scatter plot.onViewerRendered', 150, 800);
       sp.props.colorColumnName = 'SEX';
       try { sp.props.legendVisibility = 'Always'; } catch (_) {}
-      await new Promise((r) => setTimeout(r, 800));
+      await quiet;
       try {
         await df.columns.addNewCalculated('SEX_alt', "if(${SEX}=='M', 'Male', 'Female')");
       } catch (_) {}
-      await new Promise((r) => setTimeout(r, 1500));
+      await w.__poll(() => !!df.col('SEX_alt'), (ok: boolean) => ok, 1500, 25);
       sp.props.colorColumnName = 'SEX_alt';
       let echoed: any = null;
       try { echoed = sp.props.colorColumnName; } catch (_) {}
@@ -371,13 +374,10 @@ test('Legend — JS API contract', async ({page}) => {
       const rowCount = df.rowCount;
       // ApiSamples reference: scripts/ui/viewers/filters/filter-group.js
       fg.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: 'Stereo Category', selected: subset});
-      // technical: the filter group debounces, so onRowsFiltered fires on an
-      // intermediate row set — no channel marks the settled one
-      await new Promise((r) => setTimeout(r, 1500));
-      const filteredCount = df.filter.trueCount;
+      // the filter group debounces; settled is the count that moved off the full table and held
+      const filteredCount = await w.__moved(() => df.filter.trueCount, rowCount, 1500);
       df.filter.setAll(true);
-      await new Promise((r) => setTimeout(r, 800));
-      const resetCount = df.filter.trueCount;
+      const resetCount = await w.__moved(() => df.filter.trueCount, filteredCount, 800);
       return {ok: true, rowCount, filteredCount, resetCount};
     }, spgiPath);
     expect(result.ok).toBe(true);

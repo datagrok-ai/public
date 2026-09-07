@@ -37,7 +37,7 @@ export async function activateView(page: Page, viewName: string): Promise<void> 
   }, viewName), {
     message: `the Filter Panel of view "${viewName}" never became the laid-out one after switching to it — `
       + 'every :visible panel read below would have addressed the other view',
-    timeout: 15_000, intervals: [300, 600, 1200],
+    timeout: 15_000, intervals: [30, 60, 120, 250, 500, 1000],
   }).toBe(true);
 }
 
