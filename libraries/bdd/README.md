@@ -80,6 +80,14 @@ closes it. Playwright still runs and reports one test per scenario (and per outl
 `-g`, tags, retries, traces and screenshots work as usual. A `Background` runs before every
 scenario, as Gherkin says; `user is logged in` only navigates when the page is not in the shell yet.
 
+**`@journey`** on the feature changes that: the feature is one test, the Background runs once, and
+the scenarios run in order on the same shell state, each a soft step — a failing scenario is
+recorded and the next one still runs, and the test fails at the end listing them. Use it for a
+property surface walked section by section, where re-opening the data and the viewer thirteen
+times would cost more than the checks (the box plot: 13 scenarios in 14 s, 6 of them the login and
+the open). Each scenario then puts back what it changed, so the next starts where the Background
+left off. `-g` selects the whole journey; the report shows every scenario and step under it.
+
 ## Element phrases
 
 A phrase resolves, in this order, at every level:
@@ -197,8 +205,10 @@ expanded, collapsed, focused. `selected` reads whatever the element uses to say 
 the element or the header/trigger inside it (a section, an accordion pane, a property category); a
 phrase matching several elements (stacked balloons) is `visible` when any is and `hidden` when none
 is. Outcomes are Playwright's retrying `expect`, so a feature never needs a wait step. When two
-definitions match a step, the one with fewer parameters wins, then the one that spells out more of
-the text; an exact tie is a compile error, never a silent pick.
+definitions match a step, the one that spells out more of the text wins, then the one with fewer
+parameters; an exact tie is a compile error, never a silent pick. A gesture on a phrase that
+matches several elements acts on the visible ones (a Dart menu keeps hidden mirrors of its items);
+several visible matches are reported, never picked.
 
 `user selects {string} in {element}` takes a native `<select>` as it is; anything else gets its
 editor clicked (a combobox or typeahead also gets ArrowDown, since those open on a keystroke) and
@@ -224,15 +234,74 @@ Parameter types: `{element}` (any phrase), `{dataset}` (a registered alias or a 
 ## Tiers
 
 `bindings/common` and `bindings/platform` load for every project. Vocabulary that only some
-packages need is a tier under `bindings/tiers/<name>/` (today: `viewers` — toolbox and viewer
-steps); a package opts in with `{"tiers": ["viewers"]}` in `bdd/bdd.config.json`. A new tier is a
-directory of binding modules like any other; nothing to register.
+packages need is a tier under `bindings/tiers/<name>/`; a package opts in with
+`{"tiers": ["viewers"]}` in `bdd/bdd.config.json`. A new tier is a directory of binding modules
+like any other; nothing to register.
+
+### The `viewers` tier
+
+Viewers on the current table view, written the way the platform sees them — properties by their
+caption, context menus by their path, canvas regions by the names the viewer reports, repaints by
+the viewer's own render event. The first feature written with it is
+`packages/UsageAnalysis/bdd/features/viewers/box-plot.feature`: 13 scenarios, the whole of a
+hand-written Playwright spec, in 14 s as one `@journey`.
+
+```gherkin
+Background:
+  Given user is logged in
+  And user opens demog-1000 dataset
+  And user adds a box plot viewer with:
+    | Value      | AGE |
+    | Category 1 | SEX |
+
+Scenario: Context menus as property paths
+  When user picks "Misc > Show Inside Values" from the context menu of box plot viewer
+  Then "Show Inside Values" of box plot viewer should be "false"
+  And box plot viewer should have less ink than before
+  When user sets "Marker Size Column" of box plot viewer to "WEIGHT"
+  And user opens the context menu of box plot viewer
+  And user hovers over Markers menu item in context menu
+  Then "Markers > Size" menu item in context menu should be disabled
+```
+
+```
+Given user adds (a ){viewer} viewer                 user adds (a ){viewer} viewer with:  | caption | value |
+      user listens for {string} event on {element} user switches to (the ){string} table view
+When  user sets {string} of {element} to {string}   user sets properties of {element}:  | caption | value |
+      user picks {string} from the context menu of {element}
+      user picks {string} from the context menu of the {string} area of {element}
+      user opens the context menu of {element}      user right-clicks on the {string} area of {element}
+      user closes the context menu                  user clicks / double-clicks / hovers over the {string} area of {element}
+      user moves the pointer away from {element}    user resizes {element} to {int} by {int}   user resizes {element} to {int} wide
+      user restores the size of {element}           user takes a snapshot of {element}
+Then  {string} of {element} should be {string}      {string} of {element} should not be {string}
+      {element} should have repainted               {element} should have less/more ink than before   {element} should be painted
+      {string} event should have fired on {element} no errors should have been logged
+      the tooltip should show columns {string}      the tooltip should not show columns {string}
+```
+
+A property is named by its caption as the property panel shows it (`Value`, `Category 1`,
+`Show Markers`, `Marker Size Column`) or by its name (`showInsideValues`); values are `true`/`false`,
+numbers, `#rrggbb` for colors, `""` for none, `\n` for a line break. A menu path is
+`"Group > Item"`. A hit area is a name the viewer reports (`grok-bdd lint` cannot list them yet;
+the box plot has `view`, `x axis`, `y axis`, `stats`, `p value`, `group comparison`, `color scale`,
+`marker`). Every property set, menu pick, area click and resize snapshots the canvas first, so
+`should have repainted` and `less/more ink than before` compare with the state before the last
+change. `no errors should have been logged` is the page's console errors and uncaught exceptions
+since the previous check (or the login step); a resource the stand does not serve is not an error.
+
+Viewers on a bdd page render immediately — `viewer.immediateRendering` is set on every viewer the
+page holds or adds — so nothing in the tier sleeps: a change is followed by the viewer's render
+event, a context menu by `onContextMenuShown`. **When a step would need a wait, the platform is
+missing a signal; it goes into the core, not into the step** (the library's `CLAUDE.md` keeps the
+list of what was added that way).
 
 ## Generated specs
 
 One `test()` per scenario and per outline row (`Every method reports itself [method=muscle]`), one
 `test.step` per Gherkin step, tags as Playwright tags, `@realizes:<feature>` tags collected into a
-`sub_features_covered` header. Library bindings are imported by package subpath, the package's own
+`sub_features_covered` header. A `@journey` feature is one `test()` with the Background inline and
+every scenario a `run.scenario(...)` soft step, closed by `run.finish()`. Library bindings are imported by package subpath, the package's own
 by relative path, and phrases are emitted as names (`el('…')`, `ds('…')`), never selectors — so a
 selector fix never regenerates anything, and `grok-bdd compile --check` fails only when a feature
 changed without its spec.

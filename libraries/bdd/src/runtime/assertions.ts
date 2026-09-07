@@ -2,7 +2,7 @@
 import {expect, Locator, Page} from '@playwright/test';
 import type {ElementRef} from './args.js';
 import {editorOf} from './gestures.js';
-import {exactText, locate} from './locate.js';
+import {exactText, locate, locateActionable} from './locate.js';
 
 export type State = 'visible' | 'hidden' | 'present' | 'absent' | 'enabled' | 'disabled' | 'checked' |
   'unchecked' | 'selected' | 'empty' | 'expanded' | 'collapsed' | 'focused';
@@ -14,21 +14,17 @@ const ROWS = ['.u2-list-row', '[role="option"]', '[role="row"]', '[role="tab"]',
 const SELECTED = '[aria-selected="true"], [aria-pressed="true"], [aria-checked="true"], [aria-current]:not([aria-current="false"]), ' +
   '.u2-list-row-selected';
 
-async function control(page: Page, target: ElementRef, loc: Locator): Promise<Locator> {
-  const inner = loc.locator('input, select, textarea, button').first();
-  return await inner.count() > 0 ? await editorOf(page, target) : loc;
-}
-
 export async function expectState(page: Page, target: ElementRef, state: State, negate = false): Promise<void> {
-  const loc = await locate(page, target);
+  const loc = ['visible', 'hidden', 'present', 'absent', 'enabled', 'disabled'].includes(state) ?
+    await locate(page, target) : await locateActionable(page, target);
   const e = negate ? expect(loc).not : expect(loc);
   switch (state) {
     case 'visible': return expectVisible(loc, !negate);
     case 'hidden': return expectVisible(loc, negate);
     case 'present': return negate ? expect(loc).toHaveCount(0) : expect(loc.first()).toBeAttached();
     case 'absent': return negate ? expect(loc.first()).toBeAttached() : expect(loc).toHaveCount(0);
-    case 'enabled': return expectEnabled(await control(page, target, loc), !negate);
-    case 'disabled': return expectEnabled(await control(page, target, loc), negate);
+    case 'enabled': return expectEnabled(loc, !negate);
+    case 'disabled': return expectEnabled(loc, negate);
     case 'checked': return expectChecked(loc, !negate);
     case 'unchecked': return expectChecked(loc, negate);
     case 'selected': return expectSelected(page, loc, !negate);
@@ -39,14 +35,11 @@ export async function expectState(page: Page, target: ElementRef, state: State, 
   }
 }
 
-/** Several matches (stacked balloons, repeated rows): visible when any is, hidden when none is. */
+/** Several matches (stacked balloons, repeated rows): visible when any is, hidden when none is —
+ * one query either way. */
 async function expectVisible(loc: Locator, visible: boolean): Promise<void> {
-  if (await loc.count() > 1) {
-    const shown = loc.filter({visible: true});
-    await (visible ? expect(shown).not.toHaveCount(0) : expect(shown).toHaveCount(0));
-    return;
-  }
-  await (visible ? expect(loc).toBeVisible() : expect(loc).toBeHidden());
+  const shown = loc.filter({visible: true});
+  await (visible ? expect(shown, 'visible expected').not.toHaveCount(0) : expect(shown, 'hidden expected').toHaveCount(0));
 }
 
 /** Options and tabs say `aria-selected`, toggles and cards `aria-pressed`, radio-like buttons
@@ -64,14 +57,30 @@ async function expectExpanded(loc: Locator, expanded: boolean): Promise<void> {
   await expect(control).toHaveAttribute('aria-expanded', String(expanded));
 }
 
+/** Disabled is the native attribute, `aria-disabled` on the element or an ancestor (grayed menu
+ * items, gated property rows), or the platform's disabled classes. */
+/** Disabled: the element or an ancestor says so (`aria-disabled`, the u2/Dart disabled classes),
+ * or it — or the control inside it — is natively disabled. Over the visible matches when there
+ * are any (the Dart menu's hidden mirror), else all of them (a property row in a panel that is
+ * not shown still says whether it is gated). One query per poll. */
 async function expectEnabled(loc: Locator, enabled: boolean): Promise<void> {
-  if (enabled) {
-    await expect(loc).toBeEnabled();
-    await expect(loc).not.toHaveClass(/u2-input-disabled|d4-disabled/);
-  }
-  else
-    await expect(loc.or(loc.locator('xpath=ancestor-or-self::*[contains(@class, "u2-input-disabled")]'))).toBeDisabled().catch(() =>
-      expect(loc).toHaveClass(/u2-input-disabled|d4-disabled/));
+  const disabled = () => loc.evaluateAll((all) => {
+    const shown = all.filter((e) => e.getClientRects().length > 0 && getComputedStyle(e).visibility !== 'hidden');
+    const els = shown.length > 0 ? shown : all;
+    if (els.length === 0)
+      return undefined;
+    const marked = (e: Element) => e.getAttribute('aria-disabled') === 'true' ||
+      ['u2-input-disabled', 'd4-disabled', 'd4-menu-item-disabled'].some((c) => e.classList.contains(c));
+    return els.every((el) => {
+      for (let e: Element | null = el; e; e = e.parentElement) {
+        if (marked(e))
+          return true;
+      }
+      const native = el.matches('input, select, textarea, button, fieldset, option') ? el : el.querySelector('input, select, textarea, button');
+      return native !== null && (native as HTMLInputElement).disabled === true;
+    });
+  });
+  await expect.poll(disabled, {message: `${enabled ? 'enabled' : 'disabled'} expected`}).toBe(!enabled);
 }
 
 async function expectChecked(loc: Locator, checked: boolean): Promise<void> {

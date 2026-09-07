@@ -4,3 +4,4 @@ export * from './assertions.js';
 export * from './harness.js';
 export {describeNoun, exactText, locate, locateRef, parseNoun, refOf, withAttr} from './locate.js';
 export * as gestures from './gestures.js';
+export * as viewers from './viewers.js';

@@ -21,6 +21,10 @@ export default defineConfig({
     ...baseConfig.use,
     baseURL: url,
     storageState: join(root, 'e2e', '.auth.json'),
+    // a failed run keeps its trace (actions, screenshots, console, network) but not the DOM
+    // snapshots: serializing the shell's DOM around every action was ~45% of a feature's time
+    // (a 315-item context menu, a property grid); `grok-bdd run --trace on` records everything
+    trace: {mode: 'retain-on-failure', snapshots: false, screenshots: true},
     launchOptions: {args: [`--unsafely-treat-insecure-origin-as-secure=${url}`]},
   },
   projects: [{name: 'bdd'}],

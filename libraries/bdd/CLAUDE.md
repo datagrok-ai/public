@@ -19,14 +19,14 @@ src/gherkin.ts     @cucumber/gherkin → flat model (And/But resolved, outlines 
 src/registry.ts    Given/When/Then/Step, element(), context(), alias(), kind(), dataset(), defineParameterType(); one global registry
 src/nouns.ts       phrase (+ context) → NounRef (pure; shared by compiler and runtime); parts of elements AND kinds
 src/match.ts       cucumber-expressions matching + specificity
-src/compile.ts     FeatureModel → *.test.ts (feature(test) session, test() per scenario, test.step per Gherkin step, enter/leave)
+src/compile.ts     FeatureModel → *.test.ts (feature(test) session, test() per scenario — or one test with soft-step scenarios for a @journey feature, test.step per Gherkin step, enter/leave)
 src/init.ts        `grok-bdd init`: scaffold bdd/ in a package (never overwrites; merges .vscode settings, .gitignore, package.json)
 src/cli.ts         init | compile [--check] | lint | list-steps | run [playwright args]  (run = check + Playwright with playwright.config)
-src/runtime/       args (el/ds/enter/leave), locate, gestures, assertions, harness (feature session + resetShell), global-setup, index
+src/runtime/       args (el/ds/enter/leave), locate, gestures, assertions, harness (feature session + resetShell + error floor), viewers (in-page `window.__bdd`: immediate rendering, render settles, properties by caption, hit areas, canvas ink, context menus), global-setup, index
 src/index.ts       what package bindings import from '@datagrok-libraries/bdd'
 bindings/common/   parameter-types, kinds (ALL u2 data-u2 kinds + Dart conventions), steps, session — base, always loaded
 bindings/platform/ the shell: elements (reserved names), datasets, steps — base, always loaded
-bindings/tiers/<t>/ opt-in tiers (`viewers`); a project names them in bdd.config.json
+bindings/tiers/<t>/ opt-in tiers (`viewers`: add/configure viewers, properties by caption, context menus and hit areas, canvas ink, events, the error floor); a project names them in bdd.config.json
 features/ generated/ bdd.config.json   the library's own project (platform smoke feature, tier viewers)
 playwright.config.ts  the one config every project runs with (BDD_ROOT → testDir/outputDir/storageState under the project)
 dist/              `npm run build` output (tsc, ESM, .d.ts, source maps) — what `exports` and the launcher use; gitignored
@@ -34,7 +34,37 @@ tests/             node:test via tsx (nouns, compile, project, init)
 ```
 
 A package project: `<pkg>/bdd/{package.json {"type":"module"}, bdd.config.json, features/, bindings/,
-generated/}`; sample `packages/U2Demo/bdd`.
+generated/}`; sample `packages/U2Demo/bdd`; the first production project is `packages/UsageAnalysis/bdd`
+(`features/viewers/box-plot.feature`, 13 scenarios, the whole of the old TestTrack box-plot spec).
+
+## We test our own platform, not a black box
+
+The one principle every step here follows, and the reason the box plot feature runs in 14 s where
+the hand-written spec it replaced took 49 s for one test: **when a test waits, something is
+missing, and the fix goes into the core, not into the test.**
+
+- A viewer that repaints on a debounce or an animation frame is waiting for a human. Tests do not
+  need that: the runtime sets `viewer.immediateRendering` on every viewer the page holds or adds
+  (`onViewerAdded`), so a property set repaints on the next task and `onViewerRendered` is the
+  signal. No `waitForTimeout`, no polling the canvas on a timer.
+- A menu that builds on a timer says so: `grok.events.onContextMenuShown` / `onContextMenuClosed`
+  (added to the core for this). Arm the event, do the gesture, await the event.
+- A region a test wants to right-click is a fact the viewer knows: `getWidgetStatus().hitAreas`
+  (box plot: view, x axis, y axis, stats, p value, group comparison, color scale, marker). A test
+  that scans pixel offsets until a menu looks right is guessing at what the viewer could tell it.
+- A state a test wants to read must be in the DOM as a state: grayed menu items and gated
+  property rows carry `aria-disabled` (added), not only opacity 0.5.
+- Data is a lever too: every paint of a marker viewer costs one draw per row. `demog-1000` is the
+  stratified 1000-row demog for viewer features; a feature that does not assert on row counts has
+  no business painting 5850 markers seventy times.
+- Selector names are the platform's contract: `camelCaseToCss` (prop_gen) stopped emitting
+  `marker--size` for "Marker Size" — the name is `div-column-combobox-marker-size` now; the old
+  double-dash names in the TestTrack branch specs are stale.
+
+When a feature needs a wait, a sleep, a pixel scan or a retry loop, stop and find the missing
+signal or name in the core (`d4` viewers, `xamgle` shell, the js-api), add it there with the
+owner's blessing, and write the step against it. Duct tape in the test is a bug report that
+nobody filed.
 
 ## Rules that must not regress
 
@@ -56,6 +86,26 @@ generated/}`; sample `packages/U2Demo/bdd`.
   the first test (`session.page(browser)`), so Playwright merges the project's context options
   (storage state, viewport) and records traces/screenshots for it. The generated spec calls
   `test()` itself so reports point at the spec line, not the harness.
+- **`@journey` = one test, the Background once, scenarios as soft steps** (`journey(test, n)` in
+  harness.ts; codegen `emitJourney`): a failing scenario is recorded, the next runs, `finish()`
+  fails the test with the list — the hand-written specs' `softStep`. The budget is the per-test
+  timeout × the scenario count. Scenarios of a journey restore what they change (the feature's
+  contract, not the harness's). Introduced 2026-09-07 because per-scenario Background + `resetShell`
+  cost ~1.9 s × 13 on the box plot — two thirds of its 38 s.
+- **Roundtrips are the cost, not the page**: an idle evaluate is ~1 ms, but every Playwright action
+  carries the trace's per-action work, so a step is as slow as its number of actions. Hence:
+  `locator.evaluate` waits for its element (no `waitFor` before it); the canvas baseline is taken
+  inside the same in-page call as the change (`writeProperties`, `resize`, `menuPoint`,
+  `findArea(…, beforeChange)`); `installViewerRuntime` remembers the page (forgotten on main-frame
+  navigation); `locateActionable` is `filter({visible: true})` with no count; `expectVisible` and
+  `expectEnabled` are one query each. A step should be locate + one action.
+- **Traces keep no DOM snapshots** (`playwright.config.ts`: `{mode: 'retain-on-failure',
+  snapshots: false, screenshots: true}`): serializing the shell's DOM around every action was ~43%
+  of the box plot's scenario time (11.4 s → 6.5 s measured with `--trace off`). Actions, screenshots,
+  console and network stay in the trace; `grok-bdd run --trace on` records everything.
+- **Hit areas are awaited like elements** (`viewers.ts` `hitArea`): a viewer that renders twice on
+  a change (the box plot after a category switch) can report no `marker` between the two paints;
+  the lookup polls up to 5 s and fails naming the areas it does report.
 - **Names are global and unique; platform names are reserved.** `element()` throws on a name or
   alias already registered; a context's `element()` throws on a global name too. App vocabulary goes
   on a `context(name, def)`.
@@ -94,8 +144,41 @@ generated/}`; sample `packages/U2Demo/bdd`.
   by whole text → primary-text part (`OPTION_LABEL`) → `title`/`aria-label` (icon cells) → substring.
   `setExpanded` clicks the twistie of a tree row (a row click only selects), else the
   `aria-expanded` control. `fillIn` recognises switches through `role=switch` inside the editor.
-- **Step specificity**: fewer parameters, then more literal characters; ties are ambiguous errors.
-  `{key}` has no spaces so `user presses {key} in {element}` cannot lose to `user presses {key}`.
+- **Step specificity**: more literal characters first, then fewer parameters; ties are ambiguous
+  errors. The literal text decides so that `user right-clicks on the {string} area of {element}`
+  beats `user right-clicks (on ){element}` (which would otherwise swallow the whole phrase into
+  `{element}`); `{key}` has no spaces so `user presses {key} in {element}` cannot lose to
+  `user presses {key}`. Changed 2026-09-06; U2Demo's 25 specs compiled identically.
+- **Gestures act on the visible match** (`locateActionable` = `filter({visible: true})`, ordinals
+  exempt). The Dart context menu mirrors every property under a zero-size "Properties..." submenu,
+  a closed view leaves its viewers behind — both duplicate the labels a phrase names. Several
+  visible matches stay a strict-mode error. `enabled`/`disabled` do NOT filter: `expectEnabled`
+  evaluates all matches in-page and takes the visible ones when there are any, else all — a
+  property row in the context panel has a zero-size box under `simpleMode` and still says
+  `aria-disabled`.
+- **Labels are found first, items second** (`locate.ts` `byLabel`): a kind whose `labelSelector`
+  is `:scope > …` resolves as label → `xpath=parent::*` ∩ kind selector. The `has:` form over a
+  315-item Dart popup costs ~35 ms per query, the parent form ~2 ms (probe 2026-09-07).
+- **Menu items match their own label** (`:scope > .u2-menu-label, :scope > .d4-menu-item-label`,
+  label before text): a group item contains its children's labels (u2 nests the submenu inside
+  the item, Dart its children), so a `has:` over descendants makes "As CSV" match the Export group
+  too, and "Markers" the group, the "Properties..." group and its nested mirror. Text-first was
+  no better: the exact text of "Markers" is only the hidden mirror's.
+- **Hover travels, and never sleeps**: the gesture leaves the element to its left on the same
+  line, then moves into its centre in steps, then checks two animation frames later that the
+  element is still where it was (a view still docking moves it out from under the pointer).
+  A Dart menu group opens its submenu from the pointer's path (a jump to the centre after a leave
+  does not open it; leaving upwards crosses the neighbouring row and closes the submenu the item
+  sits in). Verified 2026-09-06 with five hover styles; the 250 ms sleep it had went 2026-09-07
+  (U2Demo 64/64 without it). Scrolling into view only when the box is outside the viewport.
+- **The error floor** (`harness.ts` `watchErrors`/`takeErrors`): console errors and page errors
+  from page open; `user is logged in` clears what the stand logs while booting, `resetShell`
+  clears the teardown's, `no errors should have been logged` reads and clears. `Failed to load
+  resource` is not collected — a help page the stand does not serve is logged by the browser, not
+  raised by the platform.
+- **Viewer settles are armed before the change** (`writeProperties`, `resize`): the repaint an
+  action causes lands on the next task, so a settle subscribed after the action already missed it
+  and burns its cap (that was 1.5 s per resize).
 - **Codegen** emits names, never selectors; `\n` line endings, no timestamps, EOL-normalized drift
   check; orphaned generated files are removed on compile and reported on `--check`.
 - **Session readiness**: `user is logged in` skips navigation when the page is already in the shell
@@ -199,6 +282,21 @@ generated/}`; sample `packages/U2Demo/bdd`.
   word (`First name input` → "first" + `name input`) needs quotes (`"First name" input`), and a
   label equal to a kind name (`Columns input`) now resolves to the labelled input first (nouns.ts
   puts the whole-kind reading last).
+- **Viewer facts (box plot, 2026-09-06)**: `Property.caption` in the JS API is the raw name
+  (`showInsideValues`) unless the Dart `@Prop(name:)` set one (`Min`, `Adjust By`); the viewer
+  runtime resolves "Show Inside Values", "Category 1" (`category1ColumnName`), "Marker Size Column"
+  (`markerSizeColumnName`, not `markerSize`) by normalizing both sides. Hit areas come back in
+  canvas coordinates (`getWidgetStatus().hitAreas`, `Rect.toMap` → `{x, y, width, height}`), the
+  runtime adds the canvas's client rect. The on-canvas column selectors (`div-column-combobox-*`)
+  are hover-revealed: `visibility: hidden` until the pointer is over the viewer and again after a
+  property change — hover the viewer before asserting them visible; `display: none` (a disabled
+  selector) is hidden regardless. The property panel's rows are `tr.property-grid-item[name="prop-
+  marker-type"][aria-label="Marker Type"]` with `aria-disabled` while `dependsOn` gates them. The
+  vertical range slider is `svg[type="range-slider"][name="y-slider"]`, `max-handle` at the top.
+  Dart context-menu items: `role=menuitem`, `name="div-Misc---Show-Inside-Values"`, own label a
+  direct `.d4-menu-item-label`; the stats-region menu names drop the "Statistics" prefix.
+- Probe scripts for these live in the scratchpad (`probe/boxplot.mjs`, `selectors.mjs`,
+  `submenu.mjs`): dev-key token via `POST /users/login/dev/admin`, cookie + localStorage `auth`.
 
 ## Conventions
 

@@ -24,6 +24,16 @@ export async function locate(page: Page, target: ElementRef | string, within?: L
   return loc.describe(describeNoun(ref));
 }
 
+/** The element a gesture or a state check acts on: the visible matches of the phrase (a Dart menu
+ * keeps a zero-size mirror of every item under "Properties..."; a closed view leaves its viewers
+ * behind). Several visible matches stay ambiguous — Playwright's strict mode reports them; an
+ * ordinal names its element as counted, visible or not. No roundtrip of its own. */
+export async function locateActionable(page: Page, target: ElementRef | string, within?: Locator): Promise<Locator> {
+  const ref = refOf(page, target);
+  const loc = (await locateRef(page, ref, within)).describe(describeNoun(ref));
+  return ref.ordinal === undefined ? loc.filter({visible: true}) : loc;
+}
+
 export async function locateRef(page: Page, ref: NounRef, within?: Locator): Promise<Locator> {
   let base: Base = within ?? page;
   let scope: Locator | undefined;
@@ -82,7 +92,8 @@ export function exactText(q: string): RegExp {
 
 function strategies(page: Page, base: Base, kind: KindEntry, q: string): Locator[] {
   const compact = q.replace(/\s+/g, '');
-  const dashed = q.replace(/\s+/g, '-');
+  // Dart names join a menu path with "---": "Markers > Size" is div-Markers---Size
+  const dashed = q.replace(/\s*>\s*/g, '---').replace(/\s+/g, '-');
   const out: Locator[] = [];
   for (const strategy of kind.match) {
     switch (strategy) {
@@ -94,7 +105,7 @@ function strategies(page: Page, base: Base, kind: KindEntry, q: string): Locator
       case 'label':
       case 'title':
         if (kind.labelSelector)
-          out.push(base.locator(kind.selector).filter({has: page.locator(kind.labelSelector, {hasText: exactText(q)})}));
+          out.push(byLabel(page, base, kind, q));
         break;
       case 'text':
         out.push(base.locator(kind.selector).filter({hasText: exactText(q)}));
@@ -119,6 +130,18 @@ function strategies(page: Page, base: Base, kind: KindEntry, q: string): Locator
     }
   }
   return out;
+}
+
+/** The elements of the kind whose label reads `q`. A label that is a direct child (`:scope > …`)
+ * is found first and its parent taken: on a popup of a few hundred menu items a `has:` filter
+ * over every item costs ~35 ms per query, the label's parent ~2 ms. */
+function byLabel(page: Page, base: Base, kind: KindEntry, q: string): Locator {
+  const label = kind.labelSelector!;
+  const direct = label.split(',').map((s) => s.trim());
+  if (direct.every((s) => s.startsWith(':scope >')))
+    return base.locator(direct.map((s) => s.slice(':scope >'.length).trim()).join(', '), {hasText: exactText(q)})
+      .locator('xpath=parent::*').and(page.locator(kind.selector));
+  return base.locator(kind.selector).filter({has: page.locator(label, {hasText: exactText(q)})});
 }
 
 /** Appends an attribute selector to every alternative of a comma-separated selector list. */
