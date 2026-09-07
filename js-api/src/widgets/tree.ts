@@ -3,6 +3,7 @@
  * @module widgets/tree
  */
 
+import {Callback} from "../const";
 import {toDart, toJs} from "../wrappers";
 import {Observable} from "rxjs";
 import {__obs, _sub, StreamSubscription} from "../events";
@@ -49,11 +50,11 @@ export class TagEditor {
     api.grok_TagEditor_Set_AcceptsDragDrop(this.dart, (x: any) => predicate(toJs(x, false)));
   };
 
-  set doDrop(action: Function) {
+  set doDrop(action: (item: any) => void) {
     api.grok_TagEditor_Set_DoDrop(this.dart, (x: any) => action(toJs(x, false)));
   }
 
-  onChanged(callback: Function): StreamSubscription {
+  onChanged(callback: Callback): StreamSubscription {
     return _sub(api.grok_TagEditor_OnChanged(this.dart, callback));
   }
 }

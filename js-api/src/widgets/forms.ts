@@ -3,6 +3,7 @@
  * @module widgets/forms
  */
 
+import {Callback} from "../const";
 import {toDart, toJs} from "../wrappers";
 import {Observable} from "rxjs";
 import {__obs, EventData, InputArgs, PropertyChangeArgs, observeStream} from "../events";
@@ -60,7 +61,7 @@ const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) a
 
   /**
    * Sets the OK button handler, and shows the OK button */
-  onOK(handler: Function, options?: {closeOnEnter?: boolean}): Dialog<Inputs> {
+  onOK(handler: Callback, options?: {closeOnEnter?: boolean}): Dialog<Inputs> {
     api.grok_Dialog_OnOK(this.dart, handler, options?.closeOnEnter ?? true);
     return this;
   }
@@ -81,7 +82,7 @@ const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) a
 
   /**
    * Sets the CANCEL button handler */
-  onCancel(handler: Function): Dialog<Inputs> {
+  onCancel(handler: Callback): Dialog<Inputs> {
     api.grok_Dialog_OnCancel(this.dart, handler);
     return this;
   }
@@ -153,13 +154,13 @@ const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) a
   /** Adds command button with the specified text.
    * @param index
    * @param tooltip */
-  addButton(text: string, action: Function, index: number = 0, tooltip: any = null): Dialog<Inputs> {
+  addButton(text: string, action: Callback, index: number = 0, tooltip: string | null = null): Dialog<Inputs> {
     api.grok_Dialog_AddButton(this.dart, text, action, index, tooltip);
     return this;
   }
 
   /** Adds context action with the specified text. */
-  addContextAction(text: string, action: Function): Dialog<Inputs> {
+  addContextAction(text: string, action: Callback): Dialog<Inputs> {
     api.grok_Dialog_AddContextAction(this.dart, text, action);
     return this;
   }

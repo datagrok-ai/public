@@ -21,8 +21,10 @@ type Package = any;
 /** Represents a function
  * {@link https://datagrok.ai/help/datagrok/functions/function} */
 export class Func extends Entity {
+  /** Auxiliary data associated with the function, not persisted (a {@link MapBag}: indexed access plus the map methods; typed `any` so it can be cast to a package's own shape). */
   public aux: any;
-  public options: { [key: string]: any; };
+  /** Function options (the `meta.*` annotations) as key-value pairs (a {@link MapBag}: indexed access plus the map methods; typed `any` so it can be cast to a package's own shape). */
+  public options: {[key: string]: any};
 
   constructor(dart: any) {
     super(dart);

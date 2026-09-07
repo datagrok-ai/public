@@ -9,7 +9,7 @@ import {Observable} from "rxjs";
 import {__obs, observeStream} from "../events";
 import {Property} from "../entities";
 import {Column, DataFrame} from "../dataframe";
-import {LegendPosition} from "../const";
+import {LegendPosition, Callback} from "../const";
 import {IDartApi} from "../api/grok_api.g";
 import {DartWidget} from "./base";
 import {RangeSliderStyle, SliderOptions} from "./types";
@@ -101,7 +101,7 @@ export class ColumnComboBox extends DartWidget {
   }
 
   /** Creates a column combo box with specified [dataframe] and [predicate]. */
-  static create(dataframe: DataFrame, predicate: Function): ColumnComboBox {
+  static create(dataframe: DataFrame, predicate: (column: Column) => boolean): ColumnComboBox {
     return toJs(api.grok_ColumnComboBox(dataframe.dart, (x: any) => predicate(toJs(x))));
   }
 
@@ -150,7 +150,7 @@ export class Legend extends DartWidget {
   get position(): LegendPosition { return api.grok_Legend_Get_Position(this.dart); }
   set position(pos: LegendPosition) { api.grok_Legend_Set_Position(this.dart, pos); }
 
-  set onViewerLegendChanged(handler: Function) {
+  set onViewerLegendChanged(handler: Callback) {
     api.grok_Legend_Set_OnViewerLegendChanged(this.dart, handler);
   }
 

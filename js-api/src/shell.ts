@@ -67,11 +67,18 @@ export class Shell {
   }
 
   /** Current table, or null. */
+  get currentTable(): DataFrame | null { return toJs(api.grok_CurrentTable()); }
+
+  /** Alias of {@link currentTable}. */
   get t(): DataFrame {
     return toJs(api.grok_CurrentTable());
   }
 
-  /** Current view */
+  /** Current view, or null. */
+  get currentView(): ViewBase | null { return toJs(api.grok_Get_CurrentView()); }
+  set currentView(view: ViewBase | null) { api.grok_Set_CurrentView(view?.dart); }
+
+  /** Alias of {@link currentView}. */
   get v(): ViewBase { return toJs(api.grok_Get_CurrentView()); }
   set v(view: ViewBase) { api.grok_Set_CurrentView(view.dart); }
 
@@ -84,7 +91,13 @@ export class Shell {
   get preview(): ViewBase | null { return toJs(api.grok_Get_CurrentPreview()); }
   set preview(view: ViewBase | null) { api.grok_Set_CurrentPreview(view ? view.dart : null); }
 
-  /** Current table view, or null */
+  /** Current view when it is a {@link TableView}, else null. */
+  get currentTableView(): TableView | null {
+    const view = toJs(api.grok_Get_CurrentView());
+    return view instanceof TableView ? view : null;
+  }
+
+  /** Alias of {@link currentTableView} that assumes the current view is a table view. */
   get tv(): TableView { return toJs(api.grok_Get_CurrentView()); }
 
   /** Current project */
@@ -121,7 +134,11 @@ export class Shell {
     return toJs(api.grok_User());
   }
 
-  /** Current object (rendered in the context panel) */
+  /** Current object (rendered in the context panel), or null. */
+  get currentObject(): any { return toJs(api.grok_Get_CurrentObject(), false); }
+  set currentObject(x: any) { this.setCurrentObject(x, true); }
+
+  /** Alias of {@link currentObject}. */
   get o(): any { return toJs(api.grok_Get_CurrentObject(), false); }
   set o(x: any) { this.setCurrentObject(x, true); }
 

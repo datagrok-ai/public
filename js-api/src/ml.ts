@@ -45,11 +45,14 @@ export namespace ml {
    * See example: {@link https://public.datagrok.ai/js/samples/domains/data-science/pca}
    * @param table - Data table.
    * @param features - List of column names containing features.
-   * @param components - Number of clusters.
+   * @param components - Number of components.
    * @param center - Center features data before PCA.
    * @param scale - Scale features data before PCA. */
-  export async function pca(table: DataFrame, features: string[], components: number, center: boolean, scale: boolean): Promise<DataFrame> {
-    await api.grok_ML_PCA(table.dart, features, components, center, scale);
+  export async function pca(table: DataFrame, features: string[], options: {components: number, center?: boolean, scale?: boolean}): Promise<DataFrame>;
+  export async function pca(table: DataFrame, features: string[], components: number, center: boolean, scale: boolean): Promise<DataFrame>;
+  export async function pca(table: DataFrame, features: string[], components: number | {components: number, center?: boolean, scale?: boolean}, center: boolean = false, scale: boolean = false): Promise<DataFrame> {
+    const o = typeof components === 'object' && components !== null ? components : {components, center, scale};
+    await api.grok_ML_PCA(table.dart, features, o.components, o.center ?? false, o.scale ?? false);
     return table;
   }
 

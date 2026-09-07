@@ -159,7 +159,7 @@ export namespace chem {
     /** Whether the currently drawn molecule becomes the current object as you sketch it */
     syncCurrentObject: boolean = true;
 
-    listeners: Function[] = [];
+    listeners: (() => void)[] = [];
     _mode = SKETCHER_MODE.INPLACE;
     _smiles: string | null = null;
     _molfile: string | null = null;
@@ -925,7 +925,7 @@ export namespace chem {
    * Sketches Molecule sketcher.
    * @param onChangedCallback - a function that accepts (smiles, molfile)
    * @param smiles - Initial molecule */
-  export function sketcher(onChangedCallback: Function, smiles: string = ''): HTMLElement {
+  export function sketcher(onChangedCallback: (smiles: string, molfile: string) => void, smiles: string = ''): HTMLElement {
     return api.grok_Chem_Sketcher(onChangedCallback, smiles);
   }
 

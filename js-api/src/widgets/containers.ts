@@ -1,3 +1,11 @@
+/** Options of {@link Accordion.addPane}. */
+export interface AccordionPaneOptions {
+  expanded?: boolean;
+  /** Insert before this pane; appended when omitted. */
+  before?: AccordionPane | null;
+  allowDragOut?: boolean;
+}
+
 /**
  * Container widgets: Accordion, AccordionPane, TabControl, TabPane, ToolboxPage.
  * @module widgets/containers
@@ -59,17 +67,22 @@ export class Accordion extends DartWidget {
     return api.grok_Accordion_AddTitle(this.dart, element);
   }
 
-  /** Adds a pane */
-  addPane(name: string, getContent: () => HTMLElement, expanded: boolean = false, before: AccordionPane | null = null,
+  /** Adds a pane; [getContent] runs when the pane is first expanded. */
+  addPane(name: string, getContent: () => HTMLElement, options?: AccordionPaneOptions): AccordionPane;
+  addPane(name: string, getContent: () => HTMLElement, expanded?: boolean, before?: AccordionPane | null, allowDragOut?: boolean): AccordionPane;
+  addPane(name: string, getContent: () => HTMLElement, expanded: boolean | AccordionPaneOptions = false, before: AccordionPane | null = null,
     allowDragOut: boolean = true): AccordionPane {
-    return toJs(api.grok_Accordion_AddPane(this.dart, name, getContent, expanded, before !== null ? before.dart : null, null, allowDragOut));
+    const o = typeof expanded === 'object' && expanded !== null ? expanded : {expanded: expanded ?? false, before, allowDragOut};
+    return toJs(api.grok_Accordion_AddPane(this.dart, name, getContent, o.expanded ?? false, o.before?.dart ?? null, null, o.allowDragOut ?? true));
   }
 
-  /** Adds a pane with the count indicator next to the title.
-   * getCount() is executed immediately. */
-  addCountPane(name: string, getContent: () => HTMLElement, getCount: () => number, expanded: boolean = false, before: AccordionPane | null = null,
+  /** Adds a pane with a count indicator next to the title; [getCount] runs immediately. */
+  addCountPane(name: string, getContent: () => HTMLElement, getCount: () => number, options?: AccordionPaneOptions): AccordionPane;
+  addCountPane(name: string, getContent: () => HTMLElement, getCount: () => number, expanded?: boolean, before?: AccordionPane | null, allowDragOut?: boolean): AccordionPane;
+  addCountPane(name: string, getContent: () => HTMLElement, getCount: () => number, expanded: boolean | AccordionPaneOptions = false, before: AccordionPane | null = null,
     allowDragOut: boolean = true): AccordionPane {
-    return toJs(api.grok_Accordion_AddPane(this.dart, name, getContent, expanded, before !== null ? before.dart : null, getCount, allowDragOut));
+    const o = typeof expanded === 'object' && expanded !== null ? expanded : {expanded: expanded ?? false, before, allowDragOut};
+    return toJs(api.grok_Accordion_AddPane(this.dart, name, getContent, o.expanded ?? false, o.before?.dart ?? null, getCount, o.allowDragOut ?? true));
   }
 
   /** Removed the specified pane. */

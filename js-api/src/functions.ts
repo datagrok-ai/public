@@ -105,7 +105,7 @@ const FuncCallParamMapProxy = new Proxy(class {
 
 export interface IFunctionRegistrationData {
   signature: string;    // int foo(string bar) or ({int x, int y}) foo(string bar) for multiple outputs
-  run: Function;
+  run: (...args: any[]) => any;
   tags?: string;        // comma-separated tags
   isAsync?: boolean;    // whether is can be called synchronously
   namespace?: string;
@@ -141,7 +141,7 @@ export class Functions {
 
   /** Registers a function of one parameter of the specified [type]. It is offered for matching
    * objects in context menus and in the "Actions" pane; [check] is an optional applicability predicate. */
-  registerParamFunc(name: string, type: Type | (string & {}), run: Function, check: ((x: any) => boolean) | boolean | null = null, description: string | null = null): void {
+  registerParamFunc(name: string, type: Type | (string & {}), run: (x: any) => any, check: ((x: any) => boolean) | boolean | null = null, description: string | null = null): void {
     api.grok_RegisterParamFunc(name, type, run, check, description);
   }
 
@@ -232,7 +232,7 @@ export class ClientCache {
 export class FuncCallParam {
   readonly dart: any;
 
-  /** Auxiliary data used for storing additional information associated with this parameter. */
+  /** Auxiliary data used for storing additional information associated with this parameter (a {@link MapBag}: indexed access plus the map methods; typed `any` so it can be cast to a package's own shape). */
   public aux: any;
 
   constructor(dart: any) {
@@ -313,8 +313,9 @@ export class FuncCall extends Entity {
   /** Output parameter metadata. See {@link outputs} for parameter values. */
   public outputParams: FuncCallParams;
 
+  /** Auxiliary data associated with this call, not part of the parameters (a {@link MapBag}: indexed access plus the map methods; typed `any` so it can be cast to a package's own shape). */
   public aux: any;
-  /** Call options as key-value pairs. */
+  /** Call options as key-value pairs (a {@link MapBag}: indexed access plus the map methods; typed `any` so it can be cast to a package's own shape). */
   public options: any;
 
   constructor(dart: any) {

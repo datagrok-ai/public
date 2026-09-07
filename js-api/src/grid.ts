@@ -935,6 +935,11 @@ export class Grid extends Viewer<IGridSettings> {
     return GridCell.fromColumnRow(this, columnName, gridRow);
   }
 
+  /** Same as {@link cell}; the (row, column) order matches {@link DataFrame.cellAt}. */
+  cellAt(gridRow: number, columnName: string): GridCell {
+    return this.cell(columnName, gridRow);
+  }
+
   /**
    * Occurs before the grid cell is rendered. Call `args.preventDefault()` to suppress the standard
    * rendering and draw your own via `args.g` within `args.bounds`.

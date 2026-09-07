@@ -27,7 +27,7 @@ export class Project extends Entity {
     this.meta = new MapProxy(api.grok_Project_Get_Meta(this.dart), 'meta') as any;
   }
 
-  /** Project options as key-value pairs. */
+  /** Project options as key-value pairs (a {@link MapBag}: indexed access plus the map methods; typed `any` so it can be cast to a package's own shape). */
   public options: any;
 
   /** Project metadata (`metaParams`) — user-facing key:value bag, e.g. `demoPath`. */

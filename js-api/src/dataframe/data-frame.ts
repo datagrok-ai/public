@@ -14,14 +14,15 @@ import {
 } from "../const";
 import {__obs, EventData, MapChangeArgs, CellRangeArgs, RowChangeArgs, ColumnChangeArgs, CellChangeArgs} from "../events";
 import {toDart, toJs} from "../wrappers";
-import {MapProxy} from "../proxies";
+import {MapBag, MapProxy} from "../proxies";
 import {_toJson} from "../utils_convert";
 import {Observable} from "rxjs";
 import type {Widget} from '../widgets';
 import {IDartApi} from "../api/grok_api.g";
 import type {Property, TableInfo} from "../entities";
 import type {Grid, FormViewer} from "../grid";
-import type {ScatterPlotViewer, Viewer} from "../viewer";
+import type {BarChartViewer, BoxPlot, HistogramViewer, LineChartViewer, NetworkDiagramViewer, ScatterPlotViewer, TileViewer, Viewer, ViewerOptions} from "../viewer";
+import type {IBarChartSettings, IBoxPlotSettings, IFormSettings, IGridSettings, IHistogramSettings, ILineChartSettings, INetworkDiagramSettings, IScatterPlotSettings, ITileViewerSettings} from "../interfaces/d4";
 import {BitSet} from "./bit-set";
 import {ColumnList} from "./column-list";
 import {Row, RowList, Cell} from "./row";
@@ -52,10 +53,10 @@ export class DataFrame {
   public rows: RowList;
   /** Filter mask: rows currently passing all filters. */
   public filter: BitSet;
-  /** Auxiliary data that is not persisted. */
+  /** Auxiliary data that is not persisted (a {@link MapBag}: indexed access plus the map methods; typed `any` so it can be cast to a package's own shape). */
   public temp: any;
   /** Metadata as string key-value pairs; persisted with the table. */
-  public tags: any;
+  public tags: MapBag<string>;
   public _meta: DataFrameMetaHelper | undefined;
   private _plot: DataFramePlotHelper | undefined;
   private _dialogs: DataFrameDialogHelper | undefined;
@@ -225,6 +226,11 @@ export class DataFrame {
     return new Cell(api.grok_DataFrame_Cell(this.dart, idx, name));
   }
 
+  /** Same as {@link cell}; the (row, column) order matches {@link Grid.cellAt}. */
+  cellAt(row: number, columnName: string): Cell {
+    return this.cell(row, columnName);
+  }
+
   /** Same as {@link col}, but throws Error if column is not found
    * @param name - Column name. */
   getCol(name: string): Column {
@@ -247,6 +253,11 @@ export class DataFrame {
    * @param grid - if specified, takes visible columns, column and row order from the grid. */
   async toCsvEx(options?: CsvExportOptions, grid?: Grid): Promise<string> {
     return api.grok_DataFrame_ToCsvEx(this.dart, options, grid?.dart);
+  }
+
+  /** Same as {@link toCsvEx}: the asynchronous export, which also converts molblock columns to SMILES when requested. */
+  toCsvAsync(options?: CsvExportOptions, grid?: Grid): Promise<string> {
+    return this.toCsvEx(options, grid);
   }
 
   /** Converts the contents to array of objects, with column names as keys.
@@ -279,13 +290,16 @@ export class DataFrame {
     return api.grok_DataFrame_ToArrow(this.dart);
   }
 
-  /** Creates a new dataframe from the specified row mask and a list of columns.
-   * @param rowMask - Rows to include.
-   * @param columnIds - Columns to include.
-   * @param saveSelection - Whether selection should be saved.
-   * @param saveTags - Whether tags should be copied to the new dataframe. */
-  clone(rowMask: BitSet | null = null, columnIds: string[] | null = null, saveSelection: boolean = false, saveTags: boolean = true): DataFrame {
-    return new DataFrame(api.grok_DataFrame_Clone(this.dart, toDart(rowMask), columnIds, saveSelection, saveTags));
+  /** Creates a new dataframe from the specified rows and columns (all, when omitted).
+   * @param rows - Rows to include.
+   * @param columns - Names of the columns to include.
+   * @param saveSelection - Whether the selection is copied.
+   * @param saveTags - Whether the tags are copied (default). */
+  clone(options?: {rows?: BitSet | null, columns?: string[] | null, saveSelection?: boolean, saveTags?: boolean}): DataFrame;
+  clone(rowMask?: BitSet | null, columnIds?: string[] | null, saveSelection?: boolean, saveTags?: boolean): DataFrame;
+  clone(rowMask: BitSet | null | {rows?: BitSet | null, columns?: string[] | null, saveSelection?: boolean, saveTags?: boolean} = null, columnIds: string[] | null = null, saveSelection: boolean = false, saveTags: boolean = true): DataFrame {
+    const o = rowMask !== null && !(rowMask instanceof BitSet) ? rowMask : {rows: rowMask, columns: columnIds, saveSelection, saveTags};
+    return new DataFrame(api.grok_DataFrame_Clone(this.dart, toDart(o.rows ?? null), o.columns ?? null, o.saveSelection ?? false, o.saveTags ?? true));
   }
 
   /** Current row.
@@ -379,8 +393,11 @@ export class DataFrame {
    * @param joinType - inner, outer, left, or right. See [DG.JOIN_TYPE]
    * @param inPlace - merges content in-place into the source table
    * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/join-link/join-tables} */
-  join(t2: DataFrame, keyColumns1: string[], keyColumns2: string[], valueColumns1: string[] | null = null, valueColumns2: string[] | null = null, joinType: JoinType = JOIN_TYPE.INNER, inPlace: boolean = false): DataFrame {
-    return new DataFrame(api.grok_JoinTables(this.dart, t2.dart, keyColumns1, keyColumns2, valueColumns1, valueColumns2, joinType, inPlace));
+  join(t2: DataFrame, options: {keys: string[], keys2?: string[], columns?: string[] | null, columns2?: string[] | null, type?: JoinType, inPlace?: boolean}): DataFrame;
+  join(t2: DataFrame, keyColumns1: string[], keyColumns2: string[], valueColumns1?: string[] | null, valueColumns2?: string[] | null, joinType?: JoinType, inPlace?: boolean): DataFrame;
+  join(t2: DataFrame, keyColumns1: string[] | {keys: string[], keys2?: string[], columns?: string[] | null, columns2?: string[] | null, type?: JoinType, inPlace?: boolean}, keyColumns2: string[] = [], valueColumns1: string[] | null = null, valueColumns2: string[] | null = null, joinType: JoinType = JOIN_TYPE.INNER, inPlace: boolean = false): DataFrame {
+    const o = keyColumns1 !== null && !Array.isArray(keyColumns1) && typeof keyColumns1 === 'object' ? keyColumns1 : {keys: keyColumns1, keys2: keyColumns2, columns: valueColumns1, columns2: valueColumns2, type: joinType, inPlace};
+    return new DataFrame(api.grok_JoinTables(this.dart, t2.dart, o.keys, o.keys2 ?? o.keys, o.columns ?? null, o.columns2 ?? null, o.type ?? JOIN_TYPE.INNER, o.inPlace ?? false));
   }
 
   /** Clears all active filters and unsets the filter bitset. */
@@ -534,7 +551,10 @@ export class DataFrameMetaHelper {
 
   /** This data will be picked up by {@link Grid} to construct groups. */
   setGroups(groups: GroupsDescription | null): void {
-    this.df.tags['.columnGroups'] = (groups ? JSON.stringify(groups) : null);
+    if (groups)
+      this.df.tags['.columnGroups'] = JSON.stringify(groups);
+    else
+      delete this.df.tags['.columnGroups'];
   }
 }
 
@@ -549,16 +569,16 @@ export class DataFramePlotHelper {
     return toJs(api.grok_Viewer_FromType_Async(viewerType, this.df.dart, _toJson(options)));
   }
 
-  scatter(options: object | null = null): ScatterPlotViewer { return DG.Viewer.scatterPlot(this.df, options); }
-  grid(options: object | null = null): Grid { return DG.Viewer.grid(this.df, options); }
-  tile(options: object | null = null): Grid { return DG.Viewer.tile(this.df, options); }
-  form(options: object | null = null): FormViewer { return DG.Viewer.form(this.df, options); }
-  histogram(options: object | null = null): Viewer { return DG.Viewer.histogram(this.df, options); }
-  bar(options: object | null = null): Viewer { return DG.Viewer.barChart(this.df, options); }
-  heatMap(options: object | null = null): Viewer { return DG.Viewer.heatMap(this.df, options); }
-  box(options: object | null = null): Viewer { return DG.Viewer.boxPlot(this.df, options); }
-  line(options: object | null = null): Viewer { return DG.Viewer.lineChart(this.df, options); }
-  network(options: object | null = null): Viewer { return DG.Viewer.network(this.df, options); }
+  scatter(options?: null | ViewerOptions<IScatterPlotSettings>): ScatterPlotViewer { return DG.Viewer.scatterPlot(this.df, options); }
+  grid(options?: null | ViewerOptions<IGridSettings>): Grid { return DG.Viewer.grid(this.df, options); }
+  tile(options?: null | ViewerOptions<ITileViewerSettings>): TileViewer { return DG.Viewer.tile(this.df, options); }
+  form(options?: null | ViewerOptions<IFormSettings>): FormViewer { return DG.Viewer.form(this.df, options); }
+  histogram(options?: null | ViewerOptions<IHistogramSettings>): HistogramViewer { return DG.Viewer.histogram(this.df, options); }
+  bar(options?: null | ViewerOptions<IBarChartSettings>): BarChartViewer { return DG.Viewer.barChart(this.df, options); }
+  heatMap(options?: null | ViewerOptions<IGridSettings>): Grid { return DG.Viewer.heatMap(this.df, options); }
+  box(options?: null | ViewerOptions<IBoxPlotSettings>): BoxPlot { return DG.Viewer.boxPlot(this.df, options); }
+  line(options?: null | ViewerOptions<ILineChartSettings>): LineChartViewer { return DG.Viewer.lineChart(this.df, options); }
+  network(options?: null | ViewerOptions<INetworkDiagramSettings>): NetworkDiagramViewer { return DG.Viewer.network(this.df, options); }
 
 }
 

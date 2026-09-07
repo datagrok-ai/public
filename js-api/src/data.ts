@@ -334,8 +334,11 @@ export class Data {
    * Links tables by the specified key columns using the specified link types (such as "current row to filter", see {@link DG.SYNC_TYPE}).
    * Tables are synchronized on the first change, set the {@link initialSync} option to reflect the current table state according to the sync type.
    * */
-  linkTables(t1: DataFrame, t2: DataFrame, keyColumns1: string[], keyColumns2: string[], linkTypes: SyncType[], initialSync: boolean = false, filterAllOnNoRowsSelected = false): void {
-    api.grok_LinkTables(t1.dart, t2.dart, keyColumns1, keyColumns2, linkTypes, initialSync, filterAllOnNoRowsSelected);
+  linkTables(t1: DataFrame, t2: DataFrame, keyColumns1: string[], keyColumns2: string[], linkTypes: SyncType[], options?: {initialSync?: boolean, filterAllOnNoRowsSelected?: boolean}): void;
+  linkTables(t1: DataFrame, t2: DataFrame, keyColumns1: string[], keyColumns2: string[], linkTypes: SyncType[], initialSync?: boolean, filterAllOnNoRowsSelected?: boolean): void;
+  linkTables(t1: DataFrame, t2: DataFrame, keyColumns1: string[], keyColumns2: string[], linkTypes: SyncType[], initialSync: boolean | {initialSync?: boolean, filterAllOnNoRowsSelected?: boolean} = false, filterAllOnNoRowsSelected = false): void {
+    const o = typeof initialSync === 'object' && initialSync !== null ? initialSync : {initialSync: initialSync ?? false, filterAllOnNoRowsSelected};
+    api.grok_LinkTables(t1.dart, t2.dart, keyColumns1, keyColumns2, linkTypes, o.initialSync ?? false, o.filterAllOnNoRowsSelected ?? false);
   };
 
   /**

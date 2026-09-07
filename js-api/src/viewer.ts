@@ -1,5 +1,5 @@
 /** A viewer that is typically docked inside a [TableView]. */
-import {FILTER_TYPE, TYPE, VIEWER, ViewerPropertyType, ViewerType} from "./const";
+import {FILTER_TYPE, TYPE, VIEWER, ViewerPropertyType, ViewerType, Callback} from "./const";
 import {BitSet, Column, DataFrame} from "./dataframe.js";
 import {Func, Property, IProperty} from "./entities";
 import {IWidgetStatus, IRectBounds, Menu, ObjectPropertyBag, Widget, Filter, TypedEventArgs, RangeSlider} from "./widgets";
@@ -80,6 +80,10 @@ export class WidgetDescriptor {
  * const view = grok.shell.addTableView(grok.data.demo.demog());
  * view.addViewer(DG.Viewer.scatterPlot(view.dataFrame, {x: 'height', y: 'weight', size: 'age', color: 'race'}));
  **/
+/** Viewer settings as {@link Viewer.setOptions} and {@link Viewer.getOptions} see them: the keys of the settings
+ * interface (with their docs) for completion, any value, plus any legacy or package-specific key. */
+export type ViewerOptions<TSettings> = {[K in keyof TSettings]?: any} & {[key: string]: any};
+
 export class Viewer<TSettings = any> extends Widget<TSettings> {
 
   /** Viewer tags: a string map persisted with the layout. */
@@ -180,8 +184,7 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
   /**
    *  Sets viewer options. See also {@link getOptions}
    *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/types/scatter-plot} */
-  // add tsettings
-  setOptions(map: { type?: ViewerType, [key: string]: any }): void {
+  setOptions(map: ViewerOptions<TSettings> & {type?: ViewerType}): void {
     api.grok_Viewer_Options(this.dart, JSON.stringify(map));
   }
 
@@ -192,7 +195,7 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
    *
    * See also {@link setOptions}
    *  Sample: https://public.datagrok.ai/js/samples/ui/viewers/types/scatter-plot */
-  getOptions(includeDefaults: boolean = false): {id: string, type: ViewerType, look: {[key: string]: any}} {
+  getOptions(includeDefaults: boolean = false): {id: string, type: ViewerType, look: ViewerOptions<TSettings>} {
     return JSON.parse(api.grok_Viewer_Serialize(this.dart, includeDefaults));
   }
 
@@ -310,8 +313,8 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
   }
 
   /** Creates a bar chart. */
-  static barChart(t: DataFrame, options?: Partial<interfaces.IBarChartSettings>): Viewer<interfaces.IBarChartSettings> {
-    return <Viewer>Viewer.fromType(VIEWER.BAR_CHART, t, options);
+  static barChart(t: DataFrame, options?: Partial<interfaces.IBarChartSettings>): BarChartViewer {
+    return <BarChartViewer>Viewer.fromType(VIEWER.BAR_CHART, t, options);
   }
 
   /** Creates a confusion matrix. */
@@ -360,8 +363,8 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
   }
 
   /** Creates a correlation plot. */
-  static correlationPlot(t: DataFrame, options?: Partial<interfaces.ICorrelationPlotSettings>): Viewer<interfaces.ICorrelationPlotSettings> {
-    return <Viewer>Viewer.fromType(VIEWER.CORR_PLOT, t, options);
+  static correlationPlot(t: DataFrame, options?: Partial<interfaces.ICorrelationPlotSettings>): CorrelationPlot {
+    return <CorrelationPlot>Viewer.fromType(VIEWER.CORR_PLOT, t, options);
   }
 
   /** Creates a density plot. */
@@ -385,13 +388,13 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
   }
 
   /** Creates a parallel-coordinates plot. */
-  static pcPlot(t: DataFrame, options?: Partial<interfaces.IPcPlotSettings>): Viewer<interfaces.IPcPlotSettings> {
-    return <Viewer>Viewer.fromType(VIEWER.PC_PLOT, t, options);
+  static pcPlot(t: DataFrame, options?: Partial<interfaces.IPcPlotSettings>): PcPlot {
+    return <PcPlot>Viewer.fromType(VIEWER.PC_PLOT, t, options);
   }
 
   /** Creates a pie chart. */
-  static pieChart(t: DataFrame, options?: Partial<interfaces.IPieChartSettings>): Viewer<interfaces.IPieChartSettings> {
-    return <Viewer>Viewer.fromType(VIEWER.PIE_CHART, t, options);
+  static pieChart(t: DataFrame, options?: Partial<interfaces.IPieChartSettings>): PieChartViewer {
+    return <PieChartViewer>Viewer.fromType(VIEWER.PIE_CHART, t, options);
   }
 
   /** Creates a 3D scatter plot. */
@@ -415,8 +418,13 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
   }
 
   /** Creates a trellis plot. */
-  static trellisPlot(t: DataFrame, options?: Partial<interfaces.ITrellisPlotSettings>): Viewer<interfaces.ITrellisPlotSettings> {
-    return <Viewer>Viewer.fromType(VIEWER.TRELLIS_PLOT, t, options);
+  static trellisPlot(t: DataFrame, options?: Partial<interfaces.ITrellisPlotSettings>): TrellisPlotViewer {
+    return <TrellisPlotViewer>Viewer.fromType(VIEWER.TRELLIS_PLOT, t, options);
+  }
+
+  /** Creates a pivot table. */
+  static pivotTable(t: DataFrame, options?: Partial<interfaces.IPivotViewerSettings>): PivotViewer {
+    return <PivotViewer>Viewer.fromType(VIEWER.PIVOT_TABLE, t, options);
   }
 
   /** @deprecated */
@@ -577,7 +585,7 @@ export class JsViewer extends Viewer {
   }
 
   /** cleanup() will get called when the viewer is disposed */
-  protected registerCleanup(cleanup: Function): void {
+  protected registerCleanup(cleanup: Callback): void {
     api.grok_Widget_RegisterCleanup(this.root, cleanup);
   }
 
@@ -1175,3 +1183,20 @@ export class ViewerAnnotationRegionsHelper extends AnnotationRegionsHelper {
     this.viewer = viewer;
   }
 }
+
+
+// `*Viewer` aliases, so every viewer class follows one naming pattern; the instances are the same classes.
+export const PcPlotViewer = PcPlot;
+export type PcPlotViewer = PcPlot;
+export const BoxPlotViewer = BoxPlot;
+export type BoxPlotViewer = BoxPlot;
+export const CorrelationPlotViewer = CorrelationPlot;
+export type CorrelationPlotViewer = CorrelationPlot;
+export const TreeMapViewer = TreeMap;
+export type TreeMapViewer = TreeMap;
+export const MatrixPlotViewer = MatrixPlot;
+export type MatrixPlotViewer = MatrixPlot;
+export const ConfusionMatrixViewer = ConfusionMatrix;
+export type ConfusionMatrixViewer = ConfusionMatrix;
+export const RocCurveViewer = RocCurve;
+export type RocCurveViewer = RocCurve;

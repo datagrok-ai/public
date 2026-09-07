@@ -3,7 +3,7 @@
  * @module ui
  **/
 
-import {ElementOptions, IndexPredicate} from './src/const';
+import {ElementOptions, IndexPredicate, Callback} from './src/const';
 import {Viewer} from './src/viewer';
 import {View, VirtualView} from './src/views/view';
 import {
@@ -229,6 +229,18 @@ export function markdown(text: string): HTMLElement {
   return api.grok_UI_Markdown(text);
 }
 
+/** An icon by name: Font Awesome by default (`'plus'`), an SVG icon for `.svg` names or `style: 'svg'`,
+ * an image for a URL, an absolute path or a data URI. See also {@link icons} for the common ones.
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/icons} */
+export function icon(name: string, options?: {onClick?: (event: MouseEvent) => void, tooltip?: string, style?: 'fa' | 'svg' | 'image'}): HTMLElement {
+  const style = options?.style ?? (name.endsWith('.svg') ? 'svg' : /^(https?:|\/|data:)/.test(name) ? 'image' : 'fa');
+  const handler = options?.onClick ?? null;
+  const tooltipMsg = options?.tooltip ?? null;
+  return style === 'svg' ? iconSvg(name, handler, tooltipMsg)
+    : style === 'image' ? iconImage(name.split('/').pop()!.split('.')[0], name, handler, tooltipMsg)
+    : iconFA(name, handler, tooltipMsg);
+}
+
 /** Returns a font-awesome icon with the specified name, handler, and tooltip.
  * Example: {@link https://public.datagrok.ai/js/samples/ui/components/icons}
  * @param name - icon name (omit the "fa-" prefix) */
@@ -440,19 +452,19 @@ export function loader(): any {
  * Sets an update indicator on the specified element.
  * Example: {@link https://public.datagrok.ai/js/samples/ui/components/update-indicator}
  * @param updating - whether the indicator should be shown */
-export function setUpdateIndicator(element: HTMLElement, updating: boolean = true, message: string = 'Updating...', onCancel?: Function): void {
+export function setUpdateIndicator(element: HTMLElement, updating: boolean = true, message: string = 'Updating...', onCancel?: Callback): void {
   return api.grok_UI_SetUpdateIndicator(element, updating, message, onCancel);
 }
 
 /**
  * Creates a button with the specified text, click handler, and tooltip.
  * Example: {@link https://public.datagrok.ai/js/samples/ui/components/buttons} */
-export function button(content: string | Element | (string | Element)[], handler: Function, tooltip: string | null = null): HTMLButtonElement {
+export function button(content: string | Element | (string | Element)[], handler: Callback, tooltip: string | null = null): HTMLButtonElement {
   return api.grok_UI_Button(content, handler, tooltip);
 }
 
 /** A large (primary) button. */
-export function bigButton(text: string, handler: Function, tooltip: string | null = null): HTMLButtonElement {
+export function bigButton(text: string, handler: Callback, tooltip: string | null = null): HTMLButtonElement {
   return api.grok_UI_BigButton(text, handler, tooltip);
 }
 
@@ -463,7 +475,7 @@ export function bigButton(text: string, handler: Function, tooltip: string | nul
  * @param caption  Button text.
  * @param handler  Invoked on click after the active state is updated.
  * @param tooltip  Tooltip shown on hover. */
-export function toggleButton(caption: string, handler: Function | null = null, tooltip: string | null = null): HTMLDivElement {
+export function toggleButton(caption: string, handler: Callback | null = null, tooltip: string | null = null): HTMLDivElement {
   return api.grok_UI_ToggleButton(caption, handler, tooltip);
 }
 
@@ -486,7 +498,7 @@ export function comboPopup(caption: string | HTMLElement, items: string[], handl
 
 /**
  * Creates a combo popup with the specified icons and items */
-export function comboPopupItems(caption: string | HTMLElement, items: { [key: string]: Function }): HTMLElement {
+export function comboPopupItems(caption: string | HTMLElement, items: { [key: string]: Callback }): HTMLElement {
   return api.grok_UI_ComboPopup(caption, Object.keys(items), (key: string) => items[key](), null);
 }
 
@@ -566,7 +578,7 @@ export function iframe(options?: {src?: string, width?: string, height?: string}
   return frame;
 }
 
-function _link(element: HTMLElement, target: string | Function, tooltipMsg?: string): void {
+function _link(element: HTMLElement, target: string | Callback, tooltipMsg?: string): void {
   if (!tooltipMsg && typeof target === 'string')
     tooltipMsg = 'Open in new tab';
 
@@ -584,7 +596,7 @@ function _link(element: HTMLElement, target: string | Function, tooltipMsg?: str
 /**
  * Example: {@link https://public.datagrok.ai/js/samples/ui/components/image}
  */
-export function image(src: string, width: number, height: number, options?: {target?: string | Function, tooltipMsg?: string}) {
+export function image(src: string, width: number, height: number, options?: {target?: string | Callback, tooltipMsg?: string}) {
   let image = element('div') as HTMLDivElement;
   image.classList.add('ui-image');
 
@@ -601,7 +613,7 @@ export function image(src: string, width: number, height: number, options?: {tar
 /** Creates an `<a>` element. */
 export function link(
     text: string,
-    target: string | Function | object,
+    target: string | Callback | object,
     tooltipMsg?: string,
     options?: string | ElementOptions | null): HTMLAnchorElement {
   let link = element('a') as HTMLAnchorElement;
@@ -651,12 +663,24 @@ export function showPopup(element: HTMLElement, anchor: HTMLElement, options?: {
   return api.grok_UI_ShowPopup(element, anchor, options?.vertical ?? false, options?.dx ?? 0, options?.dy ?? 0, options?.smart ?? true);
 }
 
-/**
- * Example: {@link https://public.datagrok.ai/js/samples/ui/components/range-slider}
- */
-export function rangeSlider(minRange: number, maxRange: number, min: number, max: number, vertical: boolean = false, style: RangeSliderStyle | SliderOptions = 'barbell'): RangeSlider {
-  let rs = RangeSlider.create(vertical, style);
-  rs.setValues(minRange, maxRange, min, max);
+/** Options of {@link rangeSlider}: [minRange]..[maxRange] is the full extent, [min]..[max] the selected part (the whole extent when omitted). */
+export interface RangeSliderOptions {
+  minRange: number;
+  maxRange: number;
+  min?: number;
+  max?: number;
+  vertical?: boolean;
+  style?: RangeSliderStyle | SliderOptions;
+}
+
+/** A two-thumb slider over [minRange]..[maxRange] with [min]..[max] selected.
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/range-slider} */
+export function rangeSlider(options: RangeSliderOptions): RangeSlider;
+export function rangeSlider(minRange: number, maxRange: number, min: number, max: number, vertical?: boolean, style?: RangeSliderStyle | SliderOptions): RangeSlider;
+export function rangeSlider(minRange: number | RangeSliderOptions, maxRange: number = 0, min: number = 0, max: number = 0, vertical: boolean = false, style: RangeSliderStyle | SliderOptions = 'barbell'): RangeSlider {
+  const o = typeof minRange === 'object' ? minRange : {minRange, maxRange, min, max, vertical, style};
+  const rs = RangeSlider.create(o.vertical ?? false, o.style ?? 'barbell');
+  rs.setValues(o.minRange, o.maxRange, o.min ?? o.minRange, o.max ?? o.maxRange);
   return rs;
 }
 
@@ -968,13 +992,13 @@ export namespace input {
   }
 
   /** Set the table specifically for the column input */
-  export function setColumnInputTable(input: InputBase, table: DataFrame, filter?: Function) {
+  export function setColumnInputTable(input: InputBase, table: DataFrame, filter?: (column: Column) => boolean) {
     const columnsFilter = typeof filter === 'function' ? (x: any) => filter!(toJs(x)) : null;
     api.grok_ColumnInput_ChangeTable(input.dart, table.dart, columnsFilter);
   }
 
   /** Set the table specifically for the columns input */
-  export function setColumnsInputTable(input: InputBase, table: DataFrame, filter?: Function) {
+  export function setColumnsInputTable(input: InputBase, table: DataFrame, filter?: (column: Column) => boolean) {
     const columnsFilter = typeof filter === 'function' ? (x: any) => filter!(toJs(x)) : null;
     api.grok_ColumnsInput_ChangeTable(input.dart, table.dart, columnsFilter);
   }
@@ -1213,13 +1237,13 @@ export function inputsRow(name: string, inputs: InputBase[]): HTMLElement {
 
 /** Creates a color picker bound to {@link colorDiv}: clicking the element opens the picker,
  * and its background updates live to preview the selected color. */
-export function colorPicker(color: number, onChanged: (color: number) => void, colorDiv: HTMLElement, onOk: Function | null, onCancel: Function | null = null): HTMLElement {
+export function colorPicker(color: number, onChanged: (color: number) => void, colorDiv: HTMLElement, onOk: Callback | null, onCancel: Callback | null = null): HTMLElement {
   return api.grok_ColorPicker(color, onChanged, colorDiv, onOk, onCancel);
 }
 
 /** Opens a standalone color picker modal immediately, without a trigger element.
  * Use when there is no persistent UI element to bind to (e.g. editing a canvas-rendered grid cell). */
-export function showColorPicker(color: number, onChanged: (color: number) => void, onOk: Function | null = null, onCancel: Function | null = null): void {
+export function showColorPicker(color: number, onChanged: (color: number) => void, onOk: Callback | null = null, onCancel: Callback | null = null): void {
   api.grok_ColorPicker_Show(color, onChanged, onOk, onCancel);
 }
 
@@ -1315,7 +1339,7 @@ export class tools {
   }
 
   /** Initialized onClick and sets the tooltip for the element. */
-  static bind(e: HTMLElement, onClick: Function | null = null, tooltipMsg: string | null = null): HTMLElement {
+  static bind(e: HTMLElement, onClick: ((event: MouseEvent) => void) | null = null, tooltipMsg: string | null = null): HTMLElement {
     if (onClick)
       e?.addEventListener('click', (e) => onClick(e));
     tooltip.bind(e, tooltipMsg);
@@ -2261,7 +2285,7 @@ export function label(text: string | null, options: {} | null = null): HTMLLabel
 }
 
 /** A link-styled label that runs [onClick]. */
-export function actionLink(text: string, onClick?: Function, tooltipMessage?: string): HTMLLabelElement {
+export function actionLink(text: string, onClick?: (event: MouseEvent) => void, tooltipMessage?: string): HTMLLabelElement {
   let c = document.createElement('label');
   c.textContent = text;
   $(c).addClass('d4-link-action');
@@ -2332,25 +2356,30 @@ export namespace forms {
   }
 }
 
-/** Creates a form: a vertical list of labeled inputs with auto-sized labels.
+/** Creates a form: a vertical list of labeled inputs with auto-sized labels. `options.layout` picks the
+ * variant: `'narrow'` puts labels above the inputs, `'wide'` lays the inputs out in two columns.
  * `autosize` is accepted for compatibility and ignored. */
-export function form(inputs: InputBase[], options: {} | null = null, autosize: boolean = true): HTMLElement {
+export function form(inputs: InputBase[], options: (ElementOptions & {layout?: 'auto' | 'narrow' | 'wide'}) | null = null, autosize: boolean = true): HTMLElement {
   const form = InputForm.forInputs(inputs);
   const d = form.root;
   _options(d, options);
   $(d).addClass('ui-form');
+  if (options?.layout === 'narrow')
+    $(d).addClass('ui-form-condensed');
+  else if (options?.layout === 'wide')
+    $(d).addClass('ui-form-wide');
   return d;
 }
 
-/** A form with labels above the inputs (for narrow hosts). */
-export function narrowForm(children: InputBase[] = [], options: {} | null = null): HTMLElement {
+/** Same as {@link form} with `layout: 'narrow'`: labels above the inputs. */
+export function narrowForm(children: InputBase[] = [], options: ElementOptions | null = null): HTMLElement {
   let d = form(children, options, false);
   $(d).addClass('ui-form-condensed');
   return d;
 }
 
-/** A form laid out in two columns. */
-export function wideForm(children: InputBase[] = [], options: {} | null = null): HTMLElement {
+/** Same as {@link form} with `layout: 'wide'`: inputs in two columns. */
+export function wideForm(children: InputBase[] = [], options: ElementOptions | null = null): HTMLElement {
   let d = form(children, options, false);
   $(d).addClass('ui-form-wide');
   return d;
@@ -2383,7 +2412,7 @@ export function star(id: string): HTMLElement {
   return api.grok_UI_Star(id);
 }
 
-function _icon(type: string, handler: Function, tooltipMsg: string | null = null): HTMLElement {
+function _icon(type: string, handler: (event: MouseEvent) => void, tooltipMsg: string | null = null): HTMLElement {
   let e = $(`<i class="grok-icon grok-font-icon-${type}"></i>`)[0] as HTMLElement;
   e?.addEventListener('click', (e) => handler(e));
   if (tooltipMsg !== null)
@@ -2392,7 +2421,7 @@ function _icon(type: string, handler: Function, tooltipMsg: string | null = null
   return e;
 }
 
-function _iconFA(type: string, handler: Function | null, tooltipMsg: string | null = null): HTMLElement {
+function _iconFA(type: string, handler: ((event: MouseEvent) => void) | null, tooltipMsg: string | null = null): HTMLElement {
   let e = $(`<i class="grok-icon fal fa-${type}"></i>`)[0] as HTMLElement;
   if (handler != null)
     e?.addEventListener('click', (e) => handler(e));
@@ -2466,24 +2495,24 @@ export function typeAhead(name: string, config: TypeAheadConfig): TypeAhead {
 }
 
 export let icons = {
-  close: (handler: Function, tooltipMsg: string | null = null) => _icon('close', handler, tooltipMsg),
-  help: (handler: Function, tooltipMsg: string | null = null) => _icon('help', handler, tooltipMsg),
-  settings: (handler: Function, tooltipMsg: string | null = null) => _icon('settings', handler, tooltipMsg),
-  edit: (handler: Function, tooltipMsg: string | null = null) => _iconFA('pen', handler, tooltipMsg),
-  save: (handler: Function | null, tooltipMsg: string | null = null) => _iconFA('save', handler, tooltipMsg),
-  copy: (handler: Function, tooltipMsg: string | null = null) => _iconFA('copy', handler, tooltipMsg),
-  add: (handler: Function, tooltipMsg: string | null = null) => _iconFA('plus', handler, tooltipMsg),
-  remove: (handler: Function, tooltipMsg: string | null = null) => _iconFA('minus', handler, tooltipMsg),
-  delete: (handler: Function, tooltipMsg: string | null = null) => _iconFA('trash-alt', handler, tooltipMsg),
-  undo: (handler: Function, tooltipMsg: string | null = null) => _iconFA('undo', handler, tooltipMsg),
-  sync: (handler: Function, tooltipMsg: string | null = null) => _iconFA('sync', handler, tooltipMsg),
-  info: (handler: Function, tooltipMsg: string | null = null) => _iconFA('info-circle', handler, tooltipMsg),
-  search: (handler: Function, tooltipMsg: string | null = null) => _iconFA('search', handler, tooltipMsg),
-  filter: (handler: Function, tooltipMsg: string | null = null) => _iconFA('filter', handler, tooltipMsg),
-  play: (handler: Function, tooltipMsg: string | null = null) => _iconFA('play', handler, tooltipMsg),
-  spinner: (handler: Function | null = null, tooltipMsg: string | null = null) =>
+  close: (handler: (event: MouseEvent) => void, tooltipMsg: string | null = null) => _icon('close', handler, tooltipMsg),
+  help: (handler: (event: MouseEvent) => void, tooltipMsg: string | null = null) => _icon('help', handler, tooltipMsg),
+  settings: (handler: (event: MouseEvent) => void, tooltipMsg: string | null = null) => _icon('settings', handler, tooltipMsg),
+  edit: (handler: (event: MouseEvent) => void, tooltipMsg: string | null = null) => _iconFA('pen', handler, tooltipMsg),
+  save: (handler: ((event: MouseEvent) => void) | null, tooltipMsg: string | null = null) => _iconFA('save', handler, tooltipMsg),
+  copy: (handler: (event: MouseEvent) => void, tooltipMsg: string | null = null) => _iconFA('copy', handler, tooltipMsg),
+  add: (handler: (event: MouseEvent) => void, tooltipMsg: string | null = null) => _iconFA('plus', handler, tooltipMsg),
+  remove: (handler: (event: MouseEvent) => void, tooltipMsg: string | null = null) => _iconFA('minus', handler, tooltipMsg),
+  delete: (handler: (event: MouseEvent) => void, tooltipMsg: string | null = null) => _iconFA('trash-alt', handler, tooltipMsg),
+  undo: (handler: (event: MouseEvent) => void, tooltipMsg: string | null = null) => _iconFA('undo', handler, tooltipMsg),
+  sync: (handler: (event: MouseEvent) => void, tooltipMsg: string | null = null) => _iconFA('sync', handler, tooltipMsg),
+  info: (handler: (event: MouseEvent) => void, tooltipMsg: string | null = null) => _iconFA('info-circle', handler, tooltipMsg),
+  search: (handler: (event: MouseEvent) => void, tooltipMsg: string | null = null) => _iconFA('search', handler, tooltipMsg),
+  filter: (handler: (event: MouseEvent) => void, tooltipMsg: string | null = null) => _iconFA('filter', handler, tooltipMsg),
+  play: (handler: (event: MouseEvent) => void, tooltipMsg: string | null = null) => _iconFA('play', handler, tooltipMsg),
+  spinner: (handler: ((event: MouseEvent) => void) | null = null, tooltipMsg: string | null = null) =>
     tools.bind(tools.parseHtml('<i class="fa fa-spinner fa-pulse fa-3x fa-fw"></i>'), handler, tooltipMsg),
-  loader: (handler: Function | null = null, tooltipMsg: string | null = null) =>
+  loader: (handler: ((event: MouseEvent) => void) | null = null, tooltipMsg: string | null = null) =>
     tools.bind(tools.parseHtml('<div class="grok-loader"><div></div><div></div><div></div><div></div></div>'), handler, tooltipMsg),
 }
 

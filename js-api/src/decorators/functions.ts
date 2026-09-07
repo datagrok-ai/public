@@ -40,7 +40,7 @@ export namespace decorators {
     trellisable?: boolean,
     viewerPath?: string
   }) {
-    return function (constructor: Function) { };
+    return function (constructor: abstract new (...args: any[]) => unknown) { };
   }
 
   /** A function that registers [DG.Filter](http://datagrok.ai/js-api/dg/classes/Filter).
@@ -54,7 +54,7 @@ export namespace decorators {
     description?: string,
     semType?: string,
   }) {
-    return function (constructor: Function) { };
+    return function (constructor: abstract new (...args: any[]) => unknown) { };
   }
 
   /** A function that registers [DG.GridCellRender](https://datagrok.ai/js-api/grok/namespaces/decorators/functions/cellRenderer).
@@ -73,7 +73,7 @@ export namespace decorators {
     columnTags?: string,
     virtual?: boolean,
   }) {
-    return function (constructor: Function) { };
+    return function (constructor: abstract new (...args: any[]) => unknown) { };
   }
 
   interface InputOptions {

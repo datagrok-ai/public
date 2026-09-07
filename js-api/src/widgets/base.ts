@@ -9,7 +9,7 @@ import {Subscription} from "rxjs";
 import {observeStream} from "../events";
 import {Func, Property, IProperty} from "../entities";
 import {DataFrame} from "../dataframe";
-import {Type} from "../const";
+import {Type, Callback} from "../const";
 import {MapProxy} from "../proxies";
 import {IDartApi} from "../api/grok_api.g";
 // The .js suffix keeps webpack on the same module instance the DG.U2 barrel loads —
@@ -232,7 +232,7 @@ export class Widget<TSettings = any> extends Control {
 
   /** Registers a cleanup function to run when [element] is killed — i.e. when its host
    * view or pane closes. Also marks the element so the kill-walk can find it. */
-  static registerCleanup(element: Element, cleanup: Function): void {
+  static registerCleanup(element: Element, cleanup: Callback): void {
     api.grok_Widget_RegisterCleanup(element, cleanup);
   }
 

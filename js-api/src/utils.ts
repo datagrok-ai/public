@@ -477,7 +477,7 @@ export function identity(length: number) {
  * @param name - a label for the execution time to display
  * @param f - function with no parameters that will get measured
  * @returns a value which f returns */
-export function time(name: string, f: Function) {
+export function time<T>(name: string, f: () => T): T {
   let start = new Date();
   let result = f();
   let stop = new Date();
@@ -492,7 +492,7 @@ export function time(name: string, f: Function) {
  * @param name - a label for the execution time to display
  * @param f - async function with no parameters that will get measured
  * @returns a promise for the value which f returns */
-export async function timeAsync(name: string, f: Function) {
+export async function timeAsync<T>(name: string, f: () => Promise<T>): Promise<T> {
   let start = new Date();
   let result = await f();
   let stop = new Date();
@@ -517,7 +517,8 @@ export function _identityInt32(length: number): Int32Array {
  * */
 export class LruCache<K = any, V = any> {
   private capacity: number;
-  public onItemEvicted: Function | null;
+  /** Called with the value that was just evicted. */
+  public onItemEvicted: ((value: any) => void) | null;
   private items: {};
   private tail: number;
   private forward: Uint16Array;

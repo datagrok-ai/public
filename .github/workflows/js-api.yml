@@ -224,6 +224,10 @@ jobs:
         working-directory: ./js-api
       - run: npm run check-links
         working-directory: ./js-api
+      - run: npm run lint
+        working-directory: ./js-api
+      - run: npm test
+        working-directory: ./js-api
       # Trusted publishing (OIDC) needs npm >= 11.5.1 on Node >= 22.14. Swap the
       # toolchain only for the publish step so the build keeps its pinned Node.
       - name: Setup Node for trusted publishing

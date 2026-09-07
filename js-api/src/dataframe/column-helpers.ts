@@ -54,7 +54,7 @@ export class ColumnColorHelper {
 
   getType(): ColorCodingType {
     if (this.column.tags.has(DG.TAGS.COLOR_CODING_TYPE))
-      return this.column.tags[DG.TAGS.COLOR_CODING_TYPE];
+      return this.column.tags[DG.TAGS.COLOR_CODING_TYPE] as ColorCodingType;
     else if (this.column.tags.has(DG.TAGS.COLOR_CODING_CATEGORICAL))
       return DG.COLOR_CODING_TYPE.CATEGORICAL;
     return DG.COLOR_CODING_TYPE.OFF;

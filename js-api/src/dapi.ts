@@ -2114,9 +2114,12 @@ export class FilesDataSource {
    * @param file - folder
    * @param recursive - whether to search in folders recursively
    * @param searchPattern - search pattern, such as part of a filename or extension, e.g., "filename-prefix" and "csv" */
-  async list(file: FileInfo | string, recursive: boolean = false, searchPattern: string | null = null): Promise<FileInfo[]> {
+  list(file: FileInfo | string, options?: {recursive?: boolean, pattern?: string | null}): Promise<FileInfo[]>;
+  list(file: FileInfo | string, recursive?: boolean, searchPattern?: string | null): Promise<FileInfo[]>;
+  async list(file: FileInfo | string, recursive: boolean | {recursive?: boolean, pattern?: string | null} = false, searchPattern: string | null = null): Promise<FileInfo[]> {
+    const o = typeof recursive === 'object' && recursive !== null ? recursive : {recursive: recursive ?? false, pattern: searchPattern};
     file = this.setRoot(file);
-    return toJs(await api.grok_Dapi_UserFiles_List(file, recursive, searchPattern, this.root));
+    return toJs(await api.grok_Dapi_UserFiles_List(file, o.recursive ?? false, o.pattern ?? null, this.root));
   }
 
   /**

@@ -26,7 +26,7 @@ function balloon(msg: any, type?: string): void {
 }
 
 /** UI notifications that degrade to console output / no-ops instead of throwing. */
-const consoleStubs: Record<string, Function> = {
+const consoleStubs: Record<string, (...args: any[]) => any> = {
   grok_Balloon: balloon,
   grok_ShowHelp: () => {},
   grok_Utils_LoadJsCss: () => Promise.resolve([]),

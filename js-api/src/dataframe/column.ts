@@ -5,7 +5,7 @@
 
 import {TYPE, FLOAT_NULL, ColumnType, ColumnTypeFilter, SemType, ColumnAggregationType, TAGS} from "../const";
 import {toDart, toJs} from "../wrappers";
-import {MapProxy} from "../proxies";
+import {MapBag, MapProxy} from "../proxies";
 import dayjs from "dayjs";
 import {IDartApi} from "../api/grok_api.g";
 import type {Comparer} from "./types";
@@ -23,10 +23,10 @@ const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) a
  * */
 export class Column<T = any, TInit = T> {
   public dart: any;
-  /** Auxiliary data that is not persisted. */
+  /** Auxiliary data that is not persisted (a {@link MapBag}: indexed access plus the map methods; typed `any` so it can be cast to a package's own shape). */
   public temp: any;
   /** Metadata as string key-value pairs; persisted with the column. */
-  public tags: any;
+  public tags: MapBag<string>;
   private _meta: ColumnMetaHelper | undefined;
 
   constructor(dart: any) {
@@ -62,7 +62,7 @@ export class Column<T = any, TInit = T> {
    *
    * {@link DataFrame.create}
    * @see COLUMN_TYPE */
-  static fromType(type: ColumnType, name?: string | null, length: number = 0): Column {
+  static fromType<T = any>(type: ColumnType, name?: string | null, length: number = 0): Column<T> {
     return toJs(api.grok_Column_FromType(type, name, length));
   }
 
@@ -93,9 +93,8 @@ export class Column<T = any, TInit = T> {
    * @param name - column name
    * @param list - list of values */
   static fromList(type: ColumnType, name: string, list: any[]): Column {
-    if (type === TYPE.DATE_TIME)
-      list = list.map((v) => v?.valueOf());
-    return toJs(api.grok_Column_FromList(type, name, list));
+    const values = type === TYPE.DATE_TIME ? list.map((v: any) => v?.valueOf()) : list;
+    return toJs(api.grok_Column_FromList(type, name, values));
   }
 
   /**
@@ -492,7 +491,8 @@ export class BigIntColumn extends Column<BigInt> {
 }
 
 
-type DateTimeInit = dayjs.Dayjs | string | Date | null;
+/** What a datetime cell accepts: a dayjs, a parseable string, epoch milliseconds, a Date, or null. */
+export type DateTimeInit = dayjs.Dayjs | string | number | Date | null;
 
 export class DateTimeColumn extends Column<dayjs.Dayjs, DateTimeInit> {
 
@@ -534,7 +534,7 @@ export class DateTimeColumn extends Column<dayjs.Dayjs, DateTimeInit> {
     return dayjs(v);
   }
 
-  set(i: number, value: dayjs.Dayjs | string | Date | null, notify: boolean = true): void {
+  set(i: number, value: DateTimeInit, notify: boolean = true): void {
     // @ts-ignore
     api.grok_DateTimeColumn_SetValue(this.dart, i, DateTimeColumn.getMs(value)?.valueOf(), notify);
   }
