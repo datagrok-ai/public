@@ -11,7 +11,8 @@
    as `datagrok-api/dg` and `datagrok-api/grok`; dg-stub also installs the kill-walk globals over
    {@link platform}. */
 
-import {Control, dfBindings, signal} from 'datagrok-api/u2core';
+import {Control, TYPE, dfBindings, signal} from 'datagrok-api/u2core';
+export {TYPE, COLUMN_TYPE, SEMTYPE} from 'datagrok-api/u2core';
 
 /** Prototype getters over the handle — what every field of a real entity is. */
 function getters(cls, ...keys) {
@@ -377,6 +378,11 @@ export class BitSet {
     return bitset;
   }
 
+  /** One copy of the words, as the platform's `grok_BitSet_FromBytes` makes. */
+  static fromBitArray(a) {
+    return BitSet.fromBytes(a.getBuffer().slice(0, a.lengthInInts).buffer, a.length);
+  }
+
   get(i) { return (new Uint32Array(this.dart.buffer)[i >>> 5] & (1 << (i & 31))) !== 0; }
 }
 getters(BitSet, 'length');
@@ -385,10 +391,10 @@ const INT_NULL = -2147483648;
 const FLOAT_NULL = 2.6789344063684636e-34;
 
 // datetime counts as numerical, as in ddt (date_time_column.dart:16)
-const NUMERICAL = new Set(['int', 'double', 'bigint', 'qnum', 'datetime']);
+const NUMERICAL = new Set([TYPE.INT, TYPE.FLOAT, TYPE.BIG_INT, TYPE.QNUM, TYPE.DATE_TIME]);
 
 export class Column {
-  constructor(name, type = 'string', semType = null) { this.dart = {name, type, semType, frame: null}; }
+  constructor(name, type = TYPE.STRING, semType = null) { this.dart = {name, type, semType, frame: null}; }
 
   get name() { return this.dart.name; }
 
@@ -402,7 +408,7 @@ export class Column {
   get isNumerical() { return NUMERICAL.has(this.dart.type); }
 
   // string and bool are the categorical types (ddt string_column.dart / bool_column.dart)
-  get isCategorical() { return this.dart.type === 'string' || this.dart.type === 'bool'; }
+  get isCategorical() { return this.dart.type === TYPE.STRING || this.dart.type === TYPE.BOOL; }
 
   /** Distinct values off the frame rows — read only under a maxCategories cap. */
   get categories() {
@@ -425,13 +431,13 @@ export class Column {
   getRawData() {
     const values = Array.from({length: this.length}, (_, i) => this.get(i));
     switch (this.dart.type) {
-      case 'int':
+      case TYPE.INT:
         return Int32Array.from(values, (v) => v == null ? INT_NULL : v);
-      case 'double': case 'qnum':
+      case TYPE.FLOAT: case TYPE.QNUM:
         return Float32Array.from(values, (v) => v == null ? FLOAT_NULL : v);
-      case 'datetime':
+      case TYPE.DATE_TIME:
         return Float64Array.from(values, (v) => v == null ? FLOAT_NULL : v.getTime() * 1000);
-      case 'bool': {
+      case TYPE.BOOL: {
         const bits = new Uint32Array((values.length + 31) >>> 5);
         values.forEach((v, i) => {
           if (v)

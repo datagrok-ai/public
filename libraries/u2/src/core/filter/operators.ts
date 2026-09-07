@@ -1,16 +1,17 @@
-import {FilterError} from './model.js';
+import {FilterError, KIND} from './model.js';
 import type {FilterCondition, FilterKind, DomainConditionNode} from './model.js';
 import type {FilterProperty} from './schema.js';
 import {domainValue, kindOf} from './kinds.js';
-// cycle with mask.ts is function-scoped only: `Masks` is used inside operator bodies, never at load time
-import {Masks} from './mask.js';
-import type {Mask, MaskCell, MaskColumnLike} from './mask.js';
+import {BitArray} from 'datagrok-api/u2core';
+// cycle with evaluate.ts is function-scoped only: `ColumnEvaluator` is used inside operator bodies, never at load time
+import {ColumnEvaluator} from './evaluate.js';
+import type {MaskCell, MaskColumnLike} from './evaluate.js';
 
 export interface FilterOperator {
   id: string;
   label: string;
   arity: 0 | 1 | 2 | 'n';
-  /** Applicable kinds (semType sets may list `['string']`). */
+  /** Applicable kinds (semType sets may list `[KIND.STRING]`). */
   kinds: FilterKind[];
   /** SemType-specific set; wins over core for that semType. */
   semType?: string;
@@ -19,14 +20,14 @@ export interface FilterOperator {
   exclusive?: boolean;
   editor: 'default' | 'range' | 'list' | 'none';
   domain?: (c: FilterCondition, prop: FilterProperty, ctx: {now: Date}) => DomainConditionNode;
-  mask?: (col: MaskColumnLike, c: FilterCondition, ctx: {now: Date}) => Mask;
-  bitset?: (col: unknown, c: FilterCondition, signal: AbortSignal) => Promise<Mask>;
+  mask?: (col: MaskColumnLike, c: FilterCondition, ctx: {now: Date}) => BitArray;
+  bitset?: (col: unknown, c: FilterCondition, signal: AbortSignal) => Promise<BitArray>;
 }
 
 /** What an operator provider answers (a `meta.role: filterOperators` package function, say) — plain
- * data, so the producer needs no u2 import. `kinds` defaults to `['string']`, `editor` to `'default'`;
+ * data, so the producer needs no u2 import. `kinds` defaults to `[KIND.STRING]`, `editor` to `'default'`;
  * `bitset` answers the column's LSB-first words (a `Uint32Array` or its `ArrayBuffer`, the layout
- * `Mask.bits` and `BitArray.buffer` share). */
+ * `BitArray.getBuffer()` and `DG.BitSet` share). */
 export interface FilterOperatorSet {
   semType: string;
   exclusive?: boolean;
@@ -64,18 +65,23 @@ export class OperatorRegistry {
   }
 
   /** A provider's whole set as operators of its `semType` (`exclusive` on each), the `bitset` words
-   * wrapped into a `Mask` once here. Throws `FilterError` listing `checkSet`'s faults on a bad descriptor;
+   * copied into a `BitArray` once here. Throws `FilterError` listing `checkSet`'s faults on a bad descriptor;
    * returns the unregister function for the whole set. */
   registerSet(set: FilterOperatorSet): () => void {
     const problems = OperatorRegistry.checkSet(set);
     if (problems.length > 0)
       throw new FilterError(`Bad operator set: ${problems.join('; ')}`);
     return this.register(set.operators.map((o): FilterOperator => ({
-      id: o.id, label: o.label, arity: o.arity, kinds: (o.kinds ?? ['string']) as FilterKind[],
+      id: o.id, label: o.label, arity: o.arity, kinds: (o.kinds ?? [KIND.STRING]) as FilterKind[],
       semType: set.semType, exclusive: set.exclusive === true, editor: o.editor ?? 'default',
       bitset: async (col, c, signal) => {
         const r = await o.bitset(col, c, signal);
-        return Masks.from(r.bits, r.length);
+        try {
+          return BitArray.fromBytes(r.bits, r.length);
+        } catch (e) {
+          const message = `${set.semType} operator "${o.id}" returned a bad bitset: ${(e as Error).message}`;
+          throw new FilterError(message, [{nodeId: c.id, code: 'evaluation', message}]);
+        }
       },
     })));
   }
@@ -137,13 +143,13 @@ export class OperatorRegistry {
 }
 
 const NULL_TESTS = ['is null', 'is not null'];
-const ALL: FilterKind[] = ['string', 'int', 'float', 'bigint', 'datetime', 'bool', 'ref'];
-const KINDS: FilterKind[] = [...ALL, 'string_list'];
+const ALL: FilterKind[] = [KIND.STRING, KIND.INT, KIND.FLOAT, KIND.BIG_INT, KIND.DATE_TIME, KIND.BOOL, KIND.REF];
+const KINDS: FilterKind[] = [...ALL, KIND.STRING_LIST];
 const ARITIES: unknown[] = [0, 1, 2, 'n'];
 const EDITORS: FilterOperator['editor'][] = ['default', 'range', 'list', 'none'];
-const ORDERED: FilterKind[] = ['int', 'float', 'bigint', 'datetime'];
-const LISTABLE: FilterKind[] = ['string', 'int', 'float', 'bigint', 'ref'];
-const TEXT: FilterKind[] = ['string', 'string_list'];
+const ORDERED: FilterKind[] = [KIND.INT, KIND.FLOAT, KIND.BIG_INT, KIND.DATE_TIME];
+const LISTABLE: FilterKind[] = [KIND.STRING, KIND.INT, KIND.FLOAT, KIND.BIG_INT, KIND.REF];
+const TEXT: FilterKind[] = [KIND.STRING, KIND.STRING_LIST];
 
 /** Escapes LIKE metacharacters. */
 export function escapeLike(s: string): string {
@@ -158,21 +164,21 @@ const node = (property: string, operator: string, value?: unknown): DomainCondit
   value === undefined ? {property, operator} : {property, operator, value};
 
 const where = (test: (cell: MaskCell, value: any) => boolean) =>
-  (col: MaskColumnLike, c: FilterCondition, ctx: {now: Date}): Mask => Masks.where(col, c, ctx, test);
+  (col: MaskColumnLike, c: FilterCondition, ctx: {now: Date}): BitArray => ColumnEvaluator.where(col, c, ctx, test);
 
 /** Case-insensitive text test, the server's ILIKE; a `{raw: true}` LIKE pattern goes through a RegExp. */
 const textMask = (test: (s: string, v: string) => boolean, negate: boolean = false) =>
-  (col: MaskColumnLike, c: FilterCondition, ctx: {now: Date}): Mask => {
-    const raw = c.options?.raw === true ? Masks.likeRegExp(String(c.value)) : null;
+  (col: MaskColumnLike, c: FilterCondition, ctx: {now: Date}): BitArray => {
+    const raw = c.options?.raw === true ? ColumnEvaluator.likeRegExp(String(c.value)) : null;
     const v = String(c.value ?? '').toLowerCase();
-    return Masks.where(col, c, ctx, (cell) =>
+    return ColumnEvaluator.where(col, c, ctx, (cell) =>
       (raw ? raw.test(String(cell)) : test(String(cell).toLowerCase(), v)) !== negate);
   };
 
 const regexMask = (negate: boolean) =>
-  (col: MaskColumnLike, c: FilterCondition, ctx: {now: Date}): Mask => {
+  (col: MaskColumnLike, c: FilterCondition, ctx: {now: Date}): BitArray => {
     const re = new RegExp(String(c.value), 'i');
-    return Masks.where(col, c, ctx, (cell) => re.test(String(cell)) !== negate);
+    return ColumnEvaluator.where(col, c, ctx, (cell) => re.test(String(cell)) !== negate);
   };
 
 const compare = (op: string, label: string): FilterOperator => ({
@@ -228,20 +234,20 @@ export const CORE_OPERATORS: FilterOperator[] = [
     domain: (c) => node(c.property, 'not like', likeValue(c, (v) => `%${v}%`)),
     mask: textMask((s, v) => s.includes(v), true),
   },
-  likeShape('starts', 'starts with', ['string'], 'like', (v) => `${v}%`, (s, v) => s.startsWith(v)),
-  likeShape('ends', 'ends with', ['string'], 'like', (v) => `%${v}`, (s, v) => s.endsWith(v)),
+  likeShape('starts', 'starts with', [KIND.STRING], 'like', (v) => `${v}%`, (s, v) => s.startsWith(v)),
+  likeShape('ends', 'ends with', [KIND.STRING], 'like', (v) => `%${v}`, (s, v) => s.endsWith(v)),
   {
-    id: 'matches', label: 'matches regex', arity: 1, kinds: ['string'], editor: 'default',
+    id: 'matches', label: 'matches regex', arity: 1, kinds: [KIND.STRING], editor: 'default',
     domain: (c) => node(c.property, '~*', String(c.value)),
     mask: regexMask(false),
   },
   {
-    id: '!matches', label: 'does not match', arity: 1, kinds: ['string'], editor: 'default',
+    id: '!matches', label: 'does not match', arity: 1, kinds: [KIND.STRING], editor: 'default',
     domain: (c) => node(c.property, '!~*', String(c.value)),
     mask: regexMask(true),
   },
   {
-    id: 'fuzzy', label: 'is similar to', arity: 1, kinds: ['string'], editor: 'default',
+    id: 'fuzzy', label: 'is similar to', arity: 1, kinds: [KIND.STRING], editor: 'default',
     domain: (c) => {
       const value = String(c.value);
       const threshold = typeof c.options?.threshold === 'number' ? c.options.threshold : null;
@@ -250,14 +256,14 @@ export const CORE_OPERATORS: FilterOperator[] = [
     },
   },
   {
-    id: 'is null', label: 'is empty', arity: 0, kinds: [...ALL, 'string_list'], editor: 'none',
+    id: 'is null', label: 'is empty', arity: 0, kinds: [...ALL, KIND.STRING_LIST], editor: 'none',
     domain: (c) => node(c.property, '=', null),
-    mask: (col) => Masks.nulls(col),
+    mask: (col) => ColumnEvaluator.nulls(col),
   },
   {
-    id: 'is not null', label: 'is not empty', arity: 0, kinds: [...ALL, 'string_list'], editor: 'none',
+    id: 'is not null', label: 'is not empty', arity: 0, kinds: [...ALL, KIND.STRING_LIST], editor: 'none',
     domain: (c) => node(c.property, '!=', null),
-    mask: (col) => Masks.not(Masks.nulls(col)),
+    mask: (col) => ColumnEvaluator.nulls(col).invert(),
   },
 ];
 

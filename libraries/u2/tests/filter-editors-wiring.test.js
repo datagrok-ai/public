@@ -8,6 +8,7 @@ import {resetDom} from './dom-shim.js';
 import {Scope} from '../src/core/scope.js';
 import {TextArea} from '../src/components/inputs/text-input.js';
 import {FilterBuilder} from '../src/components/filter/filter-builder.js';
+import {TYPE} from 'datagrok-api/u2core';
 
 register('./dg-stub.mjs', import.meta.url);
 await import('../src/dg/filter/index.js');
@@ -15,7 +16,7 @@ await import('../src/dg/filter/index.js');
 test('the dg filter entry routes editor hints on its own', () => {
   const scope = new Scope();
   try {
-    const prop = {name: 'notes', type: 'string', inputType: 'TextArea'};
+    const prop = {name: 'notes', type: TYPE.STRING, inputType: 'TextArea'};
     const input = Scope.runWith(scope, () => FilterBuilder.defaultEditors(prop, {}));
     assert.ok(input instanceof TextArea);
   } finally {

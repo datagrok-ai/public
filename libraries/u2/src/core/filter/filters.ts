@@ -7,6 +7,6 @@ export * from './schema.js';
 export * from './validate.js';
 export * from './grammar.js';
 export * from './domain-tree.js';
-export * from './mask.js';
+export * from './evaluate.js';
 export * from './url.js';
 export {resolveSpan, spanOf} from '../span.js';

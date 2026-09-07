@@ -16,7 +16,7 @@ import {DateTimeInput} from '../inputs/date-input.js';
 import {SuggestInput} from '../inputs/suggest-input.js';
 import {TagsInput} from '../inputs/tags-input.js';
 import {RefInput} from './ref-input.js';
-import {format, isRef, isSpan, kindOf, operators, property, valueEquals} from '../../core/filter/index.js';
+import {KIND, format, isRef, isSpan, kindOf, operators, property, valueEquals} from '../../core/filter/index.js';
 import type {FilterCondition, FilterGroup, FilterKind, FilterScalar, FilterValue, Lock, FilterOperator,
   FilterProperty, FilterSchema, FilterValueEditorFactory} from '../../core/filter/index.js';
 
@@ -53,7 +53,7 @@ function scalarText(v: FilterScalar): string {
 }
 
 function parseScalar(text: string, kind: FilterKind): FilterScalar {
-  const numeric = kind === 'int' || kind === 'float';
+  const numeric = kind === KIND.INT || kind === KIND.FLOAT;
   return numeric && text.trim() !== '' && Number.isFinite(Number(text)) ? Number(text) : text;
 }
 
@@ -317,32 +317,32 @@ export class FilterRow extends Control {
       return scalarEditor(input, (v) => input.value.value = text(v));
     }
     const values = this._host.schema.values;
-    if (kind === 'ref' && values) {
+    if (kind === KIND.REF && values) {
       const input = new RefInput({inline: true, prop, schema: this._host.schema,
         value: isRef(initial) ? initial : null, onChanged: (v) => onChange(v ?? undefined)});
       return scalarEditor(input, (v) => input.value.value = isRef(v) ? v : null);
     }
     switch (kind) {
-      case 'int': case 'float': {
+      case KIND.INT: case KIND.FLOAT: {
         const input = new NumberInput({inline: true, mode: kind, min: prop.min, max: prop.max,
           value: typeof initial === 'number' ? initial : null,
           onChanged: (v) => onChange(v === null ? undefined : v)});
         return scalarEditor(input, (v) => input.value.value = typeof v === 'number' ? v : null);
       }
-      case 'bigint': {
+      case KIND.BIG_INT: {
         const parse = (v: FilterScalar | undefined): bigint | null =>
           typeof v === 'number' || typeof v === 'string' && /^-?\d+$/.test(v) ? BigInt(v) : null;
         const input = new BigIntInput({inline: true, value: parse(initial),
           onChanged: (v) => onChange(v === null ? undefined : v.toString())});
         return scalarEditor(input, (v) => input.value.value = parse(v));
       }
-      case 'bool': {
+      case KIND.BOOL: {
         const text = (v: FilterScalar | undefined) => v === true ? 'true' : v === false ? 'false' : null;
         const input = new ChoiceInput({inline: true, items: ['true', 'false'], value: text(initial),
           onChanged: (v) => onChange(v === null ? undefined : v === 'true')});
         return scalarEditor(input, (v) => input.value.value = text(v));
       }
-      case 'datetime': {
+      case KIND.DATE_TIME: {
         // a span is a `Date` tagged with its text; two resolutions of one span are the same value
         const toDate = (v: FilterScalar | undefined): Date | null =>
           isSpan(v) ? markSpan(resolveSpan(v.span, new Date()), v.span) : v instanceof Date ? v : null;
@@ -359,7 +359,7 @@ export class FilterRow extends Control {
         const text = (v: FilterScalar | undefined) => v === undefined || v === null ? '' : scalarText(v);
         const options = {inline: true, value: text(initial),
           onChanged: (v: string) => onChange(v === '' ? undefined : v)};
-        const input = values && kind === 'string' ?
+        const input = values && kind === KIND.STRING ?
           new SuggestInput({...options, openOnFocus: true, source: async (q, signal) =>
             (await values(prop, q, signal)).map((i) => scalarText(i.value))}) :
           new TextInput(options);

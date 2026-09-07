@@ -9,7 +9,8 @@ import {register} from 'node:module';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {Scope} from '../src/core/scope.js';
 import {TextInput, TextArea} from '../src/components/inputs/text-input.js';
-import {Filters, FilterError} from '../src/core/filter/index.js';
+import {BitArray, SEMTYPE, TYPE} from 'datagrok-api/u2core';
+import {Filters, FilterError, KIND} from '../src/core/filter/index.js';
 import {BitSet, DataFrame, Entity, Property} from './platform-doubles.mjs';
 
 const META_HOOK = `
@@ -60,8 +61,8 @@ function propOf(schema, name) {
 
 function people() {
   return new DataFrame(
-    [{name: 'name', type: 'string'}, {name: 'age', type: 'int'}, {name: 'weight', type: 'double'},
-      {name: 'smiles', type: 'string', semType: 'Molecule'}],
+    [{name: 'name', type: TYPE.STRING}, {name: 'age', type: TYPE.INT}, {name: 'weight', type: TYPE.FLOAT},
+      {name: 'smiles', type: TYPE.STRING, semType: SEMTYPE.MOLECULE}],
     [{name: 'Ann', age: 34, weight: 1.5, smiles: 'CCO'}, {name: 'Bob', age: 28, weight: 2.5, smiles: 'CC'},
       {name: 'Cid', age: 45, weight: 0.5, smiles: 'C'}]);
 }
@@ -72,10 +73,10 @@ smoke('forDataFrame: one property per column with kind and a molecule renderer; 
   const df = people();
   const schema = FilterSchemas.forDataFrame(df);
   assert.deepEqual(schema.properties.map((p) => p.name), ['name', 'age', 'weight', 'smiles']);
-  assert.deepEqual(schema.properties.map((p) => Filters.kindOf(p)), ['string', 'int', 'float', 'string']);
-  assert.deepEqual(propOf(schema, 'name'), {name: 'name', type: 'string'}, 'categories are values, not choices');
-  assert.deepEqual(propOf(schema, 'age'), {name: 'age', type: 'int'}, 'the frame min/max are not bounds');
-  assert.equal(propOf(schema, 'smiles').semType, 'Molecule');
+  assert.deepEqual(schema.properties.map((p) => Filters.kindOf(p)), [KIND.STRING, KIND.INT, KIND.FLOAT, KIND.STRING]);
+  assert.deepEqual(propOf(schema, 'name'), {name: 'name', type: TYPE.STRING}, 'categories are values, not choices');
+  assert.deepEqual(propOf(schema, 'age'), {name: 'age', type: TYPE.INT}, 'the frame min/max are not bounds');
+  assert.equal(propOf(schema, 'smiles').semType, SEMTYPE.MOLECULE);
   assert.ok(schema.renderer(propOf(schema, 'smiles')), 'molecule columns render through the sketcher depiction');
   assert.equal(schema.renderer(propOf(schema, 'name')), undefined);
   assert.deepEqual(Filters.validate(Filters.group('and', [Filters.cond('age', '<', 20), Filters.cond('name', '=', 'Dan')]),
@@ -92,21 +93,21 @@ smoke('forDataFrame: one property per column with kind and a molecule renderer; 
   assert.deepEqual(await schema.values(propOf(schema, 'name'), 'a', abort), [{value: 'Ann', label: 'Ann'}]);
   assert.equal(reads.length, 1, 'refresh re-reads them');
   const rows = Array.from({length: 25}, (_, i) => ({code: `c${i}`}));
-  const many = FilterSchemas.forDataFrame(new DataFrame([{name: 'code', type: 'string'}], rows));
+  const many = FilterSchemas.forDataFrame(new DataFrame([{name: 'code', type: TYPE.STRING}], rows));
   assert.equal((await many.values(propOf(many, 'code'), 'c1', abort)).length, 11);
 });
 
 smoke('forDataFrame: refresh re-reads the columns — a semantic type detected after the snapshot changes the operators', () => {
-  const df = new DataFrame([{name: 'smiles', type: 'string'}], [{smiles: 'CCO'}]);
+  const df = new DataFrame([{name: 'smiles', type: TYPE.STRING}], [{smiles: 'CCO'}]);
   const schema = FilterSchemas.forDataFrame(df);
   const before = schema.properties;
-  assert.deepEqual(before, [{name: 'smiles', type: 'string'}]);
+  assert.deepEqual(before, [{name: 'smiles', type: TYPE.STRING}]);
   assert.equal(schema.renderer(propOf(schema, 'smiles')), undefined);
-  df.columns.byName('smiles').dart.semType = 'Molecule';
+  df.columns.byName('smiles').dart.semType = SEMTYPE.MOLECULE;
   assert.equal(schema.properties, before, 'a snapshot until refresh');
   schema.refresh();
   assert.notEqual(schema.properties, before, 'replaced, not mutated');
-  assert.equal(propOf(schema, 'smiles').semType, 'Molecule');
+  assert.equal(propOf(schema, 'smiles').semType, SEMTYPE.MOLECULE);
   assert.ok(schema.renderer(propOf(schema, 'smiles')));
 });
 
@@ -116,11 +117,11 @@ function domainsDouble() {
   const calls = {rowProperties: [], facets: []};
   const tables = {
     'plates.plate': [
-      new Property('name', 'string', {friendlyName: 'Name', nullable: false,
+      new Property('name', TYPE.STRING, {friendlyName: 'Name', nullable: false,
         get: (r) => r.name, set: (r, v) => r.name = v}),
-      new Property('project_id', 'string', {friendlyName: 'Project', semType: 'Core.projects'}),
+      new Property('project_id', TYPE.STRING, {friendlyName: 'Project', semType: 'Core.projects'}),
     ],
-    'Core.projects': [new Property('name', 'string'), new Property('created_on', 'datetime')],
+    'Core.projects': [new Property('name', TYPE.STRING), new Property('created_on', TYPE.DATE_TIME)],
   };
   grok.dapi.domains = {
     registry: {
@@ -150,13 +151,13 @@ smoke('forDomainTable: registry properties are copied field by field, a dotted s
   const source = (await grok.dapi.domains.registry.rowProperties('plates.plate'))[0];
   assert.deepEqual(Object.keys({...source}), ['dart'], 'a spread of the platform property yields only its handle');
   const name = propOf(schema, 'name');
-  assert.deepEqual([name.propertyType, name.friendlyName, name.nullable], ['string', 'Name', false]);
+  assert.deepEqual([name.propertyType, name.friendlyName, name.nullable], [TYPE.STRING, 'Name', false]);
   assert.equal(typeof name.get, 'function');
   assert.equal(name.ref, undefined);
 
   const project = propOf(schema, 'project_id');
   assert.equal(project.ref, 'Core.projects');
-  assert.equal(Filters.kindOf(project), 'ref');
+  assert.equal(Filters.kindOf(project), KIND.REF);
   assert.equal(schema.renderer(project).caption({type: 'Core.projects', id: 'p1', name: 'Alpha'}), 'Alpha');
   assert.equal(schema.renderer(project).caption({type: 'Core.projects', id: 'p1'}), 'p1');
 });
@@ -182,7 +183,7 @@ smoke('forDomainTable: resolveRef loads the target table', async () => {
   const target = await schema.resolveRef(project);
   assert.deepEqual(calls.rowProperties, ['plates.plate', 'Core.projects']);
   assert.deepEqual(target.properties.map((p) => p.name), ['name', 'created_on']);
-  assert.equal(Filters.kindOf(propOf(target, 'created_on')), 'datetime');
+  assert.equal(Filters.kindOf(propOf(target, 'created_on')), KIND.DATE_TIME);
 });
 
 // --- forEntityType ---
@@ -192,9 +193,9 @@ function metaDouble() {
   const info = (name, type, extra = {}) => ({name, type, semType: null, friendlyName: name,
     description: null, refType: null, relationKind: null, ...extra});
   const types = {
-    User: [info('login', 'string', {friendlyName: 'Login'}),
-      info('group', 'object', {refType: 'Group', description: 'Personal group'})],
-    Group: [info('friendlyName', 'string')],
+    User: [info('login', TYPE.STRING, {friendlyName: 'Login'}),
+      info('group', TYPE.OBJECT, {refType: 'Group', description: 'Personal group'})],
+    Group: [info('friendlyName', TYPE.STRING)],
   };
   grok.meta.propertiesOf = async (type, options) => {
     calls.propertiesOf.push([type, options]);
@@ -214,11 +215,11 @@ smoke('forEntityType: filterable properties, refType as the ref, ref values from
   const schema = await FilterSchemas.forEntityType('User');
   assert.deepEqual(calls.propertiesOf, [['User', {filterable: true}]]);
   assert.deepEqual(schema.properties.map((p) => p.name), ['login', 'group']);
-  assert.deepEqual(propOf(schema, 'login'), {name: 'login', type: 'string', friendlyName: 'Login'});
+  assert.deepEqual(propOf(schema, 'login'), {name: 'login', type: TYPE.STRING, friendlyName: 'Login'});
   const group = propOf(schema, 'group');
-  assert.deepEqual(group, {name: 'group', type: 'object', friendlyName: 'group', description: 'Personal group',
+  assert.deepEqual(group, {name: 'group', type: TYPE.OBJECT, friendlyName: 'group', description: 'Personal group',
     ref: 'Group'});
-  assert.equal(Filters.kindOf(group), 'ref');
+  assert.equal(Filters.kindOf(group), KIND.REF);
 
   assert.deepEqual(await schema.values(group, 'dev', abort),
     [{value: {type: 'Group', id: 'g1', name: 'Developers'}, label: 'Developers'}]);
@@ -277,7 +278,7 @@ function testRule() {
 smoke('editors: a registered Editors rule is what the builder mounts', async () => {
   const unregister = testRule();
   try {
-    const {fb, editor} = rowEditor(Filters.schema([{name: 'smiles', type: 'string', semType: 'Test'}]), 'x');
+    const {fb, editor} = rowEditor(Filters.schema([{name: 'smiles', type: TYPE.STRING, semType: 'Test'}]), 'x');
     assert.equal(editor.dataset.test, 'registered');
     fb.dispose();
   } finally {
@@ -289,7 +290,7 @@ smoke('editors: a semType-ruled property gets the same editor in a form and in a
   async () => {
     const unregister = testRule();
     try {
-      const schema = Filters.schema([{name: 'smiles', type: 'string', semType: 'Test', inputType: 'TextArea'}]);
+      const schema = Filters.schema([{name: 'smiles', type: TYPE.STRING, semType: 'Test', inputType: 'TextArea'}]);
       const form = inputForProperty(schema.properties[0], {assumeWritable: true});
       assert.equal(form.root.dataset.test, 'registered', 'the rule wins over the inputType hint in the form');
       form.dispose();
@@ -302,8 +303,8 @@ smoke('editors: a semType-ruled property gets the same editor in a form and in a
   });
 
 smoke('editors: inputType/editor hints resolve after the rules; plain kinds return null', async () => {
-  const schema = Filters.schema([{name: 'notes', type: 'string', inputType: 'TextArea'},
-    {name: 'name', type: 'string'}, {name: 'age', type: 'int'}]);
+  const schema = Filters.schema([{name: 'notes', type: TYPE.STRING, inputType: 'TextArea'},
+    {name: 'name', type: TYPE.STRING}, {name: 'age', type: TYPE.INT}]);
   const notes = Editors.resolve(propOf(schema, 'notes'), {});
   assert.ok(notes instanceof TextArea);
   assert.equal(notes.enabled, true, 'a filter value is always writable');
@@ -317,7 +318,7 @@ smoke('editors: a ref is a type-ahead over schema.values, whose value is the Fil
   const items = [{value: {type: 'Group', id: 'g1', name: 'Developers'}, label: 'Developers'},
     {value: {type: 'Group', id: 'g2', name: 'Testers'}, label: 'Testers'}];
   const schema = {
-    properties: [{name: 'group', type: 'object', ref: 'Group'}],
+    properties: [{name: 'group', type: TYPE.OBJECT, ref: 'Group'}],
     values: async (prop, query) => items.filter((i) => i.label.toLowerCase().includes(query.toLowerCase())),
   };
   const input = new RefInput({prop: schema.properties[0], schema, debounceMs: 0});
@@ -352,24 +353,24 @@ smoke('editors: a ref is a type-ahead over schema.values, whose value is the Fil
 
 // --- toBitSet ---
 
-smoke('toBitSet: one fromBytes over the mask bits, rowCount long', async () => {
+smoke('toBitSet: one fromBitArray over the mask, rowCount long', async () => {
   const df = people();
   const calls = [];
-  const fromBytes = BitSet.fromBytes;
-  BitSet.fromBytes = (buffer, length) => {
-    calls.push([buffer, length]);
-    return fromBytes(buffer, length);
+  const fromBitArray = BitSet.fromBitArray;
+  BitSet.fromBitArray = (a) => {
+    calls.push(a);
+    return fromBitArray(a);
   };
   try {
     const bitset = await toBitSet(df, Filters.group('and', [
       Filters.cond('age', '>', 30), Filters.cond('name', '!=', 'Cid')]));
     assert.equal(calls.length, 1);
-    assert.ok(calls[0][0] instanceof ArrayBuffer);
-    assert.equal(calls[0][1], 3);
+    assert.ok(calls[0] instanceof BitArray);
+    assert.equal(calls[0].length, 3);
     assert.equal(bitset.length, 3);
     assert.deepEqual([0, 1, 2].map((i) => bitset.get(i)), [true, false, false]);
   } finally {
-    BitSet.fromBytes = fromBytes;
+    BitSet.fromBitArray = fromBitArray;
   }
   assert.equal(frameLike(df).column('nope'), null);
   assert.equal(frameLike(df).column('age').length, 3);

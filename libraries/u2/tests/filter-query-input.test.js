@@ -10,14 +10,15 @@ import {Scope, signal, Filters, FilterBuilder, FilterQueryInput, Control} from '
 import {Registry} from '../src/spec/registry.js';
 import {SpecContext, renderSpec} from '../src/spec/spec.js';
 import {registerAll} from '../src/spec/registrations.js';
+import {TYPE} from 'datagrok-api/u2core';
 
 const PROPS = [
-  {name: 'name', type: 'string', friendlyName: 'Name'},
-  {name: 'age', type: 'int', min: 0, max: 120},
-  {name: 'sex', type: 'string', choices: ['F', 'M']},
-  {name: 'active', type: 'bool'},
-  {name: 'created', type: 'datetime'},
-  {name: 'mw', type: 'double'},
+  {name: 'name', type: TYPE.STRING, friendlyName: 'Name'},
+  {name: 'age', type: TYPE.INT, min: 0, max: 120},
+  {name: 'sex', type: TYPE.STRING, choices: ['F', 'M']},
+  {name: 'active', type: TYPE.BOOL},
+  {name: 'created', type: TYPE.DATE_TIME},
+  {name: 'mw', type: TYPE.FLOAT},
 ];
 const VALUES = {name: ['Aspirin', 'Ibuprofen', 'Naproxen'], status: ['Open', 'Blocked']};
 const SCHEMA = Filters.schema(PROPS, VALUES);
@@ -395,8 +396,8 @@ spec('registration: the manifest entry states the grammar and the binding tiers;
   assert.match(meta.usage, /mw between 200 and 500/);
   assert.match(meta.usage, /-1w 2d now/);
   const props = Object.fromEntries(meta.props.map((p) => [p.name, p]));
-  assert.deepEqual([props.value.type, props.value.bindable, props.value.twoWay], ['object', true, true]);
-  assert.deepEqual([props.query.type, props.query.bindable, props.query.twoWay], ['string', true, undefined]);
+  assert.deepEqual([props.value.type, props.value.bindable, props.value.twoWay], [TYPE.OBJECT, true, true]);
+  assert.deepEqual([props.query.type, props.query.bindable, props.query.twoWay], [TYPE.STRING, true, undefined]);
   assert.equal(props.schema.bindable, undefined, 'schema is re-render tier');
   assert.deepEqual(meta.events, ['change']);
 

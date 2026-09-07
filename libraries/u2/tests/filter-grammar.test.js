@@ -11,6 +11,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
 import {Filters} from '../src/core/filter/index.js';
+import {TYPE} from 'datagrok-api/u2core';
 
 const corpus = JSON.parse(readFileSync(fileURLToPath(new URL('./filter-grammar.corpus.json', import.meta.url)), 'utf8'));
 const SPAN_TOLERANCE_MS = 5000;
@@ -131,8 +132,8 @@ test('negate: the D10 table, lists keep their list, the fuzzy pair collapses', (
 });
 
 const schema = Filters.schema([
-  {name: 'name', type: 'string'}, {name: 'age', type: 'int'}, {name: 'created', type: 'datetime'},
-  {name: 'status', type: 'string'},
+  {name: 'name', type: TYPE.STRING}, {name: 'age', type: TYPE.INT}, {name: 'created', type: TYPE.DATE_TIME},
+  {name: 'status', type: TYPE.STRING},
 ]);
 
 function ctx(textWithCaret) {

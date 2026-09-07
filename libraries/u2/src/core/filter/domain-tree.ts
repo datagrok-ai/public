@@ -1,4 +1,4 @@
-import {FilterError, cond, group, isGroup, isRef, isSpan} from './model.js';
+import {FilterError, KIND, cond, group, isGroup, isRef, isSpan} from './model.js';
 import type {DomainCondition, DomainConditionNode, DomainConditionTree, FilterCondition, FilterGroup, FilterNode,
   FilterProblem, FilterScalar, FilterValue} from './model.js';
 import {property as propertyOf} from './schema.js';
@@ -52,9 +52,9 @@ function typed(v: unknown, prop: FilterProperty | null): FilterScalar {
   if (typeof v !== 'string' || !prop)
     return v as FilterScalar;
   const kind = kindOf(prop);
-  if (kind === 'ref' && prop.ref && v !== '@current')
+  if (kind === KIND.REF && prop.ref && v !== '@current')
     return {type: prop.ref, id: v};
-  if (kind === 'datetime' && !Number.isNaN(Date.parse(v)))
+  if (kind === KIND.DATE_TIME && !Number.isNaN(Date.parse(v)))
     return new Date(v);
   return v;
 }

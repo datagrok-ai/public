@@ -11,11 +11,12 @@ import {Filters} from '../src/core/filter/index.js';
 import {Registry} from '../src/spec/registry.js';
 import {SpecContext, renderSpec} from '../src/spec/spec.js';
 import {registerAll} from '../src/spec/registrations.js';
+import {TYPE} from 'datagrok-api/u2core';
 
 const SCHEMA = {properties: [
-  {name: 'name', type: 'string'},
-  {name: 'age', type: 'int', min: 0, max: 120},
-  {name: 'sex', type: 'string', choices: ['F', 'M']},
+  {name: 'name', type: TYPE.STRING},
+  {name: 'age', type: TYPE.INT, min: 0, max: 120},
+  {name: 'sex', type: TYPE.STRING, choices: ['F', 'M']},
 ], values: {name: ['Aspirin', 'Ibuprofen']}};
 
 function spec(name, body) {
@@ -52,9 +53,9 @@ spec('manifest: the entry states the grammar and three examples, props carry the
   assert.match(meta.usage, /mw between 200 and 500/);
   assert.match(meta.usage, /-1w 2d now/);
   const props = Object.fromEntries(meta.props.map((p) => [p.name, p]));
-  assert.deepEqual([props.value.type, props.value.bindable, props.value.twoWay], ['object', true, true]);
+  assert.deepEqual([props.value.type, props.value.bindable, props.value.twoWay], [TYPE.OBJECT, true, true]);
   assert.deepEqual([props.mode.bindable, props.mode.twoWay, props.mode.choices], [true, true, ['simple', 'advanced']]);
-  assert.deepEqual([props.query.type, props.query.bindable, props.query.twoWay], ['string', true, undefined]);
+  assert.deepEqual([props.query.type, props.query.bindable, props.query.twoWay], [TYPE.STRING, true, undefined]);
   assert.equal(props.schema.bindable, undefined, 'schema is re-render tier');
   assert.deepEqual(props.orientation.choices, ['vertical', 'horizontal']);
   assert.deepEqual(meta.events, ['change']);

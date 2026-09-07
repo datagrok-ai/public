@@ -6,7 +6,8 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
-import {Filters} from '../src/core/filter/index.js';
+import {Filters, KIND} from '../src/core/filter/index.js';
+import {TYPE, SEMTYPE} from 'datagrok-api/u2core';
 
 const corpus = JSON.parse(readFileSync(fileURLToPath(new URL('./filter-grammar.corpus.json', import.meta.url)), 'utf8'));
 const c = (property, operator, value) => value === undefined ? {property, operator} : {property, operator, value};
@@ -84,8 +85,8 @@ test('fromDomainTree: a root-level >=/<= pair is not a between; ids are fresh', 
 });
 
 test('fromDomainTree with a schema: ref ids become FilterRef, ISO strings become Dates, @current stays', () => {
-  const schema = Filters.schema([{name: 'owner', type: 'string', ref: 'Core.users'}, {name: 'created', type: 'datetime'},
-    {name: 'name', type: 'string'}]);
+  const schema = Filters.schema([{name: 'owner', type: TYPE.STRING, ref: 'Core.users'}, {name: 'created', type: TYPE.DATE_TIME},
+    {name: 'name', type: TYPE.STRING}]);
   const root = Filters.fromDomainTree([c('owner', '=', 'u1'), 'and', c('owner', '=', ['u1', 'u2']), 'and',
     c('owner', '=', '@current'), 'and', c('created', '>', '2026-01-02T00:00:00.000Z'), 'and',
     c('created', '=', ['2026-01-02T00:00:00.000Z']), 'and', c('name', '=', '2026-01-02T00:00:00.000Z'), 'and',
@@ -140,8 +141,8 @@ test('toDomainTree: not pushes down, nested and on a between; an operator withou
     [c('e', '=', [1]), 'and', c('f', 'like', '%q%')],
   ]], 'a doubly negated fuzzy pair stays the plain like (the pushdown approximation)');
   assert.deepEqual(Filters.toDomainTree(Filters.group('and', [Filters.cond('a', '=', 1)], {not: true})), [c('a', '!=', 1)]);
-  const unregister = Filters.operators.register({id: 'Contains', label: 'Contains', arity: 1, kinds: ['string'],
-    semType: 'Molecule', editor: 'default', bitset: async () => ({bits: new Uint32Array(0), length: 0})});
+  const unregister = Filters.operators.register({id: 'Contains', label: 'Contains', arity: 1, kinds: [KIND.STRING],
+    semType: SEMTYPE.MOLECULE, editor: 'default', bitset: async () => ({bits: new Uint32Array(0), length: 0})});
   try {
     assert.throws(() => Filters.toDomainTree(Filters.group('and', [Filters.cond('smiles', 'Contains', 'C')])),
       /"Contains" has no domain form/);
@@ -178,7 +179,7 @@ function resolved(node, now) {
   return node.value === undefined ? node : {...node, value: Array.isArray(node.value) ? node.value.map(date) : date(node.value)};
 }
 
-const datetimes = Filters.schema([{name: 'created', type: 'datetime'}, {name: 'updated', type: 'datetime'}]);
+const datetimes = Filters.schema([{name: 'created', type: TYPE.DATE_TIME}, {name: 'updated', type: TYPE.DATE_TIME}]);
 
 for (const entry of corpus.entries.filter((e) => e.errors !== true)) {
   test(`round trip ${entry.id}: the model survives toDomainTree → fromDomainTree`, () => {
@@ -192,8 +193,8 @@ for (const entry of corpus.entries.filter((e) => e.errors !== true)) {
 }
 
 test('Filters.parse: syntax problems with an empty root, validation problems with a schema, typed values', () => {
-  const schema = Filters.schema([{name: 'name', type: 'string'}, {name: 'age', type: 'int'},
-    {name: 'created', type: 'datetime'}, {name: 'owner', type: 'string', ref: 'Core.users'}]);
+  const schema = Filters.schema([{name: 'name', type: TYPE.STRING}, {name: 'age', type: TYPE.INT},
+    {name: 'created', type: TYPE.DATE_TIME}, {name: 'owner', type: TYPE.STRING, ref: 'Core.users'}]);
   const bad = Filters.parse('name = ', schema);
   assert.deepEqual(bad.root.nodes, []);
   assert.equal(bad.problems[0].code, 'syntax');
@@ -213,15 +214,15 @@ test('Filters.parse: syntax problems with an empty root, validation problems wit
 });
 
 test('Filters.parse: a property typed in another case takes the schema spelling, so format prints it', () => {
-  const schema = Filters.schema([{name: 'AGE', type: 'int'}, {name: 'Owner', type: 'string', ref: 'Core.users'}]);
+  const schema = Filters.schema([{name: 'AGE', type: TYPE.INT}, {name: 'Owner', type: TYPE.STRING, ref: 'Core.users'}]);
   const parsed = Filters.parse('age > 1 and OWNER.login = "u1" and owner = "u2"', schema);
   assert.deepEqual(parsed.problems, []);
   assert.deepEqual(parsed.root.nodes.map((n) => n.property), ['AGE', 'Owner.login', 'Owner']);
   assert.deepEqual(parsed.root.nodes[2].value, {type: 'Core.users', id: 'u2'}, 'the canonical property types the value');
   assert.equal(Filters.format(parsed.root), 'AGE > 1 and Owner.login = "u1" and Owner = "u2"');
-  assert.equal(Filters.parse('Age > 1', Filters.schema([{name: 'Age', type: 'int'}, {name: 'age', type: 'int'}]))
+  assert.equal(Filters.parse('Age > 1', Filters.schema([{name: 'Age', type: TYPE.INT}, {name: 'age', type: TYPE.INT}]))
     .root.nodes[0].property, 'Age', 'an exact name stays');
-  assert.equal(Filters.parse('AGE > 1', Filters.schema([{name: 'Age', type: 'int'}, {name: 'age', type: 'int'}]))
+  assert.equal(Filters.parse('AGE > 1', Filters.schema([{name: 'Age', type: TYPE.INT}, {name: 'age', type: TYPE.INT}]))
     .problems[0].code, 'unknown-property', 'two case variants: neither is meant');
   assert.equal(Filters.fromDomainTree([{property: 'age', operator: '>', value: 1}], schema).nodes[0].property, 'AGE',
     'a tree written by hand canonicalizes the same way');
