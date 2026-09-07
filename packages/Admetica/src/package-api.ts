@@ -33,7 +33,7 @@ export namespace funcs {
     return await grok.functions.call('Admetica:AdmeticaHT', { table, molecules, absorption, distribution, metabolism, excretion });
   }
 
-  export async function admeticaEditor(call: any ): Promise<void> {
+  export async function admeticaEditor(call: any ): Promise<any> {
     return await grok.functions.call('Admetica:AdmeticaEditor', { call });
   }
 

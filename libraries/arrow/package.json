@@ -1,10 +1,14 @@
 {
   "name": "@datagrok-libraries/arrow",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git"
+  },
   "publishConfig": {
     "access": "public"
   },
   "fullName": "Arrow",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "author": {
     "name": "Pavlo Polovyi",
     "email": "ppolovyi@datagrok.ai"

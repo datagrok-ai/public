@@ -1,4 +1,5 @@
-import {signal, Scope, Component} from '../../src/index.js';
+import {signal, Scope, Control} from '../../src/index.js';
+import {Tooltip} from '../../src/core/tooltip.js';
 
 function injectOnce(id, make) {
   if (document.getElementById(id)) return;
@@ -39,8 +40,6 @@ function target(text) {
 }
 
 export async function render(main) {
-  const {Tooltip} = await import('../../src/core/tooltip.js');
-
   main.append(el('h1', null, 'Tooltip'));
   const intro = el('p');
   intro.innerHTML = 'One singleton element in the shared <code>Overlay</code> layer, positioned ' +
@@ -56,7 +55,7 @@ export async function render(main) {
   const refresh = () => scopeCount.textContent = String(Scope.liveCount);
   main.append(countLine);
 
-  const page = new Component();
+  const page = new Control();
   const now = signal(new Date().toLocaleTimeString());
   const timer = setInterval(() => now.value = new Date().toLocaleTimeString(), 1000);
   page.own(() => clearInterval(timer));

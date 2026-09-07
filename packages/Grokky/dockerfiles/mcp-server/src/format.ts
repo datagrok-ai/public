@@ -3,11 +3,12 @@
 // (LATENCY.md Tier 4). Results are therefore compact JSON, array results are paged, and everything
 // is capped — a naive `list` on a large instance used to inject hundreds of KB mid-turn.
 
-export type ToolResult = {content: {type: 'text'; text: string}[]};
+export type ToolResult = {content: {type: 'text'; text: string}[]; isError?: boolean};
 
 const DEFAULT_LIMIT = 50;
 const MAX_CHARS = 20_000;
 const MAX_RAW_CHARS = 40_000;
+const MAX_ERROR_CHARS = 2_000;
 
 const wrap = (text: string): ToolResult => ({content: [{type: 'text', text}]});
 
@@ -42,5 +43,9 @@ export function formatResult(data: unknown, opts: FormatOpts = {}): ToolResult {
 /** Errors come back as a result, not a throw: the model can read and correct them in-place,
  * whereas a protocol-level error ends the tool call with nothing actionable in it. */
 export function formatError(message: string, detail?: unknown): ToolResult {
-  return wrap(JSON.stringify(detail === undefined ? {error: message} : {error: message, ...(detail as object)}));
+  const error = message.length <= MAX_ERROR_CHARS ? message :
+    `${message.slice(0, MAX_ERROR_CHARS)}…truncated at ${MAX_ERROR_CHARS} chars`;
+  const result = wrap(JSON.stringify(detail === undefined ? {error} : {error, ...(detail as object)}));
+  result.isError = true;
+  return result;
 }

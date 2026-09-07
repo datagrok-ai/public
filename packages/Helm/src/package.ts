@@ -15,6 +15,7 @@ import {HelmInputBase, IHelmHelper, IHelmInputInitOptions} from '@datagrok-libra
 import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
 
 import {getPropertiesWidget} from './widgets/properties-widget';
+import {getWrapWidthWidget} from './widgets/wrap-width-widget';
 import {HelmGridCellRenderer, HelmGridCellRendererBack} from './utils/helm-grid-cell-renderer';
 import {HelmPackage} from './package-utils';
 import {HelmHelper} from './helm-helper';
@@ -70,6 +71,11 @@ async function initHelmInt(): Promise<void> {
     const libHelper = await getMonomerLibHelper();
     const helmHelper: IHelmHelper = new HelmHelper(seqHelper, _package.logger, rdKitModule);
     _package.completeInit(helmHelper, libHelper);
+    // Seed hwe's process-wide row-wrap width from the `MonomersPerRow` package
+    // property. Must run before the first cell renders; the column widget in
+    // `helmPanel` can then override it for the session without changing this
+    // default.
+    _package.applyDefaultMonomersPerRow();
   } catch (err: any) {
     const [errMsg, errStack] = errInfo(err);
     grok.shell.error(`Package \'Helm\' init error:\n${errMsg}`);
@@ -149,6 +155,20 @@ export class PackageFunctions {
   static editMoleculeCell(
     @grok.decorators.param({'type': 'grid_cell'}) cell: DG.GridCell): void {
     checkMonomersAndOpenWebEditor(cell, undefined, undefined);
+  }
+
+  @grok.decorators.panel({
+    name: 'HELM Renderer',
+    meta: {role: 'widgets'},
+    tags: ['widgets', 'panel'],
+  })
+  static async helmPanel(
+    @grok.decorators.param({'options': {'semType': 'Macromolecule', 'units': 'helm'}}) col: DG.Column): Promise<DG.Widget> {
+    if (col.meta.units !== NOTATION.HELM)
+      return new DG.Widget(ui.divText('These settings apply only to HELM columns'));
+    // Session-scoped row-wrap width. The package-wide default lives in the
+    // `MonomersPerRow` package property and is not touched here.
+    return getWrapWidthWidget();
   }
 
 

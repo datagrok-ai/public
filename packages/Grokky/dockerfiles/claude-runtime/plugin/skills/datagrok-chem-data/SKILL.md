@@ -8,7 +8,7 @@ description: Bioactivity and small-molecule data-side catalog. Covers ChEMBL sea
 Function catalog for the **data and workflow** half of Datagrok cheminformatics:
 Chembl, MolTrack, HitTriage, Curves.
 
-All functions are callable from a `datagrok-exec` block via
+All functions are callable through the `datagrok_exec` tool via
 `grok.functions.call('<Package>:<funcName>', {param1, param2, ...})`. For the
 data-side packages, results are usually `DG.DataFrame` objects produced by SQL
 queries or by Docker services (MolTrack).
@@ -34,7 +34,7 @@ never `ChEMBL:foo` or `chembl:foo`.
 
 If the user asks for a concrete data-side action ("register this compound",
 "fit IC50 from this data", "what is the SMILES of aspirin", "list ChEMBL
-compounds for organism X") — emit a `datagrok-exec` block calling the relevant
+compounds for organism X") — call `datagrok_exec` with code calling the relevant
 function below. Don't answer chemistry/data questions from memory when a
 catalog function exists. If a required input (SMILES, payload, mapping JSON)
 is missing, emit the block with a clearly-marked placeholder or sensible
@@ -242,7 +242,7 @@ Stores curve data in a single cell (one `DG.Column` of fit chart JSON) and
 renders it as a per-cell curve. Includes converters from XML 3DX, compact-DR,
 and GraphPad Prism `.pzfx` formats.
 
-**Fit-statistic property enum** (used by `addStatisticsColumn` and `addAggrStatisticsColumn`'s `propName`): keys from the curve `FitStatistics` type — `'rSquared' | 'auc' | 'interceptX' | 'interceptY' | 'slope' | 'top' | 'bottom'`. (IC50 corresponds to `interceptX` for the standard 50% intercept; aliases like `'IC50'` / `'Hill'` / `'AUC'` are recognised at the UI/sigmoid layer but the canonical key is `interceptX`.)
+**Fit-statistic property enum** (used by `addStatisticsColumn` and `addAggrStatisticsColumn`'s `propName`): keys from the curve `FitStatistics` type — `'rSquared' | 'auc' | 'interceptX' | 'interceptY' | 'slope' | 'top' | 'bottom'`. (IC50 corresponds to `interceptX` for the standard 50% intercept; aliases like `'IC50'` / `'Hill'` / `'AUC'` are recognised at the UI/sigmoid layer but the canonical key is `interceptX` — a key outside this enum yields an all-null column with no error.)
 
 ### Building and inspecting curves
 
@@ -253,7 +253,7 @@ and GraphPad Prism `.pzfx` formats.
 | `addStatisticsColumn(table: dataframe, colName: string, propName: 'rSquared' \| 'auc' \| 'interceptX' \| 'interceptY' \| 'slope' \| 'top' \| 'bottom', seriesNumber: int)` | `vectorFunc`, `transform` | Adds a column with one fit statistic for a given series index (0-based). `propName` is a key of the `FitStatistics` type — IC50 is the standard 50% intercept (`interceptX`). |
 | `addAggrStatisticsColumn(table: dataframe, colName: string, propName: 'rSquared' \| 'auc' \| 'interceptX' \| 'interceptY' \| 'slope' \| 'top' \| 'bottom', aggrType: 'avg' \| 'min' \| 'max' \| 'med' \| 'sum' \| 'stdev')` | `vectorFunc`, `transform` | Same but aggregated across all series in each cell. |
 
-**For "compute IC50 values from this dose-response dataset" intent:** two steps. (1) Fit: `Curves:dataToCurves(t, concCol, readoutCol, batchCol, assayCol, runCol, compoundCol, targetCol)` — guess the columns from the current table (concentration/dose, readout/response, compound/batch IDs). (2) Extract: `Curves:addStatisticsColumn(fitTable, 'fit', 'IC50', 0)` to pull IC50 from series 0. Always emit both blocks back-to-back; never reply conversationally for an IC50 request.
+**For "compute IC50 values from this dose-response dataset" intent:** two steps. (1) Fit: `Curves:dataToCurves(t, concCol, readoutCol, batchCol, assayCol, runCol, compoundCol, targetCol)` — guess the columns from the current table (concentration/dose, readout/response, compound/batch IDs). (2) Extract: `Curves:addStatisticsColumn(fitTable, 'fit', 'interceptX', 0)` to pull IC50 from series 0. Always make both calls back-to-back; never reply conversationally for an IC50 request.
 
 ### Demos
 

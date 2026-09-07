@@ -1,13 +1,12 @@
 /* eslint-disable no-undef */
 
-import {modelFromWorkerData} from './cobra-model'
-import {optimizeModel} from './cobraSolver'
+import * as cobra from './cobraSolver'
 
 onmessage = async (message) => {
-  const model = modelFromWorkerData(message.data)
+  const model = cobra.modelFromWorkerData(message.data)
   try {
     console.log(message.data)
-    const solution = optimizeModel(model)
+    const solution = (model.optimize())
     postMessage(solution)
   } catch (e) {
     postMessage({ error: e });

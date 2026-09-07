@@ -1,5 +1,25 @@
 # Grok Connect changelog
 
+# 2.8.5 (unreleased)
+
+* Fixed: Cassandra `FLOAT` and `TINYINT` columns failed with `CodecNotFoundException` — the typed fast reads ask the driver to widen to `Double`/`Integer`, which it refuses, so the provider now reads those through `getObject` and the converter chain
+* Streaming: typed JDBC fast reads (`getInt`/`getDouble`/`getString`/... instead of `getObject` + conversion for the common column types, `ResultSetManager.readFast`)
+* Streaming: `int8AsInt32` query option - bigint columns travel as `int` while every value fits int32; the downcast is opt-in, sticky once a value overflows and survives chunk boundaries (`detach` carries the flag)
+* Streaming: next fetch size is derived from the previous chunk's serialized bytes/row instead of the in-memory estimate; the measurement is snapshotted when the fetch is scheduled (chunk k feeds fetch k+2 single-task, k+3 pipelined); `MAX_FETCH_SIZE` raised to 500000 rows
+* Serialization: cost-based int and datetime encoder selection (RLE / sequence-pattern / bit-packed list, `dateTime:int`) with Dart-fixture goldens; no d42 VERSION bump
+* Streaming: chunks are gzipped in grok_connect when Datlas sends `compressChunks` (`gzipLevel`, default 1); announced as `DATAFRAME PART SIZE: <n> gzip=true` and passed through by Datlas
+* Streaming: two-stage pipeline - fetch(k+2) runs in parallel with serialize+gzip(k+1) while chunk k is sent; `-Dgrok.connect.pipelineFetch=false` restores the single-task path; closing mid-stream flags the query cancelled and waits (up to 5 s) for the in-flight fetch before releasing the connection
+* Debug: `COLUMN SIZES` line (per-column bytes/gz/encoder) after the serialize END marker; per-column encode `ms` only with the `columnTimings` query option
+* Fixed: Hive2 could not run a single query since 2.8.0 — reconstructing hive-jdbc 4.0.1's dropped runtime deps missed `hive-serde`, so the driver died on `NoClassDefFoundError: org/apache/hadoop/hive/serde2/thrift/Type`, and `hive-standalone-metastore-common` pulled the shaded `hadoop-client-api` (whose `Configuration` resolves `org.apache.hadoop.shaded.*` out of the absent `hadoop-client-runtime`) alongside the unshaded `hadoop-common`
+* Fixed: Postgres `interval` columns lost their zero-valued units (`1 years 5 mons 5 days` instead of `1 years 5 mons 5 days 0 hours 0 mins 0.0 secs`) after the 2.8.0 driver refresh — pgjdbc 42.7.13 rewrote `PGInterval.toString()`; the six-unit rendering is now pinned in `PgIntervalTypeConverter` instead of coming from the driver
+* Fixed: the shaded jar failed every hostname lookup on JDK >= 18 (dnsjava's `java.net.spi.InetAddressResolverProvider` service entry pointed at a multi-release class the shade drops); the entry is now excluded
+* Fixed: `grok_connect.cmd` / `grok_connect.sh` put `lib/*` before the jar on the classpath, letting a driver's bundled SLF4J shadow the shaded one
+* `initConnectFetchSize` with a non-numeric value (e.g. `"10 MB"`, which only `connectFetchSize` accepts) now fails with a clear message instead of a bare `NumberFormatException`
+
+# 2.8.4
+
+* GROK-20712: Fixed the main image registering zero providers — the newline `printf` writes into `providers.conf` for the default empty allowlist parsed as an empty set instead of "all providers", so every DB test failed with "Provider Postgres not found" since 2.8.3
+
 # 2.8.3
 
 * GROK-20712: Provider allowlist is now baked into the image at build time (`providers.conf` written by the Dockerfile `FLAVOR` layer from the `GROK_CONNECT_PROVIDERS` build arg) instead of being read from a runtime env variable, so the main/extended provider partition cannot be overridden at deploy time

@@ -1,0 +1,73 @@
+/* Section skin — a form-category heading (13px bold body color) over a plain body; the chevron
+   rides the host's left padding gutter and shows on hover/focus only, so the title stays flush
+   with the captions below (a zero-padding overflow:hidden host clips it — documented limitation).
+   Tokens only; css/tokens.css must be loaded alongside. */
+.u2-section {
+  font-family: var(--dg-font-family);
+  font-size: var(--dg-font-size);
+  line-height: var(--dg-line-height);
+  color: var(--dg-text-color);
+}
+
+.u2-section-header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  font-weight: var(--dg-font-weight-bold);
+  outline: none;
+}
+
+/* the display: flex above would defeat the UA [hidden] rule the form's header auto-hide writes */
+.u2-section-header[hidden] {
+  display: none;
+}
+
+.u2-section-header[role='button'] {
+  cursor: pointer;
+  user-select: none;
+}
+
+.u2-section-header:focus-visible {
+  outline: var(--dg-focus-ring);
+  outline-offset: calc(-1 * var(--dg-focus-ring-width));
+}
+
+.u2-section-chevron {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(-1 * var(--dg-space-xl));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--dg-space-xl);
+  font-size: var(--dg-font-size-small);
+  color: var(--dg-text-color-light);
+  opacity: 0;
+  transition: transform 100ms ease, opacity 100ms ease;
+}
+
+.u2-section-header:hover .u2-section-chevron,
+.u2-section-header:focus-visible .u2-section-chevron {
+  opacity: 1;
+}
+
+/* hover-only while expanded; a collapsed section keeps its chevron, or nothing says it folds */
+.u2-section-header[aria-expanded='false'] .u2-section-chevron {
+  opacity: 1;
+}
+
+.u2-section-header[aria-expanded='false'] .u2-section-chevron {
+  transform: rotate(-90deg);
+}
+
+.u2-section-title {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.u2-section-body {
+  display: flex;
+  flex-direction: column;
+}

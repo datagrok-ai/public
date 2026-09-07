@@ -65,12 +65,12 @@ public class BufferAccessor {
         view = new ByteData(buf);
     }
 
-    void writeString(String value) {
+    public void writeString(String value) {
         byte[] bytes = value == null ? null : value.getBytes(StandardCharsets.UTF_8);
         writeUint8List(bytes);
     }
 
-    void writeInt8(byte value) {
+    public void writeInt8(byte value) {
         _ensureSpace(1);
         view.setInt8(bufPos, value);
         bufPos += 1;
@@ -462,6 +462,15 @@ public class BufferAccessor {
         System.arraycopy(buf, bufPos, list, 0, length);
         bufPos += length;
         return list;
+    }
+
+    // Skips the column header and returns the encoder id every column encoder writes first.
+    public int readColumnEncoderId() {
+        readTypeCode(TYPE_COLUMN);
+        readString();
+        readString();
+        readStringMap();
+        return readInt32();
     }
 
     // Reads a Column: TYPE_COLUMN, name, typeName, tags, then encoder payload.

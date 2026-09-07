@@ -51,6 +51,22 @@ describe('FanoutPublisher', () => {
     expect(connectFn).toHaveBeenCalledTimes(3);
   });
 
+  test('concurrent publishes single-flight the connection', async () => {
+    const publishFn = jest.fn().mockReturnValue(true);
+    const connectFn = jest.fn().mockImplementation(async () => mockConnection(publishFn));
+    const publisher = new FanoutPublisher('amqp://guest:guest@localhost:5672', connectFn);
+
+    const results = await Promise.all([
+      publisher.publish({}, 'c1', 'accepted'),
+      publisher.publish({}, 'c2', 'progress'),
+      publisher.publish({}, 'c3', 'call'),
+    ]);
+
+    expect(results).toEqual([true, true, true]);
+    expect(connectFn).toHaveBeenCalledTimes(1);
+    expect(publishFn).toHaveBeenCalledTimes(3);
+  });
+
   test('reuses the channel across publishes and asserts the exchange non-durable', async () => {
     const publishFn = jest.fn().mockReturnValue(true);
     const conn = mockConnection(publishFn);

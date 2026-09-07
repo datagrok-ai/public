@@ -3,7 +3,9 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
 export class SearchBaseViewer extends DG.JsViewer {
-  name: string = '';
+  private _name: string = '';
+  get name(): string { return this._name; }
+  set name(x: string | undefined) { this._name = x ?? ''; }
   semType: string = '';
   limit: number;
   targetColumn?: DG.Column<string>;

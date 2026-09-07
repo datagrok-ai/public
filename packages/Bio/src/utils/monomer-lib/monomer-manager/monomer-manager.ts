@@ -13,6 +13,7 @@ import {mostSimilarNaturalAnalog} from '@datagrok-libraries/bio/src/utils/macrom
 import {PolymerType, MonomerType} from '@datagrok-libraries/bio/src/helm/types';
 
 import {MonomerLibManager} from '../lib-manager';
+import {attachMonomerManagerAi} from '../ai-functions';
 
 import {MONOMER_RENDERER_TAGS} from '@datagrok-libraries/bio/src/utils/cell-renderer';
 import {BioTags, MONOMER_MOTIF_SPLITTER} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
@@ -360,10 +361,78 @@ export class MonomerManager implements IMonomerManager {
     return this._newMonomerForm;
   }
 
+  get tableView(): DG.TableView | null { return this.tv; }
+
+  get currentLibrary(): string | null { return this.libInput?.value ?? null; }
+
+  get monomerSymbols(): string[] {
+    return (this.tv?.dataFrame?.col(MONOMER_DF_COLUMN_NAMES.SYMBOL)?.toList() ?? []).filter((s: string) => !!s);
+  }
+
+  /** Row index of the monomer with [symbol] in the open library grid, or -1. */
+  findMonomerRow(symbol: string): number {
+    const col = this.tv?.dataFrame?.col(MONOMER_DF_COLUMN_NAMES.SYMBOL);
+    return col ? col.toList().indexOf(symbol) : -1;
+  }
+
+  async getMonomerBySymbol(symbol: string): Promise<Monomer | null> {
+    const row = this.findMonomerRow(symbol);
+    return row < 0 ? null : await monomerFromDfRow(this.tv!.dataFrame.rows.get(row));
+  }
+
+  /** Applies [fields] to the monomer edit form; returns the unrecognized keys. */
+  setMonomerFormFields(fields: {[key: string]: unknown}): string[] {
+    const inputs = this._newMonomerForm.fieldInputs;
+    const unknown: string[] = [];
+    for (const [key, value] of Object.entries(fields)) {
+      if (key === 'molecule')
+        this._newMonomerForm.molSketcher.setSmiles(String(value ?? ''));
+      else if (key in inputs)
+        (inputs[key as keyof typeof inputs] as DG.InputBase).value = value as any;
+      else
+        unknown.push(key);
+    }
+    this._newMonomerForm.onMonomerInputChanged();
+    return unknown;
+  }
+
+  /** The form's validation error, or null when it can be saved. */
+  validateMonomerForm(): string | null {
+    return this._newMonomerForm.validateInputs() ?? null;
+  }
+
+  /** Saves the monomer currently in the edit form (the same path as the Save button). */
+  async saveMonomerForm(): Promise<void> {
+    await this._newMonomerForm.saveMonomer();
+  }
+
+  /** Deletes monomers from the open library by symbol, without the confirmation dialog. */
+  async deleteMonomersBySymbols(symbols: string[]): Promise<{deleted: string[], missing: string[]}> {
+    const libName = this.currentLibrary;
+    if (!libName || !this.tv?.dataFrame)
+      throw new Error('No monomer library is open');
+    const deleted: string[] = [];
+    const missing: string[] = [];
+    const monomers: Monomer[] = [];
+    for (const symbol of symbols) {
+      const row = this.findMonomerRow(symbol);
+      if (row < 0) {
+        missing.push(symbol);
+        continue;
+      }
+      monomers.push(await monomerFromDfRow(this.tv.dataFrame.rows.get(row)));
+      deleted.push(symbol);
+    }
+    if (monomers.length)
+      await this._newMonomerForm.removeMonomers(monomers, libName, false, false);
+    return {deleted, missing};
+  }
+
   private _contextMenuSub: Subscription | null = null;
   private async getMonomersTableView(fileName?: string, addView = true): Promise<DG.TableView> {
     const df = await this.getMonomersDf(fileName);
     this.tv = DG.TableView.create(df, addView);
+    attachMonomerManagerAi(this.tv, this);
 
     this.adjustTable();
     this._contextMenuSub?.unsubscribe();
@@ -1098,28 +1167,34 @@ class MonomerForm implements INewMonomerForm {
     return ui.divH([molImage, infoTable], {style: {alignItems: 'center'}});
   }
 
-  async removeMonomers(monomers: Monomer[], libName: string, notify = true) {
+  async removeMonomers(monomers: Monomer[], libName: string, notify = true, confirm = true) {
     const provider = await findProviderWithLibraryName(await this.monomerLibManager.getProviders(), libName);
     if (!provider) {
       grok.shell.error(`Library ${libName} not found in any provider`);
       return;
     }
-    const infoTables = ui.divV(monomers.map((m) => this.getMonomerInfoTable(m)), {style: {maxHeight: '500px', overflow: 'scroll'}});
     const isPlural = monomers.length > 1;
+    const doRemove = async () => {
+      await provider.deleteMonomersFromLibrary(libName, monomers);
+      await this.monomerLibManager.loadMonomerLib(true);
+      await this.refreshTable();
+      if (notify)
+        grok.shell.info(`Monomer${isPlural ? 's' : ''} ${monomers.map((m) => m.symbol).join(', ')} ${isPlural ? 'were' : 'was'} successfully removed from ${libName} library`);
+    };
+    if (!confirm) {
+      await doRemove();
+      return;
+    }
+    const infoTables = ui.divV(monomers.map((m) => this.getMonomerInfoTable(m)), {style: {maxHeight: '500px', overflow: 'scroll'}});
     const promptText = isPlural ?
       `Are you sure you want to remove monomers ${monomers.map((m) => m.symbol).join(', ')} from ${libName} library?` :
       `Are you sure you want to remove monomer with symbol ${monomers[0].symbol} from ${libName} library?`;
-
 
     const dlg = ui.dialog('Remove Monomer' + (isPlural ? 's' : ''))
       .add(ui.h1(promptText))
       .add(infoTables)
       .addButton('Remove', async () => {
-        await provider.deleteMonomersFromLibrary(libName, monomers);
-        await this.monomerLibManager.loadMonomerLib(true);
-        await this.refreshTable();
-        if (notify)
-          grok.shell.info(`Monomer${isPlural ? 's' : ''} ${monomers.map((m) => m.symbol).join(', ')} ${isPlural ? 'were' : 'was'} successfully removed from ${libName} library`);
+        await doRemove();
         dlg.close();
       })
       .show();
@@ -1187,7 +1262,7 @@ class MonomerForm implements INewMonomerForm {
       await saveLib();
   }
 
-  private async saveMonomer() {
+  async saveMonomer() {
     // TODO: handle some r group logic here
     // const molFile = this.molSketcher.getMolFile();
     let smiles = this.molSketcher.getSmiles();

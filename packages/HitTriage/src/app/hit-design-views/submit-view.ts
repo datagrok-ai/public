@@ -48,6 +48,13 @@ export class HitDesignSubmitView extends HitBaseView<HitDesignTemplate, HitDesig
     return this.statusInput.value ?? this.app.campaign?.status ?? 'No Status';
   }
 
+  /** Programmatic submit (used by the AI view functions): seeds the status the same
+   * way the dialog does, then runs the regular submit flow. */
+  public async submitWithStatus(status?: string): Promise<boolean> {
+    this.statusInput.value = status?.trim() ? status.trim() : (this.app.campaign?.status ?? 'Submitted');
+    return await this.submit();
+  }
+
   render() {
     this.statusInput.value = this.app.campaign?.status ?? '';
     ui.empty(this.content);
@@ -106,22 +113,24 @@ export class HitDesignSubmitView extends HitBaseView<HitDesignTemplate, HitDesig
   onActivated(): void {
   }
 
-  async submit(): Promise<any> {
+  /** Resolves to whether the submit function ran and the campaign was saved. */
+  async submit(): Promise<boolean> {
     const submitParams= this.app.submitParams;
     if (!submitParams) {
       grok.shell.error('No submit function selected. Please select a function to submit the campaign.');
-      return;
+      return false;
     }
 
     const submitFn = DG.Func.find({name: submitParams.fName, package: submitParams.package})[0];
     if (!submitFn) {
       grok.shell.error(`Function ${submitParams.fName} not found.`);
-      return;
+      return false;
     }
     const filteredDf = DG.DataFrame.fromCsv(this.app.dataFrame!.toCsv({filteredRowsOnly: true}));
     await submitFn.apply({df: filteredDf, molecules: this.app.molColName});
     this.app.campaign!.status = this.getStatus();
-    this.app.saveCampaign();
+    await this.app.saveCampaign();
     grok.shell.info('Submitted successfully.');
+    return true;
   }
 }

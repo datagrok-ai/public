@@ -265,7 +265,9 @@ export class HelmInput extends HelmInputBase {
         try {
           const webEditorValue = webEditorApp!.canvas!.getHelm(true)
             .replace(/<\/span>/g, '').replace(/<span style='background:#bbf;'>/g, '');
-          this.viewer.editor.setHelm(webEditorValue);
+          // Through setStringValue, not just editor.setHelm — updating only the drawing
+          // left `value`/`stringValue` stale (a Flow Helm Input read back an empty value).
+          this.setStringValue(webEditorValue);
           this.helmString = webEditorValue;
 
           const selection = webEditorApp!.canvas!.helm!.jsd.m.atoms;
@@ -277,6 +279,7 @@ export class HelmInput extends HelmInputBase {
             this.viewer.editor.m.atoms[i].highlighted = selection[i].selected;
           }
           this.viewer.editor.redraw();
+          this.fireChanged();
         } catch (err: any) {
           defaultErrorHandler(err);
         } finally {

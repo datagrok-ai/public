@@ -297,6 +297,7 @@ export enum PATH {
   EQ = '=',
   AND = '&',
   PARAM = `?params:`,
+  PARAM_ENCODED = `?params%3a`,
   BROWSE = 'browse',
   RECENT = 'diff-studio-recent.d42',
   MY_FILES = 'Myfiles',

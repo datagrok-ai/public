@@ -356,7 +356,8 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
   /** Renders Logo Summary Table body. */
   render(): void {
     $(this.root).empty();
-    if (this.clustersColumnName == null || this.sequenceColumnName == null || this.activityColumnName == null) {
+    if (!this.dataFrame || this.clustersColumnName == null || this.sequenceColumnName == null ||
+      this.activityColumnName == null) {
       this.root.appendChild(
         ui.divText('Please, select a sequence, cluster and activity columns in the viewer properties'));
       return;
@@ -397,6 +398,8 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
    */
   onPropertyChanged(property: DG.Property): void {
     super.onPropertyChanged(property);
+    if (!this.dataFrame)
+      return;
     let doRender = false;
     switch (property.name) {
     case LST_PROPERTIES.MEMBERS_RATIO_THRESHOLD:

@@ -117,8 +117,9 @@ public class ProviderManager {
         }
     }
 
-    private static Set<String> parseAllowlist(String value) {
-        if (GrokConnectUtil.isEmpty(value) || value.trim().equals("*"))
+    static Set<String> parseAllowlist(String value) {
+        // providers.conf always ends with a newline, so whitespace-only must mean "all"
+        if (value == null || value.trim().isEmpty() || value.trim().equals("*"))
             return null;
         return Arrays.stream(value.split(","))
                 .map(String::trim)

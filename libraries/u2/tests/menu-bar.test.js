@@ -6,7 +6,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {Scope} from '../src/index.js';
-import {MenuBar} from '../src/components/menu-bar.js';
+import {MenuBar} from '../src/components/navigation/menu-bar.js';
 
 function ui(name, body) {
   test(name, async () => {

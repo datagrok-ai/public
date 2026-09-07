@@ -1,5 +1,9 @@
 {
   "name": "wiki-merge",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git"
+  },
   "version": "1.0.0",
   "description": "A TypeScript command-line utility to copy GitHub project documentation (markdown files and images) to a new location, while only including files that are referenced from top-level markdown files.",
   "main": "wiki-merge.js",

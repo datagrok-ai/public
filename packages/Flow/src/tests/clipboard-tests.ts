@@ -13,6 +13,32 @@ category('Flow: clipboard', () => {
     registerBuiltinNodes();
   });
 
+  test('the node context menu offers Copy; copyNodes feeds paste without a selection', async () => {
+    const e = makeEditor();
+    try {
+      const node = await addNode(e.flow, 'Inputs/String Input', 0, 0);
+      await until(() => !!e.container.querySelector(`.ff-node[data-node-id="${node.id}"]`));
+
+      const nodeEl = e.container.querySelector<HTMLElement>(`.ff-node[data-node-id="${node.id}"]`)!;
+      nodeEl.dispatchEvent(new MouseEvent('contextmenu', {bubbles: true, cancelable: true, clientX: 10, clientY: 10}));
+      const labels = (): string[] => Array.from(document.querySelectorAll<HTMLElement>('.d4-menu-item-label'))
+        .map((el) => el.textContent?.trim() ?? '');
+      expect(await until(() => labels().includes('Copy')), true, `no Copy item; saw: ${labels().join(', ')}`);
+      for (const el of Array.from(document.querySelectorAll('.d4-menu-popup, .d4-menu-dropdown')))
+        el.remove();
+
+      // What the menu item runs: copy THIS node (no selection needed), then paste.
+      expect(e.flow.copyNodes([node.id]), 1, 'one node copied');
+      const pasted = await e.flow.pasteClipboard();
+      expect(pasted.length, 1, 'paste materialized the copy');
+      expect(e.flow.getNodeCount(), 2);
+      expect(e.flow.copyNodes([]), 0, 'nothing to copy leaves the clipboard untouched');
+      expect((await e.flow.pasteClipboard()).length, 1, 'previous clipboard still pastes');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
   test('duplicateNodes copies nodes + internal connections and selects the copies', async () => {
     const e = makeEditor();
     try {

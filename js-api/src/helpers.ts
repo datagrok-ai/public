@@ -1,5 +1,6 @@
 import {toJs} from './wrappers';
 import {IDartApi} from "./api/grok_api.g";
+import {levenshteinDistance, jaroWinklerDistance} from './utils/string-distances';
 
 const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
 
@@ -199,5 +200,15 @@ export class StringUtils {
 
   public static camelCaseToSentence(s: string, o?: {capitalizeFirst?: boolean, capitalizeNext?: boolean, capitalizeConjunctions?: boolean}) {
     return api.grok_StringUtils_CamelCaseToSentence(s, o?.capitalizeFirst ?? true, o?.capitalizeNext ?? false, o?.capitalizeConjunctions ?? false);
+  }
+
+  /** Normalized Levenshtein distance in [0, 1]. */
+  public static levenshteinDistance(a: string, b: string): number {
+    return levenshteinDistance(a, b);
+  }
+
+  /** 1 − Jaro-Winkler similarity (standard definition, p = 0.1, prefix ≤ 4). */
+  public static jaroWinklerDistance(a: string, b: string): number {
+    return jaroWinklerDistance(a, b);
   }
 }

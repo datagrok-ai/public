@@ -277,8 +277,35 @@ export async function openDatagrok(page: Page) {
   await installCsvBridge(page);
 }
 
+// The session behind DATAGROK_AUTH_TOKEN is shared by every spec, and the relogin scenarios
+// POST /users/logout, which invalidates it server-side for everyone who logs in afterwards.
+// Mint a throwaway session per context so one spec's logout cannot lock the rest out.
+// The published `grok test` runner exports only DATAGROK_AUTH_TOKEN, so without the config
+// fallback below this returns undefined on every CI agent and all specs share one session.
+async function mintToken(): Promise<string | undefined> {
+  let apiUrl = process.env.DATAGROK_API_URL;
+  let devKey = process.env.DATAGROK_DEV_KEY;
+  if (!apiUrl || !devKey) {
+    const cfg = readDevKeyFromConfig('key');
+    if (!cfg)
+      return undefined;
+    apiUrl = cfg.apiUrl;
+    devKey = cfg.key;
+  }
+  // the contract above is "undefined when it cannot mint", and a refused or reset connection
+  // is exactly that case — unguarded, it propagated out of loginToDatagrok and failed the spec
+  // instead of falling back to the shared DATAGROK_AUTH_TOKEN
+  try {
+    const response = await fetch(`${apiUrl}/users/login/dev/${devKey}`, {method: 'POST'});
+    const json = await response.json().catch(() => null);
+    return json?.token ?? undefined;
+  } catch (_) {
+    return undefined;
+  }
+}
+
 export async function loginToDatagrok(page: Page) {
-  const token = process.env.DATAGROK_AUTH_TOKEN;
+  const token = (await mintToken()) ?? process.env.DATAGROK_AUTH_TOKEN;
   if (!token || token.length === 0)
     throw new Error('DATAGROK_AUTH_TOKEN is not set. Run via `grok test`, which derives the token from ~/.grok/config.yaml.');
   // Idempotent so a spec running on the worker-scoped booted page (shared-page.ts) can keep
@@ -310,7 +337,11 @@ export async function loginAndOpenFile(page: Page, relPath: string) {
   await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 60_000});
 }
 
-function readSecondUserDevKeyFromConfig(): {apiUrl: string; key2: string} | null {
+// Read a dev key from ~/.grok/config.yaml for the server whose url matches the current
+// DATAGROK_URL (falling back to the configured default server). `field` is `key:` for the
+// test user and `key2:` for the second user. This is what makes both logins work under a
+// plain `grok test` — the config fallback is the only thing the installed runner lacks.
+function readDevKeyFromConfig(field: 'key' | 'key2'): {apiUrl: string; key: string} | null {
   try {
     const confPath = path.join(os.homedir(), '.grok', 'config.yaml');
     if (!fs.existsSync(confPath)) return null;
@@ -320,15 +351,15 @@ function readSecondUserDevKeyFromConfig(): {apiUrl: string; key2: string} | null
     try { wantHost = new URL(baseUrl).host; } catch (_) { wantHost = null; }
     for (const name of Object.keys(servers)) {
       const s = servers[name];
-      if (!s?.url || !s?.key2) continue;
+      if (!s?.url || !s?.[field]) continue;
       let h: string | null = null;
       try { h = new URL(s.url).host; } catch (_) { h = null; }
       if (h && wantHost && h === wantHost)
-        return {apiUrl: String(s.url).replace(/\/$/, ''), key2: String(s.key2)};
+        return {apiUrl: String(s.url).replace(/\/$/, ''), key: String(s[field])};
     }
     const def = cfg?.default;
-    if (def && servers[def]?.key2 && servers[def]?.url)
-      return {apiUrl: String(servers[def].url).replace(/\/$/, ''), key2: String(servers[def].key2)};
+    if (def && servers[def]?.[field] && servers[def]?.url)
+      return {apiUrl: String(servers[def].url).replace(/\/$/, ''), key: String(servers[def][field])};
     return null;
   } catch (_) {
     return null;
@@ -347,12 +378,12 @@ export async function resolveSecondUserToken(): Promise<string> {
   if (_secondTokenCache) return _secondTokenCache;
   const envTok = process.env.DATAGROK_AUTH_TOKEN_2;
   if (envTok && envTok.length > 0) return (_secondTokenCache = envTok);
-  const cfg = readSecondUserDevKeyFromConfig();
+  const cfg = readDevKeyFromConfig('key2');
   if (!cfg)
     throw new Error(
       'No second-user credentials available. Set DATAGROK_AUTH_TOKEN_2 / DATAGROK_DEV_KEY_2, ' +
       'or add a `key2:` (second-user dev key) to the matching server in ~/.grok/config.yaml.');
-  return (_secondTokenCache = await exchangeDevKeyForToken(cfg.apiUrl, cfg.key2));
+  return (_secondTokenCache = await exchangeDevKeyForToken(cfg.apiUrl, cfg.key));
 }
 
 export async function getSecondUserLogin(): Promise<string> {

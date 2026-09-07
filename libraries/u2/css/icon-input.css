@@ -1,0 +1,47 @@
+/* u2 icon picker (see src/components/inputs/icon-input.ts): a button-like control showing the
+   current glyph and name, and an anchored popup with a search box over a virtualized grid. */
+.u2-input-editor.u2-icon-input {
+  display: flex;
+  align-items: center;
+  gap: var(--dg-space-s);
+  border-bottom: var(--dg-input-border);
+  cursor: pointer;
+}
+
+.u2-input-editor.u2-icon-input:focus {
+  border-bottom: var(--dg-input-border-focus);
+}
+
+.u2-icon-input-preview {
+  display: inline-flex;
+  width: var(--dg-space-xl);
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.u2-icon-input-name {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.u2-icon-input-popup {
+  box-sizing: border-box;
+  width: 296px;
+  padding: var(--dg-space-s);
+  gap: var(--dg-space-s);
+  border: var(--dg-overlay-border);
+  border-radius: var(--dg-radius-l);
+  background: var(--dg-bg);
+  box-shadow: var(--dg-shadow-2);
+}
+
+/* a whole number of 28px cells, the grid's own scroller */
+.u2-icon-input-popup .u2-grid {
+  height: 224px;
+  border: none;
+}
+
+.u2-icon-input-popup .u2-grid-cell {
+  font-size: var(--dg-font-size-h1);
+}

@@ -108,10 +108,17 @@ category('Flow: input values', () => {
       int.properties['defaultValue'] = 5;
       const out = await addNode(e.flow, 'Outputs/Table Output');
       await e.flow.addConnectionByKeys(table.id, 'table', out.id, 'table');
+      const braces = await addNode(e.flow, 'Inputs/String Input');
+      braces.properties['paramName'] = 'query';
+      braces.properties['defaultValue'] = 'a {b} c';
       const script = emitScript(e.flow, SETTINGS, {});
       expect(script.includes('//input: dataframe df\n'), true, 'no default on the dataframe header');
       expect(script.includes('//input: dataframe df ='), false, 'table name never leaks into the header');
       expect(script.includes('//input: int n = 5'), true, 'scalar default still emitted');
+      // The platform parses the line's first-{-to-last-} span as the options block —
+      // a brace-carrying default (HELM etc.) corrupts the line and must stay out.
+      expect(script.includes('//input: string query\n'), true, 'the param line survives bare');
+      expect(script.includes('{b}'), false, 'a brace-carrying default never rides the header');
     } finally {
       destroyEditor(e);
     }

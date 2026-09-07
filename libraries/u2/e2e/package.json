@@ -1,0 +1,9 @@
+{
+  "name": "@datagrok-libraries/u2-e2e",
+  "private": true,
+  "type": "module",
+  "description": "Browser checks for u2 in the real Datagrok client — local mode (fast lane) and a stand (proof lane)",
+  "dependencies": {
+    "playwright": "1.61.1"
+  }
+}

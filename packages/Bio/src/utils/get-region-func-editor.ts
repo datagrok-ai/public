@@ -22,15 +22,20 @@ export interface SeqRegion {
   end: string,
 }
 
+const regionLabel = (r: SeqRegion): string => `${r.name}: ${r.start}-${r.end}`;
+
 export class GetRegionFuncEditor {
   inputs = new class {
     table: DG.InputBase<DG.DataFrame | null>;
     sequence: DG.InputBase<DG.Column | null>;
-    region: DG.InputBase<SeqRegion>;
-    start: DG.InputBase<string>;
-    end: DG.InputBase<string>;
+    /** Items are region labels (see {@link regionLabel}); the selected region is looked up in {@link regionList}. */
+    region: DG.ChoiceInput<string | null>;
+    start: DG.ChoiceInput<string | null>;
+    end: DG.ChoiceInput<string | null>;
     name: DG.InputBase<string>;
   }();
+
+  private regionList: SeqRegion[] = [];
 
   constructor(
     private readonly call: DG.FuncCall,
@@ -45,11 +50,11 @@ export class GetRegionFuncEditor {
       this.inputs.table.value!.columns.bySemType(DG.SEMTYPE.MACROMOLECULE);
     this.inputs.sequence = ui.input.column('Sequence', {table: grok.shell.tv.dataFrame, value: seqColValue,
       onValueChanged: this.sequenceInputChanged.bind(this), filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MACROMOLECULE});
-    this.inputs.start = ui.input.choice('Start', {onValueChanged: this.startInputChanged.bind(this)}) as unknown as DG.InputBase<string>;
-    this.inputs.end = ui.input.choice('End', {onValueChanged: this.endInputChanged.bind(this)}) as unknown as DG.InputBase<string>;
+    this.inputs.start = ui.input.choice<string>('Start', {onValueChanged: this.startInputChanged.bind(this)});
+    this.inputs.end = ui.input.choice<string>('End', {onValueChanged: this.endInputChanged.bind(this)});
 
-    this.inputs.region = ui.input.choice<SeqRegion>('Region', {value: null as unknown as SeqRegion, items: [],
-      onValueChanged: this.regionInputChanged.bind(this)}) as DG.InputBase<SeqRegion>;
+    this.inputs.region = ui.input.choice<string>('Region', {nullable: true,
+      onValueChanged: this.regionInputChanged.bind(this)});
 
     this.inputs.name = ui.input.string('Column name', {value: this.getDefaultName(),
       onValueChanged: this.nameInputChanged.bind(this), clearIcon: true});
@@ -67,11 +72,9 @@ export class GetRegionFuncEditor {
   }
 
   private sequenceInputChanged(): void {
-    const seqCol = this.inputs.sequence.value;
-    const sh = seqCol ? this.seqHelper.getSeqHandler(seqCol) : null;
     this.updateRegionItems();
     this.updateStartEndInputItems();
-    this.updateRegion(true);
+    this.updateRegion();
     this.updateNameInput();
   }
 
@@ -80,16 +83,14 @@ export class GetRegionFuncEditor {
   private regionInputChanged(): void {
     this.fixRegion = true;
     try {
-      const regJsonStr = this.inputs.region.stringValue;
-      const reg: SeqRegion | null = regJsonStr ? JSON.parse(regJsonStr) as SeqRegion : null;
-
-      if (reg !== null) {
-        this.inputs.start.value = reg?.start;
-        this.inputs.end.value = reg?.end;
+      const reg = this.getSelectedRegion();
+      if (reg) {
+        this.inputs.start.value = reg.start;
+        this.inputs.end.value = reg.end;
       } else {
-        const sh = this.seqHelper.getSeqHandler(this.inputs.sequence.value!);
-        this.inputs.start.value = sh.posList[0];
-        this.inputs.end.value = sh.posList[sh.posList.length - 1];
+        const posList = this.inputs.start.items;
+        this.inputs.start.value = posList[0] ?? null;
+        this.inputs.end.value = posList[posList.length - 1] ?? null;
       }
     } finally {
       this.fixRegion = false;
@@ -97,12 +98,12 @@ export class GetRegionFuncEditor {
   }
 
   private startInputChanged(): void {
-    this.updateRegion(false);
+    this.updateRegion();
     this.updateNameInput();
   }
 
   private endInputChanged(): void {
-    this.updateRegion(false);
+    this.updateRegion();
     this.updateNameInput();
   }
 
@@ -120,22 +121,12 @@ export class GetRegionFuncEditor {
 
   private updateStartEndInputItems(): void {
     const seqCol = this.inputs.sequence.value;
-    const sh = seqCol ? this.seqHelper.getSeqHandler(seqCol) : null;
+    const posList: string[] = seqCol ? this.seqHelper.getSeqHandler(seqCol).posList : [];
 
-    const startSE = (this.inputs.start.input as HTMLSelectElement);
-    const endSE = (this.inputs.end.input as HTMLSelectElement);
-    for (let i = startSE.options.length - 1; i >= 0; --i) startSE.options.remove(i);
-    for (let i = endSE.options.length - 1; i >= 0; --i) endSE.options.remove(i);
-    for (const pos of sh?.posList ?? []) {
-      const startPosOE = document.createElement('option');
-      const endPosOE = document.createElement('option');
-      startPosOE.text = endPosOE.text = pos;
-      startPosOE.value = endPosOE.value = pos;
-      startSE.options.add(startPosOE);
-      endSE.options.add(endPosOE);
-    }
-    startSE.value = sh?.posList[0] ?? '';
-    endSE.value = sh?.posList[sh?.posList.length - 1] ?? '';
+    this.inputs.start.items = posList;
+    this.inputs.end.items = posList;
+    this.inputs.start.value = posList[0] ?? null;
+    this.inputs.end.value = posList[posList.length - 1] ?? null;
   }
 
   private updateRegionItems(): void {
@@ -159,40 +150,28 @@ export class GetRegionFuncEditor {
       regionList = regionsTagTxt ? JSON.parse(regionsTagTxt) : null;
     }
 
-    const regionSE = (this.inputs.region.input as HTMLSelectElement);
-    for (let i = regionSE.options.length - 1; i >= 0; --i) regionSE.options.remove(i);
-
-    const nullOE = document.createElement('option');
-    nullOE.text = '';
-    nullOE.value = JSON.stringify(null);
-    regionSE.options.add(nullOE);
-
-    if (regionList != null) {
+    this.regionList = regionList ?? [];
+    this.inputs.region.items = this.regionList.map(regionLabel);
+    if (regionList != null)
       this.inputs.region.root.style.removeProperty('display');
-      for (const region of regionList) {
-        const regionOE = document.createElement('option');
-        regionOE.text = `${region.name}: ${region.start}-${region.end}`;
-        regionOE.value = JSON.stringify(region);
-        regionSE.options.add(regionOE);
-      }
-    } else {
+    else
       this.inputs.region.root.style.display = 'none';
-    }
   }
 
-  private updateRegion(reset: boolean): void {
-    const startPos: string = this.inputs.start.stringValue ?? '';
-    const endPos: string = this.inputs.end.stringValue ?? '';
+  private getSelectedRegion(): SeqRegion | null {
+    const label = this.inputs.region.value;
+    return label ? this.regionList.find((r) => regionLabel(r) === label) ?? null : null;
+  }
 
-    if (!this.fixRegion) {
-      const regionSE = (this.inputs.region.input as HTMLSelectElement);
-      regionSE.selectedIndex = -1;
-      for (let i = regionSE.options.length - 1; i >= 0; --i) {
-        const regionOE = regionSE.options[i];
-        const reg: SeqRegion = JSON.parse(regionOE.value);
-        if (reg && startPos === reg.start && endPos === reg.end) regionSE.selectedIndex = i;
-      }
-    }
+  /** Selects the region matching the current start/end positions, or none. */
+  private updateRegion(): void {
+    if (this.fixRegion) return;
+    const startPos = this.inputs.start.value;
+    const endPos = this.inputs.end.value;
+    const reg = this.regionList.find((r) => r.start === startPos && r.end === endPos);
+    const label = reg ? regionLabel(reg) : null;
+    if (this.inputs.region.value !== label)
+      this.inputs.region.value = label;
   }
 
   private defaultName: boolean = true;
@@ -208,13 +187,10 @@ export class GetRegionFuncEditor {
   }
 
   private getDefaultName(): string {
-    const regionJsonStr = this.inputs.region.stringValue;
-    const reg: SeqRegion | null = regionJsonStr ? JSON.parse(regionJsonStr) : null;
-
+    const reg = this.getSelectedRegion();
     const seqCol: DG.Column<string> = this.inputs.sequence.value!;
-
-    const startPos: string = this.inputs.start.stringValue ?? '';
-    const endPos: string = this.inputs.end.stringValue ?? '';
+    const startPos: string = this.inputs.start.value ?? '';
+    const endPos: string = this.inputs.end.value ?? '';
 
     return reg != null ? `${seqCol.name}(${reg.name}): ${reg.start}-${reg.end}` :
       `${seqCol?.name}: (${startPos}-${endPos})`;
@@ -231,11 +207,11 @@ export class GetRegionFuncEditor {
   }
 
   private getStart(): string | null {
-    return this.inputs.start.stringValue;
+    return this.inputs.start.value;
   }
 
   private getEnd(): string | null {
-    return this.inputs.end.stringValue;
+    return this.inputs.end.value;
   }
 
   private getName(): string | null {

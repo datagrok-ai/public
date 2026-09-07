@@ -72,6 +72,21 @@ svg.escher-svg .segment {
 svg.escher-svg .arrowhead {
   fill: #ab0c13;
 }
+/* Flux-direction animation: dots drifting along the segment.
+   Dash pattern, stroke width and the dashoffset animation itself are set
+   from JS (Web Animations API) in Draw.update_segment. */
+svg.escher-svg .segment-flow {
+  fill: none;
+  stroke: #ffffff; /* fallback; JS derives the real color from the segment */
+  stroke-opacity: 0.85;
+  stroke-linecap: round;
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  svg.escher-svg .segment-flow {
+    display: none !important;
+  }
+}
 svg.escher-svg .stoichiometry-label-rect {
   fill: white;
   opacity: 0.5;

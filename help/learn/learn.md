@@ -52,7 +52,7 @@ Under the hood, Chemprop uses message passing neural networks. The model engine 
 * XGBoost
 * Linear Regression
 * Softmax Classifier
-* PCA Regression
+* PLS Regression
  
 ## Train model
 

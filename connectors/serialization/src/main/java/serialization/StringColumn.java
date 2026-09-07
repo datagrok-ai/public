@@ -10,7 +10,7 @@ public class StringColumn extends AbstractColumn<String> {
     private static final String TYPE = Types.STRING;
 
     private String[] data;
-    private Integer[] idxs;
+    private int[] idxs;
     private List<String> categories;
 
     // Decoded categorical state (set by decode): resolve get(idx) via
@@ -52,11 +52,46 @@ public class StringColumn extends AbstractColumn<String> {
     public void encode(BufferAccessor buf) {
         materialize();
         categorize();
+        // string:tokens (id 4, GROK-20761) vs plain categories (id 0): the row->category index
+        // column costs the same either way, so compare the category payloads only.
+        serialization.codecs.StringTokens tokens = IntColumn.ADVANCED_ENCODERS && IntColumn.WRITER_LEVEL >= 2
+                ? serialization.codecs.StringTokens.analyze(categories) : null;
+        if (tokens != null && tokens.estimate() < categoriesPayloadSize()) {
+            buf.writeInt32(4);
+            tokens.encode(buf);
+        }
+        else {
+            buf.writeInt32(0);
+            buf.writeStringList(categories.toArray(new String[0]));
+        }
+        new IntColumn("", idxs).encode(buf);
+    }
+
+    // Mirrors Dart's _StringCategoriesEncoder.estimate (StringList framing + per-category cost),
+    // minus the shared index column.
+    private int categoriesPayloadSize() {
+        int size = 26;
+        for (String c : categories)
+            size += c.length() + 4;
+        return size;
+    }
+
+    // The id-0 payload estimate for this column used as a nested string:tokens part:
+    // categories + best index encoding (the nested payload carries its own index column).
+    public int estimateCategoriesPayload() {
+        materialize();
+        categorize();
+        return categoriesPayloadSize() + 4 + IntColumn.Encoding.choose(idxs, idxs.length).size;
+    }
+
+    // Plain id-0 payload; used for nested string:tokens parts, which are never tokens
+    // themselves (mirrors Dart's StringTokensEncoder._nesting guard).
+    public void encodeCategories(BufferAccessor buf) {
+        materialize();
+        categorize();
         buf.writeInt32(0);
         buf.writeStringList(categories.toArray(new String[0]));
-        IntColumn col = new IntColumn("");
-        col.addAll(idxs);
-        col.encode(buf);
+        new IntColumn("", idxs).encode(buf);
     }
 
     @Override
@@ -75,6 +110,9 @@ public class StringColumn extends AbstractColumn<String> {
                 break;
             case 3: // zlib (write-disabled, read-supported for old blobs).
                 cats = decodeZlib(buf);
+                break;
+            case 4: // tokens: literal / int / long-int / string parts (GROK-20761).
+                cats = serialization.codecs.StringTokens.decode(buf, name);
                 break;
             default:
                 throw new RuntimeException("decoding " + name + ": string encoder " + id + " not supported");
@@ -240,7 +278,7 @@ public class StringColumn extends AbstractColumn<String> {
         for (int i = 0; i < categories.size(); i++)
             remap[categoryMap.get(categories.get(i))] = i;
 
-        idxs = new Integer[length];
+        idxs = new int[length];
         for (int n = 0; n < length; n++)
             idxs[n] = remap[tempIdxs[n]];
     }

@@ -10,7 +10,6 @@ import org.slf4j.LoggerFactory;
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.sql.SQLTransientConnectionException;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
@@ -34,7 +33,7 @@ public class ConnectionPool {
         try {
             HikariDataSource ds = getOrCreateDataSource(key, url, properties, driverClassName);
             return ds.getConnection();
-        } catch (HikariPool.PoolInitializationException | SQLTransientConnectionException e) {
+        } catch (HikariPool.PoolInitializationException e) {
             HikariDataSource pool = connectionPool.remove(key);
             if (pool != null)
                 pool.close();
@@ -53,7 +52,7 @@ public class ConnectionPool {
         try {
             HikariDataSource ds = getOrCreateDataSource(key, dataSource);
             return ds.getConnection();
-        } catch (HikariPool.PoolInitializationException | SQLTransientConnectionException e) {
+        } catch (HikariPool.PoolInitializationException e) {
             HikariDataSource pool = connectionPool.remove(key);
             if (pool != null)
                 pool.close();

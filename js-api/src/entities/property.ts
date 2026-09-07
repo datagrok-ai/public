@@ -3,112 +3,22 @@
  * @module entities/property
  */
 
-import {ColumnTypeFilter, SemType, TYPE, Type} from "../const";
+import {ColumnTypeFilter, RELATION_KIND, SemType, TYPE, Type} from "../const";
 import {toDart, toJs} from "../wrappers";
 import {MapProxy} from "../proxies";
 import {IDartApi} from "../api/grok_api.g";
 import {InputType} from "../api/d4.api.g";
-import {PropertyGetter, PropertySetter, ValueValidator} from "./types";
+import {PropertyGetter, PropertySetter} from "./types";
 
 const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
 
 
-/** Represents a property.
- * See also {@link Property}. */
-export interface IProperty {
-
-  /** Property name */
-  name?: string;
-
-  /** Property data type. See {@link TYPE}. */
-  type?: string;
-
-  /** Property input type */
-  inputType?: string;
-
-  /** Whether an empty value is allowed. This is used by validators. */
-  nullable?: boolean;
-
-  /** Property description */
-  description?: string;
-
-  /** Semantic type */
-  semType?: string;
-
-  /** Units of measurement. See also: [postfix] */
-  units?: string;
-
-  /** Minimum value. Applicable to numerical properties only */
-  min?: number;
-
-  /** Maximum value. Applicable to numerical properties only */
-  max?: number;
-
-  /** Step to be used in a slider. Only applies to numerical properties. */
-  step?: number;
-
-  /** Whether a slider appears next to the number input. Applies to numerical columns only. */
-  showSlider?: boolean;
-
-  /** Whether a plus/minus clicker appears next to the number input. Applies to numerical columns only. */
-  showPlusMinus?: boolean;
-
-  /** List of choices. Applicable to string properties only */
-  choices?: string[];
-
-  /** Initial value used when initializing UI. See also {@link defaultValue} */
-  initialValue?: any;
-
-  /** Default value used for deserialization and cloning. See also {@link initialValue}. */
-  defaultValue?: any;
-
-  /** Custom editor (such as slider or text area) */
-  editor?: string;
-
-  /** Corresponding category on the context panel */
-  category?: string;
-
-  /** Value format, such as '0.000' */
-  format?: string;
-
-  /** Whether the property should be editable via the UI */
-  userEditable?: boolean;
-
-  /** List of validators. It can include [NAMED_VALIDATORS] as well as any pre-defined function names.
-   * Signature: validator(x: DG.Type): string | null.
-   * [null] indicates that the value is valid, [string] describes a validation error. */
-  validators?: string[];
-
-  /** List of value validators (functions that take a value and return error message or null) */
-  valueValidators?: ValueValidator<any>[];
-
-  /** Custom field caption shown in [PropertyGrid]
-   * @deprecated The property will be removed soon. Use {@link friendlyName} instead */
-  caption?: string;
-
-  /** Custom field friendly name shown in [PropertyGrid] */
-  friendlyName?: string;
-
-  /** Name of the corresponding JavaScript field. No need to specify it if it is the same as name. */
-  fieldName?: string;
-
-  tags?: any;
-
-  /** Additional options. */
-  options?: any;
-
-  /** Filter for columns, can be numerical, numerical_no_datetime, categorical, datetime,
-   * categorical_or_datetime, or directly a column type (string, int...)
-   * Applicable when type = Column */
-  columnTypeFilter?: ColumnTypeFilter | null;
-
-
-  viewer?: string;
-}
+export type {IProperty, IPropertyMeta} from "./property-meta";
+import type {IProperty} from "./property-meta";
 
 
 /** Properties of properties. See also {@link Property.propertyOptions}. */
-interface IPropertyMeta {
+interface IPropertyAnnotation {
   applicableTo?: string;
 }
 
@@ -121,6 +31,10 @@ interface IPropertyMeta {
  */
 export class Property implements IProperty {
   public readonly dart: any;
+
+  /** The union of the property's tags and its FuncParam options (tags win) — exactly what
+   * `InputBase.getOption` reads. Treat as readonly: writes stick only for FuncParam-backed
+   * properties without tags (those get the live options map). */
   public options: any;
 
   constructor(dart: any) {
@@ -166,6 +80,13 @@ export class Property implements IProperty {
 
   /** Property subtype */
   get propertySubType(): TYPE { return api.grok_Property_Get_PropertySubType(this.dart); }
+
+  /** Type this property points at (`'User'`), or null when it holds a plain value. */
+  get refType(): string | null { return api.grok_Property_Get_RefType(this.dart) ?? null; }
+
+  /** How the property relates to its owner in the database ({@link RELATION_KIND}) —
+   * null when it carries no database annotation, and is therefore not filterable. */
+  get relationKind(): RELATION_KIND | null { return api.grok_Property_Get_RelationKind(this.dart) ?? null; }
 
   /** Applies to viewers properties whether to include the property in the layout or not. */
   get includeInLayout(): boolean { return api.grok_Property_Get_IncludeInLayout(this.dart); }
@@ -298,10 +219,11 @@ export class Property implements IProperty {
 
   /** Creates property for the JavaScript objects with the corresponding property name */
   static js(name: string, type: TYPE, options?: IProperty): Property {
+    const {get, set, ...rest} = options ?? {};
     return Property.create(name, type,
-      (x: any) => x[name],
-      function (x: any, v: any) { x[name] = v; },
-      options?.defaultValue).fromOptions(options);
+      get ?? ((x: any) => x[name]),
+      set ?? function (x: any, v: any) { x[name] = v; },
+      options?.defaultValue).fromOptions(options && rest);
   }
 
   static jsInt(name: string, options?: IProperty): Property { return Property.js(name, TYPE.INT, options); }
@@ -319,7 +241,7 @@ export class Property implements IProperty {
     api.grok_Property_RegisterAttachedProperty(typeName, property.dart);
   }
 
-  static propertyOptions:{[name in keyof IProperty]: IProperty & IPropertyMeta } = {
+  static propertyOptions:{[name in keyof IProperty]: IProperty & IPropertyAnnotation } = {
     'name': { name: 'name', type: TYPE.STRING, nullable: false },
     'type': { name: 'type', type: TYPE.STRING, nullable: false, description: 'Property data type, such as "int" or "string".' },
     'inputType': { name: 'inputType', type: TYPE.STRING, friendlyName: 'Input type', description: 'Property input type' },

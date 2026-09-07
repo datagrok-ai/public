@@ -54,7 +54,8 @@ import {FlowAIContext} from './ai-tools';
 
 const FLOW_TEMPLATES: {label: string; file: string; desc: string}[] = [
   {label: 'Workflow demo', file: 'Workflow Demo.flow', desc: 'A sample multi-step data workflow.'},
-  {label: 'Bio Molecules', file: 'Sequence demo.flow', desc: 'A Peptides conversion and calculation.'},
+  {label: 'Interactive viewers', file: 'Interactive Viewers.flow',
+    desc: 'Live in-node viewers driven by a molecule sketcher.'},
 ];
 
 export class FuncFlowView extends DG.ViewBase {
@@ -498,6 +499,17 @@ export class FuncFlowView extends DG.ViewBase {
       },
       onPreviewNode: (nodeId: string) => this.previewNodeData(nodeId),
       onRerunNode: (nodeId: string) => this.rerunNode(nodeId),
+      // In-node preview: the node component mounts the captured live viewer/widget root.
+      getInlinePreviewContent: (nodeId: string) =>
+        this.executionController?.inlinePreviewRoot(nodeId) ?? null,
+      isInlinePreviewPending: (nodeId: string) =>
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+        (this.executionController?.inlinePreviewPending(nodeId) ?? false),
+      onInlinePreviewToggled: (nodeId: string) => {
+        this.executionController?.syncInlinePreviewOwnership(nodeId);
+        // The bottom panel must swap between the live root and the hosted-note.
+        if (this.outputPreview.currentNodeId === nodeId) this.outputPreview.refresh();
+      },
       canRerunNode: (nodeId: string) => this.executionController?.canRerunNode(nodeId) ?? false,
       // Only suggestions wired FROM the drag-source node apply to a socket drag.
       getSocketSuggestions: async (nodeId: string) => {
@@ -1303,11 +1315,22 @@ export class FuncFlowView extends DG.ViewBase {
     if (!this.autorunScheduler) return;
     const on = this.autorunScheduler.toggle();
     this.autorunIcon?.classList.toggle('ff-autorun-on', on);
+    // The mode saves with the flow (metadata.settings.autorun) so it reopens live.
+    if (on) this.flowSettings.autorun = true;
+    else delete this.flowSettings.autorun;
+    this.updateSaveButtonState();
     if (on) {
       const pending = this.executionController?.pendingNodes() ?? new Set<string>();
       if (pending.size > 0) this.autorunScheduler.kick(pending);
     }
     this.updateAutorunIndicator();
+  }
+
+  /** Drive the autorun toggle to a target state (applying a loaded flow's saved
+   *  mode) — turning it on kicks pending nodes exactly like a ribbon click. */
+  private applyAutorunSetting(on: boolean): void {
+    if (!this.autorunScheduler || this.autorunScheduler.enabled === on) return;
+    this.toggleAutorun();
   }
 
   /** Amber "waiting" badge on the bolt while autorun is on but can't run what's
@@ -1382,11 +1405,15 @@ export class FuncFlowView extends DG.ViewBase {
     const opts: AddEventListenerOptions = {capture: true};
     const handler = (): void => {
       // Only when THIS view is the current one — never pin someone else's view.
-      const cur = grok.shell.v;
-      if (!this.dart || !cur || cur.dart !== this.dart) return;
-      try {
-        (grok.shell.v as DG.View).pin?.();
-      } catch {/* not pinnable in this host — ignore */}
+      setTimeout(() => {
+        const cur = grok.shell.v;
+        if (!this.dart || !cur || cur.dart !== this.dart) return;
+        try {
+          grok.shell.v.pin?.();
+        } catch (e) {
+          console.error(e);
+        }
+      }, 100);
       this.teardownAutoPin();
     };
     this.autoPinHandler = handler;
@@ -2230,6 +2257,8 @@ export class FuncFlowView extends DG.ViewBase {
     await this.editorReady;
     await deserializeFlow(doc, this.flow);
     if (doc.metadata?.settings) this.flowSettings = doc.metadata.settings;
+    // A flow saved with autorun on reopens live (and vice versa).
+    this.applyAutorunSetting(this.flowSettings.autorun === true);
     // Output-view tabs: rebuild the tab set from the fresh graph, then stash
     // the saved layouts (keyed by paramName — node ids were just remapped);
     // each applies once its tab is activated with a value.

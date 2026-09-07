@@ -1,0 +1,50 @@
+export const VLAAIVIS_METADATA_TAG = '.vlaaivis-metadata';
+
+export const VLAAIVIS_PROFILE_TYPE = 'VlaaiVis Profile';
+export const VLAAIVIS_PROFILE_VERSION = 1;
+
+export const PANE_HEADER_SELECTOR = '.d4-accordion-pane-header';
+
+export const DEFAULTS = {
+  WEIGHT: 1,
+  LOWER_BOUND: 0.8,
+  UPPER_BOUND: 0.9,
+  /// Columns put into their own sector when the editor opens on an unconfigured chart.
+  AUTO_GROUP_COLUMNS: 3,
+  PLOT_HEIGHT: 64,
+};
+
+export const LABELS = {
+  UNASSIGNED: 'Unassigned columns',
+  TIP: 'Drag a column name onto a sector to move it. Unassigned columns aren\'t drawn.',
+  NO_UNASSIGNED: 'Every column is in a sector. Drag one here to leave it out.',
+  LOWER_BOUND: 'Target min',
+  UPPER_BOUND: 'Target max',
+  ADD_SECTOR: '+ Add sector',
+  PROFILE: 'Profile',
+  PROFILE_PLACEHOLDER: 'Name this profile',
+  LOWER_ABOVE_UPPER: 'Must be below Target max',
+  UPPER_BELOW_LOWER: 'Must be above Target min',
+};
+
+export const TOOLTIPS = {
+  SECTOR: 'A group of columns sharing one color. Its share of the circle is the sum of its weights.',
+  WEIGHT: 'How wide this column\'s wedge is. Relative — weights don\'t need to sum to 1.',
+  LOWER_BOUND: 'Inner edge of the shaded ring drawn behind the wedges.',
+  UPPER_BOUND: 'Outer edge of the shaded ring. Wedges reaching past it are meeting the target.',
+  NEW_SECTOR: 'New sector',
+  UNASSIGNED: 'Columns not in any sector aren\'t drawn. Drag one into a sector to include it.',
+  DRAG: 'Drag into a sector to move it',
+  COLOR: 'Sector color',
+  RENAME: 'Rename sector',
+  DELETE: 'Delete sector',
+  SAVE_PROFILE: 'Save profile to a file',
+  OPEN_PROFILE: 'Load profile from a file',
+};
+
+export const STYLE_INFO = {
+  SUMMARY: 'Shows how well a row meets an MPO profile: ' +
+    'each column becomes a wedge whose length is its 0–1 desirability score.',
+  LEARN_MORE: 'Learn more',
+  HELP_URL: 'https://datagrok.ai/help/datagrok/solutions/domains/chem/mpo',
+};

@@ -92,6 +92,21 @@ from (select * from builds order by build_date) b
 order by commit
 --end
 
+--name: TestBranches
+--friendlyName: UA | Tests | Branches
+--connection: System:Datagrok
+--input: int lastDays = 60
+-- Branches that reported test results recently, newest first — feeds the branch pickers on the
+-- test dashboards. Scoped by time so long-dead branches don't accumulate in the list.
+select b.branch
+from builds b
+where b.branch is not null and b.branch <> ''
+  and exists (select 1 from test_runs r where r.build_name = b.name
+              and r.date_time >= now() - (@lastDays || ' days')::interval)
+group by b.branch
+order by max(b.build_date) desc
+--end
+
 --name: getTestStatusesAcordingDF 
 --connection: System:Datagrok 
 --meta.cache: all

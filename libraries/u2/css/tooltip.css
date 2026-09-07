@@ -11,5 +11,5 @@
   background: var(--dg-beige-1);
   border: var(--dg-overlay-border);
   border-radius: var(--dg-radius);
-  box-shadow: var(--dg-shadow-overlay);
+  box-shadow: var(--dg-shadow-1);
 }

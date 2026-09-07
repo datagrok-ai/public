@@ -6,7 +6,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {
-  signal, computed, batch, untracked, Scope, Component, bindText, bindValue, AsyncSource,
+  signal, computed, batch, untracked, Scope, Control, bindText, bindValue, AsyncSource,
   Overlay, OVERLAY_CLOSE_EVENT, Tooltip, VirtualList, VirtualTree, Combobox, TabStrip, Menu,
   Splitter, TextInput, TextArea, BoolInput, ChoiceInput, MultiChoiceInput, NumberInput, Dialog,
   Accordion, Breadcrumbs, Toolbar, Form, panel, div, span, h1, button, link,
@@ -108,11 +108,11 @@ smoke('bindText/bindValue: live text and echo-suppressed two-way binding', () =>
   assert.equal(label.textContent, 'Hello, typed!');
 });
 
-smoke('Component.build: everything built inside is disposed with the result', () => {
+smoke('Control.build: everything built inside is disposed with the result', () => {
   let inner;
   let released = 0;
   const value = signal('x');
-  const outer = Component.build(() => {
+  const outer = Control.build(() => {
     inner = new TextInput({label: 'Name'});
     Scope.ambient.own(() => released++);
     return [inner, panel([span(value)])];
@@ -238,6 +238,73 @@ smoke('TabStrip: activation, lazy content built once, close', () => {
   tabs.dispose();
 });
 
+smoke('TabStrip: the platform look is the default, document is a variant, vertical walks with ↑/↓', () => {
+  const plain = mount(new TabStrip({tabs: [{id: 'a', label: 'A', content: span('a')}]}));
+  assert.equal(plain.orientation, 'horizontal');
+  assert.equal(plain.root.classList.contains('u2-tabs-document'), false);
+  assert.equal(plain.root.classList.contains('u2-tabs-vertical'), false);
+  plain.dispose();
+
+  const documents = mount(new TabStrip({variant: 'document'}));
+  assert.equal(documents.root.classList.contains('u2-tabs-document'), true);
+  documents.dispose();
+
+  const vertical = mount(new TabStrip({orientation: 'vertical', tabs: [
+    {id: 'a', label: 'A', content: span('a')},
+    {id: 'b', label: 'B', content: span('b')},
+  ]}));
+  assert.equal(vertical.orientation, 'vertical');
+  assert.equal(vertical.root.classList.contains('u2-tabs-vertical'), true);
+  assert.equal(vertical.root.querySelector('.u2-tabs-header').getAttribute('aria-orientation'), 'vertical');
+  const [a, b] = vertical.root.querySelectorAll('.u2-tabs-tab');
+  a.focus();
+  fire(a, 'keydown', {key: 'ArrowDown'});
+  assert.equal(document.activeElement, b, 'ArrowDown moves focus down the column');
+  fire(b, 'keydown', {key: 'ArrowUp'});
+  assert.equal(document.activeElement, a);
+  fire(a, 'keydown', {key: 'ArrowRight'});
+  assert.equal(document.activeElement, b, 'the horizontal keys keep working');
+  assert.equal(vertical.activeTab.value, 'a', 'focus moved, activation did not');
+  vertical.dispose();
+
+  const horizontal = mount(new TabStrip({tabs: [
+    {id: 'a', label: 'A', content: span('a')},
+    {id: 'b', label: 'B', content: span('b')},
+  ]}));
+  const first = horizontal.root.querySelector('.u2-tabs-tab');
+  first.focus();
+  fire(first, 'keydown', {key: 'ArrowDown'});
+  assert.equal(document.activeElement, first, 'ArrowDown is not a tab key in a horizontal strip');
+  horizontal.dispose();
+});
+
+smoke('TabStrip: icons by name or element, icon-only tabs keep their tooltip', () => {
+  const custom = span('★');
+  const tabs = mount(new TabStrip({tabs: [
+    {id: 'home', label: 'Home', icon: 'home', content: span('home')},
+    {id: 'star', label: 'Starred', icon: custom, content: span('star')},
+    {id: 'help', label: '', icon: 'question-circle', tooltip: 'Help', content: span('help')},
+    {id: 'plain', label: 'Plain', content: span('plain')},
+  ]}));
+  const [home, star, help, plain] = tabs.root.querySelectorAll('.u2-tabs-tab');
+
+  const homeIcon = home.querySelector('.u2-tabs-icon');
+  assert.equal(homeIcon.firstChild.classList.contains('fa-home'), true, 'a string renders through icon()');
+  assert.equal(homeIcon.firstChild.classList.contains('grok-icon'), true);
+  assert.equal(home.children[0], homeIcon, 'the icon precedes the label');
+  assert.equal(home.querySelector('.u2-tabs-label').textContent, 'Home');
+  assert.equal(home.title, 'Home');
+
+  assert.equal(star.querySelector('.u2-tabs-icon').firstChild, custom, 'an element is used as is');
+
+  assert.equal(help.querySelector('.u2-tabs-label').textContent, '', 'icon-only: no label text');
+  assert.equal(help.querySelector('.u2-tabs-icon .fa-question-circle') !== null, true);
+  assert.equal(help.title, 'Help', 'the header title carries the tooltip');
+
+  assert.equal(plain.querySelector('.u2-tabs-icon'), null);
+  tabs.dispose();
+});
+
 smoke('Menu: builds at coordinates, activates an item, closes', async () => {
   let clicked = '';
   const menu = new Menu()
@@ -314,6 +381,17 @@ smoke('Splitter: keyboard resize clamps at minSize', () => {
   splitter.dispose();
 });
 
+smoke('Splitter: a sizes list that does not match the panels falls back to equal shares', () => {
+  const splitter = mount(new Splitter([span('a'), span('b'), span('c')],
+    {direction: 'horizontal', sizes: [0.3, 0.7]}));
+  for (const size of splitter.sizes.value)
+    assert.ok(Math.abs(size - 1 / 3) < 1e-9, `equal thirds, got ${splitter.sizes.value}`);
+  const bases = splitter.root.querySelectorAll('.u2-splitter-panel').map((p) => p.style.flexBasis);
+  assert.equal(bases.length, 3);
+  assert.ok(bases.every((b) => !b.includes('NaN')), `no NaN flex basis: ${bases}`);
+  splitter.dispose();
+});
+
 smoke('VirtualTree: expands a branch and renames a node', () => {
   const renamed = [];
   const tree = mount(new VirtualTree({onRename: (node, label) => renamed.push([node.id, label])}));
@@ -330,6 +408,13 @@ smoke('VirtualTree: expands a branch and renames a node', () => {
   assert.deepEqual(texts(tree.root, '.u2-tree-label'), ['Alpha', 'Alpha one', 'Beta']);
   assert.equal(tree.root.querySelector('.u2-list-row[data-index="0"]').getAttribute('aria-expanded'), 'true');
 
+  assert.equal(tree.nodeForRow(tree.root.querySelector('.u2-list-row[data-index="1"] .u2-tree-label')).id,
+    'a1', 'nodeForRow resolves any element inside a row to its node');
+  assert.equal(tree.nodeForRow(tree.root.querySelector('.u2-list-row[data-index="0"] .u2-tree-twistie')).id,
+    'a');
+  assert.equal(tree.nodeForRow(tree.root), null, 'off the rows there is no node');
+  assert.equal(tree.nodeForRow(null), null);
+
   const label = tree.root.querySelector('.u2-list-row[data-index="0"] .u2-tree-label');
   fire(label, 'dblclick');
   const editor = tree.root.querySelector('.u2-tree-rename');
@@ -338,6 +423,32 @@ smoke('VirtualTree: expands a branch and renames a node', () => {
   fire(editor, 'keydown', {key: 'Enter'});
   assert.deepEqual(renamed, [['a', 'Renamed']]);
   assert.equal(tree.root.querySelector('.u2-list-row[data-index="0"] .u2-tree-label').textContent, 'Renamed');
+  tree.dispose();
+});
+
+smoke('VirtualTree: contextActions reach the list, so a right-click opens the node\'s own menu', () => {
+  const log = [];
+  const tree = mount(new VirtualTree({
+    contextActions: (node) => [{name: `Rename ${node.label}`, run: () => log.push(node.id)},
+      {name: 'Delete', enabled: false, run: () => log.push('deleted')}],
+  }));
+  tree.root.querySelector('.u2-list').clientHeight = 220;
+  tree.setRoots([{id: 'a', label: 'Alpha'}, {id: 'b', label: 'Beta'}]);
+
+  let leaked = 0;
+  const ancestor = () => leaked++;
+  document.body.addEventListener('contextmenu', ancestor);
+  fire(tree.root.querySelector('.u2-list-row[data-index="1"] .u2-tree-label'), 'contextmenu');
+  document.body.removeEventListener('contextmenu', ancestor);
+  assert.equal(leaked, 0, 'the row menu is the only menu — nothing propagates to an ancestor hook');
+  const items = document.querySelectorAll('[role="menuitem"]');
+  assert.deepEqual(items.map((el) => el.querySelector('.u2-menu-label').textContent),
+    ['Rename Beta', 'Delete']);
+  assert.equal(items[1].getAttribute('aria-disabled'), 'true', 'a disabled action stays visible');
+  fire(items[1], 'click');
+  assert.deepEqual(log, [], 'and does nothing');
+  fire(items[0], 'click');
+  assert.deepEqual(log, ['b']);
   tree.dispose();
 });
 
@@ -390,8 +501,8 @@ smoke('TextArea and BoolInput: bound editors and the switch variant', () => {
   toggle.dispose();
 });
 
-smoke('NumberInput: parses, steps and clamps', () => {
-  const count = mount(new NumberInput({label: 'Count', mode: 'int', min: 0, max: 10, step: 2}));
+smoke('NumberInput: parses, steps, and validates instead of clamping typed text', () => {
+  const count = mount(new NumberInput({label: 'Count', mode: 'int', min: 0, max: 10, step: 2, spinner: true}));
   const editor = count.root.querySelector('input');
 
   editor.value = 'abc';
@@ -412,8 +523,16 @@ smoke('NumberInput: parses, steps and clamps', () => {
   editor.value = '-5';
   fire(editor, 'input');
   fire(editor, 'blur');
-  assert.equal(count.value.value, 0, 'commit clamps at min');
-  assert.equal(editor.value, '0');
+  assert.equal(count.value.value, -5, 'out-of-range text is kept, as the platform input keeps it');
+  assert.equal(editor.value, '-5');
+  assert.equal(count.validity.value, 'Value must be at least 0');
+  fire(count.root.querySelector('.u2-number-spin'), 'click');
+  assert.equal(count.value.value, -3, 'stepping walks toward range instead of clamping');
+  assert.equal(count.validity.value, 'Value must be at least 0');
+  fire(count.root.querySelector('.u2-number-spin'), 'click');
+  fire(count.root.querySelector('.u2-number-spin'), 'click');
+  assert.equal(count.value.value, 1, 'and the validity clears once inside');
+  assert.equal(count.validity.value, null);
   count.dispose();
 });
 
@@ -475,13 +594,35 @@ smoke('Dialog: shows, runs OK and restores focus', () => {
   name.dispose();
 });
 
+smoke('Accordion: a pane icon by name or element sits between the chevron and the title', () => {
+  const accordion = mount(new Accordion());
+  const named = accordion.addPane('General', span('g'), false, 'cog');
+  const custom = span('★');
+  const element = accordion.addPane('Starred', span('s'), true, custom);
+  const plain = accordion.addPane('Plain', span('p'));
+
+  const header = named.root.querySelector('.u2-accordion-header');
+  assert.deepEqual([...header.children].map((c) => c.className),
+    ['u2-accordion-chevron', 'u2-accordion-icon', 'u2-accordion-title']);
+  assert.equal(named.icon.classList.contains('fa-cog'), true, 'a string renders through icon()');
+  assert.equal(header.querySelector('.u2-accordion-icon').firstChild, named.icon);
+  assert.equal(header.title, 'General');
+  assert.equal(header.querySelector('.u2-accordion-chevron .fa-chevron-down') !== null, true);
+
+  assert.equal(element.icon, custom, 'an element is used as is');
+  assert.equal(element.expanded.value, true, 'the positional expanded flag still applies');
+  assert.equal(plain.icon, undefined);
+  assert.equal(plain.root.querySelector('.u2-accordion-icon'), null);
+  accordion.dispose();
+});
+
 smoke('Accordion: lazy pane content is built once and disposed with the pane', () => {
   let builds = 0;
   let released = 0;
   const accordion = mount(new Accordion());
   const pane = accordion.addPane('Details', () => {
     builds++;
-    const content = new Component();
+    const content = new Control();
     content.own(() => released++);
     return content.root;
   });
@@ -495,6 +636,9 @@ smoke('Accordion: lazy pane content is built once and disposed with the pane', (
   pane.expanded.value = false;
   pane.expanded.value = true;
   assert.equal(builds, 1, 'collapsed content is hidden, not rebuilt');
+
+  assert.equal(accordion.paneAt(0), pane, 'paneAt addresses a pane by position');
+  assert.equal(accordion.paneAt(1), undefined);
 
   accordion.removePane('Details');
   assert.equal(released, 1, 'removePane disposes what the builder made');
@@ -570,7 +714,7 @@ smoke('Form: aggregates validity, focuses the first invalid input, round-trips v
 });
 
 smoke('Tooltip: bind shows on hover, hide clears it, dispose unbinds', async () => {
-  const host = new Component();
+  const host = new Control();
   const target = document.createElement('button');
   document.body.append(target);
   Tooltip.bind(target, () => 'Compound name', host.scope);
@@ -643,7 +787,7 @@ smoke('AsyncSource: debounces, aborts the superseded call, retries and reports e
 smoke('Perf: times construction, disposes the tree, accumulates the report', async () => {
   const before = Perf.report().length;
   let inner;
-  const entry = await Perf.measure('two inputs', () => Component.build(() => {
+  const entry = await Perf.measure('two inputs', () => Control.build(() => {
     inner = new TextInput({label: 'Name'});
     return [inner, new BoolInput({label: 'Flag'})];
   }));
@@ -655,4 +799,43 @@ smoke('Perf: times construction, disposes the tree, accumulates the report', asy
   const report = Perf.report();
   assert.equal(report.length, before + 1);
   assert.equal(report[report.length - 1].label, 'two inputs');
+});
+
+smoke('VirtualTree: the whole row is the rename handle — except the twistie, and never without onRename', () => {
+  const silent = mount(new VirtualTree());
+  silent.root.querySelector('.u2-list').clientHeight = 220;
+  silent.setRoots([{id: 'a', label: 'Alpha'}]);
+  fire(silent.root.querySelector('.u2-list-row[data-index="0"] .u2-tree-label'), 'dblclick');
+  assert.equal(silent.root.querySelector('.u2-tree-rename'), null, 'no onRename, no editor');
+  silent.dispose();
+
+  const tree = mount(new VirtualTree({onRename: () => {}}));
+  tree.root.querySelector('.u2-list').clientHeight = 220;
+  tree.setRoots([{id: 'a', label: 'Alpha', children: [{id: 'a1', label: 'Alpha one'}]}]);
+  fire(tree.root.querySelector('.u2-list-row[data-index="0"] .u2-tree-twistie'), 'dblclick');
+  assert.equal(tree.root.querySelector('.u2-tree-rename'), null, 'the twistie is not a rename handle');
+
+  // a short label leaves most of the row bare — a dblclick on the bare row must still rename
+  fire(tree.root.querySelector('.u2-list-row[data-index="0"] .u2-tree-row'), 'dblclick');
+  const editor = tree.root.querySelector('.u2-tree-rename');
+  assert.equal(editor?.value, 'Alpha', 'the row itself opens the editor');
+  fire(editor, 'keydown', {key: 'Escape'});
+  fire(tree.root, 'dblclick');
+  assert.equal(tree.root.querySelector('.u2-tree-rename'), null, 'off the rows there is nothing to rename');
+  tree.dispose();
+});
+
+smoke('VirtualTree: expandPath over an already-open path leaves the rows alone', async () => {
+  const tree = mount(new VirtualTree({onRename: () => {}}));
+  tree.root.querySelector('.u2-list').clientHeight = 220;
+  tree.setRoots([{id: 'a', label: 'Alpha', children: [{id: 'a1', label: 'Alpha one'}]}]);
+  await tree.expandPath(['a', 'a1']);
+  const row = tree.root.querySelector('.u2-list-row[data-index="1"]');
+
+  // the second click of a double-click re-runs this path; a rows rebuild between the two
+  // clicks recycles the target element, and the browser then never synthesizes the dblclick
+  await tree.expandPath(['a', 'a1']);
+  assert.equal(tree.root.querySelector('.u2-list-row[data-index="1"]'), row,
+    'the very same row element is still up');
+  tree.dispose();
 });

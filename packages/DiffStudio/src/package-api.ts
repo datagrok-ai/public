@@ -20,10 +20,19 @@ export namespace funcs {
     return await grok.functions.call('DiffStudio:Dock', {});
   }
 
+  /**
+   * Solve a system of ordinary differential equations using default solver settings.
+   * @param {any} problem - ODE system to solve (equations, initial values, argument range)
+   */
   export async function solve(problem: any ): Promise<DG.DataFrame> {
     return await grok.functions.call('DiffStudio:Solve', { problem });
   }
 
+  /**
+   * Solve a system of ordinary differential equations with a custom method and solver options.
+   * @param {any} problem - ODE system to solve (equations, initial values, argument range)
+   * @param {any} options - Solver options: numerical method, tolerances, iteration and time limits
+   */
   export async function solveEquations(problem: any , options: any ): Promise<DG.DataFrame> {
     return await grok.functions.call('DiffStudio:SolveEquations', { problem, options });
   }
@@ -62,7 +71,7 @@ export namespace funcs {
   }
 
   /**
-   * Ball flight simulation
+   * Simulate the trajectory of a thrown ball, accounting for air drag.
    * @param {number} roB - Material density
    */
   export async function ballFlight(dB: number , roB: number , v: number , a: number ): Promise<{maxDist: number, maxHeight: number, df: DG.DataFrame}> {
@@ -85,6 +94,7 @@ export namespace funcs {
 
   /**
    * Solve initial value problem for ordinary differential equations
+   * @param {string} problem - Initial value problem in Diff Studio .ivp format
    */
   export async function solveODE(problem: string ): Promise<DG.DataFrame> {
     return await grok.functions.call('DiffStudio:SolveODE', { problem });

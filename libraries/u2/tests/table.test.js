@@ -4,9 +4,9 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
-import {signal, computed, Scope, Component} from '../src/index.js';
+import {signal, computed, Scope, Control} from '../src/index.js';
 import {span} from '../src/core/elements.js';
-import {BasicTable, tableFromMap} from '../src/components/table.js';
+import {BasicTable, tableFromMap} from '../src/components/collections/table.js';
 
 function table(name, body) {
   test(name, async () => {
@@ -201,7 +201,7 @@ table('tableFromMap: two columns, muted keys, element values', () => {
 table('dispose: listeners and effects die with the component scope', () => {
   const items = signal(ITEMS);
   let clicks = 0;
-  const t = Component.build(() => [new BasicTable({
+  const t = Control.build(() => [new BasicTable({
     columns: columns(),
     items,
     selectable: true,

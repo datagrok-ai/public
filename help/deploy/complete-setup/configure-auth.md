@@ -15,12 +15,9 @@ Datagrok supports many [authentication](../../govern/access-control/access-contr
 
 * [General](#general-login-password-authentication) (login-password)
 * [LDAP](#ldap-authentication)
-* [Google](#oauth-authentication)
-* [OpenID](#openid-authentication)
+* [OpenID](#openid-authentication) (Google, Azure AD, Okta, and other OpenID Connect providers)
 * [SAML](#saml-authentication)
 * [IAP](#iap-authentication)
-* GitHub
-* Facebook
 
 You can enable all methods separately or combined.
 
@@ -81,26 +78,17 @@ from a script using the [`grok s` CLI](../../develop/server-management.md#sync-a
 
 :::
 
-## Oauth authentication
-
-Datagrok supports Google, Facebook, and GitHub OAUTH authentication.
-
-1. Go to the Datagrok Settings section 'Users and Sessions'; this section contains all authentication settings.
-2. Enable 'Google authentication' to use the Google Oauth method (or another provider)
-3. Set 'Client Id' and 'Secret' if applicable. You can get it from your OpenID provider
-4. Make sure the correct Web Root is set in 'Admin' section
-
-Consider using a general OpenID authentication as it is more flexible.
-
 ## OpenID authentication
 
 This is the preferred and most powerful way to integrate with an external identity provider.  
-Datagrok supports the OpenID protocol to allow users to be authenticated using OpenID providers, for example, Azure AD.
+Datagrok supports the OpenID protocol to allow users to be authenticated using OpenID providers
+such as Azure AD, Google, Okta, Auth0, and any other OIDC-compliant identity provider.
 
 1. Go to the Datagrok Settings section `Users and Sessions`; this section contains all authentication settings.
 2. Enable `Open Id authentication` to use the OpenID method
 3. Get a well-known-configuration route and set it to 'Open Id Config Endpoint'. It should look
-   like `https://login.datagrok.ai/.well-known/openid-configuration`
+   like `https://login.datagrok.ai/.well-known/openid-configuration`.
+   For Google, use `https://accounts.google.com/.well-known/openid-configuration`.
 4. Set `Client Id` and `Client Secret` as in your OpenId provider. 
 Datagrok supports a certificate-based authentication method for Azure AD. If you prefer it against a plain secret, 
 generate a certificate, sign it with a private RSA key, and upload it to the Datagrok. Then upload the certificate to your Azure AD application settings. 

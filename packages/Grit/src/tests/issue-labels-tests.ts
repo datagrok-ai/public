@@ -30,9 +30,8 @@ category('Grit: issue labels', () => {
     return (rows[0].labels ?? []).map((l) => l.name);
   };
 
-  const insertIssue = async (number: number, title: string, labels?: string[]): Promise<string> => {
-    const [row] = await gritDb.issues.insert(
-      {project_id: projectId!, number: number, title: title, labels: labels});
+  const insertIssue = async (title: string, labels?: string[]): Promise<string> => {
+    const [row] = await gritDb.issues.insert({project_id: projectId!, title: title, labels: labels});
     issueIds.push(row.id);
     return row.id;
   };
@@ -72,12 +71,12 @@ category('Grit: issue labels', () => {
     await setup();
     try {
       // The relation rides the ordinary insert payload as the full set of target ids.
-      const id = await insertIssue(1, `${labelName('issue')} tagged`, [urgent, bug, urgent]);
+      const id = await insertIssue(`${labelName('issue')} tagged`, [urgent, bug, urgent]);
       // Deduped (the junction's businessKey makes re-linking idempotent) and ordered
       // by display name, whatever order they were written in.
       expect((await linked(id)).join(','), `${labelName('bug')},${labelName('urgent')}`);
       // An issue with no labels expands to [], never null.
-      const bare = await insertIssue(2, `${labelName('issue')} bare`);
+      const bare = await insertIssue(`${labelName('issue')} bare`);
       expect((await linked(bare)).length, 0);
 
       // d42 (what a grid binds to): display names joined by ', ' plus the hidden
@@ -99,9 +98,9 @@ category('Grit: issue labels', () => {
   test('filter: relation paths in both filter forms', async () => {
     await setup();
     try {
-      const tagged = await insertIssue(1, `${labelName('issue')} tagged`, [bug]);
-      const other = await insertIssue(2, `${labelName('issue')} other`, [urgent]);
-      const bare = await insertIssue(3, `${labelName('issue')} bare`);
+      const tagged = await insertIssue(`${labelName('issue')} tagged`, [bug]);
+      const other = await insertIssue(`${labelName('issue')} other`, [urgent]);
+      const bare = await insertIssue(`${labelName('issue')} bare`);
       const mine: _DG.DomainConditionNode<IssueColumn> =
         {property: 'project_id', operator: '=', value: projectId!};
 
@@ -149,7 +148,7 @@ category('Grit: issue labels', () => {
   test('update: the list replaces the link set, [] clears it, absent leaves it alone', async () => {
     await setup();
     try {
-      const id = await insertIssue(1, `${labelName('issue')} edited`, [bug]);
+      const id = await insertIssue(`${labelName('issue')} edited`, [bug]);
       // The generated <Table>Update names the relation next to the columns.
       const values: IssueUpdate = {labels: [urgent, spare]};
       const upd = await gritDb.issues.update(id, values);
@@ -187,7 +186,7 @@ category('Grit: issue labels', () => {
       const name = `${labelName('fresh')}`;
       const [label, issue] = await gritDb.transaction([
         {op: 'insert', table: 'label', ref: 'l1', values: {name: name}},
-        {op: 'insert', table: 'issue', values: {project_id: projectId!, number: 1,
+        {op: 'insert', table: 'issue', values: {project_id: projectId!,
           title: `${labelName('issue')} tx`, labels: ['$l1']}},
       ]);
       labelIds.push(label.id);
@@ -204,7 +203,7 @@ category('Grit: issue labels', () => {
       let message = '';
       try {
         const report = await gritDb.issues.batch(
-          [{project_id: projectId!, number: 1, title: `${labelName('issue')} B`, labels: [bug]}]);
+          [{project_id: projectId!, title: `${labelName('issue')} B`, labels: [bug]}]);
         message = report.error ?? '';
       } catch (e: any) {
         message = e.message ?? `${e}`;

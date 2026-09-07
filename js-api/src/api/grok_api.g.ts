@@ -33,7 +33,7 @@ export interface IDartApi {
   grok_Set_CurrentPreview(view: any): any;
   grok_TableNames(): any;
   grok_TableByName(s: any): any;
-  grok_ScriptSync(script: String): any;
+  grok_ScriptSync(script: String, variables?: any): any;
   grok_Get_PresentationMode(): any;
   grok_Set_PresentationMode(v: Bool): any;
   grok_Set_SimpleMode(s: Bool): any;
@@ -321,6 +321,8 @@ export interface IDartApi {
   grok_DockManager_FindNode(m: any, e: any): any;
   grok_DockManager_HandleResize(d: any): any;
   grok_DockManager_OnElementClosed(d: any): any;
+  grok_DockManager_OnPanelShown(d: any): any;
+  grok_DockManager_OnPanelHidden(d: any): any;
   grok_WidgetDescriptor_GetDescriptors(): any;
   grok_WidgetDescriptor_GetByName(name: String): any;
   grok_WidgetDescriptor_Get_Name(d: any): any;
@@ -360,6 +362,8 @@ export interface IDartApi {
   grok_Viewer_LineChart(t: any, json: String): any;
   grok_Viewer_GetInfo(v: any): any;
   grok_Viewer_Get_Look(v: any): any;
+  grok_Viewer_Get_ImmediateRendering(v: any): any;
+  grok_Viewer_Set_ImmediateRendering(v: any, x: Bool): any;
   grok_Viewer_Get_Properties(v: any): any;
   grok_Viewer_Get_Tags(v: any): any;
   grok_Viewer_Remove_From_View(v: any): any;
@@ -646,6 +650,8 @@ export interface IDartApi {
   grok_TagElement_Set_Tag(te: any, tag: any): any;
   grok_InputBase_Get_InputType(input: any): any;
   grok_InputBase_Get_DataType(input: any): any;
+  grok_InputBase_Get_ValidationMessages(input: any): any;
+  grok_InputBase_OnValidated(input: any): any;
   grok_InputBase_Get_Property(input: any): any;
   grok_InputBase_Set_Property(input: any, p: any): any;
   grok_InputBase_Get_Root(input: any): any;
@@ -739,7 +745,7 @@ export interface IDartApi {
   grok_ColorInput_SetShowOnlyColorBox(input: any, x: any): any;
   grok_FilesInput_Set_AcceptExtensions(input: any, x: any): any;
   grok_PropertyGrid(): any;
-  grok_PropertyGrid_Update(propGrid: any, src: any, props: any): any;
+  grok_PropertyGrid_Update(propGrid: any, src: any, props: any, table?: any): any;
   grok_TreeViewNode_Tree(): any;
   grok_TreeViewNode_Root(node: any): any;
   grok_TreeViewNode_Get_Value(node: any): any;
@@ -814,6 +820,10 @@ export interface IDartApi {
   grok_FuncCall_Get_Param_Value(call: any, name: String): any;
   grok_FuncCall_Get_Output_Param_Value(call: any): any;
   grok_FuncCall_Call(call: any, showProgress: any, progress: any, processed: Bool, report: Bool): Promise<any>;
+  grok_FuncCall_EvalParamChoices(call: any, name: String): Promise<any>;
+  grok_FuncCall_EvalParamSuggestions(call: any, name: String, text: String): Promise<any>;
+  grok_FuncCall_EvalParamDefault(call: any, name: String): Promise<any>;
+  grok_FuncCall_EvalParamValidators(call: any, name: String): Promise<any>;
   grok_Meta_Register(jsMeta: any): any;
   grok_Meta_List(): any;
   grok_Meta_ForEntity(entity: any): any;
@@ -832,6 +842,9 @@ export interface IDartApi {
   grok_Meta_RenderInput(meta: any, x: any): any;
   grok_Meta_GetById(meta: any, id: String): Promise<any>;
   grok_Meta_DartForType(type: String): any;
+  grok_Meta_GridPropertiesOf(typeName: String): any;
+  grok_Meta_FilterPropertiesOf(typeName: String): any;
+  grok_Meta_CoreLocationOf(typeName: String): Promise<any>;
   grok_DomainRowMeta_RegisterPerTableMetas(): Promise<any>;
   grok_DomainRegistry_RowProperties(type: String): Promise<any>;
   grok_DomainRegistry_TableInfo(schemaName: String, tableName: String): Promise<any>;
@@ -910,6 +923,8 @@ export interface IDartApi {
   grok_UI_ToggleButtonGroup(buttons: any, toggleFirst: Bool): any;
   grok_UI_ComboPopup(caption: any, items: any, handler: any, renderer: any): any;
   grok_UI_TableFromMap(x: any, showCopyValue: Bool): any;
+  grok_UI_PickTableFromFiles(): Promise<any>;
+  grok_UI_PickTableFromQuery(): Promise<any>;
   grok_UI_List(items: any, maxRows: Num): any;
   grok_UI_Bind(item: any, element: any, contextMenu: any): any;
   grok_UI_Wait(jsugetElement: any): any;
@@ -1153,6 +1168,10 @@ export interface IDartApi {
   grok_Dapi_Info_GetStorageStats(c: any): Promise<any>;
   grok_Dapi_Log(): any;
   grok_Dapi_Log_Where(logClient: any, entityId: String, start: any, end: any, favoritesOnly: Bool): any;
+  grok_Dapi_Log_CloudLogGroups(connection: String, prefix: String): Promise<any>;
+  grok_Dapi_Log_CloudLogEvents(connection: String, group: String, start: any, end: any, filter: String, limit: Num): Promise<any>;
+  grok_Dapi_Log_ArchiveObjects(connection: String, prefix: String, limit: Num): Promise<any>;
+  grok_Dapi_Log_ArchiveEvents(connection: String, key: String): Promise<any>;
   grok_Dapi_LogTypes(): any;
   grok_Dapi_Dockers(): any;
   grok_Dapi_DockerImages(): any;
@@ -1613,6 +1632,8 @@ export interface IDartApi {
   grok_Property_Get_PropertyType(p: any): any;
   grok_Property_Set_PropertyType(p: any, x: String): any;
   grok_Property_Get_PropertySubType(p: any): any;
+  grok_Property_Get_RefType(p: any): any;
+  grok_Property_Get_RelationKind(p: any): any;
   grok_Property_Get_IncludeInLayout(p: any): any;
   grok_Property_Set_IncludeInLayout(p: any, x: Bool): any;
   grok_Property_Get_SemType(p: any): any;
@@ -1723,6 +1744,7 @@ export interface IDartApi {
   grok_Project_AddRelation(p: any, e: any, link: Bool): any;
   grok_Project_RemoveRelation(p: any, e: any): any;
   grok_Project_Description(p: any): any;
+  grok_Project_Set_Description(p: any, x: String): any;
   grok_Project_IsDirty(p: any): any;
   grok_Project_IsEmpty(p: any): any;
   grok_Project_IsDashboard(p: any): any;
@@ -1934,6 +1956,8 @@ export interface IDartApi {
   grok_Dapi_Set_Root(root: String): any;
   grok_Dapi_Set_Token(token: String): any;
   grok_Dapi_Get_Token(): any;
+  grok_Dapi_Set_ImpersonationToken(token: String): any;
+  grok_Dapi_Get_ImpersonationToken(): any;
   grok_Dapi_WS_Root(): any;
   grok_Dapi_OpenAI_Proxy(): any;
   grok_Clear_LastError(): any;

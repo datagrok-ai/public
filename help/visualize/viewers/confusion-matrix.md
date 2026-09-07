@@ -35,11 +35,11 @@ To add the viewer programmatically from the console, use:
 | Show Context Menu | boolean | Properties common for all viewers todo: use code generation |
 | Title | string |  |
 | Description | string | Viewer description that gets shown at the *Descriptor Position*. Markup is supported. |
-| Help | string | Help to be shown when user clicks on the ''?'' icon on top. Could either be in markdown, or a URL (starting with ''/'' or ''http''). |
+| Help | string | Help to be shown when user clicks on the '?' icon on top. Could either be in markdown, or a URL (starting with '/' or 'http'). |
 | Description Position | flexposition |  |
 | Description Visibility Mode | visibilitymode |  |
 | **Data** | | |
-| Filter | string | Formula that filters out rows to show. Examples: `${AGE}` > 20 or `${WEIGHT / 2)}` > 100, `${SEVERITY}` == ''Medium'', `${RACE}`.endsWith(''sian'') |
+| Filter | string | Formula that filters out rows to show. Examples: `${AGE}` > 20 or `${WEIGHT / 2)}` > 100, `${SEVERITY}` == 'Medium', `${RACE}`.endsWith('sian') |
 | Table | string |  |
 | **Style** | | |
 | Controls Font | string | Viewer controls elements font. |

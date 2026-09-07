@@ -11,9 +11,11 @@ import grok_connect.managers.integer_column.DefaultIntColumnManager;
 import grok_connect.managers.string_column.DefaultStringColumnManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import serialization.BigIntColumn;
 import serialization.Column;
 import serialization.StringColumn;
 import serialization.Types;
+import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.Collection;
@@ -26,7 +28,9 @@ public class DefaultResultSetManager implements ResultSetManager {
     protected Column<?>[] columns;
     protected ColumnMeta[] columnsMeta;
     protected ColumnManager<?>[] currentManagers;
+    protected boolean[] fastRead;
     protected boolean isInit = false;
+    private boolean int8AsInt32;
 
     public DefaultResultSetManager(Collection<ColumnManager<?>> columnManagers) {
         this.columnManagers = columnManagers;
@@ -59,18 +63,35 @@ public class DefaultResultSetManager implements ResultSetManager {
             columns = new Column<?>[columnCount];
             columnsMeta = new ColumnMeta[columnCount];
             currentManagers = new ColumnManager[columnCount];
+            fastRead = new boolean[columnCount];
             for (int i = 0; i < columnCount; i++) {
                 ColumnMeta columnMeta = getColumnMeta(i + 1, meta, initColumnSize);
                 columnsMeta[i] = columnMeta;
                 ColumnManager<?> applicableColumnManager = getApplicableColumnManager(columnMeta);
                 currentManagers[i] = applicableColumnManager;
+                fastRead[i] = applicableColumnManager.canReadFast(columnMeta);
                 String columnName = columnMeta.getColumnLabel();
                 columns[i] = applicableColumnManager.getColumn(columnName, initColumnSize);
+                if (columns[i] instanceof BigIntColumn)
+                    ((BigIntColumn) columns[i]).setDowncastAllowed(int8AsInt32);
             }
             isInit = true;
         } catch (SQLException e) {
             throw new RuntimeException("Something went wrong when init ResultSetManager", e);
         }
+    }
+
+    @Override
+    public void setInt8AsInt32(boolean value) {
+        int8AsInt32 = value;
+    }
+
+    @Override
+    public boolean readFast(ResultSet resultSet, int index) throws SQLException {
+        if (!fastRead[index - 1])
+            return false;
+        currentManagers[index - 1].readFast(resultSet, index, columns[index - 1], columnsMeta[index - 1]);
+        return true;
     }
 
     @Override
@@ -92,6 +113,7 @@ public class DefaultResultSetManager implements ResultSetManager {
                 stringColumn.add(newManager.convert(o, columnsMeta[index - 1]));
                 columns[index - 1] = stringColumn;
                 currentManagers[index - 1] = newManager;
+                fastRead[index - 1] = false;
             }
         }
         else
@@ -104,10 +126,18 @@ public class DefaultResultSetManager implements ResultSetManager {
     }
 
     @Override
-    public void empty(int newColSize) {
-        for (Column<?> col : columns) {
-            col.setInitColumnSize(newColSize);
-            col.empty();
+    public void detach(int nextColSize) {
+        for (int i = 0; i < columns.length; i++) {
+            Column<?> col = columns[i];
+            boolean bigInt = col instanceof BigIntColumn;
+            Column<?> fresh = Column.getColumnForType(bigInt ? Types.BIG_INT : col.getType(), col.getName(), nextColSize);
+            if (fresh.getClass() != col.getClass())
+                throw new IllegalStateException("detach rebuilt " + col.getName() + " as " + fresh.getClass().getSimpleName() + " instead of " + col.getClass().getSimpleName());
+            if (bigInt) {
+                ((BigIntColumn) fresh).setDowncastAllowed(int8AsInt32);
+                ((BigIntColumn) fresh).setSticky(((BigIntColumn) col).isSticky());
+            }
+            columns[i] = fresh;
         }
     }
 

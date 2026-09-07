@@ -25,6 +25,7 @@ extends `UaView`; the handler calls `markToolboxReady()` (added to `src/tabs/ua.
 |----------------|-----------------------------|-------------------------------------------------------------|
 | Overview       | `src/release/overview.ts`   | Fetches all domains in parallel; status cards + alerts       |
 | Tests          | `src/release/tests.ts`      | `UsageAnalysis:ReleaseTests` query (`queries/release_tests.sql`) — unit + integration + package (non-manual) |
+| Benchmarks     | `src/release/benchmarks.ts` | `UsageAnalysis:ReleaseBenchmarks` + `ReleaseBenchmarkVersions` — `test_runs.benchmark` only |
 | Manual         | `src/release/manual.ts`     | `UsageAnalysis:ReleaseManualTests` query — Test Track batches |
 | Stress         | `src/tabs/stress-tests.ts`  | **reused**; `StressTestsSummary`/`StressTestsRaw`            |
 | Vulnerabilities| `src/tabs/vulnerabilities.ts`| **reused**; VEX `index.json` — core shown as bleeding-edge only (`toDashboardImages`) |
@@ -72,6 +73,36 @@ schema (`ignore?`/`ignoreReason`/`lastResolved`).
   `Autotests` schema. `muted` (= global `ignore?` OR muted-for-this-version) gates `needs_attention` and
   every failing/flaky count; clicking the icon toggles the version, updates the counts, and persists.
 - **Drilldown:** selecting a row shows the latest raw output + a Jenkins link in the context panel.
+
+## Benchmarks tab
+
+Same shape as Tests, over the other half of `test_runs`. A benchmark-marked case runs in **both** the
+regular suite and the Benchmarks stage of one build, and the two share a `tests` catalog row — only
+`test_runs.benchmark` tells them apart, so every CTE in `ReleaseBenchmarks` filters on it, and the
+`ReleaseTests` CTEs all carry the matching `NOT r.benchmark`. Source of the data: the `Benchmarks`
+stage of `Build-Deploy-Datagrok` (datlas `test.perf.dart` + `grok test --benchmark` over
+ApiTests/DBTests/CVMTests, on the `stress` agent) — see `core/docs/TEST_REPORTING.md`.
+
+Two histories, because they answer different questions:
+
+- **Per build** (`ReleaseBenchmarks`, instance- and branch-scoped like `ReleaseTests`) — did *this*
+  change slow something down? Sparkline over the last N builds, oldest→newest.
+- **Per release line** (`ReleaseBenchmarkVersions`, unscoped) — has it been drifting for months? Each
+  build's `version` rolls up to its minor (`1.27.3` and `1.27.8` both → `1.27`), trunk builds all report
+  `bleeding-edge` and collapse into one trailing point, so the sparkline reads `1.26 → 1.27 → 1.28 →
+  bleeding-edge`. A five-build window cannot show this.
+
+**Slower verdict.** `slower` is true when the latest passing run exceeds either baseline — the
+**median** of the prior builds in the window (median, not mean: one contended agent run would drag a
+mean up far enough to hide the next real regression behind it), or the previous release's average —
+by more than the tab's `Slower by %` input (default `BENCH_SLOW_PCT` = 20). Benchmarks under
+`BENCH_MIN_MS` (200ms) are exempt; a percentage on a sub-200ms workload is scheduler noise. The
+threshold is deliberately tighter than the correctness tests' `SLOW_FACTOR` (1.25) — a benchmark
+exists to be measured, so a delta that is noise on a functional test is the signal here.
+
+**Alerts.** Overview gets a Benchmarks card and up to two alert nodes: *slower than expected*
+(orange — a regression, not a ship-blocker) listing every offender with both deltas, and *benchmarks
+failed* (red — the case blew its own in-suite threshold, which is a hard failure).
 
 ## Launch
 

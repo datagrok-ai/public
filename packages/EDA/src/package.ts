@@ -39,6 +39,9 @@ import {SoftmaxClassifier} from './softmax-classifier';
 import {initXgboost} from '../wasm/xgbooster';
 import {XGBooster} from './xgbooster';
 
+import {initSvm, KernelType} from '../wasm/svm';
+import {SVM} from './svm';
+
 import {ParetoOptimizer} from './pareto-optimization/pareto-optimizer';
 import {ParetoFrontViewer} from './pareto-optimization/pareto-front-viewer';
 
@@ -60,6 +63,7 @@ export class PackageFunctions {
   @grok.decorators.init({tags: ['init']})
   static async init(): Promise<void> {
     await initXgboost();
+    await initSvm();
   }
 
 
@@ -742,6 +746,80 @@ export class PackageFunctions {
     df: DG.DataFrame,
     predictColumn: DG.Column): boolean {
     return XGBooster.isApplicable(df.columns, predictColumn);
+  }
+
+  @grok.decorators.func({
+    'meta': {
+      'mlname': 'SVM',
+      'mlrole': 'train',
+    },
+    'name': 'trainSVM',
+    'outputs': [{'name': 'model', 'type': 'dynamic'}],
+  })
+  static async trainSVM(
+    df: DG.DataFrame,
+    predictColumn: DG.Column,
+    @grok.decorators.param({'type': 'string', 'options': {'choices': ['Linear', 'Polynomial', 'RBF', 'Sigmoid'], 'initialValue': 'RBF', 'description': 'Kernel function: linear, polynomial, RBF (radial basis function), or sigmoid.'}}) kernel: string,
+    @grok.decorators.param({'type': 'double', 'options': {'caption': 'Penalty', 'min': '0.001', 'max': '1000', 'initialValue': '1', 'description': 'Penalty for misclassifying training points. Higher values fit the training data more tightly and risk overfitting, lower values give a smoother, more general model.'}}) cost: number,
+    @grok.decorators.param({'type': 'double', 'options': {'min': '0', 'max': '100', 'initialValue': '0', 'description': 'Kernel coefficient. Used by the RBF, polynomial, and sigmoid kernels. Leave 0 to use 1/number-of-features.'}}) gamma: number,
+    @grok.decorators.param({'type': 'int', 'options': {'min': '1', 'max': '10', 'initialValue': '3', 'description': 'Degree of the polynomial kernel. Higher values give a more flexible, curved decision boundary. Used by the polynomial kernel only.'}}) degree: number,
+    @grok.decorators.param({'type': 'double', 'options': {'caption': 'Offset', 'min': '-100', 'max': '100', 'initialValue': '0', 'description': 'Constant added inside the kernel before the polynomial power or the sigmoid. Used by the polynomial and sigmoid kernels only.'}}) coef0: number,
+    @grok.decorators.param({'type': 'double', 'options': {'min': '0', 'max': '10', 'initialValue': '0.1', 'description': 'Width of the error-insensitive tube in SVR regression. Training errors smaller than this are not penalized, so larger values give a smoother model with fewer support vectors. Used for regression targets only.'}}) epsilon: number): Promise<Uint8Array> {
+    const kernelType = ({
+      'Linear': KernelType.Linear,
+      'Polynomial': KernelType.Poly,
+      'RBF': KernelType.Rbf,
+      'Sigmoid': KernelType.Sigmoid,
+    } as Record<string, KernelType>)[kernel] ?? KernelType.Rbf;
+
+    const model = new SVM();
+    await model.fit(df.columns, predictColumn, {kernelType, C: cost, gamma, degree, coef0, epsilon});
+
+    return model.toBytes();
+  }
+
+
+  @grok.decorators.func({
+    'meta': {
+      'mlname': 'SVM',
+      'mlrole': 'apply',
+    },
+    'name': 'Apply SVM',
+    'description': 'Predict the target for a table using a trained support vector machine (SVM) model.',
+  })
+  static applySVM(
+    df: DG.DataFrame,
+    @grok.decorators.param({'options': {'description': 'Trained SVM model to apply.'}}) model: any): DG.DataFrame {
+    const unpackedModel = new SVM(model);
+    return DG.DataFrame.fromColumns([unpackedModel.predict(df.columns)]);
+  }
+
+
+  @grok.decorators.func({
+    'meta': {
+      'mlname': 'SVM',
+      'mlrole': 'isApplicable',
+    },
+    'name': 'isApplicableSVM',
+  })
+  static isApplicableSVM(
+    df: DG.DataFrame,
+    predictColumn: DG.Column): boolean {
+    return SVM.isApplicable(df.columns, predictColumn);
+  }
+
+
+  @grok.decorators.func({
+    'meta': {
+      'mlname': 'SVM',
+      'mlrole': 'isInteractive',
+    },
+    'name': 'isInteractiveSVM',
+  })
+  static isInteractiveSVM(
+    df: DG.DataFrame,
+    predictColumn: DG.Column): boolean {
+    return SVM.isInteractive(df.columns, predictColumn);
   }
 
   @grok.decorators.func({

@@ -67,6 +67,10 @@ export interface UserMessage {
    * true; the gates are quality mechanisms, not security boundaries, so a client may turn its
    * own off. */
   gates?: {grounding?: boolean; verify?: boolean};
+  resumeExpected?: boolean;
+  /** Id of the queued admission task: the turn holds until the matching
+   * `Grokky:aiChatTurnTask` celery task claims it (see tasks.ts). */
+  taskId?: string;
 }
 
 export interface AbortMessage {
@@ -92,7 +96,8 @@ export interface SyncMessage {
 export interface AuthStartMessage {type: 'auth_start'}
 export interface AuthCodeMessage {type: 'auth_code'; code: string}
 
-export type IncomingMessage = UserMessage | AbortMessage | InputResponseMessage | SyncMessage | AuthStartMessage | AuthCodeMessage;
+export type IncomingMessage =
+  UserMessage | AbortMessage | InputResponseMessage | SyncMessage | AuthStartMessage | AuthCodeMessage;
 
 /** Per-turn metrics forwarded from the SDK `result` message (see docs/BENCHMARK.md). */
 export interface TurnMetrics {
@@ -115,8 +120,11 @@ export type OutgoingMessage =
   // The visible answer stays; the revision streams hidden, and `final.revision` says whether it
   // replaces the original ('replaced') or the original stands ('kept').
   | {type: 'revision_start'; sessionId: string}
-  | {type: 'final'; sessionId: string; content: string; structured_output?: any; unverified?: boolean; metrics?: TurnMetrics; revision?: 'kept' | 'replaced'}
+  | {type: 'final'; sessionId: string; content: string; structured_output?: any; unverified?: boolean;
+      metrics?: TurnMetrics; revision?: 'kept' | 'replaced'}
   | {type: 'error'; sessionId: string; message: string}
+  | {type: 'session_reset'; sessionId: string}
+  | {type: 'auth_required'; sessionId: string}
   | {type: 'queued'; sessionId: string}
   | {type: 'aborted'; sessionId: string}
   | {type: 'input_request'; sessionId: string; requestId: string; toolName: string; input: any}

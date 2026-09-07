@@ -73,11 +73,28 @@ grok s users save --json user.json                   # create / update from JSON
 grok s groups add-members Chemists alice bob         # membership (idempotent)
 grok s shares add "Me:MyConn" Chemists --access Edit # sharing
 grok s functions run 'Chem:smilesToMw("CCO")'        # call a function
+grok s packages install Chem Bio                     # install latest plugins from the registry
 grok s raw GET /api/users/current                    # any endpoint
 ```
 
 Full reference with JSON shapes, batch operations, and scripting patterns:
 [`tools/GROK_S.md`](tools/GROK_S.md).
+
+## Publishing to npm
+
+Everything published from this repo (`datagrok-api`, `datagrok-tools`,
+`@datagrok-libraries/*`, `@datagrok-misc/*`, `@datagrok/*`) authenticates with
+OIDC trusted publishing and ships npm provenance. There is no npm token in CI.
+
+Two consequences when adding or moving a package:
+
+- `package.json` must carry `"repository": { "type": "git", "url": "https://github.com/datagrok-ai/public.git" }`
+  — provenance rejects a publish whose repository does not match.
+- A new package's first version is published **by hand**, then enrolled with
+  `npm trust`, before merging. CI publishes every version after that.
+
+Manual and bulk-enrollment script:
+[`.github/NPM_TRUSTED_PUBLISHING.md`](.github/NPM_TRUSTED_PUBLISHING.md).
 
 ## Code Style
 

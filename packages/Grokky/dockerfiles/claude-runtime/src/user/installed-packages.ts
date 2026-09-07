@@ -12,5 +12,6 @@ export function isPackageInstalled(userId: string, name: string): boolean {
 
 export function setInstalledPackages(userId: string, packages: PackageInfo[]): void {
   cache.set(userId, new Map(packages.map((p) => [p.name, p.updatedOn ?? ''])));
-  console.log(`install-set: stored ${packages.length} package(s) for user ${userId}: [${packages.map((p) => p.name).join(', ')}]`);
+  console.log(`install-set: stored ${packages.length} package(s) for user ${userId}: ` +
+    `[${packages.map((p) => p.name).join(', ')}]`);
 }

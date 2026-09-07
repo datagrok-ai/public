@@ -43,6 +43,7 @@ async function postprocess() {
     .avg('build_date')
     .add(DG.STR_AGG.CONCAT_UNIQUE, 'status')
     .add(DG.STR_AGG.CONCAT_UNIQUE, 'instance')
+    .add(DG.STR_AGG.CONCAT_UNIQUE, 'branch')
     .add(DG.STR_AGG.CONCAT_UNIQUE, 'build_commit')
     .add(DG.STR_AGG.CONCAT_UNIQUE, 'build')
     .add(DG.STR_AGG.CONCAT_UNIQUE, 'result')
@@ -132,7 +133,8 @@ async function postprocess() {
     let data = {build : (getFirstOfCol(pivot.columns.byName(buildName + ' concat unique(build)'))),
      build_commit : (getFirstOfCol(pivot.columns.byName(buildName + ' concat unique(build_commit)'))),
      build_date : (getFirstOfCol(pivot.columns.byName(buildName + ' avg(build_date)'))),
-     instance : (getFirstOfCol(pivot.columns.byName(buildName + ' concat unique(instance)')))}
+     instance : (getFirstOfCol(pivot.columns.byName(buildName + ' concat unique(instance)'))),
+     branch : (getFirstOfCol(pivot.columns.byName(buildName + ' concat unique(branch)')))}
     let colResult = pivot.columns.byName(i + ' concat unique(result)');
     // if (colResult !== null)
     //   colResult.semType = 'stackTrace';
@@ -150,6 +152,7 @@ async function postprocess() {
     pivot.columns.remove(buildName + ' concat unique(build_commit)');
     pivot.columns.remove(buildName + ' avg(build_date)');
     pivot.columns.remove(buildName + ' concat unique(instance)');
+    pivot.columns.remove(buildName + ' concat unique(branch)');
   }
 
   pivot.name = '0. Tests Dashboard'; 

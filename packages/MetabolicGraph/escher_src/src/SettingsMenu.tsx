@@ -196,6 +196,19 @@ class SettingsMenu extends Component<{settings: Settings, map: EscherMap, setDis
                 />
                 Highlight reactions not in model
               </label>
+              <label title='If checked, animate the direction of flux along reactions whenever reaction data is loaded.'>
+                <input
+                  type='checkbox'
+                  onClick={() => {
+                    settings.set(
+                      'animate_flux',
+                      !settings.get('animate_flux')
+                    );
+                  }}
+                  checked={settings.get('animate_flux')}
+                />
+                Animate flux direction
+              </label>
               <label title='If true, then use CSS3 3D transforms to speed up panning and zooming.'>
                 <input
                   type='checkbox'

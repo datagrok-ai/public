@@ -216,3 +216,7 @@ resizes. */
   fill: rgb(150, 150, 150);
 }
 
+.overlay {
+  height: revert-layer !important;
+  width: revert-layer !important;
+}

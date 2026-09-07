@@ -98,6 +98,8 @@ export async function hierarchicalClusteringUI(
     grok.shell.warning('Hierarchical clustering analysis on data filtered out for nulls.');
     tv = grok.shell.addTableView(filteredDf);
   }
+  else if (!tv)
+    tv = grok.shell.addTableView(df);
   if (!tv.grid)
     throw new Error('TableView has no grid to attach dendrogram to.');
 

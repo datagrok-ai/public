@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/eda",
   "friendlyName": "EDA",
-  "version": "1.8.0",
+  "version": "1.9.0",
   "description": "Exploratory Data Analysis Tools",
   "license": "MIT",
   "dependencies": {

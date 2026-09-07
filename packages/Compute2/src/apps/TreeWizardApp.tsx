@@ -25,6 +25,10 @@ export const TreeWizardApp = Vue.defineComponent({
       type: Object as Vue.PropType<PipelineInstanceConfig>,
       required: false,
     },
+    initialRunId: {
+      type: String,
+      required: false,
+    },
     view: {
       type: DG.View,
       required: true,
@@ -44,7 +48,7 @@ export const TreeWizardApp = Vue.defineComponent({
         currentView.value.close();
     };
     return () => (
-      <TreeWizard providerFunc={props.providerFunc} version={props.version} instanceConfig={props.instanceConfig} modelName={props.modelName} view={currentView.value} showReturn={!!resolve.value} onReturn={onReturn}/>
+      <TreeWizard providerFunc={props.providerFunc} version={props.version} instanceConfig={props.instanceConfig} initialRunId={props.initialRunId} modelName={props.modelName} view={currentView.value} showReturn={!!resolve.value} onReturn={onReturn}/>
     );
   },
 });

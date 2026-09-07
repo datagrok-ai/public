@@ -4,6 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import $ from 'cash-dom';
+import * as rxjs from 'rxjs';
 import * as C from '../utils/constants';
 import {COLUMN_NAME} from '../utils/constants';
 import * as CR from '../utils/cell-renderer';
@@ -759,6 +760,9 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
           this.onFilterChanged(true, false);
         }
       }));
+      // Not debounced: a hover before the reset would highlight with a stale-length mask
+      this.subs.push(rxjs.merge(this.dataFrame.onRowsRemoved, this.dataFrame.onRowsAdded)
+        .subscribe(() => this.onFilterChanged(true, false)));
     } else {
       const msg = 'PeptidesError: dataframe is missing Macromolecule or numeric columns';
       grok.log.error(msg);
@@ -773,6 +777,7 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
     this._mutationCliffStats = null;
     this._mutationCliffsSelection = null;
     this._mutationCliffs = null;
+    this._scaledActivityColumn = null;
     if (onlySetNulls)
       return;
 
@@ -1382,6 +1387,7 @@ export class MostPotentResidues extends SARViewer {
     this._mutationCliffStats = null;
     this._mutationCliffsSelection = null;
     this._mutationCliffs = null;
+    this._scaledActivityColumn = null;
     if (onlySetNulls)
       return;
     this._viewerGrid = null;

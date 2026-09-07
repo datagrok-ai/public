@@ -1,18 +1,17 @@
-import {signal, computed, Scope, Component, bindText} from '../../src/index.js';
+import {signal, computed, Scope, Control, bindText} from '../../src/index.js';
+import {Accordion} from '../../src/components/containers/accordion.js';
 
-function injectOnce(id, make) {
+function injectOnce(id, href) {
   if (document.getElementById(id)) return;
-  const e = make();
-  e.id = id;
-  document.head.append(e);
-}
-
-injectOnce('u2-accordion-css', () => {
   const l = document.createElement('link');
   l.rel = 'stylesheet';
-  l.href = new URL('../../css/accordion.css', import.meta.url).href;
-  return l;
-});
+  l.href = new URL(href, import.meta.url).href;
+  l.id = id;
+  document.head.append(l);
+}
+
+injectOnce('u2-icons-css', '../../css/icons.css');
+injectOnce('u2-accordion-css', '../../css/accordion.css');
 
 function el(tag, cls, text) {
   const e = document.createElement(tag);
@@ -37,11 +36,11 @@ function paragraph(text) {
 const TITLES = ['Overview', 'Lazy details', 'Live values', 'Removable'];
 
 export async function render(main) {
-  const {Accordion} = await import('../../src/components/accordion.js');
-
   main.append(el('h1', null, 'Accordion'));
   const intro = el('p');
-  intro.innerHTML = 'Panes expand independently (no exclusive mode, like the platform accordion). ' +
+  intro.innerHTML = 'The platform\'s <code>ui.accordion</code> look. Panes expand independently (no ' +
+    'exclusive mode, like the platform accordion); <code>addPane(title, content, expanded, icon)</code> ' +
+    'takes a Font Awesome name or an element as the icon. ' +
     'Headers are a roving-tabindex group: ↑/↓/Home/End move between them, Enter or Space toggles. ' +
     'Function content is built on first expansion and kept afterwards — collapsing sets ' +
     '<code>display:none</code>, it never detaches. Each pane builds under its own scope, so ' +
@@ -80,13 +79,13 @@ export async function render(main) {
   };
 
   const live = () => {
-    const content = Component.build(() => {
+    const content = Control.build(() => {
       const value = el('b');
       bindText(Scope.ambient, value, computed(() => String(ticks.value)));
       const line = el('div');
       line.append('ticks = ', value);
       return [
-        paragraph('A Component built inside the builder — adopted by the pane scope via Scope.ambient.'),
+        paragraph('A Control built inside the builder — adopted by the pane scope via Scope.ambient.'),
         line,
         button('Tick', () => ticks.value++),
       ];
@@ -98,8 +97,8 @@ export async function render(main) {
   const acc = new Accordion();
   acc.root.style.maxWidth = '520px';
   acc.root.style.border = 'var(--dg-border-width) solid var(--dg-border)';
-  acc.addPane('Overview', eager, true);
-  acc.addPane('Lazy details', lazy);
+  acc.addPane('Overview', eager, true, 'info-circle');
+  acc.addPane('Lazy details', lazy, false, 'hourglass-half');
   acc.addPane('Live values', live);
   acc.addPane('Removable', paragraph('Remove this pane below and watch the live scope count drop.'));
   main.append(acc.root);

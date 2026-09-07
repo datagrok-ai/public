@@ -135,6 +135,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.metadata.outputs.publish_matrix) }}
+    permissions:
+      contents: write
+      id-token: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -172,13 +175,23 @@ jobs:
       - run: npm run test
         working-directory: misc/${{ matrix.project }}
         if: ${{ matrix.test == 'test' }}
+      # Trusted publishing (OIDC) needs npm >= 11.5.1 on Node >= 22.14. Swap the
+      # toolchain only for the publish step so the build keeps its pinned Node.
+      - name: Setup Node for trusted publishing
+        uses: actions/setup-node@v4
+        if: matrix.publish == 'publish' && github.ref == 'refs/heads/master'
+        with:
+          node-version: '24.x'
+          registry-url: 'https://registry.npmjs.org'
+          scope: '@datagrok-misc'
+      - name: Upgrade npm for trusted publishing
+        if: matrix.publish == 'publish' && github.ref == 'refs/heads/master'
+        run: npm install -g npm@latest
       - name: npm publish
         id: publish
         run: npm publish --access public
         if: matrix.publish == 'publish' && github.ref == 'refs/heads/master'
         working-directory: misc/${{ matrix.project }}
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Get actors slack
         id: actor

@@ -70,7 +70,7 @@ import {addCopyMenuUI} from './utils/context-menu';
 import {getRegionDo} from './utils/get-region';
 import {GetRegionApp} from './apps/get-region-app';
 import {GetRegionFuncEditor} from './utils/get-region-func-editor';
-import {FuncCallParamsEditor, MessageFuncCallEditor} from './utils/func-call-params-editor';
+import {FuncCallParamsEditor, MessageFuncCallEditor} from '@datagrok-libraries/utils/src/func-call-params-editor';
 import {sequenceToMolfile} from './utils/sequence-to-mol';
 import {detectMacromoleculeProbeDo} from './utils/detect-macromolecule-probe';
 import {getMolColumnFromHelm} from './utils/helm-to-molfile/utils';

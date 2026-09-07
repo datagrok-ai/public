@@ -44,7 +44,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "ssh://git@github.com/datagrok-ai/public.git",
+    "url": "https://github.com/datagrok-ai/public.git",
     "directory": "packages/Python"
   },
   "category": "Compute",

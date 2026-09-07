@@ -172,6 +172,7 @@ export async function getQueryParams(): Promise<string[]> {
 
 function createPieSettings(table: DG.DataFrame, columnNames: string[], properties: any): any {
   const sectors: any[] = [];
+  const matched: string[] = [];
 
   for (const subgroup of properties.subgroup) {
     const subgroupColor = colorsDictionary[subgroup.name];
@@ -184,11 +185,14 @@ function createPieSettings(table: DG.DataFrame, columnNames: string[], propertie
     for (const model of subgroup.models) {
       const modelName = columnNames.find((name: string) => name.includes(model.name));
       if (modelName) {
+        matched.push(modelName);
         const column = table.col(modelName);
-        const { line, weight, min, max } = model;
+        const { line, weight, min, max, functionType, mode } = model;
 
         if (column) {
           const updatedMeta = {
+            functionType: functionType,
+            mode: mode,
             groupName: subgroup.name,
             weight: weight,
             line: line,
@@ -202,8 +206,12 @@ function createPieSettings(table: DG.DataFrame, columnNames: string[], propertie
 
         sector.subsectors.push({
           name: modelName,
+          functionType: functionType,
+          mode: mode,
           weight: weight,
           line: line,
+          min: min,
+          max: max,
         });
       }
     }
@@ -213,6 +221,7 @@ function createPieSettings(table: DG.DataFrame, columnNames: string[], propertie
   }
 
   return {
+    columnNames: matched,
     sectors: {
       lowerBound: DEFAULT_LOWER_VALUE,
       upperBound: DEFAULT_UPPER_VALUE,
@@ -241,7 +250,6 @@ export function addSparklines(table: DG.DataFrame, columnNames: string[], index:
   name ??= pieName;
   const pie = grid.columns.add({ gridColumnName: name, cellType: 'piechart' });
 
-  pie.settings = { columnNames: columnNames };
   pie.settings = createPieSettings(table, columnNames, properties);
 
   grid.columns.byName(name)?.move(index);

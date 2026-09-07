@@ -105,7 +105,7 @@ export function getDevKey(hostKey: string): { url: string, key: string } {
   let key = '';
   let url = '';
   try {
-    let url = new URL(host).href;
+    url = new URL(host).href;
     if (url.endsWith('/')) url = url.slice(0, -1);
     if (url in urls) key = config['servers'][urls[url]]['key'];
   } catch (error) {

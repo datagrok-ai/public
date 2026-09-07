@@ -10,7 +10,8 @@ import {classicConnectionPath} from 'rete-render-utils';
 
 const {RefSocket, RefControl} = Presets.classic;
 import {FlowNode, FlowScheme, EXEC_IN_KEY, EXEC_OUT_KEY, ORDER_SOCKET_TYPE, isExecKey, nodeMissingRequirements,
-  hiddenSocketRow} from './scheme';
+  hiddenSocketRow, supportsInlinePreview, inlinePreviewEnabled, inlinePreviewSize,
+  INLINE_PREVIEW_SIZE_PROP} from './scheme';
 import {InputValueControl} from './nodes/input-value-control';
 import {TypedSocket} from './sockets';
 import {getSlotColor, getSlotLetter, pastelize} from '../types/type-map';
@@ -57,6 +58,9 @@ export function FlowNodeComponent(props: NodeProps): React.JSX.Element {
 
   const autoSummary = !node.description && !collapsed ? summarizeNode(node) : '';
 
+  const previewCapable = supportsInlinePreview(node);
+  const previewOn = previewCapable && inlinePreviewEnabled(node);
+
   const onCaretClick = (e: React.MouseEvent): void => {
     e.stopPropagation();
     toggleCollapsed(node);
@@ -78,6 +82,7 @@ export function FlowNodeComponent(props: NodeProps): React.JSX.Element {
       data-selected={node.selected ? 'true' : 'false'}
       data-status={dgStatus}
       data-attention={attention ? 'true' : 'false'}
+      data-inline-preview={previewOn ? 'true' : 'false'}
     >
       {/* Exec ports always render so edges keep their endpoints; CSS shows them
           only when wired, hovered, or during an order drag. */}
@@ -128,6 +133,19 @@ export function FlowNodeComponent(props: NodeProps): React.JSX.Element {
           title={statusText || 'Not run yet'}
         />
         <span className="ff-node-title-text" data-testid={tid('node-title-text')} title={node.label}>{node.label}</span>
+        {previewCapable && (
+          <span
+            className="ff-node-preview-toggle"
+            data-testid={tid('node-preview-toggle')}
+            data-on={previewOn ? 'true' : 'false'}
+            title={previewOn ? 'Hide the in-node preview' : 'Show the result right on the node'}
+            onPointerDown={stopPointer}
+            onClick={(e) => {
+              e.stopPropagation();
+              node.editorBridge?.toggleInlinePreview(node.id);
+            }}
+          >{previewOn ? '⊟' : '⊞'}</span>
+        )}
         <span
           className="ff-node-caret"
           data-testid={tid('node-caret')}
@@ -230,6 +248,8 @@ export function FlowNodeComponent(props: NodeProps): React.JSX.Element {
               ))}
             </div>
           )}
+
+          {previewOn && <InlineNodePreview node={node} />}
         </div>
       )}
 
@@ -265,6 +285,87 @@ export function FlowNodeComponent(props: NodeProps): React.JSX.Element {
         </div>
       )}
     </div>
+  );
+}
+
+/** In-node preview of a viewer/widget output. The in-card container only
+ *  reserves the box (border, placeholder, resize) — the actual content is
+ *  mounted by the editor in a SCREEN-SPACE PORTAL tracking this container
+ *  (`FlowEditor.syncInlinePreview`): DG viewer popups are `position: fixed`,
+ *  and any transformed ancestor (the zoom/pan canvas) would become their
+ *  containing block, throwing them far from the viewer. The size persists in
+ *  `node.properties` so it serializes with the flow. */
+function InlineNodePreview(props: {node: FlowNode}): React.JSX.Element {
+  const node = props.node;
+  const hostRef = React.useRef<HTMLDivElement>(null);
+
+  // Placeholder before content exists; the portal binds/refreshes on every
+  // render, so a fresh run's content appears without extra plumbing.
+  React.useEffect(() => {
+    const host = hostRef.current;
+    if (!host) return;
+    const has = (node.editorBridge?.getInlinePreviewContent(node.id) ?? null) != null;
+    if (has) {
+      host.querySelector(':scope > .ff-node-preview-placeholder')?.remove();
+      host.dataset.empty = 'false';
+    } else {
+      // A run on its way to this node shows a loader, not the resting hint —
+      // a fresh full run clears the captured value before recomputing it.
+      const pending = node.editorBridge?.isInlinePreviewPending(node.id) ?? false;
+      const want = pending ? 'loading' : 'true';
+      if (host.dataset.empty !== want) {
+        host.innerHTML = '';
+        const ph = document.createElement('div');
+        ph.className = 'ff-node-preview-placeholder';
+        ph.dataset.testid = tid('node-preview-placeholder');
+        if (pending) {
+          ph.dataset.loading = 'true';
+          ph.appendChild(ui.loader());
+        } else
+          ph.textContent = 'Run the flow to see the preview';
+        host.appendChild(ph);
+        host.dataset.empty = want;
+      }
+    }
+    node.editorBridge?.syncInlinePreview(node.id, host);
+  });
+
+  // Tear the portal down when the preview unmounts (toggle off, collapse, node
+  // removed) — this also releases the hosted marker to the bottom panel.
+  React.useEffect(() => () => {
+    node.editorBridge?.releaseInlinePreview(node.id);
+  }, []);
+
+  // Persist a user drag-resize into the node properties (cosmetic — no
+  // params-changed report; properties serialize on save).
+  React.useEffect(() => {
+    const host = hostRef.current;
+    if (!host || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(() => {
+      // The CSS `resize` handle writes inline width/height — read those, not
+      // offsetWidth (which adds the borders and would drift the stored size).
+      const w = Math.round(parseFloat(host.style.width) || host.offsetWidth);
+      const h = Math.round(parseFloat(host.style.height) || host.offsetHeight);
+      if (w <= 0 || h <= 0) return;
+      const cur = inlinePreviewSize(node);
+      if (cur.width !== w || cur.height !== h)
+        node.properties[INLINE_PREVIEW_SIZE_PROP] = {width: w, height: h};
+    });
+    ro.observe(host);
+    return () => ro.disconnect();
+  }, []);
+
+  const size = inlinePreviewSize(node);
+  return (
+    <div
+      className="ff-node-inline-preview"
+      data-testid={tid('node-preview')}
+      style={{width: `${size.width}px`, height: `${size.height}px`}}
+      ref={hostRef}
+      onPointerDown={(e) => e.stopPropagation()}
+      onDoubleClick={(e) => e.stopPropagation()}
+      onWheel={(e) => e.stopPropagation()}
+    />
   );
 }
 

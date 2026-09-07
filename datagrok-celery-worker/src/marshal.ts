@@ -8,8 +8,10 @@ import {FuncCall, FuncCallParam, Type} from './func-call';
 export function validateCall(call: FuncCall): void {
   // The server sets options.isParquet = false for js-lang funcs (docker_func.dart
   // executeCall); a parquet payload means a misconfigured deployment.
-  if (call.useParquetTransfer)
-    throw new Error('Parquet transfer is not supported by the JS worker: the server must send dataframes as d42 or CSV (call.options.isParquet must be false)');
+  if (call.useParquetTransfer) {
+    throw new Error('Parquet transfer is not supported by the JS worker: ' +
+      'the server must send dataframes as d42 or CSV (call.options.isParquet must be false)');
+  }
   if (call.outputParams.length > 1)
     throw new Error('Only one return parameter is allowed, but more are present in the Datagrok function declaration.');
 }
@@ -82,10 +84,14 @@ export function marshalInput(param: FuncCallParam, dg?: any): any {
       // server_action.dart sends to js-lang funcs), 'csv' comes from older datlas versions
       if (param.receivedType === Type.DATA_FRAME)
         param.value = dg.DataFrame.fromByteArray(value);
-      else if (param.receivedType === 'csv')
-        param.value = dg.DataFrame.fromCsv(Buffer.from(value.buffer, value.byteOffset, value.byteLength).toString('utf8'));
-      else
-        throw new Error(`Unsupported dataframe transfer type '${param.receivedType}' for ${param.name}: expected 'dataframe' (d42 binary) or 'csv'`);
+      else if (param.receivedType === 'csv') {
+        param.value = dg.DataFrame.fromCsv(
+          Buffer.from(value.buffer, value.byteOffset, value.byteLength).toString('utf8'));
+      }
+      else {
+        throw new Error(`Unsupported dataframe transfer type '${param.receivedType}' for ${param.name}: ` +
+          `expected 'dataframe' (d42 binary) or 'csv'`);
+      }
       break;
     }
     case Type.FILE:
@@ -115,7 +121,7 @@ function returnError(param: FuncCallParam, expected: string, value: any): Error 
  *  (mirrors ReturnValueProcessor + _send_param_grok_pipe: dataframe -> {id: uuid} with
  *  tags {'.id': id, '.type': 'dataframe'} and d42 bytes, blob -> param name with
  *  {'.id': name, '.type': 'blob'}) and returns the bytes to stream for streamable outputs. */
-export function marshalOutput(param: FuncCallParam, value: any, dg?: any): MarshaledOutput {
+export function marshalOutput(param: FuncCallParam, value: any): MarshaledOutput {
   if (value == null) {
     param.value = null;
     return {bytes: null, tags: null};
@@ -138,7 +144,8 @@ export function marshalOutput(param: FuncCallParam, value: any, dg?: any): Marsh
       if (!(value instanceof Uint8Array))
         throw returnError(param, 'Uint8Array', value);
       param.value = param.name;
-      return {bytes: value instanceof Buffer ? new Uint8Array(value) : value, tags: {'.id': param.name, '.type': 'blob'}};
+      return {bytes: value instanceof Buffer ? new Uint8Array(value) : value,
+        tags: {'.id': param.name, '.type': 'blob'}};
     }
     case Type.INT: {
       const n = Number(value);

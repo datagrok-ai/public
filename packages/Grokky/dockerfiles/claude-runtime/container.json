@@ -1,5 +1,5 @@
 {
-  "cpu": 1,
-  "memory": 2048,
+  "cpu": 4,
+  "memory": 8192,
   "on_demand": true
 }

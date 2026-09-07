@@ -2,7 +2,7 @@
   "compilerOptions": {
     "target": "es2017",
     "module": "esnext",
-    "lib": ["es2022", "dom"],
+    "lib": ["esnext", "dom"],
     "declaration": true,
     "declarationMap": true,
     "strict": true,

@@ -17,12 +17,12 @@ keywords:
 
 | Service                                                                   | Docker Image                                                                                      |
 |---------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------|
-| [Datagrok](../../develop/under-the-hood/infrastructure.md#1-core-components) | [datagrok/datagrok:1.27.7](https://hub.docker.com/r/datagrok/datagrok)                            |
-| [Grok Connect](../../develop/under-the-hood/infrastructure.md#3-external-database-connectivity) | [datagrok/grok_connect:2.6.5](https://hub.docker.com/r/datagrok/grok_connect)                    |
-| Grok Spawner                                                              | [datagrok/grok_spawner:2.22.0](https://hub.docker.com/r/datagrok/grok_spawner)                     |
+| [Datagrok](../../develop/under-the-hood/infrastructure.md#1-core-components) | [datagrok/datagrok:1.27.9](https://hub.docker.com/r/datagrok/datagrok)                            |
+| [Grok Connect](../../develop/under-the-hood/infrastructure.md#3-external-database-connectivity) | [datagrok/grok_connect:2.8.4](https://hub.docker.com/r/datagrok/grok_connect)                    |
+| Grok Spawner                                                              | [datagrok/grok_spawner:2.23.0](https://hub.docker.com/r/datagrok/grok_spawner)                     |
 | [Jupyter Kernel Gateway](../../compute/scripting/scripting.mdx)           | [datagrok/jupyter_kernel_gateway:1.34.1](https://hub.docker.com/r/datagrok/jupyter_kernel_gateway) |
-| Grok Pipe | [datagrok/grok_pipe:1.22.0](https://hub.docker.com/r/datagrok/grok_pipe) |
-| Grok Registry Proxy | [datagrok/grok_registry_proxy:1.30.0](https://hub.docker.com/r/datagrok/grok_registry_proxy) |
+| Grok Pipe | [datagrok/grok_pipe:1.22.2](https://hub.docker.com/r/datagrok/grok_pipe) |
+| Grok Registry Proxy | [datagrok/grok_registry_proxy:1.30.2](https://hub.docker.com/r/datagrok/grok_registry_proxy) |
 
 
 See also:

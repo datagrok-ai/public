@@ -1,8 +1,8 @@
 /** Task queue consumer. The worker OWNS the task queue declaration ({durable: true});
  *  datlas publishes into it with passive: true (call_queue_service.dart _putTask) and
  *  expects an 'accepted' fanout reply within taskPickupTimeout (60s), so ACCEPTED is
- *  published immediately on message receipt — datlas' own worker mode does the same
- *  (ack + ACCEPTED before parsing, _handleTasksQueueMessage). */
+ *  published immediately on message receipt (datlas' own worker mode does the same,
+ *  _handleTasksQueueMessage). */
 import * as amqplib from 'amqplib';
 
 import {FanoutPublisher} from './fanout-publisher';
@@ -22,8 +22,9 @@ export class CeleryConsumer {
   private conn: any = null;
   private channel: any = null;
   private consumerTag: string | null = null;
-  private readonly fifo: FuncCall[] = [];
-  private draining = false;
+  private readonly inFlight = new Map<string, Promise<void>>();
+  private executing = 0;
+  private readonly slotWaiters: (() => void)[] = [];
   private stopped = false;
   private reconnectWaitMs = 0;
 
@@ -36,15 +37,16 @@ export class CeleryConsumer {
     this.connectFn = connectFn ?? ((url: string) => amqplib.connect(url));
   }
 
-  get isBusy(): boolean {
-    return this.draining;
+  get inFlightCount(): number {
+    return this.inFlight.size;
   }
 
   async start(): Promise<void> {
     try {
       await this.connect();
       this.reconnectWaitMs = 0;
-      logInfo(`Consuming task queue '${this.settings.taskQueueName}'`);
+      logInfo(`Consuming task queue '${this.settings.taskQueueName}' ` +
+        `(max ${this.settings.maxConcurrentTasks} concurrent task${this.settings.maxConcurrentTasks > 1 ? 's' : ''})`);
     }
     catch (e: any) {
       logError(`Task queue connection failed: ${e?.message ?? e}`);
@@ -64,10 +66,19 @@ export class CeleryConsumer {
     });
     const channel = await conn.createChannel();
     channel.on?.('error', (e: Error) => logWarn(`Task queue channel error: ${e.message}`));
+    channel.on?.('close', () => {
+      if (!this.stopped && this.conn === conn) {
+        try {
+          conn.close()?.catch?.(() => {});
+        }
+        catch (_) {}
+      }
+    });
     await channel.assertQueue(this.settings.taskQueueName, {durable: true});
-    const consumed = await channel.consume(this.settings.taskQueueName,
-      (message: any) => this.onMessage(message), {noAck: false});
+    await channel.prefetch(this.settings.maxConcurrentTasks);
     this.channel = channel;
+    const consumed = await channel.consume(this.settings.taskQueueName,
+      (message: any) => this.onMessage(message, channel), {noAck: false});
     this.consumerTag = consumed.consumerTag;
   }
 
@@ -82,28 +93,23 @@ export class CeleryConsumer {
   }
 
   /** Handles one task message; visible for tests (pass the channel-delivered message). */
-  onMessage(message: any): void {
+  onMessage(message: any, channel: any = this.channel): void {
     if (message == null)
       return; // consumer was cancelled by the broker
+    let call: FuncCall;
     try {
-      this.channel?.ack(message);
       const headers = message.properties?.headers ?? {};
       if (headers['lang'] != null && headers['lang'] !== 'js')
         logWarn(`Task '${headers['task']}' has lang='${headers['lang']}', expected 'js'`);
-      const call = FuncCall.fromCeleryBody(JSON.parse(message.content.toString('utf8')));
+      call = FuncCall.fromCeleryBody(JSON.parse(message.content.toString('utf8')));
       // ACCEPTED must reach datlas within taskPickupTimeout
       void this.publisher.publish({}, call.id, 'accepted');
-      if (this.revoked.has(call.id)) {
-        this.publishCanceled(call);
-        return;
-      }
-      this.fifo.push(call);
-      void this.drain();
     }
     catch (e: any) {
       logError(`Failed to handle a task message: ${e?.message ?? e}`);
       // Poison message: fail fast with an Error CALL instead of letting datlas wait
       // out the full taskPickupTimeout (60s) on a missing ACCEPTED
+      this.ack(channel, message);
       const correlationId = message.properties?.correlationId;
       if (correlationId != null) {
         void this.publisher.publish({}, correlationId, 'accepted');
@@ -113,6 +119,51 @@ export class CeleryConsumer {
           errorMessage: `Worker failed to parse the task message: ${e?.message ?? e}`,
         }, correlationId, 'call');
       }
+      return;
+    }
+    if (this.revoked.has(call.id)) {
+      this.publishCanceled(call);
+      this.ack(channel, message);
+      return;
+    }
+    if (this.inFlight.has(call.id)) {
+      void this.inFlight.get(call.id)!.finally(() => this.ack(channel, message));
+      return;
+    }
+    const task = this.admit(call)
+      .catch((e: any) => logError(`Task runner threw: ${e?.message ?? e}`, call.id))
+      .finally(() => {
+        this.inFlight.delete(call.id);
+        this.ack(channel, message);
+      });
+    this.inFlight.set(call.id, task);
+  }
+
+  private async admit(call: FuncCall): Promise<void> {
+    // prefetch bounds deliveries per channel; after a reconnect the new channel can
+    // over-deliver while old-channel tasks still run, so the gate is NOT redundant
+    while (this.executing >= this.settings.maxConcurrentTasks)
+      await new Promise<void>((resolve) => this.slotWaiters.push(resolve));
+    if (this.revoked.has(call.id)) {
+      this.publishCanceled(call);
+      return;
+    }
+    this.executing++;
+    try {
+      await this.runTask(call);
+    }
+    finally {
+      this.executing--;
+      this.slotWaiters.shift()?.();
+    }
+  }
+
+  private ack(channel: any, message: any): void {
+    try {
+      channel?.ack(message);
+    }
+    catch (e: any) {
+      logWarn(`Ack failed (the broker will redeliver the message): ${e?.message ?? e}`);
     }
   }
 
@@ -120,31 +171,6 @@ export class CeleryConsumer {
     logInfo('Task was revoked before pickup, publishing Canceled CALL', call.id);
     call.status = FuncCallStatus.CANCELED;
     void this.publisher.publish(call.toJson(), call.id, 'call');
-  }
-
-  /** Single-in-flight executor loop draining the in-memory FIFO. */
-  private async drain(): Promise<void> {
-    if (this.draining)
-      return;
-    this.draining = true;
-    try {
-      while (this.fifo.length > 0) {
-        const call = this.fifo.shift()!;
-        if (this.revoked.has(call.id)) {
-          this.publishCanceled(call);
-          continue;
-        }
-        try {
-          await this.runTask(call);
-        }
-        catch (e: any) {
-          logError(`Task runner threw: ${e?.message ?? e}`, call.id);
-        }
-      }
-    }
-    finally {
-      this.draining = false;
-    }
   }
 
   /** Stops receiving new tasks (queued messages stay in the broker for other workers). */
@@ -161,10 +187,10 @@ export class CeleryConsumer {
     }
   }
 
-  /** Waits until the in-flight task (and the FIFO) is done, up to [timeoutMs]. */
+  /** Waits until all in-flight tasks are done, up to [timeoutMs]. */
   async waitForIdle(timeoutMs: number): Promise<boolean> {
     const deadline = Date.now() + timeoutMs;
-    while (this.draining || this.fifo.length > 0) {
+    while (this.inFlight.size > 0) {
       if (Date.now() >= deadline)
         return false;
       await new Promise((resolve) => setTimeout(resolve, 100));

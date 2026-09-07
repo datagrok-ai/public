@@ -226,11 +226,13 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
       if (!fit)
         continue;
       const {fitFunc, curve, fitSpaceSeries, userParamsFlag} = fit;
-
+      const pointHalfSize = FitConstants.POINT_PX_SIZE * ratio / 2;
+      // so that extreme points are not cut
+      const pfDataBox = dataBox.inflate(pointHalfSize, pointHalfSize);
       // a bound narrows the plot, and what falls outside it is out of view rather than out of bounds
       g.save();
       g.beginPath();
-      g.rect(dataBox.x, dataBox.y, dataBox.width, dataBox.height);
+      g.rect(pfDataBox.x, pfDataBox.y, pfDataBox.width, pfDataBox.height);
       g.clip();
       renderFitLine(g, series, {viewport, ratio, logOptions: chartLogOptions, showAxes: areAxesShown(screenBounds),
         showAxesLabels: areAxesLabelsShown(screenBounds, data), screenBounds, curveFunc: curve!, seriesIdx: i, drawnAt});

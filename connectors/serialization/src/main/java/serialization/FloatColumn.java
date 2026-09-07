@@ -135,6 +135,11 @@ public class FloatColumn extends AbstractColumn<Float> {
         data[length++] = (value != null) ? value : (float)None;
     }
 
+    public void add(float value) {
+        ensureSpace(1);
+        data[length++] = value;
+    }
+
     @Override
     public void addAll(Float[] values) {
         ensureSpace(values.length);

@@ -2,7 +2,7 @@
 #description: Duplicates a string in Python
 #language: python
 #tags: test, selenium
-#input: string s
+#input: string s = "abc"
 #output: string res
 #test: PythonDup("abc") == "abcabc"
 

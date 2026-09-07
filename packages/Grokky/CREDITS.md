@@ -119,7 +119,8 @@ Datagrok.
 
 Grokky ships two Docker images that run alongside the Datagrok platform.
 These are built and distributed separately from the JavaScript bundle.
-All listed components are under permissive licenses.
+All listed components are under permissive licenses, except the Claude Agent
+SDK (proprietary, see below).
 
 ### `dockerfiles/claude-runtime` — Claude Agent runtime (Hono + WebSocket)
 
@@ -129,12 +130,16 @@ browser. Skills/knowledge-sync system included.
 | Component                            | License    | Upstream                                          |
 |--------------------------------------|------------|---------------------------------------------------|
 | Node.js 20 (`node:20-slim` base)     | MIT (Node) | https://nodejs.org/                               |
-| @anthropic-ai/claude-agent-sdk       | MIT        | https://github.com/anthropics/claude-agent-sdk   |
+| @anthropic-ai/claude-agent-sdk       | Proprietary | https://github.com/anthropics/claude-agent-sdk   |
 | @hono/node-server, @hono/node-ws     | MIT        | https://hono.dev/                                 |
 | hono                                 | MIT        | https://github.com/honojs/hono                    |
 | adm-zip                              | MIT        | https://github.com/cthackers/adm-zip              |
 | yaml                                 | ISC        | https://github.com/eemeli/yaml                    |
 | @zilliz/claude-context-mcp           | MIT        | https://github.com/zilliztech/claude-context      |
+
+The Claude Agent SDK is © Anthropic PBC, all rights reserved; its use is
+governed by Anthropic's Legal Agreements
+(https://code.claude.com/docs/en/legal-and-compliance).
 
 The image also clones `https://github.com/datagrok-ai/public.git` at build
 time into `/workspace`; the cloned source is the same MIT-licensed `public/`

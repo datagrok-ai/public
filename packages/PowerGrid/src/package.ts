@@ -17,7 +17,7 @@ import {BarCellRenderer} from './cell-types/bar-cell-renderer';
 
 import {SparklineCellRenderer} from './sparklines/sparklines-lines';
 import {BarChartCellRenderer} from './sparklines/bar-chart';
-import {PieChartCellRenderer} from './sparklines/piechart';
+import {PieChartCellRenderer, VlaaiVisCellRenderer} from './sparklines/piechart';
 import {RadarChartCellRender} from './sparklines/radar-chart';
 import {ScatterPlotCellRenderer} from './sparklines/scatter-plot';
 import {names, SparklineType, sparklineTypes, SummarySettingsBase} from './sparklines/shared';
@@ -95,6 +95,22 @@ export class PackageFunctions {
   })
   static piechartCellRenderer() {
     return new PieChartCellRenderer();
+  }
+
+
+  @grok.decorators.func({
+    meta: {
+      cellType: 'vlaaivis',
+      gridChart: 'true',
+      virtual: 'true',
+      role: 'cellRenderer'
+    },
+    tags: ['cellRenderer'],
+    name: 'VlaaiVis',
+    outputs: [{type: 'grid_cell_renderer', name: 'result'}]
+  })
+  static vlaaivisCellRenderer() {
+    return new VlaaiVisCellRenderer();
   }
 
 

@@ -1,5 +1,9 @@
 {
   "name": "@datagrok-libraries/cruddy",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git"
+  },
   "publishConfig": {
     "access": "public"
   },

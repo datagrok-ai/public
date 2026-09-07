@@ -19,6 +19,10 @@ const GRID_INITED_EVENT = 'd4-grid-initialized';
 // When `savedOnly` is set, the panel shows only runs carrying this flag.
 export const STEP_HISTORY_OPTION = 'compute2StepHistory';
 
+// Stamped by ArtifactAlignment on published program copies; they are addressed by id
+// from the catalog only, so every history listing filters them out.
+export const ARTIFACT_FROZEN_OPTION = 'artifactsFrozen';
+
 export const History = Vue.defineComponent({
   name: 'History',
   props: {
@@ -84,12 +88,12 @@ export const History = Vue.defineComponent({
     const refresh = async () => {
       isLoading.value = true;
       try {
-        const newHistoricalRuns = await historyUtils.pullRunsByName(
+        const newHistoricalRuns = (await historyUtils.pullRunsByName(
           func.value.name,
           [{author: grok.shell.user}],
           {},
           ['session.user', 'options'],
-        );
+        )).filter((run) => run.options[ARTIFACT_FROZEN_OPTION] !== 'true');
         historicalRuns.value.clear();
 
         const visibleRuns = props.savedOnly ?

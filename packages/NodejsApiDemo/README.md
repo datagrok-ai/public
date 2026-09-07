@@ -39,5 +39,5 @@ or from the browser console with the same two lines minus the bootstrap.
 ## Requirements
 
 The JKG image must ship `datagrok-api` (built from repo source since GROK-20443;
-`deploy/jupyter_kernel_gateway/Dockerfile`). Scripts run with `detached` js-api
+`deploy/jkg_nodejs/Dockerfile`). Scripts run with `detached` js-api
 init — nothing user-specific is cached across calls in the shared kernel.

@@ -1,0 +1,90 @@
+{
+  "frame": "forced_string_tokens",
+  "rowCount": 6,
+  "columns": [
+    {
+      "name": "go",
+      "dgType": "string",
+      "valueEncoding": "string",
+      "encoderId": 4,
+      "values": [
+        "GO:0005886",
+        "GO:0000001",
+        "",
+        "GO:1905515",
+        null,
+        "GO:0005886"
+      ]
+    },
+    {
+      "name": "chembl",
+      "dgType": "string",
+      "valueEncoding": "string",
+      "encoderId": 4,
+      "values": [
+        "CHEMBL25",
+        "CHEMBL1234567",
+        "CHEMBL3",
+        "CHEMBL25",
+        "CHEMBL99",
+        null
+      ]
+    },
+    {
+      "name": "hex",
+      "dgType": "string",
+      "valueEncoding": "string",
+      "encoderId": 4,
+      "values": [
+        "DSM-4:555F",
+        "DSM-4:5A5F",
+        "DSM-1:0001",
+        "DSM-9:FFFF",
+        "DSM-4:555F",
+        "DSM-0:1234"
+      ]
+    },
+    {
+      "name": "zinc",
+      "dgType": "string",
+      "valueEncoding": "string",
+      "encoderId": 4,
+      "values": [
+        "ZINC000012345678",
+        "ZINC000012345679",
+        "ZINC000099999999",
+        "ZINC000012345678",
+        null,
+        "ZINC001000000001"
+      ]
+    },
+    {
+      "name": "longsplit",
+      "dgType": "string",
+      "valueEncoding": "string",
+      "encoderId": 4,
+      "values": [
+        "A-000000000000005",
+        "B-999000000000004",
+        "A-000000000000006",
+        "B-999000000000123",
+        "C-500000000000000",
+        "A-000000000000005"
+      ]
+    },
+    {
+      "name": "wells",
+      "dgType": "string",
+      "valueEncoding": "string",
+      "encoderId": 4,
+      "values": [
+        "A01",
+        "P24",
+        "B02",
+        "A01",
+        "H12",
+        "C07"
+      ]
+    }
+  ]
+}

@@ -16,6 +16,7 @@ export abstract class HitAppBase<T> {
   public computeFunctions: ComputeFunctions;
   public isJoining = false;
   protected hasEditPermission = false;
+  public get canEdit(): boolean {return this.hasEditPermission;}
   private _appName: AppName;
   public get appName(): AppName {return this._appName;}
   public static molFileExtReaders: { ext: string; handlerFunc: DG.Func }[] = ['sdf', 'mol', 'smi', 'mol2']

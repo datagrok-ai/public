@@ -14,16 +14,50 @@ const MIN_SLOW_MS = 1000; // ignore sub-second tests — a +% on a few-ms test i
 /** Instances the dashboard can inspect; each maps to a `test_runs.instance` host (see release_tests.sql). */
 export const ENV_CHOICES = ['dev', 'release', 'public', 'release-ec2'];
 export const DEFAULT_ENV = 'dev';
+export const DEFAULT_BRANCH = 'master';
+/** Branch picker entry meaning "do not filter" — the pre-branch behaviour, kept for comparing runs. */
+export const ALL_BRANCHES = '(all branches)';
 
-/** Dashboard-wide state shared by every tab. The ribbon env picker (ReleaseHandler) writes `env`;
- * env-scoped tabs (Overview, Tests) read `env.value` and re-fetch when it changes. The ribbon Refresh
- * button fires `refresh`; every tab re-fetches on it. */
+/** Dashboard-wide state shared by every tab. The ribbon env and branch pickers (ReleaseHandler) write
+ * `env` and `branch`; scoped tabs (Overview, Tests) read `.value` and re-fetch when either changes. The
+ * ribbon Refresh button fires `refresh`; every tab re-fetches on it. */
 export class ReleaseContext {
   readonly env: BehaviorSubject<string>;
+  readonly branch: BehaviorSubject<string>;
   readonly refresh = new Subject<void>();
-  constructor(env: string = DEFAULT_ENV) {
+  constructor(env: string = DEFAULT_ENV, branch: string = DEFAULT_BRANCH) {
     this.env = new BehaviorSubject(env);
+    this.branch = new BehaviorSubject(branch);
   }
+}
+
+/** Branches that reported results recently, newest first, with master pinned to the top. */
+export async function fetchTestBranches(): Promise<string[]> {
+  const df = await queries.testBranches(60);
+  const col = df.columns.byIndex(0);
+  const branches = Array.from({length: col.length}, (_, i) => col.get(i) as string).filter((b) => b);
+  return [DEFAULT_BRANCH, ...branches.filter((b) => b !== DEFAULT_BRANCH), ALL_BRANCHES];
+}
+
+/** Descending semver order over `release/X.Y.Z` names; anything unparseable sorts last. */
+function releaseRank(branch: string): number[] {
+  const parts = branch.slice('release/'.length).split('.').map((p) => parseInt(p, 10));
+  return [0, 1, 2].map((i) => (Number.isFinite(parts[i]) ? parts[i] : -1));
+}
+
+/** The branch an instance is expected to be running: dev tracks trunk, every other instance
+ * runs a release, so default it to the highest `release/X.Y.Z` that has reported results.
+ * Falls back to master when no release branch has (a fresh database, or a stale window). */
+export function defaultBranchForEnv(env: string, branches: string[]): string {
+  if (env === DEFAULT_ENV)
+    return DEFAULT_BRANCH;
+  const releases = branches.filter((b) => b.startsWith('release/'));
+  if (releases.length === 0)
+    return DEFAULT_BRANCH;
+  return releases.sort((a, b) => {
+    const [ra, rb] = [releaseRank(a), releaseRank(b)];
+    return (rb[0] - ra[0]) || (rb[1] - ra[1]) || (rb[2] - ra[2]) || a.localeCompare(b);
+  })[0];
 }
 
 // Version-bound test muting. A test is muted for a specific release version; the mute list lives in its
@@ -198,8 +232,10 @@ function renameCol(df: DG.DataFrame, from: string, to: string): void {
 }
 
 /** Runs ReleaseTests and pivots it client-side into one row per test with per-build columns. */
-export async function fetchReleaseTests(instanceFilter: string, lastBuildsNum: number): Promise<ReleasePivot | null> {
-  const raw: DG.DataFrame = await queries.releaseTests(instanceFilter, lastBuildsNum);
+export async function fetchReleaseTests(instanceFilter: string, lastBuildsNum: number,
+  branchFilter: string = DEFAULT_BRANCH): Promise<ReleasePivot | null> {
+  const raw: DG.DataFrame = await queries.releaseTests(instanceFilter,
+    branchFilter === ALL_BRANCHES ? null : branchFilter, lastBuildsNum);
   if (raw.rowCount === 0)
     return null;
 
@@ -473,6 +509,197 @@ export async function fetchReleaseManual(lastBatches: number): Promise<ManualPiv
   }
   return {df: pivot, chronological, latest, statusCols: chronological.map((bi) => `${bi}`),
     successCols: chronological.map((bi) => `${bi} ok`), latestBatchName, passed, failed, total: pivot.rowCount};
+}
+
+// Benchmarks. Their own threshold, tighter than the correctness tests' SLOW_FACTOR: a benchmark exists
+// to be measured, so a regression that would be noise on a functional test is the signal here. The
+// floor is lower too — a 300ms benchmark is a real workload, not a few-ms test whose +% means nothing.
+export const BENCH_SLOW_PCT = 20;
+const BENCH_MIN_MS = 200;
+
+/** One-row-per-benchmark pivot: per-build history, per-release-line history, and the slower verdict. */
+export interface BenchmarkPivot {
+  df: DG.DataFrame;
+  buildIndexes: number[]; // ascending: first = oldest, last = latest
+  latest: number;
+  statusCols: string[];
+  durationCols: string[];
+  versions: string[]; // release lines, oldest -> newest ('bleeding-edge' last)
+  versionCols: string[];
+  version: string; // release version of the latest build
+  slowPct: number;
+}
+
+export interface BenchmarkAlerts {
+  total: number;
+  slower: number;
+  failed: number;
+  notRun: number;
+  slowerByPkg: Record<string, string[]>;
+  failingByPkg: Record<string, string[]>;
+  worstPct: number;
+}
+
+/** Runs ReleaseBenchmarks + ReleaseBenchmarkVersions and pivots both into one row per benchmark.
+ * `slowPct` is the regression threshold in percent (latest vs baseline). */
+export async function fetchReleaseBenchmarks(instanceFilter: string, lastBuildsNum: number,
+  branchFilter: string = DEFAULT_BRANCH, slowPct: number = BENCH_SLOW_PCT,
+  lastVersionsNum: number = 6): Promise<BenchmarkPivot | null> {
+  const [raw, rawVersions]: DG.DataFrame[] = await Promise.all([
+    queries.releaseBenchmarks(instanceFilter, branchFilter === ALL_BRANCHES ? null : branchFilter, lastBuildsNum),
+    queries.releaseBenchmarkVersions(lastVersionsNum),
+  ]);
+  if (raw.rowCount === 0)
+    return null;
+
+  const biCol = raw.getCol('build_index');
+  const buildIndexes = Array.from(new Set(Array.from({length: biCol.length}, (_, i) => biCol.get(i))))
+    .filter((v) => v != null).map(Number).sort((a, b) => a - b);
+  const latest = buildIndexes[buildIndexes.length - 1];
+
+  const pivot = raw.groupBy(['package', 'test', 'owner'])
+    .pivot('build_index')
+    .first('status')
+    .avg('duration')
+    .first('result')
+    .first('build_commit')
+    .aggregate();
+
+  const latestCommit = pivot.columns.addNewString('latest_commit');
+  latestCommit.init((i) => pivot.get(`${latest} first(build_commit)`, i) ?? '');
+  const latestResult = pivot.columns.addNewString('latest_result');
+  for (const bi of buildIndexes) {
+    renameCol(pivot, `${bi} first(status)`, `${bi}`);
+    renameCol(pivot, `${bi} avg(duration)`, `${bi} ms`);
+    renameCol(pivot, `${bi} first(result)`, `${bi} result`);
+    pivot.columns.remove(`${bi} first(build_commit)`);
+  }
+  latestResult.init((i) => pivot.get(`${latest} result`, i) ?? '');
+  const statusCols = buildIndexes.map((bi) => `${bi}`);
+  const durationCols = buildIndexes.map((bi) => `${bi} ms`);
+
+  // Per-release-line history, keyed by test. version_index is ascending, so the sparkline reads
+  // oldest release -> newest -> bleeding-edge left to right.
+  const versions: string[] = [];
+  const versionMs = new Map<string, Map<string, number>>(); // test -> version -> ms
+  if (rawVersions.rowCount > 0) {
+    const vTest = rawVersions.getCol('test');
+    const vName = rawVersions.getCol('version');
+    const vIdx = rawVersions.getCol('version_index');
+    const vMs = rawVersions.getCol('ms');
+    const byIndex = new Map<number, string>();
+    for (let i = 0; i < rawVersions.rowCount; i++) {
+      byIndex.set(Number(vIdx.get(i)), vName.get(i));
+      let perTest = versionMs.get(vTest.get(i));
+      if (!perTest) {
+        perTest = new Map<string, number>();
+        versionMs.set(vTest.get(i), perTest);
+      }
+      perTest.set(vName.get(i), Number(vMs.get(i)));
+    }
+    versions.push(...[...byIndex.keys()].sort((a, b) => a - b).map((k) => byIndex.get(k)!));
+  }
+  const versionCols = versions.map((v) => `${v} ms`);
+  const pivotTestCol = pivot.getCol('test');
+  for (const v of versions) {
+    pivot.columns.addNewFloat(`${v} ms`).init((i) => {
+      const ms = versionMs.get(pivotTestCol.get(i))?.get(v);
+      return ms == null || isNaN(ms) ? null : ms;
+    });
+  }
+
+  const buildCol = raw.getCol('build');
+  let latestBuildName = '';
+  for (let i = 0; i < raw.rowCount; i++)
+    if (Number(biCol.get(i)) === latest) { latestBuildName = buildCol.get(i) ?? ''; break; }
+  const version = versionFromBuild(latestBuildName);
+
+  const prevReleaseByTest = new Map<string, number>();
+  const rawPrev = raw.columns.byName('prev_release_ms');
+  const rawTestCol = raw.getCol('test');
+  if (rawPrev) {
+    for (let i = 0; i < raw.rowCount; i++) {
+      const t = rawTestCol.get(i);
+      if (!prevReleaseByTest.has(t)) { const v: any = rawPrev.get(i); prevReleaseByTest.set(t, v == null ? NaN : Number(v)); }
+    }
+  }
+
+  pivot.columns.addNewInt('latest_ms').init((i) => {
+    const v = Number(pivot.get(`${latest} ms`, i));
+    return v && !isNaN(v) ? Math.round(v) : 0;
+  });
+  // Median, not mean, over the prior builds in the window: one contended agent run would drag a mean
+  // up far enough to hide the next real regression behind it.
+  pivot.columns.addNewInt('baseline_ms').init((i) => {
+    const prior = buildIndexes.slice(0, -1)
+      .filter((bi) => pivot.get(`${bi}`, i) === 'passed')
+      .map((bi) => Number(pivot.get(`${bi} ms`, i))).filter((v) => v && !isNaN(v));
+    return prior.length ? Math.round(median(prior)) : 0;
+  });
+  pivot.columns.addNewInt('prev_release_ms').init((i) => {
+    const v = prevReleaseByTest.get(pivotTestCol.get(i));
+    return (v == null || isNaN(v)) ? 0 : v;
+  });
+  const factor = 1 + slowPct / 100;
+  pivot.columns.addNewBool('failing').init((i) => pivot.get(`${latest}`, i) === 'failed');
+  pivot.columns.addNewInt('slow_pct').init((i) => {
+    const latestMs = pivot.get('latest_ms', i);
+    const base = pivot.get('baseline_ms', i) || pivot.get('prev_release_ms', i);
+    return (latestMs && base) ? Math.round((latestMs / base - 1) * 100) : 0;
+  });
+  pivot.columns.addNewBool('slower').init((i) => {
+    if (pivot.get(`${latest}`, i) !== 'passed')
+      return false;
+    const latestMs = pivot.get('latest_ms', i);
+    if (!latestMs || latestMs < BENCH_MIN_MS)
+      return false;
+    const base = pivot.get('baseline_ms', i);
+    const prev = pivot.get('prev_release_ms', i);
+    return (base > 0 && latestMs > base * factor) || (prev > 0 && latestMs > prev * factor);
+  });
+  pivot.columns.addNewString('slow_detail').init((i) => {
+    if (pivot.get('slower', i) !== true)
+      return '';
+    const latestMs = pivot.get('latest_ms', i);
+    const base = pivot.get('baseline_ms', i);
+    const prev = pivot.get('prev_release_ms', i);
+    const pct = (b: number) => { const p = Math.round((latestMs / b - 1) * 100); return `${p >= 0 ? '+' : ''}${p}%`; };
+    const parts: string[] = [];
+    if (base > 0) parts.push(`${pct(base)} vs median of last ${buildIndexes.length - 1} builds (${base}ms)`);
+    if (prev > 0) parts.push(`${pct(prev)} vs previous release (${prev}ms)`);
+    return `${latestMs}ms — ${parts.join(', ')}`;
+  });
+
+  pivot.getCol('test').semType = 'autotest';
+  pivot.getCol('owner').semType = 'User';
+  pivot.getCol('owner').setTag('cell.renderer', 'User');
+  pivot.name = 'Benchmarks';
+  return {df: pivot, buildIndexes, latest, statusCols, durationCols, versions, versionCols, version, slowPct};
+}
+
+/** Rolls the benchmark pivot up into the counts and package-grouped lists the Overview needs. */
+export function computeBenchmarkAlerts(p: BenchmarkPivot): BenchmarkAlerts {
+  const df = p.df;
+  const a: BenchmarkAlerts = {total: df.rowCount, slower: 0, failed: 0, notRun: 0,
+    slowerByPkg: {}, failingByPkg: {}, worstPct: 0};
+  const pkgCol = df.getCol('package');
+  const testCol = df.getCol('test');
+  for (let i = 0; i < df.rowCount; i++) {
+    const pkg = pkgCol.get(i) ?? '';
+    const test = testCol.get(i);
+    const status = df.get(`${p.latest}`, i);
+    if (status == null || status === 'did not run')
+      a.notRun++;
+    if (df.get('failing', i) === true)
+      pushByPkg(a.failingByPkg, pkg, test);
+    if (df.get('slower', i) === true) {
+      pushByPkg(a.slowerByPkg, pkg, `${test}: ${df.get('slow_detail', i) ?? ''}`);
+      a.worstPct = Math.max(a.worstPct, df.get('slow_pct', i) ?? 0);
+    }
+  }
+  a.slower = countGroups(a.slowerByPkg);
+  a.failed = countGroups(a.failingByPkg);
+  return a;
 }
 
 /** Compares the latest build's worst-case p95 to the median of prior builds (from StressTestsSummary). */

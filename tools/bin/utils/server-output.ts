@@ -3,6 +3,13 @@ import type {NodeApiError, BatchResponse} from './node-dapi';
 
 export type OutputFormat = 'table' | 'json' | 'csv' | 'quiet';
 
+let errorFormat: OutputFormat = 'table';
+
+/** Set once per run so every `printError` call site reports in the requested format. */
+export function setOutputFormat(format: OutputFormat): void {
+  errorFormat = format;
+}
+
 export function printOutput(data: any, format: OutputFormat): void {
   if (data === null || data === undefined) {
     if (format !== 'quiet') console.log('(empty)');
@@ -124,8 +131,29 @@ export function printBatchOutput(response: BatchResponse, format: OutputFormat):
     process.stderr.write(JSON.stringify(errors.map((r) => ({id: r.id, action: r.action, error: r.error})), null, 2) + '\n');
 }
 
-export function printError(err: any): void {
+export function printError(err: any, opts: {verbose?: boolean} = {}): void {
   const apiErr: NodeApiError | undefined = err?.apiError;
-  const out: any = apiErr ?? {error: String(err?.message ?? err)};
-  process.stderr.write(JSON.stringify(out, null, 2) + '\n');
+  const status = apiErr?.errorCode;
+  const base = apiErr?.error ?? String(err?.message ?? err);
+  const message = typeof status === 'number' && status >= 400 && !base.includes(String(status)) ? `${base} (HTTP ${status})` : base;
+  if (errorFormat === 'json') {
+    process.stderr.write(JSON.stringify({...apiErr, error: message}) + '\n');
+    return;
+  }
+  process.stderr.write(`${message}\n`);
+  printErrorDetails(apiErr?.body);
+  if (opts.verbose && apiErr?.stackTrace)
+    process.stderr.write(apiErr.stackTrace + '\n');
+}
+
+/** Structured fields of a domain error envelope: per-row validation errors, manifest errors, a plan awaiting confirmation. */
+function printErrorDetails(body: any): void {
+  if (!body || typeof body !== 'object') return;
+  for (const r of Array.isArray(body.rows) ? body.rows : [])
+    for (const e of Array.isArray(r?.errors) ? r.errors : [])
+      process.stderr.write(`  row ${r.index ?? ''}${e?.column ? ` ${e.column}` : ''}: ${e?.message ?? e?.code ?? ''}\n`);
+  for (const e of Array.isArray(body.errors) ? body.errors : [])
+    process.stderr.write(`  ${typeof e === 'string' ? e : (e?.message ?? JSON.stringify(e))}\n`);
+  if (body.plan)
+    process.stderr.write(JSON.stringify(body.plan, null, 2) + '\n');
 }

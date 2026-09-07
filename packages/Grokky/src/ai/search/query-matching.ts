@@ -3,7 +3,6 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {_package} from '../../package';
-import {dartLike, fireAIAbortEvent} from '../../utils';
 import {ClaudeRuntimeClient, ClaudeModel} from '../../claude/runtime-client';
 import {RENDERED_EVENT} from '../ui';
 
@@ -23,13 +22,25 @@ type PatternQueryMatchResult = {
   reasoning?: string;
 };
 
+const NO_MATCH = 'NO_MATCH';
+
 export async function findBestMatchingQuery(
   question: string,
 ): Promise<QueryMatchResult | null> {
+  const tableQueriesSearchFunctions = DG.Func.find({meta: {searchPattern: null}, returnType: 'dataframe'})
+    .filter((f) => f.options['searchPattern']);
+  if (tableQueriesSearchFunctions.length === 0)
+    return null;
+
+  const searchPatterns = tableQueriesSearchFunctions.map((f) => removeTrailingQuotes(f.options['searchPattern'] as string));
+
   const schema = {
     type: 'object',
     properties: {
-      searchPattern: {type: 'string'},
+      searchPattern: {
+        enum: [...new Set(searchPatterns), NO_MATCH],
+        description: `The exact pattern chosen from the provided list, or ${NO_MATCH} if none fits.`,
+      },
       parameters: {
         type: 'array',
         description: 'Array of parameter key-value pairs extracted from the search pattern.',
@@ -51,10 +62,6 @@ export async function findBestMatchingQuery(
     additionalProperties: false,
   } as const;
 
-  const tableQueriesSearchFunctions = DG.Func.find({meta: {searchPattern: null}, returnType: 'dataframe'})
-    .filter((f) => f.options['searchPattern']);
-
-  const searchPatterns = tableQueriesSearchFunctions.map((f) => f.options['searchPattern'] as string);
   const descriptions = tableQueriesSearchFunctions.map((f) => f.description ?? 'No description');
   const connectionIds = tableQueriesSearchFunctions.map((c) => (c instanceof DG.DataQuery) ? c.connection.id ?? 'unknown' : 'unknown');
   const idSet = new Set(connectionIds.filter((id) => id !== 'unknown'));
@@ -133,7 +140,7 @@ User request:
 "${question}"
 
 Analyze the user request and return a JSON object with:
-- searchPattern: the exact pattern string from above (or closest match if confidence is low)
+- searchPattern: the exact pattern string from above, or ${NO_MATCH} if nothing fits
 - parameters: array of objects with 'key' and 'value' properties for extracted parameter values
 - confidence: your confidence score (0 to 1)
 - suggestedConnection: infer the most likely connection from available list (be generous with inference); return null only if truly no clues exist
@@ -142,6 +149,8 @@ Analyze the user request and return a JSON object with:
 
   try {
     const rawResult = await ClaudeRuntimeClient.getInstance().query(`${systemPrompt}\n\n${userPrompt}`, {outputSchema: schema, model: ClaudeModel.Haiku});
+    if (rawResult.searchPattern === NO_MATCH)
+      return null;
     const parametersRecord: Record<string, string> = {};
     for (const param of rawResult.parameters)
       parametersRecord[param.key] = param.value;

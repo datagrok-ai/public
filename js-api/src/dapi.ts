@@ -96,6 +96,16 @@ export class Dapi {
   get token(): string { return api.grok_Dapi_Get_Token(); }
   set token(token: string | undefined) { api.grok_Dapi_Set_Token(token); }
 
+  /** Token of a user to act AS until this is cleared.
+   *
+   * A browser session authenticates with the HttpOnly `auth` cookie, which script can
+   * neither read nor overwrite, so assigning {@link token} same-origin changes nothing.
+   * Set this to a token you already hold — a signup response, a service token — and it
+   * travels in the `Authorization` header, which the server prefers over the cookie.
+   * Always clear it in a `finally`; while it is set, every call runs as that user. */
+  get impersonationToken(): string | null { return api.grok_Dapi_Get_ImpersonationToken(); }
+  set impersonationToken(token: string | null) { api.grok_Dapi_Set_ImpersonationToken(token); }
+
   /** Retrieves entities from server by list of IDs */
   getEntities(ids: string[]): Promise<Entity[]> {
     return api.grok_Dapi_Entities_GetEntities(ids);
@@ -1578,12 +1588,12 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
     return domainCall(api.grok_Dapi_Domains_IsWatching(this.dart, this.schema, this.table, id ?? null));
   }
 
-  /** Effective {@link DomainTableCapabilities} of the CURRENT user on this table:
-   * server-truth permission probes on the final securing entity plus the writable-column
-   * mirror of column security. Cached per registry generation + user; grant changes made
-   * through this client drop the cache automatically, out-of-band changes require
-   * {@link DomainsDataSource.invalidateUiCaches}. Rejects with a
-   * {@link DomainValidationError} for unknown tables. */
+  /** Effective {@link DomainTableCapabilities} of the CURRENT user on this table,
+   * composed by the server from the predicates its reads and writes apply
+   * (`GET /domains/{schema}/{table}/capabilities`). Cached per registry generation +
+   * user; grant changes made through this client drop the cache automatically,
+   * out-of-band changes require {@link DomainsDataSource.invalidateUiCaches}. Rejects
+   * with a {@link DomainValidationError} for unknown tables. */
   capabilities(): Promise<DomainTableCapabilities> {
     return domainCall(api.grok_Domains_TableCapabilities(this.schema, this.table));
   }
@@ -2018,6 +2028,49 @@ export class LogDataSource extends HttpDataSource<LogEvent> {
 
   where(options?: {entityId?: string, start?: dayjs.Dayjs, end?: dayjs.Dayjs, favoritesOnly?: boolean}): LogDataSource {
     return new LogDataSource(api.grok_Dapi_Log_Where(this.dart, options?.entityId ?? '', toDart(options?.start), toDart(options?.end), options?.favoritesOnly ?? false));
+  }
+
+  /**
+   * Names of the cloud log groups this instance can read.
+   *
+   * Admins only. Without a connection the server uses its own AWS role.
+   *
+   * @example
+   * const groups = await grok.dapi.log.getCloudLogGroups({prefix: '/datagrok/'});
+   */
+  getCloudLogGroups(options?: {connection?: string, prefix?: string}): Promise<string[]> {
+    return api.grok_Dapi_Log_CloudLogGroups(options?.connection ?? '', options?.prefix ?? '');
+  }
+
+  /**
+   * Events from a cloud log group — the hot, queryable tier (30 days).
+   *
+   * `filter` is a CloudWatch *filter pattern*, not a regular expression: a bare
+   * word matches a substring, `?a ?b` is OR, `-x` excludes.
+   *
+   * @example
+   * const df = await grok.dapi.log.getCloudLogEvents('/datagrok/public',
+   *   dayjs().subtract(1, 'hour'), dayjs(), {filter: 'error'});
+   */
+  getCloudLogEvents(group: string, start: dayjs.Dayjs, end: dayjs.Dayjs,
+    options?: {connection?: string, filter?: string, limit?: number}): Promise<DataFrame> {
+    return api.grok_Dapi_Log_CloudLogEvents(options?.connection ?? '', group,
+      toDart(start), toDart(end), options?.filter ?? '', options?.limit ?? 1000);
+  }
+
+  /**
+   * Objects in the write-once log archive under `prefix` — key, modified, size.
+   *
+   * Listing is the archive's only index; the keys carry the delivery date.
+   * `connection` is an S3 data connection pointing at the archive bucket.
+   */
+  getArchiveObjects(connection: string, options?: {prefix?: string, limit?: number}): Promise<DataFrame> {
+    return api.grok_Dapi_Log_ArchiveObjects(connection, options?.prefix ?? '', options?.limit ?? 1000);
+  }
+
+  /** Decodes one archived object into log events, same shape as {@link getCloudLogEvents}. */
+  getArchiveEvents(connection: string, key: string): Promise<DataFrame> {
+    return api.grok_Dapi_Log_ArchiveEvents(connection, key);
   }
 }
 

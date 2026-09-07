@@ -192,7 +192,8 @@
       "scriptDescription": "Demo of workflow with multiple outputs",
       "tags": [
         "flow"
-      ]
+      ],
+      "autorun": true
     }
   }
 }

@@ -76,11 +76,12 @@ export async function hierarchicalClustering(df: DG.DataFrame, colNameList: DG.C
 }
 
 //name: importNwk
-//description: Opens Newick file
-//input: string fileContent 
+//description: Parse a Newick (.nwk/.newick) tree file into a dataframe and open it as a dendrogram.
+//input: string fileContent { description: Newick file contents }
 //output: list tables
 //meta.role: fileHandler
 //meta.ext: nwk, newick
+//friendlyName: Import Newick
 export async function importNewick(fileContent: string) : Promise<any> {
   return await PackageFunctions.importNewick(fileContent);
 }

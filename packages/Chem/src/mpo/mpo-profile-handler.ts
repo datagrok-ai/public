@@ -7,7 +7,7 @@ import {MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profi
 import {isDesirabilityProfile} from '@datagrok-libraries/statistics/src/mpo/mpo';
 import {MpoProfileInfo} from './utils';
 import {MpoProfileCreateView} from './mpo-create-profile';
-import {MpoProfileManager} from './mpo-profile-manager';
+import {confirmDeleteProfile, downloadProfile, prepareProfileClone} from './mpo-profile-actions';
 
 export class MpoProfileHandler extends DG.ObjectHandler<MpoProfileInfo> {
   get type(): string {
@@ -30,8 +30,8 @@ export class MpoProfileHandler extends DG.ObjectHandler<MpoProfileInfo> {
     editor.setProfile(profile);
     editor.root.style.pointerEvents = 'none';
 
-    const editBtn = ui.bigButton('Edit', () => MpoProfileHandler.edit(profile));
-    const ribbon = ui.divH([editBtn], {style: {justifyContent: 'flex-end'}});
+    const ribbon = ui.divH([ui.bigButton('Edit', () => MpoProfileHandler.edit(profile))],
+      {style: {justifyContent: 'flex-end'}});
     ribbon.classList.add('d4-ribbon-item');
 
     const panel = ui.accordion();
@@ -43,27 +43,29 @@ export class MpoProfileHandler extends DG.ObjectHandler<MpoProfileInfo> {
 
   constructor() {
     super();
-    this.registerParamFunc('Edit', (p: MpoProfileInfo) => MpoProfileHandler.edit(p));
-    this.registerParamFunc('Clone', (p: MpoProfileInfo) => MpoProfileHandler.clone(p));
-    this.registerParamFunc('Download', (p: MpoProfileInfo) => MpoProfileManager.download(p));
-    this.registerParamFunc('Delete', (p: MpoProfileInfo) => MpoProfileHandler.delete(p));
+    this.registerParamFunc('Edit', MpoProfileHandler.edit);
+    this.registerParamFunc('Clone', MpoProfileHandler.clone);
+    this.registerParamFunc('Download', downloadProfile);
+    this.registerParamFunc('Delete', MpoProfileHandler.delete);
   }
 
   static edit(profile: MpoProfileInfo): void {
-    const editable = structuredClone(profile);
-    const view = new MpoProfileCreateView(editable, false, profile.fileName);
+    grok.shell.setCurrentObject(null, false, true);
+    if (MpoProfileCreateView.focusOpenEditor(profile.id))
+      return;
+    const view = new MpoProfileCreateView(profile, false);
     grok.shell.v = grok.shell.addView(view.view);
     view.setupBreadcrumbs();
   }
 
   static clone(profile: MpoProfileInfo): void {
-    const {profile: clonedProfile, fileName} = MpoProfileManager.prepareClone(profile);
-    const view = new MpoProfileCreateView(clonedProfile, false, fileName);
+    grok.shell.setCurrentObject(null, false, true);
+    const view = new MpoProfileCreateView(prepareProfileClone(profile), false);
     grok.shell.v = grok.shell.addView(view.view);
     view.setupBreadcrumbs();
   }
 
   static delete(profile: MpoProfileInfo): void {
-    MpoProfileManager.confirmDelete(profile);
+    confirmDeleteProfile(profile);
   }
 }

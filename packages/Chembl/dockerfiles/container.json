@@ -1,0 +1,7 @@
+{
+  "cpu": 2,
+  "memory": 4096,
+  "storage": 64,
+  "on_demand": true,
+  "shutdown_timeout": 60
+}

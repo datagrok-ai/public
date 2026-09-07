@@ -113,8 +113,8 @@
 .u2-btn-group-item.u2-btn-group-selected {
   position: relative;
   z-index: 1;
-  color: var(--dg-accent);
-  background: var(--dg-steel-1);
+  color: var(--dg-selection-text);
+  background: var(--dg-selection-bg);
   border-color: var(--dg-steel-3);
 }
 
@@ -160,7 +160,7 @@
 
 .u2-btn-group-toolbar .u2-btn-group-item.u2-btn-group-selected,
 .u2-btn-group-ribbon .u2-btn-group-item.u2-btn-group-selected {
-  background: var(--dg-steel-1);
+  background: var(--dg-selection-bg);
   border-color: var(--dg-border);
 }
 

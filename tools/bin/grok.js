@@ -2,6 +2,8 @@
 const argv = require('minimist')(process.argv.slice(2), {
   alias: {k: 'key', h: 'help', r: 'recursive'},
   boolean: ['dartium'],
+  // keep versions verbatim — minimist would coerce '1.10' to the number 1.1
+  string: ['version'],
 });
 // minimist maps `--no-retry` to `{retry: false}`, so the `args['no-retry']` checks in
 // test.ts / playwright-runner.ts never fired and `--no-retry` was silently ignored
@@ -34,6 +36,14 @@ const commands = {
 
 const onPackageCommandNames = ['api', 'check', 'link', 'publish', 'test'];
 
+// A machine-readable run prints its error as JSON on stderr (server.ts) and nothing else:
+// a usage dump on stdout would corrupt the output the caller parses.
+const outputFormat = argv.output ?? argv.o;
+function printUsage(command) {
+  if (outputFormat !== 'json')
+    process.stderr.write(`${help[command]}\n`);
+}
+
 const command = argv['_'][0];
 if (command !== 'test' && command !== 'stresstest')
   delete argv.dartium;
@@ -50,23 +60,23 @@ if (command in commands) {
       if (result && typeof result.then === 'function') {
         result.then((ok) => {
           if (!ok) {
-            console.log(help[command]);
+            printUsage(command);
             exitWithCode(1);
           }
         }).catch((err) => {
           console.error(err);
-          console.log(help[command]);
+          printUsage(command);
           exitWithCode(255);
         });
       }
       else if (!result) {
-        console.log(help[command]);
+        printUsage(command);
         exitWithCode(1);
       }
     }
   } catch (err) {
     console.error(err);
-    console.log(help[command]);
+    printUsage(command);
     exitWithCode(255);
   }
 } else
@@ -74,6 +84,7 @@ if (command in commands) {
 
 
 function exitWithCode(code) {
-  console.log(`Exiting with code ${code}`);
+  if (outputFormat !== 'json')
+    console.log(`Exiting with code ${code}`);
   process.exit(code);
 }

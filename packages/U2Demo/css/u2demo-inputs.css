@@ -1,0 +1,4 @@
+/* the Preview (DynamicInput) slot keeps the row's height while its renderer returns nothing */
+.u2demo-page .u2-dynamic {
+  min-height: var(--dg-control-height);
+}

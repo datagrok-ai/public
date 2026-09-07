@@ -38,7 +38,9 @@ async function closeViewer(page: any, vt: string) {
   await page.evaluate((t: string) => {
     (window as any).grok.shell.tv.viewers.find((q: any) => q.type === t)?.close();
   }, vt);
-  await page.waitForTimeout(500);
+  await page.waitForFunction((t: string) =>
+    !(window as any).grok.shell.tv.viewers.find((q: any) => q.type === t), vt,
+    {timeout: 8000});
 }
 
 test('Legend selectors and column switching (SPGI)', async ({page}) => {
@@ -54,9 +56,8 @@ test('Legend selectors and column switching (SPGI)', async ({page}) => {
       (window as any).grok.shell.tv.addViewer('Scatter plot',
         {colorColumnName: 'Stereo Category', markersColumnName: 'Competition assay Date'});
     });
-    await page.waitForTimeout(3000);
+    await v.waitForLegendIdle(page, 'Scatter plot');
     await v.resizeViewer(page, 'Scatter plot', 900, 600);
-    await page.waitForTimeout(1500);
     const s = await legendInfo(page, 'Scatter plot');
     expect(s.selector, `no markers selector: ${JSON.stringify(s)}`).toBe(true);
     expect(s.aggrVisible, 'the datetime map selector is not shown').toBe(true);
@@ -69,7 +70,9 @@ test('Legend selectors and column switching (SPGI)', async ({page}) => {
       sel.value = 'quarter';
       sel.dispatchEvent(new Event('input', {bubbles: true}));
     });
-    await page.waitForTimeout(2000);
+    await page.waitForFunction(() => (window as any).grok.shell.tv.viewers
+      .find((q: any) => q.type === 'Scatter plot').props.markersMap === 'quarter',
+      {timeout: 8000}).catch(() => null);
     const mapped = await page.evaluate(() => {
       const tv = (window as any).grok.shell.tv;
       return tv.viewers.find((q: any) => q.type === 'Scatter plot').props.markersMap;
@@ -88,9 +91,8 @@ test('Legend selectors and column switching (SPGI)', async ({page}) => {
       (window as any).grok.shell.tv.addViewer('Line chart',
         {yColumnNames: ['Average Mass'], splitColumnNames: ['Series'], showMarkers: 'Always'});
     });
-    await page.waitForTimeout(2500);
+    await v.waitForLegendIdle(page, 'Line chart');
     await v.resizeViewer(page, 'Line chart', 900, 600);
-    await page.waitForTimeout(1500);
     const before = await legendInfo(page, 'Line chart');
     expect(before.items).toBeGreaterThan(0);
 
@@ -105,7 +107,7 @@ test('Legend selectors and column switching (SPGI)', async ({page}) => {
     await page.evaluate(() => {
       (window as any).grok.shell.tv.addViewer('Scatter plot', {colorColumnName: 'Stereo Category'});
     });
-    await page.waitForTimeout(2500);
+    await v.waitForLegendIdle(page, 'Scatter plot');
     await v.resizeViewer(page, 'Scatter plot', 900, 600);
     await v.setViewerProps(page, 'Scatter plot', [{set: {legendPosition: 'RightBottom'}, wait: 1500}]);
     const corner = await legendInfo(page, 'Scatter plot');

@@ -1,5 +1,9 @@
 # utils changelog
 
+## 4.7.9 (2026-08-27)
+
+* Added FuncCallParamsEditor: adapts a `getParams()`-style dialog editor to the canonical `DG.FuncCallEditor` contract
+
 ## 4.7.8 (2026-08-07)
 
 * #3765: Forms viewer: Added ability to pin the rows

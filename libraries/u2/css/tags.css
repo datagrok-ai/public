@@ -1,0 +1,108 @@
+/* Tags input skin — chips and the typing box share one underlined field, suggestions live in the
+   overlay popup. Tokens only; css/tokens.css, css/inputs.css and css/badge.css must be loaded
+   alongside (the chips are u2-tag badges). */
+.u2-input-editor.u2-tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--dg-space-s);
+  height: auto;
+  min-height: var(--dg-control-height);
+  padding: var(--dg-space-xs) var(--dg-space-s);
+  border-bottom: var(--dg-input-border);
+  cursor: text;
+}
+
+.u2-input-editor.u2-tags:focus-within {
+  border-bottom: var(--dg-input-border-focus);
+}
+
+.u2-tags-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--dg-space-s);
+}
+
+.u2-tags-chips:empty {
+  display: none;
+}
+
+.u2-tags-input {
+  flex: 1;
+  min-width: 80px;
+  height: var(--dg-inline-control-height);
+  padding: 0 var(--dg-space-xs);
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  outline: none;
+}
+
+.u2-tags-input::placeholder {
+  color: var(--dg-text-color-light);
+}
+
+.u2-tags-popup {
+  box-sizing: border-box;
+  overflow-y: auto;
+  padding: var(--dg-space-xs) 0;
+  font-family: var(--dg-font-family);
+  font-size: var(--dg-font-size);
+  line-height: var(--dg-line-height);
+  color: var(--dg-text-color);
+  background: var(--dg-bg);
+  border: var(--dg-overlay-border);
+  border-radius: var(--dg-radius-l);
+  box-shadow: var(--dg-shadow-2);
+}
+
+.u2-tags-option {
+  padding: var(--dg-space-xs) var(--dg-space-m);
+  cursor: pointer;
+}
+
+.u2-tags-option:hover {
+  background: var(--dg-hover-subtle);
+}
+
+.u2-tags-option-active {
+  background: var(--dg-selection-bg);
+}
+
+.u2-tags-option-active .u2-tags-text {
+  color: var(--dg-accent);
+}
+
+.u2-tags-text {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.u2-tags-loading,
+.u2-tags-empty,
+.u2-tags-error,
+.u2-tags-hint {
+  display: flex;
+  align-items: center;
+  gap: var(--dg-space-m);
+  padding: var(--dg-space-xs) var(--dg-space-m);
+  color: var(--dg-text-color-light);
+}
+
+.u2-tags-retry {
+  height: var(--dg-inline-control-height);
+  padding: 0 var(--dg-space-m);
+  font-family: var(--dg-font-family);
+  font-size: var(--dg-font-size-small);
+  color: var(--dg-text-color);
+  background: var(--dg-bg-secondary);
+  border: var(--dg-border-width) solid var(--dg-border);
+  border-radius: var(--dg-radius);
+  cursor: pointer;
+}
+
+.u2-tags-retry:hover {
+  background: var(--dg-hover);
+}

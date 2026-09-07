@@ -108,7 +108,7 @@ export class FormsViewer extends DG.JsViewer {
     this.showSelectedRows = this.bool('showSelectedRows', true);
     this.useGridSort = this.bool('useGridSort', true, {description: 'Sort values the same way as in the spreadsheet'});
     this.sortByColumnName = this.column('sortBy');
-    this.sortAscending = false;
+    this.sortAscending = this.bool('sortAscending', false);
     this.rendererSize = this.string('rendererSize', 'small', {choices: ['small', 'normal', 'large'], description: 'Sets the display size of rendered content'}) as 'small' | 'normal' | 'large';
     this.font = this.string('font', 'normal normal 13px "Roboto"', {editor: 'font', description: 'Font for labels and values'});
     this.numberFormat = this.string('numberFormat', SAME_AS_GRID, {choices: [SAME_AS_GRID, ...Object.keys(numberFormats)], description: 'Number format applied to numeric fields'});

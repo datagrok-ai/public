@@ -29,7 +29,6 @@ import {
   pinView, reportTree, resolveChosenUuid,
 } from '../../utils';
 import {useReactiveTreeDriver} from '../../composables/use-reactive-tree-driver';
-import {take} from 'rxjs/operators';
 import {EditRunMetadataDialog} from '@datagrok-libraries/compute-utils/shared-components/src/history-dialogs';
 import {historyUtils} from '@datagrok-libraries/compute-utils';
 import {PipelineInstanceConfig} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
@@ -38,6 +37,7 @@ import {createCompositorOverlayService} from '../../composables/use-compositor-o
 import {compositorOverlay} from '../../directives/compositor-overlay';
 import {CustomExport, ExportCbInput, ViewersHook} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
+import {getShareAction} from '../../sharing/sharing';
 import {richFunctionViewReport} from '@datagrok-libraries/compute-utils';
 import {BehaviorSubject} from 'rxjs';
 
@@ -55,6 +55,10 @@ export const TreeWizard = Vue.defineComponent({
     },
     instanceConfig: {
       type: Object as Vue.PropType<PipelineInstanceConfig>,
+      required: false,
+    },
+    initialRunId: {
+      type: String,
       required: false,
     },
     showReturn: {
@@ -175,21 +179,17 @@ export const TreeWizard = Vue.defineComponent({
       });
     };
 
-    const saveSubTreeState = (uuid: string) => {
-      const dialog = makeNodeMetadataDialog(uuid);
-      dialog.onMetadataEdit.pipe(take(1)).subscribe((editOptions) => {
+    const saveSubTreeState = async (uuid: string) => {
+      const editOptions = await makeNodeMetadataDialog(uuid).awaitMetadata();
+      if (editOptions)
         saveDynamicItem(chosenStepUuid.value!, editOptions);
-      });
-      dialog.show({center: true, width: 500});
     };
 
-    const saveEntireModelState = () => {
+    const saveEntireModelState = async () => {
       if (!treeState.value) return;
-      const dialog = makeNodeMetadataDialog(treeState.value.uuid, currentMetaCallData.value);
-      dialog.onMetadataEdit.pipe(take(1)).subscribe((editOptions) => {
+      const editOptions = await makeNodeMetadataDialog(treeState.value.uuid, currentMetaCallData.value).awaitMetadata();
+      if (editOptions)
         savePipeline(editOptions);
-      });
-      dialog.show({center: true, width: 500});
     };
 
     const goNextStep = () => {
@@ -323,6 +323,8 @@ export const TreeWizard = Vue.defineComponent({
     };
 
     let pendingStepPath: string | null = null;
+    // Programmatic open (OpenWorkflowRun) passes the id via call.aux, deep links via the start URL
+    let initialRunId = props.initialRunId;
 
     Vue.watch(treeState, (treeState) => {
       if (!treeState)
@@ -334,15 +336,16 @@ export const TreeWizard = Vue.defineComponent({
         return;
       }
 
-      if (globalThis.initialURLHandled)
+      if (!initialRunId && globalThis.initialURLHandled)
         return;
 
       // Getting inital URL user entered with
       const startUrl = new URL(grok.shell.startUri);
+      const loadingId = initialRunId ?? startUrl.searchParams.get('id');
+      pendingStepPath = initialRunId ? null : startUrl.searchParams.get('currentStep');
+      initialRunId = undefined;
       globalThis.initialURLHandled = true;
 
-      const loadingId = startUrl.searchParams.get('id');
-      pendingStepPath = startUrl.searchParams.get('currentStep');
       if (loadingId)
         loadPipeline(loadingId);
       else if (pendingStepPath) {
@@ -468,22 +471,52 @@ export const TreeWizard = Vue.defineComponent({
 
     // RFV renders the save-to-history icon and emits this with the step's FuncCall.
     // Prefill comes from the step's node meta states, same as the workflow/subtree saves.
-    const saveStepToHistory = (fc: DG.FuncCall) => {
-      const dialog = makeNodeMetadataDialog(chosenStepUuid.value);
-      dialog.onMetadataEdit.pipe(take(1)).subscribe(async (editOptions) => {
-        if (editOptions.title) fc.options['title'] = editOptions.title;
-        if (editOptions.description) fc.options['description'] = editOptions.description;
-        if (editOptions.tags) fc.options['tags'] = editOptions.tags;
-        fc.options[STEP_HISTORY_OPTION] = 'true';
-        try {
-          await historyUtils.saveRun(fc);
-          grok.shell.info('Step saved to history');
-        } catch (e: any) {
-          grok.shell.error(e);
-        }
-      });
-      dialog.show({center: true, width: 500});
+    // Resolves the saved id (null when cancelled/failed) so save-then-share can chain on it.
+    const saveStepToHistory = async (fc: DG.FuncCall): Promise<string | null> => {
+      const editOptions = await makeNodeMetadataDialog(chosenStepUuid.value).awaitMetadata();
+      if (!editOptions)
+        return null;
+      if (editOptions.title) fc.options['title'] = editOptions.title;
+      if (editOptions.description) fc.options['description'] = editOptions.description;
+      if (editOptions.tags) fc.options['tags'] = editOptions.tags;
+      fc.options[STEP_HISTORY_OPTION] = 'true';
+      try {
+        await historyUtils.saveRun(fc);
+        grok.shell.info('Step saved to history');
+        return fc.id;
+      } catch (e: any) {
+        grok.shell.error(e);
+        return null;
+      }
     };
+
+    const shareAction = getShareAction();
+
+    const shareStepRun = (fc: DG.FuncCall) => shareAction!.run({
+      liveCall: () => fc,
+      savedCallId: () => fc.options[STEP_HISTORY_OPTION] === 'true' ? fc.id : null,
+      saveRun: () => saveStepToHistory(fc),
+      defaultName: () => chosenStepState.value?.friendlyName ?? fc.func?.friendlyName,
+    });
+
+    const saveWorkflowForSharing = async (): Promise<string | null> => {
+      if (!treeState.value)
+        return null;
+      const editOptions = await makeNodeMetadataDialog(treeState.value.uuid, currentMetaCallData.value).awaitMetadata();
+      if (!editOptions)
+        return null;
+      const meta = await savePipeline(editOptions);
+      return meta?.id ?? null;
+    };
+
+    const shareCurrentRun = () => shareAction!.run({
+      savedCallId: () => {
+        const meta = currentMetaCallData.value;
+        return meta?.id && !hasNotSavedEdits.value ? meta.id : null;
+      },
+      saveRun: saveWorkflowForSharing,
+      defaultName: () => currentMetaCallData.value?.title ?? props.modelName,
+    });
 
     const isRunDisabled = Vue.computed(() => {
       if (!chosenStepUuid.value)
@@ -667,6 +700,12 @@ export const TreeWizard = Vue.defineComponent({
             style={{'padding-right': '3px'}}
             onClick={() => guardTreeAction('saving', saveEntireModelState)}
           /> }
+          {isTreeLoaded.value && shareAction != null && <IconFA
+            name='share-alt'
+            tooltip={shareAction.tooltip}
+            style={{'padding-right': '3px'}}
+            onClick={() => shareCurrentRun()}
+          /> }
           {isTreeLoaded.value && showReturn.value && <IconFA
             name='check'
             tooltip={'Confirm data'}
@@ -818,8 +857,11 @@ export const TreeWizard = Vue.defineComponent({
                 isBlocked={treeMutationsLocked.value || isGlobalLocked.value}
                 skipInit={true}
                 stepHistory={currentStepHistoryEnabled.value}
+                showPublish={shareAction != null && currentStepHistoryEnabled.value}
+                publishTooltip={shareAction?.tooltip}
                 onUpdate:funcCall={onFuncCallChange}
                 onSaveToHistory={saveStepToHistory}
+                onPublishRun={shareStepRun}
                 onActionRequested={runActionWithConfirmation}
                 onConsistencyReset={(ioName) => consistencyReset(chosenStepUuid.value!, ioName)}
                 dock-spawn-title='Step review'

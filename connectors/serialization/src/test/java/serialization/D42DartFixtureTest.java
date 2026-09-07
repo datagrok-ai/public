@@ -135,7 +135,7 @@ public class D42DartFixtureTest {
                     case "bigint": {
                         boolean none = isNull || v.getAsString().isEmpty();
                         Assertions.assertEquals(none, col.isNone(r), at + " none");
-                        if (!none) Assertions.assertEquals(v.getAsString(), ((BigIntColumn) col).get(r), at);
+                        if (!none) Assertions.assertEquals(v.getAsString(), String.valueOf(col.get(r)), at);
                         break;
                     }
                     case "datetimeMicros":
@@ -222,8 +222,8 @@ public class D42DartFixtureTest {
 
         // The full ARCHITECTURE section 1.5 encoder-id matrix.
         Map<String, int[]> required = new LinkedHashMap<>();
-        required.put("int", new int[]{1, 2, 3, 4});
-        required.put("string", new int[]{0, 1, 2, 3});
+        required.put("int", new int[]{1, 2, 3, 4, 5, 6});
+        required.put("string", new int[]{0, 1, 2, 3, 4});
         required.put("bool", new int[]{1});
         required.put("datetime", new int[]{1, 2, 3});
         required.put("double", new int[]{1, 2, 3, 4, 5});

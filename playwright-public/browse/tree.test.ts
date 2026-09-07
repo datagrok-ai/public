@@ -114,7 +114,12 @@ test.describe('Browse tree (Browse-Tree-*)', () => {
 
     // Switch view: open Tutorials. Sidebar switches to Toolbox after a table-like view opens.
     await expandTreeGroup(page, 'Apps');
-    await treeItemByName(page, 'Tutorials').click();
+    // Files and Databases are expanded above, so Tutorials sits below the fold — scroll it in
+    // before clicking, or the click waits on an element that will never become visible.
+    const tutorials = treeItemByName(page, 'Tutorials');
+    await tutorials.waitFor({ state: 'attached', timeout: 20_000 });
+    await tutorials.scrollIntoViewIfNeeded();
+    await tutorials.click();
     await page.waitForTimeout(2000);
 
     // Return to the Browse panel from the Sidebar.

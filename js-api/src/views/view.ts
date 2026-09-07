@@ -176,11 +176,12 @@ export class ViewBase extends Widget {
   get path(): string { return api.grok_View_Get_Path(this.dart); }
   set path(s: string) { api.grok_View_Set_Path(this.dart, s); }
 
-  /** Functions applicable to this view. Override in subclasses to return the view's
-   * registered package functions — each typically takes the generic `view` argument
-   * and reaches this instance through `view.jsView`. The Dart JsViewHost forwards its
-   * own `getFunctions()` here, so callers holding `grok.shell.v` see these functions. */
-  getFunctions(): Func[] { return []; }
+  /** Whether the view is pinned. Pinned views are not closed when a new view is opened. */
+  get isPinned(): boolean { return api.grok_View_Get_IsPinned(this.dart); }
+  set isPinned(value: boolean) { api.grok_View_Set_IsPinned(this.dart, value); }
+
+  /** Pins the view. Pinned views are not closed when a new view is opened. */
+  pin(): void { this.isPinned = true; }
 
   /** Handles URL path. Override in subclasses.
    *
@@ -327,12 +328,6 @@ export class View extends ViewBase {
   get helpUrl(): string | null { return api.grok_View_Get_HelpUrl(this.dart); }
   set helpUrl(url: string | null) { api.grok_View_Set_HelpUrl(this.dart, url); }
 
-  /** Whether the view is pinned. Pinned views are not closed when a new view is opened. */
-  get isPinned(): boolean { return api.grok_View_Get_IsPinned(this.dart); }
-  set isPinned(value: boolean) { api.grok_View_Set_IsPinned(this.dart, value); }
-
-  /** Pins the view. Pinned views are not closed when a new view is opened. */
-  pin(): void { this.isPinned = true; }
 
   /**
    * Loads previously saved view layout. Only applicable to certain views, such as {@link TableView}.

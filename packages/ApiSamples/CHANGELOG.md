@@ -2,6 +2,21 @@
 
 ## v.next
 
+* GROK-20799: Added dapi/entity-properties.js — `grok.meta.propertiesOf`/`coreLocationOf` discovery, from a type's catalog to a related-entity filter over its Core table
+* GROK-20799: Added dapi/domains/capabilities.js — `DomainTableClient.capabilities()` (server-composed, incl. `travelableRelations`/`securingTable`) gating a create form on `canInsert`/`writableColumns`
+* GROK-20753: Added functions/eval-param-validators.js — named parameter validators run via `FuncCall.evalParamValidators` against the call's current value
+* GROK-20753: Added misc/utils/string-distances.js — `DG.StringUtils.levenshteinDistance`/`jaroWinklerDistance`
+* GROK-20753: Added ui/dialogs/pick-table.js — `ui.pickTableFromFiles`/`ui.pickTableFromQuery` with the null-on-cancel contract
+* Functions: Added functions/script-sync-variables.js — `scriptSync` with a variables map evaluated over a fresh context
+* Functions: Added functions/eval-param-choices.js — `evalParamChoices`/`evalParamDefault` over a client-registered choices provider
+* Functions: Added functions/property-options.js — `Property.options` as the tags-and-options union with FuncParam write-through
+* ProgressIndicator: Added functions/progress-log-updated.js — `onLogUpdated` during a debug-mode call, where each event is a plain `{level, message, flag, params, time}` object
+* Fixed statistics/pearson-correlation.js reading `c1` twice, so it correlated a column with itself and always returned 1
+* Fixed functions/caching-results.js referencing an undefined `result` (and dropped an unused `counts`)
+* Fixed ui/widgets/widgets-tree.js throwing on a widget with no `children`, and on the base `Widget`, which has no `getFunctions`/`getProperties` (only domain widgets do)
+* Fixed dapi/projects.js saving an unnamed project ("Project name cannot be empty")
+* Gave the `s` input of PythonDup and RDup a default so they run without arguments
+
 * GROK-20298: Added dapi/domains/platform-grid.js — the editable domain grid with NO package installed: `DG.DomainGrid.create`, the frame's service columns, and the grid's machine surface
 * GROK-20298: Added dapi/domains/relations.js — many-to-many relations end to end: insert with a link set, expand, the d42 chips + id companion, relation filter paths and facet counts, set-replace update, and the create-and-link transaction
 * GROK-20298: Added dapi/domains/extend-schema.js — extending a plugin's domain schema: the Extend grant, the extend apply, and using the new column by its logical name

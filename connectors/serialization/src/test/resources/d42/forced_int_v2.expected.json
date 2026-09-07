@@ -1,0 +1,54 @@
+{
+  "frame": "forced_int_v2",
+  "rowCount": 8,
+  "columns": [
+    {
+      "name": "packed",
+      "dgType": "int",
+      "valueEncoding": "int",
+      "encoderId": 5,
+      "values": [
+        0,
+        100000,
+        null,
+        65535,
+        131071,
+        5,
+        99999,
+        42
+      ]
+    },
+    {
+      "name": "delta",
+      "dgType": "int",
+      "valueEncoding": "int",
+      "encoderId": 6,
+      "values": [
+        1000000,
+        1000003,
+        1000006,
+        null,
+        1000012,
+        1000015,
+        1000021,
+        1000030
+      ]
+    },
+    {
+      "name": "packedNeg",
+      "dgType": "int",
+      "valueEncoding": "int",
+      "encoderId": 5,
+      "values": [
+        -7,
+        -1,
+        null,
+        -100,
+        0,
+        12,
+        -55,
+        3
+      ]
+    }
+  ]
+}

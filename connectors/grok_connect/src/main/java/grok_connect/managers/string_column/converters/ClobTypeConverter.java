@@ -15,11 +15,8 @@ public class ClobTypeConverter implements Converter<String> {
 
     @Override
     public String convert(Object value) {
-        if (value == null) {
-            LOGGER.trace("value is null");
+        if (value == null)
             return "";
-        }
-        LOGGER.trace(DEFAULT_LOG_MESSAGE, value.getClass());
         try {
             Reader reader = ((Clob)value).getCharacterStream();
             StringWriter writer = new StringWriter();

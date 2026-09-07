@@ -1,0 +1,54 @@
+/* FuncCallHistoryBrowser (src/dg/entities/func-call-history-browser.ts): a virtualized list of
+   one function's saved runs, rows rendered by the platform's FuncCall handler. */
+.u2-fch {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--dg-bg);
+  font-family: var(--dg-font-family);
+  font-size: var(--dg-font-size);
+  line-height: var(--dg-line-height);
+  color: var(--dg-text-color);
+}
+
+/* flex containers ignore the hidden attribute's UA rule — the state toggles rely on it */
+.u2-fch [hidden] {
+  display: none !important;
+}
+
+.u2-fch-main {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  align-items: stretch;
+  min-height: 0;
+}
+
+/* min-height 0: without it the flex child's min-height:auto keeps the list at content height,
+   which defeats virtualization (every row rendered) */
+.u2-fch-main .u2-list {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.u2-fch-state {
+  flex: 1 1 auto;
+  align-items: center;
+  gap: var(--dg-space-m);
+}
+
+.u2-fch-row {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  min-width: 0;
+  padding: 0 var(--dg-space-m);
+  gap: var(--dg-space-s);
+  overflow: hidden;
+}
+
+.u2-fch-row .grok-funccall-list-item {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}

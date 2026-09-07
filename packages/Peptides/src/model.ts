@@ -722,7 +722,7 @@ export class PeptidesModel {
       throw new Error('PeptidesError: Could not updage grid: monomerPositionStats or positionColumns are null');
 
 
-    CR.setWebLogoRenderer(this.analysisView.grid, this.monomerPositionStats, this.positionColumns,
+    CR.setWebLogoRenderer(this.analysisView.grid, () => this.monomerPositionStats!, this.positionColumns,
       this.getScaledActivityColumn()!, cellRendererOptions);
     if (!this._layoutEventInitialized) {
       grok.events.onViewLayoutApplied.subscribe((layout) => {
@@ -1117,6 +1117,12 @@ export class PeptidesModel {
       this.isRibbonSet = true;
       this.updateGrid();
     }
+
+    // Stats masks are sized to row count, so they get stale and must be recalculated when rows are added or removed
+    this.subs.push(rxjs.merge(this.df.onRowsRemoved, this.df.onRowsAdded).subscribe(() => {
+      this._monomerPositionStats = null;
+      this.cachedWebLogoTooltip = {bar: '', tooltip: null};
+    }));
 
     this.subs.push(grok.events.onAccordionConstructed.subscribe((acc) => {
       if (!(grok.shell.o instanceof DG.SemanticValue || (grok.shell.o instanceof DG.Column &&

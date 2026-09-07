@@ -86,9 +86,9 @@ div.u2-input-editor.u2-multi-select-field.u2-invalid {
   color: var(--dg-text-color);
   background: var(--dg-bg);
   border: var(--dg-overlay-border);
-  border-radius: var(--dg-radius);
+  border-radius: var(--dg-radius-l);
   outline: none;
-  box-shadow: var(--dg-shadow-overlay);
+  box-shadow: var(--dg-shadow-2);
 }
 
 .u2-multi-select-filter {
@@ -146,7 +146,7 @@ div.u2-input-editor.u2-multi-select-field.u2-invalid {
 }
 
 .u2-multi-select-option-active {
-  background: var(--dg-steel-1);
+  background: var(--dg-selection-bg);
 }
 
 .u2-multi-select-check {

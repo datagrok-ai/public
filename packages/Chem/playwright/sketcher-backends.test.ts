@@ -41,7 +41,7 @@ async function switchBackendViaMenu(page: import('@playwright/test').Page, frien
   await page.locator('.d4-menu-item-label').filter({hasText: new RegExp(`^${friendlyName}$`)}).first().click();
   // external backends load a remote widget — wait until the switch lands on the same handle
   await page.waitForFunction((b) =>
-    (window as any).DG?.chem?.currentSketcherType === b && (window as any).__sk?.sketcher,
+    (window as any).DG?.chem?.currentSketcherType === b && (window as any).__sk?.sketcher?.isInitialized,
   friendlyName, {timeout: 60000});
   await page.waitForTimeout(3000);
 }
@@ -66,7 +66,7 @@ async function runBattery(page: import('@playwright/test').Page, backend: string
     {
       const t0 = Date.now();
       while (Date.now() - t0 < 15000) {
-        if (/V2000|V3000/.test(sk.getMolFile() ?? '')) break;
+        if (/V2000|V3000/.test(sk.getMolFile() ?? '') && !sk.isEmpty()) break;
         await sleep(400);
       }
     }

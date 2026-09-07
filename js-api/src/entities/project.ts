@@ -68,6 +68,10 @@ export class Project extends Entity {
     return api.grok_Project_Description(this.dart);
   }
 
+  set description(s: string) {
+    api.grok_Project_Set_Description(this.dart, s);
+  }
+
   /** Project changes flag */
   get isDirty(): boolean {
     return api.grok_Project_IsDirty(this.dart);

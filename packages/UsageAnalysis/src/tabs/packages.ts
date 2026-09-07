@@ -184,7 +184,7 @@ export class PackagesView extends UaView {
           data[r.package + ':' + r.name] = r.count + (d ?? 0);
         }
         const info = fPane.root.querySelector('#info') as HTMLElement;
-        info.textContent = df.getCol('count').stats.sum.toString();
+        info.textContent = (df.rowCount ? df.getCol('count').stats.sum : 0).toString();
         info.style.removeProperty('display');
         info.after(button);
         if (!Object.keys(data).length) return ui.divText('No data');
@@ -232,7 +232,7 @@ export class PackagesView extends UaView {
         for (const r of df.rows)
           data[r.source] = r.count + (data[r.source] ?? 0);
         const info = lPane.root.querySelector('#info') as HTMLElement;
-        info.textContent = df.getCol('count').stats.sum.toString();
+        info.textContent = (df.rowCount ? df.getCol('count').stats.sum : 0).toString();
         info.style.removeProperty('display');
         info.after(button);
         return Object.keys(data).length ? ui.tableFromMap(data) : ui.divText('No data');
@@ -247,7 +247,7 @@ export class PackagesView extends UaView {
         const data: {[key: string]: number} = {};
         for (const r of df.rows) data[r.name] = r.count + (data[r.name] ?? 0);
         const info = pane.root.querySelector('#info') as HTMLElement;
-        info.textContent = df.getCol('count').stats.sum.toString();
+        info.textContent = (df.rowCount ? df.getCol('count').stats.sum : 0).toString();
         info.style.removeProperty('display');
         return Object.keys(data).length ? ui.tableFromMap(data) : ui.divText('No data');
       });

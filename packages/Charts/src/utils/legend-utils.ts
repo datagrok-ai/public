@@ -13,7 +13,9 @@ export enum VISIBILITY_MODE {
 export type VisibilityMode = `${VISIBILITY_MODE}`;
 
 export class LegendHelper {
-  legendDiv: HTMLDivElement = ui.div();
+  static readonly WIDTH = 100;
+  legendDiv: HTMLDivElement = ui.div([], {style: {position: 'absolute', top: '0', right: '0', bottom: '0',
+    width: `${LegendHelper.WIDTH}px`, overflow: 'hidden'}});
   legend: DG.Legend | null = null;
   column: DG.Column | null = null;
   onCategoriesChanged: ((filteredIdxs: number[], categories: string[]) => void) | null = null;
@@ -46,7 +48,7 @@ export class LegendHelper {
   show(chartDom?: HTMLElement): void {
     $(this.legendDiv).show();
     if (chartDom)
-      $(chartDom).css('marginRight', '100px');
+      $(chartDom).css('marginRight', `${LegendHelper.WIDTH}px`);
   }
 
   hide(chartDom?: HTMLElement): void {

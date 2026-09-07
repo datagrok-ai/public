@@ -5,9 +5,10 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {Scope} from '../src/core/scope.js';
-import {TextInput} from '../src/components/text-input.js';
+import {TextInput} from '../src/components/inputs/text-input.js';
 import {Registry} from '../src/spec/registry.js';
 import {SpecContext, renderSpec} from '../src/spec/spec.js';
+import {SpecEditor} from '../src/spec/editor.js';
 import {registerAll} from '../src/spec/registrations.js';
 
 /** Every test runs against a clean document and must leave the live-scope count where it was. */
@@ -58,7 +59,9 @@ spec('registerAll: fills a fresh registry and is idempotent', () => {
   assert.equal(new Set(tags).size, tags.length, 'no tag registered twice');
   for (const tag of tags) {
     assert.match(tag, /^u2-/);
-    assert.equal(reg.get(tag).create instanceof Function, true);
+    const meta = reg.get(tag);
+    assert.equal((meta.visual === false ? meta.createComponent : meta.create) instanceof Function,
+      true, `${tag} carries no factory for what it is`);
   }
   registerAll(reg);
   assert.equal(components(reg).length, tags.length, 'a second call registers nothing new');
@@ -69,6 +72,8 @@ spec('manifest: survives JSON and describes every component', () => {
   const restored = JSON.parse(JSON.stringify(manifest));
   assert.deepEqual(restored, manifest);
   assert.equal(restored.schema, 'dg-ui/1');
+  assert.match(restored.binding, /bindable: true marks live/,
+    'the binding rule is stated once at the top level (UB-9)');
   for (const meta of restored.components) {
     assert.equal('create' in meta, false, `${meta.tag} leaks its factory into the manifest`);
     assert.equal(typeof meta.description === 'string' && meta.description.length > 0, true,
@@ -76,7 +81,7 @@ spec('manifest: survives JSON and describes every component', () => {
     assert.equal(meta.example.tag, meta.tag, `${meta.tag} has no example of itself`);
     assert.equal(Array.isArray(meta.props), true);
     for (const prop of [...meta.props, ...meta.childProps ?? []])
-      assert.match(prop.type, /^(string|int|float|bool|string\[\]|json)$/);
+      assert.match(prop.type, /^(string|int|double|bool|string_list|object)$/);
   }
 });
 
@@ -86,7 +91,11 @@ spec('every registered example renders without a placeholder and disposes clean'
   const instances = [];
   const warnings = captureWarnings(() => {
     for (const meta of components(reg)) {
-      const instance = renderSpec({$schema: 'dg-ui/1', root: meta.example}, new SpecContext(), reg);
+      // a non-visual example belongs on the tray: rendered as the root it is a placeholder by design
+      const spec = meta.visual === false ?
+        {$schema: 'dg-ui/1', root: {tag: 'div'}, components: [meta.example]} :
+        {$schema: 'dg-ui/1', root: meta.example};
+      const instance = renderSpec(spec, new SpecContext(), reg);
       const errors = instance.root.querySelectorAll('.u2-spec-error');
       assert.equal(errors.length, 0, `${meta.tag}: ${errors.map((e) => e.textContent).join('; ')}`);
       instances.push(instance);
@@ -116,7 +125,7 @@ spec('u2-text-input: the bound value drives the context signal and back', () => 
   instance.dispose();
 });
 
-spec('u2-form: a misspelled child is a placeholder, its sibling still renders', () => {
+spec('u2-form: a misspelled child is a placeholder in its own row, its sibling still renders', () => {
   const reg = registry();
   let instance;
   const warnings = captureWarnings(() => {
@@ -129,12 +138,53 @@ spec('u2-form: a misspelled child is a placeholder, its sibling still renders', 
     }, new SpecContext(), reg);
   });
 
-  const errors = instance.root.querySelectorAll('.u2-spec-error');
-  assert.equal(errors.length, 1);
-  assert.match(errors[0].textContent, /^u2-txt-input: /);
+  const rows = instance.root.querySelector('.u2-form-rows');
+  assert.equal(rows.children.length, 2, 'the placeholder is a row, not a trailer on the form root');
+  assert.equal(rows.children[0].classList.contains('u2-spec-error'), true, 'and it holds its child index');
+  assert.match(rows.children[0].textContent, /^u2-txt-input: /);
   assert.equal(instance.root.querySelector('input').value, 'Aspirin');
-  assert.equal(warnings.length, 1);
-  assert.match(warnings[0], /u2-form: child 0 is not an input/, 'the placeholder took the non-input path');
+  assert.equal(warnings.length, 0, 'a child rendered in place warrants no warning');
+  instance.dispose();
+});
+
+spec('u2-form: DOM order follows spec order across inputs and plain children alike', () => {
+  const reg = registry();
+  const instance = renderSpec({
+    $schema: 'dg-ui/1',
+    root: {tag: 'u2-form', children: [
+      {tag: 'u2-text-input', name: 'a', props: {label: 'A'}},
+      {tag: 'u2-button', name: 'b', props: {text: 'Go'}},
+      {tag: 'u2-text-input', name: 'c', props: {label: 'C'}},
+    ]},
+  }, new SpecContext(), reg);
+
+  const rows = instance.root.querySelector('.u2-form-rows');
+  assert.deepEqual([...rows.children].map((el) => el.dataset.u2Name), ['a', 'b', 'c']);
+  instance.dispose();
+});
+
+spec('u2-form: a child broken by a patch renders its placeholder in place, and undo heals it there', () => {
+  const reg = registry();
+  const source = {
+    $schema: 'dg-ui/1',
+    root: {tag: 'u2-form', name: 'form', children: [
+      {tag: 'u2-text-input', name: 'a', props: {label: 'A'}},
+      {tag: 'u2-text-input', name: 'mid', props: {label: 'Mid'}},
+      {tag: 'u2-text-input', name: 'z', props: {label: 'Z'}},
+    ]},
+  };
+  const instance = renderSpec(source, new SpecContext(), reg);
+  const editor = new SpecEditor(instance);
+  const rows = () => instance.root.querySelector('.u2-form-rows');
+
+  editor.apply({op: 'set-bind', node: source.root.children[1], name: 'value', path: '$.nowhere'});
+  assert.equal(rows().children[1].classList.contains('u2-spec-error'), true,
+    'the broken child keeps its row between its siblings');
+  assert.deepEqual([...rows().children].map((el) => el.dataset.u2Name), ['a', 'mid', 'z']);
+
+  editor.undo();
+  assert.equal(rows().children[1].classList.contains('u2-spec-error'), false);
+  assert.deepEqual([...rows().children].map((el) => el.dataset.u2Name), ['a', 'mid', 'z']);
   instance.dispose();
 });
 
@@ -204,9 +254,9 @@ spec('u2-form: adopt takes inputs into the form and aggregates their validity', 
   assert.equal(form.validity.value, 'Name is required', 'an invalid child invalidates the form');
   name.value.value = 'Aspirin';
   assert.equal(form.validity.value, null);
-  assert.equal(stray.parentNode, form.root, 'a non-input still lands in the form root');
-  assert.equal(warnings.length, 1);
-  assert.match(warnings[0], /u2-form: child 1 is not an input/);
+  assert.deepEqual([...form.root.querySelector('.u2-form-rows').children], [name.root, stray],
+    'a non-input is a row in adopt order');
+  assert.equal(warnings.length, 0);
   form.dispose();
   name.dispose();
 });
@@ -261,6 +311,74 @@ spec('u2-tabs: child nodes label the tabs, and activation switches panels', () =
   instance.dispose();
 });
 
+spec('u2-button with an icon, u2-icon and u2-icon-input render; the icon props ask for the Icon editor', () => {
+  const reg = registry();
+  const instance = renderSpec({
+    $schema: 'dg-ui/1',
+    root: {tag: 'u2-div-v', children: [
+      {tag: 'u2-button', name: 'save', props: {text: 'Save', icon: 'save', primary: true}},
+      {tag: 'u2-button', name: 'plain', props: {text: 'Plain', icon: ''}},
+      {tag: 'u2-icon', name: 'glyph', props: {name: 'github', size: 'large'}},
+      {tag: 'u2-icon-input', name: 'pick', props: {label: 'Icon', value: 'star'}},
+    ]},
+  }, new SpecContext(), reg);
+  document.body.append(instance.root);
+  const save = instance.node('save').root;
+  assert.notEqual(save.querySelector('.fa-save'), null, 'the icon leads the text');
+  assert.equal(save.textContent, 'Save');
+  assert.equal(save.classList.contains('u2-btn-primary'), true);
+  assert.equal(instance.node('plain').root.querySelector('.u2-icon'), null, 'an empty icon is no icon');
+  const glyph = instance.node('glyph').root;
+  assert.equal(['grok-icon', 'u2-icon', 'fab', 'fa-github', 'u2-icon-large'].every((c) => glyph.classList.contains(c)), true);
+  const pick = instance.node('pick');
+  assert.equal(pick.root.dataset.u2, 'icon-input');
+  assert.equal(pick.value.value, 'star');
+  assert.deepEqual(instance.dump().root.children[3], {tag: 'u2-icon-input', name: 'pick', props: {label: 'Icon', value: 'star'}});
+  instance.dispose();
+
+  const metas = new Map(components(reg).map((c) => [c.tag, c]));
+  const inputType = (tag, list, name) => metas.get(tag)[list].find((p) => p.name === name).inputType;
+  assert.equal(inputType('u2-button', 'props', 'icon'), 'Icon');
+  assert.equal(inputType('u2-icon', 'props', 'name'), 'Icon');
+  assert.equal(inputType('u2-icon-input', 'props', 'value'), 'Icon');
+  assert.equal(inputType('u2-tabs', 'childProps', 'icon'), 'Icon');
+  assert.equal(inputType('u2-accordion', 'childProps', 'icon'), 'Icon');
+});
+
+spec('u2-tabs and u2-accordion: the child icon prop renders, the tabs props pick orientation and variant', () => {
+  const reg = registry();
+  let instance;
+  const warnings = captureWarnings(() => {
+    instance = renderSpec({
+      $schema: 'dg-ui/1',
+      root: {tag: 'u2-div-v', children: [
+        {tag: 'u2-tabs', props: {orientation: 'vertical', variant: 'document'}, children: [
+          {tag: 'u2-panel', props: {title: 'Data', icon: 'table'}},
+          {tag: 'u2-panel', props: {title: 'Style'}},
+        ]},
+        {tag: 'u2-accordion', children: [
+          {tag: 'u2-panel', props: {title: 'General', icon: 'cog'}},
+          {tag: 'u2-panel', props: {title: 'Notes'}},
+        ]},
+      ]},
+    }, new SpecContext(), reg);
+  });
+  document.body.append(instance.root);
+
+  assert.deepEqual(warnings, [], 'icon is declared child metadata on both hosts');
+  const tabs = instance.root.querySelector('.u2-tabs');
+  assert.equal(tabs.classList.contains('u2-tabs-vertical'), true);
+  assert.equal(tabs.classList.contains('u2-tabs-document'), true);
+  const tabIcons = tabs.querySelectorAll('.u2-tabs-tab').map((t) => t.querySelector('.u2-tabs-icon .fa-table'));
+  assert.equal(tabIcons[0] !== null, true, 'the first tab carries its icon');
+  assert.equal(tabIcons[1], null);
+  const paneIcons = instance.root.querySelectorAll('.u2-accordion-header')
+    .map((h) => h.querySelector('.u2-accordion-icon .fa-cog'));
+  assert.equal(paneIcons[0] !== null, true, 'the first pane carries its icon');
+  assert.equal(paneIcons[1], null);
+  instance.dispose();
+});
+
 spec('u2-property-grid: its JSON payload renders without a single warning', () => {
   const reg = registry();
   let instance;
@@ -293,11 +411,16 @@ spec('manifest: the child hooks stay out of it, the metadata they need stays in'
     assert.equal('adopt' in meta, false, `${tag} leaks a hook into the manifest`);
     assert.equal(meta.acceptsChildren, true, `${tag} does not advertise its children`);
   }
-  assert.deepEqual(metas.get('u2-tabs').childProps.map((p) => p.name), ['title']);
-  assert.deepEqual(metas.get('u2-property-grid').props.map((p) => p.type), ['json', 'json']);
+  assert.deepEqual(metas.get('u2-tabs').childProps.map((p) => p.name), ['title', 'icon']);
+  assert.deepEqual(metas.get('u2-accordion').childProps.map((p) => p.name), ['title', 'icon']);
+  const tabProps = Object.fromEntries(metas.get('u2-tabs').props.map((p) => [p.name, p.choices]));
+  assert.deepEqual(tabProps, {orientation: ['horizontal', 'vertical'], variant: ['platform', 'document'],
+    activeTab: undefined});
+  assert.deepEqual(metas.get('u2-tabs').defaults, {orientation: 'horizontal', variant: 'platform'});
+  assert.deepEqual(metas.get('u2-property-grid').props.map((p) => p.type), ['object', 'object']);
 });
 
-spec('dump: a splitter of a form and an accordion round-trips', () => {
+spec('dump: a splitter of a form and an accordion round-trips the document, not the live values', () => {
   const reg = registry();
   const source = {
     $schema: 'dg-ui/1',
@@ -313,10 +436,11 @@ spec('dump: a splitter of a form and an accordion round-trips', () => {
 
   type(instance.root.querySelector('input'), 'Ibuprofen');
   const dumped = instance.dump();
-  assert.equal(dumped.root.children[0].children[0].props.value, 'Ibuprofen');
+  assert.equal(dumped.root.children[0].children[0].props.value, 'Aspirin', 'a Run-mode edit never folds in');
+  assert.deepEqual(dumped, source);
 
   const restored = renderSpec(dumped, new SpecContext(), reg);
-  assert.equal(restored.root.querySelector('input').value, 'Ibuprofen');
+  assert.equal(restored.root.querySelector('input').value, 'Aspirin');
   assert.deepEqual(restored.dump(), dumped);
   instance.dispose();
   restored.dispose();

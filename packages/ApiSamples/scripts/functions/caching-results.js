@@ -5,7 +5,6 @@
 //     //meta.cache: true
 
 //grok.functions.clientCache.clear();
-let counts = {};
 
 grok.functions.register({
   signature: 'int bar(int x)',
@@ -30,6 +29,3 @@ grok.shell.info(await grok.functions.call('bar', {x: 8}));
 grok.shell.info(await grok.functions.call('bar', {x: 12}));
 grok.shell.info(await grok.functions.call('bar', {x: 12}));
 grok.shell.info(await grok.functions.call('bar', {x: 12}));
-
-grok.shell.info(result);
-grok.shell.info(counts);

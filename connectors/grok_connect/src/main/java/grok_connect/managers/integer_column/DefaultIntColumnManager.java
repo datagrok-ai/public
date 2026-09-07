@@ -13,16 +13,15 @@ import grok_connect.managers.integer_column.converters.FloatTypeConverter;
 import grok_connect.managers.integer_column.converters.LongTypeConverter;
 import grok_connect.managers.integer_column.converters.ShortTypeConverter;
 import grok_connect.resultset.ColumnMeta;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import serialization.Column;
 import serialization.IntColumn;
 import java.math.BigDecimal;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 
 public class DefaultIntColumnManager implements ColumnManager<Integer> {
-    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultIntColumnManager.class);
     private static final Converter<Integer> DEFAULT_CONVERTER = value -> (Integer) value;
     private final Map<Class<?>, Converter<Integer>> converterMap;
 
@@ -40,11 +39,8 @@ public class DefaultIntColumnManager implements ColumnManager<Integer> {
 
     @Override
     public Integer convert(Object value, ColumnMeta columnMeta) {
-        LOGGER.trace("convert method was called");
-        if (value == null) {
-            LOGGER.trace("value is null");
+        if (value == null)
             return null;
-        }
         Class<?> aClass = value.getClass();
         Converter<Integer> converter = converterMap
                 .getOrDefault(aClass, DEFAULT_CONVERTER);
@@ -63,6 +59,23 @@ public class DefaultIntColumnManager implements ColumnManager<Integer> {
                 || typeName.equalsIgnoreCase("serial4") || typeName.equalsIgnoreCase("UInt16")
                 || typeName.equalsIgnoreCase("UInt8") || (typeName.equalsIgnoreCase("NUMBER")
                 && precision < 10 && scale == 0);
+    }
+
+    @Override
+    public boolean canReadFast(ColumnMeta columnMeta) {
+        int type = columnMeta.getType();
+        String typeName = columnMeta.getTypeName();
+        return type == java.sql.Types.INTEGER || type == java.sql.Types.SMALLINT || type == java.sql.Types.TINYINT
+                || typeName.equalsIgnoreCase("int4") || typeName.equalsIgnoreCase("int2");
+    }
+
+    @Override
+    public void readFast(ResultSet resultSet, int index, Column<?> column, ColumnMeta columnMeta) throws SQLException {
+        int value = resultSet.getInt(index);
+        if (resultSet.wasNull())
+            ((IntColumn) column).add(null);
+        else
+            ((IntColumn) column).add(value);
     }
 
     @Override

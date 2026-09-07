@@ -1,12 +1,12 @@
 ---
 name: datagrok-viewers
-description: Add a viewer, configure a viewer, change viewer options, find viewer, close viewer, view a scatter plot, bar chart, histogram, line chart, box plot, pie chart, heat map, correlation plot, 3D scatter, trellis, density plot, statistics, on a Datagrok TableView inside a datagrok-exec block. Use whenever the user asks to plot, chart, visualize, show a graph, draw a distribution, color by a column, swap a viewer's axis, toggle a legend / regression line / log scale, replace one viewer with another, close every chart, reset the view to just the grid, or find an existing viewer by type. Plugin viewers like "Chem space", "sequence space", "activity cliffs" are NOT viewer types — they're registered functions — route those to `grok.functions.call`. Does NOT cover filtering (separate skill `datagrok-filtering`), selection (`datagrok-selection`), grid cell rendering (`datagrok-grid-customization`), layout save/restore, or custom-viewer authoring.
+description: Add a viewer, configure a viewer, change viewer options, find viewer, close viewer, view a scatter plot, bar chart, histogram, line chart, box plot, pie chart, heat map, correlation plot, 3D scatter, trellis, density plot, statistics, on a Datagrok TableView via the datagrok_exec tool. Use whenever the user asks to plot, chart, visualize, show a graph, draw a distribution, color by a column, swap a viewer's axis, toggle a legend / regression line / log scale, replace one viewer with another, close every chart, reset the view to just the grid, or find an existing viewer by type. Plugin viewers like "Chem space", "sequence space", "activity cliffs" are NOT viewer types — they're registered functions — route those to `grok.functions.call`. Does NOT cover filtering (separate skill `datagrok-filtering`), selection (`datagrok-selection`), grid cell rendering (`datagrok-grid-customization`), layout save/restore, or custom-viewer authoring.
 ---
 
 # datagrok-viewers
 
-Add, configure, find, and close viewers on a `DG.TableView` from inside a
-`datagrok-exec` block. Globals injected by the runtime: `grok`, `ui`, `DG`,
+Add, configure, find, and close viewers on a `DG.TableView` via the
+`datagrok_exec` tool. Globals injected by the runtime: `grok`, `ui`, `DG`,
 `view`, `t` (the current `DG.DataFrame`, when the view is a `TableView`).
 
 ## Quick reference
@@ -56,6 +56,13 @@ Other naming conventions across viewers:
 - **Axis scale**: `xAxisType: 'linear' | 'logarithmic'` (and `y`, `z`,
   `colorAxisType`). Not `logX`, not `logScale`.
 - **Axis bounds**: `xMin`, `xMax`, `yMin`, `yMax`. Not `xRange: [a, b]`.
+
+## Unconfirmed options
+
+Options not documented here must be confirmed against the live schema before
+setting: `viewer.getProperties()` → match `.name`, respect `.propertyType` and
+`.choices`. Values are scalars — never objects/arrays: a wrong-typed value is
+stored unchecked.
 
 ## The viewers array
 
@@ -109,7 +116,7 @@ Full canonical list at runtime: `Object.values(DG.VIEWER)`.
 Use the in-scope `view` global, not `grok.shell.tv` (the *globally* active
 view, which may be a different tab when the user has several open).
 
-```datagrok-exec
+```js
 // Scatter plot of MW vs LogP, colored by activity, with regression line.
 view.addViewer(DG.VIEWER.SCATTER_PLOT, {
   xColumnName: 'MW',
@@ -119,7 +126,7 @@ view.addViewer(DG.VIEWER.SCATTER_PLOT, {
 });
 ```
 
-```datagrok-exec
+```js
 // Line chart with multiple y series — yColumnNames is the plural form (array).
 view.addViewer(DG.VIEWER.LINE_CHART, {
   xColumnName: 'date',
@@ -127,7 +134,7 @@ view.addViewer(DG.VIEWER.LINE_CHART, {
 });
 ```
 
-```datagrok-exec
+```js
 // Bar chart of count by category.
 view.addViewer(DG.VIEWER.BAR_CHART, {
   splitColumnName: 'category',
@@ -141,7 +148,7 @@ view.addViewer(DG.VIEWER.BAR_CHART, {
 `viewer.setOptions({...})` applies a batch of property changes and re-renders
 once. Same property-name rules as `addViewer`.
 
-```datagrok-exec
+```js
 // Recolor the existing scatter plot by a different column.
 const sp = Array.from(view.viewers).slice(1)
   .find((v) => v.type === DG.VIEWER.SCATTER_PLOT);
@@ -152,7 +159,7 @@ if (sp)
 `view.addViewer(...)` returns the freshly attached viewer, so you can chain
 create + configure:
 
-```datagrok-exec
+```js
 const sp = view.addViewer(DG.VIEWER.SCATTER_PLOT, {
   xColumnName: 'height',
   yColumnName: 'weight',
@@ -163,7 +170,7 @@ sp.setOptions({xMin: 150, xMax: 200, colorColumnName: 'age'});
 
 To discover property names, ask the viewer:
 
-```datagrok-exec
+```js
 const v = view.addViewer(DG.VIEWER.SCATTER_PLOT);
 const names = v.getProperties().map((p) => p.name);
 return ui.divText(names.join(', '));
@@ -174,13 +181,13 @@ return ui.divText(names.join(', '));
 `view.viewers` is an array; **index 0 is always the grid**, so iteration always
 starts with `.slice(1)`.
 
-```datagrok-exec
+```js
 // First scatter plot on the view (or undefined).
 const sp = Array.from(view.viewers).slice(1)
   .find((v) => v.type === DG.VIEWER.SCATTER_PLOT);
 ```
 
-```datagrok-exec
+```js
 // All histograms.
 const hs = Array.from(view.viewers).slice(1)
   .filter((v) => v.type === DG.VIEWER.HISTOGRAM);
@@ -191,14 +198,14 @@ const hs = Array.from(view.viewers).slice(1)
 `viewer.close()` closes and detaches the viewer. It **throws** if the viewer
 was never attached to a view, so wrap in try/catch.
 
-```datagrok-exec
+```js
 // Close every scatter plot on the view.
 Array.from(view.viewers).slice(1)
   .filter((v) => v.type === DG.VIEWER.SCATTER_PLOT)
   .forEach((v) => { try { v.close(); } catch {} });
 ```
 
-```datagrok-exec
+```js
 // Close every non-grid viewer (reset the view to just the grid).
 Array.from(view.viewers).slice(1)
   .forEach((v) => { try { v.close(); } catch {} });
@@ -206,7 +213,7 @@ Array.from(view.viewers).slice(1)
 
 Close-and-replace pattern for "show me X instead of Y":
 
-```datagrok-exec
+```js
 // Close all scatter plots, then add a histogram.
 Array.from(view.viewers).slice(1)
   .filter((v) => v.type === DG.VIEWER.SCATTER_PLOT)
@@ -233,7 +240,7 @@ Only the *Space functions return the freshly-attached viewer (`Chem:chemSpaceTop
 return `void`, so to keep configuring you must find the new viewer via
 `view.viewers`:
 
-```datagrok-exec
+```js
 const sp = await grok.functions.call('Chem:chemSpaceTopMenu', {
   table: t, molecules: t.col('smiles'),
   methodName: 'UMAP', similarityMetric: 'Tanimoto', plotEmbeddings: true,
@@ -248,7 +255,7 @@ Use `DG.Viewer.fromType` **only** when embedding a viewer in a custom UI
 element you return from the block. The caller is responsible for placing the
 result. For everything else, prefer `view.addViewer`.
 
-```datagrok-exec
+```js
 // Build a scatter plot of t and embed its DOM root in the chat.
 const sp = DG.Viewer.fromType(DG.VIEWER.SCATTER_PLOT, t, {
   xColumnName: 'mw', yColumnName: 'logp',

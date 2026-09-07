@@ -9,8 +9,10 @@ import {u2} from '@datagrok-libraries/utils/src/u2';
 import {_package} from '../package';
 import {MpoProfileInfo, updateMpoPath, MpoPathMode, MPO_PROFILES_NAME, MPO_PROFILE_CHANGED_EVENT, MPO_PROFILE_DELETED_EVENT} from './utils';
 import {MpoProfileCreateView} from './mpo-create-profile';
-import {MpoProfileManager} from './mpo-profile-manager';
+import {mpoProfileStore} from './mpo-profile-store';
+import {downloadProfile, uploadProfile} from './mpo-profile-actions';
 import {MpoProfileHandler} from './mpo-profile-handler';
+import {attachMpoProfilesAi} from '../ai-tools/mpo';
 
 export class MpoProfilesView {
   name = MPO_PROFILES_NAME;
@@ -19,7 +21,14 @@ export class MpoProfilesView {
 
   private tableContainer = ui.divV([]);
   private subs: Subscription[] = [];
-  private previewedFileName: string | null = null;
+  private previewedId: string | null = null;
+  private descriptionObserver = new ResizeObserver((entries) => {
+    for (const entry of entries) {
+      const span = entry.target as HTMLElement;
+      span.classList.toggle('chem-mpo-description-expandable',
+        span.classList.contains('expanded') || span.scrollHeight > span.clientHeight);
+    }
+  });
 
   constructor() {
     this.view = DG.View.fromRoot(this.root);
@@ -27,21 +36,18 @@ export class MpoProfilesView {
     grok.shell.windows.showHelp = false;
     grok.shell.windows.showProperties = true;
     updateMpoPath(this.view, MpoPathMode.List);
+    attachMpoProfilesAi(this);
   }
 
   async render(): Promise<void> {
     ui.setUpdateIndicator(this.root, true);
-    const createButton = ui.button(ui.h2('Create profile'), () => this.openCreateProfile());
-    createButton.classList.add('chem-mpo-action-button');
-    const importButton = ui.button(ui.h2('Upload'), () => MpoProfileManager.upload());
-    importButton.classList.add('chem-mpo-action-button');
     try {
       ui.empty(this.root);
       this.root.append(
         this.buildHeader(),
         ui.h1('Manage Profiles'),
         this.tableContainer,
-        ui.divH([createButton, importButton]),
+        ui.divH(this.buildActionButtons()),
       );
 
       await this.reloadProfiles();
@@ -54,11 +60,19 @@ export class MpoProfilesView {
   private async reloadProfiles(): Promise<void> {
     ui.setUpdateIndicator(this.tableContainer, true);
     try {
-      await MpoProfileManager.ensureLoaded();
+      await mpoProfileStore.ensureLoaded();
       this.rerenderTable();
     } finally {
       ui.setUpdateIndicator(this.tableContainer, false);
     }
+  }
+
+  private buildActionButtons(): HTMLElement[] {
+    const createButton = ui.button(ui.h2('Create profile'), () => this.openCreateProfile());
+    createButton.classList.add('chem-mpo-action-button');
+    const importButton = ui.button(ui.h2('Upload'), () => uploadProfile());
+    importButton.classList.add('chem-mpo-action-button');
+    return [createButton, importButton];
   }
 
   private buildHeader(): HTMLElement {
@@ -73,10 +87,12 @@ export class MpoProfilesView {
   }
 
   private rerenderTable(): void {
+    this.descriptionObserver.disconnect();
     ui.empty(this.tableContainer);
 
-    if (MpoProfileManager.items.length === 0) {
+    if (mpoProfileStore.items.length === 0) {
       this.tableContainer.append(ui.h2('No MPO profiles yet'));
+      this.tableContainer.append(ui.divText('An administrator can load the default profiles by running Chem:seedMpoProfiles.'));
       return;
     }
 
@@ -85,7 +101,7 @@ export class MpoProfilesView {
 
   private buildProfilesTable(): HTMLElement {
     const table = ui.table(
-      MpoProfileManager.items,
+      mpoProfileStore.items,
       (profile) => [
         this.buildActionsButton(profile),
         this.buildProfileLink(profile),
@@ -99,9 +115,7 @@ export class MpoProfilesView {
   }
 
   private buildProfileLink(profile: MpoProfileInfo): HTMLElement {
-    const link = ui.link(profile.name, () => {
-      this.previewedFileName = profile.fileName;
-    });
+    const link = ui.link(profile.name, () => this.preview(profile));
     link.addEventListener('dblclick', () => MpoProfileHandler.edit(profile));
     return ui.bind(profile, link);
   }
@@ -110,13 +124,12 @@ export class MpoProfilesView {
     const actionsButton = ui.button(
       '⋮',
       () => {
-        ui.popupMenu()
-          .item('Edit', () => MpoProfileHandler.edit(profile))
-          .item('Clone', () => MpoProfileHandler.clone(profile))
-          .item('Download', () => MpoProfileManager.download(profile))
-          .separator()
-          .item('Delete', () => MpoProfileHandler.delete(profile))
-          .show();
+        const menu = ui.popupMenu();
+        menu.item('Edit', () => MpoProfileHandler.edit(profile));
+        menu.item('Clone', () => MpoProfileHandler.clone(profile));
+        menu.item('Download', () => downloadProfile(profile));
+        menu.separator().item('Delete', () => MpoProfileHandler.delete(profile));
+        menu.show();
       },
       'Actions',
     );
@@ -126,30 +139,38 @@ export class MpoProfilesView {
 
   private buildDescription(text: string): HTMLElement {
     const span = ui.divText(text, 'chem-mpo-description');
-    requestAnimationFrame(() => {
-      if (span.scrollHeight > span.clientHeight) {
-        span.classList.add('chem-mpo-description-expandable');
-        span.onclick = () => span.classList.toggle('expanded');
-      }
-    });
+    span.onclick = () => {
+      if (span.classList.contains('chem-mpo-description-expandable'))
+        span.classList.toggle('expanded');
+    };
+    this.descriptionObserver.observe(span);
     return span;
   }
 
-  private openCreateProfile(): void {
+  preview(profile: MpoProfileInfo): void {
+    this.previewedId = profile.id;
+    grok.shell.windows.showContextPanel = true;
+    grok.shell.o = profile;
+  }
+
+  openCreateProfile(name?: string): MpoProfileCreateView {
     // Clear stale context panel (e.g. a profile selected via ui.bind in the list)
     // until a dataset is loaded and MpoContextPanel takes over.
     grok.shell.o = null;
     const view = new MpoProfileCreateView();
+    if (name)
+      view.setProfileName(name);
     grok.shell.v = grok.shell.addPreview(view.tableView!);
     view.setupBreadcrumbs();
+    return view;
   }
 
   private listenForChanges(): void {
     this.subs.push(grok.events.onCustomEvent(MPO_PROFILE_CHANGED_EVENT).subscribe(() => this.reloadProfiles()));
     this.subs.push(grok.events.onCustomEvent(MPO_PROFILE_DELETED_EVENT).subscribe((data) => {
-      if (data?.fileName === this.previewedFileName) {
+      if (data?.id === this.previewedId) {
         grok.shell.o = null;
-        this.previewedFileName = null;
+        this.previewedId = null;
       }
     }));
     this.subs.push(grok.events.onViewRemoving.subscribe((v) => {
@@ -159,6 +180,7 @@ export class MpoProfilesView {
   }
 
   private detach(): void {
+    this.descriptionObserver.disconnect();
     this.subs.forEach((sub) => sub.unsubscribe());
     this.subs = [];
   }

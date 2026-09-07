@@ -5,13 +5,13 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>grok_connect</artifactId>
-    <version>2.8.3</version>
+    <version>2.8.4</version>
     <packaging>jar</packaging>
 
     <parent>
         <groupId>connectors</groupId>
         <artifactId>build</artifactId>
-        <version>2.8.3</version>
+        <version>2.8.4</version>
     </parent>
 
     <properties>
@@ -162,6 +162,9 @@
                                         <exclude>META-INF/*.DSA</exclude>
                                         <exclude>META-INF/*.RSA</exclude>
                                         <exclude>META-INF/versions/**</exclude>
+                                        <!-- dnsjava's JDK 18+ resolver lives under META-INF/versions (dropped above);
+                                             keeping its service entry makes every InetAddress lookup throw on JDK 18+ -->
+                                        <exclude>META-INF/services/java.net.spi.InetAddressResolverProvider</exclude>
                                     </excludes>
                                 </filter>
                             </filters>
@@ -695,6 +698,18 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        <dependency> <!-- org.apache.hadoop.hive.serde2.thrift.Type; the JDBC driver reads every
+                          result-set column through it -->
+            <groupId>org.apache.hive</groupId>
+            <artifactId>hive-serde</artifactId>
+            <version>4.0.1</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
         <dependency>
             <groupId>org.apache.thrift</groupId>
             <artifactId>libthrift</artifactId>
@@ -733,6 +748,14 @@
                 <exclusion>
                     <groupId>com.google.guava</groupId>
                     <artifactId>guava</artifactId>
+                </exclusion>
+                <exclusion> <!-- orc-shims drags the shaded hadoop client, whose Configuration
+                                 resolves org.apache.hadoop.shaded.* out of hadoop-client-runtime;
+                                 that jar is not here, so the Hive driver dies initializing
+                                 (NoClassDefFoundError .shaded.com.ctc.wstx.io.InputBootstrapper).
+                                 The unshaded hadoop-common 3.4.3 below is the one to use. -->
+                    <groupId>org.apache.hadoop</groupId>
+                    <artifactId>hadoop-client-api</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>

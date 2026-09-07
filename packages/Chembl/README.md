@@ -6,8 +6,12 @@ companion [UniChem](https://www.ebi.ac.uk/unichem/) database. The package ships 
 TypeScript layer on top of a large collection of SQL queries against a Postgres ChEMBL instance with
 the [RDKit cartridge](https://rdkit.org/docs/Cartridge.html) installed.
 
-The bundled connections point at the public Datagrok demo ChEMBL database, so the package works
-out of the box — no credentials required.
+The package ships the database with it: `dockerfiles/` builds a Postgres + RDKit container from the
+ChEMBL release the package is versioned after, and the `Chembl` / `ChemblSql` connections resolve
+their server from that container. The package works out of the box — no credentials required, and
+nothing to deploy alongside it.
+
+The package version is the ChEMBL release plus `.0.0` — 37.0.0 ships ChEMBL 37.
 
 ## Features
 
@@ -40,6 +44,8 @@ out of the box — no credentials required.
 * [connections](https://github.com/datagrok-ai/public/tree/master/packages/Chembl/connections)
   — `Chembl` (Postgres, used for most queries), `ChemblSql` (PostgresDart, used by the
   dataframe-in/dataframe-out converters), and `Unichem`.
+* [dockerfiles](https://github.com/datagrok-ai/public/tree/master/packages/Chembl/dockerfiles)
+  — the ChEMBL database container the first two connections run against.
 * [queries](https://github.com/datagrok-ai/public/tree/master/packages/Chembl/queries) —
   `cartridge.sql` (RDKit substructure/similarity), `converters.sql` (ID conversion),
   `queries.sql` (user-facing browse/search + info-panel widgets), `browser.sql` (internal

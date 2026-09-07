@@ -556,25 +556,86 @@ export async function runQueryViaActions(page: Page, queryName: string): Promise
     .click();
   await page.waitForFunction(({ sel, prev }) =>
     document.querySelectorAll(sel).length > prev, { sel: selector, prev: before }, { timeout: 30_000 });
+  // The count ticks up while the platform is still swapping views, so returning here hands
+  // back a half-finished transition and the editor tab can vanish immediately after.
+  let previous = '';
+  for (let i = 0; i < 12; i++) {
+    const current = await viewHandleNames(page);
+    if (current === previous)
+      break;
+    previous = current;
+    await page.waitForTimeout(400);
+  }
+}
+
+const viewHandleNames = (page: Page): Promise<string> =>
+  page.evaluate(() => Array.from(document.querySelectorAll('[name^="view-handle: "]'))
+    .map((h) => h.getAttribute('name')).join(' | '));
+
+/** Every open view, marking the ones that are query editors, plus the current view. */
+function openViewsReport(page: Page): Promise<string> {
+  return page.evaluate(() => {
+    const handles = Array.from(document.querySelectorAll('[name^="view-handle: "]'))
+      .map((h) => `${h.getAttribute('name')}${h.querySelector('[name="icon-data-query"]') ? ' [editor]' : ''}`);
+    const g = (window as unknown as { grok: any }).grok;
+    return `open views: ${handles.length ? handles.join(' | ') : '(none)'}; current: ${g?.shell?.v?.name ?? '(unknown)'}`;
+  });
 }
 
 /**
- * Switch back to the query editor tab (the one with `icon-data-query`).
+ * Click the view handle carrying `icon-data-query`; false when no view is a query editor.
  *
- * Implementation note: with `grok.shell.windows.simpleMode = true` (Tabs mode, our default),
- * the active view's content is what's painted — the inactive view-handles exist in the DOM
- * but Playwright's `.waitFor({ state: 'visible' })` rejects them as offscreen, so a real
- * `locator.click()` cannot be used. Per grok-browser SKILL ("UI attempt failed → fall back
- * to JS API, record reason"), dispatch the click at the DOM level — the platform listens at
- * the document level and switches the active tab regardless.
+ * With `grok.shell.windows.simpleMode = true` (Tabs mode, our default) only the active view is
+ * painted, so Playwright rejects the inactive handles as offscreen and a real `locator.click()`
+ * cannot be used. Per grok-browser SKILL ("UI attempt failed → fall back to JS API, record
+ * reason"), dispatch the click at the DOM level — the platform listens at the document level.
+ *
+ * The handle is matched on the badge alone, not on the query name: after `Run query...` the
+ * result view carries the same name as the editor, and a name-matched lookup then finds the
+ * wrong one, or none at all.
+ */
+function clickQueryEditorHandle(page: Page): Promise<boolean> {
+  return page.evaluate(() => {
+    (document.querySelector('.d4-dialog[name="dialog-Save-project"] .grok-font-icon-close') as HTMLElement)?.click();
+    const editor = Array.from(document.querySelectorAll('[name^="view-handle: "]'))
+      .find((h) => h.querySelector('[name="icon-data-query"]')) as HTMLElement | undefined;
+    editor?.click();
+    return editor !== undefined;
+  });
+}
+
+/**
+ * Switch back to the query editor tab, retrying while the view swap settles.
+ *
+ * A bare click-and-wait reports `[name="input-Name"]` never appearing, which is true and
+ * useless: the editor view is simply not open any more. Say that instead, and list what is.
  */
 export async function focusQueryEditorTab(page: Page, queryName: string): Promise<void> {
-  await page.evaluate((name) => {
-    const handles = Array.from(document.querySelectorAll(`[name="view-handle: ${name}"]`));
-    const editor = handles.find((h) => h.querySelector('[name="icon-data-query"]')) as HTMLElement | undefined;
-    editor?.click();
-  }, queryName);
-  await page.waitForTimeout(400);
+  const nameInput = page.locator('[name="input-Name"]').first();
+  const deadline = Date.now() + 30_000;
+  while (Date.now() < deadline) {
+    if (await clickQueryEditorHandle(page)) {
+      try {
+        await nameInput.waitFor({ state: 'visible', timeout: 5_000 });
+        return;
+      }
+      catch {
+        // The editor is mid-swap — fall through and click it again.
+      }
+    }
+    await page.waitForTimeout(500);
+  }
+  throw new Error(`focusQueryEditorTab("${queryName}"): no open view carries [name="icon-data-query"], ` +
+    `so there is no query editor to switch back to. ${await openViewsReport(page)}`);
+}
+
+/// `Run query...` opens a result table view whose ribbon also carries `[name="button-Save"]`, and
+/// clicking that one saves a project instead. The result view can also win the focus race after
+/// [focusQueryEditorTab] returns, so the editor has to be re-asserted right before Save.
+async function activateQueryEditorView(page: Page): Promise<void> {
+  if (await page.locator('[name="input-Name"]').count() > 0)
+    return;
+  await focusQueryEditorTab(page, '(re-assert before Save)');
 }
 
 /** Click Save in the query editor ribbon and wait for the server commit. */
@@ -583,13 +644,34 @@ export async function saveQuery(page: Page, friendlyName: string): Promise<void>
   // landed — a lingering dialog or the preloader swallows it, and the spec then waits out
   // the whole timeout with nothing saved. Re-click until the query is actually on the
   // server. Save is idempotent on an existing query, so a repeat is an update, not a copy.
-  await expect(async () => {
-    if (await findQueryByFriendlyName(page, friendlyName)) return;
-    await page.locator('[name="button-Save"]').first().click({ timeout: 5_000 });
-    await expect.poll(async () =>
-      (await findQueryByFriendlyName(page, friendlyName)) !== null,
-    { timeout: 20_000 }).toBe(true);
-  }).toPass({ timeout: 90_000 });
+  try {
+    await expect(async () => {
+      if (await findQueryByFriendlyName(page, friendlyName)) return;
+      await activateQueryEditorView(page);
+      await page.locator('[name="button-Save"]').first().click({ timeout: 5_000 });
+      await expect.poll(async () =>
+        (await findQueryByFriendlyName(page, friendlyName)) !== null,
+      { timeout: 20_000 }).toBe(true);
+    }).toPass({ timeout: 90_000 });
+  } catch (e) {
+    // A bare timeout cannot tell "Save never committed" from "committed under a different
+    // name", and those have different owners. Report what the server and the editor actually
+    // hold so the next occurrence is diagnosable from the CI log alone.
+    const state = await page.evaluate(async (fn) => {
+      const g = (window as unknown as { grok: any }).grok;
+      const byName = await g.dapi.queries.filter(`name = "${fn}"`).list().catch(() => []);
+      const nameInput = document.querySelector('[name="input-Name"]') as HTMLInputElement | null;
+      const save = document.querySelector('[name="button-Save"]') as HTMLElement | null;
+      return {
+        foundByName: byName.map((q: any) => ({name: q.name, friendlyName: q.friendlyName})),
+        nameInputValue: nameInput?.value ?? '(no name input)',
+        saveButton: save ? save.className : '(absent)',
+        dialogsOpen: document.querySelectorAll('.d4-dialog').length,
+      };
+    }, friendlyName).catch((err) => ({probeFailed: String(err).slice(0, 200)}));
+    throw new Error(`saveQuery("${friendlyName}") never appeared with that friendlyName.\n` +
+      `Editor/server state at give-up: ${JSON.stringify(state)}\n${String(e).slice(0, 400)}`);
+  }
 }
 
 /** Find a saved query by the user-facing name (stored server-side as `friendlyName`). */

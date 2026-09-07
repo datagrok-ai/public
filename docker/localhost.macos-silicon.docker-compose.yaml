@@ -6,6 +6,16 @@
 # server fail to start. See `localhost.docker-compose.yaml` for the full rationale.
 x-datagrok-release: bleeding-edge
 
+# Shared by every jkg_* gateway below. They differ only in image and network alias.
+x-jkg: &jkg
+  platform: linux/amd64
+  environment:
+    GROK_PARAMETERS: |
+      {
+        "queueSettings": {"useQueue": true, "amqpHost": "rabbitmq", "amqpUser": "guest", "amqpPassword": "guest", "amqpPort": 5672, "pipeHost": "grok_pipe", "pipePort": 3000, "pipeKey": "test-key", "maxConcurrentCalls": 4}
+      }
+  restart: unless-stopped
+
 services:
   rabbitmq:
     image: rabbitmq:4.0.5-management
@@ -22,7 +32,7 @@ services:
         aliases:
           - rabbitmq
     restart: unless-stopped
-    profiles: [ "all", "rabbitmq", "scripting", "jupyter_kernel_gateway", "jkg" ]
+    profiles: [ "all", "rabbitmq", "scripting", "jkg" ]
 
   grok_pipe:
     image: datagrok/grok_pipe:${GROK_PIPE_VERSION:-bleeding-edge}
@@ -37,7 +47,7 @@ services:
         aliases:
           - grok_pipe
     restart: unless-stopped
-    profiles: [ "all", "scripting", "jupyter_kernel_gateway", "jkg" ]
+    profiles: [ "all", "scripting", "jkg" ]
 
   datagrok:
     privileged: true
@@ -132,20 +142,55 @@ services:
     restart: unless-stopped
     profiles: [ "all", "grok_connect" ]
 
-  jupyter_kernel_gateway:
-    image: datagrok/jupyter_kernel_gateway:${JUPYTER_KERNEL_GATEWAY_VERSION:-bleeding-edge}
-    platform: linux/amd64
+  # Per-language kernel gateways. These replaced the single all-languages
+  # datagrok/jupyter_kernel_gateway image, which is no longer built. `scripting` (and
+  # `all`/`cvm`) starts every language; name one service's own profile — `jkg_python`,
+  # `jkg_r`, … — to start just that one. Each image is several GB, so pull only what you
+  # script in. They are published for amd64 only and run under emulation here.
+  jkg_python:
+    <<: *jkg
+    image: datagrok/jkg_python:${JKG_PYTHON_VERSION:-bleeding-edge}
     networks:
       datagrok:
         aliases:
-          - jupyter_kernel_gateway
-    environment:
-      GROK_PARAMETERS: |
-        {
-          "queueSettings": {"useQueue": true, "amqpHost": "rabbitmq", "amqpUser": "guest", "amqpPassword": "guest", "amqpPort": 5672, "pipeHost": "grok_pipe", "pipePort": 3000, "pipeKey": "test-key", "maxConcurrentCalls": 4}
-        }
-    restart: unless-stopped
-    profiles: [ "all", "cvm", "scripting", "jupyter_kernel_gateway", "jkg" ]
+          - jkg_python
+    profiles: [ "all", "cvm", "scripting", "jkg", "jkg_python" ]
+
+  jkg_r:
+    <<: *jkg
+    image: datagrok/jkg_r:${JKG_R_VERSION:-bleeding-edge}
+    networks:
+      datagrok:
+        aliases:
+          - jkg_r
+    profiles: [ "all", "cvm", "scripting", "jkg", "jkg_r" ]
+
+  jkg_octave:
+    <<: *jkg
+    image: datagrok/jkg_octave:${JKG_OCTAVE_VERSION:-bleeding-edge}
+    networks:
+      datagrok:
+        aliases:
+          - jkg_octave
+    profiles: [ "all", "cvm", "scripting", "jkg", "jkg_octave" ]
+
+  jkg_julia:
+    <<: *jkg
+    image: datagrok/jkg_julia:${JKG_JULIA_VERSION:-bleeding-edge}
+    networks:
+      datagrok:
+        aliases:
+          - jkg_julia
+    profiles: [ "all", "cvm", "scripting", "jkg", "jkg_julia" ]
+
+  jkg_nodejs:
+    <<: *jkg
+    image: datagrok/jkg_nodejs:${JKG_NODEJS_VERSION:-bleeding-edge}
+    networks:
+      datagrok:
+        aliases:
+          - jkg_nodejs
+    profiles: [ "all", "cvm", "scripting", "jkg", "jkg_nodejs" ]
 
   db:
     image: pgvector/pgvector:pg17

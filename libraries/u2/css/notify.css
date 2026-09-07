@@ -1,0 +1,103 @@
+/* Notifications — platform Balloon look (d4 balloon.css) expressed in tokens: top-right stack,
+   tinted surface + colored border per type, hover reveals the copy/close icons and pauses the
+   countdown bar. Tokens only; css/tokens.css and css/icons.css (standalone) must be loaded
+   alongside. */
+.u2-notify-container {
+  position: fixed;
+  top: 60px;
+  right: 10px;
+  width: 300px;
+  max-height: calc(100vh - 80px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--dg-space-m);
+  pointer-events: none;
+  font-family: var(--dg-font-family);
+  font-size: var(--dg-font-size);
+  line-height: var(--dg-line-height);
+}
+
+.u2-notify {
+  pointer-events: auto;
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--dg-space-m);
+  padding: var(--dg-space-l) 52px var(--dg-space-l) var(--dg-space-l);
+  border-radius: var(--dg-radius);
+  border: var(--dg-border-width) solid;
+  box-shadow: var(--dg-shadow-2);
+  white-space: pre-wrap;
+}
+
+.u2-notify-info {
+  color: var(--dg-green-3);
+  border-color: var(--dg-green-2);
+  background: var(--dg-green-1);
+}
+
+.u2-notify-warning {
+  color: var(--dg-orange-3);
+  border-color: var(--dg-orange-2);
+  background: var(--dg-orange-1);
+}
+
+.u2-notify-error {
+  color: var(--dg-red-4);
+  border-color: var(--dg-red-3);
+  background: var(--dg-red-1);
+}
+
+.u2-notify-type-icon {
+  flex-shrink: 0;
+  font-size: var(--dg-font-size-h1);
+}
+
+.u2-notify-info .u2-notify-type-icon { color: var(--dg-green-2); }
+.u2-notify-warning .u2-notify-type-icon { color: var(--dg-orange-2); }
+.u2-notify-error .u2-notify-type-icon { color: var(--dg-red-3); }
+
+.u2-notify-content {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* hidden by opacity, not display, so the buttons keep their place and stay tabbable */
+.u2-notify-icons {
+  position: absolute;
+  top: var(--dg-space-m);
+  right: var(--dg-space-m);
+  display: flex;
+  gap: var(--dg-space-xs);
+  opacity: 0;
+}
+
+.u2-notify:hover .u2-notify-icons,
+.u2-notify-icons:focus-within {
+  opacity: 1;
+}
+
+.u2-notify-icons .u2-icon-btn {
+  color: inherit;
+}
+
+.u2-notify-timer {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 2px;
+  width: 100%;
+  background: currentColor;
+  animation: u2-notify-countdown linear forwards;
+}
+
+.u2-notify:hover .u2-notify-timer {
+  animation-play-state: paused;
+}
+
+@keyframes u2-notify-countdown {
+  0% { width: 100%; }
+  100% { width: 0; }
+}

@@ -39,6 +39,54 @@ import Settings from './Settings';
 import {Coord, D3Selection} from './types';
 import Scale from './Scale';
 
+/** Parse '#rgb', '#rrggbb', 'rgb(...)' or 'rgba(...)' into [r, g, b]. */
+function parseColor(color: string): [number, number, number] | null {
+  const rgbMatch = /^rgba?\(([^)]+)\)/.exec(color);
+  if (rgbMatch) {
+    const parts = rgbMatch[1].split(',').map((x) => parseFloat(x));
+    if (parts.length >= 3 && !parts.slice(0, 3).some(isNaN))
+      return [parts[0], parts[1], parts[2]];
+    return null;
+  }
+  const hexMatch = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(color.trim());
+  if (hexMatch) {
+    const h = hexMatch[1];
+    if (h.length === 3) {
+      return [parseInt(h[0] + h[0], 16), parseInt(h[1] + h[1], 16),
+        parseInt(h[2] + h[2], 16)];
+    }
+    return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16),
+      parseInt(h.slice(4, 6), 16)];
+  }
+  return null;
+}
+
+/**
+ * Pick a flow-dot color that stays visible on the segment it rides on:
+ * a lightened version of the edge color on dark edges, a darkened one on
+ * pale edges.
+ */
+function flowDotColor(edgeColor: string): string {
+  const rgb = parseColor(edgeColor);
+  if (!rgb) return '#ffffff';
+  const [r, g, b] = rgb;
+  const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  const mix = (x: number, target: number, t: number) =>
+    Math.round(x + (target - x) * t);
+  return luminance < 140 ?
+    `rgb(${mix(r, 255, 0.7)}, ${mix(g, 255, 0.7)}, ${mix(b, 255, 0.7)})` :
+    `rgb(${mix(r, 0, 0.45)}, ${mix(g, 0, 0.45)}, ${mix(b, 0, 0.45)})`;
+}
+
+/** On-screen edge width above which the flux dots get their drop-shadow glow.
+ * Compositing the shadow across a whole zoomed-out map lags the browser, and
+ * it is only appreciable up close anyway. */
+const FLOW_SHADOW_MIN_EDGE_PX = 13;
+
+type FlowAnimated = SVGPathElement & {
+  __flowAnim?: {anim: Animation, key: string, segWidth: number, halo: string}
+};
+
 export default class Draw {
   behavior: Behavior;
   settings: Settings;
@@ -50,6 +98,25 @@ export default class Draw {
     this.settings = settings;
     this.map = map;
     this.callback_manager = new CallbackManager();
+    // toggle the flux-dot glow as the zoom level changes
+    this.map.zoomContainer?.callbackManager.set('zoom_change.flux-flow',
+      () => this.updateFlowShadows());
+  }
+
+  /**
+   * Show the flux-dot drop-shadow glow only when zoomed in close enough for
+   * it to matter; compositing it across a zoomed-out map lags the browser.
+   */
+  updateFlowShadows() {
+    const scale = this.map.zoomContainer?.windowScale ?? 1;
+    const svgNode = this.map.svg?.node() as Element | null;
+    if (!svgNode) return;
+    svgNode.querySelectorAll('.segment-flow').forEach((node) => {
+      const el = node as FlowAnimated;
+      if (!el.__flowAnim) return;
+      el.style.filter = el.__flowAnim.segWidth * scale >= FLOW_SHADOW_MIN_EDGE_PX ?
+        el.__flowAnim.halo : '';
+    });
   }
 
   /**
@@ -273,6 +340,10 @@ export default class Draw {
     // create reaction arrow
     g.append('path')
       .attr('class', 'segment');
+
+    // flux-direction animation overlay (dots drifting along the segment)
+    g.append('path')
+      .attr('class', 'segment-flow');
 
     g.append('g')
       .attr('class', 'arrowheads');
@@ -516,6 +587,148 @@ export default class Draw {
       });
     // remove
     arrowheads.exit().remove();
+
+    // Flux-direction animation overlay: translucent dots drifting along each
+    // segment in the direction the flux actually flows (see .segment-flow CSS).
+    // Shown only when reaction data is loaded and the segment carries a
+    // nonzero flux; speed tracks the flux magnitude relative to the scale.
+    // Driven by the Web Animations API rather than CSS keyframes: SVG stroke
+    // properties reject unitless var()/calc() keyframe values in some browsers,
+    // which silently kills the animation.
+    const animate_flux = this.settings.get('animate_flux') &&
+      typeof Element !== 'undefined' && 'animate' in Element.prototype &&
+      !(typeof window !== 'undefined' &&
+        window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
+    let max_abs_domain = 0;
+    if (has_data_on_reactions && animate_flux) {
+      const domain = scale.reaction_color.domain() as number[];
+      max_abs_domain = domain.reduce((m, x) => Math.max(m, Math.abs(x)), 0);
+    }
+    const window_scale = this.map?.zoomContainer?.windowScale ?? 1;
+    update_selection
+      .select('.segment-flow')
+      .each(function(d: any) {
+        // @ts-ignore
+        // eslint-disable-next-line no-invalid-this
+        const el = this as FlowAnimated;
+        const flux = d.data;
+        const segEl = el.parentElement?.querySelector('.segment') as SVGPathElement | null;
+        const show = Boolean(animate_flux && has_data_on_reactions && segEl &&
+          flux != null && !isNaN(flux) && flux !== 0 &&
+          segEl.style.visibility !== 'hidden');
+        if (!show) {
+          if (el.__flowAnim) {
+            el.__flowAnim.anim.cancel();
+            delete el.__flowAnim;
+          }
+          el.style.display = 'none';
+          el.removeAttribute('d');
+          return;
+        }
+
+        // Does forward (positive) flux run from -> to along this path?
+        let forwardAlong: boolean;
+        if (d.to_node_coefficient != null) {
+          forwardAlong = d.to_node_coefficient > 0; // products receive flux, reactants emit it
+        } else if (d.from_node_coefficient != null) {
+          forwardAlong = d.from_node_coefficient < 0;
+        } else {
+          // marker-to-marker segment: which side of the reaction the non-center
+          // marker sits on is only recorded on its sibling metabolite segments
+          const reaction = (el.parentNode!.parentNode as any).__data__;
+          const fromNode = drawn_nodes[d.from_node_id];
+          const markerId = (fromNode && fromNode.node_type === 'midmarker') ?
+            d.to_node_id : d.from_node_id;
+          const markerIsFrom = markerId === d.from_node_id;
+          let side = 0; // <0: reactant side, >0: product side
+          const segments = reaction ? reaction.segments : {};
+          for (const sid in segments) {
+            const s = segments[sid];
+            if (s.from_node_id === markerId && s.to_node_coefficient != null) {
+              side = s.to_node_coefficient;
+              break;
+            }
+            if (s.to_node_id === markerId && s.from_node_coefficient != null) {
+              side = s.from_node_coefficient;
+              break;
+            }
+          }
+          if (side === 0) {
+            // exchange/demand reactions: this marker has no metabolite segments
+            // at all, so it sits opposite every metabolite-bearing segment
+            for (const sid in segments) {
+              const s = segments[sid];
+              const coef = s.to_node_coefficient != null ?
+                s.to_node_coefficient : s.from_node_coefficient;
+              if (coef != null) {
+                side = -coef;
+                break;
+              }
+            }
+          }
+          // a reactant-side marker feeds the center; a product-side marker drains it
+          forwardAlong = side > 0 ? !markerIsFrom : markerIsFrom;
+        }
+        // d.data holds |flux| when the 'abs' style is on, so the sign lives in reverse_flux
+        const along = d.reverse_flux ? !forwardAlong : forwardAlong;
+
+        // dots sized to sit inside the segment stroke
+        let segWidth = 10; // default .segment stroke-width from the embedded css
+        if (should_size) {
+          segWidth = flux == null ? no_data_size : scale.reaction_size(flux);
+          if (isNaN(segWidth)) segWidth = no_data_size;
+        }
+        const dotWidth = Math.max(2, segWidth * 0.8);
+        const period = Math.max(20, dotWidth * 3);
+
+        // one period per 0.3s at the top of the scale, easing down to 1.5s
+        let duration = 0.6;
+        if (max_abs_domain > 0) {
+          const rel = Math.min(1, Math.abs(flux) / max_abs_domain);
+          duration = rel <= 0 ? 1.5 : Math.min(1.5, Math.max(0.3, 0.3 / Math.sqrt(rel)));
+        }
+
+        el.style.display = 'inline';
+        el.setAttribute('d', segEl!.getAttribute('d') ?? '');
+        el.style.strokeWidth = dotWidth + 'px';
+        // dots take a lightened/darkened shade of this segment's own color,
+        // with a soft same-color halo around each bead
+        const dotColor = flowDotColor(getComputedStyle(segEl!).stroke);
+        el.style.stroke = dotColor;
+        // stacking shadows intensifies the glow; a single larger radius only dilutes it.
+        // Applied only at high zoom (see updateFlowShadows) — it lags the browser otherwise.
+        const haloOne = `drop-shadow(0 0 ${(dotWidth * 0.6).toFixed(1)}px ${dotColor})`;
+        const halo = `${haloOne} ${haloOne}`;
+        el.style.filter = segWidth * window_scale >= FLOW_SHADOW_MIN_EDGE_PX ? halo : '';
+        // a dot every `period` units: a tiny dash with round caps renders as a circle
+        const dash = 0.1;
+        el.style.strokeDasharray = dash + 'px ' + period + 'px';
+
+        // (re)start the animation only when its parameters actually changed,
+        // so redraws (e.g. time-course steps) don't visibly reset the phase
+        const key = [period, duration.toFixed(2), along].join('|');
+        if (!el.__flowAnim || el.__flowAnim.key !== key) {
+          if (el.__flowAnim)
+            el.__flowAnim.anim.cancel();
+          // decreasing dashoffset slides the dots from the path start toward its end
+          const anim = el.animate(
+            [
+              {strokeDashoffset: (period + dash) + 'px'},
+              {strokeDashoffset: '0px'}
+            ],
+            {
+              duration: duration * 1000,
+              iterations: Infinity,
+              direction: along ? 'normal' : 'reverse',
+              easing: 'linear'
+            }
+          );
+          el.__flowAnim = {anim, key, segWidth, halo};
+        } else {
+          el.__flowAnim.segWidth = segWidth;
+          el.__flowAnim.halo = halo;
+        }
+      });
 
     // new stoichiometry labels
     const stoichiometry_labels = update_selection.select('.stoichiometry-labels')

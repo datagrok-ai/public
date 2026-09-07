@@ -119,7 +119,7 @@ export function getSelectionWidget(table: DG.DataFrame, options: SelectionWidget
   const tooltipOptions: TooltipOptions = {x: 0, y: 0, monomerPosition: {} as SelectionItem, mpStats};
 
   if (options.isAnalysis) {
-    setWebLogoRenderer(grid, mpStats, options.positionColumns, options.activityColumn, cellRendererOptions,
+    setWebLogoRenderer(grid, () => mpStats, options.positionColumns, options.activityColumn, cellRendererOptions,
       tooltipOptions);
   }
 

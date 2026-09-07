@@ -8,11 +8,18 @@ export function bindText(scope: Scope, el: Element, source: ReadonlySignal<unkno
 }
 
 /** Two-way binding with centralized echo suppression: a user edit updates the signal
- * without the effect writing the (identical) value back into the input mid-keystroke. */
-export function bindValue(scope: Scope, input: HTMLInputElement | HTMLTextAreaElement, source: Signal<string>): void {
+ * without the effect writing the (identical) value back into the input mid-keystroke.
+ *
+ * `commitOn` picks which of the browser's two edit events writes the signal: every keystroke
+ * (`input`, the default) or the commit — blur or Enter — the way Dart's `fireChanged` reports one
+ * (`commitOn: 'change'`). Either way the field shows what is being typed; only the signal waits. */
+export function bindValue(scope: Scope, input: HTMLInputElement | HTMLTextAreaElement,
+  source: Signal<string>, commitOn: 'input' | 'change' = 'input'): void {
   let echo = false;
   scope.effect(() => {
-    const v = source.value;
+    // a bound source may hold nothing yet — a data source before its first run — and the DOM
+    // would render that as the literal "undefined"
+    const v = source.value ?? '';
     if (!echo)
       input.value = v;
   });
@@ -24,6 +31,6 @@ export function bindValue(scope: Scope, input: HTMLInputElement | HTMLTextAreaEl
       echo = false;
     }
   };
-  input.addEventListener('input', handler);
-  scope.own(() => input.removeEventListener('input', handler));
+  input.addEventListener(commitOn, handler);
+  scope.own(() => input.removeEventListener(commitOn, handler));
 }

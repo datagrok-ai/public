@@ -27,14 +27,14 @@ interface MethodInfo {
 
 
 export async function biochemicalPropertiesDialog(): Promise<void> {
-  const calculatorFuncs = await DG.Func.find({meta: {function_family: 'biochem-calculator'}});
+  const calculatorFuncs = DG.Func.find({meta: {function_family: 'biochem-calculator'}});
 
   if (calculatorFuncs.length === 0) {
     grok.shell.warning('No biochemical calculators found.');
     return;
   }
 
-  const dialog = ui.dialog({title: 'Biochemical Properties'});
+  const dialog = ui.dialog({title: 'Chemical Properties'});
   dialog.root.classList.add('biochem-calc-dialog');
 
   let table = grok.shell.t;

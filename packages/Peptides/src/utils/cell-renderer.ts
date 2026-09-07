@@ -303,13 +303,13 @@ export type WebLogoBounds = { [position: string]: { [monomer: string]: DG.Rect }
 /**
  * Sets WebLogo renderer.
  * @param grid - Grid to set renderer to.
- * @param monomerPositionStats - Monomer position statistics.
+ * @param monomerPositionStats - Monomer position statistics getter, invoked on each render/event to avoid stale masks.
  * @param positionColumns - Position columns.
  * @param activityCol - Activity column.
  * @param options - Cell renderer options.
  * @param tooltipOptions - Tooltip options.
  */
-export function setWebLogoRenderer(grid: DG.Grid, monomerPositionStats: MonomerPositionStats,
+export function setWebLogoRenderer(grid: DG.Grid, monomerPositionStats: () => MonomerPositionStats,
   positionColumns: DG.Column<string>[], activityCol: DG.Column<number>, options: WebLogoCellRendererOptions,
   tooltipOptions: TooltipOptions = {
     x: 0, y: 0, mpStats: {} as MonomerPositionStats,
@@ -317,7 +317,7 @@ export function setWebLogoRenderer(grid: DG.Grid, monomerPositionStats: MonomerP
   }): void {
   options.isSelectionTable ??= false;
   if (Object.keys(tooltipOptions.mpStats).length == 0)
-    tooltipOptions.mpStats = monomerPositionStats;
+    tooltipOptions.mpStats = monomerPositionStats();
 
 
   if (options.isSelectionTable && (!options.webLogoBounds || !options.cachedWebLogoTooltip)) {
@@ -367,7 +367,7 @@ export function setWebLogoRenderer(grid: DG.Grid, monomerPositionStats: MonomerP
             columns: [col.name],
           })[col.name];
         } else
-          stats = monomerPositionStats[col.name];
+          stats = monomerPositionStats()[col.name];
 
 
         if (!stats)
@@ -410,12 +410,13 @@ export function setWebLogoRenderer(grid: DG.Grid, monomerPositionStats: MonomerP
         return;
       }
       tooltipOptions.monomerPosition = monomerPosition;
+      tooltipOptions.mpStats = monomerPositionStats();
       const isDfFiltered = df.filter.anyFalse;
       const actionDf = isDfFiltered ? df.clone(df.filter) : df;
       const actionActivityCol = actionDf.getCol(activityCol.name) as DG.Column<number>;
       requestWebLogoAction(ev, monomerPosition, actionDf, actionActivityCol, options, tooltipOptions);
       if (!options.isSelectionTable && options.highlightCallback != null)
-        options.highlightCallback(monomerPosition, df, monomerPositionStats);
+        options.highlightCallback(monomerPosition, df, monomerPositionStats());
     } else if (options.unhighlightCallback != null)
       options.unhighlightCallback();
   };

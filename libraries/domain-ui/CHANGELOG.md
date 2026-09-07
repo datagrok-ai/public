@@ -2,6 +2,8 @@
 
 ## v.next
 
+* Build: `datagrok-api` is now the in-repo `../../js-api` rather than `^1.27.8` from the registry. Both consumers (ApiTests, Grit) already resolve it that way, and a second registry copy under this library's `node_modules` gave every `DG.*` type a duplicate identity, so consuming packages failed to compile (`Types have separate declarations of a private property '_helpUrl'`). The `npm link` scripts are gone — `npm install` creates the symlink directly.
+
 * GROK-20298: `DomainFrameEditor`, `DomainGrid`, `confirmDiscardChanges` / `promptUnsavedChanges` and the widget-action Funcs now live in `datagrok-api` (`DG.*`) and are re-exported from here — every import path is unchanged, and the names are the SAME classes, never a copy. On the platform surface the generic members are statics (`DG.DomainFrameEditor.SERVICE_COLUMNS`, `DG.DomainGrid.saveFunc`, ...); this library keeps the flat names (`SERVICE_COLUMNS`, `saveFunc`, `validateCellValue`, `isReferenceProperty`, `editorsOf`, ...) bound to them, so no plugin edit is needed. The library keeps the composable plugin surface (`DomainAppView`, `EntityListWidget`, `DomainForm`, the `domains` facade, the handler helpers). The grid's slice of the stylesheet moved with the grid. The `datagrok-api` floor is now `^1.27.8` — the version that carries the moved classes; an older platform fails the shim import at build time instead of at runtime.
 
 * GROK-20298: `DomainTable` and `domains.table()` take a fifth generic, the update payload (`DomainTable<TRow, TInsert, TColumn, TExpand, TUpdate = Partial<TRow>>`), so a handle over a table with many-to-many relations keeps `update()`'s link sets typed; `AnyDomainTableClient` erases it like the rest

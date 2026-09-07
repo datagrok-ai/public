@@ -8,15 +8,44 @@ import * as DG from 'datagrok-api/dg';
 
 
 export namespace funcs {
-  export async function u2DemoApp(): Promise<DG.View> {
-    return await grok.functions.call('U2Demo:U2DemoApp', {});
+  export async function u2DemoApp(path?: string ): Promise<DG.View> {
+    return await grok.functions.call('U2Demo:U2DemoApp', { path });
+  }
+
+  export async function u2DemoTreeBrowser(treeNode: any ): Promise<void> {
+    return await grok.functions.call('U2Demo:U2DemoTreeBrowser', { treeNode });
   }
 
   export async function reportsBrowserApp(): Promise<DG.View> {
     return await grok.functions.call('U2Demo:ReportsBrowserApp', {});
   }
 
+  export async function u2DesignerApp(): Promise<DG.View> {
+    return await grok.functions.call('U2Demo:U2DesignerApp', {});
+  }
+
+  /**
+  Registers u2 value editors for the property types enabled in `u2.valueEditors`
+  */
+  export async function u2AutoRegisterEditors(): Promise<void> {
+    return await grok.functions.call('U2Demo:U2AutoRegisterEditors', {});
+  }
+
   export async function info(): Promise<void> {
     return await grok.functions.call('U2Demo:Info', {});
+  }
+
+  /**
+  Demo orders placed within the last N days — the data source demo of the u2 designer
+  */
+  export async function demoOrders(days: number ): Promise<DG.DataFrame> {
+    return await grok.functions.call('U2Demo:DemoOrders', { days });
+  }
+
+  /**
+  Records a line in the U2 Designer's Run log — the function to wire a button to
+  */
+  export async function u2Record(text: string ): Promise<string> {
+    return await grok.functions.call('U2Demo:U2Record', { text });
   }
 }

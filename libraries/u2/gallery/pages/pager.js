@@ -1,6 +1,6 @@
 import {Scope, signal} from '../../src/index.js';
 import {AsyncPager} from '../../src/core/pager.js';
-import {VirtualList} from '../../src/components/list.js';
+import {VirtualList} from '../../src/components/collections/list.js';
 
 function injectOnce(id, href) {
   if (document.getElementById(id)) return;

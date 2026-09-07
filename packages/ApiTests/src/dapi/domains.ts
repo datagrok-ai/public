@@ -142,7 +142,7 @@ category('Dapi: domain registry', () => {
     const props = await registry().rowProperties('grit.issue');
     const by = (n: string) => props.find((p) => p.name === n)!;
     expect(by('number').min, 1, 'min from schema.json');
-    expect(by('number').nullable, false, 'required column must not be nullable');
+    expect(by('number').nullable, true, 'auto-numbered column is nullable (server fills it)');
     expect(by('title').nullable, false);
     expect(by('description').nullable, true);
     // Lookup tables since Grit 2.0.0: status/priority/type are ref columns, so the

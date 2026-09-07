@@ -315,7 +315,7 @@ Drag-and-drop columns right from the grid to add the corresponding filters:
 | Show Context Menu | boolean | Properties common for all viewers todo: use code generation |
 | Title | string |  |
 | Description | string | Viewer description that gets shown at the *Descriptor Position*. Markup is supported. |
-| Help | string | Help to be shown when user clicks on the ''?'' icon on top. Could either be in markdown, or a URL (starting with ''/'' or ''http''). |
+| Help | string | Help to be shown when user clicks on the '?' icon on top. Could either be in markdown, or a URL (starting with '/' or 'http'). |
 | Description Position | flexposition |  |
 | Description Visibility Mode | visibilitymode |  |
 | **Description** | | |

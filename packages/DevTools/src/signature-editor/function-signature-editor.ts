@@ -64,28 +64,12 @@ export function registerParamEditorHandler(): void {
 export function functionSignatureEditor(view: DG.View) {
   if (view.root?.parentElement?.querySelector(FSE_ICON_SELECTOR) != null)
     return;
-  view.type === DATA_QUERY_VIEW ?
-    addFseRibbonQuery(view as DG.DataQueryView) :
-    addFseRibbonScript(view as DG.ScriptView);
+  addFseRibbon(view as DG.ScriptView | DG.DataQueryView);
 }
 
 const getCode = (codeMirror: any) => codeMirror.getDoc().getValue();
 
-function addFseRibbonQuery(v: DG.DataQueryView) {
-  applyCodeMirror(v, (codeMirror) => {
-    const iconFse = ui.iconFA('magic', () => openFse(v, getCode(codeMirror)), 'Open Signature Editor');
-
-    const addIcon = () => {
-      const ribbonPanelsRoot = v.ribbonMenu.root.previousSibling as HTMLElement;
-      if (ribbonPanelsRoot != null && ribbonPanelsRoot.querySelector(FSE_ICON_SELECTOR) == null)
-        ribbonPanelsRoot.append(ui.div(iconFse, 'd4-ribbon-item'));
-    };
-    addIcon();
-    v.subs.push(v.tabs.onTabChanged.subscribe(addIcon));
-  });
-}
-
-function addFseRibbonScript(v: DG.ScriptView) {
+function addFseRibbon(v: DG.ScriptView | DG.DataQueryView) {
   applyCodeMirror(v, (codeMirror) => {
     const iconFse = ui.iconFA('magic', () => openFse(v, getCode(codeMirror)), 'Open Signature Editor');
 

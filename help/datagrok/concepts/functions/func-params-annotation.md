@@ -130,6 +130,8 @@ Datagrok supports the following types in all scripting languages:
 * Scalars: `int`, `double`, `bool`, `string`, `datetime`
 * Table: `dataframe`, `column`, `column_list`
 * Collections: `list` (typically of strings)
+* Predicates: `tablerowfiltercall` (row predicate), `colfiltercall` (column predicate).
+  See [predicate parameters](#predicate-parameters)
 * `graphics`: typically a function output. See [example](https://github.com/datagrok-ai/public/blob/9f7043dbadd9be35c6f798143642de3c9145b560/packages/Chem/scripts/gasteiger_charges.py#L4)
 * `file`: when the script is executed, contains a string with the path to a file
 * `blob`: array of bytes
@@ -162,16 +164,23 @@ For `dataframe` type:
 | columns     | numerical              | Only numerical columns will be loaded (including datetime)   |
 | columns     | numerical_no_datetime  | Same as numerical, but datetime columns are excluded         |
 | columns     | categorical            | Only categorical columns will be loaded                      |
+| viewer      | Line chart \| Grid     | Visualizes the parameter with the specified [viewers](../../../compute/scripting/scripting-features/visualize-output-data.md) |
 
 For `column` and `column_list` types
 
 | Option     | Value                           | Description                                                                 |
 |------------|---------------------------------|-----------------------------------------------------------------------------|
 | type       | numerical, numerical_no_datetime, categorical, datetime, categorical_or_datetime, or a column type such as int, double, string | In a dialog, only matching columns will be shown. Datetime columns are numerical, so use `numerical_no_datetime` to exclude them |
+| table      | Name of a dataframe parameter   | Binds the column parameter to the specified input table (see the [complex annotation example](#examples)). When omitted, the function's dataframe parameter is used |
 | format     | MM/dd/yyyy                      | Datetime format, for dateTime columns and datetime type only                |
 | allowNulls | true/false                      | Adds validation of the missing values presence                              |
 | action     | join("table parameter name")    | Joins result to the specified table, for output parameters only             |
 | action     | replace("table parameter name") | Replaces result with columns in specified table, for output parameters only |
+
+When a column parameter has no value, Datagrok picks a default automatically from the columns
+that match the type filter: for parameters with a semantic type, the first matching column
+(for molecules, columns named `structure`, `smiles`, `canonical_smiles`, or `molecule` are
+preferred), otherwise the column whose name is closest to the parameter name.
 
 For `string` type
 
@@ -182,9 +191,12 @@ For `string` type
 
 For `numeric` types
 
-| Option   | Description                                                                                                                                |
-|----------|--------------------------------------------------------------------------------------------------------------------------------------------|
-| min, max | Minimum and maximum to be validated. When both are defined, slider is added for the float input, and +/- clicker is added to the int input |
+| Option        | Description                                                                                                                                |
+|---------------|--------------------------------------------------------------------------------------------------------------------------------------------|
+| min, max      | Minimum and maximum to be validated. When both are defined, slider is added for the float input, and +/- clicker is added to the int input |
+| step          | Increment used by the slider and the +/- clicker                                                                                           |
+| showSlider    | Explicitly shows or hides the slider (requires `min` and `max`)                                                                            |
+| showPlusMinus | Explicitly shows or hides the +/- clicker                                                                                                  |
 
 For `list` type`
 
@@ -233,6 +245,9 @@ Use `category` to group related parameters under a shared section header in the 
 //input: double momentum {category: Hyperparameters}
 //input: int epochs {category: Training}
 ```
+
+Parameters without a category are grouped under the implicit `Misc` category. Section headers
+appear only when parameters use more than one category, or a single category other than `Misc`.
 
 For functions with many parameter groups, use `meta.categoryGroups` to organize categories into a
 hierarchy of collapsible sections. The value is a JSON object where keys are section headers and
@@ -324,6 +339,14 @@ For example, to create an optional string parameter with the initial value:
 SELECT * FROM customers where shipCountry = @shipCountry
 ```
 
+An initial value doesn't have to be a literal. When the input form opens, the initial value is
+evaluated as a function expression, so it can invoke a function — including a `Query(...)` for
+queries:
+
+```sql
+--input: string company = Query("SELECT name FROM companies ORDER BY revenue DESC LIMIT 1")
+```
+
 ### Nullable vs Optional
 
 It’s important to distinguish between **nullable** and **optional** parameters:
@@ -409,6 +432,13 @@ You can define `choices` using a comma-separated list of values,
 a CSV file,
 a name of another function (such as query), 
 or by writing an actual SQL query.
+
+To show a description for each choice (as a tooltip in the dropdown), add the `descriptions`
+option with a map keyed by choice value:
+
+```sql
+--input: string mode = "fast" {choices: ["fast", "exact"]; descriptions: {"fast": "Approximate but quick", "exact": "Slower, exact results"}}
+```
 
 <details> 
 <summary> Example: SQL query: single choice: different ways to specify a list of countries </summary> 
@@ -520,13 +550,13 @@ The following example adds a "containsLettersOnly" function to the "col" paramet
 //name: jsVal1
 //input: string s
 //output: string valid
-valid = input < 11 ? null : "Error val1";
+valid = s.length < 11 ? null : "Error val1";
 ```
 
 ```python
 #name: Numbers
 #language: python
-#input: int count1 {validators: ["jsval1"]
+#input: int count1 {validators: ["jsval1"]}
 ```
 
 Cross-package, bool-returning predicates work directly:
@@ -640,9 +670,12 @@ Datagrok does the rest, and turns it into an interactive experience:
 
 ![](dependent-parameters.gif)
 
-:::warning 
-At the moment, parameter referencing is implemented only for SQL queries.
-The implementation for JavaScript and other languages is in progress.
+:::note Referencing scope
+Referencing parameters with `@` inside the function *body* is supported for SQL queries only.
+Dropdown dependencies work for any function type: when `choices` or `suggestions` name a
+function, that function's parameters are matched to the calling function's parameters by name,
+and the list refreshes automatically whenever a referenced parameter changes. `validator`,
+`visible`, and `enabled` expressions can also reference other parameters by name.
 :::
 
 </div>
@@ -715,6 +748,10 @@ parameter of the `orders` function. When the top-level function is executed, `co
 to the value of the `orders.shipCountry` parameter. That way, you can reference the internal parameters of the
 helper function and use them in the top-level function.
 
+To let users run the helper function separately (for example, to interactively select outliers
+before running the main function), add a button with the `editor-button` option. See
+[Input automation](../../../compute/scripting/advanced-scripting/automate-inputs.md).
+
 This powerful technique allows to reuse functions, and mix multiple technologies and languages 
 within one script. You can get your data with a SQL query, run calculations in Python, and then
 visualize it interactively in Datagrok - all of that without writing a single line of UI code.
@@ -737,6 +774,31 @@ result = `${country} - ${orders.rowCount * factor}`;
 ![img.png](function-input.png)
 
 </details>
+
+### Predicate parameters
+
+Functions that transform tables (such as the built-in **Delete rows** or **Keep columns**
+commands) can take a predicate that selects the rows or columns to operate on:
+
+* `tablerowfiltercall`: a row predicate
+* `colfiltercall`: a column predicate
+
+In the dialog, a predicate parameter renders as a "Where rows" or "Where columns" dropdown
+listing every function that returns the corresponding predicate type. Choosing one shows that
+function's own parameters inline, and the resulting function call becomes the parameter value.
+Like column parameters, a predicate binds to a table parameter (the `table` option).
+
+### Special editors
+
+Besides `inputType`, the `editor` option can invoke special-purpose editors:
+
+* `editor: columnsMap`: for map parameters bound to a table, shows a column-mapping editor
+  where each declared input column is mapped to a column of the selected table. The dialog
+  requires every input column to be mapped.
+* `editor: layout`: the parameter holds a [view layout](../../../visualize/view-layout.md) id.
+  The dialog shows the layout's thumbnail and an **Edit Layout** button that opens the input
+  table in a new view. When you close that view, its layout is saved and assigned to the
+  parameter. Requires a `dataframe` input parameter.
 
 ### Complex calculated columns
 
@@ -1041,6 +1103,8 @@ A custom editor is a function that:
 | `isValid`       | `boolean`            | Indicates whether the inputs are valid |
 | `onInputChanged`| `Observable<any>`    | Emits when user modifies inputs |
 | `inputFor?`     | `(name: string) => DG.InputBase<any>` | Optional method to retrieve the input for a parameter name |
+| `getHistoryString?` | `() => string`   | Serializes the current inputs for the run dialog's history (`DG.FuncCallEditor` defaults it to `''`) |
+| `loadHistoryString?`| `(s: string) => void` | Restores the inputs from a history record |
 
 
 <details>

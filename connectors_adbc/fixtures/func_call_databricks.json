@@ -1,0 +1,39 @@
+{
+  "id": "test_databricks_call",
+  "func": {
+    "#type": "DataQuery",
+    "id": "q1",
+    "name": "Test Databricks Query",
+    "query": "SELECT * FROM samples.tpch.nation WHERE n_regionkey = @regionKey",
+    "connectionId": "conn_databricks",
+    "connection": {
+      "id": "conn_databricks",
+      "dataSource": "DatabricksADBC",
+      "parameters": {
+        "server": "dbc-52240d8b-a70a.cloud.databricks.com",
+        "port": 443,
+        "httpPath": "/sql/1.0/warehouses/769f690b943edd7f",
+        "db": "default"
+      },
+      "credentials": {
+        "parameters": {
+          "password": "dapi_PLACEHOLDER_TOKEN"
+        }
+      }
+    },
+    "params": [
+      {
+        "#type": "FuncParam",
+        "name": "regionKey",
+        "propertyType": "int",
+        "value": 1,
+        "isInput": true
+      }
+    ],
+    "options": {}
+  },
+  "options": {},
+  "parameterValues": {
+    "regionKey": 1
+  }
+}

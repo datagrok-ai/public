@@ -1,10 +1,11 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {Subject, fromEvent} from 'rxjs';
+import {Subject, fromEvent, race} from 'rxjs';
+import {map, take} from 'rxjs/operators';
 import {ItemMetadata} from '../../reactive-tree-driver/src/view/ViewCommunication';
 
-type EditOptions = {
+export type EditOptions = {
   title?: string,
   description?: string,
   isFavorite?: boolean,
@@ -92,6 +93,16 @@ export class EditRunMetadataDialog extends DG.Dialog {
       this._onMetadataEdit.next(editOptions);
       this.close();
     });
+  }
+
+  // Shows the dialog and resolves the edited metadata, or null when dismissed. Save fires
+  // onMetadataEdit before close(); onClose is the only signal that covers every dismissal
+  // path (the Esc key fires neither onOK nor onCancel).
+  awaitMetadata(options?: {center?: boolean, width?: number}): Promise<EditOptions | null> {
+    const result$ = race<EditOptions | null>(this.onMetadataEdit, this.onClose.pipe(map(() => null)))
+      .pipe(take(1));
+    this.show({center: true, width: 500, ...options});
+    return result$.toPromise();
   }
 }
 

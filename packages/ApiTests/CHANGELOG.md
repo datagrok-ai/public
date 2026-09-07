@@ -2,6 +2,39 @@
 
 ## 1.10.3 (WIP)
 
+GROK-20298: `dapi/domains.ts` — `grit.issue.number` is auto-numbered since Grit 2.1.0, so its row property is expected nullable (the server fills it)
+GROK-20298: New `dapi/domain-cross-schema-refs.ts` pins the soft cross-schema ref through PlatesFixture's `plate.source_query` (`ref: Core.queries`): an insert with a visible query id is accepted and an unknown id is refused with the per-row `fk` error (409), `source_query.friendlyName` filters and expands through the ref, a categories facet on the ref column carries the query's name, and deleting the query leaves the row readable with the dangling id while expand and filter find nothing.
+GROK-20799: New `dapi/entity-properties.ts` pins the `grok.meta` discovery surface — catalog order and labels, the filterable subset, `refType`/`relationKind`, the domain-table branch, the uniform null miss, `coreLocationOf`, no secret in any catalog, the drift probe (every filterable User property filters through the Core query route), the no-oracle refusal of a secret column, the session→user hop agreeing with dinq, and the structured 403 on a Core write.
+GROK-20799: `dapi/domain-lifecycle.ts` pins the server-composed `travelableRelations` and `securingTable` of `DomainTableClient.capabilities()` (declared relation travelable for admin and not for an ungranted user; a master-mode junction secured by its delegate target)
+
+GROK-20753: `functions/param-eval.ts` adds the W4 pins — `Functions: ParamValidators` (client-registered sync validators run via `FuncCall.evalParamValidators` against the call's current value: passing results omitted, `false` → the "didn't pass the <friendlyName> check" message with `isError: true`, a string result becomes the message, declaration-order results, unknown-name and async-registered rejections with the sync-required message) and a `ScriptSync` comparison-expression pin over a variables map.
+
+GROK-20753: New `utils/string-utils.ts` pins `DG.StringUtils.levenshteinDistance`/`jaroWinklerDistance` (pure-function values).
+
+GROK-20753: New `widgets/pickers.ts` pins the table-picker dialogs (`ui.pickTableFromFiles`/`ui.pickTableFromQuery` open their platform dialogs and resolve null on cancel) and the `ColumnGrid` popup surface (`Widgets: ColumnGrid`) — construction, `onCurrentRowChanged`/`currentColumn`, the search-box filter, `close()` detaching, and the wrapped-`DG.Column` filter-callback contract on both the `popup` option and the `filter` setter.
+
+GROK-20753: `functions/param-eval.ts` adds the W3 table-param pins (`Functions: TableParams`) — dataframe marshaling into a FuncCall (dart identity kept, same-reference writes collapse to one `onChanged`), the resolver readback shape (a string into a column param reads back as a `FuncCall`), the `ColumnList` surface of a column-array write (`names()`/`toList()`/`length`), the `grok_Property_Get`/`grok_Property_Set` `parentTableParamName` door (implicit annotation link with null `options['table']`, explicit `{table: df}`, set round-trip on a registered func), and `columnTypeFilter` derived from `{type: ...}`.
+
+GROK-20753: `functions/param-eval.ts` adds the W2 pins — the tags∪options union on viewer properties (`.is-legend-property` on `colorColumnName`, writes into the merged copy do not survive a fresh `getProperties()` read), `evalParamChoices` propagate lookup over a client-registered DataFrame provider (`values` key→key, own column excluded from `lookup`), and static list-literal `choices` answering through the evaluator.
+
+Functions: New `functions/param-eval.ts` covers the FuncCall parameter-source evaluators (`evalParamChoices` with `dependsOn` and the null `lookup`, `evalParamSuggestions` receiving the typed text, `evalParamDefault` including rejection on a broken command), `scriptSync` with a variables map (fresh-context isolation) plus its one-argument back-compat, and `Property.options` write-through for FuncParam-backed properties.
+
+Tests: Removed the `grok test` Node pass — the suite runs in the browser only. `package-test.ts` no longer exports `testNode()` or takes an `excludeNodeTests` input, which are the two things `grok test` probes to decide whether to run tests headless, and every `{node: true/false}` annotation is gone. Two workarounds that existed only so the test bundle would evaluate under that pass went with it: `benchmarks.ts` closes its table unconditionally, and `js-viewer.ts` extends `DG.JsViewer` directly instead of a dummy base.
+
+Tests: The standalone Node runner (`package-test-node.ts`) is unaffected and still drives `grok stresstest` and the nightly Stress-Tests job. It selects by `{stressTest: true}`, not by `{node: true}`, so it keeps the `typeof process` self-skips that let browser-bound tests opt out under Node — including four stress-marked ones whose loss would have dropped the sweep off its 100% baseline.
+
+GROK-20774: `Property: Accessors` covers custom `get`/`set` on `DG.Property.js` (accessors win over the default field closures, options metadata still applied, the Dart options push does not clobber them) and a custom `set` on `Widget.addProperty` (the write lands through the setter and `onPropertyChanged` still fires).
+
+AI viewers: Fixed the two legend-visibility tests that had never passed. `legendPresent` asked whether a `.d4-legend` element exists, but hiding a legend that has already been shown collapses it to zero width instead of detaching it — so every "legend is now hidden" assertion after a toggle was doomed, while the same assertion at creation time passed because the element had never been built. It now measures rendered width, and lives in `helpers.ts` so BarChart and BoxPlot share one definition.
+
+Node runner: The stress suite now also loads a sibling package's node tests - `extraTestPackages` merges DBTests' registry into the one the runner filters, so the sweep covers read-only Postgres queries through grok_connect alongside the platform API. Each package resolves its own copy of the test library, so the merge is by registry object rather than by import.
+
+Node runner: Fixed the `datagrok-api/{dg,grok,ui}` aliasing for the ESM graph — `Module._resolveFilename` returned a `dg-runtime:` sentinel that is not a real path, and whichever resolver saw it (tsx's or Node's) read it as a directory import and threw. 25 of the 49 eligible test files (every `dataframe/`, `functions/`, `bitset/`, `stats/`, `property/`, `valuematcher/` file and four `dapi/domain-*` ones) never loaded and their tests never ran. `bindRuntimeGlobals()` now generates a real module per global once `startDatagrok()` has produced them and resolves the specifiers to that, so the alias no longer depends on which resolver wins.
+
+GROK-20752: `ProgressIndicator` covers `onLogUpdated` delivering plain `{level, message, flag, params, time}` objects — a debug-mode call of an ad-hoc JS script, asserting the client `CALL DURATION` start event's types and params.
+
+Build: Fixed the local build — `@datagrok-libraries/domain-ui` now takes `datagrok-api` from `../../js-api` instead of the registry, so its types are the same ones ApiTests compiles against. `build-js-api-tests-local` builds js-api and domain-ui only; the `link-*` scripts are gone.
+
 GROK-20298: `Dapi: domain frame editor` covers the move of the editor into the platform — `DomainFrameEditor.attachTo(frame, schema, table)` adopting a frame its HOST owns (the Dart Domain View's entry point), with `DG.DomainFrameEditor` asserted to be the very class `@datagrok-libraries/domain-ui` exports.
 
 GROK-20298: `Dapi: domain frame editor` covers the ref-column gate lift — a writable `ref` column is editable in `DomainGrid` (the in-place picker's precondition), a cleared ref reaches the update op as an explicit `null`, a required ref clear blocks the save, and a pick back to the original drops the pending change.

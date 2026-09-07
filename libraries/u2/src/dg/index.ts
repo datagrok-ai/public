@@ -1,104 +1,88 @@
 /* The ONLY layer allowed to import datagrok-api (enforced by eslint). Bridges u2's
    platform-free core onto the platform's existing lifecycle and event surfaces. */
-export {asDartInput, DartInput} from './input-bridge.js';
-export {columnInput, tableInput} from './pickers.js';
-export {ObjectForm, propertyForm, objectForm} from './object-form.js';
-export type {PropertyLike, PropertySource, ObjectFormOptions, FieldOverride} from './object-form.js';
-export {fromDartInput, PlatformInput} from './from-dart-input.js';
-export type {DartInputLike} from './from-dart-input.js';
-export {userInput} from './user-input.js';
-export {dapiSource, dapiPager, sanitizeFilterValue} from './dapi-source.js';
-export type {DapiSourceLike, DapiSourceOptions, DapiPagerSourceLike, DapiPagerOptions} from './dapi-source.js';
+export {asDartInput, dartInputFor, DartInput} from './inputs/input-bridge.js';
+export type {DartInputOptions, PropertyInputBuilder} from './inputs/input-bridge.js';
+export {columnInput, tableInput, tablesInput, ColumnPicker} from './inputs/pickers.js';
+export type {ColumnInputOptions, ColumnPickerOptions} from './inputs/pickers.js';
+export {ObjectForm, propertyForm, objectForm, inputForProperty, PlatformInputs} from './forms/object-form.js';
+export type {IProperty} from '../core/property-like.js';
+export type {PropertySource, ObjectFormOptions, FieldOverride,
+  PropertyInputOptions, InputFactory} from './forms/object-form.js';
+export {propertyEditor, PropertyEditor} from './forms/property-editor.js';
+export type {PropertyEditorOptions} from './forms/property-editor.js';
+export {fromDartInput, PlatformInput} from './inputs/from-dart-input.js';
+export type {DartInputLike} from './inputs/from-dart-input.js';
+export {userInput} from './inputs/user-input.js';
+export {dapiSource, dapiPager, sanitizeFilterValue} from './entities/dapi-source.js';
+export type {DapiSourceLike, DapiSourceOptions, DapiPagerSourceLike, DapiPagerOptions} from './entities/dapi-source.js';
 export {handlerRenderer, HandlerRenderer, chip, EntityChip, entityCard, EntityCard, entityInput}
-  from './entity.js';
-export type {ChipOptions, EntityInputOptions} from './entity.js';
-export {Editors} from './editors.js';
-export type {EditorRule} from './editors.js';
-export {moleculeInput, moleculeRenderer} from './molecule.js';
-export type {MoleculeRendererOptions} from './molecule.js';
+  from './entities/entity.js';
+export type {ChipOptions, EntityInputOptions} from './entities/entity.js';
+export {functionsBrowser} from './entities/functions-browser.js';
+export type {DgFunctionsBrowserOptions} from './entities/functions-browser.js';
+export {funcCallHistoryBrowser, FuncCallHistoryBrowser} from './entities/func-call-history-browser.js';
+export type {FuncCallHistoryBrowserOptions} from './entities/func-call-history-browser.js';
+export {Editors} from './forms/editors.js';
+export type {EditorRule} from './forms/editors.js';
+export {moleculeInput, moleculeRenderer} from './inputs/molecule.js';
+export type {MoleculeRendererOptions} from './inputs/molecule.js';
+export {functionInput, FunctionInput} from './inputs/function-input.js';
+export type {FunctionInputOptions} from './inputs/function-input.js';
+export {funcCallInput, FuncCallInput} from './inputs/func-call-input.js';
+export type {FuncCallInputOptions} from './inputs/func-call-input.js';
+export {metaInput} from './inputs/meta-input.js';
+export type {MetaInputOptions} from './inputs/meta-input.js';
+export {fileInput, FileInput} from './inputs/file-input.js';
+export type {FileInputOptions, FileInputMode} from './inputs/file-input.js';
+export {filesInput, FilesInput} from './inputs/files-input.js';
+export type {FilesInputOptions} from './inputs/files-input.js';
+export {rsaInput, RsaInput} from './inputs/rsa-input.js';
+export type {RsaInputOptions} from './inputs/rsa-input.js';
+export {columnRenderer, ColumnRenderer} from './entities/column-renderer.js';
+export {columnsInput, ColumnsInput, columnsMapInput, ColumnsMapInput, aggregatedColumnsInput,
+  AggregatedColumnsInput, aggregationsFor, defaultAggregation} from './inputs/columns.js';
+export type {ColumnsInputOptions, ColumnsMapInputOptions, ColumnKey, ColumnAggregation,
+  AggregatedColumnsInputOptions} from './inputs/columns.js';
+export {appView} from './shell/app-view.js';
+export type {AppViewOptions} from './shell/app-view.js';
+export {SpecNodeRef, SpecNodesRef, specTree, brokenCount, nodeLabel, idPath} from './designer/node-ref.js';
+export type {SpecTree} from './designer/node-ref.js';
+export {registerSpecNodeHandler} from './designer/handler.js';
+export {Palette} from './designer/palette.js';
+export {Tray, sourceNode, funcSourceNode} from './designer/tray.js';
+export type {TrayOptions} from './designer/tray.js';
+export {accepts, resolveDrop} from './designer/dnd.js';
+export type {DropRect, DropTarget} from './designer/dnd.js';
+export {makeDesignerDroppable, readDrop, dropNode, funcRef, tabularExtensions, OPEN_FILE}
+  from './designer/drop.js';
+export type {DropItem, DropReading, DesignerDropOptions} from './designer/drop.js';
+export {designerView, SpecDesigner} from './designer/view.js';
+export type {DesignerViewOptions} from './designer/view.js';
+export {SAMPLES} from './designer/samples.js';
+export {loadGallery, saveToGallery, listGallery, GALLERY_KEY} from './designer/gallery.js';
+export {bindTree} from './designer/bind-model.js';
+export type {BindTreeNode} from './designer/bind-model.js';
+export {bindPicker, bindGroups, bindRows} from './designer/bind-picker.js';
+export type {BindGroup, BindRows} from './designer/bind-picker.js';
+export {funcPicker, funcEntries, filterFuncs, paramProps, paramValues, eventEntry, eventPick}
+  from './designer/func-picker.js';
+export type {FuncEntry, FuncLike, FuncPick, FuncPickerOptions} from './designer/func-picker.js';
+export {sourceStatus, statusText, refreshSource} from './designer/source-status.js';
+export type {SourceStatus} from './designer/source-status.js';
+export {platformContext} from './shell/spec-context.js';
+// side-effect only: filling `backends` is what makes the data sources work in the platform
+import './shell/source-backends.js';
 
 import * as DG from 'datagrok-api/dg';
-import {Observable, Subscription} from 'rxjs';
-import {Component} from '../core/component.js';
+import {Observable} from 'rxjs';
 import {Scope} from '../core/scope.js';
-import {signal, Signal, ReadonlySignal, rawEffect} from '../core/signals.js';
+import {signal, ReadonlySignal, rawEffect} from '../core/signals.js';
+import {PlatformInputs} from './forms/object-form.js';
+import {FileInput} from './inputs/file-input.js';
 
-/** Hosts a u2 component as a `DG.Widget`: the component's disposal joins the widget's
- * `subs`, and `toDart()` registers it in the platform widget registry, so the Dart
- * kill-walk (view close) disposes all effects with zero new machinery.
- * Pass `closeIn` when docking the component ad-hoc: the pane ✕ fires only
- * `dockManager.onClosed` (never `Widget.kill` — platform gap, see PLAN.md P3), so the
- * auto-wire detaches on close. Components never actually mounted stay the caller's
- * responsibility to dispose. */
-export function host(component: Component, closeIn?: DG.DockManager): DG.Widget {
-  const w = DG.Widget.fromRoot(component.root);
-  // core contract (2026-08): a docked pane's ✕ kills elements carrying this attribute;
-  // inert on older cores, where the closeIn onClosed auto-wire below covers it
-  component.root.setAttribute('data-kill-on-close', 'true');
-  w.subs.push(new Subscription(() => component.dispose()));
-  if (closeIn) {
-    w.subs.push(closeIn.onClosed.subscribe((el: HTMLElement) => {
-      if (el != null && (el === component.root || el.contains(component.root)))
-        w.detach();
-    }));
-  }
-  w.toDart();
-  return w;
-}
-
-type ChromeItem = Component | HTMLElement;
-
-export interface AppViewOptions {
-  name: string;
-  /** The view content — hosted as a `DG.Widget`, so view close disposes it (see {@link host}). */
-  content: Component;
-  /** Ribbon panel groups → `view.setRibbonPanels`. Main view controls (filter, refresh, mode
-   * switches, menu bar) belong here, not inside the content area. */
-  ribbon?: ChromeItem[][];
-  /** → the shell's per-view status bar. A signal renders as a live text panel; elements and
-   * components are placed as given. */
-  status?: ReadonlySignal<string> | ChromeItem | ChromeItem[];
-}
-
-/** A platform view over a u2 component tree that rides the shell's chrome instead of
- * recreating it: ribbon for view controls, the per-view status bar for state. Chrome lives
- * outside the view root (the shell owns those containers), so the Dart kill-walk never
- * reaches it — components passed as chrome are disposed with the content instead. */
-export function appView(options: AppViewOptions): DG.ViewBase {
-  const w = host(options.content);
-  const view = DG.View.fromRoot(options.content.root);
-  view.name = options.name;
-
-  const adopt = (item: ChromeItem): HTMLElement => {
-    if (!(item instanceof Component))
-      return item;
-    w.subs.push(new Subscription(() => item.dispose()));
-    return item.root;
-  };
-  const panel = (item: ChromeItem): HTMLDivElement => {
-    const el = adopt(item);
-    if (el instanceof HTMLDivElement)
-      return el;
-    const wrap = document.createElement('div');
-    wrap.append(el);
-    return wrap;
-  };
-
-  if (options.ribbon)
-    view.setRibbonPanels(options.ribbon.map((group) => group.map(adopt)));
-  const status = options.status;
-  if (status instanceof Signal) {
-    const el = document.createElement('div');
-    w.subs.push(new Subscription(rawEffect(() => {
-      el.textContent = status.value;
-    })));
-    view.statusBarPanels = [el];
-  } else if (status != null) {
-    const items = (Array.isArray(status) ? status : [status]) as ChromeItem[];
-    view.statusBarPanels = items.map(panel);
-  }
-  return view;
-}
+// the schema-driven router keeps loading without the platform, so the editors that need it are
+// wired here instead of imported there
+PlatformInputs.register('file', (prop, options) => new FileInput(options));
 
 /** Mirrors an rxjs observable into a signal owned by `scope`. */
 export function toSignal<T>(observable: Observable<T>, initial: T, scope: Scope): ReadonlySignal<T> {
@@ -119,3 +103,20 @@ export function toObservable<T>(source: ReadonlySignal<T>): Observable<T> {
 export function leakReport(): {liveScopes: number, liveWidgets: number} {
   return {liveScopes: Scope.liveCount, liveWidgets: DG.Widget.getAll().length};
 }
+export {viewerOf, viewerControl, REPOINTING} from './viewers/viewer-control.js';
+export type {Bindable, TableRef} from './viewers/viewer-control.js';
+export {viewers, viewerSettings} from './viewers/viewers.js';
+export {registerPlatformViewers, registerPlatformComponents, kebab, toSpecProp, VIEWER_USAGE}
+  from './viewers/registrations.js';
+export {VIEWER_SAMPLES, platformSamples} from './viewers/samples.js';
+export {funcForm, FuncCallForm} from './funcs/func-form.js';
+export type {FuncFormOptions, FuncCallLike, FuncCallParamLike} from './funcs/func-form.js';
+export {applyHistory, applyHistoryById, materializeInputs} from './funcs/func-history.js';
+export {TableInput} from './inputs/pickers.js';
+export type {InputAction, TableInputOptions} from './inputs/pickers.js';
+export {ColumnInput} from './inputs/column-combo.js';
+export type {ColumnInputOptions2} from './inputs/column-combo.js';
+export {messageInput, userMentionProvider, USER_TOKEN} from './inputs/message-input.js';
+export type {MessageInputOptions, MentionProvider} from '../components/inputs/message-input.js';
+export {registerControlInspector, controlProperties, controlPropDescriptors, disposePanel,
+  controlAt, noControl} from './shell/control-inspector.js';

@@ -1,0 +1,641 @@
+.chem-sar-matrix {
+  display: flex;
+  flex-direction: row;
+  height: 100%;
+  min-height: 0;
+}
+
+/* Width must match NAV_W in the viewer and .chem-sar-xfer-list — both panes fit cells against the leftover. */
+.chem-sar-nav {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 320px;
+  min-width: 320px;
+  border-right: 1px solid var(--grey-2);
+  overflow: hidden;
+  position: relative;
+}
+
+/* Centred on the header row it sits over, rather than riding above it. */
+.chem-sar-nav-collapse {
+  position: absolute;
+  top: 14px;
+  right: 6px;
+  z-index: 2;
+  cursor: pointer;
+  color: var(--grey-4);
+}
+
+.chem-sar-nav.chem-sar-collapsed {
+  flex: 0 0 28px;
+  min-width: 28px;
+}
+
+.chem-sar-nav.chem-sar-collapsed > .chem-sar-nav-header,
+.chem-sar-nav.chem-sar-collapsed > .chem-sar-nav-list {
+  display: none;
+}
+
+.chem-sar-nav.chem-sar-collapsed .chem-sar-nav-collapse {
+  transform: rotate(180deg);
+}
+
+/* Vertical padding matches .chem-sar-main-bar so the two panes' rules meet at the same height. The wide
+   right padding keeps the filter icon clear of the collapse chevron, which is absolutely positioned
+   over this corner. */
+.chem-sar-nav-header {
+  padding: 6px 26px 6px 12px;
+  border-bottom: 1px solid var(--grey-2);
+}
+
+.chem-sar-nav-badge {
+  flex: 0 0 auto;
+  font-size: 10.5px;
+  color: var(--grey-6);
+  background: var(--grey-1);
+  border: 1px solid var(--grey-2);
+  border-radius: 9px;
+  padding: 0 6px;
+  white-space: nowrap;
+  cursor: help;
+}
+
+.chem-sar-rank-tip {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 380px;
+  white-space: normal;
+  line-height: 1.5;
+}
+
+.chem-sar-empty-note {
+  padding: 16px 12px;
+  max-width: 520px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--grey-5);
+}
+
+/* Clearing an input's caption empties its label but still lays the box and its padding out, leaving a
+   gap before the editor. Matching on :empty leaves labelled controls alone. */
+.chem-sar-matrix .ui-input-label:empty {
+  display: none;
+}
+
+.chem-sar-nav-matches {
+  font-size: 10.5px;
+  color: var(--grey-5);
+}
+
+.chem-sar-nav-matches:empty {
+  display: none;
+}
+
+.chem-sar-nav-list {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.chem-sar-card-nested {
+  border-left: 2px solid var(--grey-2);
+}
+
+/* Reads as a heading over the series it holds rather than as one of them: it is not selectable and
+   has no score, so it must not look like a card that can be opened. */
+.chem-sar-scaffold-card {
+  background: var(--grey-1);
+  cursor: default;
+}
+
+.chem-sar-scaffold-card .chem-sar-card-name {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 11px;
+  color: var(--grey-5);
+}
+
+/* Always occupies its width, empty on a leaf, so every card's core starts at the same x. */
+.chem-sar-card-twisty {
+  flex: 0 0 11px;
+  width: 11px;
+  font-size: 10px;
+  text-align: center;
+  color: var(--grey-4);
+}
+
+i.chem-sar-card-twisty:hover {
+  color: var(--grey-6);
+}
+
+.chem-sar-card {
+  --chem-sar-card-row: 17px;
+  display: flex;
+  align-items: center;
+  /* The pane is a fixed 320px, and the core depiction and score column claim most of it. Anything
+     wider here and a folded card's descriptor no longer fits on one line. */
+  gap: 8px;
+  padding: 6px 12px;
+  cursor: pointer;
+  border-left: 3px solid transparent;
+}
+
+.chem-sar-card:hover {
+  background: var(--grey-1);
+}
+
+.chem-sar-card.selected {
+  background: #2083D530;
+  border-left-color: var(--blue-1);
+}
+
+.chem-sar-card-core {
+  border: 1px solid var(--grey-2);
+  border-radius: 3px;
+  background: transparent;
+}
+
+.chem-sar-card-body {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Both body rows are pinned to the same height, and the score column repeats it, so the two stacks
+   line up row for row. Natural leading cannot do this: the rows carry different font sizes, and the
+   level badge's border makes row one taller than its text. */
+.chem-sar-card-title {
+  font-weight: 600;
+  font-size: 12px;
+  line-height: var(--chem-sar-card-row);
+  color: var(--grey-6);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  align-items: center;
+  gap: 6px;
+}
+
+.chem-sar-card-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.chem-sar-card-level {
+  flex: 0 0 auto;
+  font-size: 9px;
+  /* Short enough that the badge plus its border stays inside the row it shares with the title. */
+  line-height: 13px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--grey-5);
+  background: var(--grey-1);
+  border: 1px solid var(--grey-2);
+  border-radius: 3px;
+  padding: 0 4px;
+}
+
+/* The fold count on this badge counts groups, not surviving series, so it reads higher than what the
+   card expands into. Coloured where the two disagree, to send the reader to the tooltip. */
+.chem-sar-card-level-partial {
+  color: var(--orange-2);
+  border-color: var(--orange-2);
+  cursor: help;
+}
+
+/* One line, clipped rather than wrapped: a second line pushes the card's rows out of step with the
+   score column beside it and makes the list ragged. */
+.chem-sar-card-desc {
+  font-size: 11px;
+  line-height: var(--chem-sar-card-row);
+  color: var(--grey-5);
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chem-sar-card-score-box {
+  display: grid;
+  grid-template-columns: auto auto;
+  grid-auto-rows: var(--chem-sar-card-row);
+  align-items: baseline;
+  /* Right-aligned, which is also what keeps the values lined up from card to card: the caption column
+     has a fixed width per rank scheme, so a common right edge gives the values a common one too. */
+  justify-content: end;
+  column-gap: 4px;
+  cursor: help;
+}
+
+/* Each value/caption pair becomes a grid item of the box rather than its own flex row, so every value
+   shares one column and every caption the next. Stacked lines stay aligned even when the values differ
+   in width, which a per-line flex row cannot do. */
+.chem-sar-card-score-line {
+  display: contents;
+}
+
+/* Two tracks whether or not both are filled, matching the body beside it. Both boxes are centred in the
+   card, so equal heights are what puts the first score on the same line as the series name; a box that
+   shrank to one row would centre that row between the two. The transfer card omits this: its body is a
+   single row, and padding the score there would push it above the name. */
+.chem-sar-card-score-2row {
+  grid-template-rows: repeat(2, var(--chem-sar-card-row));
+}
+
+.chem-sar-card-score {
+  font-weight: 600;
+  font-size: 11px;
+  line-height: var(--chem-sar-card-row);
+  color: var(--grey-6);
+  text-align: right;
+  /* Digits must occupy equal width, otherwise a 1 is narrower than a 9 and the decimal points in a
+     stacked best/mean pair fail to line up. */
+  font-variant-numeric: tabular-nums;
+}
+
+.chem-sar-card-score-cap {
+  font-size: 9px;
+  line-height: var(--chem-sar-card-row);
+  color: var(--grey-5);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  text-align: left;
+}
+
+.chem-sar-main {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+/* One row, never two: a wrapped header pushes the grid down and re-flows as the pane is resized. The
+   title and controls hold their size and the chips give way, so a pane too narrow for everything
+   loses chips from the right rather than gaining a second line. */
+.chem-sar-main-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+  padding: 0px 10px;
+  border-bottom: 1px solid var(--grey-2);
+}
+
+.chem-sar-main-bar > .chem-sar-main-title {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The controls sit at the far end of the title row. */
+.chem-sar-control-bar.chem-sar-control-inline {
+  flex: 0 0 auto;
+  margin-left: auto;
+  padding: 0;
+  border-bottom: none;
+}
+
+/* Inline there is a single row, so nothing needs aligning to a label column, and the fixed 96px label
+   plus the platform's 200px editor would push the controls onto a line of their own. Both shrink to
+   their content instead. Doubled class beats the standalone rules below regardless of source order.
+   Safe only inline, where every control is a choice: a number input's box is sized to match its
+   slider, and overriding its width breaks that proportion. */
+.chem-sar-control-bar.chem-sar-control-inline .ui-input-label {
+  flex: 0 0 auto;
+  width: auto;
+}
+
+.chem-sar-control-bar.chem-sar-control-inline .ui-input-editor {
+  width: auto;
+  min-width: 0;
+}
+
+.chem-sar-control-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 2px 10px 6px;
+  border-bottom: 1px solid var(--grey-2);
+}
+
+.chem-sar-control-bar .ui-input-root {
+  margin: 0;
+  min-width: 0;
+}
+
+/* Fixed label column so rows stay aligned when the bar wraps. */
+.chem-sar-control-bar .ui-input-label {
+  font-size: 11px;
+  flex: 0 0 96px;
+  width: 96px;
+  min-width: 0;
+  padding-right: 6px;
+}
+
+/* Leave width to the platform: a number input's box and slider are sized to match, override breaks proportion. */
+.chem-sar-control-bar .ui-input-editor {
+  min-width: 0;
+}
+
+.chem-sar-main-title {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--grey-6);
+}
+
+.chem-sar-chips {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: nowrap;
+  /* Shrinks below its content so the header stays one row; min-width:0 is what lets a flex item
+     shrink past its intrinsic size at all. The outsized shrink factor makes the chips absorb nearly
+     all of a shortfall, so a narrow pane drops chips from the right before it truncates the title —
+     and never before the controls, which do not shrink. */
+  flex: 0 100 auto;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.chem-sar-chip-badge {
+  font-size: 10.5px;
+  color: var(--grey-6);
+  background: var(--grey-1);
+  border: 1px solid var(--grey-2);
+  border-radius: 9px;
+  padding: 0 6px;
+  white-space: nowrap;
+}
+
+.chem-sar-chip-transfer {
+  color: var(--blue-3);
+  background: var(--blue-2);
+  border-color: var(--grey-2);
+  font-weight: 600;
+}
+
+/* Reads as a caveat rather than a measurement: it reports what the sub-series below do NOT reach.
+   Coloured on the text and border only, since the base chip's background is the one that is defined. */
+.chem-sar-chip-partial {
+  color: var(--orange-2);
+  border-color: var(--orange-2);
+  cursor: help;
+}
+
+.chem-sar-xfer-stats {
+  margin: 10px 0 4px;
+  padding: 8px 10px;
+  border: 1px solid var(--grey-2);
+  border-radius: 6px;
+  max-width: 340px;
+}
+
+.chem-sar-xfer-title {
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--grey-6);
+  margin-bottom: 4px;
+}
+
+.chem-sar-xfer-stat {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 2px 0;
+}
+
+.chem-sar-xfer-stat-l {
+  font-size: 11.5px;
+  color: var(--grey-5);
+}
+
+.chem-sar-xfer-stat-v {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--grey-6);
+}
+
+.chem-sar-cp-hint {
+  font-size: 11.5px;
+  color: var(--grey-5);
+  line-height: 1.5;
+  margin-bottom: 6px;
+}
+
+.chem-sar-main-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 10px;
+}
+
+/* Plain flex fill, not ui.box (which pins a fixed pixel width) — the grid needs a real height to virtualize against. */
+.chem-sar-grid-host {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+}
+
+.chem-sar-grid-host > * {
+  flex: 1;
+  min-width: 0;
+}
+
+.chem-sar-matrix-cp {
+  padding: 8px;
+  font-size: 12px;
+}
+
+.chem-sar-cp-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chem-sar-cp-structbox {
+  border: 1px solid var(--grey-2);
+  border-radius: 6px;
+  padding: 6px;
+  margin: 6px 0;
+  display: flex;
+  justify-content: center;
+  background: var(--white);
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* Cap fixed-size drawing to the box so a narrowed panel clips it instead of spilling into a horizontal scrollbar. */
+.chem-sar-cp-structbox > * {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.chem-sar-cp-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 2px 0;
+}
+
+.chem-sar-cp-rl {
+  color: var(--grey-5);
+  font-style: italic;
+  white-space: nowrap;
+}
+
+.chem-sar-cp-rv {
+  text-align: right;
+}
+
+.chem-sar-cp-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 12px 0 4px;
+  padding-top: 8px;
+  border-top: 1px solid var(--grey-2);
+}
+
+.chem-sar-cp-section-title {
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--grey-6);
+}
+
+.chem-sar-cp-badge {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--blue-3);
+  background: #2083D530;
+  border-radius: 4px;
+  padding: 1px 6px;
+}
+
+.chem-sar-cp-value {
+  font-weight: 700;
+}
+
+.chem-sar-cp-decomp {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.chem-sar-cp-frag {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.chem-sar-cp-frag-box {
+  border: 1px solid var(--grey-2);
+  border-radius: 5px;
+  padding: 3px;
+  background: var(--white);
+}
+
+.chem-sar-cp-generate {
+  width: 100%;
+  margin-top: 6px;
+}
+
+.chem-sar-xfer-panel {
+  display: flex;
+  flex-direction: row;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* The transfer list is a .chem-sar-nav like the matrix navigator, so it takes that pane's width and
+   border. The list inside it must stay flex:1 to fill the height under the header — a width here
+   would land on the same element as .chem-sar-nav-list and, being later in the file, beat it. */
+.chem-sar-xfer-nav {
+  border-right: 1px solid var(--grey-2);
+}
+
+/* Fixed-width popup (cannot be dragged like the docked Filters panel), so it must fit its widest filter outright. */
+.chem-sar-struct-filters {
+  width: 360px;
+  max-height: 600px;
+  /* `scroll`, not `auto`: an overlay/auto scrollbar renders as a thin sliver over the fixed-width popup. */
+  overflow-y: scroll;
+  scrollbar-width: auto;
+}
+
+.chem-sar-struct-filters::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chem-sar-struct-filters::-webkit-scrollbar-thumb {
+  background: var(--grey-3);
+  border-radius: 3px;
+}
+
+.chem-sar-struct-filters .d4-filter-group-wrapper {
+  flex-direction: column;
+}
+
+.chem-sar-struct-filters .d4-filter-group {
+  width: 100%!important;
+  height: 100%!important;
+}
+
+.chem-sar-struct-filters .d4-filter {
+  width: 100%;
+}
+
+.chem-sar-struct-icon {
+  margin-left: 4px;
+  cursor: pointer;
+}
+
+.chem-sar-struct-icon.chem-sar-filter-on {
+  color: var(--blue-1);
+  position: relative;
+}
+
+.chem-sar-struct-icon.chem-sar-filter-on::after {
+  content: '';
+  position: absolute;
+  top: -1px;
+  right: -2px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--blue-1);
+}
+
+.chem-sar-nav-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.chem-sar-nav-controls .ui-input-root {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+}
+
+/* Pushed to the far end of its bar, away from whatever sits at the near end. Qualified by the bar so it
+   outranks the platform's own margin on a button. */
+.chem-sar-main-bar > .chem-sar-bar-end {
+  margin-left: auto;
+}
+
+.chem-sar-makelist-grid {
+  height: calc(100% - 50px);
+  min-height: 0;
+}

@@ -25,7 +25,8 @@ test('Line chart split legend colors follow the filter (demog)', async ({page}) 
     const df = await grok.dapi.files.readCsv('System:DemoFiles/demog.csv');
     grok.shell.addTableView(df);
   });
-  await page.waitForTimeout(2500);
+  await page.waitForFunction(() =>
+    (window as any).grok?.shell?.tv?.dataFrame?.rowCount > 0, null, {timeout: 30000});
 
   await softStep('After filtering to one RACE the legend colors match the repainted lines', async () => {
     await page.evaluate(async () => {
@@ -35,9 +36,8 @@ test('Line chart split legend colors follow the filter (demog)', async ({page}) 
       const lc = tv.viewers.find((x: any) => x.type === 'Line chart');
       lc.setOptions({yColumnNames: ['AGE'], splitColumnNames: ['RACE', 'SEVERITY']});
     });
-    await page.waitForTimeout(3000);
+    await v.waitForLegendIdle(page, 'Line chart');
     await v.resizeViewer(page, 'Line chart', 900, 600);
-    await page.waitForTimeout(1500);
 
     const before = await page.evaluate(() => {
       const root = document.querySelector('[name="legend"]') as HTMLElement;
@@ -50,7 +50,7 @@ test('Line chart split legend colors follow the filter (demog)', async ({page}) 
       const race = tv.dataFrame.col('RACE');
       tv.dataFrame.rows.filter((r: any) => race.get(r.idx) === 'Other');
     });
-    await page.waitForTimeout(2500);
+    await v.waitForLegendIdle(page, 'Line chart');
 
     const after = await page.evaluate(() => {
       const DG = (window as any).DG;
@@ -88,7 +88,8 @@ test('User-picked split item color survives legend re-render (demog)', async ({p
     const df = await grok.dapi.files.readCsv('System:DemoFiles/demog.csv');
     grok.shell.addTableView(df);
   });
-  await page.waitForTimeout(2500);
+  await page.waitForFunction(() =>
+    (window as any).grok?.shell?.tv?.dataFrame?.rowCount > 0, null, {timeout: 30000});
 
   await page.evaluate(async () => {
     const tv = (window as any).grok.shell.tv;
@@ -97,9 +98,8 @@ test('User-picked split item color survives legend re-render (demog)', async ({p
     const lc = tv.viewers.find((x: any) => x.type === 'Line chart');
     lc.setOptions({yColumnNames: ['AGE'], splitColumnNames: ['RACE', 'SEVERITY', 'SEX']});
   });
-  await page.waitForTimeout(3000);
+  await v.waitForLegendIdle(page, 'Line chart');
   await v.resizeViewer(page, 'Line chart', 900, 420);
-  await page.waitForTimeout(1500);
 
   const readItemColor = (label: string) => page.evaluate((l) => {
     const root = document.querySelector('[name="legend"]') as HTMLElement;
@@ -127,22 +127,21 @@ test('User-picked split item color survives legend re-render (demog)', async ({p
     const icon = page.locator('[name="legend-icon-color-picker"]');
     await expect(icon).toBeVisible({timeout: 5000});
     await icon.click();
-    await page.waitForTimeout(800);
 
     const swatch = page.locator('.d4-color-bar').nth(3);
     await expect(swatch).toBeVisible({timeout: 5000});
     swatchColor = await swatch.evaluate((el) => getComputedStyle(el).backgroundColor);
     expect(swatchColor).not.toBe(item.color);
     await swatch.click();
-    await page.waitForTimeout(500);
     await page.locator('.d4-dialog button', {hasText: /^OK$/}).first().click();
-    await page.waitForTimeout(1000);
+    await page.waitForFunction(() =>
+      document.querySelector('.d4-dialog') == null, {timeout: 8000}).catch(() => null);
+    await v.waitForLegendIdle(page, 'Line chart');
     expect(await readItemColor(label)).toBe(swatchColor);
   });
 
   await softStep('The color survives a viewer resize', async () => {
     await v.resizeViewer(page, 'Line chart', 850, 400);
-    await page.waitForTimeout(2000);
     expect(await readItemColor(label)).toBe(swatchColor);
   });
 
@@ -169,8 +168,8 @@ test('User-picked split item color survives legend re-render (demog)', async ({p
       const tv = (window as any).grok.shell.tv;
       const sex = tv.dataFrame.col('SEX');
       tv.dataFrame.rows.filter((r: any) => sex.get(r.idx) !== null);
-      await new Promise((r) => setTimeout(r, 1500));
     });
+    await v.waitForLegendIdle(page, 'Line chart');
     expect(await readItemColor(label)).toBe(swatchColor);
   });
 

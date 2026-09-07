@@ -155,6 +155,7 @@ export interface SettingsType {
   metabolite_compare_style: CompareStyle
   and_method_in_gene_reaction_rule: 'mean' | 'min'
   highlight_missing: boolean
+  animate_flux: boolean
   enable_search: boolean
   enable_editing: boolean
   disabled_buttons: string[]

@@ -6,8 +6,6 @@ import grok_connect.managers.datetime_column.converters.*;
 import grok_connect.resultset.ColumnMeta;
 import microsoft.sql.DateTimeOffset;
 import oracle.sql.TIMESTAMPTZ;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import serialization.Column;
 import serialization.DateTimeColumn;
 import java.sql.Timestamp;
@@ -17,7 +15,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class DefaultDateTimeColumnManager implements ColumnManager<Double> {
-    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultDateTimeColumnManager.class);
     private static final Converter<Date> DEFAULT_CONVERTER = value -> (Date) value;
     private static final double DEFAULT_MULTIPLIER = 1000.0;
     private final Map<Class<?>, Converter<Date>> converterMap;
@@ -37,11 +34,8 @@ public class DefaultDateTimeColumnManager implements ColumnManager<Double> {
 
     @Override
     public Double convert(Object value, ColumnMeta columnMeta) {
-        LOGGER.trace("convert method was called");
-        if (value == null) {
-            LOGGER.trace("value is null");
+        if (value == null)
             return null;
-        }
         Class<?> aClass = value.getClass();
         Converter<Date> converter = converterMap
                 .getOrDefault(aClass, DEFAULT_CONVERTER);

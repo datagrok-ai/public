@@ -11,7 +11,9 @@ keywords:
 
 A pie chart shows numerical proportions across categories. Like a bar chart, it
 compares categorical values, but emphasizes the relative size of each category
-(a slice of the pie) compared to the whole dataset.
+(a slice of the pie) compared to the whole dataset. Switch **Mode** to `Donut`
+(**Style** settings) to draw the chart as a ring; **Center Label** puts text in the
+hole (the category column name by default).
 
 :::note developers 
 
@@ -69,7 +71,7 @@ Controls:
 | Show Context Menu | boolean | Properties common for all viewers todo: use code generation |
 | Title | string |  |
 | Description | string | Viewer description that gets shown at the *Descriptor Position*. Markup is supported. |
-| Help | string | Help to be shown when user clicks on the ''?'' icon on top. Could either be in markdown, or a URL (starting with ''/'' or ''http''). |
+| Help | string | Help to be shown when user clicks on the '?' icon on top. Could either be in markdown, or a URL (starting with '/' or 'http'). |
 | Description Position | flexposition |  |
 | Description Visibility Mode | visibilitymode |  |
 | **Data** | | |
@@ -77,9 +79,13 @@ Controls:
 | Pie Sort Type | string |  |
 | Pie Sort Order | string |  |
 | Include Nulls | boolean |  |
-| Filter | string | Formula that filters out rows to show. Examples: `${AGE}` > 20 or `${WEIGHT / 2)}` > 100, `${SEVERITY}` == ''Medium'', `${RACE}`.endsWith(''sian'') |
+| Filter | string | Formula that filters out rows to show. Examples: `${AGE}` > 20 or `${WEIGHT / 2)}` > 100, `${SEVERITY}` == 'Medium', `${RACE}`.endsWith('sian') |
 | Table | string |  |
 | **Style** | | |
+| Mode | string | Pie or donut |
+| Show Center Label | boolean | Show text in the donut hole |
+| Center Label | string | Text in the donut hole; the category column name if empty |
+| Center Label Font | string | Font of the text in the donut hole |
 | Label Position | string |  |
 | Auto Layout | boolean |  |
 | Controls Font | string | Viewer controls elements font. |

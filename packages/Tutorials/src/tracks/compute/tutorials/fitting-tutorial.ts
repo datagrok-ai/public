@@ -124,7 +124,7 @@ export class FittingTutorial extends Tutorial {
     );
 
     // 4. Play
-    const modelView = await getView('Ball flight');
+    const modelView = await getView('Ball Flight Simulation');
     if (modelView === null) {
       grok.shell.warning('Model run timeout exceeded');
       return;

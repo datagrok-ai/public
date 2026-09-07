@@ -234,15 +234,17 @@ grok s groups save --json group.json --save-relations
 
 # Share entities
 grok s shares add "JohnDoe:MyConnection" Chemists,Admins --access Edit
-grok s shares list <entity-uuid>
+grok s shares list "JohnDoe:MyConnection"      # by name or UUID; includes inherited grants
 
-# List / inspect entities
+# List / count / inspect entities (--limit / --offset page, --filter is a smart filter)
 grok s users list
+grok s users count --filter 'status = "active"'
 grok s packages list --filter "MyPlugin"       # check if a plugin is published
 grok s connections list --output json
 grok s functions list --filter "Chem"          # find registered functions
-grok s connections get <id>
-grok s connections delete <id>
+grok s connections get <id-or-name>
+grok s connections delete <id-or-name>
+# users cannot be deleted (no server API) — `grok s users block <login>` instead
 grok s connections save --json conn.json --save-credentials   # create or update
 grok s connections test "JohnDoe:MyConnection"                # test by id or name
 grok s connections test --json conn.json                      # test a connection defined in JSON
@@ -250,6 +252,16 @@ grok s connections test --json conn.json                      # test a connectio
 # Call a server function
 grok s functions run 'Chem:smilesToMw("ccc")'
 grok s functions run 'Pkg:fn({a:5,b:22})'
+
+# Manage packages (server pulls released versions from the package repository / npm)
+grok s packages install Chem Bio PowerGrid     # install latest of each
+grok s packages install Chem --version 1.14.0  # pin a version
+grok s packages outdated                       # installed vs registry-latest
+grok s packages update --all                   # upgrade everything outdated
+grok s packages versions Chem                  # published versions + current/latest flags
+grok s packages set-version Chem 1.13.0        # activate a specific version
+grok s packages uninstall Chem                 # repo entry stays installable
+grok s packages share Chem Chemists --access View
 
 # Browse file storage
 grok s files list "System:AppData" -r          # list files recursively
@@ -265,11 +277,21 @@ grok s groups list-members Admins --admin               # admin members only
 grok s groups list-members Admins --no-admin            # non-admin members only
 grok s groups list-memberships alice                    # groups alice belongs to
 
-# Hit any API endpoint directly
-grok s raw GET /api/users/current
-grok s raw GET /api/packages/dev/MyPlugin
+# Domain schemas and their rows (entity-mapped domain tables)
+grok s domains list                            # registered schemas; `list grit` lists its tables
+grok s domains get grit.issue                  # a table's columns (`get grit` = manifest, `get grit.issue <id>` = one row)
+grok s domains query grit.issue --filter 'status = "open"' --sort '!created_on' --limit 20
+grok s domains insert grit.issue title="Crash" status=open
+grok s domains upload grit.issue ./issues.csv --upsert
+grok s domains grant grit.issue Chemists --access Edit
+grok s domains apply myschema --json schema.json --dry-run   # user-managed schema DDL
 
-# Describe entity JSON schema
+# Hit any API endpoint directly (API-relative path; a leading /api is accepted; exit 1 on failure)
+grok s raw GET /users/current
+grok s raw GET /packages/dev/MyPlugin
+grok s raw POST /public/v1/functions/Sin/call --data '{"x": 1}'
+
+# Fields of an entity type (registry record + a live sample)
 grok s describe connections
 
 # Target a specific server
@@ -282,7 +304,10 @@ grok s users list --output quiet | xargs ...   # pipe IDs
 ```
 
 **Windows Git Bash:** prefix raw paths with `MSYS_NO_PATHCONV=1` to prevent POSIX→Windows
-path conversion: `MSYS_NO_PATHCONV=1 grok s raw GET /api/users/current`
+path conversion: `MSYS_NO_PATHCONV=1 grok s raw GET /users/current`
+
+**Tests:** `npm run test:server` (unit, mocked client) and `HOST=<alias> npm run test:integration`
+(a live server; read-only apart from a `files.put` round trip).
 
 **Implementation:** `bin/commands/server.ts`, `bin/utils/node-dapi.ts` (Node.js REST client),
 `bin/utils/server-output.ts` (formatters). The Node.js dapi bypasses the Dart interop layer

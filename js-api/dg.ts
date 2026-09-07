@@ -35,6 +35,7 @@ export * from './src/ui/wizard';
 export {time, timeAsync, Utils, HtmlUtils, LruCache, Paint} from './src/utils';
 export {ObjectHandler, EntityMetaDartProxy} from './ui';
 export * from './src/sticky_meta';
+export * from './src/meta';
 export * from './src/data';
 export * from './src/helpers';
 export * from './src/logger';
@@ -45,6 +46,11 @@ export * from './src/utils';
 export * from './src/proxies';
 export * from './src/utils_convert';
 export * from './src/ui/tree-view';
+
+export {AIChat, AIEngine} from './src/ai';
+export type {AIAttachment, AIChatOptions, AIRunOptions, AIResult, AIUsage, AIStream, AITurnEvent} from './src/ai';
+
+export * as U2 from './src/u2core/index.js';
 
 import * as grok from './grok';
 import * as ui from './ui';

@@ -65,7 +65,7 @@
   "category": "Development",
   "repository": {
     "type": "git",
-    "url": "git@github.com:datagrok-ai/public.git",
+    "url": "https://github.com/datagrok-ai/public.git",
     "directory": "packages/LibTests"
   },
   "overrides": {

@@ -1,7 +1,6 @@
-import * as DG from "datagrok-api/dg";
+import * as DG from 'datagrok-api/dg';
 import {runTests, tests, TestContext} from '@datagrok-libraries/test/src/test';
-
-export let _package = new DG.Package();
+export const _package = new DG.Package();
 export {tests};
 
 //name: test

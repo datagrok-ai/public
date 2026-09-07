@@ -7,10 +7,10 @@ import {
   DEFAULT_AGGREGATION, WEIGHTED_AGGREGATIONS_LIST,
   DesirabilityMode, DesirabilityProfile, PropertyDesirability, WeightedAggregation,
   createDefaultCategorical, createDefaultNumerical, isMpoNumericColumn, isNumerical, migrateDesirability,
-  rangeNumericalToColumn,
+  rangeNumericalToColumn, applyDesirabilityPatch,
 } from './mpo';
-import {DesirabilityEditor, DesirabilityEditorFactory} from './editors/desirability-editor-factory';
-import {DesirabilityModeDialog} from './dialogs/desirability-mode-dialog';
+import {DesirabilityEditor} from './editors/desirability-editor-factory';
+import {createMpoRow, MpoRow} from './editors/mpo-property-row';
 import {discoverComputeFunctions, chemFunctionsDialog} from '../compute-functions';
 
 import '../../css/styles.css';
@@ -21,17 +21,14 @@ const MAX_CATEGORICAL_CATEGORIES = 20;
 const COLUMN_DROPDOWN_OPEN_SELECTOR = '.d4-column-selector-backdrop';
 
 interface RowCtx {
+  mpoRow: MpoRow;
   row: HTMLElement;
   editor: DesirabilityEditor;
-  editorHost: HTMLElement;
-  prop: PropertyDesirability;
   sub: Subscription;
   propertyCell?: HTMLElement;
   nameInput?: DG.InputBase<string>;
   nameInputSub?: Subscription;
   name: string;
-  modeGear?: HTMLElement;
-  controls?: HTMLElement;
 }
 
 function isMpoEligibleColumn(c: DG.Column): boolean {
@@ -138,16 +135,8 @@ export class MpoProfileEditor {
       return;
     this.design = on;
 
-    if (!this.profile || this.propertyOrder.length === 0)
-      return this.render();
-
-    for (const name of this.propertyOrder) {
-      const rowId = this.rowIds[name];
-      this.rowCtx.get(rowId)?.editor.setDesignMode?.(on);
-      this.updatePropertyCell(rowId);
-      this.updateDesignControls(rowId);
-    }
-    this.revalidateNameInputs();
+    this.resetRows();
+    this.render();
   }
 
   private render(): void {
@@ -189,11 +178,11 @@ export class MpoProfileEditor {
     this.root.append(container);
   }
 
-  addProperty(): void {
+  addProperty(name?: string): void {
     if (!this.profile)
       return;
 
-    const newName = this.uniquePropertyName();
+    const newName = name ?? this.uniquePropertyName();
     const newRowId = this.newRowId();
 
     this.profile.properties[newName] = createDefaultNumerical();
@@ -203,6 +192,32 @@ export class MpoProfileEditor {
     this.resetRows();
     this.render();
     this.emitChange();
+  }
+
+  updateProperty(name: string, patch: Partial<PropertyDesirability>): void {
+    const ctx = this.rowCtx.get(this.rowIds[name]);
+    if (ctx) {
+      ctx.mpoRow.applyPatch(patch);
+      return;
+    }
+    const prop = this.profile?.properties[name];
+    if (!prop)
+      return;
+    applyDesirabilityPatch(prop, patch);
+    this.emitChange();
+  }
+
+  setPropertyColumn(name: string, col: DG.Column | null): void {
+    const rowId = this.rowIds[name];
+    this.columnMapping[name] = col?.name ?? null;
+    if (col && this.switchPropertyType(name, rowId, col))
+      return;
+    this.rowCtx.get(rowId)?.editor.setColumn?.(col);
+    this.emitChange();
+  }
+
+  deleteProperty(name: string): void {
+    this.deleteRow(this.rowIds[name]);
   }
 
   private buildHeader(): HTMLElement {
@@ -218,9 +233,6 @@ export class MpoProfileEditor {
     rowId: string,
     prop: PropertyDesirability,
   ): HTMLElement {
-    const row = ui.divH([], 'statistics-mpo-row');
-    row.dataset.rowId = rowId;
-
     const col = this.resolveColumn(name);
     if (col) {
       const corrected = this.correctPropertyType(prop, col);
@@ -230,49 +242,31 @@ export class MpoProfileEditor {
       }
     }
 
-    const editor = DesirabilityEditorFactory.create(prop, 300, 80, this.design);
-    editor.root.classList.add('statistics-mpo-editor-fill');
-    const sub = editor.onChanged.subscribe(() => this.emitChange());
-    const editorHost = ui.divH([editor.root]);
+    const currentName = (): string => this.rowCtx.get(rowId)?.name ?? name;
+    const mpoRow = createMpoRow(prop, {
+      name: currentName,
+      column: () => this.mappedColumn(currentName()),
+      design: this.design,
+      onChanged: () => this.emitChange(),
+      onReplaced: (replacement) => {
+        const current = currentName();
+        this.profile!.properties[current] = replacement;
+        this.rebuildRow(current, rowId);
+      },
+    });
+    const {root: row, editor} = mpoRow;
+    row.dataset.rowId = rowId;
 
-    const ctx: RowCtx = {row, editor, editorHost, prop, sub, name};
+    const ctx: RowCtx = {mpoRow, row, editor, sub: mpoRow.sub, name};
     ctx.propertyCell = this.buildPropertyCell(ctx);
-    const weightCell = this.buildWeightCell(prop);
-    const columnCell = this.buildColumnSelector(rowId, ctx, editor);
+    const columnCell = this.buildColumnSelector(ctx);
+    mpoRow.propertyCell.append(...[ctx.propertyCell, columnCell].filter(Boolean) as HTMLElement[]);
+    this.appendWeightColumnControls(mpoRow.weightCell, mpoRow.weightInput, prop);
+    if (this.design)
+      row.append(this.buildRowControls(rowId, prop));
     this.rowCtx.set(rowId, ctx);
 
-    row.append(
-      ui.divV([ctx.propertyCell, columnCell].filter(Boolean), 'statistics-mpo-property-cell'),
-      weightCell,
-      editorHost,
-    );
-
-    this.updateDesignControls(rowId);
-
     return row;
-  }
-
-  private updateDesignControls(rowId: string): void {
-    const ctx = this.rowCtx.get(rowId);
-    if (!ctx)
-      return;
-
-    if (this.design) {
-      if (!ctx.modeGear) {
-        ctx.modeGear = this.buildModeGear(rowId, ctx.prop, ctx.editor);
-        ctx.editorHost.append(ctx.modeGear);
-      }
-      if (!ctx.controls) {
-        ctx.controls = this.buildRowControls(rowId, ctx.prop);
-        ctx.row.append(ctx.controls);
-      }
-      return;
-    }
-
-    ctx.modeGear?.remove();
-    ctx.modeGear = undefined;
-    ctx.controls?.remove();
-    ctx.controls = undefined;
   }
 
   private removeRow(rowId: string): void {
@@ -350,72 +344,54 @@ export class MpoProfileEditor {
     ctx.propertyCell = newCell;
   }
 
-  private buildWeightCell(prop: PropertyDesirability): HTMLElement {
-    const children: HTMLElement[] = [];
+  private appendWeightColumnControls(
+    cell: HTMLElement,
+    weightInput: DG.InputBase<number | null>,
+    prop: PropertyDesirability,
+  ): void {
+    if (!this.dataFrame)
+      return;
+
     const update = (fn: (p: PropertyDesirability) => void): void => {
       fn(prop);
       this.emitChange();
     };
 
-    const weightInput = ui.input.float('', {value: prop.weight, min: 0, max: 1, format: '#0.000',
-      onValueChanged: (v) => update((p) => p.weight = Math.max(0, Math.min(1, v ?? 0))),
+    const numCols = this.getNumericalColumnNames();
+    let isColumn = !!prop.weightColumn && numCols.includes(prop.weightColumn);
+
+    const colInput = ui.input.choice('', {items: numCols, nullable: true, value: prop.weightColumn ?? '',
+      onValueChanged: (v) => update((p) => p.weightColumn = v || undefined),
     });
-    weightInput.root.classList.add('statistics-mpo-weight-input');
-    children.push(weightInput.root);
 
-    if (this.dataFrame) {
-      const numCols = this.getNumericalColumnNames();
-      let isColumn = !!prop.weightColumn && numCols.includes(prop.weightColumn);
+    const syncToggle = () => {
+      weightInput.root.classList.toggle('statistics-mpo-hidden', isColumn);
+      colInput.root.classList.toggle('statistics-mpo-hidden', !isColumn);
+      toggle.classList.toggle('statistics-mpo-weight-toggle-active', isColumn);
+    };
 
-      const colInput = ui.input.choice('', {items: numCols, nullable: true, value: prop.weightColumn ?? '',
-        onValueChanged: (v) => update((p) => p.weightColumn = v || undefined),
-      });
-
-      const syncToggle = () => {
-        weightInput.root.classList.toggle('statistics-mpo-hidden', isColumn);
-        colInput.root.classList.toggle('statistics-mpo-hidden', !isColumn);
-        toggle.classList.toggle('statistics-mpo-weight-toggle-active', isColumn);
-      };
-
-      const toggle = ui.iconFA('exchange-alt', () => {
-        isColumn = !isColumn;
-        syncToggle();
-        if (!isColumn)
-          update((p) => delete p.weightColumn);
-        else if (colInput.value)
-          update((p) => p.weightColumn = colInput.value || undefined);
-      }, 'Toggle');
-      toggle.classList.add('statistics-mpo-weight-toggle');
-      ui.tooltip.bind(toggle, () => isColumn ? 'Switch to manual weight' : 'Use weight from column');
+    const toggle = ui.iconFA('exchange-alt', () => {
+      isColumn = !isColumn;
       syncToggle();
+      if (!isColumn)
+        update((p) => delete p.weightColumn);
+      else if (colInput.value)
+        update((p) => p.weightColumn = colInput.value || undefined);
+    }, 'Toggle');
+    toggle.classList.add('statistics-mpo-weight-toggle');
+    ui.tooltip.bind(toggle, () => isColumn ? 'Switch to manual weight' : 'Use weight from column');
+    syncToggle();
 
-      children.push(colInput.root, toggle);
-    }
-
-    return ui.divH(children, 'statistics-mpo-weight-cell');
+    cell.append(colInput.root, toggle);
   }
 
-  private buildColumnSelector(
-    rowId: string,
-    ctx: RowCtx,
-    editor: DesirabilityEditor,
-  ): HTMLElement | null {
+  private buildColumnSelector(ctx: RowCtx): HTMLElement | null {
     if (!this.dataFrame)
       return null;
 
-    const matchedName = this.columnMapping[ctx.name] ?? null;
-    const matchedCol = matchedName ? this.dataFrame.col(matchedName) : null;
+    const matchedCol = this.mappedColumn(ctx.name);
 
-    if (matchedCol)
-      editor.setColumn?.(matchedCol);
-
-    const commit = (v: DG.Column | null): void => {
-      this.columnMapping[ctx.name] = v?.name ?? null;
-      if (v && this.switchPropertyType(ctx.name, rowId, v))
-        return;
-      editor.setColumn?.(v);
-      this.emitChange();
-    };
+    const commit = (v: DG.Column | null): void => this.setPropertyColumn(ctx.name, v);
 
     // Local workaround to avoid blocking statistics releases on a js-api change.
     // Proper fix: expose `changeOnHover` on IColumnInputInitOptions.
@@ -487,6 +463,11 @@ export class MpoProfileEditor {
     return Array.from(this.dataFrame.columns).filter((c) => isMpoNumericColumn(c)).map((c) => c.name);
   }
 
+  private mappedColumn(name: string): DG.Column | null {
+    const colName = this.columnMapping[name];
+    return colName ? this.dataFrame?.col(colName) ?? null : null;
+  }
+
   private resolveColumn(name: string): DG.Column | null {
     if (!this.dataFrame)
       return null;
@@ -544,21 +525,6 @@ export class MpoProfileEditor {
     this.emitChange();
   }
 
-  private buildModeGear(
-    rowId: string,
-    prop: PropertyDesirability,
-    editor: DesirabilityEditor,
-  ): HTMLElement {
-    return ui.icons.settings(() => {
-      const name = this.rowCtx.get(rowId)?.name;
-      if (!name)
-        return;
-      const colName = this.columnMapping[name];
-      const col = colName ? this.dataFrame?.col(colName) ?? null : null;
-      this.openModeDialog(name, rowId, prop, editor, col);
-    }, 'Settings');
-  }
-
   private buildRowControls(rowId: string, prop: PropertyDesirability): HTMLElement {
     const compute = this.buildComputeIcon(prop);
     const add = ui.icons.add(() => this.insertRowAfterRow(rowId), 'Add');
@@ -566,33 +532,7 @@ export class MpoProfileEditor {
     return ui.divH([compute, add, del], 'statistics-mpo-control-buttons');
   }
 
-  private openModeDialog(
-    name: string,
-    rowId: string,
-    prop: PropertyDesirability,
-    editor: DesirabilityEditor,
-    mappedCol: DG.Column | null = null,
-  ): void {
-    new DesirabilityModeDialog(
-      name,
-      prop,
-      (patch) => {
-        const p = this.profile?.properties[name];
-        if (p)
-          Object.assign(p, patch);
-        editor.redrawAll();
-      },
-      (newProp) => {
-        if (!this.profile)
-          return;
-        this.profile.properties[name] = newProp;
-        this.rebuildRow(name, rowId);
-      },
-      mappedCol,
-    ).show();
-  }
-
-  private renameProperty(oldName: string, newName: string): boolean {
+  renameProperty(oldName: string, newName: string): boolean {
     if (!this.profile || oldName === newName)
       return false;
 
@@ -616,6 +556,7 @@ export class MpoProfileEditor {
     const ctx = this.rowCtx.get(rowId);
     if (ctx)
       ctx.name = newName;
+    this.updatePropertyCell(rowId);
 
     this.emitChange();
     return true;

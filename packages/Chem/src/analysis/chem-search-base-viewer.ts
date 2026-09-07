@@ -18,7 +18,9 @@ export enum RowSourceTypes {
 export class ChemSearchBaseViewer extends DG.JsViewer {
   isEditedFromSketcher: boolean = false;
   gridSelect: boolean = false;
-  name: string = '';
+  private _name: string = '';
+  get name(): string { return this._name; }
+  set name(x: string | undefined) { this._name = x ?? ''; }
   distanceMetric: string;
   limit: number;
   fingerprint: string;

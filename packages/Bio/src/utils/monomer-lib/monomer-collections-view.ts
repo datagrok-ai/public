@@ -10,6 +10,7 @@ import {MonomerSelectionWidget} from '@datagrok-libraries/bio/src/utils/monomer-
 
 import {MonomerLibManager} from './lib-manager';
 import {MonomerCollectionHandler, MonomerCollectionInfo} from './monomer-collection-handler';
+import {attachMonomerCollectionsAi} from './ai-functions';
 import {SEM_TYPES} from '../constants';
 import {_package} from '../../package';
 
@@ -50,6 +51,7 @@ export class MonomerCollectionsView {
     this.view.name = MonomerCollectionsView.VIEW_NAME;
     // Store reference for the handler to find
     (this.view as any)._mcView = this;
+    attachMonomerCollectionsAi(this.view, this);
 
     // Ribbon
     const addBtn = ui.icons.add(() => this.showAddCollectionDialog(), 'Create new monomer collection');

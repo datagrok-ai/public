@@ -81,6 +81,26 @@ branch picks.
    selection).
 
 
+## Notes
+
+- **Why ui-only?** Canvas-rendered ECharts viewers (Sunburst, Tree,
+  Timelines) use a single `<canvas>` element inside the ECharts
+  instance container. There are no per-segment / per-branch DOM
+  elements to query, hover, or click. Any "click" needs canvas
+  pixel coordinates, which depend on viewport size, ECharts layout
+  algorithm, and theme — making programmatic synthesis brittle and
+  not equivalent to the actual UI invariant.
+- **JS-API fallbacks remain in companion specs** (`sunburst-spec.ts`,
+  `tree-spec.ts`) for the contract level (filter ∧ selection
+  cardinalities, `setOptions`/`props.get` round-trips), but the UI-
+  gesture invariant itself is documented here for manual
+  verification.
+- **Canonical manual-only, by design.** `sunburst-multi-selection`,
+  `tree-shift-click-multi-select`, and the Select Columns
+  per-column toggle are deliberately manual-only tests — not a
+  deferral and not a coverage gap. There is no plan to automate
+  them; this file is the authoritative catalog for human QA.
+
 ---
 {
   "order": 35,

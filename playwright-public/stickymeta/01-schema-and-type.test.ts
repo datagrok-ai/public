@@ -38,7 +38,9 @@ test('Sticky Meta: entity type & schema lifecycle (create, edit, delete)', async
 
     await typeDialog.locator('[name="input-Matching-expression"]').click();
     await page.keyboard.press('Control+A');
-    await page.keyboard.type('semtype=molecule', { delay: 10 });
+    // Nothing here depends on what the expression matches, and a molecule matcher would put this
+    // schema into spec 02's Sticky meta dialog while both run — a run-unique source tag cannot.
+    await page.keyboard.type(`source=${PREFIX}${suffix}`, { delay: 10 });
     await expect(typeDialog.locator('[name="button-OK"]')).not.toHaveClass(/disabled/);
 
     await H.clickDialogButton(page, 'dialog-Create-a-new-entity-type', 'button-OK');

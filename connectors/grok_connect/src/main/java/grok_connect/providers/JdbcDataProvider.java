@@ -262,21 +262,8 @@ public abstract class JdbcDataProvider extends DataProvider {
                             statement.setString(n + i + 1, s);
                     }
                     else {
-                        if (param.value == null) {
-                            switch (param.propertyType) {
-                                case Types.INT:
-                                case Types.FLOAT:
-                                    statement.setNull(n + i + 1, java.sql.Types.NUMERIC);
-                                    break;
-                                case Types.BIG_INT:
-                                    statement.setNull(n + i + 1, java.sql.Types.BIGINT);
-                                case Types.BOOL:
-                                    statement.setNull(n + i + 1, java.sql.Types.BOOLEAN);
-                                default:
-                                    statement.setNull(n + i + 1, java.sql.Types.VARCHAR);
-                                    break;
-                            }
-                        }
+                        if (param.value == null)
+                            setNullParameter(statement, n + i + 1, param.propertyType);
                         else
                             statement.setObject(n + i + 1, param.value);
                     }
@@ -427,7 +414,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                     case Types.BOOL:
                         queryBuffer.append(interpolateBool(param));
                         return;
-                    case Types.STRING: //todo: support escaping
+                    case Types.STRING:
                         queryBuffer.append(interpolateString(param));
                         return;
                     case Types.LIST: //todo: extract submethod
@@ -435,7 +422,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                             @SuppressWarnings(value = "unchecked")
                             ArrayList<String> value = ((ArrayList<String>) param.value);
                             for (int i = 0; i < value.size(); i++) {
-                                queryBuffer.append(String.format("'%s'", value.get(i)));
+                                queryBuffer.append(String.format("'%s'", escapeSqlString(value.get(i))));
                                 if (i < value.size() - 1)
                                     queryBuffer.append(",");
                             }
@@ -445,7 +432,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                             throw new UnsupportedOperationException("Non-string lists are not implemented for manual param interpolation providers");
                         }
                     default:
-                        queryBuffer.append(param.value.toString());
+                        queryBuffer.append(sqlNumericLiteral(param.value));
                 }
                 return;
             }
@@ -455,8 +442,40 @@ public abstract class JdbcDataProvider extends DataProvider {
                 .append(paramName); // there are no such FuncParam, so it means that it is not a param
     }
 
+    protected void setNullParameter(PreparedStatement statement, int index, String propertyType) throws SQLException {
+        switch (propertyType) {
+            case Types.INT:
+            case Types.FLOAT:
+                statement.setNull(index, java.sql.Types.NUMERIC);
+                break;
+            case Types.BIG_INT:
+                statement.setNull(index, java.sql.Types.BIGINT);
+                break;
+            case Types.BOOL:
+                statement.setNull(index, java.sql.Types.BOOLEAN);
+                break;
+            default:
+                statement.setNull(index, java.sql.Types.VARCHAR);
+        }
+    }
+
+    private static final Pattern NUMERIC_LITERAL = Pattern.compile("[+-]?\\d+(\\.\\d+)?([eE][+-]?\\d+)?");
+
+    /** Escape a value for a single-quoted SQL string literal (standard single-quote doubling). */
+    public static String escapeSqlString(String value) {
+        return value == null ? null : value.replace("'", "''");
+    }
+
+    /** A value that will be emitted unquoted into SQL as a number; rejects anything that is not numeric. */
+    protected String sqlNumericLiteral(Object value) {
+        String s = String.valueOf(value);
+        if (!NUMERIC_LITERAL.matcher(s).matches())
+            throw new IllegalArgumentException("Non-numeric value for numeric parameter: " + s);
+        return s;
+    }
+
     protected String interpolateString(FuncParam param) {
-        return String.format("'%s'", param.value.toString());
+        return String.format("'%s'", escapeSqlString(param.value.toString()));
     }
 
     protected String interpolateBool(FuncParam param) {
@@ -560,17 +579,16 @@ public abstract class JdbcDataProvider extends DataProvider {
             int rowCount = 0;
             do {
                 rowCount++;
+                if (!dryRun && queryMonitor.checkCancelledIdResultSet(queryRun.id)) {
+                    logger.info("Query was canceled");
+                    queryMonitor.removeResultSet(queryRun.id);
+                    throw new QueryCancelledByUser();
+                }
                 for (int c = 1; c < columnCount + 1; c++) {
-                    Object value = getObjectFromResultSet(resultSet, c);
-
-                    if (dryRun) continue;
-                    resultSetManager.processValue(value, c);
-
-                    if (queryMonitor.checkCancelledIdResultSet(queryRun.id)) {
-                        logger.info("Query was canceled");
-                        queryMonitor.removeResultSet(queryRun.id);
-                        throw new QueryCancelledByUser();
-                    }
+                    if (dryRun)
+                        getObjectFromResultSet(resultSet, c);
+                    else if (!resultSetManager.readFast(resultSet, c))
+                        resultSetManager.processValue(getObjectFromResultSet(resultSet, c), c);
                 }
             } while ((maxIterations < 0 || rowCount < maxIterations) && resultSet.next());
 
@@ -844,9 +862,10 @@ public abstract class JdbcDataProvider extends DataProvider {
 
     public String addBrackets(String name) {
         String brackets = descriptor.nameBrackets;
+        String close = brackets.substring(brackets.length() - 1);
         return Arrays.stream(name.split("\\."))
                 .map((str) -> str.startsWith(brackets.substring(0, 1)) ? str
-                        : brackets.charAt(0) + str + brackets.substring(brackets.length() - 1))
+                        : brackets.charAt(0) + str.replace(close, close + close) + close)
                 .collect(Collectors.joining("."));
     }
 
@@ -1314,7 +1333,7 @@ public abstract class JdbcDataProvider extends DataProvider {
     }
 
     public String castParamValueToSqlDateTime(FuncParam param) {
-        return "datetime('" + param.value.toString() + "')";
+        return "datetime('" + escapeSqlString(param.value.toString()) + "')";
     }
 
     public java.util.Properties defaultConnectionProperties(DataConnection conn) {

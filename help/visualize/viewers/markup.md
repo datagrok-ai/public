@@ -45,12 +45,12 @@ Here is how to embed iframes:
 | Stretch | boolean |  |
 | Content | string |  |
 | Mode | textinterpretationmode |  |
-| Markup Enabled | boolean | Whether the rendered html is passed through Grok''s [Markup] engine (don''t confuse it with the Markup that might be used for html rendering) |
+| Markup Enabled | boolean | Whether the rendered html is passed through Grok's [Markup] engine (don't confuse it with the Markup that might be used for html rendering) |
 | Allow Dynamic Menus | boolean |  |
 | Show Context Menu | boolean | Properties common for all viewers todo: use code generation |
 | Title | string |  |
 | Description | string | Viewer description that gets shown at the *Descriptor Position*. Markup is supported. |
-| Help | string | Help to be shown when user clicks on the ''?'' icon on top. Could either be in markdown, or a URL (starting with ''/'' or ''http''). |
+| Help | string | Help to be shown when user clicks on the '?' icon on top. Could either be in markdown, or a URL (starting with '/' or 'http'). |
 | Description Position | flexposition |  |
 | Description Visibility Mode | visibilitymode |  |
 | **Description** | | |

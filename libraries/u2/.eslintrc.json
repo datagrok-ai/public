@@ -40,8 +40,12 @@
       "excludedFiles": ["src/dg/**/*.ts"],
       "rules": {
         "no-restricted-imports": ["error", {
+          "paths": [{
+            "name": "datagrok-api",
+            "message": "L0-L2 are platform-free: datagrok-api may only be imported under src/dg/ (see core/docs/features/ui2/PLAN.md D3)."
+          }],
           "patterns": [{
-            "group": ["datagrok-api", "datagrok-api/*"],
+            "group": ["datagrok-api/*", "!datagrok-api/u2core"],
             "message": "L0-L2 are platform-free: datagrok-api may only be imported under src/dg/ (see core/docs/features/ui2/PLAN.md D3)."
           }]
         }]

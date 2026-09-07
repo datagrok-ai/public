@@ -1,0 +1,14 @@
+# Use the real `git` CLI rather than libgit2 when resolving git dependencies.
+#
+# Why: `databricks-adbc` has a C# submodule `csharp/hiveserver2` whose
+# `.gitmodules` entry uses an SSH URL (`git@github.com:adbc-drivers/hiveserver2.git`).
+# libgit2's SSH transport fails on Windows ("failed to set hostkey preference"),
+# and there is no cargo option to skip submodule fetching. The submodule repo
+# is public, so shelling out to the real git CLI lets the user's git config
+# rewrite the URL to HTTPS via:
+#
+#   git config --global url."https://github.com/".insteadOf "git@github.com:"
+#
+# That rewrite only applies when cargo invokes git directly.
+[net]
+git-fetch-with-cli = true

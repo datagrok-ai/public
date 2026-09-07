@@ -341,8 +341,8 @@ export namespace funcs {
   /**
   Extracts a sub-region of each sequence between the given positions into a new column.
   */
-  export async function extractRegion(table: DG.DataFrame , sequence: DG.Column , start: string | null, end: string | null): Promise<DG.Column> {
-    return await grok.functions.call('Bio:ExtractRegion', { table, sequence, start, end });
+  export async function extractRegion(table: DG.DataFrame , sequence: DG.Column , start: string | null, end: string | null, name?: string ): Promise<DG.Column> {
+    return await grok.functions.call('Bio:ExtractRegion', { table, sequence, start, end, name });
   }
 
   /**

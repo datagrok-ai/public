@@ -51,6 +51,15 @@ public class TablesBlob {
         length = buffer.bufPos;
     }
 
+    public int[] getColumnsOffsets(int idx) {
+        return columnsOffsets[idx];
+    }
+
+    /// Offset of the metadata tail; the last column of the last table ends here.
+    public int getLength() {
+        return length;
+    }
+
     /// Serializes the [TablesBlob] into array of bytes [Uint8List].
     public byte[] toByteArray() {
         GsonBuilder builder = new GsonBuilder();

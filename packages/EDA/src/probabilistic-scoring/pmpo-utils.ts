@@ -5,14 +5,14 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {generateMpoFileName, MPO_PROFILE_CHANGED_EVENT} from '@datagrok-libraries/statistics/src/mpo/utils';
+import {generateMpoFileName} from '@datagrok-libraries/statistics/src/mpo/utils';
 import '../../css/pmpo.css';
 
 import {COLORS, DESCR_TABLE_TITLE, DESCR_TITLE, DescriptorStatistics, DesirabilityProfileProperties,
-  DESIRABILITY_COL_NAME, FOLDER, P_VAL, PMPO_COMPUTE_FAILED, PmpoParams, SCORES_TITLE,
+  DESIRABILITY_COL_NAME, P_VAL, PMPO_COMPUTE_FAILED, PmpoParams, SCORES_TITLE,
   SELECTED_TITLE, STAT_TO_TITLE_MAP, TINY, WEIGHT_TITLE, CorrelationTriple,
   BASIC_RANGE_SIGMA_COEFFS, EXTENDED_RANGE_SIGMA_COEFFS, EQUALITY_SIGN,
-  PREFERABLE_CATEGORIES} from './pmpo-defs';
+  PMPO_FOLDER, PREFERABLE_CATEGORIES} from './pmpo-defs';
 import {computeSigmoidParamsFromX0, getCutoffs, gaussDesirabilityFunc, sigmoidS,
   solveNormalIntersection} from './stat-tools';
 import {getColorScaleDiv} from '../pareto-optimization/utils';
@@ -340,16 +340,6 @@ export function getWeightsTable(params: Map<string, PmpoParams>): DG.DataFrame {
   ]);
 } // getWeightsTable
 
-/** Loads pMPO model parameters from a file.
- * @param file FileInfo object pointing to the JSON model file.
- */
-export async function loadPmpoParams(file: DG.FileInfo): Promise<Map<string, PmpoParams>> {
-  const jsonText = await file.readAsString();
-  const parsedObj = JSON.parse(jsonText);
-
-  return new Map(Object.entries(parsedObj.properties));
-} // loadPmpoParams
-
 /** Returns JSON object representing an MPO Desirability Profile.
  * @param params Map of descriptor names to their pMPO parameters.
  * @param name Name of the desirability profile.
@@ -365,9 +355,21 @@ export function getDesirabilityProfileJson(params: Map<string, PmpoParams>, useS
   };
 }
 
-/** Saves pMPO model parameters to a file.
+export async function savePmpoFile(params: Map<string, PmpoParams>, name: string,
+  description: string): Promise<string> {
+  const path = `${PMPO_FOLDER}/${generateMpoFileName(name, new Set())}`;
+  await grok.dapi.files.writeAsText(path, JSON.stringify({
+    'type': 'Probabilistic MPO Model',
+    'name': name,
+    'description': description,
+    'properties': Object.fromEntries(params),
+  }, null, 2));
+  return path;
+}
+
+/** Saves the pMPO model: as an MPO Desirability Profile, or as a pMPO-format file.
  * @param params Map of descriptor names to their pMPO parameters.
- * @param modelName Suggested model name (used as default file name).
+ * @param modelName Suggested profile name.
  */
 export async function saveModel(params: Map<string, PmpoParams>, modelName: string,
   useSigmoidalCorrection: boolean): Promise<void> {
@@ -378,39 +380,26 @@ export async function saveModel(params: Map<string, PmpoParams>, modelName: stri
     tooltipText: 'Save the model as an MPO Desirability Profile. If disabled, the model is saved in the pMPO format.',
   });
 
-  const objectToSave = () => {
-    if (typeInput.value) {
-      return getDesirabilityProfileJson(
-        params,
-        useSigmoidalCorrection,
-        nameInput.value,
-        descriptionInput.value,
-        false,
-      );
-    }
-
-    return {
-      'type': 'Probabilistic MPO Model',
-      'name': nameInput.value,
-      'description': descriptionInput.value,
-      'properties': Object.fromEntries(params),
-    };
-  };
-
   const dlg = ui.dialog({title: 'Save model'})
     .add(nameInput)
     .add(descriptionInput)
     .add(typeInput)
     .addButton('Save', async () => {
       try {
-        const files = await grok.dapi.files.list(FOLDER);
-        const existingFileNames = new Set(files.map((f) => f.name));
-        const fileName = generateMpoFileName(nameInput.value, existingFileNames);
-        const path = `${FOLDER}/${fileName}`;
-        const jsonString = JSON.stringify(objectToSave(), null, 2);
-        await grok.dapi.files.writeAsText(path, jsonString);
-        grok.events.fireCustomEvent(MPO_PROFILE_CHANGED_EVENT, {});
-        grok.shell.info(`Saved to ${path}`);
+        if (typeInput.value) {
+          const profileJson = getDesirabilityProfileJson(
+            params,
+            useSigmoidalCorrection,
+            nameInput.value,
+            descriptionInput.value,
+            false,
+          );
+          await grok.functions.call('Chem:saveMpoProfile', {profileJson: JSON.stringify(profileJson)});
+          grok.shell.info(`Saved MPO profile "${nameInput.value}".`);
+        } else {
+          const path = await savePmpoFile(params, nameInput.value, descriptionInput.value);
+          grok.shell.info(`Saved to ${path}`);
+        }
       } catch (err) {
         grok.shell.error(`Failed to save: ${err instanceof Error ? err.message : 'the platform issue'}.`);
       }

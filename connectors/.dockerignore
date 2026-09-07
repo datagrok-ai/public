@@ -22,3 +22,12 @@
 
 .dockerignore
 Dockerfile
+
+# Superseded connector drivers now resolved from Maven (CHANGELOG 2.8.0) — never bake
+# leftover copies from a developer's lib/ into the image (avoids duplicate drivers).
+grok_connect/lib/AthenaJDBC42-*.jar
+grok_connect/lib/DatabricksJDBC42*.jar
+grok_connect/lib/cdata.jdbc.*.jar
+grok_connect/lib/jackson-annotations-2.14.3.jar
+grok_connect/lib/jackson-databind-2.14.3.jar
+grok_connect/lib/jackson-core-2.14.3.jar

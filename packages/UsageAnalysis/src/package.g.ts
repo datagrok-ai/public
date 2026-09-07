@@ -109,6 +109,15 @@ export function serviceLogsApp(path?: string, params?: any, limit?: number) : an
   return PackageFunctions.serviceLogsApp(path, params, limit);
 }
 
+//name: Cloud Logs
+//output: view result
+//meta.role: adminApp,app
+//meta.url: /cloud-logs
+//meta.icon: images/icons/service-logs.svg
+export function cloudLogsApp() : any {
+  return PackageFunctions.cloudLogsApp();
+}
+
 //input: dynamic treeNode 
 //meta.role: appTreeBrowser
 //meta.app: Service Logs

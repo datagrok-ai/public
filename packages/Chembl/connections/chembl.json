@@ -3,8 +3,7 @@
   "name": "Chembl",
   "friendlyName": "CHEMBL",
   "parameters": {
-    "server": "db.datagrok.ai",
-    "port": 54325,
+    "server": "${Chembl<DockerContainer>}",
     "db": "chembl",
     "cacheResults": true
   },

@@ -16,7 +16,7 @@ export class InputValueControl extends ClassicPreset.Control {
   element(): HTMLElement | null {
     if (this.editor === undefined) {
       this.editor = buildInputValueEditor(this.node,
-        () => this.node.editorBridge?.notifyParamsChanged(this.node.id));
+        () => this.node.editorBridge?.notifyParamsChanged(this.node.id), {host: 'node'});
     }
     return this.editor?.root ?? null;
   }
@@ -24,5 +24,11 @@ export class InputValueControl extends ClassicPreset.Control {
   /** Reflect a store change made elsewhere into the DG input — programmatic, never reported as an edit. */
   sync(): void {
     this.editor?.sync();
+  }
+
+  /** Throw the cached editor away (a Property Input changed shape) — the next render builds a fresh one. */
+  rebuild(): void {
+    this.editor?.root.remove();
+    this.editor = undefined;
   }
 }

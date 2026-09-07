@@ -1,0 +1,1395 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Artifact Catalog Walkthrough</title>
+</head>
+<body>
+<style>
+  :root {
+    --bg: #f4f6f8;
+    --surface: #ffffff;
+    --ink: #21272e;
+    --muted: #5c6673;
+    --line: #dbe1e8;
+    --accent: #2083d5;
+    --accent-ink: #17629f;
+    --accent-soft: #e3effb;
+    --ok: #2e8f57;
+    --ok-soft: #e4f3ea;
+    --warn: #a97a10;
+    --warn-soft: #fbf3df;
+    --bad: #c4453a;
+    --bad-soft: #fae9e7;
+    --note-bg: #ffffff;
+    --code-bg: #eef1f4;
+    --shadow: 0 1px 3px rgba(20, 30, 40, .08), 0 4px 14px rgba(20, 30, 40, .06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #14171b;
+      --surface: #1c2127;
+      --ink: #d9dee4;
+      --muted: #96a0ab;
+      --line: #2d343c;
+      --accent: #4da3e8;
+      --accent-ink: #7dbcee;
+      --accent-soft: #1c2c3b;
+      --ok: #4fae78;
+      --ok-soft: #1c2f25;
+      --warn: #d3a13e;
+      --warn-soft: #322a17;
+      --bad: #e07268;
+      --bad-soft: #38211f;
+      --note-bg: #1c2127;
+      --code-bg: #262c33;
+      --shadow: 0 1px 3px rgba(0, 0, 0, .4), 0 4px 14px rgba(0, 0, 0, .3);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #14171b;
+    --surface: #1c2127;
+    --ink: #d9dee4;
+    --muted: #96a0ab;
+    --line: #2d343c;
+    --accent: #4da3e8;
+    --accent-ink: #7dbcee;
+    --accent-soft: #1c2c3b;
+    --ok: #4fae78;
+    --ok-soft: #1c2f25;
+    --warn: #d3a13e;
+    --warn-soft: #322a17;
+    --bad: #e07268;
+    --bad-soft: #38211f;
+    --note-bg: #1c2127;
+    --code-bg: #262c33;
+    --shadow: 0 1px 3px rgba(0, 0, 0, .4), 0 4px 14px rgba(0, 0, 0, .3);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 15px/1.55 "Segoe UI", system-ui, Roboto, "Helvetica Neue", sans-serif;
+  }
+  code, .mono {
+    font-family: "Cascadia Code", ui-monospace, Consolas, Menlo, monospace;
+    font-size: .86em;
+    background: var(--code-bg);
+    border-radius: 3px;
+    padding: .08em .35em;
+  }
+  a { color: var(--accent-ink); text-decoration: none; }
+  a:hover, a:focus-visible { text-decoration: underline; outline: none; }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+
+  .wrap { max-width: 1140px; margin: 0 auto; padding: 40px 24px 80px; }
+
+  /* ---------- hero ---------- */
+  .eyebrow {
+    font-size: 12px; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--accent-ink); margin: 0 0 10px; font-weight: 600;
+  }
+  h1 { font-size: 34px; line-height: 1.15; margin: 0 0 12px; text-wrap: balance; font-weight: 650; }
+  .lede { max-width: 62ch; color: var(--muted); margin: 0 0 26px; font-size: 16.5px; }
+
+  .personas { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; }
+  .persona {
+    display: flex; gap: 10px; align-items: center;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+    padding: 10px 14px; min-width: 230px; flex: 1;
+  }
+  .persona .avatar {
+    width: 34px; height: 34px; border-radius: 50%; flex: none;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700; color: #fff; line-height: 1;
+    letter-spacing: .02em;
+  }
+  .persona b { display: block; font-size: 14px; }
+  .persona div span { display: block; font-size: 12.5px; color: var(--muted); }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; margin-bottom: 22px; font-size: 13px; color: var(--muted); }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 11px; font-weight: 700; letter-spacing: .03em;
+    border-radius: 4px; padding: 2px 7px; vertical-align: middle; white-space: nowrap;
+  }
+  .badge-live { background: var(--ok-soft); color: var(--ok); border: 1px solid var(--ok); }
+  .badge-planned { background: var(--warn-soft); color: var(--warn); border: 1px dashed var(--warn); }
+
+  .navfab {
+    position: fixed; top: 14px; left: 14px; z-index: 40;
+    display: flex; align-items: center; gap: 8px;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 8px;
+    padding: 7px 13px; font: 600 13px/1 "Segoe UI", system-ui, Roboto, sans-serif;
+    color: var(--ink); cursor: pointer; box-shadow: var(--shadow);
+  }
+  .navfab:hover { border-color: var(--accent); color: var(--accent-ink); }
+  .navfab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .sidenav {
+    position: fixed; top: 56px; left: 14px; z-index: 39; width: 252px;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+    box-shadow: var(--shadow); padding: 8px; display: none;
+    max-height: calc(100vh - 76px); overflow-y: auto;
+  }
+  body.nav-open .sidenav { display: block; }
+  .sidenav a {
+    display: block; padding: 7px 11px; border-radius: 6px;
+    color: var(--ink); font-size: 13.5px;
+  }
+  .sidenav a .n { color: var(--muted); margin-right: 9px; font-variant-numeric: tabular-nums; display: inline-block; width: 12px; }
+  .sidenav a:hover { background: var(--accent-soft); text-decoration: none; }
+  .sidenav a.act { background: var(--accent-soft); color: var(--accent-ink); font-weight: 650; }
+  .sidenav a:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+  /* ---------- chapters & slides ---------- */
+  .chapter { margin-top: 64px; }
+  .ch-head { display: flex; gap: 16px; align-items: baseline; border-bottom: 2px solid var(--line); padding-bottom: 10px; margin-bottom: 8px; }
+  .ch-num { font-size: 30px; font-weight: 750; color: var(--accent); font-variant-numeric: tabular-nums; }
+  .ch-head h2 { font-size: 23px; margin: 0; text-wrap: balance; }
+  .story {
+    margin: 10px 0 28px; padding: 10px 16px; border-left: 3px solid var(--accent);
+    color: var(--muted); font-style: italic; max-width: 75ch; font-size: 15.5px;
+  }
+  .story b { color: var(--ink); font-style: normal; }
+
+  .slide { margin-bottom: 46px; }
+  .slide-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .step {
+    background: var(--accent); color: #fff; border-radius: 6px;
+    font-size: 12.5px; font-weight: 700; padding: 3px 8px; font-variant-numeric: tabular-nums;
+  }
+  .slide-head h3 { margin: 0; font-size: 17.5px; }
+
+  .slide-grid { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 18px; align-items: start; }
+  @media (max-width: 900px) { .slide-grid { grid-template-columns: minmax(0, 1fr); } }
+
+  .stage { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+
+  .frame {
+    border: 1px solid var(--line); border-radius: 10px; background: var(--surface);
+    box-shadow: var(--shadow); overflow: hidden;
+  }
+  .frame-bar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 12px; border-bottom: 1px solid var(--line); background: var(--surface);
+  }
+  .dots { display: flex; gap: 5px; }
+  .dots i { width: 9px; height: 9px; border-radius: 50%; background: var(--line); }
+  .frame-url { font-size: 11.5px; color: var(--muted); font-family: Consolas, monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .frame-scroll { overflow-x: auto; }
+
+  /* ---------- the mocked Datagrok screen (always light — it depicts the product) ---------- */
+  .screen {
+    position: relative; min-width: 730px;
+    background: #ffffff; color: #2b3037;
+    font: 12.5px/1.45 "Segoe UI", system-ui, Roboto, sans-serif;
+  }
+  .screen .mut { color: #7d8792; }
+  .s-top {
+    display: flex; align-items: center; gap: 10px;
+    background: #f5f7f9; border-bottom: 1px solid #dde3e9; padding: 6px 12px;
+    font-size: 12px; color: #55606b;
+  }
+  .s-top b { color: #2b3037; font-weight: 600; }
+  .s-cols { display: flex; align-items: stretch; }
+  .s-tree { width: 188px; flex: none; background: #f7f9fa; border-right: 1px solid #e2e7ec; padding: 8px 0; }
+  .t-i { padding: 3px 10px 3px 26px; white-space: nowrap; }
+  .t-g { padding: 5px 10px 3px 14px; font-weight: 600; color: #55606b; }
+  .t-app { padding: 5px 10px; font-weight: 650; color: #2b3037; display: flex; align-items: center; gap: 6px; }
+  .t-sel { background: #e1eefb; color: #17629f; font-weight: 600; }
+  .t-dim { color: #8a939c; }
+  .s-main { flex: 1; padding: 12px 14px; min-width: 0; }
+  .s-ctx { width: 252px; flex: none; border-left: 1px solid #e2e7ec; background: #fbfcfd; padding: 10px 12px; }
+  .s-ctx h4 { margin: 0 0 6px; font-size: 12.5px; color: #2b3037; }
+  .s-ctx h5 { margin: 12px 0 4px; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: #7d8792; }
+
+  .vtitle { font-size: 14px; font-weight: 650; margin: 0 0 8px; display: flex; align-items: center; gap: 8px; }
+  .ribbon { display: flex; gap: 4px; margin-left: auto; align-items: center; position: relative; }
+  .ric {
+    width: 22px; height: 22px; border-radius: 4px; display: grid; place-items: center;
+    color: #55606b; font-size: 12px; border: 1px solid transparent;
+  }
+  .ric.hl { background: #e1eefb; border-color: #9cc5e8; color: #17629f; }
+  .tt {
+    position: absolute; top: 26px; right: 0; background: #3b4652; color: #fff;
+    font-size: 11px; padding: 3px 8px; border-radius: 3px; white-space: nowrap; z-index: 3;
+  }
+
+  .searchbar { display: flex; gap: 8px; margin-bottom: 10px; align-items: center; }
+  .searchbox {
+    flex: 1; max-width: 330px; border: 1px solid #c9d2da; border-radius: 4px;
+    padding: 3px 9px; color: #7d8792; background: #fff; display: flex; gap: 7px; align-items: center;
+  }
+  .searchbox b { color: #2b3037; font-weight: 500; }
+
+  /* dialogs */
+  .dlg-veil { background: #eef1f4; padding: 20px; display: flex; justify-content: center; }
+  .dlg { background: #fff; border: 1px solid #cfd7de; box-shadow: 0 8px 28px rgba(30,40,50,.22); border-radius: 4px; }
+  .dlg-t { padding: 8px 14px; font-weight: 650; font-size: 13px; border-bottom: 1px solid #e6eaee; display: flex; justify-content: space-between; }
+  .dlg-t .x { color: #9aa3ac; font-weight: 400; }
+  .dlg-b { padding: 12px 14px; display: flex; flex-direction: column; gap: 7px; }
+  .dlg-f { padding: 10px 14px; border-top: 1px solid #e6eaee; display: flex; justify-content: flex-end; gap: 8px; }
+  .f-row { display: grid; grid-template-columns: 96px 1fr; gap: 10px; align-items: center; }
+  .f-row label { color: #55606b; text-align: right; }
+  .inp { border: 1px solid #c9d2da; border-radius: 3px; padding: 3px 8px; background: #fff; min-height: 16px; }
+  .inp.dis { background: #f0f2f4; color: #8a939c; }
+  .inp.area { min-height: 44px; }
+  .inp .caret { float: right; color: #9aa3ac; font-size: 10px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 4px; }
+  .chip {
+    background: #e3effb; border: 1px solid #bcd7f0; color: #17629f;
+    border-radius: 10px; padding: 0 8px; font-size: 11.5px; white-space: nowrap;
+  }
+  .chip.tag { background: #f0f2f4; border-color: #d5dbe1; color: #55606b; }
+  .chip .x { margin-left: 5px; color: #9aa3ac; }
+  .hint { font-size: 11.5px; color: #7d8792; font-style: italic; }
+  .gnote { font-size: 11px; color: #7d8792; }
+  .gnote code { background: #f0f2f4; color: #55606b; }
+
+  .btn {
+    display: inline-block; border: 1px solid #c9d2da; background: #fff; color: #2b3037;
+    border-radius: 3px; padding: 3px 14px; font-size: 12.5px; font-weight: 500;
+  }
+  .btn-primary { background: #2083d5; border-color: #2083d5; color: #fff; font-weight: 600; }
+  .btn-sm { padding: 2px 10px; font-size: 12px; }
+  .btn-dis { opacity: .55; }
+
+  /* toasts (grok.shell balloons) */
+  .toast {
+    position: absolute; top: 10px; right: 10px; z-index: 4;
+    max-width: 290px; background: #eef6fd; border: 1px solid #a9cfef; color: #1f5c92;
+    border-radius: 4px; padding: 8px 12px; font-size: 12px; box-shadow: 0 3px 12px rgba(30,40,50,.18);
+  }
+  .toast.warn { background: #fdf6e7; border-color: #e4c98a; color: #8a6510; }
+  .toast .tb { display: block; margin-top: 5px; }
+
+  /* grids */
+  .gridt { border-collapse: collapse; width: 100%; font-size: 12px; background: #fff; }
+  .gridt th {
+    background: #f5f7f9; border: 1px solid #e2e7ec; padding: 3px 8px;
+    text-align: left; font-weight: 600; color: #55606b; white-space: nowrap;
+  }
+  .gridt td { border: 1px solid #e9edf1; padding: 3px 8px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .gridt tr.sel td { background: #e1eefb; }
+
+  .pill {
+    display: inline-block; font-size: 11px; font-weight: 600; border-radius: 9px; padding: 0 8px;
+  }
+  .p-pending { background: #fbf3df; color: #8a6510; }
+  .p-approved { background: #e4f3ea; color: #24734a; }
+  .p-rejected { background: #fae9e7; color: #a53a30; }
+
+  /* cards (d4-gallery-item) */
+  .cards { display: flex; flex-wrap: wrap; gap: 10px; }
+  .pcard {
+    width: 218px; border: 1px solid #e2e7ec; border-radius: 4px; background: #fff;
+    padding: 9px 11px; box-shadow: 0 1px 2px rgba(30,40,50,.06);
+  }
+  .pcard.sel { border-color: #9cc5e8; background: #f4f9fe; }
+  .pcard b { display: block; font-size: 12.5px; margin-bottom: 5px; }
+  .kv { border-collapse: collapse; font-size: 11.5px; }
+  .kv td { padding: 1px 0; vertical-align: top; }
+  .kv td:first-child { color: #7d8792; padding-right: 12px; }
+
+  /* facet filter panel */
+  .s-filters { width: 172px; flex: none; border-right: 1px solid #e9edf1; padding-right: 12px; margin-right: 12px; }
+  .facet { margin-bottom: 10px; }
+  .facet h6 { margin: 0 0 3px; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: #7d8792; }
+  .fo { display: flex; justify-content: space-between; padding: 1px 0 1px 4px; color: #2b3037; }
+  .fo .cnt { color: #9aa3ac; font-variant-numeric: tabular-nums; }
+  .fo.on { background: #e1eefb; color: #17629f; font-weight: 600; border-radius: 3px; }
+  .cb { display: inline-block; width: 10px; height: 10px; border: 1px solid #b3bcc5; border-radius: 2px; margin-right: 6px; background: #fff; }
+  .cb.on { background: #2083d5; border-color: #2083d5; }
+
+  /* context-panel bits */
+  .ctx-kv { border-collapse: collapse; font-size: 11.5px; width: 100%; }
+  .ctx-kv td { padding: 2px 0; vertical-align: top; }
+  .ctx-kv td:first-child { color: #7d8792; padding-right: 10px; white-space: nowrap; }
+  .ctx-btns { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .hist { list-style: none; margin: 4px 0 0; padding: 0; font-size: 11.5px; }
+  .hist li { padding: 2px 0; }
+  .hist .open { color: #17629f; margin-left: 6px; }
+  .glink { color: #17629f; }
+
+  /* callout numbers on anatomy slide */
+  .co {
+    position: absolute; width: 20px; height: 20px; border-radius: 50%;
+    background: #2083d5; color: #fff; font-size: 11.5px; font-weight: 700;
+    display: grid; place-items: center; z-index: 5; box-shadow: 0 1px 4px rgba(30,40,50,.3);
+  }
+
+  /* notification feed mocks */
+  .feed { display: flex; flex-direction: column; gap: 8px; }
+  .feed-cap { font-size: 12px; color: var(--muted); font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
+  .notif {
+    display: flex; gap: 10px; align-items: flex-start;
+    border: 1px dashed var(--warn); background: var(--warn-soft);
+    border-radius: 8px; padding: 9px 12px; font-size: 13px;
+  }
+  .notif .bell { flex: none; font-size: 15px; }
+  .notif .to { color: var(--muted); font-size: 12px; display: block; }
+  .notif .badge { margin-left: auto; flex: none; }
+
+  /* notes rail */
+  .notes { display: flex; flex-direction: column; gap: 10px; font-size: 13.5px; }
+  .note {
+    background: var(--note-bg); border: 1px solid var(--line); border-left: 3px solid var(--accent);
+    border-radius: 8px; padding: 10px 13px;
+  }
+  .note b.nt { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--accent-ink); margin-bottom: 4px; }
+  .note.warn { border-left-color: var(--warn); }
+  .note.warn b.nt { color: var(--warn); }
+  .note p { margin: 0 0 6px; } .note p:last-child { margin-bottom: 0; }
+
+  /* matrix & caveats */
+  .matrix { border-collapse: collapse; width: 100%; font-size: 13px; background: var(--surface); }
+  .matrix th, .matrix td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; }
+  .matrix th { background: var(--code-bg); }
+  .matrix td.y { color: var(--ok); font-weight: 650; }
+  .matrix td.n { color: var(--bad); font-weight: 650; }
+  .matrix td.p { color: var(--warn); font-weight: 650; }
+
+  .caveats { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 14px; margin-top: 18px; }
+  .caveat { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+  .caveat h4 { margin: 0 0 6px; font-size: 15px; }
+  .caveat p { margin: 0; color: var(--muted); font-size: 13.5px; }
+
+  footer { margin-top: 60px; border-top: 1px solid var(--line); padding-top: 16px; color: var(--muted); font-size: 13px; }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .slide { scroll-margin-top: 20px; }
+    html { scroll-behavior: smooth; }
+  }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <g id="mol1" fill="none" stroke="#4a5560" stroke-width="1.3" stroke-linecap="round">
+      <polygon points="13,4 20.8,8.5 20.8,17.5 13,22 5.2,17.5 5.2,8.5"/>
+      <line x1="14.4" y1="6.6" x2="18.9" y2="9.2"/>
+      <line x1="18.9" y1="16.8" x2="14.4" y2="19.4"/>
+      <line x1="7.1" y1="9.6" x2="7.1" y2="16.4"/>
+      <line x1="20.8" y1="8.5" x2="28" y2="4.5"/>
+      <line x1="28" y1="4.5" x2="34.5" y2="8.2"/>
+      <text x="36.5" y="11.5" stroke="none" fill="#4a5560" font-size="7.5" font-family="Segoe UI, sans-serif">NH</text>
+    </g>
+    <g id="ic-share">
+      <line x1="4.5" y1="8" x2="11.5" y2="3.8" stroke="currentColor" stroke-width="1.5"/>
+      <line x1="4.5" y1="8" x2="11.5" y2="12.2" stroke="currentColor" stroke-width="1.5"/>
+      <circle cx="11.8" cy="3.6" r="2.4" fill="currentColor"/>
+      <circle cx="4.2" cy="8" r="2.4" fill="currentColor"/>
+      <circle cx="11.8" cy="12.4" r="2.4" fill="currentColor"/>
+    </g>
+    <g id="mol2" fill="none" stroke="#4a5560" stroke-width="1.3" stroke-linecap="round">
+      <polygon points="13,4 20.8,8.5 20.8,17.5 13,22 5.2,17.5 5.2,8.5"/>
+      <line x1="14.4" y1="6.6" x2="18.9" y2="9.2"/>
+      <line x1="7.1" y1="9.6" x2="7.1" y2="16.4"/>
+      <line x1="20.8" y1="17.5" x2="28" y2="21.5"/>
+      <text x="30" y="24.5" stroke="none" fill="#4a5560" font-size="7.5" font-family="Segoe UI, sans-serif">OH</text>
+    </g>
+  </defs>
+</svg>
+
+<button class="navfab" id="navToggle" aria-expanded="false" aria-controls="sidenav">☰ Contents</button>
+<nav class="sidenav" id="sidenav" aria-label="Contents">
+  <a href="#top">Overview</a>
+  <a href="#anatomy"><span class="n">0</span>App anatomy</a>
+  <a href="#j1"><span class="n">1</span>Program, study &amp; permissions</a>
+  <a href="#j2"><span class="n">2</span>Publish &amp; approve</a>
+  <a href="#j3"><span class="n">3</span>Reject &rarr; new version &rarr; approve</a>
+  <a href="#j4"><span class="n">4</span>Find &amp; filter</a>
+  <a href="#out-of-scope"><span class="n">•</span>Out of scope</a>
+  <a href="#caveats"><span class="n">•</span>Known gaps</a>
+</nav>
+
+<div class="wrap">
+
+<header id="top">
+  <p class="eyebrow">ArtifactAlignment &middot; Datagrok package PoC</p>
+  <h1>Artifact Catalog Walkthrough</h1>
+  <p class="lede">Publishing a Compute2 model run freezes an immutable copy, aligns it with a drug
+  program, study, and molecules, and makes it discoverable in one shared catalog — trimmed to
+  what each person is allowed to see.
+  This walkthrough recreates the UI as annotated slides and follows four roles through the
+  four core journeys. Every screen below is a <b>mock recreation</b> with sensible sample data —
+  not a screenshot.</p>
+
+  <div class="personas">
+    <div class="persona"><span class="avatar" style="background:#5b6b7c">IT</span>
+      <div><b>IT admin</b><span>Registry steward &middot; provisions programs &amp; groups</span></div></div>
+    <div class="persona"><span class="avatar" style="background:#7a5cb8">ML</span>
+      <div><b>Modeling lead</b><span><i>Approvers</i> tier &middot; reviews &amp; approves</span></div></div>
+    <div class="persona"><span class="avatar" style="background:#2083d5">CS</span>
+      <div><b>Computational scientist</b><span><i>Contributors</i> tier &middot; publishes runs</span></div></div>
+    <div class="persona"><span class="avatar" style="background:#2e8f57">PM</span>
+      <div><b>Program manager</b><span><i>Viewers</i> tier &middot; discovers &amp; reads</span></div></div>
+  </div>
+
+  <div class="legend">
+    <span><span class="badge badge-live">✓ WORKS TODAY</span> — real balloon / behavior the package shows now</span>
+    <span><span class="badge badge-planned">⚠ NOT WORKING YET</span> — designed notification; blocked by a platform bug, shown for illustration only</span>
+  </div>
+
+</header>
+
+<!-- ======================================================= 0. ANATOMY -->
+<section class="chapter" id="anatomy">
+  <div class="ch-head"><span class="ch-num">0</span><h2>The Artifact Catalog at a glance</h2></div>
+  <p class="story">Everything lives in one Browse app: <b>Artifact Catalog</b>. A tree on the left,
+  server-backed catalog views in the middle, and the context panel on the right.</p>
+
+  <article class="slide">
+    <div class="slide-head"><span class="step">0.1</span><h3>Layout: tree &middot; catalog &middot; context panel</h3></div>
+    <div class="slide-grid">
+      <div class="stage">
+        <div class="frame">
+          <div class="frame-bar"><span class="dots"><i></i><i></i><i></i></span>
+            <span class="frame-url">…/apps/ArtifactAlignment</span></div>
+          <div class="frame-scroll"><div class="screen">
+            <span class="co" style="top:44px; left:8px">1</span>
+            <span class="co" style="top:44px; left:300px">2</span>
+            <span class="co" style="top:44px; right:230px">3</span>
+            <div class="s-top">Browse &rsaquo; Apps &rsaquo; <b>Artifact Catalog</b></div>
+            <div class="s-cols">
+              <div class="s-tree">
+                <div class="t-app">🗂 Artifact Catalog</div>
+                <div class="t-i">My publications</div>
+                <div class="t-i">Review queue</div>
+                <div class="t-g">Programs</div>
+                <div class="t-i t-dim">New program…</div>
+                <div class="t-i t-dim">Edit program…</div>
+                <div class="t-i t-sel">ALPHA</div>
+                <div class="t-i">BRAVO</div>
+                <div class="t-g">Registry</div>
+                <div class="t-i t-dim">New study…</div>
+                <div class="t-i t-dim">New compound…</div>
+                <div class="t-i t-dim">Link compound to program…</div>
+                <div class="t-i">Studies</div>
+                <div class="t-i">Compounds</div>
+              </div>
+              <div class="s-main">
+                <div class="vtitle">ALPHA</div>
+                <div class="searchbar"><div class="searchbox">🔍 <span>Search…</span></div></div>
+                <div class="cards">
+                  <div class="pcard"><b>Exposure model &middot; v3</b>
+                    <table class="kv"><tr><td>Study</td><td>ABC-301</td></tr>
+                    <tr><td>Workstream</td><td>modeling</td></tr>
+                    <tr><td>Tags</td><td>PK, popPK</td></tr></table></div>
+                  <div class="pcard"><b>Dose-escalation summary &middot; v2</b>
+                    <table class="kv"><tr><td>Study</td><td>ABC-201</td></tr>
+                    <tr><td>Workstream</td><td>clinical</td></tr>
+                    <tr><td>Tags</td><td>safety</td></tr></table></div>
+                </div>
+              </div>
+              <div class="s-ctx">
+                <h4>ALPHA</h4>
+                <table class="ctx-kv">
+                  <tr><td>Name</td><td>GRK-1 kinase inhibitor</td></tr>
+                  <tr><td>Indication</td><td>Rheumatoid arthritis</td></tr>
+                  <tr><td>Stage</td><td>Phase 2</td></tr>
+                </table>
+                <h5>Audience groups</h5>
+                <div class="glink">Artifacts: ALPHA Viewers</div>
+                <div class="glink">Artifacts: ALPHA Contributors</div>
+                <div class="glink">Artifacts: ALPHA Approvers</div>
+              </div>
+            </div>
+          </div></div>
+        </div>
+      </div>
+      <aside class="notes">
+        <div class="note"><b class="nt">① Browse tree</b>
+          <p>One tree for the whole workflow: your own publications, the review queue, a node per
+          drug program, and the shared registry of studies and compounds.</p></div>
+        <div class="note"><b class="nt">② Catalog views</b>
+          <p>Each view answers one everyday question. The <b>catalog</b> and the program pages
+          show approved work only; the <b>Review queue</b> holds whatever still needs a decision;
+          <b>My publications</b> is your own work and its current fate. Cards or a grid — with
+          search, sorting, and filters built in.</p></div>
+        <div class="note"><b class="nt">③ Context panel</b>
+          <p>Clicking a program shows its properties and the three audience-group links — this is
+          where members are managed. Clicking a publication shows its details, actions, and history
+          (journeys 2–3).</p></div>
+        <div class="note"><b class="nt">Shareable links</b>
+          <p>Every view and program page has a stable link — paste it in chat or a meeting note
+          and a colleague lands exactly where you are.</p></div>
+      </aside>
+    </div>
+  </article>
+</section>
+
+<!-- ======================================================= 1. SETUP -->
+<section class="chapter" id="j1">
+  <div class="ch-head"><span class="ch-num">1</span><h2>Set up a program, a study, and member permissions</h2></div>
+  <p class="story">As the <b>IT admin</b>, I want to create program ALPHA with its studies and
+  compounds, and give team members the right level of access — so the team can publish and review
+  from day one.</p>
+
+  <article class="slide">
+    <div class="slide-head"><span class="step">1.1</span><h3>New program — audience groups are born with it</h3></div>
+    <div class="slide-grid">
+      <div class="stage">
+        <div class="frame">
+          <div class="frame-bar"><span class="dots"><i></i><i></i><i></i></span>
+            <span class="frame-url">Programs › New program…</span></div>
+          <div class="frame-scroll"><div class="screen">
+            <div class="toast">Program ALPHA created
+              <span class="tb"><span class="badge badge-live">✓ WORKS TODAY</span></span></div>
+            <div class="dlg-veil">
+              <div class="dlg" style="width:430px">
+                <div class="dlg-t">New program <span class="x">✕</span></div>
+                <div class="dlg-b">
+                  <div class="f-row"><label>Code</label><div class="inp">ALPHA</div></div>
+                  <div class="f-row"><label>Name</label><div class="inp">GRK-1 kinase inhibitor</div></div>
+                  <div class="f-row"><label>Description</label><div class="inp">First-in-class oral GRK-1 inhibitor</div></div>
+                  <div class="f-row"><label>External ref</label><div class="inp">PORTFOLIO-114</div></div>
+                  <div class="f-row"><label>Stage</label><div class="inp">Phase 2</div></div>
+                  <div class="f-row"><label>Status</label><div class="inp">active</div></div>
+                  <div class="f-row"><label>Indication</label><div class="inp">Rheumatoid arthritis</div></div>
+                  <div class="gnote">Audience groups: <code>Artifacts: ALPHA Viewers</code>,
+                    <code>Artifacts: ALPHA Contributors</code>, <code>Artifacts: ALPHA Approvers</code></div>
+                </div>
+                <div class="dlg-f"><span class="btn">CANCEL</span><span class="btn btn-primary">OK</span></div>
+              </div>
+            </div>
+          </div></div>
+        </div>
+      </div>
+      <aside class="notes">
+        <div class="note"><b class="nt">Code is the anchor</b>
+          <p>The code is the program's short handle: it names the three audience groups and never
+          changes after creation.</p></div>
+        <div class="note"><b class="nt">Context from the portfolio</b>
+          <p>Stage, status, and indication come from the owning portfolio system
+          (<i>External ref</i> links to it) and are shown for orientation.</p></div>
+        <div class="note"><b class="nt">Members-only visibility</b>
+          <p>Each program is visible only to its own audience groups — people outside the program
+          never see it or anything published into it.</p></div>
+      </aside>
+    </div>
+  </article>
+
+  <article class="slide">
+    <div class="slide-head"><span class="step">1.2</span><h3>Assign members — three cumulative tiers</h3></div>
+    <div class="slide-grid">
+      <div class="stage">
+        <div class="frame">
+          <div class="frame-bar"><span class="dots"><i></i><i></i><i></i></span>
+            <span class="frame-url">…/apps/ArtifactAlignment/programs/ALPHA</span></div>
+          <div class="frame-scroll"><div class="screen">
+            <div class="s-top">Browse &rsaquo; Apps &rsaquo; <b>Artifact Catalog</b> &rsaquo; Programs &rsaquo; ALPHA</div>
+            <div class="s-cols">
+              <div class="s-tree">
+                <div class="t-app">🗂 Artifact Catalog</div>
+                <div class="t-i">My publications</div>
+                <div class="t-i">Review queue</div>
+                <div class="t-g">Programs</div>
+                <div class="t-i t-sel">ALPHA</div>
+                <div class="t-g">Registry</div>
+                <div class="t-i">Studies</div>
+                <div class="t-i">Compounds</div>
+              </div>
+              <div class="s-main">
+                <div class="vtitle">ALPHA <span class="mut" style="font-weight:400">— no publications yet</span></div>
+                <p class="mut" style="margin-top:30px; text-align:center">Nothing published into ALPHA so far.</p>
+              </div>
+              <div class="s-ctx">
+                <h4>ALPHA</h4>
+                <table class="ctx-kv">
+                  <tr><td>Name</td><td>GRK-1 kinase inhibitor</td></tr>
+                  <tr><td>External ref</td><td class="glink">PORTFOLIO-114</td></tr>
+                </table>
+                <h5>Audience groups</h5>
+                <div class="glink">Artifacts: ALPHA Viewers</div>
+                <div style="padding:2px 0 6px 12px" class="mut">program manager<br>+ <i>Artifacts: ALPHA Contributors</i></div>
+                <div class="glink">Artifacts: ALPHA Contributors</div>
+                <div style="padding:2px 0 6px 12px" class="mut">computational scientist<br>+ <i>Artifacts: ALPHA Approvers</i></div>
+                <div class="glink">Artifacts: ALPHA Approvers</div>
+                <div style="padding:2px 0 2px 12px" class="mut">modeling lead<br>+ <i>Artifacts: Approvers</i></div>
+              </div>
+            </div>
+          </div></div>
+        </div>
+      </div>
+      <aside class="notes">
+        <div class="note"><b class="nt">viewer ⊂ contributor ⊂ approver</b>
+          <p>Tiers nest: the Contributors group is itself a member of Viewers, and Approvers a
+          member of Contributors. Adding a member to <i>Approvers</i> alone gives them everything
+          below it.</p></div>
+        <div class="note"><b class="nt">Approval is a membership</b>
+          <p>There is no separate "approve" permission to configure — being in the Approvers group
+          is what grants the right to approve or reject. Everyone else can read but not
+          decide.</p></div>
+        <div class="note"><b class="nt">Member management</b>
+          <p>The group links open the standard member editor — adding or removing people is
+          ordinary group administration, fully auditable.</p></div>
+      </aside>
+    </div>
+  </article>
+
+  <article class="slide">
+    <div class="slide-head"><span class="step">1.3</span><h3>Registry: a study and a lead compound</h3></div>
+    <div class="slide-grid">
+      <div class="stage">
+        <div class="frame">
+          <div class="frame-bar"><span class="dots"><i></i><i></i><i></i></span>
+            <span class="frame-url">Registry › New study… / Link compound to program…</span></div>
+          <div class="frame-scroll"><div class="screen">
+            <div class="dlg-veil" style="gap:16px; flex-wrap:wrap">
+              <div class="dlg" style="width:300px">
+                <div class="dlg-t">New study <span class="x">✕</span></div>
+                <div class="dlg-b">
+                  <div class="f-row"><label>Program</label><div class="inp">ALPHA <span class="caret">▾</span></div></div>
+                  <div class="f-row"><label>Protocol code</label><div class="inp">ABC-301</div></div>
+                  <div class="f-row"><label>Phase</label><div class="inp">ph2 <span class="caret">▾</span></div></div>
+                  <div class="f-row"><label>Status</label><div class="inp">ongoing <span class="caret">▾</span></div></div>
+                </div>
+                <div class="dlg-f"><span class="btn">CANCEL</span><span class="btn btn-primary">OK</span></div>
+              </div>
+              <div class="dlg" style="width:300px">
+                <div class="dlg-t">Link compound to program <span class="x">✕</span></div>
+                <div class="dlg-b">
+                  <div class="f-row"><label>Program</label><div class="inp">ALPHA <span class="caret">▾</span></div></div>
+                  <div class="f-row"><label>Compound</label><div class="inp">GRK-1234 <span class="caret">▾</span></div></div>
+                  <div class="f-row"><label>Role</label><div class="inp">lead <span class="caret">▾</span></div></div>
+                </div>
+                <div class="dlg-f"><span class="btn">CANCEL</span><span class="btn btn-primary">OK</span></div>
+              </div>
+              <div style="flex-basis:100%; background:#fff; padding:0 6px 6px">
+                <div class="vtitle" style="padding-top:8px">Compounds</div>
+                <table class="gridt">
+                  <tr><th>Registration code</th><th>Name</th><th>Structure</th></tr>
+                  <tr><td>GRK-1234</td><td>grokitinib</td>
+                    <td><svg viewBox="0 0 48 26" width="48" height="26" role="img" aria-label="structure"><use href="#mol1"/></svg></td></tr>
+                  <tr><td>GRK-1187</td><td>belzatinib</td>
+                    <td><svg viewBox="0 0 48 26" width="48" height="26" role="img" aria-label="structure"><use href="#mol2"/></svg></td></tr>
+                  <tr><td>GRK-0993</td><td>staurosporine</td>
+                    <td><svg viewBox="0 0 48 26" width="48" height="26" role="img" aria-label="structure"><use href="#mol1"/></svg></td></tr>
+                </table>
+              </div>
+            </div>
+          </div></div>
+        </div>
+      </div>
+      <aside class="notes">
+        <div class="note"><b class="nt">One shared registry</b>
+          <p>Studies carry their protocol code, phase, and status; compounds carry a registration
+          code, a name, and a chemical structure that renders wherever the compound
+          appears.</p></div>
+        <div class="note"><b class="nt">Compounds = molecules</b>
+          <p>Linking a compound to a program marks its role — lead, backup, or tool — and makes it
+          the default molecule suggestion whenever someone publishes into that program.</p></div>
+        <div class="note"><b class="nt">Who keeps it current</b>
+          <p>Everyone can browse the registries; contributors keep them up to date.</p></div>
+      </aside>
+    </div>
+  </article>
+
+  <table class="matrix">
+    <tr><th>Action</th><th>Viewer</th><th>Contributor</th><th>Approver</th></tr>
+    <tr><td>See program, publications, history</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td></tr>
+    <tr><td>Publish a run into the program</td><td class="n">✗ denied</td><td class="p">✓ → stays <i>pending</i></td><td class="y">✓ → auto-<i>approved</i></td></tr>
+    <tr><td>Curate (tags, path, molecules, description)</td><td class="n">✗</td><td class="y">✓</td><td class="y">✓</td></tr>
+    <tr><td>Approve / reject</td><td class="n">✗</td><td class="n">✗</td><td class="y">✓ — never their own publication</td></tr>
+    <tr><td>Outside all groups</td><td colspan="3">Sees nothing: no program, no publications, no history, no frozen data</td></tr>
+  </table>
+</section>
+
+<!-- ======================================================= 2. PUBLISH & APPROVE -->
+<section class="chapter" id="j2">
+  <div class="ch-head"><span class="ch-num">2</span><h2>Publish a model run; reviewer approves</h2></div>
+  <p class="story">As the <b>computational scientist</b>, I want to publish my PK exposure model
+  run to program ALPHA so the team can find it. As the <b>modeling lead</b>, I review and
+  approve it.</p>
+
+  <article class="slide">
+    <div class="slide-head"><span class="step">2.1</span><h3>The model run — a Compute2 RichFunctionView</h3></div>
+    <div class="slide-grid">
+      <div class="stage">
+        <div class="frame">
+          <div class="frame-bar"><span class="dots"><i></i><i></i><i></i></span>
+            <span class="frame-url">Compute2 › PK Exposure Model</span></div>
+          <div class="frame-scroll"><div class="screen">
+            <div class="s-top"><b>PK Exposure Model</b><span class="mut">run of 2026-08-21 14:02</span>
+              <span class="ribbon">
+                <span class="ric">🕘</span><span class="ric">⤓</span>
+                <span class="ric hl"><svg viewBox="0 0 16 16" width="13" height="13" aria-label="Publish to program"><use href="#ic-share"/></svg></span>
+                <span class="tt">Publish to program</span>
+              </span></div>
+            <div class="s-cols">
+              <div class="s-tree" style="width:225px; padding:10px 12px">
+                <div style="font-weight:650; margin-bottom:8px">Inputs</div>
+                <div class="f-row" style="grid-template-columns:74px 1fr; margin-bottom:5px"><label class="mut">Molecule</label>
+                  <div class="inp" style="display:flex; align-items:center; gap:6px">GRK-1234
+                    <svg viewBox="0 0 48 26" width="34" height="19"><use href="#mol1"/></svg></div></div>
+                <div class="f-row" style="grid-template-columns:74px 1fr; margin-bottom:5px"><label class="mut">Dose (mg)</label><div class="inp">150</div></div>
+                <div class="f-row" style="grid-template-columns:74px 1fr; margin-bottom:5px"><label class="mut">Regimen</label><div class="inp">BID <span class="caret">▾</span></div></div>
+                <div class="f-row" style="grid-template-columns:74px 1fr; margin-bottom:10px"><label class="mut">PK data</label><div class="inp">abc301_pk.csv</div></div>
+                <span class="btn btn-primary" style="width:100%; text-align:center">Run</span>
+              </div>
+              <div class="s-main">
+                <div class="vtitle" style="font-size:12.5px">Exposure — GRK-1234, 150 mg BID</div>
+                <svg viewBox="0 0 320 130" width="320" height="130" role="img"
+                     aria-label="Concentration-time curve peaking near 820 ng/mL at 2 hours">
+                  <line x1="34" y1="10" x2="34" y2="108" stroke="#dde3e9" stroke-width="1"/>
+                  <line x1="34" y1="108" x2="310" y2="108" stroke="#dde3e9" stroke-width="1"/>
+                  <line x1="34" y1="36" x2="310" y2="36" stroke="#eef1f4" stroke-width="1"/>
+                  <line x1="34" y1="72" x2="310" y2="72" stroke="#eef1f4" stroke-width="1"/>
+                  <path d="M34,106 C55,20 70,18 90,34 C130,66 190,88 250,98 C275,102 295,104 308,105 L308,108 L34,108 Z"
+                        fill="rgba(32,131,213,.12)" stroke="none"/>
+                  <path d="M34,106 C55,20 70,18 90,34 C130,66 190,88 250,98 C275,102 295,104 308,105"
+                        fill="none" stroke="#2083d5" stroke-width="2"/>
+                  <circle cx="71" cy="21" r="3.5" fill="#2083d5" stroke="#fff" stroke-width="2"/>
+                  <text x="78" y="16" font-size="9" fill="#55606b">C<tspan baseline-shift="sub" font-size="7">max</tspan> 820 ng/mL</text>
+                  <text x="30" y="14" font-size="9" fill="#7d8792" text-anchor="end">ng/mL</text>
+                  <text x="308" y="122" font-size="9" fill="#7d8792" text-anchor="end">h</text>
+                  <text x="34" y="122" font-size="9" fill="#7d8792">0</text>
+                </svg>
+                <table class="gridt" style="max-width:320px; margin-top:6px">
+                  <tr><th>AUC<sub>0–12</sub></th><th>C<sub>max</sub></th><th>T<sub>½</sub></th></tr>
+                  <tr><td>4 310 ng·h/mL</td><td>820 ng/mL</td><td>6.4 h</td></tr>
+                </table>
+              </div>
+            </div>
+          </div></div>
+        </div>
+      </div>
+      <aside class="notes">
+        <div class="note"><b class="nt">Where publishing starts</b>
+          <p>The RichFunctionView (mocked here — any Compute2 model form) gets a
+          <b><svg viewBox="0 0 16 16" width="12" height="12" style="vertical-align:-1px"><use href="#ic-share"/></svg>
+          Publish to program</b> ribbon icon once the catalog package is installed and publishing
+          is switched on in Compute2's settings. The same icon appears on workflows and individual
+          workflow steps.</p></div>
+        <div class="note"><b class="nt">No metadata here</b>
+          <p>The model form is just the model form. Program alignment happens in a separate
+          dialog — next slide.</p></div>
+      </aside>
+    </div>
+  </article>
+
+  <article class="slide">
+    <div class="slide-head"><span class="step">2.2</span><h3>"Publish to program" — seconds of metadata</h3></div>
+    <div class="slide-grid">
+      <div class="stage">
+        <div class="frame">
+          <div class="frame-bar"><span class="dots"><i></i><i></i><i></i></span>
+            <span class="frame-url">Publish to program</span></div>
+          <div class="frame-scroll"><div class="screen">
+            <div class="toast">Published "Exposure model" v1 (pending)
+              <span class="tb"><span class="badge badge-live">✓ WORKS TODAY</span></span></div>
+            <div class="dlg-veil">
+              <div class="dlg" style="width:470px">
+                <div class="dlg-t">Publish to program <span class="x">✕</span></div>
+                <div class="dlg-b">
+                  <div class="f-row"><label>Name</label><div class="inp">Exposure model</div></div>
+                  <div class="f-row"><label>Program</label><div class="inp">ALPHA <span class="caret">▾</span></div></div>
+                  <div class="f-row"><label>Study</label><div class="inp">ABC-301 <span class="caret">▾</span></div></div>
+                  <div class="f-row"><label>Workstream</label><div class="inp">modeling <span class="caret">▾</span></div></div>
+                  <div class="f-row"><label>Molecules</label><div class="inp chips"><span class="chip">GRK-1234 <span class="x">✕</span></span></div></div>
+                  <div class="f-row"><label>Tags</label><div class="inp chips">
+                    <span class="chip tag">PK <span class="x">✕</span></span><span class="chip tag">popPK <span class="x">✕</span></span></div></div>
+                  <div class="f-row"><label>Path</label><div class="inp">PK/exposure</div></div>
+                  <div class="f-row"><label>Description</label><div class="inp area">Two-compartment exposure model, ABC-301 interim PK set, 150 mg BID.</div></div>
+                  <div class="hint">This creates a new publication in ALPHA.</div>
+                </div>
+                <div class="dlg-f"><span class="btn">CANCEL</span><span class="btn btn-primary">OK</span></div>
+              </div>
+            </div>
+          </div></div>
+        </div>
+        <div class="feed">
+          <span class="feed-cap">Notification feed — designed, shown for illustration</span>
+          <div class="notif"><span class="bell">🔔</span>
+            <div><span class="to">To group: Artifacts: ALPHA Approvers</span>
+              <b>Exposure model v1</b> is waiting for review in ALPHA.</div>
+            <span class="badge badge-planned">⚠ NOT WORKING YET</span></div>
+        </div>
+      </div>
+      <aside class="notes">
+        <div class="note"><b class="nt">What OK actually does</b>
+          <p>Behind the <i>"Publishing…"</i> progress bar, the catalog <b>freezes an exact,
+          stamped copy</b> of the run — that copy is what gets shared and reviewed, unchangeable
+          from this moment on. The working copy stays the author's, private and editable.</p></div>
+        <div class="note"><b class="nt">Field behavior</b>
+          <p><b>Molecules</b> suggests the program's linked compounds (registration codes; typing
+          searches the registry). <b>Tags</b> suggests existing tags and a new name creates one.
+          <b>Study</b> lists the chosen program's protocols and resets when the program changes.
+          Workstream defaults to <code>modeling</code>.</p></div>
+        <div class="note"><b class="nt">pending, because the publisher is a contributor</b>
+          <p>Every new version starts out pending. When an approver publishes their own run it
+          goes live instantly; a contributor's publication waits for a reviewer.</p></div>
+        <div class="note warn"><b class="nt">⚠ Notification gap</b>
+          <p>The design calls for notifying the approvers group at publish time — but the
+          platform's domain-table watch channel currently delivers nothing to the feed. Until that
+          bug is fixed, <b>reviewers must check the Review queue themselves</b>. Only the balloons
+          marked "works today" actually appear.</p></div>
+      </aside>
+    </div>
+  </article>
+
+  <article class="slide">
+    <div class="slide-head"><span class="step">2.3</span><h3>The reviewer's Review queue</h3></div>
+    <div class="slide-grid">
+      <div class="stage">
+        <div class="frame">
+          <div class="frame-bar"><span class="dots"><i></i><i></i><i></i></span>
+            <span class="frame-url">…/apps/ArtifactAlignment/review-queue</span></div>
+          <div class="frame-scroll"><div class="screen">
+            <div class="s-top">Browse &rsaquo; Apps &rsaquo; <b>Artifact Catalog</b> &rsaquo; <b>Review queue</b></div>
+            <div class="s-cols">
+              <div class="s-main">
+                <div class="vtitle">Review queue</div>
+                <div style="overflow-x:auto">
+                <table class="gridt">
+                  <tr><th>Name</th><th>Revision</th><th>Study</th><th>Workstream</th><th>Author</th><th>Status</th></tr>
+                  <tr class="sel"><td>Exposure model</td><td>1</td><td>ABC-301</td><td>modeling</td><td>comp. scientist</td><td><span class="pill p-pending">pending</span></td></tr>
+                  <tr><td>Tox screen summary</td><td>1</td><td>ABC-201</td><td>clinical</td><td>clin. scientist</td><td><span class="pill p-pending">pending</span></td></tr>
+                </table>
+                </div>
+              </div>
+              <div class="s-ctx">
+                <h4>Exposure model &middot; v1</h4>
+                <table class="ctx-kv">
+                  <tr><td>Status</td><td><span class="pill p-pending">pending</span></td></tr>
+                  <tr><td>Study</td><td>ABC-301</td></tr>
+                  <tr><td>Workstream</td><td>modeling</td></tr>
+                  <tr><td>Molecules</td><td><span class="chip">GRK-1234</span></td></tr>
+                  <tr><td>Tags</td><td><span class="chip tag">PK</span> <span class="chip tag">popPK</span></td></tr>
+                  <tr><td>Author</td><td>computational scientist</td></tr>
+                </table>
+                <div class="ctx-btns">
+                  <span class="btn btn-sm">Open artifact</span>
+                </div>
+                <div class="ctx-btns">
+                  <span class="btn btn-sm btn-primary">Approve</span>
+                  <span class="btn btn-sm">Reject…</span>
+                </div>
+                <h5>History</h5>
+                <div class="mut">No archived versions</div>
+              </div>
+            </div>
+          </div></div>
+        </div>
+      </div>
+      <aside class="notes">
+        <div class="note"><b class="nt">One queue for everything undecided</b>
+          <p>The Review queue gathers everything that still needs a decision — pending and
+          rejected items — across all programs the reviewer belongs to.</p></div>
+        <div class="note"><b class="nt">Open artifact first</b>
+          <p><b>Open artifact</b> opens the frozen run in Compute2 — the reviewer sees the actual
+          model outputs, not just metadata.</p></div>
+        <div class="note"><b class="nt">Who can decide</b>
+          <p>Approve and Reject are visible to anyone looking at a pending item, but only members
+          of the program's Approvers group can actually use them — and never on their own
+          publication.</p></div>
+      </aside>
+    </div>
+  </article>
+
+  <article class="slide">
+    <div class="slide-head"><span class="step">2.4</span><h3>Approved — discoverable for the whole audience</h3></div>
+    <div class="slide-grid">
+      <div class="stage">
+        <div class="frame">
+          <div class="frame-bar"><span class="dots"><i></i><i></i><i></i></span>
+            <span class="frame-url">…/apps/ArtifactAlignment/programs/ALPHA</span></div>
+          <div class="frame-scroll"><div class="screen">
+            <div class="toast">Publication approved — reopen the view to refresh
+              <span class="tb"><span class="badge badge-live">✓ WORKS TODAY</span></span></div>
+            <div class="s-top">Browse &rsaquo; Apps &rsaquo; <b>Artifact Catalog</b> &rsaquo; Programs &rsaquo; ALPHA</div>
+            <div class="s-cols">
+              <div class="s-main">
+                <div class="vtitle">ALPHA</div>
+                <div class="cards">
+                  <div class="pcard sel"><b>Exposure model &middot; v1</b>
+                    <table class="kv">
+                      <tr><td>Study</td><td>ABC-301</td></tr>
+                      <tr><td>Workstream</td><td>modeling</td></tr>
+                      <tr><td>Tags</td><td>PK, popPK</td></tr></table></div>
+                </div>
+              </div>
+              <div class="s-ctx">
+                <h4>Exposure model &middot; v1</h4>
+                <table class="ctx-kv">
+                  <tr><td>Study</td><td>ABC-301</td></tr>
+                  <tr><td>Approved by</td><td>modeling lead</td></tr>
+                  <tr><td>Approved on</td><td>2026-08-21 16:40</td></tr>
+                </table>
+                <div class="ctx-btns">
+                  <span class="btn btn-sm">Open artifact</span>
+                  <span class="btn btn-sm">Curate…</span>
+                </div>
+                <h5>History</h5>
+                <div class="mut">No archived versions</div>
+              </div>
+            </div>
+          </div></div>
+        </div>
+        <div class="feed">
+          <span class="feed-cap">Notification feed — designed, shown for illustration</span>
+          <div class="notif"><span class="bell">🔔</span>
+            <div><span class="to">To: the author</span>
+              Your publication <b>Exposure model v1</b> was approved by the modeling lead.</div>
+            <span class="badge badge-planned">⚠ NOT WORKING YET</span></div>
+        </div>
+      </div>
+      <aside class="notes">
+        <div class="note"><b class="nt">What the card shows — and hides</b>
+          <p>Cards lead with <b>name · version</b>; the status line appears only when a row is
+          <i>not</i> approved ("approved is noise on a card"). Internal ids never surface.</p></div>
+        <div class="note"><b class="nt">One current version per publication</b>
+          <p>Approving records who decided and when, and makes this the single version readers
+          see — an older approved version, if there was one, moves to history
+          automatically.</p></div>
+        <div class="note"><b class="nt">Curate…</b>
+          <p>After approval, contributors can still fix discovery metadata (tags, molecules, path,
+          workstream, description) via the <b>Curate publication</b> dialog — identity and approval
+          fields are deliberately excluded from it.</p></div>
+        <div class="note warn"><b class="nt">⚠ Author isn't notified</b>
+          <p>The author learns about the approval from the balloon only if watching live, or from
+          <b>My publications</b> — the feed notification shown above is not delivered today.</p></div>
+      </aside>
+    </div>
+  </article>
+</section>
+
+<!-- ======================================================= 3. REJECT / RESUBMIT -->
+<section class="chapter" id="j3">
+  <div class="ch-head"><span class="ch-num">3</span><h2>Rejected, revised, approved — versioning in action</h2></div>
+  <p class="story">As the <b>computational scientist</b>, I publish an update to the exposure model; the <b>modeling lead</b> rejects
+  it with a reason. I fix the analysis and resubmit — the catalog keeps the audience on the last
+  approved version the whole time, and history keeps the trail.</p>
+
+  <article class="slide">
+    <div class="slide-head"><span class="step">3.1</span><h3>Publishing an update — the republish hint</h3></div>
+    <div class="slide-grid">
+      <div class="stage">
+        <div class="frame">
+          <div class="frame-bar"><span class="dots"><i></i><i></i><i></i></span>
+            <span class="frame-url">Publish to program</span></div>
+          <div class="frame-scroll"><div class="screen">
+            <div class="toast">Published "Exposure model" v2 (pending)
+              <span class="tb"><span class="badge badge-live">✓ WORKS TODAY</span></span></div>
+            <div class="dlg-veil">
+              <div class="dlg" style="width:470px">
+                <div class="dlg-t">Publish to program <span class="x">✕</span></div>
+                <div class="dlg-b">
+                  <div class="f-row"><label>Name</label><div class="inp">Exposure model</div></div>
+                  <div class="f-row"><label>Program</label><div class="inp">ALPHA <span class="caret">▾</span></div></div>
+                  <div class="f-row"><label>Study</label><div class="inp">ABC-301 <span class="caret">▾</span></div></div>
+                  <div class="f-row"><label>Workstream</label><div class="inp">modeling <span class="caret">▾</span></div></div>
+                  <div class="f-row"><label>Molecules</label><div class="inp chips"><span class="chip">GRK-1234 <span class="x">✕</span></span></div></div>
+                  <div class="f-row"><label>Tags</label><div class="inp chips">
+                    <span class="chip tag">PK <span class="x">✕</span></span><span class="chip tag">popPK <span class="x">✕</span></span></div></div>
+                  <div class="f-row"><label>Path</label><div class="inp">PK/exposure</div></div>
+                  <div class="f-row"><label>Description</label><div class="inp area">Updated with the full ABC-301 PK set.</div></div>
+                  <div class="hint">A publication named "Exposure model" exists in ALPHA / ABC-301 —
+                    this publishes version 2; the current version stays visible until this one is
+                    approved.</div>
+                </div>
+                <div class="dlg-f"><span class="btn">CANCEL</span><span class="btn btn-primary">OK</span></div>
+              </div>
+            </div>
+          </div></div>
+        </div>
+        <div class="feed">
+          <span class="feed-cap">Notification feed — designed, shown for illustration</span>
+          <div class="notif"><span class="bell">🔔</span>
+            <div><span class="to">To group: Artifacts: ALPHA Approvers</span>
+              <b>Exposure model v2</b> is waiting for review in ALPHA.</div>
+            <span class="badge badge-planned">⚠ NOT WORKING YET</span></div>
+        </div>
+      </div>
+      <aside class="notes">
+        <div class="note"><b class="nt">Same name, same publication</b>
+          <p>Publishing under the same name, program, and study means a new version of the same
+          publication — the dialog notices while you type and says exactly what will
+          happen.</p></div>
+        <div class="note"><b class="nt">Metadata copies forward</b>
+          <p>Tags, molecules, workstream, path, and description are carried over from the previous
+          version unless changed here.</p></div>
+        <div class="note"><b class="nt">No downtime for readers</b>
+          <p>v1 stays the approved, discoverable version. v2 sits in the Review queue — there is
+          always at most one current version and one version under review.</p></div>
+      </aside>
+    </div>
+  </article>
+
+  <article class="slide">
+    <div class="slide-head"><span class="step">3.2</span><h3>The reviewer rejects, with a reason</h3></div>
+    <div class="slide-grid">
+      <div class="stage">
+        <div class="frame">
+          <div class="frame-bar"><span class="dots"><i></i><i></i><i></i></span>
+            <span class="frame-url">Review queue › Reject…</span></div>
+          <div class="frame-scroll"><div class="screen">
+            <div class="toast">Publication rejected — reopen the view to refresh
+              <span class="tb"><span class="badge badge-live">✓ WORKS TODAY</span></span></div>
+            <div class="dlg-veil">
+              <div class="dlg" style="width:380px">
+                <div class="dlg-t">Reject publication <span class="x">✕</span></div>
+                <div class="dlg-b">
+                  <div class="f-row" style="grid-template-columns:60px 1fr; align-items:start"><label>Reason</label>
+                    <div class="inp area">wrong cohort — ABC-201 baseline subjects included in the ABC-301 exposure set</div></div>
+                </div>
+                <div class="dlg-f"><span class="btn">CANCEL</span><span class="btn btn-primary">OK</span></div>
+              </div>
+            </div>
+          </div></div>
+        </div>
+        <div class="feed">
+          <span class="feed-cap">Notification feed — designed, shown for illustration</span>
+          <div class="notif"><span class="bell">🔔</span>
+            <div><span class="to">To: the author</span>
+              <b>Exposure model v2</b> was rejected by the modeling lead: <i>"wrong cohort — ABC-201
+              baseline subjects included in the ABC-301 exposure set."</i></div>
+            <span class="badge badge-planned">⚠ NOT WORKING YET</span></div>
+        </div>
+      </div>
+      <aside class="notes">
+        <div class="note"><b class="nt">A reason is mandatory</b>
+          <p>A rejection can't be saved without saying why — and the reason stays attached to that
+          version, in history, for good.</p></div>
+        <div class="note"><b class="nt">Rejected ≠ gone</b>
+          <p>The rejected v2 <b>stays live</b> — visible in the Review queue and in the author's
+          <b>My publications</b> — until a resubmission archives it. Approved v1 is untouched;
+          the audience keeps seeing the last good version.</p></div>
+        <div class="note warn"><b class="nt">⚠ The author finds out by looking</b>
+          <p>With feed notifications not working, the rejection (and its reason) is only visible in
+          <b>My publications</b> / the Review queue — worth knowing when you set team
+          expectations.</p></div>
+      </aside>
+    </div>
+  </article>
+
+  <article class="slide">
+    <div class="slide-head"><span class="step">3.3</span><h3>Fix and resubmit — v3</h3></div>
+    <div class="slide-grid">
+      <div class="stage">
+        <div class="frame">
+          <div class="frame-bar"><span class="dots"><i></i><i></i><i></i></span>
+            <span class="frame-url">Publish to program</span></div>
+          <div class="frame-scroll"><div class="screen">
+            <div class="toast">Published "Exposure model" v3 (pending)
+              <span class="tb"><span class="badge badge-live">✓ WORKS TODAY</span></span></div>
+            <div class="dlg-veil">
+              <div class="dlg" style="width:470px">
+                <div class="dlg-t">Publish to program <span class="x">✕</span></div>
+                <div class="dlg-b">
+                  <div class="f-row"><label>Name</label><div class="inp">Exposure model</div></div>
+                  <div class="f-row"><label>Program</label><div class="inp">ALPHA <span class="caret">▾</span></div></div>
+                  <div class="f-row"><label>Study</label><div class="inp">ABC-301 <span class="caret">▾</span></div></div>
+                  <div class="f-row"><label>Description</label><div class="inp area">ABC-301 subjects only; cohort filter fixed.</div></div>
+                  <div class="hint">A publication named "Exposure model" exists in ALPHA / ABC-301 —
+                    this publishes version 3; the current version stays visible until this one is
+                    approved.</div>
+                </div>
+                <div class="dlg-f"><span class="btn">CANCEL</span><span class="btn btn-primary">OK</span></div>
+              </div>
+            </div>
+          </div></div>
+        </div>
+      </div>
+      <aside class="notes">
+        <div class="note"><b class="nt">Resubmission tidies up</b>
+          <p>Publishing v3 moves the rejected v2 into <b>Publication history</b>, keeping its
+          verdict, the reason, and the metadata it had. The live picture is clean again:
+          approved v1, pending v3.</p></div>
+        <div class="note"><b class="nt">History is append-only</b>
+          <p>Archived rows are never discoverable through the catalog — they are reachable only
+          from a publication's History pane.</p></div>
+      </aside>
+    </div>
+  </article>
+
+  <article class="slide">
+    <div class="slide-head"><span class="step">3.4</span><h3>Approved — the trail stays visible</h3></div>
+    <div class="slide-grid">
+      <div class="stage">
+        <div class="frame">
+          <div class="frame-bar"><span class="dots"><i></i><i></i><i></i></span>
+            <span class="frame-url">…/apps/ArtifactAlignment/programs/ALPHA</span></div>
+          <div class="frame-scroll"><div class="screen">
+            <div class="toast">Publication approved — reopen the view to refresh
+              <span class="tb"><span class="badge badge-live">✓ WORKS TODAY</span></span></div>
+            <div class="s-top">Browse &rsaquo; Apps &rsaquo; <b>Artifact Catalog</b> &rsaquo; Programs &rsaquo; ALPHA</div>
+            <div class="s-cols">
+              <div class="s-main">
+                <div class="vtitle">ALPHA</div>
+                <div class="cards">
+                  <div class="pcard sel"><b>Exposure model &middot; v3</b>
+                    <table class="kv">
+                      <tr><td>Study</td><td>ABC-301</td></tr>
+                      <tr><td>Workstream</td><td>modeling</td></tr>
+                      <tr><td>Tags</td><td>PK, popPK</td></tr></table></div>
+                </div>
+              </div>
+              <div class="s-ctx">
+                <h4>Exposure model &middot; v3</h4>
+                <table class="ctx-kv">
+                  <tr><td>Study</td><td>ABC-301</td></tr>
+                  <tr><td>Approved by</td><td>modeling lead</td></tr>
+                  <tr><td>Approved on</td><td>2026-08-24 09:12</td></tr>
+                </table>
+                <div class="ctx-btns">
+                  <span class="btn btn-sm">Open artifact</span>
+                  <span class="btn btn-sm">Curate…</span>
+                </div>
+                <h5>History</h5>
+                <ul class="hist">
+                  <li>v2 &middot; rejected — "wrong cohort — ABC-201 baseline subjects included…" <span class="open">open</span></li>
+                  <li>v1 &middot; approved <span class="open">open</span></li>
+                </ul>
+              </div>
+            </div>
+          </div></div>
+        </div>
+        <div class="feed">
+          <span class="feed-cap">Notification feed — designed, shown for illustration</span>
+          <div class="notif"><span class="bell">🔔</span>
+            <div><span class="to">To: the author</span>
+              Your publication <b>Exposure model v3</b> was approved by the modeling lead.</div>
+            <span class="badge badge-planned">⚠ NOT WORKING YET</span></div>
+        </div>
+      </div>
+      <aside class="notes">
+        <div class="note"><b class="nt">The full arc, on one panel</b>
+          <p>Approving v3 archives the previously approved v1, so History now reads:
+          <code>v2 · rejected — "wrong cohort…"</code> and <code>v1 · approved</code>, each with an
+          <i>open</i> link to the archived frozen artifact. The catalog shows only
+          <b>Exposure model · v3</b>.</p></div>
+        <div class="note"><b class="nt">Every version is auditable</b>
+          <p>Old frozen copies remain openable from history — reviewers can compare exactly what
+          was approved or rejected, and why.</p></div>
+      </aside>
+    </div>
+  </article>
+</section>
+
+<!-- ======================================================= 4. FIND & FILTER -->
+<section class="chapter" id="j4">
+  <div class="ch-head"><span class="ch-num">4</span><h2>Find it later — search and faceted filtering</h2></div>
+  <p class="story">As the <b>program manager</b> (view-only), I want to answer "where is the
+  exposure work for GRK-1234 in ABC-301?" without asking anyone.</p>
+
+  <article class="slide">
+    <div class="slide-head"><span class="step">4.1</span><h3>The catalog with facets open</h3></div>
+    <div class="slide-grid">
+      <div class="stage">
+        <div class="frame">
+          <div class="frame-bar"><span class="dots"><i></i><i></i><i></i></span>
+            <span class="frame-url">…/apps/ArtifactAlignment</span></div>
+          <div class="frame-scroll"><div class="screen">
+            <div class="s-top">Browse &rsaquo; Apps &rsaquo; <b>Artifact Catalog</b></div>
+            <div class="s-cols">
+              <div class="s-main" style="display:flex">
+                <div class="s-filters">
+                  <div class="facet"><h6>Study</h6>
+                    <div class="fo"><span><span class="cb"></span>ABC-201</span><span class="cnt">2</span></div>
+                    <div class="fo"><span><span class="cb"></span>ABC-301</span><span class="cnt">1</span></div>
+                    <div class="fo"><span><span class="cb"></span>(none)</span><span class="cnt">2</span></div></div>
+                  <div class="facet"><h6>Workstream</h6>
+                    <div class="fo"><span><span class="cb"></span>modeling</span><span class="cnt">2</span></div>
+                    <div class="fo"><span><span class="cb"></span>clinical</span><span class="cnt">1</span></div>
+                    <div class="fo"><span><span class="cb"></span>discovery</span><span class="cnt">1</span></div>
+                    <div class="fo"><span><span class="cb"></span>cmc</span><span class="cnt">1</span></div></div>
+                  <div class="facet"><h6>Molecules</h6>
+                    <div class="fo"><span><span class="cb"></span>GRK-1234</span><span class="cnt">4</span></div>
+                    <div class="fo"><span><span class="cb"></span>GRK-1187</span><span class="cnt">1</span></div>
+                    <div class="fo"><span><span class="cb"></span>GRK-0993</span><span class="cnt">1</span></div></div>
+                  <div class="facet"><h6>Tags</h6>
+                    <div class="fo"><span><span class="cb"></span>PK</span><span class="cnt">2</span></div>
+                    <div class="fo"><span><span class="cb"></span>popPK</span><span class="cnt">1</span></div>
+                    <div class="fo"><span><span class="cb"></span>safety</span><span class="cnt">1</span></div>
+                    <div class="fo"><span><span class="cb"></span>ADME</span><span class="cnt">1</span></div></div>
+                  <div class="facet"><h6>Type</h6>
+                    <div class="fo"><span><span class="cb"></span>workflow-run</span><span class="cnt">4</span></div>
+                    <div class="fo"><span><span class="cb"></span>function-run</span><span class="cnt">1</span></div></div>
+                </div>
+                <div style="flex:1; min-width:0">
+                  <div class="searchbar"><div class="searchbox">🔍 <span>Search…</span></div></div>
+                  <div class="cards">
+                    <div class="pcard"><b>Exposure model &middot; v3</b>
+                      <table class="kv"><tr><td>Study</td><td>ABC-301</td></tr><tr><td>Workstream</td><td>modeling</td></tr><tr><td>Tags</td><td>PK, popPK</td></tr></table></div>
+                    <div class="pcard"><b>PopPK dashboard &middot; v1</b>
+                      <table class="kv"><tr><td>Study</td><td>ABC-201</td></tr><tr><td>Workstream</td><td>modeling</td></tr><tr><td>Tags</td><td>PK</td></tr></table></div>
+                    <div class="pcard"><b>Dose-escalation summary &middot; v2</b>
+                      <table class="kv"><tr><td>Study</td><td>ABC-201</td></tr><tr><td>Workstream</td><td>clinical</td></tr><tr><td>Tags</td><td>safety</td></tr></table></div>
+                    <div class="pcard"><b>ADME screen batch 12 &middot; v1</b>
+                      <table class="kv"><tr><td>Workstream</td><td>discovery</td></tr><tr><td>Tags</td><td>ADME</td></tr></table></div>
+                    <div class="pcard"><b>Stability trend report &middot; v1</b>
+                      <table class="kv"><tr><td>Workstream</td><td>cmc</td></tr></table></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div></div>
+        </div>
+      </div>
+      <aside class="notes">
+        <div class="note"><b class="nt">Approved work only — and only yours to see</b>
+          <p>The catalog shows approved work, from the programs the viewer belongs to and nothing
+          else — the counts shown are their counts.</p></div>
+        <div class="note"><b class="nt">Facets that count</b>
+          <p>Narrow down by <b>Status, Study, Workstream, Molecules, Tags, Path, and Type</b> —
+          each option shows how many results it holds, and facets combine with the search
+          box.</p></div>
+        <div class="note"><b class="nt">Molecule chips everywhere</b>
+          <p>A publication can carry several molecules and several tags; each shows as its own
+          chip and can be filtered on its own.</p></div>
+      </aside>
+    </div>
+  </article>
+
+  <article class="slide">
+    <div class="slide-head"><span class="step">4.2</span><h3>Narrowed to one answer</h3></div>
+    <div class="slide-grid">
+      <div class="stage">
+        <div class="frame">
+          <div class="frame-bar"><span class="dots"><i></i><i></i><i></i></span>
+            <span class="frame-url">…/apps/ArtifactAlignment &middot; filtered</span></div>
+          <div class="frame-scroll"><div class="screen">
+            <div class="s-top">Browse &rsaquo; Apps &rsaquo; <b>Artifact Catalog</b></div>
+            <div class="s-cols">
+              <div class="s-main" style="display:flex">
+                <div class="s-filters">
+                  <div class="facet"><h6>Study</h6>
+                    <div class="fo on"><span><span class="cb on"></span>ABC-301</span><span class="cnt">1</span></div>
+                    <div class="fo"><span><span class="cb"></span>ABC-201</span><span class="cnt">0</span></div></div>
+                  <div class="facet"><h6>Molecules</h6>
+                    <div class="fo on"><span><span class="cb on"></span>GRK-1234</span><span class="cnt">1</span></div>
+                    <div class="fo"><span><span class="cb"></span>GRK-1187</span><span class="cnt">0</span></div>
+                    <div class="fo"><span><span class="cb"></span>GRK-0993</span><span class="cnt">0</span></div></div>
+                </div>
+                <div style="flex:1; min-width:0">
+                  <div class="searchbar"><div class="searchbox">🔍 <b>exposure</b></div></div>
+                  <div class="cards">
+                    <div class="pcard sel"><b>Exposure model &middot; v3</b>
+                      <table class="kv"><tr><td>Study</td><td>ABC-301</td></tr><tr><td>Workstream</td><td>modeling</td></tr><tr><td>Tags</td><td>PK, popPK</td></tr></table></div>
+                  </div>
+                </div>
+              </div>
+              <div class="s-ctx">
+                <h4>Exposure model &middot; v3</h4>
+                <table class="ctx-kv">
+                  <tr><td>Study</td><td>ABC-301</td></tr>
+                  <tr><td>Molecules</td><td><span class="chip">GRK-1234</span></td></tr>
+                  <tr><td>Author</td><td>computational scientist</td></tr>
+                </table>
+                <div class="ctx-btns"><span class="btn btn-sm">Open artifact</span></div>
+                <h5>History</h5>
+                <ul class="hist">
+                  <li>v2 &middot; rejected — "wrong cohort…" <span class="open">open</span></li>
+                  <li>v1 &middot; approved <span class="open">open</span></li>
+                </ul>
+              </div>
+            </div>
+          </div></div>
+        </div>
+      </div>
+      <aside class="notes">
+        <div class="note"><b class="nt">Three clicks, one answer</b>
+          <p>Molecule <b>GRK-1234</b>, study <b>ABC-301</b>, and a word of the name — the current
+          approved version is the only thing left on screen, one click from opening.</p></div>
+        <div class="note"><b class="nt">Viewer tier, viewer buttons</b>
+          <p>A viewer sees <b>Open artifact</b> and history — publishing into the program is denied for
+          viewers, and approval actions never apply to an approved row.</p></div>
+        <div class="note warn"><b class="nt">⚠ No structure search</b>
+          <p>Molecule filtering is by <b>registration code</b>, not chemistry: substructure /
+          similarity search is an explicit design limit. The bridge is chemistry tooling —
+          resolve a structure to registration codes there, then filter here. (Structures still
+          display throughout the catalog.)</p></div>
+      </aside>
+    </div>
+  </article>
+</section>
+
+<!-- ======================================================= OUT OF SCOPE -->
+<section class="chapter" id="out-of-scope">
+  <div class="ch-head"><span class="ch-num">•</span><h2>Out of scope for the PoC</h2></div>
+  <div class="caveats">
+    <div class="caveat"><h4>🧩 More artifact types</h4>
+      <p>The PoC publishes workflow runs and function runs. Other artifact types — dashboards,
+      queries, reports — and richer filtering by artifact type are out of scope, mostly for
+      technical reasons: each type needs its own way of being frozen and shared before it can join
+      the catalog.</p></div>
+    <div class="caveat"><h4>💬 Chat about a publication</h4>
+      <p>There is no conversation around a publication — the reject reason is the only written
+      exchange the workflow carries. Technically, publications are catalog rows rather than
+      platform entities, so entity features like comment threads don't attach to them.</p></div>
+    <div class="caveat"><h4>🎯 Finer-grained permissions</h4>
+      <p>Access is granted per program — whole-program or nothing. Narrower scopes, such as one
+      specific study or one model type, are out of scope: they need more research, are much more
+      complicated technically, and would be hard for administrators to manage day to day.</p></div>
+  </div>
+</section>
+
+<!-- ======================================================= CAVEATS -->
+<section class="chapter" id="caveats">
+  <div class="ch-head"><span class="ch-num">•</span><h2>Known gaps (this is a PoC)</h2></div>
+  <div class="caveats">
+    <div class="caveat"><h4>🔔 Notifications don't reach the feed</h4>
+      <p>Every dashed 🔔 card in this document is <b>designed but not delivered</b> — a platform
+      limitation; only the balloon messages work today. Until that's fixed, reviewers check the
+      Review queue and authors check My publications themselves. There are also no review
+      reminders or escalation yet.</p></div>
+    <div class="caveat"><h4>🔒 Security edges</h4>
+      <p>A few edges remain open in the PoC: contributors aren't yet limited to their own programs
+      for direct data changes, and frozen copies aren't yet locked down as tightly as designed.
+      Each gap is tracked by an automated check that flags the moment the platform closes
+      it.</p></div>
+    <div class="caveat"><h4>🎛 UI customization isn't there yet</h4>
+      <p>The catalog is built from the platform's generic data views, which can't yet be tailored
+      to this workflow — built-in controls that don't belong here can't be hidden, and the
+      standard dialogs can't be adapted. Closing this is a top item on the platform ask list in
+      the package design doc.</p></div>
+  </div>
+</section>
+
+<footer>
+  Artifact Catalog Walkthrough &middot; <code>@datagrok/artifact-alignment</code> 0.1.0 (PoC)
+  &middot; mocked UI recreation, August 2026. Companion to the package design doc
+  (<code>docs/artifact-alignment.html</code>).
+</footer>
+
+</div>
+
+<script>
+(function () {
+  var btn = document.getElementById('navToggle');
+  var links = [].slice.call(document.querySelectorAll('.sidenav a'));
+  function setOpen(open) {
+    document.body.classList.toggle('nav-open', open);
+    btn.setAttribute('aria-expanded', String(open));
+  }
+  btn.addEventListener('click', function () {
+    setOpen(!document.body.classList.contains('nav-open'));
+  });
+  // wide enough to float in the margin without covering content
+  setOpen(window.innerWidth >= 1700);
+  links.forEach(function (a) {
+    a.addEventListener('click', function () {
+      if (window.innerWidth < 1700) setOpen(false);
+    });
+  });
+  var targets = links.map(function (a) {
+    return document.getElementById(a.getAttribute('href').slice(1));
+  });
+  function spy() {
+    var current = 0;
+    targets.forEach(function (t, i) {
+      if (t && t.getBoundingClientRect().top <= 130) current = i;
+    });
+    links.forEach(function (a, i) { a.classList.toggle('act', i === current); });
+  }
+  document.addEventListener('scroll', spy, {passive: true});
+  spy();
+})();
+</script>
+</body>
+</html>

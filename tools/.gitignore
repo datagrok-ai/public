@@ -5,3 +5,5 @@ test-console-output.log
 bin/commands/*.js.map
 bin/utils/*.js.map
 bin/validators/*.js.map
+bin/utils/migrate/*.js
+bin/utils/migrate/*.js.map

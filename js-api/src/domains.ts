@@ -137,9 +137,10 @@ export interface DomainGrant {
 }
 
 /** Effective capabilities of the CURRENT user on one domain table
- * (see `DomainTableClient.capabilities`). Composed client-side from server-truth
- * permission probes on the FINAL securing entity through the master delegate chain,
- * plus the writable-column mirror of column security.
+ * (see `DomainTableClient.capabilities`). Composed by the SERVER
+ * (`GET /domains/{schema}/{table}/capabilities`) from the same predicates its reads
+ * and writes apply: grants on the FINAL securing entity through the master delegate
+ * chain, the writable-column mirror of column security, and relation travel.
  *
  * These are TABLE-level affordances, and they drift toward denial: every flag is
  * derived from grants on the securing entity, so grants that reach individual ROWS
@@ -149,14 +150,17 @@ export interface DomainGrant {
  * {@link DomainRow.permissions}. A true flag mirrors a predicate the server also
  * enforces, so gating UI on it avoids the common 403s (but never assume it removes
  * them: grants can change between the probe and the write, and column-level
- * restrictions are checked per value). */
+ * restrictions are checked per value). Read-only registrations (platform tables
+ * exposed through the `Core` schema) answer canInsert/canEdit/canDelete = false for
+ * everyone, admins included. */
 export interface DomainTableCapabilities {
   /** View grant on the securing entity. Row-mode tables may still expose
    * individually granted rows when false. */
   canView: boolean;
   /** Edit grant on the securing entity — the server's insert predicate
-   * (`_checkInsertAllowed`). False negative on master-mode tables where the caller
-   * holds the grant on an individual MASTER ROW rather than the master table. */
+   * (`_checkInsertAllowed`) — on a table that accepts writes. False negative on
+   * master-mode tables where the caller holds the grant on an individual MASTER ROW
+   * rather than the master table. */
   canInsert: boolean;
   /** {@link canInsert} AND at least one column is writable for the caller (the
    * built-in grid-editability rule) AND the table grant actually reaches rows —
@@ -171,6 +175,12 @@ export interface DomainTableCapabilities {
   /** Column names the caller may write (Edit on an owning property schema),
    * in declared column order. */
   writableColumns: string[];
+  /** Relations the caller may expand (View on both the junction and the target
+   * table), in declaration order. */
+  travelableRelations: string[];
+  /** The FINAL securing table (`<schema>.<table>`) every grant above is evaluated on:
+   * the table itself, or the end of its master delegate chain. */
+  securingTable: string;
   securityMode: 'table' | 'master' | 'row';
   /** Whether writes leave an in-transaction audit trail. */
   audit: boolean;

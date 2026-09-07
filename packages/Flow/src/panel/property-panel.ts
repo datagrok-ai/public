@@ -17,6 +17,7 @@ import {
   inputCaptionOf,
 } from '../utils/func-input-overrides';
 import {buildInputValueEditor} from '../utils/input-values';
+import {PROPERTY_INPUT_TYPE, applyPropertyInputShape} from '../rete/nodes/input-nodes';
 import {ColumnPickRequest} from './column-picker';
 import { processChoiceInput } from './choice-input-processor';
 
@@ -43,6 +44,7 @@ const UTILITY_PROP_TOOLTIPS: Record<string, Record<string, string>> = {
   'Select Columns': {columnNames: 'Comma-separated column names to extract'},
   'Select Table': {tableName: 'Name of an open table (resolved via grok.shell.tableByName)'},
   'Log': {label: 'Optional label prefix for the log message'},
+  'To Semantic Value': {semType: 'Semantic type to tag the value with (e.g. Molecule, Macromolecule)'},
   'String': {value: 'The constant string value to output'},
   'Int': {value: 'The constant integer value to output'},
   'Double': {value: 'The constant floating-point value to output'},
@@ -55,6 +57,9 @@ const PRIMITIVE_INPUT_TYPES: ReadonlySet<string> = new Set([
 ]);
 
 const TYPE_FILTER_VALUES = ['', 'numerical', 'categorical', 'string', 'int', 'double', 'bool'];
+/** Types a Property Input can mimic — set manually when the target isn't a DG function. */
+const PROPERTY_INPUT_TYPES = ['dynamic', 'string', 'int', 'double', 'bool', 'datetime',
+  'dataframe', 'column', 'column_list', 'string_list', 'file', 'map', 'blob'];
 const SEMTYPE_VALUES = ['', 'Molecule', 'Macromolecule'];
 const OUTPUT_TYPE_VALUES = [
   'string', 'int', 'double', 'bool',
@@ -343,6 +348,20 @@ export class PropertyPanel {
   private addInputNodePane(acc: DG.Accordion, node: FlowNode): void {
     acc.addPane('Input Configuration', () => {
       const content = ui.div([], 'funcflow-accordion-content');
+      if (node.dgTypeName === PROPERTY_INPUT_TYPE) {
+        content.appendChild(this.createCombo('Type', String(node.properties['propertyType'] ?? 'dynamic'),
+          PROPERTY_INPUT_TYPES, (v) => {
+            if (v === String(node.properties['propertyType'] ?? '')) return;
+            node.properties['propertyType'] = v;
+            applyPropertyInputShape(node);
+            this.flow.rebuildValueEditor(node.id);
+            // Re-render this pane for the new type's qualifier rows; deferred so the
+            // combo finishes its own event before its DOM is thrown away.
+            setTimeout(() => {
+              if (this.currentNode === node) this.showNode(node, this.currentExecState);
+            });
+          }, 'The parameter type this input mimics — picked up automatically when connected to a function input'));
+      }
       content.appendChild(this.createTextarea('Param Name', String(node.properties['paramName'] ?? ''), (v) => {
         node.properties['paramName'] = v;
       }));
@@ -359,8 +378,12 @@ export class PropertyPanel {
         content.appendChild(this.createCombo('Type Filter', String(node.properties['typeFilter'] ?? ''), TYPE_FILTER_VALUES, (v) => {node.properties['typeFilter'] = v;}));
       if (node.properties['semTypeFilter'] !== undefined)
         content.appendChild(this.createTextarea('SemType Filter', String(node.properties['semTypeFilter'] ?? ''), (v) => {node.properties['semTypeFilter'] = v;}));
-      if (node.properties['semType'] !== undefined)
-        content.appendChild(this.createCombo('SemType', String(node.properties['semType'] ?? ''), SEMTYPE_VALUES, (v) => {node.properties['semType'] = v;}));
+      if (node.properties['semType'] !== undefined) {
+        // An adopted semType may be outside the stock list — keep it selectable.
+        const semCur = String(node.properties['semType'] ?? '');
+        const semItems = SEMTYPE_VALUES.includes(semCur) ? SEMTYPE_VALUES : [semCur, ...SEMTYPE_VALUES];
+        content.appendChild(this.createCombo('SemType', semCur, semItems, (v) => {node.properties['semType'] = v;}));
+      }
       if (node.properties['choices'] !== undefined)
         content.appendChild(this.createTextarea('Choices (comma-sep)', String(node.properties['choices'] ?? ''), (v) => {node.properties['choices'] = v;},
           'Comma-separated list of allowed values — the run dialog and the value editor show them as a dropdown', false, 'Choices'));

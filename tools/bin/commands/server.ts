@@ -1,12 +1,20 @@
 /// Docs: [Grok Dapi](/docs/plans/grok-dapi/)
 import * as fs from 'fs';
 import * as path from 'path';
-import {NodeDapi, BatchRequest, BatchOperation} from '../utils/node-dapi';
+import {NodeDapi, BatchRequest, BatchOperation, InternalDataSource, PackageOpResult, mapPositionalParams} from '../utils/node-dapi';
 import {createClient} from '../utils/server-client';
-import {printOutput, printBatchOutput, printError, OutputFormat} from '../utils/server-output';
+import {printOutput, printBatchOutput, printError, setOutputFormat, OutputFormat} from '../utils/server-output';
+import {handleMigrate} from './server-migrate';
+import {handleDomains} from './server-domains';
+import {isUuid} from '../utils/migrate/registry';
+import {resolveEntity} from '../utils/migrate/walker';
+
+/** `queries|scripts get <nqName>` resolves through `/entities`, which needs the entity type. */
+const ENTITY_TYPES: Record<string, string> = {queries: 'DataQuery', scripts: 'Script', reports: 'UserReport'};
 
 const ENTITIES = ['users', 'groups', 'functions', 'connections', 'queries', 'scripts', 'packages', 'reports', 'files', 'tables'];
-const VERBS = ['list', 'get', 'delete'];
+const COMMANDS = ['shares', 'domains', 'raw', 'batch', 'describe', 'healthcheck', 'sync', 'pull', 'push', 'migrate', 'diff', 'bundle'];
+const VERBS = ['list', 'count', 'get', 'delete'];
 
 export async function server(argv: any): Promise<boolean> {
   const args: string[] = argv['_'].slice(1);
@@ -15,6 +23,7 @@ export async function server(argv: any): Promise<boolean> {
   const rest: string[] = args.slice(2);
 
   const output: OutputFormat = argv.output ?? argv.o ?? 'table';
+  setOutputFormat(output);
   const limit: number = Number(argv.limit ?? argv.l ?? 50);
   const offset: number = Number(argv.offset ?? 0);
   const filter: string = argv.filter ?? argv.f ?? '';
@@ -28,25 +37,34 @@ export async function server(argv: any): Promise<boolean> {
 
   let client;
   try {
-    client = await createClient(host);
+    client = await createClient(host, !!argv.admin);
   } catch (err: any) {
+    // a bad alias, URL or key is not a usage error: no help dump, just the reason
     printError(err);
-    return false;
+    process.exitCode = 1;
+    return true;
   }
   const dapi = new NodeDapi(client);
 
   try {
-    if (entity === 'batch') return handleBatch(dapi, argv, verb, rest, output);
-    if (entity === 'raw') return handleRaw(dapi, verb, rest, output);
-    if (entity === 'describe') return handleDescribe(dapi, verb ?? rest[0], output);
-    if (entity === 'healthcheck') return handleHealthcheck(dapi, argv, output);
-    if (entity === 'sync') return handleSync(dapi, verb, rest, argv, output);
-    if (entity === 'functions' && verb === 'run') return handleFuncRun(dapi, rest, argv, output);
-    if (entity === 'functions' && verb === 'list') return handleFunctionsList(dapi, argv, limit, offset, filter, output);
+    // await each handler so a rejection lands in the catch below instead of
+    // escaping to grok.js as an unhandled rejection (stack trace + exit 255)
+    if (['pull', 'push', 'migrate', 'diff', 'bundle'].includes(entity))
+      return await handleMigrate(dapi, entity, [verb, ...rest].filter(Boolean), argv, output);
+    if (entity === 'domains') return await handleDomains(dapi, verb, rest, argv, output);
+    if (entity === 'batch') return await handleBatch(dapi, argv, verb, rest, output);
+    if (entity === 'raw') return await handleRaw(dapi, verb, rest, argv, output);
+    if (entity === 'describe') return await handleDescribe(dapi, verb ?? rest[0], output);
+    if (entity === 'healthcheck') return await handleHealthcheck(dapi, argv, output);
+    if (entity === 'sync') return await handleSync(dapi, verb, rest, argv, output);
+    if (entity === 'functions' && verb === 'run') return await handleFuncRun(dapi, rest, argv, output);
+    if (entity === 'functions' && verb === 'list') return await handleFunctionsList(dapi, argv, limit, offset, filter, output);
     if (entity === 'files' && verb === 'list') {
-      const path = rest[0] ?? '';
-      const result = await dapi.files.list(path, recursive);
-      printOutput(result, output);
+      if (!rest[0]) { printError(new Error('Usage: grok s files list <connector>[/<path>] [-r]\n  e.g. grok s files list "System:AppData" -r')); return false; }
+      const files = await dapi.files.list(String(rest[0]), recursive);
+      if (output === 'json') printOutput(files, output);
+      else if (output === 'quiet') { for (const f of files) console.log(f.path); }
+      else printOutput(files.map((f) => ({path: f.path, kind: f.isFile ? 'file' : 'dir', size: f.isFile ? f.size ?? '' : '', updatedOn: f.updatedOn ?? ''})), output);
       return true;
     }
     if (entity === 'files' && verb === 'get') {
@@ -59,25 +77,31 @@ export async function server(argv: any): Promise<boolean> {
       if (output !== 'quiet') console.log(`Deleted ${rest[0]}`);
       return true;
     }
-    if (entity === 'files' && verb === 'put') return handleFilesPut(dapi, rest, output);
-    if (entity === 'shares' && verb === 'add') return handleSharesAdd(dapi, rest, argv, output);
-    if (entity === 'shares' && verb === 'list') return handleSharesList(dapi, rest, output);
-    if (entity === 'users' && verb === 'save') return handleUserSave(dapi, argv, output);
-    if (entity === 'groups' && verb === 'save') return handleGroupSave(dapi, argv, output);
-    if (entity === 'connections' && verb === 'save') return handleConnSave(dapi, argv, output);
-    if (entity === 'connections' && verb === 'test') return handleConnTest(dapi, rest, argv, output);
-    if (entity === 'groups' && verb === 'add-members') return handleGroupAddMembers(dapi, rest, argv, output);
-    if (entity === 'groups' && verb === 'remove-members') return handleGroupRemoveMembers(dapi, rest, argv, output);
-    if (entity === 'groups' && verb === 'list-members') return handleGroupListMembers(dapi, rest, argv, output);
-    if (entity === 'groups' && verb === 'list-memberships') return handleGroupListMemberships(dapi, rest, argv, output);
-    if (entity === 'users' && verb === 'block') return handleUserBlock(dapi, rest, output);
-    if (entity === 'users' && verb === 'unblock') return handleUserUnblock(dapi, rest, output);
-    if (entity === 'tables' && verb === 'download') return handleTablesDownload(dapi, rest, argv, output);
-    if (entity === 'tables' && verb === 'upload') return handleTablesUpload(dapi, rest, output);
+    if (entity === 'files' && verb === 'put') return await handleFilesPut(dapi, rest, output);
+    if (entity === 'shares' && verb === 'add') return await handleSharesAdd(dapi, rest, argv, output);
+    if (entity === 'shares' && verb === 'list') return await handleSharesList(dapi, rest, output);
+    if (entity === 'users' && verb === 'save') return await handleUserSave(dapi, argv, output);
+    if (entity === 'groups' && verb === 'save') return await handleGroupSave(dapi, argv, output);
+    if (entity === 'connections' && verb === 'save') return await handleConnSave(dapi, argv, output);
+    if (entity === 'connections' && verb === 'test') return await handleConnTest(dapi, rest, argv, output);
+    if (entity === 'groups' && verb === 'add-members') return await handleGroupAddMembers(dapi, rest, argv, output);
+    if (entity === 'groups' && verb === 'remove-members') return await handleGroupRemoveMembers(dapi, rest, argv, output);
+    if (entity === 'groups' && (verb === 'list-members' || verb === 'list-memberships')) return await handleGroupListMembers(dapi, verb, rest, argv, output);
+    if (entity === 'users' && verb === 'block') return await handleUserBlock(dapi, rest, output);
+    if (entity === 'users' && verb === 'unblock') return await handleUserUnblock(dapi, rest, output);
+    if (entity === 'tables' && verb === 'download') return await handleTablesDownload(dapi, rest, argv, output);
+    if (entity === 'tables' && verb === 'upload') return await handleTablesUpload(dapi, rest, output);
+    if (entity === 'packages' && verb === 'install') return await handlePackagesInstall(dapi, rest, argv, output);
+    if (entity === 'packages' && verb === 'uninstall') return await handlePackagesUninstall(dapi, rest, output);
+    if (entity === 'packages' && verb === 'share') return await handlePackagesShare(dapi, rest, argv, output);
+    if (entity === 'packages' && verb === 'versions') return await handlePackagesVersions(dapi, rest, output);
+    if (entity === 'packages' && verb === 'set-version') return await handlePackagesSetVersion(dapi, rest, output);
+    if (entity === 'packages' && verb === 'outdated') return await handlePackagesOutdated(dapi, output);
+    if (entity === 'packages' && verb === 'update') return await handlePackagesUpdate(dapi, rest, argv, output);
 
     const source = (dapi as any)[entity];
     if (!source || !ENTITIES.includes(entity)) {
-      printError(new Error(`Unknown entity type: '${entity}'. Valid: ${ENTITIES.join(', ')}`));
+      printError(new Error(`Unknown command '${entity}'. Entities: ${ENTITIES.join(', ')}. Other commands: ${COMMANDS.join(', ')}. See grok s --help`));
       return false;
     }
     if (!verb) {
@@ -86,18 +110,27 @@ export async function server(argv: any): Promise<boolean> {
     }
 
     if (verb === 'list') {
-      const page = Math.floor(offset / limit);
-      const results = await source
-        .filter(filter)
-        .by(limit)
-        .page(page)
-        .list();
+      const results = source instanceof InternalDataSource
+        ? await source.list({text: filter || undefined, limit, page: Math.floor(offset / limit) + 1})
+        : await source.filter(filter).by(limit).page(Math.floor(offset / limit)).list();
       printOutput(results, output);
+      return true;
+    }
+    if (verb === 'count') {
+      if (entity === 'reports') throw new Error('The server has no count endpoint for reports; use `grok s reports list --output quiet | wc -l`');
+      const n = source instanceof InternalDataSource
+        ? await source.count({text: filter || undefined})
+        : await source.filter(filter).count();
+      printOutput(n, output);
       return true;
     }
     if (verb === 'get') {
       if (!rest[0]) { printError(new Error('Usage: grok s <entity> get <id>')); return false; }
-      const result = await source.find(rest[0]);
+      // The internal routers find by id only; a name has to be resolved through /entities first.
+      const id = source instanceof InternalDataSource && !isUuid(rest[0])
+        ? (await resolveEntity(dapi, rest[0], ENTITY_TYPES[entity])).id
+        : rest[0];
+      const result = await source.find(id);
       printOutput(result, output);
       return true;
     }
@@ -108,11 +141,15 @@ export async function server(argv: any): Promise<boolean> {
       return true;
     }
 
-    printError(new Error(`Unknown verb: '${verb}'. Valid: ${VERBS.join(', ')}`));
+    const extraVerbs = entity === 'packages' ? ', install, uninstall, update, outdated, versions, set-version, share' : '';
+    printError(new Error(`Unknown verb: '${verb}'. Valid: ${VERBS.join(', ')}${extraVerbs}`));
     return false;
   } catch (err: any) {
-    printError(err);
-    return false;
+    // A runtime failure is not a usage error: report it and exit non-zero without
+    // making grok.js dump the help block (which it does for every `false` result).
+    printError(err, {verbose: !!argv.verbose});
+    process.exitCode = 1;
+    return true;
   }
 }
 
@@ -169,6 +206,190 @@ async function handleTablesDownload(dapi: NodeDapi, rest: string[], argv: any, o
   }
   else
     process.stdout.write(csv);
+  return true;
+}
+
+async function installPackages(dapi: NodeDapi, targets: {name: string; version: string}[], output: OutputFormat): Promise<PackageOpResult[]> {
+  const results: PackageOpResult[] = [];
+  for (const t of targets) {
+    let name = t.name;
+    try {
+      const pkg = await dapi.packages.resolve(t.name);
+      if (pkg) name = pkg.name;
+      if (output === 'table') console.log(`Installing ${name} (${t.version})...`);
+      const id = await dapi.packages.install(name, t.version);
+      // the server returns the published id for any existing explicit version
+      // (even an already-current one), so null means the version doesn't exist
+      if (!id && t.version !== 'latest')
+        results.push({package: name, version: t.version, status: 'error', error: `Version '${t.version}' not found`});
+      else
+        results.push({package: name, version: t.version, status: id ? 'installed' : 'noop', id: id ?? undefined});
+    }
+    catch (err: any) {
+      results.push({package: name, version: t.version, status: 'error', error: (err?.message ?? String(err)).replace(/\s*\n\s*/g, '; ')});
+    }
+  }
+  return results;
+}
+
+function printPackageOps(results: PackageOpResult[], output: OutputFormat): void {
+  if (output === 'quiet') {
+    for (const r of results)
+      if (r.id) console.log(r.id);
+  }
+  else
+    printOutput(results, output);
+  if (results.some((r) => r.status === 'error')) process.exitCode = 1;
+}
+
+async function handlePackagesInstall(dapi: NodeDapi, rest: string[], argv: any, output: OutputFormat): Promise<boolean> {
+  if (!rest.length) {
+    printError(new Error('Usage: grok s packages install <name> [<name> ...] [--version <v>]'));
+    return false;
+  }
+  if (argv.version !== undefined && rest.length > 1) {
+    printError(new Error('--version applies to a single package'));
+    return false;
+  }
+  const version = argv.version !== undefined ? String(argv.version) : 'latest';
+  const results = await installPackages(dapi, rest.map((r) => ({name: String(r), version})), output);
+  printPackageOps(results, output);
+  return true;
+}
+
+async function handlePackagesUninstall(dapi: NodeDapi, rest: string[], output: OutputFormat): Promise<boolean> {
+  if (!rest[0]) {
+    printError(new Error('Usage: grok s packages uninstall <name-or-id>'));
+    return false;
+  }
+  const result = await dapi.packages.uninstall(rest[0]);
+  if (output === 'json' || output === 'csv') printOutput(result, output);
+  else if (output === 'quiet') console.log(result.id);
+  else
+    console.log(result.repoBacked
+      ? `Uninstalled ${result.name} (package entry kept — reinstall with 'grok s packages install ${result.name}')`
+      : `Deleted local package ${result.name}`);
+  return true;
+}
+
+async function handlePackagesShare(dapi: NodeDapi, rest: string[], argv: any, output: OutputFormat): Promise<boolean> {
+  const [name, ...groupArgs] = rest;
+  if (!name || !groupArgs.length) {
+    printError(new Error('Usage: grok s packages share <name-or-id> <group>[,<group>...] [--access View|Edit]'));
+    return false;
+  }
+  const groups = groupArgs.flatMap((g) => g.split(',')).map((g) => g.trim()).filter(Boolean).join(',');
+  const access = typeof argv.access === 'string' ? argv.access : 'View';
+  if (access !== 'View' && access !== 'Edit') {
+    printError(new Error(`Invalid --access '${access}'. Use 'View' or 'Edit'.`));
+    return false;
+  }
+  const pkg = await dapi.packages.resolve(name);
+  if (!pkg) {
+    printError(new Error(`Package '${name}' not found`));
+    return false;
+  }
+  const result = await dapi.shares.share(pkg.id, groups, access);
+  printOutput(result, output);
+  if (result?.status === 'failed') process.exitCode = 1;
+  return true;
+}
+
+async function handlePackagesVersions(dapi: NodeDapi, rest: string[], output: OutputFormat): Promise<boolean> {
+  if (!rest[0]) {
+    printError(new Error('Usage: grok s packages versions <name-or-id>'));
+    return false;
+  }
+  const versions = await dapi.packages.versions(rest[0]);
+  const flat = versions.map((v: any) => ({
+    version: v?.version ?? '',
+    current: v?.isCurrent ?? false,
+    latest: v?.isLatest ?? false,
+    local: v?.isLocal ?? false,
+    remote: v?.isRemote ?? false,
+    debug: v?.debug ?? false,
+    id: v?.id ?? '',
+  }));
+  printOutput(flat, output);
+  return true;
+}
+
+async function handlePackagesSetVersion(dapi: NodeDapi, rest: string[], output: OutputFormat): Promise<boolean> {
+  if (!rest[0] || rest[1] === undefined) {
+    printError(new Error('Usage: grok s packages set-version <name> <version>'));
+    return false;
+  }
+  const version = String(rest[1]);
+  const pkg = await dapi.packages.resolve(String(rest[0]));
+  const name = pkg?.name ?? String(rest[0]);
+  const id = await dapi.packages.install(name, version);
+  if (!id) {
+    printError(new Error(`Version '${version}' not found for package '${name}'`));
+    return false;
+  }
+  if (output === 'quiet') console.log(id);
+  else if (output === 'json' || output === 'csv') printOutput({package: name, version, id}, output);
+  else console.log(`${name} -> ${version} (published package ${id})`);
+  return true;
+}
+
+async function handlePackagesOutdated(dapi: NodeDapi, output: OutputFormat): Promise<boolean> {
+  const rows = await dapi.packages.outdated();
+  if (!rows.length && output === 'table') {
+    console.log('All packages up to date.');
+    return true;
+  }
+  printOutput(rows, output);
+  return true;
+}
+
+async function handlePackagesUpdate(dapi: NodeDapi, rest: string[], argv: any, output: OutputFormat): Promise<boolean> {
+  const all = argv.all === true;
+  if (!all && !rest.length) {
+    printError(new Error('Usage: grok s packages update <name> [<name> ...] | --all'));
+    return false;
+  }
+  const outdated = await dapi.packages.outdated();
+  const results: PackageOpResult[] = [];
+  // a package tracking 'latest' keeps that auto-update intent; a pinned one gets
+  // pinned to the concrete registry-latest version
+  const targetVersion = (o: {desiredVersion: string; latest: string}) => o.desiredVersion === 'latest' ? 'latest' : o.latest;
+  let targets: {name: string; version: string}[];
+  if (all) {
+    targets = outdated.map((o) => ({name: o.name, version: targetVersion(o)}));
+    if (!targets.length && output === 'table') {
+      console.log('All packages up to date.');
+      return true;
+    }
+  }
+  else {
+    targets = [];
+    for (const r of rest) {
+      const raw = String(r);
+      let pkg: any = null;
+      try {
+        pkg = await dapi.packages.resolve(raw);
+      }
+      catch (err: any) {
+        results.push({package: raw, version: '', status: 'error', error: (err?.message ?? String(err)).replace(/\s*\n\s*/g, '; ')});
+        continue;
+      }
+      if (!pkg) {
+        results.push({package: raw, version: '', status: 'error', error: 'Package not found'});
+        continue;
+      }
+      const o = outdated.find((x) => x.name === pkg.name);
+      if (o) {
+        targets.push({name: pkg.name, version: targetVersion(o)});
+        continue;
+      }
+      const versions: any[] = Array.isArray(pkg.publishedVersions) ? pkg.publishedVersions : [];
+      const installed = versions.some((v) => v?.isCurrent && !v?.debug);
+      results.push({package: pkg.name, version: '', status: 'noop', note: installed ? 'already up to date' : 'not installed'});
+    }
+  }
+  results.push(...await installPackages(dapi, targets, output));
+  printPackageOps(results, output);
   return true;
 }
 
@@ -238,13 +459,19 @@ async function handleFunctionsList(dapi: NodeDapi, argv: any, limit: number, off
   return true;
 }
 
-async function handleRaw(dapi: NodeDapi, method: string | undefined, rest: string[], output: OutputFormat): Promise<boolean> {
+async function handleRaw(dapi: NodeDapi, method: string | undefined, rest: string[], argv: any, output: OutputFormat): Promise<boolean> {
   if (!method || !rest[0]) {
-    printError(new Error('Usage: grok s raw <METHOD> <path>'));
+    printError(new Error('Usage: grok s raw <METHOD> <path> [--json body.json | --data \'{"k": 1}\']\n  e.g. grok s raw GET /users/current   (paths are API-relative; a leading /api is accepted)'));
     return false;
   }
-  const path = rest[0];
-  const result = await dapi.raw(method, path);
+  let body: any;
+  if (argv.json)
+    body = readJsonFile(argv.json);
+  else if (argv.data !== undefined) {
+    try { body = JSON.parse(String(argv.data)); }
+    catch { body = String(argv.data); }
+  }
+  const result = await dapi.raw(method, String(rest[0]), body);
   printOutput(result, output);
   return true;
 }
@@ -255,23 +482,15 @@ async function handleSync(dapi: NodeDapi, subject: string | undefined, rest: str
   // runs are read-only here; `run` triggers an actual push and prints
   // the per-item summary. Full reference in
   // core/docs/plans/instance-sync.md (Phase 7 / operational polish).
-  //
-  // `_callSync` does dual-path routing: tries `/api/sync/...` first
-  // (nginx-fronted deployments) and falls back to `/sync/...` (bare
-  // datlas on :8082). Same approach as the server-side handshake
-  // code so the CLI works against either layout.
   const verb = rest[0];
+  // a 1.27 server has no /sync routes at all: report that as "not found", not as a failure
   const callSync = async (method: string, path: string, body?: any): Promise<any> => {
-    for (const prefix of ['/api', '']) {
-      const r: any = body !== undefined
-        ? await dapi.raw(method, `${prefix}${path}`, body)
-        : await dapi.raw(method, `${prefix}${path}`);
-      // raw() returns `null` for 404, but the server returns HTML for
-      // 404 too — treat anything that isn't a sync-shaped object/array
-      // as a miss and fall through to the alternate prefix.
-      if (r && (Array.isArray(r) || typeof r === 'object') && r['#type'] !== 'ApiError') return r;
+    try {
+      return await dapi.raw(method, path, body);
+    } catch (err: any) {
+      if (err?.apiError?.errorCode === 404) return null;
+      throw err;
     }
-    return null;
   };
   if (subject === 'pairs' && verb === 'list') {
     const status = argv.status ? `?status=${encodeURIComponent(argv.status)}` : '';
@@ -326,9 +545,10 @@ async function handleSync(dapi: NodeDapi, subject: string | undefined, rest: str
 async function handleHealthcheck(dapi: NodeDapi, argv: any, output: OutputFormat): Promise<boolean> {
   const module: string | undefined = argv.module;
   const path = module
-    ? `/api/public/v1/healthcheck?module=${encodeURIComponent(module)}`
-    : '/api/public/v1/healthcheck';
-  const result = await dapi.raw('GET', path);
+    ? `/public/v1/healthcheck?module=${encodeURIComponent(module)}`
+    : '/public/v1/healthcheck';
+  const result = await dapi.client.get(path);
+  const services: any[] = Array.isArray(result?.services) ? result.services : [];
 
   if (output === 'json') {
     printOutput(result, output);
@@ -342,17 +562,32 @@ async function handleHealthcheck(dapi: NodeDapi, argv: any, output: OutputFormat
     console.log(`time:    ${result?.time ?? ''}`);
     console.log('');
   }
-  printOutput(result?.services ?? [], output);
+  if (services.length)
+    printOutput(services, output);
+  else if (module)
+    throw new Error(`Module '${module}' is not reported by the server`);
+  else if (output !== 'quiet')
+    console.log('(no services reported)');
   return true;
 }
 
 async function handleDescribe(dapi: NodeDapi, entityType: string | undefined, output: OutputFormat): Promise<boolean> {
   if (!entityType) {
-    printError(new Error('Usage: grok s describe <entity-type>'));
+    printError(new Error('Usage: grok s describe <entity|type>   e.g. grok s describe connections, grok s describe Project'));
     return false;
   }
-  const result = await dapi.describe(entityType);
-  printOutput(result, output);
+  const result = await dapi.describe(String(entityType));
+  if (output === 'json') {
+    printOutput(result, output);
+    return true;
+  }
+  if (output !== 'quiet' && result.type)
+    console.log(`${result.type.name}${result.type.friendlyName && result.type.friendlyName !== result.type.name ? ` (${result.type.friendlyName})` : ''}  id ${result.type.id}${result.type.isPackageEntity ? '  package entity' : ''}\n`);
+  if (!result.fields.length) {
+    if (output !== 'quiet') console.log('(no entity of this type exists on the server to derive the fields from)');
+    return true;
+  }
+  printOutput(output === 'quiet' ? result.fields.map((f) => f.field) : result.fields, output);
   return true;
 }
 
@@ -377,6 +612,8 @@ async function handleFuncRun(dapi: NodeDapi, rest: string[], argv: any, output: 
     const parsed = parseFuncCall(funcName);
     funcName = parsed.name;
     params = parsed.params;
+    if (Object.keys(params).some((k) => /^\d+$/.test(k)))
+      params = mapPositionalParams(params, (await dapi.functions.find(funcName))?.parameterInfos, funcName);
   }
 
   const result = await dapi.functions.run(funcName, params);
@@ -417,18 +654,26 @@ async function handleSharesAdd(dapi: NodeDapi, rest: string[], argv: any, output
 }
 
 async function handleSharesList(dapi: NodeDapi, rest: string[], output: OutputFormat): Promise<boolean> {
-  const entityId = rest[0];
-  if (!entityId) {
-    printError(new Error('Usage: grok s shares list <entity-id>   (entity id must be a UUID)'));
+  if (!rest[0]) {
+    printError(new Error('Usage: grok s shares list <entity-id-or-name>   e.g. grok s shares list "Admin:MyConnection"'));
     return false;
   }
-  const perms = await dapi.shares.list(entityId);
-  const flat = (Array.isArray(perms) ? perms : []).map((p: any) => ({
-    group: p?.userGroup?.friendlyName ?? p?.userGroup?.name ?? p?.userGroup?.id ?? '',
-    groupId: p?.userGroup?.id ?? '',
-    access: p?.permission?.name ?? p?.permission?.friendlyName ?? '',
-    personal: p?.userGroup?.personal ?? false,
-  }));
+  const entityId = isUuid(String(rest[0])) ? String(rest[0]) : (await resolveEntity(dapi, String(rest[0]))).id;
+  const perms: any[] = await dapi.shares.list(entityId);
+  // the permissions route returns group ids only; a share touches a handful of groups
+  const groups = new Map<string, any>();
+  for (const id of new Set(perms.map((p) => p?.userGroup?.id).filter(Boolean)))
+    groups.set(id, await dapi.groups.find(id));
+  const flat = perms.map((p: any) => {
+    const g = groups.get(p?.userGroup?.id) ?? p?.userGroup ?? {};
+    return {
+      group: g.friendlyName ?? g.name ?? g.id ?? '',
+      groupId: g.id ?? '',
+      access: p?.permission?.name ?? p?.permission?.friendlyName ?? '',
+      personal: g.personal ?? false,
+      inherited: p?.inheritedByLink === true,
+    };
+  });
   printOutput(flat, output);
   return true;
 }
@@ -519,24 +764,16 @@ async function handleGroupRemoveMembers(dapi: NodeDapi, rest: string[], argv: an
   return true;
 }
 
-async function handleGroupListMembers(dapi: NodeDapi, rest: string[], argv: any, output: OutputFormat): Promise<boolean> {
+async function handleGroupListMembers(dapi: NodeDapi, verb: string, rest: string[], argv: any, output: OutputFormat): Promise<boolean> {
   if (!rest[0]) {
-    printError(new Error('Usage: grok s groups list-members <group> [--admin | --no-admin]'));
+    printError(new Error(`Usage: grok s groups ${verb} <group-or-login> [--admin | --no-admin] [--user]`));
     return false;
   }
   const admin: boolean | undefined = typeof argv.admin === 'boolean' ? argv.admin : undefined;
-  const result = await dapi.groups.getMembers(rest[0], admin);
-  printOutput(result, output);
-  return true;
-}
-
-async function handleGroupListMemberships(dapi: NodeDapi, rest: string[], argv: any, output: OutputFormat): Promise<boolean> {
-  if (!rest[0]) {
-    printError(new Error('Usage: grok s groups list-memberships <group> [--admin | --no-admin]'));
-    return false;
-  }
-  const admin: boolean | undefined = typeof argv.admin === 'boolean' ? argv.admin : undefined;
-  const result = await dapi.groups.getMemberships(rest[0], admin);
+  const personalOnly = argv.user === true;
+  const result = verb === 'list-members'
+    ? await dapi.groups.getMembers(String(rest[0]), admin, personalOnly)
+    : await dapi.groups.getMemberships(String(rest[0]), admin, personalOnly);
   printOutput(result, output);
   return true;
 }
@@ -652,7 +889,7 @@ export function parseFuncCall(expr: string): {name: string; params: Record<strin
   return {name, params: Object.fromEntries(positional.map((v, i) => [String(i), v]))};
 }
 
-const HELP_SERVER = `
+export const HELP_SERVER = `
 Usage: grok server <entity> <verb> [args] [options]
        grok s <entity> <verb> [args] [options]
 
@@ -660,27 +897,29 @@ Manage a Datagrok server from the command line.
 
 Entities:
   users, groups, functions, connections, queries, scripts, packages, reports, files, tables
+  (plus domains, shares, batch, raw, describe, healthcheck, sync, pull/push/migrate/diff/bundle below)
 
 Verbs:
-  list      List entities
+  list      List entities (--filter, --limit, --offset)
+  count     Count entities (--filter)
   get       Get a single entity by ID or name
-  delete    Delete an entity by ID
+  delete    Delete an entity by ID or name (users cannot be deleted: block them; functions: scripts and queries only)
 
 Special commands:
-  grok s functions run <Name:func(args)>              Call a function
+  grok s functions run <Name:func(args)>              Call a function (positional args map onto its inputs)
   grok s functions list [--type <t>] [--language <l>] [--package <p>] [--filter <expr>]
                                                       Type: script|query|function|package
                                                       Language applies to scripts (python, r, julia, nodejs, octave, grok)
-  grok s files list <path> [-r]                       List files (recursive with -r)
+  grok s files list <connector>[/<path>] [-r]         List a share (recursive with -r): path, kind, size
   grok s files get <path>                             Download a file (returns bytes)
   grok s files delete <path>                          Delete a file
   grok s files put <local> <remote>                   Upload a local file
-  grok s raw <METHOD> <path>                          Hit any API endpoint
-  grok s describe <entity-type>                       Show entity JSON schema
+  grok s raw <METHOD> <path> [--json f | --data j]    Any API endpoint; path is API-relative (/users/current), /api prefix optional
+  grok s describe <entity|type>                       Fields of an entity type (registry record + a live sample)
   grok s healthcheck [--module <name>]                Check server + per-module health
   grok s shares add <entity> <group>[,<group>...] [--access View|Edit]
                                                       Share an entity with one or more groups
-  grok s shares list <entity-id>                      List who an entity (UUID) is shared with
+  grok s shares list <entity-id-or-name>              List who an entity is shared with
   grok s users save --json user.json                  Create or update a user from a JSON file
   grok s groups save --json group.json [--save-relations]
                                                       Create or update a group from a JSON file
@@ -690,12 +929,47 @@ Special commands:
   grok s connections test --json conn.json            Test connectivity of a connection defined in JSON
   grok s groups add-members <group> <m>... [--admin]  Add one or more users/groups as members
   grok s groups remove-members <group> <m>...         Remove members (no-op if not a member)
-  grok s groups list-members <group> [--admin]        List members (optionally filter by admin)
-  grok s groups list-memberships <group> [--admin]    List parent groups
+  grok s groups list-members <group> [--admin] [--user]
+                                                      List members (optionally filter by admin; --user: personal group)
+  grok s groups list-memberships <group> [--admin] [--user]
+                                                      List parent groups
   grok s users block <id-or-login>                    Block a user from the platform
   grok s users unblock <id-or-login>                  Unblock a previously blocked user
   grok s tables upload <name> <file.csv|file.d42>     Upload a CSV or d42 binary as a Datagrok table
-  grok s tables download <name-or-id> [-O <file>]     Download a table as CSV (stdout by default)
+  grok s tables download <name|Project:Table|id> [-O <file>]
+                                                      Download a table as CSV (stdout by default)
+  grok s packages install <name>... [--version <v>]   Install latest (or pinned) versions from the registry
+  grok s packages uninstall <name>                    Uninstall a package (repository entry is kept)
+  grok s packages update <name>... | --all            Upgrade to the latest registry version
+  grok s packages outdated                            Show installed vs latest registry versions
+  grok s packages versions <name>                     List published versions (current/latest/debug flags)
+  grok s packages set-version <name> <version>        Activate a specific published version
+  grok s packages share <name> <group>[,...] [--access View|Edit]
+                                                      Share a package with one or more groups
+  grok s pull [<nqName|id>...] --out <dir>            Export entities into a bundle directory
+  grok s push <bundle-dir> [--dry-run]                Import a bundle into the target server
+  grok s migrate <selection> --from <a> --to <b>      Pull from one instance and push into another
+  grok s diff <bundle-dir>                            What a push would change (read-only, plans with skip)
+  grok s bundle ls <bundle-dir>                       List what a bundle contains
+  grok s domains list [<schema>] [--filter <text>]    Domain schemas, or the tables of one schema
+  grok s domains get <schema>|<schema.table> [<id>]   Manifest, a table's columns, or one row
+  grok s domains query <schema.table> [--filter <expr>] [--columns a,b] [--sort 'a,!b'] [--expand x] [--limit n] [--offset n]
+  grok s domains count <schema.table> [--filter <expr>]
+  grok s domains insert <schema.table> --json rows.json | col=value ... [--error-on-duplicate]
+  grok s domains update <schema.table> <id> --json values.json | col=value ... [--version n]
+  grok s domains delete <schema.table> <id> | --filter <expr> [--limit n]
+  grok s domains delete <schema> --force              Purge a user-managed schema with its data
+  grok s domains upload <schema.table> <file.csv|.d42|.json> [--upsert] [--no-all-or-nothing] [--error-on-duplicate]
+  grok s domains download <schema.table> [-O out.csv|out.d42] [--filter <expr>] [--columns a,b] [--sort s]
+  grok s domains aggregate <schema.table> --measures 'count,sum(x) as t' [--group-by a,b] [--filter <expr>]
+  grok s domains transaction <schema> --json ops.json  Ordered insert/update/delete ops, atomically
+  grok s domains audit <schema>|<schema.table> [<id>] [--limit n]
+  grok s domains capabilities <schema.table>          What the current user may do on the table
+  grok s domains grants <schema>|<schema.table>       Direct permission grants on a schema or table
+  grok s domains grant <schema>|<schema.table> <group>[,...] [--access View|Edit|Delete|Share|Extend]
+  grok s domains revoke <schema>|<schema.table> <group>[,...] [--access <permission>]
+  grok s domains create <name> [--friendly-name <t>] [--description <t>]
+  grok s domains apply <schema> --json manifest.json [--dry-run] [--confirm-destructive] [--if-version <v>]
   grok s batch <entity> <verb> arg1 [arg2 ...]        Batch operation (one round-trip)
   grok s batch <entity> <verb> --json params.json     Batch from JSON array
   grok s batch manifest.json                          Run a workflow manifest
@@ -704,18 +978,53 @@ Special commands:
   grok s sync setup get <setup-id>                    Inspect a setup (selections, direction, last run)
   grok s sync run <setup-id>                          Trigger a push run; prints per-item outcome
 
+Pull / push / migrate options:
+  --out <dir>           Bundle directory to write (pull; merges into an existing bundle)
+  --type <t,t>          conn, query, script, project, dashboard, space, view, layout, table,
+                        file, group, job, notebook, model
+  --name <glob>         Entity name glob: 'Cereal*' matches by prefix, '*demo*' anywhere
+  --namespace <ns>      Everything under a namespace, recursively
+  --space <nqName>      The space itself plus everything under it
+  --author <login>      Entities authored by a login
+  --tag <tag>           Entities carrying a tag
+  --since <2w|date>     Entities updated since ('2w' means '-2w'; also --since=-2w)
+  --filter <expr>       Smart-filter expression ANDed with the other flags
+  --no-deps             Do not follow dependencies (never-travels rules still apply)
+  --no-include-data     Do not pull table data (.d42) for pulled tables
+  --include-files       Also pull the bytes of pulled files
+  --replace             Clear the bundle directory before writing
+  --dry-run             Push: print the plan and stop
+  --on-conflict <p>     Push: what to do when the name is taken on the target by another id —
+                        fail (default) aborts before any write, skip leaves the target alone
+                        (and fails whatever depends on it), adopt writes into the twin and
+                        records idmap.json, duplicate creates the bundle entity under its own
+                        id next to the twin (a UserGroup cannot be duplicated — group names
+                        are unique, so that row fails)
+  --creds <file.yaml>   Push: target-side connection secrets, 'Ns:Conn:' then '  password: \${VAR}'
+                        (a covered connection is always written, so a push rotates the secret)
+  --from <alias|url>    Migrate: source instance (pulled from, never written to)
+  --to <alias|url>      Migrate: target instance
+  --keep                Migrate: keep the temporary bundle and print its path on stderr
+
 Options:
   --host <alias|url>    Server alias from config or full URL
+  --admin               Ask the server for an admin session, so the run sees entities the key's
+                        own account cannot (other people's spaces). Refused unless the account
+                        may start one; lasts for this command only
   --output <format>     Output format: table (default), json, csv, quiet
   --filter <text>       Smart filter expression
   --limit <n>           Page size (default: 50)
   --offset <n>          Start offset (default: 0)
   -r, --recursive       Recursive (for files list)
-  --json <file>         Read function parameters or batch params from JSON file
+  --verbose             Print the stack of a runtime failure, not just its message
+  --json <file>         Read a JSON body from a file (save, functions run, batch, raw)
+  --data '<json>'       Inline JSON body for raw
   -O, --output-file     Write table download to a file instead of stdout
   --type <t>            Function discriminator: script | query | function | package
   --language <lang>     Script language: python, r, julia, nodejs, octave, grok
   --package <name>      Restrict to functions belonging to a package (by short name)
+  --version <v>         Package version for 'packages install' (default: latest)
+  --all                 For 'packages update': upgrade every outdated package
 
 Batch manifest options (in manifest.json):
   stopOnError           Stop on first failure (default: true)
@@ -725,6 +1034,7 @@ Batch manifest options (in manifest.json):
 Examples:
   grok s users list
   grok s users list --output json --limit 10
+  grok s users count --filter 'status = "active"'
   grok s users save --json user.json
   grok s groups save --json group.json --save-relations
   grok s shares add "JohnDoe:MyConnection" Chemists,Admins --access Edit
@@ -742,14 +1052,38 @@ Examples:
   grok s functions list --package PowerPack --type package --filter 'name contains "grid"'
   grok s files list "System:AppData" -r
   grok s files put ./smiles.csv "System:DemoFiles/smiles.csv"
-  grok s raw GET /api/users/current
+  grok s packages install Chem Bio PowerGrid
+  grok s packages install Chem --version 1.14.0
+  grok s packages update --all
+  grok s packages versions Chem
+  grok s packages share Chem Chemists --access View
+  grok s raw GET /users/current
+  grok s raw POST /public/v1/functions/Sin/call --data '{"x": 1}'
   grok s describe connections
+  grok s tables download MyTable -O ./my-table.csv
   grok s users list --host dev
   grok s users list --host "https://mygrok.com/api"
   grok s groups add-members Admins alice bob --admin
   grok s groups remove-members Admins alice
   grok s groups list-members Admins --admin
   grok s groups list-memberships alice
+  grok s pull Admin:CerealDemog --out ./bundle --host dev
+  grok s pull Chemists --out ./bundle --host dev
+  grok s pull --type script --author alice --no-deps --out ./bundle
+  grok s bundle ls ./bundle
+  grok s push ./bundle --host local --dry-run
+  grok s push ./bundle --host local --on-conflict adopt
+  grok s pull --type space --namespace MySpace --include-files --out ./bundle
+  grok s push ./bundle --host prod --creds ./creds.yaml
+  grok s migrate Chem:TargetDashboard --from dev --to prod --dry-run
+  grok s diff ./bundle --host local
+  grok s domains list
+  grok s domains get grit.issue
+  grok s domains query grit.issue --filter 'status = "open"' --sort '!created_on' --limit 20
+  grok s domains insert grit.issue title="Crash on save" status=open
+  grok s domains upload grit.issue ./issues.csv --upsert
+  grok s domains download grit.issue -O ./issues.csv
+  grok s domains grant grit.issue Chemists --access Edit
   grok s batch files delete "System:AppData/old.txt" "System:DemoFiles/tmp.txt"
   grok s batch users create --json users.json
   grok s batch manifest.json

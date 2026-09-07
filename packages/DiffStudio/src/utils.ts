@@ -68,6 +68,39 @@ export function unusedFileName(name: string, files: string[]): string {
   return `${name}(${num})`;
 }
 
+/** Index of the `?params:` marker (plain or percent-encoded `?params%3a`), or -1. */
+export function findParamsIdx(path: string): number {
+  const lower = path.toLowerCase();
+  const plain = lower.indexOf(PATH.PARAM);
+  return plain > -1 ? plain : lower.indexOf(PATH.PARAM_ENCODED);
+}
+
+/** Length of the params marker at `idx` (plain or encoded), for slicing the tail after it. */
+function paramsMarkerLength(path: string, idx: number): number {
+  return path.toLowerCase().startsWith(PATH.PARAM, idx) ? PATH.PARAM.length : PATH.PARAM_ENCODED.length;
+}
+
+/** Parse model inputs from the `?params:` section; skips non `key=value` tokens
+ *  (e.g. `&preview`). Null when absent or on a malformed encoding. */
+export function parseStartingInputs(path: string): Map<string, number> | null {
+  const idx = findParamsIdx(path);
+  if (idx < 0)
+    return null;
+
+  try {
+    const inputs = new Map<string, number>();
+    for (const token of path.slice(idx + paramsMarkerLength(path, idx)).split(PATH.AND)) {
+      const eqIdx = token.indexOf(PATH.EQ);
+      if (eqIdx < 0) // e.g. the `preview` flag
+        continue;
+      inputs.set(decodeURIComponent(token.slice(0, eqIdx)).toLowerCase(), Number(token.slice(eqIdx + 1)));
+    }
+    return inputs;
+  } catch (error) {
+    return null;
+  }
+}
+
 /** Return dataframe with the specified number of last rows */
 export function getTableFromLastRows(df: DG.DataFrame, maxRows: number): DG.DataFrame {
   if (df.rowCount <= maxRows)
@@ -254,7 +287,10 @@ export function closeWindows() {
   grok.shell.windows.showColumns = false;
 }
 
-/** Get dataframe with recent models */
+/** Get dataframe with recent models. A corrupt or legacy `.d42` (e.g. one left on a
+ *  stand in an incompatible blob format) must degrade to «no recents» rather than throw:
+ *  this read also runs fire-and-forget from the constructor's prefetch, so a throw becomes
+ *  an unhandled rejection that surfaces to `grok.shell.lastError` and fails demo tests. */
 export async function getRecentModelsTable(): Promise<DG.DataFrame> {
   const path = `${grok.shell.user.project.name}:Home/${PATH.RECENT}`;
   const exist = await grok.dapi.files.exists(path);
@@ -262,8 +298,12 @@ export async function getRecentModelsTable(): Promise<DG.DataFrame> {
   if (!exist)
     return DG.DataFrame.create(0);
 
-  const dfs = await grok.dapi.files.readBinaryDataFrames(path);
-  return dfs[0];
+  try {
+    const dfs = await grok.dapi.files.readBinaryDataFrames(path);
+    return dfs[0];
+  } catch {
+    return DG.DataFrame.create(0);
+  }
 }
 
 let recentDfPromise: Promise<DG.DataFrame> | null = null;

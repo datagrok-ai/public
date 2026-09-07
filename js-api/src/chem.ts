@@ -288,10 +288,7 @@ export namespace chem {
     }
 
     isEmpty(): boolean {
-      if (this.sketcher?.explicitMol?.value)
-        return false;
-      const molFile = this.getMolFile();
-      return Sketcher.isEmptyMolfile(molFile);
+      return Sketcher.isEmptyMolfile(this.sketcher?.explicitMol?.value ?? this.getMolFile());
     }
 
     /** Sets the molecule, supports either SMILES, SMARTS or MOLBLOCK formats */

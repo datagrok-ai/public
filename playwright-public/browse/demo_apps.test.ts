@@ -126,14 +126,19 @@ function treeName(path: string[]): string {
 /** Expand a tree group identified by its stable `name="tree-..."` attribute (unambiguous, by name). */
 async function expandByTreeName(page: Page, name: string): Promise<void> {
   const node = page.locator(`[name="${name}"]`).first();
-  await node.waitFor({ state: 'visible', timeout: 20_000 });
+  // A node below the fold is attached but not visible, and scrolling is what makes it visible —
+  // waiting for visible before scrolling can never succeed.
+  await node.waitFor({ state: 'attached', timeout: 20_000 });
   await node.scrollIntoViewIfNeeded();
+  await node.waitFor({ state: 'visible', timeout: 20_000 });
   const tri = node.locator(TREE_EXPAND_ARROW).first();
-  const expanded = await tri.evaluate((el) => el.classList.contains('d4-tree-view-tri-expanded')).catch(() => false);
-  if (expanded) return;
+  const isExpanded = () => tri.evaluate((el) => el.classList.contains('d4-tree-view-tri-expanded')).catch(() => false);
+  if (await isExpanded()) return;
   if (await tri.isVisible().catch(() => false)) await tri.click();
   else await node.click();
-  await page.waitForTimeout(900);
+  // Children of a group that has not finished expanding are display:none, so the next step
+  // would look for them too early. Wait for the group to report itself expanded.
+  await expect.poll(isExpanded, { timeout: 20_000, intervals: [100, 200, 400, 800] }).toBe(true);
 }
 
 /**
@@ -148,8 +153,9 @@ async function openDemo(page: Page, demo: Demo): Promise<void> {
     await expandByTreeName(page, treeName(demo.path.slice(0, i)));
   // Wait until the parent group's children are actually rendered, then click the leaf.
   const leaf = page.locator(`[name="${treeName(demo.path)}"]`).first();
-  await leaf.waitFor({ state: 'visible', timeout: 20_000 });
+  await leaf.waitFor({ state: 'attached', timeout: 20_000 });
   await leaf.scrollIntoViewIfNeeded();
+  await leaf.waitFor({ state: 'visible', timeout: 20_000 });
   await leaf.click();
 }
 

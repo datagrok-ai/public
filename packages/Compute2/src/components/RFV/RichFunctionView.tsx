@@ -269,6 +269,15 @@ export const RichFunctionView = Vue.defineComponent({
       type: Boolean,
       default: false,
     },
+    // adds a share icon (emits `publishRun`); hosts gate it on the sharingMethod package setting
+    showPublish: {
+      type: Boolean,
+      default: false,
+    },
+    publishTooltip: {
+      type: String,
+      default: 'Share run',
+    },
     showRunButton: {
       type: Boolean,
       default: true,
@@ -299,6 +308,7 @@ export const RichFunctionView = Vue.defineComponent({
   emits: {
     'update:funcCall': (_call: DG.FuncCall) => true,
     'saveToHistory': (_call: DG.FuncCall) => true,
+    'publishRun': (_call: DG.FuncCall) => true,
     'runClicked': () => true,
     'actionRequested': (_actionUuid: string) => true,
     'consistencyReset': (_ioName: string) => true,
@@ -719,6 +729,11 @@ export const RichFunctionView = Vue.defineComponent({
             name={props.stepHistory ? 'cloud-upload-alt' : 'save'}
             tooltip='Save run to history'
             onClick={() => emit('saveToHistory', currentCall.value)}
+          /> }
+          { props.showPublish && !uiBlocked.value && <IconFA
+            name='share-alt'
+            tooltip={props.publishTooltip}
+            onClick={() => emit('publishRun', currentCall.value)}
           /> }
           { (props.historyEnabled || props.stepHistory) && <IconFA
             name='history'

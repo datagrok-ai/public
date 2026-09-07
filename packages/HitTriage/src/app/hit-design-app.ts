@@ -25,6 +25,7 @@ import * as api from '../package-api';
 import {registerMol} from './utils/molreg';
 import {autoMergeOnCampaignOpen, mergeIntoCampaign} from './utils/merge-table';
 import {openMergeTableDialog} from './dialogs/merge-table-dialog';
+import {attachHitInfoAi, attachHitCampaignAi} from './ai/view-functions';
 
 export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> extends HitAppBase<T> {
   multiView: DG.MultiView;
@@ -32,6 +33,7 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
   get infoView(): HitDesignInfoView {return this._infoView;}
   protected _designView?: DG.TableView;
   public _submitView?: HitDesignSubmitView;
+  get submitView(): HitDesignSubmitView | undefined {return this._submitView;}
   protected _designViewName = 'Design';
   protected _filePath = `System.AppData/HitTriage/${this.appName}/campaigns`;
   protected _campaignId?: string;
@@ -54,6 +56,7 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
     }));
 
     this.multiView.parentCall = c;
+    attachHitInfoAi(this.multiView, this);
 
     this.mainView = this.multiView;
     this._initViewSubs();
@@ -388,7 +391,11 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
 
   get campaignId(): string | undefined {return this._campaignId;}
 
-  get designView(): DG.TableView {return this._designView = this.getDesignView();}
+  get designView(): DG.TableView {
+    const view = this.getDesignView();
+    attachHitCampaignAi(view, this, 'design');
+    return this._designView = view;
+  }
 
   get designViewName(): string {return this._designViewName;}
 

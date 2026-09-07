@@ -96,7 +96,9 @@ interface IAnalyzedColumn {
 })
 export class GroupAnalysisViewer extends DG.JsViewer {
   initialized: boolean = false;
-  name = 'group';
+  private _name: string = 'group';
+  get name(): string { return this._name; }
+  set name(x: string | undefined) { this._name = x ?? ''; }
   groupByColumnNames: string[];
   analyzedColumns: IAnalyzedColumn[];
   analyzedColumnsEncoded: string;

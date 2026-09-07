@@ -2,6 +2,9 @@
 
 ## v.next
 
+* Added optional run sharing (workflow, RFV model run, and per-step when the step has enableHistory) via the sharingMethod setting: artifact-alignment ("Publish to program", requires the ArtifactAlignment package) or workspaces (links the run into an existing space, saving it to history first when needed)
+* Saved Compute2 runs (e.g. linked into a space) now render and open through their own editor from Browse instead of the generic funccall view
+* Added OpenWorkflowRun for opening a saved workflow or function run by its FuncCall id
 * Fixed view pinning failing depending on the platform's js-api version (pin vs isPinned)
 * Run compare: Fixed Save & Share failing to save and producing projects that crash on open
 

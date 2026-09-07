@@ -88,6 +88,19 @@ an app-like shareable link:
 To copy such a link for the parameters you currently see, click the **copy** icon next to
 the **Run** button.
 
+### Stored runs
+
+Every saved run of a function gets a sequential number (shown as `#N` in the function's
+run history). A run can be reopened by URL:
+
+```
+/func/Admin.SalesReport/runs/1
+```
+
+The link opens the run's stored inputs and outputs without re-executing the function.
+Query parameters are ignored when the run is found. If the run number doesn't exist, the
+parameter form opens instead, prefilled with any parameters the URL provided.
+
 Notes:
 
 * All required parameters must be in the URL. Otherwise the parameter form opens with the

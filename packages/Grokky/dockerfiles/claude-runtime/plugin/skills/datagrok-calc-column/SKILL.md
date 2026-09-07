@@ -1,12 +1,12 @@
 ---
 name: datagrok-calc-column
-description: Add a calculated, formula-based column to a dataframe inside a datagrok-exec block. Use whenever the user asks to compute, derive, add, or create a new column from existing columns — LipE, ratios, log/round, heavy atom count, any expression in the Datagrok formula DSL. Replaces hand-written addNewFloat/addNewInt + for-loop with a single formula-attached column that recomputes when source columns change.
+description: Add a calculated, formula-based column to a dataframe via the datagrok_exec tool. Use whenever the user asks to compute, derive, add, or create a new column from existing columns — LipE, ratios, log/round, heavy atom count, any expression in the Datagrok formula DSL. Replaces hand-written addNewFloat/addNewInt + for-loop with a single formula-attached column that recomputes when source columns change.
 ---
 
 # datagrok-calc-column
 
-Use `t.columns.addNewCalculated(name, formula, type?)` inside a `datagrok-exec`
-block to add a formula-driven column. The formula stays attached to the column,
+Use `t.columns.addNewCalculated(name, formula, type?)` in `datagrok_exec` code
+to add a formula-driven column. The formula stays attached to the column,
 so edits to source columns trigger automatic recompute.
 
 Do **not** use `t.columns.addNewFloat('LipE')` plus a manual `for` loop — that
@@ -23,7 +23,7 @@ await t.columns.addNewCalculated(
 ): Promise<DG.Column>
 ```
 
-`t` is the current `DG.DataFrame` (injected by `datagrok-exec`). If you have a
+`t` is the current `DG.DataFrame` (injected by `datagrok_exec`). If you have a
 DataFrame from elsewhere, replace `t` with that variable.
 
 ## Formula DSL — quick reference
@@ -37,7 +37,7 @@ DataFrame from elsewhere, replace `t` with that variable.
 | `Round`, `RoundFloat`, `Log`, `Log10`, `Sqrt`, `Abs` | math functions      |
 | `Avg($[col])`, `Sum($[col])`, `Min($[col])`, `Max($[col])`, `StDev($[col])` | aggregates over a whole column |
 | `Max([${A}, ${B}])`, `Min([${A}, ${B}])` | per-row max / min across columns — the argument is an **array** |
-| `Chem:getInchis(${molecule})`, `HeavyAtomCount(${molecule})` | only functions tagged `vectorFunc: 'true'` work here — see [Which functions work in a formula](#which-functions-work-in-a-formula) |
+| `Chem:getInchis(${molecule})` | only functions tagged `vectorFunc: 'true'` work here — see [Which functions work in a formula](#which-functions-work-in-a-formula) |
 | `"text"`             | string literal (double quotes)                     |
 
 Both operator and function forms parse: `${pIC50} - ${cLogP}` ≡ `Sub(${pIC50}, ${cLogP})`.
@@ -46,17 +46,17 @@ Full function catalog: `help/transform/add-new-column.md`.
 
 ## Examples
 
-```datagrok-exec
-// Heavy atom count (requires Chem package)
-await t.columns.addNewCalculated('HAC', 'HeavyAtomCount(${molecule})', 'int');
+```js
+// Lipophilic efficiency
+await t.columns.addNewCalculated('LipE', '${pIC50} - ${cLogP}');
 ```
 
-```datagrok-exec
+```js
 // Log of activity
 await t.columns.addNewCalculated('logIC50', 'Log10(${IC50})');
 ```
 
-```datagrok-exec
+```js
 // Per-row maximum of two columns — note the array argument.
 await t.columns.addNewCalculated('CS max', 'Max([${Chemical Space X}, ${Chemical Space Y}])');
 ```
@@ -66,7 +66,7 @@ await t.columns.addNewCalculated('CS max', 'Max([${Chemical Space X}, ${Chemical
 A package function (`Chem:foo`, `Admetica:bar`, ...) can be used inside an
 `addNewCalculated` formula only if it is tagged `vectorFunc: 'true'` in its
 metadata. Everything else must be called imperatively via
-`grok.functions.call(...)` in a separate `datagrok-exec` block.
+`grok.functions.call(...)` in a separate `datagrok_exec` call.
 
 ## Chem properties → use the chem catalog, not a formula
 
@@ -75,7 +75,7 @@ stereo centers, molecule charge): use `Chem:addChemPropertiesColumns` (boolean
 flags) or `Chem:getProperties(molecules, selected?)` (string list) — see
 `datagrok-chem-toolkit`. Example:
 
-```datagrok-exec
+```js
 await grok.functions.call('Chem:addChemPropertiesColumns', {
   table: t, molecules: t.col('smiles'), MW: true,
 });

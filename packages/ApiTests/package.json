@@ -46,10 +46,7 @@
   "scripts": {
     "debug-js-api-tests": "webpack && grok publish localhost",
     "release-js-api-tests": "grok publish localhost --release",
-    "link-all": "npm link @datagrok-libraries/utils @datagrok-libraries/ml @datagrok-libraries/domain-ui datagrok-api",
-    "link-utils": "npm link @datagrok-libraries/utils",
-    "link-api": "npm link datagrok-api",
-    "build-js-api-tests-local": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm --prefix ./../../libraries/ml run build && npm --prefix ./../../libraries/domain-ui run build && npm run build",
+    "build-js-api-tests-local": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/domain-ui run build && npm run build",
     "build-js-api-tests": "webpack",
     "build": "grok api && grok check --soft && webpack",
     "test": "grok test",

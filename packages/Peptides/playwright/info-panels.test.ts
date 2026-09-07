@@ -34,25 +34,20 @@ test('Peptides — Info Panels', async ({page}) => {
       await new Promise((r) => setTimeout(r, 5000));
       try { await grok.functions.call('Peptides:initPeptides'); }
       catch (e) { console.log('[note] Peptides:initPeptides pre-warm threw (non-fatal):', String(e)); }
-      const wiredDeadline = Date.now() + 30_000;
-      let detailsWired = false;
-      while (Date.now() < wiredDeadline) {
-        detailsWired = !!document.querySelector('.grok-prop-panel [name="pane-Details"]');
-        if (detailsWired) break;
-        await new Promise((r) => setTimeout(r, 250));
-      }
+      // Only that the panel is open: its panes belong to whatever grok.shell.o is, and
+      // right after addTableView that is the platform info object (Client/Server/Services/
+      // Plugins). Details arrives in step 2, with the column.
       return {
         rows: df.rowCount,
         semType: df.col('AlignedSequence')?.semType,
-        detailsWired,
+        panelOpen: !!document.querySelector('.grok-prop-panel'),
         activeViewType: (grok.shell.v as any)?.type ?? (grok.shell.v as any)?.constructor?.name,
       };
     }, datasetPath);
     expect(result.rows).toBe(647);
     expect(result.semType).toBe('Macromolecule');
-    expect(result.detailsWired).toBe(true);
+    expect(result.panelOpen).toBe(true);
     await page.locator('[name="viewer-Grid"]').waitFor({timeout: 30_000});
-    await page.locator('.grok-prop-panel [name="pane-Details"]').waitFor({timeout: 30_000});
   });
   await softStep('Step 1: Verify amino acid coloring (cell.renderer === sequence)', async () => {
     const renderer = await page.evaluate(() => {
@@ -63,7 +58,6 @@ test('Peptides — Info Panels', async ({page}) => {
   });
   await softStep('Step 2: Focus AlignedSequence column, wait for Context Panel rebuild', async () => {
     await page.locator('[name="viewer-Grid"]').waitFor({timeout: 15_000});
-    await page.locator('.grok-prop-panel [name="pane-Details"]').waitFor({timeout: 15_000});
     const probe = await page.evaluate(async () => {
       const df = grok.shell.tv.dataFrame;
       const col = df.col('AlignedSequence');

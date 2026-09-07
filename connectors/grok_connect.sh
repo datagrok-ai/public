@@ -51,7 +51,7 @@ if [ "$1" == "shell" ]; then
     fi
 
     GROK_CONNECT=$(grok_connect_jar)
-    java -Xmx4g -classpath ${GROK_CONNECT_DIR}/lib/*:${TARGET_DIR}/${GROK_CONNECT} grok_connect.GrokConnectShell "$@"
+    java -Xmx4g -classpath ${TARGET_DIR}/${GROK_CONNECT}:${GROK_CONNECT_DIR}/lib/* grok_connect.GrokConnectShell "$@"
 else
     # Remove target
     rm -rf ${TARGET_DIR}

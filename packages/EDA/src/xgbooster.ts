@@ -45,6 +45,8 @@ enum TITLES {
   VERSION = 'Version',
   CATS = 'Categories',
   CATS_SIZE = 'Categories size',
+  FEATURES = 'Features',
+  FEATURES_SIZE = 'Features size',
   WAS_BOOL = 'Was bool',
 }
 
@@ -60,7 +62,7 @@ function columnView(col: DG.Column): ColumnView {
   return (col.getRawData() as ColumnView).subarray(0, col.length) as ColumnView;
 }
 
-function featureViews(features: DG.ColumnList): ColumnView[] {
+function featureViews(features: DG.Column[]): ColumnView[] {
   const views: ColumnView[] = [];
   for (const col of features)
     views.push(columnView(col));
@@ -105,6 +107,8 @@ export class XGBooster {
   private targetCategories: string[] | undefined = undefined;
   /** True if the original target was a boolean column */
   private targetWasBool = false;
+  /** Feature names (training order), used to match apply-time columns by name. */
+  private featureNames: string[] | undefined = undefined;
   /** Cached live wasm handle; recreated lazily from modelBytes. */
   private handle = 0;
 
@@ -147,6 +151,17 @@ export class XGBooster {
         }
         offset += categoriesBytesSize;
 
+        // Feature names (training order), if present.
+        const featuresBytesCol = headerDf.col(TITLES.FEATURES_SIZE);
+        const featuresBytesSize = (featuresBytesCol !== null) ? (featuresBytesCol.get(0) as number) : 0;
+        if (featuresBytesSize > 0) {
+          const featuresDf = DG.DataFrame.fromByteArray(
+            new Uint8Array(packedModel.buffer, packedModel.byteOffset + offset, featuresBytesSize),
+          );
+          this.featureNames = featuresDf.col(TITLES.FEATURES)?.toList();
+        }
+        offset += featuresBytesSize;
+
         offset = Math.ceil(offset / ALIGN_VAL) * ALIGN_VAL;
 
         // Unpack model bytes (copy: the container buffer may be reused by the caller)
@@ -170,6 +185,8 @@ export class XGBooster {
     // Idempotent; needed where package init does not run (package-test bundle).
     await initXgboost();
 
+    this.featureNames = features.names();
+
     // A boolean target is converted to a 2-class string target ('true'/'false')
     this.targetWasBool = (target.type === DG.COLUMN_TYPE.BOOL);
     const tgt = this.targetWasBool ? target.convertTo(DG.COLUMN_TYPE.STRING) : target;
@@ -192,7 +209,7 @@ export class XGBooster {
 
     const hyper: XgbHyperParams = {iterations, eta, maxDepth, lambda, alpha};
     // String labels are category codes (0..K-1 by construction).
-    this.modelBytes = await fitXgb(featureViews(features), columnView(tgt),
+    this.modelBytes = await fitXgb(featureViews(features.toList()), columnView(tgt),
       target.length, MISSING_VALUE, this.objective,
       this.objective === XgbObjective.Multiclass ? numClass : 0, hyper);
 
@@ -204,12 +221,13 @@ export class XGBooster {
     if (this.modelBytes === undefined)
       throw new Error('Failed to apply non-trained model');
 
-    const samplesCount = features.byIndex(0).length;
+    const ordered = this.orderedFeatures(features);
+    const samplesCount = ordered[0].length;
     let prediction: Float32Array;
     try {
       if (this.handle === 0)
         this.handle = loadXgbModel(this.modelBytes);
-      prediction = predictXgb(this.handle, featureViews(features), samplesCount, MISSING_VALUE);
+      prediction = predictXgb(this.handle, featureViews(ordered), samplesCount, MISSING_VALUE);
     } catch (err) {
       // On a module crash the cached handle is dead; drop it so that the
       // next call reloads the model into the re-initialized module.
@@ -246,11 +264,18 @@ export class XGBooster {
 
     const categoriesBytesSize = (categoriesBytes !== undefined) ? categoriesBytes.length : 0;
 
+    // Feature names (training order)
+    const featuresBytes = (this.featureNames !== undefined) ? DG.DataFrame.fromColumns([
+      DG.Column.fromList(DG.COLUMN_TYPE.STRING, TITLES.FEATURES, this.featureNames),
+    ]).toByteArray() : undefined;
+    const featuresBytesSize = (featuresBytes !== undefined) ? featuresBytes.length : 0;
+
     // Header with model specification
     const headerDf = DG.DataFrame.fromColumns([
       DG.Column.fromStrings(TITLES.TYPE, [this.targetType]),
       DG.Column.fromInt32Array(TITLES.MODEL_SIZE, new Int32Array([this.modelBytes.length])),
       DG.Column.fromInt32Array(TITLES.CATS_SIZE, new Int32Array([categoriesBytesSize])),
+      DG.Column.fromInt32Array(TITLES.FEATURES_SIZE, new Int32Array([featuresBytesSize])),
       DG.Column.fromInt32Array(TITLES.WAS_BOOL, new Int32Array([this.targetWasBool ? 1 : 0])),
       DG.Column.fromInt32Array(TITLES.OBJECTIVE, new Int32Array([this.objective])),
       DG.Column.fromInt32Array(TITLES.VERSION, new Int32Array([CONTAINER_VERSION])),
@@ -260,8 +285,8 @@ export class XGBooster {
     const headerBytesSize = headerBytes.length;
 
     // Packed model
-    const reservedSize = Math.ceil((SIZE_BYTES +
-      headerBytesSize + categoriesBytesSize + this.modelBytes.length + PACK_RESERVE) / BLOCK_SIZE) * BLOCK_SIZE;
+    const reservedSize = Math.ceil((SIZE_BYTES + headerBytesSize + categoriesBytesSize +
+      featuresBytesSize + this.modelBytes.length + PACK_RESERVE) / BLOCK_SIZE) * BLOCK_SIZE;
 
     const packedModel = new Uint8Array(reservedSize);
 
@@ -281,6 +306,11 @@ export class XGBooster {
       packedModel.set(categoriesBytes!, offset);
     offset += categoriesBytesSize;
 
+    // Pack feature names
+    if (featuresBytesSize > 0)
+      packedModel.set(featuresBytes!, offset);
+    offset += featuresBytesSize;
+
     offset = Math.ceil(offset / ALIGN_VAL) * ALIGN_VAL;
 
     // Pack model bytes
@@ -288,6 +318,21 @@ export class XGBooster {
 
     return packedModel;
   } // toBytes
+
+  /** Apply-time columns in training order, matched by name (legacy: positional). */
+  private orderedFeatures(features: DG.ColumnList): DG.Column[] {
+    if (this.featureNames === undefined)
+      return features.toList();
+    const byName = new Map<string, DG.Column>();
+    for (const col of features)
+      byName.set(col.name, col);
+    return this.featureNames.map((name) => {
+      const col = byName.get(name);
+      if (col === undefined)
+        throw new Error(`XGBoost: model feature is missing in the table: "${name}"`);
+      return col;
+    });
+  }
 
   private invalidateHandle(): void {
     if (this.handle !== 0) {

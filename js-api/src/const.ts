@@ -140,6 +140,19 @@ export enum TYPE {
   NOTEBOOK = 'Notebook'
 }
 
+/** How a property relates to its owner in the database ({@link Property.relationKind}).
+ * @enum {RELATION_KIND} */
+export enum RELATION_KIND {
+  FIELD = 'Field',
+  BELONGS_TO = 'BelongsTo',
+  USES = 'Uses',
+  OWNS = 'Owns',
+  USED_BY = 'UsedBy',
+  USES_MANY = 'UsesMany',
+  CALCULATED_FIELD = 'CalculatedField',
+  INHERITS = 'Inherits',
+}
+
 export enum GRID_COLUMN_TAGS {
 
 }
@@ -255,6 +268,8 @@ export const SEMTYPE = {
   IC50: 'IC50',  //	[nM, µM] Half-maximal inhibitory concentration (lower = more potent)
   EC50: 'EC50',  // [nM, µM] Half-maximal effective concentration
   Ki: 'Ki',      // [nM, µM] Inhibition constant (binding affinity to target)
+
+  FUNCTION_NAME: 'FunctionName',  // namespace-qualified function name, such as 'Chem:SmilesToMw'
 }
 
 export const UNITS = {
@@ -442,6 +457,9 @@ export const FUNC_TYPES = {
   MONOMER_LIB_PROVIDER: 'monomer-lib-provider',
 
   SEARCH_PROVIDER: 'searchProvider',
+
+  AI_ENGINE: 'aiEngine',
+
   NOTATION_REFINER: 'notationRefiner',
 }
 
@@ -618,6 +636,11 @@ export const functionRoles: FuncRoleDescription[] = [
     role: FUNC_TYPES.SEARCH_PROVIDER,
     description: 'Marks a function to be used as a search provider in the global search.',
     signature: 'searchProvider(): SearchProvider'
+  },
+  {
+    role: FUNC_TYPES.AI_ENGINE,
+    description: 'Provides an AI backend (engine) discoverable through grok.ai.',
+    signature: 'aiEngine(): AIEngine'
   },
   {
     role: FUNC_TYPES.NOTATION_REFINER,
@@ -844,6 +867,7 @@ export enum EVENT_TYPE {
   // Context menu events
   CONTEXT_MENU = 'd4-context-menu',
   CONTEXT_MENU_CLOSED = 'd4-menu-closed',
+  CONTEXT_MENU_SHOWN = 'd4-menu-shown',
 
   // View events
   CURRENT_VIEW_CHANGED = 'd4-current-view-changed',

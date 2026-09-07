@@ -9,21 +9,21 @@ import * as DG from 'datagrok-api/dg';
 
 export namespace scripts {
   /**
-  Returns distance matrix condensed
+  Compute a condensed pairwise distance matrix between rows of the input table.
   */
   export async function distanceScript(data: DG.DataFrame , distance_name: string ): Promise<DG.DataFrame> {
     return await grok.functions.call('Dendrogram:DistanceScript', { data, distance_name });
   }
 
   /**
-  Returns the newick representation of the tree for given dataset
+  Cluster rows of the input table hierarchically and return the tree in Newick format.
   */
   export async function hierarchicalClusteringScript(data: DG.DataFrame , distance_name: string , linkage_name: string ): Promise<string> {
     return await grok.functions.call('Dendrogram:HierarchicalClusteringScript', { data, distance_name, linkage_name });
   }
 
   /**
-  Returns the newick representation of the tree for given distance matrix
+  Cluster observations hierarchically from a precomputed distance matrix and return the tree in Newick format.
   */
   export async function hierarchicalClusteringByDistanceScript(data: DG.DataFrame , size: number , linkage_name: string ): Promise<string> {
     return await grok.functions.call('Dendrogram:HierarchicalClusteringByDistanceScript', { data, size, linkage_name });

@@ -1,0 +1,14 @@
+# Build artifacts — 4.7 GB, never needed in the image (rebuilt inside the builder stage).
+target/
+
+# Git metadata.
+.git/
+.github/
+
+# Platform-specific / runtime-loaded driver libraries. The Snowflake driver is
+# installed via apt in the runtime stage; the ClickHouse driver is compiled from
+# source in the clickhouse-driver stage. The committed Windows .dll is irrelevant on Linux.
+lib/
+
+# Docs and scratch.
+*.md

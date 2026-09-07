@@ -40,7 +40,7 @@ if "%1" == "shell" (
         call set REST_ARGS=%%REST_ARGS:*%2=%%
     )
 
-    for %%f in (%TARGET_DIR%\grok_connect-*.jar) do java -Xmx4g -classpath %GROK_CONNECT_DIR%\lib\*;%%f grok_connect.GrokConnectShell %REST_ARGS%
+    for %%f in (%TARGET_DIR%\grok_connect-*.jar) do java -Xmx4g -classpath %%f;%GROK_CONNECT_DIR%\lib\* grok_connect.GrokConnectShell %REST_ARGS%
 ) else (
     :: Remove target
     del /s /q %TARGET_DIR%
@@ -67,7 +67,7 @@ if "%1" == "shell" (
 
     :: Run connector server with shared libraries
     if "%1" == "run" (
-        for %%f in (%TARGET_DIR%\grok_connect-*.jar) do call java -Xmx4g -classpath %GROK_CONNECT_DIR%\lib\*;%%f grok_connect.GrokConnect
+        for %%f in (%TARGET_DIR%\grok_connect-*.jar) do call java -Xmx4g -classpath %%f;%GROK_CONNECT_DIR%\lib\* grok_connect.GrokConnect
         pause
     )
 )

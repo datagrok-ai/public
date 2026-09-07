@@ -130,7 +130,7 @@ export interface IssueRow {
 /** Insert payload for `grit.issue`. */
 export interface IssueInsert {
   project_id: string;
-  number: number;
+  number?: number;
   title: string;
   description?: string;
   status_id?: string;
@@ -156,6 +156,12 @@ export type IssueExpand = {
   'status_id': {'status_id.name'?: string; 'status_id.description'?: string};
   'priority_id': {'priority_id.name'?: string; 'priority_id.description'?: string; 'priority_id.priority'?: number};
   'type_id': {'type_id.name'?: string; 'type_id.description'?: string};
+  'reporter': {'reporter.login'?: string; 'reporter.firstName'?: string; 'reporter.lastName'?: string;
+    'reporter.status'?: string; 'reporter.createdOn'?: Dayjs; 'reporter.picture'?: string; 'reporter.group'?: string;
+    'reporter.author'?: string};
+  'assignee': {'assignee.login'?: string; 'assignee.firstName'?: string; 'assignee.lastName'?: string;
+    'assignee.status'?: string; 'assignee.createdOn'?: Dayjs; 'assignee.picture'?: string; 'assignee.group'?: string;
+    'assignee.author'?: string};
   'labels': {labels?: {id: string; name: string}[]};
   'details:comment': {comment?: CommentRow[]};
   'details:issue_label': {issue_label?: IssueLabelRow[]};

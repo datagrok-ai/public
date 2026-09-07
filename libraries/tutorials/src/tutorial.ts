@@ -124,7 +124,7 @@ export abstract class Tutorial extends DG.Widget {
     grok.shell.windows.showBrowse = true;
   }
 
-  async run(): Promise<void> {
+  async start(): Promise<void> {
     this._addHeader();
 
     const tutorials = this.track?.tutorials;
@@ -232,7 +232,7 @@ export abstract class Tutorial extends DG.Widget {
             this.clearRoot();
             tutorialNode.html('');
             tutorialNode.append(nextTutorial.root);
-            nextTutorial.run();
+            nextTutorial.start();
           }),
           ui.button('Cancel', () => {
             this.updateProgress(this.track);

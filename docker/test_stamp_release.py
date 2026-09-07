@@ -127,7 +127,9 @@ def main():
         rc, out = run(d, 'stamp', '--version', '1.28.0', '--set', 'datagrok=1.28.0',
                       '--set', 'grok_pipe=1.22.2', '--set', 'grok_connect=2.7.0',
                       '--set', 'grok_spawner=2.23.0',
-                      '--set', 'jupyter_kernel_gateway=1.34.1',
+                      '--set', 'jkg_python=1.1.0', '--set', 'jkg_r=1.1.0',
+                      '--set', 'jkg_octave=1.1.0', '--set', 'jkg_julia=1.1.0',
+                      '--set', 'jkg_nodejs=1.1.0',
                       '--allow-floating', 'grok_connect_adbc')
         if rc != 0:
             raise AssertionError('stamp failed:\n%s' % out)
