@@ -13,15 +13,64 @@ export {describeNoun, parseNoun};
 
 type Base = Page | Locator;
 
-/** The phrase parsed with the page's active context — the one parse every runtime path shares. */
+const lastRefs = new WeakMap<Page, NounRef>();
+
+/** The phrase parsed with the page's active context — the one parse every runtime path shares.
+ * Remembered per page: the phrase a step failed on is the last one it parsed. */
 export function refOf(page: Page, target: ElementRef | string): NounRef {
-  return parseNoun(typeof target === 'string' ? target : target.phrase, contextOf(page));
+  const ref = parseNoun(typeof target === 'string' ? target : target.phrase, contextOf(page));
+  lastRefs.set(page, ref);
+  return ref;
+}
+
+const LABEL_MAX = 40;
+const SHOWN_MAX = 20;
+
+/** What the page shows where the last phrase looked, for a failure report: the scope that is not
+ * open, or the visible elements of the phrase's kind (labelled as the platform labels them) so the
+ * author sees the name to write instead. Empty when nothing was looked up. */
+export async function explain(page: Page): Promise<string> {
+  const ref = lastRefs.get(page);
+  if (!ref)
+    return '';
+  let base: Base = page;
+  if (ref.scope) {
+    const scope = await locateRef(page, ref.scope);
+    if (await scope.filter({visible: true}).count() === 0)
+      return `${ref.scope.raw}: not open`;
+    base = scope.first();
+  }
+  const plan = ref.plan;
+  const selector = plan.type === 'kind' ? [plan, ...plan.alternatives].map((s) => s.kind.selector).join(', ') :
+    plan.type === 'entry' ? plan.entry.selector : plan.selector;
+  const labels = await base.locator(selector).evaluateAll((els, max) => {
+    const shown = els.filter((e) => e.getClientRects().length > 0 && getComputedStyle(e).visibility !== 'hidden');
+    const label = (e: Element) => e.getAttribute('data-u2-name') || e.getAttribute('aria-label') || e.getAttribute('title') ||
+      ((e as HTMLElement).innerText ?? e.textContent ?? '').trim().split('\n')[0].trim() || e.tagName.toLowerCase();
+    return {total: els.length, visible: shown.length, labels: [...new Set(shown.map((e) => label(e).slice(0, max)))]};
+  }, LABEL_MAX);
+  const where = ref.scope ? ` in ${ref.scope.raw}` : '';
+  const what = plan.type === 'kind' ? `${plan.kind.name}s` : plan.type === 'entry' ? `"${plan.entry.name}"` : `"${plan.part}"`;
+  if (labels.visible === 0)
+    return `${what}${where}: ${labels.total === 0 ? 'none on the page' : `${labels.total} present, none visible`}`;
+  const list = labels.labels.slice(0, SHOWN_MAX).join(' | ') + (labels.labels.length > SHOWN_MAX ? ` | … ${labels.labels.length - SHOWN_MAX} more` : '');
+  return `visible ${what}${where}: ${list}`;
 }
 
 export async function locate(page: Page, target: ElementRef | string, within?: Locator): Promise<Locator> {
   const ref = refOf(page, target);
   const loc = await locateRef(page, ref, within);
   return loc.describe(describeNoun(ref));
+}
+
+/** The element a gesture or a state check acts on: the visible matches of the phrase (a Dart menu
+ * keeps a zero-size mirror of every item under "Properties..."; a closed view leaves its viewers
+ * behind). Several visible matches stay ambiguous — Playwright's strict mode reports them; an
+ * ordinal names its element as counted, visible or not. No roundtrip of its own. */
+export async function locateActionable(page: Page, target: ElementRef | string, within?: Locator): Promise<Locator> {
+  const ref = refOf(page, target);
+  const loc = await locateRef(page, ref, within);
+  return (ref.ordinal === undefined ? loc.filter({visible: true}) : loc).describe(describeNoun(ref));
 }
 
 export async function locateRef(page: Page, ref: NounRef, within?: Locator): Promise<Locator> {
@@ -82,7 +131,8 @@ export function exactText(q: string): RegExp {
 
 function strategies(page: Page, base: Base, kind: KindEntry, q: string): Locator[] {
   const compact = q.replace(/\s+/g, '');
-  const dashed = q.replace(/\s+/g, '-');
+  // Dart names join a menu path with "---": "Markers > Size" is div-Markers---Size
+  const dashed = q.replace(/\s*>\s*/g, '---').replace(/\s+/g, '-');
   const out: Locator[] = [];
   for (const strategy of kind.match) {
     switch (strategy) {
@@ -94,7 +144,7 @@ function strategies(page: Page, base: Base, kind: KindEntry, q: string): Locator
       case 'label':
       case 'title':
         if (kind.labelSelector)
-          out.push(base.locator(kind.selector).filter({has: page.locator(kind.labelSelector, {hasText: exactText(q)})}));
+          out.push(byLabel(page, base, kind, q));
         break;
       case 'text':
         out.push(base.locator(kind.selector).filter({hasText: exactText(q)}));
@@ -119,6 +169,18 @@ function strategies(page: Page, base: Base, kind: KindEntry, q: string): Locator
     }
   }
   return out;
+}
+
+/** The elements of the kind whose label reads `q`. A label that is a direct child (`:scope > …`)
+ * is found first and its parent taken: on a popup of a few hundred menu items a `has:` filter
+ * over every item costs ~35 ms per query, the label's parent ~2 ms. */
+function byLabel(page: Page, base: Base, kind: KindEntry, q: string): Locator {
+  const label = kind.labelSelector!;
+  const direct = label.split(',').map((s) => s.trim());
+  if (direct.every((s) => s.startsWith(':scope >')))
+    return base.locator(direct.map((s) => s.slice(':scope >'.length).trim()).join(', '), {hasText: exactText(q)})
+      .locator('xpath=parent::*').and(page.locator(kind.selector));
+  return base.locator(kind.selector).filter({has: page.locator(label, {hasText: exactText(q)})});
 }
 
 /** Appends an attribute selector to every alternative of a comma-separated selector list. */

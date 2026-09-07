@@ -1,6 +1,9 @@
+/* ---
+realizes: [viewers.scatter-plot, viewers.histogram, viewers.line-chart, viewers.bar-chart, viewers.pie-chart, viewers.trellis-plot, viewers.box-plot]
+--- */
 // GROK-19083: legend marker entries must react to deselecting markers on the host viewer.
 
-import {test, expect} from '@playwright/test';
+import {localTest as test, expect} from '../../shared-page';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 
@@ -12,20 +15,24 @@ test('GROK-19083: legend marker entries sync with markersColumnName deselect', a
 
   await loginToDatagrok(page);
   await v.openTable(page);
+  await v.installEventWaits(page);
 
   await softStep('Steps 2-4: Color=Series + Marker=Series → combined legend with markers', async () => {
     const items = await page.evaluate(async () => {
+      const w = window as any;
       const tv = (window as any).grok.shell.tv;
       tv.addViewer('Scatter plot');
-      await new Promise((r) => setTimeout(r, 800));
+      await w.__poll(() => (window as any).grok.shell.tv.viewers.filter((x: any) => x.type === 'Scatter plot').length,
+        (c: number) => c > 0, 800);
       const sp = tv.viewers.find((x: any) => x.type === 'Scatter plot');
+      const count = () => sp.root.querySelectorAll('[name="legend"] .d4-legend-item').length;
+      const quiet = w.__quiet('viewer:Scatter plot.onViewerRendered', 150, 1800);
       sp.props.colorColumnName = 'Series';
       sp.props.markersColumnName = 'Series';
       try { sp.props.legendVisibility = 'Always'; } catch (_) {}
-      await new Promise((r) => setTimeout(r, 1800));
-      const i = sp.root.querySelectorAll('[name="legend"] .d4-legend-item');
+      await quiet;
       return {
-        itemCount: i.length,
+        itemCount: await w.__settledFor(count, 150, 1800, 25),
         markersBefore: sp.props.markersColumnName,
         colorBefore: sp.props.colorColumnName,
       };
@@ -43,15 +50,21 @@ test('GROK-19083: legend marker entries sync with markersColumnName deselect', a
 
   await softStep('Step 5 invariant: deselect markers — legend updates in sync', async () => {
     const res = await page.evaluate(async () => {
-      const tv = (window as any).grok.shell.tv;
+      const w = window as any;
+      const tv = w.grok.shell.tv;
       const sp = tv.viewers.find((x: any) => x.type === 'Scatter plot');
       const itemsBefore = Array.from(sp.root.querySelectorAll('[name="legend"] .d4-legend-item')) as HTMLElement[];
       const markerIconsBefore = itemsBefore.filter((it) =>
         !!it.querySelector('svg, canvas, .d4-legend-marker, [class*="marker"]')).length;
       const beforeCount = itemsBefore.length;
+      const glyphs = () => Array.from(sp.root.querySelectorAll('[name="legend"] .d4-legend-item'))
+        .filter((it: any) => !!it.querySelector('svg, canvas, .d4-legend-marker, [class*="marker"]')).length;
+      const stamp = () => `${sp.root.querySelectorAll('[name="legend"] .d4-legend-item').length}|${glyphs()}`;
+      const quiet = w.__quiet('viewer:Scatter plot.onViewerRendered', 150, 1800);
       sp.props.markersColumnName = '';
       try { sp.invalidate?.(); } catch (_) {}
-      await new Promise((r) => setTimeout(r, 1800));
+      await quiet;
+      await w.__settledFor(stamp, 150, 1800, 25);
       const itemsAfter = Array.from(sp.root.querySelectorAll('[name="legend"] .d4-legend-item')) as HTMLElement[];
       const markerIconsAfter = itemsAfter.filter((it) =>
         !!it.querySelector('svg, canvas, .d4-legend-marker, [class*="marker"]')).length;
@@ -71,12 +84,14 @@ test('GROK-19083: legend marker entries sync with markersColumnName deselect', a
 
   await softStep('Step 5 follow-up: re-bind markers — legend renders entries again', async () => {
     const res = await page.evaluate(async () => {
-      const sp = (window as any).grok.shell.tv.viewers.find((x: any) => x.type === 'Scatter plot');
+      const w = window as any;
+      const sp = w.grok.shell.tv.viewers.find((x: any) => x.type === 'Scatter plot');
+      const count = () => sp.root.querySelectorAll('[name="legend"] .d4-legend-item').length;
+      const quiet = w.__quiet('viewer:Scatter plot.onViewerRendered', 150, 1500);
       sp.props.markersColumnName = 'Series';
       try { sp.invalidate?.(); } catch (_) {}
-      await new Promise((r) => setTimeout(r, 1500));
-      const items = sp.root.querySelectorAll('[name="legend"] .d4-legend-item');
-      return {markers: sp.props.markersColumnName, itemCount: items.length};
+      await quiet;
+      return {markers: sp.props.markersColumnName, itemCount: await w.__settledFor(count, 150, 1500, 25)};
     });
     expect(res.markers).toBe('Series');
     expect(res.itemCount).toBeGreaterThan(0);

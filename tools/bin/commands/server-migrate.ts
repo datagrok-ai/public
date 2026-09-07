@@ -76,9 +76,11 @@ async function handlePull(dapi: NodeDapi, rest: string[], argv: any, output: Out
   const rows: Row[] = [...notes];
   for (const [, {type, json}] of entities)
     rows.push({name: nqNameOf(json), entityType: type, action: 'info', reason: 'pulled'});
-  // An entity the server would not hand over — or whose bytes it would not — is missing from
-  // the bundle, and pushing it would quietly promote less than was asked for.
-  const dropped = notes.filter((n) => n.reason === 'fetch_failed' || n.reason === 'no_data').length;
+  // An entity the server would not hand over is missing from the bundle, and pushing it would
+  // quietly promote less than was asked for. Absent bytes are not that: a datasync table that was
+  // never materialised has no data file to give, travels fine and refreshes on the target — so
+  // `no_data` is reported per table and left to the operator rather than blocking the push.
+  const dropped = notes.filter((n) => n.reason === 'fetch_failed').length;
   if (dropped) {
     rows.push({name: out, entityType: 'Bundle', action: 'failed', reason: 'incomplete',
       detail: `${dropped} entities could not be read in full`});

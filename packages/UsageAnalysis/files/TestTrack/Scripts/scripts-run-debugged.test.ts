@@ -23,7 +23,6 @@ const RUN_SCRIPT_CONTENT = `#name: ${RUN_SCRIPT_NAME}
 count <- nrow(table) * ncol(table)
 newParam <- "test"`;
 
-/** Fast reset: closeAll + navigate to Scripts browser. */
 async function resetToScripts(page: Page) {
   await page.evaluate(() => {
     const g = (window as any).grok;
@@ -46,8 +45,7 @@ test.describe.serial('Scripts: Run', () => {
   let page: Page;
 
   test.beforeAll(async ({ browser }) => {
-    // Fresh-context navigation + login state hydration against a remote server
-    // can exceed the default 60s hook timeout, making retries flake.
+
     test.setTimeout(180_000);
     sharedContext = await browser.newContext({ storageState: AUTH_STATE });
     page = await sharedContext.newPage();
@@ -81,16 +79,12 @@ test.describe.serial('Scripts: Run', () => {
     await apiDeleteScript(page, RUN_SCRIPT_NAME);
   });
 
-  // ──────────────────────────────────────────────────────────────────
-  // Test 1: Run.md steps 1–4 — run from context menu with sample table
-  // ──────────────────────────────────────────────────────────────────
   test('1. Run script from context menu, choose cars from dropdown', async () => {
-    // R container cold-start on public.datagrok.ai can push total test time past 60s.
+
     test.setTimeout(180_000);
-    // Step 1: Go to Scripts
+
     await resetToScripts(page);
 
-    // Load cars.csv into session memory
     await page.evaluate(async () => {
       const grok = (window as any).grok;
       const t = await grok.data.getDemoTable('cars.csv');
@@ -99,68 +93,48 @@ test.describe.serial('Scripts: Run', () => {
     });
     await page.waitForTimeout(300);
 
-    // Navigate back to Scripts (preserves tables in memory)
     await page.evaluate(() => (window as any).grok.shell.route('/scripts'));
     await expect(page.locator('.grok-gallery-search-bar')).toBeVisible({ timeout: 15_000 });
 
-    // Step 2: Right-click the script → Run...
     await rightClickScript(page, RUN_SCRIPT_NAME);
     await clickMenuItem(page, 'Run...');
 
-    // Dialog opens
     const dialog = page.locator('.d4-dialog').first();
     await expect(dialog).toBeVisible({ timeout: 10_000 });
     await expect(dialog).toContainText('RunTest', { ignoreCase: true });
 
-    // Step 3: Select cars from the dropdown
     await dialog.locator('select.ui-input-editor').selectOption('cars');
 
-    // Step 4: Click OK
     const okBtn = dialog.locator('button.ui-btn-ok').first();
     await expect(okBtn).toBeEnabled({ timeout: 8_000 });
     await okBtn.click();
 
-    // Verify: dialog closes (script executed) — R runtime on public.datagrok.ai
-    // can cold-start slowly, so allow up to 2 minutes.
     await expect(dialog).not.toBeVisible({ timeout: 120_000 });
 
-    // Verify: no error balloon
     const errorBalloon = page.locator('.d4-balloon-error');
     await expect(errorBalloon).toHaveCount(0, { timeout: 5_000 }).catch(() => {});
   });
 
-  // ──────────────────────────────────────────────────────────────────
-  // Test 2: Run.md step 4 — run with file from Datagrok Files (folder-tree icon)
-  // ──────────────────────────────────────────────────────────────────
   test('2. Run script, choose dataset from Datagrok Files via folder-tree icon', async () => {
     test.setTimeout(180_000);
     await resetToScripts(page);
 
-    // Right-click → Run...
     await rightClickScript(page, RUN_SCRIPT_NAME);
     await clickMenuItem(page, 'Run...');
 
     const dialog = page.locator('.d4-dialog').first();
     await expect(dialog).toBeVisible({ timeout: 10_000 });
 
-    // Click the folder-tree icon to browse Datagrok Files
     await dialog.locator('i[name="icon-folder-tree"]').click();
 
-    // "Select a file" dialog opens — the reliable marker is the `dlg-select-a-file`
-    // class applied to `.d4-dialog-contents` by Modal.title (the `name` attribute
-    // is not set on the root DOM node for this dialog).
     const fileBrowser = page.locator('.d4-dialog', { has: page.locator('.dlg-select-a-file') }).first();
     await expect(fileBrowser).toBeVisible({ timeout: 10_000 });
 
-    // Helper: expand a tree group by locating its label, then clicking the
-    // sibling tri-expander. Waits for the group-host to render children after
-    // async connection/file loading completes.
     const expandTreeGroup = async (name: string) => {
       const label = fileBrowser
         .locator(`.d4-tree-view-group-label:text-is("${name}")`)
         .first();
-      // The label may exist in DOM but be collapsed under an unexpanded ancestor.
-      // Walk up the ancestor chain to ensure all parents are expanded first.
+
       await label.evaluate((el: Element) => {
         el.scrollIntoView({ block: 'center' });
       });
@@ -177,10 +151,10 @@ test.describe.serial('Scripts: Run', () => {
         };
       });
       if (!info.expanded && info.hasTri) {
-        // Click the tri directly — some trees only toggle on tri-click.
+
         const node = label.locator('xpath=..');
         await node.locator('.d4-tree-view-tri').first().click();
-        // Wait for either the host to have children or the tri to be expanded.
+
         await fileBrowser.page().waitForFunction((lbl) => {
           const labelEl = Array.from(document.querySelectorAll('.d4-tree-view-group-label'))
             .find(l => (l.textContent ?? '').trim() === lbl);
@@ -199,29 +173,22 @@ test.describe.serial('Scripts: Run', () => {
     await expandTreeGroup('Files');
     await expandTreeGroup('Demo');
 
-    // Select cars.csv (leaf node)
     const carsFile = fileBrowser.locator('.d4-tree-view-item-label:text-is("cars.csv")').first();
     await expect(carsFile).toBeVisible({ timeout: 10_000 });
     await carsFile.click();
 
-    // Click OK in the file browser dialog
     await fileBrowser.locator('button.ui-btn-ok, button[name="button-OK"]').first().click();
     await page.waitForTimeout(500);
 
-    // Click OK in the main run dialog
     const okBtn = dialog.locator('button.ui-btn-ok').first();
     await expect(okBtn).toBeEnabled({ timeout: 8_000 });
     await okBtn.click();
     await expect(dialog).not.toBeVisible({ timeout: 60_000 });
 
-    // Verify: no error balloon
     const errorBalloon = page.locator('.d4-balloon-error');
     await expect(errorBalloon).toHaveCount(0, { timeout: 5_000 }).catch(() => {});
   });
 
-  // ──────────────────────────────────────────────────────────────────
-  // Test 3: Run.md step 4 — run with local file upload (folder-open icon)
-  // ──────────────────────────────────────────────────────────────────
   test('3. Run script, upload local file via folder-open icon', async () => {
     await resetToScripts(page);
 
@@ -231,7 +198,6 @@ test.describe.serial('Scripts: Run', () => {
     const dialog = page.locator('.d4-dialog').first();
     await expect(dialog).toBeVisible({ timeout: 10_000 });
 
-    // Prepare a file chooser listener before clicking the folder-open icon
     const [fileChooser] = await Promise.all([
       page.waitForEvent('filechooser', { timeout: 5_000 }).catch(() => null),
       dialog.locator('i[name="icon-folder-open"]').click(),
@@ -261,29 +227,22 @@ test.describe.serial('Scripts: Run', () => {
     await expect(errorBalloon).toHaveCount(0, { timeout: 5_000 }).catch(() => {});
   });
 
-  // ──────────────────────────────────────────────────────────────────
-  // Test 4: Run.md steps 5–8 — run from Datagrok console
-  // ──────────────────────────────────────────────────────────────────
   test('4. Run script from the console', async () => {
-    // Load cars.csv first
+
     await loadCarsDemoTable(page);
     await expect(page.locator('.d4-grid')).toBeVisible({ timeout: 10_000 });
 
-    // Step 5: Open console with Backquote (`)
     await page.keyboard.press('Backquote');
     const consoleInput = page.locator('input[placeholder="> Enter command"]');
     await expect(consoleInput).toBeVisible({ timeout: 8_000 });
 
-    // Step 6: Derive namespace from login
     const login = process.env.DATAGROK_LOGIN ?? 'admin';
     const namespace = login.includes('@') ? login.split('@')[0].replace(/\+/g, '') : login;
 
-    // Step 7: Enter the command and press Enter
     const scriptFuncName = RUN_SCRIPT_NAME.replace(/_/g, '');
     await consoleInput.fill(`${namespace}:${scriptFuncName}("cars")`);
     await consoleInput.press('Enter');
 
-    // Step 8: Verify output with script result
     const consoleBody = page.locator('.d4-console-body');
     await expect(consoleBody).toContainText(/count/, { timeout: 30_000 });
   });

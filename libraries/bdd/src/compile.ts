@@ -1,8 +1,9 @@
 /* Feature model → one Playwright spec. Deterministic: the output is a pure function of the feature
-   text and the loaded bindings; element phrases are emitted as `el('…')` and datasets as `ds('…')`
+   text and the loaded bindings; element phrases (`{element}`, `{widget}`) are emitted as `el('…')` and datasets as `ds('…')`
    (names, never selectors), so a registry fix never forces a regeneration. A feature's scenarios
-   share one browser page through `feature(test)` (see runtime/harness.ts): Playwright still runs
-   one test per scenario. A step declared with `enters` switches the vocabulary: the compiler
+   share one browser page through `feature(test, …)` (see runtime/harness.ts): Playwright still runs
+   one test per scenario. Every step is `session.step(line, title, …)` — its feature line is the
+   step's location in reports and traces, and the first line of its failure. A step declared with `enters` switches the vocabulary: the compiler
    validates the following phrases against that context and emits `enter(page, '…')` so the
    runtime resolves them the same way. */
 import {dirname, isAbsolute, join, relative, sep} from 'node:path';
@@ -36,6 +37,8 @@ export interface CompiledFeature {
   diagnostics: Diagnostic[];
 }
 
+/** A feature whose scenarios run in order on one shell state, the Background once (see `journey`). */
+export const JOURNEY_TAG = '@journey';
 export const GENERATED_DIR = 'generated';
 export const FEATURES_DIR = 'features';
 export const RUNTIME_SPECIFIER = `${PACKAGE_NAME}/runtime`;
@@ -76,7 +79,8 @@ export function compileFeature(feature: FeatureModel, ctx: CompileContext): Comp
 
   const emitArg = (arg: MatchedArg, step: StepModel, context: ContextEntry | undefined): string => {
     switch (arg.type) {
-      case 'element': {
+      case 'element':
+      case 'widget': {
         helpers.add('el');
         const phrase = String(arg.value);
         try {
@@ -113,18 +117,18 @@ export function compileFeature(feature: FeatureModel, ctx: CompileContext): Comp
     if (result.ambiguous) {
       diag(step.line, 'error', `ambiguous step "${step.text}": ` +
         result.ambiguous.map((m) => `"${m.def.expression}"`).join(' | '));
-      return [`${indent}await test.step(${title}, () => { throw new Error('ambiguous step'); });`];
+      return [`${indent}await session.step(${step.line}, ${title}, () => { throw new Error('ambiguous step'); });`];
     }
     if (!result.match) {
       const near = ctx.matcher.suggest(step.text).map((d) => `"${d.expression}"`).join(', ');
       diag(step.line, 'error', `no step definition matches "${step.text}"` + (near ? ` — nearest: ${near}` : ''));
-      return [`${indent}await test.step(${title}, () => { throw new Error('no step definition matches this step'); });`];
+      return [`${indent}await session.step(${step.line}, ${title}, () => { throw new Error('no step definition matches this step'); });`];
     }
     const {def, args} = result.match;
     const exported = ctx.bindings.exportOf.get(def.fn);
     if (!exported || !IDENT.test(exported.name)) {
       diag(step.line, 'error', `the definition of "${def.expression}" must be an exported const of its module`);
-      return [`${indent}await test.step(${title}, () => { throw new Error('step definition is not exported'); });`];
+      return [`${indent}await session.step(${step.line}, ${title}, () => { throw new Error('step definition is not exported'); });`];
     }
     if (!named.has(exported.module.specifier))
       named.set(exported.module.specifier, new Set());
@@ -134,7 +138,7 @@ export function compileFeature(feature: FeatureModel, ctx: CompileContext): Comp
       call.push(JSON.stringify(step.table));
     if (step.docString !== undefined)
       call.push(JSON.stringify(step.docString));
-    const out = [`${indent}await test.step(${title}, () => ${exported.name}(page${call.map((c) => ', ' + c).join('')}));`];
+    const out = [`${indent}await session.step(${step.line}, ${title}, () => ${exported.name}(page${call.map((c) => ', ' + c).join('')}));`];
     if (def.meta.enters !== undefined) {
       const entered = lookupContext(def.meta.enters);
       if (!entered)
@@ -160,13 +164,14 @@ export function compileFeature(feature: FeatureModel, ctx: CompileContext): Comp
     return n === 1 ? name : `${name} (${n})`;
   };
 
-  const body: string[] = [];
-  for (const scenario of feature.scenarios)
-    body.push(...emitScenario(scenario, feature, uniqueTitle, emitStep));
+  const body: string[] = feature.tags.includes(JOURNEY_TAG) ?
+    emitJourney(feature, uniqueTitle, emitStep, helpers) :
+    feature.scenarios.flatMap((scenario) => emitScenario(scenario, feature, uniqueTitle, emitStep));
 
   const lines: string[] = [];
   const realizes = [...feature.tags, ...feature.scenarios.flatMap((s) => s.tags)]
     .filter((t) => t.startsWith('@realizes:')).map((t) => t.slice('@realizes:'.length));
+  lines.push('/* eslint-disable max-len */', '/* eslint-disable comma-spacing */', '/* eslint-disable quotes */');
   lines.push('/* ---');
   lines.push(`generated: ${relPath}`);
   lines.push(`generator: ${PACKAGE_NAME} — do not edit; run \`grok-bdd compile\` to regenerate`);
@@ -183,23 +188,48 @@ export function compileFeature(feature: FeatureModel, ctx: CompileContext): Comp
   lines.push(`import {${[...helpers].sort().join(', ')}} from '${RUNTIME_SPECIFIER}';`);
   lines.push('');
   lines.push(`test.describe(${JSON.stringify(feature.name)}, () => {`);
-  lines.push('  const session = feature(test);');
+  lines.push(`  const session = feature(test, ${JSON.stringify(relPath)}, import.meta.url);`);
   lines.push(...body);
   lines.push('});');
   lines.push('');
   return {feature, outFile, code: lines.join('\n'), diagnostics};
 }
 
-function emitScenario(scenario: ScenarioModel, feature: FeatureModel,
-  uniqueTitle: (s: string) => string, emitStep: (step: StepModel, indent: string, state: ScenarioState) => string[]): string[] {
-  const tags = [...new Set([...feature.tags, ...scenario.tags])].filter((t) => t.startsWith('@'));
-  const options = tags.length > 0 ? `, {tag: [${tags.map((t) => JSON.stringify(t)).join(', ')}]}` : '';
+type EmitStep = (step: StepModel, indent: string, state: ScenarioState) => string[];
+
+function tagOptions(tags: string[]): string {
+  const unique = [...new Set(tags)].filter((t) => t.startsWith('@'));
+  return unique.length > 0 ? `, {tag: [${unique.map((t) => JSON.stringify(t)).join(', ')}]}` : '';
+}
+
+function emitScenario(scenario: ScenarioModel, feature: FeatureModel, uniqueTitle: (s: string) => string, emitStep: EmitStep): string[] {
   const out: string[] = [];
   const state: ScenarioState = {};
-  out.push(`  test(${JSON.stringify(uniqueTitle(scenario.name))}${options}, async ({browser}) => {`);
+  out.push(`  test(${JSON.stringify(uniqueTitle(scenario.name))}${tagOptions([...feature.tags, ...scenario.tags])}, async ({browser}) => {`);
   out.push('    const page = await session.page(browser);');
   for (const step of [...feature.background, ...scenario.steps])
     out.push(...emitStep(step, '    ', state));
+  out.push('  });');
+  return out;
+}
+
+/** One test for the feature: the Background, then every scenario as a soft step on the same state. */
+function emitJourney(feature: FeatureModel, uniqueTitle: (s: string) => string, emitStep: EmitStep, helpers: Set<string>): string[] {
+  helpers.add('journey');
+  const out: string[] = [];
+  const state: ScenarioState = {};
+  out.push(`  test(${JSON.stringify(feature.name)}${tagOptions([...feature.tags, ...feature.scenarios.flatMap((s) => s.tags)])}, async ({browser}) => {`);
+  out.push('    const page = await session.page(browser);');
+  out.push(`    const run = journey(test, ${feature.scenarios.length}, page);`);
+  for (const step of feature.background)
+    out.push(...emitStep(step, '    ', state));
+  for (const scenario of feature.scenarios) {
+    out.push(`    await run.scenario(${JSON.stringify(uniqueTitle(scenario.name))}, async () => {`);
+    for (const step of scenario.steps)
+      out.push(...emitStep(step, '      ', state));
+    out.push('    });');
+  }
+  out.push('    run.finish();');
   out.push('  });');
   return out;
 }

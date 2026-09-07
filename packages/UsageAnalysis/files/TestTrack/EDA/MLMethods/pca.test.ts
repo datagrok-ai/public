@@ -4,13 +4,6 @@ import {
   selectAllColumnsInPicker, setBoolInputOn, setInputValue, waitForColumns, waitForDialog,
 } from './helpers';
 
-// Test Track scenario: EDA/pca.md
-// 1. Open cars.csv from Demo files.
-// 2. Top Menu > ML > Analyze > PCA...
-// 3. Select all Features, set Components = 3.
-// 4. Click OK; expect PC1, PC2, PC3 columns added.
-// 5. Repeat with Center and Scale; expect PC1 (2), PC2 (2), PC3 (2) additional columns.
-
 const PC_BASE = ['PC1', 'PC2', 'PC3'];
 
 async function runPcaDialog(
@@ -41,15 +34,11 @@ test.describe.serial('EDA / PCA', () => {
 
     await runPcaDialog(page, { components: '3' });
 
-    // Step 4 expectation: three new columns PC1/PC2/PC3 appear on the current DF.
-    // Wait in-browser (no per-attempt report errors), then assert once.
     await waitForColumns(page, PC_BASE);
     expect(await currentColumnNames(page)).toEqual(expect.arrayContaining(PC_BASE));
     const afterFirst = await currentColumnNames(page);
     expect(afterFirst.length).toBeGreaterThanOrEqual(before + 3);
 
-    // Step 5: repeat with Center + Scale checked. The platform names duplicate PC
-    // columns with a `" (2)"` suffix on collision.
     await runPcaDialog(page, { components: '3', center: true, scale: true });
 
     await waitForColumns(page, ['PC1 (2)', 'PC2 (2)', 'PC3 (2)']);

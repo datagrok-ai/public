@@ -1,25 +1,22 @@
 ---
 feature: connections
-target_layer: playwright
-coverage_type: edge
-priority: p2
 realizes: [views.connections]
-realized_as: []
+priority: p2
+target_layer: manual-only
+coverage_type: edge
 related_bugs: []
 ---
 
 # Catalogs — manual UI checks
 
-This is the **manual companion** to `catalogs.md`. The autotest
-(`catalogs.test.ts`) is fully gated behind `test.skip(true)` because no
-catalog-capable connection (MS SQL / NorthwindTest) exists on the dev test
-account, so there is no fixture to drive the UI against. The whole scenario
-delegates to this checklist.
+This is the **manual companion** to `catalogs.md`. The shared catalog-capable
+MS SQL connections (e.g. NorthwindTest) exist on dev (and release) — run this
+checklist there.
 
 ## Pre-conditions
 
-- A Datagrok account with at least one catalog-capable connection (e.g. the
-  shared MS SQL `NorthwindTest`).
+- Run on dev or release, where the shared catalog-capable MS SQL connection
+  (e.g. `NorthwindTest`) is available.
 
 ## Steps — Catalog browsing
 
@@ -57,3 +54,9 @@ delegates to this checklist.
 - No red error balloons during expansion / preview / comment edits
 - Catalog comment/LLM-comment inputs persist after click-away/re-select
 - Both **Browse** and **Open as table** open without errors
+
+---
+{
+  "order": 9,
+  "datasets": []
+}

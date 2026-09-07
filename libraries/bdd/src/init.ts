@@ -2,7 +2,7 @@
    smoke feature that passes on any stand, the manifest entries, the editor settings. Run in the
    package directory (where package.json is). Never overwrites: what exists is reported as such. */
 import {appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync} from 'node:fs';
-import {join, sep} from 'node:path';
+import {join, relative, sep} from 'node:path';
 import {listFiles} from './discover.js';
 import {LIB_ROOT, PACKAGE_NAME} from './project.js';
 
@@ -23,9 +23,13 @@ interface Manifest {
 const GITIGNORE = ['bdd/test-results/', 'bdd/e2e/', 'bdd/.auth.json'];
 const STATES = 'visible|hidden|present|absent|enabled|disabled|checked|unchecked|selected|empty|expanded|collapsed|focused';
 
-function libraryVersions(): {bdd: string; playwright: string} {
+/** The library as a dependency: by path when init runs from a checkout of it (the monorepo, until
+ * it is on npm — npm links the directory and `npm ci` needs no registry), by version otherwise. */
+function libraryVersions(packageDir: string): {bdd: string; playwright: string} {
   const lib = JSON.parse(readFileSync(join(LIB_ROOT, 'package.json'), 'utf8')) as Manifest;
-  return {bdd: `^${lib.version as string}`, playwright: lib.devDependencies?.['@playwright/test'] ?? '>=1.40.0'};
+  const checkout = !LIB_ROOT.split(sep).includes('node_modules');
+  const bdd = checkout ? `file:${relative(packageDir, LIB_ROOT).split(sep).join('/')}` : `^${lib.version as string}`;
+  return {bdd, playwright: lib.devDependencies?.['@playwright/test'] ?? '>=1.40.0'};
 }
 
 function indentOf(json: string): string {
@@ -160,7 +164,7 @@ export function scaffold(packageDir: string): InitResult {
   else
     result.skipped.push('.gitignore');
 
-  const versions = libraryVersions();
+  const versions = libraryVersions(packageDir);
   const changes: string[] = [];
   manifest.devDependencies ??= {};
   for (const [name, version] of [[PACKAGE_NAME, versions.bdd], ['@playwright/test', versions.playwright]]) {

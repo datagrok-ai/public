@@ -15,3 +15,5 @@ element('status bar', {selector: '.layout-status-bar', aliases: ['statusbar'],
   parts: {'view panel': '.d4-view-status-panel'}});
 element('open tableview', {selector: '.d4-table-view, .grok-table-view', aliases: ['current table view', 'table view']});
 element('grid', {selector: '[name="viewer-Grid"]', aliases: ['the grid'], gestures: {click: 'mouse'}});
+element('context menu', {selector: '.d4-menu-popup', aliases: ['popup menu'],
+  description: 'the open Dart popup menu (the last one when a submenu is open)'});

@@ -3,7 +3,7 @@
    `fill`), native `<select>` first for choices, the editor part of a composite input. */
 import type {Locator, Page} from '@playwright/test';
 import type {ElementRef} from './args.js';
-import {cssString, escapeRegExp, exactText, locate, refOf, withAttr} from './locate.js';
+import {cssString, escapeRegExp, exactText, locateActionable as locate, refOf, withAttr} from './locate.js';
 
 const EDITOR = '[data-u2-part="editor"] input, [data-u2-part="editor"] select, [data-u2-part="editor"] textarea, ' +
   '[data-u2-part="editor"][contenteditable], .ui-input-editor, input, select, textarea, [contenteditable="true"]';
@@ -41,20 +41,43 @@ export async function rightclick(page: Page, target: ElementRef): Promise<void> 
   await (await locate(page, target)).click({button: 'right'});
 }
 
-/** Leaves the element first — a pointer already resting on it (the previous click) produces no
- * pointerenter, and tooltips listen for that — then stays until the layout has settled: a shift
- * under the pointer right after the move (a view still docking) leaves it again, unseen. */
+/** Leaves the element first, to its left on the same line — a pointer already resting on it (the
+ * previous click) produces no pointerenter, and tooltips listen for that; leaving upwards would
+ * cross a neighbouring menu row and close the submenu the element sits in — then lands on its
+ * centre in one move (every pointer event costs a frame, and a Dart menu group opens on the first
+ * move since 2026-09-07) and checks that the element is still where it was: a shift under the
+ * pointer right after the move (a view still docking) leaves it again, unseen. The browser
+ * coalesces mouse moves queued while its main thread is busy, so the pair can collapse into the
+ * last move alone — one that enters nothing when the pointer already rested inside; the gesture
+ * therefore waits, in the page and for a few frames at most, for the element's own `mouseenter`,
+ * and repeats the pair when it did not come. */
 export async function hover(page: Page, target: ElementRef): Promise<void> {
   const loc = await locate(page, target);
-  await loc.scrollIntoViewIfNeeded();
+  const viewport = page.viewportSize();
   for (let attempt = 0; attempt < 3; attempt++) {
-    const before = await loc.boundingBox();
-    if (before)
-      await page.mouse.move(Math.max(0, before.x - 8), Math.max(0, before.y - 8));
-    await loc.hover();
-    await page.waitForTimeout(350);
+    let before = await loc.boundingBox();
+    if (before && viewport && (before.y < 0 || before.x < 0 || before.y + before.height > viewport.height || before.x + before.width > viewport.width)) {
+      await loc.scrollIntoViewIfNeeded();
+      before = await loc.boundingBox();
+    }
+    if (!before) {
+      await loc.hover();
+      return;
+    }
+    const cy = before.y + before.height / 2;
+    await loc.evaluate((el) => {
+      (el as any).__bddEntered = false;
+      el.addEventListener('mouseenter', () => { (el as any).__bddEntered = true; }, {once: true});
+    });
+    await page.mouse.move(Math.max(0, before.x - 8), cy);
+    await page.mouse.move(before.x + before.width / 2, cy);
+    const entered = await loc.evaluate((el) => new Promise<boolean>((resolve) => {
+      let frames = 0;
+      const tick = () => (el as any).__bddEntered || frames++ > 4 ? resolve((el as any).__bddEntered === true) : requestAnimationFrame(tick);
+      tick();
+    }));
     const after = await loc.boundingBox();
-    if (!before || !after || (before.x === after.x && before.y === after.y))
+    if (entered && (!after || (before.x === after.x && before.y === after.y)))
       return;
   }
 }

@@ -1,6 +1,10 @@
-import {test, expect} from '@playwright/test';
+/* ---
+realizes: [viewers.scatter-plot, viewers.histogram, viewers.line-chart, viewers.bar-chart, viewers.pie-chart, viewers.trellis-plot, viewers.box-plot]
+--- */
+import {test, expect} from '../../shared-page';
 import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
+import {addLegendViewers} from './legend-setup';
 
 test.use(specTestOptions);
 
@@ -11,12 +15,13 @@ test('Legend structure rendering', async ({page}) => {
 
   await loginToDatagrok(page);
   await v.openTable(page);
+  await v.installEventWaits(page);
 
   await softStep('Add 7 viewers, set legend column to Core, Always visible', async () => {
-    await v.addLegendViewers(page, {
+    await addLegendViewers(page, {
       column: 'Core',
       viewers: ['Scatter plot', 'Histogram', 'Line chart', 'Bar chart', 'Pie chart', 'Trellis plot', 'Box plot'],
-      settleMs: 2500,
+      capMs: 2500,
     });
     const types = await page.evaluate(() => (window as any).grok.shell.tv.viewers.map((x: any) => x.type));
     expect(types.length).toBeGreaterThanOrEqual(8);
@@ -86,13 +91,15 @@ test('Legend structure rendering', async ({page}) => {
 
   await softStep('Scatter plot — Color=Series, Marker stays Core', async () => {
     const res = await page.evaluate(async () => {
-      const tv = (window as any).grok.shell.tv;
+      const w = window as any;
+      const tv = w.grok.shell.tv;
       const sp = tv.viewers.find((x: any) => x.type === 'Scatter plot');
+      const count = () => sp.root.querySelector('[name="legend"]')?.querySelectorAll('.d4-legend-item').length ?? 0;
+      const quiet = w.__quiet('viewer:Scatter plot.onViewerRendered', 150, 1000);
       sp.props.colorColumnName = 'Series';
-      await new Promise((r) => setTimeout(r, 1000));
-      const legend = sp.root.querySelector('[name="legend"]');
-      const items = legend?.querySelectorAll('.d4-legend-item') ?? [];
-      return {items: items.length, markers: sp.props.markersColumnName, color: sp.props.colorColumnName};
+      await quiet;
+      const items = await w.__settledFor(count, 150, 1000, 25);
+      return {items, markers: sp.props.markersColumnName, color: sp.props.colorColumnName};
     });
     expect(res.markers).toBe('Core');
     expect(res.color).toBe('Series');
@@ -104,10 +111,14 @@ test('Legend structure rendering', async ({page}) => {
       const tv = (window as any).grok.shell.tv;
       const layout = tv.saveLayout();
       layout.name = 'StructRender_' + Date.now();
-      const saved = await (window as any).grok.dapi.layouts.save(layout);
-      await new Promise((r) => setTimeout(r, 1000));
-      tv.loadLayout(await (window as any).grok.dapi.layouts.find(saved.id));
-      await new Promise((r) => setTimeout(r, 3500));
+      const w = window as any;
+      const saved = await w.grok.dapi.layouts.save(layout);
+      const found = await w.__findSaved(() => w.grok.dapi.layouts.find(saved.id));
+      const gen = w.__viewerGen();
+      tv.loadLayout(found);
+      await w.__rebuilt(gen, () => {
+        return `${(Array.from(w.grok.shell.tv?.viewers ?? []) as any[]).length}`;
+      }, 4500);
       (window as any).__srLayoutId = saved.id;
       return saved.id;
     });
@@ -134,9 +145,11 @@ test('Legend structure rendering', async ({page}) => {
 
   await softStep('Cleanup', async () => {
     await page.evaluate(async (id) => {
+      const w = window as any;
       if (id) try { await (window as any).grok.dapi.layouts.delete(await (window as any).grok.dapi.layouts.find(id)); } catch (_) {}
       (window as any).grok.shell.closeAll();
-      await new Promise((r) => setTimeout(r, 500));
+      await w.__poll(() => Array.from((window as any).grok.shell.tableViews).length,
+        (c: number) => c === 0, 500);
     }, (globalThis as any).__srLayoutId);
   });
 

@@ -60,6 +60,12 @@ export const isBuiltinGroup = (g: any): boolean => BUILTIN_GROUP_IDS.has(String(
  * connection, and the personal `Home` share belong to the instance, not to the content.
  */
 export function untransferableReason(type: string, json: any): {action: 'warn' | 'info'; reason: string} | null {
+  // A project the platform keeps for something else — the namespace an installed package occupies,
+  // or the wrapper it maintains around a saved entity. The target builds its own, and a pushed one
+  // is accepted and then simply not there (113 of them on a real 1.27 → 1.27 push). Its own space
+  // listing draws the same line: `isDashboard = false and isEntity = false`.
+  if (type === 'Project' && (json?.isEntity === true || json?.isPackage === true))
+    return {action: 'info', reason: 'platform_project'};
   if (type === 'UserGroup')
     return isBuiltinGroup(json) ? {action: 'info', reason: 'platform_group'} : null;
   if (type !== 'DataConnection') return null;
@@ -121,6 +127,14 @@ export const TYPES: Record<string, TypeSpec> = {
     deps: (q) => [ref('DataConnection', q.connection?.id)],
   },
   Script: {route: '/scripts', rank: 3, tags: true},
+  // A visual query has no listing of its own and is only visible to an admin session, which is
+  // why it never showed up before `--admin`.
+  TableQuery: {
+    route: '/connectors/table_queries', rank: 3,
+    listVia: 'entities', typeId: '34d867a0-e870-11e6-af38-653465436553',
+    strip: (q) => { q.connection = idOnly(q.connection); },
+    deps: (q) => [ref('DataConnection', q.connection?.id)],
+  },
   TableInfo: {
     route: '/tables', rank: 4, tags: true,
     bytes: {kind: 'tables', get: (id) => `/tables/${id}/data`, put: (id) => `/tables/data?id=${id}`},

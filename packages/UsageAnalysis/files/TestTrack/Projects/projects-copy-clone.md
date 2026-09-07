@@ -1,9 +1,11 @@
 ---
 feature: projects
+ui_coverage_split_to:
+  - projects-copy-clone-ui.md
 target_layer: playwright
 coverage_type: regression
 priority: p1
-realizes_atlas: [save-copy-with-link-mode]
+realizes_atlas: [projects.cp.save-copy-with-link-mode]
 realizes: [views.projects, sharing.share-dialog]
 realized_as:
   - projects-copy-clone-spec.ts

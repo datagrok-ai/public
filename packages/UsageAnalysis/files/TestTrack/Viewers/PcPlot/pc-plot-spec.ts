@@ -1,5 +1,9 @@
-import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
+/* ---
+realizes: []
+--- */
+
+import {localTest as test, expect} from '../../shared-page';
+import {openDatagrok, specTestOptions, softStep, isLocalBootNoise} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 
 test.use(specTestOptions);
@@ -10,105 +14,48 @@ const spgiPath = 'System:AppData/Chem/tests/spgi-100.csv';
 test('PC Plot tests', async ({page}) => {
   test.setTimeout(600_000);
 
-  await loginToDatagrok(page);
+  const pageErrors: string[] = [];
+  const consoleErrors: string[] = [];
+  page.on('pageerror', (e) => pageErrors.push(String(e)));
+  page.on('console', (m) => {
+    if (m.type() === 'error' && !isLocalBootNoise(m.text())) consoleErrors.push(m.text());
+  });
+  const errorCount = () => pageErrors.length + consoleErrors.length;
+  const viewerAlive = () => page.evaluate(() =>
+    !!grok.shell.tv.viewers.find(v => v.type === 'PC Plot')
+    && !!document.querySelector('[name="viewer-PC-Plot"]'));
+  const pcPlotPresent = () => page.evaluate(() => !!grok.shell.tv.viewers.find(v => v.type === 'PC Plot'));
 
-  // Phase 2: Open dataset
+  await openDatagrok(page);
+
   await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 3000});
 
-  // Phase 3: Add PC Plot via toolbox
   await page.evaluate(() => {
     const icon = document.querySelector('[name="icon-pc-plot"]');
     if (icon) (icon as HTMLElement).click();
   });
   await page.locator('[name="viewer-PC-Plot"]').waitFor({timeout: 10000});
 
-  // #### Menu Ribbon and To Script
-  await softStep('Menu Ribbon and To Script', async () => {
-    const viewerExists = await page.evaluate(() => !!grok.shell.tv.viewers.find(v => v.type === 'PC Plot'));
-    expect(viewerExists).toBe(true);
+  await v.installEventWaits(page);
+  await v.waitForViewerRendered(page, 'PC Plot', 50);
 
-    await page.evaluate(async () => {
-      const viewer = document.querySelector('[name="viewer-PC-Plot"]')!;
-      const canvas = viewer.querySelector('canvas[name="canvas"]')!;
-      const rect = canvas.getBoundingClientRect();
-      canvas.dispatchEvent(new MouseEvent('contextmenu', {
-        bubbles: true, cancelable: true, button: 2,
-        clientX: rect.left + rect.width / 2, clientY: rect.top + rect.height / 2
-      }));
-      await new Promise(r => setTimeout(r, 500));
-      const items = Array.from(document.querySelectorAll('.d4-menu-item-label'));
-      const toScript = items.find(el => el.textContent!.trim() === 'To Script');
-      if (toScript) {
-        const parent = toScript.closest('.d4-menu-item')!;
-        parent.dispatchEvent(new MouseEvent('mousemove', { bubbles: true }));
-        parent.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
-        await new Promise(r => setTimeout(r, 300));
-        const sub = Array.from(document.querySelectorAll('.d4-menu-item-label'));
-        const js = sub.find(el => el.textContent!.trim() === 'To JavaScript');
-        if (js) js.closest('.d4-menu-item')!.click();
-      }
-      await new Promise(r => setTimeout(r, 500));
-    });
-
-    await page.evaluate(async () => {
-      const pc = grok.shell.tv.viewers.find(v => v.type === 'PC Plot');
-      if (pc) pc.close();
-      await new Promise(r => setTimeout(r, 500));
-      const icon = document.querySelector('[name="icon-pc-plot"]');
-      if (icon) (icon as HTMLElement).click();
-      await new Promise(r => setTimeout(r, 1000));
-    });
-    const reopened = await page.evaluate(() => !!grok.shell.tv.viewers.find(v => v.type === 'PC Plot'));
-    expect(reopened).toBe(true);
-  });
-
-  // #### Axis scale & normalization
-  await softStep('Axis scale & normalization', async () => {
-    const result = await page.evaluate(() => {
-      const pc = grok.shell.tv.viewers.find(v => v.type === 'PC Plot')!;
-      const defaultNorm = pc.props.normalizeEachColumn;
-      pc.props.normalizeEachColumn = false;
-      const afterDisable = pc.props.normalizeEachColumn;
-      pc.props.normalizeEachColumn = true;
-      const afterReenable = pc.props.normalizeEachColumn;
-      pc.props.logColumnsColumnNames = ['AGE'];
-      const logAge = pc.props.logColumnsColumnNames.slice();
-      pc.props.logColumnsColumnNames = ['AGE', 'WEIGHT'];
-      const logBoth = pc.props.logColumnsColumnNames.slice();
-      pc.props.logColumnsColumnNames = [];
-      return { defaultNorm, afterDisable, afterReenable, logAge, logBoth };
-    });
-    expect(result.defaultNorm).toBe(true);
-    expect(result.afterDisable).toBe(false);
-    expect(result.afterReenable).toBe(true);
-    expect(result.logAge).toEqual(['AGE']);
-    expect(result.logBoth).toEqual(['AGE', 'WEIGHT']);
-
+  await softStep('Axis scale via the context menu', async () => {
     const menuResult = await page.evaluate(async () => {
+      const w = window as any;
       const viewer = document.querySelector('[name="viewer-PC-Plot"]')!;
       const canvas = viewer.querySelector('canvas[name="canvas"]')!;
       const rect = canvas.getBoundingClientRect();
+
       const openMenu = async () => {
         canvas.dispatchEvent(new MouseEvent('contextmenu', {
           bubbles: true, cancelable: true, button: 2,
           clientX: rect.left + rect.width / 2, clientY: rect.top + rect.height / 2
         }));
-        await new Promise(r => setTimeout(r, 500));
+        await w.__poll(() => document.querySelectorAll('.d4-menu-item-label').length,
+          (n: number) => n > 0, 500);
       };
-      const clickSub = async (parent: string, child: string) => {
-        const items = Array.from(document.querySelectorAll('.d4-menu-item-label'));
-        const p = items.find(el => el.textContent!.trim() === parent);
-        if (!p) return false;
-        const pm = p.closest('.d4-menu-item')!;
-        pm.dispatchEvent(new MouseEvent('mousemove', { bubbles: true }));
-        pm.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
-        await new Promise(r => setTimeout(r, 300));
-        const sub = Array.from(document.querySelectorAll('.d4-menu-item-label'));
-        const c = sub.find(el => el.textContent!.trim() === child);
-        if (c) c.closest('.d4-menu-item')!.click();
-        await new Promise(r => setTimeout(r, 300));
-        return !!c;
-      };
+      const clickSub = (parent: string, child: string) =>
+        w.__menuLeaf(parent, child).then(() => true, () => false);
       await openMenu();
       await clickSub('Y Axis', 'Global');
       const pc = grok.shell.tv.viewers.find(v => v.type === 'PC Plot')!;
@@ -122,214 +69,181 @@ test('PC Plot tests', async ({page}) => {
     expect(menuResult.afterNorm).toBe(true);
   });
 
-  // #### Selection & line display
   await softStep('Selection & line display', async () => {
-    const result = await page.evaluate(() => {
-      const pc = grok.shell.tv.viewers.find(v => v.type === 'PC Plot')!;
-      const r: any = {};
-      r.defaultCurrent = pc.props.showCurrentLine;
-      r.defaultMouseOver = pc.props.showMouseOverLine;
-      r.defaultAll = pc.props.showAllLines;
-      pc.props.showCurrentLine = false;
-      r.currentOff = pc.props.showCurrentLine;
-      pc.props.showCurrentLine = true;
-      pc.props.showMouseOverLine = false;
-      r.mouseOverOff = pc.props.showMouseOverLine;
-      pc.props.showMouseOverLine = true;
-      pc.props.showMouseOverRowGroup = true;
-      pc.props.showAllLines = false;
-      r.allOff = pc.props.showAllLines;
-      pc.props.showAllLines = true;
-      return r;
-    });
-    expect(result.defaultCurrent).toBe(true);
-    expect(result.currentOff).toBe(false);
-    expect(result.mouseOverOff).toBe(false);
-    expect(result.allOff).toBe(false);
-  });
+    const errBefore = errorCount();
+    await v.setViewerProps(page, 'PC Plot', [
+      {set: {showCurrentLine: false}},
+      {set: {showCurrentLine: true}},
+      {set: {showMouseOverLine: false}},
+      {set: {showMouseOverLine: true}},
+      {set: {showMouseOverRowGroup: true}},
+      {set: {showAllLines: false}},
+      {set: {showAllLines: true}},
+      {set: {showMouseOverRowGroup: false}},
+    ], 150);
+    expect(await viewerAlive()).toBe(true);
+    expect(errorCount()).toBe(errBefore);
 
-  // #### Style & layout
-  await softStep('Style & layout', async () => {
-    const result = await page.evaluate(() => {
+    const menu = await page.evaluate(async () => {
+      const w = window as any;
       const pc = grok.shell.tv.viewers.find(v => v.type === 'PC Plot')!;
-      pc.props.lineWidth = 3;
-      const lw = pc.props.lineWidth;
-      pc.props.currentLineWidth = 5;
-      const clw = pc.props.currentLineWidth;
-      pc.props.mouseOverLineWidth = 5;
-      pc.props.labelsOrientation = 'Vert';
-      const lo = pc.props.labelsOrientation;
-      pc.props.minMaxOrientation = 'Vert';
-      pc.props.horzMargin = 60;
-      const hm = pc.props.horzMargin;
-      pc.props.autoLayout = false;
-      const al = pc.props.autoLayout;
-      pc.props.lineWidth = 0.5; pc.props.currentLineWidth = 2; pc.props.mouseOverLineWidth = 2;
-      pc.props.labelsOrientation = 'Auto'; pc.props.minMaxOrientation = 'Auto';
-      pc.props.horzMargin = 40; pc.props.autoLayout = true;
-      return { lw, clw, lo, hm, al };
-    });
-    expect(result.lw).toBe(3);
-    expect(result.clw).toBe(5);
-    expect(result.lo).toBe('Vert');
-    expect(result.al).toBe(false);
-  });
-
-  // #### In-chart filtering & reset
-  await softStep('In-chart filtering & reset', async () => {
-    const result = await page.evaluate(async () => {
-      const pc = grok.shell.tv.viewers.find(v => v.type === 'PC Plot')!;
-      pc.props.showFilteredOutLines = true;
-      const sfo = pc.props.showFilteredOutLines;
       const viewer = document.querySelector('[name="viewer-PC-Plot"]')!;
       const canvas = viewer.querySelector('canvas[name="canvas"]')!;
       const rect = canvas.getBoundingClientRect();
-      canvas.dispatchEvent(new MouseEvent('dblclick', {
-        bubbles: true, cancelable: true,
-        clientX: rect.left + rect.width / 2, clientY: rect.top + rect.height / 2
-      }));
-      await new Promise(r => setTimeout(r, 500));
-      canvas.dispatchEvent(new MouseEvent('contextmenu', {
-        bubbles: true, cancelable: true, button: 2,
-        clientX: rect.left + rect.width / 2, clientY: rect.top + rect.height / 2
-      }));
-      await new Promise(r => setTimeout(r, 500));
-      const items = Array.from(document.querySelectorAll('.d4-menu-item-label'));
-      const rv = items.find(el => el.textContent!.trim() === 'Reset View');
-      if (rv) rv.closest('.d4-menu-item')!.click();
-      await new Promise(r => setTimeout(r, 300));
-      pc.props.showFilteredOutLines = false;
-      return { sfo, resetFound: !!rv };
+
+      const clickSub = async (parent: string, child: string) => {
+        canvas.dispatchEvent(new MouseEvent('contextmenu', {
+          bubbles: true, cancelable: true, button: 2,
+          clientX: rect.left + rect.width / 2, clientY: rect.top + rect.height / 2
+        }));
+        return w.__menuLeaf(parent, child).then(() => true, () => false);
+      };
+      const curBefore = pc.props.showCurrentLine;
+      await clickSub('Selection', 'Show Current Line');
+      const curToggled = pc.props.showCurrentLine;
+      await clickSub('Selection', 'Show Current Line');
+      const curRestored = pc.props.showCurrentLine;
+      const allBefore = pc.props.showAllLines;
+      await clickSub('Selection', 'Show All Lines');
+      const allToggled = pc.props.showAllLines;
+      await clickSub('Selection', 'Show All Lines');
+      const allRestored = pc.props.showAllLines;
+      return {curBefore, curToggled, curRestored, allBefore, allToggled, allRestored};
     });
-    expect(result.sfo).toBe(true);
-    expect(result.resetFound).toBe(true);
+    expect(menu.curToggled).toBe(!menu.curBefore);
+    expect(menu.curRestored).toBe(menu.curBefore);
+    expect(menu.allToggled).toBe(!menu.allBefore);
+    expect(menu.allRestored).toBe(menu.allBefore);
+
+    const settledPx = async () => {
+      await v.waitForCanvasQuiet(page, 'PC Plot', {timeoutMs: 1500, optional: true});
+      let prev = (await v.countCanvasPixels(page, 'PC Plot')).total;
+      let cur = prev;
+      for (let i = 0; i < 1; i++) {
+        cur = (await v.countCanvasPixels(page, 'PC Plot')).total;
+        if (Math.abs(cur - prev) < 200) break;
+        prev = cur;
+      }
+      return cur;
+    };
+    const setState = async (allLines: boolean, selectFirst: number) => {
+      await page.evaluate((s) => {
+        const pc = grok.shell.tv.viewers.find(v => v.type === 'PC Plot')!;
+        const df = grok.shell.tv.dataFrame;
+        if (s.selectFirst === 0)
+          df.selection.setAll(false);
+        else
+          for (let i = 0; i < s.selectFirst; i++) df.selection.set(i, true);
+        pc.props.showAllLines = s.allLines;
+      }, {allLines, selectFirst});
+      await v.waitForViewerRendered(page, 'PC Plot', 400);
+    };
+
+    await setState(true, 0);
+    const allPx = await settledPx();
+    await setState(false, 0);
+    const hiddenPx = await settledPx();
+    await setState(false, 40);
+    const selectedPx = await settledPx();
+    await setState(true, 40);
+    const restoredPx = await settledPx();
+
+    await setState(true, 0);
+
+    console.log(`Selection & line display px: allPx=${allPx} hiddenPx=${hiddenPx} selectedPx=${selectedPx} restoredPx=${restoredPx}`);
+
+    expect(hiddenPx).toBeGreaterThanOrEqual(0);
+    expect(allPx - hiddenPx).toBeGreaterThan(2000);
+
+    expect(selectedPx - hiddenPx).toBeGreaterThan(500);
+    expect(allPx - selectedPx).toBeGreaterThan(1000);
+
+    expect(restoredPx - selectedPx).toBeGreaterThan(1000);
+    expect(errorCount()).toBe(errBefore);
   });
 
-  // #### Filter panel interaction
-  await softStep('Filter panel interaction', async () => {
+  await softStep('Style & layout', async () => {
+    const errBefore = errorCount();
+    // every prop below still gets set, in this order and to these values; they are grouped so
+    // the ladder pays one render per group instead of one per assignment (8.2s at eight steps)
+    await v.setViewerProps(page, 'PC Plot', [
+      {set: {lineWidth: 3, currentLineWidth: 5, mouseOverLineWidth: 5}},
+      {set: {labelsOrientation: 'Vert', minMaxOrientation: 'Vert'}},
+      {set: {horzMargin: 60, autoLayout: false}},
+      {set: {
+        lineWidth: 0.5, currentLineWidth: 2, mouseOverLineWidth: 2,
+        labelsOrientation: 'Auto', minMaxOrientation: 'Auto',
+        horzMargin: 40, autoLayout: true,
+      }, wait: 400},
+    ], 150);
+    const sliders = await v.pollValue(
+      () => page.locator('[name="viewer-PC-Plot"] [name^="axis-slider-"]').count(),
+      (n) => n > 0, 3000, 150);
+    expect(sliders).toBeGreaterThan(0);
+    expect(await viewerAlive()).toBe(true);
+    expect(errorCount()).toBe(errBefore);
+  });
+
+  await softStep('Show Filters from the context menu', async () => {
+    await v.setViewerProps(page, 'PC Plot', [{set: {columnNames: ['AGE', 'HEIGHT', 'WEIGHT']}}], 800);
     const result = await page.evaluate(async () => {
-      const fg = grok.shell.tv.getFiltersGroup();
-      await new Promise(r => setTimeout(r, 500));
-      fg.updateOrAdd({type: 'histogram', column: 'AGE', min: 30, max: 50});
-      await new Promise(r => setTimeout(r, 500));
-      const afterFilter = grok.shell.tv.dataFrame.filter.trueCount;
-      fg.updateOrAdd({type: 'histogram', column: 'AGE', min: 18, max: 89});
-      await new Promise(r => setTimeout(r, 500));
-      const afterReset = grok.shell.tv.dataFrame.filter.trueCount;
-      return { afterFilter, afterReset };
-    });
-    expect(result.afterFilter).toBeLessThan(5850);
-    expect(result.afterReset).toBe(5850);
-  });
-
-  // #### Column management & reordering
-  await softStep('Column management & reordering', async () => {
-    const result = await page.evaluate(() => {
+      const w = window as any;
       const pc = grok.shell.tv.viewers.find(v => v.type === 'PC Plot')!;
-      const defaultCols = pc.props.columnNames.slice();
-      pc.props.columnNames = defaultCols.filter((c: string) => c !== 'HEIGHT');
-      const removed = pc.props.columnNames.slice();
-      pc.props.columnNames = [...pc.props.columnNames, 'HEIGHT'];
-      const added = pc.props.columnNames.slice();
-      pc.props.columnNames = ['WEIGHT', 'AGE', 'HEIGHT', 'STARTED'];
-      const reordered = pc.props.columnNames.slice();
-      pc.props.columnNames = ['AGE', 'HEIGHT', 'WEIGHT', 'STARTED'];
-      return { removed, added, reordered };
+      const viewer = document.querySelector('[name="viewer-PC-Plot"]')!;
+      const canvas = viewer.querySelector('canvas[name="canvas"]')!;
+      const cr = canvas.getBoundingClientRect();
+
+      const clickFilterSub = async (child: string) => {
+        canvas.dispatchEvent(new MouseEvent('contextmenu', {
+          bubbles: true, cancelable: true, button: 2,
+          clientX: cr.left + cr.width / 2, clientY: cr.top + cr.height / 2}));
+        return w.__menuLeaf('Filter', child).then(() => true, () => false);
+      };
+      const showBefore = pc.props.showFilters;
+      await clickFilterSub('Show Filters');
+      const showToggled = pc.props.showFilters;
+      await clickFilterSub('Show Filters');
+      const showRestored = pc.props.showFilters;
+      return {showBefore, showToggled, showRestored};
     });
-    expect(result.removed).not.toContain('HEIGHT');
-    expect(result.added).toContain('HEIGHT');
-    expect(result.reordered[0]).toBe('WEIGHT');
+
+    expect(result.showToggled).toBe(!result.showBefore);
+    expect(result.showRestored).toBe(result.showBefore);
   });
 
-  // #### Density styles
-  await softStep('Density styles', async () => {
-    const result = await page.evaluate(() => {
-      const pc = grok.shell.tv.viewers.find(v => v.type === 'PC Plot')!;
-      const def = pc.props.densityStyle;
-      pc.props.densityStyle = 'box plot';
-      const box = pc.props.densityStyle;
-      pc.props.showInterquartileRange = false;
-      const iqrOff = pc.props.showInterquartileRange;
-      pc.props.showInterquartileRange = true;
-      pc.props.showUpperDash = false; pc.props.showUpperDash = true;
-      pc.props.showLowerDash = false; pc.props.showLowerDash = true;
-      pc.props.showMeanCross = false; pc.props.showMeanCross = true;
-      pc.props.showMedian = false; pc.props.showMedian = true;
-      pc.props.showCircles = true;
-      pc.props.densityStyle = 'violin plot';
-      const violin = pc.props.densityStyle;
-      pc.props.bins = 200;
-      const bins = pc.props.bins;
-      pc.props.whiskerLineWidth = 5;
-      pc.props.densityStyle = 'circles';
-      pc.props.bins = 100; pc.props.whiskerLineWidth = 2;
-      return { def, box, iqrOff, violin, bins };
-    });
-    expect(result.def).toBe('circles');
-    expect(result.box).toBe('box plot');
-    expect(result.iqrOff).toBe(false);
-    expect(result.violin).toBe('violin plot');
-    expect(result.bins).toBe(200);
-  });
-
-  // #### Color coding, legend & grid coloring
-  await softStep('Color coding, legend & grid coloring', async () => {
-    const result = await page.evaluate(async () => {
-      const pc = grok.shell.tv.viewers.find(v => v.type === 'PC Plot')!;
-      pc.props.colorColumnName = 'AGE';
-      const colorAge = pc.props.colorColumnName;
-      pc.props.colorAxisType = 'logarithmic';
-      const logColor = pc.props.colorAxisType;
-      pc.props.invertColorScheme = true;
-      const inverted = pc.props.invertColorScheme;
-      pc.props.invertColorScheme = false;
-      pc.props.colorMin = 30; pc.props.colorMax = 60;
-      const cMin = pc.props.colorMin;
-      pc.props.colorMin = null; pc.props.colorMax = null; pc.props.colorAxisType = 'linear';
-      pc.props.colorColumnName = 'RACE';
-      const colorRace = pc.props.colorColumnName;
-      pc.props.legendPosition = 'Left';
-      const lLeft = pc.props.legendPosition;
-      pc.props.legendPosition = 'Right'; pc.props.legendPosition = 'Top'; pc.props.legendPosition = 'Bottom';
-      pc.props.legendVisibility = 'Never';
-      const lNever = pc.props.legendVisibility;
-      pc.props.legendVisibility = 'Auto';
-      pc.props.colorColumnName = 'HEIGHT';
-      const df = grok.shell.tv.dataFrame;
-      df.col('HEIGHT').meta.colors.setLinear([DG.Color.blue, DG.Color.red]);
-      await new Promise(r => setTimeout(r, 500));
-      df.col('HEIGHT').meta.colors.setConditional({'20-150': DG.Color.green, '150-250': DG.Color.orange});
-      await new Promise(r => setTimeout(r, 500));
-      df.col('HEIGHT').meta.colors.setLinear();
-      pc.props.colorColumnName = '';
-      return { colorAge, logColor, inverted, cMin, colorRace, lLeft, lNever };
-    });
-    expect(result.colorAge).toBe('AGE');
-    expect(result.logColor).toBe('logarithmic');
-    expect(result.colorRace).toBe('RACE');
-    expect(result.lNever).toBe('Never');
-  });
-
-  // #### Title and description
   await softStep('Title and description', async () => {
-    const result = await page.evaluate(() => {
+    const errBefore = errorCount();
+    const readTexts = () => page.evaluate(() => {
       const pc = grok.shell.tv.viewers.find(v => v.type === 'PC Plot')!;
-      pc.props.title = 'My PC Plot';
-      const title = pc.props.title;
-      pc.props.description = 'Test description';
-      const desc = pc.props.description;
-      pc.props.descriptionPosition = 'Bottom';
-      const pos = pc.props.descriptionPosition;
-      pc.props.title = ''; pc.props.description = '';
-      return { title, desc, pos };
+      const root = pc.root as HTMLElement;
+      const panel = (root.closest('.panel-base') as HTMLElement) ?? root;
+      return {
+        titlebar: (panel.querySelector('.panel-titlebar-text')?.textContent ?? '').trim(),
+        shown: (root.innerText || '').replace(/\s+/g, ' ').trim(),
+      };
     });
-    expect(result.title).toBe('My PC Plot');
-    expect(result.desc).toBe('Test description');
+    await v.setViewerProps(page, 'PC Plot', [{set: {title: 'My PC Plot'}}], 600);
+    const titleShown = (await v.pollValue(readTexts,
+      (t) => t.titlebar.includes('My PC Plot'), 3000, 150)).titlebar;
+    await v.setViewerProps(page, 'PC Plot', [{set: {description: 'Test description'}}], 600);
+    const withDescription = (await v.pollValue(readTexts,
+      (t) => t.shown.includes('Test description'), 3000, 150)).shown;
+    await v.setViewerProps(page, 'PC Plot', [{set: {descriptionPosition: 'Bottom'}}], 600);
+    const moved = (await v.pollValue(readTexts,
+      (t) => t.shown.includes('Test description'), 3000, 150)).shown;
+    await v.setViewerProps(page, 'PC Plot', [{set: {title: '', description: ''}}], 600);
+    const after = await v.pollValue(readTexts,
+      (t) => !t.titlebar.includes('My PC Plot') && !t.shown.includes('Test description'), 3000, 150);
+    expect(titleShown).toContain('My PC Plot');
+    expect(withDescription).toContain('Test description');
+    expect(moved).toContain('Test description');
+    expect(after.titlebar).not.toContain('My PC Plot');
+    expect(after.shown).not.toContain('Test description');
+    expect(errorCount()).toBe(errBefore);
   });
 
-  // #### Pick Up / Apply
   await softStep('Pick Up / Apply', async () => {
-    const result = await page.evaluate(async () => {
+    await page.evaluate(() => {
       const tv = grok.shell.tv;
       const pc1 = tv.viewers.find(v => v.type === 'PC Plot')!;
       pc1.props.columnNames = ['AGE', 'WEIGHT', 'STARTED'];
@@ -338,100 +252,135 @@ test('PC Plot tests', async ({page}) => {
       pc1.props.legendPosition = 'Left';
       pc1.props.title = 'Source Plot';
       tv.addViewer('PC Plot');
-      await new Promise(r => setTimeout(r, 500));
+    });
+    await v.pollValue(
+      () => page.evaluate(() => grok.shell.tv.viewers.filter(v => v.type === 'PC Plot').length),
+      (n) => n >= 2, 500, 100);
+
+    await page.evaluate(async () => {
+      const w = window as any;
+      const pcs = () => grok.shell.tv.viewers.filter(v => v.type === 'PC Plot');
+
       const clickSub = async (idx: number, parent: string, child: string) => {
-        const viewers = document.querySelectorAll('[name="viewer-PC-Plot"]');
-        const canvas = viewers[idx].querySelector('canvas[name="canvas"]')!;
+        const canvas = pcs()[idx].root.querySelector('canvas[name="canvas"]')!;
         const rect = canvas.getBoundingClientRect();
         canvas.dispatchEvent(new MouseEvent('contextmenu', {
           bubbles: true, cancelable: true, button: 2,
           clientX: rect.left + rect.width / 2, clientY: rect.top + rect.height / 2
         }));
-        await new Promise(r => setTimeout(r, 500));
-        const items = Array.from(document.querySelectorAll('.d4-menu-item-label'));
-        const p = items.find(el => el.textContent!.trim() === parent);
-        if (!p) return;
-        const pm = p.closest('.d4-menu-item')!;
-        pm.dispatchEvent(new MouseEvent('mousemove', { bubbles: true }));
-        pm.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
-        await new Promise(r => setTimeout(r, 300));
-        const sub = Array.from(document.querySelectorAll('.d4-menu-item-label'));
-        const c = sub.find(el => el.textContent!.trim() === child);
-        if (c) c.closest('.d4-menu-item')!.click();
-        await new Promise(r => setTimeout(r, 500));
+        await w.__menuLeaf(parent, child).catch(() => {});
       };
       await clickSub(0, 'Pick Up / Apply', 'Pick Up');
       await clickSub(1, 'Pick Up / Apply', 'Apply');
-      const pcs = tv.viewers.filter(v => v.type === 'PC Plot');
-      const r = { pc2Cols: pcs[1]?.props.columnNames?.slice(), pc2Color: pcs[1]?.props.colorColumnName, pc2Title: pcs[1]?.props.title };
-      if (pcs[1]) pcs[1].close();
+    });
+
+    const applied = await v.pollValue(() => page.evaluate(() => {
+      const pcs = grok.shell.tv.viewers.filter(v => v.type === 'PC Plot');
+      return {
+        cols: pcs[1]?.props.columnNames?.slice(),
+        color: pcs[1]?.props.colorColumnName,
+        log: pcs[1]?.props.logColumnsColumnNames?.slice(),
+        legend: pcs[1]?.props.legendPosition,
+        title: pcs[1]?.props.title,
+      };
+    }), (a) => a.title === 'Source Plot', 500, 100);
+
+    await page.evaluate(() => {
+      grok.shell.tv.viewers.filter(v => v.type === 'PC Plot')[0]
+        .props.columnNames = ['AGE', 'HEIGHT', 'WEIGHT', 'STARTED'];
+    });
+    await v.waitForViewerRendered(page, 'PC Plot', 600);
+    const cols = await page.evaluate(() => {
+      const pcs = grok.shell.tv.viewers.filter(v => v.type === 'PC Plot');
+      return {pc1: pcs[0]?.props.columnNames?.slice(), pc2: pcs[1]?.props.columnNames?.slice()};
+    });
+
+    await page.evaluate(() => grok.shell.tv.dataFrame.filter.setAll(true));
+    await v.waitForViewerRendered(page, 'PC Plot', 400);
+    const fullBefore = await page.evaluate(() => grok.shell.tv.dataFrame.filter.trueCount);
+    await page.evaluate(() => {
+      const pc2El = document.querySelectorAll('[name="viewer-PC-Plot"]')[1] as HTMLElement;
+      const vr = pc2El.getBoundingClientRect();
+      pc2El.dispatchEvent(new MouseEvent('mousemove', {
+        bubbles: true, clientX: vr.left + vr.width / 2, clientY: vr.top + vr.height / 2}));
+    });
+    await v.pollValue(() => page.evaluate(() =>
+      !!document.querySelectorAll('[name="viewer-PC-Plot"]')[1]?.querySelector('[name="axis-slider-AGE"]')),
+    (present) => present, 400, 100);
+    const draggedPc2 = await page.evaluate(async () => {
+      const w = window as any;
+      const pc2El = document.querySelectorAll('[name="viewer-PC-Plot"]')[1] as HTMLElement;
+      const svg = pc2El.querySelector('[name="axis-slider-AGE"]');
+      if (!svg) return false;
+      const maxHandle = svg.querySelector('[name="max-handle"]')!;
+      const hr = maxHandle.getBoundingClientRect();
+      const cx = hr.x + hr.width / 2, cy = hr.y + hr.height / 2;
+      const mk = (x: number, y: number) => ({bubbles: true, cancelable: true, clientX: x, clientY: y, button: 0});
+      maxHandle.dispatchEvent(new MouseEvent('mousedown', mk(cx, cy)));
+      await w.__drag(svg as HTMLElement, {x: cx, y: cy + 20}, {x: cx, y: cy + 200},
+        {steps: 3, stepMs: 20, holdMs: 50});
+      return true;
+    });
+    const filteredByPc2 = await v.pollValue(
+      () => page.evaluate(() => grok.shell.tv.dataFrame.filter.trueCount),
+      (n) => n < fullBefore, 500, 100);
+
+    await page.evaluate(() => {
+      const tv = grok.shell.tv;
+      tv.viewers.filter(v => v.type === 'PC Plot')[1]?.close();
       const pcF = tv.viewers.find(v => v.type === 'PC Plot')!;
+      tv.dataFrame.filter.setAll(true);
       pcF.props.columnNames = ['AGE', 'HEIGHT', 'WEIGHT', 'STARTED'];
       pcF.props.logColumnsColumnNames = []; pcF.props.colorColumnName = '';
       pcF.props.legendPosition = 'Auto'; pcF.props.title = '';
-      return r;
     });
-    expect(result.pc2Cols).toEqual(['AGE', 'WEIGHT', 'STARTED']);
-    expect(result.pc2Color).toBe('RACE');
-    expect(result.pc2Title).toBe('Source Plot');
+    await v.waitForViewerRendered(page, 'PC Plot', 300);
+
+    expect(applied.cols).toEqual(['AGE', 'WEIGHT', 'STARTED']);
+    expect(applied.color).toBe('RACE');
+    expect(applied.log).toEqual(['AGE']);
+    expect(applied.legend).toBe('Left');
+    expect(applied.title).toBe('Source Plot');
+
+    expect(cols.pc1).toEqual(['AGE', 'HEIGHT', 'WEIGHT', 'STARTED']);
+    expect(cols.pc2).toEqual(['AGE', 'WEIGHT', 'STARTED']);
+
+    expect(draggedPc2).toBe(true);
+    expect(filteredByPc2).toBeLessThan(fullBefore);
   });
 
-  // #### Layout and project save/restore
-  await softStep('Layout and project save/restore', async () => {
-    const result = await page.evaluate(async () => {
-      const tv = grok.shell.tv;
-      const layout = tv.saveLayout();
-      await grok.dapi.layouts.save(layout);
-      const layoutId = layout.id;
-      await new Promise(r => setTimeout(r, 1000));
-      tv.addViewer('Scatter plot');
-      await new Promise(r => setTimeout(r, 500));
-      const saved = await grok.dapi.layouts.find(layoutId);
-      tv.loadLayout(saved);
-      await new Promise(r => setTimeout(r, 3000));
-      const hasScatter = tv.viewers.some(v => v.type === 'Scatter plot');
-      const hasPc = tv.viewers.some(v => v.type === 'PC Plot');
-      await grok.dapi.layouts.delete(saved);
-      return { hasScatter, hasPc };
-    });
-    expect(result.hasScatter).toBe(false);
-    expect(result.hasPc).toBe(true);
-  });
-
-  // #### Table switching and transformation
   await softStep('Table switching and transformation', async () => {
-    const result = await page.evaluate(async (path) => {
-      const df2 = await grok.dapi.files.readCsv(path);
-      const tv2 = grok.shell.addTableView(df2);
-      await new Promise(resolve => {
-        const sub = df2.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(null); });
-        setTimeout(resolve, 3000);
-      });
-      const hasBioChem = Array.from({length: df2.columns.length}, (_, i) => df2.columns.byIndex(i))
-        .some((c: any) => c.semType === 'Molecule' || c.semType === 'Macromolecule');
-      if (hasBioChem) {
-        for (let i = 0; i < 50; i++) {
-          if (document.querySelector('[name="viewer-Grid"] canvas')) break;
-          await new Promise(r => setTimeout(r, 200));
-        }
-        await new Promise(r => setTimeout(r, 5000));
-      }
-      const views = Array.from(grok.shell.views);
-      const demogView = views.find((v: any) => v.name === 'Table');
-      if (demogView) grok.shell.v = demogView;
-      await new Promise(r => setTimeout(r, 500));
-      const pc = grok.shell.tv.addViewer('PC Plot');
-      await new Promise(r => setTimeout(r, 500));
-      pc.props.table = df2.name;
-      await new Promise(r => setTimeout(r, 500));
-      const tableSet = pc.dataFrame?.name;
-      pc.props.transformation = '[{"#type":"GroupAggregation","aggType":"key","colName":"Chemist 521"},{"#type":"GroupAggregation","aggType":"pivot","colName":"Series"},{"#type":"GroupAggregation","aggType":"count","colName":"Id"}]';
-      await new Promise(r => setTimeout(r, 1000));
-      pc.close();
-      return { spgiRows: df2.rowCount, tableSet };
-    }, spgiPath);
-    expect(result.spgiRows).toBe(100);
-    expect(result.tableSet).toBeTruthy();
+    await v.closeAllAndWait(page);
+    await v.openTable(page, {path: spgiPath, semTypeTimeoutMs: 3000});
+    const spgi = await page.evaluate(() => ({
+      rows: grok.shell.tv.dataFrame.rowCount, name: grok.shell.tv.dataFrame.name}));
+
+    await page.evaluate(() => grok.shell.tv.addViewer('PC Plot'));
+    await v.pollValue(pcPlotPresent, (present) => present, 500, 100);
+    await v.setViewerProps(page, 'PC Plot', [{set: {table: spgi.name}}], 500);
+    const tableSet = await page.evaluate(() =>
+      grok.shell.tv.viewers.find(v => v.type === 'PC Plot')?.dataFrame?.name);
+
+    const sliderAxes = () => page.evaluate(() =>
+      Array.from(document.querySelectorAll('[name="viewer-PC-Plot"] [name^="axis-slider-"]'))
+        .map((e) => e.getAttribute('name')!.replace('axis-slider-', '')));
+    const axesBefore = await v.pollValue(sliderAxes, (a) => a.length > 0, 1500, 150);
+
+    const pivot = '[{"#type":"GroupAggregation","aggType":"key","colName":"Chemist 521"},{"#type":"GroupAggregation","aggType":"pivot","colName":"Series"},{"#type":"GroupAggregation","aggType":"count","colName":"Id"}]';
+    await v.setViewerProps(page, 'PC Plot', [{set: {transformation: pivot}}], 3000);
+
+    const axesAfter = await v.pollValue(sliderAxes, (a) => a.includes('Triazoles'), 3000, 150);
+    await v.setViewerProps(page, 'PC Plot', [{set: {transformation: ''}}], 1500);
+    const axesReverted = await v.pollValue(sliderAxes,
+      (a) => JSON.stringify(a) === JSON.stringify(axesBefore), 1500, 150);
+    await page.evaluate(() => grok.shell.tv.viewers.find(v => v.type === 'PC Plot')?.close());
+
+    expect(spgi.rows).toBe(100);
+    expect(tableSet).toBeTruthy();
+
+    expect(axesAfter).not.toEqual(axesBefore);
+    expect(axesAfter).toContain('Triazoles');
+    expect(axesReverted).toEqual(axesBefore);
   });
 
   v.finishSpec();

@@ -84,6 +84,7 @@ export interface InitPipeline {
   provider: NqName;
   version?: string;
   instanceConfig?: PipelineInstanceConfig;
+  config?: PipelineConfigurationProcessed;
 }
 
 export interface ResetToConsistent {

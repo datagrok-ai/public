@@ -1,6 +1,7 @@
 /* Step text → step definition, through cucumber expressions. Every definition is tried; when
-   several match, the one with the fewest parameters (the most literal text) wins, then the longer
-   expression; an exact tie is reported as ambiguous rather than picked silently. */
+   several match, the one that spells out more of the text wins (`user right-clicks on the
+   {string} area of {element}` over `user right-clicks (on ){element}`), then the one with fewer
+   parameters; an exact tie is reported as ambiguous rather than picked silently. */
 import {CucumberExpression, ParameterType, ParameterTypeRegistry} from '@cucumber/cucumber-expressions';
 import {parameterTypes, ParameterTypeDef, StepDef, steps} from './registry.js';
 
@@ -49,8 +50,8 @@ export class StepMatcher {
     return this._compiled.map((c) => c.def);
   }
 
-  /** Fewer parameters first, then more literal text matched (the step text minus what the
-   * parameters captured); a definition that spells the words out beats one that captures them. */
+  /** More literal text matched first (the step text minus what the parameters captured), then
+   * fewer parameters; a definition that spells the words out beats one that captures them. */
   match(text: string): MatchResult {
     const hits: (StepMatch & {params: number; literal: number})[] = [];
     for (const c of this._compiled) {
@@ -67,7 +68,7 @@ export class StepMatcher {
     }
     if (hits.length === 0)
       return {};
-    hits.sort((a, b) => a.params - b.params || b.literal - a.literal);
+    hits.sort((a, b) => b.literal - a.literal || a.params - b.params);
     const best = hits[0];
     const ties = hits.filter((h) => h.params === best.params && h.literal === best.literal);
     if (ties.length > 1)

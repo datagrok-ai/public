@@ -88,6 +88,11 @@ jobs:
       - run: npm version
       - run: npm install
         working-directory: ./tools
+      # The api-domains tests typecheck against the sibling js-api checkout, which this sparse
+      # checkout does not have; the grok s / migrate suites are self-contained.
+      - name: Unit tests (grok s, migrate)
+        run: npm run test:server
+        working-directory: ./tools
       # Trusted publishing (OIDC) needs npm >= 11.5.1 on Node >= 22.14. Swap the
       # toolchain only for the publish step so the build keeps its pinned Node.
       - name: Setup Node for trusted publishing

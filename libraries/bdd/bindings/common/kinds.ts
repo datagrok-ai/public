@@ -63,8 +63,13 @@ inputKind('map input', ['map-input'], '', ['key value input']);
 inputKind('message input', ['message-input'], '', ['prompt input', 'chat input']);
 inputKind('radio input', ['radio-input'], '.ui-input-radio', ['radio group', 'radio']);
 inputKind('slider', ['slider-input'], '.ui-input-slider', ['slider input']);
-inputKind('range slider', ['range-slider'], '', ['range input']);
-kind('slider handle', {aliases: ['handle', 'thumb'], selector: '[role="slider"]', match: ['aria', 'name', 'text']});
+inputKind('range slider', ['range-slider'], 'svg[type="range-slider"]', ['range input']);
+kind('slider handle', {
+  aliases: ['handle', 'thumb'],
+  selector: '[role="slider"], svg[type="range-slider"] [name$="-handle"]',
+  match: ['aria', 'name', 'text', 'dart'],
+  dartNames: ['{q}-handle', '{q}'],
+});
 inputKind('suggest input', ['suggest-input', 'typeahead'], '', ['autocomplete', 'typeahead']);
 inputKind('combobox', ['combobox'], '.ui-input-editable-choice', ['combo box', 'editable choice']);
 inputKind('multi select', ['multi-select'], '.ui-input-multi-choice', ['multi select input']);
@@ -72,7 +77,7 @@ inputKind('tags input', ['tags-input'], '.ui-input-tags', ['tags field']);
 inputKind('file input', ['file-input', 'files-input'], '.ui-input-file', ['file field', 'files input']);
 inputKind('columns input', ['columns-input', 'columns-map-input', 'aggregated-columns-input'], '.ui-input-columns', ['columns picker']);
 inputKind('column input', ['column-combo', 'column-picker'], '.d4-column-selector', ['column picker', 'column selector', 'column combobox'],
-  {match: ['name', 'label', 'dart'], dartNames: ['div-column-combobox-{q}-', 'input-host-{q}'], gestures: {open: 'mousedown'}});
+  {match: ['name', 'label', 'dart'], dartNames: ['div-column-combobox-{q}', 'div-column-combobox-{q}-', 'input-host-{q}'], gestures: {open: 'mousedown'}});
 inputKind('function input', ['function-input', 'func-call-input'], '', ['func input']);
 inputKind('dynamic input', ['dynamic-input'], '', []);
 inputKind('rsa input', ['rsa-input'], '', ['key input']);
@@ -110,7 +115,13 @@ kind('function form', {
 });
 kind('object form', {selector: u2('object-form'), match: ['name', 'aria']});
 kind('property grid', {aliases: ['property editor'], selector: u2('property-grid', 'property-editor'), match: ['name', 'aria']});
-kind('property', {aliases: ['property row'], selector: '.u2-propgrid-row', match: ['label', 'name'], labelSelector: '.u2-propgrid-name'});
+kind('property', {
+  aliases: ['property row'],
+  selector: '.u2-propgrid-row, tr.property-grid-item',
+  match: ['label', 'name', 'aria', 'dart'],
+  labelSelector: '.u2-propgrid-name, .property-grid-item-name-text',
+  dartNames: ['prop-{q}'],
+});
 kind('category', {
   aliases: ['property category'],
   selector: '.u2-propgrid-category',
@@ -160,7 +171,7 @@ kind('history browser', {
 kind('icon', {
   selector: u2('icon') + ', .u2-icon, .grok-icon, [name^="icon-"], i[class*="fa-"]',
   match: ['aria', 'name', 'dart'],
-  dartNames: ['icon-{q}'],
+  dartNames: ['icon-{q}', '{q}'],
 });
 kind('badge', {selector: u2('badge', 'count-badge', 'dot'), match: ['text', 'name', 'aria']});
 kind('tag', {selector: u2('tag') + ', .d4-tag', match: ['text', 'name']});
@@ -189,10 +200,12 @@ kind('toolbar', {selector: u2('toolbar') + ', [role="toolbar"], .d4-ribbon', mat
 // the Dart main menu keeps a permanent [role="menu"] container per group — not a popup
 kind('menu', {selector: u2('menu') + ', .d4-menu-popup, [role="menu"]:not(.d4-menu-item-container)', match: ['name', 'aria']});
 kind('menu bar', {selector: u2('menu-bar') + ', [role="menubar"]', match: ['name', 'aria']});
+// a group item (u2 nests its submenu inside the item, Dart its children) contains its
+// children's labels, so an item's own label is the direct child
 kind('menu item', {
   selector: '.u2-menu-item, [role="menuitem"], .d4-menu-item',
-  match: ['text', 'label', 'name', 'dart'],
-  labelSelector: '.u2-menu-label, .d4-menu-item-label',
+  match: ['label', 'text', 'name', 'dart'],
+  labelSelector: ':scope > .u2-menu-label, :scope > .d4-menu-item-label',
   dartNames: ['div-{q}'],
 });
 kind('breadcrumbs', {aliases: ['breadcrumb bar'], selector: u2('breadcrumbs'), match: ['name', 'aria']});
@@ -249,11 +262,21 @@ kind('palette', {selector: u2('palette'), match: ['name']});
 kind('designer', {selector: u2('designer'), match: ['name']});
 
 // --- the Dart shell -------------------------------------------------------------------------------
+// the title bar belongs to the dock panel around the viewer, hence the ancestor walk
+const PANEL = 'xpath=ancestor::*[contains(concat(" ", normalize-space(@class), " "), " panel-base ")][1]';
 kind('viewer', {
   selector: '[name^="viewer-"], .d4-viewer',
   match: ['dart', 'name'],
   dartNames: ['viewer-{q}'],
   gestures: {click: 'mouse'},
+  parts: {
+    title: `${PANEL}//*[contains(@class, "panel-titlebar-text")]`,
+    'settings icon': `${PANEL}//*[contains(@class, "panel-titlebar")]//*[@name="icon-font-icon-settings"]`,
+    'menu icon': `${PANEL}//*[contains(@class, "panel-titlebar")]//*[@name="icon-font-icon-menu"]`,
+    'close icon': `${PANEL}//*[contains(@class, "panel-titlebar")]//*[@name="Close" or @name="icon-font-icon-close"]`,
+    description: '.d4-viewer-description',
+    canvas: 'canvas[name="canvas"]',
+  },
 });
 kind('view', {
   selector: '.d4-view-handle, [name^="view-handle: "]',

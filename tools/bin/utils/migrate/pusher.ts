@@ -7,6 +7,9 @@ import {Bundle, BundleEntity, bytesPath, hashOf, hashView, stripPrivate, writeId
 import {nestedIds, rewrite} from './rewriter';
 import {findEntity, grantsOf, groupCache} from './walker';
 
+/** A relation set is written whole; a project holding thousands of them is slow, not stuck. */
+const BULK_WRITE_MS = Number(process.env['GROK_HTTP_BULK_TIMEOUT'] ?? 600000);
+
 export type Action = 'create' | 'update' | 'identical' | 'skip' | 'failed' | 'warn' | 'info' | 'needs-credentials';
 export type ConflictPolicy = 'fail' | 'skip' | 'duplicate' | 'adopt';
 
@@ -37,6 +40,20 @@ export async function plan(dapi: NodeDapi, bundle: Bundle,
   const onTarget = new Set<string>();
   const pusherNamespace = await currentNamespace(dapi);
 
+  // A personal root project exists on the target already, under the target's own id, because it
+  // was created with the user. Pointing at that one before anything is rewritten is what keeps
+  // the content under it in its owner's namespace instead of the pusher's.
+  const owners = bundle.manifest.order
+    .map((entry) => bundle.entities.get(entry.id)!.json._personalOf).filter(Boolean);
+  if (owners.length) {
+    const personal = await personalProjects(dapi);
+    for (const entry of bundle.manifest.order) {
+      const owner = bundle.entities.get(entry.id)!.json._personalOf;
+      if (owner && personal.has(owner))
+        idmap[entry.id] = personal.get(owner)!;
+    }
+  }
+
   // Every twin is resolved before the first payload is rewritten: an adoption discovered
   // halfway through would leave the references of everything rewritten before it stale.
   const resolved = new Map<string, {target: any; twin: any}>();
@@ -66,6 +83,14 @@ export async function plan(dapi: NodeDapi, bundle: Bundle,
     planned.set(entry.id, row);
 
     const {target, twin} = resolved.get(entry.id)!;
+    if (json._personalOf) {
+      row.action = 'skip';
+      row.reason = 'personal_project';
+      row.detail = `the target keeps ${json._personalOf}'s own`;
+      onTarget.add(json.id);
+      effective.set(entry.id, {type, json});
+      continue;
+    }
     // A hand-edited bundle must not be able to overwrite what the target owns itself.
     const refuse = untransferableReason(type, json);
     if (refuse) {
@@ -340,7 +365,10 @@ async function pushRelations(dapi: NodeDapi, effective: Map<string, BundleEntity
   const inBundle = new Set([...effective.values()].map((e) => e.json.id));
   for (const [id, {type, json}] of effective) {
     if (type !== 'Project' || !json.relations?.length) continue;
-    if (!['create', 'update'].includes(planned.get(id)?.action ?? 'create')) continue;
+    // A personal project is skipped as an entity — the target keeps its own — but its children
+    // still have to be attached to it, or they land with no namespace at all.
+    const row = planned.get(id);
+    if (!['create', 'update'].includes(row?.action ?? 'create') && row?.reason !== 'personal_project') continue;
 
     const target = await projects.find(json.id);
     if (!target) continue;
@@ -367,7 +395,9 @@ async function pushRelations(dapi: NodeDapi, effective: Map<string, BundleEntity
 
     for (let attempt = 0; ; attempt++) {
       try {
-        await projects.save(target, 'saveRelations=true');
+        // A personal root project can hold thousands of relations, and the whole set is written
+        // in one POST: at 60s it times out, and everything under it stays namespaceless.
+        await dapi.client.post('/projects?saveRelations=true', stripPrivate(JSON.parse(JSON.stringify(target))), BULK_WRITE_MS);
         break;
       } catch (err: any) {
         const text = String(err?.message ?? err);
@@ -509,6 +539,15 @@ export function changedKeys(type: string, a: any, b: any): string[] {
 
 function minor(version: string): string {
   return String(version ?? '').split('.').slice(0, 2).join('.');
+}
+
+/** Login -> the id of that user's personal root project on this instance. */
+async function personalProjects(dapi: NodeDapi): Promise<Map<string, string>> {
+  const byLogin = new Map<string, string>();
+  for (const user of await dapi.internal('/users').listAll({limit: 500}))
+    if (user?.login && user?.project?.id)
+      byLogin.set(user.login, user.project.id);
+  return byLogin;
 }
 
 async function currentNamespace(dapi: NodeDapi): Promise<string> {

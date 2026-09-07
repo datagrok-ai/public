@@ -36,6 +36,7 @@
     "update:ivp-parser": "esbuild plugins/ivp-parser.entry.mjs --bundle --format=cjs --platform=node --alias:diff-grok=../libraries/compute-utils/node_modules/diff-grok --outfile=plugins/ivp-parser.bundle.cjs",
     "debug-source-map": "node build.js --source-maps",
     "test": "vitest run --project unit",
+    "test:server": "vitest run --project unit bin/__tests__/node-dapi bin/__tests__/server bin/__tests__/migrate",
     "test:watch": "vitest --project unit",
     "test:integration": "vitest run --project integration",
     "test:all": "vitest run"

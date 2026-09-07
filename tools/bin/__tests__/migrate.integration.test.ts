@@ -93,7 +93,8 @@ beforeAll(async () => {
     description: 'migrate test',
     notebook: {cells: [], metadata: {kernelspec: {name: 'python3', display_name: 'Python 3'}}, nbformat: 4, nbformat_minor: 2},
   });
-  await dapi.groups.addMembers(ids.group, ['admin'], false, true);
+  // a fresh group needs an admin, otherwise the server refuses the save
+  await dapi.groups.addMembers(ids.group, ['admin'], true, true);
   await dapi.shares.share(ids.dash, 'MigTestGroup', 'View');
   await dapi.client.post('/entities/tag?tag=migrate-test', [ids.conn, ids.query, ids.dash]);
 });

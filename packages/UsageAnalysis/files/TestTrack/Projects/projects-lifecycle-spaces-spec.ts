@@ -1,6 +1,5 @@
-// Spaces-source lifecycle: provision a transient root Space with demog.csv, save with Sync ON, reopen.
-// GROK-18345: share to the second user's GROUP at View-and-Use + Full and verify recipient can open it.
-import {test, expect} from '@playwright/test';
+import {expect} from '@playwright/test';
+import {test} from '../shared-page';
 import {softStep, stepErrors} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
 import {
@@ -17,13 +16,8 @@ import {
   resetShell,
   PROVENANCE_PATTERNS,
 } from '../helpers/openers';
-import {
-  saveAllTablesWithProvenance,
-  reopenAndAssertProvenance,
-  shareWithSecondUserAndVerify,
-  deleteProjectWithCleanup,
-  SavedAllTables,
-} from '../helpers/projects';
+import {deleteProjectWithCleanup, SavedAllTables} from '../helpers/projects';
+import {saveAllTablesWithProvenance, reopenAndAssertProvenance, shareWithSecondUserAndVerify} from './projects-shared';
 
 test.use(projectsTestOptions);
 
@@ -40,7 +34,6 @@ test('Projects / Lifecycle Spaces: open from Space + sync + reopen', async ({pag
   await setupSession(page);
   await resetShell(page);
 
-  // Provision a Space with demog.csv copied in; it stays alive so Sync-ON reopen can re-run OpenFile against it.
   const probe = await provisionSpaceFixture(page, {
     namePrefix: 'lifecycle-spaces',
     fileName: 'demog.csv',
@@ -72,7 +65,6 @@ test('Projects / Lifecycle Spaces: open from Space + sync + reopen', async ({pag
       expect(result.reopenedRowCount).toBeGreaterThan(0);
     });
 
-    // GROK-18345 recipient-open leg. MUST be last before cleanup — the helper restores the owner session before delete.
     await softStep('GROK-18345: share with second user + recipient-open verification', async () => {
       if (!saved) throw new Error('no saved project');
       const r = await shareWithSecondUserAndVerify(page, {id: saved.projectId, name: projectName}, {full: true});

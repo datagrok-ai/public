@@ -205,6 +205,7 @@ describe('select', () => {
 function dashboardResponder(): (method: string, path: string) => any {
   return (_m, path) => {
     if (path.startsWith('/privileges/permissions?')) return [];
+    if (path.startsWith('/users?')) return [];
     if (path.startsWith('/projects/relations?')) return [
       {entity: {'#type': 'TableInfo', id: TABLE_ID}},
       {entity: {'#type': 'ViewInfo', id: VIEW_ID}},
@@ -308,6 +309,7 @@ describe('grants and groups', () => {
     if (path === '/groups/analysts') return {'#type': 'UserGroup', id: 'analysts', name: 'Analysts', friendlyName: 'Analysts'};
     if (path === '/groups/a4b45840-9a50-11e6-9cc9-8546b8bf62e6') return {'#type': 'UserGroup', id: 'a4b45840-9a50-11e6-9cc9-8546b8bf62e6', name: 'AllUsers', friendlyName: 'All users'};
     if (path.startsWith('/projects/relations?') || path.startsWith('/views?') || path.startsWith('/layouts?')) return [];
+    if (path.startsWith('/users?')) return [];
     throw new Error(`unexpected ${path}`);
   };
 

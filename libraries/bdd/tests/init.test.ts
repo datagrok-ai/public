@@ -36,7 +36,7 @@ test('init scaffolds bdd/, the editor settings, the ignore list and the manifest
   assert.match(readFileSync(join(dir, 'bdd', 'features', 'smoke.feature'), 'utf8'), /Given user is logged in/);
   assert.match(readFileSync(join(dir, '.gitignore'), 'utf8'), /bdd\/test-results\//);
   const manifest = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8'));
-  assert.ok(manifest.devDependencies[PACKAGE_NAME]);
+  assert.match(manifest.devDependencies[PACKAGE_NAME], /^file:/, 'from a checkout of the library, the dependency is its path');
   assert.ok(manifest.devDependencies['@playwright/test']);
   assert.equal(manifest.scripts['test:bdd'], 'grok-bdd run');
   assert.equal(manifest.scripts.build, 'webpack');

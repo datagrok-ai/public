@@ -1,4 +1,5 @@
-import {test, expect} from '@playwright/test';
+import {expect} from '@playwright/test';
+import {test} from '../shared-page';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
 test.use(specTestOptions);
@@ -38,7 +39,7 @@ for (const ds of datasets) {
     await page.evaluate(async () => {
       const probes = ['Bio:getSeqHelper', 'Bio:getMonomerLibHelper', 'Bio:getBioLib'];
       for (const fn of probes) {
-        try { await (grok as any).functions.call(fn, {}); return; } catch { /* try next */ }
+        try { await (grok as any).functions.call(fn, {}); return; } catch {  }
       }
       await new Promise((r) => setTimeout(r, 3000));
     });
@@ -62,9 +63,10 @@ for (const ds of datasets) {
         await new Promise((r) => setTimeout(r, 400));
         (document.querySelector('[name="div-Bio---Calculate---Extract-Region..."]') as HTMLElement).click();
       });
-      // Dialog name is `dialog-Get-Region` (named after API getRegion, not the menu label).
-      await page.locator('[name="dialog-Get-Region"]').waitFor({timeout: 60_000});
-      await page.locator('[name="dialog-Get-Region"] [name="button-OK"]').click();
+      // The menu runs the `Get Sequence Region` func through Bio:GetRegionEditor, so the
+      // dialog carries that func name.
+      await page.locator('[name="dialog-Get-Sequence-Region"], [name="dialog-Get-Region"]').waitFor({timeout: 60_000});
+      await page.locator('[name="dialog-Get-Sequence-Region"] [name="button-OK"], [name="dialog-Get-Region"] [name="button-OK"]').click();
       await page.waitForFunction(
         (b) => grok.shell.tv.dataFrame.columns.length > b, before, {timeout: 30_000});
       const info: {hasRegion: boolean, units: string | null, name: string | null} = await page.evaluate(() => {
@@ -77,7 +79,7 @@ for (const ds of datasets) {
       expect(info.hasRegion).toBe(true);
       expect(info.units).toBe(ds.units);
       await page.waitForFunction(
-        () => document.querySelectorAll('[name="dialog-Get-Region"]').length === 0,
+        () => document.querySelectorAll('[name="dialog-Get-Sequence-Region"], [name="dialog-Get-Region"]').length === 0,
         null, {timeout: 15_000}).catch(() => {});
     });
     await softStep(`${ds.name}: Transform > Convert Sequence Notation adds a new Macromolecule column`, async () => {
