@@ -51,17 +51,27 @@ export async function openPlatformView(page: Page, name: PlatformView): Promise<
   await page.waitForTimeout(400);
 }
 
-/** Parse the "shown / total" gallery counter into numbers, polling until it settles. */
+/** Parse the gallery counter into numbers, polling until it settles. */
 export async function readGalleryCount(page: Page): Promise<{ shown: number; total: number }> {
-  // The counter is parseable long before it is final — a gallery still loading reads "2 / 2" and
-  // only later "3 / 3" — so wait for the same text twice rather than taking the first match.
+  // Three shapes, and only the first carries two numbers: "25 / 2155" while a filter constrains
+  // the list, "50 of 78" while it is still loading, plain "78" once it is whole. "..." means the
+  // total is not known yet.
+  const parse = (text: string): { shown: number; total: number } | null => {
+    const pair = text.match(/(\d+)\s*(?:\/|of)\s*(\d+)/);
+    if (pair)
+      return { shown: Number(pair[1]), total: Number(pair[2]) };
+    const single = text.match(/^(\d+)$/);
+    return single ? { shown: Number(single[1]), total: Number(single[1]) } : null;
+  };
+  // The counter is parseable long before it is final — a gallery still loading reads "2" and
+  // only later "3" — so wait for the same text twice rather than taking the first match.
   const counter = page.locator(GALLERY_COUNTS).first();
-  let m: RegExpMatchArray | null = null;
+  let m: { shown: number; total: number } | null = null;
   let last = '';
   let repeats = 0;
   for (let i = 0; i < 40; i++) {
     const text = (await counter.textContent().catch(() => ''))?.trim() ?? '';
-    const parsed = text.match(/(\d+)\s*\/\s*(\d+)/);
+    const parsed = parse(text);
     if (parsed) {
       m = parsed;
       repeats = text === last ? repeats + 1 : 0;
@@ -70,8 +80,7 @@ export async function readGalleryCount(page: Page): Promise<{ shown: number; tot
     last = text;
     await page.waitForTimeout(250);
   }
-  if (!m) return { shown: NaN, total: NaN };
-  return { shown: Number(m[1]), total: Number(m[2]) };
+  return m ?? { shown: NaN, total: NaN };
 }
 
 /** Type into the gallery search and wait for the count to settle. */
