@@ -170,6 +170,7 @@ export function compileFeature(feature: FeatureModel, ctx: CompileContext): Comp
   const lines: string[] = [];
   const realizes = [...feature.tags, ...feature.scenarios.flatMap((s) => s.tags)]
     .filter((t) => t.startsWith('@realizes:')).map((t) => t.slice('@realizes:'.length));
+  lines.push('/* eslint-disable max-len */', '/* eslint-disable comma-spacing */', '/* eslint-disable quotes */');
   lines.push('/* ---');
   lines.push(`generated: ${relPath}`);
   lines.push(`generator: ${PACKAGE_NAME} — do not edit; run \`grok-bdd compile\` to regenerate`);

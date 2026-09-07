@@ -1,3 +1,6 @@
+/* eslint-disable max-len */
+/* eslint-disable comma-spacing */
+/* eslint-disable quotes */
 /* ---
 generated: features/viewers/box-plot.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
