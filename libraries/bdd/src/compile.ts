@@ -1,8 +1,9 @@
 /* Feature model → one Playwright spec. Deterministic: the output is a pure function of the feature
    text and the loaded bindings; element phrases (`{element}`, `{widget}`) are emitted as `el('…')` and datasets as `ds('…')`
    (names, never selectors), so a registry fix never forces a regeneration. A feature's scenarios
-   share one browser page through `feature(test)` (see runtime/harness.ts): Playwright still runs
-   one test per scenario. A step declared with `enters` switches the vocabulary: the compiler
+   share one browser page through `feature(test, …)` (see runtime/harness.ts): Playwright still runs
+   one test per scenario. Every step is `session.step(line, title, …)` — its feature line is the
+   step's location in reports and traces, and the first line of its failure. A step declared with `enters` switches the vocabulary: the compiler
    validates the following phrases against that context and emits `enter(page, '…')` so the
    runtime resolves them the same way. */
 import {dirname, isAbsolute, join, relative, sep} from 'node:path';
@@ -116,18 +117,18 @@ export function compileFeature(feature: FeatureModel, ctx: CompileContext): Comp
     if (result.ambiguous) {
       diag(step.line, 'error', `ambiguous step "${step.text}": ` +
         result.ambiguous.map((m) => `"${m.def.expression}"`).join(' | '));
-      return [`${indent}await test.step(${title}, () => { throw new Error('ambiguous step'); });`];
+      return [`${indent}await session.step(${step.line}, ${title}, () => { throw new Error('ambiguous step'); });`];
     }
     if (!result.match) {
       const near = ctx.matcher.suggest(step.text).map((d) => `"${d.expression}"`).join(', ');
       diag(step.line, 'error', `no step definition matches "${step.text}"` + (near ? ` — nearest: ${near}` : ''));
-      return [`${indent}await test.step(${title}, () => { throw new Error('no step definition matches this step'); });`];
+      return [`${indent}await session.step(${step.line}, ${title}, () => { throw new Error('no step definition matches this step'); });`];
     }
     const {def, args} = result.match;
     const exported = ctx.bindings.exportOf.get(def.fn);
     if (!exported || !IDENT.test(exported.name)) {
       diag(step.line, 'error', `the definition of "${def.expression}" must be an exported const of its module`);
-      return [`${indent}await test.step(${title}, () => { throw new Error('step definition is not exported'); });`];
+      return [`${indent}await session.step(${step.line}, ${title}, () => { throw new Error('step definition is not exported'); });`];
     }
     if (!named.has(exported.module.specifier))
       named.set(exported.module.specifier, new Set());
@@ -137,7 +138,7 @@ export function compileFeature(feature: FeatureModel, ctx: CompileContext): Comp
       call.push(JSON.stringify(step.table));
     if (step.docString !== undefined)
       call.push(JSON.stringify(step.docString));
-    const out = [`${indent}await test.step(${title}, () => ${exported.name}(page${call.map((c) => ', ' + c).join('')}));`];
+    const out = [`${indent}await session.step(${step.line}, ${title}, () => ${exported.name}(page${call.map((c) => ', ' + c).join('')}));`];
     if (def.meta.enters !== undefined) {
       const entered = lookupContext(def.meta.enters);
       if (!entered)
@@ -187,7 +188,7 @@ export function compileFeature(feature: FeatureModel, ctx: CompileContext): Comp
   lines.push(`import {${[...helpers].sort().join(', ')}} from '${RUNTIME_SPECIFIER}';`);
   lines.push('');
   lines.push(`test.describe(${JSON.stringify(feature.name)}, () => {`);
-  lines.push('  const session = feature(test);');
+  lines.push(`  const session = feature(test, ${JSON.stringify(relPath)}, import.meta.url);`);
   lines.push(...body);
   lines.push('});');
   lines.push('');

@@ -5,16 +5,23 @@
    it. The generated spec keeps calling `test()` itself, so reports point at the spec line.
    The page's console errors and uncaught exceptions are collected from the moment it opens, so a
    scenario can assert a zero-error floor (`no errors should have been logged`). */
+import {join, sep} from 'node:path';
+import {fileURLToPath} from 'node:url';
 import type {Browser, Page, PlaywrightTestArgs, PlaywrightTestOptions, PlaywrightWorkerArgs, PlaywrightWorkerOptions,
   TestType} from '@playwright/test';
-import {expect} from '@playwright/test';
 import {leave} from './args.js';
+import {failure, isWaitFailure, journeyFailure} from './failure.js';
+import {explain} from './locate.js';
 
 type Test = TestType<PlaywrightTestArgs & PlaywrightTestOptions, PlaywrightWorkerArgs & PlaywrightWorkerOptions>;
 
 export interface FeatureSession {
   /** The feature's page — opened on first use, shared by the scenarios that follow. */
   page(browser: Browser): Promise<Page>;
+  /** One Gherkin step: a Playwright step located at the feature line, whose failure names the
+   * line, the step as written, the reason, and — when Playwright gave up on an element — what the
+   * page shows where the phrase looked. */
+  step(line: number, title: string, body: () => Promise<unknown>): Promise<void>;
 }
 
 export interface Journey {
@@ -30,20 +37,29 @@ export interface Journey {
  * per-test timeout times the scenario count. */
 export function journey(test: Test, scenarios: number): Journey {
   test.setTimeout(test.info().timeout * scenarios);
-  const failed: string[] = [];
+  const failed: {name: string; error: unknown}[] = [];
   return {
     async scenario(name: string, body: () => Promise<void>): Promise<void> {
       try {
         await test.step(name, body);
       }
       catch (e) {
-        failed.push(`${name}: ${(e as Error).message ?? e}`);
+        failed.push({name, error: e});
       }
     },
     finish(): void {
-      expect(failed, `${failed.length} of ${scenarios} scenarios failed`).toEqual([]);
+      if (failed.length > 0)
+        throw journeyFailure(failed, scenarios);
     },
   };
+}
+
+/** `<root>/generated/x/y.test.ts` + `features/x/y.feature` → the feature file (the layout
+ * `outFileFor` writes). */
+function featureFile(specUrl: string, path: string): string {
+  const spec = fileURLToPath(specUrl);
+  const i = spec.lastIndexOf(`${sep}generated${sep}`);
+  return join(i < 0 ? spec : spec.slice(0, i), ...path.split('/'));
 }
 
 const HOME_VIEW = 'datagrok';
@@ -75,8 +91,9 @@ export function takeErrors(page: Page): string[] {
   return out;
 }
 
-export function feature(test: Test): FeatureSession {
+export function feature(test: Test, path = '', specUrl = ''): FeatureSession {
   let page: Page | undefined;
+  const file = path && specUrl ? featureFile(specUrl, path) : undefined;
   test.afterEach(async () => {
     if (page && !page.isClosed()) {
       leave(page);
@@ -94,6 +111,17 @@ export function feature(test: Test): FeatureSession {
         watchErrors(page);
       }
       return page;
+    },
+    async step(line: number, title: string, body: () => Promise<unknown>): Promise<void> {
+      await test.step(title, async () => {
+        try {
+          await body();
+        }
+        catch (e) {
+          const shown = isWaitFailure(e) && page && !page.isClosed() ? await explain(page).catch(() => '') : '';
+          throw failure(`${path || 'feature'}:${line}`, title, e, shown, file ? `${file}:${line}:1` : '');
+        }
+      }, {location: file ? {file, line, column: 1} : undefined});
     },
   };
 }

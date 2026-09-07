@@ -20,13 +20,13 @@ import {openToolbox, viewerAdded} from '@datagrok-libraries/bdd/bindings/tiers/v
 import {ds, el, feature} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Platform behaviour from a package", () => {
-  const session = feature(test);
+  const session = feature(test, "features/platform/viewers-from-a-package.feature", import.meta.url);
   test("A viewer from the toolbox", {tag: ["@platform", "@realizes:viewers.scatter-plot"]}, async ({browser}) => {
     const page = await session.page(browser);
-    await test.step("Given user is logged in", () => loggedIn(page));
-    await test.step("And user opens spgi dataset", () => openDataset(page, ds("spgi")));
-    await test.step("When user opens toolbox", () => openToolbox(page));
-    await test.step("And user clicks on scatter plot icon on toolbox", () => clickOn(page, el("scatter plot icon on toolbox")));
-    await test.step("Then scatter plot viewer should be added to the open tableview", () => viewerAdded(page, "scatter plot"));
+    await session.step(7, "Given user is logged in", () => loggedIn(page));
+    await session.step(8, "And user opens spgi dataset", () => openDataset(page, ds("spgi")));
+    await session.step(9, "When user opens toolbox", () => openToolbox(page));
+    await session.step(10, "And user clicks on scatter plot icon on toolbox", () => clickOn(page, el("scatter plot icon on toolbox")));
+    await session.step(11, "Then scatter plot viewer should be added to the open tableview", () => viewerAdded(page, "scatter plot"));
   });
 });

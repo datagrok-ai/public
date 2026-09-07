@@ -121,8 +121,27 @@ function install(): void {
     const p = props.find((x) => norm(x.caption) === want) ?? props.find((x) => norm(x.name) === want) ??
       props.find((x) => norm(friendly(x.name)) === want) ??
       props.find((x) => /ColumnNames?$/.test(x.name) && norm(friendly(x.name)) === short);
-    if (!p)
-      throw new Error(`${v.type} has no "${caption}" property; it has: ${props.map((x) => x.caption ?? x.name).join(', ')}`);
+    if (!p) {
+      // a property's caption defaults to its name; the grid shows the name split into words
+      const title = (x: any): string => x.caption && x.caption !== x.name ? x.caption :
+        x.name.replace(/ColumnNames?$/, ' Column').replace(/[a-z\d](?=[A-Z])|[a-z](?=\d)|[A-Z](?=[A-Z][a-z])/g, '$& ')
+          .replace(/^./, (c: string) => c.toUpperCase());
+      const distance = (a: string, b: string): number => {
+        const row = [...Array(b.length + 1).keys()];
+        for (let i = 1; i <= a.length; i++) {
+          let prev = row[0]++;
+          for (let j = 1; j <= b.length; j++) {
+            const cur = row[j];
+            row[j] = Math.min(row[j] + 1, row[j - 1] + 1, prev + (a[i - 1] === b[j - 1] ? 0 : 1));
+            prev = cur;
+          }
+        }
+        return row[b.length];
+      };
+      const titles = props.map(title);
+      const nearest = titles.map((t) => ({t, d: distance(norm(t), want)})).sort((x, y) => x.d - y.d).slice(0, 3).map((x) => x.t);
+      throw new Error(`${v.type} has no "${caption}" property; nearest: ${nearest.join(', ')}. All: ${titles.join(', ')}`);
+    }
     return p;
   };
   const convert = (p: any, text: string): unknown => {

@@ -71,4 +71,7 @@ export const followingShouldBe = Then('the following elements should be {state}:
 
 export const waitFor = Given('user waits for {element}', async (page: Page, target: ElementRef) => {
   await expect(await locate(page, target)).toBeVisible();
-}, {description: 'until visible — the only wait the vocabulary has'});
+}, {description: 'until visible'});
+
+export const waitMs = Given('user waits for {int} millisecond(s)', (page: Page, ms: number) => page.waitForTimeout(ms),
+  {description: 'a plain sleep, for probing a feature by hand — a committed feature that needs one is missing a signal in the core'});

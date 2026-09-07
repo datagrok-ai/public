@@ -17,17 +17,17 @@ import {clickOn, enterInto, shouldBe, shouldHaveText, typeInto} from '@datagrok-
 import {el, enter, feature} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Functions", () => {
-  const session = feature(test);
+  const session = feature(test, "features/demo/forms/functions.feature", import.meta.url);
   test("Picking a platform function and running it", {tag: ["@demo", "@realizes:u2.functions-browser", "@realizes:u2.func-form"]}, async ({browser}) => {
     const page = await session.page(browser);
-    await test.step("Given user opens the \"Functions\" demo page", () => openDemoPage(page, "Functions"));
+    await session.step(6, "Given user opens the \"Functions\" demo page", () => openDemoPage(page, "Functions"));
     enter(page, "U2 Demo");
-    await test.step("When user types \"Abs\" into search of functions browser", () => typeInto(page, "Abs", el("search of functions browser")));
-    await test.step("And user clicks on Abs item in list of functions browser", () => clickOn(page, el("Abs item in list of functions browser")));
-    await test.step("Then Abs heading should be visible", () => shouldBe(page, el("Abs heading"), "visible"));
-    await test.step("And function form should be visible", () => shouldBe(page, el("function form"), "visible"));
-    await test.step("When user enters \"7.5\" into x input in function form", () => enterInto(page, "7.5", el("x input in function form")));
-    await test.step("And user clicks on Run button", () => clickOn(page, el("Run button")));
-    await test.step("Then value of result readout should have text \"7.5\"", () => shouldHaveText(page, el("value of result readout"), "7.5"));
+    await session.step(7, "When user types \"Abs\" into search of functions browser", () => typeInto(page, "Abs", el("search of functions browser")));
+    await session.step(8, "And user clicks on Abs item in list of functions browser", () => clickOn(page, el("Abs item in list of functions browser")));
+    await session.step(9, "Then Abs heading should be visible", () => shouldBe(page, el("Abs heading"), "visible"));
+    await session.step(10, "And function form should be visible", () => shouldBe(page, el("function form"), "visible"));
+    await session.step(11, "When user enters \"7.5\" into x input in function form", () => enterInto(page, "7.5", el("x input in function form")));
+    await session.step(12, "And user clicks on Run button", () => clickOn(page, el("Run button")));
+    await session.step(13, "Then value of result readout should have text \"7.5\"", () => shouldHaveText(page, el("value of result readout"), "7.5"));
   });
 });

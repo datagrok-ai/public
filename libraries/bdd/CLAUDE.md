@@ -90,7 +90,23 @@ nobody filed.
   (leave the context, `resetShell`) and `afterAll` (close the context); the page is created inside
   the first test (`session.page(browser)`), so Playwright merges the project's context options
   (storage state, viewport) and records traces/screenshots for it. The generated spec calls
-  `test()` itself so reports point at the spec line, not the harness.
+  `test()` itself so reports point at the spec line, not the harness; every step is
+  `session.step(line, title, fn)` (`feature(test, "features/x.feature", import.meta.url)`), a
+  Playwright step whose `location` is the feature line.
+- **A failure is the feature line, the step, one sentence, and what was there instead**
+  (`src/runtime/failure.ts`, `harness.ts` `session.step`, `locate.ts` `explain`; 2026-09-07, the
+  lead: "the error PW gave me is very uninformative … this should be true everywhere"). `reasonOf`
+  strips Playwright's API prefix, an evaluate's in-page stack, ANSI, the ms timeout phrasing and
+  the `waiting for locator(…)` selector line; the rest of a call log and a matcher's own text
+  stay. On a wait failure (`isWaitFailure`) the report adds `explain(page)`: the last phrase
+  `refOf` parsed — its scope `not open`, or the visible elements of its kind by their labels
+  (`data-u2-name`/aria-label/title/first text line), so the author sees the name to write. A
+  `StepFailure` has no frames except for a programming error (`TypeError` & co., own frames only);
+  its one frame is the feature line, so Playwright prints the Gherkin snippet. Errors thrown by our
+  own code must already be sentences that name the alternatives (`has no "x" area; it has: …`,
+  `has no "x" property; nearest: …`, `no "x" in the menu; it shows: …`) — a new throw follows that
+  shape. `journeyFailure` lists the failed scenarios in the same shape, no `toEqual` diff.
+  `report()` in cli.ts prints notes only for `lint` or `--verbose`: 134 of them buried the failure.
 - **`@journey` = one test, the Background once, scenarios as soft steps** (`journey(test, n)` in
   harness.ts; codegen `emitJourney`): a failing scenario is recorded, the next runs, `finish()`
   fails the test with the list — the hand-written specs' `softStep`. The budget is the per-test

@@ -25,6 +25,9 @@ grok s files put public/packages/ApiTests/files/datasets/demog-1000.csv "System:
 ```
 
 Editing: change a feature, `npx grok-bdd compile`, commit the regenerated spec with it;
-`npx grok-bdd list-steps` prints every phrase this package can use; `npx grok-bdd run --trace on`
-records a trace with DOM snapshots; `PLAYWRIGHT_JSON_OUTPUT_NAME=run.json npx grok-bdd run --reporter=list,json`
-gives per-step timings.
+`npx grok-bdd list-steps` prints every phrase this package can use; `npx grok-bdd compile --verbose`
+prints how every element phrase resolves; `npx grok-bdd run --trace on` records a trace with DOM
+snapshots; `PLAYWRIGHT_JSON_OUTPUT_NAME=run.json npx grok-bdd run --reporter=list,json` gives
+per-step timings. A failed step reports its feature line, the step, the reason, and what the page
+shows instead (the visible menu items, the nearest property captions) — see "Reading a failure"
+in the library README.

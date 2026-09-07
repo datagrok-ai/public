@@ -64,7 +64,8 @@ test('one test per Gherkin scenario and outline row on the feature page, backgro
   const {code, diagnostics, outFile} = compile();
   assert.equal(diagnostics.filter((d) => d.level === 'error').length, 0);
   assert.ok(outFile.replace(/\\/g, '/').endsWith('bdd/generated/viewers/toolbox.test.ts'));
-  assert.match(code, /test\.describe\("Toolbox", \(\) => \{\n  const session = feature\(test\);/);
+  assert.match(code, /test\.describe\("Toolbox", \(\) => \{\n  const session = feature\(test, "features\/viewers\/toolbox\.feature", import\.meta\.url\);/);
+  assert.match(code, /await session\.step\(7, "When user clicks on scatter plot icon on toolbox", \(\) => clickOn\(page, el\("scatter plot icon on toolbox"\)\)\);/);
   assert.equal((code.match(/^  test\(/gm) ?? []).length, 3);
   assert.match(code, /test\("Several viewers \[viewer=bar chart\]", \{tag: \["@demo", "@realizes:u2.dialog"\]\}, async \(\{browser\}\) => \{\n    const page = await session\.page\(browser\);/);
   assert.equal((code.match(/openDataset\(page, ds\("spgi"\)\)/g) ?? []).length, 3);
@@ -79,9 +80,9 @@ test('a @journey feature is one test: the background once, every scenario a soft
   const {code, diagnostics} = compile('@journey ' + FEATURE);
   assert.equal(diagnostics.filter((d) => d.level === 'error').length, 0);
   assert.equal((code.match(/^  test\(/gm) ?? []).length, 1);
-  assert.match(code, /test\("Toolbox", \{tag: \["@journey", "@demo", "@realizes:u2.dialog"\]\}, async \(\{browser\}\) => \{\n    const page = await session\.page\(browser\);\n    const run = journey\(test, 3\);\n    await test\.step\("Given user opens spgi dataset"/);
+  assert.match(code, /test\("Toolbox", \{tag: \["@journey", "@demo", "@realizes:u2.dialog"\]\}, async \(\{browser\}\) => \{\n    const page = await session\.page\(browser\);\n    const run = journey\(test, 3\);\n    await session\.step\(4, "Given user opens spgi dataset"/);
   assert.equal((code.match(/openDataset\(page, ds\("spgi"\)\)/g) ?? []).length, 1);
-  assert.match(code, /await run\.scenario\("Add a viewer", async \(\) => \{\n      await test\.step\("When user clicks on scatter plot icon on toolbox"/);
+  assert.match(code, /await run\.scenario\("Add a viewer", async \(\) => \{\n      await session\.step\(7, "When user clicks on scatter plot icon on toolbox"/);
   assert.match(code, /await run\.scenario\("Several viewers \[viewer=bar chart\]", async \(\) => \{/);
   assert.match(code, /\n    run\.finish\(\);\n  \}\);\n\}\);\n$/);
   assert.match(code, /import \{ds, el, feature, journey\} from '@datagrok-libraries\/bdd\/runtime';/);

@@ -112,9 +112,9 @@ everything as existing and changes nothing.
 ```bash
 grok-bdd init               # bootstrap bdd/ in the current package (idempotent)
 grok-bdd link [--undo]      # wire the package to this checkout of the library (until it is on npm)
-grok-bdd compile            # features/** → generated/**  (+ diagnostics)
+grok-bdd compile            # features/** → generated/**  (+ errors; --verbose adds how every phrase resolves)
 grok-bdd compile --check    # fails when a committed spec is stale — the CI gate
-grok-bdd lint               # diagnostics only
+grok-bdd lint               # diagnostics only, notes included
 grok-bdd list-steps         # every step this package can use, and where it comes from
 grok-bdd run [--headed] [-g "name"] [--reporter=list]   # compile --check, then Playwright
 ```
@@ -146,6 +146,31 @@ property surface walked section by section, where re-opening the data and the vi
 times would cost more than the checks (the box plot: 13 scenarios in 14 s, 6 of them the login and
 the open). Each scenario then puts back what it changed, so the next starts where the Background
 left off. `-g` selects the whole journey; the report shows every scenario and step under it.
+
+## Reading a failure
+
+A failed step reports the feature line, the step as written, and the reason in a sentence —
+followed, when Playwright gave up waiting for an element, by what the page shows where the phrase
+looked. Playwright prints the Gherkin around the line, since the step's location is the feature
+file, not the generated spec:
+
+```
+StepFailure: features/viewers/box-plot.feature:43
+  When user right-clicks on the "statsff" area of box plot viewer
+
+Box plot has no "statsff" area right now; it has: view, x axis, y axis, stats, p value, marker
+
+   at ../features/viewers/box-plot.feature:43
+   42 |       | Show P Value          | true  |
+ > 43 |     When user right-clicks on the "statsff" area of box plot viewer
+```
+
+A misspelled menu item gets `visible menu items in context menu: General | Reset View | Markers | …`;
+a phrase inside a menu that is not open gets `context menu: not open`; a misspelled property gets
+the nearest captions, then all of them. A journey lists every failed scenario in that shape. There
+is no matcher diff, no in-page stack and no harness line: a stack trace appears only for a
+programming error in a binding, and then only its own frames. `bdd/test-results/` still has the
+screenshot and the trace.
 
 ## Element phrases
 
@@ -255,6 +280,7 @@ Then  {element} should be/become {state}  {element} should not be/become {state}
       {element} should have (the )value {string}        {element} should have {int} item(s)/row(s)/tab(s)
       the following elements should be {state}:  | element |
 Given user is logged in                   user opens {dataset} dataset          user waits for {element}
+      user waits for {int} millisecond(s)   (a probe while writing a feature; a committed one needing it is missing a signal)
 ```
 
 States: visible, hidden, present, absent, enabled, disabled, checked, unchecked, selected, empty,

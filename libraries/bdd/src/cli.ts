@@ -1,7 +1,7 @@
 /* grok-bdd <command> — run inside a package (features under bdd/features) or inside the library.
      init                  bootstrap bdd/ in the package: config, starter bindings, a smoke feature, manifest entries
-     compile [--check]     features/** → generated/**.test.ts; --check reports drift instead of writing
-     lint                  diagnostics only
+     compile [--check] [--verbose]  features/** → generated/**.test.ts; --check reports drift instead of writing, --verbose prints how every phrase resolves
+     lint                  diagnostics only, notes included
      list-steps            the vocabulary this project sees (base tiers + its tiers + its own bindings)
      run [playwright args] compile --check, then Playwright over generated/ with the library's config
      link [--undo]         wire the package to this checkout of the library (one Playwright per run) */
@@ -45,19 +45,24 @@ async function compileAll(project: Project): Promise<{compiled: CompiledFeature[
   return {compiled, diagnostics};
 }
 
-function report(diagnostics: Diagnostic[]): number {
-  for (const d of diagnostics)
-    console.log(`${d.file}:${d.line} ${d.level}: ${d.message}`);
+/** Errors and warnings always; the notes (how each phrase resolves) only when asked — they are an
+ * authoring aid, and hundreds of them bury the one line that matters in a run. */
+function report(diagnostics: Diagnostic[], notes: boolean): number {
+  for (const d of diagnostics) {
+    if (notes || d.level !== 'note')
+      console.log(`${d.file}:${d.line} ${d.level}: ${d.message}`);
+  }
   const errors = diagnostics.filter((d) => d.level === 'error').length;
-  console.log(`${errors} error(s), ${diagnostics.length - errors} note(s)`);
+  const noted = diagnostics.length - errors;
+  console.log(`${errors} error(s), ${noted} note(s)${noted > 0 && !notes ? ' (--verbose shows them)' : ''}`);
   return errors;
 }
 
 const eol = (s: string) => s.replace(/\r\n/g, '\n');
 
-async function compile(project: Project, check: boolean): Promise<number> {
+async function compile(project: Project, check: boolean, notes = false): Promise<number> {
   const {compiled, diagnostics} = await compileAll(project);
-  const errors = report(diagnostics);
+  const errors = report(diagnostics, notes);
   const expected = new Set(compiled.map((c) => c.outFile));
   const orphans = listFiles(project.generatedDir, '.test.ts').filter((f) => !expected.has(f));
   let drift = 0;
@@ -227,7 +232,7 @@ function link(cwd: string, undo: boolean): number {
 async function main(): Promise<number> {
   const [command = 'compile', ...flags] = process.argv.slice(2);
   if (command === '--help' || command === '-h' || command === 'help') {
-    console.log('grok-bdd init | link [--undo] | compile [--check] | lint | list-steps | run [playwright args]');
+    console.log('grok-bdd init | link [--undo] | compile [--check] [--verbose] | lint | list-steps | run [playwright args]');
     return 0;
   }
   if (command === 'init')
@@ -238,18 +243,18 @@ async function main(): Promise<number> {
   console.log(`bdd: ${project.name} at ${project.root}${project.tiers.length > 0 ? ` (tiers: ${project.tiers.join(', ')})` : ''}`);
   switch (command) {
     case 'compile':
-      return compile(project, flags.includes('--check'));
+      return compile(project, flags.includes('--check'), flags.includes('--verbose'));
     case 'check':
-      return compile(project, true);
+      return compile(project, true, flags.includes('--verbose'));
     case 'lint':
-      return report((await compileAll(project)).diagnostics) > 0 ? 1 : 0;
+      return report((await compileAll(project)).diagnostics, true) > 0 ? 1 : 0;
     case 'list-steps':
       await listSteps(project);
       return 0;
     case 'run':
       return run(project, flags);
     default:
-      console.error(`unknown command "${command}" — init | link [--undo] | compile [--check] | lint | list-steps | run [playwright args]`);
+      console.error(`unknown command "${command}" — init | link [--undo] | compile [--check] [--verbose] | lint | list-steps | run [playwright args]`);
       return 2;
   }
 }

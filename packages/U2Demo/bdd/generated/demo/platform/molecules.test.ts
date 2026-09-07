@@ -17,19 +17,19 @@ import {enterInto, selectIn, shouldBe, shouldContainText, shouldHaveText, typeIn
 import {el, enter, feature} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Bridged chemistry inputs", () => {
-  const session = feature(test);
+  const session = feature(test, "features/demo/platform/molecules.feature", import.meta.url);
   test("The structure input, the property form and the structure typeahead", {tag: ["@demo", "@realizes:u2.dg.molecules"]}, async ({browser}) => {
     const page = await session.page(browser);
-    await test.step("Given user opens the \"Molecules\" demo page", () => openDemoPage(page, "Molecules"));
+    await session.step(7, "Given user opens the \"Molecules\" demo page", () => openDemoPage(page, "Molecules"));
     enter(page, "U2 Demo");
-    await test.step("Then value of smiles readout should have text \"CC(=O)OC1=CC=CC=C1C(=O)O\"", () => shouldHaveText(page, el("value of smiles readout"), "CC(=O)OC1=CC=CC=C1C(=O)O"));
-    await test.step("And Structure input should be visible", () => shouldBe(page, el("Structure input"), "visible"));
-    await test.step("When user types \"Aspirin acetate\" into Name input in object form", () => typeInto(page, "Aspirin acetate", el("Name input in object form")));
-    await test.step("Then value of compound readout should contain text \"Aspirin acetate\"", () => shouldContainText(page, el("value of compound readout"), "Aspirin acetate"));
-    await test.step("When user enters \"181\" into \"MW, Da\" input in object form", () => enterInto(page, "181", el("\"MW, Da\" input in object form")));
-    await test.step("Then value of compound readout should contain text \"\\\"mw\\\":181\"", () => shouldContainText(page, el("value of compound readout"), "\"mw\":181"));
-    await test.step("When user types \"Caf\" into compound picker", () => typeInto(page, "Caf", el("compound picker")));
-    await test.step("And user selects \"Caffeine\" in compound picker", () => selectIn(page, "Caffeine", el("compound picker")));
-    await test.step("Then value of picked readout should have text \"Caffeine\"", () => shouldHaveText(page, el("value of picked readout"), "Caffeine"));
+    await session.step(8, "Then value of smiles readout should have text \"CC(=O)OC1=CC=CC=C1C(=O)O\"", () => shouldHaveText(page, el("value of smiles readout"), "CC(=O)OC1=CC=CC=C1C(=O)O"));
+    await session.step(9, "And Structure input should be visible", () => shouldBe(page, el("Structure input"), "visible"));
+    await session.step(10, "When user types \"Aspirin acetate\" into Name input in object form", () => typeInto(page, "Aspirin acetate", el("Name input in object form")));
+    await session.step(11, "Then value of compound readout should contain text \"Aspirin acetate\"", () => shouldContainText(page, el("value of compound readout"), "Aspirin acetate"));
+    await session.step(12, "When user enters \"181\" into \"MW, Da\" input in object form", () => enterInto(page, "181", el("\"MW, Da\" input in object form")));
+    await session.step(13, "Then value of compound readout should contain text \"\\\"mw\\\":181\"", () => shouldContainText(page, el("value of compound readout"), "\"mw\":181"));
+    await session.step(14, "When user types \"Caf\" into compound picker", () => typeInto(page, "Caf", el("compound picker")));
+    await session.step(15, "And user selects \"Caffeine\" in compound picker", () => selectIn(page, "Caffeine", el("compound picker")));
+    await session.step(16, "Then value of picked readout should have text \"Caffeine\"", () => shouldHaveText(page, el("value of picked readout"), "Caffeine"));
   });
 });
