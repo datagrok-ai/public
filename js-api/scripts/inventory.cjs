@@ -170,7 +170,8 @@ const metrics = {
   undocumentedClasses: handClasses.filter((m) => !m.hasDoc).length,
   darkMembers: hand.filter(dark).length,
   anyInSignature: handMembers.filter((m) => m.anyInSig).length,
-  undocumentedGenerated: members.filter((m) => m.generated && !m.hasDoc).length,
+  // grok_api.g.ts is the Dart interop table (IDartApi): never documented, grows with every handler.
+  undocumentedGenerated: members.filter((m) => m.generated && !m.hasDoc && !/grok_api\.g\.ts$/.test(m.file)).length,
 };
 
 console.log('--- hand-written only ---');
