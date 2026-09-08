@@ -96,6 +96,43 @@ What the box plot review found, as the checklist for the next translation:
 - **Precondition of a fixture.** A scenario about empty categories must assert the fixture has
   blanks before it asserts what the viewer does with them.
 
+What the bar chart and 3D scatter plot round (2026-09-08, eight reviewers) added:
+
+- **A histogram misses a reorder.** Equal bars swapping places keep every color count; the
+  repaint detector compares bitmaps pixel by pixel now. A claim about order or length is read
+  from the hit areas, not from pixels.
+- **"Some pixel of that color anywhere" is not "the overlay on that bar".** A viewer that draws
+  a selected or filtered share reports the share's rectangle as a hit area (`selected
+  <category>`); the feature asserts the area, its color and its ink against the snapshot.
+- **A blue outline that was there before the filter.** Check what the change removed or shrank
+  (`less ink than before` in the share's area), not what was present all along.
+- **A picture that cannot be read** (a WebGL canvas) gets readings from the viewer: a frame
+  signature rendered and hashed in one task, the camera, the rows drawn, the current row, the
+  highlighted rows. A signature that "differs" must have exactly one cause: fonts fetched per
+  scene, labels added asynchronously and an auto-rotating camera each faked a repaint until
+  the core stopped doing them on a test page.
+- **A viewer's own timer is invisible to `isRenderPending`** until it is included (the bar
+  chart's `_refreshRequested`, the legend's settle timer, the 3D plot's pending label loads);
+  a settle that "worked" was timer FIFO.
+- **A static that survives a closed menu.** The Dart menu's last mouse move made a move over
+  the next menu at the same point a no-op; a group that a hover opened once did not open again.
+- **A step with no Then.** A data step that removes a color coding needs its own observation
+  (`column should have no color coding`) before the round-trip that claims to restore it.
+- **The old spec went through the server; the feature stayed in the page.** A layout
+  round-trip that the old spec did through `dapi.layouts` is done with `… to the server`.
+- **Every journey scenario ends on the error floor.** A scenario owns its errors and balloons;
+  one check per feature discards the rest.
+- **Green twice on a quiet machine is not green.** Run the folder on four workers more than
+  once before reporting; a repaint that lands on a different step per run is the platform's own
+  deferred work (the table view makes row 0 current a second after the grid appears — every
+  viewer repaints its marker), and the step that opens the dataset takes that state at once
+  rather than waiting a second for it (the platform skips work already done). Run headed too:
+  a GPU-rasterized canvas repaints with different antialiasing once Chrome moves it to the CPU
+  after enough pixel readbacks, which headless never does (the config now disables the
+  accelerated canvas). The failed run's `trace.zip` (`test.trace` holds the step timeline),
+  its screenshot and the "within … over: …" part of the repaint failure are the evidence to
+  start from.
+
 ## Pass 3 — fix, in this order
 
 1. Put the decisions to the lead first, one question per systemic finding, options with the

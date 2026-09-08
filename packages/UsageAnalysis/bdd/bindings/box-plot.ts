@@ -3,7 +3,7 @@
    library's `viewers` tier and the platform's data steps (`grok-bdd list-steps`). */
 import {Page} from '@playwright/test';
 import {When} from '@datagrok-libraries/bdd';
-import {ElementRef, viewers} from '@datagrok-libraries/bdd/runtime';
+import {el, ElementRef, viewers} from '@datagrok-libraries/bdd/runtime';
 
 const Y_SLIDER = 'svg[type="range-slider"][name="y-slider"]';
 
@@ -35,17 +35,17 @@ export const zoomValueAxis = When('user zooms into the value axis of {widget}', 
 }, {tier: 'ui'});
 
 /** The top of the view area: values that high are rare, so nothing is under the pointer. */
-const emptySpace = async (page: Page, target: ElementRef): Promise<{x: number; y: number}> => {
-  const view = await viewers.hitArea(page, target, 'view', true);
+const emptySpace = async (page: Page): Promise<{x: number; y: number}> => {
+  const view = await viewers.hitArea(page, el('box plot viewer'), 'view', true);
   return {x: view.x + view.width / 2, y: view.y + view.height * 0.05};
 };
 
-export const clickEmptySpace = When('user clicks on empty plot space of {widget}', async (page: Page, target: ElementRef) => {
-  const p = await emptySpace(page, target);
+export const clickEmptySpace = When('user clicks on empty plot space of box plot viewer', async (page: Page) => {
+  const p = await emptySpace(page);
   await page.mouse.click(p.x, p.y);
 }, {tier: 'ui', description: 'plot space with no marker under it — a click there clears the selection'});
 
-export const doubleClickEmptySpace = When('user double-clicks on empty plot space of {widget}', async (page: Page, target: ElementRef) => {
-  const p = await emptySpace(page, target);
+export const doubleClickEmptySpace = When('user double-clicks on empty plot space of box plot viewer', async (page: Page) => {
+  const p = await emptySpace(page);
   await page.mouse.dblclick(p.x, p.y);
 }, {tier: 'ui', description: 'resets the view'});

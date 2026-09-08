@@ -116,7 +116,7 @@ grok-bdd compile            # features/** → generated/**  (+ errors; --verbose
 grok-bdd compile --check    # fails when a committed spec is stale — the CI gate
 grok-bdd lint               # diagnostics only, notes included
 grok-bdd list-steps         # every step this package can use, and where it comes from
-grok-bdd run [--headed] [-g "name"] [--reporter=list]   # compile --check, then Playwright
+grok-bdd run [--headed] [-g "name"] [--reporter=list]   # compile --check, then Playwright (headed runs the same: the browser launches with its accelerated 2D canvas off, so a repaint check reads the same pixels as headless)
 ```
 
 Every command runs from the package directory (or from `bdd/` itself). A feature change needs
@@ -298,8 +298,10 @@ viewer checks that follow compare with the state before it:
 
 ```
 When  user clears the row selection       user deletes the selected rows
+      user selects rows where {string} is {string}     user selects rows where {string} is one of {string}
       user filters rows where {string} is between {float} and {float}    user filters out rows where {string} is {string}
-      user resets the filter              user adds a calculated column {string} with formula {string}
+      user filters rows where {string} is {string}     user resets the filter
+      user adds a calculated column {string} with formula {string}
       user removes {string} column        user removes the coloring of {string} column
       user colors {string} column linearly from {string} to {string} (over {float} to {float})
       user colors {string} column conditionally:  | range | color |     user colors {string} column categorically:  | category | color |
@@ -307,8 +309,10 @@ Then  no/some rows should be selected     all/only/some/no rows where {string} i
       the table should have a current row   the table should have {int} row(s)   the table should have no rows where {string} is {string}
       {int} row(s) should pass the filter   fewer than {int} rows should pass the filter   all rows should pass the filter
       the filter should pass exactly the rows where {string} is between {float} and {float}
+      the filter should pass exactly the rows where {string} is {string}
       table {string} should be open       table {string} should have columns {string}    table {string} should have {int} row(s)
       table {string} should have no missing values in {string} column
+      {string} column should have no color coding    {string} column should be color-coded categorically
 ```
 
 States: visible, hidden, present, absent, enabled, disabled, checked, unchecked, selected, empty,
@@ -339,8 +343,10 @@ export const openDataset = Given('user opens {dataset} dataset', async (page: Pa
 }, {tier: 'api', description: 'OpenFile through the JS API — provenance as in the UI'});
 ```
 
-(The real one also waits for the platform's semantic-type-detected event for that table: a step is
-over when the platform is done with it, so background work never lands on the next step.)
+(The real one also waits for the platform's semantic-type-detected event for that table, and makes
+row 0 current itself — the view would do that a second after the grid appears, repainting every
+viewer on whatever step is running then: a step is over when the platform is done with it, so
+background work never lands on the next step.)
 
 Parameter types: `{element}` (any phrase), `{widget}` (a phrase naming a viewer or a widget — the
 `viewers` tier takes nothing else where it reads or changes one), `{dataset}` (a registered alias or a
@@ -392,9 +398,11 @@ When  user sets {string} property of {widget} to {string}       user sets proper
       user opens the context menu of {element}      user right-clicks on the {string} area of {widget}
       user closes the context menu                  user clicks / double-clicks / hovers over the {string} area of {widget}
       user clicks on the {string} area of {widget} holding {key}    user drags a selection box over the {string} area of {widget}
+      user drags a selection box from the {string} area to the {string} area of {widget}
+      user drags across the {string} area of {widget}    user scrolls the mouse wheel up/down over the {string} area of {widget}
       user moves the pointer away from {element}    user resizes {widget} to {int} by {int}    user resizes {widget} to {int} wide
       user restores the size of {widget}            user takes a snapshot of {widget}          user remembers the value range of {widget}
-      user saves the layout of the current table view   user loads the saved layout
+      user saves the layout of the current table view   user saves the layout of the current table view to the server   user loads the saved layout
 Then  {string} property of {widget} should be {string}          {string} property of {widget} should not be {string}
       properties of {widget} should be:  | caption | value |    {widget} should be bound to table {string}
       {widget} should have repainted                {widget} should have repainted by at least {int} pixels
@@ -409,6 +417,9 @@ Then  {string} property of {widget} should be {string}          {string} propert
       the value range of {widget} should lie within {string} column     {widget} should show the remembered value range
       the color scale of {widget} should cover a narrower/wider range than before
       the color scale of {widget} should cover the same range as before
+      the {string} reading of {widget} should be {float}    the {string} reading of {widget} should be lower/higher than before
+      the {string} reading of {widget} should differ from before    the {string} reading of {widget} should be the same as before
+      legend of {widget} should be visible/hidden / have {int} items / contain text {string}    the legend of {widget} should be on the left/right/top/bottom
       {string} event should have fired on {widget}  {string} event should not have fired on {widget}
       no errors should have been logged             no error or warning balloon should have been shown
       the tooltip should show columns {string}      the tooltip should not show columns {string}
@@ -422,7 +433,14 @@ menu path is `"Group > Item"`. A hit area is a name the viewer reports (`grok-bd
 list them yet; the box plot has `view`, `x axis`, `y axis`, `stats`, `p value`, `group comparison`,
 `color scale`, `marker`, `category <label>` and `<label> values` per category, `p value of <group>`
 and `<effect> effect` under group comparison; the bar chart `view`, `x axis`, `y axis`, `bar
-<category>`; under group comparison with a control, `control band` or `control band <stratum>`).
+<category>` and `bar <category> | <stack>`; the 3D scatter plot `view` and `point`; under group
+comparison with a control, `control band` or `control band <stratum>`). A reading is a name the
+viewer reports in `getWidgetStatus().values`: every viewer with a row filter `rows shown`, the box
+plot `color scale min` / `max`, the bar chart `bars`, `stack segments`, `clipped bars`, the 3D
+scatter plot `camera x` / `y` / `z` / `camera distance` and `scene signature` — its WebGL canvas
+has no pixels to read, so `the "scene signature" reading … should differ from before` is its
+`repainted`. `legend of {widget}` is the viewer's legend element (`[name="legend"]`, its rows the
+legend items).
 Every property set, menu pick, area click, hover and resize snapshots the canvas, the ink of every
 hit area, the selection-colored pixels, the value range and the color scale's range first, so
 `should have repainted`, `less/more ink` (of the canvas or of one area), `more/less selection

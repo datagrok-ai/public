@@ -10,7 +10,7 @@ import {expect, Page} from '@playwright/test';
 import {Given, Then, When} from '../../../src/registry.js';
 import type {ElementRef} from '../../../src/runtime/args.js';
 import {normalizeKey} from '../../../src/runtime/gestures.js';
-import {takeErrors} from '../../../src/runtime/harness.js';
+import {atFeatureEnd, takeErrors} from '../../../src/runtime/harness.js';
 import * as v from '../../../src/runtime/viewers.js';
 
 declare const grok: any;
@@ -61,6 +61,11 @@ export const propertiesShouldBe = Then('properties of {widget} should be:', asyn
 
 export const saveLayout = When('user saves the layout of the current table view', (page: Page) => v.saveLayout(page),
   {tier: 'api', description: 'tv.saveLayout(), kept for "loads the saved layout" later in the feature'});
+
+export const saveLayoutToServer = When('user saves the layout of the current table view to the server', async (page: Page) => {
+  const id = await v.saveLayoutToServer(page);
+  atFeatureEnd(page, () => v.deleteLayout(page, id));
+}, {tier: 'api', description: 'dapi.layouts.save; "loads the saved layout" then fetches what the server stored, so the round-trip covers its serialization; deleted when the feature ends'});
 
 export const loadLayout = When('user loads the saved layout', (page: Page) => v.loadLayout(page), {tier: 'api'});
 
@@ -119,6 +124,34 @@ export const dragSelectionOverArea = When('user drags a selection box over the {
   await page.mouse.up();
   await page.keyboard.up('Shift');
 }, {tier: 'ui', description: 'a Shift-drag across the inner 80% of the area — the platform\'s rectangle selection'});
+
+export const dragSelectionBetweenAreas = When('user drags a selection box from the {string} area to the {string} area of {widget}',
+  async (page: Page, from: string, to: string, target: ElementRef) => {
+    const a = v.centerOf(await v.hitArea(page, target, from, true));
+    const b = v.centerOf(await v.hitArea(page, target, to));
+    await page.keyboard.down('Shift');
+    await page.mouse.move(a.x, a.y);
+    await page.mouse.down();
+    await page.mouse.move(b.x, b.y, {steps: 3});
+    await page.mouse.up();
+    await page.keyboard.up('Shift');
+  }, {tier: 'ui', description: 'a Shift-drag from the centre of one area to the centre of another — every area the rectangle touches is covered'});
+
+export const dragAcrossArea = When('user drags across the {string} area of {widget}', async (page: Page, area: string, target: ElementRef) => {
+  const b = await v.hitArea(page, target, area, true);
+  await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(b.x + b.width * 0.75, b.y + b.height * 0.3, {steps: 2});
+  await page.mouse.up();
+}, {tier: 'ui', description: 'a plain drag from the centre of the area towards its upper right — a rotation on a 3D plot, a pan on a chart'});
+
+export const wheelOverArea = When('user scrolls the mouse wheel {word} over the {string} area of {widget}', async (page: Page, direction: string, area: string, target: ElementRef) => {
+  if (direction !== 'up' && direction !== 'down')
+    throw new Error(`the wheel scrolls up or down, not "${direction}"`);
+  const c = v.centerOf(await v.hitArea(page, target, area, true));
+  await page.mouse.move(c.x, c.y);
+  await page.mouse.wheel(0, direction === 'up' ? -600 : 600);
+}, {tier: 'ui', description: 'up or down, a few notches, with the pointer at the centre of the area'});
 
 export const pointerAway = When('user moves the pointer away from {element}', async (page: Page, target: ElementRef) => {
   const box = await (await v.viewerLocator(page, target)).boundingBox();
@@ -181,6 +214,25 @@ export const showsFewerRows = Then('{widget} should show fewer rows than before'
 
 export const showsMoreRows = Then('{widget} should show more rows than before', (page: Page, target: ElementRef) =>
   v.expectReading(page, target, 'rows shown', 'higher'));
+
+export const readingIs = Then('the {string} reading of {widget} should be {float}', (page: Page, name: string, target: ElementRef, value: number) =>
+  v.expectReading(page, target, name, 'equal', value),
+{description: 'a reading the viewer reports (getWidgetStatus().values): "rows shown", the bar chart\'s "bars" / "stack segments" / "clipped bars", the 3D scatter plot\'s "camera distance"'});
+
+export const readingLower = Then('the {string} reading of {widget} should be lower than before', (page: Page, name: string, target: ElementRef) =>
+  v.expectReading(page, target, name, 'lower'), {description: 'against the snapshot before the last change'});
+
+export const readingHigher = Then('the {string} reading of {widget} should be higher than before', (page: Page, name: string, target: ElementRef) =>
+  v.expectReading(page, target, name, 'higher'));
+
+export const readingDiffers = Then('the {string} reading of {widget} should differ from before', (page: Page, name: string, target: ElementRef) =>
+  v.expectReading(page, target, name, 'differ'), {description: 'not what the snapshot before the last change held — the 3D scatter plot\'s "scene signature" is what "repainted" means on a WebGL canvas'});
+
+export const readingSame = Then('the {string} reading of {widget} should be the same as before', (page: Page, name: string, target: ElementRef) =>
+  v.expectReading(page, target, name, 'same'), {description: 'read once the viewer is quiet, and read once'});
+
+export const legendSide = Then('the legend of {widget} should be on the {word}', (page: Page, target: ElementRef, side: string) =>
+  v.expectLegendSide(page, target, side), {description: 'left, right, top or bottom — the side the viewer laid its legend out on'});
 
 export const notRepainted = Then('{widget} should not have repainted', (page: Page, target: ElementRef) => v.expectNotRepainted(page, target),
   {description: 'no canvas change since the snapshot before the last gesture, read once the viewer is quiet (a render pass that draws the same picture — the mouse-over row — is not a repaint)'});

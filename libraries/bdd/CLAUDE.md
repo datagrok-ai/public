@@ -228,7 +228,26 @@ nobody filed.
   detectors — Chem's SMILES detector took 300–500 ms on spgi-100), which used to land on
   whichever step came next (a 500 ms "Table" read, a 500 ms property set). The step now waits
   for the platform's own `ddt-semantic-type-detected` event for that data frame (identity by the
-  Dart handle — the same file opened twice is two tables).
+  Dart handle — the same file opened twice is two tables). The same step also outlasts the table
+  view's startup timer (`table_view.dart`, 1000 ms after the grid is created: focus the grid and
+  make row 0 current when no row is): every viewer repaints its current-row marker then, about a
+  second into a feature, on whatever step is running — under a four-worker run it landed on the
+  stacking journey's "Relative Values alone is inert" as a 2023 px repaint (2026-09-08), and on
+  a quiet machine on a step that tolerated it. The step does not wait for the timer (the lead:
+  "that is extra second every open"): it makes row 0 current itself, and the timer's check
+  (`currentRow == -1`) then skips the reset. The focus at one second still happens; it repaints
+  nothing, but a step typing into an input within the first second of a feature would lose it.
+  The lead's run failed the same way again with row 0 current from the start, so the repaint was
+  never the marker. "Should not have repainted" now says where the pixels changed (the box of
+  the changed pixels in CSS px and the hit areas it touches, or the two canvas sizes), and that
+  line found it: the lead ran **headed**, and the box covered the whole chart. Chrome rasterizes
+  a 2D canvas on the GPU in a headed window and moves it to the CPU after enough `getImageData`
+  readbacks (the harness reads pixels on every check); the first paint after the move differs in
+  antialiasing from the one before it — 1312 px on a re-render of identical geometry, 2023 px in
+  the suite — while headless rasterizes in software throughout and never shows it. The config
+  launches with `--disable-accelerated-2d-canvas` (nine headless and two headed runs green
+  after). A failure that names the region is the reproduction when the machine that fails is
+  not yours.
 - **A bdd page runs in simple mode, so the view tabs are hidden**: `user is logged in` sets
   `grok.shell.windows.simpleMode = true`, and the `view-handle: …` elements of every view are then
   present but hidden. U2Demo's "clicks on "U2 Demo" view" passed for days only because the rogue
@@ -266,6 +285,59 @@ nobody filed.
   spec hovered the icon slot instead); the `T` key is `root.onKeyPress` on the viewer, so click
   the plot before pressing; the ANCOVA table's control row has no p-value (do not assert
   completeness there); `demog-1000`'s auto-picked category is DIS_POP.
+- **The bar chart and the 3D scatter plot became eight journeys (2026-09-08)** — seven bar chart
+  features under `features/viewers/bar-chart/` from the seven TestTrack bar chart specs, one 3D
+  scatter plot feature — and what each old hack became: the bar chart reports `values` (`rows
+  shown`, `bars`, `stack segments`, `clipped bars`) and gates its axes on their show flags, and
+  the package's `bar-chart.ts` reads the order and the lengths of the bars and a spot no bar
+  covers from the `bar <category>` hit areas (the old specs scanned the canvas for the bar green
+  and clicked fixed fractions); the 3D scatter plot cannot give pixels (a WebGL canvas: no 2D
+  context, no preserved buffer — `pixels()` returns an empty bitmap for it), so it reports a
+  `scene signature` (the frame hashed after a render, in one task), the camera and a `point` hit
+  area (the marker nearest the camera, projected), read through the generic reading steps
+  (`the {string} reading of {widget} should be / differ from before / be the same as before /
+  lower / higher`). `repainted` counts pixels that differ from the snapshot's bitmap now, not the
+  color-histogram distance: a reorder of equal bars (Bar Sort Order) keeps the histogram and is a
+  repaint all the same (the old spec had noted it as a "fault guard only"); a bitmap that changed
+  size falls back to the histogram plus the area difference. The legend's 100 ms settle timer
+  relays out the canvas after a legend shows or hides and was invisible to `isRenderPending` —
+  "Relative Values alone is inert" saw 39000 px of that relayout as a repaint; the getter now
+  includes it. `pickMenuPath` enters a group item from its left (`openGroup`): a pointer already
+  resting on the item from a hover before the menu was reopened moved nowhere and opened
+  nothing. Facts that cost a run each: the on-chart column selectors are named by the property
+  they BIND (`div-column-combobox-split`, not the caption — `ColumnComboBox.bind` re-annotates),
+  so the bar chart's are `Split` / `Value` / `Stack column input` and the 3D plot's `X` / `Y` /
+  `Z` / `Color`; a selector's text has no space after the caption (`X:AGE`); the bar chart's Row
+  Source defaults to Filtered, so under On Click = Filter a bar click leaves only the clicked bar
+  and the Filtered Rows overlay (dark-blue outline `#0000A0`) needs Row Source = All; a fully
+  negative category has no stack segment under Relative Values (its share is drawn outside
+  0..1); the Bottom legend slot yields to the value selector on a short chart (assert the
+  property, not the side); "Show Labels: never" removes white glyphs from inside colored bars,
+  so ink goes UP, not down — a chrome toggle takes `repainted by at least N pixels`; the 3D
+  plot's camera auto-rotates from the first scene until the first mouse-down or look change.
+  **The backward-match round on the eight (same day, eight reviewers)** turned into core and
+  library changes rather than feature patches: the bar chart reports its overlay shares as
+  `selected <category>` / `filtered <category>` hit areas (an orange pixel anywhere and a blue
+  outline that was there before the filter proved nothing), its `x axis` area is a frame fact (it
+  echoed the property), its own debounced refresh counts as render-pending (settles resolved
+  before the refresh ran and lived on timer FIFO); the 3D plot fetched its label font per scene
+  and added the labels asynchronously (a signature that "differed" for any rebuild, font-XHR
+  race included) — the font is now cached and pending label loads are render-pending — its
+  auto-rotation is off under `immediateRendering`, and it reports `current row` and
+  `highlighted rows`; a Dart menu kept its static `_lastMouseMove` across menus, so a move over
+  the next menu at the same client point opened no group (`hide()` clears it); `painted` reads
+  ink without moving the snapshot; `user saves the layout of the current table view to the
+  server` (dapi + `atFeatureEnd` delete) is the honest round-trip where the old spec had one;
+  `{string} column should have no color coding / be color-coded categorically` observe a data
+  step that had no Then; the bar chart's `hang below`, `lie one under another` and the Alt-drag
+  `zooms into the categories` steps replace claims the geometry never checked; every journey
+  scenario ends on `no errors should have been logged` because a scenario owns its floor.
+  **A settle ends on the last render the viewer announces, not the first** (found with a render
+  timeline after a Stack removal: renders at 19, 131 and 243 ms with `isRenderPending` true
+  throughout — the legend re-anchors in up to four passes 100 ms apart — while `settle` had
+  returned at 20 ms, so the later passes landed on the next step's baseline and "Relative Values
+  alone is inert" saw 78000 px). `settle` now resolves only once a render has landed AND the
+  viewer says nothing is pending.
 - **What a step costs, measured (2026-09-07 evening)**: the Playwright floor on this machine is
   2.4 ms for `page.evaluate`, 6 ms for `locator.evaluate`, ~2 ms for `expect.poll`, and
   `test.step`/`session.step` add nothing measurable; the trace (retain-on-failure, no snapshots,

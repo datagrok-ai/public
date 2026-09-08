@@ -63,7 +63,7 @@ inputKind('map input', ['map-input'], '', ['key value input']);
 inputKind('message input', ['message-input'], '', ['prompt input', 'chat input']);
 inputKind('radio input', ['radio-input'], '.ui-input-radio', ['radio group', 'radio']);
 inputKind('slider', ['slider-input'], '.ui-input-slider', ['slider input']);
-inputKind('range slider', ['range-slider'], 'svg[type="range-slider"]', ['range input']);
+inputKind('range slider', ['range-slider'], 'svg[type="range-slider"]', ['range input'], {dartNames: ['input-host-{q}', '{q}']});
 kind('slider handle', {
   aliases: ['handle', 'thumb'],
   selector: '[role="slider"], svg[type="range-slider"] [name$="-handle"]',
@@ -276,6 +276,7 @@ kind('viewer', {
     'close icon': `${PANEL}//*[contains(@class, "panel-titlebar")]//*[@name="Close" or @name="icon-font-icon-close"]`,
     description: '.d4-viewer-description',
     canvas: 'canvas[name="canvas"]',
+    legend: '[name="legend"]',
   },
 });
 kind('view', {

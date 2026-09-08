@@ -29,7 +29,14 @@ export const openDataset = Given('user opens {dataset} dataset', async (page: Pa
   }, undefined, {timeout: 15000}).catch(() => {
     throw new Error(`${dataset.name}: semantic types were not detected within 15 s (is auto-detection on?)`);
   });
-}, {tier: 'api', description: 'OpenFile through the JS API — provenance as in the UI; done when semantic types are detected'});
+  // a second after the grid is created the view makes row 0 current when no row is, and every
+  // viewer repaints its marker mid-feature; done here, the view's timer skips it
+  await page.evaluate(() => {
+    const df = (window as any).grok.shell.tv?.dataFrame;
+    if (df && df.currentRowIdx === -1 && df.rowCount > 0)
+      df.currentRowIdx = 0;
+  });
+}, {tier: 'api', description: 'OpenFile through the JS API — provenance as in the UI; done when semantic types are detected, with row 0 current as the view would make it a second later'});
 
 export const switchTableView = Given('user switches to (the ){string} table view', async (page: Page, name: string) => {
   await page.evaluate((n) => {

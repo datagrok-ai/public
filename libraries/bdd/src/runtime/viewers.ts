@@ -19,10 +19,11 @@ export interface Box {
   height: number;
 }
 
-/** A viewer's canvas after a change: `delta` is the histogram distance from the snapshot taken
- * before the change, `ink` the painted pixels now, `inkBefore` those of the snapshot, `hue` and
- * `hueBefore` the pixels in the selection hue; `selected` rows and the `view` area in device
- * pixels size the highlight a selection must paint. */
+/** A viewer's canvas after a change: `delta` is the number of pixels that differ from the snapshot
+ * taken before the change (the histogram distance when the bitmap changed size), `ink` the painted
+ * pixels now, `inkBefore` those of the snapshot, `hue` and `hueBefore` the pixels in the selection
+ * hue; `selected` rows and the `view` area in device pixels size the highlight a selection must
+ * paint. */
 export interface CanvasChange {
   delta: number;
   ink: number;
@@ -79,6 +80,11 @@ export interface Balloon {
 }
 
 const POPUP = '.d4-menu-popup';
+
+/** The sentence of an in-page error, without Playwright's evaluate prefix and stack. */
+function reasonText(e: unknown): string {
+  return String(e instanceof Error ? e.message : e).replace(/^[\w.]+: /, '').split('\n')[0];
+}
 const MENU_ITEM = 'xpath=ancestor::*[contains(concat(" ", normalize-space(@class), " "), " d4-menu-item ")][1]';
 const TOOLTIP_COLUMNS = '.d4-tooltip table.d4-row-tooltip-table tr td:first-child';
 
@@ -89,7 +95,7 @@ function install(): void {
     return;
   const renders = new WeakMap<Element, {count: number; last: number; sub?: any}>();
   const snapshots = new WeakMap<Element, {colors: Map<number, number>; ink: number; hue: number; renders: number; range?: Range;
-    areas: Record<string, number>; scale?: ScaleRange; values: Record<string, unknown>}>();
+    areas: Record<string, number>; scale?: ScaleRange; values: Record<string, unknown>; bitmap: ImageData}>();
   // how long a repaint the viewer says is pending may take before that is a platform failure
   const PENDING_CAP = 10000;
   const sizes = new WeakMap<Element, {width: string; height: string}>();
@@ -150,9 +156,11 @@ function install(): void {
   };
   /** Resolves with the renders since the call once the viewer has nothing on its way: the platform
    * says whether a refresh or a repaint is pending, so a property that paints nothing returns at
-   * once and a repaint is waited for as long as it takes (a pending one that never lands is a
-   * platform failure, reported after `PENDING_CAP`). A viewer without the signal falls back to a
-   * render event within `capMs`. */
+   * once and a repaint is waited for as long as it takes — through every render it announces (a
+   * legend change re-anchors in up to four passes 100 ms apart; a settle that ended on the first
+   * render left the later ones to land on the next step's baseline). A pending one that never
+   * lands is a platform failure, reported after `PENDING_CAP`. A viewer without the signal falls
+   * back to a render event within `capMs`. */
   const settle = (el: Element, capMs: number): Promise<number> => {
     const v = viewerOf(el);
     arm(v);
@@ -161,9 +169,9 @@ function install(): void {
     const t0 = Date.now();
     return new Promise((resolve, reject) => {
       const tick = () => {
-        if (stamp.count > before)
-          return resolve(stamp.count - before);
         const p = pending(v);
+        if (stamp.count > before && p !== true)
+          return resolve(stamp.count - before);
         if (p === false)
           return resolve(0);
         if (p === undefined) {
@@ -195,7 +203,12 @@ function install(): void {
       throw new Error(`${v.type} has no canvas`);
     return cv;
   };
-  const pixels = (cv: HTMLCanvasElement): ImageData => cv.getContext('2d')!.getImageData(0, 0, cv.width, cv.height);
+  // a WebGL canvas (the 3D scatter plot) has no 2D context and no pixels to read: its picture is
+  // the viewer's own `scene signature` reading
+  const pixels = (cv: HTMLCanvasElement): ImageData => {
+    const ctx = cv.getContext('2d');
+    return ctx ? ctx.getImageData(0, 0, cv.width, cv.height) : new ImageData(1, 1);
+  };
   const histogram = (img: ImageData) => {
     const data = img.data;
     const colors = new Map<number, number>();
@@ -371,9 +384,60 @@ function install(): void {
     const hit = areasOf(v);
     for (const key of Object.keys(hit))
       areas[norm(key)] = inkIn(img, deviceRect(cv, hit[key]));
-    snapshots.set(v.root, {...shot, renders: renders.get(v.root)!.count, range: rangeOf(v), areas, scale: scaleRange(v), values: {...valuesOf(v)}});
+    snapshots.set(v.root, {...shot, renders: renders.get(v.root)!.count, range: rangeOf(v), areas, scale: scaleRange(v), values: {...valuesOf(v)}, bitmap: img});
     return shot.ink;
   };
+  /** Pixels that differ between two bitmaps of the same size — a reorder of equal bars keeps the
+   * color histogram and is still a repaint; bitmaps of different sizes differ by their histogram
+   * and their size. */
+  const pixelDelta = (before: ImageData, now: ImageData, colorsBefore: Map<number, number>, colorsNow: Map<number, number>): number => {
+    if (before.width !== now.width || before.height !== now.height) {
+      let delta = Math.abs(before.width * before.height - now.width * now.height);
+      for (const [c, n] of colorsNow)
+        delta += Math.abs(n - (colorsBefore.get(c) ?? 0));
+      for (const [c, n] of colorsBefore) {
+        if (!colorsNow.has(c))
+          delta += n;
+      }
+      return delta;
+    }
+    const a = before.data;
+    const b = now.data;
+    let delta = 0;
+    for (let i = 0; i < a.length; i += 4) {
+      if (a[i] !== b[i] || a[i + 1] !== b[i + 1] || a[i + 2] !== b[i + 2] || a[i + 3] !== b[i + 3])
+        delta++;
+    }
+    return delta;
+  };
+  /** Where the picture differs from the snapshot, for the failure to say: the changed pixels'
+   * box in CSS px and the hit areas it touches, or the two canvas sizes when they differ. */
+  const changedWhere = (v: any, cv: HTMLCanvasElement, before: ImageData, now: ImageData): string => {
+    if (before.width !== now.width || before.height !== now.height)
+      return `canvas ${before.width}x${before.height} → ${now.width}x${now.height}`;
+    const a = before.data;
+    const b = now.data;
+    let x0 = now.width, y0 = now.height, x1 = -1, y1 = -1;
+    for (let i = 0, p = 0; i < a.length; i += 4, p++) {
+      if (a[i] !== b[i] || a[i + 1] !== b[i + 1] || a[i + 2] !== b[i + 2] || a[i + 3] !== b[i + 3]) {
+        const x = p % now.width;
+        const y = (p - x) / now.width;
+        if (x < x0) x0 = x;
+        if (x > x1) x1 = x;
+        if (y < y0) y0 = y;
+        if (y > y1) y1 = y;
+      }
+    }
+    if (x1 < 0)
+      return '';
+    const s = cv.width / cv.getBoundingClientRect().width;
+    const box = {x: x0 / s, y: y0 / s, width: (x1 - x0 + 1) / s, height: (y1 - y0 + 1) / s};
+    const touched = Object.entries(areasOf(v)).filter(([n, r]) => n !== 'view' && r.x < box.x + box.width && box.x < r.x + r.width && r.y < box.y + box.height && box.y < r.y + r.height).map(([n]) => n);
+    return `within ${Math.round(box.x)},${Math.round(box.y)} ${Math.round(box.width)}x${Math.round(box.height)} of the canvas`
+      + (touched.length ? `, over: ${touched.join(', ')}` : '');
+  };
+  /** The painted pixels now, without moving the snapshot. */
+  const ink = (el: Element): number => histogram(pixels(canvasOf(viewerOf(el)))).ink;
   // the baseline "should have repainted" compares with: the canvas before the change
   const baseline = (el: Element): void => {
     try {
@@ -421,6 +485,15 @@ function install(): void {
       throw new Error(`${viewerOf(el).type} has no "${name}" area right now; it has: ${found.has.join(', ') || 'none'}`);
     return found.box;
   };
+  /** Every hit area the viewer reports, in client coordinates. */
+  const areas = (el: Element): Record<string, Box> => {
+    const v = viewerOf(el);
+    const cv = canvasBox(v);
+    const result: Record<string, Box> = {};
+    for (const [key, r] of Object.entries(areasOf(v)))
+      result[key] = {x: cv.x + r.x, y: cv.y + r.y, width: r.width, height: r.height};
+    return result;
+  };
   /** Painted pixels inside a hit area (the canvas may be scaled to the device). */
   const areaInk = (el: Element, name: string): number => {
     const v = viewerOf(el);
@@ -442,17 +515,12 @@ function install(): void {
   const change = (el: Element): CanvasChange => {
     const v = viewerOf(el);
     const cv = canvasOf(v);
-    const now = histogram(pixels(cv));
+    const img = pixels(cv);
+    const now = histogram(img);
     const before = snapshots.get(v.root);
     if (!before)
       throw new Error(`${v.type}: no snapshot to compare with`);
-    let delta = 0;
-    for (const [c, n] of now.colors)
-      delta += Math.abs(n - (before.colors.get(c) ?? 0));
-    for (const [c, n] of before.colors) {
-      if (!now.colors.has(c))
-        delta += n;
-    }
+    const delta = pixelDelta(before.bitmap, img, before.colors, now.colors);
     const view = areasOf(v)['view'];
     const viewPx = view ? deviceRect(cv, view).w * deviceRect(cv, view).h : cv.width * cv.height;
     let selected = 0;
@@ -481,19 +549,25 @@ function install(): void {
   };
   /** Whether the viewer painted since its snapshot, read once it is quiet: after the frame a
    * change would land on, and after whatever it says is still pending. */
-  const stillness = async (el: Element): Promise<{renders: number; delta: number}> => {
+  const stillness = async (el: Element): Promise<{renders: number; delta: number; where: string}> => {
     const v = viewerOf(el);
     const before = snapshots.get(v.root);
     if (!before)
       throw new Error(`${v.type}: no snapshot to compare with`);
     await quiet(v);
-    return {renders: renders.get(v.root)!.count - before.renders, delta: change(el).delta};
+    const cv = canvasOf(v);
+    const delta = change(el).delta;
+    return {renders: renders.get(v.root)!.count - before.renders, delta, where: delta ? changedWhere(v, cv, before.bitmap, pixels(cv)) : ''};
   };
   /** The value range against the snapshot's, read once the viewer is quiet (a reset that lands a
    * tick after the change is read, not missed). */
   const quietRangeChange = async (el: Element): Promise<RangeChange> => {
     await quiet(viewerOf(el));
     return rangeChange(el);
+  };
+  const quietValueChange = async (el: Element, name: string): Promise<{before?: unknown; now?: unknown; has: string[]}> => {
+    await quiet(viewerOf(el));
+    return valueChange(el, name);
   };
   /** One subscription per viewer and event, alive from "listens for" until `unlisten` (the
    * "should have fired" read, or the viewer closing). */
@@ -616,16 +690,32 @@ function install(): void {
   /** The balloons shown since the last read, and clears them. */
   const takeBalloons = (): Balloon[] => balloons.splice(0, balloons.length);
   const saveLayout = (): void => { layout = grok.shell.tv.saveLayout(); };
-  const loadLayout = (): void => {
+  /** Saves through the server and keeps only the id: "loads the saved layout" then fetches what
+   * the server stored, so the round-trip covers the serialization too. */
+  const saveLayoutToServer = async (): Promise<string> => {
+    const l = grok.shell.tv.saveLayout();
+    await grok.dapi.layouts.save(l);
+    layout = {serverId: l.id};
+    return l.id;
+  };
+  const loadLayout = async (): Promise<void> => {
     if (!layout)
       throw new Error('no layout saved in this feature');
-    grok.shell.tv.loadLayout(layout);
+    const saved = layout.serverId ? await grok.dapi.layouts.find(layout.serverId) : layout;
+    if (!saved)
+      throw new Error(`the server has no layout ${layout.serverId}`);
+    grok.shell.tv.loadLayout(saved);
+  };
+  const deleteLayout = async (id: string): Promise<void> => {
+    const saved = await grok.dapi.layouts.find(id);
+    if (saved)
+      await grok.dapi.layouts.delete(saved);
   };
 
-  w.__bdd = {viewerOf, arm, stampAll, settle, quiet, readProperty, writeProperties, findArea, hitArea, areaInk, areaChange, areaColors,
-    snapshot, baselineAll, change, rangeChange, quietRangeChange, scaleChange, valueChange, rememberRange, rememberedRange, stillness,
+  w.__bdd = {viewerOf, arm, stampAll, settle, quiet, readProperty, writeProperties, findArea, hitArea, areas, areaInk, areaChange, areaColors,
+    snapshot, baselineAll, change, rangeChange, quietRangeChange, scaleChange, valueChange, quietValueChange, rememberRange, rememberedRange, stillness,
     palette, tableOf, listen, unlisten, firedCount, resize, restoreSize, armEvent, waitArmed, closeMenu, openMenu, menuPoint, addViewer,
-    takeBalloons, saveLayout, loadLayout};
+    takeBalloons, saveLayout, saveLayoutToServer, loadLayout, deleteLayout, ink};
   stampAll();
   grok.events.onViewerAdded.subscribe((a: any) => arm(a?.args?.viewer));
   grok.events.onViewerClosed.subscribe((a: any) => a?.args?.viewer && forget(a.args.viewer));
@@ -686,6 +776,14 @@ export async function expectHasArea(page: Page, target: ElementRef, name: string
 
 export function centerOf(box: Box): {x: number; y: number} {
   return {x: box.x + box.width / 2, y: box.y + box.height / 2};
+}
+
+/** Every hit area the viewer reports right now, in client coordinates — for a step that reasons
+ * over them together (the order of the bars, a spot no bar covers). */
+export async function hitAreas(page: Page, target: ElementRef): Promise<Record<string, Box>> {
+  await installViewerRuntime(page);
+  const loc = await viewerLocator(page, target);
+  return loc.evaluate((el) => (window as any).__bdd.areas(el));
 }
 
 export async function addViewer(page: Page, type: string): Promise<void> {
@@ -766,16 +864,23 @@ export async function expectAreaInk(page: Page, target: ElementRef, area: string
   await installViewerRuntime(page);
   const loc = await viewerLocator(page, target);
   let last: AreaChange | undefined;
+  let failure = '';
   const holds = async (): Promise<boolean> => {
-    const c: AreaChange = last = await loc.evaluate((el, a) => (window as any).__bdd.areaChange(el, a), area);
-    return compare === 'less' ? c.ink < c.inkBefore : c.ink > c.inkBefore;
+    try {
+      const c: AreaChange = last = await loc.evaluate((el, a) => (window as any).__bdd.areaChange(el, a), area);
+      return compare === 'less' ? c.ink < c.inkBefore : c.ink > c.inkBefore;
+    }
+    catch (e) {
+      failure = reasonText(e);
+      return false;
+    }
   };
   try {
     await expect.poll(holds, {timeout: 10000}).toBe(true);
   }
   catch {
     throw new Error(`the "${area}" area of ${target.phrase} does not have ${compare} ink than before` +
-      (last ? ` (${last.inkBefore} px before, ${last.ink} now, in ${JSON.stringify(last.rect)} of the bitmap)` : ''));
+      (last ? ` (${last.inkBefore} px before, ${last.ink} now, in ${JSON.stringify(last.rect)} of the bitmap)` : failure ? `: ${failure}` : ''));
   }
 }
 
@@ -868,30 +973,59 @@ export async function expectAreasDiffer(page: Page, target: ElementRef, a: strin
   }
 }
 
-/** A numeric reading of the viewer (`getWidgetStatus().values`, "rows shown") equals a value, or
- * is lower/higher than at the snapshot before the last change. */
-export async function expectReading(page: Page, target: ElementRef, name: string, compare: 'equal' | 'lower' | 'higher', value?: number): Promise<void> {
+export type ReadingCompare = 'equal' | 'lower' | 'higher' | 'differ' | 'same';
+
+/** A reading of the viewer (`getWidgetStatus().values`: "rows shown", "bars", "scene signature")
+ * equals a value, is lower/higher than at the snapshot before the last change, differs from it, or
+ * is the same — the negative read once the viewer is quiet, and read once. */
+export async function expectReading(page: Page, target: ElementRef, name: string, compare: ReadingCompare, value?: number): Promise<void> {
   await installViewerRuntime(page);
   const loc = await viewerLocator(page, target);
   let last: {before?: unknown; now?: unknown; has: string[]} = {has: []};
   const holds = async (): Promise<boolean | string> => {
-    last = await loc.evaluate((el, n) => (window as any).__bdd.valueChange(el, n), name);
-    if (typeof last.now !== 'number')
+    last = await loc.evaluate((el, [n, q]) => {
+      const b = (window as any).__bdd;
+      return q ? b.quietValueChange(el, n) : b.valueChange(el, n);
+    }, [name, compare === 'same'] as [string, boolean]);
+    if (last.now === undefined || last.now === null)
       return `no "${name}" reading`;
     if (compare === 'equal')
       return last.now === value;
-    if (typeof last.before !== 'number')
+    if (last.before === undefined || last.before === null)
       return `no "${name}" reading at the snapshot`;
+    if (compare === 'differ' || compare === 'same')
+      return (last.now !== last.before) === (compare === 'differ');
+    if (typeof last.now !== 'number' || typeof last.before !== 'number')
+      return `"${name}" is not a number`;
     return compare === 'lower' ? last.now < last.before : last.now > last.before;
   };
+  const what = {equal: `${value}`, lower: 'lower than before', higher: 'higher than before', differ: 'different from before', same: 'the same as before'}[compare];
+  const report = (): never => {
+    throw new Error(`"${name}" of ${target.phrase} is ${String(last.now)}, not ${what}` +
+      (compare === 'equal' ? '' : ` (${String(last.before)})`) +
+      (last.now === undefined || last.now === null ? `; the viewer reports: ${last.has.join(', ') || 'no readings'}` : ''));
+  };
+  if (compare === 'same') {
+    if (await holds() !== true)
+      report();
+    return;
+  }
   try {
     await expect.poll(holds, {timeout: 5000}).toBe(true);
   }
   catch {
-    const what = compare === 'equal' ? `${value}` : `${compare} than before (${String(last.before)})`;
-    throw new Error(`"${name}" of ${target.phrase} is ${String(last.now)}, not ${what}` +
-      (typeof last.now !== 'number' ? `; the viewer reports: ${last.has.join(', ') || 'no readings'}` : ''));
+    report();
   }
+}
+
+/** The legend sits on the side the viewer's own slot class names (`d4-legend-left`, …). */
+export async function expectLegendSide(page: Page, target: ElementRef, side: string): Promise<void> {
+  const want = side.toLowerCase();
+  const legend = (await viewerLocator(page, target)).locator('[name="legend"]').filter({visible: true}).first();
+  await expect(legend, `the legend of ${target.phrase}`).toBeVisible();
+  const classes = (await legend.getAttribute('class') ?? '').split(/\s+/);
+  const sides = classes.filter((c) => /^d4-legend-(left|right|top|bottom)$/.test(c)).map((c) => c.slice('d4-legend-'.length));
+  expect(sides, `the legend of ${target.phrase} is on the ${sides.join(', ') || 'unknown'} side, not the ${want}`).toContain(want);
 }
 
 /** The range the color scale labels against the snapshot before the last change. */
@@ -922,13 +1056,15 @@ export async function expectScaleRange(page: Page, target: ElementRef, compare: 
 export async function expectNotRepainted(page: Page, target: ElementRef): Promise<void> {
   await installViewerRuntime(page);
   const loc = await viewerLocator(page, target);
-  const still: {renders: number; delta: number} = await loc.evaluate((el) => (window as any).__bdd.stillness(el));
-  expect(still.delta, `${target.phrase} repainted: ${still.delta} px changed in ${still.renders} render(s)`).toBe(0);
+  const still: {renders: number; delta: number; where: string} = await loc.evaluate((el) => (window as any).__bdd.stillness(el));
+  expect(still.delta, `${target.phrase} repainted: ${still.delta} px changed in ${still.renders} render(s)${still.where ? ', ' + still.where : ''}`).toBe(0);
 }
 
 export async function expectInk(page: Page, target: ElementRef, compare: 'less' | 'more' | 'some'): Promise<void> {
   if (compare === 'some') {
-    await expect.poll(() => snapshot(page, target), {timeout: 10000, message: `${target.phrase} is blank`}).toBeGreaterThan(0);
+    await installViewerRuntime(page);
+    const loc = await viewerLocator(page, target);
+    await expect.poll(() => loc.evaluate((el) => (window as any).__bdd.ink(el)), {timeout: 10000, message: `${target.phrase} is blank`}).toBeGreaterThan(0);
     return;
   }
   await expect.poll(async () => {
@@ -1087,9 +1223,19 @@ export async function saveLayout(page: Page): Promise<void> {
   await page.evaluate(() => { (window as any).__bdd.saveLayout(); });
 }
 
+/** Saves the layout through the server and returns its id; the caller registers the deletion. */
+export async function saveLayoutToServer(page: Page): Promise<string> {
+  await installViewerRuntime(page);
+  return page.evaluate(() => (window as any).__bdd.saveLayoutToServer());
+}
+
+export async function deleteLayout(page: Page, id: string): Promise<void> {
+  await page.evaluate((i) => (window as any).__bdd.deleteLayout(i), id);
+}
+
 export async function loadLayout(page: Page): Promise<void> {
   await installViewerRuntime(page);
-  await page.evaluate(() => { (window as any).__bdd.loadLayout(); });
+  await page.evaluate(() => (window as any).__bdd.loadLayout());
 }
 
 /** The balloons (info, warning, error) shown since the last read; reading clears them. */
@@ -1142,12 +1288,24 @@ export function menuItem(page: Page, label: string): Locator {
   return page.locator(POPUP).last().locator('.d4-menu-item-label', {hasText: exactText(label)}).first().locator(MENU_ITEM);
 }
 
+/** A group item opens on a pointer move over it: the move enters from the left, since a pointer
+ * already resting on the item (a hover before the menu was reopened) would move nowhere. */
+async function openGroup(item: Locator): Promise<void> {
+  await item.waitFor({state: 'visible', timeout: 5000});
+  const box = await item.boundingBox();
+  if (!box)
+    throw new Error('the menu item has no box');
+  const cy = box.y + box.height / 2;
+  await item.page().mouse.move(Math.max(0, box.x - 8), cy);
+  await item.page().mouse.move(box.x + box.width / 2, cy);
+}
+
 /** `Misc > Show Inside Values`: hovers the groups, clicks the leaf. */
 export async function pickMenuPath(page: Page, path: string): Promise<void> {
   const segments = path.split(/\s*[>|]\s*/).filter((s) => s.length > 0);
   for (let i = 0; i < segments.length; i++) {
     const item = menuItem(page, segments[i]);
-    const act = i < segments.length - 1 ? item.hover({timeout: 5000}) : item.click({timeout: 5000});
+    const act = i < segments.length - 1 ? openGroup(item) : item.click({timeout: 5000});
     await act.catch(async (e: Error) => {
       const visible = await page.locator(POPUP).last().locator('.d4-menu-item-label').allTextContents();
       throw new Error(`no "${segments[i]}" in the menu; it shows: ${visible.map((s) => s.trim()).filter(Boolean).join(' | ')}\n${e.message}`);

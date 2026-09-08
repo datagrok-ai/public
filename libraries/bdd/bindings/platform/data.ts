@@ -65,6 +65,32 @@ async function changeTable(page: Page, body: (arg: any) => void, arg: unknown): 
 export const clearSelection = When('user clears the row selection', (page: Page) =>
   changeTable(page, () => { grok.shell.t.selection.setAll(false); }, null), {tier: 'api'});
 
+/** The rows where the column reads one of the values become the selection, nothing else; a
+ * category no row has fails (a typo must not pass as an empty selection). */
+function selectWhere(page: Page, column: string, values: string[]): Promise<void> {
+  return changeTable(page, ([c, vs]) => {
+    const df = grok.shell.t;
+    const col = df.col(c);
+    if (!col)
+      throw new Error(`no "${c}" column in ${df.name}; it has: ${df.columns.names().join(', ')}`);
+    let hits = 0;
+    df.selection.init((i: number) => {
+      const hit = vs.includes(String(col.get(i) ?? ''));
+      if (hit)
+        hits++;
+      return hit;
+    });
+    if (hits === 0)
+      throw new Error(`no row of ${df.name} has ${c} ${vs.length > 1 ? `in ${vs.join(', ')}` : `= ${vs[0]}`}`);
+  }, [column, values] as [string, string[]]);
+}
+
+export const selectWhereIs = When('user selects rows where {string} is {string}', (page: Page, column: string, value: string) =>
+  selectWhere(page, column, [value]), {tier: 'api', description: 'the table\'s selection bitset — every row of the category and nothing else; the UI path is a click on the category in a viewer'});
+
+export const selectWhereOneOf = When('user selects rows where {string} is one of {string}', (page: Page, column: string, values: string) =>
+  selectWhere(page, column, list(values)), {tier: 'api', description: 'comma-separated categories'});
+
 export const noneSelected = Then('no rows should be selected', (page: Page) =>
   expect.poll(() => selectedCount(page), {message: 'rows selected'}).toBe(0));
 
@@ -125,6 +151,17 @@ export const filterBetween = When('user filters rows where {string} is between {
   }, [column, lo, hi] as [string, number, number]),
 {tier: 'api', description: 'the table\'s filter bitset, as a filter viewer would set it; the filter panel\'s own handles are not driven'});
 
+export const filterTo = When('user filters rows where {string} is {string}', (page: Page, column: string, value: string) =>
+  changeTable(page, ([c, v]) => {
+    const df = grok.shell.t;
+    const col = df.col(c);
+    if (!col)
+      throw new Error(`no "${c}" column in ${df.name}; it has: ${df.columns.names().join(', ')}`);
+    df.filter.init((i: number) => String(col.get(i) ?? '') === v);
+    if (df.filter.trueCount === 0)
+      throw new Error(`no row of ${df.name} has ${c} = ${v}`);
+  }, [column, value] as [string, string]), {tier: 'api', description: 'keeps the category\'s rows only — the table\'s filter bitset'});
+
 export const filterOut = When('user filters out rows where {string} is {string}', (page: Page, column: string, value: string) =>
   changeTable(page, ([c, v]) => {
     const df = grok.shell.t;
@@ -161,6 +198,28 @@ export const filterIsExactly = Then('the filter should pass exactly the rows whe
     }, [column, lo, hi] as [string, number, number]);
     expect(off, `rows whose filter bit disagrees with ${column} in [${lo}, ${hi}]`).toBe(0);
   }, {description: 'the table filter bit by bit — a viewer\'s own filter must leave it alone'});
+
+export const filterIsExactlyCategory = Then('the filter should pass exactly the rows where {string} is {string}', async (page: Page, column: string, value: string) => {
+  const off = await page.evaluate(([c, v]) => {
+    const df = grok.shell.t;
+    const col = df.col(c);
+    if (!col)
+      throw new Error(`no "${c}" column in ${df.name}; it has: ${df.columns.names().join(', ')}`);
+    let wrong = 0;
+    let matching = 0;
+    for (let i = 0; i < df.rowCount; i++) {
+      const hit = String(col.get(i) ?? '') === v;
+      if (hit)
+        matching++;
+      if (df.filter.get(i) !== hit)
+        wrong++;
+    }
+    if (matching === 0)
+      throw new Error(`no row of ${df.name} has ${c} = ${v}`);
+    return wrong;
+  }, [column, value] as [string, string]);
+  expect(off, `rows whose filter bit disagrees with ${column} = ${value}`).toBe(0);
+}, {description: 'the table filter bit by bit: the category\'s rows pass, no other row does'});
 
 // --- rows --------------------------------------------------------------------------------------------
 
@@ -227,6 +286,26 @@ export const colorCategorical = When('user colors {string} column categorically:
   color(page, column, 'categorical', Object.fromEntries(table)), {tier: 'api', description: '| category | color | rows'});
 
 export const colorOff = When('user removes the coloring of {string} column', (page: Page, column: string) => color(page, column, 'off', null), {tier: 'api'});
+
+/** The column's color-coding type tag: '' when none. */
+function colorCodingType(page: Page, column: string): Promise<string> {
+  return page.evaluate((c) => {
+    const df = grok.shell.t;
+    const col = df.col(c);
+    if (!col)
+      throw new Error(`no "${c}" column in ${df.name}; it has: ${df.columns.names().join(', ')}`);
+    const type = col.getTag('.color-coding-type');
+    return type == null || type === 'Off' ? '' : String(type);
+  }, column);
+}
+
+export const noColorCoding = Then('{string} column should have no color coding', async (page: Page, column: string) => {
+  await expect.poll(() => colorCodingType(page, column), {message: `the color coding of "${column}"`}).toBe('');
+}, {description: 'the column\'s color-coding tag is unset or Off'});
+
+export const colorCodedCategorically = Then('{string} column should be color-coded categorically', async (page: Page, column: string) => {
+  await expect.poll(() => colorCodingType(page, column), {message: `the color coding of "${column}"`}).toBe('Categorical');
+});
 
 /** `#rrggbb` → the ARGB int the color API takes. */
 function DG_COLOR(hex: string): number {
