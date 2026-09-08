@@ -49,6 +49,8 @@ export {AIChat, AIEngine} from './src/ai';
 export type {AIAttachment, AIChatOptions, AIRunOptions, AIResult, AIUsage, AIStream, AITurnEvent} from './src/ai';
 
 export * as U2 from './src/u2core/index.js';
+export {BitArray} from './src/u2core/bit-array.js';
+export type {BitPredicate} from './src/u2core/bit-array.js';
 
 import * as grok from './grok';
 import * as ui from './ui';

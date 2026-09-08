@@ -292,10 +292,12 @@ export class FastaBioFilter extends BioFilterBase<BioFilterProps> {
   constructor() {
     super();
 
+    // the props follow the input at once: applyProps() writes them back into the input, and a
+    // value a task behind the keystrokes wiped the letters typed meanwhile
     this.substructureInput = ui.input.string('', {
       value: '', onValueChanged: (value) => {
+        this.props = new BioFilterProps(value, undefined, _package.logger);
         window.setTimeout(() => {
-          this.props = new BioFilterProps(value, undefined, _package.logger);
           if (!this._propsChanging) this.onChanged.next();
         }, 0 /* next event cycle */);
       }, placeholder: 'Substructure'

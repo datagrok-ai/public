@@ -124,6 +124,9 @@ export class Shell {
   /** Last error state */
   get lastError(): Promise<string|undefined> { return api.grok_Get_LastError(); }
 
+  /** Resolves once every package autostart function has run; they start 3 seconds after the app has started. */
+  get autostartsCompleted(): Promise<void> { return api.grok_Shell_Get_AutostartsCompleted(); }
+
   set lastError(s: any) { api.grok_Set_LastError(s); }
 
   /** Clears {@link lastError}. */

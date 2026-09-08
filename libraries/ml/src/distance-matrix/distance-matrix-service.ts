@@ -2,16 +2,25 @@ import {KnownMetrics} from '../typed-metrics';
 import {DistanceAggregationMethod, DistanceAggregationMethods, ClusterRepresentatives} from './types';
 
 export class DistanceMatrixService {
-    private _workers: Worker[];
+    private _workers: Worker[] = [];
     private _workerCount: number;
     private _terminateOnComplete: boolean;
     public constructor(useConcurrentWorkers = true, terminateOnComplete = true) {
       const threadCount = navigator.hardwareConcurrency;
       this._workerCount = useConcurrentWorkers ? Math.max(threadCount - 2, 1) : 1;
-      this._workers = new Array(this._workerCount).fill(null)
-        .map(() => new Worker(new URL('./distance-matrix-worker', import.meta.url)));
       this._terminateOnComplete = terminateOnComplete;
     };
+
+    /** Workers are spawned for the job at hand, never ahead of it: a worker still importing its
+     * chunks when {@link terminate} runs dies mid-load, and the browser reports every such load
+     * as an uncaught NetworkError on the page. */
+    private workers(count: number): Worker[] {
+      if (this._terminateOnComplete)
+        this._workers = [];
+      while (this._workers.length < count)
+        this._workers.push(new Worker(new URL('./distance-matrix-worker', import.meta.url)));
+      return this._workers.slice(0, count);
+    }
 
     public async calc(values: ArrayLike<any>, fnName: KnownMetrics,
       normalize = true, opts?: {[_: string]: any}): Promise<Float32Array> {
@@ -31,32 +40,33 @@ export class DistanceMatrixService {
       return new Promise(async (resolve, reject) => {
         try {
           const len = values[0].length;
-          const promises = new Array<Promise<void>>(this._workerCount);
           const totalLength = len * (len - 1) / 2; // size of reduced distance matrix
-          this._workerCount = Math.min(this._workerCount, totalLength);
-          const chunkSize = totalLength / this._workerCount;
+          const workerCount = Math.max(1, Math.min(this._workerCount, totalLength));
+          const workers = this.workers(workerCount);
+          const promises = new Array<Promise<void>>(workerCount);
+          const chunkSize = totalLength / workerCount;
           const distanceMatrix = new Float32Array(totalLength);
           let endRow = 0;
           let endCol = 1;
           // minmax for normalization
           let lmin = 0;
           let lmax = Number.MIN_VALUE;
-          for (let i = 0; i < this._workerCount; i++) {
+          for (let i = 0; i < workerCount; i++) {
             const start = Math.floor(i * chunkSize);
-            const end = (i === this._workerCount - 1) ? totalLength : Math.floor((i + 1) * chunkSize);
+            const end = (i === workerCount - 1) ? totalLength : Math.floor((i + 1) * chunkSize);
             const startRow = endRow;
             const startCol = endCol;
-            if (i !== this._workerCount - 1) {
+            if (i !== workerCount - 1) {
               // These formulas map the linear index to the upper triangular matrix indices
               endRow = len - 2 - Math.floor(Math.sqrt(-8 * end + 4 * len * (len - 1) - 7) / 2 - 0.5);
               endCol = end - len * endRow + Math.floor((endRow + 1) * (endRow + 2) / 2);
             }
-            this._workers[i].postMessage(
+            workers[i].postMessage(
               {values, fnNames, startRow, startCol, chunckSize: end - start, opts, weights, aggregationMethod}
             );
             promises[i] = new Promise((resolveWorker, rejectWorker) => {
-              this._workers[i].onmessage = ({data: {error, distanceMatrixData, min, max}}): void => {
-                this._terminateOnComplete && setTimeout(() => this._workers[i].terminate());
+              workers[i].onmessage = ({data: {error, distanceMatrixData, min, max}}): void => {
+                this._terminateOnComplete && setTimeout(() => workers[i].terminate());
                 if (error) {
                   rejectWorker(error);
                 } else {

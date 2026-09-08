@@ -11,7 +11,8 @@
    as `datagrok-api/dg` and `datagrok-api/grok`; dg-stub also installs the kill-walk globals over
    {@link platform}. */
 
-import {Control, dfBindings, signal} from 'datagrok-api/u2core';
+import {Control, TYPE, dfBindings, signal} from 'datagrok-api/u2core';
+export {TYPE, COLUMN_TYPE, SEMTYPE} from 'datagrok-api/u2core';
 
 /** Prototype getters over the handle — what every field of a real entity is. */
 function getters(cls, ...keys) {
@@ -369,14 +370,31 @@ export class UnreadableFileInfo extends FileInfo {
 
 export class BitSet {
   constructor(length = 0) { this.dart = {length}; }
+
+  /** The bytes are kept as given — what a test asserts the mask adapter handed over. */
+  static fromBytes(buffer, bitLength) {
+    const bitset = new BitSet(bitLength);
+    bitset.dart.buffer = buffer;
+    return bitset;
+  }
+
+  /** One copy of the words, as the platform's `grok_BitSet_FromBytes` makes. */
+  static fromBitArray(a) {
+    return BitSet.fromBytes(a.getBuffer().slice(0, a.lengthInInts).buffer, a.length);
+  }
+
+  get(i) { return (new Uint32Array(this.dart.buffer)[i >>> 5] & (1 << (i & 31))) !== 0; }
 }
 getters(BitSet, 'length');
 
+const INT_NULL = -2147483648;
+const FLOAT_NULL = 2.6789344063684636e-34;
+
 // datetime counts as numerical, as in ddt (date_time_column.dart:16)
-const NUMERICAL = new Set(['int', 'double', 'bigint', 'qnum', 'datetime']);
+const NUMERICAL = new Set([TYPE.INT, TYPE.FLOAT, TYPE.BIG_INT, TYPE.QNUM, TYPE.DATE_TIME]);
 
 export class Column {
-  constructor(name, type = 'string', semType = null) { this.dart = {name, type, semType, frame: null}; }
+  constructor(name, type = TYPE.STRING, semType = null) { this.dart = {name, type, semType, frame: null}; }
 
   get name() { return this.dart.name; }
 
@@ -390,12 +408,48 @@ export class Column {
   get isNumerical() { return NUMERICAL.has(this.dart.type); }
 
   // string and bool are the categorical types (ddt string_column.dart / bool_column.dart)
-  get isCategorical() { return this.dart.type === 'string' || this.dart.type === 'bool'; }
+  get isCategorical() { return this.dart.type === TYPE.STRING || this.dart.type === TYPE.BOOL; }
 
   /** Distinct values off the frame rows — read only under a maxCategories cap. */
   get categories() {
     const frame = this.dart.frame;
     return frame == null ? [] : [...new Set(frame.dart.rows.map((r) => r[this.dart.name]))];
+  }
+
+  get length() { return this.dart.frame?.dart.rows.length ?? 0; }
+
+  get(i) { return this.dart.frame.dart.rows[i][this.dart.name] ?? null; }
+
+  get min() { return Math.min(...this._numbers()); }
+  get max() { return Math.max(...this._numbers()); }
+
+  _numbers() { return this.categories.filter((v) => typeof v === 'number'); }
+
+  /** The platform's raw layouts derived from the frame rows: ints and
+   * category indexes as Int32Array, floats as Float32Array, datetimes as Float64Array µs,
+   * bools as an LSB-first Uint32Array. */
+  getRawData() {
+    const values = Array.from({length: this.length}, (_, i) => this.get(i));
+    switch (this.dart.type) {
+      case TYPE.INT:
+        return Int32Array.from(values, (v) => v == null ? INT_NULL : v);
+      case TYPE.FLOAT: case TYPE.QNUM:
+        return Float32Array.from(values, (v) => v == null ? FLOAT_NULL : v);
+      case TYPE.DATE_TIME:
+        return Float64Array.from(values, (v) => v == null ? FLOAT_NULL : v.getTime() * 1000);
+      case TYPE.BOOL: {
+        const bits = new Uint32Array((values.length + 31) >>> 5);
+        values.forEach((v, i) => {
+          if (v)
+            bits[i >>> 5] |= 1 << (i & 31);
+        });
+        return bits;
+      }
+      default: {
+        const categories = this.categories;
+        return Int32Array.from(values, (v) => categories.indexOf(v));
+      }
+    }
   }
 }
 getters(Column, 'type', 'semType');

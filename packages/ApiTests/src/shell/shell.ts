@@ -21,6 +21,12 @@ category('Shell', () => {
     expect(grok.shell.v != v, true);
   }, {skipReason: nodeSkip});
 
+  test('autostartsCompleted', async () => {
+    const p = grok.shell.autostartsCompleted;
+    expect(p instanceof Promise, true);
+    await p;
+  }, {skipReason: nodeSkip});
+
   test('addView', async () => {
     let view = DG.View.create();
     const v = grok.shell.addView(view);

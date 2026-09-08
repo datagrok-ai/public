@@ -133,12 +133,27 @@ export function printBatchOutput(response: BatchResponse, format: OutputFormat):
 
 export function printError(err: any, opts: {verbose?: boolean} = {}): void {
   const apiErr: NodeApiError | undefined = err?.apiError;
-  const message = apiErr?.error ?? String(err?.message ?? err);
+  const status = apiErr?.errorCode;
+  const base = apiErr?.error ?? String(err?.message ?? err);
+  const message = typeof status === 'number' && status >= 400 && !base.includes(String(status)) ? `${base} (HTTP ${status})` : base;
   if (errorFormat === 'json') {
     process.stderr.write(JSON.stringify({...apiErr, error: message}) + '\n');
     return;
   }
   process.stderr.write(`${message}\n`);
+  printErrorDetails(apiErr?.body);
   if (opts.verbose && apiErr?.stackTrace)
     process.stderr.write(apiErr.stackTrace + '\n');
+}
+
+/** Structured fields of a domain error envelope: per-row validation errors, manifest errors, a plan awaiting confirmation. */
+function printErrorDetails(body: any): void {
+  if (!body || typeof body !== 'object') return;
+  for (const r of Array.isArray(body.rows) ? body.rows : [])
+    for (const e of Array.isArray(r?.errors) ? r.errors : [])
+      process.stderr.write(`  row ${r.index ?? ''}${e?.column ? ` ${e.column}` : ''}: ${e?.message ?? e?.code ?? ''}\n`);
+  for (const e of Array.isArray(body.errors) ? body.errors : [])
+    process.stderr.write(`  ${typeof e === 'string' ? e : (e?.message ?? JSON.stringify(e))}\n`);
+  if (body.plan)
+    process.stderr.write(JSON.stringify(body.plan, null, 2) + '\n');
 }

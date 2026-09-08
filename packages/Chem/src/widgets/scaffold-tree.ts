@@ -1978,7 +1978,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   }
 
   isBitsetStale(node: DG.TreeViewNode | null): boolean {
-    if (!node || !this.dataFrame)
+    if (!node || node.value === null || !this.dataFrame)
       return false;
 
     const bs = value(node).bitset;

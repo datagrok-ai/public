@@ -1,11 +1,9 @@
 ---
 feature: general
+realizes_atlas: []
+priority: p2
 target_layer: manual-only
 coverage_type: regression
-produced_from: split
-original_path: public/packages/UsageAnalysis/files/TestTrack/General/table-manager.md
-split_date: 2026-06-16
-related_bugs: []
 manual_only_reason: |
   The Table Manager is a d4 canvas grid. Row selection (single and Shift+range
   multi-select), the "Open as table" right-click action, and the "Show > All"
@@ -13,18 +11,19 @@ manual_only_reason: |
   no stable DOM/API hook. Opening the manager and verifying it lists the open
   tables IS automated in table-manager-spec.ts; these canvas/context-menu
   interactions remain manual.
+related_bugs: []
 ---
 
 # Table Manager — canvas grid interactions
 
 Manual companion to `table-manager.md`. Opening **View | Tables** (Alt+T) and
-verifying the manager lists all open tables is automated by
-`table-manager-spec.ts`. The interactions below operate on the canvas grid and
+verifying the manager lists all open tables is covered by the automated
+companion. The interactions below operate on the canvas grid and
 its context menus and are verified manually.
 
 ## Preconditions
 
-1. Load 3-4 datasets (e.g. drag in a couple of demo files).
+1. Load 3-4 datasets (e.g. demog.csv, chem/smiles.csv, chem/SPGI.csv from Demo Files).
 2. Open the Table Manager via **View | Tables** (or `Alt + T`).
 
 ## Steps
@@ -56,5 +55,6 @@ its context menus and are verified manually.
 
 ---
 {
-  "order": 6
+  "order": 6,
+  "datasets": ["System:DemoFiles/demog.csv", "System:DemoFiles/chem/smiles.csv", "System:DemoFiles/chem/SPGI.csv"]
 }

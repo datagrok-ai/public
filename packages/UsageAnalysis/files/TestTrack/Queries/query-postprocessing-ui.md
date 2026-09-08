@@ -1,39 +1,31 @@
 ---
 feature: queries
-target_layer: playwright
-coverage_type: edge
-priority: p2
 realizes: [views.queries, viewers.scatter-plot, viewers.correlation-plot]
-realized_as: []
+priority: p2
+target_layer: manual-only
+coverage_type: edge
+manual_only_reason: |
+  Layout-tab viewers are added by drag-and-drop, only real typing exercises
+  the Post-Process editor, and the run's green info balloon is verified in a
+  real browser session.
 related_bugs: []
 ---
 
 # Query Post-Processing — manual UI checks
 
-This is the **manual companion** to `query-postprocessing.md`. The autotest
-`query-postprocessing.test.ts` covers the parts that map to stable DOM automation;
-this file covers the rest, all of which need a human in front of the browser.
-
-The autotest covers: create the query via UI, set Name + SQL, run via Play, Save,
-patch `postProcessScript` via dapi (UI fallback — see SCOPE NOTE 2 in the spec
-file), and verify on round-trip that the Post-Process tab mounts correctly with the
-saved body.
+This is the **manual companion** to `query-postprocessing.md`. The automated
+companion covers the parts that map to stable automation; this file covers the
+rest, all of which need a human in front of the browser.
 
 The manual steps below cover three carve-outs the autotest could not exercise:
 
 1. **Layout-tab viewers** — adding a Scatterplot and a Correlation Plot to the
-   Layout-tab preview requires drag-drop or a JS handle on the nested TableView,
-   neither of which respond to synthesised browser events.
-2. **Typing into the Post-Process tab editor** — the CodeMirror inside ScriptView
-   does not propagate JS-injected values into `DataQueryView.postProcessScript`,
-   so the autotest patches via dapi instead. A real human typing in the editor
-   does work, and that path is what we exercise here.
-3. **Run + green info balloon `77`** — Right-click → Run on a query whose
-   `postProcessScript` was patched in the same session raises a red
-   "Handler for null is not registered" error in our automation
-   (the client function registry doesn't rebind the new handler). A real fresh
-   browser session does NOT see this — the balloon fires correctly. So the
-   end-to-end runtime assertion lives here.
+   Layout-tab preview requires drag-drop, which must be done by hand.
+2. **Typing into the Post-Process tab editor** — only real typing in the
+   editor exercises this path.
+3. **Run + green info balloon `77`** — the end-to-end runtime assertion lives
+   here: in a real browser session, Right-click → Run fires the green balloon
+   correctly.
 
 ## Pre-conditions
 
@@ -85,3 +77,19 @@ The manual steps below cover three carve-outs the autotest could not exercise:
 * The post-process info balloon (`77`) fires on every Run, regardless of which tab
   you press Run from.
 * No red error balloons or console errors during any step.
+
+## Cleanup
+
+* Revert the `Test_Postprocessing` query to its pre-run state: right-click →
+  **Edit...**; on the **Layout** tab remove the Scatterplot and Correlation Plot
+  added in steps 7–8, and on the **Post-Process** tab remove the
+  `grok.shell.info(result.rowCount);` line added in step 3; then **Save**.
+  Alternatively, delete the whole query (right-click → **Delete...**) — the
+  autotest or steps 1–6 of `query-postprocessing.md` re-create it for the next run.
+* Close All.
+
+---
+{
+  "order": 13,
+  "datasets": []
+}

@@ -40,12 +40,14 @@ module.exports = {
       },
       ...(workingInDartium ? [{
         test: /\.js$/,
-        exclude: /node_modules[\\/]core-js/,
+        // u2 ships modern-browser JS; babel's core-js injections would not resolve from its folder
+        exclude: /node_modules[\\/]core-js|[\\/](@datagrok-)?libraries[\\/]u2[\\/]/,
         use: {
           loader: 'babel-loader',
           options: babelOptions,
         },
       }] : []),
+      {test: /\.css$/i, use: ['style-loader', 'css-loader']},
     ],
   },
   devtool: 'source-map',
@@ -53,6 +55,7 @@ module.exports = {
     'datagrok-api/dg': 'DG',
     'datagrok-api/grok': 'grok',
     'datagrok-api/ui': 'ui',
+    'datagrok-api/u2core': 'DG.U2',
     'openchemlib/full.js': 'OCL',
     'rxjs': 'rxjs',
     'rxjs/operators': 'rxjs.operators',

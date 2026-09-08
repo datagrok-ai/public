@@ -1,4 +1,5 @@
-import { test, expect } from "@playwright/test";
+import {expect} from '@playwright/test';
+import {test} from '../../shared-page';
 import {
   baseUrl,
   loginToDatagrok,
@@ -137,7 +138,6 @@ test("Connections / Schema", async ({ page }) => {
               ?.textContent?.trim() === "Northwind",
         );
 
-        // Browse may already have expanded Northwind; expand if not.
         let nHost = northwindGroup?.querySelector(
           ":scope > .d4-tree-view-group-host",
         );

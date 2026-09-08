@@ -1,6 +1,7 @@
-import {test, expect, Page} from '@playwright/test';
+import {expect, Page} from '@playwright/test';
+import {test} from '../shared-page';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
-import {finishSpec} from '../helpers/viewers';
+import {finishSpec, openTable} from '../helpers/viewers';
 test.use(specTestOptions);
 const CM_SELECTOR = '.d4-dialog .add-new-column-dialog-cm-div .cm-content';
 async function dispatchEditorReplace(
@@ -170,21 +171,7 @@ test('PowerPack: Add new column - column-name highlight (GROK-17004 invariant)',
   test.setTimeout(300_000);
   stepErrors.length = 0;
   await loginToDatagrok(page);
-  await page.evaluate(async () => {
-    const grok = (window as any).grok;
-    document.body.classList.add('selenium');
-    grok.shell.settings.showFiltersIconsConstantly = true;
-    grok.shell.windows.simpleMode = true;
-    try { grok.shell.closeAll(); } catch (_) {}
-    const df = await grok.dapi.files.readCsv('System:DemoFiles/demog.csv');
-    grok.shell.addTableView(df);
-    await new Promise<void>((resolve) => {
-      const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
-      setTimeout(resolve, 3000);
-    });
-  });
-  await page.locator('[name="viewer-Grid"]').waitFor({timeout: 60_000});
-  await page.waitForTimeout(1000);
+  await openTable(page, {path: 'System:DemoFiles/demog.csv'});
   const cols = await page.evaluate(() => {
     const df = (window as any).grok.shell.tv?.dataFrame;
     return df ? df.columns.names() : [];
@@ -278,18 +265,7 @@ test('PowerPack: Add new column - column-name highlight (GROK-17004 invariant)',
     expect(blueness.isBlue).toBe(true);
   });
   await softStep('Scenario 5 / Step 1: switch active dataset to SPGI', async () => {
-    await page.evaluate(async () => {
-      const grok = (window as any).grok;
-      try { grok.shell.closeAll(); } catch (_) {  }
-      const df = await grok.dapi.files.readCsv('System:DemoFiles/chem/SPGI.csv');
-      grok.shell.addTableView(df);
-      await new Promise<void>((resolve) => {
-        const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
-        setTimeout(resolve, 4000);
-      });
-    });
-    await page.locator('[name="viewer-Grid"]').waitFor({timeout: 60_000});
-    await page.waitForTimeout(2000);
+    await openTable(page, {path: 'System:DemoFiles/chem/SPGI.csv', semType: 'Molecule'});
     const spgiCols = await page.evaluate(() => {
       const df = (window as any).grok.shell.tv?.dataFrame;
       return df ? df.columns.names() : [];
@@ -327,19 +303,18 @@ test('PowerPack: Add new column - column-name highlight (GROK-17004 invariant)',
   });
   await softStep('Scenario 5 / Step 5 + GROK-17004 INVARIANT: five distinct columns highlighted in blue', async () => {
     const tokens = await readHighlightedColumnTokens(page);
-    // At least one highlight span surfaced (the addColHighlight pipeline ran).
+
     expect(tokens.length).toBeGreaterThan(0);
-    // Each of the five referenced columns is highlighted (distinct set).
+
     const distinct = await readDistinctHighlightedColumns(page);
     for (const c of ['Whole blood assay 1', 'Route Admin', 'Chemical Space X', 'Average Mass', 'Species'])
       expect(distinct, `column "${c}" not highlighted; distinct=[${distinct.join(', ')}]`).toContain(c);
-    // At least one rendered span has a blue computed color (the
-    // getColumnNamesAndSelections -> addColHighlight pipeline completed).
+
     const blueness = await readFirstHighlightBlueness(page);
     expect(blueness.hasSpan).toBe(true);
     expect(blueness.isBlue).toBe(true);
   });
-  // ---- Cleanup: cancel the dialog and clear shell state ----
+
   await page.evaluate(() => {
     const cancel = document.querySelector(
       '.d4-dialog [name="button-Add-New-Column---CANCEL"]',
@@ -351,7 +326,7 @@ test('PowerPack: Add new column - column-name highlight (GROK-17004 invariant)',
     if (anyCancel) anyCancel.click();
   }).catch(() => {});
   await page.evaluate(() => {
-    try { (window as any).grok.shell.closeAll(); } catch (_) { /* best effort */ }
+    try { (window as any).grok.shell.closeAll(); } catch (_) {  }
   }).catch(() => {});
   finishSpec();
 });

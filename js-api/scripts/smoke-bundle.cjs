@@ -19,7 +19,7 @@ const path = require('path');
 const {loadBundle, DEFAULT_BUNDLE} = require('./load-bundle.cjs');
 
 const bundlePath = process.argv[2] ? path.resolve(process.argv[2]) : DEFAULT_BUNDLE;
-const REQUIRED = ['Viewer', 'Grid', 'FormViewer', 'Point', 'DataFrame', 'Column'];
+const REQUIRED = ['Viewer', 'Grid', 'FormViewer', 'Point', 'DataFrame', 'Column', 'BitArray'];
 
 function fail(message, detail) {
   console.error('\njs-api bundle smoke test FAILED');

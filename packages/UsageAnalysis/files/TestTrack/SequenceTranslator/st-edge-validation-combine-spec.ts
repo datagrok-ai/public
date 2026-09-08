@@ -1,4 +1,5 @@
-import {test, expect, Page} from '@playwright/test';
+import {expect, Page} from '@playwright/test';
+import {test} from '../shared-page';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 
 test.use(specTestOptions);
@@ -25,7 +26,7 @@ async function validateViaHelper(page: Page, sequence: string): Promise<{error: 
 }
 
 test('SequenceTranslator — Edge: validateSequence false-branch + combineSenseAntisense mismatched units', async ({page}) => {
-  // JS-API-driven edge spec: one CSV load + a handful of function calls; 3 min is ample.
+
   test.setTimeout(180_000);
   stepErrors.length = 0;
   await loginToDatagrok(page);

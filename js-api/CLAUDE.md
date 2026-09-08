@@ -53,7 +53,7 @@ Large modules are split into focused sub-modules for maintainability. The main f
 |---------------------|-------------------------------------------------------------|
 | `types.ts`          | Type aliases: RowPredicate, Comparer, ColumnId, etc.        |
 | `qnum.ts`           | Qnum class for qualified numbers (with comparison operators)|
-| `bit-set.ts`        | BitSet class for efficient boolean arrays                   |
+| `bit-set.ts`        | BitSet (Dart-backed); bridges `fromBitArray`, `toBitArray`, `copyFrom(BitArray)` |
 | `stats.ts`          | Stats class, GroupByBuilder for aggregations                |
 | `column.ts`         | Column and typed variants (FloatColumn, DateTimeColumn)     |
 | `column-list.ts`    | ColumnList collection class                                 |
@@ -61,6 +61,13 @@ Large modules are split into focused sub-modules for maintainability. The main f
 | `row.ts`            | Row, Cell, RowList, RowGroup, RowMatcher, ValueMatcher      |
 | `data-frame.ts`     | DataFrame class and helper classes                          |
 | `formula-helpers.ts`| DataFrameFormulaLinesHelper, DataFrameAnnotationRegionsHelper|
+
+#### `src/u2core/` - Platform-free layer
+Dependency-free code that runs without the Dart runtime (u2 core, Web Workers, headless Node tests). Bundled as the `DG.U2` external; importable as `datagrok-api/u2core`.
+
+| File                | Contents                                                    |
+|---------------------|-------------------------------------------------------------|
+| `bit-array.ts`      | BitArray — pure-JS bit array with the BitSet vocabulary; also `DG.BitArray`. Workers that must not reference `DG` import `datagrok-api/src/u2core/bit-array.js` |
 
 #### `src/entities/` - Platform Entities
 | File                | Contents                                                    |

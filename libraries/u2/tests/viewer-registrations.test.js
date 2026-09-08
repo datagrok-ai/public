@@ -189,10 +189,10 @@ scoped('registerPlatformComponents is the core registry plus the viewers; the co
   const reg = new Registry();
   registerPlatformComponents(reg);
   const core = reg.metas().filter((m) => !m.tag.startsWith('u2-viewer-'));
-  assert.equal(core.length, 40);
-  assert.equal(reg.metas().length, 45);
+  assert.equal(core.length, 42);
+  assert.equal(reg.metas().length, 47);
   registerPlatformComponents(reg);
-  assert.equal(reg.metas().length, 45);
+  assert.equal(reg.metas().length, 47);
 
   const fch = reg.get('u2-func-call-history-browser');
   assert.equal(fch.props.find((p) => p.name === 'functionName').bindable, true);

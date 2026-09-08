@@ -28,6 +28,20 @@ import {SpotlightWidget} from './spotlight/spotlight-widget';
 import {getAdminGroups, getMyGroupFavorites, pinEntityToGroup} from './spotlight/group-favorites';
 import {DBExplorerEditor} from '@datagrok-libraries/db-explorer/src/editor';
 import {setupDBQueryCellHandler, setupGlobalDBExplorer, runEnrichmentFromConfig} from './db-explorer';
+import {FilterBuilderFilter} from './filter/filter-builder-filter';
+import '@datagrok-libraries/u2/css/tokens.css';
+import '@datagrok-libraries/u2/css/elements.css';
+import '@datagrok-libraries/u2/css/inputs.css';
+import '@datagrok-libraries/u2/css/number.css';
+import '@datagrok-libraries/u2/css/date.css';
+import '@datagrok-libraries/u2/css/tags.css';
+import '@datagrok-libraries/u2/css/choice.css';
+import '@datagrok-libraries/u2/css/buttons.css';
+import '@datagrok-libraries/u2/css/typeahead.css';
+import '@datagrok-libraries/u2/css/badge.css';
+import '@datagrok-libraries/u2/css/icons.css';
+import '@datagrok-libraries/u2/css/filter.css';
+import '@datagrok-libraries/u2/css/filter-query.css';
 export * from './package.g';
 export const _package = new DG.Package();
 export let _properties: { [propertyName: string]: any };
@@ -180,6 +194,16 @@ export class PackageFunctions {
   })
   static cronInput(): DG.InputBase {
     return new CronInput();
+  }
+
+  @grok.decorators.func({
+    name: 'Filter Builder',
+    description: 'Schema-driven query builder (u2)',
+    meta: {role: 'filter', columnlessFilter: 'true'},
+    outputs: [{name: 'result', type: 'filter'}],
+  })
+  static filterBuilder(): DG.Filter {
+    return new FilterBuilderFilter();
   }
 
   @grok.decorators.func({})

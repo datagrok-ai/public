@@ -288,12 +288,13 @@ export function unpivot(table: DG.DataFrame, copyColumns: DG.Column[], mergeColu
 }
 
 //description: Renders a molecule as a widget. Drawn once on a large square canvas so the preview stays crisp at any size
+//tags: ignorePanel
 //input: string molecule { nullable: false; semType: Molecule; description: Molecule (SMILES or Molfile) }
 //output: widget result
 //meta.includeInFlow: true
 //meta.autorun: true
-export function renderMolecule(molecule: string) : any {
-  return PackageFunctions.renderMolecule(molecule);
+export async function renderMolecule(molecule: string) : Promise<any> {
+  return await PackageFunctions.renderMolecule(molecule);
 }
 
 //input: file file 

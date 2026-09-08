@@ -20,7 +20,6 @@ const EDIT_SCRIPT_CONTENT = `#name: ${EDIT_SCRIPT_NAME}
 
 count <- nrow(table) * ncol(table)`;
 
-/** Fast reset: closeAll + navigate to Scripts browser. */
 async function resetToScripts(page: Page) {
   await page.evaluate(() => {
     const g = (window as any).grok;
@@ -61,7 +60,6 @@ test.describe.serial('Scripts: Edit', () => {
     await page.waitForFunction(() => !!(window as any).grok?.dapi?.scripts, { timeout: 10_000 });
     await apiDeleteScript(page, EDIT_SCRIPT_NAME);
 
-    // Create the script via API (prerequisite setup)
     await page.evaluate(async (content) => {
       const DG = (window as any).DG;
       const grok = (window as any).grok;
@@ -76,12 +74,10 @@ test.describe.serial('Scripts: Edit', () => {
     await apiDeleteScript(page, EDIT_SCRIPT_NAME);
   });
 
-  // Test track: Edit.md, steps 1–6
   test('1. Edit script body, save, close, reopen and verify change persists', async () => {
-    // Step 1: Go to Browse > Platform > Functions > Scripts
+
     await resetToScripts(page);
 
-    // Step 2: Find PW_EditTest in gallery and double-click to open
     const card = getScriptCard(page, EDIT_SCRIPT_NAME);
     await expect(card).toBeVisible({ timeout: 15_000 });
     await card.dblclick();
@@ -90,24 +86,20 @@ test.describe.serial('Scripts: Edit', () => {
     await expect(page.locator('.CodeMirror-code')).toContainText('#language: r', { timeout: 15_000 });
     await expect(page.locator('[name="div-view-name"]')).toContainText('EditTest', { ignoreCase: true });
 
-    // Step 3: Add the expression newParam="test" to the script body
     await page.locator('.CodeMirror').click();
     await page.keyboard.press('ControlOrMeta+End');
     await page.keyboard.press('Enter');
     await page.keyboard.type(EDIT_MARKER, { delay: 10 });
     await page.waitForTimeout(200);
 
-    // Step 4: Click Save
     const saveBtn = page.locator('button[name="button-Save"]');
     await expect(saveBtn).not.toHaveClass(/disabled/, { timeout: 8_000 });
     await saveBtn.click();
     await expect(page.locator('.d4-balloon').first()).toContainText(/saved/i, { timeout: 10_000 });
 
-    // Step 5: Close all views via shell.closeAll
     await page.evaluate(() => (window as any).grok.shell.closeAll());
     await page.waitForTimeout(300);
 
-    // Step 6: Navigate back to Scripts, find and reopen, verify edit persists
     await resetToScripts(page);
     const cardAfter = getScriptCard(page, EDIT_SCRIPT_NAME);
     await expect(cardAfter).toBeVisible({ timeout: 15_000 });
@@ -116,11 +108,9 @@ test.describe.serial('Scripts: Edit', () => {
     await page.waitForURL(/\/script\//, { timeout: 15_000 });
     await expect(page.locator('.CodeMirror-code')).toContainText(EDIT_MARKER, { timeout: 15_000 });
 
-    // Close all views via shell.closeAll
     await page.evaluate(() => (window as any).grok.shell.closeAll());
     await page.waitForTimeout(200);
 
-    // Verify all views are closed — no tab handles should remain
     await expect(page.locator('.tab-handle-close')).toHaveCount(0, { timeout: 5_000 });
   });
 });

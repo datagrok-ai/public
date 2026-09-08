@@ -1,5 +1,9 @@
 # bio changelog
 
+## 6.0.4 (2026-09-08)
+
+* Added `monomer-works/lib-events.ts`: `onMonomerLibLoaded` / `fireMonomerLibLoaded`, the `bio-monomer-lib-loaded` custom platform event Bio fires after every monomer library load, for packages that render or validate monomers without a library object of their own
+
 ## 6.0.2 (2026-07-06)
 
 * To atomic level (linear path): support multi-chain HELM (e.g. `RNA1{...}|RNA2{...}`) — each disjoint chain is assembled independently and stacked vertically into a single molfile instead of being fused into one continuous chain.

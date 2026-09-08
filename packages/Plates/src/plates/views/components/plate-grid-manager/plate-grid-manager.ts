@@ -149,8 +149,6 @@ export class PlateGridManager {
 
   private subscribeToStateChanges(): void {
     const sub = this.stateManager.onStateChange$.subscribe((event) => {
-      console.log('PlateGridManager: State changed', event);
-
       if (event.type === 'plate-selected') {
         const newIndex = event.plateIndex;
         if (newIndex !== undefined && newIndex !== -1 && this.grid.dataFrame) {

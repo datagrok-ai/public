@@ -8,6 +8,8 @@ import {SIMILARITY_METRIC} from "../const";
 import {observeStream} from "../events";
 import {Observable} from "rxjs";
 import {IDartApi} from "../api/grok_api.g";
+// The .js suffix keeps webpack on the same module instance the DG.U2 barrel loads.
+import {BitArray} from "../u2core/bit-array.js";
 
 const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
 
@@ -36,6 +38,24 @@ export class BitSet {
     if (bitLength == null || !Number.isInteger(bitLength) || bitLength < 0)
       bitLength = buffer.byteLength * 8;
     return new BitSet(api.grok_BitSet_FromBytes(buffer, bitLength));
+  }
+
+  private static _words(a: BitArray): ArrayBufferLike {
+    const w = a.getBuffer();
+    const n = a.lengthInInts;
+    return w.byteOffset === 0 && w.length === n ? w.buffer : w.slice(0, n).buffer;
+  }
+
+  /** Creates a {@link BitSet} holding a copy of the {@link BitArray}'s bits. */
+  static fromBitArray(a: BitArray): BitSet {
+    return new BitSet(api.grok_BitSet_FromBytes(BitSet._words(a), a.length));
+  }
+
+  /** A {@link BitArray} holding a copy of this bitset's bits. */
+  toBitArray(): BitArray {
+    const b: Uint32Array = api.grok_BitSet_Get_Buffer(this.dart);
+    const length = this.length;
+    return new BitArray(new Uint32Array(b.buffer, b.byteOffset, (length + 31) >>> 5).slice(), length);
   }
 
   /** Creates a {@link BitSet} of the specified length with all bits set to false.
@@ -180,9 +200,15 @@ export class BitSet {
     return api.grok_BitSet_GetSelectedIndexes(this.dart);
   }
 
-  /** Copies the content from the other {@link BitSet}. */
-  copyFrom(b: BitSet, notify: boolean = true): BitSet {
-    api.grok_BitSet_CopyFrom(this.dart, b.dart, notify);
+  /** Copies the content from the other {@link BitSet} or {@link BitArray} of the same length. */
+  copyFrom(b: BitSet | BitArray, notify: boolean = true): BitSet {
+    if (b instanceof BitSet)
+      api.grok_BitSet_CopyFrom(this.dart, b.dart, notify);
+    else {
+      if (b.length !== this.length)
+        throw new RangeError(`Lengths differ (${this.length} != ${b.length})`);
+      api.grok_BitSet_SetBuffer(this.dart, b.getBuffer().slice(0, b.lengthInInts), notify);
+    }
     return this;
   }
 

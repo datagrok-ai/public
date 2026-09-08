@@ -309,12 +309,19 @@ export function substituteZeroes(data: IFitChartData): void {
         minNonZeroX = series.points[j].x;
       if (series.points[j].x > maxNonZeroX && series.points[j].x !== 0)
         maxNonZeroX = series.points[j].x;
-      if (!uniqueArr.includes(series.points[j].x)) {
+      if (series.points[j].x !== 0 && !uniqueArr.includes(series.points[j].x)) {
         uniqueArr[uniqueArr.length] = series.points[j].x;
         countOfDistNonZeroX++;
       }
     }
-    const zeroSubstitute = Math.pow(10, Math.log10(minNonZeroX) - (Math.log10(maxNonZeroX) - Math.log10(minNonZeroX) / (countOfDistNonZeroX - 1)));
+    if (countOfDistNonZeroX === 0)
+      continue;
+
+    // one dose step below the smallest tested dose, measured on the log scale the axis uses
+    const logMin = Math.log10(minNonZeroX);
+    const logStep = countOfDistNonZeroX > 1 ?
+      (Math.log10(maxNonZeroX) - logMin) / (countOfDistNonZeroX - 1) : 1;
+    const zeroSubstitute = Math.pow(10, logMin - logStep);
     for (let j = 0; j < series.points.length; j++) {
       if (series.points[j].x === 0)
         series.points[j].x = zeroSubstitute;

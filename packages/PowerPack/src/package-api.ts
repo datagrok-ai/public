@@ -64,6 +64,13 @@ export namespace funcs {
     return await grok.functions.call('PowerPack:CronInput', {});
   }
 
+  /**
+  Schema-driven query builder (u2)
+  */
+  export async function filterBuilder(): Promise<any> {
+    return await grok.functions.call('PowerPack:FilterBuilder', {});
+  }
+
   export async function isFormulaColumn(col: DG.Column ): Promise<boolean> {
     return await grok.functions.call('PowerPack:IsFormulaColumn', { col });
   }

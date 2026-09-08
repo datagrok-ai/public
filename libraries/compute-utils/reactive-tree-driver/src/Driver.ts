@@ -1,10 +1,10 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {BehaviorSubject, Observable, Subject, EMPTY, of, from, combineLatest} from 'rxjs';
+import {BehaviorSubject, Observable, Subject, EMPTY, of, from, combineLatest, defer} from 'rxjs';
 import {isFuncCallSerializedState, PipelineState} from './config/PipelineInstance';
 import {AddDynamicItem, InitPipeline, LoadDynamicItem, LoadPipeline, MoveDynamicItem, RemoveDynamicItem, ResetToConsistent, ReturnResult, RunAction, RunSequence, RunStep, SaveDynamicItem, SavePipeline, UpdateFuncCall, ViewConfigCommands} from './view/ViewCommunication';
-import {pairwise, takeUntil, concatMap, catchError, switchMap, map, mapTo, startWith, withLatestFrom, tap, distinctUntilChanged, filter} from 'rxjs/operators';
+import {pairwise, takeUntil, concatMap, catchError, switchMap, map, mapTo, startWith, withLatestFrom, tap, distinctUntilChanged, filter, defaultIfEmpty, last, take} from 'rxjs/operators';
 import {StateTree} from './runtime/StateTree';
 import {loadInstanceState} from './runtime/funccall-utils';
 import {callHandler} from './utils';
@@ -16,8 +16,11 @@ import {DriverLogger, reportError} from './data/Logger';
 import {LinksData} from './runtime/LinksState';
 import {getStartedOrNull} from '../../shared-utils/utils';
 
+export type CommandAck = {cid: number, result: any} | {cid: number, error: unknown};
+
 export class Driver {
   public currentMetaCallData$ = new BehaviorSubject<MetaCallInfo>({});
+  public commandAcks$ = new Subject<CommandAck>();
   public hasNotSavedEdits$ = new BehaviorSubject<boolean>(false);
   public currentState$ = new BehaviorSubject<PipelineState | undefined>(undefined);
   public currentCallsState$ = new BehaviorSubject<Record<string, Observable<FuncCallStateInfo | undefined>>>({});
@@ -34,7 +37,8 @@ export class Driver {
   public treeMutationsLocked$ = new BehaviorSubject(false);
 
   private states$ = new BehaviorSubject<StateTree | undefined>(undefined);
-  private commands$ = new Subject<ViewConfigCommands>();
+  private commands$ = new Subject<{msg: ViewConfigCommands, cid: number}>();
+  private commandId = 0;
   private closed$ = new Subject<true>();
   private wasEdited$ = new BehaviorSubject<boolean>(false);
 
@@ -43,9 +47,15 @@ export class Driver {
   constructor(private mockMode = false) {
     this.commands$.pipe(
       withLatestFrom(this.states$),
-      concatMap(([msg, state]) => this.executeCommand(msg, state).pipe(
+      // defer keeps a synchronous executeCommand throw inside the inner observable, so
+      // catchError acks it instead of the throw erroring (and killing) the outer queue
+      concatMap(([{msg, cid}, state]) => defer(() => this.executeCommand(msg, state)).pipe(
+        defaultIfEmpty(null as any),
+        last(),
+        tap((result) => this.commandAcks$.next({cid, result})),
         catchError((error) => {
           reportError('recoverable', `command:${msg.event}`, error, this.logger);
+          this.commandAcks$.next({cid, error});
           return EMPTY;
         }),
       )),
@@ -138,17 +148,28 @@ export class Driver {
     ).subscribe(this.result$);
   }
 
-  public sendCommand(msg: ViewConfigCommands) {
+  /** Queues the command and resolves when it finishes: the last value emitted by the command,
+   * or null when it failed (the error is reported via the logger) or was dropped by a lock. */
+  public sendCommand(msg: ViewConfigCommands): Promise<any> {
     if (this.globalROLocked$.value || this.treeMutationsLocked$.value) {
       grok.shell.warning(`Ignoring event ${msg.event}`);
       console.warn(`Ignoring event ${msg.event}`);
-      return;
+      return Promise.resolve(null);
     }
-    this.commands$.next(msg);
+    const cid = ++this.commandId;
+    const ack = this.commandAcks$.pipe(
+      filter((ack) => ack.cid === cid),
+      take(1),
+      map((ack) => 'error' in ack ? null : ack.result),
+    ).toPromise();
+    this.commands$.next({msg, cid});
+    return ack;
   }
 
   public close() {
     this.closed$.next(true);
+    // resolves pending sendCommand promises (with undefined) instead of leaving them hanging
+    this.commandAcks$.complete();
     this.states$.value?.close();
     this.currentState$.next(undefined);
   }
@@ -298,8 +319,10 @@ export class Driver {
   }
 
   private initPipeline(msg: InitPipeline) {
-    return callHandler<PipelineConfiguration>(msg.provider, {version: msg.version}).pipe(
-      concatMap((conf) => from(getProcessedConfig(conf, this.logger))),
+    const config$ = msg.config ? of(msg.config) :
+      callHandler<PipelineConfiguration>(msg.provider, {version: msg.version}).pipe(
+        concatMap((conf) => from(getProcessedConfig(conf, this.logger))));
+    return config$.pipe(
       map((config) => msg.instanceConfig ?
         StateTree.fromInstanceConfig({
           config,

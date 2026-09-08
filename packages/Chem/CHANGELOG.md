@@ -2,12 +2,18 @@
 
 ## v.next
 
+* GROK-20753: Added `moleculeFilterOperators` (`meta.role: filterOperators`) — substructure, superstructure, exact, stereo-agnostic and similarity operators for the u2 filter builder
+* GROK-20808: MMP: Fixed a crash when no table was selected in the dialog
+* GROK-20829: Guard isBitsetStale against the valueless root tree group
 * SAR Matrix: Fixed the SAR Transfer tab rebuilding the whole panel (grid flicker, list scroll jumping to the top) on expanding/collapsing a series or selecting a transfer — the list now toggles and swaps in place like the SAR Matrix navigator
 * Fixed the package build failing on `TS2610` — `name` is an accessor on the u2 `Component` base, so the viewer overrides it with its own accessor instead of redeclaring it as a property
 * Fixed Gasteiger Partial Charges panel on current RDKit — `GetSimilarityMapFromWeights` now requires an explicit `MolDraw2DCairo` drawer (passed by keyword, so pre-2023.09 RDKit still works)
 * GROK-20824: MPO: Fixed the profile description picking up the title's text styling when styled text was pasted into it
 * GROK-20821: MPO: Fixed the dataset list ignoring newly opened tables
 * GROK-20823: MPO: Fixed Edit opening duplicate editor tabs and leaving a stale profile preview in the context panel
+* GROK-20832: MPO: Fixed Save being disabled on a freshly cloned profile — the copy could not be kept
+* GROK-20831: MPO: Fixed truncated profile descriptions not expanding on click after saving a profile
+* GROK-20830: MPO: Fixed data-driven Save not using the name and description typed on the tab
 
 ## 1.17.14 (2026-08-13)
 

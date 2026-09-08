@@ -14,9 +14,12 @@ category('Celery: datagrok-celery-task', () => {
     const big = '9007199254740993'; // 2^53 + 1 — survives only as a string
     expect(String(await grok.functions.call('CVMTests:cvmBigInt', {x: big})), big);
     // First call pays the worker container cold start, which datlas bounds at
-    // containerStatusTimeout (5 min) — anything shorter reports EXECUTION TIMEOUT
-    // for a start still legitimately in progress.
-  }, {timeout: 300000, node: true});
+    // containerStatusTimeout — anything shorter reports EXECUTION TIMEOUT for a
+    // start still legitimately in progress. On CI that cold start builds the
+    // worker image and overran the old 5-min pairing: this case burned exactly
+    // its 300s and took the other thirteen down with it (builds #120, #121).
+    // Keep it aligned with the stand's containerStatusTimeoutMinutes (20).
+  }, {timeout: 900000, node: true});
 
   test('String escaping', async () => {
     for (const s of escapingTestStrings)

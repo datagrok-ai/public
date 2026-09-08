@@ -149,5 +149,17 @@ export {MessageInput} from './components/inputs/message-input.js';
 export type {MessageInputOptions, MentionProvider} from './components/inputs/message-input.js';
 export {FunctionsBrowser, filterFuncItems, tagCounts} from './components/collections/functions-browser.js';
 export type {FuncItem, FunctionsBrowserOptions} from './components/collections/functions-browser.js';
+export {Filters, FilterError, KIND, OperatorRegistry, CORE_OPERATORS, ColumnEvaluator} from './core/filter/index.js';
+export type {FilterKind, Lock, FilterRef, FilterSpan, FilterScalar, FilterValue, FilterCondition, FilterGroup,
+  FilterNode, FilterJsonGroup, FilterJsonCondition, FilterJsonNode, FilterProblem, DomainCondition,
+  DomainConditionNode, DomainConditionTree, FilterOperator, FilterOperatorSet,
+  FilterProperty, FilterValueItem, FilterSchema, FilterTemplate, FilterDiff, FilterValueEditorFactory,
+  FilterTarget, FilterToken, FilterCompletion, MaskColumnLike, MaskFrameLike} from './core/filter/index.js';
+export {FilterBuilder} from './components/filter/filter-builder.js';
+export type {FilterBuilderOptions, FilterBuilderStatus, FilterMode} from './components/filter/filter-builder.js';
+export {FilterQueryInput} from './components/filter/filter-query-input.js';
+export type {FilterQueryInputOptions, FilterQueryInputStatus} from './components/filter/filter-query-input.js';
+export {RefInput} from './components/filter/ref-input.js';
+export type {RefInputOptions} from './components/filter/ref-input.js';
 
-export const VERSION = '0.0.1';
+export const VERSION = '0.1.0';

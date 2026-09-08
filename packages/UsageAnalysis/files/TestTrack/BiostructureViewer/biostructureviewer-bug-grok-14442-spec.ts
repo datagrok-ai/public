@@ -1,6 +1,5 @@
-// GROK-14442: file-handler search must disambiguate by exact extension — .pdb -> importPdb only,
-// .pdbqt -> importPdbqt only (prefix-containment match was the pre-fix bug).
-import {test, expect} from '@playwright/test';
+import {expect} from '@playwright/test';
+import {test} from '../shared-page';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 
 test.use(specTestOptions);
@@ -18,7 +17,6 @@ test('BiostructureViewer — GROK-14442 file-handler search disambiguation regre
 
   await loginToDatagrok(page);
 
-  // Baseline environment setup.
   await page.evaluate(() => {
     document.querySelectorAll('.d4-dialog').forEach((d) => {
       const cancel = d.querySelector('[name="button-CANCEL"]') as HTMLElement | null;
@@ -32,7 +30,7 @@ test('BiostructureViewer — GROK-14442 file-handler search disambiguation regre
   await page.locator('[name="Browse"]').waitFor({timeout: 30_000});
 
   try {
-    // SCENARIO A — Registry disambiguation against the function registry (dispatcher input domain).
+
     await softStep('Scenario A — Registry disambiguation (.pdb -> importPdb only; .pdbqt -> importPdbqt only)', async () => {
       const result = await page.evaluate(() => {
         const handlers = DG.Func.find({})
@@ -45,7 +43,6 @@ test('BiostructureViewer — GROK-14442 file-handler search disambiguation regre
               .filter(Boolean),
           }));
 
-        // Exact-extension match — post-fix correct behaviour.
         const exactMatch = (testExt: string): string[] =>
           handlers.filter((h: any) => h.extList.includes(testExt))
             .map((h: any) => h.nq);
@@ -66,7 +63,6 @@ test('BiostructureViewer — GROK-14442 file-handler search disambiguation regre
         };
       });
 
-      // Clause (a): '.pdb' must resolve to importPdb alone (importPdbqt matched via prefix pre-fix).
       expect(
         result.pdbHandlers,
         'GROK-14442 disambiguation violated: .pdb extension MUST resolve to ' +
@@ -80,7 +76,6 @@ test('BiostructureViewer — GROK-14442 file-handler search disambiguation regre
         'collision was the pre-fix bug shape).',
       ).not.toContain('BiostructureViewer:importPdbqt');
 
-      // Clause (b): '.pdbqt' must resolve to importPdbqt alone (inverse-regression guard).
       expect(
         result.pdbqtHandlers,
         'GROK-14442 inverse-disambiguation violated: .pdbqt extension MUST ' +
@@ -95,7 +90,6 @@ test('BiostructureViewer — GROK-14442 file-handler search disambiguation regre
       expect(result.importPdbqtInputName).toBe('fileContent');
     });
 
-    // SCENARIO 1 — .pdb double-click must route to importPdb (function-call spy + UI inference).
     await softStep('Scenario 1 step 1 — DOM-driving: open Files browser via Browse tab', async () => {
       await page.locator('[name="Browse"]').click();
       await page.waitForTimeout(800);
@@ -108,7 +102,7 @@ test('BiostructureViewer — GROK-14442 file-handler search disambiguation regre
     let scenario1AutodockUiMounted = false;
 
     await softStep('Scenario 1 step 3 — Double-click 1bdq.pdb; function-call spy captures the fired handler', async () => {
-      // Install the function-call spy BEFORE the trigger action.
+
       await page.evaluate(() => {
         const grokAny: any = (window as any).grok;
         const w: any = window as any;
@@ -124,12 +118,11 @@ test('BiostructureViewer — GROK-14442 file-handler search disambiguation regre
         };
       });
 
-      // Drive the file-handler dispatch (same code path as the Files-browser double-click).
       await page.evaluate(async (path) => {
         const grokAny: any = (window as any).grok;
         try {
           const fileInfo = await grokAny.dapi.files.list(path).catch(() => null);
-          // openFile on some versions; else dispatch importPdb directly. Both hit the same registry.
+
           if (grokAny.dapi.files.openFile)
             grokAny.dapi.files.openFile(path).catch(() => {});
           else
@@ -140,11 +133,10 @@ test('BiostructureViewer — GROK-14442 file-handler search disambiguation regre
         await new Promise((r) => setTimeout(r, 8000));
       }, samplePdbPath);
 
-      // Capture spy results.
       const capture = await page.evaluate(() => {
         const w: any = window as any;
         const caps = [...(w.__bvCapturedHandlers || [])];
-        // Uninstall spy.
+
         if (w.__bvOrigFunctionsCall) {
           const grokAny: any = w.grok;
           grokAny.functions.call = w.__bvOrigFunctionsCall;
@@ -154,10 +146,9 @@ test('BiostructureViewer — GROK-14442 file-handler search disambiguation regre
       });
       scenario1SpyCaptured = capture;
 
-      // Capture resulting-UI inference.
       const ui = await page.evaluate(() => {
         const grokAny: any = (window as any).grok;
-        // AutoDock-pose UI = the Open-file dialog open OR a grid carrying its marker columns.
+
         const dialogOpen = !!document.querySelector('[name="dialog-Open-file"]');
         let autodockGridPresent = false;
         try {
@@ -172,7 +163,7 @@ test('BiostructureViewer — GROK-14442 file-handler search disambiguation regre
           autodockGridPresent =
             dfCols.includes('binding energy') &&
             dfCols.includes('torsional free (3)');
-        } catch (_) { /* best-effort */ }
+        } catch (_) {  }
         return {
           hasBiostructure: !!document.querySelector('[name="viewer-Biostructure"]'),
           hasAutodockUi: dialogOpen || autodockGridPresent,
@@ -204,7 +195,7 @@ test('BiostructureViewer — GROK-14442 file-handler search disambiguation regre
           `Captured handlers: ${JSON.stringify(scenario1SpyCaptured)}.`,
         ).toBe(false);
       } else {
-        // Fallback: spy captured nothing (dispatcher bypassed functions.call); use UI inference.
+
         expect(
           scenario1AutodockUiMounted,
           'GROK-14442 file-handler search regressed (UI-inference path): the ' +
@@ -212,7 +203,7 @@ test('BiostructureViewer — GROK-14442 file-handler search disambiguation regre
           '.pdb input. Spy captured nothing; UI inference is the fallback.',
         ).toBe(false);
         if (!scenario1ViewerMounted) {
-          // eslint-disable-next-line no-console
+
           console.warn(
             '[SR-01 spy-bypass] GROK-14442 Scenario 1 — function-call spy captured nothing AND ' +
             'Biostructure viewer did not mount. AutoDock UI also absent, so the ' +
@@ -222,11 +213,10 @@ test('BiostructureViewer — GROK-14442 file-handler search disambiguation regre
       }
     });
 
-    // Close any resulting view to leave a clean state for Scenario 2.
     await page.evaluate(async () => {
       const grokAny: any = (window as any).grok;
       grokAny.shell.closeAll();
-      // Best-effort dialog dismissal.
+
       document.querySelectorAll('.d4-dialog').forEach((d) => {
         const cancel = d.querySelector('[name="button-CANCEL"]') as HTMLElement | null;
         if (cancel) cancel.click();
@@ -234,12 +224,11 @@ test('BiostructureViewer — GROK-14442 file-handler search disambiguation regre
       await new Promise((r) => setTimeout(r, 1500));
     });
 
-    // SCENARIO 2 — .pdbqt double-click must route to importPdbqt (inverse-regression guard).
     let scenario2SpyCaptured: string[] = [];
     let scenario2BioViewerMounted = false;
 
     await softStep('Scenario 2 step 3 — Double-click .pdbqt; spy captures importPdbqt; importPdb NOT captured', async () => {
-      // Install spy.
+
       await page.evaluate(() => {
         const grokAny: any = (window as any).grok;
         const w: any = window as any;
@@ -268,7 +257,6 @@ test('BiostructureViewer — GROK-14442 file-handler search disambiguation regre
         await new Promise((r) => setTimeout(r, 8000));
       }, samplePdbqtPath);
 
-      // Capture and uninstall.
       const capture = await page.evaluate(() => {
         const w: any = window as any;
         const caps = [...(w.__bvCapturedHandlers || [])];
@@ -281,7 +269,6 @@ test('BiostructureViewer — GROK-14442 file-handler search disambiguation regre
       });
       scenario2SpyCaptured = capture;
 
-      // Capture resulting-UI inference.
       const ui = await page.evaluate(() => ({
         hasBiostructure: !!document.querySelector('[name="viewer-Biostructure"]'),
       }));
@@ -302,14 +289,14 @@ test('BiostructureViewer — GROK-14442 file-handler search disambiguation regre
           `to importPdb. Captured handlers: ${JSON.stringify(scenario2SpyCaptured)}.`,
         ).toBe(false);
       } else {
-        // Fallback UI inference: a mounted Biostructure viewer would be the inverse-regression signature.
+
         expect(
           scenario2BioViewerMounted,
           'GROK-14442 inverse regression (UI-inference path): Biostructure ' +
           '(Mol*) viewer mounted for .pdbqt input, implying importPdb fired. ' +
           'Spy captured nothing; UI inference is the fallback.',
         ).toBe(false);
-        // eslint-disable-next-line no-console
+
         console.warn(
           '[SR-01 spy-bypass] GROK-14442 Scenario 2 — function-call spy captured nothing. ' +
           'Inverse-regression check inferred from UI absence of Biostructure viewer.',
@@ -317,7 +304,6 @@ test('BiostructureViewer — GROK-14442 file-handler search disambiguation regre
       }
     });
 
-    // SCENARIO 2 step 5 — Joint disambiguation cross-check (log-only summary).
     await softStep('Scenario 2 step 5 — Joint disambiguation cross-check (GROK-14442 invariant)', async () => {
       const summary = {
         scenarioA: {
@@ -334,11 +320,11 @@ test('BiostructureViewer — GROK-14442 file-handler search disambiguation regre
           bioViewerMounted: scenario2BioViewerMounted,
         },
       };
-      // eslint-disable-next-line no-console
+
       console.log(`[GROK-14442 joint-invariant summary] ${JSON.stringify(summary)}`);
     });
   } finally {
-    // Cleanup — restore grok.functions.call and close views.
+
     try {
       await page.evaluate(() => {
         const w: any = window as any;
@@ -349,10 +335,10 @@ test('BiostructureViewer — GROK-14442 file-handler search disambiguation regre
         }
         if (w.__bvCapturedHandlers) delete w.__bvCapturedHandlers;
       });
-    } catch (e) { /* best-effort */ }
+    } catch (e) {  }
     try {
       await page.evaluate(() => { (window as any).grok?.shell?.closeAll?.(); });
-    } catch (e) { /* best-effort */ }
+    } catch (e) {  }
   }
 
   const realErrors = stepErrors.filter((e) => !e.error.startsWith('Test is skipped:'));

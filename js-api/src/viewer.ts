@@ -336,6 +336,10 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
   get immediateRendering(): boolean { return api.grok_Viewer_Get_ImmediateRendering(this.dart); }
   set immediateRendering(x: boolean) { api.grok_Viewer_Set_ImmediateRendering(this.dart, x); }
 
+  /** True while a change is on its way to the canvas: a debounced refresh is armed, or a repaint
+   * is requested and not yet done. A test waits on this instead of a timeout. */
+  get isRenderPending(): boolean { return api.grok_Viewer_Get_IsRenderPending(this.dart); }
+
   /** Creates a {@link Grid} for the table. */
   static grid(t: DataFrame, options?: Partial<interfaces.IGridSettings>): Grid {
     return new DG.Grid(api.grok_Viewer_Grid(t.dart, _toJson(options)));

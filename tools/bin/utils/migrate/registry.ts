@@ -2,7 +2,7 @@
 
 export type BytesKind = 'tables' | 'files';
 
-export interface Ref {type: string; id?: string; nqName?: string}
+export interface Ref {type?: string; id?: string; nqName?: string}
 
 export interface TypeSpec {
   route: string;
@@ -44,10 +44,30 @@ export const PASSWORD_PLACEHOLDER = '_____________';
 export const SAME_PASSWORD = 'not—changed';
 
 /**
+ * Seeded by `core/server/db/create_admin.sql` under these ids on every instance, so they are the
+ * target's own rows, not content. Matched by id, not name: `Developers` is seeded nowhere and is
+ * an ordinary group a customer may own, which has to travel like any other.
+ */
+const BUILTIN_GROUP_IDS = new Set([
+  'a4b45840-9a50-11e6-9cc9-8546b8bf62e6',
+  '1ab8b38d-9c4e-4b1e-81c3-ae2bde3e12c5',
+]);
+
+export const isBuiltinGroup = (g: any): boolean => BUILTIN_GROUP_IDS.has(String(g?.id ?? ''));
+
+/**
  * Never travels, whichever side asks: the platform's own connections, a space's `Files`
  * connection, and the personal `Home` share belong to the instance, not to the content.
  */
 export function untransferableReason(type: string, json: any): {action: 'warn' | 'info'; reason: string} | null {
+  // A project the platform keeps for something else — the namespace an installed package occupies,
+  // or the wrapper it maintains around a saved entity. The target builds its own, and a pushed one
+  // is accepted and then simply not there (113 of them on a real 1.27 → 1.27 push). Its own space
+  // listing draws the same line: `isDashboard = false and isEntity = false`.
+  if (type === 'Project' && (json?.isEntity === true || json?.isPackage === true))
+    return {action: 'info', reason: 'platform_project'};
+  if (type === 'UserGroup')
+    return isBuiltinGroup(json) ? {action: 'info', reason: 'platform_group'} : null;
   if (type !== 'DataConnection') return null;
   if (json?.namespace === 'System:') return {action: 'info', reason: 'platform_connection'};
   if (json?.parameters?.isProject === true) return {action: 'info', reason: 'space_files_connection'};
@@ -67,7 +87,9 @@ export function stripCredentials(c: any): void {
 }
 
 const FILE_CALL_RE = /Open(?:ServerFile|File|Folder)[A-Za-z]*\s*\(\s*["']([^"']+)["']/g;
+const NS_CALL_RE = /\b([A-Za-z]\w*(?::[A-Za-z]\w*)+)\s*\(/g;
 
+/** What a datasync script needs to re-run: the shares it opens, and the entities it calls. */
 export function datasyncConnectionRefs(t: any): Ref[] {
   if (t.metaParams?.['.data-sync'] !== 'sync') return [];
   const script: string = t.metaParams?.['.script'] ?? '';
@@ -77,6 +99,10 @@ export function datasyncConnectionRefs(t: any): Ref[] {
     if (nqName)
       refs.push({type: 'DataConnection', nqName});
   }
+  // A query- or script-backed sync names its source as `Namespace:Name(...)`. Which type
+  // answers to that nqName is not knowable from the script, so it is resolved, not assumed.
+  for (const m of script.matchAll(NS_CALL_RE))
+    refs.push({nqName: m[1]});
   return refs;
 }
 
@@ -101,6 +127,14 @@ export const TYPES: Record<string, TypeSpec> = {
     deps: (q) => [ref('DataConnection', q.connection?.id)],
   },
   Script: {route: '/scripts', rank: 3, tags: true},
+  // A visual query has no listing of its own and is only visible to an admin session, which is
+  // why it never showed up before `--admin`.
+  TableQuery: {
+    route: '/connectors/table_queries', rank: 3,
+    listVia: 'entities', typeId: '34d867a0-e870-11e6-af38-653465436553',
+    strip: (q) => { q.connection = idOnly(q.connection); },
+    deps: (q) => [ref('DataConnection', q.connection?.id)],
+  },
   TableInfo: {
     route: '/tables', rank: 4, tags: true,
     bytes: {kind: 'tables', get: (id) => `/tables/${id}/data`, put: (id) => `/tables/data?id=${id}`},
@@ -138,6 +172,7 @@ export const TYPES: Record<string, TypeSpec> = {
 
 /** A root space is skipped by the default `/projects` listing — it has no namespace of its own. */
 export const TYPE_OPTIONS: Record<string, TypeOptions> = {
+  project: {params: {includeRoot: 'true'}},
   dashboard: {clause: 'isDashboard = true'},
   space: {clause: 'isDashboard = false and isEntity = false', params: {includeRoot: 'true'}},
 };

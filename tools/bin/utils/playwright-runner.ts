@@ -209,7 +209,7 @@ export async function runPlaywrightTests(
 
   let webUrl: string;
   try {
-    webUrl = await testUtils.getWebUrl(url, token);
+    webUrl = process.env.DATAGROK_WEB_URL || await testUtils.getWebUrl(url, token);
     if (webUrl.endsWith('/'))
       webUrl = webUrl.slice(0, -1);
   } catch {

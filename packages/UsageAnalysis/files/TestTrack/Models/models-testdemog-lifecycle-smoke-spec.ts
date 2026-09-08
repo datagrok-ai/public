@@ -1,4 +1,5 @@
-import {test, expect} from '@playwright/test';
+import {expect} from '@playwright/test';
+import {test} from '../shared-page';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 import {setPredict, selectFeaturesByName} from '../helpers/models-helpers';
 
@@ -8,9 +9,7 @@ const MODEL_NAME = 'TestDemog';
 const MODEL_NAME_REGRESSION = 'TestDemog_Regression';
 
 test('TestDemog predictive model lifecycle: Train / Apply / Browse+Compare / Delete', async ({page}) => {
-  // Trains TWO small EDA models on demog.csv (binary SEX classifier + WEIGHT regression) — not
-  // chemprop. Several steps each poll SAVE-enable up to 90-180s; 300s covers both trains + apply +
-  // browse/compare + delete with margin.
+
   test.setTimeout(300_000);
 
   stepErrors.length = 0;

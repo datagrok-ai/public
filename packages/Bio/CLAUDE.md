@@ -382,6 +382,40 @@ Existing engines:
 | `bio05-helm-msa-sequence-space.ts` | HELM MSA via PepSeA + sequence space scatter plot |
 | `utils.ts` | Shared: `demoSequenceSpace()` (UMAP/tSNE + scatter), constants |
 
+## Automation surface (`bdd/`)
+
+The package's behavioral tests are Gherkin features under `bdd/features/` on
+`@datagrok-libraries/bdd` (`bdd/README.md`: how to run them; the library's README for the
+vocabulary). What the package exposes for them, and must keep:
+
+- `WebLogoViewer.getWidgetStatus()`: `parts.canvas`; hit areas `view`, `position <label>` and
+  `monomer <M> at position <label>` (CSS px of the canvas, the last laid-out range); readings
+  `positions shown`, `rows shown`, `rows selected`. `isRenderPending` is true from a render
+  request to the paint; `onRendered` fires after every render pass.
+- `SequenceSearchBaseViewer` (similarity and diversity search): `isRenderPending` while a render
+  (the compute included) is on its way, `onRendered` after each; readings `source column` and
+  `limit`, plus `target row` / `neighbours` / `neighbour set` (similarity: the neighbour rows as
+  one string) and `subset size` / `subset` / `distinct sequences` (diversity).
+- Names: the Manage Annotations dialog's list is `data-u2="list"` / `data-u2-name="annotations"`,
+  each row `data-u2="item"` named by the annotation id, the delete icon
+  `name="icon-delete-annotation"`; dialogs and inputs carry the platform's `dialog-<Title>` /
+  `input-host-<Caption>` names, so a caption change is a feature change.
+- `Bio:getHelmMonomers` is registered under that name (it was `Bio: getHelmMonomers`);
+  `matchWithMonomerLibrary` has the friendly name `Match with Monomer Library` (its dialog).
+- `MonomerLibManager.loadMonomerLib` fires the `bio-monomer-lib-loaded` custom event after every
+  load (`@datagrok-libraries/bio/src/monomer-works/lib-events.ts`: `onMonomerLibLoaded`,
+  `fireMonomerLibLoaded`; args `{libraries, reload}`) — the signal a feature or another package
+  waits on after a library is toggled, added or deleted; the load awaits `updateLibs` first.
+- Monomer Collections cards are `data-u2="card"` named by the collection's display name with
+  spaces as dashes (`Canonical-AAs`, `New-Collection`) and carry `aria-selected`.
+- The Manage Monomer Libraries view keeps the platform's names: `<file>.json` checkboxes (the
+  label is the file name), `Add` / `Merge` buttons, `Delete` and `Edit monomer library` icons
+  by aria label, the `Warning` delete dialog; with two storage providers on the stand `Add`
+  asks which one in the `Select storage for new monomer library` dialog. `bdd/fixtures/` holds
+  the HELM JSON library the features upload (`bdd-test-lib.json`, one PEPTIDE monomer `BDD`).
+- The grid's `cell type of <column>` reading (core `getWidgetStatus`) is how the features name
+  the renderer a column got: `helm`, `sequence`, `Monomer`.
+
 ## Tests (`src/tests/`)
 
 Test entry point: `src/package-test.ts` — imports all test files, exports `test()` and `initAutoTests()`.

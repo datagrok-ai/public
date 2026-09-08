@@ -1,4 +1,5 @@
-import {test, expect} from '@playwright/test';
+import {expect} from '@playwright/test';
+import {test} from '../../shared-page';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors, baseUrl} from '../../spec-login';
 
 test.use(specTestOptions);
@@ -8,7 +9,6 @@ test('Database meta — sticky meta on DB connections/tables/columns', async ({p
 
   await loginToDatagrok(page);
 
-  // Setup phase
   await page.evaluate(async () => {
     document.body.classList.add('selenium');
     const g = (window as any).grok;
@@ -19,7 +19,6 @@ test('Database meta — sticky meta on DB connections/tables/columns', async ({p
     await new Promise((r) => setTimeout(r, 500));
   });
 
-  // ---- Database metadata display section ----
   await softStep('DB: open Browse > Databases > Postgres > CHEMBL', async () => {
     await page.evaluate(async () => {
       const click = (sel: string) => (document.querySelector(sel) as HTMLElement | null)?.click();
@@ -105,7 +104,6 @@ test('Database meta — sticky meta on DB connections/tables/columns', async ({p
     expect(values.llm).toBe('');
   });
 
-  // ---- Table metadata display section ----
   await softStep('Table: open NorthwindTest > Schemas > Public', async () => {
     const hasSchemasNode = await page.evaluate(async () => {
       const nw = document.querySelector('[name="tree-Databases---Postgres---NorthwindTest"]') as HTMLElement | null;
@@ -124,7 +122,6 @@ test('Database meta — sticky meta on DB connections/tables/columns', async ({p
     expect(hasSection).toBe(true);
   });
 
-  // ---- Column metadata display section ----
   await softStep('Column: open categories > categoryid', async () => {
     await page.goto(`${baseUrl}/dbtable/Postgres.PostgresTest.public.categories?browse=db`);
     await page.waitForTimeout(4000);

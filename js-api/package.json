@@ -4,7 +4,7 @@
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git"
   },
-  "version": "1.27.9",
+  "version": "1.27.11",
   "description": "",
   "main": "./datagrok.js",
   "types": "./datagrok.d.ts",
@@ -30,6 +30,9 @@
       ],
       "node-api": [
         "./node-api.d.ts"
+      ],
+      "u2core": [
+        "./src/u2core/index.d.ts"
       ]
     }
   },
@@ -73,6 +76,14 @@
     "./src/const": {
       "types": "./src/const.d.ts",
       "default": "./src/const.js"
+    },
+    "./src/u2core/bit-array": {
+      "types": "./src/u2core/bit-array.d.ts",
+      "default": "./src/u2core/bit-array.js"
+    },
+    "./src/u2core/bit-array.js": {
+      "types": "./src/u2core/bit-array.d.ts",
+      "default": "./src/u2core/bit-array.js"
     },
     "./u2core": {
       "types": "./src/u2core/index.d.ts",

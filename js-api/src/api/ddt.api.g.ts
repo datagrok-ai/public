@@ -1,4 +1,4 @@
-// this file was generated automatically from ddt classes declarations
+/** this file was generated automatically from ddt classes declarations */
 import { toDart } from "../wrappers";
 let api = (typeof window !== 'undefined' ? window : global.window) as any;
 
@@ -383,6 +383,9 @@ export class FuncOptions {
 
   /** When set to 'true', the function is higher-priority to be set in Filters Panel */
   static PrimaryFilter = 'primaryFilter';
+
+  /** When set to 'true', the Filters Panel adds the filter without the column-selection dialog (a columnless filter) */
+  static ColumnlessFilter = 'columnlessFilter';
 
   /** Function that returns a Widget that gets added as a tab to the "Inspector" window */
   static InspectorPanel = 'inspectorPanel';

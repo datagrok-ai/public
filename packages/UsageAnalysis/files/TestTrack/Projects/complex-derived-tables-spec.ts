@@ -1,5 +1,5 @@
-// GROK-19103: joining two source tables and saving must create exactly ONE project, not a stray join-only project.
-import {test, expect, Page} from '@playwright/test';
+import {expect, Page} from '@playwright/test';
+import {test} from '../shared-page';
 import {loginToDatagrok, softStep, stepErrors} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
 import {projectsTestOptions, evalJs} from './_helpers';
@@ -11,7 +11,6 @@ async function closeAll(page: Page) {
   await evalJs(page, 'grok.shell.closeAll()');
 }
 
-// Open demog.csv via the OpenFile recorder API — writes df.tags['.script'] provenance without UI traversal flake.
 async function openDemogFile(page: Page): Promise<void> {
   await page.evaluate(async () => {
     const DG = (window as any).DG;
@@ -88,7 +87,7 @@ test('Projects / Complex derived-tables: Join lands in active project (GROK-1910
     });
 
     await softStep('Step 2: Save current project with Data Sync ON', async () => {
-      // Multi-table inline save — must persist all 3 open tables (helper saves only the active TableView).
+
       const saved = await page.evaluate(async (n) => {
         const grok = (window as any).grok;
         const DG = (window as any).DG;
@@ -127,7 +126,7 @@ test('Projects / Complex derived-tables: Join lands in active project (GROK-1910
       const afterCount = await evalJs(page,
         `(async () => (await grok.dapi.projects.list({limit: 1000})).length)()`,
       );
-      // GROK-19103: a stray join-only project would push delta to 2+.
+
       expect(afterCount - baselineCount).toBe(1);
     });
 
@@ -142,7 +141,7 @@ test('Projects / Complex derived-tables: Join lands in active project (GROK-1910
         try { return Number(grok.shell.tables?.length) || 0; }
         catch (_) { return 0; }
       }, projectId);
-      // At minimum the 2 source tables must reopen; the joined derivative may or may not persist.
+
       expect(tableCount).toBeGreaterThanOrEqual(2);
     });
   } finally {

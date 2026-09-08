@@ -11,9 +11,82 @@ export const specTestOptions = {
   launchOptions: {args: ['--window-size=1920,1080', '--window-position=0,0']},
   actionTimeout: 15_000,
   navigationTimeout: 60_000,
+  // Stated rather than inherited: specs that read an exported artefact through
+  // page.waitForEvent('download') depend on it, and Playwright's default is not
+  // part of any contract this section controls.
+  acceptDownloads: true,
 };
 
 export interface StepError { step: string; error: string; }
+
+/** test.step when a test is running, a plain call otherwise (worker fixtures, global setup). */
+export function phase<T>(title: string, fn: () => Promise<T>): Promise<T> {
+  try { return test.step(title, fn); }
+  catch (_) { return fn(); }
+}
+
+export interface LedgerEntry { kind: string; ms: number; what: string; }
+
+/**
+ * Records every page.evaluate / waitForFunction / waitForTimeout the current test makes, so the
+ * JSON report can say where the time outside test.step went. Attached as annotations.
+ */
+export function installLedger(page: Page): LedgerEntry[] {
+  const ledger: LedgerEntry[] = [];
+  const p = page as any;
+  if (p.__ledgerInstalled) return p.__ledger;
+  p.__ledgerInstalled = true;
+  p.__ledger = ledger;
+  const snippet = (fn: any) => String(typeof fn === 'function' ? fn.toString() : fn)
+    .replace(/\s+/g, ' ').slice(0, 140);
+  for (const kind of ['evaluate', 'waitForFunction', 'waitForTimeout'] as const) {
+    const orig = p[kind].bind(page);
+    p[kind] = async (...args: any[]) => {
+      const t0 = Date.now();
+      try { return await orig(...args); }
+      finally { ledger.push({kind, ms: Date.now() - t0, what: kind === 'waitForTimeout' ? String(args[0]) : snippet(args[0])}); }
+    };
+  }
+  // the Playwright-side actions were the one unmeasured bucket (435s of a 1,923s Viewers run):
+  // mouse and keyboard calls, and the locator actions, are timed the same way
+  const wrap = (obj: any, kind: string, names: string[], label: (name: string, args: any[]) => string) => {
+    for (const name of names) {
+      const orig = obj[name]?.bind(obj);
+      if (!orig) continue;
+      obj[name] = async (...args: any[]) => {
+        const t0 = Date.now();
+        try { return await orig(...args); }
+        finally { ledger.push({kind, ms: Date.now() - t0, what: label(name, args)}); }
+      };
+    }
+  };
+  wrap(page.mouse, 'mouse', ['move', 'click', 'dblclick', 'down', 'up', 'wheel'],
+    (n, a) => `${n} ${typeof a[0] === 'number' ? Math.round(a[0]) + ',' + Math.round(a[1]) : ''}${a[2]?.steps ? ' steps=' + a[2].steps : ''}`);
+  wrap(page.keyboard, 'keyboard', ['press', 'type', 'insertText'], (n, a) => `${n} ${String(a[0]).slice(0, 30)}`);
+  const origLocator = p.locator.bind(page);
+  p.locator = (...args: any[]) => {
+    const loc = origLocator(...args);
+    wrap(loc, 'locator', ['click', 'dblclick', 'hover', 'fill', 'press', 'pressSequentially', 'waitFor', 'scrollIntoViewIfNeeded',
+      'count', 'isVisible', 'textContent', 'innerText', 'boundingBox', 'evaluate', 'evaluateAll', 'check', 'selectOption'],
+    (n) => `${n} ${String(args[0]).slice(0, 80)}`);
+    return loc;
+  };
+  return ledger;
+}
+
+export function ledgerAnnotations(ledger: LedgerEntry[]): {type: string; description: string}[] {
+  const out: {type: string; description: string}[] = [];
+  const byKind: Record<string, {ms: number; n: number}> = {};
+  for (const e of ledger) {
+    byKind[e.kind] = byKind[e.kind] ?? {ms: 0, n: 0};
+    byKind[e.kind].ms += e.ms; byKind[e.kind].n++;
+  }
+  for (const k of Object.keys(byKind)) out.push({type: 'ledger-' + k, description: `${byKind[k].ms}ms/${byKind[k].n}`});
+  for (const e of [...ledger].sort((a, b) => b.ms - a.ms).slice(0, 12))
+    out.push({type: 'ledger-top', description: `${e.ms}ms ${e.kind} ${e.what}`});
+  ledger.length = 0;
+  return out;
+}
 
 export const stepErrors: StepError[] = [];
 
@@ -25,29 +98,47 @@ export async function softStep(name: string, fn: () => Promise<void>) {
   }
 }
 
-// Wait until the top-menu Chem entry registers — it appears only after the
-// Molecule semType is detected on the active table and the Chem package is
-// ready. Polls up to ~15s for the `[name="div-Chem"]` element to be present.
 export async function waitForChemMenu(page: Page) {
   await page.locator('[name="div-Chem"]').first().waitFor({state: 'attached', timeout: 15_000});
 }
 
-// Poll until a column with Molecule semType exists on the active table (or the
-// spec's window.__df handle). The Chem autostart detector runs asynchronously
-// AFTER the Chem menu attaches, so waitForChemMenu alone does not guarantee
-// semType has been applied — checking immediately races the detector.
+// Resolves when a Molecule column is typed. Both the platform's detection event
+// (`SemanticTypeDetector.SEMANTIC_TYPE_DETECTED`,
+// grok_shared/lib/src/semantics/semantic_type_detector.dart:289) and a poll are
+// armed: a column has been observed reaching semType Molecule with no further
+// global event arriving, so an event-only barrier hangs on a ready table.
 export async function waitForMolecule(page: Page, timeoutMs = 45_000) {
-  await page.waitForFunction(() => {
+  await page.evaluate(({timeout}) => new Promise<void>((resolve, reject) => {
     const g = (window as any).grok;
-    const tables = [g?.shell?.t, (window as any).__df].filter(Boolean);
-    return tables.some((t: any) => t.columns.toList().some((c: any) => c.semType === 'Molecule'));
-  }, null, {timeout: timeoutMs});
+    const typed = () => [g?.shell?.t, (window as any).__df]
+      .filter(Boolean)
+      .some((t: any) => t.columns.toList().some((c: any) => c.semType === 'Molecule'));
+
+    if (typed())
+      return resolve();
+
+    const sub = g.events.onEvent('ddt-semantic-type-detected').subscribe(() => {
+      if (typed())
+        done();
+    });
+    const poll = setInterval(() => { if (typed()) done(); }, 500);
+    const timer = setTimeout(
+      () => done(new Error('waitForMolecule: no Molecule column detected within ' + timeout + 'ms')), timeout);
+
+    function done(err?: Error) {
+      clearTimeout(timer);
+      clearInterval(poll);
+      sub.unsubscribe();
+      err ? reject(err) : resolve();
+    }
+
+    if (typed())
+      done();
+  }), {timeout: timeoutMs});
 }
 
 async function injectToken(page: Page, token: string) {
-  // Navigate to the origin first so the cookie/localStorage entries are
-  // attached to the right host. The `/oauth/` path matches what `grok test`
-  // does for Puppeteer (test-utils.ts:135).
+
   await page.goto(baseUrl + '/oauth/');
   const u = new URL(baseUrl);
   await page.context().addCookies([{name: 'auth', value: token, domain: u.hostname, path: '/'}]);
@@ -57,59 +148,200 @@ async function injectToken(page: Page, token: string) {
   await page.locator('[name="Browse"]').waitFor({timeout: 60_000});
 }
 
+// Local mode (`?mode=local`, core/docs/features/ui2/LOCAL_MODE.md): the client boots with no
+// authenticated session and answers every API call from static files. A spec whose subject is
+// client behaviour runs identically there, without the token exchange, the boot round-trips or
+// the per-spec dataset read — set DATAGROK_MODE=local to take that lane.
+export const localMode = process.env.DATAGROK_MODE === 'local';
+
+// Which client a page is running. The lane is declared per spec by the fixture it imports
+// (`test` = server, `localTest` = local), so one run can hold both; DATAGROK_MODE=local is
+// kept as a run-wide override for measuring the same spec both ways.
+const lanes = new WeakMap<Page, 'local' | 'server'>();
+
+export function setLane(page: Page, lane: 'local' | 'server') {
+  lanes.set(page, lane);
+}
+
+export function laneOf(page: Page): 'local' | 'server' {
+  // DATAGROK_MODE=server forces every lane onto a real server: local mode is a fast lane for
+  // building, and the discipline that goes with it is proving the same specs against a stand.
+  if (process.env.DATAGROK_MODE === 'server') return 'server';
+  return lanes.get(page) ?? (localMode ? 'local' : 'server');
+}
+
+// Datasets a local-mode run must not fetch from the server, mapped to the checked-in copy.
+// `packages/ApiTests/files/datasets/demog.csv` is byte-identical to System:DemoFiles/demog.csv,
+// so category counts, tooltips and legend labels assert the same values in both lanes.
+const LOCAL_DATASETS: Record<string, string> = {
+  'System:DemoFiles/demog.csv': '../../../ApiTests/files/datasets/demog.csv',
+  'System:DemoFiles/demog-1000.csv': '../../../ApiTests/files/datasets/demog-1000.csv',
+  'System:AppData/Chem/tests/spgi-100.csv': '../../../UITests/files/SPGI_v2_100.csv',
+};
+
+/**
+ * Installs `__readCsv(path)`, the one seam a spec needs to run in either lane: on a server it is
+ * `dapi.files.readCsv`, in local mode it parses a CSV shipped into the page from LOCAL_DATASETS.
+ * An unmapped path throws by name rather than resolving to an empty table, which is how local
+ * mode degrades everything server-backed.
+ */
+let localCsvCache: Record<string, string> | null = null;
+
+export async function installCsvBridge(page: Page) {
+  const local = laneOf(page) === 'local';
+  let texts: Record<string, string> = {};
+  if (local) {
+    if (!localCsvCache) {
+      localCsvCache = {};
+      for (const serverPath of Object.keys(LOCAL_DATASETS)) {
+        const file = path.resolve(__dirname, LOCAL_DATASETS[serverPath]);
+        if (fs.existsSync(file)) localCsvCache[serverPath] = fs.readFileSync(file, 'utf8');
+      }
+    }
+    texts = localCsvCache;
+  }
+  await page.evaluate(({csv, local}) => {
+    const w = window as any;
+    w.__csv = csv;
+    // a server read of demog.csv costs 1-5s on dev; the bytes do not change between the tests
+    // of one worker, so the text is fetched once and parsed per call
+    w.__csvText = w.__csvText ?? {};
+    w.__readCsv = async (p: string) => {
+      if (!local) {
+        // a dev stall in the read must fail by name, not hold the spec to its timeout
+        // (forms-spec once sat 560s in readAsText of curves.csv)
+        if (!(p in w.__csvText))
+          w.__csvText[p] = await Promise.race([w.grok.dapi.files.readAsText(p),
+            new Promise<string>((_, rej) => setTimeout(() => rej(new Error(`readAsText("${p}") timed out after 30s`)), 30_000))]);
+        return w.DG.DataFrame.fromCsv(w.__csvText[p]);
+      }
+      if (!(p in w.__csv))
+        throw new Error(`No local copy of "${p}" — add it to LOCAL_DATASETS or run this spec on a server`);
+      return w.DG.DataFrame.fromCsv(w.__csv[p]);
+    };
+  }, {csv: texts, local});
+}
+
+/**
+ * Console noise a local-mode boot on dev produces that no spec caused: the deployed
+ * `web/local/api.json` lists a staged package whose bundle was never copied under
+ * `web/local/pkg/`, so the client 404s on it. Specs that assert a zero console-error count
+ * must not be charged for it; anything else still fails them.
+ */
+export function isLocalBootNoise(text: string): boolean {
+  // A local-client defect, not the viewer under test: grid_editors.dart:199 _initCellEditing
+  // calls Node.remove on an already-detached node, raising a removeChild NotFoundError plus a
+  // companion multi-line "Stack trace <id>". It fires at an arbitrary moment in ~1 run in 3 on
+  // ?mode=local and never on the authenticated client, so whichever step happens to be open
+  // when it lands fails its no-error floor.
+  return /Failed to load resource/.test(text) || /local\/pkg\//.test(text) ||
+    /removeChild.*no longer a child/.test(text) || /^Stack trace [A-Za-z0-9]+/.test(text.trim());
+}
+
+export async function openLocalDatagrok(page: Page) {
+  const alreadyUp = await page.evaluate(() =>
+    !!(window as any).grok?.shell && document.querySelector('.grok-preloader') == null,
+  ).catch(() => false);
+  if (alreadyUp) return;
+  await page.goto(`${baseUrl}/?mode=local`);
+  // A stand that does not serve local mode ignores the parameter and returns the LOGIN page
+  // (verified against public.datagrok.ai): `grok.shell` exists there, so waiting on the shell
+  // alone burns the full timeout and then reports a bare Playwright timeout. Race the two
+  // outcomes instead and name the real cause — local mode ships in the client, so the target
+  // stand has to be built from a revision that carries it.
+  const outcome = await page.waitForFunction(() => {
+    const w = window as any;
+    if (document.querySelector('input[type="password"], .grok-login')) return 'login';
+    return document.querySelector('.grok-preloader') == null && !!w.grok?.shell ? 'ready' : false;
+  }, null, {timeout: 120_000}).then((h) => h.jsonValue());
+  if (outcome === 'login')
+    throw new Error(`${baseUrl} does not serve local mode: ?mode=local returned the login page. ` +
+      'The client must be built from a revision that carries it (core/docs/features/ui2/LOCAL_MODE.md).');
+  // The deployed fixture registers a debugging package, so a local boot raises a sticky
+  // "Debugging packages" balloon — and a sticky balloon's container eats clicks (shared-page.ts).
+  // It arrives after the shell is up, i.e. after the first spec's resetShell has already run,
+  // which is what made that spec's column-selector pick fail 3 runs in 4. Wait it out here,
+  // once per boot, so no spec starts under it.
+  await page.waitForFunction(() => document.querySelectorAll('.d4-balloon').length > 0,
+    null, {timeout: 5_000}).catch(() => {});
+  await page.evaluate(() => {
+    for (const b of Array.from(document.querySelectorAll('.d4-balloon'))) b.remove();
+    for (const c of Array.from(document.querySelectorAll('.d4-balloon-container')))
+      (c as HTMLElement).innerHTML = '';
+  });
+}
+
+/** Boots whichever client the run asked for. */
+export async function openDatagrok(page: Page) {
+  await (laneOf(page) === 'local' ? openLocalDatagrok(page) : loginToDatagrok(page));
+  await installCsvBridge(page);
+}
+
 // The session behind DATAGROK_AUTH_TOKEN is shared by every spec, and the relogin scenarios
 // POST /users/logout, which invalidates it server-side for everyone who logs in afterwards.
 // Mint a throwaway session per context so one spec's logout cannot lock the rest out.
+// The published `grok test` runner exports only DATAGROK_AUTH_TOKEN, so without the config
+// fallback below this returns undefined on every CI agent and all specs share one session.
 async function mintToken(): Promise<string | undefined> {
-  const apiUrl = process.env.DATAGROK_API_URL;
-  const devKey = process.env.DATAGROK_DEV_KEY;
-  if (!apiUrl || !devKey)
+  let apiUrl = process.env.DATAGROK_API_URL;
+  let devKey = process.env.DATAGROK_DEV_KEY;
+  if (!apiUrl || !devKey) {
+    const cfg = readDevKeyFromConfig('key');
+    if (!cfg)
+      return undefined;
+    apiUrl = cfg.apiUrl;
+    devKey = cfg.key;
+  }
+  // the contract above is "undefined when it cannot mint", and a refused or reset connection
+  // is exactly that case — unguarded, it propagated out of loginToDatagrok and failed the spec
+  // instead of falling back to the shared DATAGROK_AUTH_TOKEN
+  try {
+    const response = await fetch(`${apiUrl}/users/login/dev/${devKey}`, {method: 'POST'});
+    const json = await response.json().catch(() => null);
+    return json?.token ?? undefined;
+  } catch (_) {
     return undefined;
-  const response = await fetch(`${apiUrl}/users/login/dev/${devKey}`, {method: 'POST'});
-  const json = await response.json().catch(() => null);
-  return json?.token ?? undefined;
+  }
 }
 
 export async function loginToDatagrok(page: Page) {
   const token = (await mintToken()) ?? process.env.DATAGROK_AUTH_TOKEN;
   if (!token || token.length === 0)
     throw new Error('DATAGROK_AUTH_TOKEN is not set. Run via `grok test`, which derives the token from ~/.grok/config.yaml.');
+  // Idempotent so a spec running on the worker-scoped booted page (shared-page.ts) can keep
+  // its own login call: re-injecting would re-navigate and pay the ~10s boot this exists to
+  // avoid. A page that is not up yet reports false and takes the full path.
+  const alreadyUp = await page.evaluate(() =>
+    !!(window as any).grok?.shell && document.querySelector('.grok-preloader') == null,
+  ).catch(() => false);
+  if (alreadyUp) return;
   await injectToken(page, token);
 }
 
-// Build the direct file-browse URL for the configured instance (DATAGROK_URL —
-// dev/public/release/local). `relPath` is dot-namespaced, e.g.
-// 'System.AppData/Helm/samples/helm-showcase.csv'.
 export function fileBrowseUrl(relPath: string): string {
   return `${baseUrl}/file/${relPath}?browse=files`;
 }
 
-// Authenticate, then navigate DIRECTLY to the dataset's file-browse URL so the
-// platform and the dataset open in a SINGLE navigation — no open-platform-then-
-// readCsv round-trip. The URL is derived from the configured instance, so the
-// same spec opens the right dataset on dev / public / release without changes.
-// Waits for the preloader to clear and the grid viewer to attach.
 export async function loginAndOpenFile(page: Page, relPath: string) {
   const token = process.env.DATAGROK_AUTH_TOKEN;
   if (!token || token.length === 0)
     throw new Error('DATAGROK_AUTH_TOKEN is not set. Run via `grok test`, which derives the token from ~/.grok/config.yaml.');
-  // Set the auth cookie/localStorage at the origin first…
+
   await page.goto(baseUrl + '/oauth/');
   const u = new URL(baseUrl);
   await page.context().addCookies([{name: 'auth', value: token, domain: u.hostname, path: '/'}]);
   await page.evaluate((t) => window.localStorage.setItem('auth', t), token);
-  // …then go straight to the dataset URL (platform + dataset in one navigation).
+
   await page.goto(fileBrowseUrl(relPath));
   await page.waitForFunction(() => document.querySelector('.grok-preloader') == null, null, {timeout: 120_000});
   await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 60_000});
 }
 
-// Read a second-user dev key (`key2:`) from ~/.grok/config.yaml for the server
-// whose url matches the current DATAGROK_URL (falling back to the configured
-// default server). This makes the second-user login work under a plain
-// `grok test` even when the installed runner doesn't forward key2 — the only
-// thing the installed runner lacks is this config fallback.
-function readSecondUserDevKeyFromConfig(): {apiUrl: string; key2: string} | null {
+// Read a dev key from ~/.grok/config.yaml for the server whose url matches the current
+// DATAGROK_URL (falling back to the configured default server). `field` is `key:` for the
+// test user and `key2:` for the second user. This is what makes both logins work under a
+// plain `grok test` — the config fallback is the only thing the installed runner lacks.
+function readDevKeyFromConfig(field: 'key' | 'key2'): {apiUrl: string; key: string} | null {
   try {
     const confPath = path.join(os.homedir(), '.grok', 'config.yaml');
     if (!fs.existsSync(confPath)) return null;
@@ -119,15 +351,15 @@ function readSecondUserDevKeyFromConfig(): {apiUrl: string; key2: string} | null
     try { wantHost = new URL(baseUrl).host; } catch (_) { wantHost = null; }
     for (const name of Object.keys(servers)) {
       const s = servers[name];
-      if (!s?.url || !s?.key2) continue;
+      if (!s?.url || !s?.[field]) continue;
       let h: string | null = null;
       try { h = new URL(s.url).host; } catch (_) { h = null; }
       if (h && wantHost && h === wantHost)
-        return {apiUrl: String(s.url).replace(/\/$/, ''), key2: String(s.key2)};
+        return {apiUrl: String(s.url).replace(/\/$/, ''), key: String(s[field])};
     }
     const def = cfg?.default;
-    if (def && servers[def]?.key2 && servers[def]?.url)
-      return {apiUrl: String(servers[def].url).replace(/\/$/, ''), key2: String(servers[def].key2)};
+    if (def && servers[def]?.[field] && servers[def]?.url)
+      return {apiUrl: String(servers[def].url).replace(/\/$/, ''), key: String(servers[def][field])};
     return null;
   } catch (_) {
     return null;
@@ -141,27 +373,19 @@ async function exchangeDevKeyForToken(apiUrl: string, key: string): Promise<stri
   throw new Error(`Second-user dev-key login failed at ${apiUrl}: ${JSON.stringify(json).slice(0, 200)}`);
 }
 
-// Resolve the second-user token: env first (set by the runner), else exchange
-// the config `key2:` dev key for a token. Throws when neither is available —
-// a two-user spec MUST NOT silently pass without its second user. Cached so
-// the login claim can be read (getSecondUserLogin) without a second exchange.
 let _secondTokenCache: string | null = null;
 export async function resolveSecondUserToken(): Promise<string> {
   if (_secondTokenCache) return _secondTokenCache;
   const envTok = process.env.DATAGROK_AUTH_TOKEN_2;
   if (envTok && envTok.length > 0) return (_secondTokenCache = envTok);
-  const cfg = readSecondUserDevKeyFromConfig();
+  const cfg = readDevKeyFromConfig('key2');
   if (!cfg)
     throw new Error(
       'No second-user credentials available. Set DATAGROK_AUTH_TOKEN_2 / DATAGROK_DEV_KEY_2, ' +
       'or add a `key2:` (second-user dev key) to the matching server in ~/.grok/config.yaml.');
-  return (_secondTokenCache = await exchangeDevKeyForToken(cfg.apiUrl, cfg.key2));
+  return (_secondTokenCache = await exchangeDevKeyForToken(cfg.apiUrl, cfg.key));
 }
 
-// Read the second user's login from the JWT `sub` (/`usr.login`) claim — no
-// page switch needed. Lets a two-user spec learn WHO the recipient is so it
-// can share with them, without the costly "switch in, read, switch back"
-// probe (which added two page reloads per spec).
 export async function getSecondUserLogin(): Promise<string> {
   const token = await resolveSecondUserToken();
   try {

@@ -394,7 +394,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     'meta': {
-      'demoPath': 'Visualization | Statistical |Correlation Plot'
+      'demoPath': 'Visualization | Statistical | Correlation Plot'
     },
     'name': 'correlationPlotDemo',
     'description': 'A quick way to assess correlations between all columns at once. Cells are color-coded by the Pearson correlation coefficient or Spearman\'s rank correlation coefficient. Histograms along the diagonal show the corresponding distribution. Hover over the cell to see the corresponding scatter plot. The grid is sortable. Select columns in the view by selecting corresponding rows.'

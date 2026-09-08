@@ -2,6 +2,15 @@
 
 ## v.next
 
+* Tests: Added the package's Gherkin features under `bdd/` (analyze, transform, calculate, search, annotate, top menu, service surface, monomer libraries and collections, cell renderers and cell actions) on `@datagrok-libraries/bdd`
+* Tests: Kept the sequence helper in the page in the init step (returned to Node it serialized the RDKit heap, ten seconds per feature) and listed each top-menu group's commands in one walk
+* Monomer libraries: Fired the `bio-monomer-lib-loaded` custom event after every library load and awaited the library update before reporting the load complete
+* Monomer Collections: Named the cards for automation and marked the selected ones with `aria-selected`
+* Diversity Search: Fixed the "importScripts failed to load" errors of the distance-matrix workers spawned beyond the job's size and terminated mid-load (in `@datagrok-libraries/ml`)
+* WebLogo, Similarity Search, Diversity Search: Exposed widget status (hit areas and readings), a render-pending flag and a rendered event for automation
+* Subsequence Search: Fixed the filter dropping keystrokes typed while a search was applied
+* Manage Annotations: Named the annotation list, its rows and the delete icon
+* Registered `getHelmMonomers` under its plain name and gave `Match with Monomer Library` its dialog title
 * Extract Region: Fixed disabled Start/End position selectors for columns without region annotations
 * AI: Exposed AI view functions on the monomer-management views — Manage Monomer Libraries (activate/deactivate, delete, merge, resolve duplicates), Manage Monomers (browse, edit-form fill/save, delete, create library), and Monomer Collections (list, create, update, delete).
 
