@@ -134,7 +134,7 @@ function dockViewers(tableView: DG.TableView, viewer: DG.Viewer, viewerName: str
   const extraViewer2Name = viewerName === DG.VIEWER.HISTOGRAM ? DG.VIEWER.BAR_CHART : DG.VIEWER.HISTOGRAM;
 
   const extraViewerNode = tableView.dockManager.dock(tableView.addViewer(extraViewerName), DG.DOCK_TYPE.RIGHT, rootNode, extraViewerName, 0.5);
-  tableView.dockManager.dock(tableView.addViewer(extraViewer2Name), DG.DOCK_TYPE.RIGHT, extraViewerNode, 'histogram', 0.3);
+  tableView.dockManager.dock(tableView.addViewer(extraViewer2Name), DG.DOCK_TYPE.RIGHT, extraViewerNode, extraViewer2Name, 0.3);
   const viewerNode = tableView.dockManager.dock(viewer, DG.DOCK_TYPE.TOP, null, viewerName, 0.7);
   tableView.dockManager.dock(tableView.filters(), DG.DOCK_TYPE.LEFT, viewerNode, 'Filters', 0.3);
 }
