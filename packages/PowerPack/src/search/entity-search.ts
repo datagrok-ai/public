@@ -7,42 +7,56 @@ import {HelpObject} from './help-entity';
 import {helpInfo} from './helpIndex.g';
 
 
+/// A package function's name is its JS export symbol and the //name: annotation becomes
+/// friendlyName, so matching ignores case and spaces: "modelhub" finds "Model Hub".
+function normalize(s?: string | null): string {
+  return (s ?? '').toLowerCase().trim().replaceAll(' ', '');
+}
+
+function funcMatches(f: DG.Func, s: string): boolean {
+  if (!s)
+    return false;
+  const keywords = (f.options['keywords'] as string) ?? '';
+  return [f.name, f.friendlyName, f.description, ...keywords.split(',')]
+    .some((v) => v && normalize(v).includes(s));
+}
+
+/// meta.role holds a comma-separated set, e.g. "adminApp,app".
+function isApp(f: DG.Func): boolean {
+  return f.hasTag(DG.FUNC_TYPES.APP) ||
+    ((f.options['role'] as string) ?? '').split(',').some((r) => normalize(r) === DG.FUNC_TYPES.APP);
+}
+
 export async function functionSearch(s: string): Promise<DG.Func[]> {
-  s = s.toLowerCase().trim();
+  s = normalize(s);
   return DG.Func.find()
-    .filter((value) => (value.name.toLowerCase().includes(s) || value.description?.toLowerCase()?.includes(s)) &&
-    (!(value instanceof DG.Script) && !(value instanceof DG.DataQuery)) && !value.hasTag('app'));
+    .filter((value) => funcMatches(value, s) &&
+    (!(value instanceof DG.Script) && !(value instanceof DG.DataQuery)) && !isApp(value));
 }
 
 export async function appSearch(s: string): Promise<DG.Func[]> {
-  s = s.toLowerCase().trim();
-  return DG.Func.find({meta: {role: DG.FUNC_TYPES.APP}}).filter((val) => val.name?.toLowerCase().includes(s) ||
-    val.description?.toLowerCase().includes(s) || val.friendlyName?.toLowerCase().includes(s));
+  s = normalize(s);
+  return DG.Func.find({meta: {role: DG.FUNC_TYPES.APP}}).filter((val) => funcMatches(val, s));
 }
 
 export async function demosSearch(s: string): Promise<DG.Func[]> {
-  s = s.toLowerCase().trim();
-  return DG.Func.find({meta: {demoPath: null}}).filter((f) => {
-    const path = (f.options[DG.FUNC_OPTIONS.DEMO_PATH] as string) ?? '';
-    return path.toLowerCase().includes(s) || f.name.toLowerCase().includes(s) ||
-      f.description?.toLowerCase()?.includes(s);
-  });
+  s = normalize(s);
+  if (!s)
+    return [];
+  return DG.Func.find({meta: {demoPath: null}}).filter((f) =>
+    normalize(f.options[DG.FUNC_OPTIONS.DEMO_PATH] as string).includes(s) || funcMatches(f, s));
 }
 
 export function exactAppFuncSearch(s: string): DG.Func | null {
-  s = s.toLowerCase().trim();
-  const apps = DG.Func.find({meta: {role: DG.FUNC_TYPES.APP}, returnType: 'view'}).filter((val) => val.name?.toLowerCase() === s ||
-    val.friendlyName?.toLowerCase() === s);
-  if (apps.length > 0)
-    return apps[0];
-  return null;
+  s = normalize(s);
+  const apps = DG.Func.find({meta: {role: DG.FUNC_TYPES.APP}, returnType: 'view'})
+    .filter((val) => normalize(val.name) === s || normalize(val.friendlyName) === s);
+  return apps.length > 0 ? apps[0] : null;
 }
 
 export async function scriptsSearch(s: string): Promise<DG.Func[]> {
-  s = s.toLowerCase().trim();
-  return DG.Func.find()
-    .filter((value) => (value.name.toLowerCase().includes(s) || value.description?.toLowerCase()?.includes(s)) &&
-    (value instanceof DG.Script));
+  s = normalize(s);
+  return DG.Func.find().filter((value) => funcMatches(value, s) && value instanceof DG.Script);
 }
 
 export async function entitySimilaritySearch(s: string): Promise<DG.Entity[]> {
@@ -58,10 +72,8 @@ export async function entitySimilaritySearch(s: string): Promise<DG.Entity[]> {
 }
 
 export async function querySearch(s: string): Promise<DG.Func[]> {
-  s = s.toLowerCase().trim();
-  return DG.Func.find()
-    .filter((value) => (value.name.toLowerCase().includes(s) || value.description?.toLowerCase()?.includes(s)) &&
-    (value instanceof DG.DataQuery));
+  s = normalize(s);
+  return DG.Func.find().filter((value) => funcMatches(value, s) && value instanceof DG.DataQuery);
 }
 
 export async function jsSamplesSearch(s: string): Promise<DG.Func[]> {

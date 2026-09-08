@@ -106,18 +106,16 @@ export function takeErrors(page: Page): string[] {
   return out;
 }
 
-/** One page per feature folder, in one browser context per worker: the features of a folder run
- * on the page the first of them opened (the shell boots once, ~4 s; the next feature starts from
- * `user is logged in` on the shell it finds, reset), a feature from another folder closes that
- * page and opens its own in the same context — the context keeps the storage state and the
- * HTTP cache, so the second boot is a second faster. The browser fixture closes the context with
- * the worker. */
-let shared: {page: Page; folder: string} | undefined;
+/** One page per worker: every feature the worker runs uses the page the first one opened (the
+ * shell boots once, ~4 s, and a package initializes once; the next feature starts from `user is
+ * logged in` on the shell it finds, reset). A page that closed (a crash, a failed test restarting
+ * the worker) is replaced in the same context, which keeps the storage state and the HTTP cache.
+ * The browser fixture closes the context with the worker. */
+let shared: Page | undefined;
 
 export function feature(test: Test, path = '', specUrl = ''): FeatureSession {
   let page: Page | undefined;
   const file = path && specUrl ? featureFile(specUrl, path) : undefined;
-  const folder = path.replace(/\/[^/]*$/, '');
   test.afterEach(async () => {
     if (page && !page.isClosed()) {
       leave(page);
@@ -135,21 +133,15 @@ export function feature(test: Test, path = '', specUrl = ''): FeatureSession {
   return {
     async page(browser: Browser): Promise<Page> {
       if (!page || page.isClosed()) {
-        if (shared && shared.page.context().browser() !== browser) {
-          await shared.page.context().close().catch(() => undefined);
+        if (shared && shared.context().browser() !== browser) {
+          await shared.context().close().catch(() => undefined);
           shared = undefined;
         }
-        if (shared && (shared.folder !== folder || shared.page.isClosed())) {
-          const context = shared.page.context();
-          await shared.page.close().catch(() => undefined);
-          shared = {page: await context.newPage(), folder};
-          watchErrors(shared.page);
-        }
-        if (!shared) {
-          shared = {page: await (await browser.newContext()).newPage(), folder};
-          watchErrors(shared.page);
-        }
-        page = shared.page;
+        if (shared && shared.isClosed())
+          shared = await shared.context().newPage();
+        shared ??= await (await browser.newContext()).newPage();
+        watchErrors(shared);
+        page = shared;
       }
       return page;
     },

@@ -66,7 +66,7 @@ test.describe("Box plot statistics and coloring", () => {
     });
     await run.scenario("The T key toggles the p-value", async () => {
       await session.step(71, "When user sets \"Show P Value\" property of box plot viewer to \"false\"", () => setProperty(page, "Show P Value", el("box plot viewer"), "false"));
-      await session.step(72, "And user clicks on empty plot space of box plot viewer", () => clickEmptySpace(page, el("box plot viewer")));
+      await session.step(72, "And user clicks on empty plot space of box plot viewer", () => clickEmptySpace(page));
       await session.step(73, "And user presses t", () => pressKey(page, "t"));
       await session.step(74, "Then \"Show P Value\" property of box plot viewer should be \"true\"", () => propertyShouldBe(page, "Show P Value", el("box plot viewer"), "true"));
       await session.step(75, "When user presses t", () => pressKey(page, "t"));

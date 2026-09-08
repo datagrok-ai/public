@@ -2,6 +2,10 @@
 
 ## v.next
 
+* Curves: A zero dose on a logarithmic x axis is placed one dose step below the smallest tested dose. Operator precedence bound the division to one term, so the substitute landed inside the tested range (10^-6.5 for a 1e-9..1e-4 series, where 10^-10 was meant) and every curve, dropline and extracted statistic fitted through that point was wrong; the distinct-dose count no longer includes the zero it is named for, a single tested dose no longer divides by zero, and a series whose x values are all zero is left alone
+* Curves: Data to Curves excludes outliers from **Max Percent Inhibition** again. `&&` binds tighter than `||`, so the outlier test was dead and an excluded well could set the maximum; an empty well no longer reports the null sentinel 2.7e-34 as a response
+* Curves: The multi curve viewer releases its subscription when it is detached. It subscribed to the current cell, cell hover and selection outside `subs`, the only list `detach()` clears, so a closed viewer kept re-rendering and another handler was added on every table attach
+* Curves: Clicking a cell with no series no longer kills the context panel. An empty series array is truthy, so the colour defaulting read `series[0]` off it and threw for every blank, malformed or mis-detected curve cell
 * Curves: Multi curve viewer: The axis names and the title are shown in the property panel, not left blank while the plot draws them. Clearing one now takes it off the plot, as it already did in the grid, rather than quietly falling back to what the data named
 * Curves: Naming one axis draws that one. Both names were needed before either appeared, so clearing **X Axis Name** took the y name with it
 * Curves: **Column Name** is no longer offered in the series options. The render stamps it on every paint so the legend can say which column a curve came from, so a name typed there was written into the cell and then overwritten before it was ever drawn

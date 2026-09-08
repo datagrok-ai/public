@@ -39,6 +39,8 @@ export class RadarViewer extends EChartViewer {
   mouseOverRowColor: number;
   lineColor: number;
   valuesColumnNames: string[];
+  minValues: {[colName: string]: number};
+  maxValues: {[colName: string]: number};
   columns: DG.Column[] = [];
   title: string;
   legendVisibility: VisibilityMode;
@@ -68,7 +70,11 @@ export class RadarViewer extends EChartViewer {
     this.showMax = this.bool('showMax', false);
     this.showValues = this.bool('showValues', false);
     this.valuesColumnNames = this.addProperty('valuesColumnNames', DG.TYPE.COLUMN_LIST, null,
-      {columnTypeFilter: DG.TYPE.NUMERICAL, category: 'Value'});
+      {columnTypeFilter: DG.TYPE.NUMERICAL, category: 'Value', groupWith: 'minValues, maxValues'});
+    this.minValues = this.addProperty('minValues', DG.TYPE.MAP, null,
+      {category: 'Value', description: 'Axis minimum per column; defaults to the column minimum'}) ?? {};
+    this.maxValues = this.addProperty('maxValues', DG.TYPE.MAP, null,
+      {category: 'Value', description: 'Axis maximum per column; defaults to the column maximum'}) ?? {};
     this.legendVisibility = <VisibilityMode> this.string('legendVisibility', VISIBILITY_MODE.AUTO,
       {choices: Object.values(VISIBILITY_MODE)});
     this.legendHelper.onCategoriesChanged = () => this.render();
@@ -320,12 +326,7 @@ export class RadarViewer extends EChartViewer {
           continue;
       }
 
-      const value = this.columns.map((c) => {
-        if (c.type === 'datetime')
-          return this.getDate(c, c.getRawData()[i]);
-        const numValue = Number(c.get(i));
-        return numValue !== -2147483648 ? numValue : 0;
-      });
+      const value = this.columns.map((c) => this.cellValue(c, i));
 
       const color = colorSourceColumn ? DG.Color.getRowColor(colorSourceColumn, i) : this.lineColor;
 
@@ -423,19 +424,21 @@ export class RadarViewer extends EChartViewer {
     }
   }
 
+  /** Axis range: the per-column override wins, otherwise the column stats. */
   createRadarIndicator(c: DG.Column): RadarIndicator {
-    const minimalVal = c.min < 0 ? (c.min + c.min * 0.1) : 0;
-    const indicator: RadarIndicator = {name: c.name};
+    const isDate = c.type === 'datetime';
+    return {
+      name: c.name,
+      min: this.minValues?.[c.name] ?? (isDate ? this.getYearFromDate(c.min) : c.min < 0 ? c.min + c.min * 0.1 : 0),
+      max: this.maxValues?.[c.name] ?? (isDate ? this.getYearFromDate(c.max) : c.max),
+    };
+  }
 
-    if (c.type === 'datetime') {
-      indicator.max = this.getYearFromDate(c.max);
-      indicator.min = this.getYearFromDate(c.min);
-    } else {
-      indicator.max = c.max;
-      indicator.min = minimalVal;
-    }
-
-    return indicator;
+  private cellValue(c: DG.Column, i: number): number {
+    if (c.type === 'datetime')
+      return this.getDate(c, c.getRawData()[i]);
+    const v = Number(c.get(i));
+    return v !== -2147483648 ? v : 0;
   }
 
   getDate(c: DG.Column, value: number) {
@@ -488,12 +491,7 @@ export class RadarViewer extends EChartViewer {
 
   updateRow(color: string, currentRow: number) {
     this.option.series[2].data.push({
-      value: this.columns.map((c) => {
-        if (c.type === 'datetime')
-          return this.getDate(c, c.getRawData()[currentRow]);
-        const value = Number(c.get(currentRow));
-        return value != -2147483648 ? value : 0;
-      }),
+      value: this.columns.map((c) => this.cellValue(c, currentRow)),
       name: `row ${currentRow + 1}`,
       lineStyle: {
         width: 2,

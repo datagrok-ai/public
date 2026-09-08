@@ -2,11 +2,18 @@
 
 Gherkin features under `features/`, compiled by `@datagrok-libraries/bdd` (`public/libraries/bdd`)
 into the Playwright specs under `generated/` — committed, never edited by hand. Today: the viewer
-features (`features/viewers/box-plot/`, one page for the folder), the six TestTrack box plot specs as six `@journey` features
-(property surface, group comparison, selection, filter, statistics and coloring, settings ladder;
-50 scenarios, 36 s for all six, every old assertion matched or strengthened — the review record
-is the `/bdd-translate` skill under `public/.claude/skills/`). The full guide, the vocabulary and the stand
-requirements are in the library's README.
+features under `features/viewers/` (one page per folder): the six TestTrack box plot specs as six
+`@journey` features under `box-plot/` (property surface, group comparison, selection, filter,
+statistics and coloring, settings ladder; 50 scenarios), the seven TestTrack bar chart specs as
+seven under `bar-chart/` (property surface with the Data panel, setup and interaction, selection
+and filter overlays, sorting and orientation, stacking and relative values, stack aggregation and
+the datetime split, the value axis; 45 scenarios) and the 3D scatter plot spec as one under
+`scatter-plot-3d/` (14 scenarios) — 109 scenarios, 1.2 min for all fourteen on four workers, every
+old assertion matched or strengthened and each one backward-matched by an independent reviewer
+(the review record and checklist is the `/bdd-translate` skill under `public/.claude/skills/`).
+The bar chart's own steps (`bindings/bar-chart.ts`) read the order and the lengths of the bars
+from the chart's hit areas. The full guide, the vocabulary and the stand requirements are in the
+library's README.
 
 From a fresh checkout of `public`, against a local stand on `http://localhost:8888` (another one:
 `DATAGROK_URL=https://… npx grok-bdd run`):

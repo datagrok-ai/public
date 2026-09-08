@@ -74,8 +74,10 @@ the dependency becomes a version, npm shares the peer `@playwright/test`, and `l
 - A platform built from `core` at or after `6983855e91` (2026-09-07): the viewer features rely on
   signals the core gained for them — `aria-disabled` on menu items and property rows, the box
   plot's `getWidgetStatus().hitAreas`, single-dash selector names, a menu group opening on the
-  first pointer move, and the semantic-type detection changes. On an older platform the
-  `viewers` features fail on those steps; the u2 features do not care.
+  first pointer move, and the semantic-type detection changes; the package features (Bio) on
+  2026-09-08's `Func.topMenu`, `aria-disabled` on dialog buttons and the grid's
+  `getWidgetStatus`. On an older platform the `viewers` features fail on those steps; the u2
+  features do not care.
 - A login. Global setup mints a token from the dev key of the `localhost` entry (or
   `DATAGROK_SERVER=<name>`) in `~/.grok/config.yaml` — the file `grok config` writes, so a
   `grok publish` setup already has it. Without a key it signs in through the login form with
@@ -116,7 +118,7 @@ grok-bdd compile            # features/** → generated/**  (+ errors; --verbose
 grok-bdd compile --check    # fails when a committed spec is stale — the CI gate
 grok-bdd lint               # diagnostics only, notes included
 grok-bdd list-steps         # every step this package can use, and where it comes from
-grok-bdd run [--headed] [-g "name"] [--reporter=list]   # compile --check, then Playwright
+grok-bdd run [--headed] [-g "name"] [--reporter=list]   # compile --check, then Playwright (headed runs the same: the browser launches with its accelerated 2D canvas off, so a repaint check reads the same pixels as headless)
 ```
 
 Every command runs from the package directory (or from `bdd/` itself). A feature change needs
@@ -133,12 +135,13 @@ control the library has a kind for, driven the way its page presents it.
 
 ## How a feature runs
 
-One browser page per feature folder: the first scenario of the folder's first feature opens it
-and boots the shell (about 4 s), every scenario ends with the shell reset (dialogs and popups
-closed, `grok.shell.closeAll()`, the Home view current), the folder's next feature starts on that
-reset shell — `user is logged in` only navigates when the page is not in the shell yet — and a
-feature from another folder closes it and opens its own. So group the features that share a
-subject in a folder (`features/viewers/box-plot/`). Playwright still runs and reports one test
+One browser page per worker: the first scenario the worker runs opens it and boots the shell
+(about 4 s), every scenario ends with the shell reset (dialogs and popups closed,
+`grok.shell.closeAll()`, the Home view current), and every later feature starts on that reset
+shell — `user is logged in` only navigates when the page is not in the shell yet, and a
+package's init step is free once the package is up. What a feature leaves on the server it puts
+back itself (`atFeatureEnd`). Folders group the features by subject (`features/viewers/box-plot/`)
+and are the unit of `grok-bdd run generated/<folder>`. Playwright still runs and reports one test
 per scenario (and per outline row), so `-g`, tags, retries and traces work as usual, each test
 with its own trace; a trace keeps the actions, console and network, and a failed test its
 screenshot — `grok-bdd run --trace on` records DOM snapshots and a screenshot per action too,
@@ -292,14 +295,76 @@ When  user switches to (the ){string} table view   user switches to (the ){strin
       user opens the {string} project
 ```
 
+The top menu and what its commands do (`bindings/platform/commands.ts`): a path is picked by
+real pointer moves over the Dart menu bar (`"Bio > Analyze > MSA..."`, the labels as shown), the
+function call the command starts is watched — the platform announces every call, and the one
+registered under the picked path (`Func.topMenu`) is the command — and the columns it adds are read
+against the columns the table had when it was picked:
+
+```
+When  user picks {string} from the top menu     user opens {string} in the top menu    user closes the top menu
+Then  the top menu should list:                 (a table of paths; each group opens once for all its leaves)
+      the top menu command should have completed          (its function call has ended, dialog and all; up to two minutes)
+      {int} new column(s) should have been added          a new column {string} should have been added
+      a new column matching {string} should have been added   no new column should have been added
+```
+
+The columns of the current table as facts (`bindings/platform/columns.ts`), a package function
+and its result (`bindings/platform/functions.ts`), and a dataset opened by its first rows:
+
+```
+Given user opens {dataset} dataset keeping the first {int} rows      … keeping the first {int} rows as {string}
+Then  {string} column should have semantic type {string}    {string} column should have units {string}
+      {string} column should have tag {string} equal to {string}    {string} column should have type {string}
+      {string} column should have no/missing values     every value of {string} column should match/contain {string}
+      every value of {string} column should lie between {float} and {float}
+      every value of {string} column should have the same length (within each {string} value)
+      every value of {string} column should be {string} and {string} of the same row joined by {string}
+      the value of {string} column in row {int} should be {string}    {string} column should have its maximum in row {int}
+      {string} column should have at least {int} distinct values
+      the table should have a column {string}   the table should not have a column {string}   the table should have {int} column(s)
+When  user makes row {int} current     user makes the last row current     Then  row {int} should be current
+When  user calls {string} function     user calls {string} function with:  | name | value |   (column:X, table, numbers, true/false)
+Then  the result should be empty / contain text {string} / match {string} / have methods {string} / have a {string} of {string}
+      the result should be a list of {int} or more items    the result should be a table with columns {string}
+      every column of the result table should be filled in row {int}
+Then  the filter panel should have {int} filter(s)    the filter panel should have a filter on {string} column
+      the filter should pass exactly the rows where {string} contains {string}
+      only rows where {string} starts with {string} should be selected
+      the {string} view should be current     When user closes the current view
+```
+
+A package's word about work finished off-screen, a file chooser, the clipboard, an app, and the
+grid (`bindings/platform/events.ts`, `common/steps.ts`, `platform/steps.ts`, the viewers tier):
+
+```
+Given user listens for {string} custom event        (grok.events.onCustomEvent — Bio's bio-monomer-lib-loaded)
+Then  the {string} custom event should have fired   the {string} custom event should not have fired
+When  user uploads {string} through {element}       (a file of the bdd project, "fixtures/lib.json", into the chooser the element opens)
+Then  the clipboard should contain/have (the )text {string}
+Given user opens the {string} app                   (the app function by its name; done when its view is current)
+Then  the {string} area of {widget} should be painted in at least {int} colors   (hues, greys and white aside)
+```
+
+`grid` is a widget: the platform's grid reports every visible cell as `cell <row> of <column>`
+(rows as the table counts them, from 1), `row header <row>` and `header <column>` hit areas, and
+the readings `rows shown`, `rows`, `columns shown`, `cell type of <column>` for each visible
+column, `current row` and `current column` — so `the "cell type of fasta" reading of grid should
+be "sequence"`, `user picks "Copy > helm" from the context menu of the "cell 1 of fasta" area of
+grid`, `user clicks on the "cell 2 of fasta" area of grid`, and
+`the "cell 1 of HELM string" area of grid should be painted in at least 3 colors` for a renderer
+that colors its monomers.
+
 The current table's rows and columns (`bindings/platform/data.ts`), through the JS API the way a
 viewer sees them; a step that changes rows or colors snapshots every open viewer first, so the
 viewer checks that follow compare with the state before it:
 
 ```
 When  user clears the row selection       user deletes the selected rows
+      user selects rows where {string} is {string}     user selects rows where {string} is one of {string}
       user filters rows where {string} is between {float} and {float}    user filters out rows where {string} is {string}
-      user resets the filter              user adds a calculated column {string} with formula {string}
+      user filters rows where {string} is {string}     user resets the filter
+      user adds a calculated column {string} with formula {string}
       user removes {string} column        user removes the coloring of {string} column
       user colors {string} column linearly from {string} to {string} (over {float} to {float})
       user colors {string} column conditionally:  | range | color |     user colors {string} column categorically:  | category | color |
@@ -307,8 +372,10 @@ Then  no/some rows should be selected     all/only/some/no rows where {string} i
       the table should have a current row   the table should have {int} row(s)   the table should have no rows where {string} is {string}
       {int} row(s) should pass the filter   fewer than {int} rows should pass the filter   all rows should pass the filter
       the filter should pass exactly the rows where {string} is between {float} and {float}
+      the filter should pass exactly the rows where {string} is {string}
       table {string} should be open       table {string} should have columns {string}    table {string} should have {int} row(s)
       table {string} should have no missing values in {string} column
+      {string} column should have no color coding    {string} column should be color-coded categorically
 ```
 
 States: visible, hidden, present, absent, enabled, disabled, checked, unchecked, selected, empty,
@@ -339,8 +406,10 @@ export const openDataset = Given('user opens {dataset} dataset', async (page: Pa
 }, {tier: 'api', description: 'OpenFile through the JS API — provenance as in the UI'});
 ```
 
-(The real one also waits for the platform's semantic-type-detected event for that table: a step is
-over when the platform is done with it, so background work never lands on the next step.)
+(The real one also waits for the platform's semantic-type-detected event for that table, and makes
+row 0 current itself — the view would do that a second after the grid appears, repainting every
+viewer on whatever step is running then: a step is over when the platform is done with it, so
+background work never lands on the next step.)
 
 Parameter types: `{element}` (any phrase), `{widget}` (a phrase naming a viewer or a widget — the
 `viewers` tier takes nothing else where it reads or changes one), `{dataset}` (a registered alias or a
@@ -392,9 +461,11 @@ When  user sets {string} property of {widget} to {string}       user sets proper
       user opens the context menu of {element}      user right-clicks on the {string} area of {widget}
       user closes the context menu                  user clicks / double-clicks / hovers over the {string} area of {widget}
       user clicks on the {string} area of {widget} holding {key}    user drags a selection box over the {string} area of {widget}
+      user drags a selection box from the {string} area to the {string} area of {widget}
+      user drags across the {string} area of {widget}    user scrolls the mouse wheel up/down over the {string} area of {widget}
       user moves the pointer away from {element}    user resizes {widget} to {int} by {int}    user resizes {widget} to {int} wide
       user restores the size of {widget}            user takes a snapshot of {widget}          user remembers the value range of {widget}
-      user saves the layout of the current table view   user loads the saved layout
+      user saves the layout of the current table view   user saves the layout of the current table view to the server   user loads the saved layout
 Then  {string} property of {widget} should be {string}          {string} property of {widget} should not be {string}
       properties of {widget} should be:  | caption | value |    {widget} should be bound to table {string}
       {widget} should have repainted                {widget} should have repainted by at least {int} pixels
@@ -409,8 +480,14 @@ Then  {string} property of {widget} should be {string}          {string} propert
       the value range of {widget} should lie within {string} column     {widget} should show the remembered value range
       the color scale of {widget} should cover a narrower/wider range than before
       the color scale of {widget} should cover the same range as before
+      the {string} reading of {widget} should be {float}    the {string} reading of {widget} should be lower/higher than before
+      the {string} reading of {widget} should differ from before    the {string} reading of {widget} should be the same as before
+      legend of {widget} should be visible/hidden / have {int} items / contain text {string}    the legend of {widget} should be on the left/right/top/bottom
       {string} event should have fired on {widget}  {string} event should not have fired on {widget}
       no errors should have been logged             no error or warning balloon should have been shown
+      an error/a warning balloon should have been shown     an error/a warning balloon containing {string} should have been shown
+      {string} property of {widget} should contain {string}
+      the {string} reading of {widget} should be {string}   the {string} reading of {widget} should be at least {float}
       the tooltip should show columns {string}      the tooltip should not show columns {string}
       the tooltip should show some columns
 ```
@@ -422,7 +499,14 @@ menu path is `"Group > Item"`. A hit area is a name the viewer reports (`grok-bd
 list them yet; the box plot has `view`, `x axis`, `y axis`, `stats`, `p value`, `group comparison`,
 `color scale`, `marker`, `category <label>` and `<label> values` per category, `p value of <group>`
 and `<effect> effect` under group comparison; the bar chart `view`, `x axis`, `y axis`, `bar
-<category>`; under group comparison with a control, `control band` or `control band <stratum>`).
+<category>` and `bar <category> | <stack>`; the 3D scatter plot `view` and `point`; under group
+comparison with a control, `control band` or `control band <stratum>`). A reading is a name the
+viewer reports in `getWidgetStatus().values`: every viewer with a row filter `rows shown`, the box
+plot `color scale min` / `max`, the bar chart `bars`, `stack segments`, `clipped bars`, the 3D
+scatter plot `camera x` / `y` / `z` / `camera distance` and `scene signature` — its WebGL canvas
+has no pixels to read, so `the "scene signature" reading … should differ from before` is its
+`repainted`. `legend of {widget}` is the viewer's legend element (`[name="legend"]`, its rows the
+legend items).
 Every property set, menu pick, area click, hover and resize snapshots the canvas, the ink of every
 hit area, the selection-colored pixels, the value range and the color scale's range first, so
 `should have repainted`, `less/more ink` (of the canvas or of one area), `more/less selection
@@ -445,6 +529,16 @@ logged` is the page's console errors and uncaught exceptions since the previous 
 scenario's start (a journey scenario owns its floor) or the login; a resource the stand does not
 serve is not an error. `no error or warning balloon should have been shown` reads the platform's
 `d4-balloon-shown` events the same way.
+
+A JS viewer takes part on the same terms by giving the runtime what a Dart viewer gives it:
+`getWidgetStatus()` with its canvas under `parts`, `hitAreas` in CSS px of that canvas and named
+`values`; a `get isRenderPending()` that is true from a render request to the paint; and an
+`onRendered` observable that fires after every render pass (the host's `onViewerRendered` never
+fires for a JS viewer). Bio's WebLogo (`position <label>`, `monomer <M> at position <label>`,
+`positions shown`, `rows shown`, `rows selected`) and its similarity and diversity search viewers
+(`target row`, `neighbours`, `neighbour set`; `subset size`, `subset`, `distinct sequences`;
+both `source column` and `limit`) are the first (`packages/Bio/src/viewers/web-logo-viewer.ts`,
+`src/analysis/sequence-search-base-viewer.ts`).
 
 Viewers on a bdd page render immediately — `viewer.immediateRendering` is set on every viewer the
 page holds or adds — so nothing in the tier sleeps: a change is followed by the viewer's own word

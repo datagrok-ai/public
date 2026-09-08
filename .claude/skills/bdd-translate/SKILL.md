@@ -96,6 +96,107 @@ What the box plot review found, as the checklist for the next translation:
 - **Precondition of a fixture.** A scenario about empty categories must assert the fixture has
   blanks before it asserts what the viewer does with them.
 
+What the bar chart and 3D scatter plot round (2026-09-08, eight reviewers) added:
+
+- **A histogram misses a reorder.** Equal bars swapping places keep every color count; the
+  repaint detector compares bitmaps pixel by pixel now. A claim about order or length is read
+  from the hit areas, not from pixels.
+- **"Some pixel of that color anywhere" is not "the overlay on that bar".** A viewer that draws
+  a selected or filtered share reports the share's rectangle as a hit area (`selected
+  <category>`); the feature asserts the area, its color and its ink against the snapshot.
+- **A blue outline that was there before the filter.** Check what the change removed or shrank
+  (`less ink than before` in the share's area), not what was present all along.
+- **A picture that cannot be read** (a WebGL canvas) gets readings from the viewer: a frame
+  signature rendered and hashed in one task, the camera, the rows drawn, the current row, the
+  highlighted rows. A signature that "differs" must have exactly one cause: fonts fetched per
+  scene, labels added asynchronously and an auto-rotating camera each faked a repaint until
+  the core stopped doing them on a test page.
+- **A viewer's own timer is invisible to `isRenderPending`** until it is included (the bar
+  chart's `_refreshRequested`, the legend's settle timer, the 3D plot's pending label loads);
+  a settle that "worked" was timer FIFO.
+- **A static that survives a closed menu.** The Dart menu's last mouse move made a move over
+  the next menu at the same point a no-op; a group that a hover opened once did not open again.
+- **A step with no Then.** A data step that removes a color coding needs its own observation
+  (`column should have no color coding`) before the round-trip that claims to restore it.
+- **The old spec went through the server; the feature stayed in the page.** A layout
+  round-trip that the old spec did through `dapi.layouts` is done with `… to the server`.
+- **Every journey scenario ends on the error floor.** A scenario owns its errors and balloons;
+  one check per feature discards the rest.
+- **Green twice on a quiet machine is not green.** Run the folder on four workers more than
+  once before reporting; a repaint that lands on a different step per run is the platform's own
+  deferred work (the table view makes row 0 current a second after the grid appears — every
+  viewer repaints its marker), and the step that opens the dataset takes that state at once
+  rather than waiting a second for it (the platform skips work already done). Run headed too:
+  a GPU-rasterized canvas repaints with different antialiasing once Chrome moves it to the CPU
+  after enough pixel readbacks, which headless never does (the config now disables the
+  accelerated canvas). The failed run's `trace.zip` (`test.trace` holds the step timeline),
+  its screenshot and the "within … over: …" part of the repaint failure are the evidence to
+  start from.
+
+What the Bio round (2026-09-08, the first package translation: 15 features from 24 TestTrack
+specs + 26 package specs + 24 md files, surveyed by six read-only agents in parallel) added:
+
+- **Survey with agents, but they cannot write.** A read-only Explore agent returns its report
+  inline; save each report to the scratchpad yourself before the context compacts, and give the
+  agents the md's scope reductions and the fixtures to check (three of the md files named files
+  that do not exist; one claimed two code paths where the code has one).
+- **The top menu is the honest entry**, not `grok.functions.call`: every old spec dispatched
+  synthetic `mouseover`s at `div-Bio---Analyze` with sleeps. Now `user picks "Bio > Analyze >
+  MSA..." from the top menu` and `the top menu command should have completed` (the platform's
+  own call events, via `Func.topMenu` added to the core) replace the 60–240 s
+  `waitForFunction(columns.length > n)` polls; the new-column steps read against the columns at
+  pick time.
+- **A package's init is a step of its own** (`the Bio package is initialized`): the first
+  command of a fresh page otherwise pays nine seconds inside a dialog wait.
+- **Look at the DOM the product actually has before naming**: the column selector opens on
+  mousedown and commits the typed name on Enter; the Dart dialog button had no `aria-disabled`
+  (added); the property grid's categories are rows the `category` kind now knows; the "more"
+  group folds the menu bar at narrow widths.
+- **A JS viewer needs the same three signals as a Dart one** (`getWidgetStatus`,
+  `isRenderPending`, `onRendered`) — the old specs read private fields (`idxs`, `renderMolIds`,
+  `positions`) with 45–180 s polls; the Bio viewers now report readings and hit areas.
+- **The product bugs the honest steps found**: the substructure filter dropped keystrokes
+  (props set a task behind the input, then written back — fixed in Bio); blank rows convert to
+  `PEPTIDE1{}$$$$` and `----`; Similarity through the dialog leaves the non-reference rows
+  empty where the API gives ~0 (open); `getHelmMonomers` was registered with a space in its
+  name (fixed); the Match command's dialog carried the function name (named).
+- **Assert the exact fixture**: filter_HELM has four rows, not three; filter_FASTA fourteen (nine
+  sequences); a wrong count is the first thing a green-looking draft gets wrong.
+
+The second Bio round (2026-09-08, later: monomer libraries and collections, cell renderers and
+cell actions — the specs left out because "the grid needs a widget status in the core"):
+
+- **Give the grid its status instead of reading `grid.col(name).cellType` through the API**:
+  `getWidgetStatus` on the core grid names every visible cell as a hit area and reports each
+  column's cell type, so a renderer claim is a reading and a cell click, a right-click and a
+  context-menu pick are real gestures on the area. The composition claim is then per cell: row
+  1 of filter_FASTA has 15 distinct monomers, row 2 has 14 — count the row you click.
+- **A "flaky under load" console error is a race, not load**: reproduce it on one page with
+  `page.on('requestfailed')` and a CPU-throttled or parallel variant before touching the test.
+  The diversity search's chunk failures were workers terminated mid-import (ml
+  `DistanceMatrixService` spawned per thread, used per job); the fix is in the library and the
+  feature's `no errors should have been logged` stays.
+- **Off-screen work gets a custom platform event**: the library reload after a checkbox
+  toggle, an upload or a delete is `bio-monomer-lib-loaded` (bio library
+  `monomer-works/lib-events.ts`), listened for and claimed by id — not a poll on the library's
+  monomer count. A state the feature changes on the server (the user's library selection) is
+  reset in the Background and at feature end (`atFeatureEnd`), so a red scenario cannot poison
+  the next run; a file it creates is deleted first (`no "x" monomer library is on the server`).
+- **Probe the stand's providers**: with the monomerDomainDB package installed, Add asks which
+  storage takes the file (`Select storage for new monomer library`); on a files-only stand the
+  dialog never shows and the feature says so in its description.
+- **Upload is a gesture** (`user uploads "fixtures/x.json" through Add button`): Playwright's
+  file chooser answers the `<input type=file>` the platform creates and clicks — no
+  `writeAsText` behind the UI's back — and the clipboard is read for `Copy as` instead of
+  trusting the info balloon.
+- **Time the suite with the JSON reporter before calling it done** (`--reporter=list,json` with
+  `PLAYWRIGHT_JSON_OUTPUT_NAME`; every Gherkin step is a Playwright step with a duration):
+  the Bio suite's 8.6 min were 63 % one step — `the Bio package is initialized` returned the
+  SeqHelper from `page.evaluate`, and Playwright serialized the RDKit module's 16 MB heap to
+  base64 on every call (a CDP profile of the step showed `typedArrayToBase64`). An in-page
+  step returns nothing it does not read. Under workers a page per folder reused nothing,
+  since Playwright hands files to workers one by one; the page is per worker now.
+
 ## Pass 3 — fix, in this order
 
 1. Put the decisions to the lead first, one question per systemic finding, options with the

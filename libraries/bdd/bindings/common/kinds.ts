@@ -63,7 +63,7 @@ inputKind('map input', ['map-input'], '', ['key value input']);
 inputKind('message input', ['message-input'], '', ['prompt input', 'chat input']);
 inputKind('radio input', ['radio-input'], '.ui-input-radio', ['radio group', 'radio']);
 inputKind('slider', ['slider-input'], '.ui-input-slider', ['slider input']);
-inputKind('range slider', ['range-slider'], 'svg[type="range-slider"]', ['range input']);
+inputKind('range slider', ['range-slider'], 'svg[type="range-slider"]', ['range input'], {dartNames: ['input-host-{q}', '{q}']});
 kind('slider handle', {
   aliases: ['handle', 'thumb'],
   selector: '[role="slider"], svg[type="range-slider"] [name$="-handle"]',
@@ -122,11 +122,13 @@ kind('property', {
   labelSelector: '.u2-propgrid-name, .property-grid-item-name-text',
   dartNames: ['prop-{q}'],
 });
+// the Dart property grid's category is a row of the grid (prop-category-<name>)
 kind('category', {
   aliases: ['property category'],
-  selector: '.u2-propgrid-category',
-  match: ['text', 'title'],
-  labelSelector: '.u2-propgrid-category-title',
+  selector: '.u2-propgrid-category, tr.property-grid-item[name^="prop-category-"]',
+  match: ['title', 'dart', 'text'],
+  labelSelector: '.u2-propgrid-category-title, .property-grid-item-name-text',
+  dartNames: ['prop-category-{q}'],
 });
 
 // --- collections ----------------------------------------------------------------------------------
@@ -136,7 +138,7 @@ kind('list', {
 });
 kind('item', {
   aliases: ['list item', 'row', 'option', 'entry'],
-  selector: '.u2-list-row, [role="option"], [role="row"], .d4-list-item, li',
+  selector: '[data-u2="item"], .u2-list-row, [role="option"], [role="row"], .d4-list-item, li',
   match: ['text', 'label', 'aria', 'name'],
   labelSelector: PRIMARY_TEXT,
 });
@@ -276,6 +278,7 @@ kind('viewer', {
     'close icon': `${PANEL}//*[contains(@class, "panel-titlebar")]//*[@name="Close" or @name="icon-font-icon-close"]`,
     description: '.d4-viewer-description',
     canvas: 'canvas[name="canvas"]',
+    legend: '[name="legend"]',
   },
 });
 kind('view', {

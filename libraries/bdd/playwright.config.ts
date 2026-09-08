@@ -26,7 +26,10 @@ export default defineConfig({
     // feature's time) nor a screenshot per action (~12 s over six features, only a filmstrip);
     // `grok-bdd run --trace on` records everything, `--video on` a video
     trace: {mode: 'retain-on-failure', snapshots: false, screenshots: false},
-    launchOptions: {args: [`--unsafely-treat-insecure-origin-as-secure=${url}`]},
+    // a GPU-rasterized canvas re-rasterizes on the CPU after enough pixel readbacks, and that first
+    // paint differs in antialiasing from the one before it (~2000 px on a bar chart) — headed only,
+    // headless is software-rasterized throughout
+    launchOptions: {args: [`--unsafely-treat-insecure-origin-as-secure=${url}`, '--disable-accelerated-2d-canvas']},
   },
   projects: [{name: 'bdd'}],
 });

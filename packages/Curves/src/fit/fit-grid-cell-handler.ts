@@ -124,10 +124,10 @@ export class FitGridCellHandler extends DG.ObjectHandler {
             chartData.seriesOptions[colorFieldName] = DG.Color.toHtml(colorFieldName === 'outlierColor' ?
               DG.Color.red : DG.Color.getCategoricalColor(0));
           }
-        } else {
-          if (!isColorValid(chartData.series ? chartData.series[0][colorFieldName] : '')) {
-chartData.series![0][colorFieldName] = DG.Color.toHtml(colorFieldName === 'outlierColor' ?
-  DG.Color.red : DG.Color.getCategoricalColor(0));
+        } else if (chartData.series?.length) {
+          if (!isColorValid(chartData.series[0][colorFieldName])) {
+            chartData.series[0][colorFieldName] = DG.Color.toHtml(colorFieldName === 'outlierColor' ?
+              DG.Color.red : DG.Color.getCategoricalColor(0));
           }
         }
       }

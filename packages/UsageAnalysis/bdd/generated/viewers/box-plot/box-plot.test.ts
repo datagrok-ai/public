@@ -214,7 +214,7 @@ test.describe("Box plot property surface", () => {
       await session.step(232, "And user remembers the value range of box plot viewer", () => rememberRange(page, el("box plot viewer")));
       await session.step(233, "When user zooms into the value axis of box plot viewer", () => zoomValueAxis(page, el("box plot viewer")));
       await session.step(234, "Then box plot viewer should show a narrower value range than before", () => narrowerRange(page, el("box plot viewer")));
-      await session.step(235, "When user double-clicks on empty plot space of box plot viewer", () => doubleClickEmptySpace(page, el("box plot viewer")));
+      await session.step(235, "When user double-clicks on empty plot space of box plot viewer", () => doubleClickEmptySpace(page));
       await session.step(236, "Then \"d4-boxplot-reset-view\" event should have fired on box plot viewer", () => eventFired(page, "d4-boxplot-reset-view", el("box plot viewer")));
       await session.step(237, "And box plot viewer should show the remembered value range", () => rememberedRange(page, el("box plot viewer")));
     });

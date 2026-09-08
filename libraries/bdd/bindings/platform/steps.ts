@@ -1,8 +1,8 @@
 /* Platform base steps: setup through the JS API (the openers of @datagrok-libraries/test keep the
    provenance tags the UI would set). Viewer steps live in the `viewers` tier. */
-import type {Page} from '@playwright/test';
+import {expect, type Page} from '@playwright/test';
 import {openTableFromFile} from '@datagrok-libraries/test/src/playwright/openers.js';
-import {DatasetEntry, Given, When} from '../../src/registry.js';
+import {DatasetEntry, Given, Then, When} from '../../src/registry.js';
 import {atFeatureEnd} from '../../src/runtime/harness.js';
 
 declare const grok: any;
@@ -11,7 +11,7 @@ declare const DG: any;
 /** Opening a table starts semantic-type detection in the background (package detectors, a few
  * hundred ms on a molecule table); the platform reports its end on the global event bus, and the
  * step is over only then — otherwise that work lands on whatever step comes next. */
-export const openDataset = Given('user opens {dataset} dataset', async (page: Page, dataset: DatasetEntry) => {
+async function openTable(page: Page, dataset: DatasetEntry, rows?: number, name?: string): Promise<void> {
   await page.evaluate(() => {
     const w = window as any;
     if (w.__bddDetected)
@@ -21,7 +21,19 @@ export const openDataset = Given('user opens {dataset} dataset', async (page: Pa
       w.__bddDetected = [...w.__bddDetected.slice(-19), a?.args?.dataFrame?.dart];
     });
   });
-  await openTableFromFile(page, dataset.path);
+  if (rows === undefined) {
+    await openTableFromFile(page, dataset.path);
+  }
+  else {
+    // a subset is a clone: the file's rows are read the same way, the view gets the first N,
+    // named as the file (readCsv names nothing) unless the step names it
+    await page.evaluate(async ([p, r, n]) => {
+      const src = await grok.dapi.files.readCsv(p);
+      const df = r < src.rowCount ? src.clone(DG.BitSet.create(src.rowCount, (i: number) => i < r)) : src;
+      df.name = n ?? p.replace(/^.*\//, '').replace(/\.[^.]+$/, '');
+      grok.shell.addTableView(df);
+    }, [dataset.path, rows, name ?? null] as [string, number, string | null]);
+  }
   await page.locator('[name="viewer-Grid"]').first().waitFor();
   await page.waitForFunction(() => {
     const w = window as any;
@@ -29,7 +41,23 @@ export const openDataset = Given('user opens {dataset} dataset', async (page: Pa
   }, undefined, {timeout: 15000}).catch(() => {
     throw new Error(`${dataset.name}: semantic types were not detected within 15 s (is auto-detection on?)`);
   });
-}, {tier: 'api', description: 'OpenFile through the JS API — provenance as in the UI; done when semantic types are detected'});
+  // a second after the grid is created the view makes row 0 current when no row is, and every
+  // viewer repaints its marker mid-feature; done here, the view's timer skips it
+  await page.evaluate(() => {
+    const df = (window as any).grok.shell.tv?.dataFrame;
+    if (df && df.currentRowIdx === -1 && df.rowCount > 0)
+      df.currentRowIdx = 0;
+  });
+}
+
+export const openDataset = Given('user opens {dataset} dataset', (page: Page, dataset: DatasetEntry) => openTable(page, dataset),
+  {tier: 'api', description: 'OpenFile through the JS API — provenance as in the UI; done when semantic types are detected, with row 0 current as the view would make it a second later'});
+
+export const openDatasetRows = Given('user opens {dataset} dataset keeping the first {int} rows', (page: Page, dataset: DatasetEntry, rows: number) =>
+  openTable(page, dataset, rows), {tier: 'api', description: 'a clone with the first N rows, named as the file — for a feature whose commands cost a call per row'});
+
+export const openDatasetRowsAs = Given('user opens {dataset} dataset keeping the first {int} rows as {string}', (page: Page, dataset: DatasetEntry, rows: number, name: string) =>
+  openTable(page, dataset, rows, name), {tier: 'api', description: 'the same, with the table named — what "table {string} should …" and "switches to the {string} table view" then use'});
 
 export const switchTableView = Given('user switches to (the ){string} table view', async (page: Page, name: string) => {
   await page.evaluate((n) => {
@@ -99,3 +127,26 @@ export const openProject = When('user opens the {string} project', async (page: 
   }, name);
   await page.waitForFunction(() => grok.shell.tv?.dataFrame != null);
 }, {tier: 'api', description: 'the project this feature saved under that name, else the server\'s by name; done when a table view is current'});
+
+export const viewIsCurrent = Then('the {string} view should be current', async (page: Page, name: string) => {
+  await expect.poll(() => page.evaluate(() => String((window as any).grok.shell.v?.name ?? '')), {message: 'the current view'}).toBe(name);
+}, {description: 'grok.shell.v by name — what a command that opens a view leaves in front'});
+
+export const closeCurrentView = When('user closes the current view', async (page: Page) => {
+  await page.evaluate(() => { (window as any).grok.shell.v?.close(); });
+}, {tier: 'api'});
+
+export const openApp = Given('user opens the {string} app', async (page: Page, name: string) => {
+  await page.evaluate(async (n) => {
+    const DG = (window as any).DG;
+    const grok = (window as any).grok;
+    const apps = DG.Func.find({tags: ['app']});
+    const app = apps.find((f: any) => f.friendlyName === n) ?? apps.find((f: any) => f.name === n);
+    if (!app)
+      throw new Error(`no "${n}" app is registered; the apps: ${apps.map((f: any) => f.friendlyName).sort().join(', ')}`);
+    const view = await app.apply({});
+    if (view?.root && !Array.from(grok.shell.views).some((v: any) => v.dart === view.dart))
+      grok.shell.addView(view);
+  }, name);
+  await expect.poll(() => page.evaluate(() => String((window as any).grok.shell.v?.name ?? '')), {message: 'the current view'}).toBe(name);
+}, {tier: 'api', description: 'runs the app function by name (the way the browse tree does) and shows the view it returns; done when that view is current'});

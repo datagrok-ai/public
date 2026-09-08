@@ -10,7 +10,7 @@ export type State = 'visible' | 'hidden' | 'present' | 'absent' | 'enabled' | 'd
 export const STATES: State[] = ['visible', 'hidden', 'present', 'absent', 'enabled', 'disabled', 'checked',
   'unchecked', 'selected', 'empty', 'expanded', 'collapsed', 'focused'];
 
-const ROWS = ['.u2-list-row', '[role="option"]', '[role="row"]', '[role="tab"]', 'option', '.d4-list-item', 'tbody tr', 'tr', 'li'];
+const ROWS = ['.u2-list-row', '[role="option"]', '[role="row"]', '[role="tab"]', 'option', '.d4-list-item', '[name="legend-item"]', 'tbody tr', 'tr', 'li'];
 const SELECTED = '[aria-selected="true"], [aria-pressed="true"], [aria-checked="true"], [aria-current]:not([aria-current="false"]), ' +
   '.u2-list-row-selected';
 

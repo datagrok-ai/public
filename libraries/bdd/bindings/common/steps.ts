@@ -75,3 +75,14 @@ export const waitFor = Given('user waits for {element}', async (page: Page, targ
 
 export const waitMs = Given('user waits for {int} millisecond(s)', (page: Page, ms: number) => page.waitForTimeout(ms),
   {description: 'a plain sleep, for probing a feature by hand — a committed feature that needs one is missing a signal in the core'});
+
+export const uploadThrough = When('user uploads {string} through {element}', (page: Page, file: string, target: ElementRef) => g.chooseFile(page, target, file),
+  {tier: 'ui', description: 'clicks the element and answers the file chooser it opens with a file of the bdd project (a path under its root, "fixtures/lib.json")'});
+
+export const clipboardContains = Then('the clipboard should contain (the )text {string}', async (page: Page, text: string) => {
+  await expect.poll(() => g.readClipboard(page), {message: 'the clipboard text'}).toContain(text);
+}, {description: 'what the page last copied (navigator.clipboard) — headless Chromium keeps a clipboard of its own'});
+
+export const clipboardHas = Then('the clipboard should have (the )text {string}', async (page: Page, text: string) => {
+  await expect.poll(() => g.readClipboard(page), {message: 'the clipboard text'}).toBe(text);
+}, {description: 'exactly, whitespace included'});

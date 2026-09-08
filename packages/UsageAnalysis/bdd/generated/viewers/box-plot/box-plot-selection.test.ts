@@ -57,10 +57,10 @@ test.describe("Box plot selection and highlight", () => {
       await session.step(46, "When user clicks on the \"category Asian\" area of box plot viewer", () => clickArea(page, "category Asian", el("box plot viewer")));
       await session.step(47, "Then only rows where \"RACE\" is \"Asian\" should be selected", () => onlyOfSelected(page, "RACE", "Asian"));
       await session.step(48, "Given user listens for \"d4-boxplot-reset-view\" event on box plot viewer", () => listenFor(page, "d4-boxplot-reset-view", el("box plot viewer")));
-      await session.step(49, "When user clicks on empty plot space of box plot viewer", () => clickEmptySpace(page, el("box plot viewer")));
+      await session.step(49, "When user clicks on empty plot space of box plot viewer", () => clickEmptySpace(page));
       await session.step(50, "Then no rows should be selected", () => noneSelected(page));
       await session.step(51, "And \"d4-boxplot-reset-view\" event should not have fired on box plot viewer", () => eventNotFired(page, "d4-boxplot-reset-view", el("box plot viewer")));
-      await session.step(52, "When user double-clicks on empty plot space of box plot viewer", () => doubleClickEmptySpace(page, el("box plot viewer")));
+      await session.step(52, "When user double-clicks on empty plot space of box plot viewer", () => doubleClickEmptySpace(page));
       await session.step(53, "Then \"d4-boxplot-reset-view\" event should have fired on box plot viewer", () => eventFired(page, "d4-boxplot-reset-view", el("box plot viewer")));
     });
     await run.scenario("No selection leaks into a filtered-out category", async () => {
