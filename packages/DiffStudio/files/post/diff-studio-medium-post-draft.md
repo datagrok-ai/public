@@ -195,6 +195,8 @@ A two-compartment model with first-order absorption from the gut:
   C_peripheral {caption: Peripheral conc., mg/L}
 ```
 
+You get:
+
 ![pk](./pk.png)
 
 Two new blocks appear here.
