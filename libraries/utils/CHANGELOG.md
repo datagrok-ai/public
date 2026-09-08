@@ -1,8 +1,7 @@
 # utils changelog
 
 ## 4.7.10 (WIP)
-
-* BitArray: Became a deprecated compatibility wrapper over `DG.BitArray` (`datagrok-api/src/u2core/bit-array`); `trueCount()` is no longer stale after `setTrue`/`setFast`/`getRawData()`/`buffer` writes; zero-caller members removed
+* GROK-20849: `BitArray` is a compatibility wrapper over `DG.BitArray` (old names kept); `trueCount()` is no longer stale after raw-buffer writes; callerless members removed
 
 ## 4.7.9 (2026-08-27)
 

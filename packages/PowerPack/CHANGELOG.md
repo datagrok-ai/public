@@ -2,9 +2,8 @@
 
 ## v.next
 
-* GROK-20753: Filters: Added the "Filter Builder" filter (`PowerPack:filterBuilder`, the u2 schema-driven query builder) — one columnless filter over the whole table (no column dialog; a picked column only seeds the first row), builder + `</>` query-input toggle, only complete rows filter; the gray query/status line under the rows is off by default (`showStatus` in the state turns it on)
-* GROK-20753: Filter Builder: the saved state is `{model, query}` — `model` (the typed tree, lossless across layout reloads) is applied first, `query` (the smart-filter string) is the hand-written form; a state written as `{type, query}` filters
-* GROK-20753: Filter Builder: semantic-type operators come from `meta.role: filterOperators` package functions discovered when the filter attaches (Chem's `moleculeFilterOperators` — substructure, superstructure, exact, stereo-agnostic, similarity for Molecule columns); the package depends on the in-repo `@datagrok-libraries/u2` and `datagrok-api` by relative path (`../../libraries/u2`, `../../js-api`)
+* GROK-20753: Added the columnless "Filter Builder" filter (`PowerPack:filterBuilder`); the saved state is `{model, query}`; the status line is off by default (`showStatus`)
+* GROK-20753: Semantic-type operators are discovered from `meta.role: filterOperators` package functions; `@datagrok-libraries/u2` and `datagrok-api` are referenced in-repo by relative path
 * Add New Column: Fixed a formula edit being lost when the project reopens. A table that persists as a creation script is rebuilt from it, and the edit was applied straight to the column without being recorded, so the replay brought back the original formula (and the context panel's Apply recorded a plain `AddNewColumn`, which spawned a duplicate column on every open). Edits now run through the new `EditColumnFormula` transform, and renaming a column in the same dialog goes through `RenameColumn` instead of the name setter
 * 2297: Route every current-user-group lookup through getCurrentUserGroup() and handle an unavailable group instead of dereferencing it
 * GROK-20631: Fire one open per Workspace row double-click and await the in-flight project preview before opening

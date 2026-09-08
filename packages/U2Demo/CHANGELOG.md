@@ -2,7 +2,7 @@
 
 ## v.next
 
-* GROK-20753: Added the Filters sub-demo under Platform — `FilterBuilder` and `FilterQueryInput` on one tree over a DataFrame (`demoOrders`, applied through the dg layer's `toBitSet`; the query rides the app URL as `?q=`), an entity type (`grok.dapi.users.filter`) and a domain table (`Filters.toDomainTree` into a domain query count)
+* GROK-20753: Added the Filters demo page (`FilterBuilder` + `FilterQueryInput` over a DataFrame, a domain table and entity metadata; `?tab=&q=` auto-apply)
 * Automation: Added the `bdd/` project (Gherkin features, package bindings, generated Playwright specs) driven by `grok-bdd`
 * Automation: Added one behavioral feature per sub-demo under `bdd/features/demo/**` (inputs, pickers, layout, popups, lists and trees, cards, feedback, tables, sections and wizard, messaging, forms, property grid, object form, functions, run history, dataframes, files, entities, molecules, bridge, the demo shell) on a `U2 Demo` context with a package-local `readout` kind
 * GROK-20753: Added the MSA workbench sub-demo under a new Automation area — a small toolbar/form/dialog/tabs app addressed purely through the u2 automation contract by the behavioral features in `libraries/bdd`

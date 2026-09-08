@@ -2,7 +2,7 @@
 
 ## v.next
 
-* GROK-20753: Added the `filterOperators` role function (`Chem:moleculeFilterOperators`) — the substructure / superstructure / exact / stereo-agnostic / similarity operator set the u2 filter builder registers for Molecule columns
+* GROK-20753: Added `moleculeFilterOperators` (`meta.role: filterOperators`) — substructure, superstructure, exact, stereo-agnostic and similarity operators for the u2 filter builder
 * GROK-20808: MMP: Fixed a crash when no table was selected in the dialog
 * GROK-20829: Guard isBitsetStale against the valueless root tree group
 * SAR Matrix: Fixed the SAR Transfer tab rebuilding the whole panel (grid flicker, list scroll jumping to the top) on expanding/collapsing a series or selecting a transfer — the list now toggles and swaps in place like the SAR Matrix navigator
