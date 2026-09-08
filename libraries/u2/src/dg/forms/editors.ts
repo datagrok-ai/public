@@ -15,6 +15,9 @@ export interface EditorRule {
 
 export class Editors {
   private static _rules: EditorRule[] = [];
+  /** The property's own `inputType`/`editor` hints — the fallback after the rules, set by the
+   * schema-driven router so every consumer resolves in the same order. */
+  static byHint: ((prop: IProperty, options: InputOptions<any>) => Input<any> | null) | null = null;
 
   /** First matching rule wins, in registration order. Returns the unregister function. */
   static register(rule: EditorRule): () => void {
@@ -26,11 +29,12 @@ export class Editors {
     };
   }
 
+  /** The first matching rule, else what the property's hints ask for, else null. */
   static resolve(prop: IProperty, options: InputOptions<any>): Input<any> | null {
     for (const rule of Editors._rules) {
       if (rule.match(prop))
         return rule.create(prop, options);
     }
-    return null;
+    return Editors.byHint?.(prop, options) ?? null;
   }
 }

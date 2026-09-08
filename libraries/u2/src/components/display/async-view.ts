@@ -4,6 +4,7 @@
 import {AsyncSource, AsyncFetch, AsyncState} from '../../core/async-source.js';
 import {Control} from '../../core/component.js';
 import {Scope} from '../../core/scope.js';
+import {untracked} from '../../core/signals.js';
 import {button} from '../../core/elements.js';
 
 export interface AsyncViewOptions {
@@ -88,8 +89,9 @@ export class AsyncView<T> extends Control {
   private _build(state: AsyncState<T>): HTMLElement | undefined {
     if (state.kind === 'loading')
       return this._skeleton ? skeleton() : loader();
+    // the content builds inside the state effect: a render that writes a signal must not re-trigger it
     if (state.kind === 'ready')
-      return this._render(state.items);
+      return untracked(() => this._render(state.items));
     if (state.kind === 'empty')
       return AsyncView._div('u2-async-empty', this._empty);
     if (state.kind === 'error') {

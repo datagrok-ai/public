@@ -4,7 +4,7 @@ onmessage = async (event: {data: {data: Uint8Array, sheetName?: string}}) => {
   const bytes = event.data.data;
   const sheetName = event.data.sheetName;
   const workbook = new ExcelJS.Workbook();
-  const wb = await workbook.xlsx.load(bytes);
+  const wb = await workbook.xlsx.load(bytes as unknown as ExcelJS.Buffer);
 
   const convertWorkbookToDataFrames = (workbook: ExcelJS.Workbook) => {
     const dfNames: string[] = [];

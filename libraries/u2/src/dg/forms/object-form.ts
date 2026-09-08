@@ -190,6 +190,7 @@ function routeFor(prop: IProperty, options: InputOptions<any>): Input<any> | nul
   return byEditor && EDITOR_TYPES[editor!](prop.propertyType ?? prop.type) ?
     byEditor(prop, options) : null;
 }
+Editors.byHint = routeFor;
 
 function sliderFor(prop: IProperty, options: InputOptions<any>): Input<any> {
   return new SliderInput({...options, min: finite(prop.min) ?? 0, max: finite(prop.max) ?? 100,
@@ -259,7 +260,7 @@ export function inputForProperty(prop: IProperty | null,
     tooltipText: prop.description ?? undefined, ...rest};
   if (kind === 'readonly')
     return readonlyText(merged);
-  const routed = routeFor(prop, merged);
+  const routed = Editors.resolve(prop, merged);
   if (routed != null)
     return routed;
   switch (kind) {

@@ -1,0 +1,57 @@
+/* Filter query input skin — the popup and its rows; the box itself is the shared input editor
+   (css/inputs.css), widened to the room it gets: a query is longer than the platform's 100px
+   text box. Tokens only; css/tokens.css and css/icons.css must be loaded alongside. */
+.u2-input-root[data-u2='filter-query-input'] > .u2-input-box {
+  flex: 1 1 auto;
+  min-width: 240px;
+}
+
+.u2-input-root[data-u2='filter-query-input'] > .u2-input-box > input.u2-input-editor {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+}
+
+.u2-fq-option-active .u2-fq-text,
+.u2-fq-option-active .u2-fq-code {
+  color: var(--dg-accent);
+}
+
+.u2-fq-row {
+  display: flex;
+  align-items: center;
+  gap: var(--dg-space-m);
+  min-width: 0;
+}
+
+.u2-fq-icon {
+  flex-shrink: 0;
+  width: 1em;
+  color: var(--dg-text-color-light);
+  text-align: center;
+}
+
+.u2-fq-text,
+.u2-fq-code {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.u2-fq-code {
+  font-family: var(--dg-font-family-mono);
+}
+
+/* an informational row (a number's range): nothing to pick */
+.u2-fq-info {
+  color: var(--dg-text-color-light);
+}
+
+.u2-fq-secondary {
+  margin-left: auto;
+  overflow: hidden;
+  font-size: var(--dg-font-size-small);
+  color: var(--dg-text-color-light);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}

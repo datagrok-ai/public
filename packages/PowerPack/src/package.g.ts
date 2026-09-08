@@ -54,6 +54,15 @@ export function cronInput() : any {
   return PackageFunctions.cronInput();
 }
 
+//name: Filter Builder
+//description: Schema-driven query builder (u2)
+//output: filter result
+//meta.role: filter
+//meta.columnlessFilter: true
+export function filterBuilder() : any {
+  return PackageFunctions.filterBuilder();
+}
+
 //input: column col 
 //output: bool result
 export function isFormulaColumn(col: DG.Column) : boolean {

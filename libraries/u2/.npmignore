@@ -1,8 +1,14 @@
 src/**/*.ts
 !src/**/*.d.ts
+*.map
 
 node_modules/
 gallery/
 tests/
+e2e/
+scripts/
+tsconfig.json
+.eslintrc.json
+*.log
 .idea/
 *.code-workspace

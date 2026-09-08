@@ -7,6 +7,7 @@ import {Input, InputOptions, labelText} from '../../core/input-base.js';
 import {Overlay, OVERLAY_CLOSE_EVENT} from '../../core/overlay.js';
 import {button} from '../../core/elements.js';
 import {iconButton} from '../actions/buttons.js';
+import {isSpanText, markSpan, resolveSpan, spanOf} from '../../core/span.js';
 
 export interface DateInputOptions extends InputOptions<Date | null> {
   /** Inclusive: days outside are disabled in the calendar, typed values clamp on commit. */
@@ -14,6 +15,9 @@ export interface DateInputOptions extends InputOptions<Date | null> {
   max?: Date;
   /** 0 Sunday, 1 Monday (the default). */
   firstDayOfWeek?: 0 | 1;
+  /** The box also takes a span relative to now (`-1w`, `2d`, `now`); the value is the resolved `Date`
+   * tagged with its text (`spanOf`), shown as typed. A picked calendar day is a plain date. */
+  relative?: boolean;
 }
 
 export type DateState = 'idle' | 'focused' | 'open';
@@ -162,7 +166,8 @@ abstract class DateField extends Input<Date | null, DateInputOptions> {
   }
 
   private get _pattern(): string {
-    return this.withTime ? 'yyyy-MM-dd HH:mm' : 'yyyy-MM-dd';
+    const pattern = this.withTime ? 'yyyy-MM-dd HH:mm' : 'yyyy-MM-dd';
+    return this.options.relative ? `${pattern} or -1w` : pattern;
   }
 
   private get _firstDay(): number {
@@ -550,6 +555,9 @@ abstract class DateField extends Input<Date | null, DateInputOptions> {
   private _format(value: Date | null): string {
     if (value === null)
       return '';
+    const span = spanOf(value);
+    if (span !== undefined)
+      return span;
     const day = isoDay(value);
     return this.withTime ? `${day} ${pad2(value.getHours())}:${pad2(value.getMinutes())}` : day;
   }
@@ -558,6 +566,8 @@ abstract class DateField extends Input<Date | null, DateInputOptions> {
     const trimmed = text.trim();
     if (!trimmed)
       return null;
+    if (this.options.relative && isSpanText(trimmed))
+      return markSpan(resolveSpan(trimmed, new Date()), trimmed);
     const match = (this.withTime ? DATE_TIME : DATE).exec(trimmed);
     if (!match)
       return undefined;

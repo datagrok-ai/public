@@ -14,6 +14,7 @@ import {formPage, propertyGridPage, objectFormPage} from './pages/forms';
 import {filesPage, dataframesPage, entitiesPage, spacesPage, moleculesPage, bridgePage}
   from './pages/platform';
 import {msaWorkbenchPage} from './pages/msa-workbench';
+import {filtersPage} from './pages/filters';
 
 /** Repo-relative root of this package's sources; the source panel keys its bundled text by it. */
 export const SRC_ROOT = 'packages/U2Demo/src';
@@ -179,6 +180,10 @@ export const DEMO_TREE: DemoGroup[] = [
       description: 'DartInput bridge and the leak detector',
       build: () => bridgePage(),
       source: {file: `${SRC_ROOT}/pages/platform.ts`, symbol: 'bridgePage'}},
+    {id: 'filters', label: 'Filters',
+      description: 'FilterBuilder and FilterQueryInput over a dataframe, an entity type and a domain table',
+      build: () => filtersPage(),
+      source: {file: `${SRC_ROOT}/pages/filters.ts`, symbol: 'filtersPage'}},
   ]),
   group('automation', 'Automation', [
     {id: 'msa-workbench', label: 'MSA workbench',
@@ -200,7 +205,7 @@ export function leafById(id: string): DemoLeaf | undefined {
 /** Resolves the tail of `/apps/U2demo/U2Demo/...` — leaf ids are globally unique, so the last
  * segment decides: `/forms/funcs` and `/funcs` both land on Functions. */
 export function leafForPath(path: string | undefined): DemoLeaf | undefined {
-  const segments = (path ?? '').split('/').filter((s) => s !== '');
+  const segments = (path ?? '').split('?')[0].split('/').filter((s) => s !== '');
   return segments.length === 0 ? undefined : leafById(segments[segments.length - 1]);
 }
 

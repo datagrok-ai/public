@@ -54,6 +54,14 @@ export function substructureFilter() : any {
   return PackageFunctions.substructureFilter();
 }
 
+//description: Substructure, superstructure, exact, stereo-agnostic and similarity operators for Molecule columns in the filter builder
+//output: object result
+//meta.role: filterOperators
+//meta.semType: Molecule
+export function moleculeFilterOperators() : any {
+  return PackageFunctions.moleculeFilterOperators();
+}
+
 //input: int x 
 //input: int y 
 //input: int w 

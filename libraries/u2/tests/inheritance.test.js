@@ -92,7 +92,7 @@ inherited('a platform viewer is a u2 control by inheritance', () => {
   assert.equal(v.getProperties, Viewer.prototype.getProperties, 'the platform override wins');
   assert.equal(v.root, v.dart.root);
   assert.equal(v.propertyTier, true);
-  for (const member of ['run', 'effect', 'own', 'dispose', 'link', 'bindStep', 'bindProps'])
+  for (const member of ['runInScope', 'effect', 'own', 'dispose', 'link', 'bindStep', 'bindProps'])
     assert.equal(typeof v[member], 'function', member);
   assert.equal(v.propertyTarget, globalThis.grok_Viewer_Get_Look(v.dart), 'a viewer\'s properties are over its look');
   assert.ok(v.scope instanceof Scope && v._u2 !== undefined);

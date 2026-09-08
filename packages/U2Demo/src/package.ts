@@ -57,6 +57,8 @@ import '@datagrok-libraries/u2/css/adaptive.css';
 import '@datagrok-libraries/u2/css/buttons.css';
 import '@datagrok-libraries/u2/css/designer.css';
 import '@datagrok-libraries/u2/css/viewers.css';
+import '@datagrok-libraries/u2/css/filter.css';
+import '@datagrok-libraries/u2/css/filter-query.css';
 import '../css/u2demo.css';
 
 import {computed} from '@datagrok-libraries/u2';
@@ -71,6 +73,7 @@ import {buildReportsBrowser} from './reports-browser';
 import {registerEnabledEditors} from './editors';
 import {registerPropRowHandler} from './convergence';
 import {DESIGNER_SPEC, appendRunLog, designerContext} from './designer';
+import {filterPath, readFilterPath} from './pages/filters';
 
 export * from './package.g';
 // not a package function: what the e2e leak check reads after closing every view
@@ -115,13 +118,19 @@ export function u2DemoApp(path?: string): DG.ViewBase {
   registerPropRowHandler();
   registerControlInspector();
   registerDemoSourceHandler();
+  // the platform routes an app URL's query string into `meta.params`, not into the `meta.url` path
+  readFilterPath(path ?? '') || readFilterPath(location.search);
   const {content, shell, status} = buildDemo({initial: leafForPath(path)?.id});
   // the inspector's panel outlives this view otherwise, holding the control it last rendered
   content.own(disposePanel);
   const view = appView({
     name: 'U2 Demo', content, status,
     ribbon: [content.runInScope(() => demoRibbon(shell))],
-    path: computed(() => APP_PATH + pathOf(shell.current.value)),
+    path: computed(() => {
+      const leaf = shell.current.value;
+      const base = APP_PATH + pathOf(leaf);
+      return leaf.id === 'filters' ? filterPath(base) : base;
+    }),
   });
   demoView = view;
   demoShell = shell;
