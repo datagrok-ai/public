@@ -10,7 +10,7 @@ import {_package} from './package';
 import {getCachedRecentModelsTable, prefetchRecentModelsTable,
   getCachedExternalLibraryEntries, prefetchExternalLibraryEntries,
   getCachedFileInfo, prefetchFolderListing, invalidateFolderListing, isEmsEnabled} from './utils';
-import {diffstudioDb} from './generated/db';
+import {diffstudioDb, LibraryModelRow} from './generated/db';
 import {TITLE, MODEL_HINT, TEMPLATE_TITLES, EXAMPLE_TITLES, MODEL_ICON, MISC, PATH, LINK,
   LIBRARY_CHANGED_EVENT} from './ui-constants';
 import {DiffStudio, EDITOR_STATE, STATE_BY_TITLE, getLink} from './app';
@@ -51,7 +51,7 @@ export class DiffStudioHub {
     ui.setUpdateIndicator(this.root, true);
     try {
       this.root.append(this.buildButtons());
-      this.buildTemplates();
+      await this.buildTemplates();
       await this.buildLibrary();
       await this.buildRecent();
     } finally {
@@ -171,9 +171,17 @@ export class DiffStudioHub {
     }
   } // buildRecent
 
-  /** Build the "Templates" section */
-  private buildTemplates(): void {
-    const cards = TEMPLATE_TITLES.map((title) => {
+  /** Build the "Templates" section. Behind the `diffStudioEms` flag the starter templates come
+   *  from the `library_model` EMS table (the `category='Template'` rows); otherwise from the static
+   *  template use-cases. */
+  private async buildTemplates(): Promise<void> {
+    const cards = isEmsEnabled() ? await this.buildEmsTemplateCards() : this.buildStaticTemplateCards();
+    this.root.append(ui.h1('Templates'), this.buildCardsContainer(cards));
+  }
+
+  /** Starter template cards from the static template use-cases (`TEMPLATE_TITLES`) */
+  private buildStaticTemplateCards(): HTMLElement[] {
+    return TEMPLATE_TITLES.map((title) => {
       const description = MODEL_HINT.get(title) ?? '';
       const iconPath = this.getIconUrl(title);
       const state = STATE_BY_TITLE.get(title) ?? EDITOR_STATE.BASIC_TEMPLATE;
@@ -185,8 +193,12 @@ export class DiffStudioHub {
       this.addModelContextMenu(card, TITLE.TEMPL, state, run);
       return card;
     });
+  }
 
-    this.root.append(ui.h1('Templates'), this.buildCardsContainer(cards));
+  /** Starter template cards from the EMS `library_model` table (the `category='Template'` rows) */
+  private async buildEmsTemplateCards(): Promise<HTMLElement[]> {
+    const models = await diffstudioDb.libraryModels.query({});
+    return models.filter((m) => m.category === 'Template').map((m) => this.emsModelCard(m));
   }
 
   /** Build the "Library" section. Behind the `diffStudioEms` flag the cards come solely from the
@@ -224,18 +236,20 @@ export class DiffStudioHub {
   /** Built-in Library cards from the EMS `library_model` table (templates are excluded — they have
    *  their own section). Each model opens by parsing its stored `.ivp` source, like a file upload. */
   private async buildEmsLibraryCards(): Promise<HTMLElement[]> {
-    const models = (await diffstudioDb.libraryModels.query({})).filter((m) => m.category !== 'Template');
-    return models.map((m) => {
-      const run = async () => {
-        const solver = new DiffStudio();
-        // No showEditor(): open in the default inputs/run view like the built-in use-cases,
-        // not the equations editor (which is what a file upload wants).
-        await solver.runSolverApp(m.source, EDITOR_STATE.FROM_FILE);
-      };
-      const iconPath = m.icon ? `${_package.webRoot}files/${m.icon}` : undefined;
-      return this.buildModelCard(m.name, m.description ?? '', run, iconPath);
-    });
-  } // buildEmsLibraryCards
+    const models = await diffstudioDb.libraryModels.query({});
+    return models.filter((m) => m.category !== 'Template').map((m) => this.emsModelCard(m));
+  }
+
+  /** Build a hub card from an EMS `library_model` row. Opens the model by parsing its stored `.ivp`
+   *  source into the default inputs/run view (no `showEditor()` — that is what a file upload wants). */
+  private emsModelCard(m: LibraryModelRow): HTMLElement {
+    const run = async () => {
+      const solver = new DiffStudio();
+      await solver.runSolverApp(m.source, EDITOR_STATE.FROM_FILE);
+    };
+    const iconPath = m.icon ? `${_package.webRoot}files/${m.icon}` : undefined;
+    return this.buildModelCard(m.name, m.description ?? '', run, iconPath);
+  }
 
   /** Build cards for custom Library models listed in `external-models.json` */
   private async buildExternalModelCards(): Promise<HTMLElement[]> {
