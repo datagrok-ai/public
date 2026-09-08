@@ -119,6 +119,7 @@
     "build-ts": "tsc && eslint ./src/*.js ./dg.js ./ui.js ./grok.js --fix",
     "smoke": "node scripts/smoke-bundle.cjs",
     "check-links": "node scripts/check-sample-links.cjs",
+    "inventory": "node scripts/inventory.cjs --check",
     "lint": "eslint --ext .ts src ui.ts grok.ts dg.ts",
     "test": "node --test scripts/unit/rect.test.cjs scripts/unit/color.test.cjs scripts/unit/qnum.test.cjs scripts/unit/utils.test.cjs",
     "build-js-api": "git clean -f -X -d ./src && tsc && webpack && npm run smoke",

@@ -84,6 +84,39 @@ export class WidgetDescriptor {
  * interface (with their docs) for completion, any value, plus any legacy or package-specific key. */
 export type ViewerOptions<TSettings> = {[K in keyof TSettings]?: any} & {[key: string]: any};
 
+type ViewerClassByType = {
+  [VIEWER.HISTOGRAM]: HistogramViewer;
+  [VIEWER.BAR_CHART]: BarChartViewer;
+  [VIEWER.BOX_PLOT]: BoxPlot;
+  [VIEWER.CALENDAR]: CalendarViewer;
+  [VIEWER.CORR_PLOT]: CorrelationPlot;
+  [VIEWER.DENSITY_PLOT]: DensityPlotViewer;
+  [VIEWER.FILTERS]: FilterGroup;
+  [VIEWER.FORM]: FormViewer;
+  [VIEWER.GRID]: Grid;
+  [VIEWER.HEAT_MAP]: Grid;
+  [VIEWER.LINE_CHART]: LineChartViewer;
+  [VIEWER.MATRIX_PLOT]: MatrixPlot;
+  [VIEWER.NETWORK_DIAGRAM]: NetworkDiagramViewer;
+  [VIEWER.PC_PLOT]: PcPlot;
+  [VIEWER.PIE_CHART]: PieChartViewer;
+  [VIEWER.SCATTER_PLOT]: ScatterPlotViewer;
+  [VIEWER.TILE_VIEWER]: TileViewer;
+  [VIEWER.TREE_MAP]: TreeMap;
+  [VIEWER.TRELLIS_PLOT]: TrellisPlotViewer;
+  [VIEWER.PIVOT_TABLE]: PivotViewer;
+  [VIEWER.CONFUSION_MATRIX]: ConfusionMatrix;
+  [VIEWER.ROC_CURVE]: RocCurve;
+};
+
+/** Viewer class by {@link VIEWER} type (keyed by the type string, so `VIEWER.SCATTER_PLOT` and
+ * `'Scatter plot'` both resolve), as the platform instantiates them. */
+export type ViewerClasses = {[K in keyof ViewerClassByType as `${K}`]: ViewerClassByType[K]};
+
+/** The class {@link Viewer.fromType} returns for a viewer type: the mapped class for a single known
+ * type, {@link Viewer} for anything else (a runtime string, a union, a plugin viewer). */
+export type ViewerClass<T extends ViewerType> = [T] extends [keyof ViewerClasses] ? ViewerClasses[T] : Viewer;
+
 export class Viewer<TSettings = any> extends Widget<TSettings> {
 
   /** Viewer tags: a string map persisted with the layout. */
@@ -166,9 +199,10 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
     }
   }
 
-  /** Creates a new viewer of the specified type.
-   * @param options */
-  static fromType(viewerType: ViewerType, table: DataFrame, options: object | null = null): Viewer {
+  /** Creates a new viewer of the specified type. A known {@link VIEWER} type (enum member or its literal)
+   * returns that viewer's class; a type only known at runtime returns {@link Viewer}.
+   * Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/create-viewers-dynamically} */
+  static fromType<T extends ViewerType>(viewerType: T, table: DataFrame, options: object | null = null): ViewerClass<T> {
     return toJs(api.grok_Viewer_FromType(viewerType, table.dart, _toJson(options)));
   }
 

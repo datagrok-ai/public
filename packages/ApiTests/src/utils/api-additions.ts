@@ -106,4 +106,21 @@ category('JS API: additions', () => {
     i.click();
     expect(clicked, true);
   });
+
+  test('Viewer.fromType returns the class its type maps to', async () => {
+    const df = grok.data.demo.demog(20);
+    const sp: DG.ScatterPlotViewer = DG.Viewer.fromType(DG.VIEWER.SCATTER_PLOT, df);
+    expect(sp instanceof DG.ScatterPlotViewer, true);
+    const byLiteral: DG.BarChartViewer = DG.Viewer.fromType('Bar chart', df);
+    expect(byLiteral instanceof DG.BarChartViewer, true);
+    const heat: DG.Grid = DG.Viewer.fromType(DG.VIEWER.HEAT_MAP, df);
+    expect(heat instanceof DG.Grid, true);
+    expect(DG.Viewer.fromType(DG.VIEWER.FILTERS, df) instanceof DG.FilterGroup, true);
+    expect(DG.Viewer.fromType(DG.VIEWER.PIVOT_TABLE, df) instanceof DG.PivotViewer, true);
+    const runtimeType: string = DG.VIEWER.PIE_CHART;
+    const generic: DG.Viewer = DG.Viewer.fromType(runtimeType, df);
+    expect(generic instanceof DG.PieChartViewer, true);
+    for (const v of [sp, byLiteral, heat, generic])
+      v.detach();
+  });
 });

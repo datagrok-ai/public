@@ -224,6 +224,8 @@ jobs:
         working-directory: ./js-api
       - run: npm run check-links
         working-directory: ./js-api
+      - run: npm run inventory
+        working-directory: ./js-api
       - run: npm run lint
         working-directory: ./js-api
       - run: npm test
