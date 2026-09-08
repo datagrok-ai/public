@@ -337,7 +337,7 @@ export class DataFrame {
 
   /** Converts a column with the specified name to [newType],
    * removes the original column from its dataframe and adds the new column to it.
-   * @deprecated Use {@link changeColumnsType} instead.
+   * Single-column form of {@link changeColumnsType}.
    * @param newType - @see {@link COLUMN_TYPE}
    * @param format - number format */
   changeColumnType(column: string | Column, newType: ColumnType, format: string | null = null): Column {

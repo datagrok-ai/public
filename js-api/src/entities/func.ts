@@ -108,7 +108,7 @@ export class Func extends Entity {
   }
 
   /**
-   * @deprecated Use find, it's the same now but does not make a server query and synchronous.
+   * @deprecated Use {@link find}: the same result, synchronous, without a server query. Removed in 1.29.
    */
   static async findAll(params?: { package?: string, name?: string, tags?: string[], meta?: any, returnType?: string, returnSemType?: string}): Promise<Func[]> {
     let functions = Func.find(params);

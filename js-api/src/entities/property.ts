@@ -55,8 +55,7 @@ export class Property implements IProperty {
   get name(): string { return api.grok_Property_Get_Name(this.dart); }
   set name(s: string) { api.grok_Property_Set_Name(this.dart, s); }
 
-  /** Custom field caption shown in the UI
-   * @deprecated The property will be removed soon. Use {@link friendlyName} instead */
+  /** Custom field caption shown in the UI. Alias of {@link friendlyName}; both stay. */
   get caption(): string { return api.grok_Property_Get_Caption(this.dart); }
   set caption(s: string) { api.grok_Property_Set_Caption(this.dart, s); }
 

@@ -24,9 +24,9 @@ export class DataQuery extends Func {
     super(dart);
   }
 
-  /** @deprecated Use FuncCall.adHoc instead **/
+  /** @deprecated Use {@link FuncCall.adHoc}. Removed in 1.29. */
   get adHoc(): boolean { return api.grok_Query_Get_AdHoc(this.dart); }
-  /** @deprecated Use FuncCall.adHoc instead **/
+  /** @deprecated Use {@link FuncCall.adHoc}. Removed in 1.29. */
   set adHoc(a: boolean) { api.grok_Query_Set_AdHoc(this.dart, a); }
 
   /** Query text */

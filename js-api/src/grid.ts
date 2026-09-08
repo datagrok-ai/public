@@ -133,7 +133,7 @@ export class Rect {
     return new Rect(cx - width / 2, cy - height / 2, width, height);
   }
 
-  /** @deprecated Use the static {@link Rect.fromCenterSize}; this instance form ignores the receiver. */
+  /** @deprecated Use the static {@link Rect.fromCenterSize}; this instance form ignores the receiver. Removed in 1.29. */
   fromCenterSize(cx: number, cy: number, width: number, height: number): Rect {
     return Rect.fromCenterSize(cx, cy, width, height);
   }

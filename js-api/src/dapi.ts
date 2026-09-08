@@ -226,7 +226,7 @@ export class Dapi {
   }
 
   /**
-   * @deprecated The UserDataStorage should not be used. Use {@link UserSettingsStorage} instead
+   * @deprecated Use {@link UserSettingsStorage} (`grok.userSettings`). Removed in 1.30.
    */
   get userDataStorage(): UserDataStorage {
     return new UserDataStorage();
@@ -811,7 +811,7 @@ export class PermissionsDataSource {
 
   /** Revokes the group's permission on the entity. */
   revoke(e: Entity, g: Group): Promise<any>;
-  /** @deprecated Use `revoke(entity, group)`, matching {@link grant}. */
+  /** @deprecated Use `revoke(entity, group)`, matching {@link grant}. Removed in 1.30. */
   revoke(g: Group, e: Entity): Promise<any>;
   revoke(a: Entity | Group, b: Group | Entity): Promise<any> {
     // Both orders reach here; when both arguments are groups the legacy (group, entity) reading wins.
@@ -821,7 +821,7 @@ export class PermissionsDataSource {
 }
 
 /**
- * @deprecated The UserDataStorage should not be used. Use {@link UserSettingsStorage} instead
+ * @deprecated Use {@link UserSettingsStorage} (`grok.userSettings`). Removed in 1.30.
  * Functionality for working with remote Users Data Storage
  * Remote storage allows to save key-value pairs on the Datagrok server for further use
  * */
@@ -1010,7 +1010,7 @@ export class SpaceChildrenClient extends HttpDataSource<Entity> {
     return new SpaceChildrenClient(api.grok_SpaceChildrenClient_Filter(this.dart, types, includeLinked));
   }
 
-  /** @deprecated Use {@link ofTypes}: unlike {@link HttpDataSource.filter}, this takes entity types, not a smart filter. */
+  /** @deprecated Use {@link ofTypes}: unlike {@link HttpDataSource.filter}, this takes entity types, not a smart filter. Removed in 1.29. */
   filter(types: string, includeLinked: boolean = false): SpaceChildrenClient {
     return this.ofTypes(types, includeLinked);
   }
@@ -2250,6 +2250,6 @@ export class FilesDataSource {
 }
 
 /**
- * @deprecated Use {@link FilesDataSource} instead. This alias is provided for backward compatibility.
+ * @deprecated Use {@link FilesDataSource}. Removed in 1.29.
  */
 export const FileSource = FilesDataSource;

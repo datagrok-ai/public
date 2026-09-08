@@ -223,17 +223,17 @@ export class Column<T = any, TInit = T> {
     return api.grok_Column_Get_Version(this.dart);
   }
 
-  // Obsolete. Recommended method is "meta.dialogs".
+  /** @deprecated Use `meta.dialogs` ({@link ColumnMetaHelper.dialogs}). Removed in 1.30. */
   get dialogs(): any {
     return this.meta.dialogs;
   }
 
-  // Obsolete. Recommended method is "meta.colors".
+  /** @deprecated Use `meta.colors` ({@link ColumnMetaHelper.colors}). Removed in 1.30. */
   get colors(): any {
     return this.meta.colors;
   }
 
-  // Obsolete. Recommended method is "meta.markers".
+  /** @deprecated Use `meta.markers` ({@link ColumnMetaHelper.markers}). Removed in 1.29. */
   get markers(): any {
     return this.meta.markers;
   }

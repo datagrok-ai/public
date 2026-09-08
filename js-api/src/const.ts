@@ -118,7 +118,7 @@ export enum TYPE {
   DYNAMIC = 'dynamic',
   VIEWER = 'viewer',  // [ViewerBase] subclasses
   LIST = 'list',
-  /** @deprecated Same as {@link TYPE.SEMANTIC_VALUE}. */
+  /** @deprecated Use {@link TYPE.SEMANTIC_VALUE}. Removed in 1.29. */
   SEM_VALUE = 'semantic_value',
   FUNC = 'func',
   FUNC_CALL = 'funccall',

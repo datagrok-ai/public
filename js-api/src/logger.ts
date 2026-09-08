@@ -35,7 +35,7 @@ export class Logger {
      return api.grok_Log_TranslateStackTrace(stackTrace);
   }
 
-  /** @Obsolete, for backward compatibility, use {audit} instead **/
+  /** @deprecated Use {@link audit} (or {@link info}/{@link error} for plain log lines); this is `audit` under an old name. Removed in 1.29. */
   log(message: string, params: object, type: string = 'log'): void {
     this._log({level: LOG_LEVEL.AUDIT, message, params, type});
   }

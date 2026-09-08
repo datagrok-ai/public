@@ -2,6 +2,9 @@ import {VIEW_TYPE, VIEWER, ViewerType, ViewType} from '../const';
 import {Column, DataFrame} from '../dataframe.js';
 import type * as uiType from '../../ui';
 import {FilterGroup, ScatterPlotViewer, Viewer} from '../viewer';
+import type {ViewerClass, HistogramViewer, BarChartViewer, BoxPlot, CalendarViewer, CorrelationPlot, DensityPlotViewer,
+  LineChartViewer, MatrixPlot, NetworkDiagramViewer, PcPlot, PieChartViewer, TileViewer, TreeMap, TrellisPlotViewer} from '../viewer';
+import type {FormViewer} from '../grid';
 import {DockManager, DockNode} from '../docking';
 import {Grid} from '../grid';
 import {DartWidget, Menu, TabControl, ToolboxPage, TreeViewGroup, Widget} from '../widgets';
@@ -126,7 +129,8 @@ export class ViewBase extends Widget {
   get entity(): object | null { return null; }
   set entity(_e: object | null) { }
 
-  /** @deprecated use path instead */
+  /** URL prefix of the view (an app's root, such as `/apps/Chem`); {@link path} is this prefix plus the
+   * view's own relative path. */
   get basePath(): string { return api.grok_View_Get_BasePath(this.dart); }
   set basePath(s: string) { api.grok_View_Set_BasePath(this.dart, s); }
 
@@ -440,7 +444,10 @@ export class TableView extends View {
     return new ToolboxPage(api.grok_View_Get_ToolboxPage(this.dart));
   }
 
-  /** Adds a viewer of the specified type. */
+  /** Adds a viewer of the specified type; a known {@link VIEWER} type returns that viewer's class
+   * (see {@link Viewer.fromType}). The `histogram()`, `scatterPlot()`, ... shorthands are the typed forms. */
+  addViewer<T extends ViewerType>(v: T, options?: any): ViewerClass<T>;
+  addViewer(v: Viewer, options?: any): Viewer;
   addViewer(v: ViewerType | string | Viewer, options?: any): Viewer {
     if (typeof v === 'string')
       v = toJs(api.grok_View_AddViewerByName(this.dart, v)) as Viewer;
@@ -475,167 +482,136 @@ export class TableView extends View {
     return new DockManager(api.grok_View_Get_DockManager(this.dart));
   }
 
-  /** @deprecated Use {@link addViewer} with {@link Viewer.histogram}.
-   *  Adds a {@link https://datagrok.ai/help/visualize/viewers/histogram | histogram}.
+  /** Adds a {@link https://datagrok.ai/help/visualize/viewers/histogram | histogram}.
    *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/types/histogram} */
-  histogram(options?: Partial<IHistogramSettings>): Viewer {
+  histogram(options?: Partial<IHistogramSettings>): HistogramViewer {
     return this.addViewer(VIEWER.HISTOGRAM, options);
   }
 
-  /** @deprecated Use {@link addViewer} with {@link Viewer.barChart}.
-   *  Adds a {@link https://datagrok.ai/help/visualize/viewers/bar-chart | bar chart}.
+  /** Adds a {@link https://datagrok.ai/help/visualize/viewers/bar-chart | bar chart}.
    *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/types/bar-chart} */
-  barChart(options?: Partial<IBarChartSettings>): Viewer {
+  barChart(options?: Partial<IBarChartSettings>): BarChartViewer {
     return this.addViewer(VIEWER.BAR_CHART, options);
   }
 
-  /** @deprecated Use {@link addViewer} with {@link Viewer.boxPlot}.
-   *  Adds a {@link https://datagrok.ai/help/visualize/viewers/box-plot | box plot}.
+  /** Adds a {@link https://datagrok.ai/help/visualize/viewers/box-plot | box plot}.
    *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/types/box-plot} */
-  boxPlot(options?: Partial<IBoxPlotSettings>): Viewer {
+  boxPlot(options?: Partial<IBoxPlotSettings>): BoxPlot {
     return this.addViewer(VIEWER.BOX_PLOT, options);
   }
 
-  /** @deprecated Use {@link addViewer} with {@link Viewer.calendar}.
-   *  Adds a {@link https://datagrok.ai/help/visualize/viewers/calendar | calendar}.
-   *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/types/calendar}
-   *  @param options */
-  calendar(options?: Partial<ICalendarSettings>): Viewer {
+  /** Adds a {@link https://datagrok.ai/help/visualize/viewers/calendar | calendar}.
+   *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/types/calendar} */
+  calendar(options?: Partial<ICalendarSettings>): CalendarViewer {
     return this.addViewer(VIEWER.CALENDAR, options);
   }
 
-  /** @deprecated Use {@link addViewer} with {@link Viewer.correlationPlot}.
-   *  Adds a {@link https://datagrok.ai/help/visualize/viewers/correlation-plot | correlation plot}.
+  /** Adds a {@link https://datagrok.ai/help/visualize/viewers/correlation-plot | correlation plot}.
    *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/types/corr-plot} */
-  corrPlot(options?: Partial<ICorrelationPlotSettings>): Viewer {
+  corrPlot(options?: Partial<ICorrelationPlotSettings>): CorrelationPlot {
     return this.addViewer(VIEWER.CORR_PLOT, options);
   }
 
-  /** @deprecated Use {@link addViewer} with {@link Viewer.densityPlot}.
-   *  Adds a {@link https://datagrok.ai/help/visualize/viewers/density-plot | density plot}.
+  /** Adds a {@link https://datagrok.ai/help/visualize/viewers/density-plot | density plot}.
    *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/types/density-plot} */
-  densityPlot(options?: Partial<IDensityPlotSettings>): Viewer {
+  densityPlot(options?: Partial<IDensityPlotSettings>): DensityPlotViewer {
     return this.addViewer(VIEWER.DENSITY_PLOT, options);
   }
 
-  /** @deprecated Use {@link addViewer} with {@link Viewer.filters}.
-   *  Adds {@link https://datagrok.ai/help/visualize/viewers/filters | filters}.
+  /** Adds {@link https://datagrok.ai/help/visualize/viewers/filters | filters}.
    *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/types/filters} */
-  filters(options?: Partial<IFiltersSettings>): Viewer {
+  filters(options?: Partial<IFiltersSettings>): FilterGroup {
     return this.addViewer(VIEWER.FILTERS, options);
   }
 
-  /** @deprecated Use {@link addViewer} with {@link Viewer.form}.
-   *  Adds default {@link https://datagrok.ai/help/visualize/viewers/form | form}.
+  /** Adds default {@link https://datagrok.ai/help/visualize/viewers/form | form}.
    *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/types/form} */
-  form(options?: Partial<IFormSettings>): Viewer {
+  form(options?: Partial<IFormSettings>): FormViewer {
     return this.addViewer(VIEWER.FORM, options);
   }
 
-  /** @deprecated Use {@link addViewer} with {@link Viewer.heatMap}.
-   *  Adds a {@link https://datagrok.ai/help/visualize/viewers/heat-map | heat map}.
+  /** Adds a {@link https://datagrok.ai/help/visualize/viewers/heat-map | heat map}.
    *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/types/heat-map} */
-  heatMap(options?: Partial<IGridSettings>): Viewer {
+  heatMap(options?: Partial<IGridSettings>): Grid {
     return this.addViewer(VIEWER.HEAT_MAP, options);
   }
 
-  /** @deprecated Use {@link addViewer} with {@link Viewer.lineChart}.
-   *  Adds a {@link https://datagrok.ai/help/visualize/viewers/line-chart | line chart}.
+  /** Adds a {@link https://datagrok.ai/help/visualize/viewers/line-chart | line chart}.
    *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/types/line-chart}  */
-  lineChart(options?: Partial<ILineChartSettings>): Viewer {
+  lineChart(options?: Partial<ILineChartSettings>): LineChartViewer {
     return this.addViewer(VIEWER.LINE_CHART, options);
   }
 
-  /** @deprecated Use {@link addViewer} with `DG.VIEWER.SHAPE_MAP`.
-   *  Adds a {@link https://datagrok.ai/help/visualize/viewers/shape-map | shape map}.
+  /** Adds a {@link https://datagrok.ai/help/visualize/viewers/shape-map | shape map}.
    *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/types/shape-map}  */
   shapeMap(options?: Partial<IMapViewerSettings>): Viewer {
     return this.addViewer(VIEWER.SHAPE_MAP, options);
   }
 
-  /** @deprecated Use {@link addViewer} with {@link Viewer.markup}.
-   *  Adds a {@link https://datagrok.ai/help/visualize/viewers/markup | markup viewer}.
+  /** Adds a {@link https://datagrok.ai/help/visualize/viewers/markup | markup viewer}.
    *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/types/markup} */
   markup(options?: Partial<IMarkupViewerSettings>): Viewer {
     return this.addViewer(VIEWER.MARKUP, options);
   }
 
-  /** @deprecated Use {@link addViewer} with {@link Viewer.matrixPlot}.
-   *  Adds a {@link https://datagrok.ai/help/visualize/viewers/matrix-plot | matrix plot}.
+  /** Adds a {@link https://datagrok.ai/help/visualize/viewers/matrix-plot | matrix plot}.
    *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/types/matrix-plot} */
-  matrixPlot(options?: Partial<IMatrixPlotSettings>): Viewer {
+  matrixPlot(options?: Partial<IMatrixPlotSettings>): MatrixPlot {
     return this.addViewer(VIEWER.MATRIX_PLOT, options);
   }
 
-  /** @deprecated Use {@link addViewer} with {@link Viewer.network}.
-   *  Adds a {@link https://datagrok.ai/help/visualize/viewers/network-diagram | network diagram}.
+  /** Adds a {@link https://datagrok.ai/help/visualize/viewers/network-diagram | network diagram}.
    *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/types/network-diagram} */
-  networkDiagram(options?: Partial<INetworkDiagramSettings>): Viewer {
+  networkDiagram(options?: Partial<INetworkDiagramSettings>): NetworkDiagramViewer {
     return this.addViewer(VIEWER.NETWORK_DIAGRAM, options);
   }
 
-  /** @deprecated Use {@link addViewer} with {@link Viewer.pcPlot}.
-   *  Adds a {@link https://datagrok.ai/help/visualize/viewers/pc-plot | parallel coordinates plot}.
+  /** Adds a {@link https://datagrok.ai/help/visualize/viewers/pc-plot | parallel coordinates plot}.
    *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/types/pc-plot} */
-  pcPlot(options?: Partial<IPcPlotSettings>): Viewer {
+  pcPlot(options?: Partial<IPcPlotSettings>): PcPlot {
     return this.addViewer(VIEWER.PC_PLOT, options);
   }
 
-  /** @deprecated Use {@link addViewer} with {@link Viewer.pieChart}.
-   *  Adds a {@link https://datagrok.ai/help/visualize/viewers/pie-chart | pie chart}.
+  /** Adds a {@link https://datagrok.ai/help/visualize/viewers/pie-chart | pie chart}.
    *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/types/pie-chart} */
-  pieChart(options?: Partial<IPieChartSettings>): Viewer {
+  pieChart(options?: Partial<IPieChartSettings>): PieChartViewer {
     return this.addViewer(VIEWER.PIE_CHART, options);
   }
 
-  /** @deprecated Use {@link addViewer} with {@link Viewer.scatterPlot}.
-   *  Adds a {@link https://datagrok.ai/help/visualize/viewers/scatter-plot | scatter plot}.
+  /** Adds a {@link https://datagrok.ai/help/visualize/viewers/scatter-plot | scatter plot}.
    *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/types/scatter-plot} */
   scatterPlot(options?: Partial<IScatterPlotSettings>): ScatterPlotViewer {
     return <ScatterPlotViewer>this.addViewer(VIEWER.SCATTER_PLOT, options);
   }
 
-  /** @deprecated Use {@link addViewer} with {@link Viewer.scatterPlot3d}.
-   *  Adds a {@link https://datagrok.ai/help/visualize/viewers/3d-scatter-plot | 3D scatter plot}.
+  /** Adds a {@link https://datagrok.ai/help/visualize/viewers/3d-scatter-plot | 3D scatter plot}.
    *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/types/scatter-plot-3d} */
   scatterPlot3d(options?: Partial<IScatterPlot3dSettings>): Viewer {
     return this.addViewer(VIEWER.SCATTER_PLOT_3D, options);
   }
 
-  /** @deprecated Use {@link addViewer} with {@link Viewer.statistics}.
-   *  Adds a {@link https://datagrok.ai/help/visualize/viewers/statistics | statistics}.
+  /** Adds a {@link https://datagrok.ai/help/visualize/viewers/statistics | statistics}.
    *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/types/statistics} */
   statistics(options?: Partial<IStatsViewerSettings>): Viewer {
     return this.addViewer(VIEWER.STATISTICS, options);
   }
 
-  /** @deprecated Use {@link addViewer} with {@link Viewer.tile}.
-   *  Adds a {@link https://datagrok.ai/help/visualize/viewers/tile-viewer | tile viewer}.
+  /** Adds a {@link https://datagrok.ai/help/visualize/viewers/tile-viewer | tile viewer}.
    *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/types/tile-viewer} */
-  tileViewer(options?: Partial<ITileViewerSettings>): Viewer {
+  tileViewer(options?: Partial<ITileViewerSettings>): TileViewer {
     return this.addViewer(VIEWER.TILE_VIEWER, options);
   }
 
-  /** @deprecated Use {@link addViewer} with {@link Viewer.treeMap}.
-   *  Adds a {@link https://datagrok.ai/help/visualize/viewers/tree-map | tree map}.
+  /** Adds a {@link https://datagrok.ai/help/visualize/viewers/tree-map | tree map}.
    *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/types/tree-map} */
-  treeMap(options?: Partial<ITreeMapSettings>): Viewer {
+  treeMap(options?: Partial<ITreeMapSettings>): TreeMap {
     return this.addViewer(VIEWER.TREE_MAP, options);
   }
 
-  /** @deprecated Use {@link addViewer} with {@link Viewer.trellisPlot}.
-   *  Adds a {@link https://datagrok.ai/help/visualize/viewers/trellis-plot | trellis plot}.
+  /** Adds a {@link https://datagrok.ai/help/visualize/viewers/trellis-plot | trellis plot}.
    *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/types/trellis-plot} */
-  trellisPlot(options?: Partial<ITrellisPlotSettings>): Viewer {
+  trellisPlot(options?: Partial<ITrellisPlotSettings>): TrellisPlotViewer {
     return this.addViewer(VIEWER.TRELLIS_PLOT, options);
-  }
-
-  /**
-   *  Adds a {@link https://datagrok.ai/help/visualize/viewers/word-cloud | word cloud}.
-   *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/types/word-cloud}
-   *  @deprecated */
-  wordCloud(options?: any): Viewer {
-    return this.addViewer(VIEWER.WORD_CLOUD, options);
   }
 
   /** Resets view layout, leaving only grid visible. */

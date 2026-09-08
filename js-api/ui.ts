@@ -194,11 +194,15 @@ export function accordion(key: any = null): Accordion {
 /**
  * Example: {@link https://public.datagrok.ai/js/samples/ui/components/tab-control}
  * @param pages - list of page factories
- * @param options - see {@link ITabControlOptions}. Passing a boolean (`vertical`) is deprecated.
- * @param key - deprecated, use `options.key` instead. */
+ * @param options - see {@link ITabControlOptions} */
+export function tabControl(pages?: { [key: string]: any; } | null, options?: ITabControlOptions): TabControl;
+/** @deprecated Use `tabControl(pages, {vertical, key})`. Removed in 1.29. */
+export function tabControl(pages: { [key: string]: any; } | null, vertical: boolean, key?: string | null): TabControl;
+/** @deprecated Pass the key in the options: `tabControl(pages, {key})`. Removed in 1.29. */
+export function tabControl(pages: { [key: string]: any; } | null, options: ITabControlOptions, key: string | null): TabControl;
 export function tabControl(pages: { [key: string]: any; } | null = null,
                            options: boolean | ITabControlOptions = {}, key: string | null = null): TabControl {
-  let tabs = TabControl.create(options, key);
+  let tabs = typeof options === 'boolean' ? TabControl.create(options, key) : TabControl.create(options, key);
   if (pages != null) {
     for (let name of Object.keys(pages)) {
       let value = pages[name];

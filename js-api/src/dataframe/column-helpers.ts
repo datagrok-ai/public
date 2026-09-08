@@ -152,7 +152,7 @@ export class ColumnMarkerHelper {
     return this.assign('~DEFAULT', marker);
   }
 
-  // Obsolete. Recommended method is "assign".
+  /** @deprecated Use {@link assign}. Removed in 1.29. */
   setMarkerCoding(category: string, marker: MarkerCodingType): void {
     let jsonTxt: string | null = this.column.getTag(TAGS.MARKER_CODING);
     const jsonMap: {[key: string]: string} = jsonTxt ? JSON.parse(jsonTxt) : {};

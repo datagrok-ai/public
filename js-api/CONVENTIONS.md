@@ -68,8 +68,9 @@ Rules:
   parameter or a non-obvious result. Reuse the sample link when a sample exists instead of duplicating it.
 - Sample links use one form, `@see {@link https://public.datagrok.ai/js/samples/<path>}`, where `<path>` is the
   file path under `ApiSamples/scripts` without extension. CI checks the link resolves (`data/check-sample-links.cjs`).
-- A deprecated member has `@deprecated Use {@link Replacement} — <one reason>.` and nothing else changes. Prose
-  markers ("Obsolete", "softly deprecated", "@Obsolete") are not allowed.
+- A deprecated member has `@deprecated Use {@link Replacement}. Removed in <version>.` (one reason may sit between
+  the two sentences) and nothing else changes. The version is the release that deletes it, so the IDE warning says
+  how long the caller has. Prose markers ("Obsolete", "softly deprecated", "@Obsolete") are not allowed.
 - Comments explain *why* only when the code cannot (`Row`'s Proxy note, the `.js` import suffix note in `base.ts`).
   They never narrate what the next line does, and never editorialise.
 - Cross-cutting behaviour that a caller must know (`grok.functions.call` result shape, `HttpDataSource` statefulness,
@@ -94,11 +95,13 @@ Rules:
 ## 5. Deprecation protocol
 
 1. Add the replacement in the same release, with a sample and a test.
-2. Mark the old member `@deprecated Use {@link New}.` and make it delegate to the new one.
+2. Mark the old member `@deprecated Use {@link New}. Removed in <version>.` and make it delegate to the new one.
 3. Add a `CHANGELOG.md` line under `v.next` that names both.
 4. Run `rg` across `public/packages` and file one ticket per package that still uses the old member.
-5. Remove in the next major (`versioning-policy.md`, rule 6). Keep a `MIGRATION.md` at the package root listing
-   every removal since the previous major.
+5. Remove two minors after the tag first shipped (tagged in 1.28 → removed in 1.30; `datagrok-api` versions track
+   platform releases, not semver). Members with no usage in `public/packages` may go one minor after. Keep a
+   `MIGRATION.md` at the package root listing every removal with its replacement. The current ledger is
+   `core/docs/reviews/js-api-audit/deprecations.md`.
 
 ## 6. Tests and samples
 

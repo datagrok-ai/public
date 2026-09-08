@@ -419,7 +419,7 @@ export class Data {
   async query<T = DataFrame>(queryName: string,
                              queryParameters: object | null = null,
                              /**
-                              * @deprecated Parameter adHoc will be removed soon.
+                              * @deprecated The parameter is ignored. Removed in 1.29.
                               */
                              adHoc: boolean = false): Promise<T> {
     return toJs(await api.grok_CallFunc(queryName, queryParameters, true, null));
@@ -428,7 +428,7 @@ export class Data {
   callQuery(queryName: string,
             queryParameters: object | null = null,
             /**
-             * @deprecated Parameter adHoc will be removed soon.
+             * @deprecated The parameter is ignored. Removed in 1.29.
              */
             adHoc: boolean = false): Promise<FuncCall> {
     return api.grok_CallQuery(queryName, queryParameters, adHoc);

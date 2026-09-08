@@ -271,10 +271,9 @@ export class Shell {
     return toJs(api.grok_AddTableView(table.dart, dockType, width, false));
   }
 
-  /**
+  /** @deprecated Use {@link tableView}. Removed in 1.30.
    * Returns {@link TableView} for the specified table if it exists, opens a new view if necessary.
    * Search is case-insensitive. */
-  //Obsolete
   getTableView(tableName: string): TableView {
     return toJs(api.grok_GetTableView(tableName));
   }
@@ -340,8 +339,8 @@ export class Shell {
     return _toIterable(api.grok_GetTableViews());
   }
 
-  /** Returns a table by its name. Search is case-insensitive. */
-  //Obsolete
+  /** @deprecated Use {@link table}. Removed in 1.30.
+   * Returns a table by its name. Search is case-insensitive. */
   tableByName(tableName: string): DataFrame {
     return toJs(api.grok_TableByName(tableName));
   }
@@ -518,7 +517,7 @@ export class Windows {
   get showHelp(): boolean { return api.grok_Windows_Get_ShowHelp();   }
   set showHelp(x: boolean) { api.grok_Windows_Set_ShowHelp(x); }
 
-  /** Obsolete. Controls the visibility of the properties window. */
+  /** @deprecated Use {@link showContextPanel}; it is the same window. Removed in 1.30. */
   get showProperties(): boolean { return api.grok_Windows_Get_ShowProperties(); }
   set showProperties(x: boolean) { api.grok_Windows_Set_ShowProperties(x); }
 

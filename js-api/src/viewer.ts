@@ -461,11 +461,6 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
     return <PivotViewer>Viewer.fromType(VIEWER.PIVOT_TABLE, t, options);
   }
 
-  /** @deprecated */
-  static wordCloud(t: DataFrame, options?: any): Viewer {
-    return <Viewer>Viewer.fromType(VIEWER.WORD_CLOUD, t, options);
-  }
-
   /** Fires when the viewer builds its context menu; add items to the emitted {@link Menu}. */
   get onContextMenu(): rxjs.Observable<Menu> {
     return this.onEvent('d4-context-menu').pipe(map(x => x.args.menu));

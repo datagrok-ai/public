@@ -136,8 +136,12 @@ export class TabControl extends DartWidget {
   /** Creates a new TabControl.
    * When [options.key] is provided, the currently selected pane is persisted across sessions
    * in localStorage. Without a key, state is not remembered.
-   * @param options - see {@link ITabControlOptions}. Passing a boolean (`vertical`) is deprecated.
-   * @param key - deprecated, use `options.key` instead.  */
+   * @param options - see {@link ITabControlOptions} */
+  static create(options?: ITabControlOptions): TabControl;
+  /** @deprecated Use `create({vertical, key})`. Removed in 1.29. */
+  static create(vertical: boolean, key?: string | null): TabControl;
+  /** @deprecated Pass the key in the options: `create({key})`. Removed in 1.29. */
+  static create(options: ITabControlOptions, key: string | null): TabControl;
   static create(options: boolean | ITabControlOptions = {}, key: string | null = null): TabControl {
     const o: ITabControlOptions = typeof options === 'boolean' ? {vertical: options} : (options ?? {});
     return toJs(api.grok_TabControl(o.vertical ?? false, o.key ?? key));
