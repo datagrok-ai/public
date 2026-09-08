@@ -2,7 +2,7 @@
 
 Gherkin features under `features/`, compiled by `@datagrok-libraries/bdd` (`public/libraries/bdd`)
 into the Playwright specs under `generated/` — committed, never edited by hand. Today: the viewer
-features under `features/viewers/` (one page per folder): the six TestTrack box plot specs as six
+features under `features/viewers/` (one page per worker): the six TestTrack box plot specs as six
 `@journey` features under `box-plot/` (property surface, group comparison, selection, filter,
 statistics and coloring, settings ladder; 50 scenarios), the seven TestTrack bar chart specs as
 seven under `bar-chart/` (property surface with the Data panel, setup and interaction, selection
