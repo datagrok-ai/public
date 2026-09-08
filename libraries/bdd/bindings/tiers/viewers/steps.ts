@@ -54,6 +54,10 @@ export const propertyShouldBe = Then('{string} property of {widget} should be {s
 export const propertyShouldNotBe = Then('{string} property of {widget} should not be {string}', (page: Page, caption: string, target: ElementRef, value: string) =>
   v.expectProperty(page, target, caption, value, true));
 
+export const propertyShouldContain = Then('{string} property of {widget} should contain {string}', async (page: Page, caption: string, target: ElementRef, text: string) => {
+  await expect.poll(() => v.readProperty(page, target, caption), {message: `"${caption}" property of ${target.phrase}`}).toContain(text);
+}, {description: 'a text property (a description a command writes its settings into) by substring'});
+
 export const propertiesShouldBe = Then('properties of {widget} should be:', async (page: Page, target: ElementRef, table: string[][]) => {
   for (const [caption, value] of table)
     await v.expectProperty(page, target, caption, value);
@@ -203,6 +207,10 @@ export const areasDiffer = Then('the {string} and {string} areas of {widget} sho
   (page: Page, a: string, b: string, target: ElementRef) => v.expectAreasDiffer(page, target, a, b),
   {description: 'one area has a color the other does not — per-category coloring, not chrome'});
 
+export const areaColors = Then('the {string} area of {widget} should be painted in at least {int} colors',
+  (page: Page, area: string, target: ElementRef, count: number) => v.expectAreaColors(page, target, area, count),
+  {description: 'distinct hues covering some pixels each, greys and white aside — a grid cell whose letters take their colors from the data, not a text cell'});
+
 export const boundTable = Then('{widget} should be bound to table {string}', (page: Page, target: ElementRef, name: string) => v.expectBoundTable(page, target, name),
   {description: 'the table the viewer draws (viewer.dataFrame), not the Table property it was asked for'});
 
@@ -218,6 +226,14 @@ export const showsMoreRows = Then('{widget} should show more rows than before', 
 export const readingIs = Then('the {string} reading of {widget} should be {float}', (page: Page, name: string, target: ElementRef, value: number) =>
   v.expectReading(page, target, name, 'equal', value),
 {description: 'a reading the viewer reports (getWidgetStatus().values): "rows shown", the bar chart\'s "bars" / "stack segments" / "clipped bars", the 3D scatter plot\'s "camera distance"'});
+
+export const readingReads = Then('the {string} reading of {widget} should be {string}', async (page: Page, name: string, target: ElementRef, value: string) => {
+  await expect.poll(() => v.readValue(page, target, name), {message: `"${name}" reading of ${target.phrase}`}).toBe(value);
+}, {description: 'a text reading (a source column, a signature) by exact value'});
+
+export const readingAtLeast = Then('the {string} reading of {widget} should be at least {float}', async (page: Page, name: string, target: ElementRef, value: number) => {
+  await expect.poll(() => v.readValue(page, target, name), {message: `"${name}" reading of ${target.phrase}`}).toBeGreaterThanOrEqual(value);
+});
 
 export const readingLower = Then('the {string} reading of {widget} should be lower than before', (page: Page, name: string, target: ElementRef) =>
   v.expectReading(page, target, name, 'lower'), {description: 'against the snapshot before the last change'});
@@ -308,6 +324,25 @@ export const noBalloons = Then('no error or warning balloon should have been sho
   const shown = (await v.takeBalloons(page)).filter((b) => b.type === 'error' || b.type === 'warning');
   expect(shown.map((b) => `${b.type}: ${b.message}`), 'error and warning balloons since the last check').toEqual([]);
 }, {description: 'the platform\'s balloons (d4-balloon-shown) since the previous check, the scenario start or the login; checking clears them'});
+
+/** The balloons of a type since the last read, polled: a balloon a command raises lands a task
+ * after the gesture. */
+async function expectBalloon(page: Page, type: string, text?: string): Promise<void> {
+  let shown: string[] = [];
+  await expect.poll(async () => {
+    shown = shown.concat((await v.takeBalloons(page)).map((b) => `${b.type}: ${b.message}`));
+    return shown.some((s) => s.startsWith(`${type}: `) && (text === undefined || s.includes(text)));
+  }, {timeout: 5000, message: `${text === undefined ? `an ${type} balloon` : `an ${type} balloon containing "${text}"`}; balloons since the last check: ${shown.join(' | ') || 'none'}`}).toBe(true);
+}
+
+export const errorBalloon = Then('an error balloon should have been shown', (page: Page) => expectBalloon(page, 'error'),
+  {description: 'since the previous balloon check; reading clears the balloons'});
+
+export const warningBalloon = Then('a warning balloon should have been shown', (page: Page) => expectBalloon(page, 'warning'));
+
+export const errorBalloonText = Then('an error balloon containing {string} should have been shown', (page: Page, text: string) => expectBalloon(page, 'error', text));
+
+export const warningBalloonText = Then('a warning balloon containing {string} should have been shown', (page: Page, text: string) => expectBalloon(page, 'warning', text));
 
 // --- tooltips --------------------------------------------------------------------------------------
 

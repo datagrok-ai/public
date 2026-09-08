@@ -122,11 +122,13 @@ kind('property', {
   labelSelector: '.u2-propgrid-name, .property-grid-item-name-text',
   dartNames: ['prop-{q}'],
 });
+// the Dart property grid's category is a row of the grid (prop-category-<name>)
 kind('category', {
   aliases: ['property category'],
-  selector: '.u2-propgrid-category',
-  match: ['text', 'title'],
-  labelSelector: '.u2-propgrid-category-title',
+  selector: '.u2-propgrid-category, tr.property-grid-item[name^="prop-category-"]',
+  match: ['title', 'dart', 'text'],
+  labelSelector: '.u2-propgrid-category-title, .property-grid-item-name-text',
+  dartNames: ['prop-category-{q}'],
 });
 
 // --- collections ----------------------------------------------------------------------------------
@@ -136,7 +138,7 @@ kind('list', {
 });
 kind('item', {
   aliases: ['list item', 'row', 'option', 'entry'],
-  selector: '.u2-list-row, [role="option"], [role="row"], .d4-list-item, li',
+  selector: '[data-u2="item"], .u2-list-row, [role="option"], [role="row"], .d4-list-item, li',
   match: ['text', 'label', 'aria', 'name'],
   labelSelector: PRIMARY_TEXT,
 });

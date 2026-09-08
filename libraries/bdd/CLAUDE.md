@@ -3,7 +3,7 @@
 Feature files bound to the u2/platform vocabulary, compiled deterministically into Playwright specs
 that packages own. Design record: `core/docs/features/ui2/automation/BRAINSTORM.md` (rulings by the
 lead: standard Gherkin; committed, drift-gated codegen; u2-centred; overridable composition;
-generic kinds; reserved platform names; packages own their tests; one page per feature folder; a global
+generic kinds; reserved platform names; packages own their tests; one page per worker; a global
 CLI; NOT wired into `grok test`; §8 there is the current state, gaps and next steps). The contract
 it consumes and the u2 findings: `core/docs/features/ui2/AUTOMATION.md`; the lane map:
 `core/docs/features/ui2/TESTING.md`.
@@ -38,6 +38,10 @@ generated/}`; sample `packages/U2Demo/bdd`; the first production project is `pac
 (`features/viewers/box-plot/*.feature`: six journeys, 50 scenarios, the whole of the six TestTrack
 box plot specs under `files/TestTrack/Viewers/BoxPlot/` and their helpers, 36 s for all six on one page,
 reviewed against the specs they replaced on 2026-09-07 (late) — the `/bdd-translate` skill is that process).
+The second is `packages/Bio/bdd` (2026-09-08): eighteen journeys, 101 scenarios, 1.9 min on one worker,
+from the TestTrack Bio specs, the package's `playwright/` specs and their md files — the first package
+translation, and the one that added the top menu, the command signal, the column and function steps
+and the JS-viewer conventions below.
 
 ## We test our own platform, not a black box
 
@@ -88,20 +92,30 @@ nobody filed.
   own goes to `node_modules/.bdd-link-backup`, `--undo` or an `npm ci` restores it; the library
   link too when npm did not make it). On a registry install the peer dependency is shared. The
   harness receives `test` from the spec and never imports it.
-- **One page per feature folder** (`src/runtime/harness.ts`, the lead's rule 2026-09-07: "one
-  folder, one tab"): `feature(test)` registers `afterEach` (leave the context, `resetShell`) and
-  `afterAll` (the feature's `atFeatureEnd` cleanups); the page is created inside the first test
-  (`session.page(browser)`), so Playwright merges the project's context options (storage state,
-  viewport), and kept in the module-level `shared` with its folder — the folder's next feature
-  file finds it and `user is logged in` only resets the shell (0.1 s instead of the ~4 s boot);
-  a feature from another folder closes that context first. Playwright 1.62 starts a trace chunk
-  on every existing context at each test start (`ArtifactsRecorder.willStartTest` →
+- **One page per worker** (`src/runtime/harness.ts`; 2026-09-07 it was one page per feature
+  folder, the lead's "one folder, one tab", and 2026-09-08 the folder boundary went: Playwright
+  hands files to workers one by one, so under four workers consecutive files of a worker were
+  never from the same folder and every feature booted its own page — 20 s of login and 36 s of
+  Bio init each under that load). `feature(test)` registers `afterEach` (leave the context,
+  `resetShell`) and `afterAll` (the feature's `atFeatureEnd` cleanups); the page is created
+  inside the first test (`session.page(browser)`), so Playwright merges the project's context
+  options (storage state, viewport), and kept in the module-level `shared` — every later feature
+  file in the worker finds it and `user is logged in` only resets the shell (0.1 s instead of
+  the ~4 s boot, and a package's init step is free). Feature isolation is the reset shell plus
+  the feature's own cleanups, not the tab. Playwright 1.62 starts a trace chunk on every
+  existing context at each test start (`ArtifactsRecorder.willStartTest` →
   `didCreateBrowserContext`), so every test still gets its own trace; a failed test restarts the
   worker, which drops the page. NEVER leave several Datagrok pages open in one browser: six live
   clients made every step 2–3× slower (measured 2026-09-07, 124 s for the suite). The generated
   spec calls `test()` itself so reports point at the spec line, not the harness; every step is
   `session.step(line, title, fn)` (`feature(test, "features/x.feature", import.meta.url)`), a
   Playwright step whose `location` is the feature line.
+- **An in-page step returns nothing it does not read** (2026-09-08): `page.evaluate` serializes
+  its return value to Node, and a platform object can be enormous — Bio's init step returned the
+  SeqHelper, which holds the RDKit module and its 16 MB WASM heap, so every call cost 10 s of
+  base64 (`typedArrayToBase64` in Playwright's serializer, seen in a CDP profile) — 312 s of an
+  8.6 min serial run, 615 s under four workers. Await inside the evaluate and return `undefined`;
+  keep results in the page (`__bddLastResult`) and read them with a small expression.
 - **A failure is the feature line, the step, one sentence, and what was there instead**
   (`src/runtime/failure.ts`, `harness.ts` `session.step`, `locate.ts` `explain`; 2026-09-07, the
   lead: "the error PW gave me is very uninformative … this should be true everywhere"). `reasonOf`
@@ -248,6 +262,82 @@ nobody filed.
   launches with `--disable-accelerated-2d-canvas` (nine headless and two headed runs green
   after). A failure that names the region is the reproduction when the machine that fails is
   not yours.
+- **The top menu is driven by name, and a command's end is its function call's end**
+  (`src/runtime/menus.ts`, `bindings/platform/commands.ts`, 2026-09-08, the Bio translation).
+  The Dart menu bar names its items `div-Bio---Analyze---Sequence-Space...` (spaces to dashes,
+  `---` between levels), so a path is found without scanning labels. The group in the bar opens on
+  `mouseenter` and closes on `mouseleave` of the horizontal item — so the library's leave-left
+  `hover` (and `pickMenuPath`'s left entry) CLOSES it when the item sits at the popup's left
+  edge; a vertical group opens on a `mousemove` inside it, and a pointer already resting on it
+  moves nowhere: the entry is two moves within the item (`enterGroup`). A bar too narrow folds
+  its groups into a "more" group where they are vertical; the viewport is 1920 wide, and the
+  probe at 1280 folded everything. A package's group shows only once the table has a column it
+  applies to, a moment after the detection the open step waited for: the pick waits for the
+  top item up to 5 s. Escape does not close the bar's group; moving the pointer to the page
+  centre does. The command is the function call whose `Func.topMenu` (added to the core for
+  this: `grok_api.dart` `Func_Get_TopMenu` + `grok_api.g.ts` + `entities/func.ts`) equals the
+  picked path, watched through `onBeforeRunAction`/`onAfterRunAction`; a function-editor dialog
+  keeps the call running until the work is done (Sequence Space: OK at 202 ms, columns at
+  223 ms, the scatter plot at 3287 ms, `after` at 3296 ms), a hand-made dialog (MSA) returns at
+  once and the work shows up as columns — the new-column steps poll 60 s for those. The pick
+  also baselines every viewer and remembers the table's columns.
+- **A Dart dialog button says "disabled" with a class only** — `CommandBar.setButtonActive` now
+  sets `aria-disabled` too (core `ui.dart`), so `OK button in Identity dialog should be
+  disabled` reads a state, not a class.
+- **The Dart column selector** (`.d4-column-selector`, `ColumnComboBox`): a `mousedown` on it
+  opens a `ColumnGrid` popup (a real grid, `.d4-column-grid`), typing opens the grid's search
+  box, and Enter there takes the name TYPED as the column (`popup.currentColumnName =
+  searchInput.value` — a partial name selects nothing). `gestures.select` does exactly that for
+  it and waits for the selector to read the name. A click opened nothing in the probe, and the
+  popup is not a `.d4-menu-popup`.
+- **A package's init is the platform's hold on its calls**: Bio initializes on its first call
+  (RDKit, the monomer libraries; 8.6 s on a fresh page) and the dialog of the first command
+  waits that long; `grok.events.onPackageLoaded` fires at login for every package, not after
+  init, and `Package.load()` hung in the probe. So a package binds its own readiness step
+  (`the Bio package is initialized` = a call of `Bio:getSeqHelper`, which the platform holds
+  until `initBio` has run). A generic "package initialized" signal in the core is still wanted.
+- **A JS viewer announces itself**: `onRendered` (the runtime's `arm` subscribes to it before
+  the host's `onViewerRendered`, which never fires for a JS viewer), a `get isRenderPending()`
+  true from the render request to the paint (WebLogo: `_renderPending` around its debounced
+  syncer; the search viewers: a counter around `renderPromise`), and `getWidgetStatus()` with
+  the canvas under `parts` and hit areas in CSS px of it (WebLogo's monomer bounds are device
+  px — divided by dpr, over the last laid-out range only: stale bounds of positions scrolled
+  out keep old coordinates). JsViewer's Dart-backed `getWidgetStatus`/`isRenderPending` are
+  overridden by the class's own members.
+- **The grid reports itself** (core `grid_core.dart` `getWidgetStatus`, 2026-09-08): every
+  visible cell, row header and column header as a hit area (`cell 3 of fasta`, rows as the table
+  counts them from 1, `grid2table` applied), `cell type of <column>` for each visible column,
+  `rows shown`, `rows`, `columns shown`, `current row`, `current column`; `{widget}` accepts
+  `grid`. So a renderer claim is the grid's own word (`the "cell type of HELM string" reading of
+  grid should be "helm"`) plus the pixels of the cell (`painted in at least 3 colors` — hues
+  grouped by `near`, greys aside, a text cell has none), a cell click is a real click on the
+  area, and the cell context menu is picked by path (`Copy > helm`). Values are reported for the
+  visible column range only: a wide table (38 monomer columns) may show columns 9–38 after a
+  transform, and `cell type of 1` is then "no such reading" — pick a fixture that fits.
+- **A package's word about work finished off-screen is a custom platform event**
+  (`grok.events.fireCustomEvent`; `src/runtime/events.ts`, `bindings/platform/events.ts`):
+  listened for by id, claimed with `should have fired` (30 s, the read zeroes the count). Bio
+  fires `bio-monomer-lib-loaded` after every monomer library load, with the sources loaded,
+  through the bio library's `monomer-works/lib-events.ts` (`onMonomerLibLoaded`), so any package
+  or test can wait for a reload instead of polling the library — and Bio now awaits the library
+  update before reporting the load complete (`updateLibs` was fire-and-forget).
+- **A worker pool spawns for the job, not for the machine** (ml `DistanceMatrixService`,
+  2026-09-08): the diversity search's "importScripts … failed to load" errors under four workers
+  were `net::ERR_ABORTED` — 30 workers spawned per `hardwareConcurrency`, 6 given work, all 30
+  terminated when the 6 answered, so 24 died mid-import and Chrome reported each as an uncaught
+  NetworkError on the page; alone, 5 of 30 aborted too. Now `min(threads, jobs)` workers are
+  spawned when the job is known. The diagnosis: Playwright's trace records no worker network;
+  a standalone page with `page.on('requestfailed')` showed the aborts, and 48 concurrent fetches
+  of the chunk answered 200 in ~100 ms, so the server was never the cause.
+- **A u2 name is one token**: the locator tries a phrase without its spaces and with dashes
+  (`canonicalaas`, `canonical-aas`), never the spaced form — a package stamping `data-u2-name`
+  from a display name writes the dashed form (Bio's collection cards, `New-Collection`).
+- **Linking libraries into a package duplicates their dependencies**: `npm link` of
+  `@datagrok-libraries/bio` and `ml` into Bio built with 20 "separate declarations of a private
+  property" errors — each library's own `node_modules` held its own `datagrok-api` and `utils`.
+  Junctions from those copies to Bio's (`New-Item -ItemType Junction`) made the types one
+  again; `npm link` also restores the package's own Playwright, so `grok-bdd link` runs again
+  after it.
 - **A bdd page runs in simple mode, so the view tabs are hidden**: `user is logged in` sets
   `grok.shell.windows.simpleMode = true`, and the `view-handle: …` elements of every view are then
   present but hidden. U2Demo's "clicks on "U2 Demo" view" passed for days only because the rogue

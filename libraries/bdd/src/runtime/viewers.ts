@@ -132,8 +132,9 @@ function install(): void {
     try {
       v.immediateRendering = true;
     } catch { /* a JS viewer without the flag */ }
+    // a JS viewer announces its own renders on `onRendered` (the host's onViewerRendered never fires for it)
     try {
-      stamp.sub = v.onViewerRendered.subscribe(() => {
+      stamp.sub = (v.onRendered ?? v.onViewerRendered).subscribe(() => {
         stamp.count++;
         stamp.last = Date.now();
       });
@@ -712,10 +713,97 @@ function install(): void {
       await grok.dapi.layouts.delete(saved);
   };
 
+  /** The function call a menu command starts, and the current table's columns before it: the
+   * platform announces every call (`onBeforeRunAction` / `onAfterRunAction`), and the one whose
+   * function is registered under the picked menu path is the command — its end is when the
+   * command is done, whatever dialog it showed in between. */
+  let command: {name: string; done: Promise<void>; started: number} | undefined;
+  let columnsBefore: {table: any; names: string[]} | undefined;
+  let commandArm: any;
+  const armCommand = (path: string): void => {
+    const t = grok.shell.t;
+    columnsBefore = t ? {table: t.dart, names: t.columns.names()} : undefined;
+    command = undefined;
+    commandArm?.unsubscribe();
+    const want = norm(path);
+    const sub = grok.functions.onBeforeRunAction.subscribe((fc: any) => {
+      const menu = fc?.func?.topMenu;
+      if (!menu || norm(menu) !== want)
+        return;
+      sub.unsubscribe();
+      if (commandArm === sub)
+        commandArm = undefined;
+      let resolve!: () => void;
+      const done = new Promise<void>((r) => { resolve = r; });
+      const after = grok.functions.onAfterRunAction.subscribe((ended: any) => {
+        if (ended?.dart === fc.dart || ended?.id === fc.id) {
+          after.unsubscribe();
+          resolve();
+        }
+      });
+      command = {name: String(fc.func?.nqName ?? fc.func?.name ?? path), done, started: Date.now()};
+    });
+    commandArm = sub;
+    // a pick that started no call within 5 s is disarmed — this arm only, never a later pick's
+    setTimeout(() => {
+      sub.unsubscribe();
+      if (commandArm === sub)
+        commandArm = undefined;
+    }, 5000);
+  };
+  const waitCommand = async (capMs: number): Promise<string> => {
+    // the click's handler may start the call a task or two later
+    const t0 = Date.now();
+    while (!command && commandArm && Date.now() - t0 < 5000)
+      await new Promise((r) => setTimeout(r, 10));
+    if (!command)
+      throw new Error('no menu command has started a function call in this scenario (a Dart command, or the menu item ran nothing)');
+    const c = command;
+    const timeout = new Promise<'timeout'>((r) => setTimeout(() => r('timeout'), capMs));
+    if (await Promise.race([c.done.then(() => 'done'), timeout]) === 'timeout')
+      throw new Error(`${c.name} has been running for ${Math.round((Date.now() - c.started) / 1000)} s`);
+    return c.name;
+  };
+  /** The current table's columns now and before the last menu command; `same` says whether the
+   * table is still the one the command started on. */
+  const columnsSince = (): {before: string[] | null; now: string[]; same: boolean} => {
+    const t = grok.shell.t;
+    return {before: columnsBefore?.names ?? null, now: t ? t.columns.names() : [], same: !!t && columnsBefore?.table === t.dart};
+  };
+
+  /** Custom platform events (`grok.events.fireCustomEvent`) by id, counted from "listens for"
+   * until the page resets; a read takes the count and the last arguments and zeroes them. */
+  const customEvents = new Map<string, {count: number; last: unknown; sub: any}>();
+  const listenCustom = (id: string): void => {
+    if (customEvents.has(id))
+      return;
+    const entry = {count: 0, last: undefined as unknown, sub: undefined as any};
+    entry.sub = grok.events.onCustomEvent(id).subscribe((args: unknown) => { entry.count++; entry.last = args; });
+    customEvents.set(id, entry);
+  };
+  const customFired = (id: string, take: boolean): {count: number; last: unknown} => {
+    const entry = customEvents.get(id);
+    if (!entry)
+      return {count: -1, last: undefined};
+    let last: unknown;
+    try {
+      last = JSON.parse(JSON.stringify(entry.last ?? null));
+    }
+    catch {
+      last = String(entry.last);
+    }
+    const read = {count: entry.count, last};
+    if (take) {
+      entry.count = 0;
+      entry.last = undefined;
+    }
+    return read;
+  };
+
   w.__bdd = {viewerOf, arm, stampAll, settle, quiet, readProperty, writeProperties, findArea, hitArea, areas, areaInk, areaChange, areaColors,
     snapshot, baselineAll, change, rangeChange, quietRangeChange, scaleChange, valueChange, quietValueChange, rememberRange, rememberedRange, stillness,
     palette, tableOf, listen, unlisten, firedCount, resize, restoreSize, armEvent, waitArmed, closeMenu, openMenu, menuPoint, addViewer,
-    takeBalloons, saveLayout, saveLayoutToServer, loadLayout, deleteLayout, ink};
+    takeBalloons, saveLayout, saveLayoutToServer, loadLayout, deleteLayout, ink, armCommand, waitCommand, columnsSince, listenCustom, customFired};
   stampAll();
   grok.events.onViewerAdded.subscribe((a: any) => arm(a?.args?.viewer));
   grok.events.onViewerClosed.subscribe((a: any) => a?.args?.viewer && forget(a.args.viewer));
@@ -951,6 +1039,28 @@ export async function expectAreaColor(page: Page, target: ElementRef, area: stri
 
 const SIGNIFICANT_PX = 30;
 
+/** The area is painted in at least `count` hues: colors covering some pixels each, grouped by
+ * `near` (a hue and its anti-aliased shades are one), greys and white aside — a cell whose letters
+ * take their colors from the data, not a text cell. */
+export async function expectAreaColors(page: Page, target: ElementRef, area: string, count: number): Promise<void> {
+  await hitArea(page, target, area);
+  let last: AreaColors | undefined;
+  const hues = async (): Promise<number> => {
+    const read: AreaColors = last = await areaColors(page, target, area);
+    const groups: string[] = [];
+    for (const c of read.colors.filter((x) => x.count >= COLOR_MIN_PX && hsl(x.hex).s >= GREY_SATURATION))
+      if (!groups.some((g) => near(g, c.hex)))
+        groups.push(c.hex);
+    return groups.length;
+  };
+  try {
+    await expect.poll(hues, {timeout: 5000}).toBeGreaterThanOrEqual(count);
+  }
+  catch {
+    throw new Error(`the "${area}" area of ${target.phrase} is painted in fewer than ${count} hues; ${describeColors(last)}`);
+  }
+}
+
 /** Two areas are painted in different colors: one of them has a color (covering some pixels) the
  * other has nothing near. */
 export async function expectAreasDiffer(page: Page, target: ElementRef, a: string, b: string): Promise<void> {
@@ -974,6 +1084,17 @@ export async function expectAreasDiffer(page: Page, target: ElementRef, a: strin
 }
 
 export type ReadingCompare = 'equal' | 'lower' | 'higher' | 'differ' | 'same';
+
+/** A reading of the viewer as it is now; a name the viewer does not report fails naming the
+ * readings it does. */
+export async function readValue(page: Page, target: ElementRef, name: string): Promise<unknown> {
+  await installViewerRuntime(page);
+  const loc = await viewerLocator(page, target);
+  const r: {now?: unknown; has: string[]} = await loc.evaluate((el, n) => (window as any).__bdd.valueChange(el, n), name);
+  if (r.now === undefined || r.now === null)
+    throw new Error(`${target.phrase} has no "${name}" reading; it reports: ${r.has.join(', ') || 'no readings'}`);
+  return r.now;
+}
 
 /** A reading of the viewer (`getWidgetStatus().values`: "rows shown", "bars", "scene signature")
  * equals a value, is lower/higher than at the snapshot before the last change, differs from it, or

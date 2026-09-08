@@ -1,7 +1,8 @@
 /* The gestures steps are made of. Each one takes an element phrase and encodes the platform's
    quirks once: real pointer clicks for canvases, key-by-key typing (Dart change listeners ignore
    `fill`), native `<select>` first for choices, the editor part of a composite input. */
-import type {Locator, Page} from '@playwright/test';
+import {resolve} from 'node:path';
+import {expect, type Locator, type Page} from '@playwright/test';
 import type {ElementRef} from './args.js';
 import {cssString, escapeRegExp, exactText, locateActionable as locate, refOf, withAttr} from './locate.js';
 
@@ -39,6 +40,21 @@ export async function dblclick(page: Page, target: ElementRef): Promise<void> {
 
 export async function rightclick(page: Page, target: ElementRef): Promise<void> {
   await (await locate(page, target)).click({button: 'right'});
+}
+
+/** Clicks the element and answers the file chooser it opens with a file of the bdd project
+ * (`file` relative to the project root, `BDD_ROOT`). */
+export async function chooseFile(page: Page, target: ElementRef, file: string): Promise<void> {
+  const loc = await locate(page, target);
+  const chooser = page.waitForEvent('filechooser', {timeout: 5000});
+  await loc.click();
+  await (await chooser).setFiles(resolve(process.env.BDD_ROOT ?? process.cwd(), file));
+}
+
+/** The page's clipboard text — headless Chromium keeps a clipboard of its own per browser. */
+export async function readClipboard(page: Page): Promise<string> {
+  await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
+  return page.evaluate(() => navigator.clipboard.readText());
 }
 
 /** Leaves the element first, to its left on the same line — a pointer already resting on it (the
@@ -139,6 +155,22 @@ export async function select(page: Page, target: ElementRef, option: string): Pr
   const native = loc.locator('select').first();
   if (await native.count() > 0) {
     await native.selectOption({label: option});
+    return;
+  }
+  // the Dart column selector: a mouse-down opens its column grid, typing opens the grid's
+  // search box, and Enter there takes the name typed as the column
+  const columnSelector = (await loc.evaluate((el) => el.classList.contains('d4-column-selector'))) ? loc : loc.locator('.d4-column-selector').first();
+  if (await columnSelector.count() > 0) {
+    const box = await columnSelector.boundingBox();
+    if (!box)
+      throw new Error(`${target.phrase} has no box`);
+    await page.mouse.move(box.x + Math.min(10, box.width / 2), box.y + box.height / 2);
+    await page.mouse.down();
+    await page.mouse.up();
+    await page.locator('.d4-column-grid').last().waitFor({state: 'visible', timeout: 5000});
+    await page.keyboard.type(option);
+    await page.keyboard.press('Enter');
+    await expect(columnSelector.locator('.d4-column-selector-column')).toHaveText(exactText(option), {timeout: 5000});
     return;
   }
   const editor = await editorOf(page, target);

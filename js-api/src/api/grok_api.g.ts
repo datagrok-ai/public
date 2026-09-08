@@ -1908,6 +1908,7 @@ export interface IDartApi {
   grok_Func_Set_HelpUrl(func: any, x: String): any;
   grok_Func_Get_Package(func: any): any;
   grok_Func_Get_IsVectorFunc(func: any): any;
+  grok_Func_Get_TopMenu(func: any): any;
   grok_Func_Get_Description(func: any): any;
   grok_Func_Set_Description(func: any, x: String): any;
   grok_Func_Get_InputParams(func: any): any;

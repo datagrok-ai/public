@@ -151,6 +151,16 @@ export const filterBetween = When('user filters rows where {string} is between {
   }, [column, lo, hi] as [string, number, number]),
 {tier: 'api', description: 'the table\'s filter bitset, as a filter viewer would set it; the filter panel\'s own handles are not driven'});
 
+export const filterNotNull = When('user filters rows where {string} is not null', (page: Page, column: string) =>
+  changeTable(page, ([c]) => {
+    const df = grok.shell.t;
+    const col = df.col(c);
+    if (!col)
+      throw new Error(`no "${c}" column in ${df.name}; it has: ${df.columns.names().join(', ')}`);
+    df.filter.init((i: number) => { return !col.isNone(i) });
+  }, [column] as [string]),
+{tier: 'api', description: 'the table\'s filter bitset, as a filter viewer would set it; the filter panel\'s own handles are not driven'});
+
 export const filterTo = When('user filters rows where {string} is {string}', (page: Page, column: string, value: string) =>
   changeTable(page, ([c, v]) => {
     const df = grok.shell.t;
@@ -370,3 +380,57 @@ export const tableColumnComplete = Then('table {string} should have no missing v
 export const tableColumnIncomplete = Then('table {string} should have missing values in {string} column', async (page: Page, name: string, column: string) => {
   expect(await missingCount(page, name, column), `missing values in "${column}" of "${name}"`).toBeGreaterThan(0);
 }, {description: 'at least one blank — the precondition of a scenario about empty categories'});
+
+// --- the filter panel -------------------------------------------------------------------------------
+
+/** The filters of the current view's filter panel, by column name. */
+const filterColumns = (page: Page): Promise<string[]> => page.evaluate(() => {
+  const group = grok.shell.tv?.getFiltersGroup?.({createDefaultFilters: false});
+  return group ? (group.filters as any[]).map((f) => String(f.columnName ?? f.column?.name ?? '')) : [];
+});
+
+export const filterPanelCount = Then('the filter panel should have {int} filter(s)', async (page: Page, count: number) => {
+  await expect.poll(() => filterColumns(page), {message: 'filters of the filter panel'}).toHaveLength(count);
+}, {description: 'the filters the current view\'s filter panel holds (none is created for the check)'});
+
+export const filterPanelHas = Then('the filter panel should have a filter on {string} column', async (page: Page, column: string) => {
+  await expect.poll(() => filterColumns(page), {message: 'filters of the filter panel'}).toContain(column);
+});
+
+export const filterIsExactlyContains = Then('the filter should pass exactly the rows where {string} contains {string}', async (page: Page, column: string, text: string) => {
+  await expect.poll(() => page.evaluate(([c, t]) => {
+    const df = grok.shell.t;
+    const col = df.col(c);
+    if (!col)
+      throw new Error(`no "${c}" column in ${df.name}; it has: ${df.columns.names().join(', ')}`);
+    let wrong = 0;
+    let matching = 0;
+    for (let i = 0; i < df.rowCount; i++) {
+      const hit = String(col.get(i) ?? '').includes(t);
+      if (hit)
+        matching++;
+      if (hit !== df.filter.get(i))
+        wrong++;
+    }
+    return matching === 0 ? `no row contains "${t}"` : wrong === 0 ? 'exactly' : `${wrong} rows off`;
+  }, [column, text] as [string, string]), {message: `the filter against rows where ${column} contains "${text}"`}).toBe('exactly');
+}, {description: 'every row whose value contains the text passes and no other; a text no row contains fails'});
+
+export const onlyStartingWithSelected = Then('only rows where {string} starts with {string} should be selected', async (page: Page, column: string, prefix: string) => {
+  await expect.poll(() => page.evaluate(([c, p]) => {
+    const df = grok.shell.t;
+    const col = df.col(c);
+    if (!col)
+      throw new Error(`no "${c}" column in ${df.name}; it has: ${df.columns.names().join(', ')}`);
+    let matching = 0;
+    let wrong = 0;
+    for (let i = 0; i < df.rowCount; i++) {
+      const hit = String(col.get(i) ?? '').startsWith(p);
+      if (hit)
+        matching++;
+      if (hit !== df.selection.get(i))
+        wrong++;
+    }
+    return matching === 0 ? `no row starts with "${p}"` : wrong === 0 ? 'exactly' : `${wrong} rows off`;
+  }, [column, prefix] as [string, string]), {message: `the selection against rows where ${column} starts with "${prefix}"`}).toBe('exactly');
+}, {description: 'every row whose value starts with the text is selected and no other'});
