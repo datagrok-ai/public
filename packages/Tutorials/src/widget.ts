@@ -62,7 +62,7 @@ export class TutorialWidget extends DG.Widget {
           ui.div([], {
             style: {
               position: 'absolute',
-              width: String(Math.round(100 / total * complete)) + '%',
+              width: String(total === 0 ? 0 : Math.round(100 / total * complete)) + '%',
               backgroundColor: 'rgba(32, 131, 213, 0.15)',
               height: '100%',
             },
