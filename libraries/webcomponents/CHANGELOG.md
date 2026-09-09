@@ -1,5 +1,9 @@
 # webcomponents changelog
 
+## v.next
+
+* InputForm: Fixed rapid funcCall swaps racing (a stale form could land in the DOM and win over the newer one)
+
 ## 0.3.6 (2026-08-11)
 
 * Viewer: Fixed `viewer-data-frame-changed` firing inside the Dart event (grid mutations in handlers crashed)

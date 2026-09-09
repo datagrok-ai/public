@@ -10,6 +10,7 @@ export class InputForm extends HTMLElement {
   private skipDefaultInit = true;
   skipTableAutoFill = false;
   private formChanges$ = new Subject<DG.InputForm>();
+  private formGeneration = 0;
 
   private destroyed$ = new Subject<boolean>();
 
@@ -58,13 +59,19 @@ export class InputForm extends HTMLElement {
   }
 
   private async replaceFunc(funcCall?: DG.FuncCall) {
+    // rapid funcCall swaps race: an older form resolving after a newer one must not
+    // land in the DOM or emit events, so only the latest generation proceeds
+    const generation = ++this.formGeneration;
     if (!funcCall)
       this.formInst = undefined;
     else {
-      this.formInst = await DG.InputForm.forFuncCall(funcCall, {twoWayBinding: true, skipDefaultInit: this.skipDefaultInit, skipTableAutoFill: this.skipTableAutoFill} as any);
-      this.formInst.root.style.overflowY = 'hidden';
-      this.formInst.root.style.paddingBottom = '10px';
-      this.appendChild(this.formInst.root);
+      const form = await DG.InputForm.forFuncCall(funcCall, {twoWayBinding: true, skipDefaultInit: this.skipDefaultInit, skipTableAutoFill: this.skipTableAutoFill} as any);
+      if (generation !== this.formGeneration)
+        return;
+      this.formInst = form;
+      form.root.style.overflowY = 'hidden';
+      form.root.style.paddingBottom = '10px';
+      this.appendChild(form.root);
     }
     this.formChanges$.next(this.formInst);
     this.dispatchEvent(new CustomEvent('form-replaced', {detail: this.formInst}));
