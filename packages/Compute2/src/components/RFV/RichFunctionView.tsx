@@ -29,7 +29,7 @@ import {startWith, take, map} from 'rxjs/operators';
 import {useHelp} from '../../composables/use-help';
 import {useObservable} from '@vueuse/rxjs';
 import {_package} from '../../package-instance';
-import {applyDefaultGridFloatFormat, canUseResults, getViewers, pinView as pinViewHelper} from '../../utils';
+import {applyDefaultGridFloatFormat, canUseResults, getViewers, pinView as pinViewHelper, STICKY_BAR_BACKGROUND} from '../../utils';
 import {canSaveProject, saveCallToProject, DfExportEntry} from '../../project-export';
 
 
@@ -811,7 +811,7 @@ export const RichFunctionView = Vue.defineComponent({
                     skipTableAutoFill={true}
                     isReadonly={isReadonly.value}
                   /> }
-                <div class='flex sticky bottom-0' style={{'z-index': 1000, 'background-color': 'rgb(255,255,255,0.75)'}}>
+                <div class='flex sticky bottom-0' style={{'z-index': 1000, 'background-color': STICKY_BAR_BACKGROUND}}>
                   { slots.navigation ?
                     slots.navigation({runLabel: runLabel.value, allowRerun: allowRerun.value}) :
                     showRun.value ?

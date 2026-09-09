@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
 import {DockManager, IconFA, ifOverlapping, MarkDown, RibbonMenu, RibbonPanel, tooltip} from '@datagrok-libraries/webcomponents-vue';
 import {History} from '../History/History';
-import {hasAddControls, PipelineWithAdd} from '../../utils';
+import {hasAddControls, PipelineWithAdd, STICKY_BAR_BACKGROUND} from '../../utils';
 import {isFuncCallState, isStaticPipelineState, PipelineState, ViewAction} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {useHelp} from '../../composables/use-help';
 import {hasContextHelp} from '@datagrok-libraries/compute-utils/shared-utils/utils';
@@ -182,7 +182,7 @@ export const PipelineView = Vue.defineComponent({
                 </div>
               </div>
               { slots.navigation &&
-                <div class='flex sticky bottom-0' style={{'z-index': 1000, 'background-color': 'rgb(255,255,255,0.75)'}}>
+                <div class='flex sticky bottom-0' style={{'z-index': 1000, 'background-color': STICKY_BAR_BACKGROUND}}>
                   {slots.navigation()}
                 </div>
               }

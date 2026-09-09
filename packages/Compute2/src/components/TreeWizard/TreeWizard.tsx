@@ -26,7 +26,7 @@ import {
   findNextSubStep,
   findNodeWithPathByUuid, findPrevStep, findTreeNodeByPath,
   findTreeNodeParrent, getRelevantGlobalActions, getViewers, hasInconsistencies, hasSubtreeFixableInconsistencies, hasSubtreeAnyInconsistencies,
-  pinView, reportTree, resolveChosenUuid,
+  pinView, reportTree, resolveChosenUuid, SELECTED_STEP_BACKGROUND,
 } from '../../utils';
 import {useReactiveTreeDriver} from '../../composables/use-reactive-tree-driver';
 import {EditRunMetadataDialog} from '@datagrok-libraries/compute-utils/shared-components/src/history-dialogs';
@@ -836,7 +836,7 @@ export const TreeWizard = Vue.defineComponent({
                         consistencyStates={states.consistency[stat.data.uuid]}
                         descriptions={states.descriptions[stat.data.uuid]}
                         style={{
-                          'background-color': stat.data.uuid === chosenStepUuid.value ? '#f2f2f5' : null,
+                          'background-color': stat.data.uuid === chosenStepUuid.value ? SELECTED_STEP_BACKGROUND : null,
                         }}
                         isDraggable={treeInstance.value?.isDraggable(stat)}
                         isDroppable={treeInstance.value?.isDroppable(stat)}
