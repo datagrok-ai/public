@@ -95,8 +95,7 @@ async function configProcessing(
   } else if (isPipelineStaticInitial(conf)) {
     const pconf = processStaticConfig(conf, logger);
     const steps = await Promise.all(conf.steps.map(async (step) => {
-      processUIFlags(step);
-      const sconf = await configProcessing(step, loadedPipelines, logger);
+      const sconf = await configProcessing(processUIFlags(step), loadedPipelines, logger);
       return sconf;
     }));
     checkUniqId(steps, logger);
@@ -104,8 +103,7 @@ async function configProcessing(
   } else if (isPipelineDynamicInitial(conf)) {
     const pconf = processDynamicConfig(conf, logger);
     const stepTypes = await Promise.all(conf.stepTypes.map(async (item) => {
-      processUIFlags(item);
-      const nconf = await configProcessing(item, loadedPipelines, logger);
+      const nconf = await configProcessing(processUIFlags(item), loadedPipelines, logger);
       return nconf;
     }));
     checkUniqId(stepTypes, logger);
@@ -120,12 +118,10 @@ async function configProcessing(
   throw new Error(`Pipeline configuration node type matching failed: ${conf}`);
 }
 
-function processUIFlags(item: PipelineDynamicItem<never>) {
-  if (item.disableUIControlls) {
-    item.disableUIAdding = true;
-    item.disableUIDragging = true;
-    item.disableUIRemoving = true;
-  }
+function processUIFlags<T extends PipelineDynamicItem<never>>(item: T): T {
+  if (item.disableUIControlls)
+    return {...item, disableUIAdding: true, disableUIDragging: true, disableUIRemoving: true};
+  return item;
 }
 
 function processStaticConfig(conf: PipelineConfigurationStaticInitial, logger?: DriverLogger) {
