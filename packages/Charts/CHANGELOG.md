@@ -11,6 +11,7 @@
 * GROK-19362: Charts: Radar: Inherits ordinary column coloring but not linked
 * Charts | Globe: Fixed crash when columns are removed from the underlying dataframe
 * GROK-20846: Charts: Timelines: X axis labels overlap and are unreadable
+* [3677](https://github.com/datagrok-ai/public/issues/3677): Charts: Radar: Add absolute normalization with configurable min/max per axis
 
 ## 1.7.0 (2026-03-20)
 

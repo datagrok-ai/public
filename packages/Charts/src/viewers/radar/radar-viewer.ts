@@ -14,6 +14,7 @@ import '../../../css/radar-viewer.css';
 
 type MinimalIndicator = '1' | '5' | '10' | '25';
 type MaximumIndicator = '75' | '90' | '95' | '99';
+type Normalization = 'Column' | 'Global';
 const WARNING_CLASS = 'radar-warning';
 
 // Based on this example: https://echarts.apache.org/examples/en/editor.html?c=radar
@@ -32,6 +33,7 @@ export class RadarViewer extends EChartViewer {
   showMin: boolean;
   showMax: boolean;
   showValues: boolean;
+  normalization: Normalization;
   colorColumnName: string;
   backgroundMinColor: number;
   backgroundMaxColor: number;
@@ -69,10 +71,12 @@ export class RadarViewer extends EChartViewer {
     this.showMin = this.bool('showMin', false);
     this.showMax = this.bool('showMax', false);
     this.showValues = this.bool('showValues', false);
+    this.normalization = <Normalization> this.string('normalization', 'Column', {choices: ['Column', 'Global'],
+      category: 'Value', description: 'Column: scales each axis to its own range; Global: one scale across all columns'});
     this.valuesColumnNames = this.addProperty('valuesColumnNames', DG.TYPE.COLUMN_LIST, null,
-      {columnTypeFilter: DG.TYPE.NUMERICAL, category: 'Value', groupWith: 'minValues, maxValues'});
+      {columnTypeFilter: DG.COLUMN_TYPE_FILTER.NUMERICAL_NO_DATE_TIME, category: 'Value', groupWith: 'minValues, maxValues'});
     this.minValues = this.addProperty('minValues', DG.TYPE.MAP, null,
-      {category: 'Value', description: 'Axis minimum per column; defaults to the column minimum'}) ?? {};
+      {category: 'Value', description: 'Axis minimum per column; defaults to 0, or below the minimum for negative columns'}) ?? {};
     this.maxValues = this.addProperty('maxValues', DG.TYPE.MAP, null,
       {category: 'Value', description: 'Axis maximum per column; defaults to the column maximum'}) ?? {};
     this.legendVisibility = <VisibilityMode> this.string('legendVisibility', VISIBILITY_MODE.AUTO,
@@ -122,16 +126,8 @@ export class RadarViewer extends EChartViewer {
   }
 
   init() {
-    this.option.radar.indicator = [];
-    const columnNames: string[] = [];
-    for (const column of this.dataFrame.columns.numerical)
-      columnNames.push(column.name);
-
     this.columns = this.getColumns();
-    for (const c of this.columns) {
-      const indicator = this.createRadarIndicator(c);
-      this.option.radar.indicator.push(indicator);
-    }
+    this.option.radar.indicator = this.createRadarIndicators();
 
     this.updateMin();
     this.updateMax();
@@ -209,7 +205,7 @@ export class RadarViewer extends EChartViewer {
     this.root.appendChild(this.legendHelper.legendDiv);
     this.updateLegend();
     this.filter = this.dataFrame.filter;
-    this.valuesColumnNames = Array.from(this.dataFrame.columns.numerical)
+    this.valuesColumnNames = Array.from(this.dataFrame.columns.numericalNoDateTime)
       .map((c: DG.Column) => c.name).slice(0, MAXIMUM_COLUMN_NUMBER);
     this.subs.push(this.dataFrame.onCurrentRowChanged.subscribe((_) => this.render()));
     this.subs.push(this.dataFrame.onMouseOverRowChanged.subscribe((_) => {
@@ -288,12 +284,9 @@ export class RadarViewer extends EChartViewer {
   }
 
   getSeriesData(indexes?: number[]): void {
-    this.option.radar.indicator = [];
     this.clearData([0, 1, 2]);
     this.columns = this.getColumns();
-
-    for (const c of this.columns)
-      this.option.radar.indicator.push(this.createRadarIndicator(c));
+    this.option.radar.indicator = this.createRadarIndicators();
 
     this.option.series[2].data = this.createSeriesData(indexes);
 
@@ -424,31 +417,34 @@ export class RadarViewer extends EChartViewer {
     }
   }
 
-  /** Axis range: the per-column override wins, otherwise the column stats. */
-  createRadarIndicator(c: DG.Column): RadarIndicator {
-    const isDate = c.type === 'datetime';
+  createRadarIndicators(): RadarIndicator[] {
+    const indicators = this.columns.map((c) => this.createRadarIndicator(c));
+    if (this.normalization === 'Global') {
+      const mins = indicators.map((i) => i.min).filter((v) => isFinite(v));
+      const maxs = indicators.map((i) => i.max).filter((v) => isFinite(v));
+      if (mins.length > 0) {
+        const min = Math.min(...mins);
+        const max = Math.max(...maxs);
+        for (const indicator of indicators) {
+          indicator.min = min;
+          indicator.max = max;
+        }
+      }
+    }
+    return indicators;
+  }
+
+  createRadarIndicator(c: DG.Column): Required<RadarIndicator> {
     return {
       name: c.name,
-      min: this.minValues?.[c.name] ?? (isDate ? this.getYearFromDate(c.min) : c.min < 0 ? c.min + c.min * 0.1 : 0),
-      max: this.maxValues?.[c.name] ?? (isDate ? this.getYearFromDate(c.max) : c.max),
+      min: this.minValues?.[c.name] ?? (c.min < 0 ? c.min + c.min * 0.1 : 0),
+      max: this.maxValues?.[c.name] ?? c.max,
     };
   }
 
   private cellValue(c: DG.Column, i: number): number {
-    if (c.type === 'datetime')
-      return this.getDate(c, c.getRawData()[i]);
     const v = Number(c.get(i));
     return v !== -2147483648 ? v : 0;
-  }
-
-  getDate(c: DG.Column, value: number) {
-    const date = this.getYearFromDate(value);
-    const isRight = date >= this.getYearFromDate(c.min) && date <= this.getYearFromDate(c.max);
-    return isRight ? date : this.getYearFromDate(c.min);
-  }
-
-  getYearFromDate(value: number) {
-    return new Date(Math.floor(value) / 1000).getFullYear();
   }
 
   updateMin() {
@@ -517,7 +513,7 @@ export class RadarViewer extends EChartViewer {
 
   getColumns() : DG.Column<any>[] {
     const columns: DG.Column<any>[] = [];
-    const numericalColumns: DG.Column<any>[] = Array.from(this.dataFrame.columns.numerical);
+    const numericalColumns: DG.Column<any>[] = Array.from(this.dataFrame.columns.numericalNoDateTime);
     if (this.valuesColumnNames?.length > 0) {
       const selectedColumns = this.dataFrame.columns.byNames(this.valuesColumnNames);
       for (let i = 0; i < selectedColumns.length; ++i) {
@@ -569,11 +565,7 @@ export class RadarViewer extends EChartViewer {
         value !== -2147483648;
 
     return columns.map((column) => {
-      const values = column.type === 'datetime' ?
-        column.getRawData().map((v: number) => this.getDate(column, v)) :
-        Array.from(column.values());
-
-      const validSorted = values
+      const validSorted = Array.from(column.values())
         .filter(isValidValue)
         .sort((a, b) => Number(a) - Number(b));
 
