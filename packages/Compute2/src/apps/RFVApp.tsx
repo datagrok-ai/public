@@ -103,8 +103,6 @@ export const RFVApp = Vue.defineComponent({
     }, {immediate: true});
 
     const formReplaced$ = new BehaviorSubject<DG.InputForm | undefined>(undefined);
-    // dataframe/file inputs that came from URL entity ids, kept for link export
-    const urlEntityIds = new Map<string, string>();
 
     const clearUrlInputs = () => {
       for (const key of Object.keys(searchParams)) {
@@ -118,11 +116,9 @@ export const RFVApp = Vue.defineComponent({
     // patch is applied in one sync block after the form is built (defaults already in)
     const applyUrlInputsFlow = async (urlParams: URLSearchParams) => {
       const call = currentFuncCall.value;
-      const {patch, entityIds, warnings} = await parseUrlInputs(call, urlParams);
+      const {patch, warnings} = await parseUrlInputs(call, urlParams);
       for (const warning of warnings)
         grok.shell.warning(warning);
-      for (const [name, id] of entityIds)
-        urlEntityIds.set(name, id);
       if (patch.size > 0) {
         await formReplaced$.pipe(filter((form) => form != null), take(1)).toPromise();
         if (currentFuncCall.value !== call)
@@ -157,7 +153,7 @@ export const RFVApp = Vue.defineComponent({
     }, {immediate: true});
 
     const copyUrlWithInputs = async () => {
-      const {url, skipped} = buildInputsUrl(currentFuncCall.value, urlEntityIds);
+      const {url, skipped} = buildInputsUrl(currentFuncCall.value);
       if (!await copyText(url)) {
         grok.shell.warning('Could not access the clipboard');
         return;
