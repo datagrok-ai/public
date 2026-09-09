@@ -3,6 +3,7 @@
 ## v.next
 
 * InputForm: Fixed rapid funcCall swaps racing (a stale form could land in the DOM and win over the newer one)
+* InputForm: Setting funcCall to undefined no longer permanently kills the input/validation event streams
 
 ## 0.3.6 (2026-08-11)
 

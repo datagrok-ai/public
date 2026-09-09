@@ -2,14 +2,14 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {Subject} from 'rxjs';
+import {EMPTY, Subject} from 'rxjs';
 import {distinctUntilChanged, map, mapTo, startWith, switchMap, takeUntil} from 'rxjs/operators';
 
 export class InputForm extends HTMLElement {
   private formInst?: DG.InputForm;
   private skipDefaultInit = true;
   skipTableAutoFill = false;
-  private formChanges$ = new Subject<DG.InputForm>();
+  private formChanges$ = new Subject<DG.InputForm | undefined>();
   private formGeneration = 0;
 
   private destroyed$ = new Subject<boolean>();
@@ -17,13 +17,15 @@ export class InputForm extends HTMLElement {
   constructor() {
     super();
 
+    // a cleared form (funcCall = undefined) must idle the streams, not error them:
+    // a switchMap throw would terminate the subscriptions for the element's lifetime
     this.formChanges$.pipe(
-      switchMap((form) => form.onInputChanged),
+      switchMap((form) => form ? form.onInputChanged : EMPTY),
       takeUntil(this.destroyed$),
     ).subscribe((ev) => this.dispatchEvent(new CustomEvent('input-changed', {detail: ev})));
 
     this.formChanges$.pipe(
-      switchMap((form) => form.onValidationCompleted.pipe(mapTo(form), startWith(form))),
+      switchMap((form) => form ? form.onValidationCompleted.pipe(mapTo(form), startWith(form)) : EMPTY),
       map((form) => form.isValid),
       distinctUntilChanged(),
       takeUntil(this.destroyed$),
