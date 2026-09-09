@@ -303,16 +303,18 @@ export class Dapi {
  * Works with Datagrok REST API, allows to get filtered and paginated lists of entities,
  * Can be extended with specific methods. (i.e. {@link UsersDataSource})
  *
- * The fluent methods ({@link filter}, {@link order}, {@link page}, {@link by}, {@link include})
- * MUTATE this source and return it, and every `grok.dapi.<name>` getter creates a fresh source, so
- * chain on one instance: `grok.dapi.users.filter('login = "admin"').list()` — a filter applied to
- * `grok.dapi.users` on one line does not carry over to `grok.dapi.users` on the next.
+ * The fluent methods ({@link filter}, {@link order}, {@link page}, {@link by}, {@link include}, ...) are
+ * immutable: each returns a new source and leaves this one as it was, so a source can be kept in a variable
+ * and reused as a starting point.
  * @example
- * const recent = await grok.dapi.projects.filter('createdOn > -1w').order('createdOn', true).list({pageSize: 20});
+ * const projects = grok.dapi.projects.order('createdOn', true);
+ * const recent = await projects.filter('createdOn > -1w').list({pageSize: 20});
+ * const all = await projects.list();   // still unfiltered
  */
 export class HttpDataSource<T> {
   dart: any;
   clsName: string;
+  private query: DataSourceQuery = {includes: []};
 
 
   constructor(s: any, clsName?: string | null) {
@@ -320,31 +322,57 @@ export class HttpDataSource<T> {
     this.clsName = clsName ?? '';
   }
 
+  /** A copy of this source whose query has [patch] applied. The Dart handle is shared; its state is
+   * rebuilt from the query right before every request, so the copies never observe each other. */
+  protected with(patch: Partial<DataSourceQuery>): this {
+    const copy = Object.create(Object.getPrototypeOf(this));
+    return Object.assign(copy, this, {query: {...this.query, ...patch}});
+  }
+
+  private prepare(): any {
+    const q = this.query;
+    let d = api.grok_DataSource_ResetQuery(this.dart);
+    if (q.allPackageVersions)
+      d = api.grok_DataSource_AllPackageVersions(d);
+    if (q.filter !== undefined)
+      d = api.grok_DataSource_WhereSmart(d, q.filter);
+    if (q.order !== undefined)
+      d = api.grok_DataSource_Order(d, q.order.field, q.order.desc);
+    if (q.pageSize !== undefined)
+      d = api.grok_DataSource_By(d, q.pageSize);
+    if (q.page !== undefined)
+      d = api.grok_DataSource_Page(d, q.page);
+    for (const include of q.includes)
+      d = api.grok_DataSource_Include(d, include);
+    return d;
+  }
+
   /** Returns all entities that satisfy the filtering criteria (see {@link filter}).
    *  See examples: {@link https://public.datagrok.ai/js/samples/dapi/projects-list}
    *  Smart filter: {@link https://datagrok.ai/help/datagrok/smart-search} */
   list(options: {pageSize?: number, pageNumber?: number, filter?: string, order?: string} = {}): Promise<T[]> {
+    let s: HttpDataSource<T> = this;
     if (options.pageSize !== undefined)
-      this.by(options.pageSize);
+      s = s.by(options.pageSize);
     if (options.pageNumber !== undefined)
-      this.page(options.pageNumber);
+      s = s.page(options.pageNumber);
     if (options.filter !== undefined)
-      this.filter(options.filter);
+      s = s.filter(options.filter);
     if (options.order !== undefined)
-      this.order(options.order);
-    return api.grok_DataSource_List(this.dart);
+      s = s.order(options.order);
+    return api.grok_DataSource_List(s.prepare());
   }
 
   /** Counts entities that satisfy the filtering criteria (see {@link filter}).
    *  See examples: {@link https://public.datagrok.ai/js/samples/dapi/projects-list}
    *  Smart filter: {@link https://datagrok.ai/help/datagrok/smart-search} */
   count(): Promise<number> {
-    return api.grok_DataSource_Count(this.dart);
+    return api.grok_DataSource_Count(this.prepare());
   }
 
   /** Returns the first entity that satisfies the filtering criteria (see {@link filter}). */
   first(): Promise<T> {
-    return api.grok_DataSource_First(this.dart);
+    return api.grok_DataSource_First(this.prepare());
   }
 
   /** Returns an entity with the specified id.
@@ -353,64 +381,68 @@ export class HttpDataSource<T> {
    *  @param id - GUID of the corresponding object
    *  @returns `{Promise<object>}` - entity.  */
   find(id: string): Promise<T> {
-    return api.grok_DataSource_Find(this.dart, id);
+    return api.grok_DataSource_Find(this.prepare(), id);
   }
 
   /** Saves an entity. */
   save(e: Entity): Promise<T> {
-    return api.grok_DataSource_Save(this.dart, e.dart);
+    return api.grok_DataSource_Save(api.grok_DataSource_ResetQuery(this.dart), e.dart);
   }
 
   /** Deletes an entity. */
   delete(e: Entity): Promise<void> {
-    return api.grok_DataSource_Delete(this.dart, e.dart);
+    return api.grok_DataSource_Delete(api.grok_DataSource_ResetQuery(this.dart), e.dart);
   }
 
-  /** Turns off package versions isolation. This DataSource will return all entities in all versions, not only the current one **/
-  allPackageVersions(): HttpDataSource<T> {
-    this.dart = api.grok_DataSource_AllPackageVersions(this.dart);
-    return this;
+  /** A source without package version isolation: entities of all package versions, not only the current one. */
+  allPackageVersions(): this {
+    return this.with({allPackageVersions: true});
   }
 
-  by(i: number): HttpDataSource<T> {
-    this.dart = api.grok_DataSource_By(this.dart, i);
-    return this;
+  /** A source that returns at most [i] entities per page. See also {@link page}. */
+  by(i: number): this {
+    return this.with({pageSize: i});
   }
 
-  /** Restricts results to the specified page number. See also {@link nextPage}. */
-  page(i: number): HttpDataSource<T> {
-    this.dart = api.grok_DataSource_Page(this.dart, i);
-    return this;
+  /** A source restricted to page [i]. See also {@link nextPage}. */
+  page(i: number): this {
+    return this.with({page: i});
   }
 
-  /** Returns next page of all entities that satisfy the filtering criteria (see {@link filter}).
-   *  Works only if pageSize was set during previous list() call
+  /** A source for the page after this one (the first call gives page 1). Reassign to advance:
+   *  `source = source.nextPage()`.
    *  See examples: {@link https://public.datagrok.ai/js/samples/dapi/projects-list} */
-  nextPage(): HttpDataSource<T> {
-    this.dart = api.grok_DataSource_NextPage(this.dart);
-    return this;
+  nextPage(): this {
+    return this.with({page: (this.query.page ?? 0) + 1});
   }
 
-  /** Applies filter to current request.
+  /** A source filtered by [w]; replaces the filter of this source, if any.
    *  Also can be set with {@link list} method "options" parameter
    *  See example: {@link https://public.datagrok.ai/js/samples/dapi/projects-list}
    *  Smart filter: {@link https://datagrok.ai/help/datagrok/navigation/views/browse#entity-search} */
-  filter(w: string): HttpDataSource<T> {
-    this.dart = api.grok_DataSource_WhereSmart(this.dart, w);
-    return this;
+  filter(w: string): this {
+    return this.with({filter: w});
   }
 
-  /** Instructs data source to return results in the specified order. */
-  order(fieldName: string, desc: boolean = false): HttpDataSource<T> {
-    this.dart = api.grok_DataSource_Order(this.dart, fieldName, desc);
-    return this;
+  /** A source ordered by [fieldName]; replaces the order of this source, if any. */
+  order(fieldName: string, desc: boolean = false): this {
+    return this.with({order: {field: fieldName, desc}});
   }
 
-  /** Includes entity in the result */
-  include(include: string): HttpDataSource<T> {
-    this.dart = api.grok_DataSource_Include(this.dart, _propsToDart(include, this.clsName));
-    return this;
+  /** A source that also loads the [include]d properties of every entity (adds to this source's includes). */
+  include(include: string): this {
+    return this.with({includes: [...this.query.includes, _propsToDart(include, this.clsName)]});
   }
+}
+
+/** Request modifiers of an {@link HttpDataSource}; every fluent verb yields a source with a new one. */
+interface DataSourceQuery {
+  filter?: string;
+  order?: {field: string, desc: boolean};
+  pageSize?: number;
+  page?: number;
+  includes: string[];
+  allPackageVersions?: boolean;
 }
 
 
@@ -1006,12 +1038,14 @@ export class SpaceChildrenClient extends HttpDataSource<Entity> {
    * @param types - Comma-separated list of entity types to include (e.g., 'Script,DataQuery')
    * @param includeLinked - If true, includes linked references in addition to owned children (default: false)
    * @returns A new SpaceChildrenClient with the filter applied */
-  ofTypes(types: string, includeLinked: boolean = false): SpaceChildrenClient {
-    return new SpaceChildrenClient(api.grok_SpaceChildrenClient_Filter(this.dart, types, includeLinked));
+  ofTypes(types: string, includeLinked: boolean = false): this {
+    const copy = this.with({});
+    copy.dart = api.grok_SpaceChildrenClient_Filter(this.dart, types, includeLinked);
+    return copy;
   }
 
   /** @deprecated Use {@link ofTypes}: unlike {@link HttpDataSource.filter}, this takes entity types, not a smart filter. Removed in 1.29. */
-  filter(types: string, includeLinked: boolean = false): SpaceChildrenClient {
+  filter(types: string, includeLinked: boolean = false): this {
     return this.ofTypes(types, includeLinked);
   }
 }

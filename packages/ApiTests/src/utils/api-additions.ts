@@ -123,4 +123,24 @@ category('JS API: additions', () => {
     for (const v of [sp, byLiteral, heat, generic])
       v.detach();
   });
+
+  test('HttpDataSource verbs are immutable', async () => {
+    const users = grok.dapi.users;
+    const admins = users.filter('login = "admin"');
+    expect(admins === users, false);
+    const all = await users.list();
+    expect(all.length > 1, true, 'the stand has more than one user');
+    expect((await admins.list()).length, 1);
+    expect((await admins.count()), 1);
+    await users.first();
+    expect((await users.list()).length, all.length, 'first() must not shrink later lists');
+    expect((await users.list({pageSize: 1})).length, 1);
+    expect((await users.list()).length, all.length, 'list options must not stick');
+    const paged = users.by(1);
+    expect((await paged.list()).length, 1);
+    expect((await paged.nextPage().list()).length, 1);
+    expect((await paged.list()).length, 1, 'nextPage() must not advance its source');
+    expect((await users.order('login', true).first()).login >= (await users.order('login').first()).login, true);
+    expect((await users.list()).length, all.length);
+  });
 });

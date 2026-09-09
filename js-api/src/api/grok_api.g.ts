@@ -1191,6 +1191,7 @@ export interface IDartApi {
   grok_DataSource_Save(s: any, e: any): Promise<any>;
   grok_DataSource_Delete(s: any, e: any): Promise<any>;
   grok_DataSource_Include(s: any, include: String): any;
+  grok_DataSource_ResetQuery(s: any): any;
   grok_DataSource_List(s: any): Promise<any>;
   grok_DataSource_Count(s: any): Promise<any>;
   grok_DataSource_First(s: any): Promise<any>;
