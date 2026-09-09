@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {Subject, BehaviorSubject, combineLatest} from 'rxjs';
 import $ from 'cash-dom';
-import {debounceTime, distinct, takeUntil} from 'rxjs/operators';
+import {debounceTime, distinctUntilChanged, takeUntil} from 'rxjs/operators';
 
 //
 // TODO: probably a separate type lib (?)
@@ -74,7 +74,7 @@ export class ValidationIcon extends HTMLElement {
   constructor() {
     super();
 
-    combineLatest([this.status$.pipe(distinct()), this.isScalar$.pipe(distinct()), this.hover$.pipe(distinct())]).pipe(
+    combineLatest([this.status$.pipe(distinctUntilChanged()), this.isScalar$.pipe(distinctUntilChanged()), this.hover$.pipe(distinctUntilChanged())]).pipe(
       debounceTime(0),
       takeUntil(this.destroyed$)
     ).subscribe(() => this.update());
@@ -136,8 +136,13 @@ export class ValidationIcon extends HTMLElement {
   }
 
   update() {
-    if (!this.status$.value)
+    if (!this.status$.value) {
+      while (this.firstChild && this.removeChild(this.firstChild));
+      this.currentIcon = undefined;
+      this.currentPopover = undefined;
+      $(this).css('display', 'none');
       return;
+    }
     const {validation, consistency} = this.status$.value;
 
     $(this).addClass('rfv2-validation-icon');
@@ -177,20 +182,23 @@ export class ValidationIcon extends HTMLElement {
       return null;
     })();
 
-    if (!iconOptions) return null;
-
+    if (!iconOptions) {
+      this.currentIcon = undefined;
+      this.currentPopover = undefined;
+      return null;
+    }
 
     if (this.hover$.value) {
       const icon = ui.iconFA(iconOptions.name);
       ui.tooltip.bind(icon, () => this.renderValidationResults());
-      if (iconOptions.color) $(icon).css('color', `${iconOptions.color}!important`);
+      if (iconOptions.color) icon.style.setProperty('color', iconOptions.color, 'important');
 
       this.currentIcon = icon;
       this.currentPopover = undefined;
     } else {
       const icon = ui.iconFA(iconOptions.name, () => this.displayValidation(), 'Show validation');
       $(icon).css({'pointer-events': 'all'});
-      if (iconOptions.color) $(icon).css('color', `${iconOptions.color}!important`);
+      if (iconOptions.color) icon.style.setProperty('color', iconOptions.color, 'important');
 
       $(icon).toggleClass('fal far');
       const popover = this.addPopover(icon);
@@ -210,7 +218,8 @@ export class ValidationIcon extends HTMLElement {
         .forEach(({category, advice}) => {
           const sectionIconOptions = this.getIconOptions(category)!;
           const icon = ui.iconFA(sectionIconOptions.name);
-          $(icon).css({'color': sectionIconOptions.color, 'margin-right': '4px'});
+          icon.style.setProperty('color', sectionIconOptions.color, 'important');
+          $(icon).css('margin-right', '4px');
           const description = typeof advice === 'string' ? advice : advice.description;
           const actions = typeof advice !== 'string' ? (advice.actions ?? []) : [];
           root.appendChild(ui.divV([
@@ -230,7 +239,8 @@ export class ValidationIcon extends HTMLElement {
     if (status?.consistency?.inconsistent) {
       const sectionIconOptions = this.getIconOptions('inconsistent', status?.consistency?.restriction)!;
       const icon = ui.iconFA(sectionIconOptions.name);
-      $(icon).css({'color': sectionIconOptions.color, 'margin-right': '4px'});
+      icon.style.setProperty('color', sectionIconOptions.color, 'important');
+      $(icon).css('margin-right', '4px');
 
       const consistentValue = status.consistency.assignedValue;
       root.appendChild(ui.divV([
@@ -259,13 +269,13 @@ export class ValidationIcon extends HTMLElement {
   }
 
   private getIconOptions(category: 'errors' | 'warnings' | 'notifications' | 'inconsistent', restrictionType?: string) {
-    if (category === 'errors') return {name: 'exclamation-circle', color: 'var(--red-3)!important'};
+    if (category === 'errors') return {name: 'exclamation-circle', color: 'var(--red-3)'};
     if (category === 'warnings')
-      return {name: 'exclamation-circle', color: 'var(--orange-2)!important'};
+      return {name: 'exclamation-circle', color: 'var(--orange-2)'};
     if (category === 'notifications')
-      return {name: 'info-circle', color: 'var(--blue-1)!important'};
+      return {name: 'info-circle', color: 'var(--blue-1)'};
     if (category === 'inconsistent')
-      return {name: 'handshake-slash', color: this.isImportantRestriction(restrictionType) ? 'var(--red-3)!important' : 'var(--blue-1)!important'};
+      return {name: 'handshake-slash', color: this.isImportantRestriction(restrictionType) ? 'var(--red-3)' : 'var(--blue-1)'};
   }
 
   private isImportantRestriction(restrictionType?: string) {
