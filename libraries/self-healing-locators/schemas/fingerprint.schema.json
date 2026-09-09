@@ -1,0 +1,159 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://datagrok.ai/schemas/self-healing-locators/fingerprint-v1.json",
+  "title": "ElementFingerprint",
+  "description": "Captured evidence about a UI element used by self-healing locators. See docs/02-fingerprint-spec.md.",
+  "type": "object",
+  "required": ["schemaVersion", "anchorName", "capturedAt", "capturedBy", "testRef", "semantic", "structural", "text", "visual", "hints"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": { "const": "1" },
+    "anchorName": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "description": "Logical name from healing.anchor() or auto-derived from selector + test."
+    },
+    "capturedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "capturedBy": {
+      "enum": ["auto", "explicit"]
+    },
+    "testRef": {
+      "type": "object",
+      "required": ["file", "test", "selectorAtCapture"],
+      "additionalProperties": false,
+      "properties": {
+        "file": { "type": "string" },
+        "suite": { "type": "string" },
+        "test": { "type": "string" },
+        "selectorAtCapture": { "type": "string" }
+      }
+    },
+    "semantic": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "testId": { "type": "string" },
+        "domId": { "type": "string" },
+        "ariaLabel": { "type": "string" },
+        "ariaRole": { "type": "string" },
+        "name": { "type": "string" },
+        "dgWidgetType": { "type": "string" },
+        "dgViewerType": { "type": "string" }
+      }
+    },
+    "structural": {
+      "type": "object",
+      "required": ["tagName", "stableClasses", "parentChain"],
+      "additionalProperties": false,
+      "properties": {
+        "tagName": { "type": "string" },
+        "stableClasses": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        },
+        "parentChain": {
+          "type": "array",
+          "maxItems": 3,
+          "items": {
+            "type": "object",
+            "required": ["tagName"],
+            "additionalProperties": false,
+            "properties": {
+              "tagName": { "type": "string" },
+              "testId": { "type": "string" },
+              "ariaRole": { "type": "string" },
+              "dgWidgetType": { "type": "string" },
+              "stableClasses": {
+                "type": "array",
+                "items": { "type": "string" },
+                "uniqueItems": true
+              }
+            }
+          }
+        },
+        "indexInParent": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "text": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "visibleText": { "type": "string", "maxLength": 200 },
+        "placeholder": { "type": "string", "maxLength": 200 },
+        "title": { "type": "string", "maxLength": 200 },
+        "valueAtCapture": { "type": "string" }
+      }
+    },
+    "visual": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "boundingBox": {
+          "type": "object",
+          "required": ["x", "y", "width", "height"],
+          "additionalProperties": false,
+          "properties": {
+            "x": { "type": "number" },
+            "y": { "type": "number" },
+            "width": { "type": "number" },
+            "height": { "type": "number" }
+          }
+        },
+        "viewportSize": {
+          "type": "object",
+          "required": ["w", "h"],
+          "additionalProperties": false,
+          "properties": {
+            "w": { "type": "number" },
+            "h": { "type": "number" }
+          }
+        },
+        "visualHash": {
+          "type": "string",
+          "description": "Perceptual hash of the element-only screenshot. Present only when the screenshots feature flag is on."
+        },
+        "screenshotRef": {
+          "type": "string",
+          "description": "Path under registry/screenshots/. Present only when image retention is enabled."
+        }
+      }
+    },
+    "hints": {
+      "type": "object",
+      "required": ["domIdLooksStable", "classesAreCssInJs", "textIsLikelyDynamic"],
+      "additionalProperties": false,
+      "properties": {
+        "domIdLooksStable": { "type": "boolean" },
+        "classesAreCssInJs": { "type": "boolean" },
+        "textIsLikelyDynamic": { "type": "boolean" },
+        "elementIsInsideViewer": { "type": "string" },
+        "platformVersion": { "type": "string" }
+      }
+    },
+    "contextSnippet": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "accessibilityNode": { "type": "object" },
+        "htmlSnippet": { "type": "string", "maxLength": 4096 }
+      }
+    },
+    "purpose": {
+      "type": "string",
+      "enum": ["normal", "destructive", "auth"],
+      "description": "Optional severity tag set via healing.anchor() that influences the policy gates."
+    },
+    "deprecated": {
+      "type": "boolean",
+      "description": "Marked true when an anchor name is being phased out; pruned after one minor version."
+    }
+  }
+}
