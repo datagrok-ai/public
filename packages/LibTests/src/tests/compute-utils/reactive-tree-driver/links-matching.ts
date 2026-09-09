@@ -1366,6 +1366,67 @@ category('ComputeUtils: Driver links matching', async () => {
     }
     expectDeepEqual(threw, true);
   });
+
+  test('Reject multi-id io target on `from` without template', async () => {
+    let threw = false;
+    try {
+      await getProcessedConfig({
+        id: 'pipeline1',
+        type: 'static',
+        steps: [
+          {id: 'step1', nqName: 'LibTests:TestAdd2'},
+          {id: 'step2', nqName: 'LibTests:TestMul2'},
+        ],
+        links: [{
+          id: 'link1',
+          from: 'in1:step1/a|b',
+          to: 'out1:step2/a',
+        }],
+      });
+    } catch {
+      threw = true;
+    }
+    expectDeepEqual(threw, true);
+  });
+
+  test('Reject multi-id io target on `to` without template', async () => {
+    let threw = false;
+    try {
+      await getProcessedConfig({
+        id: 'pipeline1',
+        type: 'static',
+        steps: [
+          {id: 'step1', nqName: 'LibTests:TestAdd2'},
+          {id: 'step2', nqName: 'LibTests:TestMul2'},
+        ],
+        links: [{
+          id: 'link1',
+          from: 'in1:step1/res',
+          to: 'out1:step2/a|b',
+        }],
+      });
+    } catch {
+      threw = true;
+    }
+    expectDeepEqual(threw, true);
+  });
+
+  test('Multi-id io target with template flag still expands', async () => {
+    const pconf = await getProcessedConfig({
+      id: 'pipeline1',
+      type: 'static',
+      steps: [
+        {id: 'step1', nqName: 'LibTests:TestAdd2'},
+        {id: 'step2', nqName: 'LibTests:TestMul2'},
+      ],
+      links: [{
+        id: 'link1',
+        from: 'in1:step1/res',
+        to: '_(template):step2/a|b',
+      }],
+    });
+    expectDeepEqual((pconf as any).links[0].to.map((io: any) => io.name), ['a', 'b']);
+  });
 });
 
 category('ComputeUtils: Driver link path shorthands', async () => {

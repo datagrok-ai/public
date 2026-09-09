@@ -246,6 +246,20 @@ function processLinkData<L extends PipelineLinkConfigurationBase<LinkSpecString>
         throw new Error(`Link ${link.id}: output ${io.name} uses (call); only funccall actions allow (call) on outputs.`);
     }
   }
+  // matching consumes only ids[0] of a final io segment, so multiple ids without
+  // (template) expansion would be silently dropped; node-selecting sides (skipIO) are exempt
+  const checkSingleIoTarget = (ios: LinkIOParsed[], isOutput: boolean) => {
+    const isNodeTarget = isOutput && (linkType === 'pipeline' || linkType === 'pipelineValidator');
+    for (const io of ios) {
+      if (io.flags?.includes('call') || isNodeTarget)
+        continue;
+      const lastSeg = indexFromEnd(io.segments) as LinkSelectorSegment | undefined;
+      if (lastSeg?.type === 'selector' && !lastSeg.ioExpand && (lastSeg.ids?.length ?? 0) > 1)
+        throw new Error(`Link ${link.id}: ${isOutput ? 'output' : 'input'} ${io.name} targets multiple ids ${lastSeg.ids.join('|')}; use a single id or the (template) flag.`);
+    }
+  };
+  checkSingleIoTarget(from, false);
+  checkSingleIoTarget(to, true);
   return {...link, from, to, base, not, actions};
 }
 

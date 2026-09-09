@@ -9,6 +9,7 @@
 * RTD: Fixed loadPipeline dropping the loaded run's metadata when an explicit config is passed
 * RTD: Fixed link IO ordering (compareAddresses NaN on prefix addresses, inverted getFirstMatch reduce). Behavior change: `getMatchedInputs()`/`getMatchedOutputs()` now iterate in tree order instead of declaration order
 * RTD: Fixed dataframe equality throwing instead of returning false when column names differ
+* RTD: Config processing rejects multi-id final io segments without the (template) flag instead of silently using the first id
 * RTD: Driver.sendCommand returns a promise resolved on command completion (per-command acks on commandAcks$)
 * RTD: Fixed a synchronous command error killing the driver command queue
 * RTD: initPipeline command accepts an inline processed config
