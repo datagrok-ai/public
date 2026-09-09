@@ -3,6 +3,7 @@ import {runTests, tests, TestContext, initAutoTests as initTests } from '@datagr
 
 import './tests/cartridge';
 import './tests/converters';
+import './tests/frac';
 
 export const _package = new DG.Package();
 export {tests};

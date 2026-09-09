@@ -51,14 +51,14 @@ export namespace queries {
   }
 
   /**
-  Search for a given pattern in the ChEMBL database with a specified threshold of similarity.
+  Finds ChEMBL compounds whose Tanimoto similarity to the query molecule is above the given threshold.
   */
   export async function patternSimilaritySearchWithThreshold(pattern: string , threshold: number ): Promise<DG.DataFrame> {
     return await grok.data.query('ChEMBL:PatternSimilaritySearchWithThreshold', { pattern, threshold });
   }
 
   /**
-  Search for a given substructure in the ChEMBL database.
+  Finds ChEMBL compounds that contain the given substructure.
   */
   export async function patternSubstructureSearch(pattern: string , maxRows: number ): Promise<DG.DataFrame> {
     return await grok.data.query('ChEMBL:PatternSubstructureSearch', { pattern, maxRows });
@@ -107,49 +107,49 @@ export namespace queries {
   }
 
   /**
-  Converts a list of compound names in chembl database to SMILES.
+  Converts a list of compound names in the ChEMBL database to SMILES.
   */
   export async function namesToSmiles(names: any ): Promise<DG.DataFrame> {
     return await grok.data.query('ChEMBL:NamesToSmiles', { names });
   }
 
   /**
-  Converts InChI Keys to ChEMBL identifiers using a dataframe input.
+  Converts InChIKeys to ChEMBL identifiers using a dataframe input.
   */
   export async function inchiKeyToChembl(ids: DG.DataFrame ): Promise<DG.DataFrame> {
     return await grok.data.query('ChEMBL:InchiKeyToChembl', { ids });
   }
 
   /**
-  Converts InChI Keys to canonical SMILES using a dataframe input.
+  Converts InChIKeys to canonical SMILES using a dataframe input.
   */
   export async function inchiKeyToSmiles(ids: DG.DataFrame ): Promise<DG.DataFrame> {
     return await grok.data.query('ChEMBL:InchiKeyToSmiles', { ids });
   }
 
   /**
-  Converts InChI Keys to standard InChI strings using a dataframe input.
+  Converts InChIKeys to standard InChI strings using a dataframe input.
   */
   export async function inchiKeyToInchi(ids: DG.DataFrame ): Promise<DG.DataFrame> {
     return await grok.data.query('ChEMBL:InchiKeyToInchi', { ids });
   }
 
   /**
-  Converts a dataframe with ChEMBL IDs to SMILES.
+  Converts a dataframe of ChEMBL IDs to canonical SMILES.
   */
   export async function chemblToSmiles(ids: DG.DataFrame ): Promise<DG.DataFrame> {
     return await grok.data.query('ChEMBL:ChemblToSmiles', { ids });
   }
 
   /**
-  Converts a dataframe with ChEMBL IDs to Inchi.
+  Converts a dataframe of ChEMBL IDs to standard InChI strings.
   */
   export async function chemblToInchi(ids: DG.DataFrame ): Promise<DG.DataFrame> {
     return await grok.data.query('ChEMBL:ChemblToInchi', { ids });
   }
 
   /**
-  Converts a dataframe with ChEMBL IDs to Inchi Keys.
+  Converts a dataframe of ChEMBL IDs to standard InChIKeys.
   */
   export async function chemblToInchiKey(ids: DG.DataFrame ): Promise<DG.DataFrame> {
     return await grok.data.query('ChEMBL:ChemblToInchiKey', { ids });
@@ -191,17 +191,17 @@ export namespace queries {
   }
 
   /**
-  Searches compound structures by FRAC (Fungicide Resistance Action Committee) classification hierarchy levels.
+  Searches compound structures by FRAC (Fungicide Resistance Action Committee) mechanism of action.
   */
-  export async function fracClassification(level1: string , level2: string | null, level3: string | null, level4: string | null): Promise<DG.DataFrame> {
-    return await grok.data.query('ChEMBL:FracClassification', { level1, level2, level3, level4 });
+  export async function fracClassification(mechanism: string | null): Promise<DG.DataFrame> {
+    return await grok.data.query('ChEMBL:FracClassification', { mechanism });
   }
 
   /**
-  Complex search combining molecular similarity, drug mechanism action type, and company research location.
+  Complex search combining molecular similarity with drug mechanism action type.
   */
-  export async function queryBySubstructure(substructure: string , threshold: string , actionType: string , mechanismOfAction: string , country: string , company: any ): Promise<DG.DataFrame> {
-    return await grok.data.query('ChEMBL:QueryBySubstructure', { substructure, threshold, actionType, mechanismOfAction, country, company });
+  export async function queryBySubstructure(substructure: string , threshold: string , actionType: string , mechanismOfAction: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('ChEMBL:QueryBySubstructure', { substructure, threshold, actionType, mechanismOfAction });
   }
 
   /**
@@ -212,24 +212,24 @@ export namespace queries {
   }
 
   /**
-  Retrieves compound SMILES and research company country information for a given molregno identifier.
+  Retrieves compound SMILES, preferred name and max clinical phase for a given molregno identifier.
   */
   export async function molregnoInfo(molregno: number ): Promise<DG.DataFrame> {
     return await grok.data.query('ChEMBL:MolregnoInfo', { molregno });
   }
 
   /**
-  Retrieves compound SMILES and research company country information for a given ChEMBL identifier.
+  Retrieves compound SMILES, preferred name and max clinical phase for a given ChEMBL identifier.
   */
   export async function chemblInfo(chemblId: string ): Promise<DG.DataFrame> {
     return await grok.data.query('ChEMBL:ChemblInfo', { chemblId });
   }
 
   /**
-  Combines FRAC classification hierarchy search with molecular substructure matching.
+  Combines FRAC mechanism of action search with molecular substructure matching.
   */
-  export async function fracClassificationWithSubstructure(level1: string , level2: string | null, level3: string | null, level4: string | null, substructure: string ): Promise<DG.DataFrame> {
-    return await grok.data.query('ChEMBL:FracClassificationWithSubstructure', { level1, level2, level3, level4, substructure });
+  export async function fracClassificationWithSubstructure(mechanism: string | null, substructure: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('ChEMBL:FracClassificationWithSubstructure', { mechanism, substructure });
   }
 
   /**
@@ -292,10 +292,16 @@ export namespace funcs {
     return await grok.functions.call('ChEMBL:ChemblSimilaritySearchPanel', { mol });
   }
 
+  /**
+  Loads ChEMBL compounds with bioactivity against bacterial targets of the given organism.
+  */
   export async function getChemblCompoundsByOrganism(maxNumberOfMolecules: number , organism: string ): Promise<DG.DataFrame> {
     return await grok.functions.call('ChEMBL:GetChemblCompoundsByOrganism', { maxNumberOfMolecules, organism });
   }
 
+  /**
+  Loads a sample of ChEMBL compound structures as canonical SMILES.
+  */
   export async function getChemblCompounds(maxNumberOfMolecules: number ): Promise<DG.DataFrame> {
     return await grok.functions.call('ChEMBL:GetChemblCompounds', { maxNumberOfMolecules });
   }

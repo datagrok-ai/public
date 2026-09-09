@@ -81,54 +81,38 @@ select count(from_id) from src10src11
 
 --name: FracClassification
 --friendlyName: Search | By FRAC Classification
---description: Searches compound structures by FRAC (Fungicide Resistance Action Committee) classification hierarchy levels.
+--description: Searches compound structures by FRAC (Fungicide Resistance Action Committee) mechanism of action.
 --connection: Chembl
---input: string level1 = 'MITOSIS AND CELL DIVISION' {choices: Query("SELECT DISTINCT level1_description FROM frac_classification")}
---input: string level2 {nullable: true; choices: Query("SELECT DISTINCT level2_description FROM frac_classification where level1_description = @level1")}
---input: string level3 {nullable: true; choices: Query("SELECT DISTINCT level3_description FROM frac_classification where level2_description = @level2")}
---input: string level4 {nullable: true; choices: Query("SELECT DISTINCT level4_description FROM frac_classification where level3_description = @level3")}
-SELECT s.*
+--input: string mechanism = "tubulin polymerization" {nullable: true; choices: Query("SELECT DISTINCT mechanism_comment FROM pesticide_classification WHERE ref_type = 'FRAC' ORDER BY 1")}
+SELECT s.*, p.compound_name, p.mechanism_comment
 FROM compound_structures s
-JOIN molecule_frac_classification m
+JOIN pesticide_class_mapping m
 ON s.molregno = m.molregno
-JOIN frac_classification f
-ON m.frac_class_id = f.frac_class_id
-WHERE
-  (@level1 is null or @level1 = '' or f.level1_description = @level1) and
-  (@level2 is null or @level2 = '' or f.level2_description = @level2) and
-  (@level3 is null or @level3 = '' or f.level3_description = @level3) and
-  (@level4 is null or @level4 = '' or f.level4_description = @level4)
+JOIN pesticide_classification p
+ON m.pest_class_id = p.pest_class_id
+WHERE p.ref_type = 'FRAC'
+  AND (@mechanism is null or @mechanism = '' or p.mechanism_comment = @mechanism)
 --end
 
 
 --name: QueryBySubstructure
---friendlyName: Search | By Substructure, Country And Action Type
---description: Complex search combining molecular similarity, drug mechanism action type, and company research location.
+--friendlyName: Search | By Substructure And Action Type
+--description: Complex search combining molecular similarity with drug mechanism action type.
 --connection: Chembl
 --meta.batchMode: true
 --input: string substructure = 'c1ccccc1' {semType: Molecule}
---input: string threshold = '0.1' 
+--input: string threshold = '0.1'
 --input: string actionType = 'BLOCKER' {choices: Query("SELECT DISTINCT action_type from drug_mechanism")}
 --input: string mechanismOfAction = 'Amiloride-sensitive sodium channel, ENaC blocker' {choices: Query("SELECT DISTINCT mechanism_of_action from drug_mechanism where action_type = @actionType")}
---input: string country = 'UK' {choices: Query("SELECT DISTINCT country from research_companies")}
---input: list<string> company = ['GlaxoSmithKline'] {choices: Query("SELECT DISTINCT company from research_companies where country = @country")}
 SELECT set_config('rdkit.tanimoto_threshold', @threshold, true);
 --batch
 SELECT s.*
 FROM compound_structures s
 INNER JOIN drug_mechanism d
 ON s.molregno = d.molregno
-INNER JOIN molecule_synonyms m
-ON s.molregno = m.molregno
-INNER JOIN research_companies r
-ON m.res_stem_id = r.res_stem_id
 WHERE s.molregno IN (SELECT molregno FROM get_mfp2_neighbors(@substructure))
 AND d.action_type = @actionType
 AND d.mechanism_of_action = @mechanismOfAction
-AND r.country = @country
-AND r.company IN (
-  SELECT unnest(@company)
-)
 --end
 
 
@@ -146,60 +130,44 @@ WHERE chembl_id IN (
 
 --name: MolregnoInfo
 --friendlyName: Misc | Compound Info by Molregno
---description: Retrieves compound SMILES and research company country information for a given molregno identifier.
+--description: Retrieves compound SMILES, preferred name and max clinical phase for a given molregno identifier.
 --connection: Chembl
 --tags: panel, widget
 --input: int molregno {semType: molregno} [ChEMBL internal compound registration number]
-SELECT DISTINCT s.canonical_smiles as smiles, COALESCE(r.country, 'Not found') as country
+SELECT s.canonical_smiles as smiles, COALESCE(md.pref_name, 'Not found') as name, md.max_phase
 FROM compound_structures s
-LEFT JOIN drug_mechanism d
-ON s.molregno = d.molregno
-LEFT JOIN molecule_synonyms m
-ON s.molregno = m.molregno
-LEFT JOIN research_companies r
-ON m.res_stem_id = r.res_stem_id
+JOIN molecule_dictionary md
+ON s.molregno = md.molregno
 WHERE s.molregno = CAST(@molregno as INTEGER)
 --end
 
 --name: ChemblInfo
 --friendlyName: Misc | Compound Info by ChEMBL ID
---description: Retrieves compound SMILES and research company country information for a given ChEMBL identifier.
+--description: Retrieves compound SMILES, preferred name and max clinical phase for a given ChEMBL identifier.
 --connection: Chembl
 --tags: panel, widget
 --input: string chemblId {semType: CHEMBL_ID} [Public ChEMBL compound identifier, e.g. CHEMBL1185]
-SELECT DISTINCT s.canonical_smiles as smiles, COALESCE(r.country, 'Not found') as country
+SELECT s.canonical_smiles as smiles, COALESCE(md.pref_name, 'Not found') as name, md.max_phase
 FROM molecule_dictionary md
 LEFT JOIN compound_structures s
 ON md.molregno = s.molregno
-LEFT JOIN drug_mechanism d
-ON s.molregno = d.molregno
-LEFT JOIN molecule_synonyms m
-ON s.molregno = m.molregno
-LEFT JOIN research_companies r
-ON m.res_stem_id = r.res_stem_id
 WHERE md.chembl_id = @chemblId
 --end
 
 
 --name: FracClassificationWithSubstructure
 --friendlyName: Search | By FRAC Classification And Substructure
---description: Combines FRAC classification hierarchy search with molecular substructure matching.
+--description: Combines FRAC mechanism of action search with molecular substructure matching.
 --connection: Chembl
---input: string level1 = 'STEROL BIOSYNTHESIS IN MEMBRANES' {choices: Query("SELECT DISTINCT level1_description FROM frac_classification")}
---input: string level2 {nullable: true; choices: Query("SELECT DISTINCT level2_description FROM frac_classification where level1_description = @level1")}
---input: string level3 {nullable: true; choices: Query("SELECT DISTINCT level3_description FROM frac_classification where level2_description = @level2")}
---input: string level4 {nullable: true; choices: Query("SELECT DISTINCT level4_description FROM frac_classification where level3_description = @level3")}
+--input: string mechanism = "C14-demethylase in sterol biosynthesis (erg11/cyp51)" {nullable: true; choices: Query("SELECT DISTINCT mechanism_comment FROM pesticide_classification WHERE ref_type = 'FRAC' ORDER BY 1")}
 --input: string substructure = "Clc1ccccc1" {semType: Substructure}
-SELECT s.*, f.level1_description, f.level2_description, f.level3_description, f.level4_description
+SELECT s.*, p.compound_name, p.mechanism_comment
 FROM compound_structures s
-JOIN molecule_frac_classification m
+JOIN pesticide_class_mapping m
 ON s.molregno = m.molregno
-JOIN frac_classification f
-ON m.frac_class_id = f.frac_class_id
-WHERE
-  (@level1 is null or @level1 = '' or f.level1_description = @level1) and
-  (@level2 is null or @level2 = '' or f.level2_description = @level2) and
-  (@level3 is null or @level3 = '' or f.level3_description = @level3) and
-  (@level4 is null or @level4 = '' or f.level4_description = @level4) and
- s.canonical_smiles::mol @>@substructure::qmol
+JOIN pesticide_classification p
+ON m.pest_class_id = p.pest_class_id
+WHERE p.ref_type = 'FRAC'
+  AND (@mechanism is null or @mechanism = '' or p.mechanism_comment = @mechanism)
+  AND s.canonical_smiles::mol @> @substructure::qmol
 --end

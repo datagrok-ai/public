@@ -56,7 +56,7 @@ export const explorerConfig: DBExplorerConfig = {
     'drug_indication': 'efo_term',
     'drug_mechanism': 'action_type',
     'drug_warning': 'warning_type',
-    'frac_classification': 'active_ingredient',
+    'pesticide_classification': 'compound_name',
     'molecule_synonyms': 'synonyms',
     'compound_records': 'record_id',
     'compound_structural_alerts': 'alert_name',
@@ -95,7 +95,6 @@ export const explorerConfig: DBExplorerConfig = {
       'structure_type',
       'molecule_type',
       'first_approval',
-      'indication_class',
       'chirality',
     ]
   }

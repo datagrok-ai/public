@@ -30,7 +30,7 @@ The package version is the ChEMBL release plus `.0.0` — 37.0.0 ships ChEMBL 37
   add extra columns on the fly.
 * **Info panels** (`MolregnoInfo`, `ChemblInfo`) that surface compound metadata in the context
   panel based on the `CHEMBL_ID` / `molregno` semantic types.
-* **HitTriage data sources** — `Chembl Compounds`, `Chembl targets by organism`, and the
+* **HitTriage data sources** — `ChEMBL Compounds`, `Compounds Active Against Organism`, and the
   `Chembl molregno` column function, for seeding HitTriage campaigns from ChEMBL.
 * **Ad-hoc browse/search queries** (`Browse | …`, `Search | …`, `Misc | …`) covering FRAC
   classification, bioactivity for bacterial targets, PK data, activity details for a target,
