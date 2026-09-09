@@ -83,6 +83,7 @@ export class Driver {
     combineLatest([this.globalROLocked$, this.treeMutationsLocked$, this.wasEdited$]).pipe(
       filter(([roLock, mutationLock]) => !roLock && !mutationLock),
       map(([, , wasEdited]) => wasEdited),
+      takeUntil(this.closed$),
     ).subscribe(this.hasNotSavedEdits$);
 
     stateUpdates$.pipe(
