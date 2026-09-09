@@ -182,7 +182,7 @@ export const TreeWizard = Vue.defineComponent({
     const saveSubTreeState = async (uuid: string) => {
       const editOptions = await makeNodeMetadataDialog(uuid).awaitMetadata();
       if (editOptions)
-        saveDynamicItem(chosenStepUuid.value!, editOptions);
+        saveDynamicItem(uuid, editOptions);
     };
 
     const saveEntireModelState = async () => {
