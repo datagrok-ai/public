@@ -370,6 +370,11 @@ When  user clears the row selection       user deletes the selected rows
       user removes {string} column        user removes the coloring of {string} column
       user colors {string} column linearly from {string} to {string} (over {float} to {float})
       user colors {string} column conditionally:  | range | color |     user colors {string} column categorically:  | category | color |
+      user colors {string} column {word} again   (switches the type back on, keeping the colors it stored)
+      user colors {string} column linked to {string} column    user colors the text of {string} column linked to {string} column
+      user applies the coloring of {string} column to {string} column    user inverts the color scheme of {string} column
+      user sets {string} column in row {int} to {string}   ("NaN", "Infinity", "-Infinity" and "" on a numeric column)
+      user selects rows where {string} is between {float} and {float}
 Then  no/some rows should be selected     all/only/some/no rows where {string} is {string} should be selected
       all/no rows where {string} is {string} should pass the filter
       the table should have a current row   the table should have {int} row(s)   the table should have no rows where {string} is {string}
@@ -379,6 +384,9 @@ Then  no/some rows should be selected     all/only/some/no rows where {string} i
       table {string} should be open       table {string} should have columns {string}    table {string} should have {int} row(s)
       table {string} should have no missing values in {string} column
       {string} column should have no color coding    {string} column should be color-coded categorically
+      {string} column should be color-coded linearly/conditionally/categorically/linked
+      the coloring of {string} column should be linked to {string} column    the text of {string} column should be color-coded
+      the color scheme of {string} column should be {string}   (the stops of a linear scheme in order)
       {int} row(s) should be selected     rows {int} to {int} should be selected     all rows should be selected
       columns {string} should be selected    no columns should be selected    every selected row should pass the filter
       {int} rows of table {string} should pass the filter    {int} rows of table {string} should be selected
@@ -490,6 +498,7 @@ When  user sets {string} property of {widget} to {string}       user sets proper
       user picks {string} from the context menu of the {string} area of {widget}
       user opens the context menu of {element}      user right-clicks on the {string} area of {widget}
       user closes the context menu                  user clicks / double-clicks / hovers over the {string} area of {widget}
+Then  the open menu should (not )list {string}      ("Group > Item" — the groups are opened to reach the item)
       user clicks on the {string} area of {widget} holding {key}    user drags a selection box over the {string} area of {widget}
       user drags a selection box from the {string} area to the {string} area of {widget}
       user drags across the {string} area of {widget}    user scrolls the mouse wheel up/down over the {string} area of {widget}
@@ -516,7 +525,9 @@ Then  {string} property of {widget} should be {string}          {string} propert
       the {string} area of {widget} should be at least {int} pixels tall/wide
       the {string} area of {widget} should be taller/wider/shorter/narrower than before
       {widget} should (not )have a(n) {string} area
-      the {string} reading of {widget} should be as remembered
+      the {string} reading of {widget} should (not )be as remembered
+      the {string} reading of {widget} should not be {string}    the {string} reading of {widget} should be a finite number
+      the {string} and {string} readings of {widget} should be the same / should differ
       the legend of {widget} should list {int} item(s) / fewer items than before / the same items as before
       the legend of {widget} should be docked / in a corner / collapsed to the mini icon / shown in the tooltip
       the legend of {widget} should (not )be in the {string} slot    the legend of {widget} should be placed as before

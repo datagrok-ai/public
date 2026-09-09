@@ -150,3 +150,7 @@ export const openApp = Given('user opens the {string} app', async (page: Page, n
   }, name);
   await expect.poll(() => page.evaluate(() => String((window as any).grok.shell.v?.name ?? '')), {message: 'the current view'}).toBe(name);
 }, {tier: 'api', description: 'runs the app function by name (the way the browse tree does) and shows the view it returns; done when that view is current'});
+
+export const autostartsCompleted = Given('the package autostarts have completed', async (page: Page) => {
+  await page.evaluate(async () => { await grok.shell.autostartsCompleted; });
+}, {tier: 'api', description: 'grok.shell.autostartsCompleted — a viewer a package registers is not there before it'});

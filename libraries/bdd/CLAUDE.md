@@ -531,6 +531,26 @@ nobody filed.
   browser and with no cap, and costs milliseconds when nothing is compiling. It is not a wait for
   a signal the platform owes us: the compile is the dev environment's, and the alternative is a
   60 s cap that fails a good suite while someone edits Dart.
+- **A menu group needs a signal, not a hover** (2026-09-09): `openGroup` used to move the pointer
+  over the group and return, so the next lookup read the parent menu, where the wanted item is
+  present but hidden — the click then timed out on an element the error message listed as being
+  there. It now waits until the item it was asked for is visible, and tries **every** item that
+  carries the group's label: a viewer menu holds two groups called "Annotations" (the axis one and
+  the viewer's own), and `.first()` picked whichever came first in the DOM. A group the menu
+  renders inline, or one already open, returns at once.
+- **A hidden thing keeps the geometry of the frame that drew it** (2026-09-09): an annotation
+  region hidden by `showViewerAnnotationRegions = false` still had `polygonScreen` from its last
+  render, so its hit area would have kept answering. A status reports an area only while the thing
+  is drawn; and a count of what the look *holds* is read off the look, not off the parsed list the
+  viewer keeps for drawing, which the same flag empties.
+- **`@known-failure`** (2026-09-09): a scenario tagged with it is expected to fail — its failure
+  does not fail the test, and its **passing** does, with "the bug it describes is fixed, so the tag
+  has to go". An open bug is translated honestly and the suite still says something when it is
+  fixed; nothing is softened to stay green.
+- **The overlay was invisible to every settle** (2026-09-09): `CanvasViewerMixin.invalidateOverlay`
+  sets `_invalidateOverlayRequested`, which `ViewerBase.isRenderPending` did not read — so a
+  current-row, hover-line or row-group repaint was pending work no step waited for (the scatter
+  plot worked around it with a private flag). It is in the base getter now.
 - **Codegen** emits names, never selectors; `\n` line endings, no timestamps, EOL-normalized drift
   check; orphaned generated files are removed on compile and reported on `--check`.
 - **Session readiness**: `user is logged in` skips navigation when the page is already in the shell
@@ -686,6 +706,27 @@ nobody filed.
   and column selection but leaves the current cell where it was.
 - Probe scripts for these live in the scratchpad (`probe/boxplot.mjs`, `selectors.mjs`,
   `submenu.mjs`): dev-key token via `POST /users/login/dev/admin`, cookie + localStorage `auth`.
+
+### Platform behaviour these features had to learn (2026-09-09)
+
+- `RowSet.SelectedOrCurrent` is the selection **when it has anything**, and the current row only
+  otherwise — not the union. `MouseOverGroup` is `dataFrame.highlight`, which a hover elsewhere
+  leaves standing, so a scenario that wants "empty" must state what it hovered last.
+- A viewer's `rows shown` is `combinedFilter.trueCount` everywhere except the scatter plot, which
+  counts the markers it actually drew (past its filter, drawable on the current axes, inside the
+  viewport), and the PC plot under a transformation, which draws the aggregated frame.
+- `demog-1000` has 128 rows with a blank HEIGHT, so a scatter plot on HEIGHT draws 872, not 1000.
+  Pick columns with no blanks (AGE, WEIGHT) when the claim is about row sources rather than blanks.
+- The grid reports a cell's colour as **lowercase** `#rrggbb` (`htmlColor` → `toRadixString(16)`).
+- A linked colour coding is two tags — `.color-coding-type = Linked` and
+  `.%color-coding-linked-column-name` — and "Apply to: Text" is the *grid column's*
+  `isTextColorCoded`, not a column tag. Switching a colouring off rewrites only the type tag, so
+  the colours it stored survive and come back when the type is switched on again.
+- `grok.shell.t` is the current view's table, not the viewer's: after a viewer is rebound to
+  another table, a column step still reads the view's table.
+- PowerPack's Formula Lines dialog opens 500 ms after a region is drawn, from a bare `Timer`; the
+  region itself is in the look synchronously, so the claims about it need no dialog. Closing the
+  dialog with OK keeps it.
 
 ## Conventions
 

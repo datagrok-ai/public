@@ -197,6 +197,56 @@ cell actions — the specs left out because "the grid needs a widget status in t
   step returns nothing it does not read. Under workers a page per folder reused nothing,
   since Playwright hands files to workers one by one; the page is per worker now.
 
+What the second viewer round (2026-09-09: trellis, tile viewer, pivot table, pie chart, PC plot,
+and the four cross-viewer specs that sit directly in `Viewers/`) added — read this before starting
+a viewer that has no automation surface yet:
+
+- **A viewer with no `getWidgetStatus` is the whole job.** Five of the six viewers in this round
+  had none, so every old spec was pixel arithmetic. Write the status FIRST, in a part file, and get
+  it into the served bundle before a single feature is written — a feature run against a stale
+  bundle reports "the viewer has no readings", and you will misread that as a broken phrase. Check
+  the bundle by grepping a **string literal** you added (`curl … login.dart.js_1.part.js`); Dart
+  method names are minified, so grepping for a method never matches.
+- **Survey with agents, implement with agents, but keep the order.** Surveys (read-only, one per
+  viewer, section C = the core signals) → core status (one implementer per viewer, the survey as
+  its brief) → features (one agent per viewer, the viewer's `CLAUDE.md` "Automation surface" as the
+  authoritative list). Three at a time. Tell each feature agent to put **every** new step in its
+  own package binding file and to touch neither the library nor the core — otherwise three agents
+  edit `steps.ts` at once. Promote the genuinely generic ones yourself, afterwards, in one pass.
+- **A hidden thing keeps the geometry of the frame that drew it.** An annotation region hidden by
+  its visibility flag still had last render's polygon, so its hit area would have kept answering.
+  A status reports an area only while the thing is drawn; and "how many does the viewer hold" is
+  read off the look, not off the parsed list the viewer keeps for drawing, which that same flag
+  empties.
+- **The overlay was pending work nothing waited for.** `CanvasViewerMixin.invalidateOverlay` sets a
+  flag `ViewerBase.isRenderPending` did not read, so every current-row, hover-line and row-group
+  repaint was invisible to every settle (the scatter plot had a private workaround). Before blaming
+  a flake on load, check what the viewer's own pending flags actually cover.
+- **`VIEWER_RENDERED` can fire before the data lands.** The pivot fired it synchronously in
+  `_render()`, ahead of the future that puts the aggregation on the grid — every settle in the tier
+  returned early and every "a click does not filter" negative was a capped hold. Fire it when the
+  viewer actually holds what it is about to draw.
+- **A menu group needs a signal, not a hover.** A Dart menu keeps every nested item in the DOM,
+  hidden until its group opens, so an item can be listed in an error message and still not be
+  clickable; and a viewer menu can hold two groups with the same name (the axis "Annotations" and
+  the viewer's own), so `.first()` picks the wrong one. `openGroup` now waits for the item it was
+  asked for and tries every candidate that carries the label. What it still cannot do is *pick* an
+  item from an axis group: the platform hides the flyout as soon as the pointer leaves the group
+  row, and takes the item away before the click lands. Say so; do not fake the gesture.
+- **`@known-failure` is how an open bug is translated.** The scenario is written honestly; the tag
+  makes its failure expected and its **passing** a failure ("the bug is fixed, remove the tag").
+  Never soften an assertion to keep a suite green.
+- **One journey can carry a cross-viewer contract.** Row Source is eight row sets on seven viewers:
+  putting all seven on one table view and reading the same number off each turns "does the viewer
+  honour the setting" into one number out of line, and costs one dataset open instead of seven.
+- **Pin the fixture from the data, not from the old spec.** The old specs were written against the
+  5850-row `demog`; the round runs on `demog-1000`, where 128 rows have a blank HEIGHT (a scatter
+  plot on HEIGHT draws 872, not 1000), `Critical` has 5 rows, and Asian has 15. Count with a script
+  against `data/demo/demog-1000.csv` before writing a number.
+- **Write patch scripts with the Write tool, never a heredoc.** The Bash tool collapses `\\` inside
+  heredocs — a `\\s` in a regex becomes `\s`, the replacement silently fails to match, and the
+  session loses twenty minutes to a "why didn't this apply".
+
 ## Pass 3 — fix, in this order
 
 1. Put the decisions to the lead first, one question per systemic finding, options with the

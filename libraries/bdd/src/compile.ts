@@ -227,7 +227,7 @@ function emitJourney(feature: FeatureModel, uniqueTitle: (s: string) => string, 
     out.push(`    await run.scenario(${JSON.stringify(uniqueTitle(scenario.name))}, async () => {`);
     for (const step of scenario.steps)
       out.push(...emitStep(step, '      ', state));
-    out.push('    });');
+    out.push(scenario.tags.includes('@known-failure') ? '    }, {knownFailure: true});' : '    });');
   }
   out.push('    run.finish();');
   out.push('  });');

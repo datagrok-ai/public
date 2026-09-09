@@ -26,8 +26,10 @@ export interface FeatureSession {
 }
 
 export interface Journey {
-  /** Runs a scenario as a soft step: a failure is recorded and the next scenario still runs. */
-  scenario(name: string, body: () => Promise<void>): Promise<void>;
+  /** Runs a scenario as a soft step: a failure is recorded and the next scenario still runs.
+   * `knownFailure` inverts that scenario: its failure is expected and does not fail the test,
+   * while its passing does — the bug it describes is fixed and the tag has to go. */
+  scenario(name: string, body: () => Promise<void>, options?: {knownFailure?: boolean}): Promise<void>;
   /** Fails the test when any scenario failed, listing them. */
   finish(): void;
 }
@@ -41,7 +43,7 @@ export function journey(test: Test, scenarios: number, page?: Page): Journey {
   test.setTimeout(test.info().timeout * scenarios);
   const failed: {name: string; error: unknown}[] = [];
   return {
-    async scenario(name: string, body: () => Promise<void>): Promise<void> {
+    async scenario(name: string, body: () => Promise<void>, options?: {knownFailure?: boolean}): Promise<void> {
       try {
         if (page) {
           takeErrors(page);
@@ -50,8 +52,12 @@ export function journey(test: Test, scenarios: number, page?: Page): Journey {
         await test.step(name, body);
       }
       catch (e) {
-        failed.push({name, error: e});
+        if (!options?.knownFailure)
+          failed.push({name, error: e});
+        return;
       }
+      if (options?.knownFailure)
+        failed.push({name, error: new Error('tagged @known-failure and passed — the bug it describes is fixed, so the tag has to go')});
     },
     finish(): void {
       if (failed.length > 0)

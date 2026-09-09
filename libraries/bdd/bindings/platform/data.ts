@@ -91,6 +91,25 @@ export const selectWhereIs = When('user selects rows where {string} is {string}'
 export const selectWhereOneOf = When('user selects rows where {string} is one of {string}', (page: Page, column: string, values: string) =>
   selectWhere(page, column, list(values)), {tier: 'api', description: 'comma-separated categories'});
 
+export const selectWhereBetween = When('user selects rows where {string} is between {float} and {float}', (page: Page, column: string, min: number, max: number) =>
+  changeTable(page, ([c, lo, hi]) => {
+    const df = grok.shell.t;
+    const col = df.col(c as string);
+    if (!col)
+      throw new Error(`no "${c}" column in ${df.name}; it has: ${df.columns.names().join(', ')}`);
+    let hits = 0;
+    df.selection.init((i: number) => {
+      const v = col.get(i);
+      const hit = v != null && !isNaN(v) && v >= (lo as number) && v <= (hi as number);
+      if (hit)
+        hits++;
+      return hit;
+    });
+    if (hits === 0)
+      throw new Error(`no row of ${df.name} has ${c} between ${lo} and ${hi}`);
+  }, [column, min, max] as [string, number, number]),
+{tier: 'api', description: 'a numeric range, both ends included — the selection becomes exactly those rows; a range no row matches fails'});
+
 export const noneSelected = Then('no rows should be selected', (page: Page) =>
   expect.poll(() => selectedCount(page), {message: 'rows selected'}).toBe(0));
 
@@ -297,6 +316,25 @@ export const noRowsWhere = Then('the table should have no rows where {string} is
 
 // --- columns -----------------------------------------------------------------------------------------
 
+export const setCell = When('user sets {string} column in row {int} to {string}', (page: Page, column: string, row: number, value: string) =>
+  changeTable(page, ([c, r, v]) => {
+    const col = grok.shell.t.col(c);
+    if (!col)
+      throw new Error(`no "${c}" column in ${grok.shell.t.name}; it has: ${grok.shell.t.columns.names().join(', ')}`);
+    const i = (r as number) - 1;
+    if (i < 0 || i >= grok.shell.t.rowCount)
+      throw new Error(`row ${r} is outside ${grok.shell.t.name} (${grok.shell.t.rowCount} rows)`);
+    const text = v as string;
+    if (text === '')
+      col.set(i, null);
+    else if (col.type === 'double' || col.type === 'int' || col.type === 'float' || col.type === 'bigint')
+      col.set(i, text === 'NaN' ? Number.NaN : text === 'Infinity' ? Number.POSITIVE_INFINITY
+        : text === '-Infinity' ? Number.NEGATIVE_INFINITY : Number(text));
+    else
+      col.set(i, text);
+  }, [column, row, value] as [string, number, string]),
+{tier: 'api', description: 'one cell, 1-based row; on a numeric column "NaN", "Infinity" and "-Infinity" write those values and "" writes a blank — what a viewer must survive'});
+
 export const addCalculated = When('user adds a calculated column {string} with formula {string}', async (page: Page, name: string, formula: string) => {
   await page.evaluate(async ([n, f]) => { await grok.shell.t.columns.addNewCalculated(n, f); }, [name, formula] as [string, string]);
   await expect.poll(() => page.evaluate((n) => grok.shell.t.columns.names().includes(n), name), {message: `"${name}" in the table's columns`}).toBe(true);
@@ -333,12 +371,19 @@ function color(page: Page, column: string, apply: string, arg: unknown): Promise
     if (!col)
       throw new Error(`no "${c}" column in ${df.name}; it has: ${df.columns.names().join(', ')}`);
     const colors = col.meta.colors;
+    // a null argument switches the type on and names no colors, so the stored ones stay
     if (how === 'linear')
-      colors.setLinear((a as any).scheme, (a as any).range);
+      colors.setLinear(a == null ? null : (a as any).scheme, a == null ? null : (a as any).range);
     else if (how === 'conditional')
-      colors.setConditional(a);
+      colors.setConditional(a as any);
     else if (how === 'categorical')
-      colors.setCategorical(a);
+      colors.setCategorical(a as any);
+    else if (how === 'linked') {
+      if (!df.col(a as string))
+        throw new Error(`no "${a}" column to link the coloring of "${c}" to`);
+      col.setTag('.color-coding-type', 'Linked');
+      col.setTag('.%color-coding-linked-column-name', a as string);
+    }
     else
       colors.setDisabled();
   }, [column, apply, arg] as [string, string, unknown]);
@@ -360,6 +405,49 @@ export const colorCategorical = When('user colors {string} column categorically:
 
 export const colorOff = When('user removes the coloring of {string} column', (page: Page, column: string) => color(page, column, 'off', null), {tier: 'api'});
 
+export const colorAgain = When('user colors {string} column {word} again', (page: Page, column: string, how: string) => {
+  const apply = {linearly: 'linear', conditionally: 'conditional', categorically: 'categorical'}[how];
+  if (!apply)
+    throw new Error(`a column is colored linearly, conditionally or categorically again — not "${how}"`);
+  return color(page, column, apply, null);
+}, {tier: 'api', description: 'switches the type back on without naming colors, so what the column already stored has to survive'});
+
+export const colorLinked = When('user colors {string} column linked to {string} column', (page: Page, column: string, source: string) =>
+  color(page, column, 'linked', source), {tier: 'api', description: 'the column takes the source column\'s colors, as the Color Coding menu\'s Linked type does'});
+
+export const colorLinkedText = When('user colors the text of {string} column linked to {string} column', async (page: Page, column: string, source: string) => {
+  await color(page, column, 'linked', source);
+  await page.evaluate((c) => {
+    const gc = grok.shell.tv?.grid?.col(c);
+    if (!gc)
+      throw new Error(`no "${c}" column in the grid`);
+    gc.isTextColorCoded = true;
+  }, column);
+}, {tier: 'api', description: 'the Linked type with "Apply to: Text" — the grid column paints the letters, not the cell'});
+
+export const colorPickUp = When('user applies the coloring of {string} column to {string} column', (page: Page, from: string, to: string) =>
+  changeTable(page, ([a, b]) => {
+    const df = grok.shell.t;
+    for (const name of [a, b])
+      if (!df.col(name))
+        throw new Error(`no "${name}" column in ${df.name}; it has: ${df.columns.names().join(', ')}`);
+    // Pick Up / Apply copies every color-coding tag the source carries, and nothing else
+    for (const tag of Array.from(df.col(a).tags.keys()).filter((k: any) => String(k).includes('color-coding')))
+      df.col(b).setTag(tag as string, df.col(a).getTag(tag as string));
+  }, [from, to] as [string, string]),
+{tier: 'api', description: 'the grid header menu\'s Color Coding > Pick Up / Apply pair — every color-coding tag of the source lands on the target'});
+
+export const colorInverted = When('user inverts the color scheme of {string} column', (page: Page, column: string) =>
+  changeTable(page, (c) => {
+    const col = grok.shell.t.col(c);
+    if (!col)
+      throw new Error(`no "${c}" column in ${grok.shell.t.name}`);
+    const scheme = col.getTag('.color-coding-linear');
+    if (!scheme)
+      throw new Error(`"${c}" has no linear color scheme to invert`);
+    col.setTag('.color-coding-linear', JSON.stringify((JSON.parse(scheme) as unknown[]).reverse()));
+  }, column), {tier: 'api', description: 'the arrows icon next to the scheme — the stops in the opposite order'});
+
 /** The column's color-coding type tag: '' when none. */
 function colorCodingType(page: Page, column: string): Promise<string> {
   return page.evaluate((c) => {
@@ -379,6 +467,48 @@ export const noColorCoding = Then('{string} column should have no color coding',
 export const colorCodedCategorically = Then('{string} column should be color-coded categorically', async (page: Page, column: string) => {
   await expect.poll(() => colorCodingType(page, column), {message: `the color coding of "${column}"`}).toBe('Categorical');
 });
+
+const CODING = {linearly: 'Linear', conditionally: 'Conditional', categorically: 'Categorical', linked: 'Linked'};
+
+export const colorCodedAs = Then('{string} column should be color-coded {word}', async (page: Page, column: string, how: string) => {
+  const want = CODING[how as keyof typeof CODING];
+  if (!want)
+    throw new Error(`a column is color-coded ${Object.keys(CODING).join(', ')} — not "${how}"`);
+  await expect.poll(() => colorCodingType(page, column), {message: `the color coding of "${column}"`}).toBe(want);
+}, {description: 'linearly, conditionally, categorically or linked — the column\'s color-coding type tag'});
+
+export const colorLinkedTo = Then('the coloring of {string} column should be linked to {string} column', async (page: Page, column: string, source: string) => {
+  await expect.poll(() => page.evaluate((c) => {
+    const col = grok.shell.t.col(c);
+    if (!col)
+      throw new Error(`no "${c}" column in ${grok.shell.t.name}`);
+    return `${col.getTag('.color-coding-type') ?? 'Off'}/${col.getTag('.%color-coding-linked-column-name') ?? ''}`;
+  }, column), {message: `the coloring of "${column}"`}).toBe(`Linked/${source}`);
+}, {description: 'the type and the source column a Linked coloring names'});
+
+export const textColorCoded = Then('the text of {string} column should be color-coded', async (page: Page, column: string) => {
+  await expect.poll(() => page.evaluate((c) => {
+    const gc = grok.shell.tv?.grid?.col(c);
+    if (!gc)
+      throw new Error(`no "${c}" column in the grid`);
+    return gc.isTextColorCoded === true;
+  }, column), {message: `"${column}" paints its text`}).toBe(true);
+}, {description: 'the grid column applies its coloring to the letters, not the cell background'});
+
+export const colorSchemeIs = Then('the color scheme of {string} column should be {string}', async (page: Page, column: string, colors: string) => {
+  const want = list(colors).map((c) => c.replace(/^#/, '').toUpperCase());
+  await expect.poll(() => page.evaluate((c) => {
+    const col = grok.shell.t.col(c);
+    if (!col)
+      throw new Error(`no "${c}" column in ${grok.shell.t.name}`);
+    const tag = col.getTag('.color-coding-linear');
+    if (!tag)
+      return ['(no linear scheme)'];
+    // the tag keeps ARGB ints from the API and #rrggbb strings from the picker
+    return (JSON.parse(tag) as unknown[]).map((v) => typeof v === 'number'
+      ? (v >>> 0).toString(16).toUpperCase().padStart(8, '0').slice(2) : String(v).replace(/^#/, '').toUpperCase());
+  }, column), {message: `the linear color scheme of "${column}"`}).toEqual(want);
+}, {description: 'the stops of a linear scheme in order, comma-separated #rrggbb — an inverted scheme reads back reversed'});
 
 /** `#rrggbb` → the ARGB int the color API takes. */
 function DG_COLOR(hex: string): number {

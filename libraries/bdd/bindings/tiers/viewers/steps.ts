@@ -101,6 +101,19 @@ export const rightClickArea = When('user right-clicks on the {string} area of {w
 
 export const closeContextMenu = When('user closes the context menu', (page: Page) => v.closeContextMenu(page), {tier: 'ui'});
 
+export const menuLists = Then('the open menu should list {string}', async (page: Page, path: string) => {
+  const parts = path.split(/\s*[>|]\s*/).filter((s) => s.length > 0);
+  const item = parts.pop();
+  await expect.poll(() => v.menuLabels(page, parts.join(' > ')), {message: `the items under "${parts.join(' > ') || 'the menu'}"`}).toContain(item);
+}, {tier: 'ui', description: `the last segment of ${PATH} is among the items, the ones before it are the groups opened to reach them — the menu must already be open`});
+
+export const menuDoesNotList = Then('the open menu should not list {string}', async (page: Page, path: string) => {
+  const parts = path.split(/\s*[>|]\s*/).filter((s) => s.length > 0);
+  const item = parts.pop();
+  // the group is opened first, so "not listed" cannot pass on a menu that never opened
+  await expect.poll(() => v.menuLabels(page, parts.join(' > ')), {message: `the items under "${parts.join(' > ') || 'the menu'}"`}).not.toContain(item);
+}, {tier: 'ui'});
+
 export const clickArea = When('user clicks on the {string} area of {widget}', async (page: Page, area: string, target: ElementRef) => {
   const c = v.centerOf(await v.hitArea(page, target, area, true));
   await page.mouse.click(c.x, c.y);
@@ -288,6 +301,46 @@ export const readingReads = Then('the {string} reading of {widget} should be {st
   await expect.poll(async () => String(await v.readValue(page, target, name)), {message: `"${name}" reading of ${target.phrase}`}).toBe(value);
 }, {description: 'a reading as text (a source column, a signature, a true/false flag) by exact value'});
 
+/** Two readings of one viewer, compared as text: 'same', or what each holds when they disagree. */
+async function compareReadings(page: Page, target: ElementRef, a: string, b: string): Promise<string> {
+  const x = String(await v.readValue(page, target, a));
+  const y = String(await v.readValue(page, target, b));
+  return x === y ? 'same' : `${a} is ${x}, ${b} is ${y}`;
+}
+
+export const readingsEqual = Then('the {string} and {string} readings of {widget} should be the same', async (page: Page, a: string, b: string, target: ElementRef) => {
+  await expect.poll(() => compareReadings(page, target, a, b), {message: `${target.phrase}`}).toBe('same');
+}, {description: 'two readings of the same viewer, as text — the colour of a linked column\'s cell against its source\'s'});
+
+export const readingsDiffer = Then('the {string} and {string} readings of {widget} should differ', async (page: Page, a: string, b: string, target: ElementRef) => {
+  await expect.poll(() => compareReadings(page, target, a, b), {message: `${target.phrase}`}).not.toBe('same');
+});
+
+export const readingDoesNotRead = Then('the {string} reading of {widget} should not be {string}', async (page: Page, name: string, target: ElementRef, value: string) => {
+  await expect.poll(async () => String(await v.readValue(page, target, name)), {message: `"${name}" reading of ${target.phrase}`}).not.toBe(value);
+});
+
+export const readingFinite = Then('the {string} reading of {widget} should be a finite number', async (page: Page, name: string, target: ElementRef) => {
+  await expect.poll(async () => {
+    const value = await v.readValue(page, target, name);
+    return typeof value === 'number' && isFinite(value) ? 'finite' : String(value);
+  }, {message: `"${name}" reading of ${target.phrase}`}).toBe('finite');
+}, {description: 'not null, NaN or Infinity — a viewer that let a NaN or an Infinity of the data into its axis reports no number there'});
+
+export const readingBetween = Then('the {string} reading of {widget} should be between {float} and {float}',
+  async (page: Page, name: string, target: ElementRef, lo: number, hi: number) => {
+    await expect.poll(async () => Number(await v.readValue(page, target, name)),
+      {message: `"${name}" reading of ${target.phrase}`}).toBeGreaterThanOrEqual(lo);
+    await expect.poll(async () => Number(await v.readValue(page, target, name)),
+      {message: `"${name}" reading of ${target.phrase}`}).toBeLessThanOrEqual(hi);
+  }, {description: 'a reading that carries float noise or depends on the layout, bounded on both sides'});
+
+export const pickColorSwatch = When('user picks the color {string} in the color picker dialog', async (page: Page, hex: string) => {
+  const swatch = page.locator(`.d4-dialog [name="color-${hex.replace('#', '')}" i]`).filter({visible: true}).first();
+  await expect(swatch, `a "${hex}" swatch in the open colour dialog`).toBeVisible();
+  await swatch.click();
+}, {tier: 'ui', description: 'a swatch of the open colour dialog by its #rrggbb — the dialog every categorical legend opens'});
+
 export const readingAtLeast = Then('the {string} reading of {widget} should be at least {float}', async (page: Page, name: string, target: ElementRef, value: number) => {
   await expect.poll(() => v.readValue(page, target, name), {message: `"${name}" reading of ${target.phrase}`}).toBeGreaterThanOrEqual(value);
 });
@@ -309,6 +362,9 @@ export const rememberReading = When('user remembers the {string} reading of {wid
 
 export const readingAsRemembered = Then('the {string} reading of {widget} should be as remembered', (page: Page, name: string, target: ElementRef) =>
   v.expectRememberedReading(page, target, name));
+
+export const readingNotAsRemembered = Then('the {string} reading of {widget} should not be as remembered', (page: Page, name: string, target: ElementRef) =>
+  v.expectRememberedReading(page, target, name, true), {description: 'the change the step in between was supposed to make actually reached the reading'});
 
 // --- the legend ------------------------------------------------------------------------------------
 

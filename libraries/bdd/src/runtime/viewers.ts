@@ -85,6 +85,7 @@ const POPUP = '.d4-menu-popup';
 function reasonText(e: unknown): string {
   return String(e instanceof Error ? e.message : e).replace(/^[\w.]+: /, '').split('\n')[0];
 }
+const SEP = /\s*[>|]\s*/;
 const MENU_ITEM = 'xpath=ancestor::*[contains(concat(" ", normalize-space(@class), " "), " d4-menu-item ")][1]';
 // a hidden tooltip keeps its last content, so every read matches the visible one only
 const TOOLTIP_ROWS = '.d4-tooltip:visible table.d4-row-tooltip-table tr';
@@ -1537,34 +1538,96 @@ export async function openContextMenuOf(page: Page, target: ElementRef, area?: s
   return rightClickArmed(page, x, y, token);
 }
 
+/** Every label of the open menus reading exactly that — a viewer menu can hold two groups of the
+ * same name (the axis "Annotations" and the viewer's own), and a group's children are in the same
+ * popup, hidden until it opens. */
+export function menuLabelsMatching(page: Page, label: string): Locator {
+  return page.locator(POPUP).locator('.d4-menu-item-label', {hasText: exactText(label)});
+}
+
+/** Every item of the open menus carrying that label. */
+export function menuItems(page: Page, label: string): Locator {
+  return menuLabelsMatching(page, label).locator(MENU_ITEM);
+}
+
+/** Whether that label is on screen right now — several items can carry it and all but one be a
+ * closed group's child, so the question is whether any match is visible, not whether the first is. */
+async function menuShows(page: Page, label: string): Promise<boolean> {
+  return (await menuLabelsMatching(page, label).filter({visible: true}).count()) > 0;
+}
+
 /** A menu item of the open popup by its own label (a group item also contains its children's). */
 export function menuItem(page: Page, label: string): Locator {
-  return page.locator(POPUP).last().locator('.d4-menu-item-label', {hasText: exactText(label)}).first().locator(MENU_ITEM);
+  return menuItems(page, label).first();
 }
 
 /** A group item opens on a pointer move over it: the move enters from the left, since a pointer
- * already resting on the item (a hover before the menu was reopened) would move nowhere. */
-async function openGroup(item: Locator): Promise<void> {
-  await item.waitFor({state: 'visible', timeout: 5000});
-  const box = await item.boundingBox();
-  if (!box)
-    throw new Error('the menu item has no box');
-  const cy = box.y + box.height / 2;
-  await item.page().mouse.move(Math.max(0, box.x - 8), cy);
-  await item.page().mouse.move(box.x + box.width / 2, cy);
+ * already resting on the item (a hover before the menu was reopened) would move nowhere. The
+ * group's items live in the same popup, hidden until it opens, so the wait is on how many labels
+ * are visible; when several items share the label, each is tried until [wanted] shows up. */
+async function openGroup(page: Page, label: string, wanted?: string): Promise<void> {
+  // a group already open, or one the menu renders inline, needs no hover
+  if (wanted !== undefined && await menuShows(page, wanted))
+    return;
+  const candidates = menuItems(page, label);
+  await candidates.first().waitFor({state: 'visible', timeout: 5000});
+  const count = await candidates.count();
+  for (let i = 0; i < count; i++) {
+    const item = candidates.nth(i);
+    if (!(await item.isVisible()))
+      continue;
+    const box = await item.boundingBox();
+    if (!box)
+      continue;
+    const cy = box.y + box.height / 2;
+    // enter from the left: a pointer already resting on the item would move nowhere
+    await page.mouse.move(Math.max(0, box.x - 8), cy);
+    await page.mouse.move(box.x + box.width / 2, cy);
+    if (wanted === undefined)
+      return;
+    const opened = await expect.poll(() => menuShows(page, wanted), {timeout: 2000}).toBe(true).then(() => true, () => false);
+    if (opened) {
+      // step into the flyout along the group's own row: the menu hides a submenu when the pointer
+      // leaves the group item at a steep angle, which would take the item away mid-click
+      const target = await menuLabelsMatching(page, wanted).filter({visible: true}).first().boundingBox();
+      if (target != null) {
+        await page.mouse.move(target.x + 4, cy);
+        await page.mouse.move(target.x + 4, target.y + target.height / 2);
+      }
+      return;
+    }
+  }
+  const visible = await page.locator(POPUP).locator('.d4-menu-item-label').filter({visible: true}).allTextContents();
+  throw new Error(`the "${label}" group did not show "${wanted}"; the menu shows: ${visible.map((t) => t.trim()).filter(Boolean).join(' | ')}`);
 }
 
 /** `Misc > Show Inside Values`: hovers the groups, clicks the leaf. */
 export async function pickMenuPath(page: Page, path: string): Promise<void> {
-  const segments = path.split(/\s*[>|]\s*/).filter((s) => s.length > 0);
+  const segments = path.split(SEP).filter((s) => s.length > 0);
   for (let i = 0; i < segments.length; i++) {
-    const item = menuItem(page, segments[i]);
-    const act = i < segments.length - 1 ? openGroup(item) : item.click({timeout: 5000});
-    await act.catch(async (e: Error) => {
-      const visible = await page.locator(POPUP).last().locator('.d4-menu-item-label').allTextContents();
-      throw new Error(`no "${segments[i]}" in the menu; it shows: ${visible.map((s) => s.trim()).filter(Boolean).join(' | ')}\n${e.message}`);
+    const last = i === segments.length - 1;
+    // the item ancestor is what the platform wires the click to, but an inline group's rows are
+    // laid out so that only the label itself has a box
+    // the item ancestor is the usual click target, but a group's rows lay the box out on the
+    // label itself, so the ancestor is there and not clickable
+    const act = last
+      ? menuItems(page, segments[i]).filter({visible: true}).first().click({timeout: 3000})
+        .catch(() => menuLabelsMatching(page, segments[i]).filter({visible: true}).first().click({timeout: 3000}))
+      : openGroup(page, segments[i], segments[i + 1]);
+    await act.catch(async () => {
+      const visible = await page.locator(POPUP).locator('.d4-menu-item-label').filter({visible: true}).allTextContents();
+      throw new Error(`no "${segments[i]}" in the menu; it shows: ${visible.map((s) => s.trim()).filter(Boolean).join(' | ')}`);
     });
   }
+}
+
+/** The labels of the open menu, opening every group of [path] first ("" reads the top level). */
+export async function menuLabels(page: Page, path: string): Promise<string[]> {
+  const segments = path.split(SEP).filter((s) => s.length > 0);
+  for (let i = 0; i < segments.length; i++)
+    await openGroup(page, segments[i], segments[i + 1]);
+  const labels = await page.locator(POPUP).locator('.d4-menu-item-label').filter({visible: true}).allTextContents();
+  return labels.map((t) => t.trim()).filter(Boolean);
 }
 
 // --- area gestures and geometry ----------------------------------------------------------------------
@@ -1692,7 +1755,7 @@ export async function rememberReading(page: Page, target: ElementRef, name: stri
   await loc.evaluate((el, n) => { (window as any).__bdd.rememberValue(el, n); }, name);
 }
 
-export async function expectRememberedReading(page: Page, target: ElementRef, name: string): Promise<void> {
+export async function expectRememberedReading(page: Page, target: ElementRef, name: string, not = false): Promise<void> {
   await installViewerRuntime(page);
   const loc = await viewerLocator(page, target);
   let last: {before?: unknown; now?: unknown; has: string[]} = {has: []};
@@ -1705,9 +1768,11 @@ export async function expectRememberedReading(page: Page, target: ElementRef, na
     return last.now === last.before;
   };
   try {
-    await expect.poll(holds, {timeout: 5000}).toBe(true);
+    await expect.poll(holds, {timeout: 5000}).toBe(!not);
   }
   catch {
+    if (not)
+      throw new Error(`"${name}" of ${target.phrase} is still the remembered ${String(last.before)}`);
     throw new Error(`"${name}" of ${target.phrase} is ${String(last.now)}, not the remembered ${String(last.before)}` +
       (last.now === undefined || last.now === null ? `; the viewer reports: ${last.has.join(', ') || 'no readings'}` : ''));
   }
