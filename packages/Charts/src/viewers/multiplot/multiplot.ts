@@ -4,7 +4,6 @@ import * as grok from 'datagrok-api/grok';
 
 import * as echarts from 'echarts';
 import {MPUtils} from './utils';
-import {unsubscribeAll} from '../../utils/utils';
 import {MPLayout} from './layout';
 import { BAR, LINE, SCATTER, TIMELINES } from './constants';
 import '../../../css/multiplot.css';
@@ -333,9 +332,6 @@ export class MultiPlotViewer extends DG.JsViewer {
           color: this.getItemStyleColorFunc(plot.visualMap, plot),
         };
       } else {
-        // if (plot.visualMap) {
-        // keep it to find is any execution ever happens here
-        debugger;
         const map = plot.visualMap;
         if (map.type === 'piecewise') {
           const min = map.pieces[0].min;
@@ -390,13 +386,12 @@ export class MultiPlotViewer extends DG.JsViewer {
         if (typeof max == 'string') max = parseFloat(max);
 
         return val > min && val < max ? 'green' : 'red';
-        return val > min && val < max ? defaultColor : plot.statusChart.alertColor;
       };
     }
     const f = (e: any) => {
       const customColor = customColorFunc(e);
       // if (plot.selectedIndexes.includes(e.dataIndex)) {
-      if (this.utils.getBitByIndex32(table.selection, e.dataIndex))
+      if (table.selection.get(e.dataIndex))
         return selectionColor;
 
       return customColor;
@@ -502,9 +497,9 @@ export class MultiPlotViewer extends DG.JsViewer {
   } // table attached
 
   detach(): void {
-    unsubscribeAll(this.subs);
     this.echart?.dispose();
     this.echart = null;
+    super.detach();
   }
 
   updateFilter(): void {
@@ -729,7 +724,6 @@ export class MultiPlotViewer extends DG.JsViewer {
         this.updatePlots();
         this.render();
       });
-      this.typeComboElements.push(inputPlotType);
       this.root.appendChild(inputPlotType);
       inputPlotType.style.position = 'absolute';
       inputPlotType.style.left = '3px';
@@ -876,8 +870,6 @@ export class MultiPlotViewer extends DG.JsViewer {
   // initTimeLine
 
   timeLinesD(params: any, api: any) {
-    const overlap = false;
-
     const categoryIndex = api.value(categoryCol);
     const start = api.coord([api.value(startCol), categoryIndex]);
     const end = api.coord([api.value(endCol), categoryIndex]);
@@ -944,9 +936,6 @@ export class MultiPlotViewer extends DG.JsViewer {
       group.children.push(marker);
     } else {
     // draw line
-      if (!this.echarts)
-        debugger;
-
       const rectShape = this.echarts.graphic.clipRectByRect({
         x: start[0],
         y: start[1] - this.lineWidth / 2,
@@ -960,15 +949,6 @@ export class MultiPlotViewer extends DG.JsViewer {
         height: params.coordSys.height,
       });
 
-      if (overlap) {
-        const height = api.size([0, 1])[1];
-        const offset = Math.max(this.markerSize * 2, this.lineWidth);
-        // Shift along the Y axis
-        //@ts-ignore
-        rectShape.y += (this.count % 3) ? (this.count % 3 === 2) ?
-          0 : offset-height/2 : height/2-offset; //@ts-ignore
-        this.count += 1;
-      }
 
       group.children.push({
         type: 'rect',

@@ -218,10 +218,6 @@ export class SankeyViewer extends DG.JsViewer {
     }
   }
 
-  detach() {
-    this.subs.forEach((sub) => sub.unsubscribe());
-  }
-
   rowMatchesColumnValues(sourceCol: DG.Column | null, targetCol: DG.Column | null,
     rowIndex: number, sourceName: string, targetName: string, operator: 'AND' | 'OR' = 'AND',
   ): boolean {

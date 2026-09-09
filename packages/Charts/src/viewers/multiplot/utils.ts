@@ -115,18 +115,6 @@ export class MPUtils {
     return r;
   }
 
-  normalize100(column: DG.Column): DG.Row[] {
-    const r: any[] = [];
-    const delta = column.max - column.min;
-    const rawData = column.getRawData();
-    for (let i = 0; i < column.length; i++) {
-      // avoid case when max == min
-      const t = delta ? (rawData[i] - column.min) * 100 / delta : rawData[i];
-      r.push(t);
-    }
-    return r;
-  }
-
   // build 2d array for series.data of echart
   getUniversalData(table: DG.DataFrame, fieldsNames: string[], indexes?: Int32Array, condition? : any): any[] {
     const r = [];
@@ -160,12 +148,6 @@ export class MPUtils {
     return r;
   }
 
-  getBitByIndex32(b: any, index: number) {
-    const b2 = b.getBuffer();
-    const rez = !!(b2[~~ (index / 32)] & (1 << (index & 31)));
-    return rez;
-  }
-
   trimCategoryString(s: string, length : number) : string {
     return s.length > length ? s.substring(0, length) + '...' : s;
   }
@@ -185,6 +167,4 @@ export class MPUtils {
     return Array.isArray(colNames) ? colNames : [colNames];
   }
 
-  splitToMultipleSeries(colIndex: number) {
-  }
 }

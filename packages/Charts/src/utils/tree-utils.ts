@@ -168,14 +168,8 @@ export class TreeUtils {
           value: 0,
         };
 
-        if (value === '') {
-          node.itemStyle = {
-            color: '#c7c7c7',
-          };
-        }
-
         node.itemStyle = {
-          color: getCategoryColor(columns[colIdx], i, inherit!),
+          color: value === '' ? '#c7c7c7' : getCategoryColor(columns[colIdx], i, inherit!),
         };
 
         if (colIdx === columns.length - 1)

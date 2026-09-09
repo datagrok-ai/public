@@ -21,7 +21,7 @@ grok.shell.v.addViewer(DG.VIEWER.TIMELINES, {
   splitByColumnName: "USUBJID",  // Subject identifier (a categorical column displayed on the Y axis)
   startColumnName: "AESTDY",     // Start date of event (an integer/datetime column)
   endColumnName: "AEENDY",       // End date of event (an integer/datetime column)
-  colorByColumnName: "AETERM",   // Color criterion (a categorical column with non-unique values to visually group the events)
+  colorColumnName: "AETERM",     // Color criterion (a categorical column with non-unique values to visually group the events)
   eventColumnName: "AETERM",     // Optional (used when `showEventInTooltip` is set to true)
   eventsColumnNames: ["c1", "c2"], // Adds event columns (integer/datetime) that have only one coordinate (rendered as a point, if [showOpenIntervals] is `false`)
   showOpenIntervals: false,      // Show an event with missing start/end coordinate as continuous
@@ -37,7 +37,8 @@ grok.shell.v.addViewer(DG.VIEWER.TIMELINES, {
                                  // that converts to a value less than that of the marker size) to a given position on the Y axis within one subject.
                                  // Used for a large number of overlapping events. The 'scatter' option shifts data points up and down in turn
   lineWidth: 3,                  // Line width (the value is not applied to markers)
-  legendVisibility: "Auto",      // Legend visibility ('Always' | 'Auto' | 'Never') requires [colorByColumnName]
+  autoSize: true,                // Auto-scale marker size and line width based on the Y-axis zoom level
+  legendVisibility: "Auto",      // Legend visibility ('Always' | 'Auto' | 'Never') requires [colorColumnName]
 });
 ```
 
@@ -193,8 +194,6 @@ Demo dataset: https://dev.datagrok.ai/f/Demo.Files/demog.csv
 ```js
 {
   hierarchyColumnNames: ["level_1_column", "level_2_column"], // Ordered list of tree levels
-  edgeShape: "curve",       // 'curve' | 'polyline'
-  expandAndCollapse: true,  // Enable branch expansion/collapse
   initialTreeDepth: 2,      // The initial depth of the tree (level 0 is the root node, etc., -1 expands all nodes)
   layout: "orthogonal",     // 'orthogonal' | 'radial'
   orient: "LR",             // 'LR' | 'RL' | 'TB' | 'BT'
@@ -217,9 +216,7 @@ Demo dataset: https://dev.datagrok.ai/f/Demo.Files/demog.csv
 ```js
 {
   top: '5px',
-  left: '5px',
   bottom: '5px',
-  right: '5px',
   animationDuration: 500,
   animationDurationUpdate: 750,
 }

@@ -58,7 +58,7 @@ export class RadarViewer extends EChartViewer {
       description: 'Minimum percentile value (indicated as dark blue area)'});
     this.max = <MaximumIndicator> this.string('max', '95', {choices: ['75', '90', '95', '99'],
       description: 'Maximum percentile value (indicated as light blue area)'});
-    this.showCurrentRow = this.bool('showCurrentRow', true, {description: 'Hides max and min values', category: 'Selection'});
+    this.showCurrentRow = this.bool('showCurrentRow', true, {description: 'Highlights the current row', category: 'Selection'});
     this.showMouseOverRow = this.bool('showMouseOverRow', true, {category: 'Selection'});
     this.showMouseOverRowGroup = this.bool('showMouseOverRowGroup', true, {category: 'Selection'});
     this.showTooltip = this.bool('showTooltip', true);

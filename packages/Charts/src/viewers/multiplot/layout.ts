@@ -1,7 +1,3 @@
-export function MPlotLayout2(visibleIndex: number, viewerThis: any) {
-  return 0;
-}
-
 export class MPLayout {
   constructor() {}
 

@@ -138,37 +138,37 @@ uncommitted radar changes).
   (`tree-viewer.ts:510-517`) falls into `'symbolSize'`. Impact currently neutralized by the
   unconditional reassign in `_render` (:913-916) — net effect is a wasted second full render; still a
   live trap.
-- **CH-21** — Dead null-category styling: `tree-utils.ts:171-175` grey `itemStyle` immediately
+- **CH-21 [resolved — grey styling made live instead of deleted]** — Dead null-category styling: `tree-utils.ts:171-175` grey `itemStyle` immediately
   overwritten at :177-179.
-- **CH-22** — `aggToStat` uses `eval` over a fixed lookup (`src/utils/utils.ts:26-47`). No injection
+- **CH-22 [won't fix — eval kept deliberately; the latent `valuesCount`→`valueCount` typo it was hiding IS fixed]** — `aggToStat` uses `eval` over a fixed lookup (`src/utils/utils.ts:26-47`). No injection
   (closed key set) but it already disables terser mangling of the enclosing scope (verified in
   `dist/package.js`); a minifier change silently breaks Tree size/color aggregation.
-- **CH-23** — Chord silently and persistently overwrites the user's `sortBy` with `'alphabet'`
+- **CH-23 [resolved]** — Chord silently and persistently overwrites the user's `sortBy` with `'alphabet'`
   mid-render via `@ts-ignore` (`chord-viewer.ts:286-287`); no recursion/spam (guard at :157), but the
   layout-persisted property changes without the user's intent.
-- **CH-24** — `super.detach()` skipped in sankey (:221-223), globe (:158-160), word-cloud (:100-102),
+- **CH-24 [resolved]** — `super.detach()` skipped in sankey (:221-223), globe (:158-160), word-cloud (:100-102),
   chord (:162-164), group-analysis (:126-128): `isDetached` never set, u2 scope never disposed,
   re-entrant detach possible. Subs are drained manually, hence low.
-- **CH-25** — Two source `debugger` statements (`multiplot.ts:344, 971`) — stripped by terser in the
+- **CH-25 [resolved]** — Two source `debugger` statements (`multiplot.ts:344, 971`) — stripped by terser in the
   production bundle (verified absent in `dist/`), so source-hygiene only. Unreachable second return
   :400; undeclared `this.count` (:991-993, dead behind `const overlap = false`); double-push of
   show/hide toggles into `typeComboElements` (:754) — harmlessly unreachable extra entries.
-- **CH-26** — Dead code: `src/viewers/multiplot/timeLinesRender.ts` (123 lines, 100% commented, never
+- **CH-26 [resolved — except `src/deprecated/`, kept deliberately for possible revival]** — Dead code: `src/viewers/multiplot/timeLinesRender.ts` (123 lines, 100% commented, never
   imported); `layout.ts:1-3` `MPlotLayout2` stub; `utils.ts:190-191` empty `splitToMultipleSeries`;
   `utils.ts:165-169` `getBitByIndex32` re-implements `BitSet.get`; `utils.ts` `normalize100` unused;
   the whole `src/deprecated/` tree (~650 loc) is imported by nothing.
-- **CH-27** — Group Analysis polish: user-visible column named `pValue(AGE` — unbalanced parenthesis
+- **CH-27 [resolved]** — Group Analysis polish: user-visible column named `pValue(AGE` — unbalanced parenthesis
   (`group-analysis-viewer.ts:269`); first chart cell renders empty until a later cellPrepare
   (:334-349 inverted cache logic); no numeric-type gate on the T-test column choice.
-- **CH-28** — README drift: Timelines documents `colorByColumnName` (README.md:24) — the property is
+- **CH-28 [resolved]** — README drift: Timelines documents `colorByColumnName` (README.md:24) — the property is
   `colorColumnName`; `autoSize` undocumented; Tree section documents nonexistent `edgeShape` and
   `expandAndCollapse` (README.md:196-197); `left`/`right` documented as common properties but removed
   (`echart-viewer.ts:48-52`).
-- **CH-29** — Flag cell renderer is a stub shipped as a registered renderer
+- **CH-29 [won't fix — kept as-is by decision]** — Flag cell renderer is a stub shipped as a registered renderer
   (`src/renderers/flag-cell-renderer.ts`): renders the literal text "flag" in hardcoded black, ignoring
   cellStyle/theme; paired detector fires on any string column literally named `flag`.
-- **CH-30** — Radar `showCurrentRow` description reads "Hides max and min values" (copy-paste;
+- **CH-30 [resolved — radar description fixed; word-cloud property renamed `columnColumnName`→`wordColumnName`, accepted as breaking for saved word-cloud layouts (viewer is experimental)]** — Radar `showCurrentRow` description reads "Hides max and min values" (copy-paste;
   `radar-viewer.ts:61`); word-cloud's persisted property is named `columnColumnName`
   (`word-cloud-viewer.ts:40`) — frozen by saved layouts.
-- **CH-31** — `test-report.csv` (test artifact) sits untracked at the package root — should be
+- **CH-31 [resolved]** — `test-report.csv` (test artifact) sits untracked at the package root — should be
   gitignored; `detectors.js` `detectMagnitude` mutates `col.semType` inside the detector.

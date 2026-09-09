@@ -20,7 +20,7 @@ const MAX_UNIQUE_CATEGORIES_NUMBER = 500;
   toolbox: true,
 })
 export class WordCloudViewer extends DG.JsViewer {
-  strColumnName: string;
+  wordColumnName: string;
   shape: string;
   minTextSize: number;
   maxTextSize: any;
@@ -38,7 +38,7 @@ export class WordCloudViewer extends DG.JsViewer {
   constructor() {
     super();
 
-    this.strColumnName = this.string('columnColumnName', '', {columnTypeFilter: DG.COLUMN_TYPE.STRING});
+    this.wordColumnName = this.string('wordColumnName', '', {columnTypeFilter: DG.COLUMN_TYPE.STRING});
 
     this.shape = this.string('shape', 'circle', {
       choices: ['circle', 'diamond', 'triangle-forward', 'triangle', 'pentagon', 'star'],
@@ -83,7 +83,7 @@ export class WordCloudViewer extends DG.JsViewer {
     this.strColumns = columns.filter((col) => col.type === DG.TYPE.STRING);
 
     if (this._testColumns())
-      this.strColumnName = this.strColumns.filter((col) => col.categories.length <= MAX_UNIQUE_CATEGORIES_NUMBER && col.categories.length > 1)[0]?.name ?? '';
+      this.wordColumnName = this.strColumns.filter((col) => col.categories.length <= MAX_UNIQUE_CATEGORIES_NUMBER && col.categories.length > 1)[0]?.name ?? '';
 
     this.render();
   }
@@ -95,20 +95,12 @@ export class WordCloudViewer extends DG.JsViewer {
 
   onPropertyChanged(property: DG.Property) {
     super.onPropertyChanged(property);
-    if (this.initialized && this._testColumns()) {
-      if (property.name === 'columnColumnName')
-        this.strColumnName = property.get(this);
-
+    if (this.initialized && this._testColumns())
       this.render();
-    }
   }
 
   onSourceRowsChanged() {
     this.render();
-  }
-
-  detach() {
-    this.subs.forEach((sub) => sub.unsubscribe());
   }
 
   render() {
@@ -116,20 +108,20 @@ export class WordCloudViewer extends DG.JsViewer {
       MessageHandler._showMessage(this.root, 'Not enough data to produce the result.', ERROR_CLASS);
       return;
     }
-    if (!this.strColumnName || this.dataFrame.getCol(this.strColumnName).categories.length > MAX_UNIQUE_CATEGORIES_NUMBER) {
+    if (!this.wordColumnName || this.dataFrame.getCol(this.wordColumnName).categories.length > MAX_UNIQUE_CATEGORIES_NUMBER) {
       MessageHandler._showMessage(this.root, 'The Word cloud viewer requires categorical column with 500 or fewer unique categories', ERROR_CLASS);
       return;
     }
 
     $(this.root).empty();
 
-    if (this.strColumnName === null || this.strColumnName === '')
+    if (this.wordColumnName === null || this.wordColumnName === '')
       return;
 
     const margin = {top: 10, right: 10, bottom: 10, left: 10};
     const width = this.root.parentElement!.clientWidth - margin.left - margin.right;
     const height = this.root.parentElement!.clientHeight - margin.top - margin.bottom;
-    const strColumn = this.dataFrame.getCol(this.strColumnName);
+    const strColumn = this.dataFrame.getCol(this.wordColumnName);
     const table = this.dataFrame;
 
     const counts = new Map<string, number>();

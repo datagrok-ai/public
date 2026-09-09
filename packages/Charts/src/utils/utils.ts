@@ -45,7 +45,7 @@ export namespace data {
       'stdev': colStatsCall + 'stdev',
       'sum': colStatsCall + 'sum',
       'unique': colStatsCall + 'uniqueCount',
-      'values': colStatsCall + 'valuesCount',
+      'values': colStatsCall + 'valueCount',
       'variance': colStatsCall + 'variance',
       '#selected': 'dataframe.selection.trueCount',
       'first': 'dataframe.getCol(columnName).get(0)',

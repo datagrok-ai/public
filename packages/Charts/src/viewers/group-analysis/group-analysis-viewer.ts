@@ -127,7 +127,7 @@ export class GroupAnalysisViewer extends DG.JsViewer {
 
   detach(): void {
     this.viewerLookSubs.forEach((sub) => sub.unsubscribe());
-    this.subs.forEach((sub) => sub.unsubscribe());
+    super.detach();
   }
 
   async onTableAttached(): Promise<void> {
@@ -221,6 +221,8 @@ export class GroupAnalysisViewer extends DG.JsViewer {
     if (this.analyzedColumns.filter((it) => it.colName === colName &&
       it.type === type && it.typeName === typeName).length)
       grok.shell.warning('Column already exists');
+    else if (type === STAT_TYPE && !this.dataFrame.col(colName)?.isNumerical)
+      grok.shell.warning('T-test requires a numerical column');
     else {
       const columnToAdd: IAnalyzedColumn = {colName: colName, type: type, typeName: typeName};
       const col = this.getCalculatedCol(columnToAdd);
@@ -270,7 +272,7 @@ export class GroupAnalysisViewer extends DG.JsViewer {
   }
 
   getStatisticsCol(column: IAnalyzedColumn, length: number) {
-    const col = DG.Column.float(`pValue(${column.colName}`, length).init((i) => this.performTTest(column.colName, i));
+    const col = DG.Column.float(`pValue(${column.colName})`, length).init((i) => this.performTTest(column.colName, i));
     col.meta.format = '#.0000000';
     return col;
   }
@@ -339,20 +341,17 @@ export class GroupAnalysisViewer extends DG.JsViewer {
           }
           if (!this.viewersStorage[gc.gridColumn.name])
             this.viewersStorage[gc.gridColumn.name] = {};
-          else {
-            if (!this.viewersStorage[gc.gridColumn.name][gc.tableRowIndex!]) {
-              df ??= this.createViewerDf(chartCol[0].colName, gc.tableRowIndex!);
-              const viewer = DG.Viewer.fromType((COL_TYPES[CHART_TYPE] as any)[chartCol[0].typeName].viewer, df);
-              this.viewersStorage[gc.gridColumn.name][gc.tableRowIndex!] = viewer;
-              viewer.copyViewersLook(this.parentViewers[gc.gridColumn.name]);
-              this.viewerLookSubs.push(this.parentViewers[gc.gridColumn.name].onDartPropertyChanged
-                .subscribe(() => {
-                  viewer.copyViewersLook(this.parentViewers[gc.gridColumn.name]);
-                }));
-            }
+          if (!this.viewersStorage[gc.gridColumn.name][gc.tableRowIndex!]) {
+            df ??= this.createViewerDf(chartCol[0].colName, gc.tableRowIndex!);
+            const viewer = DG.Viewer.fromType((COL_TYPES[CHART_TYPE] as any)[chartCol[0].typeName].viewer, df);
+            this.viewersStorage[gc.gridColumn.name][gc.tableRowIndex!] = viewer;
+            viewer.copyViewersLook(this.parentViewers[gc.gridColumn.name]);
+            this.viewerLookSubs.push(this.parentViewers[gc.gridColumn.name].onDartPropertyChanged
+              .subscribe(() => {
+                viewer.copyViewersLook(this.parentViewers[gc.gridColumn.name]);
+              }));
           }
-          if (!(Object.keys(this.viewersStorage[gc.gridColumn.name]).length === 0))
-            gc.element = this.viewersStorage[gc.gridColumn.name][gc.tableRowIndex!].root;
+          gc.element = this.viewersStorage[gc.gridColumn.name][gc.tableRowIndex!].root;
         }
       }
     });
