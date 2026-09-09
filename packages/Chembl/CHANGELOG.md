@@ -1,5 +1,10 @@
 # ChEMBL changelog
 
+## 37.0.2 (2026-09-09)
+
+* GROK-20862: Added `Search | By ATC Classification` and `... And Substructure` — four cascading WHO ATC levels over `atc_classification`, replacing the lost FRAC hierarchy
+* GROK-20862: The `Database Queries` demo now runs the ATC substructure query
+
 ## 37.0.1 (2026-09-09)
 
 * GROK-20862: Rewrote the FRAC classification queries for the ChEMBL 36+ schema (`pesticide_classification` replaces the dropped `frac_classification` hierarchy)

@@ -233,6 +233,20 @@ export namespace queries {
   }
 
   /**
+  Searches compound structures by the four-level WHO ATC (Anatomical Therapeutic Chemical) classification.
+  */
+  export async function atcClassification(level1: string , level2: string | null, level3: string | null, level4: string | null): Promise<DG.DataFrame> {
+    return await grok.data.query('ChEMBL:AtcClassification', { level1, level2, level3, level4 });
+  }
+
+  /**
+  Combines the four-level WHO ATC classification with molecular substructure matching.
+  */
+  export async function atcClassificationWithSubstructure(level1: string , level2: string | null, level3: string | null, level4: string | null, substructure: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('ChEMBL:AtcClassificationWithSubstructure', { level1, level2, level3, level4, substructure });
+  }
+
+  /**
   Provides autocomplete suggestions for compound names matching a substring pattern.
   */
   export async function compoundNames(sub: string ): Promise<DG.DataFrame> {

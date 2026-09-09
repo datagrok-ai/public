@@ -32,7 +32,7 @@ The package version is the ChEMBL release plus `.0.0` — 37.0.0 ships ChEMBL 37
   panel based on the `CHEMBL_ID` / `molregno` semantic types.
 * **HitTriage data sources** — `ChEMBL Compounds`, `Compounds Active Against Organism`, and the
   `Chembl molregno` column function, for seeding HitTriage campaigns from ChEMBL.
-* **Ad-hoc browse/search queries** (`Browse | …`, `Search | …`, `Misc | …`) covering FRAC
+* **Ad-hoc browse/search queries** (`Browse | …`, `Search | …`, `Misc | …`) covering ATC and FRAC
   classification, bioactivity for bacterial targets, PK data, activity details for a target,
   and more. Each has a matching `.layout` file where applicable.
 * **ChEMBL browser UI** backed by the internal `_cb…` queries.

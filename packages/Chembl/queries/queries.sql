@@ -171,3 +171,49 @@ WHERE p.ref_type = 'FRAC'
   AND (@mechanism is null or @mechanism = '' or p.mechanism_comment = @mechanism)
   AND s.canonical_smiles::mol @> @substructure::qmol
 --end
+
+
+--name: AtcClassification
+--friendlyName: Search | By ATC Classification
+--description: Searches compound structures by the four-level WHO ATC (Anatomical Therapeutic Chemical) classification.
+--connection: Chembl
+--input: string level1 = "ANTIINFECTIVES FOR SYSTEMIC USE" {choices: Query("SELECT DISTINCT level1_description FROM atc_classification ORDER BY 1")}
+--input: string level2 {nullable: true; choices: Query("SELECT DISTINCT level2_description FROM atc_classification WHERE level1_description = @level1 ORDER BY 1")}
+--input: string level3 {nullable: true; choices: Query("SELECT DISTINCT level3_description FROM atc_classification WHERE level2_description = @level2 ORDER BY 1")}
+--input: string level4 {nullable: true; choices: Query("SELECT DISTINCT level4_description FROM atc_classification WHERE level3_description = @level3 ORDER BY 1")}
+SELECT s.*, a.level5 AS atc_code, a.who_name, a.level1_description, a.level2_description, a.level3_description, a.level4_description
+FROM compound_structures s
+JOIN molecule_atc_classification m
+ON s.molregno = m.molregno
+JOIN atc_classification a
+ON m.level5 = a.level5
+WHERE
+  (@level1 is null or @level1 = '' or a.level1_description = @level1) and
+  (@level2 is null or @level2 = '' or a.level2_description = @level2) and
+  (@level3 is null or @level3 = '' or a.level3_description = @level3) and
+  (@level4 is null or @level4 = '' or a.level4_description = @level4)
+--end
+
+
+--name: AtcClassificationWithSubstructure
+--friendlyName: Search | By ATC Classification And Substructure
+--description: Combines the four-level WHO ATC classification with molecular substructure matching.
+--connection: Chembl
+--input: string level1 = "ANTIINFECTIVES FOR SYSTEMIC USE" {choices: Query("SELECT DISTINCT level1_description FROM atc_classification ORDER BY 1")}
+--input: string level2 {nullable: true; choices: Query("SELECT DISTINCT level2_description FROM atc_classification WHERE level1_description = @level1 ORDER BY 1")}
+--input: string level3 {nullable: true; choices: Query("SELECT DISTINCT level3_description FROM atc_classification WHERE level2_description = @level2 ORDER BY 1")}
+--input: string level4 {nullable: true; choices: Query("SELECT DISTINCT level4_description FROM atc_classification WHERE level3_description = @level3 ORDER BY 1")}
+--input: string substructure = "Clc1ccccc1" {semType: Substructure}
+SELECT s.*, a.level5 AS atc_code, a.who_name, a.level1_description, a.level2_description, a.level3_description, a.level4_description
+FROM compound_structures s
+JOIN molecule_atc_classification m
+ON s.molregno = m.molregno
+JOIN atc_classification a
+ON m.level5 = a.level5
+WHERE
+  (@level1 is null or @level1 = '' or a.level1_description = @level1) and
+  (@level2 is null or @level2 = '' or a.level2_description = @level2) and
+  (@level3 is null or @level3 = '' or a.level3_description = @level3) and
+  (@level4 is null or @level4 = '' or a.level4_description = @level4) and
+  s.canonical_smiles::mol @> @substructure::qmol
+--end
