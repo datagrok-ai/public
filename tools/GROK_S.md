@@ -602,6 +602,99 @@ Every entity keeps the **same UUID** on both instances, so a push is idempotent:
 unchanged bundle a second time writes nothing, and 1.28's built-in server-to-server sync
 recognises what the CLI pushed as its own.
 
+Moving a **whole instance** rather than one team's work needs `--admin` on both ends, so the
+run sees and writes what the key's own account cannot: without it a pull collects only the
+entities shared with that account, and the target's own users never get their content back.
+
+```bash
+grok s pull --since 10y --type project,connection,query,script,group,layout   --out ./bundle --host dev --admin
+grok s push ./bundle --host prod --admin --on-conflict skip
+```
+
+**Name the content types; do not pull tables directly.** A long-lived stand accumulates a loose
+`TableInfo` per ad-hoc import — dev holds 1.76 M of them against 21 K projects, and an admin
+session sees every one. Selecting projects instead pulls each project's tables, views and layouts
+as dependencies, so everything a dashboard needs still travels and the scratch rows stay behind.
+Check what a stand is carrying before deciding:
+
+```bash
+grok s tables list --host dev --admin --limit 1 --output json   # `count` ignores --filter
+```
+
+`--type` takes the aliases `conn`/`connection`, `query`, `script`, `project`/`dashboard`/`space`,
+`view`, `layout`, `table`, `file`, `group`, `job`, `notebook`, `model`, or an exact type name
+(`DataConnection`) — a lowercased type name is not an alias and is rejected.
+
+### Preparing the target
+
+Four things belong to the instance, not to a bundle, and have to be in place before the push.
+`grok s diff` reports missing users; missing packages are reported by the push itself, since the
+check runs against what the push is about to write.
+
+| | Why | How to check |
+|---|---|---|
+| **Users** | Content of a user who does not exist lands under the pushing account | `warn user_missing` |
+| **Packages** | Package functions, scripts and connections carry a name-derived id that only exists once the package is *published* there — installing it from the repository is not enough | `warn package_not_installed` |
+| **Platform shares** | `System:AppData` and `System:DemoFiles` are created by the deployment; entities that read from them need them present | `grok s connections list --host prod` |
+| **Credentials** | Secrets never travel — set them on the target after the push, or pass `--creds` | `needs-credentials` rows |
+
+A freshly deployed stand also stops at its setup wizard, and 1.27.x keeps the session token in
+memory rather than a cookie — so that redirect logs you straight back out. Click the wizard
+through once and normal login works.
+
+Users are **not** part of a bundle. Create them on the target first — content that belongs to
+a user who does not exist there lands under the pushing account instead of theirs.
+
+### Surviving a blip
+
+A retriable answer (429, 502, 503, 504) or a dropped socket is retried with exponential backoff —
+five attempts by default, about half a minute. That covers a busy moment, not a stand that steps
+out for a restart, and a whole-instance walk is long enough to meet one:
+
+```bash
+GROK_HTTP_RETRIES=9 grok s pull --out ./bundle --host dev --admin ...   # ~4 min of tolerance
+```
+
+A pull that dies anyway is not wasted — pulls accumulate, so re-running without `--replace`
+merges into the same bundle.
+
+### A bundle remembers where it was pushed
+
+`--on-conflict adopt` records every adoption in the bundle's own `idmap.json`, so a re-push
+writes into the same target rows instead of adopting again. That is what makes a repeated push
+idempotent — but it also means the bundle is no longer neutral: pushed at a *different* target,
+or re-pushed after an aborted attempt, it resolves entities by the ids it learned last time and
+updates rows it would otherwise have created.
+
+Pull into a fresh directory (or delete `idmap.json`) whenever a bundle is aimed at a different
+instance than the one it last adopted against.
+
+### Conflict policies
+
+Measured against a target holding 924 of the bundle's 1,162 names:
+
+| `--on-conflict` | What lands | Cost |
+|---|---|---|
+| `fail` (default) | nothing; every conflict is listed first | safest way to see the damage before writing |
+| `skip` | the non-conflicting entities only | most failures — whatever depended on a skipped entity fails too |
+| `adopt` | conflicting names are written into the target's existing rows | keeps one copy; the usual choice for a real migration |
+| `duplicate` | a second copy of everything that collides | target grows by the whole bundle, tables bring their columns |
+
+### References the source has already lost
+
+A long-lived instance accumulates entities that point at something deleted out from under them —
+most often a saved view whose table is gone. The pull resolves every outside reference against the
+source, so a bundle records which of them the source itself can no longer answer:
+
+```
+Bundle  warn  source_dangling_refs  50 reference(s) point at entities the source itself no longer has
+```
+
+The push then reports whatever depends on one as `skip dead_on_source` rather than as a failure,
+and does not fail the run over it — no target can supply what the source has already lost. A
+reference the source *does* keep but the target lacks stays a real failure (`dependency_missing`),
+because installing the package or widening the pull fixes it.
+
 ### Bundle layout
 
 ```
@@ -614,8 +707,11 @@ bundle/
   FileInfo/reports.readme.md.json   # a file without a namespace is named by its path
   tables/<id>.d42                   # table data (on by default for pulled tables)
   files/<id>                        # file bytes (only with --include-files)
-  idmap.json                        # sourceId -> targetId, written by --on-conflict adopt and
-                                    # whenever a FileInfo save answers with an existing row's id
+  shares/<encoded path>             # share files a datasync table rebuilds itself from
+  idmap.json                        # sourceId -> targetId, written whenever the push resolves an
+                                    # entity to a different id on the target — an adoption, a
+                                    # package entity found by name, or a save that answered with
+                                    # an existing row's id
 ```
 
 **Pulls accumulate.** Pulling into an existing bundle merges: entities already there are
@@ -636,8 +732,8 @@ grok s push ./release --host prod
 | positional `Chem:Dashboard <uuid> ...` | exactly these entities, by nqName or id |
 | `--type conn,query,script,project,dashboard,space,view,layout,table,file,group,job,notebook,model` | which types to list (default: all of them) |
 | `--name <glob>` | free-text search, then a client-side glob on name and friendly name (`Cereal*`, `*demo*`) |
-| `--namespace Chem` | everything **under** the namespace, recursively — the space `Chem` itself is not one of them |
-| `--space Chem:Reports` | the space itself **plus** everything under it |
+| `--namespace Chem` | everything **under** the namespace, recursively, plus the space `Chem` itself — without it nothing selected has anywhere to be placed |
+| `--space Chem:Reports` | the same, named by nqName rather than by namespace |
 | `--author alice` | entities authored by a login |
 | `--tag demo` | entities carrying a tag (types whose router has no `tags` param are skipped with a warning) |
 | `--since 2w` / `--since=-30d` / `--since 2026-08-01` | updated since (bare `2w` means `-2w`; the shell eats a leading `-` unless you use `=`) |

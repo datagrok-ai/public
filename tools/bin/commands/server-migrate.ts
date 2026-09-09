@@ -5,16 +5,16 @@ import * as path from 'path';
 import * as yaml from 'js-yaml';
 import {NodeDapi} from '../utils/node-dapi';
 import {createClient} from '../utils/server-client';
-import {printOutput, printError, OutputFormat} from '../utils/server-output';
+import {printOutput, printError, progressReporter, OutputFormat} from '../utils/server-output';
 import {BytesKind, DEFAULT_TYPES, nqNameOf, resolveTypes} from '../utils/migrate/registry';
 import * as bundle from '../utils/migrate/bundle';
-import {Selection, expand, normalizeSince, pullBytes, select} from '../utils/migrate/walker';
+import {External, Selection, collectExternals, expand, normalizeSince, pullBytes, pullShares, select} from '../utils/migrate/walker';
 import {ConflictPolicy, Row, plan, push, summarize} from '../utils/migrate/pusher';
 
 const SELECTION_USAGE = '  [<nqName|id>...] [--type t,t] [--namespace ns] [--space s] [--name n] [--author login]\n' +
   '  [--tag t] [--since 2w] [--filter expr] [--no-deps] [--no-include-data] [--include-files]';
-const PULL_USAGE = `Usage: grok s pull --out <dir> [--replace] [--host <alias>]\n${SELECTION_USAGE}`;
-const MIGRATE_USAGE = 'Usage: grok s migrate --from <alias> --to <alias> [--dry-run] [--keep]\n' +
+const PULL_USAGE = `Usage: grok s pull --out <dir> [--replace] [--admin] [--host <alias>]\n${SELECTION_USAGE}`;
+const MIGRATE_USAGE = 'Usage: grok s migrate --from <alias> --to <alias> [--dry-run] [--keep] [--admin]\n' +
   '  [--on-conflict fail|skip|duplicate|adopt] [--creds <file.yaml>]\n' + SELECTION_USAGE;
 
 export async function handleMigrate(dapi: NodeDapi, verb: string, rest: string[], argv: any,
@@ -53,12 +53,19 @@ async function handlePull(dapi: NodeDapi, rest: string[], argv: any, output: Out
 
   const notes: Row[] = [];
   const note = (row: Row) => notes.push(row);
-  const selected = await select(dapi, sel, note);
-  const entities = argv.deps !== false ? await expand(dapi, selected, note) : selected;
+  const leftBehind: External[] = [];
+  const progress = progressReporter(output === 'quiet');
+  const selected = await select(dapi, sel, note, progress);
+  const entities = argv.deps !== false ? await expand(dapi, selected, note, leftBehind, progress) : selected;
+  // Everything the bundle points at but leaves behind, so the push can re-find it by name.
+  const outside = await collectExternals(dapi, entities, note, progress);
+  const externals = [...leftBehind, ...outside.externals];
   const kinds: BytesKind[] = [];
   if (argv['include-data'] !== false) kinds.push('tables');
   if (argv['include-files']) kinds.push('files');
-  const bytes = await pullBytes(dapi, entities, note, kinds);
+  const bytes = await pullBytes(dapi, entities, note, kinds, progress);
+  // A datasync table rebuilds itself from a share on open, so the file has to travel with it.
+  const shares = argv['include-files'] ? await pullShares(dapi, entities, note, progress) : new Map<string, Buffer>();
 
   const info = await dapi.serverInfo();
   const user = await dapi.client.get('/users/current');
@@ -71,9 +78,16 @@ async function handlePull(dapi: NodeDapi, rest: string[], argv: any, output: Out
     },
     args: process.argv.slice(3),
     packages: notes.filter((n) => n.reason === 'package_entity').map((n) => n.detail!).filter(Boolean),
+    externals,
+    dangling: outside.dangling,
   }, {replace: !!argv.replace}, bytes);
+  bundle.writeShares(out, shares);
+  progress(`wrote ${entities.size} entities to ${out}`);
 
   const rows: Row[] = [...notes];
+  if (outside.dangling.length)
+    rows.push({name: dapi.client.baseUrl, entityType: 'Bundle', action: 'warn', reason: 'source_dangling_refs',
+      detail: `${outside.dangling.length} reference(s) point at entities the source itself no longer has`});
   for (const [, {type, json}] of entities)
     rows.push({name: nqNameOf(json), entityType: type, action: 'info', reason: 'pulled'});
   // An entity the server would not hand over is missing from the bundle, and pushing it would
@@ -135,13 +149,14 @@ function conflictPolicy(argv: any): ConflictPolicy {
 async function handlePush(dapi: NodeDapi, rest: string[], argv: any, output: OutputFormat): Promise<boolean> {
   const dir = rest[0];
   if (!dir) {
-    printError(new Error('Usage: grok s push <bundle-dir> [--dry-run] [--on-conflict fail|skip|duplicate|adopt] [--creds <file.yaml>] [--host <alias>]'));
+    printError(new Error('Usage: grok s push <bundle-dir> [--dry-run] [--on-conflict fail|skip|duplicate|adopt] [--creds <file.yaml>] [--admin] [--host <alias>]'));
     return false;
   }
   const onConflict = conflictPolicy(argv);
   const creds = loadCreds(argv.creds);
   const dryRun = !!argv['dry-run'];
-  const result = await push(dapi, bundle.read(dir), {dryRun, onConflict, creds}, (rows) => {
+  const result = await push(dapi, bundle.read(dir), {dryRun, onConflict, creds,
+    progress: progressReporter(output === 'quiet')}, (rows) => {
     if (output === 'table' && !dryRun) {
       console.log('Plan:');
       printOutput(rows, output);

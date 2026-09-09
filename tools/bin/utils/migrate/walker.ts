@@ -1,7 +1,9 @@
 /// Docs: [Entity export / import](/docs/features/grok-tool/export-import/DESIGN.md)
 import {NodeDapi} from '../node-dapi';
-import {BytesKind, TYPES, Ref, TypeOptions, UUID_RE, inNamespace, isBuiltinGroup, nqNameOf, untransferableReason} from './registry';
-import {BundleEntity} from './bundle';
+import {BytesKind, TYPES, Ref, TypeOptions, UUID_RE, datasyncFilePaths, inNamespace, isBuiltinGroup, nqNameOf, untransferableReason} from './registry';
+import {BundleEntity, normalize} from './bundle';
+import {nestedIds, rewrite} from './rewriter';
+import {pool} from './pool';
 
 export interface Selection {
   types: string[];
@@ -19,7 +21,19 @@ export interface Selection {
 
 export type Note = (row: {name: string; entityType: string; action: 'warn' | 'info'; reason: string; detail?: string}) => void;
 
+export type Progress = (stage: string, done?: number, total?: number) => void;
+const noProgress: Progress = () => {};
+
+/** An entity that stays on the source but is still referenced by what travels. */
+export interface External {id: string; type: string; nqName: string}
+
+/** What the bundle points at but does not carry: resolvable on the source, or dead there too. */
+export interface Outside {externals: External[]; dangling: string[]}
+
 const ALL_USERS = 'a4b45840-9a50-11e6-9cc9-8546b8bf62e6';
+
+/** One round trip per entity, tens of thousands per stand — modest, since the server is shared. */
+const WALK_CONCURRENCY = 12;
 
 const quoted = (v: string): string => `"${v.replace(/"/g, '\\"')}"`;
 
@@ -115,9 +129,13 @@ export async function resolveEntity(dapi: NodeDapi, token: string, type?: string
  * rules. Returns true when the entity was dropped (and noted).
  */
 async function untransferable(dapi: NodeDapi, type: string, json: any, note: Note,
-                              packageNames: Map<string, string>): Promise<boolean> {
+                              packageNames: Map<string, string>, externals?: External[]): Promise<boolean> {
   const drop = (action: 'warn' | 'info', reason: string, detail?: string) => {
     note({name: nqNameOf(json), entityType: type, action, reason, detail});
+    // What stays behind is still referenced by what travels. The id is the instance's own, so
+    // the push has to find the target's equivalent by name — record what to look for.
+    if (externals && json?.id)
+      externals.push({id: json.id, type, nqName: nqNameOf(json)});
     return true;
   };
   if (json.package)
@@ -132,7 +150,8 @@ async function untransferable(dapi: NodeDapi, type: string, json: any, note: Not
   return false;
 }
 
-export async function select(dapi: NodeDapi, sel: Selection, note: Note): Promise<Map<string, BundleEntity>> {
+export async function select(dapi: NodeDapi, sel: Selection, note: Note,
+                             progress: Progress = noProgress): Promise<Map<string, BundleEntity>> {
   const picked = new Map<string, BundleEntity>();
   const packageNames = new Map<string, string>();
   const add = async (lite: any) => {
@@ -142,6 +161,14 @@ export async function select(dapi: NodeDapi, sel: Selection, note: Note): Promis
       return;
     }
     if (picked.has(lite.id)) return;
+    // The listing already carries what decides this, and the entities it rules out are the
+    // expensive ones: `GET /projects/{id}` on a package namespace holds tens of thousands of
+    // children and never answers, so fetching one only to discard it costs the request deadline.
+    const listed = untransferableReason(type, lite);
+    if (listed) {
+      note({name: nqNameOf(lite), entityType: type, action: listed.action, reason: listed.reason});
+      return;
+    }
     const json = await tryFind(dapi, type, lite.id, nqNameOf(lite), note);
     if (json && !await untransferable(dapi, type, json, note, packageNames))
       picked.set(lite.id, {type, json});
@@ -149,6 +176,17 @@ export async function select(dapi: NodeDapi, sel: Selection, note: Note): Promis
 
   if (sel.space)
     await add(await resolveEntity(dapi, sel.space));
+  // `--namespace X` matches what is *inside* X, never X itself: a personal root or a space is
+  // named `X` in the root namespace. Without it nothing selected has anywhere to be placed, and
+  // the whole selection lands under the pushing account.
+  if (sel.namespace) {
+    const owner = await resolveEntity(dapi, sel.namespace.replace(/:$/, ''), 'Project').catch(() => null);
+    if (owner)
+      await add(owner);
+    else
+      note({name: sel.namespace, entityType: 'Project', action: 'warn', reason: 'owning_space_not_found',
+        detail: 'nothing selected can be placed under it — the content will land under the pushing account'});
+  }
   for (const n of sel.names)
     await add(await resolveEntity(dapi, n));
 
@@ -167,21 +205,27 @@ export async function select(dapi: NodeDapi, sel: Selection, note: Note): Promis
         typeId: spec.typeId,
         ...(sel.typeOptions?.[type]?.params ?? {}),
       };
-      for (const lite of await dapi.internal(route).listAll(params))
-        if (!sel.name || matchesName(sel.name, lite))
-          await add(lite);
+      const listed = await dapi.internal(route).listAll(params);
+      const wanted = listed.filter((lite: any) => !sel.name || matchesName(sel.name, lite));
+      let done = 0;
+      await pool(wanted, WALK_CONCURRENCY, async (lite: any) => {
+        await add(lite);
+        progress(`selecting ${type}`, ++done, wanted.length);
+      });
     }
   }
   return picked;
 }
 
-export async function expand(dapi: NodeDapi, selected: Map<string, BundleEntity>, note: Note): Promise<Map<string, BundleEntity>> {
+export async function expand(dapi: NodeDapi, selected: Map<string, BundleEntity>, note: Note,
+                             externals?: External[], progress: Progress = noProgress): Promise<Map<string, BundleEntity>> {
   const out = new Map<string, BundleEntity>();
   const seen = new Set<string>();
   const queue: {type: string; id: string; json?: any}[] = [];
   const packageNames = new Map<string, string>();
-  // Datasync scripts name the same query over and over; one lookup per nqName is enough.
-  const resolved = new Map<string, any>();
+  // Datasync scripts name the same query over and over; the promise is cached so concurrent
+  // walkers share one lookup rather than each starting their own.
+  const resolved = new Map<string, Promise<any>>();
 
   const enqueue = (type: string, id: string, json?: any) => {
     if (!id || seen.has(id) || !TYPES[type]) return;
@@ -192,36 +236,44 @@ export async function expand(dapi: NodeDapi, selected: Map<string, BundleEntity>
   for (const [id, e] of selected)
     enqueue(e.type, id, e.json);
 
+  // A generation at a time: what a batch discovers is queued for the next, so the walk stays
+  // breadth-first while the round trips overlap.
   while (queue.length) {
-    const {type, id, json: known} = queue.shift()!;
-    const json = known ?? await tryFind(dapi, type, id, id, note);
-    if (!json) continue;
+    const batch = queue.splice(0, WALK_CONCURRENCY);
+    await pool(batch, WALK_CONCURRENCY, async ({type, id, json: known}) => {
+      const json = known ?? await tryFind(dapi, type, id, id, note);
+      if (!json) return;
 
-    if (await untransferable(dapi, type, json, note, packageNames)) continue;
-    out.set(id, {type, json});
+      if (await untransferable(dapi, type, json, note, packageNames, externals)) return;
+      out.set(id, {type, json});
+      // No honest total: the queue grows as dependencies are discovered and shrinks as they
+      // are taken, so a denominator here would move backwards.
+      progress('walking dependencies', out.size);
 
-    if (type === 'Project') {
-      for (const r of await projectRelations(dapi, id, json, note))
-        enqueue(r?.entity?.['#type'], r?.entity?.id);
-      for (const route of ['/views', '/layouts'])
-        for (const v of await dapi.internal(route).listAll({projectId: id}))
-          enqueue(v['#type'], v.id);
-    }
-
-    for (const dep of TYPES[type].deps?.(json) ?? []) {
-      if (dep.id || !dep.nqName) {
-        enqueue(dep.type ?? '', dep.id ?? '');
-        continue;
+      if (type === 'Project') {
+        for (const r of await projectRelations(dapi, id, json, note))
+          enqueue(r?.entity?.['#type'], r?.entity?.id);
+        for (const route of ['/views', '/layouts'])
+          for (const v of await dapi.internal(route).listAll({projectId: id}))
+            enqueue(v['#type'], v.id);
       }
-      const key = `${dep.type ?? ''}|${dep.nqName}`;
-      if (!resolved.has(key))
-        resolved.set(key, await resolveDep(dapi, dep, note));
-      const found = resolved.get(key);
-      if (found)
-        enqueue(found['#type'], found.id);
-    }
+
+      for (const dep of TYPES[type].deps?.(json) ?? []) {
+        if (dep.id || !dep.nqName) {
+          enqueue(dep.type ?? '', dep.id ?? '');
+          continue;
+        }
+        const key = `${dep.type ?? ''}|${dep.nqName}`;
+        if (!resolved.has(key))
+          resolved.set(key, resolveDep(dapi, dep, note));
+        const found = await resolved.get(key);
+        if (found)
+          enqueue(found['#type'], found.id);
+      }
+    });
   }
-  await expandGrants(dapi, out, note);
+  await expandGrants(dapi, out, note, progress);
+  progress('resolving personal spaces');
   await markPersonalProjects(dapi, out);
   return out;
 }
@@ -307,17 +359,22 @@ export async function grantsOf(dapi: NodeDapi, id: string, group: (gid: string) 
  * portable, so grants and memberships are recorded under bundle-only `_grants` /
  * `_members` keys and replayed by name and login on the target.
  */
-async function expandGrants(dapi: NodeDapi, out: Map<string, BundleEntity>, note: Note): Promise<void> {
+async function expandGrants(dapi: NodeDapi, out: Map<string, BundleEntity>, note: Note,
+                            progress: Progress = noProgress): Promise<void> {
   const group = groupCache(dapi);
   const queue: any[] = [];
-  for (const [id, e] of out) {
-    if (e.type === 'UserGroup') { queue.push(e.json); continue; }
+  const entities = [...out].filter(([, e]) => e.type !== 'UserGroup');
+  for (const [, e] of out)
+    if (e.type === 'UserGroup') queue.push(e.json);
+  let seen = 0;
+  await pool(entities, WALK_CONCURRENCY, async ([id, e]) => {
+    progress('reading grants', ++seen, entities.length);
     const grants = await grantsOf(dapi, id, group);
-    if (!grants.length) continue;
+    if (!grants.length) return;
     e.json._grants = grants.map((g) => ({group: g.group, permission: g.permission}));
     for (const g of grants)
       queue.push(await group(g.groupId));
-  }
+  });
 
   const done = new Set<string>();
   while (queue.length) {
@@ -366,14 +423,81 @@ async function groupMembers(dapi: NodeDapi, g: any, group: (id: string) => Promi
   return members;
 }
 
-export async function pullBytes(dapi: NodeDapi, entities: Map<string, BundleEntity>, note: Note,
-                                kinds: BytesKind[]): Promise<Map<string, Buffer>> {
-  const bytes = new Map<string, Buffer>();
+/**
+ * A datasync table carries no data of its own — it rebuilds itself from a file on open. The
+ * table travels, the file does not, so the dashboard lands empty unless the file comes too.
+ */
+/**
+ * Anything the bundle points at but does not carry. Most of it belongs to the instance rather
+ * than to the content — a package's own rows, a platform share, a personal space — and every
+ * instance mints its own id for those, so the only thing that can survive the trip is the name.
+ */
+export async function collectExternals(dapi: NodeDapi, entities: Map<string, BundleEntity>, note: Note,
+                                       progress: Progress = noProgress): Promise<Outside> {
+  const mine = new Set<string>();
+  const referenced = new Set<string>();
+  // The bundle stores the normalized form, and normalizing drops the embedded copies that make an
+  // outside entity look like a nested row — scanning the live JSON would call those ids our own.
   for (const [id, {type, json}] of entities) {
-    const spec = TYPES[type];
-    if (!spec.bytes || !kinds.includes(spec.bytes.kind)) continue;
+    const stored = normalize(type, json);
+    mine.add(id);
+    for (const nested of nestedIds(stored)) mine.add(nested);
+    rewrite(stored, {}, referenced);
+  }
+  const externals: External[] = [];
+  const dangling: string[] = [];
+  const outside = [...referenced].filter((id) => !mine.has(id));
+  let seen = 0;
+  await pool(outside, WALK_CONCURRENCY, async (id) => {
+    const found = await findEntity(dapi, id).catch(() => undefined);
+    if (found === undefined) {
+      note({name: id, entityType: 'Entity', action: 'warn', reason: 'reference_unresolved'});
+      return;
+    }
+    // Nothing on the source answers to it either: the reference died here, and no target can
+    // satisfy it. Recording that is what lets the push tell broken source data from a real failure.
+    if (found)
+      externals.push({id, type: found['#type'], nqName: nqNameOf(found)});
+    else
+      dangling.push(id);
+    progress('resolving outside references', ++seen, outside.length);
+  });
+  externals.sort((a, b) => a.id.localeCompare(b.id));
+  dangling.sort();
+  return {externals, dangling};
+}
+
+export async function pullShares(dapi: NodeDapi, entities: Map<string, BundleEntity>,
+                                 note: Note, progress: Progress = noProgress): Promise<Map<string, Buffer>> {
+  const wanted = new Set<string>();
+  for (const [, {type, json}] of entities)
+    if (type === 'TableInfo')
+      for (const p of datasyncFilePaths(json)) wanted.add(p);
+
+  const files = new Map<string, Buffer>();
+  let done = 0;
+  for (const remote of wanted) {
+    progress('fetching share files', ++done, wanted.size);
     try {
-      bytes.set(id, await dapi.client.getBytes(spec.bytes.get(id)));
+      files.set(remote, await dapi.files.readBytes(remote));
+    } catch (err: any) {
+      note({name: remote, entityType: 'File', action: 'warn', reason: 'share_file_unreadable',
+        detail: err?.message ?? String(err)});
+    }
+  }
+  return files;
+}
+
+export async function pullBytes(dapi: NodeDapi, entities: Map<string, BundleEntity>, note: Note,
+                                kinds: BytesKind[], progress: Progress = noProgress): Promise<Map<string, Buffer>> {
+  const bytes = new Map<string, Buffer>();
+  const withBytes = [...entities].filter(([, e]) => TYPES[e.type].bytes && kinds.includes(TYPES[e.type].bytes!.kind));
+  let done = 0;
+  for (const [id, {type, json}] of withBytes) {
+    const spec = TYPES[type];
+    progress('fetching data', ++done, withBytes.length);
+    try {
+      bytes.set(id, await dapi.client.getBytes(spec.bytes!.get(id)));
     } catch (err: any) {
       note({name: json.name ?? id, entityType: type, action: 'warn', reason: 'no_data', detail: err?.message});
     }

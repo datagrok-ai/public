@@ -1,6 +1,6 @@
 import {describe, it, expect} from 'vitest';
 import {NodeDapi} from '../utils/node-dapi';
-import {Selection, compileFilter, expand, matchesName, normalizeSince, pullBytes, select} from '../utils/migrate/walker';
+import {Selection, collectExternals, compileFilter, expand, matchesName, normalizeSince, pullBytes, select} from '../utils/migrate/walker';
 
 interface Call {method: string; path: string; body?: any}
 
@@ -150,7 +150,8 @@ describe('select', () => {
     const {dapi, calls} = makeDapi(() => []);
     await select(dapi, sel({types: ['Project'], namespace: 'MigTestSpace',
       typeOptions: {Project: {clause: 'isDashboard = false and isEntity = false', params: {includeRoot: 'true'}}}}), () => {});
-    expect(calls.map((c) => c.path)).toEqual([
+    // The first call resolves the space itself; the listing is what this test is about.
+    expect(calls.map((c) => c.path).filter((p) => p.startsWith('/projects'))).toEqual([
       '/projects?text=namespace%20starts%20%22MigTestSpace%3A%22%20and%20isDashboard%20%3D%20false%20and%20isEntity%20%3D%20false&includeRoot=true&limit=500&page=1',
     ]);
   });
@@ -158,7 +159,7 @@ describe('select', () => {
   it('lists files by type id — there is no type-wide /files listing', async () => {
     const {dapi, calls} = makeDapi(() => []);
     await select(dapi, sel({types: ['FileInfo'], namespace: 'MigTestSpace'}), () => {});
-    expect(calls[0].path).toBe(
+    expect(calls.map((c) => c.path).find((p) => p.includes('typeId='))).toBe(
       '/entities?text=namespace%20starts%20%22MigTestSpace%3A%22&typeId=34d75630-e870-11e6-bfe1-590ff6f10d14&limit=500&page=1');
   });
 
@@ -374,5 +375,43 @@ describe('pullBytes', () => {
     const none = bytesDapi();
     expect((await pullBytes(none.dapi, entities, () => {}, [])).size).toBe(0);
     expect(none.paths).toEqual([]);
+  });
+});
+
+describe('select', () => {
+  it('drops a package namespace from the listing without fetching it', async () => {
+    const lite = {'#type': 'Project', id: PROJECT_ID, name: 'Chem', isEntity: true, isPackage: true};
+    const {dapi, calls} = makeDapi((_m, path) => path.startsWith('/projects?') ? [lite] : (() => { throw new Error('should not fetch'); })());
+    const notes: any[] = [];
+    const picked = await select(dapi, sel({types: ['Project']}), (r) => notes.push(r));
+    expect(picked.size).toBe(0);
+    expect(notes.find((n) => n.reason === 'platform_project')).toBeTruthy();
+    expect(calls.some((c) => c.path === `/projects/${PROJECT_ID}`)).toBe(false);
+  });
+});
+
+describe('collectExternals', () => {
+  const DEAD = 'deadbeef-1111-2222-3333-444444444444';
+  const entities = new Map([[VIEW_ID, {type: 'ViewInfo', json: {
+    '#type': 'ViewInfo', id: VIEW_ID, name: 'Demog', table: {id: DEAD},
+  }}]]);
+
+  it('separates a reference the source still resolves from one it has lost', async () => {
+    const {dapi} = makeDapi((_m, path) => path.includes(CONN_ID)
+      ? {'#type': 'DataConnection', id: CONN_ID, name: 'Northwind', namespace: 'Samples:'}
+      : (() => { throw Object.assign(new Error('Not Found'), {apiError: {errorCode: 404}}); })());
+    const live = new Map([[VIEW_ID, {type: 'ViewInfo', json: {
+      '#type': 'ViewInfo', id: VIEW_ID, name: 'Demog', connection: {id: CONN_ID},
+    }}]]);
+    const {externals, dangling} = await collectExternals(dapi, live as any, () => {});
+    expect(externals).toEqual([{id: CONN_ID, type: 'DataConnection', nqName: 'Samples:Northwind'}]);
+    expect(dangling).toEqual([]);
+  });
+
+  it('records a reference nothing on the source answers to', async () => {
+    const {dapi} = makeDapi(() => { throw Object.assign(new Error('Not Found'), {apiError: {errorCode: 404}}); });
+    const {externals, dangling} = await collectExternals(dapi, entities as any, () => {});
+    expect(externals).toEqual([]);
+    expect(dangling).toEqual([DEAD]);
   });
 });
