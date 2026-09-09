@@ -37,7 +37,7 @@ export class WordCloudViewer extends DG.JsViewer {
   constructor() {
     super();
 
-    this.strColumnName = this.string('columnColumnName', '', { columnTypeFilter: DG.COLUMN_TYPE.STRING });
+    this.strColumnName = this.string('columnColumnName', '', {columnTypeFilter: DG.COLUMN_TYPE.STRING});
 
     this.shape = this.string('shape', 'circle', {
       choices: ['circle', 'diamond', 'triangle-forward', 'triangle', 'pentagon', 'star'],
@@ -48,13 +48,13 @@ export class WordCloudViewer extends DG.JsViewer {
 
     this.minRotationDegree = this.int('minRotationDegree', -30);
     this.maxRotationDegree = this.int('maxRotationDegree', 30);
-    this.rotationStep = this.int('rotationStep', 5, { min: 1 });
+    this.rotationStep = this.int('rotationStep', 5, {min: 1});
 
     this.gridSize = this.int('gridSize', 8);
 
     this.drawOutOfBound = this.bool('drawOutOfBound', true);
 
-    this.fontFamily = this.string('fontFamily', 'sans-serif', { choices: ['sans-serif', 'serif', 'monospace'] });
+    this.fontFamily = this.string('fontFamily', 'sans-serif', {choices: ['sans-serif', 'serif', 'monospace']});
 
     this.bold = this.bool('bold', true);
 
@@ -97,6 +97,10 @@ export class WordCloudViewer extends DG.JsViewer {
     }
   }
 
+  onSourceRowsChanged() {
+    this.render();
+  }
+
   detach() {
     this.subs.forEach((sub) => sub.unsubscribe());
   }
@@ -122,19 +126,22 @@ export class WordCloudViewer extends DG.JsViewer {
     if (this.strColumnName === null || this.strColumnName === '')
       return;
 
-    const margin = { top: 10, right: 10, bottom: 10, left: 10 };
+    const margin = {top: 10, right: 10, bottom: 10, left: 10};
     const width = this.root.parentElement!.clientWidth - margin.left - margin.right;
     const height = this.root.parentElement!.clientHeight - margin.top - margin.bottom;
     const strColumn = this.dataFrame.getCol(this.strColumnName);
-    const words = strColumn.categories;
-    const data: any = []; //echarts.SeriesOption[] = [];
     const table = this.dataFrame;
 
-    words.forEach((w) => data.push({
-      name: w,
-      value: strColumn.toList().filter((row) => row === w).length,
+    const counts = new Map<string, number>();
+    for (const i of this.filter.getSelectedIndexes()) {
+      const word = strColumn.get(i);
+      counts.set(word, (counts.get(word) ?? 0) + 1);
+    }
+    const data = Array.from(counts, ([name, value]) => ({
+      name: name,
+      value: value,
       textStyle: {
-        color: DG.Color.toHtml(DG.Color.getCategoryColor(strColumn, w)),
+        color: DG.Color.toHtml(DG.Color.getCategoryColor(strColumn, name)),
       },
     }));
 
@@ -183,8 +190,7 @@ export class WordCloudViewer extends DG.JsViewer {
       .on('mousedown', (d: any) => {
         table.selection.handleClick((i) => {
           return d.name === strColumn.get(i);
-        //@ts-ignore
-        }, d);
+        }, d.event.event);
       });
   }
 }

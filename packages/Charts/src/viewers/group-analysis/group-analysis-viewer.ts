@@ -1,6 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
+import {Subscription} from 'rxjs';
 
 import {tTest} from '@datagrok-libraries/statistics/src/tests';
 
@@ -97,8 +98,8 @@ interface IAnalyzedColumn {
 export class GroupAnalysisViewer extends DG.JsViewer {
   initialized: boolean = false;
   private _name: string = 'group';
-  get name(): string { return this._name; }
-  set name(x: string | undefined) { this._name = x ?? ''; }
+  get name(): string {return this._name;}
+  set name(x: string | undefined) {this._name = x ?? '';}
   groupByColumnNames: string[];
   analyzedColumns: IAnalyzedColumn[];
   analyzedColumnsEncoded: string;
@@ -106,6 +107,7 @@ export class GroupAnalysisViewer extends DG.JsViewer {
   grouppedDf: DG.DataFrame | undefined = undefined;
   parentViewers: {[key: string]: DG.Viewer};
   viewersStorage: {[key: string]: {[key: number]: DG.Viewer}} = {};
+  viewerLookSubs: Subscription[] = [];
   grouppingColsDiv = ui.div();
   grouppedGridDiv = ui.div();
   mainView = ui.splitV([]);
@@ -124,6 +126,7 @@ export class GroupAnalysisViewer extends DG.JsViewer {
   }
 
   detach(): void {
+    this.viewerLookSubs.forEach((sub) => sub.unsubscribe());
     this.subs.forEach((sub) => sub.unsubscribe());
   }
 
@@ -143,9 +146,9 @@ export class GroupAnalysisViewer extends DG.JsViewer {
   }
 
   initChartEventListeners() {
-    this.dataFrame.onRowsFiltered.subscribe((_) => {
+    this.subs.push(this.dataFrame.onRowsFiltered.subscribe((_) => {
       this.updateGrid();
-    });
+    }));
   }
 
   onPropertyChanged(p: DG.Property) {
@@ -299,6 +302,9 @@ export class GroupAnalysisViewer extends DG.JsViewer {
 
 
   updateGrid() {
+    this.viewerLookSubs.forEach((sub) => sub.unsubscribe());
+    this.viewerLookSubs.length = 0;
+    this.viewersStorage = {};
     this.grouppedDf = this.dataFrame.groupBy(this.groupByColumnNames).whereRowMask(this.dataFrame.filter).aggregate();
     this.grid = this.grouppedDf.plot.grid();
     const aggregateCols = this.analyzedColumns.filter((it) => it.type === AGGR_TYPE);
@@ -334,19 +340,19 @@ export class GroupAnalysisViewer extends DG.JsViewer {
           if (!this.viewersStorage[gc.gridColumn.name])
             this.viewersStorage[gc.gridColumn.name] = {};
           else {
-            if (!this.viewersStorage[gc.gridColumn.name][gc.gridRow]) {
+            if (!this.viewersStorage[gc.gridColumn.name][gc.tableRowIndex!]) {
               df ??= this.createViewerDf(chartCol[0].colName, gc.tableRowIndex!);
               const viewer = DG.Viewer.fromType((COL_TYPES[CHART_TYPE] as any)[chartCol[0].typeName].viewer, df);
-              this.viewersStorage[gc.gridColumn.name][gc.gridRow] = viewer;
+              this.viewersStorage[gc.gridColumn.name][gc.tableRowIndex!] = viewer;
               viewer.copyViewersLook(this.parentViewers[gc.gridColumn.name]);
-              this.parentViewers[gc.gridColumn.name].onDartPropertyChanged
+              this.viewerLookSubs.push(this.parentViewers[gc.gridColumn.name].onDartPropertyChanged
                 .subscribe(() => {
                   viewer.copyViewersLook(this.parentViewers[gc.gridColumn.name]);
-                });
+                }));
             }
           }
           if (!(Object.keys(this.viewersStorage[gc.gridColumn.name]).length === 0))
-            gc.element = this.viewersStorage[gc.gridColumn.name][gc.gridRow].root;
+            gc.element = this.viewersStorage[gc.gridColumn.name][gc.tableRowIndex!].root;
         }
       }
     });

@@ -178,7 +178,7 @@ export class RadarViewer extends EChartViewer {
 
     this.chart.on('click', (params: any) => {
       const idx = parseInt(params.name.replace(/\D/g, ''), 10) - 1;
-      if (idx) {
+      if (!isNaN(idx) && idx >= 0) {
         this.dataFrame.currentRowIdx = idx;
         this.render();
       }
@@ -442,9 +442,8 @@ export class RadarViewer extends EChartViewer {
     };
   }
 
-  private cellValue(c: DG.Column, i: number): number {
-    const v = Number(c.get(i));
-    return v !== -2147483648 ? v : 0;
+  private cellValue(c: DG.Column, i: number): number | null {
+    return c.isNone(i) ? null : Number(c.get(i));
   }
 
   updateMin() {
@@ -559,18 +558,15 @@ export class RadarViewer extends EChartViewer {
 
   /* Going to be replaced with perc in stats */
   getQuantile(columns: DG.Column<any>[], percent: number): number[] {
-    const isValidValue = (value: any) =>
-      typeof value === 'bigint' ?
-        value !== BigInt('-2147483648') :
-        value !== -2147483648;
-
     return columns.map((column) => {
-      const validSorted = Array.from(column.values())
-        .filter(isValidValue)
-        .sort((a, b) => Number(a) - Number(b));
-
+      const validSorted: number[] = [];
+      for (let i = 0; i < column.length; i++) {
+        if (!column.isNone(i))
+          validSorted.push(Number(column.get(i)));
+      }
+      validSorted.sort((a, b) => a - b);
       const idx = Math.floor(percent * (validSorted.length - 1));
-      return Number(validSorted[idx]);
+      return validSorted[idx];
     });
   }
 }

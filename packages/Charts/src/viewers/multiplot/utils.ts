@@ -42,7 +42,7 @@ export class MPUtils {
     const fieldsNumber = categs.length < categsMax ? categs.length : categsMax;
     for (let i = 0; i < fieldsNumber; i++) {
       const t: any = {};
-      t.series = { type: descr.type, data: [], descr: 222 };
+      t.series = {type: descr.type, data: [], descr: 222};
       t.x = descr.x;
       t.y = descr.y;
       t.condition = {
@@ -143,14 +143,12 @@ export class MPUtils {
     };
 
     if (indexes) {
+      const conditionValues = condition ?
+        (Array.isArray(condition.value) ? condition.value : [condition.value]) : null;
       for (let ind = 0; ind < indexes.length; ind++) {
         const row = table.row(indexes[ind]);
-        const fields = getRowFields(row);
-        if (!condition || row[condition.field] === condition.value)
-          r.push(fields);
-
-        if (!condition || condition.value.includes(row[condition.field]))
-          r.push(fields);
+        if (!conditionValues || conditionValues.includes(row[condition.field]))
+          r.push(getRowFields(row));
       }
     } else {
       for (let i = 0; i < table.rowCount; i++) {

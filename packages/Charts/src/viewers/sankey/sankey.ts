@@ -21,7 +21,7 @@ import {
 } from 'd3-sankey';
 
 import '../../../css/sankey-viewer.css';
-import { MessageHandler } from '../../utils/utils';
+import {MessageHandler} from '../../utils/utils';
 
 interface Node {
   node: number,
@@ -140,11 +140,7 @@ export class SankeyViewer extends DG.JsViewer {
     const dataFrameSourceColumn = this.dataFrame.getCol(this.sourceColumnName);
     const dataFrameTargetColumn = this.dataFrame.getCol(this.targetColumnName);
     const dataFrameValueColumn = this.dataFrame.getCol(this.valueColumnName);
-    const selectedIndexes = this.filter.getSelectedIndexes();
-    const { rowCount } = this.dataFrame;
-    const filteredIndexList = selectedIndexes.length > 0 ?
-      selectedIndexes :
-      Array.from({ length: rowCount }, (_, index) => index);
+    const filteredIndexList = this.filter.getSelectedIndexes();
 
     const sourceList = new Array<string>(filteredIndexList.length);
     const targetList = new Array<string>(filteredIndexList.length);
@@ -333,7 +329,6 @@ export class SankeyViewer extends DG.JsViewer {
       .attr('y', (d) => (d.y1! + d.y0!) / 2)
       .attr('dy', '0.35em')
       .attr('text-anchor', (d) => d.x0! < width / 2 ? 'start' : 'end')
-      .attr('class', (d: any) => (d.name).split(' ').join('_'))
       .text((d: any) => d.name);
 
     function dragmove(this: any, event: any, d: any) {
@@ -347,7 +342,7 @@ export class SankeyViewer extends DG.JsViewer {
       d.y1 += event.dy;
 
       rect.attr('transform', `translate(${d.x0 - rectX}, ${d.y0 - rectY})`);
-      nodeGroup.select(`text.${d.name.split(' ').join('_')}`)
+      titles.filter((t) => t === d)
         .attr('transform', `translate(${d.x0 - rectX}, ${d.y0 - rectY})`);
 
       generator.update(graph);

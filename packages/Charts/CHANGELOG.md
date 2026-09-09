@@ -12,6 +12,14 @@
 * Charts | Globe: Fixed crash when columns are removed from the underlying dataframe
 * GROK-20846: Charts: Timelines: X axis labels overlap and are unreadable
 * [3677](https://github.com/datagrok-ai/public/issues/3677): Charts: Radar: Add absolute normalization with configurable min/max per axis
+* Multiplot: Fixed duplicate points and wrong rows in split plots (CH-02)
+* Radar: Missing values are no longer drawn as zeros (CH-03)
+* Group Analysis: Group charts now respect filtering and sorting (CH-04)
+* Tree: Fixed the tree not updating on data edits (CH-05)
+* Word cloud: Fixed ignored filter (CH-06)
+* Word cloud: Ctrl+click now adds to the selection (CH-07)
+* Sankey: Fixed all rows shown when the filter matches none (CH-08)
+* Radar: Fixed clicking the first row (CH-10)
 
 ## 1.7.0 (2026-03-20)
 

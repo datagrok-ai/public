@@ -36,6 +36,7 @@ export class GlobeViewer extends DG.JsViewer {
   scene?: THREE.Scene;
   camera?: THREE.PerspectiveCamera;
   orbControls?: OrbitControls;
+  animationFrameId?: number;
 
   constructor() {
     super();
@@ -83,11 +84,12 @@ export class GlobeViewer extends DG.JsViewer {
     this.orbControls.autoRotate = true;
     this.orbControls.autoRotateSpeed = 2.2;
 
-    (function animate(this: any) {
-      this.orbControls.update();
-      this.renderer.render(this.scene, this.camera);
-      requestAnimationFrame(animate.bind(this));
-    }).bind(this)();
+    const animate = () => {
+      this.orbControls!.update();
+      this.renderer!.render(this.scene!, this.camera!);
+      this.animationFrameId = requestAnimationFrame(animate);
+    };
+    animate();
 
     this.initialized = true;
   }
@@ -156,7 +158,12 @@ export class GlobeViewer extends DG.JsViewer {
   }
 
   detach() {
+    if (this.animationFrameId !== undefined)
+      cancelAnimationFrame(this.animationFrameId);
+    this.orbControls?.dispose();
+    this.renderer?.dispose();
     this.subs.forEach((sub) => sub.unsubscribe());
+    super.detach();
   }
 
   getCoordinates() {

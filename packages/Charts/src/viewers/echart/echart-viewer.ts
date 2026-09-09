@@ -17,7 +17,7 @@ export class EChartViewer extends DG.JsViewer {
     super();
 
     //common properties
-    this.tableName = this.string('table', null, { fieldName: 'tableName', category: 'Data', editor: 'table' });
+    this.tableName = this.string('table', null, {fieldName: 'tableName', category: 'Data', editor: 'table'});
     this.addRowSourceAndFormula();
     const chartDiv = ui.div([], {style: {position: 'absolute', left: '0', right: '0', top: '0', bottom: '0'}});
     chartDiv.style.cssText += 'overflow: hidden!important;';
@@ -68,6 +68,12 @@ export class EChartViewer extends DG.JsViewer {
   addSelectionOrDataSubs() {
     this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
     this.subs.push(DG.debounce(this.dataFrame.onDataChanged, 50).subscribe((_) => this.render()));
+  }
+
+  protected resubscribe(add: () => void): void {
+    this.subs.forEach((sub) => sub.unsubscribe());
+    this.subs.length = 0;
+    add();
   }
 
   prepareOption() {}
