@@ -2,6 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as echarts from 'echarts';
+import {unsubscribeAll} from '../../utils/utils';
 
 export class EChartViewer extends DG.JsViewer {
   private _chart: echarts.ECharts | null = null;
@@ -71,8 +72,7 @@ export class EChartViewer extends DG.JsViewer {
   }
 
   protected resubscribe(add: () => void): void {
-    this.subs.forEach((sub) => sub.unsubscribe());
-    this.subs.length = 0;
+    unsubscribeAll(this.subs);
     add();
   }
 

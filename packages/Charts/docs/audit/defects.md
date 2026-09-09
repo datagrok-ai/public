@@ -74,7 +74,7 @@ uncommitted radar changes).
   falsy → `currentRowIdx` never set for row 1, while the tooltip path (:189-196) works, making the
   inconsistency visible.
 
-- **CH-11 — Error messages stack into duplicate banners (radar, tree, sunburst, word cloud, globe).**
+- **CH-11 [resolved] — Error messages stack into duplicate banners (radar, tree, sunburst, word cloud, globe).**
   `_showMessage` appends unconditionally and the failing-render paths return before the corresponding
   remove: `radar-viewer.ts:536-541`, `tree-viewer.ts:896/900`, `sunburst-viewer.ts:427/431`,
   `word-cloud-viewer.ts:110-120`, `globe-viewer.ts:207-210`. Renders fire from ~8 subscriptions plus
@@ -82,7 +82,7 @@ uncommitted radar changes).
   early error-return also skips the dispose/detach block, leaving that render's duplicate chart handlers
   and subs alive (the one path where handler double-binding persists).
 
-- **CH-12 — Tree color scale drops zero-valued aggregates.**
+- **CH-12 [resolved] — Tree color scale drops zero-valued aggregates.**
   `src/utils/tree-utils.ts:133-136` (`if (!value) continue`): 0 is excluded from min/max, so zero-valued
   nodes clamp to a scale extreme and the whole color range shifts for aggregations that legitimately
   produce 0 (sum, avg, variance, #selected).
@@ -93,19 +93,19 @@ uncommitted radar changes).
   the default Tree path (`inherit` undefined, :746) same-named columns across tables collide and changed
   categories yield `undefined` → echarts palette fallback.
 
-- **CH-14 — One failed molecule image permanently kills molecule labels.**
+- **CH-14 [resolved] — One failed molecule image permanently kills molecule labels.**
   `tree-viewer.ts:766-771` / `sunburst-viewer.ts:297-302`: `moleculeRenderQueue = queue.then(...)` with
   no `.catch` — the first rejection (e.g. Chem missing, bad SMILES) poisons the chain; every later
   molecule label is skipped with an unhandled rejection each. `TreeUtils.getMoleculeImage`
   (`tree-utils.ts:223-229`) has no availability check and no caller catches (verified all 4 sites).
 
-- **CH-15 — Table rebind keeps the old dataframe's subscriptions.**
+- **CH-15 [resolved] — Table rebind keeps the old dataframe's subscriptions.**
   `radar-viewer.ts:210-250`, `chord-viewer.ts:143-146`, `sankey.ts:112-114`,
   `word-cloud-viewer.ts:76-77`: `onTableAttached` pushes subs without dropping prior ones; a rebind
   (`table` property change / project rebind re-fires attach) leaves the old dataframe subscribed —
   duplicate renders plus a retained reference to the old dataframe.
 
-- **CH-16 — Multiplot ships dev scaffolding as product.**
+- **CH-16 [resolved] — Multiplot ships dev scaffolding as product.** *(timeline red/green colors deliberately kept — restoring the commented-out color logic is a ClinicalCase-visible behavior change, out of scope per plan)*
   `multiplot.ts`: 15 live `console.*` (:84,85,104,134,390,418,488,496,589,594,610,614,618,622,890 —
   verified present in `dist/package.js`) firing on every property change/click/zoom/brush; dev
   properties visible in the property panel — `paramA` default `'string inside'` (:42), `paramOptions`
@@ -113,28 +113,28 @@ uncommitted radar changes).
   real color logic commented out (:941-945, :998-999); the constructor's `ui.onSizeChanged` subscription
   is unmanaged and there is no `detach()` at all — the echarts instance is never disposed (:92-100).
 
-- **CH-17 — Surface plot: wrong background default; dataShape diverges from filtered data.**
+- **CH-17 [resolved] — Surface plot: wrong background default; dataShape diverges from filtered data.** *(the `grok.shell.error/warning` balloons from `onTableAttached` on 1-2-column tables are left as-is)*
   `surface-plot.ts:66`: `this.int('backgroundColor', 0xFFF)` = 4095, assigned raw (unparseable color) to
   `option.backgroundColor` on every render (:257) until the property is first changed (:221). `:272-273`
   `dataShape = [√n, √n]` uses the **unfiltered** length while `series[0].data` is filtered (:277) —
   shape and data diverge under any filter (garbled surface). Also `grok.shell.error/warning` fire from
   `onTableAttached` (:177, :180) on small tables.
 
-- **CH-18 — Timelines: inside x-zoom is inert; type-mismatch warning fires per row.**
+- **CH-18 [resolved] — Timelines: inside x-zoom is inert; type-mismatch warning fires per row.**
   `src/viewers/timelines/echarts-options.ts:30-34`: `{type:'inside', xAxisIndex:[1,2]}` targets axes
   that don't exist (there is one xAxis) → wheel/pinch x-zoom does nothing, and the dead entry still
   occupies a `zoomState` slot (`timelines-viewer.ts:465-469, 102-107`). `isSameDate`
   (`timelines-viewer.ts:488-495`) calls `grok.shell.warning` from per-row click/tooltip predicates
   (:126-138, :217-220) — one balloon per row on column-type mismatch.
 
-- **CH-19 — `lodash` is imported but not a dependency.**
+- **CH-19 [resolved] — `lodash` is imported but not a dependency.**
   `radar-viewer.ts:11`, `tree-viewer.ts:12`, `sunburst-viewer.ts:11` import `lodash`;
   `package.json` declares only `@types/lodash` (dev). Resolves through hoisting today; a clean isolated
   install or hoisting change breaks the build, and the version is unpinned.
 
 ## Low
 
-- **CH-20** — Tree `onPropertyChanged`: missing `break` after `case 'initialTreeDepth'`
+- **CH-20 [resolved]** — Tree `onPropertyChanged`: missing `break` after `case 'initialTreeDepth'`
   (`tree-viewer.ts:510-517`) falls into `'symbolSize'`. Impact currently neutralized by the
   unconditional reassign in `_render` (:913-916) — net effect is a wasted second full render; still a
   live trap.

@@ -4,6 +4,7 @@ import * as grok from 'datagrok-api/grok';
 
 import * as echarts from 'echarts';
 import {MPUtils} from './utils';
+import {unsubscribeAll} from '../../utils/utils';
 import {MPLayout} from './layout';
 import { BAR, LINE, SCATTER, TIMELINES } from './constants';
 import '../../../css/multiplot.css';
@@ -39,8 +40,6 @@ export class MultiPlotViewer extends DG.JsViewer {
   // private echartOptions: echarts.EChartsOption;
   private echartOptions: any;
 
-  private paramA : string = this.string('paramA', 'string inside');
-
   private timeLineSeries: any;
   private timeLineIndex: number = 11;
   private statusChartIndex: number = 10;
@@ -57,7 +56,7 @@ export class MultiPlotViewer extends DG.JsViewer {
   private globalMarginBottom: number = 0;
   private selectionColor : DG.Color = DG.Color.toRgb(DG.Color.selectedRows);
   private categoryLength : number = 9;
-  private paramOptions : string = this.string('paramOptions', 'none22');
+  private paramOptions : string = this.string('paramOptions', 'none', {userEditable: false});
   private mode : string = 'none'; // 'brushSelected'
   private options: {series: any[], xAxisMinMax: {[key: string]: any}} = {series: [], xAxisMinMax: {}};
 
@@ -81,15 +80,12 @@ export class MultiPlotViewer extends DG.JsViewer {
 
   constructor() {
     super();
-    console.log('------------------------------------- MULTIPLOT ------------------------------');
-    console.log('this.root: ', this.root);
-
     this.paletteColors = DG.Color.categoricalPalette.map(DG.Color.toRgb);
     // this.plots = this.options.series;
     // this.init();
 
     this.box = this.root.getBoundingClientRect();
-    ui.onSizeChanged(this.root).subscribe(((this2) => (e: any) => {
+    this.subs.push(ui.onSizeChanged(this.root).subscribe(((this2) => (e: any) => {
       if (!this2.echartOptions) return 0;
       this2.updateOptionsPositions();
       if (this2.echart) {
@@ -97,11 +93,10 @@ export class MultiPlotViewer extends DG.JsViewer {
         this2.render();
         this2.echart.resize();
       }
-    })(this));
+    })(this)));
   }
 
   init(): void {
-    console.warn('init');
     if (!this.isTablesLoaded) return;
     this.clearPlots();
     this.plots.map((e) => {
@@ -131,7 +126,6 @@ export class MultiPlotViewer extends DG.JsViewer {
     ;
     const name = property.name;
     const val = property.get(this);
-    console.log('property changed: ', name, val);
     if (name === 'defaultTitleHeight') {
       this.defaultTitleHeight = val;
       this.updateOptionsPositions();
@@ -387,7 +381,6 @@ export class MultiPlotViewer extends DG.JsViewer {
       };
     }
     if (plot.statusChart) {
-      console.error('status chart get color func');
       customColorFunc = (e: any) => {
         let val = e.data[plot.statusChart.valueField];
         let min = e.data[plot.statusChart.minField];
@@ -415,7 +408,6 @@ export class MultiPlotViewer extends DG.JsViewer {
   // 'circle', 'rect', 'roundRect', 'triangle', 'diamond', 'pin', 'arrow', 'none'
   getMarkerSymbolFunc(customSymbolFunc: any, plot: any) : any {
     const defaultSymbol = 'circle';
-    console.warn('getShapeFunc: ', defaultSymbol);
     function f(e: any) {
       // console.log('symbol ', e);
       const customSymbol = customSymbolFunc(e);
@@ -485,7 +477,6 @@ export class MultiPlotViewer extends DG.JsViewer {
     const plotTablesList : string[] = this.plots.map((e) => e.tableName);
     const openTablesArray: string[] = Object.keys(this.tables);
     const notLoaded : string[] = plotTablesList.filter((e) => openTablesArray.indexOf(e) == -1);
-    console.warn('not loaded list', notLoaded);
     return notLoaded.length == 0;
   }
 
@@ -493,7 +484,6 @@ export class MultiPlotViewer extends DG.JsViewer {
     if (!this.checkTablesLoaded() || Object.keys(this.tables).length === 0)
       return;
 
-    console.warn('all tables loaded');
     this.plots = this.utils.getPlotsFromParams(this.tables, this.options.series);
     this.isTablesLoaded = 1;
     this.init();
@@ -510,6 +500,12 @@ export class MultiPlotViewer extends DG.JsViewer {
       this.render();
     }));
   } // table attached
+
+  detach(): void {
+    unsubscribeAll(this.subs);
+    this.echart?.dispose();
+    this.echart = null;
+  }
 
   updateFilter(): void {
     this.timeLinesData = [];
@@ -585,13 +581,8 @@ export class MultiPlotViewer extends DG.JsViewer {
   addEchartHandlers() : void {
     if (this.isEchartHandlers) return;
 
-    this.echart!.on('dataZoom', (e: any) => {
-      console.log('zoom ', e);
-    });
-
     this.echart!.on('brushSelected', (e: any) => {
       this.mode = 'brushSelected';
-      console.log('brush selected ', e);
       if (e.batch.length === 0) return;
       const batchSelected = e.batch[0].selected;
       if (batchSelected.length === 0) return;
@@ -606,20 +597,7 @@ export class MultiPlotViewer extends DG.JsViewer {
       // this.render();
     }); // onBrushSelected
 
-    this.echart!.on('brushEnd', (e: any) => {
-      console.error('brushEnd, ', e);
-    });
-
-    this.echart!.on('mousedown', {datatype: ''}, (e: any) => {
-      console.log('mouse down: ', e);
-    });
-
-    this.echart!.on('mouseup', {datatype: ''}, (e: any) => {
-      console.log('mouse up: ', e);
-    });
-
     this.echart!.on('click', {datatype: 'all'}, (params : any) => {
-      console.log('echart click', params);
       const iPlot : number = this.visibleIndexes[params.componentIndex];
       const table : DG.DataFrame = this.tables[this.plots[iPlot].tableName];
       const indexes = table.filter.getSelectedIndexes();
@@ -887,7 +865,6 @@ export class MultiPlotViewer extends DG.JsViewer {
   }
 
   render(): void {
-    console.log('set echart options: ', this.echartOptions);
     if (this.echart) {
       this.echart.clear();
       // this.echart.setOption(this.echartOptions, true);

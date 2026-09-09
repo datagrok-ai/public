@@ -7,6 +7,7 @@ import $ from 'cash-dom';
 
 import {select, scaleLinear, scaleOrdinal, color, ScaleLinear, ScaleOrdinal} from 'd3';
 import {layoutConf, topSort} from './utils';
+import {unsubscribeAll} from '../../utils/utils';
 
 import '../../../css/chord-viewer.css';
 
@@ -125,6 +126,7 @@ export class ChordViewer extends DG.JsViewer {
   }
 
   onTableAttached() {
+    unsubscribeAll(this.subs);
     this.init();
     this.filter = this.dataFrame.filter;
 
@@ -140,10 +142,14 @@ export class ChordViewer extends DG.JsViewer {
       this.chordLengthColumnName = this.numColumns[0].name;
     }
 
+    this.addSubs();
+    this.render();
+  }
+
+  addSubs() {
     this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
     this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50).subscribe((_) => this.render(false)));
     this.subs.push(DG.debounce(this.dataFrame.onFilterChanged, 50).subscribe((_) => this.render()));
-    this.render();
   }
 
   // Override onSourceRowsChanged to re-render the chord automatically on row source updates

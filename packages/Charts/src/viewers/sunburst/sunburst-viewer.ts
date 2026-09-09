@@ -8,7 +8,6 @@ import {TreeUtils, TreeDataType} from '../../utils/tree-utils';
 import * as echarts from 'echarts';
 import {fromEvent} from 'rxjs';
 import {debounceTime} from 'rxjs/operators';
-import _ from 'lodash';
 import {ERROR_CLASS, MessageHandler} from '../../utils/utils';
 
 /// https://echarts.apache.org/examples/en/editor.html?c=tree-basic
@@ -42,6 +41,7 @@ export class SunburstViewer extends EChartViewer {
   currentVersion: number | null = null;
   includeNulls: boolean;
   private moleculeRenderQueue: Promise<void> = Promise.resolve();
+  private moleculeRenderErrorLogged: boolean = false;
   private latestRenderToken = 0;
   viewerFilter: DG.BitSet | null = null;
   constructor() {
@@ -267,12 +267,6 @@ export class SunburstViewer extends EChartViewer {
     this.render();
   }
 
-  _showMessage(msg: string, className: string) {
-    const errorDiv = ui.divText(msg, className);
-    errorDiv.style.textAlign = 'center';
-    this.root.appendChild(errorDiv);
-  }
-
   async getSeriesData(): Promise<TreeDataType[] | undefined> {
     const rowSource = this.selectedOptions.includes(this.rowSource!);
     return await TreeUtils.toForest(this.dataFrame, this.eligibleHierarchyNames, this.filter,
@@ -297,7 +291,12 @@ export class SunburstViewer extends EChartViewer {
   async renderMoleculeQueued(params: any, width: number, height: number): Promise<void> {
     this.moleculeRenderQueue = this.moleculeRenderQueue.then(() =>
       this.renderMolecule(params, width, height),
-    );
+    ).catch((e) => {
+      if (!this.moleculeRenderErrorLogged) {
+        this.moleculeRenderErrorLogged = true;
+        console.error(e);
+      }
+    });
     await this.moleculeRenderQueue;
   }
 
@@ -424,7 +423,7 @@ export class SunburstViewer extends EChartViewer {
     }
 
     if (!this.eligibleHierarchyNames.length) {
-      this._showMessage('The Sunburst viewer requires at least one categorical column with fewer than 500 unique categories', ERROR_CLASS);
+      MessageHandler._showMessage(this.root, 'The Sunburst viewer requires at least one categorical column with fewer than 500 unique categories', ERROR_CLASS);
       return;
     }
 

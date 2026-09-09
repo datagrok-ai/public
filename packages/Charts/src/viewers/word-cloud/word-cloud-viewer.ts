@@ -8,9 +8,10 @@ import 'echarts-wordcloud';
 
 import $ from 'cash-dom';
 
+import {ERROR_CLASS, MessageHandler, unsubscribeAll} from '../../utils/utils';
+
 
 const MAX_UNIQUE_CATEGORIES_NUMBER = 500;
-const ERROR_CLASS = 'd4-viewer-error';
 
 @grok.decorators.viewer({
   name: 'Word cloud',
@@ -73,8 +74,8 @@ export class WordCloudViewer extends DG.JsViewer {
   }
 
   onTableAttached() {
-    this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe((_) => this.render()));
-    this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50).subscribe((_) => this.render()));
+    unsubscribeAll(this.subs);
+    this.addSubs();
 
     this.init();
 
@@ -85,6 +86,11 @@ export class WordCloudViewer extends DG.JsViewer {
       this.strColumnName = this.strColumns.filter((col) => col.categories.length <= MAX_UNIQUE_CATEGORIES_NUMBER && col.categories.length > 1)[0]?.name ?? '';
 
     this.render();
+  }
+
+  addSubs() {
+    this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe((_) => this.render()));
+    this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50).subscribe((_) => this.render()));
   }
 
   onPropertyChanged(property: DG.Property) {
@@ -105,19 +111,13 @@ export class WordCloudViewer extends DG.JsViewer {
     this.subs.forEach((sub) => sub.unsubscribe());
   }
 
-  _showMessage(msg: string, className: string) {
-    const errorDiv = ui.divText(msg, className);
-    errorDiv.style.textAlign = 'center';
-    this.root.appendChild(errorDiv);
-  }
-
   render() {
     if (!this._testColumns()) {
-      this._showMessage('Not enough data to produce the result.', ERROR_CLASS);
+      MessageHandler._showMessage(this.root, 'Not enough data to produce the result.', ERROR_CLASS);
       return;
     }
     if (!this.strColumnName || this.dataFrame.getCol(this.strColumnName).categories.length > MAX_UNIQUE_CATEGORIES_NUMBER) {
-      this._showMessage('The Word cloud viewer requires categorical column with 500 or fewer unique categories', ERROR_CLASS);
+      MessageHandler._showMessage(this.root, 'The Word cloud viewer requires categorical column with 500 or fewer unique categories', ERROR_CLASS);
       return;
     }
 

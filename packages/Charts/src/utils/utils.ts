@@ -1,8 +1,14 @@
 /* eslint-disable max-len */
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
+import {Subscription} from 'rxjs';
 
 export const ERROR_CLASS = 'd4-viewer-error';
+
+export function unsubscribeAll(subs: Subscription[]): void {
+  subs.forEach((sub) => sub.unsubscribe());
+  subs.length = 0;
+}
 
 export namespace ts {
   /** A type guard function.
@@ -50,6 +56,7 @@ export namespace data {
 
 export namespace MessageHandler {
   export function _showMessage(root: HTMLElement, msg: string, className: string) {
+    _removeMessage(root, className);
     root.appendChild(ui.divText(msg, className));
   }
 

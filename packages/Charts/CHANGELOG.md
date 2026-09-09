@@ -20,6 +20,8 @@
 * Word cloud: Ctrl+click now adds to the selection (CH-07)
 * Sankey: Fixed all rows shown when the filter matches none (CH-08)
 * Radar: Fixed clicking the first row (CH-10)
+* Tree, Sunburst: Fixed one bad molecule hiding the remaining structure labels (CH-14)
+* Timelines: Mouse-wheel zoom now works on the time axis (CH-18)
 
 ## 1.7.0 (2026-03-20)
 

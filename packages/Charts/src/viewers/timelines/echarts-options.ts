@@ -29,7 +29,7 @@ export const options = {
   dataZoom: [
     {
       type: 'inside',
-      xAxisIndex: [1, 2],
+      xAxisIndex: 0,
       filterMode: 'weakFilter',
     },
     {

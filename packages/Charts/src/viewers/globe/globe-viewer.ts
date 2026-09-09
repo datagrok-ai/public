@@ -8,6 +8,7 @@ import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls.js';
 import {scaleLinear, scaleSqrt, scaleSequential, interpolateYlOrRd, ScaleLinear} from 'd3';
 
 import {_package} from '../../package';
+import {ERROR_CLASS, MessageHandler} from '../../utils/utils';
 
 
 @grok.decorators.viewer({
@@ -208,13 +209,12 @@ export class GlobeViewer extends DG.JsViewer {
     return numColumns.length >= 1;
   }
 
-  _showErrorMessage(msg: string) {this.root.appendChild(ui.divText(msg, 'd4-viewer-error'));}
-
   render() {
     if (!this._testColumns()) {
-      this._showErrorMessage('The Globe viewer requires a minimum of 1 numerical column.');
+      MessageHandler._showMessage(this.root, 'The Globe viewer requires a minimum of 1 numerical column.', ERROR_CLASS);
       return;
     }
+    MessageHandler._removeMessage(this.root, ERROR_CLASS);
 
     this.getCoordinates();
     this.globe!

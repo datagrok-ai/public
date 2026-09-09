@@ -207,6 +207,11 @@ export class RadarViewer extends EChartViewer {
     this.filter = this.dataFrame.filter;
     this.valuesColumnNames = Array.from(this.dataFrame.columns.numericalNoDateTime)
       .map((c: DG.Column) => c.name).slice(0, MAXIMUM_COLUMN_NUMBER);
+    this.resubscribe(() => this.addSubs());
+    this.render();
+  }
+
+  addSubs() {
     this.subs.push(this.dataFrame.onCurrentRowChanged.subscribe((_) => this.render()));
     this.subs.push(this.dataFrame.onMouseOverRowChanged.subscribe((_) => {
       if (this.showMouseOverRow)
@@ -248,7 +253,6 @@ export class RadarViewer extends EChartViewer {
         });
       }),
     );
-    this.render();
   }
 
   public override onPropertyChanged(property: DG.Property) {

@@ -21,7 +21,7 @@ import {
 } from 'd3-sankey';
 
 import '../../../css/sankey-viewer.css';
-import {MessageHandler} from '../../utils/utils';
+import {MessageHandler, unsubscribeAll} from '../../utils/utils';
 
 interface Node {
   node: number,
@@ -109,10 +109,8 @@ export class SankeyViewer extends DG.JsViewer {
   }
 
   onTableAttached() {
-    this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
-    this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50).subscribe((_) => this.render()));
-    this.subs.push(this.dataFrame.onMetadataChanged.subscribe((_) => this.render()));
-
+    unsubscribeAll(this.subs);
+    this.addSubs();
     this.init();
 
     if (this._testColumns()) {
@@ -127,6 +125,12 @@ export class SankeyViewer extends DG.JsViewer {
 
     this.prepareData();
     this.render();
+  }
+
+  addSubs() {
+    this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
+    this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50).subscribe((_) => this.render()));
+    this.subs.push(this.dataFrame.onMetadataChanged.subscribe((_) => this.render()));
   }
 
   onSourceRowsChanged() {

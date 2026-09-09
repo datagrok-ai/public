@@ -131,7 +131,7 @@ export class TreeUtils {
             continue;
 
           const value = node[prop];
-          if (!value) continue;
+          if (value == null) continue;
           data[`${prop}-meta`].min = Math.min(data[`${prop}-meta`].min, value);
           data[`${prop}-meta`].max = Math.max(data[`${prop}-meta`].max, value);
         }
