@@ -11,6 +11,7 @@
 * RTD: Fixed dataframe equality throwing instead of returning false when column names differ
 * RTD: Config processing rejects multi-id final io segments without the (template) flag instead of silently using the first id
 * RTD: DriverLogger keeps at most 5000 entries (log and errors) instead of growing unbounded
+* RTD: Fixed config path resolution silently accepting one extra segment past a leaf step
 * RTD: Driver.sendCommand returns a promise resolved on command completion (per-command acks on commandAcks$)
 * RTD: Fixed a synchronous command error killing the driver command queue
 * RTD: initPipeline command accepts an inline processed config

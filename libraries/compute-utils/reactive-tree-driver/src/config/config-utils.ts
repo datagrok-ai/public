@@ -111,9 +111,8 @@ export function getConfigByInstancePath(
     } else if (isPipelineSelfRef(item))
       throw new Error(`Ref segment ${segment} was not mapped`);
 
-    if (newRemainingPath.length > 0)
-      throw new Error(`Unmatched segments ${newRemainingPath}`);
-    return [];
+    // a step config is a leaf; any remaining path means the path does not exist
+    throw new Error(`Unmatched segments ${remainingPath}`);
   }, instancePath);
 
   const node = traverse(config, (_acc, node) => node, undefined as ConfigTraverseItem | undefined);

@@ -31,6 +31,7 @@ import './tests/compute-utils/reactive-tree-driver/link-running-state';
 import './tests/compute-utils/reactive-tree-driver/link-io-order';
 import './tests/compute-utils/reactive-tree-driver/custom-deep-equal';
 import './tests/compute-utils/reactive-tree-driver/driver-logger';
+import './tests/compute-utils/reactive-tree-driver/config-path-resolution';
 import './tests/compute-utils/reactive-tree-driver/advanced-coverage';
 import './tests/compute-utils/reactive-tree-driver/buffer-keys-during-lock';
 import './tests/compute-utils/reactive-tree-driver/links-template-expand';
