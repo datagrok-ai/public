@@ -1,4 +1,3 @@
-import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {Observable, OperatorFunction, defer, from, merge, of} from 'rxjs';
 import {concatMap, distinctUntilChanged, filter, map, reduce, share, withLatestFrom, windowToggle} from 'rxjs/operators';

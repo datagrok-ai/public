@@ -1,5 +1,3 @@
-import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {v4 as uuidv4} from 'uuid';
 import {HandlerBase} from '../config/PipelineConfiguration';

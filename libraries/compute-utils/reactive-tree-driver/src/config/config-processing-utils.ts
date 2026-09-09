@@ -1,5 +1,3 @@
-import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {AbstractPipelineActionConfiguration, AbstractPipelineDynamicConfiguration, AbstractPipelineStaticConfiguration, LoadedPipeline, DataActionConfiguraion, NestedItemContext, PipelineConfigurationInitial, PipelineConfigurationDynamicInitial, PipelineConfigurationStaticInitial, PipelineInitConfiguration, PipelineLinkConfigurationBase, PipelineMutationConfiguration, PipelineRefInitial, PipelineSelfRef, PipelineStepConfiguration, FuncCallActionConfiguration, PipelineReturnConfiguration, PipelineDynamicItem} from './PipelineConfiguration';
 import {isDynamicType, ItemId, LinkSpecString, NqName} from '../data/common-types';
@@ -50,7 +48,7 @@ function isStepConfigInitial(c: ConfigInitialTraverseItem): c is PipelineStepCon
   return !isPipelineStaticInitial(c) && !isPipelineDynamicInitial(c) && !isPipelineRefInitial(c) && !isActionConfigInitial(c);
 }
 
-function isPipelineConfigInitial(c: ConfigInitialTraverseItem): c is PipelineConfigurationInitial {
+function isPipelineConfigInitial(c: ConfigInitialTraverseItem): c is PipelineConfigurationStaticInitial | PipelineConfigurationDynamicInitial {
   return isPipelineStaticInitial(c) || isPipelineDynamicInitial(c);
 }
 
@@ -84,7 +82,7 @@ async function configProcessing(
   loadedPipelines: PipelineRefStore<null>,
   logger?: DriverLogger,
 ): Promise<PipelineConfigurationProcessed | PipelineStepConfiguration<FuncCallIODescription[]> | AbstractPipelineActionConfiguration | PipelineSelfRef> {
-  if (isPipelineConfigInitial(conf) && !isPipelineRefInitial(conf) && conf.nqName)
+  if (isPipelineConfigInitial(conf) && conf.nqName)
     addPipelineRef(loadedPipelines, conf.nqName, conf.version, null);
 
   if (isActionConfigInitial(conf)) {

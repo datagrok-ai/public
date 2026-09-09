@@ -1,6 +1,4 @@
 import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
-import * as DG from 'datagrok-api/dg';
 import {BehaviorSubject, Observable, Subject, EMPTY, of, from, combineLatest, defer} from 'rxjs';
 import {isFuncCallSerializedState, PipelineState} from './config/PipelineInstance';
 import {AddDynamicItem, InitPipeline, LoadDynamicItem, LoadPipeline, MoveDynamicItem, RemoveDynamicItem, ResetToConsistent, ReturnResult, RunAction, RunSequence, RunStep, SaveDynamicItem, SavePipeline, UpdateFuncCall, ViewConfigCommands} from './view/ViewCommunication';
