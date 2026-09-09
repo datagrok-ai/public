@@ -116,7 +116,7 @@ const areObjectsEqual: TypeEqualityComparator<Record<any, any>> = (a, b) => {
     for (const columnA of a.columns) {
       const columnB = b.columns.byName(columnA.name);
 
-      if (columnA.type !== columnB.type || columnA.name !== columnB.name)
+      if (columnB == null || columnA.type !== columnB.type || columnA.name !== columnB.name)
         return false;
 
       for (let i = 0; i < a.rowCount; i++) {
