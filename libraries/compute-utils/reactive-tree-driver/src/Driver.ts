@@ -286,7 +286,7 @@ export class Driver {
         if (!stateLoaded.nqName)
           throw new Error(`Pipeline config in wrapper FuncCall ${msg.funcCallId} missing nqName`);
         if (msg.config)
-          return of([stateLoaded, msg.config] as const);
+          return of([stateLoaded, msg.config, metaCall, isFavorite] as const);
         return callHandler<PipelineConfiguration>(stateLoaded.nqName, {version: stateLoaded.version}).pipe(
           concatMap((conf) => from(getProcessedConfig(conf, this.logger))),
           map((config) => [stateLoaded, config, metaCall, isFavorite] as const),
