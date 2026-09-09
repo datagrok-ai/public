@@ -142,14 +142,18 @@ export const RFVApp = Vue.defineComponent({
       initialRunId = undefined;
       globalThis.initialURLHandled = true;
 
-      if (loadingId) {
-        const fc = await historyUtils.loadRun(loadingId);
-        currentFuncCall.value = Vue.markRaw(fc);
-        return;
-      }
+      try {
+        if (loadingId) {
+          const fc = await historyUtils.loadRun(loadingId);
+          currentFuncCall.value = Vue.markRaw(fc);
+          return;
+        }
 
-      if ([...startUrl.searchParams.keys()].length > 0)
-        await applyUrlInputsFlow(startUrl.searchParams);
+        if ([...startUrl.searchParams.keys()].length > 0)
+          await applyUrlInputsFlow(startUrl.searchParams);
+      } catch (e: any) {
+        grok.shell.error(e);
+      }
     }, {immediate: true});
 
     const copyUrlWithInputs = async () => {
@@ -213,8 +217,13 @@ export const RFVApp = Vue.defineComponent({
       currentFuncCall.value.options['description'] = editOptions.description;
       currentFuncCall.value.options['tags'] = editOptions.tags;
       currentFuncCall.value.newId();
-      await historyUtils.saveRun(currentFuncCall.value);
-      await saveIsFavorite(currentFuncCall.value, !!editOptions.isFavorite);
+      try {
+        await historyUtils.saveRun(currentFuncCall.value);
+        await saveIsFavorite(currentFuncCall.value, !!editOptions.isFavorite);
+      } catch (e: any) {
+        grok.shell.error(e);
+        return null;
+      }
       // saveRun persists the run under currentFuncCall's id (set by newId() above), so map that
       // id straight to the URL. Set it here rather than via triggerRef -> the currentFuncCall
       // watcher, whose `fc.author` gate would clear it (a just-saved call has no author yet).
@@ -235,26 +244,35 @@ export const RFVApp = Vue.defineComponent({
     const shareRun = async () => {
       if (!canUseResults(currentCallState.value, 'sharing'))
         return;
-      await shareAction!.run({
-        liveCall: () => currentFuncCall.value,
-        savedCallId: () => searchParams.id ?? null,
-        saveRun: saveRunWithDialog,
-        defaultName: () => {
-          const fc = currentFuncCall.value;
-          return fc.options['title'] ?? fc.func?.friendlyName ?? fc.func?.name;
-        },
-      });
+      try {
+        await shareAction!.run({
+          liveCall: () => currentFuncCall.value,
+          savedCallId: () => searchParams.id ?? null,
+          saveRun: saveRunWithDialog,
+          defaultName: () => {
+            const fc = currentFuncCall.value;
+            return fc.options['title'] ?? fc.func?.friendlyName ?? fc.func?.name;
+          },
+        });
+      } catch (e: any) {
+        grok.shell.error(e);
+      }
     };
 
     Vue.onUnmounted(() => {
       sub.unsubscribe();
     });
 
-    // TODO: better async handling
-    if (viewersHookMakerName) {
-      const hookMaker = DG.Func.byName(viewersHookMakerName);
-      hookMaker.apply().then((hook) => viewersHook.value = hook)
-    }
+    const loadViewersHook = async () => {
+      if (!viewersHookMakerName)
+        return;
+      try {
+        viewersHook.value = await DG.Func.byName(viewersHookMakerName).apply();
+      } catch (e: any) {
+        grok.shell.error(e);
+      }
+    };
+    loadViewersHook();
 
     return () => (
       Vue.withDirectives(<div class='w-full h-full flex'>

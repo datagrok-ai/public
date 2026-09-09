@@ -454,7 +454,11 @@ export const TreeWizard = Vue.defineComponent({
           });
         },
       };
-      return exportData.handler(treeState.value!, utils);
+      try {
+        return await exportData.handler(treeState.value!, utils);
+      } catch (e: any) {
+        grok.shell.error(e);
+      }
     }
 
     ////
