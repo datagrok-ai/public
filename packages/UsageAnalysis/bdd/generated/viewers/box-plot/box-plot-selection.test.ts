@@ -16,7 +16,7 @@ import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {clearSelection, currentRowValue, deleteSelected, filterOut, hasCurrentRow, noRowsWhere, noneOfSelected, noneSelected, onlyOfAnySelected, onlyOfSelected, resetFilter, someOfSelected, someSelected} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
-import {addViewerWith, areaPainted, clickArea, clickAreaHolding, dragSelectionOverArea, eventFired, eventNotFired, hasNoArea, hoverArea, lessHighlight, listenFor, moreHighlight, noBalloons, noErrors, noHighlight, notRepainted, painted, pointerAway, propertyShouldBe, setProperties, setProperty, takeSnapshot} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {addViewerWith, areaPainted, clickArea, clickAreaHolding, dragSelectionOverArea, eventFired, eventNotFired, hasNoArea, hoverArea, lessHighlight, listenFor, moreHighlight, noBalloons, noErrors, noHighlight, notRepainted, painted, pointerAway, propertyShouldBe, repaintedBy, setProperties, setProperty, takeSnapshot} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Box plot selection and highlight", () => {
@@ -98,27 +98,34 @@ test.describe("Box plot selection and highlight", () => {
       await session.step(89, "When user moves the pointer away from box plot viewer", () => pointerAway(page, el("box plot viewer")));
       await session.step(90, "And user sets \"Show Mouse Over Point\" property of box plot viewer to \"true\"", () => setProperty(page, "Show Mouse Over Point", el("box plot viewer"), "true"));
     });
-    await run.scenario("A hover on a bar chart leaves the box plot alone", async () => {
+    await run.scenario("A hover on a bar chart highlights its rows in the box plot only while the row group is shown", async () => {
       await session.step(93, "When user adds a bar chart viewer with:", () => addViewerWith(page, "bar chart", [["Split","RACE"]]));
       await session.step(95, "And user sets \"Marker Color Column\" property of box plot viewer to \"RACE\"", () => setProperty(page, "Marker Color Column", el("box plot viewer"), "RACE"));
       await session.step(96, "And user takes a snapshot of box plot viewer", () => takeSnapshot(page, el("box plot viewer")));
       await session.step(97, "And user hovers over the \"bar Caucasian\" area of bar chart viewer", () => hoverArea(page, "bar Caucasian", el("bar chart viewer")));
-      await session.step(98, "Then box plot viewer should not have repainted", () => notRepainted(page, el("box plot viewer")));
-      await session.step(99, "When user clicks on close icon of bar chart viewer", () => clickOn(page, el("close icon of bar chart viewer")));
-      await session.step(100, "Then bar chart viewer should be absent", () => shouldBe(page, el("bar chart viewer"), "absent"));
-      await session.step(101, "When user sets \"Marker Color Column\" property of box plot viewer to \"\"", () => setProperty(page, "Marker Color Column", el("box plot viewer"), ""));
+      await session.step(98, "Then box plot viewer should have repainted by at least 2000 pixels", () => repaintedBy(page, el("box plot viewer"), 2000));
+      await session.step(99, "When user moves the pointer away from bar chart viewer", () => pointerAway(page, el("bar chart viewer")));
+      await session.step(100, "And user sets \"Show Mouse Over Row Group\" property of box plot viewer to \"false\"", () => setProperty(page, "Show Mouse Over Row Group", el("box plot viewer"), "false"));
+      await session.step(101, "And user takes a snapshot of box plot viewer", () => takeSnapshot(page, el("box plot viewer")));
+      await session.step(102, "And user hovers over the \"bar Caucasian\" area of bar chart viewer", () => hoverArea(page, "bar Caucasian", el("bar chart viewer")));
+      await session.step(103, "Then box plot viewer should not have repainted", () => notRepainted(page, el("box plot viewer")));
+      await session.step(104, "When user moves the pointer away from bar chart viewer", () => pointerAway(page, el("bar chart viewer")));
+      await session.step(105, "And user sets \"Show Mouse Over Row Group\" property of box plot viewer to \"true\"", () => setProperty(page, "Show Mouse Over Row Group", el("box plot viewer"), "true"));
+      await session.step(106, "And user clicks on close icon of bar chart viewer", () => clickOn(page, el("close icon of bar chart viewer")));
+      await session.step(107, "Then bar chart viewer should be absent", () => shouldBe(page, el("bar chart viewer"), "absent"));
+      await session.step(108, "When user sets \"Marker Color Column\" property of box plot viewer to \"\"", () => setProperty(page, "Marker Color Column", el("box plot viewer"), ""));
     });
     await run.scenario("A categorical coloring survives deleting the selected rows", async () => {
-      await session.step(104, "When user sets \"Marker Color Column\" property of box plot viewer to \"RACE\"", () => setProperty(page, "Marker Color Column", el("box plot viewer"), "RACE"));
-      await session.step(105, "And user clicks on the \"category Other\" area of box plot viewer", () => clickArea(page, "category Other", el("box plot viewer")));
-      await session.step(106, "Then only rows where \"RACE\" is \"Other\" should be selected", () => onlyOfSelected(page, "RACE", "Other"));
-      await session.step(107, "When user deletes the selected rows", () => deleteSelected(page));
-      await session.step(108, "Then the table should have no rows where \"RACE\" is \"Other\"", () => noRowsWhere(page, "RACE", "Other"));
-      await session.step(109, "And box plot viewer should be painted", () => painted(page, el("box plot viewer")));
-      await session.step(110, "And box plot viewer should not have a \"category Other\" area", () => hasNoArea(page, el("box plot viewer"), "category Other"));
-      await session.step(111, "And no errors should have been logged", () => noErrors(page));
-      await session.step(112, "And no error or warning balloon should have been shown", () => noBalloons(page));
-      await session.step(113, "And \"Marker Color Column\" property of box plot viewer should be \"RACE\"", () => propertyShouldBe(page, "Marker Color Column", el("box plot viewer"), "RACE"));
+      await session.step(111, "When user sets \"Marker Color Column\" property of box plot viewer to \"RACE\"", () => setProperty(page, "Marker Color Column", el("box plot viewer"), "RACE"));
+      await session.step(112, "And user clicks on the \"category Other\" area of box plot viewer", () => clickArea(page, "category Other", el("box plot viewer")));
+      await session.step(113, "Then only rows where \"RACE\" is \"Other\" should be selected", () => onlyOfSelected(page, "RACE", "Other"));
+      await session.step(114, "When user deletes the selected rows", () => deleteSelected(page));
+      await session.step(115, "Then the table should have no rows where \"RACE\" is \"Other\"", () => noRowsWhere(page, "RACE", "Other"));
+      await session.step(116, "And box plot viewer should be painted", () => painted(page, el("box plot viewer")));
+      await session.step(117, "And box plot viewer should not have a \"category Other\" area", () => hasNoArea(page, el("box plot viewer"), "category Other"));
+      await session.step(118, "And no errors should have been logged", () => noErrors(page));
+      await session.step(119, "And no error or warning balloon should have been shown", () => noBalloons(page));
+      await session.step(120, "And \"Marker Color Column\" property of box plot viewer should be \"RACE\"", () => propertyShouldBe(page, "Marker Color Column", el("box plot viewer"), "RACE"));
     });
     run.finish();
   });

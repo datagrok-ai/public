@@ -5,10 +5,12 @@ import {editorOf} from './gestures.js';
 import {exactText, locate, locateActionable, refOf} from './locate.js';
 
 export type State = 'visible' | 'hidden' | 'present' | 'absent' | 'enabled' | 'disabled' | 'checked' |
-  'unchecked' | 'selected' | 'empty' | 'expanded' | 'collapsed' | 'focused';
+  'unchecked' | 'partially checked' | 'selected' | 'empty' | 'expanded' | 'collapsed' | 'focused' | 'invalid' | 'valid';
 
-export const STATES: State[] = ['visible', 'hidden', 'present', 'absent', 'enabled', 'disabled', 'checked',
-  'unchecked', 'selected', 'empty', 'expanded', 'collapsed', 'focused'];
+// "partially checked" before "checked": the alternation takes the first match
+export const STATES: State[] = ['visible', 'hidden', 'present', 'absent', 'enabled', 'disabled', 'partially checked', 'checked',
+  'unchecked', 'selected', 'empty', 'expanded', 'collapsed', 'focused', 'invalid', 'valid'];
+const INVALID_CLASSES = ['d4-invalid', 'd4-forced-invalid', 'u2-input-invalid'];
 
 const ROWS = ['.u2-list-row', '[role="option"]', '[role="row"]', '[role="tab"]', 'option', '.d4-list-item', '[name="legend-item"]', 'tbody tr', 'tr', 'li'];
 const SELECTED = '[aria-selected="true"], [aria-pressed="true"], [aria-checked="true"], [aria-current]:not([aria-current="false"]), ' +
@@ -27,6 +29,9 @@ export async function expectState(page: Page, target: ElementRef, state: State, 
     case 'disabled': return expectEnabled(loc, negate);
     case 'checked': return expectChecked(loc, !negate);
     case 'unchecked': return expectChecked(loc, negate);
+    case 'partially checked': return expectMixed(loc, !negate);
+    case 'invalid': return expectInvalid(loc, !negate);
+    case 'valid': return expectInvalid(loc, negate);
     case 'selected': return expectSelected(page, loc, !negate);
     case 'empty': return (negate ? expect(await editorOf(page, target)).not : expect(await editorOf(page, target))).toHaveValue('');
     case 'expanded': return expectExpanded(loc, !negate);
@@ -81,6 +86,22 @@ async function expectEnabled(loc: Locator, enabled: boolean): Promise<void> {
     });
   });
   await expect.poll(disabled, {message: `${enabled ? 'enabled' : 'disabled'} expected`}).toBe(!enabled);
+}
+
+/** A branch whose children disagree says `aria-checked="mixed"` (a hierarchical filter node). */
+async function expectMixed(loc: Locator, mixed: boolean): Promise<void> {
+  const box = loc.locator('[aria-checked]').first();
+  const target = await box.count() > 0 ? box : loc.first();
+  await (mixed ? expect(target) : expect(target).not).toHaveAttribute('aria-checked', 'mixed');
+}
+
+/** Invalid: `aria-invalid` or the platform's invalid classes on the element or a control inside. */
+async function expectInvalid(loc: Locator, invalid: boolean): Promise<void> {
+  const holds = () => loc.evaluateAll((all, classes: string[]) => all.some((el) => {
+    const marked = (e: Element) => e.getAttribute('aria-invalid') === 'true' || classes.some((c) => e.classList.contains(c));
+    return marked(el) || Array.from(el.querySelectorAll('input, select, textarea, [aria-invalid]')).some(marked);
+  }), INVALID_CLASSES);
+  await expect.poll(holds, {message: `${invalid ? 'invalid' : 'valid'} expected`}).toBe(invalid);
 }
 
 async function expectChecked(loc: Locator, checked: boolean): Promise<void> {

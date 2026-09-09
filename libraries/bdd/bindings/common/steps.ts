@@ -11,6 +11,10 @@ import {locate} from '../../src/runtime/locate.js';
 
 export const clickOn = When('user clicks (on ){element}', (page: Page, target: ElementRef) => g.click(page, target), {tier: 'ui'});
 export const doubleClickOn = When('user double-clicks (on ){element}', (page: Page, target: ElementRef) => g.dblclick(page, target), {tier: 'ui'});
+export const clickOnHolding = When('user clicks on {element} holding {key}', (page: Page, target: ElementRef, key: string) => g.clickHolding(page, target, key),
+  {tier: 'ui', description: 'a click with a key or a chord held: Control adds to the selection, Shift extends it, Control+Shift removes'});
+export const pasteInto = When('user pastes {string} in(to) {element}', (page: Page, text: string, target: ElementRef) => g.paste(page, target, text),
+  {tier: 'ui', description: 'the text through the clipboard and Ctrl+V, so the platform\'s paste handling runs; \\n for a line break'});
 export const rightClickOn = When('user right-clicks (on ){element}', (page: Page, target: ElementRef) => g.rightclick(page, target), {tier: 'ui'});
 export const hoverOver = When('user hovers (over ){element}', (page: Page, target: ElementRef) => g.hover(page, target), {tier: 'ui'});
 export const focusOn = When('user focuses (on ){element}', (page: Page, target: ElementRef) => g.focus(page, target), {tier: 'ui'});

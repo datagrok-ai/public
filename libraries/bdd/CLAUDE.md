@@ -498,6 +498,39 @@ nobody filed.
   subscription per viewer and event, replaced by a repeated "listens for", ended by the "should have
   fired" read or by `grok.events.onViewerClosed` (which also drops the render stamp). Before
   2026-09-07 every "listens for" stacked another subscription that lived as long as the viewer.
+- **The second viewer round (2026-09-08: grid, scatter plot, histogram, form, PowerGrid's forms,
+  filter panel, legend; design record `core/docs/features/ui2/automation/VIEWERS_ROUND_2026-09.md`)**
+  added to the runtime before any feature was written: hit areas are anchored at `parts.canvas`,
+  else `parts.root`, else the viewer's root (`anchorOf`), so a DOM viewer reports areas and
+  readings and only the pixel steps need a canvas; every pixel reading composites the viewer's
+  `overlay` part over its canvas when both have the same size (`pixelsOf` — the scatter plot
+  draws regression lines, labels and stats on its overlay, the grid its selection and current
+  cell; before, `repainted` and `ink` were blind to them); the snapshot keeps every hit area's
+  rectangle (`taller/wider than before`) and the legend's mode, slot, keys and size; readings can
+  be remembered by viewer type (`rememberValue`, the value-range pair generalised); the legend is
+  read from the `data-legend-*` attributes it already publishes and its items are a kind, never
+  hit areas (a tooltip-hosted legend leaves the viewer root — `legendRoot` looks in `.d4-tooltip`
+  too); a legend item click and a splitter drag snapshot first and `settle` after, since the
+  common click does neither. Kinds `legend item` and `filter card`, the `filter panel` element
+  (accepted by `{widget}`) and the states `partially checked` / `invalid` came with it. The
+  ownership rule of the round: one widget reports everything it contains — the filter panel's
+  categories, checkboxes and handles are ITS areas and readings, its inner grids are named
+  `filter-grid`, not `viewer-Grid`, so the reserved `grid` stays unique.
+- **Keys pressed "in" a viewer go to the viewer** (`gestures.ts` `editorOf`, 2026-09-09): `focuses on`
+  and `presses {key} in` resolve an element's editor — itself when editable, else the first input
+  inside — and for a viewer that first input is a field, not an editor: the form's arrow-key row
+  walk never fired because the arrows went into a read-only field input. A target matching
+  `[name^="viewer-"], .d4-viewer` is now its own editor (its root, which the form makes focusable
+  with `tabIndex = 0`). The probe that found it: the same key through `locator.press` on the root
+  moved the row; through the library's step it did not.
+- **Global setup fetches the client before a browser does** (`global-setup.ts` `warmClient`,
+  2026-09-08): a dev stand serves the Dart client from `pub serve`, which recompiles the whole
+  bundle after any source edit — the first request then blocks for minutes, and every run started
+  in that window died in global setup with `waiting for locator('[name="Browse"]')` after 60 s.
+  One plain `fetch` of `login.dart.js` and its deferred part pays that wait once, outside the
+  browser and with no cap, and costs milliseconds when nothing is compiling. It is not a wait for
+  a signal the platform owes us: the compile is the dev environment's, and the alternative is a
+  60 s cap that fails a good suite while someone edits Dart.
 - **Codegen** emits names, never selectors; `\n` line endings, no timestamps, EOL-normalized drift
   check; orphaned generated files are removed on compile and reported on `--check`.
 - **Session readiness**: `user is logged in` skips navigation when the page is already in the shell
@@ -614,6 +647,43 @@ nobody filed.
   vertical range slider is `svg[type="range-slider"][name="y-slider"]`, `max-handle` at the top.
   Dart context-menu items: `role=menuitem`, `name="div-Misc---Show-Inside-Values"`, own label a
   direct `.d4-menu-item-label`; the stats-region menu names drop the "Statistics" prefix.
+- `user filters rows where ...` writes the table's filter bitset directly (`df.filter.init`). That
+  write is transient: anything that calls `dataFrame.rows.requestFilter` recomputes the filter from
+  the registered filters and drops it. A histogram does that on **every context-menu pick**
+  (`_refresh()` while `filteringEnabled`, its default), so a menu pick after such a step silently
+  restores all rows. When a scenario must hold a filter across viewer interaction, filter through a
+  filter card (`user adds a categorical filter on ... keeping ...`), which is a registered filter.
+- `{widget} should have repainted` measures the whole canvas even when the phrase names an area —
+  use `the {string} area of {widget} should have repainted` for one area's own pixels. A hover
+  highlight can be gone by the time a later step reads it (the tooltip lands under the pointer), so
+  put the repaint checks right after the gesture and the tooltip text after them.
+- **A backward-match review is the second half of a translation** (2026-09-09, five reviewers over
+  grid, histogram, scatter plot, filter panel, form+legend). What it changed, beyond the features:
+  `{widget} should have repainted` measured the whole canvas even when the phrase named an area, so
+  every per-area repaint claim in the round was really "the canvas repainted" — hence the area step
+  above; `should show the remembered value range` compared top and bottom only and `narrower/wider`
+  compared height only, so a Reset View that lost the X window passed (both now compare the area and
+  both axes); the tooltip readers matched a hidden tooltip's leftover text (`.d4-tooltip:visible`
+  now); `expectLegendPlacedAsBefore` compared mode and slot but not size, so a legend that jumped
+  inside its slot passed; `the filter panel should have N filters` called `getFiltersGroup`, which
+  CREATES a panel when the view has none, so "0 filters" quietly resurrected one (it now reads the
+  group only when a Filters viewer is open). Two new steps came from findings that had no honest
+  phrase: `the open tableview should have {int} {viewer} viewer(s)` (an "added"/"closed" claim is
+  vacuous on a view that already owns one of that type) and `no|all rows where {string} is {string}
+  should pass the filter` (a row COUNT cannot tell a card that filters from a card that stopped).
+- **A reviewer's finding is a hypothesis until the suite runs it.** Three of the round's fixes
+  asserted things the product does not do: two cells of different columns do NOT share a colour with
+  coding off (the greys of the text differ), `USUBJID` ascending IS demog's natural order so the Sort
+  dialog moves no row, and a reversed `xMin/xMax` window is NORMALISED to (20, 60) rather than kept.
+  Write the fix, run it, and keep what the product says.
+- Two core defects the review pass surfaced: `grid.cell2screen` returns null for a cell scrolled out,
+  so the grid's status emitted a null rect and the filter panel's status (which reads the inner grid's
+  areas) crashed with `TypeError … reading 'get$left'` whenever a card was re-added — both guard now;
+  and the filter panel's counter host started visible with an empty count until the first
+  `_refreshCounts`, so an empty panel showed an empty badge (`htmlSetVisible(false)` at creation).
+- A grid's selected columns are a set: `columns "..." should be selected` compares regardless of
+  order. `the "current row" reading of grid` is 1-based, 0 meaning none, and Escape clears the row
+  and column selection but leaves the current cell where it was.
 - Probe scripts for these live in the scratchpad (`probe/boxplot.mjs`, `selectors.mjs`,
   `submenu.mjs`): dev-key token via `POST /users/login/dev/admin`, cookie + localStorage `auth`.
 

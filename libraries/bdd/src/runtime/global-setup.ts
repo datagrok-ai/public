@@ -104,5 +104,21 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
     }
     process.env.DATAGROK_AUTH_TOKEN = token;
   }
+  await warmClient(url);
   await libSetup(config);
+}
+
+/** Asks the stand for the client bundle before a browser does. On a dev stand the Dart client is
+ * served by `pub serve`, which recompiles the whole bundle after any source edit: the first
+ * request then blocks for minutes while the browser's own load — and the 60 s the shell wait
+ * allows — expires on a page that has not been served yet. One plain request outside the browser
+ * pays that wait once, with no cap, and is a few milliseconds when nothing is compiling. A stand
+ * serving a built client (a deployment, CI) answers at once and nothing is lost. */
+async function warmClient(url: string): Promise<void> {
+  const start = Date.now();
+  for (const path of ['login.dart.js', 'login.dart.js_1.part.js'])
+    await fetch(`${url}/${path}`).then((r) => r.arrayBuffer()).catch(() => undefined);
+  const seconds = Math.round((Date.now() - start) / 1000);
+  if (seconds >= 5)
+    console.log(`bdd: the stand took ${seconds} s to serve its client (a dev stand recompiles it after a source change)`);
 }

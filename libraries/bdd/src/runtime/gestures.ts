@@ -34,6 +34,30 @@ export async function click(page: Page, target: ElementRef): Promise<void> {
   await loc.click();
 }
 
+/** A click with a key or a chord held (Control adds to a selection, Shift extends it). */
+export async function clickHolding(page: Page, target: ElementRef, key: string): Promise<void> {
+  const keys = normalizeKey(key).split('+');
+  for (const k of keys)
+    await page.keyboard.down(k);
+  try {
+    await click(page, target);
+  }
+  finally {
+    for (const k of keys.reverse())
+      await page.keyboard.up(k);
+  }
+}
+
+/** Puts the text on the page's clipboard and pastes it into the element's editor with Ctrl+V — the
+ * platform's own paste handling runs (a comma list becomes an alternation, a newline list a union). */
+export async function paste(page: Page, target: ElementRef, text: string): Promise<void> {
+  const editor = await editorOf(page, target);
+  await editor.click();
+  await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
+  await page.evaluate((t) => navigator.clipboard.writeText(t), text);
+  await page.keyboard.press('Control+V');
+}
+
 export async function dblclick(page: Page, target: ElementRef): Promise<void> {
   await (await locate(page, target)).dblclick();
 }
@@ -101,9 +125,11 @@ export async function hover(page: Page, target: ElementRef): Promise<void> {
 /** The editable control of an element: itself when it is one, otherwise its editor part. */
 export async function editorOf(page: Page, target: ElementRef): Promise<Locator> {
   const loc = await locate(page, target);
-  const editable = await loc.evaluate((e) => ['INPUT', 'SELECT', 'TEXTAREA'].includes(e.tagName) ||
-    (e as HTMLElement).isContentEditable).catch(() => false);
-  if (editable)
+  // a viewer handles keys on its root (a form walks rows on the arrows, a plot zooms on +/-);
+  // its first input is a field, not its editor
+  const own = await loc.evaluate((e) => ['INPUT', 'SELECT', 'TEXTAREA'].includes(e.tagName) ||
+    (e as HTMLElement).isContentEditable || e.matches('[name^="viewer-"], .d4-viewer')).catch(() => false);
+  if (own)
     return loc;
   for (const selector of [EDITOR, EDITOR_PART]) {
     const inner = loc.locator(selector).first();

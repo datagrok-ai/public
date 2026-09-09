@@ -86,7 +86,9 @@ function reasonText(e: unknown): string {
   return String(e instanceof Error ? e.message : e).replace(/^[\w.]+: /, '').split('\n')[0];
 }
 const MENU_ITEM = 'xpath=ancestor::*[contains(concat(" ", normalize-space(@class), " "), " d4-menu-item ")][1]';
-const TOOLTIP_COLUMNS = '.d4-tooltip table.d4-row-tooltip-table tr td:first-child';
+// a hidden tooltip keeps its last content, so every read matches the visible one only
+const TOOLTIP_ROWS = '.d4-tooltip:visible table.d4-row-tooltip-table tr';
+const TOOLTIP_COLUMNS = TOOLTIP_ROWS + ' td:first-child';
 
 /** Everything the in-page side needs, on `window.__bdd`. Self-contained: it runs in the browser. */
 function install(): void {
@@ -95,7 +97,9 @@ function install(): void {
     return;
   const renders = new WeakMap<Element, {count: number; last: number; sub?: any}>();
   const snapshots = new WeakMap<Element, {colors: Map<number, number>; ink: number; hue: number; renders: number; range?: Range;
-    areas: Record<string, number>; scale?: ScaleRange; values: Record<string, unknown>; bitmap: ImageData}>();
+    areas: Record<string, number>; rects: Record<string, Box>; scale?: ScaleRange; values: Record<string, unknown>; bitmap: ImageData;
+    legend?: {mode: string; slot: string; items: number; keys: string[]; selected: string[]; width: number; height: number}}>();
+  const rememberedValues: Record<string, unknown> = {};
   // how long a repaint the viewer says is pending may take before that is a platform failure
   const PENDING_CAP = 10000;
   const sizes = new WeakMap<Element, {width: string; height: string}>();
@@ -197,18 +201,49 @@ function install(): void {
       await new Promise((resolve) => setTimeout(resolve, 0));
     }
   };
+  const partsOf = (v: any): Record<string, Element> => v.getWidgetStatus?.()?.parts ?? {};
   const canvasOf = (v: any): HTMLCanvasElement => {
-    const part = v.getWidgetStatus?.()?.parts?.canvas;
+    const part = partsOf(v).canvas as HTMLCanvasElement | undefined;
     const cv = part ?? v.root.querySelector('canvas[name="canvas"]') ?? v.root.querySelector('canvas');
     if (!cv)
       throw new Error(`${v.type} has no canvas`);
     return cv;
+  };
+  /** What a viewer's hit areas are relative to: its canvas, else the root it reports, else its
+   * root (a form, a filter panel — DOM viewers with no canvas). */
+  const anchorOf = (v: any): Element => {
+    const parts = partsOf(v);
+    return parts.canvas ?? parts.root ?? v.root;
   };
   // a WebGL canvas (the 3D scatter plot) has no 2D context and no pixels to read: its picture is
   // the viewer's own `scene signature` reading
   const pixels = (cv: HTMLCanvasElement): ImageData => {
     const ctx = cv.getContext('2d');
     return ctx ? ctx.getImageData(0, 0, cv.width, cv.height) : new ImageData(1, 1);
+  };
+  /** The viewer's picture: its canvas with its `overlay` part composited on top when there is one
+   * of the same size (the scatter plot draws regression lines, labels and stats on the overlay,
+   * the grid its selection and current cell) — so paint on either layer counts. */
+  const pixelsOf = (v: any): ImageData => {
+    const cv = canvasOf(v);
+    const img = pixels(cv);
+    const over = partsOf(v).overlay as HTMLCanvasElement | undefined;
+    if (!(over instanceof HTMLCanvasElement) || over === cv || over.width !== cv.width || over.height !== cv.height)
+      return img;
+    const top = pixels(over);
+    const a = img.data;
+    const b = top.data;
+    for (let i = 0; i < b.length; i += 4) {
+      const alpha = b[i + 3];
+      if (alpha === 0)
+        continue;
+      const w = alpha / 255;
+      a[i] = Math.round(b[i] * w + a[i] * (1 - w));
+      a[i + 1] = Math.round(b[i + 1] * w + a[i + 1] * (1 - w));
+      a[i + 2] = Math.round(b[i + 2] * w + a[i + 2] * (1 - w));
+      a[i + 3] = Math.max(a[i + 3], alpha);
+    }
+    return img;
   };
   const histogram = (img: ImageData) => {
     const data = img.data;
@@ -262,7 +297,7 @@ function install(): void {
   };
   /** The colors drawn in at least `minPx` pixels, blanks and near-whites aside. */
   const palette = (el: Element, minPx: number): number => {
-    const data = histogram(pixels(canvasOf(viewerOf(el))));
+    const data = histogram(pixelsOf(viewerOf(el)));
     let n = 0;
     for (const [c, count] of data.colors) {
       const r = (c >> 16) & 255;
@@ -279,8 +314,46 @@ function install(): void {
     const v = viewerOf(el);
     const cv = canvasOf(v);
     const rect = deviceRect(cv, areasOf(v)[areaKey(v, name)]);
-    const colors = colorsIn(pixels(cv), rect);
+    const colors = colorsIn(pixelsOf(v), rect);
     return {colors: [...colors.entries()].sort((a, b) => b[1] - a[1]).map(([c, count]) => ({hex: hex(c), count})), rect, bitmap: [cv.width, cv.height]};
+  };
+  /** The legend a viewer hosts, as the attributes it publishes on every commit: its mode and slot,
+   * the item total, the rendered items' keys and the selected ones; undefined without a legend.
+   * A legend shown in the tooltip is re-parented out of the viewer, so it is looked up there. */
+  const legendState = (v: any): {mode: string; slot: string; items: number; keys: string[]; selected: string[]; width: number; height: number} | undefined => {
+    const l: HTMLElement | null = v.root.querySelector('[name="legend"]') ?? document.querySelector('.d4-tooltip [name="legend"]');
+    if (!l)
+      return undefined;
+    const items = Array.from(l.querySelectorAll('[name="legend-item"]'));
+    const key = (i: Element) => i.getAttribute('data-item-key') ?? i.getAttribute('aria-label') ?? '';
+    return {mode: l.dataset.legendMode ?? '', slot: l.dataset.legendSlot ?? '', items: Number(l.dataset.legendItems ?? items.length),
+      keys: items.map(key), selected: items.filter((i) => i.getAttribute('aria-selected') === 'true' || i.getAttribute('data-item-selected') === 'true').map(key),
+      width: l.offsetWidth, height: l.offsetHeight};
+  };
+  const legendChange = (el: Element): {before?: ReturnType<typeof legendState>; now?: ReturnType<typeof legendState>} => {
+    const v = viewerOf(el);
+    return {before: snapshots.get(v.root)?.legend, now: legendState(v)};
+  };
+  /** A reading kept by viewer type and name, for "as remembered" across a close and a reopen. */
+  const rememberValue = (el: Element, name: string): void => {
+    const v = viewerOf(el);
+    const r = valueChange(el, name);
+    if (r.now === undefined || r.now === null)
+      throw new Error(`${v.type} has no "${name}" reading; it reports: ${r.has.join(', ') || 'no readings'}`);
+    rememberedValues[`${v.type}|${norm(name)}`] = r.now;
+  };
+  const rememberedValue = (el: Element, name: string): {before?: unknown; now?: unknown; has: string[]} => {
+    const v = viewerOf(el);
+    const r = valueChange(el, name);
+    return {before: rememberedValues[`${v.type}|${norm(name)}`], now: r.now, has: r.has};
+  };
+  /** A hit area's rectangle now and at the snapshot before the last change (anchor coordinates). */
+  const areaRectChange = (el: Element, name: string): {before?: Box; now?: Box; has: string[]} => {
+    const v = viewerOf(el);
+    const areas = areasOf(v);
+    const key = Object.keys(areas).find((k) => norm(k) === norm(name));
+    const before = snapshots.get(v.root)?.rects ?? {};
+    return {before: before[norm(name)], now: key === undefined ? undefined : areas[key], has: Object.keys(areas)};
   };
   /** The viewer's named readings (`getWidgetStatus().values`). */
   const valuesOf = (v: any): Record<string, unknown> => v.getWidgetStatus?.()?.values ?? {};
@@ -378,14 +451,26 @@ function install(): void {
   const snapshot = (el: Element): number => {
     const v = viewerOf(el);
     arm(v);
-    const cv = canvasOf(v);
-    const img = pixels(cv);
+    const hit = areasOf(v);
+    const rects: Record<string, Box> = {};
+    for (const key of Object.keys(hit))
+      rects[norm(key)] = {...hit[key]};
+    const legend = legendState(v);
+    let cv: HTMLCanvasElement | undefined;
+    try {
+      cv = canvasOf(v);
+    } catch { /* a DOM viewer: its areas, readings and legend are the snapshot */ }
+    if (!cv) {
+      snapshots.set(v.root, {colors: new Map(), ink: 0, hue: 0, renders: renders.get(v.root)!.count, range: rangeOf(v), areas: {}, rects,
+        scale: scaleRange(v), values: {...valuesOf(v)}, bitmap: new ImageData(1, 1), legend});
+      return 0;
+    }
+    const img = pixelsOf(v);
     const shot = histogram(img);
     const areas: Record<string, number> = {};
-    const hit = areasOf(v);
     for (const key of Object.keys(hit))
       areas[norm(key)] = inkIn(img, deviceRect(cv, hit[key]));
-    snapshots.set(v.root, {...shot, renders: renders.get(v.root)!.count, range: rangeOf(v), areas, scale: scaleRange(v), values: {...valuesOf(v)}, bitmap: img});
+    snapshots.set(v.root, {...shot, renders: renders.get(v.root)!.count, range: rangeOf(v), areas, rects, scale: scaleRange(v), values: {...valuesOf(v)}, bitmap: img, legend});
     return shot.ink;
   };
   /** Pixels that differ between two bitmaps of the same size — a reorder of equal bars keeps the
@@ -438,12 +523,12 @@ function install(): void {
       + (touched.length ? `, over: ${touched.join(', ')}` : '');
   };
   /** The painted pixels now, without moving the snapshot. */
-  const ink = (el: Element): number => histogram(pixels(canvasOf(viewerOf(el)))).ink;
+  const ink = (el: Element): number => histogram(pixelsOf(viewerOf(el))).ink;
   // the baseline "should have repainted" compares with: the canvas before the change
   const baseline = (el: Element): void => {
     try {
       snapshot(el);
-    } catch { /* a viewer without a canvas */ }
+    } catch { /* not a viewer of an open view */ }
   };
   /** Every viewer's baseline at once — before a change that reaches them all (a filter, a
    * selection, a column's colors). */
@@ -463,7 +548,7 @@ function install(): void {
     return settled;
   };
   const canvasBox = (v: any): Box => {
-    const r = canvasOf(v).getBoundingClientRect();
+    const r = anchorOf(v).getBoundingClientRect();
     return {x: r.x, y: r.y, width: r.width, height: r.height};
   };
   /** The named hit area in client coordinates, or the names the viewer reports instead. */
@@ -499,7 +584,7 @@ function install(): void {
   const areaInk = (el: Element, name: string): number => {
     const v = viewerOf(el);
     const cv = canvasOf(v);
-    return inkIn(pixels(cv), deviceRect(cv, areasOf(v)[areaKey(v, name)]));
+    return inkIn(pixelsOf(v), deviceRect(cv, areasOf(v)[areaKey(v, name)]));
   };
   /** A hit area's ink now against the snapshot's (the area must have been reported then too). */
   const areaChange = (el: Element, name: string): AreaChange => {
@@ -513,10 +598,34 @@ function install(): void {
     const cv = canvasOf(v);
     return {ink: areaInk(el, name), inkBefore, rect: deviceRect(cv, areasOf(v)[areaKey(v, name)])};
   };
+  /** The pixels that changed inside one hit area since the snapshot — the area's own repaint,
+   * as opposed to the whole canvas'. */
+  const areaDelta = (el: Element, name: string): number => {
+    const v = viewerOf(el);
+    const before = snapshots.get(v.root);
+    if (!before)
+      throw new Error(`${v.type}: no snapshot to compare with`);
+    const cv = canvasOf(v);
+    const now = pixelsOf(v);
+    if (before.bitmap.width !== now.width || before.bitmap.height !== now.height)
+      throw new Error(`${v.type}: the canvas resized since the snapshot`);
+    const r = deviceRect(cv, areasOf(v)[areaKey(v, name)]);
+    const a = before.bitmap.data;
+    const b = now.data;
+    let delta = 0;
+    for (let y = r.y; y < Math.min(r.y + r.h, now.height); y++) {
+      for (let x = r.x; x < Math.min(r.x + r.w, now.width); x++) {
+        const i = (y * now.width + x) * 4;
+        if (a[i] !== b[i] || a[i + 1] !== b[i + 1] || a[i + 2] !== b[i + 2] || a[i + 3] !== b[i + 3])
+          delta++;
+      }
+    }
+    return delta;
+  };
   const change = (el: Element): CanvasChange => {
     const v = viewerOf(el);
     const cv = canvasOf(v);
-    const img = pixels(cv);
+    const img = pixelsOf(v);
     const now = histogram(img);
     const before = snapshots.get(v.root);
     if (!before)
@@ -558,7 +667,7 @@ function install(): void {
     await quiet(v);
     const cv = canvasOf(v);
     const delta = change(el).delta;
-    return {renders: renders.get(v.root)!.count - before.renders, delta, where: delta ? changedWhere(v, cv, before.bitmap, pixels(cv)) : ''};
+    return {renders: renders.get(v.root)!.count - before.renders, delta, where: delta ? changedWhere(v, cv, before.bitmap, pixelsOf(v)) : ''};
   };
   /** The value range against the snapshot's, read once the viewer is quiet (a reset that lands a
    * tick after the change is read, not missed). */
@@ -800,7 +909,8 @@ function install(): void {
     return read;
   };
 
-  w.__bdd = {viewerOf, arm, stampAll, settle, quiet, readProperty, writeProperties, findArea, hitArea, areas, areaInk, areaChange, areaColors,
+  w.__bdd = {viewerOf, arm, stampAll, settle, quiet, readProperty, writeProperties, findArea, hitArea, areas, areaInk, areaChange, areaDelta, areaColors,
+    areaRectChange, legendState: (el: Element) => legendState(viewerOf(el)), legendChange, rememberValue, rememberedValue,
     snapshot, baselineAll, change, rangeChange, quietRangeChange, scaleChange, valueChange, quietValueChange, rememberRange, rememberedRange, stillness,
     palette, tableOf, listen, unlisten, firedCount, resize, restoreSize, armEvent, waitArmed, closeMenu, openMenu, menuPoint, addViewer,
     takeBalloons, saveLayout, saveLayoutToServer, loadLayout, deleteLayout, ink, armCommand, waitCommand, columnsSince, listenCustom, customFired};
@@ -938,6 +1048,14 @@ export async function canvasChange(page: Page, target: ElementRef): Promise<Canv
 export async function expectRepainted(page: Page, target: ElementRef, minPx = 1): Promise<void> {
   await expect.poll(async () => (await canvasChange(page, target)).delta,
     {timeout: 10000, message: minPx > 1 ? `${target.phrase} did not repaint by ${minPx} pixels` : `${target.phrase} did not repaint`}).toBeGreaterThanOrEqual(minPx);
+}
+
+/** A hit area's own repaint: the pixels inside its rectangle that differ from the snapshot. */
+export async function expectAreaRepainted(page: Page, target: ElementRef, area: string, minPx = 1): Promise<void> {
+  await installViewerRuntime(page);
+  const loc = await viewerLocator(page, target);
+  await expect.poll(() => loc.evaluate((el, a) => (window as any).__bdd.areaDelta(el, a), area),
+    {timeout: 10000, message: `the "${area}" area of ${target.phrase} did not repaint`}).toBeGreaterThanOrEqual(minPx);
 }
 
 /** The table the viewer draws (`viewer.dataFrame`), not the property it was asked to bind. */
@@ -1229,6 +1347,21 @@ export async function rememberRange(page: Page, target: ElementRef): Promise<voi
   await loc.evaluate((el) => { (window as any).__bdd.rememberRange(el); });
 }
 
+/** Both axes of a viewport, when it has a horizontal one: a viewer that restores the Y window and
+ * loses the X window is not showing the same range. */
+function sameRange(a: Range, b: Range, eps: number): boolean {
+  if (Math.abs(a.top - b.top) >= eps || Math.abs(a.bottom - b.bottom) >= eps)
+    return false;
+  const horizontal = [a.left, a.right, b.left, b.right].every((x) => typeof x === 'number' && isFinite(x));
+  return !horizontal || (Math.abs(a.left! - b.left!) < eps && Math.abs(a.right! - b.right!) < eps);
+}
+
+function rangeArea(r: Range): number {
+  const width = typeof r.left === 'number' && typeof r.right === 'number' && isFinite(r.left) && isFinite(r.right)
+    ? Math.abs(r.right - r.left) : 1;
+  return Math.abs(r.height) * (width || 1);
+}
+
 /** The value range equals the one remembered for this viewer type — across a close and a reopen. */
 export async function expectRememberedRange(page: Page, target: ElementRef): Promise<void> {
   await installViewerRuntime(page);
@@ -1236,7 +1369,7 @@ export async function expectRememberedRange(page: Page, target: ElementRef): Pro
   let last: RangeChange = {};
   const holds = async (): Promise<boolean> => {
     last = await loc.evaluate((el) => (window as any).__bdd.rememberedRange(el));
-    return !!last.before && !!last.now && Math.abs(last.before.top - last.now.top) < 0.5 && Math.abs(last.before.bottom - last.now.bottom) < 0.5;
+    return !!last.before && !!last.now && sameRange(last.before, last.now, 0.5);
   };
   try {
     await expect.poll(holds, {timeout: 5000}).toBe(true);
@@ -1269,7 +1402,7 @@ export async function rangeChange(page: Page, target: ElementRef): Promise<Range
 /** The value range (viewport) against the snapshot before the last change; `same` is read once the
  * viewer is quiet, so a reset that lands a tick later fails it rather than slipping past. */
 export async function expectValueRange(page: Page, target: ElementRef, compare: 'narrower' | 'same' | 'wider'): Promise<void> {
-  const same = (a: Range, b: Range) => Math.abs(a.top - b.top) < 1e-6 && Math.abs(a.bottom - b.bottom) < 1e-6;
+  const same = (a: Range, b: Range) => sameRange(a, b, 1e-6);
   const loc = await viewerLocator(page, target);
   let last: RangeChange = {};
   const holds = async (): Promise<boolean | string> => {
@@ -1278,7 +1411,7 @@ export async function expectValueRange(page: Page, target: ElementRef, compare: 
       return 'no range';
     if (compare === 'same')
       return same(last.before, last.now);
-    return compare === 'narrower' ? last.now.height < last.before.height * 0.95 : last.now.height > last.before.height * 1.05;
+    return compare === 'narrower' ? rangeArea(last.now) < rangeArea(last.before) * 0.95 : rangeArea(last.now) > rangeArea(last.before) * 1.05;
   };
   try {
     await expect.poll(holds, {timeout: 5000}).toBe(true);
@@ -1434,7 +1567,369 @@ export async function pickMenuPath(page: Page, path: string): Promise<void> {
   }
 }
 
+// --- area gestures and geometry ----------------------------------------------------------------------
+
+/** A plain drag from the centre of one hit area to the centre of another (a column header to a
+ * new place, a range handle to a bin); the baseline is taken before the drag. */
+export async function dragArea(page: Page, target: ElementRef, from: string, to: string): Promise<void> {
+  const a = centerOf(await hitArea(page, target, from, true));
+  const b = centerOf(await hitArea(page, target, to));
+  await page.mouse.move(a.x, a.y);
+  await page.mouse.down();
+  await page.mouse.move(b.x, b.y, {steps: 3});
+  await page.mouse.up();
+}
+
+/** A drag of the area's centre by a distance in a direction (a resizer, a splitter). */
+export async function dragAreaBy(page: Page, target: ElementRef, area: string, px: number, direction: string): Promise<void> {
+  const d = direction.toLowerCase();
+  if (!['left', 'right', 'up', 'down'].includes(d))
+    throw new Error(`a drag goes left, right, up or down, not "${direction}"`);
+  const c = centerOf(await hitArea(page, target, area, true));
+  const dx = d === 'left' ? -px : d === 'right' ? px : 0;
+  const dy = d === 'up' ? -px : d === 'down' ? px : 0;
+  await page.mouse.move(c.x, c.y);
+  await page.mouse.down();
+  await page.mouse.move(c.x + dx / 2, c.y + dy / 2);
+  await page.mouse.move(c.x + dx, c.y + dy);
+  await page.mouse.up();
+}
+
+/** A drag with a modifier across the inner 80% of an area: Control+Shift removes from the
+ * selection, Alt zooms. */
+export async function dragBoxOverArea(page: Page, target: ElementRef, area: string, keys: string[]): Promise<void> {
+  const b = await hitArea(page, target, area, true);
+  for (const k of keys)
+    await page.keyboard.down(k);
+  try {
+    await page.mouse.move(b.x + b.width * 0.1, b.y + b.height * 0.1);
+    await page.mouse.down();
+    await page.mouse.move(b.x + b.width * 0.9, b.y + b.height * 0.9, {steps: 3});
+    await page.mouse.up();
+  }
+  finally {
+    for (const k of [...keys].reverse())
+      await page.keyboard.up(k);
+  }
+}
+
+/** Types into a hit area that holds an editor (a range input, a form field): a click on its
+ * centre, select all, the text, Enter. */
+export async function typeIntoArea(page: Page, target: ElementRef, area: string, text: string): Promise<void> {
+  const c = centerOf(await hitArea(page, target, area, true));
+  await page.mouse.click(c.x, c.y);
+  await page.keyboard.press('Control+A');
+  await page.keyboard.type(text.replace(/\\n/g, '\n'));
+  await page.keyboard.press('Enter');
+}
+
+export async function expectAreaSize(page: Page, target: ElementRef, area: string, dimension: 'tall' | 'wide', min: number): Promise<void> {
+  const box = await hitArea(page, target, area);
+  const size = dimension === 'tall' ? box.height : box.width;
+  expect(size, `the "${area}" area of ${target.phrase} is ${Math.round(size)} px ${dimension}, not at least ${min}`).toBeGreaterThanOrEqual(min);
+}
+
+/** The area's rectangle against the snapshot's: taller or wider than before. */
+export async function expectAreaGrew(page: Page, target: ElementRef, area: string, dimension: 'taller' | 'wider' | 'shorter' | 'narrower'): Promise<void> {
+  await installViewerRuntime(page);
+  const loc = await viewerLocator(page, target);
+  let last: {before?: Box; now?: Box; has: string[]} = {has: []};
+  const holds = async (): Promise<boolean | string> => {
+    last = await loc.evaluate((el, a) => (window as any).__bdd.areaRectChange(el, a), area);
+    if (!last.now)
+      return `no "${area}" area now`;
+    if (!last.before)
+      return `no "${area}" area at the snapshot`;
+    const now = dimension === 'taller' || dimension === 'shorter' ? last.now.height : last.now.width;
+    const before = dimension === 'taller' || dimension === 'shorter' ? last.before.height : last.before.width;
+    return dimension === 'taller' || dimension === 'wider' ? now > before + 0.5 : now < before - 0.5;
+  };
+  try {
+    await expect.poll(holds, {timeout: 5000}).toBe(true);
+  }
+  catch {
+    throw new Error(`the "${area}" area of ${target.phrase} is not ${dimension} than before (before ${JSON.stringify(last.before)}, now ${JSON.stringify(last.now)}` +
+      (last.now ? ')' : `; it has: ${last.has.join(', ') || 'none'})`));
+  }
+}
+
+/** Two areas are painted in the same colors: every significant color of either has a near color
+ * in the other (a linked color coding, a category and its swatch). */
+export async function expectSameColors(page: Page, target: ElementRef, a: string, b: string): Promise<void> {
+  await hitArea(page, target, a);
+  await hitArea(page, target, b);
+  let shownA: AreaColors | undefined;
+  let shownB: AreaColors | undefined;
+  const own = (mine: AreaColor[], theirs: AreaColor[]): boolean =>
+    mine.some((c) => c.count >= SIGNIFICANT_PX && !theirs.some((d) => d.count >= COLOR_MIN_PX && near(c.hex, d.hex)));
+  const same = async (): Promise<boolean> => {
+    const ra: AreaColors = shownA = await areaColors(page, target, a);
+    const rb: AreaColors = shownB = await areaColors(page, target, b);
+    return !own(ra.colors, rb.colors) && !own(rb.colors, ra.colors);
+  };
+  try {
+    await expect.poll(same, {timeout: 5000}).toBe(true);
+  }
+  catch {
+    throw new Error(`the "${a}" and "${b}" areas of ${target.phrase} are painted in different colors; "${a}" ${describeColors(shownA)}; "${b}" ${describeColors(shownB)}`);
+  }
+}
+
+/** No pixel of the color (nor a shade of it) inside the area, read once. */
+export async function expectAreaNotColor(page: Page, target: ElementRef, area: string, color: string): Promise<void> {
+  const want = '#' + color.replace(/^#/, '').toUpperCase();
+  if (!/^#[0-9A-F]{6}$/.test(want))
+    throw new Error(`"${color}" is not a #rrggbb color`);
+  await hitArea(page, target, area);
+  const read = await areaColors(page, target, area);
+  const count = read.colors.filter((c) => near(c.hex, want)).reduce((n, c) => n + c.count, 0);
+  expect(count, `the "${area}" area of ${target.phrase} is painted in ${want} (${count} px); ${describeColors(read)}`).toBeLessThan(COLOR_MIN_PX);
+}
+
+export async function rememberReading(page: Page, target: ElementRef, name: string): Promise<void> {
+  await installViewerRuntime(page);
+  const loc = await viewerLocator(page, target);
+  await loc.evaluate((el, n) => { (window as any).__bdd.rememberValue(el, n); }, name);
+}
+
+export async function expectRememberedReading(page: Page, target: ElementRef, name: string): Promise<void> {
+  await installViewerRuntime(page);
+  const loc = await viewerLocator(page, target);
+  let last: {before?: unknown; now?: unknown; has: string[]} = {has: []};
+  const holds = async (): Promise<boolean | string> => {
+    last = await loc.evaluate((el, n) => (window as any).__bdd.rememberedValue(el, n), name);
+    if (last.before === undefined)
+      return `"${name}" was not remembered`;
+    if (last.now === undefined || last.now === null)
+      return `no "${name}" reading`;
+    return last.now === last.before;
+  };
+  try {
+    await expect.poll(holds, {timeout: 5000}).toBe(true);
+  }
+  catch {
+    throw new Error(`"${name}" of ${target.phrase} is ${String(last.now)}, not the remembered ${String(last.before)}` +
+      (last.now === undefined || last.now === null ? `; the viewer reports: ${last.has.join(', ') || 'no readings'}` : ''));
+  }
+}
+
+// --- the legend --------------------------------------------------------------------------------------
+
+interface LegendState {
+  mode: string;
+  slot: string;
+  items: number;
+  keys: string[];
+  selected: string[];
+  width: number;
+  height: number;
+}
+
+/** The legend the viewer hosts, wherever it sits now (in the viewer, or re-parented into the
+ * tooltip when collapsed to the mini icon). */
+function legendRoot(page: Page, viewer: Locator): Locator {
+  return viewer.locator('[name="legend"]').or(page.locator('.d4-tooltip [name="legend"]')).filter({visible: true}).first();
+}
+
+/** A legend item by the label it shows (`aria-label`, else the label text). */
+export async function legendItem(page: Page, target: ElementRef, label: string): Promise<Locator> {
+  const legend = legendRoot(page, await viewerLocator(page, target));
+  const items = legend.locator('[name="legend-item"]');
+  const byAria = items.filter({has: page.locator(`:scope[aria-label="${label.replace(/"/g, '\\"')}" i]`)});
+  const byText = items.filter({has: page.locator('.d4-legend-value', {hasText: exactText(label)})});
+  return byAria.or(byText).first();
+}
+
+export async function legendStateOf(page: Page, target: ElementRef): Promise<LegendState | undefined> {
+  await installViewerRuntime(page);
+  const loc = await viewerLocator(page, target);
+  return loc.evaluate((el) => (window as any).__bdd.legendState(el));
+}
+
+function describeLegend(s: LegendState | undefined): string {
+  return s ? `mode ${s.mode || 'none'}, slot ${s.slot || 'none'}, ${s.items} items (${s.keys.length} rendered), ${s.width}x${s.height}` : 'no legend';
+}
+
+/** The legend's item total (`data-legend-items`, every section, rendered or not). */
+export async function expectLegendItems(page: Page, target: ElementRef, count: number): Promise<void> {
+  let last: LegendState | undefined;
+  try {
+    await expect.poll(async () => (last = await legendStateOf(page, target))?.items, {timeout: 5000}).toBe(count);
+  }
+  catch {
+    throw new Error(`the legend of ${target.phrase} lists ${last?.items ?? 'no'} items, not ${count} (${describeLegend(last)})`);
+  }
+}
+
+export async function expectLegendItemsChange(page: Page, target: ElementRef, compare: 'fewer' | 'same'): Promise<void> {
+  await installViewerRuntime(page);
+  const loc = await viewerLocator(page, target);
+  let last: {before?: LegendState; now?: LegendState} = {};
+  const holds = async (): Promise<boolean | string> => {
+    last = await loc.evaluate((el) => (window as any).__bdd.legendChange(el));
+    if (!last.before)
+      return 'no legend at the snapshot';
+    if (!last.now)
+      return 'no legend now';
+    return compare === 'fewer' ? last.now.items < last.before.items :
+      last.now.items === last.before.items && last.now.keys.join('|') === last.before.keys.join('|');
+  };
+  try {
+    await expect.poll(holds, {timeout: 5000}).toBe(true);
+  }
+  catch {
+    throw new Error(`the legend of ${target.phrase} does not list ${compare === 'fewer' ? 'fewer items than' : 'the same items as'} before (before ${describeLegend(last.before)}; now ${describeLegend(last.now)})`);
+  }
+}
+
+const LEGEND_MODES: Record<string, string> = {docked: 'docked', corner: 'corner', 'mini icon': 'miniIcon', tooltip: 'tooltip', hidden: 'hidden'};
+
+export async function expectLegendMode(page: Page, target: ElementRef, mode: string): Promise<void> {
+  const want = LEGEND_MODES[mode];
+  if (!want)
+    throw new Error(`a legend is docked, in a corner, collapsed to the mini icon, shown in the tooltip or hidden — not "${mode}"`);
+  let last: LegendState | undefined;
+  try {
+    await expect.poll(async () => (last = await legendStateOf(page, target))?.mode, {timeout: 5000}).toBe(want);
+  }
+  catch {
+    throw new Error(`the legend of ${target.phrase} is not ${mode} (${describeLegend(last)})`);
+  }
+}
+
+export async function expectLegendSlot(page: Page, target: ElementRef, slot: string, negate = false): Promise<void> {
+  const norm = (s: string) => s.toLowerCase().replace(/[^a-z]/g, '');
+  let last: LegendState | undefined;
+  const poll = expect.poll(async () => norm((last = await legendStateOf(page, target))?.slot ?? ''), {timeout: 5000});
+  try {
+    await (negate ? poll.not : poll).toBe(norm(slot));
+  }
+  catch {
+    throw new Error(`the legend of ${target.phrase} is ${negate ? 'still' : 'not'} in the ${slot} slot (${describeLegend(last)})`);
+  }
+}
+
+/** Mode, slot and size as at the snapshot before the last change, read once the viewer is quiet:
+ * a legend that keeps its slot but jumps or resizes inside it has moved. */
+export async function expectLegendPlacedAsBefore(page: Page, target: ElementRef): Promise<void> {
+  await installViewerRuntime(page);
+  const loc = await viewerLocator(page, target);
+  const r: {before?: LegendState; now?: LegendState} = await loc.evaluate(async (el) => {
+    const b = (window as any).__bdd;
+    await b.quiet(b.viewerOf(el));
+    return b.legendChange(el);
+  });
+  if (!r.before || !r.now)
+    throw new Error(`the legend of ${target.phrase}: ${!r.before ? 'no legend at the snapshot' : 'no legend now'}`);
+  const where = (l: LegendState) => `${l.mode}/${l.slot}/${Math.round(l.width)}x${Math.round(l.height)}`;
+  expect(where(r.now), `the legend of ${target.phrase} moved (before ${describeLegend(r.before)}; now ${describeLegend(r.now)})`).toBe(where(r.before));
+}
+
+/** A click on a legend item (the category filters the viewer): the baseline is taken first and
+ * the viewer settles after, so the checks that follow read the state after the repaint. */
+export async function clickLegendItem(page: Page, target: ElementRef, label: string, options: {key?: string; cross?: boolean} = {}): Promise<void> {
+  await snapshot(page, target);
+  const item = await legendItem(page, target, label);
+  await item.waitFor({state: 'visible', timeout: 5000}).catch(async () => {
+    const shown = await legendRoot(page, await viewerLocator(page, target)).locator('.d4-legend-value').allTextContents();
+    throw new Error(`no "${label}" item in the legend of ${target.phrase}; it shows: ${shown.map((s) => s.trim()).filter(Boolean).join(' | ') || 'nothing'}`);
+  });
+  const what = options.cross ? item.locator('.d4-legend-cross').first() : item.locator('.d4-legend-value').first();
+  if (options.cross)
+    await item.hover();
+  const keys = options.key ? options.key.split('+') : [];
+  for (const k of keys)
+    await page.keyboard.down(k);
+  try {
+    await what.click();
+  }
+  finally {
+    for (const k of [...keys].reverse())
+      await page.keyboard.up(k);
+  }
+  const loc = await viewerLocator(page, target);
+  await loc.evaluate((el) => (window as any).__bdd.settle(el, 300));
+}
+
+function cssToHex(color: string): string {
+  const m = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(color);
+  if (m)
+    return '#' + [m[1], m[2], m[3]].map((x) => Number(x).toString(16).padStart(2, '0')).join('').toUpperCase();
+  const h = /^#([0-9a-f]{6})$/i.exec(color.trim());
+  return h ? '#' + h[1].toUpperCase() : '';
+}
+
+/** The color a legend item is drawn in (its inline color, the category's color). */
+export async function legendItemColor(page: Page, target: ElementRef, label: string): Promise<string> {
+  const item = await legendItem(page, target, label);
+  await item.waitFor({state: 'visible', timeout: 5000});
+  return cssToHex(await item.evaluate((e) => (e as HTMLElement).style.color || getComputedStyle(e).color));
+}
+
+export async function expectLegendItemColor(page: Page, target: ElementRef, label: string, color: string, negate = false): Promise<void> {
+  const want = '#' + color.replace(/^#/, '').toUpperCase();
+  if (!/^#[0-9A-F]{6}$/.test(want))
+    throw new Error(`"${color}" is not a #rrggbb color`);
+  let last = '';
+  try {
+    await expect.poll(async () => near(last = await legendItemColor(page, target, label), want), {timeout: 5000}).toBe(!negate);
+  }
+  catch {
+    throw new Error(`the "${label}" item in the legend of ${target.phrase} is ${negate ? 'still' : 'not'} colored ${want}` +
+      (negate ? '' : `; it is ${last || 'colored nothing'}`));
+  }
+}
+
+export async function expectLegendItemsDiffer(page: Page, target: ElementRef, a: string, b: string): Promise<void> {
+  let ca = '';
+  let cb = '';
+  try {
+    await expect.poll(async () => {
+      ca = await legendItemColor(page, target, a);
+      cb = await legendItemColor(page, target, b);
+      return ca !== '' && cb !== '' && !near(ca, cb);
+    }, {timeout: 5000}).toBe(true);
+  }
+  catch {
+    throw new Error(`the "${a}" and "${b}" items in the legend of ${target.phrase} are colored alike (${ca || 'nothing'} and ${cb || 'nothing'})`);
+  }
+}
+
+/** A real drag of the legend splitter: along the axis the bar resizes (a vertical bar moves
+ * horizontally), positive towards the legend's far side; the viewer settles after. */
+export async function dragLegendSplitter(page: Page, target: ElementRef, px: number): Promise<void> {
+  await snapshot(page, target);
+  const loc = await viewerLocator(page, target);
+  const bar = loc.locator('[name="legend-splitter"]').filter({visible: true}).first();
+  await bar.waitFor({state: 'visible', timeout: 5000}).catch(() => {
+    throw new Error(`${target.phrase} shows no legend splitter (a docked legend has one)`);
+  });
+  const vertical = (await bar.getAttribute('class') ?? '').includes('vertical');
+  const box = await bar.boundingBox();
+  if (!box)
+    throw new Error('the legend splitter has no box');
+  const c = {x: box.x + box.width / 2, y: box.y + box.height / 2};
+  await page.mouse.move(c.x, c.y);
+  await page.mouse.down();
+  await page.mouse.move(c.x + (vertical ? px / 2 : 0), c.y + (vertical ? 0 : px / 2));
+  await page.mouse.move(c.x + (vertical ? px : 0), c.y + (vertical ? 0 : px));
+  await page.mouse.up();
+  await loc.evaluate((el) => (window as any).__bdd.settle(el, 300));
+}
+
 // --- tooltips ---------------------------------------------------------------------------------------
+
+/** The value the row tooltip shows for a column name. */
+export async function tooltipValue(page: Page, column: string): Promise<string | undefined> {
+  const rows = await page.locator(TOOLTIP_ROWS).evaluateAll((trs) =>
+    trs.map((tr) => Array.from(tr.querySelectorAll('td')).map((td) => (td.textContent ?? '').trim())));
+  const hit = rows.find((cells) => cells[0]?.toUpperCase() === column.toUpperCase());
+  return hit ? hit.slice(1).join(' ').trim() : undefined;
+}
+
+export async function expectTooltipValue(page: Page, column: string, value: string): Promise<void> {
+  await expect.poll(() => tooltipValue(page, column), {timeout: 5000, message: `"${column}" in the row tooltip`}).toBe(value);
+}
 
 export async function tooltipColumns(page: Page): Promise<string[]> {
   const cells = await page.locator(TOOLTIP_COLUMNS).allTextContents();

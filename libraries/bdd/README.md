@@ -284,6 +284,8 @@ When  user clicks (on ){element}          user double-clicks (on ){element}     
       user opens {element}                user closes {element}                 user expands/collapses {element}
       user drags {element} to {element}   user scrolls to {element}             user navigates to {string}
       user reloads the page               user fills in:  | element | value |
+      user clicks on {element} holding {key}   (Control adds to a selection, Shift extends it, Control+Shift removes)
+      user pastes {string} in(to) {element}    (through the clipboard and Ctrl+V, so the platform's paste handling runs)
 Then  {element} should be/become {state}  {element} should not be/become {state}
       {element} should contain (the )text {string}      {element} should have (the )text {string}
       {element} should have (the )value {string}        {element} should have {int} item(s)/row(s)/tab(s)
@@ -369,6 +371,7 @@ When  user clears the row selection       user deletes the selected rows
       user colors {string} column linearly from {string} to {string} (over {float} to {float})
       user colors {string} column conditionally:  | range | color |     user colors {string} column categorically:  | category | color |
 Then  no/some rows should be selected     all/only/some/no rows where {string} is {string} should be selected
+      all/no rows where {string} is {string} should pass the filter
       the table should have a current row   the table should have {int} row(s)   the table should have no rows where {string} is {string}
       {int} row(s) should pass the filter   fewer than {int} rows should pass the filter   all rows should pass the filter
       the filter should pass exactly the rows where {string} is between {float} and {float}
@@ -376,7 +379,34 @@ Then  no/some rows should be selected     all/only/some/no rows where {string} i
       table {string} should be open       table {string} should have columns {string}    table {string} should have {int} row(s)
       table {string} should have no missing values in {string} column
       {string} column should have no color coding    {string} column should be color-coded categorically
+      {int} row(s) should be selected     rows {int} to {int} should be selected     all rows should be selected
+      columns {string} should be selected    no columns should be selected    every selected row should pass the filter
+      {int} rows of table {string} should pass the filter    {int} rows of table {string} should be selected
+      {string} column should be true exactly where the filter passes
+      the categorical color of {string} in {string} column should be {string}
+When  user selects the first {int} rows
+      user links table {string} to table {string} as {string}:  | key in the first | key in the second |   ("filter to filter", "selection to filter", …)
 ```
+
+The filter panel through its own API (`bindings/platform/data.ts` too): the panel is opened, a
+card's criterion set as a category click or a range drag would leave it, and its state read back —
+the gestures on the cards are the filter panel features' own subject, these are their setup:
+
+```
+When  user opens the filter panel      user opens an empty filter panel
+      user adds a categorical filter on {string} keeping {string}     user adds a range filter on {string} from {float} to {float}
+      user configures the hierarchical filter with columns {string}
+Then  the filter on {string} column should keep only {string}
+      the filter on {string} column should be filtering     the filter on {string} column should not be filtering
+```
+
+`filter panel` names the Filters viewer (`[name="viewer-Filters"]`) with the parts `counter`,
+`master`, `search`, `add filter selector`, `reset icon`, `search icon` and `expand icon`
+(`counter of filter panel should be hidden`), and `{widget}` accepts it, so its readings and hit
+areas read as a viewer's; a card is a `filter card` by its caption (`"RACE" filter card`, parts
+`caption`, `checkbox`, `indicator`, `mode`, `summary`, `body`, `close`, `search icon`, `search`),
+`disabled` while suspended. A hierarchical node is `partially checked` when its children
+disagree; an input the platform refuses is `invalid`.
 
 States: visible, hidden, present, absent, enabled, disabled, checked, unchecked, selected, empty,
 expanded, collapsed, focused. `selected` reads whatever the element uses to say so —
@@ -463,6 +493,11 @@ When  user sets {string} property of {widget} to {string}       user sets proper
       user clicks on the {string} area of {widget} holding {key}    user drags a selection box over the {string} area of {widget}
       user drags a selection box from the {string} area to the {string} area of {widget}
       user drags across the {string} area of {widget}    user scrolls the mouse wheel up/down over the {string} area of {widget}
+      user drags the {string} area of {widget} to the {string} area    user drags the {string} area of {widget} by {int} pixels to the left/right/up/down
+      user drags a deselection box over the {string} area of {widget} (Control+Shift)    user drags a zoom box over the {string} area of {widget} (Alt)
+      user enters {string} into the {string} area of {widget}    (an area that holds an editor: click, select all, type, Enter)
+      user remembers the {string} reading of {widget}    user clicks on {string} item in the legend of {widget} (holding {key})
+      user clicks on the cross of {string} item in the legend of {widget}    user drags the legend splitter of {widget} by {int} pixels
       user moves the pointer away from {element}    user resizes {widget} to {int} by {int}    user resizes {widget} to {int} wide
       user restores the size of {widget}            user takes a snapshot of {widget}          user remembers the value range of {widget}
       user saves the layout of the current table view   user saves the layout of the current table view to the server   user loads the saved layout
@@ -472,9 +507,22 @@ Then  {string} property of {widget} should be {string}          {string} propert
       {widget} should not have repainted            {widget} should be painted
       {widget} should have less/more ink than before    {widget} should be painted in at least {int} colors
       the {string} area of {widget} should be painted   the {string} area of {widget} should have less/more ink than before
+      the {string} area of {widget} should have repainted
+      the open tableview should have {int} {viewer} viewer(s)
       the {string} area of {widget} should contain the color {string}
       the {string} and {string} areas of {widget} should be painted in different colors
+      the {string} and {string} areas of {widget} should be painted in the same colors
+      the {string} area of {widget} should not contain the color {string}
+      the {string} area of {widget} should be at least {int} pixels tall/wide
+      the {string} area of {widget} should be taller/wider/shorter/narrower than before
       {widget} should (not )have a(n) {string} area
+      the {string} reading of {widget} should be as remembered
+      the legend of {widget} should list {int} item(s) / fewer items than before / the same items as before
+      the legend of {widget} should be docked / in a corner / collapsed to the mini icon / shown in the tooltip
+      the legend of {widget} should (not )be in the {string} slot    the legend of {widget} should be placed as before
+      the {string} item in the legend of {widget} should be colored {string}
+      the {string} and {string} items in the legend of {widget} should be colored differently
+      the tooltip should show {string} as {string}
       {widget} should show more/less selection highlight than before    {widget} should show a/no selection highlight
       {widget} should show a narrower/wider value range than before     {widget} should show the same value range as before
       the value range of {widget} should lie within {string} column     {widget} should show the remembered value range
@@ -506,7 +554,17 @@ plot `color scale min` / `max`, the bar chart `bars`, `stack segments`, `clipped
 scatter plot `camera x` / `y` / `z` / `camera distance` and `scene signature` — its WebGL canvas
 has no pixels to read, so `the "scene signature" reading … should differ from before` is its
 `repainted`. `legend of {widget}` is the viewer's legend element (`[name="legend"]`, its rows the
-legend items).
+legend items); `should have {int} items` counts the rendered rows (the legend virtualises long
+lists), `should list {int} items` the total the legend publishes, and its mode, slot and keys come
+from the same `data-legend-*` attributes the legend writes on every commit — the library adds
+nothing to the legend's render path. A `legend item` is a kind (`"R_ONE" legend item in legend of
+scatter plot viewer`, `selected` while its category filters the viewer, parts `label`, `cross`,
+`thumbnail`, `marker`); the legend's chrome are viewer parts (`mini legend icon`, `legend
+splitter`, `legend inner splitter`, `legend close chevron`, `legend markers selector`), the hover
+pickers page elements (`color picker icon`, `marker picker icon`). A viewer with no canvas (a
+form, the filter panel) reports its hit areas relative to its root and has no pixel steps; a
+viewer with an `overlay` canvas of the same size as its canvas (the scatter plot's regression lines
+and labels, the grid's selection) has both composited into every pixel reading.
 Every property set, menu pick, area click, hover and resize snapshots the canvas, the ink of every
 hit area, the selection-colored pixels, the value range and the color scale's range first, so
 `should have repainted`, `less/more ink` (of the canvas or of one area), `more/less selection

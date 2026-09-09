@@ -118,6 +118,42 @@ export const onlyOfAnySelected = Then('only rows where {string} is one of {strin
   }, {message: `rows where ${column} is one of ${values} selected`}).toBe('exactly');
 }, {description: 'every row of these categories (comma-separated) and nothing else — a union built with Control clicks'});
 
+/** How many rows of a category the filter keeps — throws when the category is not in the column, so
+ * a typo fails instead of passing as "none". */
+async function matchFilter(page: Page, column: string, value: string): Promise<{matching: number; passing: number}> {
+  const m = await page.evaluate(([c, v]) => {
+    const df = grok.shell.t;
+    const col = df.col(c);
+    if (!col)
+      throw new Error(`no "${c}" column in ${df.name}; it has: ${df.columns.names().join(', ')}`);
+    let matching = 0;
+    let passing = 0;
+    for (let i = 0; i < df.rowCount; i++) {
+      if (String(col.get(i) ?? '') !== v)
+        continue;
+      matching++;
+      if (df.filter.get(i))
+        passing++;
+    }
+    return {matching, passing};
+  }, [column, value] as [string, string]);
+  if (m.matching === 0)
+    throw new Error(`no row of ${await tableName(page)} has ${column} = ${value}`);
+  return m;
+}
+
+export const noneOfFiltered = Then('no rows where {string} is {string} should pass the filter', async (page: Page, column: string, value: string) => {
+  await expect.poll(async () => (await matchFilter(page, column, value)).passing,
+    {message: `rows where ${column} is ${value} passing the filter`}).toBe(0);
+}, {description: 'the category is filtered out — what the filter actually keeps, not what a card says it keeps'});
+
+export const allOfFiltered = Then('all rows where {string} is {string} should pass the filter', async (page: Page, column: string, value: string) => {
+  await expect.poll(async () => {
+    const m = await matchFilter(page, column, value);
+    return m.passing === m.matching ? 'all' : `${m.passing} of ${m.matching}`;
+  }, {message: `rows where ${column} is ${value} passing the filter`}).toBe('all');
+});
+
 export const noneOfSelected = Then('no rows where {string} is {string} should be selected', async (page: Page, column: string, value: string) => {
   await expect.poll(async () => (await matchSome(page, column, [value])).selected, {message: `rows where ${column} is ${value} selected`}).toBe(0);
 });
@@ -171,6 +207,18 @@ export const filterTo = When('user filters rows where {string} is {string}', (pa
     if (df.filter.trueCount === 0)
       throw new Error(`no row of ${df.name} has ${c} = ${v}`);
   }, [column, value] as [string, string]), {tier: 'api', description: 'keeps the category\'s rows only — the table\'s filter bitset'});
+
+export const filterToAnyOf = When('user filters rows where {string} is one of {string}', (page: Page, column: string, values: string) =>
+  changeTable(page, ([c, vs]) => {
+    const df = grok.shell.t;
+    const col = df.col(c);
+    if (!col)
+      throw new Error(`no "${c}" column in ${df.name}; it has: ${df.columns.names().join(', ')}`);
+    df.filter.init((i: number) => vs.includes(String(col.get(i) ?? '')));
+    if (df.filter.trueCount === 0)
+      throw new Error(`no row of ${df.name} has ${c} in ${vs.join(', ')}`);
+  }, [column, list(values)] as [string, string[]]),
+{tier: 'api', description: 'keeps the rows of these categories (comma-separated) and no other'});
 
 export const filterOut = When('user filters out rows where {string} is {string}', (page: Page, column: string, value: string) =>
   changeTable(page, ([c, v]) => {
@@ -262,6 +310,21 @@ export const removeColumn = When('user removes {string} column', async (page: Pa
     df.columns.remove(n);
   }, name);
 }, {tier: 'api'});
+
+export const renameColumn = When('user renames {string} column to {string}', async (page: Page, from: string, to: string) => {
+  await page.evaluate(([a, b]) => {
+    const df = grok.shell.t;
+    const col = df.col(a);
+    if (!col)
+      throw new Error(`no "${a}" column in ${df.name}; it has: ${df.columns.names().join(', ')}`);
+    col.name = b;
+  }, [from, to] as [string, string]);
+  await expect.poll(() => page.evaluate((n) => grok.shell.t.columns.names().includes(n), to), {message: `"${to}" in the table's columns`}).toBe(true);
+}, {tier: 'api', description: 'the column\'s name through the API — the UI path is the header\'s Column Properties dialog'});
+
+export const currentColumnIs = Then('the current column should be {string}', (page: Page, name: string) =>
+  expect.poll(() => page.evaluate(() => String(grok.shell.t.currentCol?.name ?? '')), {message: 'the current column'}).toBe(name),
+{description: 'the table\'s current column by name ("" when none)'});
 
 function color(page: Page, column: string, apply: string, arg: unknown): Promise<void> {
   return changeTable(page, ([c, how, a]) => {
@@ -385,7 +448,9 @@ export const tableColumnIncomplete = Then('table {string} should have missing va
 
 /** The filters of the current view's filter panel, by column name. */
 const filterColumns = (page: Page): Promise<string[]> => page.evaluate(() => {
-  const group = grok.shell.tv?.getFiltersGroup?.({createDefaultFilters: false});
+  // getFiltersGroup creates one when the view has none, which would make "0 filters" resurrect a panel
+  const open = Array.from(grok.shell.tv?.viewers ?? []).some((v: any) => String(v.type) === 'Filters');
+  const group = open ? grok.shell.tv.getFiltersGroup({createDefaultFilters: false}) : null;
   return group ? (group.filters as any[]).map((f) => String(f.columnName ?? f.column?.name ?? '')) : [];
 });
 
@@ -415,6 +480,209 @@ export const filterIsExactlyContains = Then('the filter should pass exactly the 
     return matching === 0 ? `no row contains "${t}"` : wrong === 0 ? 'exactly' : `${wrong} rows off`;
   }, [column, text] as [string, string]), {message: `the filter against rows where ${column} contains "${text}"`}).toBe('exactly');
 }, {description: 'every row whose value contains the text passes and no other; a text no row contains fails'});
+
+// --- selection facts ---------------------------------------------------------------------------------
+
+export const selectedRowCount = Then('{int} row(s) should be selected', (page: Page, count: number) =>
+  expect.poll(() => selectedCount(page), {message: 'rows selected'}).toBe(count), {description: 'exactly that many, whichever rows'});
+
+export const rowsRangeSelected = Then('rows {int} to {int} should be selected', async (page: Page, from: number, to: number) => {
+  await expect.poll(() => page.evaluate(([a, b]) => {
+    const df = grok.shell.t;
+    let inRange = 0;
+    for (let i = a - 1; i < b && i < df.rowCount; i++) {
+      if (df.selection.get(i))
+        inRange++;
+    }
+    return `${inRange} of ${b - a + 1} in the range, ${df.selection.trueCount} in all`;
+  }, [from, to] as [number, number]), {message: `rows ${from} to ${to} selected`}).toBe(`${to - from + 1} of ${to - from + 1} in the range, ${to - from + 1} in all`);
+}, {description: 'rows counted from 1 as the grid shows them, every row of the range and nothing else'});
+
+export const allRowsSelected = Then('all rows should be selected', (page: Page) =>
+  expect.poll(() => page.evaluate(() => grok.shell.t.selection.trueCount === grok.shell.t.rowCount), {message: 'every row is selected'}).toBe(true));
+
+/** The names of the selected grid columns of the current table view, in grid order. */
+const selectedColumns = (page: Page): Promise<string[]> => page.evaluate(() => {
+  const cols = grok.shell.tv.grid.columns;
+  const out: string[] = [];
+  for (let i = 0; i < cols.length; i++) {
+    const c = cols.byIndex(i);
+    if (c?.selected && c.name)
+      out.push(String(c.name));
+  }
+  return out;
+});
+
+export const columnsSelected = Then('columns {string} should be selected', async (page: Page, names: string) => {
+  await expect.poll(async () => (await selectedColumns(page)).slice().sort(), {message: 'the selected grid columns'})
+    .toEqual(list(names).slice().sort());
+}, {description: 'exactly these grid columns are selected (comma-separated, in any order — a selection is a set) — a Shift or Control click on a header'});
+
+export const noColumnsSelected = Then('no columns should be selected', async (page: Page) => {
+  await expect.poll(() => selectedColumns(page), {message: 'the selected grid columns'}).toEqual([]);
+});
+
+export const selectedPassFilter = Then('every selected row should pass the filter', async (page: Page) => {
+  const off = await page.evaluate(() => {
+    const df = grok.shell.t;
+    let wrong = 0;
+    for (const i of df.selection.getSelectedIndexes() as Iterable<number>) {
+      if (!df.filter.get(i))
+        wrong++;
+    }
+    return wrong;
+  });
+  expect(off, 'selected rows the filter drops').toBe(0);
+});
+
+export const selectFirstRows = When('user selects the first {int} rows', (page: Page, count: number) =>
+  changeTable(page, (n: number) => { grok.shell.t.selection.init((i: number) => i < n); }, count),
+{tier: 'api', description: 'the first N rows in table order become the selection, nothing else'});
+
+// --- other tables and links ------------------------------------------------------------------------
+
+function tableCount(page: Page, name: string, what: 'filter' | 'selection'): Promise<number> {
+  return page.evaluate(([n, w]) => {
+    const t = grok.shell.tables.find((x: any) => x.name === n);
+    if (!t)
+      throw new Error(`table "${n}" is not open; open: ${grok.shell.tables.map((x: any) => x.name).join(' | ')}`);
+    return (w === 'filter' ? t.filter : t.selection).trueCount as number;
+  }, [name, what] as [string, 'filter' | 'selection']);
+}
+
+export const tableFilterCount = Then('{int} rows of table {string} should pass the filter', (page: Page, count: number, name: string) =>
+  expect.poll(() => tableCount(page, name, 'filter'), {message: `rows of "${name}" passing its filter`}).toBe(count),
+{description: 'another open table\'s filter, without switching to its view — what a link between tables carries'});
+
+export const tableSelectedCount = Then('{int} rows of table {string} should be selected', (page: Page, count: number, name: string) =>
+  expect.poll(() => tableCount(page, name, 'selection'), {message: `rows of "${name}" selected`}).toBe(count));
+
+export const linkTables = When('user links table {string} to table {string} as {string}:', async (page: Page, from: string, to: string, type: string, table: string[][]) => {
+  await page.evaluate(([a, b, t, keys]) => {
+    const find = (n: string) => {
+      const df = grok.shell.tables.find((x: any) => x.name === n);
+      if (!df)
+        throw new Error(`table "${n}" is not open; open: ${grok.shell.tables.map((x: any) => x.name).join(' | ')}`);
+      return df;
+    };
+    const norm = (s: string) => s.toLowerCase().replace(/[^a-z]/g, '');
+    const sync = (Object.values(DG.SYNC_TYPE) as string[]).find((s) => norm(s) === norm(t));
+    if (!sync)
+      throw new Error(`no "${t}" link type; the platform has: ${(Object.values(DG.SYNC_TYPE) as string[]).join(', ')}`);
+    grok.data.linkTables(find(a), find(b), keys.map((k) => k[0]), keys.map((k) => k[1]), [sync]);
+  }, [from, to, type, table] as [string, string, string, string[][]]);
+}, {tier: 'api', description: '| key column in the first | key column in the second | rows; the type as the platform names it: "filter to filter", "selection to filter", "selection to selection", "row to row"…; the link lives as long as the tables'});
+
+export const columnTrueWhereFiltered = Then('{string} column should be true exactly where the filter passes', async (page: Page, column: string) => {
+  const off = await page.evaluate((c) => {
+    const df = grok.shell.t;
+    const col = df.col(c);
+    if (!col)
+      throw new Error(`no "${c}" column in ${df.name}; it has: ${df.columns.names().join(', ')}`);
+    let wrong = 0;
+    for (let i = 0; i < df.rowCount; i++) {
+      if ((col.get(i) === true) !== df.filter.get(i))
+        wrong++;
+    }
+    return wrong;
+  }, column);
+  expect(off, `rows where "${column}" disagrees with the filter`).toBe(0);
+}, {description: 'a boolean column written from the filter (Filter to Column) row by row against the filter bitset'});
+
+export const categoricalColorIs = Then('the categorical color of {string} in {string} column should be {string}', async (page: Page, category: string, column: string, color: string) => {
+  const want = '#' + color.replace(/^#/, '').toUpperCase();
+  await expect.poll(() => page.evaluate(([c, cat]) => {
+    const df = grok.shell.t;
+    const col = df.col(c);
+    if (!col)
+      throw new Error(`no "${c}" column in ${df.name}; it has: ${df.columns.names().join(', ')}`);
+    const tag = col.getTag('.color-coding-categorical');
+    const map: Record<string, unknown> = tag ? JSON.parse(tag) : {};
+    const v = map[cat];
+    if (v === undefined)
+      return `(no color for ${cat}; colored: ${Object.keys(map).join(', ') || 'nothing'})`;
+    // the tag keeps what was written: an ARGB int from the API, a #rrggbb string from the picker
+    const n = typeof v === 'number' ? v : parseInt(String(v).replace(/^#/, ''), 16);
+    return '#' + (n >>> 0 & 0xFFFFFF).toString(16).padStart(6, '0').toUpperCase();
+  }, [column, category] as [string, string]), {message: `the categorical color of ${category} in "${column}"`}).toBe(want);
+}, {description: 'the column\'s categorical color-coding map (what a legend picker writes), as #rrggbb'});
+
+// --- the filter panel through the API ------------------------------------------------------------------
+
+/** The current view's filter group, creating the panel with or without its default cards. */
+async function filterGroup(page: Page, defaults: boolean): Promise<void> {
+  await page.evaluate((d) => { grok.shell.tv.getFiltersGroup({createDefaultFilters: d}); }, defaults);
+  await page.locator('[name="viewer-Filters"]').filter({visible: true}).first().waitFor();
+  await settleAll(page);
+}
+
+export const openFilterPanel = When('user opens the filter panel', (page: Page) => filterGroup(page, true),
+  {tier: 'api', description: 'the view\'s Filters viewer with a default card per column, as the ribbon\'s filter icon opens it; done when every viewer has drawn'});
+
+export const openEmptyFilterPanel = When('user opens an empty filter panel', (page: Page) => filterGroup(page, false),
+  {tier: 'api', description: 'the Filters viewer with no cards — the entry point for scenarios that add every card themselves'});
+
+/** A card criterion through the group's own API — the state a category click or a range drag
+ * would leave; the gesture itself is the filter panel features' subject. */
+function filterState(page: Page, state: Record<string, unknown>): Promise<void> {
+  return changeTable(page, (s: Record<string, unknown>) => {
+    const fg = grok.shell.tv.getFiltersGroup({createDefaultFilters: false});
+    const col = grok.shell.t.col(String(s.column ?? ''));
+    if (s.column !== undefined && !col)
+      throw new Error(`no "${s.column}" column in ${grok.shell.t.name}; it has: ${grok.shell.t.columns.names().join(', ')}`);
+    fg.updateOrAdd(s, true);
+  }, state);
+}
+
+export const addCategoricalFilter = When('user adds a categorical filter on {string} keeping {string}', (page: Page, column: string, values: string) =>
+  filterState(page, {type: 'categorical', column, selected: list(values)}),
+{tier: 'api', description: 'a categorical card with these categories (comma-separated) checked and the rest unchecked, as the category clicks leave it; updates the card when it exists'});
+
+export const addRangeFilter = When('user adds a range filter on {string} from {float} to {float}', (page: Page, column: string, min: number, max: number) =>
+  filterState(page, {type: 'histogram', column, min, max}), {tier: 'api', description: 'a histogram card narrowed to the range, as the handles leave it'});
+
+export const configureHierarchical = When('user configures the hierarchical filter with columns {string}', (page: Page, columns: string) =>
+  filterState(page, {type: 'hierarchical', colNames: list(columns), allEnabled: true}),
+{tier: 'api', description: 'the hierarchical card\'s levels in this order (comma-separated), every node checked'});
+
+/** The filters of the current view's panel with their state, by column name. */
+const filterFacts = (page: Page): Promise<{column: string; filtering: boolean; selected?: string[]}[]> => page.evaluate(() => {
+  const group = grok.shell.tv?.getFiltersGroup?.({createDefaultFilters: false});
+  return group ? (group.filters as any[]).map((f) => ({
+    column: String(f.columnName ?? f.column?.name ?? ''),
+    filtering: f.isFiltering === true,
+    selected: (() => {
+      try {
+        const s = f.saveState?.();
+        return Array.isArray(s?.selected) ? s.selected.map(String) : undefined;
+      }
+      catch {
+        return undefined;
+      }
+    })(),
+  })) : [];
+});
+
+export const filterKeepsOnly = Then('the filter on {string} column should keep only {string}', async (page: Page, column: string, values: string) => {
+  await expect.poll(async () => {
+    const f = (await filterFacts(page)).find((x) => x.column === column);
+    return f ? (f.selected ? [...f.selected].sort().join(', ') : '(no categories)') : `(no filter on ${column})`;
+  }, {message: `the categories the filter on "${column}" keeps`}).toBe(list(values).sort().join(', '));
+}, {description: 'the categorical card\'s checked categories (comma-separated, any order) — its own state, not the table\'s rows'});
+
+export const filterIsFiltering = Then('the filter on {string} column should be filtering', async (page: Page, column: string) => {
+  await expect.poll(async () => {
+    const f = (await filterFacts(page)).find((x) => x.column === column);
+    return f ? (f.filtering ? 'filtering' : 'not filtering') : `(no filter on ${column})`;
+  }, {message: `the filter on "${column}"`}).toBe('filtering');
+}, {description: 'the card restricts rows (its criterion is not "everything") — the header counter counts these'});
+
+export const filterNotFiltering = Then('the filter on {string} column should not be filtering', async (page: Page, column: string) => {
+  await expect.poll(async () => {
+    const f = (await filterFacts(page)).find((x) => x.column === column);
+    return f ? (f.filtering ? 'filtering' : 'not filtering') : `(no filter on ${column})`;
+  }, {message: `the filter on "${column}"`}).toBe('not filtering');
+});
 
 export const onlyStartingWithSelected = Then('only rows where {string} starts with {string} should be selected', async (page: Page, column: string, prefix: string) => {
   await expect.poll(() => page.evaluate(([c, p]) => {

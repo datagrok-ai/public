@@ -279,7 +279,32 @@ kind('viewer', {
     description: '.d4-viewer-description',
     canvas: 'canvas[name="canvas"]',
     legend: '[name="legend"]',
+    'mini legend icon': '[name="mini-legend-icon"]',
+    'legend splitter': '[name="legend-splitter"]',
+    'legend inner splitter': '[name="legend-inner-splitter"]',
+    'legend close chevron': '[name="icon-hide-corner-legend"]',
+    'legend markers selector': '[name="legend-markers-selector"]',
   },
+});
+// an entry of a viewer's legend: "R_ONE" legend item in legend of scatter plot viewer; selected while
+// its category filters the viewer (aria-selected), named by the label it shows (aria-label)
+kind('legend item', {
+  aliases: ['legend entry'],
+  selector: '[name="legend-item"]',
+  match: ['aria', 'label', 'text'],
+  labelSelector: '.d4-legend-value',
+  parts: {label: '.d4-legend-value', cross: '.d4-legend-cross', thumbnail: 'canvas.d4-legend-value', marker: '[name="legend-item-marker"]'},
+});
+// a card of the filter panel by its caption: "RACE" filter card, checkbox of "RACE" filter card;
+// aria-disabled while suspended, its own counter as the indicator part
+kind('filter card', {
+  selector: '.d4-filter',
+  match: ['label', 'dart'],
+  labelSelector: '.d4-filter-column-name',
+  dartNames: ['filter-card-{q}'],
+  parts: {caption: '.d4-filter-column-name', checkbox: '.d4-filter-bool-input', indicator: '.d4-filter-indicator',
+    mode: '[name="filter-mode-toggle"]', summary: '.d4-filter-summary', body: '.d4-filter-element',
+    close: '[name="icon-times"]', 'search icon': '[name="icon-search"]', search: '.d4-filter-element input'},
 });
 kind('view', {
   selector: '.d4-view-handle, [name^="view-handle: "]',
