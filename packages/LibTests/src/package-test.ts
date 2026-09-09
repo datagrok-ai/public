@@ -27,6 +27,7 @@ import './tests/compute-utils/reactive-tree-driver/links-retention';
 import './tests/compute-utils/reactive-tree-driver/pipeline-validators-reactive';
 import './tests/compute-utils/reactive-tree-driver/pipeline-granular-mutations';
 import './tests/compute-utils/reactive-tree-driver/error-handling';
+import './tests/compute-utils/reactive-tree-driver/link-running-state';
 import './tests/compute-utils/reactive-tree-driver/advanced-coverage';
 import './tests/compute-utils/reactive-tree-driver/buffer-keys-during-lock';
 import './tests/compute-utils/reactive-tree-driver/links-template-expand';
