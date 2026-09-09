@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import {BehaviorSubject, Observable, Subject, EMPTY, of, from, combineLatest, defer} from 'rxjs';
 import {isFuncCallSerializedState, PipelineState} from './config/PipelineInstance';
 import {AddDynamicItem, InitPipeline, LoadDynamicItem, LoadPipeline, MoveDynamicItem, RemoveDynamicItem, ResetToConsistent, ReturnResult, RunAction, RunSequence, RunStep, SaveDynamicItem, SavePipeline, UpdateFuncCall, ViewConfigCommands} from './view/ViewCommunication';
-import {pairwise, takeUntil, concatMap, catchError, switchMap, map, mapTo, startWith, withLatestFrom, tap, distinctUntilChanged, filter, defaultIfEmpty, last, take} from 'rxjs/operators';
+import {pairwise, takeUntil, concatMap, catchError, switchMap, map, mapTo, startWith, tap, distinctUntilChanged, filter, defaultIfEmpty, last, take} from 'rxjs/operators';
 import {StateTree} from './runtime/StateTree';
 import {loadInstanceState} from './runtime/funccall-utils';
 import {callHandler} from './utils';
@@ -46,10 +46,10 @@ export class Driver {
 
   constructor(private mockMode = false) {
     this.commands$.pipe(
-      withLatestFrom(this.states$),
       // defer keeps a synchronous executeCommand throw inside the inner observable, so
-      // catchError acks it instead of the throw erroring (and killing) the outer queue
-      concatMap(([{msg, cid}, state]) => defer(() => this.executeCommand(msg, state)).pipe(
+      // catchError acks it instead of the throw erroring (and killing) the outer queue;
+      // it also samples states$ at execution time, after prior queued commands have run
+      concatMap(({msg, cid}) => defer(() => this.executeCommand(msg, this.states$.value)).pipe(
         defaultIfEmpty(null as any),
         last(),
         tap((result) => this.commandAcks$.next({cid, result})),

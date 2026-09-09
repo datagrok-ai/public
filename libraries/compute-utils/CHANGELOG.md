@@ -5,6 +5,7 @@
 * RTD: Fixed a link handler error leaving the link permanently running and deadlocking all tree mutations
 * RTD: Closing a state tree now destroys its links and actions, releasing their FuncCall and DataFrame subscriptions
 * RTD: Link running state uses run sequence numbers instead of wall-clock timestamps (same-ms runs reported as finished)
+* RTD: Queued driver commands sample the state tree at execution time instead of enqueue time
 * RTD: Driver.sendCommand returns a promise resolved on command completion (per-command acks on commandAcks$)
 * RTD: Fixed a synchronous command error killing the driver command queue
 * RTD: initPipeline command accepts an inline processed config
