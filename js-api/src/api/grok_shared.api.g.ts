@@ -161,6 +161,8 @@ export class Permission {
 
   static ADMIN_SYNC = 'AdminSync';
 
+  static ADMIN_URL_ALIASES = 'AdminUrlAliases';
+
   static CREATE_REPOSITORY = 'CreateRepository';
 
   static CREATE_GROUP = 'CreateGroup';
