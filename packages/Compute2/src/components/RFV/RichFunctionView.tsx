@@ -29,7 +29,7 @@ import {startWith, take, map} from 'rxjs/operators';
 import {useHelp} from '../../composables/use-help';
 import {useObservable} from '@vueuse/rxjs';
 import {_package} from '../../package-instance';
-import {applyDefaultGridFloatFormat, canUseResults, getViewers, pinView as pinViewHelper, STICKY_BAR_BACKGROUND} from '../../utils';
+import {applyDefaultGridFloatFormat, canUseResults, disposeViewers, getViewers, pinView as pinViewHelper, STICKY_BAR_BACKGROUND} from '../../utils';
 import {canSaveProject, saveCallToProject, DfExportEntry} from '../../project-export';
 
 
@@ -529,7 +529,7 @@ export const RichFunctionView = Vue.defineComponent({
             currentCall.value.func,
             currentCall.value,
             viewers,
-          );
+          ).finally(() => disposeViewers(viewers));
           DG.Utils.download(`${currentCall.value.func.nqName} - ${Utils.getStartedOrNull(currentCall.value) ?? 'Not completed'}.xlsx`, blob);
         }
         activeExports.push({name, handler});

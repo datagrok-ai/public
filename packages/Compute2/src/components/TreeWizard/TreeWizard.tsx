@@ -25,7 +25,7 @@ import {
   applyCustomExport,
   findNextSubStep,
   findNodeWithPathByUuid, findPrevStep, findTreeNodeByPath,
-  findTreeNodeParrent, getRelevantGlobalActions, getViewers, hasInconsistencies, hasSubtreeFixableInconsistencies, hasSubtreeAnyInconsistencies,
+  disposeViewers, findTreeNodeParrent, getRelevantGlobalActions, getViewers, hasInconsistencies, hasSubtreeFixableInconsistencies, hasSubtreeAnyInconsistencies,
   pinView, reportTree, resolveChosenUuid, SELECTED_STEP_BACKGROUND,
 } from '../../utils';
 import {useReactiveTreeDriver} from '../../composables/use-reactive-tree-driver';
@@ -425,7 +425,7 @@ export const TreeWizard = Vue.defineComponent({
             viewers,
             states.validations?.[uuid],
             states.consistency?.[uuid],
-          );
+          ).finally(() => disposeViewers(viewers));
         },
         reportStateExcel: async (state: PipelineState, cb?: (input: ExportCbInput) => Promise<void>) => {
           return reportTree({
