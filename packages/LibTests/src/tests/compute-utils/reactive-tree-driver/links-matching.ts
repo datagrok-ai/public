@@ -1411,6 +1411,50 @@ category('ComputeUtils: Driver links matching', async () => {
     expectDeepEqual(threw, true);
   });
 
+  test('Reject tag-ending io target in data link', async () => {
+    let threw = false;
+    try {
+      await getProcessedConfig({
+        id: 'pipeline1',
+        type: 'static',
+        steps: [
+          {id: 'step1', nqName: 'LibTests:TestAdd2'},
+          {id: 'step2', nqName: 'LibTests:TestMul2'},
+        ],
+        links: [{
+          id: 'link1',
+          from: 'in1:step1/#same(someTag)',
+          to: 'out1:step2/a',
+        }],
+      });
+    } catch {
+      threw = true;
+    }
+    expectDeepEqual(threw, true);
+  });
+
+  test('Reject zero-segment io target in data link', async () => {
+    let threw = false;
+    try {
+      await getProcessedConfig({
+        id: 'pipeline1',
+        type: 'static',
+        steps: [
+          {id: 'step1', nqName: 'LibTests:TestAdd2'},
+          {id: 'step2', nqName: 'LibTests:TestMul2'},
+        ],
+        links: [{
+          id: 'link1',
+          from: 'in1',
+          to: 'out1:step2/a',
+        }],
+      });
+    } catch {
+      threw = true;
+    }
+    expectDeepEqual(threw, true);
+  });
+
   test('Multi-id io target with template flag still expands', async () => {
     const pconf = await getProcessedConfig({
       id: 'pipeline1',
