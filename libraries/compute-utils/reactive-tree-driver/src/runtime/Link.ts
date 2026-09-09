@@ -125,11 +125,16 @@ export class Link {
     inputsChanges$.pipe(
       switchMap(
         ([scope, inputs]) =>
-          this.runHandler(inputs, inputSet, outputSet, callInputs, inputSlots, outputSlots, inputTemplates, outputTemplates, actions, actionsVisibility, baseNode, scope, state).pipe(
+          defer(() => this.runHandler(inputs, inputSet, outputSet, callInputs, inputSlots, outputSlots, inputTemplates, outputTemplates, actions, actionsVisibility, baseNode, scope, state)).pipe(
             map((controller) => this.setHandlerResults(controller, state)),
             catchError((error) => {
+              // emit on errors as well, otherwise lastFinished$ never advances,
+              // the link stays running and tree mutations deadlock on waitForLinks
+              this.lastPipelineMutations = undefined;
+              this.lastGranularMutations = undefined;
+              this.returnResult = undefined;
               reportError('recoverable', `link:${this.matchInfo.spec.id}`, error, this.logger, [this.matchInfo.spec.id]);
-              return EMPTY;
+              return of(undefined);
             }),
           ),
       ),

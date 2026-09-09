@@ -2,6 +2,7 @@
 
 ## v.next
 
+* RTD: Fixed a link handler error leaving the link permanently running and deadlocking all tree mutations
 * RTD: Driver.sendCommand returns a promise resolved on command completion (per-command acks on commandAcks$)
 * RTD: Fixed a synchronous command error killing the driver command queue
 * RTD: initPipeline command accepts an inline processed config
