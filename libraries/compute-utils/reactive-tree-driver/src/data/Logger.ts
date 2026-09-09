@@ -81,6 +81,16 @@ TreeUpdateStartedLogItem | TreeUpdateMutationLogItem | TreeUpdateFinishedLogItem
 LinkRunStartedLogItem | LinkRunFinishedLogItem | LinkAddedLogItem | LinkRemoveLogItem | ActionAddedLogItem | ActionRemoveLogItem |
 ErrorLogItem;
 
+const MAX_LOG_ENTRIES = 5000;
+
+// emitted arrays are immutable snapshots: append copies into a fresh array,
+// so consumers (vue refs, logs$.value readers) never observe mutation
+function capAppend<T>(arr: readonly T[], item: T): T[] {
+  const next = arr.length >= MAX_LOG_ENTRIES ? arr.slice(arr.length - MAX_LOG_ENTRIES + 1) : arr.slice();
+  next.push(item);
+  return next;
+}
+
 export class DriverLogger {
   private log: LogItem[] = [];
   public logs$ = new BehaviorSubject<LogItem[]>([]);
@@ -92,22 +102,20 @@ export class DriverLogger {
   logLink(type: 'linkRunStarted' | 'linkRunFinished' | 'linkAdded' | 'linkRemoved' | 'actionAdded' | 'actionRemoved', data: LinkLogPayload) {
     const uuid = uuidv4();
     const timestamp = new Date();
-    const logItem = {type, uuid, timestamp, ...data};
-    this.log = [...this.log, logItem];
-    this.logs$.next(this.log);
+    this.append({type, uuid, timestamp, ...data});
   }
 
   logTreeUpdates(type: 'treeUpdateStarted' | 'treeUpdateFinished') {
     const uuid = uuidv4();
     const timestamp = new Date();
-    this.log = [...this.log, {type, uuid, timestamp}];
-    this.logs$.next(this.log);
+    this.append({type, uuid, timestamp});
   }
 
   logMutations(data: TreeUpdateMutationPayload) {
     const uuid = uuidv4();
     const timestamp = new Date();
-    this.log = [...this.log, {type: 'treeUpdateMutation', uuid, timestamp, ...data}];
+    // no emission: mutation entries are batched until the next event flushes them
+    this.log = capAppend(this.log, {type: 'treeUpdateMutation', uuid, timestamp, ...data});
   }
 
   logError(severity: ErrorSeverity, context: string, error: Error, links?: string[]) {
@@ -121,11 +129,15 @@ export class DriverLogger {
       error,
       links,
     };
-    this._errors.push(entry);
+    this._errors = capAppend(this._errors, entry);
     this.errors$.next(entry);
-    this.log = [...this.log, entry];
-    this.logs$.next(this.log);
+    this.append(entry);
     reportErrorToUI(severity, context, error);
+  }
+
+  private append(item: LogItem) {
+    this.log = capAppend(this.log, item);
+    this.logs$.next(this.log);
   }
 }
 
