@@ -61,9 +61,7 @@ export const ScalarsPanel = Vue.defineComponent({
                 { formattedValue } { units }
                 <span style={{paddingLeft: '10px'}}>
                   { validationStates.value?.[name] &&
-                    <td>
-                      <ValidationIcon validationStatus={{validation: validationStates.value?.[name]}}/>
-                    </td>
+                    <ValidationIcon validationStatus={{validation: validationStates.value?.[name]}}/>
                   }
                 </span>
 
@@ -83,13 +81,13 @@ export const ScalarsPanel = Vue.defineComponent({
                   <td> <span> { friendlyName } </span></td>
                   <td> <span> { units } </span></td>
                   <td> <span> { formattedValue } </span></td>
-                  { validationStates.value?.[name] &&
-                    <td>
-                      <span>
+                  <td>
+                    <span>
+                      { validationStates.value?.[name] &&
                         <ValidationIcon validationStatus={{validation: validationStates.value?.[name]}}/>
-                      </span>
-                    </td>
-                  }
+                      }
+                    </span>
+                  </td>
                   <td> <span> </span></td>
                 </tr>;
               })

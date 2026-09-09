@@ -10,6 +10,7 @@
 * RFV: Fixed dataframe param subscriptions accumulating on every tab rebuild (leaked across runs, step switches, and unmount)
 * Excel exports detach the ad-hoc viewers they create (one leaked set per export click before)
 * History: Fixed the Version column always showing; edit/delete dialogs cleanly abort on cancel and Esc; failed run loads on row selection show a shell error
+* RFV: Fixed the skipInit prop default typo; report/export/SA/fitting failures show a shell error; scalar table rows align with and without validation icons; restored the scalar row separator
 * Added optional run sharing (workflow, RFV model run, and per-step when the step has enableHistory) via the sharingMethod setting: artifact-alignment ("Publish to program", requires the ArtifactAlignment package) or workspaces (links the run into an existing space, saving it to history first when needed)
 * Saved Compute2 runs (e.g. linked into a space) now render and open through their own editor from Browse instead of the generic funccall view
 * Added OpenWorkflowRun for opening a saved workflow or function run by its FuncCall id
