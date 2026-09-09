@@ -2,6 +2,8 @@
 
 ## v.next
 
+* Added `grok.shell.autostartsCompleted` — a promise that resolves once every package autostart function has run (they start 3 seconds after the app has started)
+* GROK-20849: Added `DG.BitArray` (= `DG.U2.BitArray`; `datagrok-api/src/u2core/bit-array` for web workers) with the `BitSet` vocabulary, the bridges `BitSet.fromBitArray` / `bitset.toBitArray()` / `copyFrom(BitArray)`, and the `TYPE` / `COLUMN_TYPE` / `SEMTYPE` re-exports from `u2core`
 * Renamed the u2 `Component.run(fn)` scope helper to `runInScope(fn)` — `run` is inherited by every view and widget and collided with the long-standing `run()` on `FunctionView` and `Tutorial`, breaking those package builds with `TS2416`
 * Added `NodeApiClient.getBytes()` / `putBytes()` and `InternalDataSource` — a client for the internal entity routers that throws on the `ApiError` bodies they answer 200 with — to the Node dapi client (subset mirror of the CLI's `tools/bin/utils/node-dapi.ts`); `InternalDataSource` is exported from `datagrok-api/node-api`, `NodeDapi.client` is public, and `NodeDapi.queries|scripts|reports` now use the internal routes (the `/public/v1/` ones they used do not exist)
 * GROK-20799: Added `grok.meta.propertiesOf(type, {filterable})` — the curated property catalog of a platform entity type or a domain table, as descriptors whose names filters, facets and grids accept; null for an uncurated type or an unknown table

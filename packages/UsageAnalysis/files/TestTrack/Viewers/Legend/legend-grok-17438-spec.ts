@@ -1,8 +1,12 @@
+/* ---
+realizes: [viewers.scatter-plot, viewers.histogram, viewers.line-chart, viewers.bar-chart, viewers.pie-chart, viewers.trellis-plot, viewers.box-plot]
+--- */
 // GROK-17438: color change on one viewer keeps the legend visible on shared-legend viewers.
 
-import {test, expect} from '@playwright/test';
+import {localTest as test, expect} from '../../shared-page';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
 import * as v from '../../helpers/viewers';
+import {addLegendViewers} from './legend-setup';
 
 test.use(specTestOptions);
 
@@ -12,10 +16,10 @@ test('GROK-17438: legend stays visible across shared-legend viewers after color 
 
   await loginToDatagrok(page);
   await v.openTable(page);
-  await v.addLegendViewers(page, {
+  await addLegendViewers(page, {
     column: 'Stereo Category',
     viewers: ['Histogram', 'Scatter plot', 'Bar chart'],
-    settleMs: 2000,
+    capMs: 2000,
   });
 
   await softStep('Step 2: legend present on Histogram + Scatter + Bar (baseline)', async () => {
@@ -57,14 +61,18 @@ test('GROK-17438: legend stays visible across shared-legend viewers after color 
   // Recovery 1: visibility=Always
   await softStep('Step 5 recovery: legendVisibility=Always restores legend on each viewer', async () => {
     const after = await page.evaluate(async () => {
-      const tv = (window as any).grok.shell.tv;
+      const w = window as any;
+      const tv = w.grok.shell.tv;
       const h = tv.viewers.find((x: any) => x.type === 'Histogram');
+      const present = () => !!h.root.querySelector('[name="legend"]');
+      let quiet = w.__quiet('viewer:Histogram.onViewerRendered', 150, 800);
       try { h.props.legendVisibility = 'Never'; } catch (_) {}
-      await new Promise((r) => setTimeout(r, 800));
-      const hiddenState = !!h.root.querySelector('[name="legend"]');
+      await quiet;
+      const hiddenState = await w.__settledFor(present, 150, 800, 25);
+      quiet = w.__quiet('viewer:Histogram.onViewerRendered', 150, 1500);
       try { h.props.legendVisibility = 'Always'; } catch (_) {}
-      await new Promise((r) => setTimeout(r, 1500));
-      const restoredState = !!h.root.querySelector('[name="legend"]');
+      await quiet;
+      const restoredState = await w.__poll(present, (p: boolean) => p, 1500, 25);
       return {hiddenState, restoredState, vis: h.props.legendVisibility};
     });
     expect(after.vis).toBe('Always');
@@ -74,10 +82,12 @@ test('GROK-17438: legend stays visible across shared-legend viewers after color 
   // Recovery 2: splitter-resize.
   await softStep('Step 4 recovery: splitter-resize gesture (Histogram side-docked)', async () => {
     await page.evaluate(async () => {
-      const h = (window as any).grok.shell.tv.viewers.find((x: any) => x.type === 'Histogram');
+      const w = window as any;
+      const h = w.grok.shell.tv.viewers.find((x: any) => x.type === 'Histogram');
+      const quiet = w.__quiet('viewer:Histogram.onViewerRendered', 150, 1000);
       try { h.props.legendPosition = 'Right'; } catch (_) {}
       try { h.props.legendVisibility = 'Always'; } catch (_) {}
-      await new Promise((r) => setTimeout(r, 1000));
+      await quiet;
     });
     const splitter = page.locator('[name="viewer-Histogram"] [name="legend-splitter"]').first();
     if (await splitter.count() > 0) {
@@ -92,11 +102,14 @@ test('GROK-17438: legend stays visible across shared-legend viewers after color 
         await page.mouse.down();
         await page.mouse.move(box.x - 50, box.y + box.height / 2, {steps: 10});
         await page.mouse.up();
-        await page.waitForTimeout(800);
         const afterBox = await page.evaluate(() => {
-          const h = (window as any).grok.shell.tv.viewers.find((x: any) => x.type === 'Histogram');
-          const legend = h.root.querySelector('[name="legend"]');
-          return legend ? legend.getBoundingClientRect().width : null;
+          const w = window as any;
+          const width = () => {
+            const h = w.grok.shell.tv.viewers.find((x: any) => x.type === 'Histogram');
+            const legend = h.root.querySelector('[name="legend"]');
+            return legend ? legend.getBoundingClientRect().width : null;
+          };
+          return w.__settledFor(width, 150, 800, 25);
         });
         expect(typeof afterBox).toBe('number');
         expect(typeof beforeBox).toBe('number');

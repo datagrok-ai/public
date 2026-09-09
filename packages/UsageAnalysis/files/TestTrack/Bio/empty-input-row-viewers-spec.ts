@@ -1,5 +1,5 @@
-// GROK-16111: the three Bio current-row viewers silently KNN on empty input (unfixed; balloon assertion softened, see SR-01 below).
-import {test, expect} from '@playwright/test';
+import {expect} from '@playwright/test';
+import {test} from '../shared-page';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
 test.use(specTestOptions);
@@ -79,7 +79,7 @@ for (const vc of viewerCases) {
     await page.evaluate(async () => {
       const probes = ['Bio:getSeqHelper', 'Bio:getMonomerLibHelper', 'Bio:getBioLib'];
       for (const fn of probes) {
-        try { await (grok as any).functions.call(fn, {}); return; } catch { /* try next */ }
+        try { await (grok as any).functions.call(fn, {}); return; } catch {  }
       }
       await new Promise((r) => setTimeout(r, 3000));
     });
@@ -96,11 +96,11 @@ for (const vc of viewerCases) {
         const origWarn = grok.shell.warning.bind(grok.shell);
         const origErr = grok.shell.error.bind(grok.shell);
         grok.shell.warning = ((msg: any, opts?: any) => {
-          try { (window as any).__balloonCalls.push({type: 'warning', msg: String(msg).slice(0, 300)}); } catch { /* ignore */ }
+          try { (window as any).__balloonCalls.push({type: 'warning', msg: String(msg).slice(0, 300)}); } catch {  }
           return origWarn(msg, opts);
         }) as any;
         grok.shell.error = ((msg: any, opts?: any) => {
-          try { (window as any).__balloonCalls.push({type: 'error', msg: String(msg).slice(0, 300)}); } catch { /* ignore */ }
+          try { (window as any).__balloonCalls.push({type: 'error', msg: String(msg).slice(0, 300)}); } catch {  }
           return origErr(msg, opts);
         }) as any;
         return {
@@ -139,7 +139,7 @@ for (const vc of viewerCases) {
       await page.waitForFunction(() => {
         return Array.isArray((window as any).__balloonCalls)
           && (window as any).__balloonCalls.length > 0;
-      }, null, {timeout: 30_000}).catch(() => { /* swallow — assertion below covers it */ });
+      }, null, {timeout: 30_000}).catch(() => {  });
       const probe = await page.evaluate((viewerSel) => {
         const df = grok.shell.tv.dataFrame;
         const calls = ((window as any).__balloonCalls || []) as Array<{type: string; msg: string}>;
@@ -156,9 +156,9 @@ for (const vc of viewerCases) {
           docked,
         };
       }, vc.viewerSelector);
-      // SR-01: GROK-16111 unfixed — viewers silently KNN on empty input. Hard balloon expect() softened to console.warn until fixed.
+
       if (!(probe.balloonCount > 0)) {
-        // eslint-disable-next-line no-console
+
         console.warn(`[SR-01 known platform gap] GROK-16111: ${vc.label} did NOT surface a rejection balloon on empty current-row input (balloonCount=${probe.balloonCount}). Captured balloons: ${JSON.stringify(probe.balloonMsgs)}. Active viewer types: ${JSON.stringify(probe.viewerTypes)}. Revert SR-01 + restore the hard expect(probe.balloonCount).toBeGreaterThan(0) when GROK-16111 is fixed.`);
       }
       expect(probe.rowCount).toBe(baseRowCount);

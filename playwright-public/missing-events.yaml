@@ -1,0 +1,92 @@
+# Event gaps found while re-authoring specs onto event-driven waits.
+#
+# An entry belongs here when a spec had to fall back to polling or a fixed cap
+# because no JS-API channel reports the state it needs. Each one is a proposed
+# fire-only platform change — no behaviour change — for someone to pick up; a
+# spec-authoring dispatch proposes, it does not implement.
+#
+# Entries are evidence-backed: a spec that demonstrably failed or had to poll,
+# plus the firing point in the source. A cap that merely looked slow is not
+# evidence — measure before adding.
+
+revision: 2
+
+gaps:
+  - id: context-menu-constructed-not-in-js-api
+    status: proposed
+    found: 2026-08-20
+    site: |
+      public/packages/UsageAnalysis/files/TestTrack/Viewers/BarChart/bar-chart-spec.ts
+      ("Context menu" step), and every context-menu step in Viewers/PcPlot/.
+    action: right-click a viewer canvas, then read the menu's item labels
+    symptom: |
+      grok.events.onContextMenu resolves while the menu is still being built, so a
+      spec that races it and reads .d4-menu-item-label gets a partially populated
+      tree. bar-chart-spec asserts the menu CONTAINS 13 specific labels and failed
+      on that race; it now settles on the label count going quiet instead, which
+      works but is a poll standing in for a channel that already exists.
+    root_cause: |
+      core/client/d4/lib/src/viewer_base/popup_menu_mixin.dart:42-46 fires two
+      events around population:
+        eventBus.fire(AppEvents.CONTEXT_MENU, menu.args);              // contribute items
+        onPopupMenu(menu.args);                                        // viewer adds its own
+        eventBus.fire(AppEvents.CONTEXT_MENU_CONSTRUCTED, menu.args);  // menu is complete
+        menu.show();
+      CONTEXT_MENU is the "add your items" hook and is the one exposed to JS
+      (EVENT_TYPE.CONTEXT_MENU / grok.events.onContextMenu). CONTEXT_MENU_CONSTRUCTED
+      is the one that means "the menu is final", and it is NOT exposed.
+    proposal: |
+      Surface the existing Dart event; nothing new needs firing.
+        public/js-api/src/const.ts    — add CONTEXT_MENU_CONSTRUCTED = 'd4-context-menu-constructed'
+                                        to EVENT_TYPE, next to CONTEXT_MENU / CONTEXT_MENU_CLOSED.
+        public/js-api/src/events.ts   — add
+                                        get onContextMenuConstructed(): rxjs.Observable<any>
+                                          { return __obs(EVENT_TYPE.CONTEXT_MENU_CONSTRUCTED); }
+                                        beside onContextMenu / onContextMenuClosed (~line 123).
+      Then specs replace the label-count poll with
+        await w.__settled('grok.events.onContextMenuConstructed', () => <right-click>, cap)
+      which also carries MenuArgs, so the menu contents become assertable from the
+      event payload rather than scraped from the DOM.
+
+  - id: property-panel-built-has-no-channel
+    status: proposed
+    found: 2026-08-20
+    site: |
+      9 sites across Viewers/BarChart/*-spec.ts, BoxPlot/boxplot-settings-ladder-spec.ts,
+      ScatterPlot/scatterplot-labels-tooltip-spec.ts — each polls
+      `page.locator('.property-grid').count() > 0` after opening a viewer's gear.
+    action: open a viewer's settings (gear icon), then read or set a property row
+    symptom: |
+      No channel reports "the property panel has finished building", so every spec
+      polls the DOM for .property-grid to appear before touching a prop row.
+    evidence: |
+      Probed on dev 2026-08-20: subscribed to onAccordionConstructed, onDialogShown,
+      onViewerAdded, onViewerClosed, onCurrentObjectChanged and onTooltipShown, then
+      opened the Bar chart gear. ONLY onCurrentObjectChanged fired.
+      onAccordionConstructed did NOT fire — despite EVENT_TYPE.ACCORDION_CONSTRUCTED
+      being exposed in js-api — because d4 Accordion fires CONSTRUCTED only from
+      end() (accordion.dart:295, via Timer.run) and the viewer property panel does
+      not go through that path. onCurrentObjectChanged is not a substitute: it
+      reports the current object changing, which happens BEFORE the grid is built —
+      the same too-early trap as onContextMenu.
+    proposal: |
+      Either route the viewer property panel through Accordion.end() so the existing
+      ACCORDION_CONSTRUCTED fires for it, or add a dedicated fire-only event when the
+      property grid finishes rendering. Until then polling .property-grid is the
+      correct rung-2 wait and should not be flagged.
+
+  - id: dialog-shown-not-fired-from-dart
+    status: needs-confirmation
+    found: 2026-08-20
+    site: PcPlot/pcplot-setup-color-filter-spec.ts:369 (save-project dialog)
+    action: open a dialog, wait for its buttons, cancel it
+    symptom: |
+      The spec polls for `.d4-dialog .ui-btn` to exist and later for `.d4-dialog`
+      to disappear. EVENT_TYPE.DIALOG_SHOWN is exposed as grok.events.onDialogShown,
+      but grepping core/client/**/*.dart found no site firing it, and there is no
+      dialog-closed counterpart at all.
+    proposal: |
+      Confirm whether DIALOG_SHOWN is fired anywhere (it may be fired from JS-side
+      dialog code rather than Dart). If not, fire it where a dialog is shown and add
+      a closed counterpart. ONE site depends on this today — low priority, recorded
+      so the next author does not re-derive the search.

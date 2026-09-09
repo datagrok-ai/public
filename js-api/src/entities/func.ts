@@ -53,6 +53,10 @@ export class Func extends Entity {
    * rather than being executed separately for each scalar element (row) */
   get isVectorFunc(): boolean { return api.grok_Func_Get_IsVectorFunc(this.dart); }
 
+  /** The main-menu path the function is registered under (`//top-menu: Bio | Analyze | MSA...`),
+   * or null; the way to tell which function a menu item runs. */
+  get topMenu(): string | null { return api.grok_Func_Get_TopMenu(this.dart); }
+
   /** Function tags. Every function kind carries them (scripts, queries, package
    * functions). See also: https://datagrok.ai/help/datagrok/concepts/functions/func-params-annotation */
   get tags(): string[] { return api.grok_Func_Get_Tags(this.dart); }

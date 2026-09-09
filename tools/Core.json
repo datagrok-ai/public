@@ -1,8 +1,8 @@
 {
   "format": 1,
   "schema": "Core",
-  "version": "4.d4b64f5b388b",
-  "hash": "d4b64f5b388ba1101a2d4371b7cb18574269418e4b60e0ad9a28980bab5e42a1",
+  "version": "4.2a03e5e1756a",
+  "hash": "2a03e5e1756ad70dbdf01981663ab63a3263dfcbc00f648785ae0f3306a68930",
   "tables": {
     "connections": {
       "securityMode": "row",
@@ -127,6 +127,16 @@
           "name": "isPackage",
           "type": "bool",
           "dbName": "is_package"
+        },
+        {
+          "name": "pictureId",
+          "type": "string",
+          "dbName": "picture_id"
+        },
+        {
+          "name": "namespace",
+          "type": "string",
+          "storage": "entity"
         }
       ]
     },
@@ -862,6 +872,16 @@
           "name": "isPackage",
           "type": "bool",
           "dbName": "is_package"
+        },
+        {
+          "name": "pictureId",
+          "type": "string",
+          "dbName": "picture_id"
+        },
+        {
+          "name": "namespace",
+          "type": "string",
+          "storage": "entity"
         },
         {
           "name": "storage",

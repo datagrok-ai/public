@@ -8,14 +8,6 @@ import {
   setInputValue, readInputTooltip, inputEditor, inputHost,
 } from './helpers/diff-studio';
 
-/**
- * Test Track scenario: DiffStudio/stages.md
- * 1. Open Diff Studio + Acid Production from Library.
- *    NOTE: the library menu item is titled 'Acid production' (TITLE.ACID).
- * 2. Multiaxis and Facet tabs are updated.
- * 3. Modify an input value; the solution updates in real time and the URL reflects the new value.
- * 4. Hover inputs — tooltips appear with relevant info.
- */
 test('DiffStudio Stages — Acid Production: Multiaxis/Facet tabs, input modify live update, tooltips',
   async ({ page }) => {
     test.setTimeout(300_000);
@@ -53,12 +45,10 @@ test('DiffStudio Stages — Acid Production: Multiaxis/Facet tabs, input modify 
     });
 
     await softStep('Step 4: Tooltips on 1-st stage, biomass, glucose MATCH expected text', async () => {
-      // Try parsing the IVP source for the canonical tooltip text. If the file isn't
-      // reachable on this environment, fall back to the known expected strings.
+
       let tooltips = await readIvpTooltips(page, 'System:AppData/DiffStudio/library/ga-production.ivp');
       if (tooltips.size === 0) {
-        // Expected values per the IVP file checked into the repo
-        // (public/packages/DiffStudio/files/library/ga-production.ivp).
+
         tooltips = new Map([
           ['1-st stage', 'Duration of the 1-st stage'],
           ['biomass', 'Aspergillus niger biomass'],

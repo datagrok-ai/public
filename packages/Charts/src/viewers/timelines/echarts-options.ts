@@ -17,6 +17,7 @@ export const options = {
     type: 'value',
     min: 'dataMin',
     max: 'dataMax',
+    axisLabel: { hideOverlap: true },
   },
   yAxis: {
     type: 'category',

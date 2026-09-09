@@ -3,7 +3,7 @@ feature: notebooks
 target_layer: apitest
 coverage_type: regression
 priority: p2
-realizes_atlas: [delete-notebook]
+realizes_atlas: [notebooks.cp.delete-notebook]
 realizes: [notebooks.view.notebook]
 produced_from: atlas-driven
 realized_as:

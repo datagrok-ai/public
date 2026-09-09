@@ -256,12 +256,13 @@ export class MpoProfileDialog {
 
     try {
       const pMpoItems = await grok.functions.call('EDA:getPmpoAppItems', {view: tableView});
-      if (!pMpoItems?.profile) {
+      const profile = pMpoItems?.getProfile();
+      if (!profile) {
         grok.shell.warning('Data-driven MPO is not applicable for this dataset');
         return;
       }
 
-      this.currentProfile = pMpoItems.profile;
+      this.currentProfile = profile;
       this.applyNameAndDescription(this.currentProfile!);
       this.saved = null;
       this.originalProfile = null;

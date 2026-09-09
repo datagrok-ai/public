@@ -3,7 +3,7 @@ feature: projects
 target_layer: playwright
 coverage_type: regression
 priority: p0
-realizes_atlas: [rename-dependent-entity-reopen, rename_external_dep, share_with_recipient_open, rename_project]
+realizes_atlas: [projects.cp.rename-dependent-entity-reopen, projects.op.rename_external_dep, projects.op.share_with_recipient_open, projects.op.rename_project]
 realizes: [views.projects]
 realized_as:
   - projects-lifecycle-query-spec.ts

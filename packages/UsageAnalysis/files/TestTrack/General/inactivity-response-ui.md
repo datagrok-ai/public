@@ -1,12 +1,10 @@
 ---
 feature: general
+realizes_atlas: []
+realizes: []
+priority: p2
 target_layer: manual-only
 coverage_type: regression
-produced_from: split
-original_path: public/packages/UsageAnalysis/files/TestTrack/General/inactivity-response.md
-split_date: 2026-06-16
-realizes: []
-related_bugs: []
 manual_only_reason: |
   The premise is a real 20-minute idle period before resuming interaction. A
   literal 20-minute wait is impractical in CI, and faking the server-side
@@ -16,6 +14,7 @@ manual_only_reason: |
   (navigate, open file, run query/script, watch console) are themselves
   automatable, but are meaningless without the genuine idle precondition. Keep
   as manual (or a long nightly soak), not a standard Playwright spec.
+related_bugs: []
 ---
 
 # Platform behavior after 20 minutes of inactivity
@@ -38,5 +37,6 @@ running a query and a script) does not produce console errors.
 
 ---
 {
-  "order": 3
+  "order": 3,
+  "datasets": []
 }

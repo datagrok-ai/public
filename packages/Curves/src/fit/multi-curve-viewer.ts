@@ -223,14 +223,14 @@ export class MultiCurveViewer extends DG.JsViewer {
     if (fitCol !== null)
       this.curvesColumnNames = [fitCol.name];
 
-    merge(...[this.dataFrame.onCurrentCellChanged, ...(grid ? [grid.onCellMouseEnter] : []), this.dataFrame.onSelectionChanged])
+    this.subs.push(merge(...[this.dataFrame.onCurrentCellChanged, ...(grid ? [grid.onCellMouseEnter] : []), this.dataFrame.onSelectionChanged])
       .pipe(debounce((_) => interval(50)))
       .subscribe((_) => {
         if (this.dataFrame) {
           this.createChartData();
           this.render();
         }
-      });
+      }));
     this.createChartData();
     if (!this.isInTrellis())
       this.render();

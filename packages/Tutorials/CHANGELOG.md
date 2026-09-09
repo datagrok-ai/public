@@ -2,6 +2,9 @@
 
 ## v.next
 
+* Demo app: Correlation Plot is offered as a demo again - its `demoPath` was missing a space, so consumers that rebuild the path from the hierarchy never matched it
+* Demo app: The second viewer pane in a viewer demo is titled after the viewer it holds, not always "histogram"
+* Tutorials: A track with no tutorials renders a 0% progress bar instead of `NaN%`
 * Fixed the package build failing on `TS2416` — the u2 `Component` base introduced `run(fn)`, which every widget now inherits, so `Tutorial`'s own `run()` no longer matched; it is now `start()`
 * GROK-20602: BREAKING regen — `grok api` codegen v2 for the Northwind demo schema: datetime fields are dayjs, typed expand/transaction surface, lazy db.ts clients
 * Demo app: Added a Domain Databases demo (Data Access | Domain Databases) — ships the classic Northwind schema and data as a plugin-declared domain database (databases/northwind) and walks through browsing, security, audit history, and the JS API

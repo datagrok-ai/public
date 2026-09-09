@@ -70,6 +70,8 @@ export type {FuncEntry, FuncLike, FuncPick, FuncPickerOptions} from './designer/
 export {sourceStatus, statusText, refreshSource} from './designer/source-status.js';
 export type {SourceStatus} from './designer/source-status.js';
 export {platformContext} from './shell/spec-context.js';
+export {FilterSchemas, frameLike, toBitSet} from './filter/index.js';
+export type {DataFrameFilterSchema} from './filter/index.js';
 // side-effect only: filling `backends` is what makes the data sources work in the platform
 import './shell/source-backends.js';
 

@@ -2,6 +2,14 @@
 
 ## v.next
 
+* GROK-20753: Added the schema-driven filter model and string grammar in core (`src/core/filter/`), kept in sync with the Dart smart-filter parser by a shared corpus
+* GROK-20753: Added `FilterBuilder` (simple / horizontal / advanced with drag-and-drop, templates) and `FilterQueryInput` (grammar-driven completion), registered as `u2-filter-builder` / `u2-filter-query-input`
+* GROK-20753: Added the platform filter layer `src/dg/filter/` — `FilterSchemas.forDataFrame/forDomainTable/forEntityType`, `toBitSet`, operator sets from `filterOperators` providers via `registerSet`
+* GROK-20753: Added `DateInput.relative` (spans such as `-1w`, `now`) backed by `src/core/span.ts`
+* GROK-20753: Unified the suggestion-popup skin (`u2-suggest-*` in `inputs.css`) and the editor resolver shared by forms and filter rows
+* GROK-20849: DataFrame masks are `DG.U2.BitArray`; `ColumnEvaluator` replaces `Masks`; type names use the `TYPE` / `COLUMN_TYPE` / `SEMTYPE` constants
+* GROK-20753: Package is npm-ready (0.1.0, `type: module`, `.npmignore`) but not published yet; in-repo consumers reference it by relative path
+
 * Automation identity (core/docs/features/ui2/AUTOMATION.md): an explicit `name` on any control stamps `data-u2-name` (an input's label fallback stays a form key and never stamps); `Input` stamps `data-u2-part` on label/editor/options/error and answers the same elements from `getWidgetStatus().parts`; `Overlay.show` stamps `data-u2-owner` on portaled popups from the anchor's nearest named ancestor, so hierarchical selectors survive the portal; `Dialog` takes `{name}`, `appView` names its content root after the view; `Form.add` warns once per kind on an input with neither name nor label
 
 * GROK-20753: The control inspector no longer lists a property whose value cannot be read — a control built by hand rather than through `registry.create` gets the registry's metadata but reads nothing for a prop backed by a private field or by an unpassed constructor option, and a row that can neither show a value nor take one reads as broken; the no-control empty state now says the element is not a u2 component instead of denying it is a control

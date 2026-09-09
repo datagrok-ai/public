@@ -1,589 +1,562 @@
-import {test, expect, Page} from '@playwright/test';
+/* ---
+realizes: [formsviewer.cp.color-and-renderer-presentation, formsviewer.edge.molecule-column-render, formsviewer.edge.fit-semtype-promotes-renderer-size]
+--- */
+import {expect, Page} from '@playwright/test';
+import {test} from '../../shared-page';
 import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
+import {HOST, ORDINARY, CURRENT, withConsoleErrorCount} from '../../helpers/forms';
+
+declare const grok: any;
+declare const DG: any;
 
 test.use(specTestOptions);
 
-const datasetPath = 'System:DemoFiles/demog.csv';
+const demogPath = 'System:DemoFiles/demog.csv';
 const spgiPath = 'System:AppData/Chem/tests/spgi-100.csv';
 const curvesPath = 'System:DemoFiles/curves.csv';
 
-test('Forms viewer tests', async ({page}: {page: Page}) => {
+function toRgb(s: string | null): [number, number, number] | null {
+  if (!s) return null;
+  let m = s.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/i);
+  if (m) return [+m[1], +m[2], +m[3]];
+  m = s.match(/^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
+  return m ? [parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16)] : null;
+}
+
+async function colorCheck(page: Page, cardSel: string, col: string):
+  Promise<{bg: string; ref: string | null; colorInt: number} | null> {
+  return page.evaluate(({sel, c}) => {
+    const df = grok.shell.t;
+    const card = document.querySelector(sel);
+    const el = card ? card.querySelector(`[column="${c}"]`) as HTMLElement | null : null;
+    if (!el) return null;
+    const row = df.currentRowIdx;
+    const colorInt = df.col(c).meta.colors.getColor(row);
+    const ref = (colorInt && colorInt !== 4294967295) ? DG.Color.toHtml(colorInt) : null;
+    return {bg: getComputedStyle(el).backgroundColor, ref, colorInt};
+  }, {sel: cardSel, c: col});
+}
+
+async function styleCheck(page: Page, cardSel: string, col: string):
+  Promise<{fieldAlign: string; refAlign: string | null; fieldFont: string; expectFont: string} | null> {
+  return page.evaluate(({sel, c}) => {
+    const grid = grok.shell.tv.grid;
+    const gc = grid.col(c);
+    const card = document.querySelector(sel);
+    const el = card ? card.querySelector(`[column="${c}"]`) as HTMLElement | null : null;
+    if (!el || !gc) return null;
+    const cs = gc.contentCellStyle;
+    const probe = document.createElement('div');
+    probe.style.font = cs && cs.font ? cs.font : '';
+    return {
+      fieldAlign: getComputedStyle(el).textAlign,
+      refAlign: cs ? (cs.horzAlign ?? null) : null,
+      fieldFont: el.style.font,
+      expectFont: probe.style.font,
+    };
+  }, {sel: cardSel, c: col});
+}
+
+async function sizeCheck(page: Page, col: string):
+  Promise<{tag: string; aw: number | null; ah: number | null; ew: number; eh: number; size: string} | null> {
+  return page.evaluate(({sel, c}) => {
+    const grid = grok.shell.tv.grid;
+    const vw = grok.shell.tv.viewers.find((x: any) => x.type === 'FormsViewer');
+    const card = document.querySelector(sel);
+    const el = card ? card.querySelector(`[column="${c}"]`) as any : null;
+    if (!el || !vw) return null;
+    const dpr = window.devicePixelRatio;
+    const size = vw.props.rendererSize as string;
+    const renderer = grid.col(c) ? grid.col(c).renderer : null;
+    const w = renderer ? renderer.defaultWidth : null;
+    const h = renderer ? renderer.defaultHeight : null;
+    let cw: number; let ch: number;
+    if (!w || !h) {
+      if (size === 'normal') { cw = 200; ch = 100; }
+      else if (size === 'large') { cw = 300; ch = 150; }
+      else { cw = 120; ch = 60; }
+    } else {
+      if (size === 'normal') { cw = w; ch = h; }
+      else if (size === 'large') { cw = Math.floor(w * 1.5); ch = Math.floor(h * 1.5); }
+      else { cw = Math.floor(w * 0.66); ch = Math.floor(h * 0.66); }
+    }
+    return {tag: el.tagName, aw: el.width ?? null, ah: el.height ?? null,
+      ew: Math.floor(cw * dpr), eh: Math.floor(ch * dpr), size};
+  }, {sel: CURRENT, c: col});
+}
+
+const rendererSizeProp = (page: Page): Promise<string | null> => page.evaluate(() => {
+  const vw = (window as any).grok.shell.tv.viewers.find((x: any) => x.type === 'FormsViewer');
+  return (vw?.props?.rendererSize as string) ?? null;
+});
+
+async function setRendererSizeViaPanel(page: Page, value: 'small' | 'normal' | 'large'): Promise<void> {
+  // re-open the gear for the CURRENT Forms viewer: a new openTable/addViewer leaves the
+  // property grid bound to the previous view's viewer, so edits never reach this one
+  await v.clickViewerTitlebarIcon(page, 'Forms', 'icon-font-icon-settings').catch(() => {});
+  await v.ensurePropertyCategory(page, 'Forms', 'misc', 'renderer-size');
+  // the row can sit in a COLLAPSED category: display stays 'table-row' but the box is 0x0,
+  // so isVisible()-style gating passes while clicks and selectOption reach nothing. Expand
+  // every header until the row has a real box before touching the editor.
+  const row = page.locator('.property-grid tr[name="prop-renderer-size"]').first();
+  const sized = () => page.evaluate(() => {
+    const r = document.querySelector('.property-grid tr[name="prop-renderer-size"]') as HTMLElement | null;
+    if (!r) return false;
+    const b = r.getBoundingClientRect();
+    return b.width > 0 && b.height > 0;
+  });
+  if (!await sized()) {
+    for (const h of await page.locator('[name^="prop-category-"]').all())
+      if (await h.isVisible().catch(() => false)) await h.click().catch(() => {});
+    await v.pollValue(sized, (ok) => ok, 3000, 100);
+  }
+
+  await row.locator('td').last().click();
+  const sel = page.locator('[name="prop-renderer-size"] select').first();
+  await sel.waitFor({state: 'visible', timeout: 5000});
+  await sel.selectOption(value);
+  await v.pollValue(() => rendererSizeProp(page), (s) => s === value, 3000, 100);
+  expect(await rendererSizeProp(page), `rendererSize did not commit to "${value}"`).toBe(value);
+}
+
+async function setColorCodeViaPanel(page: Page, on: boolean): Promise<void> {
+  await v.ensurePropertyCategory(page, 'Forms', 'misc', 'color-code');
+  await v.setPropertyGridCheckbox(page, 'color-code', on, 'misc');
+}
+
+test('Forms viewer — colour coding and renderer presentation (p2)', async ({page}) => {
   test.setTimeout(600_000);
 
   await loginToDatagrok(page);
 
-  await page.evaluate(async (path: string) => {
-    document.body.classList.add('selenium');
-    (grok.shell.settings as any).showFiltersIconsConstantly = true;
-    (grok.shell.windows as any).simpleMode = false;
-    grok.shell.closeAll();
-    const df = await grok.dapi.files.readCsv(path);
-    const tv = grok.shell.addTableView(df);
-    await new Promise(resolve => {
-      const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(null); });
-      setTimeout(resolve, 3000);
-    });
-  }, datasetPath);
-  await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30000});
+  let colorRow = 0;
+  await softStep('Scenario 1 setup — colour-code AGE by background, centre it, give it a distinct font', async () => {
+    await v.openTable(page, {path: demogPath, semTypeTimeoutMs: 3000});
+    await v.addViewerByIcon(page, 'Forms', 'Forms', 30_000, 'FormsViewer');
+    await page.locator('.d4-multi-form').first().waitFor({timeout: 30_000});
 
-  await page.evaluate(() => {
-    const icon = document.querySelector('[name="icon-Forms"]');
-    if (icon) (icon as HTMLElement).click();
-  });
-  await page.locator('[name="viewer-Forms"]').waitFor({timeout: 10000});
+    const info = await page.evaluate(() => {
+      const df = grok.shell.t;
+      const gc = grok.shell.tv.grid.col('AGE');
+      gc.contentCellStyle.horzAlign = 'center';
+      gc.contentCellStyle.font = 'italic bold 14px "Times New Roman"';
+      df.col('AGE').meta.colors.setLinear();
 
-  
-
-  await softStep('Fields: open settings gear', async () => {
-    await page.evaluate(() => {
-      
-      const viewer = document.querySelector('[name="viewer-Forms"]');
-      let el: Element | null = viewer ?? null;
-      for (let i = 0; i < 5; i++) {
-        el = el?.parentElement ?? null;
-        if (!el) break;
-        const gear = el.querySelector('[name="icon-font-icon-settings"]');
-        if (gear) { (gear as HTMLElement).click(); return; }
+      const col = df.col('AGE');
+      let row = 0;
+      for (let i = 0; i < df.rowCount; i++) {
+        const c = col.meta.colors.getColor(i);
+        if (c && c !== 4294967295) { row = i; break; }
       }
+      df.currentRowIdx = row;
+      return {row, textCoded: !!gc.isTextColorCoded};
     });
-    await page.waitForFunction(() =>
-      document.querySelector('[name="prop-view-fields"]') !== null, {timeout: 15000});
+    colorRow = info.row;
+    expect(info.textCoded).toBe(false);
   });
 
-  await softStep('Fields: click [...] button opens Select columns dialog', async () => {
-    await page.waitForTimeout(500); 
+  await softStep('Step 1a — the AGE field background equals the AGE colour scheme, both normalized', async () => {
+
+    await expect.poll(async () => {
+      const r = await colorCheck(page, CURRENT, 'AGE');
+      if (!r || !r.ref) return false;
+      const a = toRgb(r.bg); const b = toRgb(r.ref);
+      return !!a && !!b && a[0] === b[0] && a[1] === b[1] && a[2] === b[2];
+    }, {timeout: 20_000}).toBe(true);
+    const r = await colorCheck(page, CURRENT, 'AGE');
+    expect(r).not.toBeNull();
+    expect(r!.colorInt).not.toBe(4294967295);
+    expect(r!.ref).not.toBeNull();
+  });
+
+  await softStep('Step 1b — the AGE field horizontal alignment and font equal the grid column style', async () => {
+    const s = await styleCheck(page, CURRENT, 'AGE');
+    expect(s).not.toBeNull();
+
+    expect(s!.refAlign).toBe('center');
+    expect(s!.fieldAlign).toBe(s!.refAlign);
+
+    expect(s!.expectFont.length).toBeGreaterThan(0);
+    expect(s!.fieldFont).toBe(s!.expectFont);
+  });
+
+  await softStep('Step 1c — Color Code OFF drops the background to an uncoloured field; ON restores it', async () => {
+    await setColorCodeViaPanel(page, false);
+
+    await expect.poll(async () => {
+      const r = await page.evaluate((sel) => {
+        const card = document.querySelector(sel);
+        const a = card ? card.querySelector('[column="AGE"]') as HTMLElement | null : null;
+        const b = card ? card.querySelector('[column="USUBJID"]') as HTMLElement | null : null;
+        if (!a || !b) return null;
+        return {a: getComputedStyle(a).backgroundColor, b: getComputedStyle(b).backgroundColor};
+      }, CURRENT);
+      return !!r && r.a === r.b;
+    }, {timeout: 20_000}).toBe(true);
+
+    await setColorCodeViaPanel(page, true);
+    await expect.poll(async () => {
+      const r = await colorCheck(page, CURRENT, 'AGE');
+      if (!r || !r.ref) return false;
+      const a = toRgb(r.bg); const b = toRgb(r.ref);
+      return !!a && !!b && a[0] === b[0] && a[1] === b[1] && a[2] === b[2];
+    }, {timeout: 20_000}).toBe(true);
+  });
+
+  let smallW = 0; let smallH = 0; let normalW = 0; let normalH = 0;
+  await softStep('Scenario 2 setup — open spgi-100, add Forms, set a current row', async () => {
+    await v.openTable(page, {path: spgiPath, semTypeTimeoutMs: 3000});
+    await v.addViewerByIcon(page, 'Forms', 'Forms', 30_000, 'FormsViewer');
+    await page.locator(HOST).first().waitFor({timeout: 30_000});
+    await page.evaluate(() => { grok.shell.t.currentRowIdx = 0; });
+    await page.locator(CURRENT).first().waitFor({timeout: 30_000});
+  });
+
+  await softStep('Step 2a — at the default small, the Structure canvas is base × 0.66 (floored) × dpr', async () => {
+
+    const def = await page.evaluate(() =>
+      grok.shell.tv.viewers.find((x: any) => x.type === 'FormsViewer').props.rendererSize);
+    expect(def).toBe('small');
+
+    await expect.poll(async () => {
+      const r = await sizeCheck(page, 'Structure');
+      return !!r && r.tag === 'CANVAS' && r.aw === r.ew && r.ah === r.eh;
+    }, {timeout: 20_000}).toBe(true);
+    const r = await sizeCheck(page, 'Structure');
+    smallW = r!.aw!; smallH = r!.ah!;
+  });
+
+  await softStep('Step 2b — normal enlarges the canvas to base × 1 × dpr, above the small values', async () => {
+    await setRendererSizeViaPanel(page, 'normal');
+    await expect.poll(async () => {
+      const r = await sizeCheck(page, 'Structure');
+      return !!r && r.size === 'normal' && r.aw === r.ew && r.ah === r.eh;
+    }, {timeout: 20_000}).toBe(true);
+    const r = await sizeCheck(page, 'Structure');
+    normalW = r!.aw!; normalH = r!.ah!;
+    expect(normalW).toBeGreaterThan(smallW);
+    expect(normalH).toBeGreaterThan(smallH);
+  });
+
+  await softStep('Step 2c — large enlarges the canvas to base × 1.5 (floored) × dpr, above the normal values', async () => {
+    await setRendererSizeViaPanel(page, 'large');
+    await expect.poll(async () => {
+      const r = await sizeCheck(page, 'Structure');
+      return !!r && r.size === 'large' && r.aw === r.ew && r.ah === r.eh;
+    }, {timeout: 20_000}).toBe(true);
+    const r = await sizeCheck(page, 'Structure');
+    expect(r!.aw!).toBeGreaterThan(normalW);
+    expect(r!.ah!).toBeGreaterThan(normalH);
+  });
+
+  await softStep('Step 3a — the Structure field is a CANVAS carrying its column name; no paint error', async () => {
+    const errCount = await withConsoleErrorCount(page, async () => {
+      await setRendererSizeViaPanel(page, 'normal');
+      await page.evaluate(() => { grok.shell.t.currentRowIdx = 1; grok.shell.t.currentRowIdx = 0; });
+      await expect.poll(async () => {
+        const r = await sizeCheck(page, 'Structure');
+        return !!r && r.tag === 'CANVAS';
+      }, {timeout: 20_000}).toBe(true);
+    });
+    const kind = await page.evaluate((sel) => {
+      const el = document.querySelector(`${sel} [column="Structure"]`);
+      return el ? el.tagName : null;
+    }, CURRENT);
+    expect(kind).toBe('CANVAS');
+    expect(errCount).toBe(0);
+    expect(await page.locator('.d4-balloon.error').count()).toBe(0);
+  });
+
+  await softStep('Step 3b — picking Structure, Core, Primary Series Name yields two molecular canvases per card', async () => {
+
     await page.evaluate(() => {
-      const btn = document.querySelector('[name="prop-view-fields"] button');
-      if (btn) (btn as HTMLElement).click();
-    });
-    
-    await page.waitForFunction(() =>
-      document.querySelector('label[name="label-None"]') !== null, {timeout: 15000});
-  });
+      const df = grok.shell.t;
+      const vw = grok.shell.tv.viewers.find((x: any) => x.type === 'FormsViewer');
+      vw.setOptions({fieldsColumnNames: ['Structure', 'Core', 'Primary Series Name']});
 
-  await softStep('Fields: click None unchecks all columns', async () => {
-    await page.evaluate(() => {
-      const noneLabel = document.querySelector('label[name="label-None"]');
-      if (noneLabel) (noneLabel as HTMLElement).click();
-    });
-    
-    await page.waitForTimeout(300);
-  });
-
-  await softStep('Fields: close dialog and set AGE/SEX/RACE via JS API (dialog uses canvas grid)', async () => {
-    
-    
-    await page.evaluate(() => {
-      const dialog = document.querySelector('.d4-dialog');
-      const okBtn = Array.from(dialog?.querySelectorAll('span, button') ?? [])
-        .find((e: any) => e.textContent?.trim() === 'OK');
-      if (okBtn) (okBtn as HTMLElement).click();
-    });
-    await page.waitForTimeout(300);
-    const fields = await page.evaluate(() => {
-      const forms = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'FormsViewer') as any;
-      forms.props.fieldsColumnNames = ['AGE', 'SEX', 'RACE'];
-      return forms.props.fieldsColumnNames;
-    });
-    expect(fields).toEqual(['AGE', 'SEX', 'RACE']);
-  });
-
-  await softStep('Fields: reorder — RACE first via JS API (drag-drop in canvas dialog not automatable)', async () => {
-    const fields = await page.evaluate(() => {
-      const forms = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'FormsViewer') as any;
-      forms.props.fieldsColumnNames = ['RACE', 'AGE', 'SEX'];
-      return forms.props.fieldsColumnNames;
-    });
-    expect(fields[0]).toBe('RACE');
-  });
-
-  await softStep('Fields: remove RACE via X icon in column header (UI)', async () => {
-    
-    await page.evaluate(() => {
-      const viewer = document.querySelector('[name="viewer-Forms"]');
-      const xIcons = Array.from(viewer?.querySelectorAll('.grok-icon.fal.fa-times') ?? []);
-      if (xIcons[0]) (xIcons[0] as HTMLElement).click();
-    });
-    await page.waitForTimeout(300);
-    const fields = await page.evaluate(() => {
-      const forms = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'FormsViewer') as any;
-      return forms.props.fieldsColumnNames;
-    });
-    expect(fields).not.toContain('RACE');
-  });
-
-  
-  await page.evaluate(() => {
-    const df = grok.shell.tv.dataFrame;
-    const forms = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'FormsViewer') as any;
-    const allCols = Array.from({length: df.columns.length}, (_: any, i: number) => df.columns.byIndex(i).name);
-    forms.props.fieldsColumnNames = allCols;
-  });
-
-  
-
-  await softStep('Show Current Row: default is true', async () => {
-    const val = await page.evaluate(() => {
-      const forms = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'FormsViewer') as any;
-      return forms.props.showCurrentRow;
-    });
-    expect(val).toBe(true);
-  });
-
-  await softStep('Show Current Row: set to false', async () => {
-    
-    const val = await page.evaluate(() => {
-      const cb = document.querySelector('[name="prop-view-show-current-row"]') as HTMLInputElement;
-      if (cb && cb.checked) cb.click();
-      const forms = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'FormsViewer') as any;
-      if (forms.props.showCurrentRow !== false) forms.props.showCurrentRow = false;
-      return forms.props.showCurrentRow;
-    });
-    expect(val).toBe(false);
-  });
-
-  await softStep('Show Current Row: set back to true', async () => {
-    const val = await page.evaluate(() => {
-      const cb = document.querySelector('[name="prop-view-show-current-row"]') as HTMLInputElement;
-      if (cb && !cb.checked) cb.click();
-      const forms = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'FormsViewer') as any;
-      if (forms.props.showCurrentRow !== true) forms.props.showCurrentRow = true;
-      return forms.props.showCurrentRow;
-    });
-    expect(val).toBe(true);
-  });
-
-  
-
-  await softStep('Show Mouse Over Row: default is true', async () => {
-    const val = await page.evaluate(() => {
-      const forms = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'FormsViewer') as any;
-      return forms.props.showMouseOverRow;
-    });
-    expect(val).toBe(true);
-  });
-
-  await softStep('Show Mouse Over Row: set to false', async () => {
-    const val = await page.evaluate(() => {
-      const cb = document.querySelector('[name="prop-view-show-mouse-over-row"]') as HTMLInputElement;
-      if (cb && cb.checked) cb.click();
-      const forms = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'FormsViewer') as any;
-      if (forms.props.showMouseOverRow !== false) forms.props.showMouseOverRow = false;
-      return forms.props.showMouseOverRow;
-    });
-    expect(val).toBe(false);
-  });
-
-  await softStep('Show Mouse Over Row: set back to true', async () => {
-    const val = await page.evaluate(() => {
-      const cb = document.querySelector('[name="prop-view-show-mouse-over-row"]') as HTMLInputElement;
-      if (cb && !cb.checked) cb.click();
-      const forms = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'FormsViewer') as any;
-      if (forms.props.showMouseOverRow !== true) forms.props.showMouseOverRow = true;
-      return forms.props.showMouseOverRow;
-    });
-    expect(val).toBe(true);
-  });
-
-  
-
-  await softStep('Selected rows: select 3 rows, showSelectedRows default true', async () => {
-    const result = await page.evaluate(() => {
-      const df = grok.shell.tv.dataFrame;
-      df.selection.set(0, true); df.selection.set(1, true); df.selection.set(2, true);
-      const forms = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'FormsViewer') as any;
-      return {selected: df.selection.trueCount, showSelectedRows: forms.props.showSelectedRows};
-    });
-    expect(result.selected).toBe(3);
-    expect(result.showSelectedRows).toBe(true);
-  });
-
-  await softStep('Show Selected Rows: set to false', async () => {
-    const val = await page.evaluate(() => {
-      const cb = document.querySelector('[name="prop-view-show-selected-rows"]') as HTMLInputElement;
-      if (cb && cb.checked) cb.click();
-      const forms = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'FormsViewer') as any;
-      if (forms.props.showSelectedRows !== false) forms.props.showSelectedRows = false;
-      return forms.props.showSelectedRows;
-    });
-    expect(val).toBe(false);
-  });
-
-  await softStep('Show Selected Rows: set back to true', async () => {
-    const val = await page.evaluate(() => {
-      const cb = document.querySelector('[name="prop-view-show-selected-rows"]') as HTMLInputElement;
-      if (cb && !cb.checked) cb.click();
-      const forms = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'FormsViewer') as any;
-      if (forms.props.showSelectedRows !== true) forms.props.showSelectedRows = true;
-      grok.shell.tv.dataFrame.selection.setAll(false);
-      return forms.props.showSelectedRows;
-    });
-    expect(val).toBe(true);
-  });
-
-  
-
-  await softStep('Form card click: currentRowIdx updates via JS API', async () => {
-    const idx = await page.evaluate(() => {
-      grok.shell.tv.dataFrame.currentRowIdx = 7;
-      return grok.shell.tv.dataFrame.currentRowIdx;
-    });
-    expect(idx).toBe(7);
-  });
-
-  await softStep('Form card Ctrl+click: row selection toggles via bitset', async () => {
-    const result = await page.evaluate(() => {
-      const df = grok.shell.tv.dataFrame;
-      df.selection.set(3, true);
-      const on = df.selection.get(3);
-      df.selection.set(3, false);
-      const off = df.selection.get(3);
-      return {on, off};
-    });
-    expect(result.on).toBe(true);
-    expect(result.off).toBe(false);
-  });
-
-  
-
-  await softStep('Color Code: default is true', async () => {
-    const val = await page.evaluate(() => {
-      const forms = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'FormsViewer') as any;
-      return forms.props.colorCode;
-    });
-    expect(val).toBe(true);
-  });
-
-  await softStep('Color Code: set to false', async () => {
-    const val = await page.evaluate(() => {
-      const cb = document.querySelector('[name="prop-view-color-code"]') as HTMLInputElement;
-      if (cb && cb.checked) cb.click();
-      const forms = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'FormsViewer') as any;
-      if (forms.props.colorCode !== false) forms.props.colorCode = false;
-      return forms.props.colorCode;
-    });
-    expect(val).toBe(false);
-  });
-
-  await softStep('Color Code: set back to true', async () => {
-    const val = await page.evaluate(() => {
-      const cb = document.querySelector('[name="prop-view-color-code"]') as HTMLInputElement;
-      if (cb && !cb.checked) cb.click();
-      const forms = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'FormsViewer') as any;
-      if (forms.props.colorCode !== true) forms.props.colorCode = true;
-      return forms.props.colorCode;
-    });
-    expect(val).toBe(true);
-  });
-
-  
-
-  await softStep('Use Grid Sort: default is true', async () => {
-    const val = await page.evaluate(() => {
-      const forms = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'FormsViewer') as any;
-      return forms.props.useGridSort;
-    });
-    expect(val).toBe(true);
-  });
-
-  await softStep('Use Grid Sort: set to false', async () => {
-    const val = await page.evaluate(() => {
-      const cb = document.querySelector('[name="prop-view-use-grid-sort"]') as HTMLInputElement;
-      if (cb && cb.checked) cb.click();
-      const forms = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'FormsViewer') as any;
-      if (forms.props.useGridSort !== false) forms.props.useGridSort = false;
-      return forms.props.useGridSort;
-    });
-    expect(val).toBe(false);
-  });
-
-  await softStep('Use Grid Sort: set back to true', async () => {
-    const val = await page.evaluate(() => {
-      const cb = document.querySelector('[name="prop-view-use-grid-sort"]') as HTMLInputElement;
-      if (cb && !cb.checked) cb.click();
-      const forms = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'FormsViewer') as any;
-      if (forms.props.useGridSort !== true) forms.props.useGridSort = true;
-      return forms.props.useGridSort;
-    });
-    expect(val).toBe(true);
-  });
-
-  
-
-  await softStep('Sort By: set to WEIGHT', async () => {
-    const val = await page.evaluate(() => {
-      const forms = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'FormsViewer') as any;
-      forms.props.sortByColumnName = 'WEIGHT';
-      return forms.props.sortByColumnName;
-    });
-    expect(val).toBe('WEIGHT');
-  });
-
-  await softStep('Sort By: change to AGE', async () => {
-    const val = await page.evaluate(() => {
-      const forms = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'FormsViewer') as any;
-      forms.props.sortByColumnName = 'AGE';
-      return forms.props.sortByColumnName;
-    });
-    expect(val).toBe('AGE');
-  });
-
-  await softStep('Sort By: clear returns null', async () => {
-    
-    const val = await page.evaluate(() => {
-      const forms = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'FormsViewer') as any;
-      forms.props.sortByColumnName = null;
-      return forms.props.sortByColumnName;
-    });
-    expect(val).toBeNull();
-  });
-
-  
-
-  await softStep('Renderer Size: default is a known value', async () => {
-    
-    const val = await page.evaluate(() => {
-      const forms = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'FormsViewer') as any;
-      return forms.props.rendererSize;
-    });
-    expect(['small', 'normal', 'large']).toContain(val);
-  });
-
-  await softStep('Renderer Size: set to normal', async () => {
-    const val = await page.evaluate(() => {
-      const forms = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'FormsViewer') as any;
-      forms.props.rendererSize = 'normal';
-      return forms.props.rendererSize;
-    });
-    expect(val).toBe('normal');
-  });
-
-  await softStep('Renderer Size: set to large', async () => {
-    const val = await page.evaluate(() => {
-      const forms = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'FormsViewer') as any;
-      forms.props.rendererSize = 'large';
-      return forms.props.rendererSize;
-    });
-    expect(val).toBe('large');
-  });
-
-  await softStep('Renderer Size: set back to small', async () => {
-    const val = await page.evaluate(() => {
-      const forms = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'FormsViewer') as any;
-      forms.props.rendererSize = 'small';
-      return forms.props.rendererSize;
-    });
-    expect(val).toBe('small');
-  });
-
-  
-
-  await softStep('Filter SEX=M: form viewer reflects filtered rows', async () => {
-    const result = await page.evaluate(async () => {
-      const forms = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'FormsViewer') as any;
-      forms.props.rendererSize = 'normal';
-      const df = grok.shell.tv.dataFrame;
-      const fg = grok.shell.tv.getFiltersGroup();
-      await new Promise(r => setTimeout(r, 300));
-      fg.updateOrAdd({type: 'categorical', column: 'SEX', selected: ['M']});
-      await new Promise(r => setTimeout(r, 500));
-      const filteredCount = df.filter.trueCount;
-      const allSexCats = Array.from((df.col('SEX') as any).categories);
-      fg.updateOrAdd({type: 'categorical', column: 'SEX', selected: allSexCats});
-      await new Promise(r => setTimeout(r, 300));
-      return {filteredCount, totalCount: df.rowCount};
-    });
-    expect(result.filteredCount).toBeLessThan(result.totalCount);
-    expect(result.filteredCount).toBeGreaterThan(0);
-  });
-
-  
-
-  await softStep('Column removal: viewer survives HEIGHT deletion', async () => {
-    const result = await page.evaluate(() => {
-      const df = grok.shell.tv.dataFrame;
-      const forms = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'FormsViewer') as any;
-      df.columns.remove('HEIGHT');
-      const colNames = Array.from({length: df.columns.length}, (_: any, i: number) =>
-        df.columns.byIndex(i).name);
-      return {heightGoneFromDf: !colNames.includes('HEIGHT'), viewerExists: forms != null};
-    });
-    expect(result.heightGoneFromDf).toBe(true);
-    expect(result.viewerExists).toBe(true);
-  });
-
-  
-
-  await softStep('Layout persistence: fields/sortBy/rendererSize restored after reload', async () => {
-    const layoutId = await page.evaluate(async () => {
-      const forms = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'FormsViewer') as any;
-      forms.props.fieldsColumnNames = ['AGE', 'SEX', 'RACE', 'WEIGHT'];
-      forms.props.sortByColumnName = 'AGE';
-      forms.props.rendererSize = 'large';
-      const layout = grok.shell.tv.saveLayout();
-      await grok.dapi.layouts.save(layout);
-      await new Promise(r => setTimeout(r, 1000));
-      return layout.id;
+      df.mouseOverRowIdx = -1;
+      df.currentRowIdx = 0;
+      df.selection.setAll(false);
+      [3, 7].forEach((r) => df.selection.set(r, true));
     });
 
-    await page.evaluate(async (id: string) => {
-      
-      const df = await grok.dapi.files.readCsv('System:DemoFiles/demog.csv');
-      const tv = grok.shell.addTableView(df);
-      grok.shell.v = tv;
-      await new Promise(resolve => {
-        const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(null); });
-        setTimeout(resolve, 3000);
+    await expect.poll(async () => page.evaluate((sel) => {
+      const df = grok.shell.t;
+      const picked = ['Structure', 'Core', 'Primary Series Name'];
+      const expectedMol = picked.filter((n) => df.col(n) && df.col(n).semType === 'Molecule').length;
+      const nonEmpty = Array.from(document.querySelectorAll(sel)).filter((c) => c.querySelector('[column]'));
+      const results = nonEmpty.map((card) => {
+        const canvases = picked.filter((n) => {
+          const el = card.querySelector(`[column="${n}"]`);
+          return el && el.tagName === 'CANVAS';
+        });
+        const psn = card.querySelector('[column="Primary Series Name"]');
+        return {
+          molCanvases: canvases.length,
+          namesOk: JSON.stringify(canvases) === JSON.stringify(['Structure', 'Core']),
+          psnIsInput: !!psn && psn.tagName === 'INPUT',
+        };
       });
-      const saved = await grok.dapi.layouts.find(id);
-      grok.shell.tv.loadLayout(saved);
-      await new Promise(r => setTimeout(r, 3000));
-    }, layoutId);
+      return JSON.stringify({
+        ready: true,
+        hasNonEmpty: results.length > 0,
+        expectedMol,
+        allTwoMol: results.every((r) => r.molCanvases === expectedMol),
+        allNamesOk: results.every((r) => r.namesOk),
+        allPsnInput: results.every((r) => r.psnIsInput),
+      });
+    }, ORDINARY), {timeout: 20_000}).toBe(JSON.stringify({
+      ready: true, hasNonEmpty: true, expectedMol: 2,
+      allTwoMol: true, allNamesOk: true, allPsnInput: true,
+    }));
+  });
 
-    const restored = await page.evaluate(() => {
-      const forms = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'FormsViewer') as any;
-      return {
-        fields: forms?.props?.fieldsColumnNames,
-        sortBy: forms?.props?.sortByColumnName,
-        rendererSize: forms?.props?.rendererSize
+  await softStep('Scenario 4 setup — open curves, add Forms without touching Renderer Size, pick smiles + multiple prefit', async () => {
+
+    await v.openTable(page, {path: curvesPath, semTypeTimeoutMs: 3000});
+    await expect.poll(() => page.evaluate(() =>
+      grok.shell.t.columns.names().some((n: string) => grok.shell.t.col(n).semType === 'fit')),
+    {timeout: 15_000}).toBe(true);
+
+    await v.addViewerByIcon(page, 'Forms', 'Forms', 30_000, 'FormsViewer');
+    await page.locator(HOST).first().waitFor({timeout: 30_000});
+    await page.evaluate(() => {
+      grok.shell.t.currentRowIdx = 0;
+      const vw = grok.shell.tv.viewers.find((x: any) => x.type === 'FormsViewer');
+      vw.setOptions({fieldsColumnNames: ['smiles', 'multiple prefit']});
+    });
+    await page.locator(CURRENT).first().waitFor({timeout: 30_000});
+  });
+
+  await softStep('Step 4a — the curve canvas is at the normal step of the ladder without touching Renderer Size', async () => {
+
+    await expect.poll(async () => page.evaluate((sel) => {
+      const grid = grok.shell.tv.grid;
+      const card = document.querySelector(sel);
+      const el = card ? card.querySelector('[column="multiple prefit"]') as any : null;
+      if (!el) return JSON.stringify({ready: false});
+      const dpr = window.devicePixelRatio;
+      const renderer = grid.col('multiple prefit') ? grid.col('multiple prefit').renderer : null;
+      const w = renderer ? renderer.defaultWidth : null;
+      const h = renderer ? renderer.defaultHeight : null;
+      const css = (size: string): [number, number] => {
+        if (!w || !h) return size === 'normal' ? [200, 100] : size === 'large' ? [300, 150] : [120, 60];
+        return size === 'normal' ? [w, h] : size === 'large'
+          ? [Math.floor(w * 1.5), Math.floor(h * 1.5)] : [Math.floor(w * 0.66), Math.floor(h * 0.66)];
       };
-    });
-    expect(restored.fields).toEqual(['AGE', 'SEX', 'RACE', 'WEIGHT']);
-    expect(restored.sortBy).toBe('AGE');
-    expect(restored.rendererSize).toBe('large');
-
-    await page.evaluate(async (id: string) => {
-      const saved = await grok.dapi.layouts.find(id);
-      if (saved) await grok.dapi.layouts.delete(saved);
-    }, layoutId);
+      const [nw, nh] = css('normal'); const [sw, sh] = css('small');
+      return JSON.stringify({
+        ready: true,
+        isCanvas: el.tagName === 'CANVAS',
+        atNormal: el.width === Math.floor(nw * dpr) && el.height === Math.floor(nh * dpr),
+        differsFromSmall: el.width !== Math.floor(sw * dpr) || el.height !== Math.floor(sh * dpr),
+      });
+    }, CURRENT), {timeout: 20_000})
+      .toBe(JSON.stringify({ready: true, isCanvas: true, atNormal: true, differsFromSmall: true}));
   });
 
-  
+  await softStep('Step 4b — smiles and multiple prefit both render as canvases; no raw-JSON input, no error', async () => {
+    const errCount = await withConsoleErrorCount(page, async () => {
+      await page.evaluate(() => { grok.shell.t.currentRowIdx = 2; grok.shell.t.currentRowIdx = 0; });
+      await expect.poll(() => page.evaluate((sel) => {
+        const card = document.querySelector(sel);
+        return ['smiles', 'multiple prefit'].every((c) => card?.querySelector(`[column="${c}"]`)?.tagName === 'CANVAS');
+      }, CURRENT), {timeout: 15_000}).toBe(true);
+    });
+    const kinds = await page.evaluate((sel) => {
+      const card = document.querySelector(sel);
+      const s = card ? card.querySelector('[column="smiles"]') : null;
+      const p = card ? card.querySelector('[column="multiple prefit"]') : null;
+      return {smiles: s ? s.tagName : null, prefit: p ? p.tagName : null};
+    }, CURRENT);
+    expect(kinds.smiles).toBe('CANVAS');
+    expect(kinds.prefit).toBe('CANVAS');
+    expect(errCount).toBe(0);
+    expect(await page.locator('.d4-balloon.error').count()).toBe(0);
+  });
 
-  await softStep('Molecule rendering: Structure column renders as drawing in Forms viewer', async () => {
-    await page.evaluate(async (path: string) => {
-      
-      const df = await grok.dapi.files.readCsv(path);
-      grok.shell.addTableView(df);
-      await new Promise(resolve => {
-        const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(null); });
-        setTimeout(resolve, 4000);
-      });
-      for (let i = 0; i < 50; i++) {
-        if (document.querySelector('[name="viewer-Grid"] canvas')) break;
-        await new Promise(r => setTimeout(r, 200));
+  await softStep('Step 4c — with three rows selected, every drawn card holds both a molecule and a curve canvas', async () => {
+    await page.evaluate(() => {
+      const df = grok.shell.t;
+      df.mouseOverRowIdx = -1;
+
+      df.currentRowIdx = 0;
+      df.selection.setAll(false);
+      [2, 5, 8].forEach((r) => df.selection.set(r, true));
+    });
+
+    await expect.poll(async () => page.evaluate((sel) => {
+      const df = grok.shell.t;
+      let selCount = 0;
+      for (let i = 0; i < df.rowCount; i++) if (df.selection.get(i)) selCount++;
+      const expected = (df.currentRowIdx >= 0 ? 1 : 0) + selCount;
+      const cards = Array.from(document.querySelectorAll(sel));
+      let both = 0; let smilesOnly = 0; let prefitOnly = 0;
+      for (const c of cards) {
+        const s = c.querySelector('[column="smiles"]');
+        const p = c.querySelector('[column="multiple prefit"]');
+        const sc = !!s && s.tagName === 'CANVAS';
+        const pc = !!p && p.tagName === 'CANVAS';
+        if (sc && pc) both++;
+        else if (sc) smilesOnly++;
+        else if (pc) prefitOnly++;
       }
-      await new Promise(r => setTimeout(r, 5000));
-    }, spgiPath);
-    await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30000});
 
-    await page.evaluate(() => {
-      const icon = document.querySelector('[name="icon-Forms"]');
-      if (icon) (icon as HTMLElement).click();
-    });
-    await page.locator('[name="viewer-Forms"]').waitFor({timeout: 10000});
-
-    const result = await page.evaluate(async () => {
-      await new Promise(r => setTimeout(r, 1000));
-      const df = grok.shell.tv.dataFrame;
-      const forms = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'FormsViewer') as any;
-      const molCols = Array.from({length: df.columns.length}, (_: any, i: number) => df.columns.byIndex(i))
-        .filter((c: any) => c.semType === 'Molecule').map((c: any) => c.name);
-      const targetCols = ['Structure', 'Primary Series Name', 'Average Mass', 'TPSA']
-        .filter((n: string) => df.col(n));
-      forms.props.fieldsColumnNames = targetCols;
-      for (let i = 0; i < 5; i++) df.selection.set(i, true);
-      forms.props.rendererSize = 'large';
-      const large = forms.props.rendererSize;
-      forms.props.rendererSize = 'small';
-      const small = forms.props.rendererSize;
-      return {molCols, fields: forms.props.fieldsColumnNames, selected: df.selection.trueCount, large, small};
-    });
-    expect(result.molCols.length).toBeGreaterThan(0);
-    expect(result.fields).toEqual(['Structure', 'Primary Series Name', 'Average Mass', 'TPSA']);
-    expect(result.selected).toBe(5);
-    expect(result.large).toBe('large');
-    expect(result.small).toBe('small');
-  });
-
-  
-
-  await softStep('Multiple molecule columns: Structure and Core both in fieldsColumnNames', async () => {
-    const result = await page.evaluate(() => {
-      const df = grok.shell.tv.dataFrame;
-      const forms = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'FormsViewer') as any;
-      const molCols = Array.from({length: df.columns.length}, (_: any, i: number) => df.columns.byIndex(i))
-        .filter((c: any) => c.semType === 'Molecule').map((c: any) => c.name);
-      const target = [...molCols.slice(0, 2), 'Primary Series Name'].filter((n: string) => df.col(n));
-      forms.props.fieldsColumnNames = target;
-      return {fields: forms.props.fieldsColumnNames, molCount: molCols.length};
-    });
-    expect(result.molCount).toBeGreaterThanOrEqual(2);
-    expect(result.fields.length).toBeGreaterThanOrEqual(2);
-  });
-
-  
-
-  await softStep('Curves: open dataset and add Forms viewer', async () => {
-    await page.evaluate(async () => {
-      
-      const df = await grok.dapi.files.readCsv('System:DemoFiles/curves.csv');
-      grok.shell.addTableView(df);
-      await new Promise(resolve => {
-        const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(null); });
-        setTimeout(resolve, 4000);
+      return JSON.stringify({
+        bothMatchesExpected: both === expected, expectedPositive: expected > 0, smilesOnly, prefitOnly,
       });
-    });
-    await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 20000});
-    await page.evaluate(() => {
-      const icon = document.querySelector('[name="icon-Forms"]');
-      if (icon) (icon as HTMLElement).click();
-    });
-    await page.locator('[name="viewer-Forms"]').waitFor({timeout: 10000});
+    }, ORDINARY), {timeout: 20_000})
+      .toBe(JSON.stringify({
+        bothMatchesExpected: true, expectedPositive: true, smilesOnly: 0, prefitOnly: 0,
+      }));
   });
 
-  await softStep('Curves: default rendererSize is one of small|normal|large', async () => {
-    
-    const val = await page.evaluate(async () => {
-      await new Promise(r => setTimeout(r, 500));
-      const forms = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'FormsViewer') as any;
-      return forms.props.rendererSize;
+  const patterns = ['c1ccncc1', 'c1ccccc1', 'C(=O)O', 'C(=O)N', 'Cl', 'F', '[nH]', 'c1ccc2ccccc2c1'];
+  let idCol = '';
+  let pattern = '';
+  let survivorId = '';
+
+  let filterRepaintErrors = 0;
+  const filterErrHandler = (msg: {type(): string}) => { if (msg.type() === 'error') filterRepaintErrors++; };
+
+  await softStep('Scenario 5 setup — open spgi-100, add Forms, select four rows split by a substructure query', async () => {
+    await v.openTable(page, {path: spgiPath, semTypeTimeoutMs: 3000});
+    await v.addViewerByIcon(page, 'Forms', 'Forms', 30_000, 'FormsViewer');
+    await page.locator(HOST).first().waitFor({timeout: 30_000});
+
+    const defaults = await page.evaluate(() => {
+      const vw = grok.shell.tv.viewers.find((x: any) => x.type === 'FormsViewer');
+      return {sel: vw.props.showSelectedRows, cur: vw.props.showCurrentRow, mo: vw.props.showMouseOverRow};
     });
-    expect(['small', 'normal', 'large']).toContain(val);
+    expect(defaults).toEqual({sel: true, cur: true, mo: true});
+
+    const setup = await page.evaluate(async ({pats}) => {
+      const df = grok.shell.t;
+      const names = df.columns.names();
+      let id: string | null = null;
+      for (const n of names) {
+        const col = df.col(n);
+        if (col.semType !== 'Molecule' && col.type === 'string') { id = n; break; }
+      }
+      if (!id)
+        for (const n of names) {
+          const col = df.col(n);
+          if (col.semType !== 'Molecule' && (col.type === 'int' || col.type === 'bigint')) { id = n; break; }
+        }
+      if (!id) return {error: 'no non-molecule identifier column on spgi-100'};
+
+      let chosen: string | null = null; let matched: number[] = []; let unmatched: number[] = [];
+      for (const p of pats) {
+        const bs = await grok.chem.searchSubstructure(df.col('Structure'), p);
+        const tc = bs.trueCount;
+        if (tc > 0 && tc < df.rowCount) {
+          chosen = p; matched = []; unmatched = [];
+          for (let i = 0; i < df.rowCount; i++) (bs.get(i) ? matched : unmatched).push(i);
+          break;
+        }
+      }
+      if (!chosen || matched.length < 1 || unmatched.length < 1)
+        return {error: 'no substructure pattern produced a proper subset on spgi-100'};
+
+      const selMatched = matched.slice(0, 2);
+      const selUnmatched = unmatched.slice(0, 2);
+      const selected = [...selMatched, ...selUnmatched];
+      df.selection.setAll(false);
+      for (const r of selected) df.selection.set(r, true);
+      df.mouseOverRowIdx = -1;
+      let current = 0;
+      while (selected.includes(current)) current++;
+      df.currentRowIdx = current;
+
+      const survivorRow = selMatched[0];
+      return {
+        id, pattern: chosen,
+        survivorId: df.col(id).getString(survivorRow),
+        selectedCount: selected.length,
+      };
+    }, {pats: patterns});
+
+    if ((setup as any).error) throw new Error(`[Scenario 5 setup] ${(setup as any).error}`);
+    idCol = (setup as any).id;
+    pattern = (setup as any).pattern;
+    survivorId = (setup as any).survivorId;
+
+    await expect.poll(async () => page.evaluate(({sel, idc}) => {
+      const cards = Array.from(document.querySelectorAll(sel)).slice(2);
+      return cards.map((c) => {
+        const e = c.querySelector(`[column="${idc}"]`) as HTMLInputElement | null;
+        return e ? e.value : null;
+      }).filter((x) => x !== null).length;
+    }, {sel: ORDINARY, idc: idCol}), {timeout: 20_000}).toBe(4);
+
+    await expect.poll(async () => page.evaluate(({sel, idc, idv}) => {
+      for (const c of Array.from(document.querySelectorAll(sel))) {
+        const e = c.querySelector(`[column="${idc}"]`) as HTMLInputElement | null;
+        if (e && e.value === idv) {
+          const cv = c.querySelector('[column="Structure"]') as HTMLCanvasElement | null;
+          if (cv && cv.tagName === 'CANVAS') { cv.setAttribute('data-repaint-probe', 'forms5b'); return true; }
+        }
+      }
+      return false;
+    }, {sel: ORDINARY, idc: idCol, idv: survivorId}), {timeout: 20_000}).toBe(true);
+
+    filterRepaintErrors = 0;
+    page.on('console', filterErrHandler);
   });
 
-  await softStep('Curves: set fields to smiles + multiple prefit', async () => {
-    const result = await page.evaluate(() => {
-      const df = grok.shell.tv.dataFrame;
-      const forms = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'FormsViewer') as any;
-      const colNames = Array.from({length: df.columns.length}, (_: any, i: number) => df.columns.byIndex(i).name);
-      const target = ['smiles', 'multiple prefit'].filter((n: string) => colNames.includes(n));
-      if (target.length > 0) forms.props.fieldsColumnNames = target;
-      return {fields: forms.props.fieldsColumnNames, available: colNames};
-    });
-    expect(result.fields).toContain('smiles');
-    expect(result.fields).toContain('multiple prefit');
+  await softStep('Step 5a — after the substructure filter, the selected-row cards equal selection ∩ filter', async () => {
+    await page.evaluate(async ({pat}) => {
+      const df = grok.shell.t;
+      const bs = await grok.chem.searchSubstructure(df.col('Structure'), pat);
+      df.filter.init((i: number) => bs.get(i));
+    }, {pat: pattern});
+
+    await expect.poll(async () => page.evaluate(({sel, idc}) => {
+      const df = grok.shell.t;
+      const inter: string[] = []; let selCount = 0;
+      for (let i = 0; i < df.rowCount; i++) {
+        if (df.selection.get(i)) selCount++;
+        if (df.selection.get(i) && df.filter.get(i)) inter.push(df.col(idc).getString(i));
+      }
+      const tail = (Array.from(document.querySelectorAll(sel)).slice(2)
+        .map((c) => (c.querySelector(`[column="${idc}"]`) as HTMLInputElement | null)?.value ?? null)
+        .filter((x) => x !== null)) as string[];
+      return JSON.stringify({excluded: inter.length < selCount, match: JSON.stringify(inter) === JSON.stringify(tail)});
+    }, {sel: ORDINARY, idc: idCol}), {timeout: 25_000})
+      .toBe(JSON.stringify({excluded: true, match: true}));
   });
 
-  await softStep('Curves: set multiple styled series columns and rendererSize large/small', async () => {
-    const result = await page.evaluate(() => {
-      const df = grok.shell.tv.dataFrame;
-      const forms = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'FormsViewer') as any;
-      const colNames = Array.from({length: df.columns.length}, (_: any, i: number) => df.columns.byIndex(i).name);
-      const target = ['smiles', 'multiple styled series', 'styled proprtional with IC50']
-        .filter((n: string) => colNames.includes(n));
-      forms.props.fieldsColumnNames = target;
-      forms.props.rendererSize = 'large';
-      const large = forms.props.rendererSize;
-      forms.props.rendererSize = 'small';
-      const small = forms.props.rendererSize;
-      return {fields: forms.props.fieldsColumnNames, large, small};
-    });
-    expect(result.fields).toContain('multiple styled series');
-    expect(result.large).toBe('large');
-    expect(result.small).toBe('small');
+  await softStep('Step 5b — the surviving card\'s Structure canvas is rebuilt and drawn (not empty) after the filter', async () => {
+
+    page.off('console', filterErrHandler);
+    expect(filterRepaintErrors).toBe(0);
+
+    await expect.poll(async () => page.evaluate(({sel, idc, idv}) => {
+      const markerGone = !document.querySelector('[data-repaint-probe="forms5b"]');
+      let present = false; let freshCanvas = false; let drawn = 0;
+      for (const c of Array.from(document.querySelectorAll(sel))) {
+        const e = c.querySelector(`[column="${idc}"]`) as HTMLInputElement | null;
+        if (e && e.value === idv) {
+          present = true;
+          const cv = c.querySelector('[column="Structure"]') as HTMLCanvasElement | null;
+          if (cv && cv.tagName === 'CANVAS' && !cv.hasAttribute('data-repaint-probe')) {
+            freshCanvas = true;
+            try {
+              const d = cv.getContext('2d')!.getImageData(0, 0, cv.width, cv.height).data;
+              for (let i = 0; i < d.length; i += 4) {
+                const a = d[i + 3]; const r = d[i]; const g = d[i + 1]; const b = d[i + 2];
+                if (a > 10 && !(r >= 245 && g >= 245 && b >= 245)) drawn++;
+              }
+            } catch (_) { drawn = -1; }
+          }
+        }
+      }
+      return JSON.stringify({markerGone, present, freshCanvas, hasContent: drawn > 20});
+    }, {sel: ORDINARY, idc: idCol, idv: survivorId}), {timeout: 20_000})
+      .toBe(JSON.stringify({markerGone: true, present: true, freshCanvas: true, hasContent: true}));
   });
 
+  await v.cleanupShell(page);
   v.finishSpec();
 });

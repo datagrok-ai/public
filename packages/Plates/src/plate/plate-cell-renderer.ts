@@ -45,11 +45,13 @@ export class PlateGridCellRenderer extends DG.GridCellRenderer {
     this.plateWidget.grid.render(g, new DG.Rect(x, y, w, h).cutTop(Math.min(h / 20, 5)).cutRight(Math.min(w / 20, 5)));
   }
 
-  onClick(gridCell: DG.GridCell, _e: MouseEvent) {
+  hasContextValue(gridCell: DG.GridCell): boolean { return gridCell.value != null; }
+
+  async getContextValue(gridCell: DG.GridCell): Promise<any> {
     const pw = PlateWidget.detailedView(Plate.fromTableByRow(gridCell.value!), false);
     pw.grid.root.style.maxHeight = '300px';
     pw.root.style.flexDirection = 'column';
     pw.grid.root.style.width = 'unset';
-    grok.shell.o = pw.root;
+    return pw.root;
   }
 }

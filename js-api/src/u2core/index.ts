@@ -9,3 +9,6 @@ export {Component, Control} from './component.js';
 export type {PropertyChange, ComponentState} from './component.js';
 export {dfBindings, DF_STEPS} from './df-bindings.js';
 export type {ColumnLike, DataFrameLike} from './df-bindings.js';
+export {BitArray} from './bit-array.js';
+export type {BitPredicate} from './bit-array.js';
+export {TYPE, COLUMN_TYPE, SEMTYPE, TYPES_SCALAR} from '../const.js';

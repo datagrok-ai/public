@@ -5,6 +5,7 @@ import * as grok from 'datagrok-api/grok';
 import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 import {TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {SearchBaseViewer} from '@datagrok-libraries/ml/src/viewers/search-base-viewer';
+import {Observable, Subject} from 'rxjs';
 
 const MAX_ROWS_FOR_DISTANCE_MATRIX = 10000;
 
@@ -26,6 +27,29 @@ export class SequenceSearchBaseViewer extends SearchBaseViewer {
   tags = [DG.TAGS.UNITS, bioTAGS.aligned, bioTAGS.separator, bioTAGS.alphabet, 'cell.renderer'];
   preComputeDistanceMatrix: boolean = false;
   requiresSampling: boolean = false;
+
+  private _rendersPending: number = 0;
+  private readonly _onRendered = new Subject<void>();
+  /** Fires after every render pass (the compute included) — what automation settles on. */
+  get onRendered(): Observable<void> { return this._onRendered; }
+  get isRenderPending(): boolean { return this._rendersPending > 0; }
+
+  protected override render(computeData = true): void {
+    this._rendersPending++;
+    super.render(computeData);
+    this.renderPromise = this.renderPromise.finally(() => {
+      this._rendersPending--;
+      this._onRendered.next();
+    });
+  }
+
+  /** The readings a search viewer reports, on top of what the host gives. */
+  getWidgetStatus(): any {
+    const base = (Object.getPrototypeOf(SequenceSearchBaseViewer.prototype) as any).getWidgetStatus?.call(this) ?? {};
+    return {...base, hitAreas: {...(base.hitAreas ?? {})}, values: {...(base.values ?? {}), ...this.readings(), 'source column': this.targetColumnName ?? '', 'limit': this.limit}};
+  }
+
+  protected readings(): {[name: string]: number | string | boolean} { return {}; }
 
   constructor(name: string, semType: string) {
     super(name, semType);

@@ -1,4 +1,12 @@
-1. Open the 'NxProjectViewers' project, check
+---
+feature: viewers
+realizes_atlas: []   # untyped: nx cross-viewer integration chain
+priority: p2
+target_layer: manual-only
+coverage_type: smoke
+---
+
+1. Open the 'NxProjectViewers' project (saved by the previous scenario) - it opens without errors
 1. Right-click the view’s header and select Table > Add view
 1. Add new column:
    * `Qnum((100-${Chemical Space Y})/100, if(qualifier(${Chemical Space X})==">", "<", "="))`
@@ -25,7 +33,7 @@
    * Re-open the formula lines dialog
    * Uncheck a few lines/bands and click OK to save
    * Re-open the formula lines dialog again
-   * Check all the checkboxes - all lines/bands should be shown when all checkboxes are selected
+   * Re-check every checkbox in the Formula Lines list and click OK - every line/band reappears on the chart once all checkboxes are selected
    * Set Row Source to FilteredSelected 
    * From the context menu, select Tools > Show regression line
    * Set Color to Series
@@ -45,15 +53,15 @@
    * Turn on Data > Multiaxes - check the legend
    * Set Y to Average Mass only
    * Switch Y to log scale - check the formula line
-1.  Go to the grid and  rename the Chemical Space X and Chemical Space Y columns - check the added calculated columns and formula lines - they should be renamed, too
-1.  Add a histogram, bar chart, pie chart, trellis plot, PC plot, and box plot. 
-1.  Add legends to all new viewers. Set different positions and visibility
-1.  Stack them one over another - check the legends
-1.  For the Chem Space X column, change the color coding to conditional and add a new bin - check the coloring and legend on the scatterplot
-1.  For the Chem Space X column, change the color coding to linear and change the schema - the scatterplot’s schema should be changed as well
-1.  Change any color on the pie chart categorical legend - check the other viewers with such legend
+1. Go to the grid and rename the Chemical Space X and Chemical Space Y columns to Chem Space X and Chem Space Y - check the added calculated columns and formula lines - they should be renamed, too
+1. Add a histogram, bar chart, pie chart, trellis plot, PC plot, and box plot.
+1. Add legends to all new viewers. Set different positions and visibility
+1. Stack them one over another - check the legends
+1. For the Chem Space X column, change the color coding to conditional and add a new bin - check the coloring and legend on the scatterplot
+1. For the Chem Space X column, change the color coding to linear and change the schema - the scatterplot’s schema should be changed as well
+1. Change any color on the pie chart categorical legend - check the other viewers with such legend
 1. Save the layout
-1. Apply some old layouts or make some changes
+1. Apply a layout saved by an earlier NX scenario (e.g. the one from calc-columns) - it applies without errors; then change the layout (e.g. move and resize a couple of viewers)
 1. Apply the saved layout - check the legend on the stacked viewers
 1.  On the scatterplots, use zoom, pan, selection, and filtering by legend
 1. Save the layout
@@ -62,7 +70,10 @@
 1. Save a new copy of the project as 'NxProjectFormulaLegend'
 
 Close All
+
+Cleanup: deferred to the end of the NX chain (see filtering-ui.md).
 ---
 {
-  "order": 4
+  "order": 4,
+  "datasets": ["System:DemoFiles/chem/SPGI.csv", "System:AppData/ApiTests/datasets/SPGI-linked1.csv", "System:AppData/ApiTests/datasets/SPGI-linked2.csv"]
 }

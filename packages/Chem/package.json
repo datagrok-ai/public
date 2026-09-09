@@ -23,7 +23,7 @@
         "Marvin",
         "ChemDraw"
       ],
-      "defaultValue": "",
+      "defaultValue": "Ketcher",
       "nullable": true
     },
     {

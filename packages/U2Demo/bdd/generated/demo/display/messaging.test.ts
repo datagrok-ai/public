@@ -1,3 +1,6 @@
+/* eslint-disable max-len */
+/* eslint-disable comma-spacing */
+/* eslint-disable quotes */
 /* ---
 generated: features/demo/display/messaging.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
@@ -14,15 +17,15 @@ import {pressKeyIn, shouldBe, shouldContainText, typeInto} from '@datagrok-libra
 import {el, enter, feature} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("The message input", () => {
-  const session = feature(test);
+  const session = feature(test, "features/demo/display/messaging.feature", import.meta.url);
   test("Composing and sending", {tag: ["@demo", "@realizes:u2.message-input"]}, async ({browser}) => {
     const page = await session.page(browser);
-    await test.step("Given user opens the \"Message input\" demo page", () => openDemoPage(page, "Message input"));
+    await session.step(5, "Given user opens the \"Message input\" demo page", () => openDemoPage(page, "Message input"));
     enter(page, "U2 Demo");
-    await test.step("Then Send button should be disabled", () => shouldBe(page, el("Send button"), "disabled"));
-    await test.step("When user types \"Hello from bdd\" into message input", () => typeInto(page, "Hello from bdd", el("message input")));
-    await test.step("Then Send button should be enabled", () => shouldBe(page, el("Send button"), "enabled"));
-    await test.step("When user presses Control+Enter in message input", () => pressKeyIn(page, "Control+Enter", el("message input")));
-    await test.step("Then value of sent readout should contain text \"Hello from bdd\"", () => shouldContainText(page, el("value of sent readout"), "Hello from bdd"));
+    await session.step(6, "Then Send button should be disabled", () => shouldBe(page, el("Send button"), "disabled"));
+    await session.step(7, "When user types \"Hello from bdd\" into message input", () => typeInto(page, "Hello from bdd", el("message input")));
+    await session.step(8, "Then Send button should be enabled", () => shouldBe(page, el("Send button"), "enabled"));
+    await session.step(9, "When user presses Control+Enter in message input", () => pressKeyIn(page, "Control+Enter", el("message input")));
+    await session.step(10, "Then value of sent readout should contain text \"Hello from bdd\"", () => shouldContainText(page, el("value of sent readout"), "Hello from bdd"));
   });
 });

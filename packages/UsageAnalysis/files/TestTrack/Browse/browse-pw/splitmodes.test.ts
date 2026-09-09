@@ -16,7 +16,6 @@ test.describe('Browse modes (Browse-Modes-*)', () => {
   test('Browse-Modes-01 — Tabs and Presentation toggles work', async ({ page }) => {
     const sink = watchErrors(page);
 
-    // Open a demo table first so there is real content to swap between layouts.
     await page.goto(`${process.env.DATAGROK_URL!}/files/System.DemoFiles/?browse=files`);
     await page.waitForSelector(RIBBON, { timeout: 30_000 });
     const demog = page.locator('label, .d4-tree-view-item-label', { hasText: /^demog\.csv$/i }).first();
@@ -26,7 +25,6 @@ test.describe('Browse modes (Browse-Modes-*)', () => {
 
     await expect(page.locator(STATUS_BAR), 'Status bar must be visible after opening a view').toBeVisible();
 
-    // Toggle Tabs mode (Tabs ↔ Windows). Click twice to return to the original state.
     const tabs = page.locator(STATUS_BAR_MODE_TABS);
     const presentation = page.locator(STATUS_BAR_MODE_PRESENTATION);
 
@@ -36,14 +34,12 @@ test.describe('Browse modes (Browse-Modes-*)', () => {
     await tabs.click();
     await page.waitForTimeout(800);
 
-    // Enter Presentation mode (F7 equivalent), then exit by pressing Escape.
     await expect(presentation, 'Presentation toggle should be visible').toBeVisible();
     await presentation.click();
     await page.waitForTimeout(800);
     await page.keyboard.press('Escape');
     await page.waitForTimeout(800);
 
-    // After all toggling, ribbon must still be present (app survived).
     await expect(page.locator(RIBBON).first(), 'App must still be alive after mode toggles').toBeVisible();
 
     await expectNoErrors(page, sink);
@@ -51,17 +47,13 @@ test.describe('Browse modes (Browse-Modes-*)', () => {
 });
 
 test.describe('Browse split (Browse-Split-*)', () => {
-  // Split right/down is performed via the dock manager when the app is in Windows mode
-  // (simpleMode = false). Both tests switch mode programmatically, perform the JS-level
-  // split, and verify two dataframes are visible side-by-side.
 
   test.beforeEach(async ({ page }) => {
     await goHome(page);
   });
 
   async function splitViews(page: import('@playwright/test').Page, direction: 'right' | 'down'): Promise<void> {
-    // Open two tables and split via JS API; this is the deterministic path Datagrok
-    // documents internally for splitting a workspace.
+
     await page.evaluate(async (dir) => {
       try { (window as any).grok.shell.closeAll(); } catch {}
       (window as any).grok.shell.windows.simpleMode = false;
@@ -69,7 +61,7 @@ test.describe('Browse split (Browse-Split-*)', () => {
       (window as any).grok.shell.addTableView(df1);
       const df2 = await (window as any).grok.dapi.files.readCsv('System:DemoFiles/demog.csv');
       const tv2 = (window as any).grok.shell.addTableView(df2);
-      // Dock the second view next to / below the first.
+
       try {
         const dock = (window as any).grok.shell.dockManager;
         const root = dock?.rootNode;
@@ -85,7 +77,6 @@ test.describe('Browse split (Browse-Split-*)', () => {
     const sink = watchErrors(page);
     await splitViews(page, 'right');
 
-    // After splitting, the shell must report at least 2 open Table views.
     const tableViewCount = await page.evaluate(() => {
       try {
         return Array.from((window as any).grok.shell.views)

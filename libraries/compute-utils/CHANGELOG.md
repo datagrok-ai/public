@@ -1,5 +1,11 @@
 # compute-utils changelog
 
+## v.next
+
+* RTD: Driver.sendCommand returns a promise resolved on command completion (per-command acks on commandAcks$)
+* RTD: Fixed a synchronous command error killing the driver command queue
+* RTD: initPipeline command accepts an inline processed config
+
 ## 1.46.9 (2026-08-07)
 
 * Exported `CONFIG_PATH` (workflow config FuncCall option key) from funccall-utils

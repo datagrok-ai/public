@@ -407,9 +407,10 @@ export class PackageFunctions {
     name: 'renderMolecule',
     description: 'Renders a molecule as a widget. Drawn once on a large square canvas so the preview stays crisp at any size',
     outputs: [{name: 'result', type: 'widget'}],
+    tags: ['ignorePanel'],
     meta: {includeInFlow: 'true', autorun: 'true'},
   })
-  static renderMolecule(
+  static async renderMolecule(
     @grok.decorators.param({options: {nullable: false, semType: 'Molecule', description: 'Molecule (SMILES or Molfile)'}}) molecule: string,
   ): Promise<DG.Widget> {
     return renderMoleculeWidget(molecule);

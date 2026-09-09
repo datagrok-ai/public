@@ -9,7 +9,7 @@ import {fileURLToPath} from 'node:url';
 
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const SERVED = ['gallery', 'css', 'src', 'vendor', 'node_modules/@floating-ui',
-  'node_modules/datagrok-api/src/u2core'];
+  'node_modules/datagrok-api/src/u2core', 'node_modules/datagrok-api/src/const.js'];
 const MIME = {'.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
   '.mjs': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8',
   '.json': 'application/json', '.map': 'application/json',

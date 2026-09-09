@@ -1,5 +1,8 @@
 # utils changelog
 
+## 4.7.10 (WIP)
+* GROK-20849: `BitArray` is a compatibility wrapper over `DG.BitArray` (old names kept); `trueCount()` is no longer stale after raw-buffer writes; callerless members removed
+
 ## 4.7.9 (2026-08-27)
 
 * Added FuncCallParamsEditor: adapts a `getParams()`-style dialog editor to the canonical `DG.FuncCallEditor` contract

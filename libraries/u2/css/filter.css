@@ -1,0 +1,347 @@
+/* Filter builder. The `u2-fb-` prefix is shared with the functions browser: no class name below
+   repeats one of its (`u2-fb-row`, `u2-fb-empty` are taken there — rows are `u2-fb-cond`). */
+.u2-input-root[data-u2='filter-builder'] {
+  align-items: flex-start;
+}
+
+.u2-input-root[data-u2='filter-builder'] > .u2-input-box {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.u2-input-editor.u2-fb {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: var(--dg-space-s);
+  min-width: 0;
+  height: auto;
+  padding: 0;
+}
+
+/* an inline host must not pin the panel to one control row: it grows with its rows */
+.u2-input-root[data-u2='filter-builder'].u2-input-inline > .u2-input-box > .u2-input-editor {
+  height: auto;
+}
+
+/* the problems are told per row (below); the input-level verdict would collide with the header */
+.u2-input-root[data-u2='filter-builder'] > .u2-input-error {
+  display: none;
+}
+
+.u2-input-editor.u2-fb.u2-invalid {
+  border-bottom: none;
+}
+
+.u2-fb [hidden] {
+  display: none !important;
+}
+
+.u2-fb-root,
+.u2-fb-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dg-space-s);
+  min-width: 0;
+}
+
+.u2-fb-header,
+.u2-fb-group-header {
+  display: flex;
+  align-items: center;
+  gap: var(--dg-space-m);
+}
+
+.u2-fb-mode {
+  margin-left: auto;
+  font-size: var(--dg-font-size-small);
+}
+
+/* a sub-group: one rule per depth, its rows indented under the header */
+.u2-fb-group {
+  padding-left: var(--dg-space-m);
+  border-left: 2px solid var(--dg-border);
+}
+
+.u2-fb-group-header {
+  min-height: var(--dg-control-height);
+}
+
+.u2-fb-group-rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dg-space-xs);
+  min-width: 0;
+}
+
+.u2-fb-group.u2-fb-negated {
+  border-left-color: var(--dg-accent);
+}
+
+/* `not` reads as a chip like the connector; lit when on */
+.u2-btn.u2-fb-not {
+  height: var(--dg-inline-control-height);
+  padding: 0 var(--dg-space-m);
+  font-size: var(--dg-font-size-small);
+  font-weight: var(--dg-font-weight-medium);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--dg-text-color);
+}
+
+.u2-btn.u2-fb-not-on {
+  color: var(--dg-selection-text);
+  background: var(--dg-selection-bg);
+  border-color: var(--dg-selection-bg);
+}
+
+.u2-fb-handle {
+  display: inline-flex;
+  align-items: center;
+  align-self: stretch;
+  padding: 0 var(--dg-space-xs);
+  color: var(--dg-text-color-light);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.u2-fb-handle:hover {
+  color: var(--dg-text-color);
+}
+
+.u2-fb-dragging {
+  opacity: 0.5;
+}
+
+/* the drop indicator: a line between rows or an outline around a group */
+.u2-fb-drop {
+  position: absolute;
+  z-index: 1;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+.u2-fb-drop-line {
+  background: var(--dg-accent);
+}
+
+.u2-fb-drop-into {
+  outline: 2px dashed var(--dg-accent);
+  outline-offset: -1px;
+  background: var(--dg-selection-bg);
+  opacity: 0.5;
+}
+
+/* the and/or toggle reads as two small chips, not as toolbar buttons */
+.u2-fb-connector .u2-btn-group-item {
+  padding: 0 var(--dg-space-m);
+  font-size: var(--dg-font-size-small);
+  font-weight: var(--dg-font-weight-medium);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* conditions stand apart; the pickers of one, when a narrow host stacks them, stay close */
+.u2-fb-rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dg-space-l);
+  min-width: 0;
+}
+
+.u2-fb-cond {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--dg-space-xs) var(--dg-space-m);
+  min-height: var(--dg-control-height);
+  padding: 0 var(--dg-space-s);
+  border-radius: var(--dg-radius);
+}
+
+.u2-fb-cond:hover {
+  background: var(--dg-hover-subtle);
+}
+
+/* the sub-inputs sit on one row: no vertical padding of their own */
+.u2-fb-cond .u2-input-root {
+  flex-wrap: nowrap;
+  padding: 0;
+}
+
+.u2-fb-cond .u2-input-error {
+  display: none;
+}
+
+/* the pickers keep one width, so the value column and the remove line up from row to row; in a
+   narrow horizontal host they give way down to 60px */
+.u2-fb-cond > .u2-fb-prop,
+.u2-fb-cond > .u2-fb-op {
+  flex: 0 1 120px;
+  min-width: 60px;
+}
+
+.u2-fb-cond > .u2-fb-prop > .u2-input-box,
+.u2-fb-cond > .u2-fb-op > .u2-input-box {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.u2-fb-prop select.u2-input-editor,
+.u2-fb-op select.u2-input-editor {
+  width: 100%;
+  min-width: 0;
+}
+
+.u2-fb-prop-text,
+.u2-fb-op-text {
+  white-space: nowrap;
+}
+
+.u2-fb-op-text {
+  color: var(--dg-text-color-light);
+}
+
+/* the value editors shrink before a row overflows its host: every box on the way down gives up
+   its content-sized floor */
+.u2-fb-values {
+  display: flex;
+  flex: 0 1 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--dg-space-xs) var(--dg-space-s);
+  min-width: 0;
+}
+
+.u2-fb-values > * {
+  flex-shrink: 1;
+  min-width: 0;
+}
+
+.u2-fb-values .u2-input-box {
+  min-width: 0;
+}
+
+.u2-fb-values .u2-input-editor {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.u2-fb-cond > .u2-fb-remove {
+  margin-left: auto;
+}
+
+/* the row's first problem, a line of its own under the controls */
+.u2-fb-problem {
+  flex: 1 0 100%;
+  font-size: var(--dg-font-size-small);
+  color: var(--dg-error);
+}
+
+.u2-fb-and {
+  font-size: var(--dg-font-size-small);
+  color: var(--dg-text-color-light);
+}
+
+.u2-fb-remove,
+.u2-fb-add {
+  color: var(--dg-text-color-light);
+}
+
+.u2-fb-remove:hover:not(:disabled),
+.u2-fb-add:hover:not(:disabled) {
+  color: var(--dg-text-color);
+}
+
+/* a problem on the row: a left rule beside the message */
+.u2-fb-invalid {
+  box-shadow: inset 2px 0 0 var(--dg-error);
+}
+
+.u2-fb-nested-text {
+  font-family: var(--dg-font-family-mono);
+  font-size: var(--dg-font-size-small);
+  color: var(--dg-text-color-light);
+}
+
+.u2-fb-none {
+  padding: 0 var(--dg-space-s);
+  font-size: var(--dg-font-size-small);
+  line-height: var(--dg-control-height);
+  color: var(--dg-text-color-light);
+}
+
+.u2-fb-hint {
+  display: flex;
+  gap: var(--dg-space-s);
+  padding: var(--dg-space-xs) var(--dg-space-s);
+  font-size: var(--dg-font-size-small);
+  color: var(--dg-text-color-light);
+}
+
+.u2-fb-query {
+  padding: var(--dg-space-xs) var(--dg-space-s);
+  font-family: var(--dg-font-family-mono);
+  font-size: var(--dg-font-size-small);
+  color: var(--dg-text-color-light);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* advanced: the strip is all rows — the spacing is row padding, not a gap, so every pixel under
+   a drag resolves to the row it is beside rather than to "append at the end of the root" */
+.u2-fb-advanced .u2-fb-rows,
+.u2-fb-advanced .u2-fb-group-rows {
+  gap: 0;
+}
+
+.u2-fb-advanced .u2-fb-cond,
+.u2-fb-advanced .u2-fb-group {
+  padding-top: calc(var(--dg-space-xs) / 2);
+  padding-bottom: calc(var(--dg-space-xs) / 2);
+}
+
+/* horizontal: the rows flow inline and wrap, a connector chip between them, "+" at the end */
+.u2-fb-horizontal .u2-fb-rows {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--dg-space-s);
+}
+
+.u2-fb-horizontal .u2-fb-cond {
+  flex-wrap: nowrap;
+  gap: var(--dg-space-s);
+  max-width: 100%;
+  min-width: 0;
+  background: var(--dg-bg);
+  border: var(--dg-border-width) solid var(--dg-border);
+}
+
+/* a chip is content-sized: the problem sits after the remove, trimmed before the chip overflows */
+.u2-fb-horizontal .u2-fb-problem {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.u2-fb-horizontal .u2-fb-cond:hover {
+  background: var(--dg-hover-subtle);
+}
+
+.u2-btn.u2-fb-join {
+  height: var(--dg-inline-control-height);
+  padding: 0 var(--dg-space-m);
+  font-weight: var(--dg-font-weight-medium);
+  color: var(--dg-selection-text);
+  background: var(--dg-selection-bg);
+  border-radius: 999px;
+}
+
+.u2-btn.u2-fb-join:hover:not(:disabled) {
+  background: var(--dg-hover);
+}

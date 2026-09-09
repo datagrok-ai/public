@@ -7,12 +7,15 @@ import {Bundle, BundleEntity, bytesPath, hashOf, hashView, stripPrivate, writeId
 import {nestedIds, rewrite} from './rewriter';
 import {findEntity, grantsOf, groupCache} from './walker';
 
+/** A relation set is written whole; a project holding thousands of them is slow, not stuck. */
+const BULK_WRITE_MS = Number(process.env['GROK_HTTP_BULK_TIMEOUT'] ?? 600000);
+
 export type Action = 'create' | 'update' | 'identical' | 'skip' | 'failed' | 'warn' | 'info' | 'needs-credentials';
 export type ConflictPolicy = 'fail' | 'skip' | 'duplicate' | 'adopt';
 
 export interface Row {name: string; entityType: string; action: Action; reason: string; detail?: string}
 
-export interface Op {id: string; type: string; json: any; row: Row; creds?: Record<string, any>}
+export interface Op {id: string; type: string; json: any; row: Row; creds?: Record<string, any>; expectedNamespace?: string}
 
 export interface PushOptions {
   dryRun?: boolean;
@@ -33,8 +36,23 @@ export async function plan(dapi: NodeDapi, bundle: Bundle,
   const conflicts: string[] = [];
   const idmap = opts.idmap ?? {};
   const orphans = new Set<string>();
+  const referrers = new Map<string, string[]>();
   const onTarget = new Set<string>();
   const pusherNamespace = await currentNamespace(dapi);
+
+  // A personal root project exists on the target already, under the target's own id, because it
+  // was created with the user. Pointing at that one before anything is rewritten is what keeps
+  // the content under it in its owner's namespace instead of the pusher's.
+  const owners = bundle.manifest.order
+    .map((entry) => bundle.entities.get(entry.id)!.json._personalOf).filter(Boolean);
+  if (owners.length) {
+    const personal = await personalProjects(dapi);
+    for (const entry of bundle.manifest.order) {
+      const owner = bundle.entities.get(entry.id)!.json._personalOf;
+      if (owner && personal.has(owner))
+        idmap[entry.id] = personal.get(owner)!;
+    }
+  }
 
   // Every twin is resolved before the first payload is rewritten: an adoption discovered
   // halfway through would leave the references of everything rewritten before it stale.
@@ -54,12 +72,25 @@ export async function plan(dapi: NodeDapi, bundle: Bundle,
 
   for (const entry of bundle.manifest.order) {
     const {type, json: source} = bundle.entities.get(entry.id)!;
-    const json = rewrite(source, idmap, orphans);
+    const mine = new Set<string>();
+    const json = rewrite(source, idmap, mine);
+    for (const orphan of mine) {
+      orphans.add(orphan);
+      referrers.set(orphan, [...(referrers.get(orphan) ?? []), nqNameOf(json)]);
+    }
     const row: Row = {name: nqNameOf(json), entityType: type, action: 'create', reason: ''};
     rows.push(row);
     planned.set(entry.id, row);
 
     const {target, twin} = resolved.get(entry.id)!;
+    if (json._personalOf) {
+      row.action = 'skip';
+      row.reason = 'personal_project';
+      row.detail = `the target keeps ${json._personalOf}'s own`;
+      onTarget.add(json.id);
+      effective.set(entry.id, {type, json});
+      continue;
+    }
     // A hand-edited bundle must not be able to overwrite what the target owns itself.
     const refuse = untransferableReason(type, json);
     if (refuse) {
@@ -92,7 +123,7 @@ export async function plan(dapi: NodeDapi, bundle: Bundle,
     }
     if (!['create', 'update'].includes(row.action)) continue;
     if (type === 'DataConnection' && !planCredentials(json, row, rows, creds)) continue;
-    ops.push({id: entry.id, type, json, row, creds});
+    ops.push({id: entry.id, type, json, row, creds, expectedNamespace: expectedNamespace(bundle, json)});
   }
 
   if (conflicts.length)
@@ -108,10 +139,18 @@ export async function plan(dapi: NodeDapi, bundle: Bundle,
     for (const nested of nestedIds(e.json))
       known.add(nested);
   }
-  for (const orphan of orphans)
-    if (!known.has(orphan))
-      rows.push({name: orphan, entityType: 'Entity', action: 'info', reason: 'orphan_ref',
-        detail: 'referenced by the bundle but not in it — left pointing at the source id'});
+  // An id the bundle points at but does not carry is only harmless if the target happens to hold
+  // it too (a platform row keeps its id everywhere). One that exists on neither side is dangling
+  // on the source, and whatever needs it will be refused there with the server's own error.
+  for (const orphan of orphans) {
+    if (known.has(orphan)) continue;
+    const by = [...new Set(referrers.get(orphan) ?? [])].join(', ');
+    rows.push(await findEntity(dapi, orphan)
+      ? {name: orphan, entityType: 'Entity', action: 'info', reason: 'orphan_ref',
+        detail: `not in the bundle, but the target has this id — referenced by ${by}`}
+      : {name: orphan, entityType: 'Entity', action: 'warn', reason: 'dependency_missing',
+        detail: `on neither the source nor the target; the save of ${by} may be refused`});
+  }
   return {rows, ops: ops.filter((o) => ['create', 'update'].includes(o.row.action)), planned, effective};
 }
 
@@ -160,8 +199,9 @@ function failDependants(effective: Map<string, BundleEntity>, planned: Map<strin
   for (const [id, {type, json}] of effective) {
     if (type === 'UserGroup')
       groupIds.set(json.friendlyName ?? json.name, json.id);
-    // A connection skipped because every parameter was masked is still on the target.
-    if (planned.get(id)?.action === 'skip' && !onTarget.has(json.id))
+    // A connection skipped because every parameter was masked is still on the target. A platform
+    // group is too, under whatever id that instance gave it — grants name it, so it never blocks.
+    if (planned.get(id)?.action === 'skip' && !onTarget.has(json.id) && planned.get(id)!.reason !== 'platform_group')
       blocked.set(json.id, planned.get(id)!);
   }
   for (let changed = true; changed;) {
@@ -178,6 +218,15 @@ function failDependants(effective: Map<string, BundleEntity>, planned: Map<strin
       changed = true;
     }
   }
+}
+
+/**
+ * Where the entity should end up, or undefined where the target legitimately decides: a personal
+ * namespace becomes the pusher's, and a root space has none to keep.
+ */
+function expectedNamespace(bundle: Bundle, json: any): string | undefined {
+  const source: string = json.namespace ?? '';
+  return !source || source === bundle.manifest.source.userNamespace ? undefined : source;
 }
 
 /**
@@ -283,6 +332,11 @@ async function saveOne(dapi: NodeDapi, bundle: Bundle, op: Op, rows: Row[], idma
     }
     if (verified.name !== op.json.name)
       rows.push({name: op.row.name, entityType: op.type, action: 'warn', reason: 'renamed', detail: `${op.json.name} → ${verified.name}`});
+    // A namespace is a label; placement comes from the owning space's relations, so an entity
+    // whose space is absent (or that is not among its relations) lands under the pusher instead.
+    if (op.expectedNamespace !== undefined && (verified.namespace ?? '') !== op.expectedNamespace)
+      rows.push({name: op.row.name, entityType: op.type, action: 'warn', reason: 'namespace_not_preserved',
+        detail: `${op.expectedNamespace} → ${verified.namespace ?? ''}; pull the owning space so the entity travels in its relations`});
     if (op.type === 'PredictiveModelInfo')
       rows.push({name: op.row.name, entityType: op.type, action: 'info', reason: 'model_blob_skipped',
         detail: 'the trained model itself stays on the source — retrain or copy it separately'});
@@ -311,7 +365,10 @@ async function pushRelations(dapi: NodeDapi, effective: Map<string, BundleEntity
   const inBundle = new Set([...effective.values()].map((e) => e.json.id));
   for (const [id, {type, json}] of effective) {
     if (type !== 'Project' || !json.relations?.length) continue;
-    if (!['create', 'update'].includes(planned.get(id)?.action ?? 'create')) continue;
+    // A personal project is skipped as an entity — the target keeps its own — but its children
+    // still have to be attached to it, or they land with no namespace at all.
+    const row = planned.get(id);
+    if (!['create', 'update'].includes(row?.action ?? 'create') && row?.reason !== 'personal_project') continue;
 
     const target = await projects.find(json.id);
     if (!target) continue;
@@ -338,7 +395,9 @@ async function pushRelations(dapi: NodeDapi, effective: Map<string, BundleEntity
 
     for (let attempt = 0; ; attempt++) {
       try {
-        await projects.save(target, 'saveRelations=true');
+        // A personal root project can hold thousands of relations, and the whole set is written
+        // in one POST: at 60s it times out, and everything under it stays namespaceless.
+        await dapi.client.post('/projects?saveRelations=true', stripPrivate(JSON.parse(JSON.stringify(target))), BULK_WRITE_MS);
         break;
       } catch (err: any) {
         const text = String(err?.message ?? err);
@@ -482,6 +541,15 @@ function minor(version: string): string {
   return String(version ?? '').split('.').slice(0, 2).join('.');
 }
 
+/** Login -> the id of that user's personal root project on this instance. */
+async function personalProjects(dapi: NodeDapi): Promise<Map<string, string>> {
+  const byLogin = new Map<string, string>();
+  for (const user of await dapi.internal('/users').listAll({limit: 500}))
+    if (user?.login && user?.project?.id)
+      byLogin.set(user.login, user.project.id);
+  return byLogin;
+}
+
 async function currentNamespace(dapi: NodeDapi): Promise<string> {
   const user = await dapi.client.get('/users/current');
   return user?.project?.name ? `${user.project.name}:` : '';
@@ -492,6 +560,7 @@ async function currentNamespace(dapi: NodeDapi): Promise<string> {
  * own namespace on the target, so that is where a same-name twin would be.
  */
 async function findByNqName(dapi: NodeDapi, bundle: Bundle, type: string, json: any, pusherNamespace: string): Promise<any> {
+  // Not `expectedNamespace`: a twin for a namespace-less entity is looked up in the root.
   const sourceNamespace: string = json.namespace ?? '';
   const namespace = sourceNamespace === bundle.manifest.source.userNamespace ? pusherNamespace : sourceNamespace;
   const matches = await dapi.internal('/entities').list({namespace, name: json.name});

@@ -41,6 +41,7 @@ let fns: Record<string, StepFn>;
 beforeEach(() => {
   resetRegistry();
   defineParameterType({name: 'element', regexp: /.+?/});
+  defineParameterType({name: 'widget', regexp: /.+? (?:viewer|widget)(?: in .+?)?/});
   defineParameterType({name: 'dataset', regexp: /[\w./:-]+?/});
   defineParameterType({name: 'state', regexp: /visible|hidden/});
   kind('icon', {selector: '[name^="icon-"]', match: ['dart'], dartNames: ['icon-{q}']});
@@ -63,7 +64,8 @@ test('one test per Gherkin scenario and outline row on the feature page, backgro
   const {code, diagnostics, outFile} = compile();
   assert.equal(diagnostics.filter((d) => d.level === 'error').length, 0);
   assert.ok(outFile.replace(/\\/g, '/').endsWith('bdd/generated/viewers/toolbox.test.ts'));
-  assert.match(code, /test\.describe\("Toolbox", \(\) => \{\n  const session = feature\(test\);/);
+  assert.match(code, /test\.describe\("Toolbox", \(\) => \{\n  const session = feature\(test, "features\/viewers\/toolbox\.feature", import\.meta\.url\);/);
+  assert.match(code, /await session\.step\(7, "When user clicks on scatter plot icon on toolbox", \(\) => clickOn\(page, el\("scatter plot icon on toolbox"\)\)\);/);
   assert.equal((code.match(/^  test\(/gm) ?? []).length, 3);
   assert.match(code, /test\("Several viewers \[viewer=bar chart\]", \{tag: \["@demo", "@realizes:u2.dialog"\]\}, async \(\{browser\}\) => \{\n    const page = await session\.page\(browser\);/);
   assert.equal((code.match(/openDataset\(page, ds\("spgi"\)\)/g) ?? []).length, 3);
@@ -72,6 +74,32 @@ test('one test per Gherkin scenario and outline row on the feature page, backgro
   assert.match(code, /sub_features_covered: \[u2.dialog\]/);
   assert.match(code, /import \{clickOn, openDataset, shouldBe\} from '@datagrok-libraries\/bdd\/bindings\/common\/steps';/);
   assert.match(code, /import \{ds, el, feature\} from '@datagrok-libraries\/bdd\/runtime';/);
+});
+
+test('a @journey feature is one test: the background once, every scenario a soft step, the failures at the end', () => {
+  const {code, diagnostics} = compile('@journey ' + FEATURE);
+  assert.equal(diagnostics.filter((d) => d.level === 'error').length, 0);
+  assert.equal((code.match(/^  test\(/gm) ?? []).length, 1);
+  assert.match(code, /test\("Toolbox", \{tag: \["@journey", "@demo", "@realizes:u2.dialog"\]\}, async \(\{browser\}\) => \{\n    const page = await session\.page\(browser\);\n    const run = journey\(test, 3, page\);\n    await session\.step\(4, "Given user opens spgi dataset"/);
+  assert.equal((code.match(/openDataset\(page, ds\("spgi"\)\)/g) ?? []).length, 1);
+  assert.match(code, /await run\.scenario\("Add a viewer", async \(\) => \{\n      await session\.step\(7, "When user clicks on scatter plot icon on toolbox"/);
+  assert.match(code, /await run\.scenario\("Several viewers \[viewer=bar chart\]", async \(\) => \{/);
+  assert.match(code, /\n    run\.finish\(\);\n  \}\);\n\}\);\n$/);
+  assert.match(code, /import \{ds, el, feature, journey\} from '@datagrok-libraries\/bdd\/runtime';/);
+});
+
+test('{widget} is an element phrase that names a viewer or a widget', () => {
+  fns.setProp = When('user sets {string} property of {widget} to {string}', async () => undefined);
+  const {code, diagnostics} = compile(`Feature: A
+  Scenario: B
+    When user sets "Value" property of scatter plot viewer to "AGE"
+    When user sets "Value" property of toolbox to "AGE"
+`);
+  assert.match(code, /setProp\(page, "Value", el\("scatter plot viewer"\), "AGE"\)/);
+  const errors = diagnostics.filter((d) => d.level === 'error');
+  assert.equal(errors.length, 1);
+  assert.equal(errors[0].line, 4);
+  assert.match(errors[0].message, /no step definition matches/);
 });
 
 test('registry modules are side-effect imports: library ones by package subpath, project ones relative', () => {

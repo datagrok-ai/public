@@ -355,6 +355,18 @@ export function getDesirabilityProfileJson(params: Map<string, PmpoParams>, useS
   };
 }
 
+export async function savePmpoFile(params: Map<string, PmpoParams>, name: string,
+  description: string): Promise<string> {
+  const path = `${PMPO_FOLDER}/${generateMpoFileName(name, new Set())}`;
+  await grok.dapi.files.writeAsText(path, JSON.stringify({
+    'type': 'Probabilistic MPO Model',
+    'name': name,
+    'description': description,
+    'properties': Object.fromEntries(params),
+  }, null, 2));
+  return path;
+}
+
 /** Saves the pMPO model: as an MPO Desirability Profile, or as a pMPO-format file.
  * @param params Map of descriptor names to their pMPO parameters.
  * @param modelName Suggested profile name.
@@ -368,25 +380,6 @@ export async function saveModel(params: Map<string, PmpoParams>, modelName: stri
     tooltipText: 'Save the model as an MPO Desirability Profile. If disabled, the model is saved in the pMPO format.',
   });
 
-  const objectToSave = () => {
-    if (typeInput.value) {
-      return getDesirabilityProfileJson(
-        params,
-        useSigmoidalCorrection,
-        nameInput.value,
-        descriptionInput.value,
-        false,
-      );
-    }
-
-    return {
-      'type': 'Probabilistic MPO Model',
-      'name': nameInput.value,
-      'description': descriptionInput.value,
-      'properties': Object.fromEntries(params),
-    };
-  };
-
   const dlg = ui.dialog({title: 'Save model'})
     .add(nameInput)
     .add(descriptionInput)
@@ -394,13 +387,17 @@ export async function saveModel(params: Map<string, PmpoParams>, modelName: stri
     .addButton('Save', async () => {
       try {
         if (typeInput.value) {
-          await grok.functions.call('Chem:saveMpoProfile', {profileJson: JSON.stringify(objectToSave())});
+          const profileJson = getDesirabilityProfileJson(
+            params,
+            useSigmoidalCorrection,
+            nameInput.value,
+            descriptionInput.value,
+            false,
+          );
+          await grok.functions.call('Chem:saveMpoProfile', {profileJson: JSON.stringify(profileJson)});
           grok.shell.info(`Saved MPO profile "${nameInput.value}".`);
         } else {
-          const files = await grok.dapi.files.list(PMPO_FOLDER);
-          const fileName = generateMpoFileName(nameInput.value, new Set(files.map((f) => f.name)));
-          const path = `${PMPO_FOLDER}/${fileName}`;
-          await grok.dapi.files.writeAsText(path, JSON.stringify(objectToSave(), null, 2));
+          const path = await savePmpoFile(params, nameInput.value, descriptionInput.value);
           grok.shell.info(`Saved to ${path}`);
         }
       } catch (err) {

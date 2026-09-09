@@ -177,7 +177,7 @@ export class PackageFunctions {
     return await standardizeMonomerLibrary(library);
   }
 
-  @grok.decorators.func({'top-menu': 'Bio | Manage | Match with Monomer Library...', description: 'Matches molecules in a column with monomers from the selected library(s)',})
+  @grok.decorators.func({'top-menu': 'Bio | Manage | Match with Monomer Library...', description: 'Matches molecules in a column with monomers from the selected library(s)', name: 'Match with Monomer Library'})
   static async matchWithMonomerLibrary(table: DG.DataFrame,
       @grok.decorators.param({type: 'column', options: {semType: 'Molecule'}})molecules: DG.Column,
       @grok.decorators.param({type: 'string', options: {choices: ['PEPTIDE', 'RNA', 'CHEM'], initialValue: 'PEPTIDE', caption: 'Polymer Type'}})polymerType: PolymerType = 'PEPTIDE') {
@@ -1419,7 +1419,7 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    name: 'Bio: getHelmMonomers',
+    name: 'getHelmMonomers',
     outputs: [{name: 'result', type: 'object'}]
   })
   static getHelmMonomers(
