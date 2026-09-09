@@ -406,13 +406,21 @@ export const RichFunctionView = Vue.defineComponent({
       return true;
     }));
 
+    // tabToProperties subscribes to param changes via useObservable, which needs an
+    // active effect scope to register disposal — watcher callbacks have none, so each
+    // rebuild runs in its own scope and stopping it releases the previous build's
+    // subscriptions (down to the Dart-side param listeners)
+    let tabsScope: Vue.EffectScope | undefined;
     const rebuildTabs = (call: DG.FuncCall) => {
-      tabToPropertiesMap.value = tabToProperties(call);
+      tabsScope?.stop();
+      tabsScope = Vue.effectScope();
+      tabToPropertiesMap.value = tabsScope.run(() => tabToProperties(call))!;
       tabLabels.value = [
         ...tabToPropertiesMap.value.inputs.keys(),
         ...tabToPropertiesMap.value.outputs.keys(),
       ];
     };
+    Vue.onBeforeUnmount(() => tabsScope?.stop());
 
     // Per-function preferred tab, tracked separately for the input and output sides and pushed
     // to the dock as `preferredPanelTitle`. Restored only on function switch and run completion
