@@ -3,6 +3,7 @@
 ## v.next
 
 * RTD: Fixed a link handler error leaving the link permanently running and deadlocking all tree mutations
+* RTD: Closing a state tree now destroys its links and actions, releasing their FuncCall and DataFrame subscriptions
 * RTD: Driver.sendCommand returns a promise resolved on command completion (per-command acks on commandAcks$)
 * RTD: Fixed a synchronous command error killing the driver command queue
 * RTD: initPipeline command accepts an inline processed config

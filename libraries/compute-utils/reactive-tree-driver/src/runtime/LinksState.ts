@@ -351,6 +351,10 @@ export class LinksState {
   }
 
   public close() {
+    for (const [, link] of this.links)
+      link.destroy();
+    for (const [, action] of this.actions)
+      action.destroy();
     this.closed$.next(true);
   }
 

@@ -418,6 +418,7 @@ export class StateTree {
   }
 
   public close() {
+    this.linksState.close();
     this.nodeTree.traverse(this.nodeTree.root, (acc, node) => {
       const item = node.getItem();
       if (isFuncCallNode(item))
