@@ -205,7 +205,7 @@ jobs:
             ./packages/ApiSamples
             ./libraries
             ./docusaurus
-            ./.github
+            ./help/develop
       - uses: actions/setup-node@v4
         with:
           node-version: '18.x'
