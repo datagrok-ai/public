@@ -288,7 +288,7 @@ export const TreeWizard = Vue.defineComponent({
     Vue.watch(searchParams, (params) => {
       const paramsRaw = [];
       if (params.currentStep)
-        paramsRaw.push(`currentStep=${params.currentStep.replace(' ', '+')}`);
+        paramsRaw.push(`currentStep=${params.currentStep.replace(/ /g, '+')}`);
       if (params.id)
         paramsRaw.push(`id=${params.id}`);
       setViewPath(paramsRaw.length ? `?${paramsRaw.join('&')}`: '?');
