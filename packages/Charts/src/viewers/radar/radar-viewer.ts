@@ -323,7 +323,7 @@ export class RadarViewer extends EChartViewer {
           continue;
       }
 
-      const value = this.columns.map((c) => this.cellValue(c, i));
+      const value = this.columns.map((c, colIdx) => this.cellValue(c, colIdx, i));
 
       const color = colorSourceColumn ? DG.Color.getRowColor(colorSourceColumn, i) : this.lineColor;
 
@@ -446,8 +446,13 @@ export class RadarViewer extends EChartViewer {
     };
   }
 
-  private cellValue(c: DG.Column, i: number): number | null {
-    return c.isNone(i) ? null : Number(c.get(i));
+  private cellValue(c: DG.Column, colIdx: number, rowIdx: number): number | null {
+    return c.isNone(rowIdx) ? null : this.clampToIndicator(colIdx, Number(c.get(rowIdx)));
+  }
+
+  private clampToIndicator(colIdx: number, value: number): number {
+    const indicator = this.option.radar.indicator[colIdx];
+    return indicator ? Math.min(Math.max(value, indicator.min), indicator.max) : value;
   }
 
   updateMin() {
@@ -490,7 +495,7 @@ export class RadarViewer extends EChartViewer {
 
   updateRow(color: string, currentRow: number) {
     this.option.series[2].data.push({
-      value: this.columns.map((c) => this.cellValue(c, currentRow)),
+      value: this.columns.map((c, colIdx) => this.cellValue(c, colIdx, currentRow)),
       name: `row ${currentRow + 1}`,
       lineStyle: {
         width: 2,
@@ -562,7 +567,7 @@ export class RadarViewer extends EChartViewer {
 
   /* Going to be replaced with perc in stats */
   getQuantile(columns: DG.Column<any>[], percent: number): number[] {
-    return columns.map((column) => {
+    return columns.map((column, colIdx) => {
       const validSorted: number[] = [];
       for (let i = 0; i < column.length; i++) {
         if (!column.isNone(i))
@@ -570,7 +575,7 @@ export class RadarViewer extends EChartViewer {
       }
       validSorted.sort((a, b) => a - b);
       const idx = Math.floor(percent * (validSorted.length - 1));
-      return validSorted[idx];
+      return this.clampToIndicator(colIdx, validSorted[idx]);
     });
   }
 }
