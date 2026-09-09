@@ -463,6 +463,16 @@ export const TreeWizard = Vue.defineComponent({
 
     const chosenStepState = Vue.computed(() => chosenStep.value?.state);
 
+    // keyed on the nqName string so a new FuncCall is prepared only when the
+    // chosen pipeline actually changes, not on every reactive state emission
+    const chosenPipelineNqName = Vue.computed(() => {
+      const state = chosenStepState.value;
+      return state && !isFuncCallState(state) ? state.nqName : undefined;
+    });
+    const chosenPipelineFuncCall = Vue.computed(() => chosenPipelineNqName.value ?
+      Vue.markRaw(DG.Func.byName(chosenPipelineNqName.value).prepare()) :
+      undefined);
+
     // per-step history is opt-in via the `enableHistory` flag on a FuncCall step
     const currentStepHistoryEnabled = Vue.computed(() => {
       const s = chosenStepState.value;
@@ -916,10 +926,7 @@ export const TreeWizard = Vue.defineComponent({
           {
             !pipelineViewHidden.value && chosenStepUuid.value && chosenStepState.value && !isFuncCallState(chosenStepState.value) &&
             <PipelineView
-              funcCall={chosenStepState.value.nqName ?
-                DG.Func.byName(chosenStepState.value.nqName!).prepare() :
-                undefined
-              }
+              funcCall={chosenPipelineFuncCall.value}
               key={chosenStepUuid.value!}
               state={chosenStepState.value}
               uuid={chosenStepUuid.value}

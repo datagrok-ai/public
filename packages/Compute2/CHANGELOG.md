@@ -3,6 +3,7 @@
 ## v.next
 
 * TreeWizard: Fixed the subtree save icon saving the currently selected step instead of the clicked one
+* TreeWizard: Stopped re-creating the pipeline FuncCall on every re-render (help panel churn and repeated context help fetches)
 * Added optional run sharing (workflow, RFV model run, and per-step when the step has enableHistory) via the sharingMethod setting: artifact-alignment ("Publish to program", requires the ArtifactAlignment package) or workspaces (links the run into an existing space, saving it to history first when needed)
 * Saved Compute2 runs (e.g. linked into a space) now render and open through their own editor from Browse instead of the generic funccall view
 * Added OpenWorkflowRun for opening a saved workflow or function run by its FuncCall id
