@@ -361,7 +361,7 @@ export class Link {
   private getFirstMatch(matchIO: readonly MatchedIO[]) {
     const p0 = matchIO.reduce((acc, val) => {
       const d = BaseTree.compareAddresses(acc, val.path);
-      return d < 0 ? val.path : acc;
+      return d > 0 ? val.path : acc;
     }, [{idx: Infinity, id: ''}] as readonly NodePathSegment[] );
     return p0;
   }
