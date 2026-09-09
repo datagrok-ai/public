@@ -2,6 +2,7 @@
 
 ## v.next
 
+* HistoricalRunsDelete.awaitDelete: dialog helper resolving null on dismissal (mirrors awaitMetadata)
 * Excel export detaches the render viewer (and its cloned dataframe) after the screenshot
 * RTD: Fixed a link handler error leaving the link permanently running and deadlocking all tree mutations
 * RTD: Closing a state tree now destroys its links and actions, releasing their FuncCall and DataFrame subscriptions

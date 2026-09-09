@@ -5,7 +5,6 @@ import * as Vue from 'vue';
 
 import {IconFA, ifOverlapping, ToggleInput, Viewer} from '@datagrok-libraries/webcomponents-vue';
 import {getColumnName, getRunsDfFromList, getVisibleProps, historyUtils, RunComparisonView, saveIsFavorite, setGridCellRendering, setGridColumnsRendering} from '@datagrok-libraries/compute-utils';
-import {} from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {ID_COLUMN_NAME, FAVORITE_COLUMN_NAME, COMPLETE_COLUMN_NAME, STARTED_COLUMN_NAME, AUTHOR_COLUMN_NAME, TAGS_COLUMN_NAME, TITLE_COLUMN_NAME, DESC_COLUMN_NAME, VERSION_COLUMN_NAME} from '@datagrok-libraries/compute-utils/shared-utils/consts';
 import {EditRunMetadataDialog, HistoricalRunsDelete} from '@datagrok-libraries/compute-utils/shared-components/src/history-dialogs';
 import {filter, mergeMap, take, toArray} from 'rxjs/operators';
@@ -143,8 +142,9 @@ export const History = Vue.defineComponent({
 
     const showEditDialog = async (funcCall: DG.FuncCall, isFavorite: boolean) => {
       const editDialog = EditRunMetadataDialog.forFuncCall(funcCall, isFavorite);
-      editDialog.show({center: true, width: 500});
-      const editOptions = await editDialog.onMetadataEdit.pipe(take(1)).toPromise();
+      const editOptions = await editDialog.awaitMetadata();
+      if (!editOptions)
+        return;
       try {
         if (!!editOptions.isFavorite !== isFavorite)
           await saveIsFavorite(funcCall, !!editOptions.isFavorite);
@@ -195,9 +195,8 @@ export const History = Vue.defineComponent({
       const run = getRunByIdx(cell.tableRowIndex!)!;
       const setToDelete = new Set([run]);
       const deleteDialog = new HistoricalRunsDelete(setToDelete);
-      deleteDialog.show({center: true, width: 500});
-
-      await deleteDialog.onFuncCallDelete.pipe(take(1)).toPromise();
+      if (!await deleteDialog.awaitDelete())
+        return;
       try {
         await Promise.all(
           wu(setToDelete.values()).map(async (funcCall) => {
@@ -223,8 +222,12 @@ export const History = Vue.defineComponent({
       historicalRunsDf.value.rows.select(() => false);
       const chosenRun = getRunByIdx(historicalRunsDf.value.currentRowIdx);
       if (chosenRun) {
-        const run = await historyUtils.loadRun(chosenRun.id);
-        emit('runChosen', run ? Vue.markRaw(run) : run);
+        try {
+          const run = await historyUtils.loadRun(chosenRun.id);
+          emit('runChosen', run ? Vue.markRaw(run) : run);
+        } catch (e: any) {
+          grok.shell.error(e);
+        }
       };
     });
 
@@ -252,7 +255,7 @@ export const History = Vue.defineComponent({
         ...showMetadata.value && tagCol.stats.missingValueCount < tagCol.length ? [TAGS_COLUMN_NAME]: [],
         ...showMetadata.value ? [TITLE_COLUMN_NAME]: [],
         ...showMetadata.value ? [DESC_COLUMN_NAME]: [],
-        ...(showMetadata.value && allowOtherVersions) ? [VERSION_COLUMN_NAME]: [],
+        ...(showMetadata.value && allowOtherVersions.value) ? [VERSION_COLUMN_NAME]: [],
         ...showInputs.value && currentFunc.value ? getVisibleProps(currentFunc.value)
           .map((key) => {
             const param = currentFunc.value.inputs.find((prop) => prop.name === key) ??
@@ -317,8 +320,8 @@ export const History = Vue.defineComponent({
       if (isLoading.value || currentSelection.size === 0)
         return;
       const deleteDialog = new HistoricalRunsDelete(currentSelection);
-      deleteDialog.show({center: true, width: 500});
-      await deleteDialog.onFuncCallDelete.pipe(take(1)).toPromise();
+      if (!await deleteDialog.awaitDelete())
+        return;
       try {
         isLoading.value = true;
         await from(currentSelection).pipe(
