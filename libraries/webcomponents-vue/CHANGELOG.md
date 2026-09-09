@@ -1,5 +1,10 @@
 # webcomponents-vue changelog
 
+## v.next
+
+* wheelGuard: hint overlay colors use design tokens
+* ifOverlapping: a show scheduled within the debounce window no longer lands after unmount; the loader is removed on unmount
+
 ## 0.3.4 (2026-08-07)
 
 * `Viewer`: patch `dataFrame` before `options` so options referencing new columns don't hit the old frame

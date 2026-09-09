@@ -20,7 +20,7 @@ export const wheelGuard = {
     hint.textContent = 'Ctrl + scroll to zoom';
     hint.style.cssText = `
       position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
-      background: rgba(60, 60, 60, 0.75); color: white; padding: 6px 14px; border-radius: 4px;
+      background: color-mix(in srgb, var(--grey-6) 75%, transparent); color: var(--grey-1); padding: 6px 14px; border-radius: 4px;
       font-size: 13px; pointer-events: none; z-index: 100; opacity: 0; transition: opacity 0.2s;`;
     el.appendChild(hint);
 
