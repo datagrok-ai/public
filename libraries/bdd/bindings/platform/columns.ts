@@ -2,7 +2,8 @@
    the other tags), the storage type, and the cells — every filled value against a pattern, a
    range, a length; one row's value; the maximum's row; distinct counts — and the current row.
    A step that changes the current row baselines every viewer first (see data.ts). */
-import {expect, Page} from '@playwright/test';
+import {Page} from '@playwright/test';
+import {expect} from '../../src/runtime/patience.js';
 import {Then, When} from '../../src/registry.js';
 import {baselineAll, settleAll} from '../../src/runtime/viewers.js';
 

@@ -33,6 +33,13 @@ function laidOutWords(chart: any): LaidWord[] {
   return words;
 }
 
+/** How many words the layout has placed — the count the status reports, and what tells a render
+ * pass that the picture is there: `setOption` returns before the layout runs, so a canvas is not
+ * evidence of a cloud. */
+export function laidOutWordCount(chart: any): number {
+  return laidOutWords(chart).length;
+}
+
 /** What the word cloud shows, for automation: the laid-out words as hit areas in CSS px of the
  * chart canvas, and the readings a test compares. While the viewer shows a message instead of a
  * cloud it reports that message and nothing the previous frame drew — `render` returns before

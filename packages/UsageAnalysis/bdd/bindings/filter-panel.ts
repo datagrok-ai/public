@@ -26,12 +26,10 @@ export const addCardFor = When('user adds a card for {string} to the filter pane
   await page.mouse.move(box.x + Math.min(10, box.width / 2), box.y + box.height / 2);
   await page.mouse.down();
   await page.mouse.up();
-  await page.locator('.d4-column-grid').last().waitFor({state: 'visible'});
   // the plus icon restores whatever was focused before the click, so the selector — which is what
-  // the typed name goes to — loses the focus its own mouse-down gave it
-  await selector.focus();
-  await page.keyboard.type(column);
-  await page.keyboard.press('Enter');
+  // the typed name goes to — loses the focus its own mouse-down gave it. The pointer stays on the
+  // panel: the header this picker belongs to is only shown while the panel is hovered
+  await gestures.pickInColumnGrid(page, column, 'the filter panel', selector);
   await panel(page).locator('.d4-filter')
     .filter({has: page.locator('.d4-filter-column-name', {hasText: exactText(column)})})
     .first().waitFor({state: 'visible'});

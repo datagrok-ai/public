@@ -12,6 +12,7 @@ import type {Browser, Page, PlaywrightTestArgs, PlaywrightTestOptions, Playwrigh
 import {leave} from './args.js';
 import {failure, isWaitFailure, journeyFailure} from './failure.js';
 import {explain} from './locate.js';
+import {whileExpectedToFail} from './patience.js';
 import {takeBalloons} from './viewers.js';
 
 type Test = TestType<PlaywrightTestArgs & PlaywrightTestOptions, PlaywrightWorkerArgs & PlaywrightWorkerOptions>;
@@ -49,7 +50,7 @@ export function journey(test: Test, scenarios: number, page?: Page): Journey {
           takeErrors(page);
           await takeBalloons(page).catch(() => undefined);
         }
-        await test.step(name, body);
+        await test.step(name, options?.knownFailure ? () => whileExpectedToFail(body) : body);
       }
       catch (e) {
         if (!options?.knownFailure)

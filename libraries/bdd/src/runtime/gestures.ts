@@ -2,7 +2,8 @@
    quirks once: real pointer clicks for canvases, key-by-key typing (Dart change listeners ignore
    `fill`), native `<select>` first for choices, the editor part of a composite input. */
 import {resolve} from 'node:path';
-import {expect, type Locator, type Page} from '@playwright/test';
+import {type Locator, type Page} from '@playwright/test';
+import {expect} from './patience.js';
 import type {ElementRef} from './args.js';
 import {cssString, escapeRegExp, exactText, locateActionable as locate, refOf, withAttr} from './locate.js';
 
@@ -176,6 +177,49 @@ export async function press(page: Page, key: string): Promise<void> {
   await page.keyboard.press(normalizeKey(key));
 }
 
+/** Types a column name into the open picker and presses Enter, without claiming the pick landed —
+ * a selector that does not offer that column keeps the one it had, and the feature reads it
+ * afterwards. Returns the popup, for the caller that does claim it. */
+export async function typeInColumnGrid(page: Page, option: string, what: string, selector?: Locator): Promise<Locator> {
+  const popup = page.locator('.d4-column-grid').last();
+  await popup.waitFor({state: 'visible', timeout: 10000});
+  // pressed ON the selector where there is one: it does not always keep the focus its own
+  // mouse-down gave it, and a letter that lands elsewhere opens no search box at all
+  await (selector ? selector.press(option[0]) : page.keyboard.press(option[0]));
+  const search = page.locator('input.d4-column-selector-search-input');
+  await search.waitFor({state: 'visible', timeout: 10000});
+  // and the letter lands in it at an unpredictable moment — before anything typed after it, or
+  // after all of it ("SEX" came back "EXS", "RACE" as "RACER") — so the name goes in over
+  // whatever is there, until the box holds it and nothing else
+  await expect.poll(async () => {
+    if (await search.inputValue() !== option) {
+      await search.press('Control+A');
+      await search.pressSequentially(option);
+    }
+    return search.inputValue();
+  }, {timeout: 5000, message: `the column picker of ${what}`}).toBe(option);
+  await search.press('Enter');
+  return popup;
+}
+
+/** Types a column name into the picker a `.d4-column-grid` popup opens, and commits it. The caller
+ * opens the popup and decides where the pointer may go (the filter panel's picker is part of a
+ * header that is only shown while the panel is hovered).
+ *
+ * Three things about this picker cost a run each to learn. Its search box does not exist until a
+ * letter is typed at the selector, and the letter that creates it lands in it out of order with
+ * anything typed while it was being created — "SEX" came back "EXS" — so the name is retyped over
+ * whatever landed. Enter is pressed ON the box, because the grid moves the focus while it filters
+ * and a keystroke sent to the page then goes nowhere. And a picker still open after Enter took no
+ * column: it is left showing the row the pointer previewed, which is what a later assertion would
+ * otherwise report as the wrong column. */
+export async function pickInColumnGrid(page: Page, option: string, what: string, selector?: Locator): Promise<void> {
+  const popup = await typeInColumnGrid(page, option, what, selector);
+  await popup.waitFor({state: 'detached', timeout: 5000}).catch(() => {
+    throw new Error(`the column picker of ${what} is still open after Enter: "${option}" was not taken`);
+  });
+}
+
 export async function select(page: Page, target: ElementRef, option: string): Promise<void> {
   const loc = await locate(page, target);
   const native = loc.locator('select').first();
@@ -193,9 +237,10 @@ export async function select(page: Page, target: ElementRef, option: string): Pr
     await page.mouse.move(box.x + Math.min(10, box.width / 2), box.y + box.height / 2);
     await page.mouse.down();
     await page.mouse.up();
-    await page.locator('.d4-column-grid').last().waitFor({state: 'visible', timeout: 5000});
-    await page.keyboard.type(option);
-    await page.keyboard.press('Enter');
+    // the popup opens under the pointer, and the row it rests on is previewed onto the selector,
+    // which is what a picker that took nothing is left showing
+    await page.mouse.move(2, 2);
+    await pickInColumnGrid(page, option, target.phrase, columnSelector);
     await expect(columnSelector.locator('.d4-column-selector-column')).toHaveText(exactText(option), {timeout: 5000});
     return;
   }

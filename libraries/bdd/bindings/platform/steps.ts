@@ -1,6 +1,7 @@
 /* Platform base steps: setup through the JS API (the openers of @datagrok-libraries/test keep the
    provenance tags the UI would set). Viewer steps live in the `viewers` tier. */
-import {expect, type Page} from '@playwright/test';
+import {type Page} from '@playwright/test';
+import {expect} from '../../src/runtime/patience.js';
 import {openTableFromFile} from '@datagrok-libraries/test/src/playwright/openers.js';
 import {DatasetEntry, Given, Then, When} from '../../src/registry.js';
 import {atFeatureEnd} from '../../src/runtime/harness.js';

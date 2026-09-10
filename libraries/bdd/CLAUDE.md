@@ -105,6 +105,59 @@ nobody filed.
   one browser — six live clients made every step 2–3× slower. The generated spec calls `test()`
   itself so reports point at the spec line, and every step is `session.step(line, title, fn)`, a
   Playwright step whose `location` is the feature line.
+- **A throw inside an `expect.poll` callback ends the poll** — Playwright calls it outside its own
+  try (`invokePollMatcher`: `const value = await actual()`), so the first read that finds no area
+  fails the step instead of retrying it. A callback that reads something the viewer may be between
+  layouts of returns `false` and keeps the reason in a variable the `catch` after the poll throws
+  (`expectAreaGrew`, `areaBiggerThanArea`). A single non-polling `hitAreas()` read behind a claim is
+  the same bug without the poll: the word cloud reported no areas at all for one frame and
+  `taller than` had already failed. An in-page read counts too — `should be painted` polled
+  `__bdd.ink`, which throws "has no canvas" for a viewer between two layouts, and gave up on the
+  first one; it catches, keeps the reason and tells it if the poll really does run out.
+- **Every check in the library imports `expect` from `src/runtime/patience.js`**, never from
+  `@playwright/test`. It is the same `expect` behind a proxy, and while a `@known-failure` scenario
+  runs it is `configure`d down to `KNOWN_FAILURE_MS` (3 s) — such a scenario states a defect the
+  product has, and spending the suite's 15 s expect budget on each of its assertions was 100 s of a
+  run proving what the tag already says (the heat map's journey 21.8 s → 10.1 s, pc plot's
+  transformations 21 s → 6.8 s). A check that names its own `{timeout}` wraps it in `pollMs(…)`,
+  which the same switch narrows; a check that must wait longer than that inside such a scenario is
+  the one that says so.
+- **A gesture aims at where the viewer has finished putting the thing.** `hitArea(…, beforeChange)`
+  settles the viewer before it reads the area and takes the baseline: a network diagram still
+  running its physics moves the node between the read and the click, and the click then selects
+  nothing (`network-diagram-selection`, `node "F"` → 0 rows). A viewer that reports nothing pending
+  answers at once, so the settle costs a roundtrip; one that never stops pending is the following
+  claim's problem, not the gesture's.
+- **Every column picker goes through `gestures.pickInColumnGrid`** — one place, because the Dart
+  `ColumnComboBox` cost this suite a full day of intermittent failures across the histogram, the
+  scatter plot, the filter panel and the pivot table, and each of its three facts had to be learned
+  separately. (1) Its search box does not exist until a letter is typed **at the selector**, and the
+  selector does not always keep the focus its own mouse-down gave it, so the letter is pressed on
+  that element (`selector.press(name[0])`), not on the page. (2) The letter that opens the box lands
+  in it at an unpredictable moment — before anything typed afterwards, or after all of it: `"SEX"`
+  came back `"EXS"` and `"RACE"` as `"RACER"` — so the name goes in over whatever is there until the
+  box holds it and nothing else. A name that arrives mangled matches no column, `currentColumnName`
+  resolves to −1, the row does not move, nothing is announced and **the picker stays open having
+  taken nothing**, showing the row the pointer previewed — which is how
+  `user picks "HEIGHT" in the "y" column selector` came back `WEIGHT`. (3) Enter is pressed **on the
+  box**, because the grid moves the focus while it filters, and the popup's disappearance is the
+  step's own outcome check: swallowing it leaves the reading it was for to time out three steps
+  later. Where the pointer may go afterwards is the caller's business — an on-viewer selector needs
+  it off the popup (a row it rests on is previewed onto the selector), the filter panel's needs it
+  on the panel (that picker lives in a header shown only while the panel is hovered).
+- **A baseline is taken on a viewer that has finished rendering.** `user sets properties of …` and
+  `user resizes …` used to snapshot at whatever instant the write started, so a viewer caught
+  between two layouts — a word cloud reports no areas at all there — left the "than before" claim
+  after it with nothing to compare with (`before undefined`). Both quiet the viewer first
+  (`writeProperties`, `resize` in `src/runtime/viewers.ts`); it costs a frame and removes a whole
+  class of "the area was not there" failures.
+- **The size a step asks for is held** (`resize`, `src/runtime/viewers.ts`). The dock manager sizes
+  the element it hosts, so an inline size written while it is still laying a freshly docked viewer
+  out is gone on the next pass — and the feature then reads a viewer at whatever width the dock
+  gave it (the statistics journey's `med` and `stdev` columns were simply off screen, three
+  scenarios failing on readings that were never going to arrive). The step waits for the box to be
+  the same for two frames before writing, and a `MutationObserver` puts the size back if a later
+  layout pass takes it away, until `user restores the size of …` or the feature ends.
 - **An in-page step returns nothing it does not read** (2026-09-08): `page.evaluate` serializes
   its return value to Node, and a platform object can be enormous — Bio's init step returned the
   SeqHelper, which holds the RDKit module and its 16 MB WASM heap, so every call cost 10 s of
@@ -718,6 +771,27 @@ nobody filed.
   `ScatterPlotViewer` and `BoxPlot` both publish it — every value-range step read `undefined`.
   Added to `public/js-api/src/viewer.ts`; a js-api rebuild lands in `xamgle/web/js/api` and needs no
   pub serve restart.
+
+### What the flakiness tail turned out to be (2026-09-10)
+
+Six full runs landed at 118-120 of 121 with a different feature failing each time, and every one of
+them passed in isolation. Three causes, all found by reading what the failing run recorded rather
+than by re-running:
+
+- **The column picker does not take a column that is already current.** `ColumnComboBox`'s search
+  box sets `popup.currentColumnName` on Enter and the popup closes from
+  `dfColumns.onCurrentRowChanged` — a frame whose current row does not move announces nothing, so
+  Enter on the name already highlighted left the picker open and took nothing. The pivot table's
+  journey re-adds the column it has just removed, which is exactly that case. Fixed in
+  `d4/lib/src/common/column_combo_box.dart` (the commit is now a method both paths call). The
+  binding no longer swallows the picker's failure to close: a picker still open after Enter took no
+  column, and the reading it was for timed out 15 s later three steps away.
+- **A dock layout pass takes an inline size back** — see the resize rule above.
+- **A viewer that empties its root before it can lay out has no picture and no message.** The word
+  cloud's `render` emptied the root and then read `this.root.parentElement!.clientWidth`; on a host
+  the dock had not sized yet that throws, leaving no canvas, no error and `isRenderPending` stuck
+  true, which the status reports as a viewer with no areas at all. It now keeps the picture that is
+  up and stays pending until a host it can measure comes back.
 
 ## Conventions
 

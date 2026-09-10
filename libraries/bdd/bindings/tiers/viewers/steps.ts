@@ -8,7 +8,8 @@
    guessing pixels or sleeping; viewers render immediately (no debounce) on a bdd page.
    `widgets.ts` next to this file holds the tier's other half: the steps a package wrote for one
    viewer that a second viewer then wanted. */
-import {expect, Page} from '@playwright/test';
+import {Page} from '@playwright/test';
+import {expect, pollMs} from '../../../src/runtime/patience.js';
 import {Given, Then, When} from '../../../src/registry.js';
 import type {ElementRef} from '../../../src/runtime/args.js';
 import {normalizeKey} from '../../../src/runtime/gestures.js';
@@ -337,13 +338,13 @@ async function errorOf(page: Page, target: ElementRef): Promise<string> {
 }
 
 export const reportsError = Then('{widget} should report the error {string}', async (page: Page, target: ElementRef, message: string) => {
-  await expect.poll(() => errorOf(page, target), {timeout: 5000,
+  await expect.poll(() => errorOf(page, target), {timeout: pollMs(5000),
     message: `${target.phrase} does not report "${message}"`}).toBe(message);
 }, {description: 'the viewer\'s own error — what validate() left, e.g. "No Y columns selected"'});
 
 export const reportsNoError = Then('{widget} should report no error', async (page: Page, target: ElementRef) => {
   let last = '';
-  await expect.poll(async () => (last = await errorOf(page, target)) === '', {timeout: 5000,
+  await expect.poll(async () => (last = await errorOf(page, target)) === '', {timeout: pollMs(5000),
     message: `${target.phrase} reports "${last}"`}).toBe(true);
 }, {description: 'the viewer validated its state and drew'});
 
@@ -528,7 +529,7 @@ async function expectBalloon(page: Page, type: string, text?: string): Promise<v
   await expect.poll(async () => {
     shown = shown.concat((await v.takeBalloons(page)).map((b) => `${b.type}: ${b.message}`));
     return shown.some((s) => s.startsWith(`${type}: `) && (text === undefined || s.includes(text)));
-  }, {timeout: 5000, message: `${text === undefined ? `an ${type} balloon` : `an ${type} balloon containing "${text}"`}; balloons since the last check: ${shown.join(' | ') || 'none'}`}).toBe(true);
+  }, {timeout: pollMs(5000), message: `${text === undefined ? `an ${type} balloon` : `an ${type} balloon containing "${text}"`}; balloons since the last check: ${shown.join(' | ') || 'none'}`}).toBe(true);
 }
 
 export const errorBalloon = Then('an error balloon should have been shown', (page: Page) => expectBalloon(page, 'error'),
@@ -566,9 +567,9 @@ export const areasSameSize = Then('the {string} and {string} areas of {widget} s
 
 export const oneTooltip = Then('exactly one tooltip should be shown', async (page: Page) => {
   await expect.poll(() => page.locator('.d4-tooltip').filter({visible: true}).count(),
-    {timeout: 5000, message: 'visible tooltips'}).toBe(1);
+    {timeout: pollMs(5000), message: 'visible tooltips'}).toBe(1);
 }, {description: 'the platform keeps one tooltip element; a second visible one is a leak'});
 
 export const tooltipSomeColumns = Then('the tooltip should show some columns', async (page: Page) => {
-  await expect.poll(() => v.tooltipColumns(page), {timeout: 5000, message: 'the row tooltip lists no column'}).not.toEqual([]);
+  await expect.poll(() => v.tooltipColumns(page), {timeout: pollMs(5000), message: 'the row tooltip lists no column'}).not.toEqual([]);
 }, {description: 'the row tooltip lists at least one column — the table\'s default tooltip, whatever it holds'});

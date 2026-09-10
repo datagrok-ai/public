@@ -19,7 +19,7 @@
    (`bindings/tiers/viewers/widgets.ts` and `bindings/platform/steps.ts`). */
 import {expect, Page} from '@playwright/test';
 import {Given, Then, When} from '@datagrok-libraries/bdd';
-import {el, ElementRef, exactText, viewers} from '@datagrok-libraries/bdd/runtime';
+import {el, ElementRef, exactText, gestures, viewers} from '@datagrok-libraries/bdd/runtime';
 
 const HISTORY_KEY = 'grok-aggregation-history';
 
@@ -31,25 +31,15 @@ async function settle(page: Page, target: ElementRef): Promise<void> {
 
 // --- the tag rows' column picker ------------------------------------------------------------------
 
-/** The `+` of a tag row opens a `ColumnComboBox` popup (`.d4-column-grid`): the icon keeps the
- * focus, the first keystroke creates the popup's search box, and Enter takes the name TYPED (not
- * the row under the pointer — hence the pointer leaves the popup first). */
+/** The `+` of a tag row opens the platform's column picker; the pointer leaves it first, because a
+ * row it rests on is previewed onto the row's chip. The picker itself is `pickInColumnGrid`. */
 export const addToRow = When('user adds {string} to the {string} row of pivot table viewer',
   async (page: Page, column: string, row: string) => {
     const target = el('pivot table viewer');
     const c = viewers.centerOf(await viewers.hitArea(page, target, `add ${row}`, true));
     await page.mouse.click(c.x, c.y);
-    const popup = page.locator('.d4-column-grid').last();
-    await popup.waitFor({state: 'visible', timeout: 10000});
     await page.mouse.move(2, 2);
-    await page.keyboard.press(column[0]);
-    const search = page.locator('input.d4-column-selector-search-input');
-    await expect(search, `the column picker's search box of the "${row}" row`).toBeVisible({timeout: 10000});
-    if (column.length > 1)
-      await page.keyboard.type(column.slice(1));
-    await expect(search).toHaveValue(column, {timeout: 5000});
-    await page.keyboard.press('Enter');
-    await popup.waitFor({state: 'detached', timeout: 5000}).catch(() => {});
+    await gestures.pickInColumnGrid(page, column, `the "${row}" row`);
     await settle(page, target);
   }, {tier: 'ui', description: 'the + of a tag row, the column typed and committed — as a user picks it'});
 
