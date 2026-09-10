@@ -92,6 +92,11 @@ describe('plannedParts', () => {
     expect(plannedParts(all, {only: ['Chem'], sweep: false})).toEqual(['Chem']);
   });
 
+  it('honours a sweep the caller turned off', () => {
+    expect(plannedParts(all, {sweep: false})).toEqual(all);
+    expect(plannedParts(all, {sweep: true})).toContain(SWEEP);
+  });
+
   it('skips what finished and retries what did not', () => {
     const state = {
       Bio: {name: 'Bio', entities: 5, failed: 0},

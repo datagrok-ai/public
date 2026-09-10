@@ -226,7 +226,9 @@ async function handleTransfer(rest: string[], argv: any, output: OutputFormat): 
 async function transferByNamespace(from: NodeDapi, to: NodeDapi, argv: any, output: OutputFormat): Promise<boolean> {
   const only: string[] = argv.only ? String(argv.only).split(',').map((s) => s.trim()) : [];
   const skip = new Set<string>(argv.skip ? String(argv.skip).split(',').map((s) => s.trim()) : []);
-  const stateFile: string = argv.state ?? path.join(os.tmpdir(), `grok-migrate-${argv.from}-${argv.to}.json`);
+  // `--from` and `--to` can be full URLs, which are not file names.
+  const tag = (v: any) => String(v).replace(/[^\w.-]+/g, '_');
+  const stateFile: string = argv.state ?? path.join(os.tmpdir(), `grok-migrate-${tag(argv.from)}-${tag(argv.to)}.json`);
   const state = readState(stateFile);
 
   // Without an admin session the source lists only what this account can see, so the run would
@@ -265,7 +267,7 @@ async function transferByNamespace(from: NodeDapi, to: NodeDapi, argv: any, outp
   // Not everything belongs to a space: a layout can sit under no namespace at all, and would
   // otherwise never travel, so a full run ends with a sweep for what no space owns.
   const spaces = plannedParts(await namespacesOf(from), {only, skip: [...skip], state,
-    sweep: !only.length && !argv['no-sweep']});
+    sweep: !only.length && argv.sweep !== false});
   const parts: Part[] = [];
   for (const [i, name] of spaces.entries()) {
     console.error(`[${i + 1}/${spaces.length}] ${name === SWEEP ? 'everything a space does not own' : name}`);
@@ -280,7 +282,7 @@ async function transferByNamespace(from: NodeDapi, to: NodeDapi, argv: any, outp
       const scope = name === SWEEP
         ? {type: argv.type ?? SWEEP_TYPES, namespace: undefined}
         : {namespace: name};
-      const pulled = await handlePull(from, [], {...argv, ...scope, out: dir}, 'quiet', false, report);
+      const pulled = await handlePull(from, [], {...argv, ...scope, 'include-files': true, out: dir}, 'quiet', false, report);
       const read = pulled ? bundle.read(dir) : null;
       part.entities = read ? read.entities.size : 0;
       // Pushing a bundle the pull could not fill promotes less than the space holds, and recording
@@ -288,7 +290,8 @@ async function transferByNamespace(from: NodeDapi, to: NodeDapi, argv: any, outp
       if (report.dropped)
         part.error = `${report.dropped} entities could not be read — not pushed`;
       else if (read && part.entities) {
-        const result = await push(to, read, {onConflict, creds, dryRun, progress: progressReporter(true)}, () => {});
+        const result = await push(to, read, {onConflict, creds, dryRun,
+          progress: progressReporter(output === 'quiet' || output === 'json')}, () => {});
         part.failed = result.items.filter((r) => r.action === 'failed').length;
       }
     } catch (err: any) {

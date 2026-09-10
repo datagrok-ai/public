@@ -557,7 +557,11 @@ async function pushRelations(dapi: NodeDapi, effective: Map<string, BundleEntity
         const text = String(err?.message ?? err);
         // The write is all-or-nothing, so a single entity the target refuses to link would cost
         // the whole space its placement. Drop the one it named and write the rest.
-        const bad = text.includes('insufficient privileges') ? undefined : RELATION_REFUSED_RE.exec(text)?.[1];
+        // `projects_repository.dart` refuses a relation for want of a permission in several
+        // wordings; dropping the entity then reports "the target would not link it" for what is
+        // really the pusher's own access, and quietly migrates less.
+        const denied = /privileges|you do not have/i.test(text);
+        const bad = denied ? undefined : RELATION_REFUSED_RE.exec(text)?.[1];
         if (bad && refused.length < 3 && target.relations.some((r: any) => r.entity?.id === bad)) {
           target.relations = target.relations.filter((r: any) => r.entity?.id !== bad);
           refused.push(bad);
@@ -577,7 +581,7 @@ async function pushRelations(dapi: NodeDapi, effective: Map<string, BundleEntity
   }
   const short: string[] = [];
   for (const [, entity] of written) {
-    const back = await projects.find(entity.json.id);
+    const back = await projects.find(entity.json.id).catch(() => null);
     const kept = new Set<string>((back?.relations ?? []).map((r: any) => r?.entity?.id));
     if ((entity.json.relations ?? []).some((r: any) => r?.entity?.id && !kept.has(r.entity.id)))
       short.push(nqNameOf(entity.json));
@@ -603,6 +607,7 @@ async function pushRelations(dapi: NodeDapi, effective: Map<string, BundleEntity
  * land in their own share rather than the pusher's.
  */
 async function pushShares(dapi: NodeDapi, bundle: Bundle, rows: Row[], onConflict: ConflictPolicy): Promise<void> {
+  const conflicts: string[] = [];
   for (const remote of listShares(bundle.dir)) {
     try {
       // The only write that replaces a file the target already has, so it answers to the same
@@ -613,7 +618,7 @@ async function pushShares(dapi: NodeDapi, bundle: Bundle, rows: Row[], onConflic
         continue;
       }
       if (already && onConflict === 'fail')
-        throw new Error('the target already has this file — pass --on-conflict adopt to replace it');
+        conflicts.push(remote);
       await dapi.files.writeBytes(remote, fs.readFileSync(sharePath(bundle.dir, remote)));
       rows.push({name: remote, entityType: 'File', action: already ? 'update' : 'create', reason: 'share_file'});
     } catch (err: any) {
@@ -621,6 +626,9 @@ async function pushShares(dapi: NodeDapi, bundle: Bundle, rows: Row[], onConflic
         detail: err?.message ?? String(err)});
     }
   }
+  if (conflicts.length)
+    throw new Error('The target already has these share files (use --on-conflict skip|adopt): ' +
+      conflicts.join(', '));
 }
 
 /**
@@ -640,8 +648,10 @@ async function restoreNames(dapi: NodeDapi, renamed: {op: Op; row: Row}[],
     delete current.storage;
     const restored = await dapi.internal(spec.saveRoute ?? spec.route)
       .save(stripPrivate(JSON.parse(JSON.stringify(current)))).catch(() => null);
-    if (restored?.name !== op.json.name) continue;
+    if (!restored) continue;
+    // The entity was written either way, so placement has to be re-asserted either way.
     saved = true;
+    if (restored.name !== op.json.name) continue;
     row.action = 'info';
     row.reason = 'name_restored';
     row.detail = `${op.json.name} was taken until the entity was placed`;
