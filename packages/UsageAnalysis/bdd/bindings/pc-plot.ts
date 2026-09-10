@@ -11,10 +11,7 @@ import {el, ElementRef, viewers} from '@datagrok-libraries/bdd/runtime';
 
 const PLOT = (): ElementRef => el('pc plot viewer');
 
-const settle = async (page: Page, target: ElementRef = PLOT()): Promise<void> => {
-  const loc = await viewers.viewerLocator(page, target);
-  await loc.evaluate((e) => (window as any).__bdd.settle(e, 300));
-};
+const settle = (page: Page, target: ElementRef = PLOT()): Promise<number> => viewers.settle(page, target);
 
 /** The axes in drawing order: what the plot reports (`axis order`) AND where it drew them — the
  * `axis <col>` strips left to right. A name list alone would echo the property. */

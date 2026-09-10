@@ -5,12 +5,10 @@ import type {ElementRef} from './args.js';
 import {editorOf, readExpanded} from './gestures.js';
 import {exactText, locate, locateActionable, refOf} from './locate.js';
 
-export type State = 'visible' | 'hidden' | 'present' | 'absent' | 'enabled' | 'disabled' | 'checked' |
-  'unchecked' | 'partially checked' | 'selected' | 'empty' | 'expanded' | 'collapsed' | 'focused' | 'invalid' | 'valid';
+import type {State} from '../states.js';
 
-// "partially checked" before "checked": the alternation takes the first match
-export const STATES: State[] = ['visible', 'hidden', 'present', 'absent', 'enabled', 'disabled', 'partially checked', 'checked',
-  'unchecked', 'selected', 'empty', 'expanded', 'collapsed', 'focused', 'invalid', 'valid'];
+export type {State};
+export {STATES} from '../states.js';
 const INVALID_CLASSES = ['d4-invalid', 'd4-forced-invalid', 'u2-input-invalid'];
 
 const ROWS = ['.u2-list-row', '[role="option"]', '[role="row"]', '[role="tab"]', 'option', '.d4-list-item', '[name="legend-item"]', 'tbody tr', 'tr', 'li'];
@@ -63,8 +61,6 @@ async function expectExpanded(loc: Locator, expanded: boolean): Promise<void> {
     .toBe(expanded);
 }
 
-/** Disabled is the native attribute, `aria-disabled` on the element or an ancestor (grayed menu
- * items, gated property rows), or the platform's disabled classes. */
 /** Disabled: the element or an ancestor says so (`aria-disabled`, the u2/Dart disabled classes),
  * or it — or the control inside it — is natively disabled. Over the visible matches when there
  * are any (the Dart menu's hidden mirror), else all of them (a property row in a panel that is

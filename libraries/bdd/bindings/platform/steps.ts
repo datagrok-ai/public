@@ -1,8 +1,7 @@
 /* Platform base steps: setup through the JS API (the openers of @datagrok-libraries/test keep the
    provenance tags the UI would set). Viewer steps live in the `viewers` tier. */
 import {type Page} from '@playwright/test';
-import {expect} from '../../src/runtime/patience.js';
-import {openTableFromFile} from '@datagrok-libraries/test/src/playwright/openers.js';
+import {expect, pollMs} from '../../src/runtime/patience.js';
 import {DatasetEntry, Given, Then, When} from '../../src/registry.js';
 import {el, type ElementRef} from '../../src/runtime/args.js';
 import {editorOf} from '../../src/runtime/gestures.js';
@@ -12,39 +11,33 @@ import {exactText} from '../../src/runtime/locate.js';
 declare const grok: any;
 declare const DG: any;
 
-/** Opening a table starts semantic-type detection in the background (package detectors, a few
- * hundred ms on a molecule table); the platform reports its end on the global event bus, and the
- * step is over only then — otherwise that work lands on whatever step comes next. */
+/** A file is read once per page and every feature gets a clone of it — the clone carries the
+ * semantic types the first detection found, so the platform's detection on it skips the typed
+ * columns — named as the file (readCsv names nothing) unless the step names it; a subset keeps
+ * the first N rows. Opening a table starts semantic-type detection in the background (package
+ * detectors, a few hundred ms on a molecule table); the platform reports its end on the global
+ * event bus, and the step is over only then — otherwise that work lands on whatever step comes
+ * next. */
 async function openTable(page: Page, dataset: DatasetEntry, rows?: number, name?: string): Promise<void> {
-  await page.evaluate(() => {
+  await page.evaluate(async ([p, r, n]) => {
     const w = window as any;
-    if (w.__bddDetected)
-      return;
-    w.__bddDetected = [];
-    w.grok.events.onEvent('ddt-semantic-type-detected').subscribe((a: any) => {
-      w.__bddDetected = [...w.__bddDetected.slice(-19), a?.args?.dataFrame?.dart];
-    });
-  });
-  if (rows === undefined) {
-    await openTableFromFile(page, dataset.path);
-  }
-  else {
-    // a subset is a clone: the file's rows are read the same way, the view gets the first N,
-    // named as the file (readCsv names nothing) unless the step names it
-    await page.evaluate(async ([p, r, n]) => {
-      const src = await grok.dapi.files.readCsv(p);
-      const df = r < src.rowCount ? src.clone(DG.BitSet.create(src.rowCount, (i: number) => i < r)) : src;
-      df.name = n ?? p.replace(/^.*\//, '').replace(/\.[^.]+$/, '');
-      grok.shell.addTableView(df);
-    }, [dataset.path, rows, name ?? null] as [string, number, string | null]);
-  }
+    if (!w.__bddDetected) {
+      w.__bddDetected = [];
+      w.grok.events.onEvent('ddt-semantic-type-detected').subscribe((a: any) => {
+        w.__bddDetected = [...w.__bddDetected.slice(-19), a?.args?.dataFrame?.dart];
+      });
+    }
+    w.__bddTables ??= {};
+    const src = (w.__bddTables[p] ??= await grok.dapi.files.readCsv(p));
+    const df = r !== null && r < src.rowCount ? src.clone(DG.BitSet.create(src.rowCount, (i: number) => i < r)) : src.clone();
+    df.name = n ?? p.replace(/^.*\//, '').replace(/\.[^.]+$/, '');
+    grok.shell.addTableView(df);
+  }, [dataset.path, rows ?? null, name ?? null] as [string, number | null, string | null]);
   await page.locator('[name="viewer-Grid"]').first().waitFor();
-  await page.waitForFunction(() => {
+  await expect.poll(() => page.evaluate(() => {
     const w = window as any;
-    return w.__bddDetected.includes(w.grok.shell.tv?.dataFrame?.dart);
-  }, undefined, {timeout: 15000}).catch(() => {
-    throw new Error(`${dataset.name}: semantic types were not detected within 15 s (is auto-detection on?)`);
-  });
+    return w.__bddDetected.includes(w.grok.shell.tv?.dataFrame?.dart) as boolean;
+  }), {timeout: pollMs(60000), message: `${dataset.name}: semantic types were not detected (is auto-detection on?)`}).toBe(true);
   // a second after the grid is created the view makes row 0 current when no row is, and every
   // viewer repaints its marker mid-feature; done here, the view's timer skips it
   await page.evaluate(() => {
@@ -177,38 +170,14 @@ export const clickPlainCheckbox = When('user clicks the plain checkbox in the {s
    again. Simple mode is restored when the feature ends, so the next feature on the same page finds
    the shell as it expects it. */
 
-async function showBrowsePanel(page: Page, open: boolean): Promise<void> {
-  await page.evaluate((show) => {
-    if (show)
-      grok.shell.windows.simpleMode = false;
-    grok.shell.windows.showBrowse = show;
-  }, open);
-}
-
 export const browsePanelOpen = Given('the browse panel is open', async (page: Page) => {
-  await showBrowsePanel(page, true);
-  await expect(page.locator('.grok-view-browse [role="tree"], .layout-browse [role="tree"]').first(),
-    'the browse tree').toBeVisible({timeout: 60000});
+  await page.evaluate(() => {
+    grok.shell.windows.simpleMode = false;
+    grok.shell.windows.showBrowse = true;
+  });
+  await expect(page.locator('.grok-view-browse [role="tree"], .layout-browse [role="tree"]').first(), 'the browse tree').toBeVisible({timeout: 60000});
   atFeatureEnd(page, () => page.evaluate(() => { grok.shell.windows.simpleMode = true; }));
 }, {tier: 'api', description: 'idempotent: leaves simple mode, shows the panel and waits for its tree; puts simple mode back at feature end'});
-
-export const openBrowsePanel = When('user opens the browse panel', async (page: Page) => {
-  await showBrowsePanel(page, true);
-  await expect(page.locator('.grok-view-browse [role="tree"], .layout-browse [role="tree"]').first(),
-    'the browse tree').toBeVisible({timeout: 60000});
-}, {tier: 'api'});
-
-export const closeBrowsePanel = When('user closes the browse panel', (page: Page) => showBrowsePanel(page, false), {tier: 'api'});
-
-export const browsePanelShouldBeOpen = Then('the browse panel should be open', async (page: Page) => {
-  await expect(page.locator('.grok-view-browse [role="tree"], .layout-browse [role="tree"]').first(),
-    'the browse tree').toBeVisible();
-});
-
-export const browsePanelShouldBeClosed = Then('the browse panel should be closed', async (page: Page) => {
-  await expect(page.locator('.grok-view-browse [role="tree"], .layout-browse [role="tree"]')
-    .filter({visible: true}), 'the browse tree').toHaveCount(0);
-});
 
 /* --- the second account ------------------------------------------------------------------------
    A sharing feature needs a user other than the one running it. It is DATAGROK_SHARING_LOGIN — the

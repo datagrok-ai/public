@@ -3,7 +3,7 @@
    diagnostic, not the regex's. The Cucumber VS Code extension needs the same list in its
    `cucumber.parameterTypes` setting (see README). */
 import {defineParameterType} from '../../src/registry.js';
-import {STATES} from '../../src/runtime/assertions.js';
+import {STATES} from '../../src/states.js';
 
 defineParameterType({name: 'element', regexp: /.+?/, description: 'an element phrase: "<qualifier> <kind>", a registered name, "X in Y"'});
 defineParameterType({name: 'dataset', regexp: /[\w./:-]+?/, description: 'a registered dataset alias or a platform path'});

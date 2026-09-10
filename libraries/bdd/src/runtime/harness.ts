@@ -35,13 +35,16 @@ export interface Journey {
   finish(): void;
 }
 
+/** What a journey scenario may add to the test's budget: a scenario takes a few seconds, and a
+ * hung one should not hold a worker for the whole per-test timeout times the scenario count. */
+const SCENARIO_BUDGET_MS = 20000;
+
 /** A `@journey` feature: one test, the Background once, the scenarios in order on the same shell
  * state — the way a hand-written spec chains `softStep`s. Each scenario leaves the state it changed
  * as it found it, so the next one starts where the Background left off, and owns its error and
- * balloon floors: what an earlier scenario logged is not charged to it. The test's budget is the
- * per-test timeout times the scenario count. */
+ * balloon floors: what an earlier scenario logged is not charged to it. */
 export function journey(test: Test, scenarios: number, page?: Page): Journey {
-  test.setTimeout(test.info().timeout * scenarios);
+  test.setTimeout(test.info().timeout + SCENARIO_BUDGET_MS * scenarios);
   const failed: {name: string; error: unknown}[] = [];
   return {
     async scenario(name: string, body: () => Promise<void>, options?: {knownFailure?: boolean}): Promise<void> {
@@ -76,8 +79,10 @@ function featureFile(specUrl: string, path: string): string {
 }
 
 const HOME_VIEW = 'datagrok';
-const LEFTOVERS = '[data-u2="dialog"], [data-u2="menu"], [data-u2="tooltip"], [data-u2="notify"] > *, ' +
-  '.d4-dialog, .d4-menu-popup, .d4-balloon, .d4-tooltip';
+// what Escape closes: dialogs and popup menus of both UI generations
+const CLOSABLE = '[data-u2="dialog"], [data-u2="menu"], .d4-dialog, .d4-menu-popup';
+// transient notifications, taken away as their close icons would
+const NOTICES = '[data-u2="notify"] > *, .d4-balloon';
 
 const errors = new WeakMap<Page, string[]>();
 const cleanups = new WeakMap<Page, (() => Promise<void>)[]>();
@@ -167,18 +172,29 @@ export function feature(test: Test, path = '', specUrl = ''): FeatureSession {
 }
 
 /** Everything closed and the Home view current — the state the next scenario starts from. A page
- * that is not in the shell (about:blank, the login page) is left alone. Errors the teardown itself
- * raises (work cancelled by `closeAll`) are dropped, so they are not charged to the next scenario. */
+ * that is not in the shell (about:blank, the login page) is left alone. Dialogs and menus are
+ * closed the platform's way (Escape, as many times as there are open ones), the tooltip through
+ * its API, notifications as their close icons would; a dialog that survives that is reported in
+ * the run's output rather than pulled out of the DOM behind the platform's back. Errors the
+ * teardown itself raises (work cancelled by `closeAll`) are dropped. */
 export async function resetShell(page: Page): Promise<void> {
   const inShell = await page.evaluate(() => typeof (window as any).grok?.shell?.closeAll === 'function').catch(() => false);
   if (!inShell)
     return;
-  await page.keyboard.press('Escape').catch(() => undefined);
-  await page.evaluate((leftovers) => {
-    (window as any).grok.shell.closeAll();
-    for (const e of document.querySelectorAll(leftovers))
+  const open = (): Promise<number> => page.locator(CLOSABLE).filter({visible: true}).count().catch(() => 0);
+  for (let i = 0; i < 3 && await open() > 0; i++)
+    await page.keyboard.press('Escape').catch(() => undefined);
+  const left: string = await page.evaluate((notices) => {
+    const w = window as any;
+    w.ui?.tooltip?.hide?.();
+    for (const e of document.querySelectorAll(notices))
       e.remove();
-  }, LEFTOVERS).catch(() => undefined);
+    w.grok.shell.closeAll();
+    return Array.from(document.querySelectorAll('.d4-dialog, [data-u2="dialog"]'))
+      .filter((e) => (e as HTMLElement).offsetParent !== null).map((e) => e.getAttribute('name') ?? e.tagName).join(', ');
+  }, NOTICES).catch(() => '');
+  if (left)
+    console.warn(`bdd: a dialog is still open after the shell reset: ${left}`);
   await page.waitForFunction((home) => (window as any).grok?.shell?.v?.type === home, HOME_VIEW, {timeout: 60000})
     .catch(() => undefined);
   takeErrors(page);

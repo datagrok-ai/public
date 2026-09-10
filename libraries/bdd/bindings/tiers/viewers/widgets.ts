@@ -8,7 +8,7 @@
    What stays in a package binding is a gesture that only that viewer's DOM has (the tile viewer's
    sketch designer, the pc plot's axis-label drag) or an arithmetic only it can check (the pivot's
    aggregation against a groupBy). */
-import {Page} from '@playwright/test';
+import {Locator, Page} from '@playwright/test';
 import {expect, pollMs} from '../../../src/runtime/patience.js';
 import {Then, When} from '../../../src/registry.js';
 import type {ElementRef} from '../../../src/runtime/args.js';
@@ -16,10 +16,7 @@ import {exactText} from '../../../src/runtime/locate.js';
 import * as g from '../../../src/runtime/gestures.js';
 import * as v from '../../../src/runtime/viewers.js';
 
-async function settle(page: Page, target: ElementRef, capMs = 300): Promise<void> {
-  const loc = await v.viewerLocator(page, target);
-  await loc.evaluate((e, ms) => (window as any).__bdd.settle(e, ms), capMs);
-}
+const settle = v.settle;
 
 // --- readings that are lists ----------------------------------------------------------------------
 
@@ -239,26 +236,23 @@ export const zoomValueAxis = When('user zooms into the value axis of {widget}', 
 
 // --- the selectors drawn on the viewer -------------------------------------------------------------
 
-/** An on-viewer column selector (`div-column-combobox-<property>`): a mouse-down on its caption
- * opens the column grid, typing opens the grid's search and Enter takes the column typed. The name
- * is the property the selector binds, lowercased — `x`, `y`, `color`, `size`, `category`, `value`.
- * Some selectors are hover-revealed, so the pointer goes over the viewer first. */
+/** An on-viewer column selector (`div-column-combobox-<property>`), opened: a mouse-down on its
+ * caption opens the column grid. The name is the property the selector binds, lowercased — `x`,
+ * `y`, `color`, `size`, `category`, `value`. The selectors are hover-revealed, so the pointer goes
+ * over the viewer first and stays there: leaving the viewer takes the popup with them. */
+async function openColumnSelector(page: Page, target: ElementRef, which: string): Promise<Locator> {
+  const loc = await v.viewerLocator(page, target);
+  const centre = v.centerOf(await v.hitArea(page, target, 'view'));
+  await page.mouse.move(centre.x, centre.y);
+  const selector = loc.locator(`[name="div-column-combobox-${which.toLowerCase()}"]`);
+  await selector.waitFor({state: 'visible', timeout: 5000});
+  await g.openColumnSelector(page, selector, false);
+  return selector;
+}
+
 export const pickInColumnSelector = When('user picks {string} in the {string} column selector of {widget}',
   async (page: Page, column: string, which: string, target: ElementRef) => {
-    const loc = await v.viewerLocator(page, target);
-    const centre = v.centerOf(await v.hitArea(page, target, 'view'));
-    await page.mouse.move(centre.x, centre.y);
-    const selector = loc.locator(`[name="div-column-combobox-${which.toLowerCase()}"]`);
-    await selector.waitFor({state: 'visible', timeout: 5000});
-    const box = await selector.boundingBox();
-    if (!box)
-      throw new Error(`${target.phrase}: the "${which}" column selector has no box`);
-    await page.mouse.move(box.x + Math.min(10, box.width / 2), box.y + box.height / 2);
-    await page.mouse.down();
-    await page.mouse.up();
-    // the pointer stays where it is: these selectors are revealed by the hover, and leaving the
-    // viewer takes the popup with them. A row it rests on is previewed onto the selector, which a
-    // pick that lands overwrites anyway
+    const selector = await openColumnSelector(page, target, which);
     await g.pickInColumnGrid(page, column, `the "${which}" column selector of ${target.phrase}`, selector);
     await expect(selector.locator('.d4-column-selector-column')).toHaveText(column, {timeout: pollMs(5000)});
     await settle(page, target);
@@ -268,17 +262,7 @@ export const pickInColumnSelector = When('user picks {string} in the {string} co
  * offers only some columns leaves the column it had, and the feature reads it afterwards. */
 export const typeInColumnSelector = When('user types {string} into the {string} column selector of {widget}',
   async (page: Page, column: string, which: string, target: ElementRef) => {
-    const loc = await v.viewerLocator(page, target);
-    const centre = v.centerOf(await v.hitArea(page, target, 'view'));
-    await page.mouse.move(centre.x, centre.y);
-    const selector = loc.locator(`[name="div-column-combobox-${which.toLowerCase()}"]`);
-    await selector.waitFor({state: 'visible', timeout: 5000});
-    const box = await selector.boundingBox();
-    if (!box)
-      throw new Error(`${target.phrase}: the "${which}" column selector has no box`);
-    await page.mouse.move(box.x + Math.min(10, box.width / 2), box.y + box.height / 2);
-    await page.mouse.down();
-    await page.mouse.up();
+    const selector = await openColumnSelector(page, target, which);
     await g.typeInColumnGrid(page, column, `the "${which}" column selector of ${target.phrase}`, selector);
     await settle(page, target);
   }, {tier: 'ui', description: 'for the negative: the selector takes the name typed only when it offers that column'});
@@ -354,10 +338,6 @@ async function rowSelected(page: Page, target: ElementRef, row: number): Promise
 export const lineSelected = Then('the line of row {int} of {widget} should be selected', async (page: Page, row: number, target: ElementRef) => {
   await expect.poll(() => rowSelected(page, target, row), {message: `row ${row} of the table ${target.phrase} draws`}).toBe(true);
 }, {description: 'the row behind a line the viewer drew, by the number its hit areas use'});
-
-export const lineNotSelected = Then('the line of row {int} of {widget} should not be selected', async (page: Page, row: number, target: ElementRef) => {
-  await expect.poll(() => rowSelected(page, target, row), {message: `row ${row} of the table ${target.phrase} draws`}).toBe(false);
-});
 
 // --- viewers that lay a card out per row ---------------------------------------------------------
 
@@ -454,13 +434,13 @@ export const dragLasso = When('user drags a lasso over the {string} area of {wid
     const b = await v.hitArea(page, target, area, true);
     const points = [[0.25, 0.25], [0.75, 0.25], [0.75, 0.75], [0.25, 0.75], [0.25, 0.25]]
       .map(([fx, fy]) => ({x: b.x + b.width * fx, y: b.y + b.height * fy}));
-    await page.keyboard.down('Shift');
-    await page.mouse.move(points[0].x, points[0].y);
-    await page.mouse.down();
-    for (const p of points.slice(1))
-      await page.mouse.move(p.x, p.y, {steps: 8});
-    await page.mouse.up();
-    await page.keyboard.up('Shift');
+    await g.withKeys(page, ['Shift'], async () => {
+      await page.mouse.move(points[0].x, points[0].y);
+      await page.mouse.down();
+      for (const p of points.slice(1))
+        await page.mouse.move(p.x, p.y, {steps: 8});
+      await page.mouse.up();
+    });
   }, {tier: 'ui', description: 'the Lasso Tool must be on; the polygon covers the middle half of the area'});
 
 // --- readings that are prose, and readings that must not be there ----------------------------

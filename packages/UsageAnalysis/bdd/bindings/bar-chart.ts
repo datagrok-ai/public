@@ -61,16 +61,8 @@ export const barsStacked = Then('the bars of {widget} should lie one under anoth
 }, {description: 'horizontal bars, one row per category'});
 
 export const zoomCategories = When('user zooms into the categories from the {string} area to the {string} area of {widget}',
-  async (page: Page, from: string, to: string, target: ElementRef) => {
-    const a = viewers.centerOf(await viewers.hitArea(page, target, from, true));
-    const b = viewers.centerOf(await viewers.hitArea(page, target, to));
-    await page.keyboard.down('Alt');
-    await page.mouse.move(a.x, a.y);
-    await page.mouse.down();
-    await page.mouse.move(b.x, b.y, {steps: 3});
-    await page.mouse.up();
-    await page.keyboard.up('Alt');
-  }, {tier: 'ui', description: 'an Alt-drag between two bars — the chart zooms its category axis to the bars the drag spans'});
+  (page: Page, from: string, to: string, target: ElementRef) => viewers.dragArea(page, target, from, to, ['Alt']),
+  {tier: 'ui', description: 'an Alt-drag between two bars — the chart zooms its category axis to the bars the drag spans'});
 
 /** The bars' lengths along the value axis: equal within a pixel, or not. */
 async function expectLengths(page: Page, target: ElementRef, equal: boolean): Promise<void> {

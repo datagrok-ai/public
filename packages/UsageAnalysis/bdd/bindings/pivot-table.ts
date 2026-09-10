@@ -24,10 +24,7 @@ import {el, ElementRef, exactText, gestures, viewers} from '@datagrok-libraries/
 const HISTORY_KEY = 'grok-aggregation-history';
 
 /** The pivot re-renders through an asynchronous aggregation; the settle returns when it landed. */
-async function settle(page: Page, target: ElementRef): Promise<void> {
-  const loc = await viewers.viewerLocator(page, target);
-  await loc.evaluate((e) => (window as any).__bdd.settle(e, 3000));
-}
+const settle = (page: Page, target: ElementRef): Promise<number> => viewers.settle(page, target, 3000);
 
 // --- the tag rows' column picker ------------------------------------------------------------------
 

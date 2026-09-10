@@ -20,10 +20,6 @@ export const resultContains = Then('the result should contain text {string}', as
   expect(String(await readResult(page, `String(value ?? '').slice(0, 4000)`)), 'the last result').toContain(text);
 });
 
-export const resultMatches = Then('the result should match {string}', async (page: Page, pattern: string) => {
-  expect(String(await readResult(page, `String(value ?? '').slice(0, 4000)`)), 'the last result').toMatch(new RegExp(pattern));
-});
-
 export const resultHasMethods = Then('the result should have methods {string}', async (page: Page, list: string) => {
   const names = list.split(/\s*,\s*/).filter(Boolean);
   const missing = await readResult(page, `arg.filter((m) => typeof value?.[m] !== 'function')`, names);

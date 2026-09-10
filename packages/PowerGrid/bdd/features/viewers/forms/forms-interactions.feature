@@ -64,7 +64,7 @@ Feature: Forms viewer interactions and row binding
     And no errors should have been logged
 
   Scenario: Control-Shift-clicking a card clears every row up to it
-    When user clicks on the "current card" area of forms viewer holding Control and Shift
+    When user clicks on the "current card" area of forms viewer holding Control+Shift
     Then 2 rows should be selected
     And all rows where "USUBJID" is "X0273T21000900003" should be selected
     And no rows where "USUBJID" is "X0273T21000400001" should be selected

@@ -2,8 +2,9 @@
 Feature: Box plot property surface
   The box plot's property surface: context menus as paths to properties, the statistics and
   group-comparison hit regions, auto layout and resize stability, the Show Markers gate, whisker
-  and control-band style, controls visibility, title and description, axis font, date category
-  mapping, the custom row tooltip, table switching, coloring, and the double-click view reset.
+  and control-band style, controls visibility, axis font, date category mapping, the custom row
+  tooltip, table switching, coloring, and the double-click view reset (the title and the
+  description are every viewer's, in viewer-chrome.feature).
   Selection, persistence, filtering, statistics and group comparison have features of their own.
   One journey: demog-1000 (a stratified 1000-row demog: one marker per row per paint) with a box
   plot of AGE by SEX is opened once, and every scenario puts back what it changed.
@@ -136,26 +137,6 @@ Feature: Box plot property surface
     Then "Marker Size" column input in box plot viewer should be hidden
     And Value column input in box plot viewer should be visible
     And "Marker Color" column input in box plot viewer should be visible
-
-  Scenario: Title and description
-    When user sets properties of box plot viewer:
-      | Show Title | true        |
-      | Title      | Age by Race |
-    Then title of box plot viewer should have text "Age by Race"
-    When user sets properties of box plot viewer:
-      | Description                 | Box plot of patient ages |
-      | Description Visibility Mode | Always                   |
-    Then description of box plot viewer should have text "Box plot of patient ages"
-    When user sets "Description Position" property of box plot viewer to "Bottom"
-    Then description of box plot viewer should be visible
-    When user sets "Description Visibility Mode" property of box plot viewer to "Never"
-    Then description of box plot viewer should be absent
-    When user sets properties of box plot viewer:
-      | Show Title                  | false |
-      | Title                       |       |
-      | Description                 |       |
-      | Description Visibility Mode | Auto  |
-      | Description Position        | Top   |
 
   Scenario: Axis font
     When user sets "Axis Font" property of box plot viewer to "normal normal 16px \"Roboto\""

@@ -88,7 +88,9 @@ export async function locateRef(page: Page, ref: NounRef, within?: Locator): Pro
       return pick(inRoot, ref);
   }
   let loc = await inBase(page, base, ref);
-  if (scope && await loc.count() === 0) {
+  // a scope that is not on the page has no owner edge to try — and `getAttribute` on it would
+  // wait the whole action timeout for it to appear
+  if (scope && await loc.count() === 0 && await scope.count() > 0) {
     const owner = await scope.first().getAttribute('data-u2-name').catch(() => null);
     if (owner) {
       const alt = await inBase(page, page.locator(`[data-u2-owner="${cssString(owner)}"]`), ref);

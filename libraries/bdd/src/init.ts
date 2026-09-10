@@ -21,7 +21,9 @@ interface Manifest {
 }
 
 const GITIGNORE = ['bdd/test-results/', 'bdd/e2e/', 'bdd/.auth.json'];
-const STATES = 'visible|hidden|present|absent|enabled|disabled|checked|unchecked|selected|empty|expanded|collapsed|focused';
+import {STATES as STATE_LIST} from './states.js';
+
+const STATES = STATE_LIST.join('|');
 
 /** The library as a dependency: by path when init runs from a checkout of it (the monorepo, until
  * it is on npm — npm links the directory and `npm ci` needs no registry), by version otherwise. */

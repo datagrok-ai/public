@@ -9,4 +9,4 @@ export {expect, pollMs, KNOWN_FAILURE_MS} from './patience.js';
 export * from './failure.js';
 export {callFunction, readResult} from './functions.js';
 export {columnsSince, menuNames, openTopMenu, pickTopMenu, waitCommand} from './menus.js';
-export {expectCustomEvent, expectNoCustomEvent, listenCustomEvent} from './events.js';
+export {expectCustomEvent, listenCustomEvent} from './events.js';

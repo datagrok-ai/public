@@ -14,11 +14,6 @@ const COMMAND_CAP = 120000;
 export const pickFromTopMenu = When('user picks {string} from the top menu', (page: Page, path: string) => pickTopMenu(page, path),
   {tier: 'ui', description: `${PATH}; the groups open under the pointer, the leaf is clicked; the function call it starts is watched for "the top menu command should have completed"`});
 
-export const openInTopMenu = When('user opens {string} in the top menu', (page: Page, path: string) => openTopMenu(page, path, false),
-  {tier: 'ui', description: 'a group of the top menu, left open — its items are then "\\"Bio > Analyze > MSA...\\" menu item"'});
-
-export const closeTheTopMenu = When('user closes the top menu', (page: Page) => closeTopMenu(page), {tier: 'ui'});
-
 /** The paths grouped by their parent: a group opens once, its leaves are checked, the menu
  * closes — as many walks as groups, not as leaves. */
 export const topMenuLists = Then('the top menu should list:', async (page: Page, rows: string[][]) => {
