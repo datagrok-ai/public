@@ -28,7 +28,7 @@
     "echarts-wordcloud": "^2.0.0",
     "graphlib": "^2.1.8",
     "lodash": "^4.17.21",
-    "rxjs": "6.5.5",
+    "rxjs": "^6.5.5",
     "three": "^0.154.0",
     "three-globe": "2.24.13"
   },
