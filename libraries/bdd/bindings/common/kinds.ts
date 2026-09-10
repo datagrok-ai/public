@@ -143,11 +143,15 @@ kind('item', {
   labelSelector: PRIMARY_TEXT,
 });
 kind('tree', {selector: u2('tree') + ', [role="tree"], .d4-tree-view', match: ['name', 'aria']});
+// the Dart tree wraps every row in a .d4-tree-view-group[role=treeitem] that carries the row's
+// text too, so the wrapper is excluded and the row — which owns name="tree-My-stuff---Favorites" —
+// is the node
 kind('tree node', {
   aliases: ['node', 'tree item'],
-  selector: '[role="tree"] .u2-list-row, [role="treeitem"], .d4-tree-view-node',
-  match: ['text', 'label', 'name'],
-  labelSelector: '.u2-tree-label, .d4-tree-view-node-label',
+  selector: '[role="tree"] .u2-list-row, [role="treeitem"]:not(.d4-tree-view-group), .d4-tree-view-node',
+  match: ['dart', 'label', 'text', 'name'],
+  labelSelector: '.u2-tree-label, .d4-tree-view-node-label, .d4-tree-view-group-label, .d4-tree-view-item-label',
+  dartNames: ['tree-{q}'],
 });
 kind('table', {selector: u2('table') + ', table', match: ['name', 'aria']});
 kind('table row', {
