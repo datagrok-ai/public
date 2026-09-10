@@ -13,7 +13,7 @@ import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {createDialogCloses, noSpaceOnServer, spacesOnServer} from '../../bindings/spaces.js';
+import {createDialogCloses, noSpaceOnServer, spaceShowsCard, spacesOnServer} from '../../bindings/spaces.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, doubleClickOn, enterInto, followingShouldBe, shouldBe, shouldNotContainText} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {browsePanelOpen, contextPanelOpen, contextPanelShows, viewIsCurrent} from '@datagrok-libraries/bdd/bindings/platform/steps';
@@ -44,8 +44,8 @@ test.describe("What the context panel says about a space", () => {
       await session.step(31, "Then the Create Space dialog should close", () => createDialogCloses(page));
       await session.step(32, "When user double-clicks on BDD-CP-Root tree node inside browse tree", () => doubleClickOn(page, el("BDD-CP-Root tree node inside browse tree")));
       await session.step(33, "Then the \"BDD-CP-Root\" view should be current", () => viewIsCurrent(page, "BDD-CP-Root"));
-      await session.step(34, "And BDD-CP-One link in space gallery should be visible", () => shouldBe(page, el("BDD-CP-One link in space gallery"), "visible"));
-      await session.step(35, "And BDD-CP-Two link in space gallery should be visible", () => shouldBe(page, el("BDD-CP-Two link in space gallery"), "visible"));
+      await session.step(34, "And the space should show the \"BDD-CP-One\" card", () => spaceShowsCard(page, "BDD-CP-One"));
+      await session.step(35, "And the space should show the \"BDD-CP-Two\" card", () => spaceShowsCard(page, "BDD-CP-Two"));
     });
     await run.scenario("Selecting a space shows its details", async () => {
       await session.step(38, "When user clicks on BDD-CP-Root tree node inside browse tree", () => clickOn(page, el("BDD-CP-Root tree node inside browse tree")));

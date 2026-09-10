@@ -13,7 +13,7 @@ import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {createDialogCloses, noSpaceOnServer, sharingPaneLists, sharingPaneListsNot, spacesOnServer} from '../../bindings/spaces.js';
+import {createDialogCloses, noSpaceOnServer, sharingPaneLists, sharingPaneListsNot, spaceShowsCard, spacesOnServer, treeHidesSpace, treeShowsSpace} from '../../bindings/spaces.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, doubleClickOn, dragTo, enterInto, shouldBe, shouldContainText} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {browsePanelOpen, pickSharingUser, viewIsCurrent} from '@datagrok-libraries/bdd/bindings/platform/steps';
@@ -39,7 +39,7 @@ test.describe("Sharing a space, and what it refuses", () => {
       await session.step(45, "And user clicks on OK button in Create Space dialog", () => clickOn(page, el("OK button in Create Space dialog")));
       await session.step(46, "When user double-clicks on BDD-Share tree node inside browse tree", () => doubleClickOn(page, el("BDD-Share tree node inside browse tree")));
       await session.step(47, "Then the \"BDD-Share\" view should be current", () => viewIsCurrent(page, "BDD-Share"));
-      await session.step(48, "And BDD-Share-Child link in space gallery should be visible", () => shouldBe(page, el("BDD-Share-Child link in space gallery"), "visible"));
+      await session.step(48, "And the space should show the \"BDD-Share-Child\" card", () => spaceShowsCard(page, "BDD-Share-Child"));
     });
     await run.scenario("The Share dialog asks who and how much", async () => {
       await session.step(51, "When user picks \"Share...\" from the context menu of BDD-Share tree node inside browse tree", () => pickFromContextMenu(page, "Share...", el("BDD-Share tree node inside browse tree")));
@@ -71,7 +71,7 @@ test.describe("Sharing a space, and what it refuses", () => {
     });
     await run.scenario("Dragging a parent onto its own child changes nothing", async () => {
       await session.step(79, "When user drags BDD-Share tree node inside browse tree to BDD-Share-Child tree node inside browse tree", () => dragTo(page, el("BDD-Share tree node inside browse tree"), el("BDD-Share-Child tree node inside browse tree")));
-      await session.step(80, "Then BDD-Share tree node inside browse tree should be visible", () => shouldBe(page, el("BDD-Share tree node inside browse tree"), "visible"));
+      await session.step(80, "Then the browse tree should show the \"BDD-Share\" space", () => treeShowsSpace(page, "BDD-Share"));
       await session.step(81, "And 1 space named \"BDD-Share\" should be on the server", () => spacesOnServer(page, 1, "BDD-Share"));
       await session.step(82, "And BDD-Share-Child tree node inside browse tree should be present", () => shouldBe(page, el("BDD-Share-Child tree node inside browse tree"), "present"));
     });
@@ -79,7 +79,7 @@ test.describe("Sharing a space, and what it refuses", () => {
       await session.step(85, "When user picks \"Delete Space\" from the context menu of BDD-Share tree node inside browse tree", () => pickFromContextMenu(page, "Delete Space", el("BDD-Share tree node inside browse tree")));
       await session.step(86, "And user clicks on DELETE button in \"Are you sure?\" dialog", () => clickOn(page, el("DELETE button in \"Are you sure?\" dialog")));
       await session.step(87, "Then 0 spaces named \"BDD-Share\" should be on the server", () => spacesOnServer(page, 0, "BDD-Share"));
-      await session.step(88, "And BDD-Share tree node inside browse tree should be absent", () => shouldBe(page, el("BDD-Share tree node inside browse tree"), "absent"));
+      await session.step(88, "And the browse tree should not show the \"BDD-Share\" space", () => treeHidesSpace(page, "BDD-Share"));
     });
     run.finish();
   });

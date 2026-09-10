@@ -27,4 +27,4 @@ Feature: A space in favorites
     Then "My stuff > Favorites > BDD-Fav" tree node inside browse tree should be absent
     And "My stuff > Favorites" tree node inside browse tree should be present
     And 1 space named "BDD-Fav" should be on the server
-    And BDD-Fav tree node inside browse tree should be visible
+    And the browse tree should show the "BDD-Fav" space

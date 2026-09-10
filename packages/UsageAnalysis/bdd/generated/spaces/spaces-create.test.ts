@@ -13,7 +13,7 @@ import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {createDialogCloses, noSpaceOnServer, spacesOnServer} from '../../bindings/spaces.js';
+import {createDialogCloses, noSpaceOnServer, spacesOnServer, treeShowsSpace} from '../../bindings/spaces.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clearField, clickOn, enterInto, shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {browsePanelOpen} from '@datagrok-libraries/bdd/bindings/platform/steps';
@@ -35,7 +35,7 @@ test.describe("Creating a space", () => {
       await session.step(22, "And user clicks on OK button in Create Space dialog", () => clickOn(page, el("OK button in Create Space dialog")));
       await session.step(23, "Then the Create Space dialog should close", () => createDialogCloses(page));
       await session.step(24, "And 1 space named \"BDD-Root\" should be on the server", () => spacesOnServer(page, 1, "BDD-Root"));
-      await session.step(25, "And BDD-Root tree node inside browse tree should be visible", () => shouldBe(page, el("BDD-Root tree node inside browse tree"), "visible"));
+      await session.step(25, "And the browse tree should show the \"BDD-Root\" space", () => treeShowsSpace(page, "BDD-Root"));
     });
     await run.scenario("The space offers its actions", async () => {
       await session.step(28, "When user opens the context menu of BDD-Root tree node inside browse tree", () => openContextMenu(page, el("BDD-Root tree node inside browse tree")));
@@ -80,7 +80,7 @@ test.describe("Creating a space", () => {
       await session.step(67, "And user enters \"BDD-Child\" into Name input in Create Space dialog", () => enterInto(page, "BDD-Child", el("Name input in Create Space dialog")));
       await session.step(68, "And user clicks on OK button in Create Space dialog", () => clickOn(page, el("OK button in Create Space dialog")));
       await session.step(69, "Then the Create Space dialog should close", () => createDialogCloses(page));
-      await session.step(70, "And BDD-Child tree node inside browse tree should be visible", () => shouldBe(page, el("BDD-Child tree node inside browse tree"), "visible"));
+      await session.step(70, "And the browse tree should show the \"BDD-Child\" space", () => treeShowsSpace(page, "BDD-Child"));
     });
     await run.scenario("A second child of the same name is refused", async () => {
       await session.step(73, "When user picks \"Create Child Space...\" from the context menu of BDD-Parent tree node inside browse tree", () => pickFromContextMenu(page, "Create Child Space...", el("BDD-Parent tree node inside browse tree")));
@@ -96,7 +96,7 @@ test.describe("Creating a space", () => {
       await session.step(83, "And user enters \"BDD Name With Spaces\" into Name input in Create Space dialog", () => enterInto(page, "BDD Name With Spaces", el("Name input in Create Space dialog")));
       await session.step(84, "And user clicks on OK button in Create Space dialog", () => clickOn(page, el("OK button in Create Space dialog")));
       await session.step(85, "Then 1 space named \"BDD Name With Spaces\" should be on the server", () => spacesOnServer(page, 1, "BDD Name With Spaces"));
-      await session.step(86, "And BDD Name With Spaces tree node inside browse tree should be visible", () => shouldBe(page, el("BDD Name With Spaces tree node inside browse tree"), "visible"));
+      await session.step(86, "And the browse tree should show the \"BDD Name With Spaces\" space", () => treeShowsSpace(page, "BDD Name With Spaces"));
     });
     run.finish();
   });

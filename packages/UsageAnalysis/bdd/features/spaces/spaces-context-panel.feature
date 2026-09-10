@@ -31,8 +31,8 @@ Feature: What the context panel says about a space
     Then the Create Space dialog should close
     When user double-clicks on BDD-CP-Root tree node inside browse tree
     Then the "BDD-CP-Root" view should be current
-    And BDD-CP-One link in space gallery should be visible
-    And BDD-CP-Two link in space gallery should be visible
+    And the space should show the "BDD-CP-One" card
+    And the space should show the "BDD-CP-Two" card
 
   Scenario: Selecting a space shows its details
     When user clicks on BDD-CP-Root tree node inside browse tree

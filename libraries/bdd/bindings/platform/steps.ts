@@ -6,7 +6,7 @@ import {DatasetEntry, Given, Then, When} from '../../src/registry.js';
 import {el, type ElementRef} from '../../src/runtime/args.js';
 import {editorOf} from '../../src/runtime/gestures.js';
 import {atFeatureEnd} from '../../src/runtime/harness.js';
-import {exactText} from '../../src/runtime/locate.js';
+import {exactText, locate} from '../../src/runtime/locate.js';
 
 declare const grok: any;
 declare const DG: any;
@@ -253,3 +253,11 @@ export const loadTable = Given('the {string} file is loaded as a table', async (
   await expect.poll(() => page.evaluate((n) => (grok.shell.tables ?? []).some((t: any) => t.name === n), name),
     {message: `"${name}" among the open tables`}).toBe(true);
 }, {tier: 'api', description: 'a file on the stand into the workspace, without a view of its own'});
+
+/** A dialog that commits to the server stays up until the server answers: creating a space took
+ * 6-18 s on dev, and a confirmation dialog on a loaded stand the same, which straddles the shared
+ * 15 s budget — so "should be hidden" passed or failed by luck. This claim owns its budget. */
+export const dialogCloses = Then('the {string} dialog should close', async (page: Page, title: string) => {
+  const dialog = await locate(page, el(`${JSON.stringify(title)} dialog`));
+  await expect(dialog.filter({visible: true}), `the "${title}" dialog`).toHaveCount(0, {timeout: pollMs(60000)});
+}, {tier: 'ui', description: 'the platform closes it when the work it started is done'});

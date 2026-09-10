@@ -45,7 +45,7 @@ Feature: Sharing a space, and what it refuses
     And user clicks on OK button in Create Space dialog
     When user double-clicks on BDD-Share tree node inside browse tree
     Then the "BDD-Share" view should be current
-    And BDD-Share-Child link in space gallery should be visible
+    And the space should show the "BDD-Share-Child" card
 
   Scenario: The Share dialog asks who and how much
     When user picks "Share..." from the context menu of BDD-Share tree node inside browse tree
@@ -77,7 +77,7 @@ Feature: Sharing a space, and what it refuses
 
   Scenario: Dragging a parent onto its own child changes nothing
     When user drags BDD-Share tree node inside browse tree to BDD-Share-Child tree node inside browse tree
-    Then BDD-Share tree node inside browse tree should be visible
+    Then the browse tree should show the "BDD-Share" space
     And 1 space named "BDD-Share" should be on the server
     And BDD-Share-Child tree node inside browse tree should be present
 
@@ -85,4 +85,4 @@ Feature: Sharing a space, and what it refuses
     When user picks "Delete Space" from the context menu of BDD-Share tree node inside browse tree
     And user clicks on DELETE button in "Are you sure?" dialog
     Then 0 spaces named "BDD-Share" should be on the server
-    And BDD-Share tree node inside browse tree should be absent
+    And the browse tree should not show the "BDD-Share" space

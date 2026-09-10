@@ -23,13 +23,13 @@ Feature: Nested spaces and moving between them
     When user picks "Create Child Space..." from the context menu of BDD-Hier-Root tree node inside browse tree
     And user enters "BDD-Hier-Child" into Name input in Create Space dialog
     And user clicks on OK button in Create Space dialog
-    Then BDD-Hier-Child tree node inside browse tree should be visible
+    Then the browse tree should show the "BDD-Hier-Child" space
 
   Scenario: The parent's view lists the child
     When user double-clicks on BDD-Hier-Root tree node inside browse tree
     Then the "BDD-Hier-Root" view should be current
     And space gallery should be visible
-    And BDD-Hier-Child link in space gallery should be visible
+    And the space should show the "BDD-Hier-Child" card
 
   Scenario: A grandchild is created from the child's card
     When user picks "Create Child Space..." from the context menu of BDD-Hier-Child link in space gallery
@@ -41,24 +41,24 @@ Feature: Nested spaces and moving between them
   Scenario: Opening the child shows the grandchild
     When user double-clicks on BDD-Hier-Child link in space gallery
     Then the "BDD-Hier-Child" view should be current
-    And BDD-Hier-Grand link in space gallery should be visible
-    And BDD-Hier-Child link in space gallery should be absent
+    And the space should show the "BDD-Hier-Grand" card
+    And the space should not show the "BDD-Hier-Child" card
 
   Scenario: Opening the grandchild leaves an empty space
     When user double-clicks on BDD-Hier-Grand link in space gallery
     Then the "BDD-Hier-Grand" view should be current
-    And BDD-Hier-Grand link in space gallery should be absent
+    And the space should not show the "BDD-Hier-Grand" card
 
   Scenario: Going back up the tree finds the content again
     When user double-clicks on BDD-Hier-Root tree node inside browse tree
     Then the "BDD-Hier-Root" view should be current
-    And BDD-Hier-Child link in space gallery should be visible
+    And the space should show the "BDD-Hier-Child" card
     When user double-clicks on BDD-Hier-Child link in space gallery
     Then the "BDD-Hier-Child" view should be current
-    And BDD-Hier-Grand link in space gallery should be visible
+    And the space should show the "BDD-Hier-Grand" card
 
   Scenario: Search still works after the walk
     When user enters "zzz-no-such-space" into space search
-    Then BDD-Hier-Grand link in space gallery should be absent
+    Then the space should not show the "BDD-Hier-Grand" card
     When user clears space search
-    Then BDD-Hier-Grand link in space gallery should be visible
+    Then the space should show the "BDD-Hier-Grand" card

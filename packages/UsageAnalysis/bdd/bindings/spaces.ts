@@ -1,8 +1,9 @@
 /* Spaces as the Browse tree shows them. Everything general — the browse panel, the browse tree,
    the expanded state of a node — is platform vocabulary in the library; what stays here is the
    space view's own gallery and search, and the spaces a scenario leaves on the server. */
-import {expect, Page} from '@playwright/test';
+import {Locator, Page} from '@playwright/test';
 import {element, Given, Then} from '@datagrok-libraries/bdd';
+import {el, exactText, expect, gestures, locate} from '@datagrok-libraries/bdd/runtime';
 import {atFeatureEnd} from '@datagrok-libraries/bdd/runtime';
 import {sharingLogin} from '@datagrok-libraries/bdd/bindings/platform/steps';
 
@@ -88,3 +89,50 @@ export const createDialogCloses = Then('the Create Space dialog should close', a
   await expect(page.locator('.d4-dialog[name="dialog-Create-Space"]').filter({visible: true}),
     'the Create Space dialog').toHaveCount(0, {timeout: 60000});
 }, {tier: 'ui', description: 'the platform closes it when the space is actually created'});
+
+/* --- what the tree and a space view show -------------------------------------------------------
+   Both refresh on a server round-trip the platform does not announce, and the tree's Spaces group
+   is closed unless something opened it: the product reveals a space it has just created by opening
+   the group, which on a loaded stand it sometimes does not do at all. So these four claims open the
+   group themselves on every attempt — what a person does — and give the round-trip a minute. The
+   negative pair needs the group open just as much: "absent" was true of a closed group whatever the
+   server held (the Dart tree builds a group's children when it opens). */
+const SPACES_GROUP = 'Spaces tree node inside browse tree';
+
+async function spacesOpen(page: Page): Promise<void> {
+  await gestures.setExpanded(page, el(SPACES_GROUP), true).catch(() => undefined);
+}
+
+function treeNode(page: Page, name: string): Promise<Locator> {
+  return locate(page, el(`${name} tree node inside browse tree`));
+}
+
+async function treeShows(page: Page, name: string): Promise<number> {
+  await spacesOpen(page);
+  return (await treeNode(page, name)).filter({visible: true}).count();
+}
+
+export const treeShowsSpace = Then('the browse tree should show the {string} space', async (page: Page, name: string) => {
+  await expect.poll(() => treeShows(page, name),
+    {message: `"${name}" among the nodes of the browse tree`, timeout: 60000}).toBeGreaterThan(0);
+}, {tier: 'ui', description: 'opens the Spaces group on each attempt, so the claim does not depend on the product revealing the space'});
+
+export const treeHidesSpace = Then('the browse tree should not show the {string} space', async (page: Page, name: string) => {
+  await expect.poll(() => treeShows(page, name),
+    {message: `"${name}" among the nodes of the browse tree`, timeout: 60000}).toBe(0);
+}, {tier: 'ui', description: 'with the group open, so the absence is the server’s answer rather than a closed group'});
+
+function cards(page: Page, name: string): Locator {
+  return page.locator('.grok-gallery-grid').locator('a, .d4-link-label')
+    .filter({hasText: exactText(name)}).filter({visible: true});
+}
+
+export const spaceShowsCard = Then('the space should show the {string} card', async (page: Page, name: string) => {
+  await expect.poll(() => cards(page, name).count(),
+    {message: `a "${name}" card in the space`, timeout: 60000}).toBeGreaterThan(0);
+}, {tier: 'ui', description: 'the view rebuilds its cards on a server round-trip it does not announce'});
+
+export const spaceHidesCard = Then('the space should not show the {string} card', async (page: Page, name: string) => {
+  await expect.poll(() => cards(page, name).count(),
+    {message: `a "${name}" card in the space`, timeout: 60000}).toBe(0);
+}, {tier: 'ui'});

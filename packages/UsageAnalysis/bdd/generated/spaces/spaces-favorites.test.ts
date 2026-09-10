@@ -13,7 +13,7 @@ import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {noSpaceOnServer, spacesOnServer} from '../../bindings/spaces.js';
+import {noSpaceOnServer, spacesOnServer, treeShowsSpace} from '../../bindings/spaces.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, enterInto, shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {browsePanelOpen} from '@datagrok-libraries/bdd/bindings/platform/steps';
@@ -42,7 +42,7 @@ test.describe("A space in favorites", () => {
       await session.step(27, "Then \"My stuff > Favorites > BDD-Fav\" tree node inside browse tree should be absent", () => shouldBe(page, el("\"My stuff > Favorites > BDD-Fav\" tree node inside browse tree"), "absent"));
       await session.step(28, "And \"My stuff > Favorites\" tree node inside browse tree should be present", () => shouldBe(page, el("\"My stuff > Favorites\" tree node inside browse tree"), "present"));
       await session.step(29, "And 1 space named \"BDD-Fav\" should be on the server", () => spacesOnServer(page, 1, "BDD-Fav"));
-      await session.step(30, "And BDD-Fav tree node inside browse tree should be visible", () => shouldBe(page, el("BDD-Fav tree node inside browse tree"), "visible"));
+      await session.step(30, "And the browse tree should show the \"BDD-Fav\" space", () => treeShowsSpace(page, "BDD-Fav"));
     });
     run.finish();
   });

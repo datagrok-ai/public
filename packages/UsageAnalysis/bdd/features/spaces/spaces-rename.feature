@@ -31,7 +31,7 @@ Feature: Renaming a space
     Then Rename project dialog should be hidden
     And 1 space named "BDD-Ren" should be on the server
     And 0 spaces named "BDD-Ren-New" should be on the server
-    And BDD-Ren tree node inside browse tree should be visible
+    And the browse tree should show the "BDD-Ren" space
 
   Scenario: A rename reaches the server and the tree
     When user picks "Rename..." from the context menu of BDD-Ren tree node inside browse tree
@@ -40,8 +40,8 @@ Feature: Renaming a space
     Then Rename project dialog should be hidden
     And 1 space named "BDD-Ren-New" should be on the server
     And 0 spaces named "BDD-Ren" should be on the server
-    And BDD-Ren-New tree node inside browse tree should be visible
-    And BDD-Ren tree node inside browse tree should be absent
+    And the browse tree should show the "BDD-Ren-New" space
+    And the browse tree should not show the "BDD-Ren" space
 
   Scenario: Renaming onto an existing name is refused
     When user picks "Create Space..." from the context menu of Spaces tree node inside browse tree
@@ -65,15 +65,15 @@ Feature: Renaming a space
     When user picks "Create Child Space..." from the context menu of BDD-Ren-Parent tree node inside browse tree
     And user enters "BDD-Ren-Child" into Name input in Create Space dialog
     And user clicks on OK button in Create Space dialog
-    Then BDD-Ren-Child tree node inside browse tree should be visible
+    Then the browse tree should show the "BDD-Ren-Child" space
     When user double-clicks on BDD-Ren-Parent tree node inside browse tree
-    Then BDD-Ren-Child link in space gallery should be visible
+    Then the space should show the "BDD-Ren-Child" card
     When user picks "Rename..." from the context menu of BDD-Ren-Child link in space gallery
     Then Name input in Rename project dialog should have value "BDD-Ren-Child"
     When user enters "BDD-Ren-ChildNew" into Name input in Rename project dialog
     And user clicks on OK button in Rename project dialog
-    Then BDD-Ren-ChildNew link in space gallery should be visible
-    And BDD-Ren-Child link in space gallery should be absent
+    Then the space should show the "BDD-Ren-ChildNew" card
+    And the space should not show the "BDD-Ren-Child" card
     When user expands BDD-Ren-Parent tree node inside browse tree
-    Then BDD-Ren-ChildNew tree node inside browse tree should be visible
-    And BDD-Ren-Child tree node inside browse tree should be absent
+    Then the browse tree should show the "BDD-Ren-ChildNew" space
+    And the browse tree should not show the "BDD-Ren-Child" space

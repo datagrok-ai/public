@@ -13,7 +13,7 @@ import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {createDialogCloses, noSpaceOnServer, spacesOnServer} from '../../bindings/spaces.js';
+import {createDialogCloses, noSpaceOnServer, spaceHidesCard, spaceShowsCard, spacesOnServer, treeShowsSpace} from '../../bindings/spaces.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clearField, clickOn, doubleClickOn, enterInto, shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {browsePanelOpen, viewIsCurrent} from '@datagrok-libraries/bdd/bindings/platform/steps';
@@ -36,13 +36,13 @@ test.describe("Nested spaces and moving between them", () => {
       await session.step(23, "When user picks \"Create Child Space...\" from the context menu of BDD-Hier-Root tree node inside browse tree", () => pickFromContextMenu(page, "Create Child Space...", el("BDD-Hier-Root tree node inside browse tree")));
       await session.step(24, "And user enters \"BDD-Hier-Child\" into Name input in Create Space dialog", () => enterInto(page, "BDD-Hier-Child", el("Name input in Create Space dialog")));
       await session.step(25, "And user clicks on OK button in Create Space dialog", () => clickOn(page, el("OK button in Create Space dialog")));
-      await session.step(26, "Then BDD-Hier-Child tree node inside browse tree should be visible", () => shouldBe(page, el("BDD-Hier-Child tree node inside browse tree"), "visible"));
+      await session.step(26, "Then the browse tree should show the \"BDD-Hier-Child\" space", () => treeShowsSpace(page, "BDD-Hier-Child"));
     });
     await run.scenario("The parent's view lists the child", async () => {
       await session.step(29, "When user double-clicks on BDD-Hier-Root tree node inside browse tree", () => doubleClickOn(page, el("BDD-Hier-Root tree node inside browse tree")));
       await session.step(30, "Then the \"BDD-Hier-Root\" view should be current", () => viewIsCurrent(page, "BDD-Hier-Root"));
       await session.step(31, "And space gallery should be visible", () => shouldBe(page, el("space gallery"), "visible"));
-      await session.step(32, "And BDD-Hier-Child link in space gallery should be visible", () => shouldBe(page, el("BDD-Hier-Child link in space gallery"), "visible"));
+      await session.step(32, "And the space should show the \"BDD-Hier-Child\" card", () => spaceShowsCard(page, "BDD-Hier-Child"));
     });
     await run.scenario("A grandchild is created from the child's card", async () => {
       await session.step(35, "When user picks \"Create Child Space...\" from the context menu of BDD-Hier-Child link in space gallery", () => pickFromContextMenu(page, "Create Child Space...", el("BDD-Hier-Child link in space gallery")));
@@ -54,27 +54,27 @@ test.describe("Nested spaces and moving between them", () => {
     await run.scenario("Opening the child shows the grandchild", async () => {
       await session.step(42, "When user double-clicks on BDD-Hier-Child link in space gallery", () => doubleClickOn(page, el("BDD-Hier-Child link in space gallery")));
       await session.step(43, "Then the \"BDD-Hier-Child\" view should be current", () => viewIsCurrent(page, "BDD-Hier-Child"));
-      await session.step(44, "And BDD-Hier-Grand link in space gallery should be visible", () => shouldBe(page, el("BDD-Hier-Grand link in space gallery"), "visible"));
-      await session.step(45, "And BDD-Hier-Child link in space gallery should be absent", () => shouldBe(page, el("BDD-Hier-Child link in space gallery"), "absent"));
+      await session.step(44, "And the space should show the \"BDD-Hier-Grand\" card", () => spaceShowsCard(page, "BDD-Hier-Grand"));
+      await session.step(45, "And the space should not show the \"BDD-Hier-Child\" card", () => spaceHidesCard(page, "BDD-Hier-Child"));
     });
     await run.scenario("Opening the grandchild leaves an empty space", async () => {
       await session.step(48, "When user double-clicks on BDD-Hier-Grand link in space gallery", () => doubleClickOn(page, el("BDD-Hier-Grand link in space gallery")));
       await session.step(49, "Then the \"BDD-Hier-Grand\" view should be current", () => viewIsCurrent(page, "BDD-Hier-Grand"));
-      await session.step(50, "And BDD-Hier-Grand link in space gallery should be absent", () => shouldBe(page, el("BDD-Hier-Grand link in space gallery"), "absent"));
+      await session.step(50, "And the space should not show the \"BDD-Hier-Grand\" card", () => spaceHidesCard(page, "BDD-Hier-Grand"));
     });
     await run.scenario("Going back up the tree finds the content again", async () => {
       await session.step(53, "When user double-clicks on BDD-Hier-Root tree node inside browse tree", () => doubleClickOn(page, el("BDD-Hier-Root tree node inside browse tree")));
       await session.step(54, "Then the \"BDD-Hier-Root\" view should be current", () => viewIsCurrent(page, "BDD-Hier-Root"));
-      await session.step(55, "And BDD-Hier-Child link in space gallery should be visible", () => shouldBe(page, el("BDD-Hier-Child link in space gallery"), "visible"));
+      await session.step(55, "And the space should show the \"BDD-Hier-Child\" card", () => spaceShowsCard(page, "BDD-Hier-Child"));
       await session.step(56, "When user double-clicks on BDD-Hier-Child link in space gallery", () => doubleClickOn(page, el("BDD-Hier-Child link in space gallery")));
       await session.step(57, "Then the \"BDD-Hier-Child\" view should be current", () => viewIsCurrent(page, "BDD-Hier-Child"));
-      await session.step(58, "And BDD-Hier-Grand link in space gallery should be visible", () => shouldBe(page, el("BDD-Hier-Grand link in space gallery"), "visible"));
+      await session.step(58, "And the space should show the \"BDD-Hier-Grand\" card", () => spaceShowsCard(page, "BDD-Hier-Grand"));
     });
     await run.scenario("Search still works after the walk", async () => {
       await session.step(61, "When user enters \"zzz-no-such-space\" into space search", () => enterInto(page, "zzz-no-such-space", el("space search")));
-      await session.step(62, "Then BDD-Hier-Grand link in space gallery should be absent", () => shouldBe(page, el("BDD-Hier-Grand link in space gallery"), "absent"));
+      await session.step(62, "Then the space should not show the \"BDD-Hier-Grand\" card", () => spaceHidesCard(page, "BDD-Hier-Grand"));
       await session.step(63, "When user clears space search", () => clearField(page, el("space search")));
-      await session.step(64, "Then BDD-Hier-Grand link in space gallery should be visible", () => shouldBe(page, el("BDD-Hier-Grand link in space gallery"), "visible"));
+      await session.step(64, "Then the space should show the \"BDD-Hier-Grand\" card", () => spaceShowsCard(page, "BDD-Hier-Grand"));
     });
     run.finish();
   });

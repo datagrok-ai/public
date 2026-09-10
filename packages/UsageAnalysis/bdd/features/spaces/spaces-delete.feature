@@ -22,16 +22,16 @@ Feature: Deleting a space
 
   Scenario: Cancelling the confirmation keeps the space
     When user clicks on CANCEL button in "Are you sure?" dialog
-    Then "Are you sure?" dialog should be hidden
+    Then the "Are you sure?" dialog should close
     And 1 space named "BDD-Del" should be on the server
-    And BDD-Del tree node inside browse tree should be visible
+    And the browse tree should show the "BDD-Del" space
 
   Scenario: Confirming removes it from the server and the tree
     When user picks "Delete Space" from the context menu of BDD-Del tree node inside browse tree
     And user clicks on DELETE button in "Are you sure?" dialog
-    Then "Are you sure?" dialog should be hidden
+    Then the "Are you sure?" dialog should close
     And 0 spaces named "BDD-Del" should be on the server
-    And BDD-Del tree node inside browse tree should be absent
+    And the browse tree should not show the "BDD-Del" space
 
   Scenario: Deleting one child leaves its sibling
     When user picks "Create Space..." from the context menu of Spaces tree node inside browse tree
@@ -41,19 +41,19 @@ Feature: Deleting a space
     When user picks "Create Child Space..." from the context menu of BDD-Del-Parent tree node inside browse tree
     And user enters "BDD-Del-Child1" into Name input in Create Space dialog
     And user clicks on OK button in Create Space dialog
-    Then BDD-Del-Child1 tree node inside browse tree should be visible
+    Then the browse tree should show the "BDD-Del-Child1" space
     When user picks "Create Child Space..." from the context menu of BDD-Del-Parent tree node inside browse tree
     And user enters "BDD-Del-Child2" into Name input in Create Space dialog
     And user clicks on OK button in Create Space dialog
-    Then BDD-Del-Child2 tree node inside browse tree should be visible
+    Then the browse tree should show the "BDD-Del-Child2" space
     When user picks "Delete Space" from the context menu of BDD-Del-Child1 tree node inside browse tree
     And user clicks on DELETE button in "Are you sure?" dialog
-    Then BDD-Del-Child1 tree node inside browse tree should be absent
-    And BDD-Del-Child2 tree node inside browse tree should be visible
+    Then the browse tree should not show the "BDD-Del-Child1" space
+    And the browse tree should show the "BDD-Del-Child2" space
 
   Scenario: Deleting the parent takes the remaining child with it
     When user picks "Delete Space" from the context menu of BDD-Del-Parent tree node inside browse tree
     And user clicks on DELETE button in "Are you sure?" dialog
     Then 0 spaces named "BDD-Del-Parent" should be on the server
-    And BDD-Del-Parent tree node inside browse tree should be absent
-    And BDD-Del-Child2 tree node inside browse tree should be absent
+    And the browse tree should not show the "BDD-Del-Parent" space
+    And the browse tree should not show the "BDD-Del-Child2" space

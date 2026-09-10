@@ -22,7 +22,7 @@ Feature: Creating a space
     And user clicks on OK button in Create Space dialog
     Then the Create Space dialog should close
     And 1 space named "BDD-Root" should be on the server
-    And BDD-Root tree node inside browse tree should be visible
+    And the browse tree should show the "BDD-Root" space
 
   Scenario: The space offers its actions
     When user opens the context menu of BDD-Root tree node inside browse tree
@@ -67,7 +67,7 @@ Feature: Creating a space
     And user enters "BDD-Child" into Name input in Create Space dialog
     And user clicks on OK button in Create Space dialog
     Then the Create Space dialog should close
-    And BDD-Child tree node inside browse tree should be visible
+    And the browse tree should show the "BDD-Child" space
 
   Scenario: A second child of the same name is refused
     When user picks "Create Child Space..." from the context menu of BDD-Parent tree node inside browse tree
@@ -83,4 +83,4 @@ Feature: Creating a space
     And user enters "BDD Name With Spaces" into Name input in Create Space dialog
     And user clicks on OK button in Create Space dialog
     Then 1 space named "BDD Name With Spaces" should be on the server
-    And BDD Name With Spaces tree node inside browse tree should be visible
+    And the browse tree should show the "BDD Name With Spaces" space

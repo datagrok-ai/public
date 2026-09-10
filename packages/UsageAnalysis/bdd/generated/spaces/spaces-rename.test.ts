@@ -13,7 +13,7 @@ import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {noSpaceOnServer, spacesOnServer} from '../../bindings/spaces.js';
+import {noSpaceOnServer, spaceHidesCard, spaceShowsCard, spacesOnServer, treeHidesSpace, treeShowsSpace} from '../../bindings/spaces.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, close, doubleClickOn, enterInto, expand, shouldBe, shouldHaveValue} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {browsePanelOpen} from '@datagrok-libraries/bdd/bindings/platform/steps';
@@ -43,7 +43,7 @@ test.describe("Renaming a space", () => {
       await session.step(31, "Then Rename project dialog should be hidden", () => shouldBe(page, el("Rename project dialog"), "hidden"));
       await session.step(32, "And 1 space named \"BDD-Ren\" should be on the server", () => spacesOnServer(page, 1, "BDD-Ren"));
       await session.step(33, "And 0 spaces named \"BDD-Ren-New\" should be on the server", () => spacesOnServer(page, 0, "BDD-Ren-New"));
-      await session.step(34, "And BDD-Ren tree node inside browse tree should be visible", () => shouldBe(page, el("BDD-Ren tree node inside browse tree"), "visible"));
+      await session.step(34, "And the browse tree should show the \"BDD-Ren\" space", () => treeShowsSpace(page, "BDD-Ren"));
     });
     await run.scenario("A rename reaches the server and the tree", async () => {
       await session.step(37, "When user picks \"Rename...\" from the context menu of BDD-Ren tree node inside browse tree", () => pickFromContextMenu(page, "Rename...", el("BDD-Ren tree node inside browse tree")));
@@ -52,8 +52,8 @@ test.describe("Renaming a space", () => {
       await session.step(40, "Then Rename project dialog should be hidden", () => shouldBe(page, el("Rename project dialog"), "hidden"));
       await session.step(41, "And 1 space named \"BDD-Ren-New\" should be on the server", () => spacesOnServer(page, 1, "BDD-Ren-New"));
       await session.step(42, "And 0 spaces named \"BDD-Ren\" should be on the server", () => spacesOnServer(page, 0, "BDD-Ren"));
-      await session.step(43, "And BDD-Ren-New tree node inside browse tree should be visible", () => shouldBe(page, el("BDD-Ren-New tree node inside browse tree"), "visible"));
-      await session.step(44, "And BDD-Ren tree node inside browse tree should be absent", () => shouldBe(page, el("BDD-Ren tree node inside browse tree"), "absent"));
+      await session.step(43, "And the browse tree should show the \"BDD-Ren-New\" space", () => treeShowsSpace(page, "BDD-Ren-New"));
+      await session.step(44, "And the browse tree should not show the \"BDD-Ren\" space", () => treeHidesSpace(page, "BDD-Ren"));
     });
     await run.scenario("Renaming onto an existing name is refused", async () => {
       await session.step(47, "When user picks \"Create Space...\" from the context menu of Spaces tree node inside browse tree", () => pickFromContextMenu(page, "Create Space...", el("Spaces tree node inside browse tree")));
@@ -77,18 +77,18 @@ test.describe("Renaming a space", () => {
       await session.step(65, "When user picks \"Create Child Space...\" from the context menu of BDD-Ren-Parent tree node inside browse tree", () => pickFromContextMenu(page, "Create Child Space...", el("BDD-Ren-Parent tree node inside browse tree")));
       await session.step(66, "And user enters \"BDD-Ren-Child\" into Name input in Create Space dialog", () => enterInto(page, "BDD-Ren-Child", el("Name input in Create Space dialog")));
       await session.step(67, "And user clicks on OK button in Create Space dialog", () => clickOn(page, el("OK button in Create Space dialog")));
-      await session.step(68, "Then BDD-Ren-Child tree node inside browse tree should be visible", () => shouldBe(page, el("BDD-Ren-Child tree node inside browse tree"), "visible"));
+      await session.step(68, "Then the browse tree should show the \"BDD-Ren-Child\" space", () => treeShowsSpace(page, "BDD-Ren-Child"));
       await session.step(69, "When user double-clicks on BDD-Ren-Parent tree node inside browse tree", () => doubleClickOn(page, el("BDD-Ren-Parent tree node inside browse tree")));
-      await session.step(70, "Then BDD-Ren-Child link in space gallery should be visible", () => shouldBe(page, el("BDD-Ren-Child link in space gallery"), "visible"));
+      await session.step(70, "Then the space should show the \"BDD-Ren-Child\" card", () => spaceShowsCard(page, "BDD-Ren-Child"));
       await session.step(71, "When user picks \"Rename...\" from the context menu of BDD-Ren-Child link in space gallery", () => pickFromContextMenu(page, "Rename...", el("BDD-Ren-Child link in space gallery")));
       await session.step(72, "Then Name input in Rename project dialog should have value \"BDD-Ren-Child\"", () => shouldHaveValue(page, el("Name input in Rename project dialog"), "BDD-Ren-Child"));
       await session.step(73, "When user enters \"BDD-Ren-ChildNew\" into Name input in Rename project dialog", () => enterInto(page, "BDD-Ren-ChildNew", el("Name input in Rename project dialog")));
       await session.step(74, "And user clicks on OK button in Rename project dialog", () => clickOn(page, el("OK button in Rename project dialog")));
-      await session.step(75, "Then BDD-Ren-ChildNew link in space gallery should be visible", () => shouldBe(page, el("BDD-Ren-ChildNew link in space gallery"), "visible"));
-      await session.step(76, "And BDD-Ren-Child link in space gallery should be absent", () => shouldBe(page, el("BDD-Ren-Child link in space gallery"), "absent"));
+      await session.step(75, "Then the space should show the \"BDD-Ren-ChildNew\" card", () => spaceShowsCard(page, "BDD-Ren-ChildNew"));
+      await session.step(76, "And the space should not show the \"BDD-Ren-Child\" card", () => spaceHidesCard(page, "BDD-Ren-Child"));
       await session.step(77, "When user expands BDD-Ren-Parent tree node inside browse tree", () => expand(page, el("BDD-Ren-Parent tree node inside browse tree")));
-      await session.step(78, "Then BDD-Ren-ChildNew tree node inside browse tree should be visible", () => shouldBe(page, el("BDD-Ren-ChildNew tree node inside browse tree"), "visible"));
-      await session.step(79, "And BDD-Ren-Child tree node inside browse tree should be absent", () => shouldBe(page, el("BDD-Ren-Child tree node inside browse tree"), "absent"));
+      await session.step(78, "Then the browse tree should show the \"BDD-Ren-ChildNew\" space", () => treeShowsSpace(page, "BDD-Ren-ChildNew"));
+      await session.step(79, "And the browse tree should not show the \"BDD-Ren-Child\" space", () => treeHidesSpace(page, "BDD-Ren-Child"));
     });
     run.finish();
   });
