@@ -139,6 +139,8 @@ export function loadCreds(file?: string): Record<string, any> | undefined {
 }
 
 const POLICIES: ConflictPolicy[] = ['fail', 'skip', 'duplicate', 'adopt'];
+/** The last part: whatever no space owns, which would otherwise never travel. */
+const SWEEP = '(unowned)';
 
 function conflictPolicy(argv: any): ConflictPolicy {
   const policy: ConflictPolicy = argv['on-conflict'] ?? 'fail';
@@ -246,16 +248,25 @@ async function transferByNamespace(from: NodeDapi, to: NodeDapi, argv: any, outp
   }
 
   const spaces = (await namespacesOf(from)).filter((n) => (!only.length || only.includes(n)) && !skip.has(n));
+  // Not everything belongs to a space: a layout can sit under no namespace at all, and would
+  // otherwise never travel. The sweep runs last, when almost everything it selects is already on
+  // the target and comes back identical, so it costs a pull and almost no placement.
+  if (!only.length && !argv['no-sweep']) spaces.push(SWEEP);
   const parts: Part[] = [];
   for (const [i, name] of spaces.entries()) {
     if (state[name] && !state[name].error) { parts.push(state[name]); continue; }
-    console.error(`[${i + 1}/${spaces.length}] ${name}`);
+    console.error(`[${i + 1}/${spaces.length}] ${name === SWEEP ? 'everything a space does not own' : name}`);
     const started = Date.now();
     const part: Part = {name};
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'grok-migrate-'));
     try {
       const report = {dropped: 0};
-      const pulled = await handlePull(from, [], {...argv, namespace: name, out: dir}, 'quiet', false, report);
+      // A pull refuses to take the whole server without a selection, and the sweep is exactly that:
+      // whatever the run already selects, or every type if it named none.
+      const scope = name === SWEEP
+        ? (hasSelection([], argv) ? {} : {type: DEFAULT_TYPES.join(',')})
+        : {namespace: name};
+      const pulled = await handlePull(from, [], {...argv, ...scope, out: dir}, 'quiet', false, report);
       const read = pulled ? bundle.read(dir) : null;
       part.entities = read ? read.entities.size : 0;
       if (read && part.entities) {

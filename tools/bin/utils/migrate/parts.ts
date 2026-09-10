@@ -15,6 +15,9 @@ export async function namespacesOf(dapi: NodeDapi): Promise<string[]> {
   const names = new Set<string>();
   for (const p of await dapi.internal('/projects').listAll({includeRoot: 'true'})) {
     if (p?.isEntity || p?.isPackage) continue;
+    // The platform's own space: its connections are already refused as `platform_connection`, the
+    // target builds its own, and listing what is under it does not answer.
+    if (String(p.namespace ?? '').startsWith('System:') || p.name === 'System') continue;
     const own = String(p.namespace ?? '').split(':')[0];
     if (own) names.add(own);
     else if (p.isRoot && p.name) names.add(String(p.name));

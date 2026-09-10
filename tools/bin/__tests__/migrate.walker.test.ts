@@ -408,6 +408,21 @@ describe('collectExternals', () => {
     expect(dangling).toEqual([]);
   });
 
+  it('does not record a reference to a type it never migrates', async () => {
+    // A report belongs to the stand it was raised on; carrying its id forward only produces a
+    // warning the operator cannot act on.
+    const REPORT = 'deadbeef-2222-3333-4444-555555555555';
+    const {dapi} = makeDapi((_m, path) => path.includes(REPORT)
+      ? {'#type': 'UserReport', id: REPORT, name: 'Report1', namespace: 'Admin:'}
+      : (() => { throw Object.assign(new Error('Not Found'), {apiError: {errorCode: 404}}); })());
+    const live = new Map([[VIEW_ID, {type: 'ViewInfo', json: {
+      '#type': 'ViewInfo', id: VIEW_ID, name: 'Demog', report: {id: REPORT},
+    }}]]);
+    const {externals, dangling} = await collectExternals(dapi, live as any, () => {});
+    expect(externals).toEqual([]);
+    expect(dangling).toEqual([]);
+  });
+
   it('records a reference nothing on the source answers to', async () => {
     const {dapi} = makeDapi(() => { throw Object.assign(new Error('Not Found'), {apiError: {errorCode: 404}}); });
     const {externals, dangling} = await collectExternals(dapi, entities as any, () => {});

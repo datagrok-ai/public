@@ -456,9 +456,12 @@ export async function collectExternals(dapi: NodeDapi, entities: Map<string, Bun
     }
     // Nothing on the source answers to it either: the reference died here, and no target can
     // satisfy it. Recording that is what lets the push tell broken source data from a real failure.
-    if (found)
+    // Only a type this tool migrates is worth recording: the push re-finds an external by name, and
+    // one it can never carry — a report, which belongs to the stand it was raised on — would just
+    // become a warning nobody can act on (900 of them on one real bundle).
+    if (found && TYPES[found['#type']])
       externals.push({id, type: found['#type'], nqName: nqNameOf(found)});
-    else
+    else if (!found)
       dangling.push(id);
     progress('resolving outside references', ++seen, outside.length);
   });

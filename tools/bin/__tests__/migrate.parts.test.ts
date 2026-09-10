@@ -27,6 +27,15 @@ describe('namespacesOf', () => {
     expect(await namespacesOf(dapi)).toEqual(['Chem', 'Skalkin']);
   });
 
+  it('leaves the platform own System space out', async () => {
+    const dapi = makeDapi(() => [
+      {name: 'System', isRoot: true},
+      {name: 'Reports', namespace: 'System:'},
+      {name: 'Team', isRoot: true},
+    ]);
+    expect(await namespacesOf(dapi)).toEqual(['Team']);
+  });
+
   it('does not repeat a namespace many projects share', async () => {
     const dapi = makeDapi(() => [
       {name: 'A', namespace: 'Team:'}, {name: 'B', namespace: 'Team:'}, {name: 'C', namespace: 'Team:Deep:'},
