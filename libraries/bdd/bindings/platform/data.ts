@@ -14,8 +14,8 @@ declare const grok: any;
 declare const DG: any;
 
 const list = (s: string): string[] => s.split(/\s*,\s*/).filter((x) => x.length > 0);
-const facts = (page: Page, column: string, test: RowTest, mustMatch = true): Promise<RowFacts> =>
-  evaluate(page, ([c, t, m]) => (window as any).__bdd.rowFacts(c, t, m), [column, test, mustMatch] as [string, RowTest, boolean]);
+const facts = (page: Page, column: string, test: RowTest): Promise<RowFacts> =>
+  evaluate(page, ([c, t]) => (window as any).__bdd.rowFacts(c, t), [column, test] as [string, RowTest]);
 const selectedCount = (page: Page): Promise<number> => page.evaluate(() => grok.shell.t.selection.trueCount as number);
 const filteredCount = (page: Page): Promise<number> => page.evaluate(() => grok.shell.t.filter.trueCount as number);
 
@@ -27,11 +27,11 @@ async function changeTable(page: Page, body: (arg: any) => void, arg: unknown): 
   await settleAll(page);
 }
 
-/** The selection or the filter becomes exactly the rows a test names; a category that matches no
- * row fails (a typo), unless the step allows an empty result. */
-const setRows = (page: Page, what: 'selection' | 'filter', column: string, test: RowTest, negate = false, mustMatch = true): Promise<void> =>
-  changeTable(page, ([w, c, t, n, m]) => { (window as any).__bdd.setRows(w, c, t, n, m); },
-    [what, column, test, negate, mustMatch] as [typeof what, string, RowTest, boolean, boolean]);
+/** The selection or the filter becomes exactly the rows a test names. A value the column does
+ * not hold (a typo) fails in the page with the values it does hold; an empty result is legal. */
+const setRows = (page: Page, what: 'selection' | 'filter', column: string, test: RowTest, negate = false): Promise<void> =>
+  changeTable(page, ([w, c, t, n]) => { (window as any).__bdd.setRows(w, c, t, n); },
+    [what, column, test, negate] as [typeof what, string, RowTest, boolean]);
 
 // --- selection ---------------------------------------------------------------------------------------
 
@@ -170,11 +170,11 @@ export const currentColumnIs = Then('the current column should be {string}', (pa
 // --- filter ------------------------------------------------------------------------------------------
 
 export const filterBetween = When('user filters rows where {string} is between {float} and {float}', (page: Page, column: string, lo: number, hi: number) =>
-  setRows(page, 'filter', column, {between: [lo, hi]}, false, false),
+  setRows(page, 'filter', column, {between: [lo, hi]}),
 {tier: 'api', description: 'the table\'s filter bitset, as a filter viewer would set it; a range no row falls in empties the table on purpose'});
 
 export const filterNotNull = When('user filters rows where {string} is not null', (page: Page, column: string) =>
-  setRows(page, 'filter', column, {notNull: true}, false, false), {tier: 'api', description: 'the table\'s filter bitset, as a filter viewer would set it'});
+  setRows(page, 'filter', column, {notNull: true}), {tier: 'api', description: 'the table\'s filter bitset, as a filter viewer would set it'});
 
 export const filterTo = When('user filters rows where {string} is {string}', (page: Page, column: string, value: string) =>
   setRows(page, 'filter', column, {eq: value}), {tier: 'api', description: 'keeps the category\'s rows only — the table\'s filter bitset'});
@@ -238,8 +238,17 @@ export const deleteSelected = When('user deletes the selected rows', (page: Page
 export const rowCount = Then('the table should have {int} row(s)', (page: Page, count: number) =>
   expect.poll(() => page.evaluate(() => grok.shell.t.rowCount as number), {message: 'rows in the table'}).toBe(count));
 
+/** The one claim about a value the column may no longer hold (the rows were deleted), so it
+ * counts on its own rather than through `rowFacts`, which refuses an unknown value. */
 export const noRowsWhere = Then('the table should have no rows where {string} is {string}', async (page: Page, column: string, value: string) => {
-  await expect.poll(async () => (await facts(page, column, {eq: value}, false)).matching, {message: `rows where ${column} is ${value}`}).toBe(0);
+  await expect.poll(() => evaluate(page, ([c, v]) => {
+    const col = (window as any).__bdd.col(c);
+    let n = 0;
+    for (let i = 0; i < col.length; i++)
+      if (String(col.get(i) ?? '') === v)
+        n++;
+    return n;
+  }, [column, value] as [string, string]), {message: `rows where ${column} is ${value}`}).toBe(0);
 });
 
 // --- columns -----------------------------------------------------------------------------------------

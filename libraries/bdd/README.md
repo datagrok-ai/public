@@ -51,7 +51,8 @@ open are registered in `bindings/platform/datasets.ts`: `demog-1000` is
 `System:DemoFiles/demog-1000.csv`, uploaded once with
 `grok s files put public/packages/ApiTests/files/datasets/demog-1000.csv "System:DemoFiles/demog-1000.csv" --host localhost`;
 `spgi` comes with the published `Chem` package (`grok s packages install Chem`). A sharing feature
-needs a second account in `DATAGROK_SHARING_LOGIN`.
+shares with the account in `DATAGROK_SHARING_LOGIN`, or, unset, with the `bddsecond` user the
+setup creates on the stand (a dev key is needed for that; users cannot be deleted, so it stays).
 
 `grok-bdd init` runs in the package directory and creates what is missing, never overwriting:
 

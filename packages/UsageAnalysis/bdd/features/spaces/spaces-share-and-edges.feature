@@ -18,7 +18,8 @@ Feature: Sharing a space, and what it refuses
   it as it comes and claim the level as text.
 
   The second account is DATAGROK_SHARING_LOGIN — the variable the hand-written suites read from
-  playwright-tests/.env; without it the sharing scenarios fail saying so, rather than passing.
+  playwright-tests/.env — or, unset, the "bddsecond" user the library's setup creates on the stand
+  with the dev key; with neither the sharing scenarios fail saying so, rather than passing.
 
   What the old spec checked after deleting the space — that the permissions endpoint no longer
   answers — is not restated here: it read a raw fetch and accepted any error at all, including a

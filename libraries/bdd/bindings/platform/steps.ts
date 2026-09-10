@@ -180,15 +180,16 @@ export const browsePanelOpen = Given('the browse panel is open', async (page: Pa
 }, {tier: 'api', description: 'idempotent: leaves simple mode, shows the panel and waits for its tree; puts simple mode back at feature end'});
 
 /* --- the second account ------------------------------------------------------------------------
-   A sharing feature needs a user other than the one running it. It is DATAGROK_SHARING_LOGIN — the
-   same variable the hand-written suites read from playwright-tests/.env — and the platform's user
-   typeahead offers it under a name with the punctuation stripped ("a+b@x" shows as "ab"), so the
-   step types the local part and picks the row rather than trusting what it typed. */
+   A sharing feature needs a user other than the one running it: DATAGROK_SHARING_LOGIN — the same
+   variable the hand-written suites read from playwright-tests/.env — or, when it is unset, the
+   "bddsecond" user the global setup creates on the stand with the dev key. The platform's user
+   typeahead offers a user under a name with the punctuation stripped ("a+b@x" shows as "ab"), so
+   the step types the local part and picks the row rather than trusting what it typed. */
 
 export function sharingLogin(): string {
   const login = process.env.DATAGROK_SHARING_LOGIN;
   if (!login)
-    throw new Error('no DATAGROK_SHARING_LOGIN in the environment: a sharing feature needs a second account');
+    throw new Error('no second account: set DATAGROK_SHARING_LOGIN, or run with a dev key so the setup can create one');
   return login;
 }
 

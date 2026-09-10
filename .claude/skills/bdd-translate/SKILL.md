@@ -117,7 +117,8 @@ Each line is a way a passing test was found to prove nothing.
 - **A picture that cannot be read** (WebGL, an inner viewer) gets a signature hashed in one task,
   and a signature that "differs" must have exactly one cause.
 - **Shape without content**: a result table with the right columns can be all blanks. **A typo
-  passes**: "rows where RACE is Blakc" matched 0 of 0 — the data steps fail on an empty match.
+  passes**: "rows where RACE is Blakc" matched 0 of 0 — the data steps fail on a value the column
+  does not hold, and a claim about rows none of which exist; an empty filter result is legal.
 - **Count the fixture against the data file**; an old `md` goes stale (three "open bugs" were all
   fixed) — verify before writing a `@known-failure`; a `test.fail(true, …)` spec proves nothing.
 - **Write patch scripts with the Write tool, never a heredoc** — the Bash tool collapses `\\`.

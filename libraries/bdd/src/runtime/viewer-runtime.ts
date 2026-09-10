@@ -188,11 +188,31 @@ function install(): void {
     'eq' in test ? `${name} = ${test.eq}` : 'in' in test ? `${name} in ${test.in.join(', ')}` :
       'contains' in test ? `${name} containing "${test.contains}"` : 'startsWith' in test ? `${name} starting with "${test.startsWith}"` :
         'notNull' in test ? `${name} not null` : `${name} between ${test.between[0]} and ${test.between[1]}`;
-  /** The rows a test names against the selection and the filter. A test no row matches fails: a
-   * category that does not exist (a typo) must not pass a check about its rows. */
-  const rowFacts = (name: string, test: RowTest, mustMatch = true): RowFacts => {
+  /** A test that could never name a row is a mistake in the feature, not a fact about the data: a
+   * category the column does not hold (a typo), a range over a text column. Checked before the
+   * scan, so that an empty result stays legal — a range that keeps no row empties a chart on
+   * purpose, and a claim about it is a claim about 0 rows. */
+  const checkTest = (name: string, c: any, test: RowTest): void => {
+    const wanted = 'eq' in test ? [test.eq] : 'in' in test ? test.in : [];
+    if (wanted.length > 0) {
+      const have = new Set<string>();
+      for (let i = 0; i < c.length; i++)
+        have.add(String(c.get(i) ?? ''));
+      const missing = wanted.filter((v) => !have.has(v));
+      if (missing.length > 0)
+        throw new Error(`${name} has no value ${missing.map((v) => `"${v}"`).join(', ')}; it has: ${[...have].slice(0, 20).join(', ')}${have.size > 20 ? ', …' : ''}`);
+    }
+    if ('between' in test && !c.isNumerical)
+      throw new Error(`${name} is a ${c.type} column; a range test needs a numerical one`);
+  };
+  /** The rows a test names against the selection and the filter. A claim about rows none of
+   * which exist fails: "only rows where X starts with Z" over a table with no such row would be
+   * checking that nothing is selected. */
+  const rowFacts = (name: string, test: RowTest): RowFacts => {
     const df = table();
-    const hit = tester(col(name, df), test);
+    const c = col(name, df);
+    checkTest(name, c, test);
+    const hit = tester(c, test);
     const facts: RowFacts = {matching: 0, selected: 0, passing: 0, selectedTotal: df.selection.trueCount, filteredTotal: df.filter.trueCount,
       wrongSelection: 0, wrongFilter: 0};
     for (let i = 0; i < df.rowCount; i++) {
@@ -211,16 +231,17 @@ function install(): void {
       if (h !== f)
         facts.wrongFilter++;
     }
-    if (mustMatch && facts.matching === 0)
+    if (facts.matching === 0)
       throw new Error(`no row of ${df.name} has ${describeTest(name, test)}`);
     return facts;
   };
-  /** The selection or the filter becomes exactly the rows the test names (or every other row). A
-   * category no row has fails unless the step allows an empty result — a range filter that keeps
-   * nothing is how a feature empties a chart on purpose. */
-  const setRows = (what: 'selection' | 'filter', name: string, test: RowTest, negate = false, mustMatch = true): number => {
+  /** The selection or the filter becomes exactly the rows the test names (or every other row);
+   * an empty result is a legal one. */
+  const setRows = (what: 'selection' | 'filter', name: string, test: RowTest, negate = false): number => {
     const df = table();
-    const hit = tester(col(name, df), test);
+    const c = col(name, df);
+    checkTest(name, c, test);
+    const hit = tester(c, test);
     let hits = 0;
     df[what].init((i: number) => {
       const h = hit(i) !== negate;
@@ -228,8 +249,6 @@ function install(): void {
         hits++;
       return h;
     });
-    if (hits === 0 && mustMatch && !negate)
-      throw new Error(`no row of ${df.name} has ${describeTest(name, test)}`);
     return hits;
   };
 

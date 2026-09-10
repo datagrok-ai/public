@@ -105,18 +105,25 @@ async function openGroup(page: Page, label: string, wanted?: string): Promise<vo
 }
 
 /** `Misc > Show Inside Values`: hovers the groups, clicks the leaf. The item ancestor is the usual
- * click target, but an inline group lays the box out on the label itself. */
+ * click target, but an inline group lays the box out on the label itself — decided before the
+ * click, and clicked once: a click whose handler rebuilds the viewer synchronously can outlast a
+ * short cap with its work done, and a second click would undo a toggle. */
 export async function pickMenuPath(page: Page, path: string): Promise<void> {
   const segments = path.split(SEP).filter((s) => s.length > 0);
   for (let i = 0; i < segments.length; i++) {
     const last = i === segments.length - 1;
-    const act = last
-      ? menuItems(page, segments[i]).filter({visible: true}).first().click({timeout: 3000})
-        .catch(() => menuLabelsMatching(page, segments[i]).filter({visible: true}).first().click({timeout: 3000}))
-      : openGroup(page, segments[i], segments[i + 1]);
-    await act.catch(async () => {
+    if (!last) {
+      await openGroup(page, segments[i], segments[i + 1]).catch(async () => {
+        throw new Error(`no "${segments[i]}" in the menu; it shows: ${await visibleMenuLabels(page)}`);
+      });
+      continue;
+    }
+    const label = menuLabelsMatching(page, segments[i]).filter({visible: true}).first();
+    await label.waitFor({state: 'visible', timeout: 3000}).catch(async () => {
       throw new Error(`no "${segments[i]}" in the menu; it shows: ${await visibleMenuLabels(page)}`);
     });
+    const item = label.locator(MENU_ITEM);
+    await (await item.count() > 0 ? item : label).click();
   }
 }
 

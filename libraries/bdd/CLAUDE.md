@@ -53,7 +53,13 @@ and `isRenderPending`, `onContextMenuShown/Closed`, `getWidgetStatus().hitAreas/
 - **`user is logged in` only resets when the page is in the shell**; it sets `simpleMode` (view
   tabs hidden — switch views by name), clears the error and balloon floors, installs the in-page
   runtime. Package autostarts land 3 s after boot; a feature that needs one awaits
-  `the package autostarts have completed`.
+  `the package autostarts have completed`. The first shell load of a page waits 180 s and warns
+  past 30 s: a starved `pub serve` hands out the 32 MB bundle in a minute, and that is a delay
+  once per page, not the feature's failure.
+- **A row test is checked before the rows are scanned** (`viewer-runtime.ts` `checkTest`): a
+  value the column does not hold (a typo) fails naming the values it has, a range over a text
+  column fails; an empty result is legal for a filter or a selection (a range that keeps no row
+  empties a chart on purpose), and a claim about rows none of which exist fails.
 - **A dataset is read once per page and every feature gets a clone** (`platform/steps.ts`
   `openTable`): the clone keeps the semantic types, so the platform's detection on it skips the
   typed columns; the step still ends on `ddt-semantic-type-detected` for that frame, and makes
@@ -100,6 +106,10 @@ and `isRenderPending`, `onContextMenuShown/Closed`, `getWidgetStatus().hitAreas/
   match and prefer the visible ones; `visible`/`hidden` over several matches = any/none.
 - **Labels are found first, items second** (`byLabel`, `:scope >` labels); menu items match
   their own label, not their children's.
+- **A gesture is dispatched once; the target is decided before it** (`pickMenuPath`): a click
+  whose handler rebuilds a viewer synchronously (the tile viewer, 0.9 s idle for 1000 rows, past
+  3 s under four workers) outlives a short cap with its work done, and a fallback click undoes
+  the toggle. Never `click().catch(() => otherClick())`.
 - **Hover is two pointer events and never sleeps**; it waits in-page for the element's own
   `mouseenter` and repeats the pair when a coalesced move swallowed it.
 - **Step specificity**: more literal text wins, then fewer parameters; a tie is a compile error.
@@ -153,6 +163,13 @@ and `isRenderPending`, `onContextMenuShown/Closed`, `getWidgetStatus().hitAreas/
   affectionate_einstein`.
 - `grok-bdd run` defaults to 4 workers (`PLAYWRIGHT_WORKERS` overrides); the installed
   `@datagrok-libraries/test` base config is older than the checkout's and says one.
+- A sharing feature shares with `DATAGROK_SHARING_LOGIN` or, unset, with the `bddsecond` user
+  `global-setup.ts` creates through `POST /public/v1/users` with the dev-key token (a missing
+  login answers 200 with an `ApiError` body; users cannot be deleted, so it stays).
+- `pub serve` degrades under a run: the direct port (`:63343`) has served the bundle in 46 s
+  while nginx at `:8888` answered from cache in 3 s; a run started while it is starved fails every
+  feature at the shell load. `curl -o /dev/null -w '%{time_total}' localhost:63343/login.dart.js_1.part.js`
+  under a few seconds first.
 - Junctions, not `mklink /J`, from Git Bash (`New-Item -ItemType Junction`); `grok-bdd link` again
   after any `npm link`/`npm ci` in a package.
 - Bash tool: cwd persists across calls, long heredocs fail — write files with the Write tool.

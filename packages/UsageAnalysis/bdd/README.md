@@ -6,7 +6,8 @@ holds one folder per platform viewer (every TestTrack viewer spec translated, mo
 features: the data and the viewer opened once, the scenarios in order as soft steps) plus
 `viewer-chrome.feature`, the outline over the title and description every viewer shares;
 `features/spaces/` the Spaces features (the browse tree, the space view, sharing — the sharing
-one needs a second account in `DATAGROK_SHARING_LOGIN`). `bindings/` keeps the steps only one
+one shares with `DATAGROK_SHARING_LOGIN`, or with the `bddsecond` user the library's setup
+creates when the variable is unset). `bindings/` keeps the steps only one
 viewer can define (the bar chart's bar order and lengths, the pie chart's slices, the pivot's
 aggregation against a `groupBy`, the correlation plot's coefficient against `DG.Stats`, the
 Forms viewer's card rows, the tile viewer's designer, the filter panel's hierarchical card); the
@@ -21,6 +22,7 @@ npx playwright install chromium                      # its browser, once per mac
 cd ../../packages/UsageAnalysis && npm ci            # the package; npm links the library in and puts grok-bdd in .bin
 npx grok-bdd link                                    # ONE Playwright: the library's copy into node_modules (redo after every npm ci)
 npx grok-bdd run --reporter=list                     # compile --check, then Playwright on 4 workers
+PLAYWRIGHT_WORKERS=2 npx grok-bdd run                # a stand whose pub serve or datlas falls behind at 4 (bundle loads past 30 s, 502s)
 npx grok-bdd run --workers 2 generated/viewers/box-plot   # any Playwright flag or path passes through
 ```
 

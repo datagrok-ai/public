@@ -4,6 +4,7 @@
 import {expect, Page} from '@playwright/test';
 import {element, Given, Then} from '@datagrok-libraries/bdd';
 import {atFeatureEnd} from '@datagrok-libraries/bdd/runtime';
+import {sharingLogin} from '@datagrok-libraries/bdd/bindings/platform/steps';
 
 declare const grok: any;
 
@@ -57,9 +58,7 @@ export const spacesOnServer = Then('{int} space(s) named {string} should be on t
    expressions rather than one with "(not )": an optional literal is not a parameter, so a single
    step would always take the positive branch. */
 async function sharingPane(page: Page): Promise<{pane: ReturnType<Page['locator']>; shown: RegExp}> {
-  const login = process.env.DATAGROK_SHARING_LOGIN;
-  if (!login)
-    throw new Error('no DATAGROK_SHARING_LOGIN in the environment: a sharing feature needs a second account');
+  const login = sharingLogin();
   const header = page.locator('.grok-prop-panel [name="div-section--Sharing"]').first();
   await expect(header, 'the Sharing pane of the context panel').toBeVisible({timeout: 30000});
   if (await header.getAttribute('aria-expanded') !== 'true')
