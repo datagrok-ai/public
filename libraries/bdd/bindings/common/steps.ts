@@ -91,3 +91,9 @@ export const clipboardContains = Then('the clipboard should contain (the )text {
 export const clipboardHas = Then('the clipboard should have (the )text {string}', async (page: Page, text: string) => {
   await expect.poll(() => g.readClipboard(page), {message: 'the clipboard text'}).toBe(text);
 }, {description: 'exactly, whitespace included'});
+
+/** The state a scenario needs, rather than a gesture: `setExpanded` reads where the element is
+ * first (aria-expanded, or the tree twistie's class), so a group that is already open stays open —
+ * "user expands" on it would close it. */
+export const isExpanded = Given('{element} is expanded', (page: Page, target: ElementRef) => g.setExpanded(page, target, true), {tier: 'ui'});
+export const isCollapsed = Given('{element} is collapsed', (page: Page, target: ElementRef) => g.setExpanded(page, target, false), {tier: 'ui'});

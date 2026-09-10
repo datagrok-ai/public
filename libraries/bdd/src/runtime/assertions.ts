@@ -2,7 +2,7 @@
 import {Locator, Page} from '@playwright/test';
 import {expect} from './patience.js';
 import type {ElementRef} from './args.js';
-import {editorOf} from './gestures.js';
+import {editorOf, readExpanded} from './gestures.js';
 import {exactText, locate, locateActionable, refOf} from './locate.js';
 
 export type State = 'visible' | 'hidden' | 'present' | 'absent' | 'enabled' | 'disabled' | 'checked' |
@@ -55,12 +55,12 @@ async function expectSelected(page: Page, loc: Locator, selected: boolean): Prom
   await (selected ? expect(hit).not.toHaveCount(0) : expect(hit).toHaveCount(0));
 }
 
-/** `aria-expanded` sits on the element itself (a tree row) or on its header/trigger inside. */
+/** `aria-expanded` sits on the element itself (a tree row) or on its header/trigger inside; the
+ * Dart tree says it with its twistie's class instead. `null` — the element says nothing at all —
+ * is reported as that rather than as the opposite state. */
 async function expectExpanded(loc: Locator, expanded: boolean): Promise<void> {
-  const self = loc.first();
-  const own = await self.getAttribute('aria-expanded', {timeout: 2000}).catch(() => null);
-  const control = own !== null ? self : self.locator('[aria-expanded]').first();
-  await expect(control).toHaveAttribute('aria-expanded', String(expanded));
+  await expect.poll(() => readExpanded(loc), {message: 'expanded state (aria-expanded, or the tree twistie)'})
+    .toBe(expanded);
 }
 
 /** Disabled is the native attribute, `aria-disabled` on the element or an ancestor (grayed menu

@@ -140,7 +140,12 @@ nobody filed.
   grows through a **100 ms polling** resizer (`handleResize`, `d4/src/utils/utils.dart`), later
   than any frame count, and the product now sizes the title in the same pass as the property write
   (`refreshTitle`, `viewer_base.dart`). A late mover the library cannot see is a product fix,
-  every time.
+  every time. **And a context menu is opened on `{element}`, not on `{widget}`**: a tree node, a
+  card, a list row. The in-page waits are the viewer's (`settle` throws for a non-viewer, and
+  synchronously — no promise yet, so a `.catch` on the call never sees it; `stableArea` throws
+  inside a frame callback, where the wait would never end), so `menuPoint` looks the viewer up
+  without throwing and skips both for anything else. The day this was missed, every Spaces
+  feature failed on its first right-click, and only a run outside the viewer tier could show it.
 - **Typed text is verified before it is committed** (`gestures.typeVerified`). Control+A, the text,
   then the editor is read back and retyped until it holds exactly the text: a keystroke that
   creates or rebuilds the editor lands at an unpredictable moment (the column picker's `"EXS"`),

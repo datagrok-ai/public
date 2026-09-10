@@ -127,8 +127,9 @@ function install(): void {
     }
     return all;
   };
+  const findViewer = (el: Element): any => viewers().find((x) => x.root === el || x.root.contains(el) || el.contains(x.root));
   const viewerOf = (el: Element): any => {
-    const v = viewers().find((x) => x.root === el || x.root.contains(el) || el.contains(x.root));
+    const v = findViewer(el);
     if (!v)
       throw new Error('the element is not a viewer of an open table view');
     return v;
@@ -837,16 +838,24 @@ function install(): void {
   /** Where to right-click an element for its context menu — a named hit area, else the viewer's
    * `view` area, else the element's centre — with the canvas baseline taken and the menu armed. */
   const menuPoint = async (el: Element, area: string | null, capMs: number): Promise<{x: number; y: number; token: string}> => {
-    // the point the menu opens at must be where the viewer has finished putting the thing: a title
-    // just set moves the grid under it, and the right-click lands a row off
-    await settle(el, 300).catch(() => undefined);
-    await stableArea(el, area ?? 'view', 1000);
+    // a tree node, a card or a list row has no render to wait through and no areas: its own centre.
+    // `settle` and `stableArea` throw for a non-viewer, the first synchronously, the second inside
+    // a frame callback where the wait would never end
+    const v = findViewer(el);
+    if (!v && area !== null)
+      throw new Error(`"${area}" names a hit area, and the element is not a viewer of an open table view`);
     let box: Box | undefined;
-    try {
-      box = hitArea(el, area ?? 'view', true);
-    } catch (e) {
-      if (area !== null)
-        throw e;
+    if (v) {
+      // the point the menu opens at must be where the viewer has finished putting the thing: a title
+      // just set moves the grid under it, and the right-click lands a row off
+      await settle(el, 300).catch(() => undefined);
+      await stableArea(el, area ?? 'view', 1000);
+      try {
+        box = hitArea(el, area ?? 'view', true);
+      } catch (e) {
+        if (area !== null)
+          throw e;
+      }
     }
     if (!box) {
       const r = el.getBoundingClientRect();

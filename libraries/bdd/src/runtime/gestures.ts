@@ -329,15 +329,35 @@ export async function scrollTo(page: Page, target: ElementRef): Promise<void> {
   await (await locate(page, target)).first().scrollIntoViewIfNeeded();
 }
 
+/** Where an element says it is open: `aria-expanded` on itself or on its header/trigger inside,
+ * and — for the Dart tree, which has neither — the class its twistie carries. `null` when the
+ * element says nothing (a leaf row has no twistie), so a caller can report that instead of
+ * guessing. */
+export function readExpanded(loc: Locator): Promise<boolean | null> {
+  return loc.first().evaluate((el) => {
+    const aria = el.getAttribute('aria-expanded') ?? el.querySelector('[aria-expanded]')?.getAttribute('aria-expanded');
+    if (aria != null)
+      return aria === 'true';
+    const twistie = el.matches('.d4-tree-view-tri, .u2-tree-twistie') ? el :
+      el.querySelector('.d4-tree-view-tri, .u2-tree-twistie');
+    return twistie === null ? null :
+      twistie.classList.contains('d4-tree-view-tri-expanded') || twistie.classList.contains('u2-tree-twistie-expanded');
+  });
+}
+
 /** Trees, accordion panes and dropdowns say where they are through `aria-expanded` — on the
- * element itself or on its header/trigger inside. */
+ * element itself or on its header/trigger inside — and the Dart tree through its twistie's class.
+ * Reading it first is what makes this idempotent: without it, a tree row that is already open is
+ * closed by "user expands". */
 export async function setExpanded(page: Page, target: ElementRef, expanded: boolean): Promise<void> {
   const self = (await locate(page, target)).first();
+  if (await readExpanded(self) === expanded)
+    return;
   const inner = self.locator('[aria-expanded]').first();
   const control = await self.getAttribute('aria-expanded') !== null ? self : await inner.count() > 0 ? inner : self;
-  if (await control.getAttribute('aria-expanded') === String(expanded))
-    return;
   // a tree row selects on click and toggles on its twistie
   const twistie = control.locator(TWISTIE).first();
   await (await twistie.count() > 0 ? twistie : control).click();
+  await expect.poll(() => readExpanded(self),
+    {message: `${target.phrase} after ${expanded ? 'expanding' : 'collapsing'} it`}).toBe(expanded);
 }
