@@ -193,8 +193,18 @@ export function keysOf(chord: string): string[] {
   return normalizeKey(chord).split('+');
 }
 
+/** A key goes to the focused element. Escape with a dialog open is meant for that dialog, which
+ * closes on a keydown inside its container — and nothing guarantees the focus is still there (the
+ * grid takes it back on a timer, a menu that just closed had it): so Escape is pressed on the
+ * topmost dialog itself. */
 export async function press(page: Page, key: string): Promise<void> {
-  await page.keyboard.press(normalizeKey(key));
+  const name = normalizeKey(key);
+  const dialog = page.locator('[data-u2="dialog"], .d4-dialog').filter({visible: true}).last();
+  if (name === 'Escape' && await dialog.count() > 0) {
+    await dialog.press(name);
+    return;
+  }
+  await page.keyboard.press(name);
 }
 
 /** Types a column name into the open picker and presses Enter, without claiming the pick landed —

@@ -106,6 +106,18 @@ and `isRenderPending`, `onContextMenuShown/Closed`, `getWidgetStatus().hitAreas/
   match and prefer the visible ones; `visible`/`hidden` over several matches = any/none.
 - **Labels are found first, items second** (`byLabel`, `:scope >` labels); menu items match
   their own label, not their children's.
+- **The context panel renders the current object (`grok.shell.o`) and nothing else**
+  (`property_panel.dart` on `onCurrentObjectChanged`; `grok.shell.windows.showContextPanel`
+  shows it). The setter drops a change to the object already current, one within 2 s of a
+  property edit and one while the object is frozen, so a click can leave the panel as it was:
+  `the context panel is open` is the Given, `the context panel should show "X"` names the object
+  before any pane is read, and a failure inside the panel reports the current object and the
+  panes in the DOM but not shown (`explain`). **A context pane that counts its items is hidden
+  while the count is 0** (`accordion.css`, `.grok-prop-panel .d4-accordion-pane[d4-info="0"]`),
+  and the count arrives asynchronously: Activity on a space created a second ago is `present`,
+  not `visible`, until the server has logged the creation.
+- **Escape goes to the topmost dialog** (`press`): the dialog closes on a keydown inside its own
+  root, and the focus is not reliably there (the grid's 1 s timer, a menu that just closed).
 - **A gesture is dispatched once; the target is decided before it** (`pickMenuPath`): a click
   whose handler rebuilds a viewer synchronously (the tile viewer, 0.9 s idle for 1000 rows, past
   3 s under four workers) outlives a short cap with its work done, and a fallback click undoes

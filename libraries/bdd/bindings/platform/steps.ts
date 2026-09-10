@@ -179,6 +179,25 @@ export const browsePanelOpen = Given('the browse panel is open', async (page: Pa
   atFeatureEnd(page, () => page.evaluate(() => { grok.shell.windows.simpleMode = true; }));
 }, {tier: 'api', description: 'idempotent: leaves simple mode, shows the panel and waits for its tree; puts simple mode back at feature end'});
 
+/* --- the context panel -------------------------------------------------------------------------
+   The panel renders the current object (`grok.shell.o`) and nothing else: a click that did not
+   change it — the setter drops a change to the object already current, one within 2 s of a
+   property edit, one while the object is frozen — leaves the panel as it was. So a claim about
+   the panel names the object first, and reads the panel only once that is the current one. */
+
+export const contextPanelOpen = Given('the context panel is open', async (page: Page) => {
+  await page.evaluate(() => { grok.shell.windows.showContextPanel = true; });
+  await expect(page.locator('.grok-prop-panel'), 'the context panel').toBeVisible({timeout: pollMs(15000)});
+}, {tier: 'api', description: 'idempotent: the shell setting, then the panel visible — not a click on its toggle'});
+
+export const contextPanelShows = Then('the context panel should show {string}', async (page: Page, name: string) => {
+  await expect.poll(() => page.evaluate(() => {
+    const o = grok.shell.o;
+    return o == null ? 'nothing' : `${o.constructor?.name ?? typeof o} "${o.friendlyName ?? o.name ?? ''}"`;
+  }), {message: `the current object (grok.shell.o), which the context panel renders`}).toMatch(new RegExp(`"${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"$`));
+  await expect(page.locator('.grok-prop-panel'), 'the context panel').toContainText(name);
+}, {description: 'the current object (grok.shell.o) is the entity of that name, and the panel shows it'});
+
 /* --- the second account ------------------------------------------------------------------------
    A sharing feature needs a user other than the one running it: DATAGROK_SHARING_LOGIN — the same
    variable the hand-written suites read from playwright-tests/.env — or, when it is unset, the
