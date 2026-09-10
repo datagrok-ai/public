@@ -1,9 +1,10 @@
 /* Platform base steps: setup through the JS API (the openers of @datagrok-libraries/test keep the
    provenance tags the UI would set). Viewer steps live in the `viewers` tier. */
-import {type Page} from '@playwright/test';
-import {expect} from '../../src/runtime/patience.js';
+import {expect, type Page} from '@playwright/test';
 import {openTableFromFile} from '@datagrok-libraries/test/src/playwright/openers.js';
 import {DatasetEntry, Given, Then, When} from '../../src/registry.js';
+import {el, type ElementRef} from '../../src/runtime/args.js';
+import {editorOf} from '../../src/runtime/gestures.js';
 import {atFeatureEnd} from '../../src/runtime/harness.js';
 import {exactText} from '../../src/runtime/locate.js';
 
@@ -167,3 +168,100 @@ export const clickPlainCheckbox = When('user clicks the plain checkbox in the {s
     await expect(box, `a checkbox in the "${title}" dialog`).toBeVisible({timeout: 5000});
     await box.click();
   }, {tier: 'ui', description: 'the only checkbox of that dialog the library\'s kinds cannot name'});
+
+/* --- the browse panel -------------------------------------------------------------------------
+   A bdd page runs in simple mode (set by `user is logged in`), where the browse panel is not built
+   at all — so a feature about the Browse tree opens it first. Opening it is a shell setting, never
+   a click on the Browse tab: that tab TOGGLES the panel, and clicking it on an open one closes it
+   again. Simple mode is restored when the feature ends, so the next feature on the same page finds
+   the shell as it expects it. */
+
+async function showBrowsePanel(page: Page, open: boolean): Promise<void> {
+  await page.evaluate((show) => {
+    if (show)
+      grok.shell.windows.simpleMode = false;
+    grok.shell.windows.showBrowse = show;
+  }, open);
+}
+
+export const browsePanelOpen = Given('the browse panel is open', async (page: Page) => {
+  await showBrowsePanel(page, true);
+  await expect(page.locator('.grok-view-browse [role="tree"], .layout-browse [role="tree"]').first(),
+    'the browse tree').toBeVisible({timeout: 60000});
+  atFeatureEnd(page, () => page.evaluate(() => { grok.shell.windows.simpleMode = true; }));
+}, {tier: 'api', description: 'idempotent: leaves simple mode, shows the panel and waits for its tree; puts simple mode back at feature end'});
+
+export const openBrowsePanel = When('user opens the browse panel', async (page: Page) => {
+  await showBrowsePanel(page, true);
+  await expect(page.locator('.grok-view-browse [role="tree"], .layout-browse [role="tree"]').first(),
+    'the browse tree').toBeVisible({timeout: 60000});
+}, {tier: 'api'});
+
+export const closeBrowsePanel = When('user closes the browse panel', (page: Page) => showBrowsePanel(page, false), {tier: 'api'});
+
+export const browsePanelShouldBeOpen = Then('the browse panel should be open', async (page: Page) => {
+  await expect(page.locator('.grok-view-browse [role="tree"], .layout-browse [role="tree"]').first(),
+    'the browse tree').toBeVisible();
+});
+
+export const browsePanelShouldBeClosed = Then('the browse panel should be closed', async (page: Page) => {
+  await expect(page.locator('.grok-view-browse [role="tree"], .layout-browse [role="tree"]')
+    .filter({visible: true}), 'the browse tree').toHaveCount(0);
+});
+
+/* --- the second account ------------------------------------------------------------------------
+   A sharing feature needs a user other than the one running it. It is DATAGROK_SHARING_LOGIN — the
+   same variable the hand-written suites read from playwright-tests/.env — and the platform's user
+   typeahead offers it under a name with the punctuation stripped ("a+b@x" shows as "ab"), so the
+   step types the local part and picks the row rather than trusting what it typed. */
+
+export function sharingLogin(): string {
+  const login = process.env.DATAGROK_SHARING_LOGIN;
+  if (!login)
+    throw new Error('no DATAGROK_SHARING_LOGIN in the environment: a sharing feature needs a second account');
+  return login;
+}
+
+export const pickSharingUser = When('user picks the sharing user in {element}', async (page: Page, target: ElementRef) => {
+  const login = sharingLogin();
+  const editor = await editorOf(page, el(target.phrase));
+  await editor.click();
+  await editor.pressSequentially(login.split('@')[0]);
+  const wanted = login.split('@')[0].replace(/[^a-z0-9]/gi, '').toLowerCase();
+  const row = page.locator('.d4-user-selector-drop-down tr, .d4-tags-selector-drop-down tr')
+    .filter({hasText: new RegExp(wanted, 'i')}).first();
+  await expect(row, `the "${login}" row of the user typeahead`).toBeVisible({timeout: 15000});
+  await row.click();
+}, {tier: 'ui', description: 'types the login of DATAGROK_SHARING_LOGIN and takes it from the typeahead'});
+
+/* The address bar is part of what the platform promises: a view that puts its state in the URL can
+   be shared by copying it. */
+export const urlShouldContain = Then('the page address should contain {string}', async (page: Page, part: string) => {
+  await expect.poll(() => page.url(), {message: 'the page address'}).toContain(part);
+});
+
+export const openAddress = When('user opens the page address of the current view', async (page: Page) => {
+  await page.goto(page.url(), {waitUntil: 'domcontentloaded', timeout: 180000});
+}, {tier: 'ui', description: 'loads the address again from scratch — what pasting the copied link into a new tab does'});
+
+/** How many viewers the current view holds — an analysis that is done is one that has put its
+ * viewers on screen. */
+export const viewHoldsViewers = Then('the current view should hold at least {int} viewer(s)',
+  async (page: Page, count: number) => {
+    await expect.poll(() => page.evaluate(() => Array.from(grok.shell.v?.viewers ?? []).length),
+      {message: 'viewers of the current view', timeout: 300000}).toBeGreaterThanOrEqual(count);
+  }, {tier: 'api', description: 'polls for up to five minutes: an analysis or a fit builds them when its run ends'});
+
+/** A table in the workspace and nothing else: no view, so a form that offers the open tables in a
+ * choice gains the option without losing the focus of the view it lives in. Named after the file,
+ * which is the name such a choice shows. */
+export const loadTable = Given('the {string} file is loaded as a table', async (page: Page, path: string) => {
+  const name = await page.evaluate(async (p) => {
+    const df = await grok.dapi.files.readCsv(p);
+    df.name = p.replace(/^.*\//, '').replace(/\.[^.]+$/, '');
+    grok.shell.addTable(df);
+    return String(df.name);
+  }, path);
+  await expect.poll(() => page.evaluate((n) => (grok.shell.tables ?? []).some((t: any) => t.name === n), name),
+    {message: `"${name}" among the open tables`}).toBe(true);
+}, {tier: 'api', description: 'a file on the stand into the workspace, without a view of its own'});

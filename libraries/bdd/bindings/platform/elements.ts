@@ -9,12 +9,22 @@ element('toolbox', {selector: '.d4-toolbox', aliases: ['toolbox pane'],
   parts: {'viewers section': '[name="div-section--Viewers"]'}});
 element('toolbox tab', {selector: '[name="Toolbox"]', aliases: ['toolbox sidebar tab']});
 element('browse tab', {selector: '[name="Browse"]'});
+element('browse panel', {selector: '.grok-view-browse, .layout-browse', aliases: ['browse view'],
+  description: 'the left panel Browse opens; a bdd page starts in simple mode, where it is not in the DOM at all'});
+element('browse tree', {selector: '.grok-view-browse [role="tree"], .layout-browse [role="tree"]',
+  description: 'the tree inside the browse panel — the scope for a node phrase ("Files tree node inside browse tree")'});
 element('context panel', {selector: '.grok-prop-panel', aliases: ['property panel']});
 element('console', {selector: '.d4-console-wrapper'});
 element('status bar', {selector: '.layout-status-bar', aliases: ['statusbar'],
   parts: {'view panel': '.d4-view-status-panel'}});
 element('open tableview', {selector: '.d4-table-view, .grok-table-view', aliases: ['current table view', 'table view']});
 element('grid', {selector: '[name="viewer-Grid"]', aliases: ['the grid'], gestures: {click: 'mouse'}});
+element('gallery', {selector: '.grok-gallery-grid', aliases: ['item gallery'],
+  description: 'the card gallery of the platform — the contents of a Files folder, a space, the Apps list'});
+element('gallery search', {selector: '.grok-gallery-search-bar .ui-input-type-ahead'});
+element('code editor', {selector: '.cm-editor, .CodeMirror', aliases: ['source editor'],
+  description: 'the CodeMirror the platform embeds wherever code or a formula is edited — version 6 ' +
+    'in the packages (.cm-editor), version 5 in the script view of the shell (.CodeMirror)'});
 element('context menu', {selector: '.d4-menu-popup', aliases: ['popup menu'],
   description: 'the open Dart popup menu (the last one when a submenu is open)'});
 element('cell editor', {selector: '[name="cell-editor"]', aliases: ['grid cell editor'],

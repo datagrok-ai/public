@@ -51,7 +51,7 @@ inputKind('text area', ['text-area'], '.ui-input-textarea', ['textarea', 'multil
 inputKind('choice input', ['choice-input'], '.ui-input-choice', ['dropdown', 'choice', 'select']);
 inputKind('multi choice input', ['multi-choice-input'], '', ['multi choice']);
 inputKind('number input', ['number-input', 'bigint-input', 'qnum-input'], '.ui-input-int, .ui-input-float', ['numeric input', 'number field']);
-inputKind('checkbox', ['bool-input'], '.ui-input-bool, .u2-multi-choice-item, .u2-columns-option', ['bool input', 'switch', 'toggle'],
+inputKind('checkbox', ['bool-input'], '.ui-input-bool, .ui-input-bool-switch, .u2-multi-choice-item, .u2-columns-option', ['bool input', 'switch', 'toggle'],
   {match: [...INPUT_MATCH, 'text']});
 inputKind('date input', ['date-input', 'datetime-input'], '.ui-input-date', ['date field', 'datetime input', 'date picker']);
 inputKind('color input', ['color-input'], '.ui-input-color', ['color picker']);
@@ -143,11 +143,15 @@ kind('item', {
   labelSelector: PRIMARY_TEXT,
 });
 kind('tree', {selector: u2('tree') + ', [role="tree"], .d4-tree-view', match: ['name', 'aria']});
+// the Dart tree wraps every row in a .d4-tree-view-group[role=treeitem] that carries the row's
+// text too, so the wrapper is excluded and the row — which owns name="tree-My-stuff---Favorites" —
+// is the node
 kind('tree node', {
   aliases: ['node', 'tree item'],
-  selector: '[role="tree"] .u2-list-row, [role="treeitem"], .d4-tree-view-node',
-  match: ['text', 'label', 'name'],
-  labelSelector: '.u2-tree-label, .d4-tree-view-node-label',
+  selector: '[role="tree"] .u2-list-row, [role="treeitem"]:not(.d4-tree-view-group), .d4-tree-view-node',
+  match: ['dart', 'label', 'text', 'name'],
+  labelSelector: '.u2-tree-label, .d4-tree-view-node-label, .d4-tree-view-group-label, .d4-tree-view-item-label',
+  dartNames: ['tree-{q}'],
 });
 kind('table', {selector: u2('table') + ', table', match: ['name', 'aria']});
 kind('table row', {
@@ -210,6 +214,12 @@ kind('menu item', {
   labelSelector: ':scope > .u2-menu-label, :scope > .d4-menu-item-label',
   dartNames: ['div-{q}'],
 });
+// the platform's ribbon holds its commands as plain divs, named by the text or the icon they show
+kind('ribbon item', {
+  aliases: ['ribbon command'],
+  selector: '.d4-ribbon-item',
+  match: ['text', 'name', 'aria'],
+});
 kind('breadcrumbs', {aliases: ['breadcrumb bar'], selector: u2('breadcrumbs'), match: ['name', 'aria']});
 kind('breadcrumb', {
   aliases: ['crumb'],
@@ -227,9 +237,12 @@ kind('dialog', {
     footer: '.u2-dialog-footer, .d4-dialog-footer'},
 });
 kind('tabs', {aliases: ['tab strip', 'tab control'], selector: u2('tabs') + ', .d4-tab-control', match: ['name', 'aria']});
+// .tab-handle is the dock manager's tab (a docked viewer, an app's own panes); its label is a
+// child, so the whole handle's text would also match a neighbour's when they share a container
 kind('tab', {
-  selector: '[role="tab"], .d4-tab-header',
-  match: ['name', 'text', 'aria', 'dart'],
+  selector: '[role="tab"], .d4-tab-header, .tab-handle',
+  match: ['name', 'label', 'text', 'aria', 'dart'],
+  labelSelector: '.tab-handle-text',
   dartNames: ['{q}', 'tab-{q}'],
 });
 kind('tab panel', {aliases: ['tab page'], selector: '[role="tabpanel"], .d4-tab-content', match: ['name', 'aria']});

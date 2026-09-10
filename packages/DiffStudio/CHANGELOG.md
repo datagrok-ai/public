@@ -1,5 +1,9 @@
 # Diff Studio changelog
 
+## v.next
+
+* Tests: Added a BDD suite (bdd/features, 9 features / 36 scenarios) translating the TestTrack Diff Studio specs and the package's Playwright tests, including the three cases the old suite left to a human (chart redraw in the script view and in the Model Hub)
+
 ## 1.6.8 (2026-09-01)
 
 * Fixed demo tests failing when a corrupt/legacy recent-models `.d42` file surfaced a read error to the shell

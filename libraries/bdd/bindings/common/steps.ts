@@ -1,12 +1,11 @@
 /* The generic step vocabulary: gestures (When) and outcomes (Then) over any element phrase.
    Expressions are cucumber expressions: `(on )` optional text, `in(to)` optional suffix, `be/become`
    alternation. Every definition is an exported const — the compiler imports it by name. */
-import {Page} from '@playwright/test';
-import {expect} from '../../src/runtime/patience.js';
+import {expect, Page} from '@playwright/test';
 import {Given, Then, When} from '../../src/registry.js';
 import type {ElementRef} from '../../src/runtime/args.js';
 import {el} from '../../src/runtime/args.js';
-import {expectCount, expectState, expectText, expectValue, State} from '../../src/runtime/assertions.js';
+import {expectCount, expectState, expectSwitched, expectText, expectValue, State} from '../../src/runtime/assertions.js';
 import * as g from '../../src/runtime/gestures.js';
 import {locate} from '../../src/runtime/locate.js';
 
@@ -22,6 +21,9 @@ export const focusOn = When('user focuses (on ){element}', (page: Page, target: 
 export const typeInto = When('user types {string} in(to) {element}', (page: Page, text: string, target: ElementRef) => g.typeInto(page, target, text), {tier: 'ui'});
 export const enterInto = When('user enters {string} in(to) {element}', (page: Page, text: string, target: ElementRef) => g.typeInto(page, target, text, true),
   {tier: 'ui', description: 'types and commits (Tab)'});
+export const insertLine = When('user puts {string} on the first line of {element}',
+  (page: Page, text: string, target: ElementRef) => g.insertLine(page, target, text),
+  {tier: 'ui', description: 'a line typed into a code editor, whose document is not an input value'});
 export const clearField = When('user clears {element}', (page: Page, target: ElementRef) => g.clear(page, target), {tier: 'ui'});
 export const pressKey = When('user presses {key}', (page: Page, key: string) => g.press(page, key), {tier: 'ui'});
 export const pressKeyIn = When('user presses {key} in {element}', (page: Page, key: string, target: ElementRef) => g.pressIn(page, target, key), {tier: 'ui'});
@@ -29,6 +31,9 @@ export const selectIn = When('user selects {string} in {element}', (page: Page, 
 export const check = When('user checks {element}', (page: Page, target: ElementRef) => g.setChecked(page, target, true), {tier: 'ui'});
 export const uncheck = When('user unchecks {element}', (page: Page, target: ElementRef) => g.setChecked(page, target, false), {tier: 'ui'});
 export const toggle = When('user toggles {element}', (page: Page, target: ElementRef) => g.toggle(page, target), {tier: 'ui'});
+export const switchOn = When('user switches on {element}', (page: Page, target: ElementRef) => g.setSwitched(page, target, true),
+  {tier: 'ui', description: 'the switch that governs it — its own, or the one a parameter form puts beside it'});
+export const switchOff = When('user switches off {element}', (page: Page, target: ElementRef) => g.setSwitched(page, target, false), {tier: 'ui'});
 export const open = When('user opens {element}', (page: Page, target: ElementRef) => g.click(page, target), {tier: 'ui'});
 export const close = When('user closes {element}', (page: Page, target: ElementRef) => g.close(page, target), {tier: 'ui'});
 export const expand = When('user expands {element}', (page: Page, target: ElementRef) => g.setExpanded(page, target, true),
@@ -64,6 +69,9 @@ export const shouldContainText = Then('{element} should contain (the )text {stri
 export const shouldNotContainText = Then('{element} should not contain (the )text {string}', (page: Page, target: ElementRef, text: string) => expectText(page, target, text, {negate: true}));
 export const shouldHaveText = Then('{element} should have (the )text {string}', (page: Page, target: ElementRef, text: string) => expectText(page, target, text, {exact: true}));
 export const shouldHaveValue = Then('{element} should have (the )value {string}', (page: Page, target: ElementRef, value: string) => expectValue(page, target, value));
+export const shouldNotHaveValue = Then('{element} should not have (the )value {string}', (page: Page, target: ElementRef, value: string) => expectValue(page, target, value, true));
+export const shouldBeSwitchedOn = Then('{element} should be switched on', (page: Page, target: ElementRef) => expectSwitched(page, target, true));
+export const shouldBeSwitchedOff = Then('{element} should be switched off', (page: Page, target: ElementRef) => expectSwitched(page, target, false));
 export const shouldHaveItems = Then('{element} should have {int} item(s)', (page: Page, target: ElementRef, count: number) => expectCount(page, target, count));
 export const shouldHaveRows = Then('{element} should have {int} row(s)', (page: Page, target: ElementRef, count: number) => expectCount(page, target, count));
 export const shouldHaveTabs = Then('{element} should have {int} tab(s)', (page: Page, target: ElementRef, count: number) => expectCount(page, target, count));
@@ -91,3 +99,9 @@ export const clipboardContains = Then('the clipboard should contain (the )text {
 export const clipboardHas = Then('the clipboard should have (the )text {string}', async (page: Page, text: string) => {
   await expect.poll(() => g.readClipboard(page), {message: 'the clipboard text'}).toBe(text);
 }, {description: 'exactly, whitespace included'});
+
+/** The state a scenario needs, rather than a gesture: `setExpanded` reads where the element is
+ * first (aria-expanded, or the tree twistie's class), so a group that is already open stays open —
+ * "user expands" on it would close it. */
+export const isExpanded = Given('{element} is expanded', (page: Page, target: ElementRef) => g.setExpanded(page, target, true), {tier: 'ui'});
+export const isCollapsed = Given('{element} is collapsed', (page: Page, target: ElementRef) => g.setExpanded(page, target, false), {tier: 'ui'});

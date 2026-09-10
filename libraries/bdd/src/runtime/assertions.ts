@@ -2,7 +2,7 @@
 import {Locator, Page} from '@playwright/test';
 import {expect} from './patience.js';
 import type {ElementRef} from './args.js';
-import {editorOf} from './gestures.js';
+import {editorOf, readExpanded, readSwitch, switchOf} from './gestures.js';
 import {exactText, locate, locateActionable, refOf} from './locate.js';
 
 export type State = 'visible' | 'hidden' | 'present' | 'absent' | 'enabled' | 'disabled' | 'checked' |
@@ -15,7 +15,7 @@ const INVALID_CLASSES = ['d4-invalid', 'd4-forced-invalid', 'u2-input-invalid'];
 
 const ROWS = ['.u2-list-row', '[role="option"]', '[role="row"]', '[role="tab"]', 'option', '.d4-list-item', '[name="legend-item"]', 'tbody tr', 'tr', 'li'];
 const SELECTED = '[aria-selected="true"], [aria-pressed="true"], [aria-checked="true"], [aria-current]:not([aria-current="false"]), ' +
-  '.u2-list-row-selected';
+  '.u2-list-row-selected, .tab-handle-selected';
 
 export async function expectState(page: Page, target: ElementRef, state: State, negate = false): Promise<void> {
   const loc = ['visible', 'hidden', 'present', 'absent', 'enabled', 'disabled'].includes(state) ?
@@ -41,6 +41,13 @@ export async function expectState(page: Page, target: ElementRef, state: State, 
   }
 }
 
+/** A parameter form's switch is not inside the input it governs, so this is a claim of its own
+ * rather than a state of the element. */
+export async function expectSwitched(page: Page, target: ElementRef, on: boolean): Promise<void> {
+  const sw = await switchOf(page, target);
+  await expect.poll(() => readSwitch(sw), {message: `the switch of ${target.phrase}`}).toBe(on);
+}
+
 /** Several matches (stacked balloons, repeated rows): visible when any is, hidden when none is —
  * one query either way. */
 async function expectVisible(loc: Locator, visible: boolean): Promise<void> {
@@ -55,12 +62,11 @@ async function expectSelected(page: Page, loc: Locator, selected: boolean): Prom
   await (selected ? expect(hit).not.toHaveCount(0) : expect(hit).toHaveCount(0));
 }
 
-/** `aria-expanded` sits on the element itself (a tree row) or on its header/trigger inside. */
+/** `aria-expanded` on the element or its header inside; the Dart tree says it with its twistie's
+ * class instead. */
 async function expectExpanded(loc: Locator, expanded: boolean): Promise<void> {
-  const self = loc.first();
-  const own = await self.getAttribute('aria-expanded', {timeout: 2000}).catch(() => null);
-  const control = own !== null ? self : self.locator('[aria-expanded]').first();
-  await expect(control).toHaveAttribute('aria-expanded', String(expanded));
+  await expect.poll(() => readExpanded(loc), {message: 'expanded state (aria-expanded, or the tree twistie)'})
+    .toBe(expanded);
 }
 
 /** Disabled is the native attribute, `aria-disabled` on the element or an ancestor (grayed menu
@@ -133,15 +139,33 @@ function escapeRegExp(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-export async function expectValue(page: Page, target: ElementRef, value: string): Promise<void> {
-  const editor = await editorOf(page, target);
-  const tag = await editor.evaluate((e) => e.tagName).catch(() => '');
-  if (tag === 'SELECT') {
-    const selected = editor.locator('option:checked');
-    await expect(selected).toHaveText(exactText(value));
+/** The value a reader would see. The editor is resolved on every attempt, not once: a view the
+ * platform is still building exposes the input host before the control inside it, and a single
+ * resolution then reads the `div.ui-input-editor` wrapper and fails with "Not an input element"
+ * instead of waiting for the input that is about to arrive (a model reopened from its own address).
+ * `undefined` is "nothing can answer yet", which keeps the poll going. A `<select>` answers with the
+ * text of the chosen option, which is what the reader sees. */
+async function readValue(page: Page, target: ElementRef): Promise<string | undefined> {
+  const editor = await editorOf(page, target).catch(() => undefined);
+  if (editor === undefined)
+    return undefined;
+  return editor.first().evaluate((e) => {
+    if (e instanceof HTMLSelectElement)
+      return e.selectedIndex < 0 ? undefined : (e.options[e.selectedIndex].textContent ?? '').trim();
+    if (e instanceof HTMLInputElement || e instanceof HTMLTextAreaElement)
+      return e.value;
+    return (e as HTMLElement).isContentEditable ? (e.textContent ?? '') : undefined;
+  }).catch(() => undefined);
+}
+
+export async function expectValue(page: Page, target: ElementRef, value: string, negate = false): Promise<void> {
+  const message = `the value of ${target.phrase}`;
+  if (!negate) {
+    await expect.poll(() => readValue(page, target), {message}).toBe(value);
+    return;
   }
-  else
-    await expect(editor).toHaveValue(value);
+  await expect.poll(() => readValue(page, target), {message: `${message} (something that can hold one)`}).not.toBe(undefined);
+  await expect.poll(() => readValue(page, target), {message}).not.toBe(value);
 }
 
 /** Rows of a collection: the first row vocabulary that has any is the one counted. */
