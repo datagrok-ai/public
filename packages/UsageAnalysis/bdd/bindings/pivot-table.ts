@@ -14,14 +14,9 @@
      the viewer-column combo of the Aggregate row;
    - the saved-parameters store, which lives in `localStorage` and outlives a feature.
 
-   Should be promoted to the library, none of them pivot business:
-   - `user drags the {string} area of {widget} onto the {string} area of {widget}` — the existing
-     drag step works within one widget; this is the cross-widget one (a grid column header onto
-     another viewer);
-   The features here also use `the {string} reading of {widget} should (not )contain {string}`,
-   which the tile viewer's bindings register in this package and which belongs in the library:
-   membership in a reading that is a list (the chips of a row, the offered history), where pinning
-   the whole ordered list would claim more than the scenario means. */
+   The cross-widget drag, the list-reading membership check and the dialog's plain checkbox were
+   none of them pivot business and are in the library now
+   (`bindings/tiers/viewers/widgets.ts` and `bindings/platform/steps.ts`). */
 import {expect, Page} from '@playwright/test';
 import {Given, Then, When} from '@datagrok-libraries/bdd';
 import {el, ElementRef, exactText, viewers} from '@datagrok-libraries/bdd/runtime';
@@ -57,23 +52,6 @@ export const addToRow = When('user adds {string} to the {string} row of pivot ta
     await popup.waitFor({state: 'detached', timeout: 5000}).catch(() => {});
     await settle(page, target);
   }, {tier: 'ui', description: 'the + of a tag row, the column typed and committed — as a user picks it'});
-
-// --- a drag between two widgets -------------------------------------------------------------------
-
-/** A drag from one widget's hit area to another's — a grid column header onto the pivot's Group by
- * row. The platform's drag starts on the first move after the button goes down, so the pointer
- * travels in steps; a single jump drops nothing. */
-export const dragAreaOntoWidget = When('user drags the {string} area of {widget} onto the {string} area of {widget}',
-  async (page: Page, from: string, source: ElementRef, to: string, target: ElementRef) => {
-    const a = viewers.centerOf(await viewers.hitArea(page, source, from, true));
-    const b = viewers.centerOf(await viewers.hitArea(page, target, to, true));
-    await page.mouse.move(a.x, a.y);
-    await page.mouse.down();
-    for (let i = 1; i <= 10; i++)
-      await page.mouse.move(a.x + (b.x - a.x) * i / 10, a.y + (b.y - a.y) * i / 10);
-    await page.mouse.up();
-    await settle(page, target);
-  }, {tier: 'ui', description: 'cross-widget drag and drop — should be promoted to the library'});
 
 // --- the arithmetic --------------------------------------------------------------------------------
 
@@ -203,21 +181,6 @@ export const clearSavedParameters = Given('user clears the saved pivot table par
   (page: Page) => page.evaluate((key) => {
     window.localStorage.removeItem(key);
   }, HISTORY_KEY), {tier: 'api', description: 'the saved configurations live in localStorage and outlive a feature'});
-
-// --- a checkbox no kind covers ----------------------------------------------------------------------
-
-/** The select-all checkbox of the grid's "Order or Hide Columns" dialog is a bare
- * `input[type="checkbox"]` with no class and no label, which the library's `checkbox` kind (u2 bool
- * inputs and `.ui-input-bool`) does not see — the kind should learn about it, and then this step
- * goes away. */
-export const clickPlainCheckbox = When('user clicks the plain checkbox in the {string} dialog',
-  async (page: Page, title: string) => {
-    const dialog = page.locator('.d4-dialog').filter({has: page.locator('.d4-dialog-title', {hasText: exactText(title)})}).last();
-    await dialog.waitFor({state: 'visible', timeout: 5000});
-    const box = dialog.locator('input[type="checkbox"]').filter({visible: true}).first();
-    await expect(box, `a checkbox in the "${title}" dialog`).toBeVisible({timeout: 5000});
-    await box.click();
-  }, {tier: 'ui', description: 'a bare checkbox of a Dart dialog — should be promoted to the library as part of the checkbox kind'});
 
 // --- the in-cell viewer columns ----------------------------------------------------------------------
 

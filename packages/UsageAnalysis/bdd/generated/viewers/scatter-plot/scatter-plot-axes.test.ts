@@ -13,11 +13,11 @@ import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {pickColumn} from '../../../bindings/scatter-plot.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, hoverOver, shouldBe, shouldContainText} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {closeAllViews, openDataset, openProject, saveAsProject} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {addViewer, legendLists, loadLayout, noBalloons, noErrors, painted, propertiesShouldBe, propertyShouldBe, readingIs, repainted, saveLayoutToServer, setProperties, setProperty, showsFewerRows, showsRows} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {pickInColumnSelector} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Scatter plot axes, encodings and persistence", () => {
@@ -30,15 +30,15 @@ test.describe("Scatter plot axes, encodings and persistence", () => {
     await session.step(13, "And user adds a scatter plot viewer", () => addViewer(page, "scatter plot"));
     await session.step(14, "Then scatter plot viewer should be painted", () => painted(page, el("scatter plot viewer")));
     await run.scenario("The on-viewer selectors set the axes and the encodings", async () => {
-      await session.step(17, "When user picks \"AGE\" in the X column selector of scatter plot viewer", () => pickColumn(page, "AGE", "X"));
-      await session.step(18, "And user picks \"HEIGHT\" in the Y column selector of scatter plot viewer", () => pickColumn(page, "HEIGHT", "Y"));
+      await session.step(17, "When user picks \"AGE\" in the \"x\" column selector of scatter plot viewer", () => pickInColumnSelector(page, "AGE", "x", el("scatter plot viewer")));
+      await session.step(18, "And user picks \"HEIGHT\" in the \"y\" column selector of scatter plot viewer", () => pickInColumnSelector(page, "HEIGHT", "y", el("scatter plot viewer")));
       await session.step(19, "And user hovers over scatter plot viewer", () => hoverOver(page, el("scatter plot viewer")));
-      await session.step(20, "And user picks \"RACE\" in the Color column selector of scatter plot viewer", () => pickColumn(page, "RACE", "Color"));
+      await session.step(20, "And user picks \"RACE\" in the \"color\" column selector of scatter plot viewer", () => pickInColumnSelector(page, "RACE", "color", el("scatter plot viewer")));
       await session.step(21, "And user hovers over scatter plot viewer", () => hoverOver(page, el("scatter plot viewer")));
-      await session.step(22, "And user picks \"WEIGHT\" in the Size column selector of scatter plot viewer", () => pickColumn(page, "WEIGHT", "Size"));
+      await session.step(22, "And user picks \"WEIGHT\" in the \"size\" column selector of scatter plot viewer", () => pickInColumnSelector(page, "WEIGHT", "size", el("scatter plot viewer")));
       await session.step(23, "And user sets \"Markers\" property of scatter plot viewer to \"SEX\"", () => setProperty(page, "Markers", el("scatter plot viewer"), "SEX"));
-      await session.step(24, "And user picks \"WEIGHT\" in the X column selector of scatter plot viewer", () => pickColumn(page, "WEIGHT", "X"));
-      await session.step(25, "And user picks \"AGE\" in the X column selector of scatter plot viewer", () => pickColumn(page, "AGE", "X"));
+      await session.step(24, "And user picks \"WEIGHT\" in the \"x\" column selector of scatter plot viewer", () => pickInColumnSelector(page, "WEIGHT", "x", el("scatter plot viewer")));
+      await session.step(25, "And user picks \"AGE\" in the \"x\" column selector of scatter plot viewer", () => pickInColumnSelector(page, "AGE", "x", el("scatter plot viewer")));
       await session.step(26, "Then properties of scatter plot viewer should be:", () => propertiesShouldBe(page, el("scatter plot viewer"), [["X","AGE"],["Y","HEIGHT"],["Color","RACE"],["Size","WEIGHT"],["Markers","SEX"]]));
       await session.step(32, "And X column input in scatter plot viewer should contain text \"AGE\"", () => shouldContainText(page, el("X column input in scatter plot viewer"), "AGE"));
       await session.step(33, "And Y column input in scatter plot viewer should contain text \"HEIGHT\"", () => shouldContainText(page, el("Y column input in scatter plot viewer"), "HEIGHT"));

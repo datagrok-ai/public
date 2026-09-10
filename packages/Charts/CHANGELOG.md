@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Word cloud: Added the automation surface — `getWidgetStatus` reports a `word "<name>"` hit area per laid-out word plus `words`, `word names`, `rows of word "<name>"`, `column`, `rows shown`, `font` and the message the viewer shows instead of a cloud; added `isRenderPending` / `onRendered`
 * GROK-20800: Timelines, Radar: Fixed the legend container placement — it is now a full-height strip on the right, filled by the legend
 * Fixed the package build failing on `TS2610` — `name` is an accessor on the u2 `Component` base, so the viewer overrides it with its own accessor instead of redeclaring it as a property
 * GROK-18695: Forced d3-color >= 3.1.0 (ReDoS fix under circos); kept echarts 5 — the 6.1.0 upgrade (XSS fix GHSA-fgmj-fm8m-jvvx) deterministically breaks the Tree and Surface plot viewers (CI EXECUTION TIMEOUT on two independent runs) and needs a proper migration

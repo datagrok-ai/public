@@ -13,11 +13,12 @@ import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {addToRow, dragAreaOntoWidget, pivotedAggregationMatches} from '../../../bindings/pivot-table.js';
+import {addToRow, pivotedAggregationMatches} from '../../../bindings/pivot-table.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, shouldBe, shouldNotBe} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {addViewer, clickArea, closeContextMenu, hasArea, hasNoArea, menuLists, noErrors, pickFromAreaContextMenu, readingIs, readingReads, setProperty} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {dragAreaOntoWidget} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Pivot table — configuring the tag rows", () => {

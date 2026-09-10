@@ -1,0 +1,237 @@
+/* eslint-disable max-len */
+/* eslint-disable comma-spacing */
+/* eslint-disable quotes */
+/* ---
+generated: features/viewers/forms/forms-core.feature
+generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
+sub_features_covered: [viewers.forms]
+--- */
+import {test} from '@playwright/test';
+import '../../../bindings/tile-viewer.js';
+import '../../../bindings/trellis-plot.js';
+import '@datagrok-libraries/bdd/bindings/common/kinds';
+import '@datagrok-libraries/bdd/bindings/common/parameter-types';
+import '@datagrok-libraries/bdd/bindings/platform/datasets';
+import '@datagrok-libraries/bdd/bindings/platform/elements';
+import {everyRecordCardShows, pinnedCardRows, recordCardRows, recordCardsAreSelection} from '../../../bindings/forms.js';
+import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
+import {clickOn, hoverOver, shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
+import {columnCount, makeRowCurrent} from '@datagrok-libraries/bdd/bindings/platform/columns';
+import {addRangeFilter, clearSelection, filterPasses, filterPassesFewer, selectWhereIs, selectedRowCount} from '@datagrok-libraries/bdd/bindings/platform/data';
+import {openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
+import {addViewer, doubleClickArea, hasArea, hasNoArea, noBalloons, noErrors, pickFromAreaContextMenu, propertyShouldBe, readingIs, readingLower, readingReads, readingsEqual, setProperties, setProperty, warningBalloonText} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {readingNotContains} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
+import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
+
+test.describe("Forms viewer field set, row binding, sort mirroring and pinning", () => {
+  const session = feature(test, "features/viewers/forms/forms-core.feature", import.meta.url);
+  test("Forms viewer field set, row binding, sort mirroring and pinning", {tag: ["@journey", "@viewers", "@realizes:viewers.forms", "@known-failure"]}, async ({browser}) => {
+    const page = await session.page(browser);
+    const run = journey(test, 11, page);
+    await session.step(36, "Given user is logged in", () => loggedIn(page));
+    await session.step(37, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
+    await session.step(38, "And user adds a forms viewer", () => addViewer(page, "forms"));
+    await session.step(39, "Then forms viewer should be visible", () => shouldBe(page, el("forms viewer"), "visible"));
+    await session.step(40, "And 1000 rows should pass the filter", () => filterPasses(page, 1000));
+    await session.step(41, "And the \"fields shown\" reading of forms viewer should be 11", () => readingIs(page, "fields shown", el("forms viewer"), 11));
+    await session.step(42, "And the \"record of card 1\" reading of forms viewer should be 1", () => readingIs(page, "record of card 1", el("forms viewer"), 1));
+    await run.scenario("The default field set is every visible column, and the header draws all of them", async () => {
+      await session.step(45, "Then the table should have 11 columns", () => columnCount(page, 11));
+      await session.step(46, "And the \"fields\" reading of forms viewer should be \"USUBJID, AGE, SEX, RACE, DIS_POP, HEIGHT, WEIGHT, DEMOG, CONTROL, STARTED, SEVERITY\"", () => readingReads(page, "fields", el("forms viewer"), "USUBJID, AGE, SEX, RACE, DIS_POP, HEIGHT, WEIGHT, DEMOG, CONTROL, STARTED, SEVERITY"));
+      await session.step(47, "And the \"fields\" and \"header labels\" readings of forms viewer should be the same", () => readingsEqual(page, "fields", "header labels", el("forms viewer")));
+      await session.step(48, "And the \"header labels\" reading of forms viewer should not contain \"~\"", () => readingNotContains(page, "header labels", el("forms viewer"), "~"));
+      await session.step(49, "And forms viewer should have a \"label USUBJID\" area", () => hasArea(page, el("forms viewer"), "label USUBJID"));
+      await session.step(50, "And forms viewer should have a \"remove SEVERITY\" area", () => hasArea(page, el("forms viewer"), "remove SEVERITY"));
+      await session.step(51, "And no error or warning balloon should have been shown", () => noBalloons(page));
+      await session.step(52, "And no errors should have been logged", () => noErrors(page));
+    });
+    await run.scenario("The leading card is the current row and follows it", async () => {
+      await session.step(55, "Then the \"card kind of card 1\" reading of forms viewer should be \"current\"", () => readingReads(page, "card kind of card 1", el("forms viewer"), "current"));
+      await session.step(56, "And the \"card kind of card 2\" reading of forms viewer should be \"mouse-over\"", () => readingReads(page, "card kind of card 2", el("forms viewer"), "mouse-over"));
+      await session.step(57, "And the \"record of card 2\" reading of forms viewer should be \"\"", () => readingReads(page, "record of card 2", el("forms viewer"), ""));
+      await session.step(58, "And the \"AGE of card 1\" reading of forms viewer should be \"26\"", () => readingReads(page, "AGE of card 1", el("forms viewer"), "26"));
+      await session.step(59, "When user makes row 13 current", () => makeRowCurrent(page, 13));
+      await session.step(60, "Then the \"record of card 1\" reading of forms viewer should be 13", () => readingIs(page, "record of card 1", el("forms viewer"), 13));
+      await session.step(61, "And the \"current record\" reading of forms viewer should be 13", () => readingIs(page, "current record", el("forms viewer"), 13));
+      await session.step(62, "And the \"AGE of card 1\" reading of forms viewer should be \"43\"", () => readingReads(page, "AGE of card 1", el("forms viewer"), "43"));
+      await session.step(63, "And the \"USUBJID of card 1\" reading of forms viewer should be \"X0273T21000900008\"", () => readingReads(page, "USUBJID of card 1", el("forms viewer"), "X0273T21000900008"));
+      await session.step(64, "When user makes row 78 current", () => makeRowCurrent(page, 78));
+      await session.step(65, "Then the \"record of card 1\" reading of forms viewer should be 78", () => readingIs(page, "record of card 1", el("forms viewer"), 78));
+      await session.step(66, "And the \"AGE of card 1\" reading of forms viewer should be \"60\"", () => readingReads(page, "AGE of card 1", el("forms viewer"), "60"));
+      await session.step(67, "When user makes row 1 current", () => makeRowCurrent(page, 1));
+      await session.step(68, "Then the \"AGE of card 1\" reading of forms viewer should be \"26\"", () => readingReads(page, "AGE of card 1", el("forms viewer"), "26"));
+      await session.step(69, "And no errors should have been logged", () => noErrors(page));
+    });
+    await run.scenario("Show Selected Rows gives every selected row a card beyond the two leading ones", async () => {
+      await session.step(72, "Then \"showSelectedRows\" property of forms viewer should be \"true\"", () => propertyShouldBe(page, "showSelectedRows", el("forms viewer"), "true"));
+      await session.step(73, "And the \"cards\" reading of forms viewer should be 2", () => readingIs(page, "cards", el("forms viewer"), 2));
+      await session.step(74, "When user selects rows where \"SEVERITY\" is \"Critical\"", () => selectWhereIs(page, "SEVERITY", "Critical"));
+      await session.step(75, "Then 5 rows should be selected", () => selectedRowCount(page, 5));
+      await session.step(76, "And the \"cards\" reading of forms viewer should be 7", () => readingIs(page, "cards", el("forms viewer"), 7));
+      await session.step(77, "And the \"records shown\" reading of forms viewer should be 6", () => readingIs(page, "records shown", el("forms viewer"), 6));
+      await session.step(78, "And the record cards of forms viewer should show rows \"215, 304, 428, 430, 512\"", () => recordCardRows(page, el("forms viewer"), "215, 304, 428, 430, 512"));
+      await session.step(79, "And every record card of forms viewer should show \"Critical\" in \"SEVERITY\"", () => everyRecordCardShows(page, el("forms viewer"), "Critical", "SEVERITY"));
+      await session.step(80, "And every record card of forms viewer should show \"M\" in \"SEX\"", () => everyRecordCardShows(page, el("forms viewer"), "M", "SEX"));
+      await session.step(81, "And the record cards of forms viewer should be exactly the selected rows that pass the filter", () => recordCardsAreSelection(page, el("forms viewer")));
+      await session.step(82, "When user clears the row selection", () => clearSelection(page));
+      await session.step(83, "Then the \"cards\" reading of forms viewer should be 2", () => readingIs(page, "cards", el("forms viewer"), 2));
+      await session.step(84, "And no errors should have been logged", () => noErrors(page));
+    });
+    await run.scenario("A filter that hides selected rows takes their cards with it", async () => {
+      await session.step(87, "Given user selects rows where \"SEVERITY\" is \"Critical\"", () => selectWhereIs(page, "SEVERITY", "Critical"));
+      await session.step(88, "Then the record cards of forms viewer should show rows \"215, 304, 428, 430, 512\"", () => recordCardRows(page, el("forms viewer"), "215, 304, 428, 430, 512"));
+      await session.step(89, "When user adds a range filter on \"AGE\" from 40 to 60", () => addRangeFilter(page, "AGE", 40, 60));
+      await session.step(90, "Then fewer than 1000 rows should pass the filter", () => filterPassesFewer(page, 1000));
+      await session.step(91, "And the record cards of forms viewer should show rows \"304, 428, 512\"", () => recordCardRows(page, el("forms viewer"), "304, 428, 512"));
+      await session.step(92, "And the record cards of forms viewer should be exactly the selected rows that pass the filter", () => recordCardsAreSelection(page, el("forms viewer")));
+      await session.step(93, "And 5 rows should be selected", () => selectedRowCount(page, 5));
+      await session.step(94, "And the \"records shown\" reading of forms viewer should be lower than before", () => readingLower(page, "records shown", el("forms viewer")));
+      await session.step(95, "When user hovers over \"AGE\" filter card", () => hoverOver(page, el("\"AGE\" filter card")));
+      await session.step(96, "And user clicks on close of \"AGE\" filter card", () => clickOn(page, el("close of \"AGE\" filter card")));
+      await session.step(97, "Then 1000 rows should pass the filter", () => filterPasses(page, 1000));
+      await session.step(98, "And the record cards of forms viewer should show rows \"215, 304, 428, 430, 512\"", () => recordCardRows(page, el("forms viewer"), "215, 304, 428, 430, 512"));
+      await session.step(99, "When user clears the row selection", () => clearSelection(page));
+      await session.step(100, "Then no errors should have been logged", () => noErrors(page));
+    });
+    await run.scenario("A double-click on the sort label takes the next step of the cycle", async () => {
+      await session.step(108, "Given user selects rows where \"SEVERITY\" is \"Critical\"", () => selectWhereIs(page, "SEVERITY", "Critical"));
+      await session.step(109, "When user sets \"sortByColumnName\" property of forms viewer to \"AGE\"", () => setProperty(page, "sortByColumnName", el("forms viewer"), "AGE"));
+      await session.step(110, "Then the \"sort direction\" reading of forms viewer should be \"↓\"", () => readingReads(page, "sort direction", el("forms viewer"), "↓"));
+      await session.step(111, "And the record cards of forms viewer should show rows \"304, 512, 428, 430, 215\"", () => recordCardRows(page, el("forms viewer"), "304, 512, 428, 430, 215"));
+      await session.step(112, "When user double-clicks on the \"label AGE\" area of forms viewer", () => doubleClickArea(page, "label AGE", el("forms viewer")));
+      await session.step(113, "Then the \"sort column\" reading of forms viewer should be \"AGE\"", () => readingReads(page, "sort column", el("forms viewer"), "AGE"));
+      await session.step(114, "And the \"sort direction\" reading of forms viewer should be \"↑\"", () => readingReads(page, "sort direction", el("forms viewer"), "↑"));
+      await session.step(115, "And the record cards of forms viewer should show rows \"215, 430, 428, 512, 304\"", () => recordCardRows(page, el("forms viewer"), "215, 430, 428, 512, 304"));
+      await session.step(116, "When user sets properties of forms viewer:", () => setProperties(page, el("forms viewer"), [["sortByColumnName","WEIGHT"],["sortAscending","true"]]));
+      await session.step(119, "Then the \"sort direction\" reading of forms viewer should be \"↑\"", () => readingReads(page, "sort direction", el("forms viewer"), "↑"));
+      await session.step(120, "And the record cards of forms viewer should show rows \"215, 430, 512, 428, 304\"", () => recordCardRows(page, el("forms viewer"), "215, 430, 512, 428, 304"));
+      await session.step(121, "When user double-clicks on the \"label WEIGHT\" area of forms viewer", () => doubleClickArea(page, "label WEIGHT", el("forms viewer")));
+      await session.step(122, "And the \"sort column\" reading of forms viewer should be \"\"", () => readingReads(page, "sort column", el("forms viewer"), ""));
+      await session.step(123, "And forms viewer should not have a \"sort indicator WEIGHT\" area", () => hasNoArea(page, el("forms viewer"), "sort indicator WEIGHT"));
+      await session.step(124, "And the record cards of forms viewer should show rows \"215, 304, 428, 430, 512\"", () => recordCardRows(page, el("forms viewer"), "215, 304, 428, 430, 512"));
+      await session.step(125, "When user double-clicks on the \"label USUBJID\" area of forms viewer", () => doubleClickArea(page, "label USUBJID", el("forms viewer")));
+      await session.step(126, "Then the \"sort column\" reading of forms viewer should be \"USUBJID\"", () => readingReads(page, "sort column", el("forms viewer"), "USUBJID"));
+      await session.step(127, "And the \"sort direction\" reading of forms viewer should be \"↓\"", () => readingReads(page, "sort direction", el("forms viewer"), "↓"));
+      await session.step(128, "And forms viewer should have a \"sort indicator USUBJID\" area", () => hasArea(page, el("forms viewer"), "sort indicator USUBJID"));
+      await session.step(129, "And the record cards of forms viewer should show rows \"512, 430, 428, 304, 215\"", () => recordCardRows(page, el("forms viewer"), "512, 430, 428, 304, 215"));
+      await session.step(130, "When user sets properties of forms viewer:", () => setProperties(page, el("forms viewer"), [["sortByColumnName",""],["sortAscending","false"]]));
+      await session.step(133, "And user clears the row selection", () => clearSelection(page));
+      await session.step(134, "Then the \"sort column\" reading of forms viewer should be \"\"", () => readingReads(page, "sort column", el("forms viewer"), ""));
+      await session.step(135, "And no errors should have been logged", () => noErrors(page));
+    });
+    await run.scenario("Sorting the grid mirrors the card order and marks the sorted label", async () => {
+      await session.step(138, "Given user selects rows where \"SEVERITY\" is \"Critical\"", () => selectWhereIs(page, "SEVERITY", "Critical"));
+      await session.step(139, "Then the \"sort column\" reading of forms viewer should be \"\"", () => readingReads(page, "sort column", el("forms viewer"), ""));
+      await session.step(140, "And forms viewer should not have a \"sort indicator AGE\" area", () => hasNoArea(page, el("forms viewer"), "sort indicator AGE"));
+      await session.step(141, "When user double-clicks on the \"header AGE\" area of grid", () => doubleClickArea(page, "header AGE", el("grid")));
+      await session.step(142, "And user makes row 1 current", () => makeRowCurrent(page, 1));
+      await session.step(143, "Then the \"sort column\" reading of grid should be \"AGE\"", () => readingReads(page, "sort column", el("grid"), "AGE"));
+      await session.step(144, "And the \"sort column\" reading of forms viewer should be \"AGE\"", () => readingReads(page, "sort column", el("forms viewer"), "AGE"));
+      await session.step(145, "And the \"sort direction\" reading of forms viewer should be \"↓\"", () => readingReads(page, "sort direction", el("forms viewer"), "↓"));
+      await session.step(146, "And forms viewer should have a \"sort indicator AGE\" area", () => hasArea(page, el("forms viewer"), "sort indicator AGE"));
+      await session.step(147, "And the record cards of forms viewer should show rows \"304, 512, 428, 430, 215\"", () => recordCardRows(page, el("forms viewer"), "304, 512, 428, 430, 215"));
+      await session.step(148, "When user double-clicks on the \"header AGE\" area of grid", () => doubleClickArea(page, "header AGE", el("grid")));
+      await session.step(149, "And user makes row 1 current", () => makeRowCurrent(page, 1));
+      await session.step(150, "Then the \"sort direction\" reading of forms viewer should be \"↑\"", () => readingReads(page, "sort direction", el("forms viewer"), "↑"));
+      await session.step(151, "And the record cards of forms viewer should show rows \"215, 430, 428, 512, 304\"", () => recordCardRows(page, el("forms viewer"), "215, 430, 428, 512, 304"));
+      await session.step(152, "When user double-clicks on the \"header AGE\" area of grid", () => doubleClickArea(page, "header AGE", el("grid")));
+      await session.step(153, "And user makes row 1 current", () => makeRowCurrent(page, 1));
+      await session.step(154, "Then the \"sort column\" reading of grid should be \"\"", () => readingReads(page, "sort column", el("grid"), ""));
+      await session.step(155, "And the \"sort column\" reading of forms viewer should be \"\"", () => readingReads(page, "sort column", el("forms viewer"), ""));
+      await session.step(156, "And forms viewer should not have a \"sort indicator AGE\" area", () => hasNoArea(page, el("forms viewer"), "sort indicator AGE"));
+      await session.step(157, "And the record cards of forms viewer should show rows \"215, 304, 428, 430, 512\"", () => recordCardRows(page, el("forms viewer"), "215, 304, 428, 430, 512"));
+      await session.step(158, "When user clears the row selection", () => clearSelection(page));
+      await session.step(159, "Then no errors should have been logged", () => noErrors(page));
+    });
+    await run.scenario("Sort By overrides the grid's own sort and moves the indicator with it", async () => {
+      await session.step(162, "Given user selects rows where \"SEVERITY\" is \"Critical\"", () => selectWhereIs(page, "SEVERITY", "Critical"));
+      await session.step(163, "When user double-clicks on the \"header AGE\" area of grid", () => doubleClickArea(page, "header AGE", el("grid")));
+      await session.step(164, "And user makes row 1 current", () => makeRowCurrent(page, 1));
+      await session.step(165, "Then the record cards of forms viewer should show rows \"304, 512, 428, 430, 215\"", () => recordCardRows(page, el("forms viewer"), "304, 512, 428, 430, 215"));
+      await session.step(166, "When user sets \"sortByColumnName\" property of forms viewer to \"WEIGHT\"", () => setProperty(page, "sortByColumnName", el("forms viewer"), "WEIGHT"));
+      await session.step(167, "Then the \"sort column\" reading of forms viewer should be \"WEIGHT\"", () => readingReads(page, "sort column", el("forms viewer"), "WEIGHT"));
+      await session.step(168, "And forms viewer should have a \"sort indicator WEIGHT\" area", () => hasArea(page, el("forms viewer"), "sort indicator WEIGHT"));
+      await session.step(169, "And forms viewer should not have a \"sort indicator AGE\" area", () => hasNoArea(page, el("forms viewer"), "sort indicator AGE"));
+      await session.step(170, "And the record cards of forms viewer should show rows \"304, 428, 512, 430, 215\"", () => recordCardRows(page, el("forms viewer"), "304, 428, 512, 430, 215"));
+      await session.step(171, "And the \"sort column\" reading of grid should be \"AGE\"", () => readingReads(page, "sort column", el("grid"), "AGE"));
+      await session.step(172, "When user sets \"sortByColumnName\" property of forms viewer to \"\"", () => setProperty(page, "sortByColumnName", el("forms viewer"), ""));
+      await session.step(173, "Then the \"sort column\" reading of forms viewer should be \"AGE\"", () => readingReads(page, "sort column", el("forms viewer"), "AGE"));
+      await session.step(174, "And the record cards of forms viewer should show rows \"304, 512, 428, 430, 215\"", () => recordCardRows(page, el("forms viewer"), "304, 512, 428, 430, 215"));
+      await session.step(175, "When user picks \"Sort > Reset\" from the context menu of the \"header AGE\" area of grid", () => pickFromAreaContextMenu(page, "Sort > Reset", "header AGE", el("grid")));
+      await session.step(176, "And user makes row 1 current", () => makeRowCurrent(page, 1));
+      await session.step(177, "And user clears the row selection", () => clearSelection(page));
+      await session.step(178, "Then the \"sort column\" reading of grid should be \"\"", () => readingReads(page, "sort column", el("grid"), ""));
+      await session.step(179, "And no errors should have been logged", () => noErrors(page));
+    });
+    await run.scenario("Use Grid Sort OFF stops the mirroring — GROK-20380 no longer reproduces", async () => {
+      await session.step(182, "Given user selects rows where \"SEVERITY\" is \"Critical\"", () => selectWhereIs(page, "SEVERITY", "Critical"));
+      await session.step(183, "When user double-clicks on the \"header AGE\" area of grid", () => doubleClickArea(page, "header AGE", el("grid")));
+      await session.step(184, "And user makes row 1 current", () => makeRowCurrent(page, 1));
+      await session.step(185, "Then the \"sort column\" reading of forms viewer should be \"AGE\"", () => readingReads(page, "sort column", el("forms viewer"), "AGE"));
+      await session.step(186, "And the record cards of forms viewer should show rows \"304, 512, 428, 430, 215\"", () => recordCardRows(page, el("forms viewer"), "304, 512, 428, 430, 215"));
+      await session.step(187, "When user sets \"useGridSort\" property of forms viewer to \"false\"", () => setProperty(page, "useGridSort", el("forms viewer"), "false"));
+      await session.step(188, "Then the \"sort column\" reading of forms viewer should be \"\"", () => readingReads(page, "sort column", el("forms viewer"), ""));
+      await session.step(189, "And the \"sort column\" reading of grid should be \"AGE\"", () => readingReads(page, "sort column", el("grid"), "AGE"));
+      await session.step(190, "And forms viewer should not have a \"sort indicator AGE\" area", () => hasNoArea(page, el("forms viewer"), "sort indicator AGE"));
+      await session.step(191, "And the record cards of forms viewer should show rows \"215, 304, 428, 430, 512\"", () => recordCardRows(page, el("forms viewer"), "215, 304, 428, 430, 512"));
+      await session.step(192, "When user sets \"useGridSort\" property of forms viewer to \"true\"", () => setProperty(page, "useGridSort", el("forms viewer"), "true"));
+      await session.step(193, "Then the \"sort column\" reading of forms viewer should be \"AGE\"", () => readingReads(page, "sort column", el("forms viewer"), "AGE"));
+      await session.step(194, "And the record cards of forms viewer should show rows \"304, 512, 428, 430, 215\"", () => recordCardRows(page, el("forms viewer"), "304, 512, 428, 430, 215"));
+      await session.step(195, "When user picks \"Sort > Reset\" from the context menu of the \"header AGE\" area of grid", () => pickFromAreaContextMenu(page, "Sort > Reset", "header AGE", el("grid")));
+      await session.step(196, "And user makes row 1 current", () => makeRowCurrent(page, 1));
+      await session.step(197, "And user clears the row selection", () => clearSelection(page));
+      await session.step(198, "Then the \"sort column\" reading of grid should be \"\"", () => readingReads(page, "sort column", el("grid"), ""));
+      await session.step(199, "And no errors should have been logged", () => noErrors(page));
+    });
+    await run.scenario("Pin Row moves a card into the pinned pane and takes it out of the record set", async () => {
+      await session.step(202, "Given user selects rows where \"SEVERITY\" is \"Critical\"", () => selectWhereIs(page, "SEVERITY", "Critical"));
+      await session.step(203, "And user sets \"showMouseOverRow\" property of forms viewer to \"false\"", () => setProperty(page, "showMouseOverRow", el("forms viewer"), "false"));
+      await session.step(204, "Then the \"pinned pane shown\" reading of forms viewer should be \"false\"", () => readingReads(page, "pinned pane shown", el("forms viewer"), "false"));
+      await session.step(205, "And the \"pinned records\" reading of forms viewer should be 0", () => readingIs(page, "pinned records", el("forms viewer"), 0));
+      await session.step(206, "And the record cards of forms viewer should show rows \"215, 304, 428, 430, 512\"", () => recordCardRows(page, el("forms viewer"), "215, 304, 428, 430, 512"));
+      await session.step(207, "When user picks \"Pin Row\" from the context menu of the \"field USUBJID of card 3\" area of forms viewer", () => pickFromAreaContextMenu(page, "Pin Row", "field USUBJID of card 3", el("forms viewer")));
+      await session.step(208, "Then the \"pinned pane shown\" reading of forms viewer should be \"true\"", () => readingReads(page, "pinned pane shown", el("forms viewer"), "true"));
+      await session.step(209, "And the \"pinned records\" reading of forms viewer should be 1", () => readingIs(page, "pinned records", el("forms viewer"), 1));
+      await session.step(210, "And the pinned cards of forms viewer should show rows \"304\"", () => pinnedCardRows(page, el("forms viewer"), "304"));
+      await session.step(211, "And the record cards of forms viewer should show rows \"215, 428, 430, 512\"", () => recordCardRows(page, el("forms viewer"), "215, 428, 430, 512"));
+      await session.step(212, "And the \"pinned by\" reading of forms viewer should be \"USUBJID\"", () => readingReads(page, "pinned by", el("forms viewer"), "USUBJID"));
+      await session.step(213, "And the \"pinned values\" reading of forms viewer should be \"X0273T29012500105\"", () => readingReads(page, "pinned values", el("forms viewer"), "X0273T29012500105"));
+      await session.step(214, "And the \"records shown\" reading of forms viewer should be 6", () => readingIs(page, "records shown", el("forms viewer"), 6));
+      await session.step(215, "And 5 rows should be selected", () => selectedRowCount(page, 5));
+      await session.step(216, "And no error or warning balloon should have been shown", () => noBalloons(page));
+      await session.step(217, "When user picks \"Unpin Row\" from the context menu of the \"field USUBJID of pinned card 1\" area of forms viewer", () => pickFromAreaContextMenu(page, "Unpin Row", "field USUBJID of pinned card 1", el("forms viewer")));
+      await session.step(218, "Then the \"pinned pane shown\" reading of forms viewer should be \"false\"", () => readingReads(page, "pinned pane shown", el("forms viewer"), "false"));
+      await session.step(219, "And the \"pinned records\" reading of forms viewer should be 0", () => readingIs(page, "pinned records", el("forms viewer"), 0));
+      await session.step(220, "And the \"pinned values\" reading of forms viewer should be \"\"", () => readingReads(page, "pinned values", el("forms viewer"), ""));
+      await session.step(221, "And the record cards of forms viewer should show rows \"215, 304, 428, 430, 512\"", () => recordCardRows(page, el("forms viewer"), "215, 304, 428, 430, 512"));
+      await session.step(222, "When user sets \"showMouseOverRow\" property of forms viewer to \"true\"", () => setProperty(page, "showMouseOverRow", el("forms viewer"), "true"));
+      await session.step(223, "And user clears the row selection", () => clearSelection(page));
+      await session.step(224, "Then no errors should have been logged", () => noErrors(page));
+    });
+    await run.scenario("Pinning through a non-unique field warns that the layout will not carry it", async () => {
+      await session.step(227, "Given user selects rows where \"SEVERITY\" is \"Critical\"", () => selectWhereIs(page, "SEVERITY", "Critical"));
+      await session.step(228, "And user sets \"showMouseOverRow\" property of forms viewer to \"false\"", () => setProperty(page, "showMouseOverRow", el("forms viewer"), "false"));
+      await session.step(229, "When user picks \"Pin Row\" from the context menu of the \"field SEX of card 3\" area of forms viewer", () => pickFromAreaContextMenu(page, "Pin Row", "field SEX of card 3", el("forms viewer")));
+      await session.step(230, "Then a warning balloon containing \"You have pinned a non-unique value. It won't be applied from the layout.\" should have been shown", () => warningBalloonText(page, "You have pinned a non-unique value. It won't be applied from the layout."));
+      await session.step(231, "And the \"pinned by\" reading of forms viewer should be \"SEX\"", () => readingReads(page, "pinned by", el("forms viewer"), "SEX"));
+      await session.step(232, "And the \"pinned values\" reading of forms viewer should be \"M\"", () => readingReads(page, "pinned values", el("forms viewer"), "M"));
+      await session.step(233, "And the \"pinned records\" reading of forms viewer should be 1", () => readingIs(page, "pinned records", el("forms viewer"), 1));
+      await session.step(234, "And the \"pinned pane shown\" reading of forms viewer should be \"true\"", () => readingReads(page, "pinned pane shown", el("forms viewer"), "true"));
+      await session.step(235, "When user picks \"Unpin Row\" from the context menu of the \"field SEX of pinned card 1\" area of forms viewer", () => pickFromAreaContextMenu(page, "Unpin Row", "field SEX of pinned card 1", el("forms viewer")));
+      await session.step(236, "Then the \"pinned records\" reading of forms viewer should be 0", () => readingIs(page, "pinned records", el("forms viewer"), 0));
+      await session.step(237, "And the \"pinned values\" reading of forms viewer should be \"\"", () => readingReads(page, "pinned values", el("forms viewer"), ""));
+      await session.step(238, "When user sets \"showMouseOverRow\" property of forms viewer to \"true\"", () => setProperty(page, "showMouseOverRow", el("forms viewer"), "true"));
+      await session.step(239, "And user clears the row selection", () => clearSelection(page));
+      await session.step(240, "Then no errors should have been logged", () => noErrors(page));
+    });
+    await run.scenario("A sort from the grid header keeps the cards it was showing", async () => {
+      await session.step(250, "Given user selects rows where \"SEVERITY\" is \"Critical\"", () => selectWhereIs(page, "SEVERITY", "Critical"));
+      await session.step(251, "Then the record cards of forms viewer should show rows \"215, 304, 428, 430, 512\"", () => recordCardRows(page, el("forms viewer"), "215, 304, 428, 430, 512"));
+      await session.step(252, "When user double-clicks on the \"header AGE\" area of grid", () => doubleClickArea(page, "header AGE", el("grid")));
+      await session.step(253, "Then the \"sort column\" reading of forms viewer should be \"AGE\"", () => readingReads(page, "sort column", el("forms viewer"), "AGE"));
+      await session.step(254, "And the \"cards\" reading of forms viewer should be 7", () => readingIs(page, "cards", el("forms viewer"), 7));
+      await session.step(255, "And the record cards of forms viewer should show rows \"304, 512, 428, 430, 215\"", () => recordCardRows(page, el("forms viewer"), "304, 512, 428, 430, 215"));
+    }, {knownFailure: true});
+    run.finish();
+  });
+});

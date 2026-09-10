@@ -1570,7 +1570,7 @@ async function openGroup(page: Page, label: string, wanted?: string): Promise<vo
   if (wanted !== undefined && await menuShows(page, wanted))
     return;
   const candidates = menuItems(page, label);
-  await candidates.first().waitFor({state: 'visible', timeout: 5000});
+  await candidates.filter({visible: true}).first().waitFor({state: 'visible', timeout: 5000});
   const count = await candidates.count();
   for (let i = 0; i < count; i++) {
     const item = candidates.nth(i);

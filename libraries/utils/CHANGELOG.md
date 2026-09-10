@@ -1,6 +1,8 @@
 # utils changelog
 
 ## 4.7.10 (WIP)
+* Forms viewer: `getWidgetStatus` now also reports `record of pinned card <n>`
+* Forms viewer: `getWidgetStatus` now also reports `align of` / `font of <COL> of <label>`, `header labels`, `record of card <n>`, `card kind of card <n>`, `pinned pane shown`, `pinned values` and `pinned by`
 * GROK-20849: `BitArray` is a compatibility wrapper over `DG.BitArray` (old names kept); `trueCount()` is no longer stale after raw-buffer writes; callerless members removed
 
 ## 4.7.9 (2026-08-27)

@@ -92,23 +92,18 @@ nobody filed.
   own goes to `node_modules/.bdd-link-backup`, `--undo` or an `npm ci` restores it; the library
   link too when npm did not make it). On a registry install the peer dependency is shared. The
   harness receives `test` from the spec and never imports it.
-- **One page per worker** (`src/runtime/harness.ts`; 2026-09-07 it was one page per feature
-  folder, the lead's "one folder, one tab", and 2026-09-08 the folder boundary went: Playwright
-  hands files to workers one by one, so under four workers consecutive files of a worker were
-  never from the same folder and every feature booted its own page — 20 s of login and 36 s of
-  Bio init each under that load). `feature(test)` registers `afterEach` (leave the context,
-  `resetShell`) and `afterAll` (the feature's `atFeatureEnd` cleanups); the page is created
-  inside the first test (`session.page(browser)`), so Playwright merges the project's context
-  options (storage state, viewport), and kept in the module-level `shared` — every later feature
-  file in the worker finds it and `user is logged in` only resets the shell (0.1 s instead of
-  the ~4 s boot, and a package's init step is free). Feature isolation is the reset shell plus
-  the feature's own cleanups, not the tab. Playwright 1.62 starts a trace chunk on every
-  existing context at each test start (`ArtifactsRecorder.willStartTest` →
-  `didCreateBrowserContext`), so every test still gets its own trace; a failed test restarts the
-  worker, which drops the page. NEVER leave several Datagrok pages open in one browser: six live
-  clients made every step 2–3× slower (measured 2026-09-07, 124 s for the suite). The generated
-  spec calls `test()` itself so reports point at the spec line, not the harness; every step is
-  `session.step(line, title, fn)` (`feature(test, "features/x.feature", import.meta.url)`), a
+- **One page per worker** (`src/runtime/harness.ts`). It was one page per feature *folder* until
+  Playwright's file-by-file hand-off made that meaningless under four workers — consecutive files
+  of a worker are never from the same folder, so every feature booted its own page (20 s of login
+  each). `feature(test)` registers `afterEach` (leave the context, `resetShell`) and `afterAll`
+  (the feature's `atFeatureEnd` cleanups); the page is created inside the first test
+  (`session.page(browser)`) so Playwright merges the project's context options, and kept in the
+  module-level `shared`, so `user is logged in` only resets the shell (0.1 s instead of ~4 s).
+  **Feature isolation is the reset shell plus the feature's own cleanups, not the tab.** Every test
+  still gets its own trace (Playwright starts a chunk per existing context at each test start); a
+  failed test restarts the worker, which drops the page. NEVER leave several Datagrok pages open in
+  one browser — six live clients made every step 2–3× slower. The generated spec calls `test()`
+  itself so reports point at the spec line, and every step is `session.step(line, title, fn)`, a
   Playwright step whose `location` is the feature line.
 - **An in-page step returns nothing it does not read** (2026-09-08): `page.evaluate` serializes
   its return value to Node, and a platform object can be enormous — Bio's init step returned the
@@ -217,70 +212,47 @@ nobody filed.
   the item, Dart its children), so a `has:` over descendants makes "As CSV" match the Export group
   too, and "Markers" the group, the "Properties..." group and its nested mirror. Text-first was
   no better: the exact text of "Markers" is only the hidden mirror's.
-- **Hover is two pointer events, and never sleeps**: the gesture leaves the element to its left on
-  the same line, lands on its centre in one move, then checks that the element is still where it
-  was (a view still docking moves it out from under the pointer). Every pointer event costs a
-  frame (~16 ms; a six-step move was 100 ms), and the animation-frame wait it had was another two
-  frames for nothing: hover-driven layout is synchronous. Leaving upwards would cross the
-  neighbouring row and close the submenu the item sits in. The stepped move existed because a
-  Dart menu group did not open on the first `mousemove` when another group's submenu state was
-  stale — fixed in the core (`menu.dart` `_initItem`: the move that closes a sibling's submenu
-  opens this one; `hide()` clears `_expandedItem`), 2026-09-07. Scrolling into view only when
-  the box is outside the viewport. **The browser delivers pointer moves frame-aligned**, so a
-  Playwright DOM read issued right after `mouse.move` can run before the move's handler on a busy
-  page: a step that reads the geometry of something the hover reveals (the box plot's axis
-  slider) first waits for it to be visible (`waitFor({state: 'visible'})`) — that is the effect,
-  not a sleep. Found 2026-09-08 as a 2-in-45 flake of the value-axis zoom under load (the drag
-  landed on plot space with the slider still hidden, the range unchanged). **And the browser
-  coalesces mouse moves queued while its main thread is busy**: the leave-then-enter pair can
-  collapse into the last move alone, which enters nothing when the pointer already rested inside
-  the element (the box plot's hover-revealed selectors stayed hidden once in 72 journeys under
-  load), so `hover` now waits in-page, a few frames at most, for the element's own `mouseenter`
-  and repeats the pair when it did not come — one evaluate more per hover, no sleep.
+- **Hover is two pointer events, and never sleeps**: leave the element to its left on the same
+  line, land on its centre in one move, then check it is still there (a view still docking moves
+  out from under the pointer). Leaving upwards would cross the neighbouring row and close the
+  submenu. Every pointer event costs a frame (~16 ms), and hover-driven layout is synchronous, so
+  there is nothing to wait for — except two browser behaviours that are not sleeps:
+  **pointer moves are delivered frame-aligned**, so a DOM read issued right after `mouse.move` can
+  run before the move's handler (a step reading geometry the hover reveals waits for it to be
+  visible first — this was a 2-in-45 flake of the value-axis zoom); and **moves queued while the
+  main thread is busy are coalesced**, so the leave-then-enter pair can collapse into one move that
+  enters nothing when the pointer already rested inside. `hover` waits in-page for the element's own
+  `mouseenter` and repeats the pair when it did not come.
 - **A step ends when the platform is done, not when the DOM shows** (`platform/steps.ts`
   `openDataset`): opening a table starts semantic-type detection in the background (package
   detectors — Chem's SMILES detector took 300–500 ms on spgi-100), which used to land on
-  whichever step came next (a 500 ms "Table" read, a 500 ms property set). The step now waits
-  for the platform's own `ddt-semantic-type-detected` event for that data frame (identity by the
-  Dart handle — the same file opened twice is two tables). The same step also outlasts the table
-  view's startup timer (`table_view.dart`, 1000 ms after the grid is created: focus the grid and
-  make row 0 current when no row is): every viewer repaints its current-row marker then, about a
-  second into a feature, on whatever step is running — under a four-worker run it landed on the
-  stacking journey's "Relative Values alone is inert" as a 2023 px repaint (2026-09-08), and on
-  a quiet machine on a step that tolerated it. The step does not wait for the timer (the lead:
-  "that is extra second every open"): it makes row 0 current itself, and the timer's check
-  (`currentRow == -1`) then skips the reset. The focus at one second still happens; it repaints
-  nothing, but a step typing into an input within the first second of a feature would lose it.
-  The lead's run failed the same way again with row 0 current from the start, so the repaint was
-  never the marker. "Should not have repainted" now says where the pixels changed (the box of
-  the changed pixels in CSS px and the hit areas it touches, or the two canvas sizes), and that
-  line found it: the lead ran **headed**, and the box covered the whole chart. Chrome rasterizes
-  a 2D canvas on the GPU in a headed window and moves it to the CPU after enough `getImageData`
-  readbacks (the harness reads pixels on every check); the first paint after the move differs in
-  antialiasing from the one before it — 1312 px on a re-render of identical geometry, 2023 px in
-  the suite — while headless rasterizes in software throughout and never shows it. The config
-  launches with `--disable-accelerated-2d-canvas` (nine headless and two headed runs green
-  after). A failure that names the region is the reproduction when the machine that fails is
-  not yours.
+  whichever step came next. The step waits for the platform's own `ddt-semantic-type-detected`
+  event for that data frame (identity by the Dart handle — the same file opened twice is two
+  tables), and outlasts the table view's startup timer (`table_view.dart`, 1000 ms after the grid
+  is created: focus the grid and make row 0 current) by making row 0 current itself, so the timer's
+  `currentRow == -1` check skips the reset. The focus at one second still happens: a step typing
+  into an input within the first second of a feature would lose it.
+- **Headed and headless rasterize canvases differently.** Chrome rasterizes a 2D canvas on the GPU
+  in a headed window and moves it to the CPU after enough `getImageData` readbacks (the harness
+  reads pixels on every check); the first paint after the move differs in antialiasing — 2023 px of
+  "repaint" on identical geometry — while headless is software throughout and never shows it. The
+  config launches with `--disable-accelerated-2d-canvas`. This is why "should not have repainted"
+  names the region that changed (the box in CSS px and the hit areas it touches): a failure that
+  names its region is the reproduction when the machine that fails is not yours.
 - **The top menu is driven by name, and a command's end is its function call's end**
-  (`src/runtime/menus.ts`, `bindings/platform/commands.ts`, 2026-09-08, the Bio translation).
-  The Dart menu bar names its items `div-Bio---Analyze---Sequence-Space...` (spaces to dashes,
-  `---` between levels), so a path is found without scanning labels. The group in the bar opens on
-  `mouseenter` and closes on `mouseleave` of the horizontal item — so the library's leave-left
-  `hover` (and `pickMenuPath`'s left entry) CLOSES it when the item sits at the popup's left
-  edge; a vertical group opens on a `mousemove` inside it, and a pointer already resting on it
-  moves nowhere: the entry is two moves within the item (`enterGroup`). A bar too narrow folds
-  its groups into a "more" group where they are vertical; the viewport is 1920 wide, and the
-  probe at 1280 folded everything. A package's group shows only once the table has a column it
-  applies to, a moment after the detection the open step waited for: the pick waits for the
-  top item up to 5 s. Escape does not close the bar's group; moving the pointer to the page
-  centre does. The command is the function call whose `Func.topMenu` (added to the core for
-  this: `grok_api.dart` `Func_Get_TopMenu` + `grok_api.g.ts` + `entities/func.ts`) equals the
-  picked path, watched through `onBeforeRunAction`/`onAfterRunAction`; a function-editor dialog
-  keeps the call running until the work is done (Sequence Space: OK at 202 ms, columns at
-  223 ms, the scatter plot at 3287 ms, `after` at 3296 ms), a hand-made dialog (MSA) returns at
-  once and the work shows up as columns — the new-column steps poll 60 s for those. The pick
-  also baselines every viewer and remembers the table's columns.
+  (`src/runtime/menus.ts`, `bindings/platform/commands.ts`). The Dart menu bar names its items
+  `div-Bio---Analyze---Sequence-Space...` (spaces to dashes, `---` between levels), so a path needs
+  no label scan. Facts that cost a run each: the bar's group opens on `mouseenter` and closes on
+  `mouseleave`, so the library's leave-left `hover` CLOSES it when the item sits at the popup's left
+  edge — a vertical group is entered with two moves *within* the item (`enterGroup`); a narrow bar
+  folds its groups into a "more" group (the viewport is 1920; a probe at 1280 folded everything); a
+  package's group appears only once the table has a column it applies to, a moment after detection,
+  so the pick waits up to 5 s; Escape does not close the bar's group, moving to the page centre
+  does. The command is the function call whose `Func.topMenu` equals the picked path (added to the
+  core for this), watched through `onBeforeRunAction`/`onAfterRunAction`. A function-editor dialog
+  keeps the call running until the work is done; a hand-made dialog returns at once and the work
+  shows up as columns, which the new-column steps poll for. The pick also baselines every viewer and
+  remembers the table's columns.
 - **A Dart dialog button says "disabled" with a class only** — `CommandBar.setButtonActive` now
   sets `aria-disabled` too (core `ui.dart`), so `OK button in Identity dialog should be
   disabled` reads a state, not a class.
@@ -629,19 +601,15 @@ nobody filed.
   is up after every reload (text checks on `notification` are any-of, so it does not interfere).
 - Node prints "Importing JSON modules is experimental" whenever tsx registers; the launcher
   filters that one warning.
-- **VS Code Cucumber extension** (`cucumberopen.cucumber-official` 1.11.0, language-server 1.7.0;
-  the lead also has `alexkrechik.cucumberautocomplete`, unconfigured). It parses
-  `defineParameterType({name, regexp: /…/})` calls from the glue, so `cucumber.parameterTypes` in
-  settings holds only `state` (its regexp is built from a list in code); listing the others again
-  yields "already a parameter type" errors. Settings files live at the core root (gitignored), in
-  `packages/U2Demo/.vscode` and here. **A settings JSON written through a Bash heredoc lost the
-  `\\` of `\\w`** (2026-09-03): VS Code's lenient parser kept `[w -]+?`, so `{viewer}` and
-  `{dataset}` steps showed as undefined ("scatter plot viewer should be added …") while the compiler
-  resolved them — write JSON with the Write tool and validate with `json.load`. To see exactly what
-  the extension resolves: `npm i @cucumber/language-service` in a scratch dir, `new
-  WasmParserAdapter('<pkg>/dist')` (the Node adapter has no TypeScript grammar), sources
-  `{languageName: 'tsx', uri, content}`, `new ExpressionBuilder(adapter).build(sources,
-  parameterTypesFromSettings)`, then `expressionLinks[].expression.match(stepText)`.
+- **VS Code Cucumber extension** (`cucumberopen.cucumber-official`). It parses
+  `defineParameterType({name, regexp: /…/})` from the glue, so `cucumber.parameterTypes` holds only
+  `state` (whose regexp is built from a list in code); listing the others again yields "already a
+  parameter type". Settings live at the core root (gitignored), in `packages/U2Demo/.vscode` and
+  here. **A settings JSON written through a Bash heredoc lost the `\\` of `\\w`**: VS Code's lenient
+  parser kept `[w -]+?`, so `{viewer}` steps showed as undefined while the compiler resolved them —
+  write JSON with the Write tool and validate with `json.load`. To see what the extension resolves,
+  build an `ExpressionBuilder` over `@cucumber/language-service`'s `WasmParserAdapter` (the Node
+  adapter has no TypeScript grammar) and match against it.
 - Bash tool here: cwd persists across calls and very long heredocs fail to parse — use absolute
   paths and the Write tool for whole files.
 - **u2 finding, not a harness bug (2026-09-03, unreported)**: in a `funcForm` a number field
@@ -654,19 +622,18 @@ nobody filed.
   word (`First name input` → "first" + `name input`) needs quotes (`"First name" input`), and a
   label equal to a kind name (`Columns input`) now resolves to the labelled input first (nouns.ts
   puts the whole-kind reading last).
-- **Viewer facts (box plot, 2026-09-06)**: `Property.caption` in the JS API is the raw name
-  (`showInsideValues`) unless the Dart `@Prop(name:)` set one (`Min`, `Adjust By`); the viewer
-  runtime resolves "Show Inside Values", "Category 1" (`category1ColumnName`), "Marker Size Column"
-  (`markerSizeColumnName`, not `markerSize`) by normalizing both sides. Hit areas come back in
-  canvas coordinates (`getWidgetStatus().hitAreas`, `Rect.toMap` → `{x, y, width, height}`), the
-  runtime adds the canvas's client rect. The on-canvas column selectors (`div-column-combobox-*`)
-  are hover-revealed: `visibility: hidden` until the pointer is over the viewer and again after a
-  property change — hover the viewer before asserting them visible; `display: none` (a disabled
-  selector) is hidden regardless. The property panel's rows are `tr.property-grid-item[name="prop-
-  marker-type"][aria-label="Marker Type"]` with `aria-disabled` while `dependsOn` gates them. The
-  vertical range slider is `svg[type="range-slider"][name="y-slider"]`, `max-handle` at the top.
-  Dart context-menu items: `role=menuitem`, `name="div-Misc---Show-Inside-Values"`, own label a
-  direct `.d4-menu-item-label`; the stats-region menu names drop the "Statistics" prefix.
+- **Viewer facts true of every viewer** (a specific viewer's areas and readings are in its own
+  `core/client/d4/lib/src/viewers/<viewer>/CLAUDE.md` "Automation surface"): `Property.caption` in
+  the JS API is the raw name (`showInsideValues`) unless `@Prop(name:)` set one, and the runtime
+  resolves a caption, a name and a `…ColumnName` by normalizing both sides — two properties sharing
+  a caption (a plot's `Min`/`Max` for X and Y) must be named, not captioned. Hit areas come back in
+  **canvas coordinates** and the runtime adds the canvas's client rect. The on-canvas column
+  selectors (`div-column-combobox-*`) are hover-revealed — `visibility: hidden` until the pointer is
+  over the viewer, and again after a property change — while `display: none` is a disabled selector
+  and stays hidden. Property rows are `tr.property-grid-item[name="prop-marker-type"]` with
+  `aria-disabled` while `dependsOn` gates them; menu items are `role=menuitem`,
+  `name="div-Misc---Show-Inside-Values"`, own label a direct `.d4-menu-item-label`, and a checked
+  one carries `aria-checked`.
 - `user filters rows where ...` writes the table's filter bitset directly (`df.filter.init`). That
   write is transient: anything that calls `dataFrame.rows.requestFilter` recomputes the filter from
   the registered filters and drops it. A histogram does that on **every context-menu pick**
@@ -677,24 +644,15 @@ nobody filed.
   use `the {string} area of {widget} should have repainted` for one area's own pixels. A hover
   highlight can be gone by the time a later step reads it (the tooltip lands under the pointer), so
   put the repaint checks right after the gesture and the tooltip text after them.
-- **A backward-match review is the second half of a translation** (2026-09-09, five reviewers over
-  grid, histogram, scatter plot, filter panel, form+legend). What it changed, beyond the features:
-  `{widget} should have repainted` measured the whole canvas even when the phrase named an area, so
-  every per-area repaint claim in the round was really "the canvas repainted" — hence the area step
-  above; `should show the remembered value range` compared top and bottom only and `narrower/wider`
-  compared height only, so a Reset View that lost the X window passed (both now compare the area and
-  both axes); the tooltip readers matched a hidden tooltip's leftover text (`.d4-tooltip:visible`
-  now); `expectLegendPlacedAsBefore` compared mode and slot but not size, so a legend that jumped
-  inside its slot passed; `the filter panel should have N filters` called `getFiltersGroup`, which
-  CREATES a panel when the view has none, so "0 filters" quietly resurrected one (it now reads the
-  group only when a Filters viewer is open). Two new steps came from findings that had no honest
-  phrase: `the open tableview should have {int} {viewer} viewer(s)` (an "added"/"closed" claim is
-  vacuous on a view that already owns one of that type) and `no|all rows where {string} is {string}
-  should pass the filter` (a row COUNT cannot tell a card that filters from a card that stopped).
-- **A reviewer's finding is a hypothesis until the suite runs it.** Three of the round's fixes
-  asserted things the product does not do: two cells of different columns do NOT share a colour with
-  coding off (the greys of the text differ), `USUBJID` ascending IS demog's natural order so the Sort
-  dialog moves no row, and a reversed `xMin/xMax` window is NORMALISED to (20, 60) rather than kept.
+- **Reviews found these, and the fixes are load-bearing** (the process itself is `/bdd-translate`):
+  a per-area repaint claim measured the whole canvas; `remembered value range` compared top and
+  bottom only, so a Reset View that lost the X window passed; the tooltip readers matched a hidden
+  tooltip's leftover text; `expectLegendPlacedAsBefore` ignored size; and `the filter panel should
+  have N filters` called `getFiltersGroup`, which CREATES a panel when the view has none, so
+  "0 filters" quietly resurrected one. Two steps exist because a claim had no honest phrase:
+  `the open tableview should have {int} {viewer} viewer(s)` (an "added"/"closed" claim is vacuous on
+  a view that already owns one of that type) and `no|all rows where {string} is {string} should pass
+  the filter` (a row COUNT cannot tell a card that filters from a card that stopped).
   Write the fix, run it, and keep what the product says.
 - Two core defects the review pass surfaced: `grid.cell2screen` returns null for a cell scrolled out,
   so the grid's status emitted a null rect and the filter panel's status (which reads the inner grid's
@@ -712,9 +670,11 @@ nobody filed.
 - `RowSet.SelectedOrCurrent` is the selection **when it has anything**, and the current row only
   otherwise — not the union. `MouseOverGroup` is `dataFrame.highlight`, which a hover elsewhere
   leaves standing, so a scenario that wants "empty" must state what it hovered last.
-- A viewer's `rows shown` is `combinedFilter.trueCount` everywhere except the scatter plot, which
-  counts the markers it actually drew (past its filter, drawable on the current axes, inside the
-  viewport), and the PC plot under a transformation, which draws the aggregated frame.
+- A viewer's `rows shown` is `combinedFilter.trueCount` everywhere except the viewers that mean
+  "what the frame drew": the scatter plot (markers past the filter, drawable on the current axes,
+  inside the viewport), the PC plot under a transformation (the aggregated frame), and the density
+  plot (the rows the last binning pass counted — on demog-1000 with Y=HEIGHT that is 872, not 1000,
+  because a blank is never binned).
 - `demog-1000` has 128 rows with a blank HEIGHT, so a scatter plot on HEIGHT draws 872, not 1000.
   Pick columns with no blanks (AGE, WEIGHT) when the claim is about row sources rather than blanks.
 - The grid reports a cell's colour as **lowercase** `#rrggbb` (`htmlColor` → `toRadixString(16)`).
@@ -727,6 +687,37 @@ nobody filed.
 - PowerPack's Formula Lines dialog opens 500 ms after a region is drawn, from a bare `Timer`; the
   region itself is in the look synchronously, so the claims about it need no dialog. Closing the
   dialog with OK keeps it.
+
+### Platform behaviour the third viewer round had to learn (2026-09-10)
+
+- **A zoom is animated, and it used to win.** `CanvasViewportMixin.zoom` walks the viewport over
+  ten 50 ms frames; a viewport written from outside during that window — Reset View, a slider, a
+  bound property — was silently overwritten by the frames still to come, so Reset View immediately
+  after an Alt-drag did nothing. The animation now stops when it sees the viewport moved under it,
+  and `isRenderPending` reports a running zoom (it did not). Both fixes are in
+  `viewer_base/canvas_viewport_mixin.dart` and `viewer_base/viewer_base.dart`.
+- **A hidden group label is still a match.** The Dart menu mirrors every property under a zero-size
+  `Properties...` submenu, so `Columns`, `Tooltip`, `Correlation Type` each occur twice in one
+  popup. `openGroup` waits on the first **visible** candidate; before that it waited on
+  `.first()`, which was whichever came first in the DOM.
+- **`painted in at least {int} colors` groups by hue**, so a linear colour scale (five shades of one
+  blue) counts as one. Correct for markers, useless as a "this is colour-coded" precondition — use
+  `should be painted` or compare two areas.
+- **A package viewer's surface is not on the stand until the package is published**, and when the
+  viewer lives in a library (the Forms viewer is in `libraries/utils`, registered by PowerGrid) the
+  package's `node_modules/@datagrok-libraries/<lib>` must point at the checkout or it compiles the
+  registry copy. The failure looks exactly like a mistyped phrase.
+- **Viewer facts worth knowing before writing a claim.** The density plot recolours its bins rather
+  than drawing a selection overlay, so it shows no selection highlight; `bins = 1` draws **three**
+  hexagon bins, because hexagon rows interlock (`getCountsIndex` adds `ceil(y / 2)`) — one bin is
+  one bin only under rectangles. `descriptionPosition` defaults to **Top**. A calendar at 1920×1080
+  lays out about 12 weeks, so a claim about all 541 days of demog-1000 is unreachable — pin an early
+  date or claim relatively. The heat map's `row height` depends on the docked layout (0.86–0.98
+  measured), so bound it rather than pinning it.
+- **`DensityPlotViewer` had no `viewport` in the JS API** although the Dart viewer has one and
+  `ScatterPlotViewer` and `BoxPlot` both publish it — every value-range step read `undefined`.
+  Added to `public/js-api/src/viewer.ts`; a js-api rebuild lands in `xamgle/web/js/api` and needs no
+  pub serve restart.
 
 ## Conventions
 

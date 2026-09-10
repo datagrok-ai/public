@@ -5,7 +5,9 @@
    so the general shapes ("X of Y should be Z") stay free for what they say; the context menu and
    the pointer steps take any element.
    Every step here asks the platform (properties, hit areas, render and menu events) instead of
-   guessing pixels or sleeping; viewers render immediately (no debounce) on a bdd page. */
+   guessing pixels or sleeping; viewers render immediately (no debounce) on a bdd page.
+   `widgets.ts` next to this file holds the tier's other half: the steps a package wrote for one
+   viewer that a second viewer then wanted. */
 import {expect, Page} from '@playwright/test';
 import {Given, Then, When} from '../../../src/registry.js';
 import type {ElementRef} from '../../../src/runtime/args.js';
@@ -187,6 +189,11 @@ export const dragDeselectionOverArea = When('user drags a deselection box over t
 export const dragZoomOverArea = When('user drags a zoom box over the {string} area of {widget}', (page: Page, area: string, target: ElementRef) =>
   v.dragBoxOverArea(page, target, area, ['Alt']), {tier: 'ui', description: 'an Alt-drag across the inner 80% of the area — the platform zooms into the rectangle'});
 
+export const dragBoxHolding = When('user drags a box over the {string} area of {widget} holding {key}',
+  (page: Page, area: string, target: ElementRef, key: string) =>
+    v.dragBoxOverArea(page, target, area, key.split('+').map(normalizeKey)),
+  {tier: 'ui', description: 'the same drag with any key or chord held — for a viewer whose rectangle gesture is not one of the three named above'});
+
 export const enterIntoArea = When('user enters {string} into the {string} area of {widget}', (page: Page, text: string, area: string, target: ElementRef) =>
   v.typeIntoArea(page, target, area, text), {tier: 'ui', description: 'a hit area that holds an editor (a range input, a form field): a click on it, select all, the text, Enter'});
 
@@ -319,6 +326,26 @@ export const readingsDiffer = Then('the {string} and {string} readings of {widge
 export const readingDoesNotRead = Then('the {string} reading of {widget} should not be {string}', async (page: Page, name: string, target: ElementRef, value: string) => {
   await expect.poll(async () => String(await v.readValue(page, target, name)), {message: `"${name}" reading of ${target.phrase}`}).not.toBe(value);
 });
+
+/** `getWidgetStatus().error` as the last validate left it; '' when the viewer reports none. This
+ * is what retires the old specs' "a <canvas> element still exists under the viewer root" probe: a
+ * chart with no Y column keeps its canvas and its view box and says "No Y columns selected". */
+async function errorOf(page: Page, target: ElementRef): Promise<string> {
+  await v.installViewerRuntime(page);
+  const loc = await v.viewerLocator(page, target);
+  return loc.evaluate((el) => String((window as any).__bdd.viewerOf(el).getWidgetStatus?.()?.error ?? ''));
+}
+
+export const reportsError = Then('{widget} should report the error {string}', async (page: Page, target: ElementRef, message: string) => {
+  await expect.poll(() => errorOf(page, target), {timeout: 5000,
+    message: `${target.phrase} does not report "${message}"`}).toBe(message);
+}, {description: 'the viewer\'s own error — what validate() left, e.g. "No Y columns selected"'});
+
+export const reportsNoError = Then('{widget} should report no error', async (page: Page, target: ElementRef) => {
+  let last = '';
+  await expect.poll(async () => (last = await errorOf(page, target)) === '', {timeout: 5000,
+    message: `${target.phrase} reports "${last}"`}).toBe(true);
+}, {description: 'the viewer validated its state and drew'});
 
 export const readingFinite = Then('the {string} reading of {widget} should be a finite number', async (page: Page, name: string, target: ElementRef) => {
   await expect.poll(async () => {
@@ -523,6 +550,24 @@ export const tooltipNotColumns = Then('the tooltip should not show columns {stri
 
 export const tooltipValue = Then('the tooltip should show {string} as {string}', (page: Page, column: string, value: string) => v.expectTooltipValue(page, column, value),
   {description: 'the row tooltip\'s value for a column, as text'});
+
+export const areasSameSize = Then('the {string} and {string} areas of {widget} should be the same {word}',
+  async (page: Page, a: string, b: string, target: ElementRef, dimension: string) => {
+    if (dimension !== 'height' && dimension !== 'width')
+      throw new Error(`two areas are the same height or the same width, not the same "${dimension}"`);
+    const areas = await v.hitAreas(page, target);
+    for (const name of [a, b])
+      if (areas[name] === undefined)
+        throw new Error(`${target.phrase} has no "${name}" area; it has: ${Object.keys(areas).join(', ')}`);
+    const read = (box: v.Box) => dimension === 'height' ? box.height : box.width;
+    expect(Math.abs(read(areas[a]) - read(areas[b])), `the "${a}" area is ${Math.round(read(areas[a]))} and "${b}" is ${Math.round(read(areas[b]))}`)
+      .toBeLessThanOrEqual(1);
+  }, {description: 'the two rectangles agree within a pixel — a size scale flattened, two bars of equal length'});
+
+export const oneTooltip = Then('exactly one tooltip should be shown', async (page: Page) => {
+  await expect.poll(() => page.locator('.d4-tooltip').filter({visible: true}).count(),
+    {timeout: 5000, message: 'visible tooltips'}).toBe(1);
+}, {description: 'the platform keeps one tooltip element; a second visible one is a leak'});
 
 export const tooltipSomeColumns = Then('the tooltip should show some columns', async (page: Page) => {
   await expect.poll(() => v.tooltipColumns(page), {timeout: 5000, message: 'the row tooltip lists no column'}).not.toEqual([]);

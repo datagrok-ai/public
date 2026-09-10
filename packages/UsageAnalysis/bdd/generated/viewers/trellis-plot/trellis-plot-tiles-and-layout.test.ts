@@ -8,15 +8,16 @@ sub_features_covered: [viewers.trellis-plot]
 --- */
 import {test} from '@playwright/test';
 import '../../../bindings/tile-viewer.js';
+import '../../../bindings/trellis-plot.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {cellsWideTall} from '../../../bindings/trellis-plot.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {shouldBe, shouldHaveText} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {addViewerWith, hasArea, hasNoArea, hoverArea, noErrors, pointerAway, propertyShouldBe, readingIs, readingReads, resizeTo, restoreSize, setProperties, setProperty} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {cellsWideTall} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Trellis plot tiled view and auto layout", () => {

@@ -628,6 +628,14 @@ export const rowsRangeSelected = Then('rows {int} to {int} should be selected', 
   }, [from, to] as [number, number]), {message: `rows ${from} to ${to} selected`}).toBe(`${to - from + 1} of ${to - from + 1} in the range, ${to - from + 1} in all`);
 }, {description: 'rows counted from 1 as the grid shows them, every row of the range and nothing else'});
 
+export const selectAllRows = When('user selects all rows', (page: Page) =>
+  page.evaluate(() => { grok.shell.t.selection.setAll(true); }),
+  {tier: 'api', description: 'the whole table selected — "all rows should be selected" had no counterpart to reach it'});
+
+export const selectNoRows = When('user selects no rows', (page: Page) =>
+  page.evaluate(() => { grok.shell.t.selection.setAll(false); }),
+  {tier: 'api', description: 'the selection cleared'});
+
 export const allRowsSelected = Then('all rows should be selected', (page: Page) =>
   expect.poll(() => page.evaluate(() => grok.shell.t.selection.trueCount === grok.shell.t.rowCount), {message: 'every row is selected'}).toBe(true));
 

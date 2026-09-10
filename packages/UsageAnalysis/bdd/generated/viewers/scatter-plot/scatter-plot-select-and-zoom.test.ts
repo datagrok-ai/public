@@ -13,12 +13,12 @@ import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {dragLasso, dragRangeHandle} from '../../../bindings/scatter-plot.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {pressKey} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {clearSelection, filterPasses, filterPassesAll, filterTo, noneSelected, onlyOfSelected, resetFilter, selectFirstRows, selectedPassFilter, selectedRowCount, someSelected} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {addViewerWith, clickArea, doubleClickArea, dragAcrossArea, dragDeselectionOverArea, dragSelectionBetweenAreas, dragSelectionOverArea, dragZoomOverArea, eventFired, hoverArea, listenFor, narrowerRange, noErrors, pickFromContextMenu, propertyShouldBe, readingAsRemembered, readingDiffers, readingHigher, readingIs, readingLower, readingSame, rememberRange, rememberReading, rememberedRange, repainted, setProperties, setProperty, showsRows, takeSnapshot, wheelOverArea} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {dragLasso, dragRangeHandle} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Scatter plot selection and viewport navigation", () => {
@@ -99,7 +99,7 @@ test.describe("Scatter plot selection and viewport navigation", () => {
       await session.step(92, "And user picks \"Reset View\" from the context menu of scatter plot viewer", () => pickFromContextMenu(page, "Reset View", el("scatter plot viewer")));
       await session.step(93, "And user remembers the value range of scatter plot viewer", () => rememberRange(page, el("scatter plot viewer")));
       await session.step(94, "And user takes a snapshot of scatter plot viewer", () => takeSnapshot(page, el("scatter plot viewer")));
-      await session.step(95, "And user drags the min handle of the x range slider of scatter plot viewer by 30 pixels", () => dragRangeHandle(page, "min", "x", 30));
+      await session.step(95, "And user drags the min handle of the \"x\" range slider of scatter plot viewer by 30 pixels", () => dragRangeHandle(page, "min", "x", el("scatter plot viewer"), 30));
       await session.step(96, "Then the \"x axis min\" reading of scatter plot viewer should be higher than before", () => readingHigher(page, "x axis min", el("scatter plot viewer")));
       await session.step(97, "And the \"x axis span\" reading of scatter plot viewer should be lower than before", () => readingLower(page, "x axis span", el("scatter plot viewer")));
       await session.step(98, "When user picks \"Reset View\" from the context menu of scatter plot viewer", () => pickFromContextMenu(page, "Reset View", el("scatter plot viewer")));
@@ -151,7 +151,7 @@ test.describe("Scatter plot selection and viewport navigation", () => {
       await session.step(144, "When user clicks on the \"empty space\" area of scatter plot viewer", () => clickArea(page, "empty space", el("scatter plot viewer")));
       await session.step(145, "And user presses l", () => pressKey(page, "l"));
       await session.step(146, "Then \"Lasso Tool\" property of scatter plot viewer should be \"true\"", () => propertyShouldBe(page, "Lasso Tool", el("scatter plot viewer"), "true"));
-      await session.step(147, "When user drags a lasso over the \"view\" area of scatter plot viewer", () => dragLasso(page, "view"));
+      await session.step(147, "When user drags a lasso over the \"view\" area of scatter plot viewer", () => dragLasso(page, "view", el("scatter plot viewer")));
       await session.step(148, "Then some rows should be selected", () => someSelected(page));
       await session.step(149, "And every selected row should pass the filter", () => selectedPassFilter(page));
       await session.step(150, "When user presses l", () => pressKey(page, "l"));

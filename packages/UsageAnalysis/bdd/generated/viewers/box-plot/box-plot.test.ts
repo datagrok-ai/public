@@ -13,11 +13,11 @@ import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {doubleClickEmptySpace, zoomValueAxis} from '../../../bindings/box-plot.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, hoverOver, shouldBe, shouldContainText, shouldHaveText, shouldNotContainText} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {openDataset, switchTableView} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {addViewerWith, boundTable, closeContextMenu, eventFired, hasArea, hasNoArea, hoverArea, lessInk, listenFor, moreInk, narrowerRange, noErrors, openContextMenu, painted, pickFromContextMenu, pointerAway, propertyShouldBe, rememberRange, rememberedRange, repainted, repaintedBy, resizeTo, resizeWidth, restoreSize, rightClickArea, setProperties, setProperty, tooltipColumns, tooltipNotColumns, tooltipSomeColumns} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {doubleClickEmptySpace, zoomValueAxis} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Box plot property surface", () => {
@@ -216,7 +216,7 @@ test.describe("Box plot property surface", () => {
       await session.step(232, "And user remembers the value range of box plot viewer", () => rememberRange(page, el("box plot viewer")));
       await session.step(233, "When user zooms into the value axis of box plot viewer", () => zoomValueAxis(page, el("box plot viewer")));
       await session.step(234, "Then box plot viewer should show a narrower value range than before", () => narrowerRange(page, el("box plot viewer")));
-      await session.step(235, "When user double-clicks on empty plot space of box plot viewer", () => doubleClickEmptySpace(page));
+      await session.step(235, "When user double-clicks on empty plot space of box plot viewer", () => doubleClickEmptySpace(page, el("box plot viewer")));
       await session.step(236, "Then \"d4-boxplot-reset-view\" event should have fired on box plot viewer", () => eventFired(page, "d4-boxplot-reset-view", el("box plot viewer")));
       await session.step(237, "And box plot viewer should show the remembered value range", () => rememberedRange(page, el("box plot viewer")));
     });

@@ -13,12 +13,12 @@ import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {clickEmptySpace} from '../../../bindings/box-plot.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {pressKey, shouldBe, shouldContainText} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {clearSelection, colorCategorical, colorConditional, colorLinear, colorLinearOver, colorOff, someSelected} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {addViewerWith, areaColor, areaLessInk, areaMoreInk, areasDiffer, dragSelectionOverArea, hasArea, hoverArea, moreHighlight, noBalloons, noErrors, pickFromAreaContextMenu, pointerAway, propertiesShouldBe, propertyShouldBe, repainted, setProperties, setProperty, someHighlight} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {clickEmptySpace} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Box plot statistics and coloring", () => {
@@ -68,7 +68,7 @@ test.describe("Box plot statistics and coloring", () => {
     });
     await run.scenario("The T key toggles the p-value", async () => {
       await session.step(71, "When user sets \"Show P Value\" property of box plot viewer to \"false\"", () => setProperty(page, "Show P Value", el("box plot viewer"), "false"));
-      await session.step(72, "And user clicks on empty plot space of box plot viewer", () => clickEmptySpace(page));
+      await session.step(72, "And user clicks on empty plot space of box plot viewer", () => clickEmptySpace(page, el("box plot viewer")));
       await session.step(73, "And user presses t", () => pressKey(page, "t"));
       await session.step(74, "Then \"Show P Value\" property of box plot viewer should be \"true\"", () => propertyShouldBe(page, "Show P Value", el("box plot viewer"), "true"));
       await session.step(75, "When user presses t", () => pressKey(page, "t"));

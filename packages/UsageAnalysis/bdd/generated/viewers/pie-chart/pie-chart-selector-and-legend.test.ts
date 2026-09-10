@@ -13,12 +13,12 @@ import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {pickCategoryColumn} from '../../../bindings/pie-chart.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, hoverOver, rightClickOn, shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {categoricalColorIs, colorOff, noColorCoding} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {addViewerWith, areaColor, areaNotColor, hasArea, hasNoArea, legendItemColor, legendItemsDiffer, legendLists, legendSide, noErrors, pickColorSwatch, propertyShouldBe, readingIs, readingLower, repaintedBy, setProperty} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {pickInColumnSelector} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Pie chart on-chart selector and legend", () => {
@@ -42,7 +42,7 @@ test.describe("Pie chart on-chart selector and legend", () => {
     });
     await run.scenario("Picking SEX in the on-chart selector re-splits the disc and the legend", async () => {
       await session.step(34, "When user hovers over pie chart viewer", () => hoverOver(page, el("pie chart viewer")));
-      await session.step(35, "And user picks \"SEX\" in the category selector of pie chart viewer", () => pickCategoryColumn(page, "SEX"));
+      await session.step(35, "And user picks \"SEX\" in the \"category\" column selector of pie chart viewer", () => pickInColumnSelector(page, "SEX", "category", el("pie chart viewer")));
       await session.step(36, "Then \"Category\" property of pie chart viewer should be \"SEX\"", () => propertyShouldBe(page, "Category", el("pie chart viewer"), "SEX"));
       await session.step(37, "And the \"slices\" reading of pie chart viewer should be 2", () => readingIs(page, "slices", el("pie chart viewer"), 2));
       await session.step(38, "And pie chart viewer should have a \"slice F\" area", () => hasArea(page, el("pie chart viewer"), "slice F"));
@@ -55,7 +55,7 @@ test.describe("Pie chart on-chart selector and legend", () => {
     });
     await run.scenario("Picking RACE back restores it", async () => {
       await session.step(47, "When user hovers over pie chart viewer", () => hoverOver(page, el("pie chart viewer")));
-      await session.step(48, "And user picks \"RACE\" in the category selector of pie chart viewer", () => pickCategoryColumn(page, "RACE"));
+      await session.step(48, "And user picks \"RACE\" in the \"category\" column selector of pie chart viewer", () => pickInColumnSelector(page, "RACE", "category", el("pie chart viewer")));
       await session.step(49, "Then \"Category\" property of pie chart viewer should be \"RACE\"", () => propertyShouldBe(page, "Category", el("pie chart viewer"), "RACE"));
       await session.step(50, "And the \"slices\" reading of pie chart viewer should be 4", () => readingIs(page, "slices", el("pie chart viewer"), 4));
       await session.step(51, "And the \"angle value of Caucasian\" reading of pie chart viewer should be 896", () => readingIs(page, "angle value of Caucasian", el("pie chart viewer"), 896));

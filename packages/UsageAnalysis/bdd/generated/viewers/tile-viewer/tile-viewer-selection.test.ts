@@ -12,13 +12,14 @@ import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {addTileViewer, everyTileShows} from '../../../bindings/tile-viewer.js';
+import {addTileViewer} from '../../../bindings/tile-viewer.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {currentRowIs, makeRowCurrent} from '@datagrok-libraries/bdd/bindings/platform/columns';
 import {clearSelection, noneOfSelected, noneSelected, onlyOfAnySelected, onlyOfSelected, selectWhereIs, selectedRowCount} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {clickArea, clickAreaHolding, noErrors, propertyShouldBe, readingAtLeast, readingIs, readingReads, setProperty, showsRows} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {everyTileShows} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Tile viewer current row and selection", () => {

@@ -13,12 +13,12 @@ import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {lineSelected} from '../../../bindings/pc-plot.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {currentRowIs, makeRowCurrent} from '@datagrok-libraries/bdd/bindings/platform/columns';
 import {allOfSelected, clearSelection, filterNotNull, filterPasses, filterPassesAll, noneSelected, resetFilter, selectWhereIs, selectedPassFilter, selectedRowCount, tableColumnIncomplete} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {addViewerWith, clickArea, dragSelectionOverArea, eventFired, hasArea, hoverArea, lessHighlight, lessInk, listenFor, moreHighlight, moreInk, noErrors, pickFromContextMenu, propertyShouldBe, readingHigher, readingIs, repaintedBy, setProperty, showsRows} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {lineSelected} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("PC plot selection, current row and mouse-over", () => {

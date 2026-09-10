@@ -808,6 +808,12 @@ export class DensityPlotViewer extends Viewer<interfaces.IDensityPlotSettings> {
   get yAxisSlider(): RangeSlider { return toJs(api.grok_DensityPlotViewer_Get_YAxisSlider(this.dart)); }
 
   get onZoomed(): rxjs.Observable<Rect> { return this.onEvent('d4-density-plot-zoomed'); }
+
+  /** The world rectangle the plot currently shows. */
+  get viewport(): Rect { return toJs(api.grok_CanvasViewportViewer_Get_Viewport(this.dart)); }
+  set viewport(viewport: Rect) { api.grok_CanvasViewportViewer_SetViewport(this.dart, viewport.x, viewport.y, viewport.width, viewport.height); }
+
+  get onViewportChanged(): rxjs.Observable<Rect> { return this.onEvent('d4-viewport-changed'); }
 }
 
 export class HistogramViewer extends Viewer<interfaces.IHistogramSettings> {

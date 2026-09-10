@@ -13,12 +13,12 @@ import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {clickEmptySpace, doubleClickEmptySpace} from '../../../bindings/box-plot.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {clearSelection, currentRowValue, deleteSelected, filterOut, hasCurrentRow, noRowsWhere, noneOfSelected, noneSelected, onlyOfAnySelected, onlyOfSelected, resetFilter, someOfSelected, someSelected} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {addViewerWith, areaPainted, clickArea, clickAreaHolding, dragSelectionOverArea, eventFired, eventNotFired, hasNoArea, hoverArea, lessHighlight, listenFor, moreHighlight, noBalloons, noErrors, noHighlight, notRepainted, painted, pointerAway, propertyShouldBe, repaintedBy, setProperties, setProperty, takeSnapshot} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {clickEmptySpace, doubleClickEmptySpace} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Box plot selection and highlight", () => {
@@ -59,10 +59,10 @@ test.describe("Box plot selection and highlight", () => {
       await session.step(46, "When user clicks on the \"category Asian\" area of box plot viewer", () => clickArea(page, "category Asian", el("box plot viewer")));
       await session.step(47, "Then only rows where \"RACE\" is \"Asian\" should be selected", () => onlyOfSelected(page, "RACE", "Asian"));
       await session.step(48, "Given user listens for \"d4-boxplot-reset-view\" event on box plot viewer", () => listenFor(page, "d4-boxplot-reset-view", el("box plot viewer")));
-      await session.step(49, "When user clicks on empty plot space of box plot viewer", () => clickEmptySpace(page));
+      await session.step(49, "When user clicks on empty plot space of box plot viewer", () => clickEmptySpace(page, el("box plot viewer")));
       await session.step(50, "Then no rows should be selected", () => noneSelected(page));
       await session.step(51, "And \"d4-boxplot-reset-view\" event should not have fired on box plot viewer", () => eventNotFired(page, "d4-boxplot-reset-view", el("box plot viewer")));
-      await session.step(52, "When user double-clicks on empty plot space of box plot viewer", () => doubleClickEmptySpace(page));
+      await session.step(52, "When user double-clicks on empty plot space of box plot viewer", () => doubleClickEmptySpace(page, el("box plot viewer")));
       await session.step(53, "Then \"d4-boxplot-reset-view\" event should have fired on box plot viewer", () => eventFired(page, "d4-boxplot-reset-view", el("box plot viewer")));
     });
     await run.scenario("No selection leaks into a filtered-out category", async () => {

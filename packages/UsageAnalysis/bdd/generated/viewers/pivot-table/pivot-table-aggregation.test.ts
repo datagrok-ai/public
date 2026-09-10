@@ -7,19 +7,20 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 sub_features_covered: [viewers.pivot-table]
 --- */
 import {test} from '@playwright/test';
+import '../../../bindings/tile-viewer.js';
 import '../../../bindings/trellis-plot.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
 import {aggregationMatches, clearSavedParameters, pickFromHistory, pivotedAggregationMatches} from '../../../bindings/pivot-table.js';
-import {readingContains, readingNotContains} from '../../../bindings/tile-viewer.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {columnType, everyValueBetween, valueInRow} from '@datagrok-libraries/bdd/bindings/platform/columns';
 import {renameColumn, rowCount, tableColumnComplete, tableOpen, tableRows} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {closeCurrentView, openDataset, switchTableView, viewIsCurrent} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {addViewer, clickArea, noErrors, readingIs, readingReads, setProperty} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {readingContains, readingNotContains} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Pivot table — the aggregation it publishes and the parameters it remembers", () => {

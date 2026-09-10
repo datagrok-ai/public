@@ -26,7 +26,7 @@ Feature: PC plot in-chart range filter
     Given user listens for "d4-pc-plot-reset-view" event on pc plot viewer
     When user hovers over pc plot viewer
     Then pc plot viewer should have a "range max handle \"AGE\"" area
-    When user drags the max handle of the "AGE" axis range slider of pc plot viewer by 120 pixels
+    When user drags the max handle of the "AGE" range slider of pc plot viewer by 120 pixels
     Then the "filtering" reading of pc plot viewer should be "true"
     And the "range max of \"AGE\"" reading of pc plot viewer should be lower than before
     And fewer than 1000 rows should pass the filter
@@ -41,7 +41,7 @@ Feature: PC plot in-chart range filter
     And no errors should have been logged
 
   Scenario: Show Filtered Out Lines draws the rows the slider dropped
-    When user drags the max handle of the "AGE" axis range slider of pc plot viewer by 120 pixels
+    When user drags the max handle of the "AGE" range slider of pc plot viewer by 120 pixels
     Then pc plot viewer should show fewer rows than before
     And the "filtered out lines drawn" reading of pc plot viewer should be 0
     When user picks "Filter > Show Filtered Out Lines" from the context menu of pc plot viewer
@@ -61,7 +61,7 @@ Feature: PC plot in-chart range filter
     And user adds a range filter on "AGE" from 30 to 50
     Then 494 rows should pass the filter
     And pc plot viewer should show 494 rows
-    When user drags the max handle of the "HEIGHT" axis range slider of pc plot viewer by 120 pixels
+    When user drags the max handle of the "HEIGHT" range slider of pc plot viewer by 120 pixels
     Then fewer than 494 rows should pass the filter
     And pc plot viewer should show fewer rows than before
     And the "filtering" reading of pc plot viewer should be "true"
@@ -69,7 +69,7 @@ Feature: PC plot in-chart range filter
     Then 494 rows should pass the filter
     And pc plot viewer should show 494 rows
     And the "filtering" reading of pc plot viewer should be "false"
-    When user drags the max handle of the "HEIGHT" axis range slider of pc plot viewer by 120 pixels
+    When user drags the max handle of the "HEIGHT" range slider of pc plot viewer by 120 pixels
     Then fewer than 494 rows should pass the filter
     When user hovers over filter panel
     And user clicks on reset icon of filter panel
@@ -82,15 +82,15 @@ Feature: PC plot in-chart range filter
 
   Scenario: A second range filter after a DateTime colour split still filters (GROK-18489)
     When user sets "Color" property of pc plot viewer to "STARTED"
-    And user drags the max handle of the "AGE" axis range slider of pc plot viewer by 120 pixels
+    And user drags the max handle of the "AGE" range slider of pc plot viewer by 120 pixels
     Then fewer than 1000 rows should pass the filter
     When user picks "Reset View" from the context menu of pc plot viewer
     Then all rows should pass the filter
-    When user drags the min handle of the "AGE" axis range slider of pc plot viewer by -120 pixels
+    When user drags the min handle of the "AGE" range slider of pc plot viewer by -120 pixels
     Then the "range min of \"AGE\"" reading of pc plot viewer should be higher than before
     And fewer than 1000 rows should pass the filter
     When user remembers the "rows shown" reading of pc plot viewer
-    And user drags the max handle of the "AGE" axis range slider of pc plot viewer by 100 pixels
+    And user drags the max handle of the "AGE" range slider of pc plot viewer by 100 pixels
     Then the "rows shown" reading of pc plot viewer should not be as remembered
     And the "range max of \"AGE\"" reading of pc plot viewer should be lower than before
     When user picks "Reset View" from the context menu of pc plot viewer
@@ -101,7 +101,7 @@ Feature: PC plot in-chart range filter
   Scenario: Changing a histogram's column leaves the plot's filter alone (github-972)
     When user adds a histogram viewer with:
       | Value | AGE |
-    And user drags the max handle of the "AGE" axis range slider of pc plot viewer by 120 pixels
+    And user drags the max handle of the "AGE" range slider of pc plot viewer by 120 pixels
     Then fewer than 1000 rows should pass the filter
     When user remembers the "rows shown" reading of pc plot viewer
     And user sets "Value" property of histogram viewer to "HEIGHT"
@@ -115,7 +115,7 @@ Feature: PC plot in-chart range filter
     And no errors should have been logged
 
   Scenario: Closing the plot releases the filter it contributed
-    When user drags the max handle of the "AGE" axis range slider of pc plot viewer by 120 pixels
+    When user drags the max handle of the "AGE" range slider of pc plot viewer by 120 pixels
     Then fewer than 1000 rows should pass the filter
     When user clicks on close icon of pc plot viewer
     Then pc plot viewer should be absent

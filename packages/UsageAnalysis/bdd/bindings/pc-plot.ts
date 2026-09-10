@@ -3,9 +3,8 @@
    reports (`axis "AGE"`, `band "AGE" - "HEIGHT"`, `line of row <n>`, `range max handle "AGE"`,
    `axis order`, `lines drawn`, `range max of "AGE"` and the rest — see
    `core/client/d4/lib/src/viewers/pc_plot/CLAUDE.md`).
-   Three of these are generic and should be promoted to the library once a second viewer wants
-   them: the axis-order claim (any viewer with named axes), the label reorder drag (any drag the
-   platform's drag-and-drop drives) and the row-membership claim. */
+   The axis-order claim stays here until a second viewer has named axes; its slider drag and its
+   row-membership claim are in the library now (`bindings/tiers/viewers/widgets.ts`). */
 import {expect, Page} from '@playwright/test';
 import {Then, When} from '@datagrok-libraries/bdd';
 import {el, ElementRef, viewers} from '@datagrok-libraries/bdd/runtime';
@@ -57,41 +56,4 @@ export const dragAxisLabel = When('user drags the {string} axis label of pc plot
     await settle(page);
   }, {tier: 'ui', description: 'the dragged column takes the slot the other label sits in'});
 
-/** A drag of one axis slider handle. The sliders are revealed on `mouseenter`, so the pointer goes
- * over the viewer first and the handle's rectangle comes from the area the plot then reports; a
- * positive count moves the handle down (a smaller max, a smaller min). */
-export const dragAxisHandle = When('user drags the {word} handle of the {string} axis range slider of pc plot viewer by {int} pixels',
-  async (page: Page, handle: string, column: string, px: number) => {
-    if (handle !== 'min' && handle !== 'max')
-      throw new Error(`a range slider has a min and a max handle, not a "${handle}" one`);
-    const target = PLOT();
-    await page.mouse.move(0, 0);
-    const view = viewers.centerOf(await viewers.hitArea(page, target, 'view'));
-    await page.mouse.move(view.x, view.y);
-    const c = viewers.centerOf(await viewers.hitArea(page, target, `range ${handle} handle "${column}"`, true));
-    await page.mouse.move(c.x, c.y);
-    await page.mouse.down();
-    await page.mouse.move(c.x, c.y + px / 2);
-    await page.mouse.move(c.x, c.y + px);
-    await page.mouse.up();
-    await settle(page);
-  }, {tier: 'ui', description: 'min or max, by an axis name; the plot then filters the table through that slider'});
 
-/** One row of the frame the plot draws, by the number the `line of row <n>` areas use. */
-async function rowSelected(page: Page, target: ElementRef, row: number): Promise<boolean> {
-  await viewers.installViewerRuntime(page);
-  const loc = await viewers.viewerLocator(page, target);
-  return loc.evaluate((e, n) => {
-    const viewer = (window as any).__bdd.viewerOf(e);
-    const frame = viewer.dataFrame;
-    return frame.selection.get(n - 1) as boolean;
-  }, row);
-}
-
-export const lineSelected = Then('the line of row {int} of {widget} should be selected', async (page: Page, row: number, target: ElementRef) => {
-  await expect.poll(() => rowSelected(page, target, row), {message: `row ${row} of the table ${target.phrase} draws`}).toBe(true);
-}, {description: 'rows as the `line of row <n>` hit areas count them, from 1'});
-
-export const lineNotSelected = Then('the line of row {int} of {widget} should not be selected', async (page: Page, row: number, target: ElementRef) => {
-  await expect.poll(() => rowSelected(page, target, row), {message: `row ${row} of the table ${target.phrase} draws`}).toBe(false);
-});

@@ -12,11 +12,12 @@ import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {addTileViewerWith, deleteValueField, pickFromViewerMenu, readingContains, readingNotContains} from '../../../bindings/tile-viewer.js';
+import {addTileViewerWith, deleteValueField} from '../../../bindings/tile-viewer.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, shouldBe, shouldHaveText} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {closeAllViews, openDataset, openProject, saveAsProject} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {addViewer, hasArea, hasNoArea, loadLayout, noErrors, propertiesShouldBe, readingAsRemembered, readingHigher, readingIs, readingReads, rememberReading, saveLayout, saveLayoutToServer, wheelOverArea} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {pickFromViewerMenu, readingContains, readingNotContains} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Tile viewer persistence", () => {

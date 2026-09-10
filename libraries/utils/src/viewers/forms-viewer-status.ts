@@ -75,6 +75,8 @@ export function formsViewerStatus(v: FormsViewer): DG.IWidgetStatus {
       values[`width of ${name} of ${label}`] = Math.round(r.width);
       values[`height of ${name} of ${label}`] = Math.round(r.height);
       values[`background of ${name} of ${label}`] = backgroundOf(field);
+      values[`align of ${name} of ${label}`] = getComputedStyle(field).textAlign;
+      values[`font of ${name} of ${label}`] = field.style.font;
       if (values[`field kind of ${name}`] === undefined)
         values[`field kind of ${name}`] = field instanceof HTMLCanvasElement ? 'canvas' : 'input';
     }
@@ -87,6 +89,9 @@ export function formsViewerStatus(v: FormsViewer): DG.IWidgetStatus {
     const label = `card ${i + 1}`;
     put(label, cards[i]);
     readCard(cards[i], label);
+    values[`record of ${label}`] = (rows[i] ?? -1) >= 0 ? rows[i] + 1 : '';
+    values[`card kind of ${label}`] = v.showCurrentRow && i === v.currentRowPos ? 'current' :
+      v.showMouseOverRow && i === v.mouseOverPos ? 'mouse-over' : 'record';
     if (v.showCurrentRow && i === v.currentRowPos) {
       put('current card', cards[i]);
       readCard(cards[i], 'current card');
@@ -104,13 +109,19 @@ export function formsViewerStatus(v: FormsViewer): DG.IWidgetStatus {
     const label = `pinned card ${i + 1}`;
     put(label, pinned[i]);
     readCard(pinned[i], label);
+    // `renderPinnedForms` appends one card per entry of `pinnedRowIndexes`, in that order
+    const row = v.pinnedRowIndexes[i] ?? -1;
+    values[`record of ${label}`] = row >= 0 ? row + 1 : '';
+    values[`card kind of ${label}`] = 'pinned';
   }
 
+  const headerLabels: string[] = [];
   for (const container of Array.from(v.columnHeadersDiv.children) as HTMLElement[]) {
     const label = container.firstElementChild as HTMLElement | null;
     const name = label?.textContent ?? '';
     if (!name)
       continue;
+    headerLabels.push(name);
     put(`label ${name}`, label);
     put(`remove ${name}`, container.querySelector('.grok-icon'));
     put(`sort indicator ${name}`, container.querySelector('.d4-multi-form-column-sort-indicator'));
@@ -122,6 +133,10 @@ export function formsViewerStatus(v: FormsViewer): DG.IWidgetStatus {
   values['pinned records'] = pinned.length;
   values['fields shown'] = v.fieldsColumnNames.length;
   values['fields'] = v.fieldsColumnNames.join(', ');
+  values['header labels'] = headerLabels.join(', ');
+  values['pinned pane shown'] = v.pinnedFormsDiv.style.display !== 'none';
+  values['pinned values'] = v.pinnedRowValues.join(', ');
+  values['pinned by'] = v.pinnedRowColumnNames.join(', ');
   values['sort column'] = sortColumns.length > 0 ? sortColumns[0] : '';
   values['sort direction'] = sortColumns.length === 0 ? '' : (v.getSortByTypes()[0] ? '↑' : '↓');
   values['current record'] = v.dataFrame.currentRowIdx >= 0 ? v.dataFrame.currentRowIdx + 1 : '';

@@ -4,6 +4,7 @@ import {expect, type Page} from '@playwright/test';
 import {openTableFromFile} from '@datagrok-libraries/test/src/playwright/openers.js';
 import {DatasetEntry, Given, Then, When} from '../../src/registry.js';
 import {atFeatureEnd} from '../../src/runtime/harness.js';
+import {exactText} from '../../src/runtime/locate.js';
 
 declare const grok: any;
 declare const DG: any;
@@ -154,3 +155,14 @@ export const openApp = Given('user opens the {string} app', async (page: Page, n
 export const autostartsCompleted = Given('the package autostarts have completed', async (page: Page) => {
   await page.evaluate(async () => { await grok.shell.autostartsCompleted; });
 }, {tier: 'api', description: 'grok.shell.autostartsCompleted — a viewer a package registers is not there before it'});
+
+/** A bare `input[type="checkbox"]` in a Dart dialog — the select-all of "Order or Hide Columns"
+ * and its like, which carry no class and no label for the `checkbox` kind to match on. */
+export const clickPlainCheckbox = When('user clicks the plain checkbox in the {string} dialog',
+  async (page: Page, title: string) => {
+    const dialog = page.locator('.d4-dialog').filter({has: page.locator('.d4-dialog-title', {hasText: exactText(title)})}).last();
+    await dialog.waitFor({state: 'visible', timeout: 5000});
+    const box = dialog.locator('input[type="checkbox"]').filter({visible: true}).first();
+    await expect(box, `a checkbox in the "${title}" dialog`).toBeVisible({timeout: 5000});
+    await box.click();
+  }, {tier: 'ui', description: 'the only checkbox of that dialog the library\'s kinds cannot name'});

@@ -8,15 +8,16 @@ sub_features_covered: [viewers.trellis-plot]
 --- */
 import {test} from '@playwright/test';
 import '../../../bindings/tile-viewer.js';
+import '../../../bindings/trellis-plot.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {setInnerProperty} from '../../../bindings/trellis-plot.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {addViewerWith, closeContextMenu, dragAreaBy, hasArea, hasNoArea, hoverArea, noErrors, pickFromAreaContextMenu, readingAsRemembered, readingAtLeast, readingDiffers, readingIs, readingNotAsRemembered, readingReads, rememberReading, rightClickArea, setProperties, setProperty, wheelOverArea} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {setInnerProperty} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Trellis plot global scale, axes and range sliders", () => {

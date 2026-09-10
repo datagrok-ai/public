@@ -7,15 +7,11 @@
    `auto generate`, `form designed`, `scroll of lane "<name>"` — see
    `core/client/d4/lib/src/viewers/tile_viewer/CLAUDE.md`).
 
-   Four of these are not tile viewer business and should be promoted to the library:
-   `the {string} reading of {widget} should (not )contain {string}` (a reading that is a list —
-   the tile viewer's `fields` and `lane names`, the pc plot's axes), `user opens the viewer menu of
-   {widget}` and `user picks {string} from the viewer menu of {widget}` (they honour the
-   `ContextMenu` shortcut a widget declares in `getWidgetStatus`, which is the generic answer to a
-   viewer whose centre is covered by something with a menu of its own), and
-   `the description of {widget} should be above/below its content` (any viewer with a Description
-   Position). The rest — the per-tile column checks, the auto-vs-designed refill contrast and the
-   sketch form designer — are this viewer's own. */
+   What is left here is this viewer's own: the sketch form designer, whose hosts are a view portaled
+   out of the viewer, and the lane drag. Its card-content claims, its field-composition contrast,
+   its viewer menu, its list readings and its description placement were every card viewer's and
+   are in the library now (`bindings/tiers/viewers/widgets.ts`) — the forms viewer joins them by
+   reporting the same `fields` and `<COL> of row <r>` readings. */
 import {expect, Locator, Page} from '@playwright/test';
 import {Given, Then, When, element} from '@datagrok-libraries/bdd';
 import {ElementRef, el, viewers} from '@datagrok-libraries/bdd/runtime';
@@ -34,165 +30,6 @@ element('tile viewer', {selector: '[name="viewer-Tile-Viewer"]', parts: {
 element('form designer', {selector: '.grok-view-sketch'});
 
 const TILE_VIEWER = 'Tile Viewer';
-
-/** Every reading the viewer reports right now, keyed as it names them. */
-async function readings(page: Page, target: ElementRef): Promise<Record<string, unknown>> {
-  await viewers.installViewerRuntime(page);
-  const loc = await viewers.viewerLocator(page, target);
-  return loc.evaluate((e) => (window as any).__bdd.viewerOf(e).getWidgetStatus()?.values ?? {});
-}
-
-/** The rows the lanes have laid out and what their cards show for one column: the `<COL> of row
- * <r>` readings, which is the grid's display string for that cell. */
-async function shownColumn(page: Page, target: ElementRef, column: string): Promise<{row: number; text: string}[]> {
-  const values = await readings(page, target);
-  const out: {row: number; text: string}[] = [];
-  for (const key of Object.keys(values)) {
-    const m = new RegExp(`^${column.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} of row (\\d+)$`).exec(key);
-    if (m)
-      out.push({row: Number(m[1]), text: String(values[key])});
-  }
-  return out;
-}
-
-async function expectEveryTile(page: Page, target: ElementRef, column: string, holds: (text: string) => boolean, what: string): Promise<void> {
-  let bad = '';
-  let seen = 0;
-  await expect.poll(async () => {
-    const cells = await shownColumn(page, target, column);
-    seen = cells.length;
-    if (seen === 0)
-      return false;
-    const wrong = cells.filter((c) => !holds(c.text));
-    bad = wrong.map((c) => `row ${c.row} shows "${c.text}"`).join(', ');
-    return wrong.length === 0;
-  }, {timeout: 5000, message: seen === 0
-    ? `${target.phrase} has laid out no card with a "${column}" field`
-    : `not every card of ${target.phrase} shows ${what} in "${column}": ${bad}`}).toBe(true);
-}
-
-export const everyTileShows = Then('every tile of {widget} should show {string} in {string}',
-  (page: Page, target: ElementRef, value: string, column: string) =>
-    expectEveryTile(page, target, column, (t) => t === value, `"${value}"`),
-{description: 'every card the lanes have laid out shows that text for the column — the "all tiles are M" claim'});
-
-export const everyTileBetween = Then('every tile of {widget} should show a value between {float} and {float} in {string}',
-  (page: Page, target: ElementRef, lo: number, hi: number, column: string) =>
-    expectEveryTile(page, target, column, (t) => Number(t) >= lo && Number(t) <= hi, `a value between ${lo} and ${hi}`),
-{description: 'the "every age is over 50" claim, read off the cards and not off the table'});
-
-// --- readings that are lists ----------------------------------------------------------------------
-
-async function expectReadingContains(page: Page, target: ElementRef, name: string, item: string, negate: boolean): Promise<void> {
-  const has = async (): Promise<boolean> => {
-    const text = String(await viewers.readValue(page, target, name));
-    return text.split(/\s*,\s*/).includes(item);
-  };
-  let last = '';
-  const poll = expect.poll(async () => {
-    last = String(await viewers.readValue(page, target, name));
-    return await has();
-  }, {timeout: 5000, message: `"${name}" of ${target.phrase} is "${last}"`});
-  await (negate ? poll.not : poll).toBe(true);
-}
-
-export const readingContains = Then('the {string} reading of {widget} should contain {string}',
-  (page: Page, name: string, target: ElementRef, item: string) => expectReadingContains(page, target, name, item, false),
-{description: 'a reading the viewer reports as a comma-separated list ("fields", "lane names", "lanes list") holds that member — should be promoted to the library'});
-
-export const readingNotContains = Then('the {string} reading of {widget} should not contain {string}',
-  (page: Page, name: string, target: ElementRef, item: string) => expectReadingContains(page, target, name, item, true),
-{description: 'the negative of the above; a feature pairs it with a positive one that proves the member was there to lose'});
-
-// --- the viewer menu ------------------------------------------------------------------------------
-
-/** The region the widget declares as its context-menu target (`getWidgetStatus().shortcuts`
- * `ContextMenu` → a hit-area name), or nothing when it declares none. The tile viewer needs it:
- * a right-click on a card opens the *column* menu of the field under the pointer, so the viewer's
- * own menu is only reachable where no card is — a lane header, or the free strip under a lane. */
-async function menuArea(page: Page, target: ElementRef): Promise<string | undefined> {
-  await viewers.installViewerRuntime(page);
-  const loc = await viewers.viewerLocator(page, target);
-  const name: string | null = await loc.evaluate((e) =>
-    (window as any).__bdd.viewerOf(e).getWidgetStatus()?.shortcuts?.['ContextMenu'] ?? null);
-  return name ?? undefined;
-}
-
-export const openViewerMenu = When('user opens the viewer menu of {widget}', async (page: Page, target: ElementRef) => {
-  await viewers.openContextMenuOf(page, target, await menuArea(page, target));
-}, {tier: 'ui', description: 'right-clicks the region the widget declares as its ContextMenu shortcut — should be promoted to the library'});
-
-export const pickFromViewerMenu = When('user picks {string} from the viewer menu of {widget}', async (page: Page, path: string, target: ElementRef) => {
-  await viewers.snapshot(page, target);
-  await viewers.openContextMenuOf(page, target, await menuArea(page, target));
-  await viewers.pickMenuPath(page, path);
-}, {tier: 'ui', description: 'the same, then the path picked — should be promoted to the library'});
-
-// --- the card composition -------------------------------------------------------------------------
-
-let rememberedFields: string[] | null = null;
-
-async function fieldsOf(page: Page, target: ElementRef): Promise<string[]> {
-  const text = String(await viewers.readValue(page, target, 'fields'));
-  return text === '' ? [] : text.split(/\s*,\s*/);
-}
-
-export const rememberFields = When('user remembers the fields of {widget}', async (page: Page, target: ElementRef) => {
-  rememberedFields = await fieldsOf(page, target);
-  if (rememberedFields.length === 0)
-    throw new Error(`${target.phrase} shows no fields to remember`);
-}, {tier: 'api', description: 'the card\'s composition, for the auto-versus-designed refill contrast that follows'});
-
-/** Both halves of the contrast compare the composition with the remembered one; neither names the
- * column that left or the one that took its place, because the form orders its fields by relevance
- * and the excluded one is whatever the score left over. */
-async function expectComposition(page: Page, target: ElementRef, refilled: boolean): Promise<void> {
-  if (rememberedFields === null)
-    throw new Error('nothing was remembered: put "user remembers the fields of tile viewer" before the change');
-  const before = rememberedFields;
-  let now: string[] = [];
-  const holds = async (): Promise<boolean> => {
-    now = await fieldsOf(page, target);
-    const gone = before.filter((f) => !now.includes(f));
-    const gained = now.filter((f) => !before.includes(f));
-    return refilled
-      ? now.length === before.length && gone.length === 1 && gained.length === 1
-      : now.length === before.length && gone.length === 0 && gained.length === 0;
-  };
-  await expect.poll(holds, {timeout: 8000, message: refilled
-    ? `${target.phrase} did not refill the freed slot: it showed ${before.join(', ')} and now shows ${now.join(', ')}`
-    : `${target.phrase} did not keep its composition: it showed ${before.join(', ')} and now shows ${now.join(', ')}`}).toBe(true);
-}
-
-export const fieldsRefilled = Then('the fields of {widget} should have refilled the freed slot',
-  (page: Page, target: ElementRef) => expectComposition(page, target, true),
-{description: 'the auto-generated card: the column that left took a field with it and a column that had none took its place, so the count is unchanged'});
-
-export const fieldsAsRemembered = Then('the fields of {widget} should be as remembered',
-  (page: Page, target: ElementRef) => expectComposition(page, target, false),
-{description: 'the designed card: the same fields as before, so no column that had none gains one — the field of a column that left stays, empty'});
-
-// --- the description's place ------------------------------------------------------------------------
-
-async function expectDescriptionPlace(page: Page, target: ElementRef, above: boolean): Promise<void> {
-  const loc = await viewers.viewerLocator(page, target);
-  const view = await viewers.hitArea(page, target, 'view');
-  const box = await loc.locator('.d4-viewer-description').filter({visible: true}).first().boundingBox();
-  if (box === null)
-    throw new Error(`${target.phrase} shows no description`);
-  const what = above ? 'above' : 'below';
-  const ok = above ? box.y + box.height <= view.y + 1 : box.y + 1 >= view.y + view.height;
-  expect(ok, `the description of ${target.phrase} is not ${what} its content: the description spans ` +
-    `${Math.round(box.y)}..${Math.round(box.y + box.height)} and the tiles ${Math.round(view.y)}..${Math.round(view.y + view.height)}`).toBe(true);
-}
-
-export const descriptionAbove = Then('the description of {widget} should be above its content',
-  (page: Page, target: ElementRef) => expectDescriptionPlace(page, target, true),
-{description: 'Description Position Top: the description box ends where the content begins — should be promoted to the library'});
-
-export const descriptionBelow = Then('the description of {widget} should be below its content',
-  (page: Page, target: ElementRef) => expectDescriptionPlace(page, target, false),
-{description: 'Description Position Bottom: the description box starts where the content ends'});
 
 // --- the sketch form designer -----------------------------------------------------------------------
 

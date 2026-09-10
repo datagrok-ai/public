@@ -12,13 +12,14 @@ import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {addTileViewerWith, deleteLabelField, deleteValueField, designerLabelFields, designerValueFields, fieldsAsRemembered, fieldsRefilled, pickFromViewerMenu, readingContains, readingNotContains, rememberFields} from '../../../bindings/tile-viewer.js';
+import {addTileViewerWith, deleteLabelField, deleteValueField, designerLabelFields, designerValueFields} from '../../../bindings/tile-viewer.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {columnCount, hasNoColumn} from '@datagrok-libraries/bdd/bindings/platform/columns';
 import {addCalculated, removeColumn} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {eventFired, hasArea, hasNoArea, listenFor, noErrors, pickFromAreaContextMenu, readingIs, readingReads, setProperty} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {fieldsAsRemembered, fieldsRefilled, pickFromViewerMenu, readingContains, readingNotContains, rememberFields} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Tile viewer form designer", () => {
