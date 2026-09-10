@@ -1,5 +1,9 @@
 # Diff Studio changelog
 
+## v.next
+
+* GROK-20866: Compute `#output` expressions inside the per-stage solver so they work in `#loop` / `#update` models
+
 ## 1.6.8 (2026-09-01)
 
 * Fixed demo tests failing when a corrupt/legacy recent-models `.d42` file surfaced a read error to the shell

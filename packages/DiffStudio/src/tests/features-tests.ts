@@ -9,6 +9,7 @@ import {category, expect, test} from '@datagrok-libraries/test/src/test';
 
 import {TEMPLATES, ENERGY_N_CONTROL} from '../templates';
 import {USE_CASES} from '../use-cases';
+import {LOOP_OUTPUT_EXPRESSIONS, UPDATE_OUTPUT_EXPRESSIONS} from './output-expr-models';
 import {testTemplate} from './test-utils';
 import {getIVP} from '../scripting-tools';
 import {MAX_LINE_CHART} from '../constants';
@@ -83,6 +84,15 @@ category('Features', () => {
   // Tests ENERGY_N_CONTROL, which uses JavaScript expressions in #expressions and a custom #output.
   // Verifies that JS code embedded in model expressions is correctly emitted and evaluated at runtime.
   testTemplate('Output expressions & use of JS code in model', ENERGY_N_CONTROL);
+
+  // Tests a #loop model whose #output references an #expression that uses a math function, PI, and
+  // #constants — symbols that live only inside the per-stage _oneStage function. Verifies the output
+  // expression is computed there (GROK-20866); before the fix the generated script threw ReferenceError.
+  testTemplate('Loop with output expressions', LOOP_OUTPUT_EXPRESSIONS);
+
+  // Same as above for a #update (multistage) model — also exercises the '_Stage' column path when the
+  // output carries an expression-derived column.
+  testTemplate('Update with output expressions', UPDATE_OUTPUT_EXPRESSIONS);
 }); // Features
 // ---------------------------------------------------------------------------
 // Structural checks derived from manual test observations:

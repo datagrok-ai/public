@@ -732,6 +732,79 @@ function getMathArg(funcIdx: number): string {
   return (funcIdx > POW_IDX) ? '(x)' : '(x, y)';
 }
 
+/** True when at least one #output entry names an #expressions value. */
+function hasOutputExpressions(ivp: IVP): boolean {
+  if (ivp.exprs === null || ivp.outputs === null)
+    return false;
+
+  for (const key of ivp.exprs.keys()) {
+    if (ivp.outputs.has(key))
+      return true;
+  }
+
+  return false;
+}
+
+/** Output-expression keys, in #output order — the columns _oneStage appends. */
+function getOutputExpressionKeys(ivp: IVP): string[] {
+  const keys = [] as string[];
+
+  ivp.outputs!.forEach((val, key) => {
+    if (!val.formula && ivp.exprs!.has(key))
+      keys.push(key);
+  });
+
+  return keys;
+}
+
+/** Lines that recompute the expressions row-by-row from the solved argument &
+    solution values, filling a Float64Array for each output expression. `indent`
+    places the block either at top level ('') or inside `_oneStage` (SPACE2). */
+function getExpressionComputationLines(ivp: IVP, indent: string): string[] {
+  const res = [] as string[];
+  const inner = indent + SCRIPT.SPACE2;
+
+  // 1. Solution raw data
+  res.push(`${indent}const ${ivp.arg.name}RawData = ${DF_NAME}.col('${ivp.arg.name}').getRawData();`);
+  res.push(`${indent}let ${ivp.arg.name};`);
+  res.push(`${indent}const len = ${DF_NAME}.rowCount;\n`);
+
+  ivp.inits.forEach((val, key) => {
+    res.push(`${indent}const ${key}RawData = ${DF_NAME}.col('${key}').getRawData();`);
+  });
+
+  res.push('');
+
+  // 2. Expressions raw data & variables
+  ivp.exprs!.forEach((val, key) => {
+    if (ivp.outputs!.has(key))
+      res.push(`${indent}const ${key}RawData = new Float64Array(len);`);
+
+    res.push(`${indent}let ${key};`);
+  });
+
+  res.push('');
+
+  // 3. Computations
+  res.push(`${indent}for (let i = 0; i < len; ++i) {`);
+  res.push(`${inner}${ivp.arg.name} = ${ivp.arg.name}RawData[i];`);
+
+  ivp.inits.forEach((val, key) => {
+    res.push(`${inner}${key} = ${key}RawData[i];`);
+  });
+
+  ivp.exprs!.forEach((val, key) => {
+    res.push(`${inner}${key} = ${val};`);
+
+    if (ivp.outputs!.has(key))
+      res.push(`${inner}${key}RawData[i] = ${key};`);
+  });
+
+  res.push(`${indent}}\n`);
+
+  return res;
+} // getExpressionComputationLines
+
 /** Return custom output lines: no expressions */
 function getCustomOutputLinesNoExpressions(name: string,
   outputs: Map<string, Output>, toAddUpdateCol: boolean): string[] {
@@ -760,51 +833,15 @@ function getCustomOutputLinesNoExpressions(name: string,
   return res;
 } // getCustomOutputLinesNoExpressions
 
-/** Return custom output lines: with expressions */
+/** Return custom output lines: with expressions (basic, non-cyclic models).
+    Recomputes the output expressions at top level after the solve. */
 function getCustomOutputLinesWithExpressions(ivp: IVP): string[] {
   const res = [''];
 
   res.push(SCRIPT.CUSTOM_OUTPUT_COM);
+  res.push(...getExpressionComputationLines(ivp, ''));
 
-  // 1. Solution raw data
-  res.push(`const ${ivp.arg.name}RawData = ${DF_NAME}.col('${ivp.arg.name}').getRawData();`);
-  res.push(`let ${ivp.arg.name};`);
-  res.push(`const len = ${DF_NAME}.rowCount;\n`);
-
-  ivp.inits.forEach((val, key) => {
-    res.push(`const ${key}RawData = ${DF_NAME}.col('${key}').getRawData();`);
-  });
-
-  res.push('');
-
-  // 2. Expressions raw data & variables
-  ivp.exprs!.forEach((val, key) => {
-    if (ivp.outputs!.has(key))
-      res.push(`const ${key}RawData = new Float64Array(len);`);
-
-    res.push(`let ${key};`);
-  });
-
-  res.push('');
-
-  // 3. Computations
-  res.push('for (let i = 0; i < len; ++i) {');
-  res.push(`${SCRIPT.SPACE2}${ivp.arg.name} = ${ivp.arg.name}RawData[i];`);
-
-  ivp.inits.forEach((val, key) => {
-    res.push(`${SCRIPT.SPACE2}${key} = ${key}RawData[i];`);
-  });
-
-  ivp.exprs!.forEach((val, key) => {
-    res.push(`${SCRIPT.SPACE2}${key} = ${val};`);
-
-    if (ivp.outputs!.has(key))
-      res.push(`${SCRIPT.SPACE2}${key}RawData[i] = ${key};`);
-  });
-
-  res.push('}\n');
-
-  // 4. Form output
+  // Form output
   res.push(`${DF_NAME} = DG.DataFrame.fromColumns([`);
   ivp.outputs!.forEach((val, key) => {
     if (!val.formula)
@@ -820,17 +857,34 @@ function getCustomOutputLinesWithExpressions(ivp: IVP): string[] {
   return res;
 } // getCustomOutputLinesWithExpressions
 
+/** Lines computing the output expressions inside `_oneStage` and appending them
+    as columns to the stage `df`. Runs where #constants, math functions and
+    #parameters are already in scope, so cyclic/multistage models need no
+    top-level recompute. */
+function getInStageOutputExpressionLines(ivp: IVP): string[] {
+  const res = [''];
+
+  res.push(SCRIPT.SPACE2 + SCRIPT.CUSTOM_OUTPUT_COM);
+  res.push(...getExpressionComputationLines(ivp, SCRIPT.SPACE2));
+
+  ivp.outputs!.forEach((val, key) => {
+    if (!val.formula && ivp.exprs!.has(key))
+      res.push(`${SCRIPT.SPACE2}${DF_NAME}.columns.add(DG.Column.fromFloat64Array('${key}', ${key}RawData.slice(0, len)));`);
+  });
+
+  return res;
+} // getInStageOutputExpressionLines
+
 /** Return custom output lines */
 function getCustomOutputLines(ivp: IVP): string[] {
-  if (ivp.exprs !== null) {
-    for (const key of ivp.exprs.keys()) {
-      if (ivp.outputs?.has(key))
-        return getCustomOutputLinesWithExpressions(ivp);
-    }
-  }
+  // Cyclic (#loop) & multistage (#update) models compute output expressions
+  // inside _oneStage, so the expression columns already exist in df here — a
+  // plain column selection is enough. Only basic models recompute at top level.
+  if (ivp.loop === null && ivp.updates === null && hasOutputExpressions(ivp))
+    return getCustomOutputLinesWithExpressions(ivp);
 
   return getCustomOutputLinesNoExpressions(ivp.name, ivp.outputs!, (ivp.updates !== null));
-} // getCustomOutputLinesWithExpressions
+} // getCustomOutputLines
 
 /** Return main body of JS-script: basic variant */
 function getScriptMainBodyBasic(ivp: IVP): string[] {
@@ -992,6 +1046,11 @@ function getScriptFunc(ivp: IVP, funcParamsNames: string): string[] {
   res.push('');
   res.push(SCRIPT.SPACE2 + SCRIPT.SOLVER_COM);
   res.push(SCRIPT.SPACE2 + SCRIPT.FUNCTION_CALL);
+
+  // 5.1) compute output expressions & attach them as columns to the stage df
+  if (hasOutputExpressions(ivp))
+    res.push(...getInStageOutputExpressionLines(ivp));
+
   res.push(SCRIPT.SPACE2 + SCRIPT.RETURN);
 
   // res.push(SCRIPT.SPACE2 + SCRIPT.SOLVER);
@@ -1015,8 +1074,12 @@ function getScriptMainBodyLoopCase(ivp: IVP): string[] {
   res.push(SCRIPT.SOLUTION_DF_COM);
   const dfNames = getSolutionDfColsNames(ivp);
 
+  // Each _oneStage result carries the output-expression columns too, so the
+  // accumulator must declare them to keep df.append aligned.
+  const accColNames = hasOutputExpressions(ivp) ? [...dfNames, ...getOutputExpressionKeys(ivp)] : dfNames;
+
   res.push(`let ${DF_NAME} = DG.DataFrame.fromColumns([`);
-  dfNames.forEach((name) => res.push(`${SCRIPT.SPACE2}DG.Column.fromFloat64Array('${name}', []),`));
+  accColNames.forEach((name) => res.push(`${SCRIPT.SPACE2}DG.Column.fromFloat64Array('${name}', []),`));
   res.push(`]);`);
   res.push(`${DF_NAME}.name = '${ivp.name}';`);
   res.push('');
