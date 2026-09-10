@@ -39,10 +39,15 @@ export const noSpaceOnServer = Given('no space named {string} is on the server',
   atFeatureEnd(page, () => deleteSpaces(page, names));
 }, {tier: 'api', description: 'deletes what an earlier run left under those names (comma-separated), and deletes them again when the feature ends'});
 
+/* A space is listed once its save returns, and the save of a ROOT space is slow: 4.8 s alone and
+   18 s with four features creating at once on a local stand (2026-09-10, POST /api/spaces in the
+   trace's network log; a second root space in the same feature takes under half a second, so the
+   server does one-time or serialized work on the first). The claim right after OK owns the same
+   budget the dialog-close claim below does, or it fails while the dialog is still legitimately open. */
 export const spacesOnServer = Then('{int} space(s) named {string} should be on the server', async (page: Page, count: number, name: string) => {
   await expect.poll(() => page.evaluate(async (n) =>
     (await grok.dapi.spaces.list({pageSize: 1000})).filter((s: any) => s.friendlyName === n || s.name === n).length,
-  name), {message: `spaces the server holds under "${name}"`}).toBe(count);
+  name), {message: `spaces the server holds under "${name}"`, timeout: 60000}).toBe(count);
 }, {tier: 'api', description: 'what the server holds, not what the tree draws — the refusal of a duplicate is a space that was never created'});
 
 /* Whom a space is shared with, read where the platform shows it. grok.dapi.permissions.get answers
