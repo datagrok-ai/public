@@ -229,6 +229,12 @@ async function transferByNamespace(from: NodeDapi, to: NodeDapi, argv: any, outp
   const stateFile: string = argv.state ?? path.join(os.tmpdir(), `grok-migrate-${argv.from}-${argv.to}.json`);
   const state = readState(stateFile);
 
+  // Without an admin session the source lists only what this account can see, so the run would
+  // enumerate a subset of the instance and report a whole-instance migration.
+  if (!argv.admin && !argv.force)
+    throw new Error('--by-namespace needs --admin, or it sees only the spaces this account can ' +
+      'reach and migrates part of the instance; pass --force to accept that.');
+
   // Both are prerequisites of the instance, not of any bundle, and both are cheaper to fix now
   // than to discover space by space: content of a user the target lacks lands under the pusher.
   const [users, packages] = await Promise.all([missingUsers(from, to), missingPackages(from, to)]);

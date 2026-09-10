@@ -350,7 +350,7 @@ export async function push(dapi: NodeDapi, bundle: Bundle, opts: PushOptions, lo
       effective.set(id, {type: e.type, json: rewrite(e.json, idmap)});
   }
 
-  await pushShares(dapi, bundle, items);
+  await pushShares(dapi, bundle, items, onConflict);
   await pushRelations(dapi, effective, planned, items, progress);
   progress('restoring names');
   const renamed = await restoreNames(dapi, deferred.renamed, idmap);
@@ -602,11 +602,20 @@ async function pushRelations(dapi: NodeDapi, effective: Map<string, BundleEntity
  * `Home` share resolves to the target's own connection for that user, so each owner's files
  * land in their own share rather than the pusher's.
  */
-async function pushShares(dapi: NodeDapi, bundle: Bundle, rows: Row[]): Promise<void> {
+async function pushShares(dapi: NodeDapi, bundle: Bundle, rows: Row[], onConflict: ConflictPolicy): Promise<void> {
   for (const remote of listShares(bundle.dir)) {
     try {
+      // The only write that replaces a file the target already has, so it answers to the same
+      // policy as everything else rather than overwriting whatever is there.
+      const already = await dapi.files.readBytes(remote).then(() => true).catch(() => false);
+      if (already && onConflict === 'skip') {
+        rows.push({name: remote, entityType: 'File', action: 'skip', reason: 'share_file_exists'});
+        continue;
+      }
+      if (already && onConflict === 'fail')
+        throw new Error('the target already has this file — pass --on-conflict adopt to replace it');
       await dapi.files.writeBytes(remote, fs.readFileSync(sharePath(bundle.dir, remote)));
-      rows.push({name: remote, entityType: 'File', action: 'create', reason: 'share_file'});
+      rows.push({name: remote, entityType: 'File', action: already ? 'update' : 'create', reason: 'share_file'});
     } catch (err: any) {
       rows.push({name: remote, entityType: 'File', action: 'warn', reason: 'share_file_not_written',
         detail: err?.message ?? String(err)});
