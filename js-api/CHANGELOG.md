@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-20848: `package.json`: `react` and `@types/react` dropped (nothing imported them since `Widget.react` went away), `@babel/core` moved to `devDependencies`, `files` added so the tarball ships the build output and docs but not sources, configs or scripts.
 * GROK-20848: Options-object forms next to the positional ones: `Accordion.addPane(name, getContent, {expanded, before, allowDragOut})` (and `addCountPane`), `ui.rangeSlider({minRange, maxRange, min, max, vertical, style})`, `grok.data.linkTables(..., {initialSync, filterAllOnNoRowsSelected})`, `grok.ml.pca(table, features, {components, center, scale})`, `DataFrame.clone({rows, columns, saveSelection, saveTags})`, `DataFrame.join(t2, {keys, keys2, columns, columns2, type, inPlace})`, `grok.dapi.files.list(path, {recursive, pattern})`
 * GROK-20848: `Viewer.setOptions/getOptions` are typed over the viewer settings; `df.plot.*` take `Partial<I*Settings>` and return the viewer classes (`plot.tile()` said `Grid`, it is a `TileViewer`)
 * GROK-20848: Added `ui.icon(name, {onClick, tooltip, style})` — Font Awesome, SVG or image by name — and `ui.form(inputs, {layout: 'narrow' | 'wide'})`; `narrowForm`/`wideForm` remain
