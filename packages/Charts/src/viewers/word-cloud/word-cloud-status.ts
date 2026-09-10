@@ -5,6 +5,8 @@ type Box = {x: number, y: number, width: number, height: number};
 
 type LaidWord = {name: string, box: Box, font: string};
 
+type Readings = {[name: string]: number | string | boolean};
+
 /** Where the layout put every word it managed to draw, in CSS px of the chart canvas. The series'
  * graphic elements are the only record the layout leaves, and a word it dropped has none — so an
  * absent `word` area is the honest answer for a word that was counted but not drawn. */
@@ -36,11 +38,11 @@ function laidOutWords(chart: any): LaidWord[] {
  * cloud it reports that message and nothing the previous frame drew — `render` returns before
  * re-creating the chart, so `chart` still holds the geometry of a cloud that is no longer on
  * screen. */
-export function wordCloudStatus(v: WordCloudViewer): DG.IWidgetStatus {
+export function wordCloudStatus(v: WordCloudViewer): DG.IWidgetStatus & {values: Readings} {
   const error = v.renderError;
   const canvas = error === null ? v.root.querySelector('canvas') as HTMLCanvasElement | null : null;
   const hitAreas: {[name: string]: Box} = {};
-  const values: {[name: string]: number | string | boolean} = {};
+  const values: Readings = {};
 
   values['column'] = v.wordColumnName;
   values['rows shown'] = v.filter.trueCount;
