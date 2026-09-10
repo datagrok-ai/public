@@ -77,12 +77,12 @@
         "promotion": {
           "enum": ["lazy", "eager"],
           "default": "lazy",
-          "description": "Row mode only. lazy: entities row created on first share; eager: at insert."
+          "description": "Row mode only. lazy: entities row created on first share; eager: at insert, with the author granted View/Edit/Delete/Share."
         },
         "defaultRowVisibility": {
           "enum": ["table", "none"],
           "default": "table",
-          "description": "Row/master modes: whether table-level View shows unshared rows."
+          "description": "Row/master modes: whether table-level View shows unshared rows. Their author always sees, edits and shares them; none hides them from everyone else."
         },
         "delegate": {
           "$ref": "#/definitions/identifier",
