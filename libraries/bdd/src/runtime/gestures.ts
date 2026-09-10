@@ -140,16 +140,42 @@ export async function editorOf(page: Page, target: ElementRef): Promise<Locator>
   return loc;
 }
 
+export async function hasFocus(loc: Locator): Promise<boolean> {
+  return loc.evaluate((e) => e === document.activeElement || e.contains(document.activeElement)).catch(() => false);
+}
+
+/** Types the text over whatever the editor holds, and again until it holds exactly that. A
+ * keystroke that creates or rebuilds the editor lands at an unpredictable moment ("SEX" came back
+ * "EXS"), and an editor the widget closes under the typing keeps only what came after it (a grid
+ * cell typed "51" and committed "1"). An editor whose value cannot be read back is typed into once,
+ * and so is one that refuses the text (read-only, disabled): refusing it is what the step after
+ * such a typing claims. */
+export async function typeVerified(editor: Locator, text: string, what: string): Promise<void> {
+  await editor.press('Control+A');
+  await editor.pressSequentially(text);
+  const refuses = await editor.evaluate((e) => (e as HTMLInputElement).readOnly || (e as HTMLInputElement).disabled ||
+    e.getAttribute('aria-readonly') === 'true' || e.getAttribute('aria-disabled') === 'true').catch(() => false);
+  if (refuses || await editor.inputValue().catch(() => null) === null)
+    return;
+  await expect.poll(async () => {
+    if (await editor.inputValue() !== text) {
+      await editor.press('Control+A');
+      await editor.pressSequentially(text);
+    }
+    return editor.inputValue();
+  }, {timeout: 5000, message: `the text typed into ${what}`}).toBe(text);
+}
+
 export async function typeInto(page: Page, target: ElementRef, text: string, commit = false): Promise<void> {
   const editor = await editorOf(page, target);
-  await editor.click();
-  if (gestureOf(page, target).type === 'fill') {
+  // an editor that has the focus already (a cell editor the double-click just opened) is not
+  // clicked: a click is what would blur it, and a blurred cell editor commits and closes
+  if (!await hasFocus(editor))
+    await editor.click();
+  if (gestureOf(page, target).type === 'fill')
     await editor.fill(text);
-  }
-  else {
-    await editor.press('Control+A');
-    await editor.pressSequentially(text);
-  }
+  else
+    await typeVerified(editor, text, target.phrase);
   if (commit)
     await editor.press('Tab');
 }
@@ -191,13 +217,7 @@ export async function typeInColumnGrid(page: Page, option: string, what: string,
   // and the letter lands in it at an unpredictable moment — before anything typed after it, or
   // after all of it ("SEX" came back "EXS", "RACE" as "RACER") — so the name goes in over
   // whatever is there, until the box holds it and nothing else
-  await expect.poll(async () => {
-    if (await search.inputValue() !== option) {
-      await search.press('Control+A');
-      await search.pressSequentially(option);
-    }
-    return search.inputValue();
-  }, {timeout: 5000, message: `the column picker of ${what}`}).toBe(option);
+  await typeVerified(search, option, `the column picker of ${what}`);
   await search.press('Enter');
   return popup;
 }

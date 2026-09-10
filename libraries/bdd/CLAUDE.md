@@ -127,7 +127,38 @@ nobody filed.
   running its physics moves the node between the read and the click, and the click then selects
   nothing (`network-diagram-selection`, `node "F"` → 0 rows). A viewer that reports nothing pending
   answers at once, so the settle costs a roundtrip; one that never stops pending is the following
-  claim's problem, not the gesture's.
+  claim's problem, not the gesture's. **And a finished render is not the end of the moving**: a
+  title just set shows an auto-sizing text area, whose resize observer moves the pivot's inner
+  grid down a row on a later frame, and the right-click meant for `grid header None med(AGE)`
+  opened the *cell* menu one row below (one in twelve runs of `pivot-table-persistence`, four in
+  the full suite). So before a right-click the anchor's box — what every area is relative to —
+  must agree on two consecutive frames (`stableArea`, in `menuPoint`): one frame of cost, and a
+  cheap read. It is not on every gesture: a first cut put it in `hitArea(…, beforeChange)` too,
+  reading the whole widget status on each of three frames, and that alone cost the suite about
+  80 s of test time (762 → 845 s) for a move seen only under a right-click. And it is a defence,
+  not the cure: the title
+  grows through a **100 ms polling** resizer (`handleResize`, `d4/src/utils/utils.dart`), later
+  than any frame count, and the product now sizes the title in the same pass as the property write
+  (`refreshTitle`, `viewer_base.dart`). A late mover the library cannot see is a product fix,
+  every time.
+- **Typed text is verified before it is committed** (`gestures.typeVerified`). Control+A, the text,
+  then the editor is read back and retyped until it holds exactly the text: a keystroke that
+  creates or rebuilds the editor lands at an unpredictable moment (the column picker's `"EXS"`),
+  and an editor the widget closes under the typing keeps only what came after — the grid's cell
+  editor was typed `"51"` and committed `"1"`. `typeInto` also leaves an editor that already has
+  the focus unclicked: a click is what would blur a cell editor, and a blurred cell editor commits
+  and closes. An editor whose value cannot be read back (a contenteditable) is typed into once, and
+  so is one that refuses the text (read-only, disabled) — refusing it is what the step after such
+  a typing claims. The verification is what found the product cause of all three losses: a table
+  view focuses its grid a second after it opens (`table_view.dart`), whatever the user is typing
+  by then; a temporary hook on `Element.remove` in the runtime caught the editor's `onChange`
+  (a blur) destroying it, with the stack. That timer now leaves an editable element alone.
+- **An area typed into must own the focus** (`typeIntoArea`). The histogram's range input took
+  the click and not the focus once in twenty runs (the same timer), and `"18"` then opened a
+  cell editor on the grid, unseen, while the filter stayed where it was. The click is repeated at
+  the area's current place until an editor inside the viewer is focused, the editor is pinned by
+  a `data-bdd-editor` mark of its own — a `:focus` locator waits on nothing once the focus has
+  moved — the text goes in verified, and the failure names what has the focus instead.
 - **Every column picker goes through `gestures.pickInColumnGrid`** — one place, because the Dart
   `ColumnComboBox` cost this suite a full day of intermittent failures across the histogram, the
   scatter plot, the filter panel and the pivot table, and each of its three facts had to be learned

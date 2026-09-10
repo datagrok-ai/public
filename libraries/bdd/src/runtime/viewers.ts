@@ -9,6 +9,7 @@ import {Locator, Page} from '@playwright/test';
 import {expect, pollMs} from './patience.js';
 import type {ElementRef} from './args.js';
 import {reasonOf} from './failure.js';
+import {typeVerified} from './gestures.js';
 import {exactText, locate} from './locate.js';
 
 declare const grok: any;
@@ -717,21 +718,35 @@ function install(): void {
    * dock manager sizes the element it hosts, so a size written while it is still laying a freshly
    * docked viewer out is overwritten by the pass that follows — and the viewer then reads at
    * whatever width the dock gave it, which is a fixture silently gone. */
-  const stableBox = (root: HTMLElement, capMs: number): Promise<void> => new Promise((done) => {
+  /** Resolves once [read] says the same thing on [frames] consecutive frames after the first — what
+   * it describes has stopped moving — or after [capMs]. */
+  const stable = (read: () => string, capMs: number, frames: number): Promise<void> => new Promise((done) => {
     const t0 = Date.now();
     let last = '';
     let same = 0;
     const tick = (): void => {
-      const r = root.getBoundingClientRect();
-      const now = `${Math.round(r.width)}x${Math.round(r.height)}`;
+      const now = read();
       same = now === last ? same + 1 : 0;
       last = now;
-      if (same >= 2 || Date.now() - t0 >= capMs)
+      if (same >= frames || Date.now() - t0 >= capMs)
         return done();
       requestAnimationFrame(tick);
     };
     requestAnimationFrame(tick);
   });
+  const stableBox = (root: HTMLElement, capMs: number): Promise<void> => stable(() => {
+    const r = root.getBoundingClientRect();
+    return `${Math.round(r.width)}x${Math.round(r.height)}`;
+  }, capMs, 2);
+  /** A gesture aims at where the viewer has finished putting the thing, and a finished render is not
+   * the end of that: a layout pass on the next frame can still move the whole viewer (a title just
+   * set moved the pivot's grid down a row, and the right-click meant for a header landed on a cell).
+   * The areas are relative to the anchor, so it is the anchor's box that must agree on two
+   * consecutive frames — a cheap read, against the whole status per frame. */
+  const stableArea = (el: Element, _name: string, capMs: number): Promise<void> => stable(() => {
+    const r = anchorOf(viewerOf(el)).getBoundingClientRect();
+    return [r.x, r.y, r.width, r.height].map(Math.round).join(',');
+  }, capMs, 1);
   // the repaint a resize causes lands on the next task, so the settle is armed before the event
   const resize = async (el: Element, width: number | null, height: number | null, capMs: number): Promise<number> => {
     const root = viewerOf(el).root as HTMLElement;
@@ -825,6 +840,7 @@ function install(): void {
     // the point the menu opens at must be where the viewer has finished putting the thing: a title
     // just set moves the grid under it, and the right-click lands a row off
     await settle(el, 300).catch(() => undefined);
+    await stableArea(el, area ?? 'view', 1000);
     let box: Box | undefined;
     try {
       box = hitArea(el, area ?? 'view', true);
@@ -960,7 +976,7 @@ function install(): void {
   w.__bdd = {viewerOf, arm, stampAll, settle, quiet, readProperty, writeProperties, findArea, hitArea, areas, areaInk, areaChange, areaDelta, areaColors,
     areaRectChange, legendState: (el: Element) => legendState(viewerOf(el)), legendChange, rememberValue, rememberedValue,
     snapshot, baselineAll, change, rangeChange, quietRangeChange, scaleChange, valueChange, quietValueChange, rememberRange, rememberedRange, stillness,
-    palette, tableOf, listen, unlisten, firedCount, resize, restoreSize, armEvent, waitArmed, closeMenu, openMenu, menuPoint, addViewer,
+    palette, tableOf, listen, unlisten, firedCount, resize, restoreSize, armEvent, waitArmed, closeMenu, openMenu, menuPoint, stableArea, addViewer,
     takeBalloons, saveLayout, saveLayoutToServer, loadLayout, deleteLayout, ink, armCommand, waitCommand, columnsSince, listenCustom, customFired};
   stampAll();
   grok.events.onViewerAdded.subscribe((a: any) => arm(a?.args?.viewer));
@@ -1739,12 +1755,47 @@ export async function dragBoxOverArea(page: Page, target: ElementRef, area: stri
 
 /** Types into a hit area that holds an editor (a range input, a form field): a click on its
  * centre, select all, the text, Enter. */
+/** A click on the area, the text typed over what the editor there holds, Enter. The click must have
+ * put the focus into an editor inside the viewer — a histogram's range input took the click and not
+ * the focus once in twenty runs, and the text then opened a cell editor on the grid, unseen — so it
+ * is repeated, at the area's current place, until one did. */
 export async function typeIntoArea(page: Page, target: ElementRef, area: string, text: string): Promise<void> {
-  const c = centerOf(await hitArea(page, target, area, true));
-  await page.mouse.click(c.x, c.y);
-  await page.keyboard.press('Control+A');
-  await page.keyboard.type(text.replace(/\\n/g, '\n'));
-  await page.keyboard.press('Enter');
+  const loc = await viewerLocator(page, target);
+  // the editor is pinned by a mark of its own rather than by `:focus`: the focus can leave it while
+  // the text is being read back (a table view focuses its grid a second after it opens, whatever
+  // the user is doing), and a locator on `:focus` would then wait on nothing
+  const mark = `bdd-editor-${Date.now()}`;
+  let where = '';
+  try {
+    await expect.poll(async () => {
+      const c = centerOf(await hitArea(page, target, area, true));
+      await page.mouse.click(c.x, c.y);
+      where = await loc.evaluate((el, m) => {
+        const a = document.activeElement;
+        if (!a)
+          return 'nothing';
+        if (el.contains(a) && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA' || (a as HTMLElement).isContentEditable)) {
+          a.setAttribute('data-bdd-editor', m);
+          return '';
+        }
+        const name = a.getAttribute('name');
+        const cls = String(a.className ?? '').trim();
+        return a.tagName.toLowerCase() + (name ? `[name="${name}"]` : '') + (cls ? '.' + cls.split(/\s+/).join('.') : '');
+      }, mark);
+      return where === '';
+    }, {timeout: pollMs(5000)}).toBe(true);
+  }
+  catch {
+    throw new Error(`a click on the "${area}" area of ${target.phrase} did not focus an editor there; the focus is on ${where}`);
+  }
+  const editor = loc.locator(`[data-bdd-editor="${mark}"]`);
+  try {
+    await typeVerified(editor, text.replace(/\\n/g, '\n'), `the "${area}" area of ${target.phrase}`);
+    await editor.press('Enter');
+  }
+  finally {
+    await editor.evaluate((e) => e.removeAttribute('data-bdd-editor')).catch(() => undefined);
+  }
 }
 
 export async function expectAreaSize(page: Page, target: ElementRef, area: string, dimension: 'tall' | 'wide', min: number): Promise<void> {
