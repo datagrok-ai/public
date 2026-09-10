@@ -87,12 +87,11 @@
       "propertyType": "string",
       "choices": [
         "none",
-        "artifact-alignment",
         "workspaces"
       ],
       "defaultValue": "none",
       "nullable": false,
-      "description": "Share action for runs: none \u2014 hidden; artifact-alignment \u2014 'Publish to program' (requires the ArtifactAlignment package); workspaces \u2014 link the run into an existing space"
+      "description": "Share action for runs: none \u2014 hidden; workspaces \u2014 link the run into an existing space"
     }
   ],
   "canEdit": [
