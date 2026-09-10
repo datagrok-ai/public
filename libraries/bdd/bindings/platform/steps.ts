@@ -3,6 +3,8 @@
 import {expect, type Page} from '@playwright/test';
 import {openTableFromFile} from '@datagrok-libraries/test/src/playwright/openers.js';
 import {DatasetEntry, Given, Then, When} from '../../src/registry.js';
+import {el, type ElementRef} from '../../src/runtime/args.js';
+import {editorOf} from '../../src/runtime/gestures.js';
 import {atFeatureEnd} from '../../src/runtime/harness.js';
 import {exactText} from '../../src/runtime/locate.js';
 
@@ -166,3 +168,68 @@ export const clickPlainCheckbox = When('user clicks the plain checkbox in the {s
     await expect(box, `a checkbox in the "${title}" dialog`).toBeVisible({timeout: 5000});
     await box.click();
   }, {tier: 'ui', description: 'the only checkbox of that dialog the library\'s kinds cannot name'});
+
+/* --- the browse panel -------------------------------------------------------------------------
+   A bdd page runs in simple mode (set by `user is logged in`), where the browse panel is not built
+   at all — so a feature about the Browse tree opens it first. Opening it is a shell setting, never
+   a click on the Browse tab: that tab TOGGLES the panel, and clicking it on an open one closes it
+   again. Simple mode is restored when the feature ends, so the next feature on the same page finds
+   the shell as it expects it. */
+
+async function showBrowsePanel(page: Page, open: boolean): Promise<void> {
+  await page.evaluate((show) => {
+    if (show)
+      grok.shell.windows.simpleMode = false;
+    grok.shell.windows.showBrowse = show;
+  }, open);
+}
+
+export const browsePanelOpen = Given('the browse panel is open', async (page: Page) => {
+  await showBrowsePanel(page, true);
+  await expect(page.locator('.grok-view-browse [role="tree"], .layout-browse [role="tree"]').first(),
+    'the browse tree').toBeVisible({timeout: 60000});
+  atFeatureEnd(page, () => page.evaluate(() => { grok.shell.windows.simpleMode = true; }));
+}, {tier: 'api', description: 'idempotent: leaves simple mode, shows the panel and waits for its tree; puts simple mode back at feature end'});
+
+export const openBrowsePanel = When('user opens the browse panel', async (page: Page) => {
+  await showBrowsePanel(page, true);
+  await expect(page.locator('.grok-view-browse [role="tree"], .layout-browse [role="tree"]').first(),
+    'the browse tree').toBeVisible({timeout: 60000});
+}, {tier: 'api'});
+
+export const closeBrowsePanel = When('user closes the browse panel', (page: Page) => showBrowsePanel(page, false), {tier: 'api'});
+
+export const browsePanelShouldBeOpen = Then('the browse panel should be open', async (page: Page) => {
+  await expect(page.locator('.grok-view-browse [role="tree"], .layout-browse [role="tree"]').first(),
+    'the browse tree').toBeVisible();
+});
+
+export const browsePanelShouldBeClosed = Then('the browse panel should be closed', async (page: Page) => {
+  await expect(page.locator('.grok-view-browse [role="tree"], .layout-browse [role="tree"]')
+    .filter({visible: true}), 'the browse tree').toHaveCount(0);
+});
+
+/* --- the second account ------------------------------------------------------------------------
+   A sharing feature needs a user other than the one running it. It is DATAGROK_SHARING_LOGIN — the
+   same variable the hand-written suites read from playwright-tests/.env — and the platform's user
+   typeahead offers it under a name with the punctuation stripped ("a+b@x" shows as "ab"), so the
+   step types the local part and picks the row rather than trusting what it typed. */
+
+export function sharingLogin(): string {
+  const login = process.env.DATAGROK_SHARING_LOGIN;
+  if (!login)
+    throw new Error('no DATAGROK_SHARING_LOGIN in the environment: a sharing feature needs a second account');
+  return login;
+}
+
+export const pickSharingUser = When('user picks the sharing user in {element}', async (page: Page, target: ElementRef) => {
+  const login = sharingLogin();
+  const editor = await editorOf(page, el(target.phrase));
+  await editor.click();
+  await editor.pressSequentially(login.split('@')[0]);
+  const wanted = login.split('@')[0].replace(/[^a-z0-9]/gi, '').toLowerCase();
+  const row = page.locator('.d4-user-selector-drop-down tr, .d4-tags-selector-drop-down tr')
+    .filter({hasText: new RegExp(wanted, 'i')}).first();
+  await expect(row, `the "${login}" row of the user typeahead`).toBeVisible({timeout: 15000});
+  await row.click();
+}, {tier: 'ui', description: 'types the login of DATAGROK_SHARING_LOGIN and takes it from the typeahead'});

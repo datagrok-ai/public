@@ -13,9 +13,10 @@ import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {browsePanelOpen, noSpaceOnServer, spacesOnServer} from '../../bindings/spaces.js';
+import {createDialogCloses, noSpaceOnServer, spacesOnServer} from '../../bindings/spaces.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clearField, clickOn, enterInto, shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
+import {browsePanelOpen} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {closeContextMenu, errorBalloonText, menuDoesNotList, menuLists, openContextMenu, pickFromContextMenu} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
@@ -28,16 +29,16 @@ test.describe("Creating a space", () => {
     await session.step(15, "And the browse panel is open", () => browsePanelOpen(page));
     await session.step(16, "And no space named \"BDD-Root, BDD-Dup, BDD-Parent, BDD-Child, BDD Name With Spaces\" is on the server", () => noSpaceOnServer(page, "BDD-Root, BDD-Dup, BDD-Parent, BDD-Child, BDD Name With Spaces"));
     await run.scenario("A root space is created from the Spaces node", async () => {
-      await session.step(19, "When user picks \"Create Space...\" from the context menu of Spaces tree node", () => pickFromContextMenu(page, "Create Space...", el("Spaces tree node")));
+      await session.step(19, "When user picks \"Create Space...\" from the context menu of Spaces tree node inside browse tree", () => pickFromContextMenu(page, "Create Space...", el("Spaces tree node inside browse tree")));
       await session.step(20, "Then Create Space dialog should be visible", () => shouldBe(page, el("Create Space dialog"), "visible"));
       await session.step(21, "When user enters \"BDD-Root\" into Name input in Create Space dialog", () => enterInto(page, "BDD-Root", el("Name input in Create Space dialog")));
       await session.step(22, "And user clicks on OK button in Create Space dialog", () => clickOn(page, el("OK button in Create Space dialog")));
-      await session.step(23, "Then Create Space dialog should be hidden", () => shouldBe(page, el("Create Space dialog"), "hidden"));
+      await session.step(23, "Then the Create Space dialog should close", () => createDialogCloses(page));
       await session.step(24, "And 1 space named \"BDD-Root\" should be on the server", () => spacesOnServer(page, 1, "BDD-Root"));
-      await session.step(25, "And BDD-Root tree node should be visible", () => shouldBe(page, el("BDD-Root tree node"), "visible"));
+      await session.step(25, "And BDD-Root tree node inside browse tree should be visible", () => shouldBe(page, el("BDD-Root tree node inside browse tree"), "visible"));
     });
     await run.scenario("The space offers its actions", async () => {
-      await session.step(28, "When user opens the context menu of BDD-Root tree node", () => openContextMenu(page, el("BDD-Root tree node")));
+      await session.step(28, "When user opens the context menu of BDD-Root tree node inside browse tree", () => openContextMenu(page, el("BDD-Root tree node inside browse tree")));
       await session.step(29, "Then the open menu should list \"Share...\"", () => menuLists(page, "Share..."));
       await session.step(30, "And the open menu should list \"Rename...\"", () => menuLists(page, "Rename..."));
       await session.step(31, "And the open menu should list \"Delete Space\"", () => menuLists(page, "Delete Space"));
@@ -47,55 +48,55 @@ test.describe("Creating a space", () => {
       await session.step(35, "When user closes the context menu", () => closeContextMenu(page));
     });
     await run.scenario("An empty name disables OK, and typing one enables it again", async () => {
-      await session.step(38, "When user picks \"Create Space...\" from the context menu of Spaces tree node", () => pickFromContextMenu(page, "Create Space...", el("Spaces tree node")));
+      await session.step(38, "When user picks \"Create Space...\" from the context menu of Spaces tree node inside browse tree", () => pickFromContextMenu(page, "Create Space...", el("Spaces tree node inside browse tree")));
       await session.step(39, "And user clears Name input in Create Space dialog", () => clearField(page, el("Name input in Create Space dialog")));
       await session.step(40, "Then OK button in Create Space dialog should be disabled", () => shouldBe(page, el("OK button in Create Space dialog"), "disabled"));
       await session.step(41, "When user enters \"BDD-Dup\" into Name input in Create Space dialog", () => enterInto(page, "BDD-Dup", el("Name input in Create Space dialog")));
       await session.step(42, "Then OK button in Create Space dialog should be enabled", () => shouldBe(page, el("OK button in Create Space dialog"), "enabled"));
       await session.step(43, "When user clicks on CANCEL button in Create Space dialog", () => clickOn(page, el("CANCEL button in Create Space dialog")));
-      await session.step(44, "Then Create Space dialog should be hidden", () => shouldBe(page, el("Create Space dialog"), "hidden"));
+      await session.step(44, "Then the Create Space dialog should close", () => createDialogCloses(page));
       await session.step(45, "And 0 spaces named \"BDD-Dup\" should be on the server", () => spacesOnServer(page, 0, "BDD-Dup"));
     });
     await run.scenario("A second root space of the same name is refused", async () => {
-      await session.step(48, "When user picks \"Create Space...\" from the context menu of Spaces tree node", () => pickFromContextMenu(page, "Create Space...", el("Spaces tree node")));
+      await session.step(48, "When user picks \"Create Space...\" from the context menu of Spaces tree node inside browse tree", () => pickFromContextMenu(page, "Create Space...", el("Spaces tree node inside browse tree")));
       await session.step(49, "And user enters \"BDD-Dup\" into Name input in Create Space dialog", () => enterInto(page, "BDD-Dup", el("Name input in Create Space dialog")));
       await session.step(50, "And user clicks on OK button in Create Space dialog", () => clickOn(page, el("OK button in Create Space dialog")));
       await session.step(51, "Then 1 space named \"BDD-Dup\" should be on the server", () => spacesOnServer(page, 1, "BDD-Dup"));
-      await session.step(52, "When user picks \"Create Space...\" from the context menu of Spaces tree node", () => pickFromContextMenu(page, "Create Space...", el("Spaces tree node")));
+      await session.step(52, "When user picks \"Create Space...\" from the context menu of Spaces tree node inside browse tree", () => pickFromContextMenu(page, "Create Space...", el("Spaces tree node inside browse tree")));
       await session.step(53, "And user enters \"BDD-Dup\" into Name input in Create Space dialog", () => enterInto(page, "BDD-Dup", el("Name input in Create Space dialog")));
       await session.step(54, "And user clicks on OK button in Create Space dialog", () => clickOn(page, el("OK button in Create Space dialog")));
       await session.step(55, "Then an error balloon containing \"Root project with same name already exists\" should have been shown", () => errorBalloonText(page, "Root project with same name already exists"));
       await session.step(56, "And 1 space named \"BDD-Dup\" should be on the server", () => spacesOnServer(page, 1, "BDD-Dup"));
       await session.step(57, "And Create Space dialog should be visible", () => shouldBe(page, el("Create Space dialog"), "visible"));
       await session.step(58, "When user clicks on CANCEL button in Create Space dialog", () => clickOn(page, el("CANCEL button in Create Space dialog")));
-      await session.step(59, "Then Create Space dialog should be hidden", () => shouldBe(page, el("Create Space dialog"), "hidden"));
+      await session.step(59, "Then the Create Space dialog should close", () => createDialogCloses(page));
     });
     await run.scenario("A child space is created under a root space", async () => {
-      await session.step(62, "When user picks \"Create Space...\" from the context menu of Spaces tree node", () => pickFromContextMenu(page, "Create Space...", el("Spaces tree node")));
+      await session.step(62, "When user picks \"Create Space...\" from the context menu of Spaces tree node inside browse tree", () => pickFromContextMenu(page, "Create Space...", el("Spaces tree node inside browse tree")));
       await session.step(63, "And user enters \"BDD-Parent\" into Name input in Create Space dialog", () => enterInto(page, "BDD-Parent", el("Name input in Create Space dialog")));
       await session.step(64, "And user clicks on OK button in Create Space dialog", () => clickOn(page, el("OK button in Create Space dialog")));
       await session.step(65, "Then 1 space named \"BDD-Parent\" should be on the server", () => spacesOnServer(page, 1, "BDD-Parent"));
-      await session.step(66, "When user picks \"Create Child Space...\" from the context menu of BDD-Parent tree node", () => pickFromContextMenu(page, "Create Child Space...", el("BDD-Parent tree node")));
+      await session.step(66, "When user picks \"Create Child Space...\" from the context menu of BDD-Parent tree node inside browse tree", () => pickFromContextMenu(page, "Create Child Space...", el("BDD-Parent tree node inside browse tree")));
       await session.step(67, "And user enters \"BDD-Child\" into Name input in Create Space dialog", () => enterInto(page, "BDD-Child", el("Name input in Create Space dialog")));
       await session.step(68, "And user clicks on OK button in Create Space dialog", () => clickOn(page, el("OK button in Create Space dialog")));
-      await session.step(69, "Then Create Space dialog should be hidden", () => shouldBe(page, el("Create Space dialog"), "hidden"));
-      await session.step(70, "And BDD-Child tree node should be visible", () => shouldBe(page, el("BDD-Child tree node"), "visible"));
+      await session.step(69, "Then the Create Space dialog should close", () => createDialogCloses(page));
+      await session.step(70, "And BDD-Child tree node inside browse tree should be visible", () => shouldBe(page, el("BDD-Child tree node inside browse tree"), "visible"));
     });
     await run.scenario("A second child of the same name is refused", async () => {
-      await session.step(73, "When user picks \"Create Child Space...\" from the context menu of BDD-Parent tree node", () => pickFromContextMenu(page, "Create Child Space...", el("BDD-Parent tree node")));
+      await session.step(73, "When user picks \"Create Child Space...\" from the context menu of BDD-Parent tree node inside browse tree", () => pickFromContextMenu(page, "Create Child Space...", el("BDD-Parent tree node inside browse tree")));
       await session.step(74, "And user enters \"BDD-Child\" into Name input in Create Space dialog", () => enterInto(page, "BDD-Child", el("Name input in Create Space dialog")));
       await session.step(75, "And user clicks on OK button in Create Space dialog", () => clickOn(page, el("OK button in Create Space dialog")));
       await session.step(76, "Then an error balloon containing \"already exists\" should have been shown", () => errorBalloonText(page, "already exists"));
       await session.step(77, "And Create Space dialog should be visible", () => shouldBe(page, el("Create Space dialog"), "visible"));
       await session.step(78, "When user clicks on CANCEL button in Create Space dialog", () => clickOn(page, el("CANCEL button in Create Space dialog")));
-      await session.step(79, "Then Create Space dialog should be hidden", () => shouldBe(page, el("Create Space dialog"), "hidden"));
+      await session.step(79, "Then the Create Space dialog should close", () => createDialogCloses(page));
     });
     await run.scenario("A name with spaces is kept as typed", async () => {
-      await session.step(82, "When user picks \"Create Space...\" from the context menu of Spaces tree node", () => pickFromContextMenu(page, "Create Space...", el("Spaces tree node")));
+      await session.step(82, "When user picks \"Create Space...\" from the context menu of Spaces tree node inside browse tree", () => pickFromContextMenu(page, "Create Space...", el("Spaces tree node inside browse tree")));
       await session.step(83, "And user enters \"BDD Name With Spaces\" into Name input in Create Space dialog", () => enterInto(page, "BDD Name With Spaces", el("Name input in Create Space dialog")));
       await session.step(84, "And user clicks on OK button in Create Space dialog", () => clickOn(page, el("OK button in Create Space dialog")));
       await session.step(85, "Then 1 space named \"BDD Name With Spaces\" should be on the server", () => spacesOnServer(page, 1, "BDD Name With Spaces"));
-      await session.step(86, "And BDD Name With Spaces tree node should be visible", () => shouldBe(page, el("BDD Name With Spaces tree node"), "visible"));
+      await session.step(86, "And BDD Name With Spaces tree node inside browse tree should be visible", () => shouldBe(page, el("BDD Name With Spaces tree node inside browse tree"), "visible"));
     });
     run.finish();
   });

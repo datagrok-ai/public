@@ -16,17 +16,17 @@ Feature: Nested spaces and moving between them
     And no space named "BDD-Hier-Root, BDD-Hier-Child, BDD-Hier-Grand" is on the server
 
   Scenario: A child is created from the tree
-    When user picks "Create Space..." from the context menu of Spaces tree node
+    When user picks "Create Space..." from the context menu of Spaces tree node inside browse tree
     And user enters "BDD-Hier-Root" into Name input in Create Space dialog
     And user clicks on OK button in Create Space dialog
     Then 1 space named "BDD-Hier-Root" should be on the server
-    When user picks "Create Child Space..." from the context menu of BDD-Hier-Root tree node
+    When user picks "Create Child Space..." from the context menu of BDD-Hier-Root tree node inside browse tree
     And user enters "BDD-Hier-Child" into Name input in Create Space dialog
     And user clicks on OK button in Create Space dialog
-    Then BDD-Hier-Child tree node should be visible
+    Then BDD-Hier-Child tree node inside browse tree should be visible
 
   Scenario: The parent's view lists the child
-    When user double-clicks on BDD-Hier-Root tree node
+    When user double-clicks on BDD-Hier-Root tree node inside browse tree
     Then the "BDD-Hier-Root" view should be current
     And space gallery should be visible
     And BDD-Hier-Child link in space gallery should be visible
@@ -35,8 +35,8 @@ Feature: Nested spaces and moving between them
     When user picks "Create Child Space..." from the context menu of BDD-Hier-Child link in space gallery
     And user enters "BDD-Hier-Grand" into Name input in Create Space dialog
     And user clicks on OK button in Create Space dialog
-    Then Create Space dialog should be hidden
-    And BDD-Hier-Grand tree node should be present
+    Then the Create Space dialog should close
+    And BDD-Hier-Grand tree node inside browse tree should be present
 
   Scenario: Opening the child shows the grandchild
     When user double-clicks on BDD-Hier-Child link in space gallery
@@ -50,7 +50,7 @@ Feature: Nested spaces and moving between them
     And BDD-Hier-Grand link in space gallery should be absent
 
   Scenario: Going back up the tree finds the content again
-    When user double-clicks on BDD-Hier-Root tree node
+    When user double-clicks on BDD-Hier-Root tree node inside browse tree
     Then the "BDD-Hier-Root" view should be current
     And BDD-Hier-Child link in space gallery should be visible
     When user double-clicks on BDD-Hier-Child link in space gallery

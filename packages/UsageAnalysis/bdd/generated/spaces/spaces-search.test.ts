@@ -13,9 +13,10 @@ import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {browsePanelOpen, noSpaceOnServer, spacesOnServer} from '../../bindings/spaces.js';
+import {createDialogCloses, noSpaceOnServer, spacesOnServer} from '../../bindings/spaces.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clearField, clickOn, doubleClickOn, enterInto, shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
+import {browsePanelOpen} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {pickFromContextMenu} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
@@ -28,17 +29,17 @@ test.describe("Searching spaces", () => {
     await session.step(12, "And the browse panel is open", () => browsePanelOpen(page));
     await session.step(13, "And no space named \"BDD-Find, BDD-Miss, BDD-Find-Child\" is on the server", () => noSpaceOnServer(page, "BDD-Find, BDD-Miss, BDD-Find-Child"));
     await run.scenario("Two spaces to search among", async () => {
-      await session.step(16, "When user picks \"Create Space...\" from the context menu of Spaces tree node", () => pickFromContextMenu(page, "Create Space...", el("Spaces tree node")));
+      await session.step(16, "When user picks \"Create Space...\" from the context menu of Spaces tree node inside browse tree", () => pickFromContextMenu(page, "Create Space...", el("Spaces tree node inside browse tree")));
       await session.step(17, "And user enters \"BDD-Find\" into Name input in Create Space dialog", () => enterInto(page, "BDD-Find", el("Name input in Create Space dialog")));
       await session.step(18, "And user clicks on OK button in Create Space dialog", () => clickOn(page, el("OK button in Create Space dialog")));
       await session.step(19, "Then 1 space named \"BDD-Find\" should be on the server", () => spacesOnServer(page, 1, "BDD-Find"));
-      await session.step(20, "When user picks \"Create Space...\" from the context menu of Spaces tree node", () => pickFromContextMenu(page, "Create Space...", el("Spaces tree node")));
+      await session.step(20, "When user picks \"Create Space...\" from the context menu of Spaces tree node inside browse tree", () => pickFromContextMenu(page, "Create Space...", el("Spaces tree node inside browse tree")));
       await session.step(21, "And user enters \"BDD-Miss\" into Name input in Create Space dialog", () => enterInto(page, "BDD-Miss", el("Name input in Create Space dialog")));
       await session.step(22, "And user clicks on OK button in Create Space dialog", () => clickOn(page, el("OK button in Create Space dialog")));
       await session.step(23, "Then 1 space named \"BDD-Miss\" should be on the server", () => spacesOnServer(page, 1, "BDD-Miss"));
     });
     await run.scenario("The Spaces list shows both", async () => {
-      await session.step(26, "When user clicks on Spaces tree node", () => clickOn(page, el("Spaces tree node")));
+      await session.step(26, "When user clicks on Spaces tree node inside browse tree", () => clickOn(page, el("Spaces tree node inside browse tree")));
       await session.step(27, "And user clicks on \"Refresh\" icon", () => clickOn(page, el("\"Refresh\" icon")));
       await session.step(28, "Then BDD-Find link in space gallery should be visible", () => shouldBe(page, el("BDD-Find link in space gallery"), "visible"));
       await session.step(29, "And BDD-Miss link in space gallery should be visible", () => shouldBe(page, el("BDD-Miss link in space gallery"), "visible"));
@@ -64,11 +65,11 @@ test.describe("Searching spaces", () => {
       await session.step(49, "And BDD-Miss link in space gallery should be visible", () => shouldBe(page, el("BDD-Miss link in space gallery"), "visible"));
     });
     await run.scenario("A child space is searchable inside its parent", async () => {
-      await session.step(52, "When user picks \"Create Child Space...\" from the context menu of BDD-Find tree node", () => pickFromContextMenu(page, "Create Child Space...", el("BDD-Find tree node")));
+      await session.step(52, "When user picks \"Create Child Space...\" from the context menu of BDD-Find tree node inside browse tree", () => pickFromContextMenu(page, "Create Child Space...", el("BDD-Find tree node inside browse tree")));
       await session.step(53, "And user enters \"BDD-Find-Child\" into Name input in Create Space dialog", () => enterInto(page, "BDD-Find-Child", el("Name input in Create Space dialog")));
       await session.step(54, "And user clicks on OK button in Create Space dialog", () => clickOn(page, el("OK button in Create Space dialog")));
-      await session.step(55, "Then BDD-Find-Child tree node should be visible", () => shouldBe(page, el("BDD-Find-Child tree node"), "visible"));
-      await session.step(56, "When user double-clicks on BDD-Find tree node", () => doubleClickOn(page, el("BDD-Find tree node")));
+      await session.step(55, "Then the Create Space dialog should close", () => createDialogCloses(page));
+      await session.step(56, "When user double-clicks on BDD-Find tree node inside browse tree", () => doubleClickOn(page, el("BDD-Find tree node inside browse tree")));
       await session.step(57, "Then BDD-Find-Child link in space gallery should be visible", () => shouldBe(page, el("BDD-Find-Child link in space gallery"), "visible"));
       await session.step(58, "When user enters \"zzz-no-such-space\" into space search", () => enterInto(page, "zzz-no-such-space", el("space search")));
       await session.step(59, "Then BDD-Find-Child link in space gallery should be absent", () => shouldBe(page, el("BDD-Find-Child link in space gallery"), "absent"));

@@ -1,5 +1,6 @@
-/* Spaces as the Browse tree shows them. Only two things are not platform vocabulary: the browse
-   panel a bdd page keeps closed, and the spaces a scenario leaves on the server. */
+/* Spaces as the Browse tree shows them. Everything general — the browse panel, the browse tree,
+   the expanded state of a node — is platform vocabulary in the library; what stays here is the
+   space view's own gallery and search, and the spaces a scenario leaves on the server. */
 import {expect, Page} from '@playwright/test';
 import {element, Given, Then} from '@datagrok-libraries/bdd';
 import {atFeatureEnd} from '@datagrok-libraries/bdd/runtime';
@@ -18,23 +19,19 @@ element('share access selector', {selector: '[name="div-share-selector"]'});
 /* grok.dapi.spaces.filter('name = "…"') answers nothing on a stand that holds the space (probed
    2026-09-10 against dev, by grok name, friendly name and both), so a space is found in the list. */
 async function deleteSpaces(page: Page, names: string[]): Promise<void> {
-  await page.evaluate(async (wanted) => {
+  const remaining = () => page.evaluate(async (wanted) => {
+    const left: string[] = [];
     for (const space of await grok.dapi.spaces.list({pageSize: 1000}))
-      if (wanted.includes(space.friendlyName) || wanted.includes(space.name))
-        await grok.dapi.spaces.delete(space);
+      if (wanted.includes(space.friendlyName) || wanted.includes(space.name)) {
+        await grok.dapi.spaces.delete(space).catch(() => undefined);
+        left.push(space.friendlyName ?? space.name);
+      }
+    return left;
   }, names);
+  // the delete returns before the space is gone, and creating the same name meanwhile is refused as
+  // a duplicate — so the step is over only once the server stops listing them
+  await expect.poll(remaining, {message: `spaces still on the server under ${names.join(', ')}`, timeout: 60000}).toEqual([]);
 }
-
-export const browsePanelOpen = Given('the browse panel is open', async (page: Page) => {
-  await page.evaluate(() => {
-    grok.shell.windows.simpleMode = false;
-    grok.shell.windows.showBrowse = true;
-  });
-  await page.locator('[name="tree-Spaces"]').first().waitFor({timeout: 60000});
-  atFeatureEnd(page, () => page.evaluate(() => {
-    grok.shell.windows.simpleMode = true;
-  }));
-}, {description: 'the Browse tree, which a bdd page hides: "user is logged in" puts the shell in simple mode, and the feature puts it back at the end'});
 
 export const noSpaceOnServer = Given('no space named {string} is on the server', async (page: Page, name: string) => {
   const names = name.split(',').map((n) => n.trim()).filter(Boolean);
@@ -42,17 +39,46 @@ export const noSpaceOnServer = Given('no space named {string} is on the server',
   atFeatureEnd(page, () => deleteSpaces(page, names));
 }, {tier: 'api', description: 'deletes what an earlier run left under those names (comma-separated), and deletes them again when the feature ends'});
 
-export const nodeExpanded = Given('the {string} tree node is expanded', async (page: Page, path: string) => {
-  const key = path.replace(/\s*>\s*/g, '---').replace(/\s+/g, '-');
-  const twistie = page.locator(`[name="tree-expander-${key}"]`).first();
-  await twistie.waitFor({state: 'visible', timeout: 30000});
-  if (!((await twistie.getAttribute('class')) ?? '').includes('d4-tree-view-tri-expanded'))
-    await twistie.click();
-  await expect(twistie).toHaveClass(/d4-tree-view-tri-expanded/);
-}, {description: 'idempotent, unlike "user expands": a Dart tree node carries no aria-expanded, so the generic step toggles blindly and closes a group that is already open — this reads the twistie\'s own class'});
-
 export const spacesOnServer = Then('{int} space(s) named {string} should be on the server', async (page: Page, count: number, name: string) => {
   await expect.poll(() => page.evaluate(async (n) =>
     (await grok.dapi.spaces.list({pageSize: 1000})).filter((s: any) => s.friendlyName === n || s.name === n).length,
   name), {message: `spaces the server holds under "${name}"`}).toBe(count);
 }, {tier: 'api', description: 'what the server holds, not what the tree draws — the refusal of a duplicate is a space that was never created'});
+
+/* Whom a space is shared with, read where the platform shows it. grok.dapi.permissions.get answers
+   with the edit and view buckets only, and a share made through the dialog lands in neither — the
+   Sharing pane calls it "has special permissions" — so the API cannot see it and the pane is the
+   claim. The user appears there under the punctuation-stripped login ("a+b@x" as "abx"). Two
+   expressions rather than one with "(not )": an optional literal is not a parameter, so a single
+   step would always take the positive branch. */
+async function sharingPane(page: Page): Promise<{pane: ReturnType<Page['locator']>; shown: RegExp}> {
+  const login = process.env.DATAGROK_SHARING_LOGIN;
+  if (!login)
+    throw new Error('no DATAGROK_SHARING_LOGIN in the environment: a sharing feature needs a second account');
+  const header = page.locator('.grok-prop-panel [name="div-section--Sharing"]').first();
+  await expect(header, 'the Sharing pane of the context panel').toBeVisible({timeout: 30000});
+  if (await header.getAttribute('aria-expanded') !== 'true')
+    await header.click();
+  return {
+    pane: page.locator('.grok-prop-panel .d4-pane-sharing').first(),
+    shown: new RegExp(login.split('@')[0].replace(/[^a-z0-9]/gi, ''), 'i'),
+  };
+}
+
+export const sharingPaneLists = Then('the sharing pane should list the sharing user', async (page: Page) => {
+  const {pane, shown} = await sharingPane(page);
+  await expect(pane).toContainText(shown);
+}, {tier: 'ui', description: 'the Sharing section of the context panel, opened if it is closed'});
+
+export const sharingPaneListsNot = Then('the sharing pane should not list the sharing user', async (page: Page) => {
+  const {pane, shown} = await sharingPane(page);
+  await expect(pane).not.toContainText(shown);
+}, {tier: 'ui'});
+
+/* Creating a space keeps the Create Space dialog open until the platform is done, and for a CHILD
+   space that took 6-18 s on dev (2026-09-10) — the shared 15 s expect timeout sits inside that
+   range, so the generic "should be hidden" passed or failed by luck. This claim owns its budget. */
+export const createDialogCloses = Then('the Create Space dialog should close', async (page: Page) => {
+  await expect(page.locator('.d4-dialog[name="dialog-Create-Space"]').filter({visible: true}),
+    'the Create Space dialog').toHaveCount(0, {timeout: 60000});
+}, {tier: 'ui', description: 'the platform closes it when the space is actually created'});

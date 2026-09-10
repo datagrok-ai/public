@@ -13,17 +13,17 @@ Feature: Searching spaces
     And no space named "BDD-Find, BDD-Miss, BDD-Find-Child" is on the server
 
   Scenario: Two spaces to search among
-    When user picks "Create Space..." from the context menu of Spaces tree node
+    When user picks "Create Space..." from the context menu of Spaces tree node inside browse tree
     And user enters "BDD-Find" into Name input in Create Space dialog
     And user clicks on OK button in Create Space dialog
     Then 1 space named "BDD-Find" should be on the server
-    When user picks "Create Space..." from the context menu of Spaces tree node
+    When user picks "Create Space..." from the context menu of Spaces tree node inside browse tree
     And user enters "BDD-Miss" into Name input in Create Space dialog
     And user clicks on OK button in Create Space dialog
     Then 1 space named "BDD-Miss" should be on the server
 
   Scenario: The Spaces list shows both
-    When user clicks on Spaces tree node
+    When user clicks on Spaces tree node inside browse tree
     And user clicks on "Refresh" icon
     Then BDD-Find link in space gallery should be visible
     And BDD-Miss link in space gallery should be visible
@@ -49,11 +49,11 @@ Feature: Searching spaces
     And BDD-Miss link in space gallery should be visible
 
   Scenario: A child space is searchable inside its parent
-    When user picks "Create Child Space..." from the context menu of BDD-Find tree node
+    When user picks "Create Child Space..." from the context menu of BDD-Find tree node inside browse tree
     And user enters "BDD-Find-Child" into Name input in Create Space dialog
     And user clicks on OK button in Create Space dialog
-    Then BDD-Find-Child tree node should be visible
-    When user double-clicks on BDD-Find tree node
+    Then the Create Space dialog should close
+    When user double-clicks on BDD-Find tree node inside browse tree
     Then BDD-Find-Child link in space gallery should be visible
     When user enters "zzz-no-such-space" into space search
     Then BDD-Find-Child link in space gallery should be absent

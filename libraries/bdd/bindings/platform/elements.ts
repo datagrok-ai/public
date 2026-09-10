@@ -9,6 +9,10 @@ element('toolbox', {selector: '.d4-toolbox', aliases: ['toolbox pane'],
   parts: {'viewers section': '[name="div-section--Viewers"]'}});
 element('toolbox tab', {selector: '[name="Toolbox"]', aliases: ['toolbox sidebar tab']});
 element('browse tab', {selector: '[name="Browse"]'});
+element('browse panel', {selector: '.grok-view-browse, .layout-browse', aliases: ['browse view'],
+  description: 'the left panel Browse opens; a bdd page starts in simple mode, where it is not in the DOM at all'});
+element('browse tree', {selector: '.grok-view-browse [role="tree"], .layout-browse [role="tree"]',
+  description: 'the tree inside the browse panel — the scope for a node phrase ("Files tree node inside browse tree")'});
 element('context panel', {selector: '.grok-prop-panel', aliases: ['property panel']});
 element('console', {selector: '.d4-console-wrapper'});
 element('status bar', {selector: '.layout-status-bar', aliases: ['statusbar'],

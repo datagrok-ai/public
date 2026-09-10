@@ -248,7 +248,10 @@ kind('accordion', {selector: u2('accordion') + ', .d4-accordion', match: ['name'
 kind('accordion header', {
   aliases: ['pane header'],
   selector: u2('accordion') + ' [role="button"], .d4-accordion-pane-header',
-  match: ['text', 'aria'],
+  // a Dart pane header carries its own name; its text can hold a count too ("Activity2"), which no
+  // exact-text match would find
+  match: ['dart', 'text', 'aria'],
+  dartNames: ['div-section--{q}'],
 });
 kind('card', {
   selector: u2('card', 'stat-card', 'entity-card') + ', .d4-item-card',
