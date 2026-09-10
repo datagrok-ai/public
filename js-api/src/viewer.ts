@@ -913,6 +913,7 @@ export class DensityPlotViewer extends Viewer<interfaces.IDensityPlotSettings> {
   get viewport(): Rect { return toJs(api.grok_CanvasViewportViewer_Get_Viewport(this.dart)); }
   set viewport(viewport: Rect) { api.grok_CanvasViewportViewer_SetViewport(this.dart, viewport.x, viewport.y, viewport.width, viewport.height); }
 
+  /** Fires whenever the visible region changes (zoom, pan, reset). */
   get onViewportChanged(): rxjs.Observable<Rect> { return this.onEvent('d4-viewport-changed'); }
 }
 
