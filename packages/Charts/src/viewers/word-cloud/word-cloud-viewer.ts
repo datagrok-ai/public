@@ -10,10 +10,13 @@ import $ from 'cash-dom';
 import {Observable, Subject} from 'rxjs';
 
 import {ERROR_CLASS, MessageHandler, unsubscribeAll} from '../../utils/utils';
-import {wordCloudStatus} from './word-cloud-status';
+import {laidOutWordCount, wordCloudStatus} from './word-cloud-status';
 
 
 const MAX_UNIQUE_CATEGORIES_NUMBER = 500;
+/** How long a render waits for a host it can measure, in 100 ms steps, before finishing on the
+ * picture that is up. */
+const SIZE_WAITS = 10;
 
 @grok.decorators.viewer({
   name: 'Word cloud',
@@ -40,6 +43,7 @@ export class WordCloudViewer extends DG.JsViewer {
   private _error: string | null = null;
   private _renderPending = 0;
   private _renderTimer: any = null;
+  private _sizeWaits = 0;
   private _onRendered = new Subject<void>();
 
   /** Fires after every render pass — what automation settles on together with `isRenderPending`. */
@@ -149,9 +153,12 @@ export class WordCloudViewer extends DG.JsViewer {
     if (this._renderPending === 0)
       return;
     // The counts are in place before `setOption`, so a status read between the two would report
-    // four words over no picture. A cloud that owes a canvas is not rendered yet; under load
-    // zrender can take more than the one frame the happy path needs.
-    if (this._error === null && this.wordColumnName && this.root.querySelector('canvas') === null && attempt < 20) {
+    // four words over no picture. The layout that places the words runs in the macrotask
+    // `setOption` queues and zrender paints them on the frame after that, so neither the canvas nor
+    // `finished` says the cloud is there — the boxes it left do.
+    const owed = this._error === null && !!this.wordColumnName &&
+      (this.root.querySelector('canvas') === null || laidOutWordCount(this.chart) === 0);
+    if (owed && attempt < 20) {
       this._renderTimer = setTimeout(() => requestAnimationFrame(() => this.renderFinished(attempt + 1)));
       return;
     }
@@ -170,6 +177,23 @@ export class WordCloudViewer extends DG.JsViewer {
       return;
     }
 
+    // Nothing can be laid out on a host with no size — the viewer between two places in the dock,
+    // a hidden tab — and emptying the root here would take the cloud off screen while the size read
+    // below threw on it, leaving the viewer with no canvas and no message. The picture that is up
+    // is the honest answer until a size comes back, and the pass stays pending while it may. The
+    // root is measured too: the element the dock sizes is not always the one that carries it.
+    const host = this.root.parentElement;
+    const width0 = (host === null ? 0 : host.clientWidth) || this.root.clientWidth;
+    const height0 = (host === null ? 0 : host.clientHeight) || this.root.clientHeight;
+    if (width0 === 0 || height0 === 0) {
+      if (this._sizeWaits++ < SIZE_WAITS)
+        this._renderTimer = setTimeout(() => this.render(), 100);
+      else
+        this.renderFinished();
+      return;
+    }
+    this._sizeWaits = 0;
+
     this._error = null;
     $(this.root).empty();
 
@@ -184,8 +208,8 @@ export class WordCloudViewer extends DG.JsViewer {
     }
 
     const margin = {top: 10, right: 10, bottom: 10, left: 10};
-    const width = this.root.parentElement!.clientWidth - margin.left - margin.right;
-    const height = this.root.parentElement!.clientHeight - margin.top - margin.bottom;
+    const width = width0 - margin.left - margin.right;
+    const height = height0 - margin.top - margin.bottom;
     const strColumn = this.dataFrame.getCol(this.wordColumnName);
     const table = this.dataFrame;
 

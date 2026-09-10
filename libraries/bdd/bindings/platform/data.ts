@@ -4,7 +4,8 @@
    follow ("should have repainted", "a narrower value range than before") read against the state
    before the change, and returns once every viewer has drawn the change, so the next step's
    baseline is the state after it. */
-import {expect, Page} from '@playwright/test';
+import {Page} from '@playwright/test';
+import {expect} from '../../src/runtime/patience.js';
 import {Then, When} from '../../src/registry.js';
 import {baselineAll, settleAll} from '../../src/runtime/viewers.js';
 

@@ -8,10 +8,12 @@
    What stays in a package binding is a gesture that only that viewer's DOM has (the tile viewer's
    sketch designer, the pc plot's axis-label drag) or an arithmetic only it can check (the pivot's
    aggregation against a groupBy). */
-import {expect, Page} from '@playwright/test';
+import {Page} from '@playwright/test';
+import {expect, pollMs} from '../../../src/runtime/patience.js';
 import {Then, When} from '../../../src/registry.js';
 import type {ElementRef} from '../../../src/runtime/args.js';
 import {exactText} from '../../../src/runtime/locate.js';
+import * as g from '../../../src/runtime/gestures.js';
 import * as v from '../../../src/runtime/viewers.js';
 
 async function settle(page: Page, target: ElementRef, capMs = 300): Promise<void> {
@@ -28,7 +30,7 @@ async function expectReadingContains(page: Page, target: ElementRef, name: strin
   const poll = expect.poll(async () => {
     last = String(await v.readValue(page, target, name));
     return last.split(/\s*,\s*/).includes(item);
-  }, {timeout: 5000, message: `"${name}" of ${target.phrase} is "${last}"`});
+  }, {timeout: pollMs(5000), message: `"${name}" of ${target.phrase} is "${last}"`});
   await (negate ? poll.not : poll).toBe(true);
 }
 
@@ -137,19 +139,31 @@ export const dragRangeHandle = When('user drags the {word} handle of the {string
   async (page: Page, handle: string, slider: string, target: ElementRef, px: number) => {
     if (handle !== 'min' && handle !== 'max')
       throw new Error(`a range slider has a min and a max handle, not a "${handle}" one`);
+    // a viewer added or closed next to this one is still being laid out: the pointer would go to
+    // where the plot was, and the sliders it reveals on enter would never appear
+    await settle(page, target);
     await page.mouse.move(0, 0);
     const centre = v.centerOf(await v.hitArea(page, target, 'view'));
     await page.mouse.move(centre.x, centre.y);
     const name = `range ${handle} handle "${slider}"`;
-    const reported = Object.keys(await v.hitAreas(page, target)).some((k) => k.startsWith('range ') && k.includes(' handle '));
     let box: {x: number; y: number; width: number; height: number} | null = null;
     let horizontal = slider === 'x';
-    // the area is polled for, and the baseline taken, in the same call: the slider lays itself out
-    // one frame after the pointer reveals it
-    if (reported)
+    // the slider lays itself out a frame after the pointer reveals it, so whether the viewer
+    // reports the handle is polled for and not read once — a single read that came too early sent
+    // this down the DOM fallback, which then failed on a viewer that does report it
+    let areas = await v.hitAreas(page, target);
+    if (areas[name] === undefined) {
+      await expect.poll(async () => (areas = await v.hitAreas(page, target))[name] !== undefined,
+        {timeout: pollMs(2000)}).toBe(true).catch(() => undefined);
+    }
+    if (areas[name] !== undefined)
       box = await v.hitArea(page, target, name, true);
     else {
-      const strip = await v.hitArea(page, target, `${slider} axis`, true);
+      // one axis per plot names its strip "x axis", one axis per column names it `axis "AGE"`
+      const stripName = Object.keys(areas).find((k) => k === `${slider} axis` || k === `axis "${slider}"`);
+      if (stripName === undefined)
+        throw new Error(`${target.phrase} has no "${name}" area and no axis strip for "${slider}"; it has: ${Object.keys(areas).join(', ') || 'none'}`);
+      const strip = await v.hitArea(page, target, stripName, true);
       horizontal = strip.width >= strip.height;
       const s = v.centerOf(strip);
       await page.mouse.move(s.x - 3, s.y);
@@ -242,10 +256,11 @@ export const pickInColumnSelector = When('user picks {string} in the {string} co
     await page.mouse.move(box.x + Math.min(10, box.width / 2), box.y + box.height / 2);
     await page.mouse.down();
     await page.mouse.up();
-    await page.locator('.d4-column-grid').last().waitFor({state: 'visible', timeout: 5000});
-    await page.keyboard.type(column);
-    await page.keyboard.press('Enter');
-    await expect(selector.locator('.d4-column-selector-column')).toHaveText(column, {timeout: 5000});
+    // the pointer stays where it is: these selectors are revealed by the hover, and leaving the
+    // viewer takes the popup with them. A row it rests on is previewed onto the selector, which a
+    // pick that lands overwrites anyway
+    await g.pickInColumnGrid(page, column, `the "${which}" column selector of ${target.phrase}`, selector);
+    await expect(selector.locator('.d4-column-selector-column')).toHaveText(column, {timeout: pollMs(5000)});
     await settle(page, target);
   }, {tier: 'ui', description: 'the column re-picked on the chart itself, the way a user re-picks it'});
 
@@ -264,9 +279,7 @@ export const typeInColumnSelector = When('user types {string} into the {string} 
     await page.mouse.move(box.x + Math.min(10, box.width / 2), box.y + box.height / 2);
     await page.mouse.down();
     await page.mouse.up();
-    await page.locator('.d4-column-grid').last().waitFor({state: 'visible', timeout: 5000});
-    await page.keyboard.type(column);
-    await page.keyboard.press('Enter');
+    await g.typeInColumnGrid(page, column, `the "${which}" column selector of ${target.phrase}`, selector);
     await settle(page, target);
   }, {tier: 'ui', description: 'for the negative: the selector takes the name typed only when it offers that column'});
 
@@ -319,11 +332,13 @@ export const areaHangsBelow = Then('the {string} area of {widget} should hang be
       const areas = await v.hitAreas(page, target);
       const a = areas[below];
       const b = areas[above];
-      if (!a || !b)
-        throw new Error(`${target.phrase} has no "${a ? above : below}" area; it has: ${Object.keys(areas).join(', ')}`);
+      if (!a || !b) {
+        shown = `it has: ${Object.keys(areas).join(', ') || 'none'}`;
+        return false;
+      }
       shown = `"${below}" spans y ${Math.round(a.y)}..${Math.round(a.y + a.height)}, "${above}" y ${Math.round(b.y)}..${Math.round(b.y + b.height)}`;
       return a.y >= b.y + b.height - 1 && a.height > 1;
-    }, {timeout: 5000, message: `the "${below}" area of ${target.phrase} does not hang below the "${above}" area: ${shown}`}).toBe(true);
+    }, {timeout: pollMs(5000), message: `the "${below}" area of ${target.phrase} does not hang below the "${above}" area: ${shown}`}).toBe(true);
   }, {description: 'one area starts where the other ends and reaches further down — a negative bar under a positive one'});
 
 // --- one row of what the viewer drew -----------------------------------------------------------------
@@ -375,7 +390,7 @@ async function expectEveryCard(page: Page, target: ElementRef, column: string, h
     const wrong = cells.filter((c) => !holds(c.text));
     bad = wrong.map((c) => `row ${c.row} shows "${c.text}"`).join(', ');
     return wrong.length === 0;
-  }, {timeout: 5000, message: seen === 0
+  }, {timeout: pollMs(5000), message: seen === 0
     ? `${target.phrase} has laid out no card with a "${column}" field`
     : `not every card of ${target.phrase} shows ${what} in "${column}": ${bad}`}).toBe(true);
 }
@@ -418,7 +433,7 @@ async function expectComposition(page: Page, target: ElementRef, refilled: boole
     return now.length === before.length && (refilled
       ? gone.length === 1 && gained.length === 1
       : gone.length === 0 && gained.length === 0);
-  }, {timeout: 8000, message: refilled
+  }, {timeout: pollMs(8000), message: refilled
     ? `${target.phrase} did not refill the freed slot: it showed ${before.join(', ')} and now shows ${now.join(', ')}`
     : `${target.phrase} did not keep its composition: it showed ${before.join(', ')} and now shows ${now.join(', ')}`}).toBe(true);
 }
@@ -459,7 +474,7 @@ async function expectTextIn(page: Page, name: string, target: ElementRef, text: 
     return last.includes(text);
   };
   try {
-    const poll = expect.poll(holds, {timeout: 5000});
+    const poll = expect.poll(holds, {timeout: pollMs(5000)});
     await (negate ? poll.not : poll).toBe(true);
   }
   catch {
@@ -489,7 +504,7 @@ export const noSuchReading = Then('{widget} should not report a {string} reading
         await loc.evaluate((el, n) => (window as any).__bdd.valueChange(el, n), name);
       has = r.has;
       return r.now !== undefined && r.now !== null;
-    }, {timeout: 5000, message: `${target.phrase} reports: ${has.join(', ') || 'no readings'}`}).toBe(false);
+    }, {timeout: pollMs(5000), message: `${target.phrase} reports: ${has.join(', ') || 'no readings'}`}).toBe(false);
   }, {description: 'the reading is absent, not merely empty'});
 
 // --- two of the viewer's own areas, compared as they stand -------------------------------------
@@ -506,14 +521,26 @@ export const areaBiggerThanArea = Then('the {string} area of {widget} should be 
     if (!(comparison in AREA_DIM))
       throw new Error(`an area is taller, shorter, wider or narrower than another, not "${comparison}"`);
     const dim = comparison as Dim;
-    const areas = await v.hitAreas(page, target);
-    for (const name of [a, b])
-      if (areas[name] === undefined)
-        throw new Error(`${target.phrase} has no "${name}" area; it has: ${Object.keys(areas).join(', ')}`);
-    const [x, y] = [AREA_DIM[dim](areas[a]), AREA_DIM[dim](areas[b])];
     const unit = dim === 'taller' || dim === 'shorter' ? 'tall' : 'wide';
-    expect(dim === 'taller' || dim === 'wider' ? x - y : y - x,
-      `the "${a}" area is ${Math.round(x)} ${unit} and "${b}" is ${Math.round(y)}`).toBeGreaterThan(0);
+    let shown = '';
+    // both areas are read together and polled for: a viewer laying itself out reports neither, and
+    // a single read of a layout in progress is a race, not a claim about the layout
+    const holds = async (): Promise<boolean> => {
+      const areas = await v.hitAreas(page, target);
+      if (areas[a] === undefined || areas[b] === undefined) {
+        shown = `${target.phrase} has no "${areas[a] ? b : a}" area; it has: ${Object.keys(areas).join(', ') || 'none'}`;
+        return false;
+      }
+      const [x, y] = [AREA_DIM[dim](areas[a]), AREA_DIM[dim](areas[b])];
+      shown = `the "${a}" area is ${Math.round(x)} ${unit} and "${b}" is ${Math.round(y)}`;
+      return dim === 'taller' || dim === 'wider' ? x > y : x < y;
+    };
+    try {
+      await expect.poll(holds, {timeout: pollMs(5000)}).toBe(true);
+    }
+    catch {
+      throw new Error(shown);
+    }
   }, {description: 'the library can say "taller than before" and "the same height"; this says one is bigger than the other now'});
 
 // --- the place a widget occupied ----------------------------------------------------------------

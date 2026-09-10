@@ -90,6 +90,13 @@ const FILE_CALL_RE = /Open(?:ServerFile|File|Folder)[A-Za-z]*\s*\(\s*["']([^"']+
 const NS_CALL_RE = /\b([A-Za-z]\w*(?::[A-Za-z]\w*)+)\s*\(/g;
 
 /** What a datasync script needs to re-run: the shares it opens, and the entities it calls. */
+/** The share paths a datasync table reads, e.g. `User:Home/Test projects/compounds.csv`. */
+export function datasyncFilePaths(t: any): string[] {
+  if (t?.metaParams?.['.data-sync'] !== 'sync') return [];
+  const script: string = t.metaParams?.['.script'] ?? '';
+  return [...script.matchAll(FILE_CALL_RE)].map((m) => m[1]).filter((p) => p.includes('/'));
+}
+
 export function datasyncConnectionRefs(t: any): Ref[] {
   if (t.metaParams?.['.data-sync'] !== 'sync') return [];
   const script: string = t.metaParams?.['.script'] ?? '';

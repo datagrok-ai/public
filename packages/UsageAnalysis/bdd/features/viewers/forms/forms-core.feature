@@ -250,6 +250,7 @@ Feature: Forms viewer field set, row binding, sort mirroring and pinning
     Given user selects rows where "SEVERITY" is "Critical"
     Then the record cards of forms viewer should show rows "215, 304, 428, 430, 512"
     When user double-clicks on the "header AGE" area of grid
-    Then the "sort column" reading of forms viewer should be "AGE"
+    Then the "current row" reading of grid should be 0
+    And the "sort column" reading of forms viewer should be "AGE"
     And the "cards" reading of forms viewer should be 7
     And the record cards of forms viewer should show rows "304, 512, 428, 430, 215"

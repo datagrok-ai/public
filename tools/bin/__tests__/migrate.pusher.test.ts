@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import {NodeDapi} from '../utils/node-dapi';
-import {Bundle, BundleEntity, normalize, read, write} from '../utils/migrate/bundle';
+import {Bundle, BundleEntity, normalize, read, write, writeShares} from '../utils/migrate/bundle';
 import {plan, push} from '../utils/migrate/pusher';
 import {loadCreds} from '../commands/server-migrate';
 
@@ -15,6 +15,7 @@ const PROJECT_ID = 'efe0b1f0-6fc0-11f1-b275-83ec2160b5e9';
 const GROUP_ID = 'dddddddd-1111-2222-3333-444444444444';
 const QUERY_ID = 'aaaaaaaa-1111-2222-3333-444444444444';
 const TWIN_ID = '99999999-1111-2222-3333-444444444444';
+const VIEW_ID = '77777777-1111-2222-3333-444444444444';
 
 let dir: string;
 beforeEach(() => { dir = fs.mkdtempSync(path.join(os.tmpdir(), 'grok-push-')); });
@@ -37,6 +38,12 @@ function makeDapi(responder: (method: string, path: string, body?: any) => any,
       for (const prefix of Object.keys(canned))
         if (path.startsWith(prefix))
           return typeof canned[prefix] === 'function' ? canned[prefix](method, path, body) : canned[prefix];
+      // Placement reads the rows on their own; a fixture only has to describe the project.
+      const forProject = /^\/projects\/relations\?.*projectId=([^&]+)/.exec(path);
+      if (forProject) {
+        const project = await this.request('GET', `/projects/${forProject[1]}`).catch(() => null);
+        return project?.relations ?? [];
+      }
       return responder(method, path, body);
     },
     get(path: string) { return this.request('GET', path); },
@@ -205,6 +212,62 @@ describe('push', () => {
       .toEqual([{id: 'r1', entity: {'#type': 'EntityRecord', id: TABLE_ID}, isLink: false}]);
   });
 
+  it('takes the intended name back once the entity is placed', async () => {
+    const project: [string, BundleEntity] = [PROJECT_ID, {type: 'Project', json: {
+      '#type': 'Project', id: PROJECT_ID, name: 'Dash', namespace: 'Admin:', isDashboard: true,
+      relations: [{id: 'r1', isLink: false, entity: {'#type': 'EntityRecord', id: TABLE_ID}}],
+    }}];
+    const table: [string, BundleEntity] = [TABLE_ID, {type: 'TableInfo', json: {'#type': 'TableInfo', id: TABLE_ID, name: 'Cereal', namespace: 'Admin:'}}];
+    const stored: Record<string, any> = {};
+    let placed = false;
+    const {dapi} = makeDapi((method, path, body) => {
+      if (path.startsWith('/entities?')) return [];
+      if (path === '/projects?saveRelations=true') { placed = true; stored[body.id] = body; return body; }
+      // Until the project is placed the name is taken, exactly as the server sees it.
+      if (method === 'POST') {
+        stored[body.id] = {...body, name: body.name === 'Dash' && !placed ? 'Dash_1' : body.name, relations: []};
+        return stored[body.id];
+      }
+      const id = path.split('?')[0].split('/').pop()!;
+      return stored[id] ?? notFound();
+    });
+    const result = await push(dapi, bundleOf([project, table]), {onConflict: 'fail'}, () => {});
+    expect(stored[PROJECT_ID].name).toBe('Dash');
+    const row = result.items.find((r) => ['renamed', 'name_restored'].includes(r.reason))!;
+    expect(row).toMatchObject({action: 'info', reason: 'name_restored'});
+  });
+
+  it('places the entity again after taking its name back', async () => {
+    // Saving an entity re-homes it into the pusher's own root, and the namespace is derived from
+    // containment — so restoring a name after placement quietly undoes the placement.
+    const project: [string, BundleEntity] = [PROJECT_ID, {type: 'Project', json: {
+      '#type': 'Project', id: PROJECT_ID, name: 'Dash', namespace: 'Skalkin:', isDashboard: true,
+      relations: [{id: 'r1', isLink: false, entity: {'#type': 'EntityRecord', id: TABLE_ID}}],
+    }}];
+    const table: [string, BundleEntity] = [TABLE_ID, {type: 'TableInfo', json: {
+      '#type': 'TableInfo', id: TABLE_ID, name: 'Cereal', namespace: 'Skalkin:'}}];
+    const stored: Record<string, any> = {};
+    let placed = false;
+    const order: string[] = [];
+    const {dapi} = makeDapi((method, path, body) => {
+      if (path.startsWith('/entities?')) return [];
+      if (path === '/projects?saveRelations=true') {
+        placed = true; order.push('place'); stored[body.id] = body; return body;
+      }
+      if (method === 'POST') {
+        if (body?.name === 'Dash') order.push('save-project');
+        // The entity save drops it back out of the project it was just placed in.
+        stored[body.id] = {...body, name: body.name === 'Dash' && !placed ? 'Dash_1' : body.name, relations: []};
+        return stored[body.id];
+      }
+      const id = path.split('?')[0].split('/').pop()!;
+      return stored[id] ?? notFound();
+    });
+    await push(dapi, bundleOf([project, table]), {onConflict: 'fail'}, () => {});
+    expect(order.lastIndexOf('place')).toBeGreaterThan(order.lastIndexOf('save-project'));
+    expect(stored[PROJECT_ID].relations.map((r: any) => r.entity.id)).toContain(TABLE_ID);
+  });
+
   it('keeps a relation the target has and the bundle does not', async () => {
     const other = '77777777-1111-2222-3333-444444444444';
     const project: [string, BundleEntity] = [PROJECT_ID, {type: 'Project', json: {
@@ -218,12 +281,41 @@ describe('push', () => {
       if (path.startsWith('/entities?')) return [];
       if (method === 'POST') return body;
       if (path.startsWith(`/projects/${PROJECT_ID}`)) return onTarget;
+      if (path.startsWith(`/tables/${TABLE_ID}`)) return table[1].json;
       return notFound();
     });
     await push(dapi, bundleOf([project, table]), {onConflict: 'fail'}, () => {});
     const saved = calls.find((c) => c.path === '/projects?saveRelations=true')!.body.relations;
     expect(saved.map((r: any) => r.entity.id).sort()).toEqual([other, TABLE_ID].sort());
     expect(saved.find((r: any) => r.entity.id === other).id).toBe('rx');
+  });
+
+  it('drops the one relation the target refuses and writes the rest', async () => {
+    const refused = '88888888-1111-2222-3333-444444444444';
+    const project: [string, BundleEntity] = [PROJECT_ID, {type: 'Project', json: {
+      '#type': 'Project', id: PROJECT_ID, name: 'Dash', namespace: 'Admin:', isDashboard: true,
+      relations: [{id: 'r1', isLink: false, entity: {'#type': 'EntityRecord', id: TABLE_ID}},
+        {id: 'r2', isLink: false, entity: {'#type': 'EntityRecord', id: refused}}],
+    }}];
+    const table: [string, BundleEntity] = [TABLE_ID, {type: 'TableInfo', json: {'#type': 'TableInfo', id: TABLE_ID, name: 'Cereal', namespace: 'Admin:'}}];
+    const other: [string, BundleEntity] = [refused, {type: 'TableInfo', json: {'#type': 'TableInfo', id: refused, name: 'Broken', namespace: 'Admin:'}}];
+    const stored: Record<string, any> = {};
+    const {dapi, calls} = makeDapi((method, path, body) => {
+      if (path.startsWith('/entities?')) return [];
+      if (path === '/projects?saveRelations=true') {
+        if (body.relations.some((r: any) => r.entity.id === refused))
+          throw new Error(`Unable to add entity ${refused} to the project`);
+        return body;
+      }
+      if (method === 'POST') { stored[body.id] = {...body, relations: []}; return body; }
+      const id = path.split('?')[0].split('/').pop()!;
+      return stored[id] ?? notFound();
+    });
+    const result = await push(dapi, bundleOf([project, table, other]), {onConflict: 'fail'}, () => {});
+    const written = calls.filter((c) => c.path === '/projects?saveRelations=true');
+    expect(written[written.length - 1].body.relations.map((r: any) => r.entity.id)).toEqual([TABLE_ID]);
+    expect(result.items.find((r) => r.reason === 'relations_refused')!.detail).toContain(refused);
+    expect(result.items.some((r) => r.action === 'failed')).toBe(false);
   });
 
   it('does not re-save relations of a project the target already matches', async () => {
@@ -630,8 +722,298 @@ describe('a skipped entity takes its dependants with it', () => {
 
 describe('files, spaces and models', () => {
   const file = (over: any = {}): [string, BundleEntity] => ['f1', {type: 'FileInfo', json: {
-    '#type': 'FileInfo', id: 'f1', name: 'a.csv', friendlyName: 'a.csv', path: 'a.csv', isFile: true, ...over,
+    '#type': 'FileInfo', id: 'f1', name: 'a.csv', friendlyName: 'a.csv', path: 'a.csv', isFile: true,
+    connection: {id: CONN_ID}, ...over,
   }}];
+
+  it('writes a datasync table\'s share file back into the share of the same name', async () => {
+    const table: [string, BundleEntity] = [TABLE_ID, {type: 'TableInfo', json: {
+      '#type': 'TableInfo', id: TABLE_ID, name: 'Compounds', namespace: 'Admin:',
+      metaParams: {'.data-sync': 'sync', '.script': 'Compounds = OpenFile("User:Home/Test projects/compounds.csv")'},
+    }}];
+    const b = bundleOf([table]);
+    writeShares(b.dir, new Map([['User:Home/Test projects/compounds.csv', Buffer.from('smiles,id\nCCO,1\n')]]));
+    const stored: Record<string, any> = {};
+    const {dapi, calls} = makeDapi((method, path, body) => {
+      if (path.startsWith('/entities?')) return [];
+      if (method === 'POST') { stored[body.id] = body; return body; }
+      const id = path.split('?')[0].split('/').pop()!;
+      return stored[id] ?? notFound();
+    });
+    const result = await push(dapi, b, {onConflict: 'fail'}, () => {});
+    const upload = calls.find((c) => c.path.startsWith('/public/v1/files/'));
+    expect(upload!.path).toBe('/public/v1/files/User.Home/Test projects/compounds.csv');
+    expect(upload!.body.toString()).toBe('smiles,id\nCCO,1\n');
+    expect(result.items.find((r) => r.entityType === 'File')).toMatchObject({action: 'create', reason: 'share_file'});
+  });
+
+  it('names the users the target is missing before anything is written', async () => {
+    const mine: [string, BundleEntity] = ['p-a', {type: 'Project', json: {
+      '#type': 'Project', id: 'p-a', name: 'Alice', isRoot: true, _personalOf: 'alice', relations: [],
+    }}];
+    const theirs: [string, BundleEntity] = ['p-b', {type: 'Project', json: {
+      '#type': 'Project', id: 'p-b', name: 'Bob', isRoot: true, _personalOf: 'bob', relations: [],
+    }}];
+    const {dapi} = makeDapi((_m, path) => {
+      if (path.startsWith('/entities?')) return [];
+      return notFound();
+    }, {'/users?': [{login: 'alice', project: {id: 'target-alice'}}]});
+    const {rows} = await plan(dapi, bundleOf([mine, theirs]), {onConflict: 'skip'});
+    const warn = rows.find((r) => r.reason === 'user_missing')!;
+    expect(warn).toMatchObject({entityType: 'User', action: 'warn', name: 'bob'});
+  });
+
+  it('survives an external whose type the registry does not carry', async () => {
+    // A bundle references types the walker never migrates (UserReport among them); once a mapping
+    // for one is in the idmap, re-verifying it must not assume a registry entry exists.
+    const SOURCE = '11111111-eeee-0000-0000-000000000001';
+    const query: [string, BundleEntity] = [QUERY_ID, {type: 'DataQuery', json: {
+      '#type': 'DataQuery', id: QUERY_ID, name: 'Orders', namespace: 'Skalkin:', query: 'select 1',
+    }}];
+    const b = bundleOf([query]);
+    b.manifest.externals = [{id: SOURCE, type: 'UserReport', nqName: 'Admin:Report1'}];
+    b.idmap[SOURCE] = '22222222-eeee-0000-0000-000000000002';
+    const stored: Record<string, any> = {};
+    const {dapi} = makeDapi((method, path, body) => {
+      if (path.startsWith('/entities?')) return [];
+      if (method === 'POST') { stored[body.id] = body; return body; }
+      const id = path.split('?')[0].split('/').pop()!;
+      return stored[id] ?? notFound();
+    });
+    const result = await push(dapi, b, {onConflict: 'fail'}, () => {});
+    expect(result.items.some((r) => r.action === 'failed')).toBe(false);
+  });
+
+  it('re-points a reference at the package entity the target made under its own id', async () => {
+    const SOURCE_CONN = '11111111-2222-3333-4444-555555555555';
+    const TARGET_CONN = '66666666-7777-8888-9999-000000000000';
+    const query: [string, BundleEntity] = [QUERY_ID, {type: 'DataQuery', json: {
+      '#type': 'DataQuery', id: QUERY_ID, name: 'Orders', namespace: 'Skalkin:',
+      connection: {id: SOURCE_CONN}, query: 'select 1',
+    }}];
+    const b = bundleOf([query]);
+    b.manifest.externals = [{id: SOURCE_CONN, type: 'DataConnection', nqName: 'Samples:PostgresNorthwind'}];
+    const stored: Record<string, any> = {};
+    const {dapi, calls} = makeDapi((method, path, body) => {
+      if (path.startsWith('/entities?namespace=Samples%3A'))
+        return [{'#type': 'DataConnection', id: TARGET_CONN, name: 'PostgresNorthwind', namespace: 'Samples:'}];
+      if (path.startsWith('/entities?')) return [];
+      if (method === 'POST') { stored[body.id] = body; return body; }
+      const id = path.split('?')[0].split('/').pop()!;
+      return stored[id] ?? notFound();
+    });
+    await push(dapi, b, {onConflict: 'fail'}, () => {});
+    const saved = calls.find((c) => c.method === 'POST' && c.path === '/connectors/queries')!;
+    expect(saved.body.connection.id).toBe(TARGET_CONN);
+  });
+
+  it('reports a view the source itself can no longer resolve as left behind, not as a failure', async () => {
+    const DEAD = 'deadbeef-0000-0000-0000-000000000001';
+    const view: [string, BundleEntity] = [VIEW_ID, {type: 'ViewInfo', json: {
+      '#type': 'ViewInfo', id: VIEW_ID, name: 'Demog', namespace: 'Skalkin:', table: {id: DEAD},
+    }}];
+    const b = bundleOf([view]);
+    b.manifest.dangling = [DEAD];
+    const {dapi} = makeDapi((method, path) => {
+      if (path.startsWith('/entities?')) return [];
+      if (method === 'POST') throw new Error('Operation caused an exception');
+      return notFound();
+    });
+    const result = await push(dapi, b, {onConflict: 'fail'}, () => {});
+    const row = result.items.find((r) => r.entityType === 'ViewInfo' && r.name.includes('Demog'))!;
+    expect(row).toMatchObject({action: 'skip', reason: 'dead_on_source'});
+    expect(result.items.some((r) => r.action === 'failed')).toBe(false);
+  });
+
+  it('keeps a timeout a failure even when the entity references a dead id', async () => {
+    const DEAD = 'deadbeef-0000-0000-0000-000000000003';
+    const view: [string, BundleEntity] = [VIEW_ID, {type: 'ViewInfo', json: {
+      '#type': 'ViewInfo', id: VIEW_ID, name: 'Demog', namespace: 'Skalkin:', table: {id: DEAD},
+    }}];
+    const b = bundleOf([view]);
+    b.manifest.dangling = [DEAD];
+    const {dapi} = makeDapi((method, path) => {
+      if (path.startsWith('/entities?')) return [];
+      if (method === 'POST') throw new Error('POST /views: no answer in 60000ms');
+      return notFound();
+    });
+    const result = await push(dapi, b, {onConflict: 'fail'}, () => {});
+    expect(result.items.find((r) => r.entityType === 'ViewInfo')!.action).toBe('failed');
+  });
+
+  it('still fails a refusal caused by a reference the source has and the target lacks', async () => {
+    const ABSENT = 'deadbeef-0000-0000-0000-000000000002';
+    const view: [string, BundleEntity] = [VIEW_ID, {type: 'ViewInfo', json: {
+      '#type': 'ViewInfo', id: VIEW_ID, name: 'Demog', namespace: 'Skalkin:', table: {id: ABSENT},
+    }}];
+    const {dapi} = makeDapi((method, path) => {
+      if (path.startsWith('/entities?')) return [];
+      if (method === 'POST') throw new Error('Operation caused an exception');
+      return notFound();
+    });
+    const result = await push(dapi, bundleOf([view]), {onConflict: 'fail'}, () => {});
+    const row = result.items.find((r) => r.entityType === 'ViewInfo' && r.name.includes('Demog'))!;
+    expect(row.action).toBe('failed');
+    expect(row.detail).toContain('install the package first');
+  });
+
+  it('re-asserts the placement of a project whose own row is unchanged', async () => {
+    const SPACE = '11111111-cccc-0000-0000-000000000001';
+    const rel = {id: 'r1', isLink: false, entity: {'#type': 'EntityRecord', id: TABLE_ID}};
+    const space: [string, BundleEntity] = [SPACE, {type: 'Project', json: {
+      '#type': 'Project', id: SPACE, name: 'Space', namespace: 'Skalkin:', relations: [rel],
+    }}];
+    const table: [string, BundleEntity] = [TABLE_ID, {type: 'TableInfo', json: {
+      '#type': 'TableInfo', id: TABLE_ID, name: 'Demog', namespace: 'Skalkin:',
+    }}];
+    // Identical at planning time, relation and all — then the relation is gone by the time
+    // placement runs, exactly as the real owner's write would have taken it away. Skipping the
+    // project here is what made a second push of the same bundle shed what the first placed.
+    let reads = 0;
+    const stored: Record<string, any> = {
+      [TABLE_ID]: {'#type': 'TableInfo', id: TABLE_ID, name: 'Demog', namespace: 'Skalkin:'},
+    };
+    const {dapi, calls} = makeDapi((method, path, body) => {
+      if (path.startsWith('/entities?')) return [];
+      if (path === '/projects?saveRelations=true') { stored[body.id] = body; return body; }
+      if (method === 'POST') { stored[body.id] = {...body, relations: []}; return stored[body.id]; }
+      const id = path.split('?')[0].split('/').pop()!;
+      if (id === SPACE)
+        return {'#type': 'Project', id: SPACE, name: 'Space', namespace: 'Skalkin:',
+          relations: reads++ === 0 ? [rel] : []};
+      return stored[id] ?? notFound();
+    });
+    const result = await push(dapi, bundleOf([space, table]), {onConflict: 'skip'}, () => {});
+    expect(result.items.find((r) => r.entityType === 'Project' && r.name.includes('Space'))!.action).toBe('identical');
+    const written = calls.filter((c) => c.path === '/projects?saveRelations=true');
+    expect(written.map((c) => c.body.id)).toContain(SPACE);
+    expect(written[0].body.relations.map((r: any) => r.entity.id)).toContain(TABLE_ID);
+  });
+
+  it('lets the owner claim an entity instead of writing a release the server ignores', async () => {
+    const OUTER = '11111111-dddd-0000-0000-000000000001';
+    const INNER = '11111111-dddd-0000-0000-000000000002';
+    // Both claim the table; the deeper one owns it, so the outer one has to hold it as a link or
+    // the owner's write deletes the outer row and nothing ever puts it back.
+    const outerRels = [
+      {id: 'r1', isLink: false, entity: {'#type': 'EntityRecord', id: INNER}},
+      {id: 'r2', isLink: false, entity: {'#type': 'EntityRecord', id: TABLE_ID}},
+    ];
+    const outer: [string, BundleEntity] = [OUTER, {type: 'Project', json: {
+      '#type': 'Project', id: OUTER, name: 'Outer', namespace: 'Skalkin:', relations: outerRels,
+    }}];
+    const inner: [string, BundleEntity] = [INNER, {type: 'Project', json: {
+      '#type': 'Project', id: INNER, name: 'Inner', namespace: 'Skalkin:',
+      relations: [{id: 'r3', isLink: false, entity: {'#type': 'EntityRecord', id: TABLE_ID}}],
+    }}];
+    const table: [string, BundleEntity] = [TABLE_ID, {type: 'TableInfo', json: {
+      '#type': 'TableInfo', id: TABLE_ID, name: 'Demog', namespace: 'Skalkin:',
+    }}];
+    // The outer project is identical, so nothing rewrites its rows — and it holds the table as a
+    // containment claim the bundle gives to the inner one.
+    const stored: Record<string, any> = {
+      [OUTER]: {'#type': 'Project', id: OUTER, name: 'Outer', namespace: 'Skalkin:',
+        relations: JSON.parse(JSON.stringify(outerRels))},
+    };
+    const {dapi, calls} = makeDapi((method, path, body) => {
+      if (path.startsWith('/entities?')) return [];
+      if (path === '/projects?saveRelations=true') { stored[body.id] = body; return body; }
+      if (method === 'POST') { stored[body.id] = {...body, relations: []}; return stored[body.id]; }
+      const id = path.split('?')[0].split('/').pop()!;
+      return stored[id] ?? notFound();
+    });
+    const result = await push(dapi, bundleOf([outer, inner, table]), {onConflict: 'skip'}, () => {});
+    expect(result.items.find((r) => r.name.includes('Outer'))!.action).toBe('identical');
+    const wrote = (id: string) => calls.filter((c) => c.path === '/projects?saveRelations=true' && c.body.id === id).pop();
+    // The owner claims it, and the server drops the other holder's containment row itself. Writing
+    // the outer project to say "link" is ignored and recomputed, so it is not worth tens of seconds.
+    expect(wrote(INNER)!.body.relations.find((r: any) => r.entity.id === TABLE_ID).isLink).toBe(false);
+    expect(wrote(OUTER)).toBeUndefined();
+  });
+
+  it('links a dashboard inside a personal space, not just the space itself', async () => {
+    const ROOT = '11111111-aaaa-bbbb-cccc-000000000001';
+    const DASH = '22222222-aaaa-bbbb-cccc-000000000002';
+    const TARGET_ROOT = '99999999-aaaa-bbbb-cccc-000000000009';
+    const root: [string, BundleEntity] = [ROOT, {type: 'Project', json: {
+      '#type': 'Project', id: ROOT, name: 'Skalkin', isRoot: true, _personalOf: 'skalkin',
+      relations: [{id: 'r0', isLink: false, entity: {'#type': 'EntityRecord', id: DASH}}],
+    }}];
+    const dash: [string, BundleEntity] = [DASH, {type: 'Project', json: {
+      '#type': 'Project', id: DASH, name: 'Accelerometer', namespace: 'Skalkin:', isDashboard: true,
+      relations: [{id: 'r1', isLink: false, entity: {'#type': 'EntityRecord', id: TABLE_ID}}],
+    }}];
+    const table: [string, BundleEntity] = [TABLE_ID, {type: 'TableInfo', json: {
+      '#type': 'TableInfo', id: TABLE_ID, name: 'Accelerometer', namespace: 'Skalkin:',
+    }}];
+    const stored: Record<string, any> = {[TARGET_ROOT]: {'#type': 'Project', id: TARGET_ROOT, name: 'Skalkin', relations: []}};
+    const {dapi, calls} = makeDapi((method, path, body) => {
+      if (path.startsWith('/entities?')) return [];
+      if (path === '/projects?saveRelations=true') { stored[body.id] = body; return body; }
+      if (method === 'POST') { stored[body.id] = {...body, relations: []}; return stored[body.id]; }
+      const id = path.split('?')[0].split('/').pop()!;
+      return stored[id] ?? notFound();
+    }, {'/users?': [{login: 'skalkin', project: {id: TARGET_ROOT}}]});
+    await push(dapi, bundleOf([root, dash, table]), {onConflict: 'skip'}, () => {});
+    const written = calls.filter((c) => c.path === '/projects?saveRelations=true').map((c) => c.body.id);
+    expect(written).toContain(TARGET_ROOT);
+    expect(written).toContain(DASH);
+  });
+
+  it('writes a container\'s relations before those of the projects inside it', async () => {
+    const ROOT = '11111111-cccc-bbbb-aaaa-000000000001';
+    const DASH = '22222222-cccc-bbbb-aaaa-000000000002';
+    // Manifest order deliberately puts the dashboard first — writing the root after it would
+    // rebuild the containment and drop what the dashboard had just been given.
+    const dash: [string, BundleEntity] = [DASH, {type: 'Project', json: {
+      '#type': 'Project', id: DASH, name: 'Dash', namespace: 'Admin:', isDashboard: true,
+      relations: [{id: 'r1', isLink: false, entity: {'#type': 'EntityRecord', id: TABLE_ID}}],
+    }}];
+    const root: [string, BundleEntity] = [ROOT, {type: 'Project', json: {
+      '#type': 'Project', id: ROOT, name: 'Space', isRoot: true,
+      relations: [{id: 'r0', isLink: false, entity: {'#type': 'EntityRecord', id: DASH}}],
+    }}];
+    const table: [string, BundleEntity] = [TABLE_ID, {type: 'TableInfo', json: {
+      '#type': 'TableInfo', id: TABLE_ID, name: 'Cereal', namespace: 'Admin:',
+    }}];
+    const stored: Record<string, any> = {};
+    const {dapi, calls} = makeDapi((method, path, body) => {
+      if (path.startsWith('/entities?')) return [];
+      if (path === '/projects?saveRelations=true') { stored[body.id] = body; return body; }
+      if (method === 'POST') { stored[body.id] = {...body, relations: []}; return stored[body.id]; }
+      const id = path.split('?')[0].split('/').pop()!;
+      return stored[id] ?? notFound();
+    });
+    await push(dapi, bundleOf([dash, root, table]), {onConflict: 'fail'}, () => {});
+    const written = calls.filter((c) => c.path === '/projects?saveRelations=true').map((c) => c.body.id);
+    expect(written).toEqual([ROOT, DASH]);
+  });
+
+  it('pushes a file that has no share of its own when its bytes travelled', async () => {
+    // `files_service.dart` saves a connection-less FileInfo as a GUID-addressed blob
+    // (`addToUserProject: f.connection == null`), so the blob is the entity.
+    const orphan = file({connection: undefined});
+    const bundle = bundleOf([orphan], new Map([['f1', Buffer.from([1, 2, 3])]]));
+    const stored: Record<string, any> = {};
+    const {dapi, calls} = makeDapi((method, path, body) => {
+      if (path.startsWith('/entities?')) return [];
+      if (method === 'POST') { stored[body.id] = body; return body; }
+      const id = path.split('?')[0].split('/').pop()!;
+      return stored[id] ?? notFound();
+    });
+    const result = await push(dapi, bundle, {onConflict: 'fail'}, () => {});
+    expect(result.items.find((r) => r.entityType === 'FileInfo')!.action).toBe('create');
+    expect(calls.some((c) => c.method === 'POST' && c.path.startsWith('/files'))).toBe(true);
+  });
+
+  it('skips a file that has neither a share nor its bytes', async () => {
+    const orphan = file({connection: undefined});
+    const {dapi, calls} = makeDapi((_m, path) => path.startsWith('/entities?') ? [] : notFound());
+    const result = await push(dapi, bundleOf([orphan]), {onConflict: 'fail'}, () => {});
+    expect(result.items.find((r) => r.entityType === 'FileInfo')).toMatchObject({
+      action: 'skip', reason: 'file_bytes_missing'});
+    expect(calls.some((c) => c.method === 'POST' && c.path.startsWith('/files'))).toBe(false);
+  });
 
   it('writes the metadata first and the bytes under the id the target answered with', async () => {
     const bundle = bundleOf([file()], new Map([['f1', Buffer.from([1, 2, 3])]]));
@@ -642,7 +1024,7 @@ describe('files, spaces and models', () => {
       return path.startsWith('/files/existing-id') ? saved : notFound();
     });
     const result = await push(dapi, bundle, {onConflict: 'fail'}, () => {});
-    expect(result.items.map((r) => r.action)).toEqual(['create']);
+    expect(result.items.find((r) => r.entityType === 'FileInfo')).toMatchObject({action: 'create'});
     expect(calls.filter((c) => c.method === 'POST').map((c) => c.path)).toEqual(['/files', '/files/data/existing-id']);
     expect(JSON.parse(fs.readFileSync(path.join(dir, 'idmap.json'), 'utf8'))['f1']).toBe('existing-id');
   });

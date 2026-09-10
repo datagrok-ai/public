@@ -1,7 +1,8 @@
 /* The generic step vocabulary: gestures (When) and outcomes (Then) over any element phrase.
    Expressions are cucumber expressions: `(on )` optional text, `in(to)` optional suffix, `be/become`
    alternation. Every definition is an exported const — the compiler imports it by name. */
-import {expect, Page} from '@playwright/test';
+import {Page} from '@playwright/test';
+import {expect} from '../../src/runtime/patience.js';
 import {Given, Then, When} from '../../src/registry.js';
 import type {ElementRef} from '../../src/runtime/args.js';
 import {el} from '../../src/runtime/args.js';

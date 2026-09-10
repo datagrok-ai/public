@@ -2,7 +2,8 @@
    function call it starts awaited through the platform's own call events, and the columns it
    added to the table read against the columns it started with. A dialog a command shows in
    between is driven with the base steps (`OK button in "Sequence Space" dialog`). */
-import {expect, Page} from '@playwright/test';
+import {Page} from '@playwright/test';
+import {expect} from '../../src/runtime/patience.js';
 import {Then, When} from '../../src/registry.js';
 import {closeTopMenu, columnsSince, menuNames, openTopMenu, pickTopMenu, visibleLabels, waitCommand} from '../../src/runtime/menus.js';
 

@@ -5,8 +5,11 @@
    (its events) or stop waiting altogether (`immediateRendering`, armed here on every viewer the
    page will ever hold), so nothing in this module sleeps. When a signal or a name is missing, it
    is added to the core, never faked here. */
-import {expect, Locator, Page} from '@playwright/test';
+import {Locator, Page} from '@playwright/test';
+import {expect, pollMs} from './patience.js';
 import type {ElementRef} from './args.js';
+import {reasonOf} from './failure.js';
+import {typeVerified} from './gestures.js';
 import {exactText, locate} from './locate.js';
 
 declare const grok: any;
@@ -104,6 +107,7 @@ function install(): void {
   // how long a repaint the viewer says is pending may take before that is a platform failure
   const PENDING_CAP = 10000;
   const sizes = new WeakMap<Element, {width: string; height: string}>();
+  const forced = new WeakMap<HTMLElement, MutationObserver>();
   const listeners = new WeakMap<Element, Record<string, {count: number; sub: any}>>();
   const armed: Record<string, Promise<unknown>> = {};
   const balloons: Balloon[] = [];
@@ -540,6 +544,10 @@ function install(): void {
   const writeProperties = async (el: Element, entries: [string, string][], capMs: number): Promise<number> => {
     const v = viewerOf(el);
     arm(v);
+    // the state a "than before" claim compares with is the one the viewer had FINISHED, not
+    // whatever it happened to be showing mid-render: a word cloud between two layouts reports no
+    // words at all, and the claim after the write then has nothing to compare with
+    await quiet(v).catch(() => undefined);
     baseline(el);
     const settled = settle(el, capMs);
     for (const [caption, text] of entries) {
@@ -706,17 +714,66 @@ function install(): void {
     renders.get(v.root)?.sub?.unsubscribe();
     renders.delete(v.root);
   };
+  /** Resolves once the element's box has been the same for two frames, or the cap runs out. The
+   * dock manager sizes the element it hosts, so a size written while it is still laying a freshly
+   * docked viewer out is overwritten by the pass that follows — and the viewer then reads at
+   * whatever width the dock gave it, which is a fixture silently gone. */
+  /** Resolves once [read] says the same thing on [frames] consecutive frames after the first — what
+   * it describes has stopped moving — or after [capMs]. */
+  const stable = (read: () => string, capMs: number, frames: number): Promise<void> => new Promise((done) => {
+    const t0 = Date.now();
+    let last = '';
+    let same = 0;
+    const tick = (): void => {
+      const now = read();
+      same = now === last ? same + 1 : 0;
+      last = now;
+      if (same >= frames || Date.now() - t0 >= capMs)
+        return done();
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  });
+  const stableBox = (root: HTMLElement, capMs: number): Promise<void> => stable(() => {
+    const r = root.getBoundingClientRect();
+    return `${Math.round(r.width)}x${Math.round(r.height)}`;
+  }, capMs, 2);
+  /** A gesture aims at where the viewer has finished putting the thing, and a finished render is not
+   * the end of that: a layout pass on the next frame can still move the whole viewer (a title just
+   * set moved the pivot's grid down a row, and the right-click meant for a header landed on a cell).
+   * The areas are relative to the anchor, so it is the anchor's box that must agree on two
+   * consecutive frames — a cheap read, against the whole status per frame. */
+  const stableArea = (el: Element, _name: string, capMs: number): Promise<void> => stable(() => {
+    const r = anchorOf(viewerOf(el)).getBoundingClientRect();
+    return [r.x, r.y, r.width, r.height].map(Math.round).join(',');
+  }, capMs, 1);
   // the repaint a resize causes lands on the next task, so the settle is armed before the event
-  const resize = (el: Element, width: number | null, height: number | null, capMs: number): Promise<number> => {
+  const resize = async (el: Element, width: number | null, height: number | null, capMs: number): Promise<number> => {
     const root = viewerOf(el).root as HTMLElement;
     if (!sizes.has(root))
       sizes.set(root, {width: root.style.width, height: root.style.height});
+    await stableBox(root, 1000);
+    await quiet(viewerOf(el)).catch(() => undefined);
     baseline(el);
     const settled = settle(el, capMs);
-    if (width !== null)
-      root.style.width = `${width}px`;
-    if (height !== null)
-      root.style.height = `${height}px`;
+    // and the dock keeps sizing it afterwards, whenever anything else in the view is laid out: the
+    // size a step asked for is the fixture every claim after it is made against, so it is held
+    // until the step that gives it back
+    forced.get(root)?.disconnect();
+    const want = {
+      width: width === null ? null : `${width}px`,
+      height: height === null ? null : `${height}px`,
+    };
+    const apply = (): void => {
+      if (want.width !== null && root.style.width !== want.width)
+        root.style.width = want.width;
+      if (want.height !== null && root.style.height !== want.height)
+        root.style.height = want.height;
+    };
+    const observer = new MutationObserver(apply);
+    observer.observe(root, {attributes: true, attributeFilter: ['style']});
+    forced.set(root, observer);
+    apply();
     window.dispatchEvent(new Event('resize'));
     return settled;
   };
@@ -725,6 +782,8 @@ function install(): void {
     const size = sizes.get(root);
     if (!size)
       return Promise.resolve(0);
+    forced.get(root)?.disconnect();
+    forced.delete(root);
     baseline(el);
     const settled = settle(el, capMs);
     root.style.width = size.width;
@@ -778,6 +837,10 @@ function install(): void {
   /** Where to right-click an element for its context menu — a named hit area, else the viewer's
    * `view` area, else the element's centre — with the canvas baseline taken and the menu armed. */
   const menuPoint = async (el: Element, area: string | null, capMs: number): Promise<{x: number; y: number; token: string}> => {
+    // the point the menu opens at must be where the viewer has finished putting the thing: a title
+    // just set moves the grid under it, and the right-click lands a row off
+    await settle(el, 300).catch(() => undefined);
+    await stableArea(el, area ?? 'view', 1000);
     let box: Box | undefined;
     try {
       box = hitArea(el, area ?? 'view', true);
@@ -913,7 +976,7 @@ function install(): void {
   w.__bdd = {viewerOf, arm, stampAll, settle, quiet, readProperty, writeProperties, findArea, hitArea, areas, areaInk, areaChange, areaDelta, areaColors,
     areaRectChange, legendState: (el: Element) => legendState(viewerOf(el)), legendChange, rememberValue, rememberedValue,
     snapshot, baselineAll, change, rangeChange, quietRangeChange, scaleChange, valueChange, quietValueChange, rememberRange, rememberedRange, stillness,
-    palette, tableOf, listen, unlisten, firedCount, resize, restoreSize, armEvent, waitArmed, closeMenu, openMenu, menuPoint, addViewer,
+    palette, tableOf, listen, unlisten, firedCount, resize, restoreSize, armEvent, waitArmed, closeMenu, openMenu, menuPoint, stableArea, addViewer,
     takeBalloons, saveLayout, saveLayoutToServer, loadLayout, deleteLayout, ink, armCommand, waitCommand, columnsSince, listenCustom, customFired};
   stampAll();
   grok.events.onViewerAdded.subscribe((a: any) => arm(a?.args?.viewer));
@@ -955,10 +1018,15 @@ export async function hitArea(page: Page, target: ElementRef, name: string, befo
   const loc = await viewerLocator(page, target);
   const find = (): Promise<{box?: Box; has: string[]}> =>
     loc.evaluate((el, [n, b]) => (window as any).__bdd.findArea(el, n, b), [name, beforeChange] as [string, boolean]);
+  // a gesture aims at where the viewer has finished putting the thing: a network diagram still
+  // running its physics moves the node between the read and the click. A viewer that says nothing
+  // is pending answers at once; one that never stops is the claim's problem, not the gesture's
+  if (beforeChange)
+    await loc.evaluate((el) => (window as any).__bdd.settle(el, 300)).catch(() => undefined);
   let found = await find();
   if (!found.box) {
     await expect.poll(async () => (found = await find()).box !== undefined,
-      {timeout: 5000, message: `${target.phrase} reports no "${name}" area; it has: ${found.has.join(', ') || 'none'}`}).toBe(true);
+      {timeout: pollMs(5000), message: `${target.phrase} reports no "${name}" area; it has: ${found.has.join(', ') || 'none'}`}).toBe(true);
   }
   return found.box!;
 }
@@ -969,7 +1037,7 @@ export async function expectHasArea(page: Page, target: ElementRef, name: string
   const find = (): Promise<{box?: Box; has: string[]}> => loc.evaluate((el, n) => (window as any).__bdd.findArea(el, n, false), name);
   let found = await find();
   const poll = expect.poll(async () => (found = await find()).box !== undefined,
-    {timeout: 5000, message: `${target.phrase} ${negate ? 'still reports' : 'reports no'} "${name}" area; it has: ${found.has.join(', ') || 'none'}`});
+    {timeout: pollMs(5000), message: `${target.phrase} ${negate ? 'still reports' : 'reports no'} "${name}" area; it has: ${found.has.join(', ') || 'none'}`});
   await (negate ? poll.not : poll).toBe(true);
 }
 
@@ -1009,7 +1077,7 @@ export async function readProperty(page: Page, target: ElementRef, caption: stri
 }
 
 export async function expectProperty(page: Page, target: ElementRef, caption: string, value: string, negate = false): Promise<void> {
-  const poll = expect.poll(() => readProperty(page, target, caption, value), {timeout: 5000, message: `"${caption}" of ${target.phrase}`});
+  const poll = expect.poll(() => readProperty(page, target, caption, value), {timeout: pollMs(5000), message: `"${caption}" of ${target.phrase}`});
   await (negate ? poll.not : poll).toBe(value.replace(/\\n/g, '\n'));
 }
 
@@ -1048,7 +1116,7 @@ export async function canvasChange(page: Page, target: ElementRef): Promise<Canv
  * the new state the snapshot. */
 export async function expectRepainted(page: Page, target: ElementRef, minPx = 1): Promise<void> {
   await expect.poll(async () => (await canvasChange(page, target)).delta,
-    {timeout: 10000, message: minPx > 1 ? `${target.phrase} did not repaint by ${minPx} pixels` : `${target.phrase} did not repaint`}).toBeGreaterThanOrEqual(minPx);
+    {timeout: pollMs(10000), message: minPx > 1 ? `${target.phrase} did not repaint by ${minPx} pixels` : `${target.phrase} did not repaint`}).toBeGreaterThanOrEqual(minPx);
 }
 
 /** A hit area's own repaint: the pixels inside its rectangle that differ from the snapshot. */
@@ -1056,14 +1124,14 @@ export async function expectAreaRepainted(page: Page, target: ElementRef, area: 
   await installViewerRuntime(page);
   const loc = await viewerLocator(page, target);
   await expect.poll(() => loc.evaluate((el, a) => (window as any).__bdd.areaDelta(el, a), area),
-    {timeout: 10000, message: `the "${area}" area of ${target.phrase} did not repaint`}).toBeGreaterThanOrEqual(minPx);
+    {timeout: pollMs(10000), message: `the "${area}" area of ${target.phrase} did not repaint`}).toBeGreaterThanOrEqual(minPx);
 }
 
 /** The table the viewer draws (`viewer.dataFrame`), not the property it was asked to bind. */
 export async function expectBoundTable(page: Page, target: ElementRef, name: string): Promise<void> {
   await installViewerRuntime(page);
   const loc = await viewerLocator(page, target);
-  await expect.poll(() => loc.evaluate((el) => (window as any).__bdd.tableOf(el)), {timeout: 5000, message: `the table ${target.phrase} is bound to`}).toBe(name);
+  await expect.poll(() => loc.evaluate((el) => (window as any).__bdd.tableOf(el)), {timeout: pollMs(5000), message: `the table ${target.phrase} is bound to`}).toBe(name);
 }
 
 /** A hit area's ink against the snapshot before the last change. */
@@ -1083,7 +1151,7 @@ export async function expectAreaInk(page: Page, target: ElementRef, area: string
     }
   };
   try {
-    await expect.poll(holds, {timeout: 10000}).toBe(true);
+    await expect.poll(holds, {timeout: pollMs(10000)}).toBe(true);
   }
   catch {
     throw new Error(`the "${area}" area of ${target.phrase} does not have ${compare} ink than before` +
@@ -1149,7 +1217,7 @@ export async function expectAreaColor(page: Page, target: ElementRef, area: stri
     return read.colors.filter((c) => near(c.hex, want)).reduce((n, c) => n + c.count, 0);
   };
   try {
-    await expect.poll(count, {timeout: 5000}).toBeGreaterThanOrEqual(COLOR_MIN_PX);
+    await expect.poll(count, {timeout: pollMs(5000)}).toBeGreaterThanOrEqual(COLOR_MIN_PX);
   }
   catch {
     throw new Error(`the "${area}" area of ${target.phrase} is not painted in ${want}; ${describeColors(last)}`);
@@ -1173,7 +1241,7 @@ export async function expectAreaColors(page: Page, target: ElementRef, area: str
     return groups.length;
   };
   try {
-    await expect.poll(hues, {timeout: 5000}).toBeGreaterThanOrEqual(count);
+    await expect.poll(hues, {timeout: pollMs(5000)}).toBeGreaterThanOrEqual(count);
   }
   catch {
     throw new Error(`the "${area}" area of ${target.phrase} is painted in fewer than ${count} hues; ${describeColors(last)}`);
@@ -1195,7 +1263,7 @@ export async function expectAreasDiffer(page: Page, target: ElementRef, a: strin
     return own(ra.colors, rb.colors) || own(rb.colors, ra.colors);
   };
   try {
-    await expect.poll(differ, {timeout: 5000}).toBe(true);
+    await expect.poll(differ, {timeout: pollMs(5000)}).toBe(true);
   }
   catch {
     throw new Error(`the "${a}" and "${b}" areas of ${target.phrase} are painted in the same colors; "${a}" ${describeColors(shownA)}; "${b}" ${describeColors(shownB)}`);
@@ -1251,7 +1319,7 @@ export async function expectReading(page: Page, target: ElementRef, name: string
     return;
   }
   try {
-    await expect.poll(holds, {timeout: 5000}).toBe(true);
+    await expect.poll(holds, {timeout: pollMs(5000)}).toBe(true);
   }
   catch {
     report();
@@ -1283,7 +1351,7 @@ export async function expectScaleRange(page: Page, target: ElementRef, compare: 
     return compare === 'narrower' ? span(last.now) < span(last.before) : span(last.now) > span(last.before);
   };
   try {
-    await expect.poll(holds, {timeout: 5000}).toBe(true);
+    await expect.poll(holds, {timeout: pollMs(5000)}).toBe(true);
   }
   catch {
     throw new Error(`the color scale of ${target.phrase} does not cover ${compare === 'same' ? 'the same' : `a ${compare}`} range` +
@@ -1304,13 +1372,22 @@ export async function expectInk(page: Page, target: ElementRef, compare: 'less' 
   if (compare === 'some') {
     await installViewerRuntime(page);
     const loc = await viewerLocator(page, target);
-    await expect.poll(() => loc.evaluate((el) => (window as any).__bdd.ink(el)), {timeout: 10000, message: `${target.phrase} is blank`}).toBeGreaterThan(0);
+    // a viewer between two layouts has no canvas to read, and a throw from the callback would end
+    // the poll on the spot: the reason is kept and told at the end instead
+    let why = '';
+    try {
+      await expect.poll(() => loc.evaluate((el) => (window as any).__bdd.ink(el)).catch((e: Error) => { why = reasonOf(e); return 0; }),
+        {timeout: pollMs(10000)}).toBeGreaterThan(0);
+    }
+    catch {
+      throw new Error(`${target.phrase} is blank${why === '' ? '' : `: ${why}`}`);
+    }
     return;
   }
   await expect.poll(async () => {
     const c = await canvasChange(page, target);
     return compare === 'less' ? c.ink < c.inkBefore : c.ink > c.inkBefore;
-  }, {timeout: 10000, message: `${target.phrase} does not have ${compare} ink than before`}).toBe(true);
+  }, {timeout: pollMs(10000), message: `${target.phrase} does not have ${compare} ink than before`}).toBe(true);
 }
 
 const HIGHLIGHT_FLOOR = 200;
@@ -1334,7 +1411,7 @@ export async function expectHighlight(page: Page, target: ElementRef, compare: '
     return compare === 'none' ? c.hue === 0 : compare === 'some' ? c.hue > 0 : compare === 'more' ? c.hue >= c.hueBefore + margin : c.hue <= c.hueBefore - margin;
   };
   try {
-    await expect.poll(holds, {timeout: 10000}).toBe(true);
+    await expect.poll(holds, {timeout: pollMs(10000)}).toBe(true);
   }
   catch {
     throw new Error(`${target.phrase} ${wrong[compare]}` +
@@ -1373,7 +1450,7 @@ export async function expectRememberedRange(page: Page, target: ElementRef): Pro
     return !!last.before && !!last.now && sameRange(last.before, last.now, 0.5);
   };
   try {
-    await expect.poll(holds, {timeout: 5000}).toBe(true);
+    await expect.poll(holds, {timeout: pollMs(5000)}).toBe(true);
   }
   catch {
     throw new Error(`${target.phrase} does not show the remembered value range (remembered ${JSON.stringify(last.before)}, now ${JSON.stringify(last.now)})`);
@@ -1384,14 +1461,14 @@ export async function expectPalette(page: Page, target: ElementRef, min: number)
   await installViewerRuntime(page);
   const loc = await viewerLocator(page, target);
   await expect.poll(() => loc.evaluate((el) => (window as any).__bdd.palette(el, 500)),
-    {timeout: 5000, message: `${target.phrase} is painted in fewer than ${min} colors`}).toBeGreaterThanOrEqual(min);
+    {timeout: pollMs(5000), message: `${target.phrase} is painted in fewer than ${min} colors`}).toBeGreaterThanOrEqual(min);
 }
 
 export async function expectAreaPainted(page: Page, target: ElementRef, area: string): Promise<void> {
   await hitArea(page, target, area);
   const loc = await viewerLocator(page, target);
   await expect.poll(() => loc.evaluate((el, a) => (window as any).__bdd.areaInk(el, a), area),
-    {timeout: 5000, message: `the "${area}" area of ${target.phrase} is blank`}).toBeGreaterThan(0);
+    {timeout: pollMs(5000), message: `the "${area}" area of ${target.phrase} is blank`}).toBeGreaterThan(0);
 }
 
 export async function rangeChange(page: Page, target: ElementRef): Promise<RangeChange> {
@@ -1415,7 +1492,7 @@ export async function expectValueRange(page: Page, target: ElementRef, compare: 
     return compare === 'narrower' ? rangeArea(last.now) < rangeArea(last.before) * 0.95 : rangeArea(last.now) > rangeArea(last.before) * 1.05;
   };
   try {
-    await expect.poll(holds, {timeout: 5000}).toBe(true);
+    await expect.poll(holds, {timeout: pollMs(5000)}).toBe(true);
   }
   catch {
     throw new Error(`${target.phrase} does not show ${compare === 'same' ? 'the same' : `a ${compare}`} value range` +
@@ -1449,7 +1526,7 @@ export async function expectFired(page: Page, target: ElementRef, event: string)
   await installViewerRuntime(page);
   const loc = await viewerLocator(page, target);
   await expect.poll(() => loc.evaluate((el, e) => (window as any).__bdd.firedCount(el, e), event),
-    {timeout: 5000, message: `"${event}" did not fire on ${target.phrase} (listen for it before the gesture)`}).toBeGreaterThan(0);
+    {timeout: pollMs(5000), message: `"${event}" did not fire on ${target.phrase} (listen for it before the gesture)`}).toBeGreaterThan(0);
   await loc.evaluate((el, e) => { const b = (window as any).__bdd; b.unlisten(b.viewerOf(el), e); }, event);
 }
 
@@ -1585,7 +1662,7 @@ async function openGroup(page: Page, label: string, wanted?: string): Promise<vo
     await page.mouse.move(box.x + box.width / 2, cy);
     if (wanted === undefined)
       return;
-    const opened = await expect.poll(() => menuShows(page, wanted), {timeout: 2000}).toBe(true).then(() => true, () => false);
+    const opened = await expect.poll(() => menuShows(page, wanted), {timeout: pollMs(2000)}).toBe(true).then(() => true, () => false);
     if (opened) {
       // step into the flyout along the group's own row: the menu hides a submenu when the pointer
       // leaves the group item at a steep angle, which would take the item away mid-click
@@ -1678,12 +1755,47 @@ export async function dragBoxOverArea(page: Page, target: ElementRef, area: stri
 
 /** Types into a hit area that holds an editor (a range input, a form field): a click on its
  * centre, select all, the text, Enter. */
+/** A click on the area, the text typed over what the editor there holds, Enter. The click must have
+ * put the focus into an editor inside the viewer — a histogram's range input took the click and not
+ * the focus once in twenty runs, and the text then opened a cell editor on the grid, unseen — so it
+ * is repeated, at the area's current place, until one did. */
 export async function typeIntoArea(page: Page, target: ElementRef, area: string, text: string): Promise<void> {
-  const c = centerOf(await hitArea(page, target, area, true));
-  await page.mouse.click(c.x, c.y);
-  await page.keyboard.press('Control+A');
-  await page.keyboard.type(text.replace(/\\n/g, '\n'));
-  await page.keyboard.press('Enter');
+  const loc = await viewerLocator(page, target);
+  // the editor is pinned by a mark of its own rather than by `:focus`: the focus can leave it while
+  // the text is being read back (a table view focuses its grid a second after it opens, whatever
+  // the user is doing), and a locator on `:focus` would then wait on nothing
+  const mark = `bdd-editor-${Date.now()}`;
+  let where = '';
+  try {
+    await expect.poll(async () => {
+      const c = centerOf(await hitArea(page, target, area, true));
+      await page.mouse.click(c.x, c.y);
+      where = await loc.evaluate((el, m) => {
+        const a = document.activeElement;
+        if (!a)
+          return 'nothing';
+        if (el.contains(a) && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA' || (a as HTMLElement).isContentEditable)) {
+          a.setAttribute('data-bdd-editor', m);
+          return '';
+        }
+        const name = a.getAttribute('name');
+        const cls = String(a.className ?? '').trim();
+        return a.tagName.toLowerCase() + (name ? `[name="${name}"]` : '') + (cls ? '.' + cls.split(/\s+/).join('.') : '');
+      }, mark);
+      return where === '';
+    }, {timeout: pollMs(5000)}).toBe(true);
+  }
+  catch {
+    throw new Error(`a click on the "${area}" area of ${target.phrase} did not focus an editor there; the focus is on ${where}`);
+  }
+  const editor = loc.locator(`[data-bdd-editor="${mark}"]`);
+  try {
+    await typeVerified(editor, text.replace(/\\n/g, '\n'), `the "${area}" area of ${target.phrase}`);
+    await editor.press('Enter');
+  }
+  finally {
+    await editor.evaluate((e) => e.removeAttribute('data-bdd-editor')).catch(() => undefined);
+  }
 }
 
 export async function expectAreaSize(page: Page, target: ElementRef, area: string, dimension: 'tall' | 'wide', min: number): Promise<void> {
@@ -1708,7 +1820,7 @@ export async function expectAreaGrew(page: Page, target: ElementRef, area: strin
     return dimension === 'taller' || dimension === 'wider' ? now > before + 0.5 : now < before - 0.5;
   };
   try {
-    await expect.poll(holds, {timeout: 5000}).toBe(true);
+    await expect.poll(holds, {timeout: pollMs(5000)}).toBe(true);
   }
   catch {
     throw new Error(`the "${area}" area of ${target.phrase} is not ${dimension} than before (before ${JSON.stringify(last.before)}, now ${JSON.stringify(last.now)}` +
@@ -1731,7 +1843,7 @@ export async function expectSameColors(page: Page, target: ElementRef, a: string
     return !own(ra.colors, rb.colors) && !own(rb.colors, ra.colors);
   };
   try {
-    await expect.poll(same, {timeout: 5000}).toBe(true);
+    await expect.poll(same, {timeout: pollMs(5000)}).toBe(true);
   }
   catch {
     throw new Error(`the "${a}" and "${b}" areas of ${target.phrase} are painted in different colors; "${a}" ${describeColors(shownA)}; "${b}" ${describeColors(shownB)}`);
@@ -1768,7 +1880,7 @@ export async function expectRememberedReading(page: Page, target: ElementRef, na
     return last.now === last.before;
   };
   try {
-    await expect.poll(holds, {timeout: 5000}).toBe(!not);
+    await expect.poll(holds, {timeout: pollMs(5000)}).toBe(!not);
   }
   catch {
     if (not)
@@ -1819,7 +1931,7 @@ function describeLegend(s: LegendState | undefined): string {
 export async function expectLegendItems(page: Page, target: ElementRef, count: number): Promise<void> {
   let last: LegendState | undefined;
   try {
-    await expect.poll(async () => (last = await legendStateOf(page, target))?.items, {timeout: 5000}).toBe(count);
+    await expect.poll(async () => (last = await legendStateOf(page, target))?.items, {timeout: pollMs(5000)}).toBe(count);
   }
   catch {
     throw new Error(`the legend of ${target.phrase} lists ${last?.items ?? 'no'} items, not ${count} (${describeLegend(last)})`);
@@ -1840,7 +1952,7 @@ export async function expectLegendItemsChange(page: Page, target: ElementRef, co
       last.now.items === last.before.items && last.now.keys.join('|') === last.before.keys.join('|');
   };
   try {
-    await expect.poll(holds, {timeout: 5000}).toBe(true);
+    await expect.poll(holds, {timeout: pollMs(5000)}).toBe(true);
   }
   catch {
     throw new Error(`the legend of ${target.phrase} does not list ${compare === 'fewer' ? 'fewer items than' : 'the same items as'} before (before ${describeLegend(last.before)}; now ${describeLegend(last.now)})`);
@@ -1855,7 +1967,7 @@ export async function expectLegendMode(page: Page, target: ElementRef, mode: str
     throw new Error(`a legend is docked, in a corner, collapsed to the mini icon, shown in the tooltip or hidden — not "${mode}"`);
   let last: LegendState | undefined;
   try {
-    await expect.poll(async () => (last = await legendStateOf(page, target))?.mode, {timeout: 5000}).toBe(want);
+    await expect.poll(async () => (last = await legendStateOf(page, target))?.mode, {timeout: pollMs(5000)}).toBe(want);
   }
   catch {
     throw new Error(`the legend of ${target.phrase} is not ${mode} (${describeLegend(last)})`);
@@ -1865,7 +1977,7 @@ export async function expectLegendMode(page: Page, target: ElementRef, mode: str
 export async function expectLegendSlot(page: Page, target: ElementRef, slot: string, negate = false): Promise<void> {
   const norm = (s: string) => s.toLowerCase().replace(/[^a-z]/g, '');
   let last: LegendState | undefined;
-  const poll = expect.poll(async () => norm((last = await legendStateOf(page, target))?.slot ?? ''), {timeout: 5000});
+  const poll = expect.poll(async () => norm((last = await legendStateOf(page, target))?.slot ?? ''), {timeout: pollMs(5000)});
   try {
     await (negate ? poll.not : poll).toBe(norm(slot));
   }
@@ -1937,7 +2049,7 @@ export async function expectLegendItemColor(page: Page, target: ElementRef, labe
     throw new Error(`"${color}" is not a #rrggbb color`);
   let last = '';
   try {
-    await expect.poll(async () => near(last = await legendItemColor(page, target, label), want), {timeout: 5000}).toBe(!negate);
+    await expect.poll(async () => near(last = await legendItemColor(page, target, label), want), {timeout: pollMs(5000)}).toBe(!negate);
   }
   catch {
     throw new Error(`the "${label}" item in the legend of ${target.phrase} is ${negate ? 'still' : 'not'} colored ${want}` +
@@ -1953,7 +2065,7 @@ export async function expectLegendItemsDiffer(page: Page, target: ElementRef, a:
       ca = await legendItemColor(page, target, a);
       cb = await legendItemColor(page, target, b);
       return ca !== '' && cb !== '' && !near(ca, cb);
-    }, {timeout: 5000}).toBe(true);
+    }, {timeout: pollMs(5000)}).toBe(true);
   }
   catch {
     throw new Error(`the "${a}" and "${b}" items in the legend of ${target.phrase} are colored alike (${ca || 'nothing'} and ${cb || 'nothing'})`);
@@ -1993,7 +2105,7 @@ export async function tooltipValue(page: Page, column: string): Promise<string |
 }
 
 export async function expectTooltipValue(page: Page, column: string, value: string): Promise<void> {
-  await expect.poll(() => tooltipValue(page, column), {timeout: 5000, message: `"${column}" in the row tooltip`}).toBe(value);
+  await expect.poll(() => tooltipValue(page, column), {timeout: pollMs(5000), message: `"${column}" in the row tooltip`}).toBe(value);
 }
 
 export async function tooltipColumns(page: Page): Promise<string[]> {
@@ -2003,6 +2115,6 @@ export async function tooltipColumns(page: Page): Promise<string[]> {
 
 export async function expectTooltipColumns(page: Page, list: string, negate = false): Promise<void> {
   const want = [...new Set(list.split(/\s*,\s*/).map((c) => c.trim().toUpperCase()).filter((c) => c.length > 0))].sort();
-  const poll = expect.poll(() => tooltipColumns(page), {timeout: 5000, message: negate ? 'the tooltip shows exactly these columns' : 'the tooltip does not show these columns'});
+  const poll = expect.poll(() => tooltipColumns(page), {timeout: pollMs(5000), message: negate ? 'the tooltip shows exactly these columns' : 'the tooltip does not show these columns'});
   await (negate ? poll.not : poll).toEqual(want);
 }

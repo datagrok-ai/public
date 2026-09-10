@@ -2,7 +2,8 @@
    API surface a package promises other packages, checked the way they use it. The last result
    is kept for the checks that follow; a rejected call fails the step with the platform's
    message. A package's own readings of the result build on `readResult` from the runtime. */
-import {expect, Page} from '@playwright/test';
+import {Page} from '@playwright/test';
+import {expect} from '../../src/runtime/patience.js';
 import {Then, When} from '../../src/registry.js';
 import {callFunction, readResult} from '../../src/runtime/functions.js';
 
