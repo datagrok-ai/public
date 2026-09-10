@@ -70,8 +70,10 @@ that opens a dashboard, any other entity, or another URL. Administrators create 
 aliases under **Browse > Platform > URL Aliases** (or from an entity's context menu,
 **Create URL alias...**), so a link keeps working after the dashboard behind it is
 republished. Query parameters on an alias URL are passed to the target: `/sales?region=EU`
-opens the dashboard with `region` set. Platform routes (`/p`, `/files`, `/apps`, ...) and
-view URLs cannot be aliased.
+opens the dashboard with `region` set. By default the address bar then shows the target's
+own URL; an alias saved with **Preserve URL** keeps `/sales` there and only the query
+parameters change as you work. Platform routes (`/p`, `/files`, `/apps`, ...) and view
+URLs cannot be aliased.
 
 ## Functions
 
