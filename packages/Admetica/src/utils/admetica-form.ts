@@ -1,7 +1,7 @@
 /* eslint-disable max-len */
 import * as ui from 'datagrok-api/ui';
 
-import { tablePieChartIndexMap } from './admetica-utils';
+import { tablePieChartNameMap } from './admetica-utils';
 
 export class FormStateGenerator {
   table: string;
@@ -84,7 +84,7 @@ export class FormStateGenerator {
     let currentTopOffset = 180;
     let currentLeftOffset = leftOffset;
     let currentColsNumber = 1;
-    const piechartIndex = tablePieChartIndexMap.get(this.table);
+    const piechartName = tablePieChartNameMap.get(this.table);
 
     elementStates.push(
       {
@@ -110,7 +110,7 @@ export class FormStateGenerator {
         'type': 'sparkline-cell',
         'viewerSettings': {
           'table': this.table,
-          'column': piechartIndex === 0 ? 'piechart' : `piechart (${piechartIndex})`,
+          'column': piechartName,
         },
       });
     }

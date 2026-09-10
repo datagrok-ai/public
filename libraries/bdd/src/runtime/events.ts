@@ -31,12 +31,3 @@ export async function expectCustomEvent(page: Page, id: string, timeoutMs = 3000
   }
   return (await read(true)).last;
 }
-
-/** Not once since "listens for" or the previous read — read once, the count kept. */
-export async function expectNoCustomEvent(page: Page, id: string): Promise<void> {
-  await installViewerRuntime(page);
-  const last: CustomRead = await page.evaluate((i) => (window as any).__bdd.customFired(i, false), id);
-  if (last.count < 0)
-    throw new Error(`the "${id}" custom event is not listened for in this scenario (Given user listens for "${id}" custom event)`);
-  expect(last.count, `times the "${id}" custom event fired`).toBe(0);
-}

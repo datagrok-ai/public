@@ -17,91 +17,118 @@ related_bugs:
   - GROK-19103
 ---
 
-# Projects — Derived-source lifecycle (Pivot / Aggregate / Join)
+# Projects — lifecycle of a project with derived tables
 
-Covers the lifecycle of a project containing derived tables — Pivot
-Table, Aggregate Rows, and Join Tables results built on top of a
-file-share source. Verifies save/reopen, sharing with a second user,
-and project rename all correctly preserve the derivation chain, and
-reinforces GROK-19103: a Join result must land in the active
-workspace, not get silently saved as a separate, broken project.
-
-UI coverage delegated to `projects-ui-smoke.md`. The Pivot / Aggregate
-/ Join dialogs themselves are exercised by `uploading.md`'s
-source-matrix scenarios, not here.
+A project holds a source table plus three tables built from it: a
+pivot, an aggregate and a join. It is saved, reopened, shared and
+renamed. Every derived table must survive each step. This also covers
+GROK-19103: the join result must stay in the current workspace and
+must not be saved as a separate, broken project.
 
 ## Setup
 
-1. Authenticate as test user.
-2. Project name: `lifecycle-derived-${Date.now()}`.
-3. Recipient placeholder: `<RECIPIENT_USERNAME_TBD>`.
-4. Helper 3 dependency: `helpers.playwright.session.logoutAndLoginAs`
-   (NOT YET REGISTERED). Same deferral pattern as
-   `projects-lifecycle-files.md`.
-5. Cleanup: delete project; revoke permissions.
+1. Two accounts: the **owner** (test user) and a **second user**.
+2. The project in this test is `lifecycleDerived`.
 
-## Scenarios
+## Scenario
 
-### Main flow — derived-tables lifecycle
+1. **Open the source.**
+   - Go to **Browse > Files > Demo**.
+   - Double-click `demog.csv`.
 
-1. **Open parent table from File share.** Open
-   `System:DemoFiles/demog.csv`. Verify table loaded.
-2. **Build derived tables in the workspace.**
-   - Pivot: configure rows / columns / values, click **Add**.
-     Resulting Pivot table appears as a new tab.
-   - Aggregate Rows: group + aggregate on the demog table, click
-     **Add**. Resulting aggregate appears as a new tab.
-   - Join Tables: join the Pivot result with the original demog on
-     a key column. Resulting Join appears as a new tab.
-   - **GROK-19103 invariant assertion:** the Join result lands in
-     the **active workspace** (visible in `grok.shell.tables`),
-     NOT as a stray separate project. Verify
-     `grok.shell.tables.length` increased by 1 (Join), not by 2
-     (Join + stray project).
-3. **Save project with Data Sync ON.** Trigger Save Project (ribbon
-   button). Project name from Setup, Data Sync **ON** for parent
-   AND each derived table, click **OK**. Cancel auto-share.
-4. **Share project with second user (View-and-Use + Full).** Use
-   `grok.dapi.permissions.grant`. Verify Sharing tab lists the
-   recipient.
-   - **Original-user assertion:** project reopens; all 4 tables
-     (parent + 3 derived) load; derivation links preserved.
-   - **Recipient-side assertion (Helper 3 — deferred):** second
-     user opens; same 4 tables; same derivation links.
-5. **Rename external dependency — N/A for derived.** Derived
-   tables inherit their parent (here: `demog.csv`); the parent
-   File source has no rename surface (path is fixed). Per chain
-   rev 3 `proactive_lifecycle_specs[5].dep_lifecycle_ops_covered:
-   [share_with_recipient_open]`, `rename_external_dep` is NOT
-   in scope.
-6. **Rename project itself.** Via JS API. Verify rename persists.
-   - Original-user assertion: project still opens under new name;
-     all derivations preserved.
-   - Recipient-side assertion (Helper 3 — deferred).
-7. **Cleanup.** Delete project; revoke permissions.
+2. **Pivot.**
+   - In **Toolbox > Viewers**, click **Pivot table**.
+   - Set **Group by** to `RACE`.
+   - Set **Pivot** to `SEX`.
+   - Set **Aggregate** to `avg(AGE)`.
+   - Click **ADD** in the top-right corner of the viewer.
+   - **Verify:** the view *demog aggregation* opens.
 
-### Expected results
+3. **Aggregate.**
+   - Click the `demog` view tab.
+   - Open **Data > Aggregate Rows...**.
+   - **Verify:** the **Pivot table** panel opens.
+   - Set **Group by** to `SITE`.
+   - Set **Aggregate** to `count(USUBJID)`.
+   - Clear **Pivot**.
+   - Click **ADD**.
+   - **Verify:** a new view with the aggregated table opens.
 
-- Derived tables persist correctly across save → reopen.
-- Join result does NOT leak into a stray separate project (GROK-19103
-  invariant).
-- Project rename does not break the derivation chain.
-- Share + recipient-open works for derived-source projects.
+4. **Join (GROK-19103).**
+   - Open **Data > Join Tables...**.
+   - In **Tables**, set the first table to `demog`.
+   - Set the second table to *demog aggregation*.
+   - Set both **Key Columns** to `RACE`.
+   - Set **Join Type** to `inner`.
+   - Click **OK**.
+   - **Verify:** the join result opens as a new view.
+   - On the left sidebar, click the **Dashboards** icon.
+   - **Verify:** all four tables are listed under **New Dashboard**.
+   - **Verify:** no other project node is listed.
 
-## Notes
+5. **Save.**
+   - Click **SAVE** on the ribbon.
+   - **Verify:** each of the four tables has its own **Data sync**
+     toggle and **CREATION SCRIPT**.
+   - Enter `lifecycleDerived` as the name.
+   - Leave **Data sync** ON for every table.
+   - Click **OK**.
+   - In the **Share** dialog, click **CANCEL**.
 
-- **Reinforces GROK-19103.** Step 2 explicitly asserts the
-  GROK-19103 invariant (a Join result lands in the active project,
-  not a stray one). This is a reinforcement — the primary bug-focused
-  spec for that bug is `complex-derived-tables-spec.ts`.
-- **No external rename for derived sources.** Derived tables inherit
-  their parent's source (here, a fixed file path with no rename
-  surface), so external-dependency rename isn't applicable to this
-  entry.
-- **UI coverage delegated.** The Pivot / Aggregate / Join UI surfaces
-  are owned by `uploading.md`'s source-matrix cases; this scenario
-  uses the JS API and assumes that matrix coverage.
-- **Deferred.** Recipient-side assertions are blocked on a
-  not-yet-registered login-as-another-user test helper, same as
-  `projects-lifecycle-files.md`.
-- **Self-cleaning.** Step 7 deletes the project.
+6. **Reopen.**
+   - Right-click the left sidebar and select **Close All**.
+   - Go to **Browse > Dashboards**.
+   - Type `lifecycleDerived` into the search box.
+   - Click the refresh icon.
+   - Double-click the `lifecycleDerived` tile.
+   - **Verify:** four views open: `demog`, the pivot, the aggregate and
+     the join.
+   - **Verify:** every view has rows.
+   - Right-click the left sidebar and select **Close All**.
+
+7. **Share.**
+   - Right-click the `lifecycleDerived` tile and choose **Share...**.
+   - Type the second user into **User, group, or email**.
+   - Pick the second user from the suggestion list.
+   - Leave **View and use** selected.
+   - Click **OK**.
+
+8. **The recipient opens it.**
+   - Click your avatar at the bottom of the left sidebar.
+   - Click **Logout** in the profile view.
+   - Sign in with the second user's credentials.
+   - Go to **Browse > Dashboards**.
+   - Type `lifecycleDerived` into the search box.
+   - Click the refresh icon.
+   - Double-click the `lifecycleDerived` tile.
+   - **Verify:** the same four views open, each with rows.
+   - **Verify:** no error dialog appears.
+   - Right-click the left sidebar and select **Close All**.
+   - Click your avatar at the bottom of the left sidebar.
+   - Click **Logout** in the profile view.
+   - Sign in with the owner's credentials.
+
+9. **Rename.**
+   - Go to **Browse > Dashboards**.
+   - Right-click the `lifecycleDerived` tile and choose **Rename...**.
+   - Change the name to `lifecycleDerivedRenamed`.
+   - Click **OK**.
+   - Go to **Browse > Dashboards**.
+   - Type `lifecycleDerivedRenamed` into the search box.
+   - Click the refresh icon.
+   - Double-click the `lifecycleDerivedRenamed` tile.
+   - **Verify:** the four views open.
+   - Right-click the left sidebar and select **Close All**.
+
+10. **Cleanup.**
+    - Right-click the `lifecycleDerivedRenamed` tile and choose **Delete
+      Project**.
+    - Click **DELETE**.
+    - Wait until the dialog closes.
+
+## Expected results
+
+- Pivot, aggregate and join results are saved in the project and
+  reopen with data.
+- The join result is part of the project, not a separate project.
+- Sharing and renaming do not lose any derived table.

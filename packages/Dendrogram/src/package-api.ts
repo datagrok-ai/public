@@ -111,7 +111,7 @@ export namespace funcs {
   }
 
   /**
-  Opens Newick file
+  Parse a Newick (.nwk/.newick) tree file into a dataframe and open it as a dendrogram.
   */
   export async function importNewick(fileContent: string ): Promise<any> {
     return await grok.functions.call('Dendrogram:ImportNewick', { fileContent });

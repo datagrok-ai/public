@@ -115,8 +115,7 @@ export const dragCardIntoLane = When('user drags the card of row {int} of {widge
     await page.mouse.move(to.x, to.y, {steps: 6});
     await page.mouse.move(to.x + 1, to.y + 1);
     await page.mouse.up();
-    const loc = await viewers.viewerLocator(page, target);
-    await loc.evaluate((e) => (window as any).__bdd.settle(e, 1000));
+    await viewers.settle(page, target, 1000);
   }, {tier: 'ui', description: 'a card picked up and dropped on another lane, the way the Kanban move is made'});
 
 // --- adding the viewer ------------------------------------------------------------------------------

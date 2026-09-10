@@ -77,7 +77,8 @@ test('Pie and bar corner stability on repeated shrinks (demog)', async ({page}) 
   await softStep('A fresh pie legend settles directly, with no docked flash before the corner', async () => {
     await recordPlacements(page);
     await page.evaluate(() => {
-      (window as any).grok.shell.tv.addViewer('Pie chart', {categoryColumnName: 'RACE'});
+      // labels off: a pie whose every segment is labeled hides its Auto legend (GROK-20793)
+      (window as any).grok.shell.tv.addViewer('Pie chart', {categoryColumnName: 'RACE', showLabel: false});
     });
     await v.waitForLegendIdle(page, 'Pie chart');
     const seen = await moves(page);

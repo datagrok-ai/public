@@ -12,8 +12,14 @@ declare const grok: any;
 export const loggedIn = Given('user is logged in', async (page: Page) => {
   const inShell = await page.evaluate(() => typeof (window as any).grok?.shell?.closeAll === 'function').catch(() => false);
   if (!inShell) {
-    await page.goto('/', {waitUntil: 'domcontentloaded'});
-    await page.locator('[name="Browse"]').first().waitFor({timeout: 60000});
+    // a dev stand's pub serve can take minutes to hand out the bundle while it recompiles or is
+    // starved: that is a delay once per page, not a failure of the feature
+    const start = Date.now();
+    await page.goto('/', {waitUntil: 'domcontentloaded', timeout: 180000});
+    await page.locator('[name="Browse"]').first().waitFor({timeout: 180000});
+    const seconds = Math.round((Date.now() - start) / 1000);
+    if (seconds >= 30)
+      console.warn(`bdd: the shell took ${seconds} s to load (a dev stand serving a bundle it is recompiling?)`);
   }
   await page.evaluate(() => {
     grok.shell.closeAll();

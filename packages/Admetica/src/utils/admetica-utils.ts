@@ -8,6 +8,7 @@ import {
   colorsDictionary,
   DEFAULT_LOWER_VALUE,
   DEFAULT_TABLE_NAME,
+  DEFAULT_TEMPLATE_FILE,
   DEFAULT_UPPER_VALUE,
   ERROR_MESSAGES,
   Model,
@@ -22,8 +23,7 @@ import '../css/admetica.css';
 import {PackageFunctions} from '../package';
 
 export let properties: any;
-export const tablePieChartIndexMap: Map<string, number> = new Map();
-const piechartIndex = 0;
+export const tablePieChartNameMap: Map<string, string> = new Map();
 
 export async function convertLD50(df: DG.DataFrame, smiles: DG.Column): Promise<DG.DataFrame> {
   if (!df.columns.contains('LD50'))
@@ -35,9 +35,11 @@ export async function convertLD50(df: DG.DataFrame, smiles: DG.Column): Promise<
     selected: ['MW'],
   });
 
+  const mwCol = molWeightsDf.getCol('MW');
   ldCol.init((i) => {
-    const molPerKg = Math.pow(10, -ldCol.get(i));
-    return molPerKg * molWeightsDf.get('MW', i) * 1000;
+    if (ldCol.isNone(i) || mwCol.isNone(i))
+      return null;
+    return Math.pow(10, -ldCol.get(i)) * mwCol.get(i) * 1000;
   });
 
   return df;
@@ -45,9 +47,7 @@ export async function convertLD50(df: DG.DataFrame, smiles: DG.Column): Promise<
 
 export async function setProperties() {
   if (properties) return;
-  const items = await grok.dapi.files.list(TEMPLATES_FOLDER);
-  const fileName = items[0].fileName;
-  const propertiesJson = await grok.dapi.files.readAsText(`${TEMPLATES_FOLDER}/${fileName}`);
+  const propertiesJson = await grok.dapi.files.readAsText(`${TEMPLATES_FOLDER}/${DEFAULT_TEMPLATE_FILE}`);
   properties = JSON.parse(propertiesJson);
 }
 
@@ -55,13 +55,17 @@ export async function performChemicalPropertyPredictions(
   molColumn: DG.Column, viewTable: DG.DataFrame, models: string[], template?: string,
   addPiechart: boolean = false, addForm: boolean = false, update: boolean = false, raiseException: boolean = false,
 ) {
+  let props: any;
   if (template) {
     try {
-      properties = JSON.parse(template);
+      props = JSON.parse(template);
     } catch (error) {
       grok.shell.error('Invalid JSON template.');
       throw new Error('Failed to parse template JSON.');
     }
+  } else {
+    await setProperties();
+    props = properties;
   }
   const progressIndicator = DG.TaskBarProgressIndicator.create('Running Admetica...');
   try {
@@ -77,7 +81,7 @@ export async function performChemicalPropertyPredictions(
     const newColumnNames = viewTable.columns.names().filter((name: string) => !existingColumns.includes(name));
     if (newColumnNames.length > 0) {
       const molColIdx = viewTable.columns.names().findIndex((name) => name === molColumn.name);
-      applyPostProcessing(viewTable, newColumnNames, addPiechart, addForm, molColIdx);
+      applyPostProcessing(viewTable, newColumnNames, addPiechart, addForm, molColIdx, props);
     }
   } catch (error: any) {
     if (raiseException)
@@ -90,14 +94,14 @@ export async function performChemicalPropertyPredictions(
 
 function applyPostProcessing(
   viewTable: DG.DataFrame, columnNames: string[],
-  addPiechart: boolean, addForm: boolean, molColIdx: number,
+  addPiechart: boolean, addForm: boolean, molColIdx: number, props?: any,
 ): void {
   const tableView = grok.shell.getTableView(viewTable.name);
   if (!tableView)
     return;
 
   const {grid} = tableView;
-  const models = properties.subgroup.flatMap((subgroup: Subgroup) => subgroup.models);
+  const models = (props ?? properties).subgroup.flatMap((subgroup: Subgroup) => subgroup.models);
 
   for (const columnName of columnNames) {
     const model = models.find((m: Model) => columnName.includes(m.name));
@@ -105,19 +109,19 @@ function applyPostProcessing(
       continue;
     const gridCol = grid.col(columnName);
     if (gridCol)
-      updateColumnProperties(gridCol, model);
+      updateColumnProperties(gridCol, model, props);
   }
 
   if (addPiechart)
-    addSparklines(viewTable, columnNames, molColIdx + 2);
+    addSparklines(viewTable, columnNames, molColIdx + 2, undefined, props);
 
-  setAdmeGroups(viewTable, columnNames);
-  addColorCoding(viewTable, columnNames);
-  addCustomTooltip(viewTable);
+  setAdmeGroups(viewTable, columnNames, props);
+  addColorCoding(viewTable, columnNames, false, props);
+  addCustomTooltip(viewTable, props);
 
   if (addForm) {
     const molColName = viewTable.columns.names()[molColIdx];
-    const form = createDynamicForm(viewTable, columnNames, molColName, addPiechart);
+    const form = createDynamicForm(viewTable, columnNames, molColName, addPiechart, props);
     tableView.dockManager.dock(form, DG.DOCK_TYPE.RIGHT, null, 'Form', 0.45);
     grid.invalidate();
   }
@@ -133,7 +137,7 @@ function applyColumnColorCoding(column: DG.Column, model: Model): void {
 }
 
 export function addColorCoding(
-  table: DG.DataFrame, columnNames: string[], showInPanel: boolean = false, props?: string,
+  table: DG.DataFrame, columnNames: string[], showInPanel: boolean = false, props?: any,
 ): void {
   const tableView = grok.shell.getTableView(table.name);
   if (!tableView && !showInPanel) return;
@@ -231,26 +235,23 @@ function createPieSettings(table: DG.DataFrame, columnNames: string[], propertie
   };
 }
 
-export function addSparklines(table: DG.DataFrame, columnNames: string[], index: number, name?: string): void {
+export function addSparklines(
+  table: DG.DataFrame, columnNames: string[], index: number, name?: string, props?: any,
+): void {
   const tv = grok.shell.getTableView(table.name);
   if (!tv)
     return;
   const {grid} = tv;
 
-  let pieChartIdx: number;
-  if (tablePieChartIndexMap.has(table.name)) {
-    pieChartIdx = tablePieChartIndexMap.get(table.name)! + 1;
-    tablePieChartIndexMap.set(table.name, pieChartIdx);
-  } else {
-    pieChartIdx = piechartIndex + 1;
-    tablePieChartIndexMap.set(table.name, pieChartIdx);
+  if (!name) {
+    name = 'piechart';
+    for (let i = 1; grid.columns.byName(name); i++)
+      name = `piechart (${i})`;
+    tablePieChartNameMap.set(table.name, name);
   }
-
-  const pieName = pieChartIdx === 0 ? 'piechart' : `piechart (${pieChartIdx})`;
-  name ??= pieName;
   const pie = grid.columns.add({ gridColumnName: name, cellType: 'piechart' });
 
-  pie.settings = createPieSettings(table, columnNames, properties);
+  pie.settings = createPieSettings(table, columnNames, props ?? properties);
 
   grid.columns.byName(name)?.move(index);
 }
@@ -285,24 +286,25 @@ function getTooltipContent(model: any, value: any): string {
   return tooltipContent;
 }
 
-export function addCustomTooltip(table: DG.DataFrame): void {
+export function addCustomTooltip(table: DG.DataFrame, props?: any): void {
   const view = grok.shell.getTableView(table.name);
   view.grid.onCellTooltip((cell, x, y) => {
-    if (cell.isTableCell && typeof cell.cell.value === 'number') {
-      const subgroup = cell.tableColumn!.name;
-      const value = cell.cell.value;
-      const model = properties.subgroup.flatMap((subg: Subgroup) => subg.models)
-        .find((model: Model) => subgroup.includes(model.name));
-      const tooltipContent = getTooltipContent(model, value);
-      ui.tooltip.show(ui.divV([
-        ui.divText(tooltipContent),
-      ]), x, y);
-      return true;
-    }
+    if (!cell.isTableCell || typeof cell.cell.value !== 'number')
+      return;
+    const columnName = cell.tableColumn!.name;
+    const model = (props ?? properties).subgroup.flatMap((subg: Subgroup) => subg.models)
+      .find((model: Model) => columnName.includes(model.name));
+    const tooltipContent = getTooltipContent(model, cell.cell.value);
+    if (!tooltipContent.trim())
+      return;
+    ui.tooltip.show(ui.divV([
+      ui.divText(tooltipContent),
+    ]), x, y);
+    return true;
   });
 }
 
-function setAdmeGroups(table: DG.DataFrame, columnNames: string[]): void {
+function setAdmeGroups(table: DG.DataFrame, columnNames: string[], props?: any): void {
   const isColumnRelatedToSubgroup = (column: string, subgroup: Subgroup): boolean => {
     return subgroup.models.some((model) => column.includes(model.name));
   };
@@ -317,13 +319,13 @@ function setAdmeGroups(table: DG.DataFrame, columnNames: string[]): void {
     }, {});
   };
 
-  const subgroupDict = createSubgroupDict(properties, columnNames);
+  const subgroupDict = createSubgroupDict(props ?? properties, columnNames);
   // Temporary workaround: Addresses the issue where setGroups does not trigger a refresh
   // when adding to an existing grid. This fix will be removed once the issue is resolved.
   table.temp['.columnGroups'] = subgroupDict;
 }
 
-export function updateColumnProperties(gridCol: DG.GridColumn, model: any): void {
+export function updateColumnProperties(gridCol: DG.GridColumn, model: any, props?: any): void {
   if (!gridCol.column) return;
 
   const column = gridCol.column;
@@ -335,7 +337,7 @@ export function updateColumnProperties(gridCol: DG.GridColumn, model: any): void
 
   column.meta.units = model.units;
 
-  const subgroupName = properties.subgroup.find((subg: Subgroup) =>
+  const subgroupName = (props ?? properties).subgroup.find((subg: Subgroup) =>
     subg.models.some((m: Model) => model.name.includes(m.name)),
   )?.name;
   if (subgroupName) {
@@ -390,6 +392,10 @@ export async function getModelsSingle(smiles: string, semValue: DG.SemanticValue
       const map: { [_: string]: any } = {};
       for (const param of queryParams) {
         const column = table.getCol(param);
+        if (column.isNone(0)) {
+          map[param] = ui.divText('');
+          continue;
+        }
         const firstValue = column.get(0);
         const color = column.meta.colors.getColor(0);
 
@@ -401,7 +407,7 @@ export async function getModelsSingle(smiles: string, semValue: DG.SemanticValue
           const units = model.units && model.units !== '-' ? model.units : '';
           const value = typeof firstValue === 'string' ? firstValue : `${firstValue.toFixed(3)} ${units}`;
           map[param] = ui.divText(value, {
-            style: { color: color ? DG.Color.toHtml(color) : 'black' },
+            style: { color: color ? DG.Color.toHtml(color) : 'var(--text-color)' },
           });
         }
       }
@@ -409,7 +415,7 @@ export async function getModelsSingle(smiles: string, semValue: DG.SemanticValue
     } catch (e) {
       ui.empty(result);
       result.appendChild(ui.divText('Couldn\'t analyze properties'));
-      //console.log(e);
+      console.error(e);
     }
   };
 
@@ -467,10 +473,10 @@ async function createPieChartPane(semValue: DG.SemanticValue): Promise<HTMLEleme
 }
 
 export function createDynamicForm(
-  viewTable: DG.DataFrame, updatedModelNames: string[], molColName: string, addPiechart: boolean,
+  viewTable: DG.DataFrame, updatedModelNames: string[], molColName: string, addPiechart: boolean, props?: any,
 ): DG.FormViewer {
   const form = DG.FormViewer.createDefault(viewTable, { columns: updatedModelNames });
-  const mapping = FormStateGenerator.createCategoryModelMapping(properties, updatedModelNames);
+  const mapping = FormStateGenerator.createCategoryModelMapping(props ?? properties, updatedModelNames);
   const generator = new FormStateGenerator(viewTable.name, mapping, molColName, addPiechart);
   const formState = generator.generateFormState();
   form.form.state = JSON.stringify(formState);

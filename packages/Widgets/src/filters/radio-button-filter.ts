@@ -19,7 +19,9 @@ export class RadioButtonFilter extends DG.Filter {
     this.subs = [];
   }
 
-  get isFiltering() {return true;}
+  get isFiltering() {
+    return super.isFiltering && this.root.querySelector('input[type=\'radio\']:checked') != null;
+  }
 
   get filterSummary() {return this.column!.getCategory(this.checkedCategoryId);}
 

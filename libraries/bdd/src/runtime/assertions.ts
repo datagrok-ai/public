@@ -5,15 +5,14 @@ import type {ElementRef} from './args.js';
 import {editorOf, readExpanded, readSwitch, switchOf} from './gestures.js';
 import {exactText, locate, locateActionable, refOf} from './locate.js';
 
-export type State = 'visible' | 'hidden' | 'present' | 'absent' | 'enabled' | 'disabled' | 'checked' |
-  'unchecked' | 'partially checked' | 'selected' | 'empty' | 'expanded' | 'collapsed' | 'focused' | 'invalid' | 'valid';
+import type {State} from '../states.js';
 
-// "partially checked" before "checked": the alternation takes the first match
-export const STATES: State[] = ['visible', 'hidden', 'present', 'absent', 'enabled', 'disabled', 'partially checked', 'checked',
-  'unchecked', 'selected', 'empty', 'expanded', 'collapsed', 'focused', 'invalid', 'valid'];
+export type {State};
+export {STATES} from '../states.js';
 const INVALID_CLASSES = ['d4-invalid', 'd4-forced-invalid', 'u2-input-invalid'];
 
 const ROWS = ['.u2-list-row', '[role="option"]', '[role="row"]', '[role="tab"]', 'option', '.d4-list-item', '[name="legend-item"]', 'tbody tr', 'tr', 'li'];
+// the dock manager's tab says which of its handles is shown with a class of its own, and nothing else
 const SELECTED = '[aria-selected="true"], [aria-pressed="true"], [aria-checked="true"], [aria-current]:not([aria-current="false"]), ' +
   '.u2-list-row-selected, .tab-handle-selected';
 
@@ -62,15 +61,14 @@ async function expectSelected(page: Page, loc: Locator, selected: boolean): Prom
   await (selected ? expect(hit).not.toHaveCount(0) : expect(hit).toHaveCount(0));
 }
 
-/** `aria-expanded` on the element or its header inside; the Dart tree says it with its twistie's
- * class instead. */
+/** `aria-expanded` sits on the element itself (a tree row) or on its header/trigger inside; the
+ * Dart tree says it with its twistie's class instead. `null` — the element says nothing at all —
+ * is reported as that rather than as the opposite state. */
 async function expectExpanded(loc: Locator, expanded: boolean): Promise<void> {
   await expect.poll(() => readExpanded(loc), {message: 'expanded state (aria-expanded, or the tree twistie)'})
     .toBe(expanded);
 }
 
-/** Disabled is the native attribute, `aria-disabled` on the element or an ancestor (grayed menu
- * items, gated property rows), or the platform's disabled classes. */
 /** Disabled: the element or an ancestor says so (`aria-disabled`, the u2/Dart disabled classes),
  * or it — or the control inside it — is natively disabled. Over the visible matches when there
  * are any (the Dart menu's hidden mirror), else all of them (a property row in a panel that is
@@ -139,6 +137,18 @@ function escapeRegExp(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+/** A number the reader sees, between two bounds: what a slider or a stepper arrives at, where no
+ * exact value is the claim. */
+export async function expectValueBetween(page: Page, target: ElementRef, lo: number, hi: number): Promise<void> {
+  await expect.poll(async () => {
+    const text = await readValue(page, target);
+    return text === undefined || text === '' ? undefined : Number(text);
+  }, {message: `the value of ${target.phrase}, expected between ${lo} and ${hi}`})
+    .toBeGreaterThanOrEqual(lo);
+  await expect.poll(async () => Number(await readValue(page, target)),
+    {message: `the value of ${target.phrase}, expected between ${lo} and ${hi}`}).toBeLessThanOrEqual(hi);
+}
+
 /** The value a reader would see. The editor is resolved on every attempt, not once: a view the
  * platform is still building exposes the input host before the control inside it, and a single
  * resolution then reads the `div.ui-input-editor` wrapper and fails with "Not an input element"
@@ -156,18 +166,6 @@ async function readValue(page: Page, target: ElementRef): Promise<string | undef
       return e.value;
     return (e as HTMLElement).isContentEditable ? (e.textContent ?? '') : undefined;
   }).catch(() => undefined);
-}
-
-/** A number the reader sees, between two bounds: what a slider or a stepper arrives at, where no
- * exact value is the claim. */
-export async function expectValueBetween(page: Page, target: ElementRef, lo: number, hi: number): Promise<void> {
-  await expect.poll(async () => {
-    const text = await readValue(page, target);
-    return text === undefined || text === '' ? undefined : Number(text);
-  }, {message: `the value of ${target.phrase}, expected between ${lo} and ${hi}`})
-    .toBeGreaterThanOrEqual(lo);
-  await expect.poll(async () => Number(await readValue(page, target)),
-    {message: `the value of ${target.phrase}, expected between ${lo} and ${hi}`}).toBeLessThanOrEqual(hi);
 }
 
 export async function expectValue(page: Page, target: ElementRef, value: string, negate = false): Promise<void> {

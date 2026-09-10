@@ -1,4 +1,7 @@
 import os
+# torch>=2.6 defaults torch.load to weights_only=True, which rejects the numpy globals
+# in chemprop checkpoints; ours are baked into the image, so full loading is safe.
+os.environ.setdefault('TORCH_FORCE_NO_WEIGHTS_ONLY_LOAD', '1')
 import logging
 import tempfile
 import json
@@ -74,13 +77,7 @@ def parallel_process_smiles(smis: List[str]) -> List[Optional[str]]:
     valid_smiles = list(executor.map(convert_to_smiles, smis))
   return valid_smiles
 
-def make_chemprop_predictions(smis: List[str], checkpoint_path: str, batch_size: int = 512) -> np.ndarray:
-  # Check for GPU availability
-  device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
-  # Load the model onto the appropriate device
-  mpnn = models.MPNN.load_from_checkpoint(checkpoint_path, map_location=device)
-
+def make_chemprop_predictions(mpnn, trainer, smis: List[str], batch_size: int = 512) -> np.ndarray:
   valid_indices = [i for i, smi in enumerate(smis) if not is_malformed(smi) and smi != '']
   valid_smiles = [smis[i] for i in valid_indices]
   invalid_indices = [i for i in range(len(smis)) if i not in valid_indices]
@@ -98,24 +95,7 @@ def make_chemprop_predictions(smis: List[str], checkpoint_path: str, batch_size:
     batch_size=batch_size
   )
 
-  logger.debug('Check GPU availability')
-  logger.debug(f"CUDA available: {torch.cuda.is_available()}")
-
-  if torch.cuda.is_available():
-    logger.debug(f"Usable CUDA devices: {find_usable_cuda_devices(1)}")
-  else:
-    logger.debug("No usable CUDA devices found. Using CPU.")
-
-  logger.debug(f'Model device: {next(mpnn.parameters()).device}')
-
   with torch.inference_mode():
-    trainer = pl.Trainer(
-      logger=True,
-      enable_progress_bar=True,
-      accelerator="gpu" if torch.cuda.is_available() else "cpu",  # Use GPU if available, else CPU
-      devices=1,
-      precision=16 if torch.cuda.is_available() else 32   # Enable mixed precision if using GPU, otherwise default
-    )
     test_preds = trainer.predict(mpnn, test_loader)
 
   test_preds = [pred.item() for batch in test_preds for pred in batch]
@@ -125,37 +105,45 @@ def make_chemprop_predictions(smis: List[str], checkpoint_path: str, batch_size:
   return np.array(test_preds, dtype=object)
 
 def find_model(model: str) -> Optional[str]:
-  files_in_dir = os.listdir()
-  model_name = next(
-    (file for file in files_in_dir if model.lower() in file.lower() and file.lower().endswith('.ckpt')),
-    None
-  )
-  return model_name
+  target = f'{model.lower()}.ckpt'
+  return next((file for file in os.listdir() if file.lower() == target), None)
 
-def predict_for_model(model: str, smis: List[str]) -> pd.DataFrame:
+def predict_for_model(model: str, smis: List[str], chunk_size: int = 1000) -> pd.DataFrame:
   model_name = find_model(model)
   if not model_name:
     raise ValueError(f"No matching model extension found for model '{model}'")
 
+  device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+  mpnn = models.MPNN.load_from_checkpoint(model_name, map_location=device)
+
+  logger.debug(f"CUDA available: {torch.cuda.is_available()}")
+  if torch.cuda.is_available():
+    logger.debug(f"Usable CUDA devices: {find_usable_cuda_devices(1)}")
+  logger.debug(f'Model device: {next(mpnn.parameters()).device}')
+
+  trainer = pl.Trainer(
+    logger=True,
+    enable_progress_bar=True,
+    accelerator="gpu" if torch.cuda.is_available() else "cpu",
+    devices=1,
+    precision=16 if torch.cuda.is_available() else 32
+  )
+
   start = time()
-  predictions = make_chemprop_predictions(smis, model_name)
+  chunks = [make_chemprop_predictions(mpnn, trainer, smis[j:j + chunk_size])
+            for j in range(0, len(smis), chunk_size)]
+  predictions = np.concatenate(chunks) if chunks else np.empty(0, dtype=object)
   logger.debug(f'Chemprop prediction for {model} took {time() - start}')
   return pd.DataFrame(predictions, columns=[model])
 
-def predict(molecules: pd.Series, models: str, batch_size: int = 1000):
+def predict(molecules: pd.Series, models: str):
   models_res = models.split(",")
   result_dfs = []
-  
+
   smis = parallel_process_smiles(molecules.fillna('').tolist())
   for model in models_res:
-    model_results = []
-    for j in range(0, len(smis), batch_size):
-      batch_smiles = smis[j:j + batch_size]
-      result_df = predict_for_model(model, batch_smiles)
-      model_results.append(result_df)
-    model_result_df = pd.concat(model_results, axis=0, ignore_index=True)
-    result_dfs.append(model_result_df)
-    
+    result_dfs.append(predict_for_model(model, smis))
+
   final_df = (
     pd.concat(result_dfs, axis=1)
       .loc[:, lambda df: ~df.columns.duplicated()]
