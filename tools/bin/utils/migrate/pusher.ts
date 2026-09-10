@@ -498,14 +498,16 @@ async function pushRelations(dapi: NodeDapi, effective: Map<string, BundleEntity
     // `projects_repository.dart`: a non-link relation deletes the entity's other non-link rows.
     const contains = (entityId: string): boolean => ownerOf(entityId) === json.id;
     const claimed = new Set<string>((json.relations ?? []).map((r: any) => r?.entity?.id).filter(Boolean));
-    // A stale containment claim would be deleted by the real owner's write and never re-examined,
-    // so every push would shed a few more rows.
+    // The server derives `is_link` — it keeps one container per entity and marks every other holder
+    // a link — so only a claim is worth writing for. Writing the release direction is ignored and
+    // recomputed, which would rewrite the project on every push, and a relation write costs tens of
+    // seconds on a stand-sized target.
     let corrected = 0;
     const wanted: any[] = [];
     for (const r of held) {
       if (!r?.entity?.id) continue;
       const isLink = claimed.has(r.entity.id) ? !contains(r.entity.id) : (r.isLink ?? false);
-      if (isLink !== (r.isLink ?? false)) corrected++;
+      if ((r.isLink ?? false) && !isLink) corrected++;
       wanted.push({id: r.id, entity: {'#type': 'EntityRecord', id: r.entity.id}, isLink});
     }
     const linked = new Set<string>(wanted.map((r) => r.entity.id));

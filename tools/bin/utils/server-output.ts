@@ -168,6 +168,7 @@ export function progressReporter(quiet: boolean = false): (stage: string, done?:
   if (quiet) return () => {};
   const tty = process.stderr.isTTY;
   let last = '';
+  let drawn = 0;
   return (stage: string, done?: number, total?: number) => {
     const count = done === undefined ? '' : total === undefined ? ` ${done}` : ` ${done}/${total}`;
     const line = `${stage}${count}`;
@@ -179,9 +180,15 @@ export function progressReporter(quiet: boolean = false): (stage: string, done?:
       last = line;
       return;
     }
+    // Redrawing on every item writes megabytes a minute into anything that is not really a
+    // terminal — a detached run produced a 7 GB file of carriage returns. The eye cannot
+    // follow faster than this anyway.
+    const finished = done !== undefined && done === total;
+    if (!finished && Date.now() - drawn < 100) return;
+    drawn = Date.now();
     process.stderr.write(`\r${' '.repeat(last.length)}\r${line}`);
     last = line;
-    if (done !== undefined && done === total) {
+    if (finished) {
       process.stderr.write('\n');
       last = '';
     }

@@ -10,6 +10,7 @@ import {BytesKind, DEFAULT_TYPES, nqNameOf, resolveTypes} from '../utils/migrate
 import * as bundle from '../utils/migrate/bundle';
 import {External, Selection, collectExternals, expand, normalizeSince, pullBytes, pullShares, select} from '../utils/migrate/walker';
 import {ConflictPolicy, Row, plan, push, summarize} from '../utils/migrate/pusher';
+import {Part, missingPackages, missingUsers, namespacesOf, readState, writeState} from '../utils/migrate/parts';
 
 const SELECTION_USAGE = '  [<nqName|id>...] [--type t,t] [--namespace ns] [--space s] [--name n] [--author login]\n' +
   '  [--tag t] [--since 2w] [--filter expr] [--no-deps] [--no-include-data] [--include-files]';
@@ -179,12 +180,14 @@ async function handlePush(dapi: NodeDapi, rest: string[], argv: any, output: Out
  * directory in between — the same two verbs, so nothing behaves differently.
  */
 async function handleTransfer(rest: string[], argv: any, output: OutputFormat): Promise<boolean> {
-  if (!argv.from || !argv.to || !hasSelection(rest, argv)) {
+  if (!argv.from || !argv.to || (!argv['by-namespace'] && !hasSelection(rest, argv))) {
     printError(new Error(MIGRATE_USAGE));
     return false;
   }
   const from = new NodeDapi(await createClient(String(argv.from), !!argv.admin));
   const to = new NodeDapi(await createClient(String(argv.to), !!argv.admin));
+  if (argv['by-namespace'])
+    return await transferByNamespace(from, to, argv, output);
   if (from.client.baseUrl === to.client.baseUrl)
     throw new Error(`--from and --to are the same server (${to.client.baseUrl}) — nothing to migrate`);
 
@@ -206,6 +209,77 @@ async function handleTransfer(rest: string[], argv: any, output: OutputFormat): 
     else
       fs.rmSync(dir, {recursive: true, force: true});
   }
+}
+
+/**
+ * A whole instance, one space at a time. Placement is exclusive on the server, so a single bundle
+ * holding every space has its projects taking entities from one another; scoped to one space that
+ * contention stays inside it. A part that fails does not stop the rest, and what finished is
+ * recorded so a re-run picks up where it stopped.
+ */
+async function transferByNamespace(from: NodeDapi, to: NodeDapi, argv: any, output: OutputFormat): Promise<boolean> {
+  const only: string[] = argv.only ? String(argv.only).split(',').map((s) => s.trim()) : [];
+  const skip = new Set<string>(argv.skip ? String(argv.skip).split(',').map((s) => s.trim()) : []);
+  const stateFile: string = argv.state ?? path.join(os.tmpdir(), `grok-migrate-${argv.from}-${argv.to}.json`);
+  const state = readState(stateFile);
+
+  // Both are prerequisites of the instance, not of any bundle, and both are cheaper to fix now
+  // than to discover space by space: content of a user the target lacks lands under the pusher.
+  const [users, packages] = await Promise.all([missingUsers(from, to), missingPackages(from, to)]);
+  // A source can have hundreds of each; the count is what decides, and a few names say which kind.
+  const few = (all: string[]) => all.slice(0, 5).join(', ') + (all.length > 5 ? `, +${all.length - 5} more` : '');
+  const notes: Row[] = [];
+  if (users.length)
+    notes.push({name: `${users.length} user(s)`, entityType: 'User', action: 'warn', reason: 'user_missing',
+      detail: `${few(users)} — create them on the target first, or their content lands under the pushing account`});
+  if (packages.length)
+    notes.push({name: `${packages.length} package(s)`, entityType: 'Package', action: 'warn', reason: 'package_not_installed',
+      detail: `${few(packages)} — publish them on the target, or what they own cannot resolve`});
+  printOutput(notes, output);
+  // A whole-instance run stops: content of a user the target lacks lands under the pushing account,
+  // and that is not worth discovering space by space. A run the operator has already scoped with
+  // `--only` is their call, so it is reported and allowed.
+  if (notes.length && !argv.force && !only.length) {
+    printError(new Error('Refusing to start: fix the above, or pass --force to migrate anyway.'));
+    process.exitCode = 1;
+    return true;
+  }
+
+  const spaces = (await namespacesOf(from)).filter((n) => (!only.length || only.includes(n)) && !skip.has(n));
+  const parts: Part[] = [];
+  for (const [i, name] of spaces.entries()) {
+    if (state[name] && !state[name].error) { parts.push(state[name]); continue; }
+    console.error(`[${i + 1}/${spaces.length}] ${name}`);
+    const started = Date.now();
+    const part: Part = {name};
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'grok-migrate-'));
+    try {
+      const report = {dropped: 0};
+      const pulled = await handlePull(from, [], {...argv, namespace: name, out: dir}, 'quiet', false, report);
+      const read = pulled ? bundle.read(dir) : null;
+      part.entities = read ? read.entities.size : 0;
+      if (read && part.entities) {
+        const result = await push(to, read, {onConflict: conflictPolicy(argv), creds: loadCreds(argv.creds),
+          progress: progressReporter(true)}, () => {});
+        part.failed = result.items.filter((r) => r.action === 'failed').length;
+      }
+    } catch (err: any) {
+      part.error = err?.message ?? String(err);
+    } finally {
+      fs.rmSync(dir, {recursive: true, force: true});
+    }
+    part.seconds = Math.round((Date.now() - started) / 1000);
+    state[name] = part;
+    writeState(stateFile, state);
+    parts.push(part);
+  }
+
+  printOutput(parts.map((p) => ({space: p.name, entities: p.entities ?? 0, failed: p.failed ?? 0,
+    seconds: p.seconds ?? 0, error: p.error ?? ''})), output);
+  console.error(`state: ${stateFile}`);
+  if (parts.some((p) => p.error || (p.failed ?? 0) > 0))
+    process.exitCode = 1;
+  return true;
 }
 
 /** What a push would do, read-only: the plan plus the top-level keys that differ. */

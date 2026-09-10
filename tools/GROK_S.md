@@ -611,6 +611,26 @@ grok s pull --since 10y --type project,connection,query,script,group,layout   --
 grok s push ./bundle --host prod --admin --on-conflict skip
 ```
 
+**Move a whole instance one space at a time.** Placement is exclusive on the server — one project
+holding an entity takes it from every other — so a single bundle carrying every space has its
+projects competing, and a stand-sized push spends its time taking rows back off each other. Scoped
+to one space that contention stays inside it:
+
+```bash
+grok s migrate --from dev --to prod --admin --by-namespace          # every space, in turn
+grok s migrate --from dev --to prod --admin --by-namespace --only Chem,Bio
+```
+
+It checks the instance-level prerequisites once before writing anything — users and packages the
+target lacks — and refuses a whole-instance run until they are fixed (`--force` overrides; a run
+already scoped with `--only` is reported but allowed). Each space is a separate pull and push, so a
+failure costs one space rather than the run, and what finished is recorded in a state file
+(`--state`), letting a re-run continue instead of repeating work.
+
+Measured on 1.27.9: three spaces, 1,946 entities, 4m44s, one failure isolated to its space; the
+re-run skipped all three in 8s. The same content as part of a 15,778-entity single bundle did not
+finish at all.
+
 **Name the content types; do not pull tables directly.** A long-lived stand accumulates a loose
 `TableInfo` per ad-hoc import — dev holds 1.76 M of them against 21 K projects, and an admin
 session sees every one. Selecting projects instead pulls each project's tables, views and layouts

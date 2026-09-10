@@ -874,7 +874,7 @@ describe('files, spaces and models', () => {
     expect(written[0].body.relations.map((r: any) => r.entity.id)).toContain(TABLE_ID);
   });
 
-  it('corrects a containment claim the bundle gives to another project', async () => {
+  it('lets the owner claim an entity instead of writing a release the server ignores', async () => {
     const OUTER = '11111111-dddd-0000-0000-000000000001';
     const INNER = '11111111-dddd-0000-0000-000000000002';
     // Both claim the table; the deeper one owns it, so the outer one has to hold it as a link or
@@ -908,9 +908,11 @@ describe('files, spaces and models', () => {
     });
     const result = await push(dapi, bundleOf([outer, inner, table]), {onConflict: 'skip'}, () => {});
     expect(result.items.find((r) => r.name.includes('Outer'))!.action).toBe('identical');
-    const wrote = (id: string) => calls.filter((c) => c.path === '/projects?saveRelations=true' && c.body.id === id).pop()!;
-    expect(wrote(OUTER).body.relations.find((r: any) => r.entity.id === TABLE_ID).isLink).toBe(true);
-    expect(wrote(INNER).body.relations.find((r: any) => r.entity.id === TABLE_ID).isLink).toBe(false);
+    const wrote = (id: string) => calls.filter((c) => c.path === '/projects?saveRelations=true' && c.body.id === id).pop();
+    // The owner claims it, and the server drops the other holder's containment row itself. Writing
+    // the outer project to say "link" is ignored and recomputed, so it is not worth tens of seconds.
+    expect(wrote(INNER)!.body.relations.find((r: any) => r.entity.id === TABLE_ID).isLink).toBe(false);
+    expect(wrote(OUTER)).toBeUndefined();
   });
 
   it('links a dashboard inside a personal space, not just the space itself', async () => {
