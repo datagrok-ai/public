@@ -1511,7 +1511,7 @@ export class tools {
         });
         let e = $(element).find('select')[0];
         if (e != undefined) {
-          width += 30;
+          width = Math.min(width + 30, window.innerWidth * 0.8);
           e.style.maxWidth = `${width}px`;
           e.style.width = `${width}px`;
         }

@@ -2,6 +2,8 @@
 
 ## v.next
 
+* GROK-20862: Form layout: a choice input is sized to its widest option, so a 200-character option (the ChEMBL FRAC mechanisms) stretched the select and the whole dialog to the viewport width. The select now caps at 80vw; longer options are clipped.
+
 * Added `grok.shell.autostartsCompleted` — a promise that resolves once every package autostart function has run (they start 3 seconds after the app has started)
 * GROK-20849: Added `DG.BitArray` (= `DG.U2.BitArray`; `datagrok-api/src/u2core/bit-array` for web workers) with the `BitSet` vocabulary, the bridges `BitSet.fromBitArray` / `bitset.toBitArray()` / `copyFrom(BitArray)`, and the `TYPE` / `COLUMN_TYPE` / `SEMTYPE` re-exports from `u2core`
 * Renamed the u2 `Component.run(fn)` scope helper to `runInScope(fn)` — `run` is inherited by every view and widget and collided with the long-standing `run()` on `FunctionView` and `Tutorial`, breaking those package builds with `TS2416`
