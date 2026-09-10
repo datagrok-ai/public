@@ -5,6 +5,7 @@ import './tests/cartridge';
 import './tests/converters';
 import './tests/frac';
 import './tests/atc';
+import './tests/protein';
 
 export const _package = new DG.Package();
 export {tests};

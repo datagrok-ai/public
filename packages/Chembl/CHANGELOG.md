@@ -1,5 +1,9 @@
 # ChEMBL changelog
 
+## 37.0.3 (2026-09-10)
+
+* GROK-20862: `Browse | Compound Activity For Targets Containing Protein` timed out on ChEMBL 37 (JDBC `I/O error` after 180 s): with nine joined tables Postgres kept the `accession` filter last and hash-joined all 24.5M activities. Reordered the joins to start from `component_sequences`; same rows, ~7 s
+
 ## 37.0.2 (2026-09-09)
 
 * GROK-20862: Added `Search | By ATC Classification` and `... And Substructure` — four cascading WHO ATC levels over `atc_classification`, replacing the lost FRAC hierarchy

@@ -57,16 +57,16 @@ SELECT DISTINCT
   t.chembl_id                      AS target_chembl_id,
   t.pref_name                      AS target_name,
   t.target_type
-FROM compound_structures s
-  RIGHT JOIN molecule_dictionary m ON s.molregno = m.molregno
-  JOIN compound_records r ON m.molregno = r.molregno
-  JOIN docs d ON r.doc_id = d.doc_id
-  JOIN activities act ON r.record_id = act.record_id
-  JOIN assays a ON act.assay_id = a.assay_id
-  JOIN target_dictionary t ON a.tid = t.tid
-  JOIN target_components tc ON t.tid = tc.tid
-  JOIN component_sequences cs ON tc.component_id = cs.component_id
-    AND cs.accession = @protein;
+FROM component_sequences cs
+  JOIN target_components tc ON tc.component_id = cs.component_id
+  JOIN target_dictionary t ON t.tid = tc.tid
+  JOIN assays a ON a.tid = t.tid
+  JOIN activities act ON act.assay_id = a.assay_id
+  JOIN compound_records r ON r.record_id = act.record_id
+  JOIN docs d ON d.doc_id = r.doc_id
+  JOIN molecule_dictionary m ON m.molregno = r.molregno
+  LEFT JOIN compound_structures s ON s.molregno = m.molregno
+WHERE cs.accession = @protein;
 --end
 
 --name: unichemUnitTestQuery
