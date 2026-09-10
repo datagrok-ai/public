@@ -45,8 +45,8 @@ test('Legend scatterplot — Color + Marker combined', async ({page}) => {
     const item = page.locator('[name="viewer-Scatter-plot"] [name="legend"] .d4-legend-item').first();
     await item.waitFor({timeout: 10000});
     await item.hover();
-    await page.locator('[name="viewer-Scatter-plot"] [name="legend-icon-color-picker"]')
-      .first().waitFor({timeout: 5000});
+    // The picker is appended to document.body, not to the viewer root.
+    await page.locator('[name="legend-icon-color-picker"]').first().waitFor({timeout: 5000});
   });
 
   await softStep('Sc1 step 5: change category color via legend picker (UI + API fallback)', async () => {
