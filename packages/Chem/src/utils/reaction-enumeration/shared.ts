@@ -125,6 +125,8 @@ function getStringColumn(df: DG.DataFrame, name: string): string[] {
 }
 
 const STEP_RXN_PREFIX = '~reaction_name_';
+/** Past this many products the step hierarchy filter is too slow to build and redraw. */
+const HIERARCHICAL_MAX_PRODUCTS = 500_000;
 
 export function buildResultDataFrame(rows: OutputRow[], name = 'Enumeration result'): DG.DataFrame {
   const maxSteps = rows.reduce((m, r) => Math.max(m, r.steps.length), 0);
@@ -143,7 +145,8 @@ export function buildResultDataFrame(rows: OutputRow[], name = 'Enumeration resu
     ...templateCols,
     DG.Column.fromInt32Array('round', new Int32Array(rows.map((r) => r.round))),
     DG.Column.fromInt32Array('n_routes', new Int32Array(rows.map((r) => r.n_routes))),
-    ...perStep((k) => `${STEP_RXN_PREFIX}${k}`, (s) => s.reactionName),
+    ...(maxSteps > 1 && rows.length <= HIERARCHICAL_MAX_PRODUCTS ?
+      perStep((k) => `${STEP_RXN_PREFIX}${k}`, (s) => s.reactionName) : []),
   ]);
   df.name = name;
   df.col('product')!.semType = DG.SEMTYPE.MOLECULE;
@@ -159,7 +162,8 @@ export function buildResultDataFrame(rows: OutputRow[], name = 'Enumeration resu
 export function defaultFilterState(col: DG.Column): DG.FilterState {
   const type = col.isNumerical ?
     (col.stats.min === col.stats.max ? DG.FILTER_TYPE.CATEGORICAL : DG.FILTER_TYPE.HISTOGRAM) :
-    col.semType === DG.SEMTYPE.MOLECULE ? DG.FILTER_TYPE.SUBSTRUCTURE : DG.FILTER_TYPE.CATEGORICAL;
+    col.semType === DG.SEMTYPE.MOLECULE ? DG.FILTER_TYPE.SUBSTRUCTURE :
+      col.meta.multiValueSeparator ? DG.FILTER_TYPE.MULTI_VALUE : DG.FILTER_TYPE.CATEGORICAL;
   return {type, column: col.name};
 }
 
