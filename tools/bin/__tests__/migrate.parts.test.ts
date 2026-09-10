@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import {NodeDapi} from '../utils/node-dapi';
-import {missingPackages, missingUsers, namespacesOf, readState, writeState} from '../utils/migrate/parts';
+import {SWEEP, missingPackages, missingUsers, namespacesOf, plannedParts, readState, writeState} from '../utils/migrate/parts';
 
 function makeDapi(responder: (path: string) => any) {
   const client: any = {
@@ -73,5 +73,31 @@ describe('run state', () => {
 
   it('treats a missing or unreadable state file as a fresh run', () => {
     expect(readState(path.join(os.tmpdir(), 'grok-parts-does-not-exist.json'))).toEqual({});
+  });
+});
+
+describe('plannedParts', () => {
+  const all = ['Bio', 'Chem', 'Skalkin'];
+
+  it('takes every space and ends with the sweep', () => {
+    expect(plannedParts(all, {sweep: true})).toEqual(['Bio', 'Chem', 'Skalkin', SWEEP]);
+  });
+
+  it('refuses a name that matches no space rather than migrating nothing', () => {
+    expect(() => plannedParts(all, {only: ['Chem', 'Chemm']})).toThrow('Chemm');
+    expect(() => plannedParts(all, {skip: ['Nope']})).toThrow('Nope');
+  });
+
+  it('leaves the sweep out when the run is scoped, so --only cannot drag in the rest', () => {
+    expect(plannedParts(all, {only: ['Chem'], sweep: false})).toEqual(['Chem']);
+  });
+
+  it('skips what finished and retries what did not', () => {
+    const state = {
+      Bio: {name: 'Bio', entities: 5, failed: 0},
+      Chem: {name: 'Chem', entities: 5, failed: 2},
+      Skalkin: {name: 'Skalkin', error: 'boom'},
+    };
+    expect(plannedParts(all, {state})).toEqual(['Chem', 'Skalkin']);
   });
 });

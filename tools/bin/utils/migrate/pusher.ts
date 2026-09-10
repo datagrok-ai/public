@@ -343,7 +343,8 @@ export async function push(dapi: NodeDapi, bundle: Bundle, opts: PushOptions, lo
       });
   // A FileInfo save can answer with an existing row's id: recording it keeps the next push
   // stable, and the passes below have to point at the id the entity actually landed under.
-  if (Object.keys(idmap).length > Object.keys(bundle.idmap).length) {
+  // Comparing sizes would miss a run that dropped one stale mapping and learned another.
+  if (JSON.stringify(idmap) !== JSON.stringify(bundle.idmap)) {
     writeIdmap(bundle.dir, idmap);
     for (const [id, e] of effective)
       effective.set(id, {type: e.type, json: rewrite(e.json, idmap)});
@@ -420,10 +421,15 @@ async function saveOne(dapi: NodeDapi, bundle: Bundle, op: Op, rows: Row[], idma
     const cause = (op.dangling ?? []).filter((id) => missing.has(id));
     const dead = cause.filter((id) => bundle.manifest.dangling?.includes(id));
     const refusal = err?.message ?? String(err);
-    op.row.action = dead.length ? 'skip' : 'failed';
-    op.row.reason = dead.length ? 'dead_on_source' : refusal;
-    if (dead.length)
-      op.row.detail = `references ${dead.join(', ')}, which the source no longer has either — ` +
+    // The server names its own refusal, not what caused it, so a dead reference is inferred — but
+    // only from a refusal. A request that timed out or lost its connection says nothing about the
+    // entity, and calling that "nothing to migrate" would hide a transport problem as clean data.
+    const transport = /no answer in|deadlock|40P01|ECONN|socket|fetch failed/i.test(refusal);
+    const named = transport ? [] : dead;
+    op.row.action = named.length ? 'skip' : 'failed';
+    op.row.reason = named.length ? 'dead_on_source' : refusal;
+    if (named.length)
+      op.row.detail = `references ${named.join(', ')}, which the source no longer has either — ` +
         `nothing to migrate, delete it there or ignore (${refusal})`;
     else if (cause.length)
       op.row.detail = `references ${cause.join(', ')}, which the target does not have — ` +
@@ -488,9 +494,11 @@ async function pushRelations(dapi: NodeDapi, effective: Map<string, BundleEntity
     // Reading the relation rows on their own, rather than the whole project, is what keeps this
     // stage usable: nearly every project already holds what the bundle wants, and fetching each
     // one in full to discover that costs hours on a stand-sized push.
-    // A failed read must not read as "holds nothing": the write replaces the whole set, so
-    // treating an unreadable project as empty would strip every relation the target has.
-    const held = await relations.listAll({projectId: json.id, include: 'entity'}).catch(() => null);
+    // `GET /projects/relations` fails on a project that links domain-table rows, the same way it
+    // does on the pull side — and reading "holds nothing" would strip every relation the target
+    // has, because the write replaces the whole set. Fall back to the project's own copy.
+    const held = await relations.listAll({projectId: json.id, include: 'entity'}).catch(() => null)
+      ?? (await projects.find(json.id).catch(() => null))?.relations;
     if (!held) {
       tally.absent++;
       continue;
@@ -549,8 +557,8 @@ async function pushRelations(dapi: NodeDapi, effective: Map<string, BundleEntity
         const text = String(err?.message ?? err);
         // The write is all-or-nothing, so a single entity the target refuses to link would cost
         // the whole space its placement. Drop the one it named and write the rest.
-        const bad = RELATION_REFUSED_RE.exec(text)?.[1];
-        if (bad && refused.length < 50 && target.relations.some((r: any) => r.entity?.id === bad)) {
+        const bad = text.includes('insufficient privileges') ? undefined : RELATION_REFUSED_RE.exec(text)?.[1];
+        if (bad && refused.length < 3 && target.relations.some((r: any) => r.entity?.id === bad)) {
           target.relations = target.relations.filter((r: any) => r.entity?.id !== bad);
           refused.push(bad);
           continue;
@@ -617,7 +625,7 @@ async function restoreNames(dapi: NodeDapi, renamed: {op: Op; row: Row}[],
   let saved = false;
   for (const {op, row} of renamed) {
     const spec = TYPES[op.type];
-    const current = await dapi.internal(spec.route).find(idmap[op.id] ?? op.json.id);
+    const current = await dapi.internal(spec.route).find(idmap[op.id] ?? op.json.id).catch(() => null);
     if (!current || current.name === op.json.name) continue;
     current.name = op.json.name;
     delete current.storage;
@@ -639,7 +647,7 @@ async function restoreNames(dapi: NodeDapi, renamed: {op: Op; row: Row}[],
 async function reportPlacement(dapi: NodeDapi, misplaced: Op[], rows: Row[],
                                idmap: Record<string, string>): Promise<void> {
   for (const op of misplaced) {
-    const now = await dapi.internal(TYPES[op.type].route).find(idmap[op.id] ?? op.json.id);
+    const now = await dapi.internal(TYPES[op.type].route).find(idmap[op.id] ?? op.json.id).catch(() => null);
     if (!now || (now.namespace ?? '') === op.expectedNamespace) continue;
     rows.push({name: op.row.name, entityType: op.type, action: 'warn', reason: 'namespace_not_preserved',
       detail: `${op.expectedNamespace} → ${now.namespace ?? ''}; pull the owning space so the entity travels in its relations`});
@@ -656,7 +664,7 @@ async function pushTags(dapi: NodeDapi, effective: Map<string, BundleEntity>, pl
     for (const [id, {type, json}] of effective) {
       const tags: string[] = json._tags ?? [];
       if (!tags.length || ['skip', 'failed'].includes(planned.get(id)?.action ?? '')) continue;
-      const target = await dapi.internal(TYPES[type].route).find(json.id);
+      const target = await dapi.internal(TYPES[type].route).find(json.id).catch(() => null);
       if (!target) continue;
       const have = new Set((target.entityTags ?? []).map((t: any) => t?.tag));
       for (const tag of tags)

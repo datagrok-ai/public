@@ -10,13 +10,15 @@ import {BytesKind, DEFAULT_TYPES, nqNameOf, resolveTypes} from '../utils/migrate
 import * as bundle from '../utils/migrate/bundle';
 import {External, Selection, collectExternals, expand, normalizeSince, pullBytes, pullShares, select} from '../utils/migrate/walker';
 import {ConflictPolicy, Row, plan, push, summarize} from '../utils/migrate/pusher';
-import {Part, missingPackages, missingUsers, namespacesOf, readState, writeState} from '../utils/migrate/parts';
+import {Part, SWEEP, missingPackages, missingUsers, namespacesOf, plannedParts, readState, writeState} from '../utils/migrate/parts';
 
 const SELECTION_USAGE = '  [<nqName|id>...] [--type t,t] [--namespace ns] [--space s] [--name n] [--author login]\n' +
   '  [--tag t] [--since 2w] [--filter expr] [--no-deps] [--no-include-data] [--include-files]';
 const PULL_USAGE = `Usage: grok s pull --out <dir> [--replace] [--admin] [--host <alias>]\n${SELECTION_USAGE}`;
 const MIGRATE_USAGE = 'Usage: grok s migrate --from <alias> --to <alias> [--dry-run] [--keep] [--admin]\n' +
-  '  [--on-conflict fail|skip|duplicate|adopt] [--creds <file.yaml>]\n' + SELECTION_USAGE;
+  '  [--on-conflict fail|skip|duplicate|adopt] [--creds <file.yaml>]\n' +
+  '  --by-namespace [--only a,b] [--skip c] [--state <file>] [--force] [--no-sweep]\n' +
+  '    moves the instance one space at a time, checking users and packages first\n' + SELECTION_USAGE;
 
 export async function handleMigrate(dapi: NodeDapi, verb: string, rest: string[], argv: any,
                                     output: OutputFormat): Promise<boolean> {
@@ -139,8 +141,7 @@ export function loadCreds(file?: string): Record<string, any> | undefined {
 }
 
 const POLICIES: ConflictPolicy[] = ['fail', 'skip', 'duplicate', 'adopt'];
-/** The last part: whatever no space owns, which would otherwise never travel. */
-const SWEEP = '(unowned)';
+const SWEEP_TYPES = 'layout,view';
 
 function conflictPolicy(argv: any): ConflictPolicy {
   const policy: ConflictPolicy = argv['on-conflict'] ?? 'fail';
@@ -188,10 +189,13 @@ async function handleTransfer(rest: string[], argv: any, output: OutputFormat): 
   }
   const from = new NodeDapi(await createClient(String(argv.from), !!argv.admin));
   const to = new NodeDapi(await createClient(String(argv.to), !!argv.admin));
-  if (argv['by-namespace'])
-    return await transferByNamespace(from, to, argv, output);
   if (from.client.baseUrl === to.client.baseUrl)
     throw new Error(`--from and --to are the same server (${to.client.baseUrl}) — nothing to migrate`);
+  if (argv['by-namespace']) {
+    if (rest.length)
+      throw new Error('--by-namespace migrates whole spaces; it takes no entity selection');
+    return await transferByNamespace(from, to, argv, output);
+  }
 
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'grok-migrate-'));
   try {
@@ -247,31 +251,38 @@ async function transferByNamespace(from: NodeDapi, to: NodeDapi, argv: any, outp
     return true;
   }
 
-  const spaces = (await namespacesOf(from)).filter((n) => (!only.length || only.includes(n)) && !skip.has(n));
+  // Resolved once: a bad policy or a broken creds file is the run's problem, not each part's.
+  const onConflict = conflictPolicy(argv);
+  const creds = loadCreds(argv.creds);
+  const dryRun = !!argv['dry-run'];
+
   // Not everything belongs to a space: a layout can sit under no namespace at all, and would
-  // otherwise never travel. The sweep runs last, when almost everything it selects is already on
-  // the target and comes back identical, so it costs a pull and almost no placement.
-  if (!only.length && !argv['no-sweep']) spaces.push(SWEEP);
+  // otherwise never travel, so a full run ends with a sweep for what no space owns.
+  const spaces = plannedParts(await namespacesOf(from), {only, skip: [...skip], state,
+    sweep: !only.length && !argv['no-sweep']});
   const parts: Part[] = [];
   for (const [i, name] of spaces.entries()) {
-    if (state[name] && !state[name].error) { parts.push(state[name]); continue; }
     console.error(`[${i + 1}/${spaces.length}] ${name === SWEEP ? 'everything a space does not own' : name}`);
     const started = Date.now();
     const part: Part = {name};
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'grok-migrate-'));
     try {
       const report = {dropped: 0};
-      // A pull refuses to take the whole server without a selection, and the sweep is exactly that:
-      // whatever the run already selects, or every type if it named none.
+      // What a space can fail to own is a leaf — a layout or a view under no namespace. Sweeping
+      // every type instead would list the whole instance, including the loose tables a stand
+      // accumulates in the millions, which is the shape this command exists to avoid.
       const scope = name === SWEEP
-        ? (hasSelection([], argv) ? {} : {type: DEFAULT_TYPES.join(',')})
+        ? {type: argv.type ?? SWEEP_TYPES, namespace: undefined}
         : {namespace: name};
       const pulled = await handlePull(from, [], {...argv, ...scope, out: dir}, 'quiet', false, report);
       const read = pulled ? bundle.read(dir) : null;
       part.entities = read ? read.entities.size : 0;
-      if (read && part.entities) {
-        const result = await push(to, read, {onConflict: conflictPolicy(argv), creds: loadCreds(argv.creds),
-          progress: progressReporter(true)}, () => {});
+      // Pushing a bundle the pull could not fill promotes less than the space holds, and recording
+      // it as done would hide that for good: the part stays failed so a re-run takes it again.
+      if (report.dropped)
+        part.error = `${report.dropped} entities could not be read — not pushed`;
+      else if (read && part.entities) {
+        const result = await push(to, read, {onConflict, creds, dryRun, progress: progressReporter(true)}, () => {});
         part.failed = result.items.filter((r) => r.action === 'failed').length;
       }
     } catch (err: any) {
@@ -280,15 +291,19 @@ async function transferByNamespace(from: NodeDapi, to: NodeDapi, argv: any, outp
       fs.rmSync(dir, {recursive: true, force: true});
     }
     part.seconds = Math.round((Date.now() - started) / 1000);
-    state[name] = part;
-    writeState(stateFile, state);
+    if (!dryRun) {
+      state[name] = part;
+      writeState(stateFile, state);
+    }
     parts.push(part);
   }
 
-  printOutput(parts.map((p) => ({space: p.name, entities: p.entities ?? 0, failed: p.failed ?? 0,
+  // What a resume skipped belongs in the table too, or the run reports less than it has done.
+  const all = [...Object.values(state).filter((p) => !parts.some((q) => q.name === p.name)), ...parts];
+  printOutput(all.map((p) => ({space: p.name, entities: p.entities ?? 0, failed: p.failed ?? 0,
     seconds: p.seconds ?? 0, error: p.error ?? ''})), output);
   console.error(`state: ${stateFile}`);
-  if (parts.some((p) => p.error || (p.failed ?? 0) > 0))
+  if (all.some((p) => p.error || (p.failed ?? 0) > 0))
     process.exitCode = 1;
   return true;
 }

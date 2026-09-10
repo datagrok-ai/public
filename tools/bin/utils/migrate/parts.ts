@@ -49,3 +49,24 @@ export function writeState(file: string, state: Record<string, Part>): void {
   fs.mkdirSync(path.dirname(file), {recursive: true});
   fs.writeFileSync(file, JSON.stringify(state, null, 2));
 }
+
+/** The last part: whatever no space owns, which would otherwise never travel. */
+export const SWEEP = '(unowned)';
+
+/**
+ * Which parts a run still has to do. A name that matches no space is a typo, not an empty
+ * selection — silently migrating nothing is the one outcome worse than refusing.
+ */
+export function plannedParts(all: string[], opts: {only?: string[]; skip?: string[];
+                             state?: Record<string, Part>; sweep?: boolean}): string[] {
+  const only = opts.only ?? [];
+  const skip = new Set(opts.skip ?? []);
+  const unknown = [...only, ...(opts.skip ?? [])].filter((n) => !all.includes(n));
+  if (unknown.length)
+    throw new Error(`No such space: ${unknown.join(', ')}`);
+  const chosen = all.filter((n) => (!only.length || only.includes(n)) && !skip.has(n));
+  if (opts.sweep) chosen.push(SWEEP);
+  // A part that failed, or that reported failures, is not finished.
+  const done = opts.state ?? {};
+  return chosen.filter((n) => !done[n] || done[n].error || done[n].failed);
+}

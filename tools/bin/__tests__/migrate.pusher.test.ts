@@ -825,6 +825,22 @@ describe('files, spaces and models', () => {
     expect(result.items.some((r) => r.action === 'failed')).toBe(false);
   });
 
+  it('keeps a timeout a failure even when the entity references a dead id', async () => {
+    const DEAD = 'deadbeef-0000-0000-0000-000000000003';
+    const view: [string, BundleEntity] = [VIEW_ID, {type: 'ViewInfo', json: {
+      '#type': 'ViewInfo', id: VIEW_ID, name: 'Demog', namespace: 'Skalkin:', table: {id: DEAD},
+    }}];
+    const b = bundleOf([view]);
+    b.manifest.dangling = [DEAD];
+    const {dapi} = makeDapi((method, path) => {
+      if (path.startsWith('/entities?')) return [];
+      if (method === 'POST') throw new Error('POST /views: no answer in 60000ms');
+      return notFound();
+    });
+    const result = await push(dapi, b, {onConflict: 'fail'}, () => {});
+    expect(result.items.find((r) => r.entityType === 'ViewInfo')!.action).toBe('failed');
+  });
+
   it('still fails a refusal caused by a reference the source has and the target lacks', async () => {
     const ABSENT = 'deadbeef-0000-0000-0000-000000000002';
     const view: [string, BundleEntity] = [VIEW_ID, {type: 'ViewInfo', json: {

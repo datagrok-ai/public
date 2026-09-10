@@ -764,10 +764,10 @@ export class NodeFilesDataSource {
   }
 
   /** Upload bytes already in memory — the bundle holds them, there is no local file. */
-  async writeBytes(filePath: string, bytes: Buffer): Promise<void> {
+  async writeBytes(filePath: string, bytes: Buffer): Promise<any> {
     const {connector, path} = this.splitPath(filePath);
     if (!path) throw new Error(`Path must name a file inside the share: got '${filePath}'`);
-    await this.client.putBytes(`/public/v1/files/${connector}/${path}`, bytes);
+    return await this.client.putBytes(`/public/v1/files/${connector}/${path}`, bytes);
   }
 
   async delete(filePath: string): Promise<void> {
@@ -783,11 +783,8 @@ export class NodeFilesDataSource {
    */
   async put(localPath: string, remotePath: string): Promise<any> {
     const fs = require('fs') as typeof import('fs');
-    const {connector, path} = this.splitPath(remotePath);
-    if (!path) throw new Error(`Remote path must include a file name after the connector: got '${remotePath}'`);
     const bytes = fs.readFileSync(localPath);
-    const res = await this.client.putBytes(`/public/v1/files/${connector}/${path}`, bytes);
-    return {path: remotePath, size: bytes.length, response: res};
+    return {path: remotePath, size: bytes.length, response: await this.writeBytes(remotePath, bytes)};
   }
 }
 

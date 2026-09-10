@@ -623,7 +623,9 @@ grok s migrate --from dev --to prod --admin --by-namespace --only Chem,Bio
 
 It checks the instance-level prerequisites once before writing anything — users and packages the
 target lacks — and refuses a whole-instance run until they are fixed (`--force` overrides; a run
-already scoped with `--only` is reported but allowed). Each space is a separate pull and push, so a
+already scoped with `--only` is reported but allowed). `--skip` leaves a space out, and a full run
+ends with an `(unowned)` sweep for leaf entities no space holds — a layout under no namespace would
+otherwise never travel. `--no-sweep` turns that off. Each space is a separate pull and push, so a
 failure costs one space rather than the run, and what finished is recorded in a state file
 (`--state`), letting a re-run continue instead of repeating work.
 
@@ -672,7 +674,7 @@ five attempts by default, about half a minute. That covers a busy moment, not a 
 out for a restart, and a whole-instance walk is long enough to meet one:
 
 ```bash
-GROK_HTTP_RETRIES=9 grok s pull --out ./bundle --host dev --admin ...   # ~4 min of tolerance
+GROK_HTTP_RETRIES=9 grok s pull --out ./bundle --host dev --admin ...   # ~90s of tolerance
 ```
 
 A pull that dies anyway is not wasted — pulls accumulate, so re-running without `--replace`
