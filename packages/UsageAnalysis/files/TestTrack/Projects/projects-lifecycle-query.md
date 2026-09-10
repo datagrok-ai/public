@@ -17,108 +17,127 @@ related_bugs:
   - github-3550
 ---
 
-# Projects — Query-source lifecycle
+# Projects — lifecycle of a query-based project
 
-Covers the lifecycle of a project sourced from a saved query on
-`System:Datagrok` (the platform's built-in metadata Postgres
-connection, always present): save, share with a second user, rename
-the underlying query, and rename the project itself. This is the full
-reproduction of github-3550 — renaming a query that a project depends
-on must not silently break the project's reference to it (the table
-should either auto-resolve or fail with an explicit error, never go
-silently null). github-3550 is the query-side sibling of GROK-19212,
-which covers the same failure mode for renamed tables.
-
-UI coverage delegated to `projects-ui-smoke.md`.
+A project built from your own saved query is saved, shared, and then
+the **query** is renamed. The project must still open with its data
+(github-3550).
 
 ## Setup
 
-1. Authenticate as test user.
-2. Project name: `lifecycle-query-${Date.now()}`.
-3. Recipient placeholder: `<RECIPIENT_USERNAME_TBD>`.
-4. Helper 3 dependency: `helpers.playwright.session.logoutAndLoginAs`
-   (NOT YET REGISTERED).
-5. Cleanup: delete project; revoke permissions; delete the
-   provisioned saved query (via `provisioned.cleanup()`).
+1. Two accounts: the **owner** (test user) and a **second user** who
+   can access the **NorthwindTest** Postgres connection.
+2. Names in this test: query `lifecycleQuery`, project
+   `lifecycleQueryProj`.
 
-## Scenarios
+## Scenario
 
-### Main flow — query-source lifecycle
+1. **Create the query.**
+   - Go to **Browse > Databases > Postgres > NorthwindTest > Schemas >
+     public**.
+   - Right-click `orders` and choose **New SQL Query...**.
+   - **Verify:** the query editor opens with `select * from
+     public.orders`.
+   - Replace the **Name** `orders` with `lifecycleQuery`.
+   - Click **Save** on the ribbon.
+   - Close the query editor.
 
-0. **Provision saved query on `System:Datagrok`.** Use
-   `helpers/openers.ts:provisionSystemDatagrokQuery({nameStem:
-   'lifecycle_query', sql: SYSTEM_DATAGROK_QUERIES.GROUPS_SAMPLE})`.
-   The helper creates a Postgres query against the `groups` table
-   and returns `{queryId, queryNqName, resolvedName, cleanup}`.
-   The query is namespaced under the test user's login — so the
-   user has full edit/rename/delete rights. (This replaces the
-   previous Samples-package env-dependency.)
-1. **Open table from Query.** Use
-   `helpers/openers.ts:openTableFromDbQuery(page,
-   provisioned.queryNqName)`. Verify the resulting table is loaded
-   and `df.tags['.script']` matches `<Var> = <queryNqName>()`.
-2. **Save project with Data Sync ON.** Use
-   `helpers/projects.ts:saveProjectWithProvenance(page,
-   projectName)`.
-3. **Share project with second user (View-and-Use).** Use
-   `grok.dapi.permissions.grant(project, recipient, false)`.
-   Defensive skip if no second user exists (Helper 3 deferred).
-   - Original-user assertion: project reopens; query result loads
-     via Data Sync.
-   - Recipient-side assertion (Helper 3 — deferred): second user
-     opens; query result loads. Recipient inherits access to
-     `System:Datagrok` via `allUsers` group — no per-user DB
-     credential dance required.
-4. **Rename external dependency — Query rename (github-3550 full
-   reproduction).**
-   - Rename the provisioned query via JS API:
-     ```js
-     const q = await grok.dapi.queries.find(provisioned.queryId);
-     q.name = `${provisioned.resolvedName}_renamed`;
-     await grok.dapi.queries.save(q);
-     ```
-   - The test owns the query (it's namespaced under the test
-     user's own login), so the rename always succeeds — no
-     permission fallback.
-   - **github-3550 invariant assertion:** the project's
-     `relations.list` should now reference the renamed query
-     (or the relation should be invalidated with an explicit
-     error, not a silent null). Specifically: reopen the project;
-     verify the table either loads (relation auto-resolved
-     post-rename — happy path) OR fails with an explicit
-     "Could not resolve query <queryNqName>" error (graceful
-     failure — not silent corruption).
-5. **Rename project itself.** Via JS API. Verify rename persists.
-6. **Cleanup.** Delete project. Invoke `provisioned.cleanup()` —
-   deletes the saved query (with its renamed name; id is stable
-   across rename).
+2. **Open its result as a table.**
+   - If `lifecycleQuery` is not shown under **NorthwindTest**, click
+     **Load more** at the end of the list.
+   - Double-click `lifecycleQuery`.
+   - **Verify:** the view `lifecycleQuery` opens with 830 rows.
 
-### Expected results
+3. **Save the project.**
+   - Click **SAVE** on the ribbon.
+   - **Verify:** the **Save project** dialog lists only
+     `lifecycleQuery`.
+   - Enter `lifecycleQueryProj` as the name.
+   - Leave **Data sync** ON.
+   - Click **OK**.
+   - In the **Share** dialog, click **CANCEL**.
+   - Right-click the left sidebar and select **Close All**.
 
-- Save / reopen works for Query-sourced projects.
-- Share + recipient-open works (recipient inherits access to
-  `System:Datagrok` via the `allUsers` group).
-- **github-3550 invariant:** Query rename does NOT silently
-  break the project's relations — either auto-resolution
-  (preferred) or explicit failure (acceptable). Silent null
-  references are the bug.
-- Project rename + Query rename stack: both renames persist.
+4. **Share the project only.**
+   - Go to **Browse > Dashboards**.
+   - Right-click the `lifecycleQueryProj` tile and choose **Share...**.
+   - Type the second user into **User, group, or email**.
+   - Pick the second user from the suggestion list.
+   - Leave **View and use** selected.
+   - Switch **Send notifications** off.
+   - Click **OK**.
 
-## Notes
+5. **The recipient opens it.**
+   - Click your avatar at the bottom of the left sidebar.
+   - Click **Logout** in the profile view.
+   - Sign in with the second user's credentials.
+   - Go to **Browse > Dashboards**.
+   - Type `lifecycleQueryProj` into the search box.
+   - Click the refresh icon.
+   - Double-click the `lifecycleQueryProj` tile.
+   - **Verify:** the table opens with 830 rows.
+   - **Verify:** no error dialog appears.
+   - Right-click the left sidebar and select **Close All**.
+   - Click your avatar at the bottom of the left sidebar.
+   - Click **Logout** in the profile view.
+   - Sign in with the owner's credentials.
 
-- **Self-contained source provisioning.** This spec creates and
-  deletes its own saved query — no Samples package, no
-  env-provisioned DB. The `System:Datagrok` connection is
-  built-in (created by `ServiceConnectionsMigration` on every
-  deploy) and shared with `allUsers`.
-- **github-3550 full reproduction.** Step 4 walks the bug's exact
-  reproduction path: rename the external query, reopen the project,
-  and check relation resolution. Because the test owns the query,
-  the rename always succeeds — there's no permission-based skip.
-- **UI coverage delegated.** All UI surfaces touched here
-  (right-click rename, Save dialog, Sharing tab) are owned
-  by `projects-ui-smoke.md`. This scenario uses the JS API path.
-- **Deferred.** Recipient-side assertions are blocked on a
-  not-yet-registered login-as-another-user test helper.
-- **Self-cleaning.** Cleanup deletes the project and invokes
-  `provisioned.cleanup()` to delete the saved query.
+6. **Rename the query.**
+   - Go to **Browse > Databases > Postgres > NorthwindTest**.
+   - Right-click `lifecycleQuery` and choose **Rename...**.
+   - In the **Rename dataquery** dialog, change the name to
+     `lifecycleQueryRenamed`.
+   - Click **OK**.
+
+7. **The owner reopens the project (github-3550).**
+   - Go to **Browse > Dashboards**.
+   - Type `lifecycleQueryProj` into the search box.
+   - Click the refresh icon.
+   - Double-click the `lifecycleQueryProj` tile.
+   - **Verify:** the table opens with 830 rows.
+   - **Verify:** no error dialog appears.
+   - Right-click the left sidebar and select **Close All**.
+
+8. **The recipient reopens the project (github-3550).**
+   - Click your avatar at the bottom of the left sidebar.
+   - Click **Logout** in the profile view.
+   - Sign in with the second user's credentials.
+   - Go to **Browse > Dashboards**.
+   - Type `lifecycleQueryProj` into the search box.
+   - Click the refresh icon.
+   - Double-click the `lifecycleQueryProj` tile.
+   - **Verify:** the table opens with 830 rows.
+   - **Verify:** no error dialog appears.
+   - Right-click the left sidebar and select **Close All**.
+   - Click your avatar at the bottom of the left sidebar.
+   - Click **Logout** in the profile view.
+   - Sign in with the owner's credentials.
+
+9. **Rename the project.**
+   - Go to **Browse > Dashboards**.
+   - Right-click the `lifecycleQueryProj` tile and choose **Rename...**.
+   - Change the name to `lifecycleQueryProjRenamed`.
+   - Click **OK**.
+   - Go to **Browse > Dashboards**.
+   - Type `lifecycleQueryProjRenamed` into the search box.
+   - Click the refresh icon.
+   - Double-click the `lifecycleQueryProjRenamed` tile.
+   - **Verify:** the table opens with 830 rows.
+   - Right-click the left sidebar and select **Close All**.
+
+10. **Cleanup.**
+    - Right-click the `lifecycleQueryProjRenamed` tile and choose
+      **Delete Project**.
+    - Click **DELETE**.
+    - Wait until the dialog closes.
+    - Under **NorthwindTest**, right-click `lifecycleQueryRenamed` and
+      choose **Delete**.
+    - **Verify:** the dialog says *Delete query
+      "lifecycleQueryRenamed"?*.
+    - Click **DELETE**.
+
+## Expected results
+
+- A query-based project reopens and reloads the query result.
+- The recipient can open the shared project.
+- After the query is renamed, the project still opens with its data.
