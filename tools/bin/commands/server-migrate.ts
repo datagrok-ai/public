@@ -5,17 +5,20 @@ import * as path from 'path';
 import * as yaml from 'js-yaml';
 import {NodeDapi} from '../utils/node-dapi';
 import {createClient} from '../utils/server-client';
-import {printOutput, printError, OutputFormat} from '../utils/server-output';
+import {printOutput, printError, progressReporter, OutputFormat} from '../utils/server-output';
 import {BytesKind, DEFAULT_TYPES, nqNameOf, resolveTypes} from '../utils/migrate/registry';
 import * as bundle from '../utils/migrate/bundle';
-import {Selection, expand, normalizeSince, pullBytes, select} from '../utils/migrate/walker';
+import {External, Selection, collectExternals, expand, normalizeSince, pullBytes, pullShares, select} from '../utils/migrate/walker';
 import {ConflictPolicy, Row, plan, push, summarize} from '../utils/migrate/pusher';
+import {Part, SWEEP, missingPackages, missingUsers, namespacesOf, plannedParts, readState, writeState} from '../utils/migrate/parts';
 
 const SELECTION_USAGE = '  [<nqName|id>...] [--type t,t] [--namespace ns] [--space s] [--name n] [--author login]\n' +
   '  [--tag t] [--since 2w] [--filter expr] [--no-deps] [--no-include-data] [--include-files]';
-const PULL_USAGE = `Usage: grok s pull --out <dir> [--replace] [--host <alias>]\n${SELECTION_USAGE}`;
-const MIGRATE_USAGE = 'Usage: grok s migrate --from <alias> --to <alias> [--dry-run] [--keep]\n' +
-  '  [--on-conflict fail|skip|duplicate|adopt] [--creds <file.yaml>]\n' + SELECTION_USAGE;
+const PULL_USAGE = `Usage: grok s pull --out <dir> [--replace] [--admin] [--host <alias>]\n${SELECTION_USAGE}`;
+const MIGRATE_USAGE = 'Usage: grok s migrate --from <alias> --to <alias> [--dry-run] [--keep] [--admin]\n' +
+  '  [--on-conflict fail|skip|duplicate|adopt] [--creds <file.yaml>]\n' +
+  '  --by-namespace [--only a,b] [--skip c] [--state <file>] [--force] [--no-sweep]\n' +
+  '    moves the instance one space at a time, checking users and packages first\n' + SELECTION_USAGE;
 
 export async function handleMigrate(dapi: NodeDapi, verb: string, rest: string[], argv: any,
                                     output: OutputFormat): Promise<boolean> {
@@ -53,12 +56,19 @@ async function handlePull(dapi: NodeDapi, rest: string[], argv: any, output: Out
 
   const notes: Row[] = [];
   const note = (row: Row) => notes.push(row);
-  const selected = await select(dapi, sel, note);
-  const entities = argv.deps !== false ? await expand(dapi, selected, note) : selected;
+  const leftBehind: External[] = [];
+  const progress = progressReporter(output === 'quiet');
+  const selected = await select(dapi, sel, note, progress);
+  const entities = argv.deps !== false ? await expand(dapi, selected, note, leftBehind, progress) : selected;
+  // Everything the bundle points at but leaves behind, so the push can re-find it by name.
+  const outside = await collectExternals(dapi, entities, note, progress);
+  const externals = [...leftBehind, ...outside.externals];
   const kinds: BytesKind[] = [];
   if (argv['include-data'] !== false) kinds.push('tables');
   if (argv['include-files']) kinds.push('files');
-  const bytes = await pullBytes(dapi, entities, note, kinds);
+  const bytes = await pullBytes(dapi, entities, note, kinds, progress);
+  // A datasync table rebuilds itself from a share on open, so the file has to travel with it.
+  const shares = argv['include-files'] ? await pullShares(dapi, entities, note, progress) : new Map<string, Buffer>();
 
   const info = await dapi.serverInfo();
   const user = await dapi.client.get('/users/current');
@@ -71,9 +81,16 @@ async function handlePull(dapi: NodeDapi, rest: string[], argv: any, output: Out
     },
     args: process.argv.slice(3),
     packages: notes.filter((n) => n.reason === 'package_entity').map((n) => n.detail!).filter(Boolean),
+    externals,
+    dangling: outside.dangling,
   }, {replace: !!argv.replace}, bytes);
+  bundle.writeShares(out, shares);
+  progress(`wrote ${entities.size} entities to ${out}`);
 
   const rows: Row[] = [...notes];
+  if (outside.dangling.length)
+    rows.push({name: dapi.client.baseUrl, entityType: 'Bundle', action: 'warn', reason: 'source_dangling_refs',
+      detail: `${outside.dangling.length} reference(s) point at entities the source itself no longer has`});
   for (const [, {type, json}] of entities)
     rows.push({name: nqNameOf(json), entityType: type, action: 'info', reason: 'pulled'});
   // An entity the server would not hand over is missing from the bundle, and pushing it would
@@ -124,6 +141,7 @@ export function loadCreds(file?: string): Record<string, any> | undefined {
 }
 
 const POLICIES: ConflictPolicy[] = ['fail', 'skip', 'duplicate', 'adopt'];
+const SWEEP_TYPES = 'layout,view';
 
 function conflictPolicy(argv: any): ConflictPolicy {
   const policy: ConflictPolicy = argv['on-conflict'] ?? 'fail';
@@ -135,13 +153,14 @@ function conflictPolicy(argv: any): ConflictPolicy {
 async function handlePush(dapi: NodeDapi, rest: string[], argv: any, output: OutputFormat): Promise<boolean> {
   const dir = rest[0];
   if (!dir) {
-    printError(new Error('Usage: grok s push <bundle-dir> [--dry-run] [--on-conflict fail|skip|duplicate|adopt] [--creds <file.yaml>] [--host <alias>]'));
+    printError(new Error('Usage: grok s push <bundle-dir> [--dry-run] [--on-conflict fail|skip|duplicate|adopt] [--creds <file.yaml>] [--admin] [--host <alias>]'));
     return false;
   }
   const onConflict = conflictPolicy(argv);
   const creds = loadCreds(argv.creds);
   const dryRun = !!argv['dry-run'];
-  const result = await push(dapi, bundle.read(dir), {dryRun, onConflict, creds}, (rows) => {
+  const result = await push(dapi, bundle.read(dir), {dryRun, onConflict, creds,
+    progress: progressReporter(output === 'quiet')}, (rows) => {
     if (output === 'table' && !dryRun) {
       console.log('Plan:');
       printOutput(rows, output);
@@ -164,7 +183,7 @@ async function handlePush(dapi: NodeDapi, rest: string[], argv: any, output: Out
  * directory in between — the same two verbs, so nothing behaves differently.
  */
 async function handleTransfer(rest: string[], argv: any, output: OutputFormat): Promise<boolean> {
-  if (!argv.from || !argv.to || !hasSelection(rest, argv)) {
+  if (!argv.from || !argv.to || (!argv['by-namespace'] && !hasSelection(rest, argv))) {
     printError(new Error(MIGRATE_USAGE));
     return false;
   }
@@ -172,6 +191,11 @@ async function handleTransfer(rest: string[], argv: any, output: OutputFormat): 
   const to = new NodeDapi(await createClient(String(argv.to), !!argv.admin));
   if (from.client.baseUrl === to.client.baseUrl)
     throw new Error(`--from and --to are the same server (${to.client.baseUrl}) — nothing to migrate`);
+  if (argv['by-namespace']) {
+    if (rest.length)
+      throw new Error('--by-namespace migrates whole spaces; it takes no entity selection');
+    return await transferByNamespace(from, to, argv, output);
+  }
 
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'grok-migrate-'));
   try {
@@ -191,6 +215,106 @@ async function handleTransfer(rest: string[], argv: any, output: OutputFormat): 
     else
       fs.rmSync(dir, {recursive: true, force: true});
   }
+}
+
+/**
+ * A whole instance, one space at a time. Placement is exclusive on the server, so a single bundle
+ * holding every space has its projects taking entities from one another; scoped to one space that
+ * contention stays inside it. A part that fails does not stop the rest, and what finished is
+ * recorded so a re-run picks up where it stopped.
+ */
+async function transferByNamespace(from: NodeDapi, to: NodeDapi, argv: any, output: OutputFormat): Promise<boolean> {
+  const only: string[] = argv.only ? String(argv.only).split(',').map((s) => s.trim()) : [];
+  const skip = new Set<string>(argv.skip ? String(argv.skip).split(',').map((s) => s.trim()) : []);
+  // `--from` and `--to` can be full URLs, which are not file names.
+  const tag = (v: any) => String(v).replace(/[^\w.-]+/g, '_');
+  const stateFile: string = argv.state ?? path.join(os.tmpdir(), `grok-migrate-${tag(argv.from)}-${tag(argv.to)}.json`);
+  const state = readState(stateFile);
+
+  // Without an admin session the source lists only what this account can see, so the run would
+  // enumerate a subset of the instance and report a whole-instance migration.
+  if (!argv.admin && !argv.force)
+    throw new Error('--by-namespace needs --admin, or it sees only the spaces this account can ' +
+      'reach and migrates part of the instance; pass --force to accept that.');
+
+  // Both are prerequisites of the instance, not of any bundle, and both are cheaper to fix now
+  // than to discover space by space: content of a user the target lacks lands under the pusher.
+  const [users, packages] = await Promise.all([missingUsers(from, to), missingPackages(from, to)]);
+  // A source can have hundreds of each; the count is what decides, and a few names say which kind.
+  const few = (all: string[]) => all.slice(0, 5).join(', ') + (all.length > 5 ? `, +${all.length - 5} more` : '');
+  const notes: Row[] = [];
+  if (users.length)
+    notes.push({name: `${users.length} user(s)`, entityType: 'User', action: 'warn', reason: 'user_missing',
+      detail: `${few(users)} — create them on the target first, or their content lands under the pushing account`});
+  if (packages.length)
+    notes.push({name: `${packages.length} package(s)`, entityType: 'Package', action: 'warn', reason: 'package_not_installed',
+      detail: `${few(packages)} — publish them on the target, or what they own cannot resolve`});
+  printOutput(notes, output);
+  // A whole-instance run stops: content of a user the target lacks lands under the pushing account,
+  // and that is not worth discovering space by space. A run the operator has already scoped with
+  // `--only` is their call, so it is reported and allowed.
+  if (notes.length && !argv.force && !only.length) {
+    printError(new Error('Refusing to start: fix the above, or pass --force to migrate anyway.'));
+    process.exitCode = 1;
+    return true;
+  }
+
+  // Resolved once: a bad policy or a broken creds file is the run's problem, not each part's.
+  const onConflict = conflictPolicy(argv);
+  const creds = loadCreds(argv.creds);
+  const dryRun = !!argv['dry-run'];
+
+  // Not everything belongs to a space: a layout can sit under no namespace at all, and would
+  // otherwise never travel, so a full run ends with a sweep for what no space owns.
+  const spaces = plannedParts(await namespacesOf(from), {only, skip: [...skip], state,
+    sweep: !only.length && argv.sweep !== false});
+  const parts: Part[] = [];
+  for (const [i, name] of spaces.entries()) {
+    console.error(`[${i + 1}/${spaces.length}] ${name === SWEEP ? 'everything a space does not own' : name}`);
+    const started = Date.now();
+    const part: Part = {name};
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'grok-migrate-'));
+    try {
+      const report = {dropped: 0};
+      // What a space can fail to own is a leaf — a layout or a view under no namespace. Sweeping
+      // every type instead would list the whole instance, including the loose tables a stand
+      // accumulates in the millions, which is the shape this command exists to avoid.
+      const scope = name === SWEEP
+        ? {type: argv.type ?? SWEEP_TYPES, namespace: undefined}
+        : {namespace: name};
+      const pulled = await handlePull(from, [], {...argv, ...scope, 'include-files': true, out: dir}, 'quiet', false, report);
+      const read = pulled ? bundle.read(dir) : null;
+      part.entities = read ? read.entities.size : 0;
+      // Pushing a bundle the pull could not fill promotes less than the space holds, and recording
+      // it as done would hide that for good: the part stays failed so a re-run takes it again.
+      if (report.dropped)
+        part.error = `${report.dropped} entities could not be read — not pushed`;
+      else if (read && part.entities) {
+        const result = await push(to, read, {onConflict, creds, dryRun,
+          progress: progressReporter(output === 'quiet' || output === 'json')}, () => {});
+        part.failed = result.items.filter((r) => r.action === 'failed').length;
+      }
+    } catch (err: any) {
+      part.error = err?.message ?? String(err);
+    } finally {
+      fs.rmSync(dir, {recursive: true, force: true});
+    }
+    part.seconds = Math.round((Date.now() - started) / 1000);
+    if (!dryRun) {
+      state[name] = part;
+      writeState(stateFile, state);
+    }
+    parts.push(part);
+  }
+
+  // What a resume skipped belongs in the table too, or the run reports less than it has done.
+  const all = [...Object.values(state).filter((p) => !parts.some((q) => q.name === p.name)), ...parts];
+  printOutput(all.map((p) => ({space: p.name, entities: p.entities ?? 0, failed: p.failed ?? 0,
+    seconds: p.seconds ?? 0, error: p.error ?? ''})), output);
+  console.error(`state: ${stateFile}`);
+  if (all.some((p) => p.error || (p.failed ?? 0) > 0))
+    process.exitCode = 1;
+  return true;
 }
 
 /** What a push would do, read-only: the plan plus the top-level keys that differ. */

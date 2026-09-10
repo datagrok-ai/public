@@ -3,6 +3,7 @@ import {category, test} from '@datagrok-libraries/test/src/test';
 import {PipelineConfiguration, historyUtils} from '@datagrok-libraries/compute-utils';
 import {getProcessedConfig} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/config-processing-utils';
 import {StateTree} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTree';
+import {Driver} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/Driver';
 import {deserializeRestrictions} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/funccall-utils';
 import {callHandler} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/utils';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
@@ -132,6 +133,25 @@ category('ComputeUtils: Driver state tree persistence', async () => {
     expectDeepEqual(restored['df']?.type, 'restricted', {prefix: 'restored restriction type'});
     expectDeepEqual(restored['df']?.assignedValue instanceof DG.DataFrame, true, {prefix: 'restored assignedValue is a dataframe'});
     expectDeepEqual(restored['df']?.assignedValue?.rowCount, 3, {prefix: 'restored dataframe content'});
+  });
+
+  test('Driver loadPipeline with explicit config keeps run metadata', async () => {
+    const config = await callHandler<PipelineConfiguration>('LibTests:MockWrapper1', {}).toPromise();
+    const pconf = await getProcessedConfig(config);
+    const driver = new Driver();
+    try {
+      await driver.sendCommand({event: 'initPipeline', provider: '', config: pconf});
+      await driver.sendCommand({event: 'savePipeline', title: 'meta title', description: 'meta desc'});
+      const savedId = driver.currentMetaCallData$.value?.id;
+      expectDeepEqual(!!savedId, true, {prefix: 'Saved metaCall id'});
+      await driver.sendCommand({event: 'loadPipeline', funcCallId: savedId!, config: pconf});
+      const meta = driver.currentMetaCallData$.value;
+      expectDeepEqual(meta?.id, savedId, {prefix: 'Loaded metaCall id'});
+      expectDeepEqual(meta?.title, 'meta title', {prefix: 'Loaded title'});
+      expectDeepEqual(meta?.description, 'meta desc', {prefix: 'Loaded description'});
+    } finally {
+      driver.close();
+    }
   });
 
   test('Load legacy embedded-DF consistency format', async () => {

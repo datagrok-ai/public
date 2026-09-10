@@ -7,8 +7,11 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import {Observable, Subject} from 'rxjs';
+
 //GIS semantic types import
 import {SEMTYPEGIS} from '../src/gis-semtypes';
+import {gisViewerStatus} from '../src/gis-viewer-status';
 
 //OpenLayers functionality import
 import {OLCallbackParam, OpenLayers, Coordinate, toStringColor} from '../src/gis-openlayer';
@@ -68,6 +71,33 @@ export class GisViewer extends DG.JsViewer {
   colorValues: Array<number> = [];
   sizeValues: Array<number> = [];
   indexValues: Array<number> = [];
+
+  private _renderPending = 0;
+  private _onRendered = new Subject<void>();
+
+  /** Fires after every render pass — what automation settles on together with `isRenderPending`. */
+  get onRendered(): Observable<void> {return this._onRendered;}
+
+  get isRenderPending(): boolean {return this._renderPending > 0;}
+
+  getWidgetStatus(): DG.IWidgetStatus {return gisViewerStatus(this);}
+
+  /** The base map is tiles from the public internet, the markers are the product. A render is done
+   * as soon as the marker layer's renderer is ready on a painted frame — waiting for the map's
+   * `rendercomplete` would make every settle a tile download, since that event also waits on the
+   * tile queue and on every layer renderer (`ol/PluggableMap.js`).
+   * A hidden marker layer is nothing to wait for: `renderType = 'heatmap'` hides it while its
+   * WebGL renderer still reads `ready === false`, and OpenLayers never asks an invisible layer to
+   * render again, so waiting on it would leave the flag up for as long as the heatmap is shown. */
+  private renderFinished(): void {
+    if (this._renderPending === 0)
+      return;
+    const layer = this.ol.olMarkersLayerGL as any;
+    if (layer?.getVisible?.() !== false && layer?.getRenderer?.()?.ready === false)
+      return;
+    this._renderPending = 0;
+    this._onRendered.next();
+  }
 
   constructor() {
     super();
@@ -362,6 +392,8 @@ export class GisViewer extends DG.JsViewer {
 
       this.updateLayersList();
 
+      this.ol.olMap.on('postrender', () => this.renderFinished());
+
       //subscribe to events
       this.subs.push(ui.onSizeChanged(this.root).subscribe(this.rootOnSizeChanged.bind(this)));
       this.subs.push(ui.onSizeChanged((this.panelLeft as HTMLElement)).subscribe(this.rootOnSizeChanged.bind(this)));
@@ -525,6 +557,10 @@ export class GisViewer extends DG.JsViewer {
     }
 
     //events of dataframe handling
+    // the flag has to go up when the change arrives, not when the debounced handler runs
+    this.subs.push(this.dataFrame.selection.onChanged.subscribe((_) => this._renderPending = 1));
+    this.subs.push(this.dataFrame.filter.onChanged.subscribe((_) => this._renderPending = 1));
+
     //rows selecting
     this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 100).subscribe((_) => {
       const selcount = this.dataFrame.selection.getSelectedIndexes();
@@ -541,6 +577,7 @@ export class GisViewer extends DG.JsViewer {
           {padding: [50, 50, 50, 50], maxZoom: 9});
       }
       this.ol.preventFocusing = false;
+      this.ol.olMap.render();
     }));
 
     //update on filtration
@@ -648,6 +685,7 @@ export class GisViewer extends DG.JsViewer {
   }
 
   detach(): void {
+    this._renderPending = 0;
     if (this.ol) {
       this.ol.removeAllLayers();
       this.ol.olMap.dispose();
@@ -656,6 +694,8 @@ export class GisViewer extends DG.JsViewer {
   }
 
   async render(fit: boolean = false, reloadData: boolean = true): Promise<void> {
+    if (this.initialized)
+      this._renderPending = 1;
     try {
       if (!this.dataFrame)
         return;
@@ -690,6 +730,9 @@ export class GisViewer extends DG.JsViewer {
       }
     } finally {
       this.updateLayersList();
+      // the frame this asks for is what `renderFinished` settles on
+      if (this.initialized)
+        this.ol.olMap.render();
     }
   }
 

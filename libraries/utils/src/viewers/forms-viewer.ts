@@ -3,6 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import {Observable, Subject} from 'rxjs';
 import {filter} from 'rxjs/operators';
+import {formsViewerStatus} from './forms-viewer-status';
 // @ts-ignore
 import '../../css/forms.css';
 
@@ -51,6 +52,24 @@ export class FormsViewer extends DG.JsViewer {
   splitColLeft: HTMLElement;
   splitColRight: HTMLElement;
   inputClicked: Subject<string> = new Subject();
+  private _renderPending = 0;
+  private _timers = new Set<any>();
+  private _onRendered = new Subject<void>();
+
+  /** Fires after every render pass — what automation settles on together with `isRenderPending`. */
+  get onRendered(): Observable<void> { return this._onRendered; }
+
+  get isRenderPending(): boolean { return this._renderPending > 0; }
+
+  private get renderDelay(): number {
+    try {
+      return this.immediateRendering ? 0 : 50;
+    } catch {
+      return 50;
+    }
+  }
+
+  getWidgetStatus(): DG.IWidgetStatus { return formsViewerStatus(this); }
 
   set dataframe(df: DG.DataFrame) {
     this.dataFrame = df;
@@ -193,7 +212,25 @@ export class FormsViewer extends DG.JsViewer {
       this.rendererSize = 'normal';
 
     const sub = (stream: Observable<unknown>, action: Function) => {
-      this.subs.push(DG.debounce(stream, 50).subscribe((_) => action()));
+      let timer: any = null;
+      this.subs.push(stream.subscribe((_) => {
+        if (timer) {
+          clearTimeout(timer);
+          this._timers.delete(timer);
+        } else
+          this._renderPending++;
+        timer = setTimeout(() => {
+          this._timers.delete(timer);
+          timer = null;
+          try {
+            action();
+          } finally {
+            this._renderPending--;
+            this._onRendered.next();
+          }
+        }, this.renderDelay);
+        this._timers.add(timer);
+      }));
     };
 
     if (!this.contextMenuSubscribed) {
@@ -214,14 +251,13 @@ export class FormsViewer extends DG.JsViewer {
     sub(this.dataFrame.filter.onChanged, () => this.render());
     sub(this.dataFrame.onMetadataChanged, () => this.render());
 
-    setTimeout(() => {
+    const gridSubTimer = setTimeout(() => {
+      this._timers.delete(gridSubTimer);
       const grid = this.getGrid();
-      if (grid) {
-        sub(grid.onRowsSorted, () => {
-          setTimeout(() => this.render());
-        });
-      }
+      if (grid)
+        sub(grid.onRowsSorted, () => this.render());
     });
+    this._timers.add(gridSubTimer);
 
     sub(this.dataFrame.onColumnsRemoved, () => {
       this.updateFieldsColumnNames();
@@ -500,7 +536,7 @@ export class FormsViewer extends DG.JsViewer {
     const grid = this.getGrid();
     if (this.sortByColumnName && this.dataFrame.columns.contains(this.sortByColumnName))
       return [this.sortByColumnName];
-    else if (grid && grid?.sortByColumns?.length > 0)
+    else if (this.useGridSort && grid && grid?.sortByColumns?.length > 0)
       return grid.sortByColumns.map((c) => c.name);
     else
       return [];
@@ -510,7 +546,7 @@ export class FormsViewer extends DG.JsViewer {
     const grid = this.getGrid();
     if (this.sortByColumnName && this.dataFrame.columns.contains(this.sortByColumnName))
       return [this.sortAscending];
-    else if (grid && grid?.sortByColumns?.length > 0)
+    else if (this.useGridSort && grid && grid?.sortByColumns?.length > 0)
       return grid.sortTypes;
     else
       return [];
@@ -526,12 +562,10 @@ export class FormsViewer extends DG.JsViewer {
       this.indexes = [];
       if (this.showSelectedRows && this.dataFrame.selection.trueCount > 0) {
         const selectionAndFilter = this.dataFrame.selection.clone().and(this.dataFrame.filter);
-        if (this.sortByColumnName && this.dataFrame.columns.contains(this.sortByColumnName))
-          this.indexes = this.dataFrame.getSortedOrder([this.sortByColumnName], [this.sortAscending], selectionAndFilter);
-        else if (grid && grid?.sortByColumns?.length > 0)
-          this.indexes = this.dataFrame.getSortedOrder(grid.sortByColumns, grid.sortTypes, selectionAndFilter);
-        else
-          this.indexes = selectionAndFilter.getSelectedIndexes();
+        const sortBy = this.getSortByColumns();
+        this.indexes = sortBy.length > 0
+          ? this.dataFrame.getSortedOrder(sortBy, this.getSortByTypes(), selectionAndFilter)
+          : selectionAndFilter.getSelectedIndexes();
       }
       if (this.pinnedRowIndexes.length > 0)
         this.indexes = Array.from(this.indexes).filter((i) => !this.pinnedRowIndexes.includes(i));
@@ -545,6 +579,32 @@ export class FormsViewer extends DG.JsViewer {
     this.virtualView.setData(
       this.indexes.length + (this.showCurrentRow ? 1 : 0) + (this.showMouseOverRow ? 1 : 0),
       (i: number) => this.renderForm(i));
+
+    this.renderFinished();
+  }
+
+  /** The virtual view lays the cards out on a 100 ms timer while its root is out of the document,
+   * so a render requested before the viewer is attached is not done when `render` returns. */
+  private renderFinished() {
+    if (document.contains(this.virtualView.root)) {
+      this._onRendered.next();
+      return;
+    }
+    this._renderPending++;
+    const timer = setTimeout(() => {
+      this._timers.delete(timer);
+      this._renderPending--;
+      this._onRendered.next();
+    }, 110);
+    this._timers.add(timer);
+  }
+
+  detach() {
+    for (const timer of this._timers)
+      clearTimeout(timer);
+    this._timers.clear();
+    this._renderPending = 0;
+    super.detach();
   }
 
   renderPinnedForms() {

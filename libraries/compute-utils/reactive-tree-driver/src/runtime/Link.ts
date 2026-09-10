@@ -1,5 +1,3 @@
-import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {v4 as uuidv4} from 'uuid';
 import {HandlerBase} from '../config/PipelineConfiguration';
@@ -7,7 +5,7 @@ import {BaseTree, NodePath, NodePathSegment, TreeNode} from '../data/BaseTree';
 import {descriptionOutputs, isFuncCallNode, StateTreeNode} from './StateTreeNodes';
 import {ActionSpec, MatchedIO, MatchedNodePaths, MatchInfo} from './link-matching';
 import {BehaviorSubject, combineLatest, defer, EMPTY, merge, Subject, of, asapScheduler} from 'rxjs';
-import {map, filter, takeUntil, withLatestFrom, switchMap, catchError, mapTo, finalize, debounceTime, timestamp, distinctUntilChanged, take} from 'rxjs/operators';
+import {map, filter, takeUntil, withLatestFrom, switchMap, catchError, mapTo, finalize, debounceTime, distinctUntilChanged, take} from 'rxjs/operators';
 import {callHandler, indexFromEnd} from '../utils';
 import {defaultLinkHandler, Slot} from './default-handler';
 import {ControllerCancelled, FuncallActionController, LinkController, MetaController, MutationController, NodeMetaController, PipelineValidatorController, RuntimeReturnController, ValidatorController} from './LinkControllers';
@@ -55,8 +53,10 @@ export class Link {
   }[];
   public returnResult: any;
 
-  private nextScheduled$ = new BehaviorSubject(-1);
-  private lastFinished$ = new BehaviorSubject(-1);
+  // run sequence numbers, not timestamps: wall-clock stamps collide within
+  // the same ms/frame, reporting a link as not running while a handler is in flight
+  private nextScheduled$ = new BehaviorSubject(0);
+  private lastFinished$ = new BehaviorSubject(0);
   public isRunning$ = combineLatest([this.nextScheduled$, this.lastFinished$]).pipe(
     map(([next, last]) => next > last),
     distinctUntilChanged(),
@@ -115,8 +115,7 @@ export class Link {
     }
 
     inputsChanges$.pipe(
-      timestamp(),
-      map(({timestamp}) => timestamp),
+      map((_, idx) => idx + 1),
       takeUntil(this.destroyed$),
     ).subscribe(this.nextScheduled$);
 
@@ -124,17 +123,21 @@ export class Link {
 
     inputsChanges$.pipe(
       switchMap(
-        ([scope, inputs]) =>
-          this.runHandler(inputs, inputSet, outputSet, callInputs, inputSlots, outputSlots, inputTemplates, outputTemplates, actions, actionsVisibility, baseNode, scope, state).pipe(
+        ([scope, inputs], runIdx) =>
+          defer(() => this.runHandler(inputs, inputSet, outputSet, callInputs, inputSlots, outputSlots, inputTemplates, outputTemplates, actions, actionsVisibility, baseNode, scope, state)).pipe(
             map((controller) => this.setHandlerResults(controller, state)),
             catchError((error) => {
+              // emit on errors as well, otherwise lastFinished$ never advances,
+              // the link stays running and tree mutations deadlock on waitForLinks
+              this.lastPipelineMutations = undefined;
+              this.lastGranularMutations = undefined;
+              this.returnResult = undefined;
               reportError('recoverable', `link:${this.matchInfo.spec.id}`, error, this.logger, [this.matchInfo.spec.id]);
-              return EMPTY;
+              return of(undefined);
             }),
+            mapTo(runIdx + 1),
           ),
       ),
-      timestamp(),
-      map(({timestamp}) => timestamp),
       takeUntil(this.destroyed$),
     ).subscribe(this.lastFinished$);
 
@@ -356,7 +359,7 @@ export class Link {
   private getFirstMatch(matchIO: readonly MatchedIO[]) {
     const p0 = matchIO.reduce((acc, val) => {
       const d = BaseTree.compareAddresses(acc, val.path);
-      return d < 0 ? val.path : acc;
+      return d > 0 ? val.path : acc;
     }, [{idx: Infinity, id: ''}] as readonly NodePathSegment[] );
     return p0;
   }

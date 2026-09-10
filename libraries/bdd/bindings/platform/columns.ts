@@ -2,7 +2,8 @@
    the other tags), the storage type, and the cells — every filled value against a pattern, a
    range, a length; one row's value; the maximum's row; distinct counts — and the current row.
    A step that changes the current row baselines every viewer first (see data.ts). */
-import {expect, Page} from '@playwright/test';
+import {Page} from '@playwright/test';
+import {expect} from '../../src/runtime/patience.js';
 import {Then, When} from '../../src/registry.js';
 import {baselineAll, settleAll} from '../../src/runtime/viewers.js';
 
@@ -113,6 +114,21 @@ export const sameLengthPerGroup = Then('every value of {string} column should ha
   const uneven = [...lengths].filter(([, ls]) => ls.size > 1).map(([k, ls]) => `${group} ${k}: ${[...ls].join(', ')}`);
   expect(uneven, `groups of "${group}" whose "${column}" values differ in length`).toEqual([]);
 }, {description: 'an alignment run per cluster: one width per cluster, not one width overall'});
+
+export const displayedInRow = Then('the {string} cell of row {int} should be displayed as {string}',
+  async (page: Page, column: string, row: number, text: string) => {
+    const shown = await page.evaluate(([c, r]) => {
+      const t = grok.shell.t;
+      const grid = grok.shell.tv?.grid;
+      const i = (r as number) - 1;
+      if (i < 0 || i >= t.rowCount)
+        throw new Error(`row ${r} is outside the table's ${t.rowCount} rows`);
+      return grid != null && grid.col(c) != null
+        ? String(grid.cell(c as string, i).cell.valueString)
+        : String(t.col(c as string).getString(i));
+    }, [column, row] as [string, number]);
+    expect(shown, `the grid's text for "${column}" in row ${row}`).toBe(text);
+  }, {description: 'what the grid draws in the cell — the column\'s format applied, unlike "the value of … column in row …", which reads the raw value'});
 
 export const valueInRow = Then('the value of {string} column in row {int} should be {string}', async (page: Page, column: string, row: number, value: string) => {
   const f = await columnFacts(page, column);

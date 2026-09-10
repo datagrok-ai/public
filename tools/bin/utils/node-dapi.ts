@@ -58,6 +58,13 @@ const BYTES_TIMEOUT_MS = setting('BYTES_TIMEOUT', 600000);
 const RETRIABLE_STATUS = new Set([429, 502, 503, 504]);
 
 /**
+ * undici keeps the socket checked out until the body is read, so a response that is answered but
+ * never consumed leaks a connection. Enough of them exhaust the pool, and the requests that
+ * follow queue forever — before the request starts, so no deadline ever fires.
+ */
+const discard = (res: Response): Promise<void> => res.body?.cancel() ?? Promise.resolve();
+
+/**
  * Without a deadline one unresponsive entity stalls a whole pull — `GET /projects/{id}` on a
  * space holding tens of thousands of children never answers. A request that hung or dropped is
  * retried, since a deadline is as often a server busy with this very pull as a dead one; a reply
@@ -66,7 +73,7 @@ const RETRIABLE_STATUS = new Set([429, 502, 503, 504]);
  */
 async function fetchOrRetry(url: string, opts: RequestInit, retriable: boolean,
                             timeoutMs: number = setting('TIMEOUT', 60000)): Promise<Response> {
-  const retries = setting('RETRIES', 3);
+  const retries = setting('RETRIES', 5);
   for (let attempt = 0; ; attempt++) {
     const last = !retriable || attempt >= retries;
     try {
@@ -79,7 +86,9 @@ async function fetchOrRetry(url: string, opts: RequestInit, retriable: boolean,
         throw new Error(`${opts.method ?? 'GET'} ${url}: ` +
           (err?.name === 'TimeoutError' ? `no answer in ${timeoutMs}ms` : err?.message ?? err));
     }
-    await new Promise((resolve) => setTimeout(resolve, setting('BACKOFF', 1000) * Math.pow(2, attempt)));
+    // Capped: uncapped doubling turns a long retry budget into minutes asleep on one request.
+    const backoff = Math.min(setting('BACKOFF', 1000) * Math.pow(2, attempt), setting('BACKOFF_MAX', 15000));
+    await new Promise((resolve) => setTimeout(resolve, backoff));
   }
 }
 
@@ -132,13 +141,20 @@ export class NodeApiClient {
 
     const res = await fetchOrRetry(url, opts, method === 'GET', timeoutMs);
 
-    if (res.status === 401 && !reauthed && await this.reauthenticate())
-      return this.request(method, path, body, headers, true, timeoutMs);
+    if (res.status === 401 && !reauthed) {
+      const refusal = await res.text();
+      if (await this.reauthenticate())
+        return this.request(method, path, body, headers, true, timeoutMs);
+      const error = refusal || `HTTP ${res.status}`;
+      throw Object.assign(new Error(error), {apiError: {error, source: 'Server', errorCode: 401}});
+    }
     if (!res.ok)
       await throwHttpError(res);
 
-    if (res.status === 204 || res.headers.get('content-length') === '0')
+    if (res.status === 204 || res.headers.get('content-length') === '0') {
+      await discard(res);
       return null;
+    }
 
     const ct = res.headers.get('content-type') ?? '';
     return throwIfApiError(ct.includes('application/json') ? await res.json() : await res.text());
@@ -177,6 +193,7 @@ export class NodeApiClient {
       method: 'POST',
       headers: {'Authorization': this.token, 'Content-Type': 'application/json'},
       body: JSON.stringify(body),
+      signal: AbortSignal.timeout(BYTES_TIMEOUT_MS),
     });
     if (!res.ok)
       await throwHttpError(res);
@@ -739,6 +756,20 @@ export class NodeFilesDataSource {
     return this.client.get(`/public/v1/files/${seg}`);
   }
 
+  /** The file's raw bytes, for copying a share file between instances. */
+  async readBytes(filePath: string): Promise<Buffer> {
+    const {connector, path} = this.splitPath(filePath);
+    if (!path) throw new Error(`Path must name a file inside the share: got '${filePath}'`);
+    return this.client.getBytes(`/public/v1/files/${connector}/${path}`);
+  }
+
+  /** Upload bytes already in memory — the bundle holds them, there is no local file. */
+  async writeBytes(filePath: string, bytes: Buffer): Promise<any> {
+    const {connector, path} = this.splitPath(filePath);
+    if (!path) throw new Error(`Path must name a file inside the share: got '${filePath}'`);
+    return await this.client.putBytes(`/public/v1/files/${connector}/${path}`, bytes);
+  }
+
   async delete(filePath: string): Promise<void> {
     const {connector, path} = this.splitPath(filePath);
     const seg = path ? `${connector}/${path}` : connector;
@@ -752,11 +783,8 @@ export class NodeFilesDataSource {
    */
   async put(localPath: string, remotePath: string): Promise<any> {
     const fs = require('fs') as typeof import('fs');
-    const {connector, path} = this.splitPath(remotePath);
-    if (!path) throw new Error(`Remote path must include a file name after the connector: got '${remotePath}'`);
     const bytes = fs.readFileSync(localPath);
-    const res = await this.client.putBytes(`/public/v1/files/${connector}/${path}`, bytes);
-    return {path: remotePath, size: bytes.length, response: res};
+    return {path: remotePath, size: bytes.length, response: await this.writeBytes(remotePath, bytes)};
   }
 }
 

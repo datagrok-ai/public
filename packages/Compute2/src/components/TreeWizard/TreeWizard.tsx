@@ -25,8 +25,8 @@ import {
   applyCustomExport,
   findNextSubStep,
   findNodeWithPathByUuid, findPrevStep, findTreeNodeByPath,
-  findTreeNodeParrent, getRelevantGlobalActions, getViewers, hasInconsistencies, hasSubtreeFixableInconsistencies, hasSubtreeAnyInconsistencies,
-  pinView, reportTree, resolveChosenUuid,
+  disposeViewers, findTreeNodeParrent, getRelevantGlobalActions, getViewers, hasInconsistencies, hasSubtreeFixableInconsistencies, hasSubtreeAnyInconsistencies,
+  pinView, reportTree, resolveChosenUuid, SELECTED_STEP_BACKGROUND,
 } from '../../utils';
 import {useReactiveTreeDriver} from '../../composables/use-reactive-tree-driver';
 import {EditRunMetadataDialog} from '@datagrok-libraries/compute-utils/shared-components/src/history-dialogs';
@@ -182,7 +182,7 @@ export const TreeWizard = Vue.defineComponent({
     const saveSubTreeState = async (uuid: string) => {
       const editOptions = await makeNodeMetadataDialog(uuid).awaitMetadata();
       if (editOptions)
-        saveDynamicItem(chosenStepUuid.value!, editOptions);
+        saveDynamicItem(uuid, editOptions);
     };
 
     const saveEntireModelState = async () => {
@@ -288,7 +288,7 @@ export const TreeWizard = Vue.defineComponent({
     Vue.watch(searchParams, (params) => {
       const paramsRaw = [];
       if (params.currentStep)
-        paramsRaw.push(`currentStep=${params.currentStep.replace(' ', '+')}`);
+        paramsRaw.push(`currentStep=${params.currentStep.replace(/ /g, '+')}`);
       if (params.id)
         paramsRaw.push(`id=${params.id}`);
       setViewPath(paramsRaw.length ? `?${paramsRaw.join('&')}`: '?');
@@ -425,7 +425,7 @@ export const TreeWizard = Vue.defineComponent({
             viewers,
             states.validations?.[uuid],
             states.consistency?.[uuid],
-          );
+          ).finally(() => disposeViewers(viewers));
         },
         reportStateExcel: async (state: PipelineState, cb?: (input: ExportCbInput) => Promise<void>) => {
           return reportTree({
@@ -454,7 +454,11 @@ export const TreeWizard = Vue.defineComponent({
           });
         },
       };
-      return exportData.handler(treeState.value!, utils);
+      try {
+        return await exportData.handler(treeState.value!, utils);
+      } catch (e: any) {
+        grok.shell.error(e);
+      }
     }
 
     ////
@@ -462,6 +466,16 @@ export const TreeWizard = Vue.defineComponent({
     ////
 
     const chosenStepState = Vue.computed(() => chosenStep.value?.state);
+
+    // keyed on the nqName string so a new FuncCall is prepared only when the
+    // chosen pipeline actually changes, not on every reactive state emission
+    const chosenPipelineNqName = Vue.computed(() => {
+      const state = chosenStepState.value;
+      return state && !isFuncCallState(state) ? state.nqName : undefined;
+    });
+    const chosenPipelineFuncCall = Vue.computed(() => chosenPipelineNqName.value ?
+      Vue.markRaw(DG.Func.byName(chosenPipelineNqName.value).prepare()) :
+      undefined);
 
     // per-step history is opt-in via the `enableHistory` flag on a FuncCall step
     const currentStepHistoryEnabled = Vue.computed(() => {
@@ -822,7 +836,7 @@ export const TreeWizard = Vue.defineComponent({
                         consistencyStates={states.consistency[stat.data.uuid]}
                         descriptions={states.descriptions[stat.data.uuid]}
                         style={{
-                          'background-color': stat.data.uuid === chosenStepUuid.value ? '#f2f2f5' : null,
+                          'background-color': stat.data.uuid === chosenStepUuid.value ? SELECTED_STEP_BACKGROUND : null,
                         }}
                         isDraggable={treeInstance.value?.isDraggable(stat)}
                         isDroppable={treeInstance.value?.isDroppable(stat)}
@@ -916,10 +930,7 @@ export const TreeWizard = Vue.defineComponent({
           {
             !pipelineViewHidden.value && chosenStepUuid.value && chosenStepState.value && !isFuncCallState(chosenStepState.value) &&
             <PipelineView
-              funcCall={chosenStepState.value.nqName ?
-                DG.Func.byName(chosenStepState.value.nqName!).prepare() :
-                undefined
-              }
+              funcCall={chosenPipelineFuncCall.value}
               key={chosenStepUuid.value!}
               state={chosenStepState.value}
               uuid={chosenStepUuid.value}

@@ -2,6 +2,7 @@
 
 ## 1.10.3 (WIP)
 
+FilterGroup: layout round-trip keeps two filters on one column (histogram and categorical on `age`)
 Shell: `shell/shell.ts` pins `grok.shell.autostartsCompleted` (a promise that resolves)
 BitArray: new `bitset/bit-array.ts` category for `DG.BitArray` and its `BitSet` bridges; the `BitSet` category is registered again
 

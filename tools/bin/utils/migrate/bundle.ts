@@ -12,6 +12,10 @@ export interface Manifest {
   pulls: {at: string; args: string[]; ids: string[]}[];
   order: ManifestEntry[];
   packages: string[];
+  /** Referenced entities the source keeps; the push re-finds them by name. */
+  externals?: {id: string; type: string; nqName: string}[];
+  /** Ids the bundle references that nothing on the source answers to — dead there, unfixable here. */
+  dangling?: string[];
 }
 
 export interface BundleEntity {type: string; json: any; file?: string}
@@ -87,6 +91,26 @@ export function bytesPath(dir: string, kind: BytesKind, id: string): string {
   return path.join(dir, kind, kind === 'tables' ? `${id}.d42` : id);
 }
 
+/**
+ * A file a datasync table reads is stored under its full share path, flattened into one
+ * file name so the bundle stays a flat directory per kind and the path survives a round trip.
+ */
+export function sharePath(dir: string, remotePath: string): string {
+  return path.join(dir, 'shares', encodeURIComponent(remotePath));
+}
+
+export function writeShares(dir: string, files: Map<string, Buffer>): void {
+  if (!files.size) return;
+  fs.mkdirSync(path.join(dir, 'shares'), {recursive: true});
+  for (const [remote, buf] of files)
+    fs.writeFileSync(sharePath(dir, remote), buf);
+}
+
+export function listShares(dir: string): string[] {
+  const at = path.join(dir, 'shares');
+  return fs.existsSync(at) ? fs.readdirSync(at).map(decodeURIComponent) : [];
+}
+
 const EMPTY: Manifest = {
   formatVersion: 1,
   source: {url: '', version: '', userNamespace: ''},
@@ -102,7 +126,8 @@ function readManifest(dir: string): Manifest {
 }
 
 export function write(dir: string, entities: Map<string, BundleEntity>,
-                      meta: {source: Manifest['source']; args: string[]; packages: string[]},
+                      meta: {source: Manifest['source']; args: string[]; packages: string[];
+                             externals?: {id: string; type: string; nqName: string}[]; dangling?: string[]},
                       opts: {replace?: boolean},
                       bytes: Map<string, Buffer> = new Map()): Manifest {
   if (opts.replace)
@@ -145,6 +170,13 @@ export function write(dir: string, entities: Map<string, BundleEntity>,
   manifest.formatVersion = 1;
   manifest.pulls.push({at: new Date().toISOString(), args: meta.args, ids});
   manifest.packages = [...new Set([...manifest.packages, ...meta.packages])].sort();
+  if (meta.externals?.length) {
+    const byId = new Map((manifest.externals ?? []).map((e) => [e.id, e]));
+    for (const e of meta.externals) byId.set(e.id, e);
+    manifest.externals = [...byId.values()].sort((a, b) => a.nqName.localeCompare(b.nqName));
+  }
+  if (meta.dangling?.length)
+    manifest.dangling = [...new Set([...(manifest.dangling ?? []), ...meta.dangling])].sort();
   const pullOf = new Map<string, number>();
   manifest.pulls.forEach((p, i) => p.ids.forEach((id) => pullOf.has(id) || pullOf.set(id, i)));
   manifest.order = [...byId.values()].sort((a, b) =>

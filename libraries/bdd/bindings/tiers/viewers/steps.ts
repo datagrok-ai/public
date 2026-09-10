@@ -5,11 +5,14 @@
    so the general shapes ("X of Y should be Z") stay free for what they say; the context menu and
    the pointer steps take any element.
    Every step here asks the platform (properties, hit areas, render and menu events) instead of
-   guessing pixels or sleeping; viewers render immediately (no debounce) on a bdd page. */
-import {expect, Page} from '@playwright/test';
+   guessing pixels or sleeping; viewers render immediately (no debounce) on a bdd page.
+   `widgets.ts` next to this file holds the tier's other half: the steps a package wrote for one
+   viewer that a second viewer then wanted. */
+import {Page} from '@playwright/test';
+import {expect, pollMs} from '../../../src/runtime/patience.js';
 import {Given, Then, When} from '../../../src/registry.js';
 import type {ElementRef} from '../../../src/runtime/args.js';
-import {normalizeKey} from '../../../src/runtime/gestures.js';
+import {keysOf, withKeys} from '../../../src/runtime/gestures.js';
 import {atFeatureEnd, takeErrors} from '../../../src/runtime/harness.js';
 import * as v from '../../../src/runtime/viewers.js';
 
@@ -29,6 +32,11 @@ export const viewerAdded = Then('{viewer} viewer should be added to the open tab
   const types: string[] = await page.evaluate(() => Array.from(grok.shell.tv.viewers).map((x: any) => String(x.type)));
   expect(types.map((t) => t.toLowerCase())).toContain(viewer.toLowerCase());
 }, {tier: 'api', description: 'both the DOM and grok.shell.tv.viewers'});
+
+export const viewerCount = Then('the open tableview should have {int} {viewer} viewer(s)', async (page: Page, count: number, viewer: string) => {
+  await expect.poll(() => page.evaluate((t) => Array.from(grok.shell.tv.viewers).filter((x: any) => String(x.type).toLowerCase() === t).length, viewer.toLowerCase()),
+    {message: `${viewer} viewers of the open table view`}).toBe(count);
+}, {tier: 'api', description: 'how many viewers of that type the view holds (grok.shell.tv.viewers) — what "added" and "closed" rest on'});
 
 // --- adding and configuring -------------------------------------------------------------------------
 
@@ -96,6 +104,19 @@ export const rightClickArea = When('user right-clicks on the {string} area of {w
 
 export const closeContextMenu = When('user closes the context menu', (page: Page) => v.closeContextMenu(page), {tier: 'ui'});
 
+export const menuLists = Then('the open menu should list {string}', async (page: Page, path: string) => {
+  const parts = path.split(/\s*[>|]\s*/).filter((s) => s.length > 0);
+  const item = parts.pop();
+  await expect.poll(() => v.menuLabels(page, parts.join(' > ')), {message: `the items under "${parts.join(' > ') || 'the menu'}"`}).toContain(item);
+}, {tier: 'ui', description: `the last segment of ${PATH} is among the items, the ones before it are the groups opened to reach them — the menu must already be open`});
+
+export const menuDoesNotList = Then('the open menu should not list {string}', async (page: Page, path: string) => {
+  const parts = path.split(/\s*[>|]\s*/).filter((s) => s.length > 0);
+  const item = parts.pop();
+  // the group is opened first, so "not listed" cannot pass on a menu that never opened
+  await expect.poll(() => v.menuLabels(page, parts.join(' > ')), {message: `the items under "${parts.join(' > ') || 'the menu'}"`}).not.toContain(item);
+}, {tier: 'ui'});
+
 export const clickArea = When('user clicks on the {string} area of {widget}', async (page: Page, area: string, target: ElementRef) => {
   const c = v.centerOf(await v.hitArea(page, target, area, true));
   await page.mouse.click(c.x, c.y);
@@ -114,32 +135,19 @@ export const hoverArea = When('user hovers over the {string} area of {widget}', 
 
 export const clickAreaHolding = When('user clicks on the {string} area of {widget} holding {key}', async (page: Page, area: string, target: ElementRef, key: string) => {
   const c = v.centerOf(await v.hitArea(page, target, area, true));
-  await page.keyboard.down(normalizeKey(key));
-  await page.mouse.click(c.x, c.y);
-  await page.keyboard.up(normalizeKey(key));
-}, {tier: 'ui', description: 'a click with a modifier held: Control adds to the selection, Shift extends it'});
+  await withKeys(page, keysOf(key), () => page.mouse.click(c.x, c.y));
+}, {tier: 'ui', description: 'a click with a key or a chord held: Control adds to the selection, Shift extends it, Control+Shift removes'});
 
-export const dragSelectionOverArea = When('user drags a selection box over the {string} area of {widget}', async (page: Page, area: string, target: ElementRef) => {
-  const b = await v.hitArea(page, target, area, true);
-  await page.keyboard.down('Shift');
-  await page.mouse.move(b.x + b.width * 0.1, b.y + b.height * 0.1);
-  await page.mouse.down();
-  await page.mouse.move(b.x + b.width * 0.9, b.y + b.height * 0.9, {steps: 3});
-  await page.mouse.up();
-  await page.keyboard.up('Shift');
-}, {tier: 'ui', description: 'a Shift-drag across the inner 80% of the area — the platform\'s rectangle selection'});
+export const dragSelectionOverArea = When('user drags a selection box over the {string} area of {widget}', (page: Page, area: string, target: ElementRef) =>
+  v.dragBoxOverArea(page, target, area, ['Shift']), {tier: 'ui', description: 'a Shift-drag across the inner 80% of the area — the platform\'s rectangle selection'});
 
 export const dragSelectionBetweenAreas = When('user drags a selection box from the {string} area to the {string} area of {widget}',
-  async (page: Page, from: string, to: string, target: ElementRef) => {
-    const a = v.centerOf(await v.hitArea(page, target, from, true));
-    const b = v.centerOf(await v.hitArea(page, target, to));
-    await page.keyboard.down('Shift');
-    await page.mouse.move(a.x, a.y);
-    await page.mouse.down();
-    await page.mouse.move(b.x, b.y, {steps: 3});
-    await page.mouse.up();
-    await page.keyboard.up('Shift');
-  }, {tier: 'ui', description: 'a Shift-drag from the centre of one area to the centre of another — every area the rectangle touches is covered'});
+  (page: Page, from: string, to: string, target: ElementRef) => v.dragArea(page, target, from, to, ['Shift']),
+  {tier: 'ui', description: 'a Shift-drag from the centre of one area to the centre of another — every area the rectangle touches is covered'});
+
+export const dragBetweenAreasHolding = When('user drags from the {string} area to the {string} area of {widget} holding {key}',
+  (page: Page, from: string, to: string, target: ElementRef, key: string) => v.dragArea(page, target, from, to, keysOf(key)),
+  {tier: 'ui', description: 'the same drag with any key or chord held — Alt zooms a bar chart into the categories it spans'});
 
 export const dragAcrossArea = When('user drags across the {string} area of {widget}', async (page: Page, area: string, target: ElementRef) => {
   const b = await v.hitArea(page, target, area, true);
@@ -148,6 +156,25 @@ export const dragAcrossArea = When('user drags across the {string} area of {widg
   await page.mouse.move(b.x + b.width * 0.75, b.y + b.height * 0.3, {steps: 2});
   await page.mouse.up();
 }, {tier: 'ui', description: 'a plain drag from the centre of the area towards its upper right — a rotation on a 3D plot, a pan on a chart'});
+
+export const dragAreaToArea = When('user drags the {string} area of {widget} to the {string} area', (page: Page, from: string, target: ElementRef, to: string) =>
+  v.dragArea(page, target, from, to), {tier: 'ui', description: 'a plain drag from the centre of one hit area to the centre of another — a column header to a new place, a range handle onto a bin'});
+
+export const dragAreaBy = When('user drags the {string} area of {widget} by {int} pixels to the {word}', (page: Page, area: string, target: ElementRef, px: number, direction: string) =>
+  v.dragAreaBy(page, target, area, px, direction), {tier: 'ui', description: 'left, right, up or down — a column or row resizer, a splitter'});
+
+export const dragDeselectionOverArea = When('user drags a deselection box over the {string} area of {widget}', (page: Page, area: string, target: ElementRef) =>
+  v.dragBoxOverArea(page, target, area, ['Control', 'Shift']), {tier: 'ui', description: 'a Control+Shift-drag across the inner 80% of the area — the platform removes the rows inside from the selection'});
+
+export const dragZoomOverArea = When('user drags a zoom box over the {string} area of {widget}', (page: Page, area: string, target: ElementRef) =>
+  v.dragBoxOverArea(page, target, area, ['Alt']), {tier: 'ui', description: 'an Alt-drag across the inner 80% of the area — the platform zooms into the rectangle'});
+
+export const dragBoxHolding = When('user drags a box over the {string} area of {widget} holding {key}',
+  (page: Page, area: string, target: ElementRef, key: string) => v.dragBoxOverArea(page, target, area, keysOf(key)),
+  {tier: 'ui', description: 'the same drag with any key or chord held — for a viewer whose rectangle gesture is not one of the three named above'});
+
+export const enterIntoArea = When('user enters {string} into the {string} area of {widget}', (page: Page, text: string, area: string, target: ElementRef) =>
+  v.typeIntoArea(page, target, area, text), {tier: 'ui', description: 'a hit area that holds an editor (a range input, a form field): a click on it, select all, the text, Enter'});
 
 export const wheelOverArea = When('user scrolls the mouse wheel {word} over the {string} area of {widget}', async (page: Page, direction: string, area: string, target: ElementRef) => {
   if (direction !== 'up' && direction !== 'down')
@@ -194,6 +221,10 @@ export const moreInk = Then('{widget} should have more ink than before', (page: 
 export const painted = Then('{widget} should be painted', (page: Page, target: ElementRef) => v.expectInk(page, target, 'some'),
   {description: 'the canvas has painted pixels'});
 
+export const areaRepainted = Then('the {string} area of {widget} should have repainted', (page: Page, area: string, target: ElementRef) =>
+  v.expectAreaRepainted(page, target, area),
+  {description: 'the pixels inside one hit area differ from the snapshot before the last change — that area repainted, not merely the canvas around it'});
+
 export const areaLessInk = Then('the {string} area of {widget} should have less ink than before', (page: Page, area: string, target: ElementRef) =>
   v.expectAreaInk(page, target, area, 'less'), {description: 'fewer painted pixels inside a hit area than the snapshot before the last change had there'});
 
@@ -204,8 +235,30 @@ export const areaColor = Then('the {string} area of {widget} should contain the 
   v.expectAreaColor(page, target, area, color), {description: 'pixels of a #rrggbb color (a shade of anti-aliasing allowed) inside a hit area'});
 
 export const areasDiffer = Then('the {string} and {string} areas of {widget} should be painted in different colors',
-  (page: Page, a: string, b: string, target: ElementRef) => v.expectAreasDiffer(page, target, a, b),
+  (page: Page, a: string, b: string, target: ElementRef) => v.expectAreaColorsAlike(page, target, a, b, false),
   {description: 'one area has a color the other does not — per-category coloring, not chrome'});
+
+export const areasSame = Then('the {string} and {string} areas of {widget} should be painted in the same colors',
+  (page: Page, a: string, b: string, target: ElementRef) => v.expectAreaColorsAlike(page, target, a, b, true),
+  {description: 'every significant color of either area has a match in the other — a linked color coding, a swatch and its category'});
+
+export const areaNotColor = Then('the {string} area of {widget} should not contain the color {string}', (page: Page, area: string, target: ElementRef, color: string) =>
+  v.expectAreaNotColor(page, target, area, color), {description: 'no pixel of the #rrggbb color (nor a shade of it) inside the hit area, read once'});
+
+export const areaAtLeastTall = Then('the {string} area of {widget} should be at least {int} pixels tall', (page: Page, area: string, target: ElementRef, px: number) =>
+  v.expectAreaSize(page, target, area, 'tall', px), {description: 'the rectangle the viewer reports for the area, in CSS pixels'});
+
+export const areaTaller = Then('the {string} area of {widget} should be taller than before', (page: Page, area: string, target: ElementRef) =>
+  v.expectAreaGrew(page, target, area, 'taller'), {description: 'against the rectangle at the snapshot before the last change'});
+
+export const areaWider = Then('the {string} area of {widget} should be wider than before', (page: Page, area: string, target: ElementRef) =>
+  v.expectAreaGrew(page, target, area, 'wider'));
+
+export const areaShorter = Then('the {string} area of {widget} should be shorter than before', (page: Page, area: string, target: ElementRef) =>
+  v.expectAreaGrew(page, target, area, 'shorter'));
+
+export const areaNarrower = Then('the {string} area of {widget} should be narrower than before', (page: Page, area: string, target: ElementRef) =>
+  v.expectAreaGrew(page, target, area, 'narrower'));
 
 export const areaColors = Then('the {string} area of {widget} should be painted in at least {int} colors',
   (page: Page, area: string, target: ElementRef, count: number) => v.expectAreaColors(page, target, area, count),
@@ -225,11 +278,70 @@ export const showsMoreRows = Then('{widget} should show more rows than before', 
 
 export const readingIs = Then('the {string} reading of {widget} should be {float}', (page: Page, name: string, target: ElementRef, value: number) =>
   v.expectReading(page, target, name, 'equal', value),
-{description: 'a reading the viewer reports (getWidgetStatus().values): "rows shown", the bar chart\'s "bars" / "stack segments" / "clipped bars", the 3D scatter plot\'s "camera distance"'});
+  {description: 'a reading the viewer reports (getWidgetStatus().values): "rows shown", the bar chart\'s "bars" / "stack segments" / "clipped bars", the 3D scatter plot\'s "camera distance"'});
 
 export const readingReads = Then('the {string} reading of {widget} should be {string}', async (page: Page, name: string, target: ElementRef, value: string) => {
-  await expect.poll(() => v.readValue(page, target, name), {message: `"${name}" reading of ${target.phrase}`}).toBe(value);
-}, {description: 'a text reading (a source column, a signature) by exact value'});
+  await expect.poll(async () => String(await v.readValue(page, target, name)), {message: `"${name}" reading of ${target.phrase}`}).toBe(value);
+}, {description: 'a reading as text (a source column, a signature, a true/false flag) by exact value'});
+
+/** Two readings of one viewer, compared as text: 'same', or what each holds when they disagree. */
+async function compareReadings(page: Page, target: ElementRef, a: string, b: string): Promise<string> {
+  const x = String(await v.readValue(page, target, a));
+  const y = String(await v.readValue(page, target, b));
+  return x === y ? 'same' : `${a} is ${x}, ${b} is ${y}`;
+}
+
+export const readingsEqual = Then('the {string} and {string} readings of {widget} should be the same', async (page: Page, a: string, b: string, target: ElementRef) => {
+  await expect.poll(() => compareReadings(page, target, a, b), {message: `${target.phrase}`}).toBe('same');
+}, {description: 'two readings of the same viewer, as text — the colour of a linked column\'s cell against its source\'s'});
+
+export const readingsDiffer = Then('the {string} and {string} readings of {widget} should differ', async (page: Page, a: string, b: string, target: ElementRef) => {
+  await expect.poll(() => compareReadings(page, target, a, b), {message: `${target.phrase}`}).not.toBe('same');
+});
+
+export const readingDoesNotRead = Then('the {string} reading of {widget} should not be {string}', async (page: Page, name: string, target: ElementRef, value: string) => {
+  await expect.poll(async () => String(await v.readValue(page, target, name)), {message: `"${name}" reading of ${target.phrase}`}).not.toBe(value);
+});
+
+/** `getWidgetStatus().error` as the last validate left it; '' when the viewer reports none. This
+ * is what retires the old specs' "a <canvas> element still exists under the viewer root" probe: a
+ * chart with no Y column keeps its canvas and its view box and says "No Y columns selected". */
+async function errorOf(page: Page, target: ElementRef): Promise<string> {
+  await v.installViewerRuntime(page);
+  const loc = await v.viewerLocator(page, target);
+  return loc.evaluate((el) => String((window as any).__bdd.viewerOf(el).getWidgetStatus?.()?.error ?? ''));
+}
+
+export const reportsError = Then('{widget} should report the error {string}', async (page: Page, target: ElementRef, message: string) => {
+  await expect.poll(() => errorOf(page, target), {timeout: pollMs(5000),
+    message: `${target.phrase} does not report "${message}"`}).toBe(message);
+}, {description: 'the viewer\'s own error — what validate() left, e.g. "No Y columns selected"'});
+
+export const reportsNoError = Then('{widget} should report no error', async (page: Page, target: ElementRef) => {
+  let last = '';
+  await expect.poll(async () => (last = await errorOf(page, target)) === '', {timeout: pollMs(5000),
+    message: `${target.phrase} reports "${last}"`}).toBe(true);
+}, {description: 'the viewer validated its state and drew'});
+
+export const readingFinite = Then('the {string} reading of {widget} should be a finite number', async (page: Page, name: string, target: ElementRef) => {
+  await expect.poll(async () => {
+    const value = await v.readValue(page, target, name);
+    return typeof value === 'number' && isFinite(value) ? 'finite' : String(value);
+  }, {message: `"${name}" reading of ${target.phrase}`}).toBe('finite');
+}, {description: 'not null, NaN or Infinity — a viewer that let a NaN or an Infinity of the data into its axis reports no number there'});
+
+export const readingBetween = Then('the {string} reading of {widget} should be between {float} and {float}',
+  async (page: Page, name: string, target: ElementRef, lo: number, hi: number) => {
+    let last = NaN;
+    await expect.poll(async () => (last = Number(await v.readValue(page, target, name))) >= lo && last <= hi,
+      {message: `"${name}" reading of ${target.phrase} is ${last}, not between ${lo} and ${hi}`}).toBe(true);
+  }, {description: 'a reading that carries float noise or depends on the layout, bounded on both sides'});
+
+export const pickColorSwatch = When('user picks the color {string} in the color picker dialog', async (page: Page, hex: string) => {
+  const swatch = page.locator(`.d4-dialog [name="color-${hex.replace('#', '')}" i]`).filter({visible: true}).first();
+  await expect(swatch, `a "${hex}" swatch in the open colour dialog`).toBeVisible();
+  await swatch.click();
+}, {tier: 'ui', description: 'a swatch of the open colour dialog by its #rrggbb — the dialog every categorical legend opens'});
 
 export const readingAtLeast = Then('the {string} reading of {widget} should be at least {float}', async (page: Page, name: string, target: ElementRef, value: number) => {
   await expect.poll(() => v.readValue(page, target, name), {message: `"${name}" reading of ${target.phrase}`}).toBeGreaterThanOrEqual(value);
@@ -247,8 +359,52 @@ export const readingDiffers = Then('the {string} reading of {widget} should diff
 export const readingSame = Then('the {string} reading of {widget} should be the same as before', (page: Page, name: string, target: ElementRef) =>
   v.expectReading(page, target, name, 'same'), {description: 'read once the viewer is quiet, and read once'});
 
+export const rememberReading = When('user remembers the {string} reading of {widget}', (page: Page, name: string, target: ElementRef) =>
+  v.rememberReading(page, target, name), {tier: 'api', description: 'kept by viewer type, so "as remembered" holds across a close and a reopen (a layout or project round-trip)'});
+
+export const readingAsRemembered = Then('the {string} reading of {widget} should be as remembered', (page: Page, name: string, target: ElementRef) =>
+  v.expectRememberedReading(page, target, name));
+
+export const readingNotAsRemembered = Then('the {string} reading of {widget} should not be as remembered', (page: Page, name: string, target: ElementRef) =>
+  v.expectRememberedReading(page, target, name, true), {description: 'the change the step in between was supposed to make actually reached the reading'});
+
+// --- the legend ------------------------------------------------------------------------------------
+
 export const legendSide = Then('the legend of {widget} should be on the {word}', (page: Page, target: ElementRef, side: string) =>
   v.expectLegendSide(page, target, side), {description: 'left, right, top or bottom — the side the viewer laid its legend out on'});
+
+export const legendLists = Then('the legend of {widget} should list {int} item(s)', (page: Page, target: ElementRef, count: number) =>
+  v.expectLegendItems(page, target, count), {description: 'the item total the legend publishes (data-legend-items), every section, rendered or scrolled out — "should have N items" counts the rendered rows only'});
+
+export const legendFewer = Then('the legend of {widget} should list fewer items than before', (page: Page, target: ElementRef) =>
+  v.expectLegendItemsChange(page, target, 'fewer'), {description: 'against the snapshot before the last change'});
+
+export const legendSameItems = Then('the legend of {widget} should list the same items as before', (page: Page, target: ElementRef) =>
+  v.expectLegendItemsChange(page, target, 'same'), {description: 'the same total and the same rendered keys as at the snapshot before the last change'});
+
+export const legendDocked = Then('the legend of {widget} should be docked', (page: Page, target: ElementRef) => v.expectLegendMode(page, target, 'docked'),
+  {description: 'the mode the legend publishes: docked at a side (in a corner over the plot, collapsed to the mini icon and shown in the tooltip are the other modes)'});
+
+export const legendSlot = Then('the legend of {widget} should be in the {string} slot', (page: Page, target: ElementRef, slot: string) =>
+  v.expectLegendSlot(page, target, slot), {description: 'left, right, top, bottom, leftTop, leftBottom, rightTop, rightBottom'});
+
+export const legendPlacedAsBefore = Then('the legend of {widget} should be placed as before', (page: Page, target: ElementRef) =>
+  v.expectLegendPlacedAsBefore(page, target), {description: 'the same mode and slot as at the snapshot before the last change, read once the viewer is quiet'});
+
+export const clickLegendItem = When('user clicks on {string} item in the legend of {widget}', (page: Page, label: string, target: ElementRef) =>
+  v.clickLegendItem(page, target, label), {tier: 'ui', description: 'the item by its label; the category then filters the viewer — the baseline is taken before and the viewer settles after'});
+
+export const clickLegendItemHolding = When('user clicks on {string} item in the legend of {widget} holding {key}', (page: Page, label: string, target: ElementRef, key: string) =>
+  v.clickLegendItem(page, target, label, {key: keysOf(key).join('+')}), {tier: 'ui', description: 'Control adds the category to the legend selection'});
+
+export const clickLegendCross = When('user clicks on the cross of {string} item in the legend of {widget}', (page: Page, label: string, target: ElementRef) =>
+  v.clickLegendItem(page, target, label, {cross: true}), {tier: 'ui', description: 'the cross a selected item shows on hover — removes it from the selection'});
+
+export const legendItemColor = Then('the {string} item in the legend of {widget} should be colored {string}', (page: Page, label: string, target: ElementRef, color: string) =>
+  v.expectLegendItemColor(page, target, label, color), {description: 'the color the item is drawn in (a shade of anti-aliasing allowed), #rrggbb'});
+
+export const legendItemsDiffer = Then('the {string} and {string} items in the legend of {widget} should be colored differently',
+  (page: Page, a: string, b: string, target: ElementRef) => v.expectLegendItemsDiffer(page, target, a, b));
 
 export const notRepainted = Then('{widget} should not have repainted', (page: Page, target: ElementRef) => v.expectNotRepainted(page, target),
   {description: 'no canvas change since the snapshot before the last gesture, read once the viewer is quiet (a render pass that draws the same picture — the mouse-over row — is not a repaint)'});
@@ -297,9 +453,6 @@ export const scaleNarrower = Then('the color scale of {widget} should cover a na
 export const scaleWider = Then('the color scale of {widget} should cover a wider range than before', (page: Page, target: ElementRef) =>
   v.expectScaleRange(page, target, 'wider'));
 
-export const scaleSame = Then('the color scale of {widget} should cover the same range as before', (page: Page, target: ElementRef) =>
-  v.expectScaleRange(page, target, 'same'));
-
 export const rememberRange = When('user remembers the value range of {widget}', (page: Page, target: ElementRef) => v.rememberRange(page, target),
   {tier: 'api', description: 'kept by viewer type, so "the remembered value range" holds across a close and a reopen (a project round-trip)'});
 
@@ -327,20 +480,16 @@ export const noBalloons = Then('no error or warning balloon should have been sho
 
 /** The balloons of a type since the last read, polled: a balloon a command raises lands a task
  * after the gesture. */
-async function expectBalloon(page: Page, type: string, text?: string): Promise<void> {
+async function expectBalloon(page: Page, type: string, text: string): Promise<void> {
   let shown: string[] = [];
   await expect.poll(async () => {
     shown = shown.concat((await v.takeBalloons(page)).map((b) => `${b.type}: ${b.message}`));
-    return shown.some((s) => s.startsWith(`${type}: `) && (text === undefined || s.includes(text)));
-  }, {timeout: 5000, message: `${text === undefined ? `an ${type} balloon` : `an ${type} balloon containing "${text}"`}; balloons since the last check: ${shown.join(' | ') || 'none'}`}).toBe(true);
+    return shown.some((s) => s.startsWith(`${type}: `) && s.includes(text));
+  }, {timeout: pollMs(5000), message: `an ${type} balloon containing "${text}"; balloons since the last check: ${shown.join(' | ') || 'none'}`}).toBe(true);
 }
 
-export const errorBalloon = Then('an error balloon should have been shown', (page: Page) => expectBalloon(page, 'error'),
+export const errorBalloonText = Then('an error balloon containing {string} should have been shown', (page: Page, text: string) => expectBalloon(page, 'error', text),
   {description: 'since the previous balloon check; reading clears the balloons'});
-
-export const warningBalloon = Then('a warning balloon should have been shown', (page: Page) => expectBalloon(page, 'warning'));
-
-export const errorBalloonText = Then('an error balloon containing {string} should have been shown', (page: Page, text: string) => expectBalloon(page, 'error', text));
 
 export const warningBalloonText = Then('a warning balloon containing {string} should have been shown', (page: Page, text: string) => expectBalloon(page, 'warning', text));
 
@@ -352,6 +501,27 @@ export const tooltipColumns = Then('the tooltip should show columns {string}', (
 export const tooltipNotColumns = Then('the tooltip should not show columns {string}', (page: Page, list: string) => v.expectTooltipColumns(page, list, true),
   {description: 'the row tooltip lists a different set of columns'});
 
+export const tooltipValue = Then('the tooltip should show {string} as {string}', (page: Page, column: string, value: string) => v.expectTooltipValue(page, column, value),
+  {description: 'the row tooltip\'s value for a column, as text'});
+
+export const areasSameSize = Then('the {string} and {string} areas of {widget} should be the same {word}',
+  async (page: Page, a: string, b: string, target: ElementRef, dimension: string) => {
+    if (dimension !== 'height' && dimension !== 'width')
+      throw new Error(`two areas are the same height or the same width, not the same "${dimension}"`);
+    const areas = await v.hitAreas(page, target);
+    for (const name of [a, b])
+      if (areas[name] === undefined)
+        throw new Error(`${target.phrase} has no "${name}" area; it has: ${Object.keys(areas).join(', ')}`);
+    const read = (box: v.Box) => dimension === 'height' ? box.height : box.width;
+    expect(Math.abs(read(areas[a]) - read(areas[b])), `the "${a}" area is ${Math.round(read(areas[a]))} and "${b}" is ${Math.round(read(areas[b]))}`)
+      .toBeLessThanOrEqual(1);
+  }, {description: 'the two rectangles agree within a pixel — a size scale flattened, two bars of equal length'});
+
+export const oneTooltip = Then('exactly one tooltip should be shown', async (page: Page) => {
+  await expect.poll(() => page.locator('.d4-tooltip').filter({visible: true}).count(),
+    {timeout: pollMs(5000), message: 'visible tooltips'}).toBe(1);
+}, {description: 'the platform keeps one tooltip element; a second visible one is a leak'});
+
 export const tooltipSomeColumns = Then('the tooltip should show some columns', async (page: Page) => {
-  await expect.poll(() => v.tooltipColumns(page), {timeout: 5000, message: 'the row tooltip lists no column'}).not.toEqual([]);
+  await expect.poll(() => v.tooltipColumns(page), {timeout: pollMs(5000), message: 'the row tooltip lists no column'}).not.toEqual([]);
 }, {description: 'the row tooltip lists at least one column — the table\'s default tooltip, whatever it holds'});

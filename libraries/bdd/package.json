@@ -39,8 +39,8 @@
     "lint": "tsx src/cli.ts lint",
     "list-steps": "tsx src/cli.ts list-steps",
     "typecheck": "tsc --noEmit -p .",
-    "test:unit": "tsx --test tests/nouns.test.ts tests/compile.test.ts tests/project.test.ts tests/init.test.ts tests/failure.test.ts",
-    "testLib": "npm run build && node bin/grok-bdd.js run",
+    "test:unit": "tsx --test tests/*.test.ts",
+    "test": "npm run build && node bin/grok-bdd.js run",
     "prepublishOnly": "npm run build"
   },
   "dependencies": {

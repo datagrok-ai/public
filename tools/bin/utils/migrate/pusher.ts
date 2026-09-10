@@ -3,32 +3,40 @@ import * as fs from 'fs';
 import {randomUUID} from 'crypto';
 import {NodeDapi} from '../node-dapi';
 import {TYPES, inNamespace, nqNameOf, rankOf, untransferableReason} from './registry';
-import {Bundle, BundleEntity, bytesPath, hashOf, hashView, stripPrivate, writeIdmap} from './bundle';
+import {Bundle, BundleEntity, bytesPath, hashOf, hashView, listShares, sharePath, stripPrivate, writeIdmap} from './bundle';
+import {pool} from './pool';
 import {nestedIds, rewrite} from './rewriter';
-import {findEntity, grantsOf, groupCache} from './walker';
+import {Progress, findEntity, grantsOf, groupCache} from './walker';
 
 /** A relation set is written whole; a project holding thousands of them is slow, not stuck. */
 const BULK_WRITE_MS = Number(process.env['GROK_HTTP_BULK_TIMEOUT'] ?? 600000);
+const RELATION_REFUSED_RE = /entity\s+([0-9a-f-]{36})/i;
+const WRITE_CONCURRENCY = 6;
 
 export type Action = 'create' | 'update' | 'identical' | 'skip' | 'failed' | 'warn' | 'info' | 'needs-credentials';
 export type ConflictPolicy = 'fail' | 'skip' | 'duplicate' | 'adopt';
 
 export interface Row {name: string; entityType: string; action: Action; reason: string; detail?: string}
 
-export interface Op {id: string; type: string; json: any; row: Row; creds?: Record<string, any>; expectedNamespace?: string}
+export interface Op {id: string; type: string; json: any; row: Row; creds?: Record<string, any>;
+  expectedNamespace?: string; dangling?: string[]}
+
+/** What a save could not judge on its own, because placement had not happened yet. */
+interface Deferred {renamed: {op: Op; row: Row}[]; misplaced: Op[]}
 
 export interface PushOptions {
   dryRun?: boolean;
   onConflict?: ConflictPolicy;
   concurrency?: number;
   creds?: Record<string, any>;
+  progress?: Progress;
 }
 
 export interface PushResult {items: Row[]; counts: Record<string, number>; status: string; remoteUrl: string}
 
 export async function plan(dapi: NodeDapi, bundle: Bundle,
                            opts: {onConflict: ConflictPolicy; creds?: Record<string, any>; idmap?: Record<string, string>},
-): Promise<{rows: Row[]; ops: Op[]; planned: Map<string, Row>; effective: Map<string, BundleEntity>}> {
+): Promise<{rows: Row[]; ops: Op[]; planned: Map<string, Row>; effective: Map<string, BundleEntity>; missing: Set<string>}> {
   const rows: Row[] = [];
   const ops: Op[] = [];
   const planned = new Map<string, Row>();
@@ -36,6 +44,7 @@ export async function plan(dapi: NodeDapi, bundle: Bundle,
   const conflicts: string[] = [];
   const idmap = opts.idmap ?? {};
   const orphans = new Set<string>();
+  const missing = new Set<string>();
   const referrers = new Map<string, string[]>();
   const onTarget = new Set<string>();
   const pusherNamespace = await currentNamespace(dapi);
@@ -52,7 +61,32 @@ export async function plan(dapi: NodeDapi, bundle: Bundle,
       if (owner && personal.has(owner))
         idmap[entry.id] = personal.get(owner)!;
     }
+    const absent = [...new Set(owners)].filter((login) => !personal.has(login)).sort();
+    if (absent.length)
+      rows.push({name: absent.join(', '), entityType: 'User', action: 'warn', reason: 'user_missing',
+        detail: `create ${absent.length === 1 ? 'this user' : 'these users'} on the target first, ` +
+          'or their content lands under the pushing account'});
   }
+
+  // A package entity gets a fresh id on every instance, so it only resolves by name.
+  await pool(bundle.manifest.externals ?? [], WRITE_CONCURRENCY, async (external) => {
+    // A mapping the bundle carries was learned from whichever target it was last pushed at, so it
+    // is only reusable while this target still answers to it.
+    const mapped = idmap[external.id];
+    const spec = TYPES[external.type];
+    if (mapped && spec && await dapi.internal(spec.route).find(mapped).catch(() => null)) return;
+    const twin = await resolveByNqName(dapi, external.type, external.nqName);
+    if (!twin) {
+      delete idmap[external.id];
+      rows.push({name: external.nqName, entityType: external.type, action: 'warn', reason: 'external_missing',
+        detail: 'stayed on the source and the target has nothing by that name — install or publish what owns it'});
+      return;
+    }
+    if (twin.id !== external.id)
+      idmap[external.id] = twin.id;
+    else
+      delete idmap[external.id];
+  });
 
   // Every twin is resolved before the first payload is rewritten: an adoption discovered
   // halfway through would leave the references of everything rewritten before it stale.
@@ -92,10 +126,11 @@ export async function plan(dapi: NodeDapi, bundle: Bundle,
       continue;
     }
     // A hand-edited bundle must not be able to overwrite what the target owns itself.
-    const refuse = untransferableReason(type, json);
+    const refuse = untransferableReason(type, json) ?? bytesMissing(bundle, type, json);
     if (refuse) {
       row.action = 'skip';
       row.reason = refuse.reason;
+      row.detail = refuse.detail;
       if (target) onTarget.add(json.id);
       effective.set(entry.id, {type, json});
       continue;
@@ -123,7 +158,8 @@ export async function plan(dapi: NodeDapi, bundle: Bundle,
     }
     if (!['create', 'update'].includes(row.action)) continue;
     if (type === 'DataConnection' && !planCredentials(json, row, rows, creds)) continue;
-    ops.push({id: entry.id, type, json, row, creds, expectedNamespace: expectedNamespace(bundle, json)});
+    ops.push({id: entry.id, type, json, row, creds, expectedNamespace: expectedNamespace(bundle, json),
+      dangling: [...mine]});
   }
 
   if (conflicts.length)
@@ -145,13 +181,31 @@ export async function plan(dapi: NodeDapi, bundle: Bundle,
   for (const orphan of orphans) {
     if (known.has(orphan)) continue;
     const by = [...new Set(referrers.get(orphan) ?? [])].join(', ');
-    rows.push(await findEntity(dapi, orphan)
-      ? {name: orphan, entityType: 'Entity', action: 'info', reason: 'orphan_ref',
-        detail: `not in the bundle, but the target has this id — referenced by ${by}`}
+    if (await findEntity(dapi, orphan)) {
+      rows.push({name: orphan, entityType: 'Entity', action: 'info', reason: 'orphan_ref',
+        detail: `not in the bundle, but the target has this id — referenced by ${by}`});
+      continue;
+    }
+    missing.add(orphan);
+    rows.push(bundle.manifest.dangling?.includes(orphan)
+      ? {name: orphan, entityType: 'Entity', action: 'info', reason: 'dead_on_source',
+        detail: `nothing on the source answers to it either — ${by} cannot be migrated intact`}
       : {name: orphan, entityType: 'Entity', action: 'warn', reason: 'dependency_missing',
-        detail: `on neither the source nor the target; the save of ${by} may be refused`});
+        detail: `not in the bundle and not on the target — install the package that owns it, ` +
+          `or pull it; the save of ${by} may be refused`});
   }
-  return {rows, ops: ops.filter((o) => ['create', 'update'].includes(o.row.action)), planned, effective};
+  return {rows, ops: ops.filter((o) => ['create', 'update'].includes(o.row.action)), planned, effective, missing};
+}
+
+/**
+ * A file with no share is stored as a blob under its own id (`files_service.dart`:
+ * `addToUserProject: f.connection == null`), so without its bytes there is nothing to create.
+ */
+function bytesMissing(bundle: Bundle, type: string, json: any): {reason: string; detail: string} | null {
+  const bytes = TYPES[type].bytes;
+  if (type !== 'FileInfo' || json?.connection?.id || !bytes) return null;
+  return fs.existsSync(bytesPath(bundle.dir, bytes.kind, json.id)) ? null
+    : {reason: 'file_bytes_missing', detail: 'a file with no share is its bytes — pull with --include-files'};
 }
 
 /** Relations are outside the hash: what matters is that the target links everything the bundle does. */
@@ -272,26 +326,44 @@ export async function push(dapi: NodeDapi, bundle: Bundle, opts: PushOptions, lo
       extra.push({name, entityType: 'Package', action: 'warn', reason: 'package_not_installed'});
 
   const idmap = {...bundle.idmap};
-  const {rows, ops, planned, effective} = await plan(dapi, bundle, {onConflict, creds: opts.creds, idmap});
+  const {rows, ops, planned, effective, missing} = await plan(dapi, bundle, {onConflict, creds: opts.creds, idmap});
   const items = [...extra, ...rows];
   log(items);
   if (opts.dryRun)
     return summarize(items, dapi, 'dry-run');
 
+  const deferred: Deferred = {renamed: [], misplaced: []};
+  const progress = opts.progress ?? (() => {});
+  let saved = 0;
   for (const rank of [...new Set(ops.map((o) => rankOf(o.type)))].sort((a, b) => a - b))
-    await pool(ops.filter((o) => rankOf(o.type) === rank), opts.concurrency ?? 6,
-      (op) => saveOne(dapi, bundle, op, items, idmap));
+    await pool(ops.filter((o) => rankOf(o.type) === rank), opts.concurrency ?? WRITE_CONCURRENCY,
+      async (op) => {
+        await saveOne(dapi, bundle, op, items, idmap, deferred, missing);
+        progress('saving', ++saved, ops.length);
+      });
   // A FileInfo save can answer with an existing row's id: recording it keeps the next push
   // stable, and the passes below have to point at the id the entity actually landed under.
-  if (Object.keys(idmap).length > Object.keys(bundle.idmap).length) {
+  // Comparing sizes would miss a run that dropped one stale mapping and learned another.
+  if (JSON.stringify(idmap) !== JSON.stringify(bundle.idmap)) {
     writeIdmap(bundle.dir, idmap);
     for (const [id, e] of effective)
       effective.set(id, {type: e.type, json: rewrite(e.json, idmap)});
   }
 
-  await pushRelations(dapi, effective, planned, items);
+  await pushShares(dapi, bundle, items, onConflict);
+  await pushRelations(dapi, effective, planned, items, progress);
+  progress('restoring names');
+  const renamed = await restoreNames(dapi, deferred.renamed, idmap);
+  // A save re-homes the entity into the pusher's own root (`repository_query.dart`:
+  // `addToUserProject`), undoing the placement the namespace is derived from.
+  if (renamed)
+    await pushRelations(dapi, effective, planned, items, progress);
+  progress('checking placement');
+  await reportPlacement(dapi, deferred.misplaced, items, idmap);
+  progress('tags and memberships');
   await pushTags(dapi, effective, planned, items);
   await pushMemberships(dapi, effective, planned, items);
+  progress('sharing');
   const {visible, projects} = await pushGrants(dapi, effective, planned, items);
   const written = items.filter((r) => r.action === 'create' || r.action === 'update').length;
   if (!visible && projects && written)
@@ -301,7 +373,8 @@ export async function push(dapi: NodeDapi, bundle: Bundle, opts: PushOptions, lo
   return summarize(items, dapi, items.some((r) => r.action === 'failed') ? 'failed' : 'ok');
 }
 
-async function saveOne(dapi: NodeDapi, bundle: Bundle, op: Op, rows: Row[], idmap: Record<string, string>): Promise<void> {
+async function saveOne(dapi: NodeDapi, bundle: Bundle, op: Op, rows: Row[], idmap: Record<string, string>,
+                       deferred: Deferred, missing: Set<string>): Promise<void> {
   const spec = TYPES[op.type];
   const payload = stripPrivate(JSON.parse(JSON.stringify(op.json)));
   const targetId = payload.id ?? op.id;
@@ -330,19 +403,37 @@ async function saveOne(dapi: NodeDapi, bundle: Bundle, op: Op, rows: Row[], idma
       op.row.reason = 'Save reported success but not on target';
       return;
     }
-    if (verified.name !== op.json.name)
-      rows.push({name: op.row.name, entityType: op.type, action: 'warn', reason: 'renamed', detail: `${op.json.name} → ${verified.name}`});
-    // A namespace is a label; placement comes from the owning space's relations, so an entity
-    // whose space is absent (or that is not among its relations) lands under the pusher instead.
+    // Names and namespaces are settled by placement, so a clash here is only a candidate.
+    if (verified.name !== op.json.name) {
+      const row: Row = {name: op.row.name, entityType: op.type, action: 'warn', reason: 'renamed',
+        detail: `${op.json.name} → ${verified.name}`};
+      rows.push(row);
+      deferred.renamed.push({op, row});
+    }
     if (op.expectedNamespace !== undefined && (verified.namespace ?? '') !== op.expectedNamespace)
-      rows.push({name: op.row.name, entityType: op.type, action: 'warn', reason: 'namespace_not_preserved',
-        detail: `${op.expectedNamespace} → ${verified.namespace ?? ''}; pull the owning space so the entity travels in its relations`});
+      deferred.misplaced.push(op);
     if (op.type === 'PredictiveModelInfo')
       rows.push({name: op.row.name, entityType: op.type, action: 'info', reason: 'model_blob_skipped',
         detail: 'the trained model itself stays on the source — retrain or copy it separately'});
   } catch (err: any) {
-    op.row.action = 'failed';
-    op.row.reason = err?.message ?? String(err);
+    // The server reports its own refusal, not what caused it; a reference that exists on
+    // neither instance is the cause often enough to be worth naming here.
+    const cause = (op.dangling ?? []).filter((id) => missing.has(id));
+    const dead = cause.filter((id) => bundle.manifest.dangling?.includes(id));
+    const refusal = err?.message ?? String(err);
+    // The server names its own refusal, not what caused it, so a dead reference is inferred — but
+    // only from a refusal. A request that timed out or lost its connection says nothing about the
+    // entity, and calling that "nothing to migrate" would hide a transport problem as clean data.
+    const transport = /no answer in|deadlock|40P01|ECONN|socket|fetch failed/i.test(refusal);
+    const named = transport ? [] : dead;
+    op.row.action = named.length ? 'skip' : 'failed';
+    op.row.reason = named.length ? 'dead_on_source' : refusal;
+    if (named.length)
+      op.row.detail = `references ${named.join(', ')}, which the source no longer has either — ` +
+        `nothing to migrate, delete it there or ignore (${refusal})`;
+    else if (cause.length)
+      op.row.detail = `references ${cause.join(', ')}, which the target does not have — ` +
+        'a package connection is the usual cause, install the package first';
   }
 }
 
@@ -360,54 +451,225 @@ async function pushBytes(dapi: NodeDapi, bundle: Bundle, type: string, bundleId:
  * `_deleteRelations`), so the payload starts from what the target already links and the
  * bundle only ever adds to it.
  */
-async function pushRelations(dapi: NodeDapi, effective: Map<string, BundleEntity>, planned: Map<string, Row>, rows: Row[]): Promise<void> {
+async function pushRelations(dapi: NodeDapi, effective: Map<string, BundleEntity>, planned: Map<string, Row>, rows: Row[],
+                             progress: Progress = () => {}): Promise<void> {
   const projects = dapi.internal('/projects');
-  const inBundle = new Set([...effective.values()].map((e) => e.json.id));
-  for (const [id, {type, json}] of effective) {
-    if (type !== 'Project' || !json.relations?.length) continue;
-    // A personal project is skipped as an entity — the target keeps its own — but its children
-    // still have to be attached to it, or they land with no namespace at all.
-    const row = planned.get(id);
-    if (!['create', 'update'].includes(row?.action ?? 'create') && row?.reason !== 'personal_project') continue;
+  const relations = dapi.internal('/projects/relations');
+  // Anything this push did not write has to prove it exists before being offered as a relation.
+  const landed = new Set<string>();
+  for (const [id, {json}] of effective)
+    if (['create', 'update', 'identical'].includes(planned.get(id)?.action ?? '')) landed.add(json.id);
+  // Containment is a tree: each entity goes to the deepest project claiming it, so a space and a
+  // dashboard listing the same table do not erase each other.
+  const claimants = new Map<string, string[]>();
+  for (const [, {type, json}] of effective) {
+    if (type !== 'Project') continue;
+    for (const rel of json.relations ?? [])
+      if (rel?.entity?.id) claimants.set(rel.entity.id, [...(claimants.get(rel.entity.id) ?? []), json.id]);
+  }
+  const depthOf = (id: string): number => {
+    let depth = 0;
+    for (let at = (claimants.get(id) ?? [])[0]; at && depth < 64; at = (claimants.get(at) ?? [])[0]) depth++;
+    return depth;
+  };
+  const ownerOf = (entityId: string): string | undefined => {
+    const holders = claimants.get(entityId) ?? [];
+    return holders.length < 2 ? holders[0]
+      : holders.reduce((deepest, id) => depthOf(id) > depthOf(deepest) ? id : deepest, holders[0]);
+  };
+  const order = [...effective].filter(([, e]) => e.type === 'Project' && e.json.relations?.length)
+    .sort((a, b) => depthOf(a[1].json.id) - depthOf(b[1].json.id));
 
-    const target = await projects.find(json.id);
-    if (!target) continue;
-    const wanted: any[] = (target.relations ?? [])
-      .filter((r: any) => r?.entity?.id)
-      .map((r: any) => ({id: r.id, entity: {'#type': 'EntityRecord', id: r.entity.id}, isLink: r.isLink ?? false}));
+  const tally = {wanted: 0, notWritable: 0, absent: 0, nothingToAdd: 0, written: 0, reasserted: 0};
+  const written: typeof order = [];
+  for (const [id, {type, json}] of order) {
+    progress('placing', ++tally.wanted, order.length);
+    // Every project the bundle places is re-asserted, not only the ones whose own row was
+    // written: one project's write takes contained entities from every other project holding them.
+    const row = planned.get(id);
+    if (['skip', 'failed'].includes(row?.action ?? '') && row?.reason !== 'personal_project') {
+      tally.notWritable++;
+      continue;
+    }
+    // Reading the relation rows on their own, rather than the whole project, is what keeps this
+    // stage usable: nearly every project already holds what the bundle wants, and fetching each
+    // one in full to discover that costs hours on a stand-sized push.
+    // `GET /projects/relations` fails on a project that links domain-table rows, the same way it
+    // does on the pull side — and reading "holds nothing" would strip every relation the target
+    // has, because the write replaces the whole set. Fall back to the project's own copy.
+    const held = await relations.listAll({projectId: json.id, include: 'entity'}).catch(() => null)
+      ?? (await projects.find(json.id).catch(() => null))?.relations;
+    if (!held) {
+      tally.absent++;
+      continue;
+    }
+    // `projects_repository.dart`: a non-link relation deletes the entity's other non-link rows.
+    const contains = (entityId: string): boolean => ownerOf(entityId) === json.id;
+    const claimed = new Set<string>((json.relations ?? []).map((r: any) => r?.entity?.id).filter(Boolean));
+    // The server derives `is_link` — it keeps one container per entity and marks every other holder
+    // a link — so only a claim is worth writing for. Writing the release direction is ignored and
+    // recomputed, which would rewrite the project on every push, and a relation write costs tens of
+    // seconds on a stand-sized target.
+    let corrected = 0;
+    const wanted: any[] = [];
+    for (const r of held) {
+      if (!r?.entity?.id) continue;
+      const isLink = claimed.has(r.entity.id) ? !contains(r.entity.id) : (r.isLink ?? false);
+      if ((r.isLink ?? false) && !isLink) corrected++;
+      wanted.push({id: r.id, entity: {'#type': 'EntityRecord', id: r.entity.id}, isLink});
+    }
     const linked = new Set<string>(wanted.map((r) => r.entity.id));
     let added = 0;
     for (const rel of json.relations) {
       if (linked.has(rel.entity.id)) continue;
       // The target stamps its own Files connection onto a space; re-attaching the source's
       // would leave the space with two of them.
-      if (!inBundle.has(rel.entity.id)) {
+      if (!landed.has(rel.entity.id)) {
         const existing = await findEntity(dapi, rel.entity.id);
         if (!existing || existing.parameters?.isProject === true) continue;
       }
-      wanted.push(rel);
+      wanted.push(contains(rel.entity.id) ? rel : {...rel, isLink: true});
       linked.add(rel.entity.id);
       added++;
     }
-    if (!added) continue;
+    if (!added && !corrected) {
+      tally.nothingToAdd++;
+      continue;
+    }
+    // Only now is the project itself needed: the write posts it back whole.
+    const target = await projects.find(json.id).catch(() => null);
+    if (!target) {
+      tally.absent++;
+      continue;
+    }
+    tally.written++;
+    // Persistently non-zero means the server is not keeping the flag as sent.
+    if (!added) tally.reasserted++;
     delete target.storage;
     target.relations = wanted;
 
-    for (let attempt = 0; ; attempt++) {
+    const refused: string[] = [];
+    for (let attempt = 0; ;) {
       try {
-        // A personal root project can hold thousands of relations, and the whole set is written
-        // in one POST: at 60s it times out, and everything under it stays namespaceless.
-        await dapi.client.post('/projects?saveRelations=true', stripPrivate(JSON.parse(JSON.stringify(target))), BULK_WRITE_MS);
+          await dapi.client.post('/projects?saveRelations=true', stripPrivate(JSON.parse(JSON.stringify(target))), BULK_WRITE_MS);
         break;
       } catch (err: any) {
         const text = String(err?.message ?? err);
-        if (attempt >= 2 || !(text.includes('40P01') || text.toLowerCase().includes('deadlock'))) {
+        // The write is all-or-nothing, so a single entity the target refuses to link would cost
+        // the whole space its placement. Drop the one it named and write the rest.
+        // `projects_repository.dart` refuses a relation for want of a permission in several
+        // wordings; dropping the entity then reports "the target would not link it" for what is
+        // really the pusher's own access, and quietly migrates less.
+        const denied = /privileges|you do not have/i.test(text);
+        const bad = denied ? undefined : RELATION_REFUSED_RE.exec(text)?.[1];
+        if (bad && refused.length < 3 && target.relations.some((r: any) => r.entity?.id === bad)) {
+          target.relations = target.relations.filter((r: any) => r.entity?.id !== bad);
+          refused.push(bad);
+          continue;
+        }
+        if (attempt++ >= 2 || !(text.includes('40P01') || text.toLowerCase().includes('deadlock'))) {
           rows.push({name: nqNameOf(json), entityType: 'Project', action: 'failed', reason: 'relations', detail: text});
           break;
         }
-        await new Promise((r) => setTimeout(r, 250 * (attempt + 1)));
+        await new Promise((r) => setTimeout(r, 250 * attempt));
       }
     }
+    if (refused.length)
+      rows.push({name: nqNameOf(json), entityType: 'Project', action: 'warn', reason: 'relations_refused',
+        detail: `${refused.length} left out because the target would not link them: ${refused.slice(0, 3).join(', ')}`});
+    written.push([id, {type, json}]);
+  }
+  const short: string[] = [];
+  for (const [, entity] of written) {
+    const back = await projects.find(entity.json.id).catch(() => null);
+    const kept = new Set<string>((back?.relations ?? []).map((r: any) => r?.entity?.id));
+    if ((entity.json.relations ?? []).some((r: any) => r?.entity?.id && !kept.has(r.entity.id)))
+      short.push(nqNameOf(entity.json));
+  }
+  tally.written -= short.length;
+  if (short.length)
+    rows.push({name: short.slice(0, 3).join(', '), entityType: 'Project',
+      action: 'warn', reason: 'relations_not_kept',
+      detail: `${short.length} project(s) lost relations the target dropped after writing them`});
+  // Placement is what makes a dashboard openable, and it is invisible in a per-entity report.
+  if (tally.wanted)
+    rows.push({name: '', entityType: 'Project', action: 'info', reason: 'relations_written',
+      detail: `${tally.written} of ${tally.wanted} placed` +
+        (tally.reasserted ? ` (${tally.reasserted} only re-stating ownership)` : '') +
+        (tally.notWritable ? `; ${tally.notWritable} not written` : '') +
+        (tally.absent ? `; ${tally.absent} missing on target` : '') +
+        (tally.nothingToAdd ? `; ${tally.nothingToAdd} already linked or unresolvable` : '')});
+}
+
+/**
+ * Files a datasync table reads, written back into the share of the same name. A personal
+ * `Home` share resolves to the target's own connection for that user, so each owner's files
+ * land in their own share rather than the pusher's.
+ */
+async function pushShares(dapi: NodeDapi, bundle: Bundle, rows: Row[], onConflict: ConflictPolicy): Promise<void> {
+  const conflicts: string[] = [];
+  for (const remote of listShares(bundle.dir)) {
+    try {
+      // The only write that replaces a file the target already has, so it answers to the same
+      // policy as everything else rather than overwriting whatever is there.
+      const already = await dapi.files.readBytes(remote).then(() => true).catch(() => false);
+      if (already && onConflict === 'skip') {
+        rows.push({name: remote, entityType: 'File', action: 'skip', reason: 'share_file_exists'});
+        continue;
+      }
+      if (already && onConflict === 'fail')
+        conflicts.push(remote);
+      await dapi.files.writeBytes(remote, fs.readFileSync(sharePath(bundle.dir, remote)));
+      rows.push({name: remote, entityType: 'File', action: already ? 'update' : 'create', reason: 'share_file'});
+    } catch (err: any) {
+      rows.push({name: remote, entityType: 'File', action: 'warn', reason: 'share_file_not_written',
+        detail: err?.message ?? String(err)});
+    }
+  }
+  if (conflicts.length)
+    throw new Error('The target already has these share files (use --on-conflict skip|adopt): ' +
+      conflicts.join(', '));
+}
+
+/**
+ * The server keeps a name unique within the namespace the entity is in, and an entity created
+ * by a push is in the pusher's namespace until its space's relations are written. A name taken
+ * there is usually free once the entity is placed. Returns true when anything was written back,
+ * since a save re-homes the entity and the placement has to be asserted again.
+ */
+async function restoreNames(dapi: NodeDapi, renamed: {op: Op; row: Row}[],
+                            idmap: Record<string, string>): Promise<boolean> {
+  let saved = false;
+  for (const {op, row} of renamed) {
+    const spec = TYPES[op.type];
+    const current = await dapi.internal(spec.route).find(idmap[op.id] ?? op.json.id).catch(() => null);
+    if (!current || current.name === op.json.name) continue;
+    current.name = op.json.name;
+    delete current.storage;
+    const restored = await dapi.internal(spec.saveRoute ?? spec.route)
+      .save(stripPrivate(JSON.parse(JSON.stringify(current)))).catch(() => null);
+    if (!restored) continue;
+    // The entity was written either way, so placement has to be re-asserted either way.
+    saved = true;
+    if (restored.name !== op.json.name) continue;
+    row.action = 'info';
+    row.reason = 'name_restored';
+    row.detail = `${op.json.name} was taken until the entity was placed`;
+  }
+  return saved;
+}
+
+/**
+ * A namespace is a label derived from the owning space, so it is only worth judging once
+ * relations and names are settled.
+ */
+async function reportPlacement(dapi: NodeDapi, misplaced: Op[], rows: Row[],
+                               idmap: Record<string, string>): Promise<void> {
+  for (const op of misplaced) {
+    const now = await dapi.internal(TYPES[op.type].route).find(idmap[op.id] ?? op.json.id).catch(() => null);
+    if (!now || (now.namespace ?? '') === op.expectedNamespace) continue;
+    rows.push({name: op.row.name, entityType: op.type, action: 'warn', reason: 'namespace_not_preserved',
+      detail: `${op.expectedNamespace} → ${now.namespace ?? ''}; pull the owning space so the entity travels in its relations`});
   }
 }
 
@@ -421,7 +683,7 @@ async function pushTags(dapi: NodeDapi, effective: Map<string, BundleEntity>, pl
     for (const [id, {type, json}] of effective) {
       const tags: string[] = json._tags ?? [];
       if (!tags.length || ['skip', 'failed'].includes(planned.get(id)?.action ?? '')) continue;
-      const target = await dapi.internal(TYPES[type].route).find(json.id);
+      const target = await dapi.internal(TYPES[type].route).find(json.id).catch(() => null);
       if (!target) continue;
       const have = new Set((target.entityTags ?? []).map((t: any) => t?.tag));
       for (const tag of tags)
@@ -512,17 +774,6 @@ async function pushGrants(dapi: NodeDapi, effective: Map<string, BundleEntity>, 
   return {visible: anyVisible, projects};
 }
 
-export async function pool<T>(items: T[], concurrency: number, work: (item: T) => Promise<void>): Promise<void> {
-  const queue = items.slice();
-  const workers: Promise<void>[] = [];
-  for (let i = 0; i < Math.min(concurrency, queue.length); i++)
-    workers.push((async () => {
-      while (queue.length)
-        await work(queue.shift()!);
-    })());
-  await Promise.all(workers);
-}
-
 export function summarize(items: Row[], dapi: NodeDapi, status: string): PushResult {
   const counts: Record<string, number> = {};
   for (const r of items)
@@ -559,6 +810,16 @@ async function currentNamespace(dapi: NodeDapi): Promise<string> {
  * An entity pulled from the source author's personal namespace lands under the pusher's
  * own namespace on the target, so that is where a same-name twin would be.
  */
+/** The target's own entity of that qualified name, whatever id it gave it. */
+async function resolveByNqName(dapi: NodeDapi, type: string, nqName: string): Promise<any> {
+  const cut = nqName.lastIndexOf(':');
+  const namespace = cut === -1 ? '' : nqName.slice(0, cut + 1);
+  const name = nqName.slice(cut + 1);
+  if (!name) return null;
+  const matches = await dapi.internal('/entities').list({namespace, name}).catch(() => []);
+  return matches.find((m: any) => m['#type'] === type && inNamespace(m, namespace)) ?? null;
+}
+
 async function findByNqName(dapi: NodeDapi, bundle: Bundle, type: string, json: any, pusherNamespace: string): Promise<any> {
   // Not `expectedNamespace`: a twin for a namespace-less entity is looked up in the root.
   const sourceNamespace: string = json.namespace ?? '';

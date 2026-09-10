@@ -29,7 +29,7 @@ import {startWith, take, map} from 'rxjs/operators';
 import {useHelp} from '../../composables/use-help';
 import {useObservable} from '@vueuse/rxjs';
 import {_package} from '../../package-instance';
-import {applyDefaultGridFloatFormat, canUseResults, getViewers, pinView as pinViewHelper} from '../../utils';
+import {applyDefaultGridFloatFormat, canUseResults, disposeViewers, getViewers, pinView as pinViewHelper, STICKY_BAR_BACKGROUND} from '../../utils';
 import {canSaveProject, saveCallToProject, DfExportEntry} from '../../project-export';
 
 
@@ -291,7 +291,7 @@ export const RichFunctionView = Vue.defineComponent({
     },
     skipInit: {
       type: Boolean,
-      dafault: true,
+      default: true,
     },
     viewersHook: {
       type: Function as Vue.PropType<ViewersHook>,
@@ -406,13 +406,21 @@ export const RichFunctionView = Vue.defineComponent({
       return true;
     }));
 
+    // tabToProperties subscribes to param changes via useObservable, which needs an
+    // active effect scope to register disposal — watcher callbacks have none, so each
+    // rebuild runs in its own scope and stopping it releases the previous build's
+    // subscriptions (down to the Dart-side param listeners)
+    let tabsScope: Vue.EffectScope | undefined;
     const rebuildTabs = (call: DG.FuncCall) => {
-      tabToPropertiesMap.value = tabToProperties(call);
+      tabsScope?.stop();
+      tabsScope = Vue.effectScope();
+      tabToPropertiesMap.value = tabsScope.run(() => tabToProperties(call))!;
       tabLabels.value = [
         ...tabToPropertiesMap.value.inputs.keys(),
         ...tabToPropertiesMap.value.outputs.keys(),
       ];
     };
+    Vue.onBeforeUnmount(() => tabsScope?.stop());
 
     // Per-function preferred tab, tracked separately for the input and output sides and pushed
     // to the dock as `preferredPanelTitle`. Restored only on function switch and run completion
@@ -501,13 +509,17 @@ export const RichFunctionView = Vue.defineComponent({
     const showRun = Vue.computed(() => props.showRunButton && (isOutputOutdated.value || allowRerun.value));
 
     const reportHandler = async (nqName: string) => {
-      await DG.Func.byName(nqName).apply({
-        startDownload: true,
-        funcCall: currentCall.value,
-        validationState: validationState.value,
-        consistencyState: consistencyState.value,
-        isOutputOutdated: isOutputOutdated.value,
-      });
+      try {
+        await DG.Func.byName(nqName).apply({
+          startDownload: true,
+          funcCall: currentCall.value,
+          validationState: validationState.value,
+          consistencyState: consistencyState.value,
+          isOutputOutdated: isOutputOutdated.value,
+        });
+      } catch (e: any) {
+        grok.shell.error(e);
+      }
     }
 
     const exports = Vue.computed(() => {
@@ -515,14 +527,18 @@ export const RichFunctionView = Vue.defineComponent({
       if (isReportEnabled.value) {
         const name = 'Default Excel';
         const handler = async () => {
-          const viewers = await getViewers(currentCall.value, viewersHook.value, callMeta.value);
-          const [blob] = await richFunctionViewReport(
-            'Excel',
-            currentCall.value.func,
-            currentCall.value,
-            viewers,
-          );
-          DG.Utils.download(`${currentCall.value.func.nqName} - ${Utils.getStartedOrNull(currentCall.value) ?? 'Not completed'}.xlsx`, blob);
+          try {
+            const viewers = await getViewers(currentCall.value, viewersHook.value, callMeta.value);
+            const [blob] = await richFunctionViewReport(
+              'Excel',
+              currentCall.value.func,
+              currentCall.value,
+              viewers,
+            ).finally(() => disposeViewers(viewers));
+            DG.Utils.download(`${currentCall.value.func.nqName} - ${Utils.getStartedOrNull(currentCall.value) ?? 'Not completed'}.xlsx`, blob);
+          } catch (e: any) {
+            grok.shell.error(e);
+          }
         }
         activeExports.push({name, handler});
       }
@@ -629,11 +645,15 @@ export const RichFunctionView = Vue.defineComponent({
     const pinView = () => pinViewHelper(props.view);
 
     const runSA = async () => {
-      pinView();
-      const ranges = getRanges('rangeSA');
-      const diffGrok = await buildDiffGrokFromFunc(currentCall.value.func);
-      const inputsLookup = diffGrok?.ivp?.inputsLookup ?? undefined;
-      SensitivityAnalysisView.fromEmpty(currentCall.value.func, {ranges, diffGrok, inputsLookup, disableLookupDefault: true});
+      try {
+        pinView();
+        const ranges = getRanges('rangeSA');
+        const diffGrok = await buildDiffGrokFromFunc(currentCall.value.func);
+        const inputsLookup = diffGrok?.ivp?.inputsLookup ?? undefined;
+        SensitivityAnalysisView.fromEmpty(currentCall.value.func, {ranges, diffGrok, inputsLookup, disableLookupDefault: true});
+      } catch (e: any) {
+        grok.shell.error(e);
+      }
     };
 
     const runFitting = async () => {
@@ -652,6 +672,8 @@ export const RichFunctionView = Vue.defineComponent({
         grok.shell.v = currentView;
         if (call)
           emit('update:funcCall', Vue.markRaw(call));
+      } catch (e: any) {
+        grok.shell.error(e);
       } finally {
         isFittingActive.value = false;
       }
@@ -811,7 +833,7 @@ export const RichFunctionView = Vue.defineComponent({
                     skipTableAutoFill={true}
                     isReadonly={isReadonly.value}
                   /> }
-                <div class='flex sticky bottom-0' style={{'z-index': 1000, 'background-color': 'rgb(255,255,255,0.75)'}}>
+                <div class='flex sticky bottom-0' style={{'z-index': 1000, 'background-color': STICKY_BAR_BACKGROUND}}>
                   { slots.navigation ?
                     slots.navigation({runLabel: runLabel.value, allowRerun: allowRerun.value}) :
                     showRun.value ?

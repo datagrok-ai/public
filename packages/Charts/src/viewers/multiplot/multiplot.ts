@@ -39,8 +39,6 @@ export class MultiPlotViewer extends DG.JsViewer {
   // private echartOptions: echarts.EChartsOption;
   private echartOptions: any;
 
-  private paramA : string = this.string('paramA', 'string inside');
-
   private timeLineSeries: any;
   private timeLineIndex: number = 11;
   private statusChartIndex: number = 10;
@@ -57,7 +55,7 @@ export class MultiPlotViewer extends DG.JsViewer {
   private globalMarginBottom: number = 0;
   private selectionColor : DG.Color = DG.Color.toRgb(DG.Color.selectedRows);
   private categoryLength : number = 9;
-  private paramOptions : string = this.string('paramOptions', 'none22');
+  private paramOptions : string = this.string('paramOptions', 'none', {userEditable: false});
   private mode : string = 'none'; // 'brushSelected'
   private options: {series: any[], xAxisMinMax: {[key: string]: any}} = {series: [], xAxisMinMax: {}};
 
@@ -81,15 +79,12 @@ export class MultiPlotViewer extends DG.JsViewer {
 
   constructor() {
     super();
-    console.log('------------------------------------- MULTIPLOT ------------------------------');
-    console.log('this.root: ', this.root);
-
     this.paletteColors = DG.Color.categoricalPalette.map(DG.Color.toRgb);
     // this.plots = this.options.series;
     // this.init();
 
     this.box = this.root.getBoundingClientRect();
-    ui.onSizeChanged(this.root).subscribe(((this2) => (e: any) => {
+    this.subs.push(ui.onSizeChanged(this.root).subscribe(((this2) => (e: any) => {
       if (!this2.echartOptions) return 0;
       this2.updateOptionsPositions();
       if (this2.echart) {
@@ -97,11 +92,10 @@ export class MultiPlotViewer extends DG.JsViewer {
         this2.render();
         this2.echart.resize();
       }
-    })(this));
+    })(this)));
   }
 
   init(): void {
-    console.warn('init');
     if (!this.isTablesLoaded) return;
     this.clearPlots();
     this.plots.map((e) => {
@@ -131,7 +125,6 @@ export class MultiPlotViewer extends DG.JsViewer {
     ;
     const name = property.name;
     const val = property.get(this);
-    console.log('property changed: ', name, val);
     if (name === 'defaultTitleHeight') {
       this.defaultTitleHeight = val;
       this.updateOptionsPositions();
@@ -339,9 +332,6 @@ export class MultiPlotViewer extends DG.JsViewer {
           color: this.getItemStyleColorFunc(plot.visualMap, plot),
         };
       } else {
-        // if (plot.visualMap) {
-        // keep it to find is any execution ever happens here
-        debugger;
         const map = plot.visualMap;
         if (map.type === 'piecewise') {
           const min = map.pieces[0].min;
@@ -387,7 +377,6 @@ export class MultiPlotViewer extends DG.JsViewer {
       };
     }
     if (plot.statusChart) {
-      console.error('status chart get color func');
       customColorFunc = (e: any) => {
         let val = e.data[plot.statusChart.valueField];
         let min = e.data[plot.statusChart.minField];
@@ -397,13 +386,12 @@ export class MultiPlotViewer extends DG.JsViewer {
         if (typeof max == 'string') max = parseFloat(max);
 
         return val > min && val < max ? 'green' : 'red';
-        return val > min && val < max ? defaultColor : plot.statusChart.alertColor;
       };
     }
     const f = (e: any) => {
       const customColor = customColorFunc(e);
       // if (plot.selectedIndexes.includes(e.dataIndex)) {
-      if (this.utils.getBitByIndex32(table.selection, e.dataIndex))
+      if (table.selection.get(e.dataIndex))
         return selectionColor;
 
       return customColor;
@@ -415,7 +403,6 @@ export class MultiPlotViewer extends DG.JsViewer {
   // 'circle', 'rect', 'roundRect', 'triangle', 'diamond', 'pin', 'arrow', 'none'
   getMarkerSymbolFunc(customSymbolFunc: any, plot: any) : any {
     const defaultSymbol = 'circle';
-    console.warn('getShapeFunc: ', defaultSymbol);
     function f(e: any) {
       // console.log('symbol ', e);
       const customSymbol = customSymbolFunc(e);
@@ -485,7 +472,6 @@ export class MultiPlotViewer extends DG.JsViewer {
     const plotTablesList : string[] = this.plots.map((e) => e.tableName);
     const openTablesArray: string[] = Object.keys(this.tables);
     const notLoaded : string[] = plotTablesList.filter((e) => openTablesArray.indexOf(e) == -1);
-    console.warn('not loaded list', notLoaded);
     return notLoaded.length == 0;
   }
 
@@ -493,7 +479,6 @@ export class MultiPlotViewer extends DG.JsViewer {
     if (!this.checkTablesLoaded() || Object.keys(this.tables).length === 0)
       return;
 
-    console.warn('all tables loaded');
     this.plots = this.utils.getPlotsFromParams(this.tables, this.options.series);
     this.isTablesLoaded = 1;
     this.init();
@@ -510,6 +495,12 @@ export class MultiPlotViewer extends DG.JsViewer {
       this.render();
     }));
   } // table attached
+
+  detach(): void {
+    this.echart?.dispose();
+    this.echart = null;
+    super.detach();
+  }
 
   updateFilter(): void {
     this.timeLinesData = [];
@@ -585,13 +576,8 @@ export class MultiPlotViewer extends DG.JsViewer {
   addEchartHandlers() : void {
     if (this.isEchartHandlers) return;
 
-    this.echart!.on('dataZoom', (e: any) => {
-      console.log('zoom ', e);
-    });
-
     this.echart!.on('brushSelected', (e: any) => {
       this.mode = 'brushSelected';
-      console.log('brush selected ', e);
       if (e.batch.length === 0) return;
       const batchSelected = e.batch[0].selected;
       if (batchSelected.length === 0) return;
@@ -606,20 +592,7 @@ export class MultiPlotViewer extends DG.JsViewer {
       // this.render();
     }); // onBrushSelected
 
-    this.echart!.on('brushEnd', (e: any) => {
-      console.error('brushEnd, ', e);
-    });
-
-    this.echart!.on('mousedown', {datatype: ''}, (e: any) => {
-      console.log('mouse down: ', e);
-    });
-
-    this.echart!.on('mouseup', {datatype: ''}, (e: any) => {
-      console.log('mouse up: ', e);
-    });
-
     this.echart!.on('click', {datatype: 'all'}, (params : any) => {
-      console.log('echart click', params);
       const iPlot : number = this.visibleIndexes[params.componentIndex];
       const table : DG.DataFrame = this.tables[this.plots[iPlot].tableName];
       const indexes = table.filter.getSelectedIndexes();
@@ -751,7 +724,6 @@ export class MultiPlotViewer extends DG.JsViewer {
         this.updatePlots();
         this.render();
       });
-      this.typeComboElements.push(inputPlotType);
       this.root.appendChild(inputPlotType);
       inputPlotType.style.position = 'absolute';
       inputPlotType.style.left = '3px';
@@ -887,7 +859,6 @@ export class MultiPlotViewer extends DG.JsViewer {
   }
 
   render(): void {
-    console.log('set echart options: ', this.echartOptions);
     if (this.echart) {
       this.echart.clear();
       // this.echart.setOption(this.echartOptions, true);
@@ -899,8 +870,6 @@ export class MultiPlotViewer extends DG.JsViewer {
   // initTimeLine
 
   timeLinesD(params: any, api: any) {
-    const overlap = false;
-
     const categoryIndex = api.value(categoryCol);
     const start = api.coord([api.value(startCol), categoryIndex]);
     const end = api.coord([api.value(endCol), categoryIndex]);
@@ -967,9 +936,6 @@ export class MultiPlotViewer extends DG.JsViewer {
       group.children.push(marker);
     } else {
     // draw line
-      if (!this.echarts)
-        debugger;
-
       const rectShape = this.echarts.graphic.clipRectByRect({
         x: start[0],
         y: start[1] - this.lineWidth / 2,
@@ -983,15 +949,6 @@ export class MultiPlotViewer extends DG.JsViewer {
         height: params.coordSys.height,
       });
 
-      if (overlap) {
-        const height = api.size([0, 1])[1];
-        const offset = Math.max(this.markerSize * 2, this.lineWidth);
-        // Shift along the Y axis
-        //@ts-ignore
-        rectShape.y += (this.count % 3) ? (this.count % 3 === 2) ?
-          0 : offset-height/2 : height/2-offset; //@ts-ignore
-        this.count += 1;
-      }
 
       group.children.push({
         type: 'rect',

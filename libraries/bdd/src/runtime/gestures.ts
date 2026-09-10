@@ -2,7 +2,8 @@
    quirks once: real pointer clicks for canvases, key-by-key typing (Dart change listeners ignore
    `fill`), native `<select>` first for choices, the editor part of a composite input. */
 import {resolve} from 'node:path';
-import {expect, type Locator, type Page} from '@playwright/test';
+import {type Locator, type Page} from '@playwright/test';
+import {expect} from './patience.js';
 import type {ElementRef} from './args.js';
 import {cssString, escapeRegExp, exactText, locateActionable as locate, refOf, withAttr} from './locate.js';
 
@@ -19,6 +20,20 @@ function gestureOf(page: Page, target: ElementRef): {click?: 'mouse' | 'dom'; ty
   const ref = refOf(page, target);
   const plan = ref.plan;
   return (plan.type === 'entry' ? plan.entry.gestures : plan.type === 'kind' ? plan.kind.gestures : undefined) ?? {};
+}
+
+/** Holds the keys around a gesture (Control adds to a selection, Shift extends it, Alt zooms).
+ * Playwright's `down` takes one key, so a chord is held key by key. */
+export async function withKeys(page: Page, keys: string[], body: () => Promise<void>): Promise<void> {
+  for (const k of keys)
+    await page.keyboard.down(k);
+  try {
+    await body();
+  }
+  finally {
+    for (const k of [...keys].reverse())
+      await page.keyboard.up(k);
+  }
 }
 
 export async function click(page: Page, target: ElementRef): Promise<void> {
@@ -60,8 +75,7 @@ export async function readClipboard(page: Page): Promise<string> {
 /** Leaves the element first, to its left on the same line — a pointer already resting on it (the
  * previous click) produces no pointerenter, and tooltips listen for that; leaving upwards would
  * cross a neighbouring menu row and close the submenu the element sits in — then lands on its
- * centre in one move (every pointer event costs a frame, and a Dart menu group opens on the first
- * move since 2026-09-07) and checks that the element is still where it was: a shift under the
+ * centre in one move and checks that the element is still where it was: a shift under the
  * pointer right after the move (a view still docking) leaves it again, unseen. The browser
  * coalesces mouse moves queued while its main thread is busy, so the pair can collapse into the
  * last move alone — one that enters nothing when the pointer already rested inside; the gesture
@@ -98,12 +112,14 @@ export async function hover(page: Page, target: ElementRef): Promise<void> {
   }
 }
 
-/** The editable control of an element: itself when it is one, otherwise its editor part. */
+/** The editable control of an element: itself when it is one, otherwise its editor part. A viewer
+ * handles keys on its root (a form walks rows on the arrows, a plot zooms on +/-); its first input
+ * is a field, not its editor. */
 export async function editorOf(page: Page, target: ElementRef): Promise<Locator> {
   const loc = await locate(page, target);
-  const editable = await loc.evaluate((e) => ['INPUT', 'SELECT', 'TEXTAREA'].includes(e.tagName) ||
-    (e as HTMLElement).isContentEditable).catch(() => false);
-  if (editable)
+  const own = await loc.evaluate((e) => ['INPUT', 'SELECT', 'TEXTAREA'].includes(e.tagName) ||
+    (e as HTMLElement).isContentEditable || e.matches('[name^="viewer-"], .d4-viewer')).catch(() => false);
+  if (own)
     return loc;
   for (const selector of [EDITOR, EDITOR_PART]) {
     const inner = loc.locator(selector).first();
@@ -113,16 +129,42 @@ export async function editorOf(page: Page, target: ElementRef): Promise<Locator>
   return loc;
 }
 
+export async function hasFocus(loc: Locator): Promise<boolean> {
+  return loc.evaluate((e) => e === document.activeElement || e.contains(document.activeElement)).catch(() => false);
+}
+
+/** Types the text over whatever the editor holds, and again until it holds exactly that. A
+ * keystroke that creates or rebuilds the editor lands at an unpredictable moment ("SEX" came back
+ * "EXS"), and an editor the widget closes under the typing keeps only what came after it (a grid
+ * cell typed "51" and committed "1"). An editor whose value cannot be read back is typed into once,
+ * and so is one that refuses the text (read-only, disabled): refusing it is what the step after
+ * such a typing claims. */
+export async function typeVerified(editor: Locator, text: string, what: string): Promise<void> {
+  await editor.press('Control+A');
+  await editor.pressSequentially(text);
+  const refuses = await editor.evaluate((e) => (e as HTMLInputElement).readOnly || (e as HTMLInputElement).disabled ||
+    e.getAttribute('aria-readonly') === 'true' || e.getAttribute('aria-disabled') === 'true').catch(() => false);
+  if (refuses || await editor.inputValue().catch(() => null) === null)
+    return;
+  await expect.poll(async () => {
+    if (await editor.inputValue() !== text) {
+      await editor.press('Control+A');
+      await editor.pressSequentially(text);
+    }
+    return editor.inputValue();
+  }, {timeout: 5000, message: `the text typed into ${what}`}).toBe(text);
+}
+
 export async function typeInto(page: Page, target: ElementRef, text: string, commit = false): Promise<void> {
   const editor = await editorOf(page, target);
-  await editor.click();
-  if (gestureOf(page, target).type === 'fill') {
+  // an editor that has the focus already (a cell editor the double-click just opened) is not
+  // clicked: a click is what would blur it, and a blurred cell editor commits and closes
+  if (!await hasFocus(editor))
+    await editor.click();
+  if (gestureOf(page, target).type === 'fill')
     await editor.fill(text);
-  }
-  else {
-    await editor.press('Control+A');
-    await editor.pressSequentially(text);
-  }
+  else
+    await typeVerified(editor, text, target.phrase);
   if (commit)
     await editor.press('Tab');
 }
@@ -146,8 +188,64 @@ export function normalizeKey(key: string): string {
   }).join('+');
 }
 
+/** `Control+Shift` → the keys `withKeys` holds. */
+export function keysOf(chord: string): string[] {
+  return normalizeKey(chord).split('+');
+}
+
+/** A key goes to the focused element. Escape with a dialog open is meant for that dialog, which
+ * closes on a keydown inside its container — and nothing guarantees the focus is still there (the
+ * grid takes it back on a timer, a menu that just closed had it): so Escape is pressed on the
+ * topmost dialog itself. */
 export async function press(page: Page, key: string): Promise<void> {
-  await page.keyboard.press(normalizeKey(key));
+  const name = normalizeKey(key);
+  const dialog = page.locator('[data-u2="dialog"], .d4-dialog').filter({visible: true}).last();
+  if (name === 'Escape' && await dialog.count() > 0) {
+    await dialog.press(name);
+    return;
+  }
+  await page.keyboard.press(name);
+}
+
+/** Types a column name into the open picker and presses Enter, without claiming the pick landed —
+ * a selector that does not offer that column keeps the one it had, and the feature reads it
+ * afterwards. Returns the popup, for the caller that does claim it.
+ * The picker's search box does not exist until a letter is typed at the selector, which does not
+ * always keep the focus its own mouse-down gave it — so the letter is pressed on that element. The
+ * letter lands in the box at an unpredictable moment ("SEX" came back "EXS"), so the name is retyped
+ * over whatever landed. Enter is pressed ON the box, because the grid moves the focus while it
+ * filters. */
+export async function typeInColumnGrid(page: Page, option: string, what: string, selector?: Locator): Promise<Locator> {
+  const popup = page.locator('.d4-column-grid').last();
+  await popup.waitFor({state: 'visible', timeout: 10000});
+  await (selector ? selector.press(option[0]) : page.keyboard.press(option[0]));
+  const search = page.locator('input.d4-column-selector-search-input');
+  await search.waitFor({state: 'visible', timeout: 10000});
+  await typeVerified(search, option, `the column picker of ${what}`);
+  await search.press('Enter');
+  return popup;
+}
+
+/** The same, and the popup's disappearance is the step's own outcome check: a picker still open
+ * after Enter took no column, and is left showing the row the pointer previewed. */
+export async function pickInColumnGrid(page: Page, option: string, what: string, selector?: Locator): Promise<void> {
+  const popup = await typeInColumnGrid(page, option, what, selector);
+  await popup.waitFor({state: 'detached', timeout: 5000}).catch(() => {
+    throw new Error(`the column picker of ${what} is still open after Enter: "${option}" was not taken`);
+  });
+}
+
+/** A mouse-down on a Dart column selector opens its column grid; the pointer then leaves it, since
+ * the row it rests on is previewed onto the selector. */
+export async function openColumnSelector(page: Page, selector: Locator, leave = true): Promise<void> {
+  const box = await selector.boundingBox();
+  if (!box)
+    throw new Error('the column selector has no box');
+  await page.mouse.move(box.x + Math.min(10, box.width / 2), box.y + box.height / 2);
+  await page.mouse.down();
+  await page.mouse.up();
+  if (leave)
+    await page.mouse.move(2, 2);
 }
 
 export async function select(page: Page, target: ElementRef, option: string): Promise<void> {
@@ -157,19 +255,10 @@ export async function select(page: Page, target: ElementRef, option: string): Pr
     await native.selectOption({label: option});
     return;
   }
-  // the Dart column selector: a mouse-down opens its column grid, typing opens the grid's
-  // search box, and Enter there takes the name typed as the column
   const columnSelector = (await loc.evaluate((el) => el.classList.contains('d4-column-selector'))) ? loc : loc.locator('.d4-column-selector').first();
   if (await columnSelector.count() > 0) {
-    const box = await columnSelector.boundingBox();
-    if (!box)
-      throw new Error(`${target.phrase} has no box`);
-    await page.mouse.move(box.x + Math.min(10, box.width / 2), box.y + box.height / 2);
-    await page.mouse.down();
-    await page.mouse.up();
-    await page.locator('.d4-column-grid').last().waitFor({state: 'visible', timeout: 5000});
-    await page.keyboard.type(option);
-    await page.keyboard.press('Enter');
+    await openColumnSelector(page, columnSelector);
+    await pickInColumnGrid(page, option, target.phrase, columnSelector);
     await expect(columnSelector.locator('.d4-column-selector-column')).toHaveText(exactText(option), {timeout: 5000});
     return;
   }
@@ -234,19 +323,32 @@ export async function drag(page: Page, source: ElementRef, target: ElementRef): 
   await (await locate(page, source)).dragTo(await locate(page, target));
 }
 
-export async function scrollTo(page: Page, target: ElementRef): Promise<void> {
-  await (await locate(page, target)).first().scrollIntoViewIfNeeded();
+/** Where an element says it is open: `aria-expanded` on itself or on its header/trigger inside,
+ * and — for the Dart tree, which has neither — the class its twistie carries. `null` when the
+ * element says nothing (a leaf row has no twistie). */
+export function readExpanded(loc: Locator): Promise<boolean | null> {
+  return loc.first().evaluate((el) => {
+    const aria = el.getAttribute('aria-expanded') ?? el.querySelector('[aria-expanded]')?.getAttribute('aria-expanded');
+    if (aria != null)
+      return aria === 'true';
+    const twistie = el.matches('.d4-tree-view-tri, .u2-tree-twistie') ? el :
+      el.querySelector('.d4-tree-view-tri, .u2-tree-twistie');
+    return twistie === null ? null :
+      twistie.classList.contains('d4-tree-view-tri-expanded') || twistie.classList.contains('u2-tree-twistie-expanded');
+  });
 }
 
-/** Trees, accordion panes and dropdowns say where they are through `aria-expanded` — on the
- * element itself or on its header/trigger inside. */
+/** Reads where the element is first, so a tree row that is already open stays open — without
+ * that, "user expands" would close it. */
 export async function setExpanded(page: Page, target: ElementRef, expanded: boolean): Promise<void> {
   const self = (await locate(page, target)).first();
+  if (await readExpanded(self) === expanded)
+    return;
   const inner = self.locator('[aria-expanded]').first();
   const control = await self.getAttribute('aria-expanded') !== null ? self : await inner.count() > 0 ? inner : self;
-  if (await control.getAttribute('aria-expanded') === String(expanded))
-    return;
   // a tree row selects on click and toggles on its twistie
   const twistie = control.locator(TWISTIE).first();
   await (await twistie.count() > 0 ? twistie : control).click();
+  await expect.poll(() => readExpanded(self),
+    {message: `${target.phrase} after ${expanded ? 'expanding' : 'collapsing'} it`}).toBe(expanded);
 }

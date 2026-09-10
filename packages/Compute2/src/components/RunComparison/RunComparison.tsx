@@ -92,13 +92,19 @@ export const RunComparison = Vue.defineComponent({
     });
 
     const tableInput = ui.input.table('Add table');
-    tableInput.onChanged.subscribe(() => {
+    const tableInputSub = tableInput.onChanged.subscribe(() => {
       const df = tableInput.value;
       if (!df)
         return;
       addEntry(entryFromDataFrame(df));
       // resetting synchronously re-enters the Dart stream controller mid-dispatch
       setTimeout(() => tableInput.value = null);
+    });
+
+    Vue.onBeforeUnmount(() => {
+      tableInputSub.unsubscribe();
+      // input.root never enters this component's DOM tree, so nothing else disposes it
+      ui.remove(tableInput.root);
     });
 
     // pre-fill pickers from {comparisonIndex}/{comparisonSplit} output annotations;
@@ -347,16 +353,23 @@ export const RunComparison = Vue.defineComponent({
       }
     };
 
-    // snapshot export: clone of the chart data plus the chart with its current options
+    // snapshot export: clone of the chart data plus the chart with its current options;
+    // null when the comparison went away behind the non-modal export dialog
     const snapshotData = (name: string) => {
-      const df = comparison.value!.chartDf.clone();
+      const current = comparison.value;
+      if (!current)
+        return null;
+      const df = current.chartDf.clone();
       df.name = name;
       const options = chartViewer.value?.getOptions();
       return {df, viewers: options ? [{type: options.type as string, options: options.look}] : []};
     };
 
     const snapshotView = (name: string) => {
-      const {df, viewers} = snapshotData(name);
+      const snap = snapshotData(name);
+      if (!snap)
+        return;
+      const {df, viewers} = snap;
       const view = grok.shell.addTableView(df);
       for (const {type, options} of viewers)
         view.addViewer(type, options);
@@ -364,7 +377,10 @@ export const RunComparison = Vue.defineComponent({
     };
 
     const saveAndShare = async (name: string) => {
-      const {df, viewers} = snapshotData(name);
+      const snap = snapshotData(name);
+      if (!snap)
+        return;
+      const {df, viewers} = snap;
       const layout = captureTableLayout(df, viewers);
       try {
         await showProjectSaveDialog([df], [layout], name);
@@ -818,6 +834,10 @@ export const RunComparison = Vue.defineComponent({
               if (next.length === 0) {
                 selectedTargetKey.value = target.key;
                 multiMode.value = false;
+              } else if (selectedTargetKey.value != null && !next.includes(selectedTargetKey.value)) {
+                // unchecking the anchor moves it to a still-charted target, so the
+                // status chips and gap badges match what the chart shows
+                selectedTargetKey.value = next[0];
               }
             };
             const isExpanded = target.kind === 'column' && !!expandedTargetKeys.value[target.key];

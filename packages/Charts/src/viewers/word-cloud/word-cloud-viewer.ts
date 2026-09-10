@@ -7,10 +7,16 @@ import * as echarts from 'echarts';
 import 'echarts-wordcloud';
 
 import $ from 'cash-dom';
+import {Observable, Subject} from 'rxjs';
+
+import {ERROR_CLASS, MessageHandler, unsubscribeAll} from '../../utils/utils';
+import {laidOutWordCount, wordCloudStatus} from './word-cloud-status';
 
 
 const MAX_UNIQUE_CATEGORIES_NUMBER = 500;
-const ERROR_CLASS = 'd4-viewer-error';
+/** How long a render waits for a host it can measure, in 100 ms steps, before finishing on the
+ * picture that is up. */
+const SIZE_WAITS = 10;
 
 @grok.decorators.viewer({
   name: 'Word cloud',
@@ -19,7 +25,7 @@ const ERROR_CLASS = 'd4-viewer-error';
   toolbox: true,
 })
 export class WordCloudViewer extends DG.JsViewer {
-  strColumnName: string;
+  wordColumnName: string;
   shape: string;
   minTextSize: number;
   maxTextSize: any;
@@ -33,11 +39,31 @@ export class WordCloudViewer extends DG.JsViewer {
   strColumns: DG.Column[];
   initialized: boolean;
   chart: any; //echarts.EChartsType
+  private _counts = new Map<string, number>();
+  private _error: string | null = null;
+  private _renderPending = 0;
+  private _renderTimer: any = null;
+  private _sizeWaits = 0;
+  private _onRendered = new Subject<void>();
+
+  /** Fires after every render pass — what automation settles on together with `isRenderPending`. */
+  get onRendered(): Observable<void> {return this._onRendered;}
+
+  get isRenderPending(): boolean {return this._renderPending > 0;}
+
+  /** Word to rows over the viewer's own filter, as the last render counted them; empty while
+   * `renderError` is set. */
+  get wordCounts(): Map<string, number> {return this._counts;}
+
+  /** The message the viewer put in place of the cloud, `null` while the cloud is drawn. */
+  get renderError(): string | null {return this._error;}
+
+  getWidgetStatus(): DG.IWidgetStatus {return wordCloudStatus(this);}
 
   constructor() {
     super();
 
-    this.strColumnName = this.string('columnColumnName', '', { columnTypeFilter: DG.COLUMN_TYPE.STRING });
+    this.wordColumnName = this.string('wordColumnName', '', {columnTypeFilter: DG.COLUMN_TYPE.STRING});
 
     this.shape = this.string('shape', 'circle', {
       choices: ['circle', 'diamond', 'triangle-forward', 'triangle', 'pentagon', 'star'],
@@ -48,13 +74,13 @@ export class WordCloudViewer extends DG.JsViewer {
 
     this.minRotationDegree = this.int('minRotationDegree', -30);
     this.maxRotationDegree = this.int('maxRotationDegree', 30);
-    this.rotationStep = this.int('rotationStep', 5, { min: 1 });
+    this.rotationStep = this.int('rotationStep', 5, {min: 1});
 
     this.gridSize = this.int('gridSize', 8);
 
     this.drawOutOfBound = this.bool('drawOutOfBound', true);
 
-    this.fontFamily = this.string('fontFamily', 'sans-serif', { choices: ['sans-serif', 'serif', 'monospace'] });
+    this.fontFamily = this.string('fontFamily', 'sans-serif', {choices: ['sans-serif', 'serif', 'monospace']});
 
     this.bold = this.bool('bold', true);
 
@@ -73,8 +99,8 @@ export class WordCloudViewer extends DG.JsViewer {
   }
 
   onTableAttached() {
-    this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe((_) => this.render()));
-    this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50).subscribe((_) => this.render()));
+    unsubscribeAll(this.subs);
+    this.addSubs();
 
     this.init();
 
@@ -82,59 +108,122 @@ export class WordCloudViewer extends DG.JsViewer {
     this.strColumns = columns.filter((col) => col.type === DG.TYPE.STRING);
 
     if (this._testColumns())
-      this.strColumnName = this.strColumns.filter((col) => col.categories.length <= MAX_UNIQUE_CATEGORIES_NUMBER && col.categories.length > 1)[0]?.name ?? '';
+      this.wordColumnName = this.strColumns.filter((col) => col.categories.length <= MAX_UNIQUE_CATEGORIES_NUMBER && col.categories.length > 1)[0]?.name ?? '';
 
     this.render();
   }
 
+  addSubs() {
+    // the flag has to go up when the change arrives, not 50 ms later when the render runs
+    for (const stream of [this.dataFrame.filter.onChanged, ui.onSizeChanged(this.root)]) {
+      this.subs.push(stream.subscribe((_: any) => this._renderPending = 1));
+      this.subs.push(DG.debounce(stream, 50).subscribe((_: any) => this.render()));
+    }
+  }
+
   onPropertyChanged(property: DG.Property) {
     super.onPropertyChanged(property);
-    if (this.initialized && this._testColumns()) {
-      if (property.name === 'columnColumnName')
-        this.strColumnName = property.get(this);
-
+    if (this.initialized && this._testColumns())
       this.render();
-    }
+  }
+
+  onSourceRowsChanged() {
+    this.render();
   }
 
   detach() {
-    this.subs.forEach((sub) => sub.unsubscribe());
+    if (this._renderTimer !== null)
+      clearTimeout(this._renderTimer);
+    this._renderTimer = null;
+    this._renderPending = 0;
+    super.detach();
   }
 
-  _showMessage(msg: string, className: string) {
-    const errorDiv = ui.divText(msg, className);
-    errorDiv.style.textAlign = 'center';
-    this.root.appendChild(errorDiv);
+  /** The message replaces the cloud, so the words the previous frame drew are no longer on screen —
+   * `render` returns before re-creating the chart, and `chart` would still hold their geometry. */
+  private showError(message: string) {
+    this._error = message;
+    this._counts = new Map();
+    MessageHandler._showMessage(this.root, message, ERROR_CLASS);
+    this.renderFinished();
+  }
+
+  private renderFinished(attempt = 0) {
+    this._renderTimer = null;
+    if (this._renderPending === 0)
+      return;
+    // The counts are in place before `setOption`, so a status read between the two would report
+    // four words over no picture. The layout that places the words runs in the macrotask
+    // `setOption` queues and zrender paints them on the frame after that, so neither the canvas nor
+    // `finished` says the cloud is there — the boxes it left do.
+    const owed = this._error === null && !!this.wordColumnName &&
+      (this.root.querySelector('canvas') === null || laidOutWordCount(this.chart) === 0);
+    if (owed && attempt < 20) {
+      this._renderTimer = setTimeout(() => requestAnimationFrame(() => this.renderFinished(attempt + 1)));
+      return;
+    }
+    this._renderPending = 0;
+    this._onRendered.next();
   }
 
   render() {
+    this._renderPending = 1;
     if (!this._testColumns()) {
-      this._showMessage('Not enough data to produce the result.', ERROR_CLASS);
+      this.showError('Not enough data to produce the result.');
       return;
     }
-    if (!this.strColumnName || this.dataFrame.getCol(this.strColumnName).categories.length > MAX_UNIQUE_CATEGORIES_NUMBER) {
-      this._showMessage('The Word cloud viewer requires categorical column with 500 or fewer unique categories', ERROR_CLASS);
+    if (!this.wordColumnName || this.dataFrame.getCol(this.wordColumnName).categories.length > MAX_UNIQUE_CATEGORIES_NUMBER) {
+      this.showError('The Word cloud viewer requires categorical column with 500 or fewer unique categories');
       return;
     }
 
+    // Nothing can be laid out on a host with no size — the viewer between two places in the dock,
+    // a hidden tab — and emptying the root here would take the cloud off screen while the size read
+    // below threw on it, leaving the viewer with no canvas and no message. The picture that is up
+    // is the honest answer until a size comes back, and the pass stays pending while it may. The
+    // root is measured too: the element the dock sizes is not always the one that carries it.
+    const host = this.root.parentElement;
+    const width0 = (host === null ? 0 : host.clientWidth) || this.root.clientWidth;
+    const height0 = (host === null ? 0 : host.clientHeight) || this.root.clientHeight;
+    if (width0 === 0 || height0 === 0) {
+      if (this._sizeWaits++ < SIZE_WAITS)
+        this._renderTimer = setTimeout(() => this.render(), 100);
+      else
+        this.renderFinished();
+      return;
+    }
+    this._sizeWaits = 0;
+
+    this._error = null;
     $(this.root).empty();
 
-    if (this.strColumnName === null || this.strColumnName === '')
+    if (this.wordColumnName === null || this.wordColumnName === '') {
+      this._counts = new Map();
+      // A viewer that has just been added has no column until the property default lands, and it
+      // renders again when it does. Declaring this frame finished would let a settle read the empty
+      // one as the answer — the status would then look exactly like the message state. The timer is
+      // the release bound, for a column the user cleared on purpose and that will never arrive.
+      this._renderTimer = setTimeout(() => requestAnimationFrame(() => this.renderFinished()), 300);
       return;
+    }
 
-    const margin = { top: 10, right: 10, bottom: 10, left: 10 };
-    const width = this.root.parentElement!.clientWidth - margin.left - margin.right;
-    const height = this.root.parentElement!.clientHeight - margin.top - margin.bottom;
-    const strColumn = this.dataFrame.getCol(this.strColumnName);
-    const words = strColumn.categories;
-    const data: any = []; //echarts.SeriesOption[] = [];
+    const margin = {top: 10, right: 10, bottom: 10, left: 10};
+    const width = width0 - margin.left - margin.right;
+    const height = height0 - margin.top - margin.bottom;
+    const strColumn = this.dataFrame.getCol(this.wordColumnName);
     const table = this.dataFrame;
 
-    words.forEach((w) => data.push({
-      name: w,
-      value: strColumn.toList().filter((row) => row === w).length,
+    const counts = new Map<string, number>();
+    for (const i of this.filter.getSelectedIndexes()) {
+      const word = strColumn.get(i);
+      counts.set(word, (counts.get(word) ?? 0) + 1);
+    }
+    this._counts = counts;
+    const data = Array.from(counts, ([name, value]) => ({
+      name: name,
+      value: value,
       textStyle: {
-        color: DG.Color.toHtml(DG.Color.getCategoryColor(strColumn, w)),
+        color: DG.Color.toHtml(DG.Color.getCategoryColor(strColumn, name)),
       },
     }));
 
@@ -183,8 +272,12 @@ export class WordCloudViewer extends DG.JsViewer {
       .on('mousedown', (d: any) => {
         table.selection.handleClick((i) => {
           return d.name === strColumn.get(i);
-        //@ts-ignore
-        }, d);
+        }, d.event.event);
       });
+
+    // `layoutAnimation` is absent from the wordcloud series defaults, so the layout helper takes its
+    // synchronous branch and lays every word out in the macrotask `setOption` queued; zrender paints
+    // them on the frame after that. echarts' own `finished` fires before either.
+    this._renderTimer = setTimeout(() => requestAnimationFrame(() => this.renderFinished()));
   }
 }

@@ -2,6 +2,7 @@
    (@datagrok-libraries/test), with one convenience for local runs — when `grok test` has not
    provided DATAGROK_AUTH_TOKEN, the token is minted from the dev key in ~/.grok/config.yaml
    (server DATAGROK_SERVER, `localhost` by default). */
+import {randomUUID} from 'node:crypto';
 import {existsSync, mkdirSync, readFileSync, writeFileSync} from 'node:fs';
 import {homedir} from 'node:os';
 import {dirname, join} from 'node:path';
@@ -90,7 +91,8 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
     const server = grokServers()[name];
     const candidates = [process.env.DATAGROK_API_URL, `${url}/api`, server?.url].filter((x): x is string => !!x);
     let token: string | undefined;
-    for (const api of candidates) {
+    let api: string | undefined;
+    for (api of candidates) {
       if (!server?.key)
         break;
       token = await mintToken(api, server.key).catch(() => undefined);
@@ -103,6 +105,47 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
       return;
     }
     process.env.DATAGROK_AUTH_TOKEN = token;
+    process.env.DATAGROK_SHARING_LOGIN ??= await ensureSecondAccount(api!, token);
   }
+  await warmClient(url);
   await libSetup(config);
+}
+
+export const SECOND_LOGIN = 'bddsecond';
+
+/** The account a sharing feature shares with. DATAGROK_SHARING_LOGIN names one; without it the
+ * setup makes sure a "bddsecond" user exists on the stand — a user cannot be deleted, so it is
+ * created once and kept — and the workers inherit the variable pointing at it. A missing login
+ * answers 200 with an ApiError body, hence the type check. */
+async function ensureSecondAccount(apiUrl: string, token: string): Promise<string> {
+  const base = apiUrl.replace(/\/$/, '');
+  const headers = {Authorization: token, 'Content-Type': 'application/json'};
+  const found = await fetch(`${base}/public/v1/users/${SECOND_LOGIN}`, {headers, signal: AbortSignal.timeout(10000)})
+    .then((r) => r.json()).catch(() => ({})) as {'#type'?: string; id?: string; firstName?: string; lastName?: string};
+  if (found['#type'] === 'User' && found.firstName === SECOND_LOGIN && !found.lastName)
+    return SECOND_LOGIN;
+  // the typeahead shows a user by name, and the step looks for the login there: the name is the
+  // login. An update sends the user back whole: without its `project` the server saves the
+  // personal root project under a new id and refuses the duplicate name.
+  const user = {...found, '#type': 'User', id: found.id ?? randomUUID(), login: SECOND_LOGIN, firstName: SECOND_LOGIN, lastName: '', status: 'active'};
+  const saved = await fetch(`${base}/public/v1/users`, {method: 'POST', headers, body: JSON.stringify(user), signal: AbortSignal.timeout(30000)});
+  if (!saved.ok)
+    throw new Error(`could not create the "${SECOND_LOGIN}" user the sharing features share with (status ${saved.status}): ${await saved.text()}`);
+  console.log(`bdd: created the "${SECOND_LOGIN}" user for the sharing features`);
+  return SECOND_LOGIN;
+}
+
+/** Asks the stand for the client bundle before a browser does. On a dev stand the Dart client is
+ * served by `pub serve`, which recompiles the whole bundle after any source edit: the first
+ * request then blocks for minutes while the browser's own load — and the 60 s the shell wait
+ * allows — expires on a page that has not been served yet. One plain request outside the browser
+ * pays that wait once, with no cap, and is a few milliseconds when nothing is compiling. A stand
+ * serving a built client (a deployment, CI) answers at once and nothing is lost. */
+async function warmClient(url: string): Promise<void> {
+  const start = Date.now();
+  for (const path of ['login.dart.js', 'login.dart.js_1.part.js'])
+    await fetch(`${url}/${path}`).then((r) => r.arrayBuffer()).catch(() => undefined);
+  const seconds = Math.round((Date.now() - start) / 1000);
+  if (seconds >= 5)
+    console.log(`bdd: the stand took ${seconds} s to serve its client (a dev stand recompiles it after a source change)`);
 }

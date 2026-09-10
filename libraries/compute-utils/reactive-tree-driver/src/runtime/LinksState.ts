@@ -1,6 +1,3 @@
-import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
-import * as DG from 'datagrok-api/dg';
 import {BaseTree, NodePath, NodePathSegment} from '../data/BaseTree';
 import {isFuncCallNode, StateTreeNode} from './StateTreeNodes';
 import {ActionSpec, LinkSpec, MatchInfo, matchNodeLink, isActionVisible} from './link-matching';
@@ -351,6 +348,10 @@ export class LinksState {
   }
 
   public close() {
+    for (const [, link] of this.links)
+      link.destroy();
+    for (const [, action] of this.actions)
+      action.destroy();
     this.closed$.next(true);
   }
 

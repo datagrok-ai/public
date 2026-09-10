@@ -123,6 +123,9 @@ Datagrok supports over 50 file formats, including domain-specific formats like S
 | `.mmcif`   | Macromolecular crystallographic data        | [Biostructure Viewer] |
 | `.mmtf`    | Compressed macromolecular structure format  | [Biostructure Viewer] |
 | `.ent`     | Legacy PDB structure file                   | [Biostructure Viewer] |
+| `.pse`     | PyMOL session                               | [Patinae]             |
+| `.prs`     | Patinae session                             | [Patinae]             |
+| `.pml`     | PyMOL script                                | [Patinae]             |
 
 ##### Electron density and volumetric data
 
@@ -217,6 +220,7 @@ the codecs your browser supports.
 [Chem]: <https://github.com/datagrok-ai/public/tree/master/packages/Chem#readme>
 [Bio]: <https://github.com/datagrok-ai/public/tree/master/packages/Bio#readme>
 [Biostructure Viewer]: <https://github.com/datagrok-ai/public/tree/master/packages/BiostructureViewer#readme>
+[Patinae]: <https://github.com/datagrok-ai/public/tree/master/packages/Patinae#readme>
 [GIS]: https://github.com/datagrok-ai/public/tree/master/packages/GIS#readme
 [Arrow]: https://github.com/datagrok-ai/public/tree/master/packages/Arrow#readme
 [PhyloTree Viewer]: https://github.com/datagrok-ai/public/tree/master/packages/PhyloTreeViewer#readme

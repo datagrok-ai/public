@@ -2,6 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as echarts from 'echarts';
+import {unsubscribeAll} from '../../utils/utils';
 
 export class EChartViewer extends DG.JsViewer {
   private _chart: echarts.ECharts | null = null;
@@ -17,7 +18,7 @@ export class EChartViewer extends DG.JsViewer {
     super();
 
     //common properties
-    this.tableName = this.string('table', null, { fieldName: 'tableName', category: 'Data', editor: 'table' });
+    this.tableName = this.string('table', null, {fieldName: 'tableName', category: 'Data', editor: 'table'});
     this.addRowSourceAndFormula();
     const chartDiv = ui.div([], {style: {position: 'absolute', left: '0', right: '0', top: '0', bottom: '0'}});
     chartDiv.style.cssText += 'overflow: hidden!important;';
@@ -68,6 +69,11 @@ export class EChartViewer extends DG.JsViewer {
   addSelectionOrDataSubs() {
     this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
     this.subs.push(DG.debounce(this.dataFrame.onDataChanged, 50).subscribe((_) => this.render()));
+  }
+
+  protected resubscribe(add: () => void): void {
+    unsubscribeAll(this.subs);
+    add();
   }
 
   prepareOption() {}

@@ -41,7 +41,9 @@
     "ts-loader": "^9.2.5",
     "typescript": "^5.6.3",
     "webpack": "^5.95.0",
-    "webpack-cli": "^5.1.4"
+    "webpack-cli": "^5.1.4",
+    "@datagrok-libraries/bdd": "file:../../libraries/bdd",
+    "@playwright/test": "^1.62.1"
   },
   "scripts": {
     "lint": "eslint src --ext .ts",
@@ -61,7 +63,8 @@
     "release-powergrid-public": "grok publish public --release",
     "debug-powergrid-local": "tsc && webpack && grok publish local",
     "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/gridext run build && npm --prefix ./../../libraries/utils run build && npm run build",
-    "test": "grok test"
+    "test": "grok test",
+    "test:bdd": "grok-bdd run"
   },
   "canEdit": [
     "Administrators"

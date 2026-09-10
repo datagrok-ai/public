@@ -1,0 +1,58 @@
+.patinae-view {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  --patinae-bg: var(--grey-1);
+  --patinae-panel-bg: var(--grey-1);
+  --patinae-border: var(--grey-3);
+  --patinae-accent: var(--blue-1);
+  --patinae-text: var(--text-color);
+  --patinae-text-dim: var(--text-color-light);
+  --patinae-info: var(--steel-4);
+  --patinae-warn: var(--red-3);
+  --patinae-error: var(--failure);
+  --patinae-cmd: var(--text-color);
+}
+
+.patinae-middle {
+  flex: 1 1 auto;
+  display: flex;
+  min-height: 160px;
+}
+
+.patinae-host {
+  flex: 1;
+  position: relative;
+  min-width: 200px;
+}
+
+.patinae-slot-top,
+.patinae-slot-bottom,
+.patinae-slot-right {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+  background: var(--patinae-panel-bg);
+}
+
+.patinae-slot-top {
+  flex: 0 1 150px;
+  border-bottom: 1px solid var(--patinae-border);
+}
+
+.patinae-slot-right {
+  width: 220px;
+  border-left: 1px solid var(--patinae-border);
+}
+
+.patinae-slot-bottom {
+  flex: 0 1 120px;
+  border-top: 1px solid var(--patinae-border);
+}
+
+.patinae-message {
+  padding: 12px;
+  color: var(--text-color-light);
+}

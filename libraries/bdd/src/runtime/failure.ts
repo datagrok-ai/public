@@ -37,8 +37,10 @@ export function reasonOf(e: unknown): string {
 /** Whether the error is Playwright giving up on an element — the case where what the page shows
  * instead is the missing half of the report. */
 export function isWaitFailure(e: unknown): boolean {
-  const text = e instanceof Error ? e.message : String(e);
-  return (e instanceof Error && e.name === 'TimeoutError') || /Timeout \d+ms exceeded|^expect\(/.test(text);
+  // Playwright colours its matcher output, and a check that names itself puts its message before
+  // the "expect(locator)… failed" line
+  const text = (e instanceof Error ? e.message : String(e)).replace(/\x1b\[[0-9;]*m/g, '');
+  return (e instanceof Error && e.name === 'TimeoutError') || /Timeout \d+ms exceeded|(^|\n)expect\(/.test(text);
 }
 
 export function failure(at: string, step: string, e: unknown, shown = '', frame = ''): StepFailure {

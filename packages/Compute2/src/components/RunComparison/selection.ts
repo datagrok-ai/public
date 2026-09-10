@@ -359,7 +359,7 @@ export function computeIndexRows(
     const paths = new Set(group.map(({table}) => table.path));
     const label = paths.size === 1 ?
       (group[0].table.friendlyPath ?? group[0].table.path) :
-      (group[0].table.name ?? group[0].table.nqName!);
+      group[0].table.name;
     const entryIds = new Set(group.map(({entry}) => entry.entryId));
     const currents = new Set(group.map(({entry, table}) =>
       validCurrent(indexSelection, entry.entryId, table.path, candidates)));

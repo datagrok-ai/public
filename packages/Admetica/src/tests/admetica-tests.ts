@@ -43,7 +43,8 @@ category('Admetica', () => {
       'O=C1Nc2ccccc2C(C2CCCCC2)=NC1',
     ]);
     const admeProps = ['PPBR', 'VDss'];
-    const distributionResults = await getAdmeProperties(molecules, smilesColumn, admeProps);
+    const df = DG.DataFrame.fromColumns([smilesColumn]);
+    const distributionResults = await getAdmeProperties(df, smilesColumn, admeProps);
     expect(distributionResults != null, true);
   }, {timeout: 25000});
 
@@ -126,11 +127,10 @@ category('Admetica', () => {
     const runAdmeticaBenchmark = async (moleculesCount: number) => {
       const molecules = grok.data.demo.molecules(moleculesCount);
       molecules.columns.remove('logD');
-      const args = [molecules, await getQueryParams()];
-      return await runOnce(getAdmeProperties, ...args);
+      return await getAdmeProperties(molecules, molecules.getCol('smiles'), await getQueryParams());
     };
     await DG.timeAsync('Admetica column', async () => await runAdmeticaBenchmark(5000));
-  }, {timeout: 10000000000, benchmark: true });
+  }, {timeout: 3600000, benchmark: true });
 
   test('Calculate.Benchmark cell', async () => {
     const distributionSubgroup = properties.subgroup.find((subgroup: any) => subgroup.name === 'Distribution');
@@ -138,14 +138,10 @@ category('Admetica', () => {
     const smilesColumn = DG.Column.fromStrings('smiles', [
       'O=C1Nc2ccccc2C(C2CCCCC2)=NC1',
     ]);
-    const args = [smilesColumn, distributionModels];
-    await DG.timeAsync('Admetica cell', async () => await runOnce(getAdmeProperties, ...args));
+    await DG.timeAsync('Admetica cell', async () =>
+      await getAdmeProperties(DG.DataFrame.fromColumns([smilesColumn]), smilesColumn, distributionModels));
   }, {timeout: 1000000, benchmark: true});
 });
-
-async function runOnce(func: (...args: any[]) => Promise<DG.DataFrame | null>, ...args: any[]) {
-  return await func(...args);
-}
 
 async function awaitPanel(pp: HTMLElement, name: string, ms: number = 5000): Promise<void> {
   await awaitCheck(() => {

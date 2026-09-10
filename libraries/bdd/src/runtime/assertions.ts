@@ -1,14 +1,15 @@
 /* Outcome checks over Playwright's retrying `expect`, so a feature never needs a wait step. */
-import {expect, Locator, Page} from '@playwright/test';
+import {Locator, Page} from '@playwright/test';
+import {expect} from './patience.js';
 import type {ElementRef} from './args.js';
-import {editorOf} from './gestures.js';
+import {editorOf, readExpanded} from './gestures.js';
 import {exactText, locate, locateActionable, refOf} from './locate.js';
 
-export type State = 'visible' | 'hidden' | 'present' | 'absent' | 'enabled' | 'disabled' | 'checked' |
-  'unchecked' | 'selected' | 'empty' | 'expanded' | 'collapsed' | 'focused';
+import type {State} from '../states.js';
 
-export const STATES: State[] = ['visible', 'hidden', 'present', 'absent', 'enabled', 'disabled', 'checked',
-  'unchecked', 'selected', 'empty', 'expanded', 'collapsed', 'focused'];
+export type {State};
+export {STATES} from '../states.js';
+const INVALID_CLASSES = ['d4-invalid', 'd4-forced-invalid', 'u2-input-invalid'];
 
 const ROWS = ['.u2-list-row', '[role="option"]', '[role="row"]', '[role="tab"]', 'option', '.d4-list-item', '[name="legend-item"]', 'tbody tr', 'tr', 'li'];
 const SELECTED = '[aria-selected="true"], [aria-pressed="true"], [aria-checked="true"], [aria-current]:not([aria-current="false"]), ' +
@@ -27,6 +28,9 @@ export async function expectState(page: Page, target: ElementRef, state: State, 
     case 'disabled': return expectEnabled(loc, negate);
     case 'checked': return expectChecked(loc, !negate);
     case 'unchecked': return expectChecked(loc, negate);
+    case 'partially checked': return expectMixed(loc, !negate);
+    case 'invalid': return expectInvalid(loc, !negate);
+    case 'valid': return expectInvalid(loc, negate);
     case 'selected': return expectSelected(page, loc, !negate);
     case 'empty': return (negate ? expect(await editorOf(page, target)).not : expect(await editorOf(page, target))).toHaveValue('');
     case 'expanded': return expectExpanded(loc, !negate);
@@ -49,16 +53,14 @@ async function expectSelected(page: Page, loc: Locator, selected: boolean): Prom
   await (selected ? expect(hit).not.toHaveCount(0) : expect(hit).toHaveCount(0));
 }
 
-/** `aria-expanded` sits on the element itself (a tree row) or on its header/trigger inside. */
+/** `aria-expanded` sits on the element itself (a tree row) or on its header/trigger inside; the
+ * Dart tree says it with its twistie's class instead. `null` — the element says nothing at all —
+ * is reported as that rather than as the opposite state. */
 async function expectExpanded(loc: Locator, expanded: boolean): Promise<void> {
-  const self = loc.first();
-  const own = await self.getAttribute('aria-expanded', {timeout: 2000}).catch(() => null);
-  const control = own !== null ? self : self.locator('[aria-expanded]').first();
-  await expect(control).toHaveAttribute('aria-expanded', String(expanded));
+  await expect.poll(() => readExpanded(loc), {message: 'expanded state (aria-expanded, or the tree twistie)'})
+    .toBe(expanded);
 }
 
-/** Disabled is the native attribute, `aria-disabled` on the element or an ancestor (grayed menu
- * items, gated property rows), or the platform's disabled classes. */
 /** Disabled: the element or an ancestor says so (`aria-disabled`, the u2/Dart disabled classes),
  * or it — or the control inside it — is natively disabled. Over the visible matches when there
  * are any (the Dart menu's hidden mirror), else all of them (a property row in a panel that is
@@ -81,6 +83,22 @@ async function expectEnabled(loc: Locator, enabled: boolean): Promise<void> {
     });
   });
   await expect.poll(disabled, {message: `${enabled ? 'enabled' : 'disabled'} expected`}).toBe(!enabled);
+}
+
+/** A branch whose children disagree says `aria-checked="mixed"` (a hierarchical filter node). */
+async function expectMixed(loc: Locator, mixed: boolean): Promise<void> {
+  const box = loc.locator('[aria-checked]').first();
+  const target = await box.count() > 0 ? box : loc.first();
+  await (mixed ? expect(target) : expect(target).not).toHaveAttribute('aria-checked', 'mixed');
+}
+
+/** Invalid: `aria-invalid` or the platform's invalid classes on the element or a control inside. */
+async function expectInvalid(loc: Locator, invalid: boolean): Promise<void> {
+  const holds = () => loc.evaluateAll((all, classes: string[]) => all.some((el) => {
+    const marked = (e: Element) => e.getAttribute('aria-invalid') === 'true' || classes.some((c) => e.classList.contains(c));
+    return marked(el) || Array.from(el.querySelectorAll('input, select, textarea, [aria-invalid]')).some(marked);
+  }), INVALID_CLASSES);
+  await expect.poll(holds, {message: `${invalid ? 'invalid' : 'valid'} expected`}).toBe(invalid);
 }
 
 async function expectChecked(loc: Locator, checked: boolean): Promise<void> {

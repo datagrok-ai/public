@@ -2,6 +2,19 @@
 
 ## v.next
 
+* HistoricalRunsDelete.awaitDelete: dialog helper resolving null on dismissal (mirrors awaitMetadata)
+* Excel export detaches the render viewer (and its cloned dataframe) after the screenshot
+* RTD: Fixed a link handler error leaving the link permanently running and deadlocking all tree mutations
+* RTD: Closing a state tree now destroys its links and actions, releasing their FuncCall and DataFrame subscriptions
+* RTD: Link running state uses run sequence numbers instead of wall-clock timestamps (same-ms runs reported as finished)
+* RTD: Queued driver commands sample the state tree at execution time instead of enqueue time
+* RTD: Fixed loadPipeline dropping the loaded run's metadata when an explicit config is passed
+* RTD: Fixed link IO ordering (compareAddresses NaN on prefix addresses, inverted getFirstMatch reduce). Behavior change: `getMatchedInputs()`/`getMatchedOutputs()` now iterate in tree order instead of declaration order
+* RTD: Fixed dataframe equality throwing instead of returning false when column names differ
+* RTD: Config processing rejects multi-id final io segments without the (template) flag instead of silently using the first id
+* RTD: DriverLogger keeps at most 5000 entries (log and errors) instead of growing unbounded
+* RTD: Fixed config path resolution silently accepting one extra segment past a leaf step
+* RTD: Config processing rejects tag-ending and zero-segment io targets in io-consuming from/to instead of failing at match time
 * RTD: Driver.sendCommand returns a promise resolved on command completion (per-command acks on commandAcks$)
 * RTD: Fixed a synchronous command error killing the driver command queue
 * RTD: initPipeline command accepts an inline processed config

@@ -7,6 +7,7 @@ import $ from 'cash-dom';
 
 import {select, scaleLinear, scaleOrdinal, color, ScaleLinear, ScaleOrdinal} from 'd3';
 import {layoutConf, topSort} from './utils';
+import {unsubscribeAll} from '../../utils/utils';
 
 import '../../../css/chord-viewer.css';
 
@@ -27,6 +28,7 @@ export class ChordViewer extends DG.JsViewer {
   includeNulls: boolean;
 
   initialized: boolean;
+  topologyWarned: boolean = false;
   data: any;
   chords: any;
   segments: any;
@@ -125,6 +127,7 @@ export class ChordViewer extends DG.JsViewer {
   }
 
   onTableAttached() {
+    unsubscribeAll(this.subs);
     this.init();
     this.filter = this.dataFrame.filter;
 
@@ -140,10 +143,14 @@ export class ChordViewer extends DG.JsViewer {
       this.chordLengthColumnName = this.numColumns[0].name;
     }
 
+    this.addSubs();
+    this.render();
+  }
+
+  addSubs() {
     this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
     this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50).subscribe((_) => this.render(false)));
     this.subs.push(DG.debounce(this.dataFrame.onFilterChanged, 50).subscribe((_) => this.render()));
-    this.render();
   }
 
   // Override onSourceRowsChanged to re-render the chord automatically on row source updates
@@ -154,13 +161,8 @@ export class ChordViewer extends DG.JsViewer {
   onPropertyChanged(property: DG.Property) {
     if (this.initialized && this._testColumns()) {
       if (property.name === 'colorBy' && this.chords.length) this.render(false);
-      else if (property.name === 'sortBy' && this.sortBy === 'alphabet' && !this.distinctCols) return;
       else this.render();
     }
-  }
-
-  detach() {
-    this.subs.forEach((sub) => sub.unsubscribe());
   }
 
   _getFrequencies(sourceCol: DG.Column, targetCol: DG.Column, indexes: Int32Array) {
@@ -282,11 +284,15 @@ export class ChordViewer extends DG.JsViewer {
 
     if (this.sortBy === 'topology') {
       if (!this.distinctCols) {
-        grok.shell.warning('Identical columns cannot be sorted topologically.');
-        //@ts-ignore
-        this.props.sortBy = 'alphabet';
-      } else
+        if (!this.topologyWarned) {
+          this.topologyWarned = true;
+          grok.shell.warning('Identical columns cannot be sorted topologically. Sorting alphabetically.');
+        }
+        this.data.sort((a: any, b: any) => a.label < b.label ? -1 : a.label > b.label ? 1 : 0);
+      } else {
+        this.topologyWarned = false;
         this.data = topSort(this.segments);
+      }
     }
     if (this.direction === 'counterclockwise') this.data.reverse();
   }

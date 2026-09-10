@@ -1,21 +1,16 @@
 // Per-type Arrow IPC ↔ DG.DataFrame round-trip suite.
-//
-// Tests go through the Arrow package's registered functions
-// (`Arrow:toFeather` / `Arrow:fromFeather`) via `grok.functions.call` to
-// exercise the public function-registry path independent of how the lib's
-// exports are spelled.
 
-import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {category, test, expect, expectFloat} from '@datagrok-libraries/test/src/test';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
+import {toFeather as libToFeather, fromFeather as libFromFeather} from '@datagrok-libraries/arrow';
 
 async function toFeather(table: DG.DataFrame): Promise<Uint8Array> {
-  return await grok.functions.call('Arrow:toFeather', {table, asStream: true}) as Uint8Array;
+  return libToFeather(table, true)!;
 }
 
 async function fromFeather(bytes: Uint8Array): Promise<DG.DataFrame> {
-  return await grok.functions.call('Arrow:fromFeather', {bytes}) as DG.DataFrame;
+  return libFromFeather(bytes)!;
 }
 
 async function roundtrip(df: DG.DataFrame): Promise<DG.DataFrame> {

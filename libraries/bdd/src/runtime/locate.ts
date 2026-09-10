@@ -44,17 +44,34 @@ export async function explain(page: Page): Promise<string> {
   const selector = plan.type === 'kind' ? [plan, ...plan.alternatives].map((s) => s.kind.selector).join(', ') :
     plan.type === 'entry' ? plan.entry.selector : plan.selector;
   const labels = await base.locator(selector).evaluateAll((els, max) => {
-    const shown = els.filter((e) => e.getClientRects().length > 0 && getComputedStyle(e).visibility !== 'hidden');
+    const isShown = (e: Element) => e.getClientRects().length > 0 && getComputedStyle(e).visibility !== 'hidden';
+    const shown = els.filter(isShown);
     const label = (e: Element) => e.getAttribute('data-u2-name') || e.getAttribute('aria-label') || e.getAttribute('title') ||
       ((e as HTMLElement).innerText ?? e.textContent ?? '').trim().split('\n')[0].trim() || e.tagName.toLowerCase();
-    return {total: els.length, visible: shown.length, labels: [...new Set(shown.map((e) => label(e).slice(0, max)))]};
+    return {total: els.length, visible: shown.length, labels: [...new Set(shown.map((e) => label(e).slice(0, max)))],
+      hidden: [...new Set(els.filter((e) => !isShown(e)).map((e) => (e.getAttribute('name') || label(e)).slice(0, max)))]};
   }, LABEL_MAX);
+  // an element that is in the DOM but not shown is a different finding from one that is not there
+  const hidden = labels.hidden.length > 0 ? ` (in the DOM but not shown: ${labels.hidden.slice(0, SHOWN_MAX).join(' | ')})` : '';
   const where = ref.scope ? ` in ${ref.scope.raw}` : '';
   const what = plan.type === 'kind' ? `${plan.kind.name}s` : plan.type === 'entry' ? `"${plan.entry.name}"` : `"${plan.part}"`;
+  // the context panel renders the current object: what that is says whether the click landed
+  const object = ref.scope && /context panel|property panel/i.test(ref.scope.raw) ? `; ${await currentObject(page)}` : '';
   if (labels.visible === 0)
-    return `${what}${where}: ${labels.total === 0 ? 'none on the page' : `${labels.total} present, none visible`}`;
+    return `${what}${where}: ${labels.total === 0 ? 'none on the page' : `${labels.total} present, none visible`}${hidden}${object}`;
   const list = labels.labels.slice(0, SHOWN_MAX).join(' | ') + (labels.labels.length > SHOWN_MAX ? ` | … ${labels.labels.length - SHOWN_MAX} more` : '');
-  return `visible ${what}${where}: ${list}`;
+  return `visible ${what}${where}: ${list}${hidden}${object}`;
+}
+
+/** `grok.shell.o` as one phrase: `current object: Project "BDD-CP-Root"`. */
+export function currentObject(page: Page): Promise<string> {
+  return page.evaluate(() => {
+    const o = (window as any).grok?.shell?.o;
+    if (o == null)
+      return 'current object: none';
+    const name = o.friendlyName ?? o.name ?? o.caption ?? '';
+    return `current object: ${o.constructor?.name ?? typeof o}${name ? ` "${name}"` : ''}`;
+  }).catch(() => 'current object: unreadable');
 }
 
 export async function locate(page: Page, target: ElementRef | string, within?: Locator): Promise<Locator> {
@@ -88,7 +105,9 @@ export async function locateRef(page: Page, ref: NounRef, within?: Locator): Pro
       return pick(inRoot, ref);
   }
   let loc = await inBase(page, base, ref);
-  if (scope && await loc.count() === 0) {
+  // a scope that is not on the page has no owner edge to try — and `getAttribute` on it would
+  // wait the whole action timeout for it to appear
+  if (scope && await loc.count() === 0 && await scope.count() > 0) {
     const owner = await scope.first().getAttribute('data-u2-name').catch(() => null);
     if (owner) {
       const alt = await inBase(page, page.locator(`[data-u2-owner="${cssString(owner)}"]`), ref);

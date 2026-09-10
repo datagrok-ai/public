@@ -2,7 +2,8 @@
    API surface a package promises other packages, checked the way they use it. The last result
    is kept for the checks that follow; a rejected call fails the step with the platform's
    message. A package's own readings of the result build on `readResult` from the runtime. */
-import {expect, Page} from '@playwright/test';
+import {Page} from '@playwright/test';
+import {expect} from '../../src/runtime/patience.js';
 import {Then, When} from '../../src/registry.js';
 import {callFunction, readResult} from '../../src/runtime/functions.js';
 
@@ -17,10 +18,6 @@ export const resultEmpty = Then('the result should be empty', async (page: Page)
 
 export const resultContains = Then('the result should contain text {string}', async (page: Page, text: string) => {
   expect(String(await readResult(page, `String(value ?? '').slice(0, 4000)`)), 'the last result').toContain(text);
-});
-
-export const resultMatches = Then('the result should match {string}', async (page: Page, pattern: string) => {
-  expect(String(await readResult(page, `String(value ?? '').slice(0, 4000)`)), 'the last result').toMatch(new RegExp(pattern));
 });
 
 export const resultHasMethods = Then('the result should have methods {string}', async (page: Page, list: string) => {

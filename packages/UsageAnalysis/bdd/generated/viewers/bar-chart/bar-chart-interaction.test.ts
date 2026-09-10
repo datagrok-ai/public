@@ -7,16 +7,20 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 sub_features_covered: [viewers.bar-chart]
 --- */
 import {test} from '@playwright/test';
+import '../../../bindings/spaces.js';
+import '../../../bindings/tile-viewer.js';
+import '../../../bindings/trellis-plot.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {barsDiffer, clickEmptySpace, doubleClickEmptySpace, zoomCategories} from '../../../bindings/bar-chart.js';
+import {barsDiffer, zoomCategories} from '../../../bindings/bar-chart.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, pressKey, shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {allOfSelected, clearSelection, colorCategorical, colorCodedCategorically, colorOff, filterIsExactlyCategory, filterPasses, filterPassesAll, noColorCoding, noneSelected, onlyOfAnySelected, onlyOfSelected, rowCount} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {addViewerWith, areaColor, areaPainted, clickArea, clickAreaHolding, dragSelectionBetweenAreas, eventFired, hasArea, hasNoArea, listenFor, loadLayout, moreHighlight, noErrors, propertyShouldBe, readingIs, readingLower, repaintedBy, saveLayoutToServer, setProperties, setProperty} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {clickEmptySpace, doubleClickEmptySpace} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Bar chart setup and interaction", () => {
@@ -45,7 +49,7 @@ test.describe("Bar chart setup and interaction", () => {
       await session.step(34, "Then the filter should pass exactly the rows where \"Primary Series Name\" is \"Triazoles\"", () => filterIsExactlyCategory(page, "Primary Series Name", "Triazoles"));
       await session.step(35, "And 64 rows should pass the filter", () => filterPasses(page, 64));
       await session.step(36, "And the \"bars\" reading of bar chart viewer should be 1", () => readingIs(page, "bars", el("bar chart viewer"), 1));
-      await session.step(37, "When user clicks on empty plot space of bar chart viewer", () => clickEmptySpace(page));
+      await session.step(37, "When user clicks on empty plot space of bar chart viewer", () => clickEmptySpace(page, el("bar chart viewer")));
       await session.step(38, "Then all rows should pass the filter", () => filterPassesAll(page));
       await session.step(39, "And the \"bars\" reading of bar chart viewer should be 5", () => readingIs(page, "bars", el("bar chart viewer"), 5));
       await session.step(40, "And no errors should have been logged", () => noErrors(page));
@@ -58,7 +62,7 @@ test.describe("Bar chart setup and interaction", () => {
       await session.step(47, "When user clicks on the \"bar Pyrrolidines\" area of bar chart viewer", () => clickArea(page, "bar Pyrrolidines", el("bar chart viewer")));
       await session.step(48, "Then the filter should pass exactly the rows where \"Primary Series Name\" is \"Pyrrolidines\"", () => filterIsExactlyCategory(page, "Primary Series Name", "Pyrrolidines"));
       await session.step(49, "And 21 rows should pass the filter", () => filterPasses(page, 21));
-      await session.step(50, "When user clicks on empty plot space of bar chart viewer", () => clickEmptySpace(page));
+      await session.step(50, "When user clicks on empty plot space of bar chart viewer", () => clickEmptySpace(page, el("bar chart viewer")));
       await session.step(51, "Then all rows should pass the filter", () => filterPassesAll(page));
       await session.step(52, "And no errors should have been logged", () => noErrors(page));
       await session.step(53, "When user sets properties of bar chart viewer:", () => setProperties(page, el("bar chart viewer"), [["Row Source","Filtered"],["On Click","Select"]]));
@@ -69,7 +73,7 @@ test.describe("Bar chart setup and interaction", () => {
       await session.step(60, "Then the \"bars\" reading of bar chart viewer should be lower than before", () => readingLower(page, "bars", el("bar chart viewer")));
       await session.step(61, "And bar chart viewer should have a \"bar Triazoles\" area", () => hasArea(page, el("bar chart viewer"), "bar Triazoles"));
       await session.step(62, "And bar chart viewer should not have a \"bar Aminopiperidines\" area", () => hasNoArea(page, el("bar chart viewer"), "bar Aminopiperidines"));
-      await session.step(63, "When user double-clicks on empty plot space of bar chart viewer", () => doubleClickEmptySpace(page));
+      await session.step(63, "When user double-clicks on empty plot space of bar chart viewer", () => doubleClickEmptySpace(page, el("bar chart viewer")));
       await session.step(64, "Then \"d4-bar-chart-reset-view\" event should have fired on bar chart viewer", () => eventFired(page, "d4-bar-chart-reset-view", el("bar chart viewer")));
       await session.step(65, "And the \"bars\" reading of bar chart viewer should be 5", () => readingIs(page, "bars", el("bar chart viewer"), 5));
       await session.step(66, "And bar chart viewer should have a \"bar Aminopiperidines\" area", () => hasArea(page, el("bar chart viewer"), "bar Aminopiperidines"));

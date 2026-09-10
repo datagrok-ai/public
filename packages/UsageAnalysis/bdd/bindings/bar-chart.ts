@@ -1,11 +1,12 @@
 /* The steps only the bar chart needs, all read from the hit areas the chart reports (`bar <category>`
-   for every bar of the last frame, stack segments as `A | B`): a click on plot space no bar covers,
-   the order of the bars along the category axis, their lengths, and how high the tallest reaches.
-   Everything else in the bar chart features is the library's `viewers` tier and the platform's
-   data steps (`grok-bdd list-steps`). */
+   for every bar of the last frame, stack segments as `A | B`): the order of the bars along the
+   category axis, their lengths, and how high the tallest reaches. The click on empty plot space and
+   the hangs-below geometry were not the bar chart's and are in the library now
+   (`bindings/tiers/viewers/widgets.ts`). Everything else in the bar chart features is the library's
+   `viewers` tier and the platform's data steps (`grok-bdd list-steps`). */
 import {expect, Page} from '@playwright/test';
 import {Then, When} from '@datagrok-libraries/bdd';
-import {el, ElementRef, viewers} from '@datagrok-libraries/bdd/runtime';
+import {ElementRef, viewers} from '@datagrok-libraries/bdd/runtime';
 
 interface Bar {
   name: string;
@@ -59,32 +60,9 @@ export const barsStacked = Then('the bars of {widget} should lie one under anoth
   }, {timeout: 5000, message: `the bars of ${target.phrase} lie side by side: ${shown}`}).toBe(true);
 }, {description: 'horizontal bars, one row per category'});
 
-/** A negative bar hangs from the baseline: its top is where a positive bar's bottom is, and it has
- * a height of its own. */
-export const barHangsBelow = Then('the {string} area of {widget} should hang below the {string} area', async (page: Page, below: string, target: ElementRef, above: string) => {
-  let shown = '';
-  await expect.poll(async () => {
-    const areas = await viewers.hitAreas(page, target);
-    const a = areas[below];
-    const b = areas[above];
-    if (!a || !b)
-      throw new Error(`${target.phrase} has no "${a ? above : below}" area; it has: ${Object.keys(areas).join(', ')}`);
-    shown = `"${below}" spans y ${Math.round(a.y)}..${Math.round(a.y + a.height)}, "${above}" y ${Math.round(b.y)}..${Math.round(b.y + b.height)}`;
-    return a.y >= b.y + b.height - 1 && a.height > 1;
-  }, {timeout: 5000, message: `the "${below}" area of ${target.phrase} does not hang below the "${above}" area: ${shown}`}).toBe(true);
-}, {description: 'a negative bar under a positive one: it starts at the baseline the other ends on, and reaches down'});
-
 export const zoomCategories = When('user zooms into the categories from the {string} area to the {string} area of {widget}',
-  async (page: Page, from: string, to: string, target: ElementRef) => {
-    const a = viewers.centerOf(await viewers.hitArea(page, target, from, true));
-    const b = viewers.centerOf(await viewers.hitArea(page, target, to));
-    await page.keyboard.down('Alt');
-    await page.mouse.move(a.x, a.y);
-    await page.mouse.down();
-    await page.mouse.move(b.x, b.y, {steps: 3});
-    await page.mouse.up();
-    await page.keyboard.up('Alt');
-  }, {tier: 'ui', description: 'an Alt-drag between two bars — the chart zooms its category axis to the bars the drag spans'});
+  (page: Page, from: string, to: string, target: ElementRef) => viewers.dragArea(page, target, from, to, ['Alt']),
+  {tier: 'ui', description: 'an Alt-drag between two bars — the chart zooms its category axis to the bars the drag spans'});
 
 /** The bars' lengths along the value axis: equal within a pixel, or not. */
 async function expectLengths(page: Page, target: ElementRef, equal: boolean): Promise<void> {
@@ -115,36 +93,3 @@ export const tallestReaches = Then('the tallest bar of {widget} should start wit
   }, {timeout: 5000, message: `the tallest bar of ${target.phrase} starts ${shown} down the view, not within the top ${percent}%`}).toBe(true);
 }, {description: 'no blank band above the tallest bar wider than that share of the view'});
 
-/** A point of the view no bar covers: of a coarse grid over the view, the one farthest from every
- * bar; the baseline is taken so "should have repainted" can follow. */
-async function emptySpace(page: Page): Promise<{x: number; y: number}> {
-  const target = el('bar chart viewer');
-  const view = await viewers.hitArea(page, target, 'view', true);
-  const areas = await viewers.hitAreas(page, target);
-  const bars = Object.keys(areas).filter((k) => k.startsWith('bar ')).map((k) => areas[k]);
-  const distance = (x: number, y: number, b: viewers.Box): number =>
-    Math.hypot(Math.max(b.x - x, 0, x - b.x - b.width), Math.max(b.y - y, 0, y - b.y - b.height));
-  let best: {x: number; y: number; d: number} | undefined;
-  for (let i = 1; i < 10; i++) {
-    for (let j = 1; j < 10; j++) {
-      const x = view.x + view.width * i / 10;
-      const y = view.y + view.height * j / 10;
-      const d = bars.length === 0 ? Infinity : Math.min(...bars.map((b) => distance(x, y, b)));
-      if (!best || d > best.d)
-        best = {x, y, d};
-    }
-  }
-  if (!best || best.d < 3)
-    throw new Error('bar chart viewer has no empty plot space: the bars cover the view');
-  return best;
-}
-
-export const clickEmptySpace = When('user clicks on empty plot space of bar chart viewer', async (page: Page) => {
-  const p = await emptySpace(page);
-  await page.mouse.click(p.x, p.y);
-}, {tier: 'ui', description: 'plot space with no bar under it — a click there releases the bar filter'});
-
-export const doubleClickEmptySpace = When('user double-clicks on empty plot space of bar chart viewer', async (page: Page) => {
-  const p = await emptySpace(page);
-  await page.mouse.dblclick(p.x, p.y);
-}, {tier: 'ui', description: 'resets the view'});

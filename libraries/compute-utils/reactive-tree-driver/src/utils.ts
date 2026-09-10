@@ -1,4 +1,3 @@
-import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {Observable, OperatorFunction, defer, from, merge, of} from 'rxjs';
 import {concatMap, distinctUntilChanged, filter, map, reduce, share, withLatestFrom, windowToggle} from 'rxjs/operators';
@@ -116,7 +115,7 @@ const areObjectsEqual: TypeEqualityComparator<Record<any, any>> = (a, b) => {
     for (const columnA of a.columns) {
       const columnB = b.columns.byName(columnA.name);
 
-      if (columnA.type !== columnB.type || columnA.name !== columnB.name)
+      if (columnB == null || columnA.type !== columnB.type || columnA.name !== columnB.name)
         return false;
 
       for (let i = 0; i < a.rowCount; i++) {

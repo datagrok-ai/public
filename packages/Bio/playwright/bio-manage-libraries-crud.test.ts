@@ -284,9 +284,9 @@ test('Bio Manage Monomer Libraries CRUD (app + tree browser + Monomers view + Ma
         const leaf = await wait('[name="div-Bio---Manage---Match-with-Monomer-Library..."]');
         if (leaf) leaf.click();
       });
-      await page.locator('[name="dialog-matchWithMonomerLibrary"]').waitFor({state: 'visible', timeout: 30_000});
+      await page.locator('[name="dialog-Match-with-Monomer-Library"]').waitFor({state: 'visible', timeout: 30_000});
       const result = await page.evaluate(() => {
-        const dialog = document.querySelector('[name="dialog-matchWithMonomerLibrary"]');
+        const dialog = document.querySelector('[name="dialog-Match-with-Monomer-Library"]');
         const hostTable = dialog?.querySelector('[name="input-host-Table"]') ?? null;
         const hostMolecules = dialog?.querySelector('[name="input-host-Molecules"]') ?? null;
         const hostPolymer = dialog?.querySelector('[name="input-host-Polymer-Type"]') ?? null;

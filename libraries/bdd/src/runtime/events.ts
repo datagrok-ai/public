@@ -1,7 +1,8 @@
 /* Custom platform events (`grok.events.fireCustomEvent` / `onCustomEvent`) — the word a package
    gives about work it finished off-screen (Bio's `bio-monomer-lib-loaded`): listened for by id
    from a step, read by the one that claims it. */
-import {expect, type Page} from '@playwright/test';
+import {type Page} from '@playwright/test';
+import {expect} from './patience.js';
 import {installViewerRuntime} from './viewers.js';
 
 interface CustomRead {
@@ -29,13 +30,4 @@ export async function expectCustomEvent(page: Page, id: string, timeoutMs = 3000
     throw new Error(`the "${id}" custom event has not fired since it was listened for (${Math.round(timeoutMs / 1000)} s)`);
   }
   return (await read(true)).last;
-}
-
-/** Not once since "listens for" or the previous read — read once, the count kept. */
-export async function expectNoCustomEvent(page: Page, id: string): Promise<void> {
-  await installViewerRuntime(page);
-  const last: CustomRead = await page.evaluate((i) => (window as any).__bdd.customFired(i, false), id);
-  if (last.count < 0)
-    throw new Error(`the "${id}" custom event is not listened for in this scenario (Given user listens for "${id}" custom event)`);
-  expect(last.count, `times the "${id}" custom event fired`).toBe(0);
 }

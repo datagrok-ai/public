@@ -2,6 +2,8 @@
 
 ## v.next
 
+* Word cloud: Fixed two ways the viewer reported a cloud that was not there. A render on a host the dock has not sized yet emptied the root and then threw on the size, leaving no canvas, no message and a render that stayed pending for ever; it now measures the root as well as the host and keeps the picture that is up until a size it can use comes back. And a render declared itself finished on a canvas with no words in it — `echarts.init` creates the canvas, but the layout that places the words runs in the macrotask `setOption` queues — so it now waits for the boxes the layout leaves, which is what the automation surface reports
+* Word cloud: Added the automation surface — `getWidgetStatus` reports a `word "<name>"` hit area per laid-out word plus `words`, `word names`, `rows of word "<name>"`, `column`, `rows shown`, `font` and the message the viewer shows instead of a cloud; added `isRenderPending` / `onRendered`
 * GROK-20800: Timelines, Radar: Fixed the legend container placement — it is now a full-height strip on the right, filled by the legend
 * Fixed the package build failing on `TS2610` — `name` is an accessor on the u2 `Component` base, so the viewer overrides it with its own accessor instead of redeclaring it as a property
 * GROK-18695: Forced d3-color >= 3.1.0 (ReDoS fix under circos); kept echarts 5 — the 6.1.0 upgrade (XSS fix GHSA-fgmj-fm8m-jvvx) deterministically breaks the Tree and Surface plot viewers (CI EXECUTION TIMEOUT on two independent runs) and needs a proper migration
@@ -11,6 +13,17 @@
 * GROK-19362: Charts: Radar: Inherits ordinary column coloring but not linked
 * Charts | Globe: Fixed crash when columns are removed from the underlying dataframe
 * GROK-20846: Charts: Timelines: X axis labels overlap and are unreadable
+* [3677](https://github.com/datagrok-ai/public/issues/3677): Charts: Radar: Add absolute normalization with configurable min/max per axis
+* Multiplot: Fixed duplicate points and wrong rows in split plots (CH-02)
+* Radar: Missing values are no longer drawn as zeros (CH-03)
+* Group Analysis: Group charts now respect filtering and sorting (CH-04)
+* Tree: Fixed the tree not updating on data edits (CH-05)
+* Word cloud: Fixed ignored filter (CH-06)
+* Word cloud: Ctrl+click now adds to the selection (CH-07)
+* Sankey: Fixed all rows shown when the filter matches none (CH-08)
+* Radar: Fixed clicking the first row (CH-10)
+* Tree, Sunburst: Fixed one bad molecule hiding the remaining structure labels (CH-14)
+* Timelines: Mouse-wheel zoom now works on the time axis (CH-18)
 
 ## 1.7.0 (2026-03-20)
 

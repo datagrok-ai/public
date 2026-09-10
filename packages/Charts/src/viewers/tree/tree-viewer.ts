@@ -93,6 +93,7 @@ export class TreeViewer extends EChartViewer {
   private hoveredPath: string | null = null;
   private selectedPaths: string[] | null = null;
   private moleculeRenderQueue: Promise<void> = Promise.resolve();
+  private moleculeRenderErrorLogged: boolean = false;
   viewerFilter: DG.BitSet | null = null;
   capturedFilterState: DG.BitSet | null = null;
   initialDfFilter: DG.BitSet | null = null;
@@ -510,6 +511,7 @@ export class TreeViewer extends EChartViewer {
     case 'initialTreeDepth':
       this.option.series[0].initialTreeDepth = p.get(this);
       this.render(false);
+      break;
 
     case 'symbolSize':
       this.option.series[0].symbolSize = p.get(this);
@@ -602,6 +604,7 @@ export class TreeViewer extends EChartViewer {
 
   addSubs(): void {
     if (!this.dataFrame) return;
+    this.subs.push(DG.debounce(this.dataFrame.onDataChanged, 50).subscribe((_) => this.render()));
     this.subs.push(this.dataFrame.onColumnsRemoved.subscribe((data) => {
       const columnNamesToRemove = data.columns.map((column: DG.Column) => column.name);
       this.hierarchyColumnNames = this.hierarchyColumnNames.filter((columnName) => !columnNamesToRemove.includes(columnName));
@@ -766,7 +769,12 @@ export class TreeViewer extends EChartViewer {
   async renderMoleculeQueued(params: any, width: number, height: number): Promise<void> {
     this.moleculeRenderQueue = this.moleculeRenderQueue.then(() =>
       this.renderMolecule(params, width, height),
-    );
+    ).catch((e) => {
+      if (!this.moleculeRenderErrorLogged) {
+        this.moleculeRenderErrorLogged = true;
+        console.error(e);
+      }
+    });
     await this.moleculeRenderQueue;
   }
 
@@ -920,13 +928,14 @@ export class TreeViewer extends EChartViewer {
     if (this.chart) {
       this.chart.clear();
       this.chart.dispose();
-      this.detach();
       this.chart = null;
     }
 
     this.chart = echarts.init(this.root);
-    this.initChartEventListeners();
-    this.addSubs();
+    this.resubscribe(() => {
+      this.initChartEventListeners();
+      this.addSubs();
+    });
 
     this.option.series[0].label.formatter = (params: any) => this.formatLabel(params);
     this.chart.setOption(this.option, false, true);
