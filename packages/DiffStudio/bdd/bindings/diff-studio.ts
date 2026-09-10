@@ -135,3 +135,38 @@ export const openSavedScript = When('user opens the saved script from the Model 
   await expect.poll(() => page.locator('[name^="input-host-"]').count(),
     {message: 'the inputs of the script the Model Hub opened', timeout: 120000}).toBeGreaterThan(0);
 }, {tier: 'ui'});
+
+/* The Refresh icon of the Model Hub ribbon carries no label and no tooltip — only the name of the
+   icon it is drawn with. */
+element('model hub refresh icon', {selector: '[name="icon-sync"]', aliases: ['catalog refresh icon']});
+
+/** The manual case proves Refresh re-fetches the catalog by removing an entry behind the view's
+ * back. The entry is the script this feature saved, so nothing anyone else owns is touched, and the
+ * feature's own cleanup then finds it already gone. */
+export const deleteSavedScript = When('the saved script is deleted on the server', async (page: Page) => {
+  const name = savedScript.get(page);
+  if (name === undefined)
+    throw new Error('no script has been saved in this feature yet');
+  await page.evaluate(async (n) => {
+    for (const s of await grok.dapi.scripts.list({pageSize: 1000}))
+      if (String(s.friendlyName ?? s.name) === n)
+        await grok.dapi.scripts.delete(s);
+  }, name);
+  await expect.poll(() => page.evaluate(async (n) =>
+    (await grok.dapi.scripts.list({pageSize: 1000})).some((s: any) => String(s.friendlyName ?? s.name) === n), name),
+  {message: `"${name}" among the scripts on the stand`, timeout: 60000}).toBe(false);
+}, {tier: 'api', description: 'removed behind the back of the view, so the next Refresh has something to notice'});
+
+export const hubDoesNotListScript = Then('the Model Hub should not list the saved script', async (page: Page) => {
+  await expect(savedCard(page), `the card of the saved script (${savedScript.get(page)}) in the Model Hub`)
+    .toHaveCount(0, {timeout: 60000});
+}, {tier: 'ui'});
+
+/** The same address again, from scratch — what pasting the link into a second tab does, minus the
+ * tab. The platform's own step ends when the navigation does, and a model rebuilt from its address
+ * takes longer than that: the claim after it used to read a page with no inputs on it yet. */
+export const reopenModelAddress = When('user opens the model at the page address', async (page: Page) => {
+  await page.goto(page.url(), {waitUntil: 'domcontentloaded', timeout: 180000});
+  await expect.poll(() => page.locator('[name^="input-host-"]').count(),
+    {message: 'the inputs of the model the address names', timeout: 180000}).toBeGreaterThan(2);
+}, {tier: 'ui', description: 'done when the model the address names has its inputs on the page'});

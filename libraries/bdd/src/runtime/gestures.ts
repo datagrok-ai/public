@@ -428,3 +428,34 @@ export async function insertLine(page: Page, target: ElementRef, text: string): 
   await page.keyboard.press('Enter');
   await expect(loc, `${target.phrase} after the line was typed`).toContainText(text);
 }
+
+/** A value set by dragging the slider of an input, not by typing into it: a real pointer press on
+ * the thumb, a walk to where the value lives on the track, and a release. The track says what it
+ * spans (`min`, `max`, `step`), so a feature can name the value a reader would aim at; a pixel of a
+ * 200-px track is worth a hundredth of the range, so the landing is checked against the coarser of
+ * one step and one pixel. */
+export async function dragSlider(page: Page, target: ElementRef, value: number): Promise<void> {
+  const loc = (await locate(page, target)).first();
+  const range = loc.locator('input[type="range"]').first();
+  if (await range.count() === 0)
+    throw new Error(`${target.phrase} has no slider to drag`);
+  const track = await range.evaluate((el: HTMLInputElement) =>
+    ({min: Number(el.min), max: Number(el.max), step: Number(el.step) || 0, value: Number(el.value)}));
+  if (value < track.min || value > track.max)
+    throw new Error(`the slider of ${target.phrase} spans ${track.min} to ${track.max}, so it cannot be dragged to ${value}`);
+  const box = await range.boundingBox();
+  if (box === null)
+    throw new Error(`the slider of ${target.phrase} has no rectangle on the page`);
+  const at = (v: number): number => box.x + box.width * ((v - track.min) / (track.max - track.min));
+  const y = box.y + box.height / 2;
+  const from = at(track.value);
+  const to = at(value);
+  await page.mouse.move(from, y);
+  await page.mouse.down();
+  for (let i = 1; i <= 8; i++)
+    await page.mouse.move(from + (to - from) * i / 8, y);
+  await page.mouse.up();
+  const tolerance = Math.max(track.step, (track.max - track.min) / box.width) * 2;
+  await expect.poll(async () => Math.abs(Number(await range.inputValue()) - value) <= tolerance,
+    {message: `the slider of ${target.phrase} within ${tolerance} of ${value} after the drag`}).toBe(true);
+}

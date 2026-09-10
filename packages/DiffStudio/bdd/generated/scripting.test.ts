@@ -12,7 +12,7 @@ import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {hubListsScript, openLibraryModel, openModelHub, openSavedScript, saveScript} from '../bindings/diff-studio.js';
+import {deleteSavedScript, hubDoesNotListScript, hubListsScript, openLibraryModel, openModelHub, openSavedScript, saveScript} from '../bindings/diff-studio.js';
 import {lookedDifferent, takePicture} from '@datagrok-libraries/bdd/bindings/common/pixels';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, enterInto, insertLine, shouldBe, shouldContainText, shouldHaveValue} from '@datagrok-libraries/bdd/bindings/common/steps';
@@ -24,7 +24,7 @@ test.describe("The equations behind a model, and the script they become", () => 
   const session = feature(test, "features/scripting.feature", import.meta.url);
   test("The equations behind a model, and the script they become", {tag: ["@journey", "@diffstudio", "@realizes:diffstudio.app.diff-studio"]}, async ({browser}) => {
     const page = await session.page(browser);
-    const run = journey(test, 6, page);
+    const run = journey(test, 7, page);
     await session.step(17, "Given user is logged in", () => loggedIn(page));
     await session.step(18, "And user opens the \"Bioreactor\" model of the Diff Studio library", () => openLibraryModel(page, "Bioreactor"));
     await run.scenario("The model shows its inputs before anything is edited", async () => {
@@ -66,6 +66,12 @@ test.describe("The equations behind a model, and the script they become", () => 
       await session.step(56, "Then Final input should have value \"800\"", () => shouldHaveValue(page, el("Final input"), "800"));
       await session.step(57, "And viewer should look different", () => lookedDifferent(page, el("viewer")));
       await session.step(58, "And no errors should have been logged", () => noErrors(page));
+    });
+    await run.scenario("Refresh re-fetches the catalog, so a model removed behind its back disappears", async () => {
+      await session.step(61, "When the saved script is deleted on the server", () => deleteSavedScript(page));
+      await session.step(62, "And user clicks on model hub refresh icon", () => clickOn(page, el("model hub refresh icon")));
+      await session.step(63, "Then the Model Hub should not list the saved script", () => hubDoesNotListScript(page));
+      await session.step(64, "And no errors should have been logged", () => noErrors(page));
     });
     run.finish();
   });

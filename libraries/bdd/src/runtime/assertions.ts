@@ -158,6 +158,18 @@ async function readValue(page: Page, target: ElementRef): Promise<string | undef
   }).catch(() => undefined);
 }
 
+/** A number the reader sees, between two bounds: what a slider or a stepper arrives at, where no
+ * exact value is the claim. */
+export async function expectValueBetween(page: Page, target: ElementRef, lo: number, hi: number): Promise<void> {
+  await expect.poll(async () => {
+    const text = await readValue(page, target);
+    return text === undefined || text === '' ? undefined : Number(text);
+  }, {message: `the value of ${target.phrase}, expected between ${lo} and ${hi}`})
+    .toBeGreaterThanOrEqual(lo);
+  await expect.poll(async () => Number(await readValue(page, target)),
+    {message: `the value of ${target.phrase}, expected between ${lo} and ${hi}`}).toBeLessThanOrEqual(hi);
+}
+
 export async function expectValue(page: Page, target: ElementRef, value: string, negate = false): Promise<void> {
   const message = `the value of ${target.phrase}`;
   if (!negate) {

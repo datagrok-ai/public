@@ -5,7 +5,7 @@ import {expect, Page} from '@playwright/test';
 import {Given, Then, When} from '../../src/registry.js';
 import type {ElementRef} from '../../src/runtime/args.js';
 import {el} from '../../src/runtime/args.js';
-import {expectCount, expectState, expectSwitched, expectText, expectValue, State} from '../../src/runtime/assertions.js';
+import {expectCount, expectState, expectSwitched, expectText, expectValue, expectValueBetween, State} from '../../src/runtime/assertions.js';
 import * as g from '../../src/runtime/gestures.js';
 import {locate} from '../../src/runtime/locate.js';
 
@@ -39,6 +39,9 @@ export const close = When('user closes {element}', (page: Page, target: ElementR
 export const expand = When('user expands {element}', (page: Page, target: ElementRef) => g.setExpanded(page, target, true),
   {tier: 'ui', description: 'tree nodes, accordion panes, dropdowns — anything with aria-expanded'});
 export const collapse = When('user collapses {element}', (page: Page, target: ElementRef) => g.setExpanded(page, target, false), {tier: 'ui'});
+export const dragSliderTo = When('user drags the slider of {element} to {float}',
+  (page: Page, target: ElementRef, value: number) => g.dragSlider(page, target, value),
+  {tier: 'ui', description: 'a real pointer drag along the track, to where the value lives on it'});
 export const dragTo = When('user drags {element} to {element}', (page: Page, source: ElementRef, target: ElementRef) => g.drag(page, source, target), {tier: 'ui'});
 export const scrollTo = When('user scrolls to {element}', (page: Page, target: ElementRef) => g.scrollTo(page, target), {tier: 'ui'});
 export const navigateTo = When('user navigates to {string}', (page: Page, url: string) => page.goto(url, {waitUntil: 'domcontentloaded'}).then(() => undefined),
@@ -72,6 +75,9 @@ export const shouldHaveValue = Then('{element} should have (the )value {string}'
 export const shouldNotHaveValue = Then('{element} should not have (the )value {string}', (page: Page, target: ElementRef, value: string) => expectValue(page, target, value, true));
 export const shouldBeSwitchedOn = Then('{element} should be switched on', (page: Page, target: ElementRef) => expectSwitched(page, target, true));
 export const shouldBeSwitchedOff = Then('{element} should be switched off', (page: Page, target: ElementRef) => expectSwitched(page, target, false));
+export const shouldHaveValueBetween = Then('{element} should have a value between {float} and {float}',
+  (page: Page, target: ElementRef, lo: number, hi: number) => expectValueBetween(page, target, lo, hi),
+  {description: 'a number a slider or a stepper arrives at, which no exact value would describe'});
 export const shouldHaveItems = Then('{element} should have {int} item(s)', (page: Page, target: ElementRef, count: number) => expectCount(page, target, count));
 export const shouldHaveRows = Then('{element} should have {int} row(s)', (page: Page, target: ElementRef, count: number) => expectCount(page, target, count));
 export const shouldHaveTabs = Then('{element} should have {int} tab(s)', (page: Page, target: ElementRef, count: number) => expectCount(page, target, count));

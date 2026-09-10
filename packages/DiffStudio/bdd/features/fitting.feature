@@ -31,10 +31,13 @@ Feature: Fitting a model to data
     And no errors should have been logged
 
   Scenario: A parameter is varied, and its bounds appear with it
-    When user switches on "FFox" input
+    When user selects "Default" in "Process mode" input
+    And user switches on "FFox" input
     Then "FFox (min)" input should be switched on
     And "FFox (min)" input should have value "0.15"
     And "FFox (max)" input should have value "0.25"
+    When user enters "1.0" into "FFox (max)" input
+    Then "FFox (max)" input should have value "1.0"
 
   Scenario: The fit needs an output to aim at and a table to aim with
     Given the "System:AppData/DiffStudio/library/bioreactor-experiment.csv" file is loaded as a table
@@ -47,7 +50,7 @@ Feature: Fitting a model to data
     When user clicks on "Run" icon
     Then the table should have a "RMSE by iterations" column
     And the table should have 1 row
-    And every value of the "FFox" column should be between 0.15 and 0.25
+    And every value of the "FFox" column should be between 0.15 and 1.0
     And the "RMSE by iterations" table should have at least 2 rows
     And the "Loss" column of the "RMSE by iterations" table should never increase
     And no errors should have been logged

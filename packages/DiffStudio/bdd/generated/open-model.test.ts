@@ -15,7 +15,7 @@ import '@datagrok-libraries/bdd/bindings/platform/elements';
 import {openLibraryModel} from '../bindings/diff-studio.js';
 import {canvasColors} from '@datagrok-libraries/bdd/bindings/common/pixels';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
-import {clickOn, enterInto, selectIn, shouldBe, shouldHaveValue, shouldNotBe} from '@datagrok-libraries/bdd/bindings/common/steps';
+import {clickOn, dragSliderTo, enterInto, selectIn, shouldBe, shouldHaveValue, shouldHaveValueBetween, shouldNotBe} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {viewIsCurrent} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {noErrors, repainted, takeSnapshot} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {el, feature, journey} from '@datagrok-libraries/bdd/runtime';
@@ -24,7 +24,7 @@ test.describe("Opening a model from the library", () => {
   const session = feature(test, "features/open-model.feature", import.meta.url);
   test("Opening a model from the library", {tag: ["@journey", "@diffstudio", "@realizes:diffstudio.app.diff-studio", "@realizes:diffstudio.model.bioreactor"]}, async ({browser}) => {
     const page = await session.page(browser);
-    const run = journey(test, 5, page);
+    const run = journey(test, 6, page);
     await session.step(17, "Given user is logged in", () => loggedIn(page));
     await session.step(18, "And user opens the \"Bioreactor\" model of the Diff Studio library", () => openLibraryModel(page, "Bioreactor"));
     await run.scenario("The model arrives with its table and its inputs", async () => {
@@ -52,12 +52,18 @@ test.describe("Opening a model from the library", () => {
       await session.step(42, "Then \"switch at\" input should have value \"150\"", () => shouldHaveValue(page, el("\"switch at\" input"), "150"));
       await session.step(43, "And line chart viewer should have repainted", () => repainted(page, el("line chart viewer")));
     });
-    await run.scenario("Process mode cascades into the parameters below it", async () => {
+    await run.scenario("The slider moves \"switch at\" and the chart follows", async () => {
       await session.step(46, "When user takes a snapshot of line chart viewer", () => takeSnapshot(page, el("line chart viewer")));
-      await session.step(47, "And user selects \"Mode 1\" in \"Process mode\" input", () => selectIn(page, "Mode 1", el("\"Process mode\" input")));
-      await session.step(48, "Then \"Process mode\" input should have value \"Mode 1\"", () => shouldHaveValue(page, el("\"Process mode\" input"), "Mode 1"));
+      await session.step(47, "And user drags the slider of \"switch at\" input to 100", () => dragSliderTo(page, el("\"switch at\" input"), 100));
+      await session.step(48, "Then \"switch at\" input should have a value between 95 and 105", () => shouldHaveValueBetween(page, el("\"switch at\" input"), 95, 105));
       await session.step(49, "And line chart viewer should have repainted", () => repainted(page, el("line chart viewer")));
-      await session.step(50, "And no errors should have been logged", () => noErrors(page));
+    });
+    await run.scenario("Process mode cascades into the parameters below it", async () => {
+      await session.step(52, "When user takes a snapshot of line chart viewer", () => takeSnapshot(page, el("line chart viewer")));
+      await session.step(53, "And user selects \"Mode 1\" in \"Process mode\" input", () => selectIn(page, "Mode 1", el("\"Process mode\" input")));
+      await session.step(54, "Then \"Process mode\" input should have value \"Mode 1\"", () => shouldHaveValue(page, el("\"Process mode\" input"), "Mode 1"));
+      await session.step(55, "And line chart viewer should have repainted", () => repainted(page, el("line chart viewer")));
+      await session.step(56, "And no errors should have been logged", () => noErrors(page));
     });
     run.finish();
   });

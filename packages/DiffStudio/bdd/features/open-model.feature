@@ -42,6 +42,12 @@ Feature: Opening a model from the library
     Then "switch at" input should have value "150"
     And line chart viewer should have repainted
 
+  Scenario: The slider moves "switch at" and the chart follows
+    When user takes a snapshot of line chart viewer
+    And user drags the slider of "switch at" input to 100
+    Then "switch at" input should have a value between 95 and 105
+    And line chart viewer should have repainted
+
   Scenario: Process mode cascades into the parameters below it
     When user takes a snapshot of line chart viewer
     And user selects "Mode 1" in "Process mode" input

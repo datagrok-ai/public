@@ -7,6 +7,9 @@ Feature: A model file previewed from Browse
   page, so it loads the address again from scratch instead — which is what pasting the link does,
   minus the second tab.
 
+  Step is set the way the case sets it, by dragging its slider: the track spans 0.01 to 0.1 in steps
+  of 0.0009, so the drag lands within a step of the value asked for rather than on it exactly.
+
   Background:
     Given user is logged in
     And the browse panel is open
@@ -25,15 +28,25 @@ Feature: A model file previewed from Browse
     And Multiaxis tab should be absent
     And Facet tab should be absent
 
-  Scenario: The inputs the preview brings can be set
-    When user enters "0.1" into step input
-    Then step input should have value "0.1"
+  Scenario: The slider sets Step, as a reader would set it
+    When user takes a snapshot of line chart viewer
+    And user drags the slider of step input to 0.1
+    Then step input should have a value between 0.09 and 0.1
+    And line chart viewer should have repainted
+
+  Scenario: The clicker counts Count up to four
     When user hovers over count input
     And user clicks on plus icon in count input
-    Then count input should not have value "1"
+    And user clicks on plus icon in count input
+    And user clicks on plus icon in count input
+    Then count input should have value "4"
+
+  Scenario: The inputs take a typed value too
+    When user enters "0.1" into step input
+    Then step input should have value "0.1"
 
   Scenario: The address carries the inputs, and loading it again brings them back
     Then the page address should contain "step"
-    When user opens the page address of the current view
+    When user opens the model at the page address
     Then step input should have value "0.10"
     And no errors should have been logged
