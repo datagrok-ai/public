@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Tutorials: Links to the Tutorials app and to individual tutorials can now be shared and opened directly
 * Demo app: Correlation Plot is offered as a demo again - its `demoPath` was missing a space, so consumers that rebuild the path from the hierarchy never matched it
 * Demo app: The second viewer pane in a viewer demo is titled after the viewer it holds, not always "histogram"
 * Tutorials: A track with no tutorials renders a 0% progress bar instead of `NaN%`
