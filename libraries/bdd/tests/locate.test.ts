@@ -5,17 +5,24 @@ import assert from 'node:assert/strict';
 import {after, before, test} from 'node:test';
 import type {Browser, Page} from '@playwright/test';
 
-/* Playwright needs Node 20 and the libraries' CI runs 18, so the import is dynamic: the other five
-   unit-test files still run there, and this one says why it did not. */
+/* These eight need a browser, and the other five test files do not: the import is dynamic and the
+   launch is guarded, so a runner without Playwright (it needs Node 20) or without its browsers says
+   which of the two is missing instead of failing, and the rest of the unit tests still run. */
 let chromium: typeof import('@playwright/test').chromium | undefined;
+let missing = '';
 try {
   ({chromium} = await import('@playwright/test'));
 }
 catch {
-  chromium = undefined;
+  missing = 'Playwright does not load here (it needs Node 20)';
 }
-const needsBrowser = chromium === undefined ? {skip: 'needs Playwright, which needs Node 20'} : {};
-const scenario = (name: string, fn: () => Promise<void>): void => void test(name, needsBrowser, fn);
+const scenario = (name: string, fn: () => Promise<void>): void => void test(name, async (t) => {
+  if (page === undefined) {
+    t.skip(missing || 'no page');
+    return;
+  }
+  await fn();
+});
 import '../bindings/common/kinds.js';
 import '../bindings/platform/elements.js';
 import {el} from '../src/runtime/args.js';
@@ -57,12 +64,18 @@ const PAGE = `
 `;
 
 let browser: Browser | undefined;
-let page: Page;
+let page: Page | undefined;
 
 before(async () => {
   if (chromium === undefined)
     return;
-  browser = await chromium.launch();
+  try {
+    browser = await chromium.launch();
+  }
+  catch (e) {
+    missing = `Chromium does not start here: ${String(e).slice(0, 80)}`;
+    return;
+  }
   page = await browser.newPage();
   await page.setContent(PAGE);
 });

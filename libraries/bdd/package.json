@@ -32,6 +32,9 @@
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git"
   },
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "compile": "tsx src/cli.ts compile",
