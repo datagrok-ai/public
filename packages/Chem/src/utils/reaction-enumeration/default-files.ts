@@ -59,7 +59,7 @@ export interface EnumerationDefaultTables {
 export async function loadEnumerationDefaults(): Promise<EnumerationDefaultTables> {
   let settings: any = {};
   try {
-    settings = await _package.getProperties() ?? {};
+    settings = _package.settings ?? {};
   } catch (e) {
     _package.logger.debug(`Could not read Chem settings, using bundled enumeration files: ${e}`);
   }

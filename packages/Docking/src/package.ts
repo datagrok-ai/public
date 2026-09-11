@@ -143,7 +143,7 @@ export class PackageFunctions{
       if (!BINDING_ENERGY_COL_UNUSED || !POSE_COL_UNUSED)
         return;
 
-      const {grid} = grok.shell.getTableView(table.name);
+      const {grid} = grok.shell.tableView(table.name);
 
       addColorCoding(grid.columns.byName(BINDING_ENERGY_COL_UNUSED)!);
       grid.sort([BINDING_ENERGY_COL_UNUSED]);

@@ -8,7 +8,7 @@ import { checkDialog } from './gui-utils';
 category('GUI: Grid', () => {
   before(async () => {
     showToolbox();
-    grok.shell.windows.showProperties = true;
+    grok.shell.windows.showContextPanel = true;
   });
 
   test('grid.dataSearch', async () => {

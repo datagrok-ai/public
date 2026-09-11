@@ -93,7 +93,7 @@ category('hierarchicalClustering', () => {
     const dataDf: DG.DataFrame = DG.DataFrame.fromCsv('a,b\n1,2\n2,3\n3,4\n4,5');
     dataDf.name = 'testHCUnattached';
     await hierarchicalClusteringUI(dataDf, ['a', 'b'], DistanceMetric.Euclidean, 'average');
-    const tv: DG.TableView = grok.shell.getTableView(dataDf.name);
+    const tv: DG.TableView = grok.shell.tableView(dataDf.name);
     expect(tv != null, true);
     tv.close();
   });

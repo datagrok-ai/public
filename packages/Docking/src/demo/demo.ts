@@ -5,7 +5,7 @@ import {_package} from '../utils/constants';
 
 export async function openMoleculeDataset(name: string): Promise<DG.TableView> {
   const table = DG.DataFrame.fromCsv(await grok.dapi.files.readAsText(name));
-  grok.shell.windows.showProperties = true;
+  grok.shell.windows.showContextPanel = true;
   return grok.shell.addTableView(table);
 }
 
@@ -14,7 +14,7 @@ export function showHelpPanel(): void {
   grok.shell.windows.help.showHelp('/help/develop/domains/chem/docking');
   grok.shell.windows.context.visible = true;
   grok.shell.windows.showContextPanel = true;
-  grok.shell.windows.showProperties = true;
+  grok.shell.windows.showContextPanel = true;
 }
 
 export async function _demoDocking(): Promise<void> {

@@ -116,7 +116,7 @@ export function addSelectedDescriptorsCol(descrStats: DG.DataFrame, selected: st
     colors[descr[i]] = res ? COLORS.SELECTED : COLORS.SKIPPED;
   }
 
-  descrCol.colors.setCategorical(colors);
+  descrCol.meta.colors.setCategorical(colors);
 
   // Added selected column
   descrStats.columns.add(DG.Column.fromList(DG.COLUMN_TYPE.BOOL, SELECTED_TITLE, selArr));

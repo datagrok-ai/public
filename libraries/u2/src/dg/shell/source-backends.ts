@@ -100,7 +100,7 @@ backends.dapiFind = async (collection, id) => {
 };
 
 backends.workspace = {
-  table: (name) => (grok.shell.tableByName(name) as unknown as DataFrameLike) ?? null,
+  table: (name) => (grok.shell.table(name) as unknown as DataFrameLike) ?? null,
   tableNames: () => grok.shell.tableNames,
   onTablesChanged: {
     subscribe: (next) => {

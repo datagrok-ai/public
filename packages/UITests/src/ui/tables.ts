@@ -21,7 +21,7 @@ category('UI: Tables', () => {
 
   before(async () => {
     v = grok.shell.newView('');
-    grok.shell.windows.showProperties = true;
+    grok.shell.windows.showContextPanel = true;
   });
 
   test('table.root', async () => {

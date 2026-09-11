@@ -38,7 +38,7 @@ export class ValidationView extends ClinicalCaseViewBase {
       return;
     }
 
-    const tabControl = ui.tabControl(null, false);
+    const tabControl = ui.tabControl(null, {vertical: false});
 
     // Conformance_Details tab - use ui.tableFromMap
     if (validationResults.Conformance_Details) {

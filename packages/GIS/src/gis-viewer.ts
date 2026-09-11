@@ -414,7 +414,7 @@ export class GisViewer extends DG.JsViewer {
         this.root.removeChild(loadingDiv);
 
         grok.shell.o = this;
-        grok.shell.windows.showProperties = true;
+        grok.shell.windows.showContextPanel = true;
       }, 100);
     }
   }
@@ -528,7 +528,7 @@ export class GisViewer extends DG.JsViewer {
       } else { //if no features were clicked - just show properties for map
         setTimeout(() => {
           grok.shell.o = this;
-          grok.shell.windows.showProperties = true;
+          grok.shell.windows.showContextPanel = true;
         }, 50);
       }
     }

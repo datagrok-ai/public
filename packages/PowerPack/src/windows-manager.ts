@@ -36,8 +36,8 @@ topmenuToggle.addEventListener('click', ()=> {
 });
 
 propertiesToggle.addEventListener('click', ()=> {
-  window.showProperties ? window.showProperties = false : window.showProperties = true;
-  setToggleState(window.showProperties, propertiesToggle);
+  window.showContextPanel ? window.showContextPanel = false : window.showContextPanel = true;
+  setToggleState(window.showContextPanel, propertiesToggle);
 });
 
 helpToggle.addEventListener('click', ()=> {
@@ -82,7 +82,7 @@ function setButtonsToggleState() {
   setToggleState(window.showAI, aiToggle);
   window.simpleMode ? topmenuToggle.className = 'windows-manager-toggle' : topmenuToggle.className = 'windows-manager-toggle active';
   setToggleState(window.showToolbox, toolboxToogle);
-  setToggleState(window.showProperties, propertiesToggle);
+  setToggleState(window.showContextPanel, propertiesToggle);
   setToggleState(window.showHelp, helpToggle);
   setToggleState(window.showVariables, vairablesToggle);
   setToggleState(window.showConsole, consoleToggle);

@@ -27,7 +27,7 @@ category('Connections', () => {
   }, {stressTest: true});
 
   test('External Provider: grok.data.query no params', async () => {
-    const result: DG.DataFrame = await grok.data.query('DbTests:PostgresqlPatternsAll', null, true);
+    const result: DG.DataFrame = await grok.data.query('DbTests:PostgresqlPatternsAll', null);
     expect(result?.rowCount ?? 0, 30);
   }, {stressTest: true});
 
