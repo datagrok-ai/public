@@ -234,8 +234,11 @@ jobs:
         if: matrix.publish == 'publish'
         working-directory: libraries/${{ matrix.project }}
 
+      # a mention nobody can resolve is not a broken build: the lookup exits 1 for an actor the
+      # email mapping does not carry, and the message it feeds is sent on publish only
       - name: Get actors slack
         id: actor
+        continue-on-error: true
         uses: ./.github/actions/slack-user-action
         with:
           slack-token: ${{ secrets.SLACKBOT_TOKEN }}
@@ -246,6 +249,7 @@ jobs:
         working-directory: libraries/${{ matrix.project }}
       - name: Get owners slack
         id: owner
+        continue-on-error: true
         uses: ./.github/actions/slack-user-action
         with:
           slack-token: ${{ secrets.SLACKBOT_TOKEN }}
