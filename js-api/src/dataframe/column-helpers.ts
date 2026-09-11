@@ -139,6 +139,7 @@ export class ColumnMarkerHelper {
     this.column = column;
   }
 
+  /** Draws [category] with [marker] on scatter plots; chainable. */
   assign(category: string, marker: MarkerCodingType): ColumnMarkerHelper {
     let jsonTxt: string | null = this.column.getTag(TAGS.MARKER_CODING);
     const jsonMap: {[key: string]: string} = jsonTxt ? JSON.parse(jsonTxt) : {};
@@ -148,6 +149,7 @@ export class ColumnMarkerHelper {
     return this;
   }
 
+  /** The marker for every category that {@link assign} gave none; chainable. */
   default(marker: MarkerCodingType): ColumnMarkerHelper {
     return this.assign('~DEFAULT', marker);
   }
