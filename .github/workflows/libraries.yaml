@@ -89,11 +89,6 @@ jobs:
                 job_name='Build, test'
               fi
 
-              node_major="$(jq -r '.engines.node // ""' "${DIR}/package.json" | grep -oE '[0-9]+' | head -1)"
-              if [ -n "${node_major}" ]; then
-                MATRIX_PUBLISH_JSON+=", \"node\": \"${node_major}.x\""
-              fi
-
               name="$(jq -r .name "${DIR}/package.json")"
               npm_version="$(curl --retry 3 -s "https://registry.npmjs.org/${name}/${current_version}" | jq -r '.? | select( has("version") == true ).version')"
               unpublished_deps="$(jq -r '. | to_entries | map(select(.value | match("\\.\\./.*")))[] | "\(.key)=\(.value)"' <<<$dependencies  | tr '\n' ' ')"
@@ -167,7 +162,7 @@ jobs:
           fi
       - uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node || '18.x' }}
+          node-version: '18.x'
           registry-url: 'https://registry.npmjs.org'
           scope: '@datagrok-libraries'
           cache: 'npm'
@@ -234,8 +229,8 @@ jobs:
         if: matrix.publish == 'publish'
         working-directory: libraries/${{ matrix.project }}
 
-      # a mention nobody can resolve is not a broken build: the lookup exits 1 for an actor the
-      # email mapping does not carry, and the message it feeds is sent on publish only
+      # a mention nobody can resolve is not a broken build: the lookup exits 1 for an email Slack
+      # does not know (a library author who left), and the message it feeds is sent on publish only
       - name: Get actors slack
         id: actor
         continue-on-error: true

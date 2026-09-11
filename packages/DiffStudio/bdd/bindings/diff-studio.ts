@@ -3,14 +3,10 @@
    the model), so the `viewers` tier drives them, and the Open model menu carries the platform's own
    item names (div-Library---Bioreactor), so its entries are plain menu items. */
 import {expect, Page} from '@playwright/test';
-import {element, Given, Then, When} from '@datagrok-libraries/bdd';
-import {atFeatureEnd} from '@datagrok-libraries/bdd/runtime';
+import {Given, Then, When} from '@datagrok-libraries/bdd';
+import {atFeatureEnd, takeErrors} from '@datagrok-libraries/bdd/runtime';
 
 declare const grok: any;
-
-/* The folder icon on the ribbon that opens the model menu — it has no name of its own, only the
-   class the app puts on it and the aria label of its icon. */
-element('open model button', {selector: '.diff-studio-ribbon-widget', aliases: ['open model icon']});
 
 /* The app's deep link per model of the library: /apps/DiffStudio/Library/<state>. The titles are
    what the Open model menu shows; the states are what the route takes. */
@@ -36,8 +32,10 @@ export const openLibraryModel = Given('user opens the {string} model of the Diff
     const state = LIBRARY[title];
     if (!state)
       throw new Error(`no "${title}" in the Diff Studio library; it has: ${Object.keys(LIBRARY).join(', ')}`);
-    const base = process.env.DATAGROK_URL ?? 'http://localhost:8888';
-    await page.goto(`${base}/apps/DiffStudio/Library/${state}?params:`, {waitUntil: 'domcontentloaded', timeout: 180000});
+    await page.goto(`/apps/DiffStudio/Library/${state}?params:`, {waitUntil: 'domcontentloaded', timeout: 180000});
+    // what the document being left logs as its fetches are aborted, and what the shell logs while
+    // booting again, is not the scenario's — the same floor the login step sets
+    takeErrors(page);
     await expect(page.locator('.diff-studio-ribbon-widget').first(), 'the Diff Studio ribbon')
       .toBeVisible({timeout: 180000});
     await expect.poll(() => page.evaluate(() => String(grok.shell.v?.name ?? '')),
@@ -45,9 +43,6 @@ export const openLibraryModel = Given('user opens the {string} model of the Diff
     await expect.poll(() => page.locator('[name^="input-host-"]').count(),
       {message: 'the inputs of the model', timeout: 60000}).toBeGreaterThan(2);
   }, {tier: 'ui', description: 'the app\'s own route for a library model; done when the ribbon, the view name and the model inputs are all there'});
-
-element('save to library icon', {selector: '.diff-studio-ribbon-save-to-model-catalog-icon',
-  aliases: ['save to model hub icon']});
 
 /* Saving writes a new .ivp into System:AppData/DiffStudio/library under a name the app picks
    ("PK-PD(14).ivp" — the count is how many earlier runs left theirs behind), and announces it on
@@ -136,10 +131,6 @@ export const openSavedScript = When('user opens the saved script from the Model 
     {message: 'the inputs of the script the Model Hub opened', timeout: 120000}).toBeGreaterThan(0);
 }, {tier: 'ui'});
 
-/* The Refresh icon of the Model Hub ribbon carries no label and no tooltip — only the name of the
-   icon it is drawn with. */
-element('model hub refresh icon', {selector: '[name="icon-sync"]', aliases: ['catalog refresh icon']});
-
 /** The manual case proves Refresh re-fetches the catalog by removing an entry behind the view's
  * back. The entry is the script this feature saved, so nothing anyone else owns is touched, and the
  * feature's own cleanup then finds it already gone. */
@@ -167,6 +158,7 @@ export const hubDoesNotListScript = Then('the Model Hub should not list the save
  * takes longer than that: the claim after it used to read a page with no inputs on it yet. */
 export const reopenModelAddress = When('user opens the model at the page address', async (page: Page) => {
   await page.goto(page.url(), {waitUntil: 'domcontentloaded', timeout: 180000});
+  takeErrors(page);
   await expect.poll(() => page.locator('[name^="input-host-"]').count(),
     {message: 'the inputs of the model the address names', timeout: 180000}).toBeGreaterThan(2);
 }, {tier: 'ui', description: 'done when the model the address names has its inputs on the page'});

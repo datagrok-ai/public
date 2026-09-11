@@ -11,6 +11,11 @@ Feature: A model saved to the library
   is claimed by that event rather than by the balloon the old spec watched for and had to treat as
   best-effort because it auto-dismisses.
 
+  The Model Hub opens a model as a function view whose charts are docked under tabs; the viewers of
+  a tab not shown stay in the DOM without a rectangle, so a claim names the tab it reads. The chart
+  is a real line chart of the platform, and a repaint is its own word — the old spec hashed a
+  canvas that answers toDataURL with a blank image.
+
   Background:
     Given user is logged in
     And user opens the "PK-PD" model of the Diff Studio library
@@ -38,8 +43,12 @@ Feature: A model saved to the library
   Scenario: The model runs from the catalog and its chart follows its inputs
     When user double-clicks on PK-PD link in gallery
     Then dose input should be visible
-    When user takes a picture of viewer
+    And "PK-PD / DiffStudio Facet" tab should be selected
+    When user takes a snapshot of line chart viewer
     And user enters "5000" into dose input
     Then dose input should have value "5000"
-    And viewer should look different
+    And line chart viewer should have repainted
+    When user clicks on "PK-PD / Grid" tab
+    Then "PK-PD / Grid" tab should be selected
+    And the "rows" reading of grid viewer should be "610"
     And no errors should have been logged

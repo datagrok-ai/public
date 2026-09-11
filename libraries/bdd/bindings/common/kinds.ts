@@ -237,12 +237,12 @@ kind('dialog', {
     footer: '.u2-dialog-footer, .d4-dialog-footer'},
 });
 kind('tabs', {aliases: ['tab strip', 'tab control'], selector: u2('tabs') + ', .d4-tab-control', match: ['name', 'aria']});
-// .tab-handle is the dock manager's tab (a docked viewer, an app's own panes); its label is a
-// child, so the whole handle's text would also match a neighbour's when they share a container
+// .tab-handle is the Dart dock manager's tab, .dockspan-tab-handle the dock-spawn-ts one a function
+// view keeps in its shadow root (which a CSS locator reaches); the label is a child either way
 kind('tab', {
-  selector: '[role="tab"], .d4-tab-header, .tab-handle',
+  selector: '[role="tab"], .d4-tab-header, .tab-handle, .dockspan-tab-handle',
   match: ['name', 'label', 'text', 'aria', 'dart'],
-  labelSelector: '.tab-handle-text',
+  labelSelector: '.tab-handle-text, .dockspan-tab-handle-text',
   dartNames: ['{q}', 'tab-{q}'],
 });
 kind('tab panel', {aliases: ['tab page'], selector: '[role="tabpanel"], .d4-tab-content', match: ['name', 'aria']});

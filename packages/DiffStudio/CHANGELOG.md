@@ -2,7 +2,7 @@
 
 ## v.next
 
-* Tests: Added a BDD suite (bdd/features, 9 features / 40 scenarios) translating the TestTrack Diff Studio specs and the package's Playwright tests, including the three cases the old suite left to a human (chart redraw in the script view and in the Model Hub), the real slider drag and the catalog Refresh
+* Tests: Added a BDD suite (bdd/features, 9 features / 42 scenarios) translating the TestTrack Diff Studio specs and the package's Playwright tests, including the app hub and the Open model menu, the three cases the old suite left to a human (chart redraw in the script view and in the Model Hub, read as the viewers they are), the real slider drag and the catalog Refresh
 
 ## 1.6.8 (2026-09-01)
 

@@ -19,6 +19,14 @@ Feature: Sensitivity analysis over a model
     And Sensitivity ribbon item should be visible
     And Fit ribbon item should be visible
 
+  Scenario: The Edit toggle swaps the form for the equations, and back
+    When user clicks on Edit ribbon item
+    Then code editor should be visible
+    And "Process mode" input should be absent
+    When user clicks on Edit ribbon item
+    Then code editor should be absent
+    And "Process mode" input should be visible
+
   Scenario: Sensitivity opens a view of its own
     When user clicks on Sensitivity ribbon item
     Then the "Bioreactor - comparison" view should be current

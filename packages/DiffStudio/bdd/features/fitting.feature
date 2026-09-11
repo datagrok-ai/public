@@ -48,9 +48,9 @@ Feature: Fitting a model to data
 
   Scenario: Running the fit lowers the loss it reports, iteration by iteration
     When user clicks on "Run" icon
-    Then the table should have a "RMSE by iterations" column
+    Then the table should have a column "RMSE by iterations"
     And the table should have 1 row
-    And every value of the "FFox" column should be between 0.15 and 1.0
+    And every value of "FFox" column should lie between 0.15 and 1.0
     And the "RMSE by iterations" table should have at least 2 rows
     And the "Loss" column of the "RMSE by iterations" table should never increase
     And no errors should have been logged

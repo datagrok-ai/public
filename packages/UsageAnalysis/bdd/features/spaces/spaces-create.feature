@@ -20,9 +20,9 @@ Feature: Creating a space
     Then Create Space dialog should be visible
     When user enters "BDD-Root" into Name input in Create Space dialog
     And user clicks on OK button in Create Space dialog
-    Then the Create Space dialog should close
+    Then the "Create Space" dialog should close
     And 1 space named "BDD-Root" should be on the server
-    And the browse tree should show the "BDD-Root" space
+    And BDD-Root tree node inside browse tree should be visible
 
   Scenario: The space offers its actions
     When user opens the context menu of BDD-Root tree node inside browse tree
@@ -41,7 +41,7 @@ Feature: Creating a space
     When user enters "BDD-Dup" into Name input in Create Space dialog
     Then OK button in Create Space dialog should be enabled
     When user clicks on CANCEL button in Create Space dialog
-    Then the Create Space dialog should close
+    Then the "Create Space" dialog should close
     And 0 spaces named "BDD-Dup" should be on the server
 
   Scenario: A second root space of the same name is refused
@@ -49,6 +49,7 @@ Feature: Creating a space
     And user enters "BDD-Dup" into Name input in Create Space dialog
     And user clicks on OK button in Create Space dialog
     Then 1 space named "BDD-Dup" should be on the server
+    And the "Create Space" dialog should close
     When user picks "Create Space..." from the context menu of Spaces tree node inside browse tree
     And user enters "BDD-Dup" into Name input in Create Space dialog
     And user clicks on OK button in Create Space dialog
@@ -56,18 +57,19 @@ Feature: Creating a space
     And 1 space named "BDD-Dup" should be on the server
     And Create Space dialog should be visible
     When user clicks on CANCEL button in Create Space dialog
-    Then the Create Space dialog should close
+    Then the "Create Space" dialog should close
 
   Scenario: A child space is created under a root space
     When user picks "Create Space..." from the context menu of Spaces tree node inside browse tree
     And user enters "BDD-Parent" into Name input in Create Space dialog
     And user clicks on OK button in Create Space dialog
     Then 1 space named "BDD-Parent" should be on the server
+    And the "Create Space" dialog should close
     When user picks "Create Child Space..." from the context menu of BDD-Parent tree node inside browse tree
     And user enters "BDD-Child" into Name input in Create Space dialog
     And user clicks on OK button in Create Space dialog
-    Then the Create Space dialog should close
-    And the browse tree should show the "BDD-Child" space
+    Then the "Create Space" dialog should close
+    And BDD-Child tree node inside browse tree should be visible
 
   Scenario: A second child of the same name is refused
     When user picks "Create Child Space..." from the context menu of BDD-Parent tree node inside browse tree
@@ -76,11 +78,12 @@ Feature: Creating a space
     Then an error balloon containing "already exists" should have been shown
     And Create Space dialog should be visible
     When user clicks on CANCEL button in Create Space dialog
-    Then the Create Space dialog should close
+    Then the "Create Space" dialog should close
 
   Scenario: A name with spaces is kept as typed
     When user picks "Create Space..." from the context menu of Spaces tree node inside browse tree
     And user enters "BDD Name With Spaces" into Name input in Create Space dialog
     And user clicks on OK button in Create Space dialog
     Then 1 space named "BDD Name With Spaces" should be on the server
-    And the browse tree should show the "BDD Name With Spaces" space
+    And the "Create Space" dialog should close
+    And BDD Name With Spaces tree node inside browse tree should be visible

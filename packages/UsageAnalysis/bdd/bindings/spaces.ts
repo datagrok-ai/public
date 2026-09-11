@@ -1,9 +1,8 @@
 /* Spaces as the Browse tree shows them. Everything general — the browse panel, the browse tree,
    the expanded state of a node — is platform vocabulary in the library; what stays here is the
    space view's own gallery and search, and the spaces a scenario leaves on the server. */
-import {Locator, Page} from '@playwright/test';
+import {expect, Page} from '@playwright/test';
 import {element, Given, Then} from '@datagrok-libraries/bdd';
-import {el, exactText, expect, gestures, locate} from '@datagrok-libraries/bdd/runtime';
 import {atFeatureEnd} from '@datagrok-libraries/bdd/runtime';
 import {sharingLogin} from '@datagrok-libraries/bdd/bindings/platform/steps';
 
@@ -49,9 +48,14 @@ export const noSpaceOnServer = Given('no space named {string} is on the server',
    server does one-time or serialized work on the first). The claim right after OK owns the same
    budget the dialog-close claim below does, or it fails while the dialog is still legitimately open. */
 export const spacesOnServer = Then('{int} space(s) named {string} should be on the server', async (page: Page, count: number, name: string) => {
-  await expect.poll(() => page.evaluate(async (n) =>
-    (await grok.dapi.spaces.list({pageSize: 1000})).filter((s: any) => s.friendlyName === n || s.name === n).length,
-  name), {message: `spaces the server holds under "${name}"`, timeout: 60000}).toBe(count);
+  // a listing the server refuses once (a stand under load) is one attempt, not the answer
+  await expect.poll(() => page.evaluate(async (n) => {
+    try {
+      return (await grok.dapi.spaces.list({pageSize: 1000})).filter((s: any) => s.friendlyName === n || s.name === n).length;
+    } catch (e) {
+      return `the listing failed: ${String(e)}`;
+    }
+  }, name), {message: `spaces the server holds under "${name}"`, timeout: 60000}).toBe(count);
 }, {tier: 'api', description: 'what the server holds, not what the tree draws — the refusal of a duplicate is a space that was never created'});
 
 /* Whom a space is shared with, read where the platform shows it. grok.dapi.permissions.get answers
@@ -80,59 +84,4 @@ export const sharingPaneLists = Then('the sharing pane should list the sharing u
 export const sharingPaneListsNot = Then('the sharing pane should not list the sharing user', async (page: Page) => {
   const {pane, shown} = await sharingPane(page);
   await expect(pane).not.toContainText(shown);
-}, {tier: 'ui'});
-
-/* Creating a space keeps the Create Space dialog open until the platform is done, and for a CHILD
-   space that took 6-18 s on dev (2026-09-10) — the shared 15 s expect timeout sits inside that
-   range, so the generic "should be hidden" passed or failed by luck. This claim owns its budget. */
-export const createDialogCloses = Then('the Create Space dialog should close', async (page: Page) => {
-  await expect(page.locator('.d4-dialog[name="dialog-Create-Space"]').filter({visible: true}),
-    'the Create Space dialog').toHaveCount(0, {timeout: 60000});
-}, {tier: 'ui', description: 'the platform closes it when the space is actually created'});
-
-/* --- what the tree and a space view show -------------------------------------------------------
-   Both refresh on a server round-trip the platform does not announce, and the tree's Spaces group
-   is closed unless something opened it: the product reveals a space it has just created by opening
-   the group, which on a loaded stand it sometimes does not do at all. So these four claims open the
-   group themselves on every attempt — what a person does — and give the round-trip a minute. The
-   negative pair needs the group open just as much: "absent" was true of a closed group whatever the
-   server held (the Dart tree builds a group's children when it opens). */
-const SPACES_GROUP = 'Spaces tree node inside browse tree';
-
-async function spacesOpen(page: Page): Promise<void> {
-  await gestures.setExpanded(page, el(SPACES_GROUP), true).catch(() => undefined);
-}
-
-function treeNode(page: Page, name: string): Promise<Locator> {
-  return locate(page, el(`${name} tree node inside browse tree`));
-}
-
-async function treeShows(page: Page, name: string): Promise<number> {
-  await spacesOpen(page);
-  return (await treeNode(page, name)).filter({visible: true}).count();
-}
-
-export const treeShowsSpace = Then('the browse tree should show the {string} space', async (page: Page, name: string) => {
-  await expect.poll(() => treeShows(page, name),
-    {message: `"${name}" among the nodes of the browse tree`, timeout: 60000}).toBeGreaterThan(0);
-}, {tier: 'ui', description: 'opens the Spaces group on each attempt, so the claim does not depend on the product revealing the space'});
-
-export const treeHidesSpace = Then('the browse tree should not show the {string} space', async (page: Page, name: string) => {
-  await expect.poll(() => treeShows(page, name),
-    {message: `"${name}" among the nodes of the browse tree`, timeout: 60000}).toBe(0);
-}, {tier: 'ui', description: 'with the group open, so the absence is the server’s answer rather than a closed group'});
-
-function cards(page: Page, name: string): Locator {
-  return page.locator('.grok-gallery-grid').locator('a, .d4-link-label')
-    .filter({hasText: exactText(name)}).filter({visible: true});
-}
-
-export const spaceShowsCard = Then('the space should show the {string} card', async (page: Page, name: string) => {
-  await expect.poll(() => cards(page, name).count(),
-    {message: `a "${name}" card in the space`, timeout: 60000}).toBeGreaterThan(0);
-}, {tier: 'ui', description: 'the view rebuilds its cards on a server round-trip it does not announce'});
-
-export const spaceHidesCard = Then('the space should not show the {string} card', async (page: Page, name: string) => {
-  await expect.poll(() => cards(page, name).count(),
-    {message: `a "${name}" card in the space`, timeout: 60000}).toBe(0);
 }, {tier: 'ui'});

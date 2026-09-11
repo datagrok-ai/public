@@ -261,11 +261,20 @@ function install(): void {
     }
     return all;
   };
-  const findViewer = (el: Element): any => viewers().find((x) => x.root === el || x.root.contains(el) || el.contains(x.root));
+  // a viewer outside a table view (a function view's docked chart, a facet's small multiples) is
+  // still a widget the platform knows by its root
+  const findViewer = (el: Element): any => {
+    const known = viewers().find((x) => x.root === el || x.root.contains(el) || el.contains(x.root));
+    if (known)
+      return known;
+    const root = el.closest('[name^="viewer-"], .d4-viewer') ?? el.querySelector('[name^="viewer-"], .d4-viewer');
+    const w = root === null ? null : DG.Widget.find(root);
+    return w !== null && typeof w?.getWidgetStatus === 'function' ? w : undefined;
+  };
   const viewerOf = (el: Element): any => {
     const v = findViewer(el);
     if (!v)
-      throw new Error('the element is not a viewer of an open table view');
+      throw new Error('the element is not a viewer');
     return v;
   };
   const arm = (v: any): void => {

@@ -88,6 +88,9 @@ export const pickFromContextMenu = When('user picks {string} from the context me
   await v.pickMenuPath(page, path);
 }, {tier: 'ui', description: `right-clicks the element (its "view" area when it reports one) and clicks ${PATH}`});
 
+export const pickFromOpenMenu = When('user picks {string} from the open menu', (page: Page, path: string) => v.pickMenuPath(page, path),
+  {tier: 'ui', description: `clicks ${PATH} in a menu something else opened — a ribbon dropdown, an icon's popup`});
+
 export const pickFromAreaContextMenu = When('user picks {string} from the context menu of the {string} area of {widget}',
   async (page: Page, path: string, area: string, target: ElementRef) => {
     await v.openContextMenuOf(page, target, area);
@@ -469,7 +472,7 @@ export const eventFired = Then('{string} event should have fired on {widget}', (
 export const eventNotFired = Then('{string} event should not have fired on {widget}', (page: Page, event: string, target: ElementRef) =>
   v.expectNotFired(page, target, event), {description: 'not once since "listens for"; the subscription stays'});
 
-export const noErrors = Then('no errors should have been logged', (page: Page) => {
+export const noErrors = Then('no errors should have been logged', async (page: Page) => {
   expect(takeErrors(page), 'console errors and page errors since the last check').toEqual([]);
 }, {description: 'console errors and uncaught exceptions since the previous check, the scenario start or the login; checking clears them'});
 

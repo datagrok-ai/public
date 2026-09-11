@@ -40,6 +40,7 @@ Feature: Opening a model from the library
     And user takes a snapshot of line chart viewer
     And user enters "150" into "switch at" input
     Then "switch at" input should have value "150"
+    And the page address should contain "switchat=150"
     And line chart viewer should have repainted
 
   Scenario: The slider moves "switch at" and the chart follows
@@ -52,5 +53,6 @@ Feature: Opening a model from the library
     When user takes a snapshot of line chart viewer
     And user selects "Mode 1" in "Process mode" input
     Then "Process mode" input should have value "Mode 1"
+    And FFox input should not have value "0.20"
     And line chart viewer should have repainted
     And no errors should have been logged

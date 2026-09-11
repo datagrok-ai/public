@@ -32,20 +32,21 @@ Feature: Sharing a space, and what it refuses
   Background:
     Given user is logged in
     And the browse panel is open
+    And Spaces tree node inside browse tree is expanded
     And no space named "BDD-Share, BDD-Share-Child" is on the server
 
   Scenario: A space and a child to share
     When user picks "Create Space..." from the context menu of Spaces tree node inside browse tree
     And user enters "BDD-Share" into Name input in Create Space dialog
     And user clicks on OK button in Create Space dialog
-    Then the Create Space dialog should close
+    Then the "Create Space" dialog should close
     And 1 space named "BDD-Share" should be on the server
     When user picks "Create Child Space..." from the context menu of BDD-Share tree node inside browse tree
     And user enters "BDD-Share-Child" into Name input in Create Space dialog
     And user clicks on OK button in Create Space dialog
     When user double-clicks on BDD-Share tree node inside browse tree
     Then the "BDD-Share" view should be current
-    And the space should show the "BDD-Share-Child" card
+    And BDD-Share-Child link in space gallery should be visible
 
   Scenario: The Share dialog asks who and how much
     When user picks "Share..." from the context menu of BDD-Share tree node inside browse tree
@@ -77,7 +78,7 @@ Feature: Sharing a space, and what it refuses
 
   Scenario: Dragging a parent onto its own child changes nothing
     When user drags BDD-Share tree node inside browse tree to BDD-Share-Child tree node inside browse tree
-    Then the browse tree should show the "BDD-Share" space
+    Then BDD-Share tree node inside browse tree should be visible
     And 1 space named "BDD-Share" should be on the server
     And BDD-Share-Child tree node inside browse tree should be present
 
@@ -85,4 +86,4 @@ Feature: Sharing a space, and what it refuses
     When user picks "Delete Space" from the context menu of BDD-Share tree node inside browse tree
     And user clicks on DELETE button in "Are you sure?" dialog
     Then 0 spaces named "BDD-Share" should be on the server
-    And the browse tree should not show the "BDD-Share" space
+    And BDD-Share tree node inside browse tree should be absent

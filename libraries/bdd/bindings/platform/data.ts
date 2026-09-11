@@ -18,7 +18,6 @@ const facts = (page: Page, column: string, test: RowTest): Promise<RowFacts> =>
   evaluate(page, ([c, t]) => (window as any).__bdd.rowFacts(c, t), [column, test] as [string, RowTest]);
 const selectedCount = (page: Page): Promise<number> => page.evaluate(() => grok.shell.t.selection.trueCount as number);
 const filteredCount = (page: Page): Promise<number> => page.evaluate(() => grok.shell.t.filter.trueCount as number);
-const tableName = (page: Page): Promise<string> => page.evaluate(() => String(grok.shell.t?.name ?? 'no table'));
 
 /** A change to the table every viewer answers: baselines first, the change, then every viewer
  * has drawn it. */
@@ -241,12 +240,6 @@ export const rowCount = Then('the table should have {int} row(s)', (page: Page, 
 
 /** The one claim about a value the column may no longer hold (the rows were deleted), so it
  * counts on its own rather than through `rowFacts`, which refuses an unknown value. */
-/** A column a computation produces appears when that computation ends, so this is how a feature
- * says "the work is done" without naming a progress indicator. */
-export const hasColumn = Then('the table should have a {string} column', (page: Page, column: string) =>
-  expect.poll(() => page.evaluate((c) => grok.shell.t?.col(c) !== null && grok.shell.t?.col(c) !== undefined, column),
-    {message: `a "${column}" column in the current table`, timeout: 120000}).toBe(true));
-
 export const noRowsWhere = Then('the table should have no rows where {string} is {string}', async (page: Page, column: string, value: string) => {
   await expect.poll(() => evaluate(page, ([c, v]) => {
     const col = (window as any).__bdd.col(c);
@@ -539,76 +532,49 @@ export const configureHierarchical = When('user configures the hierarchical filt
   filterState(page, {type: 'hierarchical', colNames: list(columns), allEnabled: true}),
 {tier: 'api', description: 'the hierarchical card\'s levels in this order (comma-separated), every node checked'});
 
-// --- numeric series ----------------------------------------------------------------------------
+// --- a table held in a cell -------------------------------------------------------------------
 
-/** The numbers of a column, in row order. `inside` names a dataframe-valued column of the current
- * table — the platform's own nesting (a fit's "RMSE by iterations", a sparkline's data) — and the
- * series is read from the table its current row holds. */
-function series(page: Page, column: string, inside?: string): Promise<number[]> {
-  return page.evaluate(([c, nested]) => {
-    let df = grok.shell.t;
-    if (nested !== null) {
-      const holder = df.col(nested);
-      if (!holder)
-        throw new Error(`no "${nested}" column in ${df.name}; it has: ${df.columns.names().join(', ')}`);
-      df = holder.get(Math.max(df.currentRowIdx, 0));
-      if (!df || !df.columns)
-        throw new Error(`"${nested}" of ${grok.shell.t.name} holds no table`);
+/** The table a dataframe-valued column of the current table holds in its current row — the
+ * platform's own nesting (a fit's "RMSE by iterations", a sparkline's data): its row count, and
+ * the numbers of one of its columns in row order when one is named. */
+function nestedTable(page: Page, inside: string, column?: string): Promise<{rows: number; values: number[]}> {
+  return page.evaluate(([n, c]) => {
+    const df = grok.shell.t;
+    const holder = df.col(n);
+    if (!holder)
+      throw new Error(`no "${n}" column in ${df.name}; it has: ${df.columns.names().join(', ')}`);
+    const nested = holder.get(Math.max(df.currentRowIdx, 0));
+    if (!nested || !nested.columns)
+      throw new Error(`"${n}" of ${df.name} holds no table`);
+    const values: number[] = [];
+    if (c !== null) {
+      const col = nested.col(c);
+      if (!col)
+        throw new Error(`no "${c}" column in the "${n}" table; it has: ${nested.columns.names().join(', ')}`);
+      for (let i = 0; i < nested.rowCount; i++) {
+        const v = col.get(i);
+        if (typeof v === 'number' && isFinite(v))
+          values.push(v);
+      }
     }
-    const col = df.col(c);
-    if (!col)
-      throw new Error(`no "${c}" column in ${df.name}; it has: ${df.columns.names().join(', ')}`);
-    const out: number[] = [];
-    for (let i = 0; i < df.rowCount; i++) {
-      const v = col.get(i);
-      if (typeof v === 'number' && isFinite(v))
-        out.push(v);
-    }
-    return out;
-  }, [column, inside ?? null] as [string, string | null]);
+    return {rows: nested.rowCount as number, values};
+  }, [inside, column ?? null] as [string, string | null]);
 }
-
-/** Where a series goes up, named so a failure says which step of it did. */
-function increases(values: number[]): string[] {
-  const up: string[] = [];
-  for (let i = 1; i < values.length; i++) {
-    if (values[i] > values[i - 1] + 1e-12)
-      up.push(`${i}: ${values[i - 1]} -> ${values[i]}`);
-  }
-  return up;
-}
-
-export const seriesDescends = Then('the {string} column should never increase', async (page: Page, column: string) => {
-  const values = await series(page, column);
-  expect(values.length, `numbers in the "${column}" column of ${await tableName(page)}`).toBeGreaterThan(1);
-  expect(increases(values), `steps of "${column}" that go up`).toEqual([]);
-  expect(values[values.length - 1], `the last value of "${column}" against its first`).toBeLessThan(values[0]);
-}, {tier: 'api', description: 'a monotone series: every step down or flat, and the end below the start'});
 
 export const nestedSeriesDescends = Then('the {string} column of the {string} table should never increase',
   async (page: Page, column: string, inside: string) => {
-    const values = await series(page, column, inside);
+    const {values} = await nestedTable(page, inside, column);
+    const up: string[] = [];
+    for (let i = 1; i < values.length; i++) {
+      if (values[i] > values[i - 1] + 1e-12)
+        up.push(`${i}: ${values[i - 1]} -> ${values[i]}`);
+    }
     expect(values.length, `numbers in the "${column}" column of the "${inside}" table`).toBeGreaterThan(1);
-    expect(increases(values), `steps of "${column}" in "${inside}" that go up`).toEqual([]);
+    expect(up, `steps of "${column}" in "${inside}" that go up`).toEqual([]);
     expect(values[values.length - 1], `the last value of "${column}" against its first`).toBeLessThan(values[0]);
-  }, {tier: 'api', description: 'the same claim about a table held in a dataframe-valued column of the current row'});
-
-export const columnWithin = Then('every value of the {string} column should be between {float} and {float}',
-  async (page: Page, column: string, lo: number, hi: number) => {
-    const values = await series(page, column);
-    expect(values.length, `numbers in the "${column}" column of ${await tableName(page)}`).toBeGreaterThan(0);
-    expect(values.filter((v) => v < lo || v > hi), `values of "${column}" outside ${lo}..${hi}`).toEqual([]);
-  }, {tier: 'api'});
+  }, {tier: 'api', description: 'a monotone series in a table held by a dataframe-valued column of the current row: every step down or flat, the end below the start'});
 
 export const nestedTableRows = Then('the {string} table should have at least {int} row(s)',
   async (page: Page, inside: string, count: number) => {
-    const rows = await page.evaluate((n) => {
-      const df = grok.shell.t;
-      const holder = df.col(n);
-      if (!holder)
-        throw new Error(`no "${n}" column in ${df.name}; it has: ${df.columns.names().join(', ')}`);
-      const nested = holder.get(Math.max(df.currentRowIdx, 0));
-      return nested && nested.columns ? (nested.rowCount as number) : -1;
-    }, inside);
-    expect(rows, `rows of the table in "${inside}"`).toBeGreaterThanOrEqual(count);
+    expect((await nestedTable(page, inside)).rows, `rows of the table in "${inside}"`).toBeGreaterThanOrEqual(count);
   }, {tier: 'api', description: 'a dataframe-valued column of the current row'});

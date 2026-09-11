@@ -3,19 +3,12 @@
    library's Chromium; no stand. */
 import assert from 'node:assert/strict';
 import {after, before, test} from 'node:test';
-import type {Browser, Page} from '@playwright/test';
+import {type Browser, chromium, type Page} from '@playwright/test';
 
-/* These eight need a browser, and the other five test files do not: the import is dynamic and the
-   launch is guarded, so a runner without Playwright (it needs Node 20) or without its browsers says
-   which of the two is missing instead of failing, and the rest of the unit tests still run. */
-let chromium: typeof import('@playwright/test').chromium | undefined;
+/* These eight need a browser, and the other five test files do not: the launch is guarded, so a
+   runner without Playwright's Chromium (the libraries CI installs none) skips them and says why,
+   and the rest of the unit tests still run. */
 let missing = '';
-try {
-  ({chromium} = await import('@playwright/test'));
-}
-catch {
-  missing = 'Playwright does not load here (it needs Node 20)';
-}
 const scenario = (name: string, fn: () => Promise<void>): void => void test(name, async (t) => {
   if (page === undefined) {
     t.skip(missing || 'no page');
@@ -67,8 +60,6 @@ let browser: Browser | undefined;
 let page: Page | undefined;
 
 before(async () => {
-  if (chromium === undefined)
-    return;
   try {
     browser = await chromium.launch();
   }
@@ -84,8 +75,8 @@ after(async () => {
   await browser?.close();
 });
 
-const count = async (phrase: string): Promise<number> => (await locate(page, el(phrase))).count();
-const text = async (phrase: string): Promise<string> => (await (await locate(page, el(phrase))).first().textContent()) ?? '';
+const count = async (phrase: string): Promise<number> => (await locate(page!, el(phrase))).count();
+const text = async (phrase: string): Promise<string> => (await (await locate(page!, el(phrase))).first().textContent()) ?? '';
 
 scenario('a kind by its data-u2-name, and by its label', async () => {
   assert.equal(await count('org input'), 1);
@@ -94,7 +85,7 @@ scenario('a kind by its data-u2-name, and by its label', async () => {
 });
 
 scenario('a part of an input, and a part of a dialog', async () => {
-  assert.equal(await (await locate(page, el('editor of org input'))).locator('input').inputValue(), 'acme');
+  assert.equal(await (await locate(page!, el('editor of org input'))).locator('input').inputValue(), 'acme');
   assert.equal(await text('title of load project dialog'), 'Load Project');
 });
 
@@ -113,12 +104,12 @@ scenario('the Dart name conventions and the platform names', async () => {
 scenario('ordinals, and the visible matches a gesture acts on', async () => {
   assert.equal(await text('second item in results list'), 'beta');
   assert.equal(await text('last item in results list'), 'gamma');
-  assert.equal(await (await locateActionable(page, el('item in results list'))).count(), 2);
+  assert.equal(await (await locateActionable(page!, el('item in results list'))).count(), 2);
 });
 
 scenario('a menu item matches its own label, not its children', async () => {
   assert.equal(await count('"As CSV" menu item in context menu'), 1);
-  assert.equal(await (await locate(page, el('Export menu item in context menu'))).getAttribute('name'), 'div-Export');
+  assert.equal(await (await locate(page!, el('Export menu item in context menu'))).getAttribute('name'), 'div-Export');
 });
 
 scenario('a popup portaled out of its owner is found through the owner edge', async () => {

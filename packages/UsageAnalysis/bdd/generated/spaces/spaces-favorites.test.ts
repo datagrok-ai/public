@@ -13,10 +13,10 @@ import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {noSpaceOnServer, spacesOnServer, treeShowsSpace} from '../../bindings/spaces.js';
+import {noSpaceOnServer, spacesOnServer} from '../../bindings/spaces.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, enterInto, shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
-import {browsePanelOpen} from '@datagrok-libraries/bdd/bindings/platform/steps';
+import {browsePanelOpen, dialogCloses} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {pickFromContextMenu} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
@@ -33,16 +33,17 @@ test.describe("A space in favorites", () => {
       await session.step(18, "And user enters \"BDD-Fav\" into Name input in Create Space dialog", () => enterInto(page, "BDD-Fav", el("Name input in Create Space dialog")));
       await session.step(19, "And user clicks on OK button in Create Space dialog", () => clickOn(page, el("OK button in Create Space dialog")));
       await session.step(20, "Then 1 space named \"BDD-Fav\" should be on the server", () => spacesOnServer(page, 1, "BDD-Fav"));
-      await session.step(21, "And \"My stuff > Favorites > BDD-Fav\" tree node inside browse tree should be absent", () => shouldBe(page, el("\"My stuff > Favorites > BDD-Fav\" tree node inside browse tree"), "absent"));
-      await session.step(22, "When user picks \"Add to favorites\" from the context menu of BDD-Fav tree node inside browse tree", () => pickFromContextMenu(page, "Add to favorites", el("BDD-Fav tree node inside browse tree")));
-      await session.step(23, "Then \"My stuff > Favorites > BDD-Fav\" tree node inside browse tree should be present", () => shouldBe(page, el("\"My stuff > Favorites > BDD-Fav\" tree node inside browse tree"), "present"));
+      await session.step(21, "And the \"Create Space\" dialog should close", () => dialogCloses(page, "Create Space"));
+      await session.step(22, "And \"My stuff > Favorites > BDD-Fav\" tree node inside browse tree should be absent", () => shouldBe(page, el("\"My stuff > Favorites > BDD-Fav\" tree node inside browse tree"), "absent"));
+      await session.step(23, "When user picks \"Add to favorites\" from the context menu of BDD-Fav tree node inside browse tree", () => pickFromContextMenu(page, "Add to favorites", el("BDD-Fav tree node inside browse tree")));
+      await session.step(24, "Then \"My stuff > Favorites > BDD-Fav\" tree node inside browse tree should be present", () => shouldBe(page, el("\"My stuff > Favorites > BDD-Fav\" tree node inside browse tree"), "present"));
     });
     await run.scenario("A space is removed from favorites", async () => {
-      await session.step(26, "When user picks \"Remove from favorites\" from the context menu of BDD-Fav tree node inside browse tree", () => pickFromContextMenu(page, "Remove from favorites", el("BDD-Fav tree node inside browse tree")));
-      await session.step(27, "Then \"My stuff > Favorites > BDD-Fav\" tree node inside browse tree should be absent", () => shouldBe(page, el("\"My stuff > Favorites > BDD-Fav\" tree node inside browse tree"), "absent"));
-      await session.step(28, "And \"My stuff > Favorites\" tree node inside browse tree should be present", () => shouldBe(page, el("\"My stuff > Favorites\" tree node inside browse tree"), "present"));
-      await session.step(29, "And 1 space named \"BDD-Fav\" should be on the server", () => spacesOnServer(page, 1, "BDD-Fav"));
-      await session.step(30, "And the browse tree should show the \"BDD-Fav\" space", () => treeShowsSpace(page, "BDD-Fav"));
+      await session.step(27, "When user picks \"Remove from favorites\" from the context menu of BDD-Fav tree node inside browse tree", () => pickFromContextMenu(page, "Remove from favorites", el("BDD-Fav tree node inside browse tree")));
+      await session.step(28, "Then \"My stuff > Favorites > BDD-Fav\" tree node inside browse tree should be absent", () => shouldBe(page, el("\"My stuff > Favorites > BDD-Fav\" tree node inside browse tree"), "absent"));
+      await session.step(29, "And \"My stuff > Favorites\" tree node inside browse tree should be present", () => shouldBe(page, el("\"My stuff > Favorites\" tree node inside browse tree"), "present"));
+      await session.step(30, "And 1 space named \"BDD-Fav\" should be on the server", () => spacesOnServer(page, 1, "BDD-Fav"));
+      await session.step(31, "And BDD-Fav tree node inside browse tree should be visible", () => shouldBe(page, el("BDD-Fav tree node inside browse tree"), "visible"));
     });
     run.finish();
   });

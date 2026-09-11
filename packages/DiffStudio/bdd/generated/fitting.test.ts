@@ -15,7 +15,8 @@ import '@datagrok-libraries/bdd/bindings/platform/elements';
 import {openLibraryModel} from '../bindings/diff-studio.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, enterInto, selectIn, shouldBeSwitchedOn, shouldHaveValue, switchOn} from '@datagrok-libraries/bdd/bindings/common/steps';
-import {columnWithin, hasColumn, nestedSeriesDescends, nestedTableRows, rowCount} from '@datagrok-libraries/bdd/bindings/platform/data';
+import {everyValueBetween, hasColumn} from '@datagrok-libraries/bdd/bindings/platform/columns';
+import {nestedSeriesDescends, nestedTableRows, rowCount} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {loadTable, viewIsCurrent} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {noErrors, repainted, takeSnapshot} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {el, feature, journey} from '@datagrok-libraries/bdd/runtime';
@@ -57,9 +58,9 @@ test.describe("Fitting a model to data", () => {
     });
     await run.scenario("Running the fit lowers the loss it reports, iteration by iteration", async () => {
       await session.step(50, "When user clicks on \"Run\" icon", () => clickOn(page, el("\"Run\" icon")));
-      await session.step(51, "Then the table should have a \"RMSE by iterations\" column", () => hasColumn(page, "RMSE by iterations"));
+      await session.step(51, "Then the table should have a column \"RMSE by iterations\"", () => hasColumn(page, "RMSE by iterations"));
       await session.step(52, "And the table should have 1 row", () => rowCount(page, 1));
-      await session.step(53, "And every value of the \"FFox\" column should be between 0.15 and 1.0", () => columnWithin(page, "FFox", 0.15, 1));
+      await session.step(53, "And every value of \"FFox\" column should lie between 0.15 and 1.0", () => everyValueBetween(page, "FFox", 0.15, 1));
       await session.step(54, "And the \"RMSE by iterations\" table should have at least 2 rows", () => nestedTableRows(page, "RMSE by iterations", 2));
       await session.step(55, "And the \"Loss\" column of the \"RMSE by iterations\" table should never increase", () => nestedSeriesDescends(page, "Loss", "RMSE by iterations"));
       await session.step(56, "And no errors should have been logged", () => noErrors(page));

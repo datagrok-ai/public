@@ -12,9 +12,9 @@ export {STATES} from '../states.js';
 const INVALID_CLASSES = ['d4-invalid', 'd4-forced-invalid', 'u2-input-invalid'];
 
 const ROWS = ['.u2-list-row', '[role="option"]', '[role="row"]', '[role="tab"]', 'option', '.d4-list-item', '[name="legend-item"]', 'tbody tr', 'tr', 'li'];
-// the dock manager's tab says which of its handles is shown with a class of its own, and nothing else
+// a dock manager's tab says which of its handles is shown with a class of its own, and nothing else
 const SELECTED = '[aria-selected="true"], [aria-pressed="true"], [aria-checked="true"], [aria-current]:not([aria-current="false"]), ' +
-  '.u2-list-row-selected, .tab-handle-selected';
+  '.u2-list-row-selected, .tab-handle-selected, .dockspan-tab-handle-selected';
 
 export async function expectState(page: Page, target: ElementRef, state: State, negate = false): Promise<void> {
   const loc = ['visible', 'hidden', 'present', 'absent', 'enabled', 'disabled'].includes(state) ?
@@ -142,11 +142,9 @@ function escapeRegExp(s: string): string {
 export async function expectValueBetween(page: Page, target: ElementRef, lo: number, hi: number): Promise<void> {
   await expect.poll(async () => {
     const text = await readValue(page, target);
-    return text === undefined || text === '' ? undefined : Number(text);
-  }, {message: `the value of ${target.phrase}, expected between ${lo} and ${hi}`})
-    .toBeGreaterThanOrEqual(lo);
-  await expect.poll(async () => Number(await readValue(page, target)),
-    {message: `the value of ${target.phrase}, expected between ${lo} and ${hi}`}).toBeLessThanOrEqual(hi);
+    const n = text === undefined || text === '' ? NaN : Number(text);
+    return n >= lo && n <= hi ? 'in range' : `${text ?? 'nothing'}`;
+  }, {message: `the value of ${target.phrase}, expected between ${lo} and ${hi}`}).toBe('in range');
 }
 
 /** The value a reader would see. The editor is resolved on every attempt, not once: a view the

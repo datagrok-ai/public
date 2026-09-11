@@ -18,10 +18,12 @@ Feature: Working with what a space holds
     And user enters "BDD-Ops" into Name input in Create Space dialog
     And user clicks on OK button in Create Space dialog
     Then 1 space named "BDD-Ops" should be on the server
+    And the "Create Space" dialog should close
     When user picks "Create Space..." from the context menu of Spaces tree node inside browse tree
     And user enters "BDD-Ops-Copy" into Name input in Create Space dialog
     And user clicks on OK button in Create Space dialog
     Then 1 space named "BDD-Ops-Copy" should be on the server
+    And the "Create Space" dialog should close
     Given Files tree node inside browse tree is expanded
     When user clicks on "Files > Demo" tree node inside browse tree
     And user drags TSLA.csv link in gallery to BDD-Ops tree node inside browse tree

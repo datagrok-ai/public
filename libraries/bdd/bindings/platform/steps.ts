@@ -228,17 +228,13 @@ export const urlShouldContain = Then('the page address should contain {string}',
   await expect.poll(() => page.url(), {message: 'the page address'}).toContain(part);
 });
 
-export const openAddress = When('user opens the page address of the current view', async (page: Page) => {
-  await page.goto(page.url(), {waitUntil: 'domcontentloaded', timeout: 180000});
-}, {tier: 'ui', description: 'loads the address again from scratch — what pasting the copied link into a new tab does'});
-
 /** How many viewers the current view holds — an analysis that is done is one that has put its
  * viewers on screen. */
 export const viewHoldsViewers = Then('the current view should hold at least {int} viewer(s)',
   async (page: Page, count: number) => {
     await expect.poll(() => page.evaluate(() => Array.from(grok.shell.v?.viewers ?? []).length),
-      {message: 'viewers of the current view', timeout: 300000}).toBeGreaterThanOrEqual(count);
-  }, {tier: 'api', description: 'polls for up to five minutes: an analysis or a fit builds them when its run ends'});
+      {message: 'viewers of the current view', timeout: pollMs(120000)}).toBeGreaterThanOrEqual(count);
+  }, {tier: 'api', description: 'a claim with the budget of the run that builds them: an analysis puts its viewers up when it ends'});
 
 /** A table in the workspace and nothing else: no view, so a form that offers the open tables in a
  * choice gains the option without losing the focus of the view it lives in. Named after the file,
