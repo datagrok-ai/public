@@ -302,7 +302,7 @@ export function drawMoleculeDifferenceOnCanvas(
   }
   let updatedX = Math.max(x, x + (w - (textWidth + subParts1.length * 4)) / 2) + 5;
   // 28 is the height of the two substitutions on top of each other + space
-  const updatedY = Math.max(y, y + (h - 28) / 2);
+  const updatedY = y; //Math.max(y, y + (h - 28) / 2);
 
   g.save();
   try {
