@@ -1,5 +1,21 @@
 # ChEMBL changelog
 
+## 37.0.3 (2026-09-10)
+
+* GROK-20862: `Browse | Compound Activity For Targets Containing Protein` timed out on ChEMBL 37 (JDBC `I/O error` after 180 s): with nine joined tables Postgres kept the `accession` filter last and hash-joined all 24.5M activities. Reordered the joins to start from `component_sequences`; same rows, ~7 s
+
+## 37.0.2 (2026-09-09)
+
+* GROK-20862: Added `Search | By ATC Classification` and `... And Substructure` — four cascading WHO ATC levels over `atc_classification`, replacing the lost FRAC hierarchy
+* GROK-20862: The `Database Queries` demo now runs the ATC substructure query
+
+## 37.0.1 (2026-09-09)
+
+* GROK-20862: Rewrote the FRAC classification queries for the ChEMBL 36+ schema (`pesticide_classification` replaces the dropped `frac_classification` hierarchy)
+* GROK-20862: Dropped the `research_companies` joins (table removed in ChEMBL 36) from the substructure search and the compound info panels
+* GROK-20862: Removed the dropped `indication_class` column from the CHEMBL ID explorer
+* Chembl: Regenerated `package.g.ts` from `package.ts` — the HitTriage data sources are `ChEMBL Compounds` and `Compounds Active Against Organism`
+
 ## 37.0.0 (2026-08-31)
 
 * Chembl: Replaced the db.datagrok.ai demo database with a package-owned Docker container built on `datagrok/demo_db_chembl`
