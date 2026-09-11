@@ -11,7 +11,9 @@ declare const grok: any;
 /* The gallery a space view shows, and its search — the same two elements in the Spaces list and
    inside a space. The cards themselves are links, so "X link in space gallery" names one without
    catching the identically-classed links of an open help pane. */
-element('space gallery', {selector: '.grok-gallery-grid', aliases: ['space content', 'gallery']});
+// the plain "gallery" is the platform's own element now (bindings/platform/elements.ts) — the same
+// selector, so "X link in gallery" and "X link in space gallery" name the same cards
+element('space gallery', {selector: '.grok-gallery-grid', aliases: ['space content']});
 element('space search', {selector: '.grok-gallery-search-bar .ui-input-type-ahead'});
 /* The access level in the sharing dialog is not a <select> any more (it was in the August spec):
    a Dart privilege selector with its current level as text and a popup behind the triangle. */
@@ -46,9 +48,14 @@ export const noSpaceOnServer = Given('no space named {string} is on the server',
    server does one-time or serialized work on the first). The claim right after OK owns the same
    budget the dialog-close claim below does, or it fails while the dialog is still legitimately open. */
 export const spacesOnServer = Then('{int} space(s) named {string} should be on the server', async (page: Page, count: number, name: string) => {
-  await expect.poll(() => page.evaluate(async (n) =>
-    (await grok.dapi.spaces.list({pageSize: 1000})).filter((s: any) => s.friendlyName === n || s.name === n).length,
-  name), {message: `spaces the server holds under "${name}"`, timeout: 60000}).toBe(count);
+  // a listing the server refuses once (a stand under load) is one attempt, not the answer
+  await expect.poll(() => page.evaluate(async (n) => {
+    try {
+      return (await grok.dapi.spaces.list({pageSize: 1000})).filter((s: any) => s.friendlyName === n || s.name === n).length;
+    } catch (e) {
+      return `the listing failed: ${String(e)}`;
+    }
+  }, name), {message: `spaces the server holds under "${name}"`, timeout: 60000}).toBe(count);
 }, {tier: 'api', description: 'what the server holds, not what the tree draws — the refusal of a duplicate is a space that was never created'});
 
 /* Whom a space is shared with, read where the platform shows it. grok.dapi.permissions.get answers
@@ -78,11 +85,3 @@ export const sharingPaneListsNot = Then('the sharing pane should not list the sh
   const {pane, shown} = await sharingPane(page);
   await expect(pane).not.toContainText(shown);
 }, {tier: 'ui'});
-
-/* Creating a space keeps the Create Space dialog open until the platform is done, and for a CHILD
-   space that took 6-18 s on dev (2026-09-10) — the shared 15 s expect timeout sits inside that
-   range, so the generic "should be hidden" passed or failed by luck. This claim owns its budget. */
-export const createDialogCloses = Then('the Create Space dialog should close', async (page: Page) => {
-  await expect(page.locator('.d4-dialog[name="dialog-Create-Space"]').filter({visible: true}),
-    'the Create Space dialog').toHaveCount(0, {timeout: 60000});
-}, {tier: 'ui', description: 'the platform closes it when the space is actually created'});

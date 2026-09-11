@@ -186,5 +186,23 @@ export function scaffold(packageDir: string): InitResult {
   }
   else
     result.skipped.push('package.json');
+
+  // the package's webpack type-checks every .ts its tsconfig reaches, and bdd/ is a Node project
+  const tsconfigFile = join(packageDir, 'tsconfig.json');
+  if (existsSync(tsconfigFile)) {
+    const text = readFileSync(tsconfigFile, 'utf8');
+    try {
+      const tsconfig = JSON.parse(text) as {exclude?: string[]};
+      if (tsconfig.exclude?.includes('bdd'))
+        result.skipped.push('tsconfig.json');
+      else {
+        tsconfig.exclude = [...(tsconfig.exclude ?? []), 'bdd'];
+        writeFileSync(tsconfigFile, JSON.stringify(tsconfig, null, indentOf(text)) + '\n', 'utf8');
+        result.created.push('tsconfig.json (exclude bdd)');
+      }
+    } catch {
+      result.notes.push('tsconfig.json is not plain JSON (comments?) — add "bdd" to its "exclude" by hand, or webpack will type-check the bdd/ folder');
+    }
+  }
   return result;
 }

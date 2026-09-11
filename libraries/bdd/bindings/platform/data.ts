@@ -531,3 +531,50 @@ export const addRangeFilter = When('user adds a range filter on {string} from {f
 export const configureHierarchical = When('user configures the hierarchical filter with columns {string}', (page: Page, columns: string) =>
   filterState(page, {type: 'hierarchical', colNames: list(columns), allEnabled: true}),
 {tier: 'api', description: 'the hierarchical card\'s levels in this order (comma-separated), every node checked'});
+
+// --- a table held in a cell -------------------------------------------------------------------
+
+/** The table a dataframe-valued column of the current table holds in its current row — the
+ * platform's own nesting (a fit's "RMSE by iterations", a sparkline's data): its row count, and
+ * the numbers of one of its columns in row order when one is named. */
+function nestedTable(page: Page, inside: string, column?: string): Promise<{rows: number; values: number[]}> {
+  return page.evaluate(([n, c]) => {
+    const df = grok.shell.t;
+    const holder = df.col(n);
+    if (!holder)
+      throw new Error(`no "${n}" column in ${df.name}; it has: ${df.columns.names().join(', ')}`);
+    const nested = holder.get(Math.max(df.currentRowIdx, 0));
+    if (!nested || !nested.columns)
+      throw new Error(`"${n}" of ${df.name} holds no table`);
+    const values: number[] = [];
+    if (c !== null) {
+      const col = nested.col(c);
+      if (!col)
+        throw new Error(`no "${c}" column in the "${n}" table; it has: ${nested.columns.names().join(', ')}`);
+      for (let i = 0; i < nested.rowCount; i++) {
+        const v = col.get(i);
+        if (typeof v === 'number' && isFinite(v))
+          values.push(v);
+      }
+    }
+    return {rows: nested.rowCount as number, values};
+  }, [inside, column ?? null] as [string, string | null]);
+}
+
+export const nestedSeriesDescends = Then('the {string} column of the {string} table should never increase',
+  async (page: Page, column: string, inside: string) => {
+    const {values} = await nestedTable(page, inside, column);
+    const up: string[] = [];
+    for (let i = 1; i < values.length; i++) {
+      if (values[i] > values[i - 1] + 1e-12)
+        up.push(`${i}: ${values[i - 1]} -> ${values[i]}`);
+    }
+    expect(values.length, `numbers in the "${column}" column of the "${inside}" table`).toBeGreaterThan(1);
+    expect(up, `steps of "${column}" in "${inside}" that go up`).toEqual([]);
+    expect(values[values.length - 1], `the last value of "${column}" against its first`).toBeLessThan(values[0]);
+  }, {tier: 'api', description: 'a monotone series in a table held by a dataframe-valued column of the current row: every step down or flat, the end below the start'});
+
+export const nestedTableRows = Then('the {string} table should have at least {int} row(s)',
+  async (page: Page, inside: string, count: number) => {
+    expect((await nestedTable(page, inside)).rows, `rows of the table in "${inside}"`).toBeGreaterThanOrEqual(count);
+  }, {tier: 'api', description: 'a dataframe-valued column of the current row'});

@@ -26,10 +26,12 @@ Feature: Putting files into a space by dragging them
     And user enters "BDD-DnD" into Name input in Create Space dialog
     And user clicks on OK button in Create Space dialog
     Then 1 space named "BDD-DnD" should be on the server
+    And the "Create Space" dialog should close
     When user picks "Create Space..." from the context menu of Spaces tree node inside browse tree
     And user enters "BDD-DnD-Src" into Name input in Create Space dialog
     And user clicks on OK button in Create Space dialog
     Then 1 space named "BDD-DnD-Src" should be on the server
+    And the "Create Space" dialog should close
     Given Files tree node inside browse tree is expanded
     When user clicks on "Files > Demo" tree node inside browse tree
     Then the "Demo" view should be current

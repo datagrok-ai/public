@@ -32,6 +32,9 @@
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git"
   },
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "compile": "tsx src/cli.ts compile",
@@ -40,7 +43,8 @@
     "list-steps": "tsx src/cli.ts list-steps",
     "typecheck": "tsc --noEmit -p .",
     "test:unit": "tsx --test tests/*.test.ts",
-    "test": "npm run build && node bin/grok-bdd.js run",
+    "test": "npm run build && npm run check && npm run test:unit",
+    "test:suite": "npm run build && node bin/grok-bdd.js run",
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
@@ -54,7 +58,7 @@
     "@playwright/test": ">=1.40.0"
   },
   "devDependencies": {
-    "@playwright/test": "^1.62.1",
+    "@playwright/test": "~1.61.0",
     "@types/node": "^20.0.0",
     "typescript": "^5.5.4"
   }

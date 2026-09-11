@@ -166,6 +166,18 @@ and `isRenderPending`, `onContextMenuShown/Closed`, `getWidgetStatus().hitAreas/
   `data-u2-owner` = the nearest named ancestor; plain `button()`, toolbar buttons and tab headers
   carry no `data-u2`. A `funcForm` number field loses a typed leading "-" (unreported u2 bug).
 - A u2 name is one token: the locator tries the phrase without spaces and with dashes.
+- A viewer outside a table view (a function view's docked chart, a facet's small multiples) is
+  reached through `DG.Widget.find(root)`; the function view's tabs are dock-spawn-ts handles in a
+  shadow root (`.dockspan-tab-handle`, a CSS locator pierces it), and the viewers of its other
+  tabs stay in the DOM with no rectangle — a claim names the tab it reads.
+- A compute form's parameter switch is a Dart `SwitchInput` (`role="switch"`, `aria-checked`)
+  that is not inside the input it governs: the sensitivity form puts it in the input's host, the
+  fitting form before it as a sibling — `switchOf` looks in the element, then back over the
+  siblings. Switching a parameter on replaces its input with a min and a max.
+- The platform's script view is CodeMirror 5 (`.CodeMirror`), the packages' editors CodeMirror 6
+  (`.cm-editor`); a document is not an input value, the text goes in at the caret. The Model Hub
+  gallery is on the page and empty for seconds after `Compute2:modelCatalog` returns: wait for
+  cards, not the element.
 
 ## Environment
 
@@ -185,6 +197,10 @@ and `isRenderPending`, `onContextMenuShown/Closed`, `getWidgetStatus().hitAreas/
 - Junctions, not `mklink /J`, from Git Bash (`New-Item -ItemType Junction`); `grok-bdd link` again
   after any `npm link`/`npm ci` in a package.
 - Bash tool: cwd persists across calls, long heredocs fail — write files with the Write tool.
+- Node 18 is what the libraries CI runs, and `@playwright/test` 1.62 exits at load below Node 20:
+  the library pins `~1.61` (the last that runs on 18) until CI moves on; `npm test` there is the
+  build, the drift check of the library's own project and the unit tests, with the locator tests
+  skipping themselves where no Chromium is installed.
 
 ## Conventions
 

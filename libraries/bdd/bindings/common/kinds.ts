@@ -51,7 +51,7 @@ inputKind('text area', ['text-area'], '.ui-input-textarea', ['textarea', 'multil
 inputKind('choice input', ['choice-input'], '.ui-input-choice', ['dropdown', 'choice', 'select']);
 inputKind('multi choice input', ['multi-choice-input'], '', ['multi choice']);
 inputKind('number input', ['number-input', 'bigint-input', 'qnum-input'], '.ui-input-int, .ui-input-float', ['numeric input', 'number field']);
-inputKind('checkbox', ['bool-input'], '.ui-input-bool, .u2-multi-choice-item, .u2-columns-option', ['bool input', 'switch', 'toggle'],
+inputKind('checkbox', ['bool-input'], '.ui-input-bool, .ui-input-bool-switch, .u2-multi-choice-item, .u2-columns-option', ['bool input', 'switch', 'toggle'],
   {match: [...INPUT_MATCH, 'text']});
 inputKind('date input', ['date-input', 'datetime-input'], '.ui-input-date', ['date field', 'datetime input', 'date picker']);
 inputKind('color input', ['color-input'], '.ui-input-color', ['color picker']);
@@ -214,6 +214,12 @@ kind('menu item', {
   labelSelector: ':scope > .u2-menu-label, :scope > .d4-menu-item-label',
   dartNames: ['div-{q}'],
 });
+// the platform's ribbon holds its commands as plain divs, named by the text or the icon they show
+kind('ribbon item', {
+  aliases: ['ribbon command'],
+  selector: '.d4-ribbon-item',
+  match: ['text', 'name', 'aria'],
+});
 kind('breadcrumbs', {aliases: ['breadcrumb bar'], selector: u2('breadcrumbs'), match: ['name', 'aria']});
 kind('breadcrumb', {
   aliases: ['crumb'],
@@ -231,9 +237,12 @@ kind('dialog', {
     footer: '.u2-dialog-footer, .d4-dialog-footer'},
 });
 kind('tabs', {aliases: ['tab strip', 'tab control'], selector: u2('tabs') + ', .d4-tab-control', match: ['name', 'aria']});
+// .tab-handle is the Dart dock manager's tab, .dockspan-tab-handle the dock-spawn-ts one a function
+// view keeps in its shadow root (which a CSS locator reaches); the label is a child either way
 kind('tab', {
-  selector: '[role="tab"], .d4-tab-header',
-  match: ['name', 'text', 'aria', 'dart'],
+  selector: '[role="tab"], .d4-tab-header, .tab-handle, .dockspan-tab-handle',
+  match: ['name', 'label', 'text', 'aria', 'dart'],
+  labelSelector: '.tab-handle-text, .dockspan-tab-handle-text',
   dartNames: ['{q}', 'tab-{q}'],
 });
 kind('tab panel', {aliases: ['tab page'], selector: '[role="tabpanel"], .d4-tab-content', match: ['name', 'aria']});

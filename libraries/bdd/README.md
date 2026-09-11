@@ -66,7 +66,9 @@ setup creates on the stand (a dev key is needed for that; users cannot be delete
 ```
 
 plus `.vscode/settings.json` for the Cucumber extension, the `.gitignore` lines
-(`bdd/test-results/`, `bdd/e2e/`, `bdd/.auth.json`) and a `test:bdd` script.
+(`bdd/test-results/`, `bdd/e2e/`, `bdd/.auth.json`), a `test:bdd` script, and `bdd` in the
+package tsconfig's `exclude` (webpack type-checks every `.ts` the tsconfig reaches, and `bdd/` is a
+Node project with a tsconfig of its own).
 
 ```bash
 grok-bdd init               # bootstrap bdd/ in the current package (idempotent)
@@ -274,7 +276,9 @@ means the settings file is not valid JSON or the glue globs miss the tier direct
 
 `npm run build` compiles `src/`, `bindings/` and the Playwright config to `dist/`; `npm run
 test:unit` runs the engine tests (nouns, compile, project, init, failure) and the locator test,
-which drives the kinds and the platform names over a static page in the library's Chromium; the
-library is a project itself (`features/platform`) and `npm test` builds and runs it. Translating a
-hand-written spec into a feature, and proving the feature tests what it claims, is the
-`/bdd-translate` skill.
+which drives the kinds and the platform names over a static page in the library's Chromium (and
+skips itself where none is installed); the library is a project itself (`features/platform`):
+`npm test` builds, drift-checks it and runs the unit tests — what the libraries CI runs on Node 18,
+which is why `@playwright/test` is pinned to the last minor that runs there — and `npm run
+test:suite` runs it against a stand. Translating a hand-written spec into a feature, and proving
+the feature tests what it claims, is the `/bdd-translate` skill.

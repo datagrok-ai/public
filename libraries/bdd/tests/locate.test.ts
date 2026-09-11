@@ -4,6 +4,18 @@
 import assert from 'node:assert/strict';
 import {after, before, test} from 'node:test';
 import {type Browser, chromium, type Page} from '@playwright/test';
+
+/* These eight need a browser, and the other five test files do not: the launch is guarded, so a
+   runner without Playwright's Chromium (the libraries CI installs none) skips them and says why,
+   and the rest of the unit tests still run. */
+let missing = '';
+const scenario = (name: string, fn: () => Promise<void>): void => void test(name, async (t) => {
+  if (page === undefined) {
+    t.skip(missing || 'no page');
+    return;
+  }
+  await fn();
+});
 import '../bindings/common/kinds.js';
 import '../bindings/platform/elements.js';
 import {el} from '../src/runtime/args.js';
@@ -44,61 +56,67 @@ const PAGE = `
 <div data-u2="menu" data-u2-owner="scope"><div class="u2-menu-item" role="menuitem"><span class="u2-menu-label">Everything</span></div></div>
 `;
 
-let browser: Browser;
-let page: Page;
+let browser: Browser | undefined;
+let page: Page | undefined;
 
 before(async () => {
-  browser = await chromium.launch();
+  try {
+    browser = await chromium.launch();
+  }
+  catch (e) {
+    missing = `Chromium does not start here: ${String(e).slice(0, 80)}`;
+    return;
+  }
   page = await browser.newPage();
   await page.setContent(PAGE);
 });
 
 after(async () => {
-  await browser.close();
+  await browser?.close();
 });
 
-const count = async (phrase: string): Promise<number> => (await locate(page, el(phrase))).count();
-const text = async (phrase: string): Promise<string> => (await (await locate(page, el(phrase))).first().textContent()) ?? '';
+const count = async (phrase: string): Promise<number> => (await locate(page!, el(phrase))).count();
+const text = async (phrase: string): Promise<string> => (await (await locate(page!, el(phrase))).first().textContent()) ?? '';
 
-test('a kind by its data-u2-name, and by its label', async () => {
+scenario('a kind by its data-u2-name, and by its label', async () => {
   assert.equal(await count('org input'), 1);
   assert.equal(await count('organization text input'), 1);
   assert.equal(await count('"First name" input'), 1);
 });
 
-test('a part of an input, and a part of a dialog', async () => {
-  assert.equal(await (await locate(page, el('editor of org input'))).locator('input').inputValue(), 'acme');
+scenario('a part of an input, and a part of a dialog', async () => {
+  assert.equal(await (await locate(page!, el('editor of org input'))).locator('input').inputValue(), 'acme');
   assert.equal(await text('title of load project dialog'), 'Load Project');
 });
 
-test('composition scopes the inner phrase inside the outer one', async () => {
+scenario('composition scopes the inner phrase inside the outer one', async () => {
   assert.equal(await count('org input in project form in load project dialog'), 1);
   assert.equal(await count('OK button in load project dialog'), 1);
   assert.equal(await count('OK button in project form'), 0);
 });
 
-test('the Dart name conventions and the platform names', async () => {
+scenario('the Dart name conventions and the platform names', async () => {
   assert.equal(await count('scatter plot icon on toolbox'), 1);
   assert.equal(await count('scatter plot icon in viewers section of toolbox'), 1);
   assert.equal(await count('Caption input'), 1);
 });
 
-test('ordinals, and the visible matches a gesture acts on', async () => {
+scenario('ordinals, and the visible matches a gesture acts on', async () => {
   assert.equal(await text('second item in results list'), 'beta');
   assert.equal(await text('last item in results list'), 'gamma');
-  assert.equal(await (await locateActionable(page, el('item in results list'))).count(), 2);
+  assert.equal(await (await locateActionable(page!, el('item in results list'))).count(), 2);
 });
 
-test('a menu item matches its own label, not its children', async () => {
+scenario('a menu item matches its own label, not its children', async () => {
   assert.equal(await count('"As CSV" menu item in context menu'), 1);
-  assert.equal(await (await locate(page, el('Export menu item in context menu'))).getAttribute('name'), 'div-Export');
+  assert.equal(await (await locate(page!, el('Export menu item in context menu'))).getAttribute('name'), 'div-Export');
 });
 
-test('a popup portaled out of its owner is found through the owner edge', async () => {
+scenario('a popup portaled out of its owner is found through the owner edge', async () => {
   assert.equal(await count('Everything menu item in scope input'), 1);
 });
 
-test('a phrase that matches nothing still has a locator to fail against, at once', async () => {
+scenario('a phrase that matches nothing still has a locator to fail against, at once', async () => {
   const start = Date.now();
   assert.equal(await count('nowhere button in load project dialog'), 0);
   assert.equal(await count('OK button in missing dialog'), 0);

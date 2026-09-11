@@ -18,6 +18,7 @@ Feature: A space in favorites
     And user enters "BDD-Fav" into Name input in Create Space dialog
     And user clicks on OK button in Create Space dialog
     Then 1 space named "BDD-Fav" should be on the server
+    And the "Create Space" dialog should close
     And "My stuff > Favorites > BDD-Fav" tree node inside browse tree should be absent
     When user picks "Add to favorites" from the context menu of BDD-Fav tree node inside browse tree
     Then "My stuff > Favorites > BDD-Fav" tree node inside browse tree should be present

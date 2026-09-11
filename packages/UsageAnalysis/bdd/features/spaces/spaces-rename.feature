@@ -14,6 +14,7 @@ Feature: Renaming a space
   Background:
     Given user is logged in
     And the browse panel is open
+    And Spaces tree node inside browse tree is expanded
     And no space named "BDD-Ren, BDD-Ren-New, BDD-Other, BDD-Ren-Parent, BDD-Ren-Child, BDD-Ren-ChildNew" is on the server
 
   Scenario: The Rename dialog opens on the current name
@@ -21,6 +22,7 @@ Feature: Renaming a space
     And user enters "BDD-Ren" into Name input in Create Space dialog
     And user clicks on OK button in Create Space dialog
     Then 1 space named "BDD-Ren" should be on the server
+    And the "Create Space" dialog should close
     When user picks "Rename..." from the context menu of BDD-Ren tree node inside browse tree
     Then Rename project dialog should be visible
     And Name input in Rename project dialog should have value "BDD-Ren"
@@ -48,6 +50,7 @@ Feature: Renaming a space
     And user enters "BDD-Other" into Name input in Create Space dialog
     And user clicks on OK button in Create Space dialog
     Then 1 space named "BDD-Other" should be on the server
+    And the "Create Space" dialog should close
     When user picks "Rename..." from the context menu of BDD-Ren-New tree node inside browse tree
     And user enters "BDD-Other" into Name input in Rename project dialog
     And user clicks on OK button in Rename project dialog
@@ -62,6 +65,7 @@ Feature: Renaming a space
     And user enters "BDD-Ren-Parent" into Name input in Create Space dialog
     And user clicks on OK button in Create Space dialog
     Then 1 space named "BDD-Ren-Parent" should be on the server
+    And the "Create Space" dialog should close
     When user picks "Create Child Space..." from the context menu of BDD-Ren-Parent tree node inside browse tree
     And user enters "BDD-Ren-Child" into Name input in Create Space dialog
     And user clicks on OK button in Create Space dialog

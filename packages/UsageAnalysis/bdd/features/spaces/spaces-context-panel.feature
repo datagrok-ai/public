@@ -21,14 +21,15 @@ Feature: What the context panel says about a space
     And user enters "BDD-CP-Root" into Name input in Create Space dialog
     And user clicks on OK button in Create Space dialog
     Then 1 space named "BDD-CP-Root" should be on the server
+    And the "Create Space" dialog should close
     When user picks "Create Child Space..." from the context menu of BDD-CP-Root tree node inside browse tree
     And user enters "BDD-CP-One" into Name input in Create Space dialog
     And user clicks on OK button in Create Space dialog
-    Then the Create Space dialog should close
+    Then the "Create Space" dialog should close
     When user picks "Create Child Space..." from the context menu of BDD-CP-Root tree node inside browse tree
     And user enters "BDD-CP-Two" into Name input in Create Space dialog
     And user clicks on OK button in Create Space dialog
-    Then the Create Space dialog should close
+    Then the "Create Space" dialog should close
     When user double-clicks on BDD-CP-Root tree node inside browse tree
     Then the "BDD-CP-Root" view should be current
     And BDD-CP-One link in space gallery should be visible

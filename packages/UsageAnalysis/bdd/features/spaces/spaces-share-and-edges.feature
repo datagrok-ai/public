@@ -32,13 +32,14 @@ Feature: Sharing a space, and what it refuses
   Background:
     Given user is logged in
     And the browse panel is open
+    And Spaces tree node inside browse tree is expanded
     And no space named "BDD-Share, BDD-Share-Child" is on the server
 
   Scenario: A space and a child to share
     When user picks "Create Space..." from the context menu of Spaces tree node inside browse tree
     And user enters "BDD-Share" into Name input in Create Space dialog
     And user clicks on OK button in Create Space dialog
-    Then the Create Space dialog should close
+    Then the "Create Space" dialog should close
     And 1 space named "BDD-Share" should be on the server
     When user picks "Create Child Space..." from the context menu of BDD-Share tree node inside browse tree
     And user enters "BDD-Share-Child" into Name input in Create Space dialog
