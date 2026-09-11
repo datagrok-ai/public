@@ -15,38 +15,38 @@ import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {pickFromTopMenu} from '@datagrok-libraries/bdd/bindings/platform/commands';
 import {openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
-import {noErrors, propertyShouldBe, propertyShouldNotBe, repainted, setProperty} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {noErrors, propertyShouldBe} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {ds, el, feature} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Pareto front viewer", () => {
   const session = feature(test, "features/pareto-front.feature", import.meta.url);
   test("The viewer picks the column of unique values as its label", {tag: ["@eda", "@realizes:eda.viewer.pareto-front"]}, async ({browser}) => {
     const page = await session.page(browser);
-    await session.step(12, "Given user is logged in", () => loggedIn(page));
-    await session.step(13, "And user opens cars dataset", () => openDataset(page, ds("cars")));
-    await session.step(16, "When user picks \"ML > Pareto Front...\" from the top menu", () => pickFromTopMenu(page, "ML > Pareto Front..."));
-    await session.step(17, "Then pareto front viewer should be visible", () => shouldBe(page, el("pareto front viewer"), "visible"));
-    await session.step(18, "And \"Label Columns\" property of pareto front viewer should be \"model\"", () => propertyShouldBe(page, "Label Columns", el("pareto front viewer"), "model"));
-    await session.step(19, "And \"Minimize\" property of pareto front viewer should be \"highway.mpg, price\"", () => propertyShouldBe(page, "Minimize", el("pareto front viewer"), "highway.mpg, price"));
-    await session.step(20, "And no errors should have been logged", () => noErrors(page));
+    await session.step(11, "Given user is logged in", () => loggedIn(page));
+    await session.step(12, "And user opens cars dataset", () => openDataset(page, ds("cars")));
+    await session.step(15, "When user picks \"ML > Pareto Front...\" from the top menu", () => pickFromTopMenu(page, "ML > Pareto Front..."));
+    await session.step(16, "Then pareto front viewer should be visible", () => shouldBe(page, el("pareto front viewer"), "visible"));
+    await session.step(17, "And \"Label Columns\" property of pareto front viewer should be \"model\"", () => propertyShouldBe(page, "Label Columns", el("pareto front viewer"), "model"));
+    await session.step(18, "And \"Minimize\" property of pareto front viewer should be \"highway.mpg, price\"", () => propertyShouldBe(page, "Minimize", el("pareto front viewer"), "highway.mpg, price"));
+    await session.step(19, "And no errors should have been logged", () => noErrors(page));
   });
   test("On demog the unique subject id is the label", {tag: ["@eda", "@realizes:eda.viewer.pareto-front"]}, async ({browser}) => {
     const page = await session.page(browser);
-    await session.step(12, "Given user is logged in", () => loggedIn(page));
-    await session.step(13, "And user opens cars dataset", () => openDataset(page, ds("cars")));
-    await session.step(23, "Given user opens demog dataset", () => openDataset(page, ds("demog")));
-    await session.step(24, "When user picks \"ML > Pareto Front...\" from the top menu", () => pickFromTopMenu(page, "ML > Pareto Front..."));
-    await session.step(25, "Then pareto front viewer should be visible", () => shouldBe(page, el("pareto front viewer"), "visible"));
-    await session.step(26, "And \"Label Columns\" property of pareto front viewer should be \"USUBJID\"", () => propertyShouldBe(page, "Label Columns", el("pareto front viewer"), "USUBJID"));
+    await session.step(11, "Given user is logged in", () => loggedIn(page));
+    await session.step(12, "And user opens cars dataset", () => openDataset(page, ds("cars")));
+    await session.step(22, "Given user opens demog dataset", () => openDataset(page, ds("demog")));
+    await session.step(23, "When user picks \"ML > Pareto Front...\" from the top menu", () => pickFromTopMenu(page, "ML > Pareto Front..."));
+    await session.step(24, "Then pareto front viewer should be visible", () => shouldBe(page, el("pareto front viewer"), "visible"));
+    await session.step(25, "And \"Label Columns\" property of pareto front viewer should be \"USUBJID\"", () => propertyShouldBe(page, "Label Columns", el("pareto front viewer"), "USUBJID"));
   });
-  test("The axes of the viewer follow its properties", {tag: ["@eda", "@realizes:eda.viewer.pareto-front"]}, async ({browser}) => {
+  test("Without a column of unique values the label stays empty", {tag: ["@eda", "@realizes:eda.viewer.pareto-front"]}, async ({browser}) => {
     const page = await session.page(browser);
-    await session.step(12, "Given user is logged in", () => loggedIn(page));
-    await session.step(13, "And user opens cars dataset", () => openDataset(page, ds("cars")));
+    await session.step(11, "Given user is logged in", () => loggedIn(page));
+    await session.step(12, "And user opens cars dataset", () => openDataset(page, ds("cars")));
+    await session.step(28, "Given user opens iris dataset", () => openDataset(page, ds("iris")));
     await session.step(29, "When user picks \"ML > Pareto Front...\" from the top menu", () => pickFromTopMenu(page, "ML > Pareto Front..."));
-    await session.step(30, "And user sets \"X Axis\" property of pareto front viewer to \"horsepower\"", () => setProperty(page, "X Axis", el("pareto front viewer"), "horsepower"));
-    await session.step(31, "Then pareto front viewer should have repainted", () => repainted(page, el("pareto front viewer")));
-    await session.step(32, "And \"Auto Axes Selection\" property of pareto front viewer should not be \"true\"", () => propertyShouldNotBe(page, "Auto Axes Selection", el("pareto front viewer"), "true"));
-    await session.step(33, "And no errors should have been logged", () => noErrors(page));
+    await session.step(30, "Then pareto front viewer should be visible", () => shouldBe(page, el("pareto front viewer"), "visible"));
+    await session.step(31, "And \"Label Columns\" property of pareto front viewer should be \"\"", () => propertyShouldBe(page, "Label Columns", el("pareto front viewer"), ""));
+    await session.step(32, "And no errors should have been logged", () => noErrors(page));
   });
 });

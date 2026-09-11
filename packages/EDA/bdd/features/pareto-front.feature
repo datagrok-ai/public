@@ -3,9 +3,8 @@ Feature: Pareto front viewer
   ML | Pareto Front... adds the viewer to the table. Translated from
   files/TestTrack/EDA/pareto-front-viewer.md and the package's playwright/pareto-front-viewer.test.ts.
 
-  The viewer reports no readings of its own (no getWidgetStatus), so the axes scenario reads the
-  repaint of the scatter plot inside it and the Auto Axes Selection the viewer turns off itself when
-  an axis is chosen by hand. The objectives, chosen in the context panel, are
+  iris has no category of unique values (Species repeats), so its label stays empty. The properties
+  chosen in the context panel, the objectives, the axes and the labels, are
   pareto-front-objectives.feature.
 
   Background:
@@ -25,9 +24,9 @@ Feature: Pareto front viewer
     Then pareto front viewer should be visible
     And "Label Columns" property of pareto front viewer should be "USUBJID"
 
-  Scenario: The axes of the viewer follow its properties
+  Scenario: Without a column of unique values the label stays empty
+    Given user opens iris dataset
     When user picks "ML > Pareto Front..." from the top menu
-    And user sets "X Axis" property of pareto front viewer to "horsepower"
-    Then pareto front viewer should have repainted
-    And "Auto Axes Selection" property of pareto front viewer should not be "true"
+    Then pareto front viewer should be visible
+    And "Label Columns" property of pareto front viewer should be ""
     And no errors should have been logged

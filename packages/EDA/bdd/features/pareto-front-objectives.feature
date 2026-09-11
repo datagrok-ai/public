@@ -1,7 +1,7 @@
 @journey @eda @realizes:eda.viewer.pareto-front
 Feature: Pareto front objectives
   The objectives of the Pareto front viewer, chosen in its properties in the context panel. Translated
-  from files/TestTrack/EDA/pareto-front-viewer.md, steps 2 to 4 and 7, and the package's
+  from files/TestTrack/EDA/pareto-front-viewer.md, steps 1 to 4 and 7, and the package's
   playwright/pareto-front-viewer.test.ts.
 
   Minimize and Maximize each open the platform's column picker, which lists the columns the property
@@ -9,7 +9,8 @@ Feature: Pareto front objectives
   picker that offered strings would start with model. The old spec read the offer from the property's
   `choices`, which the viewer never sets: its claim that model and turbo were absent passed whatever
   the offer was. The conflict warning is text the viewer puts in its own element, not a picture on
-  its canvas.
+  its canvas. The viewer reports no readings of its own (no getWidgetStatus): an axis or a label chosen
+  by hand is claimed by the automatic choice the viewer turns off.
 
   One journey over one viewer, on purpose: for two seconds after a property is edited the platform
   ignores a change of the current object (AppEvents.propertyEdited), so a feature that edited a
@@ -58,6 +59,19 @@ Feature: Pareto front objectives
     And user clicks on OK button in "Select columns..." dialog
     Then "Maximize" property of pareto front viewer should be ""
     And pareto front viewer should not contain text "Cannot minimize and maximize"
+    And no errors should have been logged
+
+  Scenario: An axis and the labels chosen by hand turn their automatic choice off
+    Given "Axes" category in context panel is expanded
+    When user selects "horsepower" in "X Axis" property in context panel
+    Then "X Axis" property of pareto front viewer should be "horsepower"
+    And "Auto Axes Selection" property of pareto front viewer should not be "true"
+    Given "Labels" category in context panel is expanded
+    When user clicks on "..." button in "Label Columns" property in context panel
+    And user clicks on None label in "Select columns..." dialog
+    And user clicks on OK button in "Select columns..." dialog
+    Then "Label Columns" property of pareto front viewer should be ""
+    And "Auto Labels Selection" property of pareto front viewer should not be "true"
     And no errors should have been logged
 
   @known-failure

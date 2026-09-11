@@ -25,6 +25,8 @@ element('gallery search', {selector: '.grok-gallery-search-bar .ui-input-type-ah
 element('code editor', {selector: '.cm-editor, .CodeMirror', aliases: ['source editor'],
   description: 'the CodeMirror the platform embeds wherever code or a formula is edited — version 6 ' +
     'in the packages (.cm-editor), version 5 in the script view of the shell (.CodeMirror)'});
+element('share access selector', {selector: '[name="div-share-selector"]',
+  description: 'the access level of the Share dialog: a Dart privilege selector showing the current level as text, a popup behind its triangle'});
 element('context menu', {selector: '.d4-menu-popup', aliases: ['popup menu'],
   description: 'the open Dart popup menu (the last one when a submenu is open)'});
 element('cell editor', {selector: '[name="cell-editor"]', aliases: ['grid cell editor'],

@@ -172,6 +172,9 @@ and `isRenderPending`, `onContextMenuShown/Closed`, `getWidgetStatus().hitAreas/
   (`property-grid-icon-minus` open, `-plus` folded), which `readExpanded` reads. For 2 s after a
   property edit (`AppEvents.propertyEdited`) the platform drops a change of the current object: a
   settings click on a new viewer right after another feature edited one leaves the panel on the old.
+- A Dart choice input's phrase can resolve to its `<select>` itself; `select` handles both. The Share
+  dialog of an entity that is not a project (a model) fetches the entity's project after it opens and
+  its OK throws "Not initialized" before that: wait for the owner's grant row ("Full access").
 - A viewer outside a table view (a function view's docked chart, a facet's small multiples) is
   reached through `DG.Widget.find(root)`; the function view's tabs are dock-spawn-ts handles in a
   shadow root (`.dockspan-tab-handle`, a CSS locator pierces it), and the viewers of its other

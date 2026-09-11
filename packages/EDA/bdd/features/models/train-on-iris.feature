@@ -57,16 +57,28 @@ Feature: Training a model to classify iris species
   Scenario: XGBoost classifies the species and retrains as its clickers and sliders move
     When user selects "Eda: XGBoost" in "Model Engine" input
     And user enters "20" into Iterations input
+    And user enters "6" into "Max Depth" input
+    And user enters "0.3" into Rate input
     And user enters "1" into Lambda input
+    And user enters "0" into Alpha input
     Then "Eda: XGBoost" heading should be visible
     And "Accuracy" table row should be visible
     And "iterations" table row should contain text "20"
     When user hovers over Iterations input
     And user clicks on plus icon in Iterations input
     Then "iterations" table row should contain text "21"
+    When user hovers over "Max Depth" input
+    And user clicks on minus icon in "Max Depth" input
+    Then "maxDepth" table row should contain text "5"
+    When user drags the slider of Rate input to 0.5
+    Then Rate input should have a value between 0.48 and 0.52
+    And "eta" table row should not contain text "eta0.30"
     When user drags the slider of Lambda input to 50
     Then Lambda input should have a value between 48 and 52
     And "lambda" table row should not contain text "lambda1"
+    When user drags the slider of Alpha input to 40
+    Then Alpha input should have a value between 38 and 42
+    And "alpha" table row should not contain text "alpha0"
     And "Accuracy" table row should be visible
     And no error or warning balloon should have been shown
     And no errors should have been logged

@@ -16,7 +16,8 @@ Feature: Training a model to predict the price of a car
   The Features picker lists the table's columns in order, model first and price seventeenth. The
   charts PLS adds to the view are its own bar charts, one bar per feature for the coefficients and
   one per component for the explained variance, and its loadings and scores scatter plots, after
-  the two every engine shows.
+  the two every engine shows. The result charts are interactive: rows boxed in Predicted vs Actual are
+  selected and highlighted there.
 
   Background:
     Given user is logged in
@@ -47,6 +48,10 @@ Feature: Training a model to predict the price of a car
     And "R squared" table row should be visible
     And "Predicted price vs Actual" label should be visible
     And the "axes" reading of pc plot viewer should be 17
+    And the "rows selected" reading of first scatter plot viewer should be 0
+    When user drags a selection box over the "view" area of first scatter plot viewer
+    Then the "rows selected" reading of first scatter plot viewer should be at least 1
+    And first scatter plot viewer should show a selection highlight
     And no error or warning balloon should have been shown
     And no errors should have been logged
 

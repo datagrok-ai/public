@@ -254,7 +254,8 @@ export async function openColumnSelector(page: Page, selector: Locator, leave = 
 
 export async function select(page: Page, target: ElementRef, option: string): Promise<void> {
   const loc = await locate(page, target);
-  const native = loc.locator('select').first();
+  // a Dart choice input's name can land on its <select> itself rather than on the host around it
+  const native = await loc.first().evaluate((e) => e.tagName === 'SELECT') ? loc.first() : loc.locator('select').first();
   if (await native.count() > 0) {
     await native.selectOption({label: option});
     return;

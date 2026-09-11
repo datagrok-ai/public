@@ -224,6 +224,72 @@ export const pickSharingUser = When('user picks the sharing user in {element}', 
   await row.click();
 }, {tier: 'ui', description: 'types the login of DATAGROK_SHARING_LOGIN and takes it from the typeahead'});
 
+/* The grant row of the second account in a Share dialog; its Remove button shows while the row is
+   hovered. The row goes at once, the grant only when the dialog is confirmed. */
+export const removeSharingUser = When('user removes the sharing user from {element}', async (page: Page, target: ElementRef) => {
+  const wanted = sharingLogin().split('@')[0].replace(/[^a-z0-9]/gi, '');
+  const row = (await locate(page, target)).locator('[name^="div-permissions-row-"]').filter({hasText: new RegExp(wanted, 'i')}).first();
+  await expect(row, `the grant row of "${wanted}"`).toBeVisible({timeout: pollMs(15000)});
+  await row.hover();
+  await row.locator('[name="button-Remove"]').click();
+  await expect(row, `the grant row of "${wanted}" after Remove`).toBeHidden();
+}, {tier: 'ui', description: 'hovers the grant row of DATAGROK_SHARING_LOGIN and clicks its Remove button'});
+
+/* Whom an entity is shared with, read where the platform shows it. grok.dapi.permissions.get answers
+   with the edit and view buckets only, and a share made through the dialog lands in neither — the
+   Sharing pane calls it "has special permissions" — so the API cannot see it and the pane is the
+   claim. The user appears there under the punctuation-stripped login ("a+b@x" as "abx"). Two
+   expressions rather than one with "(not )": an optional literal is not a parameter, so a single
+   step would always take the positive branch. */
+async function sharingPane(page: Page): Promise<{pane: ReturnType<Page['locator']>; shown: RegExp}> {
+  const login = sharingLogin();
+  const header = page.locator('.grok-prop-panel [name="div-section--Sharing"]').first();
+  await expect(header, 'the Sharing pane of the context panel').toBeVisible({timeout: 30000});
+  if (await header.getAttribute('aria-expanded') !== 'true')
+    await header.click();
+  return {
+    pane: page.locator('.grok-prop-panel .d4-pane-sharing').first(),
+    shown: new RegExp(login.split('@')[0].replace(/[^a-z0-9]/gi, ''), 'i'),
+  };
+}
+
+export const sharingPaneLists = Then('the sharing pane should list the sharing user', async (page: Page) => {
+  const {pane, shown} = await sharingPane(page);
+  await expect(pane).toContainText(shown);
+}, {tier: 'ui', description: 'the Sharing section of the context panel, opened if it is closed'});
+
+export const sharingPaneListsNot = Then('the sharing pane should not list the sharing user', async (page: Page) => {
+  const {pane, shown} = await sharingPane(page);
+  await expect(pane).not.toContainText(shown);
+}, {tier: 'ui'});
+
+/* A predictive model a feature saves, found by the name its card shows (friendlyName). The delete
+   returns before the model is gone, so the step is over once the server stops listing it. */
+async function deleteModels(page: Page, names: string[]): Promise<void> {
+  const remaining = () => page.evaluate(async (wanted) => {
+    const left: string[] = [];
+    for (const model of await grok.dapi.models.list({pageSize: 1000}))
+      if (wanted.includes(model.friendlyName) || wanted.includes(model.name)) {
+        await grok.dapi.models.delete(model).catch(() => undefined);
+        left.push(model.friendlyName ?? model.name);
+      }
+    return left;
+  }, names);
+  await expect.poll(remaining, {message: `predictive models still on the server under ${names.join(', ')}`, timeout: 60000}).toEqual([]);
+}
+
+export const noModelOnServer = Given('no predictive model named {string} is on the server', async (page: Page, name: string) => {
+  const names = name.split(',').map((n) => n.trim()).filter(Boolean);
+  await deleteModels(page, names);
+  atFeatureEnd(page, () => deleteModels(page, names));
+}, {tier: 'api', description: 'deletes what an earlier run left under those names (comma-separated), and deletes them again when the feature ends'});
+
+export const modelsOnServer = Then('{int} predictive model(s) named {string} should be on the server', async (page: Page, count: number, name: string) => {
+  await expect.poll(() => page.evaluate(async (n) =>
+    (await grok.dapi.models.list({pageSize: 1000})).filter((m: any) => m.friendlyName === n || m.name === n).length, name),
+  {message: `predictive models the server holds under "${name}"`, timeout: pollMs(30000)}).toBe(count);
+}, {tier: 'api', description: 'what the server holds, not what the gallery draws'});
+
 export const urlShouldContain = Then('the page address should contain {string}', async (page: Page, part: string) => {
   await expect.poll(() => page.url(), {message: 'the page address'}).toContain(part);
 });
