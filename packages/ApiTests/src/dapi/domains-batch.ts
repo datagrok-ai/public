@@ -2,7 +2,7 @@ import type * as _grok from 'datagrok-api/grok';
 import type * as _DG from 'datagrok-api/dg';
 declare let grok: typeof _grok, DG: typeof _DG;
 
-import {category, expect, test} from '@datagrok-libraries/test/src/test';
+import {category, expect, expectObject, test} from '@datagrok-libraries/test/src/test';
 
 // Phase-2 surface of grok.dapi.domains (batch/upsert, transactions, aggregate,
 // queryDf) against the 'apitests' schema from databases/apitests/schema.json.
@@ -113,6 +113,28 @@ category('Dapi: domains batch', () => {
     expect(res.errorCount, 1);
     const rows = await items().query({filter: `sku starts "${p}"`});
     expect(rows.length, 0, 'allOrNothing batch must not apply any rows');
+  });
+
+  test('batch throwOnError rejects', async () => {
+    const p = prefix();
+    const payload = [{sku: `${p}-ok`, quantity: 1}, {sku: `${p}-bad`, quantity: -5}];
+    try {
+      const report = await items().batch(payload);
+      let err: any = null;
+      try {
+        await items().batch(payload, {throwOnError: true});
+      } catch (e) {
+        err = e;
+      }
+      expect(err instanceof DG.DomainValidationError, true,
+        `expected DomainValidationError, got ${err?.constructor?.name}: ${err?.message}`);
+      expectObject(err.body, report);
+
+      const partial = await items().batch(payload, {throwOnError: true, allOrNothing: false});
+      expect(partial.errorCount, 1, 'partial mode is not an abort and must resolve');
+    } finally {
+      await purge(p);
+    }
   });
 
   test('transaction $ref across tables', async () => {
