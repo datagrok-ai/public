@@ -338,6 +338,9 @@ export function readExpanded(loc: Locator): Promise<boolean | null> {
     const aria = el.getAttribute('aria-expanded') ?? el.querySelector('[aria-expanded]')?.getAttribute('aria-expanded');
     if (aria != null)
       return aria === 'true';
+    // a Dart property grid category says it only by its icon: minus while open, plus while folded
+    if (el.matches('.property-grid-category'))
+      return el.querySelector('.property-grid-icon-minus') !== null;
     const twistie = el.matches('.d4-tree-view-tri, .u2-tree-twistie') ? el :
       el.querySelector('.d4-tree-view-tri, .u2-tree-twistie');
     return twistie === null ? null :

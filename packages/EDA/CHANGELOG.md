@@ -1,5 +1,9 @@
 # EDA changelog
 
+## v.next
+
+* Tests: Added BDD features for PCA, PLS, multivariate analysis, ANOVA, control comparisons, model training and the Pareto front viewer
+
 ## 1.9.0 (2026-08-26)
 
 * Added SVM (classification and regression)

@@ -7,6 +7,7 @@ dataset('demog', {path: 'System:DemoFiles/demog.csv', description: 'the demograp
 dataset('demog-1000', {path: 'System:DemoFiles/demog-1000.csv',
   description: 'a stratified 1000-row subset of demog (same SEX / RACE / DIS_POP proportions) — the table for viewer features: every paint costs one marker per row'});
 dataset('cars', {path: 'System:DemoFiles/cars.csv'});
+dataset('iris', {path: 'System:DemoFiles/iris.csv', description: '150 flowers: four measurements and the Species category'});
 dataset('earthquakes', {path: 'System:DemoFiles/geo/earthquakes.csv',
   description: '2426 quakes with Latitude / Longitude / Depth / Magnitude — the geo table the map viewers bind to'});
 dataset('beer', {path: 'System:DemoFiles/beer.csv', description: '118 beers, 33 columns; Aroma is a long-text column, so its default filter is a text filter'});

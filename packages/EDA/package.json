@@ -40,7 +40,8 @@
     "ts-loader": "^9.5.1",
     "typescript": "^5.6.3",
     "webpack": "^5.95.0",
-    "webpack-cli": "^5.1.4"
+    "webpack-cli": "^5.1.4",
+    "@datagrok-libraries/bdd": "file:../../libraries/bdd"
   },
   "scripts": {
     "link-all": "npm link datagrok-api @datagrok-libraries/utils @datagrok-libraries/tutorials",
@@ -53,7 +54,8 @@
     "release-eda-dev": "webpack && grok publish dev --release",
     "debug-eda-local": "webpack && grok publish local",
     "release-eda-local": "webpack && grok publish local --release",
-    "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm --prefix ./../../libraries/tutorials run build && npm run build"
+    "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm --prefix ./../../libraries/tutorials run build && npm run build",
+    "test:bdd": "grok-bdd run"
   },
   "canEdit": [
     "Administrators"
