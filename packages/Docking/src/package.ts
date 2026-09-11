@@ -10,7 +10,7 @@ import {IAutoDockService} from '@datagrok-libraries/bio/src/pdb/auto-dock-servic
 import {BiostructureData, BiostructureDataJson} from '@datagrok-libraries/bio/src/pdb/types';
 
 import {AutoDockApp, AutoDockDataType} from './apps/auto-dock-app';
-import {_runAutodock, AutoDockService, _runAutodock2, ensureNoDockingError} from './utils/auto-dock-service';
+import {AutoDockService, ensureNoDockingError} from './utils/auto-dock-service';
 import {TARGET_PATH, BINDING_ENERGY_COL, POSE_COL, BINDING_ENERGY_COL_UNUSED, POSE_COL_UNUSED, ERROR_COL_NAME, ERROR_MESSAGE, AUTODOCK_PROPERTY_DESCRIPTIONS} from './utils/constants';
 import { _demoDocking } from './demo/demo';
 import { DockingViewApp } from './demo/docking-app';
@@ -26,6 +26,7 @@ export class PackageFunctions{
   }
 
   @grok.decorators.func({
+    'description': 'Returns the AutoDock service client used by other packages',
     'outputs': [
       {
         'name': 'result',
@@ -38,18 +39,7 @@ export class PackageFunctions{
     return resSvc;
   }
 
-  @grok.decorators.func()
-  static async autoDockApp(): Promise<void> {
-    const pi = DG.TaskBarProgressIndicator.create('AutoDock app...');
-    try {
-      const app = new AutoDockApp('autoDockApp');
-      await app.init();
-    } finally {
-      pi.close();
-    }
-  }
-
-  @grok.decorators.func()
+  @grok.decorators.func({description: 'Lists target folders that contain an AutoDock grid parameter (.gpf) file'})
   static async getConfigFiles(): Promise<string[]> {
     const targetsFiles: DG.FileInfo[] = await grok.dapi.files.list(TARGET_PATH, true);
     const directoriesWithGpf = await Promise.all(
@@ -62,6 +52,7 @@ export class PackageFunctions{
   }
 
   @grok.decorators.func({
+    'description': 'Docks one ligand in the AutoDock container; results are cached per input',
     'meta': {
       'cache': 'all',
       'cache.invalidateOn': '0 0 1 * *'
@@ -107,18 +98,11 @@ export class PackageFunctions{
 
     formatColumns(autodockResults);
     const processedResults = processAutodockResults(autodockResults, table);
-    // `processAutodockResults` returns an empty DataFrame when AutoDock's
-    // output is missing required columns — skip downstream wiring.
     if (processedResults.columns.length === 0)
       return processedResults;
     await grok.data.detectSemanticTypes(processedResults);
 
-    // NOTE: the SMILES↔pose atom-picker link is NOT written here. Users
-    // activate it explicitly via the "Link SMILES column" checkbox in the
-    // AutoDock context panel (`mol3dAtomPickerLinkWidget`). Auto-linking
-    // was rejected to avoid ambiguous pairings when the table has more
-    // than one SMILES column and to keep the interactive-highlight opt-in
-    // rather than implicit.
+    // The SMILES-pose atom-picker link is opt-in via the AutoDock panel: auto-linking is ambiguous with several SMILES columns.
     return processedResults;
   }
 
@@ -171,13 +155,14 @@ export class PackageFunctions{
     }
   }
 
-  @grok.decorators.func()
+  @grok.decorators.func({description: 'Checks whether a Molecule3D value is an AutoDock pose with a binding energy'})
   static isApplicableAutodock(molecule: string): boolean {
     return molecule.includes('binding energy');
   }
 
   @grok.decorators.panel({
     'name': 'AutoDock',
+    'description': 'Shows the receptor with the docked pose and its AutoDock energy terms',
     'condition': 'Docking:isApplicableAutodock(molecule)',
     meta: {role: 'widgets', domain: 'chem'},
   })
@@ -186,7 +171,7 @@ export class PackageFunctions{
     return await PackageFunctions.getAutodockSingle(molecule);
   }
 
-  @grok.decorators.func()
+  @grok.decorators.func({description: 'Builds the AutoDock pose widget for a single Molecule3D value'})
   static async getAutodockSingle(
     molecule: DG.SemanticValue, showProperties: boolean = true,
     table?: DG.DataFrame): Promise<DG.Widget<any> | null> {
@@ -195,8 +180,7 @@ export class PackageFunctions{
     if (value.toLowerCase().includes(ERROR_COL_NAME))
       return new DG.Widget(ui.divText(value));
 
-    const tableView = grok.shell.tv;
-    const currentTable = table ?? tableView.dataFrame;
+    const currentTable = table ?? molecule.cell?.dataFrame ?? grok.shell.t;
 
     const addedToPdb = value.includes(BINDING_ENERGY_COL);
     if (!addedToPdb)
@@ -209,6 +193,8 @@ export class PackageFunctions{
       currentTable.currentRowIdx = 0;
 
     const receptorData = await getReceptorData(value);
+    if (!receptorData.data)
+      return new DG.Widget(ui.divText(`Could not fetch receptor ${receptorData.options!.name}`));
     const targetViewer = await currentTable.plot.fromType('Biostructure', {
       dataJson: BiostructureDataJson.fromData(receptorData),
       ligandColumnName: molecule.cell.column.name,
@@ -249,11 +235,6 @@ export class PackageFunctions{
     });
     widget.subs.push(sub);
 
-    // Append the atom-picker "Link SMILES column" checkbox at the bottom
-    // of the AutoDock panel. Rendered via BiostructureViewer's exposed
-    // function rather than as a separate cell panel, so the UI stays as
-    // a single "AutoDock" section in the context panel instead of two.
-    // Fails silently if BSV isn't installed / the function isn't found.
     try {
       const linkWidget = await grok.functions.call(
         'BiostructureViewer:mol3dAtomPickerLinkWidget',
@@ -282,6 +263,7 @@ export class PackageFunctions{
 
   @grok.decorators.panel({
     'name': 'Biology | AutoDock',
+    'description': 'Docks the current molecule against a chosen target and shows the best pose',
     meta: {role: 'widgets'},
   })
   static async autodockPanel(
@@ -312,6 +294,7 @@ export class PackageFunctions{
   }
 
   @grok.decorators.app({
+    'description': 'Opens the Docking app',
     'meta': {
       'icon': 'images/docking-icon.png',
       'browsePath': 'Bio'

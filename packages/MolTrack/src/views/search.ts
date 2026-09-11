@@ -47,7 +47,7 @@ import {
 import {funcs} from '../package-api';
 import dayjs, {Dayjs} from 'dayjs';
 import {_package} from '../package';
-import {Subject} from 'rxjs';
+import {Subject, Subscription} from 'rxjs';
 import {awaitCheck} from '@datagrok-libraries/utils/src/test';
 import {createPathFromArr, getAppHeader, getStatisticsWidget} from '../utils/view-utils';
 import {applyMolTrackLayout, saveMolTrackLayout} from '../utils/layout';
@@ -64,6 +64,8 @@ export const SAVED_SEARCH_STORAGE = 'MolTrackSavedSearch';
 
 export let molTrackSearchFieldsArr: DG.Property[] | null = null;
 export let openedSearchView: DG.ViewBase | null = null;
+let layoutSub: Subscription | null = null;
+let sizeSub: Subscription | null = null;
 
 export function getSavedSearches(entityLevel: Scope): Record<string, string> {
   const allSavedSearches = grok.userSettings.get(SAVED_SEARCH_STORAGE) || {};
@@ -71,13 +73,10 @@ export function getSavedSearches(entityLevel: Scope): Record<string, string> {
   const prefix = `${entityLevel}_`;
 
   for (const key of Object.keys(allSavedSearches)) {
-    if (!key.startsWith(prefix)) continue;
+    if (!key.startsWith(prefix) || key.endsWith(CHUNK_KEY_SUFFIX)) continue;
 
-    const parts = key.split('_');
-    const searchName = parts[1];
-
-    if (!savedSearches[searchName])
-      savedSearches[searchName] = getFullFilterStr(entityLevel, searchName);
+    const searchName = key.slice(prefix.length);
+    savedSearches[searchName] = getFullFilterStr(entityLevel, searchName);
   }
 
   return savedSearches;
@@ -272,7 +271,7 @@ export function loadSearchQuery(savedSearch: MolTrackSearch, queryBuilder: Query
   outputsFieldsInput.value = savedSearch.outputCols
     .map((it) => DG.Column.fromType((it.type as string === 'uuid' ? 'string' : it.type) as any, it.name));
   ui.empty(aggrContainer);
-  aggregations = [];
+  aggregations.length = 0;
   savedSearch.aggregations?.forEach((aggr) => {
     const aggregationRow = createAggregationRow(aggrContainer, menuFieldsForAggr, aggregations,
       validationErrorSubj, aggr);
@@ -322,7 +321,8 @@ export async function createSearchPanel(tv: DG.TableView, entityLevel: Scope, in
       queryBuilder.setLayout(newLayout);
   };
 
-  ui.onSizeChanged(filtersDiv).subscribe(() => {
+  sizeSub?.unsubscribe();
+  sizeSub = ui.onSizeChanged(filtersDiv).subscribe(() => {
     updateQueryBuilderLayout(filtersDiv.clientWidth);
   });
 
@@ -447,7 +447,7 @@ export async function createSearchPanel(tv: DG.TableView, entityLevel: Scope, in
         const menu = DG.Menu.popup();
         menu.items(items.map((it) => ui.tools.click(
           ui.divH([
-            ui.divText(it.date.toString(), {style: {color: '#7990A5'}}),
+            ui.divText(it.date.toString(), 'moltrack-history-date'),
             ui.divText(molTrackSerachToString(JSON.parse(it.value) as MolTrackSearch, queryBuilder),
               'moltrack-serch-history-item'),
           ], {style: {gap: '5px'}}),
@@ -545,7 +545,7 @@ export async function runSearch(tv: DG.TableView, search: MolTrackSearch, entity
     const result = await grok.functions.call('MolTrack:search', {
       query: JSON.stringify(molTrackQuery),
       entityEndpoint: endpoint,
-    }); ;
+    });
     const resultDf = DG.DataFrame.fromObjects(result.data);
     if (resultDf) {
       await loadSearchFields();
@@ -566,7 +566,6 @@ export async function runSearch(tv: DG.TableView, search: MolTrackSearch, entity
     updateView(tv, resultDf ?? DG.DataFrame.create(), entityLevel, tv.name);
   } catch (e: any) {
     grok.shell.error(e?.message ?? e);
-    tv.dataFrame = DG.DataFrame.create();
   } finally {
     ui.setUpdateIndicator(tv.grid.root, false);
   }
@@ -759,7 +758,7 @@ function convertSimpleCondition(cond: any, level: Scope, type: MolTrackEntityTyp
   return {
     field: `${level}${isDynamicProp ? '.details' : ''}.${cond.field}`,
     operator: cond.operator,
-    value: cond.value ? cond.value instanceof dayjs ? convertDateToString(cond.value) : cond.value : null,
+    value: cond.value instanceof dayjs ? convertDateToString(cond.value) : cond.value ?? null,
     threshold: cond.threshold || null,
   };
 }
@@ -947,7 +946,8 @@ export async function updateView(tv: DG.TableView, df: DG.DataFrame, scope: Scop
   };
 
   waitForGrid(tv, (grid) => {
-    grid.onPropertyValueChanged.subscribe(() => {
+    layoutSub?.unsubscribe();
+    layoutSub = grid.onPropertyValueChanged.subscribe(() => {
       saveMolTrackLayout(grid, scope);
     });
 
@@ -1041,7 +1041,6 @@ export async function handleSearchURL(url: string): Promise<DG.ViewBase> {
             JSON.parse(savedSearches[savedSearchName]), true);
         } else {
           grok.shell.error(`Search ${savedSearchName} not found for ${scope}`);
-          createSearchView(scope, scope.toLowerCase() as Scope, undefined, false);
           return await createSearchView(scope, scope.toLowerCase() as Scope, undefined, false);
         }
       }

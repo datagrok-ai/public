@@ -25,5 +25,5 @@ export const AUTODOCK_PROPERTY_DESCRIPTIONS: {[colName: string]: string} = {
   'ligand moving': 'Moving Ligand-Moving Receptor',
   'total internal (2)': 'Final Total Internal Energy',
   'torsional free (3)': 'Torsional Free Energy',
-  'unbound systems (4)': 'Unbound System\s Energy' 
+  'unbound systems (4)': 'Unbound System\'s Energy' 
 }

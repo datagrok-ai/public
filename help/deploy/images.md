@@ -8,6 +8,8 @@ keywords:
   - bleeding-edge tag
   - pin image version
   - helm chart tag
+  - build provenance
+  - slsa
 ---
 
 The Datagrok services that run on every deployment path
@@ -94,6 +96,26 @@ deployments to track the most recent stable build; pin to a specific semver from
 Helm chart tags follow the same scheme with a `-helm` suffix
 (`1.27.3-helm`, `1.27.3-rc-helm`, `bleeding-edge-helm`). There is no `latest-helm`
 chart — pin the chart by version.
+
+## Build provenance
+
+Release and release-candidate images (`1.x.y`, `1.x.y-rc`) are built by the release
+pipeline with BuildKit, which generates a [SLSA](https://slsa.dev) v1 provenance
+attestation and attaches it to the image in the registry as an OCI attestation manifest.
+The attestation records the image digest, the build type, the source repository and
+commit, the Dockerfile, the base images with their digests, and the build timestamps.
+It is unsigned, which corresponds to SLSA Build Level 1.
+
+To retrieve it for any release image:
+
+```shell
+docker buildx imagetools inspect datagrok/datagrok:1.27.9 --format '{{json .Provenance}}'
+```
+
+The same applies to the other Datagrok service images published from the release
+pipeline, such as `datagrok/grok_connect`. The `bleeding-edge` tag is built by a separate
+nightly path and does not carry an attestation; pin a release tag when you need
+provenance.
 
 ## Independent release cadence
 

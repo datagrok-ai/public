@@ -1,5 +1,9 @@
 # tutorials changelog
 
+## 1.7.9 (2026-09-11)
+
+* Tutorial: A running tutorial keeps a shareable URL, so its link can be copied from the address bar and opened directly
+
 ## 1.7.7 (2026-05-16)
 
 ### Features
