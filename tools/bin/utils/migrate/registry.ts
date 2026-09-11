@@ -1,4 +1,5 @@
 /// Docs: [Entity export / import](/docs/features/grok-tool/export-import/DESIGN.md)
+import {createHash} from 'crypto';
 
 export type BytesKind = 'tables' | 'files';
 
@@ -249,7 +250,22 @@ export function fileNameFor(json: any): string {
   const cleaned = String(nqName).replace(/[:/\\?*"<>|]+/g, '.').replace(/^\.+|\.+$/g, '');
   // Windows resolves `NUL.json` (and `COM1.csv.json`) to a device, whatever the extension.
   const head = cleaned.split('.')[0];
-  return RESERVED_RE.test(head) ? `${head}-${json.id ?? 'entity'}${cleaned.slice(head.length)}` : cleaned;
+  return shorten(RESERVED_RE.test(head) ? `${head}-${json.id ?? 'entity'}${cleaned.slice(head.length)}` : cleaned);
 }
 
 const RESERVED_RE = /^(NUL|CON|PRN|AUX|COM[1-9]|LPT[1-9])$/i;
+
+/**
+ * A path component caps at 255 bytes on ext4 and NTFS, and a nested view under a long space
+ * reaches that: one TWIG snapshot spelled 268. The write is what fails, so the whole part dies
+ * rather than the entity. The digest keeps a truncated name unique and stable across pulls.
+ */
+const MAX_FILE_NAME = 200;
+
+function shorten(name: string): string {
+  if (Buffer.byteLength(name) <= MAX_FILE_NAME) return name;
+  const digest = createHash('sha1').update(name).digest('hex').slice(0, 8);
+  let head = name;
+  while (Buffer.byteLength(head) > MAX_FILE_NAME - 9) head = head.slice(0, -1);
+  return `${head}-${digest}`;
+}

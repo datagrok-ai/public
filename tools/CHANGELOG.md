@@ -1,5 +1,9 @@
 # Datagrok-tools changelog
 
+## 6.5.10 (2026-09-11)
+
+* `grok s pull` — a bundle file name is capped at 200 bytes plus a digest of the full name, so it stays unique and stable across pulls. A nested view under a long space spells a longer name than a path component may hold (255 bytes on ext4 and NTFS): one TWIG snapshot reached 268 and the write failed with `ENAMETOOLONG`, taking down the whole part rather than the entity — a `--by-namespace` part that only touched the space as a dependency died with it.
+
 ## 6.5.9 (2026-09-11)
 
 * `grok s push/migrate` — placement no longer claims an entity the walk refused. Containment is exclusive, so asserting a project's relation to a platform entity takes it away from whatever holds it on the target: migrating a dashboard built on demo data moved `System:DemoFiles` into the migrated space, and every reference to it by name broke stand-wide until its `System` row was restored by hand. The guard covered a space's own `Files` connection but not `System:` connections, personal `Home` shares, package projects or built-in groups; it now defers to the same `untransferableReason` the walk uses.
