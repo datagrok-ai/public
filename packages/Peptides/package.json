@@ -47,7 +47,8 @@
     "ts-loader": "^9.5.1",
     "typescript": "^5.6.3",
     "webpack": "^5.95.0",
-    "webpack-cli": "^5.1.4"
+    "webpack-cli": "^5.1.4",
+    "@datagrok-libraries/bdd": "file:../../libraries/bdd"
   },
   "scripts": {
     "link-api": "npm link datagrok-api",
@@ -72,7 +73,8 @@
     "test": "grok test",
     "test-dev": "grok test --host dev",
     "test-local": "grok test --host localhost",
-    "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm --prefix ./../../libraries/math run build && npm --prefix ./../../libraries/ml run build && npm --prefix ./../../libraries/bio run build && npm --prefix ./../../libraries/statistics run build && npm --prefix ./../../libraries/tutorials run build && npm run build"
+    "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm --prefix ./../../libraries/math run build && npm --prefix ./../../libraries/ml run build && npm --prefix ./../../libraries/bio run build && npm --prefix ./../../libraries/statistics run build && npm --prefix ./../../libraries/tutorials run build && npm run build",
+    "test:bdd": "grok-bdd run"
   },
   "canEdit": [
     "Administrators"
