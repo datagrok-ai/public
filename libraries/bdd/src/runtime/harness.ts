@@ -195,7 +195,24 @@ export async function resetShell(page: Page): Promise<void> {
   }, NOTICES).catch(() => '');
   if (left)
     console.warn(`bdd: a dialog is still open after the shell reset: ${left}`);
+  // a view that closeAll leaves (the Model Hub's card view survives it) would otherwise keep the
+  // next scenario off the Home view: closed one by one, then reported rather than waited for
+  const stayed: string = await page.waitForFunction((home) => (window as any).grok?.shell?.v?.type === home, HOME_VIEW, {timeout: 5000})
+    .then(() => '')
+    .catch(() => page.evaluate((home) => {
+      const w = window as any;
+      const others = Array.from(w.grok.shell.views as Iterable<any>).filter((v) => v.type !== home);
+      for (const v of others)
+        v.close();
+      const still = Array.from(w.grok.shell.views as Iterable<any>).filter((v) => v.type !== home);
+      const homeView = Array.from(w.grok.shell.views as Iterable<any>).find((v) => v.type === home);
+      if (homeView)
+        w.grok.shell.v = homeView;
+      return still.map((v) => `${v.type}:${v.name}`).join(', ');
+    }, HOME_VIEW).catch(() => ''));
+  if (stayed)
+    console.warn(`bdd: views that survived closeAll and their own close() at the shell reset: ${stayed}`);
   await page.waitForFunction((home) => (window as any).grok?.shell?.v?.type === home, HOME_VIEW, {timeout: 60000})
-    .catch(() => undefined);
+    .catch(() => console.warn('bdd: the Home view is not current after the shell reset'));
   takeErrors(page);
 }
