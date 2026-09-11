@@ -329,8 +329,7 @@ export class HttpDataSource<T> {
     return Object.assign(copy, this, {query: {...this.query, ...patch}});
   }
 
-  private prepare(): any {
-    const q = this.query;
+  private prepare(q: DataSourceQuery = this.query): any {
     let d = api.grok_DataSource_ResetQuery(this.dart);
     if (q.allPackageVersions)
       d = api.grok_DataSource_AllPackageVersions(d);
@@ -384,9 +383,9 @@ export class HttpDataSource<T> {
     return api.grok_DataSource_Find(this.prepare(), id);
   }
 
-  /** Saves an entity. */
+  /** Saves an entity; the saved copy comes back with this source's {@link include}s loaded. */
   save(e: Entity): Promise<T> {
-    return api.grok_DataSource_Save(api.grok_DataSource_ResetQuery(this.dart), e.dart);
+    return api.grok_DataSource_Save(this.prepare({includes: this.query.includes}), e.dart);
   }
 
   /** Deletes an entity. */

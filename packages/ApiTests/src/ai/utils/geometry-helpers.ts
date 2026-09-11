@@ -54,8 +54,7 @@ category('AI: Utils: Geometry', () => {
     const r = new DG.Rect(10, 20, 100, 40);
     expectRect(r.getTopPart(4, 1), 10, 30, 100, 10);
     expectRect(r.getLeftPart(4, 1), 35, 20, 25, 40);
-    // getGridPart has a latent bug (height divides by y index, not yCount); pin as-coded behavior.
-    expectRect(r.getGridPart(2, 2, 1, 1), 60, 40, 50, 40);
+    expectRect(r.getGridPart(2, 2, 1, 1), 60, 40, 50, 20);
     expectRect(r.getTopScaled(0.25), 10, 20, 100, 10);
     expectRect(r.getLeftScaled(0.25), 10, 20, 25, 40);
   });
