@@ -90,7 +90,7 @@ export class LaboratoryView extends ClinicalCaseViewBase {
 
     this.root.className = 'grok-view ui-box';
 
-    const tabControl = ui.tabControl(null, false);
+    const tabControl = ui.tabControl(null, {vertical: false});
 
     const distributionCreated = checkColumnsAndCreateViewer(
       studies[this.studyId].domains.lb,

@@ -97,7 +97,7 @@ export class SpotlightWidget extends DG.Widget {
       'Learn': () => new LearningWidget().root,
     };
 
-    this.tabControl = ui.tabControl(tabs, true, 'spotlight-widget');
+    this.tabControl = ui.tabControl(tabs, {vertical: true, key: 'spotlight-widget'});
     this.subs.push(this.tabControl.onTabChanged.subscribe((tabPane: DG.TabPane) => {
       this.cleanLists();
       if (tabPane.name !== 'Workspace')

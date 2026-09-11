@@ -32,7 +32,7 @@ export class PlateWidget extends DG.Widget {
   wellDetailsDiv?: HTMLElement;
   plateDetailsDiv?: HTMLElement;
   plateActionsDiv?: HTMLElement;
-  tabs: DG.TabControl = DG.TabControl.create(true);
+  tabs: DG.TabControl = DG.TabControl.create({vertical: true});
   tabsContainer: HTMLElement = ui.divH([], 'assay-plates--plate-widget__tabs-container');
   _editable: boolean = false;
   mapFromRowFunc: (row: DG.Row) => Record<string, any> = mapFromRow;

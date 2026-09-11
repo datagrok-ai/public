@@ -32,7 +32,7 @@ category('WebLogo.project', () => {
     await delay(500);
 
     const prj2 = await grok.dapi.projects.open(prjName);
-    const view2 = grok.shell.getTableView(tableName);
+    const view2 = grok.shell.tableView(tableName);
 
     const viewersA = wu(view2.viewers).toArray();
     expect(viewersA.length, 2);

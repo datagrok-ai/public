@@ -31,7 +31,7 @@ export abstract class IsolatedAppUIBase extends AppUIBase {
     this.view.name = this.appName;
 
     const windows = grok.shell.windows;
-    windows.showProperties = false;
+    windows.showContextPanel = false;
     windows.showToolbox = false;
     windows.showHelp = false;
   }

@@ -80,7 +80,7 @@ category('Viewers: 3D Scatter Plot', () => {
     await uploadProject('Test project with 3 D Scatter Plot', demog.getTableInfo(), v, demog);
     grok.shell.closeAll();
     await grok.dapi.projects.open('Test project with 3 D Scatter Plot');
-    v = grok.shell.getTableView('demog 1000');
+    v = grok.shell.tableView('demog 1000');
     isViewerPresent(Array.from(v.viewers), '3d scatter plot');
     const scatterPlot3D = findViewer('3d scatter plot', v);
 

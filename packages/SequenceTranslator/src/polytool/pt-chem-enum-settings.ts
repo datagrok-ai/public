@@ -41,11 +41,10 @@ export function parseChemEnumDefaults(json: string | null | undefined): ChemEnum
 
 export async function getMarkushDefaults(): Promise<ChemEnumHistoryEntry | null> {
   try {
-    const ps = (_package.settings ?? await _package.getSettings()) as unknown as Map<string, any> | Record<string, any>;
+    const ps = _package.settings;
     if (!ps)
       return null;
-    // this hack is needed because api says it will return Map, but it actually returns object...
-    const value = ps instanceof Map ? ps.get(markushDefaultsPropName) : ps[markushDefaultsPropName];
+    const value = ps[markushDefaultsPropName];
     return parseChemEnumDefaults(value ?? null);
   } catch (e) {
     console.error(e);

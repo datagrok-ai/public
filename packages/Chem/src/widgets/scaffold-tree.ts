@@ -1869,7 +1869,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     }
 
     if (isNew) {
-      const gridColumn = grok.shell.getTableView(this.dataFrame!.name)?.grid.columns.byName(columnName);
+      const gridColumn = grok.shell.tableView(this.dataFrame!.name)?.grid.columns.byName(columnName);
       if (gridColumn) {
         gridColumn.visible = !hidden;
         gridColumn.isTextColorCoded = !hidden;
@@ -2578,7 +2578,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.subs.push(grok.events.onViewRemoving.subscribe((eventData) => {
       const eventView = eventData.args.view;
       if (this.dataFrame.name) {
-        const currentView = grok.shell.getTableView(this.dataFrame.name);
+        const currentView = grok.shell.tableView(this.dataFrame.name);
         if (eventView && currentView && eventView.id === currentView.id)
           this.closeAll = true;
       }

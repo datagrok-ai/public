@@ -1407,7 +1407,7 @@ export class PeptidesModel {
       minClusterSize: mclParams.minClusterSize,
     } satisfies MCLSerializableOptions);
 
-    const tv = this.analysisView ?? grok.shell.getTableView(this.df.name);
+    const tv = this.analysisView ?? grok.shell.tableView(this.df.name);
     if (tv) {
       const func = DG.Func.find({package: 'EDA', name: 'markovClusteringViewer'})[0];
       if (!func)

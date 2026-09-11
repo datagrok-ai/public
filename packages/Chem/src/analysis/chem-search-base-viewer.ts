@@ -123,8 +123,8 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
 
   updateMetricsLink(object: any, options: {[key: string]: string}): void {
     const metricsButton = ui.link(` ${this.distanceMetric}, ${this.fingerprint}`, () => {
-      if (!grok.shell.windows.showProperties)
-        grok.shell.windows.showProperties = true;
+      if (!grok.shell.windows.showContextPanel)
+        grok.shell.windows.showContextPanel = true;
       grok.shell.o = object;
     }, 'Distance metric and fingerprint', '');
     Object.keys(options).forEach((it: any) => metricsButton.style[it] = options[it]);

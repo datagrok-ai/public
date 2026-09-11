@@ -226,7 +226,7 @@ test('Peptide SAR demo dashboard + Peptides app landing — entry-point smokes',
             flags: {
               showToolbox: grok.shell.windows.showToolbox,
               showHelp: grok.shell.windows.showHelp,
-              showProperties: grok.shell.windows.showProperties,
+              showProperties: grok.shell.windows.showContextPanel,
             },
           };
         });

@@ -68,7 +68,7 @@ export class ScalarsFitRadar {
     const catCol = this.table.col(NAME.CATEGORY);
 
     if (catCol !== null) {
-      catCol.colors.setCategorical({
+      catCol.meta.colors.setCategorical({
         'Simulation': DG.Color.categoricalPalette[INDICES.BLUE],
         'Target': DG.Color.categoricalPalette[INDICES.ORANGE],
       });

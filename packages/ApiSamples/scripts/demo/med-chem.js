@@ -92,7 +92,7 @@ const groups = {
 };
 
 // settings virtual columns
-const tv = grok.shell.getTableView('Med Chem');
+const tv = grok.shell.tableView('Med Chem');
 if (tv) {
   tv.grid.columns.add({gridColumnName: 'Toxicity risks', cellType: 'Tags'}).settings = {columns: toxicityRisks};
   tv.grid.columns.add({gridColumnName: 'plate', cellType: 'Plate'})

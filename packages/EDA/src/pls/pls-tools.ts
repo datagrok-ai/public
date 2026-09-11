@@ -377,8 +377,8 @@ export async function addMvaResults(input: PlsInput, names: MvaNames, components
 function addMvaViewers(input: MvaInput, names: MvaNames, analysisType: PLS_ANALYSIS): void {
   const sourceTable = input.table;
   const view = grok.shell.tableView(sourceTable.name);
-  const loadingsRegrCoefsTable = grok.shell.tableByName(names.analysisTable);
-  const explVarsDF = grok.shell.tableByName(names.explVarTable);
+  const loadingsRegrCoefsTable = grok.shell.table(names.analysisTable);
+  const explVarsDF = grok.shell.table(names.explVarTable);
   const model: MvaModel = JSON.parse(sourceTable.getTag(MVA_MODEL_TAG)!);
 
   // 1. Predicted vs Reference scatter plot
@@ -740,7 +740,7 @@ export async function runDemoMVA(): Promise<void> {
   grok.shell.windows.help.visible = true;
   grok.shell.windows.help.showHelp(ui.markdown(DEMO_INTRO_MD));
   grok.shell.windows.showContextPanel = false;
-  grok.shell.windows.showProperties = false;
+  grok.shell.windows.showContextPanel = false;
 
   const cols = table.columns.toList();
   const numCols = cols.filter((col) =>

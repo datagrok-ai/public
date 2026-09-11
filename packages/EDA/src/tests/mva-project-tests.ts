@@ -65,7 +65,7 @@ async function saveAndOpenProject(tv: DG.TableView, names: MvaNames, dataSync: b
 
   // the viewers of the analysis tables are docked in the same view, so a project keeps them too
   for (const name of [names.analysisTable, names.explVarTable]) {
-    const df = grok.shell.tableByName(name);
+    const df = grok.shell.table(name);
     const info = df.getTableInfo();
     project.addChild(info);
     await grok.dapi.tables.uploadDataFrame(df);
@@ -87,7 +87,7 @@ async function checkResults(tableName: string, names: MvaNames): Promise<void> {
   await awaitCheck(() => grok.shell.tableNames.includes(tableName),
     `The '${tableName}' table has not been opened`, CHECK_TIMEOUT);
 
-  const table = grok.shell.tableByName(tableName);
+  const table = grok.shell.table(tableName);
 
   await awaitCheck(() => expected.every((name) => table.col(name) !== null),
     `The analysis columns are missing, expected: ${expected.join(', ')}`, CHECK_TIMEOUT);
@@ -105,7 +105,7 @@ category('Multivariate analysis: projects', () => {
     for (const name of names.xScores.concat(names.yScores).concat([names.prediction]))
       expect(df.col(name) !== null, true, `The '${name}' column has not been added`);
 
-    const analysis = grok.shell.tableByName(names.analysisTable);
+    const analysis = grok.shell.table(names.analysisTable);
 
     for (const name of [TITLE.FEATURE, TITLE.REGR_COEFS, `${TITLE.XLOADING}1`, TITLE.VIP])
       expect(analysis.col(name) !== null, true, `The '${name}' column of the analysis table is missing`);

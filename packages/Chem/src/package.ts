@@ -200,7 +200,7 @@ let mpoTreeBrowserSub: Subscription | null = null;
 async function initChemInt(): Promise<void> {
   chemCommonRdKit.setRdKitWebRoot(_package.webRoot);
   await chemCommonRdKit.initRdKitModuleLocal();
-  _properties = await _package.getProperties();
+  _properties = _package.settings;
   _rdRenderer = new RDKitCellRenderer(PackageFunctions.getRdKitModule());
   renderer = new GridCellRendererProxy(_rdRenderer, 'Molecule');
   let storedSketcherType = grok.userSettings.getValue(DG.chem.STORAGE_NAME, DG.chem.KEY) ?? '';
