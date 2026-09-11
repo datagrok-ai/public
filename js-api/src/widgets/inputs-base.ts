@@ -179,8 +179,7 @@ export class InputBase<T = any> {
   /**
    * Performs immediate validation of the input and returns the result.
    *
-   * @returns {boolean} True if the input is valid; otherwise, false.
-   */
+   * @returns True if the input is valid; otherwise, false. */
   validate(): boolean {
     return api.grok_InputBase_Validate(this.dart);
   }

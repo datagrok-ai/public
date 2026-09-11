@@ -202,9 +202,10 @@ jobs:
             ./.github
             ./docker
             ./packages/ApiTests
+            ./packages/ApiSamples
             ./libraries
             ./docusaurus
-            ./.github
+            ./help/develop
       - uses: actions/setup-node@v4
         with:
           node-version: '18.x'
@@ -220,6 +221,14 @@ jobs:
       - run: npm run build
         working-directory: ./js-api
       - run: npm run build-ts
+        working-directory: ./js-api
+      - run: npm run check-links
+        working-directory: ./js-api
+      - run: npm run inventory
+        working-directory: ./js-api
+      - run: npm run lint
+        working-directory: ./js-api
+      - run: npm test
         working-directory: ./js-api
       # Trusted publishing (OIDC) needs npm >= 11.5.1 on Node >= 22.14. Swap the
       # toolchain only for the publish step so the build keeps its pinned Node.

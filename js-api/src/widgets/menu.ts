@@ -25,8 +25,8 @@ const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) a
 
 /**
  * Menu (either top menu or popup menu).
- * Top menu sample: {@link https://public.datagrok.ai/js/samples/ui/menu}
- * Popup menu sample: {@link https://public.datagrok.ai/js/samples/ui/popup-menu}
+ * Top menu sample: {@link https://public.datagrok.ai/js/samples/ui/components/menu}
+ * Popup menu sample: {@link https://public.datagrok.ai/js/samples/ui/components/popup-menu}
  *
  * @example
  * DG.Menu.popup()
@@ -87,7 +87,7 @@ export class Menu {
   }
 
   /** Ends a group of menu items and returns to the higher menu level.
-   * @returns {Menu} `this` menu itself. */
+   * @returns `this` menu itself. */
   endGroup(): Menu {
     return toJs(api.grok_Menu_EndGroup(this.dart));
   }
@@ -107,7 +107,7 @@ export class Menu {
   /** Adds color palettes colors to menu.
    * @param colors - Array of arrays of color choices.
    * @param options - Optional params and functions, see {@link IMenuColorPaletteOptions}.
-   * @returns {Menu} `this` menu itself. */
+   * @returns `this` menu itself. */
   colorPalette(colors: number[][], options?: IMenuColorPaletteOptions): Menu {
     return toJs(api.grok_Menu_ColorPalette(this.dart, colors, options?.getInitialValue, options?.onSelect,
       options?.onPreview, options?.asGroup, options?.visible, options?.categorical ?? false, options?.resetColorMs ?? 200, options?.closeOnClick ?? true));
@@ -116,7 +116,7 @@ export class Menu {
   /** Adds font editor to menu.
    * @param initial - Initial font to be set first or reset.
    * @param options - Optional params and functions, see {@link IMenuFontEditorOptions}.
-   * @returns {Menu} `this` menu itself. */
+   * @returns `this` menu itself. */
   fontEditor(initial: string, options?: IMenuFontEditorOptions): Menu {
     return toJs(api.grok_Menu_FontEditor(this.dart, initial, options?.fontSizeMin, options?.fontSizeMax,
       options?.fontSizeStep ?? 1, options?.fontFamilies, options?.asGroup, options?.onChange));
@@ -125,7 +125,7 @@ export class Menu {
   /** Adds single-column selector to menu.
    * @param dataFrame - Data frame to be used for the selector,where column choices are taken from.
    * @param options - Optional params and functions, see {@link IMenuSingleColumnSelectorOptions}.
-   * @returns {Menu} `this` menu itself. */
+   * @returns `this` menu itself. */
   singleColumnSelector(dataFrame: DataFrame, options?: IMenuSingleColumnSelectorOptions): Menu {
     return toJs(api.grok_Menu_SingleColumSelector(this.dart, dataFrame.dart, options?.initialValue,
       !options?.onChange ? null : (grid: any, c: any, currentRowChanged: boolean) => options?.onChange?.(toJs(grid), toJs(c), currentRowChanged),
@@ -136,7 +136,7 @@ export class Menu {
   /** Adds multi-column selector to menu.
    * @param dataFrame - Data frame to be used for the selector,where column choices are taken from.
    * @param options - Optional params and functions, see {@link IMenuMultiColumnSelectorOptions}.
-   * @returns {Menu} `this` menu itself. */
+   * @returns `this` menu itself. */
   multiColumnSelector(dataFrame: DataFrame, options?: IMenuMultiColumnSelectorOptions): Menu {
     return toJs(api.grok_Menu_MultiColumSelector(this.dart, dataFrame.dart, options?.initialValue,
       !options?.onChange ? null : (grid: any) => options?.onChange?.(toJs(grid)),
@@ -146,23 +146,23 @@ export class Menu {
   /** Adds a header title.
    * @param text - Header title text.
    * @param options - Optional params and functions, see {@link IMenuHeaderOptions}.
-   * @returns {Menu} `this` menu itself. */
+   * @returns `this` menu itself. */
   header(text: string, options?: IMenuHeaderOptions): Menu {
     return toJs(api.grok_Menu_Header(this.dart, text, options?.onClick, options?.hasHoverEffect ?? false, options?.getDescription));
   }
 
-  /** Adds a separator line.
-   *  @returns {Menu} */
+  /** Adds a separator line. */
   separator(): Menu {
     return toJs(api.grok_Menu_Separator(this.dart));
   }
 
   /** Shows the menu.
-   * @returns {Menu} `this` menu itself. */
+   * @returns `this` menu itself. */
   show(options?: IShowMenuOptions): Menu {
     return toJs(api.grok_Menu_Show(this.dart, options?.element, options?.causedBy, options?.x, options?.y, options?.nextToElement));
   }
 
+  /** Hides the menu. */
   hide(): void {
     api.grok_Menu_Hide(this.dart);
   }
@@ -176,10 +176,12 @@ export class Menu {
     return this;
   }
 
+  /** Fires when an item of this menu is clicked. */
   get onContextMenuItemClick() {
     return __obs('d4-menu-item-click', this.dart);
   }
 
+  /** Fires when the menu closes. */
   get onClose(): Observable<EventData> { return api.grok_Menu_OnClose(this.dart); }
 
   toString(): string {

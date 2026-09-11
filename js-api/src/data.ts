@@ -36,21 +36,17 @@ export class DemoDatasets {
    * "demog" - clinical study demographics data: subj, study, site, sex, race, disease, start date
    * "biosensor": wearable sensor data: time, x, y, z, temp, eda
    * "random walk": random walk data for the specified number of dimensions
-   * "geo": geographic coordinates given as latitude/longitude pairs: lat, lng, value
-   *
-   * @returns {DataFrame} */
+   * "geo": geographic coordinates given as latitude/longitude pairs: lat, lng, value */
   getDemoTable(dataset: DemoDatasetName, rows: number = 10000, columns: number = 3): DataFrame {
     return toJs(api.grok_TestData(dataset, rows, columns));
   }
 
-  /** Wearable sensor data: time, x, y, z, temp, eda
-   * @returns {DataFrame}*/
+  /** Wearable sensor data: time, x, y, z, temp, eda */
   biosensor(rows: number = 10000): DataFrame {
     return this.getDemoTable('biosensor', rows);
   }
 
-  /** Random walk
-   * @returns {DataFrame}*/
+  /** Random walk */
   randomWalk(rows: number = 10000, columns: number = 3): DataFrame {
     return this.getDemoTable('random walk', rows, columns);
   }
@@ -68,20 +64,17 @@ export class DemoDatasets {
    * - weight: float */
   demog(rows: number = 10000): DataFrame { return this.getDemoTable('demog', rows); }
 
-  /** Demographics
-   * @returns {DataFrame}*/
+  /** Demographics */
   molecules(rows: number = 10000): DataFrame {
     return this.getDemoTable('molecules', rows);
   }
 
-  /** Plate well data
-   * @returns {DataFrame}*/
+  /** Plate well data */
   wells(rows: number = 10000): DataFrame {
     return this.getDemoTable('wells', rows);
   }
 
-  /** Lat/lng of a walk around San Francisco
-   * @returns {DataFrame}*/
+  /** Lat/lng of a walk around San Francisco */
   geo(rows: number = 10000): DataFrame {
     return this.getDemoTable('geo', rows);
   }
@@ -93,8 +86,7 @@ export class DemoDatasets {
 
   /** Returns a demo dataset with the specified path (relative to the demo root)
    * @example
-   * grok.data.getDemoTable("sensors/eeg.csv").then((t) => grok.shell.addTableView(t));
-   * @returns {Promise<DataFrame>}*/
+   * grok.data.getDemoTable("sensors/eeg.csv").then((t) => grok.shell.addTableView(t)); */
   loadDemoTable(path: string): Promise<DataFrame> {
     return api.grok_GetDemoTable(path);
   }
@@ -103,9 +95,8 @@ export class DemoDatasets {
 export class Db {
 
   /** Executes a specified {@link sql} against the specified {@link connectionId}.
-   * @param {string} connectionId - fully-qualified connection name (see [nqName])
-   * @param {string} sql - SQL statement
-   */
+   * @param connectionId - fully-qualified connection name (see [nqName])
+   * @param sql - SQL statement */
   async query(connectionId: string, sql: string): Promise<DataFrame> {
     let connection: DataConnection = await new Functions().eval(connectionId);
     let q = connection.query('adhoc', sql);
@@ -115,8 +106,7 @@ export class Db {
   /**
    * Creates {@link TableQueryBuilder} that can be used to construct sql queries.
    * @param connectionId - fully-qualified connection name (see [nqName])
-   * @param tableName - database table name
-   */
+   * @param tableName - database table name */
   buildQuery(connectionId: string, tableName: string): TableQueryBuilder {
     return TableQueryBuilder.from(tableName, connectionId);
   }
@@ -124,14 +114,14 @@ export class Db {
   /** Returns a {@link DbTable} for structured writes (insert/upsert/update/delete)
    * against [tableName] on the [connectionId] connection.
    * @param connectionId - fully-qualified connection name (see [nqName])
-   * @param tableName - database table name (optionally schema-qualified, e.g. `public.orders`) */
+   * @param tableName - database table name (optionally schema-qualified, e.g. `public.orders`)  */
   table(connectionId: string, tableName: string): DbTable {
     return new DbTable(connectionId, tableName);
   }
 
   /** Creates a {@link TableMutationBuilder} for fluent `UPDATE`/`DELETE` composition.
    * @param connectionId - fully-qualified connection name (see [nqName])
-   * @param tableName - database table name */
+   * @param tableName - database table name  */
   buildMutation(connectionId: string, tableName: string): TableMutationBuilder {
     return TableMutationBuilder.from(tableName, connectionId);
   }
@@ -140,7 +130,7 @@ export class Db {
    * keys) against the [connectionId] connection. Every operation supports `dryRun()`
    * (the exact SQL plus live-data destructive pre-checks) and the
    * `confirmDestructive` execution contract — see {@link DdlCommand}.
-   * @param connectionId - fully-qualified connection name (see [nqName]) */
+   * @param connectionId - fully-qualified connection name (see [nqName])  */
   ddl(connectionId: string): DdlBuilder {
     return new DdlBuilder(connectionId);
   }
@@ -305,6 +295,14 @@ export class DbTable {
  * Creating, loading, querying, manipulating, joining tables.
  * */
 
+/** Options of {@link Data.linkTables}. */
+export interface LinkTablesOptions {
+  /** Apply the link to the current state right away instead of on the first change. */
+  initialSync?: boolean;
+  /** With a selection link: filter everything out when nothing is selected. */
+  filterAllOnNoRowsSelected?: boolean;
+}
+
 export class Data {
   public demo: DemoDatasets = new DemoDatasets();
   public files: Files = new Files();
@@ -317,9 +315,7 @@ export class Data {
    * "demog" - clinical study demographics data: subj, study, site, sex, race, disease, start date
    * "biosensor": wearable sensor data: time, x, y, z, temp, eda
    * "random walk": random walk data for the specified number of dimensions
-   * "geo": geographic coordinates given as latitude/longitude pairs: lat, lng, value
-   *
-   * @returns {DataFrame} */
+   * "geo": geographic coordinates given as latitude/longitude pairs: lat, lng, value */
   testData(dataset: DemoDatasetName, rows: number = 10000, columns: number = 3): DataFrame {
     return toJs(api.grok_TestData(dataset, rows, columns));
   }
@@ -330,9 +326,7 @@ export class Data {
 
   /**
    * Parses the CSV string.
-   * @param {string} csv - The content of the comma-separated values file.
-   * @param {CsvImportOptions} options
-   * */
+   * @param csv - The content of the comma-separated values file. */
   parseCsv(csv: string, options?: CsvImportOptions): DataFrame {
     return toJs(api.grok_ParseCsv(csv, options));
   }
@@ -348,8 +342,11 @@ export class Data {
    * Links tables by the specified key columns using the specified link types (such as "current row to filter", see {@link DG.SYNC_TYPE}).
    * Tables are synchronized on the first change, set the {@link initialSync} option to reflect the current table state according to the sync type.
    * */
-  linkTables(t1: DataFrame, t2: DataFrame, keyColumns1: string[], keyColumns2: string[], linkTypes: SyncType[], initialSync: boolean = false, filterAllOnNoRowsSelected = false): void {
-    api.grok_LinkTables(t1.dart, t2.dart, keyColumns1, keyColumns2, linkTypes, initialSync, filterAllOnNoRowsSelected);
+  linkTables(t1: DataFrame, t2: DataFrame, keyColumns1: string[], keyColumns2: string[], linkTypes: SyncType[], options?: LinkTablesOptions): void;
+  linkTables(t1: DataFrame, t2: DataFrame, keyColumns1: string[], keyColumns2: string[], linkTypes: SyncType[], initialSync?: boolean, filterAllOnNoRowsSelected?: boolean): void;
+  linkTables(t1: DataFrame, t2: DataFrame, keyColumns1: string[], keyColumns2: string[], linkTypes: SyncType[], initialSync: boolean | LinkTablesOptions = false, filterAllOnNoRowsSelected = false): void {
+    const o: LinkTablesOptions = typeof initialSync === 'boolean' ? {initialSync, filterAllOnNoRowsSelected} : initialSync ?? {};
+    api.grok_LinkTables(t1.dart, t2.dart, keyColumns1, keyColumns2, linkTypes, o.initialSync ?? false, o.filterAllOnNoRowsSelected ?? false);
   };
 
   /**
@@ -369,17 +366,16 @@ export class Data {
 
   /**
    * Merges two tables by the specified key columns.
-   * @param {DataFrame} t1 - a table to join
-   * @param {DataFrame} t2 - a table to join
-   * @param {string[]} keyColumns1 - key column names from the first table
-   * @param {string[]} keyColumns2 - key column names from the second table
-   * @param {string[]} valueColumns1 - column names to copy from the first table.
+   * @param t1 - a table to join
+   * @param t2 - a table to join
+   * @param keyColumns1 - key column names from the first table
+   * @param keyColumns2 - key column names from the second table
+   * @param valueColumns1 - column names to copy from the first table.
    * Pass null to add all columns, an empty array [] to not add any columns, or an array with column names to add them specifically.
-   * @param {string[]} valueColumns2 - column names to copy from the second table
-   * @param {JoinType} joinType - inner, outer, left, or right. See [DG.JOIN_TYPE]
-   * @param {boolean} inPlace - merges content in-place into the source table
-   * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/join-link/join-tables}
-   * */
+   * @param valueColumns2 - column names to copy from the second table
+   * @param joinType - inner, outer, left, or right. See [DG.JOIN_TYPE]
+   * @param inPlace - merges content in-place into the source table
+   * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/join-link/join-tables} */
   joinTables(t1: DataFrame, t2: DataFrame, keyColumns1: string[], keyColumns2: string[], valueColumns1: string[] | null = null, valueColumns2: string[] | null = null, joinType: JoinType = JOIN_TYPE.INNER, inPlace: boolean = false): DataFrame {
     return new DataFrame(api.grok_JoinTables(t1.dart, t2.dart, keyColumns1, keyColumns2, valueColumns1, valueColumns2, joinType, inPlace));
   }
@@ -387,8 +383,7 @@ export class Data {
   /**
    * Opens a table by its id.
    * Sample: {@link https://public.datagrok.ai/js/samples/data-access/open-table-by-id}
-   * @param {string} id - table GUID
-   */
+   * @param id - table GUID */
   openTable(id: string): Promise<DataFrame> {
     return api.grok_OpenTable(id);
   }
@@ -420,12 +415,11 @@ export class Data {
    * // Returns a DataFrame (default)
    * const df = await grok.data.query("DbTests:PostgresqlTable");
    *
-   * Sample: {@link https://public.datagrok.ai/js/samples/data-access/parameterized-query}
-   */
+   * Sample: {@link https://public.datagrok.ai/js/samples/data-access/db/parameterized-query} */
   async query<T = DataFrame>(queryName: string,
                              queryParameters: object | null = null,
                              /**
-                              * @deprecated Parameter adHoc will be removed soon.
+                              * @deprecated The parameter is ignored. Removed in 1.29.
                               */
                              adHoc: boolean = false): Promise<T> {
     return toJs(await api.grok_CallFunc(queryName, queryParameters, true, null));
@@ -434,7 +428,7 @@ export class Data {
   callQuery(queryName: string,
             queryParameters: object | null = null,
             /**
-             * @deprecated Parameter adHoc will be removed soon.
+             * @deprecated The parameter is ignored. Removed in 1.29.
              */
             adHoc: boolean = false): Promise<FuncCall> {
     return api.grok_CallQuery(queryName, queryParameters, adHoc);
@@ -450,13 +444,10 @@ export class Detector {
    * Calls [check] function against a random subset of the column values, returns true
    * if all checks return true. Useful for the efficient auto-detection of the column semantic type.
    *
-   * @param {Column} column
-   * @param {StringPredicate} check
-   * @param {number} min - minimum number of categories. Returns false if less than that.
-   * @param {number} max - number of checks to make
-   * @param {number} ratio - [0-1] range: minimum allowed number of the success/total checks.
-   * @param minStringLength - values shorter than that are not considered checks
-   * */
+   * @param min - minimum number of categories. Returns false if less than that.
+   * @param max - number of checks to make
+   * @param ratio - [0-1] range: minimum allowed number of the success/total checks.
+   * @param minStringLength - values shorter than that are not considered checks */
   static sampleCategories(column: Column, check: StringPredicate, min: number = 5, max: number = 10, ratio: number = 1, minStringLength: number = 1): boolean {
     if (column.type !== TYPE.STRING)
       return false;
@@ -497,8 +488,7 @@ export class DbSchemaInfo {
   /**
    * Creates a new `DbSchemaInfo` wrapper.
    *
-   * @param dart - The underlying Dart object representing a database schema.
-   */
+   * @param dart - The underlying Dart object representing a database schema. */
   constructor(dart: any) {
     this.dart = dart;
   }
@@ -508,8 +498,7 @@ export class DbSchemaInfo {
   /**
    * Schema name (e.g., `"public"`, `"dbo"`).
    *
-   * @returns The name of this schema.
-   */
+   * @returns The name of this schema. */
   get name(): string {
     return api.grok_DbSchemaInfo_Get_Name(this.dart);
   }
@@ -519,15 +508,13 @@ export class DbSchemaInfo {
   }
 
   /**
-   * @returns A comment string, or an empty string if none exists.
-   */
+   * @returns A comment string, or an empty string if none exists. */
   get comment(): string | undefined {
     return api.grok_DbSchemaInfo_Get_Prop(this.dart, Tags.DbComment);
   }
 
   /**
-   * @returns User-defined comment used by AI query builder.
-   */
+   * @returns User-defined comment used by AI query builder. */
   get llmComment(): string | undefined {
     return api.grok_DbSchemaInfo_Get_Prop(this.dart, Tags.LlmComment);
   }
@@ -535,8 +522,7 @@ export class DbSchemaInfo {
   /**
    * The parent `DataConnection` this schema belongs to.
    *
-   * @returns A {@link DataConnection} instance.
-   */
+   * @returns A {@link DataConnection} instance. */
   get connection(): DataConnection {
     return api.grok_DbSchemaInfo_Get_Connection(this.dart);
   }
@@ -544,8 +530,7 @@ export class DbSchemaInfo {
   /**
    * Lists all tables belonging to this schema.
    *
-   * @returns A promise resolving to an array of {@link TableInfo} objects.
-   */
+   * @returns A promise resolving to an array of {@link TableInfo} objects. */
   getTables(): Promise<TableInfo[]> {
     return api.grok_DbSchemaInfo_Get_Tables(this.dart);
   }
@@ -577,8 +562,7 @@ export class DbSchemaInfo {
    *   comment: "Master table containing customer profiles",
    *   rowCount: 120345,
    * });
-   * ```
-   */
+   * ``` */
   annotateTable(
       table: TableInfo | string,
       props: DbTableProperties,
@@ -606,8 +590,7 @@ export class DbSchemaInfo {
    *   isUnique: true,
    *   comment: "Primary key for the orders table",
    * });
-   * ```
-   */
+   * ``` */
   annotateColumn(
       table: TableInfo | string,
       column: ColumnInfo | string,
@@ -638,8 +621,7 @@ export class DbRelationInfo implements DbRelationProperties {
   /**
    * Creates a new `DbRelationInfo` wrapper.
    *
-   * @param dart - The underlying Dart object representing a relation.
-   */
+   * @param dart - The underlying Dart object representing a relation. */
   constructor(dart: any) {
     this.dart = dart;
   }
@@ -769,8 +751,7 @@ export class DbInfo {
   /**
    * Creates a new `DbInfo` wrapper.
    *
-   * @param dart - The underlying Dart object representing a database connection.
-   */
+   * @param dart - The underlying Dart object representing a database connection. */
   constructor(dart: any) {
     this.dart = dart;
   }
@@ -780,22 +761,19 @@ export class DbInfo {
   /**
    * The name of the database/catalog.
    *
-   * @returns The database name.
-   */
+   * @returns The database name. */
   get name(): string {
     return api.grok_DbInfo_Get_Name(this.dart);
   }
 
   /**
-   * @returns Connection comment text, or an empty string if none exists.
-   */
+   * @returns Connection comment text, or an empty string if none exists. */
   get comment(): string | undefined {
     return api.grok_DbInfo_Get_Prop(this.dart, Tags.DbComment);
   }
 
   /**
-   * @returns User-defined comment used by AI query builder.
-   */
+   * @returns User-defined comment used by AI query builder. */
   get llmComment(): string | undefined {
     return api.grok_DbInfo_Get_Prop(this.dart, Tags.LlmComment);
   }
@@ -803,8 +781,7 @@ export class DbInfo {
   /**
    * Lists all schemas available for this database connection.
    *
-   * @returns A promise resolving to an array of {@link DbSchemaInfo} objects.
-   */
+   * @returns A promise resolving to an array of {@link DbSchemaInfo} objects. */
   getSchemas(): Promise<DbSchemaInfo[]> {
     return api.grok_DbInfo_Get_Schemas(this.dart);
   }
@@ -812,8 +789,7 @@ export class DbInfo {
   /**
    * Lists all known relations for this connection.
    *
-   * @returns A promise resolving to an array of {@link DbRelationInfo} objects.
-   */
+   * @returns A promise resolving to an array of {@link DbRelationInfo} objects. */
   getRelations(): Promise<DbRelationInfo[]> {
     return api.grok_DbInfo_Get_Relations(this.dart);
   }
@@ -821,8 +797,7 @@ export class DbInfo {
   /**
    * The underlying `DataConnection` object.
    *
-   * @returns A {@link DataConnection} wrapper.
-   */
+   * @returns A {@link DataConnection} wrapper. */
   get connection(): DataConnection {
     return toJs(api.grok_DbInfo_Get_Connection(this.dart));
   }
@@ -865,8 +840,7 @@ export class DbInfo {
    *     cardinality: 'many-to-one'
    *   }
    * );
-   * ```
-   */
+   * ``` */
   addRelation(fromTable: string, fromColumns: string[], toTable: string, toColumns: string[],
               props?: DbRelationProperties): Promise<DbRelationInfo> {
     return api.grok_DbInfo_AddRelation(this.dart, fromTable, fromColumns, toTable, toColumns, props);

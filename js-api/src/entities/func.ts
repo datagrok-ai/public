@@ -19,12 +19,12 @@ type Package = any;
 
 
 /** Represents a function
- * @extends Entity
- * {@link https://datagrok.ai/help/datagrok/functions/function}
- * */
+ * {@link https://datagrok.ai/help/datagrok/functions/function} */
 export class Func extends Entity {
+  /** Auxiliary data associated with the function, not persisted (a {@link MapBag}: indexed access plus the map methods; typed `any` so it can be cast to a package's own shape). */
   public aux: any;
-  public options: { [key: string]: any; };
+  /** Function options (the `meta.*` annotations) as key-value pairs (a {@link MapBag}: indexed access plus the map methods; typed `any` so it can be cast to a package's own shape). */
+  public options: {[key: string]: any};
 
   constructor(dart: any) {
     super(dart);
@@ -112,7 +112,7 @@ export class Func extends Entity {
   }
 
   /**
-   * @deprecated Use find, it's the same now but does not make a server query and synchronous.
+   * @deprecated Use {@link find}: the same result, synchronous, without a server query. Removed in 1.29.
    */
   static async findAll(params?: { package?: string, name?: string, tags?: string[], meta?: any, returnType?: string, returnSemType?: string}): Promise<Func[]> {
     let functions = Func.find(params);
@@ -129,14 +129,13 @@ export class Func extends Entity {
 }
 
 
-/** @extends Func
- * Represents a Script
- * */
+/**
+ * Represents a Script */
 export class Script extends Func {
   public static readonly vecInputTableName = 'in_vec_table';
   public static readonly vecOutputTableName = 'out_vec_table';
 
-  /** @constructs Script */
+
   constructor(dart: any) {
     super(dart);
   }

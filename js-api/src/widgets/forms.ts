@@ -3,6 +3,7 @@
  * @module widgets/forms
  */
 
+import {Callback} from "../const";
 import {toDart, toJs} from "../wrappers";
 import {Observable} from "rxjs";
 import {__obs, EventData, InputArgs, PropertyChangeArgs, observeStream} from "../events";
@@ -17,11 +18,10 @@ const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) a
 
 /**
  * A non-modal dialog.
- * Sample: https://public.datagrok.ai/js/samples/ui/dialogs
+ * Sample: https://public.datagrok.ai/js/samples/ui/dialogs/dialogs
  *
  * @example
  * ui.dialog('Windows')
- *   .add(ui.)
  *   .add(ui.span(['People of Earth, your attention, please… ']))
  *   .onOK(() => { grok.shell.info('OK!'); })
  *   .show();
@@ -60,19 +60,14 @@ const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) a
   }
 
   /**
-   * Sets the OK button handler, and shows the OK button
-   * @param {Function} handler
-   * @param {Object} options
-   * @returns {Dialog} */
-  onOK(handler: Function, options?: {closeOnEnter?: boolean}): Dialog<Inputs> {
+   * Sets the OK button handler, and shows the OK button */
+  onOK(handler: Callback, options?: {closeOnEnter?: boolean}): Dialog<Inputs> {
     api.grok_Dialog_OnOK(this.dart, handler, options?.closeOnEnter ?? true);
     return this;
   }
 
   /**
-   * Sets the OK button handler and returns a promise of the handler callback.
-   * @param {Function} handler
-   * @returns {Promise} */
+   * Sets the OK button handler and returns a promise of the handler callback. */
   async awaitOnOK<T = any>(handler: () => Promise<T>): Promise<T> {
     let completer = new Completer<T>();
     this.onOK(() => {
@@ -86,15 +81,13 @@ const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) a
   }
 
   /**
-   * Sets the CANCEL button handler
-   * @param {Function} handler
-   * @returns {Dialog} */
-  onCancel(handler: Function): Dialog<Inputs> {
+   * Sets the CANCEL button handler */
+  onCancel(handler: Callback): Dialog<Inputs> {
     api.grok_Dialog_OnCancel(this.dart, handler);
     return this;
   }
 
-  /** @returns {Observable} */
+
   get onClose(): Observable<any> {
     return __obs('d4-dialog-closed', this.dart);
   }
@@ -112,24 +105,20 @@ const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) a
   // onClose(handler) { api.grok_Dialog_OnClose(this.dart, handler); return this; }
   // onClose(handler) { let s = _sub(api.grok_Dialog_OnClose(this.dart, () => { handler(); s.cancel(); })); return this; }
 
-  /** @returns {Dialog}
-   * @param {{modal: boolean, fullScreen: boolean, center: boolean, centerAt: Element, x: number, y: number, width: number, height: number}|{}} options
-   * */
+  /**
+   * @param {{modal: boolean, fullScreen: boolean, center: boolean, centerAt: Element, x: number, y: number, width: number, height: number}|{}} options */
   show(options?: { modal?: boolean; resizable?: boolean; fullScreen?: boolean; center?: boolean; centerAt?: Element; x?: number; y?: number; width?: number; height?: number; backgroundColor?: string; showNextTo?: HTMLElement}): Dialog<Inputs> {
     api.grok_Dialog_Show(this.dart, options?.modal, options?.resizable, options?.fullScreen, options?.center, options?.centerAt, options?.x, options?.y, options?.width, options?.height, options?.backgroundColor, options?.showNextTo);
     return this;
   }
 
-  /** @returns {Dialog}
-   * @param {boolean} fullScreen  */
+
   showModal(fullScreen: boolean): Dialog<Inputs> {
     api.grok_Dialog_Show(this.dart, true, null, fullScreen, false, null, null, null, null, null, null, null);
     return this;
   }
 
-  /** Adds content to the dialog. using addInput() for inputs is preferred, as it provides better type safety.
-   * @param {HTMLElement | Widget | InputBase} content
-   * @returns {Dialog} */
+  /** Adds content to the dialog. using addInput() for inputs is preferred, as it provides better type safety. */
   add(content: HTMLElement | Widget | InputBase): Dialog<Inputs> {
     api.grok_Dialog_Add(this.dart, toDart(content));
     return this;
@@ -157,40 +146,28 @@ const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) a
     api.grok_Dialog_Close(this.dart);
   }
 
-  /** Returns command button with the specified text.
-   * @param {string} text
-   * @returns {HTMLButtonElement}
-   * */
+  /** Returns command button with the specified text. */
   getButton(text: string): HTMLButtonElement {
     return api.grok_Dialog_GetButton(this.dart, text);
   }
 
   /** Adds command button with the specified text.
-   * @param {string} text
-   * @param {Function} action
    * @param index
-   * @param tooltip
-   * @returns {Dialog}
-   * */
-  addButton(text: string, action: Function, index: number = 0, tooltip: any = null): Dialog<Inputs> {
+   * @param tooltip */
+  addButton(text: string, action: Callback, index: number = 0, tooltip: string | null = null): Dialog<Inputs> {
     api.grok_Dialog_AddButton(this.dart, text, action, index, tooltip);
     return this;
   }
 
-  /** Adds context action with the specified text.
-   * @param {string} text
-   * @param {Function} action
-   * @returns {Dialog}
-   * */
-  addContextAction(text: string, action: Function): Dialog<Inputs> {
+  /** Adds context action with the specified text. */
+  addContextAction(text: string, action: Callback): Dialog<Inputs> {
     api.grok_Dialog_AddContextAction(this.dart, text, action);
     return this;
   }
 
   /** Initializes the 'history' feature.
-   * @param {Function} getInput - collects the input from UI into JSON-serializable object
-   * @param {Function} applyInput - refreshes the UI according to input
-   * */
+   * @param getInput - collects the input from UI into JSON-serializable object
+   * @param applyInput - refreshes the UI according to input */
   history(getInput: () => any, applyInput: (x: any) => void): void {
     api.grok_Dialog_History(this.dart, getInput, applyInput);
   }

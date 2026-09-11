@@ -246,7 +246,7 @@ export function installDomStub(): void {
   for (const tag of ['Div', 'Span', 'Input', 'TextArea', 'Select', 'Button', 'Anchor', 'Image',
     'Canvas', 'Table', 'TableRow', 'TableCell', 'Label', 'Paragraph', 'Heading', 'UList', 'LI', 'IFrame'])
     g[`HTML${tag}Element`] ??= FakeElement;
-  g.requestAnimationFrame ??= (f: Function) => setTimeout(f, 0);
+  g.requestAnimationFrame ??= (f: () => void) => setTimeout(f, 0);
   g.cancelAnimationFrame ??= (id: any) => clearTimeout(id);
   g.getComputedStyle ??= () => makeStyle();
 }

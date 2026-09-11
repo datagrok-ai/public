@@ -83,6 +83,8 @@ import './property/property';
 import './widgets/input-form';
 import './u2/u2';
 import './utils/progressIndicator';
+import './utils/audit-fixes';
+import './utils/api-additions';
 import './ai/ai-tests';
 
 import { runTests, tests, TestContext, initAutoTests as initTests } from '@datagrok-libraries/test/src/test';

@@ -58,6 +58,7 @@ const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) a
  * ```
  */
 export class Row {
+  /** The table these rows belong to. */
   table: DataFrame;
   readonly idx: number;
 
@@ -69,9 +70,9 @@ export class Row {
    */
   constructor(table: DataFrame, idx: number) {
 
-    /** @member {DataFrame} */
+
     this.table = table;
-    /** @member {number} */
+
     this.idx = idx;
 
     // Return a Proxy to enable dynamic column access via property syntax.
@@ -79,7 +80,7 @@ export class Row {
     return new Proxy(this, {
       set(target, name: string, value) {
         if (target.hasOwnProperty(name)) {
-          Object.entries(target)[<any>name] = value;
+          (target as any)[name] = value;
           return true;
         }
         target.table.set(name, target.idx, value);
@@ -196,7 +197,7 @@ export class RowList {
   readonly table: DataFrame;
 
   constructor(table: DataFrame, dart: any) {
-    /** @member {DataFrame} */
+
     this.table = table;
     this.dart = dart;
   }
@@ -207,49 +208,48 @@ export class RowList {
   /** List of textual descriptions of currently applied filters */
   get filters(): DartList<string> { return DartList.fromDart(api.grok_RowList_Get_Filters(this.dart)); }
 
+  /** Predicate that tells whether a row index is the mouse-over row. */
   get mouseOverRowFunc(): IndexPredicate {
     return api.grok_RowList_MouseOverRowFunc(this.dart);
   }
 
+  /** Indexes of the rows that satisfy [indexPredicate]. */
   where(indexPredicate: IndexPredicate): WuIterable<number> {
     return wu(_toIterable(api.grok_RowList_Where(this.dart, indexPredicate)));
   }
 
+  /** Row indexes, optionally restricted to the filtered or selected rows. */
   indexes(options?: {onlyFiltered?: boolean, onlySelected?: boolean}): WuIterable<number> {
     return wu(_toIterable(api.grok_RowList_Indexes(this.dart, options?.onlyFiltered ?? false, options?.onlySelected ?? false)));
   }
 
   /** Removes specified rows
-   * @param {number} idx
-   * @param {number} [count=1] - Number of rows to remove.
-   * @param notify - Whether a change notification should be fired. */
+   * @param [count - =1] - Number of rows to remove.
+   * @param notify - Whether a change notification should be fired.  */
   removeAt(idx: number, count: number = 1, notify: boolean = true): void {
     api.grok_RowList_RemoveAt(this.dart, idx, count, notify);
   }
 
-  /** Removes specified rows
-   * @param {RowPredicate} rowPredicate */
+  /** Removes specified rows */
   removeWhere(rowPredicate: RowPredicate): void {
     api.grok_RowList_RemoveWhereIdx(this.dart, (i: number) => rowPredicate(this.get(i)));
   }
 
-  /** Removes specified rows
-   * @param {IndexPredicate} indexPredicate */
+  /** Removes specified rows */
   removeWhereIdx(indexPredicate: IndexPredicate): void {
     api.grok_RowList_RemoveWhereIdx(this.dart, indexPredicate);
   }
 
   /** Inserts empty rows at the specified position
-   * @param {number} [count=1] - Number of rows to insert.
-   * @param notify - Whether a change notification should be fired. */
+   * @param [count - =1] - Number of rows to insert.
+   * @param notify - Whether a change notification should be fired.  */
   insertAt(idx: number, count: number = 1, notify: boolean = true): void {
     api.grok_RowList_InsertAt(this.dart, idx, count, notify);
   }
 
   /** Appends a new row with the specified values
    * @param values - List of values (length and types should match columns)
-   * @param notify - Whether a change notification should be fired.
-   * @returns {Row} */
+   * @param notify - Whether a change notification should be fired. */
   addNew(values: any[] | null = null, notify: boolean = true): Row {
     return new Row(this.table, api.grok_RowList_AddNew(this.dart, values, notify));
   }
@@ -261,9 +261,9 @@ export class RowList {
   }
 
   /** Sets values for the specified row.
-   * @param {number} idx - Row index.
+   * @param idx - Row index.
    * @param values - List of values (length and types should match columns)
-   * @param notify - Raise onDataChanged event */
+   * @param notify - Raise onDataChanged event  */
   setValues(idx: number, values: any[], notify: boolean = true): void {
     api.grok_RowList_SetValues(this.dart, idx, values, notify);
   }
@@ -316,7 +316,7 @@ export class RowList {
     api.grok_RowList_AddFilterState(this.dart, state);
   }
 
-  /** @returns {string} */
+
   toString(): string {
     return api.grok_Object_ToString(this.dart);
   }
@@ -340,33 +340,28 @@ export class Cell {
     this.dart = dart;
   }
 
-  /** Corresponding table.
-   * @returns {DataFrame} */
+  /** Corresponding table. */
   get dataFrame(): DataFrame {
     const {DataFrame} = require('./data-frame');
     return new DataFrame(api.grok_Cell_Get_DataFrame(this.dart));
   }
 
-  /** Corresponding row.
-   * @returns {Row} */
+  /** Corresponding row. */
   get row(): Row {
     return new Row(this.dataFrame, this.rowIndex);
   }
 
-  /** Index of the corresponding row.
-   * @returns {number} */
+  /** Index of the corresponding row. */
   get rowIndex(): number {
     return api.grok_Cell_Get_RowIndex(this.dart);
   }
 
-  /** Corresponding column.
-   * @returns {Column} */
+  /** Corresponding column. */
   get column(): Column {
     return toJs(api.grok_Cell_Get_Column(this.dart));
   }
 
-  /** Cell value.
-   * @returns {*} */
+  /** Cell value. */
   get value(): any { return toJs(api.grok_Cell_Get_Value(this.dart)); }
   set value(x: any) { api.grok_Cell_Set_Value(this.dart, toDart(x)); }
 
@@ -377,7 +372,7 @@ export class Cell {
   /** Whether the cell is empty */
   isNone(): boolean { return this.column.isNone(this.rowIndex); }
 
-  /** @returns {string} */
+
   toString(): string {
     return api.grok_Object_ToString(this.dart);
   }
