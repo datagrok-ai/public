@@ -19,19 +19,13 @@ export function showHelpPanel(): void {
 
 export async function _demoDocking(): Promise<void> {
   await demo('docking', ['AutoDock poses']);
-  // showHelpPanel();
 }
 
 async function demo(type: 'docking', columnNames: string[]): Promise<void> {
   const datasetPath = `System:AppData/Docking/demo_files/${type}_demo.csv`;
   const layoutPath = `System:AppData/Docking/demo_files/${type}_demo.layout`;
 
-  // semType isn't stored in layout JSON — pin Molecule (SMILES), rawPng
-  // (PL Diagram, BSV PL object handler), and Tags (PL Interactions, drives
-  // the per-token colored badge renderer in tandem with the layout's
-  // `cell.renderer: Tags` + `.multi-value-separator: ,` tags) at import
-  // time. Ligand columns are pinned below in the same loop that adds their
-  // docking-role tag.
+  // semType is not stored in the layout JSON, so it is pinned at import time.
   const df = DG.DataFrame.fromCsv(
     await grok.dapi.files.readAsText(datasetPath),
     {columnImportOptions: [

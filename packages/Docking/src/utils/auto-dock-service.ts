@@ -9,7 +9,6 @@ import {Molecule3DUnitsHandler} from '@datagrok-libraries/bio/src/molecule-3d/mo
 import {MoleculeUnitsHandler} from '@datagrok-libraries/bio/src/molecule/molecule-units-handler';
 
 import {_package} from './constants';
-import { getAutoDockService } from '../package';
 
 namespace Forms {
   export type dockLigand = {
@@ -45,7 +44,7 @@ namespace Forms {
 
 export function buildDefaultAutodockGpf(receptorName: string, npts: GridSize): string {
   const res: string = `
-npts ${npts.x} ${npts.y} ${npts.y}      # num.grid points in xyz
+npts ${npts.x} ${npts.y} ${npts.z}      # num.grid points in xyz
 gridfld ${receptorName}.maps.fld                    # grid_data_file
 spacing 0.375                                       # spacing(A)
 receptor_types A C Fe N NA OA SA                    # receptor atom types
@@ -143,13 +142,6 @@ export class AutoDockService implements IAutoDockService {
     const result = adRes as unknown as Forms.LigandResults;
     const poses = result.poses;
 
-    // const modelList: string[] = wu(adRes.poses.matchAll(/MODEL.*?ENDMDL/gs/* lazy, not greedy */))
-    //   .map((ma) => ma[0]).toArray();
-    // const posesCol = DG.Column.fromStrings(poseColName ?? 'pdbqt_model', modelList);
-    // // posesCol.semType = DG.SEMTYPE.MOLECULE3D;
-    // // posesCol.meta.units = 'pdbqt';
-    // const posesDf = DG.DataFrame.fromColumns([posesCol]);
-
     const posesDf: DG.DataFrame = poses 
       ? this.ph.parsePdbqt(adRes.poses, poseColName) 
       : DG.DataFrame.fromJson(JSON.stringify(result));
@@ -159,9 +151,6 @@ export class AutoDockService implements IAutoDockService {
   async dockLigandColumn(receptor: BiostructureData, ligandCol: DG.Column<string>,
     autodockGpf: string, poseCount: number = 30, poseColName: string = 'poses', debug: boolean = false
   ): Promise<DG.DataFrame> {
-    //if (receptor.binary || receptor.ext !== 'pdb')
-      //throw new Error(`Unsupported receptor ext '${receptor.ext}' or binary, must be 'pdb' string.`);
-
     let ligandPdbCol: DG.Column<string>;
     switch (ligandCol.semType) {
       case DG.SEMTYPE.MOLECULE: {
@@ -213,12 +202,9 @@ export class AutoDockService implements IAutoDockService {
   }
 
   private async fetchAndCheck(path: string, params: RequestInit): Promise<any> {
-    // @ts-ignore
     const adResponse: Response = await grok.dapi.docker.dockerContainers.fetchProxy(this.dc.id, path, params);
     if (adResponse.status !== 200) {
       const errMsg = adResponse.statusText;
-      // const errMsg = (await adResponse.json())['datagrok-error'];
-      // throw new Error(errMsg);
     }
     const adRes = (await adResponse.json()) as Forms.dockLigandRes;
     ensureNoDockingError(adRes);
@@ -244,55 +230,3 @@ export function ensureNoDockingError(response: any) {
   if (datagrokError)
     throw new Error(datagrokError);
 }
-
-
-export async function _runAutodock(
-  receptor: DG.FileInfo, ligand: DG.FileInfo, npts: GridSize
-): Promise<DG.DataFrame | null> {
-  const svc: IAutoDockService = new AutoDockService();
-  if (!svc.ready) {
-    grok.shell.warning('Autodock container not started yet.');
-    return null;
-  }
-
-  const receptorStr = await receptor.readAsString();
-  const receptorData: BiostructureData = {binary: false, ext: receptor.extension, data: await receptor.readAsString()};
-  const ligandData: BiostructureData = {binary: false, ext: ligand.extension, data: await ligand.readAsString()};
-  const autodockGpf = buildDefaultAutodockGpf(receptor.fileName, npts);
-  return await svc.dockLigand(receptorData, ligandData, autodockGpf);
-}
-
-export async function _runAutodock2(molCol: DG.Column<string>, receptor: BiostructureData): Promise<void> {
-  // const receptorPdb: string = await receptorFi.readAsString();
-
-  let resDf: DG.DataFrame | undefined = undefined;
-
-  const adSvc = await getAutoDockService();
-  await adSvc.awaitStatus('started', 30000);
-  const ph = await getPdbHelper();
-  for (let lRowI = 0; lRowI < molCol.length; ++lRowI) {
-    const t1 = window.performance.now();
-    try {
-      const ligandMol = molCol.get(lRowI);
-      const ligandPdb = await ph.molToPdb(ligandMol!);
-      const ligandData: BiostructureData = {binary: false, data: ligandPdb, ext: 'pdb'};
-      const autodockGpf = buildDefaultAutodockGpf(receptor.options!.name!, new GridSize(40, 40, 40));
-
-      const posesDf = await adSvc.dockLigand(receptor, ligandData, autodockGpf, 10);
-
-      if (resDf === undefined)
-        resDf = posesDf.clone(DG.BitSet.create(posesDf.rowCount, (_i) => false));
-
-      resDf!.append(posesDf, true);
-    } finally {
-      const t2 = window.performance.now();
-      _package.logger.debug('_runAutodock2(), ' + `ligand: ${lRowI}, ` + `ET: ${t2 - t2} ms, `);
-    }
-  }
-
-  if (resDf !== undefined)
-    DG.Utils.download('models.csv', resDf.toCsv());
-  else
-    window.alert('Empty result');
-}
-

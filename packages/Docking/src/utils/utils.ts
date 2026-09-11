@@ -70,9 +70,10 @@ async function fetchPdbContent(pdbId: string, format: string = 'pdb'): Promise<s
 export function prop(molecule: DG.SemanticValue, propertyCol: DG.Column, host: HTMLElement, descriptions: { [colName: string]: string }) : HTMLElement {
   const addColumnIcon = ui.iconFA('plus', () => {
     const df = molecule.cell.dataFrame;
-    propertyCol.name = df.columns.getUnusedName(propertyCol.name);
-    propertyCol.setTag(DG.TAGS.DESCRIPTION, descriptions[propertyCol.name]);
-    df.columns.add(propertyCol);
+    const col = propertyCol.clone();
+    col.name = df.columns.getUnusedName(propertyCol.name);
+    col.setTag(DG.TAGS.DESCRIPTION, descriptions[propertyCol.name]);
+    df.columns.add(col);
   }, `Calculate ${propertyCol.name} for the whole table`);
 
   ui.tools.setHoverVisibility(host, [addColumnIcon]);
@@ -128,17 +129,7 @@ export function processAutodockResults(autodockResults: DG.DataFrame, table: DG.
     Lower values correspond to stronger binding.';
   const poseCol = autodockResults.col(POSE_COL);
   const affinityCol = autodockResults.col(BINDING_ENERGY_COL);
-  // Both columns are required. Missing either means AutoDock didn't
-  // produce the expected output (e.g. the docking-autodock container
-  // was stopped, the target folder was unreadable, or the pipeline
-  // returned partial results). Surface this with a shell warning and
-  // return an empty DataFrame instead of crashing on `null!.name`.
   if (!poseCol || !affinityCol) {
-    // `auto-dock-app.ts#getAutodockResults` creates a fallback DataFrame
-    // with only a `pose` STRING column (no `binding energy`) when every
-    // ligand failed to dock. The per-ligand error messages are written
-    // into that pose column. Surface them so the user sees the real
-    // problem instead of a generic "missing column" notice.
     if (poseCol && !affinityCol && poseCol.type === DG.TYPE.STRING) {
       const errorMessages: string[] = [];
       for (let i = 0; i < poseCol.length && errorMessages.length < 3; i++) {
