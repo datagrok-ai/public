@@ -79,17 +79,15 @@ export function renderMappingEditor(
 
     if (issues.length === 0) {
       const icon = ui.iconFA('check-circle', undefined, 'Valid mapping');
-      icon.style.color = 'green';
-      icon.classList.add('moltrack-div');
+      icon.classList.add('moltrack-div', 'moltrack-status-valid');
       statusCell.appendChild(icon);
       return;
     }
 
     const mainIssue = issues.find((i) => i.severity === 'error') ?? issues[0];
     const iconName = mainIssue.severity === 'error' ? 'times-circle' : 'exclamation-triangle';
-    const iconColor = mainIssue.severity === 'error' ? 'red' : 'orange';
     const icon = ui.iconFA(iconName, undefined, mainIssue.message);
-    icon.style.color = iconColor;
+    icon.classList.add(mainIssue.severity === 'error' ? 'moltrack-status-error' : 'moltrack-status-warning');
     statusCell.appendChild(icon);
   }
 
