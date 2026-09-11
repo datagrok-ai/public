@@ -2,7 +2,8 @@
 
 ## v.next
 
-* GROK-20866: Compute `#output` expressions inside the per-stage solver so they work in `#loop` / `#update` models
+* Compute `#output` expressions inside the per-stage solver so they work in `#loop` / `#update` models
+* Update the PK model
 
 ## 1.6.8 (2026-09-01)
 

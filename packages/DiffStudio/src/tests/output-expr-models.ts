@@ -1,8 +1,4 @@
-// Test-only IVP models exercising #expressions referenced from #output together
-// with #loop / #update. The output expressions use a math function (sin/exp), a
-// math constant (PI) and #constants — all of which are only in scope inside the
-// per-stage _oneStage function, so these models fail to solve unless the output
-// expressions are computed there (GROK-20866).
+// Test-only IVP models with #output expressions in #loop / #update models (GROK-20866).
 
 /** Cyclic model whose #output includes an expression using math + #constants. */
 export const LOOP_OUTPUT_EXPRESSIONS = `#name: Loop output expressions

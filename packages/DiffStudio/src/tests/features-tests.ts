@@ -85,9 +85,7 @@ category('Features', () => {
   // Verifies that JS code embedded in model expressions is correctly emitted and evaluated at runtime.
   testTemplate('Output expressions & use of JS code in model', ENERGY_N_CONTROL);
 
-  // Tests a #loop model whose #output references an #expression that uses a math function, PI, and
-  // #constants — symbols that live only inside the per-stage _oneStage function. Verifies the output
-  // expression is computed there (GROK-20866); before the fix the generated script threw ReferenceError.
+  // Tests a #loop model whose #output references an #expression
   testTemplate('Loop with output expressions', LOOP_OUTPUT_EXPRESSIONS);
 
   // Same as above for a #update (multistage) model — also exercises the '_Stage' column path when the

@@ -1,31 +1,41 @@
 #name: PK
-#description: Pharmacokinetic (PK) simulation: one-compartment model
+#description: Pharmacokinetic (PK) simulation: two-compartment model
 #equations:
-  d(depot)/dt = -KA * depot
-  d(centr)/dt = KA * depot - CL * C2
+  dA_gut/dt  = -ka * A_gut
+  dA_c/dt    =  ka * A_gut - CL * C_central  - Q * (C_central - C_peripheral)
+  dA_p/dt    =  Q * (C_central - C_peripheral)
 
 #expressions:
-  C2 = centr / V2
+  C_central    = A_c / Vc
+  C_peripheral = A_p / Vp
 
 #loop:
-  count = 1 {category: Dosing; min: 1; max: 10} [Number of doses]
-  depot += dose
+  _count = 1 {caption: Count; category: Dosing; min: 1; max: 20} [Number of consecutive doses]
+  A_gut += dose
 
 #argument: t
-  start = 0 {units: h; caption: begin; category: Dosing; min: 0; max: 1} [Begin of dosing interval]
-  final = 12 {units: h; caption: end; category: Dosing; min: 5; max: 15} [End of dosing interval]
-  step = 0.01 {units: h; caption: step; category: Dosing; min: 0.01; max: 0.1} [Time step of simulation]  
+  initial = 0  {caption: Start; units: h} [Start of the dosing interval]
+  final   = 12 {caption: Interval; units: h; category: Dosing; min: 4; max: 24; step: 1} [Length of one dosing interval]
+  step    = 0.01 {caption: Step; units: h} [Time step of simulation]
 
-#inits:  
-  depot = 0 {category: Initial values}
-  centr = 0 {category: Initial values} [Central]
+#inits:
+  A_c   = 0 {caption: Central;    units: mg; category: Initial amount} [Drug amount in the central compartment]
+  A_p   = 0 {caption: Peripheral; units: mg; category: Initial amount} [Drug amount in the peripheral compartment]
+  A_gut = 0 {caption: Gut;        units: mg; category: Initial amount} [Drug amount at the absorption site]
 
-#parameters:  
-  dose = 1E4 {category: Dosing; min: 1E3; max: 2E4; step: 1E3} [Dosage]
-  KA = 0.3 {caption: rate constant; category: Parameters; min: 0.1; max: 1}
-  CL = 2 {caption: clearance; category: Parameters; min: 1; max: 5}
-  V2 = 4 {caption: central volume; category: Parameters; min: 1; max: 10} [Central compartment volume]
+#parameters:
+  dose = 500 {caption: Dose; units: mg; category: Dosing; min: 0; max: 1000} [Amount added to the gut at each dose]
+  ka = 1.0 {caption: Absorption rate;     units: 1/h;  category: PK parameters; min: 0.1; max: 5} [First-order absorption rate constant]
+  CL = 5.0 {caption: Clearance;           units: L/h;  category: PK parameters; min: 0.5; max: 20} [Systemic clearance from the central compartment]
+  Vc = 30  {caption: Central volume;      units: L;    category: PK parameters; min: 5;   max: 100} [Volume of distribution of the central compartment]
+  Vp = 60  {caption: Peripheral volume;   units: L;    category: PK parameters; min: 5;   max: 200} [Volume of distribution of the peripheral compartment]
+  Q  = 3.0 {caption: Intercompartmental clearance; units: L/h; category: PK parameters; min: 0.1; max: 20} [Distribution clearance between compartments]
+
+#output:
+  t            {caption: Time, h} [Simulation time]
+  C_central    {caption: Central conc., mg/L} [Drug concentration in the central compartment]
+  C_peripheral {caption: Peripheral conc., mg/L} [Drug concentration in the peripheral compartment]
 
 #meta.solver: {method: 'mrt'; maxTimeMs: 50}
 
-#tolerance: 1E-9
+#tolerance: 1e-6

@@ -757,9 +757,7 @@ function getOutputExpressionKeys(ivp: IVP): string[] {
   return keys;
 }
 
-/** Lines that recompute the expressions row-by-row from the solved argument &
-    solution values, filling a Float64Array for each output expression. `indent`
-    places the block either at top level ('') or inside `_oneStage` (SPACE2). */
+/** Row-by-row recompute of output expressions; `indent` selects top level or `_oneStage`. */
 function getExpressionComputationLines(ivp: IVP, indent: string): string[] {
   const res = [] as string[];
   const inner = indent + SCRIPT.SPACE2;
@@ -857,10 +855,7 @@ function getCustomOutputLinesWithExpressions(ivp: IVP): string[] {
   return res;
 } // getCustomOutputLinesWithExpressions
 
-/** Lines computing the output expressions inside `_oneStage` and appending them
-    as columns to the stage `df`. Runs where #constants, math functions and
-    #parameters are already in scope, so cyclic/multistage models need no
-    top-level recompute. */
+/** Computes output expressions inside `_oneStage` and appends them as columns to the stage `df`. */
 function getInStageOutputExpressionLines(ivp: IVP): string[] {
   const res = [''];
 
@@ -877,9 +872,7 @@ function getInStageOutputExpressionLines(ivp: IVP): string[] {
 
 /** Return custom output lines */
 function getCustomOutputLines(ivp: IVP): string[] {
-  // Cyclic (#loop) & multistage (#update) models compute output expressions
-  // inside _oneStage, so the expression columns already exist in df here — a
-  // plain column selection is enough. Only basic models recompute at top level.
+  // #loop/#update models compute expression columns in _oneStage; only basic models recompute here.
   if (ivp.loop === null && ivp.updates === null && hasOutputExpressions(ivp))
     return getCustomOutputLinesWithExpressions(ivp);
 

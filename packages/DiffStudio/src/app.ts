@@ -1759,6 +1759,7 @@ export class DiffStudio {
 
     try {
       const ivp = getIVP(this.editorView!.state.doc.toString());
+      console.log(ivp);
       this.removeFacetGrid();
       await this.generateInputs(ivp);
 
