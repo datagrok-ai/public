@@ -28,5 +28,6 @@ Feature: Pareto front viewer
     Given user opens iris dataset
     When user picks "ML > Pareto Front..." from the top menu
     Then pareto front viewer should be visible
+    And "Minimize" property of pareto front viewer should be "Petal.Length, Petal.Width"
     And "Label Columns" property of pareto front viewer should be ""
     And no errors should have been logged

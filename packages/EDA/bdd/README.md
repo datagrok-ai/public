@@ -38,14 +38,9 @@ setup creates) and deletes the model it saves when it ends.
 
 ## What the platform gave these features
 
-- The column picker ("Select columns...") is a grid viewer: `text of cell N of __name` names the
-  column of a row, `cell N of x` is its checkbox. Its Search input filters the rows; a row keeps its
-  number.
 - The Train Model view trains on every change. The model card reports the parameters the model was
   trained with and its scores, which is what the claims read; the view remembers the last session's
   hyperparameters, so each scenario sets what it reads.
-- A Dart property grid category tells its state only by its icon; the library's expand reads it.
-- For two seconds after a property is edited in the context panel the platform ignores a change of
-  the current object, which is why the objectives are one journey over one viewer.
-- The Share dialog of an entity that is not a project fetches the entity's project after it opens;
-  its OK before that fails with "Not initialized". The owner's grant row appears once it is ready.
+- The column picker, the property grid categories, the two-second current-object drop after a
+  property edit and the Share dialog of a model are platform facts: `libraries/bdd/CLAUDE.md`,
+  "Facts that cost a run each".

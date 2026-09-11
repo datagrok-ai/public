@@ -42,6 +42,8 @@ Feature: Training a model to classify iris species
     Then "Eda: Softmax" heading should be visible
     And "Accuracy" table row should be visible
     And "iterations" table row should contain text "100"
+    And "rate" table row should contain text "rate2"
+    And "penalty" table row should contain text "penalty0.10"
     And "Predicted Species vs Actual" label should be visible
     And "Confusions" label should be visible
     When user drags the slider of Rate input to 10
@@ -64,6 +66,9 @@ Feature: Training a model to classify iris species
     Then "Eda: XGBoost" heading should be visible
     And "Accuracy" table row should be visible
     And "iterations" table row should contain text "20"
+    And "eta" table row should contain text "eta0.30"
+    And "lambda" table row should contain text "lambda1"
+    And "alpha" table row should contain text "alpha0"
     When user hovers over Iterations input
     And user clicks on plus icon in Iterations input
     Then "iterations" table row should contain text "21"

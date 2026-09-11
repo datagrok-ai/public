@@ -260,7 +260,7 @@ export async function select(page: Page, target: ElementRef, option: string): Pr
     await native.selectOption({label: option});
     return;
   }
-  const columnSelector = (await loc.evaluate((el) => el.classList.contains('d4-column-selector'))) ? loc : loc.locator('.d4-column-selector').first();
+  const columnSelector = (await loc.first().evaluate((el) => el.classList.contains('d4-column-selector'))) ? loc.first() : loc.locator('.d4-column-selector').first();
   if (await columnSelector.count() > 0) {
     await openColumnSelector(page, columnSelector);
     await pickInColumnGrid(page, option, target.phrase, columnSelector);
@@ -331,15 +331,15 @@ export async function drag(page: Page, source: ElementRef, target: ElementRef): 
   await (await locate(page, source)).dragTo(await locate(page, target));
 }
 
-/** Where an element says it is open: `aria-expanded` on itself or on its header/trigger inside,
- * and — for the Dart tree, which has neither — the class its twistie carries. `null` when the
- * element says nothing (a leaf row has no twistie). */
+/** Where an element says it is open: `aria-expanded` on itself or on its header/trigger inside;
+ * for the Dart tree, which has neither, the class its twistie carries; for a Dart property grid
+ * category, its icon (minus while open, plus while folded). `null` when the element says nothing
+ * (a leaf row has no twistie). */
 export function readExpanded(loc: Locator): Promise<boolean | null> {
   return loc.first().evaluate((el) => {
     const aria = el.getAttribute('aria-expanded') ?? el.querySelector('[aria-expanded]')?.getAttribute('aria-expanded');
     if (aria != null)
       return aria === 'true';
-    // a Dart property grid category says it only by its icon: minus while open, plus while folded
     if (el.matches('.property-grid-category'))
       return el.querySelector('.property-grid-icon-minus') !== null;
     const twistie = el.matches('.d4-tree-view-tri, .u2-tree-twistie') ? el :

@@ -212,83 +212,116 @@ export function sharingLogin(): string {
   return login;
 }
 
+/** The second account as the platform shows it: the local part of the login, punctuation stripped. */
+export function sharingShownName(): string {
+  return sharingLogin().split('@')[0].replace(/[^a-z0-9]/gi, '');
+}
+
 export const pickSharingUser = When('user picks the sharing user in {element}', async (page: Page, target: ElementRef) => {
   const login = sharingLogin();
   const editor = await editorOf(page, el(target.phrase));
   await editor.click();
   await editor.pressSequentially(login.split('@')[0]);
-  const wanted = login.split('@')[0].replace(/[^a-z0-9]/gi, '').toLowerCase();
   const row = page.locator('.d4-user-selector-drop-down tr, .d4-tags-selector-drop-down tr')
-    .filter({hasText: new RegExp(wanted, 'i')}).first();
-  await expect(row, `the "${login}" row of the user typeahead`).toBeVisible({timeout: 15000});
+    .filter({hasText: new RegExp(sharingShownName(), 'i')}).first();
+  await expect(row, `the "${login}" row of the user typeahead`).toBeVisible({timeout: pollMs(15000)});
   await row.click();
 }, {tier: 'ui', description: 'types the login of DATAGROK_SHARING_LOGIN and takes it from the typeahead'});
 
 /* The grant row of the second account in a Share dialog; its Remove button shows while the row is
    hovered. The row goes at once, the grant only when the dialog is confirmed. */
 export const removeSharingUser = When('user removes the sharing user from {element}', async (page: Page, target: ElementRef) => {
-  const wanted = sharingLogin().split('@')[0].replace(/[^a-z0-9]/gi, '');
-  const row = (await locate(page, target)).locator('[name^="div-permissions-row-"]').filter({hasText: new RegExp(wanted, 'i')}).first();
-  await expect(row, `the grant row of "${wanted}"`).toBeVisible({timeout: pollMs(15000)});
+  const shown = sharingShownName();
+  const row = (await locate(page, target)).locator('[name^="div-permissions-row-"]').filter({hasText: new RegExp(shown, 'i')}).first();
+  await expect(row, `the grant row of "${shown}"`).toBeVisible({timeout: pollMs(15000)});
   await row.hover();
   await row.locator('[name="button-Remove"]').click();
-  await expect(row, `the grant row of "${wanted}" after Remove`).toBeHidden();
+  await expect(row, `the grant row of "${shown}" after Remove`).toBeHidden();
 }, {tier: 'ui', description: 'hovers the grant row of DATAGROK_SHARING_LOGIN and clicks its Remove button'});
 
 /* Whom an entity is shared with, read where the platform shows it. grok.dapi.permissions.get answers
    with the edit and view buckets only, and a share made through the dialog lands in neither — the
    Sharing pane calls it "has special permissions" — so the API cannot see it and the pane is the
-   claim. The user appears there under the punctuation-stripped login ("a+b@x" as "abx"). Two
-   expressions rather than one with "(not )": an optional literal is not a parameter, so a single
-   step would always take the positive branch. */
-async function sharingPane(page: Page): Promise<{pane: ReturnType<Page['locator']>; shown: RegExp}> {
-  const login = sharingLogin();
+   claim. The pane fills its grants in after it is built and appends its Share... button last
+   (db_entity_meta.dart renderSharingSection), so a claim reads it only once the button is there: a
+   "does not list" read off the loading pane would pass whatever the grants are. Two expressions
+   rather than one with "(not )": an optional literal is not a parameter, so a single step would
+   always take the positive branch. */
+async function sharingPane(page: Page): Promise<ReturnType<Page['locator']>> {
   const header = page.locator('.grok-prop-panel [name="div-section--Sharing"]').first();
-  await expect(header, 'the Sharing pane of the context panel').toBeVisible({timeout: 30000});
+  await expect(header, 'the Sharing pane of the context panel').toBeVisible({timeout: pollMs(30000)});
   if (await header.getAttribute('aria-expanded') !== 'true')
     await header.click();
-  return {
-    pane: page.locator('.grok-prop-panel .d4-pane-sharing').first(),
-    shown: new RegExp(login.split('@')[0].replace(/[^a-z0-9]/gi, ''), 'i'),
-  };
+  const pane = page.locator('.grok-prop-panel .d4-pane-sharing').first();
+  await expect(pane.getByRole('button', {name: /^share\.\.\.$/i}), 'the Sharing pane, loaded (its Share... button)')
+    .toBeVisible({timeout: pollMs(30000)});
+  return pane;
 }
 
 export const sharingPaneLists = Then('the sharing pane should list the sharing user', async (page: Page) => {
-  const {pane, shown} = await sharingPane(page);
-  await expect(pane).toContainText(shown);
-}, {tier: 'ui', description: 'the Sharing section of the context panel, opened if it is closed'});
+  await expect(await sharingPane(page)).toContainText(new RegExp(sharingShownName(), 'i'));
+}, {tier: 'ui', description: 'the Sharing section of the context panel, opened if it is closed, read once it has loaded'});
 
 export const sharingPaneListsNot = Then('the sharing pane should not list the sharing user', async (page: Page) => {
-  const {pane, shown} = await sharingPane(page);
-  await expect(pane).not.toContainText(shown);
-}, {tier: 'ui'});
+  await expect(await sharingPane(page)).not.toContainText(new RegExp(sharingShownName(), 'i'));
+}, {tier: 'ui', description: 'read once the pane has loaded'});
 
-/* A predictive model a feature saves, found by the name its card shows (friendlyName). The delete
-   returns before the model is gone, so the step is over once the server stops listing it. */
-async function deleteModels(page: Page, names: string[]): Promise<void> {
-  const remaining = () => page.evaluate(async (wanted) => {
+/* --- entities a feature leaves on the server ------------------------------------------------------
+   Found by the name the platform shows (friendlyName) or the grok name, in the whole list:
+   grok.dapi.spaces.filter('name = "…"') answers nothing on a stand that holds the space (probed
+   2026-09-10 against dev, by grok name, friendly name and both). A delete returns before the entity
+   is gone, and a save under the same name meanwhile is refused as a duplicate, so the cleanup is over
+   only once the server stops listing them; a listing the server refuses once (a stand under load) is
+   one attempt, not the answer. */
+type NamedSource = 'spaces' | 'models';
+
+async function deleteNamed(page: Page, source: NamedSource, what: string, names: string[]): Promise<void> {
+  const remaining = () => page.evaluate(async ([src, wanted]) => {
     const left: string[] = [];
-    for (const model of await grok.dapi.models.list({pageSize: 1000}))
-      if (wanted.includes(model.friendlyName) || wanted.includes(model.name)) {
-        await grok.dapi.models.delete(model).catch(() => undefined);
-        left.push(model.friendlyName ?? model.name);
-      }
+    for (const entity of await grok.dapi[src].list({pageSize: 1000})) {
+      if (!wanted.includes(entity.friendlyName) && !wanted.includes(entity.name))
+        continue;
+      const name = entity.friendlyName ?? entity.name;
+      await grok.dapi[src].delete(entity).then(() => left.push(name), (e: unknown) => left.push(`${name} (the delete failed: ${String(e)})`));
+    }
     return left;
-  }, names);
-  await expect.poll(remaining, {message: `predictive models still on the server under ${names.join(', ')}`, timeout: 60000}).toEqual([]);
+  }, [source, names] as [NamedSource, string[]]);
+  await expect.poll(remaining, {message: `${what} still on the server under ${names.join(', ')}`, timeout: pollMs(60000)}).toEqual([]);
 }
 
-export const noModelOnServer = Given('no predictive model named {string} is on the server', async (page: Page, name: string) => {
-  const names = name.split(',').map((n) => n.trim()).filter(Boolean);
-  await deleteModels(page, names);
-  atFeatureEnd(page, () => deleteModels(page, names));
+async function expectNamedCount(page: Page, source: NamedSource, what: string, name: string, count: number): Promise<void> {
+  await expect.poll(() => page.evaluate(async ([src, n]) => {
+    try {
+      return (await grok.dapi[src].list({pageSize: 1000})).filter((e: any) => e.friendlyName === n || e.name === n).length;
+    }
+    catch (e) {
+      return `the listing failed: ${String(e)}`;
+    }
+  }, [source, name] as [NamedSource, string]), {message: `${what} the server holds under "${name}"`, timeout: pollMs(60000)}).toBe(count);
+}
+
+const namesOf = (list: string): string[] => list.split(',').map((n) => n.trim()).filter(Boolean);
+
+export const noSpaceOnServer = Given('no space named {string} is on the server', async (page: Page, name: string) => {
+  await deleteNamed(page, 'spaces', 'spaces', namesOf(name));
+  atFeatureEnd(page, () => deleteNamed(page, 'spaces', 'spaces', namesOf(name)));
 }, {tier: 'api', description: 'deletes what an earlier run left under those names (comma-separated), and deletes them again when the feature ends'});
 
-export const modelsOnServer = Then('{int} predictive model(s) named {string} should be on the server', async (page: Page, count: number, name: string) => {
-  await expect.poll(() => page.evaluate(async (n) =>
-    (await grok.dapi.models.list({pageSize: 1000})).filter((m: any) => m.friendlyName === n || m.name === n).length, name),
-  {message: `predictive models the server holds under "${name}"`, timeout: pollMs(30000)}).toBe(count);
-}, {tier: 'api', description: 'what the server holds, not what the gallery draws'});
+/* A space is listed once its save returns, and the save of a ROOT space is slow: 4.8 s alone and
+   18 s with four features creating at once on a local stand (2026-09-10); the claim right after OK
+   owns the budget the dialog-close claim does. */
+export const spacesOnServer = Then('{int} space(s) named {string} should be on the server', (page: Page, count: number, name: string) =>
+  expectNamedCount(page, 'spaces', 'spaces', name, count),
+{tier: 'api', description: 'what the server holds, not what the tree draws — the refusal of a duplicate is a space that was never created'});
+
+export const noModelOnServer = Given('no predictive model named {string} is on the server', async (page: Page, name: string) => {
+  await deleteNamed(page, 'models', 'predictive models', namesOf(name));
+  atFeatureEnd(page, () => deleteNamed(page, 'models', 'predictive models', namesOf(name)));
+}, {tier: 'api', description: 'deletes what an earlier run left under those names (comma-separated), and deletes them again when the feature ends'});
+
+export const modelsOnServer = Then('{int} predictive model(s) named {string} should be on the server', (page: Page, count: number, name: string) =>
+  expectNamedCount(page, 'models', 'predictive models', name, count),
+{tier: 'api', description: 'what the server holds, not what the gallery draws'});
 
 export const urlShouldContain = Then('the page address should contain {string}', async (page: Page, part: string) => {
   await expect.poll(() => page.url(), {message: 'the page address'}).toContain(part);

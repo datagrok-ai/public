@@ -85,7 +85,9 @@ Feature: Training a model to predict the price of a car
     When user enters "0.3" into Rate input
     And user enters "1" into Lambda input
     And user enters "0" into Alpha input
-    Then "eta" table row should contain text "0.30"
+    Then "eta" table row should contain text "eta0.30"
+    And "lambda" table row should contain text "lambda1"
+    And "alpha" table row should contain text "alpha0"
     When user drags the slider of Rate input to 0.5
     Then Rate input should have a value between 0.48 and 0.52
     And "eta" table row should not contain text "eta0.30"

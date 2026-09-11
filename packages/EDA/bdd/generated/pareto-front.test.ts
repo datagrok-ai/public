@@ -46,7 +46,8 @@ test.describe("Pareto front viewer", () => {
     await session.step(28, "Given user opens iris dataset", () => openDataset(page, ds("iris")));
     await session.step(29, "When user picks \"ML > Pareto Front...\" from the top menu", () => pickFromTopMenu(page, "ML > Pareto Front..."));
     await session.step(30, "Then pareto front viewer should be visible", () => shouldBe(page, el("pareto front viewer"), "visible"));
-    await session.step(31, "And \"Label Columns\" property of pareto front viewer should be \"\"", () => propertyShouldBe(page, "Label Columns", el("pareto front viewer"), ""));
-    await session.step(32, "And no errors should have been logged", () => noErrors(page));
+    await session.step(31, "And \"Minimize\" property of pareto front viewer should be \"Petal.Length, Petal.Width\"", () => propertyShouldBe(page, "Minimize", el("pareto front viewer"), "Petal.Length, Petal.Width"));
+    await session.step(32, "And \"Label Columns\" property of pareto front viewer should be \"\"", () => propertyShouldBe(page, "Label Columns", el("pareto front viewer"), ""));
+    await session.step(33, "And no errors should have been logged", () => noErrors(page));
   });
 });

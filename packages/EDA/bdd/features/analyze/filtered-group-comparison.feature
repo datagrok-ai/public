@@ -17,8 +17,10 @@ Feature: Group comparison of a filtered table
     When user filters rows where "SEX" is "F"
     Then 3243 rows should pass the filter
     When user picks "ML > Analyze > Group Comparison > Control Comparisons..." from the top menu
-    And user clicks on Run button in "Control comparisons" dialog
+    Then 3243 rows should pass the filter
+    When user clicks on Run button in "Control comparisons" dialog
     Then the top menu command should have completed
+    And 3243 rows should pass the filter
     And second grid viewer should be bound to table "Control comparisons result"
     And the "text of cell 1 of Group" reading of second grid viewer should be "Black"
     And the "text of cell 1 of n" reading of second grid viewer should be "104"
