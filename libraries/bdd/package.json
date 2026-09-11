@@ -40,7 +40,8 @@
     "list-steps": "tsx src/cli.ts list-steps",
     "typecheck": "tsc --noEmit -p .",
     "test:unit": "tsx --test tests/*.test.ts",
-    "test": "npm run build && node bin/grok-bdd.js run",
+    "test": "npm run build && npm run check && npm run test:unit",
+    "testSuite": "npm run build && node bin/grok-bdd.js run",
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
