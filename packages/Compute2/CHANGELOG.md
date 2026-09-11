@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Ribbon panels and menus migrated to the injected per-view service from webcomponents-vue; removed view prop drilling, busy-guarded ribbon actions use the built-in disabled API
 * TreeWizard: Fixed the subtree save icon saving the currently selected step instead of the clicked one
 * TreeWizard: Stopped re-creating the pipeline FuncCall on every re-render (help panel churn and repeated context help fetches)
 * RFV: "Copy link with inputs" reads entity ids off the current table/file values instead of ids recorded at load time, so a replaced input no longer resurfaces through the copied link

@@ -15,6 +15,7 @@
     "@datagrok-libraries/test": "../../libraries/test",
     "@datagrok-libraries/utils": "../../libraries/utils",
     "@datagrok-libraries/webcomponents": "../../libraries/webcomponents",
+    "@datagrok-libraries/webcomponents-vue": "../../libraries/webcomponents-vue",
     "cash-dom": "^8.1.4",
     "datagrok-api": "^1.27.0",
     "dayjs": "1.11.19",
@@ -22,6 +23,7 @@
     "fflate": "^0.8.2",
     "lodash.clonedeepwith": "^4.5.0",
     "rxjs": "^6.6.7",
+    "vue": "^3.4.38",
     "wu": "^2.1.0"
   },
   "devDependencies": {

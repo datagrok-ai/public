@@ -51,6 +51,10 @@ import './tests/compute-utils/history-file-inputs';
 import './tests/arrow/roundtrip';
 import './tests/arrow/titanic';
 import './tests/webcomponents/viewer-host';
+import './tests/webcomponents-vue/ribbon-core';
+import './tests/webcomponents-vue/ribbon-elements';
+import './tests/webcomponents-vue/ribbon-service';
+import './tests/webcomponents-vue/ribbon-components';
 
 export const _package = new DG.Package();
 export {tests};
