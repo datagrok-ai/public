@@ -26,7 +26,10 @@ await handler.editRow(row);                                  // true when saved
 
 // The standard optimistic-concurrency dialog, for code that saves by itself:
 // resolves 'reload' | 'overwrite' | null, and the caller applies the decision.
-const stale = {id: row.id, version: row.version, title: row.values.title};
+// Snapshot AFTER the dialogs: editRow may have written, so a version read before them can
+// already be behind — and then the FIRST save conflicts, not the deliberate second one.
+const current = await issues.get(row.id);
+const stale = {id: current.id, version: current.version, title: current.title};
 await issues.save({...stale});                 // bumps the version...
 try {
   await issues.save(stale);                    // ...so this one is stale: 409
