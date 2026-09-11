@@ -210,6 +210,34 @@ category('Flow: input values', () => {
     }
   });
 
+  test('a wheel over the on-node editor does not zoom the canvas', async () => {
+    const e = makeEditor();
+    try {
+      await addNode(e.flow, 'Inputs/Int Input');
+      const rendered = await until(() =>
+        e.container.querySelector('[data-testid="ff-node-value-input"] input') != null, 4000);
+      expect(rendered, true, 'the node body hosts a DG input');
+
+      const wheel = (el: Element): void => {
+        const r = el.getBoundingClientRect();
+        el.dispatchEvent(new WheelEvent('wheel', {bubbles: true, cancelable: true, deltaY: -120,
+          clientX: r.left + r.width / 2, clientY: r.top + r.height / 2}));
+      };
+      const before = e.flow.getZoom();
+      const moved = (): boolean => Math.abs(e.flow.getZoom() - before) > 1e-6;
+
+      wheel(e.container.querySelector('[data-testid="ff-node-value-input"] input')!);
+      await until(moved, 500);
+      expect(moved(), false, 'the editor keeps the wheel — the canvas must not zoom under the cursor');
+
+      // The same gesture on empty canvas still zooms — the guard is scoped, not global.
+      wheel(e.container.querySelector('.ff-canvas')!);
+      expect(await until(moved, 2000), true, 'the canvas itself still zooms on wheel');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
   test('editing through the editor reports params-changed exactly once', async () => {
     registerBuiltinNodes();
     const edits: GraphEdit[] = [];

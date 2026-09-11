@@ -57,8 +57,9 @@ function canonicalizer(rdkit: any): (s: string) => string {
 // (e.g. a product correctly formed but mis-tagged as round 1 instead of round 2, or built via the
 // wrong template) — sort by a composite key so row order (which can differ between the two run
 // paths) doesn't matter, then compare field-by-field for a precise failure message.
+const stepsKey = (r: OutputRow): string => r.steps.map((s) => `${s.reactionName}|${s.template}`).join('>');
 function rowSortKey(r: OutputRow): string {
-  return [r.product, r.round, r.reaction_name, r.template, r.route].join('');
+  return [r.product, r.round, stepsKey(r), r.route].join('');
 }
 function expectSameRows(a: OutputRow[], b: OutputRow[], label: string): void {
   const sa = [...a].sort((x, y) => rowSortKey(x).localeCompare(rowSortKey(y)));
@@ -67,9 +68,7 @@ function expectSameRows(a: OutputRow[], b: OutputRow[], label: string): void {
   for (let i = 0; i < sa.length; i++) {
     expect(sa[i].product, sb[i].product, `${label}: row[${i}].product differs`);
     expect(sa[i].round, sb[i].round, `${label}: row[${i}].round differs for product "${sa[i].product}"`);
-    expect(sa[i].reaction_name, sb[i].reaction_name,
-      `${label}: row[${i}].reaction_name differs for product "${sa[i].product}"`);
-    expect(sa[i].template, sb[i].template, `${label}: row[${i}].template differs for product "${sa[i].product}"`);
+    expect(stepsKey(sa[i]), stepsKey(sb[i]), `${label}: row[${i}].steps differ for product "${sa[i].product}"`);
     expect(sa[i].route, sb[i].route, `${label}: row[${i}].route differs for product "${sa[i].product}"`);
   }
 }
@@ -385,11 +384,12 @@ category('Reaction Enumeration', () => {
 
     // Peptide coupling: every AA pair (incl. self) -> dipeptide -> at least 20 products,
     // all containing the C-N peptide bond pattern N-C(=O)-C.
-    const peptideRows = rows.filter((r) => r.reaction_name === 'Peptide coupling');
+    const lastReaction = (r: OutputRow): string | undefined => r.steps[r.steps.length - 1]?.reactionName;
+    const peptideRows = rows.filter((r) => lastReaction(r) === 'Peptide coupling');
     expect(peptideRows.length > 0, true, 'Peptide coupling produced no rows');
 
     // Disulfide: only Cys-Cys can react (only Cys has a thiol). Expect exactly one canonical product.
-    const disulfideRows = rows.filter((r) => r.reaction_name === 'Disulfide formation');
+    const disulfideRows = rows.filter((r) => lastReaction(r) === 'Disulfide formation');
     expect(disulfideRows.length > 0, true, 'Disulfide formation produced no rows — Cys + Cys should match');
     expect(disulfideRows[0].product.includes('SS') || /S.{0,3}S/.test(disulfideRows[0].product), true,
       `Disulfide product missing SS link: ${disulfideRows[0].product}`);
