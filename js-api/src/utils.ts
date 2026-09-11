@@ -54,6 +54,8 @@ if (typeof HTMLCanvasElement != 'undefined') {
     return this;
   }
 
+  // Polyfilled only where the browser lacks the native roundRect, which takes radii and returns void.
+  if (!CanvasRenderingContext2D.prototype.roundRect)
   CanvasRenderingContext2D.prototype.roundRect = function (x: number, y: number, w: number, h: number, r: number) {
     if (w < 2 * r) r = w / 2;
     if (h < 2 * r) r = h / 2;
@@ -169,7 +171,7 @@ export namespace Paint {
 }
 
 export class Utils {
-  /** @param {Iterable} iterable*/
+
   static firstOrNull<T>(iterable: Iterable<T>): T | null {
     let first = iterable[Symbol.iterator]().next();
     return first.done ? null : first.value;
@@ -286,8 +288,8 @@ export class Utils {
     }
   }
 
+  /** Runs the specified package tests and aggregates their results (used by the test runner). @internal */
   static async executeTests(testsParams: { package: any, params: any }[], stopOnFail?: boolean): Promise<any> {
-    console.log(`********** Entered executeTests func`);
     let failed = false;
     let csv = "";
     let verbosePassed = "";
@@ -355,10 +357,6 @@ export class Utils {
         if ((success !== true && skipped !== true) && stopOnFail)
           break;
       }
-      if (DG.Test.isInDebug) {
-        console.log('on browser closing debug point');
-        debugger
-      }
       res = Utils.createResultsCsv(resultDF);
 
     } catch (e) {
@@ -386,12 +384,12 @@ export class Utils {
    * as it exits early if missmatch is found.
    * @param columns - List of columns to detect hierarchy in.
    * @param maxDepth - Maximum depth of the hierarchy to detect.
-   * @returns
-   */
+   * @returns */
   static detectColumnHierarchy(columns: Column[], maxDepth: number = 3): string[] {
     return api.grok_Utils_DetectColumnHierarchy(columns.map((c) => c.dart), maxDepth);
   }
 
+  /** @internal */
   static createResultsCsv(resultDF?: DataFrame): string {
     if (resultDF) {
       const bs = DG.BitSet.create(resultDF.rowCount)
@@ -476,11 +474,10 @@ export function identity(length: number) {
 };*/
 
 /** Times the execution of function f
- * @param {string} name - a label for the execution time to display
- * @param {Function} f - function with no parameters that will get measured
- * @returns {value} - a value which f returns
- * */
-export function time(name: string, f: Function) {
+ * @param name - a label for the execution time to display
+ * @param f - function with no parameters that will get measured
+ * @returns a value which f returns */
+export function time<T>(name: string, f: () => T): T {
   let start = new Date();
   let result = f();
   let stop = new Date();
@@ -492,12 +489,10 @@ export function time(name: string, f: Function) {
 }
 
 /** Times the execution of asyncronous function f
- * @async
- * @param {string} name - a label for the execution time to display
- * @param {Function} f - async function with no parameters that will get measured
- * @returns {Promise<value>} - a promise for the value which f returns
- * */
-export async function timeAsync(name: string, f: Function) {
+ * @param name - a label for the execution time to display
+ * @param f - async function with no parameters that will get measured
+ * @returns a promise for the value which f returns */
+export async function timeAsync<T>(name: string, f: () => Promise<T>): Promise<T> {
   let start = new Date();
   let result = await f();
   let stop = new Date();
@@ -522,7 +517,8 @@ export function _identityInt32(length: number): Int32Array {
  * */
 export class LruCache<K = any, V = any> {
   private capacity: number;
-  public onItemEvicted: Function | null;
+  /** Called with the value that was just evicted. */
+  public onItemEvicted: ((value: any) => void) | null;
   private items: {};
   private tail: number;
   private forward: Uint16Array;
@@ -547,9 +543,7 @@ export class LruCache<K = any, V = any> {
 
   /**
    * Splays a value on top.
-   * @param {number} pointer - Pointer of the value to splay on top.
-   * @return {LruCache}
-   */
+   * @param pointer - Pointer of the value to splay on top. */
   splayOnTop(pointer: number): LruCache<K, V> {
     let oldHead = this.head;
 
@@ -576,8 +570,7 @@ export class LruCache<K = any, V = any> {
   /**
    * Checks whether the key exists in the cache.
    *
-   * @param  {any} key   - Key.
-   */
+   * @param key - Key. */
   has(key: any): boolean {
     return key in this.items;
   }
@@ -585,9 +578,8 @@ export class LruCache<K = any, V = any> {
   /**
    * Sets the value for the given key in the cache.
    *
-   * @param  {any} key   - Key.
-   * @param  {any} value - Value.
-   */
+   * @param key - Key.
+   * @param value - Value. */
   set(key: any, value: any): void {
 
     // The key already exists, we just need to update the value and splay on top
@@ -631,8 +623,7 @@ export class LruCache<K = any, V = any> {
   /**
    * Gets the value attached to the given key, and makes it the most recently used item.
    *
-   * @param  {any} key - Key.
-   */
+   * @param key - Key. */
   get(key: any): V | undefined {
     // @ts-ignore
     let pointer = this.items[key];
@@ -649,10 +640,8 @@ export class LruCache<K = any, V = any> {
    * Returns the value with the specified key, if it already exists in the cache,
    * or creates a new one by calling the provided function.
    *
-   * @param  {any} key   - Key.
-   * @param  {Function} createFromKey - Function to create a new item.
-   * @return {any}
-   */
+   * @param key - Key.
+   * @param createFromKey - Function to create a new item. */
   getOrCreate(key: K, createFromKey: (key: K) => V): V {
     let value = this.get(key);
     if (value !== undefined)
@@ -735,9 +724,10 @@ export namespace Test {
   }
 }
 
+/** Usage-analytics helpers for click tracking. @internal */
 export namespace ClickUtils {
-  /// Returns a DataFrame with aggregated click data.
-  /// `UsageAnalysis` package should be installed.
+  /** Returns a DataFrame with aggregated click data.
+   * `UsageAnalysis` package should be installed. */
   export async function getAggregatedClicks(): Promise<DataFrame> {
     return await grok.data.query('UsageAnalysis:GetAggregatedClicks', {});
   }

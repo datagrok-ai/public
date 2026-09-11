@@ -58,7 +58,27 @@ export class DartList<T> implements Iterable<T> {
 /**
  * Proxies a Dart Map, API-compliant to ES 2015+
  */
-export const MapProxy = new Proxy(class {
+/** Map methods of a {@link MapBag}, in addition to indexed access. */
+export interface IMapProxy<V = any> {
+  keys(): Iterable<string>;
+  values(): Iterable<V>;
+  entries(): Iterable<[string, V]>;
+  forEach(callback: (key: string, value: V) => void): void;
+  get(key: string): V;
+  set(key: string, value: V): IMapProxy<V>;
+  has(key: string): boolean;
+  delete(key: string): boolean;
+  clear(): void;
+  size(): number;
+  [Symbol.iterator](): Iterator<[string, V]>;
+}
+
+/** A Dart-backed string-keyed bag (`df.tags`, `column.temp`, `call.aux`, ...): read and write entries
+ * by index, or use the map methods. Writes go straight to the Dart object. */
+export type MapBag<V = any> = {[key: string]: V} & IMapProxy<V>;
+
+/** A proxy to a Dart `Map<String, T>`; see {@link MapBag}. `valueType` restricts writes to one `typeof`. */
+export const MapProxy: new <V = any>(dart: any, objectName?: string | null, valueType?: string | null) => MapBag<V> = new Proxy(class {
         dart: any;
         objectName: string | null;
         valueType: string | null;
@@ -148,7 +168,7 @@ export const MapProxy = new Proxy(class {
             });
         }
     }
-);
+) as any;
 
 // export class PropProxy {
 //     constructor(dart) {

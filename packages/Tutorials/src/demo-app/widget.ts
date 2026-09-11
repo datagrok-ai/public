@@ -23,7 +23,7 @@ export class DemoAppWidget extends DG.Widget {
 
         grok.shell.windows.showRibbon = true;
         grok.shell.windows.showHelp = true;
-        grok.shell.windows.showProperties = true;
+        grok.shell.windows.showContextPanel = true;
         grok.shell.windows.help.syncCurrentObject = true;
 
         let tree = ui.tree();

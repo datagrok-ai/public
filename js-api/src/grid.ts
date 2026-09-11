@@ -128,9 +128,14 @@ export class Rect {
     return api.grok_Rect_Unpack(_bytes);
   }
 
-  /** Rectangle of the specified size, with the specified center */
-  fromCenterSize(cx: number, cy: number, width: number, height: number): Rect {
+  /** Rectangle of the specified size, with the specified center. */
+  static fromCenterSize(cx: number, cy: number, width: number, height: number): Rect {
     return new Rect(cx - width / 2, cy - height / 2, width, height);
+  }
+
+  /** @deprecated Use the static {@link Rect.fromCenterSize}; this instance form ignores the receiver. Removed in 1.29. */
+  fromCenterSize(cx: number, cy: number, width: number, height: number): Rect {
+    return Rect.fromCenterSize(cx, cy, width, height);
   }
 
   /** The midpoint of the rectangle along the x-axis. */
@@ -152,7 +157,7 @@ export class Rect {
   /** Same as (y) */
   get minY(): number { return this.y; }
 
-  /** Same as x + width */
+  /** Same as (y + height), or (bottom) */
   get maxY(): number { return this.bottom; }
 
   /** Left border position of the rectangle along the x-axis. */
@@ -186,8 +191,7 @@ export class Rect {
    * Rectangle's top part of height {@link height}.
    * New rectangle with the same top border as the original, but with a height of {@link height}.
    * The result may be larger than the original rectangle along y-axis.
-   * @param height {number} new rectangle height
-   */
+   * @param height {number} new rectangle height */
   getTop(height: number): Rect {
     return new Rect(this.left, this.top, this.width, height);
   }
@@ -196,8 +200,7 @@ export class Rect {
    * Rectangle's bottom part of height {@link height}.
    * New rectangle with the same bottom border as the original, but with a height of {@link height}.
    * The result may be larger than the original rectangle along y-axis.
-   * @param height {number} new rectangle height
-   */
+   * @param height {number} new rectangle height */
   getBottom(height: number): Rect {
     return new Rect(this.left, this.bottom - height, this.width, height);
   }
@@ -206,8 +209,7 @@ export class Rect {
    * Rectangle's left part of width {@link width}.
    * New rectangle with the same left border as the original, but with a width of {@link width}.
    * The result may be larger than the original rectangle along x-axis.
-   * @param width {number} new rectangle width
-   */
+   * @param width {number} new rectangle width */
   getLeft(width: number): Rect {
     return new Rect(this.left, this.top, width, this.height);
   }
@@ -216,8 +218,7 @@ export class Rect {
    * Rectangle's right part of width {@link width}.
    * New rectangle with the same right border as the original, but with a width of {@link width}.
    * The result may be larger than the original rectangle along x-axis.
-   * @param width {number} new rectangle width
-   */
+   * @param width {number} new rectangle width */
   getRight(width: number): Rect {
     return new Rect(this.right - width, this.top, width, this.height);
   }
@@ -226,8 +227,7 @@ export class Rect {
    * New rectangle with the same top-left corner as the original, but with new {@link width} and {@link height}.
    * The result may be larger than the original rectangle on both axes.
    * @param width {number} new rectangle width
-   * @param height {number} new rectangle height
-   */
+   * @param height {number} new rectangle height */
   getTopLeft(width: number, height: number): Rect {
     return new Rect(this.left, this.top, width, height);
   }
@@ -236,8 +236,7 @@ export class Rect {
    * New rectangle with the same top-right corner as the original, but with new {@link width} and {@link height}.
    * The result may be larger than the original rectangle on both axes.
    * @param width {number} new rectangle width
-   * @param height {number} new rectangle height
-   */
+   * @param height {number} new rectangle height */
   getTopRight(width: number, height: number): Rect {
     return new Rect(this.right - width, this.top, width, height);
   }
@@ -247,8 +246,7 @@ export class Rect {
    * but with new {@link width} and {@link height}.
    * The result may be larger than the original rectangle on both axes.
    * @param width {number} new rectangle width
-   * @param height {number} new rectangle height
-   */
+   * @param height {number} new rectangle height */
   getBottomLeft(width: number, height: number): Rect {
     return new Rect(this.left, this.bottom - height, width, height);
   }
@@ -258,8 +256,7 @@ export class Rect {
    * but with new {@link width} and {@link height}.
    * The result may be larger than the original rectangle on both axes.
    * @param width {number} new rectangle width
-   * @param height {number} new rectangle height
-   */
+   * @param height {number} new rectangle height */
   getBottomRight(width: number, height: number): Rect {
     return new Rect(this.right - width, this.bottom - height, width, height);
   }
@@ -268,32 +265,28 @@ export class Rect {
 
   /**
    * New rectangle with the same right border as the original, but with the left border clipped by {@link dw}.
-   * @param dw {number} delta width
-   */
+   * @param dw {number} delta width */
   cutLeft(dw: number): Rect {
     return new Rect(this.left + dw, this.top, this.width - dw, this.height);
   }
 
   /**
    * New rectangle with the same bottom border as the original, but with the top border clipped by {@link dh}.
-   * @param dh {number} delta height
-   */
+   * @param dh {number} delta height */
   cutTop(dh: number): Rect {
     return new Rect(this.left, this.top + dh, this.width, this.height - dh);
   }
 
   /**
    * New rectangle with the same top border as the original, but with the bottom border clipped by {@link dh}.
-   * @param dh {number} delta height
-   */
+   * @param dh {number} delta height */
   cutBottom(dh: number): Rect {
     return new Rect(this.left, this.top, this.width, this.height - dh);
   }
 
   /**
    * New rectangle with the same left border as the original, but with the right border clipped by {@link dw}.
-   * @param dw {number} delta width
-   */
+   * @param dw {number} delta width */
   cutRight(dw: number): Rect {
     return new Rect(this.left, this.top, this.width - dw, this.height);
   }
@@ -301,46 +294,40 @@ export class Rect {
   // --
 
   /** New rectangle below the original with a height of {@link height}.
-   * @param height {number} new rectangle height
-   */
+   * @param height {number} new rectangle height */
   below(height: number): Rect {
     return new Rect(this.left, this.bottom, this.width, height);
   }
 
   /** New rectangle above the original with a height of {@link height}.
-   * @param height {number} new rectangle height
-   */
+   * @param height {number} new rectangle height */
   above(height: number): Rect {
     return new Rect(this.left, this.top - height, this.width, height);
   }
 
   /** New rectangle to the left of the original with a width of {@link width}.
-   * @param width {number} new rectangle width
-   */
+   * @param width {number} new rectangle width */
   toTheLeft(width: number): Rect {
     return new Rect(this.left - width, this.top, width, this.height);
   }
 
   /**
    * New rectangle to the right of the original with a width of {@link width}.
-   * @param width {number} new rectangle width
-   */
+   * @param width {number} new rectangle width */
   toTheRight(width: number): Rect {
     return new Rect(this.right, this.top, width, this.height);
   }
 
   /**
    * New rectangle above the original with a height of {@link height}. See {@link above}.
-   * @param height {number} new rectangle height
-   */
+   * @param height {number} new rectangle height */
   toTheTop(height: number): Rect {
     return this.above(height);
   }
 
   /**
    * New rectangle below the original with a height of {@link height}. See {@link below}.
-   * @param height {number} new rectangle height
-   */
+   * @param height {number} new rectangle height */
   toTheBottom(height: number): Rect {
     return this.below(height);
   }
@@ -350,8 +337,7 @@ export class Rect {
   /**
    * New rectangle with the same top border as the original, but with a height
    * scaled with {@link ratio} of the original height. See also {@link getTop}.
-   * @param ratio {number} height scale factor
-   */
+   * @param ratio {number} height scale factor */
   getTopScaled(ratio: number): Rect {
     return this.getTop(this.height * ratio);
   }
@@ -359,8 +345,7 @@ export class Rect {
   /**
    * New rectangle with the same bottom border as the original, but with a height
    * scaled with {@link ratio} of the original height. See also {@link getBottom}.
-   * @param ratio {number} height scale factor
-   */
+   * @param ratio {number} height scale factor */
   getBottomScaled(ratio: number): Rect {
     return this.getBottom(this.height * ratio);
   }
@@ -368,8 +353,7 @@ export class Rect {
   /**
    * New rectangle with the same left border as the original, but with a width
    * scaled with {@link ratio} of original width. See also {@link getLeft}.
-   * @param ratio {number} width scale factor
-   */
+   * @param ratio {number} width scale factor */
   getLeftScaled(ratio: number): Rect {
     return this.getLeft(this.width * ratio);
   }
@@ -377,8 +361,7 @@ export class Rect {
   /**
    * New rectangle with the same right border as the original, but with a width
    * scaled with {@link ratio} of original width. See also {@link getRight}.
-   * @param ratio {number} width scale factor
-   */
+   * @param ratio {number} width scale factor */
   getRightScaled(ratio: number): Rect {
     return this.getRight(this.width * ratio);
   }
@@ -388,8 +371,7 @@ export class Rect {
   /**
    * Horizontal part of {@link index} of the original rectangle sliced on {@link count} parts.
    * @param count {number} count of parts to divide the rectangle vertically
-   * @param index {number} index of part to return
-   */
+   * @param index {number} index of part to return */
   getTopPart(count: number, index: number): Rect {
     return new Rect(
       this.left, this.top + (this.height / count) * index,
@@ -399,8 +381,7 @@ export class Rect {
   /**
    * Vertical part of {@link index} of the original rectangle slices on {@link count} parts.
    * @param count {number} count of parts to divide rectangle horizontally
-   * @param index {number} index of part to return
-   */
+   * @param index {number} index of part to return */
   getLeftPart(count: number, index: number): Rect {
     return new Rect(
       this.left + (this.width / count) * index, this.top,
@@ -412,12 +393,11 @@ export class Rect {
    * @param xCount {number} dividing grid size along x-axis
    * @param yCount {number} dividing grid size along y-axis
    * @param x {number} index of part to return along x-axis
-   * @param y {number} index of part to return along y-axis
-   */
+   * @param y {number} index of part to return along y-axis */
   getGridPart(xCount: number, yCount: number, x: number, y: number): Rect {
     return new Rect(
       this.left + (this.width / xCount) * x, this.top + (this.height / yCount) * y,
-      this.width / xCount, this.height / y);
+      this.width / xCount, this.height / yCount);
   }
 
   // --
@@ -427,8 +407,7 @@ export class Rect {
    * and top and bottom borders shifted outside by {@link dy}.
    * Overall size increased by 2*{@link dx} along x-axis, and by 2*{@link dy} along y-axis.
    * @param dx {number} vertical borders shift delta along x-axis
-   * @param dy {number} horizontal borders shift delta along y-axis
-   */
+   * @param dy {number} horizontal borders shift delta along y-axis */
   inflate(dx: number, dy: number): Rect {
     return new Rect(
       this.left - dx, this.top - dy,
@@ -439,8 +418,7 @@ export class Rect {
    * Inflated rectangle with right border of the original shifted outside by {@link dw}
    * and bottom border shifted outside by {@link dh}.
    * @param dw {number} delta width
-   * @param dh {number} delta height
-   */
+   * @param dh {number} delta height */
   inflateSize(dw: number, dh: number): Rect {
     return new Rect(this.left, this.top, this.width + dw, this.height + dh);
   }
@@ -449,8 +427,7 @@ export class Rect {
    * Inflated rectangle with new width scaled by {@link dxRatio} of the original
    * and height scaled by {@link dyRatio}.
    * @param dxRatio {number} width scale ratio
-   * @param dyRatio {number} height scale ratio
-   */
+   * @param dyRatio {number} height scale ratio */
   inflateRel(dxRatio: number, dyRatio: number): Rect {
     return this.inflate(this.width * (dxRatio - 1), this.height * (dyRatio - 1));
   }
@@ -466,8 +443,8 @@ export class Rect {
    * Positioned in the center. Useful for rendering images in cells. */
   fit(width: number, height: number): Rect {
     return width / height > this.width / this.height
-      ? this.fromCenterSize(this.midX, this.midY, this.width, height * (this.width / width))
-      : this.fromCenterSize(this.midX, this.midY, width * (this.height / height), this.height)
+      ? Rect.fromCenterSize(this.midX, this.midY, this.width, height * (this.width / width))
+      : Rect.fromCenterSize(this.midX, this.midY, width * (this.height / height), this.height)
   }
 
   /** Checks if this Rect contains the point (x; y) inside */
@@ -498,7 +475,7 @@ export class GridCell<TData = any> {
     this.dart = dart;
   }
 
-  /** @returns {GridCell} */
+
   static fromColumnRow(grid: Grid, columnName: string, gridRow: number): GridCell {
     return new GridCell(api.grok_Grid_GetCell(grid.dart, columnName, gridRow));
   }
@@ -512,7 +489,7 @@ export class GridCell<TData = any> {
     return new GridCell(api.grok_GridCell_CreateColHeader(gridColumn.dart));
   }
 
-  /** @returns {string} Cell type */
+  /** @returns Cell type */
   get cellType(): string {
     return api.grok_GridCell_Get_CellType(this.dart);
   }
@@ -522,42 +499,42 @@ export class GridCell<TData = any> {
     api.grok_GridCell_Set_CellType(this.dart, x);
   }
 
-  /** @returns {boolean} Whether this is a table (data) cell (as opposed to special cells like row headers). */
+  /** @returns Whether this is a table (data) cell (as opposed to special cells like row headers). */
   get isTableCell(): boolean {
     return api.grok_GridCell_Get_IsTableCell(this.dart);
   }
 
-  /** @returns {boolean} Whether this is a row header. */
+  /** @returns Whether this is a row header. */
   get isRowHeader(): boolean {
     return api.grok_GridCell_Get_IsRowHeader(this.dart);
   }
 
-  /** @returns {boolean} Whether this is a column header. */
+  /** @returns Whether this is a column header. */
   get isColHeader(): boolean {
     return api.grok_GridCell_Get_IsColHeader(this.dart);
   }
 
-  /** @returns {Column} Corresponding table column, or null. */
+  /** @returns Corresponding table column, or null. */
   get tableColumn(): Column<TData> | null {
     return this.gridColumn.column;
   }
 
-  /** @returns {Row} Corresponding table row, or null. */
+  /** @returns Corresponding table row, or null. */
   get tableRow(): Row | null {
     return this.cell?.row;
   }
 
-  /** @returns {number|null} Index of the corresponding table row. */
+  /** @returns Index of the corresponding table row. */
   get tableRowIndex(): number | null {
     return this.isTableCell || this.isRowHeader ? this.cell.rowIndex : null;
   }
 
-  /** @returns {number} Index of the corresponding grid row. */
+  /** @returns Index of the corresponding grid row. */
   get gridRow(): number {
     return api.grok_GridCell_Get_GridRow(this.dart);
   }
 
-  /** @returns {GridColumn} Corresponding grid column. */
+  /** @returns Corresponding grid column. */
   get gridColumn(): GridColumn<TData> {
     return new GridColumn(api.grok_GridCell_Get_GridColumn(this.dart));
   }
@@ -569,12 +546,12 @@ export class GridCell<TData = any> {
   get customText(): string { return api.grok_GridCell_Get_CustomText(this.dart); }
   set customText(x: string) { api.grok_GridCell_Set_CustomText(this.dart, x); }
 
-  /** @returns {Grid} this cell belongs to. */
+  /** @returns this cell belongs to. */
   get grid(): Grid {
     return new Grid(api.grok_GridCell_Get_Grid(this.dart));
   }
 
-  /** @returns {Cell} Corresponding table cell. */
+  /** @returns Corresponding table cell. */
   get cell(): Cell {
     return new Cell(api.grok_GridCell_Get_Cell(this.dart));
   }
@@ -587,7 +564,7 @@ export class GridCell<TData = any> {
     return toJs(api.grok_GridCell_Get_Value(this.dart));
   }
 
-  /** @returns {GridCellStyle} Style to use for rendering. */
+  /** @returns Style to use for rendering. */
   get style(): GridCellStyle {
     return new GridCellStyle(api.grok_GridCell_Get_Style(this.dart));
   }
@@ -596,7 +573,7 @@ export class GridCell<TData = any> {
   get color(): number { return api.grok_GridCell_Get_Color(this.dart); }
 
   /** Grid cell bounds.
-   * Sample: {@link https://public.datagrok.ai/js/samples/grid/cell-bounds}
+   * Sample: {@link https://public.datagrok.ai/js/samples/grid/advanced/cell-bounds}
    */
   get bounds(): Rect {
     return Rect.fromDart(api.grok_GridCell_Get_Bounds(this.dart));
@@ -685,10 +662,10 @@ export class GridColumn<TData = any> {
     return toJs(api.grok_GridColumn_Get_Grid(this.dart));
   }
 
-  /** @returns {Column} Corresponding table column, or null. */
+  /** @returns Corresponding table column, or null. */
   get column(): Column<TData> | null {
     let col = api.grok_GridColumn_Get_Column(this.dart);
-    return col === null ? null : new Column(col);
+    return col === null ? null : toJs(col);
   }
 
   /** Index of the column. */
@@ -699,7 +676,7 @@ export class GridColumn<TData = any> {
   pin(): void {api.grok_Grid_pinColumns(api.grok_GridColumn_Get_Grid(this.dart), [this.dart]); }
   unpin(): void {api.grok_Grid_unpinColumns(api.grok_GridColumn_Get_Grid(this.dart), [this.dart]); }
 
-  /** @returns {string} Column name. */
+  /** @returns Column name. */
   get name(): string { return api.grok_GridColumn_Get_Name(this.dart); }
   set name(x: string) { api.grok_GridColumn_Set_Name(this.dart, x); }
 
@@ -710,20 +687,20 @@ export class GridColumn<TData = any> {
   get headerCellStyle(): GridCellStyle { return api.grok_GridColumn_Get_HeaderCellStyle(this.dart); }
 
   /** Column width in pixels.
-   * Sample: {@link https://public.datagrok.ai/js/samples/grid/resize-columns} */
+   * Sample: {@link https://public.datagrok.ai/js/samples/grid/resize/resize-columns} */
   get width(): number { return api.grok_GridColumn_Get_Width(this.dart); }
   set width(x: number) { api.grok_GridColumn_Set_Width(this.dart, x); }
 
-  /** Background column as a 4-byte ARGB number. */
-  get backColor(): Color { return api.grok_GridColumn_Get_BackColor(this.dart); }
-  set backColor(x: Color) { api.grok_GridColumn_Set_BackColor(this.dart, x); }
+  /** Background color as a 4-byte ARGB number (see {@link Color}). */
+  get backColor(): number { return api.grok_GridColumn_Get_BackColor(this.dart); }
+  set backColor(x: number) { api.grok_GridColumn_Set_BackColor(this.dart, x); }
 
   /** Column format.
-   * Sample: {@link https://public.datagrok.ai/js/samples/grid/html-markup-cells} */
+   * Sample: {@link https://public.datagrok.ai/js/samples/grid/html-cells/html-markup-cells} */
   get format(): string { return api.grok_GridColumn_Get_Format(this.dart); }
   set format(x: string) { api.grok_GridColumn_Set_Format(this.dart, x); }
 
-  /** @returns {string} Cell type. */
+  /** @returns Cell type. */
   get cellType(): string { return api.grok_GridColumn_Get_CellType(this.dart); }
   set cellType(x: string) { api.grok_GridColumn_Set_CellType(this.dart, x); }
 
@@ -736,13 +713,11 @@ export class GridColumn<TData = any> {
   set visible(x: boolean) { api.grok_GridColumn_Set_Visible(this.dart, x); }
 
   /** Custom colors for categories.
-   * Sample: {@link https://public.datagrok.ai/js/samples/grid/category-colors}
-   *  @returns {Object.<string, number>} */
+   * Sample: {@link https://public.datagrok.ai/js/samples/grid/color-coding/category-colors} */
   get categoryColors(): { [s: string]: number } { return api.grok_GridColumn_Get_CategoryColors(this.dart); }
   set categoryColors(x: { [s: string]: number }) { api.grok_GridColumn_Set_CategoryColors(this.dart, x); }
 
-  /** Whether the column is editable.
-   *  @returns {boolean} */
+  /** Whether the column is editable. */
   get editable(): boolean { return api.grok_GridColumn_Get_Editable(this.dart); }
   set editable(x: boolean) { api.grok_GridColumn_Set_Editable(this.dart, x); }
 
@@ -817,42 +792,36 @@ export class GridColumnList {
     this.dart = dart;
   }
 
-  /** Row header column.
-   *  @returns {GridColumn}  */
+  /** Row header column. */
   get rowHeader(): GridColumn | null {
     return this.byIndex(0);
   }
 
-  /** Returns a grid column by index, or null if it does not exist.
-   *  @param {number} index
-   *  @returns {GridColumn}  */
+  /** Returns a grid column by index, or null if it does not exist. */
   byIndex(index: number): GridColumn | null {
     return GridColumn.fromDart(api.grok_GridColumnList_ByIndex(this.dart, index));
   }
 
-  /** Returns a grid column by name, or null if it does not exist.
-   *  @param {string} columnName
-   *  @returns {GridColumn}  */
+  /** Returns a grid column by name, or null if it does not exist. */
   byName(columnName: string): GridColumn | null {
     return GridColumn.fromDart(api.grok_GridColumnList_ByName(this.dart, columnName));
   }
 
   /** Sets column order.
-   * Sample: {@link https://public.datagrok.ai/js/samples/grid/order-columns}
-   *  @param {string[]} columnNames - Order of columns. */
+   * Sample: {@link https://public.datagrok.ai/js/samples/grid/order/order-columns}
+   *  @param columnNames - Order of columns. */
   setOrder(columnNames: string[]): void {
     api.grok_GridColumnList_SetOrder(this.dart, columnNames);
   }
 
   /** Shows the specified columns (and hides the rest).
-   * Sample: {@link https://public.datagrok.ai/js/samples/grid/hide-columns}
-   *  @param {string[]} columnNames - Names of the columns to show. */
+   * Sample: {@link https://public.datagrok.ai/js/samples/grid/resize/hide-columns}
+   *  @param columnNames - Names of the columns to show. */
   setVisible(columnNames: string[]): void {
     api.grok_GridColumnList_SetVisible(this.dart, columnNames);
   }
 
-  /** GridColumnList length.
-   *  @returns {number}  */
+  /** GridColumnList length. */
   get length(): number {
     return api.grok_GridColumnList_Get_Length(this.dart);
   }
@@ -951,27 +920,28 @@ export class Grid extends Viewer<IGridSettings> {
     return Grid.create(t);
   }
 
-  /** Grid columns.
-   *  @returns {GridColumnList} */
+  /** Grid columns. */
   get columns(): GridColumnList {
     return new GridColumnList(api.grok_Grid_Get_Columns(this.dart));
   }
 
-  /** Returns a column with the specified name.
-   * @param {string} name
-   * @returns {GridColumn} */
+  /** Returns a column with the specified name. */
   col(name: string): GridColumn | null {
     return this.columns.byName(name);
   }
 
-  /** Returns a grid cell at the specified position. */
-  cell(columnName: string, gridRow: number): GridCell {
-    return GridCell.fromColumnRow(this, columnName, gridRow);
+  /** Returns the grid cell at the specified position; both argument orders are accepted, the (row, column)
+   * one matches {@link DataFrame.cell}. */
+  cell(gridRow: number, columnName: string): GridCell;
+  cell(columnName: string, gridRow: number): GridCell;
+  cell(a: string | number, b: number | string): GridCell {
+    return typeof a === 'number' ? GridCell.fromColumnRow(this, b as string, a) : GridCell.fromColumnRow(this, a, b as number);
   }
 
   /**
-   * Occurs after the grid cell has been rendered. Do `args.preventDefault()` to prevent standard rendering.
-   * Sample: {@link https://public.datagrok.ai/js/samples/grid/custom-cell-rendering-indexes}
+   * Occurs before the grid cell is rendered. Call `args.preventDefault()` to suppress the standard
+   * rendering and draw your own via `args.g` within `args.bounds`.
+   * Sample: {@link https://public.datagrok.ai/js/samples/grid/events/custom-cell-rendering-indexes}
    * See also {@link onCellRendered}. */
   get onCellRender(): Observable<GridCellRenderArgs> {
     return __obs('d4-grid-cell-render', this.dart);
@@ -984,12 +954,12 @@ export class Grid extends Viewer<IGridSettings> {
     return __obs('d4-grid-cell-rendered', this.dart);
   }
 
-  /** @returns {HTMLCanvasElement} */
+
   get canvas(): HTMLCanvasElement {
     return api.grok_Grid_Get_Canvas(this.dart);
   }
 
-  /** @returns {HTMLCanvasElement} */
+
   get overlay(): HTMLCanvasElement {
     return api.grok_Grid_Get_Overlay(this.dart);
   }
@@ -1001,7 +971,7 @@ export class Grid extends Viewer<IGridSettings> {
   get sortTypes(): boolean[] { return api.grok_Grid_Get_SortTypes(this.dart); }
 
   /**
-   * Sample: {@link https://public.datagrok.ai/js/samples/grid/custom-cell-prepare}
+   * Sample: {@link https://public.datagrok.ai/js/samples/grid/events/custom-cell-prepare}
    */
   onCellPrepare(callback: (cell: GridCell) => any): StreamSubscription {
     return _sub(api.grok_Grid_OnCellPrepare(this.dart, (dcell: any) => {
@@ -1010,7 +980,7 @@ export class Grid extends Viewer<IGridSettings> {
   }
 
   /**
-   * Sample: {@link https://public.datagrok.ai/js/samples/grid/custom-cell-tooltip}
+   * Sample: {@link https://public.datagrok.ai/js/samples/grid/events/custom-cell-tooltip}
    */
   onCellTooltip(callback: (cell: GridCell, x: number, y: number) => any): StreamSubscription {
     return _sub(api.grok_Grid_OnCellTooltip(this.dart, (dcell: any, x: any, y: any) => {
@@ -1019,21 +989,21 @@ export class Grid extends Viewer<IGridSettings> {
   }
 
   /** Returns a grid cell at the specified position, or null if there is none.
-   * Sample: {@link https://public.datagrok.ai/js/samples/grid/hit-test} */
+   * Sample: {@link https://public.datagrok.ai/js/samples/grid/advanced/hit-test} */
   hitTest(x: number, y: number): GridCell | null {
     return toJs(api.grok_Grid_HitTest(this.dart, x, y));
   }
 
-  /** Sorts rows by the specified [columnIds].
-   *  Specify sort directions via [asc] array (true = ascending, false = descending)
-   *  If [asc] is not specified, sorts in ascending order. */
+  /** Sorts rows by the specified [columns] (names or objects).
+   *  Specify sort directions via the [orders] array (true = ascending, false = descending);
+   *  when [orders] is omitted, sorts in ascending order. */
   sort(columns: string[] | Column[], orders: boolean[] | null = null): Grid {
     api.grok_Grid_Sort(this.dart, (columns as any[]).map((c: string | Column) => c instanceof Column ? c.dart : c), orders);
     return this;
   }
 
   /** Sorts the rows, using the specified comparer that accepts indexes.
-   * Sample: {@link https://public.datagrok.ai/js/samples/grid/order-rows-by-comparer}
+   * Sample: {@link https://public.datagrok.ai/js/samples/grid/order/order-rows-by-comparer}
    * Also, @see setRowOrder */
   sortIndexes(indexComparer: (a: number, b: number) => number): Grid {
     let indexes = _identityInt32(this.table.rowCount);
@@ -1048,28 +1018,27 @@ export class Grid extends Viewer<IGridSettings> {
   }
 
   /** Sets the order or rows in the table.
-   * Sample: {@link https://public.datagrok.ai/js/samples/grid/order-rows}
+   * Sample: {@link https://public.datagrok.ai/js/samples/grid/order/order-rows}
    * Also, @see sortIndexes */
   setRowOrder(indexes: number[]): Grid {
     api.grok_Grid_SetRowOrder(this.dart, indexes);
     return this;
   }
 
-  /** Pinned rows.
-   *  @returns {Iterable<number>} */
+  /** Pinned rows. */
   get pinnedRows(): Iterable<number> {
     return _toIterable(api.grok_Grid_Get_PinnedRows(this.dart));
   }
 
   /** Returns a grid cell at the specified position.
-   * Sample: {@link https://public.datagrok.ai/js/samples/grid/scroll-to-cell}
+   * Sample: {@link https://public.datagrok.ai/js/samples/grid/navigate/scroll-to-cell}
    */
   scrollToCell(column: string | Column, row: number): void {
     api.grok_Grid_ScrollToCell(this.dart, toDart(column), row);
   }
 
   /** Scrolls the grid to the specified position.
-   * Sample: {@link https://public.datagrok.ai/js/samples/grid/scroll-to-pixels}
+   * Sample: {@link https://public.datagrok.ai/js/samples/grid/navigate/scroll-to-pixels}
    */
   scrollToPixels(x: number, y: number): void {
     api.grok_Grid_ScrollToPixels(this.dart, x, y);
@@ -1081,7 +1050,7 @@ export class Grid extends Viewer<IGridSettings> {
   invalidate(): void { api.grok_Grid_Invalidate(this.dart); }
 
   /** Vertical scroll bar.
-   * Sample: {@link https://public.datagrok.ai/js/samples/grid/scroll-bars}
+   * Sample: {@link https://public.datagrok.ai/js/samples/grid/navigate/scroll-bars}
    */
   get vertScroll(): RangeSlider {
     return toJs(api.grok_Grid_Get_VertScroll(this.dart));
@@ -1118,35 +1087,51 @@ export class Grid extends Viewer<IGridSettings> {
   }
 
   /**
-   * Sample: {@link https://public.datagrok.ai/js/samples/grid/resize-events}
+   * Sample: {@link https://public.datagrok.ai/js/samples/grid/resize/resize-events}
    */
   get onColumnResized(): Observable<any> {
     return __obs('d4-grid-column-resized', this.dart);
   }
 
-  /** Sample: {@link https://public.datagrok.ai/js/samples/grid/resize-events} */
+  /** Sample: {@link https://public.datagrok.ai/js/samples/grid/resize/resize-events} */
   get onRowsResized(): Observable<any> { return __obs('d4-grid-rows-resized', this.dart); }
 
-  /** Sample: {@link https://public.datagrok.ai/js/samples/grid/order-rows} */
+  /** Sample: {@link https://public.datagrok.ai/js/samples/grid/order/order-rows} */
   get onRowsSorted(): Observable<any> { return __obs('d4-grid-rows-sorted', this.dart); }
+  /** Fires when rows are pinned or unpinned. */
   get onPinnedRowsChanged(): Observable<any> { return __obs('d4-grid-pinned_rows-changed', this.dart); }
 
+  /** Fires after the user edits a cell value; emits the edited {@link GridCell}. */
   get onCellValueEdited(): Observable<GridCell> { return __obs('d4-grid-cell-value-edited', this.dart); }
+  /** Fires when the current (focused) grid cell changes. */
   get onCurrentCellChanged(): Observable<GridCell> { return __obs('d4-grid-current-cell-changed', this.dart); }
+  /** Fires when the mouse enters a cell. */
   get onCellMouseEnter(): Observable<GridCell> { return __obs('d4-grid-cell-mouse-enter', this.dart); }
+  /** Fires when the mouse leaves a cell. */
   get onCellMouseLeave(): Observable<GridCell> { return __obs('d4-grid-cell-mouse-leave', this.dart); }
 
+  /** Fires when a cell is clicked. */
   get onCellClick(): Observable<GridCell> { return __obs('d4-grid-cell-click', this.dart); }
+  /** Fires when a cell is double-clicked. */
   get onCellDoubleClick(): Observable<GridCell> { return __obs('d4-grid-cell-double-click', this.dart); }
+  /** Fires on mouse-down over a cell, before the click is processed. */
   get onCellMouseDown(): Observable<GridCell> { return __obs('d4-grid-cell-mouse-down', this.dart); }
+  /** Fires on key-down while a cell has focus. */
   get onCellKeyDown(): Observable<GridCell> { return __obs('d4-grid-cell-key-down', this.dart); }
+  /** Fires when the mouse enters a row. */
   get onRowEnter(): Observable<GridCell> { return __obs('d4-grid-row-enter', this.dart); }
 
+  /** Fires before the overlay (interactive layer) is drawn; `preventDefault()` to draw it yourself. */
   get onBeforeDrawOverlay(): Observable<EventData> { return __obs('d4-grid-before-draw-overlay', this.dart); }
+  /** Fires after the overlay is drawn — draw on top of the grid here. */
   get onAfterDrawOverlay(): Observable<EventData> { return __obs('d4-grid-after-draw-overlay', this.dart); }
+  /** Fires before the cell content is drawn. */
   get onBeforeDrawContent(): Observable<EventData> { return __obs('d4-grid-before-draw-content', this.dart); }
+  /** Fires after the cell content is drawn. */
   get onAfterDrawContent(): Observable<EventData> { return __obs('d4-grid-after-draw-content', this.dart); }
+  /** Fires before a cell tooltip is shown; `preventDefault()` to suppress it or supply your own. */
   get onTooltipCreating(): Observable<GridTooltipArgs> { return __obs('d4-grid-show-tooltip', this.dart) };
+  /** Fires when a link inside a cell of this grid is clicked; `args.gridCell` and `args.link`. */
   get onGridCellLinkClicked(): Observable<EventData<GridCellArgs>> {return __obs('d4-grid-cell-link-clicked-local', this.dart); }
 
   /** Returns currently visible cells */
@@ -1199,7 +1184,7 @@ export class GridCellStyle {
   get marker(): string { return api.grok_GridCellStyle_Get_Marker(this.dart) ?? ''; }
   set marker(x: string) { api.grok_GridCellStyle_Set_Marker(this.dart, x); }
 
-  get marginLeft(): number { return api.grok_GridCellStyle_Get_MarginLeft(this.dart) ?? ''; }
+  get marginLeft(): number { return api.grok_GridCellStyle_Get_MarginLeft(this.dart) ?? 0; }
   set marginLeft(x: number) { api.grok_GridCellStyle_Set_MarginLeft(this.dart, x); }
 
   /** Text color (RGBA-encoded) */
@@ -1235,7 +1220,7 @@ export class GridCellRenderArgs extends EventData {
     super(dart);
   }
 
-  /** @returns {CanvasRenderingContext2D} */
+
   get g(): CanvasRenderingContext2D {
     return api.grok_GridCellRenderArgs_Get_G(this.dart);
   }
@@ -1247,7 +1232,8 @@ export class GridCellRenderArgs extends EventData {
 
   /** Cell bounds to render to. */
   get bounds(): Rect {
-    return api.grok_GridCellRenderArgs_Get_Bounds(this.dart);
+    const b = api.grok_GridCellRenderArgs_Get_Bounds(this.dart);
+    return new Rect(b.x, b.y, b.width, b.height);
   }
 }
 

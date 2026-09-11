@@ -224,7 +224,7 @@ export class ParetoFrontViewer extends DG.JsViewer {
   } // computeParetoFront
 
   private markResColWithColor(col: DG.Column): void {
-    col.colors.setCategorical({
+    col.meta.colors.setCategorical({
       'optimal': '#2ca02c',
       'non-optimal': '#e3e3e3',
     });

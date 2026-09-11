@@ -1,4 +1,4 @@
-/// this file was generated automatically from d4.common classes declarations
+// this file was generated automatically from d4.common classes declarations
 import { toDart } from "../wrappers";
 let api = (typeof window !== 'undefined' ? window : global.window) as any;
 
@@ -86,14 +86,14 @@ export class GridCellStyleEx {
   set horzAlign(x: string) {api.grok_GridCellStyle_Set_horzAlign(this.dart, toDart(x)); }
   get vertAlign(): string { return api.grok_GridCellStyle_Get_vertAlign(this.dart); };
   set vertAlign(x: string) {api.grok_GridCellStyle_Set_vertAlign(this.dart, toDart(x)); }
-  /// When defined, overrides the default cell tooltip
+  /** When defined, overrides the default cell tooltip */
   get tooltip(): string { return api.grok_GridCellStyle_Get_tooltip(this.dart); };
   set tooltip(x: string) {api.grok_GridCellStyle_Set_tooltip(this.dart, toDart(x)); }
   get cursor(): string { return api.grok_GridCellStyle_Get_cursor(this.dart); };
   set cursor(x: string) {api.grok_GridCellStyle_Set_cursor(this.dart, toDart(x)); }
   get textWrap(): string { return api.grok_GridCellStyle_Get_textWrap(this.dart); };
   set textWrap(x: string) {api.grok_GridCellStyle_Set_textWrap(this.dart, toDart(x)); }
-  /// Marker to be shown when the value does not fit in the cell
+  /** Marker to be shown when the value does not fit in the cell */
   get marker(): string { return api.grok_GridCellStyle_Get_marker(this.dart); };
   set marker(x: string) {api.grok_GridCellStyle_Set_marker(this.dart, toDart(x)); }
   get textColor(): number { return api.grok_GridCellStyle_Get_textColor(this.dart); };
@@ -110,18 +110,18 @@ export class GridCellStyleEx {
   set marginBottom(x: number) {api.grok_GridCellStyle_Set_marginBottom(this.dart, toDart(x)); }
   get textVertical(): boolean { return api.grok_GridCellStyle_Get_textVertical(this.dart); };
   set textVertical(x: boolean) {api.grok_GridCellStyle_Set_textVertical(this.dart, toDart(x)); }
-  /// Applies to image columns only
+  /** Applies to image columns only */
   get imageScale(): number { return api.grok_GridCellStyle_Get_imageScale(this.dart); };
   set imageScale(x: number) {api.grok_GridCellStyle_Set_imageScale(this.dart, toDart(x)); }
-  /// Applies to image columns only
+  /** Applies to image columns only */
   get opacity(): number { return api.grok_GridCellStyle_Get_opacity(this.dart); };
   set opacity(x: number) {api.grok_GridCellStyle_Set_opacity(this.dart, toDart(x)); }
   get clip(): boolean { return api.grok_GridCellStyle_Get_clip(this.dart); };
   set clip(x: boolean) {api.grok_GridCellStyle_Set_clip(this.dart, toDart(x)); }
-  /// For 'html' cell types only
+  /** For 'html' cell types only */
   get element(): any { return api.grok_GridCellStyle_Get_element(this.dart); };
   set element(x: any) {api.grok_GridCellStyle_Set_element(this.dart, toDart(x)); }
-  /// When defined, the cell editor becomes a combo box with the specified values
+  /** When defined, the cell editor becomes a combo box with the specified values */
   get choices(): Array<string> { return api.grok_GridCellStyle_Get_choices(this.dart); };
   set choices(x: Array<string>) {api.grok_GridCellStyle_Set_choices(this.dart, toDart(x)); }
 }

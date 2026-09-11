@@ -30,7 +30,7 @@ export class DiffStudioHub {
     this.view.name = this.name;
     this.view.helpUrl = LINK.DIF_STUDIO_REL;
     grok.shell.windows.showHelp = false;
-    grok.shell.windows.showProperties = false;
+    grok.shell.windows.showContextPanel = false;
   }
 
   /** Render the full hub view */

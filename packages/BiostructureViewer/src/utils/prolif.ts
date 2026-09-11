@@ -301,7 +301,7 @@ function _dropPriorPlColumns(df: DG.DataFrame): void {
 // finishes. The actual cell rendering is handled by PowerGrid's built-in
 // `RawPNGRenderer` (semType `rawPng`), registered platform-wide via PowerGrid.
 // Look up the TableView by exact DataFrame reference rather than by name —
-// `grok.shell.getTableView(df.name)` returns the wrong view if multiple
+// `grok.shell.tableView(df.name)` returns the wrong view if multiple
 // TableViews share a name (the platform allows duplicates).
 function _adjustGridForDiagrams(df: DG.DataFrame, colNames: string[]): void {
   const tv = Array.from(grok.shell.tableViews).find((v) => v.dataFrame?.id === df?.id);

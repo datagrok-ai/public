@@ -15,11 +15,10 @@ import dayjs from "dayjs";
 const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
 
 
-/** @extends Entity
- * Represents a Table metadata
- * */
+/**
+ * Represents a Table metadata */
 export class TableInfo extends Entity {
-  /** @constructs TableInfo */
+
   public tags: {[key: string]: any};
 
   constructor(dart: any) {
@@ -39,11 +38,11 @@ export class TableInfo extends Entity {
 }
 
 
-/** @extends Entity
- * Represents Column metadata */
+/**
+ * Represents Column metadata  */
 export class ColumnInfo extends Entity {
   public tags: {[key: string]: any};
-  /** @constructs ColumnInfo */
+
   constructor(dart: any) {
     super(dart);
     this.tags = new MapProxy(api.grok_ColumnInfo_Get_Tags(this.dart), 'tags');
@@ -60,16 +59,16 @@ export class ColumnInfo extends Entity {
   }
 }
 
-/** @extends Entity
+/**
  * Allows for files handling in JS-based info panels
- * {@link https://datagrok.ai/help/discover/info-panels}
- * */
+ * {@link https://datagrok.ai/help/discover/info-panels} */
 export class FileInfo extends Entity {
-  /** @constructs FileInfo */
+
   constructor(dart: any) {
     super(dart);
   }
 
+  /** The connection the file belongs to. */
   get connection(): DataConnection { return toJs(api.grok_FileInfo_Get_Connection(this.dart)); }
 
   /** Returns path, i.e. `geo/dmv_offices.csv` */
@@ -96,23 +95,25 @@ export class FileInfo extends Entity {
   /** Checks if directory */
   get isDirectory(): boolean { return api.grok_FileInfo_Get_IsDirectory(this.dart); }
 
+  /** When the file was last modified. */
   get updatedOn(): dayjs.Dayjs | null {
     const d = api.grok_FileInfo_Get_UpdatedOn(this.dart);
     return d ? dayjs(d) : null;
   }
 
-  /** @returns {Promise<string>} */
+
   // readAsString(): Promise<string> {
   //   return new Promise((resolve, reject) => api.grok_FileInfo_ReadAsString(this.dart, (x: any) => resolve(x), (x: any) => reject(x)));
   // }
 
   get data(): Uint8Array {return api.grok_FileInfo_Get_Data(this.dart);}
 
+  /** Reads the file content as text. */
   readAsString(): Promise<string> {
     return api.grok_FileInfo_ReadAsString(this.dart);
   }
 
-  /** @returns {Promise<Uint8Array>} */
+
   readAsBytes(): Promise<Uint8Array> {
     return api.grok_FileInfo_ReadAsBytes(this.dart);
   }
@@ -122,12 +123,14 @@ export class FileInfo extends Entity {
     return api.grok_FileInfo_Save(this.dart);
   }
 
+  /** Creates a file info for [path] holding [data] in memory (not yet saved). */
   static fromBytes(path: string, data: Uint8Array): FileInfo {
     if (!path)
       throw new Error('Path can\'t be null or empty');
     return api.grok_FileInfo_FromBytes(path, data);
   }
 
+  /** Creates a file info for [path] holding [data] in memory (not yet saved). */
   static fromString(path: string, data: string): FileInfo {
     if (!path)
       throw new Error('Path can\'t be null or empty');

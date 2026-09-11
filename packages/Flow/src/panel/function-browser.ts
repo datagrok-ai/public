@@ -303,7 +303,7 @@ export class FunctionBrowser {
   }
 
   private buildTopTabs(): HTMLElement {
-    const tabs = DG.TabControl.create(false, TOOLBOX_TABS_KEY);
+    const tabs = DG.TabControl.create({vertical: false, key: TOOLBOX_TABS_KEY});
     this.topTabs = tabs;
     this.queriesTabContent = setTid(ui.div([], 'funcflow-tab-content'), 'browser-queries');
     this.workflowsTabContent = setTid(ui.div([], 'funcflow-tab-content'), 'browser-workflows');

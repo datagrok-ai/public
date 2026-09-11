@@ -26,7 +26,7 @@ function setScriptRibbon(v: DG.View, doc: any) {
   const viewsMenu = () => {
     const addView = (item) => {
       const cursor = doc.getCursor();
-      const template = `//name: ${item}\n//language: javascript\nlet windows = grok.shell.windows;\nwindows.showToolbox = false;\nwindows.showProperties = false;\nwindows.showHelp = false;\n`;
+      const template = `//name: ${item}\n//language: javascript\nlet windows = grok.shell.windows;\nwindows.showToolbox = false;\nwindows.showContextPanel = false;\nwindows.showHelp = false;\n`;
       switch (item) {
       case 'Simple View':
         doc.replaceRange('grok.shell.newView(\'New view\',[])\n', cursor);

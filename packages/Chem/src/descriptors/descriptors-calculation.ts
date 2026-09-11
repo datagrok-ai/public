@@ -199,7 +199,7 @@ export function getDescriptorsApp(): void {
   const windows = grok.shell.windows;
   windows.showToolbox = false;
   windows.showHelp = false;
-  windows.showProperties = false;
+  windows.showContextPanel = false;
 
   let table = DG.DataFrame.create();
   table.name = 'Descriptors';
@@ -242,7 +242,7 @@ export function getDescriptorsApp(): void {
     if (v.name === view.name) {
       windows.showToolbox = true;
       windows.showHelp = true;
-      windows.showProperties = true;
+      windows.showContextPanel = true;
     }
   });
 }

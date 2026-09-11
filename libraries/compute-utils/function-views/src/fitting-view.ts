@@ -2048,7 +2048,7 @@ export class FittingView {
         const color = colors[colorIdx];
         const rgb = DG.Color.toRgb(color);
 
-        catCol!.colors.setCategorical({
+        catCol!.meta.colors.setCategorical({
           'Simulation': color,
           'Target': simFuncColNames.length > 1 ? lightenRGB(rgb, SIZE.LIGHTER_PERC) : colors[colorIdx + 1],
         });

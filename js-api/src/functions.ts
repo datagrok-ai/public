@@ -105,10 +105,11 @@ const FuncCallParamMapProxy = new Proxy(class {
 
 export interface IFunctionRegistrationData {
   signature: string;    // int foo(string bar) or ({int x, int y}) foo(string bar) for multiple outputs
-  run: Function;
+  run: (...args: any[]) => any;
   tags?: string;        // comma-separated tags
   isAsync?: boolean;    // whether is can be called synchronously
   namespace?: string;
+  /** Function options (the meta annotations) as key-value pairs. */
   options?: {[key: string]: string};
 }
 
@@ -138,14 +139,25 @@ export class Functions {
     return new Func(api.grok_RegisterFunc(func));
   }
 
-  registerParamFunc(name: string, type: Type, run: Function, check: boolean | null = null, description: string | null = null): void {
+  /** Registers a function of one parameter of the specified [type]. It is offered for matching
+   * objects in context menus and in the "Actions" pane; [check] is an optional applicability predicate. */
+  registerParamFunc(name: string, type: Type | (string & {}), run: (x: any) => any, check: ((x: any) => boolean) | boolean | null = null, description: string | null = null): void {
     api.grok_RegisterParamFunc(name, type, run, check, description);
   }
 
+  /** Calls the function [name] (namespace-qualified, such as `'Chem:SmilesToMw'`) with the named
+   * [parameters], loading the owning package first if necessary.
+   * The result depends on the number of declared outputs: exactly one output resolves to that value
+   * (for instance a DataFrame); several outputs resolve to an object keyed by output name
+   * (`res.result1`, `res.result2`); no outputs resolve to `undefined`.
+   * @example
+   * const mw = await grok.functions.call('Chem:SmilesToMw', {smiles: 'CCO'}); */
   async call(name: string, parameters: object = {}, showProgress: boolean = false, progress: ProgressIndicator | null = null): Promise<any> {
     return toJs(await api.grok_CallFunc(name, parameters, showProgress, toDart(progress)));
   }
 
+  /** Evaluates a GrokScript expression (or a bare function name) in [context] and returns the result;
+   * for a bare function name that is the {@link Func} itself (see {@link find}). */
   async eval(name: string, context?: Context): Promise<any> {
     return toJs(await api.grok_EvalFunc(name, context?.dart));
   }
@@ -208,7 +220,7 @@ export class ClientCache {
   /** Removes expired records. Normally, Datagrok does it automatically when needed. */
   cleanup(): Promise<void> { return api.grok_ClientCache_Cleanup(); }
 
-  /** Returns the number of */
+  /** Returns the number of cached records. */
   getRecordCount(): Promise<number> { return api.grok_ClientCache_GetRecordCount(); }
 
   /** Indicates whether the caching service is running. */
@@ -220,7 +232,7 @@ export class ClientCache {
 export class FuncCallParam {
   readonly dart: any;
 
-  /** Auxiliary data used for storing additional information associated with this parameter. */
+  /** Auxiliary data used for storing additional information associated with this parameter (a {@link MapBag}: indexed access plus the map methods; typed `any` so it can be cast to a package's own shape). */
   public aux: any;
 
   constructor(dart: any) {
@@ -232,7 +244,7 @@ export class FuncCallParam {
 
   get value(): any { return toJs(api.grok_FuncCallParam_Get_Value(this.dart)); }
 
-  /** A property that re*/
+  /** Property (metadata) of this parameter: name, type, options. */
   get property(): Property { return toJs(api.grok_FuncCallParam_Get_Param(this.dart)); }
 
   processOutput(): void {
@@ -301,7 +313,9 @@ export class FuncCall extends Entity {
   /** Output parameter metadata. See {@link outputs} for parameter values. */
   public outputParams: FuncCallParams;
 
+  /** Auxiliary data associated with this call, not part of the parameters (a {@link MapBag}: indexed access plus the map methods; typed `any` so it can be cast to a package's own shape). */
   public aux: any;
+  /** Call options as key-value pairs (a {@link MapBag}: indexed access plus the map methods; typed `any` so it can be cast to a package's own shape). */
   public options: any;
 
   constructor(dart: any) {
@@ -323,9 +337,11 @@ export class FuncCall extends Entity {
   get func(): Func { return toJs(api.grok_FuncCall_Get_Func(this.dart)); }
   set func(func: Func) { api.grok_FuncCall_Set_Func(this.dart, func.dart); }
 
+  /** The call this one was made from, or null for a top-level call. */
   get parentCall(): FuncCall { return toJs(api.grok_FuncCall_Get_ParentCall(this.dart)); }
   set parentCall(c: FuncCall) { api.grok_FuncCall_Set_ParentCall(this.dart, c.dart); }
 
+  /** When the call started. */
   get started(): dayjs.Dayjs { return dayjs(api.grok_FuncCall_Get_Started(this.dart)); }
 
   set started(value: dayjs.Dayjs) {
@@ -334,15 +350,20 @@ export class FuncCall extends Entity {
     api.grok_FuncCall_Set_Started(this.dart, value?.valueOf());
   }
 
+  /** When the call finished. */
   get finished(): dayjs.Dayjs { return dayjs(api.grok_FuncCall_Get_Finished(this.dart)); }
 
+  /** Execution status: `Created`, `Running`, `Completed`, `Error`, or `Canceled`. */
   get status(): string { return api.grok_FuncCall_Get_Status(this.dart); }
   set status(newStatus: string) { api.grok_FuncCall_Set_Status(this.dart, newStatus)}
+  /** Whether the call was made ad hoc (not persisted in the history). */
   get adHoc(): boolean { return api.grok_FuncCall_Get_AdHoc(this.dart); }
   set adHoc(a: boolean) { api.grok_FuncCall_Set_AdHoc(this.dart, a); }
 
+  /** The user who made the call. */
   override get author(): User { return toJs(api.grok_FuncCall_Get_Author(this.dart)); }
 
+  /** Logger whose records are attached to this call. */
   get debugLogger(): Logger { return new Logger(undefined, {dartLogger: api.grok_FuncCall_Get_DebugLogger(this.dart)}); }
 
   /** Returns function call parameter value */
@@ -362,10 +383,12 @@ export class FuncCall extends Entity {
     return toJs(api.grok_FuncCall_Get_Output_Param_Value(this.dart));
   }
 
+  /** Sets an auxiliary value on this call (see {@link aux}). */
   setAuxValue(name: string, value: any): void {
     api.grok_FuncCall_Set_Aux_Value(this.dart, name, toDart(value));
   }
 
+  /** Sets the input parameter value; same as `inputs[name] = value`. */
   setParamValue(name: string, value: any): void {
     api.grok_FuncCall_Set_Param_Value(this.dart, name, toDart(value));
   }
@@ -404,6 +427,7 @@ export class FuncCall extends Entity {
     return this;
   }
 
+  /** Requests cancellation of a running call. */
   cancel(): Promise<void> {
     return api.grok_FuncCall_Cancel(this.dart);
   }
@@ -416,10 +440,12 @@ export class FuncCall extends Entity {
   /** Shows the corresponding dialog (or view). */
   edit() { api.grok_FuncCall_Edit(this.dart); }
 
+  /** Builds the standard input editor for this call and returns its root; see also {@link buildEditor}. */
   getEditor(condensed?: boolean, showTableSelectors?: boolean): Promise<HTMLDivElement> {
     return api.grok_FuncCall_Get_Editor(this.dart, condensed, showTableSelectors);
   }
 
+  /** Builds the standard input editor into [root] and returns the inputs it created. */
   buildEditor(root: HTMLDivElement, options?: {condensed?: boolean, showTableSelectors?: boolean}): Promise<InputBase[]> {
     return api.grok_FuncCall_Build_Editor(this.dart, root, options?.condensed, options?.showTableSelectors);
   }

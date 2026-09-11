@@ -1899,8 +1899,7 @@ async function initBioInt() {
   // first make sure chem and rdkit module are loaded
   const rdKitModule = await getRdKitModule();
   // then load package settings
-  const pkgProps = await _package.getProperties();
-  const bioPkgProps = new BioPackageProperties(pkgProps);
+  const bioPkgProps = new BioPackageProperties(Object.entries(_package.settings ?? {}));
   _package.properties = bioPkgProps;
   // then load monomer lib
   const libHelper = await MonomerLibManager.getInstance();

@@ -30,8 +30,7 @@ export class CardView extends View {
   }
 
   /**
-   * User-specified {@link https://datagrok.ai/help/datagrok/smart-search | filter expression}.
-   * @type {string} */
+   * User-specified {@link https://datagrok.ai/help/datagrok/smart-search | filter expression}. */
   get searchValue(): string { return api.grok_CardView_Get_SearchValue(this.dart); }
   set searchValue(s: string) { api.grok_CardView_Set_SearchValue(this.dart, s); }
 
@@ -47,8 +46,7 @@ export class CardView extends View {
   set searchFields(s: string[]) { api.grok_CardView_Set_SearchFields(this.dart, s); }
 
   /** Programmatically defined invisible
-   * {@link https://datagrok.ai/help/datagrok/smart-search | filter expression}.
-   *  @type {string} */
+   * {@link https://datagrok.ai/help/datagrok/smart-search | filter expression}. */
   get permanentFilter(): string { return api.grok_CardView_Get_PermanentFilter(this.dart); }
   set permanentFilter(s: string) { api.grok_CardView_Set_PermanentFilter(this.dart, s); }
 
@@ -88,7 +86,7 @@ export class CustomCardView extends CardView {
 
 /** Projects view */
 export class ProjectsView extends CardView {
-  /** @constructs ProjectsView */
+
   constructor(dart: any) {
     super(dart);
   }
@@ -101,7 +99,6 @@ export class ProjectsView extends CardView {
 
 /** Scripts view */
 export class ScriptsView extends CardView {
-  /** @constructs ProjectsView */
   constructor(dart: any) {
     super(dart);
   }

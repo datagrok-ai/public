@@ -54,7 +54,7 @@ export class ColumnColorHelper {
 
   getType(): ColorCodingType {
     if (this.column.tags.has(DG.TAGS.COLOR_CODING_TYPE))
-      return this.column.tags[DG.TAGS.COLOR_CODING_TYPE];
+      return this.column.tags[DG.TAGS.COLOR_CODING_TYPE] as ColorCodingType;
     else if (this.column.tags.has(DG.TAGS.COLOR_CODING_CATEGORICAL))
       return DG.COLOR_CODING_TYPE.CATEGORICAL;
     return DG.COLOR_CODING_TYPE.OFF;
@@ -70,8 +70,7 @@ export class ColumnColorHelper {
   /** Enables linear color-coding on a column.
    * @param range - list of palette colors (ARGB integers; see {@link Color}).
    * @param options - list of additional parameters, such as the minimum/maximum value to be used for scaling and the colors for values below the minimum and above the maximum.
-   * Use the same numeric representation as [Column.min] and [Column.max].
-   */
+   * Use the same numeric representation as [Column.min] and [Column.max]. */
   setLinear(range: number[] | null = null, options: {min?: number, belowMinColor?: string, max?: number, aboveMaxColor?: string} | null = null): void {
     this.column.tags[DG.TAGS.COLOR_CODING_TYPE] = DG.COLOR_CODING_TYPE.LINEAR;
     if (range != null)
@@ -87,8 +86,7 @@ export class ColumnColorHelper {
    * @param valueColors - dictionary of numerical values and hex-colors.
    * @param options - list of additional parameters, such as the colors for values below the minimum and above the maximum.
    *
-   * See samples: {@link https://public.datagrok.ai/js/samples/grid/color-coding/color-coding}}
-   */
+   * See samples: {@link https://public.datagrok.ai/js/samples/grid/color-coding/color-coding}} */
   setLinearAbsolute(valueColors: {[value: number]: string}, options: {belowMinColor?: string, aboveMaxColor?: string} | null = null): void {
     this.column.tags[TAGS.COLOR_CODING_TYPE] = DG.COLOR_CODING_TYPE.LINEAR;
     const orderedEntries = Object.entries(valueColors).sort(([a], [b]) => +a - +b);
@@ -154,7 +152,7 @@ export class ColumnMarkerHelper {
     return this.assign('~DEFAULT', marker);
   }
 
-  // Obsolete. Recommended method is "assign".
+  /** @deprecated Use {@link assign}. Removed in 1.29. */
   setMarkerCoding(category: string, marker: MarkerCodingType): void {
     let jsonTxt: string | null = this.column.getTag(TAGS.MARKER_CODING);
     const jsonMap: {[key: string]: string} = jsonTxt ? JSON.parse(jsonTxt) : {};

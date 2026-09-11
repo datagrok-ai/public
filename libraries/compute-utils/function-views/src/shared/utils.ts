@@ -120,7 +120,7 @@ export const getDfFromRuns = (
         DG.VIEWER.HISTOGRAM, DG.VIEWER.BOX_PLOT,
       ].includes(sender.temp[VIEWER_PATH]['type'])
     ) {
-      grok.shell.windows.showProperties = true;
+      grok.shell.windows.showContextPanel = true;
 
       const getAppendedDfs = (column: DG.Column) => {
         const appendedDf = column.get(0).clone() as DG.DataFrame;

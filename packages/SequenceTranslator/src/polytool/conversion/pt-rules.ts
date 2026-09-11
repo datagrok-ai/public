@@ -362,7 +362,7 @@ export class Rules {
 }
 
 export async function getRules(ruleFiles: string[]): Promise<Rules> {
-  const fileSource = new DG.FileSource(RULES_PATH);
+  const fileSource = new DG.FilesDataSource(RULES_PATH);
   const rules: Rules = new Rules(null, null, [], []);
 
   for (let i = 0; i < ruleFiles.length; i++) {

@@ -280,7 +280,7 @@ export class SarMatrixViewer extends DG.JsViewer {
     this.host.addEventListener('contextmenu', () => this.contextCell = null, true);
 
     // Transfer detection is quadratic in the total row count, so that tab computes on first open.
-    this.tabs = ui.tabControl(null, false);
+    this.tabs = ui.tabControl(null, {vertical: false});
     const matrixPane = this.tabs.addPane(TAB_MATRIX, () => this.host);
     ui.tooltip.bind(matrixPane.header, 'Core × substituent potency matrices, one per series');
     const transferPane = this.tabs.addPane(TAB_TRANSFER, () => this.transferPanel.root);

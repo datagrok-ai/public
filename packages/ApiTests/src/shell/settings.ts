@@ -48,7 +48,7 @@ category('Settings', () => {
     expect(gss.showMenu, !grok.shell.windows.simpleMode, 'showMenu');
     expect(gss.showTables, grok.shell.windows.showTables, 'showTables');
     expect(gss.showColumns, grok.shell.windows.showColumns, 'showColumns');
-    expect(gss.showProperties, grok.shell.windows.showProperties, 'showProperties');
+    expect(gss.showProperties, grok.shell.windows.showContextPanel, 'showProperties');
     expect(gss.showToolbox, grok.shell.windows.showToolbox, 'showToolbox');
     expect(gss.showStatusBar, grok.shell.windows.showStatusBar, 'showStatusBar');
     expect(gss.showVariables, grok.shell.windows.showVariables, 'showVariables');

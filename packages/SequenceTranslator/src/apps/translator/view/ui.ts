@@ -182,7 +182,7 @@ class TranslatorAppLayout {
     // update the view
 
     grok.data.detectSemanticTypes(selectedTable);
-    grok.shell.v = grok.shell.getTableView(selectedTable.name);
+    grok.shell.v = grok.shell.tableView(selectedTable.name);
   }
 
   private constructSingleSequenceControls(): HTMLDivElement {

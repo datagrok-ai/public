@@ -18,21 +18,19 @@ export class Entity {
 
   public dart: any;
 
-  /** @constructs Entity*/
+
   constructor(dart: any) {
     this.dart = dart;
   }
 
-  /** Entity ID (GUID)
-   *  @type {string} */
+  /** Entity ID (GUID) */
   get id(): string { return api.grok_Entity_Get_Id(this.dart); }
   set id(x: string) { api.grok_Entity_Set_Id(this.dart, x); }
 
   /** Generates new {@link id} for this entity. */
   newId(): void { api.grok_Entity_New_Id(this.dart); }
 
-  /** Entity friendly name
-   *  @type {string} */
+  /** Entity friendly name */
   get friendlyName(): string { return api.grok_Entity_Get_FriendlyName(this.dart); }
   set friendlyName(x: string) { api.grok_Entity_Set_FriendlyName(this.dart, x); }
 
