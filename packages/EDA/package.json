@@ -28,6 +28,7 @@
     "email": "vmakarichev@datagrok.ai"
   },
   "devDependencies": {
+    "@datagrok-libraries/bdd": "file:../../libraries/bdd",
     "@playwright/test": "^1.48.0",
     "@typescript-eslint/eslint-plugin": "^5.32.0",
     "@typescript-eslint/parser": "^5.32.0",
@@ -53,7 +54,8 @@
     "release-eda-dev": "webpack && grok publish dev --release",
     "debug-eda-local": "webpack && grok publish local",
     "release-eda-local": "webpack && grok publish local --release",
-    "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm --prefix ./../../libraries/tutorials run build && npm run build"
+    "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm --prefix ./../../libraries/tutorials run build && npm run build",
+    "test:bdd": "grok-bdd run"
   },
   "canEdit": [
     "Administrators"

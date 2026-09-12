@@ -173,6 +173,15 @@ and `isRenderPending`, `onContextMenuShown/Closed`, `getWidgetStatus().hitAreas/
   `data-u2-owner` = the nearest named ancestor; plain `button()`, toolbar buttons and tab headers
   carry no `data-u2`. A `funcForm` number field loses a typed leading "-" (unreported u2 bug).
 - A u2 name is one token: the locator tries the phrase without spaces and with dashes.
+- The Dart column picker ("Select columns...") is a grid viewer: `text of cell N of __name` names
+  a row's column, `cell N of x` is its checkbox, its Search input filters without renumbering. A
+  Dart property grid category (`tr.property-grid-category`) has no aria state, only its icon
+  (`property-grid-icon-minus` open, `-plus` folded), which `readExpanded` reads. The 2 s drop of the
+  Invariants (`AppEvents.propertyEdited`) reaches across features: a settings click on a new viewer
+  right after another feature edited a property leaves the panel on the old one.
+- A Dart choice input's phrase can resolve to its `<select>` itself; `select` handles both. The Share
+  dialog of an entity that is not a project (a model) fetches the entity's project after it opens and
+  its OK throws "Not initialized" before that: wait for the owner's grant row ("Full access").
 - A viewer outside a table view (a function view's docked chart, a facet's small multiples) is
   reached through `DG.Widget.find(root)`; the function view's tabs are dock-spawn-ts handles in a
   shadow root (`.dockspan-tab-handle`, a CSS locator pierces it), and the viewers of its other
