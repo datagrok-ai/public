@@ -268,6 +268,14 @@ export namespace queries {
     return await grok.data.query('UsageAnalysis:LogEventParameters', { eventId });
   }
 
+  export async function systemActivity(date: string , groups: any ): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:SystemActivity', { date, groups });
+  }
+
+  export async function systemActivitySummary(date: string , groups: any ): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:SystemActivitySummary', { date, groups });
+  }
+
   export async function metricsPgStatStatementsVersion(): Promise<DG.DataFrame> {
     return await grok.data.query('UsageAnalysis:MetricsPgStatStatementsVersion', {});
   }

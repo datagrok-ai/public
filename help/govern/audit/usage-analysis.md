@@ -58,6 +58,12 @@ into platform usage:
       identify where the majority of activities originate.
     * **User events**: A [scatterplot](../../visualize/viewers/scatter-plot.md) visualizes events specific to individual users, allowing you to track their activity history and understand their usage patterns better.
 1. **Log**: A table lists all log events, which you can filter by user and source.
+1. **System Activity**: The platform's security trail. A table lists logins and logouts, failed
+   login attempts, impersonation, admin session start and end, developer key generation,
+   settings and log settings changes, and server starts, filterable by event type and user; a
+   line chart above it shows how many of each happened over time. Click a row to see the
+   record's details (the login that failed and why, which settings changed, the session type)
+   on the **Context Panel**.
 1. **Projects**: Provides insights into how users interact with projects on the platform:
     * **Scatterplot** shows a timeline of access events per project. The tooltip displays `access_count`, which is the number of times a project was opened.
     * **Unique Users Per Project**: A [barchart](../../visualize/viewers/bar-chart.md) displays the number of distinct users who accessed each project over the given period.
