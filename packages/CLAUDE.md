@@ -331,6 +331,10 @@ If the package ships `dockerfiles/*/container.json` naming an `image`, remember 
 the version (see above), so the images for the new version must exist in the registry *before*
 the bump lands on master.
 
+### js-api version
+
+Do not bump `js-api/package.json` in a feature PR — the core release pipeline owns that version and a `master` push auto-publishes it (see `js-api/CLAUDE.md` → Versioning). Depend on the in-repo API with `"datagrok-api": "../../js-api"`; the release rewrites it to the published range.
+
 ## Naming Conventions
 
 - Package folder: **PascalCase** (`PowerGrid`, `BiostructureViewer`)
