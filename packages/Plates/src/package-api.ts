@@ -13,8 +13,8 @@ export namespace funcs {
   }
 
   /**
-  Assasy plates with concentration, layout and readout data
-  */
+   * Assasy plates with concentration, layout and readout data
+   */
   export async function assayPlatesDemo(): Promise<void> {
     return await grok.functions.call('Plates:AssayPlatesDemo', {});
   }
@@ -36,8 +36,8 @@ export namespace funcs {
   }
 
   /**
-  Checks if an Excel file contains plate data.
-  */
+   * Checks if an Excel file contains plate data.
+   */
   export async function checkExcelIsPlate(content: any ): Promise<boolean> {
     return await grok.functions.call('Plates:CheckExcelIsPlate', { content });
   }
@@ -51,8 +51,8 @@ export namespace funcs {
   }
 
   /**
-  Checks if a CSV file can be parsed as a plate.
-  */
+   * Checks if a CSV file can be parsed as a plate.
+   */
   export async function checkCsvIsPlate(file: DG.FileInfo ): Promise<boolean> {
     return await grok.functions.call('Plates:CheckCsvIsPlate', { file });
   }

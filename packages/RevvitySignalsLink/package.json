@@ -8,40 +8,17 @@
     "email": "mdolotova@datagrok.ai"
   },
   "dependencies": {
-    "datagrok-api": "^1.27.0",
-    "cash-dom": "^8.1.5",
-    "dayjs": "^1.11.13",
-    "@datagrok-libraries/utils": "^4.6.8",
-    "rxjs": "^6.5.5",
-    "@datagrok-libraries/test": "^1.1.0"
-  },
-  "devDependencies": {
-    "datagrok-tools": "^5.0.0",
-    "webpack": "^5.95.0",
-    "webpack-cli": "^5.1.4",
-    "ts-loader": "^9.5.4",
-    "typescript": "^5.9.3",
-    "style-loader": "^4.0.0",
-    "css-loader": "^7.1.2"
+    "datagrok-api": "workspace:^",
+    "cash-dom": "catalog:",
+    "dayjs": "catalog:",
+    "@datagrok-libraries/utils": "workspace:^",
+    "rxjs": "catalog:",
+    "@datagrok-libraries/test": "workspace:^"
   },
   "scripts": {
-    "link-all": "grok link",
-    "debug-revvitysignalslink": "webpack && grok publish",
-    "release-revvitysignalslink": "webpack && grok publish --release",
-    "build-revvitysignalslink": "webpack",
-    "build": "grok api && grok check && webpack",
-    "debug-revvitysignalslink-dev": "webpack && grok publish dev",
-    "release-revvitysignalslink-dev": "webpack && grok publish dev --release",
-    "debug-revvitysignalslink-public": "webpack && grok publish public",
-    "release-revvitysignalslink-public": "webpack && grok publish public --release",
-    "debug-revvitysignalslink-test": "webpack && grok publish test",
-    "release-revvitysignalslink-test": "webpack && grok publish test --release",
-    "debug-revvitysignalslink-sandbox": "webpack && grok publish sandbox",
-    "release-revvitysignalslink-sandbox": "webpack && grok publish sandbox --release",
-    "debug-revvitysignalslink-release": "webpack && grok publish release",
-    "release-revvitysignalslink-release": "webpack && grok publish release --release",
-    "debug-revvitysignalslink-release2": "webpack && grok publish release2",
-    "release-revvitysignalslink-release2": "webpack && grok publish release2 --release",
+    "build": "grok build",
+    "typecheck": "grok tsc --noEmit -p tsconfig.json",
+    "lint": "eslint --ext .ts,.tsx src",
     "test": "grok test"
   },
   "canEdit": [
@@ -54,8 +31,5 @@
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",
     "directory": "packages/RevvitySignalsLink"
-  },
-  "overrides": {
-    "datagrok-api": "$datagrok-api"
   }
 }

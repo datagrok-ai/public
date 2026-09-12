@@ -13,7 +13,7 @@ import * as DG from 'datagrok-api/dg';
 //name: binaryImageCellRenderer
 //tags: cellRenderer
 //output: grid_cell_renderer renderer
-//meta.role: cellRenderer
+//meta.role: CellRenderer
 //meta.cellType: BinaryImage
 export function _BinaryImageCellRenderer() {
   return new BinaryImageCellRenderer();
@@ -21,7 +21,7 @@ export function _BinaryImageCellRenderer() {
 
 //name: Color
 //output: grid_cell_renderer renderer
-//meta.role: cellRenderer
+//meta.role: CellRenderer
 //meta.cellType: Color
 export function _ColorCellRenderer() {
   return new ColorCellRenderer();
@@ -30,7 +30,7 @@ export function _ColorCellRenderer() {
 //name: hyperlinkCellRenderer
 //tags: cellRenderer
 //output: grid_cell_renderer renderer
-//meta.role: cellRenderer
+//meta.role: CellRenderer
 //meta.cellType: Hyperlink
 export function _HyperlinkCellRenderer() {
   return new HyperlinkCellRenderer();
@@ -39,7 +39,7 @@ export function _HyperlinkCellRenderer() {
 //name: imageUrlCellRenderer
 //tags: cellRenderer
 //output: grid_cell_renderer renderer
-//meta.role: cellRenderer
+//meta.role: CellRenderer
 //meta.cellType: ImageUrl
 export function _ImageCellRenderer() {
   return new ImageCellRenderer();
@@ -48,7 +48,7 @@ export function _ImageCellRenderer() {
 //name: Multi Choice
 //tags: cellRenderer
 //output: grid_cell_renderer renderer
-//meta.role: cellRenderer
+//meta.role: CellRenderer
 //meta.cellType: MultiChoice
 export function _MultiChoiceCellRenderer() {
   return new MultiChoiceCellRenderer();
@@ -57,7 +57,7 @@ export function _MultiChoiceCellRenderer() {
 //name: Stars
 //tags: cellRenderer
 //output: grid_cell_renderer renderer
-//meta.role: cellRenderer
+//meta.role: CellRenderer
 //meta.cellType: Stars
 export function _StarsCellRenderer() {
   return new StarsCellRenderer();
@@ -66,7 +66,7 @@ export function _StarsCellRenderer() {
 //name: svgCellRenderer
 //tags: cellRenderer
 //output: grid_cell_renderer renderer
-//meta.role: cellRenderer
+//meta.role: CellRenderer
 //meta.cellType: SVG
 export function _SvgCellRenderer() {
   return new SvgCellRenderer();
@@ -75,7 +75,7 @@ export function _SvgCellRenderer() {
 //name: htestCellRenderer
 //tags: cellRenderer
 //output: grid_cell_renderer renderer
-//meta.role: cellRenderer
+//meta.role: CellRenderer
 //meta.cellType: htest
 export function _HtmlTestCellRenderer() {
   return new HtmlTestCellRenderer();
@@ -223,7 +223,7 @@ export function addPinnedColumn(gridCol: any) {
 }
 
 //tags: autostart
-//meta.role: autostart
+//meta.role: Autostart
 export async function _autoPowerGrid() : Promise<void> {
   await PackageFunctions._autoPowerGrid();
 }
@@ -245,7 +245,7 @@ export function formsViewer() {
 //tags: widgets, panel
 //input: string imageUrl { semType: ImageUrl }
 //output: widget result
-//meta.role: widgets,panel
+//meta.role: widgets,Panel
 export function imgContent(imageUrl: string) : any {
   return PackageFunctions.imgContent(imageUrl);
 }
@@ -281,7 +281,7 @@ export function isWebGPURenderValid(sc: any) : boolean {
 //name: rawPng
 //tags: cellRenderer
 //output: grid_cell_renderer renderer
-//meta.role: cellRenderer
+//meta.role: CellRenderer
 //meta.cellType: rawPng
 export function _RawPNGRenderer() {
   return new RawPNGRenderer();
@@ -290,7 +290,7 @@ export function _RawPNGRenderer() {
 //name: Scatter Plot
 //tags: cellRenderer
 //output: grid_cell_renderer renderer
-//meta.role: cellRenderer
+//meta.role: CellRenderer
 //meta.cellType: scatterplot
 //meta.virtual: true
 export function _ScatterPlotCellRenderer() {

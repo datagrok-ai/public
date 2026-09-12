@@ -72,7 +72,8 @@ function copyDts(src: string, dst: string): void {
 /** Stages the local js-api types into `<dir>/node_modules/datagrok-api`. */
 function stageDatagrokApiTypes(dir: string): void {
   const dstRoot = path.join(dir, 'node_modules', 'datagrok-api');
-  copyDts(jsApiDir, dstRoot);
+  // js-api emits its declarations into dist/ (see js-api/package.json "exports")
+  copyDts(path.join(jsApiDir, 'dist'), dstRoot);
   fs.writeFileSync(path.join(dstRoot, 'package.json'),
     '{"name": "datagrok-api", "version": "0.0.0", "types": "datagrok.d.ts"}');
   // dayjs types (the generated db.ts imports `type {Dayjs}`).
@@ -93,7 +94,7 @@ function stageDatagrokApiTypes(dir: string): void {
  * declarations per test would not check anything this file cares about. */
 function stageDomainUiTypes(dir: string): void {
   const dstRoot = path.join(dir, 'node_modules', '@datagrok-libraries', 'domain-ui');
-  copyDts(path.join(domainUiDir, 'src'), path.join(dstRoot, 'src'));
+  copyDts(path.join(domainUiDir, 'dist', 'src'), path.join(dstRoot, 'src'));
   fs.writeFileSync(path.join(dstRoot, 'package.json'),
     '{"name": "@datagrok-libraries/domain-ui", "version": "0.0.0", "types": "./src/index.d.ts"}');
 }

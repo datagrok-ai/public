@@ -13,52 +13,22 @@
     "directory": "packages/DevTools"
   },
   "dependencies": {
-    "@datagrok-libraries/compute-api": "^0.6.1",
-    "@datagrok-libraries/test": "^1.2.1",
-    "@datagrok-libraries/utils": "^4.6.8",
+    "@datagrok-libraries/compute-api": "workspace:^",
+    "@datagrok-libraries/test": "workspace:^",
+    "@datagrok-libraries/utils": "workspace:^",
     "codemirror": "^5.65.15",
-    "datagrok-api": "../../js-api",
-    "rxjs": "^6.5.5"
-  },
-  "overrides": {
-    "datagrok-api": "$datagrok-api",
-    "uuid": "^11.1.1"
+    "datagrok-api": "workspace:^",
+    "rxjs": "catalog:"
   },
   "devDependencies": {
     "@types/codemirror": "^5.60.5",
-    "@typescript-eslint/eslint-plugin": "^5.32.0",
-    "@typescript-eslint/parser": "^5.32.0",
-    "cash-dom": "^8.1.0",
-    "css-loader": "^5.2.4",
-    "datagrok-tools": "^5.0.0",
-    "eslint": "^8.21.0",
-    "eslint-config-google": "^0.14.0",
-    "style-loader": "^2.0.0",
-    "ts-loader": "^9.5.4",
-    "typescript": "^5.9.3",
-    "webpack": "^5.104.1",
-    "webpack-cli": "^6.0.1"
+    "cash-dom": "catalog:"
   },
   "scripts": {
-    "link-api": "npm link datagrok-api",
-    "link-utils": "npm link @datagrok-libraries/utils",
-    "debug-dev-tools": "grok publish",
-    "release-dev-tools": "grok publish --release",
-    "build-dev-tools": "webpack",
-    "build": "grok api && grok check --soft && webpack",
-    "lint": "eslint src --ext .ts",
-    "lint-fix": "eslint src --ext .ts --fix",
-    "debug-dev-tools-public": "grok publish public",
-    "release-dev-tools-public": "grok publish public --release",
-    "debug-dev-tools-local": "grok publish local",
-    "release-dev-tools-local": "grok publish local --release",
-    "release-local": "grok publish local --release",
-    "debug-local": "grok publish local",
-    "test": "grok test",
-    "test-dev": "grok test --host dev",
-    "test-local": "grok test --host localhost",
-    "link-all": "npm link datagrok-api @datagrok-libraries/utils",
-    "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm run build"
+    "build": "grok build",
+    "typecheck": "grok tsc --noEmit -p tsconfig.json",
+    "lint": "eslint --ext .ts,.tsx src",
+    "test": "grok test"
   },
   "sources": [
     "common/codemirror/codemirror.js",

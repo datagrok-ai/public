@@ -1,8 +1,11 @@
 const fs = require('fs');
 const path = require('path');
 
-const tsParser = require('@typescript-eslint/typescript-estree');
-const generate = require('@babel/generator').default;
+// Loaded on first use: the parser and generator cost ~0.3 s, and the plugin is instantiated by every
+// bundle whether or not a file changed.
+let _tsParser; let _generate;
+const tsParser = {parse: (...a) => (_tsParser ??= require('@typescript-eslint/typescript-estree')).parse(...a)};
+const generate = (...a) => (_generate ??= require('@babel/generator').default)(...a);
 
 const {
   reservedDecorators,
@@ -15,9 +18,11 @@ const {
   inputOptionsNames,
 } = require('../bin/utils/func-generation');
 
-const {toCamelCase} = require('../bin/commands/migrate');
+// Not imported from commands/migrate: that module loads ts-morph (~1.5 s) at require time.
+const toCamelCase = (s) => s.split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join('');
 
-const {api} = require('../bin/commands/api');
+let _api;
+const api = (...a) => (_api ??= require('../bin/commands/api').api)(...a);
 
 // Prebuilt CJS bundle of diff-grok's IVP parser (`getIVP` + a couple constants), tree-shaken
 // to exclude the script-code generator. Regenerate with `npm run update:ivp-parser`.

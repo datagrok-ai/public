@@ -13,43 +13,55 @@ export namespace funcs {
   }
 
   /**
-  Finds similar and substructure matches for a molecule in the Chemspace catalog.
-  */
+   * Finds similar and substructure matches for a molecule in the Chemspace catalog.
+   * @param {string} smiles
+   *   semType: Molecule
+   */
   export async function samplesPanel(smiles: string ): Promise<any> {
     return await grok.functions.call('EnamineChemSpace:SamplesPanel', { smiles });
   }
 
   /**
-  Shows vendor prices and pack sizes for a Chemspace compound.
-  */
+   * Shows vendor prices and pack sizes for a Chemspace compound.
+   * @param {string} id - Chemspace compound id (e.g. CSCS00000000000)
+   *   semType: chemspace-id
+   */
   export async function pricesPanel(id: string ): Promise<any> {
     return await grok.functions.call('EnamineChemSpace:PricesPanel', { id });
   }
 
   /**
-  Countries Chemspace can ship to, for the shipToCountry parameter
-  */
+   * Countries Chemspace can ship to, for the shipToCountry parameter
+   */
   export async function getShipToCountries(): Promise<any> {
     return await grok.functions.call('EnamineChemSpace:GetShipToCountries', {});
   }
 
   /**
-  Adds a column of Chemspace compound ids matched by exact structure for each molecule.
-  */
+   * Adds a column of Chemspace compound ids matched by exact structure for each molecule.
+   * @param {DG.Column} molColumn
+   *   semType: Molecule
+   * @param {string} shipToCountry - Destination country for pricing and availability
+   *   choices: Chemspace:getShipToCountries()
+   */
   export async function getChemspaceIds(molColumn: DG.Column , shipToCountry: string ): Promise<DG.Column> {
     return await grok.functions.call('EnamineChemSpace:GetChemspaceIds', { molColumn, shipToCountry });
   }
 
   /**
-  Looks up vendor, pack size and price for each Chemspace id and joins the result back into the table.
-  */
+   * Looks up vendor, pack size and price for each Chemspace id and joins the result back into the table.
+   * @param {DG.Column} idsColumn - Column of Chemspace compound ids to price
+   *   semType: chemspace-id
+   * @param {string} shipToCountry - Destination country for pricing and availability
+   *   choices: Chemspace:getShipToCountries()
+   */
   export async function getChemspacePrices(data: DG.DataFrame , idsColumn: DG.Column , shipToCountry: string ): Promise<DG.DataFrame> {
     return await grok.functions.call('EnamineChemSpace:GetChemspacePrices', { data, idsColumn, shipToCountry });
   }
 
   /**
-  Perform query with multipart form data
-  */
+   * Perform query with multipart form data
+   */
   export async function queryMultipart(path: string , formParamsStr: string , paramsStr?: string ): Promise<string> {
     return await grok.functions.call('EnamineChemSpace:QueryMultipart', { path, formParamsStr, paramsStr });
   }

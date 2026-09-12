@@ -17,22 +17,22 @@ export namespace scripts {
   }
 
   /**
-  file and blob
-  */
+   * file and blob
+   */
   export async function juliaFileBlobInputOutput(fileInput: DG.FileInfo , blobInput: any ): Promise<{fileOutput: DG.FileInfo, blobOutput: any}> {
     return await grok.functions.call('CVMTests:JuliaFileBlobInputOutput', { fileInput, blobInput });
   }
 
   /**
-  calc column
-  */
+   * calc column
+   */
   export async function juliaCalcColumn(x: number ): Promise<number> {
     return await grok.functions.call('CVMTests:JuliaCalcColumn', { x });
   }
 
   /**
-  column list input
-  */
+   * column list input
+   */
   export async function juliaColumnList(df: DG.DataFrame , cols: string[] ): Promise<DG.DataFrame> {
     return await grok.functions.call('CVMTests:JuliaColumnList', { df, cols });
   }
@@ -42,71 +42,71 @@ export namespace scripts {
   }
 
   /**
-  df input/output
-  */
+   * df input/output
+   */
   export async function juliaDataframe(df: DG.DataFrame , dfNumerical: DG.DataFrame , dfCategorical: DG.DataFrame ): Promise<{resultDf: DG.DataFrame, resultNumerical: DG.DataFrame, resultCategorical: DG.DataFrame}> {
     return await grok.functions.call('CVMTests:JuliaDataframe', { df, dfNumerical, dfCategorical });
   }
 
   /**
-  datetime input/output
-  */
+   * datetime input/output
+   */
   export async function juliaDate(input_datetime: any ): Promise<any> {
     return await grok.functions.call('CVMTests:JuliaDate', { input_datetime });
   }
 
   /**
-  Echo string script
-  */
+   * Echo string script
+   */
   export async function juliaEcho(string_input: string ): Promise<string> {
     return await grok.functions.call('CVMTests:JuliaEcho', { string_input });
   }
 
   /**
-  df input/output
-  */
+   * df input/output
+   */
   export async function juliaEmptyDataframe(): Promise<DG.DataFrame> {
     return await grok.functions.call('CVMTests:JuliaEmptyDataframe', {});
   }
 
   /**
-  file lines count
-  */
+   * file lines count
+   */
   export async function juliaLinesCount(file: DG.FileInfo , header: boolean , separator: string , dec: string ): Promise<number> {
     return await grok.functions.call('CVMTests:JuliaLinesCount', { file, header, separator, dec });
   }
 
   /**
-  graphics output column input
-  */
+   * graphics output column input
+   */
   export async function juliaGraphics(df: DG.DataFrame , xName: DG.Column , yName: DG.Column ): Promise<any> {
     return await grok.functions.call('CVMTests:JuliaGraphics', { df, xName, yName });
   }
 
   /**
-  primitive inputs and outputs test
-  */
+   * primitive inputs and outputs test
+   */
   export async function juliaSimple(integer_input: number , double_input: number , bool_input: boolean , string_input: string ): Promise<{integer_output: number, double_output: number, bool_output: boolean, string_output: string}> {
     return await grok.functions.call('CVMTests:JuliaSimple', { integer_input, double_input, bool_input, string_input });
   }
 
   /**
-  Returns the last element of a string list
-  */
+   * Returns the last element of a string list
+   */
   export async function juliaListStringTest(string_list: any ): Promise<string> {
     return await grok.functions.call('CVMTests:JuliaListStringTest', { string_list });
   }
 
   /**
-  map input/output
-  */
+   * map input/output
+   */
   export async function juliaMap(input_map: any , unique_key: string ): Promise<any> {
     return await grok.functions.call('CVMTests:JuliaMap', { input_map, unique_key });
   }
 
   /**
-  df performance
-  */
+   * df performance
+   */
   export async function juliaSingleDf(df: DG.DataFrame ): Promise<DG.DataFrame> {
     return await grok.functions.call('CVMTests:JuliaSingleDf', { df });
   }
@@ -116,99 +116,99 @@ export namespace scripts {
   }
 
   /**
-  file and blob
-  */
+   * file and blob
+   */
   export async function octaveFileBlobInputOutput(fileInput: DG.FileInfo , blobInput: any ): Promise<{fileOutput: DG.FileInfo, blobOutput: any}> {
     return await grok.functions.call('CVMTests:OctaveFileBlobInputOutput', { fileInput, blobInput });
   }
 
   /**
-  calc column
-  */
+   * calc column
+   */
   export async function octaveCalcColumn(x: number ): Promise<number> {
     return await grok.functions.call('CVMTests:OctaveCalcColumn', { x });
   }
 
   /**
-  column list input
-  */
+   * column list input
+   */
   export async function octaveColumnList(df: DG.DataFrame , cols: string[] ): Promise<DG.DataFrame> {
     return await grok.functions.call('CVMTests:OctaveColumnList', { df, cols });
   }
 
   /**
-  df input/output
-  */
+   * df input/output
+   */
   export async function octaveDataframe(df: DG.DataFrame , dfNumerical: DG.DataFrame , dfCategorical: DG.DataFrame ): Promise<{resultDf: DG.DataFrame, resultNumerical: DG.DataFrame, resultCategorical: DG.DataFrame}> {
     return await grok.functions.call('CVMTests:OctaveDataframe', { df, dfNumerical, dfCategorical });
   }
 
   /**
-  datetime input/output
-  */
+   * datetime input/output
+   */
   export async function octaveDate(input_datetime: any ): Promise<any> {
     return await grok.functions.call('CVMTests:OctaveDate', { input_datetime });
   }
 
   /**
-  Echo string script
-  */
+   * Echo string script
+   */
   export async function octaveEcho(string_input: string ): Promise<string> {
     return await grok.functions.call('CVMTests:OctaveEcho', { string_input });
   }
 
   /**
-  Exponential Operator Test
-  */
+   * Exponential Operator Test
+   */
   export async function octaveExponentialOperatorTest(): Promise<DG.DataFrame> {
     return await grok.functions.call('CVMTests:OctaveExponentialOperatorTest', {});
   }
 
   /**
-  file lines count
-  */
+   * file lines count
+   */
   export async function octaveLinesCount(file: DG.FileInfo , header: boolean , separator: string , dec: string ): Promise<number> {
     return await grok.functions.call('CVMTests:OctaveLinesCount', { file, header, separator, dec });
   }
 
   /**
-  graphics output column input
-  */
+   * graphics output column input
+   */
   export async function octaveGraphics(df: DG.DataFrame , xName: DG.Column , yName: DG.Column ): Promise<any> {
     return await grok.functions.call('CVMTests:OctaveGraphics', { df, xName, yName });
   }
 
   /**
-  primitive inputs and outputs test
-  */
+   * primitive inputs and outputs test
+   */
   export async function octaveSimple(integer_input: number , double_input: number , bool_input: boolean , string_input: string ): Promise<{integer_output: number, double_output: number, bool_output: boolean, string_output: string}> {
     return await grok.functions.call('CVMTests:OctaveSimple', { integer_input, double_input, bool_input, string_input });
   }
 
   /**
-  Returns the last element of a string list
-  */
+   * Returns the last element of a string list
+   */
   export async function octaveListStringTest(string_list: any ): Promise<string> {
     return await grok.functions.call('CVMTests:OctaveListStringTest', { string_list });
   }
 
   /**
-  map input/output
-  */
+   * map input/output
+   */
   export async function octaveMap(input_map: any , unique_key: string ): Promise<any> {
     return await grok.functions.call('CVMTests:OctaveMap', { input_map, unique_key });
   }
 
   /**
-  df performance
-  */
+   * df performance
+   */
   export async function octaveSingleDf(df: DG.DataFrame ): Promise<DG.DataFrame> {
     return await grok.functions.call('CVMTests:OctaveSingleDf', { df });
   }
 
   /**
-  df performance
-  */
+   * df performance
+   */
   export async function octaveStdout(df: DG.DataFrame ): Promise<DG.DataFrame> {
     return await grok.functions.call('CVMTests:OctaveStdout', { df });
   }
@@ -218,29 +218,29 @@ export namespace scripts {
   }
 
   /**
-  file and blob
-  */
+   * file and blob
+   */
   export async function pythonFileBlobInputOutput(fileInput: DG.FileInfo , blobInput: any ): Promise<{fileOutput: DG.FileInfo, blobOutput: any}> {
     return await grok.functions.call('CVMTests:PythonFileBlobInputOutput', { fileInput, blobInput });
   }
 
   /**
-  calc column
-  */
+   * calc column
+   */
   export async function pythonCalcColumn(x: number ): Promise<number> {
     return await grok.functions.call('CVMTests:PythonCalcColumn', { x });
   }
 
   /**
-  column list input
-  */
+   * column list input
+   */
   export async function pythonColumnList(df: DG.DataFrame , cols: string[] ): Promise<DG.DataFrame> {
     return await grok.functions.call('CVMTests:PythonColumnList', { df, cols });
   }
 
   /**
-  df input/output
-  */
+   * df input/output
+   */
   export async function pythonDataframeGraphicsCached(df: DG.DataFrame ): Promise<{resultDf: DG.DataFrame, scatter: any}> {
     return await grok.functions.call('CVMTests:PythonDataframeGraphicsCached', { df });
   }
@@ -250,155 +250,157 @@ export namespace scripts {
   }
 
   /**
-  df input/output
-  */
+   * df input/output
+   */
   export async function pythonDataframe(df: DG.DataFrame , dfNumerical: DG.DataFrame , dfCategorical: DG.DataFrame ): Promise<{resultDf: DG.DataFrame, resultNumerical: DG.DataFrame, resultCategorical: DG.DataFrame}> {
     return await grok.functions.call('CVMTests:PythonDataframe', { df, dfNumerical, dfCategorical });
   }
 
   /**
-  datetime input/output
-  */
+   * datetime input/output
+   */
   export async function pythonDate(input_datetime: any ): Promise<any> {
     return await grok.functions.call('CVMTests:PythonDate', { input_datetime });
   }
 
   /**
-  Echo string script
-  */
+   * Echo string script
+   */
   export async function pythonEcho(string_input: string ): Promise<string> {
     return await grok.functions.call('CVMTests:PythonEcho', { string_input });
   }
 
   /**
-  df input/output
-  */
+   * df input/output
+   */
   export async function pythonEmptyDataframe(): Promise<DG.DataFrame> {
     return await grok.functions.call('CVMTests:PythonEmptyDataframe', {});
   }
 
   /**
-  Environment with extra conda-only dependencies beyond base
-  */
+   * Environment with extra conda-only dependencies beyond base
+   */
   export async function pythonEnvCondaExtras(text: string ): Promise<string> {
     return await grok.functions.call('CVMTests:PythonEnvCondaExtras', { text });
   }
 
   /**
-  Environment with both conda extras and pip packages
-  */
+   * Environment with both conda extras and pip packages
+   */
   export async function pythonEnvMixedDeps(data: string ): Promise<string> {
     return await grok.functions.call('CVMTests:PythonEnvMixedDeps', { data });
   }
 
   /**
-  Verifies numpy ABI compatibility when pip packages depend on numpy
-  */
+   * Verifies numpy ABI compatibility when pip packages depend on numpy
+   */
   export async function pythonEnvNumpyCompat(rows: number ): Promise<number> {
     return await grok.functions.call('CVMTests:PythonEnvNumpyCompat', { rows });
   }
 
   /**
-  Environment with pip-only extra dependencies
-  */
+   * Environment with pip-only extra dependencies
+   */
   export async function pythonEnvPipOnly(text: string ): Promise<string> {
     return await grok.functions.call('CVMTests:PythonEnvPipOnly', { text });
   }
 
   /**
-  Environment with Python 3.12 template
-  */
+   * Environment with Python 3.12 template
+   */
   export async function pythonEnvPy312(text: string ): Promise<string> {
     return await grok.functions.call('CVMTests:PythonEnvPy312', { text });
   }
 
   /**
-  Tests that existing environment is correctly detected and reused
-  */
+   * Tests that existing environment is correctly detected and reused
+   */
   export async function pythonEnvReuse(text: string ): Promise<string> {
     return await grok.functions.call('CVMTests:PythonEnvReuse', { text });
   }
 
   /**
-  anchors count in html
-  */
+   * anchors count in html
+   */
   export async function pythonAnchorsCount(html: string ): Promise<number> {
     return await grok.functions.call('CVMTests:PythonAnchorsCount', { html });
   }
 
   /**
-  df input/output
-  */
+   * df input/output
+   */
   export async function pythonException(df: DG.DataFrame ): Promise<DG.DataFrame> {
     return await grok.functions.call('CVMTests:PythonException', { df });
   }
 
   /**
-  image pixel count
-  */
+   * image pixel count
+   */
   export async function imagePixelCount(fileInput: DG.FileInfo ): Promise<number> {
     return await grok.functions.call('CVMTests:ImagePixelCount', { fileInput });
   }
 
   /**
-  graphics output column input
-  */
+   * graphics output column input
+   */
   export async function pythonGraphics(df: DG.DataFrame , xName: DG.Column , yName: DG.Column ): Promise<any> {
     return await grok.functions.call('CVMTests:PythonGraphics', { df, xName, yName });
   }
 
   /**
-  primitive inputs and outputs test
-  */
+   * primitive inputs and outputs test
+   */
   export async function pythonSimpleCached(integer_input: number , double_input: number , bool_input: boolean , string_input: string ): Promise<{integer_output: number, double_output: number, bool_output: boolean, string_output: string}> {
     return await grok.functions.call('CVMTests:PythonSimpleCached', { integer_input, double_input, bool_input, string_input });
   }
 
   /**
-  primitive inputs and outputs test
-  */
+   * primitive inputs and outputs test
+   */
   export async function pythonSimple(integer_input: number , double_input: number , bool_input: boolean , string_input: string ): Promise<{integer_output: number, double_output: number, bool_output: boolean, string_output: string}> {
     return await grok.functions.call('CVMTests:PythonSimple', { integer_input, double_input, bool_input, string_input });
   }
 
   /**
-  Returns the last element of a string list
-  */
+   * Returns the last element of a string list
+   */
   export async function pythonListStringTest(string_list: any ): Promise<string> {
     return await grok.functions.call('CVMTests:PythonListStringTest', { string_list });
   }
 
   /**
-  map input/output
-  */
+   * map input/output
+   */
   export async function pythonMap(input_map: any , unique_key: string ): Promise<any> {
     return await grok.functions.call('CVMTests:PythonMap', { input_map, unique_key });
   }
 
   /**
-  file lines count
-  */
+   * file lines count
+   */
   export async function pythonLinesCount(file: DG.FileInfo ): Promise<number> {
     return await grok.functions.call('CVMTests:PythonLinesCount', { file });
   }
 
   /**
-  df performance
-  */
+   * df performance
+   */
   export async function pythonSingleDfCached(df: DG.DataFrame ): Promise<DG.DataFrame> {
     return await grok.functions.call('CVMTests:PythonSingleDfCached', { df });
   }
 
   /**
-  df performance
-  */
+   * df performance
+   */
   export async function pythonSingleDf(df: DG.DataFrame ): Promise<DG.DataFrame> {
     return await grok.functions.call('CVMTests:PythonSingleDf', { df });
   }
 
   /**
-  choices test
-  */
+   * choices test
+   * @param {string} choices
+   *   choices: ["string", "int", "boolean"]
+   */
   export async function pythonStringChoices(choices: string ): Promise<string> {
     return await grok.functions.call('CVMTests:PythonStringChoices', { choices });
   }
@@ -408,22 +410,22 @@ export namespace scripts {
   }
 
   /**
-  file and blob
-  */
+   * file and blob
+   */
   export async function rFileBlobInputOutput(fileInput: DG.FileInfo , blobInput: any ): Promise<{fileOutput: DG.FileInfo, blobOutput: any}> {
     return await grok.functions.call('CVMTests:RFileBlobInputOutput', { fileInput, blobInput });
   }
 
   /**
-  calc column
-  */
+   * calc column
+   */
   export async function rCalcColumn(x: number ): Promise<number> {
     return await grok.functions.call('CVMTests:RCalcColumn', { x });
   }
 
   /**
-  column list input
-  */
+   * column list input
+   */
   export async function rColumnList(df: DG.DataFrame , cols: string[] ): Promise<DG.DataFrame> {
     return await grok.functions.call('CVMTests:RColumnList', { df, cols });
   }
@@ -433,71 +435,71 @@ export namespace scripts {
   }
 
   /**
-  df input/output
-  */
+   * df input/output
+   */
   export async function rDataframe(df: DG.DataFrame , dfNumerical: DG.DataFrame , dfCategorical: DG.DataFrame ): Promise<{resultDf: DG.DataFrame, resultNumerical: DG.DataFrame, resultCategorical: DG.DataFrame}> {
     return await grok.functions.call('CVMTests:RDataframe', { df, dfNumerical, dfCategorical });
   }
 
   /**
-  datetime input/output
-  */
+   * datetime input/output
+   */
   export async function rDate(input_datetime: any ): Promise<any> {
     return await grok.functions.call('CVMTests:RDate', { input_datetime });
   }
 
   /**
-  reverse a string using stringi from a custom env
-  */
+   * reverse a string using stringi from a custom env
+   */
   export async function rEnvStringReverse(input_string: string ): Promise<string> {
     return await grok.functions.call('CVMTests:REnvStringReverse', { input_string });
   }
 
   /**
-  reverse a string using stringi from a yaml env file
-  */
+   * reverse a string using stringi from a yaml env file
+   */
   export async function rEnvFileStringReverse(input_string: string ): Promise<string> {
     return await grok.functions.call('CVMTests:REnvFileStringReverse', { input_string });
   }
 
   /**
-  file lines count
-  */
+   * file lines count
+   */
   export async function rLinesCount(file: DG.FileInfo , header: boolean , separator: string , dec: string ): Promise<number> {
     return await grok.functions.call('CVMTests:RLinesCount', { file, header, separator, dec });
   }
 
   /**
-  graphics output column input
-  */
+   * graphics output column input
+   */
   export async function rGraphics(df: DG.DataFrame , xName: DG.Column , yName: DG.Column ): Promise<any> {
     return await grok.functions.call('CVMTests:RGraphics', { df, xName, yName });
   }
 
   /**
-  primitive inputs and outputs test
-  */
+   * primitive inputs and outputs test
+   */
   export async function rSimple(integer_input: number , double_input: number , bool_input: boolean , string_input: string ): Promise<{integer_output: number, double_output: number, bool_output: boolean, string_output: string}> {
     return await grok.functions.call('CVMTests:RSimple', { integer_input, double_input, bool_input, string_input });
   }
 
   /**
-  Returns the last element of a string list
-  */
+   * Returns the last element of a string list
+   */
   export async function rListStringTest(string_list: any ): Promise<string> {
     return await grok.functions.call('CVMTests:RListStringTest', { string_list });
   }
 
   /**
-  map input/output
-  */
+   * map input/output
+   */
   export async function rMap(input_map: any , unique_key: string ): Promise<any> {
     return await grok.functions.call('CVMTests:RMap', { input_map, unique_key });
   }
 
   /**
-  df performance
-  */
+   * df performance
+   */
   export async function rSingleDf(df: DG.DataFrame ): Promise<DG.DataFrame> {
     return await grok.functions.call('CVMTests:RSingleDf', { df });
   }

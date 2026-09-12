@@ -9,32 +9,18 @@
   },
   "description": "Integrates Datagrok with REINVENT4 for advanced small molecule design and optimization",
   "dependencies": {
-    "@datagrok-libraries/utils": "^4.6.5",
-    "cash-dom": "^8.1.5",
-    "datagrok-api": "^1.26.0",
-    "dayjs": "^1.11.13",
+    "@datagrok-libraries/utils": "workspace:^",
+    "cash-dom": "catalog:",
+    "datagrok-api": "workspace:^",
+    "dayjs": "catalog:",
     "jszip": "3.10.1",
-    "@datagrok-libraries/test": "^1.1.0"
-  },
-  "devDependencies": {
-    "datagrok-tools": "^5.0.0",
-    "ts-loader": "^9.5.1",
-    "typescript": "5.6.3",
-    "webpack": "^5.95.0",
-    "webpack-cli": "^5.1.4"
+    "@datagrok-libraries/test": "workspace:^"
   },
   "scripts": {
-    "link-all": "",
-    "debug-reinvent4": "webpack && grok publish",
-    "release-reinvent4": "webpack && grok publish --release",
-    "build-reinvent4": "webpack",
-    "build": "grok api && grok check --soft && webpack",
-    "debug-reinvent4-dev": "webpack && grok publish dev",
-    "release-reinvent4-dev": "webpack && grok publish dev --release",
-    "debug-reinvent4-local": "webpack && grok publish local",
-    "release-reinvent4-local": "webpack && grok publish local --release",
-    "debug-reinvent4-localhost": "webpack && grok publish localhost",
-    "release-reinvent4-localhost": "webpack && grok publish localhost --release"
+    "build": "grok build",
+    "typecheck": "grok tsc --noEmit -p tsconfig.json",
+    "lint": "eslint --ext .ts,.tsx src",
+    "test": "grok test"
   },
   "canEdit": [
     "Administrators"
@@ -47,8 +33,5 @@
     "url": "https://github.com/datagrok-ai/public.git",
     "directory": "packages/Reinvent4"
   },
-  "category": "Bioinformatics",
-  "overrides": {
-    "datagrok-api": "$datagrok-api"
-  }
+  "category": "Bioinformatics"
 }

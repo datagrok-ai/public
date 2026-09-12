@@ -546,7 +546,10 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
     follow: true,
   });
 
-  const isWebpack = fs.existsSync('webpack.config.js');
+  // A bundled package ships dist/package.js: built by webpack (legacy) or by `grok build`
+  // (rspack via @datagrok/build-config, which needs no config file at all).
+  const isWebpack = fs.existsSync('webpack.config.js') || fs.existsSync('rspack.config.js') ||
+    fs.existsSync('dist/package.js') || fs.existsSync(path.join(curDir, 'src', 'package.ts'));
   if (!rebuild && isWebpack) {
     if (fs.existsSync('dist/package.js')) {
       const distFiles = await walk({
@@ -571,11 +574,6 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
   const jsTsFiles = files.filter((f) => !f.startsWith('dist/') && (f.endsWith('.js') || f.endsWith('.ts')));
   const packageFilePath = path.join(curDir, 'package.json');
   const json = JSON.parse(fs.readFileSync(packageFilePath, {encoding: 'utf-8'}));
-
-  if (isWebpack) {
-    const webpackConfigPath = path.join(curDir, 'webpack.config.js');
-    const content = fs.readFileSync(webpackConfigPath, {encoding: 'utf-8'});
-  }
 
   const funcFiles = jsTsFiles.filter((f) => packageFiles.includes(f));
   color.log(`Checks finished in ${Date.now() - checkStart} ms`);
@@ -728,12 +726,14 @@ export async function publish(args: PublishArgs) {
 async function publishPackage(args: PublishArgs) {
   const nArgs = args['_'].length;
 
-  if (!args.link) {
-    if (args.build || args.rebuild) {
-      color.log('Building');
+  // A bundled package is built locally before upload unless --skip-build. Inside the pnpm
+  // workspace the install already happened at the root; standalone packages install first.
+  if (!args.link && !args['skip-build'] && !args.rebuild && fs.existsSync(path.join(curDir, 'src'))) {
+    color.log('Building');
+    const workspace = utils.isPnpmWorkspace(curDir);
+    if (!workspace && !fs.existsSync(path.join(curDir, 'node_modules')))
       await utils.runScript('npm install', curDir, false);
-      await utils.runScript('npm run build', curDir, false);
-    }
+    await utils.runScript(workspace ? 'pnpm run build' : 'npm run build', curDir, false);
   }
 
   if (args.debug && args.release) {
@@ -813,6 +813,7 @@ interface PublishArgs {
   _: string[],
   build?: boolean,
   ['skip-check']?: boolean,
+  ['skip-build']?: boolean,
   rebuild?: boolean,
   ['rebuild-docker']?: boolean,
   ['skip-docker-rebuild']?: boolean,

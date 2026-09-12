@@ -9,15 +9,15 @@ import * as DG from 'datagrok-api/dg';
 
 export namespace scripts {
   /**
-  Duplicates a string in Python
-  */
+   * Duplicates a string in Python
+   */
   export async function pythonDup(s: string ): Promise<string> {
     return await grok.functions.call('APISamples:PythonDup', { s });
   }
 
   /**
-  Duplicates a string in R
-  */
+   * Duplicates a string in R
+   */
   export async function rdup(s: string ): Promise<string> {
     return await grok.functions.call('APISamples:RDup', { s });
   }

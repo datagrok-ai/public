@@ -17,22 +17,22 @@ export namespace funcs {
   }
 
   /**
-  Reads a file uploaded into a flow and parses it into a table
-  */
+   * Reads a file uploaded into a flow and parses it into a table
+   */
   export async function readUploadedFile(fileId: string , fileName: string ): Promise<DG.DataFrame> {
     return await grok.functions.call('Flow:ReadUploadedFile', { fileId, fileName });
   }
 
   /**
-  Keeps uploaded-file permissions in sync when a flow script is shared
-  */
+   * Keeps uploaded-file permissions in sync when a flow script is shared
+   */
   export async function flowShareSync(): Promise<void> {
     return await grok.functions.call('Flow:FlowShareSync', {});
   }
 
   /**
-  Interactive function chain designer
-  */
+   * Interactive function chain designer
+   */
   export async function funcflowApp(path?: string ): Promise<DG.View> {
     return await grok.functions.call('Flow:FuncflowApp', { path });
   }
@@ -42,8 +42,8 @@ export namespace funcs {
   }
 
   /**
-  Builds a flow diagram from a table creation script and opens it in the Flow editor
-  */
+   * Builds a flow diagram from a table creation script and opens it in the Flow editor
+   */
   export async function flowFromCreationScript(script: string ): Promise<DG.View> {
     return await grok.functions.call('Flow:FlowFromCreationScript', { script });
   }
@@ -53,8 +53,8 @@ export namespace funcs {
   }
 
   /**
-  Opens the visual Flow editor for a flow script entity
-  */
+   * Opens the visual Flow editor for a flow script entity
+   */
   export async function flowScriptEditor(script: any ): Promise<DG.View> {
     return await grok.functions.call('Flow:FlowScriptEditor', { script });
   }
@@ -68,162 +68,197 @@ export namespace funcs {
   }
 
   /**
-  List the current flow graph: all nodes (id, label, type, status, set input values) and connections. Call this first to understand what is on the canvas
-  */
+   * List the current flow graph: all nodes (id, label, type, status, set input values) and connections. Call this first to understand what is on the canvas
+   */
   export async function listFlowNodes(view: DG.View ): Promise<any> {
     return await grok.functions.call('Flow:ListFlowNodes', { view });
   }
 
   /**
-  Ports (with DG types), editable input values, unmet requirements, and last-run outputs of one node
-  */
+   * Ports (with DG types), editable input values, unmet requirements, and last-run outputs of one node
+   */
   export async function getFlowNodeDetails(view: DG.View , nodeId: string ): Promise<any> {
     return await grok.functions.call('Flow:GetFlowNodeDetails', { view, nodeId });
   }
 
   /**
-  Search the flow node catalog (a curated subset of platform functions plus input/output/utility nodes). ALWAYS filter: pass a query with what the node should do (e.g. "join tables", "open file"), and/or a DG type it must accept or produce (dataframe, column, string, ...). Returns at most limit (default 15) matches with their input/output types
-  */
+   * Search the flow node catalog (a curated subset of platform functions plus input/output/utility nodes). ALWAYS filter: pass a query with what the node should do (e.g. "join tables", "open file"), and/or a DG type it must accept or produce (dataframe, column, string, ...). Returns at most limit (default 15) matches with their input/output types
+   * @param {string} query - Words describing what the node does
+   * @param {string} acceptsInputType - DG type one of its inputs must accept
+   * @param {string} producesOutputType - DG type one of its outputs must produce
+   */
   export async function findFlowNodeTypes(view: DG.View , query?: string , acceptsInputType?: string , producesOutputType?: string , limit?: number ): Promise<any> {
     return await grok.functions.call('Flow:FindFlowNodeTypes', { view, query, acceptsInputType, producesOutputType, limit });
   }
 
   /**
-  Add a node to the canvas by its registered typeName (from findFlowNodeTypes). Optionally set editable input values right away. Returns the new node id and its ports
-  */
+   * Add a node to the canvas by its registered typeName (from findFlowNodeTypes). Optionally set editable input values right away. Returns the new node id and its ports
+   * @param {string} label - Optional custom title
+   * @param {any} inputValues - Editable primitive inputs, key to value
+   */
   export async function addFlowNode(view: DG.View , typeName: string , label?: string , inputValues?: any ): Promise<any> {
     return await grok.functions.call('Flow:AddFlowNode', { view, typeName, label, inputValues });
   }
 
   /**
-  Connect a source node output to a target node input (port keys from getFlowNodeDetails / addFlowNode). Types must be compatible
-  */
+   * Connect a source node output to a target node input (port keys from getFlowNodeDetails / addFlowNode). Types must be compatible
+   */
   export async function connectFlowNodes(view: DG.View , sourceNodeId: string , sourceOutput: string , targetNodeId: string , targetInput: string ): Promise<any> {
     return await grok.functions.call('Flow:ConnectFlowNodes', { view, sourceNodeId, sourceOutput, targetNodeId, targetInput });
   }
 
   /**
-  Set editable input values of a node (key to value; keys from getFlowNodeDetails). Marks the node and its downstream stale
-  */
+   * Set editable input values of a node (key to value; keys from getFlowNodeDetails). Marks the node and its downstream stale
+   */
   export async function setFlowNodeInputs(view: DG.View , nodeId: string , values: any ): Promise<any> {
     return await grok.functions.call('Flow:SetFlowNodeInputs', { view, nodeId, values });
   }
 
   /**
-  Select a node on the canvas so the user sees it (opens its properties panel)
-  */
+   * Select a node on the canvas so the user sees it (opens its properties panel)
+   */
   export async function selectFlowNode(view: DG.View , nodeId: string ): Promise<any> {
     return await grok.functions.call('Flow:SelectFlowNode', { view, nodeId });
   }
 
   /**
-  List Flow built-in interactive guides: step-by-step tutorials and short "how do I" walkthroughs that highlight the actual UI. When the user asks how to do something in Flow, check here first — a matching guide beats a textual explanation
-  */
+   * List Flow built-in interactive guides: step-by-step tutorials and short "how do I" walkthroughs that highlight the actual UI. When the user asks how to do something in Flow, check here first — a matching guide beats a textual explanation
+   * @param {string} query - Words to filter by
+   */
   export async function listFlowGuides(view: DG.View , query?: string ): Promise<any> {
     return await grok.functions.call('Flow:ListFlowGuides', { view, query });
   }
 
   /**
-  Start an interactive guide (id from listFlowGuides) — it highlights the real UI step by step and waits for the user to act. ALWAYS confirm with the user first before starting one; never launch it unasked
-  */
+   * Start an interactive guide (id from listFlowGuides) — it highlights the real UI step by step and waits for the user to act. ALWAYS confirm with the user first before starting one; never launch it unasked
+   */
   export async function startFlowGuide(view: DG.View , guideId: string ): Promise<any> {
     return await grok.functions.call('Flow:StartFlowGuide', { view, guideId });
   }
 
   /**
-  Validate and execute the whole flow. Returns validation problems instead of running if the graph is invalid; otherwise waits for the run and reports per-node failures
-  */
+   * Validate and execute the whole flow. Returns validation problems instead of running if the graph is invalid; otherwise waits for the run and reports per-node failures
+   */
   export async function runFlow(view: DG.View ): Promise<any> {
     return await grok.functions.call('Flow:RunFlow', { view });
   }
 
   /**
-  Keeps the rows matching a condition, as a new table
-  */
+   * Keeps the rows matching a condition, as a new table
+   * @param {string} condition - Boolean expression over the table columns
+   */
   export async function filterRows(table: DG.DataFrame , condition: string ): Promise<DG.DataFrame> {
     return await grok.functions.call('Flow:FilterRows', { table, condition });
   }
 
   /**
-  Removes the rows matching a condition, as a new table
-  */
+   * Removes the rows matching a condition, as a new table
+   * @param {string} condition - Boolean expression selecting the rows to drop
+   */
   export async function deleteRows(table: DG.DataFrame , condition: string ): Promise<DG.DataFrame> {
     return await grok.functions.call('Flow:DeleteRows', { table, condition });
   }
 
   /**
-  Rows matching a condition, keeping only the chosen columns
-  */
+   * Rows matching a condition, keeping only the chosen columns
+   * @param {string} condition - Boolean expression over the table columns
+   * @param {string[]} columns - Columns to keep. Leave empty to keep all of them
+   */
   export async function extractRows(table: DG.DataFrame , condition: string , columns: string[] | null): Promise<DG.DataFrame> {
     return await grok.functions.call('Flow:ExtractRows', { table, condition, columns });
   }
 
   /**
-  Selects the rows matching a condition and passes the table on
-  */
+   * Selects the rows matching a condition and passes the table on
+   * @param {string} condition - Boolean expression over the table columns
+   * @param {boolean} clearSelection - Drop the previous selection instead of adding to it
+   */
   export async function selectRows(table: DG.DataFrame , condition: string , clearSelection: boolean ): Promise<DG.DataFrame> {
     return await grok.functions.call('Flow:SelectRows', { table, condition, clearSelection });
   }
 
   /**
-  Sets the current row of the table
-  */
+   * Sets the current row of the table
+   * @param {number} index - 0 Based index
+   */
   export async function setCurrentRow(table: DG.DataFrame , index: number ): Promise<DG.DataFrame> {
     return await grok.functions.call('Flow:SetCurrentRow', { table, index });
   }
 
   /**
-  A reproducible random sample of rows, as a new table
-  */
+   * A reproducible random sample of rows, as a new table
+   * @param {number} count - How many rows to keep
+   * @param {number} seed - Random seed. The same seed always draws the same rows
+   */
   export async function filterRandomRows(table: DG.DataFrame , count: number , seed: number ): Promise<DG.DataFrame> {
     return await grok.functions.call('Flow:FilterRandomRows', { table, count, seed });
   }
 
   /**
-  Selects a reproducible random sample of rows and passes the table on
-  */
+   * Selects a reproducible random sample of rows and passes the table on
+   * @param {number} count - How many rows to select
+   * @param {number} seed - Random seed. The same seed always draws the same rows
+   * @param {boolean} clearSelection - Drop the previous selection instead of adding to it
+   */
   export async function selectRandomRows(table: DG.DataFrame , count: number , seed: number , clearSelection: boolean ): Promise<DG.DataFrame> {
     return await grok.functions.call('Flow:SelectRandomRows', { table, count, seed, clearSelection });
   }
 
   /**
-  A copy of the table without the chosen columns. Removes selected columns
-  */
+   * A copy of the table without the chosen columns. Removes selected columns
+   * @param {string[]} columns - Columns to remove
+   */
   export async function deleteColumns(table: DG.DataFrame , columns: string[] ): Promise<DG.DataFrame> {
     return await grok.functions.call('Flow:DeleteColumns', { table, columns });
   }
 
   /**
-  Sets a tag on the chosen columns and passes the table on
-  */
+   * Sets a tag on the chosen columns and passes the table on
+   * @param {string[]} columns - Columns to tag
+   * @param {string} tag - Tag name, for example units or .formula
+   * @param {string} value - Tag value
+   */
   export async function tagColumns(table: DG.DataFrame , columns: string[] , tag: string , value: string | null): Promise<DG.DataFrame> {
     return await grok.functions.call('Flow:TagColumns', { table, columns, tag, value });
   }
 
   /**
-  Computes an expression into a new column of the table
-  */
+   * Computes an expression into a new column of the table
+   * @param {string} expression - Formula over the table columns
+   * @param {string} name - Name of the resulting column
+   * @param {string} type - Column type. auto infers it from the expression
+   *   choices: ["auto","string","int","double","bool","datetime","qnum"]
+   */
   export async function expressionToColumn(table: DG.DataFrame , expression: string , name: string , type: string ): Promise<DG.Column> {
     return await grok.functions.call('Flow:ExpressionToColumn', { table, expression, name, type });
   }
 
   /**
-  Groups rows and aggregates columns. Add a pivot column to build a pivot table
-  */
+   * Groups rows and aggregates columns. Add a pivot column to build a pivot table
+   * @param {string[]} groupByColumns - Columns to group by. Leave empty to aggregate the whole table into one row
+   * @param {string} aggregations - Aggregations to compute, as a list of column and function pairs
+   * @param {string[]} pivotColumns - Columns whose values become result columns
+   */
   export async function aggregate(table: DG.DataFrame , groupByColumns: string[] | null, aggregations: string , pivotColumns: string[] | null): Promise<DG.DataFrame> {
     return await grok.functions.call('Flow:Aggregate', { table, groupByColumns, aggregations, pivotColumns });
   }
 
   /**
-  Wide to long. Each merged column becomes a category and value row pair
-  */
+   * Wide to long. Each merged column becomes a category and value row pair
+   * @param {string[]} copyColumns - Columns repeated alongside every produced row
+   * @param {string[]} mergeColumns - Columns folded into the category and value pair
+   * @param {string} categoryColumnName - Name of the column holding the source column names
+   * @param {string} valueColumnName - Name of the column holding the values
+   */
   export async function unpivot(table: DG.DataFrame , copyColumns: string[] | null, mergeColumns: string[] , categoryColumnName: string , valueColumnName: string ): Promise<DG.DataFrame> {
     return await grok.functions.call('Flow:Unpivot', { table, copyColumns, mergeColumns, categoryColumnName, valueColumnName });
   }
 
   /**
-  Renders a molecule as a widget. Drawn once on a large square canvas so the preview stays crisp at any size
-  */
+   * Renders a molecule as a widget. Drawn once on a large square canvas so the preview stays crisp at any size
+   * @param {string} molecule - Molecule (SMILES or Molfile)
+   *   semType: Molecule
+   */
   export async function renderMolecule(molecule: string ): Promise<any> {
     return await grok.functions.call('Flow:RenderMolecule', { molecule });
   }

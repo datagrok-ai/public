@@ -1,7 +1,7 @@
 import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
 
-//meta.role: init
+//meta.role: Init
 export async function init() : Promise<void> {
   await PackageFunctions.init();
 }
@@ -50,7 +50,7 @@ export async function viewBiostructure(content: string, format?: string, name?: 
 //description: Opens PDB file
 //input: string fileContent 
 //output: list<dataframe> result
-//meta.role: fileHandler
+//meta.role: FileHandler
 //meta.ext: mmcif, cifCore, pdb, gro
 export async function importPdb(fileContent: string) : Promise<any> {
   return await PackageFunctions.importPdb(fileContent);
@@ -60,7 +60,7 @@ export async function importPdb(fileContent: string) : Promise<any> {
 //description: Opens XYZ file
 //input: string fileContent 
 //output: list<dataframe> result
-//meta.role: fileHandler
+//meta.role: FileHandler
 //meta.ext: xyz
 export async function importXYZ(fileContent: string) : Promise<any> {
   return await PackageFunctions.importXYZ(fileContent);
@@ -70,7 +70,7 @@ export async function importXYZ(fileContent: string) : Promise<any> {
 //description: Opens biostructure files supported with NGL
 //input: string fileContent 
 //output: list<dataframe> result
-//meta.role: fileHandler
+//meta.role: FileHandler
 //meta.ext: mmtf, cns, top, prmtop, ply, obj, ccp4
 export async function importWithNgl(fileContent: string) : Promise<any> {
   return await PackageFunctions.importWithNgl(fileContent);
@@ -81,7 +81,7 @@ export async function importWithNgl(fileContent: string) : Promise<any> {
 //input: string fileContent 
 //input: bool test = false { optional: true }
 //output: list<dataframe> result
-//meta.role: fileHandler
+//meta.role: FileHandler
 //meta.ext: pdbqt
 export async function importPdbqt(fileContent: string, test: boolean) : Promise<any> {
   return await PackageFunctions.importPdbqt(fileContent, test);
@@ -89,7 +89,7 @@ export async function importPdbqt(fileContent: string, test: boolean) : Promise<
 
 //input: file file 
 //output: view result
-//meta.role: fileViewer
+//meta.role: FileViewer
 //meta.fileViewer: mmtf,cns,top,prmtop,pqr
 export function previewNglStructure(file: any) : any {
   return PackageFunctions.previewNglStructure(file);
@@ -97,7 +97,7 @@ export function previewNglStructure(file: any) : any {
 
 //input: file file 
 //output: view result
-//meta.role: fileViewer
+//meta.role: FileViewer
 //meta.fileViewer: ply,obj
 export function previewNglSurface(file: any) : any {
   return PackageFunctions.previewNglSurface(file);
@@ -105,7 +105,7 @@ export function previewNglSurface(file: any) : any {
 
 //input: file file 
 //output: view result
-//meta.role: fileViewer
+//meta.role: FileViewer
 //meta.fileViewer: ccp4
 export function previewNglDensity(file: any) : any {
   return PackageFunctions.previewNglDensity(file);
@@ -113,7 +113,7 @@ export function previewNglDensity(file: any) : any {
 
 //input: file file 
 //output: view result
-//meta.role: fileViewer
+//meta.role: FileViewer
 //meta.fileViewer: mol,mol2,cif,mcif,mmcif,gro,pdb,pdbqt,ent,sd,xyz
 export function previewBiostructureStructure(file: DG.FileInfo) : any {
   return PackageFunctions.previewBiostructureStructure(file);
@@ -121,7 +121,7 @@ export function previewBiostructureStructure(file: DG.FileInfo) : any {
 
 //input: file file 
 //output: view result
-//meta.role: fileViewer
+//meta.role: FileViewer
 //meta.fileViewer: parm7,psf
 export function previewBiostructureTopology(file: DG.FileInfo) : any {
   return PackageFunctions.previewBiostructureTopology(file);
@@ -129,7 +129,7 @@ export function previewBiostructureTopology(file: DG.FileInfo) : any {
 
 //input: file file 
 //output: view result
-//meta.role: fileViewer
+//meta.role: FileViewer
 //meta.fileViewer: dsn6,brix,cube,cub,dx,dxbin,xplor,mrc,map
 export function previewBiostructureDensity(file: DG.FileInfo) : any {
   return PackageFunctions.previewBiostructureDensity(file);
@@ -143,7 +143,7 @@ export async function openPdbResidues(fi: DG.FileInfo) : Promise<void> {
 //name: PDB id viewer
 //input: string pdbId { semType: PDB_ID }
 //output: widget result
-//meta.role: panel
+//meta.role: Panel
 export function pdbIdNglPanelWidget(pdbId: string) : any {
   return PackageFunctions.pdbIdNglPanelWidget(pdbId);
 }
@@ -151,7 +151,7 @@ export function pdbIdNglPanelWidget(pdbId: string) : any {
 //name: PDB Information
 //input: string pdbId { semType: PDB_ID }
 //output: widget result
-//meta.role: panel
+//meta.role: Panel
 export async function pdbInfoPanel(pdbId: string) : Promise<any> {
   return await PackageFunctions.pdbInfoPanel(pdbId);
 }
@@ -165,7 +165,7 @@ export function hasNonWaterHetatm(molecule: string) : boolean {
 //name: Protein-Ligand Interactions
 //input: semantic_value molecule { semType: Molecule3D }
 //output: widget result
-//meta.role: panel
+//meta.role: Panel
 //condition: BiostructureViewer:hasNonWaterHetatm(molecule)
 export async function pdbInteractionsWidget(molecule: DG.SemanticValue) : Promise<any> {
   return await PackageFunctions.pdbInteractionsWidget(molecule);
@@ -180,7 +180,7 @@ export function isAutoDockPose(molecule: string) : boolean {
 //name: Protein-Ligand Interactions
 //input: semantic_value molecule { semType: Molecule3D }
 //output: widget result
-//meta.role: panel
+//meta.role: Panel
 //condition: BiostructureViewer:isAutoDockPose(molecule)
 export async function dockingInteractionsWidget(molecule: DG.SemanticValue) : Promise<any> {
   return await PackageFunctions.dockingInteractionsWidget(molecule);
@@ -189,7 +189,7 @@ export async function dockingInteractionsWidget(molecule: DG.SemanticValue) : Pr
 //name: Protein-Ligand Interactions
 //input: string pdbId { semType: PDB_ID }
 //output: widget result
-//meta.role: panel
+//meta.role: Panel
 export async function pdbIdInteractionsWidget(pdbId: string) : Promise<any> {
   return await PackageFunctions.pdbIdInteractionsWidget(pdbId);
 }
@@ -239,7 +239,7 @@ export async function biostructureDataProviderApp() : Promise<void> {
 //output: viewer result
 //meta.keywords: PDB, Biostructure
 //meta.icon: files/icons/ngl-viewer.svg
-//meta.role: viewer,panel
+//meta.role: viewer,Panel
 export function nglViewer() {
   return PackageFunctions.nglViewer();
 }
@@ -249,7 +249,7 @@ export function nglViewer() {
 //output: viewer result
 //meta.keywords: Molstar, PDB
 //meta.icon: files/icons/biostructure-viewer.svg
-//meta.role: viewer,panel
+//meta.role: viewer,Panel
 export function molstarViewer() {
   return PackageFunctions.molstarViewer();
 }
@@ -259,7 +259,7 @@ export function molstarViewer() {
 //output: viewer result
 //meta.keywords: PDB, track
 //meta.showInGallery: false
-//meta.role: viewer,panel
+//meta.role: viewer,Panel
 export function saguaroViewer() {
   return PackageFunctions.saguaroViewer();
 }
@@ -402,7 +402,7 @@ export function biostructureDataToJson(binary: boolean, data: any, ext: string, 
 //name: 3D Structure
 //input: semantic_value molecule { semType: Molecule3D }
 //output: widget result
-//meta.role: widgets,panel
+//meta.role: widgets,Panel
 //meta.domain: bio
 export function structure3D(molecule: DG.SemanticValue) : any {
   return PackageFunctions.structure3D(molecule);
@@ -411,7 +411,7 @@ export function structure3D(molecule: DG.SemanticValue) : any {
 //name: PDB Information
 //input: semantic_value molecule { semType: Molecule3D }
 //output: widget result
-//meta.role: panel
+//meta.role: Panel
 export function pdbFileInfoPanel(molecule: DG.SemanticValue) : any {
   return PackageFunctions.pdbFileInfoPanel(molecule);
 }

@@ -21,7 +21,7 @@ Threading is organized in modern web browsers through Web Workers. They are part
 may vary from browser to browser. We rely on Google Chrome as a reference browser.
 
 Though the basic techniques of using Web Workers covered in this article are not specific to Datagrok, there are
-important aspects of using Web Workers as part of a webpack-based and/or TypeScript packages. In addition, we are
+important aspects of using Web Workers as part of bundled TypeScript packages. In addition, we are
 providing convenience parallel computation libraries built on top of Web Workers as part of the Datagrok distribution.
 
 ## Using a single Web Worker for a heavy task to unblock the UI

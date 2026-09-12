@@ -2,7 +2,7 @@ import {PlateGridCellRenderer} from './plate/plate-cell-renderer';
 import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
 
-//meta.role: autostart
+//meta.role: Autostart
 export async function autostart() : Promise<void> {
   await PackageFunctions.autostart();
 }
@@ -14,7 +14,7 @@ export async function assayPlatesDemo() : Promise<void> {
   await PackageFunctions.assayPlatesDemo();
 }
 
-//meta.role: init
+//meta.role: Init
 export async function _initPlates() : Promise<void> {
   await PackageFunctions._initPlates();
 }
@@ -22,14 +22,14 @@ export async function _initPlates() : Promise<void> {
 //input: file folder 
 //input: list<file> files 
 //output: dynamic result
-//meta.role: folderViewer
+//meta.role: FolderViewer
 export async function platesFolderPreview(folder: DG.FileInfo, files: DG.FileInfo[]) {
   return await PackageFunctions.platesFolderPreview(folder, files);
 }
 
 //input: file file 
 //output: view result
-//meta.role: fileViewer
+//meta.role: FileViewer
 //meta.fileViewer: txt
 //meta.fileViewerCheck: Plates:checkFileIsPlate
 export function previewPlate(file: DG.FileInfo) : any {
@@ -38,7 +38,7 @@ export function previewPlate(file: DG.FileInfo) : any {
 
 //input: string fileContent 
 //output: list<dataframe> result
-//meta.role: fileHandler
+//meta.role: FileHandler
 //meta.ext: txt
 //meta.fileViewerCheck: Plates:checkFileIsPlate
 export async function importPlate(fileContent: string) : Promise<any> {
@@ -53,7 +53,7 @@ export async function checkExcelIsPlate(content: Uint8Array) : Promise<boolean> 
 }
 
 //input: blob fileContent 
-//meta.role: fileHandler
+//meta.role: FileHandler
 //meta.ext: xlsx
 //meta.fileViewerCheck: Plates:checkExcelIsPlate
 export async function importPlateXlsx(fileContent: Uint8Array) : Promise<any> {
@@ -63,7 +63,7 @@ export async function importPlateXlsx(fileContent: Uint8Array) : Promise<any> {
 //name: viewPlateXlsx
 //input: file file 
 //output: view result
-//meta.role: fileViewer
+//meta.role: FileViewer
 //meta.fileViewer: xlsx
 //meta.fileViewerCheck: Plates:checkExcelIsPlate
 export async function previewPlateXlsx(file: DG.FileInfo) : Promise<any> {
@@ -85,13 +85,13 @@ export function checkFileIsPlate(content: string) : boolean {
 
 //name: Plates
 //output: view result
-//meta.role: app
+//meta.role: App
 export async function platesApp() : Promise<any> {
   return await PackageFunctions.platesApp();
 }
 
 //input: dynamic treeNode 
-//meta.role: appTreeBrowser
+//meta.role: AppTreeBrowser
 //meta.app: Plates
 export async function platesAppTreeBrowser(treeNode: any) : Promise<void> {
   await PackageFunctions.platesAppTreeBrowser(treeNode);
@@ -109,7 +109,7 @@ export async function createDummyPlateData() : Promise<void> {
 }
 //name: PlateGridCellRenderer
 //output: grid_cell_renderer renderer
-//meta.role: cellRenderer
+//meta.role: CellRenderer
 //meta.cellType: Plate
 export function _PlateGridCellRenderer() {
   return new PlateGridCellRenderer();

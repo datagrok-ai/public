@@ -17,8 +17,8 @@ export namespace funcs {
   }
 
   /**
-  Excalidraw viewer
-  */
+   * Excalidraw viewer
+   */
   export async function excalfileViewer(fileContent: DG.FileInfo ): Promise<DG.View> {
     return await grok.functions.call('Excalidraw:ExcalfileViewer', { fileContent });
   }

@@ -15,7 +15,7 @@ export function _makeInspectorPanel() : any {
 }
 
 //description: DevTools autostart function
-//meta.role: autostart
+//meta.role: Autostart
 export function autostartTools() : void {
   PackageFunctions.autostartTools();
 }
@@ -26,14 +26,14 @@ export function _IconTool() : void {
 }
 
 //name: Test Manager
-//meta.role: adminApp,app
+//meta.role: adminApp,App
 //top-menu: Tools | Dev | Test Manager
 export async function testManager() : Promise<void> {
   await PackageFunctions.testManager();
 }
 
 //input: dynamic treeNode 
-//meta.role: appTreeBrowser
+//meta.role: AppTreeBrowser
 //meta.app: Test Manager
 export async function testManagerAppTreeBrowser(treeNode: any) : Promise<void> {
   await PackageFunctions.testManagerAppTreeBrowser(treeNode);

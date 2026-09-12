@@ -5,7 +5,7 @@ description: Overview of package-based JavaScript and TypeScript development on 
 keywords:
   - package.json
   - package.js
-  - webpack.config.js
+  - rspack.config.js
   - detectors.js
   - grok publish
   - creating a package
@@ -53,7 +53,7 @@ The simplest JavaScript package consists of the following files:
 | [package.json](#packagejson)          | metadata              |
 | [package.js](#packagejs)              | entry point           |
 | [detectors.js](#detectorsjs)          | detectors file        |
-| [webpack.config.js](#webpackconfigjs) | webpack configuration |
+| tsconfig.json                         | two lines: extends the shared base, includes `src` |
 | README.md                             | package summary       |
 | package.png                           | package icon          |
 
@@ -93,25 +93,29 @@ In addition to that, it might contain the following folders:
   "version": "0.0.1",
   "description": "Support for DNA sequences",
   "dependencies": {
-    "datagrok-api": "latest"
+    "datagrok-api": "^1.27.0"
   },
   "devDependencies": {
-    "webpack": "latest",
-    "webpack-cli": "latest"
+    "@datagrok/build-config": "^0.1.0"
   },
   "scripts": {
-    "debug-sequence": "webpack && grok publish",
-    "release-sequence": "webpack && grok publish --release",
-    "build-sequence": "webpack",
-    "build": "webpack"
+    "build": "grok build",
+    "typecheck": "grok tsc --noEmit -p tsconfig.json",
+    "lint": "eslint --ext .ts,.tsx src",
+    "test": "grok test"
   }
 }
 ```
 
-The package template first includes only one dependency — `datagrok-api`. You can add more packages to the dependencies
-list and install them via `npm install`.
+A package declares only what it imports at runtime. The toolchain (the rspack bundler, swc, TypeScript,
+eslint) comes from the single `@datagrok/build-config` devDependency; the four scripts are the same in every
+package. Add dependencies with `npm install <name>` as usual.
 
-The file `package.json` also contains `scripts` for [debugging and publishing your package](#publishing).
+Inside the [public repository](https://github.com/datagrok-ai/public) the picture is the same but managed
+once for all packages: it is a pnpm workspace, `datagrok-api` and the libraries are `workspace:^`, shared
+versions are `catalog:`, and the toolchain is a root devDependency, so a package there has no
+devDependencies at all. Run `pnpm install` once at the repository root and `grok build` in any package;
+see [packages/BUILD.MD](https://github.com/datagrok-ai/public/blob/master/packages/BUILD.MD).
 
 ### <a href="#" id="package.js"></a>package.js
 
@@ -130,7 +134,7 @@ export function test() {
 }
 ```
 
-Note that `Datagrok API` modules are already imported. They are also set as external modules, so that `Webpack` will not
+Note that `Datagrok API` modules are already imported. They are also set as external modules, so that the bundler will not
 include them to the output. You can include other libraries or packages, as all of them will be built-in a single bundle
 file. If you choose to include other files, such as CSS, in your package, import them into `package.js` as well.
 
@@ -178,48 +182,30 @@ class SequencePackageDetectors extends DG.Package {
 
 Once registered, this function is now available across the whole platform, and can be used for semantic type detection.
 
-### <a href="#" id="webpack.config.js"></a>webpack.config.js
+### <a href="#" id="build-configuration"></a>Build configuration
 
-The package is built according to its configuration file, which typically has the following content:
+There is no bundler configuration file in a package. `grok build --skip-check` (from `@datagrok/build-config`) bundles
+`src/package.ts` into `dist/package.js` with [rspack](https://rspack.rs) and swc, using one configuration
+shared by every Datagrok package: the platform-provided modules are externals (`datagrok-api/*`, `rxjs`,
+`cash-dom`, `dayjs`, `wu`, `openchemlib`, `exceljs`, `html2canvas`), CSS is injected, images and `.wasm`
+become URLs, the output is assigned to a variable named after the package (type `window.<package_name>`,
+e.g. `window.sequence`, in the browser console to check), and source maps are emitted.
+
+A package that needs more adds an `rspack.config.js` with only the differences:
 
 ```javascript
-const path = require('path');
+const {bundler} = require('@datagrok/build-config');
 
-module.exports = {
-  mode: 'development',  // set to "production" to minify the output and enable optimizations for production builds
-  entry: {
-    package: './src/package.js'  // the package is limited to exactly one entry point
-  },
-  devtool: 'inline-source-map',   // enhances package debugging in the browser devtools
-  externals: {                    // external modules won't be loaded to the output, but taken from the environment
-    'datagrok-api/dg': 'DG',
-    'datagrok-api/grok': 'grok',
-    'datagrok-api/ui': 'ui',
-    'openchemlib/full.js': 'OCL',
-    'rxjs': 'rxjs',
-    'rxjs/operators': 'rxjs.operators',
-    'cash-dom': '$',
-    'dayjs': 'dayjs',
-    'wu': 'wu',
-    'exceljs': 'ExcelJS',
-  },
-  output: {
-    filename: '[name].js',
-    library: 'sequence',     // the name of the package in lower case
-    libraryTarget: 'var',    // the results will be assigned to a variable `sequence`
-    path: path.resolve(__dirname, 'dist'),
-  },
-};
+module.exports = bundler({
+  externals: {ngl: 'NGL'},   // a global provided by the page
+  wasm: 'async',             // WebAssembly modules imported as ES modules
+  jsx: 'react',              // .tsx with the React automatic runtime
+});
 ```
 
-Have a look at the [Webpack documentation](https://webpack.js.org/configuration/) in case you need to modify or extend
-the provided options. For instance, you can add CSS and other file [loaders](https://webpack.js.org/loaders/)
-to `module.rules`. When the package is loaded, the output gets assigned to a variable (
-type `window.<package_name>`, e.g. `window.sequence`, in the browser's console just to check). Finally, note that the
-package name have reoccurred in multiple files, including this one. This might become important if you are going to
-introduce changes to the code or, for example, rename the package without creating it from scratch. In this case, make
-sure the name is accurately substituted: set the `name` field in `package.json` and `library` in `webpack.config.js` to
-the desired name in lower case, and rename a class `<package_name>PackageDetectors` using camel case in `detectors.js`.
+See the [@datagrok/build-config README](https://github.com/datagrok-ai/public/blob/master/build-config/README.md)
+for every option. If you rename a package, set the `name` field in `package.json` (the bundle variable
+follows it) and rename the class `<package_name>PackageDetectors` in `detectors.js`.
 
 ## Naming conventions
 
@@ -333,11 +319,11 @@ will no longer exist after the developer releases their package.
 
 ### Building package
 
-`Webpack` is required for your package source code to work successfully in the browser. You need to build your package
-with `webpack` locally. To do that, run the script `"build": "webpack"`
-before publishing. For convenience, publication scripts in `package.json` combine these two steps:
-`webpack && grok publish`. The `build` script is reserved for server-side build, so don't change or remove it. The
-platform will build a package on the server side, if you call `grok publish` with the `--rebuild` option.
+The package source must be bundled before it can run in the browser. `grok publish` builds first, so
+you rarely run the build yourself; when you do, use `npm run build` in the package (in the public
+repository, `grok build`, which also builds the libraries the package depends on and caches the result).
+The `build` script is `grok build`: bundle, generate the function metadata files, run `grok check`.
+Keep the script name; do not change what it runs.
 
 ### Publishing modes
 
@@ -346,25 +332,17 @@ Use the following flags to specify who can access your package:
 * In `--debug` mode, packages are accessible by the developer only (default).
 * In `--release` mode, packages are accessible by everyone who has the privilege.
 
-To publish a package, open the `package.json` file in your IDE. Typically, the `scripts` section would contain several
-scripts generated for your package based on the contents of `config.yaml`. For development purposes, use the scripts
-having the `debug` word in their name. For production, use the alternative scripts starting with `deploy` instead.
+To publish a package, run `grok publish` from the package folder: it builds the package and uploads it in
+debug mode to the default server from `config.yaml`. Add `--release` for a release build, and a server
+alias or URL to target another server:
 
-```json
-"scripts": {
-"debug-sequence": "webpack && grok publish",
-"release-sequence": "webpack && grok publish --release",
-"build-sequence": "webpack",
-"build": "webpack",
-"debug-sequence-dev": "webpack && grok publish dev",
-"release-sequence-dev": "webpack && grok publish dev --release",
-"debug-sequence-local": "webpack && grok publish local",
-"release-sequence-local": "webpack && grok publish local --release"
-}
+```shell
+grok publish                    # debug build to the default server
+grok publish dev                # debug build to the `dev` alias
+grok publish dev --release      # release build to the `dev` alias
 ```
 
-Alternatively, you can run these scripts with `npm run`. If you have any questions, type `grok` for instructions
-or `grok publish --help` to get help on this particular command.
+Type `grok` for instructions or `grok publish --help` to get help on this particular command.
 
 In addition, you can pass another server either as URL or server alias from the `config.yaml` file:
 
@@ -528,12 +506,11 @@ as `process.env.CHEMBL_LOGIN` and `process.env.CHEMBL_PASSWORD`, respectively.
 
 See [debugging](advanced/debugging.md) for details.
 
-### Webpack-based packages
+### Bundled packages
 
-If you deploy package in debug mode (`--release` isn't passed to `grok publish`) and source maps are properly
-generated (thus, the setting [devtool](https://webpack.js.org/configuration/devtool/) of
-`module.exports =` section in `webpack.config.js` is present), you'd find your package sources in the `top` (root)
-section of the source tree by its decapitalized name.
+If you deploy a package in debug mode (`--release` isn't passed to `grok publish`), the bundle's source maps
+(always emitted by `grok build --skip-check`) let you find your package sources in the `top` (root) section of the source
+tree by its decapitalized name.
 
 ### Source-based packages
 
@@ -542,9 +519,8 @@ Deploying such package locates it to the Datagrok host URI (such as `https://dev
 
 ### Troubleshooting debugging
 
-1. For webpack-based packages, make sure there is `devtool: 'inline-source-map'`
-   in `module.exports =` section of
-   `webpack.config.js`. Otherwise, source maps aren't generated and the IDE won't get source code locations.
+1. Publish in debug mode (no `--release`): release bundles are minified and the IDE won't get source code
+   locations. Source maps are always emitted by `grok build --skip-check`.
 
 2. Make sure the required plugins / debuggers for Chrome debugging are installed in your IDE.
 

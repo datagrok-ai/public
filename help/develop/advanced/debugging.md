@@ -19,7 +19,7 @@ import TabItem from '@theme/TabItem';
 ```
 
 This article will guide you through the process of debugging your Datagrok packages. In most cases, these packages are
-TypeScript projects that utilize the `webpack` module bundler. However, if your package is based on a non-standard
+TypeScript projects bundled by rspack through the shared `@datagrok/build-config` configuration. However, if your package is based on a non-standard
 template, you may need to configure it differently for debugging.
 
 Here are the main points that we will cover:
@@ -34,46 +34,12 @@ Here are the main points that we will cover:
 
 ## Prerequisites
 
-First, make sure your package has the sourcemap options enabled:
+Source maps are on by default: `grok build --skip-check` (the shared rspack configuration every package builds with) emits
+`dist/package.js.map` next to the bundle, and TypeScript sources map through swc. Third-party libraries that ship
+their own source maps are picked up as well. Publish in debug mode (no `--release`) so the bundle is not minified.
 
-1. In `tsconfig.json`:
-
-  ```json
-  "compilerOptions": {
-    "sourceMap": true,
-  }
-  ```
-
-1. In `webpack.config.js`:
-
-  ```js
-  module.exports = {
-    devtool: 'source-map',
-  };
-  ```
-
-In some cases, especially when using 3rd-party libraries that have their own source maps, you may need to install an
-additional loader:
-
-```shell
-npm install source-map-loader --save-dev
-```
-
-To enable `source-map-loader`, add the following rule to your `webpack.config.js`:
-
-```js
-module.exports = {
-  module: {
-    rules: [
-      {
-        test: /\.js$/,
-        enforce: "pre",
-        use: ["source-map-loader"],
-      },
-    ],
-  },
-};
-```
+If your package uses a hand-written `rspack.config.js`, keep `devtool: 'source-map'` (the default from
+`bundler({...})`) in it.
 
 ## Recommendations for IDEs
 
@@ -98,7 +64,7 @@ grok init --ide=vscode
 
 As a result, there will be a `.vscode` folder with two files in your package folder: `launch.json` and `tasks.json`.
 Once you are ready to launch your code, open `Run and Debug` in the sidebar (`Ctrl+Shift+D`) and hit "Run" to start
-debugging (`F5` or `Ctrl+F5`). Wait for your application to "compile" (in our case — go through webpack, and potentially
+debugging (`F5` or `Ctrl+F5`). Wait for your application to "compile" (in our case — go through the bundler, and potentially
 through linters, etc.), then start it in Datagrok and explore your runtime state through breakpoints, variable watches,
 call stacks etc.
 
@@ -138,7 +104,7 @@ The second file, `tasks.json`, contains the following:
   "tasks": [
     {
       "type": "shell",
-      "command": "cmd.exe /c \"webpack && grok publish <GROK_HOST>\"",
+      "command": "cmd.exe /c \"grok publish <GROK_HOST>\"",
       "label": "rebuild"
     }
   ]
@@ -156,7 +122,7 @@ The second file, `tasks.json`, contains the following:
   "tasks": [
     {
       "type": "shell",
-      "command": "webpack && grok publish <GROK_HOST>",
+      "command": "grok publish <GROK_HOST>",
       "label": "rebuild"
     }
   ]
@@ -168,7 +134,7 @@ The second file, `tasks.json`, contains the following:
 </Tabs>
 ```
 
-This command builds your package with webpack. The webpack step helps track some syntactic errors before they occur in
+This command builds your package (rspack) and publishes it. The build step helps track some syntactic errors before they occur in
 runtime, and consequently ship the package to your Datagrok server. In this example, a default server would be chosen to
 deploy to. The server configurations are pre-created by you with `grok config` earlier and stored in
 `%USERPROFILE%/.grok/config.yaml`, where you can modify them, and choose the default configuration. To override the
@@ -211,18 +177,18 @@ In this dialog, add a new `Shell Script` configuration by the `+` button:
 Fill this configuration with the following:
 
 ```shell
-/c call webpack && call grok publish dev && call echo
+/c call grok publish dev && call echo
 ```
 
 ![WebStorm: Shell Script configuration content](../packages/webstorm-debugging-03.png)
 
 *Note.* This configuration looks controversial, but this is so only to overcome the known problems in WebStorm. It turns
 out both interpreter and script parameters have to be specified. Omitting the script parameter will work if you run the
-`Webpack & Publish` configuration standalone, but *won't* work as part of the other's configuration build step, which
+`Build & Publish` configuration standalone, but *won't* work as part of the other's configuration build step, which
 we'd need later. As for the trailing `echo`, it is simply due to the way this build step works in WebStorm: it
 concatenates the interpreter line with the script call line, and we use it to suppress the redundant script call line.
 
-This `Webpack & Publish` configuration shall become a step running a webpack on your package and publishing it to a
+This `Build & Publish` configuration shall become a step building your package and publishing it to a
 configuration of your choice. In the above screenshot we've chosen a `dev` configuration, declared in your grok config
 file at `%USERPROFILE%/.grok/config.yaml`:
 
@@ -236,7 +202,7 @@ configuration, and fill it with the following:
 ![WebStorm: JavaScript Debug configuration content](../packages/webstorm-debugging-05.png)
 
 Basically, you need to add the previously created `Shell Script` configuration as a `Before Launch` step. After this
-step is executed on hitting the `Debug` button and displaying the `webpack` log and errors in the WebStorm tool output
+step is executed on hitting the `Debug` button and displaying the build log and errors in the WebStorm tool output
 window, WebStorm will launch the browser in the debugging mode and let you hit your breakpoints:
 
 ![WebStorm: a debugging session](../packages/webstorm-debugging-06.png)
@@ -249,7 +215,7 @@ of WebStorm IDEs. To fix it, remove these two files and restart the IDE (replace
 * `%USERPROFILE%\AppData\Roaming\JetBrains\WebStorm2020.1\options\web-browsers.xml`
 * `%USERPROFILE%\AppData\Roaming\JetBrains\WebStorm2020.1\options\other.xml`
 
-*Note 1.* You may notice there's an option to add a `Run External tool` step, which could serve us this `Webpack &
+*Note 1.* You may notice there's an option to add a `Run External tool` step, which could serve us this `Build &
 Publish` step. Unfortunately, this step won't work due to a [known
 issue](https://youtrack.jetbrains.com/issue/IDEA-229467) in WebStorm IDEs. We broke the run step into two steps
 intentionally to alleviate this problem.

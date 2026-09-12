@@ -295,11 +295,10 @@ your own registry, and how images are validated server-side), see
 
 ## 5. Build and publish
 
-Run webpack and [publish](../../develop.md#publishing) your package to one of the
- Datagrok instances:
+[Publish](../../develop.md#publishing) your package to one of the Datagrok instances (it is built
+first):
 
 ```shell
-webpack
 grok publish dev
 ```
 

@@ -9,15 +9,15 @@ import * as DG from 'datagrok-api/dg';
 
 export namespace funcs {
   /**
-  Previews audio files using the native browser player
-  */
+   * Previews audio files using the native browser player
+   */
   export async function audioViewer(file: DG.FileInfo ): Promise<DG.View> {
     return await grok.functions.call('Media:AudioViewer', { file });
   }
 
   /**
-  Previews video files using the native browser player
-  */
+   * Previews video files using the native browser player
+   */
   export async function videoViewer(file: DG.FileInfo ): Promise<DG.View> {
     return await grok.functions.call('Media:VideoViewer', { file });
   }

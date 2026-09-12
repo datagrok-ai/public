@@ -14,26 +14,34 @@
     "email": "ppolovyi@datagrok.ai"
   },
   "description": "DataFrame ↔ Arrow IPC conversion (extracted from @datagrok/arrow)",
-  "main": "src/index.ts",
-  "types": "src/index.ts",
+  "main": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts",
   "dependencies": {
     "apache-arrow": "^21.0.0",
-    "datagrok-api": "^1.27.0"
-  },
-  "devDependencies": {
-    "@typescript-eslint/eslint-plugin": "^5.11.0",
-    "@typescript-eslint/parser": "^5.11.0",
-    "datagrok-tools": "^4.14.34",
-    "eslint": "^8.18.0",
-    "eslint-config-google": "^0.14.0",
-    "typescript": "^4.6.0"
+    "datagrok-api": "workspace:^"
   },
   "scripts": {
-    "link": "npm link",
-    "link-api": "npm link datagrok-api",
-    "link-all": "npm link datagrok-api",
-    "build": "grok check --soft && tsc",
-    "lint": "eslint \"./src/**/*.ts\"",
-    "lint-fix": "eslint \"./src/**/*.ts\" --fix"
+    "build": "grok tsc -p tsconfig.json",
+    "lint": "eslint --ext .ts,.tsx src"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "default": "./dist/src/index.js"
+    },
+    "./package.json": "./package.json",
+    "./css/*": "./css/*",
+    "./src": {
+      "types": "./dist/src/index.d.ts",
+      "default": "./dist/src/index.js"
+    },
+    "./*.js": {
+      "types": "./dist/*.d.ts",
+      "default": "./dist/*.js"
+    },
+    "./*": {
+      "types": "./dist/*.d.ts",
+      "default": "./dist/*.js"
+    }
   }
 }

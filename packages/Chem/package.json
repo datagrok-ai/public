@@ -55,51 +55,36 @@
     }
   ],
   "dependencies": {
-    "@datagrok-libraries/chem-meta": "^1.2.12",
-    "@datagrok-libraries/gridext": "^1.5.4",
-    "@datagrok-libraries/math": "^1.2.7",
-    "@datagrok-libraries/ml": "^6.10.15",
-    "@datagrok-libraries/statistics": "^1.12.11",
-    "@datagrok-libraries/test": "^1.3.1",
-    "@datagrok-libraries/tutorials": "^1.7.6",
-    "@datagrok-libraries/utils": "^4.7.9",
+    "@datagrok-libraries/chem-meta": "workspace:^",
+    "@datagrok-libraries/gridext": "workspace:^",
+    "@datagrok-libraries/math": "workspace:^",
+    "@datagrok-libraries/ml": "workspace:^",
+    "@datagrok-libraries/statistics": "workspace:^",
+    "@datagrok-libraries/test": "workspace:^",
+    "@datagrok-libraries/tutorials": "workspace:^",
+    "@datagrok-libraries/utils": "workspace:^",
     "@types/pako": "^2.0.3",
     "@webgpu/types": "^0.1.40",
-    "cash-dom": "^8.1.5",
-    "datagrok-api": "^1.27.7",
-    "dayjs": "^1.11.13",
-    "file-loader": "^6.2.0",
+    "cash-dom": "catalog:",
+    "datagrok-api": "workspace:^",
+    "dayjs": "catalog:",
     "js-yaml": "^4.1.1",
     "jszip": "3.10.1",
     "ngl": "^2.4.0",
     "offscreen-canvas": "^0.1.1",
-    "openchemlib": "^7.2.3",
+    "openchemlib": "catalog:",
     "pako": "^2.1.0",
-    "rxjs": "^6.5.5",
-    "source-map-loader": "^4.0.1",
-    "typescript": "5.6.3",
+    "rxjs": "catalog:",
     "typescript-lru-cache": "^2.0.0",
     "worker-loader": "^3.0.8",
-    "wu": "^2.1.0"
+    "wu": "catalog:"
   },
   "devDependencies": {
-    "@datagrok/charts": "^1.7.0",
-    "@datagrok/power-grid": "^1.6.2",
     "@playwright/test": "^1.48.0",
     "@types/js-yaml": "^4.0.9",
     "@types/offscreencanvas": "^2019.7.3",
-    "@types/wu": "^2.1.44",
-    "@typescript-eslint/eslint-plugin": "^5.62.0",
-    "@typescript-eslint/parser": "^5.62.0",
-    "css-loader": "^7.1.2",
-    "datagrok-tools": "^5.0.0",
-    "eslint": "^8.1.0",
-    "eslint-config-google": "^0.14.0",
-    "path": "^0.12.7",
-    "style-loader": "^4.0.0",
-    "ts-loader": "^9.5.1",
-    "webpack": "^5.103.0",
-    "webpack-cli": "^5.1.4"
+    "@types/wu": "catalog:",
+    "path": "^0.12.7"
   },
   "browser": {
     "fs": false,
@@ -108,23 +93,10 @@
     "crypto": false
   },
   "scripts": {
-    "link-api": "npm link datagrok-api",
-    "link-utils": "npm link @datagrok-libraries/utils",
-    "link-ml": "npm link @datagrok-libraries/ml",
-    "link-chem-meta": "npm link @datagrok-libraries/chem-meta",
-    "link-all": "npm link @datagrok-libraries/chem-meta datagrok-api @datagrok-libraries/math @datagrok-libraries/utils @datagrok-libraries/ml @datagrok-libraries/tutorials @datagrok-libraries/statistics",
-    "build-chem-local": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm --prefix ./../../libraries/ml run build && npm run build",
-    "build": "grok api && grok check --soft && webpack",
-    "debug-local": "tsc && webpack && grok publish local",
-    "release-local": "grok publish local --release",
-    "debug-chem": "webpack && grok publish",
-    "release-chem": "webpack && grok publish --release",
-    "lint": "eslint \"./src/**/*.ts\"",
-    "lint-fix": "eslint \"./src/**/*.ts\" --fix",
-    "test": "grok test",
-    "test-dev": "grok test --host dev",
-    "test-local": "grok test --host localhost",
-    "build-all": "npm --prefix ./../../libraries/chem-meta run build && npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/math run build && npm --prefix ./../../libraries/utils run build && npm --prefix ./../../libraries/ml run build && npm --prefix ./../../libraries/tutorials run build && npm --prefix ./../../libraries/statistics run build && npm run build"
+    "build": "grok build",
+    "typecheck": "grok tsc --noEmit -p tsconfig.json",
+    "lint": "eslint --ext .ts,.tsx src",
+    "test": "grok test"
   },
   "canEdit": [
     "Administrators"
@@ -142,9 +114,11 @@
   "sources": [
     "common/openchemlib-full.js"
   ],
-  "overrides": {
-    "datagrok-api": "$datagrok-api",
-    "uuid": "^11.1.1"
-  },
-  "playwrightTests": "playwright"
+  "playwrightTests": "playwright",
+  "grok": {
+    "testDependencies": [
+      "@datagrok/charts",
+      "@datagrok/power-grid"
+    ]
+  }
 }

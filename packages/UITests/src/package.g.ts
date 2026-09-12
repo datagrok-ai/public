@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 //name: TestViewerForProperties
 //description: Viewer to test properties and others
 //output: viewer result
-//meta.role: viewer,panel
+//meta.role: viewer,Panel
 export function testViewerForProperties() : any {
   return PackageFunctions.testViewerForProperties();
 }

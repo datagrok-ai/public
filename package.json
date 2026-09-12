@@ -1,0 +1,26 @@
+{
+  "name": "datagrok-public",
+  "private": true,
+  "packageManager": "pnpm@10.12.4",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "typecheck": "turbo run typecheck",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "affected": "turbo run build typecheck --filter=...[origin/master]"
+  },
+  "devDependencies": {
+    "@datagrok/build-config": "workspace:^",
+    "@types/node": "catalog:",
+    "@typescript-eslint/eslint-plugin": "^8.39.0",
+    "@typescript-eslint/parser": "^8.39.0",
+    "datagrok-tools": "workspace:^",
+    "eslint": "^8.57.1",
+    "eslint-config-google": "^0.14.0",
+    "turbo": "^2.5.0",
+    "typescript": "npm:typescript@^5.9.3"
+  }
+}

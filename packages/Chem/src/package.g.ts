@@ -12,12 +12,12 @@ export function getMolFileHandler(molString: string) : any {
   return PackageFunctions.getMolFileHandler(molString);
 }
 
-//meta.role: init
+//meta.role: Init
 export async function init() : Promise<void> {
   await PackageFunctions.init();
 }
 
-//meta.role: autostart
+//meta.role: Autostart
 export async function initChemAutostart() : Promise<void> {
   await PackageFunctions.initChemAutostart();
 }
@@ -207,7 +207,7 @@ export async function diverseSubset(table: DG.DataFrame, molecules: DG.Column, l
 }
 
 //description: As SDF...
-//meta.role: fileExporter
+//meta.role: FileExporter
 export async function saveAsSdf() : Promise<void> {
   await PackageFunctions.saveAsSdf();
 }
@@ -266,7 +266,7 @@ export async function descriptorsDocker(table: DG.DataFrame, molecules: DG.Colum
 //name: DescriptorsEditor
 //input: funccall call 
 //output: widget result
-//meta.role: editor
+//meta.role: Editor
 export function descriptorsEditor(call: DG.FuncCall) : any {
   return PackageFunctions.descriptorsEditor(call);
 }
@@ -308,7 +308,7 @@ export async function getMapIdentifiers(table: DG.DataFrame, molecules: DG.Colum
 //name: MapIdentifiersEditor
 //input: funccall call 
 //output: widget result
-//meta.role: editor
+//meta.role: Editor
 export function mapIdentifiersEditor(call: DG.FuncCall) : any {
   return PackageFunctions.mapIdentifiersEditor(call);
 }
@@ -337,7 +337,7 @@ export async function chemDescriptors(table: DG.DataFrame, molecules: DG.Column,
 
 //name: SearchSubstructureEditor
 //input: funccall call 
-//meta.role: editor
+//meta.role: Editor
 export function searchSubstructureEditor(call: DG.FuncCall) : void {
   PackageFunctions.searchSubstructureEditor(call);
 }
@@ -384,7 +384,7 @@ export async function performClusterMCS(molCol: DG.Column, clusterCol: DG.Column
 
 //input: funccall call 
 //output: widget result
-//meta.role: editor
+//meta.role: Editor
 export function ChemSpaceEditor(call: DG.FuncCall) : any {
   return PackageFunctions.ChemSpaceEditor(call);
 }
@@ -516,7 +516,7 @@ export async function rGroupDecomposition(df: DG.DataFrame, molColName: string, 
 
 //input: funccall call 
 //output: widget result
-//meta.role: editor
+//meta.role: Editor
 export function ActivityCliffsEditor(call: DG.FuncCall) : any {
   return PackageFunctions.ActivityCliffsEditor(call);
 }
@@ -674,7 +674,7 @@ export async function runPharmacophoreFeatures(table: DG.DataFrame, molecules: D
 //input: column molColumn { semType: Molecule }
 //output: widget result
 //meta.exclude-actions-panel: true
-//meta.role: panel
+//meta.role: Panel
 export function molColumnPropertyPanel(molColumn: DG.Column) : any {
   return PackageFunctions.molColumnPropertyPanel(molColumn);
 }
@@ -683,7 +683,7 @@ export function molColumnPropertyPanel(molColumn: DG.Column) : any {
 //input: column molColumn { semType: Molecule }
 //output: widget result
 //meta.exclude-actions-panel: true
-//meta.role: panel
+//meta.role: Panel
 export function molColumnHighlights(molColumn: DG.Column) : any {
   return PackageFunctions.molColumnHighlights(molColumn);
 }
@@ -691,7 +691,7 @@ export function molColumnHighlights(molColumn: DG.Column) : any {
 //name: Chemistry | Descriptors
 //input: string smiles { semType: Molecule }
 //output: widget result
-//meta.role: widgets,panel
+//meta.role: widgets,Panel
 //meta.domain: chem
 export function descriptorsWidget(smiles: string) : any {
   return PackageFunctions.descriptorsWidget(smiles);
@@ -701,7 +701,7 @@ export function descriptorsWidget(smiles: string) : any {
 //description: Drug Likeness score, with explanations on molecule fragments contributing to the score. OCL.
 //input: semantic_value smiles { semType: Molecule }
 //output: widget result
-//meta.role: widgets,panel
+//meta.role: widgets,Panel
 //meta.domain: chem
 //help-url: /help/domains/chem/info-panels/drug-likeness.md
 export function drugLikeness(smiles: DG.SemanticValue) : any {
@@ -712,7 +712,7 @@ export function drugLikeness(smiles: DG.SemanticValue) : any {
 //description: Basic molecule properties
 //input: semantic_value smiles { semType: Molecule }
 //output: widget result
-//meta.role: widgets,panel
+//meta.role: widgets,Panel
 //meta.domain: chem
 export function properties(smiles: DG.SemanticValue) : any {
   return PackageFunctions.properties(smiles);
@@ -729,7 +729,7 @@ export function getChemPropertyFunction(name: string) : any {
 //description: Screening drug candidates against structural alerts i.e. fragments associated to a toxicological response
 //input: string smiles { semType: Molecule }
 //output: widget result
-//meta.role: widgets,panel
+//meta.role: widgets,Panel
 //meta.domain: chem
 //help-url: /help/domains/chem/info-panels/structural-alerts.md
 export async function structuralAlerts(smiles: string) : Promise<any> {
@@ -740,7 +740,7 @@ export async function structuralAlerts(smiles: string) : Promise<any> {
 //description: Detects and highlights pharmacophores (donors, acceptors, hydrophobic, aromatic, positive, negative)
 //input: string smiles { semType: Molecule }
 //output: widget result
-//meta.role: widgets,panel
+//meta.role: widgets,Panel
 //meta.domain: chem
 export async function pharmacophoreFeatures(smiles: string) : Promise<any> {
   return await PackageFunctions.pharmacophoreFeatures(smiles);
@@ -749,7 +749,7 @@ export async function pharmacophoreFeatures(smiles: string) : Promise<any> {
 //name: Structure | Identifiers
 //input: string smiles { semType: Molecule }
 //output: widget result
-//meta.role: widgets,panel
+//meta.role: widgets,Panel
 //meta.domain: chem
 export async function identifiers(smiles: string) : Promise<any> {
   return await PackageFunctions.identifiers(smiles);
@@ -759,7 +759,7 @@ export async function identifiers(smiles: string) : Promise<any> {
 //description: 3D molecule representation
 //input: string molecule { semType: Molecule }
 //output: widget result
-//meta.role: widgets,panel
+//meta.role: widgets,Panel
 //meta.domain: chem
 export async function structure3D(molecule: string) : Promise<any> {
   return await PackageFunctions.structure3D(molecule);
@@ -769,7 +769,7 @@ export async function structure3D(molecule: string) : Promise<any> {
 //description: 2D molecule representation
 //input: string molecule { semType: Molecule }
 //output: widget result
-//meta.role: widgets,panel
+//meta.role: widgets,Panel
 //meta.domain: chem
 export function structure2d(molecule: string) : any {
   return PackageFunctions.structure2d(molecule);
@@ -779,7 +779,7 @@ export function structure2d(molecule: string) : any {
 //description: Toxicity prediction. Calculated by openchemlib
 //input: semantic_value smiles { semType: Molecule }
 //output: widget result
-//meta.role: widgets,panel
+//meta.role: widgets,Panel
 //meta.domain: chem
 //help-url: /help/domains/chem/info-panels/toxicity-risks.md
 export function toxicity(smiles: DG.SemanticValue) : any {
@@ -790,7 +790,7 @@ export function toxicity(smiles: DG.SemanticValue) : any {
 //description: Substructure search in synthon chemical space using RDKit SynthonSpaceSearch
 //input: string molecule { semType: Molecule }
 //output: widget result
-//meta.role: widgets,panel
+//meta.role: widgets,Panel
 //meta.domain: chem
 export async function synthonSubstructureSearchWidget(molecule: string) : Promise<any> {
   return await PackageFunctions.synthonSubstructureSearchWidget(molecule);
@@ -800,7 +800,7 @@ export async function synthonSubstructureSearchWidget(molecule: string) : Promis
 //description: Fingerprint similarity search in synthon chemical space using RDKit SynthonSpaceSearch
 //input: string molecule { semType: Molecule }
 //output: widget result
-//meta.role: widgets,panel
+//meta.role: widgets,Panel
 //meta.domain: chem
 export async function synthonSimilaritySearchWidget(molecule: string) : Promise<any> {
   return await PackageFunctions.synthonSimilaritySearchWidget(molecule);
@@ -906,7 +906,7 @@ export function openChemLibSketcher() : any {
 //description: Opens SDF file
 //input: list bytes 
 //output: list<dataframe> result
-//meta.role: fileHandler
+//meta.role: FileHandler
 //meta.ext: sdf,mol
 export function importSdf(bytes: Uint8Array) : any {
   return PackageFunctions.importSdf(bytes);
@@ -915,7 +915,7 @@ export function importSdf(bytes: Uint8Array) : any {
 //description: Opens smi file
 //input: list bytes 
 //output: list<dataframe> result
-//meta.role: fileHandler
+//meta.role: FileHandler
 //meta.ext: smi
 export function importSmi(bytes: Uint8Array) : any {
   return PackageFunctions.importSmi(bytes);
@@ -924,7 +924,7 @@ export function importSmi(bytes: Uint8Array) : any {
 //description: Opens MOL2 file
 //input: list bytes 
 //output: list<dataframe> result
-//meta.role: fileHandler
+//meta.role: FileHandler
 //meta.ext: mol2
 export function importMol2(bytes: Uint8Array) : any {
   return PackageFunctions.importMol2(bytes);
@@ -933,7 +933,7 @@ export function importMol2(bytes: Uint8Array) : any {
 //description: Opens MOL file
 //input: string content 
 //output: list<dataframe> result
-//meta.role: fileHandler
+//meta.role: FileHandler
 //meta.ext: mol
 export function importMol(content: string) : any {
   return PackageFunctions.importMol(content);
@@ -1133,7 +1133,7 @@ export function mmpViewer() : any {
 
 //input: funccall call 
 //output: widget result
-//meta.role: editor
+//meta.role: Editor
 export function MMPEditor(call: DG.FuncCall) : any {
   return PackageFunctions.MMPEditor(call);
 }
@@ -1373,7 +1373,7 @@ export async function deprotect(table: DG.DataFrame, molecules: DG.Column, fragm
 //name: Deprotect Editor
 //input: funccall call 
 //output: widget result
-//meta.role: editor
+//meta.role: Editor
 export function deprotectEditor(call: DG.FuncCall) : any {
   return PackageFunctions.deprotectEditor(call);
 }
@@ -1451,7 +1451,7 @@ export function mpoTransformFunction(df: DG.DataFrame, profileName: string, aggr
 
 //input: file file 
 //output: view result
-//meta.role: fileViewer
+//meta.role: FileViewer
 //meta.fileViewer: json
 //meta.fileViewerCheck: Chem:checkJsonMpoProfile
 export function mpoProfileEditor(file: DG.FileInfo) : any {
@@ -1467,7 +1467,7 @@ export function checkJsonMpoProfile(content: string) {
 //name: Chemistry | Mixture
 //input: string mixture { semType: ChemicalMixture }
 //output: widget result
-//meta.role: widgets,panel
+//meta.role: widgets,Panel
 //meta.domain: chem
 export async function mixtureWidget(mixture: string) : Promise<any> {
   return await PackageFunctions.mixtureWidget(mixture);
@@ -1476,7 +1476,7 @@ export async function mixtureWidget(mixture: string) : Promise<any> {
 //name: Chemistry | MixtureTree
 //input: string mixture { semType: ChemicalMixture }
 //output: widget result
-//meta.role: widgets,panel
+//meta.role: widgets,Panel
 //meta.domain: chem
 export async function mixtureTreeWidget(mixture: string) : Promise<any> {
   return await PackageFunctions.mixtureTreeWidget(mixture);
@@ -1507,7 +1507,7 @@ export async function seedMpoProfiles() : Promise<string> {
 //output: view result
 //meta.browsePath: Chem
 //meta.icon: images/mpo.png
-//meta.role: app
+//meta.role: App
 export async function mpoProfilesApp(path?: string) : Promise<any> {
   return await PackageFunctions.mpoProfilesApp(path);
 }
@@ -1516,7 +1516,7 @@ export async function mpoProfilesApp(path?: string) : Promise<any> {
 //description: Forward-reaction library enumeration over building blocks and SMARTS templates.
 //output: view result
 //meta.browsePath: Chem | Reactions
-//meta.role: app
+//meta.role: App
 export async function reactionEnumeratorApp() : Promise<any> {
   return await PackageFunctions.reactionEnumeratorApp();
 }
@@ -1596,7 +1596,7 @@ export async function twoComponentReactionsApp(_path?: string) : Promise<any> {
 //name: Chemistry | MPO
 //input: semantic_value smiles { semType: Molecule }
 //output: widget result
-//meta.role: widgets,panel
+//meta.role: widgets,Panel
 //meta.domain: chem
 export async function mpoWidget(semValue: DG.SemanticValue) : Promise<any> {
   return await PackageFunctions.mpoWidget(semValue);

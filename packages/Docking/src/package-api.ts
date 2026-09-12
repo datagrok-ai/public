@@ -28,13 +28,27 @@ export namespace funcs {
     return await grok.functions.call('Docking:DockLigandCached', { jsonForm, containerId });
   }
 
+  /**
+   * Dock small molecules to a macromolecule target with AutoDock and return binding poses and energies.
+   * @param {DG.Column} ligands - Small molecules to dock
+   *   semType: Molecule
+   * @param {string} target - Target folder with the macromolecule and docking config
+   *   choices: Docking:getConfigFiles
+   * @param {number} poses - Number of output conformations (poses) per molecule
+   */
   export async function getAutodockResults(table: DG.DataFrame , ligands: DG.Column , target: string , poses: number ): Promise<DG.DataFrame> {
     return await grok.functions.call('Docking:GetAutodockResults', { table, ligands, target, poses });
   }
 
   /**
-  Autodock plugin UI
-  */
+   * Autodock plugin UI
+   * @param {DG.DataFrame} table - 'Input data table'
+   * @param {DG.Column} ligands - 'Small molecules to dock'
+   *   semType: Molecule
+   * @param {string} target - 'Folder with config and macromolecule'
+   *   choices: Docking:getConfigFiles
+   * @param {number} poses - 'Number of output conformations for each small molecule'
+   */
   export async function runAutodock(table: DG.DataFrame , ligands: DG.Column , target: string , poses: number ): Promise<void> {
     return await grok.functions.call('Docking:RunAutodock', { table, ligands, target, poses });
   }
@@ -43,6 +57,10 @@ export namespace funcs {
     return await grok.functions.call('Docking:IsApplicableAutodock', { molecule });
   }
 
+  /**
+   * @param {any} molecule
+   *   semType: Molecule3D
+   */
   export async function autodockWidget(molecule: any ): Promise<any> {
     return await grok.functions.call('Docking:AutodockWidget', { molecule });
   }
@@ -52,12 +70,16 @@ export namespace funcs {
   }
 
   /**
-  Small molecule docking to a macromolecule with pose visualization
-  */
+   * Small molecule docking to a macromolecule with pose visualization
+   */
   export async function demoDocking(): Promise<void> {
     return await grok.functions.call('Docking:DemoDocking', {});
   }
 
+  /**
+   * @param {any} smiles
+   *   semType: Molecule
+   */
   export async function autodockPanel(smiles: any ): Promise<any> {
     return await grok.functions.call('Docking:AutodockPanel', { smiles });
   }

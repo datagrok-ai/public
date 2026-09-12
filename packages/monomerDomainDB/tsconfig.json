@@ -1,15 +1,6 @@
 {
-  "compilerOptions": {
-    "target": "es6",
-    "module": "es2020",
-    "lib": ["ES2022", "dom"],
-    "sourceMap": true,
-    "strict": true,
-    "moduleResolution": "bundler",
-    "esModuleInterop": true,
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true
-  }
+  "extends": "@datagrok/build-config/tsconfig.base.json",
+  "include": [
+    "src"
+  ]
 }

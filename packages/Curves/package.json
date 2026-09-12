@@ -8,48 +8,22 @@
     "email": "dkovalyov@datagrok.ai"
   },
   "dependencies": {
-    "@datagrok-libraries/statistics": "^1.12.13",
-    "@datagrok-libraries/test": "^1.2.0",
-    "@datagrok-libraries/utils": "^4.6.5",
-    "@types/wu": "^2.1.42",
-    "@typescript-eslint/eslint-plugin": "^5.62.0",
-    "@typescript-eslint/parser": "^5.62.0",
-    "cash-dom": "^8.0.0",
-    "datagrok-api": "^1.27.0",
-    "dayjs": "^1.11.7",
-    "eslint": "^8.1.0",
-    "eslint-config-google": "^0.14.0",
-    "exceljs": "^4.3.0",
+    "@datagrok-libraries/statistics": "workspace:^",
+    "@datagrok-libraries/test": "workspace:^",
+    "@datagrok-libraries/utils": "workspace:^",
+    "@types/wu": "catalog:",
+    "cash-dom": "catalog:",
+    "datagrok-api": "workspace:^",
+    "dayjs": "catalog:",
+    "exceljs": "catalog:",
     "jstat": "^1.9.6",
-    "rxjs": "^6.5.5"
-  },
-  "devDependencies": {
-    "css-loader": "^5.0.0",
-    "datagrok-tools": "^6.1.6",
-    "source-map-loader": "^4.0.1",
-    "style-loader": "^2.0.0",
-    "ts-loader": "^9.5.1",
-    "typescript": "^5.6.3",
-    "webpack": "^5.95.0",
-    "webpack-cli": "^5.1.4"
-  },
-  "overrides": {
-    "datagrok-api": "$datagrok-api",
-    "uuid": "^11.1.1"
+    "rxjs": "catalog:"
   },
   "scripts": {
-    "link-all": "npm link datagrok-api @datagrok-libraries/utils @datagrok-libraries/statistics",
-    "debug-curves": "webpack && grok publish",
-    "release-curves": "webpack && grok publish --release",
-    "build-curves": "webpack",
-    "build": "grok api && grok check --soft && webpack",
-    "debug-curves-dev": "webpack && grok publish dev",
-    "release-curves-dev": "webpack && grok publish dev --release",
-    "debug-curves-public": "webpack && grok publish public",
-    "release-curves-public": "webpack && grok publish public --release",
-    "debug-curves-local": "webpack && grok publish local",
-    "test": "grok test",
-    "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm --prefix ./../../libraries/statistics run build && npm run build"
+    "build": "grok build",
+    "typecheck": "grok tsc --noEmit -p tsconfig.json",
+    "lint": "eslint --ext .ts,.tsx src",
+    "test": "grok test"
   },
   "canEdit": [
     "Administrators"

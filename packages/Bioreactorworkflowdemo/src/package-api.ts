@@ -9,29 +9,29 @@ import * as DG from 'datagrok-api/dg';
 
 export namespace funcs {
   /**
-  Configure and simulate daily bacterial growth in a bioreactor
-  */
+   * Configure and simulate daily bacterial growth in a bioreactor
+   */
   export async function bioreactorWorkflow(params: any ): Promise<any> {
     return await grok.functions.call('BioreactorWorkflowDemo:BioreactorWorkflow', { params });
   }
 
   /**
-  Define the initial reactor state and bacterial growth parameters
-  */
+   * Define the initial reactor state and bacterial growth parameters
+   */
   export async function bioreactorConfiguration(initialVolume: number , initialBiomass: number , initialSubstrate: number , muMax: number , monodKs: number , biomassYield: number , decayRate: number , maxVolume: number ): Promise<{volume: number, biomass: number, substrate: number, maximumGrowthRate: number, halfSaturationConstant: number, yieldCoefficient: number, decayConstant: number, dayDuration: number, workingVolumeLimit: number}> {
     return await grok.functions.call('BioreactorWorkflowDemo:BioreactorConfiguration', { initialVolume, initialBiomass, initialSubstrate, muMax, monodKs, biomassYield, decayRate, maxVolume });
   }
 
   /**
-  Apply daily feeding and simulate bacterial growth for one cultivation day
-  */
+   * Apply daily feeding and simulate bacterial growth for one cultivation day
+   */
   export async function dayCalculation(solutionAdded: number , substrateAdded: number , incomingVolume: number , incomingBiomass: number , incomingSubstrate: number , maximumGrowthRate: number , halfSaturationConstant: number , yieldCoefficient: number , decayConstant: number , dayDuration: number ): Promise<{finalVolume: number, finalBiomass: number, finalSubstrate: number, finalBiomassMass: number, finalSubstrateMass: number, biomassMassChange: number, substrateConsumed: number, dailyProfile: DG.DataFrame}> {
     return await grok.functions.call('BioreactorWorkflowDemo:DayCalculation', { solutionAdded, substrateAdded, incomingVolume, incomingBiomass, incomingSubstrate, maximumGrowthRate, halfSaturationConstant, yieldCoefficient, decayConstant, dayDuration });
   }
 
   /**
-  Collect all daily cultivation inputs and outputs in one table
-  */
+   * Collect all daily cultivation inputs and outputs in one table
+   */
   export async function summary(summaryInput: DG.DataFrame ): Promise<DG.DataFrame> {
     return await grok.functions.call('BioreactorWorkflowDemo:Summary', { summaryInput });
   }

@@ -1,21 +1,24 @@
 {
   "compilerOptions": {
     "target": "ES2020",
-    "module": "None",
-    "moduleResolution": "Node",
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
-    "outFile": "detectors.js",
+    "module": "es2015",
+    "moduleResolution": "bundler",
+    "lib": [
+      "ES2020",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "outDir": ".",
+    "rootDir": "src",
     "strict": true,
     "noEmitOnError": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "baseUrl": ".",
-    "paths": {
-      "datagrok-api/dg": ["node_modules/datagrok-api/dg.d.ts"],
-      "datagrok-api/grok": ["node_modules/datagrok-api/grok.d.ts"],
-      "datagrok-api/ui": ["node_modules/datagrok-api/ui.d.ts"]
-    },
-    "types": ["node"]
+    "types": [
+      "node"
+    ]
   },
-  "files": ["src/detectors-src.ts"]
+  "files": [
+    "src/detectors-src.ts"
+  ]
 }

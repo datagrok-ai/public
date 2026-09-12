@@ -13,58 +13,28 @@
     "directory": "packages/PowerGrid"
   },
   "dependencies": {
-    "@datagrok-libraries/statistics": "^1.12.12",
-    "@datagrok-libraries/test": "^1.1.0",
-    "@datagrok-libraries/utils": "^4.7.7",
-    "@types/wu": "^2.1.44",
-    "cash-dom": "^8.1.5",
-    "datagrok-api": "^1.27.0",
-    "dayjs": "^1.11.13",
-    "wu": "^2.1.0"
+    "@datagrok-libraries/statistics": "workspace:^",
+    "@datagrok-libraries/test": "workspace:^",
+    "@datagrok-libraries/utils": "workspace:^",
+    "@types/wu": "catalog:",
+    "cash-dom": "catalog:",
+    "datagrok-api": "workspace:^",
+    "dayjs": "catalog:",
+    "wu": "catalog:",
+    "rxjs": "catalog:"
   },
   "devDependencies": {
-    "@babel/core": "^7.29.0",
-    "@babel/preset-env": "^7.29.0",
-    "@datagrok-libraries/math": "^1.2.4",
-    "@types/node": "^22.7.5",
-    "@types/wu": "^2.1.44",
-    "@typescript-eslint/eslint-plugin": "^5.20.0",
-    "@typescript-eslint/parser": "^5.20.0",
+    "@datagrok-libraries/math": "workspace:^",
+    "@types/wu": "catalog:",
     "@webgpu/types": "^0.1.51",
-    "babel-loader": "^10.0.0",
-    "css-loader": "^7.1.2",
-    "datagrok-tools": "^5.0.0",
-    "eslint": "^8.57.1",
-    "eslint-config-google": "^0.14.0",
-    "source-map-loader": "^4.0.1",
-    "style-loader": "^4.0.0",
-    "ts-loader": "^9.2.5",
-    "typescript": "^5.6.3",
-    "webpack": "^5.95.0",
-    "webpack-cli": "^5.1.4",
-    "@datagrok-libraries/bdd": "file:../../libraries/bdd",
+    "@datagrok-libraries/bdd": "workspace:^",
     "@playwright/test": "^1.62.1"
   },
   "scripts": {
-    "lint": "eslint src --ext .ts",
-    "lint-fix": "eslint src --ext .ts --fix",
-    "link-all": "npm link datagrok-api @datagrok-libraries/gridext @datagrok-libraries/utils",
-    "link-gridext": "npm link @datagrok-libraries/gridext",
-    "link-api": "npm link datagrok-api ",
-    "debug-powergrid": "grok publish",
-    "release-powergrid": "grok publish --release",
-    "build-powergrid": "webpack",
-    "powergrid-deploy": "webpack & grok publish",
-    "build-typescript": "tsc",
-    "build": "grok api && grok check --soft && webpack",
-    "debug-powergrid-dev": "grok publish dev",
-    "release-powergrid-dev": "grok publish dev --release",
-    "debug-powergrid-public": "grok publish public",
-    "release-powergrid-public": "grok publish public --release",
-    "debug-powergrid-local": "tsc && webpack && grok publish local",
-    "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/gridext run build && npm --prefix ./../../libraries/utils run build && npm run build",
-    "test": "grok test",
-    "test:bdd": "grok-bdd run"
+    "build": "grok build",
+    "typecheck": "grok tsc --noEmit -p tsconfig.json",
+    "lint": "eslint --ext .ts,.tsx src",
+    "test": "grok test"
   },
   "canEdit": [
     "Administrators"
@@ -72,8 +42,5 @@
   "canView": [
     "All users"
   ],
-  "category": "General",
-  "overrides": {
-    "datagrok-api": "$datagrok-api"
-  }
+  "category": "General"
 }

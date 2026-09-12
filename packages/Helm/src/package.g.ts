@@ -2,7 +2,7 @@ import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
 
 //tags: init
-//meta.role: init
+//meta.role: Init
 export async function initHelm() : Promise<void> {
   await PackageFunctions.initHelm();
 }
@@ -29,7 +29,7 @@ export function editMoleculeCell(cell: any) : void {
 //tags: widgets, panel
 //input: column col { semType: Macromolecule; units: helm }
 //output: widget result
-//meta.role: widgets,panel
+//meta.role: widgets,Panel
 export async function helmPanel(col: DG.Column) : Promise<any> {
   return await PackageFunctions.helmPanel(col);
 }
@@ -46,7 +46,7 @@ export function openEditor(mol: DG.SemanticValue) : void {
 //tags: panel, widgets, bio
 //input: semantic_value sequence { semType: Macromolecule }
 //output: widget result
-//meta.role: widgets,panel
+//meta.role: widgets,Panel
 //meta.domain: bio
 export async function propertiesWidget(sequence: DG.SemanticValue) : Promise<any> {
   return await PackageFunctions.propertiesWidget(sequence);

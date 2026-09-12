@@ -1,0 +1,4 @@
+{
+  "root": true,
+  "extends": "./build-config/eslintrc.json"
+}

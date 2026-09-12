@@ -1,7 +1,7 @@
 import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
 
-//meta.role: init
+//meta.role: Init
 export async function init() : Promise<void> {
   await PackageFunctions.init();
 }
@@ -15,7 +15,7 @@ export async function renderPanel(func: any) : Promise<any> {
 
 //name: Model Hub
 //output: view result
-//meta.role: app
+//meta.role: App
 //meta.browsePath: Compute
 export function modelCatalog() {
   return PackageFunctions.modelCatalog();
@@ -32,7 +32,7 @@ export function modelCatalogTreeBrowser(treeNode: any, browseView: DG.ViewBase) 
 //name: Custom Function View Editor
 //input: funccall call 
 //output: view result
-//meta.role: editor
+//meta.role: Editor
 export async function CustomFunctionViewEditor(call: DG.FuncCall) : Promise<any> {
   return await PackageFunctions.CustomFunctionViewEditor(call);
 }
@@ -40,7 +40,7 @@ export async function CustomFunctionViewEditor(call: DG.FuncCall) : Promise<any>
 //name: Rich Function View Editor
 //input: funccall call 
 //output: view result
-//meta.role: editor
+//meta.role: Editor
 export async function RichFunctionViewEditor(call: DG.FuncCall) : Promise<any> {
   return await PackageFunctions.RichFunctionViewEditor(call);
 }
@@ -48,7 +48,7 @@ export async function RichFunctionViewEditor(call: DG.FuncCall) : Promise<any> {
 //name: Tree Wizard Editor
 //input: funccall call 
 //output: view result
-//meta.role: editor
+//meta.role: Editor
 export async function TreeWizardEditor(call: DG.FuncCall) : Promise<any> {
   return await PackageFunctions.TreeWizardEditor(call);
 }

@@ -648,6 +648,10 @@ export namespace funcs {
     return await grok.functions.call('UsageAnalysis:ServiceLogsApp', { path, params, limit });
   }
 
+  export async function cloudLogsApp(): Promise<DG.View> {
+    return await grok.functions.call('UsageAnalysis:CloudLogsApp', {});
+  }
+
   export async function serviceLogsAppTreeBrowser(treeNode: any ): Promise<void> {
     return await grok.functions.call('UsageAnalysis:ServiceLogsAppTreeBrowser', { treeNode });
   }

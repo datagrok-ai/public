@@ -48,7 +48,7 @@ predictive models, integration with the external utilities, data augmentation, a
 * Customize packages with properties
 * Persisting user sessions and tables
 * Using WebAssembly with Datagrok functions
-* Webpack packages with WebAssembly
+* Packages with WebAssembly
 * Using Web Workers for background computations
 --->
 
@@ -61,7 +61,7 @@ predictive models, integration with the external utilities, data augmentation, a
 * [Datagrok tools](https://www.npmjs.com/package/datagrok-tools)
 * [Naming conventions](../../develop/develop.md#naming-conventions)
 
-1. Install the necessary tools (Node.js, npm, webpack, datagrok-tools) following
+1. Install the necessary tools (Node.js, npm, datagrok-tools) following
    [these instructions](../../develop/dev-process/set-up-environment.md)
 2. Create a branch from master at [GitHub](https://github.com/datagrok-ai/public/branches) or using your IDE; Use your
    credentials as a name of the branch
@@ -73,7 +73,7 @@ predictive models, integration with the external utilities, data augmentation, a
    TypeScript configuration (if you are new to TypeScript, you can specify the `--js` option); Note that detectors.js
    file should be in JavaScript anyway. Also you can add `--eslint` option to add eslint checker feature to the package
 5. Run `npm install` to link the dependencies mentioned in `package.json` file of your package
-6. Upload it to the server: run `webpack` and `grok publish dev` (see other options
+6. Upload it to the server: run `grok publish dev` (it builds the package first) (see other options
    [here](../../develop/develop.md#publishing-modes))
 7. Launch the platform and run the package's `info()` function using different methods:
 
@@ -753,8 +753,8 @@ Viewers | New Scripting Viewer`.
    Write a test that creates two dataframes with the columns with dna_nucleotide semantic type, use `fuzzyJoin` function tyo join dataframes. 
    After getting result  appends the dataframes and calculates the `Counts` column. The test should check the existence of the appended columns.
 
-6. Deploy the package with `webpack` and `grok publish dev`. Unlike with the first exercise, where the package was built
-   on the Datagrok server, in this one we locally build the package before sending it. In addition, webpack output helps
+6. Deploy the package with `grok publish dev`. Unlike with the first exercise, where the package was built
+   on the Datagrok server, in this one we locally build the package before sending it. In addition, the build output helps
    find some syntactic errors in JavaScript.
    
 7. Launch the platform and run the test to check if you implemented the function correctly by [Test Manager](../../develop/dev-process/tools/test-manager.md). If the test fails, fix the

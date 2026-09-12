@@ -15,7 +15,7 @@ keywords:
 Package functions are typically registered in the main package file `package.ts`. Each function has a special [parameter annotation](../../datagrok/concepts/functions/func-params-annotation.md) depending on its [role](../function-roles.md).
 You can use [decorators](https://www.typescriptlang.org/docs/handbook/decorators.html) to register annotated functions based on decorated classes or objects. Decorators let you create strongly typed annotations instead of writing them by hand.
 
-You can use a decorator `@grok.decorators.<name>`. This is equivalent to adding a function to `package.ts`. When you run the `build` script for your package, the webpack plugin called `FuncGeneratorPlugin` will add a special `package.g.ts` file to your project. Note that it is not on the ignore list, so you should commit this file to the repository.
+You can use a decorator `@grok.decorators.<name>`. This is equivalent to adding a function to `package.ts`. When you run the `build` script for your package, `FuncGeneratorPlugin` (part of the shared rspack configuration) will add a special `package.g.ts` file to your project. Note that it is not on the ignore list, so you should commit this file to the repository.
 
 ## Class decorators
 
@@ -155,18 +155,8 @@ export class PackageFunctions {
    "emitDecoratorMetadata": true,    /* Enables experimental support for emitting type metadata for decorators. */
    ```
 
-1. In `webpack.config.js`, enable `FuncGeneratorPlugin`:
-
-   ```js
-   const FuncGeneratorPlugin = require('datagrok-tools/plugins/func-gen-plugin');
-
-   module.exports = {
-     /** ... */
-     plugins: [
-       new FuncGeneratorPlugin({outputPath: './src/package.g.ts'}),
-     ],
-   };
-   ```
+1. Nothing to configure for the bundler: `FuncGeneratorPlugin`, which turns the decorators into
+   `src/package.g.ts`, is part of the shared rspack configuration every package builds with (`grok build --skip-check`).
 
 1. In `package.json`, add `datagrok-tools` to dev dependencies; upgrade its version, if necessary:
 

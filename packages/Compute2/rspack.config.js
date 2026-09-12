@@ -1,6 +1,6 @@
 const path = require('path');
 const fs = require('fs');
-const rspack = require('@rspack/core');
+const {rspack, loaders} = require('@datagrok/build-config');
 const packageName = path.parse(require('./package.json').name).name.toLowerCase().replace(/-/g, '');
 const FuncGeneratorPlugin = require('datagrok-tools/plugins/func-gen-plugin');
 
@@ -88,8 +88,7 @@ module.exports = (env = {}) => {
         {test: /\.tsx$/, include: includePaths, loader: 'babel-loader', options: babelTsx},
         {test: /\.ts$/, include: includePaths, loader: 'builtin:swc-loader', options: swcTs},
         {test: /\.jsx$/, loader: 'babel-loader', options: babelJsx},
-        {test: /\.css$/, use: ['style-loader', 'css-loader', 'postcss-loader'], type: 'javascript/auto'},
-        {test: /\.(mjs|js)$/, enforce: 'pre', use: ['source-map-loader']},
+        {test: /\.css$/, use: [loaders.style, loaders.css, 'postcss-loader'], type: 'javascript/auto'},
       ],
     },
     plugins: [

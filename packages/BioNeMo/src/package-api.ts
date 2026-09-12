@@ -9,36 +9,48 @@ import * as DG from 'datagrok-api/dg';
 
 export namespace scripts {
   /**
-  Predicts the 3D structure of how a molecule interacts with a protein
-  */
+   * Predicts the 3D structure of how a small molecule ligand docks into a protein
+   */
   export async function diffdockPython(protein: string , ligand: string , num_poses: number , api_key: string ): Promise<any> {
     return await grok.functions.call('BioNeMo:DiffdockPython', { protein, ligand, num_poses, api_key });
   }
 
   /**
-  Predicts the 3D structure of a protein from its amino acid sequence
-  */
+   * Predicts the 3D structure of a protein from its amino acid sequence
+   */
   export async function esmfoldPython(sequence: string , api_key: string ): Promise<string> {
     return await grok.functions.call('BioNeMo:EsmfoldPython', { sequence, api_key });
   }
 
   /**
-  MolMIM performs controlled generation, finding molecules with the right properties
-  */
+   * MolMIM performs controlled generation, finding molecules with the right properties
+   */
   export async function molMIMGenerate(algorithm: string , num_molecules: number , property_name: string , minimize: boolean , min_similarity: number , particles: number , iterations: number , smi: string , api_key: string ): Promise<string> {
     return await grok.functions.call('BioNeMo:MolMIMGenerate', { algorithm, num_molecules, property_name, minimize, min_similarity, particles, iterations, smi, api_key });
   }
 }
 
 export namespace funcs {
+  /**
+   * @param {string} smi
+   *   semType: Molecule
+   */
   export async function molMIMModel(algorithm: string , num_molecules: number , property_name: string , minimize: boolean , min_similarity: number , particles: number , iterations: number , smi: string ): Promise<void> {
     return await grok.functions.call('BioNeMo:MolMIMModel', { algorithm, num_molecules, property_name, minimize, min_similarity, particles, iterations, smi });
   }
 
+  /**
+   * @param {DG.Column} sequences
+   *   semType: Macromolecule
+   */
   export async function esmFoldModel(table: DG.DataFrame , sequences: DG.Column ): Promise<DG.DataFrame> {
     return await grok.functions.call('BioNeMo:EsmFoldModel', { table, sequences });
   }
 
+  /**
+   * @param {any} sequence
+   *   semType: Macromolecule
+   */
   export async function esmFoldModelPanel(sequence: any ): Promise<any> {
     return await grok.functions.call('BioNeMo:EsmFoldModelPanel', { sequence });
   }
@@ -51,10 +63,20 @@ export namespace funcs {
     return await grok.functions.call('BioNeMo:DiffDockModelScript', { ligand, target, poses });
   }
 
+  /**
+   * @param {DG.Column} ligands
+   *   semType: Molecule
+   * @param {string} target
+   *   choices: Bionemo: getTargetFiles
+   */
   export async function diffDockModel(table: DG.DataFrame , ligands: DG.Column , target: string , poses: number ): Promise<DG.DataFrame> {
     return await grok.functions.call('BioNeMo:DiffDockModel', { table, ligands, target, poses });
   }
 
+  /**
+   * @param {any} smiles
+   *   semType: Molecule
+   */
   export async function diffDockPanel(smiles: any ): Promise<any> {
     return await grok.functions.call('BioNeMo:DiffDockPanel', { smiles });
   }

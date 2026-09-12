@@ -9,8 +9,8 @@ import * as DG from 'datagrok-api/dg';
 
 export namespace funcs {
   /**
-  Opens Tableau workbook file
-  */
+   * Opens Tableau workbook file
+   */
   export async function importTwb(bytes: any ): Promise<any> {
     return await grok.functions.call('Tableau:ImportTwb', { bytes });
   }

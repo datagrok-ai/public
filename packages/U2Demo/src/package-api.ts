@@ -25,8 +25,8 @@ export namespace funcs {
   }
 
   /**
-  Registers u2 value editors for the property types enabled in `u2.valueEditors`
-  */
+   * Registers u2 value editors for the property types enabled in `u2.valueEditors`
+   */
   export async function u2AutoRegisterEditors(): Promise<void> {
     return await grok.functions.call('U2Demo:U2AutoRegisterEditors', {});
   }
@@ -36,15 +36,15 @@ export namespace funcs {
   }
 
   /**
-  Demo orders placed within the last N days — the data source demo of the u2 designer
-  */
+   * Demo orders placed within the last N days — the data source demo of the u2 designer
+   */
   export async function demoOrders(days: number ): Promise<DG.DataFrame> {
     return await grok.functions.call('U2Demo:DemoOrders', { days });
   }
 
   /**
-  Records a line in the U2 Designer's Run log — the function to wire a button to
-  */
+   * Records a line in the U2 Designer's Run log — the function to wire a button to
+   */
   export async function u2Record(text: string ): Promise<string> {
     return await grok.functions.call('U2Demo:U2Record', { text });
   }

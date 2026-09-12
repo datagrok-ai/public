@@ -13,8 +13,8 @@ export namespace funcs {
   }
 
   /**
-  Program-aligned catalog of published Compute2 workflow runs
-  */
+   * Program-aligned catalog of published Compute2 workflow runs
+   */
   export async function artifactCatalogApp(path?: string ): Promise<DG.View> {
     return await grok.functions.call('ArtifactAlignment:ArtifactCatalogApp', { path });
   }
@@ -24,15 +24,15 @@ export namespace funcs {
   }
 
   /**
-  Publishes a saved Compute2 workflow run into a program as a frozen copy
-  */
+   * Publishes a saved Compute2 workflow run into a program as a frozen copy
+   */
   export async function publishWorkflowRun(request: any , sourceCall?: any ): Promise<any> {
     return await grok.functions.call('ArtifactAlignment:PublishWorkflowRun', { request, sourceCall });
   }
 
   /**
-  Opens the "Publish to program" dialog for a Compute2 run — a saved run id or a live FuncCall
-  */
+   * Opens the "Publish to program" dialog for a Compute2 run — a saved run id or a live FuncCall
+   */
   export async function publishWorkflowRunDialog(sourceMetaCallId?: string , sourceCall?: any , defaultName?: string ): Promise<void> {
     return await grok.functions.call('ArtifactAlignment:PublishWorkflowRunDialog', { sourceMetaCallId, sourceCall, defaultName });
   }
@@ -50,8 +50,8 @@ export namespace funcs {
   }
 
   /**
-  The discovery slice: approved rows only, one per publication
-  */
+   * The discovery slice: approved rows only, one per publication
+   */
   export async function discoverArtifacts(programId?: string ): Promise<any> {
     return await grok.functions.call('ArtifactAlignment:DiscoverArtifacts', { programId });
   }
@@ -61,29 +61,29 @@ export namespace funcs {
   }
 
   /**
-  Idempotently provisions a program with its viewers/contributors/approvers groups and row grants
-  */
+   * Idempotently provisions a program with its viewers/contributors/approvers groups and row grants
+   */
   export async function ensureArtifactProgram(spec: any ): Promise<any> {
     return await grok.functions.call('ArtifactAlignment:EnsureArtifactProgram', { spec });
   }
 
   /**
-  One-time idempotent security setup: umbrella groups, registry visibility, per-column write gating
-  */
+   * One-time idempotent security setup: umbrella groups, registry visibility, per-column write gating
+   */
   export async function setupArtifactSecurity(): Promise<void> {
     return await grok.functions.call('ArtifactAlignment:SetupArtifactSecurity', {});
   }
 
   /**
-  Test fixture: a workflow step with a dataframe output
-  */
+   * Test fixture: a workflow step with a dataframe output
+   */
   export async function aaTestStep(a: number ): Promise<DG.DataFrame> {
     return await grok.functions.call('ArtifactAlignment:AaTestStep', { a });
   }
 
   /**
-  Test fixture: stands in for a pipeline provider function
-  */
+   * Test fixture: stands in for a pipeline provider function
+   */
   export async function aaTestProvider(): Promise<any> {
     return await grok.functions.call('ArtifactAlignment:AaTestProvider', {});
   }

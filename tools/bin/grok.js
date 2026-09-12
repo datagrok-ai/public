@@ -9,30 +9,43 @@ const argv = require('minimist')(process.argv.slice(2), {
 // test.ts / playwright-runner.ts never fired and `--no-retry` was silently ignored
 // (Playwright kept retrying failed specs). Normalize back to the flag the commands read.
 if (argv.retry === false) argv['no-retry'] = true;
-const help = require('./commands/help').help;
+// The help texts are a large module; load them only when one is printed.
+let _help;
+const help = new Proxy({}, {get: (_, key) => (_help ??= require('./commands/help').help)[key]});
 const runAllCommand = require('./utils/utils').runAll;
 
+// Each command module is loaded only when invoked: loading all of them (puppeteer, ts-morph,
+// archiver, inquirer) used to cost ~6 s of start-up on every `grok api` / `grok check`.
+const lazy = (file, name) => (args) => require(`./commands/${file}`)[name](args);
 const commands = {
-  add: require('./commands/add').add,
-  api: require('./commands/api').api,
-  build: require('./commands/build').build,
-  check: require('./commands/check').check,
-  claude: require('./commands/claude').claude,
-  config: require('./commands/config').config,
-  create: require('./commands/create').create,
-  'docker-gen': require('./commands/docker-gen').dockerGen,
-  init: require('./commands/init').init,
-  link: require('./commands/link').link,
-  publish: require('./commands/publish').publish,
-  report: require('./commands/report').report,
-  run: require('./commands/run').run,
-  test: require('./commands/test').test,
-  testall: require('./commands/test-all').testAll,
-  stresstest: require('./commands/stress-tests').stressTests,
-  migrate: require('./commands/migrate').migrate,
-  server: require('./commands/server').server,
-  s: require('./commands/server').server,
+  add: lazy('add', 'add'),
+  api: lazy('api', 'api'),
+  build: lazy('build', 'build'),
+  check: lazy('check', 'check'),
+  claude: lazy('claude', 'claude'),
+  config: lazy('config', 'config'),
+  create: lazy('create', 'create'),
+  'docker-gen': lazy('docker-gen', 'dockerGen'),
+  init: lazy('init', 'init'),
+  link: lazy('link', 'link'),
+  publish: lazy('publish', 'publish'),
+  report: lazy('report', 'report'),
+  run: lazy('run', 'run'),
+  test: lazy('test', 'test'),
+  tsc: lazy('tsc', 'tsc'),
+  testall: lazy('test-all', 'testAll'),
+  stresstest: lazy('stress-tests', 'stressTests'),
+  migrate: lazy('migrate', 'migrate'),
+  server: lazy('server', 'server'),
+  s: lazy('server', 'server'),
+  setup: lazy('setup', 'setup'),
 };
+
+// `--version` is a string option (grok publish --version 1.10), so a bare `grok --version` parses as ''.
+if (argv._.length === 0 && ('version' in argv && argv.version === '' || argv.v === true)) {
+  console.log(require('../package.json').version);
+  process.exit(0);
+}
 
 const onPackageCommandNames = ['api', 'check', 'link', 'publish', 'test'];
 

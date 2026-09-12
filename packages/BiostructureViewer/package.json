@@ -22,11 +22,11 @@
     "vendor/pviz-bundle.min.js"
   ],
   "dependencies": {
-    "@datagrok-libraries/bio": "^5.65.2",
-    "@datagrok-libraries/chem-meta": "^1.2.12",
-    "@datagrok-libraries/test": "^1.3.1",
-    "@datagrok-libraries/tutorials": "^1.6.1",
-    "@datagrok-libraries/utils": "^4.6.5",
+    "@datagrok-libraries/bio": "workspace:^",
+    "@datagrok-libraries/chem-meta": "workspace:^",
+    "@datagrok-libraries/test": "workspace:^",
+    "@datagrok-libraries/tutorials": "workspace:^",
+    "@datagrok-libraries/utils": "workspace:^",
     "@rcsb/rcsb-api-tools": "2.3.1",
     "@rcsb/rcsb-molstar": "2.0.0-dev.8",
     "@rcsb/rcsb-saguaro": "^2.5.13",
@@ -35,70 +35,38 @@
     "@types/react": "17.0.37",
     "@types/react-dom": "17.0.11",
     "@types/react-select": "3.0.11",
-    "cash-dom": "^8.1.5",
+    "cash-dom": "catalog:",
     "d3": "^7.9.0",
     "d3-shape": "^1.3.7",
     "d3-zoom": "^3.0.0",
-    "datagrok-api": "^1.27.0",
-    "dayjs": "^1.11.4",
+    "datagrok-api": "workspace:^",
+    "dayjs": "catalog:",
     "js-base64": "^3.7.5",
     "molstar": "^2.4.1",
     "react": "17.0.2",
     "react-dom": "17.0.2",
     "react-icons": "3.11.0",
     "react-select": "3.2.0",
-    "rxjs": "^6.5.5",
+    "rxjs": "catalog:",
     "uuid": "^11.1.1",
-    "wu": "^2.1.0"
+    "wu": "catalog:"
   },
   "devDependencies": {
-    "@datagrok/chem": "^1.13.0",
     "@playwright/test": "^1.48.0",
-    "@types/node": "^18.19.0",
     "@types/signals": "1.0.1",
     "@types/three": "^0.159.0",
     "@types/uuid": "^9.0.1",
-    "@types/wu": "^2.1.44",
-    "@typescript-eslint/eslint-plugin": "^6.14.0",
-    "@typescript-eslint/parser": "^6.14.0",
-    "css-loader": "^6.8.1",
-    "datagrok-tools": "^6.4.5",
-    "eslint": "^8.55.0",
-    "eslint-config-google": "^0.14.0",
-    "file-loader": "^6.2.0",
-    "mini-css-extract-plugin": "^2.7.6",
+    "@types/wu": "catalog:",
     "sass": "^1.69.5",
     "sass-loader": "^13.3.2",
-    "source-map-loader": "^4.0.1",
-    "style-loader": "^3.3.3",
-    "ts-loader": "9.4.2",
     "tslib": "^2.6.2",
-    "typescript": "^5.3.3",
-    "webpack": "^5.89.0",
-    "webpack-bundle-analyzer": "^4.10.2",
-    "webpack-cli": "^5.1.4"
+    "webpack-bundle-analyzer": "^4.10.2"
   },
   "scripts": {
-    "link-api": "npm link datagrok-api",
-    "link-utils": "npm link @datagrok-libraries/utils",
-    "link-all": "npm link @datagrok-libraries/chem-meta datagrok-api @datagrok-libraries/utils @datagrok-libraries/bio @datagrok-libraries/tutorials",
-    "debug-biostructureviewer": "webpack && grok publish",
-    "release-biostructureviewer": "webpack && grok publish --release",
-    "build-biostructureviewer": "webpack",
-    "build": "grok api && grok check --soft && webpack",
-    "debug-biostructureviewer-dev": "webpack && grok publish dev",
-    "release-biostructureviewer-dev": "webpack && grok publish dev --release",
-    "debug-biostructureviewer-public": "webpack && grok publish public",
-    "release-biostructureviewer-public": "webpack && grok publish public --release",
-    "debug-biostructureviewer-local": "webpack && grok publish local",
-    "release-biostructureviewer-local": "webpack && grok publish local --release",
-    "lint": "eslint src --ext .ts",
-    "lint-fix": "eslint src --ext .ts --fix",
-    "test": "grok test",
-    "test-dev": "grok test --host dev",
-    "test-localhost": "grok test --host localhost",
-    "analyze": "webpack --profile --json > ./stats.json && npx webpack-bundle-analyzer ./stats.json",
-    "build-all": "npm --prefix ./../../libraries/chem-meta run build && npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm --prefix ./../../libraries/bio run build && npm --prefix ./../../libraries/tutorials run build && npm run build"
+    "build": "grok build",
+    "typecheck": "grok tsc --noEmit -p tsconfig.json",
+    "lint": "eslint --ext .ts,.tsx src",
+    "test": "grok test"
   },
   "canEdit": [
     "Administrators"
@@ -110,22 +78,10 @@
   "meta": {
     "dartium": false
   },
-  "overrides": {
-    "datagrok-api": "$datagrok-api",
-    "uuid": "^11.1.1",
-    "@ranfdev/deepobj": "^1.0.4",
-    "node-gyp": "^11.0.0",
-    "@babel/traverse": "^7.23.2",
-    "lodash": "^4.18.1",
-    "jsonwebtoken": "^9.0.2",
-    "got": "^11.8.6",
-    "tmp": "^0.2.4",
-    "node-fetch": "^2.7.0",
-    "cross-fetch": "^4.1.0",
-    "form-data": "^4.0.6",
-    "@tootallnate/once": "^2.0.1",
-    "ws": "^8.18.0",
-    "minimatch": "^9.0.5"
-  },
-  "playwrightTests": "playwright"
+  "playwrightTests": "playwright",
+  "grok": {
+    "testDependencies": [
+      "@datagrok/chem"
+    ]
+  }
 }

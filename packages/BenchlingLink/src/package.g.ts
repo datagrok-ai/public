@@ -3,14 +3,14 @@ import * as DG from 'datagrok-api/dg';
 
 //name: Benchling
 //output: view result
-//meta.role: app
+//meta.role: App
 //meta.browsePath: Chem
 export async function benchlingLinkApp() : Promise<any> {
   return await PackageFunctions.benchlingLinkApp();
 }
 
 //input: dynamic treeNode 
-//meta.role: appTreeBrowser
+//meta.role: AppTreeBrowser
 //meta.app: Benchling
 export async function benchlingLinkAppTreeBrowser(treeNode: any) : Promise<void> {
   await PackageFunctions.benchlingLinkAppTreeBrowser(treeNode);

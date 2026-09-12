@@ -9,7 +9,8 @@ import * as DG from 'datagrok-api/dg';
 
 export namespace funcs {
   /**
-   * @param {string} smiles
+   * Predict retrosynthesis routes for a molecule using AiZynthFinder.
+   * @param {string} smiles - Target molecule to plan a synthesis route for
    *   semType: Molecule
    */
   export async function retroSynthesisPath(smiles: string ): Promise<any> {

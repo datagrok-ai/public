@@ -9,8 +9,8 @@ import * as DG from 'datagrok-api/dg';
 
 export namespace funcs {
   /**
-  Opens Minitab Worksheet file
-  */
+   * Opens Minitab Worksheet file
+   */
   export async function importMwx(bytes: any ): Promise<any> {
     return await grok.functions.call('Minitab:ImportMwx', { bytes });
   }
@@ -20,8 +20,8 @@ export namespace funcs {
   }
 
   /**
-  Opens Minitab Project file
-  */
+   * Opens Minitab Project file
+   */
   export async function importMpx(bytes: any ): Promise<any> {
     return await grok.functions.call('Minitab:ImportMpx', { bytes });
   }

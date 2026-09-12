@@ -14,8 +14,6 @@
   "license": "MIT",
   "version": "0.10.0",
   "friendlyName": "Scientific Computing",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
   "description": "Pure TypeScript library for numerical methods",
   "keywords": [
     "optimization",
@@ -26,26 +24,71 @@
     "jstat": "^1.9.6"
   },
   "devDependencies": {
-    "@datagrok-libraries/codegen-async-to-sync": "^0.1.0",
+    "@datagrok-libraries/codegen-async-to-sync": "workspace:^",
     "@types/jest": "^29.0.0",
-    "@types/wu": "^2.1.44",
-    "@typescript-eslint/eslint-plugin": "^5.62.0",
-    "@typescript-eslint/parser": "^5.62.0",
-    "eslint": "^8.56.0",
-    "eslint-config-google": "^0.14.0",
+    "@types/wu": "catalog:",
     "jest": "^29.0.0",
     "ts-jest": "^29.0.0",
-    "ts-loader": "^9.2.6",
-    "typedoc": "^0.28.14",
-    "typescript": "^5.6.3"
+    "typedoc": "^0.28.14"
   },
   "scripts": {
-    "link": "npm link",
-    "build": "tsc",
-    "lint": "eslint \"./src/**/*.ts\"",
-    "lint-fix": "eslint \"./src/**/*.ts\" --fix",
-    "test": "jest",
+    "build": "grok tsc -p tsconfig.json",
+    "lint": "eslint --ext .ts,.tsx src",
     "update-codegen": "codegen-async-to-sync --roots src",
     "codegen:check": "codegen-async-to-sync --check --roots src"
-  }
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json",
+    "./css/*": "./css/*",
+    "./src/nca/core": {
+      "types": "./dist/src/nca/core/index.d.ts",
+      "default": "./dist/src/nca/core/index.js"
+    },
+    "./src/nca": {
+      "types": "./dist/src/nca/index.d.ts",
+      "default": "./dist/src/nca/index.js"
+    },
+    "./src/optimization": {
+      "types": "./dist/src/optimization/index.d.ts",
+      "default": "./dist/src/optimization/index.js"
+    },
+    "./src/optimization/multi-objectives": {
+      "types": "./dist/src/optimization/multi-objectives/index.d.ts",
+      "default": "./dist/src/optimization/multi-objectives/index.js"
+    },
+    "./src/optimization/single-objective": {
+      "types": "./dist/src/optimization/single-objective/index.d.ts",
+      "default": "./dist/src/optimization/single-objective/index.js"
+    },
+    "./src/optimization/single-objective/optimizers/lbfgs-b": {
+      "types": "./dist/src/optimization/single-objective/optimizers/lbfgs-b/index.d.ts",
+      "default": "./dist/src/optimization/single-objective/optimizers/lbfgs-b/index.js"
+    },
+    "./src/stats": {
+      "types": "./dist/src/stats/index.d.ts",
+      "default": "./dist/src/stats/index.js"
+    },
+    "./src/time-series/feature-extraction": {
+      "types": "./dist/src/time-series/feature-extraction/index.d.ts",
+      "default": "./dist/src/time-series/feature-extraction/index.js"
+    },
+    "./src/time-series": {
+      "types": "./dist/src/time-series/index.d.ts",
+      "default": "./dist/src/time-series/index.js"
+    },
+    "./*.js": {
+      "types": "./dist/*.d.ts",
+      "default": "./dist/*.js"
+    },
+    "./*": {
+      "types": "./dist/*.d.ts",
+      "default": "./dist/*.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts"
 }

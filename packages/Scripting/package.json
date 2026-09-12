@@ -14,10 +14,7 @@
     "directory": "packages/Scripting"
   },
   "dependencies": {
-    "datagrok-api": "^1.27.0"
-  },
-  "devDependencies": {
-    "typescript": "^5.9.2"
+    "datagrok-api": "workspace:^"
   },
   "scripts": {
     "debug-scripting": "grok publish",

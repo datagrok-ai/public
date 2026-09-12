@@ -1,18 +1,9 @@
 {
+  "extends": "@datagrok/build-config/tsconfig.base.json",
+  "include": [
+    "src"
+  ],
   "compilerOptions": {
-    "target": "ES2022",
-    "module": "ES2022",
-    "lib": ["ES2022", "dom"],
-    "sourceMap": true,
-    "strict": true,
-    "strictPropertyInitialization": false,
-    "moduleResolution": "node",
-    "esModuleInterop": true,
-    "sourceRoot": "",
-    "mapRoot": "",
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true
+    "strictPropertyInitialization": false
   }
 }

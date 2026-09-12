@@ -26,14 +26,13 @@ export function modifyMetric(df: DG.DataFrame): void {
     for (const key of colsData.keys()) {
       const val = colsData.get(key);
 
+      const element = inputElements.get(key);
       if (names.includes(key)) {
           val!.use = true;
-          //@ts-ignore
-          inputElements.get(key)?.hidden = false;
+          if (element) element.hidden = false;
       } else {
           val!.use = false;
-          //@ts-ignore
-          inputElements.get(key)?.hidden = true;
+          if (element) element.hidden = true;
       }
 
       colsData.set(key, val!);
@@ -79,8 +78,7 @@ export function modifyMetric(df: DG.DataFrame): void {
     const metricInput = ui.input.choice(`${name}:`, {value: colData.metric.type as string, items: choices,
       onValueChanged: (value) => {
         const val = colsData.get(name);
-        //@ts-ignore
-        val?.metric.type = value;
+        if (val) val.metric.type = value;
         colsData.set(name, val!);
       }});
     metricInput.setTooltip(`Type of metric between the '${name}' feature values.`);
@@ -88,8 +86,7 @@ export function modifyMetric(df: DG.DataFrame): void {
     const weightInput = ui.input.float('metric with the weight', {value: colData.metric.weight,
       onValueChanged: (value) => {
         const val = colsData.get(name);
-        //@ts-ignore
-        val?.metric.weight = value;
+        if (val) val.metric.weight = value;
         colsData.set(name, val!);
       }});
     weightInput.setTooltip(`Weight coefficient of the '${name}' feature metric.`);

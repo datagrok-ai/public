@@ -31,15 +31,15 @@ export namespace funcs {
   }
 
   /**
-  DevTools autostart function
-  */
+   * DevTools autostart function
+   */
   export async function autostartTools(): Promise<void> {
     return await grok.functions.call('DevTools:AutostartTools', {});
   }
 
   /**
-  IconTool
-  */
+   * IconTool
+   */
   export async function iconTool(): Promise<void> {
     return await grok.functions.call('DevTools:IconTool', {});
   }

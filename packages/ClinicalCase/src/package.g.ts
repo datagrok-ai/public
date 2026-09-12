@@ -4,14 +4,14 @@ import * as DG from 'datagrok-api/dg';
 
 //name: Clinical Case
 //output: view result
-//meta.role: app
+//meta.role: App
 //meta.icon: /img/clin_case_icon.png
 export async function clinicalCaseApp() : Promise<any> {
   return await PackageFunctions.clinicalCaseApp();
 }
 
 //input: dynamic treeNode 
-//meta.role: appTreeBrowser
+//meta.role: AppTreeBrowser
 //meta.app: Clinical Case
 export async function clinicalCaseAppTreeBrowser(treeNode: any) : Promise<void> {
   await PackageFunctions.clinicalCaseAppTreeBrowser(treeNode);
@@ -37,14 +37,14 @@ export async function getListOfStudies(name?: string, description?: string, numS
 //input: file folder 
 //input: list<file> files 
 //output: widget result
-//meta.role: folderViewer
+//meta.role: FolderViewer
 export async function clinicalCaseFolderLauncher(folder: DG.FileInfo, files: DG.FileInfo[]) : Promise<any> {
   return await PackageFunctions.clinicalCaseFolderLauncher(folder, files);
 }
 
 //input: list file 
 //output: list<dataframe> result
-//meta.role: fileHandler
+//meta.role: FileHandler
 //meta.ext: xpt
 export async function xptFileHandler(file: DG.FileInfo) : Promise<any> {
   return await PackageFunctions.xptFileHandler(file);
@@ -63,7 +63,7 @@ export async function runCoreValidate(standard: string, dataPath: string, versio
 }
 //name: sdiscRuleViolationRenderer
 //output: grid_cell_renderer renderer
-//meta.role: cellRenderer
+//meta.role: CellRenderer
 //meta.cellType: sdisc-rule-violation
 export function _SdiscRuleViolationCellRenderer() {
   return new SdiscRuleViolationCellRenderer();

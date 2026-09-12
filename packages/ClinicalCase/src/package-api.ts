@@ -23,8 +23,13 @@ export namespace funcs {
   }
 
   /**
-  Return list of clinical and preclinical studies loaded into Clinical Case application
-  */
+   * Return list of clinical and preclinical studies loaded into Clinical Case application
+   * @param {string} description - More detailed study information including species, drug, dosing
+   * @param {string} numSubjectsOperator - >, <, =
+   * @param {string} startDateOperator - >, <, =
+   * @param {string} endDateOperator - >, <, =
+   * @param {string} standard - CDISC data format, either SDTM or SEND
+   */
   export async function getListOfStudies(name?: string , description?: string , numSubjects?: number , numSubjectsOperator?: string , startDate?: any , startDateOperator?: string , endDate?: any , endDateOperator?: string , ongoing?: boolean , standard?: string ): Promise<any> {
     return await grok.functions.call('ClinicalCase:GetListOfStudies', { name, description, numSubjects, numSubjectsOperator, startDate, startDateOperator, endDate, endDateOperator, ongoing, standard });
   }
@@ -38,8 +43,8 @@ export namespace funcs {
   }
 
   /**
-  Run CDISC CORE validation on datasets
-  */
+   * Run CDISC CORE validation on datasets
+   */
   export async function runCoreValidate(standard: string , dataPath: string , version: string , outputFormat: string , options: any ): Promise<string> {
     return await grok.functions.call('ClinicalCase:RunCoreValidate', { standard, dataPath, version, outputFormat, options });
   }

@@ -2,9 +2,15 @@
 
 ## Requirements
 
-1. Node version [18.12.x](https://nodejs.org/dist/v18.12.0/)
-2. Npm version 9.x.x: `npm install -g npm@9.x.x`
-3. Latest `typescript`.
+1. Node 22 or later.
+2. pnpm, enabled with `corepack enable` (the version is pinned in the root `package.json`). The
+   repository is one pnpm workspace: run `grok setup` once (it enables pnpm, installs, and removes npm-era leftovers); never `npm install` inside a
+   package.
+3. `datagrok-tools`: `npm install -g datagrok-tools` (inside the repository, package scripts use the
+   workspace copy automatically).
+
+TypeScript, the bundler and eslint come with the workspace (`@datagrok/build-config`); nothing else is
+installed globally. See [packages/BUILD.MD](packages/BUILD.MD) for the build commands.
 
 We are only using pure JavaScript in the packages not yet converted to TypeScript, such as
 `public/packages/Charts`.
@@ -28,11 +34,11 @@ In particular:
    and [trailing commas](https://google.github.io/styleguide/jsguide.html#features-arrays-trailing-comma)
    .
 
-5. When creating a package, use the `--eslint` flag to get an
-   up-to-date [configuration file](https://github.com/datagrok-ai/public/blob/master/tools/package-template/.eslintrc.json)
-   .
+5. The eslint configuration is one file at the repository root (`.eslintrc.json`); packages carry none.
+   `pnpm run lint` in a package (or `pnpm turbo run lint`) applies it.
 
-6. **Do not** delete `package-lock.json` from the repository. Update it when needed
+6. `pnpm-lock.yaml` at the repository root is the only lockfile. Commit it whenever `pnpm install`
+   changes it; never add a `package-lock.json`.
 
 7. Document your code when there is a need for it, but do not overdo it. For instance, there is no reason to include
    information that is already in the function/class signature, such as types of parameters. Often, a one-liner is
@@ -45,20 +51,10 @@ Thank you for following the style!
 
 ## Using a linter
 
-If you have created a package with `grok create ... --eslint`, the `package.json` file will already have the
-required `eslint` dependencies, which would be installed together with others once you call `npm install`. Also, the
-file `.eslintrc.json` with all necessary settings will be pre-created.
-
-However, if you work with packages either not created with `grok create` or not having all the conditions above met, you
-should still set up `eslint`. It is straightforward:
-
-* Install `eslint`: call `npm install eslint --save-dev -g`
-* Install `eslint` `google` settings: `npm install eslint-config-google -g`.
-
-Make sure that your `.eslintrc.json` is actualized to using TypeScript (look
-for `"parser": "@typescript-eslint/parser"`). If that's not the case, populate your `.eslintrc.json`
-file with the settings
-[matching this file from `datagrok-tools`](https://github.com/datagrok-ai/public/blob/master/tools/package-template/.eslintrc.json).
+Inside the repository, eslint and the TypeScript parser are workspace devDependencies and the one
+configuration lives in `.eslintrc.json` at the root: run `pnpm run lint` in a package, or
+`pnpm turbo run lint` for everything. A standalone package created with `grok create` gets the same
+rule set through `@datagrok/build-config`; run `npm run lint` there.
 
 ## Git
 

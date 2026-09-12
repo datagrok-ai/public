@@ -6,14 +6,14 @@ import * as DG from 'datagrok-api/dg';
 //tags: app
 //input: string path { meta.url: true; optional: true }
 //output: view result
-//meta.role: app
+//meta.role: App
 export function funcflowApp(path?: string) : any {
   return PackageFunctions.funcflowApp(path);
 }
 
 //input: file file 
 //output: view result
-//meta.role: fileViewer
+//meta.role: FileViewer
 //meta.fileViewer: flow
 export function viewFuncFlow(file: DG.FileInfo) : any {
   return PackageFunctions.viewFuncFlow(file);
@@ -299,7 +299,7 @@ export async function renderMolecule(molecule: string) : Promise<any> {
 
 //input: file file 
 //output: view result
-//meta.role: fileViewer
+//meta.role: FileViewer
 //meta.fileViewer: flow
 export function viewFlowFile(file: DG.FileInfo) : any {
   return PackageFunctions.viewFlowFile(file);

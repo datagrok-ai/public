@@ -33,29 +33,24 @@
     "url": "https://github.com/datagrok-ai/public.git"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
+    "build": "grok tsc -p tsconfig.build.json",
+    "lint": "eslint --ext .ts,.tsx src",
     "compile": "tsx src/cli.ts compile",
     "check": "tsx src/cli.ts compile --check",
-    "lint": "tsx src/cli.ts lint",
     "list-steps": "tsx src/cli.ts list-steps",
-    "typecheck": "tsc --noEmit -p .",
-    "test:unit": "tsx --test tests/nouns.test.ts tests/compile.test.ts tests/project.test.ts tests/init.test.ts tests/failure.test.ts",
-    "testLib": "npm run build && node bin/grok-bdd.js run",
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
     "@cucumber/cucumber-expressions": "^18.0.1",
     "@cucumber/gherkin": "^42.0.1",
     "@cucumber/messages": "^34.2.1",
-    "@datagrok-libraries/test": "^1.4.0",
+    "@datagrok-libraries/test": "workspace:^",
     "tsx": "^4.19.0"
   },
   "peerDependencies": {
     "@playwright/test": ">=1.40.0"
   },
   "devDependencies": {
-    "@playwright/test": "^1.62.1",
-    "@types/node": "^20.0.0",
-    "typescript": "^5.5.4"
+    "@playwright/test": "^1.62.1"
   }
 }

@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 //description: Opens Minitab Worksheet file
 //input: list bytes 
 //output: list<dataframe> result
-//meta.role: fileHandler
+//meta.role: FileHandler
 //meta.ext: mwx
 export async function importMwx(bytes: Uint8Array) : Promise<any> {
   return await MinitabPackageFunctions.importMwx(bytes);
@@ -12,7 +12,7 @@ export async function importMwx(bytes: Uint8Array) : Promise<any> {
 
 //input: file file 
 //output: view result
-//meta.role: fileViewer
+//meta.role: FileViewer
 //meta.fileViewer: mwx
 export async function previewMwx(file: DG.FileInfo) : Promise<any> {
   return await MinitabPackageFunctions.previewMwx(file);
@@ -21,7 +21,7 @@ export async function previewMwx(file: DG.FileInfo) : Promise<any> {
 //description: Opens Minitab Project file
 //input: list bytes 
 //output: list<dataframe> result
-//meta.role: fileHandler
+//meta.role: FileHandler
 //meta.ext: mpx
 export async function importMpx(bytes: Uint8Array) : Promise<any> {
   return await MinitabPackageFunctions.importMpx(bytes);
@@ -29,7 +29,7 @@ export async function importMpx(bytes: Uint8Array) : Promise<any> {
 
 //input: file file 
 //output: view result
-//meta.role: fileViewer
+//meta.role: FileViewer
 //meta.fileViewer: mpx
 export async function previewMpx(file: DG.FileInfo) : Promise<any> {
   return await MinitabPackageFunctions.previewMpx(file);

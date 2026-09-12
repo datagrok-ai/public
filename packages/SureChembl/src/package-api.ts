@@ -8,28 +8,59 @@ import * as DG from 'datagrok-api/dg';
 
 
 export namespace queries {
+  /**
+   * Finds SureCHEMBL patents whose molecules contain the query substructure.
+   * @param {string} pattern
+   *   semType: Substructure
+   */
   export async function searchPatentBySubstructure(pattern: string , maxMols: number ): Promise<DG.DataFrame> {
     return await grok.data.query('SureChEMBL:SearchPatentBySubstructure', { pattern, maxMols });
   }
 
+  /**
+   * Finds SureCHEMBL patents whose molecules are similar to the query structure.
+   * @param {string} pattern
+   *   semType: Molecule
+   */
   export async function searchPatentBySimilarity(pattern: string , threshold: number , maxMols: number ): Promise<DG.DataFrame> {
     return await grok.data.query('SureChEMBL:SearchPatentBySimilarity', { pattern, threshold, maxMols });
   }
 }
 
 export namespace funcs {
+  /**
+   * Searches SureCHEMBL patents for molecules containing the query structure as a substructure.
+   * @param {string} molecule
+   *   semType: Molecule
+   * @param {number} limit - Maximum number of matching molecules to return
+   */
   export async function sureChemblSubstructureSearch(molecule: string , limit: number ): Promise<DG.DataFrame> {
     return await grok.functions.call('SureChEMBL:SureChemblSubstructureSearch', { molecule, limit });
   }
 
+  /**
+   * Searches SureCHEMBL patents for molecules similar to the query structure.
+   * @param {string} molecule
+   *   semType: Molecule
+   * @param {number} limit - Maximum number of matching molecules to return
+   * @param {number} similarityThreshold - Minimum Tanimoto similarity, 0-1 (default 0.6)
+   */
   export async function sureChemblSimilaritySearch(molecule: string , limit: number , similarityThreshold: number ): Promise<DG.DataFrame> {
     return await grok.functions.call('SureChEMBL:SureChemblSimilaritySearch', { molecule, limit, similarityThreshold });
   }
 
+  /**
+   * @param {string} molecule
+   *   semType: Molecule
+   */
   export async function sureChemblSubstructureSearchWidget(molecule: string ): Promise<any> {
     return await grok.functions.call('SureChEMBL:SureChemblSubstructureSearchWidget', { molecule });
   }
 
+  /**
+   * @param {string} molecule
+   *   semType: Molecule
+   */
   export async function sureChemblSimilaritySearchWidget(molecule: string ): Promise<any> {
     return await grok.functions.call('SureChEMBL:SureChemblSimilaritySearchWidget', { molecule });
   }

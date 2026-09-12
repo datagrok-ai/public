@@ -35,6 +35,12 @@ proprietary extensions.
 For developers: check out [getting started](help/develop/develop.md)
 and [contributor's guide](CONTRIB.md).
 
+## Building
+
+The repository is one pnpm workspace with a Turborepo task graph: `grok setup` once (or `pnpm install` at the root),
+then `grok build` in any package (or `grok build --all`). Details, and what a package declares, are in
+[packages/BUILD.MD](packages/BUILD.MD).
+
 ## Academia
 
 Datagrok grants free license to academic institutions to use it in any context, either research or

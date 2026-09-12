@@ -26,7 +26,7 @@ export class Slot {
   ) {
     // Webpack's worker bundler only recognizes this exact `new Worker(new URL(...))`
     // literal; parameterizing the URL breaks static analysis.
-    this.worker = new Worker(new URL('./fitting.worker.ts', import.meta.url));
+    this.worker = new Worker(new URL('./fitting.worker', import.meta.url));
     this.worker.onmessage = (ev: MessageEvent<WorkerInbound>) => onMessage(ev.data);
     this.worker.onerror = onError;
   }

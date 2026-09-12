@@ -7,132 +7,107 @@
   "version": "1.27.11",
   "description": "",
   "main": "./datagrok.js",
-  "types": "./datagrok.d.ts",
-  "typesVersions": {
-    "*": {
-      "grok": [
-        "./grok.d.ts"
-      ],
-      "grok.js": [
-        "./grok.d.ts"
-      ],
-      "ui": [
-        "./ui.d.ts"
-      ],
-      "ui.js": [
-        "./ui.d.ts"
-      ],
-      "dg": [
-        "./dg.d.ts"
-      ],
-      "dg.js": [
-        "./dg.d.ts"
-      ],
-      "node-api": [
-        "./node-api.d.ts"
-      ],
-      "u2core": [
-        "./src/u2core/index.d.ts"
-      ]
-    }
-  },
+  "types": "./dist/datagrok.d.ts",
   "exports": {
+    ".": {
+      "types": "./dist/datagrok.d.ts",
+      "default": "./datagrok.js"
+    },
+    "./package.json": "./package.json",
+    "./css/*": "./css/*",
+    "./src/dataframe": {
+      "types": "./dist/src/dataframe/index.d.ts",
+      "default": "./dist/src/dataframe/index.js"
+    },
+    "./src/entities": {
+      "types": "./dist/src/entities/index.d.ts",
+      "default": "./dist/src/entities/index.js"
+    },
+    "./src/u2core": {
+      "types": "./dist/src/u2core/index.d.ts",
+      "default": "./dist/src/u2core/index.js"
+    },
+    "./src/widgets": {
+      "types": "./dist/src/widgets/index.d.ts",
+      "default": "./dist/src/widgets/index.js"
+    },
+    "./*.js": {
+      "types": "./dist/*.d.ts",
+      "default": "./dist/*.js"
+    },
+    "./*": {
+      "types": "./dist/*.d.ts",
+      "default": "./dist/*.js"
+    },
     "./datagrok": {
-      "types": "./datagrok.d.ts",
+      "types": "./dist/datagrok.d.ts",
       "default": "./datagrok.js"
     },
     "./datagrok.js": {
-      "types": "./datagrok.d.ts",
+      "types": "./dist/datagrok.d.ts",
       "default": "./datagrok.js"
     },
     "./grok": {
-      "types": "./grok.d.ts",
-      "default": "./grok.js"
+      "types": "./dist/grok.d.ts",
+      "default": "./dist/grok.js"
     },
     "./grok.js": {
-      "types": "./grok.d.ts",
-      "default": "./grok.js"
+      "types": "./dist/grok.d.ts",
+      "default": "./dist/grok.js"
     },
     "./ui": {
-      "types": "./ui.d.ts",
-      "default": "./ui.js"
+      "types": "./dist/ui.d.ts",
+      "default": "./dist/ui.js"
     },
     "./ui.js": {
-      "types": "./ui.d.ts",
-      "default": "./ui.js"
+      "types": "./dist/ui.d.ts",
+      "default": "./dist/ui.js"
     },
     "./dg": {
-      "types": "./dg.d.ts",
-      "default": "./dg.js"
+      "types": "./dist/dg.d.ts",
+      "default": "./dist/dg.js"
     },
     "./dg.js": {
-      "types": "./dg.d.ts",
-      "default": "./dg.js"
+      "types": "./dist/dg.d.ts",
+      "default": "./dist/dg.js"
     },
     "./node-api": {
-      "types": "./node-api.d.ts",
-      "default": "./node-api.js"
+      "types": "./dist/node-api.d.ts",
+      "default": "./dist/node-api.js"
     },
-    "./src/const": {
-      "types": "./src/const.d.ts",
-      "default": "./src/const.js"
-    },
-    "./src/u2core/bit-array": {
-      "types": "./src/u2core/bit-array.d.ts",
-      "default": "./src/u2core/bit-array.js"
-    },
-    "./src/u2core/bit-array.js": {
-      "types": "./src/u2core/bit-array.d.ts",
-      "default": "./src/u2core/bit-array.js"
+    "./node-api.js": {
+      "types": "./dist/node-api.d.ts",
+      "default": "./dist/node-api.js"
     },
     "./u2core": {
-      "types": "./src/u2core/index.d.ts",
-      "default": "./src/u2core/index.js"
+      "types": "./dist/src/u2core/index.d.ts",
+      "default": "./dist/src/u2core/index.js"
     }
   },
   "dependencies": {
-    "@babel/core": "^7.27.1",
-    "@datagrok-libraries/chem-meta": "^1.0.12",
+    "@datagrok-libraries/chem-meta": "workspace:^",
     "@types/react": "^18.3.11",
-    "@types/wu": "^2.1.44",
-    "cash-dom": "^8.1.5",
-    "dayjs": "^1.11.10",
+    "@types/wu": "catalog:",
+    "cash-dom": "catalog:",
+    "dayjs": "catalog:",
     "openchemlib": "^7.2.3",
     "react": "^18.3.1",
-    "rxjs": "^6.5.5",
+    "rxjs": "catalog:",
     "typeahead-standalone": "4.14.1",
     "ws": "^8.18.2",
-    "wu": "^2.1.0"
+    "wu": "catalog:"
   },
   "devDependencies": {
-    "@babel/preset-env": "^7.21.4",
-    "@types/node": "^18.11.18",
-    "@typescript-eslint/eslint-plugin": "^4.20.0",
-    "@typescript-eslint/parser": "^4.20.0",
-    "babel-loader": "^9.1.2",
     "bufferutil": "^4.0.9",
-    "css-loader": "^5.0.0",
-    "eslint": "^7.23.0",
-    "null-loader": "^4.0.1",
-    "source-map-loader": "^4.0.1",
-    "style-loader": "^2.0.0",
-    "svg-loader": "^0.0.2",
-    "ts-loader": "^8.1.0",
     "tui-jsdoc-template": "^1.2.2",
-    "typescript": "^4.2.3",
-    "utf-8-validate": "^6.0.5",
-    "webpack": "^5.64.1",
-    "webpack-cli": "^4.6.0"
+    "utf-8-validate": "^6.0.5"
   },
   "scripts": {
-    "link": "npm link",
-    "link-all": "npm link @datagrok-libraries/chem-meta",
-    "build-ts": "tsc && eslint ./src/*.js ./dg.js ./ui.js ./grok.js --fix",
-    "smoke": "node scripts/smoke-bundle.cjs",
-    "build-js-api": "git clean -f -X -d ./src && tsc && webpack && npm run smoke",
-    "build": "tsc && webpack && npm run smoke",
-    "build-docker": "tsc && webpack --config webpack.config.docker.js && npm run smoke",
-    "build-node": "webpack --config webpack.config.node.js",
-    "build-all": "npm --prefix ./../libraries/chem-meta run build && npm run build"
+    "build": "grok tsc -p tsconfig.json && grok build --skip-check && node scripts/smoke-bundle.cjs",
+    "build-docker": "grok tsc -p tsconfig.json && grok build --skip-check --only=browser && node scripts/smoke-bundle.cjs",
+    "build-node": "grok build --skip-check --only=node",
+    "typecheck": "grok tsc --noEmit -p tsconfig.json",
+    "lint": "eslint --ext .ts,.tsx src *.ts",
+    "smoke": "node scripts/smoke-bundle.cjs"
   }
 }

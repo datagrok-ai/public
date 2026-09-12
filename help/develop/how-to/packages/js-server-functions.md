@@ -69,7 +69,7 @@ const result = await grok.functions.call('MyPackage:heavyCompute', {df});
 
 ## Inside the function
 
-* All package code and bundled npm dependencies are available (the worker loads the published webpack
+* All package code and bundled npm dependencies are available (the worker loads the published
   bundle). `grok.dapi.*` calls run with the calling user's session token.
 * Report progress with the worker-provided global (a no-op in the browser):
 

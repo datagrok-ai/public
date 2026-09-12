@@ -30,10 +30,12 @@ export async function dockLigandCached(jsonForm: string, containerId: string) : 
   return await PackageFunctions.dockLigandCached(jsonForm, containerId);
 }
 
+//name: AutoDock Results
+//description: Dock small molecules to a macromolecule target with AutoDock and return binding poses and energies.
 //input: dataframe table 
-//input: column ligands { semType: Molecule }
-//input: string target 
-//input: double poses 
+//input: column ligands { semType: Molecule; description: Small molecules to dock }
+//input: string target { choices: Docking:getConfigFiles; description: Target folder with the macromolecule and docking config }
+//input: double poses { description: Number of output conformations (poses) per molecule }
 //output: dataframe result { action: join(table) }
 //meta.vectorFunc: true
 export async function getAutodockResults(table: DG.DataFrame, ligands: DG.Column, target: string, poses: number) : Promise<any> {
@@ -61,7 +63,7 @@ export function isApplicableAutodock(molecule: string) : boolean {
 //name: AutoDock
 //input: semantic_value molecule { semType: Molecule3D }
 //output: widget result
-//meta.role: widgets,panel
+//meta.role: widgets,Panel
 //meta.domain: chem
 //condition: Docking:isApplicableAutodock(molecule)
 export async function autodockWidget(molecule: DG.SemanticValue) : Promise<any> {
@@ -86,7 +88,7 @@ export async function demoDocking() : Promise<void> {
 //name: Biology | AutoDock
 //input: semantic_value smiles { semType: Molecule }
 //output: widget result
-//meta.role: widgets,panel
+//meta.role: widgets,Panel
 export async function autodockPanel(smiles: DG.SemanticValue) : Promise<any> {
   return await PackageFunctions.autodockPanel(smiles);
 }
@@ -96,7 +98,7 @@ export async function autodockPanel(smiles: DG.SemanticValue) : Promise<any> {
 //output: view result
 //meta.icon: images/docking-icon.png
 //meta.browsePath: Bio
-//meta.role: app
+//meta.role: App
 export async function dockingView(path?: string) : Promise<any> {
   return await PackageFunctions.dockingView(path);
 }

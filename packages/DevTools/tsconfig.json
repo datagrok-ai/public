@@ -1,16 +1,9 @@
 {
+  "extends": "@datagrok/build-config/tsconfig.base.json",
+  "include": [
+    "src"
+  ],
   "compilerOptions": {
-    "outDir": "./built",
-    "target": "es6",
-    "module": "es2020",
-    "lib": ["ES2022", "DOM"],
-    "moduleResolution": "node",
-    "strict": false,
-    "skipLibCheck": true,
-    "allowSyntheticDefaultImports": true,
-    "sourceMap": true,
-    "esModuleInterop": true,
-    "experimentalDecorators": true,                 /* Enables experimental support for ES7 decorators. */
-    "emitDecoratorMetadata": true,                  /* Enables experimental support for emitting type metadata for decorators. */
+    "strict": false
   }
 }

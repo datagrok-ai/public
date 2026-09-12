@@ -9,45 +9,19 @@
   "servicePackage": true,
   "description": "Automated CVM tests",
   "dependencies": {
-    "@datagrok-libraries/test": "^1.4.0",
-    "cash-dom": "^8.1.1",
-    "datagrok-api": "^1.27.0",
-    "dayjs": "^1.11.10",
-    "rxjs": "^6.6.7",
+    "@datagrok-libraries/test": "workspace:^",
+    "cash-dom": "catalog:",
+    "datagrok-api": "workspace:^",
+    "dayjs": "catalog:",
+    "rxjs": "catalog:",
     "ws": "^8.19.0",
-    "wu": "^2.1.0"
-  },
-  "overrides": {
-    "datagrok-api": "$datagrok-api"
-  },
-  "devDependencies": {
-    "@typescript-eslint/eslint-plugin": "^8.8.1",
-    "@typescript-eslint/parser": "^8.8.1",
-    "datagrok-tools": "^5.0.0",
-    "eslint": "^8.57.1",
-    "eslint-config-google": "^0.14.0",
-    "ts-loader": "^9.5.1",
-    "typescript": "^5.6.3",
-    "webpack": "^5.95.0",
-    "webpack-cli": "^5.1.4"
+    "wu": "catalog:"
   },
   "scripts": {
-    "link-all": "",
-    "debug-cvmtests": "webpack && grok publish",
-    "release-cvmtests": "webpack && grok publish --release",
-    "build-cvmtests": "webpack",
-    "build": "grok api && grok check --soft && webpack",
-    "debug-cvmtests-dev": "webpack && grok publish dev",
-    "release-cvmtests-dev": "webpack && grok publish localhost --release",
-    "debug-cvmtests-public": "webpack && grok publish public",
-    "release-cvmtests-public": "webpack && grok publish public --release",
-    "debug-cvmtests-release": "webpack && grok publish release",
-    "release-cvmtests-release": "webpack && grok publish release --release",
-    "debug-cvmtests-test": "webpack && grok publish test",
-    "release-cvmtests-test": "webpack && grok publish test --release",
-    "lint": "eslint src --ext .ts",
-    "lint-fix": "eslint src --ext .ts --fix",
-    "test": "grok test --host localhost --skip-build --skip-publish",
+    "build": "grok build",
+    "typecheck": "grok tsc --noEmit -p tsconfig.json",
+    "lint": "eslint --ext .ts,.tsx src",
+    "test": "grok test",
     "stress-test-pipe": "node scripts/grok_pipe_stress_test.js"
   },
   "canEdit": [

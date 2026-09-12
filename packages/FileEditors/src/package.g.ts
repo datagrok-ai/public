@@ -8,7 +8,7 @@ export function info() : void {
 
 //input: file file 
 //output: view result
-//meta.role: fileViewer
+//meta.role: FileViewer
 //meta.fileViewer: pdf
 export async function previewPdf(file: DG.FileInfo) : Promise<any> {
   return await PackageFunctions.previewPdf(file);
@@ -16,7 +16,7 @@ export async function previewPdf(file: DG.FileInfo) : Promise<any> {
 
 //input: list bytes 
 //output: list<dataframe> result
-//meta.role: fileHandler
+//meta.role: FileHandler
 //meta.ext: pdf
 export async function viewPdf(bytes: Uint8Array) : Promise<any> {
   return await PackageFunctions.viewPdf(bytes);
@@ -24,7 +24,7 @@ export async function viewPdf(bytes: Uint8Array) : Promise<any> {
 
 //input: file file 
 //output: view result
-//meta.role: fileViewer
+//meta.role: FileViewer
 //meta.fileViewer: docx
 export async function previewDocx(file: DG.FileInfo) : Promise<any> {
   return await PackageFunctions.previewDocx(file);
@@ -32,7 +32,7 @@ export async function previewDocx(file: DG.FileInfo) : Promise<any> {
 
 //input: list bytes 
 //output: list<dataframe> result
-//meta.role: fileHandler
+//meta.role: FileHandler
 //meta.ext: docx
 export async function viewDocx(bytes: Uint8Array) : Promise<any> {
   return await PackageFunctions.viewDocx(bytes);
@@ -40,7 +40,7 @@ export async function viewDocx(bytes: Uint8Array) : Promise<any> {
 
 //input: file file 
 //output: view result
-//meta.role: fileViewer
+//meta.role: FileViewer
 //meta.fileViewer: rtf
 export async function previewRtf(file: DG.FileInfo) : Promise<any> {
   return await PackageFunctions.previewRtf(file);
@@ -48,7 +48,7 @@ export async function previewRtf(file: DG.FileInfo) : Promise<any> {
 
 //input: file file 
 //output: view result
-//meta.role: fileViewer
+//meta.role: FileViewer
 //meta.fileViewer: tex
 export async function previewTex(file: DG.FileInfo) : Promise<any> {
   return await PackageFunctions.previewTex(file);

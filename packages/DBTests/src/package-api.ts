@@ -500,6 +500,10 @@ export namespace queries {
     return await grok.data.query('DBTests:MSSQLByDouble', { freight });
   }
 
+  /**
+   * @param {string} shipCountry
+   *   choices: ["France", "Germany", "USA", "Finland"]
+   */
   export async function mssqlbyStringChoices(shipCountry: string ): Promise<DG.DataFrame> {
     return await grok.data.query('DBTests:MSSQLByStringChoices', { shipCountry });
   }
@@ -516,6 +520,10 @@ export namespace queries {
     return await grok.data.query('DBTests:MSSQLByStringPatternDatetime', { orderDate });
   }
 
+  /**
+   * @param {string} shipCountry
+   *   choices: Query("SELECT DISTINCT shipCountry FROM Orders")
+   */
   export async function mssqlorders(employeeId: number , shipVia: string , freight: number , shipCountry: string , shipCity: string , freightLess1000: boolean , requiredDate: any , orderDate: string ): Promise<DG.DataFrame> {
     return await grok.data.query('DBTests:MSSQLOrders', { employeeId, shipVia, freight, shipCountry, shipCity, freightLess1000, requiredDate, orderDate });
   }
@@ -776,6 +784,10 @@ export namespace queries {
     return await grok.data.query('DBTests:PostgresByDouble', { freight });
   }
 
+  /**
+   * @param {string} shipCountry
+   *   choices: ["France", "Germany", "USA", "Finland"]
+   */
   export async function postgresByStringChoices(shipCountry: string ): Promise<DG.DataFrame> {
     return await grok.data.query('DBTests:PostgresByStringChoices', { shipCountry });
   }
@@ -796,6 +808,10 @@ export namespace queries {
     return await grok.data.query('DBTests:PostgresByStringPatternDatetime', { orderDate });
   }
 
+  /**
+   * @param {string} shipCountry
+   *   choices: Query("SELECT DISTINCT shipCountry FROM Orders")
+   */
   export async function postgresOrders(employeeId: number , shipVia: string , freight: number , shipCountry: string , shipCity: string , freightLess1000: boolean , requiredDate: any , orderDate: string ): Promise<DG.DataFrame> {
     return await grok.data.query('DBTests:PostgresOrders', { employeeId, shipVia, freight, shipCountry, shipCity, freightLess1000, requiredDate, orderDate });
   }
@@ -1016,6 +1032,10 @@ export namespace queries {
     return await grok.data.query('DBTests:PostgresqlByDouble', { freight });
   }
 
+  /**
+   * @param {string} shipCountry
+   *   choices: ["France", "Germany", "USA", "Finland"]
+   */
   export async function postgresqlByStringChoices(shipCountry: string ): Promise<DG.DataFrame> {
     return await grok.data.query('DBTests:PostgresqlByStringChoices', { shipCountry });
   }
@@ -1036,6 +1056,10 @@ export namespace queries {
     return await grok.data.query('DBTests:PostgresqlByStringPatternDatetime', { orderDate });
   }
 
+  /**
+   * @param {string} shipCountry
+   *   choices: Query("SELECT DISTINCT shipCountry FROM Orders")
+   */
   export async function postgresqlOrders(employeeId: number , shipVia: string , freight: number , shipCountry: string , shipCity: string , freightLess1000: boolean , requiredDate: any , orderDate: string ): Promise<DG.DataFrame> {
     return await grok.data.query('DBTests:PostgresqlOrders', { employeeId, shipVia, freight, shipCountry, shipCity, freightLess1000, requiredDate, orderDate });
   }

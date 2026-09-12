@@ -29,12 +29,26 @@ while (path.dirname(dirStep) !== dirStep) {
   dirStep = path.dirname(dirStep);
 }
 
+function isPnpmWorkspace(dir: string): boolean {
+  for (let d = path.resolve(dir); ; d = path.dirname(d)) {
+    if (fs.existsSync(path.join(d, 'pnpm-workspace.yaml')))
+      return true;
+    if (path.dirname(d) === d)
+      return false;
+  }
+}
+
 let verbose = false;
 let pathMode = false;
 let devMode = false;
 let unlink = false;
 
 export async function link(args: LinkArgs) {
+  if (isPnpmWorkspace(curDir)) {
+    console.log('This checkout is a pnpm workspace: in-repo dependencies are linked by `pnpm install` ' +
+      '(workspace:^), and `grok link` is not needed. Run `pnpm install` at the repository root.');
+    return true;
+  }
   verbose = args.verbose ?? false;
   devMode = args.dev ?? false;
   pathMode = args.path ?? false;

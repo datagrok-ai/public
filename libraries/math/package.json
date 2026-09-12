@@ -16,37 +16,63 @@
   "description": "Library for high performance computations",
   "dependencies": {
     "@webgpu/types": "^0.1.40",
-    "cash-dom": "^8.1.5",
-    "datagrok-api": "^1.21.1",
-    "dayjs": "^1.11.13",
+    "cash-dom": "catalog:",
+    "datagrok-api": "workspace:^",
+    "dayjs": "catalog:",
     "eslint-plugin-gpu-rules": "^1.0.0",
-    "file-loader": "^6.2.0",
     "ml-levenberg-marquardt": "^4.1.3",
-    "rxjs": "^6.5.5",
-    "source-map-loader": "^4.0.1",
+    "rxjs": "catalog:",
     "worker-loader": "^3.0.8",
-    "wu": "^2.1.0"
+    "wu": "catalog:"
   },
   "devDependencies": {
-    "@types/wu": "^2.1.44",
-    "@typescript-eslint/eslint-plugin": "^8.8.1",
-    "@typescript-eslint/parser": "^8.8.1",
-    "css-loader": "^6.7.3",
-    "datagrok-tools": "^4.14.20",
-    "eslint": "^8.57.1",
-    "eslint-config-eslint": "^9.0.0",
-    "eslint-config-google": "^0.14.0",
-    "style-loader": "^3.3.2",
-    "ts-loader": "^9.2.6",
-    "typescript": "^4.9.5"
+    "@types/wu": "catalog:",
+    "eslint-config-eslint": "^9.0.0"
   },
   "scripts": {
-    "link": "npm link",
-    "link-api": "npm link datagrok-api",
-    "link-all": "npm link datagrok-api",
-    "build-math": "git clean -f -X -d ./src && tsc",
-    "build": "grok check --soft && tsc",
-    "lint": "eslint \"./src/**/*.ts\"",
-    "lint-fix": "eslint \"./src/**/*.ts\" --fix"
-  }
+    "build": "grok tsc -p tsconfig.json",
+    "lint": "eslint --ext .ts,.tsx src"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json",
+    "./css/*": "./css/*",
+    "./src/dbscan": {
+      "types": "./dist/src/dbscan/index.d.ts",
+      "default": "./dist/src/dbscan/index.js"
+    },
+    "./src/hierarchical-clustering": {
+      "types": "./dist/src/hierarchical-clustering/index.d.ts",
+      "default": "./dist/src/hierarchical-clustering/index.js"
+    },
+    "./src": {
+      "types": "./dist/src/index.d.ts",
+      "default": "./dist/src/index.js"
+    },
+    "./src/webGPU": {
+      "types": "./dist/src/webGPU/index.d.ts",
+      "default": "./dist/src/webGPU/index.js"
+    },
+    "./src/webGPU/multi-col-knn": {
+      "types": "./dist/src/webGPU/multi-col-knn/index.d.ts",
+      "default": "./dist/src/webGPU/multi-col-knn/index.js"
+    },
+    "./src/webGPU/umap": {
+      "types": "./dist/src/webGPU/umap/index.d.ts",
+      "default": "./dist/src/webGPU/umap/index.js"
+    },
+    "./*.js": {
+      "types": "./dist/*.d.ts",
+      "default": "./dist/*.js"
+    },
+    "./*": {
+      "types": "./dist/*.d.ts",
+      "default": "./dist/*.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts"
 }

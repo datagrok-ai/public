@@ -139,12 +139,11 @@ Tests use Puppeteer for headless browser automation:
 
 ### `grok build` Command
 
-Builds packages with `npm install` + `npm run build`. Supports:
-- Single package: `grok build` (from package directory)
-- Recursive: `grok build --recursive` (discovers and builds all packages in subdirectories)
-- `--filter "name:Chem"` - Filter packages by package.json fields (supports regex, `&&` for multiple conditions)
-- `--parallel N` - Max parallel build jobs (default 4)
-- `--no-incremental` - Force full rebuild (default uses `--env incremental`)
+A front for Turborepo inside the `public/` pnpm workspace (`pnpm exec turbo run build ...`), never prompting:
+- `grok build` (from a package directory): the package and everything it depends on, in dependency order, cached
+- `grok build --all`: the whole workspace; `grok build --affected`: everything the diff against `origin/master` touches
+- `--typecheck` adds the type-check task; `--filter <turbo filter>`; `--parallel N` (default 3); `--force` ignores the cache
+- Outside a workspace it explains that `pnpm run build` / `npm run build` in the package is the way
 
 ### `grok claude` Command
 

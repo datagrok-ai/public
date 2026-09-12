@@ -31,7 +31,7 @@ later change `public` to `dev` or other Datagrok instance, simply identify `publ
 to a desired instance alias, such as `dev`.
 
 You can now run the Datagrok instance with your package in the debugging mode using `F5`. After you hit `F5`, Datagrok
-CLI will build your package using `webpack`, deploy it to the [configured Datagrok instance], and then run the Chrome
+CLI will build your package (rspack via `grok build --skip-check`), deploy it to the [configured Datagrok instance], and then run the Chrome
 browser in debug mode for VS Code. This special Chrome instance is _separate_ from the default Chrome in your OS.
 
 The first time you run debugging, you need to enter your Datagrok credentials into Chrome. After you entered them, close
@@ -55,7 +55,7 @@ To configure debugging with a shell script on WebStorm:
 
 ![WebStorm: Adding a shell script configuration](webstorm-debugging-02.png)
 
-3. Add a name for your configuration, and then add the `/c call webpack && grok publish dev && call echo` script.
+3. Add a name for your configuration, and then add the `/c call grok publish dev && call echo` script.
 
 ![WebStorm: Shell Script configuration content](webstorm-debugging-03.png)
 
@@ -96,7 +96,7 @@ Deploying a source-based package locates it to the Datagrok host URI (such as `h
 
 ## Troubleshooting debugging
 
-1. Make sure that the webpack configurations are set properly:
+1. Publish in debug mode (no `--release`): source maps are always emitted, but release bundles are minified:
 
 * `devtool`: `'inline-source-map'`
 * `mode`: `development`

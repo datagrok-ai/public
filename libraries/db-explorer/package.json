@@ -15,35 +15,31 @@
   "version": "1.7.4",
   "description": "Library for exploring databases",
   "dependencies": {
-    "datagrok-api": "^1.26.0",
-    "dayjs": "^1.11.13",
-    "file-loader": "^6.2.0",
-    "rxjs": "^6.5.5",
-    "source-map-loader": "^4.0.1",
+    "datagrok-api": "workspace:^",
+    "dayjs": "catalog:",
+    "rxjs": "catalog:",
     "worker-loader": "^3.0.8",
-    "wu": "^2.1.0"
+    "wu": "catalog:"
   },
   "devDependencies": {
-    "@types/wu": "^2.1.44",
-    "@typescript-eslint/eslint-plugin": "^8.8.1",
-    "@typescript-eslint/parser": "^8.8.1",
-    "css-loader": "^6.7.3",
-    "datagrok-tools": "^4.14.20",
-    "eslint": "^8.57.1",
+    "@types/wu": "catalog:",
     "eslint-config-eslint": "^9.0.0",
-    "eslint-config-google": "^0.14.0",
-    "prettier-eslint": "16.3.0",
-    "style-loader": "^3.3.2",
-    "ts-loader": "^9.2.6",
-    "typescript": "^4.9.5"
+    "prettier-eslint": "16.3.0"
   },
   "scripts": {
-    "link": "npm link",
-    "link-api": "npm link datagrok-api",
-    "link-all": "npm link datagrok-api",
-    "build-db-explorer": "git clean -f -X -d ./src && tsc",
-    "build": "grok check --soft && tsc",
-    "lint": "eslint \"./src/**/*.ts\"",
-    "lint-fix": "eslint \"./src/**/*.ts\" --fix"
+    "build": "grok tsc -p tsconfig.json",
+    "lint": "eslint --ext .ts,.tsx src"
+  },
+  "exports": {
+    "./package.json": "./package.json",
+    "./css/*": "./css/*",
+    "./*.js": {
+      "types": "./dist/*.d.ts",
+      "default": "./dist/*.js"
+    },
+    "./*": {
+      "types": "./dist/*.d.ts",
+      "default": "./dist/*.js"
+    }
   }
 }

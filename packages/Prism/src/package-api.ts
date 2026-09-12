@@ -9,8 +9,8 @@ import * as DG from 'datagrok-api/dg';
 
 export namespace funcs {
   /**
-  Opens GraphPad Prism file
-  */
+   * Opens GraphPad Prism file
+   */
   export async function importPrism(bytes: any ): Promise<any> {
     return await grok.functions.call('Prism:ImportPrism', { bytes });
   }

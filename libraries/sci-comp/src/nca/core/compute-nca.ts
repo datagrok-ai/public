@@ -120,7 +120,7 @@ export function computeNca(inputs: ProfileInputs, rules: NcaRules): ComputeResul
   );
   let augTime = inputs.time;
   let augConc = procConc;
-  let augBlq = effBlq;
+  let augBlq: Uint8Array = effBlq;
   let cmaxIdxForFit = observedCmax.cmaxIdx;
   if (!hasT0) {
     if (inputs.route === ROUTE_IV_BOLUS) {
