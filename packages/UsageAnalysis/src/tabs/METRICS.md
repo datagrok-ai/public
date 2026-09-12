@@ -8,7 +8,7 @@ function-call queue, error/session counts, and `pg_stat_statements` query rankin
 color-banded cards plus several drill-down panels. Request latency, per-route statistics, the queue,
 connections, database size and the `pg_stat_statements` rankings come from one call to
 `grok.dapi.admin.getMetrics()` (the admin-only `/api/admin/metrics` endpoint); table health, largest
-tables, cache-miss tables, session offenders, errors and sessions come from cached `Metrics*` SQL
+tables, cache-miss tables, session offenders and sessions come from cached `Metrics*` SQL
 queries against `System:Datagrok`; storage usage comes from a server-maintained snapshot exposed via
 the JS API (`grok.dapi.info.getStorageStats()`); disk free space comes from the `DiskStats` server
 function (free space on the server's data volume). Every loader is wrapped in `safeCall` so a single
@@ -23,7 +23,7 @@ Implemented in [`metrics.ts`](./metrics.ts) as `class MetricsView extends UaView
 | File                                                                     | Description                                                                                                                   |
 |--------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------|
 | [`metrics.ts`](./metrics.ts)                                             | `MetricsView` — the whole tab: cards, panels, refresh flow, thresholds, tooltips, snapshot email.                             |
-| [`../../queries/metrics.sql`](../../queries/metrics.sql)                 | All `Metrics*` SQL queries (table health, largest tables, cache-miss tables, session offenders, errors, sessions, stats reset). |
+| [`../../queries/metrics.sql`](../../queries/metrics.sql)                 | All `Metrics*` SQL queries (table health, largest tables, cache-miss tables, session offenders, sessions, stats reset).         |
 | [`../package-api.ts`](../package-api.ts)                                 | Auto-generated typed wrappers (`queries.metrics*`) for the SQL queries; do not edit.                                          |
 | [`../ua-toolbox.ts`](../ua-toolbox.ts)                                   | `UaToolbox` — supplies the date filter (`getFilter().date`) and `filterStream`.                                               |
 | [`./ua.ts`](./ua.ts)                                                     | `UaView` base class.                                                                                                          |
@@ -35,29 +35,30 @@ Implemented in [`metrics.ts`](./metrics.ts) as `class MetricsView extends UaView
 
 - `initViewers()` — builds the layout: header (`as of` label + Refresh / Share buttons), two
   rows of cards (Database, Table health, Storage, Connections, Queue, Disk free / Errors, Latency,
-  Sessions), the Queries panel, the Largest-tables + Table-health panels, the HTTP-routes panel.
+  Sessions), the Queries panel, the Largest-tables + Table-health panels, the Errors panel, the
+  HTTP-routes panel.
   Subscribes `uaToolbox.filterStream → refreshWindowCards()` and calls `refresh()` once.
 - `refresh()` — guards against re-entry with `refreshing`, then runs all loaders in parallel via
   `Promise.all` (table-health summary, largest tables, table health, window cards, storage, disk).
-- `refreshWindowCards()` — re-runs the time-window-dependent sources (errors, sessions, and
+- `refreshWindowCards()` — re-runs the time-window-dependent sources (sessions, and
   `loadMetrics()` — the endpoint call, which also re-renders the point-in-time cards it feeds);
   called both on full refresh and on every date-filter change.
 - `fetchMetrics(limit)` / `loadMetrics()` — `fetchMetrics` calls
   `grok.dapi.admin.getMetrics({date, limit})` with the toolbox date; `loadMetrics` calls it once
   with `DASHBOARD_LIMIT`, keeps the response in `this.metrics`, and renders everything it feeds:
-  Latency, HTTP routes, Queue, Connections, Queries, Database.
+  Latency, HTTP routes, Errors (card and panel), Queue, Connections, Queries, Database.
 - `safeCall(fn, label)` — static wrapper: `try { await fn() } catch { console.warn; return null }`.
   Every loader treats `null` as "unavailable" and renders a neutral `info` card or a
   `degradedMessage`.
 - `loadDbStats`, `loadTableHealthSummary`, `loadConnections`, `loadQueue`, `loadErrors`,
   `loadSessions`, `loadLatency`, `loadStorage`, `loadDisk` — one per card; each sets
   value/sub-text/color and binds a rich tooltip built by a matching `build*Tooltip` static.
-- `loadQueries`, `loadLargestTables`, `loadTableHealth`, `loadHttpRoutes` — render grids into
+- `loadQueries`, `loadLargestTables`, `loadTableHealth`, `loadHttpRoutes`, `loadTopErrors` — render grids into
   panel hosts (`DG.Viewer.grid`) with per-cell color banding via `onCellPrepare`.
-- `frame()` / `routesFrame()` / `statementsFrame()` — turn the endpoint's arrays into
+- `frame()` / `routesFrame()` / `errorsFrame()` / `statementsFrame()` — turn the endpoint's arrays into
   `DG.DataFrame`s (`DG.DataFrame.fromObjects`) with the column names the grids and CSVs use
-  (`route`, `count`, `p50`, `p95`, `p99`, `err_pct`; `query`, `calls`, `total_ms`, `mean_ms`,
-  `hit_pct`).
+  (`route`, `count`, `p50`, `p95`, `p99`, `err_pct`; `message`, `source`, `count`, `users`, `sessions`,
+  `hours`, `last_seen`; `query`, `calls`, `total_ms`, `mean_ms`, `hit_pct`).
 - `openFullView()` — re-runs a source with `FULL_VIEW_LIMIT` (100000) — a `Metrics*` query, or
   the endpoint via `fetchMetrics` for HTTP routes and the `pg_stat_statements` rankings — and opens
   the result as a standalone `TableView` ("Add to workspace").
@@ -80,15 +81,17 @@ The card sub-text gets the band as a CSS class (`ua-metrics-green` / `-orange` /
    server resolves the toolbox `date` pattern into `[window.start, window.end]` plus an equal-length
    previous window (`window.previousStart`) for the `±delta vs prev` comparison, and returns
    `http.now` / `http.previous` (Latency card), `http.routes` ordered by p95 (HTTP routes panel),
-   `queue` (Queue card), `database.sizeBytes` / `cacheHitPct` / `statsReset` (Database card),
+   `errors` (Errors card: count, distinct users, delta vs the previous window, per-source tooltip;
+   Errors panel: `errors.top` — message groups ordered by users, then the hours they recurred in,
+   then count), `queue` (Queue card), `database.sizeBytes` / `cacheHitPct` / `statsReset` (Database card),
    `database.connections` (Connections card) and `database.statements` (Queries panel — all three
    rankings arrive in one response, so the mode toggle re-renders without a round trip).
 2. **SQL-fed cards and grids.** The remaining loaders call a `queries.metrics*` wrapper, which runs
    a `Metrics*` query in `queries/metrics.sql` against `System:Datagrok` (read-only role). Most
    queries carry `--meta.cache: all` + `--meta.cache.invalidateOn: */5 * * * *`, so results are
    server-cached for ~5 minutes; the dashboard `as of` label is just the client-side fetch time.
-   `MetricsErrorsCount` and `MetricsSessionsCount` take the toolbox `date` filter and internally
-   derive the current window `[min_date, max_date]` and an equal-length previous window.
+   `MetricsSessionsCount` takes the toolbox `date` filter and internally derives the current window
+   `[min_date, max_date]` and an equal-length previous window.
 3. **pg_stat_statements.** The server reads the extension itself (picking the `total_exec_time` /
    `total_time` column names by its version) and reports `statements.available = false` when it is
    missing or unreadable; the Queries panel then shows a degraded message. "Reset stats" still runs
@@ -177,7 +180,6 @@ that is only 70% full but has < 2 GiB free still goes red.
 | `MetricsTableHealth`                    | Per-table dead % and last vacuum (≥1K live rows) → **Table health** panel grid + full view.                                                 |
 | `MetricsLargestTables`                  | Top tables by total relation size (total, index, #rows, total_bytes) → **Largest tables** panel grid + full view.                           |
 | `MetricsConnectionsOffenders`           | Per-session offenders (idle-in-xact, long active, lock-blockers) → **Connections** tooltip table (lazy, 500 ms after card).                 |
-| `MetricsErrorsCount`                    | Error-event count for the window vs the previous window (events whose `event_types.source = 'error'`) → **Errors** card.                    |
 | `MetricsSessionsCount`                  | Distinct `users_sessions` started in the window vs previous → **Sessions** card.                                                            |
 | `MetricsResetPgStatStatements`          | Calls `pg_stat_statements_reset()` on `System:DatagrokAdmin` → "Reset stats" menu action.                                                   |
 

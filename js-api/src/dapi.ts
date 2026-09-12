@@ -485,8 +485,8 @@ export class AdminDataSource {
     return api.grok_Dapi_Admin_GetServiceInfos(this.dart);
   }
 
-  /** Server metrics for a time window: HTTP request latency per route, the function-call queue,
-   *  and database statistics. Admin only. Sample: {@link https://public.datagrok.ai/js/samples/dapi/admin} */
+  /** Server metrics for a time window: HTTP request latency per route, the errors recorded, the
+   *  function-call queue, and database statistics. Admin only. Sample: {@link https://public.datagrok.ai/js/samples/dapi/admin} */
   async getMetrics(options?: ServerMetricsOptions): Promise<ServerMetrics> {
     const iso = (d: Date | string) => d instanceof Date ? d.toISOString() : d;
     const params = new URLSearchParams();
@@ -660,6 +660,28 @@ export interface ServerMetricsConnections {
   oldestIdleTransactionSeconds: number,
 }
 
+/** One group of error events with the same message. */
+export interface ServerMetricsError {
+  /** The message, uuids replaced by `<id>`, at most 300 characters. */
+  message: string,
+  /** Where it was recorded: `server`, `request`, `request-exception`, `client`, ... */
+  source: string | null,
+  /** `normal`, `critical` or `fatal`; null for event types recorded before 1.28.0, which never stored it. */
+  severity: string | null,
+  /** Events in the window. */
+  count: number,
+  /** Distinct users whose sessions recorded it. */
+  users: number,
+  /** Distinct sessions that recorded it. */
+  sessions: number,
+  /** Distinct clock hours it occurred in — how persistent it is. */
+  hours: number,
+  /** ISO 8601. */
+  firstSeen: string,
+  /** ISO 8601. */
+  lastSeen: string,
+}
+
 /** Result of {@link AdminDataSource.getMetrics}. */
 export interface ServerMetrics {
   /** ISO 8601; `previousStart` opens the window of the same length right before `start`. */
@@ -672,6 +694,18 @@ export interface ServerMetrics {
     previous: {count: number, p95: number},
     /** Ordered by `p95` descending, at most `limit` rows. */
     routes: ServerMetricsRoute[],
+  },
+  /** Error events recorded in the window (a request refused for what the caller asked — not found,
+   *  no privileges, a bad argument — is not one). */
+  errors: {
+    /** Error events in the window and the distinct users they hit. */
+    now: {count: number, users: number},
+    /** The window of the same length right before `window.start`. */
+    previous: {count: number},
+    /** Error events per source (`server`, `request`, `client`, ...). */
+    bySource: {[source: string]: number},
+    /** Grouped by message, ordered by users, then hours, then count; at most `limit` rows. */
+    top: ServerMetricsError[],
   },
   /** `func_calls` by status: `queued` are waiting, `running` are executing. */
   queue: {queued: number, running: number},
