@@ -328,7 +328,7 @@ grok s domains list grit                            # tables of one schema: secu
 grok s domains get grit                             # the manifest, as JSON (doubles as an export)
 grok s domains get grit.issue                       # the table's columns (--output json: its manifest section)
 grok s domains get grit.issue <row-id>              # one row
-grok s domains capabilities grit.issue              # what the current user may do on the table
+grok s domains access grit.issue                    # can.view/insert/edit/delete/share + editable/readonly column lists
 ```
 
 ### Querying

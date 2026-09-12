@@ -2,6 +2,8 @@
 
 ## v.next
 
+* GROK-20753: The u2 views follow the session seam — `issues.draft()`, `saveButton(src)` / `discardButton(src)` over the source's session, the splitter and `appView({own})` owning the controls and the source
+* GROK-20753: Moved 'Create Issue' and 'Projects' onto the u2 domain stack (`domains.table` → `newRow()` / `source()`, `domainForm`, `domainList`, `saveButton` / `discardButton` inside an `appView`) — no domain-ui in either view; `issue.description` declares `"editor": "textarea"`; added the `Grit: u2 form and list` test category (GROK-20298)
 * GROK-20298: `issue.number` is now auto-numbered per project by the engine (`"autoNumber": {"scope": "project_id"}`, schema 2.1.0) — a blank number is assigned on insert, a supplied one (the GitHub ingest) is kept, and the value is immutable afterwards; the toggle ships as the migration chain `databases/grit/0001_issue_autonumber.sql` (+ `down/`), the dogfood of the `ems-migration` protocol
 * GROK-20298: Declared `issue.labels` as a many-to-many relation (`{"via": "issue_label", "target": "label"}`, both junction FKs auto-resolved) — labels now expand with the issue, filter through `labels.name` / `labels.id`, write as an inline id set, and appear as chips in the grid, a tags input in the form, a pane in the entity view and a facet in the filter panel, with no Grit UI code; the declared filter panel lists `labels.id` explicitly, since a declared `filters` section replaces the heuristic relation facet along with everything else
 * GROK-20298: Added `src/tests/issue-labels-tests.ts` — the typed relation surface end-to-end on Grit's real schema (expand, both filter forms, set-replace update, create-and-link transaction, batch refusal)

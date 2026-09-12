@@ -964,7 +964,7 @@ Special commands:
   grok s domains aggregate <schema.table> --measures 'count,sum(x) as t' [--group-by a,b] [--filter <expr>]
   grok s domains transaction <schema> --json ops.json  Ordered insert/update/delete ops, atomically
   grok s domains audit <schema>|<schema.table> [<id>] [--limit n]
-  grok s domains capabilities <schema.table>          What the current user may do on the table
+  grok s domains access <schema.table>                What the current user may do on the table, per field
   grok s domains grants <schema>|<schema.table>       Direct permission grants on a schema or table
   grok s domains grant <schema>|<schema.table> <group>[,...] [--access View|Edit|Delete|Share|Extend]
   grok s domains revoke <schema>|<schema.table> <group>[,...] [--access <permission>]

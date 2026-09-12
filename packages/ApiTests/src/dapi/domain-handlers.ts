@@ -51,7 +51,7 @@ category('JS: domain handlers', () => {
   test('DG.DomainRow wrapper exported', async () => {
     expect(typeof DG.DomainRow, 'function', 'DG.DomainRow is not exported');
     const props = Object.getOwnPropertyNames((DG.DomainRow as any).prototype);
-    for (const p of ['schemaName', 'tableName', 'typeName', 'semValue', 'values', 'id', 'permissions'])
+    for (const p of ['schemaName', 'tableName', 'typeName', 'semValue', 'values', 'id'])
       expect(props.includes(p), true, `DG.DomainRow.${p} member missing`);
   });
 
@@ -306,8 +306,8 @@ category('JS: domain handlers', () => {
     const props = await handler.getProperties();
     for (const c of ['sku', 'name', 'quantity'])
       expect(props.some((p) => p.name === c), true, `rowProperties must describe ${c}`);
-    const caps = await handler.capabilities();
-    expect(caps.securityMode, 'row');
+    const access = await handler.access();
+    expect(access.securityMode, 'row');
     const sku = `SKU-DOH-${stamp()}`;
     const kind = `doh-${stamp()}`;
     const [ins] = await items().insert({sku, name: 'Detail probe'});
@@ -320,16 +320,17 @@ category('JS: domain handlers', () => {
       expect(tab!.fkColumn, 'item_id');
       const children = await events().query({filter: tab!.filter});
       expect(children.length, 1, 'the detail-tab filter must scope the child table to the parent row');
-      // Writable columns only — the form mirrors column security, and system
+      // Editable columns only — the form mirrors column security, and system
       // columns are never editable.
+      const editable = props.filter((p) => access.fields[p.name] === 'editable').map((p) => p.name);
       const editor = await handler.renderEditor(row);
       const inputs = editor.querySelectorAll('.ui-input-root');
-      expect(inputs.length, caps.writableColumns.length,
-        `editor inputs must match writableColumns (${JSON.stringify(caps.writableColumns)})`);
+      expect(inputs.length, editable.length,
+        `editor inputs must match the editable fields (${JSON.stringify(editable)})`);
       expect(editor.textContent!.includes('version'), false, 'system columns must not be editable');
       // A brand-new unsaved row is editable the same way (create form).
       expect((await handler.renderEditor()).querySelectorAll('.ui-input-root').length,
-        caps.writableColumns.length, 'create form must offer the same writable columns');
+        editable.length, 'create form must offer the same editable columns');
     } finally {
       await items().delete(ins.id); // cascades to item_event
     }
@@ -357,30 +358,27 @@ category('JS: domain handlers', () => {
       // Both directions of one real grant round-trip (grant/revoke drop the caches).
       const gate = async (granted: boolean) => {
         granted ? await items().grant(group!, 'Delete') : await items().revoke(group!, 'Delete');
-        return {perms: await row.permissions(), actions: await names()};
+        return {row: await items().get(ins.id, {withAccess: true}), actions: await names()};
       };
       const denied = await gate(false);
       const allowed = await gate(true);
-      expect(typeof denied.perms.edit, 'boolean',
-        `permissions() must resolve flags: ${JSON.stringify(denied.perms)}`);
-      expect(allowed.perms.delete, true,
-        `a Delete grant must reach row permissions: ${JSON.stringify(allowed.perms)}`);
+      expect(typeof denied.row['~can_edit'], 'boolean',
+        `withAccess must resolve the row flags: ${JSON.stringify(denied.row)}`);
+      expect(allowed.row['~can_delete'], true,
+        `a Delete grant must reach the row's ~can_delete: ${JSON.stringify(allowed.row)}`);
       expect(allowed.actions.includes('Delete'), true, 'the Delete action must appear with the grant');
-      // An admin SESSION short-circuits the probe to all-true (Auth.adminMode) —
-      // the denial side is only observable where the probe actually ran.
-      if (!denied.perms.delete)
+      // An admin answers every row flag true — the denial side is only
+      // observable where the server actually denied.
+      if (!denied.row['~can_delete'])
         expect(denied.actions.includes('Delete'), false, 'Delete must be hidden without the grant');
       // Open (the platform's default row action), History and Copy link are
-      // always offered; Share needs BOTH a row-mode table and Share on the row.
+      // always offered; Share follows the row's own ~can_share.
       for (const n of ['Open', 'History', 'Copy link'])
         expect(allowed.actions.includes(n), true, `${n} action missing: ${JSON.stringify(allowed.actions)}`);
-      expect(allowed.actions.includes('Share...'), allowed.perms.share === true,
-        `Share... must follow the row's Share permission: ${JSON.stringify(allowed.perms)}`);
-      // Unsaved rows have no securing entity, hence no permissions — for admins
-      // too — and therefore no actions at all (no address, history or link).
-      const p = await handler.newRow().permissions();
-      expect(p.edit || p.delete || p.share, false,
-        `an unsaved row must hold no permissions: ${JSON.stringify(p)}`);
+      expect(allowed.actions.includes('Share...'), allowed.row['~can_share'] === true,
+        `Share... must follow the row's ~can_share: ${JSON.stringify(allowed.row)}`);
+      // Unsaved rows have no securing entity, hence no actions at all (no
+      // address, history or link).
       expect((await handler.getRibbonActions(handler.newRow() as any)).length, 0,
         'an unsaved row must offer no actions');
       expect(handler.deepLink(handler.newRow() as any), null,
@@ -614,7 +612,7 @@ category('JS: domain handlers', () => {
 
     const unknown = new DG.DomainObjectHandler('apitests.nosuch');
     for (const [member, action] of [['getProperties', () => unknown.getProperties()],
-      ['capabilities', () => unknown.capabilities()]] as [string, () => Promise<any>][]) {
+      ['access', () => unknown.access()]] as [string, () => Promise<any>][]) {
       const e = await thrown(action);
       expect(e instanceof DG.DomainValidationError, true,
         `${member} on an unknown table must reject with DomainValidationError, got ${e?.constructor?.name}: ${e?.message}`);

@@ -21,6 +21,11 @@ export interface TypeAheadOptions<T> {
   /** Below it the popup shows a hint row and an async source is never queried. */
   minChars?: number;
   debounceMs?: number;
+  /** Opens the candidates on focus, the empty query listing the first of them — the platform's
+   * look-up inputs do; off by default. */
+  openOnFocus?: boolean;
+  /** What the empty row says, per query; "No matches" by default. */
+  emptyText?: string | ((query: string) => string);
 }
 
 export type TypeAheadState = 'idle' | 'focused' | 'open';
@@ -40,6 +45,9 @@ export class TypeAhead<T> extends Control {
   private readonly _list: SuggestionList<T>;
   private readonly _itemText: (item: T) => string;
   private readonly _minChars: number;
+  private readonly _openOnFocus: boolean;
+  /** Enter arrived while the candidates were still on their way: the pick is made when they land. */
+  private _pendingPick = false;
   private readonly _view: ReadonlySignal<AsyncState<T>>;
   private readonly _items: ReadonlySignal<T[]>;
   private readonly _source: AsyncSource<T> | undefined;
@@ -58,6 +66,7 @@ export class TypeAhead<T> extends Control {
     const render = options.render ?? listItem ??
       ((item: T) => SuggestionList.row('u2-typeahead-text', itemText(item)));
     this._minChars = options.minChars ?? 0;
+    this._openOnFocus = options.openOnFocus === true;
 
     this.root.classList.add('u2-typeahead');
     this.root.dataset.u2 = 'typeahead';
@@ -98,12 +107,25 @@ export class TypeAhead<T> extends Control {
       text: this._text,
       minChars: this._minChars,
       render,
-      autoHighlight: true,
+      autoHighlight: this._openOnFocus ? 'always' : true,
       onPick: (index) => this._send({type: 'select', index}),
       onDismiss: () => this._send({type: 'dismiss'}),
       onRetry: () => this._source?.retry(),
+      emptyText: options.emptyText,
     });
     this.isOpen = this._list.isOpen;
+    // a fast Enter: the intent was clear — the name typed, else the first candidate, once they land
+    this.effect(() => {
+      const view = this._view.value;
+      if (!this._pendingPick || view.kind === 'loading' || view.kind === 'idle')
+        return;
+      this._pendingPick = false;
+      if (view.kind !== 'ready')
+        return;
+      const typed = this._text.peek().trim().toLowerCase();
+      const exact = view.items.findIndex((item) => itemText(item).toLowerCase() === typed);
+      this._commit(exact >= 0 ? exact : 0, document.activeElement === input);
+    });
 
     bindValue(this.scope, input, this._text);
     this._listen(input, 'input', () => this._onInput());
@@ -121,6 +143,14 @@ export class TypeAhead<T> extends Control {
       case 'focus':
         if (state === 'idle')
           this._machine.value = 'focused';
+        // the first candidates, not the held item's name as a query
+        if (this._openOnFocus) {
+          if (this._source && this.selected.peek() !== null)
+            this._source.query('');
+          else
+            this._refresh();
+          this._openPopup();
+        }
         break;
       case 'blur':
         this._dismiss();
@@ -143,8 +173,12 @@ export class TypeAhead<T> extends Control {
           this._list.move(-1);
         break;
       case 'enter':
-        if (state === 'open')
+        if (state !== 'open')
+          break;
+        if (this._view.peek().kind === 'ready')
           this._commit(this._list.activeIndex.peek());
+        else
+          this._pendingPick = true;
         break;
       case 'escape':
         if (state === 'open')
@@ -162,7 +196,13 @@ export class TypeAhead<T> extends Control {
     }
   }
 
+  /** Whether an Enter is waiting for the candidates — a host does not treat the box as stray then. */
+  get isPickPending(): boolean {
+    return this._pendingPick;
+  }
+
   private _onInput(): void {
+    this._pendingPick = false;
     if (this.selected.peek() !== null) {
       this._echo = true;
       try {
@@ -172,6 +212,11 @@ export class TypeAhead<T> extends Control {
       }
     }
     this._send({type: 'input'});
+  }
+
+  /** Puts the text back to the selection's — what a host does with stray text on blur. */
+  resync(): void {
+    this._text.value = this.selected.peek() === null ? '' : this._itemText(this.selected.peek()!);
   }
 
   private _syncText(): void {
@@ -206,13 +251,14 @@ export class TypeAhead<T> extends Control {
       this._source.query(this._text.peek());
   }
 
-  private _commit(index: number): void {
+  private _commit(index: number, focus = true): void {
     const item = this._items.peek()[index];
     if (item === undefined)
       return;
     this.selected.value = item;
     this._dismiss();
-    this._input.focus();
+    if (focus)
+      this._input.focus();
   }
 
   private _onKeyDown(e: KeyboardEvent): void {

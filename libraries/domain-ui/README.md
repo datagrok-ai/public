@@ -152,9 +152,9 @@ navigation path.
 
 ## Permissions
 
-Every affordance comes from `DG.DomainTableCapabilities`: no `canEdit` gives a read-only
-grid, no `canInsert` removes New/Add row, no `canDelete` removes Delete, and columns
-outside `writableColumns` stay read-only and never appear in a payload.
+Every affordance comes from `DG.DomainAccess`: no `can.edit` gives a read-only grid, no
+`can.insert` removes New/Add row, no `can.delete` removes Delete, and columns whose
+`access.fields` entry is not `'editable'` stay read-only and never appear in a payload.
 
 ## Learn more
 

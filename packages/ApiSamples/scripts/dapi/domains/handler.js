@@ -1,5 +1,5 @@
 // DomainObjectHandler — the per-table handler every domain table gets for free.
-// It is reflective (columns, labels, choices and capabilities come from the
+// It is reflective (columns, labels, choices and access come from the
 // runtime registry) and delegating: whatever you do NOT override renders exactly
 // like the platform, so subclassing is never a regression.
 
@@ -26,8 +26,8 @@ const row = await handler.getById(issue.id);                 // DG.DomainRow, on
 const local = handler.rowFrom(issue);                        // same DomainRow, no round trip
 
 const props = await handler.getProperties();                 // registry Property metadata
-const caps = await handler.capabilities();                   // server-truth capabilities
-const perms = await row.permissions();                       // per-row edit/delete/share
+const access = await handler.access();                       // server-truth {can, fields}
+const fresh = await grok.dapi.domains.table('grit.issue').get(issue.id, {withAccess: true}); // ~can_edit / ~can_delete / ~can_share
 const tabs = await handler.getDetailTabs(row);               // FK-inverted child tables
 const actions = await handler.getRibbonActions(row);         // only what this user may do
 
@@ -36,8 +36,8 @@ grok.shell.newView('grit.issue handler', [
   handler.renderCard(row),
   ui.tableFromMap({
     'Columns': props.map((p) => p.name).join(', '),
-    'Writable': caps.writableColumns.join(', ') || '(read-only)',
-    'Row permissions': Object.keys(perms).filter((k) => perms[k]).join(', ') || '(none)',
+    'Editable': Object.keys(access.fields).filter((c) => access.fields[c] === 'editable').join(', ') || '(read-only)',
+    'Row access': DG.DOMAIN_ACCESS_COLUMNS.filter((k) => fresh[k]).join(', ') || '(none)',
     'Detail tables': tabs.map((t) => t.table).join(', ') || '(none)',
     'Actions': actions.map((a) => a.name).join(', '),
   }),

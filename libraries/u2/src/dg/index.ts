@@ -122,3 +122,14 @@ export {messageInput, userMentionProvider, USER_TOKEN} from './inputs/message-in
 export type {MessageInputOptions, MentionProvider} from '../components/inputs/message-input.js';
 export {registerControlInspector, controlProperties, controlPropDescriptors, disposePanel,
   controlAt, noControl} from './shell/control-inspector.js';
+export {domains, DomainTable} from './domain/index.js';
+export type {DomainAction, RowValidator} from './domain/index.js';
+export {domainForm, DomainForm} from './domain/form.js';
+export type {DomainFormOptions, DomainFormTarget} from './domain/form.js';
+export {domainList, DomainList} from './domain/list.js';
+export type {DomainListOptions, DomainListMode} from './domain/list.js';
+export {domainPick, DomainPick, PickInput} from './domain/pick.js';
+export type {DomainPickOptions, PickInputOptions, PickItem} from './domain/pick.js';
+export {saveButton, discardButton, newButton} from './domain/buttons.js';
+export type {SessionTarget, SessionButtonOptions} from './domain/buttons.js';
+export {registerDomainComponents} from './domain/registrations.js';

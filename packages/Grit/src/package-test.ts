@@ -3,6 +3,7 @@ import * as DG from 'datagrok-api/dg';
 
 import './tests/issue-crud-tests';
 import './tests/issue-labels-tests';
+import './tests/u2';
 
 export let _package = new DG.Package();
 export { tests };

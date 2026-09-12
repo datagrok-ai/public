@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-20298: Domains: `DomainTableClient.access()` (`DomainAccess` = `{can: {view, insert, edit, delete, share}, fields: {<column>: 'editable' | 'readonly'}, ...}`, a restricted column absent from `fields`) replaces `capabilities()` / `DomainTableCapabilities`; `DomainQuerySpec.withAccess` and `get(id, {withAccess: true})` add the per-row `DG.DOMAIN_ACCESS_COLUMNS` (`~can_edit`, `~can_delete`, `~can_share`), which replace the deleted `DomainRow.permissions()`; `DomainFrameEditor` / `IDomainTableContext` carry `access` instead of `capabilities`
 * Added `grok.shell.autostartsCompleted` — a promise that resolves once every package autostart function has run (they start 3 seconds after the app has started)
 * GROK-20849: Added `DG.BitArray` (= `DG.U2.BitArray`; `datagrok-api/src/u2core/bit-array` for web workers) with the `BitSet` vocabulary, the bridges `BitSet.fromBitArray` / `bitset.toBitArray()` / `copyFrom(BitArray)`, and the `TYPE` / `COLUMN_TYPE` / `SEMTYPE` re-exports from `u2core`
 * Renamed the u2 `Component.run(fn)` scope helper to `runInScope(fn)` — `run` is inherited by every view and widget and collided with the long-standing `run()` on `FunctionView` and `Tutorial`, breaking those package builds with `TS2416`

@@ -12,6 +12,8 @@ export interface ColumnLike {
   name: string;
   type: string;
   semType?: string | null;
+  /** Whether the cell holds no value — `get` answers the column type's null sentinel for it. */
+  isNone?(row: number): boolean;
 }
 
 export interface DataFrameLike {
@@ -28,6 +30,8 @@ export interface DataFrameLike {
   onSelectionChanged: ObservableLike<unknown>;
   onFilterChanged: ObservableLike<unknown>;
   onColumnsChanged: ObservableLike<unknown>;
+  onRowsAdded: ObservableLike<unknown>;
+  onRowsRemoved: ObservableLike<unknown>;
 }
 
 /** The seven steps every DataFrame answers — static, so a source that IS a frame enumerates them

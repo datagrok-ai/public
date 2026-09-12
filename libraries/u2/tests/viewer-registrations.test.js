@@ -189,10 +189,12 @@ scoped('registerPlatformComponents is the core registry plus the viewers; the co
   const reg = new Registry();
   registerPlatformComponents(reg);
   const core = reg.metas().filter((m) => !m.tag.startsWith('u2-viewer-'));
-  assert.equal(core.length, 42);
-  assert.equal(reg.metas().length, 47);
+  assert.equal(core.length, 46, 'the core registry, the dg entity controls and the three domain tags');
+  assert.equal(reg.metas().length, 51);
   registerPlatformComponents(reg);
-  assert.equal(reg.metas().length, 47);
+  assert.equal(reg.metas().length, 51);
+  assert.deepEqual(['u2-domain-form', 'u2-domain-list', 'u2-domain-pick'].map((tag) => reg.get(tag)?.tag),
+    ['u2-domain-form', 'u2-domain-list', 'u2-domain-pick']);
 
   const fch = reg.get('u2-func-call-history-browser');
   assert.equal(fch.props.find((p) => p.name === 'functionName').bindable, true);

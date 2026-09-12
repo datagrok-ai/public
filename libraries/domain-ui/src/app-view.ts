@@ -375,7 +375,7 @@ export interface DomainAppViewOptions extends AppViewOptions, Omit<EntityListOpt
  * grok.shell.addView(view);
  * ```
  *
- * The page loads asynchronously (capabilities, registry metadata, rows), so the
+ * The page loads asynchronously (access, registry metadata, rows), so the
  * constructor returns immediately — which is what an `#app` function needs.
  *
  * **URL.** `DomainQuery.toUrlParams()` (`filters[0]`, `orderBy[0]`, `limit`...)
@@ -721,7 +721,7 @@ export interface DomainEntityAppViewOptions extends AppViewOptions {
  *
  * Everything on it is permission-gated: actions come from the row's server-truth
  * permissions, the form from the caller's writable columns, the detail grids from
- * the child tables' own capabilities.
+ * the child tables' own access.
  */
 export class DomainEntityAppView extends AppView {
   readonly client: AnyDomainTableClient;
@@ -768,10 +768,10 @@ export class DomainEntityAppView extends AppView {
 
   get table(): string { return `${this.client.schema}.${this.client.table}`; }
 
-  /** Effective capabilities of the current user on the row's table (null until
+  /** Effective access of the current user on the row's table (null until
    * the page has loaded). */
-  get capabilities(): DG.DomainTableCapabilities | null {
-    return this._context?.capabilities ?? null;
+  get access(): DG.DomainAccess | null {
+    return this._context?.access ?? null;
   }
 
   /** The property form of the row, once the page has loaded. */

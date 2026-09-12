@@ -35,6 +35,7 @@ import './dapi/domain-filters';
 import './dapi/domain-relations';
 import './dapi/domain-cross-schema-refs';
 import './dapi/domain-lifecycle';
+import './dapi/domain-access';
 import './dapi/domain-parity';
 import './dapi/domain-handlers';
 import './dapi/domain-frame-editor';

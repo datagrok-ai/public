@@ -27,8 +27,8 @@ import * as ui from '../../../ui';
 import {EntityMetaDartProxy, ObjectHandler} from '../../../ui';
 import {DomainTableClient} from '../../dapi';
 import {DataFrame} from '../../dataframe';
-// DomainTableCapabilities is referenced by the gating docs below, nowhere in the code.
-import {DomainQuerySpec, DomainTableCapabilities} from '../../domains';
+// DomainAccess is referenced by the gating docs below, nowhere in the code.
+import {DomainAccess, DomainQuerySpec, DOMAIN_ACCESS_COLUMNS} from '../../domains';
 import {DomainAction, DomainObjectHandler} from '../../domains-ui';
 import {Func} from '../../entities/func';
 import {Functions} from '../../functions';
@@ -116,7 +116,7 @@ const CONFLICT_CELL_COLOR = 0xFFFFE0B2; // soft orange: dismissed version confli
 
 /** Options of {@link DomainGrid.create}. */
 export interface DomainGridOptions extends DomainFrameEditorOptions {
-  /** Master switch for editing; ANDed with the table's `canEdit` capability, so
+  /** Master switch for editing; ANDed with the table's `access.can.edit`, so
    * a table the user may not edit is read-only whatever this says. */
   editable?: boolean;
   /** Show the toolbar (unsaved-change count, Save/Cancel, Add/Delete row).
@@ -149,11 +149,11 @@ export interface DomainGridOptions extends DomainFrameEditorOptions {
  * - a {@link DomainFrameEditor} as THE writer of the editing state: in-grid
  *   edits are tracked, validated, highlighted (amber) and marked (red, with the
  *   message in the tooltip), and saved as ONE transaction;
- * - permission gating from {@link DomainTableCapabilities}: no `canEdit` means
- *   a read-only grid, no `canInsert` means no Add row, no `canDelete` means no
+ * - permission gating from {@link DomainAccess}: no `can.edit` means
+ *   a read-only grid, no `can.insert` means no Add row, no `can.delete` means no
  *   Delete row, and columns the caller cannot write stay read-only.
  *
- * Capabilities are SNAPSHOT when the grid is built. A later grant change (or a
+ * Access is SNAPSHOT when the grid is built. A later grant change (or a
  * `grok.dapi.domains.invalidateUiCaches()`) affects only grids created after it —
  * an existing grid keeps the gating it was born with; rebuild it to pick the new
  * permissions up.
@@ -189,7 +189,7 @@ export class DomainGrid extends Widget implements IEditorHost {
     this.editor = own == null ? source as DomainFrameEditor
       : DomainFrameEditor.forContext(own, options);
     this._defaults = options.defaults;
-    this._editable = (options.editable ?? true) && this.editor.capabilities.canEdit;
+    this._editable = (options.editable ?? true) && this.editor.access.can.edit;
     this.grid = Grid.create(this.editor.dataFrame);
     // A viewer built outside the DOM carries the default 400x300 inline size it
     // was born with; it has to fill whatever host it is mounted in instead.
@@ -203,9 +203,9 @@ export class DomainGrid extends Widget implements IEditorHost {
       this._button('Cancel', () => this.editor.discard(), 'Discard every pending change'),
     ], 'domain-ui-save-bar');
     this._toolbar = ui.divH([
-      this._editable && this.editor.capabilities.canInsert
+      this._editable && this.editor.access.can.insert
         ? this._button('Add row', () => this.addRow(), 'Append a new row') : null,
-      this._editable && this.editor.capabilities.canDelete
+      this._editable && this.editor.access.can.delete
         ? this._button('Delete row', () => this.deleteRow(), 'Mark the current row for deletion') : null,
       this._saveBar,
     ], 'domain-ui-grid-toolbar');
@@ -225,7 +225,7 @@ export class DomainGrid extends Widget implements IEditorHost {
     this._ready = own == null ? Promise.resolve(this) : this._load(options.query);
   }
 
-  /** Builds the grid: resolves the table's registry metadata and capabilities,
+  /** Builds the grid: resolves the table's registry metadata and access,
    * runs the query, attaches the editor and decorates the grid through the
    * table's registered handler. */
   static async create(client: DomainTableClient, options?: DomainGridOptions): Promise<DomainGrid> {
@@ -246,7 +246,7 @@ export class DomainGrid extends Widget implements IEditorHost {
   /** The frame the grid shows — replaced whenever the editor refreshes. */
   get dataFrame(): DataFrame { return this.editor.dataFrame; }
 
-  /** Whether in-grid editing is on (the requested mode AND the table's `canEdit`). */
+  /** Whether in-grid editing is on (the requested mode AND the table's `access.can.edit`). */
   get editable(): boolean { return this._editable; }
 
   /** {@link IEditorHost}: the pending batch a hosting page answers for. */
@@ -276,7 +276,7 @@ export class DomainGrid extends Widget implements IEditorHost {
     // The handler decorates presentation; the service columns are OURS — hide
     // them here too, so a handler that overrides renderGrid entirely still
     // cannot expose (or let the user edit) the editing state.
-    for (const name of DomainFrameEditor.SERVICE_COLUMNS) {
+    for (const name of [...DomainFrameEditor.SERVICE_COLUMNS, ...DOMAIN_ACCESS_COLUMNS]) {
       const gc = this.grid.col(name);
       if (gc != null) {
         gc.visible = false;
@@ -438,7 +438,7 @@ export class DomainGrid extends Widget implements IEditorHost {
     }
     if (!editable)
       return;
-    const writable = this.editor.capabilities.writableColumns;
+    const writable = DomainFrameEditor.writableColumns(this.editor.access);
     for (const p of this.editor.properties) {
       const gc = this.grid.col(p.name);
       if (gc != null)
@@ -513,9 +513,9 @@ export class DomainGrid extends Widget implements IEditorHost {
     if (!this._editable)
       return [DomainGrid.refreshFunc()];
     const funcs = [DomainGrid.saveFunc(), DomainGrid.discardFunc()];
-    if (this.editor.capabilities.canInsert)
+    if (this.editor.access.can.insert)
       funcs.push(DomainGrid.addRowFunc());
-    if (this.editor.capabilities.canDelete)
+    if (this.editor.access.can.delete)
       funcs.push(DomainGrid.deleteRowFunc());
     funcs.push(DomainGrid.refreshFunc());
     return funcs;

@@ -24,8 +24,8 @@ import {IDartApi} from '../../api/grok_api.g';
 import {COLUMN_TYPE, ColumnType, TYPE} from '../../const';
 import {DomainRegistryClient, DomainsDataSource, DomainTableClient} from '../../dapi';
 import {Column, DataFrame} from '../../dataframe';
-import {DomainQuerySpec, DomainTableCapabilities, DomainTableInfo, DomainTransactionOp,
-  DomainValidationError, DomainVersionConflictError} from '../../domains';
+import {DomainAccess, DomainQuerySpec, DomainTableInfo, DomainTransactionOp,
+  DomainValidationError, DomainVersionConflictError, DOMAIN_ACCESS_COLUMNS} from '../../domains';
 import {DomainObjectHandler} from '../../domains-ui';
 import {Property} from '../../entities/property';
 import {Logger} from '../../logger';
@@ -69,9 +69,12 @@ export interface DomainFrameEditorOptions {
   /** The query the frame came from — what {@link DomainFrameEditor.refresh}
    * re-runs, and what {@link DomainFrameEditor.create} runs to build it. */
   query?: DomainQuerySpec;
-  /** Pre-probed capabilities, to avoid a second round trip when the caller
-   * already has them (a {@link DomainGrid} passes its own). */
-  capabilities?: DomainTableCapabilities;
+  /** Pre-probed access, to avoid a second round trip when the caller
+   * already has it (a {@link DomainGrid} passes its own). */
+  access?: DomainAccess;
+  /** Suppresses the editor's own informational balloons ('Saved N rows') for a
+   * host that phrases its own feedback; errors and the conflict dialog always show. */
+  quiet?: boolean;
 }
 
 /** Marks a first-touch whose original value could not be captured (see
@@ -174,10 +177,10 @@ export type AnyDomainTableClient = DomainTableClient<any, any, any, any, any>;
 
 /**
  * The prefetched table context a SYNCHRONOUS widget factory needs: the typed
- * client plus the registry metadata and capabilities, resolved once by
+ * client plus the registry metadata and access, resolved once by
  * `domains.table(...)` (which is why `form()`, `grid()` and friends need no await).
  *
- * Capabilities are a SNAPSHOT taken when the context was acquired — the contract
+ * Access is a SNAPSHOT taken when the context was acquired — the contract
  * the grid has always had, moved one level up: a later grant change (or a
  * `grok.dapi.domains.invalidateUiCaches()`) does not reach widgets already built
  * from this context; re-acquire the handle to re-gate.
@@ -187,26 +190,25 @@ export interface IDomainTableContext {
   /** Registry {@link Property} metadata of the table's declared columns. */
   readonly properties: Property[];
   readonly info: DomainTableInfo;
-  readonly capabilities: DomainTableCapabilities;
+  readonly access: DomainAccess;
   /** `'<schema>.<table>'`. */
   readonly table: string;
 }
 
 /**
- * Resolves [client]'s registry metadata and the caller's capabilities in ONE
+ * Resolves [client]'s registry metadata and the caller's access in ONE
  * round of requests — the async boundary every synchronous widget factory sits
  * behind (`domains.table()`, `DomainGrid.create()`, `EntityListWidget.create()`).
  */
 export async function acquireDomainContext(
   client: AnyDomainTableClient): Promise<IDomainTableContext> {
   const address = `${client.schema}.${client.table}`;
-  const [properties, info, capabilities] = await Promise.all([
+  const [properties, info, access] = await Promise.all([
     registry.rowProperties(address),
     registry.tableInfo(address),
-    client.capabilities(),
+    client.access(),
   ]);
-  return {client: client, properties: properties, info: info,
-    capabilities: capabilities, table: address};
+  return {client: client, properties: properties, info: info, access: access, table: address};
 }
 
 /** An empty frame of [properties]' columns — what the local (no round trip)
@@ -314,6 +316,8 @@ export class DomainFrameEditor {
   private _saveDepth = 0;
   private _dirty = false;
   private _query?: DomainQuerySpec;
+  /** See {@link DomainFrameEditorOptions.quiet}. */
+  readonly quiet: boolean;
   private _nameColumn: string | null;
 
   private readonly _onChanged = new rxjs.Subject<DomainFrameEditor>();
@@ -326,21 +330,27 @@ export class DomainFrameEditor {
   private constructor(
     /** The table the frame's rows belong to. */
     public readonly client: DomainTableClient,
-    /** Effective capabilities of the current user, SNAPSHOT when the editor was
+    /** Effective access of the current user, SNAPSHOT when the editor was
      * created — what read-only degradation and the writable-column payload filter
      * derive from. A later `grok.dapi.domains.invalidateUiCaches()` (or a grant
      * change) does NOT reach an existing editor: re-create it to pick the new
      * permissions up. */
-    public readonly capabilities: DomainTableCapabilities,
+    public readonly access: DomainAccess,
     df: DataFrame, properties: Property[], nameColumn: string | null,
-    query?: DomainQuerySpec) {
+    options?: DomainFrameEditorOptions) {
     this._properties = properties;
     for (const p of properties)
       this._propByName.set(p.name, p);
     this._nameColumn = nameColumn;
-    this._query = query;
+    this._query = options?.query;
+    this.quiet = options?.quiet === true;
     this._df = df;
     this._bind(df);
+  }
+
+  /** The columns [access] lets the caller write, in the server's (declared) order. */
+  static writableColumns(access: DomainAccess): string[] {
+    return Object.keys(access.fields).filter((c) => access.fields[c] === 'editable');
   }
 
   /** Attaches the editing state to an EXISTING frame of [client]'s rows (a
@@ -349,13 +359,12 @@ export class DomainFrameEditor {
   static async attach(dataFrame: DataFrame, client: DomainTableClient,
     options?: DomainFrameEditorOptions): Promise<DomainFrameEditor> {
     const address = `${client.schema}.${client.table}`;
-    const [properties, capabilities, info] = await Promise.all([
+    const [properties, access, info] = await Promise.all([
       registry.rowProperties(address),
-      options?.capabilities != null ? Promise.resolve(options.capabilities) : client.capabilities(),
+      options?.access != null ? Promise.resolve(options.access) : client.access(),
       registry.tableInfo(address),
     ]);
-    return new DomainFrameEditor(client, capabilities, dataFrame, properties,
-      info.nameColumn, options?.query);
+    return new DomainFrameEditor(client, access, dataFrame, properties, info.nameColumn, options);
   }
 
   /** {@link attach} for a host that has a frame and a table address but no client
@@ -385,8 +394,8 @@ export class DomainFrameEditor {
   static forContext(context: IDomainTableContext,
     options?: DomainFrameEditorOptions): DomainFrameEditor {
     return new DomainFrameEditor(context.client,
-      options?.capabilities ?? context.capabilities, _emptyFrame(context.properties),
-      context.properties, context.info.nameColumn, options?.query);
+      options?.access ?? context.access, _emptyFrame(context.properties),
+      context.properties, context.info.nameColumn, options);
   }
 
   /**
@@ -516,7 +525,7 @@ export class DomainFrameEditor {
 
   /** Whether the cell carries a pending change (what highlighting keys on). */
   isChanged(row: number, column: string): boolean {
-    return this.stateOf(row) === 'new' || column in this.changesOf(row);
+    return !column.startsWith('~') && (this.stateOf(row) === 'new' || column in this.changesOf(row));
   }
 
   /** The cell's problem, or null. */
@@ -718,7 +727,7 @@ export class DomainFrameEditor {
    * send null — that is an edit, not an omission. */
   buildOps(): DomainPendingOp[] {
     const table = this.client.table;
-    const writable = this.capabilities.writableColumns;
+    const writable = DomainFrameEditor.writableColumns(this.access);
     const pending: DomainPendingOp[] = [];
     for (let row = 0; row < this._df.rowCount; row++) {
       const state = this.stateOf(row);
@@ -1047,7 +1056,7 @@ export class DomainFrameEditor {
    * nothing of theirs would be dropped.
    */
   private _droppedValue(row: number, column: string): string | null {
-    if (this.capabilities.writableColumns.includes(column))
+    if (DomainFrameEditor.writableColumns(this.access).includes(column))
       return null;
     const pending = this.stateOf(row) === 'new'
       ? this._wire(row, column) != null : column in this.changesOf(row);
@@ -1069,7 +1078,9 @@ export class DomainFrameEditor {
    * on one of those would be dropped by {@link buildOps} just as silently. */
   private _validateRow(row: number): void {
     for (const column of this._df.columns.names()) {
-      if (DomainFrameEditor.SERVICE_COLUMNS.includes(column))
+      // Every `~` column is service state (the editor's own, a `withAccess` read's
+      // `~can_*`, a relation's id companion) — never data a payload could drop.
+      if (column.startsWith('~'))
         continue;
       // The same predicate the per-cell path uses, so a prefilled value on a
       // non-writable column is marked here too (and stays marked: a re-validation
@@ -1173,7 +1184,44 @@ export class DomainFrameEditor {
       return await this._onTransactionError(e, pending);
     }
     this._applyResults(pending, results);
+    await this._writeBack(pending.map((p, i) => p.op.op === 'insert' ? results[i]?.id
+      : p.op.op === 'update' ? p.op.id : null).filter((id) => id != null).map((id) => `${id}`));
     return true;
+  }
+
+  /** Re-reads the rows a save inserted or updated and lands EVERY returned column
+   * in the frame — server defaults, `created_on`/`author_id`/`updated_on`, the
+   * per-row `~can_*` — so a host reading the frame after a save sees the server's
+   * row, not the payload it sent. Fails soft: the id/version write-back stands. */
+  private async _writeBack(ids: string[]): Promise<void> {
+    if (ids.length === 0)
+      return;
+    let rows: any[];
+    try {
+      rows = await this.client.query({filter: {property: 'id', operator: '=', value: ids},
+        withAccess: this._df.columns.contains(DOMAIN_ACCESS_COLUMNS[0])});
+    } catch (e) {
+      log.warning(`${this.table}: post-save re-read failed — ${e}`);
+      return;
+    }
+    const byId = new Map<string, any>(rows.map((r) => [`${r.id}`, r]));
+    this._write(() => {
+      for (let row = 0; row < this._df.rowCount; row++) {
+        const fresh = byId.get(`${this._wire(row, 'id')}`);
+        if (fresh == null)
+          continue;
+        for (const name of Object.keys(fresh)) {
+          if (!this._df.columns.contains(name) || DomainFrameEditor.SERVICE_COLUMNS.includes(name))
+            continue;
+          const v = fresh[name];
+          // jsonb cells travel as objects; the frame holds them as text. dayjs passes through.
+          const plain = v != null && typeof v === 'object' && typeof v.toISOString !== 'function';
+          this._df.set(name, row, plain ? JSON.stringify(v) : v);
+        }
+      }
+    });
+    this._resetCaches();
+    this._fire();
   }
 
   private _applyResults(pending: DomainPendingOp[], results: any[]): void {
@@ -1192,6 +1240,16 @@ export class DomainFrameEditor {
           result.inserted++;
           if (r.id != null && this._df.columns.contains('id'))
             this._df.set('id', row, `${r.id}`);
+          // The frame defaults (false) would read the just-created row as locked;
+          // the table-level rights stand in until the post-save re-read lands the
+          // server's per-row value (or for good, if that re-read fails). Share is
+          // per row only in row mode — null elsewhere, as the server answers it.
+          for (const column of DOMAIN_ACCESS_COLUMNS)
+            if (this._df.columns.contains(column)) {
+              const right = column.slice('~can_'.length) as keyof DomainAccess['can'];
+              this._df.set(column, row, right === 'share' && this.access.securityMode !== 'row'
+                ? null : this.access.can[right]);
+            }
         }
         else
           result.updated++;
@@ -1208,7 +1266,8 @@ export class DomainFrameEditor {
     this._fire();
     this._onSaved.next(result);
     const n = result.inserted + result.updated + result.deleted;
-    balloon.info(`Saved ${n} row${n === 1 ? '' : 's'}`);
+    if (!this.quiet)
+      balloon.info(`Saved ${n} row${n === 1 ? '' : 's'}`);
   }
 
   private async _onTransactionError(e: any, pending: DomainPendingOp[]): Promise<boolean> {

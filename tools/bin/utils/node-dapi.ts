@@ -902,8 +902,9 @@ export class NodeDomainsDataSource {
     return this.client.del(`/domains/grants/${encodeURIComponent(entityId)}${buildQuery({group, permission})}`);
   }
 
-  capabilities(schema: string, table: string): Promise<any> {
-    return this.client.get(`${this.rows(schema, table)}/capabilities`);
+  /** `{can: {view, insert, edit, delete, share}, fields: {<column>: 'editable' | 'readonly'}, ...}`. */
+  access(schema: string, table: string): Promise<any> {
+    return this.client.get(`${this.rows(schema, table)}/access`);
   }
 
   /** JSON rows; spec = {filter, sort, columns, expand, limit, offset} (10k row cap). */

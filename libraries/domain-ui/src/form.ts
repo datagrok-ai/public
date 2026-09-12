@@ -749,7 +749,7 @@ export class DomainForm extends DG.Widget implements IEditorHost {
 
   /** The actions this caller may perform on this form, as REAL platform Funcs —
    * `Save`, `Discard`, `Reset` from the shared vocabulary, or none at all when the
-   * form is read-only (no writable column, or no `canInsert`/`canEdit`). */
+   * form is read-only (no editable field, or no `can.insert`/`can.edit`). */
   getFunctions(): DG.Func[] {
     return this.canWrite ? [saveFunc(), discardFunc(), resetFunc()] : [];
   }
@@ -757,16 +757,15 @@ export class DomainForm extends DG.Widget implements IEditorHost {
   /** Columns this form edits: the table's declared columns the caller may WRITE
    * (column security), in declared order. */
   editableProperties(): DG.Property[] {
-    const writable = this._context.capabilities.writableColumns;
-    return this._context.properties.filter((p) => writable.includes(p.name));
+    const fields = this._context.access.fields;
+    return this._context.properties.filter((p) => fields[p.name] === 'editable');
   }
 
-  /** Whether the caller may save this form at all — the capability gate every
+  /** Whether the caller may save this form at all — the access gate every
    * affordance derives from. */
   get canWrite(): boolean {
-    const capabilities = this._context.capabilities;
-    return this.editableProperties().length > 0 &&
-      (this.isEditing ? capabilities.canEdit : capabilities.canInsert);
+    const can = this._context.access.can;
+    return this.editableProperties().length > 0 && (this.isEditing ? can.edit : can.insert);
   }
 
   detach(): void {
@@ -782,7 +781,7 @@ export class DomainForm extends DG.Widget implements IEditorHost {
 
   private async _load(): Promise<void> {
     try {
-      const options = {capabilities: this._context.capabilities};
+      const options = {access: this._context.access};
       if (this.isEditing) {
         const id = this.rowId;
         this._editor = await DomainFrameEditor.create(this._context.client, Object.assign(

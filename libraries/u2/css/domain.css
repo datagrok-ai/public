@@ -1,0 +1,160 @@
+/* u2 domain controls (src/dg/domain): the form host, the list rows and their status area, the
+   default card, the picker box. Tokens only — css/tokens.css must be loaded alongside. */
+.u2-domain-form {
+  padding: var(--dg-space-m);
+}
+
+/* a pristine draft is not wrong yet: a field's verdict shows once it was edited or left */
+.u2-input-untouched .u2-input-error {
+  display: none;
+}
+
+.u2-input-untouched .u2-input-editor.u2-invalid,
+.u2-input-untouched .u2-input-editor.u2-invalid:focus {
+  border-bottom-color: var(--dg-border);
+}
+
+/* the amber edge of a pending change, the grid's dirty cell in form terms */
+.u2-input-changed > .u2-input-box {
+  border-left: 3px solid var(--dg-orange-2);
+  padding-left: var(--dg-space-xs);
+}
+
+/* the system columns as a footer: compact, muted */
+.u2-domain-form-system {
+  margin-top: var(--dg-space-m);
+  padding-top: var(--dg-space-s);
+  border-top: var(--dg-border-width) solid var(--dg-border);
+  color: var(--dg-text-color-light);
+  font-size: var(--dg-font-size-small);
+}
+
+.u2-domain-form-system .u2-form-readonly-value {
+  min-height: 0;
+  color: var(--dg-text-color-light);
+}
+
+.u2-domain-draft {
+  font-style: italic;
+  color: var(--dg-text-color-light);
+}
+
+.u2-domain-form-empty {
+  padding: var(--dg-space-m);
+  color: var(--dg-text-color-light);
+  font-family: var(--dg-font-family);
+  font-size: var(--dg-font-size);
+}
+
+.u2-domain-form-error {
+  color: var(--dg-failure);
+}
+
+.u2-domain-list {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.u2-domain-list-rows {
+  flex: 1;
+  min-height: 0;
+}
+
+.u2-domain-list-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+}
+
+.u2-domain-list-content {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.u2-domain-list-status {
+  padding: var(--dg-space-s) var(--dg-space-m);
+  color: var(--dg-text-color-light);
+  font-family: var(--dg-font-family);
+  font-size: var(--dg-font-size);
+}
+
+.u2-domain-list-status:empty {
+  display: none;
+}
+
+.u2-domain-list-error {
+  align-items: center;
+  gap: var(--dg-space-m);
+}
+
+.u2-domain-card {
+  gap: var(--dg-space-xs);
+  overflow: hidden;
+}
+
+.u2-domain-card-title {
+  font-weight: 600;
+}
+
+.u2-domain-card-description {
+  color: var(--dg-text-color-light);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* a row marked deleted stays until the save: struck through, faded, Restore on it */
+.u2-domain-list-deleted .u2-domain-list-content {
+  text-decoration: line-through;
+  opacity: 0.55;
+}
+
+/* the picker box: a magnifier on the left (the platform look-up's), a clear on the right */
+.u2-pick-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+
+.u2-pick-box::before {
+  content: '';
+  position: absolute;
+  left: var(--dg-space-xs);
+  width: 12px;
+  height: 12px;
+  pointer-events: none;
+  background-color: var(--dg-text-color-light);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round'%3E%3Ccircle cx='6.8' cy='6.8' r='4.6'/%3E%3Cpath d='M10.2 10.2 14 14'/%3E%3C/svg%3E") no-repeat center / 12px;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round'%3E%3Ccircle cx='6.8' cy='6.8' r='4.6'/%3E%3Cpath d='M10.2 10.2 14 14'/%3E%3C/svg%3E") no-repeat center / 12px;
+}
+
+.u2-pick-box > .u2-typeahead {
+  flex: 1;
+  min-width: 0;
+}
+
+.u2-pick-box .u2-typeahead-input {
+  padding-left: 20px;
+  padding-right: 20px;
+}
+
+.u2-domain-card-time {
+  color: var(--dg-text-color-light);
+}
+
+/* a card is the handler's own markup and may be taller than the row: clipped, never overflowing */
+.u2-domain-list-cards .u2-list-row {
+  align-items: flex-start;
+  white-space: normal;
+}
+
+.u2-domain-list-cards .u2-domain-list-content {
+  max-height: 100%;
+  overflow: hidden;
+}

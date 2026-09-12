@@ -105,6 +105,35 @@ export class ObjectHandler {
   static forEntity(x) { return ObjectHandler.registered.find((h) => h.isApplicable(x)) ?? null; }
 }
 
+/** The js-api domain handler's slice the domain handle uses (domains-ui.ts): rows built locally
+ * off a values map, the entity view opened by row. Never registered by itself — a test that wants
+ * handler-backed rendering registers one. */
+export class DomainObjectHandler extends ObjectHandler {
+  static opened = [];
+
+  constructor(table) {
+    super();
+    this.table = table;
+  }
+
+  get type() { return this.table; }
+
+  isApplicable(x) { return x?.typeName === this.table; }
+
+  rowFrom(values) { return {typeName: this.table, values: values ?? {}, id: values?.id ?? null}; }
+
+  openRow(row) { DomainObjectHandler.opened.push(row); }
+
+  getCaption(x) { return String(x.values?.name ?? x.values?.title ?? x.id ?? ''); }
+
+  renderListItem(x) {
+    const el = document.createElement('span');
+    el.className = 'test-handler-item';
+    el.textContent = this.getCaption(x);
+    return el;
+  }
+}
+
 export class JsInputBase {
   constructor() {
     this.root = document.createElement('div');
@@ -147,6 +176,13 @@ export const dapi = {
     list: async () => [],
     readAsText: async () => '',
   },
+  /** What the domain error mapping and the user/group pickers reach; a test replaces the fields. */
+  domains: {
+    invalidated: 0,
+    invalidateUiCaches() { dapi.domains.invalidated++; },
+  },
+  users: {find: async () => null},
+  groups: {find: async () => null},
 };
 
 export const shell = new Shell();

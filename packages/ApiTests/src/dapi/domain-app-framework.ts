@@ -81,7 +81,7 @@ category('Dapi: domain app framework', () => {
       expect(list.rows.length, 3, 'clearing the search did not restore the list');
 
       // Capability-driven affordance: admin may insert, so New is offered.
-      expect(list.capabilities.canInsert, true, 'admin cannot insert into the fixture table');
+      expect(list.access.can.insert, true, 'admin cannot insert into the fixture table');
       expect(buttons(list.root).some((b) => b.startsWith('New')), true,
         `no New button for a caller who may insert: ${buttons(list.root).join(', ')}`);
 
@@ -115,7 +115,7 @@ category('Dapi: domain app framework', () => {
       await list.setMode('grid');
       expect(list.grid != null, true, 'grid mode did not build a DomainGrid');
       expect(list.grid!.dataFrame.rowCount, 2, 'the grid does not show the queried rows');
-      expect(list.grid!.editable, list.capabilities.canEdit, 'the grid ignored the table capability');
+      expect(list.grid!.editable, list.access.can.edit, 'the grid ignored the table access');
       // The list's editors are what an app's dirty policy gates on.
       expect(list.editors.length, 1, 'grid mode must expose its editor');
       list.grid!.editor.setValue(0, 'name', 'Edited in the list');
@@ -334,7 +334,7 @@ category('Dapi: domain app framework', () => {
       // Not a branch: the package OWNS apitests.item, so a caller who cannot edit
       // it is a broken fixture, not a reason to report a green run that asserted
       // nothing.
-      expect(editor.capabilities.canEdit, true, 'the fixture table is not editable for this caller');
+      expect(editor.access.can.edit, true, 'the fixture table is not editable for this caller');
 
       // CANCEL — the rebuild does not happen and the changes survive.
       editor.setValue(0, 'name', 'Pending 1');
@@ -387,20 +387,15 @@ category('Dapi: domain app framework', () => {
             let list: EntityListWidget | null = null;
             try {
               list = await listOf({query: query(prefix), mode: 'grid', editable: true});
-              expect(list.capabilities.canInsert, false, 'a View-only user reports canInsert');
+              expect(list.access.can.insert, false, 'a View-only user reports can.insert');
               expect(buttons(list.root).some((b) => b.startsWith('New')), false,
                 `a View-only user is offered New: ${buttons(list.root).join(', ')}`);
               expect(list.grid!.editable, false, 'a View-only user got an editable grid');
               expect(list.rows.length + list.grid!.dataFrame.rowCount >= 1, true,
                 'the View-only user cannot even read the rows');
-              // Row commands come from the row's own permissions. They are NOT
-              // asserted here: `DomainRow.permissions()` short-circuits on the
-              // Dart client's `Auth.adminMode`, which this harness cannot swap
-              // (it swaps the auth cookie, not the booted client's session), so a
-              // cookie-impersonated admin still sees every action. Row-level
-              // degradation is verified in a REAL restricted browser session
-              // instead (WO-9 live pass). What IS session-truthful here — the
-              // capabilities — is asserted above.
+              // Row commands come from the row's own `~can_*` access columns
+              // (pinned by `Dapi: domain access`); what is asserted here is the
+              // table-level access above.
               const row = domainHandler('apitests.item').rowFrom(
                 (await grok.dapi.domains.table('apitests.item').first({filter:
                   {property: 'sku', operator: 'like', value: `${prefix}%`} as any}))!);

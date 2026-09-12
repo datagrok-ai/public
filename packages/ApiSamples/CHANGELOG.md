@@ -4,7 +4,7 @@
 
 * GROK-20849: Added `data-frame/bitset/bit-array.js` — `DG.BitArray` built in JS and applied to a DataFrame filter
 * GROK-20799: Added dapi/entity-properties.js — `grok.meta.propertiesOf`/`coreLocationOf` discovery, from a type's catalog to a related-entity filter over its Core table
-* GROK-20799: Added dapi/domains/capabilities.js — `DomainTableClient.capabilities()` (server-composed, incl. `travelableRelations`/`securingTable`) gating a create form on `canInsert`/`writableColumns`
+* GROK-20799: Added dapi/domains/access.js — `DomainTableClient.access()` (server-composed `{can, fields}`, incl. `travelableRelations`/`securingTable`) gating a create form on `can.insert` / editable `fields`, plus `get(id, {withAccess: true})` for the per-row `~can_*` flags; handler.js and registry-reflection.js read the same shape
 * GROK-20753: Added functions/eval-param-validators.js — named parameter validators run via `FuncCall.evalParamValidators` against the call's current value
 * GROK-20753: Added misc/utils/string-distances.js — `DG.StringUtils.levenshteinDistance`/`jaroWinklerDistance`
 * GROK-20753: Added ui/dialogs/pick-table.js — `ui.pickTableFromFiles`/`ui.pickTableFromQuery` with the null-on-cancel contract

@@ -4,8 +4,12 @@
    'auto'`, through the global the bundler binds `datagrok-api/dg` to. */
 import {batch} from '../../core/signals.js';
 import type {IProperty} from '../../core/property-like.js';
-import {Input, InputOptions} from '../../core/input-base.js';
+import {Input, InputOptions, labelText} from '../../core/input-base.js';
 import {text} from '../../core/text.js';
+import {Access} from '../../core/access.js';
+import type {FieldAccess} from '../../core/access.js';
+import type {IFieldStatus, IWidgetStatus} from '../../core/widget-like.js';
+import {div, span} from '../../core/elements.js';
 import {Form} from '../../components/forms/form.js';
 import type {FormLayout} from '../../components/forms/form.js';
 import {TextInput} from '../../components/inputs/text-input.js';
@@ -50,6 +54,10 @@ export interface ObjectFormOptions {
    * `layout: 'tall'` where {@link layout} is not given. */
   condensed?: boolean;
   onChanged?: (name: string, value: unknown) => void;
+  /** What the caller may see and edit (default {@link Access.full}): a `hidden` field is not
+   * rendered, a `readonly` one is caption + value text — never an input, so it is in neither
+   * `getValues()` nor the validity. */
+  access?: Access;
 }
 
 /** What {@link objectForm} enumerates properties off. JS-implemented `DG.Widget` subclasses are
@@ -68,7 +76,10 @@ interface Field {
   prop: IProperty;
   /** Null for a platform editor, which reads and writes the property in its own native type. */
   kind: Kind | null;
-  input: Input<any>;
+  /** Null for a readonly-by-access field, which is text — see {@link Field.text}. */
+  input: Input<any> | null;
+  access: FieldAccess;
+  text?: HTMLElement;
 }
 
 export type InputFactory = (prop: IProperty, options: InputOptions<any>) => Input<any>;
@@ -187,8 +198,11 @@ function routeFor(prop: IProperty, options: InputOptions<any>): Input<any> | nul
     return byInputType(prop, options);
   const editor = prop.editor?.toLowerCase();
   const byEditor = editor ? BY_EDITOR[editor] : undefined;
-  return byEditor && EDITOR_TYPES[editor!](prop.propertyType ?? prop.type) ?
-    byEditor(prop, options) : null;
+  if (byEditor && EDITOR_TYPES[editor!](prop.propertyType ?? prop.type))
+    return byEditor(prop, options);
+  // a column named `description` holds prose: multi-line by default, a hint still wins
+  return !editor && prop.name === 'description' && (prop.propertyType ?? prop.type) === 'string' ?
+    new TextArea(options) : null;
 }
 Editors.byHint = routeFor;
 
@@ -298,6 +312,7 @@ export class ObjectForm extends Form {
   private readonly _fields: Field[] = [];
   private readonly _onChanged: ((name: string, value: unknown) => void) | undefined;
   private readonly _auto: boolean;
+  private readonly _access: Access;
   private _refreshing = false;
 
   constructor(props: IProperty[], target: object, options: ObjectFormOptions = {}) {
@@ -305,8 +320,9 @@ export class ObjectForm extends Form {
     this.target = target;
     this._onChanged = options.onChanged;
     this._auto = options.editors === 'auto';
+    this._access = options.access ?? Access.full;
     this.root.dataset.u2 = 'object-form';
-    for (const prop of ObjectForm._select(props, options))
+    for (const prop of ObjectForm._select(props, options, this._access))
       this._addField(prop, options.overrides?.[prop.name!] ?? {});
   }
 
@@ -316,9 +332,10 @@ export class ObjectForm extends Form {
   }
 
   /** The input editing a property — generated, override-supplied, or the platform's own editor
-   * wrapped by `fromDartInput`. Keyed by property name regardless of the input's caption. */
+   * wrapped by `fromDartInput`. Keyed by property name regardless of the input's caption; none
+   * for a field the access renders as text. */
   input(name: string): Input<any> | undefined {
-    return this._fields.find((f) => f.prop.name === name)?.input;
+    return this._fields.find((f) => f.prop.name === name)?.input ?? undefined;
   }
 
   /** Re-reads every field off {@link target} — after a save, an external edit, a server refresh.
@@ -329,20 +346,62 @@ export class ObjectForm extends Form {
     this._refreshing = true;
     try {
       batch(() => {
-        for (const field of this._fields)
-          field.input.value.value = this._read(field.prop, field.kind);
+        for (const field of this._fields) {
+          if (field.input !== null)
+            field.input.value.value = this._read(field.prop, field.kind);
+          else
+            field.text!.textContent = text(this._read(field.prop, 'readonly'));
+        }
       });
     } finally {
       this._refreshing = false;
     }
   }
 
+  /** The base status plus one entry per rendered field, its `access` saying why it is an editor
+   * or text; a hidden field has no entry. */
+  getWidgetStatus(): IWidgetStatus & {inputs: IFieldStatus[]} {
+    const status = super.getWidgetStatus();
+    return {...status, inputs: this._fields.map((field): IFieldStatus => {
+      const input = field.input;
+      const error = input?.validity.peek() ?? undefined;
+      return {
+        name: field.prop.name!,
+        caption: input?.label ?? ObjectForm._caption(field.prop),
+        type: field.prop.propertyType ?? field.prop.type ?? 'string',
+        semType: field.prop.semType ?? undefined,
+        value: input !== null ? input.value.peek() : this._read(field.prop, 'readonly'),
+        choices: field.prop.choices ?? undefined,
+        required: field.prop.nullable === false,
+        valid: error === undefined || error === null,
+        error: error ?? undefined,
+        description: field.prop.description ?? undefined,
+        access: field.access,
+      };
+    })};
+  }
+
   private _addField(prop: IProperty, override: FieldOverride): void {
+    const access = this._access.field(prop.name!);
+    if (access === 'readonly') {
+      const value = span(text(this._read(prop, 'readonly')), 'u2-form-readonly-value');
+      value.dataset.u2Part = 'readonly-value';
+      const caption = labelText(override.label) ?? ObjectForm._caption(prop);
+      const row = div([span(caption, 'u2-input-label'), value], 'u2-form-readonly');
+      row.dataset.u2 = 'readonly-field';
+      row.dataset.u2Name = prop.name!;
+      const tooltip = labelText(override.tooltipText) ?? prop.description;
+      if (tooltip)
+        row.title = tooltip;
+      this.addElement(row);
+      this._fields.push({prop, kind: 'readonly', input: null, access, text: value});
+      return;
+    }
     const kind = kindOf(prop);
     const {input: custom, ...rest} = override;
     const options: InputOptions<any> = {
       name: prop.name,
-      label: prop.caption ?? prop.friendlyName ?? prop.name,
+      label: ObjectForm._caption(prop),
       tooltipText: prop.description ?? undefined,
       nullable: prop.nullable,
       ...rest,
@@ -359,7 +418,7 @@ export class ObjectForm extends Form {
         input.addValidator((value) => ObjectForm.isEmpty(value) ? 'Value can\'t be empty' : null);
     }
     this.add(input);
-    this._fields.push({prop, kind: native ? null : kind, input});
+    this._fields.push({prop, kind: native ? null : kind, input, access});
 
     // a platform editor is bound to the target by `forProperty` and writes the property itself
     if (native) {
@@ -409,14 +468,20 @@ export class ObjectForm extends Form {
     return kind === null ? value : ObjectForm.coerce(kind, value);
   }
 
-  private static _select(props: IProperty[], options: ObjectFormOptions): IProperty[] {
+  private static _select(props: IProperty[], options: ObjectFormOptions, access: Access): IProperty[] {
     let selected = props;
     if (options.include) {
       const byName = new Map(props.map((p) => [p.name, p]));
       selected = options.include.map((name) => byName.get(name)).filter((p): p is IProperty => p !== undefined);
     }
     const exclude = options.exclude;
-    return exclude ? selected.filter((p) => !exclude.includes(p.name!)) : selected;
+    if (exclude)
+      selected = selected.filter((p) => !exclude.includes(p.name!));
+    return selected.filter((p) => access.field(p.name!) !== 'hidden');
+  }
+
+  private static _caption(prop: IProperty): string {
+    return prop.caption ?? prop.friendlyName ?? prop.name ?? '';
   }
 
   static coerce(kind: Kind, value: unknown): any {

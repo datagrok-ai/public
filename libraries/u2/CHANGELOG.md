@@ -2,6 +2,9 @@
 
 ## v.next
 
+* GROK-20753: Domain sources have a real session seam — `src.session` (`SingleSession`; the `session` option shares one) is what `save`/`discard`, the buttons and `cmd:save` go through, with the one "saved" balloon and `onSaved`/`onDiscarded`; a `DomainForm` pairs through the source (`src.guard`, `src.activate`) instead of being passed to the list and the buttons
+* GROK-20753: `MemoryDomainBackend` is a frame host: `frame()` answers a `MemoryFrame` with `MemoryEditState` as its writer, so `DomainSource` has one collection path (`FrameRows`); the memory backend validates `choices`/`min`/`max`, stamps `author_id`, orders nulls as Postgres does and carries `~can_share` as null off row mode — the cases both backends share are listed in `docs/domain-backend-contract.md`
+* GROK-20753: `DomainSource` takes `draft: true` (and `DomainTable.newRow()` became `draft()`); `Rows` holds the `~state`/service-column/draft-key conventions; `Access.row()` reads any `~can_<name>` column; `EditorEditState.validity` is lazy; `Splitter` and `appView({own})` own the controls and sources handed to them; the core and dg barrels export the public surface only
 * GROK-20753: Added the schema-driven filter model and string grammar in core (`src/core/filter/`), kept in sync with the Dart smart-filter parser by a shared corpus
 * GROK-20753: Added `FilterBuilder` (simple / horizontal / advanced with drag-and-drop, templates) and `FilterQueryInput` (grammar-driven completion), registered as `u2-filter-builder` / `u2-filter-query-input`
 * GROK-20753: Added the platform filter layer `src/dg/filter/` — `FilterSchemas.forDataFrame/forDomainTable/forEntityType`, `toBitSet`, operator sets from `filterOperators` providers via `registerSet`

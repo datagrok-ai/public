@@ -6,6 +6,7 @@ import {FuncSource} from './func-source.js';
 import {EntitySource} from './entity-source.js';
 import {TableSource} from './table-source.js';
 import {EntityRef} from './entity-ref.js';
+import {DomainSource} from './domain-source.js';
 import {ComponentMeta, Registry, registry as globalRegistry} from '../spec/registry.js';
 
 /** The `grok.dapi.*` collections a spec may list — every one of them a paged entity source. */
@@ -98,6 +99,34 @@ const METAS: ComponentMeta[] = [
     defaults: {entityType: 'users', designData: 'live'},
     designPreview: {name: 'Sample entity', friendlyName: 'Sample entity'},
     example: {tag: 'u2-entity-ref', name: 'author', props: {entityType: 'users', id: 'current'}},
+  },
+  {
+    tag: 'u2-domain-source',
+    category: 'Data',
+    visual: false,
+    createComponent: (props, env) => new DomainSource(props, env),
+    description: 'A domain (EMS) table as data: its rows, the current row a form edits, the ' +
+      'caller\'s access, and every pending change until `save`.',
+    usage: 'The one source every domain control binds to. Bind `query` to a search or filter ' +
+      'input to narrow the rows; bind a form\'s inputs under `currentRow` to edit the current row; ' +
+      'wire Save and Discard to the `save` and `discard` functions (they go through the session), ' +
+      'and `newRow` to a Create button; `draft: true` is the source of a create form. ' +
+      'Prefer it over a query source for anything a user edits.',
+    props: [
+      {name: 'table', type: 'string', description: 'The table address, `<schema>.<table>`.'},
+      {name: 'query', type: 'string', bindable: true,
+        description: 'A smart-filter string; changing it reloads the rows from the first page.'},
+      {name: 'pageSize', type: 'int', description: 'How many rows one page loads (default 50).'},
+      {name: 'withAccess', type: 'bool',
+        description: 'Fetch the per-row access columns with every row (default true); the table-level ' +
+          'access is always fetched.'},
+      {name: 'defaults', type: 'object',
+        description: 'Column values every draft row starts with — a parent\'s id on a child table.'},
+      {name: 'draft', type: 'bool',
+        description: 'Load nothing and start on one pristine draft — what a create form binds to.'},
+    ],
+    defaults: {pageSize: 50, withAccess: true, draft: false},
+    example: {tag: 'u2-domain-source', name: 'issues', props: {table: 'grit.issue', pageSize: 50}},
   },
 ];
 

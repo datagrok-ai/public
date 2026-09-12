@@ -11,7 +11,7 @@ import {
 } from '@datagrok-libraries/u2';
 import type {Signal, FilterGroup, FilterSchema} from '@datagrok-libraries/u2';
 import {FilterSchemas, toBitSet, chip, EntityChip, viewers} from '@datagrok-libraries/u2/src/dg/index.js';
-import {demoOrders} from '../package';
+import {demoOrders} from '../demo-orders';
 import {readout} from './common';
 
 type FilterTab = 'dataframe' | 'entity' | 'domain';

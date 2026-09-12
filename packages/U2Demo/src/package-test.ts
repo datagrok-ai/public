@@ -2,6 +2,7 @@ import { runTests, tests, TestContext , initAutoTests as initTests } from '@data
 import * as DG from 'datagrok-api/dg';
 import './tests/demo-tests';
 import './tests/designer-tests';
+import './tests/domain-source';
 
 export let _package = new DG.Package();
 export { tests };

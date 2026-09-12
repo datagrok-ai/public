@@ -3,7 +3,7 @@ export type {ReadonlySignal} from './core/signals.js';
 export {Scope} from './core/scope.js';
 export {Component, Control} from './core/component.js';
 export type {IProperty, IPropertyMeta} from './core/property-like.js';
-export type {FuncLike, ObservableLike, IWidgetStatus, IInputStatus, IEventType,
+export type {FuncLike, ObservableLike, IWidgetStatus, IInputStatus, IFieldStatus, IEventType,
   IRectBounds, NamedProperty, ComponentMetaBase} from './core/widget-like.js';
 export {bindText, bindValue} from './core/bind.js';
 export {AsyncSource} from './core/async-source.js';
@@ -16,7 +16,7 @@ export {VirtualList} from './components/collections/list.js';
 export type {VirtualListOptions} from './components/collections/list.js';
 export {VirtualGrid} from './components/collections/grid.js';
 export type {VirtualGridOptions} from './components/collections/grid.js';
-export {rowActions, actionsMenu} from './components/actions/actions.js';
+export {rowActions, actionsMenu, allowedActions} from './components/actions/actions.js';
 export type {Action} from './components/actions/actions.js';
 export {Combobox} from './components/inputs/combobox.js';
 export type {ComboboxOptions} from './components/inputs/combobox.js';
@@ -137,6 +137,22 @@ export type {TableSourceOptions} from './sources/table-source.js';
 export {EntityRef} from './sources/entity-ref.js';
 export type {EntityRefOptions} from './sources/entity-ref.js';
 export {registerDataSources, COLLECTIONS} from './sources/registrations.js';
+export {Access} from './core/access.js';
+export type {AccessData, FieldAccess, Capability} from './core/access.js';
+export type {ActionsOptions} from './components/actions/actions.js';
+export {arrayRows, Rows} from './sources/rows-like.js';
+export type {RowsLike, RowView} from './sources/rows-like.js';
+export {DomainBackendError} from './sources/domain-backend.js';
+export type {DomainBackend, DomainTableLike, DomainTableInfoLike, DomainFrameLike, DomainQueryLike,
+  DomainTransactionOpLike, DomainTransactionResultLike} from './sources/domain-backend.js';
+export {MemoryDomainBackend} from './sources/memory-domain.js';
+export type {MemorySchemaJson, MemoryTableJson, MemoryColumnJson, MemoryDomainOptions}
+  from './sources/memory-domain.js';
+export type {EditState, RowState} from './sources/edit-state.js';
+export {DomainSource} from './sources/domain-source.js';
+export type {DomainSourceOptions, DomainSourceState, DomainSchema} from './sources/domain-source.js';
+export {SingleSession} from './sources/session.js';
+export type {DomainSession} from './sources/session.js';
 export {SuggestInput} from './components/inputs/suggest-input.js';
 export type {SuggestInputOptions} from './components/inputs/suggest-input.js';
 export {Card} from './components/containers/card.js';

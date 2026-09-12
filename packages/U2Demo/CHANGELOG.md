@@ -2,6 +2,8 @@
 
 ## v.next
 
+* GROK-20753: `U2: domain source` follows the u2 session seam — `table.draft()`, `Rows.isDraft`, the buttons over `src.session`
+* GROK-20753: Added the `U2: domain source` test category (the u2 domain stack over `apitests.item`); `demoOrders` moved to `src/demo-orders.ts` so the test bundle no longer trips over the nav ↔ package import cycle
 * GROK-20753: Added the Filters demo page (`FilterBuilder` + `FilterQueryInput` over a DataFrame, a domain table and entity metadata; `?tab=&q=` auto-apply)
 * Automation: Added the `bdd/` project (Gherkin features, package bindings, generated Playwright specs) driven by `grok-bdd`
 * Automation: Added one behavioral feature per sub-demo under `bdd/features/demo/**` (inputs, pickers, layout, popups, lists and trees, cards, feedback, tables, sections and wizard, messaging, forms, property grid, object form, functions, run history, dataframes, files, entities, molecules, bridge, the demo shell) on a `U2 Demo` context with a package-local `readout` kind

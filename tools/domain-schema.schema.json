@@ -297,7 +297,11 @@
         "default": {
           "description": "Default value for new rows / UI inputs."
         },
-        "format": {"type": "string"}
+        "format": {"type": "string"},
+        "editor": {
+          "enum": ["textarea", "switch", "slider", "color", "tags", "markdown"],
+          "description": "Input editor hint for forms and dialogs (lower-case; stored as the platform InputType name on the column's property; markdown renders as a text area until the platform bridges its markdown input)."
+        }
       }
     }
   }

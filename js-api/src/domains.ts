@@ -71,6 +71,14 @@ export type DomainFilter<TColumn extends string = string> =
 /** Runtime list of the system columns (type-level counterpart: {@link DomainSystemColumn}). */
 export const DOMAIN_SYSTEM_COLUMNS = ['id', 'version', 'created_on', 'updated_on', 'author_id'] as const;
 
+/** The per-row service columns a `withAccess` query adds (see {@link DomainQuerySpec.withAccess}):
+ * booleans saying whether the CALLER may edit / delete / share that row. `~can_share` is
+ * null off row mode — only row-mode tables carry per-row Share. Never exported. */
+export const DOMAIN_ACCESS_COLUMNS = ['~can_edit', '~can_delete', '~can_share'] as const;
+
+/** The per-row keys of a `withAccess` read (see {@link DOMAIN_ACCESS_COLUMNS}). */
+export type DomainRowAccess = {'~can_edit': boolean; '~can_delete': boolean; '~can_share': boolean | null};
+
 /** Splits the `'<schema>.<table>'` address every domain client and UI component
  * takes, throwing on a malformed one — the single spelling of that contract. */
 export function splitDomainTable(name: string): [string, string] {
@@ -136,45 +144,53 @@ export interface DomainGrant {
   permission: DomainPermission;
 }
 
-/** Effective capabilities of the CURRENT user on one domain table
- * (see `DomainTableClient.capabilities`). Composed by the SERVER
- * (`GET /domains/{schema}/{table}/capabilities`) from the same predicates its reads
+/** What the caller may do with one field: `readonly` fields render as text, `editable`
+ * ones take input. A column the caller may not SEE is absent from
+ * {@link DomainAccess.fields} altogether. */
+export type FieldAccess = 'editable' | 'readonly';
+
+/** Effective access of the CURRENT user on one domain table
+ * (see `DomainTableClient.access`). Composed by the SERVER
+ * (`GET /domains/{schema}/{table}/access`) from the same predicates its reads
  * and writes apply: grants on the FINAL securing entity through the master delegate
- * chain, the writable-column mirror of column security, and relation travel.
+ * chain, column security, and relation travel.
  *
- * These are TABLE-level affordances, and they drift toward denial: every flag is
+ * `can` holds TABLE-level affordances, and they drift toward denial: every flag is
  * derived from grants on the securing entity, so grants that reach individual ROWS
  * (a master row of a master-mode table, a promoted row of a row-mode table) are not
  * counted. A false flag therefore means "no table-wide right" — the caller may still
- * succeed on a particular row, and per-row truth comes from
- * {@link DomainRow.permissions}. A true flag mirrors a predicate the server also
- * enforces, so gating UI on it avoids the common 403s (but never assume it removes
- * them: grants can change between the probe and the write, and column-level
- * restrictions are checked per value). Read-only registrations (platform tables
- * exposed through the `Core` schema) answer canInsert/canEdit/canDelete = false for
- * everyone, admins included. */
-export interface DomainTableCapabilities {
-  /** View grant on the securing entity. Row-mode tables may still expose
-   * individually granted rows when false. */
-  canView: boolean;
-  /** Edit grant on the securing entity — the server's insert predicate
-   * (`_checkInsertAllowed`) — on a table that accepts writes. False negative on
-   * master-mode tables where the caller holds the grant on an individual MASTER ROW
-   * rather than the master table. */
-  canInsert: boolean;
-  /** {@link canInsert} AND at least one column is writable for the caller (the
-   * built-in grid-editability rule) AND the table grant actually reaches rows —
-   * for non-table security modes that needs the securing table's rows to default
-   * to table visibility, otherwise access is per-row. Same false-negative shape as
-   * {@link canInsert}. */
-  canEdit: boolean;
-  /** Delete grant on the securing entity, under the same reaches-rows rule as
-   * {@link canEdit}; same false-negative shape. */
-  canDelete: boolean;
-  canShareTable: boolean;
-  /** Column names the caller may write (Edit on an owning property schema),
-   * in declared column order. */
-  writableColumns: string[];
+ * succeed on a particular row, and per-row truth rides the rows of a
+ * `withAccess` query ({@link DOMAIN_ACCESS_COLUMNS}). A true flag mirrors a predicate
+ * the server also enforces, so gating UI on it avoids the common 403s (but never
+ * assume it removes them: grants can change between the probe and the write, and
+ * column-level restrictions are checked per value). Read-only registrations
+ * (platform tables exposed through the `Core` schema) answer every write flag false
+ * and every field `readonly` for everyone, admins included. */
+export interface DomainAccess {
+  can: {
+    /** View grant on the securing entity. Row-mode tables may still expose
+     * individually granted rows when false. */
+    view: boolean;
+    /** Edit grant on the securing entity — the server's insert predicate — on a
+     * table that accepts writes. False negative on master-mode tables where the
+     * caller holds the grant on an individual MASTER ROW rather than the master table. */
+    insert: boolean;
+    /** {@link insert} AND at least one column is editable for the caller (the
+     * built-in grid-editability rule) AND the table grant actually reaches rows —
+     * for non-table security modes that needs the securing table's rows to default
+     * to table visibility, otherwise access is per-row. Same false-negative shape. */
+    edit: boolean;
+    /** Delete grant on the securing entity, under the same reaches-rows rule as
+     * {@link edit}; same false-negative shape. */
+    delete: boolean;
+    share: boolean;
+  };
+  /** Every column the caller may see (declared and system columns alike), keyed by
+   * name; `editable` iff the caller may write it (Edit on an owning property
+   * schema). A restricted column is ABSENT. An `autoNumber` column reads `readonly`
+   * although the server still accepts a supplied value (imports keep their numbers)
+   * — a form never sends one. */
+  fields: {[column: string]: FieldAccess};
   /** Relations the caller may expand (View on both the junction and the target
    * table), in declaration order. */
   travelableRelations: string[];
@@ -341,6 +357,10 @@ export interface DomainQuerySpec<TColumn extends string = string, TExpandKey ext
   expand?: TExpandKey[];
   limit?: number;
   offset?: number;
+  /** Adds the per-row {@link DOMAIN_ACCESS_COLUMNS} (`~can_edit`, `~can_delete`, `~can_share`):
+   * JSON rows carry them as boolean keys, `queryDf` frames as trailing bool columns. Row-level
+   * truth where the table-level {@link DomainAccess.can} flags are false negatives. */
+  withAccess?: boolean;
 }
 
 /** One measure of {@link DomainAggregateSpec}: `fn` over `column` (`count` needs no column);
@@ -644,6 +664,7 @@ export class DomainQueryBuilder<TRow, TColumn extends string = string,
   private _expand: string[] = [];
   private _limit?: number;
   private _offset?: number;
+  private _withAccess = false;
 
   constructor(private readonly client: IDomainQueryExecutor<TRow>) {}
 
@@ -716,6 +737,12 @@ export class DomainQueryBuilder<TRow, TColumn extends string = string,
     return this;
   }
 
+  /** Adds the per-row {@link DOMAIN_ACCESS_COLUMNS} (see {@link DomainQuerySpec.withAccess}). */
+  withAccess(): this {
+    this._withAccess = true;
+    return this;
+  }
+
   private _filter(): DomainFilter<TColumn> | undefined {
     return this._rawFilter !== undefined ? this._rawFilter
       : this._conds.length === 0 ? undefined : this._conds;
@@ -736,6 +763,8 @@ export class DomainQueryBuilder<TRow, TColumn extends string = string,
       spec.limit = this._limit;
     if (this._offset != null)
       spec.offset = this._offset;
+    if (this._withAccess)
+      spec.withAccess = true;
     return spec;
   }
 

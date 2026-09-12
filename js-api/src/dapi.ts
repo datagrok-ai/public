@@ -55,14 +55,16 @@ import {
   DomainQuerySpec,
   DomainRestrictError,
   DomainRowInsert,
+  DomainAccess,
   DomainSavedFilterInfo,
-  DomainTableCapabilities,
   DomainTableClientOptions,
   DomainTableInfo,
   DomainTransactionOp,
   DomainUpdateResult,
   DomainValidationError,
+  DomainRowAccess,
   DomainVersionConflictError,
+  DOMAIN_ACCESS_COLUMNS,
   domainCall,
   retryOnVersionConflict,
   splitDomainTable,
@@ -1160,8 +1162,8 @@ export class DomainsDataSource {
     return new DomainRegistryClient();
   }
 
-  /** Drops the client-side domain UI caches (table capabilities, row permissions,
-   * writable columns, resolved display names) so the next read re-probes server
+  /** Drops the client-side domain UI caches (table access, resolved display names)
+   * so the next read re-probes server
    * truth. Grant changes made through this client invalidate automatically; call
    * this after out-of-band grant changes (another session, `grok s`, server-side). */
   invalidateUiCaches(): void {
@@ -1385,6 +1387,9 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
    * template-built filter strings — condition values are bound server-side, so any string
    * value is safe (apostrophes included). */
   query(): DomainQueryBuilder<TRow, TColumn, TExpand, TRow, DataFrame>;
+  /** {@link query} with `withAccess`: every row also carries the {@link DomainRowAccess} keys. */
+  query(spec: DomainQuerySpec<TColumn, keyof TExpand & string> & {withAccess: true}):
+    Promise<(TRow & DomainRowAccess)[]>;
   /** Runs a filtered, sorted, paginated query; resolves to an array of row objects (10k row cap).
    * A declared many-to-many relation expands under its own name into a
    * {@link DomainRelationLink}`[]` (`expand: ['labels']` → `row.labels = [{id, name}, ...]`,
@@ -1409,8 +1414,19 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
    * `', '` (tagged so the grid draws chips) and the hidden companion `'~<relation>.id'` with
    * the ids in the same order — the ids are the source of truth (see
    * {@link DomainRelationLink}). */
-  queryDf(spec: DomainQuerySpec<TColumn, keyof TExpand & string> = {}): Promise<DataFrame> {
-    return domainCall(api.grok_Dapi_Domains_QueryDf(this.dart, this.schema, this.table, spec));
+  async queryDf(spec: DomainQuerySpec<TColumn, keyof TExpand & string> = {}): Promise<DataFrame> {
+    const df: DataFrame = await domainCall(api.grok_Dapi_Domains_QueryDf(this.dart, this.schema, this.table, spec));
+    // The server tags only CSV export: a binary-export tag would drop the columns
+    // from its own d42 response, so that one is stamped here, once.
+    if (spec.withAccess)
+      for (const name of DOMAIN_ACCESS_COLUMNS) {
+        const col = df.columns.byName(name);
+        if (col != null) {
+          col.meta.includeInBinaryExport = false;
+          col.meta.includeInCsvExport = false;
+        }
+      }
+    return df;
   }
 
   /** Grouped aggregation over the rows and columns visible to the caller (10k row cap);
@@ -1423,9 +1439,15 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
 
   /** Fetches one row by id; resolves to null if the row does not exist or is not visible
    * (typed `TRow` for backward compatibility — guard against null, or use `first`). */
-  async get(id: string): Promise<TRow> {
+  get(id: string): Promise<TRow>;
+  /** {@link get} with the row's {@link DOMAIN_ACCESS_COLUMNS} (`~can_edit`, `~can_delete`,
+   * `~can_share`) — the {@link DomainRowAccess} keys beside the row's own. */
+  get(id: string, options: {withAccess: true}): Promise<TRow & DomainRowAccess>;
+  get(id: string, options?: {withAccess?: boolean}): Promise<TRow>;
+  async get(id: string, options?: {withAccess?: boolean}): Promise<TRow> {
     const datetimes = this._datetimes();
-    const row = await domainCall(api.grok_Dapi_Domains_GetRow(this.dart, this.schema, this.table, id));
+    const row = await domainCall(api.grok_Dapi_Domains_GetRow(this.dart, this.schema, this.table, id,
+      options?.withAccess ?? false));
     return this._fromWire(row, await datetimes);
   }
 
@@ -1588,14 +1610,14 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
     return domainCall(api.grok_Dapi_Domains_IsWatching(this.dart, this.schema, this.table, id ?? null));
   }
 
-  /** Effective {@link DomainTableCapabilities} of the CURRENT user on this table,
+  /** Effective {@link DomainAccess} of the CURRENT user on this table,
    * composed by the server from the predicates its reads and writes apply
-   * (`GET /domains/{schema}/{table}/capabilities`). Cached per registry generation +
+   * (`GET /domains/{schema}/{table}/access`). Cached per registry generation +
    * user; grant changes made through this client drop the cache automatically,
    * out-of-band changes require {@link DomainsDataSource.invalidateUiCaches}. Rejects
    * with a {@link DomainValidationError} for unknown tables. */
-  capabilities(): Promise<DomainTableCapabilities> {
-    return domainCall(api.grok_Domains_TableCapabilities(this.schema, this.table));
+  access(): Promise<DomainAccess> {
+    return domainCall(api.grok_Domains_Access(this.schema, this.table));
   }
 
   /** Direct permission rows on this table's registry entity. Requires Share. */

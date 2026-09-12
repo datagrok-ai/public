@@ -34,6 +34,10 @@ export class Overlay {
    * also registered on `scope`, so disposing the owner tears the overlay down; closing drops that
    * registration again, so an input reopened all day never piles dead closures up on its scope. */
   static show(anchor: HTMLElement, content: HTMLElement, scope: Scope): () => void {
+    // nothing to anchor to — and autoUpdate's first, synchronous update would close through
+    // `position()` before the stop it returns is held, leaving its frame loop running for good
+    if (!anchor.isConnected)
+      return () => {};
     // The owner link: overlay content is portaled to the body host, so DOM ancestry cannot answer
     // "whose popup is this" — data-u2-owner carries the nearest named ancestor's automation id
     // instead, and hierarchical selectors follow that edge across the portal boundary.

@@ -133,6 +133,7 @@ the row and column security of the column that carries it.
 | `autoNumber`   | `true` or `{"scope": "<ref column>", "start": N}`: the engine numbers new rows from a counter (`int` only, see [Auto-numbering](#auto-numbering)) |
 | `isName`       | Marks the primary display-name column (one per table, `string` only); its value titles cards, tooltips, and entity views. Without it, a string column literally named `name` is used by convention |
 | `semType`, `friendlyName`, `description`, `format` | Display and semantic metadata                     |
+| `editor`       | Input editor hint for forms: `textarea`, `switch`, `slider`, `color`, `tags`, or `markdown` (reaches `Property.inputType`; `markdown` renders as a text area for now) |
 
 Validation runs twice with the same code: client-side in dialogs (instant feedback) and
 server-side on every write (authoritative). Integrity constraints (`unique`, foreign keys,

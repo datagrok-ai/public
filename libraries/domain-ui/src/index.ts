@@ -7,7 +7,7 @@
  * ANY registered table without codegen.
  *
  * The way in is the {@link domains} facade: `domains.table(...)` is the ONE await
- * (it prefetches the client, the registry metadata and the caller's capabilities),
+ * (it prefetches the client, the registry metadata and the caller's access),
  * and every widget factory on the handle is synchronous.
  *
  * ```ts
@@ -71,7 +71,7 @@ export type {
   DomainAction,
   DomainDetailTab,
   DomainViewOptions,
-  DomainTableCapabilities,
+  DomainAccess,
   DomainTableInfo,
   DomainChildTableRef,
   DomainQuerySpec,

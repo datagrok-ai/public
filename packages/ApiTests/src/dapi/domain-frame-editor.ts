@@ -11,7 +11,7 @@ import {withRestrictedUser} from './domain-lifecycle';
 // writer of the '~state'/'~changes'/'~errors' service columns) and DomainGrid.
 // The state-transition and op-builder tests run alongside the live loop here, as
 // planned: they import the library, which only ApiTests bundles. NONE of them is
-// pure — an editor probes the registry and the caller's capabilities on create,
+// pure — an editor probes the registry and the caller's access on create,
 // so every test below needs a live server with the apitests schema registered.
 //
 // Fixture: the package's own 'apitests.item' (sku required+unique, name,
@@ -587,14 +587,12 @@ category('Dapi: domain frame editor', () => {
     const prefix = `fe-rocol-${stamp()}`;
     await seed(prefix, 1);
     try {
-      const caps = await items().capabilities();
-      // A caller who may not write `quantity`. Capabilities are an INPUT of the
+      const access = await items().access();
+      // A caller who may not write `quantity`. Access is an INPUT of the
       // editor (a grid passes its own), so the case is exercised without a
       // second session — what matters is that buildOps would drop the value.
-      const capabilities = Object.assign({}, caps,
-        {writableColumns: caps.writableColumns.filter((c) => c !== 'quantity')});
       const editor = await DomainFrameEditor.create(items() as any,
-        {query: specFor(prefix), capabilities: capabilities as any});
+        {query: specFor(prefix), access: {...access, fields: {...access.fields, quantity: 'readonly'}}});
 
       editor.setValue(0, 'name', 'A writable column');
       expect(editor.errorOf(0, 'name'), null, 'a writable column was refused');
@@ -664,8 +662,7 @@ category('Dapi: domain frame editor', () => {
       grid = await DomainGrid.create(items() as any, {
         query: {filter: {property: 'sku', operator: 'like', value: `${prefix}%`} as any, sort: 'sku'},
       });
-      const caps = grid.editor.capabilities;
-      expect(grid.editable, caps.canEdit, 'the grid ignored the table capability');
+      expect(grid.editable, grid.editor.access.can.edit, 'the grid ignored the table access');
 
       // The editing state is never visible or editable, whatever a handler does.
       for (const name of SERVICE_COLUMNS) {
@@ -679,11 +676,11 @@ category('Dapi: domain frame editor', () => {
 
       // Column security is the only in-grid editing gate (reference columns
       // included — they open their own anchored picker).
-      if (caps.canEdit) {
+      if (grid.editor.access.can.edit) {
         expect(grid.grid.props.allowEdit, true, 'an editable table produced a read-only grid');
         for (const p of grid.editor.properties) {
           const gc = grid.grid.col(p.name);
-          if (gc != null && !caps.writableColumns.includes(p.name))
+          if (gc != null && grid.editor.access.fields[p.name] !== 'editable')
             expect(gc.editable, false, `${p.name} is editable without write access`);
         }
         expect(grid.grid.col('sku')?.editable, true, 'a writable column is not editable');
@@ -710,8 +707,8 @@ category('Dapi: domain frame editor', () => {
         query: {filter: {property: 'kind', operator: 'like', value: `${prefix}%`} as any, sort: 'kind'},
       });
       const editor = grid.editor;
-      const caps = editor.capabilities;
-      if (!caps.canEdit || !caps.writableColumns.includes('item_id'))
+      const access = editor.access;
+      if (!access.can.edit || access.fields['item_id'] !== 'editable')
         throw new Error('the fixture is not editable: the ref gate cannot be exercised');
 
       // The gate lift: a writable ref column takes in-grid edits, so the
@@ -825,8 +822,8 @@ category('Dapi: domain frame editor', () => {
         try {
           await probe.asUser(async () => {
             grok.dapi.domains.invalidateUiCaches();
-            const caps = await grok.dapi.domains.table('apitests.item').capabilities();
-            expect(caps.canEdit, false, 'a View-only user reports canEdit');
+            const access = await grok.dapi.domains.table('apitests.item').access();
+            expect(access.can.edit, false, 'a View-only user reports can.edit');
             const grid = await DomainGrid.create(grok.dapi.domains.table('apitests.item') as any,
               {query: {filter: {property: 'sku', operator: 'like', value: `${prefix}%`} as any}});
             try {

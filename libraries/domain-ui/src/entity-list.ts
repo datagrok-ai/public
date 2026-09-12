@@ -50,7 +50,7 @@ export interface EntityListOptions {
   mode?: EntityListMode;
   /** Show the toolbar — search, mode switch, New (default true). */
   toolbar?: boolean;
-  /** Offer in-grid editing in `'grid'` mode; ANDed with the table's `canEdit`
+  /** Offer in-grid editing in `'grid'` mode; ANDed with the table's `access.can.edit`
    * (default true — the built-in Domain View's grid mode edits too; pass false
    * for a strictly read-only browse list). */
   editable?: boolean;
@@ -92,18 +92,18 @@ export interface EntityListOptions {
  *   until one is asked for;
  * - `'grid'` mode is a {@link DomainGrid}: batch editing, one-transaction save,
  *   the standard conflict flow;
- * - permission gating from {@link DG.DomainTableCapabilities}: no New without
- *   `canInsert`, no editing without `canEdit`, and each item offers only what
- *   its own row permissions allow.
+ * - permission gating from {@link DG.DomainAccess}: no New without
+ *   `can.insert`, no editing without `can.edit`, and each item offers only what
+ *   its own row access columns allow.
  *
- * Capabilities are SNAPSHOT when the list is built (see {@link DomainGrid}) —
+ * Access is SNAPSHOT when the list is built (see {@link DomainGrid}) —
  * rebuild it after a grant change.
  */
 export class EntityListWidget extends DG.Widget implements IEditorHost {
   readonly client: DG.DomainTableClient;
   /** The handler every item command goes through (a plugin's, when registered). */
   readonly handler: DG.DomainObjectHandler;
-  readonly capabilities: DG.DomainTableCapabilities;
+  readonly access: DG.DomainAccess;
   readonly info: DG.DomainTableInfo;
 
   /** Holds either the gallery (cards / brief) or the grid: a flex column that
@@ -151,7 +151,7 @@ export class EntityListWidget extends DG.Widget implements IEditorHost {
     options = options ?? {};
     this._context = context;
     this.client = context.client;
-    this.capabilities = context.capabilities;
+    this.access = context.access;
     this.info = context.info;
     this.handler = domainHandler(this.table);
     this._options = options;
@@ -159,7 +159,7 @@ export class EntityListWidget extends DG.Widget implements IEditorHost {
     this._query = options.query ?? {};
     this._identityColumns = this._searchNames(context.properties);
 
-    this._newButton = this.capabilities.canInsert
+    this._newButton = this.access.can.insert
       ? ui.button(`New ${this.info.singularName}...`, () => this.createRow(),
         `Create a new ${this.info.singularName}`) : null;
     for (const mode of ['cards', 'brief', 'grid'] as EntityListMode[])
@@ -192,7 +192,7 @@ export class EntityListWidget extends DG.Widget implements IEditorHost {
     {cards: 'grip-horizontal', brief: 'grip-lines', grid: 'table'};
 
   /**
-   * Builds the list from a bare client: resolves the table's capabilities and
+   * Builds the list from a bare client: resolves the table's access and
    * registry metadata, then loads the first page.
    *
    * The FIRST load is not gated — a list that does not exist yet has nothing

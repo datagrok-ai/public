@@ -31,9 +31,9 @@ category('ArtifactAlignment: security', () => {
   test('schema security setup is idempotent and leaves approval/curation columns writable for admin', async () => {
     await setupSchemaSecurity();
     await setupSchemaSecurity();
-    const caps = await alignment().capabilities();
+    const access = await alignment().access();
     for (const column of [...APPROVAL_COLUMNS, ...CURATION_COLUMNS]) {
-      expect(caps.writableColumns.includes(column), true,
+      expect(access.fields[column], 'editable',
         `'${column}' not writable for admin after column restriction`);
     }
   });

@@ -9,7 +9,7 @@ core onto Datagrok lifecycle, events, and value editors.
 |---|---|
 | `toSignal` / `toObservable` | rxjs ↔ signals, both directions |
 | `leakReport()` | live u2 scopes vs registered widgets |
-| `appView({name, content, ribbon?, toolbox?, status?})` | a u2 component tree as a platform view, riding the shell's own chrome |
+| `appView({name, content, own?, ribbon?, toolbox?, status?})` | a u2 component tree as a platform view, riding the shell's own chrome; chrome controls and whatever `own` lists (the sources) are disposed with the content |
 | `designerView(spec, options?)` | the spec designer as a view: live canvas, structure tree in the toolbox, Design/Run toggle, selection path in the status bar |
 | `registerSpecNodeHandler()` | the `ObjectHandler` that renders a selected spec node (`SpecNodeRef`) in the context panel |
 | `makeDesignerDroppable({element, active, onDragActive, onDrop})` | the platform's drag channel pointed at an element: a file or a function dragged out of Browse arrives as a `DropReading` (`readDrop`), each item ready for `dropNode` to make a `u2-func-source` of it |
@@ -426,3 +426,66 @@ Every field reports as it is typed except `name`, which reports on commit — bl
 keys its records by that name (the example above does), and per keystroke `dose` → `name` would
 rename the property through `n`, `na` and `nam` on the way. Pass `validators: {name: …}` to refuse a
 name the caller cannot take: the message shows on the field, and the record keeps the name it had.
+
+## Domain controls: `domains.table` and `u2.domain.*`
+
+The platform adapter of the domain (EMS) seam (`src/dg/domain/`; recipe: `docs/recipes/crud-app.md`;
+what both backends must agree on: `docs/domain-backend-contract.md`). `backends.domain` is filled
+at dg import with `DgDomainBackend` over `grok.dapi.domains`, so a `DomainSource` (core) built
+anywhere in the platform loads real rows; the same source over `MemoryDomainBackend` — a frame
+host too, over `MemoryFrame` — is what the headless tests and the gallery run.
+
+| Export | What it does |
+|---|---|
+| `domains.table(address)` | one await → `DomainTable`: `properties`, `info`, `access` (an `Access`), `handler` (the platform's `DomainObjectHandler` for the rows — never registered by u2), and the registries an app fills once: `actions` (`DomainAction {name, icon?, requires?, when?(row), run(row)}`), `validators.add(column, (value, row) => message \| null)`, `renderer` (the handler's rendering, the name column as caption) |
+| `table.source(options)` / `table.draft(values)` | a started `DomainSource`; a `draft: true` source of one pristine draft. Both are tracked, so the controls find the handle (`DomainTable.of(src)`); `src.session` (core `SingleSession`) is the unit of work Save drives, `src.activate` the signal a list bumps on Enter |
+| `domainForm(target, options?)` | `DomainForm` over a `DomainSource`, its `currentRow` signal, or a bare row (+ `source`): a fresh `propertyForm` per row under the row's access — the system columns left out (`system: 'footer'` shows them as a muted block: Id/Version/Created/Updated/Author, local times, the author resolved, a draft's id "assigned on save"), a readonly reference showing its target's name, a pristine draft's verdicts held back until a field is edited or left (`validate()` shows them all), an edited field marked with an amber edge, `focus()` on the first field; validity = schema rules + `table.validators` + the writer's per-cell errors (over the platform the editor maps the server's column errors onto the cells and resolves a 409 itself). Paired through the source: it guards `src.save()` (a refusal is "Cannot save: <Caption> is required" whichever path ran — the button, Ctrl+S, `cmd:save`), takes the focus back on the session's `onSaved`/`onDiscarded` and on `src.activate`; a refused save is one balloon, a 403 also drops the access caches |
+| `domainList(src, options?)` | `DomainList`: a `VirtualList` over `src.rows`, `brief` or `cards` (the recipe card: title, one muted description line, the creation time; a handler's own card where it defines one), Open (saved rows) + Delete (`requires: 'delete'`) + the table's and the list's own actions per row; a row marked deleted stays struck through with Restore until the save; selection = `src.currentRow` (a loaded list starts on its first row), Enter bumps `src.activate` (the paired form takes the focus), Delete deletes, the selected row's actions rove into the tab order; the next page near the bottom, loading/empty/error under the rows |
+| `domainPick(table, options?)` | `DomainPick`, an `Input<string \| null>` face over a `TypeAhead` that queries the target table by its name column (else the first business-key column, else the id); `PickInput` is the same face over any type-ahead — the `User`/`Group` editors ride it |
+| `saveButton(src \| session)` / `discardButton(src \| session)` / `newButton(src, values?)` | buttons over a `DomainSession` (a source stands for its own): disabled while clean or saving; the session balloons "<Singular> saved" once and emits `onSaved`, so no form is passed around; New adds a pristine draft (`src.newRow`), hidden without `insert` |
+| `registerDomainComponents(reg)` | the `u2-domain-form` / `-list` / `-pick` tags (also run by `registerPlatformComponents`); a control binds to its source whole: `bind: {source: "$.issues.source"}` |
+
+Editor rules registered at import: a property whose `semType` is a table address
+(`<schema>.<table>`) gets `domainPick` over that table; `User` → the user picker, `Group` → the
+group picker — everywhere `propertyForm` is generated, not only in domain forms.
+
+### Access
+
+`Access` (core) is the one protocol every control consults; the server answers it in exactly that
+shape (`DomainTableClient.access()` → `{can, fields}`) and nothing asks the server twice.
+
+- `can(capability)`: `view`, `insert`, `edit`, `delete`, `share` (plus a schema's custom names).
+  `Action.requires` names one; a denied action is not rendered.
+- `field(name)`: `hidden` where the server did not list the column, `editable` where it listed
+  it so AND the row may be written, `readonly` otherwise. The write capability is `edit` for an
+  existing row and `insert` for a draft (`access.forDraft()`) — a listed `editable` only means
+  "not column-restricted", never "this caller may write this row".
+- `row(r)`: the per-row view. A `withAccess` query adds `~can_edit`, `~can_delete`, `~can_share`
+  to every row (`Access.ROW_COLUMNS`, the documented server set) — computed by the same predicates
+  the server enforces on write; `row()` reads any `~can_<name>` the table has a capability for. A
+  boolean the row carries REPLACES the table's answer for that capability either way: a row-mode
+  table's table-level flags are false negatives, so a row may be editable under a table that says
+  `edit: false`, and read-only under one that says `true`. A column that is absent or not a
+  boolean is not carried — off row mode the server sends `~can_share` as null and omits it from
+  a frame. `insert` is never per row.
+- The controls pick the view for you: `domainForm` renders a draft under `forDraft()` and an
+  existing row under `row(r)`; `domainList` filters each row's actions under `row(r)` (a draft
+  under the table's access — its `~can_*` cells are the frame's defaults, not truth). The frame
+  path hides the three columns from every export the way the editor hides its own service columns.
+
+### What the frame host honours (STATE-CONTRACT)
+
+Over the platform backend a source is a frame with the js-api `DomainFrameEditor` attached as its
+single writer (`EditorEditState`); over the memory backend a `MemoryFrame` with `MemoryEditState`.
+Rows are keyed the way `FrameRows` keys them — the `id` cell, `Rows.draftKey(index)` (`~row:<index>`)
+for a draft that has no id yet; `Rows` (core) is the one holder of the `~` conventions (`Rows.STATE`,
+`isService`, `isDraft`). What that means for an app:
+
+- **H6** — a programmatic re-query (a bound `query` changing) is skipped while the source is dirty;
+  a user-initiated one must go through the unsaved-changes gate. A refresh drops the batch.
+- **H7** — never export or hand off the source's frame: it carries the editing state and the
+  access columns (export-tagged, but that is the safety net). Query a fresh frame.
+- **H8** — a re-query replaces the frame and detaches the editor from the old one; the next page
+  (`loadMore`) is appended into the same frame, pending edits kept.
+- **H10** — everything mirrored (`isDirty`, `changeCount`, `validity`, `errorOf`) follows the
+  editor's `onChanged`, never frame events; a direct `df.set` is invisible to save.

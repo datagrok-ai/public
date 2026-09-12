@@ -6,7 +6,7 @@
  * an embeddable, programmatically created view.
  *
  * The data-plane counterpart is `src/domains.ts` + `grok.dapi.domains`
- * (see {@link DomainTableCapabilities}, `grok.dapi.domains.registry`).
+ * (see {@link DomainAccess}, `grok.dapi.domains.registry`).
  *
  * @module domains-ui
  */
@@ -15,7 +15,7 @@ import * as ui from '../ui';
 import {EntityMetaDartProxy, ObjectHandler} from '../ui';
 import {InputBase} from './widgets/inputs-base';
 import {DomainRegistryClient, DomainTableClient} from './dapi';
-import {domainCall, DomainConditionTree, DomainQueryParams, DomainTableCapabilities,
+import {domainCall, DomainAccess, DomainConditionTree, DomainQueryParams, DOMAIN_ACCESS_COLUMNS,
   splitDomainTable} from './domains';
 import {DomainRow} from './entities/domain';
 import {Property} from './entities/property';
@@ -80,7 +80,7 @@ export interface DomainAction {
 
 /**
  * The per-table {@link ObjectHandler} for domain rows: reflective (it takes
- * columns, labels, choices and capabilities from the runtime registry, so it
+ * columns, labels, choices and access from the runtime registry, so it
  * works on ANY table without codegen) and delegating (every render member falls
  * through to the platform's Dart meta for that table).
  *
@@ -202,11 +202,11 @@ export class DomainObjectHandler<T = DomainRow> extends ObjectHandler<T> {
     return new DomainRegistryClient().rowProperties(this.table);
   }
 
-  /** Effective {@link DomainTableCapabilities} of the current user on this table.
+  /** Effective {@link DomainAccess} of the current user on this table.
    * Every affordance below is derived from it — consumers never hand-wire
    * permission checks. */
-  capabilities(): Promise<DomainTableCapabilities> {
-    return this.client.capabilities();
+  access(): Promise<DomainAccess> {
+    return this.client.access();
   }
 
   /** Loads the row by id (the acquisition path for a {@link DomainRow} in JS);
@@ -310,18 +310,17 @@ export class DomainObjectHandler<T = DomainRow> extends ObjectHandler<T> {
   /** Reflective property form over the writable columns of [x] (a new row when
    * omitted) — inputs come from {@link getProperties}, and non-writable columns
    * are excluded from the form AND from any payload built off it, mirroring
-   * column security. Callers without the corresponding table capability
-   * (`canInsert` for a new row, `canEdit` for an existing one) get a read-only
+   * column security. Callers without the corresponding table right
+   * (`can.insert` for a new row, `can.edit` for an existing one) get a read-only
    * explanation instead: column security alone is NOT table Edit. A richer form
    * (async validation, reference pickers, error mapping) is `DomainForm` in
    * `@datagrok-libraries/domain-ui`. */
   async renderEditor(x?: T): Promise<HTMLElement> {
-    const [properties, caps] = await Promise.all([this.getProperties(), this.capabilities()]);
-    const writable = caps.writableColumns;
-    const inputs = properties.filter((p) => writable.includes(p.name));
+    const [properties, access] = await Promise.all([this.getProperties(), this.access()]);
+    const inputs = properties.filter((p) => access.fields[p.name] === 'editable');
     const row = (x == null ? null : this.rowOf(x)) ?? this.newRow();
     const creating = row.id == null;
-    if (!(creating ? caps.canInsert : caps.canEdit) || inputs.length === 0)
+    if (!(creating ? access.can.insert : access.can.edit) || inputs.length === 0)
       return ui.divText(creating ? `You cannot create ${this.table} rows.`
         : `You cannot edit ${this.table} rows.`);
     return ui.input.form(toDart(row), inputs);
@@ -357,8 +356,8 @@ export class DomainObjectHandler<T = DomainRow> extends ObjectHandler<T> {
 
   /** Actions available on [x] for the CURRENT user — the JS mirror of the Entity
    * View ribbon plus its default Open action (Open, Edit, Clone, Delete, Share,
-   * Watch, History, Copy link), gated by server-truth row permissions
-   * ({@link DomainRow.permissions}) and the table's registry metadata. Actions
+   * Watch, History, Copy link), gated by the row's server-truth access columns
+   * (a `withAccess` read, {@link DOMAIN_ACCESS_COLUMNS}) and the table's registry metadata. Actions
    * the user may not perform are absent from the list; an unsaved row
    * ({@link newRow}) has none of them — it has no address, history or
    * permissions until it is inserted.
@@ -375,20 +374,20 @@ export class DomainObjectHandler<T = DomainRow> extends ObjectHandler<T> {
     const row = this.rowOf(x);
     if (row?.id == null)
       return [];
-    const info = await new DomainRegistryClient().tableInfo(this.table);
-    const perms = await row.permissions();
+    const [info, fresh] = await Promise.all([
+      new DomainRegistryClient().tableInfo(this.table),
+      this.client.get(row.id, {withAccess: true}),
+    ]);
     const res: DomainAction[] = [
       {name: 'Open', icon: 'folder-open', changesRow: false, run: () => this.openRow(x)}];
-    if (perms.edit) {
+    if (fresh?.['~can_edit']) {
       res.push({name: 'Edit...', icon: 'pencil', changesRow: true, run: () => this.editRow(x)});
       res.push({name: 'Clone', icon: 'clone', changesRow: true, run: () => this.cloneRow(x)});
     }
-    if (perms.delete)
+    if (fresh?.['~can_delete'])
       res.push({name: 'Delete', icon: 'trash-alt', changesRow: true, run: () => this.deleteRow(x)});
-    // Row-mode tables are the ones that CAN share a row; Share on the row itself
-    // is what makes it offerable (the Dart ribbon shows it and explains the
-    // denial on click — JS consumers render the list as-is, so gate it here).
-    if (info.securityMode === 'row' && perms.share)
+    // `~can_share` is null off row mode — only row-mode tables CAN share a row.
+    if (fresh?.['~can_share'])
       res.push({name: 'Share...', icon: 'share-alt', changesRow: true, run: () => this.shareRow(x)});
     // Row-level watch needs the audit trail as its change source. NB the state
     // is a server round trip per build (the Dart ribbon reads its warmed cache);

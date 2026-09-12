@@ -21,6 +21,10 @@ export interface VirtualListOptions<T> {
   /** The item's FULL action list: right-click selects the row and opens it as a menu at the
    * cursor. The hover block (`rowActions`) shows the icon-bearing subset of the same list. */
   contextActions?: (item: T, index: number) => Action[];
+  /** Enter on the selected row — its default action. */
+  onEnter?: (item: T, index: number) => void;
+  /** Delete on the selected row. */
+  onDelete?: (item: T, index: number) => void;
 }
 
 export interface IndexRange {
@@ -69,6 +73,8 @@ export class VirtualList<T> extends Control {
   private readonly _rowRole: string;
   private readonly _keyOf: ((item: T) => string) | undefined;
   private readonly _renderItem: (item: T, index: number, row: HTMLElement) => HTMLElement;
+  private readonly _onEnter: ((item: T, index: number) => void) | undefined;
+  private readonly _onDelete: ((item: T, index: number) => void) | undefined;
   private readonly _content = document.createElement('div');
   private readonly _source = signal<ReadonlySignal<T[]>>(signal<T[]>([]));
   private readonly _rows = new Map<number, HTMLElement>();
@@ -85,6 +91,8 @@ export class VirtualList<T> extends Control {
     this._rowRole = options.rowRole ?? 'option';
     this._keyOf = options.keyOf;
     this._renderItem = options.render;
+    this._onEnter = options.onEnter;
+    this._onDelete = options.onDelete;
 
     this.root.classList.add('u2-list');
     this.root.tabIndex = 0;
@@ -240,6 +248,14 @@ export class VirtualList<T> extends Control {
       return;
     const page = Math.max(1, Math.floor(this.root.clientHeight / this._itemHeight) - 1);
     const current = this.selectedIndex.value;
+    if ((e.key === 'Enter' || e.key === 'Delete') && current >= 0 && e.target === this.root) {
+      const handler = e.key === 'Enter' ? this._onEnter : this._onDelete;
+      if (!handler)
+        return;
+      e.preventDefault();
+      handler(this._items[current], current);
+      return;
+    }
     let next: number;
     switch (e.key) {
       case 'ArrowDown': next = current + 1; break;
@@ -333,8 +349,12 @@ export class VirtualList<T> extends Control {
       row.setAttribute(name, value);
   }
 
+  /** Roving tabindex: only the selected row's action buttons are in the tab order, so Tab from the
+   * list lands on its actions and not on every row's. */
   private _setSelected(row: HTMLElement, selected: boolean): void {
     row.classList.toggle('u2-list-row-selected', selected);
     row.setAttribute('aria-selected', String(selected));
+    for (const b of Array.from(row.querySelectorAll<HTMLElement>('.u2-row-actions button')))
+      b.tabIndex = selected ? 0 : -1;
   }
 }

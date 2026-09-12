@@ -204,7 +204,7 @@ export async function buildTreeBrowser(treeNode: DG.TreeViewGroup): Promise<void
       showProgramDialog(picked.values);
   });
   try {
-    const programs = await grok.dapi.domains.table(T_PROGRAM).query({sort: 'code', limit: 100});
+    const programs = await grok.dapi.domains.table(T_PROGRAM).query({sort: 'code', limit: 100, withAccess: true});
     const programHandler = new DG.DomainObjectHandler(T_PROGRAM);
     // keyed by the node's DOM root — the wrapper identity is not stable across events
     const nodePrograms = new Map<HTMLElement, any>();
@@ -213,9 +213,8 @@ export async function buildTreeBrowser(treeNode: DG.TreeViewGroup): Promise<void
       const item = programsNode.item(program.code);
       nodePrograms.set(item.root, program);
       // presentation only; the save path re-checks server-side
-      void programHandler.rowFrom(program).permissions()
-        .then((p) => p.edit && editableIds.add(program.id))
-        .catch(() => {/* no edit affordance */});
+      if (program['~can_edit'])
+        editableIds.add(program.id);
       item.onSelected.subscribe(() => {
         preview(programView(program.code), `programs/${encodeURIComponent(program.code)}`);
         // context panel shows the audience group links (member management)

@@ -14,3 +14,4 @@ shell's chrome inside your view — use it.**
 | [entity-browser](entity-browser.md) | A list of server objects with details — the master-detail shape |
 | [list-item-rendering](list-item-rendering.md) | Rendering rich items (reports, mail, issues) in a list |
 | [forms-and-details](forms-and-details.md) | Editing an object, or showing a read-only detail pane |
+| [crud-app](crud-app.md) | Listing, editing and creating rows of a domain (EMS) table — `domains.table` + the domain controls |

@@ -11,7 +11,7 @@
  * ```
  *
  * {@link domains.table} is the ONLY await: it resolves the typed client, the
- * registry metadata and the caller's capabilities once, and every widget factory on
+ * registry metadata and the caller's access once, and every widget factory on
  * the resulting {@link DomainTable} handle is SYNCHRONOUS — data loads inside the
  * widget afterwards (see `DomainForm.ready`). Strings stay on the one-shot dialog
  * openers (`pick` / `create` / `edit`), which are async by nature and keep no state.
@@ -69,15 +69,15 @@ export interface DomainDialogOptions {
 
 /**
  * A prefetched handle on one domain table: the typed client plus the registry
- * metadata and the caller's capabilities, resolved ONCE by {@link domains.table}.
+ * metadata and the caller's access, resolved ONCE by {@link domains.table}.
  *
  * Everything built from it is synchronous, which is the whole point — a page that
  * opens three widgets over the same table pays for one round of metadata, not
  * three. Data-plane reads are passed through so a handle is also enough to read
  * back what a form just wrote.
  *
- * **Capabilities are a snapshot.** Affordances (a read-only form, a missing Save)
- * come from the capabilities as they were when the handle was acquired; a later
+ * **Access is a snapshot.** Affordances (a read-only form, a missing Save)
+ * come from the access as it was when the handle was acquired; a later
  * grant change — or a `grok.dapi.domains.invalidateUiCaches()` — reaches only
  * widgets built from a NEWLY acquired handle. Re-acquire to re-gate.
  */
@@ -92,8 +92,8 @@ export class DomainTable<TRow = any, TInsert = DG.DomainRowInsert<TRow>,
     public readonly properties: DG.Property[],
     /** Display identity, security mode, audit flag, FK-inverted child tables. */
     public readonly info: DG.DomainTableInfo,
-    /** The caller's effective capabilities, snapshot at acquisition. */
-    public readonly capabilities: DG.DomainTableCapabilities) {}
+    /** The caller's effective access, snapshot at acquisition. */
+    public readonly access: DG.DomainAccess) {}
 
   /** See {@link domains.table}. */
   static async acquire<TRow = any, TInsert = DG.DomainRowInsert<TRow>,
@@ -106,7 +106,7 @@ export class DomainTable<TRow = any, TInsert = DG.DomainRowInsert<TRow>,
       ? grok.dapi.domains.table<TRow, TInsert, TColumn, TExpand, TUpdate>(nameOrClient) : nameOrClient;
     const context = await acquireDomainContext(client);
     return new DomainTable<TRow, TInsert, TColumn, TExpand, TUpdate>(
-      client, context.properties, context.info, context.capabilities);
+      client, context.properties, context.info, context.access);
   }
 
   /** `'<schema>.<table>'` — the row entity type and semType. */
@@ -382,7 +382,7 @@ export namespace domains {
 
   /**
    * THE async boundary: resolves the typed client, the registry properties, the
-   * table info and the caller's capabilities for [nameOrClient] (a
+   * table info and the caller's access for [nameOrClient] (a
    * `'<schema>.<table>'` address, or a client you already hold), and hands back the
    * handle every widget factory is synchronous on.
    */

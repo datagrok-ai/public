@@ -383,7 +383,10 @@ export class BitSet {
     return BitSet.fromBytes(a.getBuffer().slice(0, a.lengthInInts).buffer, a.length);
   }
 
-  get(i) { return (new Uint32Array(this.dart.buffer)[i >>> 5] & (1 << (i & 31))) !== 0; }
+  /** A never-written set is all-true, as a fresh frame's filter is. */
+  get(i) {
+    return this.dart.buffer === undefined || (new Uint32Array(this.dart.buffer)[i >>> 5] & (1 << (i & 31))) !== 0;
+  }
 }
 getters(BitSet, 'length');
 
@@ -487,7 +490,7 @@ class ColumnList {
 }
 
 const EVENTS = ['onCurrentRowChanged', 'onValuesChanged', 'onSelectionChanged', 'onFilterChanged',
-  'onColumnsChanged', 'onColumnNameChanged'];
+  'onColumnsChanged', 'onColumnNameChanged', 'onRowsAdded', 'onRowsRemoved'];
 
 /** As much of a frame as u2 reads: cells, the current row, the column list and the events. The
  * rows are the records given, behind the handle (`dart.rows`); the handle also counts the reads,

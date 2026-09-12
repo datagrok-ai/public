@@ -98,7 +98,6 @@ textarea.u2-input-editor {
 .u2-input-error {
   flex: 1 0 100%;
   min-width: 0;
-  max-width: 260px;
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 3;

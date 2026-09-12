@@ -213,9 +213,9 @@ export async function rejectPublication(rowId: string, reason: string,
   });
 }
 
-/** Per-program write authority via transitive group membership — NOT
- * DomainRow.permissions(), whose client-side admin fast-path ignores the acting
- * identity under impersonation (doc § Platform tasks, row-permission probes). */
+/** Per-program write authority via transitive group membership — NOT the row's
+ * `~can_edit`, whose admin fast-path ignores the acting identity under
+ * impersonation (doc § Platform tasks, row-permission probes). */
 async function requireProgramWriter(
   groups: {contributors: DG.Group | null, approvers: DG.Group | null}, action: string): Promise<void> {
   if (!await currentUserIn(groups.contributors) && !await currentUserIn(groups.approvers))

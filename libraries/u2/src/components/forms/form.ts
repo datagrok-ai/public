@@ -118,6 +118,12 @@ export class Form extends Control {
     return this;
   }
 
+  /** Focus to the first input — where a form starts, and where it returns after Save. */
+  focusFirst(): void {
+    if (this._inputs.length > 0)
+      Form._focus(this._inputs[0]);
+  }
+
   validate(): boolean {
     for (const input of this._inputs) {
       if (input.validity.peek() !== null) {
