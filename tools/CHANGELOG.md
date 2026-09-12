@@ -1,5 +1,9 @@
 # Datagrok-tools changelog
 
+## 6.5.11 (2026-09-12)
+
+* `grok publish` — when no local image exists and the `latest-compatible` lookup fails (a transient network or auth error), the image is now built and pushed like a first publish. It used to record the container with no image at all, so the package landed on the server with that container in `error` (seen with Grokky's `mcp-server` after one `ECONNABORTED` on the login call).
+
 ## 6.5.10 (2026-09-11)
 
 * `grok s pull` — a bundle file name is capped at 200 bytes plus a digest of the full name, so it stays unique and stable across pulls. A nested view under a long space spells a longer name than a path component may hold (255 bytes on ext4 and NTFS): one TWIG snapshot reached 268 and the write failed with `ENAMETOOLONG`, taking down the whole part rather than the entity — a `--by-namespace` part that only touched the space as a dependency died with it.

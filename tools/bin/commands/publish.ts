@@ -417,8 +417,11 @@ async function processDockerImages(
         color.log(`  Build it with: docker build -t ${img.fullLocalName} -f ${dockerfilePath} ${dockerfileDir}`);
         const fallback = await fallbackImage(img, host, devKey, registry, version, contentHash);
         if (fallback.serverError) {
-          color.error(`Cannot resolve fallback: ${fallback.serverError}`);
-          result = {image: null, fallback: true, requestedVersion: registryTag};
+          // A lookup error says nothing about the Dockerfile; build it like a first publish.
+          color.warn(`Cannot resolve fallback: ${fallback.serverError}. Building the image...`);
+          result = buildAndPush() ?? {image: null, fallback: true, requestedVersion: registryTag};
+          if (!result.image)
+            color.error(`No image for ${img.imageName}: build or push failed. No container will be available.`);
         }
         else if (fallback.image && fallback.hashMatch === true) {
           result = fallback;
