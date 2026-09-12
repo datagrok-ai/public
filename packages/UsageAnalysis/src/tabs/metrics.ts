@@ -26,6 +26,8 @@ const THRESH = {
   routeP95Ms: {green: 500, orange: 2000},
   routeP99Ms: {green: 2000, orange: 5000},
   routeErrPct: {green: 10, orange: 50},
+  errorUsers: {green: 2, orange: 5},
+  errorHours: {green: 3, orange: 12},
   diskUsedPct: {orange: 75, red: 90},
   diskFreeBytes: {orange: 5 * 1024 * 1024 * 1024, red: 2 * 1024 * 1024 * 1024},
 };
@@ -123,6 +125,7 @@ export class MetricsView extends UaView {
   private largestTablesHost!: HTMLElement;
   private tableHealthHost!: HTMLElement;
   private httpRoutesHost!: HTMLElement;
+  private errorsHost!: HTMLElement;
   private refreshing = false;
   private metrics: DG.ServerMetrics | null = null;
 
@@ -138,6 +141,7 @@ export class MetricsView extends UaView {
     this.largestTablesHost = ui.div([], 'ua-metrics-grid-host');
     this.tableHealthHost = ui.div([], 'ua-metrics-grid-host');
     this.httpRoutesHost = ui.div([], 'ua-metrics-grid-host');
+    this.errorsHost = ui.div([], 'ua-metrics-grid-host');
 
     const refreshBtn = ui.bigButton('Refresh', () => this.refresh());
     refreshBtn.prepend(ui.iconFA('sync-alt'), ' ');
@@ -176,6 +180,9 @@ export class MetricsView extends UaView {
     const httpRoutesPanel = MetricsView.buildPanel('HTTP routes', this.httpRoutesHost,
       () => this.openFullView(async (limit) => MetricsView.routesFrame((await this.fetchMetrics(limit)).http.routes),
         'getMetrics', 'HTTP routes'));
+    const errorsPanel = MetricsView.buildPanel('Errors', this.errorsHost,
+      () => this.openFullView(async (limit) => MetricsView.errorsFrame((await this.fetchMetrics(limit)).errors.top),
+        'getMetrics', 'Errors'));
 
     const tablesRow = ui.divH([largestTablesPanel, tableHealthPanel], 'ua-metrics-tables-row');
 
@@ -185,6 +192,7 @@ export class MetricsView extends UaView {
       cardsRow2,
       queriesPanel,
       tablesRow,
+      errorsPanel,
       httpRoutesPanel,
     ], 'ua-metrics-root'));
 
@@ -313,7 +321,7 @@ export class MetricsView extends UaView {
   }
 
   private async refreshWindowCards(): Promise<void> {
-    await Promise.all([this.loadErrors(), this.loadSessions(), this.loadMetrics()]);
+    await Promise.all([this.loadSessions(), this.loadMetrics()]);
   }
 
   private fetchMetrics(limit: number): Promise<DG.ServerMetrics> {
@@ -323,9 +331,12 @@ export class MetricsView extends UaView {
   private async loadMetrics(): Promise<void> {
     MetricsView.resetHost(this.queriesGridHost);
     MetricsView.resetHost(this.httpRoutesHost);
+    MetricsView.resetHost(this.errorsHost);
     this.metrics = await MetricsView.safeCall(() => this.fetchMetrics(DASHBOARD_LIMIT), 'getMetrics');
     this.loadLatency();
     this.loadHttpRoutes();
+    this.loadErrors();
+    this.loadTopErrors();
     this.loadQueue();
     this.loadConnections();
     this.loadQueries();
@@ -581,24 +592,46 @@ export class MetricsView extends UaView {
       q.queued === 0 ? 'green' : 'orange');
   }
 
-  private async loadErrors(): Promise<void> {
-    const filter = this.uaToolbox.getFilter();
+  private loadErrors(): void {
     const card = this.card('errors');
     ui.tooltip.bind(card.root, null);
-    const df = await MetricsView.safeCall(() => queries.metricsErrorsCount(filter.date!), 'MetricsErrorsCount');
-    if (!df || df.rowCount === 0) {
+    const m = this.metrics;
+    if (!m) {
+      this.setCard('errors', '—', 'unavailable', 'info');
+      return;
+    }
+    const {count: now, users} = m.errors.now;
+    const prev = m.errors.previous.count;
+    if (now === 0) {
       this.setCard('errors', '0', 'no errors', 'info');
       return;
     }
-    const now = num(df, 'errors_now');
-    const prev = num(df, 'errors_prev');
     const delta = now - prev;
     const color = deltaColor(now, delta);
-    this.setCard('errors', `${now}`, deltaSub(delta), color);
-    const winStart = dts(df, 'window_start');
-    const winEnd = dts(df, 'window_end');
-    const prevStart = dts(df, 'prev_window_start');
-    ui.tooltip.bind(card.root, () => MetricsView.buildErrorsTooltip({now, prev, delta, color, winStart, winEnd, prevStart}));
+    this.setCard('errors', `${now}`, `${users} user${users === 1 ? '' : 's'} · ${deltaSub(delta)}`, color);
+    ui.tooltip.bind(card.root, () => MetricsView.buildErrorsTooltip({
+      now, prev, delta, color, users, bySource: m.errors.bySource,
+      winStart: dayjs(m.window.start), winEnd: dayjs(m.window.end), prevStart: dayjs(m.window.previousStart),
+    }));
+  }
+
+  private loadTopErrors(): void {
+    this.errorsHost.innerHTML = '';
+    const errors = this.metrics?.errors.top;
+    if (!errors) {
+      this.errorsHost.append(MetricsView.degradedMessage('Errors unavailable.'));
+      return;
+    }
+    if (errors.length === 0) {
+      this.errorsHost.append(MetricsView.degradedMessage('No errors recorded in this window.'));
+      return;
+    }
+    const grid = DG.Viewer.grid(MetricsView.errorsFrame(errors), MetricsView.gridOptions());
+    const messageCol = grid.col('message');
+    if (messageCol)
+      messageCol.width = 480;
+    grid.onCellPrepare((gc) => MetricsView.renderErrorsCell(gc));
+    MetricsView.fitGrid(grid, this.errorsHost);
   }
 
   // The "Previous window: N nouns · ±delta (pct) vs previous window" block shared by the
@@ -622,14 +655,20 @@ export class MetricsView extends UaView {
   }
 
   private static buildErrorsTooltip(d: {
-    now: number, prev: number, delta: number, color: CardColor,
+    now: number, prev: number, delta: number, color: CardColor, users: number, bySource: {[source: string]: number},
     winStart: dayjs.Dayjs | null, winEnd: dayjs.Dayjs | null, prevStart: dayjs.Dayjs | null,
   }): HTMLElement {
     const lines: HTMLElement[] = [];
     lines.push(ui.divText(
-      `${d.now.toLocaleString()} error event${d.now === 1 ? '' : 's'} logged in this window.`));
-    lines.push(ui.divText('An error event = one row in events with event_types.source = \'error\'.',
+      `${d.now.toLocaleString()} error event${d.now === 1 ? '' : 's'} logged in this window, ` +
+      `hitting ${d.users} user${d.users === 1 ? '' : 's'}.`));
+    lines.push(ui.divText('An error event = one row in events with event_types.source = \'error\'; ' +
+      'a request refused for what the caller asked (not found, no privileges, a bad argument) is not one.',
       'ua-metrics-tt-dim'));
+    const sources = Object.keys(d.bySource).sort((a, b) => d.bySource[b] - d.bySource[a]);
+    if (sources.length > 0)
+      lines.push(ui.divText(`By source: ${sources.map((s) => `${s || 'unknown'} ${d.bySource[s]}`).join(' · ')}`,
+        'ua-metrics-tt-dim'));
     if (d.winStart && d.winEnd)
       lines.push(ui.divText(formatRange(d.winStart, d.winEnd), 'ua-metrics-tt-dim'));
     const trend = d.color === 'red' ? 'Red = more errors than the previous window.'
@@ -919,6 +958,11 @@ export class MetricsView extends UaView {
       ({route: `${r.method} ${r.route}`, count: r.count, p50: r.p50, p95: r.p95, p99: r.p99, err_pct: r.errPct})));
   }
 
+  private static errorsFrame(errors: DG.ServerMetricsError[]): DG.DataFrame {
+    return MetricsView.frame(errors.map((e) => ({message: e.message, source: e.source ?? '', count: e.count,
+      users: e.users, sessions: e.sessions, hours: e.hours, last_seen: e.lastSeen})));
+  }
+
   private static statementsFrame(rows: DG.ServerMetricsStatement[]): DG.DataFrame {
     return MetricsView.frame(rows.map((s) =>
       ({query: s.query, calls: s.calls, total_ms: s.totalMs, mean_ms: s.meanMs, hit_pct: s.hitPct})));
@@ -979,6 +1023,19 @@ export class MetricsView extends UaView {
       gc.style.textColor = thresholdColor(v, THRESH.routeP99Ms, false);
     else if (name === 'err_pct')
       gc.style.textColor = thresholdColor(v, THRESH.routeErrPct, false);
+  }
+
+  private static renderErrorsCell(gc: DG.GridCell): void {
+    const name = gc.gridColumn.name;
+    const v = gc.cell.value;
+    if (v == null)
+      return;
+    if (name === 'users')
+      gc.style.textColor = thresholdColor(v as number, THRESH.errorUsers, false);
+    else if (name === 'hours')
+      gc.style.textColor = thresholdColor(v as number, THRESH.errorHours, false);
+    else if (name === 'last_seen')
+      gc.style.element = ui.divText(formatAgo(dayjs(v as string)));
   }
 
   private static renderTableHealthCell(gc: DG.GridCell): void {
@@ -1050,7 +1107,6 @@ export class MetricsView extends UaView {
       {name: 'largest_tables.csv',        fn: () => queries.metricsLargestTables(20)},
       {name: 'cache_miss_tables.csv',     fn: () => queries.metricsCacheMissTables()},
       {name: 'connections_offenders.csv', fn: () => queries.metricsConnectionsOffenders(20, 60, 30)},
-      {name: 'errors.csv',                fn: () => queries.metricsErrorsCount(date)},
       {name: 'sessions.csv',              fn: () => queries.metricsSessionsCount(date)},
       {name: 'storage.json',              fn: async () => JSON.stringify(await grok.dapi.info.getStorageStats())},
       {name: 'disk.json',                 fn: () => grok.functions.call('DiskStats') as Promise<string>},
@@ -1067,12 +1123,15 @@ export class MetricsView extends UaView {
       files.push(DG.FileInfo.fromString(sources[i].name, csv));
     }
     if (m) {
-      const {window: w, http, queue, database: db} = m;
+      const {window: w, http, queue, database: db, errors} = m;
       const frames: {[name: string]: DG.DataFrame} = {
         'db_summary.csv': MetricsView.frame([{size_bytes: db.sizeBytes, cache_hit_pct: db.cacheHitPct, stats_reset: db.statsReset}]),
         'connections.csv': MetricsView.frame([db.connections]),
         'queue.csv': MetricsView.frame([queue]),
         'http_routes.csv': MetricsView.routesFrame(http.routes),
+        'errors.csv': MetricsView.errorsFrame(errors.top),
+        'errors_summary.csv': MetricsView.frame([{count: errors.now.count, users: errors.now.users, count_prev: errors.previous.count,
+          window_start: w.start, window_end: w.end, prev_window_start: w.previousStart}]),
         'latency.csv': MetricsView.frame([{...http.now, p95_prev: http.previous.p95, count_prev: http.previous.count,
           window_start: w.start, window_end: w.end, prev_window_start: w.previousStart}]),
       };

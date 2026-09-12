@@ -2,7 +2,8 @@
 
 ## v.next
 
-* Admin: Added `grok.dapi.admin.getMetrics()` — server metrics for a time window (request latency per route, the function-call queue, database size, connections and `pg_stat_statements` rankings) from the new `/api/admin/metrics` endpoint; admin only
+* Admin: Added `grok.dapi.admin.getMetrics()` — server metrics for a time window (request latency per route, the errors recorded — count, distinct users, the previous window's count, a count per source, and the groups by message ordered by users, then hours recurring, then count (`ServerMetricsError`, GROK-20877) — the function-call queue, database size, connections and `pg_stat_statements` rankings) from the new `/api/admin/metrics` endpoint; admin only
+* GROK-20877: Errors: A request the server refused for what the caller asked — not found, no privileges, a bad argument — answers 404/403/400 (`SecurityException` was 500) and is no longer recorded as an error
 * GROK-20848: `HttpDataSource.save` keeps the source's `include`s (immutable data sources reset them, so `include('session.user').save(call)` came back without an author)
 * GROK-20862: Form layout: a choice input is sized to its widest option, so a 200-character option (the ChEMBL FRAC mechanisms) stretched the select and the whole dialog to the viewport width. The select now caps at 80vw; longer options are clipped.
 * GROK-20848: `package.json`: `react` and `@types/react` dropped (nothing imported them since `Widget.react` went away), `@babel/core` moved to `devDependencies`, `files` added so the tarball ships the build output and docs but not sources, configs or scripts.
