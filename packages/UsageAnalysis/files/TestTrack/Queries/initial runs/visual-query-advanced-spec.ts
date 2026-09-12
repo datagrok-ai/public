@@ -715,7 +715,7 @@ test("Queries — Visual Query Advanced (post-process, layout, edit, refresh, pr
     });
     expect(result.viewType).toBe("TableView");
     expect(
-      result.errors?.some((e) => e?.startsWith("Can't open project")),
+      result.errors?.some((e) => e?.startsWith("Unable to open project")),
     ).toBeFalsy();
   });
 
