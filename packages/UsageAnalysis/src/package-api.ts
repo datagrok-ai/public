@@ -276,52 +276,20 @@ export namespace queries {
     return await grok.data.query('UsageAnalysis:SystemActivitySummary', { date, groups });
   }
 
-  export async function metricsPgStatStatementsVersion(): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:MetricsPgStatStatementsVersion', {});
-  }
-
   export async function metricsResetPgStatStatements(): Promise<DG.DataFrame> {
     return await grok.data.query('UsageAnalysis:MetricsResetPgStatStatements', {});
   }
 
-  export async function metricsDbStats(): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:MetricsDbStats', {});
+  export async function metricsCacheMissTables(): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:MetricsCacheMissTables', {});
   }
 
   export async function metricsTableHealthSummary(limit: number ): Promise<DG.DataFrame> {
     return await grok.data.query('UsageAnalysis:MetricsTableHealthSummary', { limit });
   }
 
-  export async function metricsConnections(): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:MetricsConnections', {});
-  }
-
   export async function metricsConnectionsOffenders(limit: number , idleXactSec: number , activeSec: number ): Promise<DG.DataFrame> {
     return await grok.data.query('UsageAnalysis:MetricsConnectionsOffenders', { limit, idleXactSec, activeSec });
-  }
-
-  export async function metricsTopSlowestQueries(limit: number ): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:MetricsTopSlowestQueries', { limit });
-  }
-
-  export async function metricsTopMostCalledQueries(limit: number ): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:MetricsTopMostCalledQueries', { limit });
-  }
-
-  export async function metricsWorstCacheHitQueries(limit: number ): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:MetricsWorstCacheHitQueries', { limit });
-  }
-
-  export async function metricsTopSlowestQueriesPg12(limit: number ): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:MetricsTopSlowestQueriesPg12', { limit });
-  }
-
-  export async function metricsTopMostCalledQueriesPg12(limit: number ): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:MetricsTopMostCalledQueriesPg12', { limit });
-  }
-
-  export async function metricsWorstCacheHitQueriesPg12(limit: number ): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:MetricsWorstCacheHitQueriesPg12', { limit });
   }
 
   export async function metricsLargestTables(limit: number ): Promise<DG.DataFrame> {
@@ -338,14 +306,6 @@ export namespace queries {
 
   export async function metricsSessionsCount(date: string ): Promise<DG.DataFrame> {
     return await grok.data.query('UsageAnalysis:MetricsSessionsCount', { date });
-  }
-
-  export async function metricsLatency(date: string ): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:MetricsLatency', { date });
-  }
-
-  export async function metricsHttpRoutes(date: string , limit: number ): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:MetricsHttpRoutes', { date, limit });
   }
 
   export async function uniqueUsersList(date: string ): Promise<DG.DataFrame> {

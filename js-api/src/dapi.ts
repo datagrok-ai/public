@@ -485,6 +485,25 @@ export class AdminDataSource {
     return api.grok_Dapi_Admin_GetServiceInfos(this.dart);
   }
 
+  /** Server metrics for a time window: HTTP request latency per route, the function-call queue,
+   *  and database statistics. Admin only. Sample: {@link https://public.datagrok.ai/js/samples/dapi/admin} */
+  async getMetrics(options?: ServerMetricsOptions): Promise<ServerMetrics> {
+    const iso = (d: Date | string) => d instanceof Date ? d.toISOString() : d;
+    const params = new URLSearchParams();
+    if (options?.dateStart)
+      params.set('date_start', iso(options.dateStart));
+    if (options?.dateEnd)
+      params.set('date_end', iso(options.dateEnd));
+    if (options?.date)
+      params.set('date', options.date);
+    if (options?.limit != null)
+      params.set('limit', `${options.limit}`);
+    const r = await fetch(`${api.grok_Dapi_Root()}/admin/metrics?${params}`, {credentials: 'include'});
+    if (!r.ok)
+      throw new Error(await r.text());
+    return r.json();
+  }
+
   /** Returns the configured report email address from admin settings.
    * Used as the default recipient for error reports and admin notifications. */
   async getReportEmail(): Promise<string> {
@@ -574,6 +593,112 @@ export interface ServiceInfo {
   time: string,
   status: 'Running' | 'Failed' | 'Stopped',
   type: 'Service' | 'Plugin',
+}
+
+/** Options for {@link AdminDataSource.getMetrics}. */
+export interface ServerMetricsOptions {
+  /** Start of the window (UTC); defaults to 24 hours before `dateEnd`. */
+  dateStart?: Date | string,
+  /** End of the window (UTC); defaults to now. */
+  dateEnd?: Date | string,
+  /** Datagrok datetime pattern (`this week`, `last 30 days`, `yesterday`, ...) resolved on the server;
+   *  ignored when `dateStart` is given. */
+  date?: string,
+  /** Rows per ranking (default 10, max 1000). */
+  limit?: number,
+}
+
+/** Request statistics of a window or of one route. */
+export interface ServerMetricsRequests {
+  /** Requests served. */
+  count: number,
+  /** Median response time, milliseconds. */
+  p50: number,
+  /** 95th-percentile response time, milliseconds. */
+  p95: number,
+  /** 99th-percentile response time, milliseconds. */
+  p99: number,
+  /** Percentage of responses with status ≥ 400. */
+  errPct: number,
+}
+
+/** Request statistics of one route template. */
+export interface ServerMetricsRoute extends ServerMetricsRequests {
+  /** HTTP method (`GET`, `POST`, ...). */
+  method: string,
+  /** The server's route template (`/users/{id}/picture`), or `/{unmatched}` for requests no route handled. */
+  route: string,
+}
+
+/** One `pg_stat_statements` row. */
+export interface ServerMetricsStatement {
+  /** Normalized statement text. */
+  query: string,
+  /** Times executed since the last stats reset. */
+  calls: number,
+  /** Total execution time, milliseconds. */
+  totalMs: number,
+  /** Mean execution time, milliseconds. */
+  meanMs: number,
+  /** Shared-buffer hit percentage; null when the statement read no blocks. */
+  hitPct: number | null,
+}
+
+/** `pg_stat_activity` summary of the platform database. */
+export interface ServerMetricsConnections {
+  /** Client backends connected. */
+  total: number,
+  /** Running a query. */
+  active: number,
+  /** Idle outside a transaction. */
+  idle: number,
+  /** `idle in transaction` — holding locks without running anything. */
+  idleInTransaction: number,
+  /** Waiting on a lock held by another session. */
+  waitingOnLock: number,
+  /** Age of the oldest idle transaction, seconds (0 when none). */
+  oldestIdleTransactionSeconds: number,
+}
+
+/** Result of {@link AdminDataSource.getMetrics}. */
+export interface ServerMetrics {
+  /** ISO 8601; `previousStart` opens the window of the same length right before `start`. */
+  window: {start: string, end: string, previousStart: string},
+  /** Request statistics: the window, the previous window (for deltas), and the slowest routes. */
+  http: {
+    /** The requested window. */
+    now: ServerMetricsRequests,
+    /** The window of the same length right before `window.start`. */
+    previous: {count: number, p95: number},
+    /** Ordered by `p95` descending, at most `limit` rows. */
+    routes: ServerMetricsRoute[],
+  },
+  /** `func_calls` by status: `queued` are waiting, `running` are executing. */
+  queue: {queued: number, running: number},
+  /** Platform database statistics. */
+  database: {
+    /** `pg_database_size` of the platform database. */
+    sizeBytes: number,
+    /** Share of block reads served from `shared_buffers`, percent. */
+    cacheHitPct: number,
+    /** ISO 8601, or null when the statistics were never reset. */
+    statsReset: string | null,
+    /** `pg_stat_activity` summary. */
+    connections: ServerMetricsConnections,
+    /** `pg_stat_statements` rankings, `limit` rows each. */
+    statements: {
+      /** False (with `version` null and empty rankings) when `pg_stat_statements` is not installed. */
+      available: boolean,
+      /** Extension version, e.g. `1.10`. */
+      version: string | null,
+      /** By mean execution time, descending. */
+      slowest: ServerMetricsStatement[],
+      /** By call count, descending. */
+      mostCalled: ServerMetricsStatement[],
+      /** By shared-buffer hit percentage, ascending. */
+      worstCacheHit: ServerMetricsStatement[],
+    },
+  },
 }
 
 /**
