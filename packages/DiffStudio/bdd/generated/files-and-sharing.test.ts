@@ -49,19 +49,21 @@ test.describe("A model file previewed from Browse", () => {
     await run.scenario("The clicker counts Count up to four", async () => {
       await session.step(38, "When user hovers over count input", () => hoverOver(page, el("count input")));
       await session.step(39, "And user clicks on plus icon in count input", () => clickOn(page, el("plus icon in count input")));
-      await session.step(40, "And user clicks on plus icon in count input", () => clickOn(page, el("plus icon in count input")));
+      await session.step(40, "And user hovers over count input", () => hoverOver(page, el("count input")));
       await session.step(41, "And user clicks on plus icon in count input", () => clickOn(page, el("plus icon in count input")));
-      await session.step(42, "Then count input should have value \"4\"", () => shouldHaveValue(page, el("count input"), "4"));
+      await session.step(42, "And user hovers over count input", () => hoverOver(page, el("count input")));
+      await session.step(43, "And user clicks on plus icon in count input", () => clickOn(page, el("plus icon in count input")));
+      await session.step(44, "Then count input should have value \"4\"", () => shouldHaveValue(page, el("count input"), "4"));
     });
     await run.scenario("The inputs take a typed value too", async () => {
-      await session.step(45, "When user enters \"0.1\" into step input", () => enterInto(page, "0.1", el("step input")));
-      await session.step(46, "Then step input should have value \"0.1\"", () => shouldHaveValue(page, el("step input"), "0.1"));
+      await session.step(47, "When user enters \"0.1\" into step input", () => enterInto(page, "0.1", el("step input")));
+      await session.step(48, "Then step input should have value \"0.1\"", () => shouldHaveValue(page, el("step input"), "0.1"));
     });
     await run.scenario("The address carries the inputs, and loading it again brings them back", async () => {
-      await session.step(49, "Then the page address should contain \"step\"", () => urlShouldContain(page, "step"));
-      await session.step(50, "When user opens the model at the page address", () => reopenModelAddress(page));
-      await session.step(51, "Then step input should have value \"0.10\"", () => shouldHaveValue(page, el("step input"), "0.10"));
-      await session.step(52, "And no errors should have been logged", () => noErrors(page));
+      await session.step(51, "Then the page address should contain \"step\"", () => urlShouldContain(page, "step"));
+      await session.step(52, "When user opens the model at the page address", () => reopenModelAddress(page));
+      await session.step(53, "Then step input should have value \"0.10\"", () => shouldHaveValue(page, el("step input"), "0.10"));
+      await session.step(54, "And no errors should have been logged", () => noErrors(page));
     });
     run.finish();
   });

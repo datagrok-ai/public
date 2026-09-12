@@ -2,13 +2,60 @@
    the loaded library knows, and the library and collection files on the server that a feature
    creates and removes. Everything is read through Bio's own helper (`Bio:getMonomerLibHelper`). */
 import {expect, Page} from '@playwright/test';
-import {Given, Then} from '@datagrok-libraries/bdd';
-import {atFeatureEnd} from '@datagrok-libraries/bdd/runtime';
+import {Given, Then, When} from '@datagrok-libraries/bdd';
+import {atFeatureEnd, el} from '@datagrok-libraries/bdd/runtime';
+import {clickOn, selectIn, shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
 
 declare const grok: any;
 
 const LIB_STORAGE = 'Libraries';
 const LIB_SETTINGS = 'Settings';
+
+export const onlyLibrarySelected = Given('only {string} monomer library is selected',
+  async (page: Page, name: string) => {
+    const before: string | null = await page.evaluate(async ([storage, key, library]) => {
+      const helper = await grok.functions.call('Bio:getMonomerLibHelper', {});
+      const providers = await helper.getProviders();
+      const names = (await Promise.all(providers.map((provider: any) => provider.listLibraries()))).flat();
+      if (!names.includes(library))
+        throw new Error(`no monomer library "${library}"; available: ${names.join(', ')}`);
+      return grok.userSettings.getValue(storage, key, true) ?? null;
+    }, [LIB_STORAGE, LIB_SETTINGS, name]);
+    atFeatureEnd(page, async () => {
+      await page.evaluate(async ([storage, key, previous]) => {
+        if (previous === null)
+          grok.userSettings.delete(storage, key, true);
+        else
+          grok.userSettings.add(storage, key, previous, true);
+        const helper = await grok.functions.call('Bio:getMonomerLibHelper', {});
+        await helper.loadMonomerLib(true);
+      }, [LIB_STORAGE, LIB_SETTINGS, before] as [string, string, string | null]);
+    });
+    await page.evaluate(async ([storage, key, library]) => {
+      const settings = JSON.parse(grok.userSettings.getValue(storage, key, true) || '{}');
+      settings.exclude = [];
+      settings.explicit = [library];
+      grok.userSettings.add(storage, key, JSON.stringify(settings), true);
+      const helper = await grok.functions.call('Bio:getMonomerLibHelper', {});
+      await helper.loadMonomerLib(true);
+    }, [LIB_STORAGE, LIB_SETTINGS, name]);
+  }, {tier: 'api', description: 'loads one library and restores the previous selection when the feature ends'});
+
+export const chooseLibraryStorage = When('user chooses {string} storage for the uploaded monomer library',
+  async (page: Page, name: string) => {
+    const providers: string[] = await page.evaluate(async () => {
+      const helper = await grok.functions.call('Bio:getMonomerLibHelper', {});
+      return (await helper.getProviders()).map((provider: any) => provider.name);
+    });
+    expect(providers, 'available monomer library storages').toContain(name);
+    // Bio saves directly when there is only one provider; it asks only when there is a choice.
+    if (providers.length === 1)
+      return;
+    const dialog = '"Select storage for new monomer library" dialog';
+    await shouldBe(page, el(dialog), 'visible');
+    await selectIn(page, name, el(`Storage input in ${dialog}`));
+    await clickOn(page, el(`OK button in ${dialog}`));
+  }, {tier: 'ui', description: 'chooses a storage when Bio offers several; a sole provider is automatic'});
 
 /** Every library on the server selected: the settings Bio keeps in user storage with nothing
  * excluded, and the library reloaded from them. */

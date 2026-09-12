@@ -3,10 +3,13 @@ Feature: To Atomic Level
   Bio | Transform | To Atomic Level... builds a V3000 molfile per sequence: the linear path for
   fasta, the HELM converter for a HELM column with branches and cycles. A molfile a downstream
   standardizer accepts carries no MASS=1 flag on a heavy atom (GROK-15176).
+  The fixture uses the standard HELM monomers, including glutamate's R3 side-chain attachment;
+  custom libraries on the stand must not override them.
 
   Background:
     Given user is logged in
     And the Bio package is initialized
+    And only "HELMCoreLibrary.json" monomer library is selected
 
   Scenario: A fasta column becomes a molblock column
     Given user opens filter_FASTA dataset

@@ -509,11 +509,12 @@ export class FormsViewer extends DG.JsViewer {
         this.fieldsColumnNames[0];
     };
     form.onclick = (event: MouseEvent) => {
-      if (event.ctrlKey && event.shiftKey) {
+      const control = event.ctrlKey || event.metaKey;
+      if (control && event.shiftKey) {
         for (let i = 0; i <= row; i++)
           this.dataFrame.selection.set(i, false);
       } else {
-        if (event.ctrlKey) {
+        if (control) {
           const currentSelection = this.dataFrame.selection.get(row);
           this.dataFrame.selection.set(row, !currentSelection);
         } else if (event.shiftKey) {

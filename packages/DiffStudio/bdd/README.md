@@ -26,11 +26,15 @@ npx grok-bdd run generated/fitting.test.ts  # one feature
 ```
 
 Nine features, 42 scenarios: 1.9 min on three workers against a local stand (2026-09-11), twice
-in a row. The stand needs `DiffStudio` and `Compute2` published, the library's files under
+in a row. The stand needs `DiffStudio`, `Compute2`, and `WebComponents` published, the library's files under
 `System:AppData/DiffStudio/library` (the package's `files/library`), and a dev key for the login
 (`libraries/bdd/README.md`, "What the stand needs"). Every feature leaves the stand as it found it:
 the library file a save adds and the script the script view saves are deleted when the feature
 ends.
+
+Install the runtime packages with `grok s packages install DiffStudio Compute2 WebComponents --host localhost`.
+`WebComponents` registers the function form and docked viewers used by Model Hub; without it,
+the model can open with no inputs and report `destroy is not a function` when its view closes.
 
 ## What the platform gave these features
 

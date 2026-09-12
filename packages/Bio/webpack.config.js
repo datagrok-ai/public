@@ -30,12 +30,8 @@ module.exports = {
     rules: [
       {
         test: /\.wasm$/i,
-        type: 'javascript/auto',
-        loader: 'file-loader',
-        options: {
-          publicPath: 'dist/',
-          name: '[name].[ext]',
-        },
+        type: 'asset/resource',
+        generator: {filename: '[name][ext]'},
       },
       {test: /\.js$/, enforce: 'pre', use: ['source-map-loader'], exclude: /node_modules/},
       {test: /\.ts(x?)$/, use: 'ts-loader', exclude: /node_modules/},

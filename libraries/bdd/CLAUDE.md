@@ -79,7 +79,8 @@ and `isRenderPending`, `onContextMenuShown/Closed`, `getWidgetStatus().hitAreas/
   and data step takes one; **no check moves it**, so several can follow one change.
 - **A settle ends when the viewer says nothing is pending** (`isRenderPending`) and a render has
   landed — through every pass it announces; 10 s pending is a platform failure; a viewer without
-  the signal falls back to a 300 ms cap. Settles are armed before the change. Negative checks
+  the signal falls back to a 300 ms cap. The resizer includes the first layout: otherwise a grid
+  can report ready with its interactive overlay still 300×150. Settles are armed before the change. Negative checks
   (`not repainted`, `same range`, `same reading`) read after `quiet`.
 - **A gesture aims where the viewer has finished putting the thing**: `hitArea(…, beforeChange)`
   settles first; `menuPoint` also waits for the anchor's box to hold for two frames; hit areas are
@@ -87,6 +88,11 @@ and `isRenderPending`, `onContextMenuShown/Closed`, `getWidgetStatus().hitAreas/
   `menuPoint` skips the viewer waits for a non-viewer.
 - **Typed text is verified and retyped** (`typeVerified`); an editor that already has the focus
   is not clicked; a hit area typed into must end up owning the focus (`typeIntoArea`).
+- **Platform keys are normalized in the shared gesture helpers.** `Control` / `Ctrl` becomes
+  `ControlOrMeta`, including held modifiers for drags and legends; typing and clearing also
+  select all with the platform modifier. `Delete` / `Del` follows `d4/shortcuts.dart`
+  (Backspace on macOS, Delete elsewhere). Physical keys are `ControlLeft` / `ControlRight`,
+  `ForwardDelete` and `Backspace`; the grid's custom current-cell copy requires `ControlLeft+Shift+C`.
 - **Every Dart column picker goes through `pickInColumnGrid`**: the first letter is pressed on the
   selector, the name retyped until the box holds it, Enter pressed on the box, and a popup still
   open afterwards is the failure.
@@ -109,7 +115,8 @@ and `isRenderPending`, `onContextMenuShown/Closed`, `getWidgetStatus().hitAreas/
 - **The context panel renders the current object (`grok.shell.o`) and nothing else**
   (`property_panel.dart` on `onCurrentObjectChanged`; `grok.shell.windows.showContextPanel`
   shows it). The setter drops a change to the object already current, one within 2 s of a
-  property edit and one while the object is frozen, so a click can leave the panel as it was:
+  property edit and one while the object is frozen. An explicit click in a top-level grid releases
+  the property-edit guard, so a cell clicked just after expanding a pane still becomes current:
   `the context panel is open` is the Given, `the context panel should show "X"` names the object
   before any pane is read, and a failure inside the panel reports the current object and the
   panes in the DOM but not shown (`explain`). **A context pane that counts its items is hidden

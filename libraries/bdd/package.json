@@ -55,7 +55,7 @@
     "tsx": "^4.19.0"
   },
   "peerDependencies": {
-    "@playwright/test": ">=1.40.0"
+    "@playwright/test": ">=1.45.0"
   },
   "devDependencies": {
     "@playwright/test": "~1.61.0",

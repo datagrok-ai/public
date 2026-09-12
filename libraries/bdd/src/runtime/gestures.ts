@@ -29,13 +29,14 @@ function gestureOf(page: Page, target: ElementRef): {click?: 'mouse' | 'dom'; ty
 /** Holds the keys around a gesture (Control adds to a selection, Shift extends it, Alt zooms).
  * Playwright's `down` takes one key, so a chord is held key by key. */
 export async function withKeys(page: Page, keys: string[], body: () => Promise<void>): Promise<void> {
-  for (const k of keys)
+  const held = keys.flatMap(keysOf);
+  for (const k of held)
     await page.keyboard.down(k);
   try {
     await body();
   }
   finally {
-    for (const k of [...keys].reverse())
+    for (const k of [...held].reverse())
       await page.keyboard.up(k);
   }
 }
@@ -144,7 +145,7 @@ export async function hasFocus(loc: Locator): Promise<boolean> {
  * and so is one that refuses the text (read-only, disabled): refusing it is what the step after
  * such a typing claims. */
 export async function typeVerified(editor: Locator, text: string, what: string): Promise<void> {
-  await editor.press('Control+A');
+  await editor.press('ControlOrMeta+A');
   await editor.pressSequentially(text);
   const refuses = await editor.evaluate((e) => (e as HTMLInputElement).readOnly || (e as HTMLInputElement).disabled ||
     e.getAttribute('aria-readonly') === 'true' || e.getAttribute('aria-disabled') === 'true').catch(() => false);
@@ -152,7 +153,7 @@ export async function typeVerified(editor: Locator, text: string, what: string):
     return;
   await expect.poll(async () => {
     if (await editor.inputValue() !== text) {
-      await editor.press('Control+A');
+      await editor.press('ControlOrMeta+A');
       await editor.pressSequentially(text);
     }
     return editor.inputValue();
@@ -176,14 +177,16 @@ export async function typeInto(page: Page, target: ElementRef, text: string, com
 export async function clear(page: Page, target: ElementRef): Promise<void> {
   const editor = await editorOf(page, target);
   await editor.click();
-  await editor.press('Control+A');
+  await editor.press('ControlOrMeta+A');
   await editor.press('Delete');
 }
 
 export function normalizeKey(key: string): string {
-  const names: Record<string, string> = {ctrl: 'Control', control: 'Control', cmd: 'Meta', meta: 'Meta',
+  const names: Record<string, string> = {ctrl: 'ControlOrMeta', control: 'ControlOrMeta', controlormeta: 'ControlOrMeta', cmd: 'Meta', meta: 'Meta',
+    controlleft: 'ControlLeft', controlright: 'ControlRight', forwarddelete: 'Delete',
     alt: 'Alt', shift: 'Shift', esc: 'Escape', escape: 'Escape', enter: 'Enter', return: 'Enter',
-    tab: 'Tab', space: 'Space', backspace: 'Backspace', delete: 'Delete', del: 'Delete',
+    tab: 'Tab', space: 'Space', backspace: 'Backspace', delete: process.platform === 'darwin' ? 'Backspace' : 'Delete',
+    del: process.platform === 'darwin' ? 'Backspace' : 'Delete',
     up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight', home: 'Home', end: 'End',
     pageup: 'PageUp', pagedown: 'PageDown'};
   return key.split('+').map((part) => {
@@ -416,7 +419,7 @@ export async function setSwitched(page: Page, target: ElementRef, on: boolean): 
 export async function insertLine(page: Page, target: ElementRef, text: string): Promise<void> {
   const loc = (await locate(page, target)).first();
   await loc.click();
-  await page.keyboard.press('Control+Home');
+  await press(page, 'Control+Home');
   await page.keyboard.type(text);
   await page.keyboard.press('Enter');
   await expect(loc, `${target.phrase} after the line was typed`).toContainText(text);

@@ -1,6 +1,10 @@
 # Bio changelog
 
 ## v.next
+* Fixed sequence and monomer context panels staying on the previous cell when a grid cell is clicked within two seconds of expanding a section (core grid fix).
+* Tests: Atomic-level conversion selects the standard HELM library so custom monomers on the stand cannot change the fixture's chemistry, and restores the previous selection afterwards.
+* Tests: Monomer library uploads support stands with only Files storage as well as stands with multiple storage providers.
+* Fixed WebAssembly asset URLs in package workers so sequence-space clustering loads the DBSCAN binary from the published package.
 
 * Tests: Added the package's Gherkin features under `bdd/` (analyze, transform, calculate, search, annotate, top menu, service surface, monomer libraries and collections, cell renderers and cell actions) on `@datagrok-libraries/bdd`
 * Tests: Kept the sequence helper in the page in the init step (returned to Node it serialized the RDKit heap, ten seconds per feature) and listed each top-menu group's commands in one walk
