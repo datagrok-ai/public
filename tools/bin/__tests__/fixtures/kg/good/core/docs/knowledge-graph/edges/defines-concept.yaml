@@ -1,4 +1,4 @@
-type: DEFINES_CONCEPT
+type: defines-concept
 from: Declaration
 to: Concept
 key: defined_by

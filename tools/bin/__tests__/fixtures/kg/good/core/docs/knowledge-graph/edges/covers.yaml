@@ -1,5 +1,5 @@
-type: COVERS
-extends: EVIDENCES
+type: covers
+extends: evidences
 from: Scenario
 to: Feature
 key: covers

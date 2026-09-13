@@ -422,7 +422,9 @@ Validate and generate the knowledge graph: the type files under
 core/docs/knowledge-graph (schema.yaml, nodes/*.yaml, edges/*.yaml) and the
 home documents, the markdown files whose frontmatter carries a \`feature:\` or a
 prefixed \`id:\` key. A home needs a name: \`name:\`, \`title:\`, or the first
-\`#\` heading of the body.
+\`#\` heading of the body. Type names and files are lower-dash-case (\`part-of\`,
+\`customer-contact\`); graph labels are the upper-snake rendering (\`PART_OF\`),
+derived by the build and never authored.
 
 Home documents are looked for in every markdown file under
     ${HOME_ROOTS.join('\n    ')}
@@ -437,12 +439,12 @@ Verbs:
                 properties) against the other homes, and repo paths cited in
                 frontmatter or in the body. Prose \`~id\` mentions and code markers
                 are not read yet; they arrive with \`build\`. Exit 1 on errors.
-    gen         Write kg.d.ts, the GLOSSARY.md tables and core/docs/FEATURES.md.
-                Refuses while check reports errors.
+    gen         Write kg.d.ts, the glossary.md tables and feature-tree.md, all inside
+                core/docs/knowledge-graph. Refuses while check reports errors.
     help        Show this help
 
 \`check\` gates the sources; \`gen --check\` gates the generated files, failing when
-kg.d.ts, GLOSSARY.md or FEATURES.md on disk differ from what gen would write.
+kg.d.ts, glossary.md or feature-tree.md on disk differ from what gen would write.
 
 Options:
     --kg <dir>          The knowledge-graph folder (default: found by walking up from
@@ -458,7 +460,7 @@ Examples:
   grok kg gen
   grok kg gen --check
 
-The contract is core/docs/knowledge-graph/CONVENTIONS.md.
+The contract is core/docs/knowledge-graph/conventions.md.
 `;
 
 export const help = {

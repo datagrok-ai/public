@@ -1,4 +1,4 @@
-type: SUPERSEDES
+type: supersedes
 from: Feature
 to: Feature
 key: superseded_by

@@ -1,4 +1,4 @@
-type: IS_IMPLEMENTED_IN
+type: is-implemented-in
 from: Feature
 to: Component
 key: code

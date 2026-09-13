@@ -1,11 +1,11 @@
-/// Home documents: the markdown files whose frontmatter declares a node (CONVENTIONS §5).
+/// Home documents: the markdown files whose frontmatter declares a node (conventions.md §5).
 /// Discovers them under the monorepo, validates the frontmatter against the type system,
 /// resolves references and cited paths, and reports what `grok kg gen` would stub.
 import * as fs from 'fs';
 import * as path from 'path';
 import {globSync} from 'glob';
 import {splitFrontmatter, keyLine, Frontmatter} from './frontmatter';
-import {TypeSystem, NodeType, EdgeType, Member, Issue, checkValue, isSubtype, pascal} from './types';
+import {TypeSystem, NodeType, EdgeType, Member, Issue, checkValue, isSubtype, pascal, kebabOfLabel} from './types';
 
 /** Where home documents may live, relative to the monorepo root: any markdown file in the repos. */
 export const HOME_ROOTS = [
@@ -249,7 +249,7 @@ class HomeChecker {
       if (key === 'feature' || key === 'id' || key === 'type' || value === null) continue;
       if (key === 'title' && typeof value === 'string') continue;
       if (key === 'part_of') {
-        error('PART_OF is derived from the id path and never authored; remove part_of:', key);
+        error('part-of is derived from the id path and never authored; remove part_of:', key);
         continue;
       }
       if (key === 'edges') {
@@ -344,7 +344,9 @@ class HomeChecker {
       const {type, to, ...props} = item as Record<string, unknown>;
       const edge = typeof type === 'string' ? this.system.edges.get(type) : undefined;
       if (!edge) {
-        error(`${where}: unknown edge type ${JSON.stringify(type)}`, 'edges');
+        const kebab = typeof type === 'string' ? kebabOfLabel(type) : null;
+        if (kebab && this.system.edges.has(kebab)) error(`${where}: edge types are lower-dash-case: write '${kebab}', not '${type}'`, 'edges');
+        else error(`${where}: unknown edge type ${JSON.stringify(type)}`, 'edges');
         return;
       }
       if (edge.abstract || !edge.derivedBy.includes('annotation')) {

@@ -1,4 +1,4 @@
-type: EVIDENCES
+type: evidences
 abstract: true
 from: Artifact
 to: Feature

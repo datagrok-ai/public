@@ -2,8 +2,9 @@
 feature: govern/permissions
 owner: askalkin
 edges:
-  - {type: PART_OF, to: govern}
-  - {type: COVERS, to: visualize}
-  - {type: NOPE, to: visualize}
+  - {type: part-of, to: govern}
+  - {type: covers, to: visualize}
+  - {type: nope, to: visualize}
+  - {type: USES_CONCEPT, to: dataframe}
 ---
 # Permissions

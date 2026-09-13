@@ -1,5 +1,5 @@
 /// The knowledge-graph type system: `schema.yaml`, `nodes/*.yaml`, `edges/*.yaml`
-/// (core/docs/knowledge-graph/CONVENTIONS.md §7). Loads the files, parses every member
+/// (core/docs/knowledge-graph/conventions.md §7). Loads the files, parses every member
 /// with the TypeScript compiler and checks the constraints listed in `schema.yaml`.
 import * as fs from 'fs';
 import * as path from 'path';
@@ -94,8 +94,8 @@ export interface ParseOptions {
 const SCALARS: Scalar[] = ['string', 'number', 'boolean', 'Date', 'Text', 'Version', 'Path', 'Url',
   'Provenance', 'TypeUnion', 'Member'];
 const MEMBER_NAME = /^[a-z][a-z0-9_]*$/;
-const NODE_TYPE_NAME = /^[a-z][a-z0-9-]*$/;
-const EDGE_TYPE_NAME = /^[A-Z][A-Z0-9_]*$/;
+const TYPE_NAME = /^[a-z][a-z0-9-]*$/;
+const UPPER_SNAKE = /^[A-Z][A-Z0-9_]*$/;
 const PREFIX = /^[A-Z][A-Za-z]{0,5}$/;
 const DEFAULT_ROOTS = ['feature', 'concept', 'component', 'artifact', 'work', 'actor', 'infra', 'type'];
 const DEFAULT_PROVENANCE = ['annotation', 'filesystem', 'ast', 'registry', 'git', 'external', 'llm', 'manual'];
@@ -108,6 +108,16 @@ export function pascal(kebab: string): string {
   return kebab.split(/[-_]/).map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join('');
 }
 
+/** The graph label of a type name: the UPPER_SNAKE rendering Cypher wants (`part-of` -> `PART_OF`); derived, never authored. */
+export function graphLabel(name: string): string {
+  return name.toUpperCase().replace(/-/g, '_');
+}
+
+/** The lower-dash-case spelling of an UPPER_SNAKE label, or null when [name] is not one. */
+export function kebabOfLabel(name: string): string | null {
+  return UPPER_SNAKE.test(name) ? name.toLowerCase().replace(/_/g, '-') : null;
+}
+
 export function firstSentence(text: string): string {
   const flat = String(text ?? '').split(/\s+/).join(' ').trim();
   const m = /(.+?\.)(\s|$)/.exec(flat);
@@ -116,7 +126,7 @@ export function firstSentence(text: string): string {
 
 class MemberError extends Error {}
 
-/** Parses one `<name>[?]: <ts-type> [= <default>]` entry (CONVENTIONS §7.1). */
+/** Parses one `<name>[?]: <ts-type> [= <default>]` entry (conventions.md §7.1). */
 export function parseMember(name: string, spec: unknown, options: ParseOptions = {}): {member?: Member, error?: string} {
   try {
     return {member: parseMemberOrThrow(name, spec, options)};
@@ -288,8 +298,9 @@ export function loadTypeSystem(kgRoot: string): TypeSystem {
   if (provenanceSpec.member?.kind === 'enum') system.provenance = provenanceSpec.member.literals!;
   else error(schemaFile, `member.aliases.Provenance: ${provenanceSpec.error ?? 'expected a string literal union'}`);
 
-  const rawNodes = loadFolder(path.join(kgRoot, 'nodes'), NODE_TYPE_NAME, 'node', error);
-  const rawEdges = loadFolder(path.join(kgRoot, 'edges'), EDGE_TYPE_NAME, 'edge', error);
+  const namePattern = (key: string) => typeof constraints[key] === 'string' ? new RegExp(constraints[key]) : TYPE_NAME;
+  const rawNodes = loadFolder(path.join(kgRoot, 'nodes'), namePattern('node_type_name'), 'node', error);
+  const rawEdges = loadFolder(path.join(kgRoot, 'edges'), namePattern('edge_type_name'), 'edge', error);
   // a file that failed to load still names its type (nodes/<type>.yaml), so references to it do not cascade into noise
   const nodeNames = [...rawNodes.keys(), ...unreadableTypes(path.join(kgRoot, 'nodes'), rawNodes)];
   const schemaNode = parseSchemaSection(schema.node_type, `${schemaFile} node_type`, error);
@@ -420,7 +431,9 @@ function loadFolder(folder: string, namePattern: RegExp, kind: string,
       continue;
     }
     const name: string = data.type;
-    if (!namePattern.test(name)) error(file, `${kind} type name '${name}' does not match ${namePattern}`);
+    const kebab = kebabOfLabel(name);
+    if (kebab) error(file, `${kind} type name '${name}' is upper-snake; type names are lower-dash-case, write '${kebab}' (the graph label ${name} is derived from it)`);
+    else if (!namePattern.test(name)) error(file, `${kind} type name '${name}' does not match ${namePattern}`);
     if (entry !== `${name}.yaml`) error(file, `file name does not match type '${name}' (expected ${name}.yaml)`);
     if (out.has(name)) {
       error(file, `duplicate ${kind} type '${name}', also declared in ${out.get(name)!.file}`);

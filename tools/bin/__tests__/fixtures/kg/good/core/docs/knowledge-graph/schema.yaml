@@ -1,7 +1,7 @@
 # Meta-schema for the knowledge graph type files.
 #
 # Validates nodes/<type>.yaml and edges/<TYPE>.yaml. Every "properties" block here, and
-# in every type file, uses TypeScript class-member syntax (CONVENTIONS.md §7.1):
+# in every type file, uses TypeScript class-member syntax (conventions.md §7.1):
 #
 #     <name>[?]: <ts-type> [= <default>]
 #
@@ -18,13 +18,13 @@ node_type:
   extends?:      string                       # another node type; absent only on `node`, the base; the eight roots extend it
   prefix?:       string                       # id prefix; declared by exactly one type in a chain, inherited below it, never redeclared
   abstract?:     boolean = false              # true: no instances, only subtypes
-  hierarchical?: boolean = false              # true: ids are paths and PART_OF is derived from them
+  hierarchical?: boolean = false              # true: ids are paths and part-of is derived from them
   authored?:     boolean = false              # true: instances have home documents written by people
   visibility?:   "'public' | 'dev' | 'internal'"   # default for instances; instances may only narrow
   was?:          string                       # kind name in the retired July 2026 Python engine, for the one-time migration
   description:   Text                         # first sentence becomes the glossary line
   properties?:   Record<string, Member>       # declared properties; a child may add or narrow, never remove or loosen
-  inherit?:      string[]                     # property names that flow down PART_OF unless a child sets them
+  inherit?:      string[]                     # property names that flow down part-of unless a child sets them
   home?:         Text                         # where instances' home documents live, for people; not enforced
   rules?:        Text[]                       # constraints `grok kg check` enforces beyond the property types, in words
 
@@ -32,7 +32,7 @@ node_type:
 # What an edge type file may contain
 # ---------------------------------------------------------------------------------
 edge_type:
-  type:          string                       # UPPER_SNAKE, unique across edges/
+  type:          string                       # lowercase kebab, unique across edges/; the graph label is its UPPER_SNAKE rendering (part-of -> PART_OF)
   extends?:      string                       # another edge type; children may narrow from/to and add properties
   abstract?:     boolean = false
   was?:          string
@@ -40,14 +40,14 @@ edge_type:
   to:            TypeUnion
   key?:          string                       # frontmatter key that spells this edge in a home doc ("requested_by")
   key_side?:     "'from' | 'to' = 'from'"   # which end's home doc carries the key (`defined_by` sits on the concept, the target)
-  symmetric?:    boolean = false              # a RELATED_TO style edge; stored once, matched both ways
+  symmetric?:    boolean = false              # a related-to style edge; stored once, matched both ways
   cardinality?:  "'one' | 'many' = 'many'"    # max out-degree per source node
   same_type?:    boolean = false              # source and target must share a concrete type
   acyclic?:      boolean = false
   derived_by:    Provenance[]                 # how instances may come to exist; "annotation" makes the key authorable
   description:   Text
   properties?:   Record<string, Member>
-  inherits?:     string[]                     # node properties this edge propagates from target to source (PART_OF only)
+  inherits?:     string[]                     # node properties this edge propagates from target to source (part-of only)
 
 # ---------------------------------------------------------------------------------
 # Member syntax and the type vocabulary
@@ -105,7 +105,7 @@ manifest:
 # ---------------------------------------------------------------------------------
 constraints:
   node_type_name:   "^[a-z][a-z0-9-]*$"
-  edge_type_name:   "^[A-Z][A-Z0-9_]*$"
+  edge_type_name:   "^[a-z][a-z0-9-]*$"        # graph label = upper-snake of the name
   prefix:           "^[A-Z][A-Za-z]{0,5}$"
   max_depth:        3                         # levels below a root
   single_parent:    true                      # one `extends` per type

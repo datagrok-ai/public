@@ -1,4 +1,4 @@
-type: PART_OF
+type: part-of
 from: Feature | Concept | Scenario
 to: Feature | Concept | Scenario
 same_type: true

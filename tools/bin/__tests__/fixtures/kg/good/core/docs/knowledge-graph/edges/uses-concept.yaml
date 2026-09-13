@@ -1,4 +1,4 @@
-type: USES_CONCEPT
+type: uses-concept
 from: Feature
 to: Concept
 key: concepts

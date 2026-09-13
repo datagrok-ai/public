@@ -1,5 +1,5 @@
 /// `grok kg check|gen` — the knowledge-graph type files and home documents
-/// (core/docs/knowledge-graph/CONVENTIONS.md §11.1).
+/// (core/docs/knowledge-graph/conventions.md §11.1).
 import * as fs from 'fs';
 import * as path from 'path';
 import {loadTypeSystem, Issue} from '../utils/kg/types';
@@ -17,7 +17,7 @@ export async function kg(argv: any): Promise<boolean> {
     console.log(HELP_KG);
     return true;
   }
-  if (PLANNED_VERBS.includes(verb)) return fail(`grok kg ${verb} is not implemented yet (CONVENTIONS.md §11.1); check and gen are`);
+  if (PLANNED_VERBS.includes(verb)) return fail(`grok kg ${verb} is not implemented yet (conventions.md §11.1); check and gen are`);
   if (verb !== 'check' && verb !== 'gen') {
     console.error(`unknown verb '${verb}'`);
     return false;
@@ -27,7 +27,7 @@ export async function kg(argv: any): Promise<boolean> {
   if (output !== 'table' && output !== 'json') return fail(`--output must be table or json, got '${output}'`);
   const quiet = argv.quiet === true;
   const typesOnly = argv['types-only'] === true;
-  if (verb === 'gen' && typesOnly) return fail('--types-only cannot be combined with gen: FEATURES.md is generated from the home documents');
+  if (verb === 'gen' && typesOnly) return fail('--types-only cannot be combined with gen: feature-tree.md is generated from the home documents');
 
   const kgRoot = argv.kg ? path.resolve(String(argv.kg)) : findKgRoot(process.cwd());
   if (!kgRoot || !fs.existsSync(path.join(kgRoot, 'schema.yaml')))

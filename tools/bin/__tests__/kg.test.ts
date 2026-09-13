@@ -1,11 +1,11 @@
 /// `grok kg check` / `grok kg gen` against the mini monorepo under fixtures/kg/good and the
-/// deliberately broken home documents under fixtures/kg/broken (CONVENTIONS.md §5, §7, §10).
+/// deliberately broken home documents under fixtures/kg/broken (conventions.md §5, §7, §10).
 import {describe, it, expect, vi} from 'vitest';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import {fileURLToPath} from 'url';
-import {parseMember, loadTypeSystem, TypeSystem} from '../utils/kg/types';
+import {parseMember, loadTypeSystem, graphLabel, TypeSystem} from '../utils/kg/types';
 import {splitFrontmatter} from '../utils/kg/frontmatter';
 import {loadHomes, makeReport, HomeSet} from '../utils/kg/homes';
 import {generate, generateDts, spliceGlossary, generateFeatures, writeOutputs} from '../utils/kg/gen';
@@ -66,7 +66,7 @@ async function run(argv: Record<string, unknown>): Promise<{ok: boolean, out: st
   }
 }
 
-describe('kg member syntax (CONVENTIONS §7.1)', () => {
+describe('kg member syntax (conventions.md §7.1)', () => {
   it('reads a nullable scalar', () => {
     const {member} = parseMember('slack?', 'string');
     expect(member).toMatchObject({name: 'slack', nullable: true, list: false, kind: 'scalar', scalar: 'string'});
@@ -122,7 +122,7 @@ describe('kg member syntax (CONVENTIONS §7.1)', () => {
   });
 });
 
-describe('kg type files (CONVENTIONS §7.3, §7.4, schema.yaml constraints)', () => {
+describe('kg type files (conventions.md §7.3, §7.4, schema.yaml constraints)', () => {
   it('validates the fixture type system clean and merges members down the chain', () => {
     const system = loadTypeSystem(path.join(fixtures, 'good', KG_DIR));
     expect(system.errors).toEqual([]);
@@ -132,7 +132,7 @@ describe('kg type files (CONVENTIONS §7.3, §7.4, schema.yaml constraints)', ()
     expect(developer.authored).toBe(true);
     expect(developer.members.company).toMatchObject({nullable: false, refs: ['team']});
     expect(developer.members.email).toMatchObject({nullable: false});
-    expect(system.edges.get('COVERS')!.properties).toHaveProperty('strength');
+    expect(system.edges.get('covers')!.properties).toHaveProperty('strength');
     expect(system.keys.get('superseded_by')!.keySide).toBe('to');
   });
 
@@ -179,20 +179,32 @@ describe('kg type files (CONVENTIONS §7.3, §7.4, schema.yaml constraints)', ()
   });
 
   it('rejects an edge that widens its parent endpoints', () => {
-    expect(typeErrors((kg) => fs.writeFileSync(path.join(kg, 'edges/COVERS.yaml'),
-      fs.readFileSync(path.join(kg, 'edges/COVERS.yaml'), 'utf8').replace('to: Feature', 'to: Feature | Concept'))))
-      .toEqual([expect.stringMatching(/COVERS\.to: Concept is not within EVIDENCES\.to: Feature/)]);
+    expect(typeErrors((kg) => fs.writeFileSync(path.join(kg, 'edges/covers.yaml'),
+      fs.readFileSync(path.join(kg, 'edges/covers.yaml'), 'utf8').replace('to: Feature', 'to: Feature | Concept'))))
+      .toEqual([expect.stringMatching(/covers\.to: Concept is not within evidences\.to: Feature/)]);
   });
 
   it('reports endpoint widening once, against the nearest violating ancestor', () => {
-    expect(typeErrors((kg) => fs.writeFileSync(path.join(kg, 'edges/ASSERTS.yaml'),
-      'type: ASSERTS\nextends: COVERS\nfrom: Scenario\nto: Concept\nderived_by: [annotation]\ndescription: Widens twice over.\n')))
-      .toEqual(['edge ASSERTS.to: Concept is not within COVERS.to: Feature']);
+    expect(typeErrors((kg) => fs.writeFileSync(path.join(kg, 'edges/asserts.yaml'),
+      'type: asserts\nextends: covers\nfrom: Scenario\nto: Concept\nderived_by: [annotation]\ndescription: Widens twice over.\n')))
+      .toEqual(['edge asserts.to: Concept is not within covers.to: Feature']);
   });
 
   it('quotes the ancestor declaration in a narrowing message without nesting quotes', () => {
     expect(typeErrors((kg) => append(kg, 'nodes/developer.yaml', "  tier?:         \"'staff' | 'alien'\"\n")))
       .toEqual(["developer.tier: adds 'alien' not allowed by the ancestor (declared by person as 'staff' | 'contractor' | 'guest' = 'staff')"]);
+  });
+
+  it('rejects an upper-snake type name and points at the lower-dash-case spelling', () => {
+    expect(typeErrors((kg) => fs.writeFileSync(path.join(kg, 'edges/DEPENDS_ON.yaml'),
+      'type: DEPENDS_ON\nfrom: Feature\nto: Feature\nderived_by: [annotation]\ndescription: Old spelling.\n')))
+      .toEqual([expect.stringMatching(/^edge type name 'DEPENDS_ON' is upper-snake; type names are lower-dash-case, write 'depends-on' \(the graph label DEPENDS_ON is derived from it\)$/)]);
+  });
+
+  it('renders the graph label of a type name as upper-snake', () => {
+    expect(graphLabel('part-of')).toBe('PART_OF');
+    expect(graphLabel('uses-concept')).toBe('USES_CONCEPT');
+    expect(graphLabel('covers')).toBe('COVERS');
   });
 
   it('rejects a duplicate YAML key', () => {
@@ -208,12 +220,12 @@ describe('kg type files (CONVENTIONS §7.3, §7.4, schema.yaml constraints)', ()
   });
 
   it('rejects an edge key without annotation provenance and a same_type mismatch', () => {
-    expect(typeErrors((kg) => fs.writeFileSync(path.join(kg, 'edges/COVERS.yaml'),
-      fs.readFileSync(path.join(kg, 'edges/COVERS.yaml'), 'utf8').replace('derived_by: [annotation]', 'derived_by: [filesystem]'))))
-      .toEqual([expect.stringMatching(/COVERS: has key 'covers' but 'annotation' is not in derived_by/)]);
-    expect(typeErrors((kg) => fs.writeFileSync(path.join(kg, 'edges/PART_OF.yaml'),
-      fs.readFileSync(path.join(kg, 'edges/PART_OF.yaml'), 'utf8').replace('to: Feature | Concept | Scenario', 'to: Feature'))))
-      .toEqual([expect.stringMatching(/PART_OF: same_type but from/)]);
+    expect(typeErrors((kg) => fs.writeFileSync(path.join(kg, 'edges/covers.yaml'),
+      fs.readFileSync(path.join(kg, 'edges/covers.yaml'), 'utf8').replace('derived_by: [annotation]', 'derived_by: [filesystem]'))))
+      .toEqual([expect.stringMatching(/covers: has key 'covers' but 'annotation' is not in derived_by/)]);
+    expect(typeErrors((kg) => fs.writeFileSync(path.join(kg, 'edges/part-of.yaml'),
+      fs.readFileSync(path.join(kg, 'edges/part-of.yaml'), 'utf8').replace('to: Feature | Concept | Scenario', 'to: Feature'))))
+      .toEqual([expect.stringMatching(/part-of: same_type but from/)]);
   });
 });
 
@@ -234,7 +246,7 @@ describe('kg frontmatter', () => {
   });
 });
 
-describe('kg home documents (CONVENTIONS §5, §10)', () => {
+describe('kg home documents (conventions.md §5, §10)', () => {
   it('accepts the good monorepo: features, concepts, a developer and a team', () => {
     const repo = makeRepo();
     const {system, homes} = load(repo);
@@ -350,16 +362,16 @@ describe('kg home documents (CONVENTIONS §5, §10)', () => {
   it('validates edge properties on a map item against the edge type', () => {
     expect(brokenErrors('bad-edge-property.md')).toEqual([
       'core/docs/broken.md:4: concepts[0].role: "bogus" is not one of \'central\' | \'supporting\'',
-      "core/docs/broken.md:4: concepts[1]: USES_CONCEPT has no property 'weight' (role)",
+      "core/docs/broken.md:4: concepts[1]: uses-concept has no property 'weight' (role)",
     ]);
   });
 
   it('rejects an authored part_of', () => {
-    expect(brokenErrors('part-of.md')).toEqual(['core/docs/broken.md:4: PART_OF is derived from the id path and never authored; remove part_of:']);
+    expect(brokenErrors('part-of.md')).toEqual(['core/docs/broken.md:4: part-of is derived from the id path and never authored; remove part_of:']);
   });
 
   it('rejects an edge key on a home whose type is not the edge endpoint', () => {
-    expect(brokenErrors('wrong-endpoint.md')).toEqual(['core/docs/broken.md:3: tickets: TRACKED_IN.from must be Feature; this home is a concept']);
+    expect(brokenErrors('wrong-endpoint.md')).toEqual(['core/docs/broken.md:3: tickets: tracked-in.from must be Feature; this home is a concept']);
   });
 
   it('rejects type: that is not a subtype of the prefix type, an abstract type, and an extracted type', () => {
@@ -370,9 +382,10 @@ describe('kg home documents (CONVENTIONS §5, §10)', () => {
 
   it('checks the edges: escape hatch for authorable types, endpoints and existence', () => {
     expect(brokenErrors('edges-escape-hatch.md')).toEqual([
-      'core/docs/broken.md:4: edges[0]: PART_OF is never authored (derived_by lacks annotation)',
-      'core/docs/broken.md:4: edges[1]: COVERS.from must be Scenario; this home is a feature',
-      'core/docs/broken.md:4: edges[2]: unknown edge type "NOPE"',
+      'core/docs/broken.md:4: edges[0]: part-of is never authored (derived_by lacks annotation)',
+      'core/docs/broken.md:4: edges[1]: covers.from must be Scenario; this home is a feature',
+      'core/docs/broken.md:4: edges[2]: unknown edge type "nope"',
+      "core/docs/broken.md:4: edges[3]: edge types are lower-dash-case: write 'uses-concept', not 'USES_CONCEPT'",
     ]);
   });
 
@@ -381,7 +394,7 @@ describe('kg home documents (CONVENTIONS §5, §10)', () => {
   });
 });
 
-describe('kg gen (CONVENTIONS §11.2)', () => {
+describe('kg gen (conventions.md §11.2)', () => {
   const system = loadTypeSystem(path.join(fixtures, 'good', KG_DIR));
 
   it('writes kg.d.ts as an interface hierarchy over Ref<T>', () => {
@@ -392,11 +405,14 @@ describe('kg gen (CONVENTIONS §11.2)', () => {
     expect(dts).toContain('export interface CoversEdge {\n  from: Ref<Scenario>;\n  to: Ref<Feature>;\n  derived_by: Provenance;\n  confidence: number;\n  evidence?: Path[];\n  strength?: \'weak\' | \'normal\' | \'strong\';\n  level?: \'exercised\' | \'asserted\';\n}');
     expect(dts).not.toContain('interface EvidencesEdge');
     expect(dts).toContain("export type NodeTypeName = 'actor' | 'artifact'");
+    expect(dts).toContain('/** The hierarchy edge, derived from the id path and never authored. */\nexport interface PartOfEdge {');
+    expect(dts).toContain('export interface UsesConceptEdge {');
+    expect(dts).toContain("export type EdgeTypeName = 'covers' | 'defines-concept' | 'evidences' | 'is-implemented-in' | 'part-of' | 'supersedes' | 'tracked-in' | 'uses-concept';");
     expect(generateDts(system)).toBe(dts);
   });
 
   it('splices the glossary tables and keeps the Concepts section byte for byte', () => {
-    const before = fs.readFileSync(path.join(fixtures, 'good', KG_DIR, 'GLOSSARY.md'), 'utf8');
+    const before = fs.readFileSync(path.join(fixtures, 'good', KG_DIR, 'glossary.md'), 'utf8');
     const after = spliceGlossary(before, system);
     expect(after.slice(after.indexOf('## Concepts'))).toBe(before.slice(before.indexOf('## Concepts')));
     expect(after.slice(0, after.indexOf('## Prefixes'))).toBe(before.slice(0, before.indexOf('## Prefixes')));
@@ -404,11 +420,13 @@ describe('kg gen (CONVENTIONS §11.2)', () => {
     expect(after).toContain('| `~C:a/b` | concept | yes | yes | core/docs/concepts/<name>.md |');
     expect(after).toContain('| `~Rel:name` | release | no | no | extracted |');
     expect(after).toContain('| developer | actor | person |  | A person who commits to the platform. |');
-    expect(after).toContain('| `PART_OF` | Feature \\| Concept \\| Scenario → Feature \\| Concept \\| Scenario |  |  | filesystem |');
-    expect(after).toContain('| `SUPERSEDES` | Feature → Feature |  | `superseded_by:` (on target) | annotation |');
+    expect(after).toContain('| Edge | Label | From → To | Extends | Key | Derived by | One line |');
+    expect(after).toContain('| `part-of` | PART_OF | Feature \\| Concept \\| Scenario → Feature \\| Concept \\| Scenario |  |  | filesystem |');
+    expect(after).toContain('| `supersedes` | SUPERSEDES | Feature → Feature |  | `superseded_by:` (on target) | annotation |');
+    expect(after).toContain('| `covers` | COVERS | Scenario → Feature | evidences | `covers:` | annotation |');
   });
 
-  it('renders FEATURES.md as an indented tree with stubs for missing parents', () => {
+  it('renders feature-tree.md as an indented tree with links relative to the knowledge-graph folder', () => {
     const repo = makeRepo();
     const {homes} = load(repo);
     const md = generateFeatures(system, homes);
@@ -417,16 +435,16 @@ describe('kg gen (CONVENTIONS §11.2)', () => {
       '',
       '- `~platform` *(no home yet)*',
       '  - `~platform/caching` *(no home yet)*',
-      '    - `~platform/caching/invalidation` — Cache invalidation ([home](CACHING.md))',
-      '- `~visualize` — Visualize ([home](visualize.md))',
-      '  - `~visualize/viewers` — Viewers ([home](viewers/README.md))',
-      '    - `~visualize/viewers/old-scatter` — Old scatter ([home](viewers/old-scatter.md))',
-      '    - `~visualize/viewers/scatter-plot` — Scatter plot ([home](../../public/help/visualize/viewers/scatter-plot.md))',
+      '    - `~platform/caching/invalidation` — Cache invalidation ([home](../CACHING.md))',
+      '- `~visualize` — Visualize ([home](../visualize.md))',
+      '  - `~visualize/viewers` — Viewers ([home](../viewers/README.md))',
+      '    - `~visualize/viewers/old-scatter` — Old scatter ([home](../viewers/old-scatter.md))',
+      '    - `~visualize/viewers/scatter-plot` — Scatter plot ([home](../../../public/help/visualize/viewers/scatter-plot.md))',
       '',
       '## Concepts',
       '',
-      '- `~C:column` — Column ([home](concepts/column.md))',
-      '- `~C:dataframe` — Dataframe ([home](concepts/dataframe.md))',
+      '- `~C:column` — Column ([home](../concepts/column.md))',
+      '- `~C:dataframe` — Dataframe ([home](../concepts/dataframe.md))',
       '',
     ]);
   });
@@ -436,14 +454,14 @@ describe('kg gen (CONVENTIONS §11.2)', () => {
     expect(md).toContain('No home documents yet');
   });
 
-  it('reports a GLOSSARY.md without the expected headings as an error instead of throwing', () => {
+  it('reports a glossary.md without the expected headings as an error instead of throwing', () => {
     const repo = makeRepo();
     const kgRoot = path.join(repo, KG_DIR);
-    const glossary = path.join(kgRoot, 'GLOSSARY.md');
+    const glossary = path.join(kgRoot, 'glossary.md');
     fs.writeFileSync(glossary, fs.readFileSync(glossary, 'utf8').replace('## Concepts', '## Terms'));
     const {outputs, errors} = generate(system, kgRoot, repo, load(repo).homes);
     expect(errors).toEqual([{file: glossary, message: expect.stringMatching(/^heading '## Concepts' not found; the generated tables are spliced between/)}]);
-    expect(outputs.map((o) => path.basename(o.file))).toEqual(['kg.d.ts', 'FEATURES.md']);
+    expect(outputs.map((o) => path.basename(o.file))).toEqual(['kg.d.ts', 'feature-tree.md']);
   });
 
   it('gen --check detects drift and writes nothing', () => {
@@ -451,7 +469,7 @@ describe('kg gen (CONVENTIONS §11.2)', () => {
     const kgRoot = path.join(repo, KG_DIR);
     const {homes} = load(repo);
     const {outputs} = generate(system, kgRoot, repo, homes);
-    expect(writeOutputs(outputs, true).stale.map((f) => path.basename(f))).toEqual(['kg.d.ts', 'GLOSSARY.md', 'FEATURES.md']);
+    expect(writeOutputs(outputs, true).stale.map((f) => path.basename(f))).toEqual(['kg.d.ts', 'glossary.md', 'feature-tree.md']);
     expect(fs.existsSync(path.join(kgRoot, 'kg.d.ts'))).toBe(false);
     expect(writeOutputs(outputs, false).written).toHaveLength(3);
     expect(writeOutputs(outputs, true).stale).toEqual([]);
