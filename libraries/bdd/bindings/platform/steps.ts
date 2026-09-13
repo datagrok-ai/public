@@ -212,17 +212,246 @@ export function sharingLogin(): string {
   return login;
 }
 
+/** The second account as the platform shows it: the local part of the login, punctuation stripped. */
+export function sharingShownName(): string {
+  return sharingLogin().split('@')[0].replace(/[^a-z0-9]/gi, '');
+}
+
 export const pickSharingUser = When('user picks the sharing user in {element}', async (page: Page, target: ElementRef) => {
   const login = sharingLogin();
   const editor = await editorOf(page, el(target.phrase));
   await editor.click();
   await editor.pressSequentially(login.split('@')[0]);
-  const wanted = login.split('@')[0].replace(/[^a-z0-9]/gi, '').toLowerCase();
   const row = page.locator('.d4-user-selector-drop-down tr, .d4-tags-selector-drop-down tr')
-    .filter({hasText: new RegExp(wanted, 'i')}).first();
-  await expect(row, `the "${login}" row of the user typeahead`).toBeVisible({timeout: 15000});
+    .filter({hasText: new RegExp(sharingShownName(), 'i')}).first();
+  await expect(row, `the "${login}" row of the user typeahead`).toBeVisible({timeout: pollMs(15000)});
   await row.click();
 }, {tier: 'ui', description: 'types the login of DATAGROK_SHARING_LOGIN and takes it from the typeahead'});
+
+/* The grant row of the second account in a Share dialog; its Remove button shows while the row is
+   hovered. The row goes at once, the grant only when the dialog is confirmed. */
+export const removeSharingUser = When('user removes the sharing user from {element}', async (page: Page, target: ElementRef) => {
+  const shown = sharingShownName();
+  const row = (await locate(page, target)).locator('[name^="div-permissions-row-"]').filter({hasText: new RegExp(shown, 'i')}).first();
+  await expect(row, `the grant row of "${shown}"`).toBeVisible({timeout: pollMs(15000)});
+  await row.hover();
+  await row.locator('[name="button-Remove"]').click();
+  await expect(row, `the grant row of "${shown}" after Remove`).toBeHidden();
+}, {tier: 'ui', description: 'hovers the grant row of DATAGROK_SHARING_LOGIN and clicks its Remove button'});
+
+/* Whom an entity is shared with, read where the platform shows it. grok.dapi.permissions.get answers
+   with the edit and view buckets only, and a share made through the dialog lands in neither — the
+   Sharing pane calls it "has special permissions" — so the API cannot see it and the pane is the
+   claim. The pane fills its grants in after it is built and appends its Share... button last
+   (db_entity_meta.dart renderSharingSection), so a claim reads it only once the button is there: a
+   "does not list" read off the loading pane would pass whatever the grants are. Two expressions
+   rather than one with "(not )": an optional literal is not a parameter, so a single step would
+   always take the positive branch. */
+async function sharingPane(page: Page): Promise<ReturnType<Page['locator']>> {
+  const header = page.locator('.grok-prop-panel [name="div-section--Sharing"]').first();
+  await expect(header, 'the Sharing pane of the context panel').toBeVisible({timeout: pollMs(30000)});
+  if (await header.getAttribute('aria-expanded') !== 'true')
+    await header.click();
+  const pane = page.locator('.grok-prop-panel .d4-pane-sharing').first();
+  await expect(pane.getByRole('button', {name: /^share\.\.\.$/i}), 'the Sharing pane, loaded (its Share... button)')
+    .toBeVisible({timeout: pollMs(30000)});
+  return pane;
+}
+
+export const sharingPaneLists = Then('the sharing pane should list the sharing user', async (page: Page) => {
+  await expect(await sharingPane(page)).toContainText(new RegExp(sharingShownName(), 'i'));
+}, {tier: 'ui', description: 'the Sharing section of the context panel, opened if it is closed, read once it has loaded'});
+
+export const sharingPaneListsNot = Then('the sharing pane should not list the sharing user', async (page: Page) => {
+  await expect(await sharingPane(page)).not.toContainText(new RegExp(sharingShownName(), 'i'));
+}, {tier: 'ui', description: 'read once the pane has loaded'});
+
+// Space name filters miss existing spaces, so names are matched after reading every page.
+type NamedSource = 'spaces' | 'models';
+type CleanupSource = NamedSource | 'projects' | 'tables';
+type ServerEntity = {id: string; name: string; friendlyName: string; children?: string[]};
+type CleanupStage = {source: CleanupSource; ids: string[]};
+
+async function serverEntities(page: Page, source: CleanupSource, filter = ''): Promise<ServerEntity[]> {
+  return page.evaluate(async ([src, query]) => {
+    try {
+      // The tables gallery hides system tables, including training artifacts.
+      let data = (src === 'tables' ? grok.dapi.entities : grok.dapi[src]).order('id');
+      const filters = [src === 'tables' ? 'entityType.name = "TableInfo"' : '', query].filter(Boolean);
+      if (filters.length > 0)
+        data = data.filter(filters.map((filter) => `(${filter})`).join(' and '));
+      if (src === 'projects')
+        data = data.include('children');
+      const result: ServerEntity[] = [];
+      for (let pageNumber = 1; ; pageNumber++) {
+        const entities = await data.list({pageSize: 1000, pageNumber});
+        for (const entity of entities)
+          result.push({id: entity.id, name: entity.name, friendlyName: entity.friendlyName,
+            children: src === 'projects' ? entity.children.map((child: any) => child.id) : undefined});
+        if (entities.length < 1000)
+          return result;
+      }
+    }
+    catch (error) {
+      // Dart ApiException loses its message when Playwright serializes it directly.
+      throw new Error(`${src} list: ${(error as any)?.message ?? String(error)}`);
+    }
+  }, [source, filter] as [CleanupSource, string]);
+}
+
+function namedCleanup(page: Page, source: NamedSource, what: string, names: string[]): () => Promise<void> {
+  let createdAfter: number | undefined;
+  let authorId: string;
+  const pending = new Map<string, CleanupStage[]>();
+  return async () => {
+    await expect.poll(async () => {
+      try {
+        if (source === 'models' && createdAfter === undefined) {
+          const owner = await page.evaluate(async () => {
+            try {
+              return {root: new URL(grok.dapi.root, location.href).href.replace(/\/$/, ''),
+                authorId: (await grok.dapi.users.current()).id};
+            }
+            catch (error) {
+              throw new Error(`cleanup owner lookup: ${(error as any)?.message ?? String(error)}`);
+            }
+          });
+          // No public dapi clock getter: use the server's HTTP Date and preserve its whole second.
+          const response = await page.request.get(`${owner.root}/info/server`);
+          if (!response.ok())
+            throw new Error(`server clock request failed: HTTP ${response.status()}`);
+          const serverTime = Date.parse(response.headers()['date'] ?? '');
+          if (!Number.isFinite(serverTime))
+            throw new Error('server clock response has no valid Date header');
+          createdAfter = serverTime + 1000;
+          authorId = owner.authorId;
+        }
+        const named = (await serverEntities(page, source))
+          .filter((entity) => names.includes(entity.friendlyName) || names.includes(entity.name));
+        for (const entity of named) {
+          if (pending.has(entity.id))
+            continue;
+          const stages: CleanupStage[] = [{source, ids: [entity.id]}];
+          if (source === 'models') {
+            const training: {id: string; owned: boolean} | null = await page.evaluate(async ([id, ownerId, cutoff]) => {
+              try {
+                const model = await grok.dapi.models.include('trainedOn').find(id);
+                const table = await grok.functions.call('Get', {object: model, propertyName: 'trainedOn'});
+                if (!table)
+                  return null;
+                const saved = await grok.dapi.tables.find(table.id);
+                return {id: table.id, owned: saved != null && model.author.id === ownerId && saved.author.id === ownerId &&
+                  model.createdOn.valueOf() > cutoff && saved.createdOn.valueOf() > cutoff};
+              }
+              catch (error) {
+                throw new Error(`model ${id} trainedOn lookup: ${(error as any)?.message ?? String(error)}`);
+              }
+            }, [entity.id, authorId, createdAfter!] as [string, string, number]);
+            const wrappers = await serverEntities(page, 'projects',
+              `isEntity = true and isPackage = false and relations.entity.id = "${entity.id}"`);
+            for (const wrapper of wrappers)
+              if (wrapper.children?.length !== 1 || wrapper.children[0] !== entity.id)
+                throw new Error(`project ${wrapper.id} has children outside model ${entity.id}; it was retained`);
+            stages.unshift({source: 'projects', ids: wrappers.map((wrapper) => wrapper.id)});
+            // trainedOn is a used table: require a new artifact by this run's user and no other model.
+            if (training?.owned) {
+              const users = await serverEntities(page, 'models', `trainedOn.id = "${training.id}"`);
+              if (!users.some((model) => model.id === entity.id))
+                throw new Error(`the training-table lookup did not return model ${entity.id}; ownership is unverified`);
+              if (users.length === 1)
+                stages.push({source: 'tables', ids: [training.id]});
+            }
+          }
+          pending.set(entity.id, stages);
+        }
+        const left: string[] = [];
+        for (const [modelId, stages] of pending) {
+          while (stages.length > 0) {
+            const stage = stages[0];
+            const entities = stage.ids.length === 0 ? [] : (await serverEntities(page, stage.source,
+              stage.ids.map((id) => `id = "${id}"`).join(' or '))).filter((entity) => stage.ids.includes(entity.id));
+            if (entities.length === 0) {
+              stages.shift();
+              continue;
+            }
+            for (const entity of entities) {
+              try {
+                if (stage.source === 'tables' &&
+                  (await serverEntities(page, 'models', `trainedOn.id = "${entity.id}"`)).length > 0)
+                  throw new Error(`training table ${entity.id} is still used by another model; it was retained`);
+                await page.evaluate(async ([src, id, ownerId]) => {
+                  let operation = 'lookup';
+                  try {
+                    // Project find expands every child; the listed wrapper is sufficient to delete it.
+                    const entity = src === 'projects' ?
+                      await grok.dapi.projects.filter(`id = "${id}"`).include('children').first() :
+                      await grok.dapi[src].find(id);
+                    if (!entity)
+                      return;
+                    if (entity.id !== id)
+                      throw new Error(`the lookup returned ${entity.id} instead of ${id}; it was retained`);
+                    if (src === 'projects' && (entity.children.length !== 1 || entity.children[0].id !== ownerId))
+                      throw new Error(`project ${id} has children outside model ${ownerId}; it was retained`);
+                    operation = 'delete';
+                    await grok.dapi[src].delete(entity);
+                  }
+                  catch (error) {
+                    throw new Error(`${src} ${id} ${operation}: ${(error as any)?.message ?? String(error)}`);
+                  }
+                }, [stage.source, entity.id, modelId] as [CleanupSource, string, string]);
+                left.push(`${stage.source} ${entity.id}`);
+              }
+              catch (error) {
+                left.push(`${stage.source} ${entity.id}: ${String(error)}`);
+              }
+            }
+            break;
+          }
+        }
+        return left;
+      }
+      catch (error) {
+        return [`the listing or artifact lookup failed: ${String(error)}`];
+      }
+    }, {message: `${what} still on the server under ${names.join(', ')}`, timeout: pollMs(60000)}).toEqual([]);
+  };
+}
+
+async function expectNamedCount(page: Page, source: NamedSource, what: string, name: string, count: number): Promise<void> {
+  await expect.poll(async () => {
+    try {
+      return (await serverEntities(page, source)).filter((entity) => entity.friendlyName === name || entity.name === name).length;
+    }
+    catch (error) {
+      return `the listing failed: ${String(error)}`;
+    }
+  }, {message: `${what} the server holds under "${name}"`, timeout: pollMs(60000)}).toBe(count);
+}
+
+const namesOf = (list: string): string[] => list.split(',').map((n) => n.trim()).filter(Boolean);
+
+export const noSpaceOnServer = Given('no space named {string} is on the server', async (page: Page, name: string) => {
+  const cleanup = namedCleanup(page, 'spaces', 'spaces', namesOf(name));
+  atFeatureEnd(page, cleanup);
+  await cleanup();
+}, {tier: 'api', description: 'deletes what an earlier run left under those names (comma-separated), and deletes them again when the feature ends'});
+
+/* A space is listed once its save returns, and the save of a ROOT space is slow: 4.8 s alone and
+   18 s with four features creating at once on a local stand (2026-09-10); the claim right after OK
+   owns the budget the dialog-close claim does. */
+export const spacesOnServer = Then('{int} space(s) named {string} should be on the server', (page: Page, count: number, name: string) =>
+  expectNamedCount(page, 'spaces', 'spaces', name, count),
+{tier: 'api', description: 'what the server holds, not what the tree draws — the refusal of a duplicate is a space that was never created'});
+
+export const noModelOnServer = Given('no predictive model named {string} is on the server', async (page: Page, name: string) => {
+  const cleanup = namedCleanup(page, 'models', 'predictive models', namesOf(name));
+  atFeatureEnd(page, cleanup);
+  await cleanup();
+}, {tier: 'api', description: 'deletes what an earlier run left under those names (comma-separated), and deletes them again when the feature ends'});
+
+export const modelsOnServer = Then('{int} predictive model(s) named {string} should be on the server', (page: Page, count: number, name: string) =>
+  expectNamedCount(page, 'models', 'predictive models', name, count),
+{tier: 'api', description: 'what the server holds, not what the gallery draws'});
 
 export const urlShouldContain = Then('the page address should contain {string}', async (page: Page, part: string) => {
   await expect.poll(() => page.url(), {message: 'the page address'}).toContain(part);

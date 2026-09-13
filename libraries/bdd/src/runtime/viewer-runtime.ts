@@ -264,10 +264,10 @@ function install(): void {
   // a viewer outside a table view (a function view's docked chart, a facet's small multiples) is
   // still a widget the platform knows by its root
   const findViewer = (el: Element): any => {
-    const known = viewers().find((x) => x.root === el || x.root.contains(el) || el.contains(x.root));
+    const root = el.closest('[name^="viewer-"], .d4-viewer') ?? el.querySelector('[name^="viewer-"], .d4-viewer');
+    const known = viewers().find((x) => x.root === root);
     if (known)
       return known;
-    const root = el.closest('[name^="viewer-"], .d4-viewer') ?? el.querySelector('[name^="viewer-"], .d4-viewer');
     const w = root === null ? null : DG.Widget.find(root);
     return w !== null && typeof w?.getWidgetStatus === 'function' ? w : undefined;
   };
