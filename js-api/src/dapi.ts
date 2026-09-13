@@ -704,7 +704,8 @@ export interface ServerMetrics {
     previous: {count: number},
     /** Error events per source (`server`, `request`, `client`, ...). */
     bySource: {[source: string]: number},
-    /** Grouped by message, ordered by users, then hours, then count; at most `limit` rows. */
+    /** Grouped by message: the top `limit` groups of every source (`server`, `client`, ...) in one
+     *  order — users, then hours, then count — so the first `limit` rows are the overall top. */
     top: ServerMetricsError[],
   },
   /** `func_calls` by status: `queued` are waiting, `running` are executing. */

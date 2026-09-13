@@ -82,8 +82,9 @@ The card sub-text gets the band as a CSS class (`ua-metrics-green` / `-orange` /
    previous window (`window.previousStart`) for the `±delta vs prev` comparison, and returns
    `http.now` / `http.previous` (Latency card), `http.routes` ordered by p95 (HTTP routes panel),
    `errors` (Errors card: count, distinct users, delta vs the previous window, per-source tooltip;
-   Errors panel: `errors.top` — message groups ordered by users, then the hours they recurred in,
-   then count), `queue` (Queue card), `database.sizeBytes` / `cacheHitPct` / `statsReset` (Database card),
+   Errors panel: `errors.top` — the top groups of every source, ordered by users, then the hours
+   they recurred in, then count; the panel's all / server / client toggle filters them locally and
+   shows the first `DASHBOARD_LIMIT`), `queue` (Queue card), `database.sizeBytes` / `cacheHitPct` / `statsReset` (Database card),
    `database.connections` (Connections card) and `database.statements` (Queries panel — all three
    rankings arrive in one response, so the mode toggle re-renders without a round trip).
 2. **SQL-fed cards and grids.** The remaining loaders call a `queries.metrics*` wrapper, which runs

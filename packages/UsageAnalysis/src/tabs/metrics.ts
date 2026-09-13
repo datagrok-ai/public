@@ -10,6 +10,7 @@ import {queries} from '../package-api';
 
 type CardColor = 'green' | 'orange' | 'red' | 'info';
 type QueriesMode = 'slowest' | 'mostCalled' | 'worstCacheHit';
+type ErrorsSource = 'all' | 'server' | 'client';
 
 const DASHBOARD_LIMIT = 10;
 const FULL_VIEW_LIMIT = 100000;
@@ -126,6 +127,7 @@ export class MetricsView extends UaView {
   private tableHealthHost!: HTMLElement;
   private httpRoutesHost!: HTMLElement;
   private errorsHost!: HTMLElement;
+  private errorsSource: ErrorsSource = 'all';
   private refreshing = false;
   private metrics: DG.ServerMetrics | null = null;
 
@@ -180,9 +182,7 @@ export class MetricsView extends UaView {
     const httpRoutesPanel = MetricsView.buildPanel('HTTP routes', this.httpRoutesHost,
       () => this.openFullView(async (limit) => MetricsView.routesFrame((await this.fetchMetrics(limit)).http.routes),
         'getMetrics', 'HTTP routes'));
-    const errorsPanel = MetricsView.buildPanel('Errors', this.errorsHost,
-      () => this.openFullView(async (limit) => MetricsView.errorsFrame((await this.fetchMetrics(limit)).errors.top),
-        'getMetrics', 'Errors'));
+    const errorsPanel = this.buildErrorsPanel();
 
     const tablesRow = ui.divH([largestTablesPanel, tableHealthPanel], 'ua-metrics-tables-row');
 
@@ -272,6 +272,33 @@ export class MetricsView extends UaView {
     more.classList.add('ua-metrics-add-icon');
 
     return MetricsView.buildPanel('Queries', this.queriesGridHost, undefined, toggle, more);
+  }
+
+  private buildErrorsPanel(): HTMLElement {
+    const sources: Array<[string, ErrorsSource, string]> = [
+      ['all', 'all', 'Every source, ranked together.'],
+      ['server', 'server', 'Recorded by the server: its own failures and what requests raised.'],
+      ['client', 'client', 'Reported by the browser: unhandled errors in the platform client and packages.'],
+    ];
+    const buttons = sources.map(([label, source, tooltip]) => {
+      const btn = ui.toggleButton(label, () => {
+        this.errorsSource = source;
+        this.loadTopErrors();
+      }, tooltip);
+      if (source === this.errorsSource)
+        btn.classList.add('d4-current');
+      return btn;
+    });
+    const toggle = ui.toggleButtonGroup(buttons);
+    toggle.classList.add('ua-metrics-mode-toggle');
+    return MetricsView.buildPanel('Errors', this.errorsHost,
+      () => this.openFullView(async (limit) => MetricsView.errorsFrame(this.filterErrors((await this.fetchMetrics(limit)).errors.top)),
+        'getMetrics', 'Errors'), toggle);
+  }
+
+  private filterErrors(errors: DG.ServerMetricsError[]): DG.ServerMetricsError[] {
+    return this.errorsSource === 'all' ? errors
+      : errors.filter((e) => (e.source === 'client') === (this.errorsSource === 'client'));
   }
 
   private confirmResetPgStats(): void {
@@ -617,11 +644,13 @@ export class MetricsView extends UaView {
 
   private loadTopErrors(): void {
     this.errorsHost.innerHTML = '';
-    const errors = this.metrics?.errors.top;
-    if (!errors) {
+    const top = this.metrics?.errors.top;
+    if (!top) {
       this.errorsHost.append(MetricsView.degradedMessage('Errors unavailable.'));
       return;
     }
+    // The endpoint returns the top `limit` of each source in one global order.
+    const errors = this.filterErrors(top).slice(0, DASHBOARD_LIMIT);
     if (errors.length === 0) {
       this.errorsHost.append(MetricsView.degradedMessage('No errors recorded in this window.'));
       return;
