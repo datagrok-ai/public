@@ -104,6 +104,12 @@ semantic types the first detection found. What a feature leaves on the server it
 (`atFeatureEnd`). Playwright runs and reports one test per scenario (and per outline row), each
 with its own trace; a `Background` runs before every scenario, as Gherkin says.
 
+Server fixtures can use `{run}` in their names, for example `BDD-Share-Model-{run}`. The suffix is
+unique per feature instance (including each worker and repeat) and stays the same across its
+scenarios. String arguments, element phrases, data tables and doc strings resolve it at runtime;
+generated specs stay deterministic. Cleanup registered with `atFeatureEnd` attempts every callback
+and fails the run if any callback fails.
+
 **`@journey`** on the feature changes that: the feature is one test, the Background runs once, and
 the scenarios run in order on the same shell state, each a soft step — a failing scenario is
 recorded and the next one still runs, and the test fails at the end listing them. Use it for a
@@ -114,6 +120,10 @@ its error and balloon floors. `-g` selects the whole journey.
 **`@known-failure`** on a scenario says the product has the defect it describes: its failure does
 not fail the test, and its passing does ("the bug is fixed, remove the tag"). Nothing is softened
 to stay green.
+
+The [known-failure audit](KNOWN_FAILURES.md) records the reproduced defects and the stale tag
+removed in September 2026. Inspect the failing step inside each tagged scenario: a green journey
+alone does not establish that it failed for the intended reason.
 
 ## Reading a failure
 
@@ -194,7 +204,9 @@ list is the reference; this is the map:
   (`types` / `enters` = types and commits), keys, `selects`, checks, expands, drags, `fills in:`;
   `should be/become {state}`, text, value and item counts. States: visible, hidden, present,
   absent, enabled, disabled, checked, unchecked, partially checked, selected, empty, expanded,
-  collapsed, focused, invalid, valid — each read from the ARIA state the element uses.
+  collapsed, focused, invalid, valid, ready — each read from the ARIA state the element uses.
+  `ready` requires explicit `aria-busy="false"` and no `aria-invalid="true"`; absent readiness
+  markup never counts as a completed result.
 - **The shell** (`bindings/platform/steps.ts`): `user is logged in`, `user opens {dataset}
   dataset` (also `keeping the first N rows [as "name"]`), switching views and table views,
   projects saved and reopened (deleted at feature end), apps, the browse panel, autostarts.
@@ -269,6 +281,11 @@ viewer says nothing is pending (`isRenderPending`), not when a cap runs out; a r
 lands is reported as the platform failure it is. **Say what the claim is**: `repainted` is a
 change detector, one pixel; a shape gets its own evidence (an area's ink, a colour in an area, a
 reading), a chrome toggle takes `by at least N pixels`.
+
+Area hovers also settle before the next step. Grid cell tooltip requests participate in the
+core viewer's pending-work signal, including the nested correlation grid. Tooltip text checks
+consider visible tooltips only; hidden retained text and an absent tooltip satisfy a negative
+check. A served core must include the tracked grid tooltip debounce for these absence checks.
 
 A JS viewer takes part by giving the runtime what a Dart viewer gives it: `getWidgetStatus()`
 with its canvas under `parts`, `hitAreas` in CSS px of it and named `values`; a `get

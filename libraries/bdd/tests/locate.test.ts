@@ -18,8 +18,12 @@ const scenario = (name: string, fn: () => Promise<void>): void => void test(name
 });
 import '../bindings/common/kinds.js';
 import '../bindings/platform/elements.js';
+import {noSpaceOnServer} from '../bindings/platform/steps.js';
 import {el} from '../src/runtime/args.js';
-import {clear, keysOf, press, pressIn, typeInto, withKeys} from '../src/runtime/gestures.js';
+import {clear, keysOf, press, pressIn, readExpanded, select, setExpanded, typeInto, withKeys} from '../src/runtime/gestures.js';
+import {atFeatureEnd, feature} from '../src/runtime/harness.js';
+import {expectState, expectText} from '../src/runtime/assertions.js';
+import {whileExpectedToFail} from '../src/runtime/patience.js';
 import {locate, locateActionable} from '../src/runtime/locate.js';
 
 const PAGE = `
@@ -190,4 +194,114 @@ scenario('Delete and Del follow Datagrok commands while ForwardDelete and Backsp
   assert.equal(await input.getAttribute('data-key'), 'Delete:46:true');
   await pressIn(page!, el('org input'), 'Shift+Backspace');
   assert.equal(await input.getAttribute('data-key'), 'Backspace:8:true');
+});
+
+
+scenario('select handles both a named native select and a host with a select inside', async () => {
+  await page!.setContent(`<select class="ui-input-root" name="input-host-Engine"><option>A</option><option>B</option></select>
+    <div class="ui-input-root" name="input-host-Mode"><select><option>C</option><option>D</option></select></div>`);
+  await select(page!, el('Engine input'), 'B');
+  await select(page!, el('Mode input'), 'D');
+  assert.deepEqual(await page!.locator('select').evaluateAll((all) => all.map((e) => (e as HTMLSelectElement).value)), ['B', 'D']);
+});
+
+scenario('property category expansion and collapse are idempotent', async () => {
+  await page!.setContent(`<table><tr class="property-grid-item property-grid-category" name="prop-category-Axes"><td><i class="property-grid-icon-plus"></i><span class="property-grid-item-name-text">Axes</span></td></tr></table>`);
+  await page!.locator('.property-grid-category').evaluate((e) => e.addEventListener('click', () => {
+    const icon = e.querySelector('i')!;
+    icon.classList.toggle('property-grid-icon-minus');
+    icon.classList.toggle('property-grid-icon-plus');
+    e.setAttribute('data-clicks', String(Number(e.getAttribute('data-clicks')) + 1));
+  }));
+  for (const expanded of [true, true, false, false]) {
+    await setExpanded(page!, el('Axes category'), expanded);
+    assert.equal(await readExpanded(page!.locator('.property-grid-category')), expanded);
+  }
+  assert.equal(await page!.locator('.property-grid-category').getAttribute('data-clicks'), '2');
+});
+
+scenario('ready requires an explicit completed and valid asynchronous result', async () => {
+  await page!.setContent('<div class="d4-pm-view-preview">preview</div>');
+  const preview = page!.locator('.d4-pm-view-preview');
+  await expectState(page!, el('model preview'), 'ready', true);
+  await preview.evaluate((e) => e.setAttribute('aria-busy', 'true'));
+  await expectState(page!, el('model preview'), 'ready', true);
+  await preview.evaluate((e) => { e.setAttribute('aria-busy', 'false'); e.setAttribute('aria-invalid', 'true'); });
+  await expectState(page!, el('model preview'), 'ready', true);
+  await preview.evaluate((e) => e.setAttribute('aria-invalid', 'false'));
+  await expectState(page!, el('model preview'), 'ready');
+});
+
+scenario('tooltip text assertions ignore hidden content retained between hovers', async () => {
+  await page!.setContent('<div class="d4-tooltip" style="display:none">Pearson R: 0.4</div>');
+  await expectText(page!, el('tooltip'), 'Pearson R', {negate: true});
+  await assert.rejects(whileExpectedToFail(() => expectText(page!, el('tooltip'), 'Pearson R')));
+  await page!.locator('.d4-tooltip').evaluate((e) => (e as HTMLElement).style.display = 'block');
+  await expectText(page!, el('tooltip'), 'Pearson R: 0.4', {exact: true});
+  await assert.rejects(whileExpectedToFail(() => expectText(page!, el('tooltip'), 'Pearson R', {negate: true})));
+  await page!.locator('.d4-tooltip').evaluate((e) => e.remove());
+  await expectText(page!, el('tooltip'), 'Pearson R', {negate: true});
+});
+
+scenario('space cleanup deletes existing fixtures even when server filters return no matches', async () => {
+  let afterAll!: () => Promise<void>;
+  const api = {afterEach: () => undefined, afterAll: (hook: () => Promise<void>) => { afterAll = hook; }};
+  const session = feature(api as unknown as Parameters<typeof feature>[0]);
+  const cleanupPage = await session.page(browser!);
+  await cleanupPage.setContent('<div class="grok-browse-icons"><i class="fa fa-sync" title="Refresh">Refresh</i></div>' +
+    '<div class="layout-browse"><span id="stale-fixture">BDD Fixture</span></div>');
+  await cleanupPage.locator('[title="Refresh"]').evaluate((icon) => {
+    icon.addEventListener('click', () => document.getElementById('stale-fixture')!.remove());
+  });
+  await cleanupPage.evaluate(() => {
+    let spaces = [
+      {id: 'fixture', name: 'BDDFixture', friendlyName: 'BDD Fixture'},
+      {id: 'unrelated', name: 'Keep', friendlyName: 'Keep'},
+    ];
+    const data = {
+      order() { return data; },
+      filter() { return {async list() { return []; }}; },
+      async list() { return spaces; },
+      async find(id: string) { return spaces.find((space) => space.id === id); },
+      async delete(space: {id: string}) { spaces = spaces.filter((item) => item.id !== space.id); },
+      async createRootSpace(name: string) { spaces.push({id: 'new-fixture', name, friendlyName: name}); },
+    };
+    (window as any).grok = {dapi: {spaces: data}};
+  });
+  await noSpaceOnServer(cleanupPage, 'BDD Fixture');
+  const remaining = () => cleanupPage.evaluate(async () =>
+    (await (window as any).grok.dapi.spaces.list()).map((space: {id: string}) => space.id));
+  assert.deepEqual(await remaining(), ['unrelated']);
+  assert.equal(await cleanupPage.locator('#stale-fixture').count(), 0);
+  await cleanupPage.evaluate(() => (window as any).grok.dapi.spaces.createRootSpace('BDD Fixture'));
+  assert.deepEqual(await remaining(), ['unrelated', 'new-fixture']);
+  await afterAll();
+  assert.deepEqual(await remaining(), ['unrelated']);
+});
+
+scenario('feature teardown attempts every cleanup and reports synchronous and asynchronous failures', async () => {
+  let afterAll!: () => Promise<void>;
+  const api = {afterEach: () => undefined, afterAll: (hook: () => Promise<void>) => { afterAll = hook; }};
+  const session = feature(api as unknown as Parameters<typeof feature>[0]);
+  const cleanupPage = await session.page(browser!);
+  const ran: number[] = [];
+  const errors = [new Error('synchronous'), new Error('asynchronous')];
+  atFeatureEnd(cleanupPage, () => { ran.push(1); throw errors[0]; });
+  atFeatureEnd(cleanupPage, async () => { ran.push(2); throw errors[1]; });
+  atFeatureEnd(cleanupPage, async () => { ran.push(3); });
+  await assert.rejects(afterAll, (e: unknown) => e instanceof AggregateError &&
+    e.errors[0] === errors[0] && e.errors[1] === errors[1] && e.errors.length === 2);
+  assert.deepEqual(ran, [1, 2, 3]);
+  await afterAll();
+});
+
+test('a run suffix is stable within a feature and distinct across feature instances', () => {
+  const api = {afterEach: () => undefined, afterAll: () => undefined};
+  const a = feature(api as unknown as Parameters<typeof feature>[0]);
+  const b = feature(api as unknown as Parameters<typeof feature>[0]);
+  assert.equal(a.text('literal'), 'literal');
+  assert.equal(a.text('{run}/{run}').split('/')[0], a.text('{run}'));
+  assert.equal(a.text('{run}/{run}').split('/')[1], a.text('{run}'));
+  assert.notEqual(a.text('{run}'), b.text('{run}'));
+  assert.match(a.text('{run}'), /^[0-9a-f-]{36}$/);
 });

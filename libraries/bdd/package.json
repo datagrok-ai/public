@@ -26,7 +26,8 @@
     "bin",
     "dist",
     "bindings",
-    "README.md"
+    "README.md",
+    "KNOWN_FAILURES.md"
   ],
   "repository": {
     "type": "git",

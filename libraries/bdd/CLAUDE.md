@@ -48,7 +48,7 @@ and `isRenderPending`, `onContextMenuShown/Closed`, `getWidgetStatus().hitAreas/
   package's Playwright the library's copy (redo after `npm ci`).
 - **One page per worker** (`harness.ts`): `feature(test)` reuses the worker's page, `afterEach`
   resets the shell (Escape for dialogs and menus, `ui.tooltip.hide`, notices removed, `closeAll`,
-  Home current), `afterAll` runs the feature's `atFeatureEnd` cleanups. Never open several
+  Home current), `afterAll` runs all the feature's `atFeatureEnd` cleanups and fails if any fails. Never open several
   Datagrok pages in one browser.
 - **`user is logged in` only resets when the page is in the shell**; it sets `simpleMode` (view
   tabs hidden — switch views by name), clears the error and balloon floors, installs the in-page
@@ -131,6 +131,9 @@ and `isRenderPending`, `onContextMenuShown/Closed`, `getWidgetStatus().hitAreas/
   the toggle. Never `click().catch(() => otherClick())`.
 - **Hover is two pointer events and never sleeps**; it waits in-page for the element's own
   `mouseenter` and repeats the pair when a coalesced move swallowed it.
+- **An area hover settles the viewer after moving the pointer.** Grid cell tooltip requests use
+  the tracked debounce, including in nested correlation grids. Negative tooltip text checks count
+  visible matching tooltips; a hidden or absent tooltip has no displayed text.
 - **Step specificity**: more literal text wins, then fewer parameters; a tie is a compile error.
   Viewer steps take `{widget}` (a phrase ending in viewer/widget, `grid`, `filter panel`).
 - **Playwright scopes inner selectors to the element**: a `labelSelector`, a part or a `has:`
@@ -139,6 +142,22 @@ and `isRenderPending`, `onContextMenuShown/Closed`, `getWidgetStatus().hitAreas/
   `--disable-accelerated-2d-canvas`, so a repaint check reads the same pixels either way.
 - **Codegen emits names, never selectors**; `\n` endings, no timestamps; orphans removed on
   compile and reported by `--check`.
+
+- **Server fixture names may include `{run}`**: the compiler resolves strings, element phrases,
+  tables and doc strings through the feature session. One UUID per feature instance keeps workers
+  and repeated runs independent; never generate it at compile time.
+- **Spaces cleanup verifies IDs against every page of the root listing.** Spaces smart filters
+  can return an empty list for an existing ID, so a filtered result cannot prove deletion. Match
+  the captured IDs locally, delete by exact ID, and retain unrelated roots. Include a fixture's
+  parent root in its cleanup names because the listing does not include child spaces.
+  After setup cleanup, refresh an open Browse tree: API deletion leaves cached nodes behind,
+  so recreating the same name otherwise targets a stale node or resolves to two nodes.
+- **Model cards are not completion signals.** The Train Model preview reports `aria-busy` before
+  debounce/queued training and `aria-invalid` for unavailable or failed results. `model preview
+  should be ready` requires the latest completed training, predictions, charts and history.
+- **Nested viewers resolve by their own root.** A scatter plot inside a JS viewer must not resolve
+  to the enclosing viewer merely because that viewer contains its element.
+
 
 ## Facts that cost a run each
 
@@ -173,6 +192,15 @@ and `isRenderPending`, `onContextMenuShown/Closed`, `getWidgetStatus().hitAreas/
   `data-u2-owner` = the nearest named ancestor; plain `button()`, toolbar buttons and tab headers
   carry no `data-u2`. A `funcForm` number field loses a typed leading "-" (unreported u2 bug).
 - A u2 name is one token: the locator tries the phrase without spaces and with dashes.
+- The Dart column picker ("Select columns...") is a grid viewer: `text of cell N of __name` names
+  a row's column, `cell N of x` is its checkbox, its Search input filters without renumbering. A
+  Dart property grid category (`tr.property-grid-category`) has no aria state, only its icon
+  (`property-grid-icon-minus` open, `-plus` folded), which `readExpanded` reads. The 2 s drop of the
+  Invariants (`AppEvents.propertyEdited`) reaches across features: a settings click on a new viewer
+  right after another feature edited a property leaves the panel on the old one.
+- A Dart choice input's phrase can resolve to its `<select>` itself; `select` handles both. The Share
+  dialog of an entity that is not a project (a model) fetches the entity's project after it opens and
+  its OK throws "Not initialized" before that: wait for the owner's grant row ("Full access").
 - A viewer outside a table view (a function view's docked chart, a facet's small multiples) is
   reached through `DG.Widget.find(root)`; the function view's tabs are dock-spawn-ts handles in a
   shadow root (`.dockspan-tab-handle`, a CSS locator pierces it), and the viewers of its other

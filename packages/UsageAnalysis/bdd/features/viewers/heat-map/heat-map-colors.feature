@@ -30,11 +30,10 @@ Feature: Heat map colouring
 
   @known-failure
   Scenario: Heatmap Colors off stops filling the cells with colour (GROK-20619)
-    # `heatmapColors` is declared on the look and the property write lands, but nothing in the
-    # render path reads it back for an attached heat map: the AGE column's band comes out
-    # pixel-for-pixel identical afterwards — 0 pixels differ, against 48828 for the Global Color
-    # Scaling write on the same band in the scenario above. The spec this replaces already carried
-    # this as knownOpenBug('GROK-20619'), with a whole-canvas repaint as the claim.
+    # The dense heat-map path (row height <= 5) calls `getGridCellAutoColor` directly, bypassing
+    # the `heatmapColors` check in the normal cell renderer. The property write lands but the
+    # AGE column's band remains identical: 0 pixels differ. Global Color Scaling above provides
+    # a positive repaint check on the same band. The old spec also carried GROK-20619.
     # Left last: a known failure aborts before its restore step.
     Then the "heatmap colors" reading of heat map viewer should be "true"
     When user sets "heatmapColors" property of heat map viewer to "false"

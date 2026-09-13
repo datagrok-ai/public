@@ -9,6 +9,8 @@ element('toolbox', {selector: '.d4-toolbox', aliases: ['toolbox pane'],
   parts: {'viewers section': '[name="div-section--Viewers"]'}});
 element('toolbox tab', {selector: '[name="Toolbox"]', aliases: ['toolbox sidebar tab']});
 element('browse tab', {selector: '[name="Browse"]'});
+element('browse toolbar', {selector: '.grok-browse-icons',
+  description: 'the Browse header actions, outside the panel body and its tree'});
 element('browse panel', {selector: '.grok-view-browse, .layout-browse', aliases: ['browse view'],
   description: 'the left panel Browse opens; a bdd page starts in simple mode, where it is not in the DOM at all'});
 element('browse tree', {selector: '.grok-view-browse [role="tree"], .layout-browse [role="tree"]',
@@ -25,6 +27,10 @@ element('gallery search', {selector: '.grok-gallery-search-bar .ui-input-type-ah
 element('code editor', {selector: '.cm-editor, .CodeMirror', aliases: ['source editor'],
   description: 'the CodeMirror the platform embeds wherever code or a formula is edited — version 6 ' +
     'in the packages (.cm-editor), version 5 in the script view of the shell (.CodeMirror)'});
+element('share access selector', {selector: '[name="div-share-selector"]',
+  description: 'the access level of the Share dialog: a Dart privilege selector showing the current level as text, a popup behind its triangle'});
+element('model preview', {selector: '.d4-pm-view-preview',
+  description: 'the Train Model preview; ready only after training, predictions, charts and history are complete'});
 element('context menu', {selector: '.d4-menu-popup', aliases: ['popup menu'],
   description: 'the open Dart popup menu (the last one when a submenu is open)'});
 element('cell editor', {selector: '[name="cell-editor"]', aliases: ['grid cell editor'],
