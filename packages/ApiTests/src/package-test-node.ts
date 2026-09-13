@@ -204,7 +204,7 @@ function parseArgs() {
 async function getToken(url: string, key: string) {
     // Raw fetch is intentional here: this runs before startDatagrok(), so the grok
     // client (and grok.dapi) isn't initialized yet — there's no dapi layer to use.
-    const response = await fetch(`${url}/users/login/dev/${key}`, {method: 'POST'});
+    const response = await fetch(`${url}/users/login/dev`, {method: 'POST', headers: {'Authorization': `Dev ${key}`}});
     const json = await response.json();
     if (json.isSuccess == true)
         return json.token;

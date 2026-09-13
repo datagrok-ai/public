@@ -1,5 +1,9 @@
 # Datagrok-tools changelog
 
+## 6.6.0 (WIP)
+
+* The developer key is sent in the `Authorization` header (`Dev <key>`) instead of the URL path. `POST /users/login/dev/<key>` and `POST /packages/dev/<key>/<package>` put a long-lived credential into every nginx access log, proxy log and shell history along the way; the key-less routes (`/users/login/dev`, `/packages/dev/<package>`) take it as a header. Servers that predate the header form answer 404/401 and the old URL is used instead, so publishing to an older server still works - but a server from 1.28 on rejects the URL form and asks for datagrok-tools 6.6.0 or later.
+
 ## 6.5.10 (2026-09-11)
 
 * `grok s pull` — a bundle file name is capped at 200 bytes plus a digest of the full name, so it stays unique and stable across pulls. A nested view under a long space spells a longer name than a path component may hold (255 bytes on ext4 and NTFS): one TWIG snapshot reached 268 and the write failed with `ENAMETOOLONG`, taking down the whole part rather than the entity — a `--by-namespace` part that only touched the space as a dependency died with it.

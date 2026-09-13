@@ -43,8 +43,8 @@ export function grokServers(file = join(homedir(), '.grok', 'config.yaml')): Rec
 }
 
 export async function mintToken(apiUrl: string, key: string): Promise<string> {
-  const response = await fetch(`${apiUrl.replace(/\/$/, '')}/users/login/dev/${key}`,
-    {method: 'POST', body: '', signal: AbortSignal.timeout(10000)});
+  const response = await fetch(`${apiUrl.replace(/\/$/, '')}/users/login/dev`,
+    {method: 'POST', body: '', headers: {'Authorization': `Dev ${key}`}, signal: AbortSignal.timeout(10000)});
   const json = await response.json().catch(() => ({})) as {token?: string; isSuccess?: boolean};
   if (!json.token)
     throw new Error(`dev-key login failed at ${apiUrl} (status ${response.status})`);

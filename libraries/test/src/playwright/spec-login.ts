@@ -126,7 +126,7 @@ export async function resolveSecondUserToken(): Promise<string> {
   const key2 = process.env.DATAGROK_DEV_KEY_2;
   if (key2 && key2.length > 0) {
     const apiUrl = (process.env.DATAGROK_URL ?? baseUrl).replace(/\/$/, '') + '/api';
-    const resp = await fetch(`${apiUrl}/users/login/dev/${key2}`, {method: 'POST'});
+    const resp = await fetch(`${apiUrl}/users/login/dev`, {method: 'POST', headers: {'Authorization': `Dev ${key2}`}});
     const json = await resp.json() as any;
     if (json?.isSuccess === true && json?.token) return (_secondTokenCache = json.token);
     throw new Error(`Second-user dev-key login failed at ${apiUrl}: ${JSON.stringify(json).slice(0, 200)}`);

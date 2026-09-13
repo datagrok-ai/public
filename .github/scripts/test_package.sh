@@ -117,7 +117,7 @@ until .github/scripts/check-output.sh "curl -s ${apiUrl}/info/server" '"Http Ser
 do
     sleep 1
 done
-token=$(curl -s -X POST ${apiUrl}/users/login/dev/admin | jq -r .token)
+token=$(curl -s -X POST ${apiUrl}/users/login/dev -H "Authorization: Dev admin" | jq -r .token)
 # Check if the token is null
 if [ "$token" == "null" ] || [ -z "$token" ]; then
   echo "Error: Token is null or empty."
@@ -202,7 +202,7 @@ fi
 done
 
 
-token=$(curl -s -X POST ${apiUrl}/users/login/dev/admin | jq -r .token)
+token=$(curl -s -X POST ${apiUrl}/users/login/dev -H "Authorization: Dev admin" | jq -r .token)
 # Check if the token is null
 if [ "$token" == "null" ] || [ -z "$token" ]; then
   echo "Error: Token is null or empty."

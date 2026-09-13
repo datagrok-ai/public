@@ -99,7 +99,11 @@ export class NodeApiClient {
   constructor(public baseUrl: string, public token: string, private devKey?: string) {}
 
   static async login(baseUrl: string, devKey: string): Promise<NodeApiClient> {
-    const res = await fetch(`${baseUrl}/users/login/dev/${devKey}`, {method: 'POST'});
+    // Servers before 1.28 only knew the key-in-URL form, where it leaked into every
+    // access log on the way; they answer 404 or 401 to the key-less route.
+    let res = await fetch(`${baseUrl}/users/login/dev`, {method: 'POST', headers: {'Authorization': `Dev ${devKey}`}});
+    if (res.status === 404 || res.status === 401)
+      res = await fetch(`${baseUrl}/users/login/dev/${devKey}`, {method: 'POST'});
     const json = (res.headers.get('content-type') ?? '').includes('application/json') ? await res.json() as any : null;
     if (!json)
       throw new Error(`Login failed at ${baseUrl} (HTTP ${res.status}): not a Datagrok API URL — it should end with /api`);
