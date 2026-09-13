@@ -383,10 +383,17 @@ Usage: grok report <subcommand> [args]
 Manage Datagrok user error reports
 
 Subcommands:
-    fetch    Download a report zip from a managed instance
+    fetch    Download a report zip from a managed instance (writes <stem>_meta.json next to it)
     read     Normalize a report (zip or json) into one JSON object on stdout
-    resolve  Mark a report as resolved
-    ticket   Create a JIRA ticket for a report via the Datlas API
+    resolve  Mark a report as resolved (needs the _meta.json written by fetch)
+    ticket   Create a JIRA ticket for a report directly in JIRA (no dedup; the key is NOT
+             written back to the report — prefer POST /reports/{id}/jira for that)
+    comment  Add a comment to a JIRA ticket (--body <text> | --body-file <path>)
+    label    Add labels to a JIRA ticket
+    attach   Attach a file to a JIRA ticket
+
+JIRA subcommands need JIRA_TOKEN (plus JIRA_USER for a user API token); ticket also needs
+--project or $JIRA_PROJECT.
 
 Read flags:
     --extract-screenshot <path>  Write the screenshot binary to <path>

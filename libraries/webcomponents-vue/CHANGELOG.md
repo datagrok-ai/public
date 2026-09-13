@@ -2,6 +2,8 @@
 
 ## v.next
 
+* Introduced an injectable per-view service (`provideDgViewService`/`useViewService`/`useDgView`) that owns ribbon rendering and diffing
+* RibbonPanel/RibbonMenu: rewritten as thin descriptor-based wrappers over the view service; `view` prop removed, added `priority` ordering and built-in disabled state (debounced style, reason tooltip/popup)
 * wheelGuard: hint overlay colors use design tokens
 * ifOverlapping: a show scheduled within the debounce window no longer lands after unmount; the loader is removed on unmount
 

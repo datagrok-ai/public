@@ -42,6 +42,14 @@ library's runtime resolves it from its own directory; the command moves the pack
 `node_modules/.bdd-link-backup/` and links the library's in its place (`--undo` puts it back).
 Once the library is published, the dependency becomes a version and `link` goes away.
 
+If `grok-bdd run` reports **`Requiring @playwright/test second time`**, run
+`npx grok-bdd link` from the package directory and retry. Binding discovery imports both
+the library's bindings and the package's bindings, so this can fail during the initial
+compile check, before Playwright starts a browser. Two installations of the **same version**
+also trigger the error: they must resolve to the same physical copy. Repeat the link after
+`npm ci` or another dependency install replaces it; reinstalling the same version alone
+does not fix it.
+
 **What the stand needs**: a platform built from `core` at or after 2026-09-10 (the viewer
 features rely on signals the core gained for them); a login — global setup mints a token from the
 dev key of the `localhost` entry in `~/.grok/config.yaml` (or `DATAGROK_SERVER=<name>`), falls back
@@ -213,6 +221,18 @@ for a package's own steps come from `@datagrok-libraries/bdd/runtime`: `locate`,
 `viewers.*` (`hitArea`, `hitAreas`, `readValue`, `settle`, `snapshot`, `onViewer`, …),
 `expectState`, `expectText`, `atFeatureEnd`.
 
+The shared gesture helpers interpret `Control` / `Ctrl` as the platform's primary modifier:
+Control on Windows/Linux, Command on macOS. Existing `user presses Control+C` and
+`… holding Control` steps therefore work on both. This also covers modifier keys held by
+drag and legend helpers, and select-all inside the typing and clearing helpers. Internally,
+Playwright's `ControlOrMeta` resolves the modifier (requires Playwright 1.45+).
+
+`Delete` / `Del` follows Datagrok's command convention: Backspace on macOS, Delete on
+Windows/Linux, so `user presses Shift+Delete` removes selected rows on either platform.
+For a physical key, use `ControlLeft` / `ControlRight`, `ForwardDelete` or `Backspace`.
+The grid's custom current-cell copy specifically checks physical Control, so that one step
+uses `user presses ControlLeft+Shift+C`. `Meta` / `Cmd` and explicit `ControlOrMeta` also work.
+
 ## Tiers, and the `viewers` tier
 
 `bindings/common` and `bindings/platform` load for every project; vocabulary only some packages
@@ -271,6 +291,12 @@ The official Cucumber extension needs, in the package's `.vscode/settings.json`:
 `cucumber.parameterTypes` for `state` (`grok-bdd init` writes it from the library's list; the other
 custom types are read from the glue). A step shown as undefined while `grok-bdd lint` resolves it
 means the settings file is not valid JSON or the glue globs miss the tier directories.
+
+Settings are relative to the folder opened in VS Code; nested `.vscode/settings.json` files
+are not inherited. With the core repository open, use `public/packages/*/bdd/features/**/*.feature`
+for features, and `public/libraries/bdd/bindings/**/*.ts` plus
+`public/packages/*/bdd/bindings/**/*.ts` for glue in the root `.vscode/settings.json`.
+Include the same `state` parameter type there. With `public/` open, omit the `public/` prefix.
 
 ## Developing the library
 

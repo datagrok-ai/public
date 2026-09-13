@@ -51,6 +51,10 @@ answers "Files" — a stand with the files alone never shows that dialog. PepSeA
 container), Bio | Folding, the Manage Monomers view's CRUD and project round-trips are not
 exercised.
 
+Atomic-level conversion selects `HELMCoreLibrary.json` for its standard monomer fixtures and
+restores the previous selection afterwards. Custom libraries can redefine symbols such as E
+without the R3 attachment required by the branched HELM fixture.
+
 Editing: change a feature, `npx grok-bdd compile`, commit the regenerated spec with it;
 `npx grok-bdd list-steps` prints every phrase this package can use, including its own
 (`bindings/steps.ts`: the readiness step, the molfile and alignment readings;

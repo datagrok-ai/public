@@ -37,7 +37,9 @@ Feature: A model file previewed from Browse
   Scenario: The clicker counts Count up to four
     When user hovers over count input
     And user clicks on plus icon in count input
+    And user hovers over count input
     And user clicks on plus icon in count input
+    And user hovers over count input
     And user clicks on plus icon in count input
     Then count input should have value "4"
 

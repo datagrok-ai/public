@@ -11,6 +11,7 @@ import {HistoryTestApp as HistoryAppInstance} from './apps/HistoryTestApp';
 import {TreeWizardApp as TreeWizardAppInstance} from './apps/TreeWizardApp';
 import {RunComparisonApp as RunComparisonAppInstance} from './apps/RunComparisonApp';
 import {RFVApp} from './apps/RFVApp';
+import {provideDgViewService} from '@datagrok-libraries/webcomponents-vue';
 import {CustomFunctionView as CustomFunctionViewInst, historyUtils} from '@datagrok-libraries/compute-utils';
 import type {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
 import type {IRuntimePipelineMutationController} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/RuntimeControllers';
@@ -189,10 +190,11 @@ export class PackageFunctions {
     setViewHierarchyData(call, view);
 
     const app = Vue.createApp(RFVApp,
-      {funcCall: Vue.markRaw(call), view: Vue.markRaw(view), initialRunId: call.aux.initialRunId});
+      {funcCall: Vue.markRaw(call), initialRunId: call.aux.initialRunId});
     view.root.classList.remove('ui-panel');
     view.root.classList.remove('ui-box');
     setVueAppOptions(app);
+    const viewService = provideDgViewService(app, view);
 
     app.mount(view.root);
 
@@ -203,6 +205,7 @@ export class PackageFunctions {
       take(1),
     ).subscribe(() => {
       app.unmount();
+      viewService.dispose();
     });
 
     grok.shell.windows.showHelp = false;
@@ -229,10 +232,11 @@ export class PackageFunctions {
 
     const {resolve, initialRunId} = call.aux;
 
-    const app = Vue.createApp(TreeWizardAppInstance, {providerFunc, modelName, version, instanceConfig, resolve, initialRunId, view: Vue.markRaw(view)});
+    const app = Vue.createApp(TreeWizardAppInstance, {providerFunc, modelName, version, instanceConfig, resolve, initialRunId});
     view.root.classList.remove('ui-panel');
     view.root.classList.remove('ui-box');
     setVueAppOptions(app);
+    const viewService = provideDgViewService(app, view);
 
     app.mount(view.root);
 
@@ -243,6 +247,7 @@ export class PackageFunctions {
       take(1),
     ).subscribe(() => {
       app.unmount();
+      viewService.dispose();
       if (resolve)
         resolve();
     });

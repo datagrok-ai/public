@@ -14,6 +14,7 @@ import {compositorOverlay} from '../directives/compositor-overlay';
 import {canUseResults, pinView} from '../utils';
 import {parseUrlInputs, applyUrlInputs, missingMandatoryInputs, buildInputsUrl, copyText} from '../url-inputs';
 import {getShareAction} from '../sharing/sharing';
+import {useDgView} from '@datagrok-libraries/webcomponents-vue';
 
 const RUN_DEBOUNCE_TIME = 250;
 const OUTPUT_OUTDATED_PATH = 'OUTPUT_OUTDATED';
@@ -28,10 +29,6 @@ export const RFVApp = Vue.defineComponent({
     initialRunId: {
       type: String,
       required: false,
-    },
-    view: {
-      type: DG.View,
-      required: true,
     },
   },
   setup(props) {
@@ -64,7 +61,7 @@ export const RFVApp = Vue.defineComponent({
       {isRunning: false, isOutputOutdated: true, isRunnable: false, runError: undefined, pendingDependencies: []},
     );
     const overlayActive = Vue.ref(false);
-    const currentView = Vue.computed(() => Vue.markRaw(props.view));
+    const currentView = useDgView();
 
     const func = Vue.shallowRef<DG.Func | undefined>(undefined);
     const isRunningOnInput = Vue.ref<boolean>(false);
@@ -77,13 +74,11 @@ export const RFVApp = Vue.defineComponent({
     const searchParams = useUrlSearchParams<{id?: string}>('history');
 
     const setViewName = (name: string = '') => {
-      if (props.view)
-        props.view.name = name;
+      currentView.name = name;
     };
 
     const setViewPath = (path: string = '') => {
-      if (props.view)
-        props.view.path = path;
+      currentView.path = path;
     };
 
     Vue.watch(searchParams, (params) => {
@@ -192,7 +187,7 @@ export const RFVApp = Vue.defineComponent({
     };
 
     const onInputChanged = () => {
-      pinView(props.view);
+      pinView(currentView);
       currentFuncCall.value.options[OUTPUT_OUTDATED_PATH] = 'true';
       updateCallState({isOutputOutdated: true});
       searchParams.id = undefined;
@@ -298,7 +293,6 @@ export const RFVApp = Vue.defineComponent({
           skipInit={false}
           showRunButton={!isRunningOnInput.value}
           keepExportsVisible={isRunningOnInput.value}
-          view={currentView.value}
         />
       </div>, [[compositorOverlay, overlayActive.value]])
     );

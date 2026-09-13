@@ -1023,7 +1023,12 @@ function install(): void {
     const saved = layout.serverId ? await grok.dapi.layouts.find(layout.serverId) : layout;
     if (!saved)
       throw new Error(`the server has no layout ${layout.serverId}`);
-    grok.shell.tv.loadLayout(saved);
+    const view = grok.shell.tv;
+    view.loadLayout(saved);
+    // Restored viewers can still be laying out their contents after loadLayout returns.
+    // Their pending signal covers this work, including the tile viewer's deferred lane layout.
+    for (const viewer of Array.from(view.viewers ?? []))
+      await quiet(viewer);
   };
   const deleteLayout = async (id: string): Promise<void> => {
     const saved = await grok.dapi.layouts.find(id);

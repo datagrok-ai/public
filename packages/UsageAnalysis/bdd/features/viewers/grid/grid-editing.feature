@@ -3,7 +3,7 @@ Feature: Grid cell editing and the clipboard
   Editing a cell in place and moving values around: a double-click opens the editor the grid names
   `cell-editor`, Enter commits and Escape cancels, Delete clears the current cell, Allow Edit off
   refuses the edit with a read-only balloon, a typed digit opens the editor on the current cell,
-  Control+Shift+C copies the current cell, Control+C / Control+V move a value between cells,
+  Physical Control+Shift+C copies the current cell, Control+C / Control+V move a value between cells,
   Control+A then copy then paste leaves the table alone, and Shift+Delete removes the selected rows
   while Control+Z brings them back. One journey on demog-1000; every scenario puts the value back.
 
@@ -70,7 +70,7 @@ Feature: Grid cell editing and the clipboard
 
   Scenario: Control+Shift+C copies the current cell
     When user clicks on the "cell 4 of AGE" area of grid
-    And user presses Control+Shift+C
+    And user presses ControlLeft+Shift+C
     Then the clipboard should have the text "45"
     And no errors should have been logged
 

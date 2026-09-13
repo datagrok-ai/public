@@ -78,7 +78,7 @@
   function Isolate() {
   }
   init();
-  init.mangledNames = {set$$call: "call=", set$context: "context=", set$currentCol: "currentCol=", set$currentRow: "currentRow=", set$isSelected: "isSelected=", set$mouseOverRow: "mouseOverRow=", set$name: "name=", set$token: "token=", get$$call: "call", get$context: "context", get$currentCol: "currentCol", get$currentRow: "currentRow", get$isSelected: "isSelected", get$mouseOverRow: "mouseOverRow", get$name: "name", get$token: "token", call$0: "call:0", call$1: "call:1", call$1$autoName: "call:0:autoName", call$1$columnIds: "call:0:columnIds", call$1$compress: "call:0:compress", call$1$context: "call:0:context", call$1$end: "call:0:end", call$1$group: "call:0:group", call$1$growable: "call:0:growable", call$1$include: "call:0:include", call$1$line: "call:0:line", call$1$name: "call:0:name", call$1$notify: "call:0:notify", call$1$onlyFiltered: "call:0:onlyFiltered", call$1$paramValues: "call:0:paramValues", call$1$parameters: "call:0:parameters", call$1$pathSegments: "call:0:pathSegments", call$1$prefix: "call:0:prefix", call$1$processed: "call:0:processed", call$1$queryParameters: "call:0:queryParameters", call$1$report: "call:0:report", call$1$rowFilter: "call:0:rowFilter", call$1$rowMask: "call:0:rowMask", call$1$saveSelection: "call:0:saveSelection", call$1$stack: "call:0:stack", call$12$canPost$canPrint$canSave$flag$includeTime$mustPost$mustPrint$mustSave$params$stackTrace: "call:2:canPost:canPrint:canSave:flag:includeTime:mustPost:mustPrint:mustSave:params:stackTrace", call$12$canPost$canPrint$canSave$flag$local$mustPost$mustPrint$mustSave$params$time: "call:2:canPost:canPrint:canSave:flag:local:mustPost:mustPrint:mustSave:params:time", call$12$canPost$canPrint$canSave$mustPost$mustPrint$mustSave$params$remote$severity$stackTrace: "call:2:canPost:canPrint:canSave:mustPost:mustPrint:mustSave:params:remote:severity:stackTrace", call$13$canPost$canPrint$canSave$flag$local$mustPost$mustPrint$mustSave$params$severity$stackTrace: "call:2:canPost:canPrint:canSave:flag:local:mustPost:mustPrint:mustSave:params:severity:stackTrace", call$2: "call:2", call$2$admin: "call:1:admin", call$2$all: "call:1:all", call$2$allowClear: "call:1:allowClear", call$2$asc: "call:1:asc", call$2$body: "call:1:body", call$2$cancelOnError: "call:1:cancelOnError", call$2$catalog: "call:1:catalog", call$2$check: "call:1:check", call$2$choices$prefix: "call:0:choices:prefix", call$2$colFilter$rowMask: "call:0:colFilter:rowMask", call$2$column: "call:1:column", call$2$columnName: "call:1:columnName", call$2$compact: "call:1:compact", call$2$context$paramValues: "call:0:context:paramValues", call$2$context$report: "call:0:context:report", call$2$desc: "call:1:desc", call$2$description: "call:1:description", call$2$errorBehavior: "call:1:errorBehavior", call$2$errorBehavior$paramToColumnName: "call:0:errorBehavior:paramToColumnName", call$2$excludeMissing: "call:1:excludeMissing", call$2$flag: "call:1:flag", call$2$format: "call:1:format", call$2$headers: "call:1:headers", call$2$id: "call:1:id", call$2$ignoreNulls: "call:1:ignoreNulls", call$2$includeEntity: "call:1:includeEntity", call$2$includeLinked$types: "call:0:includeLinked:types", call$2$indexes: "call:1:indexes", call$2$limit: "call:1:limit", call$2$link: "call:1:link", call$2$name$replaceId: "call:0:name:replaceId", call$2$name$sql: "call:0:name:sql", call$2$notify: "call:1:notify", call$2$notify$requester: "call:0:notify:requester", call$2$notify$values: "call:0:notify:values", call$2$onError: "call:1:onError", call$2$onlyFiltered$onlySelected: "call:0:onlyFiltered:onlySelected", call$2$optional: "call:1:optional", call$2$options: "call:1:options", call$2$orElse: "call:1:orElse", call$2$override: "call:1:override", call$2$overwrite: "call:1:overwrite", call$2$prefix$startWith: "call:0:prefix:startWith", call$2$processed$report: "call:0:processed:report", call$2$processed$values: "call:0:processed:values", call$2$runGuarded: "call:1:runGuarded", call$2$saveCredentials: "call:1:saveCredentials", call$2$saveRelations: "call:1:saveRelations", call$2$shouldNotify: "call:1:shouldNotify", call$2$specification$zoneValues: "call:0:specification:zoneValues", call$2$suppressException: "call:1:suppressException", call$2$uniquifyNames: "call:1:uniquifyNames", call$2$update: "call:1:update", call$2$whenNull: "call:1:whenNull", call$2$withDrive: "call:1:withDrive", call$3: "call:3", call$3$archive: "call:2:archive", call$3$as: "call:2:as", call$3$aux$context$progress: "call:0:aux:context:progress", call$3$body$headers: "call:1:body:headers", call$3$catalog$schema: "call:1:catalog:schema", call$3$catalogs$entityTypes: "call:1:catalogs:entityTypes", call$3$catalogs$schemas: "call:1:catalogs:schemas", call$3$clear$value: "call:1:clear:value", call$3$columnsToAppend$inPlace: "call:1:columnsToAppend:inPlace", call$3$context$options$paramValues: "call:0:context:options:paramValues", call$3$copy: "call:2:copy", call$3$count$notify: "call:1:count:notify", call$3$dataType: "call:2:dataType", call$3$description$friendlyName: "call:1:description:friendlyName", call$3$dryRun: "call:2:dryRun", call$3$end$start$userId: "call:0:end:start:userId", call$3$ext$recursive: "call:1:ext:recursive", call$3$flag$params: "call:1:flag:params", call$3$format$zip: "call:1:format:zip", call$3$headers$suppressException: "call:1:headers:suppressException", call$3$id: "call:2:id", call$3$index$shouldNotify: "call:1:index:shouldNotify", call$3$length$position: "call:1:length:position", call$3$limit: "call:2:limit", call$3$models$stopDrillDown$type: "call:0:models:stopDrillDown:type", call$3$notify: "call:2:notify", call$3$notify$overwrite: "call:1:notify:overwrite", call$3$onDone$onError: "call:1:onDone:onError", call$3$permission: "call:2:permission", call$3$processed$queue$report: "call:0:processed:queue:report", call$3$processed$report: "call:1:processed:report", call$3$processed$report$values: "call:0:processed:report:values", call$3$resultColName: "call:2:resultColName", call$3$rowIndexes$rowMask: "call:1:rowIndexes:rowMask", call$3$rowMask$sortOrders: "call:1:rowMask:sortOrders", call$3$shouldNotify: "call:2:shouldNotify", call$3$tags: "call:2:tags", call$4: "call:4", call$4$as$function: "call:2:as:function", call$4$auditType$params: "call:2:auditType:params", call$4$body$headers$suppressException: "call:1:body:headers:suppressException", call$4$canPrint$flag$params: "call:1:canPrint:flag:params", call$4$cancelOnError$onDone$onError: "call:1:cancelOnError:onDone:onError", call$4$catalog$schema$tableName: "call:1:catalog:schema:tableName", call$4$columnIds$rowMask$saveSelection$saveTags: "call:0:columnIds:rowMask:saveSelection:saveTags", call$4$count$notify$start: "call:1:count:notify:start", call$4$end$entityId$favoritesOnly$start: "call:0:end:entityId:favoritesOnly:start", call$4$errorOnDuplicate: "call:3:errorOnDuplicate", call$4$fields: "call:3:fields", call$4$function$resultColName: "call:2:function:resultColName", call$4$includeDefaultValues$models$propToMap$stopDrillDown: "call:0:includeDefaultValues:models:propToMap:stopDrillDown", call$4$limit: "call:3:limit", call$4$mode$rows: "call:2:mode:rows", call$4$models$stopDrillDown$tooltipExclusion$type: "call:0:models:stopDrillDown:tooltipExclusion:type", call$4$permission: "call:3:permission", call$4$progress$tags: "call:2:progress:tags", call$4$setValue$type: "call:2:setValue:type", call$4$tags$type: "call:2:tags:type", call$5: "call:5", call$5$auditType$params$stackTrace: "call:2:auditType:params:stackTrace", call$5$aux$context$options$paramValues$processed: "call:0:aux:context:options:paramValues:processed", call$5$context$processed$queue$report: "call:1:context:processed:queue:report", call$5$id: "call:4:id", call$5$permission: "call:4:permission", call$5$props: "call:4:props", call$5$version: "call:4:version", call$6: "call:6", call$6$leftTable$rightTableAlias: "call:4:leftTable:rightTableAlias", call$8$aux$context$hideParams$options$paramValues$paramValuesList$processed$progress: "call:0:aux:context:hideParams:options:paramValues:paramValuesList:processed:progress", call$9$allOrNothing$bytes$csv$df$errorOnDuplicate$mode$rows: "call:2:allOrNothing:bytes:csv:df:errorOnDuplicate:mode:rows"};
+  init.mangledNames = {set$$call: "call=", set$context: "context=", set$currentCol: "currentCol=", set$currentRow: "currentRow=", set$isSelected: "isSelected=", set$mouseOverRow: "mouseOverRow=", set$name: "name=", set$token: "token=", get$$call: "call", get$context: "context", get$currentCol: "currentCol", get$currentRow: "currentRow", get$isSelected: "isSelected", get$mouseOverRow: "mouseOverRow", get$name: "name", get$token: "token", call$0: "call:0", call$1: "call:1", call$1$autoName: "call:0:autoName", call$1$columnIds: "call:0:columnIds", call$1$compress: "call:0:compress", call$1$context: "call:0:context", call$1$end: "call:0:end", call$1$group: "call:0:group", call$1$growable: "call:0:growable", call$1$include: "call:0:include", call$1$line: "call:0:line", call$1$name: "call:0:name", call$1$notify: "call:0:notify", call$1$onlyFiltered: "call:0:onlyFiltered", call$1$paramValues: "call:0:paramValues", call$1$parameters: "call:0:parameters", call$1$pathSegments: "call:0:pathSegments", call$1$prefix: "call:0:prefix", call$1$processed: "call:0:processed", call$1$queryParameters: "call:0:queryParameters", call$1$report: "call:0:report", call$1$rowFilter: "call:0:rowFilter", call$1$rowMask: "call:0:rowMask", call$1$saveSelection: "call:0:saveSelection", call$1$stack: "call:0:stack", call$10$allOrNothing$bytes$csv$df$errorOnDuplicate$mode$rows$throwOnError: "call:2:allOrNothing:bytes:csv:df:errorOnDuplicate:mode:rows:throwOnError", call$12$canPost$canPrint$canSave$flag$includeTime$mustPost$mustPrint$mustSave$params$stackTrace: "call:2:canPost:canPrint:canSave:flag:includeTime:mustPost:mustPrint:mustSave:params:stackTrace", call$12$canPost$canPrint$canSave$flag$local$mustPost$mustPrint$mustSave$params$time: "call:2:canPost:canPrint:canSave:flag:local:mustPost:mustPrint:mustSave:params:time", call$12$canPost$canPrint$canSave$mustPost$mustPrint$mustSave$params$remote$severity$stackTrace: "call:2:canPost:canPrint:canSave:mustPost:mustPrint:mustSave:params:remote:severity:stackTrace", call$13$canPost$canPrint$canSave$flag$local$mustPost$mustPrint$mustSave$params$severity$stackTrace: "call:2:canPost:canPrint:canSave:flag:local:mustPost:mustPrint:mustSave:params:severity:stackTrace", call$2: "call:2", call$2$admin: "call:1:admin", call$2$all: "call:1:all", call$2$allowClear: "call:1:allowClear", call$2$asc: "call:1:asc", call$2$body: "call:1:body", call$2$cancelOnError: "call:1:cancelOnError", call$2$catalog: "call:1:catalog", call$2$check: "call:1:check", call$2$choices$prefix: "call:0:choices:prefix", call$2$colFilter$rowMask: "call:0:colFilter:rowMask", call$2$column: "call:1:column", call$2$columnName: "call:1:columnName", call$2$compact: "call:1:compact", call$2$context$paramValues: "call:0:context:paramValues", call$2$context$report: "call:0:context:report", call$2$desc: "call:1:desc", call$2$description: "call:1:description", call$2$errorBehavior: "call:1:errorBehavior", call$2$errorBehavior$paramToColumnName: "call:0:errorBehavior:paramToColumnName", call$2$excludeMissing: "call:1:excludeMissing", call$2$flag: "call:1:flag", call$2$format: "call:1:format", call$2$headers: "call:1:headers", call$2$id: "call:1:id", call$2$ignoreNulls: "call:1:ignoreNulls", call$2$includeEntity: "call:1:includeEntity", call$2$includeLinked$types: "call:0:includeLinked:types", call$2$indexes: "call:1:indexes", call$2$limit: "call:1:limit", call$2$link: "call:1:link", call$2$name$replaceId: "call:0:name:replaceId", call$2$name$sql: "call:0:name:sql", call$2$notify: "call:1:notify", call$2$notify$requester: "call:0:notify:requester", call$2$notify$values: "call:0:notify:values", call$2$onError: "call:1:onError", call$2$onlyFiltered$onlySelected: "call:0:onlyFiltered:onlySelected", call$2$optional: "call:1:optional", call$2$options: "call:1:options", call$2$orElse: "call:1:orElse", call$2$override: "call:1:override", call$2$overwrite: "call:1:overwrite", call$2$prefix$startWith: "call:0:prefix:startWith", call$2$processed$report: "call:0:processed:report", call$2$processed$values: "call:0:processed:values", call$2$runGuarded: "call:1:runGuarded", call$2$saveCredentials: "call:1:saveCredentials", call$2$saveRelations: "call:1:saveRelations", call$2$shouldNotify: "call:1:shouldNotify", call$2$specification$zoneValues: "call:0:specification:zoneValues", call$2$suppressException: "call:1:suppressException", call$2$uniquifyNames: "call:1:uniquifyNames", call$2$update: "call:1:update", call$2$whenNull: "call:1:whenNull", call$2$withDrive: "call:1:withDrive", call$3: "call:3", call$3$archive: "call:2:archive", call$3$as: "call:2:as", call$3$aux$context$progress: "call:0:aux:context:progress", call$3$body$headers: "call:1:body:headers", call$3$catalog$schema: "call:1:catalog:schema", call$3$catalogs$entityTypes: "call:1:catalogs:entityTypes", call$3$catalogs$schemas: "call:1:catalogs:schemas", call$3$clear$value: "call:1:clear:value", call$3$columnsToAppend$inPlace: "call:1:columnsToAppend:inPlace", call$3$context$options$paramValues: "call:0:context:options:paramValues", call$3$copy: "call:2:copy", call$3$count$notify: "call:1:count:notify", call$3$dataType: "call:2:dataType", call$3$description$friendlyName: "call:1:description:friendlyName", call$3$dryRun: "call:2:dryRun", call$3$end$start$userId: "call:0:end:start:userId", call$3$ext$recursive: "call:1:ext:recursive", call$3$flag$params: "call:1:flag:params", call$3$format$zip: "call:1:format:zip", call$3$headers$suppressException: "call:1:headers:suppressException", call$3$id: "call:2:id", call$3$index$shouldNotify: "call:1:index:shouldNotify", call$3$length$position: "call:1:length:position", call$3$limit: "call:2:limit", call$3$models$stopDrillDown$type: "call:0:models:stopDrillDown:type", call$3$notify: "call:2:notify", call$3$notify$overwrite: "call:1:notify:overwrite", call$3$onDone$onError: "call:1:onDone:onError", call$3$permission: "call:2:permission", call$3$processed$queue$report: "call:0:processed:queue:report", call$3$processed$report: "call:1:processed:report", call$3$processed$report$values: "call:0:processed:report:values", call$3$resultColName: "call:2:resultColName", call$3$rowIndexes$rowMask: "call:1:rowIndexes:rowMask", call$3$rowMask$sortOrders: "call:1:rowMask:sortOrders", call$3$shouldNotify: "call:2:shouldNotify", call$3$tags: "call:2:tags", call$4: "call:4", call$4$as$function: "call:2:as:function", call$4$auditType$params: "call:2:auditType:params", call$4$body$headers$suppressException: "call:1:body:headers:suppressException", call$4$canPrint$flag$params: "call:1:canPrint:flag:params", call$4$cancelOnError$onDone$onError: "call:1:cancelOnError:onDone:onError", call$4$catalog$schema$tableName: "call:1:catalog:schema:tableName", call$4$columnIds$rowMask$saveSelection$saveTags: "call:0:columnIds:rowMask:saveSelection:saveTags", call$4$count$notify$start: "call:1:count:notify:start", call$4$end$entityId$favoritesOnly$start: "call:0:end:entityId:favoritesOnly:start", call$4$errorOnDuplicate: "call:3:errorOnDuplicate", call$4$fields: "call:3:fields", call$4$function$resultColName: "call:2:function:resultColName", call$4$includeDefaultValues$models$propToMap$stopDrillDown: "call:0:includeDefaultValues:models:propToMap:stopDrillDown", call$4$limit: "call:3:limit", call$4$mode$rows: "call:2:mode:rows", call$4$models$stopDrillDown$tooltipExclusion$type: "call:0:models:stopDrillDown:tooltipExclusion:type", call$4$permission: "call:3:permission", call$4$progress$tags: "call:2:progress:tags", call$4$setValue$type: "call:2:setValue:type", call$4$tags$type: "call:2:tags:type", call$5: "call:5", call$5$auditType$params$stackTrace: "call:2:auditType:params:stackTrace", call$5$aux$context$options$paramValues$processed: "call:0:aux:context:options:paramValues:processed", call$5$context$processed$queue$report: "call:1:context:processed:queue:report", call$5$id: "call:4:id", call$5$permission: "call:4:permission", call$5$props: "call:4:props", call$5$version: "call:4:version", call$6: "call:6", call$6$leftTable$rightTableAlias: "call:4:leftTable:rightTableAlias", call$8$aux$context$hideParams$options$paramValues$paramValuesList$processed$progress: "call:0:aux:context:hideParams:options:paramValues:paramValuesList:processed:progress"};
   // Constructors are generated at runtime.
   function setupProgram(programData, typesOffset) {
     "use strict";
@@ -19041,8 +19041,8 @@
       applySync$3$processed$report$values: function($0, $1, $2) {
         return this.noSuchMethod$1(this, H.createInvocationMirror("applySync", "applySync$3$processed$report$values", 0, [$0, $1, $2], ["processed", "report", "values"]));
       },
-      batch$9$allOrNothing$bytes$csv$df$errorOnDuplicate$mode$rows: function($0, $1, $2, $3, $4, $5, $6, $7, $8) {
-        return this.noSuchMethod$1(this, H.createInvocationMirror("batch", "batch$9$allOrNothing$bytes$csv$df$errorOnDuplicate$mode$rows", 0, [$0, $1, $2, $3, $4, $5, $6, $7, $8], ["allOrNothing", "bytes", "csv", "df", "errorOnDuplicate", "mode", "rows"]));
+      batch$10$allOrNothing$bytes$csv$df$errorOnDuplicate$mode$rows$throwOnError: function($0, $1, $2, $3, $4, $5, $6, $7, $8, $9) {
+        return this.noSuchMethod$1(this, H.createInvocationMirror("batch", "batch$10$allOrNothing$bytes$csv$df$errorOnDuplicate$mode$rows$throwOnError", 0, [$0, $1, $2, $3, $4, $5, $6, $7, $8, $9], ["allOrNothing", "bytes", "csv", "df", "errorOnDuplicate", "mode", "rows", "throwOnError"]));
       },
       bindCallback$2$runGuarded: function($0, $1) {
         return this.noSuchMethod$1(this, H.createInvocationMirror("bindCallback", "bindCallback$2$runGuarded", 0, [$0, $1], ["runGuarded"]));
@@ -19153,6 +19153,10 @@
         return this.noSuchMethod$1(this, H.createInvocationMirror("call", "call$1$stack", 0, [$0], ["stack"]));
       },
       "+call:0:stack": 0,
+      call$10$allOrNothing$bytes$csv$df$errorOnDuplicate$mode$rows$throwOnError: function($0, $1, $2, $3, $4, $5, $6, $7, $8, $9) {
+        return this.noSuchMethod$1(this, H.createInvocationMirror("call", "call$10$allOrNothing$bytes$csv$df$errorOnDuplicate$mode$rows$throwOnError", 0, [$0, $1, $2, $3, $4, $5, $6, $7, $8, $9], ["allOrNothing", "bytes", "csv", "df", "errorOnDuplicate", "mode", "rows", "throwOnError"]));
+      },
+      "+call:2:allOrNothing:bytes:csv:df:errorOnDuplicate:mode:rows:throwOnError": 0,
       call$12$canPost$canPrint$canSave$flag$includeTime$mustPost$mustPrint$mustSave$params$stackTrace: function($0, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) {
         return this.noSuchMethod$1(this, H.createInvocationMirror("call", "call$12$canPost$canPrint$canSave$flag$includeTime$mustPost$mustPrint$mustSave$params$stackTrace", 0, [$0, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11], ["canPost", "canPrint", "canSave", "flag", "includeTime", "mustPost", "mustPrint", "mustSave", "params", "stackTrace"]));
       },
@@ -19673,10 +19677,6 @@
         return this.noSuchMethod$1(this, H.createInvocationMirror("call", "call$8$aux$context$hideParams$options$paramValues$paramValuesList$processed$progress", 0, [$0, $1, $2, $3, $4, $5, $6, $7], ["aux", "context", "hideParams", "options", "paramValues", "paramValuesList", "processed", "progress"]));
       },
       "+call:0:aux:context:hideParams:options:paramValues:paramValuesList:processed:progress": 0,
-      call$9$allOrNothing$bytes$csv$df$errorOnDuplicate$mode$rows: function($0, $1, $2, $3, $4, $5, $6, $7, $8) {
-        return this.noSuchMethod$1(this, H.createInvocationMirror("call", "call$9$allOrNothing$bytes$csv$df$errorOnDuplicate$mode$rows", 0, [$0, $1, $2, $3, $4, $5, $6, $7, $8], ["allOrNothing", "bytes", "csv", "df", "errorOnDuplicate", "mode", "rows"]));
-      },
-      "+call:2:allOrNothing:bytes:csv:df:errorOnDuplicate:mode:rows": 0,
       change$1$parameters: function($0) {
         return this.noSuchMethod$1(this, H.createInvocationMirror("change", "change$1$parameters", 0, [$0], ["parameters"]));
       },
@@ -77270,8 +77270,8 @@
       call$4$fields: function(arg0, arg1, arg2, arg3) {
         return this.$call.call$4$fields(arg0, arg1, arg2, arg3);
       },
-      call$9$allOrNothing$bytes$csv$df$errorOnDuplicate$mode$rows: function(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8) {
-        return this.$call.call$9$allOrNothing$bytes$csv$df$errorOnDuplicate$mode$rows(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
+      call$10$allOrNothing$bytes$csv$df$errorOnDuplicate$mode$rows$throwOnError: function(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9) {
+        return this.$call.call$10$allOrNothing$bytes$csv$df$errorOnDuplicate$mode$rows$throwOnError(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
       },
       call$4$limit: function(arg0, arg1, arg2, arg3) {
         return this.$call.call$4$limit(arg0, arg1, arg2, arg3);
@@ -98449,7 +98449,7 @@
     initJsApi__closure59: {
       "^": "Closure:4;_box_0,jsonToJs,jsonToDart,c,schema,table,format,options",
       call$0: [function() {
-        var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, $async$self = this, t1, opts, t2, t3, t4, t5, t6, t7, $async$temp1;
+        var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, $async$self = this, t1, opts, t2, t3, t4, t5, t6, t7, t8, $async$temp1;
         var $async$call$0 = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
           if ($async$errorCode === 1)
             return P._asyncRethrow($async$result, $async$completer);
@@ -98487,12 +98487,15 @@
                 t7 = t3.$index(opts, "allOrNothing");
                 if (t7 == null)
                   t7 = true;
-                t3 = t3.$index(opts, "errorOnDuplicate");
+                t8 = t3.$index(opts, "errorOnDuplicate");
+                if (t8 == null)
+                  t8 = false;
+                t3 = t3.$index(opts, "throwOnError");
                 if (t3 == null)
                   t3 = false;
                 $async$temp1 = $async$self.jsonToJs;
                 $async$goto = 6;
-                return P._asyncAwait($async$self.c.batch$9$allOrNothing$bytes$csv$df$errorOnDuplicate$mode$rows($async$self.schema, $async$self.table, t7, t2, t5, t4, t3, t6, t1), $async$call$0);
+                return P._asyncAwait($async$self.c.batch$10$allOrNothing$bytes$csv$df$errorOnDuplicate$mode$rows$throwOnError($async$self.schema, $async$self.table, t7, t2, t5, t4, t8, t6, t1, t3), $async$call$0);
               case 6:
                 // returning from await.
                 $async$returnValue = $async$temp1.call$1($async$result);
@@ -108413,9 +108416,9 @@
         });
         return P._asyncStart($async$delete$3, $async$completer);
       },
-      batch$9$allOrNothing$bytes$csv$df$errorOnDuplicate$mode$rows: function(schema, table, allOrNothing, bytes, csv, df, errorOnDuplicate, mode, rows) {
+      batch$10$allOrNothing$bytes$csv$df$errorOnDuplicate$mode$rows$throwOnError: function(schema, table, allOrNothing, bytes, csv, df, errorOnDuplicate, mode, rows, throwOnError) {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, $async$self = this, t1, url, response, res;
-        var $async$batch$9$allOrNothing$bytes$csv$df$errorOnDuplicate$mode$rows = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
+        var $async$batch$10$allOrNothing$bytes$csv$df$errorOnDuplicate$mode$rows$throwOnError = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
           if ($async$errorCode === 1)
             return P._asyncRethrow($async$result, $async$completer);
           while (true)
@@ -108432,7 +108435,7 @@
                 if (t1 == null)
                   t1 = $.$get$GrokClientBase__http();
                 $async$goto = 6;
-                return P._asyncAwait(t1.post$4$body$headers$suppressException(url, bytes == null ? df.toByteArray$0() : bytes, C.Map_79BUP, true), $async$batch$9$allOrNothing$bytes$csv$df$errorOnDuplicate$mode$rows);
+                return P._asyncAwait(t1.post$4$body$headers$suppressException(url, bytes == null ? df.toByteArray$0() : bytes, C.Map_79BUP, true), $async$batch$10$allOrNothing$bytes$csv$df$errorOnDuplicate$mode$rows$throwOnError);
               case 6:
                 // returning from await.
                 response = $async$result;
@@ -108447,7 +108450,7 @@
                 // then
                 t1 = $async$self.GrokClientBase_customHttp;
                 $async$goto = 10;
-                return P._asyncAwait((t1 == null ? $.$get$GrokClientBase__http() : t1).post$4$body$headers$suppressException(url, csv, C.Map_790vk, true), $async$batch$9$allOrNothing$bytes$csv$df$errorOnDuplicate$mode$rows);
+                return P._asyncAwait((t1 == null ? $.$get$GrokClientBase__http() : t1).post$4$body$headers$suppressException(url, csv, C.Map_790vk, true), $async$batch$10$allOrNothing$bytes$csv$df$errorOnDuplicate$mode$rows$throwOnError);
               case 10:
                 // returning from await.
                 response = $async$result;
@@ -108460,7 +108463,7 @@
                 if (t1 == null)
                   t1 = $.$get$GrokClientBase__http();
                 $async$goto = 11;
-                return P._asyncAwait(t1.post$4$body$headers$suppressException(url, C.JsonCodec_null_null.encode$1(rows), $async$self._json, true), $async$batch$9$allOrNothing$bytes$csv$df$errorOnDuplicate$mode$rows);
+                return P._asyncAwait(t1.post$4$body$headers$suppressException(url, C.JsonCodec_null_null.encode$1(rows), $async$self._json, true), $async$batch$10$allOrNothing$bytes$csv$df$errorOnDuplicate$mode$rows$throwOnError);
               case 11:
                 // returning from await.
                 response = $async$result;
@@ -108474,6 +108477,8 @@
                 res = C.JsonCodec_null_null.decode$1(t1.get$body(response));
                 if (J.$ge$n(t1.get$statusCode(response), 400) === true && J.$index$asx(res, "rows") == null)
                   throw H.wrapException($async$self._decodeError$1(response));
+                if (throwOnError === true && J.$index$asx(res, "error") != null)
+                  throw H.wrapException(Q.DomainWriteException$("Batch failed: " + H.S(J.$index$asx(res, "errorCount")) + " row(s) rejected", res, t1.get$statusCode(response)));
                 $async$returnValue = res;
                 // goto return
                 $async$goto = 1;
@@ -108483,10 +108488,10 @@
                 return P._asyncReturn($async$returnValue, $async$completer);
             }
         });
-        return P._asyncStart($async$batch$9$allOrNothing$bytes$csv$df$errorOnDuplicate$mode$rows, $async$completer);
+        return P._asyncStart($async$batch$10$allOrNothing$bytes$csv$df$errorOnDuplicate$mode$rows$throwOnError, $async$completer);
       },
       batch$4$mode$rows: function(schema, table, mode, rows) {
-        return this.batch$9$allOrNothing$bytes$csv$df$errorOnDuplicate$mode$rows(schema, table, true, null, null, null, false, mode, rows);
+        return this.batch$10$allOrNothing$bytes$csv$df$errorOnDuplicate$mode$rows$throwOnError(schema, table, true, null, null, null, false, mode, rows, false);
       },
       deleteWhere$4$limit: function(schema, table, filter, limit) {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, $async$self = this, body, t1, t2, $async$temp1;
@@ -167704,8 +167709,8 @@
         t1 = new self.DG.ComponentBuildInfo();
         t2 = J.getInterceptor$x(t1);
         t2.set$branch(t1, "master");
-        t2.set$commit(t1, "609eab0c3181e2947cf11f3c1e2ad3e42ff6d88c");
-        t2.set$date(t1, "2026-09-11T10:43:39.525Z");
+        t2.set$commit(t1, "63a1900f1262f2023c52ed7c227f556909e47dda");
+        t2.set$date(t1, "2026-09-11T22:48:01.195Z");
         t2.set$version(t1, "1.27.11");
         return t1;
       }, null, null, 0, 0, null, "call"]

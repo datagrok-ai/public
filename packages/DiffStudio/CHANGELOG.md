@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Tests: Identify saved scripts in Model Hub by their qualified entity link and clean up by ID, so models with the same display name stay distinct; reveal the Count buttons before each increment.
 * Tests: Added a BDD suite (bdd/features, 9 features / 42 scenarios) translating the TestTrack Diff Studio specs and the package's Playwright tests, including the app hub and the Open model menu, the three cases the old suite left to a human (chart redraw in the script view and in the Model Hub, read as the viewers they are), the real slider drag and the catalog Refresh
 
 ## 1.6.8 (2026-09-01)

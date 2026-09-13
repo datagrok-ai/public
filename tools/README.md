@@ -100,6 +100,11 @@ For more information on configuring connections, refer to the [Connections](http
   - `--suffix`: a string containing package version hash
 
   Running `grok publish` is the same as running `grok publish defaultHost --build --debug`.
+- `report` works with user error reports on a Datagrok instance (the instance is a server alias from
+  `config.yaml`): `grok report fetch <instance> <number>` downloads the report zip, `grok report read
+  <zip|json|instance number>` prints one normalized JSON object (flags `--extract-screenshot`,
+  `--extract-d42`, `--extract-client-log`), `grok report resolve <instance> <number>` marks it resolved.
+  `ticket`, `comment`, `label`, `attach` talk to JIRA with `JIRA_TOKEN`. See `grok report --help`.
 - `check` checks package content (function signatures, import statements of external modules,
   etc.). The check is also run during package publication.
 - `init` modifies a package template by adding config files for linters, IDE, and so on

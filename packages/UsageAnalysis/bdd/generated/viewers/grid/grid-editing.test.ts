@@ -88,7 +88,7 @@ test.describe("Grid cell editing and the clipboard", () => {
     });
     await run.scenario("Control+Shift+C copies the current cell", async () => {
       await session.step(72, "When user clicks on the \"cell 4 of AGE\" area of grid", () => clickArea(page, "cell 4 of AGE", el("grid")));
-      await session.step(73, "And user presses Control+Shift+C", () => pressKey(page, "Control+Shift+C"));
+      await session.step(73, "And user presses ControlLeft+Shift+C", () => pressKey(page, "ControlLeft+Shift+C"));
       await session.step(74, "Then the clipboard should have the text \"45\"", () => clipboardHas(page, "45"));
       await session.step(75, "And no errors should have been logged", () => noErrors(page));
     });

@@ -1,11 +1,11 @@
-/* The phrase-to-locator layer against a static page: the kinds and the platform names as the
+/* Locators and gestures against a static page: the kinds and the platform names as the
    bindings register them, resolved on markup shaped like the u2 and Dart contracts. Runs in the
    library's Chromium; no stand. */
 import assert from 'node:assert/strict';
 import {after, before, test} from 'node:test';
 import {type Browser, chromium, type Page} from '@playwright/test';
 
-/* These eight need a browser, and the other five test files do not: the launch is guarded, so a
+/* These tests need a browser, and the other test files do not: the launch is guarded, so a
    runner without Playwright's Chromium (the libraries CI installs none) skips them and says why,
    and the rest of the unit tests still run. */
 let missing = '';
@@ -19,6 +19,7 @@ const scenario = (name: string, fn: () => Promise<void>): void => void test(name
 import '../bindings/common/kinds.js';
 import '../bindings/platform/elements.js';
 import {el} from '../src/runtime/args.js';
+import {clear, keysOf, press, pressIn, typeInto, withKeys} from '../src/runtime/gestures.js';
 import {locate, locateActionable} from '../src/runtime/locate.js';
 
 const PAGE = `
@@ -121,4 +122,72 @@ scenario('a phrase that matches nothing still has a locator to fail against, at 
   assert.equal(await count('nowhere button in load project dialog'), 0);
   assert.equal(await count('OK button in missing dialog'), 0);
   assert.ok(Date.now() - start < 5000, 'a scope that is not there must not be waited for');
+});
+
+scenario('typing replaces existing text in a focused editor on every platform', async () => {
+  const input = page!.locator('[data-u2-name="org"] input');
+  await input.fill('45');
+  await input.press('End');
+  await typeInto(page!, el('org input'), '99');
+  assert.equal(await input.inputValue(), '99');
+  await typeInto(page!, el('org input'), '7');
+  assert.equal(await input.inputValue(), '7');
+});
+
+scenario('clearing removes all existing text on every platform', async () => {
+  const input = page!.locator('[data-u2-name="org"] input');
+  await input.fill('0.00');
+  await clear(page!, el('org input'));
+  assert.equal(await input.inputValue(), '');
+});
+
+scenario('the portable selection modifier clicks without a context menu and is released', async () => {
+  const button = page!.getByRole('button', {name: 'OK', exact: true});
+  await button.evaluate((el) => {
+    for (const type of ['click', 'contextmenu'])
+      el.addEventListener(type, (event) => {
+        const e = event as MouseEvent;
+        el.setAttribute('data-gesture', `${e.type}:${e.ctrlKey || e.metaKey}:${e.shiftKey}`);
+        e.preventDefault();
+      });
+  });
+  for (const keys of [keysOf('ctrl+shift'), ['Control', 'Shift'], ['ControlOrMeta', 'Shift']]) {
+    await withKeys(page!, keys, () => button.click());
+    assert.equal(await button.getAttribute('data-gesture'), 'click:true:true');
+  }
+  await button.click();
+  assert.equal(await button.getAttribute('data-gesture'), 'click:false:false');
+});
+
+scenario('Control shortcuts select text while ControlLeft sends physical Control', async () => {
+  const input = page!.locator('[data-u2-name="org"] input');
+  await input.fill('abcdef');
+  await input.press('End');
+  await press(page!, 'Control+A');
+  assert.equal(await input.evaluate((el: HTMLInputElement) => el.selectionEnd! - el.selectionStart!), 6);
+  await input.evaluate((el) => el.addEventListener('keydown', (event) => {
+    const e = event as KeyboardEvent;
+    el.setAttribute('data-modifiers', `${e.ctrlKey}:${e.metaKey}:${e.shiftKey}`);
+  }));
+  await pressIn(page!, el('org input'), 'ControlLeft+Shift+C');
+  assert.equal(await input.getAttribute('data-modifiers'), 'true:false:true');
+});
+
+scenario('Delete and Del follow Datagrok commands while ForwardDelete and Backspace stay literal', async () => {
+  const input = page!.locator('[data-u2-name="org"] input');
+  await input.evaluate((el) => {
+    el.addEventListener('keydown', (event) => {
+      const e = event as KeyboardEvent;
+      el.setAttribute('data-key', `${e.key}:${e.keyCode}:${e.shiftKey}`);
+    });
+  });
+  const mac = await page!.evaluate(() => navigator.platform.startsWith('Mac'));
+  await pressIn(page!, el('org input'), 'Shift+Del');
+  assert.equal(await input.getAttribute('data-key'), mac ? 'Backspace:8:true' : 'Delete:46:true');
+  await pressIn(page!, el('org input'), 'Shift+Delete');
+  assert.equal(await input.getAttribute('data-key'), mac ? 'Backspace:8:true' : 'Delete:46:true');
+  await pressIn(page!, el('org input'), 'Shift+ForwardDelete');
+  assert.equal(await input.getAttribute('data-key'), 'Delete:46:true');
+  await pressIn(page!, el('org input'), 'Shift+Backspace');
+  assert.equal(await input.getAttribute('data-key'), 'Backspace:8:true');
 });
