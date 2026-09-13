@@ -17,6 +17,9 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.converter.ConvertWith;
 import org.junit.jupiter.params.provider.MethodSource;
 import serialization.DataFrame;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 class ClickHouseDataProviderTest extends ContainerizedProviderBaseTest {
     protected ClickHouseDataProviderTest(Provider type) {
@@ -94,7 +97,19 @@ class ClickHouseDataProviderTest extends ContainerizedProviderBaseTest {
     public void checkDatesParameterSupport_ok(@ConvertWith(NamedArgumentConverter.class) FuncCall funcCall, DataFrame expected) {
         funcCall.func.connection = connection;
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
-        Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
+        Assertions.assertEquals(expected.getColumnCount(), actual.getColumnCount());
+        Assertions.assertEquals(expected.getColumn(0).getName(), actual.getColumn(0).getName());
+        Assertions.assertEquals(expected.getColumn(0).getType(), actual.getColumn(0).getType());
+        // These queries have no ORDER BY; MergeTree can return the same rows in different orders.
+        // Sort logical values (not backing arrays), preserving duplicates and exact timestamps.
+        Assertions.assertEquals(sortedDates(expected), sortedDates(actual));
+    }
+
+    private static List<Double> sortedDates(DataFrame df) {
+        return IntStream.range(0, df.rowCount)
+                .mapToObj(row -> (Double) df.getColumn(0).get(row))
+                .sorted()
+                .collect(Collectors.toList());
     }
 
     @DisplayName("Output support for uuid type")
