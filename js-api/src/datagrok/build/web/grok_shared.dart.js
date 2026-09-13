@@ -17317,6 +17317,9 @@
     identityHashCode: [function(object) {
       return H.objectHashCode(object);
     }, "call$1", "core__identityHashCode$closure", 2, 0, 648],
+    int_parse: function(source, onError, radix) {
+      return H.Primitives_parseInt(source, radix, onError);
+    },
     Iterable_Iterable$generate: function(count, generator, $E) {
       if (J.$le$n(count, 0) === true)
         return new H.EmptyIterable([$E]);
@@ -34477,7 +34480,7 @@
       errors = $call.validateParameterValues$0();
       t1 = J.getInterceptor$asx(errors);
       if (t1.get$isNotEmpty(errors) === true)
-        throw H.wrapException(C.JSString_methods.$add("Errors calling " + H.S(J.get$name$x($call.get$func())) + ": ", J.join$1$ax(t1.map$1(errors, new N.Func_validateParameterValues_closure()), "\n")));
+        throw H.wrapException(new N.InvalidArgumentException(C.JSString_methods.$add("Errors calling " + H.S(J.get$name$x($call.get$func())) + ": ", J.join$1$ax(t1.map$1(errors, new N.Func_validateParameterValues_closure()), "\n")), 400));
     },
     Funcs_funcs: function() {
       var t1 = $.$get$Funcs_namespacesFuncs();
@@ -35471,7 +35474,7 @@
       return P._asyncStart($async$updateColumnValues, $async$completer);
     },
     updateColumnValuesByIndexes: function(colList, indexes, context) {
-      var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, $async$handler = 2, $async$currentError, $async$next = [], $call, result, x, s, t1, col, formula, dataFrame, call0, t2, t3, t4, t5, t6, t7, idx, t8, t9, exception, stackTrace, p, getRowFieldColName, usedCol, values, tempCol, cols, item, colName, columns, actualColumns, actualCol, i, $async$exception, $async$temp1;
+      var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, $async$handler = 2, $async$currentError, $async$next = [], $call, result, x, s, t1, col, formula, dataFrame, call0, t2, t3, t4, t5, t6, t7, idx, t8, t9, exception, p, getRowFieldColName, usedCol, values, tempCol, cols, item, colName, columns, actualColumns, actualCol, i, $async$exception, $async$temp1;
       var $async$updateColumnValuesByIndexes = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
         if ($async$errorCode === 1) {
           $async$currentError = $async$result;
@@ -35563,29 +35566,7 @@
                 $async$exception = $async$currentError;
                 x = H.unwrapException($async$exception);
                 s = H.getTraceFromException($async$exception);
-                t8 = $.$get$log();
-                t9 = x;
-                stackTrace = s;
-                t8.toString;
-                if (stackTrace == null && !!J.getInterceptor(t9).$isError)
-                  stackTrace = t9.get$stackTrace();
-                t9 = new S.LogMessage("error", "normal", null, J.toString$0$(t9), null, null, null, null, null, null, null, null, null, null, null, null, null, null, false);
-                t9.time = new P.DateTime(Date.now(), false);
-                t9.params = P.LinkedHashMap__makeEmpty();
-                t9.includeTime = false;
-                t9.remote = false;
-                t9.local = false;
-                t9.canPrint = true;
-                t9.canSave = true;
-                t9.canPost = true;
-                t9.mustPrint = false;
-                t9.mustSave = false;
-                t9.mustPost = false;
-                if (typeof stackTrace === "string")
-                  t9.stackTrace = new P._StringStackTrace(stackTrace);
-                else
-                  t9.stackTrace = stackTrace;
-                t8.logImpl$1(t9);
+                $.$get$log().log$12$canPost$canPrint$canSave$mustPost$mustPrint$mustSave$params$remote$severity$stackTrace("error", x, null, null, null, null, null, null, null, null, "normal", s);
                 $async$next.push(11);
                 // goto finally
                 $async$goto = 10;
@@ -77060,6 +77041,9 @@
       call$2$context$report: function(arg0, arg1) {
         return this.$call.call$2$context$report(arg0, arg1);
       },
+      call$12$canPost$canPrint$canSave$mustPost$mustPrint$mustSave$params$remote$severity$stackTrace: function(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11) {
+        return this.$call.call$12$canPost$canPrint$canSave$mustPost$mustPrint$mustSave$params$remote$severity$stackTrace(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11);
+      },
       call$2$context$paramValues: function(arg0, arg1) {
         return this.$call.call$2$context$paramValues(arg0, arg1);
       },
@@ -77089,9 +77073,6 @@
       },
       call$5: function(arg0, arg1, arg2, arg3, arg4) {
         return this.$call.call$5(arg0, arg1, arg2, arg3, arg4);
-      },
-      call$12$canPost$canPrint$canSave$mustPost$mustPrint$mustSave$params$remote$severity$stackTrace: function(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11) {
-        return this.$call.call$12$canPost$canPrint$canSave$mustPost$mustPrint$mustSave$params$remote$severity$stackTrace(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11);
       },
       call$12$canPost$canPrint$canSave$flag$local$mustPost$mustPrint$mustSave$params$time: function(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11) {
         return this.$call.call$12$canPost$canPrint$canSave$flag$local$mustPost$mustPrint$mustSave$params$time(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11);
@@ -82320,7 +82301,7 @@
     FuncBatchRunner: {
       "^": "Object;table@,columnNames<,context*,progress@,progressValue,maxFuncLevel,dropResults",
       vectorCall$2$errorBehavior: function($call, errorBehavior) {
-        var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, $async$handler = 2, $async$currentError, $async$next = [], $async$self = this, func, preColumns, processColumn, colNames, vecFunc, paramValues, param, col, vectorizableType, callParam, vecCall, outNames, outColumns, param0, i, column, x, s, preCalcColumns, func0, funcParams, calculatedFuncCalls, t1, n, t2, inputParam, v, t3, columns, originalColName, originalCol, map, t4, exception, stackTrace, p, $async$exception, $async$temp1, $async$temp2;
+        var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, $async$handler = 2, $async$currentError, $async$next = [], $async$self = this, func, preColumns, processColumn, colNames, vecFunc, paramValues, param, col, vectorizableType, callParam, vecCall, outNames, outColumns, param0, i, column, x, s, preCalcColumns, func0, funcParams, calculatedFuncCalls, t1, n, t2, inputParam, v, t3, columns, originalColName, originalCol, map, t4, exception, p, $async$exception, $async$temp1, $async$temp2;
         var $async$vectorCall$2$errorBehavior = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
           if ($async$errorCode === 1) {
             $async$currentError = $async$result;
@@ -82506,29 +82487,7 @@
                 $async$exception = $async$currentError;
                 x = H.unwrapException($async$exception);
                 s = H.getTraceFromException($async$exception);
-                t1 = $.$get$log();
-                t2 = x;
-                stackTrace = s;
-                t1.toString;
-                if (stackTrace == null && !!J.getInterceptor(t2).$isError)
-                  stackTrace = t2.get$stackTrace();
-                t2 = new S.LogMessage("error", "normal", null, J.toString$0$(t2), null, null, null, null, null, null, null, null, null, null, null, null, null, null, false);
-                t2.time = new P.DateTime(Date.now(), false);
-                t2.params = P.LinkedHashMap__makeEmpty();
-                t2.includeTime = false;
-                t2.remote = false;
-                t2.local = false;
-                t2.canPrint = true;
-                t2.canSave = true;
-                t2.canPost = true;
-                t2.mustPrint = false;
-                t2.mustSave = false;
-                t2.mustPost = false;
-                if (typeof stackTrace === "string")
-                  t2.stackTrace = new P._StringStackTrace(stackTrace);
-                else
-                  t2.stackTrace = stackTrace;
-                t1.logImpl$1(t2);
+                $.$get$log().log$12$canPost$canPrint$canSave$mustPost$mustPrint$mustSave$params$remote$severity$stackTrace("error", x, null, null, null, null, null, null, null, null, "normal", s);
                 throw $async$exception;
                 // goto after finally
                 $async$goto = 12;
@@ -88000,6 +87959,15 @@
           this._writeVarint$1(size);
         }
       }
+    },
+    UserException: {
+      "^": "Object;message>,statusCode>",
+      toString$0: function(_) {
+        return this.message;
+      }
+    },
+    InvalidArgumentException: {
+      "^": "UserException;message,statusCode"
     },
     _EuclidianDivisionResult: {
       "^": "Object;quotient,remainder",
@@ -93793,7 +93761,15 @@
           var body, error, message, t1, t2, t3, exception, error0;
           t1 = J.getInterceptor$x(response);
           if (J.$ge$n(t1.get$statusCode(response), 400) === true || J.containsKey$1$x(t1.get$headers(response), $.DapiHttpHeaders_API_ERROR) === true) {
-            if (J.$eq$(t1.get$statusCode(response), 404) === true || J.$eq$(J.$index$asx(t1.get$headers(response), $.DapiHttpHeaders_API_ERROR_CODE), "404") === true) {
+            if (J.$eq$(t1.get$statusCode(response), 404) !== true)
+              if (J.$eq$(J.$index$asx(t1.get$headers(response), $.DapiHttpHeaders_API_ERROR_CODE), "404") === true) {
+                t2 = J.$index$asx(t1.get$headers(response), $.DapiHttpHeaders_API_ERROR);
+                t2 = J.startsWith$1$s(t2 == null ? "" : t2, "NotFoundInRepositoryException") === true;
+              } else
+                t2 = false;
+            else
+              t2 = true;
+            if (t2) {
               t1 = t1.get$headers(response);
               t2 = B.encodingForCharset(J.$index$asx(U._contentTypeForHeaders(t1).get$parameters(), "charset"), C.Latin1Codec_false).get$encoder().convert$1("");
               t3 = t2.length;
@@ -93828,7 +93804,12 @@
               if (response.get$reasonPhrase() != null)
                 message = H.S(message) + ": " + H.S(response.get$reasonPhrase());
             }
-            throw H.wrapException(O.ApiException$(message, error, t1.get$statusCode(response)));
+            t2 = message;
+            t3 = error;
+            t1 = J.$index$asx(t1.get$headers(response), $.DapiHttpHeaders_API_ERROR_CODE);
+            if (t1 == null)
+              t1 = "";
+            throw H.wrapException(O.ApiException$(t2, t3, P.int_parse(t1, new E.DelegatingHttpClient_checkError_closure(response), null)));
           }
           return response;
         }
@@ -93863,6 +93844,12 @@
       call$1: [function(args) {
         return J.$eq$(J.get$method$x(args), "DELETE");
       }, null, null, 2, 0, null, 94, "call"]
+    },
+    DelegatingHttpClient_checkError_closure: {
+      "^": "Closure:0;response",
+      call$1: function(_) {
+        return J.get$statusCode$x(this.response);
+      }
     }
   }], ["dwebsocket", "package:grok_shared/delegating_websocket_client.dart",, Y, {
     "^": "",
@@ -116721,43 +116708,13 @@
         si = t2.indexOf$1(s, ":");
         t3 = J.getInterceptor$n(si);
         if (t3.$lt(si, 0) === true) {
-          t2 = $.$get$log();
-          t3 = 'Options parsing: missing ":" in "' + H.S(s) + '"';
-          t2.toString;
-          t3 = new S.LogMessage("warning", "normal", null, t3, null, null, null, null, null, null, null, null, null, null, null, null, null, null, false);
-          t3.time = new P.DateTime(Date.now(), false);
-          t3.params = P.LinkedHashMap__makeEmpty();
-          t3.includeTime = false;
-          t3.remote = false;
-          t3.local = false;
-          t3.canPrint = true;
-          t3.canSave = true;
-          t3.canPost = true;
-          t3.mustPrint = false;
-          t3.mustSave = false;
-          t3.mustPost = false;
-          t2.logImpl$1(t3);
+          $.$get$log().log$13$canPost$canPrint$canSave$flag$local$mustPost$mustPrint$mustSave$params$severity$stackTrace("warning", 'Options parsing: missing ":" in "' + H.S(s) + '"', null, null, null, null, null, null, null, null, null, "normal", null);
           continue;
         }
         key = J.trim$0$s(t2.substring$2(s, 0, si));
         value = J.trim$0$s(t2.substring$1(s, t3.$add(si, 1)));
         if (J.get$isEmpty$asx(key) === true) {
-          t2 = $.$get$log();
-          t3 = 'Options parsing: empty key in "' + H.S(s) + '"';
-          t2.toString;
-          t3 = new S.LogMessage("warning", "normal", null, t3, null, null, null, null, null, null, null, null, null, null, null, null, null, null, false);
-          t3.time = new P.DateTime(Date.now(), false);
-          t3.params = P.LinkedHashMap__makeEmpty();
-          t3.includeTime = false;
-          t3.remote = false;
-          t3.local = false;
-          t3.canPrint = true;
-          t3.canSave = true;
-          t3.canPost = true;
-          t3.mustPrint = false;
-          t3.mustSave = false;
-          t3.mustPost = false;
-          t2.logImpl$1(t3);
+          $.$get$log().log$13$canPost$canPrint$canSave$flag$local$mustPost$mustPrint$mustSave$params$severity$stackTrace("warning", 'Options parsing: empty key in "' + H.S(s) + '"', null, null, null, null, null, null, null, null, null, "normal", null);
           continue;
         }
         result.$indexSet(0, key, value);
@@ -116765,7 +116722,7 @@
       return result;
     },
     ScriptParser__smartSplit: function(str, seps) {
-      var split, _startsWithDescriptionKey, quote, depth, inDescriptionValue, i, t1, t2, ch, t3, t4, prefix;
+      var split, _startsWithDescriptionKey, quote, depth, inDescriptionValue, i, t1, t2, ch, t3, prefix;
       if (seps == null)
         seps = [";"];
       split = [];
@@ -116798,22 +116755,7 @@
             if (t2.$eq(ch, "}") === true || t2.$eq(ch, "]") === true || t2.$eq(ch, ")") === true)
               --depth;
             if (depth < 0) {
-              t3 = $.$get$log();
-              t4 = 'Options parsing: unbalanced brackets in "' + H.S(str) + '"';
-              t3.toString;
-              t4 = new S.LogMessage("warning", "normal", null, t4, null, null, null, null, null, null, null, null, null, null, null, null, null, null, false);
-              t4.time = new P.DateTime(Date.now(), false);
-              t4.params = P.LinkedHashMap__makeEmpty();
-              t4.includeTime = false;
-              t4.remote = false;
-              t4.local = false;
-              t4.canPrint = true;
-              t4.canSave = true;
-              t4.canPost = true;
-              t4.mustPrint = false;
-              t4.mustSave = false;
-              t4.mustPost = false;
-              t3.logImpl$1(t4);
+              $.$get$log().log$13$canPost$canPrint$canSave$flag$local$mustPost$mustPrint$mustSave$params$severity$stackTrace("warning", 'Options parsing: unbalanced brackets in "' + H.S(str) + '"', null, null, null, null, null, null, null, null, null, "normal", null);
               depth = 0;
             }
             if (!inDescriptionValue && depth === 0) {
@@ -116822,22 +116764,7 @@
                 inDescriptionValue = true;
             }
             if (!inDescriptionValue && depth === 0 && t2.$eq(ch, ",") === true && !C.JSArray_methods.contains$1(seps, ",")) {
-              t2 = $.$get$log();
-              t3 = 'Invalid "' + H.S(ch) + '" at parameter options top level, expected ' + C.JSArray_methods.join$1(seps, " or ");
-              t2.toString;
-              t3 = new S.LogMessage("warning", "normal", null, t3, null, null, null, null, null, null, null, null, null, null, null, null, null, null, false);
-              t3.time = new P.DateTime(Date.now(), false);
-              t3.params = P.LinkedHashMap__makeEmpty();
-              t3.includeTime = false;
-              t3.remote = false;
-              t3.local = false;
-              t3.canPrint = true;
-              t3.canSave = true;
-              t3.canPost = true;
-              t3.mustPrint = false;
-              t3.mustSave = false;
-              t3.mustPost = false;
-              t2.logImpl$1(t3);
+              $.$get$log().log$13$canPost$canPrint$canSave$flag$local$mustPost$mustPrint$mustSave$params$severity$stackTrace("warning", 'Invalid "' + H.S(ch) + '" at parameter options top level, expected ' + C.JSArray_methods.join$1(seps, " or "), null, null, null, null, null, null, null, null, null, "normal", null);
               split.push(J.trim$0$s(t1.substring$2(str, 0, i)));
               str = t1.substring$1(str, i + 1);
               quote = false;
@@ -116989,7 +116916,7 @@
       return P._asyncStart($async$getEntityProject, $async$completer);
     },
     safeCall: function(action, logOnError, message, onError) {
-      var x, s, exception, t1, t2, stackTrace;
+      var x, s, exception, t1;
       try {
         action.call$0();
         return true;
@@ -116998,34 +116925,13 @@
         s = H.getTraceFromException(exception);
         if (logOnError) {
           t1 = $.$get$log();
-          t2 = x;
-          stackTrace = s;
-          t1.toString;
-          if (stackTrace == null && !!J.getInterceptor(t2).$isError)
-            stackTrace = t2.get$stackTrace();
-          t2 = new S.LogMessage("error", "normal", null, J.toString$0$(t2), null, null, null, null, null, null, null, null, null, null, null, null, null, null, false);
-          t2.time = new P.DateTime(Date.now(), false);
-          t2.params = P.LinkedHashMap__makeEmpty();
-          t2.includeTime = false;
-          t2.remote = false;
-          t2.local = false;
-          t2.canPrint = true;
-          t2.canSave = true;
-          t2.canPost = true;
-          t2.mustPrint = false;
-          t2.mustSave = false;
-          t2.mustPost = false;
-          if (typeof stackTrace === "string")
-            t2.stackTrace = new P._StringStackTrace(stackTrace);
-          else
-            t2.stackTrace = stackTrace;
-          t1.logImpl$1(t2);
+          t1.log$12$canPost$canPrint$canSave$mustPost$mustPrint$mustSave$params$remote$severity$stackTrace("error", x, null, null, null, null, null, null, null, null, "normal", s);
         }
         return false;
       }
     },
     safeCallAsync: function(computation, logOnError, message, onError, rethrowError) {
-      var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, $async$handler = 2, $async$currentError, $async$next = [], x, s, exception, t1, t2, stackTrace, $async$exception;
+      var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, $async$handler = 2, $async$currentError, $async$next = [], x, s, exception, t1, $async$exception;
       var $async$safeCallAsync = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
         if ($async$errorCode === 1) {
           $async$currentError = $async$result;
@@ -117056,28 +116962,7 @@
               s = H.getTraceFromException($async$exception);
               if (logOnError) {
                 t1 = $.$get$log();
-                t2 = x;
-                stackTrace = s;
-                t1.toString;
-                if (stackTrace == null && !!J.getInterceptor(t2).$isError)
-                  stackTrace = t2.get$stackTrace();
-                t2 = new S.LogMessage("error", "normal", null, J.toString$0$(t2), null, null, null, null, null, null, null, null, null, null, null, null, null, null, false);
-                t2.time = new P.DateTime(Date.now(), false);
-                t2.params = P.LinkedHashMap__makeEmpty();
-                t2.includeTime = false;
-                t2.remote = false;
-                t2.local = false;
-                t2.canPrint = true;
-                t2.canSave = true;
-                t2.canPost = true;
-                t2.mustPrint = false;
-                t2.mustSave = false;
-                t2.mustPost = false;
-                if (typeof stackTrace === "string")
-                  t2.stackTrace = new P._StringStackTrace(stackTrace);
-                else
-                  t2.stackTrace = stackTrace;
-                t1.logImpl$1(t2);
+                t1.log$12$canPost$canPrint$canSave$mustPost$mustPrint$mustSave$params$remote$severity$stackTrace("error", x, null, null, null, null, null, null, null, null, "normal", s);
               }
               $async$returnValue = false;
               // goto return
@@ -152118,7 +152003,7 @@
         return N.DbTableQueryBuilder_DbTableQueryBuilder$from(t1, null);
       }, "call$0", "get$query", 0, 0, 609],
       execDataSync$2: function(context, clearVariables) {
-        var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, $async$handler = 2, $async$currentError, $async$next = [], $async$self = this, errors, $call, e, s, t1, script, variableName, scriptLines, t2, exception, t3, t4, stackTrace, tableName, $async$exception;
+        var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, $async$handler = 2, $async$currentError, $async$next = [], $async$self = this, errors, $call, e, s, t1, script, variableName, scriptLines, t2, exception, t3, tableName, $async$exception;
         var $async$execDataSync$2 = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
           if ($async$errorCode === 1) {
             $async$currentError = $async$result;
@@ -152172,29 +152057,7 @@
                 $async$exception = $async$currentError;
                 e = H.unwrapException($async$exception);
                 s = H.getTraceFromException($async$exception);
-                t3 = $.$get$log();
-                t4 = e;
-                stackTrace = s;
-                t3.toString;
-                if (stackTrace == null && !!J.getInterceptor(t4).$isError)
-                  stackTrace = t4.get$stackTrace();
-                t4 = new S.LogMessage("error", "normal", null, J.toString$0$(t4), null, null, null, null, null, null, null, null, null, null, null, null, null, null, false);
-                t4.time = new P.DateTime(Date.now(), false);
-                t4.params = P.LinkedHashMap__makeEmpty();
-                t4.includeTime = false;
-                t4.remote = false;
-                t4.local = false;
-                t4.canPrint = true;
-                t4.canSave = true;
-                t4.canPost = true;
-                t4.mustPrint = false;
-                t4.mustSave = false;
-                t4.mustPost = false;
-                if (typeof stackTrace === "string")
-                  t4.stackTrace = new P._StringStackTrace(stackTrace);
-                else
-                  t4.stackTrace = stackTrace;
-                t3.logImpl$1(t4);
+                $.$get$log().log$12$canPost$canPrint$canSave$mustPost$mustPrint$mustSave$params$remote$severity$stackTrace("error", e, null, null, null, null, null, null, null, null, "normal", s);
                 J.add$1$ax(errors, J.toString$0$(e));
                 // goto after finally
                 $async$goto = 8;
@@ -152602,9 +152465,9 @@
       get$className: function(_) {
         return "DG.DbSchemaInfo";
       },
-      getTables$0: function() {
+      getTables$1$includeProperties: function(includeProperties) {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, $async$self = this, t1, t2, t3, t4, props, tablesMap, ti, tableMap, key, t5, t6, t7, t8, colMap, col, colInfoMap, t9, t10, $async$temp1;
-        var $async$getTables$0 = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
+        var $async$getTables$1$includeProperties = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
           if ($async$errorCode === 1)
             return P._asyncRethrow($async$result, $async$completer);
           while (true)
@@ -152620,17 +152483,17 @@
                 t3 = $async$self.name;
                 $async$temp1 = $async$self;
                 $async$goto = 5;
-                return P._asyncAwait(t1.getSchema$3$catalog$schema(t2, $async$self.catalog, t3), $async$getTables$0);
+                return P._asyncAwait(t1.getSchema$3$catalog$schema(t2, $async$self.catalog, t3), $async$getTables$1$includeProperties);
               case 5:
                 // returning from await.
                 $async$temp1._grok_shared$_tables = $async$result;
-                t3 = Q.ConnectClient$().connections;
+                t1 = Q.ConnectClient$().connections;
                 t2 = J.get$id$x($async$self.connection);
-                t1 = $async$self.name;
+                t3 = $async$self.name;
                 t4 = $async$self.catalog;
                 t4 = t4 != null ? [t4] : null;
                 $async$goto = 6;
-                return P._asyncAwait(t3.getDatabaseProperties$3$catalogs$schemas(t2, t4, [t1]), $async$getTables$0);
+                return P._asyncAwait(t1.getDatabaseProperties$3$catalogs$schemas(t2, t4, [t3]), $async$getTables$1$includeProperties);
               case 6:
                 // returning from await.
                 props = $async$result;
@@ -152715,7 +152578,10 @@
                 return P._asyncReturn($async$returnValue, $async$completer);
             }
         });
-        return P._asyncStart($async$getTables$0, $async$completer);
+        return P._asyncStart($async$getTables$1$includeProperties, $async$completer);
+      },
+      getTables$0: function() {
+        return this.getTables$1$includeProperties(true);
       },
       setProp$2: function($name, value) {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$self = this, t1, t2, $async$temp1;
@@ -157748,8 +157614,25 @@
         return this.error$12$canPost$canPrint$canSave$mustPost$mustPrint$mustSave$params$remote$severity$time($receiver, exception, stackTrace, null, null, null, null, null, null, null, null, "normal", null);
       }, "error$2", "call$12$canPost$canPrint$canSave$mustPost$mustPrint$mustSave$params$remote$severity$time", "call$2", "get$error", 4, 21, 614, 1, 260, 1, 1, 1, 1, 1, 1, 1, 1, 503, 30, 76, 195, 271, 136, 115, 116, 120, 126, 127, 129],
       log$17$auditType$canPost$canPrint$canSave$flag$includeTime$local$mustPost$mustPrint$mustSave$params$remote$severity$stackTrace$time: [function(level, messageOrException, auditType, canPost, canPrint, canSave, flag, includeTime, local, mustPost, mustPrint, mustSave, params, remote, severity, stackTrace, time) {
+        var t1;
         if (stackTrace == null && !!J.getInterceptor(messageOrException).$isError)
           stackTrace = messageOrException.get$stackTrace();
+        if (J.$eq$(level, "error") === true) {
+          t1 = J.getInterceptor(messageOrException);
+          if (!t1.$isUserException)
+            if (!!t1.$isApiException) {
+              t1 = messageOrException.statusCode;
+              t1 = t1 != null && J.$ge$n(t1, 400) === true && J.$lt$n(messageOrException.statusCode, 500) === true;
+            } else
+              t1 = false;
+          else
+            t1 = true;
+        } else
+          t1 = false;
+        if (t1) {
+          canPost = false;
+          canSave = false;
+        }
         return this.logImpl$1(S.LogMessage$(level, J.toString$0$(messageOrException), params, auditType, canPost, canPrint, canSave, flag, includeTime, local, mustPost, mustPrint, mustSave, remote, severity, stackTrace, time));
       }, function(level, messageOrException) {
         return this.log$17$auditType$canPost$canPrint$canSave$flag$includeTime$local$mustPost$mustPrint$mustSave$params$remote$severity$stackTrace$time(level, messageOrException, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
@@ -167722,8 +167605,8 @@
         t1 = new self.DG.ComponentBuildInfo();
         t2 = J.getInterceptor$x(t1);
         t2.set$branch(t1, "master");
-        t2.set$commit(t1, "c852a7207379a6c5e2efb92937e33c0eb6d9068d");
-        t2.set$date(t1, "2026-09-12T22:48:46.208Z");
+        t2.set$commit(t1, "10f018c6dae24e227f2be35cf42dd5b57c133675");
+        t2.set$date(t1, "2026-09-13T22:48:09.155Z");
         t2.set$version(t1, "1.27.11");
         return t1;
       }, null, null, 0, 0, null, "call"]
