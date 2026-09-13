@@ -1,6 +1,7 @@
 import { migrate } from "./migrate";
 import { HELP_SERVER } from "./server";
 import { testAll } from "./test-all";
+import { HOME_ROOTS } from "../utils/kg/homes";
 
 const HELP = `
 Usage: grok <command>
@@ -25,6 +26,7 @@ Commands:
     testall     Run packages tests
     migrate     Migrate legacy tags to meta.role
     server (s)  Manage a Datagrok server (list/get/delete entities, run functions)
+    kg          Check and generate the knowledge graph (type files, home documents)
 
 To get help on a particular command, use:
     grok <command> --help
@@ -413,6 +415,52 @@ The instance name must match a server alias in ~/.grok/config.yaml.
 `;
 
 
+export const HELP_KG = `
+Usage: grok kg <verb> [options]
+
+Validate and generate the knowledge graph: the type files under
+core/docs/knowledge-graph (schema.yaml, nodes/*.yaml, edges/*.yaml) and the
+home documents, the markdown files whose frontmatter carries a \`feature:\` or a
+prefixed \`id:\` key. A home needs a name: \`name:\`, \`title:\`, or the first
+\`#\` heading of the body.
+
+Home documents are looked for in every markdown file under
+    ${HOME_ROOTS.join('\n    ')}
+skipping node_modules, dist, build, .dart_tool, .claude, .git, fixtures and
+__tests__ folders, and the Test Track files (packages/UsageAnalysis/files and
+playwright-public: their \`feature:\` key still means the area, until it migrates
+to \`covers:\`).
+
+Verbs:
+    check       The validation gate: type files against schema.yaml, home documents
+                against their types, frontmatter references (edge keys, reference
+                properties) against the other homes, and repo paths cited in
+                frontmatter or in the body. Prose \`~id\` mentions and code markers
+                are not read yet; they arrive with \`build\`. Exit 1 on errors.
+    gen         Write kg.d.ts, the GLOSSARY.md tables and core/docs/FEATURES.md.
+                Refuses while check reports errors.
+    help        Show this help
+
+\`check\` gates the sources; \`gen --check\` gates the generated files, failing when
+kg.d.ts, GLOSSARY.md or FEATURES.md on disk differ from what gen would write.
+
+Options:
+    --kg <dir>          The knowledge-graph folder (default: found by walking up from
+                        the current directory to the monorepo root)
+    --types-only        Check the type files only, skip the home documents (check only)
+    --check             With gen: fail if the generated files differ from disk, write nothing
+    --output <format>   table (default) or json (the report as JSON, nothing else)
+    --quiet             Print errors only: no warnings, no summary line
+
+Examples:
+  grok kg check
+  grok kg check --types-only --output json
+  grok kg gen
+  grok kg gen --check
+
+The contract is core/docs/knowledge-graph/CONVENTIONS.md.
+`;
+
 export const help = {
   add: HELP_ADD,
   api: HELP_API,
@@ -432,5 +480,6 @@ export const help = {
   migrate: HELP_MIGRATE,
   server: HELP_SERVER,
   s: HELP_SERVER,
+  kg: HELP_KG,
   help: HELP,
 };

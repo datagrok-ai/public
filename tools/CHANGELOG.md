@@ -1,5 +1,9 @@
 # Datagrok-tools changelog
 
+## v.next
+
+* grok kg: Added check and gen for the knowledge graph type files and home documents
+
 ## 6.5.10 (2026-09-11)
 
 * `grok s pull` — a bundle file name is capped at 200 bytes plus a digest of the full name, so it stays unique and stable across pulls. A nested view under a long space spells a longer name than a path component may hold (255 bytes on ext4 and NTFS): one TWIG snapshot reached 268 and the write failed with `ENAMETOOLONG`, taking down the whole part rather than the entity — a `--by-namespace` part that only touched the space as a dependency died with it.

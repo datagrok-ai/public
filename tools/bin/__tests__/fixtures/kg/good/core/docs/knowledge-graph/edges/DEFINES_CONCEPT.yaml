@@ -1,0 +1,7 @@
+type: DEFINES_CONCEPT
+from: Declaration
+to: Concept
+key: defined_by
+key_side: to
+derived_by: [annotation]
+description: The classes that define a concept, listed as defined_by in the home doc of the concept.

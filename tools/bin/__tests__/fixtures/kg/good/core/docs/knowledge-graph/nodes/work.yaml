@@ -1,0 +1,6 @@
+type: work
+extends: node
+abstract: true
+description: Something that tracks intent or change over time.
+properties:
+  url?:         Url

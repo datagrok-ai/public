@@ -1,0 +1,9 @@
+type: scenario
+extends: artifact
+prefix: TS
+hierarchical: true
+authored: true
+description: A manual test scenario in Test Track.
+properties:
+  path:          Path
+  priority?:     "'p1' | 'p2' | 'p3'"

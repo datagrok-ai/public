@@ -32,6 +32,7 @@ const commands = {
   migrate: require('./commands/migrate').migrate,
   server: require('./commands/server').server,
   s: require('./commands/server').server,
+  kg: require('./commands/kg').kg,
 };
 
 const onPackageCommandNames = ['api', 'check', 'link', 'publish', 'test'];

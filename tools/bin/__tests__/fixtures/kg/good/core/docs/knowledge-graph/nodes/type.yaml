@@ -1,0 +1,6 @@
+type: type
+extends: node
+abstract: true
+description: A node or edge type definition.
+properties:
+  file:         Path

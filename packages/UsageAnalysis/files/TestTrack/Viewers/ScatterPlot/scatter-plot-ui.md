@@ -1,5 +1,6 @@
 ---
-feature: scatterplot
+id: TS:viewers/scatter-plot/ui
+covers: [visualize/viewers/scatter-plot]
 target_layer: manual-only
 coverage_type: smoke
 manual_only_reason: |

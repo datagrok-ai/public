@@ -1,3 +1,13 @@
+---
+feature: domains/chem
+name: Cheminformatics
+owner: P:askalkin
+code:
+  - public/packages/Chem/**
+concepts: [semantic-type, column, dataframe, function]
+status: active
+---
+
 # Chem Package
 
 ## Summary

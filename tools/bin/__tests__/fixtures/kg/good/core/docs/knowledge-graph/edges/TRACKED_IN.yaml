@@ -1,0 +1,8 @@
+type: TRACKED_IN
+from: Feature
+to: Ticket
+key: tickets
+derived_by: [annotation]
+description: The tickets a feature names as its own.
+properties:
+  relation?:     "'epic' | 'task' | 'other' = 'other'"

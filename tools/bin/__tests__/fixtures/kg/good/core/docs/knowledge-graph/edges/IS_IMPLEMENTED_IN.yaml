@@ -1,0 +1,8 @@
+type: IS_IMPLEMENTED_IN
+from: Feature
+to: Component
+key: code
+derived_by: [annotation, filesystem]
+description: The code of a feature, the roots listed under code in its home doc.
+properties:
+  role?:         "'definition' | 'ui' | 'api'"

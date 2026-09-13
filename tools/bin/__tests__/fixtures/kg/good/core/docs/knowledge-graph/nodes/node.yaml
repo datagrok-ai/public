@@ -1,0 +1,12 @@
+type: node
+abstract: true
+description: Fields every node carries whatever its type.
+properties:
+  id:           string
+  name:         string
+  description?: Text
+  status?:      "'proposed' | 'active' | 'removed' = 'active'"
+  visibility?:  "'public' | 'dev' | 'internal'"
+  owner?:       Person | Team
+  aliases?:     string[]
+inherit: [status, visibility, owner]

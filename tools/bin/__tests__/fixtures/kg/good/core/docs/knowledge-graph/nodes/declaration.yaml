@@ -1,0 +1,5 @@
+type: declaration
+extends: component
+description: A named code declaration.
+properties:
+  kind:          "'class' | 'function'"
