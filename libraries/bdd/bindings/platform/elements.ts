@@ -9,6 +9,8 @@ element('toolbox', {selector: '.d4-toolbox', aliases: ['toolbox pane'],
   parts: {'viewers section': '[name="div-section--Viewers"]'}});
 element('toolbox tab', {selector: '[name="Toolbox"]', aliases: ['toolbox sidebar tab']});
 element('browse tab', {selector: '[name="Browse"]'});
+element('browse toolbar', {selector: '.grok-browse-icons',
+  description: 'the Browse header actions, outside the panel body and its tree'});
 element('browse panel', {selector: '.grok-view-browse, .layout-browse', aliases: ['browse view'],
   description: 'the left panel Browse opens; a bdd page starts in simple mode, where it is not in the DOM at all'});
 element('browse tree', {selector: '.grok-view-browse [role="tree"], .layout-browse [role="tree"]',

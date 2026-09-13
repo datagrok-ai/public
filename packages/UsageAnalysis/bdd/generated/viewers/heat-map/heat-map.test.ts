@@ -97,32 +97,32 @@ test.describe("Heat map layout, column labels, column cap and scrollbars", () =>
       await session.step(93, "And the \"row height\" reading of heat map viewer should be between 0 and 8", () => readingBetween(page, "row height", el("heat map viewer"), 0, 8));
       await session.step(94, "And no errors should have been logged", () => noErrors(page));
     });
-    await run.scenario("Max Heatmap Columns set through the property panel takes columns off the screen", async () => {
-      await session.step(102, "When user clicks on settings icon of heat map viewer", () => clickOn(page, el("settings icon of heat map viewer")));
-      await session.step(103, "Then the \"max heatmap columns\" reading of heat map viewer should be 100", () => readingIs(page, "max heatmap columns", el("heat map viewer"), 100));
-      await session.step(104, "And the \"columns shown\" reading of heat map viewer should be 11", () => readingIs(page, "columns shown", el("heat map viewer"), 11));
-      await session.step(105, "When user sets \"maxHeatmapColumns\" property of heat map viewer to \"3\"", () => setProperty(page, "maxHeatmapColumns", el("heat map viewer"), "3"));
-      await session.step(106, "Then the \"max heatmap columns\" reading of heat map viewer should be 3", () => readingIs(page, "max heatmap columns", el("heat map viewer"), 3));
-      await session.step(107, "And the \"columns shown\" reading of heat map viewer should be 3", () => readingIs(page, "columns shown", el("heat map viewer"), 3));
-      await session.step(108, "And the \"column order\" reading of heat map viewer should be \"AGE, HEIGHT, WEIGHT\"", () => readingReads(page, "column order", el("heat map viewer"), "AGE, HEIGHT, WEIGHT"));
-      await session.step(109, "And heat map viewer should have repainted", () => repainted(page, el("heat map viewer")));
-      await session.step(110, "When user sets \"maxHeatmapColumns\" property of heat map viewer to \"100\"", () => setProperty(page, "maxHeatmapColumns", el("heat map viewer"), "100"));
-      await session.step(111, "Then the \"columns shown\" reading of heat map viewer should be 11", () => readingIs(page, "columns shown", el("heat map viewer"), 11));
-      await session.step(112, "And no errors should have been logged", () => noErrors(page));
+    await run.scenario("Max Heatmap Columns set after opening settings takes columns off the screen", async () => {
+      await session.step(100, "When user clicks on settings icon of heat map viewer", () => clickOn(page, el("settings icon of heat map viewer")));
+      await session.step(101, "Then the \"max heatmap columns\" reading of heat map viewer should be 100", () => readingIs(page, "max heatmap columns", el("heat map viewer"), 100));
+      await session.step(102, "And the \"columns shown\" reading of heat map viewer should be 11", () => readingIs(page, "columns shown", el("heat map viewer"), 11));
+      await session.step(103, "When user sets \"maxHeatmapColumns\" property of heat map viewer to \"3\"", () => setProperty(page, "maxHeatmapColumns", el("heat map viewer"), "3"));
+      await session.step(104, "Then the \"max heatmap columns\" reading of heat map viewer should be 3", () => readingIs(page, "max heatmap columns", el("heat map viewer"), 3));
+      await session.step(105, "And the \"columns shown\" reading of heat map viewer should be 3", () => readingIs(page, "columns shown", el("heat map viewer"), 3));
+      await session.step(106, "And the \"column order\" reading of heat map viewer should be \"AGE, HEIGHT, WEIGHT\"", () => readingReads(page, "column order", el("heat map viewer"), "AGE, HEIGHT, WEIGHT"));
+      await session.step(107, "And heat map viewer should have repainted", () => repainted(page, el("heat map viewer")));
+      await session.step(108, "When user sets \"maxHeatmapColumns\" property of heat map viewer to \"100\"", () => setProperty(page, "maxHeatmapColumns", el("heat map viewer"), "100"));
+      await session.step(109, "Then the \"columns shown\" reading of heat map viewer should be 11", () => readingIs(page, "columns shown", el("heat map viewer"), 11));
+      await session.step(110, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("The title bar closes the map", async () => {
-      await session.step(115, "When user clicks on close icon of heat map viewer", () => clickOn(page, el("close icon of heat map viewer")));
-      await session.step(116, "Then heat map viewer should be absent", () => shouldBe(page, el("heat map viewer"), "absent"));
-      await session.step(117, "And the open tableview should have 0 heat map viewers", () => viewerCount(page, 0, "heat map"));
-      await session.step(118, "And no errors should have been logged", () => noErrors(page));
+      await session.step(113, "When user clicks on close icon of heat map viewer", () => clickOn(page, el("close icon of heat map viewer")));
+      await session.step(114, "Then heat map viewer should be absent", () => shouldBe(page, el("heat map viewer"), "absent"));
+      await session.step(115, "And the open tableview should have 0 heat map viewers", () => viewerCount(page, 0, "heat map"));
+      await session.step(116, "And no errors should have been logged", () => noErrors(page));
     });
-    await run.scenario("The same cap written through the JS API alone rebuilds nothing (grid_look.dart:331)", async () => {
-      await session.step(129, "Given user adds a heat map viewer", () => addViewer(page, "heat map"));
-      await session.step(130, "Then the \"max heatmap columns\" reading of heat map viewer should be 100", () => readingIs(page, "max heatmap columns", el("heat map viewer"), 100));
-      await session.step(131, "And the \"columns shown\" reading of heat map viewer should be 11", () => readingIs(page, "columns shown", el("heat map viewer"), 11));
-      await session.step(132, "When user sets \"maxHeatmapColumns\" property of heat map viewer to \"3\"", () => setProperty(page, "maxHeatmapColumns", el("heat map viewer"), "3"));
-      await session.step(133, "Then the \"max heatmap columns\" reading of heat map viewer should be 3", () => readingIs(page, "max heatmap columns", el("heat map viewer"), 3));
-      await session.step(134, "And the \"columns shown\" reading of heat map viewer should be 3", () => readingIs(page, "columns shown", el("heat map viewer"), 3));
+    await run.scenario("Max Heatmap Columns should apply before opening settings (grid_look.dart:435)", async () => {
+      await session.step(125, "Given user adds a heat map viewer", () => addViewer(page, "heat map"));
+      await session.step(126, "Then the \"max heatmap columns\" reading of heat map viewer should be 100", () => readingIs(page, "max heatmap columns", el("heat map viewer"), 100));
+      await session.step(127, "And the \"columns shown\" reading of heat map viewer should be 11", () => readingIs(page, "columns shown", el("heat map viewer"), 11));
+      await session.step(128, "When user sets \"maxHeatmapColumns\" property of heat map viewer to \"3\"", () => setProperty(page, "maxHeatmapColumns", el("heat map viewer"), "3"));
+      await session.step(129, "Then the \"max heatmap columns\" reading of heat map viewer should be 3", () => readingIs(page, "max heatmap columns", el("heat map viewer"), 3));
+      await session.step(130, "And the \"columns shown\" reading of heat map viewer should be 3", () => readingIs(page, "columns shown", el("heat map viewer"), 3));
     }, {knownFailure: true});
     run.finish();
   });

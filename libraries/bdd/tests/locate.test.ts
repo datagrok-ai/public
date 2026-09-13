@@ -18,10 +18,12 @@ const scenario = (name: string, fn: () => Promise<void>): void => void test(name
 });
 import '../bindings/common/kinds.js';
 import '../bindings/platform/elements.js';
+import {noSpaceOnServer} from '../bindings/platform/steps.js';
 import {el} from '../src/runtime/args.js';
 import {clear, keysOf, press, pressIn, readExpanded, select, setExpanded, typeInto, withKeys} from '../src/runtime/gestures.js';
 import {atFeatureEnd, feature} from '../src/runtime/harness.js';
-import {expectState} from '../src/runtime/assertions.js';
+import {expectState, expectText} from '../src/runtime/assertions.js';
+import {whileExpectedToFail} from '../src/runtime/patience.js';
 import {locate, locateActionable} from '../src/runtime/locate.js';
 
 const PAGE = `
@@ -228,6 +230,53 @@ scenario('ready requires an explicit completed and valid asynchronous result', a
   await expectState(page!, el('model preview'), 'ready', true);
   await preview.evaluate((e) => e.setAttribute('aria-invalid', 'false'));
   await expectState(page!, el('model preview'), 'ready');
+});
+
+scenario('tooltip text assertions ignore hidden content retained between hovers', async () => {
+  await page!.setContent('<div class="d4-tooltip" style="display:none">Pearson R: 0.4</div>');
+  await expectText(page!, el('tooltip'), 'Pearson R', {negate: true});
+  await assert.rejects(whileExpectedToFail(() => expectText(page!, el('tooltip'), 'Pearson R')));
+  await page!.locator('.d4-tooltip').evaluate((e) => (e as HTMLElement).style.display = 'block');
+  await expectText(page!, el('tooltip'), 'Pearson R: 0.4', {exact: true});
+  await assert.rejects(whileExpectedToFail(() => expectText(page!, el('tooltip'), 'Pearson R', {negate: true})));
+  await page!.locator('.d4-tooltip').evaluate((e) => e.remove());
+  await expectText(page!, el('tooltip'), 'Pearson R', {negate: true});
+});
+
+scenario('space cleanup deletes existing fixtures even when server filters return no matches', async () => {
+  let afterAll!: () => Promise<void>;
+  const api = {afterEach: () => undefined, afterAll: (hook: () => Promise<void>) => { afterAll = hook; }};
+  const session = feature(api as unknown as Parameters<typeof feature>[0]);
+  const cleanupPage = await session.page(browser!);
+  await cleanupPage.setContent('<div class="grok-browse-icons"><i class="fa fa-sync" title="Refresh">Refresh</i></div>' +
+    '<div class="layout-browse"><span id="stale-fixture">BDD Fixture</span></div>');
+  await cleanupPage.locator('[title="Refresh"]').evaluate((icon) => {
+    icon.addEventListener('click', () => document.getElementById('stale-fixture')!.remove());
+  });
+  await cleanupPage.evaluate(() => {
+    let spaces = [
+      {id: 'fixture', name: 'BDDFixture', friendlyName: 'BDD Fixture'},
+      {id: 'unrelated', name: 'Keep', friendlyName: 'Keep'},
+    ];
+    const data = {
+      order() { return data; },
+      filter() { return {async list() { return []; }}; },
+      async list() { return spaces; },
+      async find(id: string) { return spaces.find((space) => space.id === id); },
+      async delete(space: {id: string}) { spaces = spaces.filter((item) => item.id !== space.id); },
+      async createRootSpace(name: string) { spaces.push({id: 'new-fixture', name, friendlyName: name}); },
+    };
+    (window as any).grok = {dapi: {spaces: data}};
+  });
+  await noSpaceOnServer(cleanupPage, 'BDD Fixture');
+  const remaining = () => cleanupPage.evaluate(async () =>
+    (await (window as any).grok.dapi.spaces.list()).map((space: {id: string}) => space.id));
+  assert.deepEqual(await remaining(), ['unrelated']);
+  assert.equal(await cleanupPage.locator('#stale-fixture').count(), 0);
+  await cleanupPage.evaluate(() => (window as any).grok.dapi.spaces.createRootSpace('BDD Fixture'));
+  assert.deepEqual(await remaining(), ['unrelated', 'new-fixture']);
+  await afterAll();
+  assert.deepEqual(await remaining(), ['unrelated']);
 });
 
 scenario('feature teardown attempts every cleanup and reports synchronous and asynchronous failures', async () => {

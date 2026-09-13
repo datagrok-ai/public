@@ -129,9 +129,11 @@ async function expectChecked(loc: Locator, checked: boolean): Promise<void> {
  * is shown now: the platform keeps one tooltip element, hidden between hovers. */
 export async function expectText(page: Page, target: ElementRef, text: string, options: {exact?: boolean; negate?: boolean} = {}): Promise<void> {
   const plan = refOf(page, target).plan;
-  const loc = plan.type === 'kind' && plan.kind.name === 'tooltip' ? await locateActionable(page, target) : await locate(page, target);
-  if (await loc.count() > 1) {
-    const matching = loc.filter({hasText: options.exact ? exactText(text) : new RegExp(escapeRegExp(text), 'i')});
+  const tooltip = plan.type === 'kind' && plan.kind.name === 'tooltip';
+  const loc = await locate(page, target);
+  if (tooltip || await loc.count() > 1) {
+    const matching = (tooltip ? loc.filter({visible: true}) : loc)
+      .filter({hasText: options.exact ? exactText(text) : new RegExp(escapeRegExp(text), 'i')});
     await (options.negate ? expect(matching).toHaveCount(0) : expect(matching).not.toHaveCount(0));
     return;
   }

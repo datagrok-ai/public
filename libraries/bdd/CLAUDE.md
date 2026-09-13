@@ -131,6 +131,9 @@ and `isRenderPending`, `onContextMenuShown/Closed`, `getWidgetStatus().hitAreas/
   the toggle. Never `click().catch(() => otherClick())`.
 - **Hover is two pointer events and never sleeps**; it waits in-page for the element's own
   `mouseenter` and repeats the pair when a coalesced move swallowed it.
+- **An area hover settles the viewer after moving the pointer.** Grid cell tooltip requests use
+  the tracked debounce, including in nested correlation grids. Negative tooltip text checks count
+  visible matching tooltips; a hidden or absent tooltip has no displayed text.
 - **Step specificity**: more literal text wins, then fewer parameters; a tie is a compile error.
   Viewer steps take `{widget}` (a phrase ending in viewer/widget, `grid`, `filter panel`).
 - **Playwright scopes inner selectors to the element**: a `labelSelector`, a part or a `has:`
@@ -143,6 +146,12 @@ and `isRenderPending`, `onContextMenuShown/Closed`, `getWidgetStatus().hitAreas/
 - **Server fixture names may include `{run}`**: the compiler resolves strings, element phrases,
   tables and doc strings through the feature session. One UUID per feature instance keeps workers
   and repeated runs independent; never generate it at compile time.
+- **Spaces cleanup verifies IDs against every page of the root listing.** Spaces smart filters
+  can return an empty list for an existing ID, so a filtered result cannot prove deletion. Match
+  the captured IDs locally, delete by exact ID, and retain unrelated roots. Include a fixture's
+  parent root in its cleanup names because the listing does not include child spaces.
+  After setup cleanup, refresh an open Browse tree: API deletion leaves cached nodes behind,
+  so recreating the same name otherwise targets a stale node or resolves to two nodes.
 - **Model cards are not completion signals.** The Train Model preview reports `aria-busy` before
   debounce/queued training and `aria-invalid` for unavailable or failed results. `model preview
   should be ready` requires the latest completed training, predictions, charts and history.

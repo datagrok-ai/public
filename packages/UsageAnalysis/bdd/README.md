@@ -13,6 +13,10 @@ aggregation against a `groupBy`, the correlation plot's coefficient against `DG.
 Forms viewer's card rows, the tile viewer's designer, the filter panel's hierarchical card); the
 rest of the vocabulary is the library's (`npx grok-bdd list-steps`).
 
+The [known-failure audit](../../../libraries/bdd/KNOWN_FAILURES.md) records the current defects,
+their observed failures and causes. The line-chart lasso scenario now passes without a tag:
+checkbox menu items keep the menu open, so close it before dragging on the chart.
+
 From a fresh checkout of `public`, against a local stand on `http://localhost:8888` (another one:
 `DATAGROK_URL=https://… npx grok-bdd run`):
 

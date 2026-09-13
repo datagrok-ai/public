@@ -93,12 +93,10 @@ Feature: Heat map layout, column labels, column cap and scrollbars
     And the "row height" reading of heat map viewer should be between 0 and 8
     And no errors should have been logged
 
-  Scenario: Max Heatmap Columns set through the property panel takes columns off the screen
-    # The cap lives in the Dart setter of `maxHeatmapColumns` (grid_look.dart:331-334), which calls
-    # `refreshGrid()` → `refresh(refreshCols: true)`, where `numerical.take(n)` then
-    # `categorical.take(n - numerical)` decide what stays visible (grid_core.dart:1183-1189). The
-    # property panel writes through that setter, so this is the path a user takes. The spec this
-    # replaces asserted a repaint of at least 1000 pixels here and never counted a column.
+  Scenario: Max Heatmap Columns set after opening settings takes columns off the screen
+    # Opening settings binds `look.viewer`. The shared API property step invokes the Dart setter,
+    # whose `refreshGrid()` can then rebuild the visible columns. The last scenario makes the
+    # same write on a fresh viewer, before that owner reference has been bound.
     When user clicks on settings icon of heat map viewer
     Then the "max heatmap columns" reading of heat map viewer should be 100
     And the "columns shown" reading of heat map viewer should be 11
@@ -118,13 +116,11 @@ Feature: Heat map layout, column labels, column cap and scrollbars
     And no errors should have been logged
 
   @known-failure
-  Scenario: The same cap written through the JS API alone rebuilds nothing (grid_look.dart:331)
-    # `look.maxHeatmapColumns = x` rebuilds the column list from its Dart setter, and a write from
-    # the property panel goes through it. A write from the JS API does not: the look changes,
-    # `onLookChanged` refreshes the grid WITHOUT `refreshCols`, and all eleven columns stay on
-    # screen — measured 11 before and 11 after, against 11 → 3 for the same write with the
-    # property panel bound to the viewer. So a plugin that sets Max Heatmap Columns on a heat map
-    # it just added changes nothing a user can see.
+  Scenario: Max Heatmap Columns should apply before opening settings (grid_look.dart:435)
+    # The API invokes the Dart setter on both paths. On a fresh viewer, `refreshGrid()` returns
+    # because `look.viewer` is unset. The ordinary look-change refresh does not rebuild columns,
+    # so all eleven stay visible even though the property is now 3. Opening settings binds the
+    # owner and makes the same API write work, as the earlier scenario demonstrates.
     # Left last: a known failure aborts before its restore step.
     Given user adds a heat map viewer
     Then the "max heatmap columns" reading of heat map viewer should be 100

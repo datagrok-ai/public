@@ -44,10 +44,10 @@ test.describe("Heat map colouring", () => {
       await session.step(29, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("Heatmap Colors off stops filling the cells with colour (GROK-20619)", async () => {
-      await session.step(39, "Then the \"heatmap colors\" reading of heat map viewer should be \"true\"", () => readingReads(page, "heatmap colors", el("heat map viewer"), "true"));
-      await session.step(40, "When user sets \"heatmapColors\" property of heat map viewer to \"false\"", () => setProperty(page, "heatmapColors", el("heat map viewer"), "false"));
-      await session.step(41, "Then the \"heatmap colors\" reading of heat map viewer should be \"false\"", () => readingReads(page, "heatmap colors", el("heat map viewer"), "false"));
-      await session.step(42, "And the \"column AGE\" area of heat map viewer should have repainted", () => areaRepainted(page, "column AGE", el("heat map viewer")));
+      await session.step(38, "Then the \"heatmap colors\" reading of heat map viewer should be \"true\"", () => readingReads(page, "heatmap colors", el("heat map viewer"), "true"));
+      await session.step(39, "When user sets \"heatmapColors\" property of heat map viewer to \"false\"", () => setProperty(page, "heatmapColors", el("heat map viewer"), "false"));
+      await session.step(40, "Then the \"heatmap colors\" reading of heat map viewer should be \"false\"", () => readingReads(page, "heatmap colors", el("heat map viewer"), "false"));
+      await session.step(41, "And the \"column AGE\" area of heat map viewer should have repainted", () => areaRepainted(page, "column AGE", el("heat map viewer")));
     }, {knownFailure: true});
     run.finish();
   });

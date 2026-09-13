@@ -4,7 +4,7 @@ import {type Page} from '@playwright/test';
 import {expect, pollMs} from '../../src/runtime/patience.js';
 import {DatasetEntry, Given, Then, When} from '../../src/registry.js';
 import {el, type ElementRef} from '../../src/runtime/args.js';
-import {editorOf} from '../../src/runtime/gestures.js';
+import {click, editorOf} from '../../src/runtime/gestures.js';
 import {atFeatureEnd} from '../../src/runtime/harness.js';
 import {exactText, locate} from '../../src/runtime/locate.js';
 
@@ -368,8 +368,10 @@ function namedCleanup(page: Page, source: NamedSource, what: string, names: stri
         for (const [modelId, stages] of pending) {
           while (stages.length > 0) {
             const stage = stages[0];
-            const entities = stage.ids.length === 0 ? [] : (await serverEntities(page, stage.source,
-              stage.ids.map((id) => `id = "${id}"`).join(' or '))).filter((entity) => stage.ids.includes(entity.id));
+            // Spaces filters also miss IDs; verify deletion against the complete listing.
+            const filter = stage.source === 'spaces' ? '' : stage.ids.map((id) => `id = "${id}"`).join(' or ');
+            const entities = stage.ids.length === 0 ? [] : (await serverEntities(page, stage.source, filter))
+              .filter((entity) => stage.ids.includes(entity.id));
             if (entities.length === 0) {
               stages.shift();
               continue;
@@ -434,7 +436,10 @@ export const noSpaceOnServer = Given('no space named {string} is on the server',
   const cleanup = namedCleanup(page, 'spaces', 'spaces', namesOf(name));
   atFeatureEnd(page, cleanup);
   await cleanup();
-}, {tier: 'api', description: 'deletes what an earlier run left under those names (comma-separated), and deletes them again when the feature ends'});
+  // API deletion does not invalidate the open tree's cached nodes (including prior teardown).
+  if (await (await locate(page, el('browse panel'))).filter({visible: true}).count() > 0)
+    await click(page, el('"Refresh" icon inside browse toolbar'));
+}, {tier: 'api', description: 'deletes earlier fixtures by name (comma-separated), refreshes the open Browse tree, and deletes them again at feature end'});
 
 /* A space is listed once its save returns, and the save of a ROOT space is slow: 4.8 s alone and
    18 s with four features creating at once on a local stand (2026-09-10); the claim right after OK

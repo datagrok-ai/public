@@ -121,6 +121,10 @@ its error and balloon floors. `-g` selects the whole journey.
 not fail the test, and its passing does ("the bug is fixed, remove the tag"). Nothing is softened
 to stay green.
 
+The [known-failure audit](KNOWN_FAILURES.md) records the reproduced defects and the stale tag
+removed in September 2026. Inspect the failing step inside each tagged scenario: a green journey
+alone does not establish that it failed for the intended reason.
+
 ## Reading a failure
 
 A failed step reports the feature line, the step as written, and the reason in a sentence —
@@ -277,6 +281,11 @@ viewer says nothing is pending (`isRenderPending`), not when a cap runs out; a r
 lands is reported as the platform failure it is. **Say what the claim is**: `repainted` is a
 change detector, one pixel; a shape gets its own evidence (an area's ink, a colour in an area, a
 reading), a chrome toggle takes `by at least N pixels`.
+
+Area hovers also settle before the next step. Grid cell tooltip requests participate in the
+core viewer's pending-work signal, including the nested correlation grid. Tooltip text checks
+consider visible tooltips only; hidden retained text and an absent tooltip satisfy a negative
+check. A served core must include the tracked grid tooltip debounce for these absence checks.
 
 A JS viewer takes part by giving the runtime what a Dart viewer gives it: `getWidgetStatus()`
 with its canvas under `parts`, `hitAreas` in CSS px of it and named `values`; a `get
