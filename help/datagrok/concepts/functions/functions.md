@@ -109,6 +109,12 @@ By default, scheduled functions run with "All users" permissions. Use `schedule.
 - You must be a member of the specified group or role to use `schedule.runAs`
 - Only applies to server-based functions (scripts and queries)
 
+A scheduled run executes as the `System` user with the group's permissions, so everything it reads
+must be shared with that group. Everything it creates (for example, a table uploaded with
+`grok.tables.upload` from a Python script) lands in the group's space, a root space named after the
+group (`AllUsers`, `Administrators`) that is created on first use and shared with the group with full
+access; when the group is a user's personal group, in that user's own project.
+
 ## Filtering
 
 You can use these fields to filter functions with [smart search](../../../visualize/table-view-1.md#search-patterns):
