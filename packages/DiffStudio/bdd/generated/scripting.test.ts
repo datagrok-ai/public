@@ -76,10 +76,11 @@ test.describe("The equations behind a model, and the script they become", () => 
       await session.step(68, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("Refresh re-fetches the catalog, so a model removed behind its back disappears", async () => {
-      await session.step(71, "When the saved script is deleted on the server", () => deleteSavedScript(page));
-      await session.step(72, "And user clicks on model hub refresh icon", () => clickOn(page, el("model hub refresh icon")));
-      await session.step(73, "Then the Model Hub should not list the saved script", () => hubDoesNotListScript(page));
-      await session.step(74, "And no errors should have been logged", () => noErrors(page));
+      await session.step(71, "Given user opens the Model Hub", () => openModelHub(page));
+      await session.step(72, "When the saved script is deleted on the server", () => deleteSavedScript(page));
+      await session.step(73, "And user clicks on model hub refresh icon", () => clickOn(page, el("model hub refresh icon")));
+      await session.step(74, "Then the Model Hub should not list the saved script", () => hubDoesNotListScript(page));
+      await session.step(75, "And no errors should have been logged", () => noErrors(page));
     });
     run.finish();
   });

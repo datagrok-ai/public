@@ -68,6 +68,8 @@ export const saveToLibrary = When('user saves the model to the Diff Studio libra
 /* The Model Hub is Compute2's catalog view, not a plain #app of the registry, so "user opens the
    … app" does not find it — the browse tree node runs Compute2:modelCatalog, and so does this. */
 export const openModelHub = Given('user opens the Model Hub', async (page: Page) => {
+  // A gallery appearing under the old pointer can open a tooltip over the next card.
+  await page.mouse.move(0, 0);
   await page.evaluate(async () => {
     const view = await grok.functions.call('Compute2:modelCatalog', {});
     if (view?.root && !Array.from(grok.shell.views).some((v: any) => v.dart === view.dart))
@@ -107,7 +109,10 @@ async function removeSavedScript(page: Page, id: string): Promise<void> {
 export const saveScript = When('user saves the script', async (page: Page) => {
   const before: string[] = await page.evaluate(async () =>
     (await grok.dapi.scripts.list({pageSize: 1000})).map((s: any) => String(s.id)));
-  await page.locator('[name="button-Save"]').first().click();
+  const saveButton = page.locator('[name="button-Save"]').filter({visible: true});
+  await saveButton.click();
+  // The server listing can see the script before Save updates its qualified name in the client.
+  await expect(saveButton, 'the script save completed in the editor').toHaveText('Saved', {timeout: 60000});
   let script: SavedScript | null = null;
   await expect.poll(async () => {
     script = await freshScript(page, before);

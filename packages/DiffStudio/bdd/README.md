@@ -36,6 +36,11 @@ Install the runtime packages with `grok s packages install DiffStudio Compute2 W
 `WebComponents` registers the function form and docked viewers used by Model Hub; without it,
 the model can open with no inputs and report `destroy is not a function` when its view closes.
 
+Rechecked on macOS against `localhost:8889` on 2026-09-13 after correcting the scripting save
+race: three complete headed runs on four workers (27 tests), three serial headed scripting
+repetitions, and one complete headless run (9 tests). All 39 passed without retries or skips;
+the saved test scripts and model files were cleaned up.
+
 ## What the platform gave these features
 
 - The model's charts are real viewers, in the model view and in the function views the Model Hub
@@ -47,3 +52,10 @@ the model can open with no inputs and report `destroy is not a function` when it
   `aria-checked`, which is what `user switches on {element}` and `should be switched on` read.
 - The Facet plot is small multiples, several line charts: `the canvases of open tableview should
   be painted in at least N colors` counts across them.
+- Saving a script waits for the editor's `Saved` confirmation. The server listing can contain the
+  new script while Save still shows its spinner. Running it then can change its qualified name
+  from `Bioreactor` to `Admin:Bioreactor` during execution, losing the function view's remembered
+  chart tab. Server persistence alone does not establish that the editor finished saving.
+- Opening Model Hub moves the pointer away before the gallery appears, so an incidental card
+  tooltip cannot cover the next target. Refresh is scoped to the current view's ribbon; Browse
+  has another Refresh action. The scripting feature returns to Model Hub before refreshing it.
