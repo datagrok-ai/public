@@ -6,12 +6,19 @@ import grok_connect.resultset.ResultSetManager;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.Mockito;
 import serialization.BigIntColumn;
 import serialization.DataFrame;
 import serialization.Types;
 import java.lang.reflect.Field;
 import java.lang.reflect.Proxy;
 import java.sql.ResultSetMetaData;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLFeatureNotSupportedException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 // int8AsInt32 option parsing and the sticky ALLOW_COL_TYPE_CHANGE tag, without a live database.
 public class QueryManagerTest {
@@ -98,6 +105,42 @@ public class QueryManagerTest {
         m.reportSerialized(100, 1);
         Assertions.assertEquals(100000, m.getFetchSize(chunk(false), m.getWireBytesPerRow()), "100 B/row -> 100K rows, not clamped");
         Assertions.assertEquals(100000, m.getFetchSize(chunk(false), 100f), "the caller's snapshot wins over the field");
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {8, 9}) // Exact chunk boundary and a partial final chunk.
+    public void unsupportedFetchSizeChangeDoesNotTruncateResults(int totalRows) throws Exception {
+        QueryManager m = manager("{\"initConnectFetchSize\":2,\"connectFetchSize\":3}");
+        ResultSet rs = Mockito.mock(ResultSet.class);
+        AtomicInteger cursor = new AtomicInteger();
+        Mockito.when(rs.next()).thenAnswer(call -> cursor.incrementAndGet() <= totalRows);
+        Mockito.when(rs.getObject(1)).thenAnswer(call -> (long) cursor.get());
+        Mockito.doThrow(new SQLFeatureNotSupportedException()).when(rs).setFetchSize(3);
+        setField(m, "resultSet", rs);
+        setField(m, "connection", Mockito.mock(Connection.class));
+        setField(m, "columnCount", 1);
+        Field managers = QueryManager.class.getDeclaredField("resultSetManager");
+        managers.setAccessible(true);
+        ((ResultSetManager) managers.get(m)).init(int8Meta(), 2);
+
+        int rowsRead = 0;
+        for (int chunkNumber = 1; chunkNumber <= 5; chunkNumber++) {
+            DataFrame df = m.getSubDF(chunkNumber);
+            if (df.rowCount == 0)
+                break;
+            Assertions.assertEquals(Math.min(chunkNumber == 1 ? 2 : 3, totalRows - rowsRead), df.rowCount);
+            for (int row = 0; row < df.rowCount; row++)
+                Assertions.assertEquals(String.valueOf(++rowsRead), df.getColumn(0).get(row).toString());
+        }
+        Assertions.assertEquals(totalRows, rowsRead, "A rejected JDBC fetch-size hint must not signal EOF");
+        Assertions.assertEquals(0, m.getSubDF(6).rowCount);
+        Mockito.verify(rs).setFetchSize(3);
+    }
+
+    private static void setField(QueryManager manager, String name, Object value) throws Exception {
+        Field field = QueryManager.class.getDeclaredField(name);
+        field.setAccessible(true);
+        field.set(manager, value);
     }
 
     @Test
