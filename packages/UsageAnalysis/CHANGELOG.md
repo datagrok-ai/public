@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-20881: Reporting: Fixed a batch change blanking the assignee of every row it touched. The handler wrote back fields the payload did not carry, which a rule with no assign action already did and resolving a selection now would
 * BDD: Corrected the line-chart lasso test to close its checkbox menu before dragging and removed its stale known-failure tag. Fixed Spaces fixture cleanup and stale Browse nodes; file operations now require the test space to be current. Box-plot shortcut checks target the viewer explicitly. Rechecked and documented the remaining viewer failures
 * GROK-20874: System Activity: Added a tab listing the platform-level audit records datlas now writes — logins, logouts, failed logins, impersonation, admin session start/end, developer-key generation, settings and log-settings changes, and server starts — as a filterable grid with a per-type timeline (`SystemActivity` / `SystemActivitySummary` queries); a row's parameters open on the context panel. Tabs whose names contain spaces now route by their space-free lowercase name
 * Metrics: The tab reads request latency, per-route statistics, the function-call queue, connections, database size and the `pg_stat_statements` rankings from `grok.dapi.admin.getMetrics()` (the new `/api/admin/metrics` endpoint) instead of its own SQL; routes are the server's route templates (`/users/{id}/picture`), and the server picks the `pg_stat_statements` column names, so the Pg12 query variants are gone. Added a Queue card (queued + running function calls) next to Connections
