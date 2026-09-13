@@ -177,13 +177,11 @@ export function getServerCredentials(hostKey: string): ServerCredentials {
   try {
     url = new URL(host).href;
     if (url.endsWith('/')) url = url.slice(0, -1);
-    for (const name of Object.keys(config.servers ?? {})) {
-      if (config.servers[name].url === url) {
-        alias = name;
-        entry = config.servers[name];
-        break;
-      }
-    }
+    // Several aliases can name the same server. Prefer one that has a keypair: a
+    // dev-key-only entry matching first would silently downgrade the login.
+    const matches = Object.keys(config.servers ?? {}).filter((name) => config.servers[name].url === url);
+    alias = matches.find((name) => config.servers[name].keyFile || fs.existsSync(keyFilePath(name))) ?? matches[0];
+    entry = alias == null ? undefined : config.servers[alias];
   } catch (error) {
     entry = config.servers?.[host];
     if (entry == null)

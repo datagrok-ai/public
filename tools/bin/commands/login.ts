@@ -98,18 +98,25 @@ function resolveTarget(target: string, config: Config, aliasArg?: string): {url:
 }
 
 /**
- * The API base for [url]. A stand behind nginx serves it at `<origin>/api`, a bare
- * Datlas at the origin itself, and there is no telling which from the URL alone -
- * so ask, rather than guess and fail at the first call.
+ * The API base for [url]. A stand behind nginx serves it at `<origin>/api`, a bare Datlas at
+ * the origin itself, and there is no telling which from the URL alone - so ask, rather than
+ * guess and fail at the first call.
+ *
+ * A 200 is not the answer: nginx serves the single-page app for anything it does not route,
+ * so the origin of a real stand answers `/info/server` with the app's HTML. Only a JSON body
+ * that names the server counts.
  */
 async function resolveApiRoot(url: string): Promise<string> {
-  const candidates = /\/api$/.test(url) ? [url] : [url, `${url}/api`];
+  const candidates = /\/api$/.test(url) ? [url] : [`${url}/api`, url];
   for (const candidate of candidates) {
     try {
       const response = await fetch(`${candidate}/info/server`);
-      if (response.ok)
+      if (!response.ok)
+        continue;
+      const info = JSON.parse(await response.text());
+      if (info?.webRoot != null || info?.Version != null)
         return candidate;
-    } catch { /* try the next shape; the throw below reports the whole failure */ }
+    } catch { /* not JSON, or unreachable: try the next shape */ }
   }
   throw new Error(`${url} does not answer as a Datagrok API (tried ${candidates.join(' and ')})`);
 }

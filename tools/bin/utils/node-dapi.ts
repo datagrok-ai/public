@@ -98,12 +98,14 @@ export class NodeApiClient {
   /** Set by `createClient` when the run asked for an admin session, so a re-login restores it. */
   adminMode: boolean = false;
 
-  constructor(public baseUrl: string, public token: string, private devKey?: string) {}
+  constructor(public baseUrl: string, public token: string, private devKey?: string,
+              private privateKey?: any) {}
 
-  static async login(baseUrl: string, devKey: string): Promise<NodeApiClient> {
-    const privateKey = keypairFor(baseUrl, devKey);
+  /** [privateKey] from a caller that resolved it by alias; otherwise it is looked up by URL. */
+  static async login(baseUrl: string, devKey: string, privateKey?: any): Promise<NodeApiClient> {
+    privateKey ??= keypairFor(baseUrl, devKey);
     if (privateKey)
-      return new NodeApiClient(baseUrl, await keyLogin(baseUrl, privateKey), devKey);
+      return new NodeApiClient(baseUrl, await keyLogin(baseUrl, privateKey), devKey, privateKey);
     // Servers before 1.28 only knew the key-in-URL form, where it leaked into every
     // access log on the way; they answer 404 or 401 to the key-less route.
     let res = await fetch(`${baseUrl}/users/login/dev`, {method: 'POST', headers: {'Authorization': `Dev ${devKey}`}});
@@ -123,9 +125,9 @@ export class NodeApiClient {
    * developer key) is good for a new session, so one is taken rather than losing the run.
    */
   private async reauthenticate(): Promise<boolean> {
-    if (!this.devKey && !keypairFor(this.baseUrl))
+    if (!this.devKey && !this.privateKey)
       return false;
-    const fresh = await NodeApiClient.login(this.baseUrl, this.devKey).catch(() => null);
+    const fresh = await NodeApiClient.login(this.baseUrl, this.devKey, this.privateKey).catch(() => null);
     if (!fresh)
       return false;
     this.token = fresh.token;
