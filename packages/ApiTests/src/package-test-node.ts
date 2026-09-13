@@ -45,9 +45,8 @@ const extraTestPackages = ['DBTests'];
 let mode: 'functional' | 'stress' = 'stress';
 
 async function main(): Promise<void> {
-    const { apiUrl, devKey, concurrentRuns, categories, loop, concurrencyRange } = parseArgs();
-    console.log('Exchanging devKey for token...');
-    const apiToken = await getToken(apiUrl, devKey);
+    const { apiUrl, devKey, token, concurrentRuns, categories, loop, concurrencyRange } = parseArgs();
+    const apiToken = token ?? await getToken(apiUrl, devKey);
     console.log('Received token.');
     // Loaded dynamically (not a static import) so Node/tsx resolve datagrok-api's
     // named exports through cjs-module-lexer instead of failing at link time.
@@ -113,8 +112,11 @@ function parseArgs() {
         })
         .option('devKey', {
             type: 'string',
-            describe: 'Developer key for authentication',
-            demandOption: true,
+            describe: 'Developer key for authentication (deprecated - prefer --token)',
+        })
+        .option('token', {
+            type: 'string',
+            describe: 'Session token, e.g. from `grok s token`. Preferred over --devKey',
         })
         .option('concurrentRuns', {
             type: 'number',
@@ -180,6 +182,7 @@ function parseArgs() {
     const res: any = {
         apiUrl: argv.apiUrl,
         devKey: argv.devKey,
+        token: argv.token,
         concurrentRuns: argv.concurrentRuns,
         categories: argv.categories,
         loop: argv.loop
@@ -202,6 +205,9 @@ function parseArgs() {
 }
 
 async function getToken(url: string, key: string) {
+    if (!key)
+        throw new Error('No credentials: pass --token (from `grok s token`) or --devKey');
+    console.log('Exchanging devKey for token...');
     // Raw fetch is intentional here: this runs before startDatagrok(), so the grok
     // client (and grok.dapi) isn't initialized yet — there's no dapi layer to use.
     const response = await fetch(`${url}/users/login/dev`, {method: 'POST', headers: {'Authorization': `Dev ${key}`}});

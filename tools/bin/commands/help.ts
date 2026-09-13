@@ -18,6 +18,7 @@ Commands:
     docker-gen  Generate Celery Docker artifacts from Python functions
     init        Modify a package template
     link        Link \`datagrok-api\` and libraries for local development
+    login       Log in to a server with a keypair (replaces the developer key)
     publish     Upload a package
     report      Manage user error reports (fetch, resolve, create ticket)
     run         Build, publish, and open in browser
@@ -140,6 +141,30 @@ Options:
                   opt out again
 `;
 
+const HELP_LOGIN = `
+Usage: grok login <server>
+
+Log in to a Datagrok server with a keypair. Generates an EC P-256 key, registers
+its public half on your account, and stores the private half in
+~/.grok/keys/<alias>.json. Nothing reusable is ever copied out of the UI, and the
+key can be given an expiry and revoked on its own.
+
+grok login https://dev.datagrok.ai      Approve the key in the browser
+grok login dev --code AB12CD34          Use a code from your profile page
+                                        (Profile > Public keys...), no browser
+
+Options:
+[--code] [--name] [--expires] [--alias]
+
+--code      One-shot enrollment code from your profile page. Skips the browser
+--name      Key name shown in your profile (default: user@host)
+--expires   Days from now, or an ISO date (2027-01-31). Default: never
+--alias     Config alias to write (default: the server's first host label)
+
+For CI, set GROK_PRIVATE_KEY to the private key JWK (raw or base64) instead of a
+config file. Read more: https://datagrok.ai/help/govern/access-control/keypair-authentication
+`;
+
 const HELP_CONFIG = `
 Usage: grok config
 
@@ -152,6 +177,7 @@ Options:
 --server    Use to add a server to the config (\`grok config add --alias alias --server url --key key\`)
 --alias     Use in conjunction with the \`server\` option to set the server name
 --key       Use in conjunction with the \`server\` option to set the developer key
+            (deprecated - prefer \`grok login\`, which needs no key here)
 --default   Use in conjunction with the \`server\` option to set the added server as default
 --registry  Docker registry URL (default: registry.{server hostname})
 `;
@@ -424,6 +450,7 @@ export const help = {
   'docker-gen': HELP_DOCKER_GEN,
   init: HELP_INIT,
   link: HELP_LINK,
+  login: HELP_LOGIN,
   publish: HELP_PUBLISH,
   report: HELP_REPORT,
   run: HELP_RUN,

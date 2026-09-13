@@ -47,6 +47,8 @@ export interface NodeApiError {
   body?: any;
 }
 
+import {keyLogin, keypairFor} from './keypair';
+
 const setting = (name: string, fallback: number): number => {
   const value = Number(process.env[`GROK_HTTP_${name}`]);
   return Number.isFinite(value) && value >= 0 ? value : fallback;
@@ -99,6 +101,9 @@ export class NodeApiClient {
   constructor(public baseUrl: string, public token: string, private devKey?: string) {}
 
   static async login(baseUrl: string, devKey: string): Promise<NodeApiClient> {
+    const privateKey = keypairFor(baseUrl, devKey);
+    if (privateKey)
+      return new NodeApiClient(baseUrl, await keyLogin(baseUrl, privateKey), devKey);
     // Servers before 1.28 only knew the key-in-URL form, where it leaked into every
     // access log on the way; they answer 404 or 401 to the key-less route.
     let res = await fetch(`${baseUrl}/users/login/dev`, {method: 'POST', headers: {'Authorization': `Dev ${devKey}`}});
@@ -114,11 +119,11 @@ export class NodeApiClient {
 
   /**
    * A stand serving several isolates can reject a session one of them does not know, and an
-   * hour-long walk has no way to ask the operator to log in again. The developer key is good
-   * for a new session, so one is taken rather than losing the run.
+   * hour-long walk has no way to ask the operator to log in again. The keypair (or the
+   * developer key) is good for a new session, so one is taken rather than losing the run.
    */
   private async reauthenticate(): Promise<boolean> {
-    if (!this.devKey)
+    if (!this.devKey && !keypairFor(this.baseUrl))
       return false;
     const fresh = await NodeApiClient.login(this.baseUrl, this.devKey).catch(() => null);
     if (!fresh)

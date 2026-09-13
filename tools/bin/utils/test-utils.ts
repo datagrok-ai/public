@@ -11,6 +11,7 @@ import {Browser, Page} from 'puppeteer';
 import * as color from '../utils/color-utils';
 import Papa from 'papaparse';
 import {devKeyFetch} from './dev-key';
+import * as keypair from './keypair';
 
 const fetch = require('node-fetch');
 
@@ -38,9 +39,24 @@ export async function getToken(url: string, key: string) {
   // auth failure (valid JSON with isSuccess=false) is returned immediately, no retry.
   const maxAttempts = 15;
   const delayMs = 3000;
+  // Keypair login is the supported path; the developer key remains as a fallback
+  // for stands and CI secrets that have not been migrated yet — including when a key is
+  // configured but that stand does not know it, which must not take the run down while a
+  // working dev key is right there.
+  let privateKey = keypair.keypairFor(url, key);
   let lastError: any;
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
+      if (privateKey) {
+        try {
+          return await keypair.keyLogin(url, privateKey);
+        } catch (error: any) {
+          if (!key || !error?.message?.startsWith('Key login failed'))
+            throw error;
+          color.warn(`${url} refused the keypair (${error.message}); falling back to the developer key`);
+          privateKey = undefined;
+        }
+      }
       const response = await devKeyFetch(`${url}/users/login/dev`, `${url}/users/login/dev/${key}`, key, {method: 'POST'});
       const text = await response.text();
       let json: any;
@@ -63,6 +79,9 @@ export async function getToken(url: string, key: string) {
     } catch (error: any) {
       if (error?.message === 'Unable to login to server. Check your dev key')
         throw error;
+      // A rejected signature is a credential problem, not a readiness one.
+      if (error?.message?.startsWith('Key login failed'))
+        throw error;
       lastError = error;
       if (utils.isConnectivityError(error))
         color.warn(`Playwright: server not reachable yet (attempt ${attempt}/${maxAttempts}): ${url}`);
@@ -70,7 +89,7 @@ export async function getToken(url: string, key: string) {
         await new Promise((r) => setTimeout(r, delayMs));
     }
   }
-  throw lastError ?? new Error(`Unable to exchange dev key for token at ${url}`);
+  throw lastError ?? new Error(`Unable to obtain a token from ${url}`);
 }
 
 export async function isPackageOnServer(hostKey: string, packageName: string): Promise<boolean> {
