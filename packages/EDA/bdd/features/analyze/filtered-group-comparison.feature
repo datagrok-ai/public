@@ -12,17 +12,28 @@ Feature: Group comparison of a filtered table
     Given user is logged in
     And user opens demog dataset
 
-  @known-failure
-  Scenario: Control comparisons count only the women when the table is filtered to them
+  Scenario: Running control comparisons preserves the filter and produces the comparison table
     When user filters rows where "SEX" is "F"
     Then 3243 rows should pass the filter
     When user picks "ML > Analyze > Group Comparison > Control Comparisons..." from the top menu
-    Then 3243 rows should pass the filter
+    Then "Control comparisons" dialog should be visible
+    And 3243 rows should pass the filter
     When user clicks on Run button in "Control comparisons" dialog
     Then the top menu command should have completed
+    And "Control comparisons" dialog should be hidden
     And 3243 rows should pass the filter
+    And table "Control comparisons result" should be open
+    And table "Control comparisons result" should have 3 rows
+    And table "Control comparisons result" should have no missing values in "n" column
     And second grid viewer should be bound to table "Control comparisons result"
     And the "text of cell 1 of Group" reading of second grid viewer should be "Black"
-    And the "text of cell 1 of n" reading of second grid viewer should be "104"
+    And the "text of cell 2 of Group" reading of second grid viewer should be "Caucasian"
+    And the "text of cell 3 of Group" reading of second grid viewer should be "Other"
+    And no error or warning balloon should have been shown
+    And no errors should have been logged
+
+  @known-failure
+  Scenario: The comparison sizes count only the women
+    Then the "text of cell 1 of n" reading of second grid viewer should be "104"
     And the "text of cell 2 of n" reading of second grid viewer should be "2823"
     And the "text of cell 3 of n" reading of second grid viewer should be "279"

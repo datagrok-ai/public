@@ -47,5 +47,10 @@ Feature: Partial least squares regression
     And the table should have a column "PLS2"
     And the table should have a column "PLS3"
     And "PLS1" column should have no missing values
+    And "PLS2" column should have no missing values
+    And "PLS3" column should have no missing values
+    And "PLS1" column should have at least 2 distinct values
+    And "PLS2" column should have at least 2 distinct values
+    And "PLS3" column should have at least 2 distinct values
     And no error or warning balloon should have been shown
     And no errors should have been logged

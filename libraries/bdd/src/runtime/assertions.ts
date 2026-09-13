@@ -32,12 +32,21 @@ export async function expectState(page: Page, target: ElementRef, state: State, 
     case 'partially checked': return expectMixed(loc, !negate);
     case 'invalid': return expectInvalid(loc, !negate);
     case 'valid': return expectInvalid(loc, negate);
+    case 'ready': return expectReady(loc, !negate);
     case 'selected': return expectSelected(page, loc, !negate);
     case 'empty': return (negate ? expect(await editorOf(page, target)).not : expect(await editorOf(page, target))).toHaveValue('');
     case 'expanded': return expectExpanded(loc, !negate);
     case 'collapsed': return expectExpanded(loc, negate);
     case 'focused': return e.toBeFocused();
   }
+}
+
+/** A completed asynchronous widget explicitly clears aria-busy. Missing markup is not readiness,
+ * and a failed computation can stop running but must not count as a ready result. */
+async function expectReady(loc: Locator, ready: boolean): Promise<void> {
+  await expect.poll(() => loc.evaluateAll((all) => all.length > 0 && all.every((el) =>
+    el.getAttribute('aria-busy') === 'false' && el.getAttribute('aria-invalid') !== 'true')),
+  {message: 'a completed, valid result (aria-busy=false)'}).toBe(ready);
 }
 
 /** A parameter form's switch is not inside the input it governs, so this is a claim of its own

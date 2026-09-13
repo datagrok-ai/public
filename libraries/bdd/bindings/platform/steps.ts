@@ -266,45 +266,174 @@ export const sharingPaneListsNot = Then('the sharing pane should not list the sh
   await expect(await sharingPane(page)).not.toContainText(new RegExp(sharingShownName(), 'i'));
 }, {tier: 'ui', description: 'read once the pane has loaded'});
 
-/* --- entities a feature leaves on the server ------------------------------------------------------
-   Found by the name the platform shows (friendlyName) or the grok name, in the whole list:
-   grok.dapi.spaces.filter('name = "…"') answers nothing on a stand that holds the space (probed
-   2026-09-10 against dev, by grok name, friendly name and both). A delete returns before the entity
-   is gone, and a save under the same name meanwhile is refused as a duplicate, so the cleanup is over
-   only once the server stops listing them; a listing the server refuses once (a stand under load) is
-   one attempt, not the answer. */
+// Space name filters miss existing spaces, so names are matched after reading every page.
 type NamedSource = 'spaces' | 'models';
+type CleanupSource = NamedSource | 'projects' | 'tables';
+type ServerEntity = {id: string; name: string; friendlyName: string; children?: string[]};
+type CleanupStage = {source: CleanupSource; ids: string[]};
 
-async function deleteNamed(page: Page, source: NamedSource, what: string, names: string[]): Promise<void> {
-  const remaining = () => page.evaluate(async ([src, wanted]) => {
-    const left: string[] = [];
-    for (const entity of await grok.dapi[src].list({pageSize: 1000})) {
-      if (!wanted.includes(entity.friendlyName) && !wanted.includes(entity.name))
-        continue;
-      const name = entity.friendlyName ?? entity.name;
-      await grok.dapi[src].delete(entity).then(() => left.push(name), (e: unknown) => left.push(`${name} (the delete failed: ${String(e)})`));
+async function serverEntities(page: Page, source: CleanupSource, filter = ''): Promise<ServerEntity[]> {
+  return page.evaluate(async ([src, query]) => {
+    try {
+      // The tables gallery hides system tables, including training artifacts.
+      let data = (src === 'tables' ? grok.dapi.entities : grok.dapi[src]).order('id');
+      const filters = [src === 'tables' ? 'entityType.name = "TableInfo"' : '', query].filter(Boolean);
+      if (filters.length > 0)
+        data = data.filter(filters.map((filter) => `(${filter})`).join(' and '));
+      if (src === 'projects')
+        data = data.include('children');
+      const result: ServerEntity[] = [];
+      for (let pageNumber = 1; ; pageNumber++) {
+        const entities = await data.list({pageSize: 1000, pageNumber});
+        for (const entity of entities)
+          result.push({id: entity.id, name: entity.name, friendlyName: entity.friendlyName,
+            children: src === 'projects' ? entity.children.map((child: any) => child.id) : undefined});
+        if (entities.length < 1000)
+          return result;
+      }
     }
-    return left;
-  }, [source, names] as [NamedSource, string[]]);
-  await expect.poll(remaining, {message: `${what} still on the server under ${names.join(', ')}`, timeout: pollMs(60000)}).toEqual([]);
+    catch (error) {
+      // Dart ApiException loses its message when Playwright serializes it directly.
+      throw new Error(`${src} list: ${(error as any)?.message ?? String(error)}`);
+    }
+  }, [source, filter] as [CleanupSource, string]);
+}
+
+function namedCleanup(page: Page, source: NamedSource, what: string, names: string[]): () => Promise<void> {
+  let createdAfter: number | undefined;
+  let authorId: string;
+  const pending = new Map<string, CleanupStage[]>();
+  return async () => {
+    await expect.poll(async () => {
+      try {
+        if (source === 'models' && createdAfter === undefined) {
+          const owner = await page.evaluate(async () => {
+            try {
+              return {root: new URL(grok.dapi.root, location.href).href.replace(/\/$/, ''),
+                authorId: (await grok.dapi.users.current()).id};
+            }
+            catch (error) {
+              throw new Error(`cleanup owner lookup: ${(error as any)?.message ?? String(error)}`);
+            }
+          });
+          // No public dapi clock getter: use the server's HTTP Date and preserve its whole second.
+          const response = await page.request.get(`${owner.root}/info/server`);
+          if (!response.ok())
+            throw new Error(`server clock request failed: HTTP ${response.status()}`);
+          const serverTime = Date.parse(response.headers()['date'] ?? '');
+          if (!Number.isFinite(serverTime))
+            throw new Error('server clock response has no valid Date header');
+          createdAfter = serverTime + 1000;
+          authorId = owner.authorId;
+        }
+        const named = (await serverEntities(page, source))
+          .filter((entity) => names.includes(entity.friendlyName) || names.includes(entity.name));
+        for (const entity of named) {
+          if (pending.has(entity.id))
+            continue;
+          const stages: CleanupStage[] = [{source, ids: [entity.id]}];
+          if (source === 'models') {
+            const training: {id: string; owned: boolean} | null = await page.evaluate(async ([id, ownerId, cutoff]) => {
+              try {
+                const model = await grok.dapi.models.include('trainedOn').find(id);
+                const table = await grok.functions.call('Get', {object: model, propertyName: 'trainedOn'});
+                if (!table)
+                  return null;
+                const saved = await grok.dapi.tables.find(table.id);
+                return {id: table.id, owned: saved != null && model.author.id === ownerId && saved.author.id === ownerId &&
+                  model.createdOn.valueOf() > cutoff && saved.createdOn.valueOf() > cutoff};
+              }
+              catch (error) {
+                throw new Error(`model ${id} trainedOn lookup: ${(error as any)?.message ?? String(error)}`);
+              }
+            }, [entity.id, authorId, createdAfter!] as [string, string, number]);
+            const wrappers = await serverEntities(page, 'projects',
+              `isEntity = true and isPackage = false and relations.entity.id = "${entity.id}"`);
+            for (const wrapper of wrappers)
+              if (wrapper.children?.length !== 1 || wrapper.children[0] !== entity.id)
+                throw new Error(`project ${wrapper.id} has children outside model ${entity.id}; it was retained`);
+            stages.unshift({source: 'projects', ids: wrappers.map((wrapper) => wrapper.id)});
+            // trainedOn is a used table: require a new artifact by this run's user and no other model.
+            if (training?.owned) {
+              const users = await serverEntities(page, 'models', `trainedOn.id = "${training.id}"`);
+              if (!users.some((model) => model.id === entity.id))
+                throw new Error(`the training-table lookup did not return model ${entity.id}; ownership is unverified`);
+              if (users.length === 1)
+                stages.push({source: 'tables', ids: [training.id]});
+            }
+          }
+          pending.set(entity.id, stages);
+        }
+        const left: string[] = [];
+        for (const [modelId, stages] of pending) {
+          while (stages.length > 0) {
+            const stage = stages[0];
+            const entities = stage.ids.length === 0 ? [] : (await serverEntities(page, stage.source,
+              stage.ids.map((id) => `id = "${id}"`).join(' or '))).filter((entity) => stage.ids.includes(entity.id));
+            if (entities.length === 0) {
+              stages.shift();
+              continue;
+            }
+            for (const entity of entities) {
+              try {
+                if (stage.source === 'tables' &&
+                  (await serverEntities(page, 'models', `trainedOn.id = "${entity.id}"`)).length > 0)
+                  throw new Error(`training table ${entity.id} is still used by another model; it was retained`);
+                await page.evaluate(async ([src, id, ownerId]) => {
+                  let operation = 'lookup';
+                  try {
+                    // Project find expands every child; the listed wrapper is sufficient to delete it.
+                    const entity = src === 'projects' ?
+                      await grok.dapi.projects.filter(`id = "${id}"`).include('children').first() :
+                      await grok.dapi[src].find(id);
+                    if (!entity)
+                      return;
+                    if (entity.id !== id)
+                      throw new Error(`the lookup returned ${entity.id} instead of ${id}; it was retained`);
+                    if (src === 'projects' && (entity.children.length !== 1 || entity.children[0].id !== ownerId))
+                      throw new Error(`project ${id} has children outside model ${ownerId}; it was retained`);
+                    operation = 'delete';
+                    await grok.dapi[src].delete(entity);
+                  }
+                  catch (error) {
+                    throw new Error(`${src} ${id} ${operation}: ${(error as any)?.message ?? String(error)}`);
+                  }
+                }, [stage.source, entity.id, modelId] as [CleanupSource, string, string]);
+                left.push(`${stage.source} ${entity.id}`);
+              }
+              catch (error) {
+                left.push(`${stage.source} ${entity.id}: ${String(error)}`);
+              }
+            }
+            break;
+          }
+        }
+        return left;
+      }
+      catch (error) {
+        return [`the listing or artifact lookup failed: ${String(error)}`];
+      }
+    }, {message: `${what} still on the server under ${names.join(', ')}`, timeout: pollMs(60000)}).toEqual([]);
+  };
 }
 
 async function expectNamedCount(page: Page, source: NamedSource, what: string, name: string, count: number): Promise<void> {
-  await expect.poll(() => page.evaluate(async ([src, n]) => {
+  await expect.poll(async () => {
     try {
-      return (await grok.dapi[src].list({pageSize: 1000})).filter((e: any) => e.friendlyName === n || e.name === n).length;
+      return (await serverEntities(page, source)).filter((entity) => entity.friendlyName === name || entity.name === name).length;
     }
-    catch (e) {
-      return `the listing failed: ${String(e)}`;
+    catch (error) {
+      return `the listing failed: ${String(error)}`;
     }
-  }, [source, name] as [NamedSource, string]), {message: `${what} the server holds under "${name}"`, timeout: pollMs(60000)}).toBe(count);
+  }, {message: `${what} the server holds under "${name}"`, timeout: pollMs(60000)}).toBe(count);
 }
 
 const namesOf = (list: string): string[] => list.split(',').map((n) => n.trim()).filter(Boolean);
 
 export const noSpaceOnServer = Given('no space named {string} is on the server', async (page: Page, name: string) => {
-  await deleteNamed(page, 'spaces', 'spaces', namesOf(name));
-  atFeatureEnd(page, () => deleteNamed(page, 'spaces', 'spaces', namesOf(name)));
+  const cleanup = namedCleanup(page, 'spaces', 'spaces', namesOf(name));
+  atFeatureEnd(page, cleanup);
+  await cleanup();
 }, {tier: 'api', description: 'deletes what an earlier run left under those names (comma-separated), and deletes them again when the feature ends'});
 
 /* A space is listed once its save returns, and the save of a ROOT space is slow: 4.8 s alone and
@@ -315,8 +444,9 @@ export const spacesOnServer = Then('{int} space(s) named {string} should be on t
 {tier: 'api', description: 'what the server holds, not what the tree draws — the refusal of a duplicate is a space that was never created'});
 
 export const noModelOnServer = Given('no predictive model named {string} is on the server', async (page: Page, name: string) => {
-  await deleteNamed(page, 'models', 'predictive models', namesOf(name));
-  atFeatureEnd(page, () => deleteNamed(page, 'models', 'predictive models', namesOf(name)));
+  const cleanup = namedCleanup(page, 'models', 'predictive models', namesOf(name));
+  atFeatureEnd(page, cleanup);
+  await cleanup();
 }, {tier: 'api', description: 'deletes what an earlier run left under those names (comma-separated), and deletes them again when the feature ends'});
 
 export const modelsOnServer = Then('{int} predictive model(s) named {string} should be on the server', (page: Page, count: number, name: string) =>

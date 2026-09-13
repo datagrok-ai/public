@@ -12,26 +12,29 @@ Feature: One-way ANOVA
     Given user is logged in
     And user opens demog dataset
 
-  Scenario: The dialog opens on a category, a feature and a significance level
+  Scenario: Running the default comparison docks a box plot with the conclusion and test statistics
     When user picks "ML > Analyze > Group Comparison > ANOVA..." from the top menu
     Then "ANOVA" dialog should be visible
     And editor of Category input in "ANOVA" dialog should have text "RACE"
     And editor of Feature input in "ANOVA" dialog should have text "AGE"
     And Alpha input in "ANOVA" dialog should have value "0.05"
     And Run button in "ANOVA" dialog should be enabled
-
-  Scenario: Running it docks a box plot with the conclusion and the table of the test
-    When user picks "ML > Analyze > Group Comparison > ANOVA..." from the top menu
-    And user clicks on Run button in "ANOVA" dialog
+    When user clicks on Run button in "ANOVA" dialog
     Then the top menu command should have completed
     And "ANOVA" dialog should be hidden
     And box plot viewer should be visible
-    And "Description" property of box plot viewer should contain "doesn't affect"
-    And "Description" property of box plot viewer should contain "p = 0.176"
+    And description of box plot viewer should be visible
+    And description of box plot viewer should contain text "doesn't affect"
+    And description of box plot viewer should contain text "p = 0.176"
     And box plot viewer should be painted
     And table "ANOVA result" should be open
     And table "ANOVA result" should have 1 row
     And table "ANOVA result" should have columns "Conclusion, Source of variance, F, df₁, df₂, F-critical, p-value"
+    And table "ANOVA result" should have no missing values in "F" column
+    And table "ANOVA result" should have no missing values in "df₁" column
+    And table "ANOVA result" should have no missing values in "df₂" column
+    And table "ANOVA result" should have no missing values in "F-critical" column
+    And table "ANOVA result" should have no missing values in "p-value" column
     And second grid viewer should be bound to table "ANOVA result"
     And no error or warning balloon should have been shown
     And no errors should have been logged

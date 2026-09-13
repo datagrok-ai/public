@@ -14,7 +14,10 @@ Feature: Pareto front viewer
   Scenario: The viewer picks the column of unique values as its label
     When user picks "ML > Pareto Front..." from the top menu
     Then pareto front viewer should be visible
+    And scatter plot viewer in pareto front viewer should be painted
     And "Label Columns" property of pareto front viewer should be "model"
+    And "Label Columns" property of scatter plot viewer in pareto front viewer should be "model"
+    And the "labels shown" reading of scatter plot viewer in pareto front viewer should be at least 1
     And "Minimize" property of pareto front viewer should be "highway.mpg, price"
     And no errors should have been logged
 
@@ -22,12 +25,18 @@ Feature: Pareto front viewer
     Given user opens demog dataset
     When user picks "ML > Pareto Front..." from the top menu
     Then pareto front viewer should be visible
+    And scatter plot viewer in pareto front viewer should be painted
     And "Label Columns" property of pareto front viewer should be "USUBJID"
+    And "Label Columns" property of scatter plot viewer in pareto front viewer should be "USUBJID"
+    And the "labels shown" reading of scatter plot viewer in pareto front viewer should be at least 1
 
   Scenario: Without a column of unique values the label stays empty
     Given user opens iris dataset
     When user picks "ML > Pareto Front..." from the top menu
     Then pareto front viewer should be visible
+    And scatter plot viewer in pareto front viewer should be painted
     And "Minimize" property of pareto front viewer should be "Petal.Length, Petal.Width"
     And "Label Columns" property of pareto front viewer should be ""
+    And "Label Columns" property of scatter plot viewer in pareto front viewer should be ""
+    And the "labels shown" reading of scatter plot viewer in pareto front viewer should be 0
     And no errors should have been logged

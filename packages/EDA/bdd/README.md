@@ -31,16 +31,24 @@ DATAGROK_URL=https://dev.datagrok.ai DATAGROK_SERVER=dev npx grok-bdd run --repo
 npx grok-bdd run generated/models/train-on-cars.test.ts   # one feature
 ```
 
-Eleven features, 32 scenarios: under a minute on four workers against dev (2026-09-11), and 45 of 45
-with `--repeat-each=3`. The stand needs EDA published and `cars.csv`, `demog.csv` and `iris.csv` in
-`System:DemoFiles`; the sharing feature needs a dev key (it shares with the `bddsecond` user the
-setup creates) and deletes the model it saves when it ends.
+Eleven features compile to thirteen Playwright tests. The stand needs EDA published and `cars.csv`,
+`demog.csv` and `iris.csv` in `System:DemoFiles`. Sharing needs a dev key for setup of `bddsecond`.
+The feature uses a unique `{run}` model name, disables notifications, and removes its model,
+sharing wrapper and newly created training table at teardown. Cleanup failure fails the run.
+
+The model tests require the core Train Model preview readiness attributes (`aria-busy` and
+`aria-invalid`). Rebuild the Dart client after the companion core changes before running these tests. Model
+artifact cleanup also needs the core project-deletion fix, which checks permission before removing
+the wrapper relation. Missing-help HTML rejection and IPv4 API routing in the host-dev nginx
+configuration fix two local-stand failures uncovered by these tests.
+The filtered group-count defect (GROK-20795) and the empty Pareto objective offer remain narrowly
+marked `@known-failure`: setup and positive result checks must pass normally.
 
 ## What the platform gave these features
 
-- The Train Model view trains on every change. The model card reports the parameters the model was
-  trained with and its scores, which is what the claims read; the view remembers the last session's
-  hyperparameters, so each scenario sets what it reads.
+- The Train Model view trains on every change. The preview reports when the latest training,
+  predictions, charts and history finish; a card's parameter text alone can precede completion.
+  Each scenario establishes its hyperparameters and exercises the resulting chart selection.
 - The column picker, the property grid categories, the two-second current-object drop after a
   property edit and the Share dialog of a model are platform facts: `libraries/bdd/CLAUDE.md`,
   "Facts that cost a run each".

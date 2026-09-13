@@ -104,6 +104,12 @@ semantic types the first detection found. What a feature leaves on the server it
 (`atFeatureEnd`). Playwright runs and reports one test per scenario (and per outline row), each
 with its own trace; a `Background` runs before every scenario, as Gherkin says.
 
+Server fixtures can use `{run}` in their names, for example `BDD-Share-Model-{run}`. The suffix is
+unique per feature instance (including each worker and repeat) and stays the same across its
+scenarios. String arguments, element phrases, data tables and doc strings resolve it at runtime;
+generated specs stay deterministic. Cleanup registered with `atFeatureEnd` attempts every callback
+and fails the run if any callback fails.
+
 **`@journey`** on the feature changes that: the feature is one test, the Background runs once, and
 the scenarios run in order on the same shell state, each a soft step — a failing scenario is
 recorded and the next one still runs, and the test fails at the end listing them. Use it for a
@@ -194,7 +200,9 @@ list is the reference; this is the map:
   (`types` / `enters` = types and commits), keys, `selects`, checks, expands, drags, `fills in:`;
   `should be/become {state}`, text, value and item counts. States: visible, hidden, present,
   absent, enabled, disabled, checked, unchecked, partially checked, selected, empty, expanded,
-  collapsed, focused, invalid, valid — each read from the ARIA state the element uses.
+  collapsed, focused, invalid, valid, ready — each read from the ARIA state the element uses.
+  `ready` requires explicit `aria-busy="false"` and no `aria-invalid="true"`; absent readiness
+  markup never counts as a completed result.
 - **The shell** (`bindings/platform/steps.ts`): `user is logged in`, `user opens {dataset}
   dataset` (also `keeping the first N rows [as "name"]`), switching views and table views,
   projects saved and reopened (deleted at feature end), apps, the browse panel, autostarts.

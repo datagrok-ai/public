@@ -27,6 +27,8 @@ element('code editor', {selector: '.cm-editor, .CodeMirror', aliases: ['source e
     'in the packages (.cm-editor), version 5 in the script view of the shell (.CodeMirror)'});
 element('share access selector', {selector: '[name="div-share-selector"]',
   description: 'the access level of the Share dialog: a Dart privilege selector showing the current level as text, a popup behind its triangle'});
+element('model preview', {selector: '.d4-pm-view-preview',
+  description: 'the Train Model preview; ready only after training, predictions, charts and history are complete'});
 element('context menu', {selector: '.d4-menu-popup', aliases: ['popup menu'],
   description: 'the open Dart popup menu (the last one when a submenu is open)'});
 element('cell editor', {selector: '[name="cell-editor"]', aliases: ['grid cell editor'],

@@ -214,3 +214,27 @@ test('"of" names a part of a generic kind', () => {
   assert.equal(diagnostics.filter((d) => d.level === 'error').length, 0);
   assert.match(diagnostics[0]?.message ?? '', /part "label" \[\[data-u2-part="label"\]\] within kind "input" qualified "name"/);
 });
+
+
+test('run placeholders resolve at runtime in strings, element phrases, tables and doc strings', () => {
+  fns.entity = Given('entity {string}', async () => undefined);
+  fns.fillIn = When('user fills in:', async () => undefined);
+  const source = `Feature: Unique names
+  Scenario: A
+    Given entity "BDD-{run}"
+    When user clicks on BDD-{run} icon
+    When user fills in:
+      | name | BDD-{run} |
+    When user fills in:
+      """
+      BDD-{run}
+      """
+`;
+  const {code, diagnostics} = compile(source);
+  assert.equal(diagnostics.filter((d) => d.level === 'error').length, 0);
+  assert.ok(code.includes('entity(page, session.text("BDD-{run}"))'));
+  assert.ok(code.includes('clickOn(page, el(session.text("BDD-{run} icon")))'));
+  assert.ok(code.includes('fillIn(page, [["name",session.text("BDD-{run}")]])'));
+  assert.ok(code.includes('fillIn(page, session.text("BDD-{run}"))'));
+  assert.equal(code, compile(source).code);
+});

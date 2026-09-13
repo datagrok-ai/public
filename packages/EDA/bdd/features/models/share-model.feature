@@ -23,7 +23,7 @@ Feature: Sharing a predictive model
 
   Background:
     Given user is logged in
-    And no predictive model named "BDD-Share-Model" is on the server
+    And no predictive model named "BDD-Share-Model-{run}" is on the server
 
   Scenario: The owner trains a model and saves it
     Given user opens demog dataset
@@ -39,11 +39,12 @@ Feature: Sharing a predictive model
     When user clicks on OK button in "Select columns..." dialog
     And user checks "Ignore missing" input
     And user selects "Eda: XGBoost" in "Model Engine" input
-    Then "Accuracy" table row should be visible
+    Then model preview should be ready
+    And "Accuracy" table row should be visible
     When user clicks on Save button
-    And user enters "BDD-Share-Model" into Name input in dialog
+    And user enters "BDD-Share-Model-{run}" into Name input in dialog
     And user clicks on OK button in dialog
-    Then 1 predictive model named "BDD-Share-Model" should be on the server
+    Then 1 predictive model named "BDD-Share-Model-{run}" should be on the server
 
   Scenario: The saved model is the owner's alone
     Given the context panel is open
@@ -51,43 +52,44 @@ Feature: Sharing a predictive model
     And Platform tree node inside browse tree is expanded
     When user clicks on "Predictive models" tree node inside browse tree
     Then the "Models" view should be current
-    When user clicks on "BDD-Share-Model" label in gallery
-    Then the context panel should show "BDD-Share-Model"
+    When user clicks on "BDD-Share-Model-{run}" label in gallery
+    Then the context panel should show "BDD-Share-Model-{run}"
     And the sharing pane should not list the sharing user
 
   Scenario: The Share dialog asks who, how much, and whether to notify
-    When user picks "Share..." from the context menu of "BDD-Share-Model" label in gallery
-    Then "Share BDD-Share-Model" dialog should be visible
-    And "Share BDD-Share-Model" dialog should contain text "Full access"
-    And "User, group, or email" input in "Share BDD-Share-Model" dialog should be visible
+    When user picks "Share..." from the context menu of "BDD-Share-Model-{run}" label in gallery
+    Then "Share BDD-Share-Model-{run}" dialog should be visible
+    And "Share BDD-Share-Model-{run}" dialog should contain text "Full access"
+    And "User, group, or email" input in "Share BDD-Share-Model-{run}" dialog should be visible
     And share access selector should contain text "View and use"
-    And "Send notifications" input in "Share BDD-Share-Model" dialog should be hidden
-    And "Share BDD-Share-Model" dialog should not contain text "will also be shared"
-    When user clicks on CANCEL button in "Share BDD-Share-Model" dialog
-    Then "Share BDD-Share-Model" dialog should be hidden
-    When user clicks on "BDD-Share-Model" label in gallery
+    And "Send notifications" input in "Share BDD-Share-Model-{run}" dialog should be hidden
+    And "Share BDD-Share-Model-{run}" dialog should not contain text "will also be shared"
+    When user clicks on CANCEL button in "Share BDD-Share-Model-{run}" dialog
+    Then "Share BDD-Share-Model-{run}" dialog should be hidden
+    When user clicks on "BDD-Share-Model-{run}" label in gallery
     Then the sharing pane should not list the sharing user
 
   Scenario: The model is shared with the second account to view and use
-    When user picks "Share..." from the context menu of "BDD-Share-Model" label in gallery
-    Then "Share BDD-Share-Model" dialog should contain text "Full access"
+    When user picks "Share..." from the context menu of "BDD-Share-Model-{run}" label in gallery
+    Then "Share BDD-Share-Model-{run}" dialog should contain text "Full access"
     And share access selector should contain text "View and use"
-    When user picks the sharing user in "User, group, or email" input in "Share BDD-Share-Model" dialog
-    Then "Send notifications" input in "Share BDD-Share-Model" dialog should be visible
-    And "Share BDD-Share-Model" dialog should not contain text "will also be shared"
-    When user clicks on OK button in "Share BDD-Share-Model" dialog
-    Then the "Share BDD-Share-Model" dialog should close
+    When user picks the sharing user in "User, group, or email" input in "Share BDD-Share-Model-{run}" dialog
+    Then "Send notifications" input in "Share BDD-Share-Model-{run}" dialog should be visible
+    And "Share BDD-Share-Model-{run}" dialog should not contain text "will also be shared"
+    When user unchecks "Send notifications" input in "Share BDD-Share-Model-{run}" dialog
+    And user clicks on OK button in "Share BDD-Share-Model-{run}" dialog
+    Then the "Share BDD-Share-Model-{run}" dialog should close
     And no error or warning balloon should have been shown
-    When user clicks on "BDD-Share-Model" label in gallery
+    When user clicks on "BDD-Share-Model-{run}" label in gallery
     Then the sharing pane should list the sharing user
 
   Scenario: The owner takes the share back
-    When user picks "Share..." from the context menu of "BDD-Share-Model" label in gallery
-    Then "Share BDD-Share-Model" dialog should contain text "Full access"
-    When user removes the sharing user from "Share BDD-Share-Model" dialog
-    And user clicks on OK button in "Share BDD-Share-Model" dialog
-    Then the "Share BDD-Share-Model" dialog should close
+    When user picks "Share..." from the context menu of "BDD-Share-Model-{run}" label in gallery
+    Then "Share BDD-Share-Model-{run}" dialog should contain text "Full access"
+    When user removes the sharing user from "Share BDD-Share-Model-{run}" dialog
+    And user clicks on OK button in "Share BDD-Share-Model-{run}" dialog
+    Then the "Share BDD-Share-Model-{run}" dialog should close
     And no error or warning balloon should have been shown
-    When user clicks on "BDD-Share-Model" label in gallery
+    When user clicks on "BDD-Share-Model-{run}" label in gallery
     Then the sharing pane should not list the sharing user
     And no errors should have been logged

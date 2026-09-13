@@ -12,7 +12,7 @@
   "cucumber.parameterTypes": [
     {
       "name": "state",
-      "regexp": "visible|hidden|present|absent|enabled|disabled|partially checked|checked|unchecked|selected|empty|expanded|collapsed|focused|invalid|valid"
+      "regexp": "visible|hidden|present|absent|enabled|disabled|partially checked|checked|unchecked|selected|empty|expanded|collapsed|focused|invalid|valid|ready"
     }
   ]
 }

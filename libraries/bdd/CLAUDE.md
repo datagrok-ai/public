@@ -48,7 +48,7 @@ and `isRenderPending`, `onContextMenuShown/Closed`, `getWidgetStatus().hitAreas/
   package's Playwright the library's copy (redo after `npm ci`).
 - **One page per worker** (`harness.ts`): `feature(test)` reuses the worker's page, `afterEach`
   resets the shell (Escape for dialogs and menus, `ui.tooltip.hide`, notices removed, `closeAll`,
-  Home current), `afterAll` runs the feature's `atFeatureEnd` cleanups. Never open several
+  Home current), `afterAll` runs all the feature's `atFeatureEnd` cleanups and fails if any fails. Never open several
   Datagrok pages in one browser.
 - **`user is logged in` only resets when the page is in the shell**; it sets `simpleMode` (view
   tabs hidden — switch views by name), clears the error and balloon floors, installs the in-page
@@ -139,6 +139,16 @@ and `isRenderPending`, `onContextMenuShown/Closed`, `getWidgetStatus().hitAreas/
   `--disable-accelerated-2d-canvas`, so a repaint check reads the same pixels either way.
 - **Codegen emits names, never selectors**; `\n` endings, no timestamps; orphans removed on
   compile and reported by `--check`.
+
+- **Server fixture names may include `{run}`**: the compiler resolves strings, element phrases,
+  tables and doc strings through the feature session. One UUID per feature instance keeps workers
+  and repeated runs independent; never generate it at compile time.
+- **Model cards are not completion signals.** The Train Model preview reports `aria-busy` before
+  debounce/queued training and `aria-invalid` for unavailable or failed results. `model preview
+  should be ready` requires the latest completed training, predictions, charts and history.
+- **Nested viewers resolve by their own root.** A scatter plot inside a JS viewer must not resolve
+  to the enclosing viewer merely because that viewer contains its element.
+
 
 ## Facts that cost a run each
 
