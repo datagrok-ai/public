@@ -26,7 +26,7 @@ category('Tested: Utils', () => {
 
   test('conditional skip', async () => {}, {skipReason: typeof process !== 'undefined' ? 'NodeJS environment' : undefined});
 
-  test(`template ${name}`, async () => {});
+  test(`template ${name}`, async () => {}, {tags: ['~nowhere/thing']});
 });
 
 async function helper(n: number, o: object): Promise<void> {}

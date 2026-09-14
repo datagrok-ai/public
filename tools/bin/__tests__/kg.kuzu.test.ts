@@ -6,7 +6,7 @@ import os from 'os';
 import path from 'path';
 import {fileURLToPath} from 'url';
 import {loadTypeSystem, TypeSystem} from '../utils/kg/types';
-import {ddl, load, loadKuzu, open, run, Ddl} from '../utils/kg/kuzu';
+import {ddl, load, loadKuzu, open, run, Ddl, KuzuConnection, KuzuQueryResult} from '../utils/kg/kuzu';
 import {find, explain, impact, testsFor, resolveTarget, coverageNote} from '../utils/kg/ops';
 import {kg} from '../commands/kg';
 
@@ -91,6 +91,12 @@ async function buildFixture(): Promise<{kgDir: string, feature: Record<string, u
   return {kgDir: path.join(repo, '.kg'), feature};
 }
 
+/** Remembers what a query handed back, so a test can prove `run` closed it. */
+function keep(results: KuzuQueryResult[], result: KuzuQueryResult | KuzuQueryResult[]): KuzuQueryResult | KuzuQueryResult[] {
+  results.push(...(Array.isArray(result) ? result : [result]));
+  return result;
+}
+
 const withKuzu = loadKuzu() ? it : it.skip;
 
 describe('the index itself (build-plan.md WO-7, WO-10)', () => {
@@ -129,6 +135,24 @@ describe('the index itself (build-plan.md WO-7, WO-10)', () => {
     // the Dart batch reached the index, and an integral DOUBLE comes back as a number, not 214.0
     const loc = await run(conn, 'MATCH (n:Component) WHERE n.`id` = $id RETURN n.`loc` AS loc', {id: 'file:core/server/datlas/lib/src/services/bio_service.dart'});
     expect(loc.rows[0].loc).toBe(214);
+  }, 60_000);
+
+  withKuzu('closes every query result, and reads the type system with the database open', async () => {
+    const {conn} = index.opened!;
+    const results: KuzuQueryResult[] = [];
+    const watched: KuzuConnection = {
+      query: async (statement) => keep(results, await conn.query(statement)),
+      prepare: (statement) => conn.prepare(statement),
+      execute: async (prepared, params) => keep(results, await conn.execute(prepared, params)) as KuzuQueryResult,
+      close: () => conn.close(),
+    };
+    expect((await run(watched, 'MATCH (n:Feature) RETURN count(n) AS n')).rows[0].n).toBe(8);
+    expect((await run(watched, 'MATCH (n:Feature) WHERE n.`id` = $id RETURN n.`id` AS id', {id: 'platform/caching'})).rows).toHaveLength(1);
+    // a result left open when the database closes kills the process at exit (kuzu.ts): both of these are closed already
+    expect(results).toHaveLength(2);
+    for (const result of results) await expect(result.getAll()).rejects.toThrow(/closed/);
+    // and the type system is read with the database open, which the same teardown used to take down with it
+    expect(types().nodes.size).toBeGreaterThan(0);
   }, 60_000);
 
   withKuzu('answers find, explain, impact and tests-for', async () => {

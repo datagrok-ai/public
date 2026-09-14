@@ -8,7 +8,7 @@ import {Emitter} from '../../emitter';
 import {Row} from '../../normalize';
 import {BuildContext, Extractor} from '../../registry';
 import {pkgId, testId, suiteId} from '../../ids';
-import {leadingId} from '../markers';
+import {HomeIndex, homesOf, leadingId, resolveMention} from '../markers';
 import {listPackages} from './packages';
 
 export interface DgTest {
@@ -42,7 +42,7 @@ export const testsExtractor: Extractor = {
   layer: 'public',
   modes: ['full'],
   run(ctx: BuildContext, emitter: Emitter): void {
-    const layer = new TestLayer(ctx.repoRoot, emitter);
+    const layer = new TestLayer(ctx.repoRoot, emitter, new HomeIndex(homesOf(ctx)));
     for (const pkg of listPackages(ctx.repoRoot))
       for (const file of layer.glob(`${pkg.dir}/src/**/*.ts`))
         if (!file.endsWith('.d.ts')) layer.emitDgFile(pkg.folder, file);
@@ -54,7 +54,7 @@ export const testsExtractor: Extractor = {
 class TestLayer {
   private suites = new Set<string>();
 
-  constructor(private repoRoot: string, private emitter: Emitter) {}
+  constructor(private repoRoot: string, private emitter: Emitter, private index: HomeIndex) {}
 
   emitDgFile(pkg: string, file: string): void {
     const level = pkg === API_TESTS_PACKAGE ? 'api' : 'unit';
@@ -92,8 +92,10 @@ class TestLayer {
     }
   }
 
-  private tests(test: string, feature: string, level: string, file: string): void {
-    this.emitter.edge({type: 'tests', from: test, to: feature, kind: level, derived_by: 'annotation', confidence: 1, evidence: [file]});
+  /** The `~id` of a category, a tag or a title is a marker like any other: one no home declares is counted, not drawn. */
+  private tests(test: string, token: string, level: string, file: string): void {
+    const feature = resolveMention(this.emitter, this.index, token, file);
+    if (feature) this.emitter.edge({type: 'tests', from: test, to: feature.id, kind: level, derived_by: 'annotation', confidence: 1, evidence: [file]});
   }
 
   glob(pattern: string): string[] {

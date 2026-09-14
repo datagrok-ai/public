@@ -9,7 +9,7 @@ import {Row} from '../normalize';
 import {BuildContext, Extractor} from '../registry';
 import {splitFrontmatter, parseYamlDocument} from '../../frontmatter';
 import {ticketId, relId, custId, commitId} from '../ids';
-import {homesOf, idTokens, ticketTokens, ticketStub, HomeIndex} from './markers';
+import {homesOf, idTokens, ticketTokens, ticketStub, resolveMention, HomeIndex} from './markers';
 
 /** The snapshot repo beside the monorepo, then the place it is cloned to on the dev boxes (build-plan.md WO-5). */
 const BACKLOG_FALLBACK = 'C:/dg/backlog';
@@ -118,7 +118,7 @@ class ProcessLayer {
   /** The Feature field the snapshot has no column for: `~id` tokens in the ticket text, and the tickets it names. */
   private body(id: string, body: string, file: string): void {
     for (const token of idTokens(body).keys()) {
-      const target = this.index.resolve(token);
+      const target = resolveMention(this.emitter, this.index, token, file);
       if (!target) continue;
       this.emitter.edge({type: target.root === 'feature' ? 'affects' : 'mentions', from: id, to: target.id, derived_by: 'annotation', confidence: 1, evidence: [file]});
     }

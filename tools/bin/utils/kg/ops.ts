@@ -27,6 +27,9 @@ const SEARCH_SCAN = 500;
 /** `find` is the vocabulary search (conventions.md §11.1): the authored types first, everything else after. */
 const VOCABULARY = [['feature', 'concept'], ['scenario', 'initiative', 'package', 'library']];
 
+/** A `file:` or `doc:` node carries the path it was made from; a home document is a `doc:` node with no file of its own. */
+const NODE_PATH = /^(?:file|doc):(.+)$/;
+
 /** Ids may be written with or without the sigil; a path names the source file it belongs to. */
 function bareId(arg: string): string {
   return arg.trim().replace(/^~/, '');
@@ -34,7 +37,8 @@ function bareId(arg: string): string {
 
 export async function resolveTarget(conn: KuzuConnection, arg: string): Promise<Record<string, unknown> | null> {
   const id = bareId(arg);
-  for (const candidate of [id, `file:${id.replace(/\\/g, '/')}`]) {
+  const p = id.replace(/\\/g, '/');
+  for (const candidate of [id, `file:${p}`, `doc:${p}`]) {
     const {rows} = await run(conn, `MATCH (n) WHERE n.${quote('id')} = $id ` +
       `RETURN n.${quote('id')} AS id, label(n) AS root, n.${quote('type')} AS type, n.${quote('name')} AS name, n.${quote('status')} AS status`, {id: candidate});
     if (rows.length) return rows[0];
@@ -53,19 +57,30 @@ async function columnsOf(conn: KuzuConnection, table: string): Promise<string[]>
   return rows.map((r) => String(r.name));
 }
 
+/**
+ * The features a node belongs to, strongest relation first, the way report.ts's diff reads a changed file: the features
+ * that own it, the one whose home it is, the ones it documents, and the ones it takes part in.
+ */
+async function featuresOf(conn: KuzuConnection, target: Record<string, unknown>): Promise<Record<string, unknown>[]> {
+  const id = String(target.id);
+  if (target.root === 'Feature') return [{feature: id, relation: 'self', name: target.name, status: target.status ?? null}];
+  const select = (relation: string) => `RETURN f.${quote('id')} AS feature, '${relation}' AS relation, f.${quote('name')} AS name, f.${quote('status')} AS status`;
+  const owns = await run(conn, `MATCH (f:Feature)-[:${quote('IS_IMPLEMENTED_IN')}]->(n) WHERE n.${quote('id')} = $id ${select('owns')}`, {id});
+  const path = NODE_PATH.exec(id)?.[1];
+  const home = path ? await run(conn, `MATCH (f:Feature) WHERE f.${quote('home')} = $path ${select('home')}`, {path}) : {rows: []};
+  const documents = await run(conn, `MATCH (n)-[:${quote('DOCUMENTS')}]->(f:Feature) WHERE n.${quote('id')} = $id ${select('documents')}`, {id});
+  const part = await run(conn, `MATCH (n)-[:${quote('PARTICIPATES_IN')}]->(f:Feature) WHERE n.${quote('id')} = $id ${select('participates')}`, {id});
+  const features: Record<string, unknown>[] = [];
+  for (const row of [...owns.rows, ...home.rows, ...documents.rows, ...part.rows])
+    if (!features.some((f) => f.feature === row.feature)) features.push(row);
+  return features;
+}
+
 /** What a change to this file, declaration or feature reaches: the features that own it, their evidence and their work. */
 export async function impact(conn: KuzuConnection, target: Record<string, unknown>, options: OpsOptions): Promise<OpsResult> {
   const id = String(target.id);
   const sections: Section[] = [];
-  const features: Record<string, unknown>[] = target.root === 'Feature' ? [{feature: id, relation: 'self', name: target.name, status: target.status ?? null}] : [];
-  if (!features.length) {
-    const owns = await run(conn, `MATCH (f:Feature)-[:${quote('IS_IMPLEMENTED_IN')}]->(n) WHERE n.${quote('id')} = $id ` +
-      `RETURN f.${quote('id')} AS feature, 'owns' AS relation, f.${quote('name')} AS name, f.${quote('status')} AS status`, {id});
-    const part = await run(conn, `MATCH (n)-[:${quote('PARTICIPATES_IN')}]->(f:Feature) WHERE n.${quote('id')} = $id ` +
-      `RETURN f.${quote('id')} AS feature, 'participates' AS relation, f.${quote('name')} AS name, f.${quote('status')} AS status`, {id});
-    for (const row of [...owns.rows, ...part.rows])
-      if (!features.some((f) => f.feature === row.feature)) features.push(row);
-  }
+  const features = await featuresOf(conn, target);
   sections.push({title: 'features', rows: features});
   const ids = features.map((f) => String(f.feature));
   if (ids.length) {
@@ -104,9 +119,7 @@ async function callersOf(conn: KuzuConnection, id: string, limit: number): Promi
 
 /** The tests, scenarios and automations of a feature and everything under it. */
 export async function testsFor(conn: KuzuConnection, target: Record<string, unknown>, options: OpsOptions): Promise<OpsResult> {
-  const id = String(target.id);
-  const roots = target.root === 'Feature' ? [id] : (await run(conn,
-    `MATCH (f:Feature)-[:${quote('IS_IMPLEMENTED_IN')}]->(n) WHERE n.${quote('id')} = $id RETURN f.${quote('id')} AS feature`, {id})).rows.map((r) => String(r.feature));
+  const roots = (await featuresOf(conn, target)).map((r) => String(r.feature));
   const sections: Section[] = [];
   if (!roots.length) return {op: 'tests-for', target, sections: [{title: 'features', rows: []}]};
   const descendants = await run(conn, `MATCH (d:Feature)-[:${quote('PART_OF')}*0..5]->(f:Feature) WHERE f.${quote('id')} IN $ids ` +

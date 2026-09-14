@@ -47,6 +47,15 @@ export function homesOf(ctx: BuildContext): HomeSet {
   return ctx.homes ??= loadHomes(ctx.system, ctx.repoRoot);
 }
 
+/** The home a `~id` an artifact names resolves to; an unresolved token is counted under `unresolved_ids` and never
+ * becomes a node, whatever edge the caller was about to draw (conventions.md §6). */
+export function resolveMention(emitter: Emitter, index: HomeIndex, token: string, evidence: string): Resolved | undefined {
+  const target = index.resolve(token);
+  if (target) return target;
+  emitter.problem('unresolved_ids', `${evidence}: ~${token} resolves to no home document`);
+  return undefined;
+}
+
 /** The stub a mentioned ticket needs until the process layer (WO-5) fills it. */
 export function ticketStub(emitter: Emitter, id: string): void {
   const github = /^gh:public#(\d+)$/.exec(id);
@@ -87,10 +96,9 @@ export interface MentionSummary {
 export function emitMentions(emitter: Emitter, from: string, text: string, evidence: string, index: HomeIndex, edgeFor?: (target: Resolved) => Row | undefined): MentionSummary {
   const summary: MentionSummary = {ids: new Map(), tickets: [], unresolved: []};
   for (const [token, count] of idTokens(text)) {
-    const target = index.resolve(token);
+    const target = resolveMention(emitter, index, token, evidence);
     if (!target) {
       summary.unresolved.push(token);
-      emitter.problem('unresolved_ids', `${evidence}: ~${token} resolves to no home document`);
       continue;
     }
     summary.ids.set(target.id, target);

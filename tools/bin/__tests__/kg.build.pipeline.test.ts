@@ -21,6 +21,8 @@ const fixture = path.join(path.dirname(fileURLToPath(import.meta.url)), 'fixture
 const KG_DIR = path.join('core', 'docs', 'knowledge-graph');
 const BATCH = path.join('.kg', 'batches', 'kg-dart.jsonl');
 const CACHING = 'core/docs/CACHING.md';
+const BIO_HOME = 'public/help/domains/bio/bio.md';
+const SEQUENCES = 'public/help/domains/bio/sequences.md';
 const LIMIT = {limit: 50};
 
 interface Built {
@@ -284,7 +286,6 @@ describe('the index over the fixture graph (build-plan.md WO-7, WO-10)', () => {
   beforeAll(async () => {
     if (!loadKuzu()) return;
     const {out, feature} = await unloadable();
-    // kuzu 0.11.3 kills the process when the type system is loaded while a Database is open, so it is read first
     const system = loadTypeSystem(path.join((await graph).repo, KG_DIR));
     await loadIndex(out, system);
     index = {out, feature, system, opened: await open(out, true)};
@@ -324,6 +325,17 @@ describe('the index over the fixture graph (build-plan.md WO-7, WO-10)', () => {
     const reached = await impact(conn, service, LIMIT);
     expect(reached.sections[0].rows).toMatchObject([{feature: 'domains/bio', relation: 'owns'}]);
     expect(reached.sections[1].rows).toEqual([{feature: 'domains/bio', owner: 'P:jane', name: 'Jane Dev'}]);
+  }, 120_000);
+
+  withKuzu('answers for a home document and for a page that documents a feature, which have no file: node of their own', async () => {
+    const {conn} = index.opened!;
+    const home = (await resolveTarget(conn, BIO_HOME))!;
+    expect(home).toMatchObject({id: `doc:${BIO_HOME}`, root: 'Artifact', type: 'doc-page'});
+    expect((await impact(conn, home, LIMIT)).sections[0].rows).toEqual([{feature: 'domains/bio', relation: 'home', name: 'Bioinformatics', status: 'active'}]);
+    expect((await testsFor(conn, home, LIMIT)).sections.find((s) => s.title === 'tests')!.rows.length).toBe(5);
+
+    const page = (await resolveTarget(conn, SEQUENCES))!;
+    expect((await impact(conn, page, LIMIT)).sections[0].rows).toEqual([{feature: 'domains/bio', relation: 'documents', name: 'Bioinformatics', status: 'active'}]);
   }, 120_000);
 
   withKuzu('leaves the reports to the JSONL: every one of them answers with the index open', async () => {

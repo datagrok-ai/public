@@ -147,6 +147,13 @@ describe('ts-tests extractor (build-plan.md WO-3c)', () => {
     ]);
   });
 
+  it('never makes a feature out of a ~id marker no home declares: the token is counted and the edge dropped', async () => {
+    const {rows, problems} = await graph;
+    expect(problems.unresolved_ids).toContain(`${TESTS}: ~nowhere/thing resolves to no home document`);
+    expect(rows('nodes/feature').map((f) => f.id)).not.toContain('nowhere/thing');
+    expect(edges(rows('edges/tests'), `test:dg:${TESTS}#Tested: Utils/template \${name}`)).toEqual([]);
+  });
+
   it('emits Playwright tests named describe > title, one suite per file, skipped from skip and describe.skip', async () => {
     const {rows} = await graph;
     const tests = rows('nodes/test').filter((t) => t.framework === 'playwright');
@@ -192,6 +199,13 @@ describe('ts-samples extractor (build-plan.md WO-3c)', () => {
     expect(rows('edges/demonstrates')).toEqual([expect.objectContaining({from: 'sample:dapi/projects-list', to: 'domains/bio', derived_by: 'annotation', confidence: 1})]);
     expect(problems.unresolved_ids).toContain('public/packages/ApiSamples/scripts/misc/missing.js: help-url https://datagrok.ai/help/nowhere/at-all names no page under public/help');
     expect(manifest.sources['ts-samples']).toBe('partial');
+  });
+
+  it('never makes a feature out of a ~id no home declares: the token is counted and the edge dropped', async () => {
+    const {rows, problems} = await graph;
+    expect(problems.unresolved_ids).toContain('public/packages/ApiSamples/scripts/misc/missing.js: ~item resolves to no home document');
+    expect(rows('nodes/feature').map((f) => f.id)).not.toContain('item');
+    expect(edges(rows('edges/demonstrates'), 'sample:misc/missing')).toEqual([]);
   });
 
   it('uses the JS API declarations the code calls, the header left out of the count', async () => {

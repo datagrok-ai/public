@@ -9,7 +9,7 @@ import {Emitter} from '../../emitter';
 import {BuildContext, Extractor} from '../../registry';
 import {sampleId, docId, docKind, languageOf} from '../../ids';
 import {commentPrefix} from '../../annotations';
-import {idTokens} from '../markers';
+import {HomeIndex, homesOf, idTokens, resolveMention} from '../markers';
 import {tsSources} from './declarations';
 import {UsesLayer} from './uses';
 
@@ -25,6 +25,7 @@ export const samplesExtractor: Extractor = {
   run(ctx: BuildContext, emitter: Emitter): void {
     const files = globSync(`${SCRIPTS_DIR}/**/*.{js,py,R,r}`, {cwd: ctx.repoRoot, ignore: ['**/node_modules/**'], nodir: true, posix: true, windowsPathsNoEscape: true}).sort();
     const uses = new UsesLayer(emitter, tsSources(ctx, emitter));
+    const index = new HomeIndex(homesOf(ctx));
     let missing = 0;
     for (const file of files) {
       const rel = file.slice(SCRIPTS_DIR.length + 1);
@@ -47,8 +48,10 @@ export const samplesExtractor: Extractor = {
           emitter.problem('unresolved_ids', `${file}: help-url ${header.keys['help-url']} names no page under ${HELP_DIR}`);
         }
       }
-      for (const feature of idTokens(header.text).keys())
-        emitter.edge({type: 'demonstrates', from: id, to: feature, derived_by: 'annotation', confidence: 1, evidence: [file]});
+      for (const token of idTokens(header.text).keys()) {
+        const feature = resolveMention(emitter, index, token, file);
+        if (feature) emitter.edge({type: 'demonstrates', from: id, to: feature.id, derived_by: 'annotation', confidence: 1, evidence: [file]});
+      }
       uses.emit(id, header.body, file);
     }
     uses.finish();

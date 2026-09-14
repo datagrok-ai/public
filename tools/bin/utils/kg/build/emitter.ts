@@ -304,7 +304,8 @@ export class Emitter {
       }
   }
 
-  /** Endpoint types per edge type with subtypes; a missing target of an authored edge becomes a stub, anything else is dropped. */
+  /** Endpoint types per edge type with subtypes; a missing target of an authored edge becomes a stub when its id names
+   * its type, anything else is dropped. */
   private resolveEndpoints(): void {
     for (const [key, row] of [...this.edges]) {
       const edgeType = this.system.edges.get(row.type as string)!;
@@ -323,21 +324,21 @@ export class Emitter {
     const entry = this.nodes.get(id);
     if (entry) return expected.some((t) => isSubtype(this.system, entry.type.name, t));
     if (row.derived_by !== 'annotation') return false;
-    const type = this.typeOfId(id, expected);
+    const type = this.typeOfId(id, expected, this.system.edges.get(row.type as string)?.key !== undefined);
     if (!type || !expected.some((t) => isSubtype(this.system, type, t))) return false;
     this.stub(id, type, stubName(id), 'annotation');
     return this.nodes.has(id);
   }
 
-  /** The concrete type an id's shape implies, within [expected]. */
-  private typeOfId(id: string, expected: string[]): string | undefined {
+  /** The concrete type an id names, within [expected]. A bare id names one only for an edge an authored key spells
+   * (`concepts:`, `documents:`, `covers:`, ...): an unresolved `~id` in prose or a marker is a counted problem, never a node. */
+  private typeOfId(id: string, expected: string[], keyed: boolean): string | undefined {
     const prefixed = PREFIXED_ID.exec(id);
     if (prefixed) return this.system.prefixes.get(prefixed[1]);
     if (JIRA_KEY.test(id)) return 'ticket';
     const schemed = SCHEMED_ID.exec(id);
     if (schemed) return SCHEME_TYPES[schemed[1]]?.find((t) => this.system.nodes.has(t));
-    const type = concreteAuthored(this.system, expected).find((t) => !t.prefix);
-    return type?.name;
+    return keyed ? concreteAuthored(this.system, expected).find((t) => !t.prefix)?.name : undefined;
   }
 
   /** A row that is neither complete nor a stub after merging is invalid; edges then left without an end follow it. */

@@ -2,6 +2,12 @@
 /// WO-7): the optional `kuzu` binding, the DDL derived from the type system, and the bulk load through
 /// temporary CSVs. Nothing else in `grok kg` may import `kuzu`, and nothing here may be needed to build:
 /// when the binding is absent `loadKuzu()` returns null and the caller says so.
+///
+/// One rule the 0.11.3 binding imposes on every caller, and it takes the whole process down: **close every
+/// `QueryResult` before the connection and the database**. One left open when the database closes segfaults
+/// at native teardown — on win32-x64 `kg build` wrote all its output and then exited 139 — so `run` and
+/// `exec` close theirs, and nothing else may call `conn.query` directly. It is also what killed a vitest
+/// worker that read the type system while a database was open; with the results closed, that order is safe.
 import * as fs from 'fs';
 import * as path from 'path';
 import {createRequire} from 'module';
@@ -245,12 +251,26 @@ export interface QueryRows {
 
 /** One statement, or several: the last result is the answer. Values come back as plain JSON. */
 export async function run(conn: KuzuConnection, cypher: string, params?: Record<string, unknown>): Promise<QueryRows> {
-  const result = params ? await conn.execute(await prepare(conn, cypher), params) : await conn.query(cypher);
-  const last = Array.isArray(result) ? result[result.length - 1] : result;
-  if (!last) return {columns: [], rows: []};
-  const columns = await last.getColumnNames();
-  const rows = (await last.getAll()).map(plain) as Record<string, unknown>[];
-  return {columns, rows};
+  const results = many(params ? await conn.execute(await prepare(conn, cypher), params) : await conn.query(cypher));
+  try {
+    const last = results[results.length - 1];
+    if (!last) return {columns: [], rows: []};
+    const columns = await last.getColumnNames();
+    const rows = (await last.getAll()).map(plain) as Record<string, unknown>[];
+    return {columns, rows};
+  }
+  finally {
+    for (const result of results) result.close();
+  }
+}
+
+/** A statement whose rows nobody reads; its result is closed all the same (see the rules above). */
+async function exec(conn: KuzuConnection, statement: string): Promise<void> {
+  for (const result of many(await conn.query(statement))) result.close();
+}
+
+function many(result: KuzuQueryResult | KuzuQueryResult[]): KuzuQueryResult[] {
+  return Array.isArray(result) ? result : [result];
 }
 
 /** A statement that will not bind reports it here, not by throwing on execute. */
@@ -283,7 +303,7 @@ export async function load(kgDir: string, system: TypeSystem): Promise<LoadResul
   const conn = new kuzu.Connection(db);
   const chains = new Map<string, string[]>([...system.nodes].map(([name, type]) => [name, type.chain]));
   try {
-    for (const statement of schema.statements) await conn.query(statement);
+    for (const statement of schema.statements) await exec(conn, statement);
     const table = new Map<string, string>();
     const nodes: TableRows[] = [];
     let parameterized = 0;
@@ -297,7 +317,7 @@ export async function load(kgDir: string, system: TypeSystem): Promise<LoadResul
           if (!csv.write(row)) late.push(row);
         }
       csv.end();
-      if (csv.rows) await conn.query(`COPY ${quote(t.name)} (${csv.columns.map((c) => quote(c.name)).join(', ')}) FROM '${posix(csv.file)}' (HEADER=true, PARALLEL=false)`);
+      if (csv.rows) await exec(conn, `COPY ${quote(t.name)} (${csv.columns.map((c) => quote(c.name)).join(', ')}) FROM '${posix(csv.file)}' (HEADER=true, PARALLEL=false)`);
       for (const row of late) await insertNode(conn, t, row);
       parameterized += late.length;
       nodes.push({table: t.name, rows: csv.rows + late.length});
@@ -321,13 +341,13 @@ export async function load(kgDir: string, system: TypeSystem): Promise<LoadResul
       for (const [key, csv] of files) {
         csv.end();
         const [from, to] = key.split(SEPARATOR);
-        if (csv.rows) await conn.query(`COPY ${quote(t.name)} FROM '${posix(csv.file)}' (HEADER=true, PARALLEL=false, from='${from}', to='${to}')`);
+        if (csv.rows) await exec(conn, `COPY ${quote(t.name)} FROM '${posix(csv.file)}' (HEADER=true, PARALLEL=false, from='${from}', to='${to}')`);
       }
       for (const row of late) await insertRel(conn, t, row);
       parameterized += late.length;
       rels.push({table: t.name, rows: rows + late.length});
     }
-    await conn.query('CHECKPOINT');
+    await exec(conn, 'CHECKPOINT');
     return {db: dbPath, ms: Date.now() - started, bytes: sizeOf(dbPath), nodes, rels, parameterized};
   }
   finally {
