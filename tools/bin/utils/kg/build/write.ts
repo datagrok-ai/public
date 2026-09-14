@@ -83,7 +83,7 @@ export function projectPublic(graph: Graph, system: TypeSystem): Graph {
   });
   const stubs = graph.stubs.filter((id) => ids.has(id));
   const problems = Object.fromEntries(Object.keys(graph.problems).map((k) => [k, k === 'partial_stubs' ? stubs.length : 0]));
-  return {nodes: projected, edges, stubs, claims: [], sources: graph.sources, problems, details: {}, invalid: []};
+  return {nodes: projected, edges, stubs, claims: [], sources: graph.sources, problems, details: {}, invalid: [], reports: {}};
 }
 
 /** Writes everything under [outRoot] and returns the manifest. `data/` and `reports/` are replaced whole; the public
@@ -115,6 +115,8 @@ export function writeBuild(graph: Graph, outRoot: string, info: BuildInfo): Mani
     writeJsonl(path.join(reportsDir, 'claims.jsonl'), claims as unknown as Row[]);
     if (graph.invalid.length) writeJsonl(path.join(reportsDir, 'invalid.jsonl'), graph.invalid.slice(0, INVALID_CAP));
     if (Object.keys(graph.details).length) fs.writeFileSync(path.join(reportsDir, 'problems.json'), `${JSON.stringify(graph.details, null, 2)}\n`);
+    for (const [name, data] of Object.entries(graph.reports).sort(([a], [b]) => compare(a, b)))
+      fs.writeFileSync(path.join(reportsDir, `${name}.json`), `${JSON.stringify(data, null, 2)}\n`);
   }
 
   const manifest: Manifest = {

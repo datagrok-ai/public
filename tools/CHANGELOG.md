@@ -7,6 +7,11 @@
 * grok kg: build extracts packages, libraries, registered functions, scripts, queries, connections and semantic types from public/
 * grok kg: build extracts DG and Playwright tests with their suites, API samples, changelog entries, markdown pages with their headings and mentions, legacy Test Track scenarios and tutorials
 * grok kg: build extracts source files, declarations, extends/implements, resolved imports and JS API usage from the TypeScript under public/
+* grok kg: build extracts the process layer - backlog tickets with their fix versions, customers and people, release records with the commits they picked
+* grok kg: build resolves file membership (conventions.md §8): one owning feature per file, participants, tests that follow an owned file, and reports/ownership.json
+* grok kg: build consumes the Dart batch .kg/batches/kg-dart.jsonl written by prop_gen - its nodes, edges and ownership claims - and reports it as ok, stale, partial or missing
+* grok kg: build loads the JSONL into a Kuzu index at .kg/kg.kuzu, one node table per root and one rel table per edge type and reference property; the binding is optional and the build succeeds without it
+* grok kg: Added query (Cypher) and the bounded operations impact, tests-for, explain and find, each with --output table|json|csv and the Dart-coverage clause
 
 ## 6.5.10 (2026-09-11)
 

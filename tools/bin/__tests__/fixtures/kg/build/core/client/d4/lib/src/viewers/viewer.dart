@@ -1,0 +1,3 @@
+class Viewer {
+  void render() {}
+}

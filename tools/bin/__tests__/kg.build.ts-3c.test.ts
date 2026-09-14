@@ -238,7 +238,9 @@ describe('docs extractor (build-plan.md WO-3c)', () => {
   it('emits a doc-page per markdown file with kind by folder, title, keywords, mdx and unlisted', async () => {
     const {rows} = await graph;
     expect(rows('nodes/doc-page').map((d) => [d.id, d.kind, d.provenance])).toEqual([
-      ['doc:core/docs/NOTES.md', 'core-doc', 'filesystem'], [`doc:${PROJECT}`, 'help', 'annotation'], [`doc:${BIO}`, 'help', 'annotation'], [`doc:${SEQUENCES}`, 'help', 'annotation'],
+      ['doc:core/client/d4/lib/src/legends/README.md', 'readme', 'annotation'], ['doc:core/client/d4/lib/src/viewers/scatterplot/CLAUDE.md', 'agent', 'annotation'],
+      ['doc:core/docs/CACHING.md', 'core-doc', 'annotation'], ['doc:core/docs/NOTES.md', 'core-doc', 'filesystem'], ['doc:core/docs/VIEWERS.md', 'core-doc', 'annotation'],
+      [`doc:${PROJECT}`, 'help', 'annotation'], [`doc:${BIO}`, 'help', 'annotation'], [`doc:${SEQUENCES}`, 'help', 'annotation'],
       ['doc:public/packages/Tested/README.md', 'readme', 'filesystem'],
       ['doc:public/packages/UsageAnalysis/files/TestTrack/Connections/initial runs/basic.md', 'other', 'annotation'],
       ['doc:public/packages/UsageAnalysis/files/TestTrack/Viewers/ScatterPlot/scatter-plot-ui.md', 'other', 'annotation'], [`doc:${LEGACY}`, 'other', 'annotation'],
@@ -260,12 +262,12 @@ describe('docs extractor (build-plan.md WO-3c)', () => {
 
   it('emits a doc-anchor per #..#### heading with GitHub slugs, -1 for a duplicate and the explicit {#id}; fenced and unsluggable lines are not anchors', async () => {
     const {rows} = await graph;
-    expect(rows('nodes/doc-anchor').filter((a) => a.page === `doc:${PROJECT}`).map((a) => [a.slug, a.level, a.heading])).toEqual([
+    expect(rows('nodes/doc-anchor').filter((a) => a.page === `doc:${PROJECT}`).map((a) => [a.slug, a.depth, a.heading])).toEqual([
       ['code-data-d42', 2, 'Code & data (`d42`)'], ['links', 3, 'Links'], ['sharing', 2, 'Sharing'], ['sharing-1', 2, 'Sharing'],
     ]);
     expect(rows('nodes/doc-anchor').some((a) => a.heading === 'Соглашения')).toBe(false);
     expect(byId(rows('nodes/doc-anchor'), `doc:${PROJECT}#sharing-1`)).toEqual({
-      id: `doc:${PROJECT}#sharing-1`, type: 'doc-anchor', name: 'Sharing', batch: expect.any(String), heading: 'Sharing', level: 2, page: `doc:${PROJECT}`, path: PROJECT,
+      id: `doc:${PROJECT}#sharing-1`, type: 'doc-anchor', name: 'Sharing', batch: expect.any(String), heading: 'Sharing', depth: 2, page: `doc:${PROJECT}`, path: PROJECT,
       provenance: 'annotation', slug: 'sharing-1', source_layer: 'public', status: 'active', visibility: 'public',
     });
     expect(rows('nodes/doc-anchor').filter((a) => a.page === `doc:${BIO}`).map((a) => a.slug)).toEqual(['bioinformatics', 'notation-conversion', 'overview']);

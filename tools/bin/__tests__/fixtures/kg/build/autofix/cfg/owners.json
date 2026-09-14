@@ -1,0 +1,6 @@
+{
+  "people": {
+    "jdev": {"name": "Jane Dev", "github": "janedev", "emails": ["jane@example.com"], "slack": "U01"},
+    "rob": {"name": "Rob Ops", "github": "robops", "emails": ["rob@example.com"]}
+  }
+}

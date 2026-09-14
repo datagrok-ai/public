@@ -268,7 +268,7 @@ describe('grok kg build: writer, manifest and public projection (build-plan.md W
     expect(fs.existsSync(path.join(repo, '.kg'))).toBe(false);
     const bad = await run({_: ['kg', 'build'], kg: path.join(repo, KG_DIR), only: 'homes,nope', db: false});
     expect(bad.exitCode).toBe(1);
-    expect(bad.err).toEqual(['--only names unknown extractors: nope (known: homes, ts-packages, ts-functions, ts-declarations, ts-imports, ts-uses, ts-tests, ts-samples, ts-changelog, docs)']);
+    expect(bad.err).toEqual(['--only names unknown extractors: nope (known: homes, ts-packages, ts-functions, ts-declarations, ts-imports, ts-uses, ts-tests, ts-samples, ts-changelog, docs, dart, process, membership)']);
     const table = await run({_: ['kg', 'build'], kg: path.join(repo, KG_DIR), only: 'homes', db: false, out});
     expect(table.out).toHaveLength(1);
     expect(table.out[0]).toMatch(/^wrote .*elsewhere: \d+ nodes \(concept 2, .*feature 7.*\), \d+ edges \(.*part-of 5.*\); sources: homes ok; problems: partial_stubs \d+; batch b-[0-9a-f]{12} \(full\)$/);

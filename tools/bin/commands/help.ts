@@ -458,10 +458,31 @@ Verbs:
                 ts-imports and ts-uses (source files, declarations, extends/implements,
                 resolved imports and JS API usage over js-api, packages and libraries),
                 ts-tests (DG and Playwright tests in their suites), ts-samples (ApiSamples),
-                ts-changelog (CHANGELOG.md bullets) and docs (markdown pages, headings,
-                mentions, legacy Test Track scenarios, tutorials).
-    query, report  Not implemented yet.
+                ts-changelog (CHANGELOG.md bullets), docs (markdown pages, headings,
+                mentions, legacy Test Track scenarios, tutorials), process (backlog
+                tickets, release records with their picked commits, and people) and
+                membership (which feature owns each file, conventions.md §8; reports
+                ownership.json).
+                Loading the index is part of build: the JSONL is copied into a Kuzu
+                database at .kg/kg.kuzu (one node table per root, one rel table per edge
+                type and per reference property). The binding is optional — without it
+                build says so in one line and still succeeds.
+    query       Cypher over the built index: grok kg query "MATCH (n:Feature) RETURN n.id",
+                or --file q.cypher. Exit 2 when kuzu is not installed.
+    impact      What a change reaches: the features that own or take part in a file,
+                declaration or feature, their owners, tests, docs and tickets, and for a
+                declaration or a file, who calls or imports it.
+    tests-for   The tests, scenarios and automations of a feature (with everything under
+                it in the tree), or of the feature that owns a path.
+    explain     One node: its properties, then every one-hop edge by type and direction.
+    find        The vocabulary search over ids, names, aliases, descriptions and keywords
+                of all eight tables; features and concepts first.
+    report      Not implemented yet.
     help        Show this help
+
+The four operations and query read .kg next to the type files; each of them prints
+\`Dart coverage unknown (no kg-dart batch)\` first while no prop_gen batch has been
+built. Ids may be written with or without the \`~\` sigil.
 
 \`check\` gates the sources; \`gen --check\` gates the generated files, failing when
 kg.d.ts, glossary.md or feature-tree.md on disk differ from what gen would write.
@@ -471,7 +492,10 @@ Options:
                         the current directory to the monorepo root)
     --types-only        Check the type files only, skip the home documents (check only)
     --check             With gen: fail if the generated files differ from disk, write nothing
-    --output <format>   table (default) or json (the check report, or the build manifest)
+    --output <format>   table (default) or json (the check report, or the build manifest);
+                        query and the operations also take csv
+    --file <path>       With query: read the Cypher from a file
+    --limit <n>         With the operations: rows per section (default 50)
     --quiet             Print errors only: no warnings, no summary line (check, gen)
     --public            With build: the public projection (public node types, visibility
                         public, no home or owner, edges with both ends public) into public/.kg/
@@ -487,6 +511,11 @@ Examples:
   grok kg gen --check
   grok kg build --only homes --no-db
   grok kg build --public --output json
+  grok kg query "MATCH (f:Feature)-[:owner]->(p:Actor) RETURN f.id, p.id"
+  grok kg impact core/server/datlas/lib/src/services/spaces_service.dart
+  grok kg tests-for ~visualize/viewers/scatter-plot --output json
+  grok kg explain ~govern/spaces
+  grok kg find scatter
 
 The contract is core/docs/knowledge-graph/conventions.md.
 `;

@@ -14,6 +14,8 @@ export interface Claim {
   source: 'home' | 'marker';
   props: Record<string, unknown>;
   line?: number;
+  /** An inline `// ~id` marker (conventions.md §6): participates-in only, never ownership. */
+  mode?: 'participates';
 }
 
 export interface Graph {
@@ -28,6 +30,8 @@ export interface Graph {
   details: Record<string, string[]>;
   /** The first rows rejected, with the reasons. */
   invalid: Row[];
+  /** Structured reports an extractor built, by file name under `reports/`. */
+  reports: Record<string, unknown>;
 }
 
 export const PROVENANCE_RANK = ['annotation', 'ast', 'registry', 'filesystem', 'external', 'git', 'manual', 'llm'];
@@ -53,6 +57,7 @@ export class Emitter {
   private problems: Record<string, number> = Object.fromEntries(PROBLEM_KINDS.map((k) => [k, 0]));
   private details: Record<string, string[]> = {};
   private invalid: Row[] = [];
+  private reports: Record<string, unknown> = {};
   readonly sources: Record<string, string> = {};
 
   constructor(private system: TypeSystem, readonly batch: string) {}
@@ -126,6 +131,21 @@ export class Emitter {
     this.claims.push(c);
   }
 
+  /** What membership resolution (WO-4) reads: every claim made so far. */
+  get claimed(): Claim[] {
+    return this.claims;
+  }
+
+  /** The rows emitted so far whose type is [type] or narrows it; membership resolution reads files and tests this way. */
+  rowsOf(type: string): Row[] {
+    return [...this.nodes.values()].filter((e) => isSubtype(this.system, e.type.name, type)).map((e) => e.row);
+  }
+
+  /** A structured report an extractor built; the writer puts it in `reports/<name>.json`. */
+  report(name: string, data: unknown): void {
+    this.reports[name] = data;
+  }
+
   source(name: string, status: string): void {
     this.sources[name] = status;
   }
@@ -156,6 +176,7 @@ export class Emitter {
       problems: this.problems,
       details: this.details,
       invalid: this.invalid,
+      reports: this.reports,
     };
   }
 

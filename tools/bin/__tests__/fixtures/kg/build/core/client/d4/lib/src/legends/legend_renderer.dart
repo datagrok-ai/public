@@ -1,0 +1,3 @@
+class LegendRenderer {
+  void paint() {}
+}

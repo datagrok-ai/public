@@ -9,9 +9,12 @@ import {testsExtractor} from './extract/ts/tests';
 import {samplesExtractor} from './extract/ts/samples';
 import {changelogExtractor} from './extract/ts/changelog';
 import {docsExtractor} from './extract/docs';
+import {dartExtractor} from './extract/dart';
 import {declarationsExtractor} from './extract/ts/declarations';
 import {importsExtractor} from './extract/ts/imports';
 import {usesExtractor} from './extract/ts/uses';
+import {processExtractor} from './extract/process';
+import {membershipExtractor} from './extract/membership';
 
 export type Mode = 'full' | 'public';
 
@@ -33,8 +36,9 @@ export interface Extractor {
   run(ctx: BuildContext, emitter: Emitter): void | Promise<void>;
 }
 
+/** In order; membership resolution reads the claims of all the others, so it stays last. */
 export const EXTRACTORS: Extractor[] = [homesExtractor, packagesExtractor, functionsExtractor, declarationsExtractor, importsExtractor, usesExtractor,
-  testsExtractor, samplesExtractor, changelogExtractor, docsExtractor];
+  testsExtractor, samplesExtractor, changelogExtractor, docsExtractor, dartExtractor, processExtractor, membershipExtractor];
 
 /** The extractors for [mode], narrowed by `--only`; names that match nothing are returned for the caller to refuse. */
 export function selectExtractors(mode: Mode, only?: string[]): {selected: Extractor[], unknown: string[]} {

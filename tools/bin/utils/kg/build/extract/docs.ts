@@ -63,7 +63,7 @@ class DocLayer {
       const n = seen.get(base) ?? 0;
       seen.set(base, n + 1);
       const slug = n ? `${base}-${n}` : base;
-      this.emitter.node({type: 'doc-anchor', id: docId(file, slug), name: h[2], path: file, page: id, slug, level: h[1].length, heading: h[2], provenance: 'annotation', source_layer: sourceLayerOf(file)});
+      this.emitter.node({type: 'doc-anchor', id: docId(file, slug), name: h[2], path: file, page: id, slug, depth: h[1].length, heading: h[2], provenance: 'annotation', source_layer: sourceLayerOf(file)});
     }
     this.unresolved += emitMentions(this.emitter, id, prose.map((l) => l.text).join('\n'), file, this.index).unresolved.length;
     if (file.startsWith(TEST_TRACK) && data.feature !== undefined && data.id === undefined) this.emitScenario(file, fm, name, prose.map((l) => l.text));

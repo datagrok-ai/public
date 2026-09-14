@@ -566,7 +566,7 @@ describe('grok kg command', () => {
     const repo = makeRepo();
     const kgRoot = path.join(repo, KG_DIR);
     for (const [argv, message] of [
-      [{_: ['kg', 'query']}, /grok kg query is not implemented yet/],
+      [{_: ['kg', 'report']}, /grok kg report is not implemented yet/],
       [{_: ['kg', 'check'], kg: kgRoot, output: 'csv'}, /--output must be table or json, got 'csv'/],
       [{_: ['kg', 'check', 'extra'], kg: kgRoot}, /unexpected argument 'extra'/],
       [{_: ['kg', 'gen'], kg: kgRoot, check: true, 'types-only': true}, /--types-only cannot be combined with gen/],
