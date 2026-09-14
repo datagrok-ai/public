@@ -34,25 +34,25 @@ test('Word Cloud tests', async ({page}) => {
       const df = grok.shell.tv.dataFrame;
       const r: any[] = [];
 
-      wc.props.columnColumnName = 'RACE';
+      wc.props.wordColumnName = 'RACE';
       await new Promise(res => setTimeout(res, 600));
-      r.push({col: wc.props.columnColumnName, error: !!document.querySelector('[name="viewer-Word-cloud"] .d4-viewer-error')});
+      r.push({col: wc.props.wordColumnName, error: !!document.querySelector('[name="viewer-Word-cloud"] .d4-viewer-error')});
 
-      wc.props.columnColumnName = 'DIS_POP';
+      wc.props.wordColumnName = 'DIS_POP';
       await new Promise(res => setTimeout(res, 600));
-      r.push({col: wc.props.columnColumnName, error: !!document.querySelector('[name="viewer-Word-cloud"] .d4-viewer-error')});
+      r.push({col: wc.props.wordColumnName, error: !!document.querySelector('[name="viewer-Word-cloud"] .d4-viewer-error')});
 
       // SITE is not in demog.csv — skip but record available columns
       const hasSite = df.columns.names().includes('SITE');
       r.push({siteAvailable: hasSite});
 
-      wc.props.columnColumnName = 'SEX';
+      wc.props.wordColumnName = 'SEX';
       await new Promise(res => setTimeout(res, 600));
       const sexCats = df.getCol('SEX').categories.length;
-      r.push({col: wc.props.columnColumnName, sexCats});
+      r.push({col: wc.props.wordColumnName, sexCats});
 
       // Restore to RACE
-      wc.props.columnColumnName = 'RACE';
+      wc.props.wordColumnName = 'RACE';
       await new Promise(res => setTimeout(res, 400));
 
       return r;
@@ -192,7 +192,7 @@ test('Word Cloud tests', async ({page}) => {
     const result = await page.evaluate(async () => {
       const df = grok.shell.tv.dataFrame;
       const wc = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Word cloud') as any;
-      wc.props.columnColumnName = 'RACE';
+      wc.props.wordColumnName = 'RACE';
       await new Promise(res => setTimeout(res, 300));
 
       grok.shell.tv.getFiltersGroup({createDefaultFilters: true});
@@ -280,12 +280,12 @@ test('Word Cloud tests', async ({page}) => {
       // USUBJID has 5850 unique values
       const hiCardCol = df.columns.names().find((n: string) =>
         df.getCol(n).type === DG.TYPE.STRING && df.getCol(n).categories.length > 500);
-      wc.props.columnColumnName = hiCardCol!;
+      wc.props.wordColumnName = hiCardCol!;
       await new Promise(res => setTimeout(res, 1000));
       const err = document.querySelector('[name="viewer-Word-cloud"] .d4-viewer-error');
       r.push({hasError: !!err, errorText: err?.textContent ?? null});
 
-      wc.props.columnColumnName = 'RACE';
+      wc.props.wordColumnName = 'RACE';
       await new Promise(res => setTimeout(res, 1000));
       const err2 = document.querySelector('[name="viewer-Word-cloud"] .d4-viewer-error');
       const canvas = document.querySelector('[name="viewer-Word-cloud"] canvas');
