@@ -9,8 +9,10 @@ Feature: Filter panel indicator with viewers filtering
   Each viewer's click is shown to narrow the rows further than the viewers before it left them.
   The counter counts the panel's cards and nothing else — a bar click takes 633 rows to 303 and
   leaves it at 2, which is the behaviour the operator confirmed, and its tooltip names those cards
-  with their categories and range. The md's "reflects all active filters" belongs to the panel's
-  summary icon instead, which is the @known-failure scenario below.
+  with their categories and range. The md's "reflects all active filters" belongs elsewhere: the
+  full list, the viewers' share included, is the tooltip of the "?" icon in the title bar of the
+  Filters viewer — every source names itself there as "column: criterion", so a zoom reads
+  "HEIGHT: [141.06,195.19]" and not "Scatter plot".
   Not translated: Scaffold Tree belongs to Chem (D3); AGE's range is set through the card's state.
 
   Background:
@@ -74,21 +76,43 @@ Feature: Filter panel indicator with viewers filtering
     And the "rows shown" reading of filter panel should be lower than remembered
     And the "rows shown" reading of filter panel should be at least 1
     And counter of filter panel should have text "2"
+    When user hovers over filter panel
+    And user hovers over help icon of filter panel
+    # the cell names both of the trellis axes in the summary, next to the cards
+    Then tooltip should contain the text "SEVERITY: None"
+    And tooltip should contain the text "RACE: Caucasian"
     And no errors should have been logged
 
-  @known-failure
-  Scenario: The panel's summary icon names the viewers' filtering as well as the cards
-    When user hovers over filter panel
-    Then question-circle icon in filter panel should be visible
-    When user hovers over question-circle icon in filter panel
-    Then tooltip should contain the text "RACE"
-    And tooltip should contain the text "Caucasian"
-    And tooltip should contain the text "[30,60]"
-    And tooltip should contain the text "Scatter plot"
-    And tooltip should contain the text "Bar chart"
-    And tooltip should contain the text "Pie chart"
-    And tooltip should contain the text "Trellis plot"
-    And tooltip should contain the text "PC Plot"
+  Scenario: The summary icon of the Filters title bar names the viewers' share as well as the cards
+    When user adds a scatter plot viewer with:
+      | X | AGE    |
+      | Y | HEIGHT |
+    And user drags a zoom box over the "view" area of scatter plot viewer
+    And user adds a bar chart viewer with:
+      | Split | SEX |
+    And user sets "On Click" property of bar chart viewer to "Filter"
+    And user clicks on the "bar M" area of bar chart viewer
+    And user adds a pie chart viewer with:
+      | Category | DIS_POP |
+    And user sets "On Click" property of pie chart viewer to "Filter"
+    And user clicks on the "slice RA" area of pie chart viewer
+    And user adds a pc plot viewer with:
+      | Column Names | AGE, HEIGHT, WEIGHT |
+    And user drags the max handle of the "AGE" range slider of pc plot viewer by 450 pixels
+    And user hovers over filter panel
+    Then help icon of filter panel should be visible
+    When user hovers over help icon of filter panel
+    # the two cards of the panel, each with the criterion it holds
+    Then tooltip should contain the text "RACE: Caucasian"
+    And tooltip should contain the text "AGE: [30,60]"
+    # HEIGHT has no card: this line is the scatter plot's zoom and nothing else
+    And tooltip should contain the text "HEIGHT: ["
+    And tooltip should contain the text "SEX: M"
+    And tooltip should contain the text "DIS_POP in [RA]"
+    # the pc plot writes its ends with a space after the comma, where the card writes none
+    And tooltip should contain the text "AGE: [18, "
+    And tooltip should contain the text "Click for help (F1)"
+    And no errors should have been logged
 
   Scenario: Reset filters empties the counter and gives back every row
     When user hovers over filter panel

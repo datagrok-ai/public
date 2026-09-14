@@ -290,6 +290,8 @@ kind('viewer', {
   parts: {
     title: `${PANEL}//*[contains(@class, "panel-titlebar-text")]`,
     'settings icon': `${PANEL}//*[contains(@class, "panel-titlebar")]//*[@name="icon-font-icon-settings"]`,
+    // the "?" of the title bar: its tooltip is the viewer's own summary above "Click for help (F1)"
+    'help icon': `${PANEL}//*[contains(@class, "panel-titlebar")]//*[@name="icon-font-icon-help"]`,
     'menu icon': `${PANEL}//*[contains(@class, "panel-titlebar")]//*[@name="icon-font-icon-menu"]`,
     'close icon': `${PANEL}//*[contains(@class, "panel-titlebar")]//*[@name="Close" or @name="icon-font-icon-close"]`,
     description: '.d4-viewer-description',
