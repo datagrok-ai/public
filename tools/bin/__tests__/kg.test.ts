@@ -562,11 +562,11 @@ describe('grok kg command', () => {
     expect(err).toEqual(["unknown verb 'frobnicate'"]);
   });
 
-  it('refuses planned verbs, a bad --output, a stray argument and gen --types-only with exit 1', async () => {
+  it('refuses a nameless report, a bad --output, a stray argument and gen --types-only with exit 1', async () => {
     const repo = makeRepo();
     const kgRoot = path.join(repo, KG_DIR);
     for (const [argv, message] of [
-      [{_: ['kg', 'report']}, /grok kg report is not implemented yet/],
+      [{_: ['kg', 'report'], kg: kgRoot}, /^grok kg report needs a report name: orphans, stale, coverage, proposed, diff$/],
       [{_: ['kg', 'check'], kg: kgRoot, output: 'csv'}, /--output must be table or json, got 'csv'/],
       [{_: ['kg', 'check', 'extra'], kg: kgRoot}, /unexpected argument 'extra'/],
       [{_: ['kg', 'gen'], kg: kgRoot, check: true, 'types-only': true}, /--types-only cannot be combined with gen/],

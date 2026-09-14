@@ -477,7 +477,15 @@ Verbs:
     explain     One node: its properties, then every one-hop edge by type and direction.
     find        The vocabulary search over ids, names, aliases, descriptions and keywords
                 of all eight tables; features and concepts first.
-    report      Not implemented yet.
+    report      One maintainer report over the JSONL a build already wrote, never the
+                index: orphans (files with no owner, grouped by package or core
+                sub-project), stale (citations, tickets, help-urls, specs and
+                declarations the graph can no longer reach), coverage (one row per
+                feature: owner, tests, scenarios, documents, description), proposed
+                (folders with code and no owner, with the id they would take) and
+                diff (the features a branch touches and the tests that cover them,
+                \`--diff <ref>\`; the md output is the PR comment). \`build\` writes the
+                first four to .kg/reports/ as both .json and .md.
     help        Show this help
 
 The four operations and query read .kg next to the type files; each of them prints
@@ -493,7 +501,7 @@ Options:
     --types-only        Check the type files only, skip the home documents (check only)
     --check             With gen: fail if the generated files differ from disk, write nothing
     --output <format>   table (default) or json (the check report, or the build manifest);
-                        query and the operations also take csv
+                        query and the operations also take csv, report takes md
     --file <path>       With query: read the Cypher from a file
     --limit <n>         With the operations: rows per section (default 50)
     --quiet             Print errors only: no warnings, no summary line (check, gen)
@@ -502,7 +510,8 @@ Options:
     --only <a,b>        With build: run only the named extractors
     --backlog <dir>     With build: the backlog snapshot repo (used by the process layer)
     --no-db             With build: write the JSONL only, do not load the graph index
-    --out <dir>         With build: write under <dir> instead of .kg/
+    --out <dir>         With build and report: write (or read) under <dir> instead of .kg/
+    --diff <ref>        With report diff: the revision HEAD is compared against
 
 Examples:
   grok kg check
@@ -516,6 +525,8 @@ Examples:
   grok kg tests-for ~visualize/viewers/scatter-plot --output json
   grok kg explain ~govern/spaces
   grok kg find scatter
+  grok kg report coverage --output json
+  grok kg report diff --diff master --output md
 
 The contract is core/docs/knowledge-graph/conventions.md.
 `;

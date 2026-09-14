@@ -1,5 +1,6 @@
-/// `grok kg check|gen|build|query|impact|tests-for|explain|find` — the knowledge-graph type files,
-/// home documents, the built graph and the index over it (conventions.md §11.1, build-plan.md).
+/// `grok kg check|gen|build|report|query|impact|tests-for|explain|find` — the knowledge-graph type
+/// files, home documents, the built graph, the maintainer reports and the index over it
+/// (conventions.md §11.1, build-plan.md).
 import * as fs from 'fs';
 import * as path from 'path';
 import {loadTypeSystem, Issue, TypeSystem} from '../utils/kg/types';
@@ -10,12 +11,13 @@ import {selectExtractors, runExtractors, EXTRACTORS, Mode} from '../utils/kg/bui
 import {writeBuild, projectPublic, gitRevisions, batchId, toolsVersion, Manifest} from '../utils/kg/build/write';
 import {loadKuzu, load as loadIndex, open, run, MISSING_KUZU, LoadResult, TableRows} from '../utils/kg/kuzu';
 import {impact, testsFor, explain, find, printOps, resolveTarget, coverageNote, OpsResult, DEFAULT_LIMIT} from '../utils/kg/ops';
+import {readGraph, fromGraph, makeReport as buildReport, printReport, writeReports, REPORT_NAMES, ReportName, ReportFormat} from '../utils/kg/report';
 import {OutputFormat, printOutput} from '../utils/server-output';
 import {HELP_KG} from './help';
 
 const KG_DIR = path.join('core', 'docs', 'knowledge-graph');
-const PLANNED_VERBS = ['report'];
 const OPS = ['impact', 'tests-for', 'explain', 'find'];
+const VERBS = ['check', 'gen', 'build', 'report'];
 
 export async function kg(argv: any): Promise<boolean> {
   const args: string[] = argv['_'].slice(1).map(String);
@@ -24,18 +26,19 @@ export async function kg(argv: any): Promise<boolean> {
     console.log(HELP_KG);
     return true;
   }
-  if (PLANNED_VERBS.includes(verb)) return fail(`grok kg ${verb} is not implemented yet (conventions.md §11.1); check, gen, build, query and the bounded operations are`);
   const output: string = argv.output ?? argv.o ?? 'table';
   if (verb === 'query' || OPS.includes(verb)) {
     if (output !== 'table' && output !== 'json' && output !== 'csv') return fail(`--output must be table, json or csv, got '${output}'`);
     return graph(verb, args.slice(1), argv, output as OutputFormat);
   }
-  if (verb !== 'check' && verb !== 'gen' && verb !== 'build') {
+  if (!VERBS.includes(verb)) {
     console.error(`unknown verb '${verb}'`);
     return false;
   }
-  if (args.length > 1) return fail(`unexpected argument '${args[1]}': grok kg ${verb} takes options only`);
-  if (output !== 'table' && output !== 'json') return fail(`--output must be table or json, got '${output}'`);
+  const takes = verb === 'report' ? 2 : 1;
+  if (args.length > takes) return fail(`unexpected argument '${args[takes]}': grok kg ${verb} takes ${verb === 'report' ? 'one report name and ' : ''}options only`);
+  const formats = verb === 'report' ? ['table', 'json', 'md'] : ['table', 'json'];
+  if (!formats.includes(output)) return fail(`--output must be ${formats.slice(0, -1).join(', ')} or ${formats[formats.length - 1]}, got '${output}'`);
   const quiet = argv.quiet === true;
   const typesOnly = argv['types-only'] === true;
   if (verb === 'gen' && typesOnly) return fail('--types-only cannot be combined with gen: feature-tree.md is generated from the home documents');
@@ -45,6 +48,7 @@ export async function kg(argv: any): Promise<boolean> {
     return fail(kgRoot ? `${slashes(kgRoot)}: no schema.yaml` : 'grok kg currently needs the monorepo: run it inside a checkout with core/docs/knowledge-graph/schema.yaml and public/, or pass --kg <dir>');
   const repoRoot = path.resolve(kgRoot, '..', '..', '..');
   if (verb === 'build') return build(argv, kgRoot, repoRoot, output);
+  if (verb === 'report') return reportVerb(argv, kgRoot, repoRoot, args[1], output as ReportFormat);
 
   const system = loadTypeSystem(kgRoot);
   const homes = typesOnly ? null : loadHomes(system, repoRoot);
@@ -91,9 +95,25 @@ async function build(argv: any, kgRoot: string, repoRoot: string, output: string
   if (mode === 'public') graph = projectPublic(graph, system);
   const outRoot = argv.out === undefined ? path.join(repoRoot, ...(mode === 'public' ? ['public', '.kg'] : ['.kg'])) : path.resolve(String(argv.out));
   const manifest = writeBuild(graph, outRoot, {mode, batch, builder, schemaVersion: system.schemaVersion, revisions});
+  if (mode !== 'public') writeReports(outRoot, fromGraph(graph, repoRoot, manifest.sources), {system, repoRoot});
   if (output === 'json') console.log(JSON.stringify(manifest, null, 2));
   else console.log(summary(manifest, rel(outRoot, repoRoot)));
   return index(argv, system, outRoot, repoRoot);
+}
+
+/** `grok kg report <name>`: one maintainer report over the JSONL a build already wrote (build-plan.md WO-8). */
+function reportVerb(argv: any, kgRoot: string, repoRoot: string, name: string | undefined, output: ReportFormat): boolean {
+  if (!name) return fail(`grok kg report needs a report name: ${REPORT_NAMES.join(', ')}`);
+  if (!REPORT_NAMES.includes(name as ReportName)) return fail(`unknown report '${name}': ${REPORT_NAMES.join(', ')}`);
+  const base = argv.diff === undefined ? undefined : String(argv.diff);
+  if ((name === 'diff') !== (base !== undefined))
+    return fail(name === 'diff' ? 'grok kg report diff needs the revision to compare against: --diff <ref>' : `--diff is for grok kg report diff, not ${name}`);
+  const outRoot = argv.out === undefined ? path.join(repoRoot, '.kg') : path.resolve(String(argv.out));
+  if (!fs.existsSync(path.join(outRoot, 'manifest.json'))) return fail(`${slashes(outRoot)}: nothing built yet; run grok kg build`);
+  const system = loadTypeSystem(kgRoot);
+  const data = readGraph(outRoot, repoRoot, system, name as ReportName);
+  printReport(buildReport(name as ReportName, data, {system, repoRoot, base}), output);
+  return true;
 }
 
 /** The JSONL is canonical: without the binding the build says so in one line and still succeeds. */
