@@ -438,7 +438,7 @@ describe('kg gen (conventions.md §11.2)', () => {
     expect(dts).toContain("export type NodeTypeName = 'actor' | 'artifact'");
     expect(dts).toContain('/** The hierarchy edge, derived from the id path and never authored. */\nexport interface PartOfEdge {');
     expect(dts).toContain('export interface UsesConceptEdge {');
-    expect(dts).toContain("export type EdgeTypeName = 'covers' | 'defines-concept' | 'documents' | 'is-implemented-in' | 'part-of' | 'supersedes' | 'tracked-in' | 'uses-concept';");
+    expect(dts).toContain("export type EdgeTypeName = 'covers' | 'defines-concept' | 'documents' | 'is-implemented-in' | 'mentions' | 'part-of' | 'supersedes' | 'tracked-in' | 'uses-concept';");
     expect(dts).toContain("export type RefPredicate = 'areas' | 'company' | 'lead' | 'owner';");
     expect(dts).toContain('  aliases?: string[];\n  source_layer: \'public\' | \'core\' | \'infra\' | \'process\' | \'synthetic\';\n  home?: Path;\n  provenance: Provenance;\n  batch: string;\n}');
     expect(dts).toContain('  to: Ref<Feature>;\n  derived_by: Provenance;\n  confidence: number;\n  evidence?: Path[];\n  batch: string;\n');
@@ -542,7 +542,7 @@ describe('grok kg command', () => {
     expect(out).toHaveLength(1);
     const report = JSON.parse(out[0]);
     expect(report.errors).toEqual([]);
-    expect(report.types).toEqual({nodes: 18, edges: 9, prefixes: 6});
+    expect(report.types).toEqual({nodes: 19, edges: 11, prefixes: 6});
     expect(report.homes).toMatchObject({feature: 6, scenario: 1});
     expect(report.annotatedPages).toBe(1);
     expect(Array.isArray(report.unresolvedExternal)).toBe(true);
@@ -566,7 +566,7 @@ describe('grok kg command', () => {
     const repo = makeRepo();
     const kgRoot = path.join(repo, KG_DIR);
     for (const [argv, message] of [
-      [{_: ['kg', 'build']}, /grok kg build is not implemented yet/],
+      [{_: ['kg', 'query']}, /grok kg query is not implemented yet/],
       [{_: ['kg', 'check'], kg: kgRoot, output: 'csv'}, /--output must be table or json, got 'csv'/],
       [{_: ['kg', 'check', 'extra'], kg: kgRoot}, /unexpected argument 'extra'/],
       [{_: ['kg', 'gen'], kg: kgRoot, check: true, 'types-only': true}, /--types-only cannot be combined with gen/],

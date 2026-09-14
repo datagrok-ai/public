@@ -8,6 +8,8 @@ import {globSync} from 'glob';
 import {splitFrontmatter, parseYamlDocument, keyLine, Frontmatter} from './frontmatter';
 import {extractCitations, headingAnchors, Citation} from './citations';
 import {TypeSystem, NodeType, EdgeType, Member, Issue, checkValue, isSubtype, pascal, kebabOfLabel, concreteAuthored} from './types';
+import {normalizeRow} from './build/normalize';
+import {SCHEME_TYPES, PREFIXED_ID, SCHEMED_ID} from './build/ids';
 
 /** Where homes may live, relative to the monorepo root: any markdown document in the repos, and
  * the YAML records (concepts, people, teams, customers) inside the knowledge-graph folder. */
@@ -41,19 +43,10 @@ const INTERNAL_DIR = 'core/docs/knowledge-graph/internal/';
 const DOCUSAURUS_KEYS = ['title', 'description', 'keywords', 'sidebar_position', 'sidebar_label', 'slug', 'mdx',
   'unlisted', 'toc_max_heading_level', 'position', 'format', 'pagination_prev', 'pagination_next', 'hide_sidebar',
   'hide_search', 'hide_title', 'tags'];
-/** Extracted id schemes (conventions.md §2.2) and the node types they name. */
-const SCHEME_TYPES: Record<string, string[]> = {
-  pkg: ['package'], lib: ['library'], func: ['function'], decl: ['declaration'], file: ['source-file'],
-  ep: ['endpoint'], table: ['db-table'], semtype: ['semantic-type'], doc: ['doc-page'], test: ['test'],
-  suite: ['test-suite'], sample: ['sample'], pr: ['pull-request'], gh: ['ticket'], commit: ['commit'],
-  report: ['report'], img: ['image'],
-};
-const PREFIXED_ID = /^([A-Z][A-Za-z]{0,5}):(.+)$/;
-const SCHEMED_ID = /^([a-z][a-z0-9-]*):(.+)$/;
 const BARE_ID = /^[a-z0-9-]+(\/[a-z0-9-]+)*$/;
 const SEGMENT = /^[a-z0-9-]+$/;
-const REPO_PREFIX = /^(landing|infra):(.+)$/;
-const GLOB_MAGIC = /[*?[\]{}]/;
+export const REPO_PREFIX = /^(landing|infra):(.+)$/;
+export const GLOB_MAGIC = /[*?[\]{}]/;
 
 export interface Home {
   /** With the type prefix, without the sigil. */
@@ -71,6 +64,13 @@ export interface Home {
   aliases: string[];
   data: Record<string, unknown>;
   body: string;
+  fm: Frontmatter;
+}
+
+/** A page that is not a home but carries edge keys such as `documents:`. */
+export interface AnnotatedPage {
+  file: string;
+  fm: Frontmatter;
 }
 
 export interface Stub {
@@ -89,6 +89,7 @@ export interface UnresolvedRef {
 
 export interface HomeSet {
   homes: Home[];
+  pages: AnnotatedPage[];
   stubs: Stub[];
   errors: Issue[];
   warnings: Issue[];
@@ -122,10 +123,8 @@ export function discoverHomeFiles(repoRoot: string): string[] {
 }
 
 export function loadHomes(system: TypeSystem, repoRoot: string, files: string[] = discoverHomeFiles(repoRoot)): HomeSet {
-  const set: HomeSet = {homes: [], stubs: [], errors: [], warnings: [], unresolvedExternal: [], scanned: files.length,
+  const set: HomeSet = {homes: [], pages: [], stubs: [], errors: [], warnings: [], unresolvedExternal: [], scanned: files.length,
     annotatedPages: 0, citations: {doc: 0, code: 0}};
-  const fms = new Map<Home, Frontmatter>();
-  const pages: {file: string, fm: Frontmatter}[] = [];
   for (const file of files) {
     let text: string;
     try {
@@ -146,20 +145,17 @@ export function loadHomes(system: TypeSystem, repoRoot: string, files: string[] 
     if (legacy && !(typeof fm.data.id === 'string' && fm.data.id.startsWith('TS:'))) continue;
     if (fm.data.feature === undefined && fm.data.id === undefined) {
       if (isYaml) set.warnings.push({file, line: 1, code: 'stray-yaml', message: 'stray YAML file in the knowledge-graph folder: no id: or feature: key, so not a home'});
-      else if (Object.keys(fm.data).some((k) => k === 'edges' || system.keys.has(k))) pages.push({file, fm});
+      else if (Object.keys(fm.data).some((k) => k === 'edges' || system.keys.has(k))) set.pages.push({file, fm});
       continue;
     }
     const home = readHome(system, file, fm, isYaml, set.errors);
-    if (home) {
-      set.homes.push(home);
-      fms.set(home, fm);
-    }
+    if (home) set.homes.push(home);
   }
   const index = indexHomes(set.homes, set.errors);
   const checker = new HomeChecker(system, repoRoot, index, set);
   for (const home of set.homes)
-    checker.check(home, fms.get(home)!);
-  for (const page of pages)
+    checker.check(home, home.fm);
+  for (const page of set.pages)
     checker.checkPage(page.file, page.fm);
   checker.checkCycles();
   return set;
@@ -227,10 +223,10 @@ function readHome(system: TypeSystem, file: string, fm: Frontmatter, isYaml: boo
   }) : [];
   const name = typeof data.name === 'string' ? data.name :
     isYaml ? undefined : typeof data.title === 'string' ? data.title : firstHeading(fm.body);
-  return {id, prefix, localId, type, file, yaml: isYaml, line: keyLine(fm, key) ?? 1, name: name ?? '', aliases, data, body: fm.body};
+  return {id, prefix, localId, type, file, yaml: isYaml, line: keyLine(fm, key) ?? 1, name: name ?? '', aliases, data, body: fm.body, fm};
 }
 
-function firstHeading(body: string): string | undefined {
+export function firstHeading(body: string): string | undefined {
   for (const line of body.split('\n')) {
     const m = /^#\s+(.+?)\s*#*\s*$/.exec(line);
     if (m) return m[1];
@@ -295,6 +291,7 @@ class HomeChecker {
     const isHelp = home.file.startsWith('public/help/');
     if (!home.name && (data.name === undefined || data.name === null))
       error('no-name', home.yaml ? 'no name: a YAML home must set name:' : 'no name: set name:, title:, or start the body with a # heading');
+    const row: Record<string, unknown> = {type: type.name};
     for (const [key, value] of Object.entries(data)) {
       if (key === 'feature' || key === 'id' || key === 'type' || value === null) continue;
       if (key === 'title' && typeof value === 'string') continue;
@@ -313,24 +310,25 @@ class HomeChecker {
       }
       const member = type.members[key];
       if (member) {
-        if (isHomeFileMember(member) && !home.yaml) {
-          error('authored-path', `${key}: derived from the home file (${home.file}) and never authored; remove it`, key);
-          continue;
-        }
-        const problem = this.valueProblem(member, value, {source: home.file, key});
-        if (problem) error(member.kind === 'ref' ? 'unresolved-ref' : member.scalar === 'Path' ? 'missing-path' : 'bad-value', `${key}: ${problem}`, key);
+        if (isHomeFileMember(member) && !home.yaml) error('authored-path', `${key}: derived from the home file (${home.file}) and never authored; remove it`, key);
+        else row[key] = value;
         continue;
       }
       if (isHelp && DOCUSAURUS_KEYS.includes(key)) continue;
       error('unknown-key', `unknown key '${key}' for type ${type.name}`, key);
     }
+    const normalized = normalizeRow(this.system, row, {
+      path: (v) => this.pathProblem(v),
+      ref: (v, m) => this.resolveRef(v, m.refs!, {source: home.file, key: m.name}).problem ?? null,
+    });
+    for (const problem of normalized.problems) error(problem.code, problem.message, problem.key);
     for (const member of Object.values(type.members)) {
       if (member.nullable || member.name === 'id' || member.name === 'name') continue;
       if (isHomeFileMember(member) && !home.yaml) {
         data[member.name] = home.file;
         continue;
       }
-      if (data[member.name] === undefined || data[member.name] === null) error('missing-key', `missing required key '${member.name}' for type ${type.name}`);
+      if (normalized.row[member.name] === undefined) error('missing-key', `missing required key '${member.name}' for type ${type.name}`);
     }
     if (type.members.manual_only && data.manual_only === undefined && data.target_layer === 'manual-only')
       data.manual_only = true;
@@ -655,12 +653,12 @@ class HomeChecker {
 }
 
 /** A `path: Path` member on an authored type names the home file itself (scenario.path, doc-page.path). */
-function isHomeFileMember(member: Member): boolean {
+export function isHomeFileMember(member: Member): boolean {
   return member.name === 'path' && member.kind === 'scalar' && member.scalar === 'Path' && !member.list;
 }
 
 /** A reference's `#anchor` part; `#` inside an extracted id (`decl:file#Name`) is not an anchor. */
-function splitRefAnchor(id: string): {id: string, anchor?: string} {
+export function splitRefAnchor(id: string): {id: string, anchor?: string} {
   const hash = id.indexOf('#');
   return hash < 0 ? {id} : {id: id.slice(0, hash), anchor: id.slice(hash + 1)};
 }

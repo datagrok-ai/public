@@ -122,3 +122,7 @@ playwright-public/PACKAGE-PLAYWRIGHT-CODE-FINDINGS.md
 .claude/.tmp
 
 __pycache__
+# grok kg build output (public projection); the nightly job will commit a snapshot later
+.kg/data/
+.kg/reports/
+.kg/manifest.json

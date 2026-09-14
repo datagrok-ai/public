@@ -445,6 +445,14 @@ Verbs:
                 are not read yet; they arrive with \`build\`. Exit 1 on errors.
     gen         Write kg.d.ts, the glossary.md tables and feature-tree.md, all inside
                 core/docs/knowledge-graph. Refuses while check reports errors.
+    build       Run the extractors and write the graph as JSONL: .kg/data/nodes/<type>.jsonl,
+                .kg/data/edges/<type|property>.jsonl, .kg/manifest.json and .kg/reports/
+                (claims.jsonl for membership, invalid.jsonl, problems.json). Lines are
+                deterministic: two builds of the same revisions are byte-identical and
+                share a content-addressed batch id; only the manifest carries the time.
+                Problems are counted in the manifest, never thrown. Extractors today:
+                homes (the home-document layer).
+    query, report  Not implemented yet.
     help        Show this help
 
 \`check\` gates the sources; \`gen --check\` gates the generated files, failing when
@@ -455,14 +463,22 @@ Options:
                         the current directory to the monorepo root)
     --types-only        Check the type files only, skip the home documents (check only)
     --check             With gen: fail if the generated files differ from disk, write nothing
-    --output <format>   table (default) or json (the report as JSON, nothing else)
-    --quiet             Print errors only: no warnings, no summary line
+    --output <format>   table (default) or json (the check report, or the build manifest)
+    --quiet             Print errors only: no warnings, no summary line (check, gen)
+    --public            With build: the public projection (public node types, visibility
+                        public, no home or owner, edges with both ends public) into public/.kg/
+    --only <a,b>        With build: run only the named extractors
+    --backlog <dir>     With build: the backlog snapshot repo (used by the process layer)
+    --no-db             With build: write the JSONL only, do not load the graph index
+    --out <dir>         With build: write under <dir> instead of .kg/
 
 Examples:
   grok kg check
   grok kg check --types-only --output json
   grok kg gen
   grok kg gen --check
+  grok kg build --only homes --no-db
+  grok kg build --public --output json
 
 The contract is core/docs/knowledge-graph/conventions.md.
 `;

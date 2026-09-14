@@ -81,6 +81,8 @@ export interface TypeSystem {
   /** Edge key -> edge type. */
   keys: Map<string, EdgeType>;
   roots: string[];
+  /** schema.yaml `version`, written into every manifest. */
+  schemaVersion: number;
   /** First segments a feature id may start with (schema.yaml `feature_roots`); empty means unchecked. */
   featureRoots: string[];
   provenance: string[];
@@ -297,13 +299,14 @@ interface RawType {
 export function loadTypeSystem(kgRoot: string): TypeSystem {
   const system: TypeSystem = {
     nodes: new Map(), edges: new Map(), prefixes: new Map(), keys: new Map(),
-    roots: DEFAULT_ROOTS, featureRoots: [], provenance: DEFAULT_PROVENANCE, reservedNodeFields: DEFAULT_RESERVED,
+    roots: DEFAULT_ROOTS, schemaVersion: 1, featureRoots: [], provenance: DEFAULT_PROVENANCE, reservedNodeFields: DEFAULT_RESERVED,
     buildFields: {node: [], edge: []}, errors: [], warnings: [],
   };
   const error: Reporter = (code, file, message, line) => system.errors.push({file, line, code, message});
   const schemaFile = path.join(kgRoot, 'schema.yaml');
   const schema = readYaml(schemaFile, error);
   if (!schema) return system;
+  if (typeof schema.version === 'number') system.schemaVersion = schema.version;
   const constraints = schema.constraints ?? {};
   if (Array.isArray(constraints.roots)) system.roots = constraints.roots.map(String);
   if (Array.isArray(constraints.feature_roots)) system.featureRoots = constraints.feature_roots.map(String);

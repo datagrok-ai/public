@@ -41,6 +41,9 @@
     "test:integration": "vitest run --project integration",
     "test:all": "vitest run"
   },
+  "optionalDependencies": {
+    "kuzu": "0.11.3"
+  },
   "bin": {
     "datagrok-upload": "./bin/_deprecated/upload.js",
     "grok": "./bin/grok.js",

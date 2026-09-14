@@ -1,0 +1,17 @@
+# Not a file people write edges against: the edge every reference property becomes.
+type: ref
+abstract: true
+from: Node
+to: Node
+derived_by: [annotation, ast, registry, external]
+description: >
+  The materialized form of a reference property. `owner: Person | Team` on a feature,
+  `connection: Connection` on a query, `assignee: Person` on a ticket become edges
+  whose predicate is the property name (owner, connection, assignee), so the query
+  vocabulary is stable even if the relation later grows properties or becomes
+  multi-valued and moves into its own edge file. Rule: a single-valued relation
+  without properties of its own is a reference property; a multi-valued relation, or
+  one with properties, is an edge type. ref itself is the family name in the schema,
+  never a predicate in the graph.
+properties:
+  name:          string

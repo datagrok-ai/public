@@ -1,0 +1,7 @@
+type: mentions
+from: Artifact | Work
+to: Node
+derived_by: [annotation]
+description: A doc, test or ticket names another node in its text. The weakest edge.
+properties:
+  count?:        number
