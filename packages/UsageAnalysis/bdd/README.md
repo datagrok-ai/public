@@ -17,6 +17,26 @@ The [known-failure audit](../../../libraries/bdd/KNOWN_FAILURES.md) records the 
 their observed failures and causes. The line-chart lasso scenario now passes without a tag:
 checkbox menu items keep the menu open, so close it before dragging on the chart.
 
+The grid folder, `features/viewers/grid/`, holds nine features on demog-1000. They replace the
+TestTrack grid scenarios `packages/UsageAnalysis/files/TestTrack/Viewers/Grid/grid.md`,
+`grid-appearance-summary-persist.md`, `grid-cell-appearance.md`, `grid-columns-style-persist.md`,
+`grid-dialogs-groups.md`, `grid-edit-clipboard.md`, `grid-rows-select-filter-navigate.md` and the
+manual checklist `grid-ui.md`, as far as the grid's signals reach; each feature's description says
+what is not translated and why. The summary-column renderers of Add > Summary Columns belong to
+PowerGrid and are claimed in `packages/PowerGrid/bdd/features/grid/summary-columns.feature`.
+
+| Feature | What it claims |
+|---|---|
+| `grid-viewer` | a second grid as a viewer; the column tooltip menu, Columns listing the chosen columns, None showing none; Pick Up / Apply carrying the grid's look to a second grid |
+| `grid-columns` | Column Sizing, header double-click sort, the two-level Sort dialog, resizers (two selected columns together, a column collapsed to a hairline), reordering, widening until the grid scrolls sideways (GROK-19753), the Order or Hide Columns type filter and Reset (GROK-19333, GROK-20167), the status-bar column manager keeping its filter across tables (GROK-19332) |
+| `grid-rows` | current row, selection by the row strip, the keyboard and by value, Allow Row Selection, Row Source, a filter and a sort sharing one order, Tab and Shift+Tab wrapping at the row edges (Escape clears the current row only with the focus on the grid overlay), Shift+click / Control+click (inverts, keeps the current row) / a plain click (keeps the selection) / a drag on the row strip, header selection |
+| `grid-appearance` | colour coding per column and grid-wide, formats (kept in a narrowed column, shown in the Context Panel), missing-value colour, row height, font, Selected Rows Color, a Style background overridden by colour coding (GROK-18638) |
+| `grid-editing` | in-place editing, Allow Edit, Add New Row On Last Row Edit, Editable by for one's own and another login, the clipboard (the rows copied in the grid's column order, a hidden column included) |
+| `grid-pinning` | Pin Row / Unpin Row / Pin Selected Rows / Unpin All Rows, a non-unique value's warning, Pin Column / Pin 2 Columns / Unpin, a header dropped into the pinned columns, Control+clicks under pinned rows, the arrows across the frozen boundary |
+| `grid-column-groups` | Group columns... from the Context Panel, the band (`group <name>`) in the group's colour, clicks on it (GROK-17505, GROK-17442, GROK-18213), the groups with their colours after a layout saved to the server and the groups after a project (GROK-17441, the project without their colours), regrouping and ungrouping |
+| `grid-persistence` | four colour codings, row height, missing-value colour, min/max stats rows, a moved, a hidden, a widened and a pinned column, two pinned rows and a sort, all back from a layout loaded over a fresh view and from a project |
+| `grid-forms-column` | Design a Form... (the designer view, Close and Apply, Edit), Default HTML Form, Custom HTML Form... |
+
 From a fresh checkout of `public`, against a local stand on `http://localhost:8888` (another one:
 `DATAGROK_URL=https://… npx grok-bdd run`):
 

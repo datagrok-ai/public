@@ -19,6 +19,8 @@ element('context panel', {selector: '.grok-prop-panel', aliases: ['property pane
 element('console', {selector: '.d4-console-wrapper'});
 element('status bar', {selector: '.layout-status-bar', aliases: ['statusbar'],
   parts: {'view panel': '.d4-view-status-panel'}});
+element('column manager', {selector: '.panel-content > .d4-column-grid', aliases: ['columns pane'],
+  description: 'the Columns pane a click on "Columns: N" in the status bar docks: a search, a type filter and a grid of the current table\'s columns (`column_grid.dart`)'});
 element('open tableview', {selector: '.d4-table-view, .grok-table-view', aliases: ['current table view', 'table view']});
 element('grid', {selector: '[name="viewer-Grid"]', aliases: ['the grid'], gestures: {click: 'mouse'}});
 element('gallery', {selector: '.grok-gallery-grid', aliases: ['item gallery'],
@@ -31,6 +33,8 @@ element('share access selector', {selector: '[name="div-share-selector"]',
   description: 'the access level of the Share dialog: a Dart privilege selector showing the current level as text, a popup behind its triangle'});
 element('model preview', {selector: '.d4-pm-view-preview',
   description: 'the Train Model preview; ready only after training, predictions, charts and history are complete'});
+element('grid overlay', {selector: '[name="viewer-Grid"] canvas[name="overlay"]',
+  description: 'the canvas the grid draws its selection and its cursor on, and the element its keyboard handling sits on: a key pressed while the focus is on the grid\'s root instead reaches only part of it (Escape then clears the selection but not the current row)'});
 element('context menu', {selector: '.d4-menu-popup', aliases: ['popup menu'],
   description: 'the open Dart popup menu (the last one when a submenu is open)'});
 element('cell editor', {selector: '[name="cell-editor"]', aliases: ['grid cell editor'],
