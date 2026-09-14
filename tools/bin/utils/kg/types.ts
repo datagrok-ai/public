@@ -62,6 +62,8 @@ export interface EdgeType {
   to: string[];
   key?: string;
   keySide: 'from' | 'to';
+  /** Properties that discriminate one assertion from another and so join type, from and to in the edge key. */
+  identity: string[];
   cardinality: 'one' | 'many';
   sameType: boolean;
   symmetric: boolean;
@@ -397,6 +399,7 @@ export function loadTypeSystem(kgRoot: string): TypeSystem {
       from: from.types ?? [], to: to.types ?? [],
       key: d.key === undefined ? undefined : String(d.key),
       keySide: d.key_side === 'to' ? 'to' : 'from',
+      identity: Array.isArray(d.identity) ? d.identity.map(String) : [],
       cardinality: d.cardinality === 'one' ? 'one' : 'many',
       sameType: d.same_type === true, symmetric: d.symmetric === true, acyclic: d.acyclic === true,
       derivedBy, description: String(d.description ?? ''), own, properties: {},
@@ -415,6 +418,8 @@ export function loadTypeSystem(kgRoot: string): TypeSystem {
       const owners = nodeMemberOwners.get(edge.key);
       if (owners) error('namespace', edge.file, `edge key '${edge.key}' collides with the node property '${edge.key}' of ${owners.join(', ')}; a frontmatter key can only mean one of them`);
     }
+    for (const m of edge.identity)
+      if (!edge.properties[m]) error('identity', edge.file, `edge ${edge.name}: identity names '${m}', which is not a property`);
     for (const m of edge.inherits)
       for (const t of edge.from)
         if (!system.nodes.get(t)?.members[m] && t !== 'node')

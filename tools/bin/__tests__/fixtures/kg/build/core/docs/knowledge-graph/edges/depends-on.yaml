@@ -2,6 +2,7 @@ type: depends-on
 was: DependsOn
 from: Package | Library
 to: Package | Library
+identity: [kind]
 derived_by: [annotation, registry]
 description: A package.json dependency between packages and libraries.
 properties:

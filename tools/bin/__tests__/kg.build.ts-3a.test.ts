@@ -8,6 +8,7 @@ import {fileURLToPath} from 'url';
 import {parseHeaderLines, parseParam, parseFunctionHeaders, parseScriptHeader, parseQueryHeaders} from '../utils/kg/build/annotations';
 import {Emitter} from '../utils/kg/build/emitter';
 import {loadTypeSystem} from '../utils/kg/types';
+import {currentDir} from '../utils/kg/build/write';
 import {kg} from '../commands/kg';
 
 const fixture = path.join(path.dirname(fileURLToPath(import.meta.url)), 'fixtures', 'kg', 'build');
@@ -24,7 +25,7 @@ async function build(): Promise<{manifest: any, rows: (file: string) => any[], p
     await kg({_: ['kg', 'build'], kg: path.join(repo, KG_DIR), only: 'ts-packages,ts-functions', db: false, output: 'json'});
     expect(error.mock.calls).toEqual([]);
     expect(process.exitCode).toBeUndefined();
-    const out = path.join(repo, '.kg');
+    const out = currentDir(path.join(repo, '.kg'))!;
     const rows = (file: string) => {
       const p = path.join(out, file.startsWith('reports/') ? file : `data/${file}.jsonl`);
       return fs.existsSync(p) ? fs.readFileSync(p, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l)) : [];
@@ -133,7 +134,7 @@ describe('ts-packages extractor (build-plan.md WO-3a)', () => {
 
   it('reads package.json into package and library nodes with the type-file members', async () => {
     const {rows, manifest} = await graph;
-    expect(manifest.sources).toEqual({'ts-functions': 'partial', 'ts-packages': 'ok'});
+    expect(manifest.sources).toEqual({'ts-functions': 'partial(2 rejected)', 'ts-packages': 'ok'});
     expect(byId(rows('nodes/package'), 'pkg:Demo')).toEqual({
       id: 'pkg:Demo', type: 'package', name: 'Demo', author: 'Jane Dev', batch: expect.any(String), category: 'Cheminformatics', description: 'The fixture package with every folder.',
       friendly_name: 'Demo', language: 'ts', npm: '@datagrok/demo', path: 'public/packages/Demo', provenance: 'registry', service: true, settings: ['Sketcher', 'TemplatesPath'],
@@ -151,6 +152,7 @@ describe('ts-packages extractor (build-plan.md WO-3a)', () => {
     expect(rows('edges/depends-on').map((e) => [e.from, e.to, e.kind, e.range])).toEqual([
       ['lib:utils', 'lib:js-api', 'runtime', '^1.27.7'],
       ['pkg:Demo', 'lib:js-api', 'runtime', '^1.27.7'],
+      ['pkg:Demo', 'lib:utils', 'optional', '^4.7.9'],
       ['pkg:Demo', 'lib:utils', 'runtime', '^4.7.9'],
       ['pkg:Demo', 'pkg:Plain', 'dev', '^0.1.0'],
       ['pkg:Plain', 'lib:js-api', 'runtime', '^1.27.7'],
@@ -174,8 +176,8 @@ describe('ts-packages extractor (build-plan.md WO-3a)', () => {
 describe('ts-functions extractor (build-plan.md WO-3a)', () => {
   it('picks the subtype by role precedence: widgets,panel is a panel; viewer,panel a viewer; adminApp,app an app; every role stays in roles', async () => {
     const {rows} = await graph;
-    expect(byId(rows('nodes/panel'), 'func:Demo:Molecule Panel')).toMatchObject({type: 'panel', roles: ['widgets', 'panel']});
-    expect(byId(rows('nodes/viewer'), 'func:Demo:Demo Viewer')).toMatchObject({type: 'viewer', roles: ['viewer', 'panel'], trellisable: true, icon: 'files/icons/viewer.svg', builtin: false});
+    expect(byId(rows('nodes/panel'), 'func:Demo:Molecule Panel')).toMatchObject({type: 'panel', roles: ['panel', 'widgets']});
+    expect(byId(rows('nodes/viewer'), 'func:Demo:Demo Viewer')).toMatchObject({type: 'viewer', roles: ['panel', 'viewer'], trellisable: true, icon: 'files/icons/viewer.svg', builtin: false});
     expect(byId(rows('nodes/app'), 'func:Demo:Demo App')).toMatchObject({type: 'app', roles: ['adminApp', 'app'], admin: true, browse_path: 'Chem | Demo', icon: 'files/icons/demo.svg'});
     expect(byId(rows('nodes/app'), 'func:Plain:Plain App')).toMatchObject({admin: false, browse_path: 'Misc', tags: ['app'], roles: ['app']});
     expect(rows('nodes/lifecycle-hook').map((f) => [f.id, f.phase, f.immediate])).toEqual([['func:Demo:autostart', 'autostart', true], ['func:Demo:init', 'init', undefined]]);
@@ -252,6 +254,7 @@ describe('ts-functions extractor (build-plan.md WO-3a)', () => {
       ['func:Demo:Molecule Renderer', 'semtype:Molecule', 'renders', 'annotation', 1],
       ['func:Demo:Substructure Filter', 'semtype:Molecule', 'filters', 'annotation', 1],
       ['func:Demo:To HELM', 'semtype:Macromolecule', 'consumes', 'annotation', 1],
+      ['func:Demo:To HELM', 'semtype:Macromolecule', 'produces', 'annotation', 1],
       ['func:Demo:detectCountries', 'semtype:demo-country', 'detects', 'ast', 0.9],
       ['func:Demo:detectFlags', 'semtype:flag', 'detects', 'ast', 0.9],
       ['func:Demo:detectImages', 'semtype:BinaryImage', 'detects', 'ast', 0.9],
@@ -306,7 +309,7 @@ describe('ts-functions extractor (build-plan.md WO-3a)', () => {
       ['query:Demo:Demo App', 'conn:Demo:Demo']]);
     expect(byId(rows('nodes/connection'), 'conn:System:Datagrok')).toMatchObject({status: 'proposed'});
     expect(problems.invalid_rows).toEqual(["public/packages/Demo/queries/q.sql:19: query 'no connection' has no --connection:"]);
-    expect(manifest.sources['ts-functions']).toBe('partial');
+    expect(manifest.sources['ts-functions']).toBe('partial(2 rejected)');
   });
 
   it('reads connections without credentials', async () => {
@@ -326,17 +329,19 @@ describe('ts-functions extractor, the defects of the WO-3a review', () => {
     expect(problems.shadowed_headers).toEqual(["public/packages/Plain/src/package-test.ts:11: 'helper' is already registered in public/packages/Plain/src/package.ts"]);
   });
 
-  it('D2 keeps the first of two declarations under one id, counts duplicate_ids, and gives a colliding query its own id', async () => {
+  it('D2 keeps the first of two declarations under one id, counts the collision apart from a merge, and gives a colliding query its own id', async () => {
     const {rows, problems} = await graph;
     expect(byId(rows('nodes/panel'), 'func:Demo:Dual')).toMatchObject({line: 153});
     expect(byId(rows('nodes/function'), 'func:Demo:Twice')).toMatchObject({line: 139, input_types: ['int']});
     expect(byId(rows('nodes/query'), 'query:Demo:Demo App')).toMatchObject({language: 'sql', connection: 'conn:Demo:Demo'});
     expect(byId(rows('nodes/app'), 'func:Demo:Demo App')).toMatchObject({language: 'ts'});
-    expect(problems.duplicate_ids).toEqual([
+    // two registrations competing for one name are a collision, not the cross-extractor merge duplicate_ids counts
+    expect(problems.registration_collisions).toEqual([
       'func:Demo:Twice: function at public/packages/Demo/src/package.g.ts:145 ignored; function at public/packages/Demo/src/package.g.ts:139 kept',
-      'func:Demo:Dual: app at public/packages/Demo/src/package.g.ts:161 ignored; panel at public/packages/Demo/src/package.g.ts:153 kept',
+      'func:Demo:Dual: app at public/packages/Demo/src/package.g.ts:162 ignored; panel at public/packages/Demo/src/package.g.ts:153 kept',
       "public/packages/Demo/queries/q.sql: query 'Demo App' collides with the function of the same name in public/packages/Demo/src/package.g.ts; kept as query:Demo:Demo App",
     ]);
+    expect(problems.duplicate_ids).toBeUndefined();
   });
 
   it('D2 re-checks a merged row against the winning type and demotes it to invalid', () => {

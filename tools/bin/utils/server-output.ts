@@ -10,7 +10,10 @@ export function setOutputFormat(format: OutputFormat): void {
   errorFormat = format;
 }
 
-export function printOutput(data: any, format: OutputFormat): void {
+/** How much of a list or an object a table cell shows before it is cut and marked. */
+export const CELL_BUDGET = 40;
+
+export function printOutput(data: any, format: OutputFormat, budget: number = CELL_BUDGET): void {
   if (data === null || data === undefined) {
     if (format !== 'quiet') console.log('(empty)');
     return;
@@ -21,7 +24,7 @@ export function printOutput(data: any, format: OutputFormat): void {
       console.log(JSON.stringify(data, null, 2));
       break;
     case 'csv':
-      printCsv(rows);
+      printCsv(rows, budget);
       break;
     case 'quiet':
       for (const row of rows) {
@@ -32,21 +35,47 @@ export function printOutput(data: any, format: OutputFormat): void {
       }
       break;
     default:
-      printTable(rows);
+      printTable(rows, budget);
   }
 }
 
-export function cellStr(v: any): string {
+export function cellStr(v: any, budget: number = CELL_BUDGET): string {
   if (v === null || v === undefined) return '';
+  if (Array.isArray(v)) return listStr(v, budget);
   if (typeof v === 'object') {
     if (v.name) return v.name;
     if (v.id) return v.id;
-    return JSON.stringify(v).slice(0, 40);
+    const json = JSON.stringify(v);
+    return json.length > budget ? `${json.slice(0, budget - 1)}…` : json;
   }
   return String(v);
 }
 
-function printTable(rows: any[]): void {
+/** A list reads as its items, not as JSON; a cut one says how many it left out, so it cannot pass for a whole one. */
+function listStr(items: any[], budget: number): string {
+  const parts = items.map((x) => cellStr(x, budget));
+  const joined = parts.join(', ');
+  if (joined.length <= budget) return joined;
+  let kept = 0;
+  let width = 0;
+  for (const part of parts) {
+    const next = width + (kept ? 2 : 0) + part.length;
+    if (next > budget) break;
+    width = next;
+    kept++;
+  }
+  const head = kept ? parts.slice(0, kept).join(', ') : cutAtWord(parts[0], budget);
+  const omitted = items.length - Math.max(kept, 1);
+  return omitted > 0 ? `${head} … (+${omitted} more)` : `${head}…`;
+}
+
+function cutAtWord(s: string, budget: number): string {
+  const cut = s.slice(0, budget);
+  const space = cut.lastIndexOf(' ');
+  return (space > budget / 2 ? cut.slice(0, space) : cut).trimEnd();
+}
+
+function printTable(rows: any[], budget: number = CELL_BUDGET): void {
   if (!rows.length) { console.log('(no results)'); return; }
   if (typeof rows[0] !== 'object' || rows[0] === null) {
     for (const r of rows) console.log(r);
@@ -57,17 +86,17 @@ function printTable(rows: any[]): void {
   for (const k of keys) widths[k] = k.length;
   for (const row of rows)
     for (const k of keys)
-      widths[k] = Math.max(widths[k], cellStr(row[k]).length);
+      widths[k] = Math.max(widths[k], cellStr(row[k], budget).length);
 
   const header = keys.map((k) => k.padEnd(widths[k])).join('  ');
   const sep = keys.map((k) => '-'.repeat(widths[k])).join('  ');
   console.log(header);
   console.log(sep);
   for (const row of rows)
-    console.log(keys.map((k) => cellStr(row[k]).padEnd(widths[k])).join('  '));
+    console.log(keys.map((k) => cellStr(row[k], budget).padEnd(widths[k])).join('  '));
 }
 
-function printCsv(rows: any[]): void {
+function printCsv(rows: any[], budget: number = CELL_BUDGET): void {
   if (!rows.length) return;
   if (typeof rows[0] !== 'object' || rows[0] === null) {
     for (const r of rows) console.log(csvCell(String(r)));
@@ -76,7 +105,7 @@ function printCsv(rows: any[]): void {
   const keys = getKeys(rows);
   console.log(keys.map(csvCell).join(','));
   for (const row of rows)
-    console.log(keys.map((k) => csvCell(cellStr(row[k]))).join(','));
+    console.log(keys.map((k) => csvCell(cellStr(row[k], budget))).join(','));
 }
 
 export function csvCell(s: string): string {

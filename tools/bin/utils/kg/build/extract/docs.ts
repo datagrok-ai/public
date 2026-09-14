@@ -20,6 +20,8 @@ const TUTORIALS = 'public/packages/Tutorials/src/tracks';
 const HEADING = /^(#{1,4})\s+(.+?)\s*(?:\{#([^}]+)\})?\s*#*\s*$/;
 const NUMBERED_STEP = /^\s*\d+\.\s+\S/;
 const PRIORITIES = ['p0', 'p1', 'p2', 'p3'];
+/** `visibility:` in a page's frontmatter narrows what its location allows, for the page and for its headings. */
+const VISIBILITY = ['public', 'dev', 'internal'];
 const QUOTED = /(['"`])((?:\\.|(?!\1).)*)\1/g;
 /** A changelog is the ts-changelog extractor's source; as a page it would add a heading anchor per released version. */
 const PAGE_IGNORE = /(^|\/)CHANGELOG\.mdx?$/i;
@@ -50,9 +52,11 @@ class DocLayer {
     const title = typeof data.title === 'string' ? data.title : undefined;
     const name = title ?? firstHeading(fm.body) ?? path.posix.basename(file);
     const keywords = (Array.isArray(data.keywords) ? data.keywords : typeof data.keywords === 'string' ? [data.keywords] : []).filter((k): k is string => typeof k === 'string');
-    this.emitter.node({type: 'doc-page', id, name, description: typeof data.description === 'string' ? data.description : firstParagraph(fm.body), path: file, kind: docKind(file),
+    const visibility = VISIBILITY.includes(String(data.visibility)) ? String(data.visibility) : undefined;
+    const admitted = this.emitter.node({type: 'doc-page', id, name, description: typeof data.description === 'string' ? data.description : firstParagraph(fm.body), path: file, kind: docKind(file),
       title, mdx: /\.mdx$/i.test(file) || !!data.mdx ? true : undefined, unlisted: data.unlisted === true ? true : undefined, keywords: keywords.length ? keywords : undefined,
-      provenance: Object.keys(data).length ? 'annotation' : 'filesystem', source_layer: sourceLayerOf(file)});
+      visibility, provenance: Object.keys(data).length ? 'annotation' : 'filesystem', source_layer: sourceLayerOf(file)});
+    if (!admitted.accepted) return;
     const prose = proseLines(fm.body);
     const seen = new Map<string, number>();
     for (const {text} of prose) {
@@ -63,7 +67,8 @@ class DocLayer {
       const n = seen.get(base) ?? 0;
       seen.set(base, n + 1);
       const slug = n ? `${base}-${n}` : base;
-      this.emitter.node({type: 'doc-anchor', id: docId(file, slug), name: h[2], path: file, page: id, slug, depth: h[1].length, heading: h[2], provenance: 'annotation', source_layer: sourceLayerOf(file)});
+      this.emitter.node({type: 'doc-anchor', id: docId(file, slug), name: h[2], path: file, page: id, slug, depth: h[1].length, heading: h[2],
+        visibility, provenance: 'annotation', source_layer: sourceLayerOf(file)});
     }
     this.unresolved += emitMentions(this.emitter, id, prose.map((l) => l.text).join('\n'), file, this.index).unresolved.length;
     if (file.startsWith(TEST_TRACK) && data.feature !== undefined && data.id === undefined) this.emitScenario(file, fm, name, prose.map((l) => l.text));
@@ -79,7 +84,7 @@ class DocLayer {
     const row: Row = {type: 'scenario', id, name, description: firstParagraph(fm.body), path: file, priority: PRIORITIES.includes(str('priority') ?? '') ? str('priority') : undefined,
       target_layer: str('target_layer'), coverage_type: str('coverage_type'), manual_only: data.manual_only === true || data.target_layer === 'manual-only' ? true : undefined,
       manual_only_reason: str('manual_only_reason'), steps: steps || undefined, provenance: 'annotation', source_layer: 'public'};
-    this.emitter.node(row);
+    if (!this.emitter.node(row).accepted) return;
     const dir = path.posix.dirname(file);
     for (const spec of Array.isArray(data.realized_as) ? data.realized_as : []) {
       if (typeof spec !== 'string') continue;

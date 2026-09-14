@@ -87,6 +87,10 @@ export interface LoadResult {
   rels: TableRows[];
   /** Rows whose list values CSV cannot carry (see `LIST_UNSAFE`), inserted one by one instead. */
   parameterized: number;
+  /** Peak resident memory of this process during the load, in MB: what a reader of the index needs. */
+  memoryMb: number;
+  /** `<platform>-<arch>` the index was written on; Kuzu's format is not portable between them. */
+  platform: string;
 }
 
 const BUILD_ORDER = ['id', 'type', 'types'];
@@ -96,8 +100,15 @@ const SEPARATOR = '\u0000';
 /** A list item CSV can carry: Kuzu's list reader splits on `,`, honours `[](){}` and quotes, and unescapes nothing. */
 const LIST_UNSAFE = /^$|^["'\s]|[\s]$|[,[\]{}]/;
 
-/** Kuzu takes 80% of free memory by default; a CLI over a 100 MB graph needs a fraction of that. */
-const BUFFER_POOL = 2048 * 1024 * 1024;
+/** Kuzu takes 80% of free memory by default; a CLI over a 100 MB graph needs a fraction of that. The load
+ * needs room for the tables it builds, a reader only for what it touches — `--memory <MB>` and
+ * `KG_KUZU_MEMORY` override both, and a manifest that recorded a bigger load raises the reader's floor. */
+export const BUILD_MEMORY_MB = 2048;
+export const READ_MEMORY_MB = 512;
+/** Graph identifiers reach Cypher inside backticks; nothing else may (conventions.md §7.1). */
+const IDENTIFIER = /^[A-Za-z_][A-Za-z0-9_]*$/;
+/** How often the load samples its own resident memory for the high-water mark. */
+const SAMPLE_MS = 250;
 
 const nodeRequire = typeof require === 'function' ? require : createRequire(path.join(process.cwd(), 'grok.js'));
 
@@ -232,15 +243,48 @@ function column(c: Column): string {
   return `${quote(c.name)} ${c.type}`;
 }
 
-/** Every identifier is quoted: `order`, `key`, `from` and `type` are Cypher keywords. */
+/** Every identifier is quoted: `order`, `key`, `from` and `type` are Cypher keywords. A name that is not a
+ * schema identifier is refused here rather than escaped: quoting is not a place to accept arbitrary text. */
 export function quote(identifier: string): string {
+  if (!IDENTIFIER.test(identifier))
+    throw new Error(`'${identifier}' is not a graph identifier (letters, digits and _, not starting with a digit); ` +
+      'table and column names come from the type system (conventions.md §7.1)');
   return `\`${identifier}\``;
 }
 
-export async function open(kgDir: string, readonly = true): Promise<{db: KuzuDatabase, conn: KuzuConnection} | null> {
+/** A single-quoted Cypher literal: a checkout path can hold an apostrophe, and a Windows one backslashes.
+ * Kuzu 0.11.3 reads `\'`, not the SQL `''` — a doubled quote is a parser error there. */
+export function literal(value: string): string {
+  return `'${value.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`;
+}
+
+/** `--memory <MB>` first, then `KG_KUZU_MEMORY`, then [fallback]; anything unreadable is ignored. */
+export function memoryMb(option: unknown, fallback: number): number {
+  for (const value of [option, process.env.KG_KUZU_MEMORY]) {
+    const mb = Number(value);
+    if (value !== undefined && value !== '' && Number.isFinite(mb) && mb > 0) return Math.round(mb);
+  }
+  return fallback;
+}
+
+/** What a reader of the index in [kgDir] needs: its floor, or the load's own high-water mark when that is more. */
+export function readerMemoryMb(kgDir: string, option?: unknown): number {
+  const file = path.join(kgDir, 'manifest.json');
+  let recorded = 0;
+  try {
+    recorded = Number(JSON.parse(fs.readFileSync(file, 'utf8')).index_memory_mb) || 0;
+  }
+  catch {
+    // no manifest beside the index, or one without the field: the floor stands
+  }
+  return memoryMb(option, Math.max(READ_MEMORY_MB, recorded));
+}
+
+export async function open(kgDir: string, readonly = true, mb?: number): Promise<{db: KuzuDatabase, conn: KuzuConnection} | null> {
   const kuzu = loadKuzu();
   if (!kuzu) return null;
-  const db = new kuzu.Database(path.join(kgDir, 'kg.kuzu'), BUFFER_POOL, true, readonly);
+  const pool = (readonly ? readerMemoryMb(kgDir, mb) : memoryMb(mb, BUILD_MEMORY_MB)) * 1024 * 1024;
+  const db = new kuzu.Database(path.join(kgDir, 'kg.kuzu'), pool, true, readonly);
   return {db, conn: new kuzu.Connection(db)};
 }
 
@@ -289,8 +333,9 @@ function plain(value: unknown): unknown {
   return value;
 }
 
-/** Replaces `<kgDir>/kg.kuzu` with the graph in `<kgDir>/data`, through CSVs under `<kgDir>/tmp`. */
-export async function load(kgDir: string, system: TypeSystem): Promise<LoadResult> {
+/** Writes `<kgDir>/kg.kuzu` from the graph in `<kgDir>/data`, through CSVs under `<kgDir>/tmp`. The caller
+ * builds a generation of its own, so nothing here is ever loaded over a database a reader may hold. */
+export async function load(kgDir: string, system: TypeSystem, mb?: number): Promise<LoadResult> {
   const kuzu = loadKuzu();
   if (!kuzu) throw new Error(MISSING_KUZU);
   const started = Date.now();
@@ -299,9 +344,12 @@ export async function load(kgDir: string, system: TypeSystem): Promise<LoadResul
   const tmp = path.join(kgDir, 'tmp');
   for (const p of [dbPath, `${dbPath}.wal`, `${dbPath}.tmp`, tmp]) fs.rmSync(p, {recursive: true, force: true});
   fs.mkdirSync(tmp, {recursive: true});
-  const db = new kuzu.Database(dbPath, BUFFER_POOL);
+  const db = new kuzu.Database(dbPath, memoryMb(mb, BUILD_MEMORY_MB) * 1024 * 1024);
   const conn = new kuzu.Connection(db);
   const chains = new Map<string, string[]>([...system.nodes].map(([name, type]) => [name, type.chain]));
+  let peak = process.memoryUsage().rss;
+  const watch = setInterval(() => peak = Math.max(peak, process.memoryUsage().rss), SAMPLE_MS);
+  watch.unref();
   try {
     for (const statement of schema.statements) await exec(conn, statement);
     const table = new Map<string, string>();
@@ -317,7 +365,7 @@ export async function load(kgDir: string, system: TypeSystem): Promise<LoadResul
           if (!csv.write(row)) late.push(row);
         }
       csv.end();
-      if (csv.rows) await exec(conn, `COPY ${quote(t.name)} (${csv.columns.map((c) => quote(c.name)).join(', ')}) FROM '${posix(csv.file)}' (HEADER=true, PARALLEL=false)`);
+      if (csv.rows) await exec(conn, `COPY ${quote(t.name)} (${csv.columns.map((c) => quote(c.name)).join(', ')}) FROM ${literal(posix(csv.file))} (HEADER=true, PARALLEL=false)`);
       for (const row of late) await insertNode(conn, t, row);
       parameterized += late.length;
       nodes.push({table: t.name, rows: csv.rows + late.length});
@@ -341,16 +389,19 @@ export async function load(kgDir: string, system: TypeSystem): Promise<LoadResul
       for (const [key, csv] of files) {
         csv.end();
         const [from, to] = key.split(SEPARATOR);
-        if (csv.rows) await exec(conn, `COPY ${quote(t.name)} FROM '${posix(csv.file)}' (HEADER=true, PARALLEL=false, from='${from}', to='${to}')`);
+        if (csv.rows) await exec(conn, `COPY ${quote(t.name)} FROM ${literal(posix(csv.file))} (HEADER=true, PARALLEL=false, from=${literal(from)}, to=${literal(to)})`);
       }
       for (const row of late) await insertRel(conn, t, row);
       parameterized += late.length;
       rels.push({table: t.name, rows: rows + late.length});
     }
     await exec(conn, 'CHECKPOINT');
-    return {db: dbPath, ms: Date.now() - started, bytes: sizeOf(dbPath), nodes, rels, parameterized};
+    peak = Math.max(peak, process.memoryUsage().rss);
+    return {db: dbPath, ms: Date.now() - started, bytes: sizeOf(dbPath), nodes, rels, parameterized,
+      memoryMb: Math.ceil(peak / 1048576), platform: `${process.platform}-${process.arch}`};
   }
   finally {
+    clearInterval(watch);
     await conn.close();
     await db.close();
     fs.rmSync(tmp, {recursive: true, force: true});
@@ -445,7 +496,7 @@ function text(value: string): string {
 }
 
 function posix(p: string): string {
-  return p.replace(/\\/g, '/');
+  return p.split(path.sep).join('/');
 }
 
 function sizeOf(p: string): number {

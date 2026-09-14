@@ -14,7 +14,11 @@ import {listPackages} from './packages';
 export interface DgTest {
   category: string;
   name: string;
+  /** The registered name is built at run time; [name] is its literal head with an ellipsis. */
+  dynamic: boolean;
   skipReason?: string;
+  /** skipReason is an expression, so whether the test runs is decided at run time. */
+  skipConditional: boolean;
   benchmark: boolean;
   tags: string[];
 }
@@ -36,6 +40,9 @@ const PLAYWRIGHT_CALL = /(?<![\w.$])(test\.describe(?:\.(?:serial|parallel|only|
 const TRAILING_OBJECT = /[\w)\]}'"`]\s*,\s*\{([^{}]*)\}\s*\)/g;
 const OPTION_KEYS = /\b(?:timeout|skipReason|benchmark|tags|stressTest|owner|isAggregated|benchmarkTimeout|benchmarkWarnTimeout|unhandledExceptionTimeout)\s*:/;
 const STRING = /^(['"`])((?:\\.|(?!\1).)*)\1$/;
+/** What follows a title that the code appends to: `test('Correctness: ' + name`. */
+const CONCATENATED = /^\s*\+/;
+const INTERPOLATION = '${';
 
 export const testsExtractor: Extractor = {
   name: 'ts-tests',
@@ -60,9 +67,11 @@ class TestLayer {
     const level = pkg === API_TESTS_PACKAGE ? 'api' : 'unit';
     for (const t of parseDgTests(this.read(file))) {
       const id = testId('dg', file, t.category, t.name);
-      const row: Row = {type: 'test', id, name: t.name, path: file, framework: 'dg', level, category: t.category, skipped: t.skipReason !== undefined ? true : undefined,
-        skip_reason: t.skipReason, benchmark: t.benchmark ? true : undefined, tags: t.tags.length ? t.tags : undefined, provenance: 'ast', source_layer: 'public'};
-      this.emitter.node(row);
+      const row: Row = {type: 'test', id, name: t.name, path: file, framework: 'dg', level, category: t.category, dynamic: t.dynamic ? true : undefined,
+        skipped: t.skipReason !== undefined ? true : undefined, skip_conditional: t.skipConditional ? true : undefined, skip_reason: t.skipReason,
+        benchmark: t.benchmark ? true : undefined, tags: t.tags.length ? t.tags : undefined, provenance: 'ast', source_layer: 'public'};
+      if (!this.emitter.node(row).accepted) continue;
+      if (t.dynamic) this.emitter.problem('dynamic_tests', `${file}: ${t.category}/${t.name} names a registration site, not a runnable test: the title is built at run time`);
       const suite = suiteId('dg', pkg, t.category);
       if (!this.suites.has(suite)) {
         this.suites.add(suite);
@@ -84,8 +93,8 @@ class TestLayer {
     for (const t of tests) {
       const chain = t.describes.join(' > ');
       const id = playwrightTestId(file, t);
-      this.emitter.node({type: 'test', id, name: chain ? `${chain} > ${t.title}` : t.title, path: file, framework: 'playwright', level: 'e2e', category: chain || undefined,
-        skipped: t.skipped ? true : undefined, provenance: 'ast', source_layer: 'public'});
+      if (!this.emitter.node({type: 'test', id, name: chain ? `${chain} > ${t.title}` : t.title, path: file, framework: 'playwright', level: 'e2e', category: chain || undefined,
+        skipped: t.skipped ? true : undefined, provenance: 'ast', source_layer: 'public'}).accepted) continue;
       this.emitter.edge({type: 'in-suite', from: id, to: suite, derived_by: 'ast', confidence: 1, evidence: [file]});
       const feature = leadingId(t.title);
       if (feature) this.tests(id, feature, 'e2e', file);
@@ -113,8 +122,9 @@ export function playwrightTestId(file: string, t: PlaywrightTest): string {
 }
 
 /** The DG tests of a source, in order: `category('X'` sets the category of every `test('Y'` after it, as the framework does; a
- * test before any category is not registered and is left out. A title built from a concatenation (`test('Correctness: ' + name`)
- * keeps only its literal head, trimmed, so the id of a row and the name it carries stay the same text. */
+ * test before any category is not registered and is left out. A title built at run time — a concatenation
+ * (`test('Correctness: ' + name`) or a template — keeps only its literal head plus an ellipsis and is marked dynamic: the row
+ * describes the registration site, and the cases it produces cannot be enumerated from the text. */
 export function parseDgTests(source: string): DgTest[] {
   const text = blankComments(source);
   const calls = [...text.matchAll(DG_CALL)];
@@ -129,15 +139,25 @@ export function parseDgTests(source: string): DgTest[] {
     const span = text.slice(m.index!, calls[i + 1]?.index ?? text.length);
     const options = [...span.matchAll(TRAILING_OBJECT)].map((o) => o[1]).filter((o) => OPTION_KEYS.test(o)).pop() ?? '';
     const skip = /\bskipReason\s*:\s*((['"`])(?:\\.|(?!\2).)*\2|[^,}]+)/.exec(options);
+    const reason = skip ? literalString(skip[1].trim()) : undefined;
     const tags = /\btags\s*:\s*\[([^\]]*)\]/.exec(options);
+    const interpolated = m[2] === '`' && m[3].includes(INTERPOLATION);
+    const dynamic = interpolated || CONCATENATED.test(text.slice(m.index! + m[0].length));
+    const head = interpolated ? m[3].slice(0, m[3].indexOf(INTERPOLATION)) : m[3];
     out.push({
-      category, name: m[3].trim(),
-      skipReason: skip ? (STRING.exec(skip[1].trim())?.[2] ?? skip[1].trim()) : undefined,
+      category, name: dynamic ? `${head.trim()}…` : m[3].trim(), dynamic,
+      skipReason: reason, skipConditional: !!skip && reason === undefined,
       benchmark: /\bbenchmark\s*:\s*true\b/.test(options),
-      tags: tags ? tags[1].split(',').map((t) => STRING.exec(t.trim())?.[2]).filter((t): t is string => !!t) : [],
+      tags: tags ? tags[1].split(',').map((t) => literalString(t.trim())).filter((t): t is string => !!t) : [],
     });
   });
   return out;
+}
+
+/** The text a quoted literal holds, or nothing when the value is an expression or a template with an interpolation. */
+function literalString(value: string): string | undefined {
+  const m = STRING.exec(value);
+  return m && !(m[1] === '`' && m[2].includes(INTERPOLATION)) ? m[2] : undefined;
 }
 
 /** The Playwright tests of a spec with their enclosing describes; `test.skip('x'`, `test.fixme('x'` and a `describe.skip` make a test skipped. */

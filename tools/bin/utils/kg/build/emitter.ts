@@ -3,7 +3,7 @@
 /// hierarchy, inherits down it, materializes reference properties, checks endpoints, enforces required
 /// members once and settles visibility.
 import {TypeSystem, NodeType, isSubtype, concreteAuthored} from '../types';
-import {normalizeRow, normalizeEdgeRow, Row, RowProblem} from './normalize';
+import {normalizeRow, normalizeEdgeRow, isOrdered, Row, RowProblem} from './normalize';
 import {PREFIXED_ID, SCHEMED_ID, SCHEME_TYPES, JIRA_KEY, parseId, stubName, titleCase, locationVisibility, sourceLayerOf} from './ids';
 
 export interface Claim {
@@ -16,6 +16,20 @@ export interface Claim {
   line?: number;
   /** An inline `// ~id` marker (conventions.md §6): participates-in only, never ownership. */
   mode?: 'participates';
+}
+
+/** What `node()` did with a row: an extractor may only emit a node's dependent edges and refs when it was accepted. */
+export interface Admission {
+  accepted: boolean;
+  id: string;
+  /** Why not: `invalid`, `registration_collision` or `duplicate_id`. */
+  reason?: string;
+}
+
+/** What one source contributed, counted after finalize: rows still in the graph, and rows it lost on the way. */
+export interface SourceCounts {
+  accepted: number;
+  rejected: number;
 }
 
 export interface Graph {
@@ -32,13 +46,15 @@ export interface Graph {
   invalid: Row[];
   /** Structured reports an extractor built, by file name under `reports/`. */
   reports: Record<string, unknown>;
+  /** Extra manifest fields the extractors contributed (`dart_packages`, `inventory`). */
+  manifest: Record<string, unknown>;
 }
 
 export const PROVENANCE_RANK = ['annotation', 'ast', 'registry', 'filesystem', 'external', 'git', 'manual', 'llm'];
 const VISIBILITY_ORDER = ['public', 'dev', 'internal'];
 const EVIDENCE_CAP = 20;
 const INVALID_CAP = 500;
-const PROBLEM_KINDS = ['invalid_rows', 'dangling_edges', 'unresolved_ids', 'ambiguous_owners', 'orphans', 'partial_stubs', 'duplicate_ids'];
+const PROBLEM_KINDS = ['invalid_rows', 'dangling_edges', 'unresolved_ids', 'ambiguous_owners', 'orphans', 'partial_stubs', 'duplicate_ids', 'registration_collisions'];
 
 interface NodeEntry {
   row: Row;
@@ -58,18 +74,23 @@ export class Emitter {
   private details: Record<string, string[]> = {};
   private invalid: Row[] = [];
   private reports: Record<string, unknown> = {};
+  private extra: Record<string, unknown> = {};
+  /** The extractor emitting right now, so a rejection can be attributed to its source. */
+  private current = '';
+  /** Source -> the ids it got in, and how many rows it lost. */
+  private contributed = new Map<string, {ids: Set<string>, rejected: number}>();
   readonly sources: Record<string, string> = {};
 
   constructor(private system: TypeSystem, readonly batch: string) {}
 
-  node(row: Row): void {
+  node(row: Row): Admission {
     const {row: r, problems, defaulted} = normalizeRow(this.system, row);
     if (typeof r.id !== 'string' || !r.id) problems.push({key: 'id', code: 'missing-key', message: 'no id'});
     if (problems.length) {
       this.reject(row, problems);
-      return;
+      return this.refuse(String(row.id ?? ''), 'invalid');
     }
-    this.merge(r, new Set(defaulted));
+    return this.merge(r, new Set(defaulted));
   }
 
   /** A node that exists only because something references it: carries only what created it (no defaults), is exempt from
@@ -109,7 +130,7 @@ export class Emitter {
       this.reject(row, problems);
       return;
     }
-    const key = [type, r.from, r.to, r.name ?? ''].join('\u0000');
+    const key = [type, r.from, r.to, r.name ?? '', ...edgeType.identity.map((p) => String(r[p] ?? ''))].join('\u0000');
     const existing = this.edges.get(key);
     if (!existing) {
       this.edges.set(key, r);
@@ -150,6 +171,24 @@ export class Emitter {
     this.sources[name] = status;
   }
 
+  /** The extractor whose rows follow, so a row it loses is counted against its source (`registry.runExtractors`). */
+  scope(name: string): void {
+    this.current = name;
+  }
+
+  /** A field the manifest carries beyond the schema's own (`dart_packages`, `inventory`). */
+  manifest(key: string, value: unknown): void {
+    this.extra[key] = value;
+  }
+
+  /** What each source contributed, after finalize dropped what it had to: `dart` says `ok` only when nothing was lost. */
+  sourceCounts(): Record<string, SourceCounts> {
+    const out: Record<string, SourceCounts> = {};
+    for (const [name, {ids, rejected}] of this.contributed)
+      if (name) out[name] = {accepted: [...ids].filter((id) => this.nodes.has(id)).length, rejected: rejected + [...ids].filter((id) => !this.nodes.has(id)).length};
+    return out;
+  }
+
   problem(kind: string, detail?: string): void {
     this.problems[kind] = (this.problems[kind] ?? 0) + 1;
     if (detail) (this.details[kind] ??= []).push(detail);
@@ -167,6 +206,7 @@ export class Emitter {
     for (const entry of this.nodes.values()) this.settleVisibility(entry);
     const stubs = [...this.nodes.values()].filter((e) => e.partial).map((e) => e.row.id as string);
     this.problems.partial_stubs = stubs.length;
+    this.settleSources();
     return {
       nodes: [...this.nodes.values()].map((e) => e.row),
       edges: [...this.edges.values()],
@@ -177,7 +217,16 @@ export class Emitter {
       details: this.details,
       invalid: this.invalid,
       reports: this.reports,
+      manifest: this.extra,
     };
+  }
+
+  /** A source that lost rows is partial however it reported itself; a missing one has nothing to be partial about. */
+  private settleSources(): void {
+    for (const [name, counts] of Object.entries(this.sourceCounts())) {
+      if (!counts.rejected || this.sources[name] === undefined || this.sources[name] === 'missing') continue;
+      this.sources[name] = `partial(${counts.rejected} rejected)`;
+    }
   }
 
   private reject(row: Row, problems: RowProblem[]): void {
@@ -185,33 +234,27 @@ export class Emitter {
     if (this.invalid.length < INVALID_CAP) this.invalid.push({...row, problems: problems.map((p) => p.message)});
   }
 
-  private merge(incoming: Row, defaulted: Set<string>): void {
+  private merge(incoming: Row, defaulted: Set<string>): Admission {
     const id = incoming.id as string;
     const incomingType = this.system.nodes.get(incoming.type as string)!;
     const provenance = String(incoming.provenance ?? '');
     const existing = this.nodes.get(id);
     if (!existing) {
       this.nodes.set(id, {row: incoming, type: incomingType, prov: Object.fromEntries(Object.keys(incoming).map((k) => [k, provenance])), weak: defaulted, partial: false});
-      return;
+      return this.admit(id);
     }
     let type = existing.type;
-    if (incomingType !== existing.type) {
-      if (isSubtype(this.system, incomingType.name, existing.type.name)) type = incomingType;
-      else if (!isSubtype(this.system, existing.type.name, incomingType.name)) {
-        this.duplicateId(existing, incoming, incomingType);
-        return;
-      }
-    }
-    if (!existing.partial && elsewhere(id, existing.row, incoming)) {
-      this.duplicateId(existing, incoming, incomingType);
-      return;
-    }
+    const narrows = isSubtype(this.system, incomingType.name, existing.type.name);
+    if (incomingType !== existing.type && !narrows && !isSubtype(this.system, existing.type.name, incomingType.name))
+      return this.duplicateId(existing, incoming, incomingType);
+    if (narrows) type = incomingType;
+    if (!existing.partial && elsewhere(id, existing.row, incoming))
+      return this.duplicateId(existing, incoming, incomingType);
     if (existing.partial) {
       const prov = Object.fromEntries(Object.keys(incoming).map((k) => [k, provenance]));
       const entry: NodeEntry = {row: {...existing.row, ...incoming, type: type.name}, type, prov: {...existing.prov, ...prov}, weak: defaulted, partial: false};
       this.nodes.set(id, entry);
-      this.revalidate(id, entry);
-      return;
+      return this.revalidate(id, entry);
     }
     const {row, prov, weak} = existing;
     for (const [k, v] of Object.entries(incoming)) {
@@ -224,7 +267,7 @@ export class Emitter {
         if (incomingWeak) weak.add(k);
         continue;
       }
-      if (Array.isArray(cur) && Array.isArray(v)) {
+      if (Array.isArray(cur) && Array.isArray(v) && !isOrdered(k)) {
         row[k] = [...new Set([...cur, ...v].map((x) => JSON.stringify(x)))].map((x) => JSON.parse(x));
         if (rank(provenance) < rank(prov[k])) prov[k] = provenance;
         continue;
@@ -242,20 +285,45 @@ export class Emitter {
     }
     row.type = type.name;
     existing.type = type;
-    this.revalidate(id, existing);
+    return this.revalidate(id, existing);
   }
 
-  /** Two rows for one id that are different declarations: the first one stands, the second is reported, never merged. */
-  private duplicateId(existing: NodeEntry, incoming: Row, incomingType: NodeType): void {
-    this.problem('duplicate_ids', `${incoming.id}: ${incomingType.name} at ${where(incoming)} ignored; ${existing.type.name} at ${where(existing.row)} kept`);
+  /**
+   * Two rows for one id that are different declarations: the first one stands, the second is reported, never merged.
+   * A second registration at another location is a name collision — two implementations competing for one name, whose
+   * loser must contribute nothing to the winner; anything else is two extractors that produced the same id.
+   */
+  private duplicateId(existing: NodeEntry, incoming: Row, incomingType: NodeType): Admission {
+    const id = String(incoming.id);
+    const collision = elsewhere(id, existing.row, incoming);
+    this.problem(collision ? 'registration_collisions' : 'duplicate_ids',
+      `${id}: ${incomingType.name} at ${where(incoming)} ignored; ${existing.type.name} at ${where(existing.row)} kept`);
+    return this.refuse(id, collision ? 'registration_collision' : 'duplicate_id');
   }
 
   /** A merged row must still satisfy the winning type, which a member narrowed by a subtype (a query's language) can break. */
-  private revalidate(id: string, entry: NodeEntry): void {
+  private revalidate(id: string, entry: NodeEntry): Admission {
     const {problems} = normalizeRow(this.system, entry.row, {defaults: false});
-    if (!problems.length) return;
+    if (!problems.length) return this.admit(id);
     this.reject(entry.row, problems);
     this.nodes.delete(id);
+    return this.refuse(id, 'invalid');
+  }
+
+  private admit(id: string): Admission {
+    this.contribution().ids.add(id);
+    return {accepted: true, id};
+  }
+
+  private refuse(id: string, reason: string): Admission {
+    this.contribution().rejected++;
+    return {accepted: false, id, reason};
+  }
+
+  private contribution(): {ids: Set<string>, rejected: number} {
+    let entry = this.contributed.get(this.current);
+    if (!entry) this.contributed.set(this.current, entry = {ids: new Set(), rejected: 0});
+    return entry;
   }
 
   /** Part-of from the id path of every hierarchical node; missing parents become stubs. Returns child -> parent. */
@@ -300,7 +368,7 @@ export class Emitter {
       for (const member of Object.values(entry.type.members)) {
         if (member.kind !== 'ref' || entry.row[member.name] === undefined) continue;
         const targets = member.list ? entry.row[member.name] as string[] : [entry.row[member.name] as string];
-        for (const to of targets) this.ref(id, member.name, to, String(entry.row.provenance ?? entry.prov[member.name] ?? 'filesystem'));
+        for (const to of targets) this.ref(id, member.name, to, String(entry.prov[member.name] ?? entry.row.provenance ?? 'filesystem'));
       }
   }
 

@@ -445,11 +445,20 @@ Verbs:
                 are not read yet; they arrive with \`build\`. Exit 1 on errors.
     gen         Write kg.d.ts, the glossary.md tables and feature-tree.md, all inside
                 core/docs/knowledge-graph. Refuses while check reports errors.
-    build       Run the extractors and write the graph as JSONL: .kg/data/nodes/<type>.jsonl,
-                .kg/data/edges/<type|property>.jsonl, .kg/manifest.json and .kg/reports/
-                (claims.jsonl for membership, invalid.jsonl, problems.json). Lines are
-                deterministic: two builds of the same revisions are byte-identical and
-                share a content-addressed batch id; only the manifest carries the time.
+    build       Run the extractors and write the graph as JSONL into one immutable
+                generation, .kg/gen/<batch>/: data/nodes/<type>.jsonl,
+                data/edges/<type|property>.jsonl, reports/ (claims.jsonl for membership,
+                invalid.jsonl, problems.json), the index as kg.kuzu, and manifest.json
+                last of all. Only when the generation is complete does .kg/current, one
+                line naming the batch, start pointing at it (with a .kg/gen/current link
+                beside it where the platform allows one), so a build that is interrupted
+                or fails to load the index leaves the previous generation queryable.
+                Earlier generations are never removed by build; grok kg gc removes them.
+                Lines are deterministic: two builds of the same inputs are byte-identical
+                and share a content-addressed batch id over both revisions, the dirty tree
+                of both repositories, the schema and builder versions, the mode, the
+                extractor selection, the backlog snapshot and the Dart batch; only the
+                manifest carries the time.
                 Problems are counted in the manifest, never thrown. Extractors today:
                 homes (the home-document layer), ts-packages (packages, libraries,
                 semantic types and depends-on from package.json) and ts-functions
@@ -464,9 +473,13 @@ Verbs:
                 membership (which feature owns each file, conventions.md §8; reports
                 ownership.json).
                 Loading the index is part of build: the JSONL is copied into a Kuzu
-                database at .kg/kg.kuzu (one node table per root, one rel table per edge
-                type and per reference property). The binding is optional — without it
-                build says so in one line and still succeeds.
+                database at .kg/gen/<batch>/kg.kuzu (one node table per root, one rel
+                table per edge type and per reference property), and the manifest records
+                it as indexed_batch with the memory the load needed (index_memory_mb) and
+                the platform it was written on (index_platform). The binding is optional —
+                without it build says so in one line and still succeeds. With --no-db the
+                generation carries no index, and current stays where it is rather than
+                take the index away from query.
     query       Cypher over the built index: grok kg query "MATCH (n:Feature) RETURN n.id",
                 or --file q.cypher. Exit 2 when kuzu is not installed.
     impact      What a change reaches: the features that own or take part in a file,
@@ -486,9 +499,13 @@ Verbs:
                 diff (the features a branch touches and the tests that cover them,
                 \`--diff <ref>\`; the md output is the PR comment). \`build\` writes the
                 first four to .kg/reports/ as both .json and .md.
+    gc          Remove older generations under .kg/gen/, keeping the current one and
+                the --keep newest (default 2). A generation whose index a reader holds
+                open is reported and left alone.
     help        Show this help
 
-The four operations and query read .kg next to the type files; each of them prints
+The four operations and query read the generation .kg/current names, next to the type
+files, and refuse an index that was loaded from another batch; each of them prints
 \`Dart coverage unknown (no kg-dart batch)\` first while no prop_gen batch has been
 built. Ids may be written with or without the \`~\` sigil.
 
@@ -510,7 +527,10 @@ Options:
     --only <a,b>        With build: run only the named extractors
     --backlog <dir>     With build: the backlog snapshot repo (used by the process layer)
     --no-db             With build: write the JSONL only, do not load the graph index
-    --out <dir>         With build and report: write (or read) under <dir> instead of .kg/
+    --out <dir>         With build, report and gc: write (or read) under <dir> instead of .kg/
+    --keep <n>          With gc: generations to keep besides the current one (default 2)
+    --memory <mb>       Kuzu buffer pool in MB: the load takes 2048, a reader 512 or what
+                        the manifest says the load needed. KG_KUZU_MEMORY does the same.
     --diff <ref>        With report diff: the revision HEAD is compared against
 
 Examples:
@@ -520,6 +540,7 @@ Examples:
   grok kg gen --check
   grok kg build --only homes --no-db
   grok kg build --public --output json
+  grok kg gc --keep 1
   grok kg query "MATCH (f:Feature)-[:owner]->(p:Actor) RETURN f.id, p.id"
   grok kg impact core/server/datlas/lib/src/services/spaces_service.dart
   grok kg tests-for ~visualize/viewers/scatter-plot --output json

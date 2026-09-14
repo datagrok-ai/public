@@ -12,6 +12,7 @@ import {Row} from '../../normalize';
 import {BuildContext, Extractor} from '../../registry';
 import {pkgId, fileId, declId, funcId, connId, envId, containerId, semtypeId, languageOf} from '../../ids';
 import {Header, HeaderBlock, parseFunctionHeaders, parseScriptHeader, parseQueryHeaders} from '../../annotations';
+import {HomeIndex, homesOf, resolveMention} from '../markers';
 import {countLines} from '../homes';
 import {PackageFolder, listPackages} from './packages';
 
@@ -72,7 +73,7 @@ export const functionsExtractor: Extractor = {
   layer: 'public',
   modes: ['full'],
   run(ctx: BuildContext, emitter: Emitter): void {
-    const layer = new FunctionLayer(ctx.repoRoot, emitter);
+    const layer = new FunctionLayer(ctx.repoRoot, emitter, new HomeIndex(homesOf(ctx)));
     const packages = listPackages(ctx.repoRoot);
     for (const pkg of packages) layer.emitPackage(pkg);
     for (const pkg of packages) layer.emitCalls(pkg);
@@ -90,7 +91,7 @@ class FunctionLayer {
   private files = new Set<string>();
   private semtypes: Record<string, string>;
 
-  constructor(private repoRoot: string, private emitter: Emitter) {
+  constructor(private repoRoot: string, private emitter: Emitter, private index: HomeIndex) {
     this.semtypes = loadSemtypes(repoRoot);
   }
 
@@ -149,7 +150,7 @@ class FunctionLayer {
       const {row, uses} = this.functionRow(block.header, {id, name, language: languageOf(file), path: file, line: block.declaration.line, pkg, type: 'function'});
       if (row.type === 'sem-type-detector' && !uses.some((u) => u.role === 'detects'))
         for (const semtype of this.detectedSemtypes(block, text, file)) uses.push({role: 'detects', semtype, derived_by: 'ast', confidence: 0.9});
-      this.emitFunction(row, uses, block.header, pkg, file);
+      if (!this.emitFunction(row, uses, block.header, pkg, file)) continue;
       this.emitter.edge({type: 'declares', from: fileId(file), to: id, derived_by: 'ast', confidence: 1, evidence: [file]});
       if (block.declaration.kind === 'method' && block.declaration.owner) {
         const owner = declId(file, block.declaration.owner);
@@ -188,8 +189,7 @@ class FunctionLayer {
       delete meta.sample;
     }
     if (header.keys.test) row.test = true;
-    this.emitFunction(row, uses, header, pkg, file);
-    this.register(pkg.folder, name, row.id as string);
+    if (this.emitFunction(row, uses, header, pkg, file)) this.register(pkg.folder, name, row.id as string);
   }
 
   private emitQueries(pkg: PackageFolder, file: string): void {
@@ -213,8 +213,7 @@ class FunctionLayer {
         row.expected_rows = expected;
         delete meta.testExpectedRows;
       }
-      this.emitFunction(row, uses, header, pkg, file);
-      this.register(pkg.folder, name, row.id as string);
+      if (this.emitFunction(row, uses, header, pkg, file)) this.register(pkg.folder, name, row.id as string);
     }
   }
 
@@ -223,7 +222,7 @@ class FunctionLayer {
   private ownId(pkg: PackageFolder, scheme: 'script' | 'query', name: string, file: string): string {
     if (!this.declared.has(name)) return funcId(pkg.folder, name);
     const id = `${scheme}:${pkg.folder}:${name}`;
-    this.emitter.problem('duplicate_ids', `${file}: ${scheme} '${name}' collides with the function of the same name in ${pkg.dir}/${this.declared.get(name)}; kept as ${id}`);
+    this.emitter.problem('registration_collisions', `${file}: ${scheme} '${name}' collides with the function of the same name in ${pkg.dir}/${this.declared.get(name)}; kept as ${id}`);
     return id;
   }
 
@@ -240,9 +239,8 @@ class FunctionLayer {
     if (typeof json?.dataSource !== 'string') return;
     const name = typeof json.name === 'string' ? json.name : path.posix.basename(file, '.json');
     const id = connId(pkg.folder, name);
-    this.emitter.node({type: 'connection', id, name, description: json.description, language: 'other', path: file, package: pkgId(pkg.folder), provider: json.dataSource,
-      server: json.parameters?.server, db: json.parameters?.db, provenance: 'registry', source_layer: 'public'});
-    this.declares(pkg, id, file);
+    if (this.emitter.node({type: 'connection', id, name, description: json.description, language: 'other', path: file, package: pkgId(pkg.folder), provider: json.dataSource,
+      server: json.parameters?.server, db: json.parameters?.db, provenance: 'registry', source_layer: 'public'}).accepted) this.declares(pkg, id, file);
   }
 
   private emitEnvironment(pkg: PackageFolder, file: string): void {
@@ -258,9 +256,8 @@ class FunctionLayer {
     const id = envId(pkg.folder, name);
     const packages = dependencyNames(data?.dependencies);
     const language = packages.some((p) => /^python\b/.test(p)) ? 'python' : packages.some((p) => /^r(-|$)/.test(p)) ? 'r' : 'other';
-    this.emitter.node({type: 'script-environment', id, name, language, path: file, package: pkgId(pkg.folder), packages: packages.length ? packages : undefined,
-      provenance: 'registry', source_layer: 'public'});
-    this.declares(pkg, id, file);
+    if (this.emitter.node({type: 'script-environment', id, name, language, path: file, package: pkgId(pkg.folder), packages: packages.length ? packages : undefined,
+      provenance: 'registry', source_layer: 'public'}).accepted) this.declares(pkg, id, file);
   }
 
   /** The three layouts `grok publish` builds from (publish.ts:55-106): a folder per container, one `dockerfiles/Dockerfile`
@@ -277,8 +274,8 @@ class FunctionLayer {
   /** `base` is left out: it references an image node no extractor produces yet (build-plan.md WO-3a). */
   private emitContainer(pkg: PackageFolder, name: string, file: string): void {
     const id = containerId(pkg.folder, name);
-    this.emitter.node({type: 'container', id, name, language: 'other', path: file, package: pkgId(pkg.folder), provenance: 'filesystem', source_layer: 'public'});
-    this.declares(pkg, id, file);
+    if (this.emitter.node({type: 'container', id, name, language: 'other', path: file, package: pkgId(pkg.folder), provenance: 'filesystem', source_layer: 'public'}).accepted)
+      this.declares(pkg, id, file);
   }
 
   /** The node row of a header: members lifted by name, the subtype by role precedence with its members, everything else in `meta`. */
@@ -397,18 +394,23 @@ class FunctionLayer {
     return {members: m, consumed, uses};
   }
 
-  private emitFunction(row: Row, uses: SemtypeUse[], header: Header, pkg: PackageFolder, file: string): void {
+  /** Whether the registration was admitted. A rejected one contributes nothing: its facts would otherwise land on the
+   * retained registration of the same name (kg-codex-review-3.md #3). */
+  private emitFunction(row: Row, uses: SemtypeUse[], header: Header, pkg: PackageFolder, file: string): boolean {
     const id = row.id as string;
-    this.emitter.node(row);
+    if (!this.emitter.node(row).accepted) return false;
     this.declares(pkg, id, file);
     for (const u of uses) {
       this.emitter.node({type: 'semantic-type', id: semtypeId(u.semtype), name: u.semtype, language: 'other', provenance: u.derived_by, source_layer: 'public'});
       this.emitter.edge({type: 'targets-semtype', from: id, to: semtypeId(u.semtype), role: u.role, derived_by: u.derived_by, confidence: u.confidence, evidence: [file]});
     }
     const feature = (header.keys.feature?.[0] ?? header.meta.feature)?.trim().replace(/^~/, '');
-    if (!feature) return;
-    this.emitter.edge({type: 'is-implemented-in', from: feature, to: id, derived_by: 'annotation', confidence: 1, evidence: [file]});
-    this.emitter.claim({file, feature, rung: 1, source: 'marker', props: {}, line: header.line});
+    if (!feature) return true;
+    const target = resolveMention(this.emitter, this.index, feature, file + ':' + header.line);
+    if (!target || target.root !== 'feature') return true;
+    this.emitter.edge({type: 'is-implemented-in', from: target.id, to: id, derived_by: 'annotation', confidence: 1, evidence: [file]});
+    this.emitter.claim({file, feature: target.id, rung: 1, source: 'marker', props: {}, line: header.line});
+    return true;
   }
 
   /** `meta.semType` failing, what a detector returns or assigns: `DG.SEMTYPE.X`, a string literal, or a file-level constant. */
@@ -430,9 +432,8 @@ class FunctionLayer {
   private fileNode(pkg: PackageFolder, file: string): void {
     if (this.files.has(file)) return;
     this.files.add(file);
-    this.emitter.node({type: 'source-file', id: fileId(file), name: path.posix.basename(file), path: file, loc: countLines(path.join(this.repoRoot, file)), language: languageOf(file),
-      generated: file.endsWith('.g.ts') ? true : undefined, package: pkgId(pkg.folder), provenance: 'filesystem', source_layer: 'public'});
-    this.declares(pkg, fileId(file), file);
+    if (this.emitter.node({type: 'source-file', id: fileId(file), name: path.posix.basename(file), path: file, loc: countLines(path.join(this.repoRoot, file)), language: languageOf(file),
+      generated: file.endsWith('.g.ts') ? true : undefined, package: pkgId(pkg.folder), provenance: 'filesystem', source_layer: 'public'}).accepted) this.declares(pkg, fileId(file), file);
   }
 
   private declares(pkg: PackageFolder, to: string, evidence: string): void {

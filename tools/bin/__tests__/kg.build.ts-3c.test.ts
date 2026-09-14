@@ -9,6 +9,7 @@ import {parseDgTests, parsePlaywrightTests, blankComments} from '../utils/kg/bui
 import {parseChangelog} from '../utils/kg/build/extract/ts/changelog';
 import {parseSampleHeader} from '../utils/kg/build/extract/ts/samples';
 import {idTokens, ticketTokens, leadingId, kebab} from '../utils/kg/build/extract/markers';
+import {currentDir} from '../utils/kg/build/write';
 import {kg} from '../commands/kg';
 
 const fixture = path.join(path.dirname(fileURLToPath(import.meta.url)), 'fixtures', 'kg', 'build');
@@ -32,7 +33,7 @@ async function build(): Promise<{manifest: any, rows: (file: string) => any[], p
     await kg({_: ['kg', 'build'], kg: path.join(repo, KG_DIR), only: 'homes,ts-packages,ts-declarations,ts-tests,ts-samples,ts-changelog,docs', db: false, output: 'json'});
     expect(error.mock.calls).toEqual([]);
     expect(process.exitCode).toBeUndefined();
-    const out = path.join(repo, '.kg');
+    const out = currentDir(path.join(repo, '.kg'))!;
     const rows = (file: string) => {
       const p = path.join(out, file.startsWith('reports/') ? file : `data/${file}.jsonl`);
       return fs.existsSync(p) ? fs.readFileSync(p, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l)) : [];
@@ -50,7 +51,7 @@ const byId = (rows: any[], id: string) => rows.find((r) => r.id === id);
 const edges = (rows: any[], from?: string, to?: string) => rows.filter((e) => (from === undefined || e.from === from) && (to === undefined || e.to === to));
 
 describe('text parsers (build-plan.md WO-3c)', () => {
-  it('reads DG tests in order under the last category, with the trailing options object, and skips commented-out calls', () => {
+  it('reads DG tests in order under the last category, the trailing options object, a run-time title and a conditional skip', () => {
     const tests = parseDgTests([
       'test(\'unregistered\', async () => {});', '// test(\'out\', async () => {});', '/* test(\'out too\', async () => {}); */',
       'category(\'A\', () => {', '  test(\'one\', async () => { if (re.test(\'x\')) call(1, {timeout: 5}); }, {timeout: 60000, skipReason: \'flaky\'});',
@@ -58,12 +59,15 @@ describe('text parsers (build-plan.md WO-3c)', () => {
       'category(\'B\', () => { test(\'four\', fn, {skipReason: reason}); });',
       'category(\'C \', () => { test(\'five: \' + name, async () => {}); });',
     ].join('\n'));
+    const plain = {dynamic: false, skipConditional: false, skipReason: undefined, benchmark: false, tags: []};
     expect(tests).toEqual([
-      {category: 'A', name: 'one', skipReason: 'flaky', benchmark: false, tags: []},
-      {category: 'A', name: 'two', skipReason: undefined, benchmark: true, tags: ['~x/y', 'z']},
-      {category: 'A', name: 'three ${n}', skipReason: undefined, benchmark: false, tags: []},
-      {category: 'B', name: 'four', skipReason: 'reason', benchmark: false, tags: []},
-      {category: 'C', name: 'five:', skipReason: undefined, benchmark: false, tags: []},
+      {...plain, category: 'A', name: 'one', skipReason: 'flaky'},
+      {...plain, category: 'A', name: 'two', benchmark: true, tags: ['~x/y', 'z']},
+      // a template and a concatenation both name a registration site: the literal head with an ellipsis, marked dynamic
+      {...plain, category: 'A', name: 'three…', dynamic: true},
+      // skipReason is an expression, so the row may not say the test is skipped
+      {...plain, category: 'B', name: 'four', skipConditional: true},
+      {...plain, category: 'C', name: 'five:…', dynamic: true},
     ]);
   });
 
@@ -116,17 +120,20 @@ describe('ts-tests extractor (build-plan.md WO-3c)', () => {
     const tests = rows('nodes/test').filter((t) => t.framework === 'dg');
     expect(tests.map((t) => t.id)).toEqual([
       'test:dg:public/packages/ApiTests/src/tests/shell.ts#Shell/windows',
-      `test:dg:${TESTS}#Tested: Utils/conditional skip`, `test:dg:${TESTS}#Tested: Utils/tagged`, `test:dg:${TESTS}#Tested: Utils/template \${name}`,
+      `test:dg:${TESTS}#Tested: Utils/conditional skip`, `test:dg:${TESTS}#Tested: Utils/tagged`, `test:dg:${TESTS}#Tested: Utils/template…`,
       `test:dg:${TESTS}#~domains/bio/detects sequences`, `test:dg:${TESTS}#~domains/bio/renders slowly`, `test:dg:${TESTS}#~domains/bio/skipped one`,
     ]);
     expect(byId(tests, 'test:dg:public/packages/ApiTests/src/tests/shell.ts#Shell/windows')).toMatchObject({level: 'api', category: 'Shell', skipped: false, benchmark: false, provenance: 'ast'});
     expect(byId(tests, `test:dg:${TESTS}#~domains/bio/detects sequences`)).toEqual({
       id: `test:dg:${TESTS}#~domains/bio/detects sequences`, type: 'test', name: 'detects sequences', batch: expect.any(String), benchmark: false, category: '~domains/bio',
-      framework: 'dg', level: 'unit', path: TESTS, provenance: 'ast', skipped: false, source_layer: 'public', status: 'active', visibility: 'public',
+      framework: 'dg', level: 'unit', path: TESTS, provenance: 'ast', dynamic: false, skipped: false, skip_conditional: false, source_layer: 'public', status: 'active', visibility: 'public',
     });
-    expect(byId(tests, `test:dg:${TESTS}#~domains/bio/renders slowly`)).toMatchObject({benchmark: true, tags: ['slow', 'render'], skipped: false});
+    expect(byId(tests, `test:dg:${TESTS}#~domains/bio/renders slowly`)).toMatchObject({benchmark: true, tags: ['render', 'slow'], skipped: false});
     expect(byId(tests, `test:dg:${TESTS}#~domains/bio/skipped one`)).toMatchObject({skipped: true, skip_reason: 'GROK-100: flaky on CI'});
-    expect(byId(tests, `test:dg:${TESTS}#Tested: Utils/conditional skip`)).toMatchObject({skipped: true, skip_reason: "typeof process !== 'undefined' ? 'NodeJS environment' : undefined"});
+    const conditional = byId(tests, `test:dg:${TESTS}#Tested: Utils/conditional skip`);
+    expect(conditional).toMatchObject({skipped: false, skip_conditional: true});
+    expect(conditional).not.toHaveProperty('skip_reason');
+    expect(byId(tests, `test:dg:${TESTS}#Tested: Utils/template…`)).toMatchObject({dynamic: true, name: 'template…'});
     expect(rows('nodes/test-suite').filter((s) => s.framework === 'dg')).toEqual([
       expect.objectContaining({id: 'suite:dg:ApiTests:Shell', name: 'Shell', package: 'pkg:ApiTests', provenance: 'ast'}),
       expect.objectContaining({id: 'suite:dg:Tested:Tested: Utils', name: 'Tested: Utils', package: 'pkg:Tested'}),

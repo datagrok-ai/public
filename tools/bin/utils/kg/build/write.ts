@@ -18,6 +18,13 @@ export interface Manifest {
   sources: Record<string, string>;
   counts: {nodes: Record<string, number>, edges: Record<string, number>};
   problems: Record<string, number>;
+  dart_packages?: Record<string, number | string>;
+  inventory?: Record<string, number>;
+  /** The generation the index in this directory was loaded from; absent when it has none (`--no-db`). */
+  indexed_batch?: string;
+  /** Peak resident memory of the load, in MB: what a reader of this index should be given. */
+  index_memory_mb?: number;
+  index_platform?: string;
 }
 
 export interface BuildInfo {
@@ -31,7 +38,19 @@ export interface BuildInfo {
 /** Node types the public snapshot carries (Decisions "Public mode"); a doc-page only when it is a help page. */
 const PUBLIC_TYPES = ['feature', 'concept', 'package', 'library', 'doc-page', 'doc-anchor', 'sample', 'scenario'];
 const HEAD_KEYS = ['id', 'type', 'name', 'from', 'to'];
+/** Members that are sets, written sorted so that arrival order cannot reach the bytes (kg-codex-review-3 #12).
+ * Ordered lists (`input_types` and the rest of normalize.ts's ORDERED_MEMBERS) are never touched. */
+const SORTED_MEMBERS = ['evidence', 'aliases', 'tags', 'roles', 'labels', 'components'];
 const INVALID_CAP = 500;
+/** One generation per batch under `<out>/gen/`, and the one-line file naming the generation to read. */
+export const GENERATIONS = 'gen';
+export const CURRENT = 'current';
+/** A generation still being written; a build with the same batch replaces it, `gc` leaves it alone. */
+const PARTIAL = '.partial';
+/** `extract/dart.ts` reads this batch; hashing it here keeps the builder out of the extractors' import graph. */
+const DART_BATCH = '.kg/batches/kg-dart.jsonl';
+/** The backlog snapshot `extract/process.ts` falls back to. */
+const BACKLOG_FALLBACK = 'C:/dg/backlog';
 
 export function toolsVersion(): string {
   return JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', '..', '..', 'package.json'), 'utf8')).version;
@@ -46,19 +65,129 @@ export function gitRevisions(repoRoot: string): Record<string, string> {
   return {reddata: sha(repoRoot, 'HEAD'), public: sha(path.join(repoRoot, 'public'), 'HEAD'), public_pin: sha(repoRoot, 'HEAD:public')};
 }
 
-/** Content-addressed: two builds of the same revisions with the same builder and schema share a batch. */
-export function batchId(revisions: Record<string, string>, schemaVersion: number, builder: string): string {
-  const hash = createHash('sha1').update([revisions.reddata, revisions.public, schemaVersion, builder].join('\n')).digest('hex');
-  return `b-${hash.slice(0, 12)}`;
+/** What a build actually reads, so that two graphs cannot share a batch (kg-codex-review-3 #12). */
+export interface BuildInputs {
+  repoRoot: string;
+  mode: string;
+  schemaVersion: number;
+  builder: string;
+  revisions: Record<string, string>;
+  /** The extractors this build runs; order does not matter. */
+  extractors: string[];
+  backlogDir?: string;
+  /** Where this build writes: its own output is not one of its inputs. */
+  outRoot?: string;
+}
+
+/** Content-addressed: the revisions, the dirty tree of both repositories, the schema and builder versions, the
+ * mode, the extractor selection, the backlog snapshot and the Dart batch. */
+export function buildInputs(inputs: BuildInputs): Record<string, string> {
+  return {
+    reddata: inputs.revisions.reddata,
+    public: inputs.revisions.public,
+    dirty: dirtyDigest(inputs.repoRoot, inputs.outRoot),
+    schema_version: String(inputs.schemaVersion),
+    builder: inputs.builder,
+    mode: inputs.mode,
+    extractors: [...inputs.extractors].sort(compare).join(','),
+    backlog: backlogInput(inputs.repoRoot, inputs.backlogDir),
+    dart: digestOf(path.join(inputs.repoRoot, ...DART_BATCH.split('/'))),
+  };
+}
+
+export function batchId(inputs: Record<string, string>): string {
+  const text = Object.entries(inputs).sort(([a], [b]) => compare(a, b)).map(([k, v]) => `${k}=${v}`).join('\n');
+  return `b-${createHash('sha1').update(text).digest('hex').slice(0, 12)}`;
+}
+
+/** `git status --porcelain` of the monorepo and of the public checkout, with the content of every modified
+ * tracked file: an uncommitted edit changes the graph, so it changes the batch. What the build itself writes
+ * under [outRoot] is left out — its own output is not an input, gitignored or not. */
+function dirtyDigest(repoRoot: string, outRoot?: string): string {
+  const hash = createHash('sha1');
+  const out = outRoot === undefined ? undefined : path.resolve(outRoot);
+  const seen = new Set<string>();
+  for (const dir of [repoRoot, path.join(repoRoot, 'public')]) {
+    // porcelain paths are relative to the repository root, and `public/` is one only when it is the submodule
+    const top = spawnSync('git', ['rev-parse', '--show-toplevel'], {cwd: dir, encoding: 'utf8'});
+    if (top.status !== 0) {
+      hash.update(`${dir}: unknown\n`);
+      continue;
+    }
+    const cwd = path.resolve(top.stdout.trim());
+    if (seen.has(cwd)) continue;
+    seen.add(cwd);
+    const r = spawnSync('git', ['status', '--porcelain', '-z'], {cwd, encoding: 'utf8', maxBuffer: 256 * 1024 * 1024});
+    if (r.status !== 0) {
+      hash.update(`${cwd}: unknown\n`);
+      continue;
+    }
+    const entries = r.stdout.split('\0');
+    for (let i = 0; i < entries.length; i++) {
+      const entry = entries[i];
+      if (!entry) continue;
+      const status = entry.slice(0, 2);
+      const file = path.resolve(cwd, entry.slice(3));
+      const renamed = (status.startsWith('R') || status.startsWith('C')) ? entries[++i] ?? '' : '';
+      if (out !== undefined && inside(out, file)) continue;
+      hash.update(`${entry}\n${renamed}`);
+      if (status !== '??') hash.update(digestOf(file));
+    }
+  }
+  return hash.digest('hex');
+}
+
+/** The backlog watermark and the digest of the snapshot it came from; `missing` when there is none. */
+function backlogInput(repoRoot: string, backlogDir?: string): string {
+  const candidates = backlogDir ? [backlogDir] : [path.resolve(repoRoot, '..', 'backlog'), BACKLOG_FALLBACK];
+  const dir = candidates.find((d) => fs.existsSync(path.join(d, 'index.jsonl')));
+  if (!dir) return 'missing';
+  const file = path.join(dir, 'index.jsonl');
+  const text = fs.readFileSync(file, 'utf8');
+  let watermark = '';
+  for (const line of text.split('\n')) {
+    if (!line.trim()) continue;
+    try {
+      const row = JSON.parse(line);
+      if (typeof row.updated === 'string' && row.updated > watermark) watermark = row.updated;
+    }
+    catch {
+      // a line the process layer will count as invalid; the digest below covers it
+    }
+  }
+  return `${watermark || 'none'}:${createHash('sha1').update(text).digest('hex')}`;
+}
+
+function inside(dir: string, file: string): boolean {
+  const r = path.relative(dir, file);
+  return !r.startsWith('..') && !path.isAbsolute(r);
+}
+
+/** The sha1 of a file, or `absent`; a directory and an unreadable path are `absent` too. */
+function digestOf(file: string): string {
+  try {
+    const stat = fs.statSync(file);
+    return stat.isFile() ? createHash('sha1').update(fs.readFileSync(file)).digest('hex') : 'absent';
+  }
+  catch {
+    return 'absent';
+  }
 }
 
 /** Public logical nodes with their descriptions; the home, the owner, non-public paths, every edge with a non-public end, the
  * claims and the full-graph problem records stay behind. */
 export function projectPublic(graph: Graph, system: TypeSystem): Graph {
-  const keep = (row: Row) => {
+  const pages = new Map<string, Row>();
+  for (const row of graph.nodes)
+    if (isSubtype(system, String(row.type), 'doc-page')) pages.set(String(row.id), row);
+  /** A heading is no more public than the page that carries it, and never outlives it (kg-codex-review-3 #1). */
+  const keep = (row: Row): boolean => {
     const type = String(row.type);
     if (row.visibility !== 'public' || !PUBLIC_TYPES.some((t) => isSubtype(system, type, t))) return false;
-    return !isSubtype(system, type, 'doc-page') || row.kind === 'help';
+    if (isSubtype(system, type, 'doc-page')) return row.kind === 'help';
+    if (!isSubtype(system, type, 'doc-anchor')) return true;
+    const page = pages.get(String(row.page));
+    return page !== undefined && keep(page);
   };
   const nodes = graph.nodes.filter(keep);
   const ids = new Set(nodes.map((n) => n.id as string));
@@ -83,15 +212,40 @@ export function projectPublic(graph: Graph, system: TypeSystem): Graph {
   });
   const stubs = graph.stubs.filter((id) => ids.has(id));
   const problems = Object.fromEntries(Object.keys(graph.problems).map((k) => [k, k === 'partial_stubs' ? stubs.length : 0]));
+  problems.projection_dropped = closure(projected, edges, ids, system);
   return {nodes: projected, edges, stubs, claims: [], sources: graph.sources, problems, details: {}, invalid: [], reports: {}};
 }
 
-/** Writes everything under [outRoot] and returns the manifest. `data/` and `reports/` are replaced whole; the public
+/** The projection is closed or it is not published: every edge end and every reference must name a node that
+ * survived. Anything left over is removed here and counted, so a leak is visible in the manifest. */
+function closure(nodes: Row[], edges: Row[], ids: Set<string>, system: TypeSystem): number {
+  let dropped = 0;
+  for (let i = edges.length - 1; i >= 0; i--)
+    if (!ids.has(edges[i].from as string) || !ids.has(edges[i].to as string)) {
+      edges.splice(i, 1);
+      dropped++;
+    }
+  for (const row of nodes) {
+    const members = system.nodes.get(row.type as string)!.members;
+    for (const [k, v] of Object.entries(row)) {
+      const m = members[k];
+      if (m?.kind !== 'ref') continue;
+      const ok = m.list ? (v as string[]).every((id) => ids.has(id)) : ids.has(v as string);
+      if (ok) continue;
+      delete row[k];
+      dropped++;
+    }
+  }
+  return dropped;
+}
+
+/** Writes the data and the reports of one generation into [genDir] and returns its manifest, which the caller
+ * writes last (after the index, if any): a generation without a manifest is an interrupted build. The public
  * snapshot gets no reports and only the public revision. */
-export function writeBuild(graph: Graph, outRoot: string, info: BuildInfo): Manifest {
+export function writeBuild(graph: Graph, genDir: string, info: BuildInfo): Manifest {
   const isPublic = info.mode === 'public';
-  const dataDir = path.join(outRoot, 'data');
-  const reportsDir = path.join(outRoot, 'reports');
+  const dataDir = path.join(genDir, 'data');
+  const reportsDir = path.join(genDir, 'reports');
   for (const dir of [dataDir, reportsDir]) fs.rmSync(dir, {recursive: true, force: true});
   fs.mkdirSync(path.join(dataDir, 'nodes'), {recursive: true});
   fs.mkdirSync(path.join(dataDir, 'edges'), {recursive: true});
@@ -105,7 +259,7 @@ export function writeBuild(graph: Graph, outRoot: string, info: BuildInfo): Mani
     counts.nodes[type] = rows.length;
   }
   for (const [name, rows] of edges) {
-    rows.sort((a, b) => compare(String(a.type), String(b.type)) || compare(String(a.from), String(b.from)) || compare(String(a.to), String(b.to)) || compare(String(a.name ?? ''), String(b.name ?? '')));
+    rows.sort((a, b) => compare(String(a.type), String(b.type)) || compare(String(a.from), String(b.from)) || compare(String(a.to), String(b.to)) || compare(String(a.name ?? ''), String(b.name ?? '')) || compare(JSON.stringify(a), JSON.stringify(b)));
     writeJsonl(path.join(dataDir, 'edges', `${name}.jsonl`), rows);
     counts.edges[name] = rows.length;
   }
@@ -129,9 +283,142 @@ export function writeBuild(graph: Graph, outRoot: string, info: BuildInfo): Mani
     sources: sortKeys(graph.sources),
     counts: {nodes: sortKeys(counts.nodes), edges: sortKeys(counts.edges)},
     problems: sortKeys(graph.problems),
+    ...graph.manifest,
   };
-  fs.writeFileSync(path.join(outRoot, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
   return manifest;
+}
+
+/** The last write of a generation: until this file exists the generation is a build in flight. */
+export function writeManifest(genDir: string, manifest: Manifest): void {
+  fs.writeFileSync(path.join(genDir, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
+}
+
+export function readManifest(genDir: string): Manifest | undefined {
+  const file = path.join(genDir, 'manifest.json');
+  if (!fs.existsSync(file)) return undefined;
+  try {
+    return JSON.parse(fs.readFileSync(file, 'utf8')) as Manifest;
+  }
+  catch {
+    return undefined;
+  }
+}
+
+/** Where a build writes: one immutable directory per batch, so a rebuild never overwrites what a reader holds. */
+export function generationDir(outRoot: string, batch: string): string {
+  return path.join(outRoot, GENERATIONS, batch);
+}
+
+/** The staging directory a rebuild of an existing batch writes into before it replaces that generation. */
+export function stagingDir(outRoot: string, batch: string): string {
+  return `${generationDir(outRoot, batch)}${PARTIAL}`;
+}
+
+/** The batch `<out>/current` names, when its generation is complete. */
+export function readCurrent(outRoot: string): string | undefined {
+  const file = path.join(outRoot, CURRENT);
+  if (!fs.existsSync(file)) return undefined;
+  const batch = fs.readFileSync(file, 'utf8').trim();
+  return batch && fs.existsSync(path.join(generationDir(outRoot, batch), 'manifest.json')) ? batch : undefined;
+}
+
+/** The directory to read a graph from: the current generation, or [outRoot] itself when it holds a build from
+ * before generations existed (a committed public snapshot, an `--out` folder written by an older builder). */
+export function currentDir(outRoot: string): string | undefined {
+  const batch = readCurrent(outRoot);
+  if (batch) return generationDir(outRoot, batch);
+  return fs.existsSync(path.join(outRoot, 'manifest.json')) ? outRoot : undefined;
+}
+
+/** Switches the pointer to [batch]: the file is replaced by a rename, the link beside it is a convenience and
+ * is skipped silently where the platform does not allow one. */
+export function publish(outRoot: string, batch: string): void {
+  const tmp = path.join(outRoot, `${CURRENT}.tmp`);
+  fs.writeFileSync(tmp, `${batch}\n`);
+  fs.renameSync(tmp, path.join(outRoot, CURRENT));
+  const link = path.join(outRoot, GENERATIONS, CURRENT);
+  try {
+    try {
+      fs.unlinkSync(link);
+    }
+    catch {
+      fs.rmdirSync(link);
+    }
+  }
+  catch {
+    // no link yet, or one this process may not remove; the attempt below decides
+  }
+  try {
+    // absolute: a junction target is resolved differently by different Node versions
+    fs.symlinkSync(path.resolve(generationDir(outRoot, batch)), link, 'junction');
+  }
+  catch {
+    // symlinks need a privilege on Windows and a junction needs an absolute target on some volumes
+  }
+}
+
+/** Replaces the generation [batch] with what was staged beside it; the pointer already names that batch. */
+export function replaceGeneration(outRoot: string, batch: string): void {
+  const genDir = generationDir(outRoot, batch);
+  try {
+    fs.rmSync(genDir, {recursive: true, force: true});
+  }
+  catch (e: any) {
+    throw new Error(`${slashes(genDir)}: cannot replace this generation (${e.code ?? e.message}); a reader may hold its ` +
+      `index open. The new one is complete in ${slashes(stagingDir(outRoot, batch))}`);
+  }
+  fs.renameSync(stagingDir(outRoot, batch), genDir);
+}
+
+export interface Generation {
+  batch: string;
+  dir: string;
+  built_at: string;
+  current: boolean;
+  indexed: boolean;
+}
+
+/** Every complete generation under `<out>/gen/`, newest first. */
+export function generations(outRoot: string): Generation[] {
+  const dir = path.join(outRoot, GENERATIONS);
+  if (!fs.existsSync(dir)) return [];
+  const current = readCurrent(outRoot);
+  const found: Generation[] = [];
+  for (const name of fs.readdirSync(dir)) {
+    if (name === CURRENT || name.endsWith(PARTIAL)) continue;
+    const manifest = readManifest(path.join(dir, name));
+    if (!manifest) continue;
+    found.push({batch: name, dir: path.join(dir, name), built_at: manifest.built_at, current: name === current,
+      indexed: manifest.indexed_batch === name});
+  }
+  return found.sort((a, b) => compare(b.built_at, a.built_at));
+}
+
+export interface GcResult {
+  removed: string[];
+  kept: string[];
+  locked: string[];
+}
+
+/** Keeps the [keep] newest generations and the current one, removes the rest; one whose index a reader holds
+ * open cannot be removed on every platform, and is reported instead. */
+export function gc(outRoot: string, keep: number): GcResult {
+  const all = generations(outRoot);
+  const result: GcResult = {removed: [], kept: [], locked: []};
+  for (const [i, gen] of all.entries()) {
+    if (i < keep || gen.current) {
+      result.kept.push(gen.batch);
+      continue;
+    }
+    try {
+      fs.rmSync(gen.dir, {recursive: true, force: true});
+      result.removed.push(gen.batch);
+    }
+    catch {
+      result.locked.push(gen.batch);
+    }
+  }
+  return result;
 }
 
 function groupBy(rows: Row[], key: (row: Row) => string): Map<string, Row[]> {
@@ -144,13 +431,18 @@ function groupBy(rows: Row[], key: (row: Row) => string): Map<string, Row[]> {
   return new Map([...out].sort(([a], [b]) => compare(a, b)));
 }
 
-/** One object per line, keys in a fixed order: id, type, name, from, to, then the rest alphabetically. */
+/** One object per line, keys in a fixed order: id, type, name, from, to, then the rest alphabetically; a
+ * set-valued member is written sorted, so that the order its rows arrived in never reaches the bytes. */
 function writeJsonl(file: string, rows: Row[]): void {
   const lines = rows.map((row) => {
     const keys = [...HEAD_KEYS.filter((k) => row[k] !== undefined), ...Object.keys(row).filter((k) => !HEAD_KEYS.includes(k)).sort(compare)];
-    return JSON.stringify(Object.fromEntries(keys.map((k) => [k, row[k]])));
+    return JSON.stringify(Object.fromEntries(keys.map((k) => [k, sorted(k, row[k])])));
   });
   fs.writeFileSync(file, lines.length ? `${lines.join('\n')}\n` : '');
+}
+
+function sorted(key: string, value: unknown): unknown {
+  return SORTED_MEMBERS.includes(key) && Array.isArray(value) ? [...value].map(String).sort(compare) : value;
 }
 
 function sortKeys<T>(record: Record<string, T>): Record<string, T> {
@@ -160,4 +452,8 @@ function sortKeys<T>(record: Record<string, T>): Record<string, T> {
 /** Code-point order, the same on every platform and locale. */
 function compare(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0;
+}
+
+function slashes(p: string): string {
+  return p.replace(/\\/g, '/');
 }

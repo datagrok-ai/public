@@ -9,7 +9,9 @@ properties:
   framework:     "'dg' | 'playwright' | 'bdd' | 'dart' | 'junit' | 'jest' | 'vitest'"
   level:         "'unit' | 'api' | 'e2e' | 'perf' | 'stress'"
   category?:     string
+  dynamic?:      boolean = false        # the registered name is built at run time (a concatenation or a template); `name` keeps the literal head and ends with an ellipsis, and the real cases are not enumerable
   skipped?:      boolean = false
+  skip_conditional?: boolean = false    # skipReason is an expression, so whether this test is skipped depends on the run
   skip_reason?:  string
   benchmark?:    boolean = false
   tags?:         string[]

@@ -40,6 +40,8 @@ class Membership {
   private ambiguous: {file: string, features: string[], rung: number}[] = [];
   private chained: {file: string, owner: string, over: string[]}[] = [];
   private orphans: {file: string, loc: number}[] = [];
+  /** The denominator every ownership number is a fraction of: what this build actually saw. */
+  private inventory = {observed_files: 0, observed_loc: 0, owned_files: 0, owned_loc: 0, participating_files: 0};
 
   constructor(private ctx: BuildContext, private emitter: Emitter) {}
 
@@ -61,7 +63,8 @@ class Membership {
     for (const file of [...files.keys()].sort()) this.resolve(file, files.get(file)!, claims.get(file) ?? []);
     this.testEdges();
     this.orphans.sort((a, b) => b.loc - a.loc || (a.file < b.file ? -1 : 1));
-    this.emitter.report('ownership', {ambiguous: this.ambiguous, orphans: this.orphans, resolved_by_chain: this.chained});
+    this.emitter.manifest('inventory', this.inventory);
+    this.emitter.report('ownership', {inventory: this.inventory, ambiguous: this.ambiguous, orphans: this.orphans, resolved_by_chain: this.chained});
   }
 
   /** Feature homes: where each one lives, and the folder a file with no claim of its own inherits from (rung 4). */
@@ -70,8 +73,9 @@ class Membership {
       if (home.type.root !== 'feature') continue;
       this.homeFile.set(home.id, home.file);
       const roots = codeRoots(home.data.code);
-      const folders = roots.map((r) => this.rootFolder(r)).filter((f): f is string => f !== undefined);
-      if (folders.length === 1) this.claimFolder(folders[0], home.id);
+      // every root is a candidate, however many the feature has: rung 4 asks whether the folder is unambiguous, not the feature
+      for (const folder of roots.map((r) => this.rootFolder(r)))
+        if (folder !== undefined) this.claimFolder(folder, home.id);
       if (!roots.some(under)) this.claimFolder(path.posix.dirname(home.file), home.id);
     }
   }
@@ -97,8 +101,7 @@ class Membership {
     if (!fs.existsSync(full) || !fs.statSync(full).isFile()) return undefined;
     const row: Row = {type: 'source-file', id: fileId(file), name: path.posix.basename(file), path: file, loc: countLines(full),
       language: languageOf(file), provenance: 'filesystem', source_layer: sourceLayerOf(file)};
-    this.emitter.node(row);
-    return row;
+    return this.emitter.node(row).accepted ? row : undefined;
   }
 
   /**
@@ -107,6 +110,9 @@ class Membership {
    * feature that claimed the file participates in it, ancestors of the owner excepted: part-of already says that.
    */
   private resolve(file: string, row: Row, claims: Claim[]): void {
+    const loc = Number(row.loc ?? 0);
+    this.inventory.observed_files++;
+    this.inventory.observed_loc += loc;
     const owning = claims.filter((c) => c.mode !== 'participates');
     let owner: Owner | undefined;
     let ambiguous = false;
@@ -139,19 +145,24 @@ class Membership {
     const id = fileId(file);
     if (owner) {
       this.owners.set(file, owner.feature);
+      this.inventory.owned_files++;
+      this.inventory.owned_loc += loc;
       const claim = owning.find((c) => c.rung === owner!.rung && c.feature === owner!.feature);
       this.emitter.edge({type: 'is-implemented-in', from: owner.feature, to: id, derived_by: owner.rung === 4 ? 'filesystem' : 'annotation',
         confidence: owner.rung === 4 ? 0.9 : 1, evidence: this.evidence(owner.feature, file, owner.rung), ...pick(claim?.props, OWNER_PROPS)});
     }
     else if (CODE_ROOTS.some((root) => file.startsWith(root))) {
-      this.orphans.push({file, loc: Number(row.loc ?? 0)});
+      this.orphans.push({file, loc});
       this.emitter.problem('orphans');
     }
+    let participates = false;
     for (const claim of claims) {
       if (claim.feature === owner?.feature || (owner && owner.feature.startsWith(`${claim.feature}/`))) continue;
+      participates = true;
       this.emitter.edge({type: 'participates-in', from: id, to: claim.feature, derived_by: 'annotation', confidence: 1,
         evidence: this.evidence(claim.feature, file, claim.rung), ...pick(claim.props, ['role'])});
     }
+    if (participates) this.inventory.participating_files++;
   }
 
   /** Where the relation is visible: the home that claimed the file, or the file itself for a marker in it. */

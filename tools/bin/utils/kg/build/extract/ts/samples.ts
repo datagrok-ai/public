@@ -35,8 +35,8 @@ export const samplesExtractor: Extractor = {
       const header = parseSampleHeader(text, commentPrefix(language));
       const members = header.keys.api ? header.keys.api.split(',').map((s) => s.trim()).filter(Boolean) : [...new Set([...text.matchAll(API_MEMBER)].map((m) => m[1]))];
       const folder = path.posix.dirname(rel);
-      emitter.node({type: 'sample', id, name: path.posix.basename(rel).replace(/\.[^.]+$/, ''), description: header.description, path: file, language, folder: folder === '.' ? '' : folder,
-        api_members: members.length ? members : undefined, provenance: Object.keys(header.keys).length ? 'annotation' : 'ast', source_layer: 'public'});
+      if (!emitter.node({type: 'sample', id, name: path.posix.basename(rel).replace(/\.[^.]+$/, ''), description: header.description, path: file, language, folder: folder === '.' ? '' : folder,
+        api_members: members.length ? members : undefined, provenance: Object.keys(header.keys).length ? 'annotation' : 'ast', source_layer: 'public'}).accepted) continue;
       if (header.keys['help-url']) {
         const page = helpPage(ctx.repoRoot, header.keys['help-url']);
         if (page) {

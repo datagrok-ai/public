@@ -1,5 +1,7 @@
 type: resolves
 from: PullRequest | Commit
 to: Ticket
-derived_by: [git]
-description: A PR or commit claims to resolve a ticket (key in the title or a Fixes/Resolves line); merely mentioning a key is mentions.
+derived_by: [git, annotation]
+description: >
+  A PR or commit claims to resolve a ticket: a key in the title, a Fixes/Resolves line in the
+  message, or a release pick that says `claim: resolves`. Merely naming a key is mentions.

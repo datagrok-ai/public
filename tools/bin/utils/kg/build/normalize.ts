@@ -22,6 +22,14 @@ export interface Normalized {
 /** Keys of an edge row that are not properties. */
 export const EDGE_ROW_KEYS = ['type', 'from', 'to', 'name'];
 
+/** List members whose order and repetitions are the fact, not a set: a signature has four `list<string>` inputs and
+ * says so four times, a route's parameters come in the order the template spells them. Every other list is a set. */
+const ORDERED_MEMBERS = ['input_types', 'output_types', 'path_params', 'query_params'];
+
+export function isOrdered(member: string): boolean {
+  return ORDERED_MEMBERS.includes(member);
+}
+
 export interface NormalizeOptions extends Partial<ValueHooks> {
   /** Apply the declared defaults (real rows); a stub carries only what created it. */
   defaults?: boolean;
@@ -80,6 +88,7 @@ function normalizeMembers(system: TypeSystem, row: Row, members: Record<string, 
 function normalizeValue(member: Member, raw: unknown): unknown {
   if (!member.list) return scalar(member, raw);
   const items = (Array.isArray(raw) ? raw : [raw]).filter((v) => v !== null && v !== undefined).map((v) => scalar(member, v));
+  if (isOrdered(member.name)) return items;
   const seen = new Set<string>();
   return items.filter((v) => {
     const key = typeof v === 'object' ? JSON.stringify(v) : `${typeof v}:${String(v)}`;

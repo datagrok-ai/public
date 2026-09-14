@@ -9,6 +9,8 @@ state:   testing
 picks:
   - {ticket: GROK-100, repo: reddata, commit: aaaaaaaaaa, subject: "Viewers: fix the legend"}
   - {ticket: null,     repo: public,  commit: bbbbbbbbbb, subject: "GROK-101: tidy the fixture"}
+  # the record itself claims the resolution this commit message does not
+  - {ticket: GROK-101, repo: reddata, commit: aaaaaaaaaa, claim: resolves, subject: "Viewers: fix the legend"}
 
 features:
   main:

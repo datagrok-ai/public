@@ -37,8 +37,8 @@ export const changelogExtractor: Extractor = {
       if (!fs.existsSync(full)) continue;
       for (const e of parseChangelog(fs.readFileSync(full, 'utf8'))) {
         const id = chgId(pkg.folder, e.version, e.n);
-        emitter.node({type: 'changelog-entry', id, name: e.text.length > NAME_CAP ? `${e.text.slice(0, NAME_CAP - 1)}…` : e.text, text: e.text, package: pkgId(pkg.folder),
-          version: e.version, date: e.date, path: file, provenance: 'annotation', source_layer: 'public'});
+        if (!emitter.node({type: 'changelog-entry', id, name: e.text.length > NAME_CAP ? `${e.text.slice(0, NAME_CAP - 1)}…` : e.text, text: e.text, package: pkgId(pkg.folder),
+          version: e.version, date: e.date, path: file, provenance: 'annotation', source_layer: 'public'}).accepted) continue;
         const kind = KINDS[VERB.exec(e.text)?.[1].slice(0, 3).toLowerCase() ?? ''];
         const changes = (target: {root?: string}): Row | undefined => target.root === 'feature' ? {type: 'changes', kind} : undefined;
         unresolved += emitMentions(emitter, id, e.text, `${file} (${e.version} #${e.n})`, index, changes).unresolved.length;

@@ -157,9 +157,10 @@ export function dualPanel(smiles: string) : any {
 //name: Dual
 //meta.role: app
 //meta.browsePath: Misc
+//input: string id { semType: DemoId }
 //output: view result
-export function dualApp() : any {
-  return PackageFunctions.dualApp();
+export function dualApp(id: string) : any {
+  return PackageFunctions.dualApp(id);
 }
 
 //name: Pareto Front

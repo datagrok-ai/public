@@ -13,6 +13,7 @@ import {dartExtractor} from './extract/dart';
 import {declarationsExtractor} from './extract/ts/declarations';
 import {importsExtractor} from './extract/ts/imports';
 import {usesExtractor} from './extract/ts/uses';
+import {inlineMarkersExtractor} from './extract/ts/inline-markers';
 import {processExtractor} from './extract/process';
 import {membershipExtractor} from './extract/membership';
 
@@ -38,7 +39,7 @@ export interface Extractor {
 
 /** In order; membership resolution reads the claims of all the others, so it stays last. */
 export const EXTRACTORS: Extractor[] = [homesExtractor, packagesExtractor, functionsExtractor, declarationsExtractor, importsExtractor, usesExtractor,
-  testsExtractor, samplesExtractor, changelogExtractor, docsExtractor, dartExtractor, processExtractor, membershipExtractor];
+  testsExtractor, samplesExtractor, changelogExtractor, docsExtractor, inlineMarkersExtractor, dartExtractor, processExtractor, membershipExtractor];
 
 /** The extractors for [mode], narrowed by `--only`; names that match nothing are returned for the caller to refuse. */
 export function selectExtractors(mode: Mode, only?: string[]): {selected: Extractor[], unknown: string[]} {
@@ -50,6 +51,7 @@ export function selectExtractors(mode: Mode, only?: string[]): {selected: Extrac
 /** Runs the extractors in order; an extractor that reports no status is `ok`, one that throws is `missing`. */
 export async function runExtractors(extractors: Extractor[], ctx: BuildContext, emitter: Emitter): Promise<void> {
   for (const extractor of extractors) {
+    emitter.scope(extractor.name);
     try {
       await extractor.run(ctx, emitter);
       emitter.sources[extractor.name] ??= 'ok';
@@ -59,4 +61,5 @@ export async function runExtractors(extractors: Extractor[], ctx: BuildContext, 
       console.error(`${extractor.name}: ${e.message}`);
     }
   }
+  emitter.scope('');
 }

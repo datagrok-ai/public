@@ -10,7 +10,7 @@ import {spawnSync} from 'child_process';
 import {loadTypeSystem, TypeSystem} from '../utils/kg/types';
 import {Emitter, Graph} from '../utils/kg/build/emitter';
 import {normalizeRow} from '../utils/kg/build/normalize';
-import {batchId} from '../utils/kg/build/write';
+import {batchId, buildInputs, currentDir} from '../utils/kg/build/write';
 import {parseId, declId, docId, testId, epId, ticketId, stubName} from '../utils/kg/build/ids';
 import {firstParagraph} from '../utils/kg/build/extract/homes';
 import {kg} from '../commands/kg';
@@ -46,16 +46,17 @@ async function run(argv: Record<string, unknown>): Promise<{ok: boolean, out: st
 }
 
 /** Builds the homes layer of a fixture copy and returns the repo, the manifest and a JSONL reader. */
-async function build(repo = makeRepo(), extra: Record<string, unknown> = {}): Promise<{repo: string, manifest: any, rows: (file: string) => any[], out: string}> {
-  const out = typeof extra.out === 'string' ? extra.out : path.join(repo, ...(extra.public ? ['public', '.kg'] : ['.kg']));
+async function build(repo = makeRepo(), extra: Record<string, unknown> = {}): Promise<{repo: string, manifest: any, rows: (file: string) => any[], out: string, root: string}> {
+  const root = typeof extra.out === 'string' ? extra.out : path.join(repo, ...(extra.public ? ['public', '.kg'] : ['.kg']));
   const result = await run({_: ['kg', 'build'], kg: path.join(repo, KG_DIR), only: 'homes', db: false, output: 'json', ...extra});
   expect(result.err).toEqual([]);
   expect(result.exitCode).toBeUndefined();
+  const out = currentDir(root)!;
   const rows = (file: string) => {
     const p = path.join(out, file.startsWith('reports/') ? file : `data/${file}`) + (file.endsWith('.jsonl') ? '' : '.jsonl');
     return fs.existsSync(p) ? fs.readFileSync(p, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l)) : [];
   };
-  return {repo, manifest: JSON.parse(result.out[0]), rows, out};
+  return {repo, manifest: JSON.parse(result.out[0]), rows, out, root};
 }
 
 function node(graph: Graph, id: string): any {
@@ -232,11 +233,33 @@ describe('ids (build-plan.md "Common contracts")', () => {
     expect([stubName('visualize/scatter-plot'), stubName('decl:a/b.ts#X'), stubName('doc:a/b.md'), stubName('func:Chem:detect'), stubName('GROK-1')]).toEqual(['Scatter plot', 'X', 'b.md', 'detect', 'GROK-1']);
   });
 
-  it('hashes the batch id from the revisions, the schema version and the builder', () => {
-    const a = batchId({reddata: '1', public: '2', public_pin: '2'}, 1, '6.5.10');
+  it('hashes the batch id from every effective input, and from nothing else', () => {
+    const inputs = {reddata: '1', public: '2', dirty: 'd', schema_version: '1', builder: '6.5.10', mode: 'full',
+      extractors: 'docs,homes', backlog: '2026-01-12T07:00:00Z:abc', dart: 'def'};
+    const a = batchId(inputs);
     expect(a).toMatch(/^b-[0-9a-f]{12}$/);
-    expect(batchId({reddata: '1', public: '2', public_pin: '3'}, 1, '6.5.10')).toBe(a);
-    expect(batchId({reddata: '1', public: '2', public_pin: '2'}, 1, '6.5.11')).not.toBe(a);
+    expect(batchId({...inputs})).toBe(a);
+    // the same inputs in another key order are the same batch; a change in any one of them is not
+    expect(batchId(Object.fromEntries(Object.entries(inputs).reverse()))).toBe(a);
+    for (const key of Object.keys(inputs))
+      expect(batchId({...inputs, [key]: 'other'}), key).not.toBe(a);
+  });
+
+  it('takes the extractor selection unordered and the backlog watermark into the inputs', () => {
+    const repo = makeRepo();
+    const of = (extra: Record<string, unknown>) => buildInputs({repoRoot: repo, mode: 'full', schemaVersion: 1, builder: '6.5.10',
+      revisions: {reddata: '1', public: '2'}, extractors: ['homes', 'docs'], ...extra});
+    expect(of({}).extractors).toBe('docs,homes');
+    expect(of({extractors: ['docs', 'homes']})).toEqual(of({}));
+    expect(of({extractors: ['docs']})).not.toEqual(of({}));
+    const backlog = path.join(repo, 'backlog');
+    fs.mkdirSync(backlog, {recursive: true});
+    fs.writeFileSync(path.join(backlog, 'index.jsonl'), `${JSON.stringify({id: 'GROK-1', updated: '2026-01-01T00:00:00Z'})}\n`);
+    const first = of({backlogDir: backlog});
+    expect(first.backlog).toMatch(/^2026-01-01T00:00:00Z:[0-9a-f]{40}$/);
+    fs.writeFileSync(path.join(backlog, 'index.jsonl'), `${JSON.stringify({id: 'GROK-1', updated: '2026-02-02T00:00:00Z'})}\n`);
+    expect(of({backlogDir: backlog}).backlog).not.toBe(first.backlog);
+    expect(batchId(of({backlogDir: backlog}))).not.toBe(batchId(first));
   });
 });
 
@@ -263,15 +286,16 @@ describe('grok kg build: writer, manifest and public projection (build-plan.md W
   it('--out redirects the output root, --only refuses an unknown extractor, --output table prints one line', async () => {
     const repo = makeRepo();
     const out = path.join(repo, 'elsewhere');
-    await build(repo, {out});
-    expect(fs.existsSync(path.join(out, 'manifest.json'))).toBe(true);
+    const {manifest} = await build(repo, {out});
+    expect(fs.existsSync(path.join(out, 'gen', manifest.batch, 'manifest.json'))).toBe(true);
+    expect(fs.readFileSync(path.join(out, 'current'), 'utf8').trim()).toBe(manifest.batch);
     expect(fs.existsSync(path.join(repo, '.kg'))).toBe(false);
     const bad = await run({_: ['kg', 'build'], kg: path.join(repo, KG_DIR), only: 'homes,nope', db: false});
     expect(bad.exitCode).toBe(1);
-    expect(bad.err).toEqual(['--only names unknown extractors: nope (known: homes, ts-packages, ts-functions, ts-declarations, ts-imports, ts-uses, ts-tests, ts-samples, ts-changelog, docs, dart, process, membership)']);
+    expect(bad.err).toEqual(['--only names unknown extractors: nope (known: homes, ts-packages, ts-functions, ts-declarations, ts-imports, ts-uses, ts-tests, ts-samples, ts-changelog, docs, ts-markers, dart, process, membership)']);
     const table = await run({_: ['kg', 'build'], kg: path.join(repo, KG_DIR), only: 'homes', db: false, out});
     expect(table.out).toHaveLength(1);
-    expect(table.out[0]).toMatch(/^wrote .*elsewhere: \d+ nodes \(concept 2, .*feature 7.*\), \d+ edges \(.*part-of 5.*\); sources: homes ok; problems: partial_stubs \d+; batch b-[0-9a-f]{12} \(full\)$/);
+    expect(table.out[0]).toMatch(/^wrote .*elsewhere\/gen\/b-[0-9a-f]{12}: \d+ nodes \(concept 2, .*feature 7.*\), \d+ edges \(.*part-of 5.*\); sources: homes ok; problems: partial_stubs \d+; batch b-[0-9a-f]{12} \(full\)$/);
   });
 
   it('--public keeps public logical nodes without home or owner, no people, no files, and only edges with both ends public', async () => {
@@ -322,8 +346,9 @@ describe('grok kg build: writer, manifest and public projection (build-plan.md W
   });
 
   it('writes the public projection under public/.kg by default', async () => {
-    const {repo} = await build(makeRepo(), {public: true});
-    expect(fs.existsSync(path.join(repo, 'public', '.kg', 'manifest.json'))).toBe(true);
+    const {repo, out} = await build(makeRepo(), {public: true});
+    expect(out.startsWith(path.join(repo, 'public', '.kg'))).toBe(true);
+    expect(fs.existsSync(path.join(out, 'manifest.json'))).toBe(true);
     expect(fs.existsSync(path.join(repo, '.kg'))).toBe(false);
   });
 });
@@ -431,7 +456,8 @@ describe('homes extractor (build-plan.md WO-2)', () => {
     const repo = makeRepo();
     write(repo, 'core/docs/broken.md', '---\nfeature: govern/permissions\nowner: askalkin\nstatus: bogus\n---\n# P\n');
     const {rows, manifest} = await build(repo);
-    expect(manifest.sources.homes).toBe('partial');
+    // the count comes from the emitter after finalize, so a source cannot call itself ok while its rows were refused
+    expect(manifest.sources.homes).toBe('partial(1 rejected)');
     expect(manifest.problems.invalid_rows).toBe(1);
     expect(rows('nodes/feature').some((f) => f.id === 'govern/permissions')).toBe(false);
     expect(rows('reports/invalid.jsonl')).toEqual([expect.objectContaining({id: 'govern/permissions', problems: [expect.stringMatching(/^status: "bogus" is not one of/)]})]);
@@ -440,24 +466,24 @@ describe('homes extractor (build-plan.md WO-2)', () => {
   it('types a dangling bare id by the expected union, never by sort order, and refuses an ambiguous one', async () => {
     const repo = makeRepo();
     write(repo, 'core/docs/haunted.md', '---\nfeature: govern/haunted\nowner: nobody\nsuperseded_by: [platform/ghost]\n---\n# Haunted\n');
-    const {rows, manifest} = await build(repo);
+    const {rows, manifest, out} = await build(repo);
     expect(rows('nodes/feature').find((f) => f.id === 'platform/ghost')).toMatchObject({type: 'feature', name: 'Ghost', status: 'proposed'});
     expect(rows('nodes/concept').map((c) => c.id)).toEqual(['C:column', 'C:dataframe']);
     expect(rows('edges/supersedes')).toContainEqual(expect.objectContaining({from: 'platform/ghost', to: 'govern/haunted'}));
     expect(rows('nodes/feature').find((f) => f.id === 'govern/haunted')).not.toHaveProperty('owner');
     expect(rows('edges/owner').some((e) => e.from === 'govern/haunted')).toBe(false);
     expect(manifest.problems.ambiguous_refs).toBe(1);
-    expect(JSON.parse(fs.readFileSync(path.join(repo, '.kg', 'reports', 'problems.json'), 'utf8')).ambiguous_refs)
+    expect(JSON.parse(fs.readFileSync(path.join(out, 'reports', 'problems.json'), 'utf8')).ambiguous_refs)
       .toEqual(["core/docs/haunted.md: owner: 'nobody' could be P:nobody or Team:nobody; write the prefix"]);
   });
 
   it('names every check issue behind a partial homes source in problems.json and counts them', async () => {
     const repo = makeRepo();
     write(repo, 'core/docs/broken.md', '---\nfeature: govern/permissions\nowner: askalkin\nstatus: bogus\n---\n# P\n');
-    const {manifest} = await build(repo);
-    expect(manifest.sources.homes).toBe('partial');
+    const {manifest, out} = await build(repo);
+    expect(manifest.sources.homes).toBe('partial(1 rejected)');
     expect(manifest.problems.home_issues).toBe(1);
-    expect(JSON.parse(fs.readFileSync(path.join(repo, '.kg', 'reports', 'problems.json'), 'utf8')).home_issues)
+    expect(JSON.parse(fs.readFileSync(path.join(out, 'reports', 'problems.json'), 'utf8')).home_issues)
       .toEqual([expect.stringMatching(/^core\/docs\/broken\.md:4: bad-value: status: "bogus" is not one of/)]);
   });
 

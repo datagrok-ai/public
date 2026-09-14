@@ -9,6 +9,9 @@ import {BuildContext} from '../registry';
 
 /** A `~id` in prose or a comment: an optional prefix, kebab segments, an anchor that is dropped; not a `~/` path or a `~~strike~~`. */
 export const ID_TOKEN = /(?<![\w~/.\\-])~((?:[A-Z][A-Za-z]{0,5}:)?[a-z][a-z0-9]*(?:-[a-z0-9]+)*(?:\/[a-z0-9]+(?:-[a-z0-9]+)*)*)(?:#[\w-]+)?/g;
+/** A line that is a comment and nothing else but a `~id`: the inline participation marker of §6. A marker after code on
+ * the same line is prose, and `// ~id` in a doc comment above a declaration is the ownership marker, not this one. */
+export const MARKER_LINE = /^\s*\/\/\s*~((?:[A-Z][A-Za-z]{0,5}:)?[a-z][a-z0-9]*(?:-[a-z0-9]+)*(?:\/[a-z0-9]+(?:-[a-z0-9]+)*)*)(?:#[\w-]+)?\s*$/;
 export const JIRA_TOKEN = /\bGROK-\d+\b/g;
 /** `[#4062](https://github.com/datagrok-ai/public/issues/4062)`: the number named twice, the link decides. */
 export const GITHUB_ISSUE_LINK = /\[#(\d+)\]\(https?:\/\/github\.com\/[^)]*\/issues\/\1\)/g;

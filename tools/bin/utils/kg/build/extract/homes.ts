@@ -60,7 +60,7 @@ class HomeLayer {
     if (home.aliases.length) row.aliases = home.aliases;
     if (type.members.manual_only && row.manual_only === undefined && data.target_layer === 'manual-only') row.manual_only = true;
     if (row.description === undefined && !home.yaml) row.description = firstParagraph(home.body);
-    this.emitter.node(row);
+    if (!this.emitter.node(row).accepted) return;
     const subject: Subject = {id: home.id, type, file: home.file, fm: home.fm};
     const claimed = this.emitKeys(subject, data);
     if (!home.yaml) this.emitCitations(subject, home.body, claimed);
@@ -124,8 +124,8 @@ class HomeLayer {
     }
     const line = keyLine(subject.fm, 'code');
     for (const p of this.expandRoot(file)) {
-      this.emitter.node({type: 'source-file', id: fileId(p), name: path.posix.basename(p), path: p, loc: countLines(path.join(this.repoRoot, p)),
-        language: languageOf(p), provenance: 'filesystem', source_layer: sourceLayerOf(p)});
+      if (!this.emitter.node({type: 'source-file', id: fileId(p), name: path.posix.basename(p), path: p, loc: countLines(path.join(this.repoRoot, p)),
+        language: languageOf(p), provenance: 'filesystem', source_layer: sourceLayerOf(p)}).accepted) continue;
       this.emitter.claim({file: p, feature: subject.id, rung: 2, source: 'home', props, line});
       claimed.add(p);
     }

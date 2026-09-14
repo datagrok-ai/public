@@ -6,6 +6,7 @@ import os from 'os';
 import path from 'path';
 import {fileURLToPath} from 'url';
 import {spawnSync} from 'child_process';
+import {currentDir} from '../utils/kg/build/write';
 import {kg} from '../commands/kg';
 
 const fixture = path.join(path.dirname(fileURLToPath(import.meta.url)), 'fixtures', 'kg', 'build');
@@ -46,7 +47,7 @@ async function build(repo: string): Promise<{manifest: any, rows: (file: string)
     await kg({_: ['kg', 'build'], kg: path.join(repo, KG_DIR), only: 'dart', db: false, output: 'json'});
     expect(error.mock.calls).toEqual([]);
     const rows = (file: string) => {
-      const p = path.join(repo, '.kg', file.startsWith('reports/') ? file : `data/${file}.jsonl`);
+      const p = path.join(currentDir(path.join(repo, '.kg'))!, file.startsWith('reports/') ? file : `data/${file}.jsonl`);
       return fs.existsSync(p) ? fs.readFileSync(p, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l)) : [];
     };
     return {manifest: JSON.parse(String(log.mock.calls[0][0])), rows};
@@ -97,7 +98,7 @@ describe('the Dart batch (build-plan.md WO-6)', () => {
     const aged = await build(old);
     expect(aged.manifest.sources.dart).toBe('stale');
     expect(aged.rows('nodes/endpoint')).toHaveLength(1);
-  });
+  }, 60_000);
 
   it('reports an absent batch as missing, without a problem', async () => {
     const repo = makeRepo();

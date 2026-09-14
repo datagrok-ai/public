@@ -13,8 +13,9 @@ import {fileURLToPath} from 'url';
 import {spawnSync} from 'child_process';
 import {loadTypeSystem, TypeSystem} from '../utils/kg/types';
 import {loadKuzu, load as loadIndex, open, run} from '../utils/kg/kuzu';
-import {find, explain, impact, testsFor, resolveTarget} from '../utils/kg/ops';
+import {find, explain, impact, testsFor, resolveTarget, printOps, OpsResult} from '../utils/kg/ops';
 import {readGraph, makeReport, REPORT_NAMES, ReportName} from '../utils/kg/report';
+import {currentDir} from '../utils/kg/build/write';
 import {kg} from '../commands/kg';
 
 const fixture = path.join(path.dirname(fileURLToPath(import.meta.url)), 'fixtures', 'kg', 'build');
@@ -67,7 +68,7 @@ async function build(repo: string, extra: Record<string, unknown> = {}): Promise
   try {
     await kg({_: ['kg', 'build'], kg: path.join(repo, KG_DIR), backlog: path.join(repo, 'backlog'), db: false, output: 'json', ...extra});
     expect(error.mock.calls).toEqual([]);
-    const out = path.join(repo, ...(extra.public ? ['public', '.kg'] : ['.kg']));
+    const out = currentDir(path.join(repo, ...(extra.public ? ['public', '.kg'] : ['.kg'])))!;
     const rows = (file: string) => {
       const p = path.join(out, file.startsWith('reports/') ? file : `data/${file}.jsonl`);
       return fs.existsSync(p) ? fs.readFileSync(p, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l)) : [];
@@ -101,7 +102,8 @@ describe('grok kg build over the fixture monorepo (build-plan.md WO-10)', () => 
     expect(manifest.sources).toEqual({
       backlog: 'ok@2026-01-12T07:00:00Z', dart: 'ok', docs: 'partial', git: 'partial', homes: 'ok', membership: 'ok',
       people: 'partial', process: 'ok', releases: 'ok', 'ts-changelog': 'partial', 'ts-declarations': 'ok',
-      'ts-functions': 'partial', 'ts-imports': 'ok', 'ts-packages': 'ok', 'ts-samples': 'partial', 'ts-tests': 'ok', 'ts-uses': 'ok',
+      'ts-functions': 'partial(2 rejected)', 'ts-imports': 'ok', 'ts-markers': 'ok', 'ts-packages': 'ok', 'ts-samples': 'partial',
+      'ts-tests': 'ok', 'ts-uses': 'ok',
     });
     expect(manifest.counts.nodes).toEqual({
       app: 2, 'cell-renderer': 1, 'changelog-entry': 5, connection: 2, container: 3, customer: 2, 'db-table': 1,
@@ -112,10 +114,10 @@ describe('grok kg build over the fixture monorepo (build-plan.md WO-10)', () => 
     });
     expect(manifest.counts.edges).toEqual({
       affects: 2, assignee: 3, automates: 3, base: 1, calls: 6, changes: 2, connection: 3, container: 33, covers: 1,
-      declared_in: 1, declares: 215, demonstrates: 1, 'depends-on': 5, documents: 1, environment: 1, extends: 4,
+      declared_in: 1, declares: 215, demonstrates: 1, 'depends-on': 6, documents: 1, environment: 1, extends: 4,
       handler: 1, implements: 1, imports: 25, 'in-suite': 14, 'is-implemented-in': 14, mentions: 15, owner: 5,
       package: 72, page: 20, 'part-of': 10, 'participates-in': 5, reporter: 4, 'requested-by': 2, router: 1,
-      semtype: 1, target_semtype: 1, 'targets-release': 3, 'targets-semtype': 12, tests: 11, uses: 17,
+      semtype: 1, target_semtype: 1, 'targets-release': 3, 'targets-semtype': 13, tests: 11, uses: 17,
     });
     expect(manifest.problems).toMatchObject({dangling_edges: 0, ambiguous_owners: 1, orphans: 27, partial_stubs: 21});
   }, 120_000);
@@ -265,6 +267,31 @@ describe('the reports build writes and the report verb prints (build-plan.md WO-
   });
 });
 
+/** What an op writes to the console, line by line. */
+function render(result: OpsResult): string[] {
+  const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+  try {
+    printOps(result, 'table');
+    return log.mock.calls.map((c) => String(c[0]));
+  }
+  finally {
+    log.mockRestore();
+  }
+}
+
+describe('what an op prints (slice-results.md §10)', () => {
+  it('prints a list cell as its items and says how many it left out, and marks a cut object', () => {
+    const long = 'x'.repeat(100);
+    const lines = render({op: 'explain', target: {id: 'pkg:Chem'}, sections: [{title: 'properties', total: 2, rows: [
+      {property: 'settings', value: ['Sketcher', 'TemplatesPath', 'BuildingBlocksPath', 'ReagentsPath', 'MolecularFingerprints', 'SubstructureSearch']},
+      {property: 'meta', value: {a: long}},
+    ]}]}).join('\n');
+    expect(lines).toContain('Sketcher, TemplatesPath, BuildingBlocksPath, ReagentsPath, MolecularFingerprints … (+1 more)');
+    expect(lines).toContain(`{"a":"${'x'.repeat(73)}…`);
+    expect(lines).not.toContain(long);
+  });
+});
+
 /** The fixture graph with one feature carrying values a CSV cannot express (build-plan.md WO-7 "List cells"). */
 async function unloadable(): Promise<{out: string, feature: Record<string, unknown>}> {
   const {out} = await graph;
@@ -325,6 +352,17 @@ describe('the index over the fixture graph (build-plan.md WO-7, WO-10)', () => {
     const reached = await impact(conn, service, LIMIT);
     expect(reached.sections[0].rows).toMatchObject([{feature: 'domains/bio', relation: 'owns'}]);
     expect(reached.sections[1].rows).toEqual([{feature: 'domains/bio', owner: 'P:jane', name: 'Jane Dev'}]);
+  }, 120_000);
+
+  withKuzu('counts a section whole and pages it after, so a header tells a page from the total', async () => {
+    const {conn} = index.opened!;
+    const bio = (await resolveTarget(conn, '~domains/bio'))!;
+    const paged = (await testsFor(conn, bio, {limit: 3})).sections.find((s) => s.title === 'tests')!;
+    expect(paged.rows.length).toBe(3);
+    expect(paged.total).toBe(5);
+    expect(render({op: 'tests-for', target: bio, sections: [paged]})).toContain('\ntests (3 of 5; --limit to see more)');
+    const whole = (await testsFor(conn, bio, LIMIT)).sections.find((s) => s.title === 'tests')!;
+    expect(render({op: 'tests-for', target: bio, sections: [whole]})).toContain('\ntests (5)');
   }, 120_000);
 
   withKuzu('answers for a home document and for a page that documents a feature, which have no file: node of their own', async () => {

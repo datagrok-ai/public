@@ -7,7 +7,8 @@ import path from 'path';
 import {fileURLToPath} from 'url';
 import {loadTypeSystem, TypeSystem} from '../utils/kg/types';
 import {ddl, load, loadKuzu, open, run, Ddl, KuzuConnection, KuzuQueryResult} from '../utils/kg/kuzu';
-import {find, explain, impact, testsFor, resolveTarget, coverageNote} from '../utils/kg/ops';
+import {find, explain, impact, testsFor, resolveTarget, coverageNote, printOps} from '../utils/kg/ops';
+import {currentDir} from '../utils/kg/build/write';
 import {kg} from '../commands/kg';
 
 const fixture = path.join(path.dirname(fileURLToPath(import.meta.url)), 'fixtures', 'kg', 'build');
@@ -82,13 +83,14 @@ async function buildFixture(): Promise<{kgDir: string, feature: Record<string, u
   finally {
     log.mockRestore();
   }
-  const file = path.join(repo, '.kg', 'data', 'nodes', 'feature.jsonl');
+  const kgDir = currentDir(path.join(repo, '.kg'))!;
+  const file = path.join(kgDir, 'data', 'nodes', 'feature.jsonl');
   const rows = fs.readFileSync(file, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l));
   const feature = rows.find((r) => r.id === 'platform/caching')!;
   feature.aliases = ['cache, the', 'a "quoted" one'];
   feature.description = 'One line, with a comma.\nAnd a "second" one.';
   fs.writeFileSync(file, rows.map((r) => JSON.stringify(r)).join('\n') + '\n');
-  return {kgDir: path.join(repo, '.kg'), feature};
+  return {kgDir, feature};
 }
 
 /** Remembers what a query handed back, so a test can prove `run` closed it. */
@@ -182,5 +184,22 @@ describe('the index itself (build-plan.md WO-7, WO-10)', () => {
       expect(coverageNote(undefined)).toBe('Dart coverage unknown (no kg-dart batch)');
       expect(coverageNote({dart: 'ok'})).toBeUndefined();
     }
+  }, 60_000);
+
+  withKuzu('says why a section came back empty instead of printing nothing', async () => {
+    const {conn} = index.opened!;
+    const reason = 'tests (0): no test carries ~domains/bio and no owned file contains tests';
+    const tests = await testsFor(conn, (await resolveTarget(conn, 'domains/bio'))!, LIMIT);
+    expect(tests.sections.find((s) => s.title === 'tests')!.empty).toBe(reason);
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    let printed: string[];
+    try {
+      printOps(tests, 'table');
+      printed = log.mock.calls.map((c) => String(c[0]));
+    }
+    finally {
+      log.mockRestore();
+    }
+    expect(printed).toContain(`\n${reason}`);
   }, 60_000);
 });

@@ -19,6 +19,12 @@ const OWNERS = 'autofix/cfg/owners.json';
 const VERSION = /^\d+(\.\d+)*$/;
 const GENERATED = /generated\s+(\d{4}-\d{2}-\d{2})/i;
 const IDENTITY_KEYS = ['github', 'bitbucket', 'jira'];
+/** Separates the git --format fields, so a subject or a message body cannot be mistaken for one. */
+const UNIT = '\u001f';
+/** A reconstructed record is evidence of the reconstruction, not of the release; every edge it produces says so. */
+const DRY_RUN_CONFIDENCE = 0.7;
+/** What turns a commit into a claim of resolution, in its own message (conventions.md §6, edges/resolves.yaml). */
+const RESOLUTION_CLAIM = /\b(?:fix|fixes|fixed|resolve|resolves|resolved|close|closes|closed)\b[\s:#-]*(GROK-\d+|#\d+)/gi;
 
 export const processExtractor: Extractor = {
   name: 'process',
@@ -28,6 +34,13 @@ export const processExtractor: Extractor = {
     new ProcessLayer(ctx, emitter).run();
   },
 };
+
+/** A picked commit, with what its own message claims. */
+interface Commit {
+  id: string;
+  sha: string;
+  message: string;
+}
 
 interface Person {
   name?: string;
@@ -94,7 +107,7 @@ class ProcessLayer {
     const full = path.join(dir, folder, `${key}.md`);
     const opened = fs.existsSync(full) ? splitFrontmatter(fs.readFileSync(full, 'utf8')) : undefined;
     const tracker = opened?.data?.tracker as Record<string, unknown> | undefined;
-    this.emitter.node({
+    const admitted = this.emitter.node({
       type: 'ticket', id, name: String(r.title ?? id), tracker: github ? 'github' : 'jira', key: github ? `#${key.replace(/^public-/, '')}` : key,
       kind: r.kind ?? 'unknown', state: r.status, raw_status: tracker?.raw_status, priority: r.priority ?? undefined,
       components: some(r.components), labels: some(r.labels), resolution: r.resolution ?? undefined, closed: r.closed ?? undefined,
@@ -102,6 +115,7 @@ class ProcessLayer {
       assignee: this.people.id(r.assignee), reporter: this.people.id(r.reporter),
       provenance: 'external', source_layer: 'process',
     });
+    if (!admitted.accepted) return;
     for (const version of some(r.fix_versions) ?? []) {
       if (!VERSION.test(String(version))) continue;
       this.releaseStub(String(version), 'external');
@@ -158,50 +172,57 @@ class ProcessLayer {
       row.status = 'proposed';
       row.description = `Dry run record generated ${GENERATED.exec(text)?.[1] ?? String((data.checks as any)?.checked_at ?? 'without a date')}; not the live record.`;
     }
-    this.emitter.node(row);
+    if (!this.emitter.node(row).accepted) return;
+    const confidence = data.dry_run === true ? DRY_RUN_CONFIDENCE : 1;
     if (base) this.releaseStub(base, 'annotation');
-    for (const pick of Array.isArray(data.picks) ? data.picks : []) this.pick(id, pick as Record<string, unknown>, record);
+    for (const pick of Array.isArray(data.picks) ? data.picks : []) this.pick(id, pick as Record<string, unknown>, record, confidence);
     for (const group of Object.values(data.features ?? {} as Record<string, unknown>))
       for (const item of Array.isArray(group) ? group : []) {
         const ticket = (item as Record<string, unknown>)?.t;
         if (typeof ticket !== 'string') continue;
         ticketStub(this.emitter, ticketId(ticket));
-        this.emitter.edge({type: 'targets-release', from: ticketId(ticket), to: id, kind: 'fix-version', derived_by: 'annotation', confidence: 1, evidence: [record]});
+        this.emitter.edge({type: 'targets-release', from: ticketId(ticket), to: id, kind: 'fix-version', derived_by: 'annotation', confidence, evidence: [record]});
       }
   }
 
-  /** One line of `picks:`: the commit it names, what the release includes, and the ticket it closes or mentions. */
-  private pick(release: string, pick: Record<string, unknown>, record: string): void {
+  /**
+   * One line of `picks:`: the commit it names, what the release includes, and how the record relates it to a ticket.
+   * The association itself is the record's word, not git's, so it is an annotation; resolution is claimed only by the
+   * commit message or by an explicit `claim: resolves` on the pick, and anything else is a mention (review 3 #5).
+   */
+  private pick(release: string, pick: Record<string, unknown>, record: string, confidence: number): void {
     const repo = pick.repo === 'public' ? 'public' : 'reddata';
     const commit = this.commit(repo, String(pick.commit ?? ''), record);
     if (!commit) return;
-    this.emitter.edge({type: 'includes', from: release, to: commit, derived_by: 'annotation', confidence: 1, evidence: [record]});
+    this.emitter.edge({type: 'includes', from: release, to: commit.id, derived_by: 'annotation', confidence, evidence: [record]});
     if (typeof pick.ticket === 'string' && pick.ticket) {
       const ticket = ticketId(pick.ticket);
       ticketStub(this.emitter, ticket);
-      this.emitter.edge({type: 'resolves', from: commit, to: ticket, derived_by: 'git', confidence: 1, evidence: [record]});
-      this.emitter.edge({type: 'targets-release', from: ticket, to: release, kind: 'picked', derived_by: 'annotation', confidence: 1, evidence: [record]});
+      const claimed = pick.claim === 'resolves' || claimsResolution(commit.message, ticket);
+      const evidence = claimed && pick.claim !== 'resolves' ? [record, `${repo}:${commit.sha}`] : [record];
+      this.emitter.edge({type: claimed ? 'resolves' : 'mentions', from: commit.id, to: ticket, derived_by: 'annotation', confidence, evidence});
+      this.emitter.edge({type: 'targets-release', from: ticket, to: release, kind: 'picked', derived_by: 'annotation', confidence, evidence: [record]});
       return;
     }
     for (const [ticket, count] of ticketTokens(String(pick.subject ?? ''))) {
       ticketStub(this.emitter, ticket);
-      this.emitter.edge({type: 'mentions', from: commit, to: ticket, count, derived_by: 'annotation', confidence: 1, evidence: [record]});
+      this.emitter.edge({type: 'mentions', from: commit.id, to: ticket, count, derived_by: 'annotation', confidence, evidence: [record]});
     }
   }
 
-  /** The full sha, subject and date of an abbreviated pick; a sha this checkout does not have leaves git partial. */
-  private commit(repo: 'reddata' | 'public', short: string, record: string): string | undefined {
+  /** The full sha, subject, date and message of an abbreviated pick; a sha this checkout does not have leaves git partial. */
+  private commit(repo: 'reddata' | 'public', short: string, record: string): Commit | undefined {
     const cwd = repo === 'public' ? path.join(this.ctx.repoRoot, 'public') : this.ctx.repoRoot;
-    const shown = spawnSync('git', ['-C', cwd, 'show', '-s', '--format=%H%n%s%n%cI', `${short}^{commit}`], {encoding: 'utf8'});
-    const [sha, subject, date] = shown.status === 0 ? shown.stdout.trim().split('\n') : [];
+    const shown = spawnSync('git', ['-C', cwd, 'show', '-s', `--format=%H${UNIT}%s${UNIT}%cI${UNIT}%B`, `${short}^{commit}`], {encoding: 'utf8'});
+    const [sha, subject, date, message] = shown.status === 0 ? shown.stdout.split(UNIT) : [];
     if (!sha) {
       this.gitPartial = true;
       this.emitter.problem('unresolved_ids', `${record}: ${repo} has no commit ${short}`);
       return undefined;
     }
     const id = commitId(repo, sha);
-    this.emitter.node({type: 'commit', id, name: sha.slice(0, 10), repo, sha, subject, date, provenance: 'git', source_layer: 'process'});
-    return id;
+    if (!this.emitter.node({type: 'commit', id, name: sha.slice(0, 10), repo, sha, subject, date, provenance: 'git', source_layer: 'process'}).accepted) return undefined;
+    return {id, sha, message: message ?? ''};
   }
 
   private releaseStub(version: string, provenance: string): void {
@@ -294,6 +315,13 @@ class People {
       }
     return {};
   }
+}
+
+/** Whether [message] itself claims to resolve [ticket]: `Fixes GROK-1`, `closes #7` and their variants. */
+function claimsResolution(message: string, ticket: string): boolean {
+  for (const m of message.matchAll(RESOLUTION_CLAIM))
+    if (ticketId(m[1]) === ticket) return true;
+  return false;
 }
 
 function identities(person: Person): string[] {

@@ -31,22 +31,23 @@ export const packagesExtractor: Extractor = {
     for (const p of packages) {
       const id = pkgId(p.folder);
       const {json} = p;
-      emitter.node({type: 'package', id, name: p.folder, description: json.description, friendly_name: json.friendlyName, version: json.version,
+      const admitted = emitter.node({type: 'package', id, name: p.folder, description: json.description, friendly_name: json.friendlyName, version: json.version,
         category: json.category, author: json.author?.name, service: json.servicePackage === true ? true : undefined,
         settings: Array.isArray(json.properties) ? json.properties.map((s: any) => s?.name).filter((n: unknown) => typeof n === 'string') : undefined,
         sources: json.sources, npm: json.name, language: ['src/package.ts', 'src/package.g.ts', 'tsconfig.json'].some((f) => fs.existsSync(path.join(ctx.repoRoot, p.dir, f))) ? 'ts' : 'js',
         path: p.dir, provenance: 'registry', source_layer: 'public'});
+      if (!admitted.accepted) continue;
       for (const st of json.meta?.semanticTypes ?? json.semanticTypes ?? []) {
         if (typeof st?.semType !== 'string') continue;
-        emitter.node({type: 'semantic-type', id: semtypeId(st.semType), name: st.semType, description: st.description, language: 'other', declared_in: id, provenance: 'registry', source_layer: 'public'});
+        if (!emitter.node({type: 'semantic-type', id: semtypeId(st.semType), name: st.semType, description: st.description, language: 'other', declared_in: id, provenance: 'registry', source_layer: 'public'}).accepted) continue;
         emitter.edge({type: 'declares', from: id, to: semtypeId(st.semType), derived_by: 'registry', confidence: 1, evidence: [`${p.dir}/package.json`]});
       }
       emitDependencies(emitter, id, p, npm);
     }
     for (const l of libraries) {
       const id = libId(l.folder);
-      emitter.node({type: 'library', id, name: l.folder, description: l.json.description, npm: l.json.name, version: l.json.version, language: 'ts',
-        path: l.dir, provenance: 'registry', source_layer: 'public'});
+      if (!emitter.node({type: 'library', id, name: l.folder, description: l.json.description, npm: l.json.name, version: l.json.version, language: 'ts',
+        path: l.dir, provenance: 'registry', source_layer: 'public'}).accepted) continue;
       emitDependencies(emitter, id, l, npm);
     }
   },

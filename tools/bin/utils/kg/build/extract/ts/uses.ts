@@ -13,6 +13,7 @@ const COMMENT_OR_STRING = /\/\/.*|\/\*[\s\S]*?\*\/|(["'`])(?:\\[\s\S]|(?!\1)[^\\
 /** The declaration a `DG.X` token means when several exported ones share the name. */
 const DG_PREFERENCE = ['class', 'enum', 'const', 'function', 'interface', 'type'];
 const UPPER_CASE = /^[A-Z][A-Z0-9_]*$/;
+const TOKEN_CONFIDENCE = 0.8;
 
 interface Use {
   to: string;
@@ -50,8 +51,9 @@ export class UsesLayer {
       if (cur) cur.count += count;
       else uses.set(use.to, {kind: use.kind, count});
     }
+    // the scan counts API-looking text, so a shadowed `DG` or a mention inside a string reaches here too; the binder-aware pass raises this to 1
     for (const [to, {kind, count}] of uses)
-      this.emitter.edge({type: 'uses', from, to, kind, count, derived_by: 'ast', confidence: 1, evidence: [evidence]});
+      this.emitter.edge({type: 'uses', from, to, kind, count, derived_by: 'ast', confidence: TOKEN_CONFIDENCE, evidence: [evidence]});
   }
 
   /** The unresolved tokens as problems, one per token with the number of files it appears in. */

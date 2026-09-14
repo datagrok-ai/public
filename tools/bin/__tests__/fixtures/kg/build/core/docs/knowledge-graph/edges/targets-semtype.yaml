@@ -2,6 +2,7 @@ type: targets-semtype
 was: DetectsSemtype
 from: Function
 to: SemanticType
+identity: [role]
 derived_by: [annotation, ast]
 description: >
   How a function relates to a semantic type: a detector assigns it, an input

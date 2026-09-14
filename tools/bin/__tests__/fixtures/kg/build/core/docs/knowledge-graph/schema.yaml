@@ -41,6 +41,7 @@ edge_type:
   key?:          string                       # frontmatter key that spells this edge in a home doc ("requested_by")
   key_side?:     "'from' | 'to' = 'from'"   # which end's home doc carries the key (`defined_by` sits on the concept, the target)
   symmetric?:    boolean = false              # a related-to style edge; stored once, matched both ways
+  identity?:     string[]                     # properties that discriminate one assertion from another and so join type, from and to in the edge key ("targets-semtype" keeps one edge per role); each must be a declared property
   cardinality?:  "'one' | 'many' = 'many'"    # max out-degree per source node
   same_type?:    boolean = false              # source and target must share a concrete type
   acyclic?:      boolean = false

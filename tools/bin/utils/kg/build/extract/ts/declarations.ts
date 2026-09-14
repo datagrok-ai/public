@@ -407,17 +407,18 @@ export const declarationsExtractor: Extractor = {
     for (const file of sources.files) {
       const isPackage = file.unit.id.startsWith('pkg:');
       const isApi = file.unit.id === JS_API;
-      emitter.node({type: 'source-file', id: fileId(file.path), name: path.posix.basename(file.path), path: file.path, loc: file.loc, language: languageOf(file.path),
+      const admitted = emitter.node({type: 'source-file', id: fileId(file.path), name: path.posix.basename(file.path), path: file.path, loc: file.loc, language: languageOf(file.path),
         generated: file.generated ? true : undefined, package: isPackage ? file.unit.id : undefined, provenance: 'filesystem', source_layer: 'public'});
+      if (!admitted.accepted) continue;
       emitter.edge({type: 'declares', from: file.unit.id, to: fileId(file.path), derived_by: 'ast', confidence: 1, evidence: [file.path]});
       for (const decl of file.decls) {
         const publicApi = isApi && decl.exported;
         if (file.generated && decl.container && !publicApi) continue;
         const id = sources.declId(file, decl);
         const container = decl.container ? declId(file.path, decl.container) : undefined;
-        emitter.node({type: 'declaration', id, name: decl.name.slice(decl.name.lastIndexOf('.') + 1), kind: decl.kind, container, exported: decl.exported,
+        if (!emitter.node({type: 'declaration', id, name: decl.name.slice(decl.name.lastIndexOf('.') + 1), kind: decl.kind, container, exported: decl.exported,
           public_api: publicApi ? true : undefined, generated: file.generated ? true : undefined, deprecated: decl.deprecated ? true : undefined, documented: decl.documented,
-          signature: decl.signature || undefined, line: decl.line, language: 'ts', path: file.path, provenance: 'ast', source_layer: 'public'});
+          signature: decl.signature || undefined, line: decl.line, language: 'ts', path: file.path, provenance: 'ast', source_layer: 'public'}).accepted) continue;
         emitter.edge({type: 'declares', from: container ?? fileId(file.path), to: id, derived_by: 'ast', confidence: 1, evidence: [file.path]});
         for (const [type, names] of [['extends', decl.extends], ['implements', decl.implements]] as const)
           for (const name of names) {

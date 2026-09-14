@@ -8,6 +8,7 @@ import path from 'path';
 import {fileURLToPath} from 'url';
 import {spawnSync} from 'child_process';
 
+import {currentDir} from '../utils/kg/build/write';
 import {kg} from '../commands/kg';
 
 const fixture = path.join(path.dirname(fileURLToPath(import.meta.url)), 'fixtures', 'kg', 'build');
@@ -30,7 +31,7 @@ async function build(extra: Record<string, unknown> = {}, prepare?: (repo: strin
   const before = process.exitCode;
   try {
     await kg({_: ['kg', 'build'], kg: path.join(repo, KG_DIR), backlog: path.join(repo, 'backlog'), only: 'homes,process', db: false, output: 'json', ...extra});
-    const out = path.join(repo, '.kg');
+    const out = currentDir(path.join(repo, '.kg'))!;
     const rows = (file: string) => {
       const p = path.join(out, `data/${file}.jsonl`);
       return fs.existsSync(p) ? fs.readFileSync(p, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l)) : [];
@@ -58,7 +59,7 @@ function commits(repo: string): void {
     shas.push(git(dir, 'rev-parse', '--short=10', 'HEAD').stdout.trim());
   }
   const record = path.join(repo, ...RECORD.split('/'));
-  fs.writeFileSync(record, fs.readFileSync(record, 'utf8').replace('aaaaaaaaaa', shas[0]).replace('bbbbbbbbbb', shas[1]));
+  fs.writeFileSync(record, fs.readFileSync(record, 'utf8').replace(/aaaaaaaaaa/g, shas[0]).replace(/bbbbbbbbbb/g, shas[1]));
 }
 
 const graph = build();
@@ -80,7 +81,7 @@ describe('tickets from the backlog snapshot (build-plan.md WO-5)', () => {
   it('writes a GitHub issue as gh:public#n with the # key and its own raw status', async () => {
     const {rows} = await graph;
     expect(byId(rows('nodes/ticket'), 'gh:public#7')).toMatchObject({tracker: 'github', key: '#7', state: 'wontfix', raw_status: 'closed/not_planned',
-      labels: ['enhancement', 'Ins'], resolution: 'not_planned'});
+      labels: ['Ins', 'enhancement'], resolution: 'not_planned'});
     expect(rows('nodes/ticket').map((t) => t.id)).toEqual(['GROK-100', 'GROK-101', 'GROK-102', 'gh:public#7']);
   });
 
@@ -165,10 +166,11 @@ describe('releases and their picks (build-plan.md WO-5)', () => {
     expect(picked[0]).toMatchObject({type: 'commit', sha: expect.stringMatching(/^[0-9a-f]{40}$/), subject: 'fixture', date: expect.any(String),
       provenance: 'git', source_layer: 'process', visibility: 'dev'});
     expect(rows('edges/includes').map((e) => [e.from, e.to])).toEqual(picked.map((c) => ['Rel:1.0.1', c.id]).sort());
-    expect(rows('edges/resolves')).toEqual([expect.objectContaining({to: 'GROK-100', derived_by: 'git', confidence: 1, evidence: [RECORD]})]);
-    // an edge is keyed by (type, from, to, name), so the fix version of a picked ticket is the same edge: the record wins, the snapshot adds its evidence
-    expect(edges(rows('edges/targets-release'), 'GROK-100')).toEqual([expect.objectContaining({to: 'Rel:1.0.1', kind: 'picked',
-      derived_by: 'annotation', evidence: [RECORD, 'backlog/index.jsonl']})]);
-    expect(rows('edges/mentions').filter((e) => e.from.startsWith('commit:'))).toEqual([expect.objectContaining({to: 'GROK-101', count: 1, evidence: [RECORD]})]);
-  });
+    // a pick's ticket is the record's word: resolution only where the pick says `claim: resolves`, and a dry run lowers every edge it makes
+    expect(rows('edges/resolves')).toEqual([expect.objectContaining({to: 'GROK-101', derived_by: 'annotation', confidence: 0.7, evidence: [RECORD]})]);
+    expect(rows('edges/mentions').filter((e) => e.from.startsWith('commit:')).map((e) => [e.to, e.confidence]).sort())
+      .toEqual([['GROK-100', 0.7], ['GROK-101', 0.7]]);
+    // targets-release is keyed by its kind as well, so a picked ticket that also carries the fix version keeps both assertions
+    expect(edges(rows('edges/targets-release'), 'GROK-100').map((e) => [e.kind, e.confidence]).sort()).toEqual([['fix-version', 1], ['picked', 0.7]]);
+  }, 60_000);
 });

@@ -6,6 +6,7 @@ import os from 'os';
 import path from 'path';
 import {fileURLToPath} from 'url';
 import {apiTokens} from '../utils/kg/build/extract/ts/uses';
+import {currentDir} from '../utils/kg/build/write';
 import {kg} from '../commands/kg';
 
 const fixture = path.join(path.dirname(fileURLToPath(import.meta.url)), 'fixtures', 'kg', 'build');
@@ -23,7 +24,7 @@ async function build(): Promise<{manifest: any, rows: (file: string) => any[], p
     await kg({_: ['kg', 'build'], kg: path.join(repo, KG_DIR), only: 'ts-packages,ts-functions,ts-declarations,ts-imports,ts-uses', db: false, output: 'json'});
     expect(error.mock.calls).toEqual([]);
     expect(process.exitCode).toBeUndefined();
-    const out = path.join(repo, '.kg');
+    const out = currentDir(path.join(repo, '.kg'))!;
     const rows = (file: string) => {
       const p = path.join(out, `data/${file}.jsonl`);
       return fs.existsSync(p) ? fs.readFileSync(p, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l)) : [];
@@ -194,7 +195,8 @@ describe('ts-uses extractor (build-plan.md WO-3b)', () => {
       [`decl:${API}/ui.ts#div`, 'ui', 1],
       [`decl:${API}/ui.ts#input.string`, 'ui', 1],
     ]);
-    expect(rows('edges/uses').find((e) => e.from === `file:${VIEWER}` && e.to === `decl:${API}/src/shell.ts#Shell.info`)).toMatchObject({derived_by: 'ast', confidence: 1, evidence: [VIEWER]});
+    // a token scan cannot tell a binding from a shadowed name or a string, so the edge claims less than certainty
+    expect(rows('edges/uses').find((e) => e.from === `file:${VIEWER}` && e.to === `decl:${API}/src/shell.ts#Shell.info`)).toMatchObject({derived_by: 'ast', confidence: 0.8, evidence: [VIEWER]});
     expect(rows('edges/uses').filter((e) => e.from === 'file:public/packages/Demo/src/package.g.ts').map((e) => e.to)).toEqual([`decl:${API}/src/dataframe.ts#DataFrame`]);
   });
 

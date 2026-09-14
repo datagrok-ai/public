@@ -9,6 +9,7 @@ import {fileURLToPath} from 'url';
 import {loadTypeSystem, TypeSystem} from '../utils/kg/types';
 import {Emitter, Graph} from '../utils/kg/build/emitter';
 import {membershipExtractor} from '../utils/kg/build/extract/membership';
+import {currentDir} from '../utils/kg/build/write';
 import {kg} from '../commands/kg';
 
 const fixture = path.join(path.dirname(fileURLToPath(import.meta.url)), 'fixtures', 'kg', 'build');
@@ -34,7 +35,7 @@ async function build(): Promise<{rows: (file: string) => any[], ownership: any, 
   const before = process.exitCode;
   try {
     await kg({_: ['kg', 'build'], kg: path.join(repo, KG_DIR), only: 'homes,ts-functions,ts-tests,membership', db: false, output: 'json'});
-    const out = path.join(repo, '.kg');
+    const out = currentDir(path.join(repo, '.kg'))!;
     const rows = (file: string) => {
       const p = path.join(out, `data/${file}.jsonl`);
       return fs.existsSync(p) ? fs.readFileSync(p, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l)) : [];
