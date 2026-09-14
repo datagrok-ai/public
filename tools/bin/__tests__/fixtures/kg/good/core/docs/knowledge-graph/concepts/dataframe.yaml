@@ -1,0 +1,8 @@
+id: C:dataframe
+name: DataFrame
+area: data
+defined_by:
+  - decl:core/client/d4/lib/scatter.dart#DataFrame
+  - {to: decl:public/js-api/src/viewer.ts#DataFrame, language: ts}
+description: >
+  An in-memory columnar table. The unit every viewer works on.

@@ -426,12 +426,16 @@ prefixed \`id:\` key. A home needs a name: \`name:\`, \`title:\`, or the first
 \`customer-contact\`); graph labels are the upper-snake rendering (\`PART_OF\`),
 derived by the build and never authored.
 
-Home documents are looked for in every markdown file under
+A home is a markdown document with frontmatter when the thing is a document
+(features, scenarios, initiatives) and a YAML file with the same keys when it is a
+record (concepts, people, teams, customers); YAML homes live inside
+core/docs/knowledge-graph (concepts/, internal/), put the prose in \`description:\`
+and must set \`name:\`. Homes are looked for in
     ${HOME_ROOTS.join('\n    ')}
-skipping node_modules, dist, build, .dart_tool, .claude, .git, fixtures and
-__tests__ folders, and the Test Track files (packages/UsageAnalysis/files and
-playwright-public: their \`feature:\` key still means the area, until it migrates
-to \`covers:\`).
+skipping nodes/, edges/ and schema.yaml, node_modules, dist, build, .dart_tool,
+.claude, .git, fixtures and __tests__ folders, and the Test Track files
+(packages/UsageAnalysis/files and playwright-public: their \`feature:\` key still
+means the area, until it migrates to \`covers:\`).
 
 Verbs:
     check       The validation gate: type files against schema.yaml, home documents

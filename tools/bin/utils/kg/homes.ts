@@ -1,21 +1,28 @@
-/// Home documents: the markdown files whose frontmatter declares a node (conventions.md §5).
-/// Discovers them under the monorepo, validates the frontmatter against the type system,
-/// resolves references and cited paths, and reports what `grok kg gen` would stub.
+/// Home documents: the markdown files and YAML records whose frontmatter declares a node
+/// (conventions.md §5), and the pages that only annotate one (`documents:`). Discovers them
+/// under the monorepo, validates them against the type system, resolves references and
+/// citations, and reports what `grok kg gen` would stub.
 import * as fs from 'fs';
 import * as path from 'path';
 import {globSync} from 'glob';
-import {splitFrontmatter, keyLine, Frontmatter} from './frontmatter';
-import {TypeSystem, NodeType, EdgeType, Member, Issue, checkValue, isSubtype, pascal, kebabOfLabel} from './types';
+import {splitFrontmatter, parseYamlDocument, keyLine, Frontmatter} from './frontmatter';
+import {extractCitations, headingAnchors, Citation} from './citations';
+import {TypeSystem, NodeType, EdgeType, Member, Issue, checkValue, isSubtype, pascal, kebabOfLabel, concreteAuthored} from './types';
 
-/** Where home documents may live, relative to the monorepo root: any markdown file in the repos. */
+/** Where homes may live, relative to the monorepo root: any markdown document in the repos, and
+ * the YAML records (concepts, people, teams, customers) inside the knowledge-graph folder. */
 export const HOME_ROOTS = [
   'core/**/*.{md,mdx}',
   'public/**/*.{md,mdx}',
   'infra/**/*.{md,mdx}',
   'landing/**/*.{md,mdx}',
+  'core/docs/knowledge-graph/**/*.yaml',
 ];
 
 export const HOME_IGNORE = [
+  'core/docs/knowledge-graph/nodes/**',
+  'core/docs/knowledge-graph/edges/**',
+  'core/docs/knowledge-graph/schema.yaml',
   '**/node_modules/**',
   '**/dist/**',
   '**/.dart_tool/**',
@@ -25,19 +32,26 @@ export const HOME_IGNORE = [
   // test fixtures carry frontmatter of their own (grok-core mail/report fixtures, the kg fixtures)
   '**/fixtures/**',
   '**/__tests__/**',
-  // Test Track scenarios (and their Playwright copies) carry a `feature:` key with a different
-  // meaning (the area they belong to) until they migrate to `covers:` (nodes/scenario.yaml rules).
-  'public/packages/UsageAnalysis/files/**',
-  'public/playwright-public/**',
 ];
 
+/** Test Track scenarios (and their Playwright copies): only files migrated to `id: TS:...` are homes; the
+ * legacy `feature:` key there still means the area (nodes/scenario.yaml rules). */
+const LEGACY_TEST_TRACK = ['public/packages/UsageAnalysis/files/', 'public/playwright-public/'];
+const INTERNAL_DIR = 'core/docs/knowledge-graph/internal/';
 const DOCUSAURUS_KEYS = ['title', 'description', 'keywords', 'sidebar_position', 'sidebar_label', 'slug', 'mdx',
   'unlisted', 'toc_max_heading_level', 'position', 'format', 'pagination_prev', 'pagination_next', 'hide_sidebar',
   'hide_search', 'hide_title', 'tags'];
+/** Extracted id schemes (conventions.md §2.2) and the node types they name. */
+const SCHEME_TYPES: Record<string, string[]> = {
+  pkg: ['package'], lib: ['library'], func: ['function'], decl: ['declaration'], file: ['source-file'],
+  ep: ['endpoint'], table: ['db-table'], semtype: ['semantic-type'], doc: ['doc-page'], test: ['test'],
+  suite: ['test-suite'], sample: ['sample'], pr: ['pull-request'], gh: ['ticket'], commit: ['commit'],
+  report: ['report'], img: ['image'],
+};
 const PREFIXED_ID = /^([A-Z][A-Za-z]{0,5}):(.+)$/;
+const SCHEMED_ID = /^([a-z][a-z0-9-]*):(.+)$/;
+const BARE_ID = /^[a-z0-9-]+(\/[a-z0-9-]+)*$/;
 const SEGMENT = /^[a-z0-9-]+$/;
-const EXTERNAL_ID = /^([a-z][a-z0-9-]*:|GROK-\d+$|#\d+$)/;
-const CITED_PATH = /^(core|public|infra|landing)[\\/][A-Za-z0-9_.\\/*-]+$/;
 const REPO_PREFIX = /^(landing|infra):(.+)$/;
 const GLOB_MAGIC = /[*?[\]{}]/;
 
@@ -50,6 +64,8 @@ export interface Home {
   type: NodeType;
   /** Posix path relative to the monorepo root. */
   file: string;
+  /** A YAML record rather than a markdown document: no body, `name:` required. */
+  yaml: boolean;
   line: number;
   name: string;
   aliases: string[];
@@ -63,23 +79,39 @@ export interface Stub {
   neededBy: string;
 }
 
+/** A reference whose target is an extracted node the build has not produced yet. */
+export interface UnresolvedRef {
+  source: string;
+  key: string;
+  value: string;
+  expectedTypes: string[];
+}
+
 export interface HomeSet {
   homes: Home[];
   stubs: Stub[];
   errors: Issue[];
   warnings: Issue[];
-  unresolvedExternal: number;
-  /** Markdown files walked looking for homes. */
+  unresolvedExternal: UnresolvedRef[];
+  /** Files walked looking for homes. */
   scanned: number;
+  /** Pages that are not homes but carry an edge key such as `documents:`. */
+  annotatedPages: number;
+  citations: {doc: number, code: number};
 }
 
-export interface Report {
+/** The `grok kg check` diagnostic report (not the graph's report node). */
+export interface CheckReport {
   errors: Issue[];
   warnings: Issue[];
+  /** Issue count per code. */
+  codes: Record<string, number>;
   types: {nodes: number, edges: number, prefixes: number};
   scanned: number;
   homes: Record<string, number>;
-  unresolvedExternal: number;
+  annotatedPages: number;
+  citations: {doc: number, code: number};
+  unresolvedExternal: UnresolvedRef[];
   stubs: string[];
   stale?: string[];
   written?: string[];
@@ -90,17 +122,34 @@ export function discoverHomeFiles(repoRoot: string): string[] {
 }
 
 export function loadHomes(system: TypeSystem, repoRoot: string, files: string[] = discoverHomeFiles(repoRoot)): HomeSet {
-  const set: HomeSet = {homes: [], stubs: [], errors: [], warnings: [], unresolvedExternal: 0, scanned: files.length};
+  const set: HomeSet = {homes: [], stubs: [], errors: [], warnings: [], unresolvedExternal: [], scanned: files.length,
+    annotatedPages: 0, citations: {doc: 0, code: 0}};
   const fms = new Map<Home, Frontmatter>();
+  const pages: {file: string, fm: Frontmatter}[] = [];
   for (const file of files) {
-    const text = fs.readFileSync(path.join(repoRoot, file), 'utf8');
-    const fm = splitFrontmatter(text);
-    if (fm.error) {
-      if (/^(feature|id):/m.test(fm.yaml)) set.errors.push({file, line: fm.errorLine, message: fm.error});
+    let text: string;
+    try {
+      text = fs.readFileSync(path.join(repoRoot, file), 'utf8');
+    } catch (e: any) {
+      set.errors.push({file, code: 'unreadable', message: `cannot read: ${e.message}`});
       continue;
     }
-    if (!fm.data || (fm.data.feature === undefined && fm.data.id === undefined)) continue;
-    const home = readHome(system, file, fm, set.errors);
+    const isYaml = /\.ya?ml$/.test(file);
+    const fm = isYaml ? parseYamlDocument(text) : splitFrontmatter(text);
+    const legacy = LEGACY_TEST_TRACK.some((p) => file.startsWith(p));
+    if (fm.error) {
+      if (!legacy || /^id:\s*TS:/m.test(fm.yaml))
+        set.errors.push({file, line: fm.errorLine, code: /not closed/.test(fm.error) ? 'unclosed-frontmatter' : 'yaml-error', message: fm.error});
+      continue;
+    }
+    if (!fm.data) continue;
+    if (legacy && !(typeof fm.data.id === 'string' && fm.data.id.startsWith('TS:'))) continue;
+    if (fm.data.feature === undefined && fm.data.id === undefined) {
+      if (isYaml) set.warnings.push({file, line: 1, code: 'stray-yaml', message: 'stray YAML file in the knowledge-graph folder: no id: or feature: key, so not a home'});
+      else if (Object.keys(fm.data).some((k) => k === 'edges' || system.keys.has(k))) pages.push({file, fm});
+      continue;
+    }
+    const home = readHome(system, file, fm, isYaml, set.errors);
     if (home) {
       set.homes.push(home);
       fms.set(home, fm);
@@ -110,95 +159,83 @@ export function loadHomes(system: TypeSystem, repoRoot: string, files: string[] 
   const checker = new HomeChecker(system, repoRoot, index, set);
   for (const home of set.homes)
     checker.check(home, fms.get(home)!);
+  for (const page of pages)
+    checker.checkPage(page.file, page.fm);
+  checker.checkCycles();
   return set;
 }
 
-function readHome(system: TypeSystem, file: string, fm: Frontmatter, errors: Issue[]): Home | null {
+function readHome(system: TypeSystem, file: string, fm: Frontmatter, isYaml: boolean, errors: Issue[]): Home | null {
   const data = fm.data!;
-  const error = (message: string, key = 'id') => errors.push({file, line: keyLine(fm, key) ?? keyLine(fm, 'feature') ?? 1, message});
+  const error = (code: string, message: string, key = 'id') => errors.push({file, line: keyLine(fm, key) ?? keyLine(fm, 'feature') ?? 1, code, message});
   if (data.feature !== undefined && data.id !== undefined) {
-    error('both feature: and id: are set; feature: is sugar for id: without a prefix');
+    error('bad-id', 'both feature: and id: are set; feature: is sugar for id: without a prefix');
     return null;
   }
   const key = data.feature !== undefined ? 'feature' : 'id';
   const raw = data[key];
   if (typeof raw !== 'string' || !raw.trim()) {
-    error(`${key}: must be an id string, got ${JSON.stringify(raw)}`, key);
+    error('bad-id', `${key}: must be an id string, got ${JSON.stringify(raw)}`, key);
     return null;
   }
   const id = raw.trim().replace(/^~/, '');
   const prefixed = PREFIXED_ID.exec(id);
   if (key === 'feature' && prefixed) {
-    error(`feature: takes a feature id without a prefix; use id: ${id}`, key);
+    error('bad-id', `feature: takes a feature id without a prefix; use id: ${id}`, key);
     return null;
   }
   const prefix = prefixed ? prefixed[1] : undefined;
   const localId = prefixed ? prefixed[2] : id;
   const baseName = prefix ? system.prefixes.get(prefix) : 'feature';
   if (!baseName || !system.nodes.has(baseName)) {
-    error(`unknown id prefix '${prefix}'`, key);
+    error('bad-id', `unknown id prefix '${prefix}'`, key);
     return null;
   }
   let type = system.nodes.get(baseName)!;
   if (data.type !== undefined) {
     const named = system.nodes.get(String(data.type));
     if (!named) {
-      error(`unknown type '${data.type}'`, 'type');
+      error('bad-type', `unknown type '${data.type}'`, 'type');
       return null;
     }
     if (!isSubtype(system, named.name, baseName)) {
-      error(`type '${named.name}' is not a subtype of ${baseName}, the type of prefix ${prefix ?? '(none)'}`, 'type');
+      error('bad-type', `type '${named.name}' is not a subtype of ${baseName}, the type of prefix ${prefix ?? '(none)'}`, 'type');
       return null;
     }
     type = named;
   }
   if (type.abstract) {
-    error(`type '${type.name}' is abstract; set type: to a concrete subtype`, data.type !== undefined ? 'type' : key);
+    error('bad-type', `type '${type.name}' is abstract; set type: to a concrete subtype`, data.type !== undefined ? 'type' : key);
     return null;
   }
   if (!type.authored) {
-    error(`type '${type.name}' is extracted, not authored; it cannot have a home document`, key);
+    error('bad-type', `type '${type.name}' is extracted, not authored; it cannot have a home document`, key);
     return null;
   }
   const segments = localId.split('/');
   if (!segments.every((s) => SEGMENT.test(s))) {
-    error(`id '${id}': segments must be lowercase kebab-case separated by /`, key);
+    error('bad-id', `id '${id}': segments must be lowercase kebab-case separated by /`, key);
     return null;
   }
   if (segments.length > 1 && !type.hierarchical) {
-    error(`id '${id}': type ${type.name} is not hierarchical, the id may not contain /`, key);
+    error('bad-id', `id '${id}': type ${type.name} is not hierarchical, the id may not contain /`, key);
     return null;
   }
   const aliases = Array.isArray(data.aliases) ? data.aliases.map((a) => {
     const alias = String(a).replace(/^~/, '');
     return prefix && !PREFIXED_ID.test(alias) ? `${prefix}:${alias}` : alias;
   }) : [];
-  const name = typeof data.name === 'string' ? data.name : typeof data.title === 'string' ? data.title : firstHeading(fm.body);
-  return {id, prefix, localId, type, file, line: keyLine(fm, key) ?? 1, name: name ?? '', aliases, data, body: fm.body};
+  const name = typeof data.name === 'string' ? data.name :
+    isYaml ? undefined : typeof data.title === 'string' ? data.title : firstHeading(fm.body);
+  return {id, prefix, localId, type, file, yaml: isYaml, line: keyLine(fm, key) ?? 1, name: name ?? '', aliases, data, body: fm.body};
 }
 
 function firstHeading(body: string): string | undefined {
-  for (const line of proseLines(body)) {
-    const m = /^#\s+(.+?)\s*#*\s*$/.exec(line.text);
+  for (const line of body.split('\n')) {
+    const m = /^#\s+(.+?)\s*#*\s*$/.exec(line);
     if (m) return m[1];
   }
   return undefined;
-}
-
-/** Body lines outside fenced code blocks, with 0-based offsets. */
-function proseLines(body: string): {text: string, offset: number}[] {
-  const out: {text: string, offset: number}[] = [];
-  let fence: string | null = null;
-  body.split('\n').forEach((text, offset) => {
-    const m = /^\s*(```|~~~)/.exec(text);
-    if (m) {
-      if (fence === null) fence = m[1];
-      else if (fence === m[1]) fence = null;
-      return;
-    }
-    if (fence === null) out.push({text, offset});
-  });
-  return out;
 }
 
 interface HomeIndex {
@@ -216,94 +253,158 @@ function indexHomes(homes: Home[], errors: Issue[]): HomeIndex {
       continue;
     }
     // discovery order says nothing about which file is the newer claim, so both are named
-    errors.push({file: home.file, line: home.line, message: `duplicate id ~${home.id}, also the home of ${other.file}`});
-    errors.push({file: other.file, line: other.line, message: `duplicate id ~${home.id}, also the home of ${home.file}`});
+    errors.push({file: home.file, line: home.line, code: 'duplicate-id', message: `duplicate id ~${home.id}, also the home of ${other.file}`});
+    errors.push({file: other.file, line: other.line, code: 'duplicate-id', message: `duplicate id ~${home.id}, also the home of ${home.file}`});
   }
   for (const home of homes)
     for (const alias of home.aliases) {
       const owner = byId.get(alias);
       if (owner) {
-        errors.push({file: home.file, line: home.line, message: `alias ~${alias} is the id of ${owner.file}`});
+        errors.push({file: home.file, line: home.line, code: 'alias-conflict', message: `alias ~${alias} is the id of ${owner.file}`});
         continue;
       }
       const other = byAlias.get(alias);
-      if (other && other !== home) errors.push({file: home.file, line: home.line, message: `alias ~${alias} is also an alias of ${other.file}`});
+      if (other && other !== home) errors.push({file: home.file, line: home.line, code: 'alias-conflict', message: `alias ~${alias} is also an alias of ${other.file}`});
       else byAlias.set(alias, home);
     }
   return {byId, byAlias};
 }
 
+/** What an edge key hangs off: a home, or a plain page (a doc-page) that only annotates. */
+interface Subject {
+  file: string;
+  typeName: string;
+  home?: Home;
+}
+
+type ErrorFn = (code: string, message: string, key?: string) => void;
+
 class HomeChecker {
   private pathCache = new Map<string, string | null>();
+  private anchorCache = new Map<string, Set<string> | null>();
   private stubIds = new Set<string>();
+  /** Instances of `acyclic` edges among homes, edge -> from id -> to ids. */
+  private instances = new Map<string, Map<string, Set<string>>>();
 
   constructor(private system: TypeSystem, private repoRoot: string, private index: HomeIndex, private set: HomeSet) {}
 
   check(home: Home, fm: Frontmatter): void {
-    const error = (message: string, key?: string) => this.set.errors.push({file: home.file, line: key ? keyLine(fm, key) ?? home.line : home.line, message});
+    const error: ErrorFn = (code, message, key) => this.set.errors.push({file: home.file, line: key ? keyLine(fm, key) ?? home.line : home.line, code, message});
     const {type, data} = home;
+    const subject: Subject = {file: home.file, typeName: type.name, home};
     const isHelp = home.file.startsWith('public/help/');
     if (!home.name && (data.name === undefined || data.name === null))
-      error('no name: set name:, title:, or start the body with a # heading');
+      error('no-name', home.yaml ? 'no name: a YAML home must set name:' : 'no name: set name:, title:, or start the body with a # heading');
     for (const [key, value] of Object.entries(data)) {
       if (key === 'feature' || key === 'id' || key === 'type' || value === null) continue;
       if (key === 'title' && typeof value === 'string') continue;
       if (key === 'part_of') {
-        error('part-of is derived from the id path and never authored; remove part_of:', key);
+        error('part-of-authored', 'part-of is derived from the id path and never authored; remove part_of:', key);
         continue;
       }
       if (key === 'edges') {
-        this.checkEdgesKey(home, value, error);
+        this.checkEdgesKey(subject, value, error);
         continue;
       }
       const edge = this.system.keys.get(key);
       if (edge) {
-        this.checkEdgeKey(home, key, edge, value, error);
+        this.checkEdgeKey(subject, key, edge, value, error);
         continue;
       }
       const member = type.members[key];
       if (member) {
-        const problem = this.valueProblem(member, value);
-        if (problem) error(`${key}: ${problem}`, key);
+        if (isHomeFileMember(member) && !home.yaml) {
+          error('authored-path', `${key}: derived from the home file (${home.file}) and never authored; remove it`, key);
+          continue;
+        }
+        const problem = this.valueProblem(member, value, {source: home.file, key});
+        if (problem) error(member.kind === 'ref' ? 'unresolved-ref' : member.scalar === 'Path' ? 'missing-path' : 'bad-value', `${key}: ${problem}`, key);
         continue;
       }
       if (isHelp && DOCUSAURUS_KEYS.includes(key)) continue;
-      error(`unknown key '${key}' for type ${type.name}`, key);
+      error('unknown-key', `unknown key '${key}' for type ${type.name}`, key);
     }
     for (const member of Object.values(type.members)) {
       if (member.nullable || member.name === 'id' || member.name === 'name') continue;
-      if (data[member.name] === undefined || data[member.name] === null) error(`missing required key '${member.name}' for type ${type.name}`);
+      if (isHomeFileMember(member) && !home.yaml) {
+        data[member.name] = home.file;
+        continue;
+      }
+      if (data[member.name] === undefined || data[member.name] === null) error('missing-key', `missing required key '${member.name}' for type ${type.name}`);
     }
+    if (type.members.manual_only && data.manual_only === undefined && data.target_layer === 'manual-only')
+      data.manual_only = true;
+    if (typeof data.visibility === 'string' && home.file.startsWith(INTERNAL_DIR) && data.visibility !== 'internal')
+      error('visibility-ceiling', `visibility '${data.visibility}' exceeds the ceiling 'internal' of ${INTERNAL_DIR}; a home there can only be internal`, 'visibility');
     this.checkHierarchy(home, error);
-    this.checkCitations(home, fm);
+    if (!home.yaml) this.checkCitations(home, fm);
   }
 
-  private checkHierarchy(home: Home, error: (message: string, key?: string) => void): void {
+  /** A page that is not a home but carries edge keys: `documents:` on a help page. */
+  checkPage(file: string, fm: Frontmatter): void {
+    const error: ErrorFn = (code, message, key) => this.set.errors.push({file, line: key ? keyLine(fm, key) ?? 1 : 1, code, message});
+    if (!this.system.nodes.has('doc-page')) {
+      error('bad-edge', 'a page can only annotate when the type system has a doc-page type');
+      return;
+    }
+    const subject: Subject = {file, typeName: 'doc-page'};
+    this.set.annotatedPages++;
+    for (const [key, value] of Object.entries(fm.data!)) {
+      if (value === null) continue;
+      if (key === 'edges') this.checkEdgesKey(subject, value, error);
+      else {
+        const edge = this.system.keys.get(key);
+        if (edge) this.checkEdgeKey(subject, key, edge, value, error);
+      }
+    }
+  }
+
+  private checkHierarchy(home: Home, error: ErrorFn): void {
     const {type, localId} = home;
     if (!type.hierarchical) return;
     const segments = localId.split('/');
-    if (type.root === 'feature' && segments.length === 2 && (home.data.owner === undefined || home.data.owner === null))
-      error(`~${home.id} is a second-level feature node and must set owner:`);
+    const withPrefix = (n: number) => (home.prefix ? `${home.prefix}:` : '') + segments.slice(0, n).join('/');
+    const missing = (n: number) => !this.index.byId.has(withPrefix(n));
+    let areaMissing = false;
+    if (type.root === 'feature') {
+      const roots = this.system.featureRoots;
+      if (roots.length && !roots.includes(segments[0]))
+        error('bad-root', `~${home.id}: feature root '${segments[0]}' is not one of ${roots.join(', ')} (schema.yaml feature_roots)`);
+      if (segments.length === 2 && (home.data.owner === undefined || home.data.owner === null))
+        error('missing-owner', `~${home.id} is a second-level feature node and must set owner:`);
+      if (segments.length >= 3 && missing(2)) {
+        areaMissing = true;
+        error('missing-area', `~${home.id} needs its area home ~${withPrefix(2)}: a level-2 feature must exist and carry the owner; none found`);
+      }
+    }
+    if (type.root === 'concept' && segments.length > 2)
+      error('too-deep', `~${home.id}: a concept id has at most two segments`);
     for (let i = 1; i < segments.length; i++) {
-      const ancestor = (home.prefix ? `${home.prefix}:` : '') + segments.slice(0, i).join('/');
-      if (this.index.byId.has(ancestor) || this.stubIds.has(ancestor)) continue;
+      const ancestor = withPrefix(i);
+      if (!missing(i) || this.stubIds.has(ancestor) || (areaMissing && i === 2)) continue;
       this.stubIds.add(ancestor);
       this.set.stubs.push({id: ancestor, type, neededBy: home.id});
-      this.set.warnings.push({file: home.file, line: home.line, message: `no home for ~${ancestor} (parent of ~${home.id}); grok kg gen lists it as a stub`});
+      this.set.warnings.push({file: home.file, line: home.line, code: 'stub', message: `no home for ~${ancestor} (parent of ~${home.id}); grok kg gen lists it as a stub`});
     }
   }
 
-  private checkEdgeKey(home: Home, key: string, edge: EdgeType, value: unknown, error: (message: string, key?: string) => void): void {
+  private checkEdgeKey(subject: Subject, key: string, edge: EdgeType, value: unknown, error: ErrorFn): void {
+    if (edge.abstract) {
+      error('bad-edge', `${key}: spells the abstract edge ${edge.name}; abstract edges cannot be authored`, key);
+      return;
+    }
     if (!Array.isArray(value)) {
-      error(`${key}: expected a list of ${edge.name} targets, got ${JSON.stringify(value)}`, key);
+      error('bad-edge', `${key}: expected a list of ${edge.name} targets, got ${JSON.stringify(value)}`, key);
       return;
     }
     const homeSide = edge.keySide;
     const otherSide = homeSide === 'from' ? 'to' : 'from';
-    if (!edge[homeSide].some((t) => isSubtype(this.system, home.type.name, t))) {
-      error(`${key}: ${edge.name}.${homeSide} must be ${edge[homeSide].map(pascal).join(' | ')}; this home is a ${home.type.name}`, key);
+    if (!edge[homeSide].some((t) => isSubtype(this.system, subject.typeName, t))) {
+      error('bad-edge', `${key}: ${edge.name}.${homeSide} must be ${edge[homeSide].map(pascal).join(' | ')}; this ${subject.home ? 'home' : 'page'} is a ${subject.typeName}`, key);
       return;
     }
+    if (homeSide === 'from' && edge.cardinality === 'one' && value.length > 1)
+      error('cardinality', `${key}: ${edge.name} has cardinality one, ${value.length} targets given`, key);
     const targetKey = key === 'code' ? 'path' : 'to';
     value.forEach((item, i) => {
       const where = `${key}[${i}]`;
@@ -313,82 +414,128 @@ class HomeChecker {
       else if (item && typeof item === 'object' && !Array.isArray(item)) {
         ({[targetKey]: target, ...props} = item as Record<string, unknown>);
         if (target === undefined) {
-          error(`${where}: a map item needs ${targetKey}:`, key);
+          error('bad-edge', `${where}: a map item needs ${targetKey}:`, key);
           return;
         }
       } else {
-        error(`${where}: expected an id or a map with ${targetKey}:, got ${JSON.stringify(item)}`, key);
+        error('bad-edge', `${where}: expected an id or a map with ${targetKey}:, got ${JSON.stringify(item)}`, key);
         return;
       }
       if (typeof target !== 'string' || !target.trim()) {
-        error(`${where}: ${targetKey} must be a string, got ${JSON.stringify(target)}`, key);
+        error('bad-edge', `${where}: ${targetKey} must be a string, got ${JSON.stringify(target)}`, key);
         return;
       }
-      const problem = key === 'code' ? this.pathProblem(target) : this.refProblem(target, edge[otherSide]);
-      if (problem) error(`${where}: ${problem}`, key);
-      this.checkEdgeProperties(edge, props, where, error,key);
+      if (key === 'code') {
+        const problem = this.pathProblem(target);
+        if (problem) error('missing-path', `${where}: ${problem}`, key);
+      } else {
+        const {home, problem} = this.resolveRef(target, edge[otherSide], {source: subject.file, key: where});
+        if (problem) error('unresolved-ref', `${where}: ${problem}`, key);
+        if (home && subject.home) {
+          if (edge.sameType && home.type.name !== subject.typeName)
+            error('same-type', `${where}: ${edge.name} is same_type; ~${home.id} is a ${home.type.name}, this home is a ${subject.typeName}`, key);
+          if (edge.acyclic) this.addInstance(edge, homeSide === 'from' ? subject.home.id : home.id, homeSide === 'from' ? home.id : subject.home.id);
+        }
+      }
+      this.checkEdgeProperties(edge, props, where, error, key);
     });
   }
 
-  private checkEdgesKey(home: Home, value: unknown, error: (message: string, key?: string) => void): void {
+  private checkEdgesKey(subject: Subject, value: unknown, error: ErrorFn): void {
     if (!Array.isArray(value)) {
-      error(`edges: expected a list of {type, to, ...} maps, got ${JSON.stringify(value)}`, 'edges');
+      error('bad-edge', `edges: expected a list of {type, to, ...} maps, got ${JSON.stringify(value)}`, 'edges');
       return;
     }
     value.forEach((item, i) => {
       const where = `edges[${i}]`;
       if (!item || typeof item !== 'object' || Array.isArray(item)) {
-        error(`${where}: expected a map with type: and to:`, 'edges');
+        error('bad-edge', `${where}: expected a map with type: and to:`, 'edges');
         return;
       }
       const {type, to, ...props} = item as Record<string, unknown>;
       const edge = typeof type === 'string' ? this.system.edges.get(type) : undefined;
       if (!edge) {
         const kebab = typeof type === 'string' ? kebabOfLabel(type) : null;
-        if (kebab && this.system.edges.has(kebab)) error(`${where}: edge types are lower-dash-case: write '${kebab}', not '${type}'`, 'edges');
-        else error(`${where}: unknown edge type ${JSON.stringify(type)}`, 'edges');
+        if (kebab && this.system.edges.has(kebab)) error('bad-edge', `${where}: edge types are lower-dash-case: write '${kebab}', not '${type}'`, 'edges');
+        else error('bad-edge', `${where}: unknown edge type ${JSON.stringify(type)}`, 'edges');
         return;
       }
       if (edge.abstract || !edge.derivedBy.includes('annotation')) {
-        error(`${where}: ${edge.name} is ${edge.abstract ? 'abstract' : 'never authored (derived_by lacks annotation)'}`, 'edges');
+        error('bad-edge', `${where}: ${edge.name} is ${edge.abstract ? 'abstract' : 'never authored (derived_by lacks annotation)'}`, 'edges');
         return;
       }
-      if (!edge.from.some((t) => isSubtype(this.system, home.type.name, t))) {
-        error(`${where}: ${edge.name}.from must be ${edge.from.map(pascal).join(' | ')}; this home is a ${home.type.name}`, 'edges');
+      if (!edge.from.some((t) => isSubtype(this.system, subject.typeName, t))) {
+        error('bad-edge', `${where}: ${edge.name}.from must be ${edge.from.map(pascal).join(' | ')}; this ${subject.home ? 'home' : 'page'} is a ${subject.typeName}`, 'edges');
         return;
       }
       if (typeof to !== 'string' || !to.trim()) {
-        error(`${where}: to must be an id, got ${JSON.stringify(to)}`, 'edges');
+        error('bad-edge', `${where}: to must be an id, got ${JSON.stringify(to)}`, 'edges');
         return;
       }
-      const problem = this.refProblem(to, edge.to);
-      if (problem) error(`${where}: ${problem}`, 'edges');
-      this.checkEdgeProperties(edge, props, where, error,'edges');
+      const {home, problem} = this.resolveRef(to, edge.to, {source: subject.file, key: where});
+      if (problem) error('unresolved-ref', `${where}: ${problem}`, 'edges');
+      if (home && subject.home) {
+        if (edge.sameType && home.type.name !== subject.typeName)
+          error('same-type', `${where}: ${edge.name} is same_type; ~${home.id} is a ${home.type.name}, this home is a ${subject.typeName}`, 'edges');
+        if (edge.acyclic) this.addInstance(edge, subject.home.id, home.id);
+      }
+      this.checkEdgeProperties(edge, props, where, error, 'edges');
     });
   }
 
-  private checkEdgeProperties(edge: EdgeType, props: Record<string, unknown>, where: string,
-    error: (message: string, key?: string) => void, key: string): void {
+  private checkEdgeProperties(edge: EdgeType, props: Record<string, unknown>, where: string, error: ErrorFn, key: string): void {
     for (const [name, value] of Object.entries(props)) {
       const member = edge.properties[name];
       if (!member) {
-        error(`${where}: ${edge.name} has no property '${name}' (${Object.keys(edge.properties).join(', ') || 'none'})`, key);
+        error('unknown-key', `${where}: ${edge.name} has no property '${name}' (${Object.keys(edge.properties).join(', ') || 'none'})`, key);
         continue;
       }
       if (value === null) continue;
-      const problem = this.valueProblem(member, value);
-      if (problem) error(`${where}.${name}: ${problem}`, key);
+      const problem = this.valueProblem(member, value, {source: '', key: `${where}.${name}`});
+      if (problem) error('bad-value', `${where}.${name}: ${problem}`, key);
     }
     for (const member of Object.values(edge.properties))
       if (!member.nullable && (props[member.name] === undefined || props[member.name] === null))
-        error(`${where}: ${edge.name} requires '${member.name}'`, key);
+        error('missing-key', `${where}: ${edge.name} requires '${member.name}'`, key);
   }
 
-  private valueProblem(member: Member, value: unknown): string | null {
+  private addInstance(edge: EdgeType, from: string, to: string): void {
+    let byFrom = this.instances.get(edge.name);
+    if (!byFrom) this.instances.set(edge.name, byFrom = new Map());
+    let tos = byFrom.get(from);
+    if (!tos) byFrom.set(from, tos = new Set());
+    tos.add(to);
+  }
+
+  /** After every home is read: an `acyclic` edge whose instances form a cycle is an error on the home closing it. */
+  checkCycles(): void {
+    for (const [edgeName, byFrom] of this.instances) {
+      const state = new Map<string, 'open' | 'done'>();
+      const visit = (id: string, trail: string[]): void => {
+        state.set(id, 'open');
+        for (const to of byFrom.get(id) ?? []) {
+          const s = state.get(to);
+          if (s === 'done') continue;
+          if (s === 'open') {
+            const cycle = [...trail.slice(trail.indexOf(to)), id, to];
+            const home = this.index.byId.get(id)!;
+            this.set.errors.push({file: home.file, line: home.line, code: 'acyclic', message: `${edgeName} is acyclic but forms a cycle: ${cycle.map((c) => `~${c}`).join(' -> ')}`});
+            continue;
+          }
+          visit(to, [...trail, id]);
+        }
+        state.set(id, 'done');
+      };
+      for (const id of byFrom.keys())
+        if (!state.has(id)) visit(id, []);
+    }
+  }
+
+  private valueProblem(member: Member, value: unknown, ctx: {source: string, key: string}): string | null {
     return checkValue(member, value, {
       provenance: this.system.provenance,
       path: (v) => this.pathProblem(v),
-      ref: (v, m) => this.refProblem(v, m.refs!),
+      ref: (v, m) => this.resolveRef(v, m.refs!, ctx).problem ?? null,
     });
   }
 
@@ -403,65 +550,139 @@ class HomeChecker {
     p = p.replace(/\/+$/, '');
     let problem: string | null;
     if (GLOB_MAGIC.test(p))
-      problem = globSync(p, {cwd: this.repoRoot, posix: true, windowsPathsNoEscape: true}).length ? null : `no file matches '${value}'`;
+      problem = globSync(p, {cwd: this.repoRoot, ignore: HOME_IGNORE, posix: true, windowsPathsNoEscape: true}).length ? null : `no file matches '${value}'`;
     else
       problem = fs.existsSync(path.join(this.repoRoot, p)) ? null : `path '${value}' does not exist`;
     this.pathCache.set(value, problem);
     return problem;
   }
 
-  /** Resolves [value] against the homes as one of [types] (kebab); counts extracted ids as unresolved-external. */
-  refProblem(value: string, types: string[]): string | null {
+  /**
+   * Resolves a reference written in a home: parse the id, expand the expected types to the concrete
+   * authored types that may carry it, check the id's kind against them, then look it up. Extracted ids
+   * (schemes, tracker keys, extracted prefixes) are type-checked now and listed as unresolved-external.
+   */
+  resolveRef(value: string, expected: string[], ctx: {source: string, key: string}): {home?: Home, problem?: string} {
     const raw = value.trim().replace(/^~/, '');
-    const expanded = types.includes('node') ? [...this.system.nodes.keys()] : types;
+    const wanted = expected.map(pascal).join(' | ');
+    const compatible = (types: string[]) => types.some((t) => expected.some((e) => isSubtype(this.system, t, e)));
+    const external = (types: string[]) => {
+      if (!compatible(types)) return {problem: `'${value}' is a ${types.map(pascal).join(' | ')}; expected ${wanted}`};
+      this.set.unresolvedExternal.push({source: ctx.source, key: ctx.key, value, expectedTypes: expected.map(pascal)});
+      return {};
+    };
+    if (!raw) return {problem: 'empty id'};
+    if (/^GROK-\d+$/.test(raw)) return external(['ticket'].filter((t) => this.system.nodes.has(t)));
+    if (/^#\d+$/.test(raw)) return external(['ticket', 'pull-request'].filter((t) => this.system.nodes.has(t)));
     const prefixed = PREFIXED_ID.exec(raw);
-    const candidates = prefixed ? [raw] : [...new Set(expanded.map((t) => {
-      const prefix = this.system.nodes.get(t)?.prefix;
-      return prefix ? `${prefix}:${raw}` : raw;
-    }))];
+    if (prefixed) {
+      const typeName = this.system.prefixes.get(prefixed[1]);
+      if (!typeName) return {problem: `'${value}': unknown id prefix '${prefixed[1]}'`};
+      if (!compatible([typeName])) return {problem: `'${value}' is a ${typeName} (prefix ${prefixed[1]}); expected ${wanted}`};
+      if (!this.system.nodes.get(typeName)!.authored) return external([typeName]);
+      const {id, anchor} = splitRefAnchor(prefixed[2]);
+      return this.lookup(value, [`${prefixed[1]}:${id}`], expected, anchor);
+    }
+    const schemed = SCHEMED_ID.exec(raw);
+    if (schemed) {
+      const types = (SCHEME_TYPES[schemed[1]] ?? []).filter((t) => this.system.nodes.has(t));
+      if (!types.length) return {problem: `'${value}': unknown id scheme '${schemed[1]}:'`};
+      if (schemed[1] === 'decl') {
+        const problem = this.pathProblem(schemed[2].split('#')[0]);
+        if (problem) return {problem: `'${value}': the declaration's ${problem}`};
+      }
+      return external(types);
+    }
+    const {id, anchor} = splitRefAnchor(raw);
+    if (!BARE_ID.test(id)) return {problem: `'${value}' is not a valid id: lowercase kebab segments, an optional Type: prefix, an optional #anchor`};
+    const concrete = concreteAuthored(this.system, expected);
+    if (!concrete.length) return {problem: `'${value}' cannot be a ${wanted}: an extracted id carries its scheme or tracker key (pkg:, func:, decl:, GROK-n, ...)`};
+    const candidates = [...new Set(concrete.map((t) => t.prefix ? `${t.prefix}:${id}` : id))];
+    return this.lookup(value, candidates, expected, anchor);
+  }
+
+  private lookup(value: string, candidates: string[], expected: string[], anchor?: string): {home?: Home, problem?: string} {
     const hits = [...new Set(candidates.map((c) => this.index.byId.get(c) ?? this.index.byAlias.get(c)).filter((h): h is Home => !!h))];
-    if (hits.length > 1) return `'${value}' is ambiguous: ${hits.map((h) => `~${h.id}`).join(', ')}; write the prefix`;
-    if (hits.length === 1) {
-      const home = hits[0];
-      return types.some((t) => isSubtype(this.system, home.type.name, t)) ? null :
-        `'${value}' resolves to ~${home.id}, a ${home.type.name}; expected ${types.map(pascal).join(' | ')}`;
+    if (hits.length > 1) return {problem: `'${value}' is ambiguous: ${hits.map((h) => `~${h.id}`).join(', ')}; write the prefix`};
+    if (!hits.length) return {problem: `'${value}' does not resolve to any home document (as ${candidates.map((c) => `~${c}`).join(' or ')})`};
+    const home = hits[0];
+    if (!expected.some((t) => isSubtype(this.system, home.type.name, t)))
+      return {problem: `'${value}' resolves to ~${home.id}, a ${home.type.name}; expected ${expected.map(pascal).join(' | ')}`};
+    if (anchor !== undefined) {
+      if (home.yaml) return {home, problem: `'${value}': ~${home.id} is a YAML record and has no headings, so '#${anchor}' cannot resolve`};
+      if (!this.anchorsOf(home.file)?.has(anchor)) return {home, problem: `'${value}': no heading '#${anchor}' in ${home.file}`};
     }
-    const prefixType = prefixed ? this.system.prefixes.get(prefixed[1]) : undefined;
-    const authoredTarget = prefixed ? (prefixType ? this.system.nodes.get(prefixType)!.authored : false) :
-      expanded.some((t) => this.system.nodes.get(t)?.authored);
-    if (!authoredTarget || (!prefixed && EXTERNAL_ID.test(raw))) {
-      this.set.unresolvedExternal++;
-      return null;
+    return {home};
+  }
+
+  /** Heading anchors of a markdown file under the repo root; null when it cannot be read. */
+  private anchorsOf(file: string): Set<string> | null {
+    const cached = this.anchorCache.get(file);
+    if (cached !== undefined) return cached;
+    let anchors: Set<string> | null;
+    try {
+      anchors = headingAnchors(splitFrontmatter(fs.readFileSync(path.join(this.repoRoot, file), 'utf8')).body);
+    } catch {
+      anchors = null;
     }
-    return `'${value}' does not resolve to any home document (as ${candidates.map((c) => `~${c}`).join(' or ')})`;
+    this.anchorCache.set(file, anchors);
+    return anchors;
   }
 
   private checkCitations(home: Home, fm: Frontmatter): void {
-    for (const {text, offset} of proseLines(home.body)) {
-      const tokens: string[] = [];
-      for (const m of text.matchAll(/`([^`\n]+)`/g)) tokens.push(m[1]);
-      for (const m of text.matchAll(/\]\(([^)\s]+)\)/g)) tokens.push(m[1]);
-      for (const token of tokens) {
-        const cited = token.trim().replace(/#.*$/, '').replace(/:\d+(-\d+)?$/, '');
-        if (!CITED_PATH.test(cited)) continue;
-        const problem = this.pathProblem(cited);
-        if (problem) this.set.errors.push({file: home.file, line: fm.bodyLine + offset, message: `cited ${problem}`});
+    for (const c of extractCitations(home.file, home.body, fm.bodyLine)) {
+      const error = (code: string, message: string) => this.set.errors.push({file: home.file, line: c.line, code, message});
+      if (c.resolved === null) {
+        this.set.citations.code++;
+        error('citation-escape', `link '${c.raw}' escapes the repository`);
+        continue;
       }
+      // a Docusaurus link may drop the extension: [Tile viewer](tile-viewer) means tile-viewer.md beside the page
+      const extensionless = c.kind !== 'backtick' && !path.posix.extname(c.resolved) && this.pathProblem(c.resolved) !== null;
+      const resolved = extensionless ? [`${c.resolved}.md`, `${c.resolved}.mdx`, `${c.resolved}/index.md`].find((a) => !this.pathProblem(a)) ?? c.resolved : c.resolved;
+      const target = resolved === c.resolved ? c.target : 'doc';
+      this.set.citations[target]++;
+      const problem = this.pathProblem(resolved);
+      if (problem) {
+        error(target === 'doc' ? 'missing-doc-link' : 'missing-cited-path', target === 'doc' ?
+          `linked document '${c.raw}' does not exist${c.raw === resolved ? '' : ` (resolved to ${resolved})`}` : `cited ${problem}`);
+        continue;
+      }
+      if (c.anchor && target === 'doc' && !this.anchorsOf(resolved)?.has(c.anchor))
+        error('bad-anchor', `link '${c.raw}': no heading '#${c.anchor}' in ${resolved}`);
     }
   }
 }
 
-export function makeReport(system: TypeSystem, homes: HomeSet | null): Report {
+/** A `path: Path` member on an authored type names the home file itself (scenario.path, doc-page.path). */
+function isHomeFileMember(member: Member): boolean {
+  return member.name === 'path' && member.kind === 'scalar' && member.scalar === 'Path' && !member.list;
+}
+
+/** A reference's `#anchor` part; `#` inside an extracted id (`decl:file#Name`) is not an anchor. */
+function splitRefAnchor(id: string): {id: string, anchor?: string} {
+  const hash = id.indexOf('#');
+  return hash < 0 ? {id} : {id: id.slice(0, hash), anchor: id.slice(hash + 1)};
+}
+
+export function makeReport(system: TypeSystem, homes: HomeSet | null): CheckReport {
   const byType: Record<string, number> = {};
   for (const home of homes?.homes ?? [])
     byType[home.type.name] = (byType[home.type.name] ?? 0) + 1;
+  const errors = [...system.errors, ...(homes?.errors ?? [])];
+  const warnings = [...system.warnings, ...(homes?.warnings ?? [])];
+  const codes: Record<string, number> = {};
+  for (const issue of [...errors, ...warnings]) codes[issue.code] = (codes[issue.code] ?? 0) + 1;
   return {
-    errors: [...system.errors, ...(homes?.errors ?? [])],
-    warnings: [...system.warnings, ...(homes?.warnings ?? [])],
+    errors, warnings, codes,
     types: {nodes: system.nodes.size, edges: system.edges.size, prefixes: system.prefixes.size},
     scanned: homes?.scanned ?? 0,
     homes: byType,
-    unresolvedExternal: homes?.unresolvedExternal ?? 0,
+    annotatedPages: homes?.annotatedPages ?? 0,
+    citations: homes?.citations ?? {doc: 0, code: 0},
+    unresolvedExternal: homes?.unresolvedExternal ?? [],
     stubs: (homes?.stubs ?? []).map((s) => s.id),
   };
 }
+
+export type {Citation};

@@ -23,9 +23,11 @@ export interface Member {
   default?: string | number | boolean;
 }
 
+/** One diagnostic; `code` is stable so tools can match on it (`unknown-key`, `unresolved-ref`, ...). */
 export interface Issue {
   file: string;
   line?: number;
+  code: string;
   message: string;
 }
 
@@ -68,6 +70,7 @@ export interface EdgeType {
   description: string;
   own: Record<string, Member>;
   properties: Record<string, Member>;
+  inherits: string[];
 }
 
 export interface TypeSystem {
@@ -78,8 +81,12 @@ export interface TypeSystem {
   /** Edge key -> edge type. */
   keys: Map<string, EdgeType>;
   roots: string[];
+  /** First segments a feature id may start with (schema.yaml `feature_roots`); empty means unchecked. */
+  featureRoots: string[];
   provenance: string[];
   reservedNodeFields: string[];
+  /** Fields the build writes on every node / edge (schema.yaml `build_fields`). */
+  buildFields: {node: Member[], edge: Member[]};
   errors: Issue[];
   warnings: Issue[];
 }
@@ -87,21 +94,23 @@ export interface TypeSystem {
 export interface ParseOptions {
   /** Kebab node type names a reference may name; `node` is always known. */
   types?: Iterable<string>;
-  /** Inside schema.yaml `Record<string, Member>` is allowed as well. */
+  /** Inside schema.yaml `Member` and `Record<string, Member>` are allowed as well. */
   schema?: boolean;
 }
 
-const SCALARS: Scalar[] = ['string', 'number', 'boolean', 'Date', 'Text', 'Version', 'Path', 'Url',
-  'Provenance', 'TypeUnion', 'Member'];
+type Reporter = (code: string, file: string, message: string, line?: number) => void;
+
+const SCALARS: Scalar[] = ['string', 'number', 'boolean', 'Date', 'Text', 'Version', 'Path', 'Url', 'Provenance', 'TypeUnion', 'Member'];
 const MEMBER_NAME = /^[a-z][a-z0-9_]*$/;
 const TYPE_NAME = /^[a-z][a-z0-9-]*$/;
 const UPPER_SNAKE = /^[A-Z][A-Z0-9_]*$/;
 const PREFIX = /^[A-Z][A-Za-z]{0,5}$/;
 const DEFAULT_ROOTS = ['feature', 'concept', 'component', 'artifact', 'work', 'actor', 'infra', 'type'];
 const DEFAULT_PROVENANCE = ['annotation', 'filesystem', 'ast', 'registry', 'git', 'external', 'llm', 'manual'];
-const DEFAULT_RESERVED = ['id', 'name', 'description', 'status', 'visibility', 'owner', 'aliases',
-  'source_layer', 'home', 'provenance', 'batch'];
+const DEFAULT_RESERVED = ['id', 'name', 'description', 'status', 'visibility', 'owner', 'aliases', 'source_layer', 'home', 'provenance', 'batch'];
 const EDGE_BUILD_FIELDS = ['derived_by', 'confidence', 'evidence', 'batch'];
+/** Emitted edge rows carry these; a property with one of the names would collide with the envelope. */
+const EDGE_ROW_FIELDS = ['from', 'to', 'type', 'id'];
 const MAX_DEPTH = 3;
 
 export function pascal(kebab: string): string {
@@ -188,6 +197,12 @@ function readType(node: ts.TypeNode, known: Set<string>, schema: boolean, inList
   }
   if (ts.isUnionTypeNode(node)) {
     const parts = node.types.map((t) => readType(t, known, schema, inList));
+    if (parts.some((p) => p.list)) {
+      const elements = node.types.map((t) => t.getText().replace(/\[\]$/, '')).join(' | ');
+      throw new MemberError(parts.every((p) => p.list) ?
+        `a union of lists is not allowed; write '(${elements})[]' instead of '${node.getText()}'` :
+        `a union may not mix lists and single values ('${node.getText()}')`);
+    }
     if (parts.every((p) => p.kind === 'enum'))
       return {...base, kind: 'enum', literals: parts.flatMap((p) => p.literals!)};
     if (parts.every((p) => p.kind === 'ref'))
@@ -204,6 +219,7 @@ function readType(node: ts.TypeNode, known: Set<string>, schema: boolean, inList
       throw new MemberError(`only Record<string, string> is allowed, got '${node.getText()}'`);
     }
     if (node.typeArguments) throw new MemberError(`generic type '${node.getText()}' is not allowed`);
+    if (typeName === 'Member' && !schema) throw new MemberError("'Member' is the schema's own vocabulary and not allowed in a type file");
     if ((SCALARS as string[]).includes(typeName)) return {...base, scalar: typeName as Scalar};
     const kebab = typeName === 'Node' ? 'node' : [...known].find((t) => pascal(t) === typeName);
     if (!kebab || !known.has(kebab)) throw new MemberError(`unknown type '${typeName}'`);
@@ -223,11 +239,9 @@ function readDefault(node: ts.Expression): string | number | boolean {
 }
 
 function defaultProblem(m: Member): string | null {
-  const d = m.default;
   if (m.list || m.kind === 'ref' || m.kind === 'record') return `a default is not allowed on a ${m.list ? 'list' : m.kind}`;
-  if (m.kind === 'enum') return m.literals!.includes(String(d)) && typeof d === 'string' ? null : `default '${d}' is not one of ${m.literals!.map((l) => `'${l}'`).join(' | ')}`;
-  const expected = m.scalar === 'number' ? 'number' : m.scalar === 'boolean' ? 'boolean' : 'string';
-  return typeof d === expected ? null : `default ${JSON.stringify(d)} is not a ${m.scalar}`;
+  const problem = checkValue({...m, nullable: false}, m.default, {provenance: DEFAULT_PROVENANCE});
+  return problem ? `default ${JSON.stringify(m.default)}: ${problem}` : null;
 }
 
 /** Parses a `Feature | Ticket` value into kebab node type names. */
@@ -283,20 +297,23 @@ interface RawType {
 export function loadTypeSystem(kgRoot: string): TypeSystem {
   const system: TypeSystem = {
     nodes: new Map(), edges: new Map(), prefixes: new Map(), keys: new Map(),
-    roots: DEFAULT_ROOTS, provenance: DEFAULT_PROVENANCE, reservedNodeFields: DEFAULT_RESERVED,
-    errors: [], warnings: [],
+    roots: DEFAULT_ROOTS, featureRoots: [], provenance: DEFAULT_PROVENANCE, reservedNodeFields: DEFAULT_RESERVED,
+    buildFields: {node: [], edge: []}, errors: [], warnings: [],
   };
-  const error = (file: string, message: string, line?: number) => system.errors.push({file, line, message});
+  const error: Reporter = (code, file, message, line) => system.errors.push({file, line, code, message});
   const schemaFile = path.join(kgRoot, 'schema.yaml');
   const schema = readYaml(schemaFile, error);
   if (!schema) return system;
   const constraints = schema.constraints ?? {};
   if (Array.isArray(constraints.roots)) system.roots = constraints.roots.map(String);
+  if (Array.isArray(constraints.feature_roots)) system.featureRoots = constraints.feature_roots.map(String);
   const reserved = schema.manifest?.reserved_fields;
   if (Array.isArray(reserved)) system.reservedNodeFields = reserved.map(String);
   const provenanceSpec = parseMember('provenance', schema.member?.aliases?.Provenance, {schema: true});
   if (provenanceSpec.member?.kind === 'enum') system.provenance = provenanceSpec.member.literals!;
-  else error(schemaFile, `member.aliases.Provenance: ${provenanceSpec.error ?? 'expected a string literal union'}`);
+  else error('schema', schemaFile, `member.aliases.Provenance: ${provenanceSpec.error ?? 'expected a string literal union'}`);
+  system.buildFields.node = Object.values(parseSchemaSection(schema.build_fields?.node, `${schemaFile} build_fields.node`, error));
+  system.buildFields.edge = Object.values(parseSchemaSection(schema.build_fields?.edge, `${schemaFile} build_fields.edge`, error));
 
   const namePattern = (key: string) => typeof constraints[key] === 'string' ? new RegExp(constraints[key]) : TYPE_NAME;
   const rawNodes = loadFolder(path.join(kgRoot, 'nodes'), namePattern('node_type_name'), 'node', error);
@@ -307,6 +324,8 @@ export function loadTypeSystem(kgRoot: string): TypeSystem {
   const schemaEdge = parseSchemaSection(schema.edge_type, `${schemaFile} edge_type`, error);
   for (const raw of rawNodes.values()) checkTopLevel(raw, schemaNode, system, error);
   for (const raw of rawEdges.values()) checkTopLevel(raw, schemaEdge, system, error);
+  checkPascalCollisions(rawNodes, 'node', error);
+  checkPascalCollisions(rawEdges, 'edge', error);
 
   const nodeChains = buildChains(rawNodes, error);
   const edgeChains = buildChains(rawEdges, error);
@@ -318,15 +337,15 @@ export function loadTypeSystem(kgRoot: string): TypeSystem {
     const isBase = name === (constraints.base ?? 'node');
     const last = rawNodes.get(chain[chain.length - 1]);
     if (last && last.data.extends === undefined && chain[chain.length - 1] !== 'node')
-      error(raw.file, `node ${name}: the extends chain does not end at node: ${chain.join(' -> ')}`);
-    if (!isBase && d.extends === undefined) error(raw.file, `node ${name}: no extends`);
-    if (system.roots.includes(name) && d.extends !== 'node') error(raw.file, `root ${name} must extend node directly`);
+      error('chain', raw.file, `node ${name}: the extends chain does not end at node: ${chain.join(' -> ')}`);
+    if (!isBase && d.extends === undefined) error('chain', raw.file, `node ${name}: no extends`);
+    if (system.roots.includes(name) && d.extends !== 'node') error('root', raw.file, `root ${name} must extend node directly`);
     if (!isBase && d.extends === 'node' && !system.roots.includes(name))
-      error(raw.file, `node ${name}: extends node directly but is not one of the roots (${system.roots.join(', ')})`);
-    if (chain.length - 2 > MAX_DEPTH) error(raw.file, `node ${name}: ${chain.length - 2} levels below the root, at most ${MAX_DEPTH} allowed (${chain.join(' -> ')})`);
+      error('root', raw.file, `node ${name}: extends node directly but is not one of the roots (${system.roots.join(', ')})`);
+    if (chain.length - 2 > MAX_DEPTH) error('depth', raw.file, `node ${name}: ${chain.length - 2} levels below the root, at most ${MAX_DEPTH} allowed (${chain.join(' -> ')})`);
     if (!isBase)
       for (const m of Object.keys(own))
-        if (system.reservedNodeFields.includes(m)) error(raw.file, `node ${name}.${m}: reserved field name, declared by the base or written by the build`);
+        if (system.reservedNodeFields.includes(m)) error('reserved', raw.file, `node ${name}.${m}: reserved field name, declared by the base or written by the build`);
     system.nodes.set(name, {
       name, file: raw.file, extends: d.extends, chain,
       root: chain.length >= 2 ? chain[chain.length - 2] : undefined,
@@ -340,29 +359,36 @@ export function loadTypeSystem(kgRoot: string): TypeSystem {
     });
   }
   for (const missing of system.roots.filter((r) => !rawNodes.has(r)))
-    error(path.join(kgRoot, 'nodes'), `root ${missing} is missing`);
+    error('root', path.join(kgRoot, 'nodes'), `root ${missing} is missing`);
   for (const node of system.nodes.values())
     node.members = mergeMembers(node.chain.map((t) => system.nodes.get(t)?.own ?? {}));
   checkPrefixes(system, rawNodes, error);
   const subtype = (t: string, a: string) => isSubtype(system, t, a);
-  for (const node of system.nodes.values())
+  for (const node of system.nodes.values()) {
     checkMemberNarrowing(node.name, node.own, node.chain.slice(1).map((t) => system.nodes.get(t)), node.file, subtype, error);
+    if (node.authored && !node.abstract && !node.prefix && node.root !== 'feature')
+      error('prefix', node.file, `node ${node.name}: authored but no type in its chain declares a prefix, so its ids cannot be written`);
+    for (const m of node.inherit)
+      if (!node.members[m]) error('inherit', node.file, `node ${node.name}: inherit names '${m}', which is not a member`);
+  }
 
   for (const [name, raw] of rawEdges) {
     const d = raw.data;
     const chain = edgeChains.get(name)!;
     const from = parseTypeUnion(d.from, nodeNames);
     const to = parseTypeUnion(d.to, nodeNames);
-    if (from.error) error(raw.file, `edge ${name}.from: ${from.error}`);
-    if (to.error) error(raw.file, `edge ${name}.to: ${to.error}`);
+    if (from.error) error('endpoint', raw.file, `edge ${name}.from: ${from.error}`);
+    if (to.error) error('endpoint', raw.file, `edge ${name}.to: ${to.error}`);
     const own = parseProperties(raw, nodeNames, error);
-    for (const m of Object.keys(own))
-      if (EDGE_BUILD_FIELDS.includes(m)) error(raw.file, `edge ${name}.${m}: reserved field name, written by the build`);
+    for (const m of Object.keys(own)) {
+      if (EDGE_BUILD_FIELDS.includes(m)) error('reserved', raw.file, `edge ${name}.${m}: reserved field name, written by the build`);
+      else if (EDGE_ROW_FIELDS.includes(m)) error('reserved', raw.file, `edge ${name}.${m}: reserved field name, part of every edge row (from, to, type, id)`);
+    }
     const derivedBy = Array.isArray(d.derived_by) ? d.derived_by.map(String) : [];
     if (d.key !== undefined && !derivedBy.includes('annotation'))
-      error(raw.file, `edge ${name}: has key '${d.key}' but 'annotation' is not in derived_by`);
+      error('edge-key', raw.file, `edge ${name}: has key '${d.key}' but 'annotation' is not in derived_by`);
     if (d.same_type === true && from.types && to.types && [...from.types].sort().join('|') !== [...to.types].sort().join('|'))
-      error(raw.file, `edge ${name}: same_type but from (${d.from}) differs from to (${d.to})`);
+      error('same-type', raw.file, `edge ${name}: same_type but from (${d.from}) differs from to (${d.to})`);
     system.edges.set(name, {
       name, file: raw.file, extends: d.extends, chain, abstract: d.abstract === true, was: d.was,
       from: from.types ?? [], to: to.types ?? [],
@@ -371,15 +397,25 @@ export function loadTypeSystem(kgRoot: string): TypeSystem {
       cardinality: d.cardinality === 'one' ? 'one' : 'many',
       sameType: d.same_type === true, symmetric: d.symmetric === true, acyclic: d.acyclic === true,
       derivedBy, description: String(d.description ?? ''), own, properties: {},
+      inherits: Array.isArray(d.inherits) ? d.inherits.map(String) : [],
     });
   }
+  const nodeMemberOwners = new Map<string, string[]>();
+  for (const node of system.nodes.values())
+    for (const m of Object.keys(node.own)) nodeMemberOwners.set(m, [...(nodeMemberOwners.get(m) ?? []), node.name]);
   for (const edge of system.edges.values()) {
     edge.properties = mergeMembers(edge.chain.map((t) => system.edges.get(t)?.own ?? {}));
     if (edge.key !== undefined) {
       const other = system.keys.get(edge.key);
-      if (other) error(edge.file, `edge key '${edge.key}' is used by both ${other.name} and ${edge.name}`);
+      if (other) error('edge-key', edge.file, `edge key '${edge.key}' is used by both ${other.name} and ${edge.name}`);
       else system.keys.set(edge.key, edge);
+      const owners = nodeMemberOwners.get(edge.key);
+      if (owners) error('namespace', edge.file, `edge key '${edge.key}' collides with the node property '${edge.key}' of ${owners.join(', ')}; a frontmatter key can only mean one of them`);
     }
+    for (const m of edge.inherits)
+      for (const t of edge.from)
+        if (!system.nodes.get(t)?.members[m] && t !== 'node')
+          error('inherit', edge.file, `edge ${edge.name}: inherits names '${m}', which is not a member of ${pascal(t)}`);
     const ancestors = edge.chain.slice(1).map((t) => system.edges.get(t));
     checkMemberNarrowing(edge.name, edge.own, ancestors, edge.file, subtype, error);
     for (const side of ['from', 'to'] as const)
@@ -387,39 +423,38 @@ export function loadTypeSystem(kgRoot: string): TypeSystem {
         if (!anc || anc[side].includes('node')) continue;
         const outside = edge[side].filter((t) => !anc[side].some((a) => subtype(t, a)));
         if (!outside.length) continue;
-        error(edge.file, `edge ${edge.name}.${side}: ${outside.map(pascal).join(' | ')} is not within ${anc.name}.${side}: ${anc[side].map(pascal).join(' | ')}`);
+        error('endpoint', edge.file, `edge ${edge.name}.${side}: ${outside.map(pascal).join(' | ')} is not within ${anc.name}.${side}: ${anc[side].map(pascal).join(' | ')}`);
         break;
       }
   }
   return system;
 }
 
-function readYaml(file: string, error: (file: string, message: string, line?: number) => void): Record<string, any> | null {
+function readYaml(file: string, error: Reporter): Record<string, any> | null {
   let text: string;
   try {
     text = fs.readFileSync(file, 'utf8');
   } catch (e: any) {
-    error(file, `cannot read: ${e.message}`);
+    error('unreadable', file, `cannot read: ${e.message}`);
     return null;
   }
   try {
     const data = yaml.load(text, {filename: file});
     if (data === null || typeof data !== 'object' || Array.isArray(data)) {
-      error(file, 'expected a YAML mapping');
+      error('yaml-error', file, 'expected a YAML mapping');
       return null;
     }
     return data as Record<string, any>;
   } catch (e: any) {
-    error(file, `YAML error: ${e.reason ?? e.message}`, e.mark ? e.mark.line + 1 : undefined);
+    error('yaml-error', file, `YAML error: ${e.reason ?? e.message}`, e.mark ? e.mark.line + 1 : undefined);
     return null;
   }
 }
 
-function loadFolder(folder: string, namePattern: RegExp, kind: string,
-  error: (file: string, message: string, line?: number) => void): Map<string, RawType> {
+function loadFolder(folder: string, namePattern: RegExp, kind: string, error: Reporter): Map<string, RawType> {
   const out = new Map<string, RawType>();
   if (!fs.existsSync(folder)) {
-    error(folder, 'folder not found');
+    error('unreadable', folder, 'folder not found');
     return out;
   }
   for (const entry of fs.readdirSync(folder).filter((f) => f.endsWith('.yaml')).sort()) {
@@ -427,16 +462,16 @@ function loadFolder(folder: string, namePattern: RegExp, kind: string,
     const data = readYaml(file, error);
     if (!data) continue;
     if (typeof data.type !== 'string') {
-      error(file, 'no type key');
+      error('type-name', file, 'no type key');
       continue;
     }
     const name: string = data.type;
     const kebab = kebabOfLabel(name);
-    if (kebab) error(file, `${kind} type name '${name}' is upper-snake; type names are lower-dash-case, write '${kebab}' (the graph label ${name} is derived from it)`);
-    else if (!namePattern.test(name)) error(file, `${kind} type name '${name}' does not match ${namePattern}`);
-    if (entry !== `${name}.yaml`) error(file, `file name does not match type '${name}' (expected ${name}.yaml)`);
+    if (kebab) error('type-name', file, `${kind} type name '${name}' is upper-snake; type names are lower-dash-case, write '${kebab}' (the graph label ${name} is derived from it)`);
+    else if (!namePattern.test(name)) error('type-name', file, `${kind} type name '${name}' does not match ${namePattern}`);
+    if (entry !== `${name}.yaml`) error('type-name', file, `file name does not match type '${name}' (expected ${name}.yaml)`);
     if (out.has(name)) {
-      error(file, `duplicate ${kind} type '${name}', also declared in ${out.get(name)!.file}`);
+      error('type-name', file, `duplicate ${kind} type '${name}', also declared in ${out.get(name)!.file}`);
       continue;
     }
     out.set(name, {file, data});
@@ -450,35 +485,43 @@ function unreadableTypes(folder: string, loaded: Map<string, RawType>): string[]
   return fs.readdirSync(folder).filter((f) => f.endsWith('.yaml') && !loadedFiles.has(f)).map((f) => f.slice(0, -5));
 }
 
-function parseSchemaSection(section: unknown, where: string,
-  error: (file: string, message: string) => void): Record<string, Member> {
+function checkPascalCollisions(raw: Map<string, RawType>, kind: string, error: Reporter): void {
+  const byPascal = new Map<string, string>();
+  for (const name of raw.keys()) {
+    const p = pascal(name);
+    const other = byPascal.get(p);
+    if (other) error('namespace', raw.get(name)!.file, `${kind} types '${other}' and '${name}' both become ${p} in TypeScript`);
+    else byPascal.set(p, name);
+  }
+}
+
+function parseSchemaSection(section: unknown, where: string, error: Reporter): Record<string, Member> {
   const members: Record<string, Member> = {};
   if (!section || typeof section !== 'object') {
-    error(where, 'schema section is missing');
+    error('schema', where, 'schema section is missing');
     return members;
   }
   for (const [name, spec] of Object.entries(section as Record<string, unknown>)) {
     const parsed = parseMember(name, spec, {schema: true});
     if (parsed.member) members[parsed.member.name] = parsed.member;
-    else error(where, parsed.error!);
+    else error('schema', where, parsed.error!);
   }
   return members;
 }
 
 /** Checks a type file's top-level keys against the schema's `node_type` / `edge_type` members. */
-function checkTopLevel(raw: RawType, schema: Record<string, Member>, system: TypeSystem,
-  error: (file: string, message: string) => void): void {
+function checkTopLevel(raw: RawType, schema: Record<string, Member>, system: TypeSystem, error: Reporter): void {
   const d = raw.data;
   for (const key of Object.keys(d))
-    if (!schema[key]) error(raw.file, `${d.type}: unknown key '${key}' (allowed: ${Object.keys(schema).join(', ')})`);
+    if (!schema[key]) error('type-key', raw.file, `${d.type}: unknown key '${key}' (allowed: ${Object.keys(schema).join(', ')})`);
   for (const m of Object.values(schema)) {
     const value = d[m.name];
     if (value === undefined || value === null) {
-      if (!m.nullable) error(raw.file, `${d.type}: missing required key '${m.name}'`);
+      if (!m.nullable) error('missing-key', raw.file, `${d.type}: missing required key '${m.name}'`);
       continue;
     }
     const problem = checkValue(m, value, {provenance: system.provenance});
-    if (problem) error(raw.file, `${d.type}.${m.name}: ${problem}`);
+    if (problem) error('bad-value', raw.file, `${d.type}.${m.name}: ${problem}`);
   }
 }
 
@@ -489,6 +532,8 @@ export interface ValueHooks {
   /** Returns a problem for a reference value, or null. */
   ref?: (value: string, member: Member) => string | null;
 }
+
+const DATE = /^(\d{4})-(\d{2})(?:-(\d{2})(?:[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?)?)?$/;
 
 /** Why [value] does not fit [member]; null when it does. Reference and Path checks go through [hooks]. */
 export function checkValue(member: Member, value: unknown, hooks: ValueHooks): string | null {
@@ -515,12 +560,16 @@ export function checkValue(member: Member, value: unknown, hooks: ValueHooks): s
       return null;
   }
   switch (member.scalar) {
-    case 'number': return typeof value === 'number' ? null : `expected a number, got ${shown}`;
+    case 'number': return typeof value === 'number' && Number.isFinite(value) ? null : `expected a finite number, got ${shown}`;
     case 'boolean': return typeof value === 'boolean' ? null : `expected a boolean, got ${shown}`;
-    case 'Date':
-      if (value instanceof Date) return null;
-      return typeof value === 'string' && /^\d{4}-\d{2}(-\d{2}([T ]\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:?\d{2})?)?)?$/.test(value) ? null :
-        `expected an ISO date or datetime, got ${shown}`;
+    case 'Date': {
+      if (value instanceof Date) return Number.isNaN(value.getTime()) ? `${shown} is not a valid date` : null;
+      const m = typeof value === 'string' ? DATE.exec(value) : null;
+      if (!m) return `expected an ISO date or datetime, got ${shown}`;
+      const [y, mo, d] = [Number(m[1]), Number(m[2]), m[3] === undefined ? 1 : Number(m[3])];
+      const date = new Date(Date.UTC(y, mo - 1, d));
+      return date.getUTCFullYear() === y && date.getUTCMonth() === mo - 1 && date.getUTCDate() === d ? null : `${shown} is not a calendar date`;
+    }
     case 'Version':
       if (typeof value === 'number') return 'a Version must be a quoted string; YAML read the unquoted value as a number, quote the value';
       return typeof value === 'string' && /^\d+(\.\d+)*$/.test(value) ? null : `expected a version like 1.28.0, got ${shown}`;
@@ -537,20 +586,20 @@ export function checkValue(member: Member, value: unknown, hooks: ValueHooks): s
   }
 }
 
-function buildChains(raw: Map<string, RawType>, error: (file: string, message: string) => void): Map<string, string[]> {
+function buildChains(raw: Map<string, RawType>, error: Reporter): Map<string, string[]> {
   const chains = new Map<string, string[]>();
   for (const [name, r] of raw) {
     const chain: string[] = [];
     let t: string | undefined = name;
     while (t !== undefined) {
       if (chain.includes(t)) {
-        error(r.file, `cycle in extends at ${t}: ${[...chain, t].join(' -> ')}`);
+        error('chain', r.file, `cycle in extends at ${t}: ${[...chain, t].join(' -> ')}`);
         break;
       }
       chain.push(t);
       const next: RawType | undefined = raw.get(t);
       if (!next) {
-        error(r.file, `${name}: extends target '${t}' does not exist`);
+        error('chain', r.file, `${name}: extends target '${t}' does not exist`);
         break;
       }
       t = next.data.extends === undefined ? undefined : String(next.data.extends);
@@ -560,18 +609,22 @@ function buildChains(raw: Map<string, RawType>, error: (file: string, message: s
   return chains;
 }
 
-function parseProperties(raw: RawType, nodeNames: string[], error: (file: string, message: string) => void): Record<string, Member> {
+function parseProperties(raw: RawType, nodeNames: string[], error: Reporter): Record<string, Member> {
   const out: Record<string, Member> = {};
   const props = raw.data.properties;
   if (props === undefined || props === null) return out;
   if (typeof props !== 'object' || Array.isArray(props)) {
-    error(raw.file, `${raw.data.type}: properties must be a mapping`);
+    error('type-member', raw.file, `${raw.data.type}: properties must be a mapping`);
     return out;
   }
   for (const [name, spec] of Object.entries(props)) {
     const parsed = parseMember(name, spec, {types: nodeNames});
-    if (parsed.member) out[parsed.member.name] = parsed.member;
-    else error(raw.file, `${raw.data.type}.${parsed.error}`);
+    if (!parsed.member) {
+      error('type-member', raw.file, `${raw.data.type}.${parsed.error}`);
+      continue;
+    }
+    if (out[parsed.member.name]) error('type-member', raw.file, `${raw.data.type}.${parsed.member.name}: declared twice (as '${parsed.member.name}' and '${parsed.member.name}?')`);
+    out[parsed.member.name] = parsed.member;
   }
   return out;
 }
@@ -584,28 +637,28 @@ function mergeMembers(chainOwn: Record<string, Member>[]): Record<string, Member
   return out;
 }
 
-function checkPrefixes(system: TypeSystem, raw: Map<string, RawType>, error: (file: string, message: string) => void): void {
+function checkPrefixes(system: TypeSystem, raw: Map<string, RawType>, error: Reporter): void {
   for (const [name, r] of raw) {
     const prefix = r.data.prefix;
     if (prefix === undefined) continue;
-    if (!PREFIX.test(String(prefix))) error(r.file, `node ${name}: bad prefix '${prefix}' (expected ${PREFIX})`);
+    if (!PREFIX.test(String(prefix))) error('prefix', r.file, `node ${name}: bad prefix '${prefix}' (expected ${PREFIX})`);
     const owner = system.prefixes.get(String(prefix));
-    if (owner) error(r.file, `prefix ${prefix} is declared by both ${owner} and ${name}`);
+    if (owner) error('prefix', r.file, `prefix ${prefix} is declared by both ${owner} and ${name}`);
     else system.prefixes.set(String(prefix), name);
     for (const anc of system.nodes.get(name)!.chain.slice(1))
-      if (raw.get(anc)?.data.prefix !== undefined) error(r.file, `node ${name}: redeclares prefix inherited from ${anc}`);
+      if (raw.get(anc)?.data.prefix !== undefined) error('prefix', r.file, `node ${name}: redeclares prefix inherited from ${anc}`);
   }
 }
 
 function checkMemberNarrowing(typeName: string, own: Record<string, Member>, ancestors: ({own: Record<string, Member>, name: string} | undefined)[],
-  file: string, subtype: (t: string, a: string) => boolean, error: (file: string, message: string) => void): void {
+  file: string, subtype: (t: string, a: string) => boolean, error: Reporter): void {
   for (const [name, member] of Object.entries(own))
     for (const anc of ancestors) {
       const theirs = anc?.own[name];
       if (!theirs) continue;
       const problem = narrowingProblem(member, theirs, subtype);
       if (!problem) continue;
-      error(file, `${typeName}.${name}: ${problem} (declared by ${anc!.name} as ${theirs.spec})`);
+      error('narrowing', file, `${typeName}.${name}: ${problem} (declared by ${anc!.name} as ${theirs.spec})`);
       break;
     }
 }
@@ -630,4 +683,9 @@ export function edgeOrder(system: TypeSystem): EdgeType[] {
     if (ba !== bb) return ba < bb ? -1 : 1;
     return a.chain.length - b.chain.length || (a.name < b.name ? -1 : a.name > b.name ? 1 : 0);
   });
+}
+
+/** Concrete authored node types under any of [types] (kebab), `node` meaning all. */
+export function concreteAuthored(system: TypeSystem, types: string[]): NodeType[] {
+  return [...system.nodes.values()].filter((n) => n.authored && !n.abstract && types.some((t) => isSubtype(system, n.name, t)));
 }

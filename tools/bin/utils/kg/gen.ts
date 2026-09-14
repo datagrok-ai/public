@@ -17,8 +17,8 @@ export function generate(system: TypeSystem, kgRoot: string, repoRoot: string, h
   const errors: Issue[] = [];
   if (fs.existsSync(glossaryFile)) {
     const missing = missingGlossaryHeading(fs.readFileSync(glossaryFile, 'utf8'));
-    if (missing) errors.push({file: glossaryFile, message: `heading '${missing}' not found; the generated tables are spliced between the ${GLOSSARY_SECTIONS.join(', ')} headings`});
-    else outputs.push({file: glossaryFile, content: spliceGlossary(fs.readFileSync(glossaryFile, 'utf8'), system)});
+    if (missing) errors.push({file: glossaryFile, code: 'glossary', message: `heading '${missing}' not found; the generated tables are spliced between the ${GLOSSARY_SECTIONS.join(', ')} headings`});
+    else outputs.push({file: glossaryFile, content: spliceGlossary(fs.readFileSync(glossaryFile, 'utf8'), system, homes)});
   }
   if (homes) {
     const treeDir = path.relative(repoRoot, kgRoot).replace(/\\/g, '/');
@@ -54,7 +54,7 @@ export function generateDts(system: TypeSystem): string {
     'type Path = string;',
     'type Url = string;',
     'type Ref<T> = string;',
-    `type Provenance = ${system.provenance.map((p) => `'${p}'`).join(' | ')};`,
+    `type Provenance = ${union(system.provenance)};`,
     '',
   ];
   for (const node of nodeOrder(system)) {
@@ -62,24 +62,38 @@ export function generateDts(system: TypeSystem): string {
     lines.push(`/** ${firstSentence(node.description)} */`);
     lines.push(`export interface ${pascal(node.name)}${parent} {`);
     for (const m of Object.values(node.own)) lines.push(`  ${memberLine(m)}`);
+    if (node.name === 'node')
+      for (const m of system.buildFields.node) lines.push(`  ${memberLine(m)}`);
     lines.push('}', '');
   }
-  for (const edge of edgeOrder(system)) {
-    if (edge.abstract) continue;
+  const concreteEdges = edgeOrder(system).filter((e) => !e.abstract);
+  for (const edge of concreteEdges) {
     lines.push(`/** ${firstSentence(edge.description)} */`);
     lines.push(`export interface ${pascal(edge.name)}Edge {`);
     lines.push(`  from: ${refType(edge.from)};`);
     lines.push(`  to: ${refType(edge.to)};`);
-    lines.push('  derived_by: Provenance;', '  confidence: number;', '  evidence?: Path[];');
+    for (const m of system.buildFields.edge) lines.push(`  ${memberLine(m)}`);
     for (const m of Object.values(edge.properties)) lines.push(`  ${memberLine(m)}`);
     lines.push('}', '');
   }
-  const nodeNames = [...system.nodes.keys()].sort();
-  const edgeNames = [...system.edges.keys()].sort();
-  lines.push(`export type NodeTypeName = ${nodeNames.map((n) => `'${n}'`).join(' | ')};`);
-  lines.push(`export type EdgeTypeName = ${edgeNames.map((n) => `'${n}'`).join(' | ')};`);
+  const predicates = new Set<string>();
+  for (const node of system.nodes.values())
+    for (const m of Object.values(node.own))
+      if (m.kind === 'ref') predicates.add(m.name);
+  lines.push(`export type NodeTypeName = ${union([...system.nodes.keys()].sort())};`);
+  lines.push(`export type EdgeTypeName = ${union(concreteEdges.map((e) => e.name).sort())};`);
+  lines.push(`/** Reference properties: each materializes as a REF edge whose predicate is the property name (conventions.md §7.6). */`);
+  lines.push(`export type RefPredicate = ${union([...predicates].sort())};`);
   lines.push('');
   return lines.join('\n');
+}
+
+function literal(text: string): string {
+  return `'${text.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`;
+}
+
+function union(literals: string[]): string {
+  return literals.length ? literals.map(literal).join(' | ') : 'never';
 }
 
 function memberLine(m: Member): string {
@@ -94,7 +108,7 @@ function tsType(m: Member): string {
 
 function baseType(m: Member): string {
   switch (m.kind) {
-    case 'enum': return m.literals!.map((l) => `'${l}'`).join(' | ');
+    case 'enum': return union(m.literals!);
     case 'ref': return refType(m.refs!);
     case 'record': return `Record<string, ${m.recordValue}>`;
   }
@@ -123,18 +137,45 @@ export function missingGlossaryHeading(markdown: string): string | null {
   return null;
 }
 
-export function spliceGlossary(markdown: string, system: TypeSystem): string {
+/** Regenerates the four tables; the Concepts table needs the homes and is left alone without them. */
+export function spliceGlossary(markdown: string, system: TypeSystem, homes: HomeSet | null = null): string {
   const tables = [prefixTable(system), nodeTable(system), edgeTable(system)];
   let md = markdown.replace(/\r\n/g, '\n');
   for (let i = 0; i < tables.length; i++)
     md = splice(md, GLOSSARY_SECTIONS[i], GLOSSARY_SECTIONS[i + 1], tables[i]);
-  return md;
+  return homes ? spliceConcepts(md, conceptTable(homes)) : md;
 }
 
 function splice(md: string, start: string, end: string, body: string): string {
   const a = md.indexOf(start);
   const b = md.indexOf(end, a);
   return `${md.slice(0, a)}${start}\n\n${body}\n\n${md.slice(b)}`;
+}
+
+/** Replaces the table under `## Concepts` (or appends one), keeping the hand-written intro lines above it. */
+function spliceConcepts(md: string, table: string): string {
+  const start = md.indexOf('## Concepts');
+  const lines = md.slice(start).split('\n');
+  let first = lines.findIndex((l) => l.startsWith('|'));
+  let end = lines.length;
+  if (first < 0) first = lines.length;
+  else for (end = first; end < lines.length && lines[end].startsWith('|'); end++);
+  const intro = lines.slice(0, first).join('\n').trimEnd();
+  const rest = lines.slice(end).join('\n').trim();
+  return `${md.slice(0, start)}${intro}\n\n${table}\n${rest ? `\n${rest}\n` : ''}`;
+}
+
+function conceptTable(homes: HomeSet): string {
+  const rows = ['| Concept | Name | Area | One line | Defined by |', '|---|---|---|---|---|'];
+  const concepts = homes.homes.filter((h) => h.type.chain.includes('concept')).sort((a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+  for (const c of concepts) {
+    const definedBy = (Array.isArray(c.data.defined_by) ? c.data.defined_by : [])
+      .map((item) => String(item && typeof item === 'object' ? (item as Record<string, unknown>).to ?? '' : item))
+      .map((id) => id.includes('#') ? id.slice(id.lastIndexOf('#') + 1) : id);
+    const area = c.data.area === undefined || c.data.area === null ? '' : String(c.data.area);
+    rows.push(`| \`${c.localId}\` | ${cell(c.name)} | ${cell(area)} | ${cell(firstSentence(String(c.data.description ?? '')))} | ${[...new Set(definedBy)].map((d) => `\`${cell(d)}\``).join(', ')} |`);
+  }
+  return rows.join('\n');
 }
 
 function cell(value: unknown): string {

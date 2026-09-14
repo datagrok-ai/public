@@ -3,7 +3,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import {loadTypeSystem, Issue} from '../utils/kg/types';
-import {loadHomes, makeReport, Report} from '../utils/kg/homes';
+import {loadHomes, makeReport, CheckReport} from '../utils/kg/homes';
 import {generate, writeOutputs} from '../utils/kg/gen';
 import {HELP_KG} from './help';
 
@@ -41,13 +41,13 @@ export async function kg(argv: any): Promise<boolean> {
     const generated = generate(system, kgRoot, repoRoot, homes);
     report.errors.push(...generated.errors);
     if (report.errors.length)
-      report.warnings.push({file: kgRoot, message: 'nothing generated while check reports errors'});
+      report.warnings.push({file: kgRoot, code: 'gen-skipped', message: 'nothing generated while check reports errors'});
     else {
       const result = writeOutputs(generated.outputs, argv.check === true);
       report.written = result.written;
       report.stale = result.stale;
       for (const file of result.stale)
-        report.errors.push({file, message: 'stale: run grok kg gen'});
+        report.errors.push({file, code: 'stale', message: 'stale: run grok kg gen'});
     }
   }
   for (const issue of [...report.errors, ...report.warnings]) issue.file = rel(issue.file, repoRoot);
@@ -75,7 +75,7 @@ function findKgRoot(from: string): string | null {
   }
 }
 
-function print(report: Report, output: string, quiet: boolean): void {
+function print(report: CheckReport, output: string, quiet: boolean): void {
   if (output === 'json') {
     console.log(JSON.stringify(report, null, 2));
     return;
@@ -88,8 +88,10 @@ function print(report: Report, output: string, quiet: boolean): void {
   const homes = Object.entries(report.homes).map(([t, n]) => `${t} ${n}`).join(', ');
   const total = Object.values(report.homes).reduce((a, b) => a + b, 0);
   console.log(`${report.types.nodes} node types, ${report.types.edges} edge types, ${report.types.prefixes} prefixes; ` +
-    `${report.scanned} markdown files scanned, ${total} home document${total === 1 ? '' : 's'}${homes ? ` (${homes})` : ''}; ` +
-    `${report.unresolvedExternal} unresolved external reference${report.unresolvedExternal === 1 ? '' : 's'}; ` +
+    `${report.scanned} files scanned, ${total} home${total === 1 ? '' : 's'}${homes ? ` (${homes})` : ''}, ` +
+    `${report.annotatedPages} annotated page${report.annotatedPages === 1 ? '' : 's'}; ` +
+    `${report.citations.doc} doc links and ${report.citations.code} code citations checked; ` +
+    `${report.unresolvedExternal.length} unresolved external reference${report.unresolvedExternal.length === 1 ? '' : 's'}; ` +
     `${report.stubs.length} stub${report.stubs.length === 1 ? '' : 's'} needed; ` +
     `${report.errors.length} error${report.errors.length === 1 ? '' : 's'}, ${report.warnings.length} warning${report.warnings.length === 1 ? '' : 's'}`);
 }

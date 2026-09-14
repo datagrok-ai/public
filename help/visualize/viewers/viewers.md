@@ -4,6 +4,7 @@ name: Viewers
 owner: P:askalkin
 code:
   - core/client/d4/lib/src/viewers/**
+  - core/client/d4/lib/src/viewer_base/**
   - core/client/d4/lib/src/common/viewer_descriptor.dart
   - public/js-api/src/viewer.ts
 concepts: [viewer, dataframe, layout]

@@ -9,6 +9,8 @@ export interface Frontmatter {
   bodyLine: number;
   /** The raw YAML text, for locating keys by line. */
   yaml: string;
+  /** 1-based line the YAML text starts at: 2 after a `---` fence, 1 for a whole YAML file. */
+  yamlLine: number;
   error?: string;
   /** 1-based line of a YAML error, when known. */
   errorLine?: number;
@@ -18,29 +20,38 @@ export function splitFrontmatter(text: string): Frontmatter {
   const source = text.charCodeAt(0) === 0xFEFF ? text.slice(1) : text;
   const lines = source.split(/\r?\n/);
   if (lines[0] !== '---')
-    return {data: null, body: source, bodyLine: 1, yaml: ''};
+    return {data: null, body: source, bodyLine: 1, yaml: '', yamlLine: 2};
   const end = lines.indexOf('---', 1);
   if (end < 0)
-    return {data: null, body: source, bodyLine: 1, yaml: '', error: 'frontmatter is not closed by a --- line', errorLine: 1};
+    return {data: null, body: source, bodyLine: 1, yaml: '', yamlLine: 2, error: 'frontmatter is not closed by a --- line', errorLine: 1};
   const block = lines.slice(1, end).join('\n');
-  const body = lines.slice(end + 1).join('\n');
+  return {...parseMapping(block, 2, 'frontmatter'), body: lines.slice(end + 1).join('\n'), bodyLine: end + 2};
+}
+
+/** A whole YAML file as a home record: the same keys as frontmatter, no body. */
+export function parseYamlDocument(text: string): Frontmatter {
+  const source = (text.charCodeAt(0) === 0xFEFF ? text.slice(1) : text).replace(/\r\n/g, '\n');
+  return {...parseMapping(source, 1, 'a YAML home'), body: '', bodyLine: source.split('\n').length + 1};
+}
+
+function parseMapping(block: string, yamlLine: number, what: string): Omit<Frontmatter, 'body' | 'bodyLine'> {
   try {
     // js-yaml's load rejects duplicate keys; keep it that way (a duplicate key is a silent overwrite otherwise)
     const data = yaml.load(block);
     if (data === null || data === undefined)
-      return {data: {}, body, bodyLine: end + 2, yaml: block};
+      return {data: {}, yaml: block, yamlLine};
     if (typeof data !== 'object' || Array.isArray(data))
-      return {data: null, body, bodyLine: end + 2, yaml: block, error: 'frontmatter must be a YAML mapping', errorLine: 2};
-    return {data: data as Record<string, unknown>, body, bodyLine: end + 2, yaml: block};
+      return {data: null, yaml: block, yamlLine, error: `${what} must be a YAML mapping`, errorLine: yamlLine};
+    return {data: data as Record<string, unknown>, yaml: block, yamlLine};
   } catch (e: any) {
-    const line = e.mark ? e.mark.line + 2 : undefined;
-    return {data: null, body, bodyLine: end + 2, yaml: block, error: `YAML error: ${e.reason ?? e.message}`, errorLine: line};
+    const line = e.mark ? e.mark.line + yamlLine : undefined;
+    return {data: null, yaml: block, yamlLine, error: `YAML error: ${e.reason ?? e.message}`, errorLine: line};
   }
 }
 
-/** 1-based line of a top-level [key] inside the frontmatter, or undefined. */
+/** 1-based line of a top-level [key] inside the YAML text, or undefined. */
 export function keyLine(fm: Frontmatter, key: string): number | undefined {
   const lines = fm.yaml.split('\n');
   const index = lines.findIndex((l) => l.startsWith(`${key}:`) || l.startsWith(`"${key}":`) || l.startsWith(`'${key}':`));
-  return index < 0 ? undefined : index + 2;
+  return index < 0 ? undefined : index + fm.yamlLine;
 }

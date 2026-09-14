@@ -1,6 +1,7 @@
 ---
-feature: platform/caching/invalidation
+feature: platform/caching
+owner: askalkin
 ---
-# Cache invalidation
+# Caching
 
-Neither `platform` nor `platform/caching` has a home: two stubs.
+The area home; `platform` itself has none, so it is a stub.

@@ -3,7 +3,7 @@ extends: actor
 prefix: P
 authored: true
 description: A human. One node per person regardless of roles.
-home: core/docs/people/<handle>.md
+home: core/docs/knowledge-graph/internal/people/<handle>.yaml
 properties:
   email:         string
   slack?:        string
