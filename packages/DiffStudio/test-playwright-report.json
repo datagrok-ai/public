@@ -5,7 +5,8 @@
       "C:\\Users\\vmaka\\Datagrok\\public\\packages\\DiffStudio\\node_modules\\@playwright\\test\\cli.js",
       "test",
       "--config=C:\\Users\\vmaka\\Datagrok\\public\\packages\\DiffStudio\\playwright\\playwright.config.ts",
-      "--reporter=json"
+      "--reporter=json",
+      "--retries=0"
     ],
     "configFile": "C:\\Users\\vmaka\\Datagrok\\public\\packages\\DiffStudio\\playwright\\playwright.config.ts",
     "rootDir": "C:/Users/vmaka/Datagrok/public/packages/DiffStudio/playwright",
@@ -62,8 +63,8 @@
     }
   ],
   "stats": {
-    "startTime": "2026-09-01T10:55:46.788Z",
-    "duration": 26.754999999999995,
+    "startTime": "2026-09-14T09:46:22.796Z",
+    "duration": 25.92500000000001,
     "expected": 0,
     "skipped": 0,
     "unexpected": 0,
