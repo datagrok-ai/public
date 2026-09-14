@@ -1,9 +1,10 @@
 # Diff Studio changelog
 
-## v.next
+## 1.7.0 (2026-09-14)
 
 * Compute `#output` expressions inside the per-stage solver so they work in `#loop` / `#update` models
 * Update the PK model
+* Browse tree: show a context menu on Templates/Library/Recent items, consistent with the model cards
 
 ## 1.6.8 (2026-09-01)
 
