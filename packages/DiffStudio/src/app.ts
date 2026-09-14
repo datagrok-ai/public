@@ -265,6 +265,7 @@ function getLineChartOptions(colNames: string[]): Partial<DG.ILineChartSettings>
     multiAxisLegendPosition: DG.FlexExtendedPosition.RightTop,
     segmentColumnName: colNames.includes(STAGE_COL_NAME) ? STAGE_COL_NAME: undefined,
     showAggrSelectors: false,
+    showSplitSelector: false,
   };
 }
 
@@ -1766,7 +1767,6 @@ export class DiffStudio {
 
     try {
       const ivp = getIVP(this.editorView!.state.doc.toString());
-      console.log(ivp);
       this.removeFacetGrid();
       await this.generateInputs(ivp);
 
