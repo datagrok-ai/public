@@ -1,0 +1,10 @@
+{
+  "#type": "DataConnection",
+  "name": "Demo",
+  "friendlyName": "DEMO",
+  "parameters": {"server": "${Demo<DockerContainer>}", "db": "demo", "cacheResults": true},
+  "credentials": {"parameters": {"login": "user", "password": "secret"}},
+  "dataSource": "Postgres",
+  "description": "Demo DB",
+  "tags": ["demo"]
+}

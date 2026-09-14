@@ -1,0 +1,13 @@
+type: part-of
+was: PartOfFeature
+from: Feature | Concept | Initiative | Scenario | Ticket
+to: Feature | Concept | Initiative | Scenario | Ticket
+same_type: true
+cardinality: one
+acyclic: true
+derived_by: [filesystem, external]
+description: >
+  The hierarchy edge. For features, concepts, initiatives and scenarios it is derived
+  from the id path and never authored. For tickets it is the epic or parent link from
+  the tracker.
+inherits: [status, visibility, owner]  # for features, concepts and initiatives; nothing propagates between tickets

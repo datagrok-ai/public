@@ -1,0 +1,14 @@
+type: doc-page
+extends: artifact
+was: DocPage
+description: >
+  A markdown document: a help page, a core/docs file, a README or CLAUDE.md, a design
+  doc, a runbook, a review, a feature record. Its headings are doc-anchor nodes. Any
+  doc page can be a home document. Id doc:<path>.
+properties:
+  path:          Path
+  kind:          "'help' | 'core-doc' | 'readme' | 'agent' | 'design' | 'runbook' | 'review' | 'record' | 'plan' | 'other'"
+  title?:        string
+  mdx?:          boolean = false
+  unlisted?:     boolean = false
+  keywords?:     string[]

@@ -1,0 +1,9 @@
+type: tracked-in
+was: TrackedAs
+from: Feature | Initiative
+to: Ticket
+key: tickets
+derived_by: [annotation]
+description: The tickets a feature or initiative names as its own, epics and canonical tasks rather than every bug.
+properties:
+  relation?:     "'epic' | 'task' | 'bug' | 'other' = 'other'"

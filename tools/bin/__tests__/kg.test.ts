@@ -738,6 +738,17 @@ describe('hierarchy and edge instances (review 2 #7)', () => {
   });
 });
 
+describe('duplicate edge-key items', () => {
+  it('warns when an edge-key list names the same target twice', () => {
+    const repo = makeRepo();
+    write(repo, 'core/docs/broken.md', `${PERMISSIONS}concepts: [dataframe, {to: dataframe, role: central}]\n---\n# P\n`);
+    const {homes} = load(repo);
+    expect(homes.errors).toEqual([]);
+    expect(homes.warnings.map((w) => `${w.code} ${w.file}:${w.line}: ${w.message}`))
+      .toContain("duplicate-item core/docs/broken.md:4: concepts[1]: 'dataframe' is listed twice under concepts:");
+  });
+});
+
 describe('member parser shapes and defaults (review 2 #8)', () => {
   it('rejects unions of lists and mixed unions, accepts the parenthesized form', () => {
     expect(parseMember('m?', 'Person[] | Team[]', {types: TYPES}).error).toBe("m: a union of lists is not allowed; write '(Person | Team)[]' instead of 'Person[] | Team[]'");

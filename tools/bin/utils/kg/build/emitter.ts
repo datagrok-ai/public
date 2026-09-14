@@ -4,7 +4,7 @@
 /// members once and settles visibility.
 import {TypeSystem, NodeType, isSubtype, concreteAuthored} from '../types';
 import {normalizeRow, normalizeEdgeRow, Row, RowProblem} from './normalize';
-import {PREFIXED_ID, SCHEMED_ID, SCHEME_TYPES, JIRA_KEY, stubName, titleCase, locationVisibility} from './ids';
+import {PREFIXED_ID, SCHEMED_ID, SCHEME_TYPES, JIRA_KEY, stubName, titleCase, locationVisibility, sourceLayerOf} from './ids';
 
 export interface Claim {
   /** Posix path relative to the monorepo root. */
@@ -19,6 +19,8 @@ export interface Claim {
 export interface Graph {
   nodes: Row[];
   edges: Row[];
+  /** Ids of the partial stubs among the nodes. */
+  stubs: string[];
   claims: Claim[];
   sources: Record<string, string>;
   problems: Record<string, number>;
@@ -65,9 +67,11 @@ export class Emitter {
     this.merge(r, new Set(defaulted));
   }
 
-  /** A node that exists only because something references it; exempt from required members, never dropped. A second stub fills the gaps of the first. */
+  /** A node that exists only because something references it: carries only what created it (no defaults), is exempt from
+   * required members and never dropped. A second stub fills the gaps of the first. */
   stub(id: string, type: string, name: string, provenance: string, extra: Row = {}): void {
-    const {row, problems, defaulted} = normalizeRow(this.system, {...extra, id, type, name, status: 'proposed', provenance, source_layer: 'synthetic'});
+    const layer = typeof extra.path === 'string' ? sourceLayerOf(extra.path) : 'synthetic';
+    const {row, problems} = normalizeRow(this.system, {...extra, id, type, name, status: 'proposed', provenance, source_layer: layer}, {defaults: false});
     if (problems.some((p) => p.key === 'type')) {
       this.reject({...extra, id, type}, problems);
       return;
@@ -83,7 +87,7 @@ export class Emitter {
       return;
     }
     const prov = Object.fromEntries(Object.keys(row).map((k) => [k, provenance]));
-    this.nodes.set(id, {row, type: this.system.nodes.get(type)!, prov, weak: new Set([...defaulted, 'status', 'source_layer', 'name']), partial: true});
+    this.nodes.set(id, {row, type: this.system.nodes.get(type)!, prov, weak: new Set(['status', 'source_layer', 'name']), partial: true});
   }
 
   edge(row: Row): void {
@@ -141,10 +145,12 @@ export class Emitter {
     for (const row of this.edges.values()) row.batch ??= this.batch;
     this.requireMembers();
     for (const entry of this.nodes.values()) this.settleVisibility(entry);
-    this.problems.partial_stubs = [...this.nodes.values()].filter((e) => e.partial).length;
+    const stubs = [...this.nodes.values()].filter((e) => e.partial).map((e) => e.row.id as string);
+    this.problems.partial_stubs = stubs.length;
     return {
       nodes: [...this.nodes.values()].map((e) => e.row),
       edges: [...this.edges.values()],
+      stubs,
       claims: this.claims,
       sources: this.sources,
       problems: this.problems,

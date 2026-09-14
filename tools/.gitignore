@@ -7,5 +7,5 @@ bin/utils/*.js.map
 bin/validators/*.js.map
 bin/utils/migrate/*.js
 bin/utils/migrate/*.js.map
-bin/utils/kg/*.js
-bin/utils/kg/*.js.map
+bin/utils/kg/**/*.js
+bin/utils/kg/**/*.js.map

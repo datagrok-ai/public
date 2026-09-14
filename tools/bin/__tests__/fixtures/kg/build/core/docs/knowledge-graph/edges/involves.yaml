@@ -1,0 +1,6 @@
+type: involves
+abstract: true
+from: Feature | Work
+to: Actor
+derived_by: [annotation, external]
+description: Base of the edges between work or features and people, teams and customers.

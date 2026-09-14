@@ -1,0 +1,9 @@
+type: demonstrates
+extends: evidences
+was: Demonstrates
+from: Sample | Tutorial
+to: Feature
+key: samples
+key_side: to
+derived_by: [annotation, ast]
+description: A sample or tutorial shows a feature in use; the API members it calls are uses edges.

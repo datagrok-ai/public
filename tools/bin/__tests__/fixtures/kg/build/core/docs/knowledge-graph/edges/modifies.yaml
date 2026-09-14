@@ -1,0 +1,8 @@
+type: modifies
+from: PullRequest | Commit
+to: SourceFile
+derived_by: [git]
+description: A change touches a file. With part-of and is-implemented-in this yields "features touched by this PR".
+properties:
+  added?:        number
+  removed?:      number

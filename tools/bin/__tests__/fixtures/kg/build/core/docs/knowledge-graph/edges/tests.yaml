@@ -1,0 +1,11 @@
+type: tests
+extends: evidences
+was: IsTestedIn
+from: Test | TestSuite
+to: Feature
+key: tests
+key_side: to
+derived_by: [annotation, filesystem]
+description: An automated test exercises a feature, from a `~id` category or tag, a path under the feature's roots, or the feature's `tests:` list.
+properties:
+  kind?:         "'unit' | 'api' | 'e2e' | 'perf' | 'stress'"

@@ -1,0 +1,11 @@
+type: uses
+was: UsesApiClass
+from: SourceFile | Package | Sample | Tutorial
+to: Declaration
+derived_by: [ast]
+description: >
+  A package, file, sample or tutorial uses a JS API class, enum, function or ui helper. The edge behind "which
+  packages would break if this API member changed".
+properties:
+  kind:          "'class' | 'enum' | 'ui' | 'function' | 'type'"
+  count?:        number

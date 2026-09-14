@@ -1,0 +1,6 @@
+type: automates
+was: Automates
+from: Test
+to: Scenario
+derived_by: [annotation]
+description: An automated test realizes a manual scenario, from the scenario's `realized_as`.

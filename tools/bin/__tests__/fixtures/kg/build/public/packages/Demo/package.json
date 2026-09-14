@@ -1,0 +1,35 @@
+{
+  "name": "@datagrok/demo",
+  "friendlyName": "Demo",
+  "fullName": "Demo",
+  "version": "1.2.3",
+  "author": {"name": "Jane Dev", "email": "jane@example.com"},
+  "description": "The fixture package with every folder.",
+  "category": "Cheminformatics",
+  "servicePackage": true,
+  "properties": [
+    {"name": "Sketcher", "propertyType": "string", "nullable": true},
+    {"name": "TemplatesPath", "propertyType": "string"}
+  ],
+  "dependencies": {
+    "@datagrok-libraries/utils": "^4.7.9",
+    "datagrok-api": "^1.27.7",
+    "rxjs": "^6.5.5"
+  },
+  "devDependencies": {
+    "@datagrok/plain": "^0.1.0",
+    "webpack": "^5.0.0"
+  },
+  "peerDependencies": {
+    "@datagrok-libraries/nowhere": "^1.0.0"
+  },
+  "optionalDependencies": {
+    "@datagrok-libraries/utils": "^4.7.9"
+  },
+  "sources": ["common/openchemlib-full.js"],
+  "meta": {
+    "semanticTypes": [
+      {"semType": "DemoId", "description": "A demo identifier", "parsers": [{"regexp": "^DEMO-[0-9]+$"}]}
+    ]
+  }
+}

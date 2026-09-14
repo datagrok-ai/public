@@ -451,7 +451,10 @@ Verbs:
                 deterministic: two builds of the same revisions are byte-identical and
                 share a content-addressed batch id; only the manifest carries the time.
                 Problems are counted in the manifest, never thrown. Extractors today:
-                homes (the home-document layer).
+                homes (the home-document layer), ts-packages (packages, libraries,
+                semantic types and depends-on from package.json) and ts-functions
+                (registered functions, scripts, queries, connections, environments,
+                containers and by-name calls under public/packages).
     query, report  Not implemented yet.
     help        Show this help
 

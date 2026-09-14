@@ -6,6 +6,7 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import {fileURLToPath} from 'url';
+import {spawnSync} from 'child_process';
 import {loadTypeSystem, TypeSystem} from '../utils/kg/types';
 import {Emitter, Graph} from '../utils/kg/build/emitter';
 import {normalizeRow} from '../utils/kg/build/normalize';
@@ -76,6 +77,11 @@ describe('normalizeRow (shared by check and build)', () => {
     expect(normalizeRow(system, {type: 'person', id: 'P:a', name: 'A', email: 'e', aliases: ['a', 'a', 'b']}).row.aliases).toEqual(['a', 'b']);
   });
 
+  it('trims string and Text members, so a folded YAML scalar and a markdown paragraph read the same', () => {
+    const {row} = normalizeRow(system, {type: 'concept', id: 'C:x', name: ' X ', description: 'A folded\nscalar.\n', aliases: [' C:y ']});
+    expect(row).toMatchObject({name: 'X', description: 'A folded\nscalar.', aliases: ['C:y']});
+  });
+
   it('reports shape problems with the check vocabulary and never the missing required members', () => {
     const {problems} = normalizeRow(system, {type: 'person', id: 'P:a', tier: 'boss', colour: 'red'});
     expect(problems).toEqual([
@@ -138,6 +144,19 @@ describe('emitter merge rules (build-plan.md WO-1)', () => {
     expect(node(graph, 'P:ok')).toBeDefined();
     expect(graph.problems).toMatchObject({invalid_rows: 1, partial_stubs: 1});
     expect(graph.invalid[0]).toMatchObject({id: 'P:noemail', problems: ["missing required member 'email' for type person"]});
+  });
+
+  it('gives a stub only what created it: no defaults, source_layer from its path when it has one', () => {
+    const e = new Emitter(system, BATCH);
+    e.stub('TS:x', 'scenario', 'X', 'filesystem');
+    e.stub('decl:public/a.ts#A', 'declaration', 'A', 'annotation', {path: 'public/a.ts', language: 'ts'});
+    e.stub('P:ghost', 'person', 'Ghost', 'annotation');
+    const graph = e.finalize();
+    expect(node(graph, 'TS:x')).toEqual({id: 'TS:x', type: 'scenario', name: 'X', status: 'proposed', provenance: 'filesystem', source_layer: 'synthetic', batch: BATCH, visibility: 'dev'});
+    expect(node(graph, 'decl:public/a.ts#A')).toEqual({id: 'decl:public/a.ts#A', type: 'declaration', name: 'A', path: 'public/a.ts', language: 'ts', status: 'proposed', provenance: 'annotation', source_layer: 'public', batch: BATCH, visibility: 'public'});
+    expect(node(graph, 'P:ghost')).not.toHaveProperty('tier');
+    e.node(person('P:ghost'));
+    expect(node(e.finalize(), 'P:ghost')).toMatchObject({tier: 'staff', status: 'active'});
   });
 
   it('turns a real row for a stub id into a full node, the stub filling only the gaps', () => {
@@ -249,7 +268,7 @@ describe('grok kg build: writer, manifest and public projection (build-plan.md W
     expect(fs.existsSync(path.join(repo, '.kg'))).toBe(false);
     const bad = await run({_: ['kg', 'build'], kg: path.join(repo, KG_DIR), only: 'homes,nope', db: false});
     expect(bad.exitCode).toBe(1);
-    expect(bad.err).toEqual(['--only names unknown extractors: nope (known: homes)']);
+    expect(bad.err).toEqual(['--only names unknown extractors: nope (known: homes, ts-packages, ts-functions)']);
     const table = await run({_: ['kg', 'build'], kg: path.join(repo, KG_DIR), only: 'homes', db: false, out});
     expect(table.out).toHaveLength(1);
     expect(table.out[0]).toMatch(/^wrote .*elsewhere: \d+ nodes \(concept 2, .*feature 7.*\), \d+ edges \(.*part-of 5.*\); sources: homes ok; problems: partial_stubs \d+; batch b-[0-9a-f]{12} \(full\)$/);
@@ -273,6 +292,33 @@ describe('grok kg build: writer, manifest and public projection (build-plan.md W
     expect(rows('edges/documents')[0].evidence).toEqual(['public/help/visualize/viewers/scatter-plot-tips.md']);
     expect(rows('edges/mentions')).toEqual([expect.objectContaining({from: 'doc:public/help/visualize/viewers/scatter-plot.md', to: 'doc:public/help/visualize/viewers/scatter-plot-tips.md'})]);
     expect(rows('edges/uses-concept')).toHaveLength(2);
+  });
+
+  it('--public writes nothing private: no reports, only the public revision, no core/ path and no reddata sha anywhere', async () => {
+    const repo = makeRepo();
+    const git = (cwd: string, ...args: string[]) => spawnSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@x', ...args], {cwd, encoding: 'utf8'});
+    for (const dir of [path.join(repo, 'public'), repo]) {
+      git(dir, 'init', '-q');
+      git(dir, 'add', '-A');
+      git(dir, 'commit', '-q', '-m', 'fixture');
+    }
+    const reddata = git(repo, 'rev-parse', 'HEAD').stdout.trim();
+    const pub = git(path.join(repo, 'public'), 'rev-parse', 'HEAD').stdout.trim();
+    expect(reddata).toMatch(/^[0-9a-f]{40}$/);
+    expect(pub).not.toBe(reddata);
+    const {manifest, out} = await build(repo, {public: true});
+    expect(manifest.mode).toBe('public');
+    expect(manifest.revisions).toEqual({public: pub});
+    expect(manifest.problems.partial_stubs).toBe(3);
+    expect(Object.entries(manifest.problems).filter(([k]) => k !== 'partial_stubs').every(([, n]) => n === 0)).toBe(true);
+    expect(fs.existsSync(path.join(out, 'reports'))).toBe(false);
+    const files = fs.readdirSync(out, {recursive: true, withFileTypes: true}).filter((d) => d.isFile()).map((d) => path.join(d.parentPath ?? d.path, d.name));
+    expect(files.length).toBeGreaterThan(5);
+    for (const file of files) {
+      const text = fs.readFileSync(file, 'utf8');
+      expect(text, file).not.toContain('core/');
+      expect(text, file).not.toContain(reddata);
+    }
   });
 
   it('writes the public projection under public/.kg by default', async () => {
@@ -312,7 +358,7 @@ describe('homes extractor (build-plan.md WO-2)', () => {
   it('reads an annotated page: a doc-page stub and documents edges with their properties', async () => {
     const {rows} = await build();
     expect(rows('nodes/doc-page').find((d) => d.id === 'doc:public/help/visualize/viewers/scatter-plot-tips.md')).toMatchObject({
-      type: 'doc-page', name: 'Scatter plot tips', path: 'public/help/visualize/viewers/scatter-plot-tips.md', kind: 'help', status: 'proposed', provenance: 'annotation', source_layer: 'synthetic', visibility: 'public',
+      type: 'doc-page', name: 'Scatter plot tips', path: 'public/help/visualize/viewers/scatter-plot-tips.md', kind: 'help', status: 'proposed', provenance: 'annotation', source_layer: 'public', visibility: 'public',
     });
     expect(rows('edges/documents')).toEqual([expect.objectContaining({from: 'doc:public/help/visualize/viewers/scatter-plot-tips.md', to: 'visualize/viewers/scatter-plot', audience: 'user', derived_by: 'annotation'})]);
   });
@@ -339,7 +385,7 @@ describe('homes extractor (build-plan.md WO-2)', () => {
   it('claims a cited implementation file at rung 3 unless a code: root already covers it, and mentions cited documents', async () => {
     const {rows} = await build();
     expect(rows('reports/claims.jsonl')).toEqual([
-      {feature: 'visualize/viewers', file: 'core/client/d4/lib', line: 8, props: {}, rung: 3, source: 'home'},
+      {feature: 'visualize/viewers', file: 'core/client/d4/lib', line: 10, props: {}, rung: 3, source: 'home'},
       expect.objectContaining({feature: 'visualize/viewers/scatter-plot', file: 'core/client/d4/lib/scatter.dart', rung: 2}),
       expect.objectContaining({feature: 'visualize/viewers/scatter-plot', file: 'public/js-api/src/viewer.ts', rung: 2}),
     ]);
@@ -389,6 +435,30 @@ describe('homes extractor (build-plan.md WO-2)', () => {
     expect(manifest.problems.invalid_rows).toBe(1);
     expect(rows('nodes/feature').some((f) => f.id === 'govern/permissions')).toBe(false);
     expect(rows('reports/invalid.jsonl')).toEqual([expect.objectContaining({id: 'govern/permissions', problems: [expect.stringMatching(/^status: "bogus" is not one of/)]})]);
+  });
+
+  it('types a dangling bare id by the expected union, never by sort order, and refuses an ambiguous one', async () => {
+    const repo = makeRepo();
+    write(repo, 'core/docs/haunted.md', '---\nfeature: govern/haunted\nowner: nobody\nsuperseded_by: [platform/ghost]\n---\n# Haunted\n');
+    const {rows, manifest} = await build(repo);
+    expect(rows('nodes/feature').find((f) => f.id === 'platform/ghost')).toMatchObject({type: 'feature', name: 'Ghost', status: 'proposed'});
+    expect(rows('nodes/concept').map((c) => c.id)).toEqual(['C:column', 'C:dataframe']);
+    expect(rows('edges/supersedes')).toContainEqual(expect.objectContaining({from: 'platform/ghost', to: 'govern/haunted'}));
+    expect(rows('nodes/feature').find((f) => f.id === 'govern/haunted')).not.toHaveProperty('owner');
+    expect(rows('edges/owner').some((e) => e.from === 'govern/haunted')).toBe(false);
+    expect(manifest.problems.ambiguous_refs).toBe(1);
+    expect(JSON.parse(fs.readFileSync(path.join(repo, '.kg', 'reports', 'problems.json'), 'utf8')).ambiguous_refs)
+      .toEqual(["core/docs/haunted.md: owner: 'nobody' could be P:nobody or Team:nobody; write the prefix"]);
+  });
+
+  it('names every check issue behind a partial homes source in problems.json and counts them', async () => {
+    const repo = makeRepo();
+    write(repo, 'core/docs/broken.md', '---\nfeature: govern/permissions\nowner: askalkin\nstatus: bogus\n---\n# P\n');
+    const {manifest} = await build(repo);
+    expect(manifest.sources.homes).toBe('partial');
+    expect(manifest.problems.home_issues).toBe(1);
+    expect(JSON.parse(fs.readFileSync(path.join(repo, '.kg', 'reports', 'problems.json'), 'utf8')).home_issues)
+      .toEqual([expect.stringMatching(/^core\/docs\/broken\.md:4: bad-value: status: "bogus" is not one of/)]);
   });
 
   it('takes the first prose paragraph after the frontmatter as the description', () => {

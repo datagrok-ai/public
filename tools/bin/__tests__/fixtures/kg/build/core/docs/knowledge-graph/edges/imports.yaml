@@ -1,0 +1,8 @@
+type: imports
+was: Imports
+from: SourceFile
+to: SourceFile | Library | Package
+derived_by: [ast]
+description: An import statement resolved to its target file, library or package.
+properties:
+  symbols?:      string[]

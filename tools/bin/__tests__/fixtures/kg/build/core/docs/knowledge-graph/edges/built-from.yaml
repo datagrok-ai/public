@@ -1,0 +1,6 @@
+type: built-from
+from: Image | Container
+to: Image
+cardinality: one
+derived_by: [annotation]
+description: The FROM line of a Dockerfile.

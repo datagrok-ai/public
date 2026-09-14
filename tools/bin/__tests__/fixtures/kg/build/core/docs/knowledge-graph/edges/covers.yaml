@@ -1,0 +1,10 @@
+type: covers
+extends: evidences
+was: Covers
+from: Scenario
+to: Feature
+key: covers
+derived_by: [annotation]
+description: A manual scenario covers a feature, from the scenario's frontmatter.
+properties:
+  level?:        "'exercised' | 'asserted' = 'exercised'"

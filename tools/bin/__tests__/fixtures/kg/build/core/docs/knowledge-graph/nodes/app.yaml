@@ -1,0 +1,11 @@
+type: app
+extends: function
+description: >
+  A registered application: a function with role app, opened from Browse or a URL.
+properties:
+  browse_path?:  string
+  icon?:         Path
+  url?:          string
+  admin?:        boolean = false
+rules:
+  - roles contains 'app'

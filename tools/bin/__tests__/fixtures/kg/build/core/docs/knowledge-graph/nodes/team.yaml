@@ -1,0 +1,9 @@
+type: team
+authored: true
+extends: actor
+prefix: Team
+description: An internal team. Owns feature areas; people join it through member-of.
+home: core/docs/knowledge-graph/internal/teams/<name>.yaml
+properties:
+  lead?:         Person
+  slack?:        string

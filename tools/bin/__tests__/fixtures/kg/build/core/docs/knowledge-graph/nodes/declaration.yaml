@@ -1,0 +1,20 @@
+type: declaration
+extends: component
+was: TsDecl
+description: >
+  A named code declaration: class, interface, function, method, getter, property,
+  enum, type alias, constant, mixin. From the TypeScript compiler for public/ and from
+  the prop_gen emitter for Dart. JS API members are declarations with public_api set.
+  Id decl:<file>#<Owner.name>; a getter and a setter of the same name are
+  decl:...#Owner.name:get and :set; overloads share one id with the merged signature.
+properties:
+  kind:          "'class' | 'interface' | 'function' | 'method' | 'getter' | 'setter' | 'prop' | 'enum' | 'type' | 'const' | 'mixin'"
+  container?:    Declaration          # lexical container: the class of a method, the owner of a getter
+  role?:         "'service' | 'repository' | 'router' | 'entity' | 'viewer' | 'command' | 'migration' | 'widget' | 'input' | 'view' | 'detector'"
+  exported:      boolean
+  public_api?:   boolean = false
+  generated?:    boolean = false
+  deprecated?:   boolean = false
+  documented?:   boolean
+  signature?:    string
+  db_table?:     DbTable                # entity classes declare their table (dbTableName); repositories map the same way

@@ -1,0 +1,10 @@
+type: doc-anchor
+extends: artifact
+description: >
+  A heading inside a doc page, addressable as <page>#<slug> where the slug is made from
+  the heading text. The unit that code comments and other docs cite.
+properties:
+  page:          DocPage
+  slug:          string
+  level:         number
+  heading:       string

@@ -1,0 +1,11 @@
+type: viewer
+extends: function
+description: >
+  A viewer: a function that returns a viewer, from a package or the built-in d4 registry.
+properties:
+  icon?:         Path
+  trellisable?:  boolean
+  grid_chart?:   boolean
+  builtin?:      boolean = false      # true for the 33 Dart viewers in d4
+rules:
+  - roles contains 'viewer'

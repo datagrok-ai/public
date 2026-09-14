@@ -1,0 +1,14 @@
+type: pull-request
+extends: work
+description: >
+  A pull request on Bitbucket (reddata) or GitHub (public). Ids pr:reddata#964 and
+  pr:public#4062, distinct from the GitHub issue that shares the number.
+  Links to tickets through mentions of GROK keys in title and body; touches features
+  through the files it changes.
+properties:
+  repo:          "'reddata' | 'public'"
+  number:        number
+  state:         "'open' | 'merged' | 'declined'"
+  branch:        string
+  target:        string
+  merged?:       Date

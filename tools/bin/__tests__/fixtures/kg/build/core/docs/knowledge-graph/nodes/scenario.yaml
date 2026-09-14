@@ -1,0 +1,23 @@
+type: scenario
+extends: artifact
+prefix: TS
+was: Scenario
+hierarchical: true
+authored: true
+description: >
+  A manual test scenario in Test Track (packages/UsageAnalysis/files/TestTrack): numbered
+  steps with preconditions and expected results. Authored and hierarchical; ids follow
+  the Test Track folder, TS:viewers/scatter-plot/regression-line. Covers features
+  through covers, is automated by tests through automates.
+home: packages/UsageAnalysis/files/TestTrack/<folder>/<name>.md
+properties:
+  path:          Path
+  priority?:     "'p0' | 'p1' | 'p2' | 'p3'"
+  target_layer?: string
+  coverage_type?: string
+  manual_only?:  boolean = false
+  manual_only_reason?: string
+  steps?:        number
+rules:
+  - "the Test Track frontmatter key feature migrates to covers"
+  - "realized_as becomes automates from the named tests; related_bugs becomes mentions"

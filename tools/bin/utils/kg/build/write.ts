@@ -52,7 +52,8 @@ export function batchId(revisions: Record<string, string>, schemaVersion: number
   return `b-${hash.slice(0, 12)}`;
 }
 
-/** Public logical nodes with their descriptions; the home, the owner, non-public paths and every edge with a non-public end stay behind. */
+/** Public logical nodes with their descriptions; the home, the owner, non-public paths, every edge with a non-public end, the
+ * claims and the full-graph problem records stay behind. */
 export function projectPublic(graph: Graph, system: TypeSystem): Graph {
   const keep = (row: Row) => {
     const type = String(row.type);
@@ -80,17 +81,20 @@ export function projectPublic(graph: Graph, system: TypeSystem): Graph {
     delete out.evidence;
     return evidence?.length ? {...out, evidence} : out;
   });
-  return {...graph, nodes: projected, edges};
+  const stubs = graph.stubs.filter((id) => ids.has(id));
+  const problems = Object.fromEntries(Object.keys(graph.problems).map((k) => [k, k === 'partial_stubs' ? stubs.length : 0]));
+  return {nodes: projected, edges, stubs, claims: [], sources: graph.sources, problems, details: {}, invalid: []};
 }
 
-/** Writes everything under [outRoot] and returns the manifest. `data/` and `reports/` are replaced whole. */
+/** Writes everything under [outRoot] and returns the manifest. `data/` and `reports/` are replaced whole; the public
+ * snapshot gets no reports and only the public revision. */
 export function writeBuild(graph: Graph, outRoot: string, info: BuildInfo): Manifest {
+  const isPublic = info.mode === 'public';
   const dataDir = path.join(outRoot, 'data');
   const reportsDir = path.join(outRoot, 'reports');
   for (const dir of [dataDir, reportsDir]) fs.rmSync(dir, {recursive: true, force: true});
   fs.mkdirSync(path.join(dataDir, 'nodes'), {recursive: true});
   fs.mkdirSync(path.join(dataDir, 'edges'), {recursive: true});
-  fs.mkdirSync(reportsDir, {recursive: true});
 
   const nodes = groupBy(graph.nodes, (n) => String(n.type));
   const edges = groupBy(graph.edges, (e) => e.type === 'ref' ? String(e.name) : String(e.type));
@@ -105,10 +109,13 @@ export function writeBuild(graph: Graph, outRoot: string, info: BuildInfo): Mani
     writeJsonl(path.join(dataDir, 'edges', `${name}.jsonl`), rows);
     counts.edges[name] = rows.length;
   }
-  const claims = [...graph.claims].sort((a, b) => compare(a.file, b.file) || compare(a.feature, b.feature) || a.rung - b.rung);
-  writeJsonl(path.join(reportsDir, 'claims.jsonl'), claims as unknown as Row[]);
-  if (graph.invalid.length) writeJsonl(path.join(reportsDir, 'invalid.jsonl'), graph.invalid.slice(0, INVALID_CAP));
-  if (Object.keys(graph.details).length) fs.writeFileSync(path.join(reportsDir, 'problems.json'), `${JSON.stringify(graph.details, null, 2)}\n`);
+  if (!isPublic) {
+    fs.mkdirSync(reportsDir, {recursive: true});
+    const claims = [...graph.claims].sort((a, b) => compare(a.file, b.file) || compare(a.feature, b.feature) || a.rung - b.rung);
+    writeJsonl(path.join(reportsDir, 'claims.jsonl'), claims as unknown as Row[]);
+    if (graph.invalid.length) writeJsonl(path.join(reportsDir, 'invalid.jsonl'), graph.invalid.slice(0, INVALID_CAP));
+    if (Object.keys(graph.details).length) fs.writeFileSync(path.join(reportsDir, 'problems.json'), `${JSON.stringify(graph.details, null, 2)}\n`);
+  }
 
   const manifest: Manifest = {
     built_at: new Date().toISOString(),
@@ -116,7 +123,7 @@ export function writeBuild(graph: Graph, outRoot: string, info: BuildInfo): Mani
     builder: info.builder,
     batch: info.batch,
     mode: info.mode,
-    revisions: info.revisions,
+    revisions: isPublic ? {public: info.revisions.public} : info.revisions,
     sources: sortKeys(graph.sources),
     counts: {nodes: sortKeys(counts.nodes), edges: sortKeys(counts.edges)},
     problems: sortKeys(graph.problems),

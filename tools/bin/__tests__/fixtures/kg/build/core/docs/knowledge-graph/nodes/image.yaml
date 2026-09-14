@@ -1,0 +1,8 @@
+type: image
+extends: infra
+prefix: Img
+description: A Docker image built from a folder under deploy/. Base images reach it through built-from.
+properties:
+  folder:        Path
+  registry?:     string
+  deprecated?:   boolean = false

@@ -1,0 +1,7 @@
+type: video
+extends: artifact
+description: A YouTube video embedded in help or linked from a feature.
+properties:
+  url:           Url
+  title?:        string
+  minutes?:      number

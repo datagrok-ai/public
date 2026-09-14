@@ -1,0 +1,10 @@
+type: panel
+extends: function
+description: >
+  An info pane shown in the context panel when its condition matches the current object.
+properties:
+  condition?:    string               # //condition: expression over the current object
+  target_type?:  string               # type of the single input
+  target_semtype?: SemanticType
+rules:
+  - roles contains 'panel'

@@ -286,6 +286,7 @@ class HomeChecker {
 
   check(home: Home, fm: Frontmatter): void {
     const error: ErrorFn = (code, message, key) => this.set.errors.push({file: home.file, line: key ? keyLine(fm, key) ?? home.line : home.line, code, message});
+    const warn: ErrorFn = (code, message, key) => this.set.warnings.push({file: home.file, line: key ? keyLine(fm, key) ?? home.line : home.line, code, message});
     const {type, data} = home;
     const subject: Subject = {file: home.file, typeName: type.name, home};
     const isHelp = home.file.startsWith('public/help/');
@@ -305,7 +306,7 @@ class HomeChecker {
       }
       const edge = this.system.keys.get(key);
       if (edge) {
-        this.checkEdgeKey(subject, key, edge, value, error);
+        this.checkEdgeKey(subject, key, edge, value, error, warn);
         continue;
       }
       const member = type.members[key];
@@ -341,6 +342,7 @@ class HomeChecker {
   /** A page that is not a home but carries edge keys: `documents:` on a help page. */
   checkPage(file: string, fm: Frontmatter): void {
     const error: ErrorFn = (code, message, key) => this.set.errors.push({file, line: key ? keyLine(fm, key) ?? 1 : 1, code, message});
+    const warn: ErrorFn = (code, message, key) => this.set.warnings.push({file, line: key ? keyLine(fm, key) ?? 1 : 1, code, message});
     if (!this.system.nodes.has('doc-page')) {
       error('bad-edge', 'a page can only annotate when the type system has a doc-page type');
       return;
@@ -352,7 +354,7 @@ class HomeChecker {
       if (key === 'edges') this.checkEdgesKey(subject, value, error);
       else {
         const edge = this.system.keys.get(key);
-        if (edge) this.checkEdgeKey(subject, key, edge, value, error);
+        if (edge) this.checkEdgeKey(subject, key, edge, value, error, warn);
       }
     }
   }
@@ -386,7 +388,7 @@ class HomeChecker {
     }
   }
 
-  private checkEdgeKey(subject: Subject, key: string, edge: EdgeType, value: unknown, error: ErrorFn): void {
+  private checkEdgeKey(subject: Subject, key: string, edge: EdgeType, value: unknown, error: ErrorFn, warn: ErrorFn): void {
     if (edge.abstract) {
       error('bad-edge', `${key}: spells the abstract edge ${edge.name}; abstract edges cannot be authored`, key);
       return;
@@ -404,6 +406,7 @@ class HomeChecker {
     if (homeSide === 'from' && edge.cardinality === 'one' && value.length > 1)
       error('cardinality', `${key}: ${edge.name} has cardinality one, ${value.length} targets given`, key);
     const targetKey = key === 'code' ? 'path' : 'to';
+    const seen = new Set<string>();
     value.forEach((item, i) => {
       const where = `${key}[${i}]`;
       let target: unknown;
@@ -423,6 +426,8 @@ class HomeChecker {
         error('bad-edge', `${where}: ${targetKey} must be a string, got ${JSON.stringify(target)}`, key);
         return;
       }
+      if (seen.has(target.trim())) warn('duplicate-item', `${where}: '${target.trim()}' is listed twice under ${key}:`, key);
+      seen.add(target.trim());
       if (key === 'code') {
         const problem = this.pathProblem(target);
         if (problem) error('missing-path', `${where}: ${problem}`, key);

@@ -1,0 +1,19 @@
+type: person
+authored: true
+extends: actor
+prefix: P
+was: Assignee
+description: >
+  A human. One node per person regardless of roles, keyed by the internal handle used
+  in autofix/cfg/owners.json and the backlog taxonomy. Cross-system identifiers live
+  here so tickets, commits, PRs and Slack all resolve to the same node.
+home: core/docs/knowledge-graph/internal/people/<handle>.yaml
+properties:
+  handle:        string
+  emails?:       string[]
+  github?:       string
+  bitbucket?:    string
+  jira?:         string
+  slack?:        string
+  departed?:     boolean = false
+  successor?:    Person

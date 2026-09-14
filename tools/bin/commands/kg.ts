@@ -90,7 +90,7 @@ async function build(argv: any, kgRoot: string, repoRoot: string, output: string
 
 function summary(m: Manifest, out: string): string {
   const total = (counts: Record<string, number>) => Object.values(counts).reduce((a, b) => a + b, 0);
-  const list = (counts: Record<string, number>) => Object.entries(counts).map(([k, n]) => `${k} ${n}`).join(', ');
+  const list = (counts: Record<string, number | string>) => Object.entries(counts).map(([k, n]) => `${k} ${n}`).join(', ');
   const problems = Object.entries(m.problems).filter(([, n]) => n > 0).map(([k, n]) => `${k} ${n}`).join(', ') || 'none';
   return `wrote ${out}: ${total(m.counts.nodes)} nodes (${list(m.counts.nodes)}), ${total(m.counts.edges)} edges (${list(m.counts.edges)}); ` +
     `sources: ${list(m.sources) || 'none'}; problems: ${problems}; batch ${m.batch} (${m.mode})`;

@@ -1,0 +1,20 @@
+# Root. A capability, user-facing or internal. The tree.
+type: feature
+extends: node
+hierarchical: true
+authored: true
+visibility: public
+description: >
+  A capability a user or a developer would recognize as distinct. Ids are paths under
+  the product roots (access, transform, explore, visualize, compute, govern,
+  collaborate, develop, deploy, domains) or the internal roots (platform, client,
+  server, infra, ops, saas). Three to five levels; a leaf has its own test scenario
+  and its own help heading.
+home: any markdown file carrying a `feature:` frontmatter key; a code folder's README or
+  CLAUDE.md, a core/docs file, or a help page
+rules:
+  - a second-level node (the area) must set owner
+  - one home document per id
+  - edge keys accepted in the home doc are declared by edge files (code, concepts,
+    tickets, related, requested_by, superseded_by, tests, samples); a page that
+    describes the feature carries `documents:` instead of becoming a second home

@@ -22,7 +22,12 @@ export interface Normalized {
 /** Keys of an edge row that are not properties. */
 export const EDGE_ROW_KEYS = ['type', 'from', 'to', 'name'];
 
-export function normalizeRow(system: TypeSystem, row: Row, hooks: Partial<ValueHooks> = {}): Normalized {
+export interface NormalizeOptions extends Partial<ValueHooks> {
+  /** Apply the declared defaults (real rows); a stub carries only what created it. */
+  defaults?: boolean;
+}
+
+export function normalizeRow(system: TypeSystem, row: Row, options: NormalizeOptions = {}): Normalized {
   const typeName = String(row.type ?? '');
   const type = system.nodes.get(typeName);
   if (!type || type.abstract) {
@@ -31,17 +36,17 @@ export function normalizeRow(system: TypeSystem, row: Row, hooks: Partial<ValueH
   }
   const members: Record<string, Member> = {...type.members};
   for (const m of system.buildFields.node) members[m.name] = m;
-  return normalizeMembers(system, row, members, ['type'], typeName, hooks);
+  return normalizeMembers(system, row, members, ['type'], typeName, options);
 }
 
-export function normalizeEdgeRow(system: TypeSystem, edge: EdgeType, row: Row, hooks: Partial<ValueHooks> = {}): Normalized {
+export function normalizeEdgeRow(system: TypeSystem, edge: EdgeType, row: Row, options: NormalizeOptions = {}): Normalized {
   const members: Record<string, Member> = {...edge.properties};
   for (const m of system.buildFields.edge) members[m.name] = m;
-  return normalizeMembers(system, row, members, EDGE_ROW_KEYS, edge.name, hooks);
+  return normalizeMembers(system, row, members, EDGE_ROW_KEYS, edge.name, options);
 }
 
 function normalizeMembers(system: TypeSystem, row: Row, members: Record<string, Member>, passthrough: string[], typeName: string,
-  hooks: Partial<ValueHooks>): Normalized {
+  options: NormalizeOptions): Normalized {
   const out: Row = {};
   const problems: RowProblem[] = [];
   for (const key of passthrough)
@@ -54,7 +59,7 @@ function normalizeMembers(system: TypeSystem, row: Row, members: Record<string, 
       continue;
     }
     const value = normalizeValue(member, raw);
-    const problem = checkValue(member, value, {provenance: system.provenance, path: hooks.path, ref: hooks.ref});
+    const problem = checkValue(member, value, {provenance: system.provenance, path: options.path, ref: options.ref});
     if (problem) {
       const code = member.kind === 'ref' ? 'unresolved-ref' : member.scalar === 'Path' ? 'missing-path' : 'bad-value';
       problems.push({key, code, message: `${key}: ${problem}`});
@@ -63,18 +68,18 @@ function normalizeMembers(system: TypeSystem, row: Row, members: Record<string, 
     out[key] = value;
   }
   const defaulted: string[] = [];
-  for (const m of Object.values(members))
-    if (m.default !== undefined && out[m.name] === undefined) {
-      out[m.name] = m.default;
-      defaulted.push(m.name);
-    }
+  if (options.defaults !== false)
+    for (const m of Object.values(members))
+      if (m.default !== undefined && out[m.name] === undefined) {
+        out[m.name] = m.default;
+        defaulted.push(m.name);
+      }
   return {row: out, problems, defaulted};
 }
 
 function normalizeValue(member: Member, raw: unknown): unknown {
-  if (!member.list) return member.scalar === 'Date' ? canonicalDate(raw) : raw;
-  const items = (Array.isArray(raw) ? raw : [raw]).filter((v) => v !== null && v !== undefined)
-    .map((v) => member.scalar === 'Date' ? canonicalDate(v) : v);
+  if (!member.list) return scalar(member, raw);
+  const items = (Array.isArray(raw) ? raw : [raw]).filter((v) => v !== null && v !== undefined).map((v) => scalar(member, v));
   const seen = new Set<string>();
   return items.filter((v) => {
     const key = typeof v === 'object' ? JSON.stringify(v) : `${typeof v}:${String(v)}`;
@@ -84,9 +89,11 @@ function normalizeValue(member: Member, raw: unknown): unknown {
   });
 }
 
-/** A YAML date becomes its ISO text; a date without a time of day stays date-only. */
-function canonicalDate(value: unknown): unknown {
-  if (!(value instanceof Date) || Number.isNaN(value.getTime())) return value;
-  const iso = value.toISOString();
-  return iso.endsWith('T00:00:00.000Z') ? iso.slice(0, 10) : iso;
+/** A YAML date becomes its ISO text, date-only when it has no time of day; a folded YAML scalar loses its trailing newline. */
+function scalar(member: Member, value: unknown): unknown {
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    const iso = value.toISOString();
+    return iso.endsWith('T00:00:00.000Z') ? iso.slice(0, 10) : iso;
+  }
+  return typeof value === 'string' && (member.scalar === 'string' || member.scalar === 'Text') ? value.trim() : value;
 }

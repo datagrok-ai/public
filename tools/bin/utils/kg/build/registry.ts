@@ -3,6 +3,8 @@ import {TypeSystem} from '../types';
 import {HomeSet} from '../homes';
 import {Emitter} from './emitter';
 import {homesExtractor} from './extract/homes';
+import {packagesExtractor} from './extract/ts/packages';
+import {functionsExtractor} from './extract/ts/functions';
 
 export type Mode = 'full' | 'public';
 
@@ -24,7 +26,7 @@ export interface Extractor {
   run(ctx: BuildContext, emitter: Emitter): void | Promise<void>;
 }
 
-export const EXTRACTORS: Extractor[] = [homesExtractor];
+export const EXTRACTORS: Extractor[] = [homesExtractor, packagesExtractor, functionsExtractor];
 
 /** The extractors for [mode], narrowed by `--only`; names that match nothing are returned for the caller to refuse. */
 export function selectExtractors(mode: Mode, only?: string[]): {selected: Extractor[], unknown: string[]} {

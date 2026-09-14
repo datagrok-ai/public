@@ -1,0 +1,8 @@
+type: changes
+extends: evidences
+from: ChangelogEntry
+to: Feature
+derived_by: [annotation, llm]
+description: A changelog bullet records a change to a feature, from `~id` mentions or the ticket it names.
+properties:
+  kind?:         "'added' | 'fixed' | 'improved' | 'removed'"

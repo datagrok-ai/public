@@ -1,0 +1,9 @@
+{
+  "name": "@datagrok-libraries/utils",
+  "version": "4.7.9",
+  "description": "Common utilities",
+  "dependencies": {
+    "datagrok-api": "^1.27.7",
+    "rxjs": "^6.5.5"
+  }
+}

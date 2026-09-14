@@ -1,0 +1,7 @@
+type: extends
+was: ExtendsClass
+from: Declaration
+to: Declaration
+cardinality: many                    # one for classes; interfaces may extend several
+derived_by: [ast]
+description: Class or interface inheritance.

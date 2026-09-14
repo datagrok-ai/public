@@ -1,0 +1,5 @@
+type: deploys
+from: Job
+to: Environment
+derived_by: [annotation]
+description: A pipeline deploys to an environment.

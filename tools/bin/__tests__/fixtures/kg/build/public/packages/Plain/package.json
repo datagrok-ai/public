@@ -1,0 +1,6 @@
+{
+  "name": "@datagrok/plain",
+  "version": "0.1.0",
+  "description": "A package without package.g.ts.",
+  "dependencies": {"datagrok-api": "^1.27.7"}
+}

@@ -1,0 +1,9 @@
+type: depends-on
+was: DependsOn
+from: Package | Library
+to: Package | Library
+derived_by: [annotation, registry]
+description: A package.json dependency between packages and libraries.
+properties:
+  kind:          "'runtime' | 'dev' | 'peer' | 'optional'"
+  range?:        string

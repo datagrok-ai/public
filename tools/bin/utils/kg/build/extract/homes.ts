@@ -22,6 +22,7 @@ export const homesExtractor: Extractor = {
     const layer = new HomeLayer(ctx.system, ctx.repoRoot, homes, emitter);
     for (const page of homes.pages) layer.emitPage(page);
     for (const home of homes.homes) layer.emitHome(home);
+    for (const e of homes.errors) emitter.problem('home_issues', `${e.file}${e.line ? `:${e.line}` : ''}: ${e.code}: ${e.message}`);
     if (homes.errors.length) emitter.source('homes', 'partial');
   },
 };
@@ -52,7 +53,7 @@ class HomeLayer {
       if (value === null || key === 'feature' || key === 'id' || key === 'type' || key === 'aliases') continue;
       const member = type.members[key];
       if (!member || (isHomeFileMember(member) && !home.yaml)) continue;
-      row[key] = member.kind === 'ref' ? this.resolveMember(value, member) : value;
+      row[key] = member.kind === 'ref' ? this.resolveMember(value, member, `${home.file}: ${key}`) : value;
     }
     for (const member of Object.values(type.members))
       if (isHomeFileMember(member) && !home.yaml) row[member.name] = home.file;
@@ -104,7 +105,8 @@ class HomeLayer {
 
   private emitEdge(subject: Subject, edge: EdgeType, subjectSide: 'from' | 'to', target: string, props: Record<string, unknown>): void {
     const otherSide = subjectSide === 'from' ? 'to' : 'from';
-    const other = this.resolve(target, edge[otherSide]);
+    const other = this.resolve(target, edge[otherSide], `${subject.file}: ${edge.key ?? edge.name}`);
+    if (!other) return;
     this.stubFor(other);
     const [from, to] = subjectSide === 'from' ? [subject.id, other] : [other, subject.id];
     this.emitter.edge({type: edge.name, from, to, derived_by: 'annotation', confidence: 1, evidence: [subject.file], ...props});
@@ -169,13 +171,18 @@ class HomeLayer {
     return [`${p}.md`, `${p}.mdx`, `${p}/index.md`].find((a) => fs.existsSync(path.join(this.repoRoot, a))) ?? p;
   }
 
-  private resolveMember(value: unknown, member: Member): unknown {
-    if (member.list) return (Array.isArray(value) ? value : [value]).map((v) => typeof v === 'string' ? this.resolve(v, member.refs!) : v);
-    return typeof value === 'string' ? this.resolve(value, member.refs!) : value;
+  private resolveMember(value: unknown, member: Member, where: string): unknown {
+    const one = (v: unknown) => typeof v === 'string' ? this.resolve(v, member.refs!, where) : v;
+    if (member.list) return (Array.isArray(value) ? value : [value]).map(one).filter((v) => v !== undefined);
+    return one(value);
   }
 
-  /** The canonical id of a reference: aliases resolve to the home's id, a bare id gets the prefix of the type it lands in. */
-  private resolve(value: string, expected: string[]): string {
+  /**
+   * The canonical id of a reference. An alias resolves to the home's id. A prefixed id is exactly its prefix's type. A bare
+   * id is the prefix-less type when the expected union admits one (a feature); otherwise it takes the single prefixed
+   * candidate, or the one that has a home, and with several candidates and no home it is ambiguous: no edge, a problem.
+   */
+  private resolve(value: string, expected: string[], where: string): string | undefined {
     const raw = value.trim().replace(/^~/, '');
     if (JIRA_KEY.test(raw) || /^#\d+$/.test(raw)) return ticketId(raw);
     if (PREFIXED_ID.test(raw)) {
@@ -184,8 +191,13 @@ class HomeLayer {
     }
     if (SCHEMED_ID.test(raw)) return raw;
     const {id} = splitRefAnchor(raw);
-    const candidates = [...new Set(concreteAuthored(this.system, expected).map((t) => t.prefix ? `${t.prefix}:${id}` : id))];
-    return this.lookup(candidates) ?? candidates[0] ?? id;
+    const concrete = concreteAuthored(this.system, expected);
+    if (concrete.some((t) => !t.prefix)) return this.lookup([id]) ?? id;
+    const candidates = [...new Set(concrete.map((t) => `${t.prefix}:${id}`))];
+    const found = this.lookup(candidates);
+    if (found || candidates.length === 1) return found ?? candidates[0];
+    this.emitter.problem('ambiguous_refs', `${where}: '${value}' could be ${candidates.join(' or ')}; write the prefix`);
+    return undefined;
   }
 
   private lookup(candidates: string[]): string | undefined {
@@ -224,7 +236,7 @@ function repoPath(p: string): string {
   return repo ? `${repo[1]}/${repo[2]}` : p.trim();
 }
 
-function countLines(file: string): number {
+export function countLines(file: string): number {
   const buffer = fs.readFileSync(file);
   if (!buffer.length) return 0;
   let n = 0;

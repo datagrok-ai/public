@@ -1,0 +1,9 @@
+type: affects
+was: Affects
+from: Ticket | Report
+to: Feature
+derived_by: [external, annotation, llm]
+description: >
+  A ticket or error report concerns a feature: from the Jira Feature field once it
+  exists, from `~id` in the text, or from a component and stack-frame heuristic
+  with confidence below one.

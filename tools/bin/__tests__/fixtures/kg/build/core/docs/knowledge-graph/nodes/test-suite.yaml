@@ -1,0 +1,10 @@
+type: test-suite
+extends: artifact
+description: >
+  A grouping of tests as the framework sees it: a DG category, a Playwright folder or
+  config, a Dart test file or test.all aggregate, a Java test class. Tests reach it
+  through in-suite.
+properties:
+  framework:     "'dg' | 'playwright' | 'bdd' | 'dart' | 'junit' | 'jest' | 'vitest'"
+  path?:         Path
+  package?:      Package

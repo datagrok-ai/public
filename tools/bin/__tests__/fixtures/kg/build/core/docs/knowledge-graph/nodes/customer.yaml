@@ -1,0 +1,17 @@
+type: customer
+authored: true
+extends: actor
+prefix: Cust
+was: Client
+description: >
+  An organization we work with: customer, partner, prospect or evaluation. One node
+  per legal entity. Seeded from the Jira Client field and the backlog customer
+  aliases; stands reach it through serves.
+home: core/docs/knowledge-graph/internal/customers/<name>.yaml
+properties:
+  relationship:  "'customer' | 'partner' | 'prospect' | 'evaluation'"
+  industry?:     "'pharma' | 'biotech' | 'agro' | 'chem' | 'cro' | 'academic' | 'other'"
+  jira_client?:  string                 # option value of the Jira Client field
+  labels?:       string[]               # backlog labels that map to this customer
+  primary_contact?: CustomerContact
+  customer_since?: Date

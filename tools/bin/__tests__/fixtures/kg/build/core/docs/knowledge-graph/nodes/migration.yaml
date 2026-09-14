@@ -1,0 +1,7 @@
+type: migration
+extends: component
+description: A database migration, SQL under server/db/db_up or a Dart @DbMigration class.
+properties:
+  language:      "'sql' | 'dart'"
+  path:          Path
+  order?:        number

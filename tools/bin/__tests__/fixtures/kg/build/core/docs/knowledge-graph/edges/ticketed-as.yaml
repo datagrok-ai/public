@@ -1,0 +1,6 @@
+type: ticketed-as
+from: Report
+to: Ticket
+cardinality: one
+derived_by: [external]
+description: An error report was promoted to a ticket.

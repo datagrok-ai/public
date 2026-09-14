@@ -1,0 +1,6 @@
+type: implements
+was: ImplementsInterface
+from: Declaration
+to: Declaration
+derived_by: [ast]
+description: Interface implementation, or a Dart mixin application.

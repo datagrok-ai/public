@@ -1,0 +1,10 @@
+type: participates-in
+extends: touches
+from: Component
+to: Feature
+derived_by: [annotation]
+description: >
+  A component that a cross-cutting feature's home doc cites, or that carries an
+  inline `// ~id` marker, without being owned by that feature. Many per component.
+properties:
+  role?:         string

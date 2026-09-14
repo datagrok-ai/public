@@ -1,0 +1,6 @@
+type: touches
+abstract: true
+from: Feature | Component
+to: Feature | Component
+derived_by: [annotation, filesystem, llm]
+description: Base of the edges that connect code to the feature tree, so "all code behind this feature" is one query.

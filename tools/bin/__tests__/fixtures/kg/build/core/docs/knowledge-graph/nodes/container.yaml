@@ -1,0 +1,10 @@
+type: container
+extends: component
+was: DockerContainer
+description: >
+  A Docker container declared by a Dockerfile under a package's dockerfiles/ folder and
+  started by the platform for that package.
+properties:
+  language:      "'other'"
+  path:          Path
+  base?:         Image

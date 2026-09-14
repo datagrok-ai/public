@@ -4,6 +4,7 @@
 
 * grok kg: Added check and gen for the knowledge graph type files and home documents
 * grok kg: Added build (pipeline core and home-document layer) writing JSONL and a manifest under .kg/
+* grok kg: build extracts packages, libraries, registered functions, scripts, queries, connections and semantic types from public/
 
 ## 6.5.10 (2026-09-11)
 

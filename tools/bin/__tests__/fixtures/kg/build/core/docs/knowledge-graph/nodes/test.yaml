@@ -1,0 +1,15 @@
+type: test
+extends: artifact
+was: Test
+description: >
+  One automated test: a DG test() in a package, a Playwright test, a Dart test(), a
+  JUnit connector test, a jest or vitest case. Id test:<framework>:<path>#<name>.
+properties:
+  path:          Path
+  framework:     "'dg' | 'playwright' | 'bdd' | 'dart' | 'junit' | 'jest' | 'vitest'"
+  level:         "'unit' | 'api' | 'e2e' | 'perf' | 'stress'"
+  category?:     string
+  skipped?:      boolean = false
+  skip_reason?:  string
+  benchmark?:    boolean = false
+  tags?:         string[]
