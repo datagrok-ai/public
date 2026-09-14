@@ -12,7 +12,7 @@
     "@datagrok-libraries/test": "^1.1.0"
   },
   "devDependencies": {
-    "datagrok-tools": "^5.1.5",
+    "datagrok-tools": "^6.7.0",
     "webpack": "^5.95.0",
     "webpack-cli": "^5.1.4",
     "ts-loader": "latest",

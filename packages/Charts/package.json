@@ -67,7 +67,7 @@
     "chokidar": "^3.5.2",
     "css-loader": "^5.2.7",
     "d3-cloud": "^1.2.5",
-    "datagrok-tools": "^5.0.0",
+    "datagrok-tools": "^6.7.0",
     "eslint": "^8.16.0",
     "eslint-config-google": "^0.14.0",
     "style-loader": "^2.0.0",

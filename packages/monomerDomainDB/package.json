@@ -21,7 +21,7 @@
     "@typescript-eslint/parser": "^8.39.0",
     "eslint": "^8.57.1",
     "eslint-config-google": "^0.14.0",
-    "datagrok-tools": "^5.1.5",
+    "datagrok-tools": "^6.7.0",
     "ts-loader": "^9.5.4",
     "typescript": "^5.9.3",
     "webpack": "^5.95.0",
