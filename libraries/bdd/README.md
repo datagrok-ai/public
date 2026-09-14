@@ -267,7 +267,9 @@ The `viewers` tier drives viewers the way the platform sees them:
   area's own ink and repaint, colours in an area (by hue, a shade of anti-aliasing allowed), two
   areas alike or different, the selection highlight (with a margin the selection warrants), the
   value range and the colour scale against before.
-- **The legend** (read from its `data-legend-*` attributes), the row tooltip, viewer events,
+- **The legend** (read from its `data-legend-*` attributes: its mode — docked, in a corner,
+  collapsed to the mini icon, placed nowhere — its slot, its items and their colors, its size
+  against before after a splitter drag, whether its items are drawn as structures or as text), the row tooltip, viewer events,
   layouts saved and loaded, sizes held and restored, and the floors: `no errors should have been
   logged`, `no error or warning balloon should have been shown`.
 - **`widgets.ts`** holds the steps first written for one viewer that a second wanted: the viewer's
