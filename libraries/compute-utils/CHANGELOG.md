@@ -2,6 +2,7 @@
 
 ## v.next
 
+* RTD: Added `getMatchedPositions`/`getBasePosition` controller methods exposing matched node positions to link handlers
 * HistoricalRunsDelete.awaitDelete: dialog helper resolving null on dismissal (mirrors awaitMetadata)
 * Excel export detaches the render viewer (and its cloned dataframe) after the screenshot
 * RTD: Fixed a link handler error leaving the link permanently running and deadlocking all tree mutations

@@ -52,13 +52,21 @@ servers:
     key: admin
   dev:
     url: https://dev.datagrok.ai/api
-    key: <developer-key>
+    keyFile: /home/me/.grok/keys/dev.json
+    login: me
 ```
 
-- `grok config add --alias <name> --server <url> --key <key>` writes a new entry.
+- `grok login <server>` is the way to add a server: it registers a keypair and writes the
+  entry for you. The private key stays in `~/.grok/keys/<alias>.json`.
+  See [keypair authentication](../help/govern/access-control/keypair-authentication.md).
+- `grok config add --alias <name> --server <url> [--key <developer-key>]` writes an entry by
+  hand. The developer key is deprecated; omit it when the server is reached with a keypair.
 - Add `--default` to make it the active server.
+- In CI, `GROK_PRIVATE_KEY` (the private JWK, raw or base64) overrides the config file.
 - Every `grok s ...` command accepts `--host <alias-or-url>` to override the default. The URL
   is the API base (`https://host/api`, or `http://host:8082` for a bare Datlas).
+- `grok s token` prints a session token for the target server — what a shell script needs
+  when it has to call the API with `curl` itself.
 
 ## Entity operations
 

@@ -1,9 +1,10 @@
 import * as DG from 'datagrok-api/dg';
 import {TreeNode} from '../data/BaseTree';
-import {IRuntimeLinkController, IRuntimeMetaController, IRuntimePipelineMutationController, INameSelectorController, IRuntimeValidatorController, IFuncallActionController, IRuntimeReturnController, IRuntimePipelineValidatorController, TemplateInfo, TemplateId} from '../RuntimeControllers';
+import {IRuntimeLinkController, IRuntimeMetaController, IRuntimePipelineMutationController, INameSelectorController, IRuntimeValidatorController, IFuncallActionController, IRuntimeReturnController, IRuntimePipelineValidatorController, TemplateInfo, TemplateId, MatchedNodeInfo} from '../RuntimeControllers';
 import {GranularMutationOp, RestrictionType, StepHandle, ValidationResult} from '../data/common-types';
 import {StateTreeNode} from './StateTreeNodes';
 import {ScopeInfo} from './Link';
+import {MatchedIO, MatchedNodePaths} from './link-matching';
 import {PipelineInstanceConfig, PipelineInstanceConfigInput, PipelineOutline, normalizePipelineInstanceConfig} from '../config/PipelineInstance';
 import {NodePath} from '../data/BaseTree';
 
@@ -18,6 +19,9 @@ export interface ControllerBaseArgs {
   scopeInfo?: ScopeInfo;
   inputTemplates?: TemplateInfo[];
   outputTemplates?: TemplateInfo[];
+  matchedInputs?: Record<string, MatchedNodePaths>;
+  matchedOutputs?: Record<string, MatchedNodePaths>;
+  basePath?: MatchedIO['path'];
 }
 
 export interface ValidatorControllerArgs extends ControllerBaseArgs {
@@ -34,6 +38,10 @@ export interface MutationControllerArgs extends ControllerBaseArgs {
   outputNodes: Record<string, {node: TreeNode<StateTreeNode>, path: NodePath}[]>;
 }
 
+function toMatchedNodeInfo(path: MatchedIO['path'], ioName?: string): MatchedNodeInfo {
+  return {path, position: path.length ? path[path.length - 1].idx : -1, ioName};
+}
+
 export class ControllerBase<T> {
   private isActive = true;
 
@@ -46,6 +54,10 @@ export class ControllerBase<T> {
   public id: string;
   public scopeInfo?: ScopeInfo;
 
+  private matchedInputs: Record<string, MatchedNodePaths>;
+  private matchedOutputs: Record<string, MatchedNodePaths>;
+  private basePath?: MatchedIO['path'];
+
   constructor(args: ControllerBaseArgs) {
     this.inputs = args.inputs;
     this.inputsSet = args.inputsSet;
@@ -53,6 +65,9 @@ export class ControllerBase<T> {
     this.callInputs = args.callInputs;
     this.id = args.id;
     this.scopeInfo = args.scopeInfo;
+    this.matchedInputs = args.matchedInputs ?? {};
+    this.matchedOutputs = args.matchedOutputs ?? {};
+    this.basePath = args.basePath;
   }
 
   getAll<T = any>(name: string): T[] {
@@ -97,6 +112,19 @@ export class ControllerBase<T> {
 
   getMatchedOutputs() {
     return this.outputsSet;
+  }
+
+  getMatchedPositions(name: string): MatchedNodeInfo[] {
+    this.checkIsClosed();
+    const matches = this.matchedInputs[name] ?? this.matchedOutputs[name];
+    if (matches == null)
+      throw new Error(`Handler for Link ${this.id} is trying to get positions of an unknown io ${name}`);
+    return matches.map((m) => toMatchedNodeInfo(m.path, m.ioName));
+  }
+
+  getBasePosition(): MatchedNodeInfo | undefined {
+    this.checkIsClosed();
+    return this.basePath ? toMatchedNodeInfo(this.basePath) : undefined;
   }
 
   close() {

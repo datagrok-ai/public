@@ -1,6 +1,14 @@
 # Datagrok-tools changelog
 
-## 6.6.0 (WIP)
+## 6.7.0 (WIP)
+
+* `grok login <server>` — keypair authentication, the replacement for the developer key. Generates an EC P-256 key, registers only its public half (in the browser, or with a one-shot `--code` from Profile > Public keys...), and keeps the private half in `~/.grok/keys/<alias>.json`. Logging in signs a server-issued nonce, so nothing reusable crosses the wire; keys can carry an expiry (`--expires`) and are revoked one at a time. `grok publish`, `grok test`, `grok stresstest` and `grok s` use it automatically whenever one is configured for the server, and fall back to the developer key otherwise. For CI, `GROK_PRIVATE_KEY` holds the private JWK (raw or base64) instead of a config file. Needs a server from 1.28 on; see https://datagrok.ai/help/govern/access-control/keypair-authentication
+* `grok s token` — prints a session token for the configured server, so shell scripts stop curling `/users/login/dev` with a long-lived key.
+* `grok config add` — `--key` is now optional: a server reached with a keypair has no developer key to record.
+* Against a server older than 1.28 — which has no keypair endpoints and refuses their paths before routing — the CLI names the version needed instead of reporting a bare 401, and falls back to the developer key when one is still configured for that server.
+* `grok login` reports its progress step by step (spinner on a terminal, one line per step in a log), including while it waits for the browser approval.
+
+## 6.6.0 (2026-09-13)
 
 * The developer key is sent in the `Authorization` header (`Dev <key>`) instead of the URL path. `POST /users/login/dev/<key>` and `POST /packages/dev/<key>/<package>` put a long-lived credential into every nginx access log, proxy log and shell history along the way; the key-less routes (`/users/login/dev`, `/packages/dev/<package>`) take it as a header. Servers that predate the header form answer 404/401 and the old URL is used instead, so publishing to an older server still works - but a server from 1.28 on rejects the URL form and asks for datagrok-tools 6.6.0 or later.
 
