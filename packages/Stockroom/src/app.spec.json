@@ -1,0 +1,26 @@
+{
+  "$schema": "dg-ui/1",
+  "root": {
+    "tag": "u2-panel",
+    "name": "app",
+    "children": [
+      {"tag": "u2-domain-source", "name": "substances", "props": {"table": "stockroom.substance", "pageSize": 50}},
+      {"tag": "u2-splitter", "name": "layout", "props": {"direction": "horizontal", "sizes": [0.35, 0.65]}, "children": [
+        {"tag": "u2-panel", "name": "left", "children": [
+          {"tag": "u2-domain-search", "name": "search", "bind": {"source": "$.substances.source"}, "props": {"placeholder": "Name or CAS"}},
+          {"tag": "u2-domain-filters", "name": "filters", "bind": {"source": "$.substances.source"}},
+          {"tag": "u2-domain-list", "name": "list", "bind": {"source": "$.substances.source"}, "props": {"mode": "cards"}}
+        ]},
+        {"tag": "u2-panel", "name": "right", "children": [
+          {"tag": "u2-domain-form", "name": "form", "bind": {"source": "$.substances.source"}},
+          {"tag": "u2-domain-children", "name": "children", "bind": {"source": "$.substances.source"},
+            "props": {"tables": ["container", "sds_document"], "mode": "list"}},
+          {"tag": "u2-domain-history", "name": "history", "bind": {"source": "$.substances.source"}},
+          {"tag": "u2-button", "name": "newButton", "props": {"text": "New"}, "on": {"click": "cmd:substances.newRow"}},
+          {"tag": "u2-button", "name": "saveButton", "props": {"text": "Save", "primary": true}, "on": {"click": "cmd:substances.save"}},
+          {"tag": "u2-button", "name": "discardButton", "props": {"text": "Discard"}, "on": {"click": "cmd:substances.discard"}}
+        ]}
+      ]}
+    ]
+  }
+}

@@ -2,6 +2,8 @@
 
 ## 1.10.3 (WIP)
 
+Domains: `@datagrok-libraries/domain-ui` retired — the lockfile no longer names it (the dependency itself left with the `Dapi: domain widgets` / `Dapi: domain app framework` categories)
+Domains: new `Dapi: domain session` (8 cases — draft ids, two editors in one transaction, 409 retry/dismiss, validation in the second editor, `confirmDiscardChanges(session)`, `$` escape) and `Dapi: domain search` (4 cases) categories; `Dapi: domain access` gained the custom-permission case; `Dapi: domain frame editor` re-targeted from `DomainGrid` to `Grid.attachEditor` / `DomainObjectHandler.decorateGrid` (+ a `detachEditor` case); `Dapi: domain widgets` and `Dapi: domain app framework` removed with the domain-ui dependency; fixture schema 1.4.0 (`item.name` searchable, `item.permissions: ["approve"]`)
 FilterGroup: layout round-trip keeps two filters on one column (histogram and categorical on `age`)
 Shell: `shell/shell.ts` pins `grok.shell.autostartsCompleted` (a promise that resolves)
 BitArray: new `bitset/bit-array.ts` category for `DG.BitArray` and its `BitSet` bridges; the `BitSet` category is registered again

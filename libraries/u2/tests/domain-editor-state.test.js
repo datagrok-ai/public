@@ -1,8 +1,8 @@
 /* `EditorEditState` (WO-8) over a fake js-api editor and the DataFrame double: keys map onto row
-   indices (the id cell, `~row:<index>` for a draft), every write reaches the editor, the signals
-   follow the editor's observables, validity is the first blocking error on a live row, and
-   dispose detaches. The real editor runs only in the platform — the U2Demo `U2: domain source`
-   category covers that. */
+   indices (the id cell — a draft's `~new:` id the editor stamps included), every write reaches
+   the editor, the signals follow the editor's observables, validity is the first blocking error
+   on a live row, and dispose detaches. The real editor runs only in the platform — the U2Demo
+   `U2: domain source` category covers that. */
 
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
@@ -34,7 +34,7 @@ function fakeEditor(rows) {
   const editor = {
     table: 'grit.issue',
     isDirty: false, changeCount: 0, isSaving: false, detached: 0, calls: [],
-    onChanged: new Stream(), onDirtyChanged: new Stream(), onSavingChanged: new Stream(),
+    onChanged: new Stream(), onDirtyChanged: new Stream(), onSavingChanged: new Stream(), onSaved: new Stream(),
     get dataFrame() { return df; },
     stateOf: (row) => states[row] ?? '',
     errorsOf: (row) => errors[row] ?? {},
@@ -50,7 +50,7 @@ function fakeEditor(rows) {
     addRow(values, options) {
       if (this.isSaving)
         return -1;
-      df.dart.rows.push({id: null, ...values});
+      df.dart.rows.push({...values, id: Rows.draftId()});
       df.onRowsAdded.fire();
       states.push('new');
       errors.push({});
@@ -95,26 +95,32 @@ scoped('keys are the id cells; writes, deletes and state reads go to the editor 
   assert.equal(await state.save(), true);
   state.dispose();
   assert.equal(editor.detached, 1);
-  assert.equal(editor.onChanged.count + editor.onDirtyChanged.count + editor.onSavingChanged.count, 0,
-    'dispose releases the editor subscriptions');
+  assert.equal(editor.onChanged.count + editor.onDirtyChanged.count + editor.onSavingChanged.count +
+    editor.onSaved.count, 0, 'dispose releases the editor subscriptions');
   assert.equal(editor.dataFrame.liveSubscriptions(), 0, 'and the frame ones');
 });
 
-scoped('a draft is keyed by its index until it has an id; the key is what `newRow` answers', async () => {
+scoped('a draft is keyed by the ~new: id the editor stamps; onSaved carries the assigned ids', async () => {
   const {df, editor} = fakeEditor(ROWS);
   const state = new EditorEditState(editor);
   const key = state.newRow({title: 'Draft'}, {pristine: true});
-  assert.equal(key, '~row:2');
+  assert.equal(Rows.isDraft(key), true);
   assert.equal(state.indexOf(key), 2);
   assert.equal(state.changeCount.value, 0, 'pristine');
   assert.equal(state.isChanged(key, 'title'), true, 'every cell of a new row is a change');
   state.setValue(key, 'title', 'Draft 2');
   assert.equal(df.get('title', 2), 'Draft 2');
   assert.equal(FrameRows.keyOf(df, 0), 'i1');
-  assert.equal(FrameRows.keyOf(df, 2), Rows.draftKey(2));
+  assert.equal(FrameRows.keyOf(df, 2), key);
+  const heard = [];
+  const sub = state.onSaved.subscribe((e) => heard.push(e));
   df.set('id', 2, 'i9');
+  editor.onSaved.fire({assigned: {[key]: 'i9'}});
+  assert.deepEqual(heard, [{assigned: {[key]: 'i9'}}]);
+  sub.unsubscribe();
   assert.equal(state.indexOf('i9'), 2, 'the index follows the frame\'s cells');
-  assert.equal(state.indexOf('~row:9'), -1, 'past the frame');
+  assert.equal(state.indexOf(key), -1, 'the draft id left with the cell');
+  assert.equal(state.indexOf('~row:9'), -1, 'no index-keyed path');
   editor.isSaving = true;
   assert.throws(() => state.newRow({}), /being saved/);
   state.dispose();

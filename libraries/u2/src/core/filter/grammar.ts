@@ -44,6 +44,8 @@ const NEGATED: Record<string, string> = {
   '~*': '!~*', '!~*': '~*', 'is': 'is not', 'is not': 'is',
 };
 const LITERALS = new Set(['true', 'false', 'null', 'now', '@current']);
+/** The operators a bare column name may stand on the value side of: `end_date >= start_date`. */
+const COMPARISONS = new Set(['=', '!=', '<', '<=', '>', '>=']);
 const WORD_OPERATORS = new Set(['like', 'starts', 'ends', 'matches', 'fuzzy', 'in', 'between']);
 const SYMBOL_OPERATORS = new Set(['=', '!=', '>', '>=', '<', '<=', '~', '~=', '!~', '!like', '!matches', '!in']);
 const SPELLINGS: Record<string, string> = {'~': 'matches', '!~': '!matches', '~=': 'fuzzy', '!in': 'not in'};
@@ -52,6 +54,8 @@ const CONNECTORS = new Set(['and', 'or', '&&', '&', '||', '|']);
 const node = (property: string, operator: string, value: unknown): DomainCondition => ({property, operator, value});
 export const isCondition = (n: DomainConditionNode): n is DomainCondition =>
   typeof n === 'object' && !Array.isArray(n);
+/** A `{$column}` or `{$param}` value — never interpolated into a pattern, never typed. */
+const isPlaceholder = (v: unknown): boolean => typeof v === 'object' && v !== null && !(v instanceof Date);
 const dartDouble = (n: number): string => Number.isInteger(n) && Math.abs(n) < 1e21 ? `${n}.0` : String(n);
 
 /** `[{fuzzy}, 'or', {like}]` on one property, or null. */
@@ -327,19 +331,43 @@ class Reader {
     if (value === undefined)
       return undefined;
     return [{property, operator: 'fuzzy', threshold, value}, 'or',
-      node(property, 'like', `%${this.interpolate(value)}%`)];
+      node(property, 'like', isPlaceholder(value) ? value : `%${this.interpolate(value)}%`)];
   }
 
   operatorCondition(property: string): DomainConditionNode | undefined {
     const operator = this.operator();
     if (operator === undefined)
       return this.fail('an operator');
+    const save = this.pos;
     const value = this.value();
-    return value === undefined ? undefined : this.normalize(property, operator, value);
+    if (value !== undefined)
+      return this.normalize(property, operator, value);
+    this.pos = save;
+    if (!COMPARISONS.has(operator))
+      return undefined;
+    const column = this.columnRef();
+    return column === undefined ? undefined : node(property, operator, {$column: column});
+  }
+
+  /** A bare single-segment name on the value side — not a literal, not dotted, not a call. */
+  columnRef(): string | undefined {
+    this.ws();
+    const start = this.pos;
+    if (!LETTER.test(this.ch()))
+      return undefined;
+    while (WORD.test(this.ch()))
+      this.pos++;
+    const name = this.text.slice(start, this.pos);
+    if (LITERALS.has(name) || this.ch() === '.' || this.ch() === '(') {
+      this.pos = start;
+      return undefined;
+    }
+    this.ws();
+    return name;
   }
 
   /** The Dart `condition()` map: span flip, `like`/`starts`/`ends`/`!like` shapes, regex and
-   * fuzzy spellings. */
+   * fuzzy spellings; a placeholder value keeps the operator's spelling and is never shaped. */
   normalize(property: string, operator: string, value: unknown): DomainConditionNode {
     const span = value instanceof Date ? spanOf(value) : undefined;
     // Dart flips a span only when its date lands after now + 1 s, so `0h` and `-0h` stay put
@@ -347,16 +375,18 @@ class Reader {
       value = markSpan(resolveSpan(`-${span}`, this.now), `-${span}`);
       operator = FLIPPED[operator] ?? operator;
     }
-    const text = this.interpolate(value);
+    const raw = isPlaceholder(value);
+    const text = raw ? '' : this.interpolate(value);
+    const pattern = (shaped: string): unknown => raw ? value : shaped;
     switch (operator) {
-      case 'like': return node(property, 'like', `%${text}%`);
-      case 'starts': return node(property, 'like', `${text}%`);
-      case 'ends': return node(property, 'like', `%${text}`);
-      case '!like': return node(property, 'not like', `%${text}%`);
+      case 'like': return node(property, 'like', pattern(`%${text}%`));
+      case 'starts': return node(property, 'like', pattern(`${text}%`));
+      case 'ends': return node(property, 'like', pattern(`%${text}`));
+      case '!like': return node(property, 'not like', pattern(`%${text}%`));
       case 'matches': case '~': return node(property, '~*', value);
       case '!matches': case '!~': return node(property, '!~*', value);
       case '~=':
-        return [{property, operator: 'fuzzy', threshold: null, value}, 'or', node(property, 'like', `%${text}%`)];
+        return [{property, operator: 'fuzzy', threshold: null, value}, 'or', node(property, 'like', pattern(`%${text}%`))];
       default: return node(property, operator, value);
     }
   }
@@ -394,7 +424,8 @@ class Reader {
     return [node(property, '>=', low), 'and', node(property, '<=', high)];
   }
 
-  /** `true | false | null | @current | timeSpan | numberSpan | number | string`, in that order. */
+  /** `true | false | null | @current | timeSpan | numberSpan | number | string | $param`, in that
+   * order. */
   value(): unknown {
     this.ws();
     const start = this.pos;
@@ -410,6 +441,14 @@ class Reader {
       return done(null);
     if (this.literal('@current'))
       return done('@current');
+    if (this.literal('$')) {
+      const from = this.pos;
+      if (!LETTER.test(this.ch()))
+        return this.fail('a parameter name', from);
+      while (WORD.test(this.ch()))
+        this.pos++;
+      return done({$param: this.text.slice(from, this.pos)});
+    }
     const m = NUMBER.exec(this.text.slice(start));
     if (m) {
       const unit = this.text[start + m[0].length] ?? '';

@@ -76,6 +76,22 @@ export class FrameRows implements RowsLike<RowView> {
     this._rebuild();
   }
 
+  /** Every row the writer has pending — new, modified or deleted — whether the frame's filter
+   * shows it or not: the batch is built from the frame, so validation and reference discovery
+   * are about all of it, not about what is on screen. */
+  pending(): RowView[] {
+    const d = this._df.peek();
+    if (d === undefined || d.columns.byName(Rows.STATE) === null)
+      return [];
+    const rows: RowView[] = [];
+    for (let i = 0; i < d.rowCount; i++) {
+      const state = d.get(Rows.STATE, i);
+      if (state === 'new' || state === 'modified' || state === 'deleted')
+        rows.push(this._proxy(this.keyAt(i)!));
+    }
+    return rows;
+  }
+
   /** The row index behind a key, -1 when the frame no longer holds it. */
   indexOf(key: string): number {
     return this._index.get(key) ?? -1;
@@ -87,10 +103,11 @@ export class FrameRows implements RowsLike<RowView> {
     return d === undefined || index < 0 || index >= d.rowCount ? undefined : FrameRows.keyOf(d, index, this._idColumn);
   }
 
-  /** The key of the row at `index` of `df`: its id cell, the draft key while it has none. */
+  /** The key of the row at `index` of `df`: its id cell — a draft's stamped `~new:` id included —
+   * or its index when the frame has no id for it. */
   static keyOf(df: DataFrameLike, index: number, idColumn = 'id'): string {
     const id = df.columns.byName(idColumn) === null ? null : df.get(idColumn, index);
-    return id === null || id === undefined || id === '' ? Rows.draftKey(index) : String(id);
+    return id === null || id === undefined || id === '' ? Rows.unkeyed(index) : String(id);
   }
 
   /** A live row over `reader`: `id` is the key, every other name reads and writes through the

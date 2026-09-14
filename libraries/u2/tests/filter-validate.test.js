@@ -170,3 +170,30 @@ test('pruneInvalid drops the reported nodes and the groups that leaves empty; th
   assert.deepEqual(Filters.pruneInvalid(target, schema, 'dataframe').nodes, [ok1], 'the target counts');
   assert.equal(Filters.pruneInvalid(target, schema), target);
 });
+
+test('column refs: same kind or both numeric; unknown, dotted, mismatched or under like → invalid-value; params pass', () => {
+  Filters.resetIds('');
+  assert.deepEqual(problems([Filters.cond('age', '<', {column: 'mw'}), Filters.cond('created', '>=', {column: 'created'}),
+    Filters.cond('name', '=', {column: 'status'}), Filters.cond('age', '=', {param: 'a'}),
+    Filters.cond('name', 'like', {param: 'q'}), Filters.cond('status', 'in', [{param: 'a'}, 'Open'])]), []);
+  const first = (nodes) => problems(nodes).map((p) => [p.code, p.message])[0];
+  assert.deepEqual(first([Filters.cond('age', '=', {column: 'name'})]), ['invalid-value', 'Cannot compare "age" with "name"']);
+  assert.deepEqual(first([Filters.cond('age', '=', {column: 'nope'})]), ['invalid-value', 'Unknown column "nope"']);
+  assert.equal(problems([Filters.cond('age', '=', {column: 'author.login'})])[0].message, 'Unknown column "author.login"');
+  assert.equal(problems([Filters.cond('name', 'like', {column: 'status'})])[0].message,
+    'Operator "like" does not accept a column');
+  assert.deepEqual(codes([Filters.cond('name', 'like', {param: 'q'})], 'dataframe'), [], 'never missing-value');
+});
+
+test('a bare name where a value was meant says how to spell it: a ref suggests the path, a text column quoting', () => {
+  Filters.resetIds('');
+  const message = (nodes) => problems(nodes)[0].message;
+  assert.equal(message([Filters.cond('author', '=', {column: 'High'})]),
+    'Unknown column "High" — did you mean `author.name = "High"`?');
+  assert.equal(message([Filters.cond('status', '=', {column: 'Open'})]),
+    'Unknown column "Open" — quote a text value', 'a choice column: the value wanted quotes');
+  assert.equal(message([Filters.cond('name', '=', {column: 'Balance'})]),
+    'Unknown column "Balance" — quote a text value');
+  assert.equal(message([Filters.cond('age', '=', {column: 'High'})]), 'Unknown column "High"',
+    'a number never meant a quoted value');
+});

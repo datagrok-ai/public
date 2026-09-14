@@ -225,3 +225,25 @@ test('completionContext: connector after a value, a tag or ")"', () => {
   assert.equal(ctx('age > 5 not hidden |').expect, 'connector');
   assert.equal(Filters.completionContext('name = 1 not ', 13, schema).expect, 'property');
 });
+
+test('column references and $params: the two phase-2 terms, their refusals and canonical strings', () => {
+  const tree = (text) => Filters.parseTree(text).tree;
+  assert.deepEqual(tree('end_date >= start_date'), [{property: 'end_date', operator: '>=', value: {$column: 'start_date'}}]);
+  assert.deepEqual(tree('a = b'), [{property: 'a', operator: '=', value: {$column: 'b'}}]);
+  assert.deepEqual(tree('country_id = $country_id'), [{property: 'country_id', operator: '=', value: {$param: 'country_id'}}]);
+  assert.deepEqual(tree('x in ($a, 5)'), [{property: 'x', operator: '=', value: [{$param: 'a'}, 5]}]);
+  assert.deepEqual(tree('name like $q'), [{property: 'name', operator: 'like', value: {$param: 'q'}}], 'kept for the binder');
+  assert.deepEqual(tree('name starts $q'), [{property: 'name', operator: 'like', value: {$param: 'q'}}]);
+  assert.deepEqual(tree('x between $lo and $hi'),
+    [[{property: 'x', operator: '>=', value: {$param: 'lo'}}, 'and', {property: 'x', operator: '<=', value: {$param: 'hi'}}]]);
+  assert.deepEqual(tree('a = true'), [{property: 'a', operator: '=', value: true}], 'a literal is never a column');
+  for (const [text, message] of [['a like b', 'Expected a value'], ['a = b.c', 'Expected a value'],
+    ['a = b(', 'Expected a value'], ['x = $', 'Expected a parameter name'], ['x = $1', 'Expected a parameter name']]) {
+    const {errors} = Filters.parseTree(text);
+    assert.equal(errors.length, 1, text);
+    assert.equal(errors[0].message, message, text);
+  }
+  assert.deepEqual(Filters.parseTree('x = $').errors[0].position, {start: 5, end: 5});
+  for (const canonical of ['end_date >= start_date', 'country_id = $country_id', 'x in ($a, 5)', 'name like $q'])
+    assert.equal(canonicalOf(canonical), canonical);
+});

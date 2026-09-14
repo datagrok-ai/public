@@ -33,7 +33,9 @@ test('schema: columns become properties, system columns first; info from the dec
   assert.equal(byName.id.set, undefined, 'system columns have no setter');
   assert.equal(typeof byName.title.set, 'function');
   assert.deepEqual(issue.info, {nameColumn: 'title', businessKey: ['project_id', 'number'],
-    singularName: 'Issue', pluralName: 'Issues'});
+    singularName: 'Issue', pluralName: 'Issues', searchableColumns: ['title', 'description'],
+    constraints: [{name: 'weight_positive', expr: 'weight >= 0', message: 'Weight is positive'}], refFilters: {},
+    permissions: ['escalate'], childTables: []});
   const project = await backend().table('grit.project');
   assert.equal(project.info.nameColumn, 'name', 'the convention fallback');
 
@@ -89,8 +91,8 @@ test('query withAccess: edit and delete are the table\'s answer, share is null, 
   assert.deepEqual(rows.map((r) => [r['~can_edit'], r['~can_delete'], r['~can_share']]),
     [[true, false, null], [false, false, null], [true, false, false]], 'the server\'s JSON shape off row mode');
   assert.equal('~can_edit' in (await issue.query())[0], false, 'not asked, not answered');
-  assert.deepEqual(await issue.access(), {can: {view: true, insert: false, edit: true, delete: false, share: true},
-    fields: {title: 'editable', number: 'readonly'}});
+  assert.deepEqual(await issue.access(), {can: {escalate: true, view: true, insert: false, edit: true, delete: false, share: true},
+    fields: {title: 'editable', number: 'readonly'}}, 'a declared permission is granted unless the option says otherwise');
 });
 
 test('transaction: insert, update with expectedVersion, delete; results per op', async () => {
@@ -103,7 +105,11 @@ test('transaction: insert, update with expectedVersion, delete; results per op',
   ]);
   assert.match(inserted.id, /^[0-9a-f-]{36}$/);
   assert.equal(inserted.version, 1);
-  assert.deepEqual(updated, {id: 'i2', version: 2});
+  // a write answers with the system columns it stamped: the platform re-reads the row for them
+  assert.equal(typeof inserted.created_on === 'string' && typeof inserted.author_id === 'string', true);
+  assert.equal(updated.id, 'i2');
+  assert.equal(updated.version, 2);
+  assert.equal(typeof updated.updated_on, 'string');
   assert.deepEqual(deleted, {id: 'i3'});
   const rows = await issue.query();
   assert.deepEqual(rows.map((r) => r.title), ['Aspirin', 'Ibuprofen 400', 'New']);
@@ -163,7 +169,7 @@ test('frame: the rows as a MemoryFrame with the writer attached; a page appends 
   bare.dispose();
 });
 
-test('transaction: $ref names an earlier insert, $$ escapes, a forward ref is refused', async () => {
+test('transaction: $ref names an insert anywhere in the batch, $$ escapes, an unknown ref is refused', async () => {
   const be = backend();
   const project = await be.table('grit.project');
   const issue = await be.table('grit.issue');
@@ -175,10 +181,148 @@ test('transaction: $ref names an earlier insert, $$ escapes, a forward ref is re
   ]);
   const rows = await issue.query({filter: `id = "${child.id}"`});
   assert.equal(rows[0].tags[0].length, 36, 'resolved element-wise inside a list');
-  await assert.rejects(issue.transaction([
+
+  const [first, later] = await issue.transaction([
     {op: 'insert', table: 'issue', values: {project_id: '$later', title: 'a'}},
-    {op: 'insert', table: 'issue', ref: 'later', values: {project_id: 'p1', title: 'b'}},
-  ]), (e) => e.code === 'bad-ref' && /forward reference/.test(e.message));
+    {op: 'insert', table: 'project', ref: 'later', values: {key: 'L', name: 'Later'}},
+  ]);
+  assert.equal((await issue.query({filter: `id = "${first.id}"`}))[0].project_id, later.id,
+    'a forward ref runs after the insert it names; results keep the request order');
+  assert.equal((await project.query({filter: 'key = "L"'}))[0].id, later.id);
   await assert.rejects(issue.transaction([{op: 'insert', table: 'issue', values: {project_id: '$nope', title: 'a'}}]),
     (e) => e.code === 'bad-ref' && /unknown reference/i.test(e.message));
+  await assert.rejects(issue.transaction([
+    {op: 'insert', table: 'issue', ref: 'a', values: {project_id: 'p1', title: '$b'}},
+    {op: 'insert', table: 'issue', ref: 'b', values: {project_id: 'p1', title: '$a'}},
+  ]), (e) => e.code === 'bad-ref' && /Operation 0: circular reference among refs "a", "b"/.test(e.message));
+  await assert.rejects(issue.transaction([{op: 'insert', table: 'nope', values: {}}]), (e) => e.code === 'not-found');
+});
+
+test('transaction: any table in one batch, all or nothing across tables; deletes run child-first', async () => {
+  const be = backend();
+  const project = await be.table('grit.project');
+  const issue = await be.table('grit.issue');
+  await assert.rejects(issue.transaction([
+    {op: 'insert', table: 'grit.project', ref: 'p', values: {key: 'N', name: 'New'}},
+    {op: 'insert', table: 'issue', values: {project_id: '$p', title: 'ok'}},
+    {op: 'insert', table: 'issue', values: {project_id: '$p'}},
+  ]), (e) => e.code === 'validation' && /Operation 2/.test(e.message));
+  assert.equal(await project.count(), 2, 'the other table rolled back too');
+  assert.equal(await issue.count(), 3);
+
+  await assert.rejects(project.transaction([{op: 'delete', table: 'project', id: 'p1'}]),
+    (e) => e.code === 'validation' && /referenced by issue.project_id/.test(e.message), 'a referenced row stays');
+  const results = await project.transaction([
+    {op: 'delete', table: 'project', id: 'p2'},
+    {op: 'delete', table: 'grit.issue', id: 'i3'},
+  ]);
+  assert.deepEqual(results, [{id: 'p2'}, {id: 'i3'}], 'parent first as requested, child first as run; request order');
+  assert.equal(await project.count(), 1);
+  assert.equal(issue.history.at(-1).tx_id, project.history.at(-1).tx_id, 'one transaction');
+});
+
+test('search: case-insensitive over the searchable columns, the name column by default; count agrees', async () => {
+  const be = backend();
+  const issue = await be.table('grit.issue');
+  assert.deepEqual(issue.info.searchableColumns, ['title', 'description']);
+  const titles = async (spec) => (await issue.query(spec)).map((r) => r.title);
+  assert.deepEqual(await titles({search: 'PRO'}), ['Ibuprofen', 'Naproxen']);
+  assert.deepEqual(await titles({search: 'pro', filter: 'done = false', sort: '!title'}), ['Naproxen', 'Ibuprofen']);
+  assert.equal(await issue.count(undefined, 'pro'), 2);
+  assert.equal(await issue.count('done = true', 'pro'), 0);
+  const project = await be.table('grit.project');
+  assert.deepEqual(project.info.searchableColumns, ['name']);
+  assert.deepEqual((await project.query({search: 'grok'})).map((r) => r.key), ['DG']);
+  const bare = new MemoryDomainBackend({name: 's', tables: {t: {columns: {x: {type: 'int'}}}}});
+  await assert.rejects(bare.tableSync('s.t').query({search: '1'}),
+    (e) => e.code === 'validation' && /no searchable column/.test(e.message));
+});
+
+test('info: constraints, refFilters, permissions and childTables from the schema; access grants a declared permission', async () => {
+  const be = backend();
+  const issue = await be.table('grit.issue');
+  const project = await be.table('grit.project');
+  assert.deepEqual(issue.info.constraints, [{name: 'weight_positive', expr: 'weight >= 0', message: 'Weight is positive'}]);
+  assert.deepEqual(issue.info.permissions, ['escalate']);
+  assert.deepEqual(project.info.childTables, [{schema: 'grit', table: 'issue', fkColumn: 'project_id', label: 'project_id'}]);
+  assert.deepEqual(issue.info.childTables, []);
+  assert.equal((await issue.access()).can.escalate, true);
+  const denied = backend({access: {can: {view: true, escalate: false}, fields: {}}});
+  assert.equal((await denied.table('grit.issue').then((t) => t.access())).can.escalate, false);
+  const filtered = new MemoryDomainBackend({name: 's', tables: {
+    country: {columns: {name: {type: 'string', isName: true}}},
+    city: {columns: {country_id: {type: 'ref', ref: 'country'}, name: {type: 'string'}}},
+    person: {columns: {country_id: {type: 'ref', ref: 'country'},
+      city_id: {type: 'ref', ref: 'city', filter: 'country_id = $country_id', friendlyName: 'City'}}},
+  }});
+  assert.deepEqual(filtered.tableSync('s.person').info.refFilters, {city_id: 'country_id = $country_id'});
+  assert.deepEqual(filtered.tableSync('s.city').info.childTables, [{schema: 's', table: 'person', fkColumn: 'city_id', label: 'City'}]);
+  assert.deepEqual(filtered.tableSync('s.country').info.childTables.map((c) => c.table), ['city', 'person']);
+});
+
+test('audit: one line per op under one tx_id, before and after the row', async () => {
+  const be = backend();
+  const issue = await be.table('grit.issue');
+  assert.deepEqual(await issue.audit('i1'), [], 'seeding is not history');
+  const [inserted] = await issue.transaction([
+    {op: 'insert', table: 'issue', values: {project_id: 'p1', title: 'New'}},
+    {op: 'update', table: 'issue', id: 'i1', values: {title: 'Aspirin 100'}},
+    {op: 'delete', table: 'issue', id: 'i2'},
+  ]);
+  const [update] = await issue.audit('i1');
+  assert.deepEqual([update.op, update.actor_id, update.before.title, update.after.title, update.after.version],
+    ['update', null, 'Aspirin', 'Aspirin 100', 2]);
+  const [insert] = await issue.audit(inserted.id);
+  assert.deepEqual([insert.op, insert.before, insert.after.title], ['insert', null, 'New']);
+  const [del] = await issue.audit('i2');
+  assert.deepEqual([del.op, del.before.title, del.after], ['delete', 'Ibuprofen', null]);
+  assert.equal(new Set([update, insert, del].map((h) => h.tx_id)).size, 1);
+  assert.equal(typeof update.ts, 'string');
+});
+
+test('saveAll: every writer\'s batch as one transaction, the results sliced back to each', async () => {
+  const be = backend();
+  const project = await be.table('grit.project');
+  const issue = await be.table('grit.issue');
+  const projects = await project.frame({});
+  const issues = await issue.frame({});
+  const p = projects.edit.newRow({key: 'S', name: 'Session'});
+  issues.edit.newRow({project_id: p, title: 'Child of a draft'});
+  issues.edit.setValue('i1', 'title', 'Aspirin 100');
+  const ops = issues.edit.buildOps();
+  assert.deepEqual(ops.map((x) => x.op.op), ['update', 'insert']);
+  assert.deepEqual(ops[1].op, {op: 'insert', table: 'grit.issue', ref: ops[1].row.id,
+    values: {project_id: `$${p}`, title: 'Child of a draft'}}, 'the draft reference is the server\'s $ref');
+  assert.equal(await be.saveAll([projects.edit, issues.edit]), true);
+  assert.equal(projects.edit.isDirty.value, false);
+  assert.equal(issues.edit.isDirty.value, false);
+  const saved = projects.df.rows.at(-1);
+  assert.match(saved.id, /^[0-9a-f-]{36}$/);
+  assert.equal(issues.df.rows.at(-1).project_id, saved.id, 'the child\'s FK is the parent\'s real id');
+  assert.equal(issue.rows.at(-1).project_id, saved.id);
+  assert.equal(issue.history.at(-1).tx_id, project.history.at(-1).tx_id, 'one transaction');
+  projects.dispose();
+  issues.dispose();
+});
+
+test('saveAll: every writer is closed for the whole transaction — an edit made meanwhile is refused', async () => {
+  const be = backend();
+  const issue = await be.table('grit.issue');
+  const issues = await issue.frame({});
+  issues.edit.setValue('i1', 'title', 'First');
+  const saving = be.saveAll([issues.edit]);
+  assert.equal(issues.edit.isSaving.value, true, 'closed before the first await');
+  issues.edit.setValue('i1', 'title', 'Second');
+  issues.edit.markDeleted('i2');
+  assert.throws(() => issues.edit.newRow({project_id: 'p1', title: 'Third'}),
+    /cannot add a row while the batch is being saved/);
+  assert.equal(await saving, true);
+  assert.equal(issues.edit.isSaving.value, false);
+  assert.equal(issue.rows[0].title, 'First', 'what was sent is what landed');
+  assert.equal(issues.df.get('title', 0), 'First', 'and the frame says so — no edit was lost silently');
+  assert.equal(issues.df.rowCount, 3, 'the delete was refused too');
+  assert.equal(issues.edit.isDirty.value, false);
+  issues.edit.setValue('i1', 'title', 'Second');
+  assert.equal(issues.edit.isDirty.value, true, 'and the writer takes edits again once it is open');
+  issues.dispose();
 });

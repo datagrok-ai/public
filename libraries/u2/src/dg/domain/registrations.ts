@@ -11,6 +11,13 @@ import {DomainForm} from './form.js';
 import {DomainList} from './list.js';
 import type {DomainListMode} from './list.js';
 import {DomainPick} from './pick.js';
+import {DomainGrid} from './grid.js';
+import {DomainHistory} from './history.js';
+import {DomainChildren} from './children.js';
+import type {DomainChildrenMode} from './children.js';
+import {DomainSearch} from './search.js';
+import {DomainFilters} from './filters.js';
+import type {DomainFiltersMode} from './filters.js';
 
 type Props = Record<string, unknown>;
 
@@ -111,6 +118,94 @@ const METAS: ComponentMeta[] = [
       {name: 'enabled', type: 'bool', bindable: true},
     ],
     example: {tag: 'u2-domain-pick', props: {label: 'Project', table: 'grit.project'}},
+  },
+  {
+    tag: 'u2-domain-grid',
+    category: 'Display',
+    appearance: false,
+    create: (props: Props) => new DomainGrid(domainSourceProp(props.source, 'u2-domain-grid')),
+    description: 'The platform grid over the rows of a domain source: in-cell editing goes through the ' +
+      'source\'s writer (pending cells amber, invalid red, conflicts orange), service columns hidden, the ' +
+      'table\'s own column decoration; the grid\'s current row and selection are the source\'s.',
+    usage: 'Bind `source` to a `u2-domain-source` (`$.issues.source`). Prefer it over `u2-domain-list` for ' +
+      'many columns or bulk edits — every cell is editable in place, under the row\'s access. Save and ' +
+      'Discard are the session\'s, not the grid\'s: wire them to `cmd:issues.save` / `cmd:issues.discard`.',
+    props: [SOURCE],
+    example: {tag: 'u2-domain-grid', bind: {source: '$.issues.source'}},
+  },
+  {
+    tag: 'u2-domain-history',
+    category: 'Display',
+    create: (props: Props) => new DomainHistory(domainSourceProp(props.source, 'u2-domain-history')),
+    description: 'The audit trail of the source\'s current row, newest first: who did what when, and the ' +
+      'columns an update changed as `caption: before → after`. A draft says "Not saved yet"; refreshed ' +
+      'when the session saves.',
+    usage: 'Bind `source` to a `u2-domain-source` (`$.issues.source`) and put it on the entity page, beside ' +
+      'or under the `u2-domain-form` over the same source — it follows the row the form edits. Only for ' +
+      'tables whose schema keeps an audit trail.',
+    props: [SOURCE],
+    example: {tag: 'u2-domain-history', bind: {source: '$.issues.source'}},
+  },
+  {
+    tag: 'u2-domain-children',
+    category: 'Display',
+    create: (props: Props) => new DomainChildren(domainSourceProp(props.source, 'u2-domain-children'), {
+      tables: list(props.tables), mode: props.mode as DomainChildrenMode | undefined,
+    }),
+    description: 'One tab per table that refers to the source\'s rows, over its current row: the child ' +
+      'rows queried by the foreign key, New pre-filled with it, every child in the same session — a draft ' +
+      'parent and its child drafts save as one transaction.',
+    usage: 'Bind `source` to a `u2-domain-source` (`$.projects.source`) on the entity page, under the ' +
+      '`u2-domain-form`. `tables` narrows the tabs; `grid` (default) edits the children in place, `list` ' +
+      'pairs a list with a form. Save and Discard are the session\'s — one Save lands the parent and its ' +
+      'children.',
+    props: [
+      SOURCE,
+      {name: 'tables', type: 'string_list', description: 'The child tables to show; every one by default.'},
+      {name: 'mode', type: 'string', choices: ['grid', 'list'],
+        description: 'The platform grid, or a list beside a form.'},
+    ],
+    defaults: {mode: 'grid'},
+    example: {tag: 'u2-domain-children', bind: {source: '$.projects.source'}},
+  },
+  {
+    tag: 'u2-domain-search',
+    category: 'Inputs',
+    create: (props: Props) => new DomainSearch(domainSourceProp(props.source, 'u2-domain-search'), {
+      placeholder: props.placeholder as string | undefined,
+      debounceMs: props.debounceMs as number | undefined,
+    }),
+    description: 'A search box over a domain source: the text goes to the table\'s searchable columns, ' +
+      'AND-ed with the source\'s query, after a short pause or on Enter.',
+    usage: 'Bind `source` to a `u2-domain-source` (`$.issues.source`) and put it in the ribbon beside ' +
+      '`u2-domain-filters`. It writes the source\'s `search`; Escape clears it. The columns it searches are ' +
+      'the schema\'s `searchable` ones (the name column by default) — no `like` chains in the app.',
+    props: [
+      SOURCE,
+      {name: 'placeholder', type: 'string'},
+      {name: 'debounceMs', type: 'int', description: 'The pause before the search runs (300 by default).'},
+    ],
+    example: {tag: 'u2-domain-search', bind: {source: '$.issues.source'}},
+  },
+  {
+    tag: 'u2-domain-filters',
+    category: 'Inputs',
+    create: (props: Props) => new DomainFilters(domainSourceProp(props.source, 'u2-domain-filters'), {
+      mode: props.mode as DomainFiltersMode | undefined,
+      placeholder: props.placeholder as string | undefined,
+    }),
+    description: 'The filter query box (or the condition builder) over a domain source\'s query, two-way, ' +
+      'with the table\'s columns and values completed.',
+    usage: 'Bind `source` to a `u2-domain-source` (`$.issues.source`). `query` is the one-line smart-filter ' +
+      'box with completion, `builder` a row per condition. A change while the session holds unsaved edits ' +
+      'asks to save or discard them first; the query round-trips to the URL (`?q=`) through the app\'s path.',
+    props: [
+      SOURCE,
+      {name: 'mode', type: 'string', choices: ['query', 'builder']},
+      {name: 'placeholder', type: 'string'},
+    ],
+    defaults: {mode: 'query'},
+    example: {tag: 'u2-domain-filters', bind: {source: '$.issues.source'}},
   },
 ];
 

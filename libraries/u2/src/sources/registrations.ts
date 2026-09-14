@@ -107,25 +107,30 @@ const METAS: ComponentMeta[] = [
     createComponent: (props, env) => new DomainSource(props, env),
     description: 'A domain (EMS) table as data: its rows, the current row a form edits, the ' +
       'caller\'s access, and every pending change until `save`.',
-    usage: 'The one source every domain control binds to. Bind `query` to a search or filter ' +
-      'input to narrow the rows; bind a form\'s inputs under `currentRow` to edit the current row; ' +
-      'wire Save and Discard to the `save` and `discard` functions (they go through the session), ' +
-      'and `newRow` to a Create button; `draft: true` is the source of a create form. ' +
-      'Prefer it over a query source for anything a user edits.',
+    usage: 'The one source every domain control binds to. Bind `query` to a filter input and ' +
+      '`search` to a search box to narrow the rows; bind a form\'s inputs under `currentRow` to edit ' +
+      'the current row; wire Save and Discard to the `save` and `discard` functions (they go through ' +
+      'the session), and `newRow` to a Create button; `draft: true` is the source of a create form. ' +
+      'Every source in one spec shares the ambient session, so one Save writes them all as one ' +
+      'transaction. Prefer it over a query source for anything a user edits.',
     props: [
       {name: 'table', type: 'string', description: 'The table address, `<schema>.<table>`.'},
       {name: 'query', type: 'string', bindable: true,
         description: 'A smart-filter string; changing it reloads the rows from the first page.'},
+      {name: 'search', type: 'string', bindable: true,
+        description: 'A case-insensitive text over the table\'s searchable columns, ANDed with the query.'},
       {name: 'pageSize', type: 'int', description: 'How many rows one page loads (default 50).'},
       {name: 'withAccess', type: 'bool',
         description: 'Fetch the per-row access columns with every row (default true); the table-level ' +
           'access is always fetched.'},
       {name: 'defaults', type: 'object',
         description: 'Column values every draft row starts with — a parent\'s id on a child table.'},
+      {name: 'empty', type: 'bool',
+        description: 'Load no rows; drafts can still be added — a child collection under a draft parent.'},
       {name: 'draft', type: 'bool',
         description: 'Load nothing and start on one pristine draft — what a create form binds to.'},
     ],
-    defaults: {pageSize: 50, withAccess: true, draft: false},
+    defaults: {pageSize: 50, withAccess: true, empty: false, draft: false},
     example: {tag: 'u2-domain-source', name: 'issues', props: {table: 'grit.issue', pageSize: 50}},
   },
 ];

@@ -1,14 +1,13 @@
 /* `EditState` over the js-api `DomainFrameEditor` — the third host of the editing state
    (STATE-CONTRACT "u2 DomainSource"): the editor stays the single writer of the frame (H3), every
    write here goes through it by row index, and its `onChanged` is the one signal the mirrored
-   state follows (H10). Keys are what `FrameRows` uses — the `id` cell, the draft key for a row
-   that has no id yet — so the source, the form and the list address a row the same way. */
+   state follows (H10). Keys are what `FrameRows` uses — the `id` cell, a draft's `~new:` id the
+   editor stamps — so the source, the form and the list address a row the same way. */
 import type * as DG from 'datagrok-api/dg';
 import {signal, computed, ReadonlySignal} from '../../core/signals.js';
 import {Emitter} from '../../core/emitter.js';
-import type {EditState} from '../../sources/edit-state.js';
+import type {EditSaved, EditState} from '../../sources/edit-state.js';
 import {FrameRows} from '../../sources/df-rows.js';
-import {Rows} from '../../sources/rows-like.js';
 import type {DataFrameLike} from '../../sources/df-bindings.js';
 
 export class EditorEditState implements EditState {
@@ -17,6 +16,7 @@ export class EditorEditState implements EditState {
   readonly validity: ReadonlySignal<string | null>;
   readonly isSaving: ReadonlySignal<boolean>;
   readonly onChanged = new Emitter<string | null>();
+  readonly onSaved = new Emitter<EditSaved>();
 
   private readonly _subs: {unsubscribe(): void}[];
   /** Bumped on every editor change: the validity walk runs when it is read, not per keystroke. */
@@ -39,6 +39,8 @@ export class EditorEditState implements EditState {
     const drop = () => this._index = undefined;
     this._subs = [
       editor.onChanged.subscribe(() => {
+        // a saved delete leaves the frame without a row event (`removeAt(row, 1, false)`)
+        drop();
         count.value = editor.changeCount;
         dirty.value = editor.isDirty;
         this._version.value = this._version.peek() + 1;
@@ -46,6 +48,7 @@ export class EditorEditState implements EditState {
       }),
       editor.onDirtyChanged.subscribe((d) => dirty.value = d),
       editor.onSavingChanged.subscribe((s) => saving.value = s),
+      editor.onSaved.subscribe((r) => this.onSaved.fire({assigned: r.assigned})),
       df.onValuesChanged.subscribe(drop),
       df.onRowsAdded.subscribe(drop),
       df.onRowsRemoved.subscribe(drop),
@@ -59,9 +62,6 @@ export class EditorEditState implements EditState {
   /** The frame row behind a key, -1 when the frame no longer holds it. */
   indexOf(key: string): number {
     const df = this.df;
-    const draft = Rows.draftRow(key, df.rowCount);
-    if (draft !== null)
-      return draft;
     if (this._index === undefined) {
       this._index = new Map();
       for (let i = 0; i < df.rowCount; i++)
@@ -117,6 +117,7 @@ export class EditorEditState implements EditState {
     for (const s of this._subs)
       s.unsubscribe();
     this.onChanged.clear();
+    this.onSaved.clear();
     this.editor.detach();
   }
 

@@ -141,17 +141,17 @@ export {Access} from './core/access.js';
 export type {AccessData, FieldAccess, Capability} from './core/access.js';
 export type {ActionsOptions} from './components/actions/actions.js';
 export {arrayRows, Rows} from './sources/rows-like.js';
-export type {RowsLike, RowView} from './sources/rows-like.js';
+export type {ColumnOf, DomainRowLike, RowsLike, RowValues, RowView} from './sources/rows-like.js';
 export {DomainBackendError} from './sources/domain-backend.js';
 export type {DomainBackend, DomainTableLike, DomainTableInfoLike, DomainFrameLike, DomainQueryLike,
-  DomainTransactionOpLike, DomainTransactionResultLike} from './sources/domain-backend.js';
+  DomainTransactionOpLike, DomainTransactionResultLike, AuditEntryLike} from './sources/domain-backend.js';
 export {MemoryDomainBackend} from './sources/memory-domain.js';
 export type {MemorySchemaJson, MemoryTableJson, MemoryColumnJson, MemoryDomainOptions}
   from './sources/memory-domain.js';
-export type {EditState, RowState} from './sources/edit-state.js';
+export type {EditState, EditSaved, RowState} from './sources/edit-state.js';
 export {DomainSource} from './sources/domain-source.js';
 export type {DomainSourceOptions, DomainSourceState, DomainSchema} from './sources/domain-source.js';
-export {SingleSession} from './sources/session.js';
+export {SharedSession, confirmDiscard} from './sources/session.js';
 export type {DomainSession} from './sources/session.js';
 export {SuggestInput} from './components/inputs/suggest-input.js';
 export type {SuggestInputOptions} from './components/inputs/suggest-input.js';
@@ -166,7 +166,8 @@ export type {MessageInputOptions, MentionProvider} from './components/inputs/mes
 export {FunctionsBrowser, filterFuncItems, tagCounts} from './components/collections/functions-browser.js';
 export type {FuncItem, FunctionsBrowserOptions} from './components/collections/functions-browser.js';
 export {Filters, FilterError, KIND, OperatorRegistry, CORE_OPERATORS, ColumnEvaluator} from './core/filter/index.js';
-export type {FilterKind, Lock, FilterRef, FilterSpan, FilterScalar, FilterValue, FilterCondition, FilterGroup,
+export type {FilterKind, Lock, FilterRef, FilterSpan, FilterColumnRef, FilterParam, FilterScalar, FilterValue,
+  FilterCondition, FilterGroup,
   FilterNode, FilterJsonGroup, FilterJsonCondition, FilterJsonNode, FilterProblem, DomainCondition,
   DomainConditionNode, DomainConditionTree, FilterOperator, FilterOperatorSet,
   FilterProperty, FilterValueItem, FilterSchema, FilterTemplate, FilterDiff, FilterValueEditorFactory,

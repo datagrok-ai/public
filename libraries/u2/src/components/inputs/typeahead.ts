@@ -196,6 +196,12 @@ export class TypeAhead<T> extends Control {
     }
   }
 
+  /** Closes the candidates without touching the selection — what a host does when something
+   * outside the box (a save, a page move) must not be covered by the popup. */
+  close(): void {
+    this._send({type: 'dismiss'});
+  }
+
   /** Whether an Enter is waiting for the candidates — a host does not treat the box as stray then. */
   get isPickPending(): boolean {
     return this._pendingPick;

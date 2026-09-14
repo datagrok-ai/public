@@ -32,8 +32,8 @@ server code, domain tables get the full platform treatment out of the box:
   import/export, sharing, watching, and history work automatically — see
   [Domains](../../../govern/catalog/domains.md).
 * **Typed API**: a generic JS client (`grok.dapi.domains`), generated TypeScript
-  interfaces per table, and a reflective UI library —
-  [domain-ui](#building-app-ui-the-domain-ui-library).
+  interfaces per table, and the u2 domain controls —
+  [Building app UI: u2](#building-app-ui-u2).
 
 You declare tables once in a JSON manifest; Datagrok creates the database objects on package
 deployment and upgrades them when the manifest changes.
@@ -99,6 +99,7 @@ Every table automatically gets the system columns `id` (UUID, also the row's ent
 | `extensible`           | `false`   | Lets users add [their own columns](#extending-a-plugin-schema) to this table                     |
 | `schemas`              | —         | [Property schemas](#property-schemas-and-column-security) contributing dynamic columns          |
 | `filters`              | —         | [Default filters](#default-filters) shown on the table's filter panel                            |
+| `permissions`          | —         | Custom permissions an app gates its actions on (`["approve"]` or `{"approve": {"description": "..."}}`): grantable on the table like View/Edit, answered as `access.can.approve` and the per-row `~can_approve` column; `grants` may name them |
 | `friendlyName`, `description` | — | Display metadata                                                                                |
 
 ### Column options
@@ -134,10 +135,25 @@ the row and column security of the column that carries it.
 | `isName`       | Marks the primary display-name column (one per table, `string` only); its value titles cards, tooltips, and entity views. Without it, a string column literally named `name` is used by convention |
 | `semType`, `friendlyName`, `description`, `format` | Display and semantic metadata                     |
 | `editor`       | Input editor hint for forms: `textarea`, `switch`, `slider`, `color`, `tags`, or `markdown` (reaches `Property.inputType`; `markdown` renders as a text area for now) |
+| `searchable`   | The query `search` key (`{search: "alp"}`) matches this `string` column, case-insensitively; a table declaring none searches its name column |
+| `filter`       | `ref` columns: a filter expression over the target table narrowing the picker's candidates; `$name` binds to the owning row's column of that name — `"country_id = $country_id"` makes a dependent picker |
 
 Validation runs twice with the same code: client-side in dialogs (instant feedback) and
 server-side on every write (authoritative). Integrity constraints (`unique`, foreign keys,
 `required`) are additionally enforced by the database.
+
+Table-level rules go in `constraints`, keyed by name. A `check` is raw SQL over the
+table's relational columns (whitelisted tokens only). An `expr` is the platform's filter
+grammar — literals, lists, `null`, and a bare column name on the right of a comparison —
+compiled to the same database CHECK and, unlike `check`, validated by forms before the
+write, with `message` shown on violation:
+
+```json
+"constraints": {
+  "dates_ordered": {"expr": "end_date >= start_date", "message": "End before start"},
+  "positive":      {"check": "weight IS NULL OR weight > 0"}
+}
+```
 
 ### Auto-numbering
 
@@ -540,15 +556,23 @@ ones are reported per row.
 
 ### Transactions
 
-Multiple operations — including across tables of one schema — commit or roll back atomically.
-An op can name its new row's id with `ref` for later ops to reference:
+Multiple operations — across tables, and across schemas when `table` is qualified as
+`<schema>.<table>` — commit or roll back atomically. An op can name its new row's id with
+`ref` for other ops to reference, in any order: the server runs the ops in dependency order
+(an op using `$p` after the op declaring `p`; a delete of a child table before a delete of
+its parent, so `onDelete: restrict` never vetoes what the same request removes) while the
+results array and the error's `opIndex` keep the request order:
 
 ```ts
 await grok.dapi.domains.transaction('grit', [
-  {op: 'insert', table: 'project', ref: 'p', values: {key: 'GRIT', name: 'Grit'}},
   {op: 'insert', table: 'issue', values: {project_id: '$p', number: 1, title: 'First issue'}},
+  {op: 'insert', table: 'project', ref: 'p', values: {key: 'GRIT', name: 'Grit'}},
+  {op: 'insert', table: 'audit.event', values: {kind: 'project-created', subject: '$p'}},
 ]);
 ```
+
+Add `onDuplicate: 'error'` to an insert op to fail the whole transaction (409) when the row's
+business key already exists, instead of merging it into the existing row.
 
 ### Expansions
 
@@ -800,29 +824,34 @@ the semantic type `<schema>.<table>`:
 * **Search patterns**: claim [identifier patterns](register-identifiers.md) (like
   `GRIT-123`) in the handler, and they resolve from global search.
 
-### Building app UI: the domain-ui library
+### Building app UI: u2
 
-To build your own UI over domain tables — forms, editable grids, list pages, whole
-browse/CRUD apps — use
-[`@datagrok-libraries/domain-ui`](https://github.com/datagrok-ai/public/tree/master/libraries/domain-ui).
-Everything in it is reflective: components take columns, labels, choices, validation
-rules, and permissions from the runtime registry, so common operations are one or two
-lines:
+To build your own UI over domain tables — forms, lists, editable grids, whole browse/CRUD
+apps — use the domain controls of `@datagrok-libraries/u2` (a relative-path dependency,
+`"@datagrok-libraries/u2": "../../libraries/u2"`, wired the way the
+[Stockroom](https://github.com/datagrok-ai/public/tree/master/packages/Stockroom) package is).
+Everything in it is reflective: the controls take columns, labels, choices, validation rules
+and permissions from the runtime registry, so an app is one await and one line:
 
 ```ts
-import {domains} from '@datagrok-libraries/domain-ui';
+import {domains} from '@datagrok-libraries/u2/src/dg/index.js';
 
-const issues = await domains.table('grit.issue');     // the one await
-grok.shell.addView(issues.app());                     // the whole browse/CRUD app
-const saved = await issues.formDialog({values: {project_id: project.id}});
+const issues = await domains.table('grit.issue');        // schema + capabilities, one round-trip
+grok.shell.addView(issues.app());                         // list ⇄ entity page, URL, ribbon, gate
 ```
 
-The library's README documents the full surface: the `domains` facade and its widget
-factories (`form`, `grid`, `list`, `listView`, `app`), schema-level handles
-(`domains.db`), composed pages and dialogs, customization points, and the widget-status
-machine surface for tests and AI assistants. The
-[Grit](https://github.com/datagrok-ai/public/tree/master/packages/Grit) package is the
-reference app built on it.
+Three tiers, each a package in this repository:
+
+* **Zero code** — `t.app()` from `schema.json` alone: Stockroom. `grok add app --domain
+  <schema>.<table>` scaffolds it.
+* **Configuration** — the same app as a `dg-ui/1` spec with the `u2-domain-*` tags, edited in
+  the designer: `Stockroom/src/app.spec.json`.
+* **Code** — `grok api --ui` generates typed handles (`getGritDb()` → a `DomainTable<IssueRow>`
+  per table, one await) on which the app declares actions, validators, a card renderer and a
+  `DomainApp` subclass with presets and shortcuts:
+  [Grit](https://github.com/datagrok-ai/public/tree/master/packages/Grit).
+
+The recipes in `libraries/u2/docs/recipes/` (`crud-app.md`) walk through the surface.
 
 ### Platform building blocks
 
@@ -831,11 +860,13 @@ The lower-level blocks behind the standard UI ship in `datagrok-api` itself:
 * `DG.DomainView.create({schema: 'grit', table: 'issue'})` opens the full table view
   (search, filters, render modes, editing) programmatically — the same view the
   `/domains/...` routes open.
-* `DG.DomainGrid.create(...)` hosts the editable domain grid inside your own view:
-  platform rendering, batch editing with unsaved-change markers, one-transaction save
-  with the conflict flows, and permission gating down to per-column writability.
+* `grid.attachEditor(editor)` hosts the domain editing state in any `DG.Grid` you own —
+  dirty / invalid / conflict cell markers and per-column writability — and
+  `DG.DomainObjectHandler.decorateGrid(grid, table)` applies the table's rendering to it.
 * `DG.DomainFrameEditor.attachTo(df, schema, table)` attaches the same editing state
-  machine to a DataFrame you render yourself — for fully custom hosts.
+  machine to a DataFrame you render yourself — for fully custom hosts; several editors save
+  as ONE transaction through `new DG.DomainSession(editors).save()`, which owns the conflict
+  and validation flows.
 
 See the
 [platform-grid](https://public.datagrok.ai/js/samples/dapi/domains/platform-grid) sample.
@@ -843,7 +874,7 @@ See the
 See also:
 
 * [Domains](../../../govern/catalog/domains.md) — the user-facing guide
-* [`@datagrok-libraries/domain-ui`](https://github.com/datagrok-ai/public/tree/master/libraries/domain-ui) —
-  reflective forms, grids, and app pages over domain tables
+* [`@datagrok-libraries/u2`](https://github.com/datagrok-ai/public/tree/master/libraries/u2) —
+  the domain controls: sources, forms, lists, grids, search, filters, children, history, the app
 * [Plugin Postgres databases](db-in-plugin.md) — raw SQL storage without entity mapping
 * [Access data](access-data.md) — connections and queries

@@ -17,9 +17,10 @@ import {InputBase} from './widgets/inputs-base';
 import {DomainRegistryClient, DomainTableClient} from './dapi';
 import {domainCall, DomainAccess, DomainConditionTree, DomainQueryParams, DOMAIN_ACCESS_COLUMNS,
   splitDomainTable} from './domains';
+import {DataFrame} from './dataframe';
 import {DomainRow} from './entities/domain';
 import {Property} from './entities/property';
-import {SemanticValue} from './grid';
+import {Grid, SemanticValue} from './grid';
 import {View} from './views/view';
 import {CardView} from './views/card_view';
 import {IDartApi} from './api/grok_api.g';
@@ -305,7 +306,61 @@ export class DomainObjectHandler<T = DomainRow> extends ObjectHandler<T> {
   // renderGrid is deliberately NOT overridden: the base
   // {@link ObjectHandler.renderGrid} already delegates to the platform meta for
   // its type, so this handler decorates a grid exactly like the Domain View —
-  // and so does every other non-overriding handler.
+  // and so does every other non-overriding handler. An app decorates a grid of
+  // its own through {@link decorateGrid}, which resolves the WINNING handler.
+
+  /**
+   * Customizes [grid] the way the platform customizes every grid over [table]'s
+   * rows: column captions, reference cells showing display names, the name
+   * column first, system and `~` columns hidden. Pair it with `Grid.attachEditor`
+   * for an editable grid.
+   *
+   * Decoration goes through the handler that WINS dispatch for the table, which
+   * is safe for plain handlers — one that does not override `renderGrid` falls
+   * through to the platform meta from the JS side too.
+   *
+   * Which is not a one-liner, because `forEntity` resolves plenty of handlers
+   * that must NOT be decorated through. It applies the collapse rule of the
+   * built-in Domain View (`DomainView.refreshGrid`) branch for branch — with the
+   * Dart one widened, since the Dart rule names `DomainRowMeta` while every Dart
+   * meta reaches JS as one wrapping proxy:
+   * - a DART meta collapses — the resolved proxy may be the inert GENERIC
+   *   `'DomainRow'` fallback (no per-table meta registered, e.g. a session with
+   *   domain databases not enabled), whose `renderGrid` early-returns into a raw
+   *   grid; a registered per-table meta decorates identically to `own` anyway;
+   * - a JS handler WITHOUT a real `renderGrid` collapses — the base method is a
+   *   no-op the platform marks `isPlatformDefault`;
+   * - everything else wins, INCLUDING a plugin handler that claims the table
+   *   through `isApplicable` under a type of its own.
+   *
+   * `own`'s inherited `renderGrid` reaches the per-table meta regardless of
+   * registration, so the collapse never loses decoration.
+   */
+  static decorateGrid(grid: Grid, table: string, dataFrame?: DataFrame): void {
+    const own = new DomainObjectHandler(table);
+    const resolved = ObjectHandler.forEntity(own.newRow());
+    const winner = resolved != null && DomainObjectHandler._decorates(resolved, table) ? resolved : own;
+    winner.renderGrid(grid, {items: dataFrame ?? grid.dataFrame});
+  }
+
+  /** Whether [handler] is worth decorating [table]'s grid through — see
+   * {@link decorateGrid}. */
+  private static _decorates(handler: ObjectHandler, table: string): boolean {
+    if (handler instanceof EntityMetaDartProxy)
+      return false;
+    return DomainObjectHandler._typeOf(handler) === table ||
+      (handler.renderGrid as any)?.isPlatformDefault !== true;
+  }
+
+  /** A handler's type, defensively: `type` is abstract on the base class and a
+   * JS getter may throw. */
+  private static _typeOf(handler: ObjectHandler): string | null {
+    try {
+      return handler.type;
+    } catch (_) {
+      return null;
+    }
+  }
 
   /** Reflective property form over the writable columns of [x] (a new row when
    * omitted) — inputs come from {@link getProperties}, and non-writable columns
@@ -313,8 +368,7 @@ export class DomainObjectHandler<T = DomainRow> extends ObjectHandler<T> {
    * column security. Callers without the corresponding table right
    * (`can.insert` for a new row, `can.edit` for an existing one) get a read-only
    * explanation instead: column security alone is NOT table Edit. A richer form
-   * (async validation, reference pickers, error mapping) is `DomainForm` in
-   * `@datagrok-libraries/domain-ui`. */
+   * (async validation, reference pickers, error mapping) is u2's `domainForm`. */
   async renderEditor(x?: T): Promise<HTMLElement> {
     const [properties, access] = await Promise.all([this.getProperties(), this.access()]);
     const inputs = properties.filter((p) => access.fields[p.name] === 'editable');

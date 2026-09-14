@@ -107,10 +107,42 @@
   white-space: nowrap;
 }
 
+/* the rows answer the filter that was applied, not the one being typed: dimmed while the two differ */
+.u2-domain-list-stale .u2-domain-list-rows {
+  opacity: 0.5;
+}
+
 /* a row marked deleted stays until the save: struck through, faded, Restore on it */
 .u2-domain-list-deleted .u2-domain-list-content {
   text-decoration: line-through;
   opacity: 0.55;
+}
+
+/* the row a refusal names, marked while the refusal stands */
+.u2-domain-list-invalid {
+  box-shadow: inset 2px 0 0 0 var(--dg-error);
+}
+
+.u2-domain-list-invalid .u2-domain-list-content {
+  color: var(--dg-error);
+}
+
+/* a bare table's brief row: the name, then what a search matches it by. Named `-line` and not
+   `-brief`: the mode class on the list host is `u2-domain-list-brief`, and a row rule landing on
+   the host collapses the scroller under it. */
+.u2-domain-list-line {
+  align-items: baseline;
+  gap: var(--dg-space-m);
+  min-width: 0;
+  overflow: hidden;
+}
+
+.u2-domain-list-details {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--dg-text-color-light);
 }
 
 /* the picker box: a magnifier on the left (the platform look-up's), a clear on the right */
@@ -144,6 +176,14 @@
   padding-right: 20px;
 }
 
+/* a blur that put the held pick's name back says so, on the verdict line, until the next focus */
+.u2-pick-hint {
+  flex: 1 0 100%;
+  min-width: 0;
+  font-size: var(--dg-font-size-small);
+  color: var(--dg-text-color-light);
+}
+
 .u2-domain-card-time {
   color: var(--dg-text-color-light);
 }
@@ -157,4 +197,198 @@
 .u2-domain-list-cards .u2-domain-list-content {
   max-height: 100%;
   overflow: hidden;
+}
+
+/* the grid host: the viewer fills it — a canvas viewer has no height of its own, so every
+   ancestor between it and the entity page has to pass one down */
+.u2-domain-grid {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.u2-domain-grid > .u2-viewer {
+  flex: 1;
+  min-height: 0;
+}
+
+/* history: one line per audit entry — when, who, what, the changed columns trailing off */
+.u2-domain-history {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  font-family: var(--dg-font-family);
+  font-size: var(--dg-font-size);
+}
+
+.u2-domain-history > .u2-section,
+.u2-domain-history .u2-section-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.u2-domain-history-hint,
+.u2-domain-children-hint,
+.u2-domain-children-empty,
+.u2-domain-children-status {
+  padding: var(--dg-space-m);
+  color: var(--dg-text-color-light);
+}
+
+.u2-domain-history-hint:empty,
+.u2-domain-children-status:empty {
+  display: none;
+}
+
+.u2-domain-history-lines {
+  flex: 1;
+  min-height: 0;
+}
+
+.u2-domain-history-line {
+  align-items: baseline;
+  gap: var(--dg-space-s);
+  height: 100%;
+  padding: var(--dg-space-s);
+  overflow: hidden;
+}
+
+.u2-domain-history-time {
+  flex: none;
+  color: var(--dg-text-color-light);
+}
+
+.u2-domain-history-actor {
+  flex: none;
+}
+
+/* two lines before it trails off — a change line names columns, ids and names */
+.u2-domain-history-changes {
+  flex: 1;
+  min-width: 0;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  line-height: var(--dg-line-height);
+  color: var(--dg-text-color-light);
+}
+
+.u2-domain-history-value {
+  color: var(--dg-text-color);
+}
+
+/* children: the tab strip, each pane a toolbar over the child collection */
+.u2-domain-children {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 240px;
+}
+
+.u2-domain-children-tabs {
+  flex: 1;
+  min-height: 0;
+}
+
+/* the panel is shown by an inline `display`, so the pane takes its height instead */
+.u2-domain-children-tabs > .u2-tabs-content > .u2-tabs-panel {
+  height: 100%;
+}
+
+.u2-domain-children-pane {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+
+.u2-domain-children-toolbar {
+  flex: none;
+  gap: var(--dg-space-s);
+  padding: var(--dg-space-xs) var(--dg-space-s);
+}
+
+.u2-domain-children-split {
+  flex: 1;
+  min-height: 0;
+  gap: var(--dg-space-m);
+}
+
+.u2-domain-children-split > * {
+  flex: 1;
+  min-width: 0;
+}
+
+.u2-domain-children-error {
+  color: var(--dg-failure);
+}
+
+/* the ribbon controls: a search box and a query box side by side, the query box the wider */
+.u2-domain-search {
+  min-width: 160px;
+}
+
+.u2-domain-filters {
+  flex: 1;
+  min-width: 240px;
+}
+
+.u2-domain-filters:empty {
+  display: none;
+}
+
+/* a ribbon row has no room for a second line: a filter that does not parse says so with the red
+   editor and its tooltip, never by pushing the buttons beside it off the bar */
+.u2-domain-filters .u2-input-error {
+  display: none;
+}
+
+/* the app: the list page and the entity page under one root, one shown at a time */
+.u2-domain-app {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+
+.u2-domain-app-list {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.u2-domain-app-list > .u2-domain-list {
+  flex: 1;
+}
+
+.u2-domain-app-entity {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  gap: var(--dg-space-s);
+}
+
+.u2-domain-app-entity > .u2-breadcrumbs {
+  padding: var(--dg-space-s) var(--dg-space-m) 0;
+}
+
+.u2-domain-app-panes {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  gap: var(--dg-space-s);
+}
+
+.u2-domain-app-panes > .u2-domain-history {
+  flex: none;
+}
+
+.u2-domain-app-panes:empty {
+  display: none;
 }

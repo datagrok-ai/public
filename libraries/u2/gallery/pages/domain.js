@@ -2,7 +2,7 @@ import {Scope, VirtualList, rowActions, backends, DomainSource, MemoryDomainBack
 import {divH, divV, span, button} from '../../src/core/elements.js';
 import {propertyForm} from '../../src/dg/forms/object-form.js';
 import {Editors} from '../../src/dg/forms/editors.js';
-import {domainPick} from '../../src/dg/domain/pick.js';
+import {DomainPick} from '../../src/dg/domain/pick.js';
 import {saveButton, discardButton} from '../../src/dg/domain/buttons.js';
 
 function injectOnce(id, href) {
@@ -52,7 +52,7 @@ const SYSTEM = ['id', 'version', 'created_on', 'updated_on'];
 // column is a picker over its table
 Editors.register({
   match: (p) => /^\w+\.\w+$/.test(p.semType ?? ''),
-  create: (p, options) => domainPick(p.semType, {...options, debounceMs: 0}),
+  create: (p, options) => new DomainPick(p.semType, {...options, debounceMs: 0}),
 });
 
 function el(tag, cls, text) {
@@ -65,7 +65,7 @@ function el(tag, cls, text) {
 /** The access a row is edited under: a draft under `insert`, an existing row as its own columns say. */
 const viewOf = (src, row) => src.access.peek().row(row);
 
-/** `u2.domain.list` in the platform: the same list, the handler's rendering, Open through the handler. */
+/** `domains.list` in the platform: the same list, the handler's rendering, Open through the handler. */
 function taskList(src) {
   const list = new VirtualList({
     itemHeight: 30,
@@ -114,7 +114,7 @@ function actionsOf(src, row) {
   return actions.filter((a) => a.requires === undefined || access.can(a.requires));
 }
 
-/** `u2.domain.form` in the platform: `propertyForm` over the current row under the row's access, a
+/** `domains.form` in the platform: `propertyForm` over the current row under the row's access, a
  * fresh form per row, every write through the row proxy — which is the source's `EditState`. */
 function taskForm(src, host) {
   let shown;
@@ -147,7 +147,7 @@ export async function render(main) {
     'the current row and every pending change, and plain controls sit on top — a list over ' +
     '<code>rows</code>, <code>propertyForm</code> over <code>currentRow</code> (writes go through the row into the ' +
     'edit state), a picker over the referenced table, Save as one transaction. In the platform ' +
-    '<code>u2.domain.list</code>, <code>u2.domain.form</code> and <code>u2.domain.pick</code> are this composition ' +
+    '<code>domains.list</code>, <code>domains.form</code> and <code>domains.pick</code> are this composition ' +
     'plus the table\'s handler; the access rules are the same: a field the caller may not see is absent, ' +
     'one they may not write is text, an action they may not run is gone — per row, from the ' +
     '<code>~can_edit</code> / <code>~can_delete</code> / <code>~can_share</code> columns the rows carry.';

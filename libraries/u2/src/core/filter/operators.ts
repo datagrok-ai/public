@@ -1,4 +1,4 @@
-import {FilterError, KIND} from './model.js';
+import {FilterError, KIND, isColumnRef, isParam} from './model.js';
 import type {FilterCondition, FilterKind, DomainConditionNode} from './model.js';
 import type {FilterProperty} from './schema.js';
 import {domainValue, kindOf} from './kinds.js';
@@ -156,8 +156,14 @@ export function escapeLike(s: string): string {
   return s.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
 }
 
-function likeValue(c: FilterCondition, shape: (v: string) => string): string {
-  return c.options?.raw === true ? String(c.value) : shape(escapeLike(String(c.value ?? '')));
+/** A column reference or a `$param` as the domain tree carries it — never shaped into a
+ * pattern; the binder or the server shapes it — else the text `shape` answers. */
+function textValue(c: FilterCondition, shape: () => string): unknown {
+  return isColumnRef(c.value) ? {$column: c.value.column} : isParam(c.value) ? {$param: c.value.param} : shape();
+}
+
+function likeValue(c: FilterCondition, shape: (v: string) => string): unknown {
+  return textValue(c, () => c.options?.raw === true ? String(c.value) : shape(escapeLike(String(c.value ?? ''))));
 }
 
 const node = (property: string, operator: string, value?: unknown): DomainConditionNode =>
@@ -238,21 +244,21 @@ export const CORE_OPERATORS: FilterOperator[] = [
   likeShape('ends', 'ends with', [KIND.STRING], 'like', (v) => `%${v}`, (s, v) => s.endsWith(v)),
   {
     id: 'matches', label: 'matches regex', arity: 1, kinds: [KIND.STRING], editor: 'default',
-    domain: (c) => node(c.property, '~*', String(c.value)),
+    domain: (c) => node(c.property, '~*', textValue(c, () => String(c.value))),
     mask: regexMask(false),
   },
   {
     id: '!matches', label: 'does not match', arity: 1, kinds: [KIND.STRING], editor: 'default',
-    domain: (c) => node(c.property, '!~*', String(c.value)),
+    domain: (c) => node(c.property, '!~*', textValue(c, () => String(c.value))),
     mask: regexMask(true),
   },
   {
     id: 'fuzzy', label: 'is similar to', arity: 1, kinds: [KIND.STRING], editor: 'default',
     domain: (c) => {
-      const value = String(c.value);
+      const value = textValue(c, () => String(c.value));
       const threshold = typeof c.options?.threshold === 'number' ? c.options.threshold : null;
       return [{property: c.property, operator: 'fuzzy', threshold, value}, 'or',
-        node(c.property, 'like', `%${value}%`)];
+        node(c.property, 'like', textValue(c, () => `%${String(c.value)}%`))];
     },
   },
   {

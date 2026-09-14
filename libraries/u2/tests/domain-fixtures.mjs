@@ -15,11 +15,13 @@ export const SCHEMA = {
     },
     issue: {
       friendlyName: 'Issues', businessKey: ['project_id', 'number'],
+      constraints: {weight_positive: {expr: 'weight >= 0', message: 'Weight is positive'}, legacy: {check: 'number > 0'}},
+      permissions: ['escalate'],
       columns: {
         project_id: {type: 'ref', ref: 'project', required: true},
         number: {type: 'int', min: 1},
-        title: {type: 'string', required: true, isName: true},
-        description: {type: 'string', editor: 'textarea'},
+        title: {type: 'string', required: true, isName: true, searchable: true},
+        description: {type: 'string', editor: 'textarea', searchable: true},
         done: {type: 'bool'},
         reporter: {type: 'user'},
         tags: {type: 'string_list'},

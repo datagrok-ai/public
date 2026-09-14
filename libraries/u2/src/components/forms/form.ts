@@ -118,10 +118,12 @@ export class Form extends Control {
     return this;
   }
 
-  /** Focus to the first input — where a form starts, and where it returns after Save. */
-  focusFirst(): void {
-    if (this._inputs.length > 0)
-      Form._focus(this._inputs[0]);
+  /** Focus to the first input — where a form starts, and where it returns after Save; with
+   * `where`, the first input it accepts, else the first. */
+  focusFirst(where?: (input: Input<any>) => boolean): void {
+    const input = (where === undefined ? undefined : this._inputs.find(where)) ?? this._inputs[0];
+    if (input !== undefined)
+      Form._focus(input);
   }
 
   validate(): boolean {

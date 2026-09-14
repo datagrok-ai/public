@@ -140,26 +140,49 @@
         },
         "constraints": {
           "type": "object",
-          "description": "Table-level CHECK constraints keyed by constraint name. The expression may reference this table's relational columns, literals, comparison/arithmetic operators and a whitelist of keywords and immutable functions; it is normalized before it reaches the DDL.",
+          "description": "Table-level CHECK constraints keyed by constraint name. {\"check\": <sql>} references this table's relational columns, literals, comparison/arithmetic operators and a whitelist of keywords and immutable functions, normalized before it reaches the DDL. {\"expr\": <filter>, \"message\"?} is the platform filter grammar over this table's relational columns (literals, lists, null, a bare column name on the right of a comparison) — compiled to the same CHECK, and validated client-side by forms before the write, with the message shown on violation.",
           "propertyNames": {"$ref": "#/definitions/identifier"},
           "additionalProperties": {
             "type": "object",
-            "required": ["check"],
-            "additionalProperties": false,
-            "properties": {
-              "check": {"type": "string"}
-            }
+            "oneOf": [
+              {
+                "required": ["check"],
+                "additionalProperties": false,
+                "properties": {"check": {"type": "string"}}
+              },
+              {
+                "required": ["expr"],
+                "additionalProperties": false,
+                "properties": {"expr": {"type": "string"}, "message": {"type": "string"}}
+              }
+            ]
           }
         },
         "grants": {
           "type": "object",
-          "description": "Permissions granted on the table entity at deploy time, keyed by group name (a platform group such as 'All users' or 'Developers'); each lists the permissions to grant.",
+          "description": "Permissions granted on the table entity at deploy time, keyed by group name (a platform group such as 'All users' or 'Developers'); each lists the permissions to grant: view, edit, delete, or a custom permission this table declares.",
           "minProperties": 1,
           "additionalProperties": {
             "type": "array",
             "minItems": 1,
-            "items": {"enum": ["view", "edit", "delete"]}
+            "items": {"$ref": "#/definitions/identifier"}
           }
+        },
+        "permissions": {
+          "description": "Custom permissions an app gates its actions on, grantable on the table entity next to View/Edit/Delete/Share and answered as access.can.<name> and the per-row ~can_<name> column: a list of names, or name -> {description?}. Names are identifiers of at most 32 characters; view, edit, delete, share and extend are reserved.",
+          "oneOf": [
+            {"type": "array", "minItems": 1, "items": {"$ref": "#/definitions/identifier"}},
+            {
+              "type": "object",
+              "minProperties": 1,
+              "propertyNames": {"$ref": "#/definitions/identifier"},
+              "additionalProperties": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {"description": {"type": "string"}}
+              }
+            }
+          ]
         },
         "relations": {
           "type": "object",
@@ -301,6 +324,14 @@
         "editor": {
           "enum": ["textarea", "switch", "slider", "color", "tags", "markdown"],
           "description": "Input editor hint for forms and dialogs (lower-case; stored as the platform InputType name on the column's property; markdown renders as a text area until the platform bridges its markdown input)."
+        },
+        "searchable": {
+          "type": "boolean",
+          "description": "The query `search` key matches this column (string only); a table declaring none searches its name column."
+        },
+        "filter": {
+          "type": "string",
+          "description": "Ref columns only: a filter-grammar expression over the target table that narrows the picker's candidates; `$name` binds to the owning row's column of that name (a dependent picker), e.g. \"country_id = $country_id\"."
         }
       }
     }

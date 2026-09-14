@@ -3,7 +3,6 @@ import type * as _DG from 'datagrok-api/dg';
 declare let grok: typeof _grok, DG: typeof _DG;
 
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
-import {DomainFrameEditor} from '@datagrok-libraries/domain-ui';
 import {thrown, withRestrictedUser} from './domain-lifecycle';
 
 // The access surface: DomainTableClient.access() — ONE server-composed answer in the
@@ -123,7 +122,7 @@ category('Dapi: domain access', () => {
       const query = {filter: {property: 'sku', operator: 'like', value: `${prefix}%`} as any, withAccess: true};
       const df = await items().queryDf(query);
       expect(df.columns.contains('~can_edit'), true, 'the fixture frame carries no access columns');
-      const editor = await DomainFrameEditor.attach(df, items() as any, {query, quiet: true});
+      const editor = await DG.DomainFrameEditor.attach(df, items() as any, {query, quiet: true});
       try {
         expect(editor.quiet, true, 'the quiet option did not reach the editor');
         const row = editor.addRow({sku: `${prefix}-1`, name: 'Added on a withAccess frame', quantity: 1});
@@ -201,6 +200,47 @@ category('Dapi: domain access', () => {
     });
     expect(outcome, 'checked',
       'the grant flip and column restriction were NOT verified: no restricted session (see the console for why)');
+  });
+
+  test('custom permission: can.approve false, ~can_approve per row, true after grant()', async () => {
+    const info = await grok.dapi.domains.registry.tableInfo('apitests.item');
+    expect(info.permissions.includes('approve'), true,
+      `the fixture declares no custom permission: ${JSON.stringify(info.permissions)}`);
+    expect((await items().access()).can['approve'], true, 'admin bypass must answer a custom permission true');
+    const sku = `SKU-PERM-${stamp()}`;
+    const [ins] = await items().insert({sku, name: 'Permission probe'});
+    try {
+      const outcome = await withRestrictedUser('wo25perm', async (probe) => {
+        const asUser = <T>(action: () => Promise<T>) => probe.asUser(async () => {
+          grok.dapi.domains.invalidateUiCaches();
+          return await action();
+        });
+        await items().grant(probe.group, 'View');
+        try {
+          const before = await asUser(() => items().access());
+          expect(before.can['approve'], false, `no grant yet, can.approve must deny: ${JSON.stringify(before.can)}`);
+          const [row] = await asUser(() => items().query({filter: `sku = "${sku}"`, withAccess: true}));
+          expect(row['~can_approve'], false, `~can_approve must be a per-row false before the grant: ${JSON.stringify(row)}`);
+          await items().grant(probe.group, 'approve');
+          expect((await asUser(() => items().access())).can['approve'], true, 'the approve grant did not flip can.approve');
+          const [granted] = await asUser(() => items().query({filter: `sku = "${sku}"`, withAccess: true}));
+          expect(granted['~can_approve'], true, `~can_approve did not follow the grant: ${JSON.stringify(granted)}`);
+          const df = await asUser(() => items().queryDf({filter: `sku = "${sku}"`, withAccess: true}));
+          expect(df.col('~can_approve')?.meta.includeInCsvExport, false, '~can_approve is not export-tagged in queryDf');
+          return 'checked';
+        } finally {
+          for (const permission of ['approve', 'View'])
+            try {
+              await items().revoke(probe.group, permission);
+            } catch (_) { /* already revoked */ }
+          grok.dapi.domains.invalidateUiCaches();
+        }
+      });
+      expect(outcome, 'checked',
+        'the custom permission was NOT verified: no restricted session (see the console for why)');
+    } finally {
+      await items().delete(ins.id);
+    }
   });
 
   test('a table grant does not reach the rows of a defaultRowVisibility:"none" table', async () => {

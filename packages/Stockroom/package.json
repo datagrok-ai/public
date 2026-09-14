@@ -1,0 +1,55 @@
+{
+  "name": "@datagrok/stockroom",
+  "friendlyName": "Stockroom",
+  "version": "0.0.1",
+  "author": {
+    "name": "Andrew Skalkin",
+    "email": "askalkin@datagrok.ai"
+  },
+  "description": "Stockroom — chemical inventory on the GHS classification; the zero-code reference app for entity-mapped domain schemas: everything is declared in schema.json",
+  "dependencies": {
+    "@datagrok-libraries/test": "^1.1.0",
+    "@datagrok-libraries/u2": "../../libraries/u2",
+    "@datagrok-libraries/utils": "latest",
+    "cash-dom": "^8.1.5",
+    "datagrok-api": "../../js-api",
+    "dayjs": "^1.11.13"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "css-loader": "^7.1.2",
+    "datagrok-tools": "^5.1.5",
+    "style-loader": "^4.0.0",
+    "ts-loader": "latest",
+    "typescript": "^5.9.3",
+    "webpack": "^5.95.0",
+    "webpack-cli": "^5.1.4"
+  },
+  "scripts": {
+    "debug-stockroom": "webpack && grok publish",
+    "release-stockroom": "webpack && grok publish --release",
+    "build-stockroom": "webpack",
+    "build": "grok api && grok check --soft && webpack",
+    "test": "grok test",
+    "debug-stockroom-dev": "webpack && grok publish dev",
+    "release-stockroom-dev": "webpack && grok publish dev --release",
+    "debug-stockroom-public": "webpack && grok publish public",
+    "release-stockroom-public": "webpack && grok publish public --release",
+    "debug-stockroom-localhost": "webpack && grok publish localhost",
+    "release-stockroom-localhost": "webpack && grok publish localhost --release"
+  },
+  "canEdit": [
+    "Developers"
+  ],
+  "canView": [
+    "All users"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/Stockroom"
+  },
+  "overrides": {
+    "datagrok-api": "$datagrok-api"
+  }
+}

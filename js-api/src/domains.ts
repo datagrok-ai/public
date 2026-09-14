@@ -72,8 +72,9 @@ export type DomainFilter<TColumn extends string = string> =
 export const DOMAIN_SYSTEM_COLUMNS = ['id', 'version', 'created_on', 'updated_on', 'author_id'] as const;
 
 /** The per-row service columns a `withAccess` query adds (see {@link DomainQuerySpec.withAccess}):
- * booleans saying whether the CALLER may edit / delete / share that row. `~can_share` is
- * null off row mode — only row-mode tables carry per-row Share. Never exported. */
+ * booleans saying whether the CALLER may edit / delete / share that row, plus `~can_<name>` per
+ * permission the table declares (`permissions` in schema.json). `~can_share` is null off row
+ * mode — only row-mode tables carry per-row Share. Never exported. */
 export const DOMAIN_ACCESS_COLUMNS = ['~can_edit', '~can_delete', '~can_share'] as const;
 
 /** The per-row keys of a `withAccess` read (see {@link DOMAIN_ACCESS_COLUMNS}). */
@@ -135,8 +136,10 @@ export interface DomainDeleteReport { deleted: number; hasMore: boolean; }
 
 /** Grantable permission on a domain registry entity (table, schema, or column schema).
  * 'Extend' is grantable on SCHEMA entities only — it lets the holder add their own
- * tables and columns to a package-managed schema the plugin opted in to. */
-export type DomainPermission = 'View' | 'Edit' | 'Delete' | 'Share' | 'Extend';
+ * tables and columns to a package-managed schema the plugin opted in to. Any other
+ * string is a CUSTOM permission the table declares (`permissions` in schema.json),
+ * grantable on that table only and read back as `can.<name>` / `~can_<name>`. */
+export type DomainPermission = 'View' | 'Edit' | 'Delete' | 'Share' | 'Extend' | (string & {});
 
 /** One direct permission row on a domain registry entity (see `DomainTableClient.grants`). */
 export interface DomainGrant {
@@ -184,6 +187,9 @@ export interface DomainAccess {
      * {@link edit}; same false-negative shape. */
     delete: boolean;
     share: boolean;
+    /** A permission the table declares (`permissions` in schema.json), by name:
+     * a grant of it on the securing entity, under the writability rules above. */
+    [custom: string]: boolean;
   };
   /** Every column the caller may see (declared and system columns alike), keyed by
    * name; `editable` iff the caller may write it (Edit on an owning property
@@ -221,6 +227,11 @@ export interface DomainTableInfo {
   nameColumn: string | null;
   /** Natural-key columns; empty when the table declares none. */
   businessKey: string[];
+  /** The DECLARED `friendlyName` (`friendlyName` in schema.json); undefined when
+   * the table declares none — unlike {@link singularName}/{@link pluralName},
+   * nothing is derived here, so the caller can tell a chosen label apart from
+   * the capitalized table name. */
+  friendlyName?: string;
   /** Effective singular display name (declared, else derived from the table name). */
   singularName: string;
   /** Effective plural display name (declared, else derived from the table name). */
@@ -230,6 +241,16 @@ export interface DomainTableInfo {
   /** What the table holds, as declared in schema.json; null when undeclared. */
   description: string | null;
   childTables: DomainChildTableRef[];
+  /** The columns {@link DomainQuerySpec.search} matches: those declared
+   * `searchable: true`, else the name column, else none. */
+  searchableColumns: string[];
+  /** Declared table constraints (`constraints` in schema.json), in declaration order. */
+  constraints: {name: string; expr: string; message?: string}[];
+  /** Per ref column, the declared `filter` its candidates are narrowed by (a
+   * smart-filter string; `$<column>` binds a sibling value of the row being edited). */
+  refFilters: {[column: string]: string};
+  /** Custom permission names the table declares (`permissions` in schema.json). */
+  permissions: string[];
 }
 
 /** Per-row outcome inside a {@link DomainBatchReport}. */
@@ -357,10 +378,15 @@ export interface DomainQuerySpec<TColumn extends string = string, TExpandKey ext
   expand?: TExpandKey[];
   limit?: number;
   offset?: number;
-  /** Adds the per-row {@link DOMAIN_ACCESS_COLUMNS} (`~can_edit`, `~can_delete`, `~can_share`):
-   * JSON rows carry them as boolean keys, `queryDf` frames as trailing bool columns. Row-level
-   * truth where the table-level {@link DomainAccess.can} flags are false negatives. */
+  /** Adds the per-row {@link DOMAIN_ACCESS_COLUMNS} (`~can_edit`, `~can_delete`, `~can_share`,
+   * plus `~can_<name>` per declared custom permission): JSON rows carry them as boolean keys,
+   * `queryDf` frames as trailing bool columns. Row-level truth where the table-level
+   * {@link DomainAccess.can} flags are false negatives. */
   withAccess?: boolean;
+  /** Case-insensitive substring over the table's searchable columns — those declared
+   * `searchable: true`, else the name column ({@link DomainTableInfo.searchableColumns});
+   * a table with neither rejects with a filter error. ANDed with `filter`. */
+  search?: string;
 }
 
 /** One measure of {@link DomainAggregateSpec}: `fn` over `column` (`count` needs no column);
@@ -463,15 +489,22 @@ export type DomainFacetResultOf<K extends DomainFacetKind> =
 /** One operation of `DomainsDataSource.transaction`. */
 export interface DomainTransactionOp {
   op: 'insert' | 'update' | 'delete';
-  /** Table name within the transaction's schema. */
+  /** `'<table>'` in the transaction's schema, or `'<schema>.<table>'` — one
+   * transaction may span schemas. */
   table: string;
-  /** Names this op's new row id; later ops may reference it in values as `'$<ref>'`
-   * (escape a literal leading `$` in a value by doubling it: `'$$100'` stores `'$100'`). */
+  /** Names this op's new row id; other ops may reference it in values as `'$<ref>'`
+   * — forward references are resolved (the server orders the inserts), and deletes
+   * run child-first. Escape a literal leading `$` in a value by doubling it:
+   * `'$$100'` stores `'$100'`. */
   ref?: string;
   values?: object;
   id?: string;
   /** Optimistic-concurrency guard for update ops. */
   expectedVersion?: number;
+  /** Insert ops only: `'error'` fails the whole transaction on a business-key
+   * conflict. Without it the insert merges into the existing row and reports
+   * `{created: false, status: 'duplicate', existingId}`. */
+  onDuplicate?: 'error';
 }
 
 /** Options for domain table `batch`. */
@@ -605,7 +638,7 @@ export async function retryOnVersionConflict<T>(
 export interface IDomainQueryExecutor<TRow> {
   query(spec: any): Promise<TRow[]>;
   queryDf(spec: any): Promise<any>;       // DG.DataFrame
-  count(filter?: any): Promise<number>;
+  count(filter?: any, options?: {search?: string}): Promise<number>;
   /** Table address, needed by {@link DomainQueryBuilder.toQuery} (`DomainTableClient` carries it). */
   readonly schema?: string;
   readonly table?: string;
@@ -665,6 +698,7 @@ export class DomainQueryBuilder<TRow, TColumn extends string = string,
   private _limit?: number;
   private _offset?: number;
   private _withAccess = false;
+  private _search?: string;
 
   constructor(private readonly client: IDomainQueryExecutor<TRow>) {}
 
@@ -743,6 +777,12 @@ export class DomainQueryBuilder<TRow, TColumn extends string = string,
     return this;
   }
 
+  /** Substring search over the table's searchable columns (see {@link DomainQuerySpec.search}). */
+  search(text: string): this {
+    this._search = text;
+    return this;
+  }
+
   private _filter(): DomainFilter<TColumn> | undefined {
     return this._rawFilter !== undefined ? this._rawFilter
       : this._conds.length === 0 ? undefined : this._conds;
@@ -765,6 +805,8 @@ export class DomainQueryBuilder<TRow, TColumn extends string = string,
       spec.offset = this._offset;
     if (this._withAccess)
       spec.withAccess = true;
+    if (this._search != null && this._search !== '')
+      spec.search = this._search;
     return spec;
   }
 
@@ -786,9 +828,9 @@ export class DomainQueryBuilder<TRow, TColumn extends string = string,
     return rows.length === 0 ? null : rows[0];
   }
 
-  /** Matching-row count under the built filter (ignores top/skip/select/expand). */
+  /** Matching-row count under the built filter and search (ignores top/skip/select/expand). */
   count(): Promise<number> {
-    return this.client.count(this._filter());
+    return this.client.count(this._filter(), {search: this._search});
   }
 
   /** Whether at least one row matches. */

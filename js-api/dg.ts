@@ -12,7 +12,7 @@ export * from './src/dapi';
 export * from './src/domains';
 export * from './src/domains-ui';
 export * from './src/ui/domains/domains-editor';
-export * from './src/ui/domains/domains-grid';
+export * from './src/ui/domains/domains-session';
 export * from './src/dataframe';
 export * from './src/entities';
 export * from './src/api/ddt.api.g';
@@ -74,9 +74,11 @@ $(function () {
     }
   });
   window.addEventListener("unhandledrejection", function(e) {
+    if ((<any>window).grok_Unhandled_Error == undefined)
+      return;
     e.preventDefault();
     e.stopPropagation();
-    (<any>window).grok_Unhandled_Error(e.reason ?? e, e.reason?.stack ?? (<any>e.reason)['$thrownJsError']?.stack);
+    (<any>window).grok_Unhandled_Error(e.reason ?? e, e.reason?.stack ?? (<any>e.reason)?.['$thrownJsError']?.stack);
   });
 
 });

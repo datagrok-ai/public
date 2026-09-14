@@ -21,7 +21,7 @@ export interface VirtualListOptions<T> {
   /** The item's FULL action list: right-click selects the row and opens it as a menu at the
    * cursor. The hover block (`rowActions`) shows the icon-bearing subset of the same list. */
   contextActions?: (item: T, index: number) => Action[];
-  /** Enter on the selected row — its default action. */
+  /** Enter on the selected row, or a double-click on it — its default action. */
   onEnter?: (item: T, index: number) => void;
   /** Delete on the selected row. */
   onDelete?: (item: T, index: number) => void;
@@ -114,6 +114,13 @@ export class VirtualList<T> extends Control {
         this._range(index);
       else
         this._single(index);
+    });
+    this._on(this._content, 'dblclick', (e) => {
+      const row = (e.target as Element).closest('.u2-list-row') as HTMLElement | null;
+      if (!row || !this._onEnter)
+        return;
+      const index = Number(row.dataset.index);
+      this._onEnter(this._items[index], index);
     });
     const contextActions = options.contextActions;
     if (contextActions) {

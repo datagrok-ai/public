@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-20753: Removed the `dapi/domains/facade-*.js` and `app-view.js` samples with the `@datagrok-libraries/domain-ui` library they demonstrated — app UI over domain tables is the u2 domain stack (see the Stockroom and Grit packages), which a sample script cannot import
 * GROK-20849: Added `data-frame/bitset/bit-array.js` — `DG.BitArray` built in JS and applied to a DataFrame filter
 * GROK-20799: Added dapi/entity-properties.js — `grok.meta.propertiesOf`/`coreLocationOf` discovery, from a type's catalog to a related-entity filter over its Core table
 * GROK-20799: Added dapi/domains/access.js — `DomainTableClient.access()` (server-composed `{can, fields}`, incl. `travelableRelations`/`securingTable`) gating a create form on `can.insert` / editable `fields`, plus `get(id, {withAccess: true})` for the per-row `~can_*` flags; handler.js and registry-reflection.js read the same shape

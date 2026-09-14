@@ -39,7 +39,7 @@ export class StringUtils {
   static jaroWinklerDistance = jaroWinklerDistance;
 }
 
-export {TYPE, COLUMN_TYPE, SEMTYPE} from '${DOUBLES}';
+export {TYPE, COLUMN_TYPE, SEMTYPE, TAGS} from '${DOUBLES}';
 
 /** A 2-role sample of js-api's \`functionRoles\` (const.ts:456) — what the functions browser's
  * roles pane is fed. */
@@ -110,6 +110,33 @@ export class ObjectHandler {
  * handler-backed rendering registers one. */
 export class DomainObjectHandler extends ObjectHandler {
   static opened = [];
+  /** Every \`decorateGrid\` call — what a grid was decorated for, over which frame, and whether the
+   * grid HELD that frame at the time (the platform decorates what the grid holds). */
+  static decorated = [];
+  /** The names the platform's DomainNameCache would have resolved: '<schema>.<table>|<id>' → name. */
+  static names = {};
+
+  /** The platform's ref-cell decoration (DomainRefCellRenderer): a column whose semType is a
+   * '<schema>.<table>' row type draws the target row's name instead of its id, an id with no name
+   * keeps the id. The platform resolves those renderers against the frame the GRID HOLDS, so a
+   * frame decorated before the grid points at it is left alone. */
+  static decorateGrid(grid, table, dataFrame) {
+    const df = dataFrame ?? grid.dataFrame;
+    const held = df != null && grid.dataFrame?.dart === df.dart;
+    DomainObjectHandler.decorated.push({grid, table, dataFrame: df, held});
+    if (!held)
+      return;
+    for (const column of df.columns.toList()) {
+      if (column.semType == null || !column.semType.includes('.'))
+        continue;
+      const gc = grid.columns.byName(column.name);
+      for (let row = 0; row < column.length; row++) {
+        const name = DomainObjectHandler.names[column.semType + '|' + column.get(row)];
+        if (name != null)
+          gc.setCellText(row, name);
+      }
+    }
+  }
 
   constructor(table) {
     super();
@@ -168,7 +195,7 @@ export function _installColumnGrid(cls) { ColumnGrid = cls; }
 `;
 
 const GROK_STUB = `
-import {DataFrame, Func, Shell} from '${DOUBLES}';
+import {DataFrame, Func, Shell, Stream} from '${DOUBLES}';
 
 export const dapi = {
   files: {
@@ -188,7 +215,8 @@ export const dapi = {
 export const shell = new Shell();
 
 /** What pickers.tableInput's follow and import action read (the platform-stub shapes). */
-export const events = {onTableAdded: shell.dart.tableAdded, onTableRemoved: shell.dart.tableRemoved};
+export const events = {onTableAdded: shell.dart.tableAdded, onTableRemoved: shell.dart.tableRemoved,
+  onViewAdded: new Stream(), onViewRemoving: new Stream(), onCurrentViewChanged: new Stream()};
 
 export const data = {parseCsv: () => new DataFrame()};
 

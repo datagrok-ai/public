@@ -7,9 +7,8 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {after, before, category, delay, expect, test} from '@datagrok-libraries/test/src/test';
 import {Rows, Scope} from '@datagrok-libraries/u2';
-import type {DomainSource} from '@datagrok-libraries/u2';
-import {domains, domainForm, domainList, DomainPick, DomainTable, saveButton, discardButton}
-  from '@datagrok-libraries/u2/src/dg/index.js';
+import type {DomainSource, IFieldStatus} from '@datagrok-libraries/u2';
+import {domains, DomainPick, DomainTable} from '@datagrok-libraries/u2/src/dg/index.js';
 
 const TABLE = 'apitests.item';
 
@@ -119,7 +118,7 @@ category('U2: domain source', () => {
       expect(draft.isDirty.value, false, 'pristine until touched');
       row!.quantity = 3;
       expect(draft.isDirty.value, true);
-      expect(await draft.save(), true);
+      expect(await draft.save(), true, `save refused: ${String(draft.error.value)}`);
       const [saved] = await items().query({filter: `sku = "${prefix}-3"`});
       expect(saved?.quantity, 3);
       expect(saved?.name, 'Gamma');
@@ -145,13 +144,13 @@ category('U2: domain source', () => {
 
   test('form: an input per editable column, text for the rest, writes through the source', async () => {
     const src = await source();
-    src.currentRow.value = src.rows.byKey(ids[0]);
-    const form = domainForm(src);
+    src.currentRow.value = src.rows.byKey(ids[0]) ?? null;
+    const form = domains.form(src);
     try {
       expect(form.form !== null, true);
       expect(form.input('name') !== undefined, true);
       expect(form.input('id') === undefined, true, 'a system column is not a field');
-      const status = form.form!.getWidgetStatus().inputs;
+      const status: IFieldStatus[] = form.form!.getWidgetStatus().inputs;
       expect(status.find((f) => f.name === 'id') === undefined, true);
       expect(status.find((f) => f.name === 'name')?.access, 'editable');
       form.input('name')!.value.value = 'Alpha 3';
@@ -170,7 +169,7 @@ category('U2: domain source', () => {
 
   test('list: rows through the handler with Open and Delete; selection is the current row', async () => {
     const src = await source();
-    const list = domainList(src);
+    const list = domains.list(src);
     try {
       const names = list.actionsFor(src.rows.byKey(ids[0])!).map((a) => a.name);
       expect(names.includes('Open') && names.includes('Delete'), true, names.join(', '));
@@ -205,8 +204,8 @@ category('U2: domain source', () => {
 
   test('Save and Discard buttons follow the session', async () => {
     const src = await source();
-    const save = saveButton(src);
-    const discard = discardButton(src);
+    const save = domains.saveButton(src);
+    const discard = domains.discardButton(src);
     try {
       expect(save.session === src.session, true, 'the source\'s own session');
       expect(save.button.disabled, true);

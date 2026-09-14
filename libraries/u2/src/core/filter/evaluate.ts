@@ -1,5 +1,5 @@
 import {BitArray} from 'datagrok-api/u2core';
-import {FilterError, KIND, isGroup, isSpan} from './model.js';
+import {FilterError, KIND, isColumnRef, isGroup, isParam, isSpan} from './model.js';
 import type {FilterCondition, FilterGroup, FilterKind, FilterScalar} from './model.js';
 import {domainValue, kindOf} from './kinds.js';
 import {resolveSpan} from '../span.js';
@@ -32,6 +32,10 @@ const NEVER = new AbortController().signal;
 
 const isFloatNull = (v: number): boolean => v === FLOAT_NULL || v === FLOAT_NULL_32 || Number.isNaN(v);
 const escapeRegExp = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const COMPARE: Record<string, (x: MaskCell, y: MaskCell) => boolean> = {
+  '=': (x, y) => x === y, '!=': (x, y) => x !== y, '<': (x, y) => x < y, '<=': (x, y) => x <= y,
+  '>': (x, y) => x > y, '>=': (x, y) => x >= y,
+};
 
 /** The leaf evaluators over a column's raw data; every mask is a `BitArray` of the column's length. */
 export class ColumnEvaluator {
@@ -92,6 +96,51 @@ export class ColumnEvaluator {
     }
   }
 
+  /** Column against column, row-wise, with one of the six comparators: a null on either side
+   * never passes; dates compare by their time value, strings by their text. */
+  static compare(left: MaskColumnLike, right: MaskColumnLike, operator: string): BitArray {
+    const test = COMPARE[operator];
+    if (test === undefined)
+      throw new FilterError(`Operator "${operator}" does not accept a column`);
+    const a = ColumnEvaluator.cells(left);
+    const b = ColumnEvaluator.cells(right);
+    return BitArray.create(left.length, (i) => {
+      const x = a(i);
+      const y = b(i);
+      return x !== null && y !== null && test(x, y);
+    });
+  }
+
+  /** A row's cell converted to the column's kind, null for a null cell. */
+  static cells(col: MaskColumnLike): (i: number) => MaskCell | null {
+    const kind = ColumnEvaluator.kindOf(col);
+    if (kind === KIND.BIG_INT) {
+      return (i) => {
+        const x = col.get!(i);
+        return x == null ? null : BigInt(x as bigint | number | string);
+      };
+    }
+    if (kind === KIND.STRING_LIST) {
+      return (i) => {
+        const x = col.get!(i);
+        return Array.isArray(x) ? x.join('\n') : null;
+      };
+    }
+    const raw = col.getRawData();
+    switch (kind) {
+      case KIND.BOOL: return (i) => ((raw[i >>> 5] >>> (i & 31)) & 1) === 1;
+      case KIND.INT: return (i) => raw[i] === INT_NULL ? null : raw[i];
+      case KIND.FLOAT: case KIND.DATE_TIME: return (i) => isFloatNull(raw[i]) ? null : raw[i];
+      default: {
+        const categories = col.categories ?? [];
+        return (i) => {
+          const s = categories[raw[i]] ?? '';
+          return s === '' ? null : s;
+        };
+      }
+    }
+  }
+
   /** A raw SQL LIKE pattern (`%`, `_`, backslash escapes) as an anchored case-insensitive RegExp. */
   static likeRegExp(pattern: string): RegExp {
     let source = '';
@@ -127,18 +176,30 @@ export class ColumnEvaluator {
 }
 
 /** Evaluates the tree over the frame's columns: sync `mask` operators and async `bitset` ones
- * per leaf, bitwise and/or/not per group, an empty group all-true. Aborts between leaves.
- * Throws `FilterError` for an unknown column, an operator without a DataFrame form, or a mask of the wrong length. */
+ * per leaf, a column reference row-wise against the other column, bitwise and/or/not per
+ * group, an empty group all-true. Aborts between leaves. Throws `FilterError` for an unknown
+ * column, an unbound `$param`, an operator without a DataFrame form, or a mask of the wrong length. */
 export async function toMask(frame: MaskFrameLike, root: FilterGroup,
   options: {signal?: AbortSignal, now?: Date} = {}): Promise<BitArray> {
   const ctx = {now: options.now ?? new Date()};
   const signal = options.signal ?? NEVER;
-  const leaf = async (c: FilterCondition): Promise<BitArray> => {
-    const col = frame.column(c.property);
+  const column = (name: string, c: FilterCondition): MaskColumnLike => {
+    const col = frame.column(name);
     if (!col) {
-      const message = `Unknown column "${c.property}"`;
+      const message = `Unknown column "${name}"`;
       throw new FilterError(message, [{nodeId: c.id, code: 'unknown-property', message}]);
     }
+    return col;
+  };
+  const leaf = async (c: FilterCondition): Promise<BitArray> => {
+    const col = column(c.property, c);
+    const param = (Array.isArray(c.value) ? c.value : [c.value]).find(isParam);
+    if (param !== undefined) {
+      const message = `Unbound parameter "$${param.param}"`;
+      throw new FilterError(message, [{nodeId: c.id, code: 'not-expressible', message}]);
+    }
+    if (isColumnRef(c.value))
+      return ColumnEvaluator.compare(col, column(c.value.column, c), c.operator);
     const op = operators.get(c.operator, {name: col.name, type: col.type, semType: col.semType});
     const m = op?.mask ? op.mask(col, c, ctx) : op?.bitset ? await op.bitset(col, c, signal) : null;
     if (m === null) {

@@ -146,11 +146,12 @@ scoped('Rows: the one holder of the ~ conventions', () => {
   assert.equal(Rows.STATE, '~state');
   assert.equal(Rows.isService('~can_edit'), true);
   assert.equal(Rows.isService('title'), false);
-  assert.equal(Rows.draftKey(3), '~row:3');
-  assert.equal(Rows.draftIndex('~row:3'), 3);
-  assert.equal(Rows.isDraft('~row:3'), true);
-  assert.equal(Rows.isDraft({id: '~row:0'}), true);
+  assert.match(Rows.draftId(), /^~new:[0-9a-f-]{36}$/);
+  assert.equal(Rows.isDraft(Rows.draftId()), true);
+  assert.equal(Rows.isDraft({id: '~new:x'}), true);
   assert.equal(Rows.isDraft({id: 'i1'}), false);
+  assert.equal(Rows.unkeyed(3), '~row:3');
+  assert.equal(Rows.isDraft('~row:3'), false, 'an id-less row of a plain frame is unkeyed, not a draft');
 });
 
 scoped('FrameRows.proxy: the row shape over any reader', () => {

@@ -7,12 +7,17 @@ import {Emitter} from '../core/emitter.js';
 import type {ObservableLike} from '../core/widget-like.js';
 import type {IProperty} from '../core/property-like.js';
 import type {Access} from '../core/access.js';
-import type {DomainTableLike, DomainTransactionOpLike} from './domain-backend.js';
+import type {DomainTableLike, DomainTransactionOpLike, DomainTransactionResultLike} from './domain-backend.js';
 import type {MemoryFrame} from './memory-frame.js';
 import {FrameRows} from './df-rows.js';
 import {Rows} from './rows-like.js';
 
 export type RowState = '' | 'new' | 'modified' | 'deleted';
+
+/** What a landed batch answers: every draft id the writer stamped → the id the server gave. */
+export interface EditSaved {
+  assigned: Record<string, string>;
+}
 
 export interface EditState {
   readonly isDirty: ReadonlySignal<boolean>;
@@ -24,11 +29,14 @@ export interface EditState {
   readonly isSaving: ReadonlySignal<boolean>;
   /** The key of the row that changed, null for a change touching several. */
   readonly onChanged: ObservableLike<string | null>;
+  /** A batch landed: the rows are settled and every draft is re-keyed by its real id. */
+  readonly onSaved: ObservableLike<EditSaved>;
   isChanged(key: string, column: string): boolean;
   errorOf(key: string, column: string): string | null;
   setValue(key: string, column: string, value: unknown): void;
-  /** Adds a draft; answers the key `RowsLike.byKey` finds it under. `pristine` is the insert-form
-   * contract: the draft is saved with the batch but arms nothing until its first write. */
+  /** Adds a draft; answers its stamped `~new:` id — the key `RowsLike.byKey` finds it under.
+   * `pristine` is the insert-form contract: the draft is saved with the batch but arms nothing
+   * until its first write. */
   newRow(values?: Record<string, unknown>, options?: {pristine?: boolean}): string;
   markDeleted(key: string): void;
   /** Undoes {@link markDeleted}: the row is back to what it was before — edited or clean. */
@@ -42,11 +50,17 @@ export interface EditState {
 
 type Row = Record<string, unknown>;
 
+/** One op of the writer's batch with the row it came from — what `applyResults` writes back to. */
+export interface MemoryPendingOp {
+  op: DomainTransactionOpLike;
+  row: Row;
+}
+
 const EMPTY = 'Value can\'t be empty';
 const isEmpty = (v: unknown) => v === null || v === undefined || v === '';
 
-/** Over the records of a `MemoryFrame`, keyed the way `FrameRows` keys them (the id cell, the
- * draft key for a row without one): originals per (row, column), the row's state in its `~state`
+/** Over the records of a `MemoryFrame`, keyed the way `FrameRows` keys them (the id cell, a
+ * draft's stamped `~new:` id): originals per (row, column), the row's state in its `~state`
  * cell, the batch built in row order as the js-api editor builds it, every write announced
  * through `onChanged` — a save removes deleted rows and re-keys drafts without a frame event, as
  * the editor does (H10). No conflict UI — a refused transaction is thrown to the caller with the
@@ -57,6 +71,7 @@ export class MemoryEditState implements EditState {
   readonly validity: ReadonlySignal<string | null>;
   readonly isSaving: ReadonlySignal<boolean>;
   readonly onChanged = new Emitter<string | null>();
+  readonly onSaved = new Emitter<EditSaved>();
 
   private readonly _originals = new Map<Row, Map<string, unknown>>();
   private readonly _pristine = new WeakSet<Row>();
@@ -88,7 +103,7 @@ export class MemoryEditState implements EditState {
   /** The frame row behind a key, -1 when the frame does not hold it. */
   indexOf(key: string): number {
     const df = this.df;
-    return Rows.draftRow(key, df.rowCount) ?? df.rows.findIndex((_, i) => FrameRows.keyOf(df, i) === key);
+    return df.rows.findIndex((_, i) => FrameRows.keyOf(df, i) === key);
   }
 
   isChanged(key: string, column: string): boolean {
@@ -102,7 +117,16 @@ export class MemoryEditState implements EditState {
     return prop === undefined || row === undefined ? null : this._error(row, prop);
   }
 
+  /** Opens and closes the writer around a transaction, as the platform editor's `setSaving` does
+   * (`domains-editor.ts`): a batch in flight is built from the rows as they were sent, so an edit
+   * made meanwhile would land in storage under the old value and read clean afterwards. */
+  setSaving(saving: boolean): void {
+    this._saving.value = saving;
+  }
+
   setValue(key: string, column: string, value: unknown): void {
+    if (this._saving.peek())
+      return;
     const row = this._row(key);
     if (row === undefined || Object.is(row[column], value))
       return;
@@ -123,17 +147,21 @@ export class MemoryEditState implements EditState {
   }
 
   newRow(values: Row = {}, options: {pristine?: boolean} = {}): string {
-    const row: Row = {...values, id: null, [Rows.STATE]: 'new'};
+    if (this._saving.peek())
+      throw new Error(`${this._table.address}: cannot add a row while the batch is being saved`);
+    const id = Rows.draftId();
+    const row: Row = {...values, id, [Rows.STATE]: 'new'};
     if (options.pristine)
       this._pristine.add(row);
     this.df.rows.push(row);
     this.df.onRowsAdded.fire(undefined);
-    const key = Rows.draftKey(this.df.rowCount - 1);
-    this._touch(key);
-    return key;
+    this._touch(id);
+    return id;
   }
 
   markDeleted(key: string): void {
+    if (this._saving.peek())
+      return;
     const row = this._row(key);
     if (row === undefined)
       return;
@@ -164,29 +192,90 @@ export class MemoryEditState implements EditState {
   async save(): Promise<boolean> {
     if (this.validity.peek() !== null || this._saving.peek())
       return false;
-    this._saving.value = true;
+    this.setSaving(true);
     try {
-      const pending = this._ops();
+      const pending = this.buildOps();
       const results = pending.length === 0 ? [] : await this._table.transaction(pending.map((p) => p.op));
-      const removed = new Set<Row>();
-      for (const [i, {op, row}] of pending.entries()) {
-        if (op.op === 'delete')
-          removed.add(row);
-        else
-          Object.assign(row, results[i]);
-      }
-      // as the platform editor's _applyResults: rows leave and drafts are re-keyed with no frame
-      // event — the host rebuilds on onChanged (H10)
-      this.df.rows.splice(0, this.df.rowCount, ...this.df.rows.filter((row) => !removed.has(row)));
-      this._settle();
+      this.applyResults(pending, results);
       return true;
     } finally {
-      this._saving.value = false;
+      this.setSaving(false);
     }
+  }
+
+  /** The batch in row order, as the js-api editor builds it: an insert names itself with its
+   * draft id, a value that is a draft id (this writer's or another's) becomes the `$` reference
+   * the server resolves, a literal leading `$` is escaped; `id` is never sent. */
+  buildOps(): MemoryPendingOp[] {
+    const table = this._table.address;
+    const pending: MemoryPendingOp[] = [];
+    for (const row of this.df.rows) {
+      const state = row[Rows.STATE] as RowState | undefined;
+      const values: Row = {};
+      const writable = this._writable(row);
+      if (state === 'deleted')
+        pending.push({row, op: {op: 'delete', table, id: String(row.id)}});
+      else if (state === 'new') {
+        for (const name of writable) {
+          if (row[name] != null)
+            values[name] = MemoryEditState._reference(row[name]);
+        }
+        pending.push({row, op: {op: 'insert', table, ref: String(row.id), values}});
+      } else if (state === 'modified') {
+        for (const name of this._originals.get(row)?.keys() ?? []) {
+          if (writable.includes(name))
+            values[name] = MemoryEditState._reference(row[name]);
+        }
+        if (Object.keys(values).length > 0) {
+          const version = row.version;
+          pending.push({row, op: {op: 'update', table, id: String(row.id), values,
+            ...(typeof version === 'number' ? {expectedVersion: version} : {})}});
+        }
+      }
+    }
+    return pending;
+  }
+
+  /** The landed batch written back: deleted rows leave, every other row takes its result (a
+   * draft its real id), every cell holding a draft id of the batch — this writer's or, through
+   * `resolved`, another's — takes the real id, everything settles — without a frame event, as
+   * the platform editor's `applyResults` (H10) — and `onSaved` carries this writer's draft → id map. */
+  applyResults(pending: MemoryPendingOp[], results: DomainTransactionResultLike[],
+    resolved: Record<string, string> = {}): void {
+    const removed = new Set<Row>();
+    const assigned = MemoryEditState.assignedOf(pending, results);
+    const ids = {...resolved, ...assigned};
+    for (const [i, {op, row}] of pending.entries()) {
+      if (op.op === 'delete')
+        removed.add(row);
+      else
+        Object.assign(row, results[i]);
+    }
+    this.df.rows.splice(0, this.df.rowCount, ...this.df.rows.filter((row) => !removed.has(row)));
+    for (const row of this.df.rows) {
+      for (const [column, value] of Object.entries(row)) {
+        if (column !== 'id' && (typeof value === 'string' || Array.isArray(value)))
+          row[column] = MemoryEditState._resolve(value, ids);
+      }
+    }
+    this._settle();
+    this.onSaved.fire({assigned});
+  }
+
+  /** The draft id of every insert of the batch → the id the backend gave it. */
+  static assignedOf(pending: MemoryPendingOp[], results: DomainTransactionResultLike[]): Record<string, string> {
+    const assigned: Record<string, string> = {};
+    for (const [i, {op}] of pending.entries()) {
+      const id = results[i]?.id;
+      if (op.op === 'insert' && op.ref !== undefined && typeof id === 'string')
+        assigned[op.ref] = id;
+    }
+    return assigned;
   }
 
   dispose(): void {
     this.onChanged.clear();
+    this.onSaved.clear();
   }
 
   /** The schema's own rules on one value: required, choices, min and max — what the backend
@@ -206,39 +295,22 @@ export class MemoryEditState implements EditState {
     return null;
   }
 
-  private _ops(): {op: DomainTransactionOpLike, row: Row}[] {
-    const table = this._table.address.split('.').pop()!;
-    const pending: {op: DomainTransactionOpLike, row: Row}[] = [];
-    for (const row of this.df.rows) {
-      const state = row[Rows.STATE] as RowState | undefined;
-      const values: Row = {};
-      const writable = this._writable(row);
-      if (state === 'deleted')
-        pending.push({row, op: {op: 'delete', table, id: String(row.id)}});
-      else if (state === 'new') {
-        for (const name of writable) {
-          if (row[name] != null)
-            values[name] = row[name];
-        }
-        pending.push({row, op: {op: 'insert', table, values}});
-      } else if (state === 'modified') {
-        for (const name of this._originals.get(row)?.keys() ?? []) {
-          if (writable.includes(name))
-            values[name] = row[name];
-        }
-        if (Object.keys(values).length > 0) {
-          const version = row.version;
-          pending.push({row, op: {op: 'update', table, id: String(row.id), values,
-            ...(typeof version === 'number' ? {expectedVersion: version} : {})}});
-        }
-      }
-    }
-    return pending;
+  private static _reference(v: unknown): unknown {
+    if (Array.isArray(v))
+      return v.map((x) => MemoryEditState._reference(x));
+    return typeof v === 'string' && (Rows.isDraft(v) || v.startsWith('$')) ? `$${v}` : v;
+  }
+
+  private static _resolve(v: unknown, ids: Record<string, string>): unknown {
+    if (Array.isArray(v))
+      return v.map((x) => MemoryEditState._resolve(x, ids));
+    return typeof v === 'string' ? ids[v] ?? v : v;
   }
 
   private _writable(row: Row): string[] {
     const access = this._access.row(row);
-    return this._table.properties.map((p) => p.name!).filter((name) => access.field(name) === 'editable');
+    return this._table.properties.map((p) => p.name!)
+      .filter((name) => name !== 'id' && access.field(name) === 'editable');
   }
 
   private _remove(drop: (row: Row) => boolean): void {

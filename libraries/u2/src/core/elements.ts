@@ -86,9 +86,9 @@ export function span(text: Text, cls?: string): HTMLSpanElement {
 
 export interface DateLike { toDate(): Date }
 
-/** Compact timestamp, full truth on hover (docs/recipes/list-item-rendering.md): renders the
- * locale short date — the year appears only when it is not the current one — with the full
- * date-time in the tooltip. Accepts anything date-shaped (`dayjs` satisfies {@link DateLike});
+/** Timestamp, full truth on hover (docs/recipes/list-item-rendering.md): the locale date with its
+ * year — the form a grid cell shows — and the time of day where the value carries one, with the
+ * full date-time in the tooltip. Accepts anything date-shaped (`dayjs` satisfies {@link DateLike});
  * an invalid date renders empty. */
 export function timestamp(value: Date | number | string | DateLike, cls?: string): HTMLSpanElement {
   const date = value instanceof Date ? value :
@@ -97,11 +97,11 @@ export function timestamp(value: Date | number | string | DateLike, cls?: string
   const el = element('span', 'u2-timestamp', cls);
   if (!(date instanceof Date) || isNaN(date.getTime()))
     return el;
-  const withYear = date.getFullYear() !== new Date().getFullYear();
-  el.textContent = date.toLocaleDateString(undefined,
-    {month: 'short', day: 'numeric', ...(withYear ? {year: 'numeric'} : {})});
-  el.title = date.toLocaleString(undefined,
-    {month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit'});
+  const day: Intl.DateTimeFormatOptions = {month: 'short', day: 'numeric', year: 'numeric'};
+  const full: Intl.DateTimeFormatOptions = {...day, hour: '2-digit', minute: '2-digit'};
+  const midnight = date.getHours() === 0 && date.getMinutes() === 0;
+  el.textContent = midnight ? date.toLocaleDateString(undefined, day) : date.toLocaleString(undefined, full);
+  el.title = date.toLocaleString(undefined, full);
   return el;
 }
 

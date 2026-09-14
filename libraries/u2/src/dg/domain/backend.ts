@@ -8,8 +8,9 @@ import * as DG from 'datagrok-api/dg';
 import type {IProperty} from '../../core/property-like.js';
 import {backends} from '../../sources/backends.js';
 import type {DataFrameLike} from '../../sources/df-bindings.js';
-import type {DomainBackend, DomainFrameLike, DomainQueryLike, DomainTableInfoLike, DomainTableLike,
-  DomainTransactionOpLike, DomainTransactionResultLike} from '../../sources/domain-backend.js';
+import type {AuditEntryLike, DomainBackend, DomainFrameLike, DomainQueryLike, DomainTableInfoLike,
+  DomainTableLike, DomainTransactionOpLike, DomainTransactionResultLike} from '../../sources/domain-backend.js';
+import type {EditState} from '../../sources/edit-state.js';
 import {EditorEditState} from './editor-state.js';
 
 /** The metadata fields a form or a filter reads off a property, copied one by one: a `DG.Property`
@@ -41,6 +42,18 @@ export class DgDomainBackend implements DomainBackend {
   /** Drops every handle, so the next source re-reads the registry — after a grant change. */
   invalidate(): void {
     this._tables.clear();
+  }
+
+  /** Every writer's batch as ONE `/transaction` through the js-api `DomainSession`, which owns
+   * the conflict dialog, the validation mapping and the retry cap; quiet — the u2 session says
+   * what was saved. */
+  async saveAll(edits: EditState[]): Promise<boolean> {
+    const session = new DG.DomainSession(edits.map((e) => (e as EditorEditState).editor), {quiet: true});
+    try {
+      return await session.save();
+    } finally {
+      session.dispose();
+    }
   }
 }
 
@@ -82,12 +95,19 @@ export class DgDomainTable implements DomainTableLike {
     return this.client.query(DgDomainTable.spec(spec));
   }
 
-  count(filter?: DomainQueryLike['filter']): Promise<number> {
-    return this.client.count(filter as DG.DomainFilter | undefined);
+  count(filter?: DomainQueryLike['filter'], search?: string): Promise<number> {
+    return this.client.count(filter as DG.DomainFilter | undefined, {search});
   }
 
   transaction(ops: DomainTransactionOpLike[]): Promise<DomainTransactionResultLike[]> {
     return grok.dapi.domains.transaction(this.client.schema, ops as DG.DomainTransactionOp[]);
+  }
+
+  /** The row's history as the seam shapes it: `id` is the ROW (the memory backend's key), the
+   * platform's audit sequence number is not kept. */
+  async audit(id: string): Promise<AuditEntryLike[]> {
+    const entries = await this.client.audit(id);
+    return entries.map((e) => ({...e, id, tx_id: e.tx_id === null ? '' : String(e.tx_id)}));
   }
 
   /** The frame with the editor attached over it; `queryDf` already stamps the `~can_*` columns out

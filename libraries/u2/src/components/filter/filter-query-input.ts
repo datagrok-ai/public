@@ -3,7 +3,7 @@
    the text unless the box is focused and dirty. Rows follow `Filters.completionContext` —
    schema properties, the property's operators, its values (or literal hints per kind) and the
    connectors — through the shared `SuggestionList` under the `u2-fq` prefix. */
-import {signal, computed, Signal, ReadonlySignal} from '../../core/signals.js';
+import {signal, computed, untracked, Signal, ReadonlySignal} from '../../core/signals.js';
 import {Input, InputOptions} from '../../core/input-base.js';
 import {bindValue} from '../../core/bind.js';
 import {div, span} from '../../core/elements.js';
@@ -20,6 +20,9 @@ export interface FilterQueryInputOptions extends InputOptions<FilterGroup> {
   placeholder?: string;
   /** What the tree must be expressible for; validation only. */
   target?: FilterTarget;
+  /** How the bound tree is spelled in the box — `Filters.format` when it answers null. A query a
+   * control wrote bound (a preset's `$me` resolved to an id) shows the way it was written. */
+  display?: (tree: FilterGroup) => string | null;
 }
 
 export interface FilterQueryInputStatus extends IWidgetStatus {
@@ -63,6 +66,8 @@ export class FilterQueryInput extends Input<FilterGroup, FilterQueryInputOptions
   /** The same text, for read-only bindings. */
   readonly query: ReadonlySignal<string>;
   readonly problems: ReadonlySignal<FilterProblem[]>;
+  /** The text {@link showText} put in the box, while it stands; null once a commit took it. */
+  readonly raw: ReadonlySignal<string | null>;
   readonly isOpen: ReadonlySignal<boolean>;
 
   // every field below is built by createEditor(), which the base constructor calls before
@@ -74,6 +79,7 @@ export class FilterQueryInput extends Input<FilterGroup, FilterQueryInputOptions
   private _view!: Signal<AsyncState<Option>>;
   private _items!: ReadonlySignal<Option[]>;
   private _problems!: Signal<FilterProblem[]>;
+  private _raw!: Signal<string | null>;
   private _context: FilterCompletion | undefined;
   private _abort: AbortController | undefined;
   private _dirty!: boolean;
@@ -83,6 +89,7 @@ export class FilterQueryInput extends Input<FilterGroup, FilterQueryInputOptions
     this.text = this._text;
     this.query = computed(() => this._text.value);
     this.problems = this._problems;
+    this.raw = this._raw;
     this.isOpen = this._list.isOpen;
     this.root.classList.add('u2-filter-query-input');
     this.root.dataset.u2 = 'filter-query-input';
@@ -93,17 +100,41 @@ export class FilterQueryInput extends Input<FilterGroup, FilterQueryInputOptions
    * root, so a bound builder keeps its rows. */
   commit(): boolean {
     const o = this.options;
+    // the text is still exactly what the tree in force reads as: nothing to parse, and a displayed
+    // form that is not the formatter's (a preset's `$me`) is not turned into a query of its own
+    if (this._raw.peek() === null && this._text.peek() === this._display(this.value.peek())) {
+      this._dirty = false;
+      return true;
+    }
     const {root, problems} = Filters.parse(this._text.peek(), o.schema, o.target);
     this._problems.value = problems;
     if (problems.length > 0)
       return false;
     this._dirty = false;
+    this._raw.value = null;
     const current = this.value.peek();
     if (Filters.equals(root, current))
-      this._text.value = Filters.format(current);
+      this._text.value = this._display(current);
     else
       this.value.value = root;
     return true;
+  }
+
+  /** Text the box did not produce — a `?q=` a link carried that the grammar or the schema refuses
+   * — shown with its problems until a commit takes it, so the user fixes it in place instead of
+   * watching it vanish; null puts the tree in force back. */
+  showText(text: string | null, problems: FilterProblem[] = []): void {
+    this._raw.value = text;
+    if (text === null) {
+      this._dirty = false;
+      // the caller is an effect of its own: re-reading the tree here must not subscribe it
+      untracked(() => this._syncText());
+      return;
+    }
+    this._dirty = true;
+    this._text.value = text;
+    this._problems.value = problems;
+    this.revalidate();
   }
 
   getWidgetStatus(): FilterQueryInputStatus {
@@ -130,6 +161,7 @@ export class FilterQueryInput extends Input<FilterGroup, FilterQueryInputOptions
     this._prefix = signal('');
     this._view = signal<AsyncState<Option>>({kind: 'idle'});
     this._problems = signal<FilterProblem[]>([]);
+    this._raw = signal<string | null>(null);
     this._items = computed(() => {
       const state = this._view.value;
       return state.kind === 'ready' ? state.items : [];
@@ -175,7 +207,7 @@ export class FilterQueryInput extends Input<FilterGroup, FilterQueryInputOptions
     });
     this._listen(input, 'select', refreshIfOpen);
     this._listen(input, 'focus', () => {
-      if (this._text.peek() === Filters.format(this.value.peek()))
+      if (this._text.peek() === this._display(this.value.peek()))
         this._dirty = false;
     });
     this._listen(input, 'blur', () => {
@@ -189,14 +221,19 @@ export class FilterQueryInput extends Input<FilterGroup, FilterQueryInputOptions
     return input;
   }
 
-  /** The bound tree re-formats the text — except under the user's feet. */
+  /** The bound tree re-formats the text — except under the user's feet, or over text {@link
+   * showText} put there that no commit has taken yet. */
   private _syncText(): void {
     const root = this.value.value;
-    if (this._dirty && document.activeElement === this._input)
+    if (this._raw.peek() !== null || (this._dirty && document.activeElement === this._input))
       return;
     this._dirty = false;
-    this._text.value = Filters.format(root);
+    this._text.value = this._display(root);
     this._problems.value = Filters.validate(root, this.options.schema, this.options.target);
+  }
+
+  private _display(tree: FilterGroup): string {
+    return this.options.display?.(tree) ?? Filters.format(tree);
   }
 
   private _caret(): number {
@@ -326,6 +363,15 @@ export class FilterQueryInput extends Input<FilterGroup, FilterQueryInputOptions
     return true;
   }
 
+  /** The highlighted row spells exactly the token already under the caret — auto-highlight put it
+   * there, the user did not. Enter must then commit, not re-insert what is typed and do nothing. */
+  private _typed(index: number): boolean {
+    const item = this._items.peek()[index];
+    const ctx = this._context;
+    return item !== undefined && ctx !== undefined &&
+      item.text === this._text.peek().slice(ctx.replace.start, ctx.replace.end);
+  }
+
   private _onKeyDown(e: KeyboardEvent): void {
     const open = this._list.isOpen.peek();
     switch (e.key) {
@@ -346,7 +392,7 @@ export class FilterQueryInput extends Input<FilterGroup, FilterQueryInputOptions
         if (e.ctrlKey || e.metaKey)
           break;
         e.preventDefault();
-        if (open && this._insert(this._list.activeIndex.peek()))
+        if (open && !this._typed(this._list.activeIndex.peek()) && this._insert(this._list.activeIndex.peek()))
           e.stopPropagation();
         else {
           this._list.dismiss();

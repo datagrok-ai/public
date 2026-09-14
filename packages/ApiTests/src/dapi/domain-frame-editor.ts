@@ -3,21 +3,22 @@ import type * as _DG from 'datagrok-api/dg';
 declare let grok: typeof _grok, DG: typeof _DG;
 
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
-import {DomainFrameEditor, DomainGrid, DomainSaveResult, SERVICE_COLUMNS, STATE_COLUMN,
-  CHANGES_COLUMN, ERRORS_COLUMN, validateCellValue} from '@datagrok-libraries/domain-ui';
 import {withRestrictedUser} from './domain-lifecycle';
 
-// ui-js-api WO-7: @datagrok-libraries/domain-ui — DomainFrameEditor (THE single
-// writer of the '~state'/'~changes'/'~errors' service columns) and DomainGrid.
-// The state-transition and op-builder tests run alongside the live loop here, as
-// planned: they import the library, which only ApiTests bundles. NONE of them is
-// pure — an editor probes the registry and the caller's access on create,
-// so every test below needs a live server with the apitests schema registered.
+// DG.DomainFrameEditor — THE single writer of the '~state'/'~changes'/'~errors'
+// service columns — and DG.Grid.attachEditor, its platform grid host. NONE of the
+// tests is pure — an editor probes the registry and the caller's access on
+// create, so every test below needs a live server with the apitests schema
+// registered.
 //
 // Fixture: the package's own 'apitests.item' (sku required+unique, name,
 // quantity int min 0). Every test inserts inside its try and deletes its rows in
 // the finally with ONE filtered deleteWhere.
 category('Dapi: domain frame editor', () => {
+  const DomainFrameEditor = DG.DomainFrameEditor;
+  type DomainFrameEditor = _DG.DomainFrameEditor;
+  type DomainSaveResult = _DG.DomainSaveResult;
+  const {SERVICE_COLUMNS, STATE_COLUMN, CHANGES_COLUMN, ERRORS_COLUMN, validateCellValue} = DG.DomainFrameEditor;
   const items = () => grok.dapi.domains.table('apitests.item');
   const stamp = () => `${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
 
@@ -344,11 +345,6 @@ category('Dapi: domain frame editor', () => {
     const prefix = `fe-attach-${stamp()}`;
     await seed(prefix, 2);
     try {
-      // ONE class, not a copy: the platform surface and the library import are
-      // the same object, so a Dart host and a plugin drive the same editor.
-      expect((DG as any).DomainFrameEditor === DomainFrameEditor, true,
-        'DG.DomainFrameEditor and the domain-ui export are different classes');
-
       // The host's own frame — what the Dart Domain View hands over: no client,
       // just the table address.
       const df = await items().queryDf(specFor(prefix) as any);
@@ -397,6 +393,50 @@ category('Dapi: domain frame editor', () => {
       // Nothing landed: the transaction rolled back.
       const server = await items().first({filter: {property: 'sku', operator: '=', value: duplicate} as any});
       expect(server != null, true, 'the readback row disappeared');
+      editor.detach();
+    } finally {
+      await cleanup(prefix);
+    }
+  });
+
+  test('duplicate refusal on the UPDATE path names the row already holding the key', async () => {
+    const prefix = `fe-dup-${stamp()}`;
+    const tags = () => grok.dapi.domains.table('apitests.tag');
+    const names = [`${prefix}-a`, `${prefix}-b`];
+    await tags().insert(names.map((name) => ({name: name})));
+    try {
+      const editor = await DomainFrameEditor.create(tags() as any,
+        {query: {filter: {property: 'name', operator: 'like', value: `${prefix}%`} as any, sort: 'name'}});
+      const taken = `${editor.dataFrame.get('name', 1)}`;
+      editor.setValue(0, 'name', taken);
+      expect(await editor.save(), false, 'a duplicate business key was accepted');
+      // the server's 409 carries the id of the row being SAVED, so the owner is looked up by the key
+      const message = `${editor.errorOf(0, 'name')?.message}`;
+      expect(message.includes(taken), true, `the refusal does not name the key: ${message}`);
+      expect(message.includes('already belongs to'), true, `the refusal does not name the owner: ${message}`);
+      editor.detach();
+    } finally {
+      try {
+        await tags().deleteWhere({property: 'name', operator: 'like', value: `${prefix}%`});
+      } catch (e) {
+        console.error(`frame-editor tag fixture ${prefix} not cleaned up: ${e}`);
+      }
+    }
+  });
+
+  test('refuse: a refusal the host detected reaches onRefused', async () => {
+    const prefix = `fe-refused-${stamp()}`;
+    await seed(prefix, 1);
+    try {
+      const editor = await editorFor(prefix);
+      const seen: {row: number, column: string, message: string}[] = [];
+      const sub = editor.onRefused.subscribe((r) => seen.push(r));
+      editor.refuse(0, 'sku', 'Sku is read-only');
+      expect(seen.length, 1, 'the refusal did not reach onRefused');
+      expect(seen[0].column, 'sku');
+      expect(seen[0].message, 'Sku is read-only');
+      expect(editor.errorOf(0, 'sku'), null, 'a refused edit marked the cell');
+      sub.unsubscribe();
       editor.detach();
     } finally {
       await cleanup(prefix);
@@ -545,13 +585,14 @@ category('Dapi: domain frame editor', () => {
     };
     try {
       const editor = await editorFor(prefix);
-      const grid = DomainGrid.forEditor(editor);
+      const grid = DG.Grid.create(editor.dataFrame);
+      grid.attachEditor(editor);
       const rowsBefore = editor.dataFrame.rowCount;
       editor.setValue(0, 'name', 'Saved under the lock');
 
       const saving = editor.save();
       expect(editor.isSaving, true, 'the editor did not close for the save');
-      expect(grid.grid.props.allowEdit, false, 'the grid stayed editable during the save');
+      expect(grid.props.allowEdit, false, 'the grid stayed editable during the save');
 
       // Every writer is refused — loudly, and without touching the batch the
       // in-flight transaction addresses.
@@ -568,7 +609,7 @@ category('Dapi: domain frame editor', () => {
       release();
       expect(await saving, true, 'the save did not finish');
       expect(editor.isSaving, false, 'the editor stayed closed after the save');
-      expect(grid.grid.props.allowEdit, grid.editable, 'the grid stayed locked after the save');
+      expect(grid.props.allowEdit, editor.writableColumns != null, 'the grid stayed locked after the save');
       expect(editor.isDirty, false, 'the save left the batch pending');
       const server = await items().query({filter: {property: 'sku', operator: 'like',
         value: `${prefix}%`} as any, sort: 'sku'});
@@ -654,44 +695,47 @@ category('Dapi: domain frame editor', () => {
     expect(validateCellValue(sku, null), "Value can't be empty", 'a required null was accepted');
   });
 
-  test('DomainGrid: platform decoration, hidden service columns, capability gating', async () => {
+  test('Grid.attachEditor: platform decoration, hidden service columns, capability gating', async () => {
     const prefix = `fe-grid-${stamp()}`;
     await seed(prefix, 2);
-    let grid: DomainGrid | null = null;
+    let grid: _DG.Grid | null = null;
+    let editor: DomainFrameEditor | null = null;
     try {
-      grid = await DomainGrid.create(items() as any, {
-        query: {filter: {property: 'sku', operator: 'like', value: `${prefix}%`} as any, sort: 'sku'},
-      });
-      expect(grid.editable, grid.editor.access.can.edit, 'the grid ignored the table access');
+      editor = await editorFor(prefix);
+      grid = DG.Grid.create(editor.dataFrame);
+      DG.DomainObjectHandler.decorateGrid(grid, 'apitests.item', editor.dataFrame);
+      grid.attachEditor(editor);
+      expect(grid.editor === editor, true, 'the grid does not report the attached editor');
 
       // The editing state is never visible or editable, whatever a handler does.
       for (const name of SERVICE_COLUMNS) {
-        const gc = grid.grid.col(name);
+        const gc = grid.col(name);
         expect(gc != null, true, `${name} is missing from the grid`);
         expect(gc!.visible, false, `${name} is visible in the grid`);
         expect(gc!.editable, false, `${name} is editable in the grid`);
       }
       // Platform decoration ran: system columns hidden (the renderGrid contract).
-      expect(grid.grid.col('id')?.visible, false, 'renderGrid did not hide the system columns');
+      expect(grid.col('id')?.visible, false, 'renderGrid did not hide the system columns');
 
       // Column security is the only in-grid editing gate (reference columns
       // included — they open their own anchored picker).
-      if (grid.editor.access.can.edit) {
-        expect(grid.grid.props.allowEdit, true, 'an editable table produced a read-only grid');
-        for (const p of grid.editor.properties) {
-          const gc = grid.grid.col(p.name);
-          if (gc != null && grid.editor.access.fields[p.name] !== 'editable')
+      if (editor.access.can.edit) {
+        expect(grid.props.allowEdit, true, 'an editable table produced a read-only grid');
+        for (const p of editor.properties) {
+          const gc = grid.col(p.name);
+          if (gc != null && editor.access.fields[p.name] !== 'editable')
             expect(gc.editable, false, `${p.name} is editable without write access`);
         }
-        expect(grid.grid.col('sku')?.editable, true, 'a writable column is not editable');
+        expect(grid.col('sku')?.editable, true, 'a writable column is not editable');
       }
 
       // The grid is the editor's mouth, never a second writer.
-      grid.editor.setValue(0, 'name', 'Through the editor');
-      expect(grid.editor.isChanged(0, 'name'), true, 'the edit was not tracked');
-      expect(grid.dataFrame === grid.editor.dataFrame, true, 'the grid and editor drifted apart');
+      editor.setValue(0, 'name', 'Through the editor');
+      expect(editor.isChanged(0, 'name'), true, 'the edit was not tracked');
+      expect(grid.dataFrame.dart === editor.dataFrame.dart, true, 'the grid and editor drifted apart');
     } finally {
       grid?.detach();
+      editor?.detach();
       await cleanup(prefix);
     }
   });
@@ -700,20 +744,23 @@ category('Dapi: domain frame editor', () => {
     const prefix = `fe-ref-${stamp()}`;
     const [itemId, otherItemId] = await seed(prefix, 2);
     const events = () => grok.dapi.domains.table('apitests.item_event');
-    let grid: DomainGrid | null = null;
+    let grid: _DG.Grid | null = null;
+    let editor: DomainFrameEditor | null = null;
     try {
       await events().insert([{item_id: itemId, kind: `${prefix}-in`, amount: 1}]);
-      grid = await DomainGrid.create(events() as any, {
+      editor = await DomainFrameEditor.create(events() as any, {
         query: {filter: {property: 'kind', operator: 'like', value: `${prefix}%`} as any, sort: 'kind'},
       });
-      const editor = grid.editor;
+      grid = DG.Grid.create(editor.dataFrame);
+      DG.DomainObjectHandler.decorateGrid(grid, 'apitests.item_event', editor.dataFrame);
+      grid.attachEditor(editor);
       const access = editor.access;
       if (!access.can.edit || access.fields['item_id'] !== 'editable')
         throw new Error('the fixture is not editable: the ref gate cannot be exercised');
 
       // The gate lift: a writable ref column takes in-grid edits, so the
       // platform's own anchored picker can open on it.
-      expect(grid.grid.col('item_id')?.editable, true,
+      expect(grid.col('item_id')?.editable, true,
         'a writable ref column stayed read-only — the in-place picker cannot open');
 
       // DELETE / BACKSPACE clears a ref cell by writing '': it must reach the
@@ -744,11 +791,12 @@ category('Dapi: domain frame editor', () => {
       expect(editor.isChanged(0, 'item_id'), false, 'the pick back to the original stayed pending');
     } finally {
       grid?.detach();
+      editor?.detach();
       await cleanup(prefix);
     }
   });
 
-  test('DomainGrid.decorate: an overriding handler of another type still wins', async () => {
+  test('DomainObjectHandler.decorateGrid: an overriding handler of another type still wins', async () => {
     const seen: any[] = [];
     // A plugin handler that claims apitests.item rows through isApplicable while
     // declaring a type of its own — the shape the collapse rule must NOT drop.
@@ -783,7 +831,7 @@ category('Dapi: domain frame editor', () => {
       const df = await items().queryDf({filter: {property: 'sku', operator: 'like',
         value: `${prefix}%`} as any});
       const grid = DG.Grid.create(df);
-      DomainGrid.decorate(grid, 'apitests.item', df);
+      DG.DomainObjectHandler.decorateGrid(grid, 'apitests.item', df);
       expect(seen.length, 1, 'the overriding handler was collapsed away');
       expect(grid.columns.byName('quantity')!.visible, false, 'its decoration did not land');
 
@@ -792,7 +840,7 @@ category('Dapi: domain frame editor', () => {
       handler.retired = true;
       DG.ObjectHandler.register(quiet);
       const collapsed = DG.Grid.create(df);
-      DomainGrid.decorate(collapsed, 'apitests.item', df);
+      DG.DomainObjectHandler.decorateGrid(collapsed, 'apitests.item', df);
       expect(seen.length, 1, 'the retired handler decorated again');
       expect(collapsed.col('id')?.visible, false,
         'a non-overriding handler of another type swallowed the platform decoration');
@@ -801,7 +849,7 @@ category('Dapi: domain frame editor', () => {
       // (the id column is a system column renderGrid hides).
       quiet.retired = true;
       const plain = DG.Grid.create(df);
-      DomainGrid.decorate(plain, 'apitests.item', df);
+      DG.DomainObjectHandler.decorateGrid(plain, 'apitests.item', df);
       expect(seen.length, 1, 'a retired handler still decorated');
       expect(plain.col('id')?.visible, false, 'the platform decoration did not run');
     } finally {
@@ -811,7 +859,7 @@ category('Dapi: domain frame editor', () => {
     }
   });
 
-  test('DomainGrid: read-only degradation under a restricted user', async () => {
+  test('Grid.attachEditor: read-only degradation under a restricted user', async () => {
     const prefix = `fe-ro-${stamp()}`;
     await seed(prefix, 1);
     try {
@@ -824,18 +872,21 @@ category('Dapi: domain frame editor', () => {
             grok.dapi.domains.invalidateUiCaches();
             const access = await grok.dapi.domains.table('apitests.item').access();
             expect(access.can.edit, false, 'a View-only user reports can.edit');
-            const grid = await DomainGrid.create(grok.dapi.domains.table('apitests.item') as any,
+            const editor = await DomainFrameEditor.create(grok.dapi.domains.table('apitests.item') as any,
               {query: {filter: {property: 'sku', operator: 'like', value: `${prefix}%`} as any}});
+            const grid = DG.Grid.create(editor.dataFrame);
+            grid.attachEditor(editor);
             try {
-              expect(grid.editable, false, 'the grid stayed editable for a View-only user');
-              expect(grid.grid.props.allowEdit, false, 'allowEdit survived read-only degradation');
-              for (const p of grid.editor.properties) {
-                const gc = grid.grid.col(p.name);
+              expect(editor.writableColumns, null, 'a View-only user has writable columns');
+              expect(grid.props.allowEdit, false, 'allowEdit survived read-only degradation');
+              for (const p of editor.properties) {
+                const gc = grid.col(p.name);
                 if (gc != null)
                   expect(gc.editable, false, `${p.name} is editable for a View-only user`);
               }
             } finally {
               grid.detach();
+              editor.detach();
             }
           });
         } finally {
@@ -851,6 +902,31 @@ category('Dapi: domain frame editor', () => {
         'read-only degradation was NOT verified: no restricted session (see the console for why)');
     } finally {
       grok.dapi.domains.invalidateUiCaches();
+      await cleanup(prefix);
+    }
+  });
+
+  test('detachEditor: the grid drops its subscriptions with the viewer, and attaching another editor replaces the first', async () => {
+    const prefix = `fe-detach-${stamp()}`;
+    await seed(prefix, 1);
+    const first = await editorFor(prefix);
+    const second = await editorFor(prefix);
+    try {
+      const grid = DG.Grid.create(first.dataFrame);
+      grid.attachEditor(first);
+      expect(grid.editor === first, true, 'the first editor was not attached');
+      grid.attachEditor(second);
+      expect(grid.editor === second, true, 'attaching another editor did not replace the first');
+      expect(grid.dataFrame.dart === second.dataFrame.dart, false,
+        'attaching an editor must not rebind the frame by itself — onRefreshed does');
+      grid.detachEditor();
+      expect(grid.editor, null, 'detachEditor left the editor attached');
+      grid.attachEditor(first);
+      grid.detach();
+      expect(grid.editor, null, 'detach() did not drop the editor with the viewer');
+    } finally {
+      first.detach();
+      second.detach();
       await cleanup(prefix);
     }
   });

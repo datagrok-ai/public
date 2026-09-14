@@ -2,24 +2,24 @@
    collection is the frame the backend hands out with its writer attached; `rows` is the
    key-addressed view lists and pickers read, `currentRow` what a form edits, and every edit goes
    through the table's `EditState` — drafts are rows, save is one transaction through the
-   session. Platform-free: everything reaches the platform through `backends.domain`. Row
-   selection arrives with the grid in phase 2. */
+   session every source of a spec or an app shares. Platform-free: everything reaches the
+   platform through `backends.domain`. */
 import {signal, computed, batch, Signal, ReadonlySignal} from '../core/signals.js';
 import {Component} from '../core/component.js';
 import {Access} from '../core/access.js';
 import {Filters} from '../core/filter/index.js';
-import type {FilterGroup, FilterProperty, FilterSchema} from '../core/filter/index.js';
+import type {FilterGroup, FilterNode, FilterProperty, FilterScalar, FilterSchema} from '../core/filter/index.js';
 import {backends, requireBackend} from './backends.js';
 import {subBind} from './sub-bind.js';
 import {Rows} from './rows-like.js';
-import type {RowsLike, RowView} from './rows-like.js';
+import type {DomainRowLike, RowsLike, RowValues, RowView} from './rows-like.js';
 import {FrameRows} from './df-rows.js';
 import type {EditState} from './edit-state.js';
 import type {DataFrameLike} from './df-bindings.js';
 import {DomainBackendError} from './domain-backend.js';
 import type {DomainBackend, DomainFrameLike, DomainQueryLike, DomainTableInfoLike, DomainTableLike}
   from './domain-backend.js';
-import {SingleSession} from './session.js';
+import {SharedSession} from './session.js';
 import type {DomainSession} from './session.js';
 import type {BindProp, BindSource} from '../spec/bind-source.js';
 import type {ComponentEnv, ComponentStart} from '../spec/registry.js';
@@ -37,40 +37,61 @@ export interface DomainSourceOptions {
   table?: string;
   /** A smart-filter string, or a filter tree built in code. */
   query?: string | FilterGroup;
+  /** A case-insensitive substring over the table's searchable columns, ANDed with the query. */
+  search?: string;
   pageSize?: number;
   /** Ask for the per-row access columns with every row (default true); the table-level access is
    * always fetched. */
   withAccess?: boolean;
   /** What every draft starts with — a parent's id on a child table. */
   defaults?: Record<string, unknown>;
-  /** A source that loads nothing and holds one pristine draft — what a create form binds to;
-   * `save()` inserts it. */
+  /** A source that loads no rows: the frame exists, so drafts can be added — a child collection
+   * under a draft parent. */
+  empty?: boolean;
+  /** `empty` plus one pristine draft — what a create form binds to; `save()` inserts it. */
   draft?: boolean;
-  /** The unit of work `save`/`discard` go through; the source's own session of one by default. */
+  /** The unit of work `save`/`discard` go through: the ambient session of the spec or app being
+   * built, else a session of its own. */
   session?: DomainSession;
 }
 
-type Row = Record<string, unknown>;
-
 const NO_ENV: ComponentEnv = {designTime: false, subBinds: {}, resolve: () => null};
-const NO_INFO: DomainTableInfoLike = {nameColumn: null, singularName: '', pluralName: '', businessKey: []};
+const NO_INFO: DomainTableInfoLike = {nameColumn: null, singularName: '', pluralName: '', businessKey: [],
+  searchableColumns: [], constraints: [], refFilters: {}, permissions: [], childTables: []};
 const REF_ADDRESS = /^\w+\.\w+$/;
 
-export class DomainSource extends Component implements BindSource, ComponentStart {
+export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Component
+  implements BindSource, ComponentStart {
+  /** Every source alive — what resolves a draft id to its row across sources ({@link draftOf}). */
+  static readonly live = new Set<DomainSource>();
+  /** The `code` of a refusal the backend already reported ({@link refuse}). */
+  static readonly REFUSED = 'refused';
+
   readonly table: string;
   readonly pageSize: number;
   readonly withAccess: boolean;
   readonly defaults: Record<string, unknown>;
   readonly isDraft: boolean;
+  /** Loads no rows (`draft` implies it). */
+  readonly isEmpty: boolean;
   /** A signal, so the panel edits it live and a bound path drives it. */
   readonly query: Signal<string | FilterGroup>;
+  /** The search text, re-queried on change like {@link query}. */
+  readonly search: Signal<string>;
   readonly df: ReadonlySignal<DataFrameLike | undefined>;
-  readonly rows: RowsLike<RowView>;
+  readonly rows: RowsLike<RowView<TRow>>;
   /** Two-way; mirrors the frame's current row. */
-  readonly currentRow: Signal<RowView | null>;
+  readonly currentRow: Signal<RowView<TRow> | null>;
+  /** The frame's selected rows (a grid's); empty over a frame without a selection. */
+  readonly selection: ReadonlySignal<readonly RowView<TRow>[]>;
   readonly state: ReadonlySignal<DomainSourceState>;
   /** What the last load or save threw — a `DomainBackendError` keeps its `code`. */
   readonly error: ReadonlySignal<unknown>;
+  /** The row the current refusal is about, when one names a row — what a list marks. */
+  readonly problemRow: ReadonlySignal<string | null>;
+  /** How a refusal the writer raised over one cell is worded; the table's registry sets it (the
+   * row's caption and the column's), and without it the writer's own message stands. */
+  nameCell: ((row: RowView, column: string, problem: string) => string) | undefined;
   /** How many rows match the query, once counted. */
   readonly total: ReadonlySignal<number | null>;
   readonly access: ReadonlySignal<Access>;
@@ -93,11 +114,13 @@ export class DomainSource extends Component implements BindSource, ComponentStar
   private readonly _edit = signal<EditState | undefined>(undefined);
   private readonly _state = signal<DomainSourceState>('idle');
   private readonly _error = signal<unknown>(undefined);
+  private readonly _problemRow = signal<string | null>(null);
   private readonly _total = signal<number | null>(null);
   private readonly _access = signal(Access.readOnly);
+  private readonly _selection = signal<readonly RowView<TRow>[]>([]);
   private readonly _errorStep: ReadonlySignal<string>;
   /** The `source` step: the resolver walks to a signal, so the source hands itself over in one. */
-  private readonly _self = signal<DomainSource>(this);
+  private readonly _self = signal<DomainSource<TRow>>(this);
   /** Bumped on every edit-state change, so everything reading a row live re-reads. */
   private readonly _version = signal(0);
   private readonly _rows: FrameRows;
@@ -111,6 +134,9 @@ export class DomainSource extends Component implements BindSource, ComponentStar
   private _gen = 0;
   private _loaded = 0;
   private _done = false;
+  /** Set while {@link rebind} rewrites the query: the caller re-reads, and a refresh here would
+   * drop the frame the batch just landed in. */
+  private _rebinding = false;
 
   constructor(options: DomainSourceOptions, env: ComponentEnv = NO_ENV) {
     super();
@@ -120,25 +146,35 @@ export class DomainSource extends Component implements BindSource, ComponentStar
     this.withAccess = options.withAccess ?? true;
     this.defaults = {...options.defaults};
     this.isDraft = options.draft ?? false;
+    this.isEmpty = options.empty ?? this.isDraft;
     this.query = signal<string | FilterGroup>(options.query ?? '');
+    this.search = signal(options.search ?? '');
     this._backend = requireBackend(this, backends.domain, 'domain tables');
     this.df = this._df;
     this.error = this._error;
+    this.problemRow = this._problemRow;
     this.access = this._access;
+    this.selection = this._selection;
     this.edit = this._edit;
     this.state = this._state;
     this.total = this._total;
     this._errorStep = computed(() => DomainSource._message(this._error.value));
-    this.currentRow = signal<RowView | null>(null);
+    this.currentRow = signal<RowView<TRow> | null>(null);
     this._rows = new FrameRows(this._df, this.scope,
       {onWrite: (id, column, value) => this._edit.peek()?.setValue(id, column, value)});
-    this.rows = this._rows;
+    this.rows = this._rows as RowsLike<RowView> as RowsLike<RowView<TRow>>;
     this.isDirty = computed(() => this._edit.value?.isDirty.value ?? false);
     this.changeCount = computed(() => this._edit.value?.changeCount.value ?? 0);
     this.validity = computed(() => this._edit.value?.validity.value ?? null);
     this.isSaving = computed(() => this._edit.value?.isSaving.value ?? false);
     this.summary = computed(() => this._summary());
-    this.session = options.session ?? new SingleSession(this);
+    this.session = options.session ?? SharedSession.ambient ?? new SharedSession();
+    const leave = this.session.add?.(this);
+    DomainSource.live.add(this);
+    this.own(() => {
+      DomainSource.live.delete(this);
+      leave?.();
+    });
 
     // a row that left the collection — a discarded draft, a saved delete — hands the current row
     // on to whatever sits at its place now (a saved draft under its new key, the next row), or none
@@ -178,7 +214,7 @@ export class DomainSource extends Component implements BindSource, ComponentStar
       apply: () => this.discard()});
     this.registerFunction({name: 'newRow', description: 'Add a pristine draft row and make it current',
       inputs: [{name: 'values', type: 'object', nullable: true}],
-      apply: (params) => this.newRow(params?.values as Row | undefined, {pristine: true})});
+      apply: (params) => this.newRow(params?.values as RowValues<TRow> | undefined, {pristine: true})});
   }
 
   /** Phase two: the query may be bound to an input the form declares after this source; the
@@ -191,7 +227,8 @@ export class DomainSource extends Component implements BindSource, ComponentStar
       this.effect(() => this.query.value = DomainSource._queryOf(bound.value));
     this.effect(() => {
       this.query.value;
-      if (!this.isDirty.peek())
+      this.search.value;
+      if (!this.isDirty.peek() && !this._rebinding)
         void this.refresh();
     });
   }
@@ -200,10 +237,21 @@ export class DomainSource extends Component implements BindSource, ComponentStar
     return this._schema;
   }
 
+  /** The draft a `~new:` id names, in whichever live source holds it — how a picker or a readonly
+   * reference shows a parent that is not saved yet. */
+  static draftOf(id: string): {source: DomainSource, row: RowView} | undefined {
+    for (const source of DomainSource.live) {
+      const row = source.rows.byKey(id);
+      if (row !== undefined)
+        return {source, row};
+    }
+    return undefined;
+  }
+
   /** A draft over {@link defaults} and `values`, made current — the row a create form binds to;
    * `pristine` keeps it from arming the dirty gate until its first edit. Needs the table: call
    * after the source is ready. */
-  newRow(values: Row = {}, options?: {pristine?: boolean}): RowView {
+  newRow(values: RowValues<TRow> = {}, options?: {pristine?: boolean}): RowView<TRow> {
     const edit = this._edit.peek();
     if (edit === undefined)
       throw new Error(`${this.table}: the table is not loaded yet`);
@@ -216,7 +264,8 @@ export class DomainSource extends Component implements BindSource, ComponentStar
   }
 
   /** Reloads from the first page; pending changes are dropped. Stale answers — a load a later
-   * refresh outran — touch nothing. A draft source loads no rows and starts on a pristine draft. */
+   * refresh outran — touch nothing. An empty source loads no rows; a draft one starts on a
+   * pristine draft. */
   async refresh(): Promise<void> {
     const gen = ++this._gen;
     batch(() => {
@@ -228,25 +277,37 @@ export class DomainSource extends Component implements BindSource, ComponentStar
       if (gen !== this._gen)
         return;
       this._adopt(table);
-      const [access, frame, total] = await Promise.all([
-        table.access(), table.frame(this._spec(0)), this.isDraft ? 0 : table.count(this._filter())]);
+      // what the caller may do does not depend on the query: a filter the server refuses must not
+      // take New away with the rows
+      const access = table.access().then((a) => {
+        if (gen === this._gen)
+          this._access.value = Access.from(a);
+      });
+      const [, frame, total] = await Promise.all([
+        access, table.frame(this._spec(0)), this._noRows ? 0 : this._count(table)]);
       if (gen !== this._gen) {
         frame.dispose();
+        return;
+      }
+      // an edit landed on the live frame while this load was in flight: the edited frame stays
+      if (this.isDirty.peek()) {
+        frame.dispose();
+        this._state.value = 'ready';
         return;
       }
       this._drop();
       this._frame = frame;
       this._loaded = frame.df.rowCount;
-      this._done = this.isDraft || this._loaded < this.pageSize;
+      this._done = this._noRows || this._loaded < this.pageSize;
       this._wire(frame);
       batch(() => {
-        this._access.value = Access.from(access);
         this._df.value = frame.df;
         this._edit.value = frame.edit;
         this._total.value = total;
         this._state.value = 'ready';
       });
       this._syncCurrent();
+      this._syncSelection();
       if (this.isDraft)
         this.newRow({}, {pristine: true});
     } catch (e) {
@@ -302,30 +363,161 @@ export class DomainSource extends Component implements BindSource, ComponentStar
     return () => this._guards.delete(check);
   }
 
-  /** This source's pending changes as one transaction — what its session calls; a refusal is
-   * the `error` (the summary and a paired form show it) and answers false. */
-  async commit(): Promise<boolean> {
+  /** What keeps this source's batch from being sent — a guard's refusal, then the writer's
+   * validity — set as the `error` ("Cannot save: Title is required"; the summary and a paired
+   * form show it); null when saveable. The session runs it on every source of the batch it is
+   * about to send, dirty or not: a pristine parent a child refers to is inserted by that batch,
+   * and the app's rules over it hold. */
+  check(): string | null {
     const edit = this._edit.peek();
-    if (edit === undefined || !edit.isDirty.peek())
-      return false;
-    this._error.value = undefined;
-    for (const check of this._guards) {
-      const problem = check();
+    if (edit === undefined)
+      return null;
+    batch(() => {
+      this._error.value = undefined;
+      this._problemRow.value = null;
+    });
+    for (const guard of this._guards) {
+      const problem = guard();
       if (problem !== null)
         return this._refuse(problem);
     }
     const problem = edit.validity.peek();
-    if (problem !== null)
-      return this._refuse(problem);
-    try {
-      const saved = await edit.save();
-      if (saved && !this.isDraft)
-        this._total.value = await this._table!.count(this._filter());
-      return saved;
-    } catch (e) {
-      this._error.value = e;
-      return false;
+    return problem === null ? null : this._refuse(this._locate(edit, problem) ?? problem);
+  }
+
+  /** The cell the writer's `validity` is about, worded by {@link nameCell} — the writer reports
+   * the message alone, and "Cannot save: Value can't be empty" names no field. */
+  private _locate(edit: EditState, problem: string): string | null {
+    const name = this.nameCell;
+    if (name === undefined)
+      return null;
+    for (const row of this.pending()) {
+      for (const prop of this._schema.properties) {
+        if (edit.errorOf(row.id, prop.name) !== problem)
+          continue;
+        this.markProblem(row.id);
+        return name(row, prop.name, problem);
+      }
     }
+    return null;
+  }
+
+  /** Every row the writer has pending — new, modified or deleted — whatever the frame's filter
+   * shows: what the batch is built from, and so what validation and reference discovery are
+   * about. */
+  pending(): readonly RowView<TRow>[] {
+    return this._rows.pending() as RowView<TRow>[];
+  }
+
+  /** After a batch this source took part in landed: the loaded window re-read so paging starts
+   * from the offset the server agrees with, the total counted again, and every other live source
+   * of the same table reloaded — it is holding the rows this batch just rewrote. */
+  async afterSave(): Promise<void> {
+    await this._rebase();
+    for (const source of DomainSource.live) {
+      if (source !== this && source.table === this.table && !source.isDirty.peek())
+        source.refresh().catch((e) => source.fail(e));
+    }
+    if (!this._noRows && this._table !== undefined)
+      this._total.value = await this._count(this._table);
+  }
+
+  /** After a landed batch: every draft id it assigned taken out of this source's {@link query} and
+   * {@link defaults}, so a child collection built under a draft parent (`fk = "~new:…"`, the
+   * master–detail shape) names the row the parent became — the re-read, and every draft added
+   * later, are about the real id. Answers whether the query changed — what has rows to re-read;
+   * re-reading is the caller's ({@link afterSave}), so the rewrite itself loads nothing. */
+  rebind(assigned: Record<string, string>): boolean {
+    for (const [column, value] of Object.entries(this.defaults)) {
+      const real = typeof value === 'string' ? assigned[value] : undefined;
+      if (real !== undefined)
+        this.defaults[column] = real;
+    }
+    const query = this.query.peek();
+    const rebound = DomainSource._rebound(query, assigned);
+    if (rebound === query)
+      return false;
+    this._rebinding = true;
+    try {
+      this.query.value = rebound;
+    } finally {
+      this._rebinding = false;
+    }
+    return true;
+  }
+
+  /** The rows loaded so far, read again from the first one: a batch that inserted, deleted or
+   * moved a row leaves the frame holding other rows than the server would answer at those
+   * offsets, and the next page would skip or repeat. The current row and the selection are kept
+   * by id — a saved draft under the id it was given. */
+  private async _rebase(): Promise<void> {
+    const table = this._table;
+    const frame = this._frame;
+    if (table === undefined || frame === undefined || this._noRows)
+      return;
+    const window = frame.df.rowCount;
+    if (window === 0)
+      return;
+    const gen = this._gen;
+    const selected = this._selection.peek().map((row) => row.id);
+    // read before the swap: a row the replacement does not hold takes `currentRow` with it
+    const current = this.currentRow.peek()?.id ?? null;
+    const replacement = await table.frame(this._spec(0, window));
+    if (gen !== this._gen) {
+      replacement.dispose();
+      return;
+    }
+    // swapped in place, never through `_drop`: a row's proxy is keyed, reads whatever frame the
+    // source holds, and everything bound to it stays bound
+    this._unwire?.();
+    this._unwire = undefined;
+    this._frame = replacement;
+    this._loaded = replacement.df.rowCount;
+    this._done = this._loaded < window;
+    this._wire(replacement);
+    batch(() => {
+      this._df.value = replacement.df;
+      this._edit.value = replacement.edit;
+    });
+    frame.dispose();
+    const at = current === null ? -1 : this._rows.indexOf(current);
+    if (at >= 0) {
+      replacement.df.currentRowIdx = at;
+      this._syncCurrent();
+    }
+    const selection = replacement.df.selection as {set?(i: number, value: boolean): void} | null | undefined;
+    if (typeof selection?.set === 'function') {
+      for (const id of selected) {
+        const index = this._rows.indexOf(id);
+        if (index >= 0)
+          selection.set(index, true);
+      }
+    }
+    this._syncSelection();
+  }
+
+  /** What the last save threw — the session hands every dirty source the backend's refusal. */
+  fail(error: unknown): void {
+    this._error.value = error;
+  }
+
+  /** A refusal the backend answered with `false` instead of an exception ("Cannot save: …"):
+   * carried by the summary like every other, but marked as already reported — the platform
+   * editor balloons its own, and nothing says it twice. */
+  refuse(problem: string): void {
+    this._error.value = new DomainBackendError(DomainSource.REFUSED, `Cannot save: ${problem}`);
+  }
+
+  /** A refusal raised over one row before anything was sent — the session's preflight. Shown the
+   * way a guard's is ({@link check}), and it names the row. */
+  refuseRow(id: string, problem: string): void {
+    this.markProblem(id);
+    this._refuse(problem);
+  }
+
+  /** Names the row the refusal being raised is about — a guard marks it before it answers. */
+  markProblem(id: string | null): void {
+    this._problemRow.value = id;
   }
 
   /** Drops this source's pending changes — what its session calls. */
@@ -345,6 +537,7 @@ export class DomainSource extends Component implements BindSource, ComponentStar
         },
       };
       case 'source': return this._self as unknown as Signal<unknown>;
+      case 'search': return this.search as unknown as Signal<unknown>;
       case 'total': return this.total as unknown as Signal<unknown>;
       case 'state': return this.state as unknown as Signal<unknown>;
       case 'error': return this._errorStep as unknown as Signal<unknown>;
@@ -358,6 +551,7 @@ export class DomainSource extends Component implements BindSource, ComponentStar
     return [
       {name: 'rows', type: 'object', description: 'The rows loaded so far, drafts included', default: true},
       {name: 'currentRow', type: 'object', walkable: true, description: 'The row a form edits; its columns are steps'},
+      {name: 'search', type: 'string', description: 'The search text over the searchable columns', writable: true},
       {name: 'total', type: 'int', description: 'How many rows match the query'},
       {name: 'state', type: 'string', description: 'idle, loading, ready or error'},
       {name: 'error', type: 'string', description: 'Why the last load or save failed'},
@@ -367,9 +561,9 @@ export class DomainSource extends Component implements BindSource, ComponentStar
     ];
   }
 
-  private _refuse(problem: string): false {
+  private _refuse(problem: string): string {
     this._error.value = new DomainBackendError('validation', `Cannot save: ${problem}`);
-    return false;
+    return problem;
   }
 
   private _adopt(table: DomainTableLike): void {
@@ -398,21 +592,34 @@ export class DomainSource extends Component implements BindSource, ComponentStar
       this._df.value = undefined;
       this._edit.value = undefined;
       this._total.value = null;
+      this._selection.value = [];
       this.currentRow.value = null;
     });
   }
 
-  /** Follows the writer's changes and the frame's current row. */
+  /** Follows the writer's changes and the frame's current row and selection. */
   private _wire(frame: DomainFrameLike): void {
     const bump = () => this._version.value = this._version.peek() + 1;
     const subs = [
       // the editor removes saved deletes and re-keys saved drafts without a frame event (H10): the
       // row projection follows its onChanged instead
       frame.edit.onChanged.subscribe(() => {
+        // a refusal stands in the summary until the next edit or discard takes it back
+        batch(() => {
+          this._error.value = undefined;
+          this._problemRow.value = null;
+        });
         this._rows.rebuild();
         bump();
       }),
+      // the exact post-save re-point: a current draft is the same row under the id it was given
+      frame.edit.onSaved.subscribe(({assigned}) => {
+        const row = this.currentRow.peek();
+        if (row !== null && assigned[row.id] !== undefined)
+          this.currentRow.value = this.rows.byKey(assigned[row.id]) ?? null;
+      }),
       frame.df.onCurrentRowChanged.subscribe(() => this._syncCurrent()),
+      frame.df.onSelectionChanged.subscribe(() => this._syncSelection()),
       frame.df.onValuesChanged.subscribe(bump),
     ];
     this._unwire = () => {
@@ -424,7 +631,25 @@ export class DomainSource extends Component implements BindSource, ComponentStar
   private _syncCurrent(): void {
     const d = this._df.peek();
     const key = d === undefined ? undefined : this._rows.keyAt(d.currentRowIdx);
-    this.currentRow.value = key === undefined ? null : this._rows.byKey(key) ?? null;
+    this.currentRow.value = key === undefined ? null : this.rows.byKey(key) ?? null;
+  }
+
+  private _syncSelection(): void {
+    const d = this._df.peek();
+    const selected = d?.selection as {get?(i: number): boolean} | null | undefined;
+    const rows: RowView<TRow>[] = [];
+    if (d !== undefined && typeof selected?.get === 'function') {
+      for (let i = 0; i < d.rowCount; i++) {
+        const row = selected.get(i) ? this.rows.byKey(this._rows.keyAt(i)!) : undefined;
+        if (row !== undefined)
+          rows.push(row);
+      }
+    }
+    this._selection.value = rows;
+  }
+
+  private _count(table: DomainTableLike): Promise<number> {
+    return table.count(this._filter(), this.search.peek() || undefined);
   }
 
   /** The access a row is written under — its own (`Access.row`: a draft under `insert`, an existing
@@ -434,8 +659,20 @@ export class DomainSource extends Component implements BindSource, ComponentStar
     return row === null ? access : access.row(row);
   }
 
-  private _spec(offset: number): DomainQueryLike {
-    return {filter: this._filter(), limit: this.isDraft ? 0 : this.pageSize, offset, withAccess: this.withAccess};
+  /** Loads no rows: an empty (or draft) source, and one whose query still names a draft id. */
+  private get _noRows(): boolean {
+    return this.isEmpty || DomainSource._namesDraft(this.query.peek());
+  }
+
+  private _spec(offset: number, limit = this.pageSize): DomainQueryLike {
+    // a query naming a draft id is not sent at all: no saved row can match it, and the server
+    // refuses the `~new:` literal on a uuid column — the rows arrive when `rebind` puts the
+    // assigned id in
+    if (DomainSource._namesDraft(this.query.peek()))
+      return {limit: 0, offset, withAccess: this.withAccess};
+    const search = this.search.peek();
+    return {filter: this._filter(), ...(search === '' ? {} : {search}), limit: this.isEmpty ? 0 : limit, offset,
+      withAccess: this.withAccess};
   }
 
   private _filter(): DomainQueryLike['filter'] {
@@ -459,7 +696,7 @@ export class DomainSource extends Component implements BindSource, ComponentStar
         const value = created.value;
         const row = this.currentRow.peek();
         if (row !== null && !Component.sameValue(row[column], value))
-          row[column] = value;
+          (row as RowView)[column] = value;
       });
       this._columns.set(column, sig = created);
     }
@@ -481,16 +718,54 @@ export class DomainSource extends Component implements BindSource, ComponentStar
     const state = this.state.value;
     const singular = this._schema.info.singularName.toLowerCase() || 'row';
     // a draft is a row, not a row of the table yet; a draft source is a create form until the
-    // draft is saved and a row of the table is what it holds
+    // draft is saved — then it holds the row it made, and says so, until the next New
     const loaded = items.filter((r) => !Rows.isDraft(r)).length;
     if (this.isDraft && (loaded === 0 || (this.currentRow.value !== null && Rows.isDraft(this.currentRow.value))))
       return state === 'ready' ? `New ${singular}` : state === 'loading' ? 'Loading…' : '';
+    if (this.isDraft)
+      return `${singular.charAt(0).toUpperCase()}${singular.slice(1)} saved`;
     if (state !== 'ready' && loaded === 0)
       return state === 'loading' ? 'Loading…' : '';
     const total = this.total.value;
     return !this.isDraft && total !== null && loaded < total ?
       `${loaded.toLocaleString()} of ${total.toLocaleString()}` :
       plural(loaded, singular, this._schema.info.pluralName.toLowerCase() || 'rows');
+  }
+
+  private static _namesDraft(query: string | FilterGroup): boolean {
+    if (typeof query === 'string')
+      return query.includes(Rows.DRAFT_PREFIX);
+    let found = false;
+    Filters.walk(query, (n) => {
+      if (Filters.isGroup(n) || n.value === undefined)
+        return;
+      for (const v of Array.isArray(n.value) ? n.value : [n.value])
+        found = found || (typeof v === 'string' && Rows.isDraft(v));
+    });
+    return found;
+  }
+
+  /** The query with every draft id `assigned` names replaced by the id it was given — the string
+   * form by the `~new:` literal, the tree form by the value; the query itself when none is in it. */
+  private static _rebound(query: string | FilterGroup, assigned: Record<string, string>): string | FilterGroup {
+    if (typeof query === 'string') {
+      let text = query;
+      for (const [draft, id] of Object.entries(assigned))
+        text = text.split(draft).join(id);
+      return text;
+    }
+    let hit = false;
+    const swap = (v: FilterScalar): FilterScalar => {
+      const real = typeof v === 'string' ? assigned[v] : undefined;
+      if (real === undefined)
+        return v;
+      hit = true;
+      return real;
+    };
+    const copy = (n: FilterNode): FilterNode => Filters.isGroup(n) ? {...n, nodes: n.nodes.map(copy)} :
+      n.value === undefined ? n : {...n, value: Array.isArray(n.value) ? n.value.map(swap) : swap(n.value)};
+    const rebound = copy(query) as FilterGroup;
+    return hit ? rebound : query;
   }
 
   private static _message(error: unknown): string {

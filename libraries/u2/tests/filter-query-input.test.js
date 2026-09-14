@@ -437,3 +437,55 @@ spec('registration: value binds two-way as the context signal itself; query read
   assert.equal(writable, false);
   instance.dispose();
 });
+
+smoke('a validation failure shows exactly like a parse failure: the red editor, the tooltip, no new tree', async () => {
+  const schema = Filters.schema([{name: 'priority_id', type: TYPE.STRING, ref: 'grit.priority'},
+    {name: 'number', type: TYPE.INT}, {name: 'title', type: TYPE.STRING}]);
+  const q = mount(new FilterQueryInput({schema, target: 'domain', inline: true,
+    value: Filters.group('and', [Filters.cond('number', '=', 1)])}));
+  const root = q.value.peek();
+  const editor = box(q);
+  for (const [text, message] of [
+    ['priority =', 'Expected a value'],
+    ['priority = High', 'Unknown property "priority" — did you mean `priority_id.name`?'],
+    ['nope = 1', 'Unknown property "nope"'],
+    ['priority_id = High', 'Unknown column "High" — did you mean `priority_id.name = "High"`?'],
+    ['title = Balance', 'Unknown column "Balance" — quote a text value'],
+  ]) {
+    q.text.value = text;
+    assert.equal(q.commit(), false, `${text} is refused`);
+    assert.equal(q.value.peek(), root, 'the query in force is untouched');
+    assert.equal(q.validity.value, message);
+    assert.equal(editor.title, message, 'the message rides the editor, the ribbon having no room for a line');
+    assert.equal(editor.classList.contains('u2-invalid'), true);
+  }
+  q.text.value = 'number = 4';
+  assert.equal(q.commit(), true);
+  assert.equal(q.validity.value, null);
+  assert.equal(editor.classList.contains('u2-invalid'), false);
+});
+
+smoke('Enter commits when the highlighted row spells what is already typed', async () => {
+  const q = mount(new FilterQueryInput({schema: Filters.schema(PROPS, {age: [4, 42]})}));
+  await type(q, 'age = 4');
+  assert.deepEqual(rows(), ['4', '42', 'number 0–120'],
+    'auto-highlighted, though the user never moved onto it');
+  key(q, 'Enter');
+  await flush();
+  assert.equal(box(q).value, 'age = 4', 'no second insertion of the same token, and no trailing space');
+  assert.equal(q.isOpen.value, false);
+  assert.deepEqual(q.value.peek().nodes.map((n) => [n.property, n.operator, n.value]), [['age', '=', 4]]);
+});
+
+smoke('`display` spells the bound tree the way a preset wrote it, and Enter on it commits nothing new', async () => {
+  const bound = Filters.group('and', [Filters.cond('name', '=', 'Naproxen')]);
+  const q = mount(new FilterQueryInput({schema: SCHEMA, display: (tree) =>
+    Filters.format(tree) === 'name = "Naproxen"' ? 'name = $me' : null}));
+  q.value.value = bound;
+  await flush();
+  assert.equal(box(q).value, 'name = $me');
+  key(q, 'Enter');
+  await flush();
+  assert.equal(q.value.peek(), bound, 'the displayed form is not parsed into a query of its own');
+  assert.equal(box(q).value, 'name = $me');
+});

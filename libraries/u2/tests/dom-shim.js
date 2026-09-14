@@ -836,9 +836,10 @@ function getComputedStyle(el) {
 }
 
 const windowTarget = new EventTargetBase();
+const location = {href: 'http://localhost/', pathname: '/', search: '', hash: ''};
 
 Object.assign(globalThis, {
-  window: globalThis, document, Node, Text, Element, HTMLElement, HTMLDivElement, HTMLInputElement,
+  window: globalThis, document, location, Node, Text, Element, HTMLElement, HTMLDivElement, HTMLInputElement,
   HTMLTextAreaElement, HTMLSelectElement, HTMLButtonElement, HTMLAnchorElement, HTMLOptionElement,
   ShadowRoot, DOMRect, Option, Event: DomEvent, CustomEvent, KeyboardEvent, MouseEvent, PointerEvent,
   WheelEvent, MutationObserver, ResizeObserver, getComputedStyle, requestAnimationFrame,
@@ -865,4 +866,5 @@ export function flush() {
 export function resetDom() {
   document.body.replaceChildren();
   document.activeElement = document.body;
+  location.search = '';
 }

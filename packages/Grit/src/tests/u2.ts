@@ -1,19 +1,18 @@
 import * as grok from 'datagrok-api/grok';
-import {after, before, category, delay, expect, test} from '@datagrok-libraries/test/src/test';
+import {before, category, delay, expect, test} from '@datagrok-libraries/test/src/test';
 import type {DomainSource} from '@datagrok-libraries/u2';
-import {domains, domainForm, domainList, DomainTable} from '@datagrok-libraries/u2/src/dg/index.js';
+import {DomainApp} from '@datagrok-libraries/u2/src/dg/index.js';
+import type {DomainTable} from '@datagrok-libraries/u2/src/dg/index.js';
+import {gritDb, IssueRow} from '../generated/db';
+import type {GritDb} from '../generated/db-ui';
+import {IssuesApp, openGrit} from '../package';
 
-const PROJECTS = 'grit.project';
-
-// The u2 domain stack over Grit's own schema: a project created through `domainForm` over a
-// pristine draft, listed by `domainList`, edited through `currentRow`, and the access the
-// controls degrade by. One project per run, keyed uniquely and deleted afterwards.
-category('Grit: u2 form and list', () => {
-  const client = () => grok.dapi.domains.table(PROJECTS);
-  const key = `U2${Date.now() % 1e10}${Math.floor(Math.random() * 1e3)}`;
-  const query = `key = "${key}"`;
-  let projects: DomainTable;
-  let id: string;
+// The code tier over the generated typed handles: the Issues app opens over `getGritDb()`, the
+// table handle is a `DomainTable<IssueRow>`, the actions show under their `when`, the validator
+// refuses closing an unassigned issue. Nothing reaches the server: the rows probed are drafts.
+category('Grit: issues app', () => {
+  let db: GritDb;
+  let issues: DomainTable<IssueRow>;
 
   /** The first load settled, or the reason it did not. */
   async function ready(src: DomainSource): Promise<void> {
@@ -24,68 +23,80 @@ category('Grit: u2 form and list', () => {
   }
 
   before(async () => {
-    projects = await domains.table(PROJECTS);
+    db = await openGrit();
+    issues = db.tables.issues;
   });
 
-  after(async () => {
-    await client().deleteWhere(query);
+  test('handles: one await, every table typed, the data clients beside them', async () => {
+    expect(db.schema, 'grit');
+    expect(db.data, gritDb);
+    expect(issues.address, 'grit.issue');
+    expect(db.tables.comments.address, 'grit.comment');
+    expect(await openGrit(), db, 'cached per page');
+    expect(issues.access.field('title'), 'editable');
+    expect(issues.access.field('number'), 'readonly', 'autoNumber is engine-assigned');
   });
 
-  test('create: a project through the form over a draft, inserted by save', async () => {
-    const draft = projects.draft();
-    const form = domainForm(draft);
+  test('app: opens over the handle as an IssuesApp — list page, presets, shortcuts, the entity page', async () => {
+    const view = issues.app({name: 'Issues (test)', path: '/apps/Grit/IssuesTest', app: IssuesApp,
+      children: {tables: ['comment']}});
+    grok.shell.addView(view);
+    try {
+      const app = DomainApp.of(view)!;
+      expect(app instanceof IssuesApp, true);
+      expect(app.page.value, 'list');
+      expect(app.shortcuts['m'], 'Assign to me');
+      expect(app.shortcuts['c'], 'Close');
+      const ribbon = app.ribbon();
+      expect(ribbon.length, 3, 'New/Save/Discard, search + filters, the presets');
+      const presets = ribbon[2][0];
+      expect(('root' in presets ? presets.root : presets).dataset.u2, 'domain-presets');
+      expect(app.ribbon(), ribbon, 'built once');
+      expect(await app.open('?entity=new'), true);
+      expect(app.page.value, 'entity');
+      expect(app.entity.value, DomainApp.NEW);
+      expect(await app.open(''), true, 'a pristine draft leaves without a prompt');
+      expect(app.page.value, 'list');
+    } finally {
+      view.close();
+    }
+  });
+
+  test('actions: Assign to me only for a row that is not mine; Close only for an open issue', async () => {
+    const draft = issues.draft({title: 'u2 action probe'});
     try {
       await ready(draft);
-      expect(form.form !== null, true, 'the draft is the form\'s row');
-      expect(draft.isDirty.value, false, 'pristine until touched');
-      form.input('key')!.value.value = key;
-      form.input('name')!.value.value = 'u2 project';
-      await delay(10);
-      expect(draft.isDirty.value, true);
-      expect(await draft.save(), true, String(draft.error.value));
-      const [row] = await client().query({filter: query});
-      expect(row?.name, 'u2 project');
-      id = row.id;
+      const row = draft.currentRow.value!;
+      const names = () => issues.actions.for(row).map((a) => a.name);
+      expect(names().includes('Assign to me'), true);
+      issues.actions.for(row).find((a) => a.name === 'Assign to me')!.run();
+      expect(row.assignee, grok.shell.user.id);
+      expect(names().includes('Assign to me'), false, 'hidden once the row is mine');
+      const closed = await gritDb.statuses.getByKey({name: 'closed'});
+      if (closed === null)
+        return;
+      expect(names().includes('Close'), true);
+      issues.actions.for(row).find((a) => a.name === 'Close')!.run();
+      expect(row.status_id, closed.id);
+      expect(names().includes('Close'), false, 'hidden once closed');
     } finally {
-      form.dispose();
       draft.dispose();
     }
   });
 
-  test('list: shows the row; edit through currentRow, save, discard', async () => {
-    const src = projects.source({query});
-    const list = domainList(src, {mode: 'cards'});
+  test('validator: closing an unassigned issue is refused', async () => {
+    const closed = await gritDb.statuses.getByKey({name: 'closed'});
+    if (closed === null)
+      return;
+    const draft = issues.draft({title: 'u2 validator probe'});
     try {
-      await ready(src);
-      expect(src.rows.items.value.length, 1);
-      expect(src.rows.byKey(id)?.name, 'u2 project');
-      list.list.selectedIndex.value = 0;
-      await delay(10);
-      expect(src.currentRow.value?.id, id, 'the selection is the current row');
-      src.currentRow.value!.name = 'u2 project 2';
-      expect(src.isDirty.value, true);
-      expect(await src.save(), true, String(src.error.value));
-      expect((await client().get(id)).name, 'u2 project 2');
-      src.currentRow.value!.name = 'zzz';
-      expect(src.isDirty.value, true);
-      src.discard();
-      expect(src.isDirty.value, false);
-      expect(src.rows.byKey(id)!.name, 'u2 project 2', 'discard restores the cell');
+      await ready(draft);
+      const row = draft.currentRow.value!;
+      expect(issues.validators.check('status_id', closed.id, row), 'Assign before closing');
+      row.assignee = grok.shell.user.id;
+      expect(issues.validators.check('status_id', closed.id, row), null);
     } finally {
-      list.dispose();
-      src.dispose();
+      draft.dispose();
     }
-  });
-
-  test('access: system and autoNumber columns are readonly, declared columns editable', async () => {
-    expect(projects.access.can('insert'), true);
-    expect(projects.access.field('name'), 'editable');
-    expect(projects.access.field('id'), 'readonly');
-    expect(projects.access.field('version'), 'readonly');
-    expect(projects.access.field('nosuch'), 'hidden');
-    const issues = await domains.table('grit.issue');
-    expect(issues.access.field('title'), 'editable');
-    expect(issues.access.field('created_on'), 'readonly');
-    expect(issues.access.field('number'), 'readonly', 'autoNumber is engine-assigned');
   });
 });

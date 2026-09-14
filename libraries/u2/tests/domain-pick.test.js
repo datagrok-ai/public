@@ -1,4 +1,4 @@
-/* `domainPick` (WO-11) over the memory backend: candidates by the target's name column, a pick
+/* `domains.pick` (WO-11) over the memory backend: candidates by the target's name column, a pick
    writes the id, a written id resolves to its name, an extra filter narrows, the name column falls
    back to the business key and then the id — and `PickInput`'s face keeps value and box in step. */
 
@@ -8,7 +8,7 @@ import {fire, flush, resetDom} from './dom-shim.js';
 import {Scope} from '../src/core/scope.js';
 import {backends} from '../src/sources/backends.js';
 import {MemoryDomainBackend} from '../src/sources/memory-domain.js';
-import {domainPick, DomainPick} from '../src/dg/domain/pick.js';
+import {DomainPick} from '../src/dg/domain/pick.js';
 import {backend} from './domain-fixtures.mjs';
 
 function scoped(name, body) {
@@ -44,7 +44,7 @@ function mount(pick) {
 
 scoped('candidates come from the target\'s name column; a pick writes the id, typing clears it', async () => {
   backends.domain = backend();
-  const pick = domainPick('grit.project', {label: 'Project', debounceMs: 0});
+  const pick = new DomainPick('grit.project', {label: 'Project', debounceMs: 0});
   const input = mount(pick);
   assert.equal(pick.root.dataset.u2, 'domain-pick');
   assert.equal(pick.value.value, null);
@@ -71,7 +71,7 @@ scoped('candidates come from the target\'s name column; a pick writes the id, ty
 
 scoped('a written id resolves to its name; an unknown id shows itself', async () => {
   backends.domain = backend();
-  const pick = domainPick('grit.project', {label: 'Project', value: 'p2'});
+  const pick = new DomainPick('grit.project', {label: 'Project', value: 'p2'});
   const input = mount(pick);
   await flush();
   assert.equal(input.value, 'Datagrok');
@@ -87,7 +87,7 @@ scoped('a written id resolves to its name; an unknown id shows itself', async ()
 
 scoped('an extra filter narrows the candidates; an empty query lists them all', async () => {
   backends.domain = backend();
-  const pick = domainPick('grit.project', {filter: 'key = "DG"', debounceMs: 0});
+  const pick = new DomainPick('grit.project', {filter: 'key = "DG"', debounceMs: 0});
   const input = mount(pick);
   input.focus();
   fire(input, 'keydown', {key: 'ArrowDown'});
@@ -96,13 +96,13 @@ scoped('an extra filter narrows the candidates; an empty query lists them all', 
   assert.deepEqual(options(), ['Datagrok']);
   pick.dispose();
 
-  const all = domainPick('grit.project', {debounceMs: 0});
+  const all = new DomainPick('grit.project', {debounceMs: 0});
   const box = mount(all);
   box.focus();
   fire(box, 'keydown', {key: 'ArrowDown'});
   await flush();
   await flush();
-  assert.deepEqual(options(), ['Datagrok', 'Grit'], 'by name');
+  assert.deepEqual(options(), ['Grit', 'Datagrok'], 'in the table\'s own order, not by name');
   all.dispose();
 });
 
@@ -137,7 +137,7 @@ scoped('DomainPick.filter: the like condition, AND-ed with the extra filter as a
 
 scoped('without a backend the search reports the failure in the popup', async () => {
   delete backends.domain;
-  const pick = domainPick('grit.project', {debounceMs: 0});
+  const pick = new DomainPick('grit.project', {debounceMs: 0});
   const input = mount(pick);
   input.focus();
   type(input, 'a');
@@ -147,10 +147,10 @@ scoped('without a backend the search reports the failure in the popup', async ()
   pick.dispose();
 });
 
-scoped('ergonomics: the candidates open on focus with the first highlighted, the placeholder is the caption, ✕ clears',
-  async () => {
+scoped('ergonomics: the candidates open on focus in the table\'s order with the first highlighted, the placeholder ' +
+  'is the caption, ✕ clears', async () => {
     backends.domain = backend();
-    const pick = domainPick('grit.project', {label: 'Project', debounceMs: 0, value: 'p1'});
+    const pick = new DomainPick('grit.project', {label: 'Project', debounceMs: 0, value: 'p1'});
     const input = mount(pick);
     await flush();
     assert.equal(input.placeholder, 'Project…');
@@ -159,8 +159,8 @@ scoped('ergonomics: the candidates open on focus with the first highlighted, the
     await flush();
     await flush();
     assert.equal(pick.typeAhead.isOpen.value, true, 'open on focus');
-    assert.deepEqual(options(), ['Datagrok', 'Grit'], 'the empty query lists the first candidates');
-    assert.equal(document.body.querySelector('.u2-typeahead-option-active')?.textContent, 'Datagrok', 'the first is highlighted');
+    assert.deepEqual(options(), ['Grit', 'Datagrok'], 'the empty query lists the first candidates as the table orders them');
+    assert.equal(document.body.querySelector('.u2-typeahead-option-active')?.textContent, 'Grit', 'the first is highlighted');
     const clear = pick.root.querySelector('.u2-input-clear');
     assert.equal(clear.hidden, false);
     fire(clear, 'click');
@@ -173,7 +173,7 @@ scoped('ergonomics: the candidates open on focus with the first highlighted, the
 
 scoped('stray text never survives a blur: cleared, or the held pick\'s name put back', async () => {
   backends.domain = backend();
-  const pick = domainPick('grit.project', {label: 'Project', debounceMs: 0});
+  const pick = new DomainPick('grit.project', {label: 'Project', debounceMs: 0});
   const input = mount(pick);
   input.focus();
   type(input, 'zzz');
@@ -196,7 +196,7 @@ scoped('stray text never survives a blur: cleared, or the held pick\'s name put 
   assert.equal(input.value, 'Grit', 'a pick stays');
   pick.dispose();
 
-  const held = domainPick('grit.project', {label: 'Project', debounceMs: 0, value: 'p2'});
+  const held = new DomainPick('grit.project', {label: 'Project', debounceMs: 0, value: 'p2'});
   const box = mount(held);
   await flush();
   assert.equal(box.value, 'Datagrok');
@@ -213,21 +213,46 @@ scoped('stray text never survives a blur: cleared, or the held pick\'s name put 
 
 scoped('opened on focus, Enter alone commits the highlighted first candidate', async () => {
   backends.domain = backend();
-  const pick = domainPick('grit.project', {label: 'Project', debounceMs: 0});
+  const pick = new DomainPick('grit.project', {label: 'Project', debounceMs: 0});
   const input = mount(pick);
   input.focus();
   await flush();
   await flush();
   fire(input, 'keydown', {key: 'Enter'});
   await flush();
-  assert.equal(pick.value.value, 'p2', 'Datagrok, first by name');
+  assert.equal(pick.value.value, 'p1', 'Grit, the first in the table\'s order');
+  assert.equal(input.value, 'Grit');
+  pick.dispose();
+});
+
+scoped('a blur that puts the held pick back says what was typed and what was kept; the next focus clears it', async () => {
+  backends.domain = backend();
+  const pick = new DomainPick('grit.project', {label: 'Project', debounceMs: 0, value: 'p2'});
+  const input = mount(pick);
+  await flush();
+  const hint = pick.root.querySelector('[data-u2-part="hint"]');
+  assert.equal(hint.hidden, true);
+  input.focus();
+  type(input, 'zzz');
+  await flush();
+  await flush();
+  fire(input, 'blur');
+  await flush();
+  assert.equal(pick.value.value, 'p2');
   assert.equal(input.value, 'Datagrok');
+  assert.equal(hint.hidden, false);
+  assert.equal(hint.textContent, 'No match for "zzz" — kept Datagrok');
+  fire(input, 'focus');
+  assert.equal(hint.hidden, true, 'cleared on the next focus');
+  fire(input, 'blur');
+  await flush();
+  assert.equal(hint.hidden, true, 'nothing to say when nothing was typed');
   pick.dispose();
 });
 
 scoped('a fast Enter: the pick is made when the candidates land — the name typed, else the first', async () => {
   backends.domain = backend();
-  const pick = domainPick('grit.project', {label: 'Project', debounceMs: 0});
+  const pick = new DomainPick('grit.project', {label: 'Project', debounceMs: 0});
   const input = mount(pick);
   input.focus();
   type(input, 'gr');
@@ -236,8 +261,8 @@ scoped('a fast Enter: the pick is made when the candidates land — the name typ
   assert.equal(pick.value.value, null);
   await flush();
   await flush();
-  assert.equal(pick.value.value, 'p2', 'the first candidate: Datagrok, by name');
-  assert.equal(input.value, 'Datagrok');
+  assert.equal(pick.value.value, 'p1', 'the first candidate: Grit, in the table\'s order');
+  assert.equal(input.value, 'Grit');
   assert.equal(pick.typeAhead.isPickPending, false);
 
   type(input, 'grit');
@@ -255,7 +280,7 @@ scoped('an empty table says "No <rows> yet" for the empty query; a query that fi
     backends.domain = new MemoryDomainBackend(
       {name: 'grit', tables: {project: {friendlyName: 'Projects', columns: {name: {type: 'string', isName: true}}}}},
       {rows: {project: []}});
-    const pick = domainPick('grit.project', {label: 'Project', debounceMs: 0});
+    const pick = new DomainPick('grit.project', {label: 'Project', debounceMs: 0});
     const input = mount(pick);
     input.focus();
     await flush();
@@ -267,3 +292,43 @@ scoped('an empty table says "No <rows> yet" for the empty query; a query that fi
     assert.equal(document.body.querySelector('.u2-typeahead-empty')?.textContent, 'No matches');
     pick.dispose();
   });
+
+scoped('a dependent picker: `$name` binds to the sibling and AND-s with the search; unbound → no candidates, a hint',
+  async () => {
+    backends.domain = backend();
+    let row = {project_id: 'p1'};
+    const pick = new DomainPick('grit.issue', {label: 'Parent', debounceMs: 0, filter: 'project_id = $project_id',
+      params: () => row, siblings: {properties: [{name: 'project_id', type: 'string', friendlyName: 'Project'}]}});
+    const input = mount(pick);
+    input.focus();
+    await flush();
+    await flush();
+    assert.deepEqual(options(), ['Aspirin', 'Ibuprofen']);
+    type(input, 'ibu');
+    await flush();
+    await flush();
+    assert.deepEqual(options(), ['Ibuprofen']);
+    row = {project_id: 'p2'};
+    type(input, '');
+    await flush();
+    await flush();
+    assert.deepEqual(options(), ['Naproxen'], 'bound afresh at every search');
+    row = {project_id: ''};
+    type(input, 'a');
+    await flush();
+    await flush();
+    assert.deepEqual(options(), []);
+    assert.equal(document.body.querySelector('.u2-typeahead-empty')?.textContent, 'Pick a project first');
+    pick.dispose();
+  });
+
+scoped('DomainPick.bind: a bound filter is a tree, an empty sibling leaves the name unbound, a tree passes through', () => {
+  assert.deepEqual(DomainPick.bind('project_id = $project_id', {project_id: 'p1'}),
+    {filter: [{property: 'project_id', operator: '=', value: 'p1'}], unbound: []});
+  assert.deepEqual(DomainPick.bind('project_id = $project_id', {project_id: ''}),
+    {filter: undefined, unbound: ['project_id']});
+  assert.deepEqual(DomainPick.bind('project_id = $project_id and done = $done', {project_id: 'p1'}).unbound, ['done']);
+  const tree = {property: 'key', operator: '=', value: 'DG'};
+  assert.deepEqual(DomainPick.bind(tree), {filter: tree, unbound: []});
+  assert.deepEqual(DomainPick.bind(undefined), {unbound: []});
+});

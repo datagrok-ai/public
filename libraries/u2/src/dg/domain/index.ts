@@ -2,8 +2,12 @@
    "What it looks like"): sources over the table, and the per-table registries an app fills once —
    actions (ribbon, row hover, context menu), the renderer (lists, pickers, chips) and validators
    (forms). Registers nothing with the platform: rendering reuses the handler `ObjectHandler.forEntity`
-   already resolves for the table's rows. */
+   already resolves for the table's rows. `domains.*` is also where every domain control is made
+   (`domains.form(src)`, `domains.list(src)`, …): one object, each member constructing at call
+   time, so the modules behind it may import this one back. `TRow` (an app's own row type) types
+   the rows every registry and source hands out; the default reads any column as unknown. */
 import * as DG from 'datagrok-api/dg';
+import * as grok from 'datagrok-api/grok';
 import {Access} from '../../core/access.js';
 import type {Capability} from '../../core/access.js';
 import type {IProperty} from '../../core/property-like.js';
@@ -14,32 +18,65 @@ import type {DomainTableInfoLike, DomainTableLike} from '../../sources/domain-ba
 import {DomainSource} from '../../sources/domain-source.js';
 import type {DomainSourceOptions} from '../../sources/domain-source.js';
 import {Rows} from '../../sources/rows-like.js';
-import type {RowView} from '../../sources/rows-like.js';
+import type {ColumnOf, DomainRowLike, RowValues, RowView} from '../../sources/rows-like.js';
+import {SharedSession, confirmDiscard} from '../../sources/session.js';
 import type {ReadonlySignal} from '../../core/signals.js';
 import {divV, span, timestamp} from '../../core/elements.js';
 import {text} from '../../core/text.js';
 import {handlerRenderer} from '../entities/entity.js';
+import {appView} from '../shell/app-view.js';
 import {SYSTEM_COLUMNS} from './backend.js';
+import {DomainErrors} from './errors.js';
+// the cycles with the control modules are function-scoped only: none reads another at load time
+import {DomainApp} from './app.js';
+import type {DomainAppOptions} from './app.js';
+import {DomainForm} from './form.js';
+import type {DomainFormOptions, DomainFormTarget} from './form.js';
+import {DomainList} from './list.js';
+import type {DomainListOptions} from './list.js';
+import {DomainPick} from './pick.js';
+import type {DomainPickOptions} from './pick.js';
+import {DomainSearch} from './search.js';
+import type {DomainSearchOptions} from './search.js';
+import {DomainFilters} from './filters.js';
+import type {DomainFiltersOptions} from './filters.js';
+import {DomainGrid} from './grid.js';
+import type {DomainGridOptions} from './grid.js';
+import {DomainHistory} from './history.js';
+import type {DomainHistoryTarget} from './history.js';
+import {DomainChildren} from './children.js';
+import type {DomainChildrenOptions} from './children.js';
+import {saveButton, discardButton, newButton} from './buttons.js';
 const REF_ADDRESS = /^\w+\.\w+$/;
 
 /** An action over one row: `requires` names the capability it needs (permission ⇒ hidden),
  * `when` narrows it per row (state ⇒ absent), `run` takes the row. */
-export interface DomainAction {
+export interface DomainAction<TRow extends DomainRowLike = DomainRowLike> {
   name: string;
   icon?: string;
   requires?: Capability;
   enabled?: boolean;
-  when?: (row: RowView) => boolean;
-  run: (row: RowView) => void;
+  when?(row: RowView<TRow>): boolean;
+  run(row: RowView<TRow>): void;
 }
 
-export type RowValidator = (value: unknown, row: RowView) => string | null;
+export type RowValidator<TRow extends DomainRowLike = DomainRowLike> =
+  (value: unknown, row: RowView<TRow>) => string | null;
 
-export class ActionRegistry {
-  private readonly _actions: DomainAction[] = [];
+/** What `DomainTable.app()` takes: the app's options without the table, plus the view's name
+ * (the plural name by default), its base path (`/domains/<schema>/<table>` by default) and the
+ * app class — a `DomainApp` subclass with its own ribbon, presets and shortcuts. */
+export interface DomainAppViewOptions extends Omit<DomainAppOptions, 'table' | 'base'> {
+  name?: string;
+  path?: string;
+  app?: new (options: DomainAppOptions) => DomainApp;
+}
+
+export class ActionRegistry<TRow extends DomainRowLike = DomainRowLike> {
+  private readonly _actions: DomainAction<TRow>[] = [];
 
   /** Returns the unregister function. */
-  add(action: DomainAction): () => void {
+  add(action: DomainAction<TRow>): () => void {
     this._actions.push(action);
     return () => {
       const at = this._actions.indexOf(action);
@@ -49,33 +86,38 @@ export class ActionRegistry {
   }
 
   /** The actions that apply to `row`, bound to it — what `rowActions` and a menu take. */
-  for(row: RowView): Action[] {
+  for(row: RowView<TRow>): Action[] {
     return ActionRegistry.bind(this._actions, row);
   }
 
-  static bind(actions: readonly DomainAction[], row: RowView): Action[] {
+  static bind<T extends DomainRowLike>(actions: readonly DomainAction<T>[], row: RowView<T>): Action[] {
     return actions.filter((a) => a.when === undefined || a.when(row)).map((a): Action =>
       ({name: a.name, icon: a.icon, requires: a.requires, enabled: a.enabled, run: () => a.run(row)}));
   }
 }
 
-export class ValidatorRegistry {
+export class ValidatorRegistry<TRow extends DomainRowLike = DomainRowLike> {
   private readonly _byColumn = new Map<string, RowValidator[]>();
 
   /** Returns the unregister function. */
-  add(column: string, validator: RowValidator): () => void {
+  add(column: ColumnOf<TRow>, validator: RowValidator<TRow>): () => void {
     const list = this._byColumn.get(column) ?? [];
     this._byColumn.set(column, list);
-    list.push(validator);
+    list.push(validator as RowValidator);
     return () => {
-      const at = list.indexOf(validator);
+      const at = list.indexOf(validator as RowValidator);
       if (at >= 0)
         list.splice(at, 1);
     };
   }
 
+  /** The columns something was registered for — what a whole-row check walks. */
+  get columns(): string[] {
+    return [...this._byColumn.keys()];
+  }
+
   /** The first problem the column's validators report, null when the value passes. */
-  check(column: string, value: unknown, row: RowView): string | null {
+  check(column: string, value: unknown, row: RowView<TRow>): string | null {
     for (const validator of this._byColumn.get(column) ?? []) {
       const message = validator(value, row);
       if (message !== null)
@@ -85,21 +127,23 @@ export class ValidatorRegistry {
   }
 }
 
-export class DomainTable {
+export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
   /** Everything an app declares about the table's actions, once. */
-  readonly actions = new ActionRegistry();
-  readonly validators = new ValidatorRegistry();
+  readonly actions = new ActionRegistry<TRow>();
+  readonly validators = new ValidatorRegistry<TRow>();
   /** The platform handler of the table's rows — deep links, the entity view, `rowFrom`. */
   readonly handler: DG.DomainObjectHandler;
   /** How lists, pickers and chips show a row; the handler's own rendering by default. */
-  renderer: ObjectRenderer<RowView>;
+  renderer: ObjectRenderer<RowView<TRow>>;
+  /** The renderer the handle was built with — what tells a table an app dressed from a bare one. */
+  readonly defaultRenderer: ObjectRenderer<RowView<TRow>>;
 
   private static readonly _bySource = new WeakMap<DomainSource, DomainTable>();
   private static readonly _byRow = new WeakMap<ReadonlySignal<RowView | null>, DomainSource>();
 
   constructor(readonly address: string, readonly table: DomainTableLike, readonly access: Access) {
     this.handler = new DG.DomainObjectHandler(address);
-    this.renderer = DomainTable.handlerRenderer(this);
+    this.renderer = this.defaultRenderer = DomainTable.handlerRenderer(this);
   }
 
   get info(): DomainTableInfoLike {
@@ -128,28 +172,111 @@ export class DomainTable {
   }
 
   /** A started source over this table. */
-  source(options: Omit<DomainSourceOptions, 'table'> = {}): DomainSource {
-    return this._track(new DomainSource({...options, table: this.address}));
+  source(options: Omit<DomainSourceOptions, 'table' | 'defaults'> & {defaults?: RowValues<TRow>} = {}):
+    DomainSource<TRow> {
+    return this._track(new DomainSource<TRow>({...options, table: this.address}));
   }
 
   /** A source holding one pristine draft over `values` as its current row — what a create form
    * binds to; `save()` on it inserts the row. */
-  draft(values: Record<string, unknown> = {}): DomainSource {
-    return this._track(new DomainSource({table: this.address, draft: true, defaults: values}));
+  draft(values: RowValues<TRow> = {}): DomainSource<TRow> {
+    return this._track(new DomainSource<TRow>({table: this.address, draft: true, defaults: values}));
   }
 
   /** The row as the platform sees it — the handler's `DomainRow`, built locally. */
-  row(row: RowView): DG.DomainRow {
+  row(row: RowView<TRow>): DG.DomainRow {
     const values: Record<string, unknown> = {...row};
     if (Rows.isDraft(row))
       delete values.id;
     return this.handler.rowFrom(values);
   }
 
-  /** Opens the row's entity view — the platform's default action on a saved row. */
-  open(row: RowView): void {
-    if (!Rows.isDraft(row))
-      this.handler.openRow(this.row(row));
+  /** Opens a saved row: the entity page of the app open over this table (find-or-activate), else
+   * the platform's entity view. */
+  open(row: RowView<TRow>): void {
+    if (Rows.isDraft(row) || DomainApp.activate(DomainApp.baseOf(this.address), row.id))
+      return;
+    this.handler.openRow(this.row(row));
+  }
+
+  /** The table as a platform view (GOAL "What it looks like": `grok.shell.addView(issues.app())`):
+   * list ⇄ entity page under one session, the ribbon, the status bar, the URL — and every gate in
+   * front of dropping unsaved changes: in-app navigation, the view's ✕, the browser's unload. */
+  app(options: DomainAppViewOptions = {}): DG.ViewBase {
+    const {name, path, app: App = DomainApp, ...rest} = options;
+    const base = path ?? `/domains/${this.address.replace('.', '/')}`;
+    const session = new SharedSession();
+    const app = SharedSession.runWith(session, () => new App({...rest, table: this, base}));
+    const view = appView({name: name ?? DomainApp.titleOf(this.info), content: app, ribbon: app.ribbon(),
+      status: app.summary, path: app.path});
+    // The shell mounts a package app at its own route and prepends it to every path the view
+    // reports (`View.path` = the app call's prefix + the view's own): the app rebases onto that
+    // route once the view is docked, so a zero-code `table.app()` lives at `/apps/<App>` and its
+    // deep links are the shell's. `/domains/<schema>/<table>` is what a view outside an app keeps.
+    const route = (): string => {
+      const full = view.path ?? '';
+      const at = full.indexOf('?');
+      const here = at < 0 ? full : full.slice(0, at);
+      if (path === undefined && here.endsWith(app.base) && here.length > app.base.length)
+        app.rebase(here.slice(0, here.length - app.base.length));
+      return app.base;
+    };
+    // both routes: the one the shell mounted the view at, and the address a view outside an app
+    // keeps — a `/domains/…` link must still reach an app that has rebased onto `/apps/…`
+    view.acceptsPath = (p) => {
+      const here = p.toLowerCase();
+      return here.startsWith(route().toLowerCase()) || here.startsWith(base.toLowerCase());
+    };
+    // the router has updated the address bar before it calls the handler (view.ts:188-195)
+    view.handlePath = () => {
+      route();
+      void app.open();
+    };
+    // A cold deep link (`/apps/Stockroom?entity=…`) reaches the app func, never a path handler —
+    // and the func is handed the path under the app root, never the query. The app opens the
+    // address bar itself, from the snapshot taken here: docking the view rewrites the URL to the
+    // view's own path (`routing.dart` setViewPath) before any event of ours runs. Only the app's
+    // own address counts — opened from the tree, it is another view's URL.
+    const from = {pathname: location.pathname.toLowerCase(), search: location.search};
+    let replayed = false;
+    const replay = (): void => {
+      const mounted = route().toLowerCase();
+      // only the app's own parameters: a URL carrying nothing but the platform's (`browse=`) has
+      // no page to restore, and opening it would drop the query the app was built with
+      const deep = new URLSearchParams(from.search);
+      if (replayed || !(deep.has('entity') || deep.has('q')) || !from.pathname.startsWith(mounted))
+        return;
+      replayed = true;
+      void app.open(from.search);
+    };
+    const added = grok.events.onViewAdded.subscribe((v) => {
+      if (v.dart !== view.dart)
+        return;
+      added.unsubscribe();
+      replay();
+    });
+    // The view's path is the shell's only once it has docked, which is not guaranteed to be before
+    // onViewAdded: the route is derived again every time the view becomes current, so a rebase that
+    // lost the race still lands and the snapshot is still replayed (once).
+    const current = grok.events.onCurrentViewChanged.subscribe((e) => {
+      if (e.args?.current?.dart === view.dart)
+        replay();
+    });
+    app.own(() => {
+      added.unsubscribe();
+      current.unsubscribe();
+    });
+    app.own(DomainApp.register(app, view));
+    app.guardUnload();
+    // the pane's ✕: cancelled here, then closed for real once the user has decided
+    const removing = grok.events.onViewRemoving.subscribe((e) => {
+      if (e.args.view.dart !== view.dart || !session.isDirty.peek())
+        return;
+      e.preventDefault();
+      void confirmDiscard(session, {action: 'close the view'}).then((ok) => ok && view.close());
+    });
+    app.own(() => removing.unsubscribe());
+    return view;
   }
 
   /** The handler-backed renderer: the name column as the caption where the table declares one,
@@ -242,22 +369,78 @@ export class DomainTable {
     };
   }
 
-  private _track(source: DomainSource): DomainSource {
+  private _track(source: DomainSource<TRow>): DomainSource<TRow> {
     DomainTable._bySource.set(source, this);
     DomainTable._byRow.set(source.currentRow, source);
+    source.guard(() => this._validate(source));
+    // last resort, after every guard: the writer refused over a cell and named neither
+    source.nameCell = (row, column, problem) => this._nameCell(row as RowView<TRow>, column, problem);
+    // every refused save is one balloon, form or not; a load failure is the list's and the hint's
+    // to show
+    source.effect(() => {
+      const error = source.error.value;
+      if (error !== undefined && source.state.peek() !== 'error' &&
+          DomainErrors.codeOf(error) !== DomainSource.REFUSED)
+        DomainErrors.report(error);
+    });
     source.start();
     return source;
+  }
+
+  /** The validators over every row the batch will send — a form wires them into its inputs, but a
+   * row action or a plain `row.column = …` never goes near a form, and the rule still holds. */
+  private _validate(source: DomainSource<TRow>): string | null {
+    const columns = this.validators.columns;
+    if (columns.length === 0)
+      return null;
+    for (const row of source.pending()) {
+      if (row[Rows.STATE] === 'deleted')
+        continue;
+      for (const column of columns) {
+        const problem = this.validators.check(column, row[column], row as RowView<TRow>);
+        if (problem === null)
+          continue;
+        // the refusal names the row it is about: from a list, "Status: …" alone names nothing
+        source.markProblem(row.id);
+        return this._nameCell(row, column, problem);
+      }
+    }
+    return null;
+  }
+
+  /** A refusal about one cell, named: the row's caption and the column's, as a list or a grid
+   * needs them — the writer's own "Value can't be empty" says nothing about which field. */
+  private _nameCell(row: RowView<TRow>, column: string, problem: string): string {
+    return `${this.renderer.caption(row)}: ${DomainTable._caption(this.properties, column)}: ${problem}`;
+  }
+
+  private static _caption(properties: IProperty[], column: string): string {
+    const name = properties.find((p) => p.name === column)?.friendlyName ?? column;
+    return `${name.charAt(0).toUpperCase()}${name.slice(1)}`;
   }
 }
 
 export const domains = {
   /** The table's shape and the caller's access in one round of requests; a handle per call, so
    * the access is re-acquired by acquiring again. */
-  async table(address: string): Promise<DomainTable> {
+  async table<TRow extends DomainRowLike = DomainRowLike>(address: string): Promise<DomainTable<TRow>> {
     const backend = backends.domain;
     if (backend === undefined)
       throw new Error('no platform backend for domain tables');
     const table = await backend.table(address);
-    return new DomainTable(address, table, Access.from(await table.access()));
+    return new DomainTable<TRow>(address, table, Access.from(await table.access()));
   },
+  form: (target: DomainFormTarget, options?: DomainFormOptions): DomainForm => new DomainForm(target, options),
+  list: (source: DomainSource, options?: DomainListOptions): DomainList => new DomainList(source, options),
+  pick: (table: string, options?: DomainPickOptions): DomainPick => new DomainPick(table, options),
+  grid: (source: DomainSource, options?: DomainGridOptions): DomainGrid => new DomainGrid(source, options),
+  search: (source: DomainSource, options?: DomainSearchOptions): DomainSearch => new DomainSearch(source, options),
+  filters: (source: DomainSource, options?: DomainFiltersOptions): DomainFilters => new DomainFilters(source, options),
+  history: (source: DomainSource, row?: DomainHistoryTarget): DomainHistory => new DomainHistory(source, row),
+  children: (parent: DomainSource, options?: DomainChildrenOptions): DomainChildren =>
+    new DomainChildren(parent, options),
+  app: (options: DomainAppOptions): DomainApp => new DomainApp(options),
+  saveButton,
+  discardButton,
+  newButton,
 };

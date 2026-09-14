@@ -14,7 +14,7 @@ import {SpecContext, renderSpec} from '../src/spec/spec.js';
 import {registerAll} from '../src/spec/registrations.js';
 import {backends} from '../src/sources/backends.js';
 import {DomainSource} from '../src/sources/domain-source.js';
-import {SingleSession} from '../src/sources/session.js';
+import {SharedSession} from '../src/sources/session.js';
 import {MemoryFrame} from '../src/sources/memory-frame.js';
 import {Rows} from '../src/sources/rows-like.js';
 import {Access} from '../src/core/access.js';
@@ -100,7 +100,8 @@ source('load: rows by id, total, access, schema and the summary', async () => {
   assert.equal(src.schema.info.pluralName, 'Issues');
   assert.equal(src.schema.properties.find((p) => p.name === 'project_id').ref, 'grit.project');
   assert.ok(src.df.value instanceof MemoryFrame, 'the memory backend is a frame host too');
-  assert.ok(src.session instanceof SingleSession, 'phase 1: a source is a session of one');
+  assert.ok(src.session instanceof SharedSession, 'built outside a spec or an app: a session of one');
+  assert.deepEqual(src.session.sources.value, [src]);
   assert.equal(src.isDirty.value, false);
   assert.equal(src.isDraft, false);
   src.dispose();
@@ -127,12 +128,13 @@ source('query: a change reloads from the first page; loadMore appends until the 
   src.dispose();
 });
 
-source('newRow → dirty → save: the draft is a row keyed by its index, gets its id, and the source is clean', async () => {
+source('newRow → dirty → save: the draft is a row under its ~new: id, gets its real id, and the source is clean', async () => {
   backends.domain = backend();
   const src = await issues({defaults: {project_id: 'p1'}});
   const draft = src.newRow({title: ''});
-  assert.equal(draft.id, Rows.draftKey(3), 'keyed by its index until saved');
+  assert.match(draft.id, /^~new:/, 'the writer stamps the draft id');
   assert.equal(Rows.isDraft(draft), true);
+  assert.equal(src.df.value.get('id', 3), draft.id, 'into the id cell');
   assert.equal(draft.project_id, 'p1', 'defaults apply');
   assert.equal(src.currentRow.value, draft, 'the draft is current: a form binds to it');
   assert.equal(src.rows.items.value.at(-1), draft, 'drafts are rows');
@@ -147,9 +149,13 @@ source('newRow → dirty → save: the draft is a row keyed by its index, gets i
 
   draft.title = 'New issue';
   assert.equal(src.validity.value, null);
+  const heard = [];
+  const sub = src.edit.value.onSaved.subscribe((e) => heard.push(e.assigned));
   assert.equal(await src.save(), true);
+  sub.unsubscribe();
   const saved = src.currentRow.value;
   assert.match(saved.id, UUID, 'the same row, now under the server\'s id, is current');
+  assert.deepEqual(heard, [{[draft.id]: saved.id}], 'the writer says which draft became which row');
   assert.equal(saved.title, 'New issue');
   assert.equal(saved.version, 1);
   assert.equal(src.rows.byKey(draft.id), undefined, 'the draft key is gone');
@@ -294,8 +300,9 @@ source('access: the backend\'s answer gates the fields; withAccess: false takes 
   const stored = backends.domain.tableSync('grit.issue').rows.at(-1);
   assert.equal(stored.title, 'x');
   assert.equal(stored.weight, undefined, 'only the editable columns are sent');
-  assert.equal(src.currentRow.value.weight, 5, 'the row keeps what it was given');
-  assert.equal(draft.id, Rows.draftKey(3), 'a held draft proxy is not re-keyed; the current row is');
+  assert.equal(src.currentRow.value.weight, null,
+    'the loaded window is re-read after the save: a value never sent is not in the server answer');
+  assert.equal(Rows.isDraft(draft.id), true, 'a held draft proxy is not re-keyed; the current row is');
 
   const trusting = await issues({withAccess: false});
   assert.equal(trusting.access.value.can('delete'), false, 'the table-level access is always fetched');
@@ -337,8 +344,10 @@ source('spec: the tray tag round-trips through dump, a bound query narrows, a bo
     assert.equal(meta.visual, false);
     assert.equal(meta.category, 'Data');
     assert.equal(typeof meta.usage, 'string');
-    assert.deepEqual(meta.props.map((p) => p.name), ['table', 'query', 'pageSize', 'withAccess', 'defaults', 'draft']);
+    assert.deepEqual(meta.props.map((p) => p.name),
+      ['table', 'query', 'search', 'pageSize', 'withAccess', 'defaults', 'empty', 'draft']);
     assert.equal(meta.props.find((p) => p.name === 'query').bindable, true);
+    assert.equal(meta.props.find((p) => p.name === 'search').bindable, true);
 
     const spec = {
       $schema: 'dg-ui/1',
@@ -391,7 +400,7 @@ source('session: save and discard go through it, it announces and emits; a given
   const heard = [];
   const subs = [src.session.onSaved.subscribe(() => heard.push('saved')),
     src.session.onDiscarded.subscribe(() => heard.push('discarded'))];
-  assert.equal(src.session.isDirty, src.isDirty);
+  assert.equal(src.session.isDirty.value, src.isDirty.value);
   assert.equal(src.session.isSaving.value, false);
   src.rows.byKey('i1').title = 'Aspirin 100';
   src.rows.byKey('i2').title = 'Ibuprofen 400';
@@ -609,7 +618,7 @@ source('a saved draft stays current under the id the server gave it; a none cell
   backends.domain = backend();
   const src = await issues({pageSize: 5});
   const draft = src.newRow({title: 'Draft'}, {pristine: true});
-  assert.equal(draft.id, Rows.draftKey(3));
+  assert.equal(Rows.isDraft(draft.id), true);
   assert.equal(src.currentRow.value, draft);
   assert.equal(src.summary.value, '3 issues', 'a draft is not a row of the table yet');
   draft.project_id = 'p1';
@@ -682,7 +691,7 @@ source('a saved delete leaves the rows and the count; the current row moves on',
   src.dispose();
 });
 
-source('a draft source: "New <row>" until the draft is saved, its row afterwards, "New" again on a fresh draft', async () => {
+source('a draft source: "New <row>" until the draft is saved, "<Row> saved" afterwards, "New" again on a fresh draft', async () => {
   backends.domain = backend();
   const draft = new DomainSource({table: 'grit.issue', draft: true, defaults: {project_id: 'p1'}}, env());
   draft.start();
@@ -694,8 +703,114 @@ source('a draft source: "New <row>" until the draft is saved, its row afterwards
   assert.equal(await draft.save(), true);
   assert.equal(draft.currentRow.value.title, 'Draft', 'the saved row stays current');
   assert.equal(Rows.isDraft(draft.currentRow.value), false);
-  assert.equal(draft.summary.value, '1 issue');
+  assert.equal(draft.summary.value, 'Issue saved', 'a create form, not a list: never "1 issue"');
   draft.newRow({title: 'Another'}, {pristine: true});
   assert.equal(draft.summary.value, 'New issue');
   draft.dispose();
+});
+
+source('search: re-queries under the dirty skip, the total is the narrowed count, a bind step drives it', async () => {
+  backends.domain = backend();
+  const src = await issues({pageSize: 2});
+  src.search.value = 'pro';
+  await flush();
+  assert.deepEqual(titles(src), ['Ibuprofen', 'Naproxen']);
+  assert.equal(src.total.value, 2);
+  assert.equal(src.summary.value, '2 issues');
+  src.query.value = 'done = false and number = 1';
+  await flush();
+  assert.deepEqual(titles(src), ['Naproxen'], 'search and query narrow together');
+  src.rows.byKey('i3').title = 'pending';
+  src.bindStep('search').value = 'zzz';
+  await flush();
+  assert.deepEqual(titles(src), ['pending'], 'H6: a search change never drops pending edits');
+  src.discard();
+  src.search.value = 'asp';
+  await flush();
+  assert.deepEqual(titles(src), []);
+  assert.equal(src.total.value, 0);
+  const seeded = await issues({search: 'ibu'});
+  assert.deepEqual(titles(seeded), ['Ibuprofen'], 'the option seeds the signal');
+  assert.equal(seeded.bindProps().find((p) => p.name === 'search').writable, true);
+  src.dispose();
+  seeded.dispose();
+});
+
+source('empty: loads no rows, counts none, accepts drafts; draft implies it', async () => {
+  backends.domain = backend();
+  const empty = await issues({empty: true, defaults: {project_id: 'p1'}});
+  assert.equal(empty.isEmpty, true);
+  assert.equal(empty.isDraft, false);
+  assert.deepEqual(titles(empty), []);
+  assert.equal(empty.total.value, 0);
+  assert.equal(empty.state.value, 'ready');
+  const draft = empty.newRow({title: 'Child of a draft parent'});
+  assert.equal(empty.currentRow.value, draft);
+  assert.equal(await empty.save(), true);
+  assert.deepEqual(titles(empty), ['Child of a draft parent'], 'the saved draft stays a row');
+  assert.equal(empty.total.value, 0, 'an empty source never counts');
+  await empty.loadMore();
+  assert.equal(empty.rows.items.value.length, 1, 'and never pages');
+  const drafted = await issues({draft: true});
+  assert.equal(drafted.isEmpty, true);
+  assert.equal(drafted.rows.items.value.length, 1);
+  empty.dispose();
+  drafted.dispose();
+});
+
+source('selection follows the frame; a frame without one selects nothing', async () => {
+  backends.domain = backend();
+  const src = await issues();
+  assert.deepEqual(src.selection.value, []);
+  const df = src.df.value;
+  df.selection = {get: (i) => i !== 1};
+  df.onSelectionChanged.fire(undefined);
+  assert.deepEqual(src.selection.value.map((r) => r.id), ['i1', 'i3']);
+  assert.equal(src.selection.value[0], src.rows.byKey('i1'), 'the same row proxies');
+  src.query.value = 'done = true';
+  await flush();
+  assert.deepEqual(src.selection.value, [], 'a new frame, nothing selected');
+  src.dispose();
+});
+
+source('draftOf: a draft id resolves to its row in whichever live source holds it', async () => {
+  backends.domain = backend();
+  const src = await issues();
+  const other = await issues({empty: true});
+  assert.equal(DomainSource.draftOf('~new:nope'), undefined);
+  const draft = other.newRow({title: 'x'});
+  assert.deepEqual(DomainSource.draftOf(draft.id), {source: other, row: draft});
+  other.dispose();
+  assert.equal(DomainSource.draftOf(draft.id), undefined, 'gone with its source');
+  src.dispose();
+});
+
+source('spec: two u2-domain-source tags share the instance\'s ambient session — one Save, one transaction', async () => {
+  backends.domain = backend();
+  const reg = new Registry();
+  registerAll(reg);
+  const instance = renderSpec({
+    $schema: 'dg-ui/1',
+    components: [
+      {tag: 'u2-domain-source', name: 'projects', props: {table: 'grit.project'}},
+      {tag: 'u2-domain-source', name: 'issues', props: {table: 'grit.issue'}},
+    ],
+    root: {tag: 'div'},
+  }, new SpecContext(), reg);
+  await flush();
+  const projects = instance.node('projects');
+  const issuesSrc = instance.node('issues');
+  assert.ok(instance.session instanceof SharedSession);
+  assert.equal(projects.session, instance.session);
+  assert.equal(issuesSrc.session, instance.session);
+  assert.equal(SharedSession.ambient, undefined, 'nothing leaks past the build');
+  const parent = projects.newRow({key: 'S', name: 'Spec project'});
+  issuesSrc.newRow({project_id: parent.id, title: 'Spec issue'});
+  assert.equal(instance.session.summary.value, '2 unsaved changes in 2 tables');
+  assert.equal(await fn(issuesSrc, 'save').apply(), true, 'cmd:issues.save saves the whole spec');
+  assert.equal(instance.session.isDirty.value, false);
+  const [p, i] = ['grit.project', 'grit.issue'].map((t) => backends.domain.tableSync(t).rows.at(-1));
+  assert.equal(i.project_id, p.id);
+  instance.dispose();
+  assert.deepEqual(instance.session.sources.value, [], 'the sources left with the instance');
 });

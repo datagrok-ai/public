@@ -1419,13 +1419,12 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
     // The server tags only CSV export: a binary-export tag would drop the columns
     // from its own d42 response, so that one is stamped here, once.
     if (spec.withAccess)
-      for (const name of DOMAIN_ACCESS_COLUMNS) {
-        const col = df.columns.byName(name);
-        if (col != null) {
+      for (const name of df.columns.names())
+        if (name.startsWith('~can_')) {
+          const col = df.columns.byName(name)!;
           col.meta.includeInBinaryExport = false;
           col.meta.includeInCsvExport = false;
         }
-      }
     return df;
   }
 
@@ -1544,14 +1543,23 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
     return domainCall(api.grok_Dapi_Domains_Facets(this.dart, this.schema, this.table, spec));
   }
 
-  /** Row count under [filter] (condition tree or smart string; omit for the whole table). */
-  count(filter?: DomainFilter<TColumn>): Promise<number> {
-    return domainCall(api.grok_Dapi_Domains_Count(this.dart, this.schema, this.table, filter ?? null));
+  /** Row count under [filter] (condition tree or smart string; omit for the whole table),
+   * narrowed by `options.search` like {@link query} would be (see {@link DomainQuerySpec.search}),
+   * so a paged source's total agrees with its rows. */
+  async count(filter?: DomainFilter<TColumn>, options?: {search?: string}): Promise<number> {
+    const search = options?.search;
+    if (search == null || search === '')
+      return domainCall(api.grok_Dapi_Domains_Count(this.dart, this.schema, this.table, filter ?? null));
+    const spec: any = {measures: [{fn: 'count'}], search: search};
+    if (filter != null)
+      spec.filter = filter;
+    const rows = await this.aggregate(spec);
+    return rows.length === 0 ? 0 : Number((rows[0] as any).count);
   }
 
   /** True when at least one visible row matches [filter]. */
-  async exists(filter?: DomainFilter<TColumn>): Promise<boolean> {
-    return (await this.count(filter)) > 0;
+  async exists(filter?: DomainFilter<TColumn>, options?: {search?: string}): Promise<boolean> {
+    return (await this.count(filter, options)) > 0;
   }
 
   /** First matching row or null; shorthand for query({...spec, limit: 1}). */

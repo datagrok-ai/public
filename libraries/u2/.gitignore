@@ -6,3 +6,6 @@ e2e/.artifacts/
 src/**/*.js
 src/**/*.d.ts
 src/**/*.d.ts.map
+tests/typing/*.js
+tests/typing/*.d.ts
+tests/typing/*.d.ts.map

@@ -1,14 +1,26 @@
 /* The collection protocol lists, cards and pickers read (GOAL ruling 2): items by key, so a plain
    array and a DataFrame feed a control alike — `arrayRows` here, `FrameRows` in df-rows.ts — and
-   the row conventions every layer shares: the editor's service columns and the draft key. */
+   the row conventions every layer shares: the editor's service columns and the draft id. */
 import {signal, Signal, ReadonlySignal} from '../core/signals.js';
 
-/** One row of a domain table as controls see it: its columns by name, `id` the key. Live over
- * the frame the source holds. A draft carries a temporary key until it is saved. */
-export interface RowView {
+/** What a typed row type must carry: the key. An app's own row type (`IssueRow` from the
+ * generated `db.ts`) satisfies it as an interface, so no index signature is asked for. */
+export interface DomainRowLike {
   readonly id: string;
-  [column: string]: unknown;
 }
+
+/** One row of a domain table as controls see it: its columns by name, `id` the key. Live over
+ * the frame the source holds. A draft carries a temporary id until it is saved. `TRow` types the
+ * columns; the bare `RowView` reads any column as unknown. */
+export type RowView<TRow extends DomainRowLike = DomainRowLike> =
+  TRow & {readonly id: string, [column: string]: unknown};
+
+/** Column values a draft starts from: the typed columns by name, any other as unknown. */
+export type RowValues<TRow extends DomainRowLike = DomainRowLike> = Partial<RowView<TRow>>;
+
+/** A column name: the keys of `TRow` are offered, any string is taken — a strict `keyof` would
+ * make a typed table unassignable where an untyped one is expected. */
+export type ColumnOf<TRow extends DomainRowLike> = (keyof TRow & string) | (string & {});
 
 export interface RowsLike<T> {
   readonly items: ReadonlySignal<readonly T[]>;
@@ -17,12 +29,13 @@ export interface RowsLike<T> {
 }
 
 /** The one place the `~` conventions live: the editor's row-state column, the service-column
- * rule (read by name, never enumerated — H7) and the key a draft carries until it is saved. */
+ * rule (read by name, never enumerated — H7) and the id a draft carries until it is saved. */
 export class Rows {
   /** The editor's row-state service column: `''`, `'new'`, `'modified'` or `'deleted'`. */
   static readonly STATE = '~state';
-  /** A draft has no id yet: it is keyed by its row index, `~row:<index>`. */
-  static readonly DRAFT_PREFIX = '~row:';
+  /** A draft's id, stamped into the `id` cell by the writer that adds it (the js-api editor, the
+   * memory edit state): `~new:<uuid>`, so a child may reference its parent before either exists. */
+  static readonly DRAFT_PREFIX = '~new:';
 
   static isService(column: string): boolean {
     return column.startsWith('~');
@@ -32,20 +45,13 @@ export class Rows {
     return (typeof x === 'string' ? x : x.id).startsWith(Rows.DRAFT_PREFIX);
   }
 
-  static draftKey(index: number): string {
-    return `${Rows.DRAFT_PREFIX}${index}`;
+  static draftId(): string {
+    return `${Rows.DRAFT_PREFIX}${crypto.randomUUID()}`;
   }
 
-  static draftIndex(key: string): number {
-    return Number(key.slice(Rows.DRAFT_PREFIX.length));
-  }
-
-  /** The frame row a draft key names (-1 past the frame); null for a key that is not a draft's. */
-  static draftRow(key: string, rowCount: number): number | null {
-    if (!Rows.isDraft(key))
-      return null;
-    const at = Rows.draftIndex(key);
-    return at < rowCount ? at : -1;
+  /** The key of a row that has no id cell at all (a non-EMS frame): its index, never a draft. */
+  static unkeyed(index: number): string {
+    return `~row:${index}`;
   }
 }
 

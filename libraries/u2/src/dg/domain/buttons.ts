@@ -36,28 +36,38 @@ export class SessionButton extends Control {
 }
 
 /** Save: the batch as one transaction through the session, which announces what it saved and
- * hands the focus back to the paired form. */
+ * hands the focus back to the paired form; the session's primary button, where Tab from a form's
+ * last field lands. */
 export function saveButton(target: SessionTarget, options: SessionButtonOptions = {}): SessionButton {
   const control = new SessionButton(target, options.text ?? 'Save', {primary: true, run: (session) => session.save()});
   control.root.dataset.u2 = 'save-button';
+  control.button.title = 'Save (Ctrl+S)';
+  const session = control.session;
+  session.primaryButton = control.button;
+  control.own(() => {
+    if (session.primaryButton === control.button)
+      session.primaryButton = undefined;
+  });
   return control;
 }
 
 export function discardButton(target: SessionTarget, options: SessionButtonOptions = {}): SessionButton {
   const control = new SessionButton(target, options.text ?? 'Discard', {run: (session) => session.discard()});
   control.root.dataset.u2 = 'discard-button';
+  control.button.title = 'Discard changes';
   return control;
 }
 
-/** "New": a pristine draft over `values` made current — for a source, the row a create form or a
- * list then edits; a function receives the row that was current (the one just saved, say) so an
- * app carries fields over from one entry to the next. Permission ⇒ hidden: absent without the
- * `insert` capability; state ⇒ disabled until the table is loaded. */
+/** "New": a draft over `values` made current — for a source, the row a create form or a list then
+ * edits; a function receives the row that was current (the one just saved, say) so an app carries
+ * fields over from one entry to the next. The press is a change of its own — the draft counts
+ * against the session from the start, unlike the create page's initial row. Permission ⇒ hidden:
+ * absent without the `insert` capability; state ⇒ disabled until the table is loaded. */
 export function newButton(source: DomainSource,
   values: Record<string, unknown> | ((last: RowView | null) => Record<string, unknown>) = {},
   options: SessionButtonOptions = {}): Control {
   const el = button(options.text ?? 'New', () => source.newRow(
-    typeof values === 'function' ? values(source.currentRow.peek()) : values, {pristine: true}));
+    typeof values === 'function' ? values(source.currentRow.peek()) : values));
   const control = new Control(el);
   control.root.dataset.u2 = 'new-button';
   control.effect(() => {

@@ -141,19 +141,19 @@ export type HiddenItemColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 
 export type HiddenItemExpand = {};
 
 export type ApitestsTransactionOp =
-  {op: 'insert'; table: 'item'; ref?: string; values: DG.DomainTxValues<ItemInsert>} |
+  {op: 'insert'; table: 'item'; ref?: string; values: DG.DomainTxValues<ItemInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'item'; id: string; values: DG.DomainTxValues<ItemUpdate>; expectedVersion?: number} |
   {op: 'delete'; table: 'item'; id: string} |
-  {op: 'insert'; table: 'tag'; ref?: string; values: DG.DomainTxValues<TagInsert>} |
+  {op: 'insert'; table: 'tag'; ref?: string; values: DG.DomainTxValues<TagInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'tag'; id: string; values: DG.DomainTxValues<Partial<TagRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'tag'; id: string} |
-  {op: 'insert'; table: 'item_tag'; ref?: string; values: DG.DomainTxValues<ItemTagInsert>} |
+  {op: 'insert'; table: 'item_tag'; ref?: string; values: DG.DomainTxValues<ItemTagInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'item_tag'; id: string; values: DG.DomainTxValues<Partial<ItemTagRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'item_tag'; id: string} |
-  {op: 'insert'; table: 'item_event'; ref?: string; values: DG.DomainTxValues<ItemEventInsert>} |
+  {op: 'insert'; table: 'item_event'; ref?: string; values: DG.DomainTxValues<ItemEventInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'item_event'; id: string; values: DG.DomainTxValues<Partial<ItemEventRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'item_event'; id: string} |
-  {op: 'insert'; table: 'hidden_item'; ref?: string; values: DG.DomainTxValues<HiddenItemInsert>} |
+  {op: 'insert'; table: 'hidden_item'; ref?: string; values: DG.DomainTxValues<HiddenItemInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'hidden_item'; id: string; values: DG.DomainTxValues<Partial<HiddenItemRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'hidden_item'; id: string};
 

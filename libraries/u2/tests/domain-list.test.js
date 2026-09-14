@@ -1,4 +1,4 @@
-/* `domainList` (WO-10) over the memory backend: rows by id through the table's renderer (the
+/* `domains.list` (WO-10) over the memory backend: rows by id through the table's renderer (the
    handler where one claims the rows, the schema otherwise), Open and Delete gated by access per
    row, selection and the current row one thing, the next page near the bottom, the loading /
    empty / error area, and the `u2-domain-list` tag. `DG` comes from tests/dg-stub.mjs. */
@@ -20,7 +20,7 @@ import {ROWS, backend} from './domain-fixtures.mjs';
 register('./dg-stub.mjs', import.meta.url);
 const {domains} = await import('../src/dg/domain/index.js');
 const {Rows} = await import('../src/sources/rows-like.js');
-const {domainList, DomainList} = await import('../src/dg/domain/list.js');
+const {DomainList} = await import('../src/dg/domain/list.js');
 const {allowedActions} = await import('../src/components/actions/actions.js');
 const {registerDomainComponents} = await import('../src/dg/domain/registrations.js');
 const DG = await import('datagrok-api/dg');
@@ -65,7 +65,7 @@ const names = (list, options) => list.actionsFor(options).map((a) => a.name);
 
 scoped('rows render by id; the schema names them without a handler, the handler where one claims them', async () => {
   const {src} = await issues();
-  const list = domainList(src);
+  const list = domains.list(src);
   assert.equal(list.root.dataset.u2, 'domain-list');
   const rows = mount(list);
   assert.deepEqual(rows.map((r) => r.dataset.u2Row), ['i1', 'i2', 'i3']);
@@ -80,7 +80,7 @@ scoped('rows render by id; the schema names them without a handler, the handler 
 scoped('a handler that claims the rows renders them, resolved once per handle', async () => {
   DG.ObjectHandler.register(new DG.DomainObjectHandler('grit.issue'));
   const {table, src} = await issues();
-  const handled = domainList(src);
+  const handled = domains.list(src);
   const items = mount(handled);
   assert.deepEqual(items.map((r) => r.querySelector('.test-handler-item')?.textContent),
     ['Aspirin', 'Ibuprofen', 'Naproxen'], 'the handler\'s list item, built off the row\'s values');
@@ -91,10 +91,10 @@ scoped('a handler that claims the rows renders them, resolved once per handle', 
 
 scoped('cards: the schema card carries the name, up to three text fields and the creation time', async () => {
   const {src} = await issues();
-  const list = domainList(src, {mode: 'cards'});
+  const list = domains.list(src, {mode: 'cards'});
   const rows = mount(list);
   assert.equal(list.root.classList.contains('u2-domain-list-cards'), true);
-  assert.equal(rows[0].style.height, '96px', 'room for a handler\'s card');
+  assert.equal(rows[0].style.height, '64px', 'room for a title, a description and the time');
   const card = rows[2].querySelector('.u2-domain-card');
   assert.equal(card.querySelector('.u2-domain-card-title').textContent, 'Naproxen');
   assert.equal(card.querySelector('.u2-domain-card-description').textContent, 'high',
@@ -106,7 +106,7 @@ scoped('cards: the schema card carries the name, up to three text fields and the
   assert.equal(draftCard.querySelector('.u2-domain-card-title').textContent, 'New issue');
   assert.equal(draftCard.querySelector('.u2-domain-card-title').classList.contains('u2-domain-draft'), true);
   list.dispose();
-  const custom = domainList(src, {render: (row) => Object.assign(document.createElement('b'), {textContent: row.id})});
+  const custom = domains.list(src, {render: (row) => Object.assign(document.createElement('b'), {textContent: row.id})});
   assert.deepEqual(mount(custom).map((r) => r.querySelector('b').textContent).slice(0, 3), ['i1', 'i2', 'i3']);
   custom.dispose();
   src.dispose();
@@ -119,7 +119,7 @@ scoped('actions: Open on saved rows through the handler, Delete under the row\'s
   const {table, src} = await issues();
   table.actions.add({name: 'Escalate', icon: 'arrow-up', requires: 'edit', when: (r) => r.title !== 'Naproxen',
     run: (r) => r.title = `${r.title}!`});
-  const list = domainList(src, {actions: [{name: 'Copy id', run: () => {}}]});
+  const list = domains.list(src, {actions: [{name: 'Copy id', run: () => {}}]});
   assert.deepEqual(names(list, src.rows.byKey('i1')), ['Open', 'Delete', 'Escalate', 'Copy id']);
   assert.deepEqual(names(list, src.rows.byKey('i2')), ['Open', 'Escalate', 'Copy id'], 'no ~can_delete');
   assert.deepEqual(names(list, src.rows.byKey('i3')), ['Open', 'Delete', 'Copy id'], 'when: false');
@@ -150,7 +150,7 @@ scoped('actions: Open on saved rows through the handler, Delete under the row\'s
   const bare = new DomainSource({table: 'grit.issue'});
   bare.start();
   await flush();
-  const plain = domainList(bare);
+  const plain = domains.list(bare);
   assert.deepEqual(names(plain, bare.rows.byKey('i1')), ['Delete'], 'no handle: nothing to open with');
   plain.dispose();
   bare.dispose();
@@ -160,7 +160,7 @@ scoped('permission ⇒ hidden: without the delete capability Delete is gone ever
   backends.domain = backend({access: {can: {view: true, insert: true, edit: true, delete: false, share: false},
     fields: {title: 'editable'}}});
   const {src} = await issues();
-  const list = domainList(src);
+  const list = domains.list(src);
   assert.deepEqual(names(list, src.rows.byKey('i1')), ['Open']);
   const rows = mount(list);
   assert.equal(rows[0].querySelectorAll('.u2-row-actions button').length, 1);
@@ -170,7 +170,7 @@ scoped('permission ⇒ hidden: without the delete capability Delete is gone ever
 
 scoped('selection and the current row are one thing, in both directions', async () => {
   const {src} = await issues();
-  const list = domainList(src);
+  const list = domains.list(src);
   mount(list);
   assert.equal(list.list.selectedIndex.value, 0, 'a loaded list starts on its first row');
   assert.equal(src.currentRow.value.id, 'i1');
@@ -194,7 +194,7 @@ scoped('selection and the current row are one thing, in both directions', async 
 scoped('near the bottom the next page is loaded into the same collection', async () => {
   const {src} = await issues({pageSize: 2});
   assert.equal(src.rows.items.value.length, 2);
-  const list = domainList(src);
+  const list = domains.list(src);
   mount(list, 100);
   const root = list.list.root;
   root.scrollHeight = 56;
@@ -211,7 +211,7 @@ scoped('the status area: loading, then empty or the failure with a retry', async
   backends.domain = backend();
   const table = await domains.table('grit.issue');
   const src = table.source({query: 'title = "zzz"'});
-  const list = domainList(src);
+  const list = domains.list(src);
   const status = list.root.querySelector('[data-u2-part="status"]');
   assert.equal(status.querySelector('.u2-loader') !== null, true, 'loading');
   await flush();
@@ -221,7 +221,7 @@ scoped('the status area: loading, then empty or the failure with a retry', async
 
   const broken = new DomainSource({table: 'grit.nope'});
   broken.start();
-  const failing = domainList(broken, {empty: 'Nothing here'});
+  const failing = domains.list(broken, {empty: 'Nothing here'});
   await flush();
   const area = failing.root.querySelector('[data-u2-part="status"]');
   assert.match(area.textContent, /Unknown table/);
@@ -264,14 +264,14 @@ scoped('a list over a table starts on its first row; a draft source does not', a
   backends.domain = backend();
   const table = await domains.table('grit.issue');
   const src = table.source();
-  const list = domainList(src);
+  const list = domains.list(src);
   await flush();
   assert.equal(src.currentRow.value?.id, 'i1', 'the first row is current once loaded');
   assert.equal(list.list.selectedIndex.value, 0);
   list.dispose();
   src.dispose();
   const draft = table.draft({title: 'D'});
-  const over = domainList(draft);
+  const over = domains.list(draft);
   await flush();
   assert.equal(draft.currentRow.value.id.startsWith('~'), true, 'the draft stays current');
   over.dispose();
@@ -281,7 +281,7 @@ scoped('a list over a table starts on its first row; a draft source does not', a
 scoped('keyboard: Enter hands the row to the form through the source, Delete deletes, actions rove with the selection', async () => {
   DG.ObjectHandler.register(new DG.DomainObjectHandler('grit.issue'));
   const {src} = await issues();
-  const list = domainList(src);
+  const list = domains.list(src);
   const rows = mount(list);
   const buttons = (row) => [...row.querySelectorAll('.u2-row-actions button')].map((b) => b.tabIndex);
   assert.deepEqual(buttons(rows[1]), [-1, -1], 'an unselected row: no action in the tab order');
@@ -304,7 +304,7 @@ scoped('keyboard: Enter hands the row to the form through the source, Delete del
 scoped('a list over a source with a current row keeps it', async () => {
   const {src} = await issues();
   src.currentRow.value = src.rows.byKey('i2');
-  const list = domainList(src);
+  const list = domains.list(src);
   await flush();
   assert.equal(src.currentRow.value?.id, 'i2', 'construction did not clear it');
   assert.equal(list.list.selectedIndex.value, 1, 'and the selection shows it');
@@ -316,14 +316,14 @@ scoped('allowedActions and Rows.isDraft', () => {
   const access = {can: (c) => c !== 'delete', row() { return this; }};
   assert.deepEqual(allowedActions([{name: 'a', run() {}}, {name: 'b', requires: 'delete', run() {}},
     {name: 'c', requires: 'edit', run() {}}], {access, row: {}}).map((a) => a.name), ['a', 'c']);
-  assert.equal(Rows.isDraft({id: '~row:3'}), true);
+  assert.equal(Rows.isDraft({id: '~new:3'}), true);
   assert.equal(Rows.isDraft({id: 'i1'}), false);
 });
 
 scoped('cards: the recipe card unless a registered handler subclass paints its own', async () => {
   DG.ObjectHandler.register(new DG.DomainObjectHandler('grit.issue'));
   const {src} = await issues();
-  const plain = domainList(src, {mode: 'cards'});
+  const plain = domains.list(src, {mode: 'cards'});
   const rows = mount(plain);
   assert.equal(rows[0].querySelector('.u2-domain-card-title')?.textContent, 'Aspirin',
     'the reflective default paints the generic table: the recipe card instead');
@@ -341,9 +341,93 @@ scoped('cards: the recipe card unless a registered handler subclass paints its o
   }
   DG.ObjectHandler.register(new IssueHandler('grit.issue'));
   const {src: own} = await issues();
-  const custom = domainList(own, {mode: 'cards'});
+  const custom = domains.list(own, {mode: 'cards'});
   const cards = mount(custom);
   assert.equal(cards[0].querySelector('.test-issue-card')?.textContent, 'card: Aspirin', 'a subclass\'s own card');
   custom.dispose();
   own.dispose();
+});
+
+scoped('a bare table: the searchable columns beside the name, and the row a refusal names is marked', async () => {
+  const {table, src} = await issues();
+  src.rows.byKey('i1').description = 'Acetylsalicylic acid';
+  await flush();
+  const list = domains.list(src);
+  const rows = mount(list);
+  assert.equal(rows[0].querySelector('.u2-domain-list-name').textContent, 'Aspirin');
+  assert.equal(rows[0].querySelector('.u2-domain-list-details').textContent, 'Acetylsalicylic acid',
+    'what a search would match the row by');
+  assert.equal(rows[1].querySelector('.u2-domain-list-details'), null, 'nothing to add for a row without one');
+
+  const off = table.validators.add('priority',
+    (value, row) => value === 'high' && !row.reporter ? 'Assign before escalating' : null);
+  src.rows.byKey('i2').priority = 'high';
+  assert.equal(await src.save(), false);
+  await flush();
+  assert.equal(src.problemRow.value, 'i2');
+  const marked = list.list.root.querySelector('[data-u2-row="i2"]');
+  assert.equal(marked.classList.contains('u2-domain-list-invalid'), true);
+  assert.equal(marked.getAttribute('aria-invalid'), 'true');
+  assert.match(marked.title, /Assign before escalating/);
+  src.discard();
+  await flush();
+  assert.equal(list.list.root.querySelector('[data-u2-row="i2"]').classList.contains('u2-domain-list-invalid'),
+    false, 'a discard takes the mark back with the refusal');
+  off();
+  list.dispose();
+  src.dispose();
+});
+
+scoped('a table whose app brought its own renderer says what that renderer says', async () => {
+  const {table, src} = await issues();
+  src.rows.byKey('i1').description = 'Acetylsalicylic acid';
+  await flush();
+  table.renderer = {...table.renderer, caption: (row) => `#${row.number}`};
+  const list = domains.list(src);
+  const rows = mount(list);
+  assert.equal(rows[0].querySelector('.u2-domain-list-details'), null);
+  list.dispose();
+  src.dispose();
+});
+
+scoped('a double-click on a row activates it, the way Enter does; a single click only selects', async () => {
+  const {src} = await issues();
+  const list = domains.list(src);
+  const rows = mount(list);
+  fire(rows[1].querySelector('.u2-domain-list-content'), 'click');
+  await flush();
+  assert.equal(src.currentRow.value.id, 'i2', 'a click selects');
+  assert.equal(src.activate.value, 0, 'and nothing more');
+  fire(rows[1].querySelector('.u2-domain-list-content'), 'dblclick');
+  assert.equal(src.activate.value, 1, 'a double-click hands the row over, as Enter does');
+  assert.equal(src.currentRow.value.id, 'i2');
+  list.dispose();
+  src.dispose();
+});
+
+scoped('no class inside a row is also on the list root: a row rule reaching the host collapses it', async () => {
+  const {src} = await issues();
+  src.rows.byKey('i1').description = 'Acetylsalicylic acid';
+  await flush();
+  const classes = (el, out = []) => {
+    out.push(...el.className.split(' ').filter((c) => c !== ''));
+    for (const child of el.children)
+      classes(child, out);
+    return out;
+  };
+  for (const mode of ['brief', 'cards']) {
+    const list = domains.list(src, {mode});
+    const rows = mount(list);
+    const host = new Set(list.root.className.split(' '));
+    assert.equal(host.has(`u2-domain-list-${mode}`), true, 'the mode is a class on the host');
+    for (const cls of classes(rows[0]))
+      assert.equal(host.has(cls), false, `${cls} is on both a ${mode} row and the list root`);
+    list.dispose();
+  }
+  const brief = domains.list(src);
+  const row = mount(brief)[0];
+  assert.equal(row.querySelector('.u2-domain-list-line .u2-domain-list-details').textContent,
+    'Acetylsalicylic acid');
+  brief.dispose();
+  src.dispose();
 });

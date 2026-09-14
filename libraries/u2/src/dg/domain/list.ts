@@ -1,13 +1,15 @@
-/* `u2.domain.list` — a `VirtualList` over a source's rows: rendered through the table's renderer,
+/* `domains.list` — a `VirtualList` over a source's rows: rendered through the table's renderer,
    each row carrying its actions (hover block and context menu alike, permission-filtered per
    row), selection and the source's current row one thing, Enter handing the row to the form
    paired through the source, the next page loaded near the bottom, a row marked deleted kept
    struck through with Restore until the save, and the source's loading, empty and error states
    shown under the rows. */
 import {Control} from '../../core/component.js';
-import type {ReadonlySignal} from '../../core/signals.js';
+import {signal} from '../../core/signals.js';
+import type {ReadonlySignal, Signal} from '../../core/signals.js';
 import type {ObjectRenderer} from '../../core/object-renderer.js';
 import {button, div, divH, span} from '../../core/elements.js';
+import {text} from '../../core/text.js';
 import {VirtualList} from '../../components/collections/list.js';
 import {allowedActions, rowActions} from '../../components/actions/actions.js';
 import type {Action} from '../../components/actions/actions.js';
@@ -34,13 +36,16 @@ export interface DomainListOptions {
   empty?: string;
 }
 
-/** A card is the handler's card — for a domain row a small property table — so it gets room. */
-const HEIGHTS: Record<DomainListMode, number> = {brief: 28, cards: 96};
+/** A card is the handler's card — a title, a description line and the creation time. */
+const HEIGHTS: Record<DomainListMode, number> = {brief: 28, cards: 64};
 const NEAR_BOTTOM_ROWS = 5;
 
 export class DomainList extends Control {
   readonly list: VirtualList<RowView>;
   readonly mode: DomainListMode;
+  /** The rows are not the ones the filter box reads as — set while that filter is invalid, so
+   * they are shown dimmed instead of as the answer (`DomainApp` wires it to `DomainFilters`). */
+  readonly stale: Signal<boolean> = signal(false);
 
   private readonly _table: DomainTable | undefined;
   private _default: ObjectRenderer<RowView> | undefined;
@@ -105,17 +110,31 @@ export class DomainList extends Control {
     this.effect(() => {
       const state = source.state.value;
       const count = source.rows.items.value.length;
+      const q = source.query.value;
+      const filtered = typeof q === 'string' ? q.trim() !== '' : q.nodes.length > 0;
       if (state === 'loading' && count === 0)
         status.replaceChildren(loader('Loading…'));
       else if (state === 'error') {
-        status.replaceChildren(divH([span(DomainErrors.message(source.error.value)),
-          button('Retry', () => void source.refresh())], 'u2-domain-list-error'));
+        // a filter the server refuses is a dead end without this: Retry runs it again
+        const actions = [button('Retry', () => void source.refresh())];
+        if (filtered)
+          actions.push(button('Clear filter', () => source.query.value = ''));
+        status.replaceChildren(divH([span(DomainErrors.message(source.error.value)), ...actions],
+          'u2-domain-list-error'));
       } else if (state === 'ready' && count === 0) {
         status.replaceChildren(span(_options.empty ??
           `No ${source.schema.info.pluralName.toLowerCase() || 'rows'}.`, 'u2-domain-list-empty'));
       } else
         status.replaceChildren();
     });
+    // a refusal names one row: marked where it is drawn, and unmarked with the refusal
+    this.effect(() => {
+      source.problemRow.value;
+      source.error.value;
+      for (const el of Array.from(this.list.root.querySelectorAll<HTMLElement>('[data-u2-row]')))
+        this._markProblem(el);
+    });
+    this.effect(() => this.root.classList.toggle('u2-domain-list-stale', this.stale.value));
     this.root.append(this.list.root, status);
   }
 
@@ -149,19 +168,45 @@ export class DomainList extends Control {
   private _row(row: RowView, el: HTMLElement): HTMLElement {
     el.dataset.u2Row = row.id;
     el.classList.toggle('u2-domain-list-deleted', row[Rows.STATE] === 'deleted');
+    this._markProblem(el);
     const render = this._options.render;
     const content = render ? render(row) : this._content(row);
     content.classList.add('u2-domain-list-content');
     return div([content, rowActions(this.actionsFor(row))], 'u2-domain-list-item');
   }
 
+  /** The row a refusal names, marked while it stands — the way a pending delete is marked. */
+  private _markProblem(el: HTMLElement): void {
+    const problem = this.source.problemRow.peek();
+    const mine = problem !== null && el.dataset.u2Row === problem;
+    el.classList.toggle('u2-domain-list-invalid', mine);
+    if (mine) {
+      el.setAttribute('aria-invalid', 'true');
+      el.title = DomainErrors.message(this.source.error.peek());
+    } else {
+      el.removeAttribute('aria-invalid');
+      el.removeAttribute('title');
+    }
+  }
+
   private _content(row: RowView): HTMLElement {
     const renderer = this.renderer;
     const brief = () => renderer.listItem?.(row) ?? span(renderer.caption(row), 'u2-domain-list-name');
-    return this.mode === 'cards' ? renderer.card?.(row) ?? brief() : brief();
+    if (this.mode === 'cards')
+      return renderer.card?.(row) ?? brief();
+    const details = this._details(row);
+    return details === '' ? brief() :
+      divH([brief(), span(details, 'u2-domain-list-details')], 'u2-domain-list-line');
   }
-}
 
-export function domainList(source: DomainSource, options?: DomainListOptions): DomainList {
-  return new DomainList(source, options);
+  /** What a bare table shows beside the name: the columns a search matches, so a hit says why it
+   * is one. A table whose app brought its own renderer says what that renderer says. */
+  private _details(row: RowView): string {
+    const info = this.source.schema.info;
+    if (this._options.renderer !== undefined || this._table === undefined ||
+        this._table.renderer !== this._table.defaultRenderer)
+      return '';
+    return info.searchableColumns.filter((c) => c !== info.nameColumn).map((c) => text(row[c]))
+      .filter((v) => v !== '').join(' · ');
+  }
 }
