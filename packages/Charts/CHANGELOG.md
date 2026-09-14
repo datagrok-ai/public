@@ -24,6 +24,7 @@
 * Radar: Fixed clicking the first row (CH-10)
 * Tree, Sunburst: Fixed one bad molecule hiding the remaining structure labels (CH-14)
 * Timelines: Mouse-wheel zoom now works on the time axis (CH-18)
+* GROK-20892: Charts: Word cloud silently loses its column in layouts saved before the columnColumnName to wordColumnName rename
 
 ## 1.7.0 (2026-03-20)
 
