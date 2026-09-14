@@ -21,7 +21,16 @@ export async function keypairToken(apiRoot: string, devKey?: string): Promise<st
     return null;
   if (!tokenCache.has(apiRoot))
     tokenCache.set(apiRoot, keypair.keyLogin(apiRoot, privateKey));
-  return await tokenCache.get(apiRoot)!;
+  try {
+    return await tokenCache.get(apiRoot)!;
+  } catch (e: any) {
+    // A server without the keypair endpoints is a reason to use the developer key that is
+    // still configured, not to stop: one config usually names stands of both vintages.
+    if (e?.name !== 'ServerTooOldError' || !devKey)
+      throw e;
+    tokenCache.delete(apiRoot);
+    return null;
+  }
 }
 
 /**
