@@ -7,5 +7,7 @@ export async function callThings(): Promise<void> {
   const f = DG.Func.byName('Plain:helper');
   const g = DG.Func.find({package: 'Nowhere', name: 'missing'});
   await grok.functions.eval('Demo:CalculatelogD');
+  await grok.functions.call('Demo:ParetoFront', {});
+  await grok.functions.call('Demo:TradeOff', {});
   console.log(f, g);
 }

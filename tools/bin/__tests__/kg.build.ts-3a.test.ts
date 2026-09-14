@@ -6,6 +6,8 @@ import os from 'os';
 import path from 'path';
 import {fileURLToPath} from 'url';
 import {parseHeaderLines, parseParam, parseFunctionHeaders, parseScriptHeader, parseQueryHeaders} from '../utils/kg/build/annotations';
+import {Emitter} from '../utils/kg/build/emitter';
+import {loadTypeSystem} from '../utils/kg/types';
 import {kg} from '../commands/kg';
 
 const fixture = path.join(path.dirname(fileURLToPath(import.meta.url)), 'fixtures', 'kg', 'build');
@@ -185,8 +187,8 @@ describe('ts-functions extractor (build-plan.md WO-3a)', () => {
     expect(byId(rows('nodes/file-handler'), 'func:Demo:Import SDF')).toMatchObject({extensions: ['sdf', 'mol'], direction: 'import', meta: {}});
     expect(byId(rows('nodes/file-viewer'), 'func:Demo:Preview MOL')).toMatchObject({extensions: ['mol', 'mol2'], check: 'Demo:checkMol', meta: {}});
     expect(byId(rows('nodes/panel'), 'func:Demo:Molecule Panel')).toMatchObject({condition: 'true', target_type: 'string', target_semtype: 'semtype:Molecule', meta: {}});
-    expect(byId(rows('nodes/filter'), 'func:Demo:Substructure Filter')).toMatchObject({semtype: 'semtype:Molecule', primary: true, meta: {}});
-    expect(byId(rows('nodes/editor'), 'func:Demo:Column Editor')).toMatchObject({edits: 'AddNewColumn', meta: {}});
+    expect(byId(rows('nodes/filter'), 'func:Demo:Substructure Filter')).toMatchObject({semtype: 'semtype:Molecule', primary: true, columnless: true, meta: {}});
+    expect(byId(rows('nodes/editor'), 'func:Demo:Column Editor')).toMatchObject({meta: {'editor-for': 'AddNewColumn'}});
     expect(byId(rows('nodes/script-handler'), 'func:Demo:Demo Handler')).toMatchObject({script_language: 'demo', extensions: ['dm'], comment_start: '#', meta: {}});
     expect(byId(rows('nodes/sem-type-detector'), 'func:Demo:detectSequences')).toMatchObject({skip_test: true, meta: {}});
     expect(byId(rows('nodes/function'), 'func:Demo:Broken Renderer')).toMatchObject({type: 'function', roles: ['cellRenderer']});
@@ -197,15 +199,16 @@ describe('ts-functions extractor (build-plan.md WO-3a)', () => {
     const {rows} = await graph;
     expect(byId(rows('nodes/function'), 'func:Demo:To HELM')).toEqual({
       id: 'func:Demo:To HELM', type: 'function', name: 'To HELM', batch: expect.any(String), cache: 'all', demo_path: 'Bioinformatics | To HELM',
-      description: 'Converts a sequence to HELM', help_url: 'https://datagrok.ai/help/domains/bio', input_types: ['dataframe', 'column', 'string', 'int'], language: 'ts', line: 118,
+      description: 'Converts a sequence to HELM', help_url: 'https://datagrok.ai/help/domains/bio', input_types: ['dataframe', 'column', 'string', 'int'], language: 'ts', line: 119,
       meta: {'cache.invalidateOn': '0 0 * * *', vectorFunc: 'true'}, output_types: ['column'], package: 'pkg:Demo', path: 'public/packages/Demo/src/package.g.ts',
       provenance: 'annotation', signature: '(dataframe table, column sequence: Macromolecule, string method, int n) -> column', source_layer: 'public', status: 'active',
       top_menu: 'Bio | Convert | To HELM...', visibility: 'public',
     });
     expect(byId(rows('nodes/function'), 'func:Demo:toMolfile')).toMatchObject({name: 'toMolfile', signature: '(string mol) -> string'});
-    expect(rows('nodes/source-file').map((f) => [f.id, f.generated, f.loc])).toEqual([
-      ['file:public/packages/Demo/detectors.js', false, 39], ['file:public/packages/Demo/src/package.g.ts', true, 126], ['file:public/packages/Demo/src/utils.ts', false, 11],
-      ['file:public/packages/Plain/src/package-test.ts', false, 7], ['file:public/packages/Plain/src/package.ts', false, 17],
+    expect(rows('nodes/source-file').map((f) => [f.id, f.generated])).toEqual([
+      ['file:public/packages/Demo/detectors.js', false], ['file:public/packages/Demo/package.js', false], ['file:public/packages/Demo/src/package.g.ts', true],
+      ['file:public/packages/Demo/src/package.ts', false], ['file:public/packages/Demo/src/utils.ts', false],
+      ['file:public/packages/Plain/src/package-test.ts', false], ['file:public/packages/Plain/src/package.js', false], ['file:public/packages/Plain/src/package.ts', false],
     ]);
   });
 
@@ -213,6 +216,7 @@ describe('ts-functions extractor (build-plan.md WO-3a)', () => {
     const {rows} = await graph;
     expect(rows('edges/declares').filter((e) => e.from.startsWith('file:public/packages/Plain/')).map((e) => [e.from, e.to])).toEqual([
       ['file:public/packages/Plain/src/package-test.ts', 'func:Plain:test'],
+      ['file:public/packages/Plain/src/package.js', 'func:Plain:srcJs'],
       ['file:public/packages/Plain/src/package.ts', 'func:Plain:Plain App'],
       ['file:public/packages/Plain/src/package.ts', 'func:Plain:helper'],
     ]);
@@ -222,7 +226,7 @@ describe('ts-functions extractor (build-plan.md WO-3a)', () => {
     const {rows} = await graph;
     expect(rows('reports/claims.jsonl')).toEqual([
       {feature: 'domains/bio', file: 'public/packages/Demo/scripts/run.js', line: 1, props: {}, rung: 1, source: 'marker'},
-      {feature: 'domains/bio', file: 'public/packages/Demo/src/package.g.ts', line: 104, props: {}, rung: 1, source: 'marker'},
+      {feature: 'domains/bio', file: 'public/packages/Demo/src/package.g.ts', line: 105, props: {}, rung: 1, source: 'marker'},
     ]);
     expect(rows('edges/is-implemented-in')).toEqual([
       expect.objectContaining({from: 'domains/bio', to: 'func:Demo:RunJs', derived_by: 'annotation', confidence: 1, evidence: ['public/packages/Demo/scripts/run.js']}),
@@ -248,6 +252,8 @@ describe('ts-functions extractor (build-plan.md WO-3a)', () => {
       ['func:Demo:Molecule Renderer', 'semtype:Molecule', 'renders', 'annotation', 1],
       ['func:Demo:Substructure Filter', 'semtype:Molecule', 'filters', 'annotation', 1],
       ['func:Demo:To HELM', 'semtype:Macromolecule', 'consumes', 'annotation', 1],
+      ['func:Demo:detectCountries', 'semtype:demo-country', 'detects', 'ast', 0.9],
+      ['func:Demo:detectFlags', 'semtype:flag', 'detects', 'ast', 0.9],
       ['func:Demo:detectImages', 'semtype:BinaryImage', 'detects', 'ast', 0.9],
       ['func:Demo:detectImages', 'semtype:Text', 'detects', 'ast', 0.9],
       ['func:Demo:detectMolecules', 'semtype:Molecule', 'detects', 'ast', 0.9],
@@ -256,6 +262,7 @@ describe('ts-functions extractor (build-plan.md WO-3a)', () => {
     ]);
     expect(rows('nodes/semantic-type').map((s) => [s.id, s.provenance])).toEqual([
       ['semtype:BinaryImage', 'ast'], ['semtype:DemoId', 'registry'], ['semtype:Macromolecule', 'annotation'], ['semtype:Molecule', 'annotation'], ['semtype:Text', 'ast'],
+      ['semtype:demo-country', 'ast'], ['semtype:flag', 'ast'],
     ]);
   });
 
@@ -264,13 +271,14 @@ describe('ts-functions extractor (build-plan.md WO-3a)', () => {
     expect(rows('edges/calls').map((e) => [e.from, e.to, e.count])).toEqual([
       ['file:public/packages/Demo/detectors.js', 'func:Demo:detectMolecules', 2],
       ['file:public/packages/Demo/src/utils.ts', 'func:Demo:Calculate logD', 1],
+      ['file:public/packages/Demo/src/utils.ts', 'func:Demo:Pareto Front', 1],
       ['file:public/packages/Demo/src/utils.ts', 'func:Demo:To HELM', 2],
       ['file:public/packages/Demo/src/utils.ts', 'func:Plain:helper', 1],
       ['file:public/packages/Plain/src/package.ts', 'func:Demo:toMolfile', 1],
     ]);
     expect(rows('edges/calls')[0]).toMatchObject({kind: 'by-name', derived_by: 'ast', confidence: 1, evidence: ['public/packages/Demo/detectors.js']});
     expect(problems.unresolved_ids).toContain('public/packages/Demo/src/utils.ts: call to Nowhere:missing names no registered function');
-    expect(manifest.problems).toMatchObject({unresolved_ids: 2, dangling_edges: 0});
+    expect(manifest.problems).toMatchObject({unresolved_ids: 3, dangling_edges: 0});
   });
 
   it('reads scripts with their language, environment reference, reference, sample and test; a file without a header is not a script', async () => {
@@ -294,19 +302,97 @@ describe('ts-functions extractor (build-plan.md WO-3a)', () => {
       input_types: ['string'], meta: {test: "Dbtests:expectTable(CompoundsForTarget(), OpenFile('x.d42'))"},
     });
     expect(byId(rows('nodes/query'), 'func:Demo:users')).toMatchObject({line: 12, connection: 'conn:System:Datagrok', test: false});
-    expect(rows('edges/connection').map((e) => [e.from, e.to])).toEqual([['func:Demo:compounds for @target', 'conn:Demo:Demo'], ['func:Demo:users', 'conn:System:Datagrok']]);
+    expect(rows('edges/connection').map((e) => [e.from, e.to])).toEqual([['func:Demo:compounds for @target', 'conn:Demo:Demo'], ['func:Demo:users', 'conn:System:Datagrok'],
+      ['query:Demo:Demo App', 'conn:Demo:Demo']]);
     expect(byId(rows('nodes/connection'), 'conn:System:Datagrok')).toMatchObject({status: 'proposed'});
-    expect(problems.invalid_rows).toEqual(["public/packages/Demo/queries/q.sql:18: query 'no connection' has no --connection:"]);
+    expect(problems.invalid_rows).toEqual(["public/packages/Demo/queries/q.sql:19: query 'no connection' has no --connection:"]);
     expect(manifest.sources['ts-functions']).toBe('partial');
   });
 
-  it('reads connections without credentials, and containers from their Dockerfile', async () => {
+  it('reads connections without credentials', async () => {
     const {rows} = await graph;
     expect(byId(rows('nodes/connection'), 'conn:Demo:Demo')).toEqual({
       id: 'conn:Demo:Demo', type: 'connection', name: 'Demo', batch: expect.any(String), db: 'demo', description: 'Demo DB', language: 'other', package: 'pkg:Demo',
       path: 'public/packages/Demo/connections/demo.json', provenance: 'registry', provider: 'Postgres', server: '${Demo<DockerContainer>}', source_layer: 'public', status: 'active', visibility: 'public',
     });
-    expect(rows('nodes/container')).toEqual([expect.objectContaining({id: 'container:Demo:demo', name: 'demo', path: 'public/packages/Demo/dockerfiles/demo/Dockerfile', package: 'pkg:Demo', provenance: 'filesystem'})]);
+  });
+});
+
+describe('ts-functions extractor, the defects of the WO-3a review', () => {
+  it('D1 reads package.g.ts, package.ts and package-test.ts: the generated file takes a name from package.ts silently, any other pair is shadowed', async () => {
+    const {rows, problems} = await graph;
+    expect(byId(rows('nodes/function'), 'func:Demo:info')).toMatchObject({path: 'public/packages/Demo/src/package.ts', line: 7});
+    expect(byId(rows('nodes/app'), 'func:Demo:Demo App')).toMatchObject({path: 'public/packages/Demo/src/package.g.ts'});
+    expect(problems.shadowed_headers).toEqual(["public/packages/Plain/src/package-test.ts:11: 'helper' is already registered in public/packages/Plain/src/package.ts"]);
+  });
+
+  it('D2 keeps the first of two declarations under one id, counts duplicate_ids, and gives a colliding query its own id', async () => {
+    const {rows, problems} = await graph;
+    expect(byId(rows('nodes/panel'), 'func:Demo:Dual')).toMatchObject({line: 153});
+    expect(byId(rows('nodes/function'), 'func:Demo:Twice')).toMatchObject({line: 139, input_types: ['int']});
+    expect(byId(rows('nodes/query'), 'query:Demo:Demo App')).toMatchObject({language: 'sql', connection: 'conn:Demo:Demo'});
+    expect(byId(rows('nodes/app'), 'func:Demo:Demo App')).toMatchObject({language: 'ts'});
+    expect(problems.duplicate_ids).toEqual([
+      'func:Demo:Twice: function at public/packages/Demo/src/package.g.ts:145 ignored; function at public/packages/Demo/src/package.g.ts:139 kept',
+      'func:Demo:Dual: app at public/packages/Demo/src/package.g.ts:161 ignored; panel at public/packages/Demo/src/package.g.ts:153 kept',
+      "public/packages/Demo/queries/q.sql: query 'Demo App' collides with the function of the same name in public/packages/Demo/src/package.g.ts; kept as query:Demo:Demo App",
+    ]);
+  });
+
+  it('D2 re-checks a merged row against the winning type and demotes it to invalid', () => {
+    const emitter = new Emitter(loadTypeSystem(path.join(fixture, KG_DIR)), 'b-test');
+    const at = {name: 'Merged', path: 'public/packages/Demo/queries/q.sql', line: 1, package: 'pkg:Demo', provenance: 'annotation', source_layer: 'public'};
+    emitter.node({type: 'function', id: 'func:Demo:Merged', language: 'ts', ...at});
+    emitter.node({type: 'query', id: 'func:Demo:Merged', language: 'sql', connection: 'conn:Demo:Demo', ...at});
+    const graph = emitter.finalize();
+    expect(graph.nodes.map((n) => n.id)).not.toContain('func:Demo:Merged');
+    expect(graph.invalid).toEqual([expect.objectContaining({id: 'func:Demo:Merged', type: 'query', problems: [expect.stringContaining('language')]})]);
+  });
+
+  it('D3 does not let a blank line inside a header end it, in all three parsers', async () => {
+    const {rows} = await graph;
+    expect(parseHeaderLines(['//name: gap', '', '//top-menu: Demo | Gap'], 3)).toMatchObject({line: 3, name: 'gap', keys: {'top-menu': ['Demo | Gap']}});
+    expect(byId(rows('nodes/function'), 'func:Demo:Spaced Header')).toMatchObject({top_menu: 'Demo | Spaced'});
+    expect(byId(rows('nodes/query'), 'func:Demo:users')).toMatchObject({line: 12, connection: 'conn:System:Datagrok'});
+    expect(byId(rows('nodes/script'), 'func:Demo:Inline Env')).toMatchObject({language: 'python'});
+  });
+
+  it('D4 reads the three container layouts: a folder per Dockerfile, a single dockerfiles/Dockerfile, a published image in container.json', async () => {
+    const {rows} = await graph;
+    expect(rows('nodes/container').map((c) => [c.id, c.name, c.path])).toEqual([
+      ['container:Demo:Demo', 'Demo', 'public/packages/Demo/dockerfiles/Dockerfile'],
+      ['container:Demo:demo', 'demo', 'public/packages/Demo/dockerfiles/demo/Dockerfile'],
+      ['container:Demo:published', 'published', 'public/packages/Demo/dockerfiles/published/container.json'],
+    ]);
     expect(rows('nodes/container')[0].base).toBeUndefined();
+  });
+
+  it('D5 resolves a call by the exact name before the spaceless one, and reports a collision instead of guessing', async () => {
+    const {rows, problems} = await graph;
+    expect(rows('edges/calls').find((e) => e.to.startsWith('func:Demo:Pareto'))).toMatchObject({to: 'func:Demo:Pareto Front'});
+    expect(rows('edges/calls').some((e) => e.to === 'func:Demo:Trade Off' || e.to === 'func:Demo:Trade off')).toBe(false);
+    expect(problems.ambiguous_calls).toEqual(['public/packages/Demo/src/utils.ts: call to Demo:TradeOff matches func:Demo:Trade Off, func:Demo:Trade off']);
+  });
+
+  it('D6 reads a JavaScript entry point at the package root and under src', async () => {
+    const {rows} = await graph;
+    expect(byId(rows('nodes/function'), 'func:Demo:rootJs')).toMatchObject({path: 'public/packages/Demo/package.js', language: 'js', description: 'A JavaScript entry point at the package root'});
+    expect(byId(rows('nodes/function'), 'func:Plain:srcJs')).toMatchObject({path: 'public/packages/Plain/src/package.js', language: 'js'});
+  });
+
+  it('D7 reads columnless from meta.columnlessFilter and leaves an editor without edits, so //editor-for: stays in meta', async () => {
+    const {rows} = await graph;
+    expect(byId(rows('nodes/filter'), 'func:Demo:Substructure Filter')).toMatchObject({columnless: true, primary: true});
+    expect(byId(rows('nodes/editor'), 'func:Demo:Column Editor')).toMatchObject({meta: {'editor-for': 'AddNewColumn'}});
+    expect(byId(rows('nodes/editor'), 'func:Demo:Column Editor').edits).toBeUndefined();
+  });
+
+  it('D8 detects the semantic type of a ternary return and of a constant map, and counts a constant it cannot resolve', async () => {
+    const {rows, problems} = await graph;
+    const detects = rows('edges/targets-semtype').filter((e) => e.role === 'detects').map((e) => [e.from, e.to]);
+    expect(detects).toContainEqual(['func:Demo:detectFlags', 'semtype:flag']);
+    expect(detects).toContainEqual(['func:Demo:detectCountries', 'semtype:demo-country']);
+    expect(detects.some((d) => d[0] === 'func:Demo:detectNowhere')).toBe(false);
+    expect(problems.unresolved_ids).toContain('public/packages/Demo/detectors.js: ELSEWHERE_SEMTYPES.NOPE names no semantic type this file declares');
   });
 });

@@ -454,7 +454,12 @@ Verbs:
                 homes (the home-document layer), ts-packages (packages, libraries,
                 semantic types and depends-on from package.json) and ts-functions
                 (registered functions, scripts, queries, connections, environments,
-                containers and by-name calls under public/packages).
+                containers and by-name calls under public/packages), ts-declarations,
+                ts-imports and ts-uses (source files, declarations, extends/implements,
+                resolved imports and JS API usage over js-api, packages and libraries),
+                ts-tests (DG and Playwright tests in their suites), ts-samples (ApiSamples),
+                ts-changelog (CHANGELOG.md bullets) and docs (markdown pages, headings,
+                mentions, legacy Test Track scenarios, tutorials).
     query, report  Not implemented yet.
     help        Show this help
 

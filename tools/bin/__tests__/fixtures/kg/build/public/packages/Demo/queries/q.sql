@@ -10,6 +10,7 @@ select 1
 --end
 
 --name: users
+
 --connection: System:Datagrok
 --output: dataframe result
 select * from users
@@ -18,3 +19,8 @@ select * from users
 --name: no connection
 --input: int n
 select 1
+--end
+
+--name: Demo App
+--connection: Demo
+select 2

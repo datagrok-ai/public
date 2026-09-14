@@ -1,0 +1,6 @@
+{
+  "name": "@datagrok/tested",
+  "friendlyName": "Tested",
+  "version": "0.1.0",
+  "description": "The fixture package with tests, a playwright folder and a changelog."
+}

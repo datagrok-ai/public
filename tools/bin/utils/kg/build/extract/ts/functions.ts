@@ -1,7 +1,7 @@
-/// Registered functions of every package (build-plan.md WO-3a): annotation headers in `src/package.g.ts`
-/// (else `src/package.ts` + `src/package-test.ts`) and `detectors.js`, scripts, queries, connections,
-/// environments and containers as their own node types, `targets-semtype` per role, and by-name `calls`
-/// per source file.
+/// Registered functions of every package (build-plan.md WO-3a): annotation headers in every entry file
+/// (`src/package.g.ts`, `src/package.ts`, `src/package-test.ts`, `package.js`) and `detectors.js`, scripts,
+/// queries, connections, environments and containers as their own node types, `targets-semtype` per role,
+/// and by-name `calls` per source file.
 import * as fs from 'fs';
 import * as path from 'path';
 import * as yaml from 'js-yaml';
@@ -38,6 +38,16 @@ const CALL_PATTERNS = [
 ];
 /** Header keys that become members or edges; every other key lands in `meta` verbatim. */
 const LIFTED_KEYS = new Set(['name', 'description', 'input', 'output', 'tags', 'friendlyName', 'top-menu', 'feature']);
+/** Where a package registers functions with headers, in precedence order: the generated file is the decorator-lowered
+ * form of what `src/package.ts` declares, so it wins over it in silence. */
+const ENTRY_FILES = ['src/package.g.ts', 'src/package.ts', 'src/package.js', 'package.js', 'src/package-test.ts', 'detectors.js'];
+const GENERATED_ENTRY = 'src/package.g.ts';
+const LOWERED_ENTRY = 'src/package.ts';
+/** What a detector returns or assigns, plainly and as the `cond ? 'x' : null` a detector may end with. */
+const DETECTED = [
+  /(?:return|\.semType\s*=)\s+(?:DG\.SEMTYPE\.([A-Z][A-Z0-9_]*)|(['"])([^'"\n]+)\2|([A-Z][A-Z0-9_]{2,})(?:\.([A-Za-z_][\w]*))?)/g,
+  /(?:return|\.semType\s*=)[^;\n]*\?\s*(?:DG\.SEMTYPE\.([A-Z][A-Z0-9_]*)|(['"])([^'"\n]+)\2|([A-Z][A-Z0-9_]{2,})(?:\.([A-Za-z_][\w]*))?)\s*:\s*null/g,
+];
 
 interface SemtypeUse {
   role: string;
@@ -72,8 +82,11 @@ export const functionsExtractor: Extractor = {
 
 class FunctionLayer {
   skipped = 0;
-  /** `<pkg>:<name>` lowercased and without spaces -> function id, for by-name call resolution. */
-  private index = new Map<string, string>();
+  /** `<pkg>:<name>` lowercased -> the functions registered under it; [exact] keeps the spaces of the name, [loose] strips them. */
+  private exact = new Map<string, Set<string>>();
+  private loose = new Map<string, Set<string>>();
+  /** The names the entry files of the package at hand registered, and where. */
+  private declared = new Map<string, string>();
   private files = new Set<string>();
   private semtypes: Record<string, string>;
 
@@ -82,19 +95,20 @@ class FunctionLayer {
   }
 
   emitPackage(pkg: PackageFolder): void {
-    const generated = `${pkg.dir}/src/package.g.ts`;
-    const sources = this.exists(generated) ? [generated] : [`${pkg.dir}/src/package.ts`, `${pkg.dir}/src/package-test.ts`];
-    for (const file of [...sources, `${pkg.dir}/detectors.js`])
-      if (this.exists(file)) this.emitFunctionFile(pkg, file);
+    this.declared.clear();
+    for (const entry of ENTRY_FILES) {
+      const file = `${pkg.dir}/${entry}`;
+      if (this.exists(file)) this.emitFunctionFile(pkg, file, entry);
+    }
     if (pkg.folder !== SAMPLES_PACKAGE)
       for (const file of this.glob(pkg, SCRIPT_GLOB)) this.emitScript(pkg, file);
     for (const file of this.glob(pkg, 'queries/**/*.sql')) this.emitQueries(pkg, file);
     for (const file of this.glob(pkg, 'connections/*.json')) this.emitConnection(pkg, file);
     for (const file of this.glob(pkg, 'environments/*.{yaml,yml}')) this.emitEnvironment(pkg, file);
-    for (const file of this.glob(pkg, 'dockerfiles/*/Dockerfile')) this.emitContainer(pkg, file);
+    this.emitContainers(pkg);
   }
 
-  /** `calls` by name per source file, resolved case-insensitively against every registered name; unresolved targets are counted. */
+  /** `calls` by name per source file, resolved case-insensitively against every registered name; unresolved and ambiguous targets are counted. */
   emitCalls(pkg: PackageFolder): void {
     const files = [...this.glob(pkg, 'src/**/*.{ts,js}').filter((f) => !f.endsWith('.d.ts')), `${pkg.dir}/detectors.js`].filter((f) => this.exists(f));
     for (const file of files) {
@@ -102,9 +116,15 @@ class FunctionLayer {
       const counts = new Map<string, number>();
       for (const pattern of CALL_PATTERNS)
         for (const m of text.matchAll(pattern)) {
-          const to = this.index.get(callKey(m[1], m[2]));
-          if (to) counts.set(to, (counts.get(to) ?? 0) + 1);
-          else this.emitter.problem('unresolved_ids', `${file}: call to ${m[1]}:${m[2]} names no registered function`);
+          const candidates = this.exact.get(exactKey(m[1], m[2])) ?? this.loose.get(looseKey(m[1], m[2]));
+          if (!candidates)
+            this.emitter.problem('unresolved_ids', `${file}: call to ${m[1]}:${m[2]} names no registered function`);
+          else if (candidates.size > 1)
+            this.emitter.problem('ambiguous_calls', `${file}: call to ${m[1]}:${m[2]} matches ${[...candidates].sort().join(', ')}`);
+          else {
+            const to = [...candidates][0];
+            counts.set(to, (counts.get(to) ?? 0) + 1);
+          }
         }
       if (!counts.size) continue;
       this.fileNode(pkg, file);
@@ -113,15 +133,22 @@ class FunctionLayer {
     }
   }
 
-  private emitFunctionFile(pkg: PackageFolder, file: string): void {
+  private emitFunctionFile(pkg: PackageFolder, file: string, entry: string): void {
     const text = this.read(file);
     this.fileNode(pkg, file);
     for (const block of parseFunctionHeaders(text)) {
       const name = block.header.name ?? block.declaration.name;
+      const first = this.declared.get(name);
+      if (first !== undefined && first !== entry) {
+        if (!(first === GENERATED_ENTRY && entry === LOWERED_ENTRY))
+          this.emitter.problem('shadowed_headers', `${file}:${block.declaration.line}: '${name}' is already registered in ${pkg.dir}/${first}`);
+        continue;
+      }
+      this.declared.set(name, entry);
       const id = funcId(pkg.folder, name);
       const {row, uses} = this.functionRow(block.header, {id, name, language: languageOf(file), path: file, line: block.declaration.line, pkg, type: 'function'});
       if (row.type === 'sem-type-detector' && !uses.some((u) => u.role === 'detects'))
-        for (const semtype of this.detectedSemtypes(block, text)) uses.push({role: 'detects', semtype, derived_by: 'ast', confidence: 0.9});
+        for (const semtype of this.detectedSemtypes(block, text, file)) uses.push({role: 'detects', semtype, derived_by: 'ast', confidence: 0.9});
       this.emitFunction(row, uses, block.header, pkg, file);
       this.emitter.edge({type: 'declares', from: fileId(file), to: id, derived_by: 'ast', confidence: 1, evidence: [file]});
       if (block.declaration.kind === 'method' && block.declaration.owner) {
@@ -129,8 +156,8 @@ class FunctionLayer {
         this.emitter.stub(owner, 'declaration', block.declaration.owner, 'ast', {language: languageOf(file), path: file, kind: 'class'});
         this.emitter.edge({type: 'declares', from: owner, to: id, derived_by: 'ast', confidence: 1, evidence: [file]});
       }
-      this.index.set(callKey(pkg.folder, name), id);
-      this.index.set(callKey(pkg.folder, block.declaration.name), id);
+      this.register(pkg.folder, name, id);
+      this.register(pkg.folder, block.declaration.name, id);
     }
   }
 
@@ -143,7 +170,7 @@ class FunctionLayer {
     const byExt = languageOf(file);
     const language = byTag ?? (SCRIPT_LANGUAGE_ENUM.includes(byExt) ? byExt : 'other');
     const name = header.name ?? path.posix.basename(file).replace(/\.[^.]+$/, '');
-    const {row, uses} = this.functionRow(header, {id: funcId(pkg.folder, name), name, language, path: file, pkg, type: 'script'});
+    const {row, uses} = this.functionRow(header, {id: this.ownId(pkg, 'script', name, file), name, language, path: file, pkg, type: 'script'});
     const meta = row.meta as Record<string, string>;
     delete meta.language;
     const environment = header.keys.environment?.[0];
@@ -162,7 +189,7 @@ class FunctionLayer {
     }
     if (header.keys.test) row.test = true;
     this.emitFunction(row, uses, header, pkg, file);
-    this.index.set(callKey(pkg.folder, name), row.id as string);
+    this.register(pkg.folder, name, row.id as string);
   }
 
   private emitQueries(pkg: PackageFolder, file: string): void {
@@ -175,7 +202,7 @@ class FunctionLayer {
         this.skipped++;
         continue;
       }
-      const {row, uses} = this.functionRow(header, {id: funcId(pkg.folder, name), name, language: 'sql', path: file, line: header.line, pkg, type: 'query'});
+      const {row, uses} = this.functionRow(header, {id: this.ownId(pkg, 'query', name, file), name, language: 'sql', path: file, line: header.line, pkg, type: 'query'});
       const meta = row.meta as Record<string, string>;
       const colon = connection.indexOf(':');
       row.connection = colon < 0 ? connId(pkg.folder, connection) : connId(connection.slice(0, colon), connection.slice(colon + 1));
@@ -187,8 +214,17 @@ class FunctionLayer {
         delete meta.testExpectedRows;
       }
       this.emitFunction(row, uses, header, pkg, file);
-      this.index.set(callKey(pkg.folder, name), row.id as string);
+      this.register(pkg.folder, name, row.id as string);
     }
+  }
+
+  /** `func:<Pkg>:<name>`, unless a header function of the package already answers to that name: a script and a query are
+   * separate registrations and must not merge into it. */
+  private ownId(pkg: PackageFolder, scheme: 'script' | 'query', name: string, file: string): string {
+    if (!this.declared.has(name)) return funcId(pkg.folder, name);
+    const id = `${scheme}:${pkg.folder}:${name}`;
+    this.emitter.problem('duplicate_ids', `${file}: ${scheme} '${name}' collides with the function of the same name in ${pkg.dir}/${this.declared.get(name)}; kept as ${id}`);
+    return id;
   }
 
   /** Provider and endpoint only: credentials never enter the graph. */
@@ -227,11 +263,21 @@ class FunctionLayer {
     this.declares(pkg, id, file);
   }
 
+  /** The three layouts `grok publish` builds from (publish.ts:55-106): a folder per container, one `dockerfiles/Dockerfile`
+   * whose image is the package itself, and a folder naming an already published image in `container.json`. */
+  private emitContainers(pkg: PackageFolder): void {
+    for (const file of this.glob(pkg, 'dockerfiles/*/Dockerfile'))
+      this.emitContainer(pkg, path.posix.basename(path.posix.dirname(file)), file);
+    const single = `${pkg.dir}/dockerfiles/Dockerfile`;
+    if (this.exists(single)) this.emitContainer(pkg, pkg.folder, single);
+    for (const file of this.glob(pkg, 'dockerfiles/*/container.json'))
+      if (!this.exists(`${path.posix.dirname(file)}/Dockerfile`)) this.emitContainer(pkg, path.posix.basename(path.posix.dirname(file)), file);
+  }
+
   /** `base` is left out: it references an image node no extractor produces yet (build-plan.md WO-3a). */
-  private emitContainer(pkg: PackageFolder, file: string): void {
-    const folder = path.posix.basename(path.posix.dirname(file));
-    const id = containerId(pkg.folder, folder);
-    this.emitter.node({type: 'container', id, name: folder, language: 'other', path: file, package: pkgId(pkg.folder), provenance: 'filesystem', source_layer: 'public'});
+  private emitContainer(pkg: PackageFolder, name: string, file: string): void {
+    const id = containerId(pkg.folder, name);
+    this.emitter.node({type: 'container', id, name, language: 'other', path: file, package: pkgId(pkg.folder), provenance: 'filesystem', source_layer: 'public'});
     this.declares(pkg, id, file);
   }
 
@@ -314,7 +360,7 @@ class FunctionLayer {
           m.semtype = semtypeId(lift('semType'));
           uses.push({role: 'filters', semtype: meta.semType, derived_by: 'annotation', confidence: 1});
         }
-        Object.assign(m, {primary: flag('primaryFilter'), columnless: flag('columnless')});
+        Object.assign(m, {primary: flag('primaryFilter'), columnless: flag('columnlessFilter')});
         break;
       case 'cell-renderer':
         if (!meta.cellType) return null;
@@ -347,10 +393,6 @@ class FunctionLayer {
         m.phase = roles.includes('init') ? 'init' : 'autostart';
         m.immediate = flag('autostartImmediate');
         break;
-      case 'editor':
-        m.edits = header.keys['editor-for']?.[0];
-        if (m.edits !== undefined) lifted.add('editor-for');
-        break;
     }
     return {members: m, consumed, uses};
   }
@@ -370,16 +412,18 @@ class FunctionLayer {
   }
 
   /** `meta.semType` failing, what a detector returns or assigns: `DG.SEMTYPE.X`, a string literal, or a file-level constant. */
-  private detectedSemtypes(block: HeaderBlock, text: string): string[] {
+  private detectedSemtypes(block: HeaderBlock, text: string, file: string): string[] {
     const out = new Set<string>();
-    for (const m of block.body.matchAll(/(?:return|\.semType\s*=)\s+(?:DG\.SEMTYPE\.([A-Z][A-Z0-9_]*)|(['"])([^'"\n]+)\2|([A-Z][A-Z0-9_]{2,}))/g)) {
-      if (m[1] && this.semtypes[m[1]]) out.add(this.semtypes[m[1]]);
-      else if (m[3]) out.add(m[3]);
-      else if (m[4]) {
-        const constant = new RegExp(`\\b${m[4]}\\s*=\\s*(['"])([^'"\\n]+)\\1`).exec(text);
-        if (constant) out.add(constant[2]);
+    for (const pattern of DETECTED)
+      for (const m of block.body.matchAll(pattern)) {
+        if (m[1] && this.semtypes[m[1]]) out.add(this.semtypes[m[1]]);
+        else if (m[3]) out.add(m[3]);
+        else if (m[4]) {
+          const value = constantValue(text, m[4], m[5]);
+          if (value) out.add(value);
+          else this.emitter.problem('unresolved_ids', `${file}: ${m[4]}${m[5] ? `.${m[5]}` : ''} names no semantic type this file declares`);
+        }
       }
-    }
     return [...out];
   }
 
@@ -395,6 +439,12 @@ class FunctionLayer {
     this.emitter.edge({type: 'declares', from: pkgId(pkg.folder), to, derived_by: 'registry', confidence: 1, evidence: [evidence]});
   }
 
+  /** A name answers to itself and, when nothing matches it exactly, to its spaceless form. */
+  private register(pkg: string, name: string, id: string): void {
+    add(this.exact, exactKey(pkg, name), id);
+    add(this.loose, looseKey(pkg, name), id);
+  }
+
   private glob(pkg: PackageFolder, pattern: string): string[] {
     return globSync(`${pkg.dir}/${pattern}`, {cwd: this.repoRoot, ignore: SOURCE_IGNORE, nodir: true, posix: true, windowsPathsNoEscape: true}).sort();
   }
@@ -408,8 +458,31 @@ class FunctionLayer {
   }
 }
 
-function callKey(pkg: string, name: string): string {
-  return `${pkg.toLowerCase()}:${name.toLowerCase().replace(/\s+/g, '')}`;
+/** The package matches case-insensitively, the name too; `Pareto Front` and `Pareto front` share this key, the declaration
+ * names `paretoFront` and `paretoFrontViewer` do not. */
+function exactKey(pkg: string, name: string): string {
+  return `${pkg.toLowerCase()}:${name.toLowerCase()}`;
+}
+
+/** `EDA:ParetoFront` as the generated package-api writes it, matched against the same name without its spaces. */
+function looseKey(pkg: string, name: string): string {
+  return exactKey(pkg, name).replace(/\s+/g, '');
+}
+
+function add(index: Map<string, Set<string>>, key: string, id: string): void {
+  let ids = index.get(key);
+  if (!ids) index.set(key, ids = new Set());
+  ids.add(id);
+}
+
+/** `SEMTYPEGIS.GISCOUNTRY` or a plain `MOLECULE`: the string the constant holds, when its literal is in the same file. */
+function constantValue(text: string, name: string, key?: string): string | undefined {
+  if (!key) return new RegExp(`\\b${name}\\s*=\\s*(['"])([^'"\\n]+)\\1`).exec(text)?.[2];
+  const literal = new RegExp(`\\b${name}\\s*=\\s*\\{`).exec(text);
+  if (!literal) return undefined;
+  const body = text.slice(literal.index + literal[0].length);
+  const end = body.indexOf('}');
+  return new RegExp(`\\b${key}\\s*:\\s*(['"])([^'"\\n]+)\\1`).exec(end < 0 ? body : body.slice(0, end))?.[2];
 }
 
 /** Conda dependency names, the nested `{pip: [...]}` lists included, without version pins. */

@@ -5,6 +5,13 @@ import {Emitter} from './emitter';
 import {homesExtractor} from './extract/homes';
 import {packagesExtractor} from './extract/ts/packages';
 import {functionsExtractor} from './extract/ts/functions';
+import {testsExtractor} from './extract/ts/tests';
+import {samplesExtractor} from './extract/ts/samples';
+import {changelogExtractor} from './extract/ts/changelog';
+import {docsExtractor} from './extract/docs';
+import {declarationsExtractor} from './extract/ts/declarations';
+import {importsExtractor} from './extract/ts/imports';
+import {usesExtractor} from './extract/ts/uses';
 
 export type Mode = 'full' | 'public';
 
@@ -26,7 +33,8 @@ export interface Extractor {
   run(ctx: BuildContext, emitter: Emitter): void | Promise<void>;
 }
 
-export const EXTRACTORS: Extractor[] = [homesExtractor, packagesExtractor, functionsExtractor];
+export const EXTRACTORS: Extractor[] = [homesExtractor, packagesExtractor, functionsExtractor, declarationsExtractor, importsExtractor, usesExtractor,
+  testsExtractor, samplesExtractor, changelogExtractor, docsExtractor];
 
 /** The extractors for [mode], narrowed by `--only`; names that match nothing are returned for the caller to refuse. */
 export function selectExtractors(mode: Mode, only?: string[]): {selected: Extractor[], unknown: string[]} {

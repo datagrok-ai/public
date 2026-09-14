@@ -53,6 +53,7 @@ export function moleculeRenderer() : any {
 //meta.role: filter
 //meta.semType: Molecule
 //meta.primaryFilter: true
+//meta.columnlessFilter: true
 //output: filter result
 export function substructureFilter() : any {
   return PackageFunctions.substructureFilter();
@@ -123,4 +124,63 @@ export async function toHelm(table: DG.DataFrame, sequence: DG.Column, method: s
 //output: string molfile { semType: Molecule }
 export function toMolfile(mol: string) : string {
   return PackageFunctions.toMolfile(mol);
+}
+
+//name: Spaced Header
+//description: A blank line inside a header does not end it
+
+//top-menu: Demo | Spaced
+export function spacedHeader() : void {
+  PackageFunctions.spacedHeader();
+}
+
+//name: Twice
+//input: int a
+export function twiceA(a: number) : void {
+  PackageFunctions.twiceA(a);
+}
+
+//name: Twice
+//input: string b
+export function twiceB(b: string) : void {
+  PackageFunctions.twiceB(b);
+}
+
+//name: Dual
+//meta.role: panel
+//input: string smiles
+//output: widget result
+export function dualPanel(smiles: string) : any {
+  return PackageFunctions.dualPanel(smiles);
+}
+
+//name: Dual
+//meta.role: app
+//meta.browsePath: Misc
+//output: view result
+export function dualApp() : any {
+  return PackageFunctions.dualApp();
+}
+
+//name: Pareto Front
+//top-menu: ML | Pareto Front...
+export function paretoFront() : void {
+  PackageFunctions.paretoFront();
+}
+
+//name: Pareto front
+//meta.role: viewer
+//output: viewer result
+export function paretoFrontViewer() : any {
+  return PackageFunctions.paretoFrontViewer();
+}
+
+//name: Trade Off
+export function tradeOffA() : void {
+  PackageFunctions.tradeOffA();
+}
+
+//name: Trade off
+export function tradeOffB() : void {
+  PackageFunctions.tradeOffB();
 }

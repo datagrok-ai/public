@@ -14,7 +14,7 @@ export interface HeaderParam {
 }
 
 export interface Header {
-  /** 1-based line of the first header line. */
+  /** 1-based line of the first line carrying a key. */
   line: number;
   /** Every key verbatim in file order; a repeated key (input, output, test) keeps every value. */
   keys: Record<string, string[]>;
@@ -49,6 +49,7 @@ const ARROW_START = /^\s*(?:export\s+)?(?:const|let|var)\s+([\w$]+)\s*(?::[^=]+)
 const METHOD_START = /^\s*(?:(?:public|private|protected|static|async|override)\s+)*([\w$]+)\s*\([^)]*\)?\s*(?::\s*[^{=;]+)?\s*\{?\s*$/;
 const CLASS_START = /^\s*(?:export\s+)?(?:default\s+)?(?:abstract\s+)?class\s+([\w$]+)/;
 const NOT_A_METHOD = new Set(['if', 'for', 'while', 'switch', 'catch', 'return', 'constructor', 'function', 'typeof', 'await', 'new', 'else', 'do', 'with', 'super', 'this', 'throw', 'yield', 'delete', 'void']);
+const QUERY_END = '--end';
 const lineRegexes = new Map<string, RegExp>();
 
 export function commentPrefix(language: string): string {
@@ -70,9 +71,14 @@ export function parseHeaderLines(lines: string[], firstLine: number, prefix = '/
   const re = lineRegex(prefix);
   const header: Header = {line: firstLine, keys: {}, inputs: [], outputs: [], tags: [], meta: {}};
   let known = false;
-  for (const raw of lines) {
-    const m = re.exec(raw.trim());
+  let first = true;
+  for (let i = 0; i < lines.length; i++) {
+    const m = re.exec(lines[i].trim());
     if (!m) continue;
+    if (first) {
+      header.line = firstLine + i;
+      first = false;
+    }
     const key = m[1];
     const value = m[2].trim();
     (header.keys[key] ??= []).push(value);
@@ -130,7 +136,15 @@ export function parseFunctionHeaders(text: string, prefix = '//'): HeaderBlock[]
     const declaration = matchStart(lines[i], i + 1, owner);
     if (!declaration) continue;
     let j = i - 1;
-    while (j >= 0 && lines[j].trim().startsWith(prefix)) j--;
+    while (j >= 0) {
+      if (lines[j].trim().startsWith(prefix)) {
+        j--;
+        continue;
+      }
+      const above = skipBlanks(lines, j, i - 1, prefix);
+      if (above === j) break;
+      j = above;
+    }
     const header = parseHeaderLines(lines.slice(j + 1, i), j + 2, prefix);
     if (!header) continue;
     if (blocks.length) blocks[blocks.length - 1].body = lines.slice(blocks[blocks.length - 1].declaration.line, j + 1).join('\n');
@@ -146,25 +160,42 @@ export function parseScriptHeader(text: string, language: string): Header | null
   let i = 0;
   while (i < lines.length && !lines[i].trim()) i++;
   const first = i;
-  while (i < lines.length && lines[i].trim().startsWith(prefix)) i++;
-  return parseHeaderLines(lines.slice(first, i), first + 1, prefix);
+  return parseHeaderLines(lines.slice(first, headerEnd(lines, first, prefix)), first + 1, prefix);
 }
 
 /** Every `--` block of a query file that names a query; a file may hold several, separated by `--end`. */
 export function parseQueryHeaders(text: string): Header[] {
   const lines = text.split(/\r?\n/);
   const headers: Header[] = [];
-  for (let i = 0; i < lines.length;) {
-    if (!lines[i].trim().startsWith('--')) {
-      i++;
-      continue;
-    }
-    const start = i;
-    while (i < lines.length && lines[i].trim().startsWith('--')) i++;
-    const header = parseHeaderLines(lines.slice(start, i), start + 1, '--');
+  for (let i = 0; i < lines.length; i++) {
+    if (!lines[i].trim().startsWith('--') || lines[i].trim() === QUERY_END) continue;
+    const end = headerEnd(lines, i, '--');
+    const header = parseHeaderLines(lines.slice(i, end), i + 1, '--');
     if (header?.name) headers.push(header);
+    i = end - 1;
   }
   return headers;
+}
+
+/** The line after the last comment line of the run starting at [start]: a blank line inside a header does not end it
+ * (scripting.dart:445-461), a non-comment line and `--end` do. */
+function headerEnd(lines: string[], start: number, prefix: string): number {
+  let end = start;
+  for (let i = start; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (line === QUERY_END && prefix === '--') break;
+    if (line.startsWith(prefix)) end = i + 1;
+    else if (line) break;
+  }
+  return end;
+}
+
+/** The comment line above a blank run inside a header; [j] when the run ends the header (a blank right above the declaration). */
+function skipBlanks(lines: string[], j: number, last: number, prefix: string): number {
+  if (j === last || lines[j].trim()) return j;
+  let k = j;
+  while (k >= 0 && !lines[k].trim()) k--;
+  return k >= 0 && lines[k].trim().startsWith(prefix) ? k : j;
 }
 
 function matchStart(line: string, lineNo: number, owner: string | undefined): Declaration | undefined {

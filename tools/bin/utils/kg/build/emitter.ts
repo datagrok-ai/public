@@ -4,7 +4,7 @@
 /// members once and settles visibility.
 import {TypeSystem, NodeType, isSubtype, concreteAuthored} from '../types';
 import {normalizeRow, normalizeEdgeRow, Row, RowProblem} from './normalize';
-import {PREFIXED_ID, SCHEMED_ID, SCHEME_TYPES, JIRA_KEY, stubName, titleCase, locationVisibility, sourceLayerOf} from './ids';
+import {PREFIXED_ID, SCHEMED_ID, SCHEME_TYPES, JIRA_KEY, parseId, stubName, titleCase, locationVisibility, sourceLayerOf} from './ids';
 
 export interface Claim {
   /** Posix path relative to the monorepo root. */
@@ -34,7 +34,7 @@ export const PROVENANCE_RANK = ['annotation', 'ast', 'registry', 'filesystem', '
 const VISIBILITY_ORDER = ['public', 'dev', 'internal'];
 const EVIDENCE_CAP = 20;
 const INVALID_CAP = 500;
-const PROBLEM_KINDS = ['invalid_rows', 'dangling_edges', 'unresolved_ids', 'ambiguous_owners', 'orphans', 'partial_stubs'];
+const PROBLEM_KINDS = ['invalid_rows', 'dangling_edges', 'unresolved_ids', 'ambiguous_owners', 'orphans', 'partial_stubs', 'duplicate_ids'];
 
 interface NodeEntry {
   row: Row;
@@ -177,13 +177,19 @@ export class Emitter {
     if (incomingType !== existing.type) {
       if (isSubtype(this.system, incomingType.name, existing.type.name)) type = incomingType;
       else if (!isSubtype(this.system, existing.type.name, incomingType.name)) {
-        this.reject(incoming, [{key: 'type', code: 'bad-type', message: `type '${incomingType.name}' conflicts with '${existing.type.name}' already asserted for ${id}`}]);
+        this.duplicateId(existing, incoming, incomingType);
         return;
       }
     }
+    if (!existing.partial && elsewhere(id, existing.row, incoming)) {
+      this.duplicateId(existing, incoming, incomingType);
+      return;
+    }
     if (existing.partial) {
       const prov = Object.fromEntries(Object.keys(incoming).map((k) => [k, provenance]));
-      this.nodes.set(id, {row: {...existing.row, ...incoming, type: type.name}, type, prov: {...existing.prov, ...prov}, weak: defaulted, partial: false});
+      const entry: NodeEntry = {row: {...existing.row, ...incoming, type: type.name}, type, prov: {...existing.prov, ...prov}, weak: defaulted, partial: false};
+      this.nodes.set(id, entry);
+      this.revalidate(id, entry);
       return;
     }
     const {row, prov, weak} = existing;
@@ -215,6 +221,20 @@ export class Emitter {
     }
     row.type = type.name;
     existing.type = type;
+    this.revalidate(id, existing);
+  }
+
+  /** Two rows for one id that are different declarations: the first one stands, the second is reported, never merged. */
+  private duplicateId(existing: NodeEntry, incoming: Row, incomingType: NodeType): void {
+    this.problem('duplicate_ids', `${incoming.id}: ${incomingType.name} at ${where(incoming)} ignored; ${existing.type.name} at ${where(existing.row)} kept`);
+  }
+
+  /** A merged row must still satisfy the winning type, which a member narrowed by a subtype (a query's language) can break. */
+  private revalidate(id: string, entry: NodeEntry): void {
+    const {problems} = normalizeRow(this.system, entry.row, {defaults: false});
+    if (!problems.length) return;
+    this.reject(entry.row, problems);
+    this.nodes.delete(id);
   }
 
   /** Part-of from the id path of every hierarchical node; missing parents become stubs. Returns child -> parent. */
@@ -330,6 +350,17 @@ export class Emitter {
     const ranks = candidates.map((v) => VISIBILITY_ORDER.indexOf(v ?? '')).filter((r) => r >= 0);
     row.visibility = ranks.length ? VISIBILITY_ORDER[Math.max(...ranks)] : 'dev';
   }
+}
+
+/** Whether [incoming] names another place than the row already held; an id that embeds its path (decl:, file:, doc:) never does. */
+function elsewhere(id: string, existing: Row, incoming: Row): boolean {
+  if (parseId(id).path !== undefined) return false;
+  const differs = (key: string) => existing[key] !== undefined && incoming[key] !== undefined && existing[key] !== incoming[key];
+  return differs('path') || differs('line');
+}
+
+function where(row: Row): string {
+  return row.path === undefined ? String(row.provenance ?? 'unknown') : `${row.path}${row.line === undefined ? '' : `:${row.line}`}`;
 }
 
 function rank(provenance: string | undefined): number {

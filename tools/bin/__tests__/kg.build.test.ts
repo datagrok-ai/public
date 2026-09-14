@@ -105,7 +105,7 @@ describe('emitter merge rules (build-plan.md WO-1)', () => {
     }
   });
 
-  it('keeps the subtype when one type is an ancestor of the other, rejects unrelated types as invalid', () => {
+  it('keeps the subtype when one type is an ancestor of the other, keeps the first of two unrelated types', () => {
     const e = new Emitter(system, BATCH);
     e.node(person('P:a'));
     e.node(person('P:a', {type: 'developer', company: 'Team:core', bitbucket: 'a', provenance: 'filesystem'}));
@@ -113,8 +113,8 @@ describe('emitter merge rules (build-plan.md WO-1)', () => {
     e.node({type: 'ticket', id: 'P:a', name: 'x', tracker: 'jira', key: 'x', provenance: 'external', source_layer: 'process'});
     const graph = e.finalize();
     expect(node(graph, 'P:a')).toMatchObject({type: 'developer', company: 'Team:core', bitbucket: 'a', provenance: 'annotation'});
-    expect(graph.problems.invalid_rows).toBe(1);
-    expect(graph.invalid[0].problems).toEqual(["type 'ticket' conflicts with 'developer' already asserted for P:a"]);
+    expect(graph.problems.invalid_rows).toBe(0);
+    expect(graph.details.duplicate_ids).toEqual(['P:a: ticket at external ignored; developer at annotation kept']);
   });
 
   it('keeps the higher confidence of a duplicate edge and unions evidence up to 20 paths', () => {
@@ -268,7 +268,7 @@ describe('grok kg build: writer, manifest and public projection (build-plan.md W
     expect(fs.existsSync(path.join(repo, '.kg'))).toBe(false);
     const bad = await run({_: ['kg', 'build'], kg: path.join(repo, KG_DIR), only: 'homes,nope', db: false});
     expect(bad.exitCode).toBe(1);
-    expect(bad.err).toEqual(['--only names unknown extractors: nope (known: homes, ts-packages, ts-functions)']);
+    expect(bad.err).toEqual(['--only names unknown extractors: nope (known: homes, ts-packages, ts-functions, ts-declarations, ts-imports, ts-uses, ts-tests, ts-samples, ts-changelog, docs)']);
     const table = await run({_: ['kg', 'build'], kg: path.join(repo, KG_DIR), only: 'homes', db: false, out});
     expect(table.out).toHaveLength(1);
     expect(table.out[0]).toMatch(/^wrote .*elsewhere: \d+ nodes \(concept 2, .*feature 7.*\), \d+ edges \(.*part-of 5.*\); sources: homes ok; problems: partial_stubs \d+; batch b-[0-9a-f]{12} \(full\)$/);

@@ -5,3 +5,9 @@
 export async function test(category: string, test: string): Promise<any> {
   return null;
 }
+
+//name: helper
+//output: int b
+export function helperShadow(): number {
+  return 1;
+}

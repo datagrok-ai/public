@@ -3,6 +3,6 @@ extends: function
 description: >
   A custom editor for a function's parameters or a value type (roles editor, valueEditor, cellEditor).
 properties:
-  edits?:        string               # function or type it edits (//editor-for, meta); callers may select it with //editor: instead
+  edits?:        string               # reserved; no package declares what an editor edits (callers select editors with //editor:), so the build never fills it
 rules:
   - roles includes one of [editor, valueEditor, cellEditor]
