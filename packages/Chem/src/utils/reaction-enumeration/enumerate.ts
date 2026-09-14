@@ -315,11 +315,20 @@ function addRouteIfNew(rec: ProductRecord, route: Route, cap: number): boolean {
   return true;
 }
 
+/** Same "-1 means no cap" convention as the other config limits. */
+function exceedsComponentCap(numReactants: number, cap: number): boolean {
+  return cap >= 0 && numReactants > cap;
+}
+
+export interface OutputStep {
+  template: string;
+  reactionName: string;
+}
+
 export interface OutputRow {
   product: string;
   route: string;
-  template: string;
-  reaction_name: string;
+  steps: OutputStep[];
   round: number;
   n_routes: number;
 }
@@ -364,10 +373,11 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
   }
 
   // The round loop silently skips over-arity templates; warn once here rather than every round.
-  const overArityCount = parsedTemplates.filter((t) => t.numReactants > config.max_num_components).length;
+  const componentCap = config.max_num_components;
+  const overArityCount = parsedTemplates.filter((t) => exceedsComponentCap(t.numReactants, componentCap)).length;
   if (overArityCount > 0) {
     warnings.push(`${overArityCount} template(s) need more reactants than Max # components ` +
-      `(${config.max_num_components}) allows and will be skipped in every round.`);
+      `(${config.max_num_components}) allows and will be skipped in every step.`);
   }
 
   const exclusion = buildExclusionQmols(rdkit, exclusionSmarts);
@@ -391,23 +401,23 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
       if (intersects)
         roundAllowedTemplateKeys.push(allowed);
       else {
-        warnings.push(`Round ${r + 1}: template override matches none of the global reaction templates; ` +
+        warnings.push(`Step ${r + 1}: template override matches none of the global reaction templates; ` +
           `using the global template set instead.`);
         roundAllowedTemplateKeys.push(null);
       }
     } else {
-      if (o?.templates) warnings.push(`Round ${r + 1}: empty template override; using the global template set instead.`);
+      if (o?.templates) warnings.push(`Step ${r + 1}: empty template override; using the global template set instead.`);
       roundAllowedTemplateKeys.push(null);
     }
-    const bbs = o?.buildingBlocks ? canonUnique(o.buildingBlocks, 'round BB') : null;
+    const bbs = o?.buildingBlocks ? canonUnique(o.buildingBlocks, 'step BB') : null;
     if (o?.buildingBlocks && (!bbs || bbs.length === 0)) {
-      warnings.push(`Round ${r + 1}: building-block override has no valid SMILES after ` +
+      warnings.push(`Step ${r + 1}: building-block override has no valid SMILES after ` +
         `canonicalization; using the global building-block pool instead.`);
     }
     roundBBs.push(bbs && bbs.length > 0 ? bbs : null);
-    const rgs = o?.reagents ? canonUnique(o.reagents, 'round reagent') : null;
+    const rgs = o?.reagents ? canonUnique(o.reagents, 'step reagent') : null;
     if (o?.reagents && (!rgs || rgs.length === 0)) {
-      warnings.push(`Round ${r + 1}: reagent override has no valid SMILES after canonicalization; ` +
+      warnings.push(`Step ${r + 1}: reagent override has no valid SMILES after canonicalization; ` +
         `using the global reagent pool instead.`);
     }
     roundReagents.push(rgs && rgs.length > 0 ? rgs : null);
@@ -479,18 +489,18 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
       // eligibleSmiles never reads activeBBs in breadth-first, nor activeReagents outside reagents
       // mode; these two warnings are the only thing surfacing an otherwise silent no-op.
       if (!useReagents && !config.enumeration.depth_first && roundBBs[round - 1] != null) {
-        warnings.push(`Round ${round}: building-block override has no effect in breadth-first ` +
-          `mode — a round draws from all earlier products regardless of the per-step BB subset.`);
+        warnings.push(`Step ${round}: building-block override has no effect in breadth-first ` +
+          `mode — a step draws from all earlier products regardless of the per-step BB subset.`);
       }
       if (!useReagents && roundReagents[round - 1] != null) {
-        warnings.push(`Round ${round}: reagent override has no effect outside reagents mode — a ` +
-          `round only draws from the reagents library when a reagents file is active.`);
+        warnings.push(`Step ${round}: reagent override has no effect outside reagents mode — a ` +
+          `step only draws from the reagents library when a reagents file is active.`);
       }
 
       for (let ti = 0; ti < parsedTemplates.length; ti++) {
         if (isCancelled?.()) break;
         const t = parsedTemplates[ti];
-        if (t.numReactants > max_num_components) continue;
+        if (exceedsComponentCap(t.numReactants, max_num_components)) continue;
         if (allowedTemplateKeys && !allowedTemplateKeys.has(templateOverrideKey(t))) continue;
 
         progressContext = {
@@ -761,25 +771,20 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
 
   const rows: OutputRow[] = [];
   for (const rec of finalProducts.values()) {
-    if (rec.routes.length === 0) {
-      rows.push({product: rec.smiles, route: '', template: '', reaction_name: '',
-        round: rec.firstRound, n_routes: 0});
-    } else {
+    if (rec.routes.length === 0)
+      rows.push({product: rec.smiles, route: '', steps: [], round: rec.firstRound, n_routes: 0});
+    else {
       for (const route of rec.routes) {
-        const last = route[route.length - 1];
         rows.push({
           product: rec.smiles,
           route: formatRoute(route),
-          template: last.templateSmarts,
-          reaction_name: last.reactionName,
+          steps: route.map((s) => ({template: s.templateSmarts, reactionName: s.reactionName})),
           round: rec.firstRound,
           n_routes: rec.routes.length,
         });
       }
-      if (rec.isOriginalBB) {
-        rows.push({product: rec.smiles, route: '', template: '', reaction_name: '',
-          round: 0, n_routes: 0});
-      }
+      if (rec.isOriginalBB)
+        rows.push({product: rec.smiles, route: '', steps: [], round: 0, n_routes: 0});
     }
   }
 
