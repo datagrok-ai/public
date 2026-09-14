@@ -300,10 +300,6 @@ export namespace queries {
     return await grok.data.query('UsageAnalysis:MetricsTableHealth', { limit });
   }
 
-  export async function metricsErrorsCount(date: string ): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:MetricsErrorsCount', { date });
-  }
-
   export async function metricsSessionsCount(date: string ): Promise<DG.DataFrame> {
     return await grok.data.query('UsageAnalysis:MetricsSessionsCount', { date });
   }
