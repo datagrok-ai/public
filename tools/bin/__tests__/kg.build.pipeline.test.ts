@@ -46,7 +46,31 @@ function makeRepo(): string {
   git(repo, 'add', '-A');
   git(repo, 'commit', '-q', '-m', 'fixture');
   stampBatch(repo, {built_at: new Date().toISOString(), revision: git(repo, 'rev-parse', 'HEAD')});
+  stampRelease(repo);
   return repo;
+}
+
+/** The same fixture with `public/` as a repository of its own, which the monorepo commit records as a gitlink. */
+function makeSubmoduleRepo(): string {
+  const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'grok-kg-sub-'));
+  fs.cpSync(fixture, repo, {recursive: true});
+  const publicDir = path.join(repo, 'public');
+  git(publicDir, 'init', '-q');
+  git(publicDir, 'add', '-A');
+  git(publicDir, 'commit', '-q', '-m', 'public');
+  git(repo, 'init', '-q');
+  git(repo, 'add', '-A');
+  git(repo, 'commit', '-q', '-m', 'fixture');
+  stampBatch(repo, {built_at: new Date().toISOString(), revision: git(repo, 'rev-parse', 'HEAD')});
+  stampRelease(repo);
+  return repo;
+}
+
+/** The picked commits of the release record are the fixture's own commit: git has to find them for a pick to exist. */
+function stampRelease(repo: string): void {
+  const file = path.join(repo, 'core', 'docs', 'release', '1.0.1.yaml');
+  const sha = git(repo, 'rev-parse', '--short=10', 'HEAD');
+  fs.writeFileSync(file, fs.readFileSync(file, 'utf8').replace(/\b(?:aaaaaaaaaa|bbbbbbbbbb)\b/g, sha));
 }
 
 /** Rewrites the batch envelope; `null` deletes the file. */
@@ -100,26 +124,26 @@ describe('grok kg build over the fixture monorepo (build-plan.md WO-10)', () => 
     const {manifest} = await graph;
     expect(manifest.mode).toBe('full');
     expect(manifest.sources).toEqual({
-      backlog: 'ok@2026-01-12T07:00:00Z', dart: 'ok', docs: 'partial', git: 'partial', homes: 'ok', membership: 'ok',
+      backlog: 'ok@2026-01-12T07:00:00Z', dart: 'ok', docs: 'partial', git: 'ok', homes: 'ok', membership: 'ok',
       people: 'partial', process: 'ok', releases: 'ok', 'ts-changelog': 'partial', 'ts-declarations': 'ok',
       'ts-functions': 'partial(2 rejected)', 'ts-imports': 'ok', 'ts-markers': 'ok', 'ts-packages': 'ok', 'ts-samples': 'partial',
       'ts-tests': 'ok', 'ts-uses': 'ok',
     });
     expect(manifest.counts.nodes).toEqual({
-      app: 2, 'cell-renderer': 1, 'changelog-entry': 5, connection: 2, container: 3, customer: 2, 'db-table': 1,
+      app: 2, 'cell-renderer': 1, 'changelog-entry': 5, commit: 2, connection: 2, container: 3, customer: 2, 'db-table': 1,
       declaration: 105, 'doc-anchor': 20, 'doc-page': 12, editor: 1, endpoint: 1, feature: 8, 'file-handler': 1,
       'file-viewer': 1, filter: 1, function: 13, library: 2, 'lifecycle-hook': 2, package: 7, panel: 2, person: 2,
       query: 3, release: 2, sample: 4, scenario: 7, script: 3, 'script-environment': 1, 'script-handler': 1,
-      'sem-type-detector': 6, 'semantic-type': 7, 'source-file': 39, test: 14, 'test-suite': 6, ticket: 12, tutorial: 1, viewer: 2,
+      'sem-type-detector': 6, 'semantic-type': 7, 'source-file': 39, test: 14, 'test-suite': 6, ticket: 13, tutorial: 1, viewer: 2,
     });
     expect(manifest.counts.edges).toEqual({
       affects: 2, assignee: 3, automates: 3, base: 1, calls: 6, changes: 2, connection: 3, container: 33, covers: 1,
       declared_in: 1, declares: 215, demonstrates: 1, 'depends-on': 6, documents: 1, environment: 1, extends: 4,
-      handler: 1, implements: 1, imports: 25, 'in-suite': 14, 'is-implemented-in': 14, mentions: 15, owner: 5,
-      package: 72, page: 20, 'part-of': 10, 'participates-in': 5, reporter: 4, 'requested-by': 2, router: 1,
-      semtype: 1, target_semtype: 1, 'targets-release': 3, 'targets-semtype': 13, tests: 11, uses: 17,
+      handler: 1, implements: 1, imports: 25, includes: 2, 'in-suite': 14, 'is-implemented-in': 15, mentions: 17, owner: 5,
+      package: 72, page: 20, 'part-of': 10, 'participates-in': 5, reporter: 4, 'requested-by': 2, resolves: 1, router: 1,
+      semtype: 1, target_semtype: 1, 'targets-release': 5, 'targets-semtype': 13, tests: 11, 'tracked-in': 2, uses: 17,
     });
-    expect(manifest.problems).toMatchObject({dangling_edges: 0, ambiguous_owners: 1, orphans: 27, partial_stubs: 21});
+    expect(manifest.problems).toMatchObject({dangling_edges: 0, ambiguous_owners: 1, orphans: 27, partial_stubs: 22});
   }, 120_000);
 
   it('writes the same bytes twice, with the same content-addressed batch and a later built_at', async () => {
@@ -181,8 +205,9 @@ describe('the reports build writes and the report verb prints (build-plan.md WO-
   it('groups orphan files by package and core sub-project, largest first', async () => {
     const {report} = await graph;
     const orphans = report('orphans');
-    expect(orphans.summary).toBe('27 files with no owner in 7 groups, 386 lines; the 7 largest groups below.');
-    expect(orphans.sections[0].rows[0]).toEqual({group: 'public/js-api', files: 11, loc: 154, largest: expect.stringContaining('src/dataframe.ts (45)')});
+    expect(orphans.summary).toBe('27 files of 39 observed (12 owned, 4 participating) have no owner, 386 of 872 lines, in 7 groups; the 7 largest groups below.');
+    expect(orphans.sections[0].rows[0]).toEqual({group: 'public/js-api', files: 11, owned: 0, participating: 0, orphans: 11, loc: 154,
+      largest: expect.stringContaining('src/dataframe.ts (45)')});
     expect(orphans.sections[0].rows.map((r: any) => r.group)).toContain('core/client/d4');
     expect(orphans.sections[0].rows.map((r: any) => r.loc)).toEqual([...orphans.sections[0].rows.map((r: any) => r.loc)].sort((a: number, b: number) => b - a));
   });
@@ -211,8 +236,9 @@ describe('the reports build writes and the report verb prints (build-plan.md WO-
     const rows = report('coverage').sections[0].rows;
     expect(rows.map((r: any) => r.feature)).toEqual(['domains', 'domains/bio', 'platform', 'platform/caching', 'visualize',
       'visualize/legends', 'visualize/viewers', 'visualize/viewers/scatter-plot']);
-    expect(rows.find((r: any) => r.feature === 'domains/bio')).toEqual({feature: 'domains/bio', owner: 'P:jane', status: 'active',
-      tests: 5, scenarios: 1, automated: 0, no_tests: false, no_docs: false, no_description: false});
+    expect(rows.find((r: any) => r.feature === 'domains/bio')).toEqual({feature: 'domains/bio', owner: 'P:jane', status: 'active', stub: false,
+      tests_runnable: 4, tests_skipped: 1, tests_dynamic: 0, inherited: 0, scenarios: 1, scenario_automated: 0,
+      no_tests: false, no_docs: false, no_description: false});
     expect(rows.find((r: any) => r.feature === 'platform/caching')).toMatchObject({no_tests: true, no_docs: true, no_description: false});
     expect(rows.find((r: any) => r.feature === 'domains')).toMatchObject({owner: '', status: 'proposed', no_description: true});
   });
@@ -221,13 +247,14 @@ describe('the reports build writes and the report verb prints (build-plan.md WO-
     const {report} = await graph;
     const rows = report('proposed').sections[0].rows;
     expect(rows).toEqual([
-      {path: 'public/packages/Plain', files: 3, loc: 35, suggested: 'domains/plain'},
-      {path: 'public/packages/Tutorials', files: 3, loc: 29, suggested: 'domains/tutorials'},
-      {path: 'public/packages/ApiTests', files: 1, loc: 7, suggested: 'domains/api-tests'},
-      {path: 'public/libraries/utils', files: 1, loc: 5, suggested: ''},
+      {path: 'public/packages/Demo', files: 12, loc: 370, unowned_files: 7, unowned_loc: 153, suggested: 'domains/demo'},
+      {path: 'public/packages/Plain', files: 3, loc: 35, unowned_files: 3, unowned_loc: 35, suggested: 'domains/plain'},
+      {path: 'public/packages/Tutorials', files: 3, loc: 29, unowned_files: 3, unowned_loc: 29, suggested: 'domains/tutorials'},
+      {path: 'public/packages/ApiTests', files: 1, loc: 7, unowned_files: 1, unowned_loc: 7, suggested: 'domains/api-tests'},
+      {path: 'public/libraries/utils', files: 1, loc: 5, unowned_files: 1, unowned_loc: 5, suggested: ''},
     ]);
-    // the folders the Demo package owns through its home are not proposed again
-    expect(rows.some((r: any) => r.path === 'public/packages/Demo')).toBe(false);
+    // the Tested package is owned file for file through the viewers home, and only that drops out
+    expect(rows.some((r: any) => r.path === 'public/packages/Tested')).toBe(false);
   });
 
   it('names the features a branch touches through the home it changed, with the tests that cover them', async () => {
@@ -242,8 +269,80 @@ describe('the reports build writes and the report verb prints (build-plan.md WO-
     const report = makeReport('diff', data, {system, repoRoot: repo, base});
     expect(report.title).toBe(`Features touched by ${base}...HEAD`);
     expect(report.sections[0].rows).toEqual([{feature: 'platform/caching', name: 'Caching', owner: 'P:jane', relation: 'home', confidence: 1}]);
-    expect(report.sections[1].rows).toEqual([{file: 'core/docs/CACHING.md', feature: 'platform/caching', relation: 'home', confidence: 1}]);
-    expect(report.summary).toContain('1 files changed, 0 of them in no feature');
+    expect(report.sections[1].rows).toEqual([{file: 'core/docs/CACHING.md', feature: 'platform/caching', relation: 'home', confidence: 1, change: 'modified'}]);
+    expect(report.summary).toContain('1 files changed (0 deleted), 0 of them in no feature');
+  }, 120_000);
+
+  it('separates owned, participating and orphan files per group, over the inventory it observed', async () => {
+    const {report} = await graph;
+    const orphans = report('orphans');
+    // one owned file used to make the whole Demo package look accounted for; it is 5 owned, 1 participating, 7 orphans
+    expect(orphans.sections[0].rows).toContainEqual({group: 'public/packages/Demo', files: 12, owned: 5, participating: 1, orphans: 7,
+      loc: 153, largest: expect.stringContaining('detectors.js (69)')});
+    expect(orphans.notes).toContain('the inventory covers the files the extractors observed, not every file in the repositories');
+  });
+
+  it('reports a tracked-in ticket as unknown, not as absent, when the backlog snapshot was not read', async () => {
+    const repo = makeRepo();
+    const {report} = await build(repo, {backlog: path.join(repo, 'no-such-backlog')});
+    const rows = report('stale').sections[0].rows.filter((r: any) => r.kind === 'ticket');
+    expect(rows.length).toBeGreaterThan(0);
+    expect(rows.every((r: any) => r.reason === 'unknown: the backlog snapshot is missing')).toBe(true);
+    expect(report('stale').notes).toContain('the backlog snapshot was not read, so a tracked-in ticket is reported as unknown, not as absent');
+  }, 120_000);
+
+  it('splits runnable, skipped and dynamic tests, counts what a feature inherits, and marks a stub', async () => {
+    const {report} = await graph;
+    const rows = report('coverage').sections[0].rows;
+    // 6 tests carry ~visualize/viewers: four that run, one skipped, one whose name is a template
+    expect(rows.find((r: any) => r.feature === 'visualize/viewers')).toMatchObject({stub: false,
+      tests_runnable: 4, tests_skipped: 1, tests_dynamic: 1, inherited: 0});
+    // a stub has no home of its own; what it "has" is what the features under it have
+    expect(rows.find((r: any) => r.feature === 'visualize')).toMatchObject({stub: true, tests_runnable: 0, inherited: 6});
+    expect(rows.find((r: any) => r.feature === 'domains')).toMatchObject({stub: true, inherited: 5});
+    expect(report('coverage').summary).toBe('8 features, 3 of them stubs; of the 5 with a home, 3 have no test or scenario, ' +
+      '4 no document beside the home, 0 no first paragraph.');
+  });
+
+  it('ranks a folder by the code no feature owns, not by whether anything in it is owned', async () => {
+    const {report} = await graph;
+    const rows = report('proposed').sections[0].rows;
+    // the Demo package has an owned file and 7 unowned ones; the unowned remainder is what puts it first
+    expect(rows[0]).toEqual({path: 'public/packages/Demo', files: 12, loc: 370, unowned_files: 7, unowned_loc: 153, suggested: 'domains/demo'});
+    expect(report('proposed').summary).toContain('1 of them is partly owned already');
+  });
+
+  it('keeps a deleted file with the owner the graph still has, and warns when the graph is behind the tree', async () => {
+    const repo = makeRepo();
+    const {out} = await build(repo);
+    const base = git(repo, 'rev-parse', 'HEAD');
+    fs.rmSync(path.join(repo, ...CACHING.split('/')));
+    fs.rmSync(path.join(repo, 'public', 'packages', 'Plain', 'src', 'package.js'));
+    git(repo, 'commit', '-q', '-m', 'remove', '--', CACHING, 'public/packages/Plain/src/package.js');
+    const system: TypeSystem = loadTypeSystem(path.join(repo, KG_DIR));
+    const report = makeReport('diff', readGraph(out, repo, system, 'diff'), {system, repoRoot: repo, base});
+    expect(report.summary).toContain('2 files changed (2 deleted)');
+    // the file is gone from the tree, so the graph built before the deletion is the only place its owner survives
+    expect(report.sections[1].rows).toContainEqual({file: CACHING, feature: 'platform/caching', relation: 'home', confidence: 1, change: 'deleted'});
+    expect(report.sections[1].rows).toContainEqual({file: 'public/packages/Plain/src/package.js', feature: '', relation: 'deleted', confidence: '', change: 'deleted'});
+    expect(report.summary).toContain('0 of them in no feature');
+    expect(report.notes).toContain('1 deleted file had no owner in this graph either; they are listed as deleted');
+    expect(report.notes).toContainEqual(expect.stringContaining('the graph was built at'));
+  }, 120_000);
+
+  it('takes the public baseline from the gitlink the core base recorded', async () => {
+    const repo = makeSubmoduleRepo();
+    const publicDir = path.join(repo, 'public');
+    const base = git(repo, 'rev-parse', 'HEAD');
+    fs.appendFileSync(path.join(publicDir, 'packages', 'Plain', 'src', 'package.ts'), '\n// one more line\n');
+    git(publicDir, 'commit', '-q', '-m', 'touch plain', '--', 'packages/Plain/src/package.ts');
+    git(repo, 'commit', '-q', '-m', 'bump submodule', '--', 'public');
+    const {out} = await build(repo);
+    const system: TypeSystem = loadTypeSystem(path.join(repo, KG_DIR));
+    const report = makeReport('diff', readGraph(out, repo, system, 'diff'), {system, repoRoot: repo, base});
+    // the monorepo sha names nothing inside the submodule: without the gitlink this diff failed and found no public file
+    expect(report.notes.some((n: string) => n.startsWith('public/:'))).toBe(false);
+    expect(report.sections[1].rows).toContainEqual({file: 'public/packages/Plain/src/package.ts', feature: '', relation: '', confidence: '', change: 'modified'});
   }, 120_000);
 
   it('refuses a report it does not have, and diff without a base', async () => {
@@ -369,11 +468,71 @@ describe('the index over the fixture graph (build-plan.md WO-7, WO-10)', () => {
     const {conn} = index.opened!;
     const home = (await resolveTarget(conn, BIO_HOME))!;
     expect(home).toMatchObject({id: `doc:${BIO_HOME}`, root: 'Artifact', type: 'doc-page'});
-    expect((await impact(conn, home, LIMIT)).sections[0].rows).toEqual([{feature: 'domains/bio', relation: 'home', name: 'Bioinformatics', status: 'active'}]);
+    expect((await impact(conn, home, LIMIT)).sections[0].rows).toMatchObject([{feature: 'domains/bio', relation: 'home', name: 'Bioinformatics', status: 'active',
+      via: `doc:${BIO_HOME} → home ← domains/bio`}]);
     expect((await testsFor(conn, home, LIMIT)).sections.find((s) => s.title === 'tests')!.rows.length).toBe(5);
 
     const page = (await resolveTarget(conn, SEQUENCES))!;
-    expect((await impact(conn, page, LIMIT)).sections[0].rows).toEqual([{feature: 'domains/bio', relation: 'documents', name: 'Bioinformatics', status: 'active'}]);
+    expect((await impact(conn, page, LIMIT)).sections[0].rows).toMatchObject([{feature: 'domains/bio', relation: 'documents', name: 'Bioinformatics', status: 'active'}]);
+  }, 120_000);
+
+  withKuzu('answers for a package through what it declares, and for a file through what it declares', async () => {
+    const {conn} = index.opened!;
+    // the package holds the code the viewers home claims, so it must answer with the same tests the feature does
+    const pkg = (await resolveTarget(conn, 'pkg:Tested'))!;
+    const viewers = (await resolveTarget(conn, '~visualize/viewers'))!;
+    const byPackage = await testsFor(conn, pkg, LIMIT);
+    const byFeature = await testsFor(conn, viewers, LIMIT);
+    const total = (r: OpsResult, title: string) => r.sections.find((s) => s.title === title)!.total;
+    const features = (r: OpsResult) => r.sections[0].rows.map((x) => String(x.feature)).sort();
+    expect(features(byPackage)).toEqual(features(byFeature));
+    expect(features(byPackage)).toEqual(['visualize/viewers', 'visualize/viewers/scatter-plot']);
+    expect(total(byPackage, 'tests')).toBe(total(byFeature, 'tests'));
+    expect(total(byPackage, 'tests')).toBe(6);
+    expect(byPackage.sections[0].rows.find((r) => r.feature === 'visualize/viewers')!.via)
+      .toBe('pkg:Tested → declares → file:public/packages/Tested/src/tests/demo-tests.ts → is-implemented-in ← visualize/viewers');
+
+    // js-api/src/viewer.ts belongs to no feature; the declaration inside it is the scatter plot's api
+    const file = (await resolveTarget(conn, 'public/js-api/src/viewer.ts'))!;
+    const reached = await impact(conn, file, LIMIT);
+    expect(reached.sections[0].rows).toMatchObject([{feature: 'visualize/viewers/scatter-plot', relation: 'owns',
+      via: 'file:public/js-api/src/viewer.ts → declares → decl:public/js-api/src/viewer.ts#JsViewer → is-implemented-in ← visualize/viewers/scatter-plot'}]);
+    expect(reached.sections[0].rows[0].path).toEqual(['file:public/js-api/src/viewer.ts', '→ declares →',
+      'decl:public/js-api/src/viewer.ts#JsViewer', '→ is-implemented-in ←', 'visualize/viewers/scatter-plot']);
+  }, 120_000);
+
+  withKuzu('puts the evidence path behind an edge group', async () => {
+    const {conn} = index.opened!;
+    const viewers = (await resolveTarget(conn, '~visualize/viewers'))!;
+    const edges = (await explain(conn, viewers, LIMIT)).sections.find((s) => s.title === 'edges')!;
+    expect(edges.rows).toContainEqual(expect.objectContaining({edge: 'IS_IMPLEMENTED_IN', direction: 'out',
+      derived_by: 'annotation', confidence: '1', evidence: 'core/docs/VIEWERS.md'}));
+  }, 120_000);
+
+  withKuzu('separates what a release targeted, what it includes and what it shipped', async () => {
+    const {conn} = index.opened!;
+    const release = (await resolveTarget(conn, '~Rel:1.0.1'))!;
+    const sections = (await explain(conn, release, LIMIT)).sections;
+    const titled = (title: string) => sections.find((s) => s.title === title)!;
+    // the record's own `features:` and the backlog's fix versions are what it aimed at; the picks are what it carries
+    expect(titled('targeted').rows.map((r) => r.ticket)).toEqual(['GROK-100', 'GROK-101', 'GROK-102']);
+    expect(titled('targeted').rows.find((r) => r.ticket === 'GROK-101')!.confidence).toBe(0.7);
+    expect(titled('included').rows.filter((r) => r.relation === 'includes').map((r) => String(r.item).split(':')[1]).sort()).toEqual(['public', 'reddata']);
+    expect(titled('included').rows.filter((r) => r.relation === 'picked').map((r) => r.item)).toEqual(['GROK-100', 'GROK-101']);
+    // a dry run in testing cannot have shipped anything, and the record says so instead of showing an empty list
+    expect(titled('shipped').rows).toEqual([]);
+    expect(titled('shipped').empty).toBe('shipped (0): not derivable (the record is a dry run; release state testing)');
+  }, 120_000);
+
+  withKuzu('keeps an exact match the substring scan would have cut, and still ranks the vocabulary first', async () => {
+    const {conn} = index.opened!;
+    // one row per table is all the substring scan may contribute, and `demo` matches a dozen components
+    const rows = (await find(conn, 'demo', {limit: 50, scan: 1})).sections[0].rows;
+    expect(rows.find((r) => r.id === 'pkg:Demo')).toMatchObject({type: 'package', match: 0});
+    expect(rows.findIndex((r) => r.id === 'pkg:Demo')).toBeLessThan(rows.findIndex((r) => r.match === 2));
+    // exactness is what the exact query matched, not what the id and the name happen to say: this is an alias
+    const alias = await find(conn, 'cache, the', LIMIT);
+    expect(alias.sections[0].rows[0]).toMatchObject({id: 'platform/caching', match: 0});
   }, 120_000);
 
   withKuzu('leaves the reports to the JSONL: every one of them answers with the index open', async () => {

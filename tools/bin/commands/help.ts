@@ -484,20 +484,40 @@ Verbs:
                 or --file q.cypher. Exit 2 when kuzu is not installed.
     impact      What a change reaches: the features that own or take part in a file,
                 declaration or feature, their owners, tests, docs and tickets, and for a
-                declaration or a file, who calls or imports it.
+                declaration or a file, who calls or imports it. The target is first
+                expanded through containment — a package or a file through what it
+                declares, a declaration through the file or package that declares it and
+                the functions it implements — so a package answers for the code it holds
+                and a file for the declarations inside it. Every feature row carries the
+                chain that produced it (\`via\` in a table, \`path\` in json).
     tests-for   The tests, scenarios and automations of a feature (with everything under
-                it in the tree), or of the feature that owns a path.
-    explain     One node: its properties, then every one-hop edge by type and direction.
+                it in the tree), or of the feature that owns a path, a package or a
+                declaration; the same containment expansion as impact.
+    explain     One node: its properties, then every one-hop edge by type and direction
+                with how it was derived, its confidence and the first evidence path. A
+                release also gets three sections of its own: targeted (the tickets whose
+                fix version it is), included (its commits and the tickets it picked) and
+                shipped (the features those tickets affect), the last only when the
+                record is released and not a dry run, and a line saying why when it is not.
     find        The vocabulary search over ids, names, aliases, descriptions and keywords
-                of all eight tables; features and concepts first.
+                of all eight tables; features and concepts first. An exact id, name or
+                alias is asked for in a query of its own, so the scan cap on the substring
+                search cannot drop it.
     report      One maintainer report over the JSONL a build already wrote, never the
                 index: orphans (files with no owner, grouped by package or core
-                sub-project), stale (citations, tickets, help-urls, specs and
-                declarations the graph can no longer reach), coverage (one row per
-                feature: owner, tests, scenarios, documents, description), proposed
-                (folders with code and no owner, with the id they would take) and
-                diff (the features a branch touches and the tests that cover them,
-                \`--diff <ref>\`; the md output is the PR comment). \`build\` writes the
+                sub-project, with the owned and participating files beside them and the
+                inventory the build observed as the denominator), stale (citations,
+                tickets, help-urls, specs and declarations the graph can no longer reach;
+                a ticket is \`unknown\` rather than absent when the backlog snapshot was
+                not read), coverage (one row per feature: owner, runnable, skipped and
+                dynamic tests, the tests it inherits from the features under it,
+                scenarios and their automations, documents, description, and whether it
+                is a stub), proposed (folders ranked by the code in them no feature owns,
+                with the id they would take) and diff (the features a branch touches and
+                the tests that cover them, \`--diff <ref>\`; the public baseline is the
+                gitlink that revision recorded, deleted files keep the owner the graph
+                still has, and a graph built from other commits than the working tree
+                says so; the md output is the PR comment). \`build\` writes the
                 first four to .kg/reports/ as both .json and .md.
     gc          Remove older generations under .kg/gen/, keeping the current one and
                 the --keep newest (default 2). A generation whose index a reader holds
@@ -505,9 +525,11 @@ Verbs:
     help        Show this help
 
 The four operations and query read the generation .kg/current names, next to the type
-files, and refuse an index that was loaded from another batch; each of them prints
-\`Dart coverage unknown (no kg-dart batch)\` first while no prop_gen batch has been
-built. Ids may be written with or without the \`~\` sigil.
+files, and refuse an index that was loaded from another batch; each of them leads with
+one line per source the manifest does not report as \`ok\` — \`Dart coverage unknown (no
+kg-dart batch)\` while no prop_gen batch has been built, and the same for a missing
+backlog or a partial docs, people or samples pass. Ids may be written with or without
+the \`~\` sigil.
 
 \`check\` gates the sources; \`gen --check\` gates the generated files, failing when
 kg.d.ts, glossary.md or feature-tree.md on disk differ from what gen would write.

@@ -4,6 +4,7 @@ name: Scatter plot
 owner: P:jane
 code:
   - {path: core/client/d4/lib/src/viewers/scatterplot/**, role: definition}
+  - {path: public/js-api/src/viewer.ts#JsViewer, role: api}
 ---
 
 # Scatter plot

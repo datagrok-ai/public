@@ -47,6 +47,8 @@ export interface Ownership {
   ambiguous: {file: string, features: string[], rung: number}[];
   orphans: {file: string, loc: number}[];
   resolved_by_chain: {file: string, owner: string, over: string[]}[];
+  /** What the build actually saw, the denominator every ownership number is a fraction of (membership.ts). */
+  inventory?: Record<string, number>;
 }
 
 /** The slice of a build the reports read: rows by id and by type, edge rows by file name, and the build's own records. */
@@ -58,6 +60,8 @@ export interface GraphData {
   /** `reports/problems.json`: free text per problem kind. */
   problems: Record<string, string[]>;
   sources: Record<string, string>;
+  /** The revisions the graph was built from; `diff` compares them with the working tree. */
+  revisions: Record<string, string>;
   repoRoot: string;
 }
 
@@ -74,11 +78,11 @@ function needs(name: ReportName, system: TypeSystem): {nodes: string[], edges: s
   const features = concrete((t) => isSubtype(system, t, 'feature'));
   switch (name) {
     case 'orphans':
-      return {nodes: [], edges: []};
+      return {nodes: ['source-file'], edges: ['is-implemented-in', 'participates-in']};
     case 'stale':
       return {nodes: ['ticket', 'declaration', 'doc-page', ...concrete((t) => !!system.nodes.get(t)!.members.help_url)], edges: ['tracked-in', 'defines-concept']};
     case 'coverage':
-      return {nodes: features, edges: ['tests', 'covers', 'automates', 'documents', 'owner']};
+      return {nodes: [...features, 'test'], edges: ['tests', 'covers', 'automates', 'documents', 'owner', 'part-of']};
     case 'proposed':
       return {nodes: ['source-file'], edges: ['is-implemented-in']};
     default:
@@ -92,6 +96,7 @@ export function readGraph(kgDir: string, repoRoot: string, system: TypeSystem, n
   const data = empty(repoRoot);
   const manifest = readJson<Manifest>(path.join(kgDir, 'manifest.json'));
   data.sources = manifest?.sources ?? {};
+  data.revisions = manifest?.revisions ?? {};
   data.ownership = readJson<Ownership>(path.join(kgDir, 'reports', 'ownership.json'));
   data.problems = readJson<Record<string, string[]>>(path.join(kgDir, 'reports', 'problems.json')) ?? {};
   for (const type of want.nodes)
@@ -104,9 +109,10 @@ export function readGraph(kgDir: string, repoRoot: string, system: TypeSystem, n
 }
 
 /** The same slice straight from the build that produced it, so `build` writes the reports without re-reading 100 MB. */
-export function fromGraph(graph: Graph, repoRoot: string, sources: Record<string, string>): GraphData {
+export function fromGraph(graph: Graph, repoRoot: string, sources: Record<string, string>, revisions: Record<string, string> = {}): GraphData {
   const data = empty(repoRoot);
   data.sources = sources;
+  data.revisions = revisions;
   data.ownership = graph.reports.ownership as Ownership | undefined;
   data.problems = graph.details;
   for (const row of graph.nodes) {
@@ -182,20 +188,50 @@ function cell(value: unknown): string {
   return String(Array.isArray(value) ? value.join(', ') : value).replace(/\|/g, '\\|').replace(/\s*\n\s*/g, ' ');
 }
 
-/** Files no feature owns, grouped by the package or the core sub-project they sit in. */
+/**
+ * Files no feature owns, grouped by the package or the core sub-project they sit in. A group's orphan count means
+ * nothing on its own, so each row carries the files that are owned and the files that only take part, and the
+ * summary carries the inventory this build observed — the denominator the numbers are a fraction of (review 3 #10).
+ */
 function orphans(data: GraphData): Report {
-  const groups = new Map<string, {file: string, loc: number}[]>();
-  for (const orphan of data.ownership?.orphans ?? []) push(groups, groupOf(orphan.file), orphan);
-  const rows = [...groups].map(([group, files]) => ({
-    group, files: files.length, loc: files.reduce((sum, f) => sum + f.loc, 0),
-    largest: [...files].sort((a, b) => b.loc - a.loc || compare(a.file, b.file)).slice(0, ORPHAN_FILES)
-      .map((f) => `${f.file.slice(group.length + 1)} (${f.loc})`).join(', '),
-  })).sort((a, b) => b.loc - a.loc || compare(a.group, b.group));
+  const owned = new Set((data.edges.get('is-implemented-in') ?? []).map((e) => String(e.to)));
+  const participating = new Set((data.edges.get('participates-in') ?? []).map((e) => String(e.from)));
+  const groups = new Map<string, {orphans: {file: string, loc: number}[], owned: number, participating: number, files: number}>();
+  const group = (file: string) => {
+    const key = groupOf(file);
+    let entry = groups.get(key);
+    if (!entry) groups.set(key, entry = {orphans: [], owned: 0, participating: 0, files: 0});
+    return entry;
+  };
+  for (const row of data.byType.get('source-file') ?? []) {
+    const entry = group(String(row.path ?? ''));
+    entry.files++;
+    if (owned.has(String(row.id))) entry.owned++;
+    else if (participating.has(String(row.id))) entry.participating++;
+  }
+  for (const orphan of data.ownership?.orphans ?? []) {
+    const entry = group(orphan.file);
+    entry.orphans.push(orphan);
+  }
+  const rows = [...groups].map(([name, e]) => ({
+    group: name, files: e.files, owned: e.owned, participating: e.participating, orphans: e.orphans.length,
+    loc: e.orphans.reduce((sum, f) => sum + f.loc, 0),
+    largest: [...e.orphans].sort((a, b) => b.loc - a.loc || compare(a.file, b.file)).slice(0, ORPHAN_FILES)
+      .map((f) => `${f.file.slice(name.length + 1)} (${f.loc})`).join(', '),
+  })).filter((r) => r.orphans).sort((a, b) => b.loc - a.loc || compare(a.group, b.group));
   const loc = rows.reduce((sum, r) => sum + r.loc, 0);
+  const inventory = data.ownership?.inventory;
+  const total = data.ownership?.orphans.length ?? 0;
+  const of = inventory ? ` of ${inventory.observed_files} observed (${inventory.owned_files} owned, ${inventory.participating_files} participating)` : '';
+  const lines = inventory ? ` of ${inventory.observed_loc}` : '';
   return {
     name: 'orphans', title: 'Orphan files',
-    summary: `${data.ownership?.orphans.length ?? 0} files with no owner in ${rows.length} groups, ${loc} lines; the ${Math.min(ORPHAN_GROUPS, rows.length)} largest groups below.`,
-    notes: data.ownership ? [] : ['no reports/ownership.json: run grok kg build'],
+    summary: `${total} files${of} have no owner, ${loc}${lines} lines, in ${rows.length} groups; the ${Math.min(ORPHAN_GROUPS, rows.length)} largest groups below.`,
+    notes: [
+      ...(data.ownership ? [] : ['no reports/ownership.json: run grok kg build']),
+      ...(inventory ? [] : ['no inventory in reports/ownership.json: the counts have no denominator']),
+      'the inventory covers the files the extractors observed, not every file in the repositories',
+    ],
     sections: [{title: 'groups', rows: rows.slice(0, ORPHAN_GROUPS)}],
   };
 }
@@ -215,10 +251,13 @@ function stale(data: GraphData, options: ReportOptions): Report {
     if (!m || !STALE_CODES.includes(m[3])) continue;
     rows.push({kind: 'citation', source: m[2] ? `${m[1]}:${m[2]}` : m[1], target: /'([^']+)'/.exec(m[4])?.[1] ?? '', reason: `${m[3]}: ${m[4]}`});
   }
+  // without the snapshot a ticket with no external provenance proves nothing: the backlog was never consulted
+  const backlog = /^ok\b/.test(data.sources.backlog ?? '');
   for (const edge of data.edges.get('tracked-in') ?? []) {
     const ticket = data.nodes.get(String(edge.to));
     if (ticket && ticket.provenance === 'external') continue;
-    rows.push({kind: 'ticket', source: String(edge.from), target: String(edge.to), reason: 'not in the backlog snapshot'});
+    rows.push({kind: 'ticket', source: String(edge.from), target: String(edge.to),
+      reason: backlog ? 'not in the backlog snapshot' : `unknown: the backlog snapshot is ${data.sources.backlog ?? 'absent'}`});
   }
   for (const row of data.nodes.values()) {
     if (typeof row.help_url !== 'string' || !HELP_LINK.test(row.help_url)) continue;
@@ -244,60 +283,107 @@ function stale(data: GraphData, options: ReportOptions): Report {
     name: 'stale', title: 'Stale references',
     summary: `${rows.length} stale references${kinds.size ? `: ${[...kinds].sort(([a], [b]) => compare(a, b)).map(([k, n]) => `${n} ${k}`).join(', ')}` : ''}.`,
     notes: [
-      ...(data.sources.backlog === 'missing' ? ['the backlog snapshot was not read, so tracked-in tickets are not checked'] : []),
+      ...(backlog ? [] : ['the backlog snapshot was not read, so a tracked-in ticket is reported as unknown, not as absent']),
       ...(data.sources.dart === 'ok' ? [] : ['the Dart batch is not ok, so defined_by declarations are not checked']),
     ],
     sections: [{title: 'references', rows: rows.sort((a, b) => compare(String(a.kind), String(b.kind)) || compare(String(a.source), String(b.source)) || compare(String(a.target), String(b.target)))}],
   };
 }
 
-/** One row per feature: who owns it, what tests it, what documents it, and whether it says what it is. */
+/**
+ * One row per feature: who owns it, what really runs against it, what documents it, and whether it says what it is.
+ * A test count that mixes a skipped test, a test whose name is built at run time and a test that runs is not a
+ * coverage number (review 3 #10), so each of them is its own column, and so is the coverage a feature only inherits
+ * from the features under it. A stub — a feature with no home of its own — is marked rather than counted as a gap.
+ */
 function coverage(data: GraphData, options: ReportOptions): Report {
   const features = [...data.nodes.values()].filter((r) => isSubtype(options.system, String(r.type), 'feature'));
-  const tests = count(data.edges.get('tests'), 'to');
   const documents = count(data.edges.get('documents'), 'to');
   const owners = new Map((data.edges.get('owner') ?? []).map((e) => [String(e.from), String(e.to)]));
   const scenarios = new Map<string, string[]>();
   for (const edge of data.edges.get('covers') ?? []) push(scenarios, String(edge.to), String(edge.from));
   const automated = count(data.edges.get('automates'), 'to');
+  const children = new Map<string, string[]>();
+  for (const edge of data.edges.get('part-of') ?? []) push(children, String(edge.to), String(edge.from));
+  const direct = new Map<string, string[]>();
+  for (const edge of data.edges.get('tests') ?? []) push(direct, String(edge.to), String(edge.from));
+  const split = (tests: string[]) => {
+    const out = {runnable: 0, skipped: 0, dynamic: 0};
+    for (const id of tests) {
+      const test = data.nodes.get(id);
+      if (test?.skipped === true) out.skipped++;
+      else if (test?.dynamic === true) out.dynamic++;
+      else out.runnable++;
+    }
+    return out;
+  };
   const rows = features.map((f) => {
     const id = String(f.id);
+    const own = direct.get(id) ?? [];
+    const counts = split(own);
     const covered = scenarios.get(id) ?? [];
-    const scenarioTests = covered.reduce((sum, s) => sum + (automated.get(s) ?? 0), 0);
     return {
       feature: id, owner: (f.owner as string | undefined) ?? owners.get(id) ?? '', status: (f.status as string | undefined) ?? '',
-      tests: tests.get(id) ?? 0, scenarios: covered.length, automated: scenarioTests,
-      no_tests: !(tests.get(id) ?? 0) && !covered.length, no_docs: !documents.get(id), no_description: !f.description,
+      stub: !f.home, tests_runnable: counts.runnable, tests_skipped: counts.skipped, tests_dynamic: counts.dynamic,
+      inherited: descendants(id, children).reduce((sum, d) => sum + (direct.get(d)?.length ?? 0), 0),
+      scenarios: covered.length, scenario_automated: covered.reduce((sum, s) => sum + (automated.get(s) ?? 0), 0),
+      no_tests: !own.length && !covered.length, no_docs: !documents.get(id), no_description: !f.description,
     };
   }).sort((a, b) => compare(a.feature, b.feature));
-  const gaps = (key: 'no_tests' | 'no_docs' | 'no_description') => rows.filter((r) => r[key]).length;
+  const gaps = (key: 'no_tests' | 'no_docs' | 'no_description') => rows.filter((r) => !r.stub && r[key]).length;
+  const authored = rows.filter((r) => !r.stub).length;
   return {
     name: 'coverage', title: 'Feature coverage',
-    summary: `${rows.length} features: ${gaps('no_tests')} with no test or scenario, ${gaps('no_docs')} with no document beside the home, ${gaps('no_description')} with no first paragraph.`,
-    notes: [], sections: [{title: 'features', rows}],
+    summary: `${rows.length} features, ${rows.length - authored} of them stubs; of the ${authored} with a home, ${gaps('no_tests')} have no test or scenario, ` +
+      `${gaps('no_docs')} no document beside the home, ${gaps('no_description')} no first paragraph.`,
+    notes: ['tests_runnable excludes a skipped test and one whose name is built at run time; inherited counts the tests of the features under this one'],
+    sections: [{title: 'features', rows}],
   };
 }
 
-/** Folders that carry code no feature claims: candidates for a home of their own (conventions.md §10). */
+/** Everything under a feature in the part-of tree, the feature itself excluded. */
+function descendants(id: string, children: Map<string, string[]>): string[] {
+  const out: string[] = [];
+  const queue = [...children.get(id) ?? []];
+  while (queue.length) {
+    const next = queue.shift()!;
+    if (next === id || out.includes(next)) continue;
+    out.push(next);
+    queue.push(...children.get(next) ?? []);
+  }
+  return out;
+}
+
+/**
+ * Folders that carry code no feature claims: candidates for a home of their own (conventions.md §10). One owned file
+ * used to hide a whole folder, so a partly claimed area never appeared; the ranking is the unowned remainder instead
+ * (review 3 #10), and a folder already fully owned is the only one that drops out.
+ */
 function proposed(data: GraphData): Report {
   const owned = new Set((data.edges.get('is-implemented-in') ?? []).map((e) => String(e.to)));
-  const folders = new Map<string, {files: number, loc: number, owned: boolean}>();
+  const folders = new Map<string, {files: number, loc: number, unowned: number, unowned_loc: number}>();
   for (const row of data.byType.get('source-file') ?? []) {
     const folder = folderOf(String(row.path ?? ''));
     if (!folder) continue;
-    const entry = folders.get(folder) ?? {files: 0, loc: 0, owned: false};
+    const entry = folders.get(folder) ?? {files: 0, loc: 0, unowned: 0, unowned_loc: 0};
+    const loc = Number(row.loc ?? 0);
     entry.files++;
-    entry.loc += Number(row.loc ?? 0);
-    entry.owned ||= owned.has(String(row.id));
+    entry.loc += loc;
+    if (!owned.has(String(row.id))) {
+      entry.unowned++;
+      entry.unowned_loc += loc;
+    }
     folders.set(folder, entry);
   }
-  const rows = [...folders].filter(([, e]) => !e.owned)
-    .map(([folder, e]) => ({path: folder, files: e.files, loc: e.loc, suggested: suggestedId(folder)}))
-    .sort((a, b) => b.loc - a.loc || compare(a.path, b.path));
+  const rows = [...folders].filter(([, e]) => e.unowned)
+    .map(([folder, e]) => ({path: folder, files: e.files, loc: e.loc, unowned_files: e.unowned, unowned_loc: e.unowned_loc, suggested: suggestedId(folder)}))
+    .sort((a, b) => b.unowned_loc - a.unowned_loc || compare(a.path, b.path));
+  const partial = rows.filter((r) => r.unowned_files < r.files).length;
   return {
     name: 'proposed', title: 'Proposed features',
-    summary: `${rows.length} folders with code and no owner, of ${folders.size} under ${PROPOSED_PARENTS.join(', ')}; ${rows.filter((r) => r.suggested).length} with a suggested id.`,
-    notes: ['a folder is only seen through the source files the build extracted'],
+    summary: `${rows.length} folders carry code no feature owns, of ${folders.size} under ${PROPOSED_PARENTS.join(', ')}; ` +
+      `${partial} of them ${partial === 1 ? 'is' : 'are'} partly owned already; ${rows.filter((r) => r.suggested).length} with a suggested id.`,
+    notes: ['a folder is only seen through the source files the build extracted; the ranking is the unowned remainder'],
     sections: [{title: 'folders', rows}],
   };
 }
@@ -348,7 +434,8 @@ function diff(data: GraphData, options: ReportOptions): Report {
   const fileRows: Record<string, unknown>[] = [];
   const features = new Map<string, Hit>();
   let unowned = 0;
-  for (const file of files) {
+  let orphanedDeletions = 0;
+  for (const {file, change} of files) {
     const hits = new Map<string, Hit>();
     const touch = (feature: string, relation: string, confidence: number) => {
       const best = hits.get(feature);
@@ -361,11 +448,14 @@ function diff(data: GraphData, options: ReportOptions): Report {
     if (home) touch(home, 'home', 1);
     for (const edge of documents.get(`doc:${file}`) ?? []) touch(String(edge.to), 'documents', Number(edge.confidence ?? 1));
     if (!hits.size) {
-      unowned++;
+      // a deleted file is gone from the working tree: the graph is the only place its owner can still be read
+      if (change === 'deleted') orphanedDeletions++;
+      else unowned++;
+      fileRows.push({file, feature: '', relation: change === 'deleted' ? 'deleted' : '', confidence: '', change});
       continue;
     }
     for (const [feature, hit] of [...hits].sort(([a], [b]) => compare(a, b))) {
-      fileRows.push({file, feature, ...hit});
+      fileRows.push({file, feature, ...hit, change});
       const best = features.get(feature);
       if (!best || stronger(hit, best)) features.set(feature, hit);
     }
@@ -383,11 +473,16 @@ function diff(data: GraphData, options: ReportOptions): Report {
   const covered = new Set(scenarioRows.map((r) => r.scenario));
   const automationRows = (data.edges.get('automates') ?? []).filter((e) => covered.has(String(e.to)))
     .map((e) => ({test: String(e.from), scenario: String(e.to)})).sort((a, b) => compare(a.test, b.test));
+  const deleted = files.filter((f) => f.change === 'deleted').length;
   return {
     name: 'diff', title: `Features touched by ${options.base}...HEAD`,
-    summary: `${files.length} files changed, ${unowned} of them in no feature; ${featureRows.length} features touched; ` +
+    summary: `${files.length} files changed (${deleted} deleted), ${unowned} of them in no feature; ${featureRows.length} features touched; ` +
       `${testRows.length} tests, ${scenarioRows.length} scenarios and ${automationRows.length} automations cover them.`,
-    notes: problems,
+    notes: [
+      ...problems,
+      ...(orphanedDeletions ? [`${orphanedDeletions} deleted file${orphanedDeletions === 1 ? '' : 's'} had no owner in this graph either; they are listed as deleted`] : []),
+      ...staleGraph(data, options.repoRoot),
+    ],
     sections: [
       {title: 'features', rows: featureRows},
       {title: 'files', rows: fileRows},
@@ -398,9 +493,22 @@ function diff(data: GraphData, options: ReportOptions): Report {
   };
 }
 
-/** `git diff --name-only <base>...HEAD` in the monorepo and in the public submodule, whose paths the graph prefixes. */
-function changedFiles(repoRoot: string, base: string): {files: string[], problems: string[]} {
-  const files = new Set<string>();
+interface Change {
+  file: string;
+  change: 'added' | 'modified' | 'deleted' | 'renamed' | 'changed';
+}
+
+/** What `git diff --name-status` calls a change, in the words the report uses. */
+const CHANGES: Record<string, Change['change']> = {A: 'added', M: 'modified', D: 'deleted', R: 'renamed', C: 'added', T: 'changed'};
+
+/**
+ * The changed files of both repositories, the public ones under the `public/` prefix the graph gives them. A monorepo
+ * revision means nothing inside the submodule, so the public baseline is the gitlink that revision recorded
+ * (`git rev-parse <base>:public`) and only falls back to the same string when the gitlink cannot be read (review 3
+ * #10). Output is NUL-delimited: a path may contain anything but a NUL, quoting included.
+ */
+function changedFiles(repoRoot: string, base: string): {files: Change[], problems: string[]} {
+  const found = new Map<string, Change>();
   const problems: string[] = [];
   const roots = new Set<string>();
   for (const [cwd, prefix] of [[repoRoot, ''], [path.join(repoRoot, 'public'), 'public/']]) {
@@ -408,22 +516,53 @@ function changedFiles(repoRoot: string, base: string): {files: string[], problem
     const top = spawnSync('git', ['-C', cwd, 'rev-parse', '--show-toplevel'], {encoding: 'utf8'});
     if (top.status !== 0 || roots.has(top.stdout.trim())) continue;
     roots.add(top.stdout.trim());
-    const r = spawnSync('git', ['-C', cwd, 'diff', '--name-only', `${base}...HEAD`], {encoding: 'utf8', maxBuffer: 32 * 1024 * 1024});
+    let from = base;
+    if (prefix) {
+      const link = gitlink(repoRoot, base);
+      if (link) from = link;
+      else problems.push(`public/: ${base}:public names no gitlink, so ${base} is used in the submodule as well`);
+    }
+    const r = spawnSync('git', ['-C', cwd, 'diff', '--name-status', '-z', `${from}...HEAD`], {encoding: 'utf8', maxBuffer: 32 * 1024 * 1024});
     if (r.status !== 0) {
-      problems.push(`${prefix || 'the monorepo'}: git diff ${base}...HEAD failed: ${(r.stderr ?? '').trim().split('\n')[0] || `exit ${r.status}`}`);
+      problems.push(`${prefix || 'the monorepo'}: git diff ${from}...HEAD failed: ${(r.stderr ?? '').trim().split('\n')[0] || `exit ${r.status}`}`);
       continue;
     }
-    for (const line of r.stdout.split('\n')) {
-      const file = line.trim();
+    // NUL-separated fields, a status then its path — and for a rename or a copy, the old path then the new one
+    const fields = r.stdout.split('\0').filter((f) => f !== '');
+    for (let i = 0; i < fields.length;) {
+      const status = fields[i++];
+      const paths = /^[RC]/.test(status) ? [fields[i++], fields[i++]] : [fields[i++]];
+      const file = paths[paths.length - 1];
       // the submodule's own gitlink is not a file of either repository
-      if (file && file !== 'public') files.add(prefix + file);
+      if (file && file !== 'public') found.set(prefix + file, {file: prefix + file, change: CHANGES[status[0]] ?? 'modified'});
     }
   }
-  return {files: [...files].sort(compare), problems};
+  return {files: [...found.values()].sort((a, b) => compare(a.file, b.file)), problems};
+}
+
+/** The public commit [base] recorded: mode 160000 is the gitlink, anything else is a folder that only looks like one. */
+function gitlink(repoRoot: string, base: string): string | undefined {
+  const r = spawnSync('git', ['-C', repoRoot, 'ls-tree', base, '--', 'public'], {encoding: 'utf8'});
+  const m = r.status === 0 ? /^160000 commit ([0-9a-f]{7,40})/.exec(r.stdout.trim()) : null;
+  return m ? m[1] : undefined;
+}
+
+/** A graph built from other commits than the ones checked out answers about files that are no longer there. */
+function staleGraph(data: GraphData, repoRoot: string): string[] {
+  const notes: string[] = [];
+  for (const [name, dir] of [['reddata', repoRoot], ['public', path.join(repoRoot, 'public')]]) {
+    const built = data.revisions[name];
+    if (!built) continue;
+    const head = spawnSync('git', ['-C', dir, 'rev-parse', 'HEAD'], {encoding: 'utf8'});
+    if (head.status !== 0 || !head.stdout.trim() || head.stdout.trim() === built) continue;
+    notes.push(`${name}: the graph was built at ${built.slice(0, 10)} and the working tree is at ${head.stdout.trim().slice(0, 10)}; ` +
+      'ownership may be out of date — run grok kg build');
+  }
+  return notes;
 }
 
 function empty(repoRoot: string): GraphData {
-  return {nodes: new Map(), byType: new Map(), edges: new Map(), problems: {}, sources: {}, repoRoot};
+  return {nodes: new Map(), byType: new Map(), edges: new Map(), problems: {}, sources: {}, revisions: {}, repoRoot};
 }
 
 function count(rows: Row[] | undefined, key: 'from' | 'to'): Map<string, number> {

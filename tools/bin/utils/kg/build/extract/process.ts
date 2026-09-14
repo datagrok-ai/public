@@ -170,6 +170,7 @@ class ProcessLayer {
       provenance: 'annotation', source_layer: 'process'};
     if (data.dry_run === true) {
       row.status = 'proposed';
+      row.dry_run = true;
       row.description = `Dry run record generated ${GENERATED.exec(text)?.[1] ?? String((data.checks as any)?.checked_at ?? 'without a date')}; not the live record.`;
     }
     if (!this.emitter.node(row).accepted) return;

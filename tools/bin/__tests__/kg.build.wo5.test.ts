@@ -82,7 +82,7 @@ describe('tickets from the backlog snapshot (build-plan.md WO-5)', () => {
     const {rows} = await graph;
     expect(byId(rows('nodes/ticket'), 'gh:public#7')).toMatchObject({tracker: 'github', key: '#7', state: 'wontfix', raw_status: 'closed/not_planned',
       labels: ['Ins', 'enhancement'], resolution: 'not_planned'});
-    expect(rows('nodes/ticket').map((t) => t.id)).toEqual(['GROK-100', 'GROK-101', 'GROK-102', 'gh:public#7']);
+    expect(rows('nodes/ticket').map((t) => t.id)).toEqual(['GROK-100', 'GROK-101', 'GROK-102', 'GROK-999', 'gh:public#7']);
   });
 
   it('takes a numeric fix version to a release stub and leaves a bucket such as v1 alone', async () => {
@@ -116,7 +116,8 @@ describe('tickets from the backlog snapshot (build-plan.md WO-5)', () => {
     expect(manifest.sources.backlog).toBe('ok@2026-01-12T07:00:00Z');
     const absent = await build({backlog: path.join(os.tmpdir(), 'grok-kg-no-backlog')});
     expect(absent.manifest.sources.backlog).toBe('missing');
-    expect(absent.rows('nodes/ticket').map((t) => t.id)).toEqual(['GROK-101']);
+    // GROK-101 is named by the release record and GROK-100/999 by the viewers home: stubs survive a missing snapshot
+    expect(absent.rows('nodes/ticket').map((t) => t.id)).toEqual(['GROK-100', 'GROK-101', 'GROK-999']);
   });
 });
 

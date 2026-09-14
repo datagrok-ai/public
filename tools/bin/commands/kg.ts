@@ -11,7 +11,7 @@ import {selectExtractors, runExtractors, EXTRACTORS, Mode} from '../utils/kg/bui
 import {writeBuild, writeManifest, readManifest, projectPublic, gitRevisions, buildInputs, batchId, toolsVersion,
   generationDir, stagingDir, replaceGeneration, currentDir, readCurrent, publish, generations, gc, Manifest} from '../utils/kg/build/write';
 import {loadKuzu, load as loadIndex, open, run, memoryMb, MISSING_KUZU, BUILD_MEMORY_MB, LoadResult, TableRows} from '../utils/kg/kuzu';
-import {impact, testsFor, explain, find, printOps, resolveTarget, coverageNote, OpsResult, DEFAULT_LIMIT} from '../utils/kg/ops';
+import {impact, testsFor, explain, find, printOps, resolveTarget, sourceCaveats, OpsResult, DEFAULT_LIMIT} from '../utils/kg/ops';
 import {readGraph, fromGraph, makeReport as buildReport, printReport, writeReports, REPORT_NAMES, ReportName, ReportFormat} from '../utils/kg/report';
 import {OutputFormat, printOutput} from '../utils/server-output';
 import {HELP_KG} from './help';
@@ -104,7 +104,7 @@ async function build(argv: any, kgRoot: string, repoRoot: string, output: string
   const genDir = staged ? stagingDir(root, batch) : generationDir(root, batch);
   fs.rmSync(genDir, {recursive: true, force: true});
   const manifest = writeBuild(graph, genDir, {mode, batch, builder, schemaVersion: system.schemaVersion, revisions});
-  if (mode !== 'public') writeReports(genDir, fromGraph(graph, repoRoot, manifest.sources), {system, repoRoot});
+  if (mode !== 'public') writeReports(genDir, fromGraph(graph, repoRoot, manifest.sources, manifest.revisions), {system, repoRoot});
   const failure = await index(argv, system, genDir, repoRoot, manifest);
   if (failure) return fail(`index not built: ${failure}; ${slashes(genDir)} stays unpublished`);
   writeManifest(genDir, manifest);
@@ -222,7 +222,7 @@ async function graph(verb: string, args: string[], argv: any, output: OutputForm
         : verb === 'tests-for' ? await testsFor(opened.conn, target, {limit})
           : await explain(opened.conn, target, {limit});
     }
-    result.note = coverageNote(sources);
+    result.notes = sourceCaveats(sources);
     printOps(result, output);
     return true;
   }

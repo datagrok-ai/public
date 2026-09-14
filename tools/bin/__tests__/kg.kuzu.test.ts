@@ -7,7 +7,7 @@ import path from 'path';
 import {fileURLToPath} from 'url';
 import {loadTypeSystem, TypeSystem} from '../utils/kg/types';
 import {ddl, load, loadKuzu, open, run, Ddl, KuzuConnection, KuzuQueryResult} from '../utils/kg/kuzu';
-import {find, explain, impact, testsFor, resolveTarget, coverageNote, printOps} from '../utils/kg/ops';
+import {find, explain, impact, testsFor, resolveTarget, coverageNote, sourceCaveats, printOps} from '../utils/kg/ops';
 import {currentDir} from '../utils/kg/build/write';
 import {kg} from '../commands/kg';
 
@@ -121,7 +121,7 @@ describe('the index itself (build-plan.md WO-7, WO-10)', () => {
   withKuzu('loads the fixture graph and round-trips a list and a text CSV cannot carry', async () => {
     const {kgDir, feature, result} = index;
     expect(result.nodes.find((t) => t.table === 'Feature')!.rows).toBe(8);
-    expect(result.nodes.find((t) => t.table === 'Component')!.rows).toBe(15);
+    expect(result.nodes.find((t) => t.table === 'Component')!.rows).toBe(16);
     expect(result.rels.find((t) => t.table === 'PART_OF')!.rows).toBe(7);
     expect(result.rels.find((t) => t.table === 'owner')!.rows).toBe(5);
     expect(result.parameterized).toBe(1);
@@ -173,7 +173,8 @@ describe('the index itself (build-plan.md WO-7, WO-10)', () => {
       expect(explained.sections[1].rows).toContainEqual(expect.objectContaining({edge: 'PART_OF', direction: 'out', targets: 'platform'}));
 
       const reached = await impact(conn, caching, LIMIT);
-      expect(reached.sections[0].rows).toEqual([{feature: 'platform/caching', relation: 'self', name: 'Caching', status: 'active'}]);
+      expect(reached.sections[0].rows).toEqual([{feature: 'platform/caching', relation: 'self', name: 'Caching', status: 'active',
+        via: 'platform/caching', path: ['platform/caching']}]);
       expect(reached.sections[1].rows).toEqual([{feature: 'platform/caching', owner: 'P:jane', name: 'Jane Dev'}]);
 
       const bio = (await resolveTarget(conn, 'domains/bio'))!;
@@ -184,6 +185,22 @@ describe('the index itself (build-plan.md WO-7, WO-10)', () => {
       expect(coverageNote(undefined)).toBe('Dart coverage unknown (no kg-dart batch)');
       expect(coverageNote({dart: 'ok'})).toBeUndefined();
     }
+  }, 60_000);
+
+  withKuzu('puts the evidence behind every edge group, and caveats every source that is not ok', async () => {
+    const {conn} = index.opened!;
+    const caching = (await resolveTarget(conn, '~platform/caching'))!;
+    const edges = (await explain(conn, caching, LIMIT)).sections.find((s) => s.title === 'edges')!;
+    expect(edges.rows).toContainEqual(expect.objectContaining({edge: 'owner', direction: 'out', derived_by: 'annotation', confidence: '1'}));
+    expect(edges.rows).toContainEqual(expect.objectContaining({edge: 'PART_OF', direction: 'out', derived_by: 'filesystem', confidence: '1'}));
+    expect(edges.rows.every((r) => r.derived_by !== undefined && r.confidence !== undefined && r.evidence !== undefined)).toBe(true);
+    // the Dart clause used to be the only one; a partial docs or people source was silently passed off as complete
+    expect(sourceCaveats({dart: 'ok', backlog: 'missing', docs: 'partial', git: 'ok@2026-01-12T07:00:00Z', people: 'partial'})).toEqual([
+      'backlog missing: no coverage of tickets, their state and who they are assigned to',
+      'docs partial: incomplete coverage of documentation pages, their headings and the mentions in them',
+      'people partial: incomplete coverage of people, teams and customers',
+    ]);
+    expect(sourceCaveats({dart: 'stale', homes: 'ok'})).toEqual(['Dart coverage stale (the kg-dart batch is stale)']);
   }, 60_000);
 
   withKuzu('says why a section came back empty instead of printing nothing', async () => {
