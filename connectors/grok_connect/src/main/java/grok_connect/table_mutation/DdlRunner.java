@@ -143,13 +143,14 @@ public class DdlRunner {
      * runs each statement on the caller's transaction. Returns the plan for the audit value on
      * {@link MutationResult#plan}.
      */
-    public static MutationPlan execute(JdbcDataProvider provider, Connection connection, DdlMutation m, String mainCallId) throws SQLException {
+    public static MutationPlan execute(JdbcDataProvider provider, Connection connection, DdlMutation m, String mainCallId, boolean logSql) throws SQLException {
         MutationPlan plan = plan(provider, connection, m);
         if (!plan.destructive.isEmpty() && !m.confirmDestructive)
             throw new MutationConfirmationRequiredException(plan, provider.descriptor.type);
         QueryMonitor queryMonitor = QueryMonitor.getInstance();
         for (String sql : plan.statements) {
-            LOGGER.info("Mutation before execution: {}", sql);
+            if (logSql)
+                LOGGER.info("Mutation before execution: {}", sql);
             try (Statement statement = connection.createStatement()) {
                 queryMonitor.addNewStatement(mainCallId, statement);
                 try {

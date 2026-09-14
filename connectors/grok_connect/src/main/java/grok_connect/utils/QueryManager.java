@@ -105,6 +105,7 @@ public class QueryManager {
     public void dryRun(boolean skipColumnFillingLog) throws QueryCancelledByUser, SQLException, GrokConnectException {
         FuncCall query = GrokConnect.gson.fromJson(initMessage, FuncCall.class);
         query.setParamValues();
+        query.afterDeserialization();
         processTableQuery(query);
         initResultSet(query);
         String sessionId = MDC.get(QueryHandler.CALL_ID_HEADER);
