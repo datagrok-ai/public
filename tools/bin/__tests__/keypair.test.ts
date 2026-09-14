@@ -87,6 +87,16 @@ describe('keyLogin', () => {
     await expect(kp.keyLogin(URL_, privateKey)).rejects.toThrow('unknown key');
   });
 
+  it('names the version a server needs when it has no keypair routes', async () => {
+    const {privateKey} = kp.generateKeyPair();
+    // A server without them answers 404, or 401 because unknown paths are refused before routing.
+    for (const status of [404, 401]) {
+      vi.stubGlobal('fetch', vi.fn(async () => new Response('{"message":"Invalid session"}', {status})));
+      await expect(kp.keyLogin(URL_, privateKey)).rejects.toThrow('needs Datagrok 1.28 or later');
+      await expect(kp.keyLogin(URL_, privateKey)).rejects.toHaveProperty('name', 'ServerTooOldError');
+    }
+  });
+
   it('does not present an HTML error page as a token', async () => {
     const {privateKey} = kp.generateKeyPair();
     vi.stubGlobal('fetch', vi.fn(async () => new Response('<html>502</html>', {status: 502})));

@@ -159,6 +159,9 @@ Profile > **Developer key...** to invalidate the copies you no longer control.
 A key is identified by its [RFC 7638](https://www.rfc-editor.org/rfc/rfc7638) JWK thumbprint,
 so the client and the server derive the same fingerprint independently.
 
+Keypair login needs **Datagrok 1.28 or later**. Against an older server the CLI says so and
+names the version; if a developer key is still configured for that server, it is used instead.
+
 ## See also
 
 - [Users and groups](users-and-groups.md)

@@ -98,12 +98,33 @@ export async function enrollWithCode(url: string, code: string, publicKey: Jwk,
     {code, name, expires, publicKey: JSON.stringify(publicKey)});
 }
 
+/** The first Datagrok that has the keypair endpoints. */
+export const MIN_SERVER_VERSION = '1.28';
+
+/**
+ * Thrown when the server has no keypair endpoints at all. Callers that still hold a developer
+ * key catch it and fall back; `grok login` reports it, since there is nothing to fall back to.
+ */
+export class ServerTooOldError extends Error {
+  constructor(public readonly server: string) {
+    super(`${server} does not support keypair authentication — it needs Datagrok ` +
+      `${MIN_SERVER_VERSION} or later. Use a developer key for this server ` +
+      '(grok config add --alias <alias> --server <url> --key <key>), or ask its operator to upgrade.');
+    this.name = 'ServerTooOldError';
+  }
+}
+
 async function postJson(url: string, body: Indexable): Promise<Indexable> {
   const response = await fetch(url, {
     method: 'POST',
     headers: {'content-type': 'application/json'},
     body: JSON.stringify(body),
   });
+  // These routes are anonymous on every server that has them. A server that does not answers
+  // 404 (no such route) or 401 (unknown paths are refused before routing) — either way, the
+  // keypair endpoints are simply not there.
+  if (response.status === 404 || response.status === 401)
+    throw new ServerTooOldError(new URL(url).origin);
   const text = await response.text();
   try {
     return JSON.parse(text);

@@ -51,9 +51,11 @@ export async function getToken(url: string, key: string) {
         try {
           return await keypair.keyLogin(url, privateKey);
         } catch (error: any) {
-          if (!key || !error?.message?.startsWith('Key login failed'))
+          const refused = error?.name === 'ServerTooOldError' ||
+            error?.message?.startsWith('Key login failed');
+          if (!key || !refused)
             throw error;
-          color.warn(`${url} refused the keypair (${error.message}); falling back to the developer key`);
+          color.warn(`${url}: ${error.message} Falling back to the developer key.`);
           privateKey = undefined;
         }
       }

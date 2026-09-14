@@ -104,8 +104,16 @@ export class NodeApiClient {
   /** [privateKey] from a caller that resolved it by alias; otherwise it is looked up by URL. */
   static async login(baseUrl: string, devKey: string, privateKey?: any): Promise<NodeApiClient> {
     privateKey ??= keypairFor(baseUrl, devKey);
-    if (privateKey)
-      return new NodeApiClient(baseUrl, await keyLogin(baseUrl, privateKey), devKey, privateKey);
+    if (privateKey) {
+      try {
+        return new NodeApiClient(baseUrl, await keyLogin(baseUrl, privateKey), devKey, privateKey);
+      } catch (e: any) {
+        // A server without the keypair endpoints is a reason to use the developer key that is
+        // still configured, not to stop: the same config often names stands of both vintages.
+        if (e?.name !== 'ServerTooOldError' || !devKey)
+          throw e;
+      }
+    }
     // Servers before 1.28 only knew the key-in-URL form, where it leaked into every
     // access log on the way; they answer 404 or 401 to the key-less route.
     let res = await fetch(`${baseUrl}/users/login/dev`, {method: 'POST', headers: {'Authorization': `Dev ${devKey}`}});

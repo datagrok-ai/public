@@ -37,3 +37,36 @@ export function log(s: string, type: LogType = 'plain'): void {
     break;
   }
 }
+
+/**
+ * One step of a multi-step command: prints its label, ticks a spinner while [action] runs, and
+ * replaces the line with the outcome. A spinner needs a terminal to erase lines, so a CI log
+ * (or a redirected stdout) gets one plain line per step instead.
+ */
+export async function step<T>(label: string, action: () => Promise<T>): Promise<T> {
+  const tty = process.stdout.isTTY === true;
+  const frames = ['-', '\\', '|', '/'];
+  let frame = 0;
+  const draw = () => process.stdout.write(`\r  ${frames[frame++ % frames.length]} ${label}   `);
+  if (!tty)
+    console.log(`  ${label}...`);
+  const timer = tty ? setInterval(draw, 120) : null;
+  if (tty)
+    draw();
+  const finish = (mark: string, color: string, text: string) => {
+    if (timer)
+      clearInterval(timer);
+    if (tty)
+      process.stdout.write(`\r\x1b[2K  \x1b[${color}m${mark}\x1b[0m ${text}\n`);
+    else if (mark !== '+')
+      console.log(`  ${mark} ${text}`);
+  };
+  try {
+    const result = await action();
+    finish('+', '32', label);
+    return result;
+  } catch (e) {
+    finish('x', '31', label);
+    throw e;
+  }
+}

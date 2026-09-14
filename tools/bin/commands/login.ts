@@ -18,17 +18,6 @@ export async function login(args: LoginArgs): Promise<boolean> {
     return false;
   const target = (args['_'][1] ?? '').toString();
 
-  let url: string;
-  let alias: string;
-  const config = kp.readConfig();
-  try {
-    ({url, alias} = resolveTarget(target, config, args.alias));
-    url = await resolveApiRoot(url);
-  } catch (error: any) {
-    color.error(error.message);
-    return false;
-  }
-
   const name = args.name ?? `${os.userInfo().username}-${os.hostname()}`;
   const expires = parseExpiry(args.expires);
   if (args.expires && !expires) {
@@ -36,36 +25,39 @@ export async function login(args: LoginArgs): Promise<boolean> {
     return false;
   }
 
-  const {publicKey, privateKey} = kp.generateKeyPair();
-  console.log(`Registering key "${name}" on ${url}`);
-
+  let url: string;
+  let alias: string;
+  let keyFile: string;
   let registered: Indexable;
+  const config = kp.readConfig();
+  const {publicKey, privateKey} = kp.generateKeyPair();
+
   try {
+    ({url, alias} = resolveTarget(target, config, args.alias));
+    url = await color.step(`Finding the Datagrok API at ${url}`, () => resolveApiRoot(url));
+
     registered = args.code
-      ? await kp.enrollWithCode(url, args.code, publicKey, name, expires)
+      ? await color.step(`Registering "${name}" with the enrollment code`,
+        () => kp.enrollWithCode(url, args.code!, publicKey, name, expires))
       : await enrollInBrowser(url, publicKey, name, expires);
+    if (registered.login == null)
+      throw new Error(registered.comment ?? registered.message ?? 'The server did not accept the key');
+
+    keyFile = await color.step('Storing the private key', async () => {
+      const file = kp.savePrivateKey(alias, privateKey);
+      config.servers ??= {};
+      config.servers[alias] = {...(config.servers[alias] ?? {}), url, key: config.servers[alias]?.key ?? '',
+        keyFile: file, login: registered.login as string};
+      config.default ??= alias;
+      kp.writeConfig(config);
+      return file;
+    });
+
+    // Proves the round trip before the user walks away, rather than at the next
+    // `grok publish`: a key that registered but cannot sign is worse than none.
+    await color.step('Signing in with the new key', () => kp.keyLogin(url, privateKey));
   } catch (error: any) {
     color.error(error.message ?? String(error));
-    return false;
-  }
-  if (registered.login == null) {
-    color.error(registered.comment ?? registered.message ?? 'The server did not accept the key');
-    return false;
-  }
-
-  const keyFile = kp.savePrivateKey(alias, privateKey);
-  config.servers ??= {};
-  config.servers[alias] = {...(config.servers[alias] ?? {}), url, key: config.servers[alias]?.key ?? '',
-    keyFile, login: registered.login};
-  config.default ??= alias;
-  kp.writeConfig(config);
-
-  // Proves the round trip before the user walks away, rather than at the next
-  // `grok publish`: a key that registered but cannot sign is worse than none.
-  try {
-    await kp.keyLogin(url, privateKey);
-  } catch (error: any) {
-    color.error(`The key was registered but the test login failed: ${error.message ?? error}`);
     return false;
   }
 
@@ -151,7 +143,9 @@ async function enrollInBrowser(url: string, publicKey: kp.Jwk, name: string,
   // link someone else sent has nothing for the user to type — which is the difference between
   // approving one's own `grok login` and handing an attacker a key to one's account.
   const verify = crypto.randomBytes(4).toString('hex').toUpperCase().slice(0, 6);
-  return await new Promise<Indexable>((resolve, reject) => {
+  let started: () => void;
+  const listening = new Promise<void>((resolve) => started = resolve);
+  const approved = new Promise<Indexable>((resolve, reject) => {
     const timeout = setTimeout(() => {
       server.close();
       reject(new Error('Timed out waiting for the browser. Use `grok login <server> --code <code>` ' +
@@ -182,12 +176,17 @@ async function enrollInBrowser(url: string, publicKey: kp.Jwk, name: string,
         verify,
         cb: `http://127.0.0.1:${port}`,
       }).toString();
-      console.log(`Opening ${origin} in your browser to approve the key...`);
-      console.log(`If it does not open, visit:\n  ${enrollUrl}`);
-      console.log(`\n  Verification code: ${verify}\n`);
+      console.log(`\n  Verification code: ${verify}`);
+      console.log(`  Type it on the page that opens. If the browser does not open, visit:`);
+      console.log(`    ${enrollUrl}\n`);
       openBrowser(enrollUrl);
+      started();
     });
   });
+
+  // The prints above land before the spinner starts, so the code stays readable on screen.
+  await listening;
+  return await color.step(`Waiting for approval in the browser at ${origin}`, () => approved);
 }
 
 function escapeHtml(s: string): string {
