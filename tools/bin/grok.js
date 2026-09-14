@@ -23,6 +23,7 @@ const commands = {
   'docker-gen': require('./commands/docker-gen').dockerGen,
   init: require('./commands/init').init,
   link: require('./commands/link').link,
+  login: require('./commands/login').login,
   publish: require('./commands/publish').publish,
   report: require('./commands/report').report,
   run: require('./commands/run').run,

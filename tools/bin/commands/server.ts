@@ -13,7 +13,7 @@ import {resolveEntity} from '../utils/migrate/walker';
 const ENTITY_TYPES: Record<string, string> = {queries: 'DataQuery', scripts: 'Script', reports: 'UserReport'};
 
 const ENTITIES = ['users', 'groups', 'functions', 'connections', 'queries', 'scripts', 'packages', 'reports', 'files', 'tables'];
-const COMMANDS = ['shares', 'domains', 'raw', 'batch', 'describe', 'healthcheck', 'sync', 'pull', 'push', 'migrate', 'diff', 'bundle'];
+const COMMANDS = ['shares', 'domains', 'raw', 'batch', 'describe', 'healthcheck', 'sync', 'pull', 'push', 'migrate', 'diff', 'bundle', 'token'];
 const VERBS = ['list', 'count', 'get', 'delete'];
 
 export async function server(argv: any): Promise<boolean> {
@@ -53,6 +53,9 @@ export async function server(argv: any): Promise<boolean> {
       return await handleMigrate(dapi, entity, [verb, ...rest].filter(Boolean), argv, output);
     if (entity === 'domains') return await handleDomains(dapi, verb, rest, argv, output);
     if (entity === 'batch') return await handleBatch(dapi, argv, verb, rest, output);
+    // Shell scripts that used to curl /users/login/dev get a token the same way
+    // every other command does, whatever credential the config holds.
+    if (entity === 'token') { console.log(client.token); return true; }
     if (entity === 'raw') return await handleRaw(dapi, verb, rest, argv, output);
     if (entity === 'describe') return await handleDescribe(dapi, verb ?? rest[0], output);
     if (entity === 'healthcheck') return await handleHealthcheck(dapi, argv, output);

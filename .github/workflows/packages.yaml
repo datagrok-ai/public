@@ -466,15 +466,28 @@ jobs:
         env:
           DEV_TEST_DEV_KEY: ${{ secrets.DEV_TEST_DEV_KEY }}
           TEST_TEST_DEV_KEY: ${{ secrets.TEST_TEST_DEV_KEY }}
+          DEV_TEST_PRIVATE_KEY: ${{ secrets.DEV_TEST_PRIVATE_KEY }}
+          TEST_TEST_PRIVATE_KEY: ${{ secrets.TEST_TEST_PRIVATE_KEY }}
         run: |
-          if [[ "${{ steps.datagrok-image.outputs.alias }}" == "test" ]]; then
-            key="$TEST_TEST_DEV_KEY"
-          elif [[ "${{ steps.datagrok-image.outputs.alias }}" == "dev" ]]; then
-            key="$DEV_TEST_DEV_KEY"
+          alias='${{ steps.datagrok-image.outputs.alias }}'
+          # Keypair first (core/docs/KEYPAIR_AUTH.md); the developer key is the fallback
+          # while a stand's *_PRIVATE_KEY secret is not provisioned. The throwaway local
+          # container keeps its built-in 'admin' key - it holds no secret to protect.
+          if [[ "$alias" == "test" ]]; then
+            key="$TEST_TEST_DEV_KEY"; private_key="$TEST_TEST_PRIVATE_KEY"
+          elif [[ "$alias" == "dev" ]]; then
+            key="$DEV_TEST_DEV_KEY"; private_key="$DEV_TEST_PRIVATE_KEY"
           else
-            key='admin'
+            key='admin'; private_key=''
           fi
-          grok config add --default --alias ${{ steps.datagrok-image.outputs.alias }} --server '${{ steps.datagrok-image.outputs.apiUrl }}' --key "$key"
+          if [ -n "$private_key" ]; then
+            mkdir -p ~/.grok/keys && chmod 700 ~/.grok/keys
+            printf '%s' "$private_key" > ~/.grok/keys/${alias}.json
+            chmod 600 ~/.grok/keys/${alias}.json
+            grok config add --default --alias ${alias} --server '${{ steps.datagrok-image.outputs.apiUrl }}'
+          else
+            grok config add --default --alias ${alias} --server '${{ steps.datagrok-image.outputs.apiUrl }}' --key "$key"
+          fi
       - name: Install Grok Dependencies before package publish to Datagrok
         if: ${{ matrix.test == 'test' }}
         timeout-minutes: 20
@@ -543,6 +556,8 @@ jobs:
         env:
           DEV_TEST_DEV_KEY: ${{ secrets.DEV_TEST_DEV_KEY }}
           TEST_TEST_DEV_KEY: ${{ secrets.TEST_TEST_DEV_KEY }}
+          DEV_TEST_PRIVATE_KEY: ${{ secrets.DEV_TEST_PRIVATE_KEY }}
+          TEST_TEST_PRIVATE_KEY: ${{ secrets.TEST_TEST_PRIVATE_KEY }}
         timeout-minutes: 20
         run: |
           check_container=false
@@ -564,14 +579,14 @@ jobs:
 
           if [[ "${check_container}" == "true" ]] ; then
             if [[ "${{ steps.datagrok-image.outputs.alias }}" == "test" ]]; then
-              key="$TEST_TEST_DEV_KEY"
+              key="$TEST_TEST_DEV_KEY"; export GROK_PRIVATE_KEY="$TEST_TEST_PRIVATE_KEY"
             elif [[ "${{ steps.datagrok-image.outputs.alias }}" == "dev" ]]; then
-              key="$DEV_TEST_DEV_KEY"
+              key="$DEV_TEST_DEV_KEY"; export GROK_PRIVATE_KEY="$DEV_TEST_PRIVATE_KEY"
             else
               key='admin'
             fi
             for i in $(seq 1 30); do
-              token=$(.github/scripts/dev-login.sh "${{ steps.datagrok-image.outputs.apiUrl }}" "$key")
+              token=$(.github/scripts/grok-token.sh "${{ steps.datagrok-image.outputs.apiUrl }}" "$key")
               if [[ "$token" != "null" && -n "$token" ]]; then
                 break
               fi

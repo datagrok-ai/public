@@ -315,8 +315,13 @@ export interface Config {
   servers: {
     [alias: string]: {
       url: string,
+      /** Developer key. Deprecated - see `grok login`. */
       key: string,
-      registry?: string
+      registry?: string,
+      /** Private key file written by `grok login`; defaults to ~/.grok/keys/<alias>.json. */
+      keyFile?: string,
+      /** Who the key belongs to, for the login prompt and error messages. */
+      login?: string,
     }
   },
   default: string,
