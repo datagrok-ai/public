@@ -96,7 +96,7 @@ function applyPostProcessing(
   viewTable: DG.DataFrame, columnNames: string[],
   addPiechart: boolean, addForm: boolean, molColIdx: number, props?: any,
 ): void {
-  const tableView = grok.shell.getTableView(viewTable.name);
+  const tableView = grok.shell.tableView(viewTable.name);
   if (!tableView)
     return;
 
@@ -139,7 +139,7 @@ function applyColumnColorCoding(column: DG.Column, model: Model): void {
 export function addColorCoding(
   table: DG.DataFrame, columnNames: string[], showInPanel: boolean = false, props?: any,
 ): void {
-  const tableView = grok.shell.getTableView(table.name);
+  const tableView = grok.shell.tableView(table.name);
   if (!tableView && !showInPanel) return;
 
   for (const columnName of columnNames) {
@@ -238,7 +238,7 @@ function createPieSettings(table: DG.DataFrame, columnNames: string[], propertie
 export function addSparklines(
   table: DG.DataFrame, columnNames: string[], index: number, name?: string, props?: any,
 ): void {
-  const tv = grok.shell.getTableView(table.name);
+  const tv = grok.shell.tableView(table.name);
   if (!tv)
     return;
   const {grid} = tv;
@@ -287,7 +287,7 @@ function getTooltipContent(model: any, value: any): string {
 }
 
 export function addCustomTooltip(table: DG.DataFrame, props?: any): void {
-  const view = grok.shell.getTableView(table.name);
+  const view = grok.shell.tableView(table.name);
   view.grid.onCellTooltip((cell, x, y) => {
     if (!cell.isTableCell || typeof cell.cell.value !== 'number')
       return;
@@ -457,7 +457,7 @@ async function createPieChartPane(semValue: DG.SemanticValue): Promise<HTMLEleme
 
   const { dataFrame, column, rowIndex, value } = cell;
 
-  const view = grok.shell.getTableView(dataFrame.name);
+  const view = grok.shell.tableView(dataFrame.name);
   const gridCol = view.grid.col(column.name);
   const gridCell = view.grid.cell(column.name, rowIndex);
 

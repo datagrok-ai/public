@@ -318,6 +318,28 @@ describe('push', () => {
     expect(result.items.some((r) => r.action === 'failed')).toBe(false);
   });
 
+  it('leaves a platform connection where the target keeps it', async () => {
+    const demoFiles = '99999999-1111-2222-3333-444444444444';
+    const project: [string, BundleEntity] = [PROJECT_ID, {type: 'Project', json: {
+      '#type': 'Project', id: PROJECT_ID, name: 'Dash', namespace: 'Admin:', isDashboard: true,
+      relations: [{id: 'r1', isLink: false, entity: {'#type': 'EntityRecord', id: TABLE_ID}},
+        {id: 'r2', isLink: false, entity: {'#type': 'EntityRecord', id: demoFiles}}],
+    }}];
+    const table: [string, BundleEntity] = [TABLE_ID, {type: 'TableInfo', json: {'#type': 'TableInfo', id: TABLE_ID, name: 'Cereal', namespace: 'Admin:'}}];
+    const stored: Record<string, any> = {};
+    const {dapi, calls} = makeDapi((method, path, body) => {
+      if (path.startsWith('/entities?')) return [];
+      if (path.startsWith(`/entities/${demoFiles}`))
+        return {'#type': 'DataConnection', id: demoFiles, name: 'DemoFiles', namespace: 'System:', dataSource: 'Files'};
+      if (method === 'POST') { stored[body.id] = {...body, relations: []}; return body; }
+      const id = path.split('?')[0].split('/').pop()!;
+      return stored[id] ?? notFound();
+    });
+    await push(dapi, bundleOf([project, table]), {onConflict: 'fail'}, () => {});
+    const written = calls.filter((c) => c.path === '/projects?saveRelations=true');
+    expect(written[written.length - 1].body.relations.map((r: any) => r.entity.id)).toEqual([TABLE_ID]);
+  });
+
   it('does not re-save relations of a project the target already matches', async () => {
     const relations = [{id: 'r1', isLink: false, entity: {'#type': 'EntityRecord', id: TABLE_ID}}];
     const project = {'#type': 'Project', id: PROJECT_ID, name: 'Dash', namespace: 'Admin:', isDashboard: true, relations};

@@ -32,18 +32,12 @@ export async function parseUserGroupString(s: string | null) {
 
 export async function getDefaultSharingSettings(): Promise<HTDefaultCampaignSharing> {
   try {
-    const ps = (_package.settings ?? await _package.getSettings()) as unknown as Map<string, any> | Record<string, any>;
+    const ps = _package.settings;
     const settings: HTDefaultCampaignSharing = {view: [], edit: []};
     if (!ps)
       return settings;
-    // this hack is needed because api says it will return Map, but it actually returns object...
-    if (ps instanceof Map) {
-      settings.view = await parseUserGroupString(ps.get('view') ?? '');
-      settings.edit = await parseUserGroupString(ps.get('edit') ?? '');
-    } else {
-      settings.view = await parseUserGroupString(ps.view ?? '');
-      settings.edit = await parseUserGroupString(ps.edit ?? '');
-    }
+    settings.view = await parseUserGroupString(ps.view ?? '');
+    settings.edit = await parseUserGroupString(ps.edit ?? '');
     return settings;
   } catch (e) {
     console.error(e);
@@ -52,10 +46,10 @@ export async function getDefaultSharingSettings(): Promise<HTDefaultCampaignShar
 }
 
 export async function getDefaultCampaignStorageSettings(): Promise<string> {
-  const ps = (_package.settings ?? await _package.getSettings()) as unknown as Map<string, any> | Record<string, any>;
+  const ps = _package.settings;
   if (!ps)
     return defaultCampaignStorage;
-  const res = (ps instanceof Map ? ps.get(defaultCampaignStoragePropName) : ps[defaultCampaignStoragePropName]) ?? defaultCampaignStorage;
+  const res = ps[defaultCampaignStoragePropName] ?? defaultCampaignStorage;
   // check if it exists
   if (!(await grok.dapi.files.exists(res)))
     return defaultCampaignStorage;

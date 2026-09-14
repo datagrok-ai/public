@@ -88,6 +88,9 @@ export const pickFromContextMenu = When('user picks {string} from the context me
   await v.pickMenuPath(page, path);
 }, {tier: 'ui', description: `right-clicks the element (its "view" area when it reports one) and clicks ${PATH}`});
 
+export const pickFromOpenMenu = When('user picks {string} from the open menu', (page: Page, path: string) => v.pickMenuPath(page, path),
+  {tier: 'ui', description: `clicks ${PATH} in a menu something else opened — a ribbon dropdown, an icon's popup`});
+
 export const pickFromAreaContextMenu = When('user picks {string} from the context menu of the {string} area of {widget}',
   async (page: Page, path: string, area: string, target: ElementRef) => {
     await v.openContextMenuOf(page, target, area);
@@ -131,6 +134,7 @@ export const hoverArea = When('user hovers over the {string} area of {widget}', 
   const c = v.centerOf(await v.hitArea(page, target, area, true));
   await page.mouse.move(c.x - 3, c.y - 3);
   await page.mouse.move(c.x, c.y);
+  await v.settle(page, target);
 }, {tier: 'ui', description: 'snapshots the canvas first, so "should not have repainted" can follow'});
 
 export const clickAreaHolding = When('user clicks on the {string} area of {widget} holding {key}', async (page: Page, area: string, target: ElementRef, key: string) => {
@@ -332,9 +336,10 @@ export const readingFinite = Then('the {string} reading of {widget} should be a 
 
 export const readingBetween = Then('the {string} reading of {widget} should be between {float} and {float}',
   async (page: Page, name: string, target: ElementRef, lo: number, hi: number) => {
-    let last = NaN;
-    await expect.poll(async () => (last = Number(await v.readValue(page, target, name))) >= lo && last <= hi,
-      {message: `"${name}" reading of ${target.phrase} is ${last}, not between ${lo} and ${hi}`}).toBe(true);
+    await expect.poll(async () => {
+      const value = Number(await v.readValue(page, target, name));
+      return value >= lo && value <= hi ? true : value;
+    }, {message: `"${name}" reading of ${target.phrase} should be between ${lo} and ${hi}`}).toBe(true);
   }, {description: 'a reading that carries float noise or depends on the layout, bounded on both sides'});
 
 export const pickColorSwatch = When('user picks the color {string} in the color picker dialog', async (page: Page, hex: string) => {
@@ -469,7 +474,7 @@ export const eventFired = Then('{string} event should have fired on {widget}', (
 export const eventNotFired = Then('{string} event should not have fired on {widget}', (page: Page, event: string, target: ElementRef) =>
   v.expectNotFired(page, target, event), {description: 'not once since "listens for"; the subscription stays'});
 
-export const noErrors = Then('no errors should have been logged', (page: Page) => {
+export const noErrors = Then('no errors should have been logged', async (page: Page) => {
   expect(takeErrors(page), 'console errors and page errors since the last check').toEqual([]);
 }, {description: 'console errors and uncaught exceptions since the previous check, the scenario start or the login; checking clears them'});
 

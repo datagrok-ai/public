@@ -52,6 +52,7 @@ Feature: Forms viewer field set, row binding, sort mirroring and pinning
     And no errors should have been logged
 
   Scenario: The leading card is the current row and follows it
+    When user moves the pointer away from grid
     Then the "card kind of card 1" reading of forms viewer should be "current"
     And the "card kind of card 2" reading of forms viewer should be "mouse-over"
     And the "record of card 2" reading of forms viewer should be ""

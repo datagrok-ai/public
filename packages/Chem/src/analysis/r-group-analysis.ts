@@ -179,7 +179,7 @@ export function rGroupAnalysis(col: DG.Column): void {
         }).call(undefined, undefined, {processed: false});
         const res: RGroupDecompRes = funcCall.getOutputParamValue();
         if (res) {
-          const view = grok.shell.getTableView(col.dataFrame.name);
+          const view = grok.shell.tableView(col.dataFrame.name);
           //make highlight column invisible
           if (res.highlightColName)
             view.grid.col(res.highlightColName)!.visible = false;

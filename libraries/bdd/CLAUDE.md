@@ -48,12 +48,18 @@ and `isRenderPending`, `onContextMenuShown/Closed`, `getWidgetStatus().hitAreas/
   package's Playwright the library's copy (redo after `npm ci`).
 - **One page per worker** (`harness.ts`): `feature(test)` reuses the worker's page, `afterEach`
   resets the shell (Escape for dialogs and menus, `ui.tooltip.hide`, notices removed, `closeAll`,
-  Home current), `afterAll` runs the feature's `atFeatureEnd` cleanups. Never open several
+  Home current), `afterAll` runs all the feature's `atFeatureEnd` cleanups and fails if any fails. Never open several
   Datagrok pages in one browser.
 - **`user is logged in` only resets when the page is in the shell**; it sets `simpleMode` (view
   tabs hidden — switch views by name), clears the error and balloon floors, installs the in-page
   runtime. Package autostarts land 3 s after boot; a feature that needs one awaits
-  `the package autostarts have completed`.
+  `the package autostarts have completed`. The first shell load of a page waits 180 s and warns
+  past 30 s: a starved `pub serve` hands out the 32 MB bundle in a minute, and that is a delay
+  once per page, not the feature's failure.
+- **A row test is checked before the rows are scanned** (`viewer-runtime.ts` `checkTest`): a
+  value the column does not hold (a typo) fails naming the values it has, a range over a text
+  column fails; an empty result is legal for a filter or a selection (a range that keeps no row
+  empties a chart on purpose), and a claim about rows none of which exist fails.
 - **A dataset is read once per page and every feature gets a clone** (`platform/steps.ts`
   `openTable`): the clone keeps the semantic types, so the platform's detection on it skips the
   typed columns; the step still ends on `ddt-semantic-type-detected` for that frame, and makes
@@ -73,7 +79,8 @@ and `isRenderPending`, `onContextMenuShown/Closed`, `getWidgetStatus().hitAreas/
   and data step takes one; **no check moves it**, so several can follow one change.
 - **A settle ends when the viewer says nothing is pending** (`isRenderPending`) and a render has
   landed — through every pass it announces; 10 s pending is a platform failure; a viewer without
-  the signal falls back to a 300 ms cap. Settles are armed before the change. Negative checks
+  the signal falls back to a 300 ms cap. The resizer includes the first layout: otherwise a grid
+  can report ready with its interactive overlay still 300×150. Settles are armed before the change. Negative checks
   (`not repainted`, `same range`, `same reading`) read after `quiet`.
 - **A gesture aims where the viewer has finished putting the thing**: `hitArea(…, beforeChange)`
   settles first; `menuPoint` also waits for the anchor's box to hold for two frames; hit areas are
@@ -81,6 +88,11 @@ and `isRenderPending`, `onContextMenuShown/Closed`, `getWidgetStatus().hitAreas/
   `menuPoint` skips the viewer waits for a non-viewer.
 - **Typed text is verified and retyped** (`typeVerified`); an editor that already has the focus
   is not clicked; a hit area typed into must end up owning the focus (`typeIntoArea`).
+- **Platform keys are normalized in the shared gesture helpers.** `Control` / `Ctrl` becomes
+  `ControlOrMeta`, including held modifiers for drags and legends; typing and clearing also
+  select all with the platform modifier. `Delete` / `Del` follows `d4/shortcuts.dart`
+  (Backspace on macOS, Delete elsewhere). Physical keys are `ControlLeft` / `ControlRight`,
+  `ForwardDelete` and `Backspace`; the grid's custom current-cell copy requires `ControlLeft+Shift+C`.
 - **Every Dart column picker goes through `pickInColumnGrid`**: the first letter is pressed on the
   selector, the name retyped until the box holds it, Enter pressed on the box, and a popup still
   open afterwards is the failure.
@@ -100,8 +112,28 @@ and `isRenderPending`, `onContextMenuShown/Closed`, `getWidgetStatus().hitAreas/
   match and prefer the visible ones; `visible`/`hidden` over several matches = any/none.
 - **Labels are found first, items second** (`byLabel`, `:scope >` labels); menu items match
   their own label, not their children's.
+- **The context panel renders the current object (`grok.shell.o`) and nothing else**
+  (`property_panel.dart` on `onCurrentObjectChanged`; `grok.shell.windows.showContextPanel`
+  shows it). The setter drops a change to the object already current, one within 2 s of a
+  property edit and one while the object is frozen. An explicit click in a top-level grid releases
+  the property-edit guard, so a cell clicked just after expanding a pane still becomes current:
+  `the context panel is open` is the Given, `the context panel should show "X"` names the object
+  before any pane is read, and a failure inside the panel reports the current object and the
+  panes in the DOM but not shown (`explain`). **A context pane that counts its items is hidden
+  while the count is 0** (`accordion.css`, `.grok-prop-panel .d4-accordion-pane[d4-info="0"]`),
+  and the count arrives asynchronously: Activity on a space created a second ago is `present`,
+  not `visible`, until the server has logged the creation.
+- **Escape goes to the topmost dialog** (`press`): the dialog closes on a keydown inside its own
+  root, and the focus is not reliably there (the grid's 1 s timer, a menu that just closed).
+- **A gesture is dispatched once; the target is decided before it** (`pickMenuPath`): a click
+  whose handler rebuilds a viewer synchronously (the tile viewer, 0.9 s idle for 1000 rows, past
+  3 s under four workers) outlives a short cap with its work done, and a fallback click undoes
+  the toggle. Never `click().catch(() => otherClick())`.
 - **Hover is two pointer events and never sleeps**; it waits in-page for the element's own
   `mouseenter` and repeats the pair when a coalesced move swallowed it.
+- **An area hover settles the viewer after moving the pointer.** Grid cell tooltip requests use
+  the tracked debounce, including in nested correlation grids. Negative tooltip text checks count
+  visible matching tooltips; a hidden or absent tooltip has no displayed text.
 - **Step specificity**: more literal text wins, then fewer parameters; a tie is a compile error.
   Viewer steps take `{widget}` (a phrase ending in viewer/widget, `grid`, `filter panel`).
 - **Playwright scopes inner selectors to the element**: a `labelSelector`, a part or a `has:`
@@ -110,6 +142,22 @@ and `isRenderPending`, `onContextMenuShown/Closed`, `getWidgetStatus().hitAreas/
   `--disable-accelerated-2d-canvas`, so a repaint check reads the same pixels either way.
 - **Codegen emits names, never selectors**; `\n` endings, no timestamps; orphans removed on
   compile and reported by `--check`.
+
+- **Server fixture names may include `{run}`**: the compiler resolves strings, element phrases,
+  tables and doc strings through the feature session. One UUID per feature instance keeps workers
+  and repeated runs independent; never generate it at compile time.
+- **Spaces cleanup verifies IDs against every page of the root listing.** Spaces smart filters
+  can return an empty list for an existing ID, so a filtered result cannot prove deletion. Match
+  the captured IDs locally, delete by exact ID, and retain unrelated roots. Include a fixture's
+  parent root in its cleanup names because the listing does not include child spaces.
+  After setup cleanup, refresh an open Browse tree: API deletion leaves cached nodes behind,
+  so recreating the same name otherwise targets a stale node or resolves to two nodes.
+- **Model cards are not completion signals.** The Train Model preview reports `aria-busy` before
+  debounce/queued training and `aria-invalid` for unavailable or failed results. `model preview
+  should be ready` requires the latest completed training, predictions, charts and history.
+- **Nested viewers resolve by their own root.** A scatter plot inside a JS viewer must not resolve
+  to the enclosing viewer merely because that viewer contains its element.
+
 
 ## Facts that cost a run each
 
@@ -144,6 +192,27 @@ and `isRenderPending`, `onContextMenuShown/Closed`, `getWidgetStatus().hitAreas/
   `data-u2-owner` = the nearest named ancestor; plain `button()`, toolbar buttons and tab headers
   carry no `data-u2`. A `funcForm` number field loses a typed leading "-" (unreported u2 bug).
 - A u2 name is one token: the locator tries the phrase without spaces and with dashes.
+- The Dart column picker ("Select columns...") is a grid viewer: `text of cell N of __name` names
+  a row's column, `cell N of x` is its checkbox, its Search input filters without renumbering. A
+  Dart property grid category (`tr.property-grid-category`) has no aria state, only its icon
+  (`property-grid-icon-minus` open, `-plus` folded), which `readExpanded` reads. The 2 s drop of the
+  Invariants (`AppEvents.propertyEdited`) reaches across features: a settings click on a new viewer
+  right after another feature edited a property leaves the panel on the old one.
+- A Dart choice input's phrase can resolve to its `<select>` itself; `select` handles both. The Share
+  dialog of an entity that is not a project (a model) fetches the entity's project after it opens and
+  its OK throws "Not initialized" before that: wait for the owner's grant row ("Full access").
+- A viewer outside a table view (a function view's docked chart, a facet's small multiples) is
+  reached through `DG.Widget.find(root)`; the function view's tabs are dock-spawn-ts handles in a
+  shadow root (`.dockspan-tab-handle`, a CSS locator pierces it), and the viewers of its other
+  tabs stay in the DOM with no rectangle — a claim names the tab it reads.
+- A compute form's parameter switch is a Dart `SwitchInput` (`role="switch"`, `aria-checked`)
+  that is not inside the input it governs: the sensitivity form puts it in the input's host, the
+  fitting form before it as a sibling — `switchOf` looks in the element, then back over the
+  siblings. Switching a parameter on replaces its input with a min and a max.
+- The platform's script view is CodeMirror 5 (`.CodeMirror`), the packages' editors CodeMirror 6
+  (`.cm-editor`); a document is not an input value, the text goes in at the caret. The Model Hub
+  gallery is on the page and empty for seconds after `Compute2:modelCatalog` returns: wait for
+  cards, not the element.
 
 ## Environment
 
@@ -153,9 +222,20 @@ and `isRenderPending`, `onContextMenuShown/Closed`, `getWidgetStatus().hitAreas/
   affectionate_einstein`.
 - `grok-bdd run` defaults to 4 workers (`PLAYWRIGHT_WORKERS` overrides); the installed
   `@datagrok-libraries/test` base config is older than the checkout's and says one.
+- A sharing feature shares with `DATAGROK_SHARING_LOGIN` or, unset, with the `bddsecond` user
+  `global-setup.ts` creates through `POST /public/v1/users` with the dev-key token (a missing
+  login answers 200 with an `ApiError` body; users cannot be deleted, so it stays).
+- `pub serve` degrades under a run: the direct port (`:63343`) has served the bundle in 46 s
+  while nginx at `:8888` answered from cache in 3 s; a run started while it is starved fails every
+  feature at the shell load. `curl -o /dev/null -w '%{time_total}' localhost:63343/login.dart.js_1.part.js`
+  under a few seconds first.
 - Junctions, not `mklink /J`, from Git Bash (`New-Item -ItemType Junction`); `grok-bdd link` again
   after any `npm link`/`npm ci` in a package.
 - Bash tool: cwd persists across calls, long heredocs fail — write files with the Write tool.
+- Node 18 is what the libraries CI runs, and `@playwright/test` 1.62 exits at load below Node 20:
+  the library pins `~1.61` (the last that runs on 18) until CI moves on; `npm test` there is the
+  build, the drift check of the library's own project and the unit tests, with the locator tests
+  skipping themselves where no Chromium is installed.
 
 ## Conventions
 

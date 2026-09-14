@@ -33,7 +33,7 @@ export async function demoBio01bUI() {
     await demoScript
       .step(`Load DNA sequences`, async () => {
         grok.shell.windows.showContextPanel = false;
-        grok.shell.windows.showProperties = false;
+        grok.shell.windows.showContextPanel = false;
 
         [df, treeHelper, dendrogramSvc] = await Promise.all([
           _package.files.readCsv(dataFn),

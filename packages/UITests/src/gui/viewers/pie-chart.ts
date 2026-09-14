@@ -71,7 +71,7 @@ category('Viewers: Pie Chart', () => {
     await uploadProject('Test project with Pie Chart', demog.getTableInfo(), v, demog);
     grok.shell.closeAll();
     await grok.dapi.projects.open('Test project with Pie Chart');
-    v = grok.shell.getTableView('demog 1000');
+    v = grok.shell.tableView('demog 1000');
     isViewerPresent(Array.from(v.viewers), 'Pie chart');
     const pieChart = findViewer('Pie chart', v);
 

@@ -15,6 +15,7 @@ import * as color from '../utils/color-utils';
 import {check} from './check';
 import {generateCeleryArtifacts} from '../utils/python-celery-gen';
 import {generateQueueArtifacts} from '../utils/queue-worker-gen';
+import {devKeyFetch} from '../utils/dev-key';
 
 const {exec, execSync} = require('child_process');
 
@@ -258,7 +259,7 @@ function listRecursive(basePath: string, rel: string): {relPath: string, fullPat
 async function getUserLogin(host: string, devKey: string): Promise<{login: string, token: string} | null> {
   let loginResp;
   try {
-    loginResp = await fetch(`${host}/users/login/dev/${devKey}`, {method: 'POST'});
+    loginResp = await devKeyFetch(`${host}/users/login/dev`, `${host}/users/login/dev/${devKey}`, devKey, {method: 'POST'});
   } catch (e: any) {
     color.warn(`Cannot reach server ${host}: ${e.message || e}`);
     return null;
@@ -508,9 +509,10 @@ async function fallbackImage(
 export async function processPackage(debug: boolean, rebuild: boolean, host: string, devKey: string, packageName: any, dropDb: boolean, suffix?: string, hostAlias?: string, registry?: string, rebuildDocker?: boolean, skipDockerRebuild?: boolean) {
   // Validate server connectivity and dev key
   let timestamps: Indexable = {};
-  let url = `${host}/packages/dev/${devKey}/${packageName}`;
+  const url = `${host}/packages/dev/${packageName}`;
+  const legacyUrl = `${host}/packages/dev/${devKey}/${packageName}`;
   try {
-    const checkResp = await fetch(url + '/timestamps');
+    const checkResp = await devKeyFetch(`${url}/timestamps`, `${legacyUrl}/timestamps`, devKey);
     const checkData = await checkResp.json();
     if (checkData['#type'] === 'ApiError') {
       color.error(checkData.message);
@@ -643,14 +645,14 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
   zip.append(JSON.stringify(localTimestamps), {name: 'timestamps.json'});
 
   // Upload
-  url += `?debug=${debug.toString()}&rebuild=${rebuild.toString()}&dropDb=${(dropDb ?? false).toString()}`;
+  let query = `?debug=${debug.toString()}&rebuild=${rebuild.toString()}&dropDb=${(dropDb ?? false).toString()}`;
   if (suffix)
-    url += `&suffix=${suffix.toString()}`;
+    query += `&suffix=${suffix.toString()}`;
   await zip.finalize();
   const zipBuffer = Buffer.concat(chunks);
 
   try {
-    const body = await fetch(url, {
+    const body = await devKeyFetch(url + query, legacyUrl + query, devKey, {
       method: 'POST',
       body: zipBuffer,
     });

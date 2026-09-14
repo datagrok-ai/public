@@ -155,7 +155,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     buildPerRoundOverrides, refreshValidation: () => ctx.refreshValidation(),
   });
 
-  const tabs = ui.tabControl(null, false);
+  const tabs = ui.tabControl(null, {vertical: false});
   tabs.root.style.width = '100%';
   tabs.root.style.flex = '1 1 0';
   tabs.root.style.minHeight = '0';

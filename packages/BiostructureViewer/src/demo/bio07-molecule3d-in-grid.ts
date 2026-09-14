@@ -17,7 +17,7 @@ export async function demoBio07NoScript(): Promise<void> {
   const pi = DG.TaskBarProgressIndicator.create('Demo Proteins ...');
   try {
     grok.shell.windows.showContextPanel = false;
-    grok.shell.windows.showProperties = false;
+    grok.shell.windows.showContextPanel = false;
 
     let csv: string;
     let df: DG.DataFrame;
@@ -73,7 +73,7 @@ export async function demoBio07UI(): Promise<void> {
     )
       .step('Loading structures', async () => {
         grok.shell.windows.showContextPanel = false;
-        grok.shell.windows.showProperties = false;
+        grok.shell.windows.showContextPanel = false;
 
         df = await _package.files.readCsv(pdbCsvFn);
         view = grok.shell.addTableView(df);

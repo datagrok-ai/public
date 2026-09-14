@@ -42,6 +42,14 @@ library's runtime resolves it from its own directory; the command moves the pack
 `node_modules/.bdd-link-backup/` and links the library's in its place (`--undo` puts it back).
 Once the library is published, the dependency becomes a version and `link` goes away.
 
+If `grok-bdd run` reports **`Requiring @playwright/test second time`**, run
+`npx grok-bdd link` from the package directory and retry. Binding discovery imports both
+the library's bindings and the package's bindings, so this can fail during the initial
+compile check, before Playwright starts a browser. Two installations of the **same version**
+also trigger the error: they must resolve to the same physical copy. Repeat the link after
+`npm ci` or another dependency install replaces it; reinstalling the same version alone
+does not fix it.
+
 **What the stand needs**: a platform built from `core` at or after 2026-09-10 (the viewer
 features rely on signals the core gained for them); a login — global setup mints a token from the
 dev key of the `localhost` entry in `~/.grok/config.yaml` (or `DATAGROK_SERVER=<name>`), falls back
@@ -51,7 +59,8 @@ open are registered in `bindings/platform/datasets.ts`: `demog-1000` is
 `System:DemoFiles/demog-1000.csv`, uploaded once with
 `grok s files put public/packages/ApiTests/files/datasets/demog-1000.csv "System:DemoFiles/demog-1000.csv" --host localhost`;
 `spgi` comes with the published `Chem` package (`grok s packages install Chem`). A sharing feature
-needs a second account in `DATAGROK_SHARING_LOGIN`.
+shares with the account in `DATAGROK_SHARING_LOGIN`, or, unset, with the `bddsecond` user the
+setup creates on the stand (a dev key is needed for that; users cannot be deleted, so it stays).
 
 `grok-bdd init` runs in the package directory and creates what is missing, never overwriting:
 
@@ -65,7 +74,9 @@ needs a second account in `DATAGROK_SHARING_LOGIN`.
 ```
 
 plus `.vscode/settings.json` for the Cucumber extension, the `.gitignore` lines
-(`bdd/test-results/`, `bdd/e2e/`, `bdd/.auth.json`) and a `test:bdd` script.
+(`bdd/test-results/`, `bdd/e2e/`, `bdd/.auth.json`), a `test:bdd` script, and `bdd` in the
+package tsconfig's `exclude` (webpack type-checks every `.ts` the tsconfig reaches, and `bdd/` is a
+Node project with a tsconfig of its own).
 
 ```bash
 grok-bdd init               # bootstrap bdd/ in the current package (idempotent)
@@ -93,6 +104,12 @@ semantic types the first detection found. What a feature leaves on the server it
 (`atFeatureEnd`). Playwright runs and reports one test per scenario (and per outline row), each
 with its own trace; a `Background` runs before every scenario, as Gherkin says.
 
+Server fixtures can use `{run}` in their names, for example `BDD-Share-Model-{run}`. The suffix is
+unique per feature instance (including each worker and repeat) and stays the same across its
+scenarios. String arguments, element phrases, data tables and doc strings resolve it at runtime;
+generated specs stay deterministic. Cleanup registered with `atFeatureEnd` attempts every callback
+and fails the run if any callback fails.
+
 **`@journey`** on the feature changes that: the feature is one test, the Background runs once, and
 the scenarios run in order on the same shell state, each a soft step — a failing scenario is
 recorded and the next one still runs, and the test fails at the end listing them. Use it for a
@@ -103,6 +120,10 @@ its error and balloon floors. `-g` selects the whole journey.
 **`@known-failure`** on a scenario says the product has the defect it describes: its failure does
 not fail the test, and its passing does ("the bug is fixed, remove the tag"). Nothing is softened
 to stay green.
+
+The [known-failure audit](KNOWN_FAILURES.md) records the reproduced defects and the stale tag
+removed in September 2026. Inspect the failing step inside each tagged scenario: a green journey
+alone does not establish that it failed for the intended reason.
 
 ## Reading a failure
 
@@ -183,7 +204,9 @@ list is the reference; this is the map:
   (`types` / `enters` = types and commits), keys, `selects`, checks, expands, drags, `fills in:`;
   `should be/become {state}`, text, value and item counts. States: visible, hidden, present,
   absent, enabled, disabled, checked, unchecked, partially checked, selected, empty, expanded,
-  collapsed, focused, invalid, valid — each read from the ARIA state the element uses.
+  collapsed, focused, invalid, valid, ready — each read from the ARIA state the element uses.
+  `ready` requires explicit `aria-busy="false"` and no `aria-invalid="true"`; absent readiness
+  markup never counts as a completed result.
 - **The shell** (`bindings/platform/steps.ts`): `user is logged in`, `user opens {dataset}
   dataset` (also `keeping the first N rows [as "name"]`), switching views and table views,
   projects saved and reopened (deleted at feature end), apps, the browse panel, autostarts.
@@ -209,6 +232,18 @@ Parameter types: `{element}` (any phrase), `{widget}` (a phrase naming a viewer 
 for a package's own steps come from `@datagrok-libraries/bdd/runtime`: `locate`, `gestures.*`,
 `viewers.*` (`hitArea`, `hitAreas`, `readValue`, `settle`, `snapshot`, `onViewer`, …),
 `expectState`, `expectText`, `atFeatureEnd`.
+
+The shared gesture helpers interpret `Control` / `Ctrl` as the platform's primary modifier:
+Control on Windows/Linux, Command on macOS. Existing `user presses Control+C` and
+`… holding Control` steps therefore work on both. This also covers modifier keys held by
+drag and legend helpers, and select-all inside the typing and clearing helpers. Internally,
+Playwright's `ControlOrMeta` resolves the modifier (requires Playwright 1.45+).
+
+`Delete` / `Del` follows Datagrok's command convention: Backspace on macOS, Delete on
+Windows/Linux, so `user presses Shift+Delete` removes selected rows on either platform.
+For a physical key, use `ControlLeft` / `ControlRight`, `ForwardDelete` or `Backspace`.
+The grid's custom current-cell copy specifically checks physical Control, so that one step
+uses `user presses ControlLeft+Shift+C`. `Meta` / `Cmd` and explicit `ControlOrMeta` also work.
 
 ## Tiers, and the `viewers` tier
 
@@ -247,6 +282,11 @@ lands is reported as the platform failure it is. **Say what the claim is**: `rep
 change detector, one pixel; a shape gets its own evidence (an area's ink, a colour in an area, a
 reading), a chrome toggle takes `by at least N pixels`.
 
+Area hovers also settle before the next step. Grid cell tooltip requests participate in the
+core viewer's pending-work signal, including the nested correlation grid. Tooltip text checks
+consider visible tooltips only; hidden retained text and an absent tooltip satisfy a negative
+check. A served core must include the tracked grid tooltip debounce for these absence checks.
+
 A JS viewer takes part by giving the runtime what a Dart viewer gives it: `getWidgetStatus()`
 with its canvas under `parts`, `hitAreas` in CSS px of it and named `values`; a `get
 isRenderPending()` true from the render request to the paint; and an `onRendered` observable.
@@ -269,11 +309,19 @@ The official Cucumber extension needs, in the package's `.vscode/settings.json`:
 custom types are read from the glue). A step shown as undefined while `grok-bdd lint` resolves it
 means the settings file is not valid JSON or the glue globs miss the tier directories.
 
+Settings are relative to the folder opened in VS Code; nested `.vscode/settings.json` files
+are not inherited. With the core repository open, use `public/packages/*/bdd/features/**/*.feature`
+for features, and `public/libraries/bdd/bindings/**/*.ts` plus
+`public/packages/*/bdd/bindings/**/*.ts` for glue in the root `.vscode/settings.json`.
+Include the same `state` parameter type there. With `public/` open, omit the `public/` prefix.
+
 ## Developing the library
 
 `npm run build` compiles `src/`, `bindings/` and the Playwright config to `dist/`; `npm run
 test:unit` runs the engine tests (nouns, compile, project, init, failure) and the locator test,
-which drives the kinds and the platform names over a static page in the library's Chromium; the
-library is a project itself (`features/platform`) and `npm test` builds and runs it. Translating a
-hand-written spec into a feature, and proving the feature tests what it claims, is the
-`/bdd-translate` skill.
+which drives the kinds and the platform names over a static page in the library's Chromium (and
+skips itself where none is installed); the library is a project itself (`features/platform`):
+`npm test` builds, drift-checks it and runs the unit tests — what the libraries CI runs on Node 18,
+which is why `@playwright/test` is pinned to the last minor that runs there — and `npm run
+test:suite` runs it against a stand. Translating a hand-written spec into a feature, and proving
+the feature tests what it claims, is the `/bdd-translate` skill.

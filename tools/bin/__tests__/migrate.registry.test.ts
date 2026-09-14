@@ -212,6 +212,14 @@ describe('fileNameFor', () => {
     expect(fileNameFor({name: 'b.csv', path: 'dir1/b.csv'})).toBe('dir1.b.csv');
     expect(fileNameFor({name: 'b.csv', path: 'dir2/b.csv'})).toBe('dir2.b.csv');
   });
+
+  it('keeps a name the filesystem can open, and two long names apart', () => {
+    const long = (tail: string) => fileNameFor({namespace: 'TWIG:TrackedChemicalLibraries:', name: 'x'.repeat(240) + tail});
+    for (const name of [long('a'), long('b')])
+      expect(Buffer.byteLength(`${name}-12345678.json`)).toBeLessThanOrEqual(255);
+    expect(long('a')).not.toBe(long('b'));
+    expect(long('a')).toBe(long('a'));
+  });
 });
 
 describe('resolveTypes', () => {

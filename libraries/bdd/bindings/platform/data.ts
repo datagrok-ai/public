@@ -14,8 +14,8 @@ declare const grok: any;
 declare const DG: any;
 
 const list = (s: string): string[] => s.split(/\s*,\s*/).filter((x) => x.length > 0);
-const facts = (page: Page, column: string, test: RowTest, mustMatch = true): Promise<RowFacts> =>
-  evaluate(page, ([c, t, m]) => (window as any).__bdd.rowFacts(c, t, m), [column, test, mustMatch] as [string, RowTest, boolean]);
+const facts = (page: Page, column: string, test: RowTest): Promise<RowFacts> =>
+  evaluate(page, ([c, t]) => (window as any).__bdd.rowFacts(c, t), [column, test] as [string, RowTest]);
 const selectedCount = (page: Page): Promise<number> => page.evaluate(() => grok.shell.t.selection.trueCount as number);
 const filteredCount = (page: Page): Promise<number> => page.evaluate(() => grok.shell.t.filter.trueCount as number);
 
@@ -27,11 +27,11 @@ async function changeTable(page: Page, body: (arg: any) => void, arg: unknown): 
   await settleAll(page);
 }
 
-/** The selection or the filter becomes exactly the rows a test names; a category that matches no
- * row fails (a typo), unless the step allows an empty result. */
-const setRows = (page: Page, what: 'selection' | 'filter', column: string, test: RowTest, negate = false, mustMatch = true): Promise<void> =>
-  changeTable(page, ([w, c, t, n, m]) => { (window as any).__bdd.setRows(w, c, t, n, m); },
-    [what, column, test, negate, mustMatch] as [typeof what, string, RowTest, boolean, boolean]);
+/** The selection or the filter becomes exactly the rows a test names. A value the column does
+ * not hold (a typo) fails in the page with the values it does hold; an empty result is legal. */
+const setRows = (page: Page, what: 'selection' | 'filter', column: string, test: RowTest, negate = false): Promise<void> =>
+  changeTable(page, ([w, c, t, n]) => { (window as any).__bdd.setRows(w, c, t, n); },
+    [what, column, test, negate] as [typeof what, string, RowTest, boolean]);
 
 // --- selection ---------------------------------------------------------------------------------------
 
@@ -170,11 +170,11 @@ export const currentColumnIs = Then('the current column should be {string}', (pa
 // --- filter ------------------------------------------------------------------------------------------
 
 export const filterBetween = When('user filters rows where {string} is between {float} and {float}', (page: Page, column: string, lo: number, hi: number) =>
-  setRows(page, 'filter', column, {between: [lo, hi]}, false, false),
+  setRows(page, 'filter', column, {between: [lo, hi]}),
 {tier: 'api', description: 'the table\'s filter bitset, as a filter viewer would set it; a range no row falls in empties the table on purpose'});
 
 export const filterNotNull = When('user filters rows where {string} is not null', (page: Page, column: string) =>
-  setRows(page, 'filter', column, {notNull: true}, false, false), {tier: 'api', description: 'the table\'s filter bitset, as a filter viewer would set it'});
+  setRows(page, 'filter', column, {notNull: true}), {tier: 'api', description: 'the table\'s filter bitset, as a filter viewer would set it'});
 
 export const filterTo = When('user filters rows where {string} is {string}', (page: Page, column: string, value: string) =>
   setRows(page, 'filter', column, {eq: value}), {tier: 'api', description: 'keeps the category\'s rows only — the table\'s filter bitset'});
@@ -238,8 +238,17 @@ export const deleteSelected = When('user deletes the selected rows', (page: Page
 export const rowCount = Then('the table should have {int} row(s)', (page: Page, count: number) =>
   expect.poll(() => page.evaluate(() => grok.shell.t.rowCount as number), {message: 'rows in the table'}).toBe(count));
 
+/** The one claim about a value the column may no longer hold (the rows were deleted), so it
+ * counts on its own rather than through `rowFacts`, which refuses an unknown value. */
 export const noRowsWhere = Then('the table should have no rows where {string} is {string}', async (page: Page, column: string, value: string) => {
-  await expect.poll(async () => (await facts(page, column, {eq: value}, false)).matching, {message: `rows where ${column} is ${value}`}).toBe(0);
+  await expect.poll(() => evaluate(page, ([c, v]) => {
+    const col = (window as any).__bdd.col(c);
+    let n = 0;
+    for (let i = 0; i < col.length; i++)
+      if (String(col.get(i) ?? '') === v)
+        n++;
+    return n;
+  }, [column, value] as [string, string]), {message: `rows where ${column} is ${value}`}).toBe(0);
 });
 
 // --- columns -----------------------------------------------------------------------------------------
@@ -522,3 +531,50 @@ export const addRangeFilter = When('user adds a range filter on {string} from {f
 export const configureHierarchical = When('user configures the hierarchical filter with columns {string}', (page: Page, columns: string) =>
   filterState(page, {type: 'hierarchical', colNames: list(columns), allEnabled: true}),
 {tier: 'api', description: 'the hierarchical card\'s levels in this order (comma-separated), every node checked'});
+
+// --- a table held in a cell -------------------------------------------------------------------
+
+/** The table a dataframe-valued column of the current table holds in its current row — the
+ * platform's own nesting (a fit's "RMSE by iterations", a sparkline's data): its row count, and
+ * the numbers of one of its columns in row order when one is named. */
+function nestedTable(page: Page, inside: string, column?: string): Promise<{rows: number; values: number[]}> {
+  return page.evaluate(([n, c]) => {
+    const df = grok.shell.t;
+    const holder = df.col(n);
+    if (!holder)
+      throw new Error(`no "${n}" column in ${df.name}; it has: ${df.columns.names().join(', ')}`);
+    const nested = holder.get(Math.max(df.currentRowIdx, 0));
+    if (!nested || !nested.columns)
+      throw new Error(`"${n}" of ${df.name} holds no table`);
+    const values: number[] = [];
+    if (c !== null) {
+      const col = nested.col(c);
+      if (!col)
+        throw new Error(`no "${c}" column in the "${n}" table; it has: ${nested.columns.names().join(', ')}`);
+      for (let i = 0; i < nested.rowCount; i++) {
+        const v = col.get(i);
+        if (typeof v === 'number' && isFinite(v))
+          values.push(v);
+      }
+    }
+    return {rows: nested.rowCount as number, values};
+  }, [inside, column ?? null] as [string, string | null]);
+}
+
+export const nestedSeriesDescends = Then('the {string} column of the {string} table should never increase',
+  async (page: Page, column: string, inside: string) => {
+    const {values} = await nestedTable(page, inside, column);
+    const up: string[] = [];
+    for (let i = 1; i < values.length; i++) {
+      if (values[i] > values[i - 1] + 1e-12)
+        up.push(`${i}: ${values[i - 1]} -> ${values[i]}`);
+    }
+    expect(values.length, `numbers in the "${column}" column of the "${inside}" table`).toBeGreaterThan(1);
+    expect(up, `steps of "${column}" in "${inside}" that go up`).toEqual([]);
+    expect(values[values.length - 1], `the last value of "${column}" against its first`).toBeLessThan(values[0]);
+  }, {tier: 'api', description: 'a monotone series in a table held by a dataframe-valued column of the current row: every step down or flat, the end below the start'});
+
+export const nestedTableRows = Then('the {string} table should have at least {int} row(s)',
+  async (page: Page, inside: string, count: number) => {
+    expect((await nestedTable(page, inside)).rows, `rows of the table in "${inside}"`).toBeGreaterThanOrEqual(count);
+  }, {tier: 'api', description: 'a dataframe-valued column of the current row'});

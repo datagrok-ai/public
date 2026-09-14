@@ -45,8 +45,8 @@ There are three entry points to the API:
 
 For example, to import a dataframe from a CSV file:
 
-1. Type `grok.`. The following options appear: `[shell, chem, data, data, ml]`.
-1. Select the best fitting option, `grok.data`, and press `.`. The following options appear: `[demo, query, compareTables, parseCsv, upload]`.
+1. Type `grok.`. The following options appear: `[ai, chem, dapi, data, decorators, events, functions, log, meta, ml, settings, shell, userSettings]`.
+1. Select the best fitting option, `grok.data`, and press `.`. The following options appear: `[db, demo, files, parseCsv, loadTable, query, joinTables, linkTables, compareTables, ...]`.
 1. Select `grok.data.parseCsv` and press **Enter**. Use IntelliSense to provide the parameters. 
 
 ![grok-intellisense](./grid-adaptive-number-formatting.gif)

@@ -458,7 +458,7 @@ jobs:
           curl -s ${{ steps.datagrok-image.outputs.apiUrl }}/info/server
           curl -s ${{ steps.datagrok-image.outputs.apiUrl }}/admin/health
 
-          token=$(curl -s -X POST ${{ steps.datagrok-image.outputs.apiUrl }}/users/login/dev/admin | jq -r .token)
+          token=$(.github/scripts/dev-login.sh "${{ steps.datagrok-image.outputs.apiUrl }}" admin)
           curl -s -H "Authorization: $token" -H "Content-Type": "application/json" '${{ steps.datagrok-image.outputs.apiUrl }}/admin/plugins/admin/settings' -X POST -d '{"#type":"AdminPluginSettings", "agreementDate":null}'
       - name: Create configuration for grok command-line tool
         if: ${{ matrix.test == 'test' }}
@@ -532,7 +532,7 @@ jobs:
         run: |
           if [[ "${{ steps.datagrok-image.outputs.apiUrl }}" == *"127.0.0.1"* ]]; then
             if [[ "${{ matrix.package }}" == "Chemspace" ]]; then
-              token=$(curl -s -X POST ${{ steps.datagrok-image.outputs.apiUrl }}/users/login/dev/admin | jq -r .token)
+              token=$(.github/scripts/dev-login.sh "${{ steps.datagrok-image.outputs.apiUrl }}" admin)
               curl -s -H "Authorization: $token" -H "Content-Type": "application/json" '${{ steps.datagrok-image.outputs.apiUrl }}/credentials/for/Chemspace.Chemspace' -X POST -d "{\"apiKey\": \"$CHEMSPACE_APIKEY\"}"
             fi
           fi
@@ -571,7 +571,7 @@ jobs:
               key='admin'
             fi
             for i in $(seq 1 30); do
-              token=$(curl -s -X POST ${{ steps.datagrok-image.outputs.apiUrl }}/users/login/dev/$key | jq -r .token)
+              token=$(.github/scripts/dev-login.sh "${{ steps.datagrok-image.outputs.apiUrl }}" "$key")
               if [[ "$token" != "null" && -n "$token" ]]; then
                 break
               fi

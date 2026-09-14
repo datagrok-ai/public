@@ -15,11 +15,10 @@ import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
-import {pressKey, shouldBe, shouldContainText} from '@datagrok-libraries/bdd/bindings/common/steps';
+import {pressKeyIn, shouldBe, shouldContainText} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {clearSelection, colorCategorical, colorConditional, colorLinear, colorLinearOver, colorOff, someSelected} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
-import {addViewerWith, areaColor, areaLessInk, areaMoreInk, areasDiffer, dragSelectionOverArea, hasArea, hoverArea, moreHighlight, noBalloons, noErrors, pickFromAreaContextMenu, pointerAway, propertiesShouldBe, propertyShouldBe, repainted, setProperties, setProperty, someHighlight} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
-import {clickEmptySpace} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
+import {addViewerWith, areaColor, areaLessInk, areaMoreInk, areasDiffer, closeContextMenu, dragSelectionOverArea, hasArea, hoverArea, moreHighlight, noBalloons, noErrors, pickFromAreaContextMenu, pointerAway, propertiesShouldBe, propertyShouldBe, repainted, setProperties, setProperty, someHighlight} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Box plot statistics and coloring", () => {
@@ -65,14 +64,14 @@ test.describe("Box plot statistics and coloring", () => {
       await session.step(59, "Then \"Show Total Count\" property of box plot viewer should be \"false\"", () => propertyShouldBe(page, "Show Total Count", el("box plot viewer"), "false"));
       await session.step(60, "When user picks \"Show Total Count\" from the context menu of the \"stats\" area of box plot viewer", () => pickFromAreaContextMenu(page, "Show Total Count", "stats", el("box plot viewer")));
       await session.step(61, "Then \"Show Total Count\" property of box plot viewer should be \"true\"", () => propertyShouldBe(page, "Show Total Count", el("box plot viewer"), "true"));
-      await session.step(62, "When user sets properties of box plot viewer:", () => setProperties(page, el("box plot viewer"), [["Show Total Count","false"],["Show Inliers Count","false"],["Show Outliers Count","false"],["Show Stdev","false"],["Show Q1","false"],["Show Q3","false"]]));
+      await session.step(62, "When user closes the context menu", () => closeContextMenu(page));
+      await session.step(63, "And user sets properties of box plot viewer:", () => setProperties(page, el("box plot viewer"), [["Show Total Count","false"],["Show Inliers Count","false"],["Show Outliers Count","false"],["Show Stdev","false"],["Show Q1","false"],["Show Q3","false"]]));
     });
     await run.scenario("The T key toggles the p-value", async () => {
-      await session.step(71, "When user sets \"Show P Value\" property of box plot viewer to \"false\"", () => setProperty(page, "Show P Value", el("box plot viewer"), "false"));
-      await session.step(72, "And user clicks on empty plot space of box plot viewer", () => clickEmptySpace(page, el("box plot viewer")));
-      await session.step(73, "And user presses t", () => pressKey(page, "t"));
+      await session.step(72, "When user sets \"Show P Value\" property of box plot viewer to \"false\"", () => setProperty(page, "Show P Value", el("box plot viewer"), "false"));
+      await session.step(73, "And user presses t in box plot viewer", () => pressKeyIn(page, "t", el("box plot viewer")));
       await session.step(74, "Then \"Show P Value\" property of box plot viewer should be \"true\"", () => propertyShouldBe(page, "Show P Value", el("box plot viewer"), "true"));
-      await session.step(75, "When user presses t", () => pressKey(page, "t"));
+      await session.step(75, "When user presses t in box plot viewer", () => pressKeyIn(page, "t", el("box plot viewer")));
       await session.step(76, "Then \"Show P Value\" property of box plot viewer should be \"false\"", () => propertyShouldBe(page, "Show P Value", el("box plot viewer"), "false"));
       await session.step(77, "When user sets \"Show P Value\" property of box plot viewer to \"true\"", () => setProperty(page, "Show P Value", el("box plot viewer"), "true"));
     });

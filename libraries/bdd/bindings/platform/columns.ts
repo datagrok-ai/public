@@ -3,7 +3,7 @@
    range, a length; one row's value; the maximum's row; distinct counts — and the current row.
    A step that changes the current row baselines every viewer first (see data.ts). */
 import {Page} from '@playwright/test';
-import {expect} from '../../src/runtime/patience.js';
+import {expect, pollMs} from '../../src/runtime/patience.js';
 import {Then, When} from '../../src/registry.js';
 import {baselineAll, settleAll} from '../../src/runtime/viewers.js';
 
@@ -150,8 +150,8 @@ export const distinctValues = Then('{string} column should have at least {int} d
 const columnNames = (page: Page): Promise<string[]> => page.evaluate(() => grok.shell.t?.columns.names() ?? []);
 
 export const hasColumn = Then('the table should have a column {string}', async (page: Page, column: string) => {
-  await expect.poll(() => columnNames(page), {message: 'columns of the current table'}).toContain(column);
-}, {description: 'the current table, by exact name'});
+  await expect.poll(() => columnNames(page), {message: 'columns of the current table', timeout: pollMs(60000)}).toContain(column);
+}, {description: 'the current table, by exact name; a column a computation produces arrives when the computation ends, so the claim carries that budget'});
 
 export const hasNoColumn = Then('the table should not have a column {string}', async (page: Page, column: string) => {
   expect(await columnNames(page), 'columns of the current table').not.toContain(column);

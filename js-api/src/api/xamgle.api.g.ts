@@ -1,73 +1,73 @@
-/// this file was generated automatically from xamgle classes declarations
+// this file was generated automatically from xamgle classes declarations
 import { toDart } from "../wrappers";
 let api = (typeof window !== 'undefined' ? window : global.window) as any;
 
 export interface SettingsInterface {
-  /// Automatically save workspace locally
+  /** Automatically save workspace locally */
   autoSaveWorkspace: boolean;
 
-  /// Automatically detect column semantic types
+  /** Automatically detect column semantic types */
   autoDetectSemanticTypes: boolean;
 
-  /// Show '?' link on docked viewers
+  /** Show '?' link on docked viewers */
   dockShowHelpLink: boolean;
 
-  /// Show '⚙' settings icon on docked viewers
+  /** Show '⚙' settings icon on docked viewers */
   dockShowSettingsLink: boolean;
 
-  /// Show hamburger link on docked viewers
+  /** Show hamburger link on docked viewers */
   dockShowMenuLink: boolean;
 
-  /// Show full screen link on docked viewers
+  /** Show full screen link on docked viewers */
   dockShowFullScreenLink: boolean;
 
-  /// Show notification when a file is imported
+  /** Show notification when a file is imported */
   notifyOnFileImport: boolean;
 
-  /// Default state of the "Send notifications" checkbox in the sharing dialog
+  /** Default state of the "Send notifications" checkbox in the sharing dialog */
   sendNotificationOnShareCheckbox: boolean;
 
-  /// Controls whether tables pane automatically shows when more
-  /// than one table is open
+  /** Controls whether tables pane automatically shows when more
+   * than one table is open */
   autoShowTablesPane: boolean;
 
-  /// Controls whether columns pane automatically shows when a table is open
+  /** Controls whether columns pane automatically shows when a table is open */
   autoShowColumnsPane: boolean;
 
-  /// Show viewer settings in the property dialog when user clicks on a viewer.
+  /** Show viewer settings in the property dialog when user clicks on a viewer. */
   showViewerSettingsOnClick: boolean;
 
-  /// Show viewer settings in the property dialog when a viewer is added.
+  /** Show viewer settings in the property dialog when a viewer is added. */
   showViewerSettingsOnAddition: boolean;
 
-  /// Show user icon on top.
+  /** Show user icon on top. */
   showUserIcon: boolean;
 
-  /// Always show filters icons, not only on hover
+  /** Always show filters icons, not only on hover */
   showFiltersIconsConstantly: boolean;
 
-  /// Determines when to show range sliders
+  /** Determines when to show range sliders */
   showRangeSlidersOnViewers: string;
 
-  /// (Experimental) Use WebGPU for rendering and hit testing.
+  /** (Experimental) Use WebGPU for rendering and hit testing. */
   scatterPlotWebGPUAcceleration: boolean;
 
-  /// Auto-apply existing layout after selected rows are extracted
+  /** Auto-apply existing layout after selected rows are extracted */
   applyLayoutWhenExtractingRows: boolean;
 
-  /// Persist history of actions along with tables and columns
+  /** Persist history of actions along with tables and columns */
   dataHistory: boolean;
 
   isServer: boolean;
 
-  /// Settings keys locked by a group/All-Users scope: localStorage must not override them.
+  /** Settings keys locked by a group/All-Users scope: localStorage must not override them. */
   lockedKeys: any;
 
   showRecentlyOpenedViewsInHistory: boolean;
 
   warnOnUnsavedChanges: boolean;
 
-  /// Log user clicks
+  /** Log user clicks */
   logActivity: boolean;
 
   hiddenMenus: Array<string>;
@@ -108,15 +108,15 @@ export interface SettingsInterface {
 
   showAI: boolean;
 
-  /// Ordering rules as JSON — see [OrderRule]. A real property so it serializes and picks up the
-  /// settings view's personal / group / All-Users scoping; the Browse page renders it with a
-  /// dedicated list editor instead of the generic string input. Read it via [OrderRule.parseAll] —
-  /// a public getter here would be auto-promoted to a `@Prop` and leak into the JS API.
+  /** Ordering rules as JSON — see [OrderRule]. A real property so it serializes and picks up the
+   * settings view's personal / group / All-Users scoping; the Browse page renders it with a
+   * dedicated list editor instead of the generic string input. Read it via [OrderRule.parseAll] —
+   * a public getter here would be auto-promoted to a `@Prop` and leak into the JS API. */
   orderRules: string;
 
   enableBetaViewers: boolean;
 
-  //@Prop(editor: 'Beta') bool enableViewerFunctions = false;
+  /** @Prop(editor: 'Beta') bool enableViewerFunctions = false; */
   saveProjectWithViewLayout: boolean;
 
   allowWidgetsAsColumns: boolean;
@@ -143,10 +143,10 @@ export interface SettingsInterface {
 
   panelOrder: string;
 
-  /// Will load default settings from server on platform start
+  /** Will load default settings from server on platform start */
   loadDefaultsOnStart: boolean;
 
-  /// If not empty, will be used to load package.js instead of the Datagrok backend
+  /** If not empty, will be used to load package.js instead of the Datagrok backend */
   webpackDevUrl: string;
 
   clientFuncCacheEnabled: boolean;
@@ -155,8 +155,8 @@ export interface SettingsInterface {
 
   dataFrameBatchSize: number;
 
-  /// Whenever an error occurs, automatically create report with extended logs and send it to the server. Use UsageAnalysis to browse them.
-  /// This includes console logs, server logs, data connectivity logs, Docker logs, etc.
+  /** Whenever an error occurs, automatically create report with extended logs and send it to the server. Use UsageAnalysis to browse them.
+   * This includes console logs, server logs, data connectivity logs, Docker logs, etc. */
   autoReportErrors: boolean;
 
 

@@ -240,7 +240,7 @@ export interface ShellFlags { showContextPanel: boolean; showToolbox: boolean; s
 export function readShellFlags(page: Page): Promise<ShellFlags> {
   return page.evaluate(() => {
     const w = grok.shell.windows;
-    return {showContextPanel: w.showContextPanel, showToolbox: w.showToolbox, showProperties: w.showProperties, showHelp: w.showHelp};
+    return {showContextPanel: w.showContextPanel, showToolbox: w.showToolbox, showProperties: w.showContextPanel, showHelp: w.showHelp};
   });
 }
 

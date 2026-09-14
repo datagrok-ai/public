@@ -20,6 +20,7 @@ Feature: Nested spaces and moving between them
     And user enters "BDD-Hier-Root" into Name input in Create Space dialog
     And user clicks on OK button in Create Space dialog
     Then 1 space named "BDD-Hier-Root" should be on the server
+    And the "Create Space" dialog should close
     When user picks "Create Child Space..." from the context menu of BDD-Hier-Root tree node inside browse tree
     And user enters "BDD-Hier-Child" into Name input in Create Space dialog
     And user clicks on OK button in Create Space dialog
@@ -35,7 +36,7 @@ Feature: Nested spaces and moving between them
     When user picks "Create Child Space..." from the context menu of BDD-Hier-Child link in space gallery
     And user enters "BDD-Hier-Grand" into Name input in Create Space dialog
     And user clicks on OK button in Create Space dialog
-    Then the Create Space dialog should close
+    Then the "Create Space" dialog should close
     And BDD-Hier-Grand tree node inside browse tree should be present
 
   Scenario: Opening the child shows the grandchild

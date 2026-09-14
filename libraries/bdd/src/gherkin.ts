@@ -34,7 +34,8 @@ export interface FeatureModel {
 export class GherkinParseError extends Error {}
 
 export function parseFeature(path: string, source: string): FeatureModel {
-  const parser = new Parser(new AstBuilder(IdGenerator.uuid()), new GherkinClassicTokenMatcher());
+  // ids only link a document's nodes to each other; uuid() needs the global crypto, which Node 18 lacks
+  const parser = new Parser(new AstBuilder(IdGenerator.incrementing()), new GherkinClassicTokenMatcher());
   let doc: messages.GherkinDocument;
   try {
     doc = parser.parse(source);

@@ -7,6 +7,7 @@
    scenario can assert a zero-error floor (`no errors should have been logged`). */
 import {join, sep} from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {randomUUID} from 'node:crypto';
 import type {Browser, Page, PlaywrightTestArgs, PlaywrightTestOptions, PlaywrightWorkerArgs, PlaywrightWorkerOptions,
   TestType} from '@playwright/test';
 import {leave} from './args.js';
@@ -18,6 +19,8 @@ import {takeBalloons} from './viewers.js';
 type Test = TestType<PlaywrightTestArgs & PlaywrightTestOptions, PlaywrightWorkerArgs & PlaywrightWorkerOptions>;
 
 export interface FeatureSession {
+  /** Resolves {run} to this feature instance's unique suffix. */
+  text(value: string): string;
   /** The feature's page — opened on first use, shared by the scenarios that follow. */
   page(browser: Browser): Promise<Page>;
   /** One Gherkin step: a Playwright step located at the feature line, whose failure names the
@@ -127,6 +130,8 @@ let shared: Page | undefined;
 
 export function feature(test: Test, path = '', specUrl = ''): FeatureSession {
   let page: Page | undefined;
+  const runId = randomUUID();
+  const text = (value: string): string => value.replaceAll('{run}', runId);
   const file = path && specUrl ? featureFile(specUrl, path) : undefined;
   test.afterEach(async () => {
     if (page && !page.isClosed()) {
@@ -135,14 +140,24 @@ export function feature(test: Test, path = '', specUrl = ''): FeatureSession {
     }
   });
   test.afterAll(async () => {
+    const failures: unknown[] = [];
     if (page && !page.isClosed()) {
-      for (const cleanup of cleanups.get(page) ?? [])
-        await cleanup().catch((e) => console.warn(`cleanup failed: ${(e as Error).message}`));
+      for (const cleanup of cleanups.get(page) ?? []) {
+        try {
+          await cleanup();
+        }
+        catch (error) {
+          failures.push(error);
+        }
+      }
       cleanups.delete(page);
     }
     page = undefined;
+    if (failures.length)
+      throw new AggregateError(failures, 'Feature cleanup failed');
   });
   return {
+    text,
     async page(browser: Browser): Promise<Page> {
       if (!page || page.isClosed()) {
         if (shared && shared.context().browser() !== browser) {
@@ -158,6 +173,7 @@ export function feature(test: Test, path = '', specUrl = ''): FeatureSession {
       return page;
     },
     async step(line: number, title: string, body: () => Promise<unknown>): Promise<void> {
+      title = text(title);
       await test.step(title, async () => {
         try {
           await body();
@@ -195,7 +211,24 @@ export async function resetShell(page: Page): Promise<void> {
   }, NOTICES).catch(() => '');
   if (left)
     console.warn(`bdd: a dialog is still open after the shell reset: ${left}`);
+  // a view that closeAll leaves (the Model Hub's card view survives it) would otherwise keep the
+  // next scenario off the Home view: closed one by one, then reported rather than waited for
+  const stayed: string = await page.waitForFunction((home) => (window as any).grok?.shell?.v?.type === home, HOME_VIEW, {timeout: 5000})
+    .then(() => '')
+    .catch(() => page.evaluate((home) => {
+      const w = window as any;
+      const others = Array.from(w.grok.shell.views as Iterable<any>).filter((v) => v.type !== home);
+      for (const v of others)
+        v.close();
+      const still = Array.from(w.grok.shell.views as Iterable<any>).filter((v) => v.type !== home);
+      const homeView = Array.from(w.grok.shell.views as Iterable<any>).find((v) => v.type === home);
+      if (homeView)
+        w.grok.shell.v = homeView;
+      return still.map((v) => `${v.type}:${v.name}`).join(', ');
+    }, HOME_VIEW).catch(() => ''));
+  if (stayed)
+    console.warn(`bdd: views that survived closeAll and their own close() at the shell reset: ${stayed}`);
   await page.waitForFunction((home) => (window as any).grok?.shell?.v?.type === home, HOME_VIEW, {timeout: 60000})
-    .catch(() => undefined);
+    .catch(() => console.warn('bdd: the Home view is not current after the shell reset'));
   takeErrors(page);
 }

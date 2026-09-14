@@ -1,5 +1,17 @@
 # Datagrok-tools changelog
 
+## 6.6.0 (WIP)
+
+* The developer key is sent in the `Authorization` header (`Dev <key>`) instead of the URL path. `POST /users/login/dev/<key>` and `POST /packages/dev/<key>/<package>` put a long-lived credential into every nginx access log, proxy log and shell history along the way; the key-less routes (`/users/login/dev`, `/packages/dev/<package>`) take it as a header. Servers that predate the header form answer 404/401 and the old URL is used instead, so publishing to an older server still works - but a server from 1.28 on rejects the URL form and asks for datagrok-tools 6.6.0 or later.
+
+## 6.5.10 (2026-09-11)
+
+* `grok s pull` — a bundle file name is capped at 200 bytes plus a digest of the full name, so it stays unique and stable across pulls. A nested view under a long space spells a longer name than a path component may hold (255 bytes on ext4 and NTFS): one TWIG snapshot reached 268 and the write failed with `ENAMETOOLONG`, taking down the whole part rather than the entity — a `--by-namespace` part that only touched the space as a dependency died with it.
+
+## 6.5.9 (2026-09-11)
+
+* `grok s push/migrate` — placement no longer claims an entity the walk refused. Containment is exclusive, so asserting a project's relation to a platform entity takes it away from whatever holds it on the target: migrating a dashboard built on demo data moved `System:DemoFiles` into the migrated space, and every reference to it by name broke stand-wide until its `System` row was restored by hand. The guard covered a space's own `Files` connection but not `System:` connections, personal `Home` shares, package projects or built-in groups; it now defers to the same `untransferableReason` the walk uses.
+
 ## 6.5.8 (2026-09-10)
 
 * `grok s` — correctness pass from the CLI audit: every server failure now exits 1 with one line on stderr (a 200 carrying an `ApiError` — missing entity, duplicate login or group name, unknown function — used to print as data with exit 0); `--limit`/`--offset` are honoured for users, groups, connections and functions (their public routes ignore paging, so `list` and the new `count` verb go through the internal routers); `files list` works (the public files route only downloads; listing goes through the connection's file route) and prints `path, kind, size`; `tables list|get|delete` no longer throw, and `tables download|get|delete` accept the bare table name, the full `Project:Table` name or the id; `describe <entity|type>` works (registry record plus the fields of a live sample; it called a nonexistent endpoint before); positional `functions run 'F(1, 2)'` maps the values onto the function's inputs instead of silently sending `{"0": 1}` (which ran the function with nulls); `raw` takes API-relative paths (a leading `/api` is accepted), sends a body from `--json <file>` or `--data '<json>'`, and fails on non-2xx — so it, and `healthcheck`, now work against a bare-Datlas `--host` too; `shares list` accepts a name and shows the grants inherited through project links; `groups` name resolution prefers an exact match (`admin` no longer collides with `Administrators`) and `--user` works on `list-members`/`list-memberships`; `connections delete` of an unknown id fails instead of reporting success; a bad `--host` URL or alias reports the reason without the help dump. `users delete` refuses with a pointer at `users block`: the platform has no user deletion, and removing the entity record leaves the login unusable. `functions delete` covers scripts and queries.

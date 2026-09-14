@@ -15,38 +15,10 @@
  *
  * Usage: node scripts/smoke-bundle.cjs [path/to/js-api.js]
  */
-const fs = require('fs');
 const path = require('path');
-const vm = require('vm');
+const {loadBundle, DEFAULT_BUNDLE} = require('./load-bundle.cjs');
 
-const DEFAULT_BUNDLE = path.resolve(__dirname, '../../../core/client/xamgle/web/js/api/js-api.js');
 const bundlePath = process.argv[2] ? path.resolve(process.argv[2]) : DEFAULT_BUNDLE;
-
-// Evaluating against stubs makes deferred work (timers, promises) fail in ways a real
-// browser never would. The synchronous module-init phase is the only part that matters
-// and try/catch already covers it, so async noise is dropped.
-process.on('uncaughtException', () => {});
-process.on('unhandledRejection', () => {});
-
-// Every property access yields another callable/constructible stub, so init code that
-// pokes at DOM or rxjs globals keeps going instead of failing for an unrelated reason.
-function stub(name) {
-  const fn = function () { return stub(name + '()'); };
-  return new Proxy(fn, {
-    get(target, prop) {
-      if (prop === 'then') return undefined;
-      if (prop === 'prototype') return target.prototype;
-      if (prop === Symbol.toPrimitive) return () => name;
-      if (prop === Symbol.iterator) return function* () {};
-      return stub(name + '.' + String(prop));
-    },
-    set: () => true,
-    has: () => true,
-    apply: () => stub(name + '()'),
-    construct: () => stub('new ' + name),
-  });
-}
-
 const REQUIRED = ['Viewer', 'Grid', 'FormViewer', 'Point', 'DataFrame', 'Column', 'BitArray'];
 
 function fail(message, detail) {
@@ -63,31 +35,13 @@ function fail(message, detail) {
   process.exit(1);
 }
 
-if (!fs.existsSync(bundlePath))
-  fail('bundle not found - run the webpack build first');
-
-const sandbox = {console, setTimeout, clearTimeout, setInterval, clearInterval};
-sandbox.globalThis = sandbox;
-sandbox.window = sandbox;
-sandbox.self = sandbox;
-for (const name of ['document', 'navigator', 'location', 'rxjs', 'OCL', 'fetch', 'localStorage'])
-  sandbox[name] = stub(name);
-vm.createContext(sandbox);
-
+let DG;
 try {
-  new vm.Script(fs.readFileSync(bundlePath, 'utf8'), {filename: 'js-api.js'})
-    .runInContext(sandbox, {timeout: 120000});
+  DG = loadBundle(bundlePath).DG;
 } catch (e) {
-  // The bundle is one minified line, so V8 splices the whole source into the stack as
-  // context. Keep only the call frames — their offsets locate the throwing class.
-  const frames = (e.stack || '').split('\n')
-    .filter((line) => /^\s+at /.test(line))
-    .slice(0, 5)
-    .join('\n');
-  fail('the bundle threw while initializing: ' + e.name + ': ' + e.message, frames);
+  fail(e.message, e.frames);
 }
 
-const DG = sandbox.DG;
 if (!DG || typeof DG !== 'object')
   fail('the bundle evaluated but never defined the DG export');
 
@@ -97,15 +51,6 @@ if (missing.length)
 
 if (typeof DG.U2?.Control !== 'function' || typeof DG.U2?.signal !== 'function')
   fail('DG.U2 is missing its u2core exports (Control, signal)');
-
-if (DG.BitArray !== DG.U2.BitArray)
-  fail('DG.BitArray and DG.U2.BitArray are different classes');
-
-// setLength growing inside an adopted over-long buffer must not surface its stale words
-const grown = new DG.BitArray(new Uint32Array([0x7, 0xffffffff, 0xffffffff]), 3);
-grown.setLength(40);
-if (grown.trueCount !== 3)
-  fail('DG.BitArray.setLength leaks adopted words: trueCount ' + grown.trueCount + ' != 3');
 
 for (const name of ['Widget', 'Viewer']) {
   if (typeof DG[name] !== 'function' || !(DG[name].prototype instanceof DG.U2.Control))

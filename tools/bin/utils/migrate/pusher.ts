@@ -522,11 +522,12 @@ async function pushRelations(dapi: NodeDapi, effective: Map<string, BundleEntity
     let added = 0;
     for (const rel of json.relations) {
       if (linked.has(rel.entity.id)) continue;
-      // The target stamps its own Files connection onto a space; re-attaching the source's
-      // would leave the space with two of them.
+      // Placement is exclusive, so claiming an entity the walk refused takes it away from
+      // whatever holds it on the target: a space's own Files connection, or `System:DemoFiles`,
+      // which moved into a migrated space and broke every reference to it by name.
       if (!landed.has(rel.entity.id)) {
         const existing = await findEntity(dapi, rel.entity.id);
-        if (!existing || existing.parameters?.isProject === true) continue;
+        if (!existing || untransferableReason(existing['#type'], existing)) continue;
       }
       wanted.push(contains(rel.entity.id) ? rel : {...rel, isLink: true});
       linked.add(rel.entity.id);

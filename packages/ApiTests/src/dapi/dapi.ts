@@ -30,6 +30,24 @@ category('Dapi', () => {
     }, {owner: 'aparamonov@datagrok.ai', stressTest: true});
   }
 
+  test('admin.getMetrics', async () => {
+    const isIso = (s: string) => typeof s === 'string' && !isNaN(Date.parse(s));
+    const m = await grok.dapi.admin.getMetrics({date: 'last 7 days', limit: 5});
+    expect(isIso(m.window.start) && isIso(m.window.end), true, 'window');
+    expect(typeof m.http.now.count === 'number' && m.http.now.count >= 0, true, 'http.now.count');
+    expect(Array.isArray(m.http.routes) && m.http.routes.length <= 5, true, 'http.routes');
+    expect(typeof m.queue.queued === 'number' && typeof m.queue.running === 'number', true, 'queue');
+    expect(m.database.sizeBytes > 0, true, 'database.sizeBytes');
+    expect(m.database.connections.total >= 1, true, 'database.connections.total');
+    expect(typeof m.database.statements.available, 'boolean', 'database.statements.available');
+
+    const dateEnd = new Date();
+    const dateStart = new Date(dateEnd.getTime() - 60 * 60 * 1000);
+    const w = await grok.dapi.admin.getMetrics({dateStart, dateEnd});
+    expect(w.window.start, dateStart.toISOString(), 'window.start');
+    expect(w.window.end, dateEnd.toISOString(), 'window.end');
+  }, {owner: 'aparamonov@datagrok.ai'});
+
   test('logging', async () => {
     const logger = new DG.Logger((m) => (m.params as {[key: string]: any})['jsApiTest2'] = 'jsApiTest3');
     const jsApiTestType = 'jsApiTestType';

@@ -24,8 +24,8 @@ category('Packages', () => {
   });
 
   async function publish(debug: boolean) {
-    const uploadResponse = await fetch(`${grok.dapi.root}/packages/dev/${key}/test?debug=${debug}&rebuild=false`,
-      {method: 'POST', body: data as BodyInit});
+    const uploadResponse = await fetch(`${grok.dapi.root}/packages/dev/test?debug=${debug}&rebuild=false`,
+      {method: 'POST', body: data as BodyInit, headers: {Authorization: `Dev ${key}`}});
     expect(uploadResponse.status, 200);
   }
 

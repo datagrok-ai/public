@@ -43,12 +43,10 @@ export class LogEvent extends Entity {
   /** Session id of the event */
   get session(): UserSession | string { return toJs(api.grok_LogEvent_Get_Session(this.dart)); }
 
-  /** Parameters of the event
-   * @type {Array<LogEventParameterValue>} */
+  /** Parameters of the event */
   get parameters(): LogEventParameterValue[] { return toJs(api.grok_LogEvent_Get_Parameters(this.dart)); }
 
-  /** Type of the event
-   * @type {LogEventType} */
+  /** Type of the event */
   get eventType(): LogEventType { return toJs(api.grok_LogEvent_Get_Type(this.dart)); }
 
   get eventTime(): dayjs.Dayjs { return dayjs(api.grok_LogEvent_Get_EventTime(this.dart)); }
@@ -71,20 +69,17 @@ export class LogEventParameterValue extends Entity {
     super(dart);
   }
 
-  /** Event of the parameter value
-   * @type {LogEvent} */
+  /** Event of the parameter value */
   get event(): LogEvent {
     return toJs(api.grok_LogEventParameterValue_Get_Event(this.dart));
   }
 
-  /** Parameter of the parameter value
-   * @type {LogEventParameter} */
+  /** Parameter of the parameter value */
   get parameter(): LogEventParameter {
     return toJs(api.grok_LogEventParameterValue_Get_Parameter(this.dart));
   }
 
-  /** Parameter value
-   * @type {string} */
+  /** Parameter value */
   get value(): string {
     return api.grok_LogEventParameterValue_Get_Value(this.dart);
   }

@@ -20,7 +20,7 @@ category('Admetica', () => {
 
   before(async () => {
     grok.shell.closeAll();
-    grok.shell.windows.showProperties = false;
+    grok.shell.windows.showContextPanel = false;
 
     try {
       await timeout(
@@ -89,7 +89,7 @@ category('Admetica', () => {
     const v = grok.shell.addTableView(molecules);
     await awaitCheck(() => document.querySelector('canvas') !== null, 'Table failed to load', 3000);
 
-    grok.shell.windows.showProperties = true;
+    grok.shell.windows.showContextPanel = true;
 
     const table = v.dataFrame;
     table.currentCell = table.cell(0, 'smiles');

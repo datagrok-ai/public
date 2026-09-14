@@ -10,6 +10,7 @@ import puppeteer from 'puppeteer';
 import {Browser, Page} from 'puppeteer';
 import * as color from '../utils/color-utils';
 import Papa from 'papaparse';
+import {devKeyFetch} from './dev-key';
 
 const fetch = require('node-fetch');
 
@@ -40,7 +41,7 @@ export async function getToken(url: string, key: string) {
   let lastError: any;
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
-      const response = await fetch(`${url}/users/login/dev/${key}`, {method: 'POST'});
+      const response = await devKeyFetch(`${url}/users/login/dev`, `${url}/users/login/dev/${key}`, key, {method: 'POST'});
       const text = await response.text();
       let json: any;
       try {

@@ -4,8 +4,8 @@ Feature: Managing monomer libraries
   toggle rewrites the user's selection and reloads the monomer library, which Bio announces as
   the bio-monomer-lib-loaded event with the sources it loaded; Add uploads a HELM JSON library
   and loads it, Delete unloads and removes it. The feature starts with every library selected
-  and leaves it so. The stand has two library storages (the monomerDomainDB package's and the
-  files), so Add asks which one takes the file; a stand with the files alone skips that dialog.
+  and leaves it so. With multiple library storages (the monomerDomainDB package's and the
+  files), Add asks which one takes the file; a stand with the files alone skips that dialog.
 
   Background:
     Given user is logged in
@@ -38,9 +38,7 @@ Feature: Managing monomer libraries
     Given user listens for "bio-monomer-lib-loaded" custom event
     And "BDD" should not be a known "PEPTIDE" monomer
     When user uploads "fixtures/bdd-test-lib.json" through Add button
-    Then "Select storage for new monomer library" dialog should be visible
-    When user selects "Files" in Storage input in "Select storage for new monomer library" dialog
-    And user clicks on OK button in "Select storage for new monomer library" dialog
+    And user chooses "Files" storage for the uploaded monomer library
     Then "bdd-test-lib.json" checkbox should become visible
     And "bdd-test-lib.json" checkbox should be checked
     And the "bio-monomer-lib-loaded" custom event should have fired

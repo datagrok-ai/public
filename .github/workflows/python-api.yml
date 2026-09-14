@@ -78,7 +78,7 @@ jobs:
       - name: Get auth token
         id: auth
         run: |
-          token=$(curl -s -X POST ${{ steps.datagrok.outputs.apiUrl }}/users/login/dev/admin | jq -r .token)
+          token=$(.github/scripts/dev-login.sh "${{ steps.datagrok.outputs.apiUrl }}" admin)
           curl -s -H "Authorization: $token" -H "Content-Type: application/json" \
             '${{ steps.datagrok.outputs.apiUrl }}/admin/plugins/admin/settings' \
             -X POST -d '{"#type":"AdminPluginSettings", "agreementDate":null}'

@@ -18,7 +18,8 @@ Feature: Sharing a space, and what it refuses
   it as it comes and claim the level as text.
 
   The second account is DATAGROK_SHARING_LOGIN — the variable the hand-written suites read from
-  playwright-tests/.env; without it the sharing scenarios fail saying so, rather than passing.
+  playwright-tests/.env — or, unset, the "bddsecond" user the library's setup creates on the stand
+  with the dev key; with neither the sharing scenarios fail saying so, rather than passing.
 
   What the old spec checked after deleting the space — that the permissions endpoint no longer
   answers — is not restated here: it read a raw fetch and accepted any error at all, including a
@@ -31,13 +32,14 @@ Feature: Sharing a space, and what it refuses
   Background:
     Given user is logged in
     And the browse panel is open
+    And Spaces tree node inside browse tree is expanded
     And no space named "BDD-Share, BDD-Share-Child" is on the server
 
   Scenario: A space and a child to share
     When user picks "Create Space..." from the context menu of Spaces tree node inside browse tree
     And user enters "BDD-Share" into Name input in Create Space dialog
     And user clicks on OK button in Create Space dialog
-    Then the Create Space dialog should close
+    Then the "Create Space" dialog should close
     And 1 space named "BDD-Share" should be on the server
     When user picks "Create Child Space..." from the context menu of BDD-Share tree node inside browse tree
     And user enters "BDD-Share-Child" into Name input in Create Space dialog

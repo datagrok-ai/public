@@ -18,12 +18,12 @@ await DG.delay(500);
 const w = DG.Widget.getAll().find((w) => w.type === 'DomainForm');
 w.getWidgetStatus();
 // → {description: 'Creates a issue in grit.issue. Fields: ...',
-//    error: 'Project: Value can\'t be empty', parts: {title: <el>, priority: <el>, ...},
+//    error: 'Project: Value can\'t be empty', parts: {title: <el>, priority_id: <el>, ...},
 //    inputs: [{name: 'title', type: 'string', value: null, required: true, valid: false},
-//             {name: 'priority', type: 'string', choices: ['low', 'medium', 'high', 'critical']},
+//             {name: 'priority_id', type: 'ref', ref: 'grit.priority', value: null},
 //             {name: 'assignee', type: 'ref', ref: 'User', value: null}, ...],
 //    hitAreas: {}, shortcuts: {}, events: []}
-w.props['priority'] = 'critical';       // the platform's property bag — same path as typing
+w.props['priority_id'] = 'critical';    // the platform's property bag — same path as typing
 w.props['assignee'] = 'Alex';           // a ref property resolves display text through the
                                         // SAME suggestion source its typeahead uses;
                                         // ambiguity → a validation error in the status
@@ -32,5 +32,5 @@ const save = w.getFunctions().find((f) => f.name === 'Save');
 await save.apply({widget: w});          // a real Func — typed, annotated, AI-discoverable
 
 grok.shell.info(JSON.stringify(w.getWidgetStatus().inputs
-  .filter((i) => ['priority', 'assignee'].includes(i.name))
+  .filter((i) => ['priority_id', 'assignee'].includes(i.name))
   .map((i) => `${i.name} = ${i.value} (${i.valid ? 'valid' : i.error})`), null, 2));

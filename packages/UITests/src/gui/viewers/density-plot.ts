@@ -69,7 +69,7 @@ category('Viewers: Density plot', () => {
     await uploadProject('Test project with Density plot', demog.getTableInfo(), v, demog);
     grok.shell.closeAll();
     await grok.dapi.projects.open('Test project with Density plot');
-    v = grok.shell.getTableView('demog 1000');
+    v = grok.shell.tableView('demog 1000');
     isViewerPresent(Array.from(v.viewers), 'Density plot');
     const densityPlot = findViewer('Density plot', v);
 

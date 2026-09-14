@@ -34,10 +34,21 @@ export abstract class Tutorial extends DG.Widget {
     this._t = df;
   }
 
+  static readonly APP_PATH = '/apps/Tutorials/Tutorials';
+
+  get path(): string {
+    const removeSpaces = (s: string) => s.replaceAll(' ', '');
+    return `${Tutorial.APP_PATH}/${removeSpaces(this.track!.name)}/${removeSpaces(this.name)}`;
+  }
+
   get url(): string {
-    const removeSpaces = (s: string) => s.split(' ').join('');
-    const root = window.location.origin;
-    return `${root}/apps/tutorials/Tutorials/${removeSpaces(this.track!.name)}/${removeSpaces(this.name)}`;
+    return window.location.origin + this.path;
+  }
+
+  private _setViewPath(): void {
+    const v = grok.shell.v;
+    if (this._t && v instanceof DG.TableView && v.dataFrame?.name === this._t.name)
+      v.path = this.path;
   }
 
   imageUrl: string = '';
@@ -164,6 +175,7 @@ export abstract class Tutorial extends DG.Widget {
     if (this.demoTable) {
       this._t = await grok.data.getDemoTable(this.demoTable);
       grok.shell.addTableView(this._t);
+      this._setViewPath();
     }
     this.closed = false;
 
@@ -375,6 +387,7 @@ export abstract class Tutorial extends DG.Widget {
     if (this.closed)
       return;
 
+    this._setViewPath();
     this.activeHints.length = 0;
     if (hint != null)
       this._placeHints(hint);
@@ -472,6 +485,9 @@ export abstract class Tutorial extends DG.Widget {
       grok.shell.tableView(this.t.name)?.close();
       grok.shell.closeTable(this.t);
     }
+    // The app is a dock panel without a view, so the platform cannot restore its URL when the table view closes
+    if (document.querySelector('.tutorials-root'))
+      window.history.replaceState(null, '', Tutorial.APP_PATH);
   }
 
   _onClose: Subject<void> = new Subject();

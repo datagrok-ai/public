@@ -7,8 +7,12 @@ import {expect} from './patience.js';
 import type {ElementRef} from './args.js';
 import {cssString, escapeRegExp, exactText, locateActionable as locate, refOf, withAttr} from './locate.js';
 
-const EDITOR = '[data-u2-part="editor"] input, [data-u2-part="editor"] select, [data-u2-part="editor"] textarea, ' +
-  '[data-u2-part="editor"][contenteditable], .ui-input-editor, input, select, textarea, [contenteditable="true"]';
+// a real control before the generic `.ui-input-editor`: a Dart float input puts a `div.ui-input-editor`
+// wrapper before its `input.ui-input-editor`, and `.first()` takes DOM order, so one list with the
+// class in it hands back the div — and the value of the input is then unreadable
+const CONTROL = '[data-u2-part="editor"] input, [data-u2-part="editor"] select, [data-u2-part="editor"] textarea, ' +
+  '[data-u2-part="editor"][contenteditable], input, select, textarea, [contenteditable="true"]';
+const EDITOR = '.ui-input-editor';
 // popup triggers (icon, function and columns pickers) are the editor part itself
 const EDITOR_PART = '[data-u2-part="editor"]';
 const OPTION = '[role="option"], .u2-menu-item, .u2-combobox-option, .d4-menu-item, .u2-list-row';
@@ -25,13 +29,14 @@ function gestureOf(page: Page, target: ElementRef): {click?: 'mouse' | 'dom'; ty
 /** Holds the keys around a gesture (Control adds to a selection, Shift extends it, Alt zooms).
  * Playwright's `down` takes one key, so a chord is held key by key. */
 export async function withKeys(page: Page, keys: string[], body: () => Promise<void>): Promise<void> {
-  for (const k of keys)
+  const held = keys.flatMap(keysOf);
+  for (const k of held)
     await page.keyboard.down(k);
   try {
     await body();
   }
   finally {
-    for (const k of [...keys].reverse())
+    for (const k of [...held].reverse())
       await page.keyboard.up(k);
   }
 }
@@ -121,7 +126,7 @@ export async function editorOf(page: Page, target: ElementRef): Promise<Locator>
     (e as HTMLElement).isContentEditable || e.matches('[name^="viewer-"], .d4-viewer')).catch(() => false);
   if (own)
     return loc;
-  for (const selector of [EDITOR, EDITOR_PART]) {
+  for (const selector of [CONTROL, EDITOR, EDITOR_PART]) {
     const inner = loc.locator(selector).first();
     if (await inner.count() > 0)
       return inner;
@@ -140,7 +145,7 @@ export async function hasFocus(loc: Locator): Promise<boolean> {
  * and so is one that refuses the text (read-only, disabled): refusing it is what the step after
  * such a typing claims. */
 export async function typeVerified(editor: Locator, text: string, what: string): Promise<void> {
-  await editor.press('Control+A');
+  await editor.press('ControlOrMeta+A');
   await editor.pressSequentially(text);
   const refuses = await editor.evaluate((e) => (e as HTMLInputElement).readOnly || (e as HTMLInputElement).disabled ||
     e.getAttribute('aria-readonly') === 'true' || e.getAttribute('aria-disabled') === 'true').catch(() => false);
@@ -148,7 +153,7 @@ export async function typeVerified(editor: Locator, text: string, what: string):
     return;
   await expect.poll(async () => {
     if (await editor.inputValue() !== text) {
-      await editor.press('Control+A');
+      await editor.press('ControlOrMeta+A');
       await editor.pressSequentially(text);
     }
     return editor.inputValue();
@@ -172,14 +177,16 @@ export async function typeInto(page: Page, target: ElementRef, text: string, com
 export async function clear(page: Page, target: ElementRef): Promise<void> {
   const editor = await editorOf(page, target);
   await editor.click();
-  await editor.press('Control+A');
+  await editor.press('ControlOrMeta+A');
   await editor.press('Delete');
 }
 
 export function normalizeKey(key: string): string {
-  const names: Record<string, string> = {ctrl: 'Control', control: 'Control', cmd: 'Meta', meta: 'Meta',
+  const names: Record<string, string> = {ctrl: 'ControlOrMeta', control: 'ControlOrMeta', controlormeta: 'ControlOrMeta', cmd: 'Meta', meta: 'Meta',
+    controlleft: 'ControlLeft', controlright: 'ControlRight', forwarddelete: 'Delete',
     alt: 'Alt', shift: 'Shift', esc: 'Escape', escape: 'Escape', enter: 'Enter', return: 'Enter',
-    tab: 'Tab', space: 'Space', backspace: 'Backspace', delete: 'Delete', del: 'Delete',
+    tab: 'Tab', space: 'Space', backspace: 'Backspace', delete: process.platform === 'darwin' ? 'Backspace' : 'Delete',
+    del: process.platform === 'darwin' ? 'Backspace' : 'Delete',
     up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight', home: 'Home', end: 'End',
     pageup: 'PageUp', pagedown: 'PageDown'};
   return key.split('+').map((part) => {
@@ -193,8 +200,18 @@ export function keysOf(chord: string): string[] {
   return normalizeKey(chord).split('+');
 }
 
+/** A key goes to the focused element. Escape with a dialog open is meant for that dialog, which
+ * closes on a keydown inside its container — and nothing guarantees the focus is still there (the
+ * grid takes it back on a timer, a menu that just closed had it): so Escape is pressed on the
+ * topmost dialog itself. */
 export async function press(page: Page, key: string): Promise<void> {
-  await page.keyboard.press(normalizeKey(key));
+  const name = normalizeKey(key);
+  const dialog = page.locator('[data-u2="dialog"], .d4-dialog').filter({visible: true}).last();
+  if (name === 'Escape' && await dialog.count() > 0) {
+    await dialog.press(name);
+    return;
+  }
+  await page.keyboard.press(name);
 }
 
 /** Types a column name into the open picker and presses Enter, without claiming the pick landed —
@@ -240,12 +257,13 @@ export async function openColumnSelector(page: Page, selector: Locator, leave = 
 
 export async function select(page: Page, target: ElementRef, option: string): Promise<void> {
   const loc = await locate(page, target);
-  const native = loc.locator('select').first();
+  // a Dart choice input's name can land on its <select> itself rather than on the host around it
+  const native = await loc.first().evaluate((e) => e.tagName === 'SELECT') ? loc.first() : loc.locator('select').first();
   if (await native.count() > 0) {
     await native.selectOption({label: option});
     return;
   }
-  const columnSelector = (await loc.evaluate((el) => el.classList.contains('d4-column-selector'))) ? loc : loc.locator('.d4-column-selector').first();
+  const columnSelector = (await loc.first().evaluate((el) => el.classList.contains('d4-column-selector'))) ? loc.first() : loc.locator('.d4-column-selector').first();
   if (await columnSelector.count() > 0) {
     await openColumnSelector(page, columnSelector);
     await pickInColumnGrid(page, option, target.phrase, columnSelector);
@@ -278,6 +296,9 @@ function optionsNamed(page: Page, option: string): Locator {
 
 export async function setChecked(page: Page, target: ElementRef, checked: boolean): Promise<void> {
   const loc = await locate(page, target);
+  // the Dart switch keeps its checkbox hidden and takes the click on a div, so it is not settable
+  if (await loc.first().locator('.ui-input-switch').count() > 0)
+    return setSwitched(page, target, checked);
   const box = loc.locator('input[type="checkbox"], input[type="radio"], [role="checkbox"], [role="switch"]').first();
   if (await box.count() > 0) {
     await box.setChecked(checked);
@@ -288,7 +309,7 @@ export async function setChecked(page: Page, target: ElementRef, checked: boolea
 
 export async function toggle(page: Page, target: ElementRef): Promise<void> {
   const loc = await locate(page, target);
-  const box = loc.locator('input[type="checkbox"], [role="checkbox"], [role="switch"]').first();
+  const box = loc.locator('.ui-input-switch, input[type="checkbox"], [role="checkbox"], [role="switch"]').first();
   await (await box.count() > 0 ? box : loc).click();
 }
 
@@ -313,14 +334,17 @@ export async function drag(page: Page, source: ElementRef, target: ElementRef): 
   await (await locate(page, source)).dragTo(await locate(page, target));
 }
 
-/** Where an element says it is open: `aria-expanded` on itself or on its header/trigger inside,
- * and — for the Dart tree, which has neither — the class its twistie carries. `null` when the
- * element says nothing (a leaf row has no twistie). */
+/** Where an element says it is open: `aria-expanded` on itself or on its header/trigger inside;
+ * for the Dart tree, which has neither, the class its twistie carries; for a Dart property grid
+ * category, its icon (minus while open, plus while folded). `null` when the element says nothing
+ * (a leaf row has no twistie). */
 export function readExpanded(loc: Locator): Promise<boolean | null> {
   return loc.first().evaluate((el) => {
     const aria = el.getAttribute('aria-expanded') ?? el.querySelector('[aria-expanded]')?.getAttribute('aria-expanded');
     if (aria != null)
       return aria === 'true';
+    if (el.matches('.property-grid-category'))
+      return el.querySelector('.property-grid-icon-minus') !== null;
     const twistie = el.matches('.d4-tree-view-tri, .u2-tree-twistie') ? el :
       el.querySelector('.d4-tree-view-tri, .u2-tree-twistie');
     return twistie === null ? null :
@@ -341,4 +365,97 @@ export async function setExpanded(page: Page, target: ElementRef, expanded: bool
   await (await twistie.count() > 0 ? twistie : control).click();
   await expect.poll(() => readExpanded(self),
     {message: `${target.phrase} after ${expanded ? 'expanding' : 'collapsing'} it`}).toBe(expanded);
+}
+
+/** A switch that governs something: the Dart `SwitchInput` draws it as `div.ui-input-switch` and
+ * keeps its real checkbox hidden, so neither a click nor a read can go through the control. */
+const SWITCH = '[role="switch"], .ui-input-switch';
+
+/** The switch of an element, which a parameter form does not put inside it: the sensitivity
+ * analysis form inserts the switch into the input's own host, the fitting form leaves it as a
+ * separate input before it (`getSwitchElement`, compute-utils). A part selector cannot climb out
+ * of the element and a composition would name the wrong parameter's switch, so the search is one
+ * gesture — itself, inside, then back over the siblings — and the one it finds is marked, the way
+ * a typed-into editor is, because a sibling has no phrase of its own. */
+export async function switchOf(page: Page, target: ElementRef): Promise<Locator> {
+  const self = (await locate(page, target)).first();
+  const found = await self.evaluate((el, sel) => {
+    for (const old of Array.from(document.querySelectorAll('[data-bdd-switch]')))
+      old.removeAttribute('data-bdd-switch');
+    let hit: Element | null = el.matches(sel) ? el : el.querySelector(sel);
+    for (let sib = el.previousElementSibling; hit === null && sib !== null; sib = sib.previousElementSibling)
+      hit = sib.matches(sel) ? sib : sib.querySelector(sel);
+    if (hit === null)
+      return false;
+    hit.setAttribute('data-bdd-switch', '');
+    return true;
+  }, SWITCH);
+  if (!found)
+    throw new Error(`${target.phrase} has no switch, inside it or beside it`);
+  return page.locator('[data-bdd-switch]');
+}
+
+/** `aria-checked` when the platform says it, else the class the Dart switch carries. */
+export function readSwitch(loc: Locator): Promise<boolean | null> {
+  return loc.first().evaluate((el) => {
+    const aria = el.getAttribute('aria-checked');
+    if (aria !== null)
+      return aria === 'true';
+    const sw = el.classList.contains('ui-input-switch') ? el : el.querySelector('.ui-input-switch');
+    return sw === null ? null : sw.classList.contains('ui-input-switch-on');
+  });
+}
+
+/** Idempotent, like `setExpanded`: a switch already on stays on. */
+export async function setSwitched(page: Page, target: ElementRef, on: boolean): Promise<void> {
+  const sw = await switchOf(page, target);
+  if (await readSwitch(sw) === on)
+    return;
+  await sw.click();
+  await expect.poll(() => readSwitch(sw),
+    {message: `the switch of ${target.phrase} after switching it ${on ? 'on' : 'off'}`}).toBe(on);
+}
+
+/** A line at the top of a code editor. An editor's document is not an input value — CodeMirror
+ * keeps it in its own model behind a hidden textarea — so the text goes in through the keyboard at
+ * the caret, and the claim is the text the editor then shows. Control+Home rather than a click at
+ * the first line: an editor scrolled down renders no first line to click. */
+export async function insertLine(page: Page, target: ElementRef, text: string): Promise<void> {
+  const loc = (await locate(page, target)).first();
+  await loc.click();
+  await press(page, 'Control+Home');
+  await page.keyboard.type(text);
+  await page.keyboard.press('Enter');
+  await expect(loc, `${target.phrase} after the line was typed`).toContainText(text);
+}
+
+/** A value set by dragging the slider of an input, not by typing into it: a real pointer press on
+ * the thumb, a walk to where the value lives on the track, and a release. The track says what it
+ * spans (`min`, `max`, `step`), so a feature can name the value a reader would aim at; a pixel of a
+ * 200-px track is worth a hundredth of the range, so the landing is checked against the coarser of
+ * one step and one pixel. */
+export async function dragSlider(page: Page, target: ElementRef, value: number): Promise<void> {
+  const loc = (await locate(page, target)).first();
+  const range = loc.locator('input[type="range"]').first();
+  if (await range.count() === 0)
+    throw new Error(`${target.phrase} has no slider to drag`);
+  const track = await range.evaluate((el: HTMLInputElement) =>
+    ({min: Number(el.min), max: Number(el.max), step: Number(el.step) || 0, value: Number(el.value)}));
+  if (value < track.min || value > track.max)
+    throw new Error(`the slider of ${target.phrase} spans ${track.min} to ${track.max}, so it cannot be dragged to ${value}`);
+  const box = await range.boundingBox();
+  if (box === null)
+    throw new Error(`the slider of ${target.phrase} has no rectangle on the page`);
+  const at = (v: number): number => box.x + box.width * ((v - track.min) / (track.max - track.min));
+  const y = box.y + box.height / 2;
+  const from = at(track.value);
+  const to = at(value);
+  await page.mouse.move(from, y);
+  await page.mouse.down();
+  for (let i = 1; i <= 8; i++)
+    await page.mouse.move(from + (to - from) * i / 8, y);
+  await page.mouse.up();
+  const tolerance = Math.max(track.step, (track.max - track.min) / box.width) * 2;
+  await expect.poll(async () => Math.abs(Number(await range.inputValue()) - value) <= tolerance,
+    {message: `the slider of ${target.phrase} within ${tolerance} of ${value} after the drag`}).toBe(true);
 }

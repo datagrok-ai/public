@@ -63,7 +63,8 @@ Feature: Line chart selection and the row markers
     Then "lassoTool" property of line chart viewer should be "true"
     When user picks "Tools > Lasso Tool" from the context menu of line chart viewer
     Then "lassoTool" property of line chart viewer should be "false"
-    And no errors should have been logged
+    When user closes the context menu
+    Then no errors should have been logged
 
   Scenario: A drag that ends where it started selects an empty band
     Given user clears the row selection
@@ -117,20 +118,13 @@ Feature: Line chart selection and the row markers
     And line chart viewer should show no selection highlight
     And no errors should have been logged
 
-  @known-failure
-  Scenario: After Tools > Lasso Tool the next Shift-drag selects nothing
-    # OPEN BUG, no ticket yet. Setting `lassoTool` through the property leaves the Shift-drag
-    # selecting its usual 82 rows (the scenario above this one); picking the SAME property from
-    # the chart's own Tools menu leaves the next Shift-drag selecting 0. It is not the drawing
-    # mode — right after the pick the chart reports `region drawing mode` false and
-    # `viewer regions` 0, so `_initAreaSelection`'s `isInDrawingMode` guard is not the one that
-    # is closing (line_chart_core.dart:747). Reproduced on every run; the API path and the UI
-    # path for one property must not differ.
+  Scenario: After picking Lasso Tool and closing the menu, a Shift-drag selects the same X band
     Given user clears the row selection
     When user picks "Tools > Lasso Tool" from the context menu of line chart viewer
     Then "lassoTool" property of line chart viewer should be "true"
     And the "region drawing mode" reading of line chart viewer should be "false"
-    When user drags a selection box over the "plot" area of line chart viewer
+    When user closes the context menu
+    And user drags a selection box over the "plot" area of line chart viewer
     Then the "rows selected" reading of line chart viewer should be 82
     When user clears the row selection
     And user sets "lassoTool" property of line chart viewer to "false"

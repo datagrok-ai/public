@@ -8,8 +8,8 @@ import * as DG from 'datagrok-api/dg';
 
 
 export namespace funcs {
-  export async function trackOverview(): Promise<void> {
-    return await grok.functions.call('Tutorials:TrackOverview', {});
+  export async function trackOverview(path?: string ): Promise<void> {
+    return await grok.functions.call('Tutorials:TrackOverview', { path });
   }
 
   export async function tutorialWidget(): Promise<any> {

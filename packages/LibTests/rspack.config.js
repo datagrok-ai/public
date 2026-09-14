@@ -15,6 +15,7 @@ const SOURCE_LIBS = [
   '@datagrok-libraries/compute-api',
   '@datagrok-libraries/utils',
   '@datagrok-libraries/webcomponents',
+  '@datagrok-libraries/webcomponents-vue',
   '@datagrok-libraries/test',
   '@datagrok-libraries/arrow',
   'diff-grok',
@@ -50,6 +51,9 @@ module.exports = (env = {}) => {
       // TestScheduler can intercept AsyncScheduler.delegate (single rxjs instance).
       alias: {
         'rxjs': path.resolve(__dirname, 'node_modules/rxjs'),
+        // Single vue instance shared by tests and webcomponents-vue code under test
+        // (each has its own node_modules copy; effects/scopes must share one runtime).
+        'vue': path.resolve(__dirname, 'node_modules/vue'),
       },
     },
     module: {

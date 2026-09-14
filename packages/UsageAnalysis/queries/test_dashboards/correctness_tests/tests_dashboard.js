@@ -103,7 +103,7 @@ async function postprocess() {
   // let ticketsStatusCol = await pivot.columns.addNewCalculated(`${builds[0]} tickets status`, `UsageAnalysis:getTicketsVerdict(\${${builds[0]} concat unique(result)})`, DG.TYPE.STRING);
   //let stickyMetaStatusCol = await pivot.columns.addNewCalculated(`ignore status`, `UsageAnalysis:getTicketsVerdict(\${ignoreReason})`, DG.TYPE.STRING);
   if (ticketsStatusCol)
-    ticketsStatusCol.colors.setCategorical({
+    ticketsStatusCol.meta.colors.setCategorical({
       'Fixed': '#2ca02c',
       'Partially Fixed (Lowest)': '#ffe51c',
       'Partially Fixed (Low)': '#ffa500',
@@ -115,7 +115,7 @@ async function postprocess() {
       'Wasn\'t Fixed (Blocker)': '#7b2d24',
     })
   if (stickyMetaStatusCol)
-    stickyMetaStatusCol.colors.setCategorical({
+    stickyMetaStatusCol.meta.colors.setCategorical({
       'Fixed': '#2ca02c',
       'Partially Fixed (Lowest)': '#ffe51c',
       'Partially Fixed (Low)': '#ffa500',

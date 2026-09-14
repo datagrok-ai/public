@@ -296,7 +296,7 @@ async function mintToken(): Promise<string | undefined> {
   // is exactly that case — unguarded, it propagated out of loginToDatagrok and failed the spec
   // instead of falling back to the shared DATAGROK_AUTH_TOKEN
   try {
-    const response = await fetch(`${apiUrl}/users/login/dev/${devKey}`, {method: 'POST'});
+    const response = await fetch(`${apiUrl}/users/login/dev`, {method: 'POST', headers: {'Authorization': `Dev ${devKey}`}});
     const json = await response.json().catch(() => null);
     return json?.token ?? undefined;
   } catch (_) {
@@ -367,7 +367,7 @@ function readDevKeyFromConfig(field: 'key' | 'key2'): {apiUrl: string; key: stri
 }
 
 async function exchangeDevKeyForToken(apiUrl: string, key: string): Promise<string> {
-  const resp = await fetch(`${apiUrl}/users/login/dev/${key}`, {method: 'POST'});
+  const resp = await fetch(`${apiUrl}/users/login/dev`, {method: 'POST', headers: {'Authorization': `Dev ${key}`}});
   const json = await resp.json() as any;
   if (json?.isSuccess === true && json?.token) return json.token;
   throw new Error(`Second-user dev-key login failed at ${apiUrl}: ${JSON.stringify(json).slice(0, 200)}`);

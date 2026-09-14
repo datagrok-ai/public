@@ -78,7 +78,7 @@ category('Viewers: PC Plot', () => {
     await uploadProject('Test project with P C Plot', demog.getTableInfo(), v, demog);
     grok.shell.closeAll();
     await grok.dapi.projects.open('Test project with P C Plot');
-    v = grok.shell.getTableView('demog 1000');
+    v = grok.shell.tableView('demog 1000');
     isViewerPresent(Array.from(v.viewers), 'PC Plot');
     const pcPlot = findViewer('PC Plot', v);
 

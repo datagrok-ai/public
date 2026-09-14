@@ -99,7 +99,8 @@ an app-like shareable link:
 ```
 
 To copy such a link for the parameters you currently see, click the **copy** icon next to
-the **Run** button.
+the **Run** button. Once the function has run and the parameter form is gone, the same icon
+sits next to **Refresh** in the **Source** pane of the Toolbox.
 
 ### Stored runs
 

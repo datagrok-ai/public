@@ -34,7 +34,7 @@ export class TwinProteinView {
   public init(entry: string, bsView: DG.TableView, ligandSelection: { [key: string]: boolean }) {
     // ---- SIDEPANEL REMOVAL ----
     const windows = grok.shell.windows;
-    windows.showProperties = false;
+    windows.showContextPanel = false;
     windows.showHelp = false;
     windows.showConsole = false;
     this.entry = entry;
