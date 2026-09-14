@@ -16,7 +16,7 @@
   },
   "devDependencies": {
     "@types/node": "^26.1.0",
-    "datagrok-tools": "^5.1.5",
+    "datagrok-tools": "^6.7.0",
     "ts-loader": "latest",
     "typescript": "latest",
     "webpack": "^5.95.0",

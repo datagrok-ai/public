@@ -19,7 +19,7 @@
     "@datagrok-libraries/bdd": "file:../../libraries/bdd",
     "@playwright/test": "^1.62.1",
     "css-loader": "^7.1.2",
-    "datagrok-tools": "^5.1.5",
+    "datagrok-tools": "^6.7.0",
     "style-loader": "^4.0.0",
     "ts-loader": "latest",
     "typescript": "latest",
