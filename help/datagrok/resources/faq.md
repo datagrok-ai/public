@@ -185,6 +185,26 @@ Yes, see [Sharing query results](../../access/databases/databases.md#sharing-que
 
 Yes. Users can access data in real-time, and the UI loads data quickly. [Dynamic dashboards](../../access/databases/databases.md#creating-dynamic-dashboards-for-query-results) enable interactive exploration.
 
+##### <b>Q: How do I find out which databases and files I already have access to?</b>
+
+Open **Browse**. **Databases** lists every connection shared with you, **Files** lists file shares, and **Spaces** lists team content. Anything missing hasn't been shared with you yet. See [Finding available data](../../access/databases/databases.md#finding-available-data).
+
+##### <b>Q: I see a query but can't run it. Why?</b>
+
+You have **View** but not the permission to execute it, or the connection credentials are restricted to a group you're not in. See [Troubleshooting access](../../access/databases/databases.md#troubleshooting-access).
+
+##### <b>Q: The data I'm looking at is stale. How do I refresh it?</b>
+
+A query result is a snapshot. Refresh it in **Toolbox** > **Source**, where you can also change the parameters. If the query is cached on the server, the refresh returns the cached result until it expires. See [Data freshness and caching](../../access/databases/databases.md#freshness-and-caching).
+
+##### <b>Q: Should I filter in SQL or in the filter panel?</b>
+
+Both. Filter in SQL to decide what leaves the database (stable criteria, large tables). Filter in Datagrok to explore the loaded slice. See [Where to filter](../solutions/workflows/retrieve-and-filter.md#where-to-filter).
+
+##### <b>Q: How do I let users pick a threshold or a date range without editing the query?</b>
+
+Use pattern inputs: `--input: string value = "< 1000" {pattern: double}` accepts `< 1000`, `10-500`, or `>= 50`. The same works for dates with `{pattern: datetime}` and values such as `this year` or `after 2024-01-01`. See [Retrieve and filter data](../solutions/workflows/retrieve-and-filter.md#parameterized-query).
+
 ## Govern
 
 ##### <b>Q: Do you follow secure development standards and industry best practices?</b>
@@ -454,6 +474,10 @@ Color coding remains consistent across the [grid](../../visualize/viewers/grid.m
 
 ### Filtering & search
 
+##### <b>Q: Are my filters saved with the dashboard?</b>
+
+The filter panel's state is part of the layout, so a saved dashboard reopens with it. To keep several filter sets for one table, save them by name in the filter panel's context menu under **Save or Apply**. These presets are stored in your browser only and don't travel with the dashboard or to other users. These presets are stored in your browser only and don't travel with the dashboard or to other users. See [Saving a filter configuration](../../visualize/viewers/filters.md#saving-a-filter-configuration).
+
 ##### **Q: How can I search and filter data quickly and intuitively?**
 
 Datagrok provides advanced and intuitive search and filtering capabilities:
@@ -496,6 +520,48 @@ experiments, samples, users, etc.). These annotations automatically follow the
 object across the platform. So if you leave a note on a molecule in one table,
 your collaborators will see the same note when that molecule appears in a
 different table or dataset.
+
+## Projects and dashboards
+
+##### <b>Q: Data sync: should I turn it on?</b>
+
+Turn it on when the dashboard must show current data and its audience has access to the database connection behind it. Turn it off for reports and snapshots that must stay as they were, or when the audience can't be given access to the source. See the comparison in [Data sync](../concepts/project/dashboard.md#data-sync).
+
+##### <b>Q: I shared a dashboard, but for my colleague it never finishes loading. Why?</b>
+
+The dashboard re-runs a query on open and your colleague can't access the query's database connection. The query itself is saved with the dashboard, but the connection is not. Share the connection with them, or keep the dashboard and its sources in one shared space. See [What recipients need](../concepts/project/dashboard.md#what-recipients-need).
+
+##### <b>Q: How do I make a "version" of a dashboard before changing it?</b>
+
+Datagrok keeps no version history for projects. Click **SAVE** > **Save a copy** before a risky change, name the copy for its purpose, and keep the layout in the gallery with **View** > **Layout** > **Save to Gallery**. See [Versioning](../concepts/project/dashboard.md#versioning).
+
+##### <b>Q: My dashboard stopped opening after I changed the query. What happened?</b>
+
+A recorded transformation step or a formula references a column that the query no longer returns. Restore the column, or remove the step in the query's **Transformations** tab. Viewers bound to a missing column don't block opening, transformation steps can. See [Change the source](../concepts/project/dashboard.md#changing-the-source).
+
+##### <b>Q: How do I update the data in a dashboard without recreating it?</b>
+
+With Data sync on, the data refreshes on every open, and **Toolbox** > **Source** refreshes it on demand. With Data sync off, refresh in **Toolbox** > **Source** and click **SAVE** > **Save original project** to store the new snapshot. See [Refresh](../concepts/project/dashboard.md#refreshing-data).
+
+##### <b>Q: What is the difference between linking and joining tables?</b>
+
+Joining produces one wider table. Linking keeps both tables and synchronizes the current row, selection, or filter between them through key columns. Use a join for one-to-one enrichment and a link for master-detail browsing. See [Join or link](../../transform/link-tables.md#joining-or-linking).
+
+##### <b>Q: How do I show the details of the current row from another table?</b>
+
+Link the tables with the `row to filter` link type. Clicking a row in the master table then filters the detail table. To show the details inside the master grid, right-click a cell in the master table (the source of the link) and select **Add** > **Linked Tables**. See [Master-detail](../../transform/link-tables.md#master-detail).
+
+##### <b>Q: Why did the column order change after a refresh?</b>
+
+The grid restores the saved order by column name. The order isn't saved for tables with more than 1,000 columns, and pivoted results order new columns by first appearance. Sort in the query for a stable order. See [Troubleshooting](../concepts/project/dashboard.md#troubleshooting).
+
+##### <b>Q: Can I embed a dashboard in another website?</b>
+
+Yes. Save the dashboard, then in the **Table View**'s **Top Menu** select **Embed...** and copy the iframe. Viewers still need a Datagrok account with access to the dashboard. See [Embed](../concepts/project/dashboard.md#embedding).
+
+##### <b>Q: What happens when I delete a dashboard?</b>
+
+It is removed for all users and can't be undone. Tables it owns go with it. Queries and linked tables stay, because they belong to other entities. To take a dashboard out of a space without deleting it, move it to another space. See [Retire](../concepts/project/dashboard.md#retiring).
 
 ## Develop
 

@@ -280,8 +280,15 @@ To create a dashboard with a file as a data source:
 3. Click **SAVE** on top to upload and share the project. The file loading script
   will be under the  "Creation script" section. 
   
-Sharing the dashboard with a file as a data source also grants the
-"read" privilege to the corresponding file connection.
+The file connection is saved as part of the dashboard, so people you share
+the dashboard with can read the file through it. To let them browse the
+folder itself, [share the folder](#file-sharing-and-access-control). For
+details, see [What recipients need](../../datagrok/concepts/project/dashboard.md#what-recipients-need).
+
+A file-based dashboard picks up a changed file on the next open, subject to
+the connection's [cache](#caching). For the difference between a snapshot and
+a re-read dashboard, and what to watch when the file is renamed or moved, see
+[Files as a source](../../datagrok/concepts/project/dashboard.md#files-as-a-source).
 
 ## File sharing and access control
 
@@ -293,8 +300,8 @@ and the privilege (View / Edit). Once the folder is shared, it appears in the re
 
 The privilege level determines what the recipient can do:
 
-* _Can view_: View, open, and download. 
-* _Can edit_: Everything under "view", plus rename, edit, delete, and reshare
+* _View and use_: View, open, and download. 
+* _Full access_: Everything under "view", plus rename, edit, delete, and reshare
 
 ![Share a folder](img/share-the-folder.gif)
 

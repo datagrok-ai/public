@@ -119,8 +119,8 @@ To share an entity using context actions:
       email, or group name and select the appropriate match.
 1. Assign access privileges. You can select any
    or all of the following options:
-   1. **Can view**: Can view, open, and download.
-   1. **Can edit**: Can rename, edit, delete, and share the entity with others.
+   1. **View and use**: Can view, open, and download.
+   1. **Full access**: Can rename, edit, delete, and share the entity with others.
 1. Optional. Add description. Decide if you want to notify users by email or
    through the Datagrok interface: 
    1. To notify via email, when entering the user identity, use emails instead of user/group names. The email notification will include a link to the shared entity and the description provided.

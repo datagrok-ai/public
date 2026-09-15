@@ -35,6 +35,28 @@ You can also [connect to a data source, query data, and share connections progra
 
 :::
 
+## Finding available data
+
+Before adding a connection, check what is already there. Most teams keep
+their internal databases connected and shared, so the data you need is often
+one click away.
+
+| Where to look | What you find |
+|---|---|
+| **Browse** > **Databases** | Every connection you created or that was shared with you, grouped by database type. Expand a connection to see its saved queries and, for most databases, its schemas and tables. Demo connections such as Northwind and ChEMBL are [public datasets](../public-datasets.md) useful for learning |
+| **Browse** > **Files** | File shares (S3, Azure, SharePoint, network drives) shared with you. Spreadsheets and other files open as tables |
+| **Browse** > **Spaces** | Team spaces with dashboards, queries, and files that colleagues published |
+| **Browse** > **Dashboards** | Dashboards shared with you. A dynamic dashboard shows where its data comes from in **Toolbox** > **Source** |
+| **Browse** > **My stuff** | Your own entities, plus favorites, recent items, and entities shared directly with you |
+
+If a connection you expect is missing, nobody has shared it with you yet.
+Connections, like other entities, are private to their author until shared.
+Ask the connection owner or your Datagrok administrator. To learn how sharing
+works, see [Access control](#access-control).
+
+To find data by name, tag, or author across all of these, use the search box
+at the top of **Browse**. See [Entity search](../../datagrok/navigation/views/browse.md#entity-search).
+
 ## Connecting to database
 
 
@@ -82,10 +104,19 @@ options).
 
 :::
 
-### Caching data
+### Freshness and caching
 
-You can cache query results to improve query performance. To learn more, see
-[Caching function results](../../develop/how-to/functions/cache-function-results.md)
+A query result is a snapshot taken when the query ran. It does not update by
+itself while you look at it. To get current data, refresh it in **Toolbox** >
+**Source** (this also lets you change the parameters), or re-run the query.
+For dashboards, the [Data sync](../../datagrok/concepts/project/dashboard.md#data-sync)
+switch decides whether the query re-runs on every open.
+
+Query results can also be cached on the server to speed up repeated runs.
+When a query or connection has caching enabled, a re-run returns the cached
+result until the cache expires or is invalidated, so the data you see can be
+older than the database. The query author sets this up. To learn more, see
+[Caching function results](../../develop/how-to/functions/cache-function-results.md).
 
 ### Modifying connection
 
@@ -584,9 +615,16 @@ To save the query output as a dynamic dashboard, do the following:
       control. The query re-executes each time the project is opened. To learn
       more about dynamic data updates in projects, see [Dynamic data](../../datagrok/navigation/basic-tasks/basic-tasks.md#dynamic-data).
 1. Click **OK** to upload the project.
-1. [Share](#sharing-query-results) the project with others.
+1. [Share](#sharing-query-results) the project with others. The query is
+   saved as part of the project, so recipients can re-run it. Make sure the
+   database connection is shared with them as well, otherwise the dashboard
+   never finishes loading for them.
 
 ![Dynamic dashboards](img/dynamic-dashboards.gif)
+
+For the trade-offs between snapshot and dynamic dashboards, what recipients
+need, how to change the query safely, and versioning practices, see
+[Dashboards](../../datagrok/concepts/project/dashboard.md).
 
 ## Sharing query results
 
@@ -614,9 +652,11 @@ necessary permissions to execute this query.
 If you want to persist a specific layout, create a dynamic dashboard, or assign
 access permissions to specific groups or users, you can share query results as a
 project. First, you need to [upload the project](#creating-dynamic-dashboards-for-query-results).
- Then, locate the desired project in **Data** > **Projects** and right-click it to share. Users
-will get an email notification with the access link. To learn more about access
-privileges, see [Access control](#access-control).
+ Then, locate the desired project in **Browse** > **Dashboards** and right-click it to share. Users
+get an in-app notification, or an email if you entered an email address, with the access link.
+To learn more about access privileges, see [Access control](#access-control), and for what
+recipients of a dynamic dashboard need, see
+[Dashboards](../../datagrok/concepts/project/dashboard.md#what-recipients-need).
 
 ## Access control
 
@@ -669,6 +709,46 @@ means you can't share a query without sharing a connection. Deleting a
 connection also deletes a query.
 
 :::
+
+### Troubleshooting access
+
+<details>
+<summary>I don't see a connection or a query that a colleague uses</summary>
+
+It hasn't been shared with you. Entities are private to their author until
+shared. Ask the author to share the query. Because the query belongs to its
+connection, sharing the query also gives you the connection.
+
+</details>
+
+<details>
+<summary>I see the query but can't run it</summary>
+
+You can see the query but lack the **Execute Data Query** permission, or the
+connection's credentials are restricted to a group you're not in. Ask the
+author to share the query with **View and use**, or an administrator to check
+the [connection credentials](../../govern/access-control/data-connection-credentials.md).
+
+</details>
+
+<details>
+<summary>I can run the query but can't see the schema</summary>
+
+Browsing tables and columns needs the **Get Schema** permission on the
+connection. Running saved queries does not. Ask the connection owner to grant
+it if you need to write your own queries.
+
+</details>
+
+<details>
+<summary>A shared dashboard never finishes loading</summary>
+
+The dashboard re-runs a query on open (Data sync on) and you don't have
+access to the query's database connection. The page stays on the loading
+spinner without a message. Ask the author to share the connection. See
+[What recipients need](../../datagrok/concepts/project/dashboard.md#what-recipients-need).
+
+</details>
 
 ## Data enrichment
 
@@ -816,3 +896,6 @@ SELECT * FROM data;
   * [Using lists in parameterized queries](https://www.youtube.com/watch?v=meRAEF7ogtw)
 * Tutorials
   * [Adding parameters to functions](../../datagrok/concepts/functions/func-params-annotation.md)
+* Workflows
+  * [Work with connected datasets](../../datagrok/solutions/workflows/connected-datasets.md)
+  * [Retrieve and filter data](../../datagrok/solutions/workflows/retrieve-and-filter.md)
