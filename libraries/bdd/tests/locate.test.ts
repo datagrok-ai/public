@@ -106,22 +106,43 @@ scenario('the Dart name conventions and the platform names', async () => {
   assert.equal(await count('Caption input'), 1);
 });
 
-scenario('a scope read while its container rebuilds finds the target once the container is back', async () => {
-  await page!.evaluate(() => {
+const PANE = (button: boolean) => '<div class="d4-accordion-pane" name="pane-Grants">' +
+  '<div class="d4-accordion-pane-header" name="div-section--Grants">Grants</div>' +
+  `<div class="d4-accordion-pane-content">${button ? '<button class="ui-btn">MANAGE</button>' : ''}</div></div>`;
+
+async function withHost(html: string, body: () => Promise<void>): Promise<void> {
+  await page!.evaluate((h) => {
     const host = document.createElement('div');
-    host.id = 'rebuilding';
-    host.innerHTML = '<div class="d4-accordion-pane-header" name="div-section--Grants">Grants</div>';
+    host.id = 'late-host';
+    host.innerHTML = h;
     document.body.appendChild(host);
-  });
-  const button = await locateActionable(page!, el('MANAGE button in "Grants" section'));
-  await page!.evaluate(() => {
-    document.getElementById('rebuilding')!.innerHTML = '<div class="d4-accordion-pane" name="pane-Grants">' +
-      '<div class="d4-accordion-pane-header" name="div-section--Grants">Grants</div>' +
-      '<div class="d4-accordion-pane-content"><button class="ui-btn">MANAGE</button></div></div>';
-  });
-  assert.equal(await button.count(), 1);
-  await page!.evaluate(() => document.getElementById('rebuilding')!.remove());
-});
+  }, html);
+  try {
+    await body();
+  }
+  finally {
+    await page!.evaluate(() => document.getElementById('late-host')?.remove());
+  }
+}
+
+const setHost = (html: string) => page!.evaluate((h) => { document.getElementById('late-host')!.innerHTML = h; }, html);
+
+scenario('a scope read while its container rebuilds finds the target once the container is back', () =>
+  withHost('<div class="d4-accordion-pane-header" name="div-section--Grants">Grants</div>', async () => {
+    const button = await locateActionable(page!, el('MANAGE button in "Grants" section'));
+    await setHost(PANE(true));
+    assert.equal(await button.count(), 1);
+  }));
+
+scenario('a target that renders late in a whole scope, and in an ordinal one, is found in that scope', () =>
+  withHost(PANE(false) + PANE(false), async () => {
+    const inFirst = await locateActionable(page!, el('MANAGE button in "Grants" section'));
+    const inSecond = await locateActionable(page!, el('MANAGE button in second "Grants" section'));
+    await setHost(PANE(false) + PANE(true));
+    assert.equal(await inSecond.count(), 1);
+    assert.equal(await inFirst.count(), 1);
+    assert.equal(await page!.locator('#late-host [name="pane-Grants"]').nth(1).locator('button').count(), 1);
+  }));
 
 scenario('ordinals, and the visible matches a gesture acts on', async () => {
   assert.equal(await text('second item in results list'), 'beta');

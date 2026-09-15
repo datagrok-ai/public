@@ -105,10 +105,10 @@ export async function locateRef(page: Page, ref: NounRef, within?: Locator): Pro
       return pick(inRoot, ref);
   }
   let loc = await inBase(page, base, ref);
-  // a scope read while its container rebuilds can resolve to a fragment of it (a section's header
-  // before its pane is back): the target is then looked for in every candidate the scope has
-  if (scope && ref.scope!.plan.type === 'kind' && await loc.count() === 0) {
-    scope = pick((await candidates(page, await scopeBase(page, ref.scope!, within), ref.scope!)).reduce((a, b) => a.or(b)), ref.scope!);
+  // a scope read while its container rebuilds can resolve to its label (a section's header before
+  // its pane is back): the target is then looked for in every candidate the scope has
+  if (scope && ref.scope!.ordinal === undefined && await loc.count() === 0 && await isKindLabel(scope, ref.scope!)) {
+    scope = (await candidates(page, await scopeBase(page, ref.scope!, within), ref.scope!)).reduce((a, b) => a.or(b));
     loc = await inBase(page, scope, ref);
   }
   // a scope that is not on the page has no owner edge to try — and `getAttribute` on it would
@@ -156,9 +156,23 @@ async function candidates(page: Page, base: Base, ref: NounRef): Promise<Locator
   return out;
 }
 
-/** What a scope itself is looked for in: its own scope, else the page. */
 async function scopeBase(page: Page, scopeRef: NounRef, within?: Locator): Promise<Base> {
-  return scopeRef.scope ? locateRef(page, scopeRef.scope, within) : within ?? page;
+  if (scopeRef.scope)
+    return locateRef(page, scopeRef.scope, within);
+  if (!within && contextFirst(scopeRef)) {
+    const root = page.locator(scopeRef.context!.selector);
+    if (await root.count() > 0)
+      return root;
+  }
+  return within ?? page;
+}
+
+async function isKindLabel(scope: Locator, scopeRef: NounRef): Promise<boolean> {
+  const label = scopeRef.plan.type === 'kind' ? scopeRef.plan.kind.labelSelector : undefined;
+  if (!label || await scope.count() === 0)
+    return false;
+  const selector = label.split(',').map((s) => s.trim().replace(/^:scope\s*>\s*/, '')).join(', ');
+  return scope.first().evaluate((e, s) => e.matches(s), selector).catch(() => false);
 }
 
 /** The element's whole text is the qualifier, allowing decoration around it (an icon glyph, a

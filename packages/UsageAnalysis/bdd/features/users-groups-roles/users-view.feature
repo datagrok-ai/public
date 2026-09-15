@@ -20,8 +20,9 @@ Feature: The Users view
   user joined ("just now", "a minute ago": grok_user_meta.dart), not the name, email and login the
   manual case lists — nothing there reads as a fact about this user, so the pane is claimed shown.
 
-  A #tag search is claimed by what it filters to: no user carries a tag this run could find (the JS
-  API cannot tag a user), so the tag is one no one has and the list empties. A sort is claimed by
+  A #tag search is claimed only to run without an error, as the manual case asks: no user carries a
+  tag this run could find (the JS API cannot tag a user), and a list emptied by a tag no one has
+  would empty just the same if # were read as plain text. A sort is claimed by
   the first item: which order the rest is in no reading exposes, and Admin and System joined in the
   same instant, so either may lead the default order. The order chosen is kept in the browser, so
   the scenario ends on Default, the ordering Settings gives.
@@ -204,7 +205,7 @@ Feature: The Users view
     Then no errors should have been logged
     And no error or warning balloon should have been shown
 
-  Scenario: A #tag search filters the list (Users-10)
+  Scenario: A #tag search runs without an error (Users-10)
     When user remembers the gallery counter
     And user types "#bddnotag{time}" into gallery search
     Then gallery counter should have text "0"

@@ -1,4 +1,4 @@
-@journey @users @realizes:views.users
+@journey @serial @users @realizes:views.users
 Feature: Managing a user
   What an administrator does to an existing user from its context menu in the Users view: the
   groups it belongs to, the roles it holds, disabling and enabling it, and marking it a favorite.

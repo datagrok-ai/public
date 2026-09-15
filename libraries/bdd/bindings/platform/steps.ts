@@ -580,8 +580,8 @@ export const userStatusOnServer = Then('the user {string} should be {word} on th
 export const personalGroupOnServer = Then('the user {string} should have a personal group on the server', async (page: Page, login: string) => {
   await expect.poll(() => page.evaluate(async (l) => {
     const user = await grok.dapi.users.include('group').filter(`login = "${l}"`).first();
-    if (!user)
-      return 'no such user';
+    if (!user?.group)
+      return user ? 'the user has no group yet' : 'no such user';
     const group = await grok.dapi.groups.find(user.group.id);
     return group?.personal ? `personal group "${group.friendlyName}"` : `group ${user.group.id} is not personal`;
   }, login), {message: `the personal group of "${login}"`, timeout: pollMs(30000)}).toBe(`personal group "${login}"`);
@@ -689,7 +689,7 @@ async function firstGalleryItem(page: Page): Promise<string> {
   if (typeof await galleryCount(page) !== 'number')
     return '';
   const gallery = await locate(page, el('gallery'));
-  return ((await gallery.filter({visible: true}).first().locator('.d4-link-label').first().textContent()
+  return ((await gallery.filter({visible: true}).first().locator('.d4-link-label').first().textContent({timeout: 1000})
     .catch(() => null)) ?? '').trim();
 }
 
