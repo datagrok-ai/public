@@ -46,15 +46,16 @@ Feature: Legends follow the rows that are left
   Name) is a count of USUBJID stacked by a calculated DIS_POP that is empty for RACE Other —
   demog-1000 has no empty category of its own, and Include Nulls has nothing to take away without
   one.
-  Known failure, and what it actually guards: the last scenario stands only because of a flag the
-  test harness sets. `libraries/bdd/src/runtime/viewer-runtime.ts`'s `arm` puts every viewer of the
-  page into `immediateRendering`, and with that flag on a layout that holds a histogram viewer comes
-  back with an empty filter panel and every row passing (reproduced outside the suite with plain JS
-  by switching the flag on). By hand, without the flag, the operator did not reproduce it at all;
-  and with the histogram closed before the layout is saved, the filter comes back even with the flag
-  on — which is why the scenario before the last one closes the histogram first. There is no ticket:
-  the finding went to the developers as a question — either the flag must not change what a layout
-  restores, or the harness must not set it. Take the mark off when that is answered.
+  Known failure: applying a layout that holds a histogram viewer races the filter panel the layout
+  re-creates. The new panel builds its cards from the layout on a 10 ms timer (`filters_core.dart`),
+  while the histogram's filter request makes the panel save its state, and the save rewrites the
+  panel's filters from the cards it already has, which before the first build is none. The save
+  normally waits 50 ms and lands after the build; under `immediateRendering`, which
+  `libraries/bdd/src/runtime/viewer-runtime.ts`'s `arm` sets on every viewer, it lands first, and the
+  layout comes back with an empty filter panel and every row passing. The saved layout is the same
+  with the flag and without it. A layout holding no histogram viewer, or one whose Filtering Enabled
+  is off, restores the panel, so the round-trips before the last scenario are made with the
+  histogram closed. Take the mark off once the save no longer runs before the panel's first build.
 
   Background:
     Given user is logged in
