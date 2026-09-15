@@ -32,9 +32,9 @@ packages/RevvitySignalsLink/scripts/revvity_etl.py:generic-api-key:14
 packages/Grokky/dockerfiles/claude-runtime/src/broker/broker.ts:generic-api-key:11
 
 # --- Algolia search-only key ---
-docusaurus/docusaurus-debug.config.js:generic-api-key:196
-docusaurus/docusaurus-wiki-debug.config.js:generic-api-key:184
-docusaurus/docusaurus.config.js:generic-api-key:211
+docusaurus/docusaurus-debug.config.js:generic-api-key:228
+docusaurus/docusaurus-wiki-debug.config.js:generic-api-key:216
+docusaurus/docusaurus.config.js:generic-api-key:243
 
 # --- DB connection (demo/test) ---
 packages/Chembl/connections/unichem.json:generic-api-key:13
