@@ -7,7 +7,7 @@ keywords:
   - package.json structure
   - package.js entry point
   - detectors.js
-  - webpack.config.js
+  - rspack.config.js
   - naming conventions
 ---
 
@@ -77,7 +77,8 @@ Datagrok Tools also outputs the `config.yaml` file and the directory it's stored
 
 > **Note**: The package template uses TypeScript. If you want to create a simple JavaScript package, pass the `--js` option to the command.
 
-5. Cd into the package directory and install other dependencies:
+5. Cd into the package directory and install the dependencies (inside the public repository, skip this:
+   `pnpm install` at the repository root covers every package):
 
   ```shell
   npm install
@@ -103,7 +104,8 @@ commands, refer to the [Datagrok Tools section].
 | [package.json](#package.json)           | Package metadata with predefined dependencies and scripts |
 | package.PNG                             | Package icon                                              |
 | README.md                               | Summary of the package                                    |
-| [webpack.config.js](#webpack.config.js) | webpack configuration for development                     |
+| tsconfig.json                           | Extends the shared base config, includes `src`            |
+| [rspack.config.js](#build-configuration) | Optional: bundler overrides, absent for a standard package |
 
 We discuss the key files in detail in their own sections that follow.
 
@@ -119,36 +121,35 @@ dependencies, and other data.
   "version": "0.0.1",
   "description": "",
   "dependencies": {
-    "datagrok-api": "latest",
-    "cash-dom": "latest",
-    "dayjs": "latest"
+    "datagrok-api": "^1.27.0",
+    "cash-dom": "^8.1.5",
+    "dayjs": "^1.11.13",
+    "rxjs": "^6.5.5"
   },
   "devDependencies": {
-    "webpack": "latest",
-    "webpack-cli": "latest"
+    "@datagrok/build-config": "^0.1.0"
   },
   "scripts": {
-    "debug-my-grok-app": "webpack && grok publish",
-    "release-my-grok-app": "webpack && grok publish --release",
-    "build-my-grok-app": "webpack",
-    "build": "webpack",
-    "debug-my-grok-app-dev": "webpack && grok publish dev",
-    "release-my-grok-app-dev": "webpack && grok publish dev --release",
-    "debug-my-grok-app-local": "webpack && grok publish local",
-    "release-my-grok-app-local": "webpack && grok publish local --release"
+    "build": "grok build",
+    "typecheck": "grok tsc --noEmit -p tsconfig.json",
+    "lint": "eslint --ext .ts,.tsx src",
+    "test": "grok test"
   }
 }
 ```
 
 The package includes the `datagrok-api` dependency &mdash; the JavaScript API you will use to develop the package.
-`dayjs` is an [alternative to Moment.js], and `cash-dom` is a [competitor for jQuery]. Additionally, the CLI includes
-`webpack` and `webpack-cli` as development dependencies to build the package.
+`dayjs` is an [alternative to Moment.js], and `cash-dom` is a [competitor for jQuery]. The single development
+dependency, `@datagrok/build-config`, brings the whole toolchain: the rspack bundler with swc, TypeScript,
+and the `dg` command the scripts call. The four scripts are the same in every Datagrok package: `build`
+bundles `src/package.ts` into `dist/`, generates the function metadata files and runs `grok check`;
+`typecheck` runs the TypeScript compiler without emitting; `lint` and `test` do what they say. Run any of
+them with `npm run <script-name>`; to [publish the package], run `grok publish`, which builds first.
 
-`package.json` also contains a few valuable scripts to let you [debug] or [publish the package]. To run any script in
-the terminal, run `npm run <script-name>`.
-
-To install the dependencies, run `npm install` from the terminal or run the provided script `install-dependencies` from
-your IDE. You can install other npm packages (such as React or Babel) using `npm install <npm package>`.
+To install the dependencies, run `npm install` from the terminal. You can install other npm packages (such
+as React) using `npm install <npm package>`. Inside the public repository the packages form one pnpm
+workspace: run `pnpm install` once at the repository root instead, and a package there declares no
+devDependencies at all (the toolchain is provided by the workspace, `datagrok-api` is `workspace:^`).
 
 ### <a href="#" id="package.js"></a>package.js
 
@@ -223,47 +224,26 @@ class SequencePackageDetectors extends DG.Package {
 Once registered by Datagrok, this function becomes available across the whole platform and can be used for semantic type
 detection.
 
-### <a href="#" id="webpack.config.js"></a>webpack.config.js
+### <a href="#" id="build-configuration"></a>Build configuration
 
-The Grok CLI generates a typical webpack configuration for the Datagrok package:
+A package has no bundler configuration file. `grok build --skip-check` (from `@datagrok/build-config`) bundles
+`src/package.ts` into `dist/package.js` with [rspack](https://rspack.rs) and swc using one configuration
+shared by every Datagrok package: the modules the platform provides are externals (`datagrok-api/*`,
+`rxjs`, `cash-dom`, `dayjs`, `wu`, `openchemlib`, `exceljs`, `html2canvas`), CSS is injected, images and
+`.wasm` become URLs, the output is assigned to a variable named after the package, and source maps are
+emitted. A package that needs more adds an `rspack.config.js` with only the differences:
 
 ```javascript
-const path = require('path');
+const {bundler} = require('@datagrok/build-config');
 
-module.exports = {
-  // Set 'mode' to 'production' to minify the output and optimize the production build
-  mode: 'development',
-  entry: {
-    // The package is limited to exactly one entry point
-    package: './src/package.js'
-  },
-  // The 'devtool' option enhances package debugging in browser devtools
-  devtool: 'inline-source-map',
-  // The external modules won't be loaded to the output, but will be taken from the environment
-  externals: {
-    'datagrok-api/dg': 'DG',
-    'datagrok-api/grok': 'grok',
-    'datagrok-api/ui': 'ui',
-    'openchemlib/full.js': 'OCL',
-    'rxjs': 'rxjs',
-    'rxjs/operators': 'rxjs.operators',
-    'cash-dom': '$',
-    'dayjs': 'dayjs',
-  },
-  output: {
-    filename: '[name].js',
-    // Name of the package in lower case letters
-    library: 'sequence',
-    // Results will be assigned to a variable `sequence`
-    libraryTarget: 'var',
-    path: path.resolve(__dirname, 'dist'),
-  },
-};
+module.exports = bundler({
+  externals: {ngl: 'NGL'},   // a global provided by the page
+  wasm: 'async',             // WebAssembly modules imported as ES modules
+  jsx: 'react',              // .tsx with the React automatic runtime
+});
 ```
 
-Refer to the [webpack documentation] to modify or extend the provided configuration.
-
-> **Note**:
+Every option is listed in the [@datagrok/build-config README](https://github.com/datagrok-ai/public/blob/master/build-config/README.md).
 
 ## Naming conventions
 
@@ -368,6 +348,5 @@ Your package might contain the following additional folders, depending on your n
 
 [views]: ../how-to/views/custom-views.md
 
-[webpack documentation]: https://webpack.js.org/configuration/
 
 [widgets]: ../../visualize/widgets.md "Widgets are various UI elements that together comprise the platform's user interface."

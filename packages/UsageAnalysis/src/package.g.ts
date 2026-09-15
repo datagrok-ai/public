@@ -1,7 +1,7 @@
 import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
 
-//meta.role: init
+//meta.role: Init
 export function _initUA() : void {
   PackageFunctions._initUA();
 }
@@ -33,7 +33,7 @@ export async function TestAnalysisReportForCurrentDay(date: any) : Promise<any> 
 //input: string categories { optional: true }
 //input: string projects { optional: true }
 //output: view result
-//meta.role: adminApp,app
+//meta.role: adminApp,App
 //meta.url: /
 export function usageAnalysisApp(path?: string, date?: string, groups?: string, packages?: string, tags?: string, categories?: string, projects?: string) : any {
   return PackageFunctions.usageAnalysisApp(path, date, groups, packages, tags, categories, projects);
@@ -42,7 +42,7 @@ export function usageAnalysisApp(path?: string, date?: string, groups?: string, 
 //name: Release
 //input: string path { optional: true; meta.url: true }
 //output: view result
-//meta.role: adminApp,app
+//meta.role: adminApp,App
 //meta.url: /release
 export function releaseDashboardApp(path?: string) : any {
   return PackageFunctions.releaseDashboardApp(path);
@@ -72,7 +72,7 @@ export async function stressRawDashboard() : Promise<any> {
 
 //name: Metrics
 //output: view result
-//meta.role: adminApp,app
+//meta.role: adminApp,App
 //meta.url: /metrics
 //meta.icon: images/icons/metrics.svg
 export function metricsApp() : any {
@@ -80,7 +80,7 @@ export function metricsApp() : any {
 }
 
 //name: Test Track
-//meta.role: adminApp,app
+//meta.role: adminApp,App
 //meta.url: /tests/manager
 //meta.icon: images/icons/test-track.svg
 export function testTrackApp() : void {
@@ -90,7 +90,7 @@ export function testTrackApp() : void {
 //name: Reports
 //input: string path { optional: true; meta.url: true }
 //output: view result
-//meta.role: adminApp,app
+//meta.role: adminApp,App
 //meta.url: /reports
 //meta.icon: images/icons/reports.svg
 export async function reportsApp(path?: string) : Promise<any> {
@@ -102,7 +102,7 @@ export async function reportsApp(path?: string) : Promise<any> {
 //input: map params { optional: true }
 //input: int limit { optional: true }
 //output: view result
-//meta.role: adminApp,app
+//meta.role: adminApp,App
 //meta.url: /service-logs
 //meta.icon: images/icons/service-logs.svg
 export function serviceLogsApp(path?: string, params?: any, limit?: number) : any {
@@ -111,7 +111,7 @@ export function serviceLogsApp(path?: string, params?: any, limit?: number) : an
 
 //name: Cloud Logs
 //output: view result
-//meta.role: adminApp,app
+//meta.role: adminApp,App
 //meta.url: /cloud-logs
 //meta.icon: images/icons/service-logs.svg
 export function cloudLogsApp() : any {
@@ -119,14 +119,14 @@ export function cloudLogsApp() : any {
 }
 
 //input: dynamic treeNode 
-//meta.role: appTreeBrowser
+//meta.role: AppTreeBrowser
 //meta.app: Service Logs
 export async function serviceLogsAppTreeBrowser(treeNode: any) : Promise<void> {
   await PackageFunctions.serviceLogsAppTreeBrowser(treeNode);
 }
 
 //input: dynamic treeNode 
-//meta.role: appTreeBrowser
+//meta.role: AppTreeBrowser
 //meta.app: Reports
 export async function reportsAppTreeBrowser(treeNode: any) : Promise<void> {
   await PackageFunctions.reportsAppTreeBrowser(treeNode);
@@ -135,7 +135,7 @@ export async function reportsAppTreeBrowser(treeNode: any) : Promise<void> {
 //name: Usage
 //output: widget result
 //meta.canView: Developers,Administrators
-//meta.role: dashboard
+//meta.role: Dashboard
 //test: usageWidget()
 export function usageWidget() : any {
   return PackageFunctions.usageWidget();
@@ -144,7 +144,7 @@ export function usageWidget() : any {
 //name: Reports
 //output: widget result
 //meta.canView: Developers,Administrators
-//meta.role: dashboard
+//meta.role: Dashboard
 //test: reportsWidget()
 export function reportsWidget() : any {
   return PackageFunctions.reportsWidget();
@@ -170,7 +170,7 @@ export function _specificClicksPanel() : any {
   return PackageFunctions._specificClicksPanel();
 }
 
-//meta.role: autostart
+//meta.role: Autostart
 export function describeCurrentObj() : void {
   PackageFunctions.describeCurrentObj();
 }
