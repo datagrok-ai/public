@@ -659,13 +659,13 @@ importers:
       '@floating-ui/dom':
         specifier: ^1.6.0
         version: 1.8.0
-      datagrok-api:
-        specifier: workspace:^
-        version: link:../../js-api
       rxjs:
         specifier: 'catalog:'
         version: 6.6.7
     devDependencies:
+      datagrok-api:
+        specifier: workspace:^
+        version: link:../../js-api
       http-server:
         specifier: ^14.1.1
         version: 14.1.1

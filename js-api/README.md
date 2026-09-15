@@ -43,7 +43,7 @@ Developer guide: [datagrok.ai/help/develop](https://datagrok.ai/help/develop/pac
 
 ```bash
 npm install
-npm run build        # tsc + webpack + bundle smoke test; also writes the browser bundle used by the platform client
+pnpm run build       # tsc + rspack bundles + bundle smoke test; also writes the browser bundle used by the platform client
 npm run build-ts     # TypeScript only
 ```
 
