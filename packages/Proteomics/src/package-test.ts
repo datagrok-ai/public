@@ -11,6 +11,7 @@ import './tests/enrichment-visualization';
 import './tests/spectronaut-parser';
 import './tests/spectronaut-candidates-parser';
 import './tests/spectronaut-candidates-e2e';
+import './tests/hye-ground-truth';
 import './tests/rank-abundance';
 import './tests/abundance-correlation';
 import './tests/fragpipe-parser';
