@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-20753: Added the `U2: domain trash` test category — a row deleted in the app, the ⋯ menu's Trash on `deleted: 'only'` with `?trash=1` in the path, the deleted row read-only with Restore, and back into the live list
 * GROK-20753: Added the `U2: domain app` test category — `DomainTable.app()` over `apitests.item`/`item_event`: the list, search, the filter query and the entity in `view.path`, a parent edit and a child insert as one transaction, the gate on Back and on close, the history pane, deep links and find-or-activate
 * GROK-20753: Added the `U2: domain session` test category — two sources under one `SharedSession` saving a draft parent and its draft child as one transaction, `domains.grid` over the js-api editor, search, and the `confirmDiscard` gate
 * GROK-20753: `U2: domain source` follows the u2 session seam — `table.draft()`, `Rows.isDraft`, the buttons over `src.session`

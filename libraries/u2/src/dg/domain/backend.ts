@@ -8,8 +8,9 @@ import * as DG from 'datagrok-api/dg';
 import type {IProperty} from '../../core/property-like.js';
 import {backends} from '../../sources/backends.js';
 import type {DataFrameLike} from '../../sources/df-bindings.js';
-import type {AuditEntryLike, DomainBackend, DomainFrameLike, DomainQueryLike, DomainTableInfoLike,
-  DomainTableLike, DomainTransactionOpLike, DomainTransactionResultLike} from '../../sources/domain-backend.js';
+import type {AuditEntryLike, DomainBackend, DomainDeletedMode, DomainFrameLike, DomainQueryLike,
+  DomainTableInfoLike, DomainTableLike, DomainTransactionOpLike,
+  DomainTransactionResultLike} from '../../sources/domain-backend.js';
 import type {EditState} from '../../sources/edit-state.js';
 import {EditorEditState} from './editor-state.js';
 
@@ -23,6 +24,15 @@ const COPIED = ['type', 'propertyType', 'semType', 'nullable', 'choices', 'min',
 export const SYSTEM_COLUMNS: readonly (readonly [name: string, type: string, caption: string])[] = [
   ['id', 'string', 'Id'], ['version', 'int', 'Version'], ['created_on', 'datetime', 'Created'],
   ['updated_on', 'datetime', 'Updated'], ['author_id', 'string', 'Author']];
+
+/** The soft-delete calls, through a cast: a package compiles these sources against the PUBLISHED
+ * `datagrok-api` types (1.27.11 in every plugin's node_modules), so `client.restore` — and
+ * `deleted` in `count`'s options, which `dapi.ts` does not take at all yet — would break every
+ * plugin build. Drops when the js-api release carrying them is out. */
+interface DeletedAwareClient {
+  restore(id: string): Promise<{id: string, restored: boolean, version: number}>;
+  count(filter: unknown, options: {search?: string, deleted?: DomainDeletedMode}): Promise<number>;
+}
 
 export class DgDomainBackend implements DomainBackend {
   private readonly _tables = new Map<string, Promise<DgDomainTable>>();
@@ -95,8 +105,16 @@ export class DgDomainTable implements DomainTableLike {
     return this.client.query(DgDomainTable.spec(spec));
   }
 
-  count(filter?: DomainQueryLike['filter'], search?: string): Promise<number> {
-    return this.client.count(filter as DG.DomainFilter | undefined, {search});
+  count(filter?: DomainQueryLike['filter'], search?: string, deleted?: DomainDeletedMode): Promise<number> {
+    return this._deleted.count(filter as DG.DomainFilter | undefined, {search, deleted});
+  }
+
+  async restore(id: string): Promise<void> {
+    await this._deleted.restore(id);
+  }
+
+  private get _deleted(): DeletedAwareClient {
+    return this.client as unknown as DeletedAwareClient;
   }
 
   transaction(ops: DomainTransactionOpLike[]): Promise<DomainTransactionResultLike[]> {

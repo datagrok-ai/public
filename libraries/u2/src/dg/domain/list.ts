@@ -147,12 +147,17 @@ export class DomainList extends Control {
 
   /** Every action that applies to `row` and that the caller may run on it (the row's own access):
    * Open on a saved row, Delete under the delete capability, the table's registry, the list's own.
-   * A row marked deleted offers Restore alone. */
+   * A row marked deleted offers Restore alone — and so does one already in the trash, which is
+   * read-only until the backend brings it back (the Delete grant, per row). */
   actionsFor(row: RowView): Action[] {
     const source = this.source;
     const table = this._table;
     if (row[Rows.STATE] === 'deleted')
       return [{name: 'Restore', icon: 'undo', run: () => source.edit.peek()?.unmarkDeleted(row.id)}];
+    if (Rows.isDeleted(row)) {
+      return allowedActions([{name: 'Restore', icon: 'trash-restore', requires: 'delete',
+        run: () => void source.restore([row.id])}], {access: source.access.peek(), row});
+    }
     const draft = Rows.isDraft(row);
     const actions: Action[] = [];
     if (table !== undefined && !draft)
@@ -167,7 +172,7 @@ export class DomainList extends Control {
 
   private _row(row: RowView, el: HTMLElement): HTMLElement {
     el.dataset.u2Row = row.id;
-    el.classList.toggle('u2-domain-list-deleted', row[Rows.STATE] === 'deleted');
+    el.classList.toggle('u2-domain-list-deleted', row[Rows.STATE] === 'deleted' || Rows.isDeleted(row));
     this._markProblem(el);
     const render = this._options.render;
     const content = render ? render(row) : this._content(row);

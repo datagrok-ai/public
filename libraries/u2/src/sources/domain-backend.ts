@@ -33,6 +33,11 @@ export interface DomainTableInfoLike {
   childTables: {schema: string, table: string, fkColumn: string, label: string}[];
 }
 
+/** Which rows a query answers: the live ones (the default), the live and the soft-deleted, or
+ * the deleted alone — a trash list, whose rows carry `~is_deleted` and are read-only until
+ * {@link DomainTableLike.restore} brings them back. */
+export type DomainDeletedMode = 'exclude' | 'include' | 'only';
+
 /** The `DomainQuerySpec` subset a source issues: a smart-filter string or the canonical
  * condition tree, a case-insensitive `search` over the searchable columns, `'col,!col'`
  * ordering, paging, and whether the rows carry the per-row access columns (`Access.ROW_COLUMNS`). */
@@ -44,6 +49,8 @@ export interface DomainQueryLike {
   limit?: number;
   offset?: number;
   withAccess?: boolean;
+  /** Default `'exclude'`; anything else projects `~is_deleted` with every row. */
+  deleted?: DomainDeletedMode;
 }
 
 /** One `/transaction` op (js-api `DomainTransactionOp`): `table` is `'<table>'` in the writer's
@@ -99,13 +106,17 @@ export interface DomainTableLike {
   info: DomainTableInfoLike;
   access(): Promise<AccessData>;
   query(spec: DomainQueryLike): Promise<Record<string, unknown>[]>;
-  /** The total under the same `filter` and `search` a query takes. */
-  count(filter?: DomainQueryLike['filter'], search?: string): Promise<number>;
+  /** The total under the same `filter`, `search` and `deleted` mode a query takes. */
+  count(filter?: DomainQueryLike['filter'], search?: string, deleted?: DomainDeletedMode): Promise<number>;
   transaction(ops: DomainTransactionOpLike[]): Promise<DomainTransactionResultLike[]>;
   /** The rows as a frame with the writer attached — the one collection a source holds. */
   frame(spec: DomainQueryLike): Promise<DomainFrameLike>;
   /** A row's history, oldest first — the platform's `client.audit`. */
   audit?(id: string): Promise<AuditEntryLike[]>;
+  /** Brings a soft-deleted row back (`~is_deleted` off, the `'undelete'` audit op); refused with
+   * `validation` where the row refers to a deleted parent. A backend that does not declare it
+   * cannot answer a `deleted` query either — `DomainSource` refuses one over it. */
+  restore?(id: string): Promise<void>;
 }
 
 export interface DomainBackend {

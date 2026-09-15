@@ -15,8 +15,9 @@ import type {IProperty} from '../core/property-like.js';
 import type {AccessData, FieldAccess} from '../core/access.js';
 import {Access} from '../core/access.js';
 import {DomainBackendError} from './domain-backend.js';
-import type {AuditEntryLike, DomainBackend, DomainFrameLike, DomainQueryLike, DomainTableInfoLike,
-  DomainTableLike, DomainTransactionOpLike, DomainTransactionResultLike} from './domain-backend.js';
+import type {AuditEntryLike, DomainBackend, DomainDeletedMode, DomainFrameLike, DomainQueryLike,
+  DomainTableInfoLike, DomainTableLike, DomainTransactionOpLike,
+  DomainTransactionResultLike} from './domain-backend.js';
 import type {EditState} from './edit-state.js';
 import {MemoryEditState} from './edit-state.js';
 import {MemoryFrame} from './memory-frame.js';
@@ -81,6 +82,10 @@ const PROPERTY_TYPES: Record<string, string> = {
 };
 
 const CORE_REF_SEM_TYPES: Record<string, string> = {user: 'User', group: 'Group'};
+
+/** The store's soft-delete flag — the server's own column, projected to queries as
+ * `Rows.DELETED`; not a declared property, so no form or filter sees it. */
+const IS_DELETED = 'is_deleted';
 
 export class MemoryDomainBackend implements DomainBackend {
   private readonly _tables = new Map<string, MemoryTable>();
@@ -245,15 +250,18 @@ export class MemoryDomainBackend implements DomainBackend {
       } else if (at < 0)
         throw new DomainBackendError('not-found', `Operation ${index}: no row "${id}"`);
       else if (op.op === 'delete') {
-        // the server's FK veto the child-first ordering exists to beat
+        // the server's FK veto the child-first ordering exists to beat; a child already in the
+        // trash holds nothing back
         for (const child of this._tables.values()) {
           for (const [column, target] of Object.entries(child.refs)) {
-            if (target === table.address && rowsOf(child).some((row) => row[column] === id))
+            if (target === table.address &&
+                rowsOf(child).some((row) => row[column] === id && row[IS_DELETED] !== true))
               throw new DomainBackendError('validation', `Operation ${index}: row "${id}" is referenced by ${child.name}.${column}`);
           }
         }
+        // soft delete: the row stays in the store and leaves every query that excludes deleted
         entry(id!, {...rows[at]}, null);
-        rows.splice(at, 1);
+        rows[at] = table.stamp({...rows[at], [IS_DELETED]: true}, (rows[at].version as number) + 1);
         results[index] = {id};
       } else {
         if (op.expectedVersion !== undefined && rows[at].version !== op.expectedVersion) {
@@ -356,7 +364,7 @@ export class MemoryTable implements DomainTableLike {
   }
 
   async query(spec: DomainQueryLike = {}): Promise<Row[]> {
-    let rows = await this._where(spec.filter, spec.search);
+    let rows = await this._where(spec.filter, spec.search, spec.deleted);
     if (spec.sort)
       rows = MemoryTable._sorted(rows, spec.sort);
     const offset = spec.offset ?? 0;
@@ -370,6 +378,8 @@ export class MemoryTable implements DomainTableLike {
         for (const [column, capability] of Access.ROW_COLUMNS)
           out[column] = row[column] ?? (capability === 'share' ? null : this._access.can[capability] === true);
       }
+      if (spec.deleted !== undefined && spec.deleted !== 'exclude')
+        out[Rows.DELETED] = row[IS_DELETED] === true;
       return out;
     });
   }
@@ -382,6 +392,7 @@ export class MemoryTable implements DomainTableLike {
       ...this.properties.map((p) => ({name: p.name!, type: p.propertyType ?? p.type ?? 'string', semType: p.semType})),
       {name: Rows.STATE, type: 'string'},
       ...(spec.withAccess ? Access.ROW_COLUMNS.map(([name]) => ({name, type: 'bool'})) : []),
+      ...(spec.deleted === undefined || spec.deleted === 'exclude' ? [] : [{name: Rows.DELETED, type: 'bool'}]),
     ];
     const df = new MemoryFrame(columns, rows);
     const edit = new MemoryEditState(this, df, Access.from(access));
@@ -398,8 +409,9 @@ export class MemoryTable implements DomainTableLike {
     };
   }
 
-  async count(filter?: DomainQueryLike['filter'], search?: string): Promise<number> {
-    return (await this._where(filter, search)).length;
+  async count(filter?: DomainQueryLike['filter'], search?: string,
+    deleted?: DomainDeletedMode): Promise<number> {
+    return (await this._where(filter, search, deleted)).length;
   }
 
   transaction(ops: DomainTransactionOpLike[]): Promise<DomainTransactionResultLike[]> {
@@ -408,6 +420,29 @@ export class MemoryTable implements DomainTableLike {
 
   audit(id: string): Promise<AuditEntryLike[]> {
     return Promise.resolve(this.history.filter((line) => line.id === id));
+  }
+
+  /** The soft delete undone, as the server's `POST …/{id}/restore`: a row whose ref column points
+   * at a row still in the trash is refused naming that column — restoring it would leave a live
+   * row referring to a deleted one. Restoring a live row does nothing. */
+  async restore(id: string): Promise<void> {
+    const at = this.rows.findIndex((row) => row.id === id);
+    if (at < 0)
+      throw new DomainBackendError('not-found', `${this.address}: no row "${id}"`);
+    const row = this.rows[at];
+    if (row[IS_DELETED] !== true)
+      return;
+    for (const [column, target] of Object.entries(this.refs)) {
+      const parent = this._backend.tableSync(target)?.rows.find((r) => r.id === row[column]);
+      if (parent?.[IS_DELETED] === true) {
+        throw new DomainBackendError('validation',
+          `Cannot restore row "${id}": ${column} refers to the deleted ${target} "${parent.id}"`);
+      }
+    }
+    const restored = this.stamp({...row, [IS_DELETED]: false}, (row.version as number) + 1);
+    this.rows[at] = restored;
+    this.history.push({id, tx_id: uuid4(), op: 'undelete', actor_id: null,
+      ts: restored.updated_on as string, before: {...row}, after: {...restored}});
   }
 
   /** The schema's rules — required, choices, min, max — as the server's `_validateRow` refuses on. */
@@ -429,12 +464,15 @@ export class MemoryTable implements DomainTableLike {
     return row;
   }
 
-  private async _where(filter: DomainQueryLike['filter'], search?: string): Promise<Row[]> {
+  private async _where(filter: DomainQueryLike['filter'], search?: string,
+    deleted: DomainDeletedMode = 'exclude'): Promise<Row[]> {
     let rows = this.rows;
     if (filter !== undefined && filter !== '') {
       const mask = await Filters.toMask(this._frameLike(), MemoryTable._tree(filter));
       rows = rows.filter((_, i) => mask.get(i));
     }
+    if (deleted !== 'include')
+      rows = rows.filter((row) => (row[IS_DELETED] === true) === (deleted === 'only'));
     if (search) {
       const columns = this.info.searchableColumns;
       if (columns.length === 0)

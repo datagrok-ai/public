@@ -47,6 +47,7 @@ import type {DomainHistoryTarget} from './history.js';
 import {DomainChildren} from './children.js';
 import type {DomainChildrenOptions} from './children.js';
 import {saveButton, discardButton, newButton} from './buttons.js';
+import {route} from './routes.js';
 const REF_ADDRESS = /^\w+\.\w+$/;
 
 /** An action over one row: `requires` names the capability it needs (permission ⇒ hidden),
@@ -174,7 +175,16 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
   /** A started source over this table. */
   source(options: Omit<DomainSourceOptions, 'table' | 'defaults'> & {defaults?: RowValues<TRow>} = {}):
     DomainSource<TRow> {
+    if (options.deleted !== undefined && options.deleted !== 'exclude')
+      DomainSource.requireRestore(this.table);
     return this._track(new DomainSource<TRow>({...options, table: this.address}));
+  }
+
+  /** Brings a soft-deleted row back — the Delete grant undone. A source over the table re-reads
+   * through {@link DomainSource.restore}, which answers for the rows it is showing. */
+  restore(id: string): Promise<void> {
+    DomainSource.requireRestore(this.table);
+    return this.table.restore!(id);
   }
 
   /** A source holding one pristine draft over `values` as its current row — what a create form
@@ -213,7 +223,7 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
     // reports (`View.path` = the app call's prefix + the view's own): the app rebases onto that
     // route once the view is docked, so a zero-code `table.app()` lives at `/apps/<App>` and its
     // deep links are the shell's. `/domains/<schema>/<table>` is what a view outside an app keeps.
-    const route = (): string => {
+    const mounted = (): string => {
       const full = view.path ?? '';
       const at = full.indexOf('?');
       const here = at < 0 ? full : full.slice(0, at);
@@ -225,12 +235,13 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
     // keeps — a `/domains/…` link must still reach an app that has rebased onto `/apps/…`
     view.acceptsPath = (p) => {
       const here = p.toLowerCase();
-      return DomainTable._under(here, route().toLowerCase()) || DomainTable._under(here, base.toLowerCase());
+      return DomainTable._under(here, mounted().toLowerCase()) || DomainTable._under(here, base.toLowerCase());
     };
-    // the router has updated the address bar before it calls the handler (view.ts:188-195)
-    view.handlePath = () => {
-      route();
-      void app.open();
+    // the router has updated the address bar before it calls the handler (view.ts:188-195), and
+    // hands over the path alone — the row `/domains/…` carries as a segment is in it
+    view.handlePath = (p) => {
+      mounted();
+      void app.open(`${p}${location.search}`);
     };
     // A cold deep link (`/apps/Stockroom?entity=…`) reaches the app func, never a path handler —
     // and the func is handed the path under the app root, never the query. The app opens the
@@ -240,11 +251,12 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
     const from = {pathname: location.pathname.toLowerCase(), search: location.search};
     let replayed = false;
     const replay = (): void => {
-      const mounted = route().toLowerCase();
+      const at = mounted().toLowerCase();
       // only the app's own parameters: a URL carrying nothing but the platform's (`browse=`) has
       // no page to restore, and opening it would drop the query the app was built with
       const deep = new URLSearchParams(from.search);
-      if (replayed || !(deep.has('entity') || deep.has('q')) || !DomainTable._under(from.pathname, mounted))
+      const own = ['entity', 'q', 'search', 'trash'].some((key) => deep.has(key));
+      if (replayed || !own || !DomainTable._under(from.pathname, at))
         return;
       replayed = true;
       void app.open(from.search);
@@ -451,6 +463,7 @@ export const domains = {
   children: (parent: DomainSource, options?: DomainChildrenOptions): DomainChildren =>
     new DomainChildren(parent, options),
   app: (options: DomainAppOptions): DomainApp => new DomainApp(options),
+  route,
   saveButton,
   discardButton,
   newButton,

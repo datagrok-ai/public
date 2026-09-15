@@ -28,7 +28,8 @@ module.exports = {
     rules: [
       workingInDartium ? {
         test: /\.ts$/,
-        exclude: /node_modules/,
+        // relative-path libraries: babel's core-js injections would not resolve from their folders
+        exclude: /node_modules|[\\/](@datagrok-)?libraries[\\/](db-explorer|test)[\\/]/,
         use: [
           {loader: 'babel-loader', options: babelOptions},
           {loader: 'ts-loader'},
@@ -39,9 +40,13 @@ module.exports = {
         exclude: /node_modules/,
       },
       ...(workingInDartium ? [{
+        test: /\.ts$/,
+        include: /[\\/](@datagrok-)?libraries[\\/](db-explorer|test)[\\/]/,
+        loader: 'ts-loader',
+      }, {
         test: /\.js$/,
         // u2 ships modern-browser JS; babel's core-js injections would not resolve from its folder
-        exclude: /node_modules[\\/]core-js|[\\/](@datagrok-)?libraries[\\/]u2[\\/]/,
+        exclude: /node_modules[\\/]core-js|[\\/](@datagrok-)?libraries[\\/](u2|db-explorer|test)[\\/]/,
         use: {
           loader: 'babel-loader',
           options: babelOptions,

@@ -12,10 +12,36 @@ export interface MemoryColumn {
   semType?: string | null;
 }
 
+/** The frame's selected rows as a host reads and writes them (`get`/`set`, the platform's
+ * `BitSet` surface): what a list's multi-selection and a bulk action over it need. */
+export class MemorySelection {
+  private readonly _rows = new Set<number>();
+
+  constructor(private readonly _frame: MemoryFrame) {}
+
+  get trueCount(): number {
+    return this._rows.size;
+  }
+
+  get(row: number): boolean {
+    return this._rows.has(row);
+  }
+
+  set(row: number, value: boolean): void {
+    if (value === this._rows.has(row))
+      return;
+    if (value)
+      this._rows.add(row);
+    else
+      this._rows.delete(row);
+    this._frame.onSelectionChanged.fire(row);
+  }
+}
+
 export class MemoryFrame implements DataFrameLike {
   readonly rows: Record<string, unknown>[];
   readonly columns: DataFrameLike['columns'];
-  readonly selection: unknown = null;
+  readonly selection: unknown = new MemorySelection(this);
   readonly filter: unknown = null;
   readonly onCurrentRowChanged = new Emitter<unknown>();
   readonly onValuesChanged = new Emitter<unknown>();

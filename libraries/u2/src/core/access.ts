@@ -38,14 +38,23 @@ export class Access {
 
   private constructor(private readonly _can: Record<string, boolean>,
     private readonly _fields: Record<string, FieldAccess>, private readonly _unlistedCan: boolean,
-    private readonly _unlistedField: FieldAccess, private readonly _writes: Capability = 'edit') {}
+    private readonly _unlistedField: FieldAccess, private readonly _writes: Capability = 'edit',
+    private readonly _bound: Record<string, boolean> = {}) {}
 
   static from(data: AccessData): Access {
     return new Access({...data.can}, {...data.fields}, false, 'hidden');
   }
 
   can(capability: Capability): boolean {
-    return this._can[capability] ?? this._unlistedCan;
+    return this._bound[capability] === false ? false : this._can[capability] ?? this._unlistedCan;
+  }
+
+  /** The same access under an upper bound: `narrow({edit: false, insert: false})` — what a source
+   * over deleted rows reads — denies those for good, and a row's own `~can_edit` refines
+   * {@link row} within the bound instead of lifting it. */
+  narrow(can: Partial<Record<Capability, boolean>>): Access {
+    return new Access({...this._can, ...can}, this._fields, this._unlistedCan, this._unlistedField,
+      this._writes, {...this._bound, ...can});
   }
 
   /** `hidden` where the field is unlisted, `editable` where it is listed so AND the row may be
@@ -64,7 +73,7 @@ export class Access {
    * a row that does not exist yet has nothing to `edit`. */
   forDraft(): Access {
     return this.isDraft ? this :
-      new Access(this._can, this._fields, this._unlistedCan, this._unlistedField, 'insert');
+      new Access(this._can, this._fields, this._unlistedCan, this._unlistedField, 'insert', this._bound);
   }
 
   /** Row-level security: a `~can_<name>` column the row carries with a boolean is the server's
@@ -93,6 +102,6 @@ export class Access {
       can[capability] = value;
     }
     return can === undefined ? this :
-      new Access(can, this._fields, this._unlistedCan, this._unlistedField, this._writes);
+      new Access(can, this._fields, this._unlistedCan, this._unlistedField, this._writes, this._bound);
   }
 }

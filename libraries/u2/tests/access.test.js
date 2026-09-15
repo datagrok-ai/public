@@ -127,6 +127,28 @@ scoped('field folds the write capability in: editable needs edit on a row, inser
   assert.equal(Access.readOnly.forDraft().field('anything'), 'readonly');
 });
 
+scoped('Access.narrow: an upper bound row() cannot lift, and a field follows it', () => {
+  const access = Access.from({...DATA, can: {...DATA.can, delete: true}});
+  const trash = access.narrow({edit: false, insert: false});
+  assert.equal(trash.can('edit'), false);
+  assert.equal(trash.can('insert'), false);
+  assert.equal(trash.can('delete'), true, 'what the bound says nothing about is untouched');
+  assert.equal(trash.can('approve'), true);
+  assert.equal(trash.field('title'), 'readonly', 'an editable column with no write capability is text');
+  assert.equal(trash.field('salary'), 'hidden');
+  assert.equal(access.can('edit'), true, 'the access narrowed from is unchanged');
+
+  const row = trash.row({'~can_edit': true, '~can_delete': false});
+  assert.equal(row.can('edit'), false, 'the row refines within the bound, never past it');
+  assert.equal(row.can('delete'), false, 'and still narrows what the bound left alone');
+  assert.equal(row.field('title'), 'readonly');
+  assert.equal(trash.forDraft().field('title'), 'readonly', 'a draft gates on insert, also bounded');
+  assert.equal(trash.row({'~state': 'new', '~can_edit': true}).field('title'), 'readonly');
+  assert.equal(trash.narrow({delete: false}).can('delete'), false, 'bounds compose');
+  assert.equal(Access.full.narrow({edit: false}).can('edit'), false);
+  assert.equal(Access.full.narrow({edit: false}).can('delete'), true);
+});
+
 function actions(log) {
   return [
     {name: 'Open', icon: 'external-link-alt', run: () => log.push('open')},

@@ -29,6 +29,9 @@ import {getAdminGroups, getMyGroupFavorites, pinEntityToGroup} from './spotlight
 import {DBExplorerEditor} from '@datagrok-libraries/db-explorer/src/editor';
 import {setupDBQueryCellHandler, setupGlobalDBExplorer, runEnrichmentFromConfig} from './db-explorer';
 import {FilterBuilderFilter} from './filter/filter-builder-filter';
+import {domains} from '@datagrok-libraries/u2/src/dg/index.js';
+// every sheet the domain stack paints with, in one import
+import '@datagrok-libraries/u2/src/dg/domain/styles.js';
 import '@datagrok-libraries/u2/css/tokens.css';
 import '@datagrok-libraries/u2/css/elements.css';
 import '@datagrok-libraries/u2/css/inputs.css';
@@ -204,6 +207,16 @@ export class PackageFunctions {
   })
   static filterBuilder(): DG.Filter {
     return new FilterBuilderFilter();
+  }
+
+  @grok.decorators.func({
+    name: 'domainRouteView',
+    description: 'The u2 app behind a /domains/<schema>/<table>[/<keyOrId>] address',
+    tags: ['domainRoutes'],
+    outputs: [{name: 'result', type: 'view'}],
+  })
+  static async domainRouteView(address: string): Promise<DG.ViewBase | null> {
+    return domains.route(address);
   }
 
   @grok.decorators.func({})

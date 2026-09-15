@@ -133,6 +133,8 @@ export interface SettingsInterface {
 
   enableDomainDatabases: boolean;
 
+  domainsDartUi: boolean;
+
   dateFormat: string;
 
   integerNumberFormat: string;

@@ -118,6 +118,12 @@
   opacity: 0.55;
 }
 
+/* trash mode: the list shows what was deleted, and says so before a row is read */
+.u2-domain-app-trash .u2-domain-app-list {
+  box-shadow: inset 0 2px 0 0 var(--dg-warm-grey-2);
+  background: var(--dg-warm-grey-1);
+}
+
 /* the row a refusal names, marked while the refusal stands */
 .u2-domain-list-invalid {
   box-shadow: inset 2px 0 0 0 var(--dg-error);

@@ -680,7 +680,9 @@ source('a saved delete leaves the rows and the count; the current row moves on',
   assert.equal(src.rows.byKey('i2'), undefined, 'no proxy survives its row');
   assert.equal(src.currentRow.value.id, 'i3', 'the row at its place is current');
   assert.equal(src.summary.value, '2 issues');
-  assert.equal(backends.domain.tableSync('grit.issue').rows.length, 2);
+  const store = backends.domain.tableSync('grit.issue').rows;
+  assert.equal(store.length, 3, 'the delete is soft: the row stays in the store, out of every live query');
+  assert.equal(store.find((r) => r.id === 'i2').is_deleted, true);
 
   src.currentRow.value = src.rows.byKey('i3');
   src.edit.value.markDeleted('i3');

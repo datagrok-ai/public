@@ -37,6 +37,9 @@ export class Rows {
   /** A draft's id, stamped into the `id` cell by the writer that adds it (the js-api editor, the
    * memory edit state): `~new:<uuid>`, so a child may reference its parent before either exists. */
   static readonly DRAFT_PREFIX = '~new:';
+  /** The soft-delete service column, projected by a query that does not exclude deleted rows:
+   * the row is in the trash, read-only until it is restored. */
+  static readonly DELETED = '~is_deleted';
 
   static isService(column: string): boolean {
     return column.startsWith('~');
@@ -44,6 +47,12 @@ export class Rows {
 
   static isDraft(x: string | RowView): boolean {
     return (typeof x === 'string' ? x : x.id).startsWith(Rows.DRAFT_PREFIX);
+  }
+
+  /** Whether the row is one the server soft-deleted — not a pending delete, which the writer
+   * keeps in the frame with `~state` set instead. */
+  static isDeleted(row: RowView): boolean {
+    return row[Rows.DELETED] === true;
   }
 
   static draftId(): string {

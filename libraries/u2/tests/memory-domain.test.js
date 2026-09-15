@@ -326,3 +326,53 @@ test('saveAll: every writer is closed for the whole transaction — an edit made
   assert.equal(issues.edit.isDirty.value, true, 'and the writer takes edits again once it is open');
   issues.dispose();
 });
+
+test('soft delete: the row stays in the store, leaves every live query, and restore brings it back', async () => {
+  const be = backend();
+  const issue = await be.table('grit.issue');
+  await issue.transaction([{op: 'delete', table: 'issue', id: 'i2'}]);
+  const titles = async (spec) => (await issue.query(spec)).map((r) => r.title);
+  assert.deepEqual(await titles(), ['Aspirin', 'Naproxen'], 'excluded by default');
+  assert.equal(await issue.count(), 2);
+  assert.deepEqual(await titles({deleted: 'only'}), ['Ibuprofen']);
+  assert.equal(await issue.count(undefined, undefined, 'only'), 1);
+  assert.deepEqual(await titles({deleted: 'include'}), ['Aspirin', 'Ibuprofen', 'Naproxen']);
+  assert.deepEqual((await issue.query({deleted: 'include'})).map((r) => r['~is_deleted']), [false, true, false],
+    '~is_deleted is projected whenever deleted rows are asked for');
+  assert.equal((await issue.query())[0]['~is_deleted'], undefined, 'and only then');
+  assert.deepEqual(await titles({deleted: 'only', filter: 'title starts "I"', search: 'pro'}), ['Ibuprofen'],
+    'the filter and the search still apply');
+  const [deleted] = await issue.query({deleted: 'only'});
+  assert.equal(deleted.version, 2, 'the delete is a version of its own');
+  const frame = await issue.frame({deleted: 'only', withAccess: true});
+  assert.deepEqual(frame.df.columns.names().slice(-5),
+    ['~state', '~can_edit', '~can_delete', '~can_share', '~is_deleted']);
+  frame.dispose();
+
+  await issue.restore('i2');
+  assert.deepEqual(await titles(), ['Aspirin', 'Ibuprofen', 'Naproxen']);
+  assert.equal((await issue.query())[1].version, 3);
+  const [undelete] = (await issue.audit('i2')).slice(-1);
+  assert.deepEqual([undelete.op, undelete.before.is_deleted, undelete.after.is_deleted],
+    ['undelete', true, false]);
+  await issue.restore('i2');
+  assert.equal((await issue.query())[1].version, 3, 'restoring a live row does nothing');
+  await assert.rejects(issue.restore('nope'), (e) => e.code === 'not-found');
+});
+
+test('soft delete: a deleted child holds no delete back, and a deleted parent vetoes a restore', async () => {
+  const be = backend();
+  const project = await be.table('grit.project');
+  const issue = await be.table('grit.issue');
+  await assert.rejects(project.transaction([{op: 'delete', table: 'project', id: 'p2'}]),
+    (e) => e.code === 'validation' && /referenced by issue.project_id/.test(e.message));
+  await issue.transaction([{op: 'delete', table: 'issue', id: 'i3'}]);
+  await project.transaction([{op: 'delete', table: 'project', id: 'p2'}]);
+  assert.equal(await project.count(), 1, 'the parent of a deleted child goes');
+  await assert.rejects(issue.restore('i3'),
+    (e) => e.code === 'validation' &&
+      /Cannot restore row "i3": project_id refers to the deleted grit\.project "p2"/.test(e.message));
+  await project.restore('p2');
+  await issue.restore('i3');
+  assert.equal(await issue.count(), 3, 'the parent first, then the child');
+});

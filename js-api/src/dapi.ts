@@ -1418,13 +1418,12 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
     const df: DataFrame = await domainCall(api.grok_Dapi_Domains_QueryDf(this.dart, this.schema, this.table, spec));
     // The server tags only CSV export: a binary-export tag would drop the columns
     // from its own d42 response, so that one is stamped here, once.
-    if (spec.withAccess)
-      for (const name of df.columns.names())
-        if (name.startsWith('~can_')) {
-          const col = df.columns.byName(name)!;
-          col.meta.includeInBinaryExport = false;
-          col.meta.includeInCsvExport = false;
-        }
+    for (const name of df.columns.names())
+      if (name.startsWith('~')) {
+        const col = df.columns.byName(name)!;
+        col.meta.includeInBinaryExport = false;
+        col.meta.includeInCsvExport = false;
+      }
     return df;
   }
 
@@ -1507,6 +1506,15 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
     return domainCall(api.grok_Dapi_Domains_Delete(this.dart, this.schema, this.table, id));
   }
 
+  /** Brings a soft-deleted row back (the Delete right is what restores, and the audit trail
+   * gets an `'undelete'` entry). A row whose reference points at a still-deleted parent is
+   * refused with a {@link DomainRestrictError} naming that column — restore the parent first;
+   * nothing deleted under that id rejects like a missing row. Find the candidates with
+   * `query({deleted: 'only'})` ({@link DomainQuerySpec.deleted}). */
+  restore(id: string): Promise<{id: string; restored: boolean; version: number}> {
+    return domainCall(api.grok_Dapi_Domains_Restore(this.dart, this.schema, this.table, id));
+  }
+
   /** Soft-deletes up to `options.limit` (≤1000, default 1000) matching rows you may delete,
    * oldest first, in ONE transaction; referential actions apply per row and a restrict
    * reference rejects the whole call ({@link DomainRestrictError} — nothing is deleted).
@@ -1544,21 +1552,29 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
   }
 
   /** Row count under [filter] (condition tree or smart string; omit for the whole table),
-   * narrowed by `options.search` like {@link query} would be (see {@link DomainQuerySpec.search}),
-   * so a paged source's total agrees with its rows. */
-  async count(filter?: DomainFilter<TColumn>, options?: {search?: string}): Promise<number> {
+   * narrowed by `options.search` like {@link query} would be (see {@link DomainQuerySpec.search})
+   * and scoped by `options.deleted` (see {@link DomainQuerySpec.deleted}), so a paged source's
+   * total — a trash list's included — agrees with its rows. */
+  async count(filter?: DomainFilter<TColumn>,
+              options?: {search?: string; deleted?: DomainQuerySpec['deleted']}): Promise<number> {
     const search = options?.search;
-    if (search == null || search === '')
+    const deleted = options?.deleted;
+    if ((search == null || search === '') && (deleted == null || deleted === 'exclude'))
       return domainCall(api.grok_Dapi_Domains_Count(this.dart, this.schema, this.table, filter ?? null));
-    const spec: any = {measures: [{fn: 'count'}], search: search};
+    const spec: any = {measures: [{fn: 'count'}]};
+    if (search != null && search !== '')
+      spec.search = search;
+    if (deleted != null)
+      spec.deleted = deleted;
     if (filter != null)
       spec.filter = filter;
     const rows = await this.aggregate(spec);
     return rows.length === 0 ? 0 : Number((rows[0] as any).count);
   }
 
-  /** True when at least one visible row matches [filter]. */
-  async exists(filter?: DomainFilter<TColumn>, options?: {search?: string}): Promise<boolean> {
+  /** True when at least one row matches [filter] in the scope [options] asks for. */
+  async exists(filter?: DomainFilter<TColumn>,
+               options?: {search?: string; deleted?: DomainQuerySpec['deleted']}): Promise<boolean> {
     return (await this.count(filter, options)) > 0;
   }
 

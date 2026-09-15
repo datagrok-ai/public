@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-20753: Added dapi/domains/trash.js — the soft-delete round trip: `query({deleted: 'only'})` as the table's trash (rows carrying `~is_deleted`), a `deleted: 'include'` frame whose csv drops the service column, and `restore(id)` with its `'undelete'` audit entry
 * GROK-20753: Removed the `dapi/domains/facade-*.js` and `app-view.js` samples with the `@datagrok-libraries/domain-ui` library they demonstrated — app UI over domain tables is the u2 domain stack (see the Stockroom and Grit packages), which a sample script cannot import
 * GROK-20849: Added `data-frame/bitset/bit-array.js` — `DG.BitArray` built in JS and applied to a DataFrame filter
 * GROK-20799: Added dapi/entity-properties.js — `grok.meta.propertiesOf`/`coreLocationOf` discovery, from a type's catalog to a related-entity filter over its Core table

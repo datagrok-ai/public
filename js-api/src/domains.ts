@@ -80,6 +80,11 @@ export const DOMAIN_ACCESS_COLUMNS = ['~can_edit', '~can_delete', '~can_share'] 
 /** The per-row keys of a `withAccess` read (see {@link DOMAIN_ACCESS_COLUMNS}). */
 export type DomainRowAccess = {'~can_edit': boolean; '~can_delete': boolean; '~can_share': boolean | null};
 
+/** Every service column a read can add — the {@link DOMAIN_ACCESS_COLUMNS} plus `~is_deleted`
+ * (projected by a `deleted: 'include' | 'only'` query, see {@link DomainQuerySpec.deleted}).
+ * They all start with `'~'`: never exported, and hidden by `Grid.attachEditor`. */
+export const DOMAIN_SERVICE_COLUMNS = [...DOMAIN_ACCESS_COLUMNS, '~is_deleted'] as const;
+
 /** Splits the `'<schema>.<table>'` address every domain client and UI component
  * takes, throwing on a malformed one — the single spelling of that contract. */
 export function splitDomainTable(name: string): [string, string] {
@@ -118,7 +123,7 @@ export interface DomainAuditEntry {
   tx_id: number | null;
   row_id?: string | null;    // present on table- and schema-wide audits
   table_id?: string | null;  // present on schema audits ('ddl' rows carry null)
-  op: 'insert' | 'update' | 'delete' | 'promote' | 'ddl';
+  op: 'insert' | 'update' | 'delete' | 'undelete' | 'promote' | 'ddl';
   actor_id: string | null;
   session_id: string | null;
   source: string;
@@ -387,6 +392,11 @@ export interface DomainQuerySpec<TColumn extends string = string, TExpandKey ext
    * `searchable: true`, else the name column ({@link DomainTableInfo.searchableColumns});
    * a table with neither rejects with a filter error. ANDed with `filter`. */
   search?: string;
+  /** Soft-deleted rows: `'exclude'` (the default — only live rows), `'include'` (both) or
+   * `'only'` (the trash). Anything but `'exclude'` also projects `~is_deleted`
+   * ({@link DOMAIN_SERVICE_COLUMNS}); a deleted row is read-only until
+   * {@link DomainTableClient.restore} brings it back. */
+  deleted?: 'exclude' | 'include' | 'only';
 }
 
 /** One measure of {@link DomainAggregateSpec}: `fn` over `column` (`count` needs no column);

@@ -17,8 +17,8 @@ import {FrameRows} from './df-rows.js';
 import type {EditState} from './edit-state.js';
 import type {DataFrameLike} from './df-bindings.js';
 import {DomainBackendError} from './domain-backend.js';
-import type {DomainBackend, DomainFrameLike, DomainQueryLike, DomainTableInfoLike, DomainTableLike}
-  from './domain-backend.js';
+import type {DomainBackend, DomainDeletedMode, DomainFrameLike, DomainQueryLike, DomainTableInfoLike,
+  DomainTableLike} from './domain-backend.js';
 import {SharedSession} from './session.js';
 import type {DomainSession} from './session.js';
 import type {BindProp, BindSource} from '../spec/bind-source.js';
@@ -39,6 +39,10 @@ export interface DomainSourceOptions {
   query?: string | FilterGroup;
   /** A case-insensitive substring over the table's searchable columns, ANDed with the query. */
   search?: string;
+  /** Which rows the source answers (default `'exclude'` — the live ones). Anything else is a
+   * trash source: the rows carry `~is_deleted` and the access is narrowed to no edit and no
+   * insert until they are restored. The backend must declare `restore`. */
+  deleted?: DomainDeletedMode;
   pageSize?: number;
   /** Ask for the per-row access columns with every row (default true); the table-level access is
    * always fetched. */
@@ -81,6 +85,11 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   readonly query: Signal<string | FilterGroup>;
   /** The search text, re-queried on change like {@link query}. */
   readonly search: Signal<string>;
+  /** Which rows the collection holds — a signal, so an app's trash mode is a flip of it and the
+   * search box, the filters and the list stay bound to the one source. */
+  readonly deleted: Signal<DomainDeletedMode>;
+  /** A source over deleted rows: nothing in it may be edited or inserted, and `save` refuses. */
+  readonly readOnly: ReadonlySignal<boolean>;
   readonly df: ReadonlySignal<DataFrameLike | undefined>;
   readonly rows: RowsLike<RowView<TRow>>;
   /** Two-way; mirrors the frame's current row. */
@@ -155,11 +164,15 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     this.isEmpty = options.empty ?? this.isDraft;
     this.query = signal<string | FilterGroup>(options.query ?? '');
     this.search = signal(options.search ?? '');
+    this.deleted = signal<DomainDeletedMode>(options.deleted ?? 'exclude');
+    this.readOnly = computed(() => this.deleted.value !== 'exclude');
     this._backend = requireBackend(this, backends.domain, 'domain tables');
     this.df = this._df;
     this.error = this._error;
     this.problemRow = this._problemRow;
-    this.access = this._access;
+    // the upper bound of a trash source, over whatever the server answered for the table
+    this.access = computed(() => this.readOnly.value ?
+      this._access.value.narrow({edit: false, insert: false}) : this._access.value);
     this.selection = this._selection;
     this.edit = this._edit;
     this.state = this._state;
@@ -234,6 +247,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     this.effect(() => {
       this.query.value;
       this.search.value;
+      this.deleted.value;
       if (!this.isDirty.peek() && !this._rebinding)
         void this.refresh();
     });
@@ -284,6 +298,8 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       if (gen !== this._gen)
         return;
       this._adopt(table);
+      if (this.deleted.peek() !== 'exclude')
+        DomainSource.requireRestore(table);
       // what the caller may do does not depend on the query: a filter the server refuses must not
       // take New away with the rows
       const access = table.access().then((a) => {
@@ -354,9 +370,60 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     }
   }
 
-  /** Through the session — the one Save every button and shortcut runs. */
+  /** Brings soft-deleted rows back through the backend, then re-reads — the restored rows have
+   * left a trash list, and a live list has them again. Answers how many were restored; the first
+   * refusal (a deleted parent) stops the run and stands as this source's error, naming the row. */
+  async restore(ids: readonly string[]): Promise<number> {
+    const table = this._table;
+    if (table === undefined)
+      throw new DomainBackendError('not-found', `${this.table}: the table is not loaded yet`);
+    DomainSource.requireRestore(table);
+    let restored = 0;
+    let problem: unknown;
+    let at: string | null = null;
+    for (const id of ids) {
+      try {
+        await table.restore!(id);
+        restored++;
+      } catch (e) {
+        problem = e;
+        at = id;
+        break;
+      }
+    }
+    if (restored > 0)
+      await this.refresh();
+    // after the re-read, which clears the error the rows that did come back have nothing to do with
+    if (problem !== undefined) {
+      batch(() => {
+        this._problemRow.value = at;
+        this._error.value = problem;
+      });
+    }
+    return restored;
+  }
+
+  /** {@link restore} over the frame's selected rows — a trash list's bulk Restore. */
+  restoreSelection(): Promise<number> {
+    return this.restore(this._selection.peek().map((row) => row.id));
+  }
+
+  /** Refuses a trash source, or a restore, over a backend that cannot restore: `restore` is the
+   * whole soft-delete lifecycle, and a `deleted` list without it shows rows nothing brings back. */
+  static requireRestore(table: DomainTableLike): void {
+    if (typeof table.restore !== 'function') {
+      throw new DomainBackendError('unsupported',
+        `${table.address}: the backend does not support deleted rows`);
+    }
+  }
+
+  /** Through the session — the one Save every button and shortcut runs; a trash source refuses
+   * before the session sees it, so a batch of the live sources sharing that session still holds. */
   save(): Promise<boolean> {
-    return this.session.save();
+    if (!this.readOnly.peek())
+      return this.session.save();
+    this.check();
+    return Promise.resolve(false);
   }
 
   discard(): void {
@@ -376,6 +443,8 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
    * about to send, dirty or not: a pristine parent a child refers to is inserted by that batch,
    * and the app's rules over it hold. */
   check(): string | null {
+    if (this.readOnly.peek())
+      return this._refuse('deleted rows are read-only until they are restored');
     const edit = this._edit.peek();
     if (edit === undefined)
       return null;
@@ -560,7 +629,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       case 'total': return this.total as unknown as Signal<unknown>;
       case 'state': return this.state as unknown as Signal<unknown>;
       case 'error': return this._errorStep as unknown as Signal<unknown>;
-      case 'access': return this._access as unknown as Signal<unknown>;
+      case 'access': return this.access as unknown as Signal<unknown>;
       case 'isDirty': return this.isDirty as unknown as Signal<unknown>;
       default: return super.bindStep(name);
     }
@@ -669,13 +738,13 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   }
 
   private _count(table: DomainTableLike): Promise<number> {
-    return table.count(this._filter(), this.search.peek() || undefined);
+    return table.count(this._filter(), this.search.peek() || undefined, this.deleted.peek());
   }
 
   /** The access a row is written under — its own (`Access.row`: a draft under `insert`, an existing
    * row as its `~can_*` columns say), no row the table's. */
   private _view(row: RowView | null): Access {
-    const access = this._access.peek();
+    const access = this.access.peek();
     return row === null ? access : access.row(row);
   }
 
@@ -688,11 +757,13 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     // a query naming a draft id is not sent at all: no saved row can match it, and the server
     // refuses the `~new:` literal on a uuid column — the rows arrive when `rebind` puts the
     // assigned id in
+    const deleted = this.deleted.peek();
+    const mode = deleted === 'exclude' ? {} : {deleted};
     if (DomainSource._namesDraft(this.query.peek()))
-      return {limit: 0, offset, withAccess: this.withAccess};
+      return {limit: 0, offset, withAccess: this.withAccess, ...mode};
     const search = this.search.peek();
     return {filter: this._filter(), ...(search === '' ? {} : {search}), limit: this.isEmpty ? 0 : limit, offset,
-      withAccess: this.withAccess};
+      withAccess: this.withAccess, ...mode};
   }
 
   private _filter(): DomainQueryLike['filter'] {
@@ -747,6 +818,8 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     if (state !== 'ready' && loaded === 0)
       return state === 'loading' ? 'Loading…' : '';
     const total = this.total.value;
+    if (this.deleted.value === 'only')
+      return plural(total ?? loaded, 'deleted row', 'deleted rows');
     return !this.isDraft && total !== null && loaded < total ?
       `${loaded.toLocaleString()} of ${total.toLocaleString()}` :
       plural(loaded, singular, this._schema.info.pluralName.toLowerCase() || 'rows');

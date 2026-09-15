@@ -190,7 +190,8 @@ scoped('New: the entity page over a pristine draft; once saved the page is the r
   const {app: a} = await app();
   const ribbon = a.ribbon();
   assert.equal(ribbon.length, 2);
-  assert.deepEqual(ribbon[0].map((c) => c.root.dataset.u2), ['new-button', 'save-button', 'discard-button']);
+  assert.deepEqual(ribbon[0].map((c) => c.root.dataset.u2),
+    ['new-button', 'save-button', 'discard-button', 'actions-menu']);
   assert.deepEqual(ribbon[1].map((c) => c.root.dataset.u2), ['domain-search', 'domain-filters']);
   assert.equal(ribbon[1][0].root.hidden, false);
   fire(ribbon[0][0].root, 'click');
@@ -717,4 +718,280 @@ scoped('closing through the write-back is blocked: the view is clean and still b
   release();
   assert.equal(await saving, true);
   a.dispose();
+});
+
+scoped('trash mode: the ⋯ menu toggles ?trash=1, the rows are read-only with Restore, and back', async () => {
+  const {app: a} = await app();
+  const ribbon = a.ribbon();
+  await flush();
+  const [add, save, discard, more] = ribbon[0];
+  assert.equal(more.root.dataset.u2, 'actions-menu');
+  assert.equal(more.root.hidden, false, 'the delete grant is what the menu holds');
+  // the ribbon is the shell's, and an anchored menu needs its button in the document
+  document.body.append(more.root);
+  fire(more.root, 'click');
+  await flush();
+  const items = [...document.querySelectorAll('[role="menuitem"] .u2-menu-label')].map((el) => el.textContent);
+  assert.deepEqual(items, ['Trash']);
+
+  a.listSource.edit.value.markDeleted('i2');
+  assert.equal(await a.session.save(), true);
+  await flush();
+  assert.equal(await a.setTrash(true), true);
+  await flush();
+  assert.equal(a.trash.value, true);
+  assert.equal(a.listSource.deleted.value, 'only');
+  assert.equal(a.path.value, `${BASE}?trash=1`);
+  assert.deepEqual(a.listSource.rows.items.value.map((r) => r.title), ['Ibuprofen']);
+  assert.equal(a.summary.value, '1 deleted row');
+  assert.deepEqual(crumbs(a), ['Issues', 'Trash']);
+  assert.equal(save.root.hidden, true, 'nothing to save in the trash');
+  assert.equal(discard.root.hidden, true);
+  assert.equal(add.root.hidden, true, 'and nothing to insert: the access is narrowed');
+
+  const row = a.listSource.rows.byKey('i2');
+  assert.deepEqual(a.list.actionsFor(row).map((x) => x.name), ['Restore'], 'the row action Delete became Restore');
+  assert.equal(a.list.root.querySelector('[data-u2-row="i2"]').classList.contains('u2-domain-list-deleted'), true);
+  assert.equal(a.listSource.access.value.row(row).can('edit'), false, 'a deleted row is read-only');
+  a.list.actionsFor(row)[0].run();
+  await flush();
+  assert.deepEqual(a.listSource.rows.items.value.map((r) => r.title), [], 'the restored row left the trash');
+
+  assert.equal(await a.setTrash(false), true);
+  await flush();
+  assert.deepEqual(a.listSource.rows.items.value.map((r) => r.title), ['Aspirin', 'Ibuprofen', 'Naproxen']);
+  assert.equal(a.path.value, BASE);
+  assert.equal(save.root.hidden, false);
+  a.dispose();
+});
+
+scoped('?trash=1 round-trips through open(); without the delete grant there is no ⋯ menu', async () => {
+  const {app: a} = await app({query: 'done = false'});
+  await flush();
+  assert.equal(await a.open('?trash=1&q=done%20%3D%20false'), true);
+  await flush();
+  assert.equal(a.trash.value, true);
+  assert.equal(a.path.value, `${BASE}?q=done%20%3D%20false&trash=1`);
+  assert.equal(await a.open(''), true);
+  assert.equal(a.trash.value, false, 'a path is authoritative about the mode');
+  a.dispose();
+
+  backends.domain = backend({access: {can: {view: true, insert: true, edit: true, delete: false, share: false},
+    fields: {title: 'editable'}}});
+  const table = await domains.table('grit.issue');
+  const b = domains.app({table, base: BASE, pageSize: 10});
+  document.body.append(b.root);
+  const ribbon = b.ribbon();
+  await flush();
+  assert.equal(ribbon[0][3].root.hidden, true, 'permission ⇒ hidden: nothing in the menu is allowed');
+  b.dispose();
+});
+
+const UUID = '11111111-2222-3333-4444-555555555555';
+
+scoped('under /domains a row is a path segment: the business key when unambiguous, the id when not', async () => {
+  backends.domain = backend();
+  const table = await domains.table('grit.project');
+  const a = domains.app({table, base: '/domains/grit/project', children: false});
+  document.body.append(a.root);
+  await flush();
+  assert.equal(a.entityPath, true, 'the platform route addresses rows by a segment');
+  assert.equal(await a.open('/domains/grit/project/GRIT'), true);
+  await flush();
+  assert.equal(a.page.value, 'entity');
+  assert.equal(a.form.value.input('name').value.value, 'Grit', 'the business key resolved the row');
+  assert.equal(a.path.value, '/domains/grit/project/GRIT');
+  assert.equal(await a.goTo('list'), true);
+  assert.equal(a.path.value, '/domains/grit/project', 'and back, with nothing left in the URL');
+  assert.equal(await a.open('/domains/grit/project/nope'), true);
+  await flush();
+  assert.match(a.form.value.root.querySelector('[data-u2-part="empty"]').textContent, /not found/,
+    'a key that matches nothing shows the not-found, as the Dart view does');
+  assert.equal(a.keyOf({id: 'x', key: 'A-B'}), 'A-B', 'a single-column key keeps its dashes');
+  assert.equal(a.keyOf({id: 'x', key: null}), 'x', 'a null component is not addressable');
+  a.dispose();
+});
+
+scoped('a composite key is joined by "-" and read back by arity; a dash in a component falls back to the id',
+  async () => {
+    backends.domain = backend();
+    const table = await domains.table('grit.issue');
+    const a = domains.app({table, base: '/domains/grit/issue'});
+    document.body.append(a.root);
+    await flush();
+    assert.equal(a.keyOf(a.listSource.rows.byKey('i1')), 'p1-1');
+    assert.equal(a.keyOf({id: 'i9', project_id: 'p-1', number: 2}), 'i9', 'the split would be ambiguous');
+    assert.equal(a.keyOf({id: 'i9', project_id: 'p1', number: null}), 'i9');
+    assert.equal(await a.open('/domains/grit/issue/p1-1'), true);
+    await flush();
+    assert.equal(a.form.value.input('title').value.value, 'Aspirin', 'the int component is read as an int');
+    assert.equal(a.path.value, '/domains/grit/issue/p1-1');
+    assert.equal(await a.open('/domains/grit/issue/p1-1-2'), true, 'an arity that does not match is read as an id');
+    await flush();
+    assert.match(a.form.value.root.querySelector('[data-u2-part="empty"]').textContent, /not found/);
+    a.dispose();
+  });
+
+scoped('a uuid segment is read as an id, and the path settles on the key the row carries', async () => {
+  backends.domain = backend({rows: {project: [{id: UUID, key: 'GRIT', name: 'Grit'}], issue: []}});
+  const table = await domains.table('grit.project');
+  const a = domains.app({table, base: '/domains/grit/project', children: false});
+  document.body.append(a.root);
+  await flush();
+  assert.equal(await a.open(`/domains/grit/project/${UUID}`), true);
+  assert.equal(a.path.value, `/domains/grit/project/${UUID}`, 'the address as given, until the row is in');
+  await flush();
+  assert.equal(a.form.value.input('name').value.value, 'Grit');
+  assert.equal(a.path.value, '/domains/grit/project/GRIT');
+  a.dispose();
+});
+
+scoped('an app at /apps keeps emitting ?entity= (R2); a /domains link still reaches it after a rebase', async () => {
+  const {app: a} = await app();
+  assert.equal(a.entityPath, false);
+  assert.equal(await a.goTo('entity', 'i2'), true);
+  assert.equal(a.path.value, `${BASE}?entity=i2`);
+  a.dispose();
+
+  backends.domain = backend();
+  const table = await domains.table('grit.issue');
+  const b = domains.app({table, base: '/domains/grit/issue'});
+  document.body.append(b.root);
+  await flush();
+  b.rebase('/apps/Grit');
+  assert.equal(b.entityPath, false, 'mounted at an app route, it is back to ?entity=');
+  assert.equal(await b.open('/domains/grit/issue/p1-1'), true, 'the fallback route still reaches it');
+  await flush();
+  assert.equal(b.form.value.input('title').value.value, 'Aspirin');
+  assert.equal(b.path.value, '/apps/Grit?entity=i1', 'and the URL it leaves behind is the id one');
+  b.dispose();
+});
+
+scoped('?search= round-trips: read on open, written into the path beside the query (U8)', async () => {
+  const {app: a} = await app();
+  await flush();
+  assert.equal(await a.open(`${BASE}?q=${encodeURIComponent('done = false')}&search=ibu`), true);
+  await flush();
+  assert.equal(a.listSource.search.value, 'ibu');
+  assert.equal(a.path.value, `${BASE}?q=done%20%3D%20false&search=ibu`);
+  assert.equal(a.listSource.rows.items.value.length, 1, 'the search narrowed the list');
+  a.listSource.search.value = '';
+  assert.equal(a.path.value, `${BASE}?q=done%20%3D%20false`);
+  assert.equal(await a.open(`${BASE}?search=asp`), true);
+  await flush();
+  assert.equal(a.listSource.query.value, '', 'a path is authoritative about both');
+  assert.equal(a.listSource.search.value, 'asp');
+  assert.equal(a.path.value, `${BASE}?search=asp`);
+  a.dispose();
+});
+
+scoped('history: one entry per user move, none while restoring, and the push lands before the shell mirrors',
+  async () => {
+    backends.domain = backend();
+    const table = await domains.table('grit.issue');
+    const saved = globalThis.history;
+    const log = [];
+    globalThis.history = {pushState: (_state, _title, url) => log.push(['push', url])};
+    const pushes = () => log.filter(([kind]) => kind === 'push').map(([, url]) => url);
+    let a;
+    try {
+      const view = table.app({path: BASE});
+      document.body.append(view.root);
+      a = DomainApp.of(view);
+      Object.defineProperty(view, 'path', {configurable: true, get: () => view.dart.path,
+        set: (x) => {
+          log.push(['path', x]);
+          view.dart.path = x;
+        }});
+      await flush();
+      assert.equal(await a.goTo('entity', 'i2'), true);
+      assert.deepEqual(log, [['push', `${BASE}?entity=i2`], ['path', `${BASE}?entity=i2`]],
+        'the entry is pushed before the shell replaces it with the same URL');
+      assert.equal(await a.goTo('list'), true);
+      a.listSource.query.value = 'done = true';
+      await flush();
+      a.listSource.search.value = 'ibu';
+      await flush();
+      assert.deepEqual(pushes(), [`${BASE}?entity=i2`, BASE, `${BASE}?q=done%20%3D%20true`,
+        `${BASE}?q=done%20%3D%20true&search=ibu`], 'a page, a query and a search are three moves');
+      assert.equal(await a.open(`${BASE}?entity=i1`), true);
+      await flush();
+      assert.equal(await a.open(BASE), true);
+      await flush();
+      assert.equal(pushes().length, 4, 'a restore from the address bar pushes nothing');
+      const ribbon = a.ribbon();
+      fire(ribbon[0][0].root, 'click');
+      await flush();
+      assert.equal(pushes().length, 5, 'New is a move');
+      a.form.value.input('project_id').value.value = 'p1';
+      a.form.value.input('title').value.value = 'Fresh';
+      await flush();
+      assert.equal(await a.session.save(), true);
+      await flush();
+      assert.equal(a.entity.value, backends.domain.tableSync('grit.issue').rows.find((r) => r.title === 'Fresh').id);
+      assert.equal(pushes().length, 5, 'the draft that became a row is the same page');
+    } finally {
+      globalThis.history = saved;
+      a?.dispose();
+    }
+  });
+
+scoped('a cold deep link replays every parameter the app owns: ?trash=1 and ?search= too', async () => {
+  backends.domain = backend();
+  const table = await domains.table('grit.issue');
+  const address = globalThis.location;
+  globalThis.location = {pathname: '/domains/grit/issue', search: '?trash=1&search=asp'};
+  let a;
+  try {
+    const view = table.app({path: '/domains/grit/issue'});
+    document.body.append(view.root);
+    a = DomainApp.of(view);
+    grok.events.onViewAdded.fire(view);
+    await flush();
+    assert.equal(a.trash.value, true, 'the mode the URL carried');
+    assert.equal(a.listSource.search.value, 'asp');
+    assert.equal(a.path.value, '/domains/grit/issue?trash=1&search=asp');
+  } finally {
+    globalThis.location = address;
+    a?.dispose();
+  }
+});
+
+scoped('Back restores the app from the address bar, and pushes nothing while doing it', async () => {
+  backends.domain = backend();
+  const table = await domains.table('grit.issue');
+  const savedHistory = globalThis.history;
+  const address = globalThis.location;
+  const pushes = [];
+  globalThis.history = {pushState: (_state, _title, url) => pushes.push(url)};
+  let a;
+  try {
+    const view = table.app({path: BASE});
+    document.body.append(view.root);
+    a = DomainApp.of(view);
+    grok.shell.v = view;
+    await flush();
+    assert.equal(await a.goTo('entity', 'i2'), true);
+    await flush();
+    assert.equal(pushes.length, 1);
+    globalThis.location = {pathname: BASE, search: ''};
+    window.dispatchEvent(new Event('popstate'));
+    await flush();
+    assert.equal(a.page.value, 'list', 'the entry the URL carries is restored');
+    assert.equal(pushes.length, 1, 'a restore pushes nothing');
+    globalThis.location = {pathname: '/apps/Somebody/Else', search: '?entity=i1'};
+    window.dispatchEvent(new Event('popstate'));
+    await flush();
+    assert.equal(a.page.value, 'list', 'another view\'s address is not the app\'s to read');
+    grok.shell.v = undefined;
+    globalThis.location = {pathname: BASE, search: '?entity=i1'};
+    window.dispatchEvent(new Event('popstate'));
+    await flush();
+    assert.equal(a.page.value, 'list', 'and neither is any address while the app is not shown');
+  } finally {
+    globalThis.history = savedHistory;
+    globalThis.location = address;
+    grok.shell.v = undefined;
+    a?.dispose();
+  }
 });

@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-20753: Added `domainRouteView` (`tags: domainRoutes`) — the platform's `/domains/<schema>/<table>[/<keyOrId>]` addresses resolve to the u2 domain app through it
 * GROK-20753: Added the columnless "Filter Builder" filter (`PowerPack:filterBuilder`); the saved state is `{model, query}`; the status line is off by default (`showStatus`)
 * GROK-20753: Semantic-type operators are discovered from `meta.role: filterOperators` package functions; `@datagrok-libraries/u2` and `datagrok-api` are referenced in-repo by relative path
 * Search: Apps and functions are now matched ignoring case and spaces, so "modelhub" finds "Model Hub" — previously only the exact spelling with the space worked, because a package function's name is its JS export symbol and the `//name:` annotation lands in friendlyName. `meta.keywords` is searched too, and an app no longer appears under both Apps and Functions (the exclusion checked tags only, missing apps declared via `meta.role`)
