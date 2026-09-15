@@ -159,7 +159,7 @@ A phrase resolves, in this order, at every level:
 |--------------------------------------------|------------------------------------------------------------------|
 | `results`, `browse tab`                    | a registered element (or alias): the whole phrase wins over everything below |
 | `second item …`, `last row …`, `3rd input` | an ordinal among the matches                                     |
-| `save button in toolbar`                   | composition: `X in|inside|within|on|under Y` — X resolved inside Y (recursively) |
+| `save button in toolbar`                   | composition: `X in\|inside\|within\|on\|under Y` — X resolved inside Y (recursively) |
 | `label of name input`, `viewers section of toolbox` | `of` names a *part* — of a registered element, or of every element of a kind |
 | `sequence column input`                    | a generic **kind** by its longest suffix, qualified by the rest  |
 | `"Run MSA" button`, `"First name" input`   | a quoted qualifier: scope words inside it are kept, and a leading "first"/"last" is not read as an ordinal |
