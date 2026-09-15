@@ -92,3 +92,52 @@ export const clipboardHas = Then('the clipboard should have (the )text {string}'
 /** The state a scenario needs, rather than a gesture: `setExpanded` reads where the element is
  * first, so a group that is already open stays open — "user expands" on it would close it. */
 export const isExpanded = Given('{element} is expanded', (page: Page, target: ElementRef) => g.setExpanded(page, target, true), {tier: 'ui'});
+
+// --- a file the page hands over, and handing it back ---------------------------------------------
+
+/* The page saves a file (a form's "Save to file", an export) through the browser's download; the
+   step keeps it in the temp directory for the file chooser a later step answers with it. One file
+   per worker: the next download replaces it. */
+let downloaded: string | undefined;
+
+export const downloadThrough = When('user downloads a file through {element}', async (page: Page, target: ElementRef) => {
+  const {tmpdir} = await import('node:os');
+  const {join} = await import('node:path');
+  const download = page.waitForEvent('download', {timeout: 10000});
+  await g.click(page, target);
+  const file = await download;
+  downloaded = join(tmpdir(), `bdd-${process.pid}-${Date.now()}-${file.suggestedFilename()}`);
+  await file.saveAs(downloaded);
+}, {tier: 'ui', description: 'clicks the element and keeps the file the browser downloads, for "uploads the downloaded file"'});
+
+export const downloadedContains = Then('the downloaded file should contain {string}', async (page: Page, text: string) => {
+  if (!downloaded)
+    throw new Error('no file has been downloaded in this worker');
+  const {readFileSync} = await import('node:fs');
+  expect(readFileSync(downloaded, 'utf8'), `the downloaded file ${downloaded}`).toContain(text);
+});
+
+export const downloadedNotContains = Then('the downloaded file should not contain {string}', async (page: Page, text: string) => {
+  if (!downloaded)
+    throw new Error('no file has been downloaded in this worker');
+  const {readFileSync} = await import('node:fs');
+  expect(readFileSync(downloaded, 'utf8'), `the downloaded file ${downloaded}`).not.toContain(text);
+});
+
+export const uploadDownloaded = When('user uploads the downloaded file through {element}', (page: Page, target: ElementRef) => {
+  if (!downloaded)
+    throw new Error('no file has been downloaded in this worker');
+  return g.chooseFile(page, target, downloaded);
+}, {tier: 'ui', description: 'answers the file chooser the element opens with the file the last "downloads a file" kept'});
+
+export const computedStyleContains = Then('the {string} style of {element} should contain {string}', async (page: Page, property: string, target: ElementRef, text: string) => {
+  const {locate} = await import('../../src/runtime/locate.js');
+  const loc = (await locate(page, target)).filter({visible: true}).first();
+  let last = '';
+  try {
+    await expect.poll(async () => (last = await loc.evaluate((e, p) => getComputedStyle(e).getPropertyValue(p as string), property)).includes(text)).toBe(true);
+  }
+  catch {
+    throw new Error(`"${property}" of ${target.phrase} is "${last}", not containing "${text}"`);
+  }
+}, {description: 'the computed CSS value the browser rendered the element with (font-family, font-size, …), by substring'});

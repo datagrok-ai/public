@@ -44,3 +44,7 @@ element('color picker icon', {selector: '[name="legend-icon-color-picker"]',
   description: 'the palette icon a hovered legend item shows to its left (the platform appends it to the page body)'});
 element('marker picker icon', {selector: '[name="legend-icon-marker-picker"]',
   description: 'the shape icon a hovered marker item of a legend shows'});
+element('column picker popup', {selector: '.d4-column-grid', aliases: ['column grid popup'],
+  description: 'the column grid a Dart column selector or a + icon opens (the platform appends it to the page body); absent once a column is taken or the picker is dismissed'});
+element('help panel', {selector: '.grok-help', aliases: ['help pane'],
+  description: 'the help the shell shows for the current object (a viewer\'s "?" icon opens its page)'});
