@@ -328,8 +328,12 @@ export function getSettingsDialog(model: PeptidesModel): SettingsElements {
   showSeqSpace.fireChanged();
   const dialog = ui.dialog('Peptides settings').add(accordion);
   dialog.root.style.width = '400px';
-  dialog.onOK(() => {
-    model.settings = result;
+  dialog.onOK(async () => {
+    try {
+      await model.applySettings(result);
+    } catch (error) {
+      grok.shell.error(String(error));
+    }
   });
   dialog.show();
 

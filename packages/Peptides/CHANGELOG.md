@@ -2,8 +2,12 @@
 
 ## v.next
 
-* GROK-20820: Recalculate monomer-position stats and scaled-activity caches when rows are added or removed
-* GROK-20751: Guard LogoSummaryTable.onPropertyChanged and render against a null dataFrame on a detached viewer
+* 1930: Recalculate monomer-position stats and scaled-activity caches when rows are added or removed
+* 2304: Guard LogoSummaryTable.onPropertyChanged and render against a null dataFrame on a detached viewer
+* Manual Alignment: Fixed Apply writing the split monomers one position off and leaving the SAR statistics stale
+* Export Mutation Cliffs: Preserved the original double-precision activities and deltas
+* Viewers: Added automation surfaces (`getWidgetStatus`, `isRenderPending`, `onRendered`) and a `peptides-sar-ready` event; Command works as Control for multi-selection on macOS
+* Added BDD feature files translating the Playwright specs (`bdd/`)
 
 ## 1.27.10 (2026-07-08)
 
