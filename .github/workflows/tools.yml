@@ -97,7 +97,6 @@ jobs:
       - name: Upgrade npm for trusted publishing
         if: needs.check.outputs.changed_version == 'true'
         run: npm install -g npm@latest
-      # pnpm pack rewrites the workspace: specifiers to real versions; npm publish keeps the OIDC flow.
       - name: npm publish
         id: publish
         if: needs.check.outputs.changed_version == 'true'

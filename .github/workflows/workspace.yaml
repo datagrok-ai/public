@@ -1,7 +1,7 @@
 name: Workspace
 # Build, type-check and lint everything a change affects (dependents included), from one pnpm
-# install and one Turborepo run. Publishes to npm on master when a package's version is bumped.
-# Stand-based package tests stay in packages.yaml.
+# install and one Turborepo run. Publishing to npm and the stand-based package tests stay in the
+# area workflows (packages.yaml, libraries.yaml, js-api.yml, tools.yml).
 on:
   push:
     branches: [master, 'release/**']
@@ -65,42 +65,3 @@ jobs:
       - name: Lint (affected)
         continue-on-error: true
         run: pnpm turbo run lint --filter='${{ steps.filter.outputs.filter }}' --cache-dir=.turbo --concurrency=4 --continue
-
-  publish:
-    name: Publish bumped packages to npm
-    needs: build
-    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    permissions:
-      id-token: write
-      contents: read
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-          registry-url: https://registry.npmjs.org
-      - run: pnpm install --frozen-lockfile
-      - name: Build what changed
-        run: pnpm turbo run build --filter='...[HEAD^1]' --concurrency=4
-      - name: Publish every changed package whose version is not on npm yet (major > 0)
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: |
-          for dir in $(pnpm turbo run build --filter='...[HEAD^1]' --dry-run=json | jq -r '.packages[]' | grep -v '^//$' \
-                       | xargs -I{} pnpm -r --filter={} exec pwd 2>/dev/null); do
-            name=$(jq -r .name "$dir/package.json"); version=$(jq -r .version "$dir/package.json"); private=$(jq -r '.private // false' "$dir/package.json")
-            [ "$private" = "true" ] && continue
-            [ "${version%%.*}" -gt 0 ] || { echo "::notice title=$name::$version is 0.x, not published"; continue; }
-            if [ "$(npm view "$name@$version" version 2>/dev/null)" = "$version" ]; then echo "::notice title=$name::$version already on npm"; continue; fi
-            echo "Publishing $name@$version"
-            # pnpm pack rewrites workspace:/catalog: specifiers to real versions; npm publish keeps
-            # the trusted-publishing (OIDC) flow described in .github/NPM_TRUSTED_PUBLISHING.md.
-            tgz=$(cd "$dir" && pnpm pack --pack-destination "$RUNNER_TEMP" | tail -1)
-            npm publish "$tgz" --access public --provenance
-          done

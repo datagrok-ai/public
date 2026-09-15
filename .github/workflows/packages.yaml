@@ -225,11 +225,11 @@ jobs:
       matrix: ${{ fromJson(needs.matrix.outputs.matrix_publish) }}
     permissions:
       actions: write
+      contents: read
       id-token: write
     steps:
       - uses: actions/checkout@v4
         with:
-          token: ${{ secrets.WRITE_TOKEN || github.token }}
           sparse-checkout: |
             ./libraries
             ./packages
@@ -412,7 +412,7 @@ jobs:
           for dep in $(jq -r '.grok.testDependencies // [] | .[]' packages/${{ matrix.package }}/package.json); do
             filters+=" --filter=${dep}..."
           done
-          pnpm turbo run build typecheck $filters --cache-dir=.turbo --concurrency=4
+          pnpm turbo run build $filters --cache-dir=.turbo --concurrency=4
       - name: Wait for Datagrok to become available
         if: ${{ matrix.test == 'test' }}
         timeout-minutes: 5
@@ -589,7 +589,11 @@ jobs:
               done
             fi
           fi
+      - name: Install Chromium for grok test
+        if: ${{ matrix.test == 'test' }}
+        run: pnpm --filter datagrok-tools exec puppeteer browsers install chrome
       - name: Configuration setuid sandbox
+        if: ${{ matrix.test == 'test' }}
         run: |
           linux_version=$(ls ~/.cache/puppeteer/chrome | grep linux- | sort -V | tail -n 1)
           cd ~/.cache/puppeteer/chrome/$linux_version/chrome-linux64/
@@ -673,9 +677,17 @@ jobs:
         run: npm install -g npm@latest
 
       - name: Publish to npm
-        run: npm publish --access public
         id: publish
         working-directory: packages/${{ matrix.package }}
+        run: |
+          tgz="$(pnpm pack --pack-destination "$RUNNER_TEMP" | tail -1)"
+          for dep in $(tar xzf "$tgz" -O package/package.json | jq -r '(.dependencies // {}) + (.peerDependencies // {}) | to_entries[] | select(.key | test("^(datagrok-api|datagrok-tools|@datagrok-libraries/)")) | "\(.key)@\(.value | ltrimstr("^"))"'); do
+            if [ "$(npm view "$dep" version 2>/dev/null)" != "${dep##*@}" ]; then
+              echo "::error title=${{ matrix.package }}::depends on $dep, which is not on npm yet; publish it first"
+              exit 1
+            fi
+          done
+          npm publish --access public "$tgz"
         if: matrix.publish == 'publish' && (steps.build.outcome == 'success' || steps.build.outcome == 'skipped') && steps.gen_checks.outcome == 'success' && (steps.check.outcome == 'success' || steps.check.outcome == 'skipped') && steps.install.outcome == 'success' && (steps.test-package.outcome == 'success' || steps.test-package.outcome == 'skipped' || (contains(matrix.package, 'Tests') || matrix.package == 'Chemspace' || matrix.package == 'DevTools' || matrix.package == 'ApiSamples'))
 
       - name: Get actors slack
@@ -810,45 +822,6 @@ jobs:
             --data-urlencode "REINDEX_ONLY=true")
           echo "REINDEX_ONLY trigger -> HTTP ${code}"
           [ "$code" = "201" ] || echo "::warning::VEX index refresh not queued (HTTP ${code})"
-
-      - name: Commit package-lock.json
-        id: git
-        continue-on-error: true
-        if: steps.publish.outcome == 'success' || steps.package-lock.outcome == 'success'
-        run: |
-          git config --global user.name 'github-actions[bot]'
-          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-          git pull
-          continue=false
-          if [ -n "$(git status -s packages/${{ matrix.package }}/package-lock.json)" ]; then
-            git add packages/${{ matrix.package }}/package-lock.json
-            skip_ci=""
-            if [ ${{ github.ref }} == 'refs/heads/master' ]; then
-              skip_ci="[skip ci]"
-            fi
-            git commit -m "GitHub Actions: Update packages/${{ matrix.package }}/package-lock.json $skip_ci
-
-            Workflow ${{ github.workflow }} ${{ github.run_number }}
-            https://github.com/datagrok-ai/public/actions/runs/${{ github.run_id }}"
-            continue=true
-          fi
-          if [[ "${continue}" == "true" ]]; then
-            count=0
-            retries=10
-            until git push; do
-              exit=$?
-              wait=$((2 ** count))
-              count=$((count + 1))
-              if [ $count -lt "$retries" ]; then
-                echo "Retry $count/$retries exited $exit, retrying 'git push' in $wait seconds..."
-                sleep $wait
-                git pull --rebase
-              else
-                echo "Retry $count/$retries exited $exit, no more retries left for 'git push'."
-                exit $exit
-              fi
-            done
-          fi
 
       - name: Trigger help update
         continue-on-error: true

@@ -179,7 +179,6 @@ jobs:
       - name: Upgrade npm for trusted publishing
         if: matrix.publish == 'publish'
         run: npm install -g npm@latest
-      # pnpm pack rewrites the workspace:/catalog: specifiers to real versions; npm publish keeps the OIDC flow.
       - name: npm publish
         id: publish
         if: matrix.publish == 'publish'
