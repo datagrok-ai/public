@@ -57,7 +57,7 @@ category('Shell', () => {
   test('tableByName', async () => {
     grok.shell.closeAll();
     const t = grok.shell.addTableView(demog);
-    expect(grok.shell.tableByName(demog.name), t.dataFrame)
+    expect(grok.shell.table(demog.name), t.dataFrame)
   }, {skipReason: nodeSkip});
 
   test('dockManager', async () => {

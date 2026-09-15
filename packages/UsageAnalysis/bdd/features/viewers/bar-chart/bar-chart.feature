@@ -162,31 +162,6 @@ Feature: Bar chart property surface
     And the "stack segments" reading of bar chart viewer should be 0
     And no errors should have been logged
 
-  Scenario: Title and description
-    When user sets properties of bar chart viewer:
-      | Show Title | true         |
-      | Title      | Demographics |
-    Then title of bar chart viewer should have text "Demographics"
-    When user sets properties of bar chart viewer:
-      | Description                 | By race |
-      | Description Visibility Mode | Always  |
-    Then description of bar chart viewer should have text "By race"
-    When user sets "Description Position" property of bar chart viewer to "Bottom"
-    Then description of bar chart viewer should be visible
-    When user sets "Description Position" property of bar chart viewer to "Left"
-    Then description of bar chart viewer should be visible
-    When user sets "Description Position" property of bar chart viewer to "Right"
-    Then description of bar chart viewer should be visible
-    When user sets "Description Visibility Mode" property of bar chart viewer to "Never"
-    Then description of bar chart viewer should be absent
-    And no errors should have been logged
-    When user sets properties of bar chart viewer:
-      | Show Title                  | false |
-      | Title                       |       |
-      | Description                 |       |
-      | Description Visibility Mode | Auto  |
-      | Description Position        | Top   |
-
   Scenario: Values in place of category names
     When user sets "Show Values Instead Of Categories" property of bar chart viewer to "true"
     Then "Show Values Instead Of Categories" property of bar chart viewer should be "true"

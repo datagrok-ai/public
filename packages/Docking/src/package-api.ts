@@ -12,18 +12,23 @@ export namespace funcs {
     return await grok.functions.call('Docking:Info', {});
   }
 
+  /**
+   * Returns the AutoDock service client used by other packages
+   */
   export async function getAutoDockService(): Promise<any> {
     return await grok.functions.call('Docking:GetAutoDockService', {});
   }
 
-  export async function autoDockApp(): Promise<void> {
-    return await grok.functions.call('Docking:AutoDockApp', {});
-  }
-
+  /**
+   * Lists target folders that contain an AutoDock grid parameter (.gpf) file
+   */
   export async function getConfigFiles(): Promise<any> {
     return await grok.functions.call('Docking:GetConfigFiles', {});
   }
 
+  /**
+   * Docks one ligand in the AutoDock container; results are cached per input
+   */
   export async function dockLigandCached(jsonForm: string , containerId: string ): Promise<string> {
     return await grok.functions.call('Docking:DockLigandCached', { jsonForm, containerId });
   }
@@ -53,11 +58,15 @@ export namespace funcs {
     return await grok.functions.call('Docking:RunAutodock', { table, ligands, target, poses });
   }
 
+  /**
+   * Checks whether a Molecule3D value is an AutoDock pose with a binding energy
+   */
   export async function isApplicableAutodock(molecule: string ): Promise<boolean> {
     return await grok.functions.call('Docking:IsApplicableAutodock', { molecule });
   }
 
   /**
+   * Shows the receptor with the docked pose and its AutoDock energy terms
    * @param {any} molecule
    *   semType: Molecule3D
    */
@@ -65,6 +74,9 @@ export namespace funcs {
     return await grok.functions.call('Docking:AutodockWidget', { molecule });
   }
 
+  /**
+   * Builds the AutoDock pose widget for a single Molecule3D value
+   */
   export async function getAutodockSingle(molecule: any , showProperties: boolean , table: DG.DataFrame ): Promise<any> {
     return await grok.functions.call('Docking:GetAutodockSingle', { molecule, showProperties, table });
   }
@@ -77,6 +89,7 @@ export namespace funcs {
   }
 
   /**
+   * Docks the current molecule against a chosen target and shows the best pose
    * @param {any} smiles
    *   semType: Molecule
    */
@@ -84,6 +97,9 @@ export namespace funcs {
     return await grok.functions.call('Docking:AutodockPanel', { smiles });
   }
 
+  /**
+   * Opens the Docking app
+   */
   export async function dockingView(path?: string ): Promise<DG.View> {
     return await grok.functions.call('Docking:DockingView', { path });
   }

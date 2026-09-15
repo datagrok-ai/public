@@ -53,6 +53,7 @@ export class ParetoFrontViewer extends DG.JsViewer {
 
   constructor() {
     super();
+    this.helpUrl = '/help/visualize/viewers/pareto-front-viewer';
 
     this.title = this.string('title', 'Pareto front');
     this.showTitle = this.bool('showTitle', false, {category: 'Description'});
@@ -224,7 +225,7 @@ export class ParetoFrontViewer extends DG.JsViewer {
   } // computeParetoFront
 
   private markResColWithColor(col: DG.Column): void {
-    col.colors.setCategorical({
+    col.meta.colors.setCategorical({
       'optimal': '#2ca02c',
       'non-optimal': '#e3e3e3',
     });

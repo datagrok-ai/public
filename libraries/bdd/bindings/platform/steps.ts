@@ -1,46 +1,43 @@
 /* Platform base steps: setup through the JS API (the openers of @datagrok-libraries/test keep the
    provenance tags the UI would set). Viewer steps live in the `viewers` tier. */
-import {expect, type Page} from '@playwright/test';
-import {openTableFromFile} from '@datagrok-libraries/test/src/playwright/openers.js';
+import {type Page} from '@playwright/test';
+import {expect, pollMs} from '../../src/runtime/patience.js';
 import {DatasetEntry, Given, Then, When} from '../../src/registry.js';
+import {el, type ElementRef} from '../../src/runtime/args.js';
+import {click, editorOf} from '../../src/runtime/gestures.js';
 import {atFeatureEnd} from '../../src/runtime/harness.js';
+import {exactText, locate} from '../../src/runtime/locate.js';
 
 declare const grok: any;
 declare const DG: any;
 
-/** Opening a table starts semantic-type detection in the background (package detectors, a few
- * hundred ms on a molecule table); the platform reports its end on the global event bus, and the
- * step is over only then — otherwise that work lands on whatever step comes next. */
+/** A file is read once per page and every feature gets a clone of it — the clone carries the
+ * semantic types the first detection found, so the platform's detection on it skips the typed
+ * columns — named as the file (readCsv names nothing) unless the step names it; a subset keeps
+ * the first N rows. Opening a table starts semantic-type detection in the background (package
+ * detectors, a few hundred ms on a molecule table); the platform reports its end on the global
+ * event bus, and the step is over only then — otherwise that work lands on whatever step comes
+ * next. */
 async function openTable(page: Page, dataset: DatasetEntry, rows?: number, name?: string): Promise<void> {
-  await page.evaluate(() => {
+  await page.evaluate(async ([p, r, n]) => {
     const w = window as any;
-    if (w.__bddDetected)
-      return;
-    w.__bddDetected = [];
-    w.grok.events.onEvent('ddt-semantic-type-detected').subscribe((a: any) => {
-      w.__bddDetected = [...w.__bddDetected.slice(-19), a?.args?.dataFrame?.dart];
-    });
-  });
-  if (rows === undefined) {
-    await openTableFromFile(page, dataset.path);
-  }
-  else {
-    // a subset is a clone: the file's rows are read the same way, the view gets the first N,
-    // named as the file (readCsv names nothing) unless the step names it
-    await page.evaluate(async ([p, r, n]) => {
-      const src = await grok.dapi.files.readCsv(p);
-      const df = r < src.rowCount ? src.clone(DG.BitSet.create(src.rowCount, (i: number) => i < r)) : src;
-      df.name = n ?? p.replace(/^.*\//, '').replace(/\.[^.]+$/, '');
-      grok.shell.addTableView(df);
-    }, [dataset.path, rows, name ?? null] as [string, number, string | null]);
-  }
+    if (!w.__bddDetected) {
+      w.__bddDetected = [];
+      w.grok.events.onEvent('ddt-semantic-type-detected').subscribe((a: any) => {
+        w.__bddDetected = [...w.__bddDetected.slice(-19), a?.args?.dataFrame?.dart];
+      });
+    }
+    w.__bddTables ??= {};
+    const src = (w.__bddTables[p] ??= await grok.dapi.files.readCsv(p));
+    const df = r !== null && r < src.rowCount ? src.clone(DG.BitSet.create(src.rowCount, (i: number) => i < r)) : src.clone();
+    df.name = n ?? p.replace(/^.*\//, '').replace(/\.[^.]+$/, '');
+    grok.shell.addTableView(df);
+  }, [dataset.path, rows ?? null, name ?? null] as [string, number | null, string | null]);
   await page.locator('[name="viewer-Grid"]').first().waitFor();
-  await page.waitForFunction(() => {
+  await expect.poll(() => page.evaluate(() => {
     const w = window as any;
-    return w.__bddDetected.includes(w.grok.shell.tv?.dataFrame?.dart);
-  }, undefined, {timeout: 15000}).catch(() => {
-    throw new Error(`${dataset.name}: semantic types were not detected within 15 s (is auto-detection on?)`);
-  });
+    return w.__bddDetected.includes(w.grok.shell.tv?.dataFrame?.dart) as boolean;
+  }), {timeout: pollMs(60000), message: `${dataset.name}: semantic types were not detected (is auto-detection on?)`}).toBe(true);
   // a second after the grid is created the view makes row 0 current when no row is, and every
   // viewer repaints its marker mid-feature; done here, the view's timer skips it
   await page.evaluate(() => {
@@ -154,3 +151,343 @@ export const openApp = Given('user opens the {string} app', async (page: Page, n
 export const autostartsCompleted = Given('the package autostarts have completed', async (page: Page) => {
   await page.evaluate(async () => { await grok.shell.autostartsCompleted; });
 }, {tier: 'api', description: 'grok.shell.autostartsCompleted — a viewer a package registers is not there before it'});
+
+/** A bare `input[type="checkbox"]` in a Dart dialog — the select-all of "Order or Hide Columns"
+ * and its like, which carry no class and no label for the `checkbox` kind to match on. */
+export const clickPlainCheckbox = When('user clicks the plain checkbox in the {string} dialog',
+  async (page: Page, title: string) => {
+    const dialog = page.locator('.d4-dialog').filter({has: page.locator('.d4-dialog-title', {hasText: exactText(title)})}).last();
+    await dialog.waitFor({state: 'visible', timeout: 5000});
+    const box = dialog.locator('input[type="checkbox"]').filter({visible: true}).first();
+    await expect(box, `a checkbox in the "${title}" dialog`).toBeVisible({timeout: 5000});
+    await box.click();
+  }, {tier: 'ui', description: 'the only checkbox of that dialog the library\'s kinds cannot name'});
+
+/* --- the browse panel -------------------------------------------------------------------------
+   A bdd page runs in simple mode (set by `user is logged in`), where the browse panel is not built
+   at all — so a feature about the Browse tree opens it first. Opening it is a shell setting, never
+   a click on the Browse tab: that tab TOGGLES the panel, and clicking it on an open one closes it
+   again. Simple mode is restored when the feature ends, so the next feature on the same page finds
+   the shell as it expects it. */
+
+export const browsePanelOpen = Given('the browse panel is open', async (page: Page) => {
+  await page.evaluate(() => {
+    grok.shell.windows.simpleMode = false;
+    grok.shell.windows.showBrowse = true;
+  });
+  await expect(page.locator('.grok-view-browse [role="tree"], .layout-browse [role="tree"]').first(), 'the browse tree').toBeVisible({timeout: 60000});
+  atFeatureEnd(page, () => page.evaluate(() => { grok.shell.windows.simpleMode = true; }));
+}, {tier: 'api', description: 'idempotent: leaves simple mode, shows the panel and waits for its tree; puts simple mode back at feature end'});
+
+/* --- the context panel -------------------------------------------------------------------------
+   The panel renders the current object (`grok.shell.o`) and nothing else: a click that did not
+   change it — the setter drops a change to the object already current, one within 2 s of a
+   property edit, one while the object is frozen — leaves the panel as it was. So a claim about
+   the panel names the object first, and reads the panel only once that is the current one. */
+
+export const contextPanelOpen = Given('the context panel is open', async (page: Page) => {
+  await page.evaluate(() => { grok.shell.windows.showContextPanel = true; });
+  await expect(page.locator('.grok-prop-panel'), 'the context panel').toBeVisible({timeout: pollMs(15000)});
+}, {tier: 'api', description: 'idempotent: the shell setting, then the panel visible — not a click on its toggle'});
+
+export const contextPanelShows = Then('the context panel should show {string}', async (page: Page, name: string) => {
+  await expect.poll(() => page.evaluate(() => {
+    const o = grok.shell.o;
+    return o == null ? 'nothing' : `${o.constructor?.name ?? typeof o} "${o.friendlyName ?? o.name ?? ''}"`;
+  }), {message: `the current object (grok.shell.o), which the context panel renders`}).toMatch(new RegExp(`"${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"$`));
+  await expect(page.locator('.grok-prop-panel'), 'the context panel').toContainText(name);
+}, {description: 'the current object (grok.shell.o) is the entity of that name, and the panel shows it'});
+
+/* --- the second account ------------------------------------------------------------------------
+   A sharing feature needs a user other than the one running it: DATAGROK_SHARING_LOGIN — the same
+   variable the hand-written suites read from playwright-tests/.env — or, when it is unset, the
+   "bddsecond" user the global setup creates on the stand with the dev key. The platform's user
+   typeahead offers a user under a name with the punctuation stripped ("a+b@x" shows as "ab"), so
+   the step types the local part and picks the row rather than trusting what it typed. */
+
+export function sharingLogin(): string {
+  const login = process.env.DATAGROK_SHARING_LOGIN;
+  if (!login)
+    throw new Error('no second account: set DATAGROK_SHARING_LOGIN, or run with a dev key so the setup can create one');
+  return login;
+}
+
+/** The second account as the platform shows it: the local part of the login, punctuation stripped. */
+export function sharingShownName(): string {
+  return sharingLogin().split('@')[0].replace(/[^a-z0-9]/gi, '');
+}
+
+export const pickSharingUser = When('user picks the sharing user in {element}', async (page: Page, target: ElementRef) => {
+  const login = sharingLogin();
+  const editor = await editorOf(page, el(target.phrase));
+  await editor.click();
+  await editor.pressSequentially(login.split('@')[0]);
+  const row = page.locator('.d4-user-selector-drop-down tr, .d4-tags-selector-drop-down tr')
+    .filter({hasText: new RegExp(sharingShownName(), 'i')}).first();
+  await expect(row, `the "${login}" row of the user typeahead`).toBeVisible({timeout: pollMs(15000)});
+  await row.click();
+}, {tier: 'ui', description: 'types the login of DATAGROK_SHARING_LOGIN and takes it from the typeahead'});
+
+/* The grant row of the second account in a Share dialog; its Remove button shows while the row is
+   hovered. The row goes at once, the grant only when the dialog is confirmed. */
+export const removeSharingUser = When('user removes the sharing user from {element}', async (page: Page, target: ElementRef) => {
+  const shown = sharingShownName();
+  const row = (await locate(page, target)).locator('[name^="div-permissions-row-"]').filter({hasText: new RegExp(shown, 'i')}).first();
+  await expect(row, `the grant row of "${shown}"`).toBeVisible({timeout: pollMs(15000)});
+  await row.hover();
+  await row.locator('[name="button-Remove"]').click();
+  await expect(row, `the grant row of "${shown}" after Remove`).toBeHidden();
+}, {tier: 'ui', description: 'hovers the grant row of DATAGROK_SHARING_LOGIN and clicks its Remove button'});
+
+/* Whom an entity is shared with, read where the platform shows it. grok.dapi.permissions.get answers
+   with the edit and view buckets only, and a share made through the dialog lands in neither — the
+   Sharing pane calls it "has special permissions" — so the API cannot see it and the pane is the
+   claim. The pane fills its grants in after it is built and appends its Share... button last
+   (db_entity_meta.dart renderSharingSection), so a claim reads it only once the button is there: a
+   "does not list" read off the loading pane would pass whatever the grants are. Two expressions
+   rather than one with "(not )": an optional literal is not a parameter, so a single step would
+   always take the positive branch. */
+async function sharingPane(page: Page): Promise<ReturnType<Page['locator']>> {
+  const header = page.locator('.grok-prop-panel [name="div-section--Sharing"]').first();
+  await expect(header, 'the Sharing pane of the context panel').toBeVisible({timeout: pollMs(30000)});
+  if (await header.getAttribute('aria-expanded') !== 'true')
+    await header.click();
+  const pane = page.locator('.grok-prop-panel .d4-pane-sharing').first();
+  await expect(pane.getByRole('button', {name: /^share\.\.\.$/i}), 'the Sharing pane, loaded (its Share... button)')
+    .toBeVisible({timeout: pollMs(30000)});
+  return pane;
+}
+
+export const sharingPaneLists = Then('the sharing pane should list the sharing user', async (page: Page) => {
+  await expect(await sharingPane(page)).toContainText(new RegExp(sharingShownName(), 'i'));
+}, {tier: 'ui', description: 'the Sharing section of the context panel, opened if it is closed, read once it has loaded'});
+
+export const sharingPaneListsNot = Then('the sharing pane should not list the sharing user', async (page: Page) => {
+  await expect(await sharingPane(page)).not.toContainText(new RegExp(sharingShownName(), 'i'));
+}, {tier: 'ui', description: 'read once the pane has loaded'});
+
+// Space name filters miss existing spaces, so names are matched after reading every page.
+type NamedSource = 'spaces' | 'models';
+type CleanupSource = NamedSource | 'projects' | 'tables';
+type ServerEntity = {id: string; name: string; friendlyName: string; children?: string[]};
+type CleanupStage = {source: CleanupSource; ids: string[]};
+
+async function serverEntities(page: Page, source: CleanupSource, filter = ''): Promise<ServerEntity[]> {
+  return page.evaluate(async ([src, query]) => {
+    try {
+      // The tables gallery hides system tables, including training artifacts.
+      let data = (src === 'tables' ? grok.dapi.entities : grok.dapi[src]).order('id');
+      const filters = [src === 'tables' ? 'entityType.name = "TableInfo"' : '', query].filter(Boolean);
+      if (filters.length > 0)
+        data = data.filter(filters.map((filter) => `(${filter})`).join(' and '));
+      if (src === 'projects')
+        data = data.include('children');
+      const result: ServerEntity[] = [];
+      for (let pageNumber = 1; ; pageNumber++) {
+        const entities = await data.list({pageSize: 1000, pageNumber});
+        for (const entity of entities)
+          result.push({id: entity.id, name: entity.name, friendlyName: entity.friendlyName,
+            children: src === 'projects' ? entity.children.map((child: any) => child.id) : undefined});
+        if (entities.length < 1000)
+          return result;
+      }
+    }
+    catch (error) {
+      // Dart ApiException loses its message when Playwright serializes it directly.
+      throw new Error(`${src} list: ${(error as any)?.message ?? String(error)}`);
+    }
+  }, [source, filter] as [CleanupSource, string]);
+}
+
+function namedCleanup(page: Page, source: NamedSource, what: string, names: string[]): () => Promise<void> {
+  let createdAfter: number | undefined;
+  let authorId: string;
+  const pending = new Map<string, CleanupStage[]>();
+  return async () => {
+    await expect.poll(async () => {
+      try {
+        if (source === 'models' && createdAfter === undefined) {
+          const owner = await page.evaluate(async () => {
+            try {
+              return {root: new URL(grok.dapi.root, location.href).href.replace(/\/$/, ''),
+                authorId: (await grok.dapi.users.current()).id};
+            }
+            catch (error) {
+              throw new Error(`cleanup owner lookup: ${(error as any)?.message ?? String(error)}`);
+            }
+          });
+          // No public dapi clock getter: use the server's HTTP Date and preserve its whole second.
+          const response = await page.request.get(`${owner.root}/info/server`);
+          if (!response.ok())
+            throw new Error(`server clock request failed: HTTP ${response.status()}`);
+          const serverTime = Date.parse(response.headers()['date'] ?? '');
+          if (!Number.isFinite(serverTime))
+            throw new Error('server clock response has no valid Date header');
+          createdAfter = serverTime + 1000;
+          authorId = owner.authorId;
+        }
+        const named = (await serverEntities(page, source))
+          .filter((entity) => names.includes(entity.friendlyName) || names.includes(entity.name));
+        for (const entity of named) {
+          if (pending.has(entity.id))
+            continue;
+          const stages: CleanupStage[] = [{source, ids: [entity.id]}];
+          if (source === 'models') {
+            const training: {id: string; owned: boolean} | null = await page.evaluate(async ([id, ownerId, cutoff]) => {
+              try {
+                const model = await grok.dapi.models.include('trainedOn').find(id);
+                const table = await grok.functions.call('Get', {object: model, propertyName: 'trainedOn'});
+                if (!table)
+                  return null;
+                const saved = await grok.dapi.tables.find(table.id);
+                return {id: table.id, owned: saved != null && model.author.id === ownerId && saved.author.id === ownerId &&
+                  model.createdOn.valueOf() > cutoff && saved.createdOn.valueOf() > cutoff};
+              }
+              catch (error) {
+                throw new Error(`model ${id} trainedOn lookup: ${(error as any)?.message ?? String(error)}`);
+              }
+            }, [entity.id, authorId, createdAfter!] as [string, string, number]);
+            const wrappers = await serverEntities(page, 'projects',
+              `isEntity = true and isPackage = false and relations.entity.id = "${entity.id}"`);
+            for (const wrapper of wrappers)
+              if (wrapper.children?.length !== 1 || wrapper.children[0] !== entity.id)
+                throw new Error(`project ${wrapper.id} has children outside model ${entity.id}; it was retained`);
+            stages.unshift({source: 'projects', ids: wrappers.map((wrapper) => wrapper.id)});
+            // trainedOn is a used table: require a new artifact by this run's user and no other model.
+            if (training?.owned) {
+              const users = await serverEntities(page, 'models', `trainedOn.id = "${training.id}"`);
+              if (!users.some((model) => model.id === entity.id))
+                throw new Error(`the training-table lookup did not return model ${entity.id}; ownership is unverified`);
+              if (users.length === 1)
+                stages.push({source: 'tables', ids: [training.id]});
+            }
+          }
+          pending.set(entity.id, stages);
+        }
+        const left: string[] = [];
+        for (const [modelId, stages] of pending) {
+          while (stages.length > 0) {
+            const stage = stages[0];
+            // Spaces filters also miss IDs; verify deletion against the complete listing.
+            const filter = stage.source === 'spaces' ? '' : stage.ids.map((id) => `id = "${id}"`).join(' or ');
+            const entities = stage.ids.length === 0 ? [] : (await serverEntities(page, stage.source, filter))
+              .filter((entity) => stage.ids.includes(entity.id));
+            if (entities.length === 0) {
+              stages.shift();
+              continue;
+            }
+            for (const entity of entities) {
+              try {
+                if (stage.source === 'tables' &&
+                  (await serverEntities(page, 'models', `trainedOn.id = "${entity.id}"`)).length > 0)
+                  throw new Error(`training table ${entity.id} is still used by another model; it was retained`);
+                await page.evaluate(async ([src, id, ownerId]) => {
+                  let operation = 'lookup';
+                  try {
+                    // Project find expands every child; the listed wrapper is sufficient to delete it.
+                    const entity = src === 'projects' ?
+                      await grok.dapi.projects.filter(`id = "${id}"`).include('children').first() :
+                      await grok.dapi[src].find(id);
+                    if (!entity)
+                      return;
+                    if (entity.id !== id)
+                      throw new Error(`the lookup returned ${entity.id} instead of ${id}; it was retained`);
+                    if (src === 'projects' && (entity.children.length !== 1 || entity.children[0].id !== ownerId))
+                      throw new Error(`project ${id} has children outside model ${ownerId}; it was retained`);
+                    operation = 'delete';
+                    await grok.dapi[src].delete(entity);
+                  }
+                  catch (error) {
+                    throw new Error(`${src} ${id} ${operation}: ${(error as any)?.message ?? String(error)}`);
+                  }
+                }, [stage.source, entity.id, modelId] as [CleanupSource, string, string]);
+                left.push(`${stage.source} ${entity.id}`);
+              }
+              catch (error) {
+                left.push(`${stage.source} ${entity.id}: ${String(error)}`);
+              }
+            }
+            break;
+          }
+        }
+        return left;
+      }
+      catch (error) {
+        return [`the listing or artifact lookup failed: ${String(error)}`];
+      }
+    }, {message: `${what} still on the server under ${names.join(', ')}`, timeout: pollMs(60000)}).toEqual([]);
+  };
+}
+
+async function expectNamedCount(page: Page, source: NamedSource, what: string, name: string, count: number): Promise<void> {
+  await expect.poll(async () => {
+    try {
+      return (await serverEntities(page, source)).filter((entity) => entity.friendlyName === name || entity.name === name).length;
+    }
+    catch (error) {
+      return `the listing failed: ${String(error)}`;
+    }
+  }, {message: `${what} the server holds under "${name}"`, timeout: pollMs(60000)}).toBe(count);
+}
+
+const namesOf = (list: string): string[] => list.split(',').map((n) => n.trim()).filter(Boolean);
+
+export const noSpaceOnServer = Given('no space named {string} is on the server', async (page: Page, name: string) => {
+  const cleanup = namedCleanup(page, 'spaces', 'spaces', namesOf(name));
+  atFeatureEnd(page, cleanup);
+  await cleanup();
+  // API deletion does not invalidate the open tree's cached nodes (including prior teardown).
+  if (await (await locate(page, el('browse panel'))).filter({visible: true}).count() > 0)
+    await click(page, el('"Refresh" icon inside browse toolbar'));
+}, {tier: 'api', description: 'deletes earlier fixtures by name (comma-separated), refreshes the open Browse tree, and deletes them again at feature end'});
+
+/* A space is listed once its save returns, and the save of a ROOT space is slow: 4.8 s alone and
+   18 s with four features creating at once on a local stand (2026-09-10); the claim right after OK
+   owns the budget the dialog-close claim does. */
+export const spacesOnServer = Then('{int} space(s) named {string} should be on the server', (page: Page, count: number, name: string) =>
+  expectNamedCount(page, 'spaces', 'spaces', name, count),
+{tier: 'api', description: 'what the server holds, not what the tree draws — the refusal of a duplicate is a space that was never created'});
+
+export const noModelOnServer = Given('no predictive model named {string} is on the server', async (page: Page, name: string) => {
+  const cleanup = namedCleanup(page, 'models', 'predictive models', namesOf(name));
+  atFeatureEnd(page, cleanup);
+  await cleanup();
+}, {tier: 'api', description: 'deletes what an earlier run left under those names (comma-separated), and deletes them again when the feature ends'});
+
+export const modelsOnServer = Then('{int} predictive model(s) named {string} should be on the server', (page: Page, count: number, name: string) =>
+  expectNamedCount(page, 'models', 'predictive models', name, count),
+{tier: 'api', description: 'what the server holds, not what the gallery draws'});
+
+export const urlShouldContain = Then('the page address should contain {string}', async (page: Page, part: string) => {
+  await expect.poll(() => page.url(), {message: 'the page address'}).toContain(part);
+});
+
+/** How many viewers the current view holds — an analysis that is done is one that has put its
+ * viewers on screen. */
+export const viewHoldsViewers = Then('the current view should hold at least {int} viewer(s)',
+  async (page: Page, count: number) => {
+    await expect.poll(() => page.evaluate(() => Array.from(grok.shell.v?.viewers ?? []).length),
+      {message: 'viewers of the current view', timeout: pollMs(120000)}).toBeGreaterThanOrEqual(count);
+  }, {tier: 'api', description: 'a claim with the budget of the run that builds them: an analysis puts its viewers up when it ends'});
+
+/** A table in the workspace and nothing else: no view, so a form that offers the open tables in a
+ * choice gains the option without losing the focus of the view it lives in. Named after the file,
+ * which is the name such a choice shows. */
+export const loadTable = Given('the {string} file is loaded as a table', async (page: Page, path: string) => {
+  const name = await page.evaluate(async (p) => {
+    const df = await grok.dapi.files.readCsv(p);
+    df.name = p.replace(/^.*\//, '').replace(/\.[^.]+$/, '');
+    grok.shell.addTable(df);
+    return String(df.name);
+  }, path);
+  await expect.poll(() => page.evaluate((n) => (grok.shell.tables ?? []).some((t: any) => t.name === n), name),
+    {message: `"${name}" among the open tables`}).toBe(true);
+}, {tier: 'api', description: 'a file on the stand into the workspace, without a view of its own'});
+
+/** A dialog that commits to the server stays up until the server answers: creating a space took
+ * 6-18 s on dev, and a confirmation dialog on a loaded stand the same, which straddles the shared
+ * 15 s budget — so "should be hidden" passed or failed by luck. This claim owns its budget. */
+export const dialogCloses = Then('the {string} dialog should close', async (page: Page, title: string) => {
+  const dialog = await locate(page, el(`${JSON.stringify(title)} dialog`));
+  await expect(dialog.filter({visible: true}), `the "${title}" dialog`).toHaveCount(0, {timeout: pollMs(60000)});
+}, {tier: 'ui', description: 'the platform closes it when the work it started is done'});

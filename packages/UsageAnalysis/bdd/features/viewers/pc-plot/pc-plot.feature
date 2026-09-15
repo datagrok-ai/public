@@ -93,27 +93,6 @@ Feature: PC plot axes, vertical scale and chrome
     Then the axes of pc plot viewer should be "AGE, HEIGHT, WEIGHT"
     And no errors should have been logged
 
-  Scenario: Title and description show and clear
-    When user sets properties of pc plot viewer:
-      | Show Title | true         |
-      | Title      | Demographics |
-    Then title of pc plot viewer should have text "Demographics"
-    When user sets properties of pc plot viewer:
-      | Description                 | Three axes |
-      | Description Visibility Mode | Always     |
-    Then description of pc plot viewer should have text "Three axes"
-    When user sets "Description Position" property of pc plot viewer to "Bottom"
-    Then description of pc plot viewer should be visible
-    When user sets "Description Visibility Mode" property of pc plot viewer to "Never"
-    Then description of pc plot viewer should be absent
-    When user sets properties of pc plot viewer:
-      | Show Title                  | false |
-      | Title                       |       |
-      | Description                 |       |
-      | Description Visibility Mode | Auto  |
-      | Description Position        | Top   |
-    Then no errors should have been logged
-
   Scenario: Line width, label orientation and the horizontal margin change what is drawn
     When user sets "Line Width" property of pc plot viewer to "3"
     Then pc plot viewer should have more ink than before

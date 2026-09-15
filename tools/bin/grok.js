@@ -28,6 +28,7 @@ const commands = {
   'docker-gen': lazy('docker-gen', 'dockerGen'),
   init: lazy('init', 'init'),
   link: lazy('link', 'link'),
+  login: lazy('login', 'login'),
   publish: lazy('publish', 'publish'),
   report: lazy('report', 'report'),
   run: lazy('run', 'run'),

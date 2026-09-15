@@ -14,6 +14,8 @@ const globalSetup = ['global-setup.js', 'global-setup.ts'].map((f) => join(here,
 
 export default defineConfig({
   ...baseConfig,
+  // one page per worker, four workers: the shared base config on npm still says one
+  workers: Number(process.env.PLAYWRIGHT_WORKERS ?? 4),
   testDir: join(root, 'generated'),
   outputDir: join(root, 'test-results'),
   globalSetup,

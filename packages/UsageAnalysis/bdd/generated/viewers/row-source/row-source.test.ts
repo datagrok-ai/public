@@ -7,6 +7,7 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 sub_features_covered: [viewers.scatter-plot, viewers.line-chart, viewers.histogram, viewers.bar-chart, viewers.pie-chart, viewers.box-plot, viewers.pc-plot]
 --- */
 import {test} from '@playwright/test';
+import '../../../bindings/spaces.js';
 import '../../../bindings/tile-viewer.js';
 import '../../../bindings/trellis-plot.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';

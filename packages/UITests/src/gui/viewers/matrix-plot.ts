@@ -64,7 +64,7 @@ category('Viewers: Matrix Plot', () => {
     await uploadProject('Test project with Matrix Plot', demog.getTableInfo(), v, demog);
     grok.shell.closeAll();
     await grok.dapi.projects.open('Test project with Matrix Plot');
-    v = grok.shell.getTableView('demog 1000');
+    v = grok.shell.tableView('demog 1000');
     isViewerPresent(Array.from(v.viewers), 'Matrix plot');
     const matrixPlot = findViewer('Matrix plot', v);
     

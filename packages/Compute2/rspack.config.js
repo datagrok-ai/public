@@ -7,9 +7,17 @@ const FuncGeneratorPlugin = require('datagrok-tools/plugins/func-gen-plugin');
 // Resolve linked-or-npm-installed lib paths to their real on-disk location so
 // module.rules[].include matches via the resolved path (not the node_modules symlink).
 // Skips libs that aren't installed (e.g., transitive lib was uninstalled).
+// Transitive file: deps of linked libs (e.g. arrow via compute-utils) are not
+// hoisted into this package's node_modules, so fall back to the repo path.
 const realLib = (pkg) => {
-  try { return fs.realpathSync(path.resolve(__dirname, 'node_modules', pkg)); }
-  catch { return null; }
+  const candidates = [
+    path.resolve(__dirname, 'node_modules', pkg),
+    path.resolve(__dirname, '../../libraries', pkg.split('/').pop()),
+  ];
+  for (const p of candidates) {
+    try { return fs.realpathSync(p); } catch {}
+  }
+  return null;
 };
 const SOURCE_LIBS = [
   '@datagrok-libraries/compute-utils',

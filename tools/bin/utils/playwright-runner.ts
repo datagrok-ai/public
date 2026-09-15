@@ -5,6 +5,7 @@ import Papa from 'papaparse';
 import * as color from './color-utils';
 import * as testUtils from './test-utils';
 import {ResultObject} from './test-utils';
+import * as keypair from './keypair';
 
 export function hasPlaywrightTests(pkgDir: string): string | null {
   const pkgJsonPath = path.join(pkgDir, 'package.json');
@@ -216,12 +217,17 @@ export async function runPlaywrightTests(
     webUrl = url.replace(/\/api\/?$/, '');
   }
 
+  // The second user the multi-user specs need. Its keypair wins over its developer key,
+  // the same way the first user's does; both are explicit, so neither picks up the
+  // configured identity by accident.
   let token2 = '';
-  if (process.env.DATAGROK_DEV_KEY_2 && process.env.DATAGROK_DEV_KEY_2.length > 0) {
+  const privateKey2 = keypair.keyFromEnv('DATAGROK_PRIVATE_KEY_2');
+  if (privateKey2 || process.env.DATAGROK_DEV_KEY_2) {
     try {
-      token2 = await testUtils.getToken(url, process.env.DATAGROK_DEV_KEY_2);
+      token2 = privateKey2 ? await keypair.keyLogin(url, privateKey2)
+        : await testUtils.getToken(url, process.env.DATAGROK_DEV_KEY_2!);
     } catch (e: any) {
-      color.warn(`Playwright: DATAGROK_DEV_KEY_2 set but failed to exchange for token: ${e.message || e}`);
+      color.warn(`Playwright: second-user credentials set but failed to exchange for token: ${e.message || e}`);
     }
   }
 

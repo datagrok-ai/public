@@ -4,8 +4,8 @@
    opens. Everything else in the pie chart features is the library's `viewers` tier and the
    platform's data steps (`grok-bdd list-steps`).
 
-   Two of these are not pie chart business and should be promoted to the library:
-*/
+   Its category selector was the scatter plot's X selector under another name, and is in the
+   library now (`bindings/tiers/viewers/widgets.ts`). */
 import {expect, Page} from '@playwright/test';
 import {Then, When} from '@datagrok-libraries/bdd';
 import {el, ElementRef, viewers} from '@datagrok-libraries/bdd/runtime';
@@ -80,26 +80,6 @@ export const slicesOffCentre = Then('the slices of {widget} should sit {int} pix
     return offsets.every((o) => Math.abs(o.off - shift) <= 2);
   }, {timeout: 5000, message: `the slices of ${target.phrase} do not sit ${shift} pixels off the centre; they sit at: ${shown}`}).toBe(true);
 }, {description: 'the exploded-pie claim: every wedge that far out of the disc\'s centre (within a pixel of rounding)'});
-
-
-export const pickCategoryColumn = When('user picks {string} in the category selector of pie chart viewer',
-  async (page: Page, column: string) => {
-    const target = el('pie chart viewer');
-    const loc = await viewers.viewerLocator(page, target);
-    const selector = loc.locator('[name="div-column-combobox-category"]');
-    await selector.waitFor({state: 'visible', timeout: 5000});
-    const box = await selector.boundingBox();
-    if (!box)
-      throw new Error(`${target.phrase}: the category selector has no box`);
-    await page.mouse.move(box.x + Math.min(10, box.width / 2), box.y + box.height / 2);
-    await page.mouse.down();
-    await page.mouse.up();
-    await page.locator('.d4-column-grid').last().waitFor({state: 'visible', timeout: 5000});
-    await page.keyboard.type(column);
-    await page.keyboard.press('Enter');
-    await expect(selector.locator('.d4-column-selector-column')).toHaveText(column, {timeout: 5000});
-    await loc.evaluate((e) => (window as any).__bdd.settle(e, 300));
-  }, {tier: 'ui', description: 'the category column re-picked on the chart itself, as a user re-picks it'});
 
 /** The palette of the colour dialog a legend item opens: every swatch carries its own hex as a
  * name (`color_picker.dart`), so the pick is by colour and not by position. */

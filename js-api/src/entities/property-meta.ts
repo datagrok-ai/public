@@ -68,8 +68,7 @@ export interface IPropertyMeta {
   /** Custom field friendly name shown in [PropertyGrid] */
   friendlyName?: string;
 
-  /** Custom field caption shown in [PropertyGrid]
-   * @deprecated The property will be removed soon. Use {@link friendlyName} instead */
+  /** Custom field caption shown in [PropertyGrid]. Alias of {@link friendlyName}; both stay. */
   caption?: string;
 }
 

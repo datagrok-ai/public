@@ -221,7 +221,7 @@ function getControlComparisonsGrid(report: ControlComparisonsReport, factor: DG.
 /** Box plot docked right + (optionally) the titled results grid docked below. */
 function addVisualization(df: DG.DataFrame, factor: DG.Column, feature: DG.Column,
   report: ControlComparisonsReport, showReport: boolean): void {
-  const view = grok.shell.getTableView(df.name);
+  const view = grok.shell.tableView(df.name);
   grok.shell.v = view;
 
   const controlLabel = labelOf(factor, report.controlCode);
@@ -392,7 +392,7 @@ export function runControlComparisons(): void {
 
 
   const dlg = ui.dialog({title: 'Control comparisons', helpUrl: HELP_URL});
-  const view = grok.shell.getTableView(df.name);
+  const view = grok.shell.tableView(df.name);
   view.root.appendChild(dlg.root);
 
   dlg.addButton('Run', () => {

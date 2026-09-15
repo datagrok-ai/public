@@ -32,7 +32,7 @@ Feature: Pie chart on-chart selector and legend
 
   Scenario: Picking SEX in the on-chart selector re-splits the disc and the legend
     When user hovers over pie chart viewer
-    And user picks "SEX" in the category selector of pie chart viewer
+    And user picks "SEX" in the "category" column selector of pie chart viewer
     Then "Category" property of pie chart viewer should be "SEX"
     And the "slices" reading of pie chart viewer should be 2
     And pie chart viewer should have a "slice F" area
@@ -45,7 +45,7 @@ Feature: Pie chart on-chart selector and legend
 
   Scenario: Picking RACE back restores it
     When user hovers over pie chart viewer
-    And user picks "RACE" in the category selector of pie chart viewer
+    And user picks "RACE" in the "category" column selector of pie chart viewer
     Then "Category" property of pie chart viewer should be "RACE"
     And the "slices" reading of pie chart viewer should be 4
     And the "angle value of Caucasian" reading of pie chart viewer should be 896

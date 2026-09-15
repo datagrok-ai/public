@@ -8,10 +8,14 @@
   },
   "description": "Provides modeling UI and Workflows [Documentaion](https://datagrok.ai/help/compute/)",
   "dependencies": {
+    "@datagrok-libraries/arrow": "workspace:^",
     "@datagrok-libraries/compute-utils": "workspace:^",
+    "@datagrok-libraries/dock-spawn-dg": "workspace:^",
     "@datagrok-libraries/test": "workspace:^",
     "@datagrok-libraries/utils": "workspace:^",
+    "@datagrok-libraries/webcomponents": "workspace:^",
     "@datagrok-libraries/webcomponents-vue": "workspace:^",
+    "@he-tree/tree-utils": "^0.1.0-alpha.8",
     "@he-tree/vue": "^2.8.7",
     "@types/wu": "catalog:",
     "@vueuse/core": "^13.3.0",
@@ -24,8 +28,7 @@
     "rxjs": "catalog:",
     "vue": "^3.5.13",
     "vue-json-pretty": "^2.4.0",
-    "wu": "catalog:",
-    "@he-tree/tree-utils": "^0.1.0-alpha.8"
+    "wu": "catalog:"
   },
   "devDependencies": {
     "@babel/preset-typescript": "^7.29.7",
@@ -59,12 +62,11 @@
       "propertyType": "string",
       "choices": [
         "none",
-        "artifact-alignment",
         "workspaces"
       ],
       "defaultValue": "none",
       "nullable": false,
-      "description": "Share action for runs: none — hidden; artifact-alignment — 'Publish to program' (requires the ArtifactAlignment package); workspaces — link the run into an existing space"
+      "description": "Share action for runs: none — hidden; workspaces — link the run into an existing space"
     }
   ],
   "canEdit": [

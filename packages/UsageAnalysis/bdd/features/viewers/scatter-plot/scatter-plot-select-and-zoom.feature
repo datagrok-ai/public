@@ -92,7 +92,7 @@ Feature: Scatter plot selection and viewport navigation
     And user picks "Reset View" from the context menu of scatter plot viewer
     And user remembers the value range of scatter plot viewer
     And user takes a snapshot of scatter plot viewer
-    And user drags the min handle of the x range slider of scatter plot viewer by 30 pixels
+    And user drags the min handle of the "x" range slider of scatter plot viewer by 30 pixels
     Then the "x axis min" reading of scatter plot viewer should be higher than before
     And the "x axis span" reading of scatter plot viewer should be lower than before
     When user picks "Reset View" from the context menu of scatter plot viewer

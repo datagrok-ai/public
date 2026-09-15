@@ -25,7 +25,7 @@ export async function initTemplates(): Promise<void> {
 
   return; //TODO: bring it back once we can cache app folders. We don't need to load it on each start.
 
-  //let templatesPath = (await _package.getProperties()).get('searchTemplatePaths');
+  //let templatesPath = (_package.settings).get('searchTemplatePaths');
   let templatesPath = 'System:AppData/PowerPack/search-templates';
 
   async function loadTemplates(): Promise<void> {

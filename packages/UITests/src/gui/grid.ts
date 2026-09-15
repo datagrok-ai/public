@@ -8,7 +8,7 @@ import { checkDialog } from './gui-utils';
 category('GUI: Grid', () => {
   before(async () => {
     showToolbox();
-    grok.shell.windows.showProperties = true;
+    grok.shell.windows.showContextPanel = true;
   });
 
   test('grid.dataSearch', async () => {
@@ -100,8 +100,8 @@ category('GUI: Grid', () => {
     grok.shell.topMenu.find('Select').find('Random Rows...').click();
     await awaitCheck(() => checkDialog('Select Random Rows'), 'cannot find dialog', 1500);
 
-    await awaitCheck(() => Array.from(document.querySelectorAll('.d4-accordion-title'))
-      .find((el) => el.textContent === 'subj') !== undefined, 'cannot load context panel', 3000);
+    await awaitCheck(() => Array.from(document.querySelectorAll('.d4-link-label'))
+      .find((el) => el.textContent === '25%') !== undefined, 'cannot find 25% in the dialog', 3000);
 
     const input25 = Array.from(document.querySelectorAll('.d4-link-label'))
       .find((el) => el.textContent === '25%') as HTMLElement;

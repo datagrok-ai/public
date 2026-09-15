@@ -8,9 +8,10 @@ import {
   RibbonPanel, DockManager, MarkDown,
   RibbonMenu,
   ifOverlapping,
-  IconImage,
   useUnwrappedCallMeta,
+  useDgView,
   DEFAULT_FLOAT_FORMAT,
+  RibbonPanelItem, RibbonMenuItem,
 } from '@datagrok-libraries/webcomponents-vue';
 import './RichFunctionView.css';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
@@ -300,10 +301,6 @@ export const RichFunctionView = Vue.defineComponent({
     urlExportHandler: {
       type: Function as Vue.PropType<() => void>,
     },
-    view: {
-      type: DG.View,
-      required: true,
-    },
   },
   emits: {
     'update:funcCall': (_call: DG.FuncCall) => true,
@@ -331,7 +328,7 @@ export const RichFunctionView = Vue.defineComponent({
     const callMeta = Vue.toRef(props, 'callMeta');
 
     const currentCall = Vue.computed(() => Vue.markRaw(props.funcCall));
-    const currentView = Vue.computed(() => Vue.markRaw(props.view));
+    const dgView = useDgView();
     const currentUuid = Vue.computed(() => props.uuid);
     const isFormValid = Vue.ref(false);
 
@@ -642,7 +639,7 @@ export const RichFunctionView = Vue.defineComponent({
       return targets;
     };
 
-    const pinView = () => pinViewHelper(props.view);
+    const pinView = () => pinViewHelper(dgView);
 
     const runSA = async () => {
       try {
@@ -683,93 +680,84 @@ export const RichFunctionView = Vue.defineComponent({
     // render
     ////
 
-    const menuIconStyle = {width: '15px', display: 'inline-block', textAlign: 'center'};
+    const stepExportsItems = Vue.computed<RibbonMenuItem[]>(() => exports.value.map(({name, handler}) => ({
+      text: name,
+      onClick: () => guardedExport(handler),
+    })));
+
+    const panelsItems = Vue.computed<RibbonMenuItem[]>(() => [
+      {
+        text: 'Show form',
+        icon: 'sign-in',
+        check: !formHidden.value,
+        onClick: () => formHidden.value = !formHidden.value,
+      },
+      {
+        text: 'Show all viewers',
+        icon: 'sign-out',
+        check: userClosed.value.size === 0,
+        onClick: () => userClosed.value = new Set(),
+      },
+      {
+        text: 'Show help',
+        icon: 'question',
+        check: !helpHidden.value,
+        onClick: () => helpHidden.value = !helpHidden.value,
+      },
+      ...(props.historyEnabled || props.stepHistory ? [{
+        text: 'Show history',
+        icon: 'history',
+        check: !historyHidden.value,
+        onClick: () => historyHidden.value = !historyHidden.value,
+      }] : []),
+    ]);
+
+    const ribbonItems = Vue.computed<RibbonPanelItem[]>(() => [
+      ...(exportsVisible.value && !uiBlocked.value && directExport.value ? [{
+        icon: 'arrow-to-bottom',
+        tooltip: 'Generate report for the current step',
+        onClick: () => guardedExport(directExport.value!.handler),
+      }] : []),
+      ...(isFittingEnabled.value && !uiBlocked.value ? [{
+        icon: {path: `${_package.webRoot}files/icons/icon-chart-dots.svg`, width: 24, height: 24},
+        tooltip: 'Fit inputs',
+        onClick: runFitting,
+      }] : []),
+      ...(isSAenabled.value && !uiBlocked.value ? [{
+        icon: {path: `${_package.webRoot}files/icons/icon-chart-sensitivity.svg`, width: 24, height: 24},
+        tooltip: 'Run sensitivity analysis',
+        onClick: runSA,
+      }] : []),
+      ...((props.historyEnabled || (props.stepHistory && exportsVisible.value)) && !uiBlocked.value ? [{
+        icon: props.stepHistory ? 'cloud-upload-alt' : 'save',
+        tooltip: 'Save run to history',
+        onClick: () => emit('saveToHistory', currentCall.value),
+      }] : []),
+      ...(props.showPublish && !uiBlocked.value ? [{
+        icon: 'share-alt',
+        tooltip: props.publishTooltip,
+        onClick: () => emit('publishRun', currentCall.value),
+      }] : []),
+      ...(props.historyEnabled || props.stepHistory ? [{
+        icon: 'history',
+        tooltip: 'Open history panel',
+        active: !historyHidden.value,
+        onClick: () => historyHidden.value = !historyHidden.value,
+      }] : []),
+      {
+        icon: 'question',
+        tooltip: helpHidden.value ? 'Open help panel' : 'Close help panel',
+        active: !helpHidden.value,
+        onClick: () => helpHidden.value = !helpHidden.value,
+      },
+    ]);
 
     return () => (
-      Vue.withDirectives(<div class='w-full h-full flex'> { exportsVisible.value && !uiBlocked.value && exports.value.length > 1 &&
-        <RibbonMenu groupName='Step exports' view={currentView.value}>
-          {
-            exports.value.map(({ name, handler }) =>
-              <span onClick={() => guardedExport(handler)}>
-                <div> {name} </div>
-              </span>
-            )
-          }
-        </RibbonMenu> }
-        <RibbonMenu groupName='Panels' view={currentView.value}>
-          <span
-            onClick={() => formHidden.value = !formHidden.value}
-            class={'flex justify-between w-full'}
-          >
-            <div> <IconFA name='sign-in' style={menuIconStyle}/> Show form </div>
-            { !formHidden.value && <IconFA name='check'/>}
-          </span>
-          <span
-            onClick={() => userClosed.value = new Set()}
-            class={'flex justify-between'}
-          >
-            <div> <IconFA name='sign-out'
-              style={menuIconStyle}/> Show all viewers </div>
-            { userClosed.value.size === 0 && <IconFA name='check'/>}
-          </span>
-          { <span
-            onClick={() => helpHidden.value = !helpHidden.value}
-            class={'flex justify-between'}
-          >
-            <div> <IconFA name='question' style={menuIconStyle}/> Show help </div>
-            { !helpHidden.value && <IconFA name='check'/>}
-          </span> }
-          { (props.historyEnabled || props.stepHistory) && <span
-            onClick={() => historyHidden.value = !historyHidden.value}
-            class={'flex justify-between'}
-          >
-            <div> <IconFA name='history' style={menuIconStyle}/> Show history </div>
-            { !historyHidden.value && <IconFA name='check'/>}
-          </span> }
-        </RibbonMenu>
-        <RibbonPanel view={currentView.value}>
-          { exportsVisible.value && !uiBlocked.value && directExport.value && <IconFA
-            name='arrow-to-bottom'
-            onClick={() => guardedExport(directExport.value!.handler)}
-            tooltip='Generate report for the current step'
-          /> }
-          { isFittingEnabled.value && !uiBlocked.value && <IconImage
-            name='fitting'
-            path={`${_package.webRoot}files/icons/icon-chart-dots.svg`}
-            onClick={runFitting}
-            tooltip='Fit inputs'
-            style={{width: '24px', height: '24px'}}
-          /> }
-          { isSAenabled.value && !uiBlocked.value && <IconImage
-            name='sa'
-            path={`${_package.webRoot}files/icons/icon-chart-sensitivity.svg`}
-            onClick={runSA}
-            tooltip='Run sensitivity analysis'
-            style={{width: '24px', height: '24px'}}
-          /> }
-          { (props.historyEnabled || (props.stepHistory && exportsVisible.value)) && !uiBlocked.value && <IconFA
-            name={props.stepHistory ? 'cloud-upload-alt' : 'save'}
-            tooltip='Save run to history'
-            onClick={() => emit('saveToHistory', currentCall.value)}
-          /> }
-          { props.showPublish && !uiBlocked.value && <IconFA
-            name='share-alt'
-            tooltip={props.publishTooltip}
-            onClick={() => emit('publishRun', currentCall.value)}
-          /> }
-          { (props.historyEnabled || props.stepHistory) && <IconFA
-            name='history'
-            tooltip='Open history panel'
-            onClick={() => historyHidden.value = !historyHidden.value}
-            style={{'background-color': !historyHidden.value ? 'var(--grey-1)': null}}
-          /> }
-          { <IconFA
-            name='question'
-            tooltip={ helpHidden.value ? 'Open help panel' : 'Close help panel' }
-            onClick={() => helpHidden.value = !helpHidden.value}
-            style={{'background-color': !helpHidden.value ? 'var(--grey-1)': null}}
-          /> }
-        </RibbonPanel>
+      Vue.withDirectives(<div class='w-full h-full flex'>
+        { exportsVisible.value && !uiBlocked.value && exports.value.length > 1 &&
+          <RibbonMenu groupName='Step exports' items={stepExportsItems.value}/> }
+        <RibbonMenu groupName='Panels' items={panelsItems.value}/>
+        <RibbonPanel items={ribbonItems.value}/>
         <DockManager class='block h-full'
           style={{overflow: 'hidden !important'}}
           onPanelClosed={handlePanelClose}

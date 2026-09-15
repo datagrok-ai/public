@@ -94,7 +94,9 @@ The `publish` command executes these steps:
 3. Process environment variables in `/connections/*.json` files (replace `${VAR}`)
 4. **Process Docker images** (see below)
 5. Create ZIP archive with archiver-promise (includes `image.json` metadata per container)
-6. Upload to server: `POST ${host}/packages/dev/${devKey}/${packageName}`
+6. Upload to server: `POST ${host}/packages/dev/${packageName}` with `Authorization: Dev ${devKey}`
+   (older servers only know `POST ${host}/packages/dev/${devKey}/${packageName}`; `devKeyFetch` in
+   `bin/utils/dev-key.ts` falls back to it on 404/401)
 
 **Key flags:**
 - `--debug` (default) - Package visible only to developer

@@ -5,7 +5,7 @@
 
 import {TYPE, FLOAT_NULL, ColumnType, ColumnTypeFilter, SemType, ColumnAggregationType, TAGS} from "../const";
 import {toDart, toJs} from "../wrappers";
-import {MapProxy} from "../proxies";
+import {MapBag, MapProxy} from "../proxies";
 import dayjs from "dayjs";
 import {IDartApi} from "../api/grok_api.g";
 import type {Comparer} from "./types";
@@ -23,8 +23,10 @@ const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) a
  * */
 export class Column<T = any, TInit = T> {
   public dart: any;
+  /** Auxiliary data that is not persisted (a {@link MapBag}: indexed access plus the map methods; typed `any` so it can be cast to a package's own shape). */
   public temp: any;
-  public tags: any;
+  /** Metadata as string key-value pairs; persisted with the column. */
+  public tags: MapBag<string>;
   private _meta: ColumnMetaHelper | undefined;
 
   constructor(dart: any) {
@@ -44,27 +46,23 @@ export class Column<T = any, TInit = T> {
   /** Creates a {@link Column} from the list of string values
    * Please note that method performs type promotion if all listed values are numeric
    *
-   * @param {string} name - Column name
-   * @param {Array} list - List of column values
+   * @param name - Column name
+   * @param list - List of column values
    *
-   * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/construction/create-from-columns}
-   * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/construction/create-from-arrays}
-   *
-   */
+   * {@link https://public.datagrok.ai/js/samples/data-frame/construction/create-from-columns}
+   * {@link https://public.datagrok.ai/js/samples/data-frame/construction/create-from-arrays} */
   static fromStrings(name: string, list: string[]): Column {
     return toJs(api.grok_Column_FromStrings(name, list));
   }
 
   /** Creates a {@link Column} with explicitly specified type
-   *
    * @param type - column type code {@link COLUMN_TYPE}
-   * @param {string} name - Column name
+   * @param name - Column name
    * @param length - Column length (should match row count of the data frame )
    *
    * {@link DataFrame.create}
-   * @see COLUMN_TYPE
-   */
-  static fromType(type: ColumnType, name?: string | null, length: number = 0): Column {
+   * @see COLUMN_TYPE */
+  static fromType<T = any>(type: ColumnType, name?: string | null, length: number = 0): Column<T> {
     return toJs(api.grok_Column_FromType(type, name, length));
   }
 
@@ -91,30 +89,26 @@ export class Column<T = any, TInit = T> {
 
   /**
    * Creates a {@link Column} from the list of values.
-   * @param {string} type - @see {@link COLUMN_TYPE}
-   * @param {string} name - column name
-   * @param {object[]} list - list of values
-   * @returns {Column} */
+   * @param type - @see {@link COLUMN_TYPE}
+   * @param name - column name
+   * @param list - list of values */
   static fromList(type: ColumnType, name: string, list: any[]): Column {
-    if (type === TYPE.DATE_TIME)
-      list = list.map((v) => v?.valueOf());
-    return toJs(api.grok_Column_FromList(type, name, list));
+    const values = type === TYPE.DATE_TIME ? list.map((v: any) => v?.valueOf()) : list;
+    return toJs(api.grok_Column_FromList(type, name, values));
   }
 
   /**
    * Crates a {@link Column} of string type from categories and indexes
    * @param name
    * @param categories
-   * @param indexes
-   */
+   * @param indexes */
   static fromIndexes(name: string, categories: string[], indexes: Int32Array): Column {
     return toJs(api.grok_Column_FromIndexes(name, categories, indexes));
   }
 
   /** Creates a {@link Column} from the bitset.
-   * @param {string} name - column name
-   * @param {BitSet} bitset - bitset. The resulting boolean column will be of length bitset.length
-   * @returns {Column} */
+   * @param name - column name
+   * @param bitset - bitset. The resulting boolean column will be of length bitset.length */
   static fromBitSet(name: string, bitset: BitSet): Column<boolean> {
     return toJs(api.grok_Column_FromBitSet(name, bitset.dart));
   }
@@ -153,11 +147,7 @@ export class Column<T = any, TInit = T> {
    *  Initialized values with [values], if it is specified; strips out the qualifier
    *  part if [exact] is true.
    *
-   * @param {string} name
-   * @param {number} length
-   * @param {number[]} values
-   * @param {boolean} exact - if true, strips out qualifier from [values].
-   * */
+   * @param exact - if true, strips out qualifier from [values]. */
   static qnum(name: string, length: number = 0, values: number[] = [], exact: boolean = true): Column<number> {
     let col = Column.fromType(TYPE.QNUM, name, length);
     if (values !== null) {
@@ -171,44 +161,37 @@ export class Column<T = any, TInit = T> {
     return col;
   }
 
-  /** Is the column numerical (float, int, bigint, qnum)
-  * @type {boolean}*/
+  /** Is the column numerical (float, int, bigint, qnum) */
   get isNumerical(): boolean {
     return api.grok_Column_Get_Is_Numerical(this.dart);
   }
 
-  /** Is the column categorical (string, boolean)
-  * @type {boolean}*/
+  /** Is the column categorical (string, boolean) */
   get isCategorical(): boolean {
     return api.grok_Column_Get_Is_Categorical(this.dart);
   }
 
-  /** Column data type.
-   * @type {string} */
+  /** Column data type. */
   get type(): ColumnType {
     return api.grok_Column_Get_Type(this.dart);
   }
 
-  /** Is this column virtual
-   * @type {boolean} */
+  /** Is this column virtual */
   get isVirtual(): boolean {
     return api.grok_Column_IsVirtual(this.dart);
   }
 
-  /** Number of elements
-   * @type {number} */
+  /** Number of elements */
   get length(): number {
     return api.grok_Column_Get_Length(this.dart);
   }
 
-  /** Parent table
-   * @type {DataFrame} */
+  /** Parent table */
   get dataFrame(): DataFrame {
     return toJs(api.grok_Column_Get_DataFrame(this.dart));
   }
 
-  /** Semantic type
-   * @type {string} */
+  /** Semantic type */
   get semType(): SemType {
     return api.grok_Column_Get_SemType(this.dart);
   }
@@ -217,8 +200,7 @@ export class Column<T = any, TInit = T> {
     api.grok_Column_Set_SemType(this.dart, s);
   }
 
-  /** Layout column ID
-   @type {string} */
+  /** Layout column ID */
   get layoutColumnId(): string {
     return api.grok_Column_Get_LayoutColumnId(this.dart);
   }
@@ -227,7 +209,7 @@ export class Column<T = any, TInit = T> {
     api.grok_Column_Set_LayoutColumnId(this.dart, s);
   }
 
-  /** @type {string} */
+
   get name(): string {
     return api.grok_Column_Get_Name(this.dart);
   }
@@ -236,31 +218,29 @@ export class Column<T = any, TInit = T> {
     api.grok_Column_Set_Name(this.dart, s);
   }
 
-  /** Version of the column. Increases each time the column was changed
-   * @returns {number} */
+  /** Version of the column. Increases each time the column was changed */
   get version(): number {
     return api.grok_Column_Get_Version(this.dart);
   }
 
-  // Obsolete. Recommended method is "meta.dialogs".
+  /** @deprecated Use `meta.dialogs` ({@link ColumnMetaHelper.dialogs}). Removed in 1.30. */
   get dialogs(): any {
     return this.meta.dialogs;
   }
 
-  // Obsolete. Recommended method is "meta.colors".
+  /** @deprecated Use `meta.colors` ({@link ColumnMetaHelper.colors}). Removed in 1.30. */
   get colors(): any {
     return this.meta.colors;
   }
 
-  // Obsolete. Recommended method is "meta.markers".
+  /** @deprecated Use `meta.markers` ({@link ColumnMetaHelper.markers}). Removed in 1.29. */
   get markers(): any {
     return this.meta.markers;
   }
 
   /**
    * Initializes all values in the column to [columnInitializer].
-   * @param {string | number | boolean | Function} valueInitializer value, or a function that returns value by index
-   * */
+   * @param valueInitializer - value, or a function that returns value by index */
   init(valueInitializer: string | number | boolean | Date | dayjs.Dayjs | null | ((ind: number) => any)): Column {
     let initType = typeof valueInitializer;
     if (initType === 'function' && this.type === DG.TYPE.DATA_FRAME) {
@@ -280,7 +260,6 @@ export class Column<T = any, TInit = T> {
   clone(mask?: BitSet): Column<T> { return new Column(api.grok_Column_Clone(this.dart, toDart(mask))); }
 
   /** FOR EXPERT USE ONLY!
-   *
    * Returns the raw buffer containing data.
    * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/performance/access}
    * Return type depends on the column type:
@@ -289,8 +268,7 @@ export class Column<T = any, TInit = T> {
    * {Float64Array} for qnums, {@link FLOAT_NULL} represents null.
    * {Float64Array} for datetime, in microseconds since epoch, {@link FLOAT_NULL} represents null.
    * {Int32Array} for strings indexes of {@link categories}.
-   * {Uint32Array} bit array.
-   * @returns {Array} */
+   * {Uint32Array} bit array. */
   getRawData(): Int32Array | Float32Array | Float64Array | Uint32Array {
     // a hack that extracts the real underlying array from the Dart Column
     const handle = api.grok_Column_GetRawData(this.dart);
@@ -308,13 +286,14 @@ export class Column<T = any, TInit = T> {
     return api.grok_Column_Scale(this.dart, idx);
   }
 
+  /** Replaces the underlying buffer (see {@link getRawData}); [notify] fires the change event. */
   setRawData(rawData: Int32Array | Float32Array | Float64Array | Uint32Array, notify: boolean = true): void {
     api.grok_Column_SetRawData(this.dart, rawData, notify);
   }
 
   /** Gets i-th value
-   * @param {number} row - row index
-   * @returns {object} - or null if isNone(i) */
+   * @param row - row index
+   * @returns or null if isNone(i) */
   get(row: number): T | null {
     return api.grok_Column_GetValue(this.dart, row);
   }
@@ -334,7 +313,7 @@ export class Column<T = any, TInit = T> {
    *  Returns true if text was successfully parsed and set, otherwise false.
    *  Examples: dateColumn.setString('April 1, 2020');
    *            intColumn.setString('42');
-   * @param {boolean} notify - whether DataFrame's `changed` event should be fired */
+   * @param notify - whether DataFrame's `changed` event should be fired */
   setString(i: number, str: string, notify: boolean = true): boolean {
     return api.grok_Column_SetString(this.dart, i, str, notify);
   }
@@ -346,11 +325,10 @@ export class Column<T = any, TInit = T> {
 
   /**
    * Sets [i]-th value to [x], and optionally notifies the dataframe about this change.
-   * @param {number} i - Row index.
-   * @param {TInit | null} value - Value to set.
-   * @param {boolean} notify - whether DataFrame's `changed` event should be fired. Call {@link fireValuesChanged}
-   * after you are done modifying the column.
-   */
+   * @param i - Row index.
+   * @param value - Value to set.
+   * @param notify - whether DataFrame's `changed` event should be fired. Call {@link fireValuesChanged}
+   * after you are done modifying the column. */
   set(i: number, value: TInit | null, notify: boolean = true): void {
     api.grok_Column_SetValue(this.dart, i, toDart(value), notify);
   }
@@ -371,9 +349,9 @@ export class Column<T = any, TInit = T> {
   }
 
   /** Sets a tag to the specified value.
-   * @param {string} tag - Key.
-   * @param {string} value - Value.
-   * @returns {Column}. * */
+   * @param tag - Key.
+   * @param value - Value.
+   * @returns * */
   setTag(tag: string, value: string): Column {
     api.grok_Column_Set_Tag(this.dart, tag, value);
     return this;
@@ -458,7 +436,7 @@ export class Column<T = any, TInit = T> {
     return toJs(api.grok_Column_ConvertTo(this.dart, newType, format));
   }
 
-  /** @returns {string} - string representation of this column */
+  /** @returns string representation of this column */
   toString(): string {
     return api.grok_Object_ToString(this.dart);
   }
@@ -473,8 +451,8 @@ export class Column<T = any, TInit = T> {
     return api.grok_Column_Aggregate(this.dart, type);
   }
 
-  /** @returns {Float32Array} - typed array of float values representing the column.
-   * Does not guarantee to perform a copy of the underlying data. */
+  /** @returns typed array of float values representing the column.
+   * Does not guarantee to perform a copy of the underlying data.  */
   asDoubleList(): Float32Array {
     return api.grok_Column_AsDoubleList(this.dart);
   }
@@ -513,7 +491,8 @@ export class BigIntColumn extends Column<BigInt> {
 }
 
 
-type DateTimeInit = dayjs.Dayjs | string | Date | null;
+/** What a datetime cell accepts: a dayjs, a parseable string, epoch milliseconds, a Date, or null. */
+export type DateTimeInit = dayjs.Dayjs | string | number | Date | null;
 
 export class DateTimeColumn extends Column<dayjs.Dayjs, DateTimeInit> {
 
@@ -555,7 +534,7 @@ export class DateTimeColumn extends Column<dayjs.Dayjs, DateTimeInit> {
     return dayjs(v);
   }
 
-  set(i: number, value: dayjs.Dayjs | string | Date | null, notify: boolean = true): void {
+  set(i: number, value: DateTimeInit, notify: boolean = true): void {
     // @ts-ignore
     api.grok_DateTimeColumn_SetValue(this.dart, i, DateTimeColumn.getMs(value)?.valueOf(), notify);
   }

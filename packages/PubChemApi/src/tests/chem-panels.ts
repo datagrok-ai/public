@@ -9,7 +9,7 @@ category('UI info panel', () => {
 
   before(async () => {
     grok.shell.closeAll();
-    grok.shell.windows.showProperties = true;
+    grok.shell.windows.showContextPanel = true;
   });
 
 

@@ -381,7 +381,7 @@ export class PackageFunctions {
     setupDBQueryCellHandler(); // db-explorer for any query result - lazy without await
     initSearch();
 
-    _properties = await _package.getProperties();
+    _properties = _package.settings;
     registerDGUserHandler(); // lazy without await
 
     // saving and restoring the scrolls when changing views

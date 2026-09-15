@@ -36,7 +36,7 @@ async function postprocess() {
     replaceColumn(batchNames[i], ' concat unique(result)', ' verdict');
     let statusCol = pivot.col(`${batchNames[i]} concat unique(status)`);
     if (statusCol)
-      statusCol.colors.setCategorical({
+      statusCol.meta.colors.setCategorical({
         'passed': '#2ca02c',
         'skipped': '#ffa500',
         'failed': '#8e342a',
@@ -48,7 +48,7 @@ async function postprocess() {
     }
     let ticketsStatusCol = await pivot.columns.addNewCalculated(`${batchNames[i]} tickets status`, `UsageAnalysis:getTicketsVerdict(\${${batchNames[i]} concat unique(result)})`, DG.TYPE.STRING);
     if (ticketsStatusCol)
-      ticketsStatusCol.colors.setCategorical({
+      ticketsStatusCol.meta.colors.setCategorical({
         'Fixed': '#2ca02c',
         'Partially Fixed (Lowest)': '#ffe51c',
         'Partially Fixed (Low)': '#ffa500',

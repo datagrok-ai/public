@@ -15,6 +15,8 @@ import * as color from '../utils/color-utils';
 import {check} from './check';
 import {generateCeleryArtifacts} from '../utils/python-celery-gen';
 import {generateQueueArtifacts} from '../utils/queue-worker-gen';
+import {devKeyFetch, keypairToken} from '../utils/dev-key';
+import * as keypair from '../utils/keypair';
 
 const {exec, execSync} = require('child_process');
 
@@ -256,17 +258,21 @@ function listRecursive(basePath: string, rel: string): {relPath: string, fullPat
 }
 
 async function getUserLogin(host: string, devKey: string): Promise<{login: string, token: string} | null> {
-  let loginResp;
+  let token: string | null;
   try {
-    loginResp = await fetch(`${host}/users/login/dev/${devKey}`, {method: 'POST'});
+    token = await keypairToken(host, devKey);
+    if (token == null) {
+      const loginResp = await devKeyFetch(`${host}/users/login/dev`, `${host}/users/login/dev/${devKey}`, devKey, {method: 'POST'});
+      if (loginResp.status !== 200)
+        return null;
+      token = (await loginResp.json()).token;
+    }
   } catch (e: any) {
     color.warn(`Cannot reach server ${host}: ${e.message || e}`);
     return null;
   }
-  if (loginResp.status !== 200)
+  if (token == null)
     return null;
-  const loginData = await loginResp.json();
-  const token = loginData.token;
   try {
     const userResp = await fetch(`${host}/users/current`, {headers: {'Authorization': token}});
     if (userResp.status !== 200)
@@ -508,9 +514,10 @@ async function fallbackImage(
 export async function processPackage(debug: boolean, rebuild: boolean, host: string, devKey: string, packageName: any, dropDb: boolean, suffix?: string, hostAlias?: string, registry?: string, rebuildDocker?: boolean, skipDockerRebuild?: boolean) {
   // Validate server connectivity and dev key
   let timestamps: Indexable = {};
-  let url = `${host}/packages/dev/${devKey}/${packageName}`;
+  const url = `${host}/packages/dev/${packageName}`;
+  const legacyUrl = `${host}/packages/dev/${devKey}/${packageName}`;
   try {
-    const checkResp = await fetch(url + '/timestamps');
+    const checkResp = await devKeyFetch(`${url}/timestamps`, `${legacyUrl}/timestamps`, devKey, {}, host);
     const checkData = await checkResp.json();
     if (checkData['#type'] === 'ApiError') {
       color.error(checkData.message);
@@ -641,17 +648,17 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
   zip.append(JSON.stringify(localTimestamps), {name: 'timestamps.json'});
 
   // Upload
-  url += `?debug=${debug.toString()}&rebuild=${rebuild.toString()}&dropDb=${(dropDb ?? false).toString()}`;
+  let query = `?debug=${debug.toString()}&rebuild=${rebuild.toString()}&dropDb=${(dropDb ?? false).toString()}`;
   if (suffix)
-    url += `&suffix=${suffix.toString()}`;
+    query += `&suffix=${suffix.toString()}`;
   await zip.finalize();
   const zipBuffer = Buffer.concat(chunks);
 
   try {
-    const body = await fetch(url, {
+    const body = await devKeyFetch(url + query, legacyUrl + query, devKey, {
       method: 'POST',
       body: zipBuffer,
-    });
+    }, host);
     const log = JSON.parse(await body.text());
 
     if (log != undefined) {
@@ -771,7 +778,9 @@ async function publishPackage(args: PublishArgs) {
 
   // Update the developer key
   if (args.key) key = args.key;
-  if (key === '') return color.warn('Please provide the key with `--key` option or add it by running `grok config`');
+  if (!key && !keypair.keypairFor(url))
+    return color.warn(`No credentials for ${url}. Run \`grok login ${host}\`, ` +
+      'or pass a developer key with `--key` (deprecated).');
 
   // Get the package name
   if (!fs.existsSync(packDir)) return color.error('`package.json` doesn\'t exist');

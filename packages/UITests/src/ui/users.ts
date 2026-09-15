@@ -93,7 +93,7 @@ category('UI: Users', () => {
       return false;
     }, 'cannot load all users', 3000);
     const user = document.querySelector('.grok-gallery-grid')!.children[0] as HTMLElement;
-    grok.shell.windows.showProperties = true;
+    grok.shell.windows.showContextPanel = true;
     const regex = new RegExp('Member of', 'g');
     user.click();
     await delay(100);

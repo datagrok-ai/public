@@ -11,11 +11,10 @@ import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {chordClick, currentColumnIs} from '../../../bindings/forms.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {makeRowCurrent} from '@datagrok-libraries/bdd/bindings/platform/columns';
-import {allOfSelected, currentRowValue, noneOfSelected, selectWhereOneOf, selectedRowCount} from '@datagrok-libraries/bdd/bindings/platform/data';
+import {allOfSelected, currentColumnIs, currentRowValue, noneOfSelected, selectWhereOneOf, selectedRowCount} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {addViewer, clickArea, clickAreaHolding, hasArea, hasNoArea, hoverArea, noErrors, pointerAway, propertiesShouldBe, readingHigher, readingIs, readingLower, readingReads, readingSame, setProperty, takeSnapshot} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
@@ -77,7 +76,7 @@ test.describe("Forms viewer interactions and row binding", () => {
       await session.step(64, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("Control-Shift-clicking a card clears every row up to it", async () => {
-      await session.step(67, "When user clicks on the \"current card\" area of forms viewer holding Control and Shift", () => chordClick(page, "current card", "Control", "Shift"));
+      await session.step(67, "When user clicks on the \"current card\" area of forms viewer holding Control+Shift", () => clickAreaHolding(page, "current card", el("forms viewer"), "Control+Shift"));
       await session.step(68, "Then 2 rows should be selected", () => selectedRowCount(page, 2));
       await session.step(69, "And all rows where \"USUBJID\" is \"X0273T21000900003\" should be selected", () => allOfSelected(page, "USUBJID", "X0273T21000900003"));
       await session.step(70, "And no rows where \"USUBJID\" is \"X0273T21000400001\" should be selected", () => noneOfSelected(page, "USUBJID", "X0273T21000400001"));

@@ -375,7 +375,7 @@ export class DiffStudio {
     grok.shell.windows.help.showHelp(divHelp);
     grok.shell.windows.context.visible = true;
     grok.shell.windows.showContextPanel = false;
-    grok.shell.windows.showProperties = false;
+    grok.shell.windows.showContextPanel = false;
     grok.shell.windows.help.visible = true;
     await this.runSolving();
   } // runSolverDemoApp

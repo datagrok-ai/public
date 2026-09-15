@@ -90,8 +90,8 @@ Every table automatically gets the system columns `id` (UUID, also the row's ent
 |------------------------|-----------|-------------------------------------------------------------------------------------------------|
 | `securityMode`         | `table`   | `table`, `master`, or `row` — see [security modes](#security-modes)                              |
 | `delegate`             | —         | Master mode: the `ref` column whose target row's security applies                                |
-| `promotion`            | `lazy`    | Row mode: when the row becomes an individually sharable entity (`lazy` = on first share, `eager` = on insert) |
-| `defaultRowVisibility` | `table`   | Row/master modes: whether table-level View shows unshared rows (`none` hides them)               |
+| `promotion`            | `lazy`    | Row mode: when the row becomes an individually sharable entity (`lazy` = on first share, `eager` = on insert, with the author granted View/Edit/Delete/Share) |
+| `defaultRowVisibility` | `table`   | Row/master modes: whether table-level View shows unshared rows (`none` hides them from everyone but their author) |
 | `businessKey`          | —         | Natural-key column list: powers deduplication on insert, upsert matching, and search handles     |
 | `audit`                | `true`    | In-transaction audit trail with before/after diffs; also enables row history and row-level watch |
 | `softDelete`           | `true`    | Deletes mark `is_deleted` instead of removing rows                                               |
@@ -307,7 +307,8 @@ one above — a `master`-mode junction delegating to the owner, so Edit on an is
 on its links (and unlinking needs no separate Delete grant). A relation whose junction or
 target table you cannot View is invisible everywhere, exactly like a name nobody declared.
 Do not set `defaultRowVisibility: "none"` on a junction or a relation target — rows
-created there could never be linked, and the manifest is rejected.
+created there would reach only their own author, nobody else could link them, and the
+manifest is rejected.
 
 ### Default filters
 
@@ -352,7 +353,7 @@ Each table declares how its rows are protected:
 |----------|------------------------------------------|-------------------------------------------------------------------------------------------------|
 | `table`  | Lookup and reference tables (default)    | One permission check against the table itself: a View grant shows all rows, Edit allows writes  |
 | `master` | Detail tables (issue → project, well → plate) | Each row inherits the security of the row it references through the `delegate` column; chains up to two hops deep |
-| `row`    | Registration masters (studies, plates)   | Individual rows can be shared with users and groups; unshared rows follow the table-level grant (or stay hidden with `defaultRowVisibility: "none"`) |
+| `row`    | Registration masters (studies, plates), user-owned records (models, files) | Individual rows can be shared with users and groups; a row's author always sees, edits, deletes and shares it; unshared rows otherwise follow the table-level grant, or stay hidden from everyone else with `defaultRowVisibility: "none"` (private to the author, shareable by them) |
 
 Grants use the standard permissions (View, Edit, Delete, Share) on the schema, table, and
 property-schema entities. Grant them from the UI (the table's **Sharing** pane) or

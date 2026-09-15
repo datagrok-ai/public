@@ -7,18 +7,20 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 sub_features_covered: [viewers.tile-viewer]
 --- */
 import {test} from '@playwright/test';
+import '../../../bindings/spaces.js';
 import '../../../bindings/trellis-plot.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {addTileViewer, descriptionAbove, descriptionBelow, everyTileBetween, everyTileShows, readingContains, readingNotContains} from '../../../bindings/tile-viewer.js';
+import {addTileViewer} from '../../../bindings/tile-viewer.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {shouldBe, shouldHaveText} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {columnCount} from '@datagrok-libraries/bdd/bindings/platform/columns';
 import {clearSelection, filterPasses, filterPassesAll, filterTo, noneSelected, resetFilter, selectWhereIs, selectedRowCount} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {openDataset, switchTableView} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {areaShorter, areaTaller, boundTable, closeContextMenu, hasArea, hasNoArea, menuDoesNotList, menuLists, noErrors, propertyShouldBe, readingAtLeast, readingDoesNotRead, readingIs, readingReads, readingsEqual, rightClickArea, setProperties, setProperty, showsFewerRows, showsMoreRows, showsRows} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {descriptionAbove, descriptionBelow, everyTileBetween, everyTileShows, readingContains, readingNotContains} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Tile viewer property surface", () => {

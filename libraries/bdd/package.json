@@ -26,11 +26,15 @@
     "bin",
     "dist",
     "bindings",
-    "README.md"
+    "README.md",
+    "KNOWN_FAILURES.md"
   ],
   "repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git"
+  },
+  "engines": {
+    "node": ">=18"
   },
   "scripts": {
     "build": "grok tsc -p tsconfig.build.json",
@@ -38,6 +42,10 @@
     "compile": "tsx src/cli.ts compile",
     "check": "tsx src/cli.ts compile --check",
     "list-steps": "tsx src/cli.ts list-steps",
+    "typecheck": "grok tsc --noEmit -p .",
+    "test:unit": "tsx --test tests/*.test.ts",
+    "test": "npm run build && npm run check && npm run test:unit",
+    "test:suite": "npm run build && node bin/grok-bdd.js run",
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
@@ -48,7 +56,7 @@
     "tsx": "^4.19.0"
   },
   "peerDependencies": {
-    "@playwright/test": ">=1.40.0"
+    "@playwright/test": ">=1.45.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.62.1"

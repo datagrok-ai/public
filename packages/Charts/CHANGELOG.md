@@ -2,6 +2,8 @@
 
 ## v.next
 
+* Word cloud: Fixed two ways the viewer reported a cloud that was not there. A render on a host the dock has not sized yet emptied the root and then threw on the size, leaving no canvas, no message and a render that stayed pending for ever; it now measures the root as well as the host and keeps the picture that is up until a size it can use comes back. And a render declared itself finished on a canvas with no words in it — `echarts.init` creates the canvas, but the layout that places the words runs in the macrotask `setOption` queues — so it now waits for the boxes the layout leaves, which is what the automation surface reports
+* Word cloud: Added the automation surface — `getWidgetStatus` reports a `word "<name>"` hit area per laid-out word plus `words`, `word names`, `rows of word "<name>"`, `column`, `rows shown`, `font` and the message the viewer shows instead of a cloud; added `isRenderPending` / `onRendered`
 * GROK-20800: Timelines, Radar: Fixed the legend container placement — it is now a full-height strip on the right, filled by the legend
 * Fixed the package build failing on `TS2610` — `name` is an accessor on the u2 `Component` base, so the viewer overrides it with its own accessor instead of redeclaring it as a property
 * GROK-18695: Forced d3-color >= 3.1.0 (ReDoS fix under circos); kept echarts 5 — the 6.1.0 upgrade (XSS fix GHSA-fgmj-fm8m-jvvx) deterministically breaks the Tree and Surface plot viewers (CI EXECUTION TIMEOUT on two independent runs) and needs a proper migration
@@ -22,6 +24,7 @@
 * Radar: Fixed clicking the first row (CH-10)
 * Tree, Sunburst: Fixed one bad molecule hiding the remaining structure labels (CH-14)
 * Timelines: Mouse-wheel zoom now works on the time axis (CH-18)
+* GROK-20892: Charts: Word cloud silently loses its column in layouts saved before the columnColumnName to wordColumnName rename
 
 ## 1.7.0 (2026-03-20)
 

@@ -12,7 +12,6 @@
 
 .rfv2-scalar-table tr {
     min-height: 30px;
-    border-bottom: 1pt solid var(--grey-2);
 }
 
 .rfv2-scalar-table tr:nth-child(odd) {

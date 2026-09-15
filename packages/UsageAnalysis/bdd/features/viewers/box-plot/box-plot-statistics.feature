@@ -59,7 +59,8 @@ Feature: Box plot statistics and coloring
     Then "Show Total Count" property of box plot viewer should be "false"
     When user picks "Show Total Count" from the context menu of the "stats" area of box plot viewer
     Then "Show Total Count" property of box plot viewer should be "true"
-    When user sets properties of box plot viewer:
+    When user closes the context menu
+    And user sets properties of box plot viewer:
       | Show Total Count    | false |
       | Show Inliers Count  | false |
       | Show Outliers Count | false |
@@ -69,10 +70,9 @@ Feature: Box plot statistics and coloring
 
   Scenario: The T key toggles the p-value
     When user sets "Show P Value" property of box plot viewer to "false"
-    And user clicks on empty plot space of box plot viewer
-    And user presses t
+    And user presses t in box plot viewer
     Then "Show P Value" property of box plot viewer should be "true"
-    When user presses t
+    When user presses t in box plot viewer
     Then "Show P Value" property of box plot viewer should be "false"
     When user sets "Show P Value" property of box plot viewer to "true"
 

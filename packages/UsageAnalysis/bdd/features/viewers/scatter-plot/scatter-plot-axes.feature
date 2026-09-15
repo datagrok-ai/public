@@ -14,15 +14,15 @@ Feature: Scatter plot axes, encodings and persistence
     Then scatter plot viewer should be painted
 
   Scenario: The on-viewer selectors set the axes and the encodings
-    When user picks "AGE" in the X column selector of scatter plot viewer
-    And user picks "HEIGHT" in the Y column selector of scatter plot viewer
+    When user picks "AGE" in the "x" column selector of scatter plot viewer
+    And user picks "HEIGHT" in the "y" column selector of scatter plot viewer
     And user hovers over scatter plot viewer
-    And user picks "RACE" in the Color column selector of scatter plot viewer
+    And user picks "RACE" in the "color" column selector of scatter plot viewer
     And user hovers over scatter plot viewer
-    And user picks "WEIGHT" in the Size column selector of scatter plot viewer
+    And user picks "WEIGHT" in the "size" column selector of scatter plot viewer
     And user sets "Markers" property of scatter plot viewer to "SEX"
-    And user picks "WEIGHT" in the X column selector of scatter plot viewer
-    And user picks "AGE" in the X column selector of scatter plot viewer
+    And user picks "WEIGHT" in the "x" column selector of scatter plot viewer
+    And user picks "AGE" in the "x" column selector of scatter plot viewer
     Then properties of scatter plot viewer should be:
       | X       | AGE    |
       | Y       | HEIGHT |

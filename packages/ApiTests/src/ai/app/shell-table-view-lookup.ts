@@ -18,13 +18,13 @@ category('AI: App: Shell Table/View Lookup', () => {
   after(async () => tv.close());
 
   test('getTableView returns the TableView for an open table', async () => {
-    const found = grok.shell.getTableView(tv.dataFrame.name);
+    const found = grok.shell.tableView(tv.dataFrame.name);
     expect(found instanceof DG.TableView, true);
     expect(found.dataFrame === tv.dataFrame, true);
   });
 
   test('tableView(name) is an alias of getTableView', async () => {
-    const a = grok.shell.getTableView(tv.dataFrame.name);
+    const a = grok.shell.tableView(tv.dataFrame.name);
     const b = grok.shell.tableView(tv.dataFrame.name);
     expect(a.dataFrame === b.dataFrame, true);
   });
@@ -40,7 +40,7 @@ category('AI: App: Shell Table/View Lookup', () => {
   });
 
   test('getTableView for an unknown table name is null-ish', async () => {
-    expect(grok.shell.getTableView(uniqueName('no-such-table')) == null, true);
+    expect(grok.shell.tableView(uniqueName('no-such-table')) == null, true);
   });
 
   test('dockElement docks an element and close removes it', async () => {

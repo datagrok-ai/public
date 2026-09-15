@@ -245,7 +245,7 @@ export class MpoProfileDialog {
   }
 
   private async createDataDrivenProfile(): Promise<void> {
-    const tableView = grok.shell.getTableView(this.dataFrame.name);
+    const tableView = grok.shell.tableView(this.dataFrame.name);
     if (!tableView) {
       grok.shell.error('No table view found for the current dataframe');
       return;
@@ -366,7 +366,7 @@ export class MpoProfileDialog {
   private addParetoFrontViewer(columnNames: string[]): void {
     if (!isEdaPackageInstalled())
       return;
-    const view = grok.shell.getTableView(this.dataFrame.name);
+    const view = grok.shell.tableView(this.dataFrame.name);
     const paretoFrontViewer = DG.Viewer.fromType('Pareto front', this.dataFrame);
     view.addViewer(paretoFrontViewer);
 
@@ -407,7 +407,7 @@ export class MpoProfileDialog {
   }
 
   private addRadarInCellViewer(desirabilityColumnNames: string[]): void {
-    const view = grok.shell.getTableView(this.dataFrame.name);
+    const view = grok.shell.tableView(this.dataFrame.name);
     if (!checkPackage('PowerGrid', 'radarCellRenderer')) {
       grok.shell.warning('PowerGrid package is not installed');
       return;

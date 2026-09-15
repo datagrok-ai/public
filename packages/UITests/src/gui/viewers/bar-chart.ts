@@ -78,7 +78,7 @@ category('Viewers: Bar Chart', () => {
     await uploadProject('Test project with Bar Chart', demog.getTableInfo(), v, demog);
     grok.shell.closeAll();
     await grok.dapi.projects.open('Test project with Bar Chart');
-    v = grok.shell.getTableView('demog 1000');
+    v = grok.shell.tableView('demog 1000');
     isViewerPresent(Array.from(v.viewers), 'Bar chart');
     const barChart = findViewer('Bar chart', v);
 

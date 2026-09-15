@@ -21,7 +21,9 @@ interface Manifest {
 }
 
 const GITIGNORE = ['bdd/test-results/', 'bdd/e2e/', 'bdd/.auth.json'];
-const STATES = 'visible|hidden|present|absent|enabled|disabled|checked|unchecked|selected|empty|expanded|collapsed|focused';
+import {STATES as STATE_LIST} from './states.js';
+
+const STATES = STATE_LIST.join('|');
 
 /** The library as a dependency: by path when init runs from a checkout of it (the monorepo, until
  * it is on npm — npm links the directory and `npm ci` needs no registry), by version otherwise. */
@@ -184,5 +186,23 @@ export function scaffold(packageDir: string): InitResult {
   }
   else
     result.skipped.push('package.json');
+
+  // the package's webpack type-checks every .ts its tsconfig reaches, and bdd/ is a Node project
+  const tsconfigFile = join(packageDir, 'tsconfig.json');
+  if (existsSync(tsconfigFile)) {
+    const text = readFileSync(tsconfigFile, 'utf8');
+    try {
+      const tsconfig = JSON.parse(text) as {exclude?: string[]};
+      if (tsconfig.exclude?.includes('bdd'))
+        result.skipped.push('tsconfig.json');
+      else {
+        tsconfig.exclude = [...(tsconfig.exclude ?? []), 'bdd'];
+        writeFileSync(tsconfigFile, JSON.stringify(tsconfig, null, indentOf(text)) + '\n', 'utf8');
+        result.created.push('tsconfig.json (exclude bdd)');
+      }
+    } catch {
+      result.notes.push('tsconfig.json is not plain JSON (comments?) — add "bdd" to its "exclude" by hand, or webpack will type-check the bdd/ folder');
+    }
+  }
   return result;
 }

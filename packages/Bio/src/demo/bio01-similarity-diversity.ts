@@ -52,7 +52,7 @@ export async function demoBio01UISteps() {
     await demoScript
       .step(`Load DNA sequences`, async () => {
         grok.shell.windows.showContextPanel = false;
-        grok.shell.windows.showProperties = false;
+        grok.shell.windows.showContextPanel = false;
 
         df = await _package.files.readCsv(dataFn);
         view = grok.shell.addTableView(df);

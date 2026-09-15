@@ -9,7 +9,9 @@
   "description": "Datagrok compute global API",
   "sideEffects": false,
   "dependencies": {
+    "@datagrok-libraries/arrow": "workspace:^",
     "@datagrok-libraries/compute-utils": "workspace:^",
+    "@datagrok-libraries/utils": "workspace:^",
     "datagrok-api": "workspace:^",
     "dayjs": "catalog:"
   },

@@ -108,10 +108,12 @@ category('GUI: Dialogs', () => {
     await delay(200);
     let okButton = Array.from(document.querySelectorAll('.ui-btn.ui-btn-ok'))
       .find((el) => el.textContent === 'OK') as HTMLElement;
+    DG.Balloon.closeAll();
     okButton.click();
     await awaitCheck(() => !checkDialog('PCA'), 'PCA dialog didnt close', 10000);
-    await awaitCheck(() => (document.querySelector('.d4-balloon-content') as HTMLElement)?.innerText.includes(
-      'Failed'), 'cannot find error balloon', 1000);
+    await awaitCheck(() => Array.from(document.querySelectorAll('.d4-balloon.error'))
+      .some((el) => (el as HTMLElement).innerText.includes('PCA')), 'cannot find error balloon', 1000);
+    DG.Balloon.closeAll();
     pca()!.click();
     await awaitCheck(() => checkDialog('PCA'), 'Dialog is not open 2', 1000);
     const featuresField: DG.Column[] = [];

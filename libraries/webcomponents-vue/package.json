@@ -16,12 +16,10 @@
     "datagrok-api": "workspace:^",
     "dayjs": "catalog:",
     "rxjs": "catalog:",
-    "uuid": "^11.0.5",
     "vue": "^3.4.38",
     "wu": "catalog:"
   },
   "devDependencies": {
-    "@types/uuid": "^10.0.0",
     "@types/wu": "catalog:"
   },
   "scripts": {

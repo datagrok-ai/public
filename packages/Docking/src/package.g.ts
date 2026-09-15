@@ -6,21 +6,19 @@ export function info() : void {
   PackageFunctions.info();
 }
 
+//description: Returns the AutoDock service client used by other packages
 //output: object result
 export async function getAutoDockService() : Promise<any> {
   return await PackageFunctions.getAutoDockService();
 }
 
-//name: autoDockApp
-export async function autoDockApp() : Promise<void> {
-  await PackageFunctions.autoDockApp();
-}
-
+//description: Lists target folders that contain an AutoDock grid parameter (.gpf) file
 //output: list<string> result
 export async function getConfigFiles() : Promise<string[]> {
   return await PackageFunctions.getConfigFiles();
 }
 
+//description: Docks one ligand in the AutoDock container; results are cached per input
 //input: string jsonForm 
 //input: string containerId 
 //output: string result
@@ -54,6 +52,7 @@ export async function runAutodock(table: DG.DataFrame, ligands: DG.Column, targe
   await PackageFunctions.runAutodock(table, ligands, target, poses);
 }
 
+//description: Checks whether a Molecule3D value is an AutoDock pose with a binding energy
 //input: string molecule 
 //output: bool result
 export function isApplicableAutodock(molecule: string) : boolean {
@@ -61,6 +60,7 @@ export function isApplicableAutodock(molecule: string) : boolean {
 }
 
 //name: AutoDock
+//description: Shows the receptor with the docked pose and its AutoDock energy terms
 //input: semantic_value molecule { semType: Molecule3D }
 //output: widget result
 //meta.role: widgets,Panel
@@ -70,6 +70,7 @@ export async function autodockWidget(molecule: DG.SemanticValue) : Promise<any> 
   return await PackageFunctions.autodockWidget(molecule);
 }
 
+//description: Builds the AutoDock pose widget for a single Molecule3D value
 //input: semantic_value molecule 
 //input: bool showProperties 
 //input: dataframe table 
@@ -86,6 +87,7 @@ export async function demoDocking() : Promise<void> {
 }
 
 //name: Biology | AutoDock
+//description: Docks the current molecule against a chosen target and shows the best pose
 //input: semantic_value smiles { semType: Molecule }
 //output: widget result
 //meta.role: widgets,Panel
@@ -94,6 +96,7 @@ export async function autodockPanel(smiles: DG.SemanticValue) : Promise<any> {
 }
 
 //name: Docking
+//description: Opens the Docking app
 //input: string path { meta.url: true; optional: true }
 //output: view result
 //meta.icon: images/docking-icon.png

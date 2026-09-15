@@ -31,12 +31,14 @@ export class ColumnList {
     this.dart = dart;
   }
 
+  /** The table these columns belong to. */
   get dataFrame(): DataFrame { return toJs(api.grok_ColumnList_Get_DataFrame(this.dart)); }
 
   /** Number of columns. */
   get length(): number { return api.grok_ColumnList_Length(this.dart); }
 
-  /** Column with the corresponding name (case-insensitive). */
+  /** Column with the corresponding name (case-insensitive), or null if there is no such column.
+   * See also {@link DataFrame.getCol}, which throws instead. */
   byName(name: string): Column { return toJs(api.grok_ColumnList_ByName(this.dart, name)); }
 
   /** Maps names to columns. */
@@ -99,18 +101,22 @@ export class ColumnList {
     return _toIterable(api.grok_ColumnList_Numerical(this.dart));
   }
 
+  /** Datetime columns. */
   get dateTime(): Iterable<Column> {
     return _toIterable(api.grok_ColumnList_DateTime(this.dart));
   }
 
+  /** Numerical columns excluding datetime. */
   get numericalNoDateTime(): Iterable<Column> {
     return _toIterable(api.grok_ColumnList_NumericalNoDateTime(this.dart));
   }
 
+  /** Boolean columns. */
   get boolean(): Iterable<Column> {
     return wu(_toIterable(api.grok_ColumnList_Boolean(this.dart)));
   }
 
+  /** Selected columns. */
   get selected(): Iterable<Column> {
     return _toIterable(api.grok_ColumnList_Selected(this.dart));
   }
@@ -120,7 +126,7 @@ export class ColumnList {
 
   /** Sets column order.
    * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/columns-ordering}
-   *  @param {string[]} columnNames - Order of columns. */
+   *  @param columnNames - Order of columns. */
   setOrder(columnNames: string[]): void {
     api.grok_ColumnList_SetOrder(this.dart, columnNames);
   }
@@ -139,16 +145,15 @@ export class ColumnList {
   }
 
   /** Adds a column, and optionally notifies the parent dataframe.
-   * @param {boolean} notify - whether DataFrame's `changed` event should be fired */
+   * @param notify - whether DataFrame's `changed` event should be fired */
   add(column: Column, notify: boolean = true): Column {
     api.grok_ColumnList_Add(this.dart, column.dart, notify);
     return column;
   }
 
   /** Returns a column with the specified name and type, or creates a new column if it does not exist.
-  * @param {string} name - column name
-  * @param {string} type - @see {@link COLUMN_TYPE}
-  * @returns {Column} */
+  * @param name - column name
+  * @param type - @see {@link COLUMN_TYPE} */
   getOrCreate(name: string, type: ColumnType): Column {
     return this.contains(name) ?
       this.byName(name) :
@@ -156,10 +161,8 @@ export class ColumnList {
   }
 
   /** Inserts a column, and optionally notifies the parent dataframe.
-   * @param {Column} column - column to insert
-   * @param {boolean} notify - whether DataFrame's `changed` event should be fired
-   * @param {int} index
-   * @returns {Column} */
+   * @param column - column to insert
+   * @param notify - whether DataFrame's `changed` event should be fired */
   insert(column: Column, index: number | null = null, notify: boolean = true): Column {
     api.grok_ColumnList_Insert(this.dart, column.dart, index, notify);
     return column;
@@ -171,12 +174,8 @@ export class ColumnList {
   }
 
   /** Adds calculated column.
-   * @param {string} name
-   * @param {string} expression
-   * @param {ColumnType} type
-   * @param {bool} treatAsString - if true, [expression] is not evaluated as formula and is treated as a regular string value instead
-   * @param {bool} subscribeOnChanges - if true, the column will be recalculated when the source columns change
-   * @returns {Column} */
+   * @param treatAsString - if true, [expression] is not evaluated as formula and is treated as a regular string value instead
+   * @param subscribeOnChanges - if true, the column will be recalculated when the source columns change */
   addNewCalculated(name: string, expression: string, type: ColumnType | 'auto' = 'auto', treatAsString: boolean = false, subscribeOnChanges: boolean = true): Promise<Column> {
     return api.grok_ColumnList_AddNewCalculated(this.dart, name, expression, type, treatAsString, subscribeOnChanges);
   }
@@ -189,7 +188,7 @@ export class ColumnList {
   addNewString(name: string): Column<string> { return this.addNew(name, TYPE.STRING); }
 
   /** Creates and adds an integer column
-   *  {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/modification/add-columns} */
+   *  {@link https://public.datagrok.ai/js/samples/data-frame/modification/add-columns} */
   addNewInt(name: string): Column<number> { return this.addNew(name, TYPE.INT); }
 
   /** Creates and adds a float column */
@@ -198,7 +197,7 @@ export class ColumnList {
   /** Creates and adds a qualified number column.
    * If [options] is provided, populates the column by combining a qualifier column
    * (string values: '<', '>', '', '=') with a numeric value column at each row.
-   * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/modification/add-columns}
+   * {@link https://public.datagrok.ai/js/samples/data-frame/modification/add-columns}
    * */
   addNewQnum(name: string, options?: QnumColumnCreationOptions): Column<number> {
     const col = this.addNew(name, TYPE.QNUM);
@@ -211,30 +210,28 @@ export class ColumnList {
   }
 
   /** Creates and adds a datetime column
-   * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/modification/add-columns}
+   * {@link https://public.datagrok.ai/js/samples/data-frame/modification/add-columns}
    * */
   addNewDateTime(name: string): DateTimeColumn { return this.addNew(name, TYPE.DATE_TIME); }
 
   /** Creates and adds a boolean column
-   * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/modification/add-columns}
+   * {@link https://public.datagrok.ai/js/samples/data-frame/modification/add-columns}
    * */
   addNewBool(name: string): Column<boolean> { return this.addNew(name, TYPE.BOOL); }
 
   /** Creates and adds a byte array column
-   * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/modification/add-columns}
+   * {@link https://public.datagrok.ai/js/samples/data-frame/modification/add-columns}
    * */
   addNewBytes(name: string): Column<Uint8Array> { return this.addNew(name, TYPE.BYTE_ARRAY); }
 
   /** Creates and adds a virtual column.
-   * @param {string} name - column name
+   * @param name - column name
    * @param getValue - value constructor function that accepts int index and returns value
    * @param setValue - function that gets invoked when a column cell value is set
-   * @param {String} type - column type
-   * @returns {Column}
+   * @param type - column type
    *
-   * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/advanced/virtual-int-column}
-   * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/advanced/virtual-columns}
-   * */
+   * {@link https://public.datagrok.ai/js/samples/data-frame/advanced/virtual-int-column}
+   * {@link https://public.datagrok.ai/js/samples/data-frame/advanced/virtual-columns} */
   addNewVirtual(
       name: string,
       getValue: (ind: number) => any, type = TYPE.OBJECT,
@@ -258,8 +255,7 @@ export class ColumnList {
     return api.grok_ColumnList_Contains(this.dart, columnName);
   }
 
-  /** Replaces the column with the new column.
-   * @param {boolean} notify */
+  /** Replaces the column with the new column. */
   replace(columnToReplace: Column | string, newColumn: Column, notify: boolean = true): Column {
     return toJs(api.grok_ColumnList_Replace(this.dart, (typeof columnToReplace === 'string') ? columnToReplace:  columnToReplace.dart, newColumn.dart, notify));
   }
@@ -277,7 +273,7 @@ export class ColumnList {
     return _getIterator(this.dart) as IterableIterator<Column>;
   }
 
-  /** @returns {string} */
+
   toString(): string {
     return api.grok_Object_ToString(this.dart);
   }

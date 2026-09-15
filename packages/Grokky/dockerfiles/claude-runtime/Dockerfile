@@ -22,8 +22,9 @@ RUN groupadd -g 2001 grok && \
     groupadd -g 2002 broker && \
     useradd -m -d /home/broker -g broker -u 1002 broker && \
     chmod 0700 /home/broker && \
-    git clone --depth 1 https://github.com/datagrok-ai/public.git /workspace && \
-    find /workspace \( -name '*.jar' -o -name 'Cargo.lock' \) -delete && \
+    git clone --depth 1 --filter=blob:none --sparse https://github.com/datagrok-ai/public.git /workspace && \
+    git -C /workspace sparse-checkout set --no-cone '/*' '!/docusaurus/' '!/help/uploads/' \
+      '!*.gif' '!*.png' '!*.PNG' '!*.jpg' '!*.jpeg' '!*.bmp' '!*.mp4' '!*.jar' && \
     mkdir -p /users && \
     chown -R grok:grok ${HOME_DIR} /workspace /users
 

@@ -19,23 +19,20 @@ const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) a
 
 
 /** Represents a predictive model
- * @extends Entity
- * {@link https://datagrok.ai/help/learn/-info}
- * */
+ * {@link https://datagrok.ai/help/learn/-info} */
 export class Model extends Entity {
-  /** @constructs Model */
+
   constructor(dart: any) {
     super(dart);
   }
 }
 
-/** @extends Entity
+/**
  * Represents a Jupyter notebook
- * {@link https://datagrok.ai/help/compute/jupyter-notebook}
- * */
+ * {@link https://datagrok.ai/help/compute/jupyter-notebook} */
 export class Notebook extends Entity {
 
-  /** @constructs Notebook */
+
   constructor(dart: any) {
     super(dart);
   }
@@ -76,6 +73,7 @@ export class Package extends Entity {
 
   private _name: string = '';
 
+  /** Base URL of the package files on the server. */
   get webRoot(): string {
     if (this._webRoot === undefined)
       return api.grok_Package_Get_WebRoot(this.dart);
@@ -87,10 +85,12 @@ export class Package extends Entity {
     this._webRoot = x;
   }
 
+  /** The package author. */
   get packageOwner(): string {
     return api.grok_Package_Get_Package_Author(this.dart);
   }
 
+  /** Package version. */
   get version(): string {
     if (this.dart != null)
       return api.grok_Package_Get_Version(this.dart);
@@ -120,6 +120,7 @@ export class Package extends Entity {
       this._name = x;
   }
 
+  /** Name of the webpack module of [file] in this package. */
   getModuleName(file: string): string {
     if (this.dart != null)
       return api.grok_Package_GetModuleName(this.dart, file);
@@ -127,6 +128,7 @@ export class Package extends Entity {
       return '';
   }
 
+  /** URL of the package icon. */
   getIconUrl(): string {
     return api.grok_Package_GetIconUrl(this.dart);
   }
@@ -154,6 +156,7 @@ export class Package extends Entity {
 
   private _logger?: PackageLogger;
 
+  /** Logger whose records carry the package name. */
   get logger(): PackageLogger {
     if (this._logger)
       return this._logger;
@@ -166,14 +169,14 @@ export class Package extends Entity {
   }
 
   /**
-   * @deprecated The {@link getProperties} should not be used. Use {@link settings} instead
+   * @deprecated Use {@link settings}. Removed in 1.29.
    */
   getProperties(): Promise<any> {
     return this.getSettings();
   }
 
   /**
-   * @deprecated The {@link getSettings} should not be used. Use {@link settings} instead
+   * @deprecated Use {@link settings}. Removed in 1.29.
    */
   getSettings(): Promise<Map<string, any>> {
     return api.grok_Package_Get_Settings(this.name);
@@ -194,6 +197,7 @@ export class Package extends Entity {
     return new DG.FilesDataSource(`System:AppData/${this.name}`);
   }
 
+  /** Loads the package test module and returns its registered tests; undefined when the package has none. */
   public async getTests(core: boolean = false) {
     try {
       await this.load({ file: 'package-test.js' });

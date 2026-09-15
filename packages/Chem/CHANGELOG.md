@@ -14,6 +14,7 @@
 * GROK-20832: MPO: Fixed Save being disabled on a freshly cloned profile — the copy could not be kept
 * GROK-20831: MPO: Fixed truncated profile descriptions not expanding on click after saving a profile
 * GROK-20830: MPO: Fixed data-driven Save not using the name and description typed on the tab
+* GROK-20805: Chem: Butina cluster doesn't work in a project with datasync
 
 ## 1.17.14 (2026-08-13)
 

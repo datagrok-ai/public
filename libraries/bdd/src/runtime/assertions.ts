@@ -1,20 +1,20 @@
 /* Outcome checks over Playwright's retrying `expect`, so a feature never needs a wait step. */
-import {expect, Locator, Page} from '@playwright/test';
+import {Locator, Page} from '@playwright/test';
+import {expect} from './patience.js';
 import type {ElementRef} from './args.js';
-import {editorOf} from './gestures.js';
+import {editorOf, readExpanded, readSwitch, switchOf} from './gestures.js';
 import {exactText, locate, locateActionable, refOf} from './locate.js';
 
-export type State = 'visible' | 'hidden' | 'present' | 'absent' | 'enabled' | 'disabled' | 'checked' |
-  'unchecked' | 'partially checked' | 'selected' | 'empty' | 'expanded' | 'collapsed' | 'focused' | 'invalid' | 'valid';
+import type {State} from '../states.js';
 
-// "partially checked" before "checked": the alternation takes the first match
-export const STATES: State[] = ['visible', 'hidden', 'present', 'absent', 'enabled', 'disabled', 'partially checked', 'checked',
-  'unchecked', 'selected', 'empty', 'expanded', 'collapsed', 'focused', 'invalid', 'valid'];
+export type {State};
+export {STATES} from '../states.js';
 const INVALID_CLASSES = ['d4-invalid', 'd4-forced-invalid', 'u2-input-invalid'];
 
 const ROWS = ['.u2-list-row', '[role="option"]', '[role="row"]', '[role="tab"]', 'option', '.d4-list-item', '[name="legend-item"]', 'tbody tr', 'tr', 'li'];
+// a dock manager's tab says which of its handles is shown with a class of its own, and nothing else
 const SELECTED = '[aria-selected="true"], [aria-pressed="true"], [aria-checked="true"], [aria-current]:not([aria-current="false"]), ' +
-  '.u2-list-row-selected';
+  '.u2-list-row-selected, .tab-handle-selected, .dockspan-tab-handle-selected';
 
 export async function expectState(page: Page, target: ElementRef, state: State, negate = false): Promise<void> {
   const loc = ['visible', 'hidden', 'present', 'absent', 'enabled', 'disabled'].includes(state) ?
@@ -32,12 +32,28 @@ export async function expectState(page: Page, target: ElementRef, state: State, 
     case 'partially checked': return expectMixed(loc, !negate);
     case 'invalid': return expectInvalid(loc, !negate);
     case 'valid': return expectInvalid(loc, negate);
+    case 'ready': return expectReady(loc, !negate);
     case 'selected': return expectSelected(page, loc, !negate);
     case 'empty': return (negate ? expect(await editorOf(page, target)).not : expect(await editorOf(page, target))).toHaveValue('');
     case 'expanded': return expectExpanded(loc, !negate);
     case 'collapsed': return expectExpanded(loc, negate);
     case 'focused': return e.toBeFocused();
   }
+}
+
+/** A completed asynchronous widget explicitly clears aria-busy. Missing markup is not readiness,
+ * and a failed computation can stop running but must not count as a ready result. */
+async function expectReady(loc: Locator, ready: boolean): Promise<void> {
+  await expect.poll(() => loc.evaluateAll((all) => all.length > 0 && all.every((el) =>
+    el.getAttribute('aria-busy') === 'false' && el.getAttribute('aria-invalid') !== 'true')),
+  {message: 'a completed, valid result (aria-busy=false)'}).toBe(ready);
+}
+
+/** A parameter form's switch is not inside the input it governs, so this is a claim of its own
+ * rather than a state of the element. */
+export async function expectSwitched(page: Page, target: ElementRef, on: boolean): Promise<void> {
+  const sw = await switchOf(page, target);
+  await expect.poll(() => readSwitch(sw), {message: `the switch of ${target.phrase}`}).toBe(on);
 }
 
 /** Several matches (stacked balloons, repeated rows): visible when any is, hidden when none is —
@@ -54,16 +70,14 @@ async function expectSelected(page: Page, loc: Locator, selected: boolean): Prom
   await (selected ? expect(hit).not.toHaveCount(0) : expect(hit).toHaveCount(0));
 }
 
-/** `aria-expanded` sits on the element itself (a tree row) or on its header/trigger inside. */
+/** `aria-expanded` sits on the element itself (a tree row) or on its header/trigger inside; the
+ * Dart tree says it with its twistie's class instead. `null` — the element says nothing at all —
+ * is reported as that rather than as the opposite state. */
 async function expectExpanded(loc: Locator, expanded: boolean): Promise<void> {
-  const self = loc.first();
-  const own = await self.getAttribute('aria-expanded', {timeout: 2000}).catch(() => null);
-  const control = own !== null ? self : self.locator('[aria-expanded]').first();
-  await expect(control).toHaveAttribute('aria-expanded', String(expanded));
+  await expect.poll(() => readExpanded(loc), {message: 'expanded state (aria-expanded, or the tree twistie)'})
+    .toBe(expanded);
 }
 
-/** Disabled is the native attribute, `aria-disabled` on the element or an ancestor (grayed menu
- * items, gated property rows), or the platform's disabled classes. */
 /** Disabled: the element or an ancestor says so (`aria-disabled`, the u2/Dart disabled classes),
  * or it — or the control inside it — is natively disabled. Over the visible matches when there
  * are any (the Dart menu's hidden mirror), else all of them (a property row in a panel that is
@@ -115,9 +129,11 @@ async function expectChecked(loc: Locator, checked: boolean): Promise<void> {
  * is shown now: the platform keeps one tooltip element, hidden between hovers. */
 export async function expectText(page: Page, target: ElementRef, text: string, options: {exact?: boolean; negate?: boolean} = {}): Promise<void> {
   const plan = refOf(page, target).plan;
-  const loc = plan.type === 'kind' && plan.kind.name === 'tooltip' ? await locateActionable(page, target) : await locate(page, target);
-  if (await loc.count() > 1) {
-    const matching = loc.filter({hasText: options.exact ? exactText(text) : new RegExp(escapeRegExp(text), 'i')});
+  const tooltip = plan.type === 'kind' && plan.kind.name === 'tooltip';
+  const loc = await locate(page, target);
+  if (tooltip || await loc.count() > 1) {
+    const matching = (tooltip ? loc.filter({visible: true}) : loc)
+      .filter({hasText: options.exact ? exactText(text) : new RegExp(escapeRegExp(text), 'i')});
     await (options.negate ? expect(matching).toHaveCount(0) : expect(matching).not.toHaveCount(0));
     return;
   }
@@ -132,15 +148,43 @@ function escapeRegExp(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-export async function expectValue(page: Page, target: ElementRef, value: string): Promise<void> {
-  const editor = await editorOf(page, target);
-  const tag = await editor.evaluate((e) => e.tagName).catch(() => '');
-  if (tag === 'SELECT') {
-    const selected = editor.locator('option:checked');
-    await expect(selected).toHaveText(exactText(value));
+/** A number the reader sees, between two bounds: what a slider or a stepper arrives at, where no
+ * exact value is the claim. */
+export async function expectValueBetween(page: Page, target: ElementRef, lo: number, hi: number): Promise<void> {
+  await expect.poll(async () => {
+    const text = await readValue(page, target);
+    const n = text === undefined || text === '' ? NaN : Number(text);
+    return n >= lo && n <= hi ? 'in range' : `${text ?? 'nothing'}`;
+  }, {message: `the value of ${target.phrase}, expected between ${lo} and ${hi}`}).toBe('in range');
+}
+
+/** The value a reader would see. The editor is resolved on every attempt, not once: a view the
+ * platform is still building exposes the input host before the control inside it, and a single
+ * resolution then reads the `div.ui-input-editor` wrapper and fails with "Not an input element"
+ * instead of waiting for the input that is about to arrive (a model reopened from its own address).
+ * `undefined` is "nothing can answer yet", which keeps the poll going. A `<select>` answers with the
+ * text of the chosen option, which is what the reader sees. */
+async function readValue(page: Page, target: ElementRef): Promise<string | undefined> {
+  const editor = await editorOf(page, target).catch(() => undefined);
+  if (editor === undefined)
+    return undefined;
+  return editor.first().evaluate((e) => {
+    if (e instanceof HTMLSelectElement)
+      return e.selectedIndex < 0 ? undefined : (e.options[e.selectedIndex].textContent ?? '').trim();
+    if (e instanceof HTMLInputElement || e instanceof HTMLTextAreaElement)
+      return e.value;
+    return (e as HTMLElement).isContentEditable ? (e.textContent ?? '') : undefined;
+  }).catch(() => undefined);
+}
+
+export async function expectValue(page: Page, target: ElementRef, value: string, negate = false): Promise<void> {
+  const message = `the value of ${target.phrase}`;
+  if (!negate) {
+    await expect.poll(() => readValue(page, target), {message}).toBe(value);
+    return;
   }
-  else
-    await expect(editor).toHaveValue(value);
+  await expect.poll(() => readValue(page, target), {message: `${message} (something that can hold one)`}).not.toBe(undefined);
+  await expect.poll(() => readValue(page, target), {message}).not.toBe(value);
 }
 
 /** Rows of a collection: the first row vocabulary that has any is the one counted. */

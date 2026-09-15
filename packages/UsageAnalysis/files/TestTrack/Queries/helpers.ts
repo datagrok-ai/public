@@ -60,7 +60,7 @@ export async function openDbConnectionView(page: Page, provider: string, connect
 export async function showContextPanel(page: Page): Promise<void> {
   await page.evaluate(() => {
     const g = (window as unknown as { grok: { shell: { windows: { showProperties: boolean } } } }).grok;
-    g.shell.windows.showProperties = true;
+    g.shell.windows.showContextPanel = true;
   });
 }
 

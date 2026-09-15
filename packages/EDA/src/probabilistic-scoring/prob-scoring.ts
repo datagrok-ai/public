@@ -637,7 +637,7 @@ export class Pmpo {
     this.setNulls(prediction, indecesOfMissingVals);
 
     // Mark predictions with a color
-    prediction.colors.setLinear(getOutputPalette(OPT_TYPE.MAX), {min: prediction.stats.min, max: prediction.stats.max});
+    prediction.meta.colors.setLinear(getOutputPalette(OPT_TYPE.MAX), {min: prediction.stats.min, max: prediction.stats.max});
 
     // Remove existing prediction column and add the new one
     df.columns.remove(this.predictionName);

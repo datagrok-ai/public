@@ -7,18 +7,20 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 sub_features_covered: [viewers.tile-viewer]
 --- */
 import {test} from '@playwright/test';
+import '../../../bindings/spaces.js';
 import '../../../bindings/trellis-plot.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {addTileViewer, dragCardIntoLane, openViewerMenu, pickFromViewerMenu} from '../../../bindings/tile-viewer.js';
+import {addTileViewer, dragCardIntoLane} from '../../../bindings/tile-viewer.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {valueInRow} from '@datagrok-libraries/bdd/bindings/platform/columns';
 import {filterOut, filterPasses, filterPassesAll, resetFilter} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {closeContextMenu, hasArea, hasNoArea, menuLists, noErrors, pointerAway, propertyShouldBe, readingAtLeast, readingIs, readingReads, setProperties, setProperty, showsRows} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {openViewerMenu, pickFromViewerMenu} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Tile viewer lanes", () => {

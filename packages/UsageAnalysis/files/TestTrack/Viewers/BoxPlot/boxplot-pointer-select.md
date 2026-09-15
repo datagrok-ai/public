@@ -97,9 +97,10 @@ expected_results:
   - anchor: Step 20
     expectation: >-
       After hovering a bar on a neighboring Bar chart viewer with distinct
-      categorical coloring, the box plot canvas pixel counts are unchanged
-      compared to the pre-hover reference snapshot — no cross-viewer color
-      repaint (github-3065).
+      categorical coloring, the box plot highlights the hovered group's rows
+      (the other groups fade) and those rows keep their own RACE marker colors —
+      they do not fall back to the default linear scheme (github-3065). With
+      Show Mouse Over Row Group off, the hover leaves the box plot unchanged.
   - anchor: Step 22
     expectation: >-
       After selecting one category's rows and deleting them from the grid, the
@@ -285,21 +286,22 @@ Expected:
 ### Scenario 7: Cross-viewer highlight must not recolor box plot (github-3065)
 
 Steps:
-1. Add a Bar Chart viewer to the same table view alongside the Box Plot.
+1. Add a Bar Chart viewer (Split = RACE) to the same table view alongside the Box Plot.
 2. In the Box Plot's Context Panel > Color, set Marker Color Column to RACE (categorical coloring).
-3. Capture a reference canvas snapshot of the box plot.
-4. Hover a bar inside the Bar Chart viewer (hover over a different category's bar to
-   trigger cross-viewer highlighting).
-5. After the highlight settle, capture a second canvas snapshot of the box plot.
-6. Verify the box plot canvas is unchanged compared to the reference snapshot — the box
-   plot canvas color did not repaint due to the cross-viewer hover (github-3065).
-7. Remove the Bar Chart viewer (close or remove from layout).
+3. Hover a bar inside the Bar Chart viewer (for example, Caucasian).
+4. Verify the box plot highlights the hovered group's rows: the other groups fade, and the
+   hovered rows are drawn in their own RACE marker colors — they do not change to the default
+   linear scheme (github-3065).
+5. Move the pointer away from the Bar Chart — the box plot returns to its normal look.
+6. In the Box Plot's Context Panel, switch Show Mouse Over Row Group off, and hover the same bar
+   again — the box plot does not change at all.
+7. Switch Show Mouse Over Row Group back on and remove the Bar Chart viewer.
 8. In the Box Plot's Context Panel > Color, set Marker Color Column to None.
 
 Expected:
-- After hovering a bar on a neighboring Bar chart viewer with distinct categorical
-  coloring, the box plot canvas is unchanged compared to the pre-hover reference
-  snapshot — no cross-viewer color repaint (github-3065).
+- Hovering a bar on a neighboring Bar chart highlights the hovered group in the box plot, and
+  the highlighted rows keep their own categorical marker colors (github-3065).
+- With Show Mouse Over Row Group off, the cross-viewer hover leaves the box plot unchanged.
 
 ### Scenario 8: Categorical coloring survives row deletion (GROK-20502)
 

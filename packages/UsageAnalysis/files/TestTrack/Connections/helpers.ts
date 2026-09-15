@@ -370,7 +370,7 @@ export async function applyAutomationSetup(page: Page): Promise<void> {
 export async function showContextPanel(page: Page): Promise<void> {
   await page.evaluate(() => {
     const g = (window as unknown as { grok: any }).grok;
-    g.shell.windows.showProperties = true;
+    g.shell.windows.showContextPanel = true;
   });
 }
 

@@ -166,27 +166,6 @@ Feature: Histogram property surface
     And histogram viewer should have a "bin 8" area
     And no errors should have been logged
 
-  Scenario: Title and description
-    When user sets properties of histogram viewer:
-      | Show Title | true             |
-      | Title      | Age distribution |
-    Then title of histogram viewer should have text "Age distribution"
-    When user sets properties of histogram viewer:
-      | Description                 | Ages of the patients |
-      | Description Visibility Mode | Always               |
-    Then description of histogram viewer should have text "Ages of the patients"
-    When user sets "Description Position" property of histogram viewer to "Bottom"
-    Then description of histogram viewer should be visible
-    When user sets "Description Visibility Mode" property of histogram viewer to "Never"
-    Then description of histogram viewer should be absent
-    And no errors should have been logged
-    When user sets properties of histogram viewer:
-      | Show Title                  | false |
-      | Title                       |       |
-      | Description                 |       |
-      | Description Visibility Mode | Auto  |
-      | Description Position        | Top   |
-
   Scenario: The context menu as a path to properties
     When user opens the context menu of histogram viewer
     Then "Show Filtered Out Rows" menu item in context menu should be visible

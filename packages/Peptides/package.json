@@ -28,6 +28,7 @@
     "wu": "catalog:"
   },
   "devDependencies": {
+    "@datagrok-libraries/bdd": "workspace:^",
     "@playwright/test": "^1.48.0",
     "@types/uuid": "^10.0.0",
     "@types/wu": "catalog:"
@@ -37,7 +38,8 @@
     "typecheck": "grok tsc --noEmit -p tsconfig.json",
     "lint": "eslint --ext .ts,.tsx src",
     "test": "grok test",
-    "install-dependencies": "npm install"
+    "install-dependencies": "npm install",
+    "test:bdd": "grok-bdd run"
   },
   "canEdit": [
     "Administrators"

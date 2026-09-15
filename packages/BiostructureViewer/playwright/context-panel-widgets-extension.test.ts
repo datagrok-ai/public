@@ -81,7 +81,7 @@ test('BiostructureViewer / context-panel widgets extension (3D Structure / PDB I
       await page.evaluate(() => {
         // Force the context panel visible: the baseline sets simpleMode=true which hides it,
         // and the accordion panes ([name="pane-*"]) only render into a shown context panel.
-        grok.shell.windows.showProperties = true;
+        grok.shell.windows.showContextPanel = true;
         const cell = grok.shell.tv.dataFrame.cell(0, 'structure');
         grok.shell.o = DG.SemanticValue.fromTableCell(cell);
       });
@@ -171,7 +171,7 @@ test('BiostructureViewer / context-panel widgets extension (3D Structure / PDB I
       await page.evaluate(() => {
         // Force the context panel visible: the baseline sets simpleMode=true which hides it,
         // and the accordion panes ([name="pane-*"]) only render into a shown context panel.
-        grok.shell.windows.showProperties = true;
+        grok.shell.windows.showContextPanel = true;
         const cell = grok.shell.tv.dataFrame.cell(0, 'structure');
         grok.shell.o = DG.SemanticValue.fromTableCell(cell);
       });
@@ -209,7 +209,7 @@ test('BiostructureViewer / context-panel widgets extension (3D Structure / PDB I
     await softStep('Scenario 3 — PDB Information pane (PDB_ID) renders async pdbInfoWidget metadata', async () => {
       await page.evaluate(() => {
         // Context panel must be shown for the accordion panes to render (see scenario 1).
-        grok.shell.windows.showProperties = true;
+        grok.shell.windows.showContextPanel = true;
         const cell = grok.shell.tv.dataFrame.cell(0, 'pdb_id');
         grok.shell.o = DG.SemanticValue.fromTableCell(cell);
       });
@@ -255,7 +255,7 @@ test('BiostructureViewer / context-panel widgets extension (3D Structure / PDB I
       const surface = await page.evaluate(async () => {
         // Force the context panel visible: the baseline sets simpleMode=true which hides it,
         // and the accordion panes ([name="pane-*"]) only render into a shown context panel.
-        grok.shell.windows.showProperties = true;
+        grok.shell.windows.showContextPanel = true;
         const cell = grok.shell.tv.dataFrame.cell(0, 'structure');
         grok.shell.o = DG.SemanticValue.fromTableCell(cell);
         // Live-confirm the gating predicate on the fixture.
@@ -344,7 +344,7 @@ test('BiostructureViewer / context-panel widgets extension (3D Structure / PDB I
     await softStep('Scenario 4 Path C — ProLIF panel (PDB_ID) renders pdbIdInteractionsWidget via RCSB fetchProxy', async () => {
       await page.evaluate(() => {
         // Context panel must be shown for the accordion panes to render (see scenario 1).
-        grok.shell.windows.showProperties = true;
+        grok.shell.windows.showContextPanel = true;
         const cell = grok.shell.tv.dataFrame.cell(0, 'pdb_id');
         grok.shell.o = DG.SemanticValue.fromTableCell(cell);
       });

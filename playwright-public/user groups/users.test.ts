@@ -187,7 +187,7 @@ test.describe('Users View (Users-*)', () => {
 
   test('Users-14 — user context menu items', async ({ page }) => {
     await openCardContextMenu(page, TARGET_NAME);
-    for (const name of ['Details', 'Chat', 'Block', 'Groups...', 'Roles...', 'Add to favorites'])
+    for (const name of ['Details', 'Chat', 'Disable...', 'Groups...', 'Roles...', 'Add to favorites'])
       await expect(contextMenuItemByName(page, name), `menu item "${name}" should be present`)
         .toBeVisible({ timeout: 5_000 });
     await closeMenu(page);
@@ -267,9 +267,9 @@ test.describe('Users View (Users-*)', () => {
     }
   });
 
-  // Users-20: block AND unblock a user fully through the UI. After Block the gallery card is stale
-  // (it doesn't react to ENTITY_MODIFIED), so the menu only flips to "Unblock" after the view is
-  // refreshed — the test reloads to exercise the real UI unblock. API is used only for verification
+  // Users-20: disable AND enable a user fully through the UI. After Disable the gallery card is stale
+  // (it doesn't react to ENTITY_MODIFIED), so the menu only flips to "Enable" after the view is
+  // refreshed — the test reloads to exercise the real UI path. API is used only for verification
   // reads and as a finally safety-net.
   test('Users-20 — block then unblock a user via UI (refresh clears the stale card)', async ({ page }) => {
     const waitForStatus = async (want: string): Promise<string> => {
@@ -282,19 +282,19 @@ test.describe('Users View (Users-*)', () => {
       return s;
     };
     try {
-      // Block.
+      // Disable.
       await openCardContextMenu(page, TARGET_NAME);
-      await contextMenuItemByName(page, 'Block').click();
-      await page.locator('.d4-dialog button[name="button-YES"]').click();
+      await contextMenuItemByName(page, 'Disable...').click();
+      await page.locator('.d4-dialog button[name="button-DISABLE"]').click();
       expect(await waitForStatus('blocked'), 'user should be blocked').toBe('blocked');
 
-      // Refresh the view so the card picks up the new state, then unblock via the UI.
+      // Refresh the view so the card picks up the new state, then enable via the UI.
       await page.reload();
       await page.locator(GALLERY_GRID).first().waitFor({ state: 'visible', timeout: 20_000 });
       await page.waitForTimeout(800);
       await openCardContextMenu(page, TARGET_NAME);
-      await contextMenuItemByName(page, 'Unblock').click();
-      await page.locator('.d4-dialog button[name="button-YES"]').click();
+      await contextMenuItemByName(page, 'Enable').click();
+      await page.locator('.d4-dialog button[name="button-ENABLE"]').click();
       expect(await waitForStatus('active'), 'user should be unblocked via UI').toBe('active');
     } finally {
       // Safety net: guarantee the account is restored even if the UI path failed mid-way.

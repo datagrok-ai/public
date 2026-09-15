@@ -61,8 +61,8 @@ expected_results:
       With Show Group Comparison confirmed off, the bare p-value label is
       visible on the Box Plot canvas (the t-test overlay is active for 2
       categories). Hovering over the bare p-value label reveals the
-      group-comparison reveal icon (name="show-group-stats") in the DOM — no
-      test-name tooltip appears on bare p hover.
+      group-comparison reveal icon (name="show-group-stats") and shows a
+      tooltip naming the test ("Welch's t-test.").
   - anchor: Scenario 2 Step 5
     expectation: >-
       After pressing the T key on the keyboard, the Show P Value property in
@@ -74,8 +74,8 @@ expected_results:
     expectation: >-
       After switching Category 1 to RACE (3+ categories), the p-value area on
       the canvas re-renders: the Alexander-Govern test branch is active. The
-      bare p-value label is present (canvas floor; hover no longer produces a
-      test-name tooltip — it reveals the reveal icon instead).
+      bare p-value label is present, and hovering it reveals the reveal icon and
+      a tooltip naming the test ("Alexander and Govern's test.").
   - anchor: Scenario 2 Step 9
     expectation: >-
       After right-clicking the statistics region and toggling a statistic from
@@ -203,9 +203,8 @@ Steps:
    group comparison is off).
 3. Move the mouse pointer over the bare p-value label on the canvas (hover
    over the p-value text). Verify that the group-comparison reveal icon
-   (the element with name="show-group-stats") appears in the DOM. Confirm
-   that NO test-name tooltip appears on bare p hover (the hover reveals the
-   icon, not a tooltip with the test conclusion).
+   (the element with name="show-group-stats") appears, and that a tooltip
+   names the test: "Welch's t-test.".
 4. In Context Panel > Statistics, disable Show P Value using the checkbox.
    Verify that the p-value overlay disappears from the canvas.
 5. Click the Box Plot canvas to give it keyboard focus. Press the T key.
@@ -220,8 +219,8 @@ Steps:
    Alexander-Govern test branch is now active for 3+ categories; canvas
    floor — bare p is present).
 8. Move the mouse pointer over the bare p label. Confirm again that the
-   reveal icon (name="show-group-stats") appears rather than a test-name
-   tooltip (the hover behavior is the same for 2 and 3+ categories).
+   reveal icon (name="show-group-stats") appears and that the tooltip now
+   names the other test: "Alexander and Govern's test.".
 9. Right-click the statistics region of the Box Plot (click on the statistics
    strip area). In the context menu that appears, toggle one statistic entry
    (e.g., toggle Show Total Count on or off). Verify that the corresponding
@@ -230,7 +229,8 @@ Steps:
 
 Expected:
 - Hovering the bare p-value label reveals the name="show-group-stats" icon
-  in the DOM; no test-name tooltip appears on bare p hover.
+  and a tooltip naming the test: "Welch's t-test." for 2 categories,
+  "Alexander and Govern's test." for 3 or more.
 - Pressing the T key toggles Show P Value on→off and off→on (both
   directions verified).
 - With Category 1 set to RACE (3+ categories), the Alexander-Govern test
@@ -357,9 +357,10 @@ Expected:
   settle-gated canvas diff to one uniform color.
 - P-value hover (Scenario 2): the bare-p hover signal is the DOM appearance
   of [name="show-group-stats"] — park the pointer on the p-value text area
-  (~40 % of the canvas height from the top) and poll. No test-name tooltip
-  exists on bare-p hover; the conclusion text lives in the group-comparison
-  strip, owned by cp.group-comparison-ladder.
+  (~40 % of the canvas height from the top) and poll. The same hover shows a
+  tooltip naming the test ("Welch's t-test." / "Alexander and Govern's test.");
+  the full conclusion text lives in the group-comparison strip, owned by
+  cp.group-comparison-ladder.
 - T-key delivery (Scenario 2 Step 5): focus the canvas before sending the
   keypress; the signal is bp.props.showPValue before and after.
 - Violin data completeness (Scenario 3 Step 3): count non-white pixels in

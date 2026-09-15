@@ -463,6 +463,8 @@ export interface DomainBatchOptions {
   allOrNothing?: boolean;
   /** Report business-key duplicates as errors instead of skipping them. */
   errorOnDuplicate?: boolean;
+  /** Reject with a {@link DomainValidationError} carrying the report when the batch is aborted. */
+  throwOnError?: boolean;
   /** Payload format for `Uint8Array` data: `'d42'` (default; `DataFrame.toByteArray()` output)
    * or `'parquet'` (converted client-side via the Arrow package — fails with a clear error when
    * Arrow is not installed). Ignored for other payloads — the format is inferred:

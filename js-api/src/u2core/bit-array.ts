@@ -1,3 +1,4 @@
+/** Decides the bit at index `i`; see {@link BitArray.init}. */
 export type BitPredicate = (i: number) => boolean;
 
 /** A pure-JS bit array with the {@link BitSet} vocabulary: LSB-first `Uint32Array` words, bit `i` at
@@ -94,10 +95,12 @@ export class BitArray {
     return new BitArray(words, length);
   }
 
+  /** Number of bits. */
   get length(): number {
     return this._length;
   }
 
+  /** Number of 32-bit words backing the array. */
   get lengthInInts(): number {
     return BitArray._wordCount(this._length);
   }
@@ -120,19 +123,26 @@ export class BitArray {
       this._data[i >>> 5] &= ~(1 << (i & 31));
   }
 
+  /** Number of set bits. */
   get trueCount(): number {
     return BitArray._popcount(this._data, this.lengthInInts);
   }
 
+  /** Number of clear bits. */
   get falseCount(): number {
     return this._length - this.trueCount;
   }
 
+  /** True if at least one bit is set. */
   get anyTrue(): boolean { return this.findNext(-1, true) !== -1; }
+  /** True if at least one bit is clear. */
   get anyFalse(): boolean { return this.findNext(-1, false) !== -1; }
+  /** True if every bit is set (also for an empty array). */
   get allTrue(): boolean { return !this.anyFalse; }
+  /** True if every bit is clear (also for an empty array). */
   get allFalse(): boolean { return !this.anyTrue; }
 
+  /** A copy with the same bits. */
   clone(): BitArray {
     return new BitArray(this._data.slice(0, this.lengthInInts), this._length);
   }
@@ -167,11 +177,13 @@ export class BitArray {
     return this;
   }
 
+  /** Sets every bit to `x`. */
   setAll(x: boolean): this {
     this._data.fill(x ? 0xffffffff : 0, 0, this.lengthInInts);
     return this._trim();
   }
 
+  /** Flips every bit. */
   invert(): this {
     for (let i = 0, n = this.lengthInInts; i < n; i++)
       this._data[i] = ~this._data[i];
@@ -353,6 +365,7 @@ export class BitArray {
     return s;
   }
 
+  /** The bits as a string of `0` and `1`, index 0 first. */
   toBinaryString(): string {
     return this.toString();
   }

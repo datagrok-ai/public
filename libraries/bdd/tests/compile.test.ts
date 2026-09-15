@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {resolve} from 'node:path';
 import {beforeEach, test} from 'node:test';
 import {compileFeature} from '../src/compile.js';
 import type {Bindings} from '../src/discover.js';
@@ -6,11 +7,15 @@ import {parseFeature} from '../src/gherkin.js';
 import {StepMatcher} from '../src/match.js';
 import {context, dataset, defineParameterType, element, Given, kind, resetRegistry, StepFn, Then, When} from '../src/registry.js';
 
-const ROOT = 'C:/pkg/bdd';
+// absolute the way the running platform writes one (a drive letter on Windows, a root slash
+// elsewhere), with the separators the compiler emits: a hardcoded "C:/..." is not a path on Linux,
+// and the relative import the compiler then cannot build reads as the raw specifier
+const abs = (p: string): string => resolve(p).split('\\').join('/');
+const ROOT = abs('/pkg/bdd');
 const STEPS = '@datagrok-libraries/bdd/bindings/common/steps';
 
 function bindings(fns: Record<string, StepFn>, registryModules: string[] = []): Bindings {
-  const module = {file: 'C:/lib/bindings/common/steps.ts', specifier: STEPS, exports: fns, stepDefs: [], registers: false};
+  const module = {file: abs('/lib/bindings/common/steps.ts'), specifier: STEPS, exports: fns, stepDefs: [], registers: false};
   const modules = [module, ...registryModules.map((s) => ({file: s, specifier: s, exports: {}, stepDefs: [], registers: true}))];
   const exportOf = new Map<StepFn, {module: typeof module; name: string}>();
   for (const [name, fn] of Object.entries(fns))
@@ -208,4 +213,28 @@ test('"of" names a part of a generic kind', () => {
 `);
   assert.equal(diagnostics.filter((d) => d.level === 'error').length, 0);
   assert.match(diagnostics[0]?.message ?? '', /part "label" \[\[data-u2-part="label"\]\] within kind "input" qualified "name"/);
+});
+
+
+test('run placeholders resolve at runtime in strings, element phrases, tables and doc strings', () => {
+  fns.entity = Given('entity {string}', async () => undefined);
+  fns.fillIn = When('user fills in:', async () => undefined);
+  const source = `Feature: Unique names
+  Scenario: A
+    Given entity "BDD-{run}"
+    When user clicks on BDD-{run} icon
+    When user fills in:
+      | name | BDD-{run} |
+    When user fills in:
+      """
+      BDD-{run}
+      """
+`;
+  const {code, diagnostics} = compile(source);
+  assert.equal(diagnostics.filter((d) => d.level === 'error').length, 0);
+  assert.ok(code.includes('entity(page, session.text("BDD-{run}"))'));
+  assert.ok(code.includes('clickOn(page, el(session.text("BDD-{run} icon")))'));
+  assert.ok(code.includes('fillIn(page, [["name",session.text("BDD-{run}")]])'));
+  assert.ok(code.includes('fillIn(page, session.text("BDD-{run}"))'));
+  assert.equal(code, compile(source).code);
 });

@@ -671,7 +671,7 @@ export class DemoView extends DG.ViewBase {
     grok.shell.windows.showToolbox = false;
     grok.shell.windows.showRibbon = true;
     grok.shell.windows.showHelp = false;
-    grok.shell.windows.showProperties = false;
+    grok.shell.windows.showContextPanel = false;
     grok.shell.windows.help.syncCurrentObject = false;
   }
 }

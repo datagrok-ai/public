@@ -18,7 +18,7 @@ category('App', () => {
     expect(handler.view.tabs != null, true, 'tabs not initialized');
   });
 
-  const tabs = ['Overview', 'Packages', 'Functions', 'Events', 'Clicks', 'Log', 'Projects'];
+  const tabs = ['Overview', 'Packages', 'Functions', 'Events', 'Clicks', 'Log', 'System Activity', 'Projects'];
 
   for (const tab of tabs) {
     test(tab, async () => {

@@ -148,8 +148,7 @@ export class PackageFunctions {
 }
 
 export async function getApiKey(): Promise<string> {
-  //@ts-ignore
-  const apiKey = (await _package.getSettings())['apiKey'];
+  const apiKey = _package.settings['apiKey'];
   if (apiKey)
     return apiKey;
   throw new Error('API key is not set in package credentials');

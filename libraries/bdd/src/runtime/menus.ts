@@ -6,7 +6,8 @@
    opens on a pointer move inside it, and a pointer that already rests on it moves nowhere, so
    the entry is two moves within the item. A menu bar too narrow for its groups folds the rest
    into a "more" group, where the folded items are vertical. */
-import {expect, Locator, Page} from '@playwright/test';
+import {Locator, Page} from '@playwright/test';
+import {expect} from './patience.js';
 import {installViewerRuntime, baselineAll} from './viewers.js';
 
 const MORE = '[role="menubar"] .d4-menu-item-more';
