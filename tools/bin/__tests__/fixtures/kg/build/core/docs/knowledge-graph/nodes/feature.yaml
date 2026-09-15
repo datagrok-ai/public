@@ -12,6 +12,9 @@ description: >
   and its own help heading.
 home: any markdown file carrying a `feature:` frontmatter key; a code folder's README or
   CLAUDE.md, a core/docs file, or a help page
+properties:
+  user_help?:      DocPage
+  developer_help?: DocPage
 rules:
   - a second-level node (the area) must set owner
   - one home document per id

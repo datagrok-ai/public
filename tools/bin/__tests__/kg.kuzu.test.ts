@@ -5,13 +5,14 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import {fileURLToPath} from 'url';
-import {loadTypeSystem, TypeSystem} from '../utils/kg/types';
+import {loadTypeSystem, graphLabel, TypeSystem} from '../utils/kg/types';
 import {ddl, load, loadKuzu, open, run, Ddl, KuzuConnection, KuzuQueryResult} from '../utils/kg/kuzu';
-import {find, explain, impact, testsFor, resolveTarget, coverageNote, sourceCaveats, printOps} from '../utils/kg/ops';
+import {find, explain, impact, testsFor, resolveTarget, coverageNote, sourceCaveats, printOps, groupOf, GROUP_ORDER} from '../utils/kg/ops';
 import {currentDir} from '../utils/kg/build/write';
 import {kg} from '../commands/kg';
 
-const fixture = path.join(path.dirname(fileURLToPath(import.meta.url)), 'fixtures', 'kg', 'build');
+const here = path.dirname(fileURLToPath(import.meta.url));
+const fixture = path.join(here, 'fixtures', 'kg', 'build');
 const KG_DIR = path.join('core', 'docs', 'knowledge-graph');
 const types = (): TypeSystem => loadTypeSystem(path.join(fixture, KG_DIR));
 const schema: Ddl = ddl(types());
@@ -28,7 +29,7 @@ describe('the index DDL (build-plan.md WO-7)', () => {
     expect(schema.nodes.map((t) => t.name)).toEqual(['Feature', 'Concept', 'Component', 'Artifact', 'Work', 'Actor', 'Infra', 'Type']);
     expect(table('Feature')).toBe('CREATE NODE TABLE `Feature`(`id` STRING PRIMARY KEY, `type` STRING, `types` STRING[], `name` STRING, ' +
       '`description` STRING, `status` STRING, `visibility` STRING, `owner` STRING, `aliases` STRING[], `source_layer` STRING, `home` STRING, ' +
-      '`provenance` STRING, `batch` STRING)');
+      '`provenance` STRING, `batch` STRING, `developer_help` STRING, `user_help` STRING)');
     // the component subtree: a number is a DOUBLE, a boolean a BOOLEAN, a list of strings a STRING[]
     expect(table('Component')).toContain('`loc` DOUBLE');
     expect(table('Component')).toContain('`exported` BOOLEAN');
@@ -39,7 +40,7 @@ describe('the index DDL (build-plan.md WO-7)', () => {
 
   it('gives every concrete edge type a rel table named by its graph label, over every admissible root pair', () => {
     expect(table('COVERS')).toBe('CREATE REL TABLE `COVERS`(FROM `Artifact` TO `Feature`, `derived_by` STRING, `confidence` DOUBLE, ' +
-      '`evidence` STRING[], `batch` STRING, `strength` STRING, `level` STRING)');
+      '`evidence` STRING[], `batch` STRING, `level` STRING)');
     const mentions = table('MENTIONS');
     expect(mentions.match(/FROM `\w+` TO `\w+`/g)!.length).toBe(16);
     expect(mentions).toContain('FROM `Artifact` TO `Feature`');
@@ -123,10 +124,10 @@ describe('the index itself (build-plan.md WO-7, WO-10)', () => {
 
   withKuzu('loads the fixture graph and round-trips a list and a text CSV cannot carry', async () => {
     const {kgDir, feature, result} = index;
-    expect(result.nodes.find((t) => t.table === 'Feature')!.rows).toBe(8);
-    expect(result.nodes.find((t) => t.table === 'Component')!.rows).toBe(16);
-    expect(result.rels.find((t) => t.table === 'PART_OF')!.rows).toBe(7);
-    expect(result.rels.find((t) => t.table === 'owner')!.rows).toBe(5);
+    expect(result.nodes.find((t) => t.table === 'Feature')!.rows).toBe(9);
+    expect(result.nodes.find((t) => t.table === 'Component')!.rows).toBe(26);
+    expect(result.rels.find((t) => t.table === 'PART_OF')!.rows).toBe(8);
+    expect(result.rels.find((t) => t.table === 'owner')!.rows).toBe(6);
     expect(result.parameterized).toBe(1);
     expect(fs.existsSync(path.join(kgDir, 'tmp'))).toBe(false);
 
@@ -136,10 +137,10 @@ describe('the index itself (build-plan.md WO-7, WO-10)', () => {
     expect(rows[0].description).toBe(feature.description);
     expect(rows[0].types).toEqual(['feature', 'node']);
     const count = await run(conn, 'MATCH (n:Feature) RETURN count(n) AS n');
-    expect(count.rows[0].n).toBe(8);
-    // the Dart batch reached the index, and an integral DOUBLE comes back as a number, not 214.0
-    const loc = await run(conn, 'MATCH (n:Component) WHERE n.`id` = $id RETURN n.`loc` AS loc', {id: 'file:core/server/datlas/lib/src/services/bio_service.dart'});
-    expect(loc.rows[0].loc).toBe(214);
+    expect(count.rows[0].n).toBe(9);
+    // the Dart pass reached the index, and an integral DOUBLE comes back as a number, not 4.0
+    const loc = await run(conn, 'MATCH (n:Component) WHERE n.`id` = $id RETURN n.`loc` AS loc', {id: 'file:core/client/d4/lib/src/legends/legend.dart'});
+    expect(loc.rows[0].loc).toBe(4);
   }, 60_000);
 
   withKuzu('closes every query result, and reads the type system with the database open', async () => {
@@ -151,7 +152,7 @@ describe('the index itself (build-plan.md WO-7, WO-10)', () => {
       execute: async (prepared, params) => keep(results, await conn.execute(prepared, params)) as KuzuQueryResult,
       close: () => conn.close(),
     };
-    expect((await run(watched, 'MATCH (n:Feature) RETURN count(n) AS n')).rows[0].n).toBe(8);
+    expect((await run(watched, 'MATCH (n:Feature) RETURN count(n) AS n')).rows[0].n).toBe(9);
     expect((await run(watched, 'MATCH (n:Feature) WHERE n.`id` = $id RETURN n.`id` AS id', {id: 'platform/caching'})).rows).toHaveLength(1);
     // a result left open when the database closes kills the process at exit (kuzu.ts): both of these are closed already
     expect(results).toHaveLength(2);
@@ -172,8 +173,11 @@ describe('the index itself (build-plan.md WO-7, WO-10)', () => {
       expect(caching).toMatchObject({id: 'platform/caching', root: 'Feature', type: 'feature'});
       const explained = await explain(conn, caching, LIMIT);
       expect(explained.sections[0].rows).toContainEqual({property: 'home', value: 'core/docs/CACHING.md'});
-      expect(explained.sections[1].rows).toContainEqual(expect.objectContaining({edge: 'owner', direction: 'out', count: 1, targets: 'P:jane'}));
-      expect(explained.sections[1].rows).toContainEqual(expect.objectContaining({edge: 'PART_OF', direction: 'out', targets: 'platform'}));
+      expect(explained.sections[1].rows).toContainEqual(expect.objectContaining({group: 'reference', edge: 'owner', direction: 'out', count: 1, targets: 'P:jane'}));
+      expect(explained.sections[1].rows).toContainEqual(expect.objectContaining({group: 'tree', edge: 'PART_OF', direction: 'out', targets: 'platform'}));
+      // the edges section is ordered by group, folder order first and the reference predicates last
+      const groups = explained.sections[1].rows.map((r) => String(r.group));
+      expect(groups).toEqual([...groups].sort((a, b) => GROUP_ORDER.indexOf(a) - GROUP_ORDER.indexOf(b)));
 
       const reached = await impact(conn, caching, LIMIT);
       expect(reached.sections[0].rows).toEqual([{feature: 'platform/caching', relation: 'self', name: 'Caching', status: 'active',
@@ -184,8 +188,8 @@ describe('the index itself (build-plan.md WO-7, WO-10)', () => {
       const tests = await testsFor(conn, bio, LIMIT);
       expect(tests.sections.find((s) => s.title === 'scenarios')!.rows).toMatchObject([{scenario: 'TS:viewers/scatter-plot/ui', feature: 'domains/bio', manual_only: true}]);
       expect(tests.sections.find((s) => s.title === 'tests')!.rows).toEqual([]);
-      expect(coverageNote({dart: 'stale'})).toBe('Dart coverage stale (the kg-dart batch is stale)');
-      expect(coverageNote(undefined)).toBe('Dart coverage unknown (no kg-dart batch)');
+      expect(coverageNote({dart: 'partial'})).toBe('Dart coverage partial (some markers did not resolve)');
+      expect(coverageNote(undefined)).toBe('Dart coverage unknown (the dart extractor did not run)');
       expect(coverageNote({dart: 'ok'})).toBeUndefined();
     }
   }, 60_000);
@@ -203,8 +207,22 @@ describe('the index itself (build-plan.md WO-7, WO-10)', () => {
       'docs partial: incomplete coverage of documentation pages, their headings and the mentions in them',
       'people partial: incomplete coverage of people, teams and customers',
     ]);
-    expect(sourceCaveats({dart: 'stale', homes: 'ok'})).toEqual(['Dart coverage stale (the kg-dart batch is stale)']);
+    expect(sourceCaveats({dart: 'partial', homes: 'ok'})).toEqual(['Dart coverage partial (some markers did not resolve)']);
   }, 60_000);
+
+  it('groups every edge label the way the real type files do: the index holds labels, not folders', () => {
+    const real = path.resolve(here, '..', '..', '..', '..', 'core', 'docs', 'knowledge-graph');
+    if (!fs.existsSync(path.join(real, 'schema.yaml'))) return;
+    const system = loadTypeSystem(real);
+    expect(system.errors).toEqual([]);
+    expect(GROUP_ORDER).toEqual([...system.edgeGroups, 'reference']);
+    for (const edge of system.edges.values()) {
+      if (edge.abstract) continue;
+      expect([edge.name, groupOf(graphLabel(edge.name))]).toEqual([edge.name, edge.group]);
+    }
+    expect(groupOf('owner')).toBe('reference');
+    expect(groupOf('user_help')).toBe('reference');
+  });
 
   withKuzu('says why a section came back empty instead of printing nothing', async () => {
     const {conn} = index.opened!;

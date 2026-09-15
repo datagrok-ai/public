@@ -19,6 +19,8 @@ const SCATTER = 'core/client/d4/lib/src/viewers/scatterplot/scatter.dart';
 const LEGEND = 'core/client/d4/lib/src/legends/legend.dart';
 const RENDERER = 'core/client/d4/lib/src/legends/legend_renderer.dart';
 const CACHE = 'core/client/d4/lib/src/viewers/legend_cache.dart';
+const HISTOGRAM = 'core/client/d4/lib/src/viewers/histogram/histogram.dart';
+const VIEWER = 'core/client/d4/lib/src/viewers/viewer.dart';
 const RUN = 'public/packages/Demo/scripts/run.js';
 const TESTS = 'public/packages/Tested/src/tests/demo-tests.ts';
 
@@ -56,7 +58,7 @@ const participants = (rows: any[], file: string) => rows.filter((e) => e.from ==
 function resolveClaims(claims: any[], file = SCATTER): Graph {
   const repo = copy();
   const emitter = new Emitter(system, 'b-test');
-  for (const id of ['visualize/viewers', 'visualize/viewers/scatter-plot', 'platform/caching'])
+  for (const id of ['visualize/viewers', 'visualize/viewers/scatter-plot', 'platform/caching', 'visualize/legends'])
     emitter.node({type: 'feature', id, name: id, provenance: 'annotation', source_layer: 'core'});
   emitter.node({type: 'source-file', id: `file:${file}`, name: path.posix.basename(file), path: file, loc: 3, language: 'dart', provenance: 'filesystem', source_layer: 'core'});
   for (const claim of claims) emitter.claim({file, source: 'marker', props: {}, ...claim});
@@ -100,13 +102,23 @@ describe('membership resolution: the rungs of conventions.md §8 (build-plan.md 
     expect(participants(rows('edges/participates-in'), 'public/packages/Demo/src/utils.ts')).toEqual(['domains/bio']);
   });
 
-  it('inherits the folder of the nearest home with no code: root of its own at rung 4, with filesystem provenance', async () => {
+  it('takes the folder of a home with no code: root of its own as a rung-2 root, the file it does not cite included', async () => {
     const {rows} = await graph;
     expect(owners(rows('edges/is-implemented-in'), RENDERER)).toEqual([expect.objectContaining({
-      from: 'visualize/legends', to: `file:${RENDERER}`, derived_by: 'filesystem', confidence: 0.9,
+      from: 'visualize/legends', to: `file:${RENDERER}`, derived_by: 'annotation', confidence: 1,
       evidence: ['core/client/d4/lib/src/legends/README.md'],
     })]);
     expect(participants(rows('edges/participates-in'), RENDERER)).toEqual(['visualize/viewers']);
+  });
+
+  it('lets a folder home inside the glob of an ancestor own its own folder, the ancestor keeping the rest', async () => {
+    const {rows, ownership} = await graph;
+    expect(owners(rows('edges/is-implemented-in'), HISTOGRAM)).toEqual([expect.objectContaining({
+      from: 'visualize/viewers/histogram', to: `file:${HISTOGRAM}`, derived_by: 'annotation', confidence: 1,
+      evidence: ['core/client/d4/lib/src/viewers/histogram/CLAUDE.md'],
+    })]);
+    expect(owners(rows('edges/is-implemented-in'), VIEWER).map((e: any) => e.from)).toEqual(['visualize/viewers']);
+    expect(ownership.resolved_by_chain).toContainEqual({file: HISTOGRAM, owner: 'visualize/viewers/histogram', over: ['visualize/viewers']});
   });
 
   it('follows every test of an owned file to its owner', async () => {
@@ -135,6 +147,13 @@ describe('membership resolution: claims that no extractor makes yet (build-plan.
     ]);
     expect(graph.edges.filter((e) => e.type === 'is-implemented-in')).toEqual([expect.objectContaining({from: 'visualize/viewers', to: `file:${SCATTER}`})]);
     expect(graph.edges.filter((e) => e.type === 'participates-in').map((e) => e.to)).toEqual(['platform/caching']);
+  });
+
+  it('inherits the folder of the nearest home at rung 4 when no root claimed the file, with filesystem provenance', () => {
+    const graph = resolveClaims([], RENDERER);
+    expect(graph.edges.filter((e) => e.type === 'is-implemented-in')).toEqual([expect.objectContaining({
+      from: 'visualize/legends', to: `file:${RENDERER}`, derived_by: 'filesystem', confidence: 0.9,
+    })]);
   });
 
   it('refuses to pick between two markers on one file, reporting the ambiguity at rung 1', () => {

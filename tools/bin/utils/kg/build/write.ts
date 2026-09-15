@@ -18,7 +18,9 @@ export interface Manifest {
   sources: Record<string, string>;
   counts: {nodes: Record<string, number>, edges: Record<string, number>};
   problems: Record<string, number>;
-  dart_packages?: Record<string, number | string>;
+  dart_packages?: Record<string, number>;
+  /** How deep the Dart pass reads: `lexical` while it is a regex pass over the sources. */
+  dart_depth?: string;
   inventory?: Record<string, number>;
   /** The generation the index in this directory was loaded from; absent when it has none (`--no-db`). */
   indexed_batch?: string;
@@ -45,8 +47,6 @@ export const GENERATIONS = 'gen';
 export const CURRENT = 'current';
 /** How long a directory under `gen/` without a manifest may be an interrupted build before `gc` removes it. */
 const INTERRUPTED_MS = 3600_000;
-/** `extract/dart.ts` reads this batch; hashing it here keeps the builder out of the extractors' import graph. */
-const DART_BATCH = '.kg/batches/kg-dart.jsonl';
 /** The backlog snapshot `extract/process.ts` falls back to. */
 const BACKLOG_FALLBACK = 'C:/dg/backlog';
 
@@ -78,7 +78,7 @@ export interface BuildInputs {
 }
 
 /** Content-addressed: the revisions, the dirty tree of both repositories, the schema and builder versions, the
- * mode, the extractor selection, the backlog snapshot and the Dart batch. */
+ * mode, the extractor selection and the backlog snapshot. */
 export function buildInputs(inputs: BuildInputs): Record<string, string> {
   return {
     reddata: inputs.revisions.reddata,
@@ -89,7 +89,6 @@ export function buildInputs(inputs: BuildInputs): Record<string, string> {
     mode: inputs.mode,
     extractors: [...inputs.extractors].sort(compare).join(','),
     backlog: backlogInput(inputs.repoRoot, inputs.backlogDir),
-    dart: digestOf(path.join(inputs.repoRoot, ...DART_BATCH.split('/'))),
   };
 }
 

@@ -2,6 +2,8 @@
 
 ## v.next
 
+* grok kg: Added serve, the graph browser over the current generation (type-tree filters, cosmos.gl rendering of every node, a node/edge pane with Explain / Impact / Tests-for, a Cypher drawer, explore and isolate modes with a view stack); the render tier is exported once into <gen>/vis/
+* grok kg: Added ask, the question set under core/docs/knowledge-graph/questions/ (YAML with Cypher, typed params and relative dates) run from the CLI, the browser and the benchmarks
 * grok kg: Added check and gen for the knowledge graph type files and home documents
 * grok kg: Added build (pipeline core and home-document layer) writing JSONL and a manifest under .kg/
 * grok kg: build extracts packages, libraries, registered functions, scripts, queries, connections and semantic types from public/
@@ -9,12 +11,15 @@
 * grok kg: build extracts source files, declarations, extends/implements, resolved imports and JS API usage from the TypeScript under public/
 * grok kg: build extracts the process layer - backlog tickets with their fix versions, customers and people, release records with the commits they picked
 * grok kg: build resolves file membership (conventions.md §8): one owning feature per file, participants, tests that follow an owned file, and reports/ownership.json
-* grok kg: build consumes the Dart batch .kg/batches/kg-dart.jsonl written by prop_gen - its nodes, edges and ownership claims - and reports it as ok, stale, partial or missing
+* grok kg: build reads the Dart sources of core/ lexically - source files, top-level declarations, tests with their suites and the ~id markers of conventions.md §6 - and records manifest.dart_depth: lexical
+* grok kg: Help pages reach the features they document - a feature home in a code folder owns that folder at rung 2, a help page cited in a home body documents the feature, the Dart pass follows HelpUrl constants, /help/ literals and doc-comment paths to the owner of the file, features and concepts take user_help: and developer_help:, and report coverage shows both columns
 * grok kg: build loads the JSONL into a Kuzu index at .kg/kg.kuzu, one node table per root and one rel table per edge type and reference property; the binding is optional and the build succeeds without it
 * grok kg: Added query (Cypher) and the bounded operations impact, tests-for, explain and find, each with --output table|json|csv and the Dart-coverage clause
-* grok kg: Simplified after the fourth review - readers open the index at the default pool, every list that is not ordered is written sorted, check issues reach report stale structured, in-suite/ticketed-as/built-from became the suite/ticket/base references, the duplicate container/declared_in/semtype/target_semtype references are gone, one home index and one heading iterator, the Dart batch header needs schema_version, and every build writes a fresh .kg/gen/<batch>-<suffix> generation
+* grok kg: Simplified after the fourth review - readers open the index at the default pool, every list that is not ordered is written sorted, check issues reach report stale structured, in-suite/ticketed-as/built-from became the suite/ticket/base references, the duplicate container/declared_in/semtype/target_semtype references are gone, one home index and one heading iterator, and every build writes a fresh .kg/gen/<batch>-<suffix> generation
+* grok kg: Edge types are grouped by folder - edges/<group>/<type>.yaml, the folder deriving the group the way a feature id derives part-of, the name still the unique id; the three abstract bases touches/evidences/involves are gone, the glossary lists one table per group and explain groups its edges the same way
+* grok kg: A declaration is a node only when it names a type (class, interface, enum, type alias, mixin) or belongs to the JS API surface - a package's or library's own members, consts and helper functions are represented by their file and their type, and a uses of one lands on its containing type
 * grok kg: Added report — orphans, stale, coverage, proposed and diff over the JSONL a build wrote, with --output table|json|md; build writes the first four to .kg/reports/ as .json and .md
-* grok kg: Added the end-to-end build test over the fixture monorepo — every extractor's row counts, byte-identical repeats, the three Dart-batch states, the public projection, the five reports and, where kuzu is installed, the index with its operations
+* grok kg: Added the end-to-end build test over the fixture monorepo — every extractor's row counts, byte-identical repeats, the Dart pass, the public projection, the five reports and, where kuzu is installed, the index with its operations
 
 ## 6.5.10 (2026-09-11)
 

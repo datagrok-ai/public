@@ -456,7 +456,7 @@ Verbs:
                 Lines are deterministic: two builds of the same inputs are byte-identical
                 and share a content-addressed batch id over both revisions, the dirty tree
                 of both repositories, the schema and builder versions, the mode, the
-                extractor selection, the backlog snapshot and the Dart batch; only the
+                extractor selection and the backlog snapshot; only the
                 manifest carries the time.
                 Problems are counted in the manifest, never thrown. Extractors today:
                 homes (the home-document layer), ts-packages (packages, libraries,
@@ -467,7 +467,9 @@ Verbs:
                 resolved imports and JS API usage over js-api, packages and libraries),
                 ts-tests (DG and Playwright tests in their suites), ts-samples (ApiSamples),
                 ts-changelog (CHANGELOG.md bullets), docs (markdown pages, headings,
-                mentions, legacy Test Track scenarios, tutorials), process (backlog
+                mentions, legacy Test Track scenarios, tutorials), dart (a lexical pass
+                over core/**/*.dart: files, top-level declarations, tests and ~id
+                markers), process (backlog
                 tickets, release records with their picked commits, and people) and
                 membership (which feature owns each file, conventions.md §8; reports
                 ownership.json).
@@ -522,13 +524,22 @@ Verbs:
                 the --keep newest (default 2), and every interrupted build older than an
                 hour. A generation whose index a reader holds open is reported and left
                 alone.
+    serve       The graph browser: a loopback page over the current generation with the
+                type trees as filters on the left, the graph in the middle (every node of
+                the generation renders) and the clicked node or edge on the right, with
+                Cypher and the four operations. The render tier (<gen>/vis/) is exported on
+                first start. --port (default 7475), --open to launch the browser; Ctrl-C stops.
+    ask         One of the questions under core/docs/knowledge-graph/questions/ against the
+                index: grok kg ask tests-for-feature --set feature=visualize/viewers, or
+                grok kg ask alone to list them with their parameters and status. A blocked
+                question runs and says what blocks a real answer.
     help        Show this help
 
 The four operations and query read the generation .kg/current names, next to the type
 files, and refuse an index that was loaded from another batch; each of them leads with
-one line per source the manifest does not report as \`ok\` — \`Dart coverage unknown (no
-kg-dart batch)\` while no prop_gen batch has been built, and the same for a missing
-backlog or a partial docs, people or samples pass. Ids may be written with or without
+one line per source the manifest does not report as \`ok\` — \`Dart coverage partial
+(some markers did not resolve)\` when a Dart marker names no home, and the same for a
+missing backlog or a partial docs, people or samples pass. Ids may be written with or without
 the \`~\` sigil.
 
 \`check\` gates the sources; \`gen --check\` gates the generated files, failing when
@@ -554,6 +565,9 @@ Options:
     --memory <mb>       Kuzu buffer pool in MB: the load takes 2048, a reader 512 or what
                         the manifest says the load needed. KG_KUZU_MEMORY does the same.
     --diff <ref>        With report diff: the revision HEAD is compared against
+    --port <n>          With serve: the port to listen on (default 7475; 0 picks a free one)
+    --open              With serve: open the page in the default browser
+    --set <name=value>  With ask: a parameter (repeatable); relative dates like -7d are accepted
 
 Examples:
   grok kg check

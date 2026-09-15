@@ -1,4 +1,5 @@
 ---
+documents: [visualize/viewers/pc-plot]
 title: "Parallel coordinates plot"
 description: Visualize high-dimensional and multivariate data as polylines across parallel axes, one per column.
 keywords:

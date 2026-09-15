@@ -262,9 +262,11 @@ describe('docs extractor (build-plan.md WO-3c)', () => {
   it('emits a doc-page per markdown file with kind by folder, title, keywords, mdx and unlisted', async () => {
     const {rows} = await graph;
     expect(rows('nodes/doc-page').map((d) => [d.id, d.kind, d.provenance])).toEqual([
-      ['doc:core/client/d4/lib/src/legends/README.md', 'readme', 'annotation'], ['doc:core/client/d4/lib/src/viewers/scatterplot/CLAUDE.md', 'agent', 'annotation'],
+      ['doc:core/client/d4/lib/src/legends/README.md', 'readme', 'annotation'], ['doc:core/client/d4/lib/src/viewers/histogram/CLAUDE.md', 'agent', 'annotation'],
+      ['doc:core/client/d4/lib/src/viewers/scatterplot/CLAUDE.md', 'agent', 'annotation'],
       ['doc:core/docs/CACHING.md', 'core-doc', 'annotation'], ['doc:core/docs/NOTES.md', 'core-doc', 'filesystem'], ['doc:core/docs/VIEWERS.md', 'core-doc', 'annotation'],
       [`doc:${PROJECT}`, 'help', 'annotation'], [`doc:${BIO}`, 'help', 'annotation'], [`doc:${SEQUENCES}`, 'help', 'annotation'],
+      ['doc:public/help/visualize/viewers/histogram.md', 'help', 'annotation'],
       ['doc:public/packages/Tested/README.md', 'readme', 'filesystem'],
       ['doc:public/packages/UsageAnalysis/files/TestTrack/Connections/initial runs/basic.md', 'other', 'annotation'],
       ['doc:public/packages/UsageAnalysis/files/TestTrack/Viewers/ScatterPlot/scatter-plot-ui.md', 'other', 'annotation'], [`doc:${LEGACY}`, 'other', 'annotation'],
@@ -281,7 +283,8 @@ describe('docs extractor (build-plan.md WO-3c)', () => {
     const feature = byId(rows('nodes/feature'), 'domains/bio');
     expect(feature).toMatchObject({home: BIO, description: 'Sequence analysis for biologics: notation conversion, MSA and activity cliffs on macromolecules.', status: 'active'});
     expect(pages[0]).toMatchObject({name: 'Bioinformatics', kind: 'help', description: feature.description, keywords: ['macromolecules', 'sequences'], status: 'active', provenance: 'annotation'});
-    expect(edges(rows('edges/mentions'), `doc:${BIO}`).map((e) => e.to)).toEqual([`doc:${PROJECT}`]);
+    // the help page the home's body cites documents the feature instead of being mentioned by it
+    expect(edges(rows('edges/mentions'), `doc:${BIO}`).map((e) => e.to)).toEqual([]);
   });
 
   it('emits a doc-anchor per #..#### heading with GitHub slugs, -1 for a duplicate and the explicit {#id}; deeper, fenced and unsluggable lines are not anchors', async () => {
@@ -304,7 +307,11 @@ describe('docs extractor (build-plan.md WO-3c)', () => {
     expect(edges(rows('edges/mentions'), 'doc:core/docs/NOTES.md').map((e) => [e.to, e.count])).toEqual([['GROK-42', 1], ['domains/bio', 1]]);
     expect(edges(rows('edges/mentions'), 'doc:public/packages/Tested/README.md').map((e) => e.to)).toEqual(['GROK-42', 'GROK-43']);
     expect(problems.unresolved_ids).toContain(`${SEQUENCES}: ~C:nothing resolves to no home document`);
-    expect(rows('edges/documents')).toEqual([expect.objectContaining({from: `doc:${SEQUENCES}`, to: 'domains/bio', audience: 'user', derived_by: 'annotation'})]);
+    expect(rows('edges/documents')).toEqual([
+      expect.objectContaining({from: `doc:${PROJECT}`, to: 'domains/bio', derived_by: 'annotation', evidence: [BIO]}),
+      expect.objectContaining({from: `doc:${SEQUENCES}`, to: 'domains/bio', audience: 'user', derived_by: 'annotation'}),
+      expect.objectContaining({from: 'doc:public/help/visualize/viewers/histogram.md', to: 'visualize/viewers/histogram', derived_by: 'annotation'}),
+    ]);
     expect(manifest.sources).toEqual({docs: 'partial', homes: 'ok', 'ts-changelog': 'partial', 'ts-declarations': 'ok', 'ts-packages': 'ok', 'ts-samples': 'partial', 'ts-tests': 'ok'});
   });
 

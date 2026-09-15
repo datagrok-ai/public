@@ -14,11 +14,16 @@ import {loadKuzu, load as loadIndex, open, run, memoryMb, MISSING_KUZU, BUILD_ME
 import {impact, testsFor, explain, find, printOps, resolveTarget, sourceCaveats, OpsResult, DEFAULT_LIMIT} from '../utils/kg/ops';
 import {readGraph, fromGraph, makeReport as buildReport, printReport, writeReports, REPORT_NAMES, ReportName, ReportFormat} from '../utils/kg/report';
 import {OutputFormat, printOutput} from '../utils/server-output';
+import {exportVis, hasVis} from '../utils/kg/vis';
+import {serve as listen} from '../utils/kg/serve';
+import {loadQuestions, ask, Question} from '../utils/kg/questions';
+import {openBrowser} from '../utils/utils';
 import {HELP_KG} from './help';
 
 const KG_DIR = path.join('core', 'docs', 'knowledge-graph');
 const OPS = ['impact', 'tests-for', 'explain', 'find'];
-const VERBS = ['check', 'gen', 'build', 'report', 'gc'];
+const VERBS = ['check', 'gen', 'build', 'report', 'gc', 'serve', 'ask'];
+const SERVE_PORT = 7475;
 /** How many generations `grok kg gc` keeps beside the current one. */
 const KEEP_GENERATIONS = 2;
 
@@ -38,9 +43,9 @@ export async function kg(argv: any): Promise<boolean> {
     console.error(`unknown verb '${verb}'`);
     return false;
   }
-  const takes = verb === 'report' ? 2 : 1;
-  if (args.length > takes) return fail(`unexpected argument '${args[takes]}': grok kg ${verb} takes ${verb === 'report' ? 'one report name and ' : ''}options only`);
-  const formats = verb === 'report' ? ['table', 'json', 'md'] : ['table', 'json'];
+  const takes = verb === 'report' || verb === 'ask' ? 2 : 1;
+  if (args.length > takes) return fail(`unexpected argument '${args[takes]}': grok kg ${verb} takes ${takes === 2 ? `one ${verb === 'report' ? 'report' : 'question'} name and ` : ''}options only`);
+  const formats = verb === 'report' ? ['table', 'json', 'md'] : verb === 'ask' ? ['table', 'json', 'csv'] : ['table', 'json'];
   if (!formats.includes(output)) return fail(`--output must be ${formats.slice(0, -1).join(', ')} or ${formats[formats.length - 1]}, got '${output}'`);
   if (verb === 'gc') return collect(argv, output);
   const quiet = argv.quiet === true;
@@ -53,6 +58,8 @@ export async function kg(argv: any): Promise<boolean> {
   const repoRoot = path.resolve(kgRoot, '..', '..', '..');
   if (verb === 'build') return build(argv, kgRoot, repoRoot, output);
   if (verb === 'report') return reportVerb(argv, kgRoot, repoRoot, args[1], output as ReportFormat);
+  if (verb === 'serve') return serve(argv, kgRoot, repoRoot);
+  if (verb === 'ask') return askVerb(argv, kgRoot, repoRoot, args[1], output as OutputFormat);
 
   const system = loadTypeSystem(kgRoot);
   const homes = typesOnly ? null : loadHomes(system, repoRoot);
@@ -215,6 +222,95 @@ async function graph(verb: string, args: string[], argv: any, output: OutputForm
     }
     result.notes = sourceCaveats(sources);
     printOps(result, output);
+    return true;
+  }
+  catch (e: any) {
+    return fail(e.message ?? String(e));
+  }
+  finally {
+    await opened.conn.close();
+    await opened.db.close();
+  }
+}
+
+/** `grok kg serve`: the browser over the current generation; the render tier is exported into `<gen>/vis/` on
+ * first start and kept there (a derived cache, never part of the batch). Runs until Ctrl-C. */
+async function serve(argv: any, kgRoot: string, repoRoot: string): Promise<boolean> {
+  const root = argv.out === undefined ? path.join(repoRoot, '.kg') : path.resolve(String(argv.out));
+  const dir = currentDir(root);
+  if (!dir) return fail(`${slashes(root)}: nothing built yet; run grok kg build`);
+  if (!fs.existsSync(path.join(dir, 'kg.kuzu'))) return fail(`${slashes(path.join(dir, 'kg.kuzu'))}: no index yet; run grok kg build`);
+  const mismatch = indexMismatch(dir);
+  if (mismatch) return fail(mismatch);
+  const manifest = readManifest(dir)!;
+  const system = loadTypeSystem(kgRoot);
+  if (system.errors.length) return fail(`${system.errors.length} type-system error${system.errors.length === 1 ? '' : 's'}; run grok kg check`);
+  const loaded = loadQuestions(kgRoot);
+  for (const e of loaded.errors) console.error(`questions: ${e}`);
+  if (!hasVis(dir)) {
+    const started = Date.now();
+    const summary = exportVis(dir, system, manifest.batch);
+    console.log(`exported ${rel(summary.dir, repoRoot)}: ${summary.nodes} nodes, ${summary.edges} edges` +
+      `${summary.dropped ? `, ${summary.dropped} dangling dropped` : ''}, ${(summary.bytes / 1048576).toFixed(1)} MB in ${((Date.now() - started) / 1000).toFixed(1)}s`);
+  }
+  const opened = await open(dir, true, argv.memory);
+  if (!opened) {
+    console.error(MISSING_KUZU);
+    process.exitCode = 2;
+    return true;
+  }
+  const port = argv.port === undefined ? SERVE_PORT : Number(argv.port);
+  if (!Number.isInteger(port) || port < 0 || port > 65535) return fail(`--port must be a port number, got '${argv.port}'`);
+  const served = await listen({genDir: dir, repoRoot, manifest, system, questions: loaded.questions, db: opened.db, conn: opened.conn, port});
+  console.log(`grok kg serve: ${served.url} over ${rel(dir, repoRoot)} (batch ${manifest.batch}); Ctrl-C stops it`);
+  if (argv.open === true) openBrowser(served.url);
+  await new Promise<void>((resolve) => {
+    for (const signal of ['SIGINT', 'SIGTERM'] as const) process.once(signal, () => resolve());
+  });
+  await served.close();
+  await opened.conn.close();
+  await opened.db.close();
+  return true;
+}
+
+/** `grok kg ask [<question>] [--set k=v]`: one of the questions under core/docs/knowledge-graph/questions/ against the
+ * current generation, or the list of them. */
+async function askVerb(argv: any, kgRoot: string, repoRoot: string, id: string | undefined, output: OutputFormat): Promise<boolean> {
+  const loaded = loadQuestions(kgRoot);
+  for (const e of loaded.errors) console.error(`questions: ${e}`);
+  if (!id) {
+    const rows = loaded.questions.map((q) => ({id: q.id, question: q.question, params: Object.keys(q.params).join(', '), status: q.status}));
+    printOutput(rows, output);
+    return true;
+  }
+  const question = loaded.questions.find((q) => q.id === id);
+  if (!question) return fail(`no question '${id}'; grok kg ask lists them`);
+  const given: Record<string, string> = {};
+  for (const pair of [].concat(argv.set ?? []).map(String)) {
+    const at = pair.indexOf('=');
+    if (at < 1) return fail(`--set takes name=value, got '${pair}'`);
+    given[pair.slice(0, at)] = pair.slice(at + 1);
+  }
+  const root = argv.out === undefined ? path.join(repoRoot, '.kg') : path.resolve(String(argv.out));
+  const dir = currentDir(root);
+  if (!dir || !fs.existsSync(path.join(dir, 'kg.kuzu'))) return fail('no index yet; run grok kg build');
+  const mismatch = indexMismatch(dir);
+  if (mismatch) return fail(mismatch);
+  const opened = await open(dir, true, argv.memory);
+  if (!opened) {
+    console.error(MISSING_KUZU);
+    process.exitCode = 2;
+    return true;
+  }
+  try {
+    const answer = await ask(opened.conn, question, given, readManifest(dir)?.sources);
+    if (output === 'json') console.log(JSON.stringify({id: question.id, question: question.question, params: answer.params, notes: answer.notes, columns: answer.columns, rows: answer.rows, ms: answer.ms}, null, 2));
+    else {
+      for (const note of answer.notes) console.log(`note: ${note}`);
+      printOutput(answer.rows, output);
+      if (output === 'table') console.log(`${answer.rows.length} row${answer.rows.length === 1 ? '' : 's'} in ${answer.ms} ms` +
+        `${Object.keys(answer.params).length ? ` (${Object.entries(answer.params).map(([k, v]) => `${k}=${v}`).join(', ')})` : ''}`);
+    }
     return true;
   }
   catch (e: any) {

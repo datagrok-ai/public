@@ -1,5 +1,6 @@
 ---
-feature: pivottable
+id: TS:viewers/pivot-table/ui
+covers: [visualize/viewers/pivot-table]
 target_layer: manual-only
 coverage_type: smoke
 ---

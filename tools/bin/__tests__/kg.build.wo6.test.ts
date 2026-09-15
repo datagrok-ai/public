@@ -1,55 +1,47 @@
-/// The Dart batch consumer (build-plan.md WO-6): the node, edge and claim lines of
-/// `.kg/batches/kg-dart.jsonl` and the four states the manifest reports for them.
+/// The lexical Dart extractor (build-plan.md WO-6): the source files, top-level declarations, tests and
+/// `~id` markers a regex pass over `core/**/*.dart` finds, and what the markers make of the ownership
+/// the other rungs would have given those files.
 import {describe, it, expect, vi} from 'vitest';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import {fileURLToPath} from 'url';
-import {spawnSync} from 'child_process';
 import {currentDir} from '../utils/kg/build/write';
 import {kg} from '../commands/kg';
 
 const fixture = path.join(path.dirname(fileURLToPath(import.meta.url)), 'fixtures', 'kg', 'build');
 const KG_DIR = path.join('core', 'docs', 'knowledge-graph');
-const BATCH = path.join('.kg', 'batches', 'kg-dart.jsonl');
-const NOW = new Date().toISOString();
+const D4 = 'core/client/d4/lib/src';
+const LEGEND = `${D4}/legends/legend.dart`;
+const RENDERER = `${D4}/legends/legend_renderer.dart`;
+const VIEWER = `${D4}/viewers/viewer.dart`;
+const GENERATED = `${D4}/viewers/viewer.g.dart`;
+const TEST_FILE = `${D4}/legends/test/legend_test.dart`;
+const HISTOGRAM = `${D4}/viewers/histogram/histogram.dart`;
+const HELP_TABLE = 'core/shared/grok_shared/lib/src/help_url.dart';
 
-/** The fixture as a git repository, so the batch revision can match HEAD or not. */
-function makeRepo(): string {
+interface Built {
+  manifest: any;
+  rows: (file: string) => any[];
+}
+
+function copy(prepare?: (repo: string) => void): string {
   const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'grok-kg-dart-'));
   fs.cpSync(fixture, repo, {recursive: true});
-  spawnSync('git', ['init', '-q'], {cwd: repo});
-  spawnSync('git', ['-c', 'user.email=kg@test', '-c', 'user.name=kg', 'commit', '--allow-empty', '-q', '-m', 'fixture'], {cwd: repo});
+  prepare?.(repo);
   return repo;
 }
 
-function head(repo: string): string {
-  return spawnSync('git', ['rev-parse', '--verify', 'HEAD'], {cwd: repo, encoding: 'utf8'}).stdout.trim();
-}
-
-/** Rewrites the batch envelope, dropping [without] from it; `null` deletes the file. */
-function batch(repo: string, envelope: Record<string, unknown> | null, extra: string[] = [], without: string[] = []): void {
-  const file = path.join(repo, BATCH);
-  if (!envelope) {
-    fs.rmSync(file);
-    return;
-  }
-  const lines = fs.readFileSync(file, 'utf8').split('\n').filter(Boolean);
-  const head = {...JSON.parse(lines[0]), ...envelope};
-  for (const key of without) delete head[key];
-  lines[0] = JSON.stringify(head);
-  fs.writeFileSync(file, [...lines, ...extra].join('\n') + '\n');
-}
-
-async function build(repo: string): Promise<{manifest: any, rows: (file: string) => any[]}> {
+async function build(repo: string, only = 'homes,dart,membership'): Promise<Built> {
   const log = vi.spyOn(console, 'log').mockImplementation(() => {});
   const error = vi.spyOn(console, 'error').mockImplementation(() => {});
   const before = process.exitCode;
   try {
-    await kg({_: ['kg', 'build'], kg: path.join(repo, KG_DIR), only: 'dart', db: false, output: 'json'});
+    await kg({_: ['kg', 'build'], kg: path.join(repo, KG_DIR), only, db: false, output: 'json'});
     expect(error.mock.calls).toEqual([]);
+    const out = currentDir(path.join(repo, '.kg'))!;
     const rows = (file: string) => {
-      const p = path.join(currentDir(path.join(repo, '.kg'))!, file.startsWith('reports/') ? file : `data/${file}.jsonl`);
+      const p = path.join(out, file.startsWith('reports/') ? file : `data/${file}.jsonl`);
       return fs.existsSync(p) ? fs.readFileSync(p, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l)) : [];
     };
     return {manifest: JSON.parse(String(log.mock.calls[0][0])), rows};
@@ -61,88 +53,87 @@ async function build(repo: string): Promise<{manifest: any, rows: (file: string)
   }
 }
 
-describe('the Dart batch (build-plan.md WO-6)', () => {
-  it('loads nodes, edges and claims from a batch of the current revision', async () => {
-    const repo = makeRepo();
-    batch(repo, {built_at: NOW, revision: head(repo)}, [
-      '{"record":"node","type":"test","id":"test:flutter:core/x_test.dart#a/b","name":"b","path":"core/x_test.dart",' +
-        '"framework":"flutter","level":"unit","provenance":"ast","source_layer":"core"}',
-    ]);
-    const {manifest, rows} = await build(repo);
+const graph = build(copy());
+
+describe('the lexical Dart pass (build-plan.md WO-6)', () => {
+  it('emits one source file per Dart file, generated ones marked, and counts them per package', async () => {
+    const {manifest, rows} = await graph;
     expect(manifest.sources.dart).toBe('ok');
-    // framework is an open vocabulary: a producer may name a framework the schema never listed
-    expect(rows('nodes/test')).toMatchObject([{id: 'test:flutter:core/x_test.dart#a/b', framework: 'flutter', level: 'unit'}]);
-    expect(manifest.problems.invalid_rows).toBe(0);
-    expect(rows('nodes/source-file')).toMatchObject([{
-      id: 'file:core/server/datlas/lib/src/services/bio_service.dart', type: 'source-file', name: 'bio_service.dart',
-      language: 'dart', loc: 214, provenance: 'ast', source_layer: 'core', batch: 'dart:deadbeef',
-    }]);
-    expect(rows('nodes/declaration').map((r) => r.id)).toEqual([
-      'decl:core/server/datlas/lib/src/routers/bio.dart#BioRouter',
-      'decl:core/server/datlas/lib/src/services/bio_service.dart#BioService',
-      'decl:core/server/datlas/lib/src/services/bio_service.dart#BioService.getSequence',
-    ]);
-    expect(rows('nodes/endpoint')).toMatchObject([{id: 'ep:GET /bio/sequences/{id}', method: 'GET', route: '/bio/sequences/{id}', path_params: ['id']}]);
-    expect(rows('nodes/db-table')).toMatchObject([{id: 'table:public.sequences', schema: 'public'}]);
-    expect(rows('edges/declares')).toHaveLength(2);
-    // a reference property of a batch node becomes its own edge, like any other
-    expect(rows('edges/router')).toMatchObject([{type: 'ref', name: 'router', from: 'ep:GET /bio/sequences/{id}', to: 'decl:core/server/datlas/lib/src/routers/bio.dart#BioRouter'}]);
-    expect(rows('reports/claims.jsonl')).toMatchObject([
-      {file: 'core/server/datlas/lib/src/routers/bio.dart', feature: 'domains/bio', rung: 1, source: 'marker', mode: 'participates', line: 9},
-      {file: 'core/server/datlas/lib/src/services/bio_service.dart', feature: 'domains/bio', rung: 1, source: 'marker', props: {role: 'definition'}, line: 1},
-    ]);
-  });
-
-  it('reports a batch from another revision or older than a week as stale, and still loads it', async () => {
-    const other = makeRepo();
-    batch(other, {built_at: NOW, revision: 'deadbeefdeadbeefdeadbeefdeadbeefdeadbeef'});
-    const stale = await build(other);
-    expect(stale.manifest.sources.dart).toBe('stale');
-    expect(stale.rows('nodes/source-file')).toHaveLength(1);
-
-    const old = makeRepo();
-    batch(old, {built_at: '2026-01-02T03:04:05Z', revision: head(old)});
-    const aged = await build(old);
-    expect(aged.manifest.sources.dart).toBe('stale');
-    expect(aged.rows('nodes/endpoint')).toHaveLength(1);
+    expect(manifest.dart_depth).toBe('lexical');
+    const files = rows('nodes/source-file').filter((f) => f.language === 'dart');
+    expect(files.map((f) => f.path).sort()).toEqual([LEGEND, TEST_FILE, RENDERER, `${D4}/viewers/legend_cache.dart`,
+      `${D4}/viewers/scatterplot/scatter.dart`, VIEWER, GENERATED, HISTOGRAM, HELP_TABLE].sort());
+    expect(files.find((f) => f.path === GENERATED)).toMatchObject({generated: true, provenance: 'filesystem', source_layer: 'core'});
+    expect(files.filter((f) => f.generated).map((f) => f.path)).toEqual([GENERATED]);
+    expect(manifest.dart_packages).toEqual({d4: 8, grok_shared: 1});
   }, 60_000);
 
-  it('refuses a batch whose schema_version is not the schema\'s, and one without it', async () => {
-    const wrong = makeRepo();
-    batch(wrong, {built_at: NOW, revision: head(wrong), schema_version: 2});
-    const other = await build(wrong);
-    expect(other.manifest.sources.dart).toBe('incompatible');
-    expect(other.manifest.problems.invalid_rows).toBe(1);
-    expect(other.rows('nodes/source-file')).toEqual([]);
-
-    const repo = makeRepo();
-    batch(repo, {built_at: NOW, revision: head(repo)}, [], ['schema_version']);
-    const none = await build(repo);
-    expect(none.manifest.sources.dart).toBe('incompatible');
-    expect(none.manifest.problems.invalid_rows).toBe(1);
-    expect(none.rows('nodes/source-file')).toEqual([]);
+  it('takes the top-level types of a file, with the doc comment and the annotation above them', async () => {
+    const {rows} = await graph;
+    const decls = rows('nodes/declaration').filter((d) => d.language === 'dart');
+    expect(decls.map((d) => d.id).sort()).toEqual([
+      `decl:${LEGEND}#Legend`, `decl:${RENDERER}#LegendRenderer`, `decl:${D4}/viewers/legend_cache.dart#LegendCache`,
+      `decl:${D4}/viewers/scatterplot/scatter.dart#ScatterPlot`, `decl:${VIEWER}#Viewer`, `decl:${GENERATED}#ViewerProps`,
+      `decl:${HISTOGRAM}#Histogram`, `decl:${HELP_TABLE}#HelpUrl`,
+    ].sort());
+    expect(decls.find((d) => d.id === `decl:${LEGEND}#Legend`)).toMatchObject({name: 'Legend', kind: 'class', exported: true,
+      documented: true, deprecated: true, line: 3, path: LEGEND, provenance: 'ast', source_layer: 'core'});
+    expect(decls.find((d) => d.id === `decl:${GENERATED}#ViewerProps`)).toMatchObject({generated: true, documented: false});
+    expect(rows('edges/declares')).toContainEqual(expect.objectContaining({from: `file:${LEGEND}`, to: `decl:${LEGEND}#Legend`, derived_by: 'ast'}));
   }, 60_000);
 
-  it('reports an absent batch as missing, without a problem', async () => {
-    const repo = makeRepo();
-    batch(repo, null);
-    const {manifest, rows} = await build(repo);
-    expect(manifest.sources.dart).toBe('missing');
-    expect(manifest.problems.invalid_rows).toBe(0);
-    expect(rows('nodes/source-file')).toEqual([]);
-  });
-
-  it('reports unreadable lines as partial and keeps the rest', async () => {
-    const repo = makeRepo();
-    batch(repo, {built_at: NOW, revision: head(repo)}, [
-      '{"record":"node","type":',
-      '{"record":"verse","type":"source-file","id":"file:core/x.dart"}',
-      '{"record":"claim","feature":"domains/bio"}',
+  it('takes the tests of a test file under the groups enclosing them, in one suite', async () => {
+    const {rows} = await graph;
+    expect(rows('nodes/test').filter((t) => t.framework === 'dart')).toMatchObject([
+      {id: `test:dart:${TEST_FILE}#a legend measures its labels once`, level: 'unit', suite: `suite:dart:${TEST_FILE}`},
+      {id: `test:dart:${TEST_FILE}#placement/a legend takes the slot it is given`, level: 'unit', category: 'placement', suite: `suite:dart:${TEST_FILE}`},
     ]);
-    const {manifest, rows} = await build(repo);
+    expect(rows('nodes/test').find((t) => t.name === 'a legend measures its labels once').category).toBeUndefined();
+    expect(rows('nodes/test-suite').filter((s) => s.framework === 'dart')).toMatchObject([
+      {id: `suite:dart:${TEST_FILE}`, name: 'legend_test.dart', path: TEST_FILE},
+    ]);
+  }, 60_000);
+
+  it('lets a `/// ~id` marker own the file the folder would have, and a `// ~id` line only participate', async () => {
+    const {rows} = await graph;
+    expect(rows('edges/is-implemented-in').filter((e) => e.to === `file:${RENDERER}`)).toEqual([expect.objectContaining({
+      from: 'visualize/viewers/scatter-plot', derived_by: 'annotation', confidence: 1, evidence: [RENDERER],
+    })]);
+    expect(rows('edges/participates-in').filter((e) => e.from === `file:${VIEWER}`).map((e) => e.to)).toEqual(['platform/caching']);
+    expect(rows('edges/is-implemented-in').filter((e) => e.to === `file:${VIEWER}`).map((e) => e.from)).toEqual(['visualize/viewers']);
+    expect(rows('reports/claims.jsonl').filter((c) => c.source === 'marker')).toMatchObject([
+      {file: RENDERER, feature: 'visualize/viewers/scatter-plot', rung: 1, line: 1},
+      {file: VIEWER, feature: 'platform/caching', rung: 1, mode: 'participates', line: 1},
+    ]);
+  }, 60_000);
+
+  it('follows a Dart test to the feature that owns its file', async () => {
+    const {rows} = await graph;
+    const tests = rows('edges/tests').filter((e) => e.from.startsWith('test:dart:'));
+    expect(tests).toHaveLength(2);
+    expect(tests.every((e) => e.to === 'visualize/legends' && e.derived_by === 'filesystem' && e.confidence === 0.9)).toBe(true);
+  }, 60_000);
+
+  it('draws documents from the help page a file names to the feature that owns the file, and reports a page that is gone', async () => {
+    const {rows, manifest} = await graph;
+    // the literal and the doc-comment path of viewer.dart; the page the histogram home cites as well is one edge, annotated
+    expect(rows('edges/documents').filter((e) => e.derived_by === 'ast')).toEqual([
+      expect.objectContaining({from: 'doc:public/help/datagrok/project.md', to: 'visualize/viewers', confidence: 0.8, evidence: [VIEWER]}),
+      expect.objectContaining({from: 'doc:public/help/domains/bio/sequences.md', to: 'visualize/viewers', confidence: 0.8, evidence: [VIEWER]}),
+    ]);
+    expect(rows('edges/documents')).toContainEqual(expect.objectContaining({from: 'doc:public/help/visualize/viewers/histogram.md',
+      to: 'visualize/viewers/histogram', derived_by: 'annotation', confidence: 1,
+      evidence: ['core/client/d4/lib/src/viewers/histogram/CLAUDE.md', HISTOGRAM]}));
+    // the page HelpUrl.Gone names exists nowhere: stale where it is defined and where it is used
+    expect(manifest.problems.unresolved_ids).toBe(2);
+  }, 60_000);
+
+  it('counts a marker that names no home and reports the pass as partial', async () => {
+    const {manifest, rows} = await build(copy((repo) => fs.writeFileSync(path.join(repo, ...`${D4}/viewers/axes.dart`.split('/')),
+      '// ~visualize/viewers/boi\nclass Axes {\n}\n')));
     expect(manifest.sources.dart).toBe('partial');
-    expect(manifest.problems.invalid_rows).toBe(3);
-    expect(rows('nodes/source-file')).toHaveLength(1);
-    expect(rows('reports/claims.jsonl')).toHaveLength(2);
-  });
+    // the marker, plus the two files naming the page HelpUrl.Gone points at
+    expect(manifest.problems.unresolved_ids).toBe(3);
+    expect(rows('edges/participates-in').some((e) => e.to === 'visualize/viewers/boi')).toBe(false);
+  }, 60_000);
 });

@@ -1,4 +1,5 @@
 ---
+documents: [visualize/viewers/web-viewer]
 title: "Web viewer"
 description: Embed any external web page as a viewer within a Datagrok table view.
 keywords:

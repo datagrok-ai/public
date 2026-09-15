@@ -1,4 +1,5 @@
 ---
+documents: [visualize/viewers/confusion-matrix]
 title: "Confusion matrix"
 description: Evaluate a classification model by comparing predicted versus actual values in a tabular format.
 keywords:

@@ -66,16 +66,34 @@ describe('ts-declarations extractor (build-plan.md WO-3b)', () => {
     expect(byId(decls, `decl:${API}/src/dataframe.ts#DataFrame.fromCsv`)).toMatchObject({name: 'fromCsv', kind: 'method', exported: true, public_api: true,
       documented: false, line: 23, signature: 'static fromCsv(csv: string, options?: {delimiter?: string}): DataFrame'});
     expect(byId(decls, `decl:${API}/src/dataframe.ts#DataFrame.fromCsv`)).not.toHaveProperty('container');
-    expect(byId(decls, `decl:${API}/src/dataframe.ts#DataFrame.hidden`)).toMatchObject({kind: 'method', exported: false, public_api: false});
-    expect(byId(decls, `decl:${API}/src/dataframe.ts#DataFrame._name`)).toMatchObject({kind: 'prop', exported: false, signature: "private _name: string = ''"});
     expect(byId(decls, `decl:${API}/src/dataframe.ts#IDisposable.dispose`)).toMatchObject({kind: 'method'});
     expect(byId(decls, `decl:${API}/src/dataframe.ts#Internal`)).toMatchObject({kind: 'class', exported: false, public_api: false});
     expect(decls.filter((d) => d.path === `${API}/src/dataframe.ts`).map((d) => [d.name, d.kind]).sort()).toEqual([
-      ['DataFrame', 'class'], ['IDisposable', 'interface'], ['Internal', 'class'], ['LogLevel', 'enum'], ['Predicate', 'type'], ['_name', 'prop'], ['dispose', 'method'],
-      ['fromCsv', 'method'], ['fromText', 'method'], ['hidden', 'method'], ['m', 'method'], ['name', 'getter'], ['name', 'setter'], ['rowCount', 'getter'],
+      ['DataFrame', 'class'], ['IDisposable', 'interface'], ['Internal', 'class'], ['LogLevel', 'enum'], ['Predicate', 'type'], ['dispose', 'method'],
+      ['fromCsv', 'method'], ['fromText', 'method'], ['name', 'getter'], ['name', 'setter'], ['rowCount', 'getter'],
     ]);
     expect(byId(decls, `decl:${API}/src/const.ts#SEMTYPE`)).toMatchObject({kind: 'const', documented: true, signature: 'export const SEMTYPE'});
-    expect(byId(decls, 'decl:public/packages/Plain/src/package.ts#plainApp')).toMatchObject({kind: 'const', signature: 'export const plainApp = async (): Promise<void> =>'});
+  });
+
+  it('keeps only types and the JS API surface: the own members, consts and helpers of a unit are no longer nodes', async () => {
+    const {rows} = await graph;
+    const decls = rows('nodes/declaration');
+    for (const id of [`decl:${API}/src/dataframe.ts#DataFrame._name`, `decl:${API}/src/dataframe.ts#DataFrame.hidden`, `decl:${API}/ui.ts#internal`,
+      'decl:public/packages/Demo/src/base.ts#Base.run', 'decl:public/packages/Demo/src/viewer.ts#DemoViewer.render',
+      'decl:public/packages/Plain/src/package.ts#plainApp', 'decl:public/libraries/utils/src/test.ts#something'])
+      expect(byId(decls, id)).toBeUndefined();
+    for (const id of [`decl:${API}/src/dataframe.ts#DataFrame.fromCsv`, `decl:${API}/src/dataframe.ts#Predicate`, `decl:${API}/src/const.ts#SEMTYPE`,
+      'decl:public/packages/Demo/src/base.ts#Base', 'decl:public/libraries/utils/src/test.ts#Thing'])
+      expect(byId(decls, id)).toBeDefined();
+    expect(decls.filter((d) => d.language === 'ts' && !d.public_api).every((d) => ['class', 'interface', 'enum', 'type'].includes(d.kind))).toBe(true);
+  });
+
+  it('declares a type inside a namespace that is not a node from its file', async () => {
+    const {rows} = await graph;
+    const test = 'public/libraries/utils/src/test.ts';
+    expect(byId(rows('nodes/declaration'), `decl:${test}#handles`)).toBeUndefined();
+    expect(byId(rows('nodes/declaration'), `decl:${test}#handles.Handle`)).toMatchObject({name: 'Handle', kind: 'interface'});
+    expect(pairs(rows('edges/declares'), `file:${test}`).sort()).toEqual([`decl:${test}#Thing`, `decl:${test}#handles.Handle`]);
   });
 
   it('gives a getter and a setter of one name the :get and :set ids, and overloads one id with the merged signature', async () => {
@@ -103,8 +121,6 @@ describe('ts-declarations extractor (build-plan.md WO-3b)', () => {
     const decls = rows('nodes/declaration');
     expect(byId(decls, `decl:${API}/src/dataframe.ts#DataFrame.fromText`)).toMatchObject({deprecated: true, documented: true, public_api: true});
     expect(byId(decls, `decl:${API}/src/dataframe.ts#DataFrame.fromCsv`)).toMatchObject({deprecated: false});
-    expect(byId(decls, `decl:${API}/ui.ts#internal`)).toMatchObject({exported: false, public_api: false});
-    expect(byId(decls, 'decl:public/libraries/utils/src/test.ts#something')).toMatchObject({exported: true, public_api: false});
     expect(byId(decls, 'decl:public/packages/Demo/src/base.ts#Base')).toMatchObject({exported: true, public_api: false});
     expect(decls.filter((d) => d.public_api).every((d) => d.path.startsWith(`${API}/`) && d.exported)).toBe(true);
   });
@@ -122,7 +138,8 @@ describe('ts-declarations extractor (build-plan.md WO-3b)', () => {
     const declares = rows('edges/declares');
     const df = `decl:${API}/src/dataframe.ts#DataFrame`;
     expect(pairs(declares, `file:${API}/src/dataframe.ts`).sort()).toEqual([df, `decl:${API}/src/dataframe.ts#IDisposable`, `decl:${API}/src/dataframe.ts#Internal`, `decl:${API}/src/dataframe.ts#LogLevel`, `decl:${API}/src/dataframe.ts#Predicate`]);
-    expect(pairs(declares, df).sort()).toEqual([`${df}._name`, `${df}.fromCsv`, `${df}.fromText`, `${df}.hidden`, `${df}.name:get`, `${df}.name:set`, `${df}.rowCount:get`]);
+    expect(pairs(declares, df).sort()).toEqual([`${df}.fromCsv`, `${df}.fromText`, `${df}.name:get`, `${df}.name:set`, `${df}.rowCount:get`]);
+    expect(pairs(declares, 'decl:public/packages/Demo/src/base.ts#Base')).toEqual([]);
     expect(declares.find((e) => e.from === df && e.to === `${df}.fromCsv`)).toMatchObject({derived_by: 'ast', confidence: 1, evidence: [`${API}/src/dataframe.ts`]});
     expect(declares.some((e) => e.from === `file:${API}/src/dataframe.ts` && e.to === `${df}.fromCsv`)).toBe(false);
     expect(byId(rows('nodes/declaration'), `decl:${API}/ui.ts#input`)).toMatchObject({kind: 'const', signature: 'export namespace input'});
@@ -169,7 +186,8 @@ describe('ts-imports extractor (build-plan.md WO-3b)', () => {
     expect(rows('edges/imports').filter((e) => e.from === `file:${API}/grok.ts`).map((e) => [e.to, e.symbols])).toEqual([
       [`file:${API}/src/chem.ts`, ['*']], [`file:${API}/src/logger.ts`, ['Logger']], [`file:${API}/src/shell.ts`, ['Shell']],
     ]);
-    expect(pairs(rows('edges/imports'), `file:${API}/dg.ts`)).toEqual([`file:${API}/src/const.ts`, `file:${API}/src/dataframe.ts`, `file:${API}/src/shell.ts`, `file:${API}/src/u2core/index.ts`, `file:${API}/src/viewer.ts`]);
+    expect(pairs(rows('edges/imports'), `file:${API}/dg.ts`)).toEqual([`file:${API}/src/const.ts`, `file:${API}/src/dataframe.ts`, `file:${API}/src/shell.ts`,
+      `file:${API}/src/u2core/index.ts`, `file:${API}/src/viewer.ts`, 'file:public/libraries/utils/src/test.ts']);
   });
 });
 
@@ -195,7 +213,10 @@ describe('ts-uses extractor (build-plan.md WO-3b)', () => {
       [`decl:${API}/src/viewer.ts#JsViewer`, 'class', 1],
       [`decl:${API}/ui.ts#div`, 'ui', 1],
       [`decl:${API}/ui.ts#input.string`, 'ui', 1],
+      ['decl:public/libraries/utils/src/test.ts#Thing', 'class', 1],
     ]);
+    const nodes = new Set(rows('nodes/declaration').map((d) => d.id));
+    expect(rows('edges/uses').every((e) => nodes.has(e.to))).toBe(true);
     // a token scan cannot tell a binding from a shadowed name or a string, so the edge claims less than certainty
     expect(rows('edges/uses').find((e) => e.from === `file:${VIEWER}` && e.to === `decl:${API}/src/shell.ts#Shell.info`)).toMatchObject({derived_by: 'ast', confidence: 0.8, evidence: [VIEWER]});
     expect(rows('edges/uses').filter((e) => e.from === 'file:public/packages/Demo/src/package.g.ts').map((e) => e.to)).toEqual([`decl:${API}/src/dataframe.ts#DataFrame`]);

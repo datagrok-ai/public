@@ -1,5 +1,6 @@
 ---
-feature: 3d-scatter-plot
+id: TS:viewers/3d-scatter-plot/ui
+covers: [visualize/viewers/3d-scatter-plot]
 target_layer: manual-only
 coverage_type: smoke
 ---

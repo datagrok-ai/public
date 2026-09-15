@@ -2,6 +2,7 @@
 /// (`ts.createSourceFile`, no Program) shared by the ts-declarations, ts-imports and ts-uses extractors;
 /// `source-file` and `declaration` nodes, `declares` file->declaration and class->member, `extends` and
 /// `implements` resolved by name in the same file, through the imports, then the same package or library.
+/// A declaration is a node only when it names a type or belongs to the JS API surface (`isNode`).
 import * as fs from 'fs';
 import * as path from 'path';
 import {globSync} from 'glob';
@@ -20,6 +21,8 @@ const SIGNATURE_CAP = 160;
 const ASSET_EXTENSIONS = ['.js', '.mjs', '.cjs', '.json', '.vue', '.css', '.wasm', '/index.js'];
 /** Declarations a class or interface may extend or implement. */
 const TYPE_KINDS = new Set(['class', 'interface']);
+/** Declaration kinds that name a type, and so are nodes wherever they are declared. */
+const NODE_KINDS = new Set(['class', 'interface', 'enum', 'type', 'mixin']);
 const PRIVATE = ts.ModifierFlags.Private | ts.ModifierFlags.Protected;
 
 export interface TsDecl {
@@ -82,6 +85,12 @@ export interface ImportTarget {
 }
 
 const CACHE = new WeakMap<BuildContext, TsSources>();
+
+/** A declaration is a node when it names a type, or when it is part of the JS API surface a plugin can call;
+ * a unit's own members, consts and helper functions are represented by their file and their type. */
+export function isNode(file: TsFile, decl: TsDecl): boolean {
+  return NODE_KINDS.has(decl.kind) || (file.unit.id === JS_API && decl.exported);
+}
 
 /** The parsed sources of this build, parsed once for the three extractors; problems are reported by whichever runs first. */
 export function tsSources(ctx: BuildContext, emitter: Emitter): TsSources {
@@ -411,14 +420,18 @@ export const declarationsExtractor: Extractor = {
         generated: file.generated ? true : undefined, package: isPackage ? file.unit.id : undefined, provenance: 'filesystem', source_layer: 'public'});
       if (!admitted.accepted) continue;
       emitter.edge({type: 'declares', from: file.unit.id, to: fileId(file.path), derived_by: 'ast', confidence: 1, evidence: [file.path]});
+      const emitted = new Set<string>();
       for (const decl of file.decls) {
         const publicApi = isApi && decl.exported;
         if (file.generated && decl.container && !publicApi) continue;
+        if (!isNode(file, decl)) continue;
         const id = sources.declId(file, decl);
-        const container = decl.container ? declId(file.path, decl.container) : undefined;
+        // a type inside a namespace the graph does not hold is declared by the file, not by the namespace
+        const container = decl.container !== undefined && emitted.has(decl.container) ? declId(file.path, decl.container) : undefined;
         if (!emitter.node({type: 'declaration', id, name: decl.name.slice(decl.name.lastIndexOf('.') + 1), kind: decl.kind, exported: decl.exported,
           public_api: publicApi ? true : undefined, generated: file.generated ? true : undefined, deprecated: decl.deprecated ? true : undefined, documented: decl.documented,
           signature: decl.signature || undefined, line: decl.line, language: 'ts', path: file.path, provenance: 'ast', source_layer: 'public'}).accepted) continue;
+        emitted.add(decl.name);
         emitter.edge({type: 'declares', from: container ?? fileId(file.path), to: id, derived_by: 'ast', confidence: 1, evidence: [file.path]});
         for (const [type, names] of [['extends', decl.extends], ['implements', decl.implements]] as const)
           for (const name of names) {

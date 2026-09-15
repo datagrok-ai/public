@@ -1,6 +1,6 @@
 /// `grok kg build` end to end (build-plan.md WO-10): the whole pipeline over the mini monorepo under
 /// fixtures/kg/build — every extractor, the row counts each of them produces, byte-identical repeats,
-/// the three states of the Dart batch, the public projection and the five reports; then, where the
+/// the Dart pass over the fixture's sources, the public projection and the five reports; then, where the
 /// optional `kuzu` binding is installed, the index, `query`, the four operations and a CSV round-trip
 /// of values the loader cannot put through a CSV.
 /// Named `.pipeline.` and not `.integration.`, which vitest.config.mts reserves for the suites that need
@@ -14,16 +14,17 @@ import {spawnSync} from 'child_process';
 import {loadTypeSystem, TypeSystem} from '../utils/kg/types';
 import {loadKuzu, load as loadIndex, open, run} from '../utils/kg/kuzu';
 import {find, explain, impact, testsFor, resolveTarget, printOps, OpsResult} from '../utils/kg/ops';
+import {OutputFormat} from '../utils/server-output';
 import {readGraph, makeReport, REPORT_NAMES, ReportName} from '../utils/kg/report';
 import {currentDir} from '../utils/kg/build/write';
 import {kg} from '../commands/kg';
 
 const fixture = path.join(path.dirname(fileURLToPath(import.meta.url)), 'fixtures', 'kg', 'build');
 const KG_DIR = path.join('core', 'docs', 'knowledge-graph');
-const BATCH = path.join('.kg', 'batches', 'kg-dart.jsonl');
 const CACHING = 'core/docs/CACHING.md';
 const BIO_HOME = 'public/help/domains/bio/bio.md';
 const SEQUENCES = 'public/help/domains/bio/sequences.md';
+const RENDERER = 'core/client/d4/lib/src/legends/legend_renderer.dart';
 const LIMIT = {limit: 50};
 
 interface Built {
@@ -38,14 +39,13 @@ function git(repo: string, ...args: string[]): string {
   return spawnSync('git', ['-c', 'user.email=kg@test', '-c', 'user.name=kg', '-C', repo, ...args], {encoding: 'utf8'}).stdout.trim();
 }
 
-/** The fixture as a git repository with one commit, its Dart batch stamped with that revision. */
+/** The fixture as a git repository with one commit. */
 function makeRepo(): string {
   const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'grok-kg-int-'));
   fs.cpSync(fixture, repo, {recursive: true});
   git(repo, 'init', '-q');
   git(repo, 'add', '-A');
   git(repo, 'commit', '-q', '-m', 'fixture');
-  stampBatch(repo, {built_at: new Date().toISOString(), revision: git(repo, 'rev-parse', 'HEAD')});
   stampRelease(repo);
   return repo;
 }
@@ -61,7 +61,6 @@ function makeSubmoduleRepo(): string {
   git(repo, 'init', '-q');
   git(repo, 'add', '-A');
   git(repo, 'commit', '-q', '-m', 'fixture');
-  stampBatch(repo, {built_at: new Date().toISOString(), revision: git(repo, 'rev-parse', 'HEAD')});
   stampRelease(repo);
   return repo;
 }
@@ -71,18 +70,6 @@ function stampRelease(repo: string): void {
   const file = path.join(repo, 'core', 'docs', 'release', '1.0.1.yaml');
   const sha = git(repo, 'rev-parse', '--short=10', 'HEAD');
   fs.writeFileSync(file, fs.readFileSync(file, 'utf8').replace(/\b(?:aaaaaaaaaa|bbbbbbbbbb)\b/g, sha));
-}
-
-/** Rewrites the batch envelope; `null` deletes the file. */
-function stampBatch(repo: string, envelope: Record<string, unknown> | null): void {
-  const file = path.join(repo, BATCH);
-  if (!envelope) {
-    fs.rmSync(file);
-    return;
-  }
-  const lines = fs.readFileSync(file, 'utf8').split('\n').filter(Boolean);
-  lines[0] = JSON.stringify({...JSON.parse(lines[0]), ...envelope});
-  fs.writeFileSync(file, `${lines.join('\n')}\n`);
 }
 
 async function build(repo: string, extra: Record<string, unknown> = {}): Promise<Built> {
@@ -130,20 +117,20 @@ describe('grok kg build over the fixture monorepo (build-plan.md WO-10)', () => 
       'ts-tests': 'ok', 'ts-uses': 'ok',
     });
     expect(manifest.counts.nodes).toEqual({
-      app: 2, 'cell-renderer': 1, 'changelog-entry': 5, commit: 2, connection: 2, container: 3, customer: 2, 'db-table': 1,
-      declaration: 105, 'doc-anchor': 20, 'doc-page': 12, editor: 1, endpoint: 1, feature: 8, 'file-handler': 1,
+      app: 2, 'cell-renderer': 1, 'changelog-entry': 5, commit: 2, connection: 2, container: 3, customer: 2,
+      declaration: 59, 'doc-anchor': 21, 'doc-page': 14, editor: 1, feature: 9, 'file-handler': 1,
       'file-viewer': 1, filter: 1, function: 13, library: 2, 'lifecycle-hook': 2, package: 7, panel: 2, person: 2,
       query: 3, release: 2, sample: 4, scenario: 7, script: 3, 'script-environment': 1, 'script-handler': 1,
-      'sem-type-detector': 6, 'semantic-type': 7, 'source-file': 39, test: 14, 'test-suite': 6, ticket: 13, tutorial: 1, viewer: 2,
+      'sem-type-detector': 6, 'semantic-type': 7, 'source-file': 44, test: 16, 'test-suite': 7, ticket: 13, tutorial: 1, viewer: 2,
     });
     expect(manifest.counts.edges).toEqual({
       affects: 2, assignee: 3, automates: 3, base: 1, calls: 6, changes: 2, connection: 3, covers: 1,
-      declares: 215, demonstrates: 1, 'depends-on': 6, documents: 1, environment: 1, extends: 4,
-      handler: 1, implements: 1, imports: 25, includes: 2, 'is-implemented-in': 15, mentions: 17, owner: 5,
-      package: 72, page: 20, 'part-of': 10, 'participates-in': 5, reporter: 4, 'requested-by': 2, resolves: 1, router: 1,
-      suite: 14, 'targets-release': 5, 'targets-semtype': 13, tests: 11, 'tracked-in': 2, uses: 17,
+      declares: 170, demonstrates: 1, 'depends-on': 6, documents: 5, environment: 1, extends: 4,
+      implements: 1, imports: 26, includes: 2, 'is-implemented-in': 19, mentions: 16, owner: 6,
+      package: 72, page: 21, 'part-of': 11, 'participates-in': 6, reporter: 4, 'requested-by': 2, resolves: 1,
+      suite: 16, 'targets-release': 5, 'targets-semtype': 13, tests: 13, 'tracked-in': 2, user_help: 1, uses: 18,
     });
-    expect(manifest.problems).toMatchObject({dangling_edges: 0, ambiguous_owners: 1, orphans: 27, partial_stubs: 22});
+    expect(manifest.problems).toMatchObject({dangling_edges: 0, ambiguous_owners: 1, orphans: 28, partial_stubs: 22});
   }, 120_000);
 
   it('writes the same bytes twice, with the same content-addressed batch and a later built_at', async () => {
@@ -157,24 +144,19 @@ describe('grok kg build over the fixture monorepo (build-plan.md WO-10)', () => 
     expect(Object.values(first).every((text) => !text.includes('built_at'))).toBe(true);
   }, 120_000);
 
-  it('reports the Dart batch as ok, stale and missing as the batch itself changes', async () => {
+  it('reads the Dart sources of the fixture: files, declarations, tests and their suite', async () => {
     const {manifest, rows} = await graph;
     expect(manifest.sources.dart).toBe('ok');
-    expect(rows('nodes/endpoint')).toHaveLength(1);
-
-    const stale = makeRepo();
-    stampBatch(stale, {revision: 'deadbeefdeadbeefdeadbeefdeadbeefdeadbeef'});
-    const staleBuild = await build(stale);
-    expect(staleBuild.manifest.sources.dart).toBe('stale');
-    expect(staleBuild.rows('nodes/db-table')).toHaveLength(1);
-
-    const gone = makeRepo();
-    stampBatch(gone, null);
-    const goneBuild = await build(gone);
-    expect(goneBuild.manifest.sources.dart).toBe('missing');
-    expect(goneBuild.manifest.counts.nodes.endpoint).toBeUndefined();
-    expect(goneBuild.manifest.counts.nodes['db-table']).toBeUndefined();
-  }, 180_000);
+    expect(manifest.dart_depth).toBe('lexical');
+    expect(manifest.dart_packages).toEqual({d4: 8, grok_shared: 1});
+    const files = rows('nodes/source-file').filter((f) => f.language === 'dart');
+    expect(files).toHaveLength(9);
+    expect(files.filter((f) => f.generated).map((f) => f.path)).toEqual(['core/client/d4/lib/src/viewers/viewer.g.dart']);
+    expect(rows('nodes/declaration').filter((d) => d.language === 'dart').map((d) => d.name).sort())
+      .toEqual(['HelpUrl', 'Histogram', 'Legend', 'LegendCache', 'LegendRenderer', 'ScatterPlot', 'Viewer', 'ViewerProps']);
+    expect(rows('nodes/test').filter((t) => t.framework === 'dart').map((t) => t.category)).toEqual([undefined, 'placement']);
+    expect(rows('nodes/test-suite').filter((s) => s.framework === 'dart')).toHaveLength(1);
+  }, 120_000);
 
   it('projects the public layer: public nodes only, no home, no owner, no source files, no reports', async () => {
     const {manifest, rows, out} = await build(makeRepo(), {public: true});
@@ -182,7 +164,7 @@ describe('grok kg build over the fixture monorepo (build-plan.md WO-10)', () => 
     expect(Object.keys(manifest.revisions)).toEqual(['public']);
     expect(Object.keys(manifest.counts.nodes).sort()).toEqual(['doc-anchor', 'doc-page', 'feature', 'library', 'package', 'sample', 'scenario']);
     const features = rows('nodes/feature');
-    expect(features).toHaveLength(8);
+    expect(features).toHaveLength(9);
     expect(features.every((f) => f.visibility === 'public' && f.home === undefined && f.owner === undefined)).toBe(true);
     expect(features.find((f) => f.id === 'domains/bio').description).toContain('Sequence analysis');
     expect(rows('nodes/source-file')).toEqual([]);
@@ -206,8 +188,8 @@ describe('the reports build writes and the report verb prints (build-plan.md WO-
   it('groups orphan files by package and core sub-project, largest first', async () => {
     const {report} = await graph;
     const orphans = report('orphans');
-    expect(orphans.summary).toBe('27 files of 39 observed (12 owned, 4 participating) have no owner, 386 of 872 lines, in 7 groups; the 7 largest groups below.');
-    expect(orphans.sections[0].rows[0]).toEqual({group: 'public/js-api', files: 11, owned: 0, participating: 0, orphans: 11, loc: 154,
+    expect(orphans.summary).toBe('28 files of 44 observed (16 owned, 5 participating) have no owner, 405 of 716 lines, in 8 groups; the 8 largest groups below.');
+    expect(orphans.sections[0].rows[0]).toEqual({group: 'public/js-api', files: 11, owned: 0, participating: 0, orphans: 11, loc: 155,
       largest: expect.stringContaining('src/dataframe.ts (45)')});
     expect(orphans.sections[0].rows.map((r: any) => r.group)).toContain('core/client/d4');
     expect(orphans.sections[0].rows.map((r: any) => r.loc)).toEqual([...orphans.sections[0].rows.map((r: any) => r.loc)].sort((a: number, b: number) => b - a));
@@ -236,10 +218,13 @@ describe('the reports build writes and the report verb prints (build-plan.md WO-
     const {report} = await graph;
     const rows = report('coverage').sections[0].rows;
     expect(rows.map((r: any) => r.feature)).toEqual(['domains', 'domains/bio', 'platform', 'platform/caching', 'visualize',
-      'visualize/legends', 'visualize/viewers', 'visualize/viewers/scatter-plot']);
+      'visualize/legends', 'visualize/viewers', 'visualize/viewers/histogram', 'visualize/viewers/scatter-plot']);
     expect(rows.find((r: any) => r.feature === 'domains/bio')).toEqual({feature: 'domains/bio', owner: 'P:jane', status: 'active', stub: false,
       tests_runnable: 4, tests_skipped: 1, tests_dynamic: 0, inherited: 0, scenarios: 1, scenario_automated: 0,
-      no_tests: false, no_docs: false, no_description: false});
+      user_help: '', developer_help: '', no_tests: false, no_docs: false, no_description: false});
+    // the page named by user_help alone, with no documents edge, is documentation all the same
+    expect(rows.find((r: any) => r.feature === 'visualize/viewers/histogram'))
+      .toMatchObject({user_help: 'doc:public/help/visualize/viewers/histogram.md', developer_help: '', no_docs: false});
     expect(rows.find((r: any) => r.feature === 'platform/caching')).toMatchObject({no_tests: true, no_docs: true, no_description: false});
     expect(rows.find((r: any) => r.feature === 'domains')).toMatchObject({owner: '', status: 'proposed', no_description: true});
   });
@@ -251,8 +236,8 @@ describe('the reports build writes and the report verb prints (build-plan.md WO-
       {path: 'public/packages/Demo', files: 12, loc: 370, unowned_files: 7, unowned_loc: 153, suggested: 'domains/demo'},
       {path: 'public/packages/Plain', files: 3, loc: 35, unowned_files: 3, unowned_loc: 35, suggested: 'domains/plain'},
       {path: 'public/packages/Tutorials', files: 3, loc: 29, unowned_files: 3, unowned_loc: 29, suggested: 'domains/tutorials'},
+      {path: 'public/libraries/utils', files: 1, loc: 16, unowned_files: 1, unowned_loc: 16, suggested: ''},
       {path: 'public/packages/ApiTests', files: 1, loc: 7, unowned_files: 1, unowned_loc: 7, suggested: 'domains/api-tests'},
-      {path: 'public/libraries/utils', files: 1, loc: 5, unowned_files: 1, unowned_loc: 5, suggested: ''},
     ]);
     // the Tested package is owned file for file through the viewers home, and only that drops out
     expect(rows.some((r: any) => r.path === 'public/packages/Tested')).toBe(false);
@@ -299,10 +284,10 @@ describe('the reports build writes and the report verb prints (build-plan.md WO-
     expect(rows.find((r: any) => r.feature === 'visualize/viewers')).toMatchObject({stub: false,
       tests_runnable: 4, tests_skipped: 1, tests_dynamic: 1, inherited: 0});
     // a stub has no home of its own; what it "has" is what the features under it have
-    expect(rows.find((r: any) => r.feature === 'visualize')).toMatchObject({stub: true, tests_runnable: 0, inherited: 6});
+    expect(rows.find((r: any) => r.feature === 'visualize')).toMatchObject({stub: true, tests_runnable: 0, inherited: 8});
     expect(rows.find((r: any) => r.feature === 'domains')).toMatchObject({stub: true, inherited: 5});
-    expect(report('coverage').summary).toBe('8 features, 3 of them stubs; of the 5 with a home, 3 have no test or scenario, ' +
-      '4 no document beside the home, 0 no first paragraph.');
+    expect(report('coverage').summary).toBe('9 features, 3 of them stubs; of the 6 with a home, 3 have no test or scenario, ' +
+      '3 no document beside the home, 0 no first paragraph.');
   });
 
   it('ranks a folder by the code no feature owns, not by whether anything in it is owned', async () => {
@@ -368,15 +353,19 @@ describe('the reports build writes and the report verb prints (build-plan.md WO-
 });
 
 /** What an op writes to the console, line by line. */
-function render(result: OpsResult): string[] {
+function render(result: OpsResult, output: OutputFormat = 'table'): string[] {
   const log = vi.spyOn(console, 'log').mockImplementation(() => {});
   try {
-    printOps(result, 'table');
+    printOps(result, output);
     return log.mock.calls.map((c) => String(c[0]));
   }
   finally {
     log.mockRestore();
   }
+}
+
+function csv(result: OpsResult): string {
+  return render(result, 'csv').join('\n');
 }
 
 describe('what an op prints (slice-results.md §10)', () => {
@@ -389,6 +378,18 @@ describe('what an op prints (slice-results.md §10)', () => {
     expect(lines).toContain('Sketcher, TemplatesPath, BuildingBlocksPath, ReagentsPath, MolecularFingerprints … (+1 more)');
     expect(lines).toContain(`{"a":"${'x'.repeat(73)}…`);
     expect(lines).not.toContain(long);
+  });
+
+  it('gives the edges section a sub-header per group in a table, and a group column in json and csv', () => {
+    const edges = {title: 'edges', total: 3, rows: [
+      {group: 'ownership', edge: 'IS_IMPLEMENTED_IN', direction: 'out', count: 2},
+      {group: 'evidence', edge: 'TESTS', direction: 'in', count: 4},
+      {group: 'reference', edge: 'owner', direction: 'out', count: 1},
+    ]};
+    const lines = render({op: 'explain', target: {id: 'visualize/viewers'}, sections: [edges]});
+    expect(lines.filter((l) => l.startsWith('\n  '))).toEqual(['\n  ownership', '\n  evidence', '\n  reference']);
+    expect(lines.join('\n')).not.toContain('group');
+    expect(csv({op: 'explain', target: {id: 'visualize/viewers'}, sections: [edges]})).toContain('group,edge,direction,count');
   });
 });
 
@@ -429,7 +430,7 @@ describe('the index over the fixture graph (build-plan.md WO-7, WO-10)', () => {
     const {rows} = await run(conn, 'MATCH (n:Feature) WHERE n.`id` = $id RETURN n.`aliases` AS aliases, n.`description` AS description', {id: index.feature.id});
     expect(rows[0].aliases).toEqual(index.feature.aliases);
     expect(rows[0].description).toBe(index.feature.description);
-    expect((await run(conn, 'MATCH (n:Feature) RETURN count(n) AS n')).rows[0].n).toBe(8);
+    expect((await run(conn, 'MATCH (n:Feature) RETURN count(n) AS n')).rows[0].n).toBe(9);
     expect(fs.existsSync(path.join(index.out, 'tmp'))).toBe(false);
   }, 120_000);
 
@@ -447,11 +448,11 @@ describe('the index over the fixture graph (build-plan.md WO-7, WO-10)', () => {
     expect(tests.sections.find((s) => s.title === 'tests')!.rows.length).toBe(5);
     expect(tests.sections.find((s) => s.title === 'scenarios')!.rows).toMatchObject([{scenario: 'TS:viewers/scatter-plot/ui', manual_only: true}]);
 
-    const service = (await resolveTarget(conn, 'core/server/datlas/lib/src/services/bio_service.dart'))!;
-    expect(service).toMatchObject({id: 'file:core/server/datlas/lib/src/services/bio_service.dart', root: 'Component'});
-    const reached = await impact(conn, service, LIMIT);
-    expect(reached.sections[0].rows).toMatchObject([{feature: 'domains/bio', relation: 'owns'}]);
-    expect(reached.sections[1].rows).toEqual([{feature: 'domains/bio', owner: 'P:jane', name: 'Jane Dev'}]);
+    const renderer = (await resolveTarget(conn, RENDERER))!;
+    expect(renderer).toMatchObject({id: `file:${RENDERER}`, root: 'Component'});
+    const reached = await impact(conn, renderer, LIMIT);
+    expect(reached.sections[0].rows).toContainEqual(expect.objectContaining({feature: 'visualize/viewers/scatter-plot', relation: 'owns'}));
+    expect(reached.sections[1].rows).toContainEqual({feature: 'visualize/viewers/scatter-plot', owner: 'P:jane', name: 'Jane Dev'});
   }, 120_000);
 
   withKuzu('counts a section whole and pages it after, so a header tells a page from the total', async () => {
@@ -474,7 +475,11 @@ describe('the index over the fixture graph (build-plan.md WO-7, WO-10)', () => {
     expect((await testsFor(conn, home, LIMIT)).sections.find((s) => s.title === 'tests')!.rows.length).toBe(5);
 
     const page = (await resolveTarget(conn, SEQUENCES))!;
-    expect((await impact(conn, page, LIMIT)).sections[0].rows).toMatchObject([{feature: 'domains/bio', relation: 'documents', name: 'Bioinformatics', status: 'active'}]);
+    expect((await impact(conn, page, LIMIT)).sections[0].rows).toMatchObject([
+      {feature: 'domains/bio', relation: 'documents', name: 'Bioinformatics', status: 'active'},
+      // a doc comment in viewer.dart names the page too, so it documents the feature that owns that file
+      {feature: 'visualize/viewers', relation: 'documents', name: 'Viewers'},
+    ]);
   }, 120_000);
 
   withKuzu('answers for a package through what it declares, and for a file through what it declares', async () => {
@@ -487,7 +492,7 @@ describe('the index over the fixture graph (build-plan.md WO-7, WO-10)', () => {
     const total = (r: OpsResult, title: string) => r.sections.find((s) => s.title === title)!.total;
     const features = (r: OpsResult) => r.sections[0].rows.map((x) => String(x.feature)).sort();
     expect(features(byPackage)).toEqual(features(byFeature));
-    expect(features(byPackage)).toEqual(['visualize/viewers', 'visualize/viewers/scatter-plot']);
+    expect(features(byPackage)).toEqual(['visualize/viewers', 'visualize/viewers/histogram', 'visualize/viewers/scatter-plot']);
     expect(total(byPackage, 'tests')).toBe(total(byFeature, 'tests'));
     expect(total(byPackage, 'tests')).toBe(6);
     expect(byPackage.sections[0].rows.find((r) => r.feature === 'visualize/viewers')!.via)

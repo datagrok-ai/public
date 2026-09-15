@@ -25,7 +25,7 @@ export class DemoViewer extends DG.JsViewer implements DG.IDisposable {
     grok.chem.similarity('C', 'CC');
     const first = DG.Nowhere.x;
     const second = grok.nowhere.y;
-    DG.U2.Control.forElement(this);
+    DG.U2.Control.forElement(this); DG.Utils.Thing.go();
     const common = await import('./common');
     console.log(first, second, common, shared, something, renamed, helper, callThings, Observable, gone);
   }

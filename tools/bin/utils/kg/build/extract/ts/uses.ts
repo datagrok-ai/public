@@ -5,8 +5,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 import {Emitter} from '../../emitter';
 import {BuildContext, Extractor} from '../../registry';
-import {fileId} from '../../ids';
-import {tsSources, ApiEntry, TsSources} from './declarations';
+import {fileId, declId} from '../../ids';
+import {tsSources, isNode, ApiEntry, TsSources} from './declarations';
 
 const API_TOKEN = /\b(DG|ui|grok)((?:\.[A-Za-z_$][\w$]*){1,3})/g;
 const COMMENT_OR_STRING = /\/\/.*|\/\*[\s\S]*?\*\/|(["'`])(?:\\[\s\S]|(?!\1)[^\\])*\1/g;
@@ -67,23 +67,27 @@ export class UsesLayer {
     if (root === 'DG') {
       const top = this.entry(segments[0], (e) => !e.decl.container);
       const nested = segments.length > 1 && (!top || top.decl.kind === 'const') ? this.entry(`${segments[0]}.${segments[1]}`) : undefined;
-      const entry = nested ?? top;
-      return entry && {to: entry.id, kind: useKind(entry)};
+      return this.use(nested ?? top);
     }
     if (root === 'ui') {
       const inUi = (e: ApiEntry) => e.file.path.endsWith('/ui.ts');
       const entry = (segments.length > 1 ? this.entry(`${segments[0]}.${segments[1]}`, inUi) : undefined) ?? this.entry(segments[0], inUi);
-      return entry && {to: entry.id, kind: 'ui'};
+      return this.use(entry, 'ui');
     }
     const space = this.entry(segments[0], (e) => e.file.path.endsWith('/grok.ts') && !e.decl.container);
     const owner = space?.decl.alias;
-    if (owner) {
-      const entry = segments.length > 1 ? this.entry(`${owner}.${segments[1]}`) : this.entry(owner, (e) => e.decl.kind === 'class');
-      return entry && {to: entry.id, kind: useKind(entry)};
-    }
+    if (owner)
+      return this.use(segments.length > 1 ? this.entry(`${owner}.${segments[1]}`) : this.entry(owner, (e) => e.decl.kind === 'class'));
     const member = segments.length > 1 ? this.entry(`${segments[0]}.${segments[1]}`) : undefined;
-    const entry = member ?? space ?? this.entry(segments[0], (e) => !e.decl.container);
-    return entry && {to: entry.id, kind: useKind(entry)};
+    return this.use(member ?? space ?? this.entry(segments[0], (e) => !e.decl.container));
+  }
+
+  /** The edge a resolved declaration produces; one the graph does not hold as a node points at its containing type instead. */
+  private use(entry: ApiEntry | undefined, kind?: string): Use | undefined {
+    if (!entry) return undefined;
+    if (isNode(entry.file, entry.decl)) return {to: entry.id, kind: kind ?? useKind(entry)};
+    const owner = entry.decl.container === undefined ? undefined : entry.file.decls.find((d) => d.name === entry.decl.container);
+    return owner && isNode(entry.file, owner) ? {to: declId(entry.file.path, owner.name), kind: kind ?? useKind(entry)} : undefined;
   }
 
   private entry(name: string, filter: (e: ApiEntry) => boolean = () => true): ApiEntry | undefined {

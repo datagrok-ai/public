@@ -24,7 +24,7 @@ const IDENTITY_KEYS = ['github', 'bitbucket', 'jira'];
 const UNIT = '\u001f';
 /** A reconstructed record is evidence of the reconstruction, not of the release; every edge it produces says so. */
 const DRY_RUN_CONFIDENCE = 0.7;
-/** What turns a commit into a claim of resolution, in its own message (conventions.md §6, edges/resolves.yaml). */
+/** What turns a commit into a claim of resolution, in its own message (conventions.md §6, edges/work/resolves.yaml). */
 const RESOLUTION_CLAIM = /\b(?:fix|fixes|fixed|resolve|resolves|resolved|close|closes|closed)\b[\s:#-]*(GROK-\d+|#\d+)/gi;
 
 export const processExtractor: Extractor = {

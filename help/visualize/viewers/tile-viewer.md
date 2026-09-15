@@ -1,4 +1,5 @@
 ---
+documents: [visualize/viewers/tile-viewer]
 title: "Tile viewer"
 description: Visualize table rows as a grid of editable form-based tiles.
 keywords:

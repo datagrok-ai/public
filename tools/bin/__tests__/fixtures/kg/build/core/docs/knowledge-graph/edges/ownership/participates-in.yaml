@@ -1,5 +1,4 @@
 type: participates-in
-extends: touches
 from: Component
 to: Feature
 derived_by: [annotation]

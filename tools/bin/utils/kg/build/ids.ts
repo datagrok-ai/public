@@ -14,6 +14,12 @@ export const SCHEME_TYPES: Record<string, string[]> = {
 export const PREFIXED_ID = /^([A-Z][A-Za-z]{0,5}):(.+)$/;
 export const SCHEMED_ID = /^([a-z][a-z0-9-]*):(.+)$/;
 export const JIRA_KEY = /^GROK-\d+$/;
+/** A DocPage reference spelled as the page's repo path (`public/help/.../bar-chart.md`), conventions.md §5.3. */
+export const PAGE_PATH = /^[^\s:]+\/[^\s:]+\.mdx?$/i;
+/** The user help tree; a page under it documents whatever cites it. */
+export const HELP_DIR = 'public/help';
+/** Where a folder has to be for a home in it to own it, and where a file has to be to count as an orphan. */
+export const CODE_ROOTS = ['core/client/', 'core/server/', 'core/shared/', 'public/packages/', 'public/libraries/', 'public/js-api/'];
 export const GITHUB_KEY = /^gh:public#\d+$/;
 const PATH_SCHEMES = ['file', 'decl', 'doc', 'mig', 'sample'];
 const LANGUAGES: Record<string, string> = {
@@ -64,13 +70,14 @@ export function semtypeId(name: string): string {
   return `semtype:${name}`;
 }
 
+/** `test:<framework>:<path>#<category>/<name>`; a test in no category is `#<name>`. */
 export function testId(framework: string, file: string, category: string, name: string): string {
-  return `test:${framework}:${posix(file)}#${category}/${name}`;
+  return `test:${framework}:${posix(file)}#${category ? `${category}/` : ''}${name}`;
 }
 
-/** `suite:dg:<Pkg>:<category>` or `suite:playwright:<path>`. */
-export function suiteId(framework: 'dg' | 'playwright', pkgOrFile: string, category?: string): string {
-  return framework === 'dg' ? `suite:dg:${pkgOrFile}:${category}` : `suite:playwright:${posix(pkgOrFile)}`;
+/** `suite:dg:<Pkg>:<category>`, or `suite:<framework>:<path>` for a framework whose suite is a file. */
+export function suiteId(framework: 'dg' | 'playwright' | 'dart', pkgOrFile: string, category?: string): string {
+  return framework === 'dg' ? `suite:dg:${pkgOrFile}:${category}` : `suite:${framework}:${posix(pkgOrFile)}`;
 }
 
 /** [file] relative to `packages/ApiSamples/scripts`; the extension is dropped. */

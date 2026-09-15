@@ -1,7 +1,6 @@
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
-import {exec} from 'child_process';
 import yaml from 'js-yaml';
 import * as utils from '../utils/utils';
 import * as color from '../utils/color-utils';
@@ -21,19 +20,6 @@ function getWebUrl(apiUrl: string): string {
   const u = new URL(apiUrl);
   u.pathname = u.pathname.replace(/\/api\/?$/, '') || '/';
   return u.toString().replace(/\/$/, '');
-}
-
-function openBrowser(url: string): void {
-  let command: string;
-  switch (process.platform) {
-    case 'darwin':  command = `open "${url}"`; break;
-    case 'win32':   command = `start "" "${url}"`; break;
-    default:        command = `xdg-open "${url}"`;
-  }
-  exec(command, (err) => {
-    if (err)
-      color.warn(`Could not open browser: ${err.message}`);
-  });
 }
 
 const MISSING_MODULE_PATTERNS = ['cannot find module', 'module not found', 'can\'t resolve'];
@@ -136,7 +122,7 @@ export async function run(args: RunArgs): Promise<boolean> {
   // Step 4: Open browser
   const webUrl = getWebUrl(url);
   color.success(`Opening ${webUrl}`);
-  openBrowser(webUrl);
+  utils.openBrowser(webUrl);
 
   return true;
 }

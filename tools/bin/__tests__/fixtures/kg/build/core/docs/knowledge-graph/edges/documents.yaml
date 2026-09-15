@@ -1,9 +1,0 @@
-type: documents
-extends: evidences
-from: DocPage | DocAnchor | Video
-to: Feature
-key: documents
-derived_by: [annotation]
-description: A page, heading or video describes a feature; a page declares it with `documents:`, a function with //help-url:, or the build infers it from `~id` mentions in the text.
-properties:
-  audience?:     "'user' | 'developer' | 'operator'"

@@ -11,6 +11,14 @@ export async function delay(ms: number) {
   await new Promise((r) => setTimeout(r, ms));
 }
 
+/** Opens [url] in the default browser; a failure is a warning, never an error. */
+export function openBrowser(url: string): void {
+  const command = process.platform === 'darwin' ? `open "${url}"` : process.platform === 'win32' ? `start "" "${url}"` : `xdg-open "${url}"`;
+  exec(command, (err) => {
+    if (err) console.warn(`Could not open browser: ${err.message}`);
+  });
+}
+
 export function isEmpty(dir: string): boolean {
   return fs.readdirSync(dir).length === 0;
 }

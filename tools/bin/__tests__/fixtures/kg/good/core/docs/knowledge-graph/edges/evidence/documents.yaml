@@ -1,5 +1,4 @@
 type: documents
-extends: evidences
 from: DocPage
 to: Feature
 key: documents

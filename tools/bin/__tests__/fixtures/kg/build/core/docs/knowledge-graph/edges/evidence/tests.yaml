@@ -1,5 +1,4 @@
 type: tests
-extends: evidences
 from: Test | TestSuite
 to: Feature
 key: tests

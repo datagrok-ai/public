@@ -405,7 +405,7 @@ function presentColumns(table: NodeTable, system: TypeSystem, kgDir: string): Co
   return table.columns.filter((c) => present.has(c.name));
 }
 
-function* readJsonl(file: string): Generator<Record<string, unknown>> {
+export function* readJsonl(file: string): Generator<Record<string, unknown>> {
   if (!fs.existsSync(file)) return;
   for (const line of fs.readFileSync(file, 'utf8').split('\n'))
     if (line) yield JSON.parse(line);

@@ -12,7 +12,7 @@ import {Emitter} from '../emitter';
 import {Row} from '../normalize';
 import {BuildContext, Extractor} from '../registry';
 import {homesOf} from './markers';
-import {PREFIXED_ID, SCHEMED_ID, JIRA_KEY, parseId, ticketId, declId, docId, fileId, languageOf, sourceLayerOf, docKind} from '../ids';
+import {PREFIXED_ID, SCHEMED_ID, JIRA_KEY, PAGE_PATH, CODE_ROOTS, HELP_DIR, parseId, ticketId, declId, docId, fileId, languageOf, sourceLayerOf, docKind} from '../ids';
 
 export const homesExtractor: Extractor = {
   name: 'homes',
@@ -57,7 +57,9 @@ class HomeLayer {
     if (!this.emitter.node(row).accepted) return;
     const subject: Subject = {id: home.id, type, file: home.file, fm: home.fm};
     const claimed = this.emitKeys(subject, data);
-    if (!home.yaml) this.emitCitations(subject, home.body, claimed);
+    if (home.yaml) return;
+    this.emitFolderRoot(subject, data, claimed);
+    this.emitCitations(subject, home.body, claimed);
   }
 
   emitPage(page: AnnotatedPage): void {
@@ -125,6 +127,15 @@ class HomeLayer {
     }
   }
 
+  /** A feature home sitting in a code folder and declaring no `code:` owns that folder, as if it had written `<folder>/**`
+   * (conventions.md §8 rung 2), so a home nested under an ancestor's glob beats it on its own files. */
+  private emitFolderRoot(subject: Subject, data: Record<string, unknown>, claimed: Set<string>): void {
+    const edge = this.system.keys.get('code');
+    const folder = path.posix.dirname(subject.file);
+    if (!edge || subject.type.root !== 'feature' || data.code !== undefined || !CODE_ROOTS.some((r) => folder.startsWith(r))) return;
+    this.emitCode(subject, edge, folder, {}, claimed);
+  }
+
   private expandRoot(p: string): string[] {
     const clean = p.replace(/\/+$/, '');
     if (GLOB_MAGIC.test(clean))
@@ -136,16 +147,23 @@ class HomeLayer {
     return [clean];
   }
 
-  /** Body citations: implementation files become claims (rung 3), documents become mentions of `doc:` stubs. */
+  /** Body citations: implementation files become claims (rung 3), a help page documents the feature, any other
+   * document becomes a mention of a `doc:` stub. */
   private emitCitations(subject: Subject, body: string, claimed: Set<string>): void {
     const isFeature = subject.type.root === 'feature';
     const mentions = this.system.edges.get('mentions');
+    const documents = this.system.edges.get('documents');
     for (const c of extractCitations(subject.file, body, subject.fm.bodyLine)) {
       if (c.resolved === null || c.resolved === subject.file) continue;
       const resolved = this.resolveDocLink(c);
       if (!fs.existsSync(path.join(this.repoRoot, resolved))) continue;
       if (/\.mdx?$/i.test(resolved)) {
         if (!mentions || !this.system.nodes.has('doc-page')) continue;
+        if (isFeature && documents && resolved.startsWith(`${HELP_DIR}/`)) {
+          this.emitter.stub(docId(resolved), 'doc-page', path.posix.basename(resolved), 'annotation', {path: resolved, kind: docKind(resolved)});
+          this.emitter.edge({type: documents.name, from: docId(resolved), to: subject.id, derived_by: 'annotation', confidence: 1, evidence: [subject.file]});
+          continue;
+        }
         const from = mentions.from.some((t) => isSubtype(this.system, subject.type.name, t)) ? subject.id : docId(subject.file);
         if (from !== subject.id) this.emitter.stub(from, 'doc-page', path.posix.basename(subject.file), 'annotation', {path: subject.file, kind: docKind(subject.file)});
         this.emitter.stub(docId(resolved), 'doc-page', path.posix.basename(resolved), 'annotation', {path: resolved, kind: docKind(resolved)});
@@ -184,6 +202,7 @@ class HomeLayer {
       return this.lookup([id]) ?? id;
     }
     if (SCHEMED_ID.test(raw)) return raw;
+    if (PAGE_PATH.test(raw)) return docId(raw);
     const {id} = splitRefAnchor(raw);
     const concrete = concreteAuthored(this.system, expected);
     if (concrete.some((t) => !t.prefix)) return this.lookup([id]) ?? id;

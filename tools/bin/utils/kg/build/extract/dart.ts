@@ -1,161 +1,199 @@
-/// The Dart batch (build-plan.md WO-6): the node, edge and claim lines `prop_gen` writes to
-/// `.kg/batches/kg-dart.jsonl` before a build, and the freshness the manifest reports for them.
-/// Dart is never parsed here; an absent batch is `missing`, not an error, and every op says so.
-/// "Fresh and readable" is not "complete": one versioned header, an explicit revision and package
-/// coverage, and claim identities that resolve are required before a batch may call itself ok
-/// (kg-codex-review-3.md #6), and the rows the emitter refuses make it partial after finalize.
+/// The Dart sources of `core/` (build-plan.md WO-6): one lexical pass per file — the file itself, its
+/// top-level declarations, the tests of a test file and the `~id` markers of conventions.md §6. No
+/// analyzer and no AST: no members, no imports, no calls, no heritage, and nothing a regex cannot see.
 import * as fs from 'fs';
 import * as path from 'path';
 import {globSync} from 'glob';
 import {Emitter} from '../emitter';
-import {Row} from '../normalize';
 import {BuildContext, Extractor} from '../registry';
-import {gitRevisions} from '../write';
 import {HomeSet} from '../../homes';
-import {homesOf, resolveMention} from './markers';
+import {fileId, declId, testId, suiteId, docId, docKind, HELP_DIR} from '../ids';
+import {countLines} from './homes';
+import {homesOf, resolveMention, MARKER_LINE} from './markers';
+import {blankComments, matchBrace} from './ts/tests';
+import {helpPage} from './ts/samples';
 
-/** Where the generator writes, relative to the monorepo root. */
-export const BATCH_FILE = '.kg/batches/kg-dart.jsonl';
-const STALE_DAYS = 7;
-const RECORDS = ['batch', 'node', 'edge', 'claim'];
-/** What the header must say about itself before its payload may be trusted. */
-const HEADER_KEYS = ['schema_version', 'revision', 'packages'];
+const SOURCES = 'core/**/*.dart';
+const SOURCE_IGNORE = ['**/.dart_tool/**', '**/build/**', '**/packages/**', '**/node_modules/**'];
 /** A Dart package of the checkout: a folder under `core/` with a pubspec.yaml, `core/<area>/libs/<pkg>` included. */
 const PUBSPECS = ['core/*/*/pubspec.yaml', 'core/*/*/*/pubspec.yaml'];
+/** A top-level declaration: at column 0, so a nested class or a string holding the word is not one. */
+const TYPE_DECL = /^(?:abstract\s+)?(class|mixin|enum)\s+([A-Za-z_$][\w$]*)/;
+/** Dart 1 spells an alias `typedef void Action(x)` and Dart 2 `typedef Action = ...`: the name precedes the parameters. */
+const TYPEDEF = /^typedef\s+.*?([A-Za-z_$][\w$]*)\s*(?:<[^(]*>)?\s*[(=]/;
+const KINDS: Record<string, string> = {class: 'class', mixin: 'mixin', enum: 'enum'};
+/** `/// ~id` opening a doc comment: the ownership marker of §6 in its Dart spelling. */
+const OWN_MARKER = /^\/\/\/\s*~((?:[A-Z][A-Za-z]{0,5}:)?[a-z][a-z0-9]*(?:-[a-z0-9]+)*(?:\/[a-z0-9]+(?:-[a-z0-9]+)*)*)(?:#[\w-]+)?\s*$/;
+const ANNOTATION = /^@/;
+const DEPRECATED = /^@(?:deprecated\b|Deprecated\()/;
+const TEST_FILE = /(?:^|\/)test\/|_test\.dart$/;
+const TEST_CALL = /(?<![\w.$])(group|test)\s*\(\s*(['"])((?:\\.|(?!\2).)*)\2/g;
 
-interface Header {
-  built_at?: string;
-  revision?: string;
-  schema_version?: unknown;
-  packages?: unknown;
-}
+/** The table of help urls every other file reaches a page through; one of its constants lacks the leading slash. */
+const HELP_TABLE = 'core/shared/grok_shared/lib/src/help_url.dart';
+const HELP_CONST = /static\s+const\s+String\s+([A-Za-z_$][\w$]*)\s*=\s*'(\/?help\/[^']+)'/g;
+const HELP_REF = /\bHelpUrl\.([A-Za-z_$][\w$]*)/g;
+const HELP_LITERAL = /'(\/help\/[^'\s]+)'/g;
+/** A help page a doc comment names by its repo path, as the viewer cores do. */
+const HELP_DOC_PATH = /^\s*\/\/\/.*?(public\/help\/[\w./-]+\.mdx?)/;
 
 export const dartExtractor: Extractor = {
   name: 'dart',
   layer: 'dart',
   modes: ['full'],
   run(ctx: BuildContext, emitter: Emitter): void {
-    const file = path.join(ctx.repoRoot, ...BATCH_FILE.split('/'));
-    if (!fs.existsSync(file)) {
-      emitter.source('dart', 'missing');
-      return;
-    }
     const homes = homesOf(ctx);
-    const rows = new Map<string, number>();
-    let header: Header | undefined;
-    let payload = false;
-    let invalid = 0;
-    const refuse = (at: number, message: string) => {
-      invalid++;
-      emitter.problem('invalid_rows', `${BATCH_FILE}:${at}: ${message}`);
-    };
-    const lines = fs.readFileSync(file, 'utf8').split('\n');
-    for (let i = 0; i < lines.length; i++) {
-      const text = lines[i].trim();
-      if (!text) continue;
-      const row = parse(text);
-      if (!row || !RECORDS.includes(String(row.record))) {
-        refuse(i + 1, row ? `unknown record '${row.record}'` : 'not JSON');
-        continue;
-      }
-      const {record, ...rest} = row;
-      if (record === 'batch') {
-        if (header || payload) refuse(i + 1, header ? 'a second batch record' : 'a batch record after the payload');
-        else {
-          header = rest as Header;
-          if (Number(header.schema_version) !== ctx.system.schemaVersion) {
-            emitter.problem('invalid_rows', `${BATCH_FILE}: schema_version ${JSON.stringify(header.schema_version)} does not match ` +
-              `schema.yaml version ${ctx.system.schemaVersion}; the batch was not loaded`);
-            emitter.source('dart', 'incompatible');
-            return;
-          }
-        }
-        continue;
-      }
-      payload = true;
-      if (record === 'node') {
-        if (emitter.node(rest).accepted) countRow(rows, rest.path);
-      }
-      else if (record === 'edge') emitter.edge(rest);
-      else {
-        const outcome = claim(emitter, homes, rest, i + 1);
-        if (outcome === 'malformed') refuse(i + 1, 'a claim needs a file, a feature, rung 1 and no mode but participates');
-        else if (outcome === 'unresolved') invalid++;
-      }
+    const helpUrls = helpConstants(ctx.repoRoot);
+    const files = globSync(SOURCES, {cwd: ctx.repoRoot, ignore: SOURCE_IGNORE, nodir: true, posix: true, windowsPathsNoEscape: true}).sort();
+    const perPackage = new Map<string, number>();
+    let unresolved = 0;
+    for (const file of files) {
+      const full = path.join(ctx.repoRoot, file);
+      const text = fs.readFileSync(full, 'utf8');
+      const lines = text.split(/\r?\n/);
+      const generated = file.endsWith('.g.dart');
+      if (!emitter.node({type: 'source-file', id: fileId(file), name: path.posix.basename(file), path: file, loc: countLines(full),
+        language: 'dart', generated: generated ? true : undefined, provenance: 'filesystem', source_layer: 'core'}).accepted) continue;
+      const pkg = packageOf(file);
+      if (pkg) perPackage.set(pkg, (perPackage.get(pkg) ?? 0) + 1);
+      declarations(emitter, file, lines, generated);
+      if (TEST_FILE.test(file)) tests(emitter, file, text);
+      unresolved += markers(emitter, homes, file, lines);
+      helpRefs(emitter, ctx.repoRoot, file, text, lines, helpUrls);
     }
-    if (!header) {
-      invalid++;
-      emitter.problem('invalid_rows', `${BATCH_FILE}: no batch record`);
-    }
-    for (const key of header ? HEADER_KEYS : [])
-      if (header![key as keyof Header] === undefined) {
-        invalid++;
-        emitter.problem('invalid_rows', `${BATCH_FILE}: the batch record has no ${key}`);
-      }
-    if (header) emitter.manifest('dart_packages', coverage(ctx.repoRoot, header, rows));
-    const stale = header && staleReason(header, ctx.repoRoot);
-    if (stale) emitter.problem('stale_sources', `${BATCH_FILE}: ${stale}`);
-    emitter.source('dart', invalid ? 'partial' : stale ? 'stale' : 'ok');
+    emitter.manifest('dart_packages', coverage(ctx.repoRoot, perPackage));
+    emitter.manifest('dart_depth', 'lexical');
+    emitter.source('dart', unresolved ? 'partial' : 'ok');
   },
 };
 
-function parse(text: string): Row | null {
-  try {
-    const row = JSON.parse(text);
-    return row && typeof row === 'object' && !Array.isArray(row) ? row as Row : null;
+/** The top-level types of a file, with the doc comment and the annotations above each of them. */
+function declarations(emitter: Emitter, file: string, lines: string[], generated: boolean): void {
+  for (let i = 0; i < lines.length; i++) {
+    const declared = declarationOf(lines[i]);
+    if (!declared) continue;
+    const {name, kind} = declared;
+    const id = declId(file, name);
+    const {documented, deprecated} = above(lines, i);
+    if (!emitter.node({type: 'declaration', id, name, kind, exported: !name.startsWith('_'),
+      generated: generated ? true : undefined, documented, deprecated: deprecated ? true : undefined,
+      line: i + 1, language: 'dart', path: file, provenance: 'ast', source_layer: 'core'}).accepted) continue;
+    emitter.edge({type: 'declares', from: fileId(file), to: id, derived_by: 'ast', confidence: 1, evidence: [file]});
   }
-  catch {
-    return null;
+}
+
+function declarationOf(line: string): {name: string, kind: string} | undefined {
+  const type = TYPE_DECL.exec(line);
+  if (type) return {name: type[2], kind: KINDS[type[1]]};
+  const alias = TYPEDEF.exec(line);
+  return alias ? {name: alias[1], kind: 'type'} : undefined;
+}
+
+/** What sits above a declaration: whether its annotations deprecate it, and whether the line before them documents it. */
+function above(lines: string[], at: number): {documented: boolean, deprecated: boolean} {
+  let deprecated = false;
+  for (let i = at - 1; i >= 0; i--) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    if (!ANNOTATION.test(line)) return {documented: line.startsWith('///'), deprecated};
+    deprecated = deprecated || DEPRECATED.test(line);
   }
+  return {documented: false, deprecated};
 }
 
-/**
- * A Dart file marker is rung 1 and nothing else: the generator sees one file at a time and cannot speak for a home
- * document's roots or its prose. `/// ~id` owns, `// ~id` on its own line only participates, and the feature it names
- * has to be one the home documents declare, or the claim is a typo and is counted, never drawn.
- */
-function claim(emitter: Emitter, homes: HomeSet, row: Row, at: number): 'ok' | 'malformed' | 'unresolved' {
-  if (typeof row.file !== 'string' || typeof row.feature !== 'string') return 'malformed';
-  if ((row.rung !== undefined && row.rung !== 1) || (row.mode !== undefined && row.mode !== 'participates')) return 'malformed';
-  const target = resolveMention(emitter, homes, row.feature, `${BATCH_FILE}:${at}`);
-  if (!target || target.root !== 'feature') return 'unresolved';
-  emitter.claim({
-    file: row.file, feature: target.id, rung: 1, source: 'marker',
-    mode: row.mode === 'participates' ? 'participates' : undefined,
-    props: row.props && typeof row.props === 'object' ? row.props as Record<string, unknown> : {},
-    line: typeof row.line === 'number' ? row.line : at,
-  });
-  return 'ok';
+/** One suite per test file, and its tests under the `group` titles that enclose them. */
+function tests(emitter: Emitter, file: string, text: string): void {
+  const found = parseDartTests(text);
+  if (!found.length) return;
+  const suite = suiteId('dart', file);
+  emitter.node({type: 'test-suite', id: suite, name: path.posix.basename(file), framework: 'dart', path: file,
+    provenance: 'filesystem', source_layer: 'core'});
+  for (const t of found)
+    emitter.node({type: 'test', id: testId('dart', file, t.category, t.name), name: t.name, path: file, framework: 'dart',
+      level: 'unit', category: t.category || undefined, suite, provenance: 'ast', source_layer: 'core'});
 }
 
-/** A batch generated from another revision of the core repo, or more than a week ago, is still loaded and reported. */
-function staleReason(header: Header, repoRoot: string): string | undefined {
-  const head = gitRevisions(repoRoot).reddata;
-  if (typeof header.revision === 'string' && head !== 'unknown' && header.revision !== head)
-    return `generated from ${header.revision.slice(0, 12)}, HEAD is ${head.slice(0, 12)}`;
-  const builtAt = Date.parse(String(header.built_at ?? ''));
-  const days = (Date.now() - builtAt) / 86400000;
-  if (Number.isNaN(builtAt)) return 'no built_at';
-  return days > STALE_DAYS ? `generated ${Math.floor(days)} days ago` : undefined;
-}
-
-/**
- * What the batch covers, for the manifest: a package the header lists with the rows it carried for it, so `0` reads as
- * "the generator walked it and it holds nothing"; a Dart package of this checkout the header does not list is `omitted`,
- * which reads as "coverage unknown". Without the distinction an absent package and an empty one look alike.
- */
-function coverage(repoRoot: string, header: Header, rows: Map<string, number>): Record<string, number | string> {
-  const listed = (Array.isArray(header.packages) ? header.packages : []).map(String);
-  const known = PUBSPECS.flatMap((p) => globSync(p, {cwd: repoRoot, posix: true, windowsPathsNoEscape: true})).map(packageOf);
-  const out: Record<string, number | string> = {};
-  for (const name of [...new Set([...listed, ...rows.keys(), ...known])].sort())
-    out[name] = listed.includes(name) ? rows.get(name) ?? 0 : 'omitted';
+/** `test('name'` calls with the `group('title'` chain around each; a commented-out test is not a test. */
+export function parseDartTests(source: string): {category: string, name: string}[] {
+  const text = blankComments(source);
+  const groups: {title: string, start: number, end: number}[] = [];
+  const out: {category: string, name: string}[] = [];
+  for (const m of text.matchAll(TEST_CALL)) {
+    const at = m.index!;
+    if (m[1] === 'group') {
+      const open = text.indexOf('{', at + m[0].length);
+      if (open >= 0) groups.push({title: m[3].trim(), start: open, end: matchBrace(text, open)});
+      continue;
+    }
+    out.push({category: groups.filter((g) => g.start < at && at < g.end).map((g) => g.title).join(' > '), name: m[3].trim()});
+  }
   return out;
 }
 
-function countRow(rows: Map<string, number>, file: unknown): void {
-  const name = typeof file === 'string' ? packageOf(file) : undefined;
-  if (name) rows.set(name, (rows.get(name) ?? 0) + 1);
+/** §6 in Dart: `/// ~id` opening a doc comment owns the file, `// ~id` alone on a line only participates. Returns
+ * how many markers named a feature no home declares, which are counted and drawn for nothing. */
+function markers(emitter: Emitter, homes: HomeSet, file: string, lines: string[]): number {
+  let unresolved = 0;
+  const seen = new Set<string>();
+  for (let i = 0; i < lines.length; i++) {
+    const owns = OWN_MARKER.exec(lines[i].trim());
+    // a `///` line inside a doc comment is prose about the feature, not the marker that opens one
+    if (owns && i > 0 && lines[i - 1].trim().startsWith('///')) continue;
+    const token = owns ? owns[1] : MARKER_LINE.exec(lines[i])?.[1];
+    if (token === undefined || seen.has(`${owns ? 'owns' : 'in'}:${token}`)) continue;
+    seen.add(`${owns ? 'owns' : 'in'}:${token}`);
+    const target = resolveMention(emitter, homes, token, `${file}:${i + 1}`);
+    if (!target || target.root !== 'feature') {
+      unresolved++;
+      continue;
+    }
+    emitter.claim({file, feature: target.id, rung: 1, source: 'marker', mode: owns ? undefined : 'participates', props: {}, line: i + 1});
+  }
+  return unresolved;
+}
+
+/** `HelpUrl.Name` -> the url it stands for, read once from the table in grok_shared. */
+function helpConstants(repoRoot: string): Map<string, string> {
+  const out = new Map<string, string>();
+  const full = path.join(repoRoot, HELP_TABLE);
+  if (!fs.existsSync(full)) return out;
+  for (const m of fs.readFileSync(full, 'utf8').matchAll(HELP_CONST)) out.set(m[1], m[2]);
+  return out;
+}
+
+/** The help pages a file names, through the table, a `/help/...` literal or a `public/help/...` path in a doc comment.
+ * A page that resolves is recorded for membership to draw `documents` from; one that does not is a stale reference. */
+function helpRefs(emitter: Emitter, repoRoot: string, file: string, text: string, lines: string[], constants: Map<string, string>): void {
+  const urls = new Set<string>();
+  for (const m of text.matchAll(HELP_REF)) {
+    const url = constants.get(m[1]);
+    if (url) urls.add(url);
+  }
+  for (const m of text.matchAll(HELP_LITERAL)) urls.add(m[1]);
+  for (const line of lines) {
+    const m = HELP_DOC_PATH.exec(line);
+    if (m) urls.add(m[1].slice('public'.length));
+  }
+  const pages = new Set<string>();
+  for (const raw of urls) {
+    const url = raw.startsWith('/') ? raw : `/${raw}`;
+    const page = helpPage(repoRoot, url);
+    if (!page) emitter.problem('unresolved_ids', `${file}: help-url ${url} names no page under ${HELP_DIR}`);
+    else if (!pages.has(page)) {
+      pages.add(page);
+      emitter.stub(docId(page), 'doc-page', path.posix.basename(page), 'ast', {path: page, kind: docKind(page)});
+      emitter.helpRef(file, page);
+    }
+  }
+}
+
+/** What the pass covered, for the manifest: every Dart package of the checkout with the number of files it holds. */
+function coverage(repoRoot: string, perPackage: Map<string, number>): Record<string, number> {
+  const known = PUBSPECS.flatMap((p) => globSync(p, {cwd: repoRoot, posix: true, windowsPathsNoEscape: true})).map(packageOf);
+  const out: Record<string, number> = {};
+  for (const name of [...new Set([...perPackage.keys(), ...known])].filter((n): n is string => n !== undefined).sort())
+    out[name] = perPackage.get(name) ?? 0;
+  return out;
 }
 
 /** `core/shared/ddt/lib/x.dart` and `core/shared/ddt/pubspec.yaml` are both `ddt`; `core/server/libs/shelf/...` is `shelf`. */

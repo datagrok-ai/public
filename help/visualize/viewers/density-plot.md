@@ -1,4 +1,5 @@
 ---
+documents: [visualize/viewers/density-plot]
 title: "Density plot"
 description: Visualize the concentration of data points across a 2D area by binning and color-coding point density.
 keywords:

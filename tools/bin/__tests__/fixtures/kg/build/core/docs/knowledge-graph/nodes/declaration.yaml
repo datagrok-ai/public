@@ -3,7 +3,10 @@ extends: component
 description: >
   A named code declaration: class, interface, function, method, getter, property,
   enum, type alias, constant, mixin. From the TypeScript compiler for public/ and from
-  the prop_gen emitter for Dart. JS API members are declarations with public_api set.
+  the lexical Dart pass. JS API members are declarations with public_api set.
+  A declaration is a node only when it names a type, or when it is part of the JS API
+  surface; a unit's own members, consts and helpers are not nodes, their file and their
+  type stand for them.
   Id decl:<file>#<Owner.name>; a getter and a setter of the same name are
   decl:...#Owner.name:get and :set; overloads share one id with the merged signature.
 properties:

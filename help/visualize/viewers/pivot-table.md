@@ -1,4 +1,5 @@
 ---
+documents: [visualize/viewers/pivot-table]
 title: "Pivot table"
 description: Aggregate, group, and cross-tabulate data by pivoting column values into rows and columns.
 keywords:

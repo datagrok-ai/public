@@ -1,5 +1,6 @@
 ---
-feature: correlationplot
+id: TS:viewers/correlation-plot/ui
+covers: [visualize/viewers/correlation-plot]
 target_layer: manual-only
 coverage_type: smoke
 ---

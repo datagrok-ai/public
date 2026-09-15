@@ -1,4 +1,5 @@
 ---
+documents: [visualize/viewers/grid]
 title: "Grid"
 keywords:
   - grid

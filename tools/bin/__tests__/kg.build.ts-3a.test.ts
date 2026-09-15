@@ -126,7 +126,9 @@ describe('annotation parser (build-plan.md WO-3a)', () => {
 describe('ts-packages extractor (build-plan.md WO-3a)', () => {
   it('copies the fixture type files from the real ones, or skips when the monorepo is not around', () => {
     if (!fs.existsSync(path.join(realKg, 'schema.yaml'))) return;
-    const files = (root: string) => ['schema.yaml', ...['nodes', 'edges'].flatMap((d) => fs.readdirSync(path.join(root, d)).map((f) => `${d}/${f}`))].sort();
+    const under = (dir: string, prefix: string): string[] => fs.readdirSync(dir, {withFileTypes: true})
+      .flatMap((e) => e.isDirectory() ? under(path.join(dir, e.name), `${prefix}/${e.name}`) : [`${prefix}/${e.name}`]);
+    const files = (root: string) => ['schema.yaml', ...['nodes', 'edges'].flatMap((d) => under(path.join(root, d), d))].sort();
     const fixtureKg = path.join(fixture, KG_DIR);
     expect(files(fixtureKg)).toEqual(files(realKg));
     for (const f of files(fixtureKg)) expect(fs.readFileSync(path.join(fixtureKg, f), 'utf8'), f).toBe(fs.readFileSync(path.join(realKg, f), 'utf8'));

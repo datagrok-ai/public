@@ -1,5 +1,4 @@
 type: requested-by
-extends: involves
 from: Feature | Ticket
 to: Customer
 key: requested_by

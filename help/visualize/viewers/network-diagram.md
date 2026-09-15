@@ -1,4 +1,5 @@
 ---
+documents: [visualize/viewers/network-diagram]
 title: "Network diagram"
 description: Visualize graphs where column values become nodes and rows become edges, with color and size coding.
 keywords:

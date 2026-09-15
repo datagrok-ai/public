@@ -1,4 +1,5 @@
 ---
+documents: [visualize/viewers/statistics]
 title: "Statistics"
 description: Show descriptive statistics such as mean, median, standard deviation, and min/max for chosen columns.
 keywords:

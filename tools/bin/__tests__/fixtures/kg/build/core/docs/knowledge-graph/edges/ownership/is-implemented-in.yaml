@@ -1,5 +1,4 @@
 type: is-implemented-in
-extends: touches
 from: Feature
 to: Component
 key: code

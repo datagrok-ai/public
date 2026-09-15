@@ -1,4 +1,4 @@
-/// The knowledge-graph type system: `schema.yaml`, `nodes/*.yaml`, `edges/*.yaml`
+/// The knowledge-graph type system: `schema.yaml`, `nodes/*.yaml`, `edges/<group>/*.yaml`
 /// (core/docs/knowledge-graph/conventions.md §7). Loads the files, parses every member
 /// with the TypeScript compiler and checks the constraints listed in `schema.yaml`.
 import * as fs from 'fs';
@@ -55,6 +55,8 @@ export interface NodeType {
 export interface EdgeType {
   name: string;
   file: string;
+  /** The folder under `edges/` the file sits in, `''` for one at the root; a selector, never part of an id. */
+  group: string;
   extends?: string;
   chain: string[];
   abstract: boolean;
@@ -83,6 +85,8 @@ export interface TypeSystem {
   /** Edge key -> edge type. */
   keys: Map<string, EdgeType>;
   roots: string[];
+  /** The `edges/` subfolders in the order the glossary and `explain` show them (schema.yaml `edge_groups`). */
+  edgeGroups: string[];
   /** schema.yaml `version`, written into every manifest. */
   schemaVersion: number;
   /** First segments a feature id may start with (schema.yaml `feature_roots`); empty means unchecked. */
@@ -110,6 +114,7 @@ const TYPE_NAME = /^[a-z][a-z0-9-]*$/;
 const UPPER_SNAKE = /^[A-Z][A-Z0-9_]*$/;
 const PREFIX = /^[A-Z][A-Za-z]{0,5}$/;
 const DEFAULT_ROOTS = ['feature', 'concept', 'component', 'artifact', 'work', 'actor', 'infra', 'type'];
+const DEFAULT_EDGE_GROUPS = ['tree', 'ownership', 'code', 'evidence', 'work', 'people', 'infra'];
 const DEFAULT_PROVENANCE = ['annotation', 'filesystem', 'ast', 'registry', 'git', 'external', 'llm', 'manual'];
 const DEFAULT_RESERVED = ['id', 'name', 'description', 'status', 'visibility', 'owner', 'aliases', 'source_layer', 'home', 'provenance', 'batch'];
 const EDGE_BUILD_FIELDS = ['derived_by', 'confidence', 'evidence', 'batch'];
@@ -295,13 +300,16 @@ function describeKind(m: Member): string {
 
 interface RawType {
   file: string;
+  /** The folder the file sits in, relative to the type folder; `''` at its root. */
+  group: string;
   data: Record<string, any>;
 }
 
 export function loadTypeSystem(kgRoot: string): TypeSystem {
   const system: TypeSystem = {
     nodes: new Map(), edges: new Map(), prefixes: new Map(), keys: new Map(),
-    roots: DEFAULT_ROOTS, schemaVersion: 1, featureRoots: [], provenance: DEFAULT_PROVENANCE, reservedNodeFields: DEFAULT_RESERVED,
+    roots: DEFAULT_ROOTS, edgeGroups: DEFAULT_EDGE_GROUPS,
+    schemaVersion: 1, featureRoots: [], provenance: DEFAULT_PROVENANCE, reservedNodeFields: DEFAULT_RESERVED,
     buildFields: {node: [], edge: []}, errors: [], warnings: [],
   };
   const error: Reporter = (code, file, message, line) => system.errors.push({file, line, code, message});
@@ -311,6 +319,7 @@ export function loadTypeSystem(kgRoot: string): TypeSystem {
   if (typeof schema.version === 'number') system.schemaVersion = schema.version;
   const constraints = schema.constraints ?? {};
   if (Array.isArray(constraints.roots)) system.roots = constraints.roots.map(String);
+  if (Array.isArray(constraints.edge_groups)) system.edgeGroups = constraints.edge_groups.map(String);
   if (Array.isArray(constraints.feature_roots)) system.featureRoots = constraints.feature_roots.map(String);
   const reserved = schema.manifest?.reserved_fields;
   if (Array.isArray(reserved)) system.reservedNodeFields = reserved.map(String);
@@ -395,7 +404,7 @@ export function loadTypeSystem(kgRoot: string): TypeSystem {
     if (d.same_type === true && from.types && to.types && [...from.types].sort().join('|') !== [...to.types].sort().join('|'))
       error('same-type', raw.file, `edge ${name}: same_type but from (${d.from}) differs from to (${d.to})`);
     system.edges.set(name, {
-      name, file: raw.file, extends: d.extends, chain, abstract: d.abstract === true,
+      name, file: raw.file, group: raw.group, extends: d.extends, chain, abstract: d.abstract === true,
       from: from.types ?? [], to: to.types ?? [],
       key: d.key === undefined ? undefined : String(d.key),
       keySide: d.key_side === 'to' ? 'to' : 'from',
@@ -459,13 +468,14 @@ function readYaml(file: string, error: Reporter): Record<string, any> | null {
   }
 }
 
+/** Every `.yaml` under [folder], subfolders included; the folder a file sits in is its group, the name stays unique across all of them. */
 function loadFolder(folder: string, namePattern: RegExp, kind: string, error: Reporter): Map<string, RawType> {
   const out = new Map<string, RawType>();
   if (!fs.existsSync(folder)) {
     error('unreadable', folder, 'folder not found');
     return out;
   }
-  for (const entry of fs.readdirSync(folder).filter((f) => f.endsWith('.yaml')).sort()) {
+  for (const entry of yamlFiles(folder)) {
     const file = path.join(folder, entry);
     const data = readYaml(file, error);
     if (!data) continue;
@@ -477,20 +487,35 @@ function loadFolder(folder: string, namePattern: RegExp, kind: string, error: Re
     const kebab = kebabOfLabel(name);
     if (kebab) error('type-name', file, `${kind} type name '${name}' is upper-snake; type names are lower-dash-case, write '${kebab}' (the graph label ${name} is derived from it)`);
     else if (!namePattern.test(name)) error('type-name', file, `${kind} type name '${name}' does not match ${namePattern}`);
-    if (entry !== `${name}.yaml`) error('type-name', file, `file name does not match type '${name}' (expected ${name}.yaml)`);
+    if (path.basename(entry) !== `${name}.yaml`) error('type-name', file, `file name does not match type '${name}' (expected ${name}.yaml)`);
     if (out.has(name)) {
-      error('type-name', file, `duplicate ${kind} type '${name}', also declared in ${out.get(name)!.file}`);
+      error('type-name', file, `duplicate ${kind} type '${name}', declared in both ${out.get(name)!.file} and ${file}; a type name is unique across every folder under ${path.basename(folder)}/`);
       continue;
     }
-    out.set(name, {file, data});
+    out.set(name, {file, group: slashes(path.dirname(entry)) === '.' ? '' : slashes(path.dirname(entry)), data});
   }
   return out;
+}
+
+/** Paths of every `.yaml` under [folder], relative to it, in a stable order. */
+function yamlFiles(folder: string, prefix = ''): string[] {
+  const out: string[] = [];
+  for (const entry of fs.readdirSync(folder, {withFileTypes: true}).sort((a, b) => a.name < b.name ? -1 : 1)) {
+    const relative = prefix ? `${prefix}/${entry.name}` : entry.name;
+    if (entry.isDirectory()) out.push(...yamlFiles(path.join(folder, entry.name), relative));
+    else if (entry.name.endsWith('.yaml')) out.push(relative);
+  }
+  return out;
+}
+
+function slashes(p: string): string {
+  return p.replace(/\\/g, '/');
 }
 
 function unreadableTypes(folder: string, loaded: Map<string, RawType>): string[] {
   if (!fs.existsSync(folder)) return [];
   const loadedFiles = new Set([...loaded.values()].map((r) => path.basename(r.file)));
-  return fs.readdirSync(folder).filter((f) => f.endsWith('.yaml') && !loadedFiles.has(f)).map((f) => f.slice(0, -5));
+  return yamlFiles(folder).filter((f) => !loadedFiles.has(path.basename(f))).map((f) => path.basename(f).slice(0, -5));
 }
 
 function checkPascalCollisions(raw: Map<string, RawType>, kind: string, error: Reporter): void {
@@ -684,13 +709,18 @@ export function nodeOrder(system: TypeSystem): NodeType[] {
   });
 }
 
-/** Edge types in glossary order: grouped by the base they end at, then by depth and name. */
+/** Edge types in glossary order: by folder group, groups in the order schema.yaml lists them, the ungrouped ones last. */
 export function edgeOrder(system: TypeSystem): EdgeType[] {
-  return [...system.edges.values()].sort((a, b) => {
-    const ba = a.chain[a.chain.length - 1], bb = b.chain[b.chain.length - 1];
-    if (ba !== bb) return ba < bb ? -1 : 1;
-    return a.chain.length - b.chain.length || (a.name < b.name ? -1 : a.name > b.name ? 1 : 0);
-  });
+  return [...system.edges.values()].sort((a, b) =>
+    groupRank(system, a.group) - groupRank(system, b.group) ||
+    (a.group < b.group ? -1 : a.group > b.group ? 1 : 0) ||
+    (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
+}
+
+function groupRank(system: TypeSystem, group: string): number {
+  if (!group) return system.edgeGroups.length + 1;
+  const index = system.edgeGroups.indexOf(group);
+  return index < 0 ? system.edgeGroups.length : index;
 }
 
 /** Concrete authored node types under any of [types] (kebab), `node` meaning all. */

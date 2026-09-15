@@ -314,13 +314,14 @@ describe('grok kg build: writer, manifest and public projection (build-plan.md W
     expect(features.find((f) => f.id === 'visualize/viewers/scatter-plot')).toMatchObject({description: 'Points in two dimensions.', visibility: 'public'});
     expect(rows('nodes/person')).toEqual([]);
     expect(rows('nodes/source-file')).toEqual([]);
-    expect(rows('nodes/doc-page').map((d) => d.id)).toEqual(['doc:public/help/visualize/viewers/scatter-plot-tips.md', 'doc:public/help/visualize/viewers/scatter-plot.md']);
+    expect(rows('nodes/doc-page').map((d) => d.id)).toEqual(['doc:public/help/visualize/viewers/scatter-plot-tips.md']);
     expect(rows('edges/owner')).toEqual([]);
     expect(rows('edges/is-implemented-in')).toEqual([]);
     expect(rows('edges/tracked-in')).toEqual([]);
     expect(rows('edges/covers')).toHaveLength(1);
-    expect(rows('edges/documents')[0].evidence).toEqual(['public/help/visualize/viewers/scatter-plot-tips.md']);
-    expect(rows('edges/mentions')).toEqual([expect.objectContaining({from: 'doc:public/help/visualize/viewers/scatter-plot.md', to: 'doc:public/help/visualize/viewers/scatter-plot-tips.md'})]);
+    // the tips page declares `documents:` and the home cites it: one edge, both pages as evidence
+    expect(rows('edges/documents')[0].evidence).toEqual(['public/help/visualize/viewers/scatter-plot-tips.md', 'public/help/visualize/viewers/scatter-plot.md']);
+    expect(rows('edges/mentions')).toEqual([]);
     expect(rows('edges/uses-concept')).toHaveLength(2);
   });
 
@@ -339,7 +340,7 @@ describe('grok kg build: writer, manifest and public projection (build-plan.md W
     const {manifest, out} = await build(repo, {public: true});
     expect(manifest.mode).toBe('public');
     expect(manifest.revisions).toEqual({public: pub});
-    expect(manifest.problems.partial_stubs).toBe(3);
+    expect(manifest.problems.partial_stubs).toBe(2);
     expect(Object.entries(manifest.problems).filter(([k]) => k !== 'partial_stubs').every(([, n]) => n === 0)).toBe(true);
     expect(fs.existsSync(path.join(out, 'reports'))).toBe(false);
     const files = fs.readdirSync(out, {recursive: true, withFileTypes: true}).filter((d) => d.isFile()).map((d) => path.join(d.parentPath ?? d.path, d.name));
@@ -383,7 +384,7 @@ describe('homes extractor (build-plan.md WO-2)', () => {
       manual_only: true, coverage_type: 'smoke', target_layer: 'manual-only', description: 'Migrated scenario: a home although it sits in the Test Track folder.', visibility: 'public',
     })]);
     expect(rows('edges/covers')).toEqual([{type: 'covers', from: 'TS:scatter-plot-ui', to: 'visualize/viewers/scatter-plot', batch: expect.any(String), confidence: 1, derived_by: 'annotation',
-      evidence: ['public/packages/UsageAnalysis/files/TestTrack/Viewers/scatter-plot-ui.md'], level: 'exercised', strength: 'normal'}]);
+      evidence: ['public/packages/UsageAnalysis/files/TestTrack/Viewers/scatter-plot-ui.md'], level: 'exercised'}]);
   });
 
   it('reads an annotated page: a doc-page stub and documents edges with their properties', async () => {
@@ -413,15 +414,18 @@ describe('homes extractor (build-plan.md WO-2)', () => {
     expect(rows('nodes/declaration').find((d) => d.id === 'decl:public/js-api/src/viewer.ts#ScatterPlotViewer')).toMatchObject({name: 'ScatterPlotViewer', language: 'ts', path: 'public/js-api/src/viewer.ts', status: 'proposed'});
   });
 
-  it('claims a cited implementation file at rung 3 unless a code: root already covers it, and mentions cited documents', async () => {
+  it('claims a cited implementation file at rung 3 unless a code: root already covers it, and takes a cited help page as documentation', async () => {
     const {rows} = await build();
     expect(rows('reports/claims.jsonl')).toEqual([
       {feature: 'visualize/viewers', file: 'core/client/d4/lib', line: 10, props: {}, rung: 3, source: 'home'},
       expect.objectContaining({feature: 'visualize/viewers/scatter-plot', file: 'core/client/d4/lib/scatter.dart', rung: 2}),
       expect.objectContaining({feature: 'visualize/viewers/scatter-plot', file: 'public/js-api/src/viewer.ts', rung: 2}),
     ]);
-    expect(rows('edges/mentions')).toEqual([expect.objectContaining({from: 'doc:public/help/visualize/viewers/scatter-plot.md', to: 'doc:public/help/visualize/viewers/scatter-plot-tips.md', derived_by: 'annotation', evidence: ['public/help/visualize/viewers/scatter-plot.md']})]);
-    expect(rows('nodes/doc-page').map((d) => d.id)).toEqual(['doc:public/help/visualize/viewers/scatter-plot-tips.md', 'doc:public/help/visualize/viewers/scatter-plot.md']);
+    // a help page the home's body cites documents the feature (conventions.md §5.4), so it is no mention
+    expect(rows('edges/mentions')).toEqual([]);
+    expect(rows('edges/documents')).toEqual([expect.objectContaining({from: 'doc:public/help/visualize/viewers/scatter-plot-tips.md', to: 'visualize/viewers/scatter-plot',
+      derived_by: 'annotation', evidence: ['public/help/visualize/viewers/scatter-plot-tips.md', 'public/help/visualize/viewers/scatter-plot.md']})]);
+    expect(rows('nodes/doc-page').map((d) => d.id)).toEqual(['doc:public/help/visualize/viewers/scatter-plot-tips.md']);
   });
 
   it('stubs tickets from tickets: with the tracker from the key shape and tracked-in edges with their properties', async () => {

@@ -7,12 +7,10 @@ import {Emitter, Claim} from '../emitter';
 import {Row} from '../normalize';
 import {BuildContext, Extractor} from '../registry';
 import {REPO_PREFIX, GLOB_MAGIC} from '../../homes';
-import {fileId, languageOf, sourceLayerOf, posix} from '../ids';
+import {fileId, languageOf, sourceLayerOf, posix, docId, CODE_ROOTS} from '../ids';
 import {countLines} from './homes';
 import {homesOf} from './markers';
 
-/** Where a file has to live to count as an orphan, and what rung 4 asks a feature home about. */
-const CODE_ROOTS = ['core/client/', 'core/server/', 'core/shared/', 'public/packages/', 'public/libraries/', 'public/js-api/'];
 /** Claim properties an ownership edge carries; anything else the `code:` item said stays in the claim. */
 const OWNER_PROPS = ['role', 'layer'];
 const RUNGS: (1 | 2 | 3)[] = [1, 2, 3];
@@ -62,6 +60,7 @@ class Membership {
       }
     for (const file of [...files.keys()].sort()) this.resolve(file, files.get(file)!, claims.get(file) ?? []);
     this.testEdges();
+    this.helpEdges();
     this.orphans.sort((a, b) => b.loc - a.loc || (a.file < b.file ? -1 : 1));
     this.emitter.manifest('inventory', this.inventory);
     this.emitter.report('ownership', {inventory: this.inventory, ambiguous: this.ambiguous, orphans: this.orphans, resolved_by_chain: this.chained});
@@ -195,6 +194,15 @@ class Membership {
       if (features?.size === 1) return [...features][0];
     }
     return undefined;
+  }
+
+  /** A help page a file names documents the feature that owns the file (conventions.md §4, the Dart pass). */
+  private helpEdges(): void {
+    for (const {file, page} of this.emitter.helpRefs) {
+      const feature = this.owners.get(file);
+      if (!feature) continue;
+      this.emitter.edge({type: 'documents', from: docId(page), to: feature, derived_by: 'ast', confidence: 0.8, evidence: [file]});
+    }
   }
 
   private testEdges(): void {

@@ -70,6 +70,7 @@ export class Emitter {
   private nodes = new Map<string, NodeEntry>();
   private edges = new Map<string, Row>();
   private claims: Claim[] = [];
+  private helpPages: {file: string, page: string}[] = [];
   private problems: Record<string, number> = Object.fromEntries(PROBLEM_KINDS.map((k) => [k, 0]));
   private details: Record<string, string[]> = {};
   private invalid: Row[] = [];
@@ -156,6 +157,16 @@ export class Emitter {
   /** What membership resolution (WO-4) reads: every claim made so far. */
   get claimed(): Claim[] {
     return this.claims;
+  }
+
+  /** A help page a source file names (`HelpUrl.X`, a `/help/...` literal): membership draws `documents` from it
+   * once the file has an owner, the way it draws `tests`. */
+  helpRef(file: string, page: string): void {
+    this.helpPages.push({file, page});
+  }
+
+  get helpRefs(): {file: string, page: string}[] {
+    return this.helpPages;
   }
 
   /** The rows emitted so far whose type is [type] or narrows it; membership resolution reads files and tests this way. */

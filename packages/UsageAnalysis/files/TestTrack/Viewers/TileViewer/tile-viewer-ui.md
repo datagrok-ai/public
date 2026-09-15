@@ -1,5 +1,6 @@
 ---
-feature: tileviewer
+id: TS:viewers/tile-viewer/ui
+covers: [visualize/viewers/tile-viewer]
 target_layer: manual-only
 coverage_type: smoke
 manual_only_reason: |

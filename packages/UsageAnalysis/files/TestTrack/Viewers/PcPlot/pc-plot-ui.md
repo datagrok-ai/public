@@ -1,5 +1,6 @@
 ---
-feature: pcplot
+id: TS:viewers/pc-plot/ui
+covers: [visualize/viewers/pc-plot]
 target_layer: manual-only
 coverage_type: smoke
 manual_only_reason: |

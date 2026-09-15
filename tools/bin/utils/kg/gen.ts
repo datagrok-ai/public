@@ -84,7 +84,10 @@ export function generateDts(system: TypeSystem): string {
   lines.push(`export type EdgeTypeName = ${union(concreteEdges.map((e) => e.name).sort())};`);
   lines.push(`/** Reference properties: each materializes as a REF edge whose predicate is the property name (conventions.md §7.6). */`);
   lines.push(`export type RefPredicate = ${union([...predicates].sort())};`);
-  lines.push('');
+  lines.push(`/** The folder under edges/ each edge type is written in; a selector for querying, never part of a name (conventions.md §4). */`);
+  lines.push('export interface EdgeGroups {');
+  for (const edge of concreteEdges) lines.push(`  ${literal(edge.name)}: ${literal(edge.group)};`);
+  lines.push('}', '');
   return lines.join('\n');
 }
 
@@ -209,14 +212,24 @@ function nodeTable(system: TypeSystem): string {
   return rows.join('\n');
 }
 
+const EDGE_INTRO = 'An edge is named by its file, grouped by its folder, referred to by name; a group is a selector, never\n' +
+  'part of a name. `edges/ref.yaml` is the mechanism behind reference properties (§7.6) and sits in no group.';
+
+/** One table per `edges/` folder, the folders in schema order, the ungrouped ones under a last heading. */
 function edgeTable(system: TypeSystem): string {
-  const rows = ['| Edge | Label | From → To | Extends | Key | Derived by | One line |', '|---|---|---|---|---|---|---|'];
+  const out: string[] = [EDGE_INTRO];
+  let group: string | null = null;
   for (const e of edgeOrder(system)) {
+    if (e.group !== group) {
+      group = e.group;
+      out.push('', `### ${group || 'reference'}`, '',
+        '| Edge | Label | From → To | Extends | Key | Derived by | One line |', '|---|---|---|---|---|---|---|');
+    }
     const key = e.key === undefined ? '' : `\`${e.key}:\`${e.keySide === 'to' ? ' (on target)' : ''}`;
     const ends = `${e.from.map(pascal).join(' \\| ')} → ${e.to.map(pascal).join(' \\| ')}`;
-    rows.push(`| \`${e.name}\`${e.abstract ? ' *(abstract)*' : ''} | ${graphLabel(e.name)} | ${ends} | ${e.extends ?? ''} | ${key} | ${e.derivedBy.join(', ')} | ${cell(firstSentence(e.description))} |`);
+    out.push(`| \`${e.name}\`${e.abstract ? ' *(abstract)*' : ''} | ${graphLabel(e.name)} | ${ends} | ${e.extends ?? ''} | ${key} | ${e.derivedBy.join(', ')} | ${cell(firstSentence(e.description))} |`);
   }
-  return rows.join('\n');
+  return out.join('\n');
 }
 
 // ---------------------------------------------------------------- feature-tree.md

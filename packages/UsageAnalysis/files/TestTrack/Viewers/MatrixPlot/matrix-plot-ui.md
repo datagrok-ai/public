@@ -1,5 +1,6 @@
 ---
-feature: matrixplot
+id: TS:viewers/matrix-plot/ui
+covers: [visualize/viewers/matrix-plot]
 target_layer: manual-only
 coverage_type: smoke
 manual_only_reason: |

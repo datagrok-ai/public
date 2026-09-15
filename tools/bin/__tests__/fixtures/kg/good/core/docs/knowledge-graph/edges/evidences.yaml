@@ -1,8 +1,0 @@
-type: evidences
-abstract: true
-from: Artifact
-to: Feature
-derived_by: [annotation, filesystem]
-description: Base of the edges through which an artifact vouches for a feature.
-properties:
-  strength?:     "'weak' | 'normal' | 'strong' = 'normal'"

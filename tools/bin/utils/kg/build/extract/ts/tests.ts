@@ -188,7 +188,7 @@ function callbackBrace(text: string, from: number): number {
 }
 
 /** Index of the `}` closing the brace at [open], strings skipped; the end of the text when unbalanced. */
-function matchBrace(text: string, open: number): number {
+export function matchBrace(text: string, open: number): number {
   let depth = 0;
   let quote = '';
   for (let i = open; i < text.length; i++) {

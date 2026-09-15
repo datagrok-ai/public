@@ -1,5 +1,4 @@
 type: changes
-extends: evidences
 from: ChangelogEntry
 to: Feature
 derived_by: [annotation, llm]

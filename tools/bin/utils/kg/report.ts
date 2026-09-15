@@ -36,7 +36,7 @@ export interface Report {
   title: string;
   /** One line: what the report counted. */
   summary: string;
-  /** What it could not see, the Dart batch first. */
+  /** What it could not see, the Dart pass first. */
   notes: string[];
   sections: Section[];
 }
@@ -277,7 +277,7 @@ function stale(data: GraphData, options: ReportOptions): Report {
     for (const edge of data.edges.get('defines-concept') ?? []) {
       const decl = data.nodes.get(String(edge.from));
       if (!decl || decl.provenance !== 'annotation' || !String(decl.path ?? '').endsWith('.dart')) continue;
-      rows.push({kind: 'declaration', source: String(edge.to), target: String(edge.from), reason: 'defined_by names a declaration the Dart batch does not have'});
+      rows.push({kind: 'declaration', source: String(edge.to), target: String(edge.from), reason: 'defined_by names a declaration the Dart pass does not have'});
     }
   const kinds = new Map<string, number>();
   for (const row of rows) kinds.set(String(row.kind), (kinds.get(String(row.kind)) ?? 0) + 1);
@@ -286,7 +286,7 @@ function stale(data: GraphData, options: ReportOptions): Report {
     summary: `${rows.length} stale references${kinds.size ? `: ${[...kinds].sort(([a], [b]) => compare(a, b)).map(([k, n]) => `${n} ${k}`).join(', ')}` : ''}.`,
     notes: [
       ...(backlog ? [] : ['the backlog snapshot was not read, so a tracked-in ticket is reported as unknown, not as absent']),
-      ...(data.sources.dart === 'ok' ? [] : ['the Dart batch is not ok, so defined_by declarations are not checked']),
+      ...(data.sources.dart === 'ok' ? [] : ['the Dart pass is not ok, so defined_by declarations are not checked']),
     ],
     sections: [{title: 'references', rows: rows.sort((a, b) => compare(String(a.kind), String(b.kind)) || compare(String(a.source), String(b.source)) || compare(String(a.target), String(b.target)))}],
   };
@@ -329,7 +329,8 @@ function coverage(data: GraphData, options: ReportOptions): Report {
       stub: !f.home, tests_runnable: counts.runnable, tests_skipped: counts.skipped, tests_dynamic: counts.dynamic,
       inherited: descendants(id, children).reduce((sum, d) => sum + (direct.get(d)?.length ?? 0), 0),
       scenarios: covered.length, scenario_automated: covered.reduce((sum, s) => sum + (automated.get(s) ?? 0), 0),
-      no_tests: !own.length && !covered.length, no_docs: !documents.get(id), no_description: !f.description,
+      user_help: (f.user_help as string | undefined) ?? '', developer_help: (f.developer_help as string | undefined) ?? '',
+      no_tests: !own.length && !covered.length, no_docs: !documents.get(id) && !f.user_help && !f.developer_help, no_description: !f.description,
     };
   }).sort((a, b) => compare(a.feature, b.feature));
   const gaps = (key: 'no_tests' | 'no_docs' | 'no_description') => rows.filter((r) => !r.stub && r[key]).length;

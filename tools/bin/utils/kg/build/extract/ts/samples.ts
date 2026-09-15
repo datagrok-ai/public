@@ -7,14 +7,13 @@ import * as path from 'path';
 import {globSync} from 'glob';
 import {Emitter} from '../../emitter';
 import {BuildContext, Extractor} from '../../registry';
-import {sampleId, docId, docKind, languageOf} from '../../ids';
+import {sampleId, docId, docKind, languageOf, HELP_DIR} from '../../ids';
 import {commentPrefix} from '../../annotations';
 import {homesOf, idTokens, resolveMention} from '../markers';
 import {tsSources} from './declarations';
 import {UsesLayer} from './uses';
 
 const SCRIPTS_DIR = 'public/packages/ApiSamples/scripts';
-const HELP_DIR = 'public/help';
 const API_MEMBER = /\b((?:DG|ui|grok)(?:\.[A-Za-z_$][\w$]*){1,3})/g;
 const HELP_URL = /^(?:https?:\/\/(?:[\w-]+\.)*datagrok\.ai)?\/help\/([^#?]+?)(?:\.mdx?)?\/?(?:[#?].*)?$/;
 

@@ -1,5 +1,6 @@
 ---
-feature: barchart
+id: TS:viewers/bar-chart/ui
+covers: [visualize/viewers/bar-chart]
 target_layer: manual-only
 coverage_type: smoke
 manual_only_reason: |

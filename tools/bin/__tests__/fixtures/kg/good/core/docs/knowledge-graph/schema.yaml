@@ -117,4 +117,5 @@ constraints:
   owner_required:     a second-level feature node sets owner
   base:             node
   roots:            [feature, concept, component, artifact, work, actor, infra, type]
+  edge_groups:      [tree, ownership, code, evidence, work, people, infra]   # the edges/ subfolders, in the order the glossary and `kg explain` show them; edges/ref.yaml is in no group
   feature_roots:    [access, transform, explore, visualize, compute, govern, collaborate, develop, deploy, domains, platform, client, server, infra, ops, saas]   # first segment of a feature id (conventions.md 2.3)

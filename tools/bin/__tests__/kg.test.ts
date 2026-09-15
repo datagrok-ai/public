@@ -6,7 +6,7 @@ import os from 'os';
 import path from 'path';
 import {fileURLToPath} from 'url';
 import {Project} from 'ts-morph';
-import {parseMember, loadTypeSystem, graphLabel, TypeSystem} from '../utils/kg/types';
+import {parseMember, loadTypeSystem, graphLabel, edgeOrder, TypeSystem} from '../utils/kg/types';
 import {splitFrontmatter} from '../utils/kg/frontmatter';
 import {extractCitations, proseLines} from '../utils/kg/citations';
 import {loadHomes, makeReport, HomeSet} from '../utils/kg/homes';
@@ -134,8 +134,36 @@ describe('kg type files (conventions.md §7.3, §7.4, schema.yaml constraints)',
     expect(developer.authored).toBe(true);
     expect(developer.members.company).toMatchObject({nullable: false, refs: ['team']});
     expect(developer.members.email).toMatchObject({nullable: false});
-    expect(system.edges.get('covers')!.properties).toHaveProperty('strength');
+    expect(system.edges.get('covers')!.properties).toHaveProperty('level');
     expect(system.keys.get('superseded_by')!.keySide).toBe('to');
+  });
+
+  it('derives an edge type\'s group from the folder its file sits in, and leaves ref ungrouped', () => {
+    const system = loadTypeSystem(path.join(fixtures, 'good', KG_DIR));
+    expect(system.edges.get('covers')!.group).toBe('evidence');
+    expect(system.edges.get('part-of')!.group).toBe('tree');
+    expect(system.edges.get('is-implemented-in')!.group).toBe('ownership');
+    expect(system.edges.get('tracked-in')!.group).toBe('work');
+    expect(system.edges.get('ref')!.group).toBe('');
+    // the group is a selector, never part of the name or of the graph label
+    expect(system.edges.get('covers')!.name).toBe('covers');
+    expect(graphLabel(system.edges.get('covers')!.name)).toBe('COVERS');
+    // and the glossary order follows schema.yaml edge_groups, not the alphabet
+    expect(edgeOrder(system).map((e) => e.group)).toEqual(['tree', 'tree', 'tree', 'tree', 'ownership', 'evidence', 'evidence', 'evidence', 'work', '']);
+  });
+
+  it('accepts a group folder nested more than one level deep', () => {
+    const repo = makeRepo();
+    const kgRoot = path.join(repo, KG_DIR);
+    write(kgRoot, 'edges/code/ast/mentors.yaml', 'type: mentors\nfrom: Person\nto: Person\nderived_by: [ast]\ndescription: Nested two folders deep.\n');
+    const system = loadTypeSystem(kgRoot);
+    expect(system.errors).toEqual([]);
+    expect(system.edges.get('mentors')!.group).toBe('code/ast');
+  });
+
+  it('rejects one type name declared in two folders, naming both files', () => {
+    expect(typeErrors((kg) => write(kg, 'edges/code/covers.yaml', fs.readFileSync(path.join(kg, 'edges/evidence/covers.yaml'), 'utf8'))))
+      .toEqual([expect.stringMatching(/^duplicate edge type 'covers', declared in both .*edges.code.covers\.yaml and .*edges.evidence.covers\.yaml; a type name is unique across every folder under edges\/$/)]);
   });
 
   it('accepts narrowing: nullable to required, enum subset, reference to a subtype', () => {
@@ -181,15 +209,16 @@ describe('kg type files (conventions.md §7.3, §7.4, schema.yaml constraints)',
   });
 
   it('rejects an edge that widens its parent endpoints', () => {
-    expect(typeErrors((kg) => fs.writeFileSync(path.join(kg, 'edges/covers.yaml'),
-      fs.readFileSync(path.join(kg, 'edges/covers.yaml'), 'utf8').replace('to: Feature', 'to: Feature | Concept'))))
-      .toEqual([expect.stringMatching(/covers\.to: Concept is not within evidences\.to: Feature/)]);
+    expect(typeErrors((kg) => write(kg, 'edges/evidence/asserts.yaml',
+      'type: asserts\nextends: covers\nfrom: Scenario\nto: Concept\nderived_by: [annotation]\ndescription: Widens its parent.\n')))
+      .toEqual([expect.stringMatching(/asserts\.to: Concept is not within covers\.to: Feature/)]);
   });
 
   it('reports endpoint widening once, against the nearest violating ancestor', () => {
-    expect(typeErrors((kg) => fs.writeFileSync(path.join(kg, 'edges/asserts.yaml'),
-      'type: asserts\nextends: covers\nfrom: Scenario\nto: Concept\nderived_by: [annotation]\ndescription: Widens twice over.\n')))
-      .toEqual(['edge asserts.to: Concept is not within covers.to: Feature']);
+    expect(typeErrors((kg) => {
+      write(kg, 'edges/evidence/asserts.yaml', 'type: asserts\nextends: covers\nfrom: Scenario\nto: Feature\nderived_by: [annotation]\ndescription: Narrows nothing.\n');
+      write(kg, 'edges/evidence/claims.yaml', 'type: claims\nextends: asserts\nfrom: Scenario\nto: Concept\nderived_by: [annotation]\ndescription: Widens twice over.\n');
+    })).toEqual(['edge claims.to: Concept is not within asserts.to: Feature']);
   });
 
   it('quotes the ancestor declaration in a narrowing message without nesting quotes', () => {
@@ -222,11 +251,11 @@ describe('kg type files (conventions.md §7.3, §7.4, schema.yaml constraints)',
   });
 
   it('rejects an edge key without annotation provenance and a same_type mismatch', () => {
-    expect(typeErrors((kg) => fs.writeFileSync(path.join(kg, 'edges/covers.yaml'),
-      fs.readFileSync(path.join(kg, 'edges/covers.yaml'), 'utf8').replace('derived_by: [annotation]', 'derived_by: [filesystem]'))))
+    expect(typeErrors((kg) => fs.writeFileSync(path.join(kg, 'edges/evidence/covers.yaml'),
+      fs.readFileSync(path.join(kg, 'edges/evidence/covers.yaml'), 'utf8').replace('derived_by: [annotation]', 'derived_by: [filesystem]'))))
       .toEqual([expect.stringMatching(/covers: has key 'covers' but 'annotation' is not in derived_by/)]);
-    expect(typeErrors((kg) => fs.writeFileSync(path.join(kg, 'edges/part-of.yaml'),
-      fs.readFileSync(path.join(kg, 'edges/part-of.yaml'), 'utf8').replace('to: Feature | Concept | Scenario', 'to: Feature'))))
+    expect(typeErrors((kg) => fs.writeFileSync(path.join(kg, 'edges/tree/part-of.yaml'),
+      fs.readFileSync(path.join(kg, 'edges/tree/part-of.yaml'), 'utf8').replace('to: Feature | Concept | Scenario', 'to: Feature'))))
       .toEqual([expect.stringMatching(/part-of: same_type but from/)]);
   });
 });
@@ -433,13 +462,15 @@ describe('kg gen (conventions.md §11.2)', () => {
     expect(dts).toContain('type Ref<T> = string;');
     expect(dts).toContain('export interface Developer extends Person {\n  company: Ref<Team>;\n  bitbucket: string;\n  areas?: Ref<Feature>[];\n}');
     expect(dts).toContain("  owner?: Ref<Person | Team>;");
-    expect(dts).toContain('export interface CoversEdge {\n  from: Ref<Scenario>;\n  to: Ref<Feature>;\n  derived_by: Provenance;\n  confidence: number;\n  evidence?: Path[];\n  batch: string;\n  strength?: \'weak\' | \'normal\' | \'strong\';\n  level?: \'exercised\' | \'asserted\';\n}');
+    expect(dts).toContain('export interface CoversEdge {\n  from: Ref<Scenario>;\n  to: Ref<Feature>;\n  derived_by: Provenance;\n  confidence: number;\n  evidence?: Path[];\n  batch: string;\n  level?: \'exercised\' | \'asserted\';\n}');
     expect(dts).not.toContain('interface EvidencesEdge');
+    expect(dts).toContain("export interface EdgeGroups {\n  'defines-concept': 'tree';\n  'part-of': 'tree';\n  'supersedes': 'tree';\n  'uses-concept': 'tree';\n  " +
+      "'is-implemented-in': 'ownership';\n  'covers': 'evidence';\n  'documents': 'evidence';\n  'mentions': 'evidence';\n  'tracked-in': 'work';\n}");
     expect(dts).toContain("export type NodeTypeName = 'actor' | 'artifact'");
     expect(dts).toContain('/** The hierarchy edge, derived from the id path and never authored. */\nexport interface PartOfEdge {');
     expect(dts).toContain('export interface UsesConceptEdge {');
     expect(dts).toContain("export type EdgeTypeName = 'covers' | 'defines-concept' | 'documents' | 'is-implemented-in' | 'mentions' | 'part-of' | 'supersedes' | 'tracked-in' | 'uses-concept';");
-    expect(dts).toContain("export type RefPredicate = 'areas' | 'company' | 'lead' | 'owner';");
+    expect(dts).toContain("export type RefPredicate = 'areas' | 'company' | 'developer_help' | 'lead' | 'owner' | 'user_help';");
     expect(dts).toContain('  aliases?: string[];\n  source_layer: \'public\' | \'core\' | \'infra\' | \'process\' | \'synthetic\';\n  home?: Path;\n  provenance: Provenance;\n  batch: string;\n}');
     expect(dts).toContain('  to: Ref<Feature>;\n  derived_by: Provenance;\n  confidence: number;\n  evidence?: Path[];\n  batch: string;\n');
     expect(generateDts(system)).toBe(dts);
@@ -457,7 +488,10 @@ describe('kg gen (conventions.md §11.2)', () => {
     expect(after).toContain('| Edge | Label | From → To | Extends | Key | Derived by | One line |');
     expect(after).toContain('| `part-of` | PART_OF | Feature \\| Concept \\| Scenario → Feature \\| Concept \\| Scenario |  |  | filesystem |');
     expect(after).toContain('| `supersedes` | SUPERSEDES | Feature → Feature |  | `superseded_by:` (on target) | annotation |');
-    expect(after).toContain('| `covers` | COVERS | Scenario → Feature | evidences | `covers:` | annotation |');
+    expect(after).toContain('| `covers` | COVERS | Scenario → Feature |  | `covers:` | annotation |');
+    // one table per edges/ folder, the folders in schema order, ref under reference
+    expect(after.match(/^### .*$/gm)).toEqual(['### tree', '### ownership', '### evidence', '### work', '### reference']);
+    expect(after).toContain('An edge is named by its file, grouped by its folder, referred to by name; a group is a selector');
   });
 
   it('generates the Concepts table from the concept homes, keeping the intro lines above it', () => {
@@ -542,7 +576,7 @@ describe('grok kg command', () => {
     expect(out).toHaveLength(1);
     const report = JSON.parse(out[0]);
     expect(report.errors).toEqual([]);
-    expect(report.types).toEqual({nodes: 19, edges: 11, prefixes: 6});
+    expect(report.types).toEqual({nodes: 19, edges: 10, prefixes: 6});
     expect(report.homes).toMatchObject({feature: 6, scenario: 1});
     expect(report.annotatedPages).toBe(1);
     expect(Array.isArray(report.unresolvedExternal)).toBe(true);
@@ -615,6 +649,23 @@ describe('reference resolution: parse, expand, type-check, look up (review 2 #1)
       .toEqual(["sponsor: 'nobody' does not resolve to any home document (as ~Cust:nobody or ~P:nobody or ~Team:nobody)"]);
   });
 
+  it('takes a DocPage reference written as the repo path of the page, and checks that the page is there', () => {
+    expect(homeErrors('core/docs/broken.md', `${PERMISSIONS}user_help: public/help/visualize/viewers/scatter-plot.md
+---
+# P
+`)).toEqual([]);
+    expect(homeErrors('core/docs/broken.md', `${PERMISSIONS}developer_help: public/help/visualize/viewers/nope.md
+---
+# P
+`))
+      .toEqual(["unresolved-ref core/docs/broken.md:4: developer_help: 'public/help/visualize/viewers/nope.md': the page's path 'public/help/visualize/viewers/nope.md' does not exist"]);
+    expect(homeErrors('core/docs/broken.md', `${PERMISSIONS}concepts: [public/help/visualize/viewers/scatter-plot.md]
+---
+# P
+`))
+      .toEqual(["unresolved-ref core/docs/broken.md:4: concepts[0]: 'public/help/visualize/viewers/scatter-plot.md' is a DocPage; expected Concept"]);
+  });
+
   it('checks the file part of a decl: reference now and defers only the symbol', () => {
     expect(homeErrors('core/docs/knowledge-graph/concepts/entity.yaml', 'id: C:entity\nname: Entity\ndefined_by: [decl:core/nope.dart#Entity]\n'))
       .toEqual(["unresolved-ref core/docs/knowledge-graph/concepts/entity.yaml:3: defined_by[0]: 'decl:core/nope.dart#Entity': the declaration's path 'core/nope.dart' does not exist"]);
@@ -625,8 +676,8 @@ describe('reference resolution: parse, expand, type-check, look up (review 2 #1)
   it('knows every scheme an extractor emits, tutorial among them', () => {
     const tutorials = (repo: string) => {
       write(repo, `${KG_DIR}/nodes/tutorial.yaml`, 'type: tutorial\nextends: artifact\ndescription: An interactive tutorial.\n');
-      write(repo, `${KG_DIR}/edges/demonstrates.yaml`,
-        'type: demonstrates\nextends: evidences\nfrom: Tutorial\nto: Feature\nkey: samples\nkey_side: to\nderived_by: [ast]\ndescription: A tutorial shows a feature in use.\n');
+      write(repo, `${KG_DIR}/edges/evidence/demonstrates.yaml`,
+        'type: demonstrates\nfrom: Tutorial\nto: Feature\nkey: samples\nkey_side: to\nderived_by: [ast]\ndescription: A tutorial shows a feature in use.\n');
     };
     expect(homeErrors('core/docs/broken.md', `${PERMISSIONS}samples: [tutorial:chem/x]\n---\n# P\n`, tutorials)).toEqual([]);
     expect(homeErrors('core/docs/broken.md', `${PERMISSIONS}samples: [nope:x]\n---\n# P\n`, tutorials))
@@ -731,19 +782,19 @@ describe('hierarchy and edge instances (review 2 #7)', () => {
   it('enforces cardinality one, same_type, acyclic and abstract-edge keys on authored edges', () => {
     const repo = makeRepo();
     const kgRoot = path.join(repo, KG_DIR);
-    fs.appendFileSync(path.join(kgRoot, 'edges/tracked-in.yaml'), 'cardinality: one\n');
+    fs.appendFileSync(path.join(kgRoot, 'edges/work/tracked-in.yaml'), 'cardinality: one\n');
     write(repo, 'core/docs/broken.md', `${PERMISSIONS}tickets: [GROK-1, GROK-2]\n---\n# P\n`);
-    fs.writeFileSync(path.join(kgRoot, 'edges/mentors.yaml'), 'type: mentors\nfrom: Person\nto: Person\nkey: mentors\nsame_type: true\nderived_by: [annotation]\ndescription: Who mentors whom.\n');
+    write(repo, `${KG_DIR}/edges/people/mentors.yaml`, 'type: mentors\nfrom: Person\nto: Person\nkey: mentors\nsame_type: true\nderived_by: [annotation]\ndescription: Who mentors whom.\n');
     write(repo, 'core/docs/knowledge-graph/internal/people/bob.yaml', 'id: P:bob\nname: Bob\nemail: b@x\nmentors: [askalkin]\n');
     write(repo, 'public/help/visualize/viewers/scatter-plot.md', fs.readFileSync(path.join(repo, 'public/help/visualize/viewers/scatter-plot.md'), 'utf8')
       .replace('status: active\n', 'status: active\nsuperseded_by: [visualize/viewers/old-scatter]\n'));
-    fs.appendFileSync(path.join(kgRoot, 'edges/evidences.yaml'), 'key: evidence\n');
+    fs.appendFileSync(path.join(kgRoot, 'edges/ref.yaml'), 'key: evidence\n');
     write(repo, 'core/docs/evidence.md', `${PERMISSIONS}evidence: [visualize]\n---\n# E\n`.replace('govern/permissions', 'govern/evidence'));
     const {system, homes} = load(repo);
     expect(system.errors).toEqual([]);
     expect(homes.errors.map((e) => `${e.code} ${e.file}: ${e.message}`).sort()).toEqual([
       "acyclic core/docs/viewers/old-scatter.md: supersedes is acyclic but forms a cycle: ~visualize/viewers/scatter-plot -> ~visualize/viewers/old-scatter -> ~visualize/viewers/scatter-plot",
-      'bad-edge core/docs/evidence.md: evidence: spells the abstract edge evidences; abstract edges cannot be authored',
+      'bad-edge core/docs/evidence.md: evidence: spells the abstract edge ref; abstract edges cannot be authored',
       'cardinality core/docs/broken.md: tickets: tracked-in has cardinality one, 2 targets given',
       'cardinality core/docs/viewers/README.md: tickets: tracked-in has cardinality one, 2 targets given',
       'same-type core/docs/knowledge-graph/internal/people/bob.yaml: mentors[0]: mentors is same_type; ~P:askalkin is a developer, this home is a person',
@@ -796,7 +847,7 @@ describe('member parser shapes and defaults (review 2 #8)', () => {
 
 describe('type-file namespaces (review 2 #9)', () => {
   it('reserves edge row fields, rejects keys that shadow node properties, requires prefixes and known inherit names', () => {
-    expect(typeErrors((kg) => append(kg, 'edges/covers.yaml', '  from?:         string\n')))
+    expect(typeErrors((kg) => append(kg, 'edges/evidence/covers.yaml', '  from?:         string\n')))
       .toEqual(['edge covers.from: reserved field name, part of every edge row (from, to, type, id)']);
     expect(typeErrors((kg) => fs.writeFileSync(path.join(kg, 'edges/owns.yaml'), 'type: owns\nfrom: Feature\nto: Person\nkey: owner\nderived_by: [annotation]\ndescription: Shadows the base owner.\n')))
       .toEqual(["edge key 'owner' collides with the node property 'owner' of node; a frontmatter key can only mean one of them"]);
@@ -804,7 +855,7 @@ describe('type-file namespaces (review 2 #9)', () => {
       .toEqual(['node partner: authored but no type in its chain declares a prefix, so its ids cannot be written']);
     expect(typeErrors((kg) => append(kg, 'nodes/team.yaml', 'inherit: [lead, bogus]\n')))
       .toEqual(["node team: inherit names 'bogus', which is not a member"]);
-    expect(typeErrors((kg) => append(kg, 'edges/part-of.yaml', 'inherits: [status, nope]\n')))
+    expect(typeErrors((kg) => append(kg, 'edges/tree/part-of.yaml', 'inherits: [status, nope]\n')))
       .toEqual(['Feature', 'Concept', 'Scenario'].map((t) => `edge part-of: inherits names 'nope', which is not a member of ${t}`));
     expect(typeErrors((kg) => fs.writeFileSync(path.join(kg, 'nodes/doc--page.yaml'), 'type: doc--page\nextends: artifact\ndescription: Collides.\n')))
       .toEqual(["node types 'doc--page' and 'doc-page' both become DocPage in TypeScript"]);

@@ -1,22 +1,19 @@
 /// WO-11b, ingestion correctness (build-plan.md, kg-codex-review-3.md #3 to #8): what the build may assert
 /// about a row it refused, about two assertions that differ only in a property, about a release record's
-/// word, about a Dart batch that is readable but incomplete, about a test whose name it cannot know, and
-/// about the files it never saw. Every case here fails on the pipeline as the third review found it.
+/// word, about a test whose name it cannot know, and about the files it never saw. Every case here
+/// fails on the pipeline as the third review found it.
 import {describe, it, expect, vi} from 'vitest';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import {fileURLToPath} from 'url';
-import {spawnSync} from 'child_process';
 import {loadTypeSystem, TypeSystem} from '../utils/kg/types';
-import {Emitter, Graph} from '../utils/kg/build/emitter';
-import {dartExtractor} from '../utils/kg/build/extract/dart';
+import {Emitter} from '../utils/kg/build/emitter';
 import {currentDir} from '../utils/kg/build/write';
 import {kg} from '../commands/kg';
 
 const fixture = path.join(path.dirname(fileURLToPath(import.meta.url)), 'fixtures', 'kg', 'build');
 const KG_DIR = path.join('core', 'docs', 'knowledge-graph');
-const BATCH = path.join('.kg', 'batches', 'kg-dart.jsonl');
 const system: TypeSystem = loadTypeSystem(path.join(fixture, KG_DIR));
 const TESTED = 'public/packages/Tested/src';
 
@@ -63,28 +60,6 @@ async function build(repo: string, only: string): Promise<Built> {
     log.mockRestore();
     error.mockRestore();
   }
-}
-
-/**
- * The Dart extractor over a fixture copy that is a git repository, its batch stamped for HEAD and extended by
- * [lines]. Run directly rather than through the CLI: the manifest fields it contributes are on the graph, and the
- * writer puts them in the manifest.
- */
-function dartGraph(envelope: Record<string, unknown> = {}, lines: string[] = [], drop: string[] = []): Graph {
-  const repo = copy();
-  spawnSync('git', ['init', '-q'], {cwd: repo});
-  spawnSync('git', ['-c', 'user.email=k@t', '-c', 'user.name=k', 'commit', '--allow-empty', '-q', '-m', 'fixture'], {cwd: repo});
-  const head = spawnSync('git', ['rev-parse', '--verify', 'HEAD'], {cwd: repo, encoding: 'utf8'}).stdout.trim();
-  const file = path.join(repo, BATCH);
-  const existing = fs.readFileSync(file, 'utf8').split('\n').filter(Boolean);
-  const header: Record<string, unknown> = {...JSON.parse(existing[0]), built_at: new Date().toISOString(), revision: head, ...envelope};
-  for (const key of drop) delete header[key];
-  fs.writeFileSync(file, [JSON.stringify(header), ...existing.slice(1), ...lines].join('\n') + '\n');
-  const emitter = new Emitter(system, 'b-test');
-  emitter.scope('dart');
-  dartExtractor.run({system, kgRoot: path.join(repo, KG_DIR), repoRoot: repo, mode: 'full'}, emitter);
-  emitter.scope('');
-  return emitter.finalize();
 }
 
 describe('admission: a refused row asserts nothing (review 3 #3)', () => {
@@ -157,41 +132,6 @@ describe('a release record speaks for itself (review 3 #5)', () => {
     const {rows} = await build(copy(), 'homes,process');
     expect(rows('edges/targets-release').filter((e) => e.evidence?.includes('core/docs/release/1.0.1.yaml')).every((e) => e.confidence === 0.7)).toBe(true);
     expect(rows('edges/targets-release').find((e) => e.derived_by === 'external')).toMatchObject({confidence: 1});
-  });
-});
-
-describe('the Dart batch must be complete, not merely readable (review 3 #6)', () => {
-  it('refuses a second header, a header after the payload, and a header missing a required key', () => {
-    const twice = dartGraph({}, ['{"record":"batch","schema_version":1,"revision":"x","packages":[]}']);
-    expect(twice.sources.dart).toMatch(/^partial/);
-    expect(twice.details.invalid_rows.some((p) => p.includes('a second batch record'))).toBe(true);
-
-    const fresh = dartGraph({}, [], ['revision']);
-    expect(fresh.sources.dart).toMatch(/^partial/);
-    expect(fresh.details.invalid_rows).toContain('.kg/batches/kg-dart.jsonl: the batch record has no revision');
-  });
-
-  it('reports a batch partial when the emitter refused its rows, however fresh the header is', () => {
-    const graph = dartGraph({}, ['{"record":"node","type":"endpoint","id":"ep:GET /x","name":"x","language":"dart","provenance":"ast","source_layer":"core"}']);
-    expect(graph.sources.dart).toMatch(/^partial\(\d+ rejected\)$/);
-  });
-
-  it('refuses a claim that is not a file marker, and one whose feature no home declares', () => {
-    const graph = dartGraph({}, [
-      '{"record":"claim","file":"core/x.dart","feature":"domains/bio","rung":2}',
-      '{"record":"claim","file":"core/y.dart","feature":"domains/boi"}',
-    ]);
-    expect(graph.sources.dart).toMatch(/^partial/);
-    expect(graph.details.invalid_rows.some((p) => p.includes('rung 1'))).toBe(true);
-    expect(graph.details.unresolved_ids).toContain('.kg/batches/kg-dart.jsonl:13: ~domains/boi resolves to no home document');
-    expect(graph.claims.some((c) => c.feature === 'domains/boi')).toBe(false);
-    expect(graph.nodes.some((n) => n.id === 'domains/boi')).toBe(false);
-  });
-
-  it('tells a package the generator walked and found empty from one it never walked', () => {
-    // two of the batch's six node records carry no path, so they are in no package's count
-    expect(dartGraph().manifest.dart_packages).toEqual({datlas: 4, ddt: 0, grok_shared: 0});
-    expect(dartGraph({packages: ['ddt', 'grok_shared']}).manifest.dart_packages).toEqual({datlas: 'omitted', ddt: 0, grok_shared: 0});
   });
 });
 

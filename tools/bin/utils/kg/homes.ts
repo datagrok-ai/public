@@ -9,7 +9,7 @@ import {splitFrontmatter, parseYamlDocument, keyLine, Frontmatter} from './front
 import {extractCitations, headings, Citation} from './citations';
 import {TypeSystem, NodeType, EdgeType, Member, Issue, checkValue, isSubtype, pascal, kebabOfLabel, concreteAuthored} from './types';
 import {normalizeRow} from './build/normalize';
-import {SCHEME_TYPES, PREFIXED_ID, SCHEMED_ID} from './build/ids';
+import {SCHEME_TYPES, PREFIXED_ID, SCHEMED_ID, PAGE_PATH} from './build/ids';
 
 /** Where homes may live, relative to the monorepo root: any markdown document in the repos, and
  * the YAML records (concepts, people, teams, customers) inside the knowledge-graph folder. */
@@ -25,6 +25,7 @@ export const HOME_IGNORE = [
   'core/docs/knowledge-graph/nodes/**',
   'core/docs/knowledge-graph/edges/**',
   'core/docs/knowledge-graph/schema.yaml',
+  'core/docs/knowledge-graph/questions/**',
   '**/node_modules/**',
   '**/dist/**',
   '**/.dart_tool/**',
@@ -606,6 +607,10 @@ class HomeChecker {
         if (problem) return {problem: `'${value}': the declaration's ${problem}`};
       }
       return external(types);
+    }
+    if (this.system.nodes.has('doc-page') && PAGE_PATH.test(raw)) {
+      const problem = this.pathProblem(raw);
+      return problem ? {problem: `'${value}': the page's ${problem}`} : external(['doc-page']);
     }
     const {id, anchor} = splitRefAnchor(raw);
     if (!BARE_ID.test(id)) return {problem: `'${value}' is not a valid id: lowercase kebab segments, an optional Type: prefix, an optional #anchor`};

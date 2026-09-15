@@ -1,4 +1,5 @@
 ---
+documents: [visualize/viewers/markup]
 title: "Markup viewer"
 description: Host arbitrary text, HTML content, or Markdown-formatted text as a viewer, including embedded iframes.
 keywords:

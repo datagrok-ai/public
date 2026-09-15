@@ -1,5 +1,6 @@
 ---
-feature: piechart
+id: TS:viewers/pie-chart/ui
+covers: [visualize/viewers/pie-chart]
 target_layer: manual-only
 coverage_type: smoke
 manual_only_reason: |
