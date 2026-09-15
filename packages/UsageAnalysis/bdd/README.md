@@ -7,7 +7,10 @@ features: the data and the viewer opened once, the scenarios in order as soft st
 `viewer-chrome.feature`, the outline over the title and description every viewer shares;
 `features/spaces/` the Spaces features (the browse tree, the space view, sharing — the sharing
 one shares with `DATAGROK_SHARING_LOGIN`, or with the `bddsecond` user the library's setup
-creates when the variable is unset). `bindings/` keeps the steps only one
+creates when the variable is unset); `features/users-groups-roles/` Browse > Platform > Users,
+Groups and Roles (the views, the New dialogs, memberships, disabling, favorites, global
+permissions). Those features make a new user on every run, named `opavlenko<time>`, and a user
+can never be deleted: on a shared stand they add up, on a fresh CI database they go with it. `bindings/` keeps the steps only one
 viewer can define (the bar chart's bar order and lengths, the pie chart's slices, the pivot's
 aggregation against a `groupBy`, the correlation plot's coefficient against `DG.Stats`, the
 Forms viewer's card rows, the tile viewer's designer, the filter panel's hierarchical card); the

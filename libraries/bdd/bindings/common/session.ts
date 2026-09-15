@@ -9,6 +9,19 @@ import {installViewerRuntime, takeBalloons} from '../../src/runtime/viewers.js';
 
 declare const grok: any;
 
+/* The PowerPack Home loads its widgets for a few seconds after it is current, and what a widget logs
+   then (GROK-20891) would land on whichever scenario runs by that time. A Home without widgets —
+   no PowerPack, or every widget hidden by the user — is not waited for. */
+async function homeWidgetsSettled(page: Page): Promise<void> {
+  const hasWidgetHome = await page.evaluate(() => grok.shell.v.root.querySelector('.power-pack-widgets-host') != null);
+  if (!hasWidgetHome)
+    return;
+  await page.waitForFunction(() => {
+    const contents = [...grok.shell.v.root.querySelectorAll('.power-pack-widgets-host .power-pack-widget-content')] as HTMLElement[];
+    return contents.length > 0 && contents.every((c) => c.children.length > 0 && c.querySelector('.grok-loader') == null);
+  }, null, {timeout: 30000}).catch(() => console.warn('bdd: the Home widgets did not finish loading in 30 s'));
+}
+
 export const loggedIn = Given('user is logged in', async (page: Page) => {
   const inShell = await page.evaluate(() => typeof (window as any).grok?.shell?.closeAll === 'function').catch(() => false);
   if (!inShell) {
@@ -28,6 +41,7 @@ export const loggedIn = Given('user is logged in', async (page: Page) => {
   });
   // closeAll re-adds the Home view asynchronously; a table opened before it lands ends up behind it
   await page.waitForFunction(() => grok.shell.v?.type === 'datagrok', null, {timeout: 60000});
+  await homeWidgetsSettled(page);
   await installViewerRuntime(page);
   // what the stand logs or shows while booting (a broken package's autostart, "Debugging
   // packages") is not the scenario's

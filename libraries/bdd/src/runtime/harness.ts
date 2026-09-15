@@ -19,7 +19,7 @@ import {takeBalloons} from './viewers.js';
 type Test = TestType<PlaywrightTestArgs & PlaywrightTestOptions, PlaywrightWorkerArgs & PlaywrightWorkerOptions>;
 
 export interface FeatureSession {
-  /** Resolves {run} to this feature instance's unique suffix. */
+  /** Resolves {run} to this feature instance's unique suffix and {time} to its start in epoch ms. */
   text(value: string): string;
   /** The feature's page — opened on first use, shared by the scenarios that follow. */
   page(browser: Browser): Promise<Page>;
@@ -104,11 +104,28 @@ export function watchErrors(page: Page): void {
     return;
   const list: string[] = [];
   errors.set(page, list);
+  // the platform logs an error as "… Translating stack trace... Look below, ID = X" and, seconds
+  // later, the translated "Stack trace X" as a message of its own — the same error: its stack joins
+  // the error while that is still unreported, and is dropped once a floor has reported it, rather
+  // than land on the floor of whatever scenario runs by then
+  const announced = new Set<string>();
   page.on('console', (m) => {
     // a resource the stand does not serve (a help page) is logged as a console error by the
     // browser, not raised by the platform's code — not part of the error floor
-    if (m.type() === 'error' && !m.text().startsWith('Failed to load resource'))
-      list.push(m.location().url ? `${m.text()} (${m.location().url})` : m.text());
+    const text = m.text();
+    if (m.type() !== 'error' || text.startsWith('Failed to load resource'))
+      return;
+    const continuation = /^Stack trace (\S+)/.exec(text);
+    if (continuation && announced.has(continuation[1])) {
+      const parent = list.findIndex((e) => e.includes(`Look below, ID = ${continuation[1]}`));
+      if (parent >= 0)
+        list[parent] += `\n${text}`;
+      return;
+    }
+    const id = /Look below, ID = (\S+)/.exec(text);
+    if (id)
+      announced.add(id[1]);
+    list.push(m.location().url ? `${text} (${m.location().url})` : text);
   });
   page.on('pageerror', (e) => list.push(String(e)));
 }
@@ -127,11 +144,15 @@ export function takeErrors(page: Page): string[] {
  * the worker) is replaced in the same context, which keeps the storage state and the HTTP cache.
  * The browser fixture closes the context with the worker. */
 let shared: Page | undefined;
+let lastTime = 0;
 
 export function feature(test: Test, path = '', specUrl = ''): FeatureSession {
   let page: Page | undefined;
   const runId = randomUUID();
-  const text = (value: string): string => value.replaceAll('{run}', runId);
+  // a login takes only [a-z0-9._-], and a user can never be deleted, so a fixture user is named by
+  // when it was made; two features of one worker never start in the same millisecond
+  const time = String(lastTime = Math.max(Date.now(), lastTime + 1));
+  const text = (value: string): string => value.replaceAll('{run}', runId).replaceAll('{time}', time);
   const file = path && specUrl ? featureFile(specUrl, path) : undefined;
   test.afterEach(async () => {
     if (page && !page.isClosed()) {
