@@ -692,6 +692,7 @@ jobs:
 
       - name: Get actors slack
         id: actor
+        continue-on-error: true
         uses: ./.github/actions/slack-user-action
         with:
           slack-token: ${{ secrets.SLACKBOT_TOKEN }}
@@ -702,12 +703,14 @@ jobs:
         working-directory: packages/${{ matrix.package }}
       - name: Get owners slack
         id: owner
+        continue-on-error: true
         uses: ./.github/actions/slack-user-action
         with:
           slack-token: ${{ secrets.SLACKBOT_TOKEN }}
           emails: ${{ steps.owner-email.outputs.owner }}
       - name: Get QA slack
         id: qa
+        continue-on-error: true
         uses: ./.github/actions/slack-user-action
         if: ${{ (matrix.package == 'Tutorials' || matrix.package == 'Chem' || matrix.package == 'DiffStidio' || matrix.package == 'PowerPack') }}
         with:
