@@ -299,45 +299,41 @@ async function serverEntities(page: Page, source: CleanupSource, filter = ''): P
   }, [source, filter] as [CleanupSource, string]);
 }
 
-/* A group's chat lives in a hidden group made for it (grok_group_meta.dart openChat) and is named
-   after the group. Deleting that hidden group, or the group, first leaves a chat the server can no
-   longer delete (deleteChat reads its group) and that throws in every user profile's chat listing
-   (forum.dart _refreshChats) — so the chat goes first, through the endpoint the JS API does not
-   wrap, and takes its hidden group along. */
-async function deleteChatsOf(page: Page, entity: ServerEntity): Promise<void> {
+/** Endpoints the JS API does not wrap (chats, global permissions), called with the page's session. */
+async function serverRequests(page: Page) {
   const {root, token} = await page.evaluate(() => ({root: new URL(grok.dapi.root, location.href).href.replace(/\/$/, ''),
     token: String(grok.dapi.token)}));
   const headers = {Authorization: token};
-  const listed = await page.request.get(`${root}/chats?onlyPrivate=true&limit=1000`, {headers});
-  if (!listed.ok())
-    throw new Error(`the chats listing failed: HTTP ${listed.status()}`);
-  for (const chat of await listed.json() as {id: string; friendlyName?: string}[]) {
-    if (chat.friendlyName !== entity.friendlyName && chat.friendlyName !== entity.name)
-      continue;
-    const deleted = await page.request.delete(`${root}/chats/${chat.id}`, {headers});
-    const body = await deleted.text();
-    if (!deleted.ok() || body.includes('ApiError'))
-      throw new Error(`chat ${chat.id} of group ${entity.id} delete: ${body.slice(0, 200)}`);
-  }
+  return {
+    async list<T>(path: string): Promise<T[]> {
+      const listed = await page.request.get(`${root}${path}`, {headers});
+      if (!listed.ok())
+        throw new Error(`GET ${path} failed: HTTP ${listed.status()}`);
+      return listed.json();
+    },
+    async remove(path: string): Promise<void> {
+      const deleted = await page.request.delete(`${root}${path}`, {headers});
+      const body = await deleted.text();
+      if (!deleted.ok() || body.includes('ApiError'))
+        throw new Error(`DELETE ${path}: ${body.slice(0, 200)}`);
+    },
+  };
 }
 
-/* A group holding a global permission cannot be deleted, and an entity delete leaves the grant orphaned,
-   breaking Global Permissions for every role (GROK-20901). The server ignores groupId here. */
+/* A group's chat lives in a hidden group made for it; deleting that group, or the group, first leaves
+   a chat that throws in every profile's chat listing (forum.dart), so the chat goes first. */
+async function deleteChatsOf(page: Page, entity: ServerEntity): Promise<void> {
+  const api = await serverRequests(page);
+  for (const chat of await api.list<{id: string}>(`/chats/with_groups?ids=${entity.id}`))
+    await api.remove(`/chats/${chat.id}`);
+}
+
+/* groups.delete refuses a group holding a global permission, and an entity delete orphans the grant. */
 async function deleteGlobalGrantsOf(page: Page, entity: ServerEntity): Promise<void> {
-  const {root, token} = await page.evaluate(() => ({root: new URL(grok.dapi.root, location.href).href.replace(/\/$/, ''),
-    token: String(grok.dapi.token)}));
-  const headers = {Authorization: token};
-  const listed = await page.request.get(`${root}/privileges/permissions/?groupId=${entity.id}&global=true`, {headers});
-  if (!listed.ok())
-    throw new Error(`the global permissions listing failed: HTTP ${listed.status()}`);
-  for (const grant of await listed.json() as {id: string; userGroup?: {id: string}}[]) {
-    if (grant.userGroup?.id !== entity.id)
-      continue;
-    const deleted = await page.request.delete(`${root}/privileges/permissions/${grant.id}`, {headers});
-    const body = await deleted.text();
-    if (!deleted.ok() || body.includes('ApiError'))
-      throw new Error(`global permission ${grant.id} of group ${entity.id} delete: ${body.slice(0, 200)}`);
-  }
+  const api = await serverRequests(page);
+  for (const grant of await api.list<{id: string; userGroup?: {id: string}}>(`/privileges/permissions/?groupId=${entity.id}&global=true`))
+    if (grant.userGroup?.id === entity.id)
+      await api.remove(`/privileges/permissions/${grant.id}`);
 }
 
 function namedCleanup(page: Page, source: NamedSource, what: string, names: string[]): () => Promise<void> {
@@ -633,15 +629,12 @@ export const notMemberOnServer = Then('{string} should not be a member of {strin
 
 /* --- the gallery ------------------------------------------------------------------------------------ */
 
-/* A long gallery renders its items as they scroll in, and in an order no reading exposes, so an item
-   outside a search is not a claim; the counter is. It reads "N" for a whole list, "N of M" for the
-   first N of M items rendered so far (M is the list), "shown / total" under a filter (shown is the
-   list), and "..." before it knows. Other features may add items meanwhile, so a comparison with
-   the remembered count is one-sided. */
+/* The counter reads "N", "N of M" (M is the list) or "shown / total", "..." before it knows. Other
+   features may add items meanwhile, so a comparison with the remembered count is one-sided. */
 const rememberedCounts = new WeakMap<Page, number>();
 
 async function galleryCount(page: Page): Promise<number | string> {
-  const text = ((await page.locator('.grok-items-view-counts').filter({visible: true}).first().textContent()
+  const text = ((await (await locate(page, el('gallery counter'))).filter({visible: true}).first().textContent()
     .catch(() => null)) ?? '').trim();
   const m = /^(?:\d+\s+of\s+)?(\d+)(?:\s*\/\s*\d+)?$/.exec(text);
   return m ? Number(m[1]) : `not a count: "${text}"`;
@@ -650,8 +643,10 @@ async function galleryCount(page: Page): Promise<number | string> {
 export const rememberGalleryCount = When('user remembers the gallery counter', async (page: Page) => {
   let count: number | string = '';
   await expect.poll(async () => String(count = await galleryCount(page)), {message: 'the gallery counter'}).toMatch(/^[0-9]+$/);
+  if (!rememberedCounts.has(page))
+    atFeatureEnd(page, async () => { rememberedCounts.delete(page); });
   rememberedCounts.set(page, Number(count));
-}, {tier: 'api', description: 'the number the counter shows once the gallery has loaded'});
+}, {tier: 'ui', description: 'the number the counter shows once the gallery has loaded, until the feature ends'});
 
 type CountRelation = 'lower' | 'not lower' | 'higher';
 
@@ -678,7 +673,8 @@ export const galleryCountHigher = Then('the gallery counter should be higher tha
   expectCountVersusRemembered(page, 'higher'), {description: 'a cleared search against the count it showed: a jump no item or two of another feature can fake'});
 
 export const galleryMode = Then('the gallery should be in {word} mode', async (page: Page, mode: string) => {
-  await expect.poll(() => page.locator('.grok-gallery-grid').filter({visible: true}).first().getAttribute('mode')
+  const gallery = await locate(page, el('gallery'));
+  await expect.poll(() => gallery.filter({visible: true}).first().getAttribute('mode')
     .then((m) => (m ?? 'none').toLowerCase()).catch(() => 'no gallery'), {message: 'the render mode of the gallery'}).toBe(mode.toLowerCase());
 }, {description: 'brief, card or grid — what the gallery renders its items as, not which toggle is lit'});
 

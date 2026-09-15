@@ -158,10 +158,11 @@ and `isRenderPending`, `onContextMenuShown/Closed`, `getWidgetStatus().hitAreas/
   revoked before `grok.dapi.groups.delete`, which refuses a role that holds one (GROK-20904). Never
   delete a group as an entity: that leaves its grants behind with no group, and the Global
   Permissions pane of every role shows "error" (GROK-20901).
-  **A group's chats go first**, through `DELETE /api/chats/{id}` (the JS API has no chats): Chat on a
-  group makes a private chat named after it in a hidden group. Deleting that hidden group, or the
-  group, first leaves a chat the server can no longer delete and that throws in every user
-  profile's chat listing (`forum.dart` `_refreshChats`) for that account — it happened once on dev.
+  **A group's chats go first**, found by the group's id (`/api/chats/with_groups?ids=`, as the
+  client's Chat does) and deleted through `DELETE /api/chats/{id}` (the JS API has no chats): Chat on
+  a group makes a private chat in a hidden group. Deleting that hidden group, or the group, first
+  leaves a chat the server can no longer delete and that throws in every user profile's chat
+  listing (`forum.dart` `_refreshChats`) for that account — it happened once on dev.
 - **A translated stack trace is not a second error**: the platform logs "… Look below, ID = X" and,
   seconds later, "Stack trace X"; the floor joins it to its error, or drops it once reported.
 - **Model cards are not completion signals.** The Train Model preview reports `aria-busy` before
@@ -217,7 +218,7 @@ and `isRenderPending`, `onContextMenuShown/Closed`, `getWidgetStatus().hitAreas/
   brings up every login sharing its letters), and a gallery counter reads `N`, `N of M` (M is the
   list, only N rendered) or `shown / total`, with `...` before it knows — an item outside a search
   is no claim, the counter is. A view-mode icon says it is current with `d4-current`, which
-  `selected` reads; the gallery itself carries `mode="Brief|Card|Grid"`.
+  `selected` reads inside the gallery toolbar only (elsewhere it marks the current card); the gallery itself carries `mode="Brief|Card|Grid"`.
 - A Dart choice input's phrase can resolve to its `<select>` itself; `select` handles both. The Share
   dialog of an entity that is not a project (a model) fetches the entity's project after it opens and
   its OK throws "Not initialized" before that: wait for the owner's grant row ("Full access").

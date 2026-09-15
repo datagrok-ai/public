@@ -9,17 +9,23 @@ import {installViewerRuntime, takeBalloons} from '../../src/runtime/viewers.js';
 
 declare const grok: any;
 
-/* The PowerPack Home loads its widgets for a few seconds after it is current, and what a widget logs
-   then (GROK-20891) would land on whichever scenario runs by that time. A Home without widgets —
-   no PowerPack, or every widget hidden by the user — is not waited for. */
+const homeNotWaitedFor = new WeakSet<Page>();
+
+/* What a PowerPack Home widget logs while it loads would land on whichever scenario runs by then. The
+   widgets host shows up within a second of the shell; a stand without it is not waited for again. */
 async function homeWidgetsSettled(page: Page): Promise<void> {
-  const hasWidgetHome = await page.evaluate(() => grok.shell.v.root.querySelector('.power-pack-widgets-host') != null);
-  if (!hasWidgetHome)
+  if (homeNotWaitedFor.has(page))
     return;
-  await page.waitForFunction(() => {
+  const hasHost = await page.waitForFunction(() => grok.shell.v?.root?.querySelector('.power-pack-widgets-host') != null,
+    null, {timeout: 10000}).then(() => true, () => false);
+  const settled = hasHost && await page.waitForFunction(() => {
     const contents = [...grok.shell.v.root.querySelectorAll('.power-pack-widgets-host .power-pack-widget-content')] as HTMLElement[];
     return contents.length > 0 && contents.every((c) => c.children.length > 0 && c.querySelector('.grok-loader') == null);
-  }, null, {timeout: 30000}).catch(() => console.warn('bdd: the Home widgets did not finish loading in 30 s'));
+  }, null, {timeout: 30000}).then(() => true, () => false);
+  if (!settled) {
+    homeNotWaitedFor.add(page);
+    console.warn(`bdd: ${hasHost ? 'the Home widgets did not finish loading in 30 s' : 'no PowerPack Home widgets'}; not waited for again on this page`);
+  }
 }
 
 export const loggedIn = Given('user is logged in', async (page: Page) => {

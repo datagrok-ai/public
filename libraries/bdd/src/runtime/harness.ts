@@ -104,10 +104,7 @@ export function watchErrors(page: Page): void {
     return;
   const list: string[] = [];
   errors.set(page, list);
-  // the platform logs an error as "… Translating stack trace... Look below, ID = X" and, seconds
-  // later, the translated "Stack trace X" as a message of its own — the same error: its stack joins
-  // the error while that is still unreported, and is dropped once a floor has reported it, rather
-  // than land on the floor of whatever scenario runs by then
+  // "Stack trace X" arrives seconds after its "Look below, ID = X" error: joined while unreported, else dropped
   const announced = new Set<string>();
   page.on('console', (m) => {
     // a resource the stand does not serve (a help page) is logged as a console error by the
@@ -117,7 +114,7 @@ export function watchErrors(page: Page): void {
       return;
     const continuation = /^Stack trace (\S+)/.exec(text);
     if (continuation && announced.has(continuation[1])) {
-      const parent = list.findIndex((e) => e.includes(`Look below, ID = ${continuation[1]}`));
+      const parent = list.findIndex((e) => new RegExp(`Look below, ID = ${continuation[1]}(\\s|$)`).test(e));
       if (parent >= 0)
         list[parent] += `\n${text}`;
       return;

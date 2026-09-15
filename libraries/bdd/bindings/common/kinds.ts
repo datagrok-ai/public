@@ -322,9 +322,7 @@ kind('filter card', {
     mode: '[name="filter-mode-toggle"]', summary: '.d4-filter-summary', body: '.d4-filter-element',
     close: '[name="icon-times"]', 'search icon': '[name="icon-search"]', search: '.d4-filter-element input'},
 });
-// the membership editor (membership_editor.dart) behind a user's Groups.../Roles..., a group's
-// Members and a role's Assigned to: a member already in is a row, a search match is a candidate;
-// both go by the subject's shown name, and the checkbox is Admin or Can assign
+// the membership editor (membership_editor.dart): a member already in is a row, a search match a candidate
 const MEMBERSHIP_PARTS = {checkbox: '.membership-row-admin input', 'checkbox label': '.membership-row-admin'};
 kind('membership row', {
   aliases: ['member row'],
