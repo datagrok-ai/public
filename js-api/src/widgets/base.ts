@@ -189,6 +189,9 @@ export class ObjectPropertyBag {
 
 export type {IEventType, IRectBounds, IInputStatus, IWidgetStatus} from "../u2core/index.js";
 
+/** What {@link Widget.addStatusProvider} contributes on every status read. */
+export type StatusProvider = () => Partial<Pick<IWidgetStatus, 'parts' | 'hitAreas' | 'values'>>;
+
 /** Base class for controls that have a visual root and a set of properties. */
 export class Widget<TSettings = any> extends Control {
 
@@ -407,7 +410,43 @@ export class Widget<TSettings = any> extends Control {
   onEvent(eventId: string | null = null): rxjs.Observable<any> { return rxjs.EMPTY; }
 
   /** Returns the widget's runtime structure for automated testing and introspection. */
-  getWidgetStatus(): IWidgetStatus { return {parts: {}, hitAreas: {}, shortcuts: {}, events: [], description: null, error: null}; }
+  getWidgetStatus(): IWidgetStatus {
+    if (this.dart == null)
+      return {parts: {}, hitAreas: {}, shortcuts: {}, events: [], description: null, error: null};
+    const status: IWidgetStatus = api.grok_Widget_GetWidgetStatus(this.dart);
+    for (const provider of Object.values(api.grok_Widget_Get_StatusProviders(this.dart)) as StatusProvider[]) {
+      const extra = provider();
+      Object.assign(status.parts, extra.parts);
+      Object.assign(status.hitAreas, extra.hitAreas);
+      status.values = {...status.values, ...extra.values};
+    }
+    return status;
+  }
+
+  /** Adds live parts, hit areas and readings to this widget's status. Providers run in registration
+   * order on every read; an existing name is replaced in place, and later providers override earlier
+   * entries. Coordinates use the widget's own hit-area system. Detaching the widget removes all
+   * providers. A subclass that overrides {@link getWidgetStatus} composes with `super.getWidgetStatus()`.
+   * @param name Stable name of the component contributing the status.
+   * @param provider Computes the contribution each time the status is requested.
+   * @example
+   * widget.addStatusProvider('selection', () => ({values: {'selected rows': table.selection.trueCount}}));
+   * console.log(widget.getWidgetStatus().values?.['selected rows']);
+   * widget.removeStatusProvider('selection');
+   * @see {@link https://public.datagrok.ai/js/samples/grid/custom-renderer-status} */
+  addStatusProvider(name: string, provider: StatusProvider): void {
+    api.grok_Widget_Get_StatusProviders(this.toDart())[name] = provider;
+  }
+
+  /** Removes the status contribution registered under name; an absent name is a no-op.
+   * @param name The name passed to {@link addStatusProvider}.
+   * @example
+   * widget.removeStatusProvider('selection');
+   * @see {@link https://public.datagrok.ai/js/samples/grid/custom-renderer-status} */
+  removeStatusProvider(name: string): void {
+    if (this.dart != null)
+      delete api.grok_Widget_Get_StatusProviders(this.dart)[name];
+  }
 
   /** Creates a new widget from the root element. */
   static fromRoot(root: HTMLElement): Widget {
@@ -431,9 +470,6 @@ export class DartWidget extends Widget {
   getProperties(): Property[] { return toJs(api.grok_PropMixin_GetProperties(this.dart)); }
   /** Functions applicable to the Dart widget, as the context menu and the AI assistant see them. */
   getFunctions(): Func[] { return toJs(api.grok_Widget_GetFunctions(this.dart)); }
-  /** Runtime snapshot of the Dart widget: named parts, hit areas, shortcuts, events, a state description and the validation error. */
-  getWidgetStatus(): IWidgetStatus { return api.grok_Widget_GetWidgetStatus(this.dart); }
-
   /** AI briefing of the underlying Dart widget. */
   get aiDescription(): string | null {
     const f = (api as any).grok_Widget_Get_AIDescription;

@@ -333,6 +333,7 @@ export interface IDartApi {
   grok_WidgetDescriptor_Get_Events(d: any): any;
   grok_WidgetDescriptor_CreateIcon(d: any): any;
   grok_Widget_GetWidgetStatus(w: any): any;
+  grok_Widget_Get_StatusProviders(w: any): any;
   grok_Widget_OnEvent(w: any, eventId: String): any;
   grok_Viewer_GetViewerTypes(): any;
   grok_Viewer_Root(v: any): any;
@@ -2123,6 +2124,9 @@ export interface IDartApi {
   grok_ViewerEvent_Set_mouseEvent(x: any, v: any): any;
   grok_ViewerEvent_Get_bitset(x: any): any;
 
+  // Generated from ../d4/lib/src/common/common.api.g.dart
+  grok_UsageType_Create(): any;
+
   // Generated from ../d4/lib/src/viewers/grid/grid.api.g.dart
   grok_GridCellStyle_Create(): any;
   grok_GridCellStyle_Get_defaultStyle(): any;
@@ -2175,7 +2179,4 @@ export interface IDartApi {
 
   // Generated from ../d4/lib/src/widgets/widgets.api.g.dart
   grok_InputType_Create(): any;
-
-  // Generated from ../d4/lib/src/common/common.api.g.dart
-  grok_UsageType_Create(): any;
 }

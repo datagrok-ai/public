@@ -748,4 +748,3 @@ export class VirtualView {
     api.grok_VirtualItemView_RefreshItem(this.dart, i);
   }
 }
-
