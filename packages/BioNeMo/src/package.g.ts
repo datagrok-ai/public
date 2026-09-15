@@ -61,7 +61,7 @@ export async function diffDockModel(table: DG.DataFrame, ligands: DG.Column, tar
 //name: Biology | DiffDock
 //input: semantic_value smiles { semType: Molecule }
 //output: widget result
-//meta.role: widgets,panel
+//meta.role: widgets,Panel
 export async function diffDockPanel(smiles: DG.SemanticValue) : Promise<any> {
   return await PackageFunctions.diffDockPanel(smiles);
 }

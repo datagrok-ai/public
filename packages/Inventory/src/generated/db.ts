@@ -94,14 +94,11 @@ export type InventoryTransactionOp =
 
 /** Typed clients for the `inventory` domain schema tables (lazy — no import-time side effects). */
 export const inventoryDb = {
-  get items() {
-    return grok.dapi.domains.table<ItemsRow, ItemsInsert, ItemsColumn, ItemsExpand>(
-      'inventory.items', {datetimeColumns: ['created_on', 'updated_on'],
-        detailDatetimeColumns: {'stock_movements': ['created_on', 'updated_on', 'moved_on']}});
+  get itemses() {
+    return grok.dapi.domains.table<ItemsRow, ItemsInsert, ItemsColumn, ItemsExpand>('inventory.items');
   },
-  get stockMovements() {
-    return grok.dapi.domains.table<StockMovementsRow, StockMovementsInsert, StockMovementsColumn, StockMovementsExpand>(
-      'inventory.stock_movements', {datetimeColumns: ['created_on', 'updated_on', 'moved_on']});
+  get stockMovementses() {
+    return grok.dapi.domains.table<StockMovementsRow, StockMovementsInsert, StockMovementsColumn, StockMovementsExpand>('inventory.stock_movements');
   },
   transaction<T extends InventoryTransactionOp[]>(ops: [...T]):
       Promise<{[K in keyof T]: DG.DomainOpResultFor<T[K]>}> {

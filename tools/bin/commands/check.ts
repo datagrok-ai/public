@@ -5,7 +5,6 @@ import * as utils from '../utils/utils';
 import * as color from '../utils/color-utils';
 import {FuncMetadata, FuncParam, FuncValidator, ValidationResult} from '../utils/interfaces';
 import {PackageFile} from '../utils/interfaces';
-import * as testUtils from '../utils/test-utils';
 import {FuncRoleDescription, functionRoles} from '../utils/const';
 import {execSync} from 'child_process';
 
@@ -60,7 +59,7 @@ export function check(args: CheckArgs): boolean {
       color.error('File `package.json` not found. Run the command from the package directory');
       return false;
     }
-    return runChecks(curDir, args.soft ?? false, false);
+    return runChecks(curDir, args.soft ?? false, args['no-exit'] ?? false);
   }
 }
 
@@ -124,7 +123,7 @@ function runChecks(packagePath: string, soft: boolean = false, noExit: boolean =
     if (noExit)
       return false;
     else
-      testUtils.exitWithCode(1);
+      process.exit(1);
   }
   color.log(`Checking package ${path.basename(packagePath)}...\t\t\t\u2713 OK`);
   return true;
@@ -507,7 +506,7 @@ export function checkPackageFile(packagePath: string, json: PackageFile, options
   if (api) {
     if (api === '../../js-api') { } else if (api === 'latest')
       warnings.push('File "package.json": you should specify Datagrok API version constraint (for example ^1.16.0, >=1.16.0).');
-    else if (options?.isReleaseCandidateVersion === false && (!/^(\^|>|<|~).+/.test(api)))
+    else if (options?.isReleaseCandidateVersion === false && (!/^(\^|>|<|~|workspace:|catalog:).+/.test(api)))
       warnings.push('File "package.json": Datagrok API version should starts with > | >= | ~ | ^ | < | <=');
   }
 

@@ -1,0 +1,23 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "globalDependencies": ["pnpm-workspace.yaml", "build-config/index.js", "build-config/package.json", "build-config/tsconfig.base.json", "build-config/tsconfig.lib.json", "build-config/css/**"],
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", "!src/package.g.ts", "!src/package-api.ts", "!dist/**"],
+      "outputs": ["dist/**", "src/package.g.ts", "src/package-api.ts", "bin/**/*.js", "datagrok.js", "datagrok.js.map"]
+    },
+    "typecheck": {
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", "!dist/**"],
+      "outputs": []
+    },
+    "lint": {
+      "outputs": []
+    },
+    "test": {
+      "dependsOn": ["build"],
+      "cache": false
+    }
+  }
+}

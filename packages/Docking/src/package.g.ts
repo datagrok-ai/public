@@ -63,7 +63,7 @@ export function isApplicableAutodock(molecule: string) : boolean {
 //description: Shows the receptor with the docked pose and its AutoDock energy terms
 //input: semantic_value molecule { semType: Molecule3D }
 //output: widget result
-//meta.role: widgets,panel
+//meta.role: widgets,Panel
 //meta.domain: chem
 //condition: Docking:isApplicableAutodock(molecule)
 export async function autodockWidget(molecule: DG.SemanticValue) : Promise<any> {
@@ -90,7 +90,7 @@ export async function demoDocking() : Promise<void> {
 //description: Docks the current molecule against a chosen target and shows the best pose
 //input: semantic_value smiles { semType: Molecule }
 //output: widget result
-//meta.role: widgets,panel
+//meta.role: widgets,Panel
 export async function autodockPanel(smiles: DG.SemanticValue) : Promise<any> {
   return await PackageFunctions.autodockPanel(smiles);
 }
@@ -101,7 +101,7 @@ export async function autodockPanel(smiles: DG.SemanticValue) : Promise<any> {
 //output: view result
 //meta.icon: images/docking-icon.png
 //meta.browsePath: Bio
-//meta.role: app
+//meta.role: App
 export async function dockingView(path?: string) : Promise<any> {
   return await PackageFunctions.dockingView(path);
 }

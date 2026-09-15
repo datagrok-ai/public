@@ -122,3 +122,9 @@ playwright-public/PACKAGE-PLAYWRIGHT-CODE-FINDINGS.md
 .claude/.tmp
 
 __pycache__
+# pnpm dry run
+.turbo/
+
+# js-api node bundle (built by grok build)
+/js-api/datagrok.js
+/js-api/datagrok.js.map

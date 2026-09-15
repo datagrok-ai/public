@@ -2,7 +2,7 @@ import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
 import {runDiffStudioModel} from './ivp-runtime';
 
-//meta.role: init
+//meta.role: Init
 export async function init() : Promise<void> {
   await PackageFunctions.init();
 }
@@ -41,7 +41,7 @@ export function diffStudioFacetViewer() : any {
 //name: Diff Studio
 //description: Solver of ordinary differential equations systems
 //output: view result
-//meta.role: app
+//meta.role: App
 //meta.browsePath: Compute
 export async function runDiffStudio() : Promise<any> {
   return await PackageFunctions.runDiffStudio();
@@ -56,7 +56,7 @@ export async function runDiffStudioDemo() : Promise<void> {
 }
 
 //input: string content 
-//meta.role: fileHandler
+//meta.role: FileHandler
 //meta.ext: ipv
 export async function ivpFileHandler(content: string) : Promise<void> {
   await PackageFunctions.ivpFileHandler(content);
@@ -64,7 +64,7 @@ export async function ivpFileHandler(content: string) : Promise<void> {
 
 //input: file file 
 //output: view result
-//meta.role: fileViewer
+//meta.role: FileViewer
 //meta.fileViewer: ivp
 export async function previewIvp(file: DG.FileInfo) : Promise<any> {
   return await PackageFunctions.previewIvp(file);
@@ -84,7 +84,7 @@ export async function runDiffStudioTreeBrowser(treeNode: any) : Promise<void> {
 //output: double maxDist { caption: Max distance }
 //output: double maxHeight { caption: Max height }
 //output: dataframe df { caption: Trajectory; viewer: Line chart(multiAxis: "false", multiAxisLegendPosition: "RightCenter", autoLayout: "false", showAggrSelectors: "false") | Grid() }
-//meta.role: model
+//meta.role: Model
 //editor: Compute2:RichFunctionViewEditor
 //meta.runOnOpen: true
 //meta.runOnInput: true
@@ -248,7 +248,6 @@ export async function ivpModel_Pollution(_t0: number, _t1: number, _h: number, y
 //meta.features: {"sens-analysis": true, "fitting": true}
 //meta.icon: files/icons/_bioreactor.png
 //meta.help: models/bioreactor.md
-//meta.comparison: {"index": "t"}
 //meta.role: model
 //meta.diffStudioModel: System:AppData/DiffStudio/models/bioreactor.ivp
 //editor: Compute2:RichFunctionViewEditor
@@ -275,7 +274,7 @@ export async function ivpModel_Pollution(_t0: number, _t1: number, _h: number, y
 //input: double T = 300 {nullable: false; units: K;     caption: Temperature; category: Parameters;  min: 250; max: 350}            [Reactor temperature (K). 300 K ≈ 27 °C]
 //input: double P = 1 {nullable: false; units: atm;   caption: Pressure;    category: Parameters;  min: 1;   max: 2}              [Total headspace pressure]
 //input: double switchTime = 135 {nullable: false; units: min;   caption: Switch;   category: Duration;        min: 70;  max: 180; step: 10}  [Transition from UF concentration (VL falls) to diafiltration (VL constant)]
-//output: dataframe df {caption: Bioreactor; viewer: Grid(block: 100) | Line chart(block: 100, multiAxis: "true", segmentColumnName: "_Stage", multiAxisLegendPosition: "RightCenter", autoLayout: "false", showAggrSelectors: "false") | DiffStudio Facet(block: 100, segmentColumnName: "_Stage")}
+//output: dataframe df {caption: Bioreactor; comparison: {"index": "t"}; viewer: Grid(block: 100) | Line chart(block: 100, multiAxis: "true", segmentColumnName: "_Stage", multiAxisLegendPosition: "RightCenter", autoLayout: "false", showAggrSelectors: "false") | DiffStudio Facet(block: 100, segmentColumnName: "_Stage")}
 export async function ivpModel_Bioreactor(mode: string, _t0: number, _t1: number, _h: number, FFox: number, KKox: number, FFred: number, KKred: number, Ffree: number, Kfree: number, FKred: number, FKox: number, MEAthiol: number, DO2: number, yO2P: number, CYST: number, VL: number, filtration: number, qin: number, yO2in: number, T: number, P: number, switchTime: number): Promise<DG.DataFrame> {
   return await runDiffStudioModel('System:AppData/DiffStudio/models/bioreactor.ivp', {_t0, _t1, _h, FFox, KKox, FFred, KKred, Ffree, Kfree, FKred, FKox, MEAthiol, DO2, yO2P, CYST, VL, filtration, qin, yO2in, T, P, switchTime});
 }

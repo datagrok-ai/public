@@ -1,0 +1,5 @@
+{
+  "name": "@datagrok/build-config-css-types",
+  "private": true,
+  "types": "index.d.ts"
+}
