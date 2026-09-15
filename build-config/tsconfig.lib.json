@@ -6,6 +6,7 @@
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
+    "preserveConstEnums": true,
     "rootDir": "${configDir}",
     "outDir": "${configDir}/dist"
   },
