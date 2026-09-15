@@ -1,7 +1,6 @@
 type: release
 extends: work
 prefix: Rel
-was: Release
 visibility: public                      # release notes are public; work subtypes set their own
 description: >
   A platform version such as 1.28.0, with its release/<version> branch in both repos

@@ -6,7 +6,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import {globSync} from 'glob';
 import {splitFrontmatter, parseYamlDocument, keyLine, Frontmatter} from './frontmatter';
-import {extractCitations, headingAnchors, Citation} from './citations';
+import {extractCitations, headings, Citation} from './citations';
 import {TypeSystem, NodeType, EdgeType, Member, Issue, checkValue, isSubtype, pascal, kebabOfLabel, concreteAuthored} from './types';
 import {normalizeRow} from './build/normalize';
 import {SCHEME_TYPES, PREFIXED_ID, SCHEMED_ID} from './build/ids';
@@ -99,6 +99,8 @@ export interface HomeSet {
   /** Pages that are not homes but carry an edge key such as `documents:`. */
   annotatedPages: number;
   citations: {doc: number, code: number};
+  /** The homes by id and by alias, built once here and shared by every reader. */
+  index: HomeIndex;
 }
 
 /** The `grok kg check` diagnostic report (not the graph's report node). */
@@ -124,7 +126,7 @@ export function discoverHomeFiles(repoRoot: string): string[] {
 
 export function loadHomes(system: TypeSystem, repoRoot: string, files: string[] = discoverHomeFiles(repoRoot)): HomeSet {
   const set: HomeSet = {homes: [], pages: [], stubs: [], errors: [], warnings: [], unresolvedExternal: [], scanned: files.length,
-    annotatedPages: 0, citations: {doc: 0, code: 0}};
+    annotatedPages: 0, citations: {doc: 0, code: 0}, index: {byId: new Map(), byAlias: new Map()}};
   for (const file of files) {
     let text: string;
     try {
@@ -151,8 +153,8 @@ export function loadHomes(system: TypeSystem, repoRoot: string, files: string[] 
     const home = readHome(system, file, fm, isYaml, set.errors);
     if (home) set.homes.push(home);
   }
-  const index = indexHomes(set.homes, set.errors);
-  const checker = new HomeChecker(system, repoRoot, index, set);
+  set.index = indexHomes(set.homes, set.errors);
+  const checker = new HomeChecker(system, repoRoot, set.index, set);
   for (const home of set.homes)
     checker.check(home, home.fm);
   for (const page of set.pages)
@@ -234,9 +236,18 @@ export function firstHeading(body: string): string | undefined {
   return undefined;
 }
 
-interface HomeIndex {
+export interface HomeIndex {
   byId: Map<string, Home>;
   byAlias: Map<string, Home>;
+}
+
+/** The first of [candidates] that names a home, by id or by alias. */
+export function lookupHome(index: HomeIndex, candidates: string[]): Home | undefined {
+  for (const c of candidates) {
+    const home = index.byId.get(c) ?? index.byAlias.get(c);
+    if (home) return home;
+  }
+  return undefined;
 }
 
 function indexHomes(homes: Home[], errors: Issue[]): HomeIndex {
@@ -273,7 +284,7 @@ interface Subject {
   home?: Home;
 }
 
-type ErrorFn = (code: string, message: string, key?: string) => void;
+type ErrorFn = (code: string, message: string, key?: string, target?: string) => void;
 
 class HomeChecker {
   private pathCache = new Map<string, string | null>();
@@ -285,7 +296,7 @@ class HomeChecker {
   constructor(private system: TypeSystem, private repoRoot: string, private index: HomeIndex, private set: HomeSet) {}
 
   check(home: Home, fm: Frontmatter): void {
-    const error: ErrorFn = (code, message, key) => this.set.errors.push({file: home.file, line: key ? keyLine(fm, key) ?? home.line : home.line, code, message});
+    const error: ErrorFn = (code, message, key, target) => this.set.errors.push({file: home.file, line: key ? keyLine(fm, key) ?? home.line : home.line, code, message, target});
     const warn: ErrorFn = (code, message, key) => this.set.warnings.push({file: home.file, line: key ? keyLine(fm, key) ?? home.line : home.line, code, message});
     const {type, data} = home;
     const subject: Subject = {file: home.file, typeName: type.name, home};
@@ -322,7 +333,7 @@ class HomeChecker {
       path: (v) => this.pathProblem(v),
       ref: (v, m) => this.resolveRef(v, m.refs!, {source: home.file, key: m.name}).problem ?? null,
     });
-    for (const problem of normalized.problems) error(problem.code, problem.message, problem.key);
+    for (const problem of normalized.problems) error(problem.code, problem.message, problem.key, problem.target);
     for (const member of Object.values(type.members)) {
       if (member.nullable || member.name === 'id' || member.name === 'name') continue;
       if (isHomeFileMember(member) && !home.yaml) {
@@ -341,7 +352,7 @@ class HomeChecker {
 
   /** A page that is not a home but carries edge keys: `documents:` on a help page. */
   checkPage(file: string, fm: Frontmatter): void {
-    const error: ErrorFn = (code, message, key) => this.set.errors.push({file, line: key ? keyLine(fm, key) ?? 1 : 1, code, message});
+    const error: ErrorFn = (code, message, key, target) => this.set.errors.push({file, line: key ? keyLine(fm, key) ?? 1 : 1, code, message, target});
     const warn: ErrorFn = (code, message, key) => this.set.warnings.push({file, line: key ? keyLine(fm, key) ?? 1 : 1, code, message});
     if (!this.system.nodes.has('doc-page')) {
       error('bad-edge', 'a page can only annotate when the type system has a doc-page type');
@@ -430,7 +441,7 @@ class HomeChecker {
       seen.add(target.trim());
       if (key === 'code') {
         const problem = this.pathProblem(target);
-        if (problem) error('missing-path', `${where}: ${problem}`, key);
+        if (problem) error('missing-path', `${where}: ${problem}`, key, target);
       } else {
         const {home, problem} = this.resolveRef(target, edge[otherSide], {source: subject.file, key: where});
         if (problem) error('unresolved-ref', `${where}: ${problem}`, key);
@@ -605,7 +616,7 @@ class HomeChecker {
   }
 
   private lookup(value: string, candidates: string[], expected: string[], anchor?: string): {home?: Home, problem?: string} {
-    const hits = [...new Set(candidates.map((c) => this.index.byId.get(c) ?? this.index.byAlias.get(c)).filter((h): h is Home => !!h))];
+    const hits = [...new Set(candidates.map((c) => lookupHome(this.index, [c])).filter((h): h is Home => !!h))];
     if (hits.length > 1) return {problem: `'${value}' is ambiguous: ${hits.map((h) => `~${h.id}`).join(', ')}; write the prefix`};
     if (!hits.length) return {problem: `'${value}' does not resolve to any home document (as ${candidates.map((c) => `~${c}`).join(' or ')})`};
     const home = hits[0];
@@ -624,7 +635,7 @@ class HomeChecker {
     if (cached !== undefined) return cached;
     let anchors: Set<string> | null;
     try {
-      anchors = headingAnchors(splitFrontmatter(fs.readFileSync(path.join(this.repoRoot, file), 'utf8')).body);
+      anchors = new Set(headings(splitFrontmatter(fs.readFileSync(path.join(this.repoRoot, file), 'utf8')).body).map((h) => h.slug));
     } catch {
       anchors = null;
     }
@@ -634,10 +645,10 @@ class HomeChecker {
 
   private checkCitations(home: Home, fm: Frontmatter): void {
     for (const c of extractCitations(home.file, home.body, fm.bodyLine)) {
-      const error = (code: string, message: string) => this.set.errors.push({file: home.file, line: c.line, code, message});
+      const error = (code: string, message: string, target?: string) => this.set.errors.push({file: home.file, line: c.line, code, message, target});
       if (c.resolved === null) {
         this.set.citations.code++;
-        error('citation-escape', `link '${c.raw}' escapes the repository`);
+        error('citation-escape', `link '${c.raw}' escapes the repository`, c.raw);
         continue;
       }
       // a Docusaurus link may drop the extension: [Tile viewer](tile-viewer) means tile-viewer.md beside the page
@@ -648,11 +659,12 @@ class HomeChecker {
       const problem = this.pathProblem(resolved);
       if (problem) {
         error(target === 'doc' ? 'missing-doc-link' : 'missing-cited-path', target === 'doc' ?
-          `linked document '${c.raw}' does not exist${c.raw === resolved ? '' : ` (resolved to ${resolved})`}` : `cited ${problem}`);
+          `linked document '${c.raw}' does not exist${c.raw === resolved ? '' : ` (resolved to ${resolved})`}` : `cited ${problem}`,
+          target === 'doc' ? c.raw : resolved);
         continue;
       }
       if (c.anchor && target === 'doc' && !this.anchorsOf(resolved)?.has(c.anchor))
-        error('bad-anchor', `link '${c.raw}': no heading '#${c.anchor}' in ${resolved}`);
+        error('bad-anchor', `link '${c.raw}': no heading '#${c.anchor}' in ${resolved}`, c.raw);
     }
   }
 }

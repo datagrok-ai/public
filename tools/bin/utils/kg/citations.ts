@@ -54,16 +54,27 @@ export function slugify(text: string): string {
   return text.toLowerCase().replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '-');
 }
 
-/** Anchors a markdown body answers to: heading slugs plus explicit `{#id}` suffixes. */
-export function headingAnchors(body: string): Set<string> {
-  const anchors = new Set<string>();
+export interface Heading {
+  depth: number;
+  text: string;
+  /** The anchor the heading answers to: its explicit `{#id}`, else its slug, numbered `-1`, `-2` per duplicate. */
+  slug: string;
+}
+
+/** The headings of a markdown body, in order, with the anchor each one answers to (GitHub's rule, all six levels). */
+export function headings(body: string): Heading[] {
+  const out: Heading[] = [];
+  const seen = new Map<string, number>();
   for (const {text} of proseLines(body)) {
-    const m = /^#{1,6}\s+(.+?)\s*(?:\{#([^}]+)\})?\s*#*\s*$/.exec(text);
+    const m = /^(#{1,6})\s+(.+?)\s*(?:\{#([^}]+)\})?\s*#*\s*$/.exec(text);
     if (!m) continue;
-    anchors.add(slugify(m[1]));
-    if (m[2]) anchors.add(m[2]);
+    const base = m[3] ?? slugify(m[2]);
+    if (!base) continue; // a heading of non-Latin words slugifies to nothing, so nothing can link to it
+    const n = seen.get(base) ?? 0;
+    seen.set(base, n + 1);
+    out.push({depth: m[1].length, text: m[2], slug: n ? `${base}-${n}` : base});
   }
-  return anchors;
+  return out;
 }
 
 export function extractCitations(file: string, body: string, bodyLine: number): Citation[] {

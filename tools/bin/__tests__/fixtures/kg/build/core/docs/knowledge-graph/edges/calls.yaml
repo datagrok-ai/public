@@ -1,5 +1,4 @@
 type: calls
-was: Calls
 from: Declaration | Function | SourceFile
 to: Function | Declaration | Endpoint
 derived_by: [ast]

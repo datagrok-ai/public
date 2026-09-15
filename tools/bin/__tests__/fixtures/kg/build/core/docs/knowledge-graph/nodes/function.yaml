@@ -1,6 +1,5 @@
 type: function
 extends: component
-was: RegisteredFunction
 description: >
   A Datagrok Func registered by an annotation header (//name:, //input:, //meta.role:)
   in a package, a script file, a query, or by @CmdFunc / Command.reg in the Dart

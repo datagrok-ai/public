@@ -3,7 +3,7 @@
 /// hierarchy, inherits down it, materializes reference properties, checks endpoints, enforces required
 /// members once and settles visibility.
 import {TypeSystem, NodeType, isSubtype, concreteAuthored} from '../types';
-import {normalizeRow, normalizeEdgeRow, isOrdered, Row, RowProblem} from './normalize';
+import {normalizeRow, normalizeEdgeRow, isOrdered, compare, Row, RowProblem} from './normalize';
 import {PREFIXED_ID, SCHEMED_ID, SCHEME_TYPES, JIRA_KEY, parseId, stubName, titleCase, locationVisibility, sourceLayerOf} from './ids';
 
 export interface Claim {
@@ -138,7 +138,8 @@ export class Emitter {
     }
     const [winner, loser] = Number(r.confidence) > Number(existing.confidence) ? [r, existing] : [existing, r];
     const merged: Row = {...loser, ...winner};
-    const evidence = [...new Set([...(existing.evidence as string[] ?? []), ...(r.evidence as string[] ?? [])])];
+    // sorted, so the cap keeps the same twenty whatever order the rows arrived in
+    const evidence = [...new Set([...(existing.evidence as string[] ?? []), ...(r.evidence as string[] ?? [])])].sort(compare);
     if (evidence.length) merged.evidence = evidence.slice(0, EVIDENCE_CAP);
     this.edges.set(key, merged);
   }

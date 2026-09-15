@@ -1,6 +1,5 @@
 type: source-file
 extends: component
-was: File
 description: >
   One source file. The unit that is-implemented-in ownership, participates-in
   citations and PR diffs operate on. Id file:<repo-relative path>.

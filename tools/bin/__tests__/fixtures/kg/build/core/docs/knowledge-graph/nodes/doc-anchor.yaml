@@ -7,4 +7,3 @@ properties:
   page:          DocPage
   slug:          string
   depth:         number
-  heading:       string

@@ -8,8 +8,9 @@ import {Emitter} from '../emitter';
 import {Row} from '../normalize';
 import {BuildContext, Extractor} from '../registry';
 import {splitFrontmatter, parseYamlDocument} from '../../frontmatter';
+import {HomeSet} from '../../homes';
 import {ticketId, relId, custId, commitId} from '../ids';
-import {homesOf, idTokens, ticketTokens, ticketStub, resolveMention, HomeIndex} from './markers';
+import {homesOf, idTokens, ticketTokens, ticketStub, resolveMention} from './markers';
 
 /** The snapshot repo beside the monorepo, then the place it is cloned to on the dev boxes (build-plan.md WO-5). */
 const BACKLOG_FALLBACK = 'C:/dg/backlog';
@@ -54,12 +55,12 @@ interface Person {
 
 class ProcessLayer {
   private people: People;
-  private index: HomeIndex;
+  private homes: HomeSet;
   private gitPartial = false;
 
   constructor(private ctx: BuildContext, private emitter: Emitter) {
     this.people = new People(ctx, emitter);
-    this.index = new HomeIndex(homesOf(ctx));
+    this.homes = homesOf(ctx);
   }
 
   run(): void {
@@ -132,7 +133,7 @@ class ProcessLayer {
   /** The Feature field the snapshot has no column for: `~id` tokens in the ticket text, and the tickets it names. */
   private body(id: string, body: string, file: string): void {
     for (const token of idTokens(body).keys()) {
-      const target = resolveMention(this.emitter, this.index, token, file);
+      const target = resolveMention(this.emitter, this.homes, token, file);
       if (!target) continue;
       this.emitter.edge({type: target.root === 'feature' ? 'affects' : 'mentions', from: id, to: target.id, derived_by: 'annotation', confidence: 1, evidence: [file]});
     }

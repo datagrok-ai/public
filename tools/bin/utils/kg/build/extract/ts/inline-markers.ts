@@ -5,7 +5,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import {Emitter} from '../../emitter';
 import {BuildContext, Extractor} from '../../registry';
-import {HomeIndex, homesOf, resolveMention, MARKER_LINE} from '../markers';
+import {homesOf, resolveMention, MARKER_LINE} from '../markers';
 import {tsSources} from './declarations';
 
 export const inlineMarkersExtractor: Extractor = {
@@ -13,7 +13,7 @@ export const inlineMarkersExtractor: Extractor = {
   layer: 'public',
   modes: ['full'],
   run(ctx: BuildContext, emitter: Emitter): void {
-    const index = new HomeIndex(homesOf(ctx));
+    const homes = homesOf(ctx);
     let unresolved = 0;
     for (const file of tsSources(ctx, emitter).files) {
       const lines = fs.readFileSync(path.join(ctx.repoRoot, file.path), 'utf8').split(/\r?\n/);
@@ -22,7 +22,7 @@ export const inlineMarkersExtractor: Extractor = {
         const token = MARKER_LINE.exec(lines[i])?.[1];
         if (token === undefined || seen.has(token)) continue;
         seen.add(token);
-        const target = resolveMention(emitter, index, token, `${file.path}:${i + 1}`);
+        const target = resolveMention(emitter, homes, token, `${file.path}:${i + 1}`);
         if (!target || target.root !== 'feature') {
           unresolved++;
           continue;

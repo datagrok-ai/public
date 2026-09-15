@@ -446,13 +446,12 @@ Verbs:
     gen         Write kg.d.ts, the glossary.md tables and feature-tree.md, all inside
                 core/docs/knowledge-graph. Refuses while check reports errors.
     build       Run the extractors and write the graph as JSONL into one immutable
-                generation, .kg/gen/<batch>/: data/nodes/<type>.jsonl,
+                generation, .kg/gen/<batch>-<suffix>/: data/nodes/<type>.jsonl,
                 data/edges/<type|property>.jsonl, reports/ (claims.jsonl for membership,
                 invalid.jsonl, problems.json), the index as kg.kuzu, and manifest.json
                 last of all. Only when the generation is complete does .kg/current, one
-                line naming the batch, start pointing at it (with a .kg/gen/current link
-                beside it where the platform allows one), so a build that is interrupted
-                or fails to load the index leaves the previous generation queryable.
+                line naming the generation, start pointing at it, so a build that is
+                interrupted or fails to load the index leaves the previous one queryable.
                 Earlier generations are never removed by build; grok kg gc removes them.
                 Lines are deterministic: two builds of the same inputs are byte-identical
                 and share a content-addressed batch id over both revisions, the dirty tree
@@ -473,7 +472,7 @@ Verbs:
                 membership (which feature owns each file, conventions.md §8; reports
                 ownership.json).
                 Loading the index is part of build: the JSONL is copied into a Kuzu
-                database at .kg/gen/<batch>/kg.kuzu (one node table per root, one rel
+                database at .kg/gen/<batch>-<suffix>/kg.kuzu (one node table per root, one rel
                 table per edge type and per reference property), and the manifest records
                 it as indexed_batch with the memory the load needed (index_memory_mb) and
                 the platform it was written on (index_platform). The binding is optional —
@@ -520,8 +519,9 @@ Verbs:
                 says so; the md output is the PR comment). \`build\` writes the
                 first four to .kg/reports/ as both .json and .md.
     gc          Remove older generations under .kg/gen/, keeping the current one and
-                the --keep newest (default 2). A generation whose index a reader holds
-                open is reported and left alone.
+                the --keep newest (default 2), and every interrupted build older than an
+                hour. A generation whose index a reader holds open is reported and left
+                alone.
     help        Show this help
 
 The four operations and query read the generation .kg/current names, next to the type

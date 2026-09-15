@@ -1,5 +1,4 @@
 type: depends-on
-was: DependsOn
 from: Package | Library
 to: Package | Library
 identity: [kind]

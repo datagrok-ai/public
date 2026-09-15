@@ -1,5 +1,4 @@
 type: affects
-was: Affects
 from: Ticket | Report
 to: Feature
 derived_by: [external, annotation, llm]

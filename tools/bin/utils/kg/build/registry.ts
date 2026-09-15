@@ -26,7 +26,8 @@ export interface BuildContext {
   repoRoot: string;
   mode: Mode;
   backlogDir?: string;
-  /** The home documents, when the caller already loaded them for check. */
+  /** The home documents: the caller's, when check already loaded them, else loaded once per build by whichever
+   * extractor asks first (`homesOf`). */
   homes?: HomeSet;
 }
 

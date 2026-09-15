@@ -6,7 +6,7 @@ import {Emitter} from '../../emitter';
 import {Row} from '../../normalize';
 import {BuildContext, Extractor} from '../../registry';
 import {pkgId, chgId} from '../../ids';
-import {HomeIndex, homesOf, emitMentions} from '../markers';
+import {homesOf, emitMentions} from '../markers';
 import {listPackages} from './packages';
 
 export interface ChangelogEntry {
@@ -29,7 +29,7 @@ export const changelogExtractor: Extractor = {
   layer: 'public',
   modes: ['full'],
   run(ctx: BuildContext, emitter: Emitter): void {
-    const index = new HomeIndex(homesOf(ctx));
+    const homes = homesOf(ctx);
     let unresolved = 0;
     for (const pkg of listPackages(ctx.repoRoot)) {
       const file = `${pkg.dir}/CHANGELOG.md`;
@@ -41,7 +41,7 @@ export const changelogExtractor: Extractor = {
           version: e.version, date: e.date, path: file, provenance: 'annotation', source_layer: 'public'}).accepted) continue;
         const kind = KINDS[VERB.exec(e.text)?.[1].slice(0, 3).toLowerCase() ?? ''];
         const changes = (target: {root?: string}): Row | undefined => target.root === 'feature' ? {type: 'changes', kind} : undefined;
-        unresolved += emitMentions(emitter, id, e.text, `${file} (${e.version} #${e.n})`, index, changes).unresolved.length;
+        unresolved += emitMentions(emitter, id, e.text, `${file} (${e.version} #${e.n})`, homes, changes).unresolved.length;
       }
     }
     emitter.source('ts-changelog', unresolved ? 'partial' : 'ok');

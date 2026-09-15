@@ -1,6 +1,5 @@
 type: library
 extends: component
-was: Library
 description: >
   A shared TypeScript library under public/libraries (@datagrok-libraries/*) or the
   JS API itself (datagrok-api). Id lib:<name>.

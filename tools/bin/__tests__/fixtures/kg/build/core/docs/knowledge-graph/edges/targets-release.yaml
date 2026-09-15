@@ -1,5 +1,4 @@
 type: targets-release
-was: TargetsRelease
 from: Ticket | Feature | PullRequest
 to: Release
 identity: [kind]

@@ -126,7 +126,8 @@ describe('ts-tests extractor (build-plan.md WO-3c)', () => {
     expect(byId(tests, 'test:dg:public/packages/ApiTests/src/tests/shell.ts#Shell/windows')).toMatchObject({level: 'api', category: 'Shell', skipped: false, benchmark: false, provenance: 'ast'});
     expect(byId(tests, `test:dg:${TESTS}#~domains/bio/detects sequences`)).toEqual({
       id: `test:dg:${TESTS}#~domains/bio/detects sequences`, type: 'test', name: 'detects sequences', batch: expect.any(String), benchmark: false, category: '~domains/bio',
-      framework: 'dg', level: 'unit', path: TESTS, provenance: 'ast', dynamic: false, skipped: false, skip_conditional: false, source_layer: 'public', status: 'active', visibility: 'public',
+      framework: 'dg', level: 'unit', path: TESTS, provenance: 'ast', dynamic: false, skipped: false, skip_conditional: false, suite: 'suite:dg:Tested:~domains/bio',
+      source_layer: 'public', status: 'active', visibility: 'public',
     });
     expect(byId(tests, `test:dg:${TESTS}#~domains/bio/renders slowly`)).toMatchObject({benchmark: true, tags: ['render', 'slow'], skipped: false});
     expect(byId(tests, `test:dg:${TESTS}#~domains/bio/skipped one`)).toMatchObject({skipped: true, skip_reason: 'GROK-100: flaky on CI'});
@@ -139,19 +140,21 @@ describe('ts-tests extractor (build-plan.md WO-3c)', () => {
       expect.objectContaining({id: 'suite:dg:Tested:Tested: Utils', name: 'Tested: Utils', package: 'pkg:Tested'}),
       expect.objectContaining({id: 'suite:dg:Tested:~domains/bio', name: '~domains/bio', package: 'pkg:Tested'}),
     ]);
-    expect(edges(rows('edges/in-suite'), `test:dg:${TESTS}#Tested: Utils/tagged`)).toEqual([expect.objectContaining({to: 'suite:dg:Tested:Tested: Utils', derived_by: 'ast', confidence: 1, evidence: [TESTS]})]);
+    expect(byId(tests, `test:dg:${TESTS}#Tested: Utils/tagged`).suite).toBe('suite:dg:Tested:Tested: Utils');
+    expect(rows('edges/suite')).toContainEqual(expect.objectContaining({type: 'ref', name: 'suite', from: `test:dg:${TESTS}#Tested: Utils/tagged`, to: 'suite:dg:Tested:Tested: Utils', derived_by: 'ast', confidence: 1}));
     expect(rows('edges/package').filter((e) => e.from.startsWith('suite:')).map((e) => [e.from, e.to])).toContainEqual(['suite:dg:Tested:~domains/bio', 'pkg:Tested']);
   });
 
-  it('turns a ~id category or first tag into a tests edge with the level as kind', async () => {
+  it('turns a ~id category or first tag into a tests edge', async () => {
     const {rows} = await graph;
-    expect(rows('edges/tests').map((e) => [e.from, e.to, e.kind, e.derived_by, e.confidence])).toEqual([
-      [`test:dg:${TESTS}#Tested: Utils/tagged`, 'domains/bio', 'unit', 'annotation', 1],
-      [`test:dg:${TESTS}#~domains/bio/detects sequences`, 'domains/bio', 'unit', 'annotation', 1],
-      [`test:dg:${TESTS}#~domains/bio/renders slowly`, 'domains/bio', 'unit', 'annotation', 1],
-      [`test:dg:${TESTS}#~domains/bio/skipped one`, 'domains/bio', 'unit', 'annotation', 1],
-      [`test:playwright:${PLAYWRIGHT}#Basic/~domains/bio sequence view opens`, 'domains/bio', 'e2e', 'annotation', 1],
+    expect(rows('edges/tests').map((e) => [e.from, e.to, e.derived_by, e.confidence])).toEqual([
+      [`test:dg:${TESTS}#Tested: Utils/tagged`, 'domains/bio', 'annotation', 1],
+      [`test:dg:${TESTS}#~domains/bio/detects sequences`, 'domains/bio', 'annotation', 1],
+      [`test:dg:${TESTS}#~domains/bio/renders slowly`, 'domains/bio', 'annotation', 1],
+      [`test:dg:${TESTS}#~domains/bio/skipped one`, 'domains/bio', 'annotation', 1],
+      [`test:playwright:${PLAYWRIGHT}#Basic/~domains/bio sequence view opens`, 'domains/bio', 'annotation', 1],
     ]);
+    expect(rows('edges/tests').every((e) => e.kind === undefined)).toBe(true);
   });
 
   it('never makes a feature out of a ~id marker no home declares: the token is counted and the edge dropped', async () => {
@@ -180,20 +183,20 @@ describe('ts-tests extractor (build-plan.md WO-3c)', () => {
       expect.objectContaining({id: `suite:playwright:${TRACK_TEST}`, name: 'basic.test.ts', package: 'pkg:UsageAnalysis'}),
       expect.objectContaining({id: `suite:playwright:${SPEC}`, name: 'scatterplot-legend-spec.ts', package: 'pkg:UsageAnalysis'}),
     ]);
-    expect(edges(rows('edges/in-suite'), undefined, `suite:playwright:${PLAYWRIGHT}`)).toHaveLength(4);
-    expect(rows('edges/in-suite')).toHaveLength(14);
+    expect(edges(rows('edges/suite'), undefined, `suite:playwright:${PLAYWRIGHT}`)).toHaveLength(4);
+    expect(rows('edges/suite')).toHaveLength(14);
   });
 });
 
 describe('ts-samples extractor (build-plan.md WO-3c)', () => {
-  it('reads api_members from an //api: header, else from DG./ui./grok. usages in order of appearance', async () => {
+  it('reads api_members from an //api: header, else from DG./ui./grok. usages, as a set', async () => {
     const {rows} = await graph;
     expect(byId(rows('nodes/sample'), 'sample:dapi/projects-list')).toEqual({
       id: 'sample:dapi/projects-list', type: 'sample', name: 'projects-list', api_members: ['DG.HttpDataSource.filter', 'DG.HttpDataSource.list'], batch: expect.any(String),
       description: 'Lists demo projects; the canonical sample for ~domains/bio project browsing.', folder: 'dapi', language: 'js', path: 'public/packages/ApiSamples/scripts/dapi/projects-list.js',
       provenance: 'annotation', source_layer: 'public', status: 'active', visibility: 'public',
     });
-    expect(byId(rows('nodes/sample'), 'sample:ui/hello')).toMatchObject({api_members: ['grok.shell.newView', 'ui.divText', 'DG.Viewer.fromType', 'grok.data.demo.demog'], folder: 'ui', language: 'js', provenance: 'ast'});
+    expect(byId(rows('nodes/sample'), 'sample:ui/hello')).toMatchObject({api_members: ['DG.Viewer.fromType', 'grok.data.demo.demog', 'grok.shell.newView', 'ui.divText'], folder: 'ui', language: 'js', provenance: 'ast'});
     expect(byId(rows('nodes/sample'), 'sample:ui/info')).toMatchObject({api_members: ['grok.shell.info'], language: 'python', description: 'A Python sample.'});
     expect(rows('nodes/sample')).toHaveLength(4);
   });
@@ -267,8 +270,8 @@ describe('docs extractor (build-plan.md WO-3c)', () => {
       ['doc:public/packages/UsageAnalysis/files/TestTrack/Viewers/ScatterPlot/scatter-plot-ui.md', 'other', 'annotation'], [`doc:${LEGACY}`, 'other', 'annotation'],
     ]);
     expect(byId(rows('nodes/doc-page'), 'doc:core/docs/NOTES.md')).toMatchObject({name: 'Notes', description: 'Loose notes on the fixture; see ~domains/bio and GROK-42.', mdx: false, unlisted: false, visibility: 'dev', source_layer: 'core'});
-    expect(byId(rows('nodes/doc-page'), `doc:${PROJECT}`)).toMatchObject({name: 'Projects', title: 'Projects', keywords: ['project', 'sharing'], description: 'A project is a collection of entities saved and shared together.', status: 'active'});
-    expect(byId(rows('nodes/doc-page'), `doc:${SEQUENCES}`)).toMatchObject({title: 'Sequences', unlisted: true, mdx: true});
+    expect(byId(rows('nodes/doc-page'), `doc:${PROJECT}`)).toMatchObject({name: 'Projects', keywords: ['project', 'sharing'], description: 'A project is a collection of entities saved and shared together.', status: 'active'});
+    expect(byId(rows('nodes/doc-page'), `doc:${SEQUENCES}`)).toMatchObject({name: 'Sequences', unlisted: true, mdx: true});
   });
 
   it('merges the page of a home into the node the homes layer stubbed: one node, the home\'s description, status active', async () => {
@@ -277,18 +280,18 @@ describe('docs extractor (build-plan.md WO-3c)', () => {
     expect(pages).toHaveLength(1);
     const feature = byId(rows('nodes/feature'), 'domains/bio');
     expect(feature).toMatchObject({home: BIO, description: 'Sequence analysis for biologics: notation conversion, MSA and activity cliffs on macromolecules.', status: 'active'});
-    expect(pages[0]).toMatchObject({name: 'Bioinformatics', title: 'Bioinformatics', kind: 'help', description: feature.description, keywords: ['sequences', 'macromolecules'], status: 'active', provenance: 'annotation'});
+    expect(pages[0]).toMatchObject({name: 'Bioinformatics', kind: 'help', description: feature.description, keywords: ['macromolecules', 'sequences'], status: 'active', provenance: 'annotation'});
     expect(edges(rows('edges/mentions'), `doc:${BIO}`).map((e) => e.to)).toEqual([`doc:${PROJECT}`]);
   });
 
-  it('emits a doc-anchor per #..#### heading with GitHub slugs, -1 for a duplicate and the explicit {#id}; fenced and unsluggable lines are not anchors', async () => {
+  it('emits a doc-anchor per #..#### heading with GitHub slugs, -1 for a duplicate and the explicit {#id}; deeper, fenced and unsluggable lines are not anchors', async () => {
     const {rows} = await graph;
-    expect(rows('nodes/doc-anchor').filter((a) => a.page === `doc:${PROJECT}`).map((a) => [a.slug, a.depth, a.heading])).toEqual([
+    expect(rows('nodes/doc-anchor').filter((a) => a.page === `doc:${PROJECT}`).map((a) => [a.slug, a.depth, a.name])).toEqual([
       ['code-data-d42', 2, 'Code & data (`d42`)'], ['links', 3, 'Links'], ['sharing', 2, 'Sharing'], ['sharing-1', 2, 'Sharing'],
     ]);
-    expect(rows('nodes/doc-anchor').some((a) => a.heading === 'Соглашения')).toBe(false);
+    expect(rows('nodes/doc-anchor').some((a) => a.name === 'Соглашения' || a.name === 'Deep')).toBe(false);
     expect(byId(rows('nodes/doc-anchor'), `doc:${PROJECT}#sharing-1`)).toEqual({
-      id: `doc:${PROJECT}#sharing-1`, type: 'doc-anchor', name: 'Sharing', batch: expect.any(String), heading: 'Sharing', depth: 2, page: `doc:${PROJECT}`, path: PROJECT,
+      id: `doc:${PROJECT}#sharing-1`, type: 'doc-anchor', name: 'Sharing', batch: expect.any(String), depth: 2, page: `doc:${PROJECT}`, path: PROJECT,
       provenance: 'annotation', slug: 'sharing-1', source_layer: 'public', status: 'active', visibility: 'public',
     });
     expect(rows('nodes/doc-anchor').filter((a) => a.page === `doc:${BIO}`).map((a) => a.slug)).toEqual(['bioinformatics', 'notation-conversion', 'overview']);

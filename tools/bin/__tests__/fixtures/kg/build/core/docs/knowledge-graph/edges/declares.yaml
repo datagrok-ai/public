@@ -1,5 +1,4 @@
 type: declares
-was: Declares
 from: Package | Library | SourceFile | Declaration
 to: Component
 derived_by: [ast, registry, filesystem]

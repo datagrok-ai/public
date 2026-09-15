@@ -162,7 +162,7 @@ describe('a release record speaks for itself (review 3 #5)', () => {
 
 describe('the Dart batch must be complete, not merely readable (review 3 #6)', () => {
   it('refuses a second header, a header after the payload, and a header missing a required key', () => {
-    const twice = dartGraph({}, ['{"record":"batch","revision":"x","generator":"prop_gen","packages":[]}']);
+    const twice = dartGraph({}, ['{"record":"batch","schema_version":1,"revision":"x","packages":[]}']);
     expect(twice.sources.dart).toMatch(/^partial/);
     expect(twice.details.invalid_rows.some((p) => p.includes('a second batch record'))).toBe(true);
 

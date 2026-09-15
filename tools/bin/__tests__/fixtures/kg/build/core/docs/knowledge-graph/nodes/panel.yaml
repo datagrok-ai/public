@@ -5,6 +5,5 @@ description: >
 properties:
   condition?:    string               # //condition: expression over the current object
   target_type?:  string               # type of the single input
-  target_semtype?: SemanticType
 rules:
   - roles contains 'panel'

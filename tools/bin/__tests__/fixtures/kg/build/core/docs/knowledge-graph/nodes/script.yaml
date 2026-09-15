@@ -1,6 +1,5 @@
 type: script
 extends: function
-was: Script
 description: >
   A function whose body is a script file under a package's scripts/ folder, run by a
   language worker through the call queue.

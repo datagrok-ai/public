@@ -161,10 +161,11 @@ describe('ts-packages extractor (build-plan.md WO-3a)', () => {
     expect(problems.unresolved_ids).toContain('public/packages/Demo/package.json: peerDependencies @datagrok-libraries/nowhere is not under public/packages or public/libraries');
   });
 
-  it('declares the semantic types of package.json with declared_in, and the package declares everything it owns', async () => {
+  it('declares the semantic types of package.json, and the package declares everything it owns', async () => {
     const {rows} = await graph;
-    expect(byId(rows('nodes/semantic-type'), 'semtype:DemoId')).toMatchObject({name: 'DemoId', description: 'A demo identifier', language: 'other', declared_in: 'pkg:Demo', provenance: 'registry'});
-    expect(rows('edges/declared_in')).toEqual([expect.objectContaining({type: 'ref', name: 'declared_in', from: 'semtype:DemoId', to: 'pkg:Demo'})]);
+    expect(byId(rows('nodes/semantic-type'), 'semtype:DemoId')).toMatchObject({name: 'DemoId', description: 'A demo identifier', language: 'other', provenance: 'registry'});
+    expect(rows('edges/declares')).toContainEqual(expect.objectContaining({from: 'pkg:Demo', to: 'semtype:DemoId', derived_by: 'registry'}));
+    expect(rows('edges/declared_in')).toEqual([]);
     const owned = rows('edges/declares').filter((e) => e.from === 'pkg:Demo').map((e) => e.to);
     for (const id of ['semtype:DemoId', 'func:Demo:To HELM', 'func:Demo:detectMolecules', 'func:Demo:Calculate logD', 'func:Demo:users', 'conn:Demo:Demo',
       'env:Demo:demo-env', 'container:Demo:demo', 'file:public/packages/Demo/src/package.g.ts', 'file:public/packages/Demo/detectors.js'])
@@ -185,11 +186,12 @@ describe('ts-functions extractor (build-plan.md WO-3a)', () => {
 
   it('fills the subtype properties from meta and drops them from the bag; a role missing its required member stays a function', async () => {
     const {rows} = await graph;
-    expect(byId(rows('nodes/cell-renderer'), 'func:Demo:Molecule Renderer')).toMatchObject({cell_type: 'Molecule', column_tags: ['quality=Molecule', 'foo=bar'], meta: {}});
-    expect(byId(rows('nodes/file-handler'), 'func:Demo:Import SDF')).toMatchObject({extensions: ['sdf', 'mol'], direction: 'import', meta: {}});
+    expect(byId(rows('nodes/cell-renderer'), 'func:Demo:Molecule Renderer')).toMatchObject({cell_type: 'Molecule', column_tags: ['foo=bar', 'quality=Molecule'], meta: {}});
+    expect(byId(rows('nodes/file-handler'), 'func:Demo:Import SDF')).toMatchObject({extensions: ['mol', 'sdf'], direction: 'import', meta: {}});
     expect(byId(rows('nodes/file-viewer'), 'func:Demo:Preview MOL')).toMatchObject({extensions: ['mol', 'mol2'], check: 'Demo:checkMol', meta: {}});
-    expect(byId(rows('nodes/panel'), 'func:Demo:Molecule Panel')).toMatchObject({condition: 'true', target_type: 'string', target_semtype: 'semtype:Molecule', meta: {}});
-    expect(byId(rows('nodes/filter'), 'func:Demo:Substructure Filter')).toMatchObject({semtype: 'semtype:Molecule', primary: true, columnless: true, meta: {}});
+    expect(byId(rows('nodes/panel'), 'func:Demo:Molecule Panel')).toMatchObject({condition: 'true', target_type: 'string', meta: {}});
+    expect(byId(rows('nodes/filter'), 'func:Demo:Substructure Filter')).toMatchObject({primary: true, columnless: true, meta: {}});
+    expect(rows('edges/targets-semtype')).toContainEqual(expect.objectContaining({from: 'func:Demo:Substructure Filter', to: 'semtype:Molecule', role: 'filters'}));
     expect(byId(rows('nodes/editor'), 'func:Demo:Column Editor')).toMatchObject({meta: {'editor-for': 'AddNewColumn'}});
     expect(byId(rows('nodes/script-handler'), 'func:Demo:Demo Handler')).toMatchObject({script_language: 'demo', extensions: ['dm'], comment_start: '#', meta: {}});
     expect(byId(rows('nodes/sem-type-detector'), 'func:Demo:detectSequences')).toMatchObject({skip_test: true, meta: {}});
@@ -295,7 +297,7 @@ describe('ts-functions extractor (build-plan.md WO-3a)', () => {
     expect(byId(rows('nodes/script'), 'func:Demo:RunJs')).toMatchObject({language: 'js'});
     expect(rows('nodes/script')).toHaveLength(3);
     expect(rows('edges/environment')).toEqual([expect.objectContaining({type: 'ref', name: 'environment', from: 'func:Demo:Calculate logD', to: 'env:Demo:demo-env'})]);
-    expect(byId(rows('nodes/script-environment'), 'env:Demo:demo-env')).toMatchObject({language: 'python', packages: ['python', 'pip', 'rdkit', 'pichemist'], path: 'public/packages/Demo/environments/demo-env.yaml', provenance: 'registry'});
+    expect(byId(rows('nodes/script-environment'), 'env:Demo:demo-env')).toMatchObject({language: 'python', packages: ['pichemist', 'pip', 'python', 'rdkit'], path: 'public/packages/Demo/environments/demo-env.yaml', provenance: 'registry'});
   });
 
   it('reads every query of a .sql file with its connection reference; one without --connection: is skipped and makes the source partial', async () => {
@@ -385,11 +387,10 @@ describe('ts-functions extractor, the defects of the WO-3a review', () => {
     expect(byId(rows('nodes/function'), 'func:Plain:srcJs')).toMatchObject({path: 'public/packages/Plain/src/package.js', language: 'js'});
   });
 
-  it('D7 reads columnless from meta.columnlessFilter and leaves an editor without edits, so //editor-for: stays in meta', async () => {
+  it('D7 reads columnless from meta.columnlessFilter and keeps //editor-for: in meta', async () => {
     const {rows} = await graph;
     expect(byId(rows('nodes/filter'), 'func:Demo:Substructure Filter')).toMatchObject({columnless: true, primary: true});
     expect(byId(rows('nodes/editor'), 'func:Demo:Column Editor')).toMatchObject({meta: {'editor-for': 'AddNewColumn'}});
-    expect(byId(rows('nodes/editor'), 'func:Demo:Column Editor').edits).toBeUndefined();
   });
 
   it('D8 detects the semantic type of a ternary return and of a constant map, and counts a constant it cannot resolve', async () => {

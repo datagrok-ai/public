@@ -109,10 +109,10 @@ describe('membership resolution: the rungs of conventions.md §8 (build-plan.md 
     expect(participants(rows('edges/participates-in'), RENDERER)).toEqual(['visualize/viewers']);
   });
 
-  it('follows every test of an owned file to its owner, keeping the test level as the kind', async () => {
+  it('follows every test of an owned file to its owner', async () => {
     const {rows} = await graph;
     const tests = rows('edges/tests').filter((e) => e.derived_by === 'filesystem');
-    expect(tests.every((e) => e.to === 'visualize/viewers' && e.confidence === 0.9 && e.kind === 'unit' && e.evidence[0] === TESTS)).toBe(true);
+    expect(tests.every((e) => e.to === 'visualize/viewers' && e.confidence === 0.9 && e.evidence[0] === TESTS)).toBe(true);
     expect(tests).toHaveLength(rows('nodes/test').filter((t) => t.path === TESTS).length);
     expect(rows('edges/tests').some((e) => e.from.startsWith('test:playwright:') && e.derived_by === 'filesystem')).toBe(false);
   });

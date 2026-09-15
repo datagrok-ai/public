@@ -10,6 +10,8 @@ export interface RowProblem {
   key: string;
   code: string;
   message: string;
+  /** The path or id the problem is about, for the stale report. */
+  target?: string;
 }
 
 export interface Normalized {
@@ -28,6 +30,11 @@ const ORDERED_MEMBERS = ['input_types', 'output_types', 'path_params', 'query_pa
 
 export function isOrdered(member: string): boolean {
   return ORDERED_MEMBERS.includes(member);
+}
+
+/** Code-point order, the same on every platform and locale. */
+export function compare(a: string, b: string): number {
+  return a < b ? -1 : a > b ? 1 : 0;
 }
 
 export interface NormalizeOptions extends Partial<ValueHooks> {
@@ -70,7 +77,7 @@ function normalizeMembers(system: TypeSystem, row: Row, members: Record<string, 
     const problem = checkValue(member, value, {provenance: system.provenance, path: options.path, ref: options.ref});
     if (problem) {
       const code = member.kind === 'ref' ? 'unresolved-ref' : member.scalar === 'Path' ? 'missing-path' : 'bad-value';
-      problems.push({key, code, message: `${key}: ${problem}`});
+      problems.push({key, code, message: `${key}: ${problem}`, ...(member.scalar === 'Path' ? {target: String(raw)} : {})});
       continue;
     }
     out[key] = value;

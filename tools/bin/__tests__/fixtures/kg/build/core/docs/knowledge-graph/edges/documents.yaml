@@ -1,6 +1,5 @@
 type: documents
 extends: evidences
-was: Documents
 from: DocPage | DocAnchor | Video
 to: Feature
 key: documents

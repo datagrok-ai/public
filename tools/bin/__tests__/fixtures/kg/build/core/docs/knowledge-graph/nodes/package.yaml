@@ -1,6 +1,5 @@
 type: package
 extends: component
-was: Package
 description: >
   A Datagrok plugin under public/packages: a deployable unit with functions, scripts,
   queries, connections, files and resources, described by its package.json. Id pkg:<Name>.

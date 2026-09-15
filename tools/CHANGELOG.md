@@ -12,6 +12,7 @@
 * grok kg: build consumes the Dart batch .kg/batches/kg-dart.jsonl written by prop_gen - its nodes, edges and ownership claims - and reports it as ok, stale, partial or missing
 * grok kg: build loads the JSONL into a Kuzu index at .kg/kg.kuzu, one node table per root and one rel table per edge type and reference property; the binding is optional and the build succeeds without it
 * grok kg: Added query (Cypher) and the bounded operations impact, tests-for, explain and find, each with --output table|json|csv and the Dart-coverage clause
+* grok kg: Simplified after the fourth review - readers open the index at the default pool, every list that is not ordered is written sorted, check issues reach report stale structured, in-suite/ticketed-as/built-from became the suite/ticket/base references, the duplicate container/declared_in/semtype/target_semtype references are gone, one home index and one heading iterator, the Dart batch header needs schema_version, and every build writes a fresh .kg/gen/<batch>-<suffix> generation
 * grok kg: Added report — orphans, stale, coverage, proposed and diff over the JSONL a build wrote, with --output table|json|md; build writes the first four to .kg/reports/ as .json and .md
 * grok kg: Added the end-to-end build test over the fixture monorepo — every extractor's row counts, byte-identical repeats, the three Dart-batch states, the public projection, the five reports and, where kuzu is installed, the index with its operations
 

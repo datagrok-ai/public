@@ -2,7 +2,6 @@ type: customer
 authored: true
 extends: actor
 prefix: Cust
-was: Client
 description: >
   An organization we work with: customer, partner, prospect or evaluation. One node
   per legal entity. Seeded from the Jira Client field and the backlog customer

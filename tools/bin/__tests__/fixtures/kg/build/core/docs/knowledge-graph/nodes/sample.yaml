@@ -1,6 +1,5 @@
 type: sample
 extends: artifact
-was: ApiSample
 description: >
   A runnable script under packages/ApiSamples/scripts that shows an API in use. Reaches
   the declarations it uses through demonstrates and features through the same edge.

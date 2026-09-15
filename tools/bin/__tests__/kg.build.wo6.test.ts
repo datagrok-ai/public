@@ -27,15 +27,17 @@ function head(repo: string): string {
   return spawnSync('git', ['rev-parse', '--verify', 'HEAD'], {cwd: repo, encoding: 'utf8'}).stdout.trim();
 }
 
-/** Rewrites the batch envelope; `null` deletes the file. */
-function batch(repo: string, envelope: Record<string, unknown> | null, extra: string[] = []): void {
+/** Rewrites the batch envelope, dropping [without] from it; `null` deletes the file. */
+function batch(repo: string, envelope: Record<string, unknown> | null, extra: string[] = [], without: string[] = []): void {
   const file = path.join(repo, BATCH);
   if (!envelope) {
     fs.rmSync(file);
     return;
   }
   const lines = fs.readFileSync(file, 'utf8').split('\n').filter(Boolean);
-  lines[0] = JSON.stringify({...JSON.parse(lines[0]), ...envelope});
+  const head = {...JSON.parse(lines[0]), ...envelope};
+  for (const key of without) delete head[key];
+  lines[0] = JSON.stringify(head);
   fs.writeFileSync(file, [...lines, ...extra].join('\n') + '\n');
 }
 
@@ -62,9 +64,14 @@ async function build(repo: string): Promise<{manifest: any, rows: (file: string)
 describe('the Dart batch (build-plan.md WO-6)', () => {
   it('loads nodes, edges and claims from a batch of the current revision', async () => {
     const repo = makeRepo();
-    batch(repo, {built_at: NOW, revision: head(repo)});
+    batch(repo, {built_at: NOW, revision: head(repo)}, [
+      '{"record":"node","type":"test","id":"test:flutter:core/x_test.dart#a/b","name":"b","path":"core/x_test.dart",' +
+        '"framework":"flutter","level":"unit","provenance":"ast","source_layer":"core"}',
+    ]);
     const {manifest, rows} = await build(repo);
     expect(manifest.sources.dart).toBe('ok');
+    // framework is an open vocabulary: a producer may name a framework the schema never listed
+    expect(rows('nodes/test')).toMatchObject([{id: 'test:flutter:core/x_test.dart#a/b', framework: 'flutter', level: 'unit'}]);
     expect(manifest.problems.invalid_rows).toBe(0);
     expect(rows('nodes/source-file')).toMatchObject([{
       id: 'file:core/server/datlas/lib/src/services/bio_service.dart', type: 'source-file', name: 'bio_service.dart',
@@ -98,6 +105,22 @@ describe('the Dart batch (build-plan.md WO-6)', () => {
     const aged = await build(old);
     expect(aged.manifest.sources.dart).toBe('stale');
     expect(aged.rows('nodes/endpoint')).toHaveLength(1);
+  }, 60_000);
+
+  it('refuses a batch whose schema_version is not the schema\'s, and one without it', async () => {
+    const wrong = makeRepo();
+    batch(wrong, {built_at: NOW, revision: head(wrong), schema_version: 2});
+    const other = await build(wrong);
+    expect(other.manifest.sources.dart).toBe('incompatible');
+    expect(other.manifest.problems.invalid_rows).toBe(1);
+    expect(other.rows('nodes/source-file')).toEqual([]);
+
+    const repo = makeRepo();
+    batch(repo, {built_at: NOW, revision: head(repo)}, [], ['schema_version']);
+    const none = await build(repo);
+    expect(none.manifest.sources.dart).toBe('incompatible');
+    expect(none.manifest.problems.invalid_rows).toBe(1);
+    expect(none.rows('nodes/source-file')).toEqual([]);
   }, 60_000);
 
   it('reports an absent batch as missing, without a problem', async () => {

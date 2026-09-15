@@ -1,5 +1,4 @@
 type: automates
-was: Automates
 from: Test
 to: Scenario
 derived_by: [annotation]

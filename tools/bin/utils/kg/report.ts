@@ -5,7 +5,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import {spawnSync} from 'child_process';
-import {TypeSystem, isSubtype} from './types';
+import {TypeSystem, Issue, isSubtype} from './types';
 import {Row} from './build/normalize';
 import {Graph} from './build/emitter';
 import {Manifest} from './build/write';
@@ -30,8 +30,6 @@ const STALE_CODES = ['missing-cited-path', 'missing-doc-link', 'citation-escape'
 const HELP_LINK = /^(?:https?:\/\/(?:[\w-]+\.)*datagrok\.ai)?\/help\//;
 const ORPHAN_GROUPS = 50;
 const ORPHAN_FILES = 5;
-/** `file:line: code: message`, the shape the homes extractor records a check issue in. */
-const HOME_ISSUE = /^([^:\s]+?)(?::(\d+))?: ([a-z][a-z-]*): (.*)$/;
 
 export interface Report {
   name: ReportName;
@@ -59,6 +57,8 @@ export interface GraphData {
   ownership?: Ownership;
   /** `reports/problems.json`: free text per problem kind. */
   problems: Record<string, string[]>;
+  /** `reports/home-issues.json`: the check issues behind a partial homes source, structured. */
+  homeIssues: Issue[];
   sources: Record<string, string>;
   /** The revisions the graph was built from; `diff` compares them with the working tree. */
   revisions: Record<string, string>;
@@ -86,7 +86,7 @@ function needs(name: ReportName, system: TypeSystem): {nodes: string[], edges: s
     case 'proposed':
       return {nodes: ['source-file'], edges: ['is-implemented-in']};
     default:
-      return {nodes: features, edges: ['is-implemented-in', 'participates-in', 'documents', 'tests', 'covers', 'automates', 'owner']};
+      return {nodes: [...features, 'test'], edges: ['is-implemented-in', 'participates-in', 'documents', 'tests', 'covers', 'automates', 'owner']};
   }
 }
 
@@ -99,6 +99,7 @@ export function readGraph(kgDir: string, repoRoot: string, system: TypeSystem, n
   data.revisions = manifest?.revisions ?? {};
   data.ownership = readJson<Ownership>(path.join(kgDir, 'reports', 'ownership.json'));
   data.problems = readJson<Record<string, string[]>>(path.join(kgDir, 'reports', 'problems.json')) ?? {};
+  data.homeIssues = readJson<Issue[]>(path.join(kgDir, 'reports', 'home-issues.json')) ?? [];
   for (const type of want.nodes)
     for (const row of readJsonl(path.join(kgDir, 'data', 'nodes', `${type}.jsonl`))) {
       data.nodes.set(String(row.id), row);
@@ -115,6 +116,7 @@ export function fromGraph(graph: Graph, repoRoot: string, sources: Record<string
   data.revisions = revisions;
   data.ownership = graph.reports.ownership as Ownership | undefined;
   data.problems = graph.details;
+  data.homeIssues = graph.reports['home-issues'] as Issue[] ?? [];
   for (const row of graph.nodes) {
     data.nodes.set(String(row.id), row);
     push(data.byType, String(row.type), row);
@@ -246,10 +248,10 @@ function groupOf(file: string): string {
 /** What the graph still points at and cannot reach: a gone path, an unknown ticket, a help page, a spec, a declaration. */
 function stale(data: GraphData, options: ReportOptions): Report {
   const rows: Record<string, unknown>[] = [];
-  for (const issue of data.problems.home_issues ?? []) {
-    const m = HOME_ISSUE.exec(issue);
-    if (!m || !STALE_CODES.includes(m[3])) continue;
-    rows.push({kind: 'citation', source: m[2] ? `${m[1]}:${m[2]}` : m[1], target: /'([^']+)'/.exec(m[4])?.[1] ?? '', reason: `${m[3]}: ${m[4]}`});
+  for (const issue of data.homeIssues) {
+    if (!STALE_CODES.includes(issue.code)) continue;
+    rows.push({kind: 'citation', source: issue.line ? `${issue.file}:${issue.line}` : issue.file, target: issue.target ?? '',
+      reason: `${issue.code}: ${issue.message}`});
   }
   // without the snapshot a ticket with no external provenance proves nothing: the backlog was never consulted
   const backlog = /^ok\b/.test(data.sources.backlog ?? '');
@@ -467,7 +469,7 @@ function diff(data: GraphData, options: ReportOptions): Report {
     relation: hit.relation, confidence: hit.confidence,
   }));
   const testRows = (data.edges.get('tests') ?? []).filter((e) => ids.has(String(e.to)))
-    .map((e) => ({test: String(e.from), feature: String(e.to), kind: String(e.kind ?? '')})).sort((a, b) => compare(a.test, b.test));
+    .map((e) => ({test: String(e.from), feature: String(e.to), level: String(data.nodes.get(String(e.from))?.level ?? '')})).sort((a, b) => compare(a.test, b.test));
   const scenarioRows = (data.edges.get('covers') ?? []).filter((e) => ids.has(String(e.to)))
     .map((e) => ({scenario: String(e.from), feature: String(e.to)})).sort((a, b) => compare(a.scenario, b.scenario));
   const covered = new Set(scenarioRows.map((r) => r.scenario));
@@ -562,7 +564,7 @@ function staleGraph(data: GraphData, repoRoot: string): string[] {
 }
 
 function empty(repoRoot: string): GraphData {
-  return {nodes: new Map(), byType: new Map(), edges: new Map(), problems: {}, sources: {}, revisions: {}, repoRoot};
+  return {nodes: new Map(), byType: new Map(), edges: new Map(), problems: {}, homeIssues: [], sources: {}, revisions: {}, repoRoot};
 }
 
 function count(rows: Row[] | undefined, key: 'from' | 'to'): Map<string, number> {

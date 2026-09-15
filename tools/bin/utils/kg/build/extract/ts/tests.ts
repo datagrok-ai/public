@@ -4,11 +4,12 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import {globSync} from 'glob';
+import {HomeSet} from '../../../homes';
 import {Emitter} from '../../emitter';
 import {Row} from '../../normalize';
 import {BuildContext, Extractor} from '../../registry';
 import {pkgId, testId, suiteId} from '../../ids';
-import {HomeIndex, homesOf, leadingId, resolveMention} from '../markers';
+import {homesOf, leadingId, resolveMention} from '../markers';
 import {listPackages} from './packages';
 
 export interface DgTest {
@@ -49,7 +50,7 @@ export const testsExtractor: Extractor = {
   layer: 'public',
   modes: ['full'],
   run(ctx: BuildContext, emitter: Emitter): void {
-    const layer = new TestLayer(ctx.repoRoot, emitter, new HomeIndex(homesOf(ctx)));
+    const layer = new TestLayer(ctx.repoRoot, emitter, homesOf(ctx));
     for (const pkg of listPackages(ctx.repoRoot))
       for (const file of layer.glob(`${pkg.dir}/src/**/*.ts`))
         if (!file.endsWith('.d.ts')) layer.emitDgFile(pkg.folder, file);
@@ -61,25 +62,24 @@ export const testsExtractor: Extractor = {
 class TestLayer {
   private suites = new Set<string>();
 
-  constructor(private repoRoot: string, private emitter: Emitter, private index: HomeIndex) {}
+  constructor(private repoRoot: string, private emitter: Emitter, private homes: HomeSet) {}
 
   emitDgFile(pkg: string, file: string): void {
     const level = pkg === API_TESTS_PACKAGE ? 'api' : 'unit';
     for (const t of parseDgTests(this.read(file))) {
       const id = testId('dg', file, t.category, t.name);
-      const row: Row = {type: 'test', id, name: t.name, path: file, framework: 'dg', level, category: t.category, dynamic: t.dynamic ? true : undefined,
+      const suite = suiteId('dg', pkg, t.category);
+      const row: Row = {type: 'test', id, name: t.name, path: file, framework: 'dg', level, category: t.category, suite, dynamic: t.dynamic ? true : undefined,
         skipped: t.skipReason !== undefined ? true : undefined, skip_conditional: t.skipConditional ? true : undefined, skip_reason: t.skipReason,
         benchmark: t.benchmark ? true : undefined, tags: t.tags.length ? t.tags : undefined, provenance: 'ast', source_layer: 'public'};
       if (!this.emitter.node(row).accepted) continue;
       if (t.dynamic) this.emitter.problem('dynamic_tests', `${file}: ${t.category}/${t.name} names a registration site, not a runnable test: the title is built at run time`);
-      const suite = suiteId('dg', pkg, t.category);
       if (!this.suites.has(suite)) {
         this.suites.add(suite);
         this.emitter.node({type: 'test-suite', id: suite, name: t.category, framework: 'dg', package: pkgId(pkg), provenance: 'ast', source_layer: 'public'});
       }
-      this.emitter.edge({type: 'in-suite', from: id, to: suite, derived_by: 'ast', confidence: 1, evidence: [file]});
       const feature = leadingId(t.category) ?? (t.tags[0] === undefined ? undefined : leadingId(t.tags[0]));
-      if (feature) this.tests(id, feature, level, file);
+      if (feature) this.tests(id, feature, file);
     }
   }
 
@@ -93,18 +93,17 @@ class TestLayer {
     for (const t of tests) {
       const chain = t.describes.join(' > ');
       const id = playwrightTestId(file, t);
-      if (!this.emitter.node({type: 'test', id, name: chain ? `${chain} > ${t.title}` : t.title, path: file, framework: 'playwright', level: 'e2e', category: chain || undefined,
+      if (!this.emitter.node({type: 'test', id, name: chain ? `${chain} > ${t.title}` : t.title, path: file, framework: 'playwright', level: 'e2e', category: chain || undefined, suite,
         skipped: t.skipped ? true : undefined, provenance: 'ast', source_layer: 'public'}).accepted) continue;
-      this.emitter.edge({type: 'in-suite', from: id, to: suite, derived_by: 'ast', confidence: 1, evidence: [file]});
       const feature = leadingId(t.title);
-      if (feature) this.tests(id, feature, 'e2e', file);
+      if (feature) this.tests(id, feature, file);
     }
   }
 
   /** The `~id` of a category, a tag or a title is a marker like any other: one no home declares is counted, not drawn. */
-  private tests(test: string, token: string, level: string, file: string): void {
-    const feature = resolveMention(this.emitter, this.index, token, file);
-    if (feature) this.emitter.edge({type: 'tests', from: test, to: feature.id, kind: level, derived_by: 'annotation', confidence: 1, evidence: [file]});
+  private tests(test: string, token: string, file: string): void {
+    const feature = resolveMention(this.emitter, this.homes, token, file);
+    if (feature) this.emitter.edge({type: 'tests', from: test, to: feature.id, derived_by: 'annotation', confidence: 1, evidence: [file]});
   }
 
   glob(pattern: string): string[] {

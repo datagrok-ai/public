@@ -10,15 +10,18 @@ import {spawnSync} from 'child_process';
 import {loadTypeSystem, TypeSystem} from '../utils/kg/types';
 import {Emitter, Graph} from '../utils/kg/build/emitter';
 import {normalizeRow} from '../utils/kg/build/normalize';
-import {batchId, buildInputs, currentDir} from '../utils/kg/build/write';
+import {batchId, buildInputs, currentDir, readCurrent} from '../utils/kg/build/write';
 import {parseId, declId, docId, testId, epId, ticketId, stubName} from '../utils/kg/build/ids';
 import {firstParagraph} from '../utils/kg/build/extract/homes';
+import {createRequire} from 'module';
+import {readGraph, makeReport} from '../utils/kg/report';
 import {kg} from '../commands/kg';
 
 const fixtures = path.join(path.dirname(fileURLToPath(import.meta.url)), 'fixtures', 'kg');
 const KG_DIR = path.join('core', 'docs', 'knowledge-graph');
 const system: TypeSystem = loadTypeSystem(path.join(fixtures, 'good', KG_DIR));
 const BATCH = 'b-test';
+const homesModule = createRequire(import.meta.url)('../utils/kg/homes.js');
 
 function makeRepo(): string {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'grok-kg-build-'));
@@ -124,6 +127,7 @@ describe('emitter merge rules (build-plan.md WO-1)', () => {
     e.node({type: 'team', id: 'Team:t', name: 'T', provenance: 'annotation', source_layer: 'core', lead: 'P:a'});
     e.node({type: 'feature', id: 'visualize', name: 'V', provenance: 'annotation', source_layer: 'core'});
     e.node({type: 'concept', id: 'C:c', name: 'c', provenance: 'annotation', source_layer: 'core'});
+    e.edge({type: 'uses-concept', from: 'visualize', to: 'C:c', derived_by: 'annotation', confidence: 0.5, evidence: ['core/docs/zz.md'], role: 'supporting'});
     for (let i = 0; i < 25; i++)
       e.edge({type: 'uses-concept', from: 'visualize', to: 'C:c', derived_by: 'annotation', confidence: i === 3 ? 1 : 0.5, evidence: [`core/docs/${i}.md`], role: i === 3 ? 'central' : 'supporting'});
     const graph = e.finalize();
@@ -132,6 +136,7 @@ describe('emitter merge rules (build-plan.md WO-1)', () => {
     expect(uses[0]).toMatchObject({confidence: 1, role: 'central', batch: BATCH});
     expect(uses[0].evidence).toHaveLength(20);
     expect(uses[0].evidence[0]).toBe('core/docs/0.md');
+    expect(uses[0].evidence).not.toContain('core/docs/zz.md');
   });
 
   it('exempts a partial stub from required members, drops an incomplete real row into invalid.jsonl', () => {
@@ -229,6 +234,7 @@ describe('ids (build-plan.md "Common contracts")', () => {
     expect(parseId('C:dataframe')).toEqual({form: 'prefix', prefix: 'C', local: 'dataframe'});
     expect(parseId('GROK-12')).toMatchObject({form: 'tracker', tracker: 'jira'});
     expect(parseId(ticketId('#4062'))).toMatchObject({form: 'tracker', tracker: 'github', anchor: '4062'});
+    expect(parseId('tutorial:chem/activity-cliffs')).toMatchObject({form: 'scheme', scheme: 'tutorial', parts: ['chem/activity-cliffs']});
     expect(parseId('visualize/viewers')).toEqual({form: 'bare', local: 'visualize/viewers'});
     expect([stubName('visualize/scatter-plot'), stubName('decl:a/b.ts#X'), stubName('doc:a/b.md'), stubName('func:Chem:detect'), stubName('GROK-1')]).toEqual(['Scatter plot', 'X', 'b.md', 'detect', 'GROK-1']);
   });
@@ -266,11 +272,11 @@ describe('ids (build-plan.md "Common contracts")', () => {
 describe('grok kg build: writer, manifest and public projection (build-plan.md WO-1)', () => {
   it('writes JSONL sorted with fixed key order, byte-identical across two builds; the manifest has the schema.yaml shape', async () => {
     const first = await build();
-    const dataDir = path.join(first.out, 'data');
-    const snapshot = () => Object.fromEntries(['nodes', 'edges'].flatMap((d) => fs.readdirSync(path.join(dataDir, d)).map((f) => [`${d}/${f}`, fs.readFileSync(path.join(dataDir, d, f), 'utf8')])));
-    const before = snapshot();
+    const snapshot = (dir: string) => Object.fromEntries(['nodes', 'edges'].flatMap((d) => fs.readdirSync(path.join(dir, 'data', d)).map((f) => [`${d}/${f}`, fs.readFileSync(path.join(dir, 'data', d, f), 'utf8')])));
+    const before = snapshot(first.out);
     const second = await build(first.repo);
-    expect(snapshot()).toEqual(before);
+    expect(second.out).not.toBe(first.out);
+    expect(snapshot(second.out)).toEqual(before);
     expect(second.manifest.batch).toBe(first.manifest.batch);
     expect(first.manifest).toMatchObject({schema_version: 1, builder: expect.stringMatching(/^\d+\.\d+\.\d+/), batch: expect.stringMatching(/^b-[0-9a-f]{12}$/), mode: 'full',
       revisions: {reddata: expect.any(String), public: expect.any(String), public_pin: expect.any(String)}, sources: {homes: 'ok'},
@@ -287,15 +293,15 @@ describe('grok kg build: writer, manifest and public projection (build-plan.md W
     const repo = makeRepo();
     const out = path.join(repo, 'elsewhere');
     const {manifest} = await build(repo, {out});
-    expect(fs.existsSync(path.join(out, 'gen', manifest.batch, 'manifest.json'))).toBe(true);
-    expect(fs.readFileSync(path.join(out, 'current'), 'utf8').trim()).toBe(manifest.batch);
+    expect(fs.existsSync(path.join(out, 'gen', readCurrent(out)!, 'manifest.json'))).toBe(true);
+    expect(fs.readFileSync(path.join(out, 'current'), 'utf8').trim()).toMatch(new RegExp(`^${manifest.batch}-`));
     expect(fs.existsSync(path.join(repo, '.kg'))).toBe(false);
     const bad = await run({_: ['kg', 'build'], kg: path.join(repo, KG_DIR), only: 'homes,nope', db: false});
     expect(bad.exitCode).toBe(1);
     expect(bad.err).toEqual(['--only names unknown extractors: nope (known: homes, ts-packages, ts-functions, ts-declarations, ts-imports, ts-uses, ts-tests, ts-samples, ts-changelog, docs, ts-markers, dart, process, membership)']);
     const table = await run({_: ['kg', 'build'], kg: path.join(repo, KG_DIR), only: 'homes', db: false, out});
     expect(table.out).toHaveLength(1);
-    expect(table.out[0]).toMatch(/^wrote .*elsewhere\/gen\/b-[0-9a-f]{12}: \d+ nodes \(concept 2, .*feature 7.*\), \d+ edges \(.*part-of 5.*\); sources: homes ok; problems: partial_stubs \d+; batch b-[0-9a-f]{12} \(full\)$/);
+    expect(table.out[0]).toMatch(/^wrote .*elsewhere\/gen\/b-[0-9a-f]{12}-\w{6}: \d+ nodes \(concept 2, .*feature 7.*\), \d+ edges \(.*part-of 5.*\); sources: homes ok; problems: partial_stubs \d+; batch b-[0-9a-f]{12} \(full\)$/);
   });
 
   it('--public keeps public logical nodes without home or owner, no people, no files, and only edges with both ends public', async () => {
@@ -485,6 +491,36 @@ describe('homes extractor (build-plan.md WO-2)', () => {
     expect(manifest.problems.home_issues).toBe(1);
     expect(JSON.parse(fs.readFileSync(path.join(out, 'reports', 'problems.json'), 'utf8')).home_issues)
       .toEqual([expect.stringMatching(/^core\/docs\/broken\.md:4: bad-value: status: "bogus" is not one of/)]);
+  });
+
+  it('carries the citation issues to report stale as structured rows, target included', async () => {
+    const repo = makeRepo();
+    write(repo, 'core/docs/broken.md', '---\nfeature: govern/permissions\nowner: askalkin\n---\n# P\n\nSee `core/nope.dart` and [a](../nope.md).\n');
+    const {out} = await build(repo);
+    const issues = JSON.parse(fs.readFileSync(path.join(out, 'reports', 'home-issues.json'), 'utf8'));
+    expect(issues.map((i: any) => [i.code, i.target])).toEqual([['missing-cited-path', 'core/nope.dart'], ['missing-doc-link', '../nope.md']]);
+    const report = makeReport('stale', readGraph(out, repo, system, 'stale'), {system, repoRoot: repo});
+    expect(report.sections[0].rows).toContainEqual({kind: 'citation', source: 'core/docs/broken.md:7', target: 'core/nope.dart',
+      reason: "missing-cited-path: cited path 'core/nope.dart' does not exist"});
+    expect(report.sections[0].rows).toContainEqual({kind: 'citation', source: 'core/docs/broken.md:7', target: '../nope.md',
+      reason: "missing-doc-link: linked document '../nope.md' does not exist (resolved to core/nope.md)"});
+  });
+
+  it('loads the home documents once per build, whichever extractors ask for them', async () => {
+    // the build runs on the transpiled .js, whose callers read the CommonJS exports object; a spy on the ESM namespace is not seen there
+    const original = homesModule.loadHomes;
+    let calls = 0;
+    homesModule.loadHomes = (...args: Parameters<typeof original>) => {
+      calls++;
+      return original(...args);
+    };
+    try {
+      await build(makeRepo(), {only: 'homes,docs,ts-tests'});
+    }
+    finally {
+      homesModule.loadHomes = original;
+    }
+    expect(calls).toBe(1);
   });
 
   it('takes the first prose paragraph after the frontmatter as the description', () => {

@@ -202,7 +202,7 @@ class Membership {
       const feature = this.owners.get(String(test.path));
       if (!feature) continue;
       this.emitter.edge({type: 'tests', from: String(test.id), to: feature, derived_by: 'filesystem', confidence: 0.9,
-        evidence: [String(test.path)], kind: test.level});
+        evidence: [String(test.path)]});
     }
   }
 }

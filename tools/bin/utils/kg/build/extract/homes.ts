@@ -5,12 +5,13 @@ import * as fs from 'fs';
 import * as path from 'path';
 import {globSync} from 'glob';
 import {TypeSystem, EdgeType, Member, NodeType, isSubtype, concreteAuthored} from '../../types';
-import {loadHomes, Home, HomeSet, AnnotatedPage, HOME_IGNORE, GLOB_MAGIC, REPO_PREFIX, isHomeFileMember, splitRefAnchor} from '../../homes';
+import {lookupHome, Home, HomeSet, AnnotatedPage, HOME_IGNORE, GLOB_MAGIC, REPO_PREFIX, isHomeFileMember, splitRefAnchor} from '../../homes';
 import {extractCitations, proseLines, Citation} from '../../citations';
 import {keyLine, Frontmatter} from '../../frontmatter';
 import {Emitter} from '../emitter';
 import {Row} from '../normalize';
 import {BuildContext, Extractor} from '../registry';
+import {homesOf} from './markers';
 import {PREFIXED_ID, SCHEMED_ID, JIRA_KEY, parseId, ticketId, declId, docId, fileId, languageOf, sourceLayerOf, docKind} from '../ids';
 
 export const homesExtractor: Extractor = {
@@ -18,11 +19,12 @@ export const homesExtractor: Extractor = {
   layer: 'home-document',
   modes: ['full', 'public'],
   run(ctx: BuildContext, emitter: Emitter): void {
-    const homes = ctx.homes ?? loadHomes(ctx.system, ctx.repoRoot);
+    const homes = homesOf(ctx);
     const layer = new HomeLayer(ctx.system, ctx.repoRoot, homes, emitter);
     for (const page of homes.pages) layer.emitPage(page);
     for (const home of homes.homes) layer.emitHome(home);
     for (const e of homes.errors) emitter.problem('home_issues', `${e.file}${e.line ? `:${e.line}` : ''}: ${e.code}: ${e.message}`);
+    emitter.report('home-issues', homes.errors);
     if (homes.errors.length) emitter.source('homes', 'partial');
   },
 };
@@ -36,15 +38,7 @@ interface Subject {
 }
 
 class HomeLayer {
-  private byId = new Map<string, Home>();
-  private byAlias = new Map<string, Home>();
-
-  constructor(private system: TypeSystem, private repoRoot: string, homes: HomeSet, private emitter: Emitter) {
-    for (const home of homes.homes) {
-      this.byId.set(home.id, home);
-      for (const alias of home.aliases) this.byAlias.set(alias, home);
-    }
-  }
+  constructor(private system: TypeSystem, private repoRoot: string, private homes: HomeSet, private emitter: Emitter) {}
 
   emitHome(home: Home): void {
     const {type, data} = home;
@@ -201,11 +195,7 @@ class HomeLayer {
   }
 
   private lookup(candidates: string[]): string | undefined {
-    for (const c of candidates) {
-      const home = this.byId.get(c) ?? this.byAlias.get(c);
-      if (home) return home.id;
-    }
-    return undefined;
+    return lookupHome(this.homes.index, candidates)?.id;
   }
 
   /** The stub an extracted reference target needs when no extractor has produced the node. */

@@ -1,6 +1,5 @@
 type: demonstrates
 extends: evidences
-was: Demonstrates
 from: Sample | Tutorial
 to: Feature
 key: samples

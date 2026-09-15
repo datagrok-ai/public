@@ -7,12 +7,13 @@ import * as path from 'path';
 import * as yaml from 'js-yaml';
 import {globSync} from 'glob';
 import {FUNC_TYPES} from '../../../../const';
+import {HomeSet} from '../../../homes';
 import {Emitter} from '../../emitter';
 import {Row} from '../../normalize';
 import {BuildContext, Extractor} from '../../registry';
 import {pkgId, fileId, declId, funcId, connId, envId, containerId, semtypeId, languageOf} from '../../ids';
 import {Header, HeaderBlock, parseFunctionHeaders, parseScriptHeader, parseQueryHeaders} from '../../annotations';
-import {HomeIndex, homesOf, resolveMention} from '../markers';
+import {homesOf, resolveMention} from '../markers';
 import {countLines} from '../homes';
 import {PackageFolder, listPackages} from './packages';
 
@@ -73,7 +74,7 @@ export const functionsExtractor: Extractor = {
   layer: 'public',
   modes: ['full'],
   run(ctx: BuildContext, emitter: Emitter): void {
-    const layer = new FunctionLayer(ctx.repoRoot, emitter, new HomeIndex(homesOf(ctx)));
+    const layer = new FunctionLayer(ctx.repoRoot, emitter, homesOf(ctx));
     const packages = listPackages(ctx.repoRoot);
     for (const pkg of packages) layer.emitPackage(pkg);
     for (const pkg of packages) layer.emitCalls(pkg);
@@ -91,7 +92,7 @@ class FunctionLayer {
   private files = new Set<string>();
   private semtypes: Record<string, string>;
 
-  constructor(private repoRoot: string, private emitter: Emitter, private index: HomeIndex) {
+  constructor(private repoRoot: string, private emitter: Emitter, private homes: HomeSet) {
     this.semtypes = loadSemtypes(repoRoot);
   }
 
@@ -347,16 +348,12 @@ class FunctionLayer {
         m.condition = header.keys.condition?.[0];
         if (m.condition !== undefined) lifted.add('condition');
         m.target_type = header.inputs[0]?.type;
-        if (header.inputs[0]?.options.semType) m.target_semtype = semtypeId(header.inputs[0].options.semType);
         break;
       case 'viewer':
         Object.assign(m, {icon: lift('icon'), trellisable: flag('trellisable'), grid_chart: flag('gridChart')});
         break;
       case 'filter':
-        if (meta.semType) {
-          m.semtype = semtypeId(lift('semType'));
-          uses.push({role: 'filters', semtype: meta.semType, derived_by: 'annotation', confidence: 1});
-        }
+        if (meta.semType) uses.push({role: 'filters', semtype: lift('semType'), derived_by: 'annotation', confidence: 1});
         Object.assign(m, {primary: flag('primaryFilter'), columnless: flag('columnlessFilter')});
         break;
       case 'cell-renderer':
@@ -406,7 +403,7 @@ class FunctionLayer {
     }
     const feature = (header.keys.feature?.[0] ?? header.meta.feature)?.trim().replace(/^~/, '');
     if (!feature) return true;
-    const target = resolveMention(this.emitter, this.index, feature, file + ':' + header.line);
+    const target = resolveMention(this.emitter, this.homes, feature, file + ':' + header.line);
     if (!target || target.root !== 'feature') return true;
     this.emitter.edge({type: 'is-implemented-in', from: target.id, to: id, derived_by: 'annotation', confidence: 1, evidence: [file]});
     this.emitter.claim({file, feature: target.id, rung: 1, source: 'marker', props: {}, line: header.line});

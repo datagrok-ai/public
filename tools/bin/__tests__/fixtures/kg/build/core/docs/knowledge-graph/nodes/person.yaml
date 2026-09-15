@@ -2,7 +2,6 @@ type: person
 authored: true
 extends: actor
 prefix: P
-was: Assignee
 description: >
   A human. One node per person regardless of roles, keyed by the internal handle used
   in autofix/cfg/owners.json and the backlog taxonomy. Cross-system identifiers live

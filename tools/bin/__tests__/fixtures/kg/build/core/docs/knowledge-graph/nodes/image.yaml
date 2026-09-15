@@ -1,8 +1,9 @@
 type: image
 extends: infra
 prefix: Img
-description: A Docker image built from a folder under deploy/. Base images reach it through built-from.
+description: A Docker image built from a folder under deploy/. `base` is the image the Dockerfile's FROM line names.
 properties:
   folder:        Path
+  base?:         Image
   registry?:     string
   deprecated?:   boolean = false

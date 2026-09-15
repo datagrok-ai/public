@@ -51,6 +51,9 @@ describe('the index DDL (build-plan.md WO-7)', () => {
       'FROM `Artifact` TO `Actor`, FROM `Work` TO `Actor`, FROM `Actor` TO `Actor`, FROM `Infra` TO `Actor`, FROM `Type` TO `Actor`, ' +
       '`derived_by` STRING, `confidence` DOUBLE, `evidence` STRING[], `batch` STRING)');
     expect(table('router')).toContain('FROM `Component` TO `Component`');
+    expect(table('suite')).toContain('FROM `Artifact` TO `Artifact`');
+    expect(table('base')).toContain('FROM `Infra` TO `Infra`');
+    expect(schema.statements.some((s) => s.includes('`IN_SUITE`'))).toBe(false);
     // kuzu identifiers are case-insensitive: the `extends` edge and the `extends` reference of a type share one table
     expect(table('EXTENDS')).toBe('CREATE REL TABLE `EXTENDS`(FROM `Component` TO `Component`, FROM `Type` TO `Type`, ' +
       '`derived_by` STRING, `confidence` DOUBLE, `evidence` STRING[], `batch` STRING)');

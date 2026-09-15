@@ -1,6 +1,5 @@
 type: requested-by
 extends: involves
-was: RequestedBy
 from: Feature | Ticket
 to: Customer
 key: requested_by

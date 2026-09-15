@@ -4,20 +4,21 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import {globSync} from 'glob';
-import {discoverHomeFiles, firstHeading} from '../../homes';
+import {discoverHomeFiles, firstHeading, HomeSet} from '../../homes';
 import {splitFrontmatter, Frontmatter} from '../../frontmatter';
-import {proseLines, slugify} from '../../citations';
+import {proseLines, headings} from '../../citations';
 import {Emitter} from '../emitter';
 import {Row} from '../normalize';
 import {BuildContext, Extractor} from '../registry';
 import {pkgId, docId, docKind, ticketId, sourceLayerOf} from '../ids';
-import {HomeIndex, homesOf, emitMentions, ticketStub, kebab} from './markers';
+import {homesOf, emitMentions, ticketStub, kebab} from './markers';
 import {firstParagraph} from './homes';
 import {parsePlaywrightTests, playwrightTestId} from './ts/tests';
 
 const TEST_TRACK = 'public/packages/UsageAnalysis/files/TestTrack/';
 const TUTORIALS = 'public/packages/Tutorials/src/tracks';
-const HEADING = /^(#{1,4})\s+(.+?)\s*(?:\{#([^}]+)\})?\s*#*\s*$/;
+/** The graph keeps anchors of the four levels a reader navigates by; `check` accepts a link to any heading. */
+const MAX_ANCHOR_DEPTH = 4;
 const NUMBERED_STEP = /^\s*\d+\.\s+\S/;
 const PRIORITIES = ['p0', 'p1', 'p2', 'p3'];
 /** `visibility:` in a page's frontmatter narrows what its location allows, for the page and for its headings. */
@@ -31,7 +32,7 @@ export const docsExtractor: Extractor = {
   layer: 'docs',
   modes: ['full', 'public'],
   run(ctx: BuildContext, emitter: Emitter): void {
-    const layer = new DocLayer(ctx.repoRoot, emitter, new HomeIndex(homesOf(ctx)));
+    const layer = new DocLayer(ctx.repoRoot, emitter, homesOf(ctx));
     for (const file of discoverHomeFiles(ctx.repoRoot))
       if (/\.mdx?$/i.test(file) && !PAGE_IGNORE.test(file)) layer.emitPage(file);
     layer.emitTutorials();
@@ -42,7 +43,7 @@ export const docsExtractor: Extractor = {
 class DocLayer {
   unresolved = 0;
 
-  constructor(private repoRoot: string, private emitter: Emitter, private index: HomeIndex) {}
+  constructor(private repoRoot: string, private emitter: Emitter, private homes: HomeSet) {}
 
   emitPage(file: string): void {
     const fm = splitFrontmatter(this.read(file));
@@ -54,23 +55,14 @@ class DocLayer {
     const keywords = (Array.isArray(data.keywords) ? data.keywords : typeof data.keywords === 'string' ? [data.keywords] : []).filter((k): k is string => typeof k === 'string');
     const visibility = VISIBILITY.includes(String(data.visibility)) ? String(data.visibility) : undefined;
     const admitted = this.emitter.node({type: 'doc-page', id, name, description: typeof data.description === 'string' ? data.description : firstParagraph(fm.body), path: file, kind: docKind(file),
-      title, mdx: /\.mdx$/i.test(file) || !!data.mdx ? true : undefined, unlisted: data.unlisted === true ? true : undefined, keywords: keywords.length ? keywords : undefined,
+      mdx: /\.mdx$/i.test(file) || !!data.mdx ? true : undefined, unlisted: data.unlisted === true ? true : undefined, keywords: keywords.length ? keywords : undefined,
       visibility, provenance: Object.keys(data).length ? 'annotation' : 'filesystem', source_layer: sourceLayerOf(file)});
     if (!admitted.accepted) return;
     const prose = proseLines(fm.body);
-    const seen = new Map<string, number>();
-    for (const {text} of prose) {
-      const h = HEADING.exec(text);
-      if (!h) continue;
-      const base = h[3] ?? slugify(h[2]);
-      if (!base) continue; // a heading of non-Latin words slugifies to nothing, so nothing can link to it
-      const n = seen.get(base) ?? 0;
-      seen.set(base, n + 1);
-      const slug = n ? `${base}-${n}` : base;
-      this.emitter.node({type: 'doc-anchor', id: docId(file, slug), name: h[2], path: file, page: id, slug, depth: h[1].length, heading: h[2],
+    for (const h of headings(fm.body).filter((h) => h.depth <= MAX_ANCHOR_DEPTH))
+      this.emitter.node({type: 'doc-anchor', id: docId(file, h.slug), name: h.text, path: file, page: id, slug: h.slug, depth: h.depth,
         visibility, provenance: 'annotation', source_layer: sourceLayerOf(file)});
-    }
-    this.unresolved += emitMentions(this.emitter, id, prose.map((l) => l.text).join('\n'), file, this.index).unresolved.length;
+    this.unresolved += emitMentions(this.emitter, id, prose.map((l) => l.text).join('\n'), file, this.homes).unresolved.length;
     if (file.startsWith(TEST_TRACK) && data.feature !== undefined && data.id === undefined) this.emitScenario(file, fm, name, prose.map((l) => l.text));
   }
 

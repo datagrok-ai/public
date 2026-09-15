@@ -9,7 +9,7 @@ import {Emitter} from '../../emitter';
 import {BuildContext, Extractor} from '../../registry';
 import {sampleId, docId, docKind, languageOf} from '../../ids';
 import {commentPrefix} from '../../annotations';
-import {HomeIndex, homesOf, idTokens, resolveMention} from '../markers';
+import {homesOf, idTokens, resolveMention} from '../markers';
 import {tsSources} from './declarations';
 import {UsesLayer} from './uses';
 
@@ -25,7 +25,7 @@ export const samplesExtractor: Extractor = {
   run(ctx: BuildContext, emitter: Emitter): void {
     const files = globSync(`${SCRIPTS_DIR}/**/*.{js,py,R,r}`, {cwd: ctx.repoRoot, ignore: ['**/node_modules/**'], nodir: true, posix: true, windowsPathsNoEscape: true}).sort();
     const uses = new UsesLayer(emitter, tsSources(ctx, emitter));
-    const index = new HomeIndex(homesOf(ctx));
+    const homes = homesOf(ctx);
     let missing = 0;
     for (const file of files) {
       const rel = file.slice(SCRIPTS_DIR.length + 1);
@@ -49,7 +49,7 @@ export const samplesExtractor: Extractor = {
         }
       }
       for (const token of idTokens(header.text).keys()) {
-        const feature = resolveMention(emitter, index, token, file);
+        const feature = resolveMention(emitter, homes, token, file);
         if (feature) emitter.edge({type: 'demonstrates', from: id, to: feature.id, derived_by: 'annotation', confidence: 1, evidence: [file]});
       }
       uses.emit(id, header.body, file);

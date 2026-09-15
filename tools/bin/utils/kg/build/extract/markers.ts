@@ -1,7 +1,7 @@
 /// What the artifact extractors share (build-plan.md WO-3c): the `~id` and `GROK-n` tokens of a text,
 /// their resolution against the home documents, the ticket stubs a mention needs, and the mentions
 /// themselves counted per target.
-import {loadHomes, HomeSet} from '../../homes';
+import {loadHomes, lookupHome, HomeSet} from '../../homes';
 import {ticketId} from '../ids';
 import {Emitter} from '../emitter';
 import {Row} from '../normalize';
@@ -22,39 +22,16 @@ export interface Resolved {
   root?: string;
 }
 
-/** The authored ids and aliases the home documents declare, so a token resolves the way `check` resolves a reference. */
-export class HomeIndex {
-  private byId = new Map<string, Resolved>();
-
-  constructor(homes: HomeSet) {
-    for (const home of homes.homes) {
-      const entry = {id: home.id, type: home.type.name, root: home.type.root};
-      this.byId.set(home.id, entry);
-      for (const alias of home.aliases) this.byId.set(alias, entry);
-    }
-  }
-
-  /** [raw] with or without the sigil; a bare id is a feature, `#anchor` is dropped. */
-  resolve(raw: string): Resolved | undefined {
-    const id = raw.trim().replace(/^~/, '').split('#')[0];
-    return this.byId.get(id);
-  }
-
-  isFeature(raw: string): boolean {
-    return this.resolve(raw)?.root === 'feature';
-  }
-}
-
 /** The home documents, loaded once per build and shared by every extractor that runs after the first to ask. */
 export function homesOf(ctx: BuildContext): HomeSet {
   return ctx.homes ??= loadHomes(ctx.system, ctx.repoRoot);
 }
 
-/** The home a `~id` an artifact names resolves to; an unresolved token is counted under `unresolved_ids` and never
- * becomes a node, whatever edge the caller was about to draw (conventions.md §6). */
-export function resolveMention(emitter: Emitter, index: HomeIndex, token: string, evidence: string): Resolved | undefined {
-  const target = index.resolve(token);
-  if (target) return target;
+/** The home a `~id` an artifact names resolves to, by id or alias, the anchor dropped; an unresolved token is counted
+ * under `unresolved_ids` and never becomes a node, whatever edge the caller was about to draw (conventions.md §6). */
+export function resolveMention(emitter: Emitter, homes: HomeSet, token: string, evidence: string): Resolved | undefined {
+  const home = lookupHome(homes.index, [token.trim().replace(/^~/, '').split('#')[0]]);
+  if (home) return {id: home.id, type: home.type.name, root: home.type.root};
   emitter.problem('unresolved_ids', `${evidence}: ~${token} resolves to no home document`);
   return undefined;
 }
@@ -96,10 +73,10 @@ export interface MentionSummary {
 /** The mentions of [text] from an artifact: resolved `~id` tokens and ticket keys, each with its count; an unresolved `~id`
  * is counted as a problem and listed, never stubbed. [edgeFor] may replace the mentions row of a resolved `~id` with a
  * stronger edge (a changelog bullet naming a feature is a `changes`). */
-export function emitMentions(emitter: Emitter, from: string, text: string, evidence: string, index: HomeIndex, edgeFor?: (target: Resolved) => Row | undefined): MentionSummary {
+export function emitMentions(emitter: Emitter, from: string, text: string, evidence: string, homes: HomeSet, edgeFor?: (target: Resolved) => Row | undefined): MentionSummary {
   const summary: MentionSummary = {ids: new Map(), tickets: [], unresolved: []};
   for (const [token, count] of idTokens(text)) {
-    const target = resolveMention(emitter, index, token, evidence);
+    const target = resolveMention(emitter, homes, token, evidence);
     if (!target) {
       summary.unresolved.push(token);
       continue;

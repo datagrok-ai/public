@@ -29,6 +29,8 @@ export interface Issue {
   line?: number;
   code: string;
   message: string;
+  /** The path or id the issue is about, for the stale report. */
+  target?: string;
 }
 
 export interface NodeType {
@@ -43,7 +45,6 @@ export interface NodeType {
   hierarchical: boolean;
   authored: boolean;
   visibility?: string;
-  was?: string;
   description: string;
   home?: string;
   own: Record<string, Member>;
@@ -57,7 +58,6 @@ export interface EdgeType {
   extends?: string;
   chain: string[];
   abstract: boolean;
-  was?: string;
   from: string[];
   to: string[];
   key?: string;
@@ -359,7 +359,7 @@ export function loadTypeSystem(kgRoot: string): TypeSystem {
       hierarchical: inherited('hierarchical') === true,
       authored: inherited('authored') === true,
       visibility: inherited('visibility'),
-      was: d.was, description: String(d.description ?? ''), home: d.home === undefined ? undefined : String(d.home),
+      description: String(d.description ?? ''), home: d.home === undefined ? undefined : String(d.home),
       own, members: {}, inherit: Array.isArray(d.inherit) ? d.inherit.map(String) : [],
     });
   }
@@ -395,7 +395,7 @@ export function loadTypeSystem(kgRoot: string): TypeSystem {
     if (d.same_type === true && from.types && to.types && [...from.types].sort().join('|') !== [...to.types].sort().join('|'))
       error('same-type', raw.file, `edge ${name}: same_type but from (${d.from}) differs from to (${d.to})`);
     system.edges.set(name, {
-      name, file: raw.file, extends: d.extends, chain, abstract: d.abstract === true, was: d.was,
+      name, file: raw.file, extends: d.extends, chain, abstract: d.abstract === true,
       from: from.types ?? [], to: to.types ?? [],
       key: d.key === undefined ? undefined : String(d.key),
       keySide: d.key_side === 'to' ? 'to' : 'from',

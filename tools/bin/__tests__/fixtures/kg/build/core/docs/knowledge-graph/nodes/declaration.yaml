@@ -1,6 +1,5 @@
 type: declaration
 extends: component
-was: TsDecl
 description: >
   A named code declaration: class, interface, function, method, getter, property,
   enum, type alias, constant, mixin. From the TypeScript compiler for public/ and from
@@ -9,7 +8,6 @@ description: >
   decl:...#Owner.name:get and :set; overloads share one id with the merged signature.
 properties:
   kind:          "'class' | 'interface' | 'function' | 'method' | 'getter' | 'setter' | 'prop' | 'enum' | 'type' | 'const' | 'mixin'"
-  container?:    Declaration          # lexical container: the class of a method, the owner of a getter
   role?:         "'service' | 'repository' | 'router' | 'entity' | 'viewer' | 'command' | 'migration' | 'widget' | 'input' | 'view' | 'detector'"
   exported:      boolean
   public_api?:   boolean = false

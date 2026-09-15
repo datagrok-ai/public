@@ -1,5 +1,4 @@
 type: mentions
-was: MentionsTicket
 from: Artifact | Work
 to: Node
 derived_by: [annotation]

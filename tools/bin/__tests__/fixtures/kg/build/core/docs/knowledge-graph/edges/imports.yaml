@@ -1,5 +1,4 @@
 type: imports
-was: Imports
 from: SourceFile
 to: SourceFile | Library | Package
 derived_by: [ast]

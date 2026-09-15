@@ -137,11 +137,11 @@ describe('grok kg build over the fixture monorepo (build-plan.md WO-10)', () => 
       'sem-type-detector': 6, 'semantic-type': 7, 'source-file': 39, test: 14, 'test-suite': 6, ticket: 13, tutorial: 1, viewer: 2,
     });
     expect(manifest.counts.edges).toEqual({
-      affects: 2, assignee: 3, automates: 3, base: 1, calls: 6, changes: 2, connection: 3, container: 33, covers: 1,
-      declared_in: 1, declares: 215, demonstrates: 1, 'depends-on': 6, documents: 1, environment: 1, extends: 4,
-      handler: 1, implements: 1, imports: 25, includes: 2, 'in-suite': 14, 'is-implemented-in': 15, mentions: 17, owner: 5,
+      affects: 2, assignee: 3, automates: 3, base: 1, calls: 6, changes: 2, connection: 3, covers: 1,
+      declares: 215, demonstrates: 1, 'depends-on': 6, documents: 1, environment: 1, extends: 4,
+      handler: 1, implements: 1, imports: 25, includes: 2, 'is-implemented-in': 15, mentions: 17, owner: 5,
       package: 72, page: 20, 'part-of': 10, 'participates-in': 5, reporter: 4, 'requested-by': 2, resolves: 1, router: 1,
-      semtype: 1, target_semtype: 1, 'targets-release': 5, 'targets-semtype': 13, tests: 11, 'tracked-in': 2, uses: 17,
+      suite: 14, 'targets-release': 5, 'targets-semtype': 13, tests: 11, 'tracked-in': 2, uses: 17,
     });
     expect(manifest.problems).toMatchObject({dangling_edges: 0, ambiguous_owners: 1, orphans: 27, partial_stubs: 22});
   }, 120_000);
@@ -150,7 +150,8 @@ describe('grok kg build over the fixture monorepo (build-plan.md WO-10)', () => 
     const {out, manifest} = await graph;
     const first = dataFiles(out);
     const again = await build(built);
-    expect(dataFiles(out)).toEqual(first);
+    expect(again.out).not.toBe(out);
+    expect(dataFiles(again.out)).toEqual(first);
     expect(again.manifest.batch).toBe(manifest.batch);
     expect(again.manifest.built_at >= manifest.built_at).toBe(true);
     expect(Object.values(first).every((text) => !text.includes('built_at'))).toBe(true);

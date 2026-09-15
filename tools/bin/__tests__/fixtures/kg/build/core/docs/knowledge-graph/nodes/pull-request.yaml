@@ -6,7 +6,7 @@ description: >
   Links to tickets through mentions of GROK keys in title and body; touches features
   through the files it changes.
 properties:
-  repo:          "'reddata' | 'public'"
+  repo:          string
   number:        number
   state:         "'open' | 'merged' | 'declined'"
   branch:        string

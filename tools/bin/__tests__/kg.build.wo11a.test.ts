@@ -65,7 +65,7 @@ describe('the public projection is closed (kg-codex-review-3.md #1)', () => {
   const page = (id: string, kind: string, visibility = 'public') =>
     node({type: 'doc-page', id: `doc:${id}`, name: id, path: id, kind, visibility});
   const anchor = (id: string, slug: string, visibility = 'public') =>
-    node({type: 'doc-anchor', id: `doc:${id}#${slug}`, name: slug, path: id, page: `doc:${id}`, slug, depth: 2, heading: slug, visibility});
+    node({type: 'doc-anchor', id: `doc:${id}#${slug}`, name: slug, path: id, page: `doc:${id}`, slug, depth: 2, visibility});
 
   it('keeps no heading whose page the projection left behind', () => {
     const graph: Graph = {
@@ -125,13 +125,13 @@ describe('the public projection is closed (kg-codex-review-3.md #1)', () => {
 });
 
 describe('a build publishes an immutable generation (kg-codex-review-3.md #2)', () => {
-  it('writes gen/<batch> whole before current names it, and never removes the one before', async () => {
+  it('writes a fresh generation whole before current names it, and never removes the one before', async () => {
     const repo = makeRepo();
     const root = path.join(scratch('gen'), '.kg');
     const first = await build(repo, root);
     expect(first.err).toEqual([]);
     const a = readCurrent(root)!;
-    expect(a).toMatch(/^b-[0-9a-f]{12}$/);
+    expect(a).toMatch(/^b-[0-9a-f]{12}-[A-Za-z0-9]{6}$/);
     expect(fs.readFileSync(path.join(root, 'current'), 'utf8').trim()).toBe(a);
     expect(fs.existsSync(path.join(root, 'gen', a, 'manifest.json'))).toBe(true);
     expect(fs.existsSync(path.join(root, 'data'))).toBe(false);
@@ -140,7 +140,15 @@ describe('a build publishes an immutable generation (kg-codex-review-3.md #2)', 
     const b = readCurrent(root)!;
     expect(b).not.toBe(a);
     expect(fs.existsSync(path.join(root, 'gen', a, 'manifest.json'))).toBe(true);
-    expect(generations(root).map((g) => g.batch).sort()).toEqual([a, b].sort());
+    expect(generations(root).map((g) => g.name).sort()).toEqual([a, b].sort());
+
+    // the same inputs again: the same batch, a directory of its own, and current moves to it
+    await build(repo, root, {only: 'homes,docs'});
+    const c = readCurrent(root)!;
+    expect(c).not.toBe(b);
+    const all = generations(root);
+    expect(all).toHaveLength(3);
+    expect(all.filter((g) => g.batch === all.find((x) => x.name === c)!.batch)).toHaveLength(2);
   }, 120_000);
 
   withKuzu('leaves current where it is when the index cannot be loaded', async () => {
@@ -157,7 +165,7 @@ describe('a build publishes an immutable generation (kg-codex-review-3.md #2)', 
     const partial = fs.readdirSync(path.join(root, 'gen')).filter((n) => n !== good && n !== 'current');
     expect(partial).toHaveLength(1);
     expect(fs.existsSync(path.join(root, 'gen', partial[0], 'manifest.json'))).toBe(false);
-    expect(generations(root).map((g) => g.batch)).toEqual([good]);
+    expect(generations(root).map((g) => g.name)).toEqual([good]);
 
     const answer = await run({_: ['kg', 'query', 'MATCH (n:Feature) RETURN count(n) AS n'], kg: path.join(repo, KG_DIR), out: root, output: 'json'});
     expect(answer.err).toEqual([]);
@@ -189,9 +197,23 @@ describe('a build publishes an immutable generation (kg-codex-review-3.md #2)', 
     expect(result.kept).toContain(current);
     expect(result.removed).toHaveLength(2);
     expect(result.locked).toEqual([]);
-    expect(generations(root).map((g) => g.batch)).toEqual([current]);
+    expect(generations(root).map((g) => g.name)).toEqual([current]);
     expect(currentDir(root)).toBe(generationDir(root, current!));
   }, 180_000);
+
+  it('gc also removes an interrupted build older than an hour, and leaves a fresh one alone', async () => {
+    const repo = makeRepo();
+    const root = path.join(scratch('interrupted'), '.kg');
+    await build(repo, root, {only: 'homes'});
+    for (const [name, age] of [['b-abcdef123456-stale', 2 * 3600_000], ['b-abcdef123456-fresh', 0]] as const) {
+      fs.mkdirSync(path.join(root, 'gen', name), {recursive: true});
+      const when = new Date(Date.now() - age);
+      fs.utimesSync(path.join(root, 'gen', name), when, when);
+    }
+    const result = gc(root, 2);
+    expect(result.removed).toEqual(['b-abcdef123456-stale']);
+    expect(fs.existsSync(path.join(root, 'gen', 'b-abcdef123456-fresh'))).toBe(true);
+  }, 120_000);
 });
 
 describe('the Kuzu seam (kg-codex-review-3.md #11)', () => {
@@ -206,17 +228,11 @@ describe('the Kuzu seam (kg-codex-review-3.md #11)', () => {
     expect(() => kuzu.quote('2big')).toThrow(/not a graph identifier/);
   });
 
-  it('takes the buffer pool from --memory, then KG_KUZU_MEMORY, then the manifest', () => {
-    const dir = scratch('memory');
+  it('takes the buffer pool from --memory, then KG_KUZU_MEMORY, then the default', () => {
     expect(kuzu.memoryMb(undefined, kuzu.BUILD_MEMORY_MB)).toBe(2048);
     expect(kuzu.memoryMb('256', kuzu.BUILD_MEMORY_MB)).toBe(256);
     expect(kuzu.memoryMb('nonsense', kuzu.READ_MEMORY_MB)).toBe(512);
-    expect(kuzu.readerMemoryMb(dir)).toBe(512);
-    fs.writeFileSync(path.join(dir, 'manifest.json'), JSON.stringify({index_memory_mb: 3000}));
-    expect(kuzu.readerMemoryMb(dir)).toBe(3000);
-    expect(kuzu.readerMemoryMb(dir, 128)).toBe(128);
-    fs.writeFileSync(path.join(dir, 'manifest.json'), JSON.stringify({index_memory_mb: 12}));
-    expect(kuzu.readerMemoryMb(dir)).toBe(512);
+    expect(kuzu.memoryMb(undefined, kuzu.READ_MEMORY_MB)).toBe(512);
     process.env.KG_KUZU_MEMORY = '777';
     try {
       expect(kuzu.memoryMb(undefined, kuzu.BUILD_MEMORY_MB)).toBe(777);
@@ -226,6 +242,23 @@ describe('the Kuzu seam (kg-codex-review-3.md #11)', () => {
       delete process.env.KG_KUZU_MEMORY;
     }
   });
+
+  withKuzu('opens an index whose manifest recorded a large load without reserving that much', async () => {
+    const root = path.join(scratch('reader-pool'), '.kg');
+    expect((await build(makeRepo(), root, {db: true, output: 'json'})).err).toEqual([]);
+    const dir = currentDir(root)!;
+    const manifest = JSON.parse(fs.readFileSync(path.join(dir, 'manifest.json'), 'utf8'));
+    fs.writeFileSync(path.join(dir, 'manifest.json'), JSON.stringify({...manifest, index_memory_mb: 3000}, null, 2));
+    const opened = (await kuzu.open(dir, true))!;
+    try {
+      expect(Number((await kuzu.run(opened.conn, 'MATCH (n:Feature) RETURN count(n) AS n')).rows[0].n)).toBeGreaterThan(0);
+      expect(process.memoryUsage().rss).toBeLessThan(1024 * 1048576);
+    }
+    finally {
+      await opened.conn.close();
+      await opened.db.close();
+    }
+  }, 300_000);
 });
 
 /** One read-only connection in its own process, the way a second `grok kg query` would open the index. */
@@ -305,12 +338,18 @@ describe('determinism of the written rows (kg-codex-review-3.md #12)', () => {
   it('writes a set-valued member sorted, whatever order its rows arrived in', () => {
     const dir = path.join(scratch('sorted'), 'gen');
     const graph: Graph = {
-      nodes: [node({type: 'feature', id: 'visualize', name: 'Visualize', aliases: ['zeta', 'alpha']})],
-      edges: [{type: 'covers', from: 'TS:a', to: 'visualize', derived_by: 'annotation', confidence: 1, evidence: ['z.md', 'a.md'], batch: BATCH}],
+      nodes: [node({type: 'feature', id: 'visualize', name: 'Visualize', aliases: ['zeta', 'alpha']}),
+        node({type: 'doc-page', id: 'doc:public/help/a.md', name: 'a', path: 'public/help/a.md', kind: 'help', keywords: ['zeta', 'alpha']}),
+        node({type: 'function', id: 'func:Demo:f', name: 'f', language: 'js', input_types: ['string', 'dataframe']})],
+      edges: [{type: 'covers', from: 'TS:a', to: 'visualize', derived_by: 'annotation', confidence: 1, evidence: ['z.md', 'a.md'], batch: BATCH},
+        {type: 'imports', from: 'func:Demo:f', to: 'visualize', derived_by: 'ast', confidence: 1, symbols: ['b', 'a'], batch: BATCH}],
       stubs: [], claims: [], sources: {}, problems: {}, details: {}, invalid: [], reports: {},
     };
     writeBuild(graph, dir, {mode: 'public', batch: BATCH, builder: '6.5.10', schemaVersion: 1, revisions: {public: 'x'}});
     expect(fs.readFileSync(path.join(dir, 'data', 'nodes', 'feature.jsonl'), 'utf8')).toContain('"aliases":["alpha","zeta"]');
+    expect(fs.readFileSync(path.join(dir, 'data', 'nodes', 'doc-page.jsonl'), 'utf8')).toContain('"keywords":["alpha","zeta"]');
     expect(fs.readFileSync(path.join(dir, 'data', 'edges', 'covers.jsonl'), 'utf8')).toContain('"evidence":["a.md","z.md"]');
+    expect(fs.readFileSync(path.join(dir, 'data', 'edges', 'imports.jsonl'), 'utf8')).toContain('"symbols":["a","b"]');
+    expect(fs.readFileSync(path.join(dir, 'data', 'nodes', 'function.jsonl'), 'utf8')).toContain('"input_types":["string","dataframe"]');
   });
 });

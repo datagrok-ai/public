@@ -1,14 +1,14 @@
 type: test
 extends: artifact
-was: Test
 description: >
   One automated test: a DG test() in a package, a Playwright test, a Dart test(), a
   JUnit connector test, a jest or vitest case. Id test:<framework>:<path>#<name>.
 properties:
   path:          Path
-  framework:     "'dg' | 'playwright' | 'bdd' | 'dart' | 'junit' | 'jest' | 'vitest'"
+  framework:     string
   level:         "'unit' | 'api' | 'e2e' | 'perf' | 'stress'"
   category?:     string
+  suite?:        TestSuite
   dynamic?:      boolean = false        # the registered name is built at run time (a concatenation or a template); `name` keeps the literal head and ends with an ellipsis, and the real cases are not enumerable
   skipped?:      boolean = false
   skip_conditional?: boolean = false    # skipReason is an expression, so whether this test is skipped depends on the run

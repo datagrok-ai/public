@@ -1,5 +1,4 @@
 type: tracked-in
-was: TrackedAs
 from: Feature | Initiative
 to: Ticket
 key: tickets

@@ -1,5 +1,4 @@
 type: part-of
-was: PartOfFeature
 from: Feature | Concept | Initiative | Scenario | Ticket
 to: Feature | Concept | Initiative | Scenario | Ticket
 same_type: true

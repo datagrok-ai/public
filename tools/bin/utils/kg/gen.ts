@@ -201,10 +201,10 @@ function yesNo(v: boolean): string {
 }
 
 function nodeTable(system: TypeSystem): string {
-  const rows = ['| Type | Root | Extends | Was | One line |', '|---|---|---|---|---|'];
+  const rows = ['| Type | Root | Extends | One line |', '|---|---|---|---|'];
   for (const t of nodeOrder(system)) {
     const root = t.name === 'node' ? '' : t.root ?? '';
-    rows.push(`| ${t.name}${t.abstract ? ' *(abstract)*' : ''} | ${root} | ${t.extends ?? ''} | ${cell(t.was)} | ${cell(firstSentence(t.description))} |`);
+    rows.push(`| ${t.name}${t.abstract ? ' *(abstract)*' : ''} | ${root} | ${t.extends ?? ''} | ${cell(firstSentence(t.description))} |`);
   }
   return rows.join('\n');
 }

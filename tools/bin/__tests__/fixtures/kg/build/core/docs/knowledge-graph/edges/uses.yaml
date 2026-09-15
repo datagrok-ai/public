@@ -1,5 +1,4 @@
 type: uses
-was: UsesApiClass
 from: SourceFile | Package | Sample | Tutorial
 to: Declaration
 derived_by: [ast]

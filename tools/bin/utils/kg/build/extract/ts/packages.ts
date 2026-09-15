@@ -39,7 +39,7 @@ export const packagesExtractor: Extractor = {
       if (!admitted.accepted) continue;
       for (const st of json.meta?.semanticTypes ?? json.semanticTypes ?? []) {
         if (typeof st?.semType !== 'string') continue;
-        if (!emitter.node({type: 'semantic-type', id: semtypeId(st.semType), name: st.semType, description: st.description, language: 'other', declared_in: id, provenance: 'registry', source_layer: 'public'}).accepted) continue;
+        if (!emitter.node({type: 'semantic-type', id: semtypeId(st.semType), name: st.semType, description: st.description, language: 'other', provenance: 'registry', source_layer: 'public'}).accepted) continue;
         emitter.edge({type: 'declares', from: id, to: semtypeId(st.semType), derived_by: 'registry', confidence: 1, evidence: [`${p.dir}/package.json`]});
       }
       emitDependencies(emitter, id, p, npm);

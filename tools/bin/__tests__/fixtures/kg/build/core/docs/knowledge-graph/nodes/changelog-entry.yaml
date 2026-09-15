@@ -1,6 +1,5 @@
 type: changelog-entry
 extends: artifact
-was: ChangelogEntry
 description: >
   One bullet in a package CHANGELOG.md under a version heading. Mentions tickets;
   describes a change to a feature through changes.

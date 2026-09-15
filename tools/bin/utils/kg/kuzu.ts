@@ -87,7 +87,7 @@ export interface LoadResult {
   rels: TableRows[];
   /** Rows whose list values CSV cannot carry (see `LIST_UNSAFE`), inserted one by one instead. */
   parameterized: number;
-  /** Peak resident memory of this process during the load, in MB: what a reader of the index needs. */
+  /** Peak resident memory of this process during the load, in MB; recorded in the manifest as telemetry. */
   memoryMb: number;
   /** `<platform>-<arch>` the index was written on; Kuzu's format is not portable between them. */
   platform: string;
@@ -102,7 +102,7 @@ const LIST_UNSAFE = /^$|^["'\s]|[\s]$|[,[\]{}]/;
 
 /** Kuzu takes 80% of free memory by default; a CLI over a 100 MB graph needs a fraction of that. The load
  * needs room for the tables it builds, a reader only for what it touches — `--memory <MB>` and
- * `KG_KUZU_MEMORY` override both, and a manifest that recorded a bigger load raises the reader's floor. */
+ * `KG_KUZU_MEMORY` override both. */
 export const BUILD_MEMORY_MB = 2048;
 export const READ_MEMORY_MB = 512;
 /** Graph identifiers reach Cypher inside backticks; nothing else may (conventions.md §7.1). */
@@ -267,23 +267,10 @@ export function memoryMb(option: unknown, fallback: number): number {
   return fallback;
 }
 
-/** What a reader of the index in [kgDir] needs: its floor, or the load's own high-water mark when that is more. */
-export function readerMemoryMb(kgDir: string, option?: unknown): number {
-  const file = path.join(kgDir, 'manifest.json');
-  let recorded = 0;
-  try {
-    recorded = Number(JSON.parse(fs.readFileSync(file, 'utf8')).index_memory_mb) || 0;
-  }
-  catch {
-    // no manifest beside the index, or one without the field: the floor stands
-  }
-  return memoryMb(option, Math.max(READ_MEMORY_MB, recorded));
-}
-
 export async function open(kgDir: string, readonly = true, mb?: number): Promise<{db: KuzuDatabase, conn: KuzuConnection} | null> {
   const kuzu = loadKuzu();
   if (!kuzu) return null;
-  const pool = (readonly ? readerMemoryMb(kgDir, mb) : memoryMb(mb, BUILD_MEMORY_MB)) * 1024 * 1024;
+  const pool = memoryMb(mb, readonly ? READ_MEMORY_MB : BUILD_MEMORY_MB) * 1024 * 1024;
   const db = new kuzu.Database(path.join(kgDir, 'kg.kuzu'), pool, true, readonly);
   return {db, conn: new kuzu.Connection(db)};
 }

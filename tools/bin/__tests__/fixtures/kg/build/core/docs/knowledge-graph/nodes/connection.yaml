@@ -1,6 +1,5 @@
 type: connection
 extends: component
-was: DataConnection
 description: >
   A data connection declared in a package's connections/*.json: provider plus endpoint
   for a database, file share or web service. Credentials never enter the graph.

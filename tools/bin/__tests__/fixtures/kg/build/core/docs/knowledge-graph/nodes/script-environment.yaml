@@ -1,6 +1,5 @@
 type: script-environment
 extends: component
-was: ScriptEnvironment
 description: A conda or pip environment declared under a package's environments/ folder.
 properties:
   language:      "'python' | 'r' | 'other'"

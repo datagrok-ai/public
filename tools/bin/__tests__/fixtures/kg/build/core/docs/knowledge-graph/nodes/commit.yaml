@@ -5,7 +5,7 @@ description: >
   A git commit. Ingested selectively: commits on release branches, commits named in a
   release record, and commits whose message carries a ticket key. Id is commit:<repo>:<full sha>.
 properties:
-  repo:          "'reddata' | 'public'"
+  repo:          string
   sha:           string
   subject:       string
   date:          Date

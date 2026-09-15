@@ -21,7 +21,6 @@ node_type:
   hierarchical?: boolean = false              # true: ids are paths and part-of is derived from them
   authored?:     boolean = false              # true: instances have home documents written by people
   visibility?:   "'public' | 'dev' | 'internal'"   # default for instances; instances may only narrow
-  was?:          string                       # kind name in the retired July 2026 Python engine, for the one-time migration
   description:   Text                         # first sentence becomes the glossary line
   properties?:   Record<string, Member>       # declared properties; a child may add or narrow, never remove or loosen
   inherit?:      string[]                     # property names that flow down part-of unless a child sets them
@@ -35,7 +34,6 @@ edge_type:
   type:          string                       # lowercase kebab, unique across edges/; the graph label is its UPPER_SNAKE rendering (part-of -> PART_OF)
   extends?:      string                       # another edge type; children may narrow from/to and add properties
   abstract?:     boolean = false
-  was?:          string
   from:          TypeUnion                    # node types accepted as source, subtypes included: "Feature | Ticket"
   to:            TypeUnion
   key?:          string                       # frontmatter key that spells this edge in a home doc ("requested_by")

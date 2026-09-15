@@ -9,7 +9,7 @@ import {generate, writeOutputs} from '../utils/kg/gen';
 import {Emitter} from '../utils/kg/build/emitter';
 import {selectExtractors, runExtractors, EXTRACTORS, Mode} from '../utils/kg/build/registry';
 import {writeBuild, writeManifest, readManifest, projectPublic, gitRevisions, buildInputs, batchId, toolsVersion,
-  generationDir, stagingDir, replaceGeneration, currentDir, readCurrent, publish, generations, gc, Manifest} from '../utils/kg/build/write';
+  generationDir, newGeneration, currentDir, readCurrent, publish, generations, gc, Manifest} from '../utils/kg/build/write';
 import {loadKuzu, load as loadIndex, open, run, memoryMb, MISSING_KUZU, BUILD_MEMORY_MB, LoadResult, TableRows} from '../utils/kg/kuzu';
 import {impact, testsFor, explain, find, printOps, resolveTarget, sourceCaveats, OpsResult, DEFAULT_LIMIT} from '../utils/kg/ops';
 import {readGraph, fromGraph, makeReport as buildReport, printReport, writeReports, REPORT_NAMES, ReportName, ReportFormat} from '../utils/kg/report';
@@ -78,7 +78,7 @@ export async function kg(argv: any): Promise<boolean> {
   return true;
 }
 
-/** `grok kg build`: the extractors into JSONL and a manifest in one immutable generation under `.kg/gen/<batch>/`
+/** `grok kg build`: the extractors into JSONL and a manifest in one immutable generation under `.kg/gen/<batch>-<suffix>/`
  * (public/.kg/ with --public), which `<out>/current` names once everything, the index included, is complete. */
 async function build(argv: any, kgRoot: string, repoRoot: string, output: string): Promise<boolean> {
   const mode: Mode = argv.public === true ? 'public' : 'full';
@@ -100,37 +100,28 @@ async function build(argv: any, kgRoot: string, repoRoot: string, output: string
   await runExtractors(selected, {system, kgRoot, repoRoot, mode, backlogDir}, emitter);
   let graph = emitter.finalize();
   if (mode === 'public') graph = projectPublic(graph, system);
-  const staged = fs.existsSync(generationDir(root, batch));
-  const genDir = staged ? stagingDir(root, batch) : generationDir(root, batch);
-  fs.rmSync(genDir, {recursive: true, force: true});
+  const genDir = newGeneration(root, batch);
   const manifest = writeBuild(graph, genDir, {mode, batch, builder, schemaVersion: system.schemaVersion, revisions});
   if (mode !== 'public') writeReports(genDir, fromGraph(graph, repoRoot, manifest.sources, manifest.revisions), {system, repoRoot});
   const failure = await index(argv, system, genDir, repoRoot, manifest);
   if (failure) return fail(`index not built: ${failure}; ${slashes(genDir)} stays unpublished`);
   writeManifest(genDir, manifest);
-  if (staged) {
-    try {
-      replaceGeneration(root, batch);
-    }
-    catch (e: any) {
-      return fail(e.message);
-    }
-  }
   if (output === 'json') console.log(JSON.stringify(manifest, null, 2));
-  else console.log(summary(manifest, rel(generationDir(root, batch), repoRoot)));
-  return promote(root, batch, manifest);
+  else console.log(summary(manifest, rel(genDir, repoRoot)));
+  return promote(root, path.basename(genDir), manifest);
 }
 
 /** The pointer moves only to a generation at least as usable as the one it leaves: a `--no-db` rebuild does not
  * take the index away from `query` and the operations. */
-function promote(root: string, batch: string, manifest: Manifest): boolean {
+function promote(root: string, name: string, manifest: Manifest): boolean {
   const previous = readCurrent(root);
-  const indexed = previous && previous !== batch && readManifest(generationDir(root, previous))?.indexed_batch === previous;
+  const prev = previous ? readManifest(generationDir(root, previous)) : undefined;
+  const indexed = prev !== undefined && prev.indexed_batch === prev.batch;
   if (!manifest.indexed_batch && indexed) {
-    console.log(`current stays at ${previous}: generation ${batch} has no index (--no-db); run grok kg build to index it`);
+    console.log(`current stays at ${previous}: generation ${name} has no index (--no-db); run grok kg build to index it`);
     return true;
   }
-  publish(root, batch);
+  publish(root, name);
   return true;
 }
 

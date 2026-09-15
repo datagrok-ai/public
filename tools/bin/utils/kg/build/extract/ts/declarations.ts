@@ -416,7 +416,7 @@ export const declarationsExtractor: Extractor = {
         if (file.generated && decl.container && !publicApi) continue;
         const id = sources.declId(file, decl);
         const container = decl.container ? declId(file.path, decl.container) : undefined;
-        if (!emitter.node({type: 'declaration', id, name: decl.name.slice(decl.name.lastIndexOf('.') + 1), kind: decl.kind, container, exported: decl.exported,
+        if (!emitter.node({type: 'declaration', id, name: decl.name.slice(decl.name.lastIndexOf('.') + 1), kind: decl.kind, exported: decl.exported,
           public_api: publicApi ? true : undefined, generated: file.generated ? true : undefined, deprecated: decl.deprecated ? true : undefined, documented: decl.documented,
           signature: decl.signature || undefined, line: decl.line, language: 'ts', path: file.path, provenance: 'ast', source_layer: 'public'}).accepted) continue;
         emitter.edge({type: 'declares', from: container ?? fileId(file.path), to: id, derived_by: 'ast', confidence: 1, evidence: [file.path]});

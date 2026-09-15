@@ -3,7 +3,6 @@ extends: function
 description: >
   A custom filter registered for a semantic type.
 properties:
-  semtype?:      SemanticType
   primary?:      boolean
   columnless?:   boolean
 rules:

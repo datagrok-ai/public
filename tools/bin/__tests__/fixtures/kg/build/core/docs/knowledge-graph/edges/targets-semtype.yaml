@@ -1,5 +1,4 @@
 type: targets-semtype
-was: DetectsSemtype
 from: Function
 to: SemanticType
 identity: [role]

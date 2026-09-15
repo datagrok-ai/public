@@ -55,7 +55,7 @@ describe('ts-declarations extractor (build-plan.md WO-3b)', () => {
     expect(rows('nodes/source-file').some((f) => f.path.endsWith('.d.ts') || f.path.endsWith('.css'))).toBe(false);
   });
 
-  it('emits declarations with kind, exported, container, documented, signature and line; ids per ids.ts', async () => {
+  it('emits declarations with kind, exported, documented, signature and line; ids per ids.ts', async () => {
     const {rows} = await graph;
     const decls = rows('nodes/declaration');
     expect(byId(decls, `decl:${API}/src/dataframe.ts#DataFrame`)).toEqual({
@@ -63,11 +63,12 @@ describe('ts-declarations extractor (build-plan.md WO-3b)', () => {
       generated: false, kind: 'class', language: 'ts', line: 2, path: `${API}/src/dataframe.ts`, provenance: 'ast', public_api: true, signature: 'export class DataFrame',
       source_layer: 'public', status: 'active', visibility: 'public',
     });
-    expect(byId(decls, `decl:${API}/src/dataframe.ts#DataFrame.fromCsv`)).toMatchObject({name: 'fromCsv', kind: 'method', container: `decl:${API}/src/dataframe.ts#DataFrame`, exported: true, public_api: true,
+    expect(byId(decls, `decl:${API}/src/dataframe.ts#DataFrame.fromCsv`)).toMatchObject({name: 'fromCsv', kind: 'method', exported: true, public_api: true,
       documented: false, line: 23, signature: 'static fromCsv(csv: string, options?: {delimiter?: string}): DataFrame'});
+    expect(byId(decls, `decl:${API}/src/dataframe.ts#DataFrame.fromCsv`)).not.toHaveProperty('container');
     expect(byId(decls, `decl:${API}/src/dataframe.ts#DataFrame.hidden`)).toMatchObject({kind: 'method', exported: false, public_api: false});
     expect(byId(decls, `decl:${API}/src/dataframe.ts#DataFrame._name`)).toMatchObject({kind: 'prop', exported: false, signature: "private _name: string = ''"});
-    expect(byId(decls, `decl:${API}/src/dataframe.ts#IDisposable.dispose`)).toMatchObject({kind: 'method', container: `decl:${API}/src/dataframe.ts#IDisposable`});
+    expect(byId(decls, `decl:${API}/src/dataframe.ts#IDisposable.dispose`)).toMatchObject({kind: 'method'});
     expect(byId(decls, `decl:${API}/src/dataframe.ts#Internal`)).toMatchObject({kind: 'class', exported: false, public_api: false});
     expect(decls.filter((d) => d.path === `${API}/src/dataframe.ts`).map((d) => [d.name, d.kind]).sort()).toEqual([
       ['DataFrame', 'class'], ['IDisposable', 'interface'], ['Internal', 'class'], ['LogLevel', 'enum'], ['Predicate', 'type'], ['_name', 'prop'], ['dispose', 'method'],
@@ -125,9 +126,9 @@ describe('ts-declarations extractor (build-plan.md WO-3b)', () => {
     expect(declares.find((e) => e.from === df && e.to === `${df}.fromCsv`)).toMatchObject({derived_by: 'ast', confidence: 1, evidence: [`${API}/src/dataframe.ts`]});
     expect(declares.some((e) => e.from === `file:${API}/src/dataframe.ts` && e.to === `${df}.fromCsv`)).toBe(false);
     expect(byId(rows('nodes/declaration'), `decl:${API}/ui.ts#input`)).toMatchObject({kind: 'const', signature: 'export namespace input'});
-    expect(byId(rows('nodes/declaration'), `decl:${API}/ui.ts#input.string`)).toMatchObject({kind: 'function', container: `decl:${API}/ui.ts#input`, public_api: true});
+    expect(byId(rows('nodes/declaration'), `decl:${API}/ui.ts#input.string`)).toMatchObject({kind: 'function', public_api: true});
     expect(pairs(declares, `decl:${API}/ui.ts#input`)).toEqual([`decl:${API}/ui.ts#input.string`]);
-    expect(rows('edges/container').find((e) => e.from === `${df}.fromCsv`)).toMatchObject({type: 'ref', name: 'container', to: df});
+    expect(rows('edges/container')).toEqual([]);
   });
 
   it('resolves extends and implements in the same file, through an import, and across files of the same package; a stranger is dropped and counted', async () => {

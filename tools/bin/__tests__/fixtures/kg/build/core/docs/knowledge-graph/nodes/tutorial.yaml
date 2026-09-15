@@ -1,6 +1,5 @@
 type: tutorial
 extends: artifact
-was: Tutorial
 description: An interactive tutorial from the Tutorials package, grouped into tracks.
 properties:
   path:          Path

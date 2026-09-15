@@ -11,21 +11,22 @@ import {Emitter} from '../emitter';
 import {Row} from '../normalize';
 import {BuildContext, Extractor} from '../registry';
 import {gitRevisions} from '../write';
-import {HomeIndex, homesOf, resolveMention} from './markers';
+import {HomeSet} from '../../homes';
+import {homesOf, resolveMention} from './markers';
 
 /** Where the generator writes, relative to the monorepo root. */
 export const BATCH_FILE = '.kg/batches/kg-dart.jsonl';
 const STALE_DAYS = 7;
 const RECORDS = ['batch', 'node', 'edge', 'claim'];
 /** What the header must say about itself before its payload may be trusted. */
-const HEADER_KEYS = ['revision', 'generator', 'packages'];
+const HEADER_KEYS = ['schema_version', 'revision', 'packages'];
 /** A Dart package of the checkout: a folder under `core/` with a pubspec.yaml, `core/<area>/libs/<pkg>` included. */
 const PUBSPECS = ['core/*/*/pubspec.yaml', 'core/*/*/*/pubspec.yaml'];
 
 interface Header {
   built_at?: string;
   revision?: string;
-  generator?: string;
+  schema_version?: unknown;
   packages?: unknown;
 }
 
@@ -39,7 +40,7 @@ export const dartExtractor: Extractor = {
       emitter.source('dart', 'missing');
       return;
     }
-    const index = new HomeIndex(homesOf(ctx));
+    const homes = homesOf(ctx);
     const rows = new Map<string, number>();
     let header: Header | undefined;
     let payload = false;
@@ -60,7 +61,15 @@ export const dartExtractor: Extractor = {
       const {record, ...rest} = row;
       if (record === 'batch') {
         if (header || payload) refuse(i + 1, header ? 'a second batch record' : 'a batch record after the payload');
-        else header = rest as Header;
+        else {
+          header = rest as Header;
+          if (Number(header.schema_version) !== ctx.system.schemaVersion) {
+            emitter.problem('invalid_rows', `${BATCH_FILE}: schema_version ${JSON.stringify(header.schema_version)} does not match ` +
+              `schema.yaml version ${ctx.system.schemaVersion}; the batch was not loaded`);
+            emitter.source('dart', 'incompatible');
+            return;
+          }
+        }
         continue;
       }
       payload = true;
@@ -69,7 +78,7 @@ export const dartExtractor: Extractor = {
       }
       else if (record === 'edge') emitter.edge(rest);
       else {
-        const outcome = claim(emitter, index, rest, i + 1);
+        const outcome = claim(emitter, homes, rest, i + 1);
         if (outcome === 'malformed') refuse(i + 1, 'a claim needs a file, a feature, rung 1 and no mode but participates');
         else if (outcome === 'unresolved') invalid++;
       }
@@ -105,10 +114,10 @@ function parse(text: string): Row | null {
  * document's roots or its prose. `/// ~id` owns, `// ~id` on its own line only participates, and the feature it names
  * has to be one the home documents declare, or the claim is a typo and is counted, never drawn.
  */
-function claim(emitter: Emitter, index: HomeIndex, row: Row, at: number): 'ok' | 'malformed' | 'unresolved' {
+function claim(emitter: Emitter, homes: HomeSet, row: Row, at: number): 'ok' | 'malformed' | 'unresolved' {
   if (typeof row.file !== 'string' || typeof row.feature !== 'string') return 'malformed';
   if ((row.rung !== undefined && row.rung !== 1) || (row.mode !== undefined && row.mode !== 'participates')) return 'malformed';
-  const target = resolveMention(emitter, index, row.feature, `${BATCH_FILE}:${at}`);
+  const target = resolveMention(emitter, homes, row.feature, `${BATCH_FILE}:${at}`);
   if (!target || target.root !== 'feature') return 'unresolved';
   emitter.claim({
     file: row.file, feature: target.id, rung: 1, source: 'marker',

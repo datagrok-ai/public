@@ -1,6 +1,0 @@
-type: in-suite
-from: Test
-to: TestSuite
-cardinality: one
-derived_by: [ast, filesystem]
-description: A test belongs to its category, folder or file.

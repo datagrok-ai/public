@@ -453,7 +453,7 @@ describe('kg gen (conventions.md §11.2)', () => {
     expect(after).not.toContain('stale');
     expect(after).toContain('| `~C:a/b` | concept | yes | yes | core/docs/knowledge-graph/concepts/<name>.yaml |');
     expect(after).toContain('| `~Rel:name` | release | no | no | extracted |');
-    expect(after).toContain('| developer | actor | person |  | A person who commits to the platform. |');
+    expect(after).toContain('| developer | actor | person | A person who commits to the platform. |');
     expect(after).toContain('| Edge | Label | From → To | Extends | Key | Derived by | One line |');
     expect(after).toContain('| `part-of` | PART_OF | Feature \\| Concept \\| Scenario → Feature \\| Concept \\| Scenario |  |  | filesystem |');
     expect(after).toContain('| `supersedes` | SUPERSEDES | Feature → Feature |  | `superseded_by:` (on target) | annotation |');
@@ -621,6 +621,17 @@ describe('reference resolution: parse, expand, type-check, look up (review 2 #1)
     expect(homeErrors('core/docs/broken.md', `${PERMISSIONS}concepts: [what:ever]\n---\n# P\n`))
       .toEqual(["unresolved-ref core/docs/broken.md:4: concepts[0]: 'what:ever': unknown id scheme 'what:'"]);
   });
+
+  it('knows every scheme an extractor emits, tutorial among them', () => {
+    const tutorials = (repo: string) => {
+      write(repo, `${KG_DIR}/nodes/tutorial.yaml`, 'type: tutorial\nextends: artifact\ndescription: An interactive tutorial.\n');
+      write(repo, `${KG_DIR}/edges/demonstrates.yaml`,
+        'type: demonstrates\nextends: evidences\nfrom: Tutorial\nto: Feature\nkey: samples\nkey_side: to\nderived_by: [ast]\ndescription: A tutorial shows a feature in use.\n');
+    };
+    expect(homeErrors('core/docs/broken.md', `${PERMISSIONS}samples: [tutorial:chem/x]\n---\n# P\n`, tutorials)).toEqual([]);
+    expect(homeErrors('core/docs/broken.md', `${PERMISSIONS}samples: [nope:x]\n---\n# P\n`, tutorials))
+      .toEqual(["unresolved-ref core/docs/broken.md:4: samples[0]: 'nope:x': unknown id scheme 'nope:'"]);
+  });
 });
 
 describe('annotated pages and migrated scenarios (review 2 #2)', () => {
@@ -684,6 +695,17 @@ describe('citations as records (review 2 #4)', () => {
       "citation-escape core/docs/broken.md:7: link '../../../x.md' escapes the repository",
       "bad-anchor core/docs/broken.md:7: link '#missing': no heading '#missing' in core/docs/broken.md",
     ]);
+  });
+
+  it('answers to the anchors the graph builds: a numbered duplicate, an explicit {#id}, and not the text slug it replaced', () => {
+    const link = (anchor: string) => homeErrors('core/docs/broken.md', `${PERMISSIONS}---
+# P
+
+[a](viewers/README.md${anchor})
+`);
+    for (const anchor of ['#sharing', '#sharing-1', '#new-id', '#deep'])
+      expect(link(anchor)).toEqual([]);
+    expect(link('#old-name')).toEqual(["bad-anchor core/docs/broken.md:7: link 'viewers/README.md#old-name': no heading '#old-name' in core/docs/viewers/README.md"]);
   });
 });
 

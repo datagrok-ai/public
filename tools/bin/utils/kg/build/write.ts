@@ -6,7 +6,7 @@ import {createHash} from 'crypto';
 import {spawnSync} from 'child_process';
 import {TypeSystem, isSubtype} from '../types';
 import {Graph} from './emitter';
-import {Row} from './normalize';
+import {Row, isOrdered, compare} from './normalize';
 
 export interface Manifest {
   built_at: string;
@@ -22,7 +22,8 @@ export interface Manifest {
   inventory?: Record<string, number>;
   /** The generation the index in this directory was loaded from; absent when it has none (`--no-db`). */
   indexed_batch?: string;
-  /** Peak resident memory of the load, in MB: what a reader of this index should be given. */
+  /** Peak resident memory of the load, in MB, as telemetry; readers size their pool from `--memory`,
+   * `KG_KUZU_MEMORY` or the 512 MB default. */
   index_memory_mb?: number;
   index_platform?: string;
 }
@@ -38,15 +39,12 @@ export interface BuildInfo {
 /** Node types the public snapshot carries (Decisions "Public mode"); a doc-page only when it is a help page. */
 const PUBLIC_TYPES = ['feature', 'concept', 'package', 'library', 'doc-page', 'doc-anchor', 'sample', 'scenario'];
 const HEAD_KEYS = ['id', 'type', 'name', 'from', 'to'];
-/** Members that are sets, written sorted so that arrival order cannot reach the bytes (kg-codex-review-3 #12).
- * Ordered lists (`input_types` and the rest of normalize.ts's ORDERED_MEMBERS) are never touched. */
-const SORTED_MEMBERS = ['evidence', 'aliases', 'tags', 'roles', 'labels', 'components'];
 const INVALID_CAP = 500;
-/** One generation per batch under `<out>/gen/`, and the one-line file naming the generation to read. */
+/** One generation per build under `<out>/gen/`, and the one-line file naming the generation to read. */
 export const GENERATIONS = 'gen';
 export const CURRENT = 'current';
-/** A generation still being written; a build with the same batch replaces it, `gc` leaves it alone. */
-const PARTIAL = '.partial';
+/** How long a directory under `gen/` without a manifest may be an interrupted build before `gc` removes it. */
+const INTERRUPTED_MS = 3600_000;
 /** `extract/dart.ts` reads this batch; hashing it here keeps the builder out of the extractors' import graph. */
 const DART_BATCH = '.kg/batches/kg-dart.jsonl';
 /** The backlog snapshot `extract/process.ts` falls back to. */
@@ -304,73 +302,44 @@ export function readManifest(genDir: string): Manifest | undefined {
   }
 }
 
-/** Where a build writes: one immutable directory per batch, so a rebuild never overwrites what a reader holds. */
-export function generationDir(outRoot: string, batch: string): string {
-  return path.join(outRoot, GENERATIONS, batch);
+/** One directory per build, named by its batch and a suffix: the batch is the content identity, the directory the
+ * publication, so a rebuild never overwrites what a reader holds open. */
+export function generationDir(outRoot: string, name: string): string {
+  return path.join(outRoot, GENERATIONS, name);
 }
 
-/** The staging directory a rebuild of an existing batch writes into before it replaces that generation. */
-export function stagingDir(outRoot: string, batch: string): string {
-  return `${generationDir(outRoot, batch)}${PARTIAL}`;
+/** A fresh generation directory, `<batch>-<six characters>`, created atomically. */
+export function newGeneration(outRoot: string, batch: string): string {
+  fs.mkdirSync(path.join(outRoot, GENERATIONS), {recursive: true});
+  return fs.mkdtempSync(path.join(outRoot, GENERATIONS, `${batch}-`));
 }
 
-/** The batch `<out>/current` names, when its generation is complete. */
+/** The generation `<out>/current` names, when it is complete. */
 export function readCurrent(outRoot: string): string | undefined {
   const file = path.join(outRoot, CURRENT);
   if (!fs.existsSync(file)) return undefined;
-  const batch = fs.readFileSync(file, 'utf8').trim();
-  return batch && fs.existsSync(path.join(generationDir(outRoot, batch), 'manifest.json')) ? batch : undefined;
+  const name = fs.readFileSync(file, 'utf8').trim();
+  return name && fs.existsSync(path.join(generationDir(outRoot, name), 'manifest.json')) ? name : undefined;
 }
 
 /** The directory to read a graph from: the current generation, or [outRoot] itself when it holds a build from
  * before generations existed (a committed public snapshot, an `--out` folder written by an older builder). */
 export function currentDir(outRoot: string): string | undefined {
-  const batch = readCurrent(outRoot);
-  if (batch) return generationDir(outRoot, batch);
+  const name = readCurrent(outRoot);
+  if (name) return generationDir(outRoot, name);
   return fs.existsSync(path.join(outRoot, 'manifest.json')) ? outRoot : undefined;
 }
 
-/** Switches the pointer to [batch]: the file is replaced by a rename, the link beside it is a convenience and
- * is skipped silently where the platform does not allow one. */
-export function publish(outRoot: string, batch: string): void {
+/** Switches the pointer to the generation [name]: the file is replaced by a rename. */
+export function publish(outRoot: string, name: string): void {
   const tmp = path.join(outRoot, `${CURRENT}.tmp`);
-  fs.writeFileSync(tmp, `${batch}\n`);
+  fs.writeFileSync(tmp, `${name}\n`);
   fs.renameSync(tmp, path.join(outRoot, CURRENT));
-  const link = path.join(outRoot, GENERATIONS, CURRENT);
-  try {
-    try {
-      fs.unlinkSync(link);
-    }
-    catch {
-      fs.rmdirSync(link);
-    }
-  }
-  catch {
-    // no link yet, or one this process may not remove; the attempt below decides
-  }
-  try {
-    // absolute: a junction target is resolved differently by different Node versions
-    fs.symlinkSync(path.resolve(generationDir(outRoot, batch)), link, 'junction');
-  }
-  catch {
-    // symlinks need a privilege on Windows and a junction needs an absolute target on some volumes
-  }
-}
-
-/** Replaces the generation [batch] with what was staged beside it; the pointer already names that batch. */
-export function replaceGeneration(outRoot: string, batch: string): void {
-  const genDir = generationDir(outRoot, batch);
-  try {
-    fs.rmSync(genDir, {recursive: true, force: true});
-  }
-  catch (e: any) {
-    throw new Error(`${slashes(genDir)}: cannot replace this generation (${e.code ?? e.message}); a reader may hold its ` +
-      `index open. The new one is complete in ${slashes(stagingDir(outRoot, batch))}`);
-  }
-  fs.renameSync(stagingDir(outRoot, batch), genDir);
 }
 
 export interface Generation {
+  /** The directory name, `<batch>-<suffix>`. */
+  name: string;
   batch: string;
   dir: string;
   built_at: string;
@@ -385,11 +354,11 @@ export function generations(outRoot: string): Generation[] {
   const current = readCurrent(outRoot);
   const found: Generation[] = [];
   for (const name of fs.readdirSync(dir)) {
-    if (name === CURRENT || name.endsWith(PARTIAL)) continue;
+    if (name === CURRENT) continue;
     const manifest = readManifest(path.join(dir, name));
     if (!manifest) continue;
-    found.push({batch: name, dir: path.join(dir, name), built_at: manifest.built_at, current: name === current,
-      indexed: manifest.indexed_batch === name});
+    found.push({name, batch: manifest.batch, dir: path.join(dir, name), built_at: manifest.built_at, current: name === current,
+      indexed: manifest.indexed_batch === manifest.batch});
   }
   return found.sort((a, b) => compare(b.built_at, a.built_at));
 }
@@ -400,25 +369,40 @@ export interface GcResult {
   locked: string[];
 }
 
-/** Keeps the [keep] newest generations and the current one, removes the rest; one whose index a reader holds
- * open cannot be removed on every platform, and is reported instead. */
+/** Keeps the [keep] newest generations and the current one, removes the rest and every interrupted build; one
+ * whose index a reader holds open cannot be removed on every platform, and is reported instead. */
 export function gc(outRoot: string, keep: number): GcResult {
   const all = generations(outRoot);
   const result: GcResult = {removed: [], kept: [], locked: []};
-  for (const [i, gen] of all.entries()) {
-    if (i < keep || gen.current) {
-      result.kept.push(gen.batch);
-      continue;
-    }
+  const remove = (name: string, dir: string) => {
     try {
-      fs.rmSync(gen.dir, {recursive: true, force: true});
-      result.removed.push(gen.batch);
+      fs.rmSync(dir, {recursive: true, force: true});
+      result.removed.push(name);
     }
     catch {
-      result.locked.push(gen.batch);
+      result.locked.push(name);
     }
+  };
+  for (const [i, gen] of all.entries()) {
+    if (i < keep || gen.current) result.kept.push(gen.name);
+    else remove(gen.name, gen.dir);
   }
+  for (const name of interrupted(outRoot, new Set(all.map((g) => g.name))))
+    remove(name, path.join(outRoot, GENERATIONS, name));
   return result;
+}
+
+/** Directories under `gen/` with no manifest and no write for an hour: a build that died before it finished. */
+function interrupted(outRoot: string, complete: Set<string>): string[] {
+  const dir = path.join(outRoot, GENERATIONS);
+  if (!fs.existsSync(dir)) return [];
+  const out: string[] = [];
+  for (const name of fs.readdirSync(dir)) {
+    if (name === CURRENT || complete.has(name)) continue;
+    const stat = fs.statSync(path.join(dir, name), {throwIfNoEntry: false});
+    if (stat?.isDirectory() && Date.now() - stat.mtimeMs > INTERRUPTED_MS) out.push(name);
+  }
+  return out;
 }
 
 function groupBy(rows: Row[], key: (row: Row) => string): Map<string, Row[]> {
@@ -431,8 +415,9 @@ function groupBy(rows: Row[], key: (row: Row) => string): Map<string, Row[]> {
   return new Map([...out].sort(([a], [b]) => compare(a, b)));
 }
 
-/** One object per line, keys in a fixed order: id, type, name, from, to, then the rest alphabetically; a
- * set-valued member is written sorted, so that the order its rows arrived in never reaches the bytes. */
+/** One object per line, keys in a fixed order: id, type, name, from, to, then the rest alphabetically; every list
+ * that is not an ordered member (normalize.ts `isOrdered`) is written sorted, so that the order its rows arrived
+ * in never reaches the bytes. */
 function writeJsonl(file: string, rows: Row[]): void {
   const lines = rows.map((row) => {
     const keys = [...HEAD_KEYS.filter((k) => row[k] !== undefined), ...Object.keys(row).filter((k) => !HEAD_KEYS.includes(k)).sort(compare)];
@@ -442,18 +427,10 @@ function writeJsonl(file: string, rows: Row[]): void {
 }
 
 function sorted(key: string, value: unknown): unknown {
-  return SORTED_MEMBERS.includes(key) && Array.isArray(value) ? [...value].map(String).sort(compare) : value;
+  return Array.isArray(value) && !isOrdered(key) ? [...value].sort((a, b) => compare(String(a), String(b))) : value;
 }
 
 function sortKeys<T>(record: Record<string, T>): Record<string, T> {
   return Object.fromEntries(Object.entries(record).sort(([a], [b]) => compare(a, b)));
 }
 
-/** Code-point order, the same on every platform and locale. */
-function compare(a: string, b: string): number {
-  return a < b ? -1 : a > b ? 1 : 0;
-}
-
-function slashes(p: string): string {
-  return p.replace(/\\/g, '/');
-}

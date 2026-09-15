@@ -1,6 +1,5 @@
 type: is-implemented-in
 extends: touches
-was: IsImplementedIn
 from: Feature
 to: Component
 key: code

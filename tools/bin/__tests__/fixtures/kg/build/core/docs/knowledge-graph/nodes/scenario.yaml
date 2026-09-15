@@ -1,7 +1,6 @@
 type: scenario
 extends: artifact
 prefix: TS
-was: Scenario
 hierarchical: true
 authored: true
 description: >

@@ -28,3 +28,7 @@ Text.
 ## Соглашения
 
 No slug: nothing links here.
+
+##### Deep
+
+No anchor: the graph keeps four levels.
