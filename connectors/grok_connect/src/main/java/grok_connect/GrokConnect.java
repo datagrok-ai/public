@@ -96,7 +96,8 @@ public class GrokConnect {
                 call.log = "";
                 call.setParamValues();
                 call.afterDeserialization();
-                PARENT_LOGGER.debug("Query: {}", call.func.query);
+                if (call.logQueryText)
+                    PARENT_LOGGER.debug("Query: {}", call.func.query);
                 long startTime = System.currentTimeMillis();
                 DataProvider provider = providerManager.getByName(call.func.connection.dataSource);
                 DataFrame dataFrame = provider.execute(call);

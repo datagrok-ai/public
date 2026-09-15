@@ -82,6 +82,19 @@ public class QueryManagerTest {
     }
 
     @Test
+    public void logQueryTextIsOffUnlessDatlasSendsIt() {
+        FuncCall silent = parse("{}");
+        silent.afterDeserialization();
+        Assertions.assertFalse(silent.logQueryText);
+        FuncCall verbose = parse("{\"logQueryText\":true}");
+        verbose.afterDeserialization();
+        Assertions.assertTrue(verbose.logQueryText);
+        FuncCall debug = parse("{\"debug\":true}");
+        debug.afterDeserialization();
+        Assertions.assertTrue(debug.logQueryText);
+    }
+
+    @Test
     public void initFetchSizeIsARowCountAndRejectsTheByteFormClearly() {
         manager("{\"initConnectFetchSize\":\"1000\"}");
         manager("{\"connectFetchSize\":\"10 MB\"}");
