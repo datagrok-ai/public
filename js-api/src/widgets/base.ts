@@ -433,7 +433,7 @@ export class Widget<TSettings = any> extends Control {
    * widget.addStatusProvider('selection', () => ({values: {'selected rows': table.selection.trueCount}}));
    * console.log(widget.getWidgetStatus().values?.['selected rows']);
    * widget.removeStatusProvider('selection');
-   * @see {@link https://public.datagrok.ai/js/samples/grid/custom-renderer-status} */
+   * see samples/grid/custom-renderer-status*/
   addStatusProvider(name: string, provider: StatusProvider): void {
     api.grok_Widget_Get_StatusProviders(this.toDart())[name] = provider;
   }
@@ -442,7 +442,7 @@ export class Widget<TSettings = any> extends Control {
    * @param name The name passed to {@link addStatusProvider}.
    * @example
    * widget.removeStatusProvider('selection');
-   * @see {@link https://public.datagrok.ai/js/samples/grid/custom-renderer-status} */
+   * see samples/grid/custom-renderer-status */
   removeStatusProvider(name: string): void {
     if (this.dart != null)
       delete api.grok_Widget_Get_StatusProviders(this.dart)[name];
