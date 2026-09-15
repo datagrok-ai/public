@@ -106,7 +106,30 @@ const config = {
                     routeBasePath: 'help',
                     exclude: ['**/_*/**', '_*/**', '**/_*', '**/*-test.md'],
                     beforeDefaultRemarkPlugins: [imagePlaceholder],
-                }
+                },
+                blog: {
+                    path: './blog',
+                    routeBasePath: 'blog',
+                    blogTitle: 'Datagrok Blog',
+                    blogDescription: 'Engineering, science, and product stories from the Datagrok team.',
+                    blogSidebarTitle: 'Recent posts',
+                    blogSidebarCount: 10,
+                    postsPerPage: 10,
+                    showReadingTime: true,
+                    editUrl: 'https://github.com/datagrok-ai/public/tree/master/docusaurus',
+                    authorsMapPath: 'authors.yml',
+                    tags: 'tags.yml',
+                    onInlineAuthors: 'warn',
+                    onInlineTags: 'warn',
+                    onUntruncatedBlogPosts: 'warn',
+                    feedOptions: {
+                        type: ['rss', 'atom'],
+                        title: 'Datagrok Blog',
+                        description: 'Engineering, science, and product stories from the Datagrok team.',
+                        copyright: `Copyright © ${new Date().getFullYear()} Datagrok, Inc.`,
+                        limit: 20,
+                    },
+                },
             }),
         ],
     ],
@@ -137,6 +160,11 @@ const config = {
                     position: 'left',
                 },
                 {
+                    to: 'blog',
+                    label: 'Blog',
+                    position: 'left',
+                },
+                {
                     href: 'https://public.datagrok.ai',
                     label: 'LAUNCH',
                     position: 'right',
@@ -154,6 +182,10 @@ const config = {
                 {
                     label: 'API Docs',
                     to: '/js-api',
+                },
+                {
+                    label: 'Blog',
+                    to: '/blog',
                 },
                 {
                     label: 'Community',

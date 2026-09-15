@@ -1,0 +1,24 @@
+# Blog tags. Reference by key in a post's front matter: `tags: [product]`.
+# Inline tags in posts are rejected by the build (onInlineTags: 'throw'),
+# so every tag must be defined here. Keep the list short: each tag becomes
+# an indexable page at /blog/tags/<permalink>.
+
+product:
+  label: Product
+  permalink: /product
+  description: Platform releases, new features, and roadmap updates.
+
+engineering:
+  label: Engineering
+  permalink: /engineering
+  description: How Datagrok is built, performance work, and architecture.
+
+science:
+  label: Science
+  permalink: /science
+  description: Cheminformatics, bioinformatics, and data science on the platform.
+
+tutorials:
+  label: Tutorials
+  permalink: /tutorials
+  description: Step-by-step guides and worked examples.
