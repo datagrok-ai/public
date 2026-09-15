@@ -11,6 +11,10 @@ on:
     paths:
       - 'tools/**'
 
+env:
+  TURBO_TELEMETRY_DISABLED: 1
+  TURBO_UI: 0
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/master' && !startsWith(github.ref, 'refs/heads/release/') }}
@@ -62,36 +66,25 @@ jobs:
           echo "version=${current_version}" >> $GITHUB_OUTPUT
 
   build:
-    name: ${{ needs.version.outputs.job_name || 'Deploy' }}
+    name: ${{ needs.check.outputs.job_name || 'Deploy' }}
     needs: [ check, common-check ]
     runs-on: ubuntu-22.04
     if: needs.common-check.outputs.continue == 'true'
     permissions:
-      contents: write
+      contents: read
       id-token: write
     steps:
       - uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.WRITE_TOKEN || github.token }}
-          sparse-checkout: |
-            ./tools
-            ./.github
+      - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '18.x'
+          node-version: 22
           registry-url: 'https://registry.npmjs.org'
-          cache: 'npm'
-          cache-dependency-path: |
-            tools/package-lock.json
-      - name: Upgrade npm
-        run: npm install -g npm@x
-      - run: npm version
-      - run: npm install
-        working-directory: ./tools
-      # The api-domains tests typecheck against the sibling js-api checkout, which this sparse
-      # checkout does not have; the grok s / migrate suites are self-contained.
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm turbo run build --filter=datagrok-tools
       - name: Unit tests (grok s, migrate)
-        run: npm run test:server
+        run: pnpm run test:server
         working-directory: ./tools
       # Trusted publishing (OIDC) needs npm >= 11.5.1 on Node >= 22.14. Swap the
       # toolchain only for the publish step so the build keeps its pinned Node.
@@ -104,10 +97,20 @@ jobs:
       - name: Upgrade npm for trusted publishing
         if: needs.check.outputs.changed_version == 'true'
         run: npm install -g npm@latest
-      - run: npm publish
+      # pnpm pack rewrites the workspace: specifiers to real versions; npm publish keeps the OIDC flow.
+      - name: npm publish
         id: publish
-        working-directory: ./tools
         if: needs.check.outputs.changed_version == 'true'
+        working-directory: ./tools
+        run: |
+          tgz="$(pnpm pack --pack-destination "$RUNNER_TEMP" | tail -1)"
+          for dep in $(tar xzf "$tgz" -O package/package.json | jq -r '(.dependencies // {}) + (.peerDependencies // {}) | to_entries[] | select(.key | test("^(datagrok-api|datagrok-tools|@datagrok-libraries/)")) | "\(.key)@\(.value | ltrimstr("^"))"'); do
+            if [ "$(npm view "$dep" version 2>/dev/null)" != "${dep##*@}" ]; then
+              echo "::error title=datagrok-tools::depends on $dep, which is not on npm yet; publish it first"
+              exit 1
+            fi
+          done
+          npm publish "$tgz"
 
       - name: Get actors slack
         id: actor
@@ -126,7 +129,7 @@ jobs:
         shell: bash
         run: |
           mentions=$(echo -e "${{ steps.actor.outputs.user-ids }}\n${{ steps.owner.outputs.user-ids }}" | sort -u)
-          header="*datagrok-tools* version *${{ needs.check.outputs.version }}* published to <https://www.npmjs.com/package/$(jq -r .name package.json)/v/${{ needs.check.outputs.version }}|NPM>\n$(for value in $mentions; do echo -n "<@$value> "; done) FYI"
+          header="*datagrok-tools* version *${{ needs.check.outputs.version }}* published to <https://www.npmjs.com/package/$(jq -r .name tools/package.json)/v/${{ needs.check.outputs.version }}|NPM>\n$(for value in $mentions; do echo -n "<@$value> "; done) FYI"
           echo "SLACK_MESSAGE_HEADER=$header" >> $GITHUB_ENV
       - name: Send to Slack
         id: slack
@@ -137,31 +140,3 @@ jobs:
           slack-token: ${{ secrets.SLACKBOT_TOKEN }}
           message: ${{ env.SLACK_MESSAGE_HEADER }}
 
-      - name: Commit package-lock.json
-        continue-on-error: true
-        if: github.ref == 'refs/heads/master' && needs.check.outputs.changed_version == 'true'
-        run: |
-          if [ -n "$(git status -s tools/package-lock.json)" ]; then
-            git config --global user.name 'github-actions[bot]'
-            git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-            git pull
-            git add tools/package-lock.json
-            git commit -m 'GitHub Actions: Update tools/package-lock.json [skip ci]
-
-            Workflow ${{ github.workflow }} ${{ github.run_number }}
-            https://github.com/datagrok-ai/public/actions/runs/${{ github.run_id }}'
-            count=0
-            until git push; do
-              exit=$?
-              wait=$((2 ** count))
-              count=$((count + 1))
-              if [ $count -lt "10" ]; then
-                echo "Retry $count/$retries exited $exit, retrying 'git push' in $wait seconds..."
-                sleep $wait
-                git pull --rebase
-              else
-                echo "Retry $count/$retries exited $exit, no more retries left for 'git push'."
-                exit $exit
-              fi
-            done
-          fi

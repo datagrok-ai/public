@@ -44,7 +44,7 @@ Developer guide: [datagrok.ai/help/develop](https://datagrok.ai/help/develop/pac
 ```bash
 npm install
 pnpm run build       # tsc + rspack bundles + bundle smoke test; also writes the browser bundle used by the platform client
-npm run build-ts     # TypeScript only
+pnpm run typecheck   # TypeScript only, no emit
 ```
 
 See `CLAUDE.md` in this folder for the interop conventions, the module map, and the regeneration rules for
