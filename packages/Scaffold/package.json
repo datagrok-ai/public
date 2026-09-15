@@ -8,30 +8,16 @@
     "email": "askalkin@datagrok.ai"
   },
   "dependencies": {
-    "datagrok-api": "^1.26.0",
-    "cash-dom": "^8.1.5",
-    "dayjs": "^1.11.13",
-    "@datagrok-libraries/test": "^1.1.0"
-  },
-  "devDependencies": {
-    "datagrok-tools": "^5.1.5",
-    "webpack": "^5.95.0",
-    "webpack-cli": "^5.1.4",
-    "ts-loader": "latest",
-    "typescript": "latest"
+    "datagrok-api": "workspace:^",
+    "cash-dom": "catalog:",
+    "dayjs": "catalog:",
+    "@datagrok-libraries/test": "workspace:^"
   },
   "scripts": {
-    "debug-scaffold": "webpack && grok publish",
-    "release-scaffold": "webpack && grok publish --release",
-    "build-scaffold": "webpack",
-    "build": "grok api && grok check --soft && webpack",
-    "test": "grok test",
-    "debug-scaffold-dev": "webpack && grok publish dev",
-    "release-scaffold-dev": "webpack && grok publish dev --release",
-    "debug-scaffold-public": "webpack && grok publish public",
-    "release-scaffold-public": "webpack && grok publish public --release",
-    "debug-scaffold-localhost": "webpack && grok publish localhost",
-    "release-scaffold-localhost": "webpack && grok publish localhost --release"
+    "build": "grok build",
+    "typecheck": "grok tsc --noEmit -p tsconfig.json",
+    "lint": "eslint --ext .ts,.tsx src",
+    "test": "grok test"
   },
   "canEdit": [
     "Developers"

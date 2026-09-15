@@ -63,6 +63,7 @@ export class WordCloudViewer extends DG.JsViewer {
   constructor() {
     super();
 
+    this.string('columnColumnName', '', {fieldName: 'wordColumnName', userEditable: false, includeInLayout: false});
     this.wordColumnName = this.string('wordColumnName', '', {columnTypeFilter: DG.COLUMN_TYPE.STRING});
 
     this.shape = this.string('shape', 'circle', {

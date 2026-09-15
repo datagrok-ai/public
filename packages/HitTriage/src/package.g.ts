@@ -1,7 +1,7 @@
 import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
 
-//meta.role: init
+//meta.role: Init
 export async function initHT() : Promise<void> {
   await PackageFunctions.initHT();
 }
@@ -27,7 +27,7 @@ export async function peptiHitAppTreeBrowser(treeNode: any) : Promise<void> {
 //name: Hit Triage
 //tags: app
 //output: view result
-//meta.role: app
+//meta.role: App
 //meta.browsePath: Chem
 export async function hitTriageApp() : Promise<any> {
   return await PackageFunctions.hitTriageApp();
@@ -36,7 +36,7 @@ export async function hitTriageApp() : Promise<any> {
 //name: Hit Design
 //tags: app
 //output: view result
-//meta.role: app
+//meta.role: App
 //meta.icon: images/icons/hit-design-icon.png
 //meta.browsePath: Chem
 export async function hitDesignApp() : Promise<any> {
@@ -46,7 +46,7 @@ export async function hitDesignApp() : Promise<any> {
 //name: PeptiHit
 //tags: app
 //output: view result
-//meta.role: app
+//meta.role: App
 //meta.icon: images/icons/pepti-hit-icon.png
 //meta.browsePath: Peptides
 export async function peptiHitApp() : Promise<any> {
@@ -62,7 +62,7 @@ export async function pepTriageAppTreeBrowser(treeNode: any) : Promise<void> {
 //name: PepTriage
 //tags: app
 //output: view result
-//meta.role: app
+//meta.role: App
 //meta.icon: images/icons/hit-triage-icon.png
 //meta.browsePath: Peptides
 export async function pepTriageApp() : Promise<any> {
@@ -115,7 +115,7 @@ export async function registerMoleculesToViD() : Promise<void> {
 //name: Hit Design V-iD
 //input: semantic_value vid { semType: HIT_DESIGN_VID }
 //output: widget result
-//meta.role: panel
+//meta.role: Panel
 export function hitDesignVidPanel(vid: DG.SemanticValue) : any {
   return PackageFunctions.hitDesignVidPanel(vid);
 }

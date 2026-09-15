@@ -16,46 +16,25 @@
     "directory": "packages/HitTriage"
   },
   "dependencies": {
-    "@datagrok-libraries/bio": "^5.63.6",
-    "@datagrok-libraries/compute-utils": "^1.44.9",
-    "@datagrok-libraries/statistics": "^1.12.9",
-    "@datagrok-libraries/test": "^1.1.0",
-    "@datagrok-libraries/utils": "^4.6.5",
-    "cash-dom": "^8.1.5",
-    "css-loader": "^6.5.1",
-    "datagrok-api": "^1.26.0",
-    "rxjs": "^6.5.5",
-    "source-map-loader": "^4.0.1",
-    "style-loader": "^3.3.1",
-    "ts-loader": "^9.5.1",
+    "@datagrok-libraries/bio": "workspace:^",
+    "@datagrok-libraries/compute-utils": "workspace:^",
+    "@datagrok-libraries/statistics": "workspace:^",
+    "@datagrok-libraries/test": "workspace:^",
+    "@datagrok-libraries/utils": "workspace:^",
+    "cash-dom": "catalog:",
+    "datagrok-api": "workspace:^",
+    "rxjs": "catalog:",
     "typeahead-standalone": "4.14.1",
-    "typescript": "^5.6.3",
     "uuid": "^11.1.1"
   },
   "devDependencies": {
-    "@types/uuid": "^9.0.2",
-    "@typescript-eslint/eslint-plugin": "^5.32.0",
-    "@typescript-eslint/parser": "^5.32.0",
-    "datagrok-tools": "^5.0.0",
-    "eslint": "^8.21.0",
-    "eslint-config-google": "^0.14.0",
-    "webpack": "^5.95.0",
-    "webpack-cli": "^5.1.4"
+    "@types/uuid": "^9.0.2"
   },
   "scripts": {
-    "lint": "eslint src --ext .ts",
-    "lint-fix": "eslint src --ext .ts --fix",
-    "link-api": "npm link datagrok-api",
-    "debug-hittriage": "webpack && grok publish ",
-    "release-hittriage": "grok publish --release",
-    "build-hittriage": "webpack",
-    "build": "grok api && grok check --soft && webpack",
-    "debug-hittriage-dev": "grok publish dev",
-    "release-hittriage-dev": "grok publish dev --release",
-    "debug-hittriage-public": "grok publish public",
-    "release-hittriage-public": "grok publish public --release",
-    "link-all": "npm link datagrok-api @datagrok-libraries/compute-utils @datagrok-libraries/statistics @datagrok-libraries/utils",
-    "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/compute-utils run build && npm --prefix ./../../libraries/statistics run build && npm --prefix ./../../libraries/utils run build && npm run build"
+    "build": "grok build",
+    "typecheck": "grok tsc --noEmit -p tsconfig.json",
+    "lint": "eslint --ext .ts,.tsx src",
+    "test": "grok test"
   },
   "canEdit": [
     "Administrators"
@@ -97,9 +76,5 @@
   ],
   "meta": {
     "sok": "HD_OBSFUS__k7#mP9@zL2$qR5!nX8"
-  },
-  "overrides": {
-    "datagrok-api": "$datagrok-api",
-    "uuid": "^11.1.1"
   }
 }

@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 
 //name: Tutorials
 //input: string path { meta.url: true; optional: true }
-//meta.role: app
+//meta.role: App
 //top-menu: Help | Tutorials @Toolbox Help | Tutorials
 export function trackOverview(path?: string) : void {
   PackageFunctions.trackOverview(path);
@@ -14,12 +14,12 @@ export function tutorialWidget() : any {
   return PackageFunctions.tutorialWidget();
 }
 
-//meta.role: autostart
+//meta.role: Autostart
 export function tutorialsAutostart() : void {
   PackageFunctions.tutorialsAutostart();
 }
 
-//meta.role: init
+//meta.role: Init
 export function tutorialsInit() : void {
   PackageFunctions.tutorialsInit();
 }
@@ -30,14 +30,14 @@ export function tutorialsInit() : void {
 //input: string filter { optional: true }
 //output: view result
 //meta.browseOnly: true
-//meta.role: app
+//meta.role: App
 //meta.icon: images/icons/demoapp-icon.png
 export function demoApp(path?: string, filter?: string) : any {
   return PackageFunctions.demoApp(path, filter);
 }
 
 //input: dynamic treeNode 
-//meta.role: appTreeBrowser
+//meta.role: AppTreeBrowser
 //meta.app: Demo
 export async function demoAppTreeBrowser(treeNode: any) : Promise<void> {
   await PackageFunctions.demoAppTreeBrowser(treeNode);

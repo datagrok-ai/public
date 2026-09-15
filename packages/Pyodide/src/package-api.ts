@@ -9,8 +9,8 @@ import * as DG from 'datagrok-api/dg';
 
 export namespace scripts {
   /**
-  file and blob
-  */
+   * file and blob
+   */
   export async function pyodideBlobInputOutput(blobInput: any ): Promise<any> {
     return await grok.functions.call('Pyodide:PyodideBlobInputOutput', { blobInput });
   }
@@ -20,15 +20,15 @@ export namespace scripts {
   }
 
   /**
-  calc column
-  */
+   * calc column
+   */
   export async function pyodideCalcColumn(x: number ): Promise<number> {
     return await grok.functions.call('Pyodide:PyodideCalcColumn', { x });
   }
 
   /**
-  column list input
-  */
+   * column list input
+   */
   export async function pyodideColumnList(df: DG.DataFrame , cols: string[] ): Promise<DG.DataFrame> {
     return await grok.functions.call('Pyodide:PyodideColumnList', { df, cols });
   }
@@ -42,8 +42,8 @@ export namespace scripts {
   }
 
   /**
-  datetime input/output
-  */
+   * datetime input/output
+   */
   export async function pyodideDate(input_datetime: any ): Promise<any> {
     return await grok.functions.call('Pyodide:PyodideDate', { input_datetime });
   }
@@ -57,8 +57,8 @@ export namespace scripts {
   }
 
   /**
-  datetime input/output
-  */
+   * datetime input/output
+   */
   export async function datetimeTestPy(input_datetime: any ): Promise<any> {
     return await grok.functions.call('Pyodide:DatetimeTestPy', { input_datetime });
   }
@@ -72,8 +72,8 @@ export namespace scripts {
   }
 
   /**
-  dataframe input/output
-  */
+   * dataframe input/output
+   */
   export async function editDFPy(input_df: DG.DataFrame ): Promise<DG.DataFrame> {
     return await grok.functions.call('Pyodide:EditDFPy', { input_df });
   }
@@ -83,8 +83,8 @@ export namespace scripts {
   }
 
   /**
-  graphics output column input
-  */
+   * graphics output column input
+   */
   export async function pyodideGraphics(df: DG.DataFrame , xName: DG.Column , yName: DG.Column ): Promise<any> {
     return await grok.functions.call('Pyodide:PyodideGraphics', { df, xName, yName });
   }
@@ -94,8 +94,8 @@ export namespace scripts {
   }
 
   /**
-  map input/output
-  */
+   * map input/output
+   */
   export async function pyodideMap(input_map: any , unique_key: string ): Promise<any> {
     return await grok.functions.call('Pyodide:PyodideMap', { input_map, unique_key });
   }
@@ -113,8 +113,8 @@ export namespace scripts {
   }
 
   /**
-  df performance
-  */
+   * df performance
+   */
   export async function pyodideSingleDf(df: DG.DataFrame ): Promise<DG.DataFrame> {
     return await grok.functions.call('Pyodide:PyodideSingleDf', { df });
   }

@@ -8,31 +8,17 @@
     "email": "askalkin@datagrok.ai"
   },
   "dependencies": {
-    "@datagrok-libraries/utils": "^4.6.5",
-    "cash-dom": "^8.1.5",
-    "datagrok-api": "^1.26.0",
-    "dayjs": "^1.11.13",
-    "@datagrok-libraries/test": "^1.1.0"
-  },
-  "devDependencies": {
-    "css-loader": "^7.1.2",
-    "datagrok-tools": "^5.0.0",
-    "style-loader": "^4.0.0",
-    "ts-loader": "^9.5.4",
-    "typescript": "^5.9.3",
-    "webpack": "^5.95.0",
-    "webpack-cli": "^5.1.4"
+    "@datagrok-libraries/utils": "workspace:^",
+    "cash-dom": "catalog:",
+    "datagrok-api": "workspace:^",
+    "dayjs": "catalog:",
+    "@datagrok-libraries/test": "workspace:^"
   },
   "scripts": {
-    "link-all": "grok link",
-    "debug-signalslink": "webpack && grok publish",
-    "release-signalslink": "webpack && grok publish --release",
-    "build-signalslink": "webpack",
-    "build": "grok api && grok check --soft && webpack",
-    "debug-signalslink-dev": "webpack && grok publish dev",
-    "release-signalslink-dev": "webpack && grok publish dev --release",
-    "debug-signalslink-public": "webpack && grok publish public",
-    "release-signalslink-public": "webpack && grok publish public --release"
+    "build": "grok build",
+    "typecheck": "grok tsc --noEmit -p tsconfig.json",
+    "lint": "eslint --ext .ts,.tsx src",
+    "test": "grok test"
   },
   "canEdit": [
     "Administrators"
@@ -44,8 +30,5 @@
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",
     "directory": "packages/SignalsLink"
-  },
-  "overrides": {
-    "datagrok-api": "$datagrok-api"
   }
 }

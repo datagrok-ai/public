@@ -2,7 +2,7 @@ import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
 
 //name: Chemspace
-//meta.role: app
+//meta.role: App
 //meta.browsePath: Chem
 export async function app() : Promise<void> {
   await PackageFunctions.app();
@@ -12,7 +12,7 @@ export async function app() : Promise<void> {
 //description: Finds similar and substructure matches for a molecule in the Chemspace catalog.
 //input: string smiles { semType: Molecule }
 //output: widget result
-//meta.role: widgets,panel
+//meta.role: widgets,Panel
 //condition: true
 export async function samplesPanel(smiles: string) : Promise<any> {
   return await PackageFunctions.samplesPanel(smiles);
@@ -22,7 +22,7 @@ export async function samplesPanel(smiles: string) : Promise<any> {
 //description: Shows vendor prices and pack sizes for a Chemspace compound.
 //input: string id { semType: chemspace-id; description: Chemspace compound id (e.g. CSCS00000000000) }
 //output: widget result
-//meta.role: widgets,panel
+//meta.role: widgets,Panel
 //condition: true
 export async function pricesPanel(id: string) : Promise<any> {
   return await PackageFunctions.pricesPanel(id);

@@ -10,7 +10,7 @@ export async function translationPanel(textfile: DG.FileInfo) : Promise<any> {
 }
 
 //name: exportFunc
-//meta.role: init
+//meta.role: Init
 export async function initAWS() : Promise<void> {
   await PackageFunctions.initAWS();
 }

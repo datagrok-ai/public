@@ -44,7 +44,7 @@ export async function docking(table: DG.DataFrame, ligands: DG.Column, config: s
 //name: Boltz-1
 //input: semantic_value molecule { semType: Molecule3D }
 //output: widget result
-//meta.role: widgets,panel
+//meta.role: widgets,Panel
 //meta.domain: chem
 //condition: Boltz1:isApplicableBoltz(molecule)
 export async function boltzWidget(molecule: DG.SemanticValue) : Promise<any> {
@@ -59,7 +59,7 @@ export function isApplicableBoltz(molecule: string) : boolean {
 
 //name: Boltz-1
 //output: view result
-//meta.role: app
+//meta.role: App
 //meta.browsePath: Bio
 export async function boltz1App() : Promise<any> {
   return await PackageFunctions.boltz1App();

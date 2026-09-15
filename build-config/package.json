@@ -1,0 +1,28 @@
+{
+  "name": "@datagrok/build-config",
+  "version": "0.1.0",
+  "description": "Shared build toolchain for Datagrok plugins and libraries: rspack + swc bundling, TypeScript 7 type-checking, package checks.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "build-config"
+  },
+  "main": "index.js",
+  "files": [
+    "index.js",
+    "css",
+    "tsconfig.base.json",
+    "tsconfig.lib.json",
+    "eslintrc.json"
+  ],
+  "dependencies": {
+    "@rspack/core": "^1.7.12",
+    "@types/node": "^22.0.0",
+    "css-loader": "^7.1.2",
+    "datagrok-tools": "workspace:^",
+    "null-loader": "^4.0.1",
+    "style-loader": "^4.0.0",
+    "typescript": "^7.0.2"
+  }
+}

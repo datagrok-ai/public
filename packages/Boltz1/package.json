@@ -9,36 +9,24 @@
   },
   "description": "Integrates Datagrok with Boltz-1",
   "dependencies": {
-    "@datagrok-libraries/utils": "^4.6.5",
+    "@datagrok-libraries/utils": "workspace:^",
     "boltz-api": "0.46.2",
-    "cash-dom": "^8.1.5",
-    "datagrok-api": "^1.26.0",
-    "dayjs": "=1.11.10",
+    "cash-dom": "catalog:",
+    "datagrok-api": "workspace:^",
+    "dayjs": "catalog:",
     "js-yaml": "^4.1.0",
-    "rxjs": "^6.5.5",
-    "@datagrok-libraries/test": "^1.1.0"
+    "rxjs": "catalog:",
+    "@datagrok-libraries/test": "workspace:^"
   },
   "devDependencies": {
     "@types/js-yaml": "^4.0.9",
-    "@types/wu": "^2.1.44",
-    "css-loader": "^7.1.2",
-    "datagrok-tools": "^5.0.0",
-    "style-loader": "^4.0.0",
-    "ts-loader": "9.4.2",
-    "typescript": "^5.3.3",
-    "webpack": "^5.89.0",
-    "webpack-cli": "^5.1.4"
+    "@types/wu": "catalog:"
   },
   "scripts": {
-    "link-all": "",
-    "debug-boltz1": "webpack && grok publish",
-    "release-boltz1": "webpack && grok publish --release",
-    "build-boltz1": "webpack",
-    "build": "grok api && grok check --soft && webpack",
-    "debug-boltz1-dev": "webpack && grok publish dev",
-    "release-boltz1-dev": "webpack && grok publish dev --release",
-    "debug-boltz1-local": "webpack && grok publish local",
-    "release-boltz1-local": "webpack && grok publish local --release"
+    "build": "grok build",
+    "typecheck": "grok tsc --noEmit -p tsconfig.json",
+    "lint": "eslint --ext .ts,.tsx src",
+    "test": "grok test"
   },
   "canEdit": [
     "Administrators"
@@ -51,8 +39,5 @@
     "url": "https://github.com/datagrok-ai/public.git",
     "directory": "packages/Boltz1"
   },
-  "category": "Bioinformatics",
-  "overrides": {
-    "datagrok-api": "$datagrok-api"
-  }
+  "category": "Bioinformatics"
 }

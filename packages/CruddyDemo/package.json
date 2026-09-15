@@ -11,32 +11,18 @@
     "css/cruddy.css"
   ],
   "dependencies": {
-    "@datagrok-libraries/utils": "^4.6.5",
-    "cash-dom": "^8.1.5",
-    "datagrok-api": "^1.26.0",
-    "dayjs": "^1.11.13",
-    "rxjs": "^6.5.5",
-    "@datagrok-libraries/test": "^1.1.0"
-  },
-  "devDependencies": {
-    "css-loader": "^7.1.2",
-    "datagrok-tools": "^5.0.0",
-    "ts-loader": "^9.5.1",
-    "typescript": "^5.6.3",
-    "webpack": "^5.95.0",
-    "webpack-cli": "^5.1.4"
+    "@datagrok-libraries/utils": "workspace:^",
+    "cash-dom": "catalog:",
+    "datagrok-api": "workspace:^",
+    "dayjs": "catalog:",
+    "rxjs": "catalog:",
+    "@datagrok-libraries/test": "workspace:^"
   },
   "scripts": {
-    "link-all": "npm link datagrok-api @datagrok-libraries/utils",
-    "debug-cruddydemo": "webpack && grok publish",
-    "release-cruddydemo": "webpack && grok publish --release",
-    "build-cruddydemo": "webpack",
-    "build": "grok api && grok check --soft && webpack",
-    "debug-cruddydemo-dev": "webpack && grok publish dev",
-    "release-cruddydemo-dev": "webpack && grok publish dev --release",
-    "debug-cruddydemo-public": "webpack && grok publish public",
-    "release-cruddydemo-public": "webpack && grok publish public --release",
-    "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm run build"
+    "build": "grok build",
+    "typecheck": "grok tsc --noEmit -p tsconfig.json",
+    "lint": "eslint --ext .ts,.tsx src",
+    "test": "grok test"
   },
   "canEdit": [
     "Administrators"
@@ -48,8 +34,5 @@
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",
     "directory": "packages/CruddyDemo"
-  },
-  "overrides": {
-    "datagrok-api": "$datagrok-api"
   }
 }

@@ -13,53 +13,26 @@
     "directory": "packages/Compute"
   },
   "dependencies": {
-    "@datagrok-libraries/compute-api": "^0.7.6",
-    "@datagrok-libraries/compute-utils": "^1.46.8",
-    "@datagrok-libraries/test": "^1.2.0",
-    "@datagrok-libraries/utils": "^4.7.1",
-    "cash-dom": "^8.1.5",
-    "datagrok-api": "^1.27.0",
-    "dayjs": "1.11.19",
-    "exceljs": "^4.3.0",
-    "rxjs": "^6.6.7",
-    "source-map-loader": "^5.0.0",
-    "ts-loader": "^9.5.1",
-    "typescript": "^5.8.3"
+    "@datagrok-libraries/compute-api": "workspace:^",
+    "@datagrok-libraries/compute-utils": "workspace:^",
+    "@datagrok-libraries/test": "workspace:^",
+    "@datagrok-libraries/utils": "workspace:^",
+    "cash-dom": "catalog:",
+    "datagrok-api": "workspace:^",
+    "dayjs": "catalog:",
+    "exceljs": "catalog:",
+    "rxjs": "catalog:"
   },
   "devDependencies": {
     "@types/lodash.clonedeepwith": "^4.5.9",
-    "@types/wu": "^2.1.44",
-    "@typescript-eslint/eslint-plugin": "^8.8.1",
-    "@typescript-eslint/parser": "^8.8.1",
-    "css-loader": "^7.1.2",
-    "datagrok-tools": "^5.0.0",
-    "eslint": "^8.0.1",
-    "eslint-config-google": "^0.14.0",
-    "style-loader": "^4.0.0",
-    "webpack": "^5.95.0",
-    "webpack-bundle-analyzer": "^4.10.2",
-    "webpack-cli": "^5.1.4"
+    "@types/wu": "catalog:",
+    "webpack-bundle-analyzer": "^4.10.2"
   },
   "scripts": {
-    "link-api": "npm link datagrok-api",
-    "link-utils": "npm link @datagrok-libraries/utils",
-    "link-all": "npm link datagrok-api @datagrok-libraries/compute-utils",
-    "debug-compute": "webpack & grok publish localhost --release",
-    "release-compute": "webpack && grok publish localhost --release",
-    "build-compute": "webpack",
-    "build": "grok api && grok check --soft && webpack",
-    "lint": "eslint . --ext .ts,.tsx",
-    "lint-fix": "eslint . --ext .ts,.tsx --fix",
-    "build-compute-local": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm run build",
-    "debug-compute-dev": "webpack && grok publish dev",
-    "release-compute-dev": "grok publish dev --release",
-    "debug-compute-local": "grok publish local",
-    "release-compute-local": "grok publish local --release",
-    "debug-compute-localhost": "grok publish localhost",
-    "release-compute-localhost": "grok publish localhost --release",
-    "debug-compute-compose": "grok publish compose",
-    "release-compute-compose": "grok publish compose --release",
-    "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/compute-utils run build && npm run build"
+    "build": "grok build",
+    "typecheck": "grok tsc --noEmit -p tsconfig.json",
+    "lint": "eslint --ext .ts,.tsx src",
+    "test": "grok test"
   },
   "canEdit": [
     "Administrators"
@@ -70,9 +43,5 @@
   "category": "Compute",
   "meta": {
     "dartium": false
-  },
-  "overrides": {
-    "datagrok-api": "$datagrok-api",
-    "uuid": "^11.1.1"
   }
 }

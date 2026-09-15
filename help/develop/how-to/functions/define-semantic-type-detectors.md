@@ -58,7 +58,7 @@ the order in which the detectors were triggered. Standard platform detectors do 
 ## Advanced checks
 
 Semantic type detectors are uploaded separately from the rest of a package
-(therefore, you might not see webpack warnings about syntax errors in
+(therefore, you might not see bundler warnings about syntax errors in
 `detectors.js`). Datagrok calls detectors each time the user opens a table. To quickly inspect the data, these functions
 have to be lightweight, simple, and efficient. Often checking the data type (`col.type`) and applying regular
 expressions to the column name (`col.name`) will be enough for such tests. However, there are ways to carry out a more

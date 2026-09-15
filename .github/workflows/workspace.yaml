@@ -1,0 +1,106 @@
+name: Workspace
+# Build, type-check and lint everything a change affects (dependents included), from one pnpm
+# install and one Turborepo run. Publishes to npm on master when a package's version is bumped.
+# Stand-based package tests stay in packages.yaml.
+on:
+  push:
+    branches: [master, 'release/**']
+    paths: ['packages/**', 'libraries/**', 'js-api/**', 'tools/**', 'build-config/**', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'turbo.json']
+  pull_request:
+    paths: ['packages/**', 'libraries/**', 'js-api/**', 'tools/**', 'build-config/**', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'turbo.json']
+  workflow_dispatch:
+    inputs:
+      filter:
+        description: 'Turborepo filter (default: everything affected by the diff against origin/master)'
+        required: false
+        type: string
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' && !startsWith(github.ref, 'refs/heads/release/') }}
+
+env:
+  TURBO_TELEMETRY_DISABLED: 1
+  TURBO_UI: 0
+
+jobs:
+  build:
+    name: Build, type-check, lint (affected)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Turborepo cache
+        uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: turbo-${{ runner.os }}-${{ github.sha }}
+          restore-keys: turbo-${{ runner.os }}-
+      - name: Resolve filter
+        id: filter
+        run: |
+          if [ -n "${{ github.event.inputs.filter }}" ]; then
+            echo "filter=${{ github.event.inputs.filter }}" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "filter=...[origin/${{ github.base_ref }}]" >> "$GITHUB_OUTPUT"
+          else
+            echo "filter=...[HEAD^1]" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Build (affected)
+        run: pnpm turbo run build --filter='${{ steps.filter.outputs.filter }}' --cache-dir=.turbo --concurrency=4 --continue
+      # Type-check and lint report but do not gate yet: the baseline carries pre-existing type debt in
+      # ~10 packages and style debt in most (they were never enforced). Flip continue-on-error off
+      # per package as the baseline is cleaned.
+      - name: Type-check (affected)
+        continue-on-error: true
+        run: pnpm turbo run typecheck --filter='${{ steps.filter.outputs.filter }}' --cache-dir=.turbo --concurrency=4 --continue
+      - name: Lint (affected)
+        continue-on-error: true
+        run: pnpm turbo run lint --filter='${{ steps.filter.outputs.filter }}' --cache-dir=.turbo --concurrency=4 --continue
+
+  publish:
+    name: Publish bumped packages to npm
+    needs: build
+    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+      - run: pnpm install --frozen-lockfile
+      - name: Build what changed
+        run: pnpm turbo run build --filter='...[HEAD^1]' --concurrency=4
+      - name: Publish every changed package whose version is not on npm yet (major > 0)
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          for dir in $(pnpm turbo run build --filter='...[HEAD^1]' --dry-run=json | jq -r '.packages[]' | grep -v '^//$' \
+                       | xargs -I{} pnpm -r --filter={} exec pwd 2>/dev/null); do
+            name=$(jq -r .name "$dir/package.json"); version=$(jq -r .version "$dir/package.json"); private=$(jq -r '.private // false' "$dir/package.json")
+            [ "$private" = "true" ] && continue
+            [ "${version%%.*}" -gt 0 ] || { echo "::notice title=$name::$version is 0.x, not published"; continue; }
+            if [ "$(npm view "$name@$version" version 2>/dev/null)" = "$version" ]; then echo "::notice title=$name::$version already on npm"; continue; fi
+            echo "Publishing $name@$version"
+            # pnpm pack rewrites workspace:/catalog: specifiers to real versions; npm publish keeps
+            # the trusted-publishing (OIDC) flow described in .github/NPM_TRUSTED_PUBLISHING.md.
+            tgz=$(cd "$dir" && pnpm pack --pack-destination "$RUNNER_TEMP" | tail -1)
+            npm publish "$tgz" --access public --provenance
+          done

@@ -1,0 +1,31 @@
+packages:
+  - packages/*
+  - libraries/*
+  - js-api
+  - tools
+  - build-config
+
+# One version of each shared tool for the whole repo. A package refers to these as
+# "name": "catalog:" and never pins its own copy.
+catalog:
+  typescript: ^7.0.2
+  '@types/node': ^22.0.0
+  rxjs: ^6.5.5
+  cash-dom: ^8.1.5
+  dayjs: ^1.11.13
+  wu: ^2.1.0
+  '@types/wu': ^2.1.44
+  openchemlib: ^8.21.0
+  exceljs: ^4.4.0
+  html2canvas: ^1.4.1
+
+# pnpm 10 blocks postinstall scripts unless allowed here. puppeteer is deliberately not
+# allowed: its Chromium download is ~150 MB per version and irrelevant to building.
+onlyBuiltDependencies:
+  - esbuild
+  - '@swc/core'
+  - sharp
+  - bufferutil
+  - utf-8-validate
+  - core-js
+  - core-js-pure

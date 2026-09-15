@@ -14,42 +14,20 @@
     "directory": "packages/Admetica"
   },
   "dependencies": {
-    "@datagrok-libraries/statistics": "^1.12.11",
-    "@datagrok-libraries/test": "^1.1.0",
-    "@datagrok-libraries/tutorials": "^1.7.7",
-    "@datagrok-libraries/utils": "^4.7.9",
-    "cash-dom": "^8.1.5",
-    "datagrok-api": "^1.26.0",
-    "dayjs": "=1.11.10",
-    "eslint": "^8.57.1",
+    "@datagrok-libraries/statistics": "workspace:^",
+    "@datagrok-libraries/test": "workspace:^",
+    "@datagrok-libraries/tutorials": "workspace:^",
+    "@datagrok-libraries/utils": "workspace:^",
+    "cash-dom": "catalog:",
+    "datagrok-api": "workspace:^",
+    "dayjs": "catalog:",
     "punycode": "^2.3.1"
   },
-  "devDependencies": {
-    "@typescript-eslint/eslint-plugin": "^8.32.0",
-    "@typescript-eslint/parser": "^8.32.0",
-    "css-loader": "^7.1.2",
-    "datagrok-tools": "^5.0.0",
-    "eslint-config-google": "^0.14.0",
-    "style-loader": "^4.0.0",
-    "ts-loader": "^9.5.1",
-    "typescript": "^5.6.3",
-    "webpack": "^5.95.0",
-    "webpack-cli": "^5.1.4"
-  },
   "scripts": {
-    "link-all": "npm link datagrok-api @datagrok-libraries/utils @datagrok-libraries/tutorials",
-    "debug-admetica": "webpack && grok publish ",
-    "release-admetica": "webpack && grok publish --release",
-    "build-admetica": "webpack",
-    "build": "grok api && grok check --soft && webpack",
-    "test": "grok test",
-    "debug-admetica-dev": "grok publish dev --rebuild",
-    "release-admetica-dev": "grok publish dev --rebuild --release",
-    "debug-admetica-local": "grok publish local --rebuild",
-    "release-admetica-local": "grok publish local --rebuild --release",
-    "debug-admetica-local2": "grok publish local2 --rebuild",
-    "release-admetica-local2": "grok publish local2 --rebuild --release",
-    "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm --prefix ./../../libraries/tutorials run build && npm run build"
+    "build": "grok build",
+    "typecheck": "grok tsc --noEmit -p tsconfig.json",
+    "lint": "eslint --ext .ts,.tsx src",
+    "test": "grok test"
   },
   "canEdit": [
     "Administrators"
@@ -57,9 +35,5 @@
   "canView": [
     "All users"
   ],
-  "category": "Cheminformatics",
-  "overrides": {
-    "datagrok-api": "$datagrok-api",
-    "uuid": "^11.1.1"
-  }
+  "category": "Cheminformatics"
 }
