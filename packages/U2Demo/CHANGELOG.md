@@ -2,6 +2,8 @@
 
 ## v.next
 
+* GROK-20753: Added the `U2: domain app` test category — `DomainTable.app()` over `apitests.item`/`item_event`: the list, search, the filter query and the entity in `view.path`, a parent edit and a child insert as one transaction, the gate on Back and on close, the history pane, deep links and find-or-activate
+* GROK-20753: Added the `U2: domain session` test category — two sources under one `SharedSession` saving a draft parent and its draft child as one transaction, `domains.grid` over the js-api editor, search, and the `confirmDiscard` gate
 * GROK-20753: `U2: domain source` follows the u2 session seam — `table.draft()`, `Rows.isDraft`, the buttons over `src.session`
 * GROK-20753: Added the `U2: domain source` test category (the u2 domain stack over `apitests.item`); `demoOrders` moved to `src/demo-orders.ts` so the test bundle no longer trips over the nav ↔ package import cycle
 * GROK-20753: Added the Filters demo page (`FilterBuilder` + `FilterQueryInput` over a DataFrame, a domain table and entity metadata; `?tab=&q=` auto-apply)

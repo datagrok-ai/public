@@ -2,6 +2,7 @@
    array and a DataFrame feed a control alike — `arrayRows` here, `FrameRows` in df-rows.ts — and
    the row conventions every layer shares: the editor's service columns and the draft id. */
 import {signal, Signal, ReadonlySignal} from '../core/signals.js';
+import {uuid4} from '../core/uuid.js';
 
 /** What a typed row type must carry: the key. An app's own row type (`IssueRow` from the
  * generated `db.ts`) satisfies it as an interface, so no index signature is asked for. */
@@ -46,7 +47,14 @@ export class Rows {
   }
 
   static draftId(): string {
-    return `${Rows.DRAFT_PREFIX}${crypto.randomUUID()}`;
+    return `${Rows.DRAFT_PREFIX}${uuid4()}`;
+  }
+
+  /** The id a landed batch gave a draft, or undefined — own properties only: the value read
+   * against the map is any string a cell, a default or a query literal may hold, `constructor`
+   * included, and an inherited key would answer with a function. */
+  static real(assigned: Record<string, string>, value: unknown): string | undefined {
+    return typeof value === 'string' && Object.hasOwn(assigned, value) ? assigned[value] : undefined;
   }
 
   /** The key of a row that has no id cell at all (a non-EMS frame): its index, never a draft. */

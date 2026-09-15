@@ -218,6 +218,44 @@ scoped('New: the entity page over a pristine draft; once saved the page is the r
   a.dispose();
 });
 
+scoped('New: discarding the draft is the way back to the list, entity and all', async () => {
+  const {app: a} = await app();
+  const ribbon = a.ribbon();
+  fire(ribbon[0][0].root, 'click');
+  await flush();
+  a.form.value.input('title').value.value = 'Fresh';
+  await flush();
+  assert.equal(a.session.isDirty.value, true);
+  fire(ribbon[0][2].button, 'click');
+  await flush();
+  assert.equal(a.page.value, 'list');
+  assert.equal(a.entity.value, null);
+  assert.equal(a.entitySource.value, null, 'the draft page is released');
+  assert.equal(a.path.value, BASE, 'no ?entity= left in the URL');
+  assert.equal(a.summary.value, '3 issues', 'the status bar is the list\'s again');
+  a.dispose();
+});
+
+scoped('New: a refused save then Discard lands on the list too', async () => {
+  const {app: a} = await app();
+  const ribbon = a.ribbon();
+  fire(ribbon[0][0].root, 'click');
+  await flush();
+  // no project: the form's own gate refuses the batch, and the draft stays pending
+  a.form.value.input('title').value.value = 'Fresh';
+  await flush();
+  assert.equal(await a.session.save(), false);
+  await flush();
+  assert.equal(a.page.value, 'entity');
+  assert.equal(a.entity.value, DomainApp.NEW);
+  fire(ribbon[0][2].button, 'click');
+  await flush();
+  assert.equal(a.page.value, 'list');
+  assert.equal(a.entity.value, null);
+  assert.equal(a.path.value, BASE);
+  a.dispose();
+});
+
 scoped('the entity page carries the children and history panes under the form; both can be left out', async () => {
   const {app: a} = await app();
   const panes = () => [...a.panes.children].map((el) => el.dataset.u2);
@@ -636,5 +674,47 @@ scoped('open(?q=) on the list page goes through the gate: cancel keeps the query
   await flush();
   assert.equal(await a.open(`${BASE}?q=${encodeURIComponent('done = false')}`), true,
     'the query it is already under asks nothing');
+  a.dispose();
+});
+
+scoped('a path is the app\'s at a segment boundary only: a sibling table\'s route is not its own', async () => {
+  backends.domain = backend();
+  const table = await domains.table('grit.issue');
+  const view = table.app({path: '/domains/grit/issue'});
+  await flush();
+  assert.equal(view.acceptsPath('/domains/grit/issue'), true);
+  assert.equal(view.acceptsPath('/domains/grit/issue?entity=i1'), true);
+  assert.equal(view.acceptsPath('/domains/grit/issue/anything'), true);
+  assert.equal(view.acceptsPath('/domains/grit/issue_label'), false, 'another table, not a deeper path');
+  DomainApp.of(view).dispose();
+});
+
+scoped('closing through the write-back is blocked: the view is clean and still being written', async () => {
+  backends.domain = backend();
+  const table = await domains.table('grit.issue');
+  const view = table.app({path: '/domains/grit/issue'});
+  await flush();
+  const a = DomainApp.of(view);
+  let release;
+  const real = backends.domain.saveAll.bind(backends.domain);
+  backends.domain.saveAll = async (edits) => {
+    const landed = await real(edits);
+    await new Promise((resolve) => release = resolve);
+    return landed;
+  };
+  a.listSource.rows.byKey('i1').title = 'Edited';
+  const saving = a.session.save();
+  await flush();
+  assert.equal(a.session.isDirty.value, false, 'the batch landed: the rows read clean already');
+  const e = {args: {view: {dart: view.dart}}, prevented: 0, preventDefault() {
+    this.prevented++;
+  }};
+  grok.events.onViewRemoving.fire(e);
+  await flush();
+  assert.equal(e.prevented, 1, 'the removal is cancelled through that window');
+  assert.equal(view.dart.closed, 0);
+  assert.match(document.body.querySelector('.u2-notify-warning')?.textContent ?? '', /Wait for the batch/);
+  release();
+  assert.equal(await saving, true);
   a.dispose();
 });

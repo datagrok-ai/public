@@ -91,7 +91,7 @@ category('Dapi: domain session', () => {
       const row = parent.addRow({sku: `${prefix}-0`, name: 'Draft item'});
       const draft = parent.dataFrame.get('id', row);
       child.addRow({item_id: draft, kind: `${prefix}-ev`, amount: 1});
-      // The post-save enrichment of the child: it must not be what resolves the ref.
+      // Fault injection, restored in `finally` (not a mock): the post-save enrichment must not be what resolves the ref.
       (child.client as any).query = async () => { throw new Error('post-save re-read refused'); };
       const session = new DG.DomainSession([parent, child]);
       expect(await session.save(), true, 'the session save did not land');
@@ -242,6 +242,93 @@ category('Dapi: domain session', () => {
     } finally {
       editor.detach();
       await cleanup(prefix);
+    }
+  });
+
+  test('a cell holding a prototype key survives a save that assigned a draft id', async () => {
+    const prefix = `ds-proto-${stamp()}`;
+    const editor = await itemsEditor(prefix);
+    try {
+      // the post-save re-read would heal a corrupted cell; the frame must be right without it
+      (editor.client as any).query = async () => { throw new Error('post-save re-read refused'); };
+      const row = editor.addRow({sku: `${prefix}-0`, name: 'constructor'});
+      expect(await editor.save(), true, 'the save did not land');
+      expect(DG.DomainFrameEditor.isDraftId(editor.dataFrame.get('id', row)), false,
+        'the draft id was not replaced by the server id');
+      expect(editor.dataFrame.get('name', row), 'constructor',
+        'the draft-id lookup wrote an inherited value into the cell');
+    } finally {
+      delete (editor.client as any).query;
+      editor.detach();
+      await cleanup(prefix);
+    }
+  });
+
+  test('two editors holding the same row are refused before anything is sent', async () => {
+    const prefix = `ds-overlap-${stamp()}`;
+    const [item] = await items().insert({sku: `${prefix}-0`, name: 'Item'});
+    const first = await itemsEditor(prefix);
+    const second = await itemsEditor(prefix);
+    try {
+      first.setValue(0, 'name', 'First');
+      second.setValue(0, 'quantity', 7);
+      const session = new DG.DomainSession([first, second], {quiet: true});
+      expect(await session.save(), false, 'an overlapping batch was sent');
+      expect(first.isDirty && second.isDirty, true, 'the refusal dropped an edit');
+      expect((await items().get(item.id)).name, 'Item', 'the overlapping batch reached the server');
+    } finally {
+      first.detach();
+      second.detach();
+      await cleanup(prefix);
+    }
+  });
+
+  test('rebind resolves a draft reference in an editor that was not in the batch, pristine', async () => {
+    const prefix = `ds-rebind-${stamp()}`;
+    const parent = await itemsEditor(prefix);
+    const child = await eventsEditor(prefix);
+    try {
+      const row = parent.addRow({sku: `${prefix}-0`, name: 'Draft item'});
+      const draft = parent.dataFrame.get('id', row);
+      const event = child.addRow({item_id: draft, kind: `${prefix}-ev`, amount: 1}, {pristine: true});
+      expect(child.isDirty, false, 'a pristine row armed the child editor');
+      const session = new DG.DomainSession([parent], {quiet: true});
+      let assigned: {[draftId: string]: string} = {};
+      session.onSaved.subscribe((r: _DG.DomainSaveResult) => assigned = r.assigned);
+      expect(await session.save(), true, 'the parent save did not land');
+      const itemId = parent.dataFrame.get('id', 0);
+      child.rebind(assigned);
+      expect(child.dataFrame.get('item_id', event), itemId, 'rebind did not resolve the draft reference');
+      expect(child.isDirty, false, 'rebind made the pristine editor dirty');
+      expect(child.changeCount, 0, 'rebind counted a change');
+      expect(child.stateOf(event), 'new', 'rebind changed the row state');
+      expect(Object.keys(child.changesOf(event)).length, 0, 'rebind recorded an original value');
+      expect(await child.save(), true, 'the rebound child did not save');
+      expect((await events().get(child.dataFrame.get('id', 0))).item_id, itemId,
+        'the child does not point at the saved parent');
+    } finally {
+      parent.detach();
+      child.detach();
+      await cleanup(prefix);
+    }
+  });
+
+  test('rebind rewrites exact draft ids only', async () => {
+    const prefix = `ds-exact-${stamp()}`;
+    const editor = await itemsEditor(prefix);
+    try {
+      const row = editor.addRow({sku: `${prefix}-0`});
+      const draft = editor.dataFrame.get('id', row);
+      editor.setValue(row, 'name', `$${draft}`);
+      const other = editor.addRow({sku: `${prefix}-1`, name: 'constructor'});
+      const before = editor.changeCount;
+      editor.rebind({[`$${draft}`]: 'escaped', 'constructor': 'inherited'} as any);
+      expect(editor.dataFrame.get('name', row), `$${draft}`, 'rebind rewrote the $-escaped wire form');
+      expect(editor.dataFrame.get('name', other), 'constructor', 'rebind rewrote an inherited key');
+      expect(editor.dataFrame.get('id', row), draft, 'rebind rewrote the editor\'s own draft id');
+      expect(editor.changeCount, before, 'rebind changed the pending count');
+    } finally {
+      editor.detach();
     }
   });
 

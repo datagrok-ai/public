@@ -33,6 +33,7 @@ import {DomainObjectHandler} from '../../domains-ui';
 import {Property} from '../../entities/property';
 import {IFrameEditor} from '../../grid';
 import {Logger} from '../../logger';
+import {Utils} from '../../utils';
 import {Dialog} from '../../widgets/forms';
 import {Balloon} from '../../widgets/menu';
 import {DomainSession} from './domains-session';
@@ -115,6 +116,17 @@ function toWire(v: any): any {
   if (typeof v === 'number' && !isFinite(v))
     return null;
   return v;
+}
+
+/** The draft-id map as a dictionary with NO prototype, taking the OWN keys of every source:
+ * a cell (or a caller's object) holding `constructor` / `toString` must read as absent here,
+ * not as an inherited Function that would then be written into a frame. */
+function toDraftMap(...sources: ({[draftId: string]: string} | undefined)[]): {[draftId: string]: string} {
+  const map: {[draftId: string]: string} = Object.create(null);
+  for (const source of sources)
+    for (const key of Object.keys(source ?? {}))
+      map[key] = source![key];
+  return map;
 }
 
 function wireEquals(a: any, b: any): boolean {
@@ -320,12 +332,12 @@ export class DomainFrameEditor implements IFrameEditor {
   }
 
   static draftId(): string {
-    return DomainFrameEditor.DRAFT_ID_PREFIX + crypto.randomUUID();
+    return DomainFrameEditor.DRAFT_ID_PREFIX + Utils.uuid4();
   }
 
   /** The draft id of every insert of [pending] → the id the server gave it. */
   static assignedOf(pending: DomainPendingOp[], results: any[]): {[draftId: string]: string} {
-    const assigned: {[draftId: string]: string} = {};
+    const assigned = toDraftMap();
     for (let i = 0; i < pending.length; i++) {
       const {op} = pending[i];
       const id = results[i]?.id;
@@ -949,7 +961,7 @@ export class DomainFrameEditor implements IFrameEditor {
     const removed: number[] = [];
     const result: DomainSaveResult = {inserted: 0, updated: 0, deleted: 0,
       assigned: DomainFrameEditor.assignedOf(pending, results)};
-    const ids = assigned == null ? result.assigned : {...assigned, ...result.assigned};
+    const ids = toDraftMap(assigned, result.assigned);
     this._write(() => {
       for (let i = 0; i < pending.length; i++) {
         const {op, row} = pending[i];
@@ -983,22 +995,50 @@ export class DomainFrameEditor implements IFrameEditor {
       removed.sort((a, b) => b - a);
       for (const row of removed)
         this._df.rows.removeAt(row, 1, false);
-      if (Object.keys(ids).length > 0)
-        for (const name of this._df.columns.names())
-          if (name !== 'id' && !DomainFrameEditor.SERVICE_COLUMNS.includes(name)
-              && this._df.columns.byName(name).type === COLUMN_TYPE.STRING)
-            for (let row = 0; row < this._df.rowCount; row++) {
-              const real = ids[this._df.get(name, row)];
-              if (real != null)
-                this._df.set(name, row, real);
-            }
     });
     this._resetCaches();
+    this.rebind(ids);
     this._df.rows.requestFilter();
     this._fire();
     await this.writeBack(pending, results);
     this._onSaved.next(result);
     return result;
+  }
+
+  /**
+   * Rewrites every cell holding a draft id the transaction resolved ([assigned] maps draft id
+   * → server id) to the real id, WITHOUT touching the row's editing state: a pristine row
+   * stays pristine, a clean row stays clean, and nothing is recorded as a change.
+   *
+   * {@link applyResults} does this for the editors that took part in the batch; a
+   * {@link DomainSession} applies it to the ones that did NOT — a pristine child holding a
+   * `~new:` reference to a parent the batch just created keeps a dangling draft id otherwise.
+   *
+   * Only a cell whose whole value IS a draft id is rewritten — never the `'$~new:…'` wire
+   * form {@link buildOps} escapes to, and never a substring.
+   */
+  rebind(assigned: {[draftId: string]: string}): void {
+    const ids = toDraftMap(assigned);
+    if (Object.keys(ids).length === 0)
+      return;
+    let rebound = false;
+    this._write(() => {
+      for (const name of this._df.columns.names()) {
+        if (name === 'id' || DomainFrameEditor.SERVICE_COLUMNS.includes(name)
+            || this._df.columns.byName(name).type !== COLUMN_TYPE.STRING)
+          continue;
+        for (let row = 0; row < this._df.rowCount; row++) {
+          const value = this._df.get(name, row);
+          const real = DomainFrameEditor.isDraftId(value) ? ids[value] : undefined;
+          if (real != null) {
+            this._df.set(name, row, real);
+            rebound = true;
+          }
+        }
+      }
+    });
+    if (rebound)
+      this._fire();
   }
 
   /** Re-reads the rows a save inserted or updated and lands EVERY returned column

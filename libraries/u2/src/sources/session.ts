@@ -99,10 +99,11 @@ export class SharedSession implements DomainSession {
       }
       if (SharedSession._overlapping(batch))
         return false;
-      // every draft id the transaction assigned, over the whole batch: a source's query or
-      // defaults may name one (a child collection under a draft parent), and what it reads next
-      // must be about the id that parent was given
-      const assigned: Record<string, string> = {};
+      // every draft id the transaction assigned, over the whole batch: a source's query, defaults
+      // or cells may name one (a child collection under a draft parent), and what it reads next
+      // must be about the id that parent was given. No prototype: what is read against this map is
+      // any string a cell or a literal may hold, `constructor` among them
+      const assigned: Record<string, string> = Object.create(null);
       const heard = batch.map((s) => s.edit.peek()!.onSaved.subscribe((r) => Object.assign(assigned, r.assigned)));
       try {
         if (!await backends.domain!.saveAll(batch.map((s) => s.edit.peek()!))) {
@@ -117,13 +118,28 @@ export class SharedSession implements DomainSession {
         for (const sub of heard)
           sub.unsubscribe();
       }
-      const rebased = new Set(batch);
-      for (const source of this._sources.peek()) {
-        if (source.rebind(assigned) && !rebased.has(source))
-          source.refresh().catch((e) => source.fail(e));
+      // the backend re-opened its writers when the transaction landed, and the re-base below
+      // still has to swap the frame: an edit made in that window would be swapped away with it,
+      // so the writers stay closed — refused, as an edit during the transaction is
+      SharedSession._hold(batch, true);
+      try {
+        const rebased = new Set(batch);
+        for (const source of this._sources.peek()) {
+          if (source.rebind(assigned) && !rebased.has(source))
+            source.refresh().catch((e) => source.fail(e));
+        }
+        // the batch has landed: a re-read that fails afterwards is that source's news to carry,
+        // never a failed save
+        for (const source of batch) {
+          try {
+            await source.afterSave();
+          } catch (e) {
+            source.markStale(e);
+          }
+        }
+      } finally {
+        SharedSession._hold(batch, false);
       }
-      for (const source of batch)
-        await source.afterSave();
       const what = batch[0].schema.info.singularName || 'Row';
       const tables = new Set(batch.map((s) => s.table)).size;
       notify.info(tables > 1 ? `${changes} change${changes === 1 ? '' : 's'} saved in ${tables} tables` :
@@ -139,6 +155,13 @@ export class SharedSession implements DomainSession {
     for (const source of this._sources.peek())
       source.revert();
     this.onDiscarded.fire();
+  }
+
+  /** Closes (or re-opens) the writer each source holds now — after a re-base that is the frame
+   * the batch landed in, which is open for editing again. */
+  private static _hold(batch: readonly DomainSource[], saving: boolean): void {
+    for (const source of batch)
+      source.edit.peek()?.setSaving(saving);
   }
 
   /** A backend that refused without throwing (the platform editor reports the server's error

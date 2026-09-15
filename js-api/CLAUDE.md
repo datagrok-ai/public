@@ -101,6 +101,7 @@ Dependency-free code that runs without the Dart runtime (u2 core, Web Workers, h
 | `data-widgets.ts`   | RangeSlider, HtmlTable, ColumnComboBox, Legend, PropertyGrid|
 | `specialized.ts`    | FilesWidget, FunctionsWidget, Favorites, VisualDbQueryEditor|
 | `progress.ts`       | TaskBarProgressIndicator                                    |
+| `tooltip.ts`        | Tooltip and the `ui.tooltip` singleton (re-exported by `ui`)|
 
 ### Dart-JavaScript Interop
 

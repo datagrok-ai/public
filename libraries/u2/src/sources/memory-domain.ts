@@ -6,6 +6,8 @@
    touches or on none. */
 import {BitArray} from 'datagrok-api/u2core';
 import {Filters} from '../core/filter/index.js';
+import {uuid4} from '../core/uuid.js';
+import {notify} from '../components/display/notify.js';
 import type {FilterGroup} from '../core/filter/model.js';
 import {INT_NULL, FLOAT_NULL} from '../core/filter/evaluate.js';
 import type {MaskColumnLike, MaskFrameLike} from '../core/filter/evaluate.js';
@@ -113,6 +115,10 @@ export class MemoryDomainBackend implements DomainBackend {
    * writer learns every draft id the batch resolved, so a child's reference to another
    * writer's draft becomes the real id in its frame too. */
   async saveAll(edits: EditState[]): Promise<boolean> {
+    if (edits.some((edit) => edit.isSaving.peek())) {
+      notify.warning('The batch is already being saved.');
+      return false;
+    }
     const parts = edits.map((edit) => ({edit: edit as MemoryEditState, pending: (edit as MemoryEditState).buildOps()}));
     // every participant closed for the whole transaction, as the platform session closes its
     // editors (`domains-session.ts`): an edit made meanwhile is not in the batch being sent
@@ -216,7 +222,7 @@ export class MemoryDomainBackend implements DomainBackend {
     };
     const results: DomainTransactionResultLike[] = new Array(ops.length);
     const audit: [MemoryTable, AuditEntryLike][] = [];
-    const tx = crypto.randomUUID();
+    const tx = uuid4();
     const ts = new Date().toISOString();
     for (const index of order) {
       const op = ops[index];
@@ -415,7 +421,7 @@ export class MemoryTable implements DomainTableLike {
 
   stamp(row: Row, version: number): Row {
     const now = new Date().toISOString();
-    row.id ??= crypto.randomUUID();
+    row.id ??= uuid4();
     row.version = version;
     row.created_on ??= now;
     row.updated_on = now;

@@ -348,18 +348,7 @@ export class DomainObjectHandler<T = DomainRow> extends ObjectHandler<T> {
   private static _decorates(handler: ObjectHandler, table: string): boolean {
     if (handler instanceof EntityMetaDartProxy)
       return false;
-    return DomainObjectHandler._typeOf(handler) === table ||
-      (handler.renderGrid as any)?.isPlatformDefault !== true;
-  }
-
-  /** A handler's type, defensively: `type` is abstract on the base class and a
-   * JS getter may throw. */
-  private static _typeOf(handler: ObjectHandler): string | null {
-    try {
-      return handler.type;
-    } catch (_) {
-      return null;
-    }
+    return handler.type === table || (handler.renderGrid as any)?.isPlatformDefault !== true;
   }
 
   /** Reflective property form over the writable columns of [x] (a new row when

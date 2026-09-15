@@ -13,7 +13,7 @@ import {Property} from './entities';
 import {IFormSettings, IGridSettings} from "./interfaces/d4";
 import {IDartApi} from "./api/grok_api.g";
 import {Balloon} from './widgets/menu';
-import * as ui from '../ui';
+import {tooltip} from './widgets/tooltip';
 
 
 const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
@@ -972,9 +972,10 @@ export interface IFrameEditor {
 export class Grid extends Viewer<IGridSettings> {
   /** Background of a cell with an unsaved edit. Canvas ARGB ints, matching the
    * platform's own in-grid editing — cell backgrounds are painted on the canvas,
-   * so they are not CSS-token territory. */
+   * so they are not CSS-token territory. The amber and the orange have no
+   * {@link Color} equivalent; the red is the platform's own grid warning. */
   static readonly DIRTY_CELL_COLOR = 0xFFFFF3CD;    // soft amber: unsaved edit
-  static readonly INVALID_CELL_COLOR = 0xFFFFB3B0;  // soft red: invalid / rejected
+  static readonly INVALID_CELL_COLOR = Color.gridWarningBackground;
   static readonly CONFLICT_CELL_COLOR = 0xFFFFE0B2; // soft orange: dismissed version conflict
 
   private _editor: IFrameEditor | null = null;
@@ -1073,9 +1074,9 @@ export class Grid extends Viewer<IGridSettings> {
     // Delete/Backspace, a double-click)
     const overlay = this.overlay;
     const onKeyDown = (e: KeyboardEvent) => {
-      const code = e.keyCode;
-      if (!(e.ctrlKey || e.metaKey || e.altKey) && ((code >= 48 && code <= 57) ||
-          (code >= 65 && code <= 90) || code === 13 || code === 8 || code === 46))
+      const key = e.key;
+      if (!(e.ctrlKey || e.metaKey || e.altKey) &&
+          (key.length === 1 || key === 'Enter' || key === 'Backspace' || key === 'Delete'))
         refuse(before?.row, before?.column);
     };
     if (overlay != null) {
@@ -1113,7 +1114,7 @@ export class Grid extends Viewer<IGridSettings> {
       const error = row == null || column == null ? null : editor.errorOf(row, column);
       if (error == null)
         return false;
-      ui.tooltip.show(ui.divText(error.message), x, y);
+      tooltip.show(error.message, x, y);
       return true;
     }));
     this._applyEditor();

@@ -183,40 +183,11 @@ export async function toMask(frame: MaskFrameLike, root: FilterGroup,
   options: {signal?: AbortSignal, now?: Date} = {}): Promise<BitArray> {
   const ctx = {now: options.now ?? new Date()};
   const signal = options.signal ?? NEVER;
-  const column = (name: string, c: FilterCondition): MaskColumnLike => {
-    const col = frame.column(name);
-    if (!col) {
-      const message = `Unknown column "${name}"`;
-      throw new FilterError(message, [{nodeId: c.id, code: 'unknown-property', message}]);
-    }
-    return col;
-  };
-  const leaf = async (c: FilterCondition): Promise<BitArray> => {
-    const col = column(c.property, c);
-    const param = (Array.isArray(c.value) ? c.value : [c.value]).find(isParam);
-    if (param !== undefined) {
-      const message = `Unbound parameter "$${param.param}"`;
-      throw new FilterError(message, [{nodeId: c.id, code: 'not-expressible', message}]);
-    }
-    if (isColumnRef(c.value))
-      return ColumnEvaluator.compare(col, column(c.value.column, c), c.operator);
-    const op = operators.get(c.operator, {name: col.name, type: col.type, semType: col.semType});
-    const m = op?.mask ? op.mask(col, c, ctx) : op?.bitset ? await op.bitset(col, c, signal) : null;
-    if (m === null) {
-      const message = `"${c.property} ${c.operator}" cannot be evaluated on a DataFrame`;
-      throw new FilterError(message, [{nodeId: c.id, code: 'not-expressible', message}]);
-    }
-    if (m.length !== frame.rowCount) {
-      const message = `"${c.property} ${c.operator}" returned a mask of ${m.length} bits for ${frame.rowCount} rows`;
-      throw new FilterError(message, [{nodeId: c.id, code: 'evaluation', message}]);
-    }
-    return m;
-  };
   const group = async (g: FilterGroup): Promise<BitArray> => {
     let acc: BitArray | null = null;
     for (const n of g.nodes) {
       signal.throwIfAborted();
-      const m = isGroup(n) ? await group(n) : await leaf(n);
+      const m = isGroup(n) ? await group(n) : await leafMask(frame, n, ctx, signal);
       // the clone keeps a registered operator's own mask untouched
       acc = acc === null ? m.clone() : g.op === 'and' ? acc.and(m) : acc.or(m);
     }
@@ -224,4 +195,75 @@ export async function toMask(frame: MaskFrameLike, root: FilterGroup,
     return g.not === true ? result.invert() : result;
   };
   return group(root);
+}
+
+/** The rows a SQL CHECK constraint admits — the same tree read with three-valued logic, as
+ * Postgres reads it (`domain_manifest_rules.dart`): a comparison against a null cell is UNKNOWN,
+ * `and`/`or`/`not` are Kleene's, and a row is refused only where the tree is FALSE. A WHERE keeps
+ * the two-valued reading of {@link toMask}, where UNKNOWN does not pass. */
+export async function toCheckMask(frame: MaskFrameLike, root: FilterGroup,
+  options: {signal?: AbortSignal, now?: Date} = {}): Promise<BitArray> {
+  const ctx = {now: options.now ?? new Date()};
+  const signal = options.signal ?? NEVER;
+  // [true, unknown] per node; a row neither holds is false
+  type Verdict = [BitArray, BitArray];
+  const unknown = (c: FilterCondition): BitArray => {
+    if (c.operator === 'is null' || c.operator === 'is not null')
+      return new BitArray(frame.rowCount);
+    const nulls = ColumnEvaluator.nulls(columnOf(frame, c.property, c));
+    return isColumnRef(c.value) ? nulls.or(ColumnEvaluator.nulls(columnOf(frame, c.value.column, c))) : nulls;
+  };
+  const group = async (g: FilterGroup): Promise<Verdict> => {
+    let acc: Verdict | null = null;
+    for (const n of g.nodes) {
+      signal.throwIfAborted();
+      const v: Verdict = isGroup(n) ? await group(n) :
+        [(await leafMask(frame, n, ctx, signal)).clone(), unknown(n)];
+      if (acc === null) {
+        acc = v;
+        continue;
+      }
+      // and: unknown wherever neither side is false; or: wherever neither side is true
+      acc = g.op === 'and' ?
+        [acc[0].clone().and(v[0]),
+          acc[1].clone().or(v[1]).and(acc[0].clone().or(acc[1])).and(v[0].clone().or(v[1]))] :
+        [acc[0].clone().or(v[0]), acc[1].clone().or(v[1]).andNot(acc[0]).andNot(v[0])];
+    }
+    const result: Verdict = acc ?? [new BitArray(frame.rowCount, true), new BitArray(frame.rowCount)];
+    return g.not === true ? [result[0].clone().or(result[1]).invert(), result[1]] : result;
+  };
+  const [truth, unsure] = await group(root);
+  return truth.or(unsure);
+}
+
+function columnOf(frame: MaskFrameLike, name: string, c: FilterCondition): MaskColumnLike {
+  const col = frame.column(name);
+  if (!col) {
+    const message = `Unknown column "${name}"`;
+    throw new FilterError(message, [{nodeId: c.id, code: 'unknown-property', message}]);
+  }
+  return col;
+}
+
+async function leafMask(frame: MaskFrameLike, c: FilterCondition, ctx: {now: Date},
+  signal: AbortSignal): Promise<BitArray> {
+  const col = columnOf(frame, c.property, c);
+  const param = (Array.isArray(c.value) ? c.value : [c.value]).find(isParam);
+  if (param !== undefined) {
+    const message = `Unbound parameter "$${param.param}"`;
+    throw new FilterError(message, [{nodeId: c.id, code: 'not-expressible', message}]);
+  }
+  if (isColumnRef(c.value))
+    return ColumnEvaluator.compare(col, columnOf(frame, c.value.column, c), c.operator);
+  const op = operators.get(c.operator, {name: col.name, type: col.type, semType: col.semType});
+  const m = op?.mask ? op.mask(col, c, ctx) : op?.bitset ? await op.bitset(col, c, signal) : null;
+  if (m === null) {
+    const message = `"${c.property} ${c.operator}" cannot be evaluated on a DataFrame`;
+    throw new FilterError(message, [{nodeId: c.id, code: 'not-expressible', message}]);
+  }
+  if (m.length !== frame.rowCount) {
+    const message = `"${c.property} ${c.operator}" returned a mask of ${m.length} bits for ${frame.rowCount} rows`;
+    throw new FilterError(message, [{nodeId: c.id, code: 'evaluation', message}]);
+  }
+  return m;
 }

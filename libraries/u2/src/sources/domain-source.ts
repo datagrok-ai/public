@@ -59,6 +59,9 @@ const NO_ENV: ComponentEnv = {designTime: false, subBinds: {}, resolve: () => nu
 const NO_INFO: DomainTableInfoLike = {nameColumn: null, singularName: '', pluralName: '', businessKey: [],
   searchableColumns: [], constraints: [], refFilters: {}, permissions: [], childTables: []};
 const REF_ADDRESS = /^\w+\.\w+$/;
+/** A draft id as a VALUE of the string query — quoted, which is the only form the grammar takes
+ * one in; `~new:` anywhere else is ordinary text. */
+const DRAFT_LITERAL = new RegExp(`(['"])${Rows.DRAFT_PREFIX}[^'"]*\\1`);
 
 export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Component
   implements BindSource, ComponentStart {
@@ -134,6 +137,9 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   private _gen = 0;
   private _loaded = 0;
   private _done = false;
+  /** Set by {@link markStale}: the loaded window is no longer the server's, so the next load
+   * starts over instead of asking for the page after it. */
+  private _restart = false;
   /** Set while {@link rebind} rewrites the query: the caller re-reads, and a refresh here would
    * drop the frame the batch just landed in. */
   private _rebinding = false;
@@ -268,6 +274,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
    * pristine draft. */
   async refresh(): Promise<void> {
     const gen = ++this._gen;
+    this._restart = false;
     batch(() => {
       this._error.value = undefined;
       this._state.value = 'loading';
@@ -324,7 +331,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   /** Appends the next page into the same frame; pending changes stay. */
   async loadMore(): Promise<void> {
     const frame = this._frame;
-    if (frame === undefined)
+    if (frame === undefined || this._restart)
       return this.refresh();
     if (this._done || this._state.peek() === 'loading')
       return;
@@ -429,10 +436,13 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
    * re-reading is the caller's ({@link afterSave}), so the rewrite itself loads nothing. */
   rebind(assigned: Record<string, string>): boolean {
     for (const [column, value] of Object.entries(this.defaults)) {
-      const real = typeof value === 'string' ? assigned[value] : undefined;
+      const real = Rows.real(assigned, value);
       if (real !== undefined)
         this.defaults[column] = real;
     }
+    // the rows too: a source outside the batch may hold a pristine child whose FK cell names the
+    // draft the batch turned into a row — it keeps its state and re-reads nothing
+    this._edit.peek()?.rebind(assigned);
     const query = this.query.peek();
     const rebound = DomainSource._rebound(query, assigned);
     if (rebound === query)
@@ -455,9 +465,9 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     const frame = this._frame;
     if (table === undefined || frame === undefined || this._noRows)
       return;
-    const window = frame.df.rowCount;
-    if (window === 0)
-      return;
+    // the window as it was before the batch applied — `_loaded` is what the server answered, and
+    // the frame may have just lost every row of it to a delete
+    const window = Math.max(this._loaded, frame.df.rowCount) || this.pageSize;
     const gen = this._gen;
     const selected = this._selection.peek().map((row) => row.id);
     // read before the swap: a row the replacement does not hold takes `currentRow` with it
@@ -499,6 +509,15 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   /** What the last save threw — the session hands every dirty source the backend's refusal. */
   fail(error: unknown): void {
     this._error.value = error;
+  }
+
+  /** The batch landed but the re-read after it did not: the changes are safe, the frame holds
+   * the rows the transaction wrote, and only the window the next page would follow is lost — so
+   * the next load starts from the first page. Said as such, never as a failed save. */
+  markStale(error: unknown): void {
+    this._restart = true;
+    this._error.value = new DomainBackendError('stale',
+      `Saved; refresh failed: ${DomainSource._message(error)}`);
   }
 
   /** A refusal the backend answered with `false` instead of an exception ("Cannot save: …"):
@@ -615,8 +634,9 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       // the exact post-save re-point: a current draft is the same row under the id it was given
       frame.edit.onSaved.subscribe(({assigned}) => {
         const row = this.currentRow.peek();
-        if (row !== null && assigned[row.id] !== undefined)
-          this.currentRow.value = this.rows.byKey(assigned[row.id]) ?? null;
+        const real = row === null ? undefined : Rows.real(assigned, row.id);
+        if (real !== undefined)
+          this.currentRow.value = this.rows.byKey(real) ?? null;
       }),
       frame.df.onCurrentRowChanged.subscribe(() => this._syncCurrent()),
       frame.df.onSelectionChanged.subscribe(() => this._syncSelection()),
@@ -734,7 +754,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
 
   private static _namesDraft(query: string | FilterGroup): boolean {
     if (typeof query === 'string')
-      return query.includes(Rows.DRAFT_PREFIX);
+      return DRAFT_LITERAL.test(query);
     let found = false;
     Filters.walk(query, (n) => {
       if (Filters.isGroup(n) || n.value === undefined)
@@ -750,13 +770,16 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   private static _rebound(query: string | FilterGroup, assigned: Record<string, string>): string | FilterGroup {
     if (typeof query === 'string') {
       let text = query;
-      for (const [draft, id] of Object.entries(assigned))
-        text = text.split(draft).join(id);
+      // the quoted literal only: `~new:…` inside a longer value is that value's own text
+      for (const [draft, id] of Object.entries(assigned)) {
+        for (const quote of ['"', '\''])
+          text = text.split(`${quote}${draft}${quote}`).join(`${quote}${id}${quote}`);
+      }
       return text;
     }
     let hit = false;
     const swap = (v: FilterScalar): FilterScalar => {
-      const real = typeof v === 'string' ? assigned[v] : undefined;
+      const real = Rows.real(assigned, v);
       if (real === undefined)
         return v;
       hit = true;

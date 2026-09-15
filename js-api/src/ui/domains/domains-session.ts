@@ -168,6 +168,11 @@ export class DomainSession implements IEditorHost {
     let parts = this.buildOps();
     if (parts == null)
       return false;
+    const overlapping = DomainSession._overlapping(parts);
+    if (overlapping != null) {
+      balloon.error(overlapping);
+      return false;
+    }
     if (parts.every((p) => p.pending.length === 0))
       return true;
     const schema = this.schema!;
@@ -203,7 +208,7 @@ export class DomainSession implements IEditorHost {
           balloon.error(message);
           return false;
         }
-        const total: DomainSaveResult = {inserted: 0, updated: 0, deleted: 0, assigned: {}};
+        const total: DomainSaveResult = {inserted: 0, updated: 0, deleted: 0, assigned: Object.create(null)};
         const slices: any[][] = [];
         let offset = 0;
         for (const part of parts) {
@@ -213,7 +218,7 @@ export class DomainSession implements IEditorHost {
         // Read from the WHOLE transaction before any editor applies its slice: a
         // frame holding another editor's draft id resolves it from here, so the
         // post-save re-read only enriches and may fail without leaving a dangling ref.
-        const assigned: {[draftId: string]: string} = {};
+        const assigned: {[draftId: string]: string} = Object.create(null);
         for (let i = 0; i < parts.length; i++)
           Object.assign(assigned, DomainFrameEditor.assignedOf(parts[i].pending, slices[i]));
         for (let i = 0; i < parts.length; i++) {
@@ -247,6 +252,26 @@ export class DomainSession implements IEditorHost {
   discard(): void {
     for (const editor of this.editors)
       editor.discard();
+  }
+
+  /** The same persisted row addressed by two participants: the transaction would carry two ops
+   * for it, the second losing to the first's version check and rolling everything back. Named
+   * and refused before anything is sent — a host with its own vocabulary (u2's `SharedSession`)
+   * says it in the row's own words above this. Null when the batch is disjoint. */
+  private static _overlapping(parts: DomainSessionPart[]): string | null {
+    const seen = new Set<string>();
+    for (const {editor, pending} of parts)
+      for (const {op} of pending) {
+        if (op.id == null)
+          continue;
+        const address = `${editor.client.schema}.${op.table}`;
+        const key = `${address}/${op.id}`;
+        if (seen.has(key))
+          return `${address} ${op.id} is edited in two places`
+            + ' — discard one of the two edits and save again';
+        seen.add(key);
+      }
+    return null;
   }
 
   /** The concatenated ops, an editor on another schema addressed as `<schema>.<table>`. */

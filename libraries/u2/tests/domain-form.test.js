@@ -843,3 +843,24 @@ scoped('a save closes the picker its Ctrl+S came from, so nothing covers the for
   form.dispose();
   src.dispose();
 });
+
+scoped('a constraint over two columns is read with SQL null semantics: an empty column is not a free pass', async () => {
+  backends.domain = new MemoryDomainBackend({name: 'grit', tables: {
+    issue: {friendlyName: 'Issues',
+      constraints: {span: {expr: 'low >= 0 and high >= 0', message: 'Both bounds must be positive'}},
+      columns: {title: {type: 'string', isName: true}, low: {type: 'int'}, high: {type: 'int'}}},
+  }}, {rows: {issue: [{id: 'i1', title: 'A', low: 1, high: 1}]}});
+  const {src} = await issues();
+  src.currentRow.value = src.rows.byKey('i1');
+  const form = domains.form(src);
+  await flush();
+  assert.equal(form.problem.value, null);
+  form.input('high').value.value = null;
+  await flush();
+  assert.equal(form.problem.value, null, 'one bound empty, the other true: unknown, and admitted');
+  form.input('low').value.value = -1;
+  await flush();
+  assert.equal(form.problem.value, 'Low: Both bounds must be positive', 'false and unknown is false, as Postgres reads it');
+  form.dispose();
+  src.dispose();
+});

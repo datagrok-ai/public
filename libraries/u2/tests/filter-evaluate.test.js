@@ -300,3 +300,37 @@ test('abort: an aborted signal rejects before the first leaf and between leaves'
     off();
   }
 });
+
+/* `toCheckMask` — the SQL CHECK reading of the same tree: a comparison against a null cell is
+   UNKNOWN, and/or/not are Kleene's, and a row is refused only where the tree is FALSE
+   (`domain_manifest_rules.dart`). The corpus: `a` = -1, 1, NULL; `b` is NULL throughout. */
+const checkFrame = {
+  rowCount: 3,
+  column: (name) => ({
+    a: column('a', TYPE.INT, Int32Array.from([-1, 1, INT_NULL])),
+    b: column('b', TYPE.INT, Int32Array.from([INT_NULL, INT_NULL, INT_NULL])),
+  })[name] ?? null,
+};
+
+const admits = async (query) => Array.from((await Filters.toCheckMask(checkFrame,
+  Filters.parse(query).root)).getSelectedIndexes());
+const passes = async (query) => Array.from((await Filters.toMask(checkFrame,
+  Filters.parse(query).root)).getSelectedIndexes());
+
+test('check: a comparison against a null cell is unknown, and unknown is admitted', async () => {
+  assert.deepEqual(await admits('a > 0'), [1, 2], 'false refuses, unknown does not');
+  assert.deepEqual(await passes('a > 0'), [1], 'a WHERE keeps the two-valued reading');
+  assert.deepEqual(await admits('b > 0'), [0, 1, 2], 'every cell null: nothing is refused');
+});
+
+test('check: and/or/not are Kleene\'s — false and unknown is false', async () => {
+  assert.deepEqual(await admits('a > 0 and b > 0'), [1, 2],
+    'a = -1 with b empty is FALSE, as Postgres refuses it');
+  assert.deepEqual(await admits('a > 0 or b > 0'), [0, 1, 2], 'false or unknown is unknown');
+  // a group's own `not`: the grammar pushes a negated comparison into its operator instead
+  const negated = Filters.group('and', [Filters.cond('a', '>', 0)], {not: true});
+  assert.deepEqual(Array.from((await Filters.toCheckMask(checkFrame, negated)).getSelectedIndexes()), [0, 2],
+    'not unknown is unknown; not true is false');
+  assert.deepEqual(await admits('b = null and a > 0'), [1, 2], 'a null test is never unknown');
+  assert.deepEqual(await admits('b != null and a > 0'), [], 'and it can be plainly false');
+});

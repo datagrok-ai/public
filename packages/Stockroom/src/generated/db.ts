@@ -421,40 +421,40 @@ export type DisposalExpand = {
 };
 
 export type StockroomTransactionOp =
-  {op: 'insert'; table: 'hazard_class'; ref?: string; values: DG.DomainTxValues<HazardClassInsert>} |
+  {op: 'insert'; table: 'hazard_class'; ref?: string; values: DG.DomainTxValues<HazardClassInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'hazard_class'; id: string; values: DG.DomainTxValues<Partial<HazardClassRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'hazard_class'; id: string} |
-  {op: 'insert'; table: 'h_statement'; ref?: string; values: DG.DomainTxValues<HStatementInsert>} |
+  {op: 'insert'; table: 'h_statement'; ref?: string; values: DG.DomainTxValues<HStatementInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'h_statement'; id: string; values: DG.DomainTxValues<Partial<HStatementRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'h_statement'; id: string} |
-  {op: 'insert'; table: 'p_statement'; ref?: string; values: DG.DomainTxValues<PStatementInsert>} |
+  {op: 'insert'; table: 'p_statement'; ref?: string; values: DG.DomainTxValues<PStatementInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'p_statement'; id: string; values: DG.DomainTxValues<Partial<PStatementRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'p_statement'; id: string} |
-  {op: 'insert'; table: 'substance'; ref?: string; values: DG.DomainTxValues<SubstanceInsert>} |
+  {op: 'insert'; table: 'substance'; ref?: string; values: DG.DomainTxValues<SubstanceInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'substance'; id: string; values: DG.DomainTxValues<SubstanceUpdate>; expectedVersion?: number} |
   {op: 'delete'; table: 'substance'; id: string} |
-  {op: 'insert'; table: 'substance_hazard'; ref?: string; values: DG.DomainTxValues<SubstanceHazardInsert>} |
+  {op: 'insert'; table: 'substance_hazard'; ref?: string; values: DG.DomainTxValues<SubstanceHazardInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'substance_hazard'; id: string; values: DG.DomainTxValues<Partial<SubstanceHazardRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'substance_hazard'; id: string} |
-  {op: 'insert'; table: 'location'; ref?: string; values: DG.DomainTxValues<LocationInsert>} |
+  {op: 'insert'; table: 'location'; ref?: string; values: DG.DomainTxValues<LocationInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'location'; id: string; values: DG.DomainTxValues<Partial<LocationRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'location'; id: string} |
-  {op: 'insert'; table: 'vendor'; ref?: string; values: DG.DomainTxValues<VendorInsert>} |
+  {op: 'insert'; table: 'vendor'; ref?: string; values: DG.DomainTxValues<VendorInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'vendor'; id: string; values: DG.DomainTxValues<Partial<VendorRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'vendor'; id: string} |
-  {op: 'insert'; table: 'container'; ref?: string; values: DG.DomainTxValues<ContainerInsert>} |
+  {op: 'insert'; table: 'container'; ref?: string; values: DG.DomainTxValues<ContainerInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'container'; id: string; values: DG.DomainTxValues<Partial<ContainerRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'container'; id: string} |
-  {op: 'insert'; table: 'purchase_order'; ref?: string; values: DG.DomainTxValues<PurchaseOrderInsert>} |
+  {op: 'insert'; table: 'purchase_order'; ref?: string; values: DG.DomainTxValues<PurchaseOrderInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'purchase_order'; id: string; values: DG.DomainTxValues<Partial<PurchaseOrderRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'purchase_order'; id: string} |
-  {op: 'insert'; table: 'order_line'; ref?: string; values: DG.DomainTxValues<OrderLineInsert>} |
+  {op: 'insert'; table: 'order_line'; ref?: string; values: DG.DomainTxValues<OrderLineInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'order_line'; id: string; values: DG.DomainTxValues<Partial<OrderLineRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'order_line'; id: string} |
-  {op: 'insert'; table: 'sds_document'; ref?: string; values: DG.DomainTxValues<SdsDocumentInsert>} |
+  {op: 'insert'; table: 'sds_document'; ref?: string; values: DG.DomainTxValues<SdsDocumentInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'sds_document'; id: string; values: DG.DomainTxValues<Partial<SdsDocumentRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'sds_document'; id: string} |
-  {op: 'insert'; table: 'disposal'; ref?: string; values: DG.DomainTxValues<DisposalInsert>} |
+  {op: 'insert'; table: 'disposal'; ref?: string; values: DG.DomainTxValues<DisposalInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'disposal'; id: string; values: DG.DomainTxValues<Partial<DisposalRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'disposal'; id: string};
 

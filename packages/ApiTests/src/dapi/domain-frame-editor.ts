@@ -2,6 +2,8 @@ import type * as _grok from 'datagrok-api/grok';
 import type * as _DG from 'datagrok-api/dg';
 declare let grok: typeof _grok, DG: typeof _DG;
 
+import * as ui from 'datagrok-api/ui';
+
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 import {withRestrictedUser} from './domain-lifecycle';
 
@@ -929,5 +931,19 @@ category('Dapi: domain frame editor', () => {
       second.detach();
       await cleanup(prefix);
     }
+  });
+  test('draftId() is a v4 uuid — no secure context required', async () => {
+    const id = DomainFrameEditor.draftId();
+    expect(DomainFrameEditor.isDraftId(id), true, `not a draft id: ${id}`);
+    expect(/^~new:[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(id), true,
+      `draftId() is not a v4 uuid: ${id}`);
+    expect(DomainFrameEditor.draftId() === id, false, 'draftId() repeated itself');
+  });
+
+  test('the editing cell colors and the tooltip surface are the platform ones', async () => {
+    expect(DG.Grid.INVALID_CELL_COLOR, DG.Color.gridWarningBackground,
+      'the invalid-cell background left the platform palette');
+    expect(typeof ui.tooltip.show, 'function', 'ui.tooltip lost show() when it moved to its own module');
+    expect(ui.tooltip instanceof ui.Tooltip, true, 'ui.tooltip is no longer a Tooltip');
   });
 });

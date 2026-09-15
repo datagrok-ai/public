@@ -846,10 +846,18 @@ export class DomainQueryBuilder<TRow, TColumn extends string = string,
    * The row cap travels, but its DEFAULT does not: without `.top()`, awaiting the
    * builder takes the server default of 100 rows while `toQuery().toSpec()` falls back
    * to {@link DOMAIN_QUERY_ROW_LIMIT} — the same builder, two row counts. Pin one with
-   * `.top()` when the two forms must agree. */
+   * `.top()` when the two forms must agree.
+   *
+   * A {@link search} is REFUSED rather than dropped: `DomainQuery` is the `DomainQuery`
+   * function's parameters, and the function takes no search — a query that carried one
+   * would silently select more rows than the collection it came from. Express the same
+   * narrowing as a condition, or keep the search as the UI state it is. */
   toQuery(): DomainQuery {
     if (this.client.schema == null || this.client.table == null)
       throw new Error('the query builder has no table address — construct the DomainQuery explicitly');
+    if (this._search != null && this._search !== '')
+      throw new Error(`toQuery() cannot carry the search "${this._search}": a DomainQuery has no ` +
+        'search parameter. Drop the search, or express it as a filter condition.');
     return new DomainQuery({
       schema: this.client.schema, table: this.client.table,
       filters: this._rawFilter !== undefined ? [this._rawFilter] : _treeToFilterElements(this._conds),

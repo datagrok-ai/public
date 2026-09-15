@@ -225,7 +225,7 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
     // keeps — a `/domains/…` link must still reach an app that has rebased onto `/apps/…`
     view.acceptsPath = (p) => {
       const here = p.toLowerCase();
-      return here.startsWith(route().toLowerCase()) || here.startsWith(base.toLowerCase());
+      return DomainTable._under(here, route().toLowerCase()) || DomainTable._under(here, base.toLowerCase());
     };
     // the router has updated the address bar before it calls the handler (view.ts:188-195)
     view.handlePath = () => {
@@ -244,7 +244,7 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
       // only the app's own parameters: a URL carrying nothing but the platform's (`browse=`) has
       // no page to restore, and opening it would drop the query the app was built with
       const deep = new URLSearchParams(from.search);
-      if (replayed || !(deep.has('entity') || deep.has('q')) || !from.pathname.startsWith(mounted))
+      if (replayed || !(deep.has('entity') || deep.has('q')) || !DomainTable._under(from.pathname, mounted))
         return;
       replayed = true;
       void app.open(from.search);
@@ -270,7 +270,9 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
     app.guardUnload();
     // the pane's ✕: cancelled here, then closed for real once the user has decided
     const removing = grok.events.onViewRemoving.subscribe((e) => {
-      if (e.args.view.dart !== view.dart || !session.isDirty.peek())
+      // saving too: the rows read clean for the whole write-back, and closing through it would
+      // drop the batch's own re-read
+      if (e.args.view.dart !== view.dart || !(session.isDirty.peek() || session.isSaving.peek()))
         return;
       e.preventDefault();
       void confirmDiscard(session, {action: 'close the view'}).then((ok) => ok && view.close());
@@ -412,6 +414,15 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
    * needs them — the writer's own "Value can't be empty" says nothing about which field. */
   private _nameCell(row: RowView<TRow>, column: string, problem: string): string {
     return `${this.renderer.caption(row)}: ${DomainTable._caption(this.properties, column)}: ${problem}`;
+  }
+
+  /** Whether a path is the app's own: its base, or a path continuing it at a segment boundary —
+   * an app at `/domains/grit/issue` does not answer for `/domains/grit/issue_label`. */
+  private static _under(path: string, base: string): boolean {
+    if (!path.startsWith(base))
+      return false;
+    const rest = path.slice(base.length);
+    return rest === '' || rest.startsWith('/') || rest.startsWith('?');
   }
 
   private static _caption(properties: IProperty[], column: string): string {

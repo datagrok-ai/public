@@ -1,9 +1,9 @@
 /* `domains.search` — the ribbon search box over a source: the search variant of `TextInput`
    (magnifier, ✕), writing `source.search` after a quiet spell, on Enter at once, cleared by
    Escape; two-way, so a search set in code shows in the box. The server runs it over the
-   table's `searchable` columns, AND-ed with the query. A search the USER makes while the session
-   holds unsaved changes goes through the gate (STATE-CONTRACT H6), as the filters do: cancel puts
-   the previous text back. */
+   table's `searchable` columns, AND-ed with the query. A search the USER makes goes through the
+   gate (STATE-CONTRACT H6), as the filters do — it answers at once while there is nothing to lose
+   and refuses while a batch is being written back; cancel puts the previous text back. */
 import {computed} from '../../core/signals.js';
 import {TextInput} from '../../components/inputs/text-input.js';
 import type {DomainSource} from '../../sources/domain-source.js';
@@ -24,6 +24,7 @@ export class DomainSearch extends TextInput {
         source.state.value;
         return `Search ${source.schema.info.pluralName.toLowerCase() || 'rows'}…`;
       })});
+    this.root.classList.add('u2-domain-search');
     this.root.dataset.u2 = 'domain-search';
     const wait = options.debounceMs ?? 300;
     const write = () => {
@@ -31,10 +32,6 @@ export class DomainSearch extends TextInput {
       const text = this.value.peek();
       if (source.search.peek() === text)
         return;
-      if (!source.session.isDirty.peek()) {
-        source.search.value = text;
-        return;
-      }
       void confirmDiscard(source.session, {action: 'change the search'}).then((ok) => {
         if (ok)
           source.search.value = text;

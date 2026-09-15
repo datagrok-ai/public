@@ -526,9 +526,10 @@ export class DomainForm extends Control {
     return parsed;
   }
 
-  /** Evaluates every constraint over the row as the fields hold it; a column left empty passes,
-   * as a SQL CHECK does on NULL. The verdicts land asynchronously on the first named column's
-   * field, or under the form. */
+  /** Evaluates every constraint over the row as the fields hold it, with the null semantics a SQL
+   * CHECK has ({@link Filters.toCheckMask}): an empty column makes its own comparison unknown, not
+   * the whole constraint — `a > 0 and b > 0` with a = -1 and b empty is still refused. The
+   * verdicts land asynchronously on the first named column's field, or under the form. */
   private _checkConstraints(): void {
     const form = this._form.peek();
     const row = this.row.peek();
@@ -537,13 +538,10 @@ export class DomainForm extends Control {
       return;
     const values: Record<string, unknown> = {...row, ...form.getValues()};
     const frame = DomainForm.frameOf(values, this.source.schema.properties);
-    const empty = (v: unknown) => v === null || v === undefined || v === '';
     const gen = ++this._checkGen;
     void Promise.all(constraints.map(async (c): Promise<string | null> => {
-      if (c.columns.some((name) => empty(values[name])))
-        return null;
       try {
-        return (await Filters.toMask(frame, c.root)).get(0) ? null : c.message;
+        return (await Filters.toCheckMask(frame, c.root)).get(0) ? null : c.message;
       } catch {
         return null;
       }

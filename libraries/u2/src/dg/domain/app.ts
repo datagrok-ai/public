@@ -164,6 +164,22 @@ export class DomainApp extends Control {
       if (row !== null && this._entity.peek() === DomainApp.NEW && !Rows.isDraft(row))
         this._entity.value = row.id;
     });
+    // and once the draft is discarded — by the Discard button or by a gate's DISCARD — the page
+    // has no row left, so the app goes back to the list. `had` keeps the load's own empty window
+    // (the frame arrives before `newRow` fills it) from counting as a discard; the move is
+    // deferred past the discard that is running, which reads dirty until it has settled.
+    let had = false;
+    this.effect(() => {
+      const source = this._entitySource.value;
+      if (source === null || !source.isDraft) {
+        had = false;
+        return;
+      }
+      const rows = source.rows.items.value.length;
+      if (rows === 0 && had)
+        queueMicrotask(() => void this.goTo('list'));
+      had = rows > 0;
+    });
 
     this.path = computed(() => {
       const entity = this._entity.value;
@@ -264,7 +280,7 @@ export class DomainApp extends Control {
 
   /** A query switch for the ribbon — one button per preset, the pressed one writing the list's
    * query (`$me` is the current user's id); the one matching the query in force is shown pressed.
-   * A press while the session holds unsaved changes goes through the gate, like the filters. */
+   * A press goes through the gate, like the filters. */
   presets(...entries: [label: string, query: string][]): ButtonGroup {
     const source = this.listSource;
     const bound = (at: number) => this._bound(entries[at][1]);
@@ -277,15 +293,11 @@ export class DomainApp extends Control {
       source.query.value = typeof q === 'string' ? Filters.format(tree) : tree;
     };
     const group = this.runInScope(() => new ButtonGroup({toggle: 'single', density: 'ribbon',
-      items: entries.map(([label], at) => ({id: String(at), label, onClick: () => {
-        if (!this.session.isDirty.peek()) {
-          apply(at);
-          return;
-        }
-        void confirmDiscard(this.session, {action: 'change the filter'}).then((ok) => ok && apply(at));
-      }}))}));
+      items: entries.map(([label], at) => ({id: String(at), label, onClick: () =>
+        void confirmDiscard(this.session, {action: 'change the filter'}).then((ok) => ok && apply(at))}))}));
     group.root.dataset.u2 = 'domain-presets';
     group.effect(() => {
+      // the schema arrives with the load: read the state so the presets are bound again once it has
       source.state.value;
       const current = DomainFilters.treeOf(source.query.value, source.schema);
       // the box shows a preset as it is written ("assignee = $me"), not the id the query carries

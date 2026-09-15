@@ -814,3 +814,35 @@ source('spec: two u2-domain-source tags share the instance\'s ambient session â€
   instance.dispose();
   assert.deepEqual(instance.session.sources.value, [], 'the sources left with the instance');
 });
+
+source('deleting the whole loaded page re-bases onto the rows that are left', async () => {
+  backends.domain = backend();
+  const src = await issues({pageSize: 2});
+  assert.deepEqual(src.rows.items.value.map((r) => r.id), ['i1', 'i2']);
+  const edit = src.edit.peek();
+  edit.markDeleted('i1');
+  edit.markDeleted('i2');
+  assert.equal(await src.save(), true);
+  assert.deepEqual(src.rows.items.value.map((r) => r.id), ['i3'], 'the window was read again from the first row');
+  assert.equal(src.total.value, 1);
+  src.dispose();
+});
+
+source('a query names a draft only through a quoted literal: other text is text, and the rewrite is exact', async () => {
+  backends.domain = backend();
+  const draft = `${Rows.DRAFT_PREFIX}0000-1111`;
+  // the string form: only the quoted value counts, and only it is rewritten
+  const named = await issues({query: `project_id = "${draft}"`});
+  assert.deepEqual(titles(named), [], 'a query naming a draft asks for no rows');
+  assert.equal(named.rebind({[draft]: 'p1'}), true);
+  assert.equal(named.query.peek(), 'project_id = "p1"');
+  // the rewrite loads nothing: re-reading is the caller's (`afterSave`)
+  await named.refresh();
+  assert.deepEqual(titles(named), ['Aspirin', 'Ibuprofen'], 'and reads them once the id is real');
+  const text = await issues({query: `title like "a ${Rows.DRAFT_PREFIX}"`});
+  assert.equal(text.state.value, 'ready');
+  assert.equal(text.total.value, 0, 'a ~new: inside a longer value is ordinary text, and the query is sent');
+  assert.equal(text.rebind({[Rows.DRAFT_PREFIX]: 'p1'}), false, 'and a substring is never rewritten');
+  named.dispose();
+  text.dispose();
+});

@@ -64,9 +64,12 @@ scoped('typing searches after the pause; Enter at once; Escape clears; the total
   assert.deepEqual(src.rows.items.value.map((r) => r.title), ['Aspirin']);
   type(input, 'ibu');
   fire(input, 'keydown', {key: 'Enter'});
-  assert.equal(src.search.value, 'ibu', 'Enter does not wait');
+  // the gate answers at once over a clean session, a microtask later
+  await flush();
+  assert.equal(src.search.value, 'ibu', 'Enter does not wait for the pause');
   fire(input, 'keydown', {key: 'Escape'});
   assert.equal(input.value, '');
+  await flush();
   assert.equal(src.search.value, '');
   await flush();
   assert.equal(src.total.value, 3);
@@ -120,6 +123,33 @@ scoped('a search while the session is dirty asks: cancel puts the text back, dis
   assert.equal(src.isDirty.value, false);
   await flush();
   assert.deepEqual(src.rows.items.value.map((r) => r.title), ['Naproxen'], 're-queried');
+  search.dispose();
+  src.dispose();
+});
+
+scoped('the box carries the class its sheet selects, and a search during a write-back is refused', async () => {
+  const src = await issues();
+  const search = domains.search(src, {debounceMs: 20});
+  assert.equal(search.root.classList.contains('u2-domain-search'), true);
+  const input = search.root.querySelector('input');
+  let release;
+  const real = backends.domain.saveAll.bind(backends.domain);
+  backends.domain.saveAll = async (edits) => {
+    const landed = await real(edits);
+    await new Promise((resolve) => release = resolve);
+    return landed;
+  };
+  src.rows.byKey('i1').title = 'Edited';
+  const saving = src.save();
+  await flush();
+  assert.equal(src.isDirty.value, false, 'the batch landed: the rows read clean already');
+  type(input, 'nap');
+  fire(input, 'keydown', {key: 'Enter'});
+  await flush();
+  assert.equal(src.search.value, '', 'the gate refuses through the write-back, clean or not');
+  assert.match(document.body.querySelector('.u2-notify-warning')?.textContent ?? '', /Wait for the batch/);
+  release();
+  assert.equal(await saving, true);
   search.dispose();
   src.dispose();
 });

@@ -62,6 +62,8 @@ scoped('a query set in code formats into the box; a committed text writes the qu
   src.query.value = 'done=true';
   assert.equal(input.text.value, 'done = true', 'formatted');
   assert.equal(commit(filters, 'title like "a"'), true);
+  // the gate answers at once over a clean session, a microtask later
+  await flush();
   assert.equal(src.query.value, 'title like "a"', 'text stays text');
   await flush();
   assert.equal(src.total.value, 2, 'Aspirin and Naproxen');
@@ -69,6 +71,7 @@ scoped('a query set in code formats into the box; a committed text writes the qu
   assert.equal(path, '/apps/T/Issues?q=title%20like%20%22a%22');
   assert.equal(new URLSearchParams(path.slice(path.indexOf('?') + 1)).get('q'), 'title like "a"');
   assert.equal(commit(filters, 'nope = 1'), false, 'an unknown column is a problem, not a query');
+  await flush();
   assert.equal(src.query.value, 'title like "a"');
   filters.dispose();
   src.dispose();
@@ -82,6 +85,7 @@ scoped('a tree query stays a tree; the builder mode shows rows', async () => {
   assert.equal(builder.root.dataset.u2, 'filter-builder');
   assert.equal(builder.query.value, 'done = true');
   builder.value.value = Filters.group('and', [Filters.cond('done', '=', false)]);
+  await flush();
   assert.equal(typeof src.query.value, 'object');
   assert.equal(Filters.format(src.query.value), 'done = false');
   await flush();
@@ -124,4 +128,23 @@ scoped('spec: u2-domain-filters is registered with usage and a mode', () => {
   const meta = reg.get('u2-domain-filters');
   assert.equal(meta.usage.length > 0, true);
   assert.deepEqual(meta.props.find((p) => p.name === 'mode').choices, ['query', 'builder']);
+});
+
+scoped('a schema the platform refuses leaves the box out, says why through the source, and is tried again', async () => {
+  backends.domain = backend();
+  const table = await domains.table('grit.issue');
+  const src = table.source({pageSize: 10});
+  const filters = domains.filters(src);
+  const schema = filters._schema.bind(filters);
+  filters._schema = () => Promise.reject(new Error('no filter schema'));
+  await flush();
+  assert.equal(filters.input.value, null, 'nothing to type into');
+  assert.match(String(src.error.value?.message ?? ''), /no filter schema/, 'and the source carries why');
+  filters._schema = schema;
+  src.query.value = 'done = true';
+  await flush();
+  await flush();
+  assert.notEqual(filters.input.value, null, 'the latch released with the failure: the next state builds the box');
+  filters.dispose();
+  src.dispose();
 });

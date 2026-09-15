@@ -8,10 +8,6 @@ import * as DG from 'datagrok-api/dg';
 
 
 export namespace funcs {
-  export async function info(): Promise<void> {
-    return await grok.functions.call('Stockroom:Info', {});
-  }
-
   /**
   Chemical stockroom on the GHS classification — the zero-code app over databases/stockroom/schema.json
   */

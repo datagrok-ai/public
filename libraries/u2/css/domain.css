@@ -47,7 +47,7 @@
 }
 
 .u2-domain-form-error {
-  color: var(--dg-failure);
+  color: var(--dg-error);
 }
 
 .u2-domain-list {
@@ -324,7 +324,7 @@
 }
 
 .u2-domain-children-error {
-  color: var(--dg-failure);
+  color: var(--dg-error);
 }
 
 /* the ribbon controls: a search box and a query box side by side, the query box the wider */

@@ -73,6 +73,20 @@ category('Dapi: domain search', () => {
     expect(event.searchableColumns.length, 0, `a table with neither lists none: ${JSON.stringify(event.searchableColumns)}`);
   });
 
+  test('toQuery() refuses a search instead of dropping it', async () => {
+    const builder = () => items().query().where('sku', 'like', 'se-%');
+    let refusal: any = null;
+    try {
+      builder().search('alpha').toQuery();
+    } catch (e) {
+      refusal = e;
+    }
+    expect(refusal != null, true, 'toQuery() silently dropped the search');
+    expect(`${refusal.message}`.includes('search'), true,
+      `the refusal does not name the search: ${refusal.message}`);
+    expect(builder().toQuery().filters!.length, 1, 'toQuery() without a search stopped working');
+  });
+
   test('a table without a searchable column rejects with DomainFilterError', async () => {
     const e = await thrown(() => events().query({search: 'x'}));
     expect(e instanceof DG.DomainFilterError, true,

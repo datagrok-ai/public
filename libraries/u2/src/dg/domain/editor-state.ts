@@ -109,6 +109,14 @@ export class EditorEditState implements EditState {
     this.editor.discard();
   }
 
+  setSaving(saving: boolean): void {
+    this.editor.setSaving(saving);
+  }
+
+  rebind(assigned: Record<string, string>): void {
+    this.editor.rebind(assigned);
+  }
+
   save(): Promise<boolean> {
     return this.editor.save();
   }

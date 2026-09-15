@@ -440,7 +440,141 @@ scoped('a source outside the batch: its defaults follow the assigned id, and not
   const saved = projects.currentRow.value;
   assert.equal(pane.defaults.project_id, saved.id, 'the defaults name the row the parent became');
   assert.notEqual(pane.rows.byKey(pristine.id), undefined, 'a defaults-only rewrite re-reads nothing');
+  assert.equal(pane.rows.byKey(pristine.id).project_id, saved.id, 'and so does the cell of the row it already holds');
+  assert.equal(pane.isDirty.value, false, 'which is still pristine');
   assert.equal(pane.newRow({title: 'Next'}).project_id, saved.id);
   projects.dispose();
   pane.dispose();
+});
+
+scoped('the pristine child of a saved parent saves on its own afterwards, under the real id', async () => {
+  backends.domain = backend();
+  const session = new SharedSession();
+  const projects = new DomainSource({table: 'grit.project', session}, env);
+  projects.start();
+  await flush();
+  const parent = projects.newRow({key: 'NEW', name: 'New project'});
+  const pane = new DomainSource({table: 'grit.issue', session, empty: true, defaults: {project_id: parent.id}}, env);
+  pane.start();
+  await flush();
+  const child = pane.newRow({title: 'Later'}, {pristine: true});
+  assert.equal(await session.save(), true);
+  const saved = projects.currentRow.value;
+  pane.rows.byKey(child.id).title = 'Now';
+  assert.equal(await session.save(), true);
+  const stored = backends.domain.tableSync('grit.issue').rows.find((r) => r.title === 'Now');
+  assert.equal(stored.project_id, saved.id, 'the insert names the row, not the draft');
+  projects.dispose();
+  pane.dispose();
+});
+
+scoped('the writers stay closed through the re-base: an edit made in that window is refused, never swallowed', async () => {
+  backends.domain = backend();
+  const session = new SharedSession();
+  const {projects, issues} = await pair(session);
+  const table = backends.domain.tableSync('grit.issue');
+  const frame = table.frame.bind(table);
+  let release;
+  // patched after the load: the next frame this table hands out is the re-base's
+  table.frame = async (spec) => {
+    if (release === undefined)
+      await new Promise((resolve) => release = resolve);
+    return frame(spec);
+  };
+  issues.rows.byKey('i1').title = 'First';
+  const saving = session.save();
+  await flush();
+  assert.equal(typeof release, 'function', 'the re-base is in flight');
+  issues.rows.byKey('i1').title = 'Second';
+  assert.equal(issues.isDirty.value, false, 'the edit is refused, as one during the transaction is');
+  release();
+  assert.equal(await saving, true);
+  assert.equal(issues.rows.byKey('i1').title, 'First', 'the frame the re-base swapped in is the one that landed');
+  assert.equal(issues.isDirty.value, false);
+  assert.equal(backends.domain.tableSync('grit.issue').rows[0].title, 'First');
+  projects.dispose();
+  issues.dispose();
+});
+
+scoped('a landed batch never reports failure: a re-read that fails marks the source, and the next load starts over', async () => {
+  backends.domain = backend();
+  const session = new SharedSession();
+  const {projects, issues} = await pair(session);
+  const table = backends.domain.tableSync('grit.issue');
+  const frame = table.frame.bind(table);
+  const specs = [];
+  let loads = 0;
+  table.frame = async (spec) => {
+    specs.push(spec);
+    // patched after the load: the first frame asked for here is the re-base's
+    if (++loads === 1)
+      throw new Error('the server is away');
+    return frame(spec);
+  };
+  const heard = [];
+  const sub = session.onSaved.subscribe(() => heard.push('saved'));
+  issues.rows.byKey('i1').title = 'Aspirin 100';
+  assert.equal(await session.save(), true, 'the backend accepted the batch');
+  sub.unsubscribe();
+  assert.deepEqual(heard, ['saved']);
+  assert.equal(backends.domain.tableSync('grit.issue').rows[0].title, 'Aspirin 100', 'and it is in storage');
+  assert.match(issues.summary.value, /^Saved; refresh failed: the server is away/);
+  await issues.loadMore();
+  assert.equal(specs.at(-1).offset, 0, 'the next load re-reads from the first page, not from the stale window');
+  assert.equal(issues.state.value, 'ready');
+  projects.dispose();
+  issues.dispose();
+});
+
+scoped('while a batch is in flight every mutation is refused, and a second saveAll with it', async () => {
+  backends.domain = backend();
+  const session = new SharedSession();
+  const {projects, issues} = await pair(session);
+  const transaction = backends.domain.transaction.bind(backends.domain);
+  let release;
+  backends.domain.transaction = async (ops) => {
+    await new Promise((resolve) => release = resolve);
+    return transaction(ops);
+  };
+  const edit = issues.edit.peek();
+  edit.markDeleted('i2');
+  issues.rows.byKey('i1').title = 'Aspirin 100';
+  const saving = session.save();
+  await flush();
+  assert.equal(typeof release, 'function', 'the transaction is in flight');
+  edit.unmarkDeleted('i2');
+  assert.equal(issues.rows.byKey('i2')[Rows.STATE], 'deleted', 'a restore is refused');
+  session.discard();
+  assert.equal(issues.rows.byKey('i1').title, 'Aspirin 100', 'and so is a discard');
+  assert.equal(await backends.domain.saveAll([edit]), false, 'a second saveAll over the same writer is refused');
+  assert.match(document.body.querySelector('.u2-notify-warning')?.textContent ?? '', /already being saved/);
+  release();
+  assert.equal(await saving, true);
+  assert.equal(issues.isDirty.value, false);
+  projects.dispose();
+  issues.dispose();
+});
+
+scoped('the assigned map is read by own properties only: a cell, a default or a query literal may be any string', async () => {
+  backends.domain = backend();
+  const session = new SharedSession();
+  const {projects, issues} = await pair(session);
+  const parent = projects.newRow({key: 'NEW', name: 'constructor'});
+  issues.newRow({project_id: parent.id, title: 'constructor', description: 'toString'});
+  assert.equal(await session.save(), true);
+  const stored = backends.domain.tableSync('grit.issue').rows.find((r) => r.title === 'constructor');
+  assert.equal(stored.description, 'toString', 'the cell kept its text, not Object.prototype.toString');
+  assert.equal(issues.currentRow.value.description, 'toString');
+  assert.equal(projects.currentRow.value.name, 'constructor');
+  // Astra's reproducer: an empty map re-acquires the prototype through every spread on the way
+  const src = new DomainSource({table: 'grit.issue', session,
+    query: 'title = "constructor"', defaults: {title: 'valueOf'}}, env);
+  src.start();
+  await flush();
+  assert.equal(src.rebind({}), false, 'nothing was assigned: nothing to rewrite');
+  assert.equal(src.defaults.title, 'valueOf');
+  assert.equal(src.query.peek(), 'title = "constructor"');
+  src.dispose();
+  projects.dispose();
+  issues.dispose();
 });

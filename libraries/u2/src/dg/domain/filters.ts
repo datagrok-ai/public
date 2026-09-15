@@ -1,8 +1,8 @@
 /* `domains.filters` — the query box (or the builder) over a source's query: the table's own
    filter schema, the platform's facet values where there is a platform, two-way with
-   `source.query`. A change the USER makes while the session holds unsaved changes goes through
-   the gate (STATE-CONTRACT H6): cancel puts the previous filter back; a query set in code is
-   the source's to skip. */
+   `source.query`. A change the USER makes goes through the gate (STATE-CONTRACT H6) — it answers
+   at once while there is nothing to lose and refuses while a batch is being written back; cancel
+   puts the previous filter back. A query set in code is the source's to skip. */
 import {Control} from '../../core/component.js';
 import {computed, signal, ReadonlySignal} from '../../core/signals.js';
 import {Filters} from '../../core/filter/index.js';
@@ -63,13 +63,13 @@ export class DomainFilters extends Control {
     let building = false;
     this.effect(() => {
       source.state.value;
-      if (building || source.schema.properties.length === 0)
+      if (building || this._input.peek() !== null || source.schema.properties.length === 0)
         return;
       building = true;
       void this._schema().then((schema) => {
         if (live)
           this._build(schema);
-      });
+      }).catch((e) => source.fail(e)).finally(() => building = false);
     });
   }
 
@@ -107,10 +107,6 @@ export class DomainFilters extends Control {
       const raw = box?.raw.value ?? null;
       if (this._syncing || (raw === this._raw && Filters.equals(tree, this._accepted)))
         return;
-      if (!source.session.isDirty.peek()) {
-        this._apply(tree);
-        return;
-      }
       void confirmDiscard(source.session, {action: 'change the filter'}).then((ok) => {
         if (ok)
           this._apply(tree);

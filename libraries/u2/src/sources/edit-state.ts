@@ -42,6 +42,13 @@ export interface EditState {
   /** Undoes {@link markDeleted}: the row is back to what it was before — edited or clean. */
   unmarkDeleted(key: string): void;
   discard(): void;
+  /** Opens and closes the writer: while it is closed every mutation is refused, as during the
+   * transaction itself. The session holds it closed until the re-base after a landed batch has
+   * swapped the frame — an edit made in that window would be swapped away. */
+  setSaving(saving: boolean): void;
+  /** Rewrites every cell holding a draft id the landed batch assigned to the id it was given,
+   * leaving the row's state alone — the pristine child of a just-saved parent stays pristine. */
+  rebind(assigned: Record<string, string>): void;
   /** Resolves to whether the batch landed; a backend refusal is thrown as it came. */
   save(): Promise<boolean>;
   /** Detaches from whatever it tracks — the frame, the platform editor. */
@@ -173,6 +180,8 @@ export class MemoryEditState implements EditState {
   }
 
   unmarkDeleted(key: string): void {
+    if (this._saving.peek())
+      return;
     const row = this._row(key);
     if (row === undefined || row[Rows.STATE] !== 'deleted')
       return;
@@ -180,7 +189,29 @@ export class MemoryEditState implements EditState {
     this._touch(key);
   }
 
+  /** Every cell of the frame holding a draft id the batch assigned takes the real id, without
+   * touching the row's state: the source of a pristine child is not in the batch, and its
+   * reference to the parent that was just inserted must still name the row. */
+  rebind(assigned: Record<string, string>): void {
+    let hit = false;
+    for (const row of this.df.rows) {
+      for (const [column, value] of Object.entries(row)) {
+        if (column === 'id' || !(typeof value === 'string' || Array.isArray(value)))
+          continue;
+        const real = MemoryEditState._resolve(value, assigned);
+        if (real === value)
+          continue;
+        row[column] = real;
+        hit = true;
+      }
+    }
+    if (hit)
+      this._touch(null);
+  }
+
   discard(): void {
+    if (this._saving.peek())
+      return;
     for (const [row, originals] of this._originals) {
       for (const [column, original] of originals)
         row[column] = original;
@@ -302,9 +333,11 @@ export class MemoryEditState implements EditState {
   }
 
   private static _resolve(v: unknown, ids: Record<string, string>): unknown {
-    if (Array.isArray(v))
-      return v.map((x) => MemoryEditState._resolve(x, ids));
-    return typeof v === 'string' ? ids[v] ?? v : v;
+    if (Array.isArray(v)) {
+      const mapped = v.map((x) => MemoryEditState._resolve(x, ids));
+      return mapped.some((x, i) => x !== v[i]) ? mapped : v;
+    }
+    return Rows.real(ids, v) ?? v;
   }
 
   private _writable(row: Row): string[] {
