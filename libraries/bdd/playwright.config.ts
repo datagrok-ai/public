@@ -33,5 +33,7 @@ export default defineConfig({
     // headless is software-rasterized throughout
     launchOptions: {args: [`--unsafely-treat-insecure-origin-as-secure=${url}`, '--disable-accelerated-2d-canvas']},
   },
-  projects: [{name: 'bdd'}],
+  // @serial features share server state another worker would change under them (a fuzzy gallery
+  // search over fixtures the others create and delete): they take turns, beside everything else
+  projects: [{name: 'bdd', grepInvert: /@serial(\s|$)/}, {name: 'bdd-serial', grep: /@serial(\s|$)/, workers: 1}],
 });

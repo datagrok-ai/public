@@ -577,6 +577,16 @@ export const userStatusOnServer = Then('the user {string} should be {word} on th
     {message: `the status of "${login}"`, timeout: pollMs(30000)}).toBe(want);
 }, {tier: 'api', description: '"active", or "disabled" (the server says blocked)'});
 
+export const personalGroupOnServer = Then('the user {string} should have a personal group on the server', async (page: Page, login: string) => {
+  await expect.poll(() => page.evaluate(async (l) => {
+    const user = await grok.dapi.users.include('group').filter(`login = "${l}"`).first();
+    if (!user)
+      return 'no such user';
+    const group = await grok.dapi.groups.find(user.group.id);
+    return group?.personal ? `personal group "${group.friendlyName}"` : `group ${user.group.id} is not personal`;
+  }, login), {message: `the personal group of "${login}"`, timeout: pollMs(30000)}).toBe(`personal group "${login}"`);
+}, {tier: 'api', description: 'the security group every user has, named by the login and flagged personal'});
+
 /** Who belongs to a group or holds a role: the member is a user by login or a group by name, and an
  * admin member is a group's Admin or a role's Can assign. */
 async function membership(page: Page, member: string, group: string): Promise<string> {
@@ -671,6 +681,41 @@ export const galleryCountNotLower = Then('the gallery counter should not be lowe
 
 export const galleryCountHigher = Then('the gallery counter should be higher than remembered', (page: Page) =>
   expectCountVersusRemembered(page, 'higher'), {description: 'a cleared search against the count it showed: a jump no item or two of another feature can fake'});
+
+/* The first item says a reordering happened; which order the rest is in no reading exposes. */
+const rememberedFirstItems = new WeakMap<Page, string>();
+
+async function firstGalleryItem(page: Page): Promise<string> {
+  if (typeof await galleryCount(page) !== 'number')
+    return '';
+  const gallery = await locate(page, el('gallery'));
+  return ((await gallery.filter({visible: true}).first().locator('.d4-link-label').first().textContent()
+    .catch(() => null)) ?? '').trim();
+}
+
+export const rememberFirstGalleryItem = When('user remembers the first item in gallery', async (page: Page) => {
+  let first = '';
+  await expect.poll(async () => first = await firstGalleryItem(page), {message: 'the first item in the gallery'}).not.toBe('');
+  if (!rememberedFirstItems.has(page))
+    atFeatureEnd(page, async () => { rememberedFirstItems.delete(page); });
+  rememberedFirstItems.set(page, first);
+}, {tier: 'ui', description: 'the name of the first item once the gallery has loaded, until the feature ends'});
+
+async function expectFirstVersusRemembered(page: Page, same: boolean): Promise<void> {
+  const remembered = rememberedFirstItems.get(page);
+  if (remembered === undefined)
+    throw new Error('no first item remembered: "user remembers the first item in gallery" first');
+  await expect.poll(async () => {
+    const first = await firstGalleryItem(page);
+    return first === '' ? 'still loading' : first === remembered ? 'the remembered one' : `another one ("${first}")`;
+  }, {message: `the first item in the gallery against "${remembered}"`}).toMatch(same ? /^the remembered one$/ : /^another one/);
+}
+
+export const firstGalleryItemSame = Then('the first item in gallery should be the remembered one', (page: Page) =>
+  expectFirstVersusRemembered(page, true));
+
+export const firstGalleryItemOther = Then('the first item in gallery should not be the remembered one', (page: Page) =>
+  expectFirstVersusRemembered(page, false), {description: 'a reordering: another item leads the list'});
 
 export const galleryMode = Then('the gallery should be in {word} mode', async (page: Page, mode: string) => {
   const gallery = await locate(page, el('gallery'));

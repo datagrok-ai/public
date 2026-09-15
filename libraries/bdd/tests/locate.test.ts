@@ -106,6 +106,23 @@ scenario('the Dart name conventions and the platform names', async () => {
   assert.equal(await count('Caption input'), 1);
 });
 
+scenario('a scope read while its container rebuilds finds the target once the container is back', async () => {
+  await page!.evaluate(() => {
+    const host = document.createElement('div');
+    host.id = 'rebuilding';
+    host.innerHTML = '<div class="d4-accordion-pane-header" name="div-section--Grants">Grants</div>';
+    document.body.appendChild(host);
+  });
+  const button = await locateActionable(page!, el('MANAGE button in "Grants" section'));
+  await page!.evaluate(() => {
+    document.getElementById('rebuilding')!.innerHTML = '<div class="d4-accordion-pane" name="pane-Grants">' +
+      '<div class="d4-accordion-pane-header" name="div-section--Grants">Grants</div>' +
+      '<div class="d4-accordion-pane-content"><button class="ui-btn">MANAGE</button></div></div>';
+  });
+  assert.equal(await button.count(), 1);
+  await page!.evaluate(() => document.getElementById('rebuilding')!.remove());
+});
+
 scenario('ordinals, and the visible matches a gesture acts on', async () => {
   assert.equal(await text('second item in results list'), 'beta');
   assert.equal(await text('last item in results list'), 'gamma');

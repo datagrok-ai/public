@@ -219,6 +219,11 @@ and `isRenderPending`, `onContextMenuShown/Closed`, `getWidgetStatus().hitAreas/
   list, only N rendered) or `shown / total`, with `...` before it knows — an item outside a search
   is no claim, the counter is. A view-mode icon says it is current with `d4-current`, which
   `selected` reads inside the gallery toolbar only (elsewhere it marks the current card); the gallery itself carries `mode="Brief|Card|Grid"`.
+  Sort list keeps the chosen order in the browser (`OrderMenu.savePersonal`), so a feature that sorts
+  ends on Default; "Apply for all users" writes the order for everyone — never a step. While the
+  gallery reloads after an order pick the counter reads "..." and the first item is empty, which is
+  not "another item". A user's personal group (friendly name = login) is not listed by the Groups
+  view; `user.tag()` throws on a User, so no feature can tag one.
 - A Dart choice input's phrase can resolve to its `<select>` itself; `select` handles both. The Share
   dialog of an entity that is not a project (a model) fetches the entity's project after it opens and
   its OK throws "Not initialized" before that: wait for the owner's grant row ("Full access").

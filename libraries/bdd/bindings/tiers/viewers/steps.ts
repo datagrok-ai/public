@@ -498,6 +498,11 @@ export const errorBalloonText = Then('an error balloon containing {string} shoul
 
 export const warningBalloonText = Then('a warning balloon containing {string} should have been shown', (page: Page, text: string) => expectBalloon(page, 'warning', text));
 
+export const infoBalloonText = Then('an info balloon containing {string} should have been shown', (page: Page, text: string) => expectBalloon(page, 'info', text));
+
+export const infoBalloon = Then('an info balloon should have been shown', (page: Page) => expectBalloon(page, 'info', ''),
+  {description: 'any info balloon since the previous balloon check — a command that answers with one of several messages'});
+
 // --- tooltips --------------------------------------------------------------------------------------
 
 export const tooltipColumns = Then('the tooltip should show columns {string}', (page: Page, list: string) => v.expectTooltipColumns(page, list),

@@ -1,4 +1,4 @@
-@journey @roles @realizes:views.roles
+@journey @serial @roles @realizes:views.roles
 Feature: A role from creation to deletion
   The New Role... dialog, a role created with it, renamed through Properties... and deleted.
   Translated from files/TestTrack/User groups/roles_manual_tests.md (Roles-03, 04, 05, 09, 15) and

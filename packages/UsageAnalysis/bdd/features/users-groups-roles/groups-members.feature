@@ -1,13 +1,16 @@
-@journey @groups @realizes:views.groups
+@journey @serial @groups @realizes:views.groups
 Feature: A group's members
   The Members pane of a group and the editor behind its MANAGE button: adding a user, making it an
   admin, nesting a group, removing a member. Translated from files/TestTrack/User
-  groups/groups_manual_tests.md (Groups-11, 12, 13, 15) and playwright-public/user groups/groups.test.ts.
+  groups/groups_manual_tests.md (Groups-11, 12, 13, 15, 18) and playwright-public/user groups/groups.test.ts.
 
   The group, the group nested into it and the user added are made by the feature; the groups are
   deleted at its end, the user stays (users cannot be deleted). Each change is claimed on the server;
   an addition also in the pane. A removal is claimed on the server only: the pane empties and
   refills while it reloads, and an absence read off it would prove nothing.
+
+  Every user has a personal security group, named by the login; the Groups view does not list those,
+  so the user's own group is claimed on the server and its login found nowhere in the gallery.
 
   Background:
     Given user is logged in
@@ -73,6 +76,14 @@ Feature: A group's members
     Then the "BDD-GM-Group-{time} members" dialog should close
     And "opavlenko{time}g" should not be a member of "BDD-GM-Group-{time}" on the server
     And "BDD-GM-Child-{time}" should be a member of "BDD-GM-Group-{time}" on the server
+    When user clears gallery search
+    Then no errors should have been logged
+    And no error or warning balloon should have been shown
+
+  Scenario: A user's personal group is on the server but not in the Groups view (Groups-18)
+    Then the user "opavlenko{time}g" should have a personal group on the server
+    When user types "opavlenko{time}g" into gallery search
+    Then gallery counter should have text "0"
     When user clears gallery search
     Then no errors should have been logged
     And no error or warning balloon should have been shown

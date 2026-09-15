@@ -105,6 +105,12 @@ export async function locateRef(page: Page, ref: NounRef, within?: Locator): Pro
       return pick(inRoot, ref);
   }
   let loc = await inBase(page, base, ref);
+  // a scope read while its container rebuilds can resolve to a fragment of it (a section's header
+  // before its pane is back): the target is then looked for in every candidate the scope has
+  if (scope && ref.scope!.plan.type === 'kind' && await loc.count() === 0) {
+    scope = pick((await candidates(page, await scopeBase(page, ref.scope!, within), ref.scope!)).reduce((a, b) => a.or(b)), ref.scope!);
+    loc = await inBase(page, scope, ref);
+  }
   // a scope that is not on the page has no owner edge to try — and `getAttribute` on it would
   // wait the whole action timeout for it to appear
   if (scope && await loc.count() === 0 && await scope.count() > 0) {
@@ -132,14 +138,27 @@ async function inBase(page: Page, base: Base, ref: NounRef): Promise<Locator> {
   }
   if (plan.type === 'part')
     return base.locator(plan.selector);
-  const candidates: Locator[] = [];
-  for (const split of [plan, ...plan.alternatives])
-    candidates.push(...(split.qualifier ? strategies(page, base, split.kind, split.qualifier) : [base.locator(split.kind.selector)]));
-  for (const c of candidates) {
+  const all = await candidates(page, base, ref);
+  for (const c of all) {
     if (await c.count() > 0)
       return c;
   }
-  return candidates.reduce((a, b) => a.or(b));
+  return all.reduce((a, b) => a.or(b));
+}
+
+async function candidates(page: Page, base: Base, ref: NounRef): Promise<Locator[]> {
+  const plan = ref.plan;
+  if (plan.type !== 'kind')
+    return [await inBase(page, base, ref)];
+  const out: Locator[] = [];
+  for (const split of [plan, ...plan.alternatives])
+    out.push(...(split.qualifier ? strategies(page, base, split.kind, split.qualifier) : [base.locator(split.kind.selector)]));
+  return out;
+}
+
+/** What a scope itself is looked for in: its own scope, else the page. */
+async function scopeBase(page: Page, scopeRef: NounRef, within?: Locator): Promise<Base> {
+  return scopeRef.scope ? locateRef(page, scopeRef.scope, within) : within ?? page;
 }
 
 /** The element's whole text is the qualifier, allowing decoration around it (an icon glyph, a

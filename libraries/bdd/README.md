@@ -119,6 +119,10 @@ property surface walked section by section, where re-opening the data and the vi
 scenario would cost more than the checks. Each scenario then puts back what it changed, and owns
 its error and balloon floors. `-g` selects the whole journey.
 
+**`@serial`** on the feature runs it one at a time with every other `@serial` feature, while the
+rest of the run stays parallel. Use it where features read what other features change at the same
+time — a fuzzy gallery search that brings up the fixtures other features create and delete.
+
 **`@known-failure`** on a scenario says the product has the defect it describes: its failure does
 not fail the test, and its passing does ("the bug is fixed, remove the tag"). Nothing is softened
 to stay green.

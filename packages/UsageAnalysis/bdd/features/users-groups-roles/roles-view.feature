@@ -1,4 +1,4 @@
-@journey @roles @realizes:views.roles
+@journey @serial @roles @realizes:views.roles
 Feature: The Roles view
   Browse > Platform > Roles as an administrator sees it: the list and its toolbar, the view modes,
   search, a role's context menu and context panel. Translated from files/TestTrack/User
@@ -11,7 +11,7 @@ Feature: The Roles view
   before its link is read. The server count of roles by a name counts groups; the Roles view listing the role
   is what shows it is one.
 
-  Not translated here: Roles-03 to 05, 09 and 15 are roles-lifecycle.feature, Roles-11 to 14
+  Elsewhere: Roles-03 to 05, 09 and 15 are roles-lifecycle.feature, Roles-11 to 14
   roles-assignment.feature.
 
   Background:

@@ -1,8 +1,8 @@
-@journey @groups @realizes:views.groups
+@journey @serial @groups @realizes:views.groups
 Feature: The Groups view
   Browse > Platform > Groups as an administrator sees it: the list and its toolbar, the view modes,
   search, a group's context menu, context panel and chat. Translated from files/TestTrack/User
-  groups/groups_manual_tests.md (Groups-01, 02, 06 to 08, 10, 17, 20) and
+  groups/groups_manual_tests.md (Groups-01, 02, 06 to 08, 10, 16, 17, 20) and
   playwright-public/user groups/groups.test.ts.
 
   The group every claim is about is made by the feature and deleted at its end, with the hidden
@@ -11,11 +11,12 @@ Feature: The Groups view
   the counter dropping below the list's first — it keeps its old number until the result lands —
   and only then by the group's link.
 
-  Not translated: Groups-03 to 05, 09 and 14 are groups-lifecycle.feature, Groups-11 to 13 and 15
-  groups-members.feature. Groups-16 (requesting membership) needs a second signed-in user, and a
-  feature has one page. Groups-18 (personal groups) has no UI: the Groups view does not list them.
-  Groups-19 (favorites) is left out: a group has no favorites entry in its context menu and no star
-  in the context panel, only a Favorites pane that takes a drag from outside the panel.
+  Elsewhere: Groups-03 to 05, 09 and 14 are groups-lifecycle.feature, Groups-11 to 13, 15 and 18
+  groups-members.feature. Groups-16 is requested by the account the feature runs as, not by a second
+  signed-in user: a feature has one page.
+
+  Not translated: Groups-19 (favorites) — a group has no favorites entry in its context menu and no
+  star in the context panel.
 
   Background:
     Given user is logged in
@@ -114,3 +115,13 @@ Feature: The Groups view
     When user clears gallery search
     Then no errors should have been logged
     And no error or warning balloon should have been shown
+
+  # GROK-20906: Request membership logs a NullError (grok_group_meta.dart 52) and sends nothing. Once
+  # fixed it sends a real request for the group this feature deletes at its end.
+  @known-failure
+  Scenario: Request membership answers without an error (Groups-16)
+    When user types "BDD-GV-Group-{time}" into gallery search
+    Then the gallery counter should be lower than remembered
+    When user picks "Request membership" from the context menu of "BDD-GV-Group-{time}" link in gallery
+    Then an info balloon should have been shown
+    And no errors should have been logged

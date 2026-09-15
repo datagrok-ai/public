@@ -3,7 +3,7 @@ Feature: The Users view
   Browse > Platform > Users as an administrator sees it: the list and its toolbar, the view modes,
   search and filters, the New dialogs up to the point where they would create someone, and what a
   user's context menu, context panel and profile show. Translated from files/TestTrack/User
-  groups/users_manual_tests.md (Users-01 to 04, 06, 08, 09, 11, 13 to 17, 22) and
+  groups/users_manual_tests.md (Users-01 to 04, 06, 08 to 17, 22) and
   playwright-public/user groups/users.test.ts.
 
   The user every claim is about is made by the feature, named by the time it ran: a user can never
@@ -20,10 +20,14 @@ Feature: The Users view
   user joined ("just now", "a minute ago": grok_user_meta.dart), not the name, email and login the
   manual case lists — nothing there reads as a fact about this user, so the pane is claimed shown.
 
-  Not translated: Users-05 and 07 (creating users) are users-create.feature; Users-18 to 21 are
-  users-manage.feature. Users-10 (#tag search): no user carries a tag to find, and the manual case's
-  own check is only that nothing fails. Users-12 (sorting): the sort menu marks its field, but
-  nothing on the page says in which order the gallery then is.
+  A #tag search is claimed by what it filters to: no user carries a tag this run could find (the JS
+  API cannot tag a user), so the tag is one no one has and the list empties. A sort is claimed by
+  the first item: which order the rest is in no reading exposes, and Admin and System joined in the
+  same instant, so either may lead the default order. The order chosen is kept in the browser, so
+  the scenario ends on Default, the ordering Settings gives.
+
+  Elsewhere: Users-05 and 07 (creating users) are users-create.feature; Users-18 to 21 are
+  users-manage.feature.
 
   Background:
     Given user is logged in
@@ -197,6 +201,29 @@ Feature: The Users view
     When user closes the current view
     Then the "Users" view should be current
     When user clears gallery search
+    Then no errors should have been logged
+    And no error or warning balloon should have been shown
+
+  Scenario: A #tag search filters the list (Users-10)
+    When user remembers the gallery counter
+    And user types "#bddnotag{time}" into gallery search
+    Then gallery counter should have text "0"
+    When user clears gallery search
+    Then the gallery counter should not be lower than remembered
+    And no errors should have been logged
+    And no error or warning balloon should have been shown
+
+  Scenario: Sort list reorders the users, and Default reorders them back (Users-12)
+    When user remembers the first item in gallery
+    And user clicks on "Sort list" icon inside gallery toolbar
+    Then the open menu should list "Name"
+    And the open menu should list "Default"
+    When user picks "Name" from the open menu
+    Then the first item in gallery should not be the remembered one
+    When user remembers the first item in gallery
+    And user picks "Default" from the open menu
+    Then the first item in gallery should not be the remembered one
+    When user closes the context menu
     Then no errors should have been logged
     And no error or warning balloon should have been shown
 

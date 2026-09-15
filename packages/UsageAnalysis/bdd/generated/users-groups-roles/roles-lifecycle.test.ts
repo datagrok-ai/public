@@ -22,7 +22,7 @@ import {el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("A role from creation to deletion", () => {
   const session = feature(test, "features/users-groups-roles/roles-lifecycle.feature", import.meta.url);
-  test("A role from creation to deletion", {tag: ["@journey", "@roles", "@realizes:views.roles"]}, async ({browser}) => {
+  test("A role from creation to deletion", {tag: ["@journey", "@serial", "@roles", "@realizes:views.roles"]}, async ({browser}) => {
     const page = await session.page(browser);
     const run = journey(test, 5, page);
     await session.step(16, "Given user is logged in", () => loggedIn(page));

@@ -1,4 +1,4 @@
-@journey @groups @realizes:views.groups
+@journey @serial @groups @realizes:views.groups
 Feature: A group from creation to deletion
   The New Group... dialog, a group created with it, renamed through Properties... and deleted.
   Translated from files/TestTrack/User groups/groups_manual_tests.md (Groups-03, 04, 05, 09, 14) and

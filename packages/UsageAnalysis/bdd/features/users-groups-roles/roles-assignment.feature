@@ -1,4 +1,4 @@
-@journey @roles @realizes:views.roles
+@journey @serial @roles @realizes:views.roles
 Feature: Who holds a role, and what it grants
   The Assigned to pane of a role and the editor behind its MANAGE button — assigning a user, letting
   it assign the role on, taking the role away — and the role's Global Permissions. Translated from
