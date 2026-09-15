@@ -266,8 +266,8 @@ export const sharingPaneListsNot = Then('the sharing pane should not list the sh
   await expect(await sharingPane(page)).not.toContainText(new RegExp(sharingShownName(), 'i'));
 }, {tier: 'ui', description: 'read once the pane has loaded'});
 
-// Space name filters miss existing spaces, so names are matched after reading every page.
-type NamedSource = 'spaces' | 'models';
+// Space and group name filters miss existing entities, so names are matched after reading every page.
+type NamedSource = 'spaces' | 'models' | 'groups';
 type CleanupSource = NamedSource | 'projects' | 'tables';
 type ServerEntity = {id: string; name: string; friendlyName: string; children?: string[]};
 type CleanupStage = {source: CleanupSource; ids: string[]};
@@ -297,6 +297,43 @@ async function serverEntities(page: Page, source: CleanupSource, filter = ''): P
       throw new Error(`${src} list: ${(error as any)?.message ?? String(error)}`);
     }
   }, [source, filter] as [CleanupSource, string]);
+}
+
+/** Endpoints the JS API does not wrap (chats, global permissions), called with the page's session. */
+async function serverRequests(page: Page) {
+  const {root, token} = await page.evaluate(() => ({root: new URL(grok.dapi.root, location.href).href.replace(/\/$/, ''),
+    token: String(grok.dapi.token)}));
+  const headers = {Authorization: token};
+  return {
+    async list<T>(path: string): Promise<T[]> {
+      const listed = await page.request.get(`${root}${path}`, {headers});
+      if (!listed.ok())
+        throw new Error(`GET ${path} failed: HTTP ${listed.status()}`);
+      return listed.json();
+    },
+    async remove(path: string): Promise<void> {
+      const deleted = await page.request.delete(`${root}${path}`, {headers});
+      const body = await deleted.text();
+      if (!deleted.ok() || body.includes('ApiError'))
+        throw new Error(`DELETE ${path}: ${body.slice(0, 200)}`);
+    },
+  };
+}
+
+/* A group's chat lives in a hidden group made for it; deleting that group, or the group, first leaves
+   a chat that throws in every profile's chat listing (forum.dart), so the chat goes first. */
+async function deleteChatsOf(page: Page, entity: ServerEntity): Promise<void> {
+  const api = await serverRequests(page);
+  for (const chat of await api.list<{id: string}>(`/chats/with_groups?ids=${entity.id}`))
+    await api.remove(`/chats/${chat.id}`);
+}
+
+/* groups.delete refuses a group holding a global permission, and an entity delete orphans the grant. */
+async function deleteGlobalGrantsOf(page: Page, entity: ServerEntity): Promise<void> {
+  const api = await serverRequests(page);
+  for (const grant of await api.list<{id: string; userGroup?: {id: string}}>(`/privileges/permissions/?groupId=${entity.id}&global=true`))
+    if (grant.userGroup?.id === entity.id)
+      await api.remove(`/privileges/permissions/${grant.id}`);
 }
 
 function namedCleanup(page: Page, source: NamedSource, what: string, names: string[]): () => Promise<void> {
@@ -368,8 +405,8 @@ function namedCleanup(page: Page, source: NamedSource, what: string, names: stri
         for (const [modelId, stages] of pending) {
           while (stages.length > 0) {
             const stage = stages[0];
-            // Spaces filters also miss IDs; verify deletion against the complete listing.
-            const filter = stage.source === 'spaces' ? '' : stage.ids.map((id) => `id = "${id}"`).join(' or ');
+            // Spaces and groups filters also miss IDs; verify deletion against the complete listing.
+            const filter = stage.source === 'spaces' || stage.source === 'groups' ? '' : stage.ids.map((id) => `id = "${id}"`).join(' or ');
             const entities = stage.ids.length === 0 ? [] : (await serverEntities(page, stage.source, filter))
               .filter((entity) => stage.ids.includes(entity.id));
             if (entities.length === 0) {
@@ -381,6 +418,10 @@ function namedCleanup(page: Page, source: NamedSource, what: string, names: stri
                 if (stage.source === 'tables' &&
                   (await serverEntities(page, 'models', `trainedOn.id = "${entity.id}"`)).length > 0)
                   throw new Error(`training table ${entity.id} is still used by another model; it was retained`);
+                if (stage.source === 'groups') {
+                  await deleteChatsOf(page, entity);
+                  await deleteGlobalGrantsOf(page, entity);
+                }
                 await page.evaluate(async ([src, id, ownerId]) => {
                   let operation = 'lookup';
                   try {
@@ -458,8 +499,236 @@ export const modelsOnServer = Then('{int} predictive model(s) named {string} sho
   expectNamedCount(page, 'models', 'predictive models', name, count),
 {tier: 'api', description: 'what the server holds, not what the gallery draws'});
 
+/* --- users, groups and roles ----------------------------------------------------------------------
+   A role is a group on the server (the Roles view lists the groups flagged as roles), so the group
+   steps serve both, under either word. A user can never be deleted: a feature that needs one makes a
+   new one, named by {time}, and leaves it — what it changed on it goes with it. */
+
+export const noGroupOnServer = Given('no group named {string} is on the server', async (page: Page, name: string) => {
+  const cleanup = namedCleanup(page, 'groups', 'groups', namesOf(name));
+  atFeatureEnd(page, cleanup);
+  await cleanup();
+}, {tier: 'api', description: 'deletes earlier fixtures by name (comma-separated), and deletes them again at feature end'});
+
+export const noRoleOnServer = Given('no role named {string} is on the server', async (page: Page, name: string) => {
+  const cleanup = namedCleanup(page, 'groups', 'roles', namesOf(name));
+  atFeatureEnd(page, cleanup);
+  await cleanup();
+}, {tier: 'api', description: 'a role is a group on the server: deletes earlier fixtures by name, and again at feature end'});
+
+export const groupsOnServer = Then('{int} group(s) named {string} should be on the server', (page: Page, count: number, name: string) =>
+  expectNamedCount(page, 'groups', 'groups', name, count), {tier: 'api'});
+
+export const rolesOnServer = Then('{int} role(s) named {string} should be on the server', (page: Page, count: number, name: string) =>
+  expectNamedCount(page, 'groups', 'roles', name, count), {tier: 'api'});
+
+/** The friendly name is set with the name: the server derives it by splitting camel case otherwise,
+ * and "BDD-Group" would be listed as "BD D-Group". */
+export const groupOnServer = Given('a group named {string} is on the server', async (page: Page, name: string) => {
+  const cleanup = namedCleanup(page, 'groups', 'groups', [name]);
+  atFeatureEnd(page, cleanup);
+  await cleanup();
+  await page.evaluate(async (n) => {
+    const group = DG.Group.create(n);
+    group.friendlyName = n;
+    await grok.dapi.groups.save(group);
+  }, name);
+  await expectNamedCount(page, 'groups', 'groups', name, 1);
+}, {tier: 'api', description: 'a new group under that name, deleted at feature end'});
+
+async function serverUsers(page: Page, login: string): Promise<{id: string; status: string}[]> {
+  return page.evaluate(async (l) => {
+    const found: {id: string; status: string}[] = [];
+    for (let pageNumber = 1; ; pageNumber++) {
+      const users = await grok.dapi.users.order('id').list({pageSize: 1000, pageNumber});
+      for (const user of users)
+        if (user.login === l)
+          found.push({id: user.id, status: (await grok.dapi.users.find(user.id)).status});
+      if (users.length < 1000)
+        return found;
+    }
+  }, login);
+}
+
+export const newUserOnServer = Given('a new user {string} with email {string} is on the server', async (page: Page, login: string, email: string) => {
+  if ((await serverUsers(page, login)).length > 0)
+    throw new Error(`a user "${login}" is already on the server; a fixture user is new, name it with {time}`);
+  await page.evaluate(async ([l, e]) => {
+    const user = DG.User.create();
+    user.login = l;
+    user.email = e;
+    user.firstName = l;
+    user.lastName = '';
+    user.status = 'active';
+    await grok.dapi.users.save(user);
+  }, [login, email]);
+  await expect.poll(() => page.evaluate(async (l) => (await grok.dapi.users.filter(l).list()).some((u: any) => u.login === l), login),
+    {message: `"${login}" found by the users search`, timeout: pollMs(60000)}).toBe(true);
+}, {tier: 'api', description: 'an active user named after its login, done when the users search finds it; users cannot be deleted, so it stays'});
+
+export const usersOnServer = Then('{int} user(s) with login {string} should be on the server', async (page: Page, count: number, login: string) => {
+  await expect.poll(() => serverUsers(page, login).then((users) => users.length), {message: `users with login "${login}"`, timeout: pollMs(60000)})
+    .toBe(count);
+}, {tier: 'api', description: 'what the server holds, not what the gallery draws'});
+
+export const userStatusOnServer = Then('the user {string} should be {word} on the server', async (page: Page, login: string, status: string) => {
+  const want = status === 'disabled' ? 'blocked' : status;
+  await expect.poll(() => serverUsers(page, login).then((users) => users.map((u) => u.status).join(', ') || 'no such user'),
+    {message: `the status of "${login}"`, timeout: pollMs(30000)}).toBe(want);
+}, {tier: 'api', description: '"active", or "disabled" (the server says blocked)'});
+
+export const personalGroupOnServer = Then('the user {string} should have a personal group on the server', async (page: Page, login: string) => {
+  await expect.poll(() => page.evaluate(async (l) => {
+    const user = await grok.dapi.users.include('group').filter(`login = "${l}"`).first();
+    if (!user?.group)
+      return user ? 'the user has no group yet' : 'no such user';
+    const group = await grok.dapi.groups.find(user.group.id);
+    return group?.personal ? `personal group "${group.friendlyName}"` : `group ${user.group.id} is not personal`;
+  }, login), {message: `the personal group of "${login}"`, timeout: pollMs(30000)}).toBe(`personal group "${login}"`);
+}, {tier: 'api', description: 'the security group every user has, named by the login and flagged personal'});
+
+/** Who belongs to a group or holds a role: the member is a user by login or a group by name, and an
+ * admin member is a group's Admin or a role's Can assign. */
+async function membership(page: Page, member: string, group: string): Promise<string> {
+  return page.evaluate(async ([m, g]) => {
+    try {
+      const all = async (source: any): Promise<any[]> => {
+        const out: any[] = [];
+        for (let pageNumber = 1; ; pageNumber++) {
+          const items = await source.order('id').list({pageSize: 1000, pageNumber});
+          out.push(...items);
+          if (items.length < 1000)
+            return out;
+        }
+      };
+      const groups = await all(grok.dapi.groups);
+      const target = groups.find((x) => x.friendlyName === g || x.name === g);
+      if (!target)
+        return `no group or role "${g}"`;
+      const ids = new Set<string>(groups.filter((x) => x.friendlyName === m || x.name === m).map((x) => x.id));
+      for (const user of await all(grok.dapi.users.include('group')))
+        if (user.login === m && user.group)
+          ids.add(user.group.id);
+      if (ids.size === 0)
+        return `no user or group "${m}"`;
+      const full = await grok.dapi.groups.find(target.id);
+      return full.adminMembers.some((x: any) => ids.has(x.id)) ? 'admin member' :
+        full.members.some((x: any) => ids.has(x.id)) ? 'member' : 'not a member';
+    }
+    catch (error) {
+      return `the lookup failed: ${(error as any)?.message ?? String(error)}`;
+    }
+  }, [member, group]);
+}
+
+const expectMembership = (page: Page, member: string, group: string, want: string[]) =>
+  expect.poll(() => membership(page, member, group), {message: `"${member}" in "${group}"`, timeout: pollMs(30000)})
+    .toMatch(new RegExp(`^(${want.join('|')})$`));
+
+export const memberOnServer = Then('{string} should be a member of {string} on the server', (page: Page, member: string, group: string) =>
+  expectMembership(page, member, group, ['member', 'admin member']), {tier: 'api', description: 'a group\'s members or a role\'s assignees, admins included'});
+
+export const plainMemberOnServer = Then('{string} should be a plain member of {string} on the server', (page: Page, member: string, group: string) =>
+  expectMembership(page, member, group, ['member']), {tier: 'api', description: 'a member without Admin (a role: without Can assign)'});
+
+export const adminMemberOnServer = Then('{string} should be an admin member of {string} on the server', (page: Page, member: string, group: string) =>
+  expectMembership(page, member, group, ['admin member']), {tier: 'api', description: 'Admin of a group, Can assign of a role'});
+
+export const notMemberOnServer = Then('{string} should not be a member of {string} on the server', (page: Page, member: string, group: string) =>
+  expectMembership(page, member, group, ['not a member']), {tier: 'api'});
+
+/* --- the gallery ------------------------------------------------------------------------------------ */
+
+/* The counter reads "N", "N of M" (M is the list) or "shown / total", "..." before it knows. Other
+   features may add items meanwhile, so a comparison with the remembered count is one-sided. */
+const rememberedCounts = new WeakMap<Page, number>();
+
+async function galleryCount(page: Page): Promise<number | string> {
+  const text = ((await (await locate(page, el('gallery counter'))).filter({visible: true}).first().textContent()
+    .catch(() => null)) ?? '').trim();
+  const m = /^(?:\d+\s+of\s+)?(\d+)(?:\s*\/\s*\d+)?$/.exec(text);
+  return m ? Number(m[1]) : `not a count: "${text}"`;
+}
+
+export const rememberGalleryCount = When('user remembers the gallery counter', async (page: Page) => {
+  let count: number | string = '';
+  await expect.poll(async () => String(count = await galleryCount(page)), {message: 'the gallery counter'}).toMatch(/^[0-9]+$/);
+  if (!rememberedCounts.has(page))
+    atFeatureEnd(page, async () => { rememberedCounts.delete(page); });
+  rememberedCounts.set(page, Number(count));
+}, {tier: 'ui', description: 'the number the counter shows once the gallery has loaded, until the feature ends'});
+
+type CountRelation = 'lower' | 'not lower' | 'higher';
+
+async function expectCountVersusRemembered(page: Page, relation: CountRelation): Promise<void> {
+  const remembered = rememberedCounts.get(page);
+  if (remembered === undefined)
+    throw new Error('no gallery counter remembered: "user remembers the gallery counter" first');
+  await expect.poll(async () => {
+    const count = await galleryCount(page);
+    if (typeof count !== 'number')
+      return count;
+    const holds = relation === 'lower' ? count < remembered : relation === 'higher' ? count > remembered : count >= remembered;
+    return `${holds ? '' : 'not '}${relation} (${count} vs ${remembered})`;
+  }, {message: 'the gallery counter against the remembered one'}).toMatch(new RegExp(`^${relation} \\(`));
+}
+
+export const galleryCountLower = Then('the gallery counter should be lower than remembered', (page: Page) =>
+  expectCountVersusRemembered(page, 'lower'));
+
+export const galleryCountNotLower = Then('the gallery counter should not be lower than remembered', (page: Page) =>
+  expectCountVersusRemembered(page, 'not lower'), {description: 'back to at least the remembered count — another feature may have added items meanwhile'});
+
+export const galleryCountHigher = Then('the gallery counter should be higher than remembered', (page: Page) =>
+  expectCountVersusRemembered(page, 'higher'), {description: 'a cleared search against the count it showed: a jump no item or two of another feature can fake'});
+
+/* The first item says a reordering happened; which order the rest is in no reading exposes. */
+const rememberedFirstItems = new WeakMap<Page, string>();
+
+async function firstGalleryItem(page: Page): Promise<string> {
+  if (typeof await galleryCount(page) !== 'number')
+    return '';
+  const gallery = await locate(page, el('gallery'));
+  return ((await gallery.filter({visible: true}).first().locator('.d4-link-label').first().textContent({timeout: 1000})
+    .catch(() => null)) ?? '').trim();
+}
+
+export const rememberFirstGalleryItem = When('user remembers the first item in gallery', async (page: Page) => {
+  let first = '';
+  await expect.poll(async () => first = await firstGalleryItem(page), {message: 'the first item in the gallery'}).not.toBe('');
+  if (!rememberedFirstItems.has(page))
+    atFeatureEnd(page, async () => { rememberedFirstItems.delete(page); });
+  rememberedFirstItems.set(page, first);
+}, {tier: 'ui', description: 'the name of the first item once the gallery has loaded, until the feature ends'});
+
+async function expectFirstVersusRemembered(page: Page, same: boolean): Promise<void> {
+  const remembered = rememberedFirstItems.get(page);
+  if (remembered === undefined)
+    throw new Error('no first item remembered: "user remembers the first item in gallery" first');
+  await expect.poll(async () => {
+    const first = await firstGalleryItem(page);
+    return first === '' ? 'still loading' : first === remembered ? 'the remembered one' : `another one ("${first}")`;
+  }, {message: `the first item in the gallery against "${remembered}"`}).toMatch(same ? /^the remembered one$/ : /^another one/);
+}
+
+export const firstGalleryItemSame = Then('the first item in gallery should be the remembered one', (page: Page) =>
+  expectFirstVersusRemembered(page, true));
+
+export const firstGalleryItemOther = Then('the first item in gallery should not be the remembered one', (page: Page) =>
+  expectFirstVersusRemembered(page, false), {description: 'a reordering: another item leads the list'});
+
+export const galleryMode = Then('the gallery should be in {word} mode', async (page: Page, mode: string) => {
+  const gallery = await locate(page, el('gallery'));
+  await expect.poll(() => gallery.filter({visible: true}).first().getAttribute('mode')
+    .then((m) => (m ?? 'none').toLowerCase()).catch(() => 'no gallery'), {message: 'the render mode of the gallery'}).toBe(mode.toLowerCase());
+}, {description: 'brief, card or grid — what the gallery renders its items as, not which toggle is lit'});
+
 export const urlShouldContain = Then('the page address should contain {string}', async (page: Page, part: string) => {
   await expect.poll(() => page.url(), {message: 'the page address'}).toContain(part);
+});
+
+export const urlShouldNotContain = Then('the page address should not contain {string}', async (page: Page, part: string) => {
+  await expect.poll(() => page.url(), {message: 'the page address'}).not.toContain(part);
 });
 
 /** How many viewers the current view holds — an analysis that is done is one that has put its

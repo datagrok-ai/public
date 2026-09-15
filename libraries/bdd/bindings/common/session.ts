@@ -9,6 +9,25 @@ import {installViewerRuntime, takeBalloons} from '../../src/runtime/viewers.js';
 
 declare const grok: any;
 
+const homeNotWaitedFor = new WeakSet<Page>();
+
+/* What a PowerPack Home widget logs while it loads would land on whichever scenario runs by then. The
+   widgets host shows up within a second of the shell; a stand without it is not waited for again. */
+async function homeWidgetsSettled(page: Page): Promise<void> {
+  if (homeNotWaitedFor.has(page))
+    return;
+  const hasHost = await page.waitForFunction(() => grok.shell.v?.root?.querySelector('.power-pack-widgets-host') != null,
+    null, {timeout: 10000}).then(() => true, () => false);
+  const settled = hasHost && await page.waitForFunction(() => {
+    const contents = [...grok.shell.v.root.querySelectorAll('.power-pack-widgets-host .power-pack-widget-content')] as HTMLElement[];
+    return contents.length > 0 && contents.every((c) => c.children.length > 0 && c.querySelector('.grok-loader') == null);
+  }, null, {timeout: 30000}).then(() => true, () => false);
+  if (!settled) {
+    homeNotWaitedFor.add(page);
+    console.warn(`bdd: ${hasHost ? 'the Home widgets did not finish loading in 30 s' : 'no PowerPack Home widgets'}; not waited for again on this page`);
+  }
+}
+
 export const loggedIn = Given('user is logged in', async (page: Page) => {
   const inShell = await page.evaluate(() => typeof (window as any).grok?.shell?.closeAll === 'function').catch(() => false);
   if (!inShell) {
@@ -28,6 +47,7 @@ export const loggedIn = Given('user is logged in', async (page: Page) => {
   });
   // closeAll re-adds the Home view asynchronously; a table opened before it lands ends up behind it
   await page.waitForFunction(() => grok.shell.v?.type === 'datagrok', null, {timeout: 60000});
+  await homeWidgetsSettled(page);
   await installViewerRuntime(page);
   // what the stand logs or shows while booting (a broken package's autostart, "Debugging
   // packages") is not the scenario's

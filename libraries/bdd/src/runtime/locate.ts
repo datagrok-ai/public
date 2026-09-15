@@ -105,6 +105,12 @@ export async function locateRef(page: Page, ref: NounRef, within?: Locator): Pro
       return pick(inRoot, ref);
   }
   let loc = await inBase(page, base, ref);
+  // a scope read while its container rebuilds can resolve to its label (a section's header before
+  // its pane is back): the target is then looked for in every candidate the scope has
+  if (scope && ref.scope!.ordinal === undefined && await loc.count() === 0 && await isKindLabel(scope, ref.scope!)) {
+    scope = (await candidates(page, await scopeBase(page, ref.scope!, within), ref.scope!)).reduce((a, b) => a.or(b));
+    loc = await inBase(page, scope, ref);
+  }
   // a scope that is not on the page has no owner edge to try — and `getAttribute` on it would
   // wait the whole action timeout for it to appear
   if (scope && await loc.count() === 0 && await scope.count() > 0) {
@@ -132,14 +138,41 @@ async function inBase(page: Page, base: Base, ref: NounRef): Promise<Locator> {
   }
   if (plan.type === 'part')
     return base.locator(plan.selector);
-  const candidates: Locator[] = [];
-  for (const split of [plan, ...plan.alternatives])
-    candidates.push(...(split.qualifier ? strategies(page, base, split.kind, split.qualifier) : [base.locator(split.kind.selector)]));
-  for (const c of candidates) {
+  const all = await candidates(page, base, ref);
+  for (const c of all) {
     if (await c.count() > 0)
       return c;
   }
-  return candidates.reduce((a, b) => a.or(b));
+  return all.reduce((a, b) => a.or(b));
+}
+
+async function candidates(page: Page, base: Base, ref: NounRef): Promise<Locator[]> {
+  const plan = ref.plan;
+  if (plan.type !== 'kind')
+    return [await inBase(page, base, ref)];
+  const out: Locator[] = [];
+  for (const split of [plan, ...plan.alternatives])
+    out.push(...(split.qualifier ? strategies(page, base, split.kind, split.qualifier) : [base.locator(split.kind.selector)]));
+  return out;
+}
+
+async function scopeBase(page: Page, scopeRef: NounRef, within?: Locator): Promise<Base> {
+  if (scopeRef.scope)
+    return locateRef(page, scopeRef.scope, within);
+  if (!within && contextFirst(scopeRef)) {
+    const root = page.locator(scopeRef.context!.selector);
+    if (await root.count() > 0)
+      return root;
+  }
+  return within ?? page;
+}
+
+async function isKindLabel(scope: Locator, scopeRef: NounRef): Promise<boolean> {
+  const label = scopeRef.plan.type === 'kind' ? scopeRef.plan.kind.labelSelector : undefined;
+  if (!label || await scope.count() === 0)
+    return false;
+  const selector = label.split(',').map((s) => s.trim().replace(/^:scope\s*>\s*/, '')).join(', ');
+  return scope.first().evaluate((e, s) => e.matches(s), selector).catch(() => false);
 }
 
 /** The element's whole text is the qualifier, allowing decoration around it (an icon glyph, a

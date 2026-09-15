@@ -21,7 +21,7 @@ import '../bindings/platform/elements.js';
 import {noSpaceOnServer} from '../bindings/platform/steps.js';
 import {el} from '../src/runtime/args.js';
 import {clear, keysOf, press, pressIn, readExpanded, select, setExpanded, typeInto, withKeys} from '../src/runtime/gestures.js';
-import {atFeatureEnd, feature} from '../src/runtime/harness.js';
+import {atFeatureEnd, feature, takeErrors, watchErrors} from '../src/runtime/harness.js';
 import {expectState, expectText} from '../src/runtime/assertions.js';
 import {whileExpectedToFail} from '../src/runtime/patience.js';
 import {locate, locateActionable} from '../src/runtime/locate.js';
@@ -105,6 +105,44 @@ scenario('the Dart name conventions and the platform names', async () => {
   assert.equal(await count('scatter plot icon in viewers section of toolbox'), 1);
   assert.equal(await count('Caption input'), 1);
 });
+
+const PANE = (button: boolean) => '<div class="d4-accordion-pane" name="pane-Grants">' +
+  '<div class="d4-accordion-pane-header" name="div-section--Grants">Grants</div>' +
+  `<div class="d4-accordion-pane-content">${button ? '<button class="ui-btn">MANAGE</button>' : ''}</div></div>`;
+
+async function withHost(html: string, body: () => Promise<void>): Promise<void> {
+  await page!.evaluate((h) => {
+    const host = document.createElement('div');
+    host.id = 'late-host';
+    host.innerHTML = h;
+    document.body.appendChild(host);
+  }, html);
+  try {
+    await body();
+  }
+  finally {
+    await page!.evaluate(() => document.getElementById('late-host')?.remove());
+  }
+}
+
+const setHost = (html: string) => page!.evaluate((h) => { document.getElementById('late-host')!.innerHTML = h; }, html);
+
+scenario('a scope read while its container rebuilds finds the target once the container is back', () =>
+  withHost('<div class="d4-accordion-pane-header" name="div-section--Grants">Grants</div>', async () => {
+    const button = await locateActionable(page!, el('MANAGE button in "Grants" section'));
+    await setHost(PANE(true));
+    assert.equal(await button.count(), 1);
+  }));
+
+scenario('a target that renders late in a whole scope, and in an ordinal one, is found in that scope', () =>
+  withHost(PANE(false) + PANE(false), async () => {
+    const inFirst = await locateActionable(page!, el('MANAGE button in "Grants" section'));
+    const inSecond = await locateActionable(page!, el('MANAGE button in second "Grants" section'));
+    await setHost(PANE(false) + PANE(true));
+    assert.equal(await inSecond.count(), 1);
+    assert.equal(await inFirst.count(), 1);
+    assert.equal(await page!.locator('#late-host [name="pane-Grants"]').nth(1).locator('button').count(), 1);
+  }));
 
 scenario('ordinals, and the visible matches a gesture acts on', async () => {
   assert.equal(await text('second item in results list'), 'beta');
@@ -304,4 +342,25 @@ test('a run suffix is stable within a feature and distinct across feature instan
   assert.equal(a.text('{run}/{run}').split('/')[1], a.text('{run}'));
   assert.notEqual(a.text('{run}'), b.text('{run}'));
   assert.match(a.text('{run}'), /^[0-9a-f-]{36}$/);
+  assert.equal(a.text('u{time}.{time}').split('.')[0], `u${a.text('{time}')}`);
+  assert.match(a.text('{time}'), /^\d{13,}$/);
+  assert.notEqual(a.text('{time}'), b.text('{time}'));
+});
+
+test('the translated stack trace of a logged error is not a second error', () => {
+  const listeners: ((m: unknown) => void)[] = [];
+  const fake = {on: (event: string, fn: (m: unknown) => void) => { if (event === 'console') listeners.push(fn); }} as unknown as Page;
+  const log = (text: string) => listeners.forEach((fn) => fn({type: () => 'error', text: () => text, location: () => ({url: ''})}));
+  watchErrors(fake);
+  log('NullError: y on null\nTranslating stack trace... Look below, ID = Cd2');
+  log('Stack trace Cd2\n\tpackages/d4/src/w.dart 1:1');
+  const joined = takeErrors(fake);
+  assert.equal(joined.length, 1);
+  assert.match(joined[0], /w\.dart/);
+  log('NullError: x on null\nTranslating stack trace... Look below, ID = Ab1');
+  assert.equal(takeErrors(fake).length, 1);
+  log('Stack trace Ab1\n\tpackages/d4/src/x.dart 1:1');
+  assert.deepEqual(takeErrors(fake), []);
+  log('Stack trace Zz9\n\tpackages/d4/src/y.dart 1:1');
+  assert.equal(takeErrors(fake).length, 1);
 });
