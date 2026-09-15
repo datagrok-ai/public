@@ -6,7 +6,8 @@
     "types": [
       "node",
       "@datagrok/build-config/css"
-    ]
+    ],
+    "sourceMap": true
   },
   "include": [
     "src"

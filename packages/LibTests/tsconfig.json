@@ -2,5 +2,8 @@
   "extends": "@datagrok/build-config/tsconfig.base.json",
   "include": [
     "src"
-  ]
+  ],
+  "compilerOptions": {
+    "sourceMap": true
+  }
 }

@@ -4,6 +4,7 @@
     "src"
   ],
   "compilerOptions": {
-    "strict": false
+    "strict": false,
+    "sourceMap": true
   }
 }
