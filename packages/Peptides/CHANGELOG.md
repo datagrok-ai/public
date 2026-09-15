@@ -2,8 +2,8 @@
 
 ## v.next
 
-* 1930: Recalculate monomer-position stats and scaled-activity caches when rows are added or removed
-* 2304: Guard LogoSummaryTable.onPropertyChanged and render against a null dataFrame on a detached viewer
+* GROK-20820: Recalculate monomer-position stats and scaled-activity caches when rows are added or removed
+* GROK-20751: Guard LogoSummaryTable.onPropertyChanged and render against a null dataFrame on a detached viewer
 
 ## 1.27.10 (2026-07-08)
 
