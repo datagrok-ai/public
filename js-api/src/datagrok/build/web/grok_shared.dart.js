@@ -70929,8 +70929,8 @@
         C.JSArray_methods.forEach$1(t1, new N.DataFrameLink_detach_closure());
         C.JSArray_methods.set$length(t1, 0);
         applied = this._attachedLinkTypes;
-        if (applied != null) {
-          if (C.JSArray_methods.any$1(applied, new N.DataFrameLink_detach_closure0())) {
+        if (applied != null && true) {
+          if ((applied && C.JSArray_methods).any$1(applied, new N.DataFrameLink_detach_closure0())) {
             t1 = this.dataFrame2;
             t1 = t1 == null ? t1 : J.get$rows$x(t1);
             if (!(t1 == null))
@@ -167799,8 +167799,8 @@
         t1 = new self.DG.ComponentBuildInfo();
         t2 = J.getInterceptor$x(t1);
         t2.set$branch(t1, "master");
-        t2.set$commit(t1, "fc617ed64664702e8ec9632360b760656fdd82ec");
-        t2.set$date(t1, "2026-09-14T22:50:29.166Z");
+        t2.set$commit(t1, "04d48c8204a4673f1e3ff102475366d5f1736565");
+        t2.set$date(t1, "2026-09-16T22:48:30.672Z");
         t2.set$version(t1, "1.27.11");
         return t1;
       }, null, null, 0, 0, null, "call"]
