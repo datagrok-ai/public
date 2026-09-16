@@ -50,5 +50,10 @@
     "directory": "packages/DiffStudio"
   },
   "category": "Compute",
-  "playwrightTests": "playwright"
+  "playwrightTests": "playwright",
+  "grok": {
+    "testDependencies": [
+      "@datagrok/compute2"
+    ]
+  }
 }
