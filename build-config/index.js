@@ -44,7 +44,7 @@ function swcOptions({jsx, decorators = true}) {
 function mergeConfig(base, o) {
   const out = {...base};
   for (const [k, v] of Object.entries(o)) {
-    if (['dir', 'jsx', 'wasm', 'decorators', 'assets', 'rules', 'mode', 'css'].includes(k)) continue;
+    if (['dir', 'jsx', 'wasm', 'emit', 'decorators', 'assets', 'rules', 'mode', 'css'].includes(k)) continue;
     if (k === 'externals') {
       out.externals = {...base.externals, ...v};
       for (const [name, value] of Object.entries(v)) if (value === false) delete out.externals[name];
@@ -62,8 +62,10 @@ function mergeConfig(base, o) {
 
 /**
  * Build an rspack config for the package in `o.dir` (default: cwd).
- * Options beyond rspack's own: `jsx: 'react'`, `wasm: 'async' | 'sync' | 'asset'`,
- * `decorators: false`, `assets: RegExp` (extra asset/resource test), `rules: []` (prepended).
+ * Options beyond rspack's own: `jsx: 'react'`, `wasm: 'async' | 'sync' | 'asset'` (asset, the default, copies
+ * .wasm files to dist under their own names), `emit: []` (files bundled with the package entry so they land
+ * in dist without being imported), `decorators: false`, `assets: RegExp` (extra asset/resource test),
+ * `rules: []` (prepended).
  */
 function bundler(o = {}) {
   const dir = o.dir || process.cwd();
@@ -74,7 +76,7 @@ function bundler(o = {}) {
   const {FuncGeneratorPlugin} = loadFuncGen();
 
   const ext = fs.existsSync(path.join(dir, 'src', 'package.ts')) ? 'ts' : 'js';
-  const entry = {package: `./src/package.${ext}`};
+  const entry = {package: o.emit ? [...o.emit, `./src/package.${ext}`] : `./src/package.${ext}`};
   const testEntry = ['ts', 'js'].map((e) => `./src/package-test.${e}`).find((e) => fs.existsSync(path.join(dir, e)));
   if (testEntry)
     entry.test = {filename: 'package-test.js', library: {type: 'var', name: `${name}_test`}, import: testEntry};
@@ -89,7 +91,7 @@ function bundler(o = {}) {
     {test: o.assets ? new RegExp(`${ASSET_TEST.source}|${o.assets.source}`) : ASSET_TEST, type: 'asset/resource'},
   ];
   if (o.wasm === 'asset' || !o.wasm)
-    rules.push({test: /\.wasm$/, type: 'asset/resource'});
+    rules.push({test: /\.wasm$/, type: 'asset/resource', generator: {filename: '[name][ext]'}});
 
   const base = {
     context: dir,
