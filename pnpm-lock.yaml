@@ -764,7 +764,7 @@ importers:
         specifier: 'catalog:'
         version: 6.6.7
       vue:
-        specifier: ^3.4.38
+        specifier: 'catalog:'
         version: 3.5.42(typescript@7.0.2)
       wu:
         specifier: 'catalog:'
