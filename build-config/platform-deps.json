@@ -5,7 +5,7 @@
   "wu":          {"version": "2.1.0",   "global": "wu"},
   "exceljs":     {"version": "4.4.0",   "global": "ExcelJS",     "source": "common/exceljs.min.js"},
   "html2canvas": {"version": "1.4.1",   "global": "html2canvas", "source": "common/html2canvas.min.js"},
-  "openchemlib": {"version": "8.21.0",  "global": "OCL",         "imports": {"openchemlib/full": "OCL"}, "source": "common/openchemlib-full.js"},
+  "openchemlib": {"version": "8.21.0",  "global": "OCL",         "imports": {"openchemlib/full": "OCL", "openchemlib/full.js": "OCL"}, "source": "common/openchemlib-full.js"},
   "vue":         {"version": "3.5.42",  "global": "Vue",         "source": "common/vue.js"},
   "ngl":         {"version": "2.5.0",   "global": "NGL",         "source": "common/ngl_viewer/ngl.js"},
   "codemirror":  {"version": "5.65.21", "global": "CodeMirror",  "source": "common/codemirror/codemirror.js"}
