@@ -98,6 +98,18 @@ export function atFeatureEnd(page: Page, cleanup: () => Promise<void>): void {
   list.push(cleanup);
 }
 
+/** The two console errors the browser raises about something that is not the platform's code.
+ * Both are matched on the message AND on where it came from — a broad pattern here is how a
+ * suite ends up silencing the failures it exists to catch. */
+function ignoredError(text: string, url: string): boolean {
+  // a resource the stand does not serve (a help page), logged by the browser rather than raised
+  if (text.startsWith('Failed to load resource'))
+    return true;
+  // an embedded third-party player refusing a feature policy of the page it is framed in:
+  // a card of the Projects gallery carries a YouTube iframe, and its complaint is not ours
+  return text.startsWith('Permissions policy violation') && /^https:\/\/(www\.)?youtube\.com\//.test(url);
+}
+
 /** Starts collecting the page's console errors and uncaught exceptions. */
 export function watchErrors(page: Page): void {
   if (errors.has(page))
@@ -105,9 +117,7 @@ export function watchErrors(page: Page): void {
   const list: string[] = [];
   errors.set(page, list);
   page.on('console', (m) => {
-    // a resource the stand does not serve (a help page) is logged as a console error by the
-    // browser, not raised by the platform's code — not part of the error floor
-    if (m.type() === 'error' && !m.text().startsWith('Failed to load resource'))
+    if (m.type() === 'error' && !ignoredError(m.text(), m.location().url))
       list.push(m.location().url ? `${m.text()} (${m.location().url})` : m.text());
   });
   page.on('pageerror', (e) => list.push(String(e)));
