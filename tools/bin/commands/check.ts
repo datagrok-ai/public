@@ -471,11 +471,12 @@ function platformDeps(packagePath: string): {[name: string]: {version: string, g
   }
 }
 
-function sharedLibExternals(packagePath: string): {[lib: string]: {[name: string]: string}} {
-  const result: {[lib: string]: {[name: string]: string}} = {};
+/** For each `common/*.js` source: the import specifiers a bundled package must externalize, with their globals. */
+function sharedLibExternals(packagePath: string): {[source: string]: {[spec: string]: string}} {
+  const result: {[source: string]: {[spec: string]: string}} = {};
   for (const [name, d] of Object.entries(platformDeps(packagePath))) {
     if (d.source)
-      result[d.source] = {[name === 'openchemlib' ? 'openchemlib/full' : name]: d.global};
+      result[d.source] = {[name]: d.global, ...d.imports};
   }
   return result;
 }
@@ -541,8 +542,9 @@ export function checkPackageFile(packagePath: string, json: PackageFile, options
         if (options?.isWebpack && source.endsWith('.js')) {
           if (options?.externals) {
             if (source in shared) {
-              const [lib, name] = Object.entries(shared[source])[0];
-              if (!(lib in options.externals && options.externals[lib] === name)) {
+              const expected = Object.entries(shared[source]);
+              if (!expected.some(([lib, name]) => options.externals![lib] === name)) {
+                const [lib, name] = expected[0];
                 warnings.push(`Webpack config parsing: Consider adding source "${source}" to webpack externals:\n` +
                   `'${lib}': '${name}'\n`);
               }
