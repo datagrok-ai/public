@@ -80,10 +80,14 @@ export const DOMAIN_ACCESS_COLUMNS = ['~can_edit', '~can_delete', '~can_share'] 
 /** The per-row keys of a `withAccess` read (see {@link DOMAIN_ACCESS_COLUMNS}). */
 export type DomainRowAccess = {'~can_edit': boolean; '~can_delete': boolean; '~can_share': boolean | null};
 
-/** Every service column a read can add — the {@link DOMAIN_ACCESS_COLUMNS} plus `~is_deleted`
- * (projected by a `deleted: 'include' | 'only'` query, see {@link DomainQuerySpec.deleted}).
+/** The soft-delete service column a `deleted: 'include' | 'only'` query projects (see
+ * {@link DomainQuerySpec.deleted}): whether the SERVER holds the row as deleted. */
+export const DOMAIN_DELETED_COLUMN = '~is_deleted';
+
+/** Every service column a read can add — the {@link DOMAIN_ACCESS_COLUMNS} plus
+ * {@link DOMAIN_DELETED_COLUMN}.
  * They all start with `'~'`: never exported, and hidden by `Grid.attachEditor`. */
-export const DOMAIN_SERVICE_COLUMNS = [...DOMAIN_ACCESS_COLUMNS, '~is_deleted'] as const;
+export const DOMAIN_SERVICE_COLUMNS = [...DOMAIN_ACCESS_COLUMNS, DOMAIN_DELETED_COLUMN] as const;
 
 /** Prefix of the caption service columns (see {@link DomainQuerySpec.captions}) — spelled once. */
 export const DOMAIN_CAPTION_PREFIX = '~caption_';
@@ -119,8 +123,11 @@ export interface DomainInsertResult {
 export interface DomainUpdateResult { id: string; version: number; }
 /** Result of one deleted row. */
 export interface DomainDeleteResult { id: string; deleted: true; }
+/** Result of one restored row: `version` is the new (incremented) row version. */
+export interface DomainRestoreResult { id: string; restored: true; version: number; }
 /** Result of one transaction op (see {@link DomainOpResultFor} for the typed-tuple form). */
-export type DomainOpResult = DomainInsertResult | DomainUpdateResult | DomainDeleteResult;
+export type DomainOpResult = DomainInsertResult | DomainUpdateResult | DomainDeleteResult |
+  DomainRestoreResult;
 
 /** Wire shape of _audit rows (repository.dart rowAudit/tableAudit/schemaAudit selects). */
 export interface DomainAuditEntry {
@@ -583,7 +590,10 @@ export type DomainFacetResultOf<K extends DomainFacetKind> =
 
 /** One operation of `DomainsDataSource.transaction`. */
 export interface DomainTransactionOp {
-  op: 'insert' | 'update' | 'delete';
+  /** `'restore'` carries `id` alone and undoes a landed soft delete — the Delete
+   * grant, not a new permission; the server orders a parent's restore before its
+   * child's. */
+  op: 'insert' | 'update' | 'delete' | 'restore';
   /** `'<table>'` in the transaction's schema, or `'<schema>.<table>'` — one
    * transaction may span schemas. */
   table: string;
@@ -750,7 +760,8 @@ export type DomainTxValues<T> = {[K in keyof T]: T[K] | `$${string}`};
 export type DomainOpResultFor<TOp> =
   TOp extends {op: 'insert'} ? DomainInsertResult :
   TOp extends {op: 'update'} ? DomainUpdateResult :
-  TOp extends {op: 'delete'} ? DomainDeleteResult : DomainOpResult;
+  TOp extends {op: 'delete'} ? DomainDeleteResult :
+  TOp extends {op: 'restore'} ? DomainRestoreResult : DomainOpResult;
 
 /** Runs [action], retrying on DomainVersionConflictError (for transaction-based
  * read-modify-write flows — put the fresh read INSIDE [action]); rethrows anything else

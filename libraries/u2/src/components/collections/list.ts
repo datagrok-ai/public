@@ -11,7 +11,7 @@
 
 import {Control} from '../../core/component.js';
 import {batch, signal, Signal, ReadonlySignal} from '../../core/signals.js';
-import {Action, actionsMenu} from '../actions/actions.js';
+import {Action, ActionGroup, actionsMenu} from '../actions/actions.js';
 
 export interface IndexRange {
   start: number;
@@ -49,6 +49,9 @@ export interface VirtualRowsOptions<T> {
   /** The item's FULL action list: right-click selects the row and opens it as a menu at the
    * cursor. The hover block (`rowActions`) shows the icon-bearing subset of the same list. */
   contextActions?: (item: T, index: number) => Action[];
+  /** Submenus under those actions, asked once the right-click has settled the selection: what a
+   * multi-selection offers as one ("3 issues"). */
+  contextGroups?: (item: T, index: number) => ActionGroup[];
 }
 
 /** The chrome a row shape names itself by: `host` is the scroller's class, and `<host>-content`,
@@ -133,18 +136,20 @@ export abstract class VirtualRows<T> extends Control {
         const index = this.indexOf(e);
         if (index < 0)
           return;
-        const actions = contextActions(this.items[index], index);
-        if (actions.length === 0)
-          return;
-        e.preventDefault();
-        // the row menu is the only menu: an ancestor's contextmenu hook must not add its own
-        e.stopPropagation();
-        // the Explorer convention: a right-click inside the selection keeps it, outside collapses
+        // the Explorer convention: a right-click inside the selection keeps it, outside collapses.
+        // Settled FIRST, so what the menu is built from is the selection the user sees
         if (this._selected.peek().has(index))
           this._write(this._selected.peek(), index);
         else
           this._single(index);
-        actionsMenu(actions).show({x: e.clientX ?? 0, y: e.clientY ?? 0});
+        const actions = contextActions(this.items[index], index);
+        const groups = options.contextGroups?.(this.items[index], index);
+        if (actions.length === 0 && (groups ?? []).length === 0)
+          return;
+        e.preventDefault();
+        // the row menu is the only menu: an ancestor's contextmenu hook must not add its own
+        e.stopPropagation();
+        actionsMenu(actions, {groups}).show({x: e.clientX ?? 0, y: e.clientY ?? 0});
       });
     }
 

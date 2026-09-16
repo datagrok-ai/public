@@ -12,7 +12,7 @@ import type {MemoryFrame} from './memory-frame.js';
 import {FrameRows} from './df-rows.js';
 import {Rows} from './rows-like.js';
 
-export type RowState = '' | 'new' | 'modified' | 'deleted';
+export type RowState = '' | 'new' | 'modified' | 'deleted' | 'restored';
 
 /** What a landed batch answers: every draft id the writer stamped → the id the server gave. */
 export interface EditSaved {
@@ -44,6 +44,12 @@ export interface EditState {
   markDeleted(key: string): void;
   /** Undoes {@link markDeleted}: the row is back to what it was before — edited or clean. */
   unmarkDeleted(key: string): void;
+  /** Stages a soft-deleted row's restore into the unit of work: it rides the next `save()` as one
+   * `restore` op of the batch, exactly as a delete does. Refused on a row the backend did not
+   * answer as deleted — a restore is the undo of a landed delete, not an edit. */
+  markRestored(key: string): void;
+  /** Undoes {@link markRestored}. */
+  unmarkRestored(key: string): void;
   discard(): void;
   /** Opens and closes the writer: while it is closed every mutation is refused, as during the
    * transaction itself. The session holds it closed until the re-base after a landed batch has
@@ -192,6 +198,26 @@ export class MemoryEditState implements EditState {
     this._touch(key);
   }
 
+  markRestored(key: string): void {
+    if (this._saving.peek())
+      return;
+    const row = this._row(key);
+    if (row === undefined || row[Rows.DELETED] !== true)
+      return;
+    row[Rows.STATE] = 'restored';
+    this._touch(key);
+  }
+
+  unmarkRestored(key: string): void {
+    if (this._saving.peek())
+      return;
+    const row = this._row(key);
+    if (row === undefined || row[Rows.STATE] !== 'restored')
+      return;
+    row[Rows.STATE] = '';
+    this._touch(key);
+  }
+
   /** Every cell of the frame holding a draft id the batch assigned takes the real id, without
    * touching the row's state: the source of a pristine child is not in the batch, and its
    * reference to the parent that was just inserted must still name the row. */
@@ -249,6 +275,8 @@ export class MemoryEditState implements EditState {
       const writable = this._writable(row);
       if (state === 'deleted')
         pending.push({row, op: {op: 'delete', table, id: String(row.id)}});
+      else if (state === 'restored')
+        pending.push({row, op: {op: 'restore', table, id: String(row.id)}});
       else if (state === 'new') {
         for (const name of writable) {
           if (row[name] != null)
@@ -282,8 +310,11 @@ export class MemoryEditState implements EditState {
     for (const [i, {op, row}] of pending.entries()) {
       if (op.op === 'delete')
         removed.add(row);
-      else
+      else {
         Object.assign(row, results[i]);
+        if (op.op === 'restore' && Rows.DELETED in row)
+          row[Rows.DELETED] = false;
+      }
     }
     this.df.rows.splice(0, this.df.rowCount, ...this.df.rows.filter((row) => !removed.has(row)));
     for (const row of this.df.rows) {
@@ -376,6 +407,7 @@ export class MemoryEditState implements EditState {
     switch (row[Rows.STATE]) {
       case 'new': return this._pristine.has(row) ? 0 : 1;
       case 'deleted': return 1;
+      case 'restored': return 1;
       case 'modified': return this._originals.get(row)?.size ?? 0;
       default: return 0;
     }
@@ -384,7 +416,7 @@ export class MemoryEditState implements EditState {
   /** A rule broken on a draft, or on a cell of an existing row the batch will send. */
   private _error(row: Row, prop: IProperty): string | null {
     const state = row[Rows.STATE];
-    if (!state || state === 'deleted')
+    if (!state || state === 'deleted' || state === 'restored')
       return null;
     const changed = state === 'new' || this._originals.get(row)?.has(prop.name!) === true;
     return changed ? MemoryEditState.problemOf(prop, row[prop.name!]) : null;

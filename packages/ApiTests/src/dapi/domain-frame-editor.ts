@@ -57,7 +57,8 @@ category('Dapi: domain frame editor', () => {
     let n = 0;
     for (let row = 0; row < editor.dataFrame.rowCount; row++) {
       const state = editor.stateOf(row);
-      n += state === 'new' || state === 'deleted' ? 1 : Object.keys(editor.changesOf(row)).length;
+      n += state === 'new' || state === 'deleted' || state === 'restored'
+        ? 1 : Object.keys(editor.changesOf(row)).length;
     }
     return n;
   }
@@ -340,6 +341,98 @@ category('Dapi: domain frame editor', () => {
       editor.detach();
     } finally {
       await cleanup(prefix);
+    }
+  });
+
+  /** [cleanup] plus the trash: a `deleteWhere` only reaches live rows, so a row a
+   * test left staged (or landed) in the trash has to come back first. */
+  async function cleanupTrash(prefix: string): Promise<void> {
+    try {
+      for (const row of await items().query({filter: {property: 'sku', operator: 'like',
+        value: `${prefix}%`} as any, deleted: 'only'}))
+        await items().restore(row.id);
+    } catch (e) {
+      console.error(`frame-editor trash ${prefix} not cleaned up: ${e}`);
+    }
+    await cleanup(prefix);
+  }
+
+  test('staged restore: one restore op, and the save brings the row back live', async () => {
+    const prefix = `fe-restore-${stamp()}`;
+    const ids = await seed(prefix, 2);
+    try {
+      await items().delete(ids[0]);
+      const editor = await DomainFrameEditor.create(items() as any,
+        {query: {...specFor(prefix), deleted: 'only'} as any});
+      const df = editor.dataFrame;
+      expect(df.rowCount, 1, 'the trash frame does not hold exactly the deleted row');
+      expect(df.get(DG.DOMAIN_DELETED_COLUMN, 0), true, 'the trash frame does not carry the deletion flag');
+      const versionBefore = df.get('version', 0);
+
+      editor.markRestored(0);
+      expect(editor.stateOf(0), 'restored', 'the row was not staged as restored');
+      expect(editor.isDirty, true, 'a staged restore did not make the editor dirty');
+      expect(editor.changeCount, 1, 'a staged restore is not exactly one change');
+      expectCounted(editor, 'after markRestored');
+
+      const ops = editor.buildOps();
+      expect(ops.length, 1, `a staged restore built ${ops.length} ops`);
+      expect(ops[0].op.op, 'restore', `the op is not a restore: ${JSON.stringify(ops[0].op)}`);
+      expect(`${ops[0].op.id}`, ids[0], 'the restore op does not name the row');
+      expect(ops[0].op.values === undefined && ops[0].op.expectedVersion === undefined, true,
+        `a restore op carries its id alone: ${JSON.stringify(ops[0].op)}`);
+
+      expect(await editor.save(), true, 'save() failed');
+      expect(editor.isDirty, false, 'the editor stayed dirty after the restore landed');
+      expect(editor.changeCount, 0, 'the staged restore was not counted out');
+      expect(editor.stateOf(0), '', 'the row state was not cleared');
+      expect(df.rowCount, 1, 'the restored row was removed from the frame');
+      expect(df.get(DG.DOMAIN_DELETED_COLUMN, 0), false, 'the restored row still reads as deleted in the frame');
+      expect(df.get('version', 0) > versionBefore, true, 'the version did not move');
+
+      const live = await items().query({filter: {property: 'sku', operator: 'like', value: `${prefix}%`} as any});
+      expect(live.length, 2, 'the restored row is not in a default query');
+      expect((await items().query({filter: {property: 'sku', operator: 'like',
+        value: `${prefix}%`} as any, deleted: 'only'})).length, 0, 'the row is still in the trash');
+      editor.detach();
+    } finally {
+      await cleanupTrash(prefix);
+    }
+  });
+
+  test('staged restore: a live row is refused, and discard takes a staged one back', async () => {
+    const prefix = `fe-restore2-${stamp()}`;
+    const ids = await seed(prefix, 2);
+    try {
+      await items().delete(ids[0]);
+      const editor = await DomainFrameEditor.create(items() as any,
+        {query: {...specFor(prefix), deleted: 'include'} as any});
+      const df = editor.dataFrame;
+      expect(df.rowCount, 2, 'the frame does not hold both rows');
+      const deletedRow = df.get(DG.DOMAIN_DELETED_COLUMN, 0) === true ? 0 : 1;
+      const liveRow = 1 - deletedRow;
+
+      editor.markRestored(liveRow);
+      expect(editor.stateOf(liveRow), '', 'a live row was staged as restored');
+      expect(editor.isDirty, false, 'refusing a restore still made the editor dirty');
+
+      editor.markRestored(deletedRow);
+      expect(editor.changeCount, 1, 'the staged restore is not one change');
+      editor.discard();
+      expect(editor.stateOf(deletedRow), '', 'discard did not take the staged restore back');
+      expect(editor.isDirty, false, 'the editor stayed dirty after discard');
+      expect(df.get(DG.DOMAIN_DELETED_COLUMN, deletedRow), true, 'discard changed the deletion flag');
+      expect((await items().query({filter: {property: 'sku', operator: 'like',
+        value: `${prefix}%`} as any, deleted: 'only'})).length, 1, 'a discarded restore reached the server');
+
+      // unmarkRestored says the same thing through the explicit member.
+      editor.markRestored(deletedRow);
+      editor.unmarkRestored(deletedRow);
+      expect(editor.stateOf(deletedRow), '', 'unmarkRestored did not clear the state');
+      expect(editor.changeCount, 0, 'unmarkRestored left the change counted');
+      editor.detach();
+    } finally {
+      await cleanupTrash(prefix);
     }
   });
 

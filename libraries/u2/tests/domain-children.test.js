@@ -26,6 +26,7 @@ const {domains} = await import('../src/dg/domain/index.js');
 const {DomainChildren} = await import('../src/dg/domain/children.js');
 const {DomainPick} = await import('../src/dg/domain/pick.js');
 const {registerDomainComponents} = await import('../src/dg/domain/registrations.js');
+const {buildEntity} = await import('../src/dg/domain/builders.js');
 
 /** Companies with contacts, and deals that point at a company twice (seller and buyer). */
 const SCHEMA = {
@@ -320,5 +321,34 @@ scoped('a New from the children toolbar is an unsaved change of its own: the gat
   assert.equal(parent.session.isDirty.value, true, 'the press is the change — Ctrl+S and the leave gate answer');
   assert.equal(parent.session.summary.value, '1 unsaved change');
   children.dispose();
+  parent.dispose();
+});
+
+scoped('buildEntity: the form, then the children and the history — in that order, and either can be left out', async () => {
+  backends.domain = crm();
+  const companies = await domains.table('crm.company');
+  const parent = companies.source({pageSize: 10});
+  await flush();
+  parent.currentRow.value = parent.rows.byKey('c1');
+  const scope = new Scope();
+  const full = buildEntity(parent, scope, {});
+  await settle();
+  assert.equal(full.form.root.dataset.u2, 'domain-form');
+  assert.deepEqual(full.panes.map((pane) => pane.root.dataset.u2), ['domain-children', 'domain-history'],
+    'the child collections, then the history');
+  assert.equal(full.panes[0].entries.value.length, 3, 'every referring table by default');
+
+  const narrowed = buildEntity(parent, scope, {children: {tables: ['contact']}, history: false});
+  await settle();
+  assert.deepEqual(narrowed.panes.map((pane) => pane.root.dataset.u2), ['domain-children']);
+  assert.deepEqual(narrowed.panes[0].entries.value.map((e) => e.label), ['Contacts'],
+    'the children options are the caller\'s');
+
+  const bare = buildEntity(parent, scope, {children: false, history: false, include: ['name']});
+  await settle();
+  assert.deepEqual(bare.panes, [], 'no panes at all');
+  assert.notEqual(bare.form.input('name'), undefined);
+  // the builder builds in the scope it was given and owns nothing else
+  scope.dispose();
   parent.dispose();
 });

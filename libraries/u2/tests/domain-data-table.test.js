@@ -14,6 +14,7 @@ import {Registry} from '../src/spec/registry.js';
 import {SpecContext, renderSpec} from '../src/spec/spec.js';
 import {registerAll} from '../src/spec/registrations.js';
 import {timestamp} from '../src/core/elements.js';
+import {Rows} from '../src/sources/rows-like.js';
 import {backend} from './domain-fixtures.mjs';
 
 register('./dg-stub.mjs', import.meta.url);
@@ -137,8 +138,9 @@ scoped('the selection and the source\'s current row are one thing', async () => 
 });
 
 scoped('a reference cell shows the row it points at, not its uuid', async () => {
-  // before the lookup answers: a placeholder, never the id — a uuid flashing in the cell reads
-  // as the value of the column (the target's table is held open here, as a round trip holds it)
+  // the caption the query projected rides with the row: the first paint is the name, with no
+  // lookup at all — the target's table is held open here, as a round trip holds it, and the cell
+  // is right anyway
   const inner = backend();
   backends.domain = {saveAll: (edits) => inner.saveAll(edits),
     table: (address) => address === 'grit.project' ? new Promise(() => {}) : inner.table(address)};
@@ -150,22 +152,44 @@ scoped('a reference cell shows the row it points at, not its uuid', async () => 
   // a scroller with no height defers its first window to the next frame (list.ts `_later`), and
   // the shim only settles those on a flush
   await flush();
-  assert.equal(cell(first, 0, 'project_id').textContent, '…');
+  assert.equal(cell(first, 0, 'project_id').textContent, 'Grit');
   first.dispose();
+
+  // with the captions off the one lookup stands in for them, and until it answers a placeholder,
+  // never the id — a uuid flashing in the cell reads as the value of the column
+  const off = (await domains.table('grit.issue')).source({pageSize: 10, captions: []});
+  const none = domains.dataTable(off, {columns: ['project_id']});
+  document.body.append(none.root);
+  await flush();
+  none.table.value.root.clientHeight = 400;
+  await flush();
+  assert.equal(cell(none, 0, 'project_id').textContent, '…');
+  none.dispose();
+  off.dispose();
   early.dispose();
 
   const {src, dt} = await dataTable({columns: ['title', 'project_id']});
-  await flush();
   await flush();
   assert.equal(cell(dt, 0, 'project_id').textContent, 'Grit', 'the name column of the row it points at');
   assert.equal(cell(dt, 2, 'project_id').textContent, 'Datagrok');
   assert.equal(cell(dt, 0, 'project_id').textContent.includes('p1'), false, 'never the raw id');
 
-  // an id the target does not hold answers as itself, as the picker's resolve does
-  src.rows.items.peek()[1].project_id = 'nope';
+  // an id the target does not hold answers as itself, as the picker's resolve does — the lookup
+  // path is the only one that ever sees a raw id
+  const loose = (await domains.table('grit.issue')).source({pageSize: 10, captions: []});
+  const lt = domains.dataTable(loose, {columns: ['project_id']});
+  document.body.append(lt.root);
+  await flush();
+  lt.table.value.root.clientHeight = 400;
   await flush();
   await flush();
-  assert.equal(cell(dt, 1, 'project_id').textContent, 'nope');
+  assert.equal(cell(lt, 0, 'project_id').textContent, 'Grit', 'the lookup answers the target\'s name');
+  loose.rows.items.peek()[1].project_id = 'nope';
+  await flush();
+  await flush();
+  assert.equal(cell(lt, 1, 'project_id').textContent, 'nope');
+  lt.dispose();
+  loose.dispose();
   dt.dispose();
   src.dispose();
 });
@@ -201,7 +225,7 @@ scoped('the column tracks follow the column types, so a wide table is not a wall
   assert.equal(of('weight'), 'minmax(48px, 0.5fr)');
   assert.equal(of('due'), 'minmax(96px, 0.8fr)');
   assert.equal(of('description'), 'minmax(72px, 1fr)');
-  assert.equal(of('project_id'), 'minmax(72px, 1fr)');
+  assert.equal(of('project_id'), 'minmax(96px, 1.5fr)', 'a reference reads as a name, not as an id');
   // ten columns of minimums must still fit a pane, or the last one is off-screen behind a
   // scrollbar the rows (absolutely positioned) never paint
   const floor = tracks.reduce((sum, t) => sum + Number(/minmax\((\d+)px/.exec(t)[1]), 0);
@@ -235,5 +259,29 @@ scoped('spec: u2-domain-data-table over a bound source', async () => {
   assert.equal(dt.source, src);
   assert.deepEqual(dt.columns(), ['title', 'priority']);
   instance.dispose();
+  src.dispose();
+});
+
+scoped('a ref cell takes the caption the query projected; only a frame without one costs a lookup', async () => {
+  const {table, src, dt} = await dataTable({columns: ['title', 'project_id']});
+  const prop = table.properties.find((p) => p.name === 'project_id');
+
+  const carried = DomainDataTable.caption(prop, {project_id: 'p1', [Rows.caption('project_id')]: 'Grit'},
+    'project_id', 'p1');
+  assert.equal(carried, 'Grit', 'the wire\'s answer on the first paint — a string, so nothing to repaint');
+
+  assert.equal(DomainDataTable.caption(prop, {project_id: 'p1', [Rows.caption('project_id')]: null},
+    'project_id', 'p1'), '', 'a null caption is an empty cell, not a miss — the caller may not see the target');
+
+  // a draft, a `User` and a `Group` are never projected: the one lookup stays, and never the uuid
+  const cache = new Map();
+  const looked = DomainDataTable.caption(prop, {project_id: 'p1'}, 'project_id', 'p1', cache);
+  assert.equal(looked.textContent, '…');
+  await flush();
+  await flush();
+  assert.equal(looked.textContent, 'Grit');
+  assert.equal(DomainDataTable.caption(prop, {project_id: 'p1'}, 'project_id', 'p1', cache), 'Grit',
+    'a second render reads what the lookup answered — one lookup per id, not per paint');
+  dt.dispose();
   src.dispose();
 });

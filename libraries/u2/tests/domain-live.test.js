@@ -389,7 +389,7 @@ scoped('the app says "Data changed — Refresh" and its Refresh goes through the
   await issue.transaction([{op: 'insert', table: 'issue', values: {project_id: 'p1', number: 7, title: 'Theirs'}}]);
   await tick(1, DomainSource.liveMs);
   assert.equal(app.stale.value, true);
-  assert.equal(app.summary.value, '1 unsaved change — Data changed — Refresh');
+  assert.equal(app.summary.value, '3 issues — 1 unsaved change — Data changed — Refresh');
 
   const done = app.refresh();
   await flush();

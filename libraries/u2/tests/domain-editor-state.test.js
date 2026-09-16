@@ -64,6 +64,16 @@ function fakeEditor(rows) {
       states[row] = 'deleted';
       this.onChanged.fire(this);
     },
+    markRestored(row) {
+      this.calls.push(['restore', row]);
+      states[row] = 'restored';
+      this.onChanged.fire(this);
+    },
+    unmarkRestored(row) {
+      this.calls.push(['unrestore', row]);
+      states[row] = '';
+      this.onChanged.fire(this);
+    },
     discard() { this.calls.push(['discard']); },
     save: async () => true,
     detach() { this.detached++; },
@@ -90,8 +100,14 @@ scoped('keys are the id cells; writes, deletes and state reads go to the editor 
   assert.equal(editor.calls.length, 1, 'an unknown key writes nothing');
   state.markDeleted('i1');
   assert.deepEqual(editor.calls[1], ['delete', 0]);
+  state.markRestored('i2');
+  assert.deepEqual(editor.calls[2], ['restore', 1], 'the adapter reaches the editor by index');
+  state.unmarkRestored('i2');
+  assert.deepEqual(editor.calls[3], ['unrestore', 1]);
+  state.markRestored('nope');
+  assert.equal(editor.calls.length, 4, 'an unknown key reaches nothing');
   state.discard();
-  assert.deepEqual(editor.calls[2], ['discard']);
+  assert.deepEqual(editor.calls[4], ['discard']);
   assert.equal(await state.save(), true);
   state.dispose();
   assert.equal(editor.detached, 1);
@@ -169,6 +185,8 @@ scoped('validity is the first blocking error on a row that is not deleted; a con
   assert.equal(state.errorOf('nope', 'title'), null);
   editor.markDeleted(1);
   assert.equal(state.validity.value, null, 'a deleted row\'s errors do not block');
+  editor.markRestored(1);
+  assert.equal(state.validity.value, null, 'nor a restored one\'s');
   editor.fail(0, 'title', 'Someone else changed it', 'conflict');
   assert.equal(state.validity.value, null, 'a dismissed conflict only marks the cell');
   assert.equal(state.errorOf('i1', 'title'), 'Someone else changed it');

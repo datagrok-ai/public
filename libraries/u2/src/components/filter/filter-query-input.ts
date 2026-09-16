@@ -205,6 +205,8 @@ export class FilterQueryInput extends Input<FilterGroup, FilterQueryInputOptions
       minChars: 0,
       render: (item) => item.render(),
       autoHighlight: true,
+      // a query's options are many and the rows under the box are what the user is filtering
+      maxHeight: 'calc(var(--dg-control-height) * 6)',
       onPick: (index) => {
         this._moved = true;
         return this._insert(index);
@@ -389,7 +391,8 @@ export class FilterQueryInput extends Input<FilterGroup, FilterQueryInputOptions
 
   /** Replaces the token under the caret with the row's text and one space (the one already there
    * when the pick lands mid-text), APPLIES it when what it made is a filter, and re-opens for the
-   * next expectation. */
+   * next expectation — unless it applied: the continuation rows would then stand over the first
+   * rows of the result the pick just fetched. The next keystroke or ArrowDown brings them back. */
   private _insert(index: number): boolean {
     const item = this._items.peek()[index];
     const ctx = this._context;
@@ -403,9 +406,13 @@ export class FilterQueryInput extends Input<FilterGroup, FilterQueryInputOptions
     this._input.focus();
     // an applied pick re-formats the text, so the caret goes to the end of what it became; a pick
     // that only filled a slot leaves the caret where the value ended
-    const at = this._applyPick() ? this._text.peek().length : caret;
+    const applied = this._applyPick();
+    const at = applied ? this._text.peek().length : caret;
     this._input.setSelectionRange?.(at, at);
-    this._suggest();
+    if (applied)
+      this._list.dismiss();
+    else
+      this._suggest();
     return true;
   }
 

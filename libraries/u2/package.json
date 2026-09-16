@@ -37,6 +37,7 @@
     "e2e:boot": "node e2e/boot-smoke.mjs",
     "e2e:stand": "node e2e/designer.stand.spec.mjs",
     "e2e:stand-u2demo": "node e2e/u2demo.stand.spec.mjs",
+    "e2e:stand-domain": "node e2e/domain.stand.spec.mjs",
     "manifest": "node scripts/gen-manifest.mjs",
     "manifest:check": "node scripts/gen-manifest.mjs --check",
     "icons": "node scripts/gen-icon-names.mjs",

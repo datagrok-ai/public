@@ -5,9 +5,7 @@
 import type * as DG from 'datagrok-api/dg';
 import {domains} from './index.js';
 import {DomainApp} from './app.js';
-
-/** `/domains/<schema>/<table>[/<keyOrId>]`; the query is `DomainApp.open`'s to read. */
-const ADDRESS = /^\/domains\/(\w+)\/(\w+)(\/[^/?#]*)?$/i;
+import {DomainAddress} from './address.js';
 
 /** The view for a `/domains` address, null where the platform keeps the address: anything that is
  * not a table route (`/domains`, `/domains/<schema>` — the schema gallery and the diagram stay
@@ -16,7 +14,7 @@ const ADDRESS = /^\/domains\/(\w+)\/(\w+)(\/[^/?#]*)?$/i;
  * and the Dart domain view would open over the live app (Back off `?trash=1`). */
 export async function route(address: string): Promise<DG.ViewBase | null> {
   const at = address.indexOf('?');
-  const match = ADDRESS.exec(at < 0 ? address : address.slice(0, at));
+  const match = DomainAddress.ROUTE.exec(at < 0 ? address : address.slice(0, at));
   if (match === null)
     return null;
   const [, schema, table, segment] = match;

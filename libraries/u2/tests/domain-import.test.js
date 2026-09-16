@@ -69,6 +69,13 @@ async function toMapping() {
   await flush();
 }
 
+/** Into the preview step — the dry run is a round trip, so the render is a flush behind it. */
+async function toPreview() {
+  fire(buttonNamed('NEXT'), 'click');
+  await flush();
+  await flush();
+}
+
 scoped('the mapping is auto-matched by name and caption; a system column is never a target', async () => {
   const memory = backend();
   const {running} = await opened(memory, frame(['title', 'Priority', 'nonesuch'], [{title: 'A', Priority: 'low'}]));
@@ -135,19 +142,89 @@ scoped('every blocking problem the wizard gates on', async () => {
   assert.equal(await running, null);
 });
 
-scoped('the preview reports the schema\'s own verdicts over the mapped cells', async () => {
+scoped('the preview is the backend\'s dry run: its verdicts, its counts, its issues', async () => {
   const memory = backend();
   const {running} = await opened(memory,
     frame(['project_id', 'title', 'number', 'priority'],
       [{project_id: 'p1', title: 'A', number: '3', priority: 'low'},
         {project_id: 'p1', title: 'B', number: '3.0', priority: 'urgent'}]));
   await toMapping();
+  await toPreview();
+  const preview = document.body.querySelector('.u2-domain-import-preview');
+  assert.match(preview.textContent, /1 will be added, 0 updated, 0 skipped, 1 row has errors\./);
+  assert.match(preview.textContent, /Nothing will be imported while "All or nothing" is on\./,
+    'the counts are per row; all-or-nothing makes one bad row the verdict on all of them');
+  assert.match(preview.textContent, /Must be one of: low, high/,
+    'the issue lines are the report\'s, not a second implementation of the rules');
+  fire(buttonNamed('CANCEL'), 'click');
+  assert.equal(await running, null);
+});
+
+scoped('the dry run is posted once per entry into the step, not per keystroke', async () => {
+  const memory = backend();
+  const posts = [];
+  const table = memory.tableSync('grit.issue');
+  const real = table.validate.bind(table);
+  table.validate = (rows, options) => {
+    posts.push({rows, options});
+    return real(rows, options);
+  };
+  const {running} = await opened(memory,
+    frame(['project_id', 'title', 'note'], [{project_id: 'p1', title: 'A', note: 'x'}]));
+  await toMapping();
+  await toPreview();
+  assert.equal(posts.length, 1, 'one post on the way in');
+  assert.deepEqual(posts[0].rows, [{project_id: 'p1', title: 'A'}], 'the mapped columns only');
+  assert.equal(posts[0].options.mode, 'insert');
+
+  fire(buttonNamed('BACK'), 'click');
+  await flush();
+  named('note').value.value = 'description';
+  await flush();
+  named('note').value.value = '(skip)';
+  await flush();
+  assert.equal(posts.length, 1, 'typing on another step posts nothing');
+
+  await toPreview();
+  assert.equal(posts.length, 1, 'the same mapping is the same dry run');
+  fire(buttonNamed('BACK'), 'click');
+  await flush();
+  named('note').value.value = 'description';
+  await flush();
+  await toPreview();
+  assert.equal(posts.length, 2, 'a mapping the run did not cover is posted again');
+  assert.deepEqual(posts[1].rows, [{project_id: 'p1', title: 'A', description: 'x'}]);
+  fire(buttonNamed('CANCEL'), 'click');
+  assert.equal(await running, null);
+});
+
+scoped('a dry run that cannot reach the backend shows why and never blocks the import', async () => {
+  const memory = backend();
+  memory.tableSync('grit.issue').validate = () => Promise.reject(new Error('the stand is down'));
+  const {running} = await opened(memory,
+    frame(['project_id', 'title'], [{project_id: 'p1', title: 'Regardless'}]));
+  await toMapping();
+  await toPreview();
+  const preview = document.body.querySelector('.u2-domain-import-preview');
+  assert.match(preview.textContent, /the stand is down/);
+  assert.equal(reason(), '', 'the commit is the authority: NEXT is not gated on the preview');
   fire(buttonNamed('NEXT'), 'click');
   await flush();
-  const preview = document.body.querySelector('.u2-domain-import-preview');
-  assert.match(preview.textContent, /1 of 2 checked rows have problems/);
-  assert.match(preview.textContent, /Integer value expected, passed: "3\.0"/);
-  assert.match(preview.textContent, /Must be one of: low, high/);
+  assert.match(document.body.querySelector('.u2-domain-import-report').textContent,
+    /1 inserted, 0 updated, 0 skipped, 0 failed/);
+  fire(buttonNamed('CLOSE'), 'click');
+  assert.equal((await running).inserted, 1);
+});
+
+scoped('a backend with no dry run says so instead of standing one in', async () => {
+  const memory = backend();
+  memory.tableSync('grit.issue').validate = undefined;
+  const {running} = await opened(memory,
+    frame(['project_id', 'title'], [{project_id: 'p1', title: 'Unchecked'}]));
+  await toMapping();
+  await toPreview();
+  assert.match(document.body.querySelector('.u2-domain-import-preview').textContent,
+    /This backend cannot preview an import; the rows are checked on import\./);
   fire(buttonNamed('CANCEL'), 'click');
   assert.equal(await running, null);
 });
@@ -203,9 +280,12 @@ scoped('a refused row leaves nothing behind and the report says so', async () =>
   await flush();
   assert.equal(issues(memory).length, 3, 'nothing was committed');
   const shown = document.body.querySelector('.u2-domain-import-report').textContent;
-  assert.match(shown, /Import aborted — 1 row\(s\) with errors/);
+  assert.match(shown, /Import aborted — 1 row has errors/);
+  assert.match(shown, /Uncheck "All or nothing" to import the 1 valid row and skip the rest\./,
+    'an aborted all-or-nothing run says what to change');
   assert.match(shown, /title/, 'the per-row report names the column the row was refused on');
   assert.match(shown, /Value can't be empty/);
+  assert.match(shown, /Source row/, 'the issue lines are headed by the source row they are about');
   fire(buttonNamed('CLOSE'), 'click');
   const report = await running;
   assert.equal(report.error, 'validation', 'an allOrNothing abort answers the report, not a throw');
@@ -234,26 +314,26 @@ scoped('a table-level insert denial still opens the wizard; no visible column re
     /no column of grit.issue you may write/);
 });
 
-scoped('the preview draws the rows as they would land, refused cells marked', async () => {
+scoped('the preview draws the rows as they would land, each under its verdict, refused cells marked', async () => {
   const memory = backend();
   const {running} = await opened(memory,
-    frame(['project_id', 'title', 'number'], [{project_id: 'p1', title: 'A', number: '3'},
-      {project_id: 'p1', title: 'B', number: '3.0'}]));
+    frame(['project_id', 'title', 'priority'], [{project_id: 'p1', title: 'A', priority: 'low'},
+      {project_id: 'p1', title: 'B', priority: 'urgent'}]));
   await toMapping();
-  fire(buttonNamed('NEXT'), 'click');
-  await flush();
+  await toPreview();
   const rows = document.body.querySelector('.u2-domain-import-rows');
   rows.clientHeight = 200;
   fire(rows, 'scroll');
   await flush();
   assert.deepEqual([...rows.querySelectorAll('.u2-data-table-head')].map((c) => c.textContent),
-    ['Project id', 'Title', 'Number'], 'the target captions, not the DB names');
+    ['Result', 'Project id', 'Title', 'Priority'], 'the verdict leads, then the target captions');
   const cells = [...rows.querySelectorAll('.u2-data-table-row')]
     .map((r) => [...r.children].map((c) => c.textContent).join('|'));
-  assert.deepEqual(cells, ['p1|A|3', 'p1|B|3.0'], 'the mapped columns as they would be sent');
+  assert.deepEqual(cells, ['Add|p1|A|low', 'Error|p1|B|urgent'],
+    'what the backend said it would do with the row, beside the row as it would be sent');
   const bad = rows.querySelector('.u2-cell-error');
-  assert.notEqual(bad, null, 'the cell the schema refuses is marked');
-  assert.match(bad.title, /Integer value expected/);
+  assert.notEqual(bad, null, 'the cell the backend refuses is marked, by the column it named');
+  assert.match(bad.title, /Must be one of: low, high/);
   fire(buttonNamed('CANCEL'), 'click');
   assert.equal(await running, null);
 });
@@ -289,4 +369,35 @@ scoped('a source column is matched the way a person reads it, not byte for byte'
   assert.equal(named('Batch').value.value, '(skip)');
   fire(buttonNamed('CANCEL'), 'click');
   assert.equal(await running, null);
+});
+
+scoped('an aborted all-or-nothing run is not a dead end: BACK, the flag off, and the valid rows land', async () => {
+  const memory = backend();
+  const {running} = await opened(memory,
+    frame(['project_id', 'title'], [{project_id: 'p1', title: 'Fine'}, {project_id: 'p1', title: ''}]));
+  await toMapping();
+  fire(buttonNamed('NEXT'), 'click');
+  await flush();
+  fire(buttonNamed('NEXT'), 'click');
+  await flush();
+  const back = [...document.body.querySelectorAll('.u2-domain-import-report button')]
+    .find((b) => b.textContent === 'BACK');
+  assert.notEqual(back, undefined, 'the report step offers the way back');
+  fire(back, 'click');
+  await flush();
+  assert.notEqual(named('allOrNothing'), null, 'the source step is back');
+  named('allOrNothing').value.value = false;
+  await flush();
+  fire(buttonNamed('NEXT'), 'click');
+  await flush();
+  assert.equal(named('title').value.value, 'title', 'and the mapping it was left with stands');
+  fire(buttonNamed('NEXT'), 'click');
+  await flush();
+  fire(buttonNamed('NEXT'), 'click');
+  await flush();
+  assert.equal(issues(memory).length, 4, 'the valid row lands once all-or-nothing is off');
+  fire(buttonNamed('CLOSE'), 'click');
+  const report = await running;
+  assert.equal(report.inserted, 1);
+  assert.equal(report.errorCount, 1);
 });

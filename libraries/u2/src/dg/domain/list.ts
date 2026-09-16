@@ -5,7 +5,7 @@
    struck through with Restore until the save, and the source's loading, empty and error states
    shown under the rows. */
 import {Control} from '../../core/component.js';
-import {signal, untracked} from '../../core/signals.js';
+import {signal} from '../../core/signals.js';
 import type {ReadonlySignal, Signal} from '../../core/signals.js';
 import type {ObjectRenderer} from '../../core/object-renderer.js';
 import {button, div, divH, divV, span, timestamp} from '../../core/elements.js';
@@ -14,13 +14,13 @@ import {VirtualList} from '../../components/collections/list.js';
 import {allowedActions, rowActions} from '../../components/actions/actions.js';
 import type {Action} from '../../components/actions/actions.js';
 import {loader} from '../../components/display/async-view.js';
-import {notify} from '../../components/display/notify.js';
 import type {DomainSource} from '../../sources/domain-source.js';
 import {Rows} from '../../sources/rows-like.js';
 import type {RowView} from '../../sources/rows-like.js';
 import {ActionRegistry, DomainTable} from './index.js';
 import type {DomainAction} from './index.js';
 import {DomainErrors} from './errors.js';
+import {DomainSelection} from './selection.js';
 
 export type DomainListMode = 'cards' | 'brief';
 
@@ -63,97 +63,28 @@ export class DomainList extends Control {
       itemHeight,
       keyOf: (row) => row.id,
       render: (row, _index, el) => this._row(row, el),
-      contextActions: (row) => this.actionsFor(row),
+      // with several rows picked the menu is two submenus and nothing flat: "Aspirin ▸" is the
+      // clicked row, "2 issues ▸" the selection — either target named, neither of them implied
+      contextActions: (row) => this._selected().length < 2 ? this.actionsFor(row) : [],
+      contextGroups: (row) => {
+        const selected = this._selected();
+        if (selected.length < 2)
+          return [];
+        const groups = [{label: this.renderer.caption(row), actions: this.actionsFor(row)}];
+        const actions = this.selectionActions(selected);
+        if (actions.length > 0) {
+          const what = source.schema.info.pluralName.toLowerCase().replace(/_/g, ' ') || 'rows';
+          groups.push({label: `${selected.length} ${what}`, actions});
+        }
+        return groups;
+      },
       onEnter: () => source.activate.value = source.activate.peek() + 1,
       onDelete: (row) => this.actionsFor(row).find((a) => a.name === 'Delete')?.run(),
     }));
     this.list.root.classList.add('u2-domain-list-rows');
     this.list.setItems(source.rows.items as ReadonlySignal<RowView[]>);
 
-    // the list's selection and the source's current row are one thing, written in either direction —
-    // seeded from the row that is current already, so the first effect does not clear it
-    const current = source.currentRow.peek();
-    if (current !== null)
-      this.list.selectedIndex.value = source.rows.items.peek().findIndex((r) => r.id === current.id);
-    this.effect(() => {
-      const row = source.rows.items.peek()[this.list.selectedIndex.value] ?? null;
-      if (row?.id !== source.currentRow.peek()?.id)
-        source.currentRow.value = row;
-    });
-    this.effect(() => {
-      const row = source.currentRow.value;
-      const items = source.rows.items.value;
-      const at = row === null ? -1 : items.findIndex((r) => r.id === row.id);
-      if (at !== this.list.selectedIndex.peek())
-        this.list.selectedIndex.value = at;
-    });
-    // the list's multi-selection IS the collection's: everything that acts on "the selected rows"
-    // — `domains.bulkEdit`, `source.restoreSelection` — reads `source.selection`, which follows
-    // the frame's selection bitset, and nothing else on a list page writes it. A selection is a
-    // USER's: the lead a load puts on the first row is not one, so nothing is mirrored until the
-    // list is clicked or keyed, and a new collection starts over.
-    const picked = signal(false);
-    const onPick = () => picked.value = true;
-    const onEscape = (e: Event) => {
-      if ((e as KeyboardEvent).key !== 'Escape')
-        return;
-      picked.value = false;
-      this.list.selectedIndex.value = -1;
-    };
-    this.list.root.addEventListener('click', onPick);
-    this.list.root.addEventListener('keydown', onPick);
-    this.list.root.addEventListener('keydown', onEscape);
-    this.own(() => {
-      this.list.root.removeEventListener('click', onPick);
-      this.list.root.removeEventListener('keydown', onPick);
-      this.list.root.removeEventListener('keydown', onEscape);
-    });
-    let frame: unknown;
-    let kept: string[] = [];
-    this.effect(() => {
-      const selected = this.list.selectedIndices.value;
-      const df = source.df.value;
-      const own = picked.value;
-      const bits = df?.selection as
-        {get?(i: number): boolean, set?(i: number, value: boolean): void} | null | undefined;
-      if (df === undefined || typeof bits?.set !== 'function')
-        return;
-      // a collection read again is the same collection: a selection survives it by KEY (a bulk
-      // edit refreshes, and the rows it wrote are still the rows the user picked), and a query
-      // that answers none of them is a new collection with nothing selected
-      if (df !== frame) {
-        frame = df;
-        // nothing to carry over leaves the list's own lead alone: a load puts it on the first row
-        const again = own ? kept : [];
-        if (again.length === 0) {
-          picked.value = false;
-          return;
-        }
-        // the scroller copies the items in an effect of its own, which runs AFTER this one: the
-        // restore waits for it, or it would look the keys up in the collection that just left
-        queueMicrotask(() => {
-          if (this.scope.isDisposed)
-            return;
-          const present = new Set(source.rows.items.peek().map((row) => row.id));
-          const back = again.filter((id) => present.has(id));
-          picked.value = back.length > 0;
-          if (back.length > 0)
-            untracked(() => this.list.selectKeys(back));
-        });
-        return;
-      }
-      // the emptying the scroller does when its items are replaced is not the user clearing
-      // the selection: only a non-empty one is remembered, and `own` is what clears it
-      if (own && selected.size > 0)
-        kept = this.list.selectedKeys();
-      // read before writing: a bitset that fires per write would send a change event per ROW on
-      // every pass, and a frame the platform writer holds is not to be touched for nothing
-      for (let i = 0; i < df.rowCount; i++) {
-        const on = own && selected.has(i);
-        if (typeof bits.get !== 'function' || bits.get(i) !== on)
-          bits.set(i, on);
-      }
-    });
+    DomainSelection.bind(this, source, this.list);
     // a list over a table starts on its first row; a draft source is a form's, not a list's
     let seeded = source.isDraft;
     this.effect(() => {
@@ -187,7 +118,7 @@ export class DomainList extends Control {
         const actions = [button('Retry', () => void source.refresh())];
         if (filtered)
           actions.push(button('Clear filter', () => source.query.value = ''));
-        status.replaceChildren(divH([span(DomainErrors.message(source.error.value)), ...actions],
+        status.replaceChildren(divH([span(DomainErrors.message(source.error.value, source)), ...actions],
           'u2-domain-list-error'));
       } else if (state === 'ready' && count === 0) {
         const search = source.search.value;
@@ -224,18 +155,18 @@ export class DomainList extends Control {
 
   /** Every action that applies to `row` and that the caller may run on it (the row's own access):
    * Open on a saved row, Delete under the delete capability, the table's registry, the list's own.
-   * A row marked deleted offers Restore alone — and so does one already in the trash, which is
-   * read-only until the backend brings it back (the Delete grant, per row). */
+   * A row marked deleted offers Restore alone — and so does one already in the trash, whose
+   * Restore is staged into the session and lands with the Save (the Delete grant, per row). */
   actionsFor(row: RowView): Action[] {
     const source = this.source;
     const table = this._table;
+    if (row[Rows.STATE] === 'restored')
+      return [{name: 'Undo restore', icon: 'undo', run: () => source.unstageRestore([row.id])}];
     if (row[Rows.STATE] === 'deleted')
       return [{name: 'Restore', icon: 'undo', run: () => source.edit.peek()?.unmarkDeleted(row.id)}];
     if (Rows.isDeleted(row)) {
-      const caption = this.renderer.caption(row);
       return allowedActions([{name: 'Restore', icon: 'trash-restore', requires: 'delete',
-        run: () => void source.restore([row.id]).then((n) => n > 0 && notify.info(`Restored "${caption}"`))}],
-      {access: source.access.peek(), row});
+        run: () => source.stageRestore([row.id])}], {access: source.access.peek(), row});
     }
     const draft = Rows.isDraft(row);
     const actions: Action[] = [];
@@ -249,9 +180,38 @@ export class DomainList extends Control {
     return allowedActions(actions, {access: source.access.peek(), row});
   }
 
+  /** The context menu of a row that is part of a multi-selection: the row's own actions, then a
+   * `<N> <plural>` submenu carrying every action that applies to ALL of the selected rows, run over
+   * the whole selection (Jane closed two issues and only one closed). An action is offered there
+   * when every selected row offers it and none of them has it disabled; it runs row by row in
+   * selection order, and the edits land in the session's next Save exactly as one row's do. */
+  selectionActions(rows: readonly RowView[]): Action[] {
+    if (rows.length === 0)
+      return [];
+    // Open takes one page: everything else a row offers means the same over many
+    const per = rows.map((row) => this.actionsFor(row).filter((a) => a.name !== 'Open'));
+    const shared = per[0].filter((action) => per.every((actions) => {
+      const same = actions.find((a) => a.name === action.name);
+      return same !== undefined && same.enabled !== false;
+    }));
+    return shared.map((action) => ({name: action.name, icon: action.icon, run: () => {
+      for (const actions of per)
+        actions.find((a) => a.name === action.name)!.run();
+    }}));
+  }
+
+  /** The rows the multi-selection holds, in selection order. */
+  private _selected(): RowView[] {
+    const items = this.source.rows.items.peek();
+    return [...this.list.selectedIndices.peek()].map((i) => items[i]).filter((row) => row !== undefined);
+  }
+
   private _row(row: RowView, el: HTMLElement): HTMLElement {
     el.dataset.u2Row = row.id;
     el.classList.toggle('u2-domain-list-deleted', row[Rows.STATE] === 'deleted' || Rows.isDeleted(row));
+    el.classList.toggle('u2-domain-list-restored', row[Rows.STATE] === 'restored');
+    el.classList.toggle('u2-domain-list-pending',
+      row[Rows.STATE] === 'modified' || row[Rows.STATE] === 'new');
     this._markProblem(el);
     const render = this._options.render;
     const content = render ? render(row) : this._content(row);
@@ -266,7 +226,7 @@ export class DomainList extends Control {
     el.classList.toggle('u2-domain-list-invalid', mine);
     if (mine) {
       el.setAttribute('aria-invalid', 'true');
-      el.title = DomainErrors.message(this.source.error.peek());
+      el.title = DomainErrors.message(this.source.error.peek(), this.source);
     } else {
       el.removeAttribute('aria-invalid');
       el.removeAttribute('title');

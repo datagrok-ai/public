@@ -13,8 +13,6 @@ import {backend} from './domain-fixtures.mjs';
 
 register('./dg-stub.mjs', import.meta.url);
 const {DomainPick} = await import('../src/dg/domain/pick.js');
-const {DgDomainBackend} = await import('../src/dg/domain/backend.js');
-const grok = await import('datagrok-api/grok');
 
 function scoped(name, body) {
   test(name, async () => {
@@ -90,23 +88,20 @@ scoped('a written id resolves to its name; an unknown id shows itself', async ()
   pick.dispose();
 });
 
-scoped('over the platform an id is resolved by the registry: one call, no query', async () => {
+scoped('a backend that declares resolveNames answers an id there: one call, no query', async () => {
   const calls = [];
-  backends.domain = new DgDomainBackend();
-  grok.dapi.domains.registry = {resolveNames: (table, ids) => {
-    calls.push({table, ids});
-    return Promise.resolve({p1: 'Grit'});
-  }};
-  grok.dapi.domains.table = () => assert.fail('the platform path reads no row');
-  try {
-    assert.deepEqual(await DomainPick.resolve('grit.project', 'p1'), {id: 'p1', name: 'Grit'});
-    assert.deepEqual(calls, [{table: 'grit.project', ids: ['p1']}]);
-    assert.deepEqual(await DomainPick.resolve('grit.project', 'gone'), {id: 'gone', name: 'gone'},
-      'an id the registry answers null for is shown as itself');
-  } finally {
-    delete grok.dapi.domains.registry;
-    delete grok.dapi.domains.table;
-  }
+  backends.domain = {
+    table: () => assert.fail('the resolver path reads no row'),
+    saveAll: () => Promise.resolve(true),
+    resolveNames: (table, ids) => {
+      calls.push({table, ids: [...ids]});
+      return Promise.resolve({p1: 'Grit'});
+    },
+  };
+  assert.deepEqual(await DomainPick.resolve('grit.project', 'p1'), {id: 'p1', name: 'Grit'});
+  assert.deepEqual(calls, [{table: 'grit.project', ids: ['p1']}]);
+  assert.deepEqual(await DomainPick.resolve('grit.project', 'gone'), {id: 'gone', name: 'gone'},
+    'an id the resolver answers null for is shown as itself');
 });
 
 scoped('an extra filter narrows the candidates; an empty query lists them all', async () => {

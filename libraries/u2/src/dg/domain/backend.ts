@@ -8,7 +8,8 @@ import * as DG from 'datagrok-api/dg';
 import type {IProperty} from '../../core/property-like.js';
 import {backends} from '../../sources/backends.js';
 import type {DataFrameLike} from '../../sources/df-bindings.js';
-import type {AuditEntryLike, DomainBackend, DomainBatchReportLike, DomainDeletedMode,
+import type {AuditEntryLike, DomainBackend, DomainBatchOptionsLike, DomainBatchReportLike,
+  DomainBatchValidationLike, DomainDeletedMode,
   DomainFrameLike, DomainProbeLike, DomainQueryLike, DomainReadScope, DomainSupportLike, DomainTableInfoLike,
   DomainTableLike, DomainTransactionOpLike, DomainTransactionResultLike} from '../../sources/domain-backend.js';
 import {DomainBackendError} from '../../sources/domain-backend.js';
@@ -42,6 +43,10 @@ interface PhaseThreeClient {
     Promise<Record<string, unknown>[]>;
   /** The table's change token: one bump per write transaction that touched its rows. */
   version(): Promise<{seq: number, at: string | null}>;
+  /** The dry run: `POST …/{table}/batch?validateOnly=true`, which answers a verdict per row and
+   * writes nothing. */
+  batch(rows: Record<string, unknown>[], options: DomainBatchOptionsLike & {validateOnly: true}):
+    Promise<DomainBatchValidationLike>;
   access(): Promise<{can: Record<string, boolean>, fields: Record<string, string>,
     support?: DomainSupportLike}>;
 }
@@ -65,6 +70,10 @@ export class DgDomainBackend implements DomainBackend {
       this._tables.set(address, loading);
     }
     return loading;
+  }
+
+  resolveNames(table: string, ids: readonly string[]): Promise<Record<string, string | null>> {
+    return grok.dapi.domains.registry.resolveNames(table, [...ids]);
   }
 
   /** Drops every handle, so the next source re-reads the registry — after a grant change. */
@@ -108,6 +117,7 @@ export class DgDomainTable implements DomainTableLike {
   readonly ancestors?: DomainTableLike['ancestors'];
   readonly probe?: DomainTableLike['probe'];
   readonly batch?: DomainTableLike['batch'];
+  readonly validate?: DomainTableLike['validate'];
 
   private constructor(readonly address: string, readonly client: DG.DomainTableClient,
     readonly registryProperties: DG.Property[], readonly tableInfo: DG.DomainTableInfo,
@@ -122,6 +132,8 @@ export class DgDomainTable implements DomainTableLike {
       this.updateWhere = (filter, values, options) => this._phase3.updateWhere(filter, values, options);
       this.batch = (rows, options) => this.client.batch(rows, options as DG.DomainBatchOptions) as
         Promise<DomainBatchReportLike>;
+      // the dry run is the same endpoint, and it is there wherever the commit is
+      this.validate = (rows, options) => this._phase3.batch(rows, {...options, validateOnly: true});
     }
     if (support.ancestors)
       this.ancestors = (id) => this._phase3.pathTo(id);

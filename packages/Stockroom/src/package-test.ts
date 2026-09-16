@@ -1,6 +1,7 @@
 import {runTests, tests, TestContext, initAutoTests as initTests} from '@datagrok-libraries/test/src/test';
 import * as DG from 'datagrok-api/dg';
 
+import './tests/locations-tests';
 import './tests/schema-tests';
 
 export let _package = new DG.Package();

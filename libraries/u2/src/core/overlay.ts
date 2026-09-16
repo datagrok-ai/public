@@ -5,6 +5,13 @@ import {Scope} from './scope.js';
  * Esc, anchor removal, scope disposal) — lets the owning control resync its own open state. */
 export const OVERLAY_CLOSE_EVENT = 'u2-overlay-close';
 
+export interface OverlayOptions {
+  /** A ceiling on the height the overlay is given — a CSS length or pixels. The room under the
+   * anchor is written as an inline `max-height`, so a popup that wants to stay shorter than that
+   * says so here rather than outranking the inline value from a stylesheet. */
+  maxHeight?: number | string;
+}
+
 /** The single body-level layer host. One container for every u2 popup, so z-index and
  * dismissal are decided in one place instead of per control. */
 export class Overlay {
@@ -41,7 +48,8 @@ export class Overlay {
   /** Shows `content` under `anchor` in the shared layer. The returned close is idempotent and
    * also registered on `scope`, so disposing the owner tears the overlay down; closing drops that
    * registration again, so an input reopened all day never piles dead closures up on its scope. */
-  static show(anchor: HTMLElement, content: HTMLElement, scope: Scope): () => void {
+  static show(anchor: HTMLElement, content: HTMLElement, scope: Scope,
+    options: OverlayOptions = {}): () => void {
     // nothing to anchor to — and autoUpdate's first, synchronous update would close through
     // `position()` before the stop it returns is held, leaving its frame loop running for good
     if (!anchor.isConnected)
@@ -108,7 +116,10 @@ export class Overlay {
             padding: 4,
             apply: ({rects, availableHeight, elements}) => {
               elements.floating.style.minWidth = `${rects.reference.width}px`;
-              elements.floating.style.maxHeight = `${Math.max(availableHeight, 64)}px`;
+              const available = `${Math.max(availableHeight, 64)}px`;
+              const cap = options.maxHeight;
+              elements.floating.style.maxHeight = cap === undefined ? available :
+                `min(${available}, ${typeof cap === 'number' ? `${cap}px` : cap})`;
             },
           }),
         ],

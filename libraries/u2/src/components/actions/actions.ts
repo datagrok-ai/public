@@ -53,10 +53,35 @@ export function rowActions(actions: Action[], options?: ActionsOptions): HTMLEle
   return el;
 }
 
+/** A submenu under the flat list: what a wider target than the clicked object offers — the rows of
+ * a multi-selection, run as one. */
+export interface ActionGroup {
+  label: string;
+  actions: Action[];
+}
+
+export interface ActionsMenuOptions extends ActionsOptions {
+  groups?: ActionGroup[];
+}
+
 /** A popup menu over the same action list — the right-click superset of {@link rowActions}. */
-export function actionsMenu(actions: Action[], options?: ActionsOptions): Menu {
+export function actionsMenu(actions: Action[], options?: ActionsMenuOptions): Menu {
   const menu = new Menu();
-  for (const action of allowedActions(actions, options))
+  const flat = allowedActions(actions, options);
+  for (const action of flat)
     menu.item(action.name, action.run, {icon: action.icon, enabled: action.enabled});
+  let anything = flat.length > 0;
+  for (const group of options?.groups ?? []) {
+    const allowed = allowedActions(group.actions, options);
+    if (allowed.length === 0)
+      continue;
+    if (anything)
+      menu.separator();
+    anything = true;
+    menu.group(group.label);
+    for (const action of allowed)
+      menu.item(action.name, action.run, {icon: action.icon, enabled: action.enabled});
+    menu.endGroup();
+  }
   return menu;
 }

@@ -76,9 +76,9 @@ export class FrameRows implements RowsLike<RowView> {
     this._rebuild();
   }
 
-  /** Every row the writer has pending — new, modified or deleted — whether the frame's filter
-   * shows it or not: the batch is built from the frame, so validation and reference discovery
-   * are about all of it, not about what is on screen. */
+  /** Every row the writer has pending — new, modified, deleted or restored — whether the frame's
+   * filter shows it or not: the batch is built from the frame, so validation and reference
+   * discovery are about all of it, not about what is on screen. */
   pending(): RowView[] {
     const d = this._df.peek();
     if (d === undefined || d.columns.byName(Rows.STATE) === null)
@@ -86,7 +86,7 @@ export class FrameRows implements RowsLike<RowView> {
     const rows: RowView[] = [];
     for (let i = 0; i < d.rowCount; i++) {
       const state = d.get(Rows.STATE, i);
-      if (state === 'new' || state === 'modified' || state === 'deleted')
+      if (state === 'new' || state === 'modified' || state === 'deleted' || state === 'restored')
         rows.push(this._proxy(this.keyAt(i)!));
     }
     return rows;

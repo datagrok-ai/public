@@ -134,7 +134,8 @@ scoped('the gate: a move with unsaved changes asks; cancel keeps the page and th
   a.form.value.input('title').value.value = 'Aspirin 100';
   await flush();
   assert.equal(a.session.isDirty.value, true);
-  assert.equal(a.summary.value, '1 unsaved change', 'the session\'s summary while dirty');
+  assert.equal(a.summary.value, 'Aspirin 100 — 1 unsaved change',
+    'the row the page holds stands, and the session\'s summary is the notice beside it');
   const answer = a.goTo('list');
   await flush();
   assert.notEqual(document.body.querySelector('.u2-dialog'), null);
@@ -167,7 +168,8 @@ scoped('one session: an edit on the entity page and one on the list save as one 
   a.listSource.rows.byKey('i3').title = 'Naproxen 500';
   await flush();
   assert.equal(a.session.changeCount.value, 2);
-  assert.equal(a.summary.value, '2 unsaved changes', 'the entity source and the list source are one table');
+  assert.equal(a.summary.value, 'Aspirin 100 — 2 unsaved changes',
+    'the entity source and the list source are one table');
   assert.equal(await a.session.save(), true);
   assert.equal(transactions, 1);
   const rows = backends.domain.tableSync('grit.issue').rows;
@@ -201,17 +203,19 @@ scoped('find-or-activate: DomainTable.open lands on the app\'s entity page; a re
 
 scoped('New: the entity page over a pristine draft; once saved the page is the row\'s', async () => {
   const {app: a} = await app();
-  const ribbon = a.ribbon();
-  assert.equal(ribbon.length, 2);
-  assert.deepEqual(ribbon[0].map((c) => c.root.dataset.u2),
+  const slots = a.ribbon();
+  assert.deepEqual(slots.main.map((c) => c.root.dataset.u2),
     ['new-button', 'save-button', 'discard-button', 'actions-menu', 'refresh-button']);
+  assert.deepEqual(slots.presets, [], 'no query switch unless a subclass builds one');
+  const ribbon = a.ribbonGroups();
+  assert.equal(ribbon.length, 2, 'the empty presets slot is not a group');
   // only the search box rides the ribbon: the shell's is one fixed 32px line with `overflow:
   // hidden`, and the query box is a row of the LIST PAGE instead
   assert.deepEqual(ribbon[1].map((c) => c.root.dataset.u2), ['domain-search']);
   assert.equal(ribbon[1][0].root.hidden, false);
   const listPage = a.root.querySelector('[data-u2-part="list-page"]');
   assert.equal(listPage.children[0] === a.filters.root, true, 'the query box is the list page first row');
-  fire(ribbon[0][0].root, 'click');
+  fire(slots.main[0].root, 'click');
   await flush();
   assert.equal(a.page.value, 'entity');
   assert.equal(a.entity.value, DomainApp.NEW);
@@ -237,13 +241,13 @@ scoped('New: the entity page over a pristine draft; once saved the page is the r
 
 scoped('New: discarding the draft is the way back to the list, entity and all', async () => {
   const {app: a} = await app();
-  const ribbon = a.ribbon();
-  fire(ribbon[0][0].root, 'click');
+  const ribbon = a.ribbon().main;
+  fire(ribbon[0].root, 'click');
   await flush();
   a.form.value.input('title').value.value = 'Fresh';
   await flush();
   assert.equal(a.session.isDirty.value, true);
-  fire(ribbon[0][2].button, 'click');
+  fire(ribbon[2].button, 'click');
   await flush();
   assert.equal(a.page.value, 'list');
   assert.equal(a.entity.value, null);
@@ -255,8 +259,8 @@ scoped('New: discarding the draft is the way back to the list, entity and all', 
 
 scoped('New: a refused save then Discard lands on the list too', async () => {
   const {app: a} = await app();
-  const ribbon = a.ribbon();
-  fire(ribbon[0][0].root, 'click');
+  const ribbon = a.ribbon().main;
+  fire(ribbon[0].root, 'click');
   await flush();
   // no project: the form's own gate refuses the batch, and the draft stays pending
   a.form.value.input('title').value.value = 'Fresh';
@@ -265,7 +269,7 @@ scoped('New: a refused save then Discard lands on the list too', async () => {
   await flush();
   assert.equal(a.page.value, 'entity');
   assert.equal(a.entity.value, DomainApp.NEW);
-  fire(ribbon[0][2].button, 'click');
+  fire(ribbon[2].button, 'click');
   await flush();
   assert.equal(a.page.value, 'list');
   assert.equal(a.entity.value, null);
@@ -308,7 +312,7 @@ scoped('DomainTable.app(): the view over the app — name, path, the registries,
   assert.equal(a.base, BASE);
   assert.equal(DomainApp.baseOf('grit.issue'), BASE);
   assert.equal(view.ribbonPanels.length, 2);
-  assert.equal(view.statusBarPanels.length, 1);
+  assert.equal(view.statusBarPanels.length, 4, 'one panel per status slot');
   await flush();
   assert.equal(view.path, BASE);
   assert.equal(view.acceptsPath('/apps/t/issues'), true);
@@ -449,8 +453,8 @@ scoped('the ambient session is the app\'s; New is hidden without insert', async 
   assert.equal(a.session, session);
   assert.equal(a.listSource.session, session);
   await flush();
-  const ribbon = a.ribbon();
-  assert.equal(ribbon[0][0].root.hidden, true);
+  const ribbon = a.ribbon().main;
+  assert.equal(ribbon[0].root.hidden, true);
   a.dispose();
 });
 
@@ -463,16 +467,16 @@ scoped('app({app: Sub}): the subclass owns the ribbon, a preset writes the query
     class Sub extends DomainApp {
       shortcuts = {'Ctrl+Shift+E': 'Escalate'};
       ribbon() {
-        const [main, tools] = super.ribbon();
         this.mine = this.presets(['Mine', 'reporter = $me'], ['Done', 'done = true']);
-        return [main, [this.mine, ...tools]];
+        return {...super.ribbon(), presets: [this.mine]};
       }
     }
     const view = table.app({path: BASE, app: Sub});
     document.body.append(view.root);
     const a = DomainApp.of(view);
     assert.ok(a instanceof Sub);
-    assert.equal(view.ribbonPanels[1].length, 2, 'the presets beside the search box');
+    assert.equal(view.ribbonPanels.length, 3, 'the presets are a group of their own');
+    assert.equal(view.ribbonPanels[2].length, 1);
     await flush();
     assert.equal(a.mine.root.dataset.u2, 'domain-presets');
     assert.deepEqual(a.mine.selected.value, [], 'no preset matches the empty query');
@@ -508,11 +512,13 @@ scoped('a refused save says why in the status bar and balloons once, with no for
     (value, row) => value === 'high' && !row.reporter ? 'Assign before escalating' : null);
   a.listSource.rows.byKey('i2').priority = 'high';
   await flush();
-  assert.equal(a.summary.value, '1 unsaved change');
+  assert.equal(a.summary.value, '3 issues — 1 unsaved change');
   assert.equal(await a.session.save(), false);
   await flush();
-  assert.equal(a.summary.value, 'Cannot save: Ibuprofen: Priority: Assign before escalating',
-    'the refusal outranks the change count, and names the row it is about');
+  assert.equal(a.summary.value, '3 issues — Cannot save: Ibuprofen: Priority: Assign before escalating',
+    'the refusal names the row it is about, and the count it is about stands (U37)');
+  assert.deepEqual({...a.status.value}, {count: '3 issues', selected: 0, notice: '1 unsaved change',
+    problem: 'Cannot save: Ibuprofen: Priority: Assign before escalating'}, 'one slot each');
   assert.equal(a.listSource.problemRow.value, 'i2', 'the offending row is named');
   assert.equal(a.list.list.root.querySelector('[data-u2-row="i2"]')
     .classList.contains('u2-domain-list-invalid'), true, 'and marked in the list');
@@ -538,7 +544,7 @@ scoped('a query the backend refuses is the list\'s error, in the status bar and 
 scoped('a ?q= the backend refuses is not a dead end: the text stays in the box, New stands, Clear filter brings the rows back',
   async () => {
     const {app: a} = await app();
-    const [[add]] = a.ribbon();
+    const [add] = a.ribbon().main;
     const filters = a.filters;
     document.body.append(add.root, filters.root);
     await flush();
@@ -590,10 +596,11 @@ scoped('a refused filter leaves the rows as they were: shown stale, the count st
   assert.equal(a.listSource.rows.items.value.length, 3, 'the rows still answer the previous filter');
   assert.equal(a.list.root.classList.contains('u2-domain-list-stale'), true);
   assert.match(a.summary.value, /Filter not applied|Unknown column/,
-    'the count does not confirm rows the box no longer reads as: it says why');
+    'the rows the box no longer reads as are dimmed, and the line says why');
   // and what it says is the box's own refusal, not a placeholder: a tooltip on a red box is not read
   assert.equal(a.filterProblem.value, box.problems.value[0].message);
-  assert.equal(a.summary.value, a.filterProblem.value);
+  assert.equal(a.summary.value, `3 issues — ${a.filterProblem.value}`);
+  assert.equal(a.status.value.notice, a.filterProblem.value);
   box.text.value = 'done = true';
   assert.equal(box.commit(), true);
   await flush();
@@ -652,9 +659,8 @@ scoped('a preset shows in the filter box as it was written, not as the id it bin
   const table = await domains.table('grit.issue');
   class Sub extends DomainApp {
     ribbon() {
-      const [main, tools] = super.ribbon();
       this.mine = this.presets(['Mine', 'reporter = $me'], ['Done', 'done = true']);
-      return [main, [this.mine, ...tools]];
+      return {...super.ribbon(), presets: [this.mine]};
     }
   }
   const view = table.app({path: BASE, app: Sub});
@@ -743,9 +749,8 @@ scoped('closing through the write-back is blocked: the view is clean and still b
 
 scoped('trash mode: the ⋯ menu toggles ?trash=1, the rows are read-only with Restore, and back', async () => {
   const {app: a} = await app();
-  const ribbon = a.ribbon();
+  const [add, save, discard, more] = a.ribbon().main;
   await flush();
-  const [add, save, discard, more] = ribbon[0];
   assert.equal(more.root.dataset.u2, 'actions-menu');
   assert.equal(more.root.hidden, false, 'the delete grant is what the menu holds');
   // the ribbon is the shell's, and an anchored menu needs its button in the document
@@ -768,8 +773,14 @@ scoped('trash mode: the ⋯ menu toggles ?trash=1, the rows are read-only with R
   assert.equal(a.summary.value, '1 deleted issue', 'the table is named, as the live count names it');
   assert.deepEqual(crumbs(a), ['Issues', 'Trash']);
   assert.equal(a.breadcrumbs.root.hidden, false, 'the LIST page reads "Issues › Trash" too');
-  assert.equal(save.root.hidden, true, 'nothing to save in the trash');
-  assert.equal(discard.root.hidden, true);
+  // the root crumb is a link and must do what a link does: the ⋯ menu is not the only way out
+  fire(a.breadcrumbs.root.querySelector('.u2-breadcrumbs-item'), 'click');
+  await flush();
+  assert.equal(a.mode.value, 'live', 'the root crumb leaves the trash');
+  assert.equal(await a.setTrash(true), true);
+  await flush();
+  assert.equal(save.root.hidden, false, 'a restore is saved: the trash is a page that saves (R-c)');
+  assert.equal(discard.root.hidden, false);
   assert.equal(add.root.hidden, true, 'and nothing to insert: the access is narrowed');
 
   const row = a.listSource.rows.byKey('i2');
@@ -778,13 +789,21 @@ scoped('trash mode: the ⋯ menu toggles ?trash=1, the rows are read-only with R
   assert.equal(a.listSource.access.value.row(row).can('edit'), false, 'a deleted row is read-only');
   a.list.actionsFor(row)[0].run();
   await flush();
+  assert.equal(a.session.isDirty.value, true, 'a restore is staged into the session, not written');
+  assert.deepEqual(a.listSource.rows.items.value.map((r) => r.title), ['Ibuprofen'], 'and the row stays put');
+  // one dirty source words its own pending changes: "1 restore pending", not the session's
+  // count of them (M1)
+  assert.equal(a.status.value.notice, '1 restore pending');
+  assert.equal(a.listSource.summary.value, '1 restore pending');
+  assert.equal(await a.session.save(), true);
+  await flush();
   assert.deepEqual(a.listSource.rows.items.value.map((r) => r.title), [], 'the restored row left the trash');
 
   assert.equal(await a.setTrash(false), true);
   await flush();
   assert.deepEqual(a.listSource.rows.items.value.map((r) => r.title), ['Aspirin', 'Ibuprofen', 'Naproxen']);
   assert.equal(a.path.value, BASE);
-  assert.equal(save.root.hidden, false);
+  assert.equal(a.mode.value, 'live', 'one signal behind the three switches');
   a.dispose();
 });
 
@@ -799,10 +818,10 @@ scoped('support ⇒ absent: a table that declares no writes and no soft delete o
   backends.domain = memory;
   const a = domains.app({table: await domains.table('grit.issue'), base: BASE, pageSize: 10});
   document.body.append(a.root);
-  const ribbon = a.ribbon();
+  const ribbon = a.ribbon().main;
   await flush();
   assert.deepEqual(a.menuActions().map((x) => x.name), [], 'no Import, no Bulk edit, no Trash');
-  assert.equal(ribbon[0][3].root.hidden, true, 'and the ⋯ button with them');
+  assert.equal(ribbon[3].root.hidden, true, 'and the ⋯ button with them');
   a.dispose();
 });
 
@@ -835,20 +854,20 @@ scoped('?trash=1 round-trips through open(); without the delete grant the menu d
   const table = await domains.table('grit.issue');
   const b = domains.app({table, base: BASE, pageSize: 10});
   document.body.append(b.root);
-  const ribbon = b.ribbon();
+  const ribbon = b.ribbon().main;
   await flush();
   assert.deepEqual(allowedActions(b.menuActions(), {access: b.listSource.access.value}).map((x) => x.name),
     ['Import…', 'Bulk edit…'], 'permission ⇒ hidden: Trash alone is gone');
-  assert.equal(ribbon[0][3].root.hidden, false, 'the ⋯ button stands while anything in it is allowed');
+  assert.equal(ribbon[3].root.hidden, false, 'the ⋯ button stands while anything in it is allowed');
   b.dispose();
 
   backends.domain = backend({access: {can: {view: true, insert: false, edit: false, delete: false, share: false},
     fields: {title: 'editable'}}});
   const c = domains.app({table: await domains.table('grit.issue'), base: BASE, pageSize: 10});
   document.body.append(c.root);
-  const bare = c.ribbon();
+  const bare = c.ribbon().main;
   await flush();
-  assert.equal(bare[0][3].root.hidden, true, 'and the button goes when nothing in it is allowed');
+  assert.equal(bare[3].root.hidden, true, 'and the button goes when nothing in it is allowed');
   c.dispose();
 });
 
@@ -858,10 +877,11 @@ scoped('Refresh is in the ribbon only while the page is stale, and reloads throu
   memory.tableSync('grit.issue').probe = () => Promise.resolve({count: 3, last});
   backends.domain = memory;
   const table = await domains.table('grit.issue');
-  const a = domains.app({table, base: BASE, pageSize: 10});
+  // off at the start, so the poll's first tick is taken by hand below
+  const a = domains.app({table, base: BASE, pageSize: 10, live: false});
   document.body.append(a.root);
   await flush();
-  const reload = a.ribbon()[0][4];
+  const reload = a.ribbon().main[4];
   await flush();
   assert.equal(reload.root.dataset.u2, 'refresh-button');
   assert.equal(reload.root.hidden, true, 'nothing is behind the server yet');
@@ -881,6 +901,9 @@ scoped('Refresh is in the ribbon only while the page is stale, and reloads throu
   await flush();
   assert.equal(a.stale.value, true, 'the collection moved under pending changes');
   assert.equal(reload.root.hidden, false);
+  assert.deepEqual({...a.status.value}, {count: '3 issues', selected: 0,
+    notice: '1 unsaved change — Data changed — Refresh', problem: null},
+    'what is pending and that the rows moved are both the notice; the count stands');
 
   fire(reload.root.querySelector('button') ?? reload.root, 'click');
   await flush();
@@ -1073,8 +1096,8 @@ scoped('history: one entry per user move, none while restoring, and the push lan
       assert.equal(await a.open(BASE), true);
       await flush();
       assert.equal(pushes().length, 3, 'a restore from the address bar pushes nothing');
-      const ribbon = a.ribbon();
-      fire(ribbon[0][0].root, 'click');
+      const ribbon = a.ribbon().main;
+      fire(ribbon[0].root, 'click');
       await flush();
       assert.equal(pushes().length, 4, 'New is a move');
       a.form.value.input('project_id').value.value = 'p1';
@@ -1170,5 +1193,102 @@ scoped('a selection is not a pending change: the unload gate stays down over a c
   a.listSource.rows.byKey('i1').title = 'Edited';
   await flush();
   assert.equal(armed(), true, 'an actual change does hold it');
+  a.dispose();
+});
+
+scoped('the status bar is four slots, and a refusal never takes the count off the line (U37)', async () => {
+  const {app: a} = await app();
+  a.list.list.root.clientHeight = 400;
+  fire(a.list.list.root, 'scroll');
+  await flush();
+  assert.deepEqual({...a.status.value}, {count: '3 issues', selected: 0, notice: null, problem: null});
+  assert.equal(DomainApp.summaryOf({count: '3 issues', selected: 2, notice: 'Data changed', problem: null}),
+    '3 issues · 2 selected — Data changed');
+  assert.equal(DomainApp.summaryOf({count: '', selected: 0, notice: null, problem: 'Boom'}), 'Boom',
+    'an empty slot leaves no dangling dash');
+  assert.equal(DomainApp.summaryOf({count: '3 issues', selected: 0, notice: 'Nice', problem: 'Boom'}),
+    '3 issues — Boom', 'a problem outranks a notice');
+
+  const panels = DomainApp.statusPanels(a);
+  await flush();
+  assert.deepEqual(panels.map((el) => el.dataset.u2Part), ['count', 'selected', 'notice', 'problem']);
+  assert.deepEqual(panels.map((el) => el.className),
+    ['u2-domain-status-count', 'u2-domain-status-selected', 'u2-domain-status-notice',
+      'u2-domain-status-problem']);
+  assert.equal(panels[0].textContent, '3 issues');
+  assert.deepEqual(panels.map((el) => el.hidden), [false, true, true, true], 'an empty slot is away');
+
+  fire(a.list.root.querySelector('[data-u2-row="i1"]'), 'click');
+  fire(a.list.root.querySelector('[data-u2-row="i3"]'), 'click', {ctrlKey: true});
+  await flush();
+  assert.equal(a.status.value.selected, 2);
+  assert.equal(panels[1].textContent, '2 selected');
+  assert.equal(panels[1].hidden, false);
+  assert.equal(a.summary.value, '3 issues · 2 selected');
+  a.dispose();
+});
+
+scoped('mode: ONE signal behind the deleted rows, the sort, the breadcrumb and the ?trash=1', async () => {
+  const {app: a} = await app();
+  assert.equal(a.mode.value, 'live');
+  assert.equal(await a.setMode('trash'), true);
+  await flush();
+  assert.equal(a.trash.value, true, 'trash is the one question the app asks of the mode');
+  assert.equal(a.listSource.deleted.value, 'only');
+  assert.equal(a.listSource.sort.value, '!updated_on');
+  assert.equal(a.path.value, `${BASE}?trash=1`);
+  assert.deepEqual(crumbs(a), ['Issues', 'Trash']);
+  assert.equal(a.root.classList.contains('u2-domain-app-trash'), true);
+  assert.equal(await a.setMode('trash'), true, 'the mode it is already in asks nothing');
+  assert.equal(await a.setTrash(false), true, 'setTrash is setMode');
+  await flush();
+  assert.equal(a.mode.value, 'live');
+  assert.equal(a.listSource.deleted.value, 'exclude');
+  assert.equal(a.path.value, BASE);
+  a.dispose();
+});
+
+scoped('live by default (R-b): an app polls unless it is told not to', async () => {
+  backends.domain = backend();
+  const table = await domains.table('grit.issue');
+  const issues = backends.domain.tableSync('grit.issue');
+  const probe = issues.probe.bind(issues);
+  const probes = [];
+  issues.probe = (spec) => {
+    probes.push(spec);
+    return probe(spec);
+  };
+  const ticks = [];
+  const saved = globalThis.setInterval;
+  globalThis.setInterval = (fn) => (ticks.push(fn), 0);
+  let a;
+  let b;
+  try {
+    a = domains.app({table, base: BASE, pageSize: 10});
+    document.body.append(a.root);
+    await flush();
+    assert.equal(a.listSource.live.value, true, 'no `live` option is `live: true`');
+    assert.equal(ticks.length, 1, 'and the poll is armed');
+    ticks[0]();
+    await flush();
+    assert.equal(probes.length, 1, 'one probe per tick');
+    b = domains.app({table, base: BASE, pageSize: 10, live: false});
+    await flush();
+    assert.equal(b.listSource.live.value, false, 'and `live: false` still turns it off');
+    assert.equal(ticks.length, 1, 'nothing armed for it');
+  } finally {
+    globalThis.setInterval = saved;
+    issues.probe = probe;
+    a?.dispose();
+    b?.dispose();
+  }
+});
+
+scoped('defaults (R-d): every draft the app opens starts with the values the view preset', async () => {
+  const {app: a} = await app({defaults: {project_id: 'p1'}});
+  assert.equal(await a.goTo('entity', DomainApp.NEW), true);
+  await flush();
+  assert.equal(a.entitySource.value.currentRow.value.project_id, 'p1');
+  assert.equal(a.form.value.input('project_id').value.value, 'p1');
   a.dispose();
 });

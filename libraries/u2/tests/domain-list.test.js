@@ -21,6 +21,7 @@ register('./dg-stub.mjs', import.meta.url);
 const {domains} = await import('../src/dg/domain/index.js');
 const {Rows} = await import('../src/sources/rows-like.js');
 const {DomainList} = await import('../src/dg/domain/list.js');
+const {DomainErrors} = await import('../src/dg/domain/errors.js');
 const {allowedActions} = await import('../src/components/actions/actions.js');
 const {registerDomainComponents} = await import('../src/dg/domain/registrations.js');
 const DG = await import('datagrok-api/dg');
@@ -455,7 +456,7 @@ scoped('an empty result says what it is empty OF, and a search offers the way ou
   src.dispose();
 });
 
-scoped('a trash row says WHEN it was deleted, and Restore says so', async () => {
+scoped('a trash row says WHEN it was deleted, and Restore stages instead of writing', async () => {
   const {src: live} = await issues();
   live.edit.value.markDeleted('i2');
   assert.equal(await live.session.save(), true);
@@ -472,10 +473,123 @@ scoped('a trash row says WHEN it was deleted, and Restore says so', async () => 
     'when it was deleted, read in the reader own zone — never the wire string');
   assert.equal(detail.textContent.includes('GMT'), false);
   assert.match(detail.title, /2026/, 'the full moment is the title');
+
+  const memory = backends.domain.tableSync('grit.issue');
+  const wrote = [];
+  const restore = memory.restore.bind(memory);
+  memory.restore = (id) => {
+    wrote.push(id);
+    return restore(id);
+  };
+  assert.deepEqual(names(list, src.rows.byKey('i2')), ['Restore']);
   list.actionsFor(src.rows.byKey('i2'))[0].run();
   await flush();
-  assert.match([...document.body.querySelectorAll('.u2-notify-info')].map((e) => e.textContent).join('|'),
-    /Restored "Ibuprofen"/, 'a restore says what came back');
+  assert.deepEqual(wrote, [], 'the restore is staged: nothing is written until the Save');
+  assert.equal(src.rows.byKey('i2')[Rows.STATE], 'restored');
+  assert.equal(src.isDirty.value, true);
+  assert.equal(src.summary.value, '1 restore pending');
+  assert.equal(mount(list)[0].classList.contains('u2-domain-list-restored'), true);
+  assert.deepEqual(names(list, src.rows.byKey('i2')), ['Undo restore'], 'the one action on a staged row');
+  list.actionsFor(src.rows.byKey('i2'))[0].run();
+  await flush();
+  assert.equal(src.rows.byKey('i2')[Rows.STATE], '');
+  assert.equal(src.isDirty.value, false, 'Undo restore takes the pending change back');
+  assert.deepEqual(names(list, src.rows.byKey('i2')), ['Restore']);
   list.dispose();
   src.dispose();
+});
+
+scoped('a multi-selection: one submenu over every picked row, offering only what all of them offer', async () => {
+  const issueRows = ROWS.issue.map((r) => ({...r}));
+  issueRows[2]['~can_delete'] = false;
+  backends.domain = backend({rows: {issue: issueRows, project: ROWS.project.map((r) => ({...r}))}});
+  const {table, src} = await issues();
+  table.actions.add({name: 'Close', icon: 'check', run: (r) => r.done = true});
+  const list = domains.list(src);
+  mount(list);
+  const at = (i) => list.list.root.querySelector(`.u2-list-row[data-index="${i}"]`);
+  const panel = () => [...document.body.querySelectorAll('.u2-menu')].at(-1);
+  const labels = () => [...panel().querySelectorAll('.u2-menu-label')].map((e) => e.textContent);
+  const leaf = (name) => [...panel().querySelectorAll('[role="menuitem"]')]
+    .find((e) => e.querySelector('.u2-menu-label').textContent === name);
+
+  fire(at(0), 'click');
+  fire(at(0), 'contextmenu');
+  assert.deepEqual(labels(), ['Open', 'Delete', 'Close'], 'one row: its own actions and no submenu');
+  fire(leaf('Open'), 'click');
+
+  fire(at(1), 'click', {ctrlKey: true});
+  await flush();
+  assert.deepEqual(src.selection.value.map((r) => r.id), ['i1', 'i2'], 'the frame follows the picked rows');
+  fire(at(1), 'contextmenu');
+  assert.deepEqual([...list.list.selectedIndices.value], [0, 1], 'the right-click did not collapse it');
+  // both targets are named: the clicked row and the selection, neither of them implied (M2)
+  assert.deepEqual(labels(), ['Ibuprofen', '2 issues']);
+  fire(panel().querySelectorAll('.u2-menu-item-sub')[0], 'click');
+  assert.deepEqual(labels(), ['Open', 'Delete', 'Close'], 'the clicked row keeps its own actions');
+  fire(leaf('Open'), 'click');
+
+  fire(at(1), 'contextmenu');
+  fire(panel().querySelectorAll('.u2-menu-item-sub')[1], 'click');
+  assert.deepEqual(labels(), ['Delete', 'Close'], 'Open takes one page: never offered over a selection');
+  fire(leaf('Close'), 'click');
+  await flush();
+  assert.deepEqual(src.rows.items.value.map((r) => r.done), [true, true, false], 'both picked rows, and only them');
+
+  fire(at(2), 'click');
+  fire(at(0), 'click', {ctrlKey: true});
+  fire(at(0), 'contextmenu');
+  assert.deepEqual(labels(), ['Aspirin', '2 issues']);
+  fire(panel().querySelectorAll('.u2-menu-item-sub')[1], 'click');
+  assert.deepEqual(labels(), ['Close'], 'i3 has no ~can_delete: Delete applies to the selection no longer');
+  fire(leaf('Close'), 'click');
+  list.dispose();
+  src.dispose();
+});
+
+scoped('a row with pending edits carries the amber edge a staged restore carries', async () => {
+  const {src} = await issues();
+  const list = domains.list(src);
+  mount(list);
+  const row = () => list.list.root.querySelector('[data-u2-row="i2"]');
+  assert.equal(row().classList.contains('u2-domain-list-pending'), false);
+  src.rows.byKey('i2').title = 'Ibuprofen 200';
+  await flush();
+  assert.equal(row().classList.contains('u2-domain-list-pending'), true,
+    'a modified row says so before the save, as the grid\'s dirty cell does');
+  src.discard();
+  await flush();
+  assert.equal(row().classList.contains('u2-domain-list-pending'), false);
+  list.dispose();
+  src.dispose();
+});
+
+scoped('a vetoed restore is worded as a restore: the row, and what to bring back first', async () => {
+  const {src} = await issues();
+  for (const id of ['i1', 'i2'])
+    src.edit.value.markDeleted(id);
+  assert.equal(await src.save(), true);
+  await flush();
+  const projects = await domains.table('grit.project');
+  const live = projects.source();
+  await flush();
+  live.edit.value.markDeleted('p1');
+  assert.equal(await live.save(), true);
+  await flush();
+  live.dispose();
+  src.dispose();
+
+  const trash = (await domains.table('grit.issue')).source({deleted: 'only'});
+  await flush();
+  trash.stageRestore(['i1']);
+  await flush();
+  assert.equal(await trash.save(), false, 'the parent is still in the trash');
+  await flush();
+  assert.equal(document.body.querySelector('.u2-notify-error')?.textContent,
+    'Cannot restore "Aspirin": its project was deleted too. Restore the project first.');
+  // over the platform the session hands the sentence on under its own code: the shape decides
+  assert.equal(DomainErrors.message({code: 'refused',
+    message: 'Cannot save: Column "project_id" references a deleted row in "project"'}, trash),
+  'Cannot restore "Aspirin": its project was deleted too. Restore the project first.');
+  trash.dispose();
 });

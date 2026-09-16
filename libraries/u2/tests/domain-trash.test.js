@@ -1,7 +1,8 @@
-/* Trash over the memory backend (WO 3-5): a landed delete is soft, a `deleted: 'only'` source is
-   the trash — rows carrying `~is_deleted`, read-only, with the access narrowed as an upper bound
-   no row's own `~can_edit` can lift — `restore` brings a row back and re-reads, a refused restore
-   names the row, and a `deleted` source over a backend that cannot restore is refused by name. */
+/* Trash over the memory backend (WO 3-5, R-c): a landed delete is soft, a `deleted: 'only'` source
+   is the trash — rows carrying `~is_deleted`, read-only, with the access narrowed as an upper bound
+   no row's own `~can_edit` can lift — a Restore is STAGED into the session's unit of work and rides
+   the next `save()` as one `restore` op, a trash source still refuses an edit, and a `deleted`
+   source over a backend that cannot restore is refused by name. */
 
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
@@ -52,7 +53,7 @@ async function drop(src, ...ids) {
   await flush();
 }
 
-source('a landed delete is soft: the trash shows the row, restore brings it back', async () => {
+source('a landed delete is soft: the trash shows the row, a staged restore brings it back on Save', async () => {
   backends.domain = backend();
   const live = await issues();
   const trash = await issues({deleted: 'only'});
@@ -64,7 +65,22 @@ source('a landed delete is soft: the trash shows the row, restore brings it back
   assert.deepEqual(titles(trash), ['Ibuprofen']);
   assert.equal(Rows.isDeleted(trash.rows.byKey('i2')), true, 'the row carries ~is_deleted');
   assert.equal(trash.summary.value, '1 deleted issue');
-  assert.equal(await trash.restore(['i2']), 1);
+
+  trash.stageRestore(['i2']);
+  await flush();
+  assert.equal(trash.isDirty.value, true, 'a staged restore is a pending change');
+  assert.equal(trash.changeCount.value, 1);
+  assert.equal(trash.summary.value, '1 restore pending');
+  assert.deepEqual(titles(trash), ['Ibuprofen'], 'nothing has happened on the server yet');
+  // pending() is what the session reads to word its balloon and what check() filters: a restored
+  // row that is not in it makes both of them answer about an empty batch (B1)
+  assert.deepEqual(trash.pending().map((r) => r.id), ['i2']);
+  assert.equal(trash.check(), null, 'a trash source with nothing but restores staged may save');
+
+  notify.closeAll();
+  assert.equal(await trash.save(), true);
+  assert.equal(document.body.querySelector('.u2-notify-info')?.textContent, 'Issue restored',
+    'a landed restore is restored, not deleted');
   await flush();
   assert.deepEqual(titles(trash), [], 'the restored row left the trash');
   assert.equal(trash.summary.value, '0 deleted issues');
@@ -74,6 +90,88 @@ source('a landed delete is soft: the trash shows the row, restore brings it back
   assert.equal(live.rows.byKey('i2').version, 3, 'the delete and the restore are a version each');
   live.dispose();
   trash.dispose();
+});
+
+source('Discard drops a staged restore and the row is still deleted', async () => {
+  backends.domain = backend();
+  const live = await issues();
+  await drop(live, 'i2');
+  live.dispose();
+  const trash = await issues({deleted: 'only'});
+  trash.stageRestore(['i2']);
+  await flush();
+  assert.equal(trash.changeCount.value, 1);
+  trash.discard();
+  await flush();
+  assert.equal(trash.isDirty.value, false);
+  assert.equal(trash.rows.byKey('i2')[Rows.STATE], '');
+  assert.equal(Rows.isDeleted(trash.rows.byKey('i2')), true, 'still in the trash');
+  trash.dispose();
+});
+
+source('two staged restores are ONE transaction; a staged delete beside them is still refused', async () => {
+  const be = backend();
+  backends.domain = be;
+  const live = await issues();
+  await drop(live, 'i1', 'i2');
+  live.dispose();
+  const both = await issues({deleted: 'include'});
+  both.stageRestore(['i1', 'i2']);
+  both.edit.value.markDeleted('i3');
+  await flush();
+  assert.equal(both.changeCount.value, 3);
+  // a source over deleted rows is read-only for everything but the restores it stages
+  assert.equal(both.check(), 'deleted rows are read-only until they are restored');
+  assert.equal(await both.save(), false);
+
+  both.edit.value.unmarkDeleted('i3');
+  await flush();
+  assert.equal(await both.save(), true);
+  await flush();
+  const table = be.tableSync('grit.issue');
+  const undeletes = table.history.filter((line) => line.op === 'undelete');
+  assert.equal(undeletes.length, 2);
+  assert.equal(undeletes[0].tx_id, undeletes[1].tx_id, 'one transaction');
+  assert.deepEqual(both.rows.items.value.map((r) => Rows.isDeleted(r)), [false, false, false]);
+  both.dispose();
+});
+
+source('a trash source with an EDIT pending is still refused with the unchanged sentence', async () => {
+  backends.domain = backend();
+  const live = await issues();
+  await drop(live, 'i1');
+  live.dispose();
+  const trash = await issues({deleted: 'only'});
+  // the narrowed access keeps a control from doing this; the writer is the last line of defence
+  trash.edit.value.setValue('i1', 'title', 'Edited');
+  await flush();
+  assert.equal(trash.check(), 'deleted rows are read-only until they are restored');
+  assert.equal(await trash.save(), false);
+  assert.deepEqual(trash.pending().map((r) => r[Rows.STATE]), ['modified'],
+    'the edit is what the guard sees, and it is not a restore');
+  trash.dispose();
+});
+
+source('stageRestore over a backend without restore refuses by name before anything is staged', async () => {
+  const memory = backend();
+  backends.domain = memory;
+  const live = await issues();
+  await drop(live, 'i2');
+  live.dispose();
+  backends.domain = {
+    table: async (address) => {
+      const t = await memory.table(address);
+      return {address: t.address, properties: t.properties, info: t.info, access: () => t.access(),
+        query: (spec) => t.query(spec), count: (scope) => t.count(scope),
+        transaction: (ops) => t.transaction(ops), frame: (spec) => t.frame(spec)};
+    },
+    saveAll: (edits) => memory.saveAll(edits),
+  };
+  const src = await issues({deleted: 'include'});
+  assert.throws(() => src.stageRestore(['i2']),
+    /grit\.issue: the backend does not support restoring deleted rows/);
+  assert.equal(src.isDirty.value, false, 'nothing was staged');
+  src.dispose();
 });
 
 source('the deleted mode is a signal: one source flips to the trash, to both, and back', async () => {
@@ -115,13 +213,12 @@ source('a trash source is read-only: the narrowed access is an upper bound, and 
   assert.equal(row['~can_edit'], true, 'the row still carries the table\'s own answer');
   assert.equal(access.row(row).can('edit'), false, 'which cannot lift the bound');
   assert.equal(access.row(row).can('delete'), true);
-  assert.equal(trash.check(), 'deleted rows are read-only until they are restored');
-  assert.equal(await trash.save(), false);
-  assert.match(String(trash.error.value.message), /Cannot save: deleted rows are read-only/);
+  assert.equal(trash.check(), null, 'a clean trash source is not in a batch and refuses nothing');
+  assert.equal(await trash.save(), false, 'there is nothing to save');
   trash.dispose();
 });
 
-source('restoreSelection: every selected row restored, then one re-read', async () => {
+source('stageRestoreSelection: every selected row staged, then one Save', async () => {
   backends.domain = backend();
   const live = await issues();
   await drop(live, 'i1', 'i3');
@@ -132,13 +229,17 @@ source('restoreSelection: every selected row restored, then one re-read', async 
   trash.df.value.selection.set(1, true);
   await flush();
   assert.equal(trash.selection.value.length, 2);
-  assert.equal(await trash.restoreSelection(), 2);
+  trash.stageRestoreSelection();
+  await flush();
+  assert.equal(trash.changeCount.value, 2);
+  assert.equal(trash.summary.value, '2 restores pending');
+  assert.equal(await trash.save(), true);
   await flush();
   assert.deepEqual(titles(trash), []);
   trash.dispose();
 });
 
-source('a restore the backend refuses stops the run, names the row and stands as the error', async () => {
+source('a restore the backend refuses fails the batch and the rows stay in the trash', async () => {
   backends.domain = backend();
   const live = await issues();
   await drop(live, 'i3');
@@ -148,9 +249,11 @@ source('a restore the backend refuses stops the run, names the row and stands as
   projects.dispose();
 
   const trash = await issues({deleted: 'only'});
-  assert.equal(await trash.restore(['i3']), 0);
-  assert.equal(trash.problemRow.value, 'i3');
-  assert.match(String(trash.error.value.message), /project_id refers to the deleted grit\.project "p2"/);
+  trash.stageRestore(['i3']);
+  await flush();
+  assert.equal(await trash.save(), false);
+  await flush();
+  assert.match(String(trash.error.value.message), /Column "project_id" references a deleted row in "project"/);
   assert.deepEqual(titles(trash), ['Naproxen'], 'the row stays in the trash');
   trash.dispose();
 });
@@ -170,8 +273,8 @@ source('a deleted source over a backend that cannot restore is refused by name',
   const src = await issues({deleted: 'only'});
   assert.equal(src.state.value, 'error');
   assert.equal(src.error.value.code, 'unsupported');
-  assert.match(String(src.error.value.message), /grit\.issue: the backend does not support deleted rows/);
+  assert.match(String(src.error.value.message), /grit\.issue: the backend does not support restoring deleted rows/);
   src.dispose();
   assert.throws(() => DomainSource.requireRestore({address: 'grit.issue'}),
-    /grit\.issue: the backend does not support deleted rows/, 'and the guard refuses at construction');
+    /grit\.issue: the backend does not support restoring deleted rows/, 'and the guard refuses at construction');
 });

@@ -137,6 +137,37 @@
   opacity: 0.55;
 }
 
+/* a staged restore is the other direction: the strike is gone, and the amber edge of a pending
+   change says it has not landed yet */
+.u2-domain-list-restored .u2-domain-list-content {
+  text-decoration: none;
+  opacity: 1;
+}
+
+.u2-domain-list-restored,
+.u2-domain-list-pending {
+  box-shadow: inset 3px 0 0 0 var(--dg-orange-2);
+}
+
+/* the status bar's slots are four panels the shell places side by side with nothing between
+   them: each one after the count leads with a separator, or "1,006" and "1 unsaved change" read
+   as one number */
+.u2-domain-status-selected::before,
+.u2-domain-status-notice::before,
+.u2-domain-status-problem::before {
+  content: '·';
+  margin: 0 var(--dg-space-m);
+  color: var(--dg-text-color-light);
+}
+
+.u2-domain-status-notice {
+  color: var(--dg-text-color-light);
+}
+
+.u2-domain-status-problem {
+  color: var(--dg-error);
+}
+
 /* trash mode: the list shows what was deleted, and says so before a row is read */
 .u2-domain-app-trash .u2-domain-app-list {
   box-shadow: inset 0 2px 0 0 var(--dg-warm-grey-2);
@@ -494,6 +525,12 @@
 
 .u2-domain-import-summary {
   color: var(--dg-text-color-light);
+}
+
+.u2-domain-import-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--dg-space-m);
 }
 
 .u2-domain-import-issues {

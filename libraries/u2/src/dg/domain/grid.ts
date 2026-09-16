@@ -7,9 +7,9 @@ import * as DG from 'datagrok-api/dg';
 import {Control} from '../../core/component.js';
 import {signal} from '../../core/signals.js';
 import type {ReadonlySignal} from '../../core/signals.js';
-import {Filters} from '../../core/filter/index.js';
 import {text} from '../../core/text.js';
-import {timestamp} from '../../core/elements.js';
+import {Dates} from '../../core/dates.js';
+import {span, timestamp} from '../../core/elements.js';
 import type {IProperty} from '../../core/property-like.js';
 import type {ObjectRenderer} from '../../core/object-renderer.js';
 import {DataTable} from '../../components/collections/data-table.js';
@@ -21,6 +21,7 @@ import {viewers} from '../viewers/viewers.js';
 import type {Bindable} from '../viewers/viewer-control.js';
 import {SYSTEM_COLUMNS} from './backend.js';
 import {EditorEditState} from './editor-state.js';
+import {DomainSelection} from './selection.js';
 import {DomainTable} from './index.js';
 import {DomainForm} from './form.js';
 
@@ -35,11 +36,8 @@ export interface DomainGridOptions {
 /** What a datetime column without a format of its own is drawn with: a `DateTime.toString()`
  * ("2026-02-03 00:00:00.000Z") is not a date. A column whose values all fall on midnight is a
  * date, the rest keep the time. */
-/** What a reference cell shows until its caption answers — never the id it holds. */
-const PENDING = '…';
 const DATE_FORMAT = 'MMM d, yyyy';
 const DATE_TIME_FORMAT = 'MMM d, yyyy HH:mm';
-const MICROSECONDS_PER_DAY = 86400000000;
 
 export class DomainGrid extends Control {
   readonly grid: DG.Grid;
@@ -130,8 +128,7 @@ export class DomainGrid extends Control {
   static isDateOnly(column: DG.Column): boolean {
     const raw = column.getRawData();
     for (let i = 0; i < raw.length; i++) {
-      const value = raw[i];
-      if (value !== Filters.FLOAT_NULL && Number.isFinite(value) && value % MICROSECONDS_PER_DAY !== 0)
+      if (!Dates.isDateOnlyMicros(raw[i]))
         return false;
     }
     return true;
@@ -163,13 +160,10 @@ export class DomainDataTable extends Control {
   readonly table: ReadonlySignal<DataTable<RowView> | null>;
 
   private readonly _table = signal<DataTable<RowView> | null>(null);
-  /** `<semType>|<id>` → the referenced row's caption, once it has answered; a promise while it
-   * is on its way, so the same id is looked up once for the whole table. */
-  private readonly _captions = new Map<string, string>();
-  private readonly _resolving = new Map<string, Promise<void>>();
+  /** `<semType>|<id>` → the caption a lookup answered for a ref the query did not project. */
+  private readonly _looked = new Map<string, string>();
   private _tick: {unsubscribe(): void} | undefined;
   private _plain: ObjectRenderer<RowView> | undefined;
-  private _repainting = false;
 
   constructor(readonly source: DomainSource, private readonly _options: DomainDataTableOptions = {}) {
     super();
@@ -220,19 +214,7 @@ export class DomainDataTable extends Control {
       items: source.rows, cellState: this._cellState(),
       onActivate: this._options.onActivate ??
         (() => source.activate.value = source.activate.peek() + 1)}));
-    // the table's selection and the source's current row are one thing, as the list's are
-    this.effect(() => {
-      const row = source.rows.items.peek()[table.selectedIndex.value] ?? null;
-      if (row?.id !== source.currentRow.peek()?.id)
-        source.currentRow.value = row;
-    });
-    this.effect(() => {
-      const row = source.currentRow.value;
-      const items = source.rows.items.value;
-      const at = row === null ? -1 : items.findIndex((r) => r.id === row.id);
-      if (at !== table.selectedIndex.peek())
-        table.selectedIndex.value = at;
-    });
+    DomainSelection.bind(this, source, table);
     this.root.replaceChildren(table.root);
     this._table.value = table;
   }
@@ -266,7 +248,10 @@ export class DomainDataTable extends Control {
       case 'datetime':
         return 'minmax(96px, 0.8fr)';
       default:
-        return 'minmax(72px, 1fr)';
+        // a reference reads as the target's name, not as the id behind it: it grows like the name
+        // column, but keeps a smaller floor — a wide table of refs must still fit a pane
+        return prop !== undefined && DomainTable.isReference(prop) ? 'minmax(96px, 1.5fr)' :
+          'minmax(72px, 1fr)';
     }
   }
 
@@ -293,7 +278,7 @@ export class DomainDataTable extends Control {
     if (prop === undefined || value === null || value === undefined || value === '')
       return text(value);
     if (DomainTable.isReference(prop))
-      return this._caption(prop, String(value));
+      return DomainDataTable.caption(prop, row, column, String(value), this._looked);
     switch (prop.propertyType ?? prop.type) {
       case 'datetime':
         // a domain `datetime` carrying a date is stamped at midnight UTC, and reading it locally
@@ -306,38 +291,29 @@ export class DomainDataTable extends Control {
     }
   }
 
-  /** The referenced row's caption, looked up the way a form's readonly reference and the history
-   * lines look one up (`DomainForm.captionOf`: a domain row by its name column, a user or a group
-   * by its friendly name) and cached per id — the rows of one window repeat their references, and
-   * a recycled cell cannot keep a patched element of its own. The id stands in until it answers. */
-  private _caption(prop: IProperty, id: string): string {
+  /** The referenced row's caption: the one the query projected for the column
+   * (`~caption_<column>`), which is the target's display name as the server computed it — null
+   * where the caller may not see the target, and that is an empty cell, not a miss. Where the
+   * frame carries none — a draft, a `User`, a `Group` — the one lookup a form's readonly
+   * reference does (`DomainForm.captionOf`), patched into the cell it was drawn into; never the
+   * uuid, which read as the value of the column. `cache` holds what that lookup answered, so a
+   * pooled cell redrawn on every scroll asks once per id instead of once per paint. */
+  static caption(prop: IProperty, row: RowView, column: string, id: string,
+    cache?: Map<string, string>): HTMLElement | string {
+    const projected = row[Rows.caption(column)];
+    if (projected !== undefined)
+      return typeof projected === 'string' ? projected : '';
     const key = `${prop.semType}|${id}`;
-    const known = this._captions.get(key);
+    const known = cache?.get(key);
     if (known !== undefined)
       return known;
-    if (!this._resolving.has(key)) {
-      // a lookup that fails settles on the id, so the cell stops asking on every repaint
-      const settle = (caption: string) => {
-        this._resolving.delete(key);
-        this._captions.set(key, caption);
-        this._repaint();
-      };
-      this._resolving.set(key, DomainForm.captionOf(prop, id)
-        .then((caption) => settle(caption === null || caption === '' ? id : caption), () => settle(id)));
-    }
-    // never the uuid: an id flashing in the cell for a moment reads as the value of the column
-    return PENDING;
-  }
-
-  /** One repaint per batch of answers, not one per id. */
-  private _repaint(): void {
-    if (this._repainting)
-      return;
-    this._repainting = true;
-    queueMicrotask(() => {
-      this._repainting = false;
-      this._table.peek()?.refresh();
-    });
+    const el = span('…');
+    void DomainForm.captionOf(prop, id).then((caption) => {
+      el.textContent = caption || id;
+      if (caption)
+        cache?.set(key, caption);
+    }, () => el.textContent = id);
+    return el;
   }
 
   /** A number as the schema wants it read: the platform's formatter under a declared `format`,

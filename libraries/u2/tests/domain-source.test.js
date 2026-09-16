@@ -345,7 +345,8 @@ source('spec: the tray tag round-trips through dump, a bound query narrows, a bo
     assert.equal(meta.category, 'Data');
     assert.equal(typeof meta.usage, 'string');
     assert.deepEqual(meta.props.map((p) => p.name),
-      ['table', 'query', 'search', 'pageSize', 'withAccess', 'defaults', 'empty', 'draft', 'deleted', 'live']);
+      ['table', 'query', 'search', 'pageSize', 'withAccess', 'captions', 'defaults', 'empty', 'draft',
+        'deleted', 'live']);
     assert.equal(meta.props.find((p) => p.name === 'query').bindable, true);
     assert.equal(meta.props.find((p) => p.name === 'search').bindable, true);
 
@@ -366,7 +367,7 @@ source('spec: the tray tag round-trips through dump, a bound query narrows, a bo
     assert.ok(src instanceof DomainSource);
     assert.equal(src.bindStep('query'), src.query, 'the declared prop stays a step');
     assert.deepEqual(titles(src), ['Ibuprofen', 'Naproxen']);
-    assert.deepEqual(src.getFunctions().map((f) => f.name), ['refresh', 'loadMore', 'save', 'discard', 'newRow']);
+    assert.deepEqual(src.getFunctions().map((f) => f.name), ['refresh', 'loadMore', 'save', 'discard', 'restoreSelection', 'newRow']);
 
     const input = instance.root.querySelector('input');
     assert.equal(input.value, '', 'no current row: the field is empty, not "undefined"');
@@ -885,7 +886,7 @@ source('a backend that declares no restore refuses a deleted source by name, bef
   await flush();
   assert.equal(src.state.value, 'error');
   assert.equal(src.error.value.code, 'unsupported');
-  assert.match(src.error.value.message, /does not support deleted rows/);
+  assert.match(src.error.value.message, /does not support restoring deleted rows/);
   assert.equal(asked, 0, 'the refusal comes before any row is read');
   src.dispose();
 });
@@ -905,12 +906,14 @@ source('a trash source refuses to insert, and its writer is built from the NARRO
   assert.throws(() => trash.newRow({title: 'Nope'}),
     (e) => e.code === 'forbidden' && /read-only until they are restored/.test(e.message),
     'a permission refusal, not a validation one');
-  assert.equal(trash.check(), 'deleted rows are read-only until they are restored');
-  assert.equal(await trash.save(), false);
+  assert.equal(trash.check(), null, 'nothing is pending, so nothing is refused');
 
   // the writer the frame carries is under the same bound: an edit it does take builds no op
   const edit = trash.edit.value;
   edit.setValue('i2', 'title', 'Renamed');
+  await flush();
+  assert.equal(trash.check(), 'deleted rows are read-only until they are restored');
+  assert.equal(await trash.save(), false);
   assert.deepEqual(edit.buildOps(), [], 'no column is writable, so the batch is empty');
   assert.equal(edit.isChanged('i2', 'title'), true, 'the frame still shows what was typed');
   live.dispose();
@@ -955,4 +958,36 @@ source('sort travels with the query: `!col` descending, dropped from the spec wh
   assert.equal('sort' in specs[specs.length - 1], false, 'no order asked for is the table default');
   assert.deepEqual(src.rows.items.value.map((r) => r.title), ['Aspirin', 'Ibuprofen', 'Naproxen']);
   src.dispose();
+});
+
+/** The specs the frames were asked for, over a backend of `inner`. */
+function spying(inner, specs) {
+  return {saveAll: (edits) => inner.saveAll(edits), table: async (address) => {
+    const t = await inner.table(address);
+    return Object.assign(Object.create(Object.getPrototypeOf(t)), t,
+      {frame: (spec) => (specs.push(spec), t.frame(spec))});
+  }};
+}
+
+source('captions: the FIRST load already asks for them, and only for visible domain-table refs', async () => {
+  const specs = [];
+  backends.domain = spying(backend(), specs);
+  const src = await issues();
+  assert.deepEqual(specs[0].captions, ['project_id'],
+    'the access is known before the spec is built, and a User ref is not a domain table');
+  assert.equal(src.rows.byKey('i1')[Rows.caption('project_id')], 'Grit', 'the name rides with the row');
+  src.dispose();
+
+  specs.length = 0;
+  const off = await issues({captions: []});
+  assert.equal('captions' in specs[0], false, '`[]` turns it off entirely');
+  off.dispose();
+
+  specs.length = 0;
+  const rows = Object.fromEntries(Object.entries(ROWS).map(([t, list]) => [t, list.map((r) => ({...r}))]));
+  backends.domain = spying(new MemoryDomainBackend(SCHEMA,
+    {rows, access: {can: {view: true}, fields: {project_id: 'hidden'}}}), specs);
+  const hidden = await issues();
+  assert.equal('captions' in specs[0], false, 'a hidden ref column is never asked for');
+  hidden.dispose();
 });

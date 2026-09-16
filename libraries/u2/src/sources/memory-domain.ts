@@ -16,9 +16,9 @@ import type {AccessData, FieldAccess} from '../core/access.js';
 import {Access} from '../core/access.js';
 import {DomainBackendError} from './domain-backend.js';
 import type {AuditEntryLike, DomainBackend, DomainBatchOptionsLike, DomainBatchReportLike,
-  DomainFrameLike, DomainProbeLike, DomainQueryLike, DomainReadScope, DomainSupportLike,
-  DomainTableInfoLike, DomainTableLike, DomainTransactionOpLike,
-  DomainTransactionResultLike} from './domain-backend.js';
+  DomainBatchValidationLike, DomainBatchValidationRowLike, DomainFrameLike, DomainProbeLike,
+  DomainQueryLike, DomainReadScope, DomainSupportLike, DomainTableInfoLike, DomainTableLike,
+  DomainTransactionOpLike, DomainTransactionResultLike} from './domain-backend.js';
 import type {EditState} from './edit-state.js';
 import {MemoryEditState} from './edit-state.js';
 import {MemoryFrame} from './memory-frame.js';
@@ -193,6 +193,23 @@ export class MemoryDomainBackend implements DomainBackend {
           before[j].add(i);
       }
     }
+    // restores read the other way round: `_checkParentsLive` vetoes a child coming back under a
+    // still-deleted parent, so the PARENT's restore runs first
+    for (const [i, parent] of ops.entries()) {
+      for (const [j, child] of ops.entries()) {
+        if (i === j || parent.op !== 'restore' || child.op !== 'restore')
+          continue;
+        const [a, b] = [tables[i], tables[j]];
+        if (b === a) {
+          const row = a.rows.find((r) => r.id === child.id);
+          if (row !== undefined && Object.entries(a.refs)
+            .some(([column, target]) => target === a.address && row[column] === parent.id))
+            before[j].add(i);
+        }
+        else if (Object.values(b.refs).includes(a.address) && !Object.values(a.refs).includes(b.address))
+          before[j].add(i);
+      }
+    }
     const order: number[] = [];
     const done = new Set<number>();
     while (order.length < ops.length) {
@@ -210,6 +227,9 @@ export class MemoryDomainBackend implements DomainBackend {
     }
 
     const copies = new Map<MemoryTable, Row[]>();
+    // `rowsOf` is also how an op READS another table — a delete's FK scan, a restore's parent
+    // check — so the tables it copied are not the tables the transaction wrote
+    const written = new Set<MemoryTable>();
     const rowsOf = (table: MemoryTable): Row[] => {
       let rows = copies.get(table);
       if (rows === undefined)
@@ -240,8 +260,8 @@ export class MemoryDomainBackend implements DomainBackend {
       const values = Object.fromEntries(Object.entries(op.values ?? {}).map(([k, v]) => [k, resolve(v, index)]));
       const id = op.op === 'insert' ? undefined : String(resolve(op.id, index));
       const at = rows.findIndex((row) => row.id === id);
-      const entry = (rowId: string, prior: Row | null, next: Row | null): void => {
-        audit.push([table, {id: rowId, tx_id: tx, op: op.op, actor_id: null, ts, before: prior, after: next}]);
+      const entry = (name: string, rowId: string, prior: Row | null, next: Row | null): void => {
+        audit.push([table, {id: rowId, tx_id: tx, op: name, actor_id: null, ts, before: prior, after: next}]);
       };
       if (op.op === 'insert') {
         const row = table.stamp(values, 1);
@@ -250,7 +270,7 @@ export class MemoryDomainBackend implements DomainBackend {
         if (op.ref !== undefined)
           refs.set(op.ref, row.id as string);
         results[index] = MemoryDomainBackend._stamped(row, 1);
-        entry(row.id as string, null, {...row});
+        entry(op.op, row.id as string, null, {...row});
       } else if (at < 0)
         throw new DomainBackendError('not-found', `Operation ${index}: no row "${id}"`);
       else if (op.op === 'delete') {
@@ -264,9 +284,25 @@ export class MemoryDomainBackend implements DomainBackend {
           }
         }
         // soft delete: the row stays in the store and leaves every query that excludes deleted
-        entry(id!, {...rows[at]}, null);
+        entry(op.op, id!, {...rows[at]}, null);
         rows[at] = table.stamp({...rows[at], [IS_DELETED]: true}, (rows[at].version as number) + 1);
         results[index] = {id};
+      } else if (op.op === 'restore') {
+        if (rows[at][IS_DELETED] !== true)
+          throw new DomainBackendError('not-found', `Operation ${index}: no deleted row "${id}"`);
+        for (const [column, target] of Object.entries(table.refs)) {
+          const parentTable = this._tables.get(target);
+          const parent = parentTable === undefined ? undefined :
+            rowsOf(parentTable).find((r) => r.id === rows[at][column]);
+          if (parent?.[IS_DELETED] === true) {
+            throw new DomainBackendError('restrict',
+              `Column "${column}" references a deleted row in "${parentTable!.name}"`);
+          }
+        }
+        const row = table.stamp({...rows[at], [IS_DELETED]: false}, (rows[at].version as number) + 1);
+        entry('undelete', id!, {...rows[at]}, {...row});
+        rows[at] = row;
+        results[index] = MemoryDomainBackend._stamped(row, row.version as number);
       } else {
         if (op.expectedVersion !== undefined && rows[at].version !== op.expectedVersion) {
           throw new DomainBackendError('version-conflict',
@@ -274,13 +310,17 @@ export class MemoryDomainBackend implements DomainBackend {
         }
         const row = table.stamp({...rows[at], ...values}, (rows[at].version as number) + 1);
         table.check(row, index);
-        entry(id!, {...rows[at]}, {...row});
+        entry(op.op, id!, {...rows[at]}, {...row});
         rows[at] = row;
         results[index] = MemoryDomainBackend._stamped(row, row.version as number);
       }
+      written.add(table);
     }
-    for (const [table, rows] of copies)
+    for (const [table, rows] of copies) {
       table.rows.splice(0, table.rows.length, ...rows);
+      if (written.has(table))
+        table.seq++;
+    }
     for (const [table, line] of audit)
       table.history.push(line);
     return results;
@@ -331,6 +371,10 @@ export class MemoryTable implements DomainTableLike {
   readonly refs: Record<string, string>;
   /** What every transaction that touched this table recorded, oldest first. */
   readonly history: AuditEntryLike[] = [];
+  /** One bump per transaction that wrote this table's rows — the memory twin of
+   * `domain_tables.change_seq` (consolidation 1-5), so `probe` answers an unscoped read with a
+   * token instead of a scan, exactly as `DgDomainTable` does. */
+  seq = 0;
 
   private readonly _access: AccessData;
   private readonly _author: string;
@@ -384,6 +428,7 @@ export class MemoryTable implements DomainTableLike {
   }
 
   async query(spec: DomainQueryLike = {}): Promise<Row[]> {
+    const captions = this._captionTargets(spec.captions);
     let rows = await this._where(spec);
     if (spec.sort)
       rows = MemoryTable._sorted(rows, spec.sort);
@@ -400,7 +445,34 @@ export class MemoryTable implements DomainTableLike {
       }
       if (spec.deleted !== undefined && spec.deleted !== 'exclude')
         out[Rows.DELETED] = row[IS_DELETED] === true;
+      // the server's LEFT JOIN under the target's own View predicate: a null FK and a target the
+      // caller may not see are the same null, and nothing says which
+      for (const [name, target] of captions) {
+        const hit = typeof row[name] !== 'string' ? undefined :
+          target.rows.find((r) => r.id === row[name]);
+        out[Rows.caption(name)] = hit === undefined ? null : target._nameOf(hit);
+      }
       return out;
+    });
+  }
+
+  /** The ref columns a `captions` entry names, resolved to their target tables — the server's
+   * `_compileCaptionExpand` refusals, word for word: an unknown, hidden or non-ref column is the
+   * ONE message (no-oracle), a nested name and a repeat their own. */
+  private _captionTargets(names: string[] | undefined): [string, MemoryTable][] {
+    if (names === undefined)
+      return [];
+    const seen = new Set<string>();
+    return names.map((name): [string, MemoryTable] => {
+      if (name.includes('.'))
+        throw new DomainBackendError('filter', `Nested caption "${name}" is not supported`);
+      if (seen.has(name))
+        throw new DomainBackendError('filter', `Duplicate caption "${name}"`);
+      seen.add(name);
+      const target = this._backend.tableSync(this.refs[name] ?? '');
+      if (target === undefined || this._access.fields[name] === 'hidden')
+        throw new DomainBackendError('filter', `Unknown or inaccessible caption column "${name}"`);
+      return [name, target];
     });
   }
 
@@ -413,6 +485,7 @@ export class MemoryTable implements DomainTableLike {
       {name: Rows.STATE, type: 'string'},
       ...(spec.withAccess ? Access.ROW_COLUMNS.map(([name]) => ({name, type: 'bool'})) : []),
       ...(spec.deleted === undefined || spec.deleted === 'exclude' ? [] : [{name: Rows.DELETED, type: 'bool'}]),
+      ...(spec.captions ?? []).map((name) => ({name: Rows.caption(name), type: 'string'})),
     ];
     const df = new MemoryFrame(columns, rows);
     // a frame over deleted rows is read-only until they are restored — the same upper bound
@@ -439,8 +512,11 @@ export class MemoryTable implements DomainTableLike {
 
   /** The server's live probe mirrored: the matching rows counted and the newest `updated_on`
    * among them, in one call — `aggregate({measures: [{fn: 'count'}, {fn: 'max', column:
-   * 'updated_on'}]})` under the same scope. */
+   * 'updated_on'}]})` under the same scope. An unscoped read is answered by {@link seq} alone
+   * with `count: -1`, the branch `DgDomainTable._probe` takes over the change token. */
   async probe(scope: DomainReadScope = {}): Promise<DomainProbeLike> {
+    if (MemoryTable._unscoped(scope))
+      return {count: -1, last: String(this.seq)};
     const rows = await this._where(scope);
     let last: string | null = null;
     for (const row of rows) {
@@ -449,6 +525,16 @@ export class MemoryTable implements DomainTableLike {
         last = updated;
     }
     return {count: rows.length, last};
+  }
+
+  /** Whether a read selects nothing at all — the whole live table, which the change token answers
+   * for. Copied verbatim from `DgDomainTable._unscoped`: the two are three lines and live on
+   * opposite sides of the platform boundary, so they stay two. */
+  private static _unscoped(scope: DomainReadScope): boolean {
+    const filter = scope.filter;
+    return (filter === undefined || filter === '' || (Array.isArray(filter) && filter.length === 0)) &&
+      (scope.search === undefined || scope.search === '') &&
+      (scope.deleted === undefined || scope.deleted === 'exclude');
   }
 
   transaction(ops: DomainTransactionOpLike[]): Promise<DomainTransactionResultLike[]> {
@@ -460,26 +546,12 @@ export class MemoryTable implements DomainTableLike {
   }
 
   /** The soft delete undone, as the server's `POST …/{id}/restore`: a row whose ref column points
-   * at a row still in the trash is refused naming that column — restoring it would leave a live
-   * row referring to a deleted one. Restoring a live row does nothing. */
+   * at a row still in the trash is refused `restrict` naming that column — restoring it would
+   * leave a live row referring to a deleted one — and a row that is not in the trash is not found.
+   * The route IS the transaction op, so the veto, the stamp and the `'undelete'` audit line are
+   * one rule. */
   async restore(id: string): Promise<void> {
-    const at = this.rows.findIndex((row) => row.id === id);
-    if (at < 0)
-      throw new DomainBackendError('not-found', `${this.address}: no row "${id}"`);
-    const row = this.rows[at];
-    if (row[IS_DELETED] !== true)
-      return;
-    for (const [column, target] of Object.entries(this.refs)) {
-      const parent = this._backend.tableSync(target)?.rows.find((r) => r.id === row[column]);
-      if (parent?.[IS_DELETED] === true) {
-        throw new DomainBackendError('validation',
-          `Cannot restore row "${id}": ${column} refers to the deleted ${target} "${parent.id}"`);
-      }
-    }
-    const restored = this.stamp({...row, [IS_DELETED]: false}, (row.version as number) + 1);
-    this.rows[at] = restored;
-    this.history.push({id, tx_id: uuid4(), op: 'undelete', actor_id: null,
-      ts: restored.updated_on as string, before: {...row}, after: {...restored}});
+    await this.transaction([{op: 'restore', table: this.address, id}]);
   }
 
   /** The filtered bulk edit, as the server's `POST …/{table}/update`: a non-empty filter selects
@@ -518,6 +590,52 @@ export class MemoryTable implements DomainTableLike {
    * otherwise the good rows land in ONE transaction and the bad ones are reported per row. */
   async batch(rows: Record<string, unknown>[],
     options: DomainBatchOptionsLike = {}): Promise<DomainBatchReportLike> {
+    const {errors, duplicate, ops, posted, failed} = this._plan(rows, options);
+    if (options.allOrNothing !== false && errors.size > 0)
+      return {error: 'validation', inserted: 0, updated: 0, skipped: 0, errorCount: errors.size, rows: failed};
+    const results = await this.transaction(ops);
+    return {
+      inserted: ops.filter((op) => op.op === 'insert').length,
+      updated: ops.filter((op) => op.op === 'update').length,
+      skipped: duplicate.size,
+      errorCount: errors.size,
+      rows: [...failed,
+        ...[...duplicate.entries()].sort(([a], [b]) => a - b).map(([index, existingId]) =>
+          ({index, id: existingId, status: 'duplicate', ...(existingId === null ? {} : {existingId})})),
+        ...posted.map((index, i) => ({index, id: results[i].id ?? null,
+          status: ops[i].op === 'insert' ? 'inserted' : 'updated'}))],
+    };
+  }
+
+  /** The dry run, as the server's `POST …/{table}/batch?validateOnly=true`: the plan {@link batch}
+   * would apply, reported and thrown away. The same code decides both, so a preview and the commit
+   * cannot disagree; the verdict is about the table as it is now. */
+  async validate(rows: Record<string, unknown>[],
+    options: DomainBatchOptionsLike = {}): Promise<DomainBatchValidationLike> {
+    const {errors, duplicate, ops, posted} = this._plan(rows, options);
+    const op = new Map(posted.map((index, i) => [index, ops[i]]));
+    const lines: DomainBatchValidationRowLike[] = rows.map((_, index) => {
+      const problems = errors.get(index);
+      if (problems !== undefined)
+        return {index, predicted: 'error' as const, errors: problems};
+      if (duplicate.has(index)) {
+        const existingId = duplicate.get(index);
+        return {index, predicted: 'skip' as const, ...(existingId === null ? {} : {existingId})};
+      }
+      const planned = op.get(index)!;
+      return planned.op === 'insert' ? {index, predicted: 'insert' as const} :
+        {index, predicted: 'update' as const, existingId: planned.id!};
+    });
+    return {validateOnly: true, rowCount: rows.length,
+      willInsert: ops.filter((x) => x.op === 'insert').length,
+      willUpdate: ops.filter((x) => x.op === 'update').length,
+      willSkip: duplicate.size, errorCount: errors.size, rows: lines};
+  }
+
+  /** What a batch WOULD do: the payload's columns checked against column security, every row
+   * against the schema's rules, and business-key duplicates — inside the batch and against the
+   * live rows — resolved into the ops the commit sends. Nothing is written. */
+  private _plan(rows: Record<string, unknown>[], options: DomainBatchOptionsLike) {
     const upsert = options.mode === 'upsert';
     const key = this.info.businessKey;
     const writable = new Set(this.properties.map((p) => p.name!)
@@ -560,6 +678,10 @@ export class MemoryTable implements DomainTableLike {
     const duplicate = new Map<number, string | null>();
     const seen = new Set<string>();
     for (const [index, row] of key.length === 0 ? [] : [...rows.entries()]) {
+      // an invalid row is reported as an error and lands nowhere: it is not a duplicate, and it
+      // does not take the key away from a later good row
+      if (errors.has(index))
+        continue;
       const spelled = spell(row);
       // the first occurrence wins: the merge may not touch one target row twice
       const clash = seen.has(spelled) ? 'Duplicate business key in batch' :
@@ -574,8 +696,6 @@ export class MemoryTable implements DomainTableLike {
     }
     const failed = [...errors.keys()].sort((a, b) => a - b).map((index) =>
       ({index, id: null, status: 'error', errors: errors.get(index)!}));
-    if (options.allOrNothing !== false && errors.size > 0)
-      return {error: 'validation', inserted: 0, updated: 0, skipped: 0, errorCount: errors.size, rows: failed};
     const ops: DomainTransactionOpLike[] = [];
     const posted: number[] = [];
     for (const [index, values] of rows.entries()) {
@@ -586,18 +706,7 @@ export class MemoryTable implements DomainTableLike {
       ops.push(id === undefined ? {op: 'insert', table: this.address, values} :
         {op: 'update', table: this.address, id, values});
     }
-    const results = await this.transaction(ops);
-    return {
-      inserted: ops.filter((op) => op.op === 'insert').length,
-      updated: ops.filter((op) => op.op === 'update').length,
-      skipped: duplicate.size,
-      errorCount: errors.size,
-      rows: [...failed,
-        ...[...duplicate.entries()].sort(([a], [b]) => a - b).map(([index, existingId]) =>
-          ({index, id: existingId, status: 'duplicate', ...(existingId === null ? {} : {existingId})})),
-        ...posted.map((index, i) => ({index, id: results[i].id ?? null,
-          status: ops[i].op === 'insert' ? 'inserted' : 'updated'}))],
-    };
+    return {errors, duplicate, ops, posted, failed};
   }
 
   /** The row's ancestors along `info.parentColumn`, ROOT FIRST and without the row itself — the

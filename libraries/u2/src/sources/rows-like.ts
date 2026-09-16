@@ -40,6 +40,14 @@ export class Rows {
   /** The soft-delete service column, projected by a query that does not exclude deleted rows:
    * the row is in the trash, read-only until it is restored. */
   static readonly DELETED = '~is_deleted';
+  /** The caption service column a query's `captions` projects for a ref column: the target row's
+   * display name as the server computed it. Read by name like every other `~` column, so a spread
+   * of a row never carries one into a payload (H7). */
+  static readonly CAPTION_PREFIX = '~caption_';
+
+  static caption(column: string): string {
+    return `${Rows.CAPTION_PREFIX}${column}`;
+  }
 
   static isService(column: string): boolean {
     return column.startsWith('~');

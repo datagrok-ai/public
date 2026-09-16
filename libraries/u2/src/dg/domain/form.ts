@@ -415,17 +415,27 @@ export class DomainForm extends Control {
     return found;
   }
 
-  /** A readonly reference shows what it points at, not the uuid it holds: resolved the way the
-   * picker resolves a preset id, the id standing in until then, under the row's scope. */
+  /** A readonly reference shows what it points at, not the uuid it holds: the caption the query
+   * projected for it (`~caption_<column>`) where the frame carries one, resolved the way the
+   * picker resolves a preset id where it does not — a draft, a user, a group. */
   private _resolveCaptions(form: ObjectForm, row: RowView, scope: Scope, extra: IProperty[]): void {
     let live = true;
     scope.own(() => live = false);
+    let projected = false;
     for (const prop of [...form.properties, ...extra]) {
       const name = prop.name!;
       const id = row[name];
       if (form.input(name) !== undefined || !DomainTable.isReference(prop) ||
           id === null || id === undefined || id === '' || this._captions.get(name)?.id === String(id))
         continue;
+      const caption = row[Rows.caption(name)];
+      if (caption !== undefined) {
+        // null is not a miss: the caller may not see the target, and a lookup answers the same
+        // nothing one request later
+        this._captions.set(name, {id: String(id), caption: typeof caption === 'string' ? caption : ''});
+        projected = true;
+        continue;
+      }
       void DomainForm.captionOf(prop, String(id)).then((caption) => {
         if (!live || caption === null)
           return;
@@ -433,6 +443,8 @@ export class DomainForm extends Control {
         this._applyCaptions(row);
       }, () => undefined);
     }
+    if (projected)
+      this._applyCaptions(row);
   }
 
   private _applyCaptions(row: RowView): void {
@@ -467,7 +479,7 @@ export class DomainForm extends Control {
       if (state === 'loading')
         el.replaceChildren(loader('Loading…'));
       else if (state === 'error')
-        el.replaceChildren(span(DomainErrors.message(source.error.value), 'u2-domain-form-error'));
+        el.replaceChildren(span(DomainErrors.message(source.error.value, source), 'u2-domain-form-error'));
       else
         el.replaceChildren(span(this._options.empty ?? DomainForm.emptyHint(source), 'u2-domain-form-hint'));
     });

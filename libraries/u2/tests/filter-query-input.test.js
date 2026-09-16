@@ -167,7 +167,10 @@ smoke('a pick replaces the token, quotes strings, appends a space and re-opens f
   await flush();
   // the pick IS the answer: it is quoted, applied and re-formatted in the one keystroke
   assert.equal(box(q).value, 'name like "Naproxen"', 'a string value is quoted');
-  assert.deepEqual(rows(), ['and', 'or']);
+  assert.equal(q.isOpen.value, false, 'an applied pick closes the popup');
+  key(q, 'ArrowDown');
+  await flush();
+  assert.deepEqual(rows(), ['and', 'or'], 'ArrowDown brings the continuation back');
   key(q, 'Enter');
   assert.equal(q.isOpen.value, false, 'Enter with no active row commits');
   assert.equal(q.query.value, 'name like "Naproxen"', 'the committed text is re-formatted');
@@ -584,6 +587,34 @@ smoke('picking clears the refusal the previous text earned', async () => {
   assert.deepEqual(q.problems.value, [], 'the guidance is not about this text any more');
   assert.deepEqual(q.value.peek().nodes.map((n) => [n.property, n.operator, n.value?.id]),
     [['location_id', 'under', 'Lab 101']]);
+});
+
+/* U34: the continuation rows kept opening over the fresh result — the first rows of the list the
+   pick had just fetched sat under an `and`/`or` popup nobody had asked for. */
+smoke('an applied pick leaves the popup closed over the result; ArrowDown re-opens the continuation', async () => {
+  const q = mount(new FilterQueryInput({schema: PLACES, name: 'q'}));
+  await type(q, 'location_id under Lab');
+  key(q, 'ArrowDown');
+  key(q, 'Enter');
+  await flush();
+  assert.equal(q.query.value, 'location_id under "Lab 101"', 'the pick applied');
+  assert.equal(q.isOpen.value, false);
+  assert.deepEqual(rows(), [], 'nothing stands over the rows the pick fetched');
+  assert.equal(document.body.querySelector('.u2-fq-popup'), null);
+
+  key(q, 'ArrowDown');
+  await flush();
+  assert.equal(q.isOpen.value, true);
+  assert.deepEqual(rows(), ['and', 'or'], 'the continuation is one keystroke away');
+  key(q, 'Escape');
+
+  const mouse = mount(new FilterQueryInput({schema: PLACES, name: 'm'}));
+  await type(mouse, 'location_id under Buil');
+  fire(document.body.querySelector('.u2-fq-option'), 'pointerdown');
+  await flush();
+  assert.equal(mouse.isOpen.value, false, 'a click that applies closes it too');
+  await type(mouse, 'location_id under "Building A" ');
+  assert.deepEqual(rows(), ['and', 'or'], 'and a keystroke re-opens it');
 });
 
 smoke('a pick that does not make a filter yet applies nothing, and still clears the refusal', async () => {

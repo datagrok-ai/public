@@ -78,4 +78,192 @@ export const scenarios = [
       t.equal(rest.hasMore, false);
     },
   },
+  {
+    name: 'restore: a landed delete is soft, and restore brings the row back',
+    requires: ['softDelete', 'restore'],
+    seed: [
+      {key: 'gone', code: 'res-gone', name: 'Gone'},
+      {key: 'kept', code: 'res-kept', name: 'Kept'},
+    ],
+    async run(table, ids, t) {
+      await table.transaction([{op: 'delete', table: table.address, id: ids.gone}]);
+      const live = await table.query({limit: 100});
+      t.deepEqual(live.map((row) => row.code), ['res-kept'], 'a deleted row leaves a live read');
+      t.equal(live[0]['~is_deleted'], undefined, 'which does not project the column at all');
+      const trash = await table.query({deleted: 'only', limit: 100});
+      t.deepEqual(trash.map((row) => row.code), ['res-gone']);
+      t.equal(trash[0]['~is_deleted'], true, 'and a trash read does');
+      await table.restore(ids.gone);
+      t.deepEqual((await table.query({limit: 100})).map((row) => row.code).sort(),
+        ['res-gone', 'res-kept'], 'restore puts it back');
+      await t.rejects(() => table.restore(ids.gone), 'not-found',
+        'restoring a live row is not found, not a no-op');
+    },
+  },
+  {
+    name: 'restore: a deleted parent vetoes a child\'s restore, and the veto names the column',
+    requires: ['softDelete', 'restore', 'hierarchy'],
+    seed: [
+      {key: 'parent', code: 'veto-parent', name: 'Site'},
+      {key: 'child', code: 'veto-child', name: 'Room', parent_id: '$ref:parent'},
+    ],
+    async run(table, ids, t) {
+      await table.transaction([{op: 'delete', table: table.address, id: ids.child}]);
+      await table.transaction([{op: 'delete', table: table.address, id: ids.parent}]);
+      let code = null;
+      let message = '';
+      try {
+        await table.restore(ids.child);
+      } catch (e) {
+        code = e.code;
+        message = `${e.message}`;
+      }
+      t.equal(code, 'restrict', 'a child under a deleted parent is refused, not restored');
+      t.ok(message.includes('parent_id'), 'and the refusal names the ref column');
+      await table.restore(ids.parent);
+      await table.restore(ids.child);
+      t.deepEqual((await table.query({limit: 100})).map((row) => row.code).sort(),
+        ['veto-child', 'veto-parent'], 'the parent first, then the child');
+    },
+  },
+  {
+    name: 'updateWhere: the filter is required, and an unwritable column is refused before any write',
+    requires: ['updateWhere'],
+    seed: [
+      {key: 'a', code: 'req-a', name: 'First'},
+      {key: 'b', code: 'req-b', name: 'Second'},
+    ],
+    async run(table, ids, t) {
+      await t.rejects(() => table.updateWhere('', {name: 'Nope'}), 'validation');
+      await t.rejects(() => table.updateWhere('code = "req-a"', {}), 'validation');
+      await t.rejects(() => table.updateWhere('code = "req-a"', {id: ids.b}), 'validation');
+      const rows = await table.query({sort: 'code', limit: 100});
+      t.deepEqual(rows.map((row) => row.name), ['First', 'Second'], 'a refusal writes nothing');
+      t.deepEqual(rows.map((row) => row.version), [1, 1]);
+    },
+  },
+  {
+    name: 'updateWhere: deleted rows are never touched',
+    requires: ['updateWhere', 'softDelete'],
+    seed: [
+      {key: 'live', code: 'upd-live', name: 'Live'},
+      {key: 'gone', code: 'upd-gone', name: 'Gone'},
+    ],
+    async run(table, ids, t) {
+      await table.transaction([{op: 'delete', table: table.address, id: ids.gone}]);
+      const done = await table.updateWhere('code in ("upd-live", "upd-gone")', {name: 'Touched'});
+      t.equal(done.updated, 1, 'the trashed row is not a live row');
+      const [gone] = await table.query({deleted: 'only', limit: 100});
+      t.equal(gone.name, 'Gone', 'and was not written');
+    },
+  },
+  {
+    name: 'batch: duplicates are skipped and reported; errorOnDuplicate makes them errors; upsert merges',
+    requires: ['batch'],
+    seed: [{key: 'a', code: 'bat-a', name: 'Existing'}],
+    async run(table, ids, t) {
+      const report = await table.batch([{code: 'bat-a', name: 'Again'}, {code: 'bat-b', name: 'New'},
+        {code: 'bat-b', name: 'Twice'}], {allOrNothing: false});
+      t.equal(report.inserted, 1);
+      t.equal(report.updated, 0);
+      t.equal(report.skipped, 2, 'the live clash and the second occurrence inside the batch');
+      t.equal(report.errorCount, 0);
+      t.deepEqual([...report.rows].sort((x, y) => x.index - y.index).map((row) => row.status),
+        ['duplicate', 'inserted', 'duplicate']);
+      t.equal([...report.rows].find((row) => row.index === 0).existingId, ids.a,
+        'a live clash names the row it clashed with');
+
+      const strict = await table.batch([{code: 'bat-a', name: 'Again'}],
+        {allOrNothing: false, errorOnDuplicate: true});
+      t.equal(strict.errorCount, 1);
+      t.equal(strict.skipped, 0);
+      t.equal(strict.rows[0].errors[0].code, 'unique');
+
+      const merged = await table.batch([{code: 'bat-a', name: 'Renamed'}], {mode: 'upsert'});
+      t.equal(merged.updated, 1);
+      t.equal(merged.inserted, 0);
+      const [a] = await table.query({filter: 'code = "bat-a"', limit: 10});
+      t.equal(a.name, 'Renamed', 'upsert merged into the row the key names');
+
+      // the payload is checked before any row is: a column that is not there, one the caller may
+      // not write, and an upsert with no business key to merge by
+      await t.rejects(() => table.batch([{nope: 1}]));
+      await t.rejects(() => table.batch([{id: ids.a, name: 'x'}]));
+      await t.rejects(() => table.batch([{name: 'No key'}], {mode: 'upsert'}));
+    },
+  },
+  {
+    name: 'batch: allOrNothing writes nothing and reports `error`; false applies the good rows',
+    requires: ['batch'],
+    seed: [],
+    async run(table, ids, t) {
+      const payload = [{code: 'aon-a', name: 'Fine'}, {name: 'No code'}];
+      const aborted = await table.batch(payload);
+      t.equal(aborted.error !== undefined && aborted.error !== null, true, 'the abort is reported');
+      t.equal(aborted.errorCount, 1);
+      t.deepEqual(aborted.rows.map((row) => [row.index, row.status]), [[1, 'error']]);
+      t.equal((await table.query({limit: 100})).length, 0, 'and nothing was written');
+
+      const partial = await table.batch(payload, {allOrNothing: false});
+      t.equal(partial.inserted, 1);
+      t.equal(partial.errorCount, 1);
+      t.deepEqual((await table.query({limit: 100})).map((row) => row.code), ['aon-a']);
+    },
+  },
+  {
+    name: 'validate: the dry run\'s verdicts equal the commit\'s, and it writes nothing',
+    requires: ['validate'],
+    seed: [{key: 'a', code: 'val-a', name: 'Existing'}],
+    async run(table, ids, t) {
+      const payload = [{code: 'val-a', name: 'Dup'}, {code: 'val-b', name: 'New'}, {name: 'No code'}];
+      const before = (await table.query({limit: 100})).length;
+      const dry = await table.validate(payload, {allOrNothing: false});
+      t.equal(dry.validateOnly, true);
+      t.equal(dry.rowCount, 3);
+      t.equal((await table.query({limit: 100})).length, before, 'a dry run writes nothing');
+      t.deepEqual([...dry.rows].sort((x, y) => x.index - y.index).map((row) => row.predicted),
+        ['skip', 'insert', 'error']);
+      t.equal(dry.willInsert, 1);
+      t.equal(dry.willUpdate, 0);
+      t.equal(dry.willSkip, 1);
+      t.equal(dry.errorCount, 1);
+
+      const report = await table.batch(payload, {allOrNothing: false});
+      const landed = {inserted: 'insert', updated: 'update', duplicate: 'skip', error: 'error'};
+      t.deepEqual([...report.rows].sort((x, y) => x.index - y.index).map((row) => landed[row.status]),
+        [...dry.rows].sort((x, y) => x.index - y.index).map((row) => row.predicted),
+        'the prediction is the commit, row for row');
+    },
+  },
+  {
+    name: 'captions: a ref column carries the target\'s display name; an unknown one is one refusal',
+    requires: [],
+    seed: [
+      {key: 'parent', code: 'cap-parent', name: 'Site'},
+      {key: 'child', code: 'cap-child', name: 'Room', parent_id: '$ref:parent'},
+    ],
+    async run(table, ids, t) {
+      const rows = await table.query({captions: ['parent_id'], sort: 'code', limit: 100});
+      t.deepEqual(rows.map((row) => `${row.code}=${row['~caption_parent_id']}`),
+        ['cap-child=Site', 'cap-parent=null'],
+        'the target\'s display name, and null where there is no target');
+      await t.rejects(() => table.query({captions: ['name']}), 'filter');
+      await t.rejects(() => table.query({captions: ['nope']}), 'filter');
+    },
+  },
+  {
+    name: 'probe: an unscoped read answers a token that moves once per write transaction',
+    requires: ['probe'],
+    seed: [{key: 'a', code: 'prb-a', name: 'First'}],
+    async run(table, ids, t) {
+      const first = await table.probe();
+      t.equal(first.count, -1, 'nothing is counted: the whole live table is the change token');
+      await table.transaction([{op: 'update', table: table.address, id: ids.a, values: {name: 'Second'}}]);
+      const second = await table.probe();
+      t.equal(second.count, -1);
+      t.equal(second.last !== first.last, true, 'and the token moved');
+      const scoped = await table.probe({filter: 'code = "prb-a"'});
+      t.equal(scoped.count, 1, 'a scoped read still counts rows');
+    },
+  },
 ];

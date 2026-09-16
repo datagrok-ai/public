@@ -2,7 +2,6 @@
    holds, the box shows the name. `PickInput` is the face over any `TypeAhead`; `domains.pick` is
    the one over a domain table, querying it by its name column through the domain seam, so it
    works over the memory backend as it does over the server. */
-import * as grok from 'datagrok-api/grok';
 import {Input, InputOptions, labelText} from '../../core/input-base.js';
 import {div, span} from '../../core/elements.js';
 import type {ObjectRenderer} from '../../core/object-renderer.js';
@@ -14,7 +13,6 @@ import {backends} from '../../sources/backends.js';
 import type {DomainQueryLike, DomainTableInfoLike, DomainTableLike} from '../../sources/domain-backend.js';
 import {DomainSource} from '../../sources/domain-source.js';
 import {Rows} from '../../sources/rows-like.js';
-import {DgDomainBackend} from './backend.js';
 
 export interface PickItem {
   id: string;
@@ -208,9 +206,9 @@ export class DomainPick extends PickInput<PickItem> {
   }
 
   /** The item behind an id; a draft id is the draft's caption from the live source holding it,
-   * no query issued; an id the table does not answer is shown as itself. Over the platform the
-   * registry's resolver answers it — batched over 30 ms and cached, so a formful of refs is one
-   * call; every other backend reads the row. */
+   * no query issued; an id the table does not answer is shown as itself. A backend that declares
+   * `resolveNames` answers it there — over the platform that is the registry's resolver, batched
+   * and cached, so a formful of refs is one call; every other backend reads the row. */
   static async resolve(table: string, id: string): Promise<PickItem> {
     const draft = Rows.isDraft(id) ? DomainSource.draftOf(id) : undefined;
     if (draft !== undefined) {
@@ -218,8 +216,9 @@ export class DomainPick extends PickInput<PickItem> {
       const name = text(draft.row[DomainPick.nameColumn(info)]);
       return {id, name: name === '' ? `New ${info.singularName.toLowerCase() || 'row'}` : name};
     }
-    if (backends.domain instanceof DgDomainBackend) {
-      const name = (await grok.dapi.domains.registry.resolveNames(table, [id]))[id];
+    const backend = backends.domain;
+    if (backend?.resolveNames !== undefined) {
+      const name = (await backend.resolveNames(table, [id]))[id];
       return {id, name: name || id};
     }
     const t = await DomainPick.table(table);

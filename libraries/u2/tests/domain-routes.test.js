@@ -18,6 +18,7 @@ import {backend} from './domain-fixtures.mjs';
 register('./dg-stub.mjs', import.meta.url);
 const {domains} = await import('../src/dg/domain/index.js');
 const {DomainApp} = await import('../src/dg/domain/app.js');
+const {DomainAddress} = await import('../src/dg/domain/address.js');
 const grok = await import('datagrok-api/grok');
 
 function scoped(name, body) {
@@ -164,3 +165,47 @@ scoped('null where the platform keeps the address: a schema route, a table the r
     assert.equal(await domains.route('/domains/demo/nope'), null, 'an unknown table falls back');
     assert.equal(await domains.route('/domains/nope/widget'), null);
   });
+
+test('DomainAddress: the platform\'s row route, and what an address carries under an app\'s bases', () => {
+  assert.deepEqual(DomainAddress.ROUTE.exec('/domains/demo/widget').slice(1),
+    ['demo', 'widget', undefined]);
+  assert.deepEqual(DomainAddress.ROUTE.exec('/domains/demo/widget/A-1').slice(1), ['demo', 'widget', '/A-1']);
+  assert.equal(DomainAddress.ROUTE.exec('/domains/demo'), null, 'the schema gallery is not a table route');
+  assert.equal(DomainAddress.ROUTE.exec('/domains/demo/widget/A-1/extra'), null);
+  assert.equal(DomainAddress.entityPath('/domains/demo/widget'), true);
+  assert.equal(DomainAddress.entityPath('/apps/Grit'), false, 'an app addresses rows by ?entity=');
+
+  // both routes at once: the one the shell mounted the view at, and the one it was built with
+  const bases = ['/apps/Grit', '/domains/grit/issue'];
+  assert.equal(DomainAddress.restOf('/apps/Grit', bases), '', 'the base itself');
+  assert.equal(DomainAddress.restOf('/APPS/grit/p1-1', bases), '/p1-1', 'the case of an address is not its own');
+  assert.equal(DomainAddress.restOf('/domains/grit/issue/p1-1', bases), '/p1-1', 'the fallback route too');
+  assert.equal(DomainAddress.restOf('/apps/GritLabs', bases), null, 'a segment boundary, not a prefix');
+  assert.equal(DomainAddress.restOf('/apps/Other/x', bases), null);
+  assert.equal(DomainAddress.segmentOf('/apps/Grit/p1-1', bases), 'p1-1');
+  assert.equal(DomainAddress.segmentOf('/apps/Grit/p1%2D1/extra', bases), 'p1-1', 'the first segment names the row');
+  assert.equal(DomainAddress.segmentOf('/apps/Grit', bases), null, 'a base names no row');
+  assert.equal(DomainAddress.segmentOf('/apps/Other/x', bases), null);
+  assert.equal(DomainAddress.under('/apps/grit?entity=i1', '/apps/grit'), true, 'a query continues the base');
+  assert.equal(DomainAddress.under('/apps/grit/i1', '/apps/grit'), true);
+  assert.equal(DomainAddress.under('/apps/grit_labs', '/apps/grit'), false);
+});
+
+test('DomainAddress: how a row is spelled in a path, and read back out of one', () => {
+  assert.equal(DomainAddress.keyOf({id: 'x', code: 'A-1'}, ['code']), 'A-1',
+    'a single-column key keeps its dashes');
+  assert.equal(DomainAddress.keyOf({id: 'x', project_id: 'p1', number: 2}, ['project_id', 'number']), 'p1-2');
+  assert.equal(DomainAddress.keyOf({id: 'x', project_id: 'p-1', number: 2}, ['project_id', 'number']), 'x',
+    'the split would be ambiguous');
+  assert.equal(DomainAddress.keyOf({id: 'x', code: null}, ['code']), 'x', 'a null component is not addressable');
+  assert.equal(DomainAddress.keyOf({id: 'x'}, []), 'x', 'no business key, no key address');
+
+  const schema = {properties: [{name: 'project_id', type: 'string'}, {name: 'number', type: 'int'}]};
+  const query = DomainAddress.keyQuery('p1-2', ['project_id', 'number'], schema);
+  assert.deepEqual(query.nodes.map((n) => [n.property, n.operator, n.value]),
+    [['project_id', '=', 'p1'], ['number', '=', 2]], 'the int component is read as an int');
+  assert.equal(DomainAddress.keyQuery(UUID, ['code'], {properties: []}), null, 'a uuid IS the id');
+  assert.equal(DomainAddress.keyQuery('A-1', [], {properties: []}), null);
+  assert.equal(DomainAddress.keyQuery('p1-1-2', ['project_id', 'number'], {properties: []}), null,
+    'an arity that does not match is read as an id');
+});

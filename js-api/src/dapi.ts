@@ -55,6 +55,7 @@ import {
   DomainQueryBuilder,
   DomainQuerySpec,
   DomainReadScope,
+  DomainRestoreResult,
   DomainRestrictError,
   DomainRowInsert,
   DomainAccess,
@@ -1534,7 +1535,7 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
    * refused with a {@link DomainRestrictError} naming that column — restore the parent first;
    * nothing deleted under that id rejects like a missing row. Find the candidates with
    * `query({deleted: 'only'})` ({@link DomainQuerySpec.deleted}). */
-  restore(id: string): Promise<{id: string; restored: boolean; version: number}> {
+  restore(id: string): Promise<DomainRestoreResult> {
     return domainCall(api.grok_Dapi_Domains_Restore(this.dart, this.schema, this.table, id));
   }
 

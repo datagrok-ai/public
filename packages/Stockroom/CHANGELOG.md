@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-20298: Locations: New container from the selected location — a ribbon button, disabled with "Select a location first" until a node is picked, opens the Containers app narrowed to that node's subtree, named "Containers in &lt;location&gt;", with every draft it creates starting in that location and its site
 * GROK-20753: Locations reads as a page: the two panes carry "Locations" / "Containers" headers, the status line says "6 containers in Lab 101, including sublocations", Enter (or a double-click) on a container opens its entity page, and an "All locations" row is the way back to every container once a node has been picked
 * GROK-20753: The Stockroom app follows the server (`live: true`) — another session's substance shows up within a poll instead of on the next reload
 * GROK-20753: Added the **Locations** app — the location tree beside the containers stored under the selected node: `domains.tree(locations)` drives a `domains.dataTable` over a live container source through `location_id under "<id>"`, and nothing selected is the whole table

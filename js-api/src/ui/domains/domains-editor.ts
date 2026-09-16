@@ -28,7 +28,7 @@ import {DomainRegistryClient, DomainTableClient} from '../../dapi';
 import {Column, DataFrame} from '../../dataframe';
 import {DomainAccess, DomainConditionTree, DomainError, DomainQuerySpec, DomainRestrictError,
   DomainTableInfo, DomainTransactionOp, DomainValidationError, DomainVersionConflictError,
-  DOMAIN_ACCESS_COLUMNS} from '../../domains';
+  DOMAIN_ACCESS_COLUMNS, DOMAIN_DELETED_COLUMN} from '../../domains';
 import {DomainObjectHandler} from '../../domains-ui';
 import {Property} from '../../entities/property';
 import {IFrameEditor} from '../../grid';
@@ -46,8 +46,10 @@ const balloon = new Balloon();
 const log = Logger.getStatic();
 const registry = new DomainRegistryClient();
 
-/** Per-row editing state, as stored in {@link DomainFrameEditor.STATE_COLUMN}. */
-export type DomainRowState = '' | 'new' | 'modified' | 'deleted';
+/** Per-row editing state, as stored in {@link DomainFrameEditor.STATE_COLUMN}.
+ * `'restored'` is a soft-deleted row staged to come back — the undo of a landed
+ * delete, as `'deleted'` is the undo of a live row. */
+export type DomainRowState = '' | 'new' | 'modified' | 'deleted' | 'restored';
 
 /** One cell-level problem, as stored in {@link DomainFrameEditor.ERRORS_COLUMN}: `'error'` blocks
  * {@link DomainFrameEditor.save}, `'conflict'` (a dismissed version conflict)
@@ -294,7 +296,9 @@ export interface DomainPendingOp {
  *
  * **Deleted rows stay in the frame** and are hidden by ANDing them out of the
  * filter bitset on every filter recomputation, so undoing a delete
- * ({@link unmarkDeleted}) is trivial and row order never moves.
+ * ({@link unmarkDeleted}) is trivial and row order never moves. The mirror case —
+ * a row the server already deleted, staged to come back by {@link markRestored} —
+ * stays VISIBLE for the same reason: it is a pending change the user must see.
  *
  * **Refreshing discards edits — BY DESIGN.** {@link refresh} re-runs the query
  * and rebuilds the frame and its state from scratch; there is no merge and never
@@ -304,7 +308,7 @@ export interface DomainPendingOp {
  * on a route change without that check WILL eat a user's batch edits.
  */
 export class DomainFrameEditor implements IFrameEditor {
-  /** Row state column: `'' | 'new' | 'modified' | 'deleted'`. */
+  /** Row state column: `'' | 'new' | 'modified' | 'deleted' | 'restored'`. */
   static readonly STATE_COLUMN = '~state';
   /** JSON column holding the ORIGINAL values of changed cells only (sparse). */
   static readonly CHANGES_COLUMN = '~changes';
@@ -743,6 +747,19 @@ export class DomainFrameEditor implements IFrameEditor {
     this._setDeleted(rows, false);
   }
 
+  /** Stages the restore of rows the SERVER has soft-deleted: they ride the next
+   * {@link save} as one `restore` op of the same transaction, exactly as a delete
+   * does. Refused on a row the frame does not answer as deleted (`~is_deleted`) —
+   * a restore is the undo of a landed delete, not an edit. */
+  markRestored(rows: number | number[]): void {
+    this._setRestored(rows, true);
+  }
+
+  /** Undoes {@link markRestored}: the row goes back to being a landed deletion. */
+  unmarkRestored(rows: number | number[]): void {
+    this._setRestored(rows, false);
+  }
+
   /** Restores one cell to its original value and drops its change entry.
    * Refused while a {@link save} is in flight. */
   revertCell(row: number, column: string): void {
@@ -773,7 +790,8 @@ export class DomainFrameEditor implements IFrameEditor {
   }
 
   /** Drops the whole pending batch: changed cells go back to their originals,
-   * new rows are removed, deleted rows are restored. Refused while a
+   * new rows are removed, deleted rows are restored and staged restores go back
+   * to being landed deletions. Refused while a
    * {@link save} is in flight — removing rows under the transaction would make
    * its results land on the wrong ones. */
   discard(): void {
@@ -805,9 +823,13 @@ export class DomainFrameEditor implements IFrameEditor {
   validate(): number {
     if (this._busy('validating'))
       return this.errorCount;
-    for (let row = 0; row < this._df.rowCount; row++)
-      if (this.stateOf(row) !== '')
+    for (let row = 0; row < this._df.rowCount; row++) {
+      const state = this.stateOf(row);
+      // A restored row carries no values of its own to check, as a deleted one
+      // carries none that could block the save.
+      if (state !== '' && state !== 'restored')
         this._validateRow(row);
+    }
     this._fire();
     return this.errorCount;
   }
@@ -829,7 +851,8 @@ export class DomainFrameEditor implements IFrameEditor {
   /** The pending batch as transaction ops, in row order: `'new'` rows insert
    * their writable values (naming their draft id as the op's `ref`), `'modified'`
    * rows update ONLY their changed columns with the row's `expectedVersion`,
-   * `'deleted'` rows delete. Exposed so a caller can inspect or extend the
+   * `'deleted'` rows delete, `'restored'` rows carry their id alone and undo a
+   * landed soft delete. Exposed so a caller can inspect or extend the
    * payload; a {@link DomainSession} concatenates several editors' into one
    * transaction.
    *
@@ -855,6 +878,11 @@ export class DomainFrameEditor implements IFrameEditor {
         // A row that was added and then deleted never reached the server.
         if (this._isPersisted(row))
           pending.push({row: row, op: {op: 'delete', table: table, id: `${id}`}});
+      }
+      else if (state === 'restored') {
+        // A draft cannot have been deleted on the server.
+        if (this._isPersisted(row))
+          pending.push({row: row, op: {op: 'restore', table: table, id: `${id}`}});
       }
       else if (state === 'new') {
         const values: {[column: string]: any} = {};
@@ -969,6 +997,17 @@ export class DomainFrameEditor implements IFrameEditor {
         if (op.op === 'delete') {
           removed.push(row);
           result.deleted++;
+          continue;
+        }
+        if (op.op === 'restore') {
+          // The row stays where it is, now live: the server updated it (version
+          // and the deletion flag), which is what 'updated' counts.
+          result.updated++;
+          if (this._df.columns.contains(DOMAIN_DELETED_COLUMN))
+            this._df.set(DOMAIN_DELETED_COLUMN, row, false);
+          if (r.version != null && this._df.columns.contains('version'))
+            this._df.set('version', row, r.version);
+          this._clearRowState(row);
           continue;
         }
         if (op.op === 'insert') {
@@ -1326,13 +1365,13 @@ export class DomainFrameEditor implements IFrameEditor {
       this._recount(row);
   }
 
-  /** [row]'s share of {@link changeCount}: a new or deleted row counts once (a
-   * PRISTINE new row not at all — see {@link addRow}), an edited one counts its
-   * changed cells. */
+  /** [row]'s share of {@link changeCount}: a new, deleted or restored row counts
+   * once (a PRISTINE new row not at all — see {@link addRow}), an edited one
+   * counts its changed cells. */
   private _recount(row: number): void {
     const state = this.stateOf(row);
     const now = state === 'new' ? (this._pristine.has(row) ? 0 : 1)
-      : state === 'deleted' ? 1 : Object.keys(this.changesOf(row)).length;
+      : state === 'deleted' || state === 'restored' ? 1 : Object.keys(this.changesOf(row)).length;
     this._changeCount += now - (this._contributions.get(row) ?? 0);
     if (now === 0)
       this._contributions.delete(row);
@@ -1495,7 +1534,7 @@ export class DomainFrameEditor implements IFrameEditor {
 
   private _recomputeState(row: number): void {
     const state = this.stateOf(row);
-    if (state === 'new' || state === 'deleted')
+    if (state === 'new' || state === 'deleted' || state === 'restored')
       return;
     const changed = Object.keys(this.changesOf(row)).length > 0;
     this._col(DomainFrameEditor.STATE_COLUMN).set(row, changed ? 'modified' : '', false);
@@ -1535,6 +1574,28 @@ export class DomainFrameEditor implements IFrameEditor {
     this._fire();
   }
 
+  private _setRestored(rows: number | number[], restored: boolean): void {
+    if (this._busy(restored ? 'restoring a deleted row' : 'unstaging a restore'))
+      return;
+    const deleted = this._df.columns.byName(DOMAIN_DELETED_COLUMN);
+    if (deleted == null) {
+      log.warning(`${this.table}: a restore needs a frame carrying ${DOMAIN_DELETED_COLUMN}` +
+        ` — read the rows with deleted: 'include' or 'only'`);
+      return;
+    }
+    const list = Array.isArray(rows) ? rows : [rows];
+    const state = this._col(DomainFrameEditor.STATE_COLUMN);
+    for (const row of list) {
+      if (row < 0 || row >= this._df.rowCount || deleted.get(row) !== true)
+        continue;
+      // A deleted row carries no originals — there is nothing between '' and
+      // 'restored' for it to go back to.
+      state.set(row, restored ? 'restored' : '', false);
+      this._recount(row);
+    }
+    this._fire();
+  }
+
   /** Cooperative filtering: every participant ANDs its own exclusions into the
    * frame filter while it is being recomputed, so deleted rows stay hidden no
    * matter which other filter runs. */
@@ -1549,7 +1610,8 @@ export class DomainFrameEditor implements IFrameEditor {
 
   private _firstBlockingError(): string | null {
     for (let row = 0; row < this._df.rowCount; row++) {
-      if (this.stateOf(row) === 'deleted')
+      const state = this.stateOf(row);
+      if (state === 'deleted' || state === 'restored')
         continue;
       const errors = this.errorsOf(row);
       for (const column of Object.keys(errors))

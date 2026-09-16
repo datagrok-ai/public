@@ -102,6 +102,59 @@ category('Dapi: domain trash', () => {
     }
   });
 
+  test('a restore through the transaction answers what the route answers', async () => {
+    const prefix = `dt-tx-${stamp()}`;
+    const [row] = await items().insert({sku: `${prefix}-0`, name: 'Transactional restore'});
+    try {
+      await items().delete(row.id);
+      const viaTx = (await grok.dapi.domains.transaction('apitests',
+        [{op: 'restore', table: 'item', id: row.id}]))[0];
+      expect(viaTx.id, row.id, `the transaction did not answer the row: ${JSON.stringify(viaTx)}`);
+      expect(viaTx.restored, true, `the transaction did not restore the row: ${JSON.stringify(viaTx)}`);
+      expect((await items().query({filter: like('sku', prefix)})).length, 1,
+        'the transactionally restored row is not in a default query');
+
+      await items().delete(row.id);
+      const viaRoute = await items().restore(row.id);
+      expect(Object.keys(viaTx).sort().join(','), Object.keys(viaRoute).sort().join(','),
+        `the two answers are shaped differently: ${JSON.stringify(viaTx)} vs ${JSON.stringify(viaRoute)}`);
+      expect(viaRoute.version, viaTx.version + 2, 'the second delete + restore did not bump the version twice');
+
+      const audit = await items().audit(row.id);
+      expect(audit.filter((a) => a.op === 'undelete').length, 2,
+        `both restores must audit as undelete: ${audit.map((a) => a.op).join(', ')}`);
+    } finally {
+      await cleanup(prefix);
+    }
+  });
+
+  test('a parent and its child come back in ONE transaction, whatever order they are listed in',
+    async () => {
+      const prefix = `dt-txp-${stamp()}`;
+      const [item] = await items().insert({sku: `${prefix}-0`, name: 'Parent'});
+      const [event] = await events().insert({item_id: item.id, kind: `${prefix}-ev`, amount: 1});
+      try {
+        await items().delete(item.id);
+        expect((await events().query({filter: like('kind', prefix), deleted: 'only'})).length, 1,
+          'the cascade did not delete the child row');
+
+        // The child is listed FIRST: the server orders the parent's restore before it,
+        // so the veto a lone child restore gets never fires.
+        const res = await grok.dapi.domains.transaction('apitests', [
+          {op: 'restore', table: 'item_event', id: event.id},
+          {op: 'restore', table: 'item', id: item.id},
+        ]);
+        expect(res.length, 2, 'the transaction did not answer both ops');
+        expect(res[0].id, event.id, 'the results left the request order');
+        expect((await events().query({filter: like('kind', prefix)})).length, 1,
+          'the child did not come back');
+        expect((await items().query({filter: like('sku', prefix)})).length, 1,
+          'the parent did not come back');
+      } finally {
+        await cleanup(prefix);
+      }
+    });
+
   test('toCsv() of a deleted: include frame carries no service column', async () => {
     const prefix = `dt-csv-${stamp()}`;
     await items().insert({sku: `${prefix}-0`, name: 'Kept'});

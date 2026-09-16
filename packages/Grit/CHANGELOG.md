@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-20753: Issues: ribbon slots — `IssuesApp.ribbon()` returns the named `{main, tools, presets}` record and declares the Mine / Open switch as the `presets` slot, instead of appending a positional group
 * GROK-20753: The Issues app follows the server (`live: true`) — an issue another session files shows up within a poll, and while there are unsaved changes the status bar says the rows are behind instead of dropping them
 * GROK-20753: Added a bulk-close regression over `updateWhere` (`Grit: issue CRUD`) — the request the app's ⋯ > "Bulk edit…" posts: one status into two of three selected issues, the third untouched, one version step and one audit line per row, and an auto-numbered column still refused in bulk
 * GROK-20753: Fixed the unstyled domain chrome — the breadcrumb, the child tabs, the History section, the filter box, the grid and the value editors now come dressed: the package imports the one `u2/src/dg/domain/styles.js` instead of a hand-kept list of sheets that had drifted

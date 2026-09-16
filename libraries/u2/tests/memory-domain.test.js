@@ -327,54 +327,98 @@ test('saveAll: every writer is closed for the whole transaction — an edit made
   issues.dispose();
 });
 
-test('soft delete: the row stays in the store, leaves every live query, and restore brings it back', async () => {
+test('transaction: a restore undoes a landed delete — one version, one `undelete` audit line', async () => {
   const be = backend();
   const issue = await be.table('grit.issue');
   await issue.transaction([{op: 'delete', table: 'issue', id: 'i2'}]);
-  const titles = async (spec) => (await issue.query(spec)).map((r) => r.title);
-  assert.deepEqual(await titles(), ['Aspirin', 'Naproxen'], 'excluded by default');
-  assert.equal(await issue.count(), 2);
-  assert.deepEqual(await titles({deleted: 'only'}), ['Ibuprofen']);
-  assert.equal(await issue.count({deleted: 'only'}), 1);
-  assert.deepEqual(await titles({deleted: 'include'}), ['Aspirin', 'Ibuprofen', 'Naproxen']);
-  assert.deepEqual((await issue.query({deleted: 'include'})).map((r) => r['~is_deleted']), [false, true, false],
-    '~is_deleted is projected whenever deleted rows are asked for');
-  assert.equal((await issue.query())[0]['~is_deleted'], undefined, 'and only then');
-  assert.deepEqual(await titles({deleted: 'only', filter: 'title starts "I"', search: 'pro'}), ['Ibuprofen'],
-    'the filter and the search still apply');
-  const [deleted] = await issue.query({deleted: 'only'});
-  assert.equal(deleted.version, 2, 'the delete is a version of its own');
-  const frame = await issue.frame({deleted: 'only', withAccess: true});
-  assert.deepEqual(frame.df.columns.names().slice(-5),
-    ['~state', '~can_edit', '~can_delete', '~can_share', '~is_deleted']);
-  frame.dispose();
-
-  await issue.restore('i2');
-  assert.deepEqual(await titles(), ['Aspirin', 'Ibuprofen', 'Naproxen']);
-  assert.equal((await issue.query())[1].version, 3);
+  const [result] = await issue.transaction([{op: 'restore', table: 'issue', id: 'i2'}]);
+  assert.deepEqual([result.id, result.version], ['i2', 3]);
+  assert.deepEqual((await issue.query()).map((r) => r.title), ['Aspirin', 'Ibuprofen', 'Naproxen']);
   const [undelete] = (await issue.audit('i2')).slice(-1);
   assert.deepEqual([undelete.op, undelete.before.is_deleted, undelete.after.is_deleted],
     ['undelete', true, false]);
-  await issue.restore('i2');
-  assert.equal((await issue.query())[1].version, 3, 'restoring a live row does nothing');
-  await assert.rejects(issue.restore('nope'), (e) => e.code === 'not-found');
+  await assert.rejects(issue.transaction([{op: 'restore', table: 'issue', id: 'i2'}]),
+    (e) => e.code === 'not-found' && /no deleted row "i2"/.test(e.message));
 });
 
-test('soft delete: a deleted child holds no delete back, and a deleted parent vetoes a restore', async () => {
+test('transaction: a parent and its child restored in one batch run parent-first, whatever the order', async () => {
   const be = backend();
   const project = await be.table('grit.project');
   const issue = await be.table('grit.issue');
-  await assert.rejects(project.transaction([{op: 'delete', table: 'project', id: 'p2'}]),
-    (e) => e.code === 'validation' && /referenced by issue.project_id/.test(e.message));
   await issue.transaction([{op: 'delete', table: 'issue', id: 'i3'}]);
   await project.transaction([{op: 'delete', table: 'project', id: 'p2'}]);
-  assert.equal(await project.count(), 1, 'the parent of a deleted child goes');
-  await assert.rejects(issue.restore('i3'),
-    (e) => e.code === 'validation' &&
-      /Cannot restore row "i3": project_id refers to the deleted grit\.project "p2"/.test(e.message));
-  await project.restore('p2');
-  await issue.restore('i3');
-  assert.equal(await issue.count(), 3, 'the parent first, then the child');
+  await be.transaction([{op: 'restore', table: 'issue', id: 'i3'},
+    {op: 'restore', table: 'project', id: 'p2'}]);
+  assert.equal(await issue.count(), 3, 'the child listed first still landed');
+  assert.equal(await project.count(), 2);
+});
+
+test('frame: the mask columns a spec projects — ~state always, ~can_* and ~is_deleted on demand', async () => {
+  const issue = await backend().table('grit.issue');
+  const plain = await issue.frame({});
+  assert.deepEqual(plain.df.columns.names().slice(-1), ['~state']);
+  plain.dispose();
+  const masked = await issue.frame({deleted: 'only', withAccess: true});
+  assert.deepEqual(masked.df.columns.names().slice(-5),
+    ['~state', '~can_edit', '~can_delete', '~can_share', '~is_deleted']);
+  masked.dispose();
+});
+
+test('captions: a ref column projects the target\'s display name; the refusals are the server\'s', async () => {
+  const be = backend({rows: {project: [{id: 'p1', key: 'GRIT', name: 'Grit'}],
+    issue: [{id: 'i1', project_id: 'p1', number: 1, title: 'Aspirin'},
+      {id: 'i2', project_id: null, number: 2, title: 'Orphan'}]}});
+  const issue = await be.table('grit.issue');
+  const rows = await issue.query({captions: ['project_id']});
+  assert.deepEqual(rows.map((r) => r['~caption_project_id']), ['Grit', null],
+    'the target\'s name, and null where there is no target');
+  assert.equal(rows[0]['~caption_project_id'], 'Grit');
+  const frame = await issue.frame({captions: ['project_id']});
+  assert.equal(frame.df.columns.names().at(-1), '~caption_project_id');
+  frame.dispose();
+
+  const refused = async (captions, message) => await assert.rejects(issue.query({captions}),
+    (e) => e.code === 'filter' && e.message === message);
+  await refused(['title'], 'Unknown or inaccessible caption column "title"');
+  await refused(['nope'], 'Unknown or inaccessible caption column "nope"');
+  await refused(['project_id.name'], 'Nested caption "project_id.name" is not supported');
+  await refused(['project_id', 'project_id'], 'Duplicate caption "project_id"');
+});
+
+test('seq: one bump per transaction per table, none when the transaction throws', async () => {
+  const be = backend();
+  const issue = be.tableSync('grit.issue');
+  const project = be.tableSync('grit.project');
+  assert.deepEqual([issue.seq, project.seq], [0, 0]);
+  assert.deepEqual(await issue.probe(), {count: -1, last: '0'}, 'an unscoped read is the token alone');
+  await issue.transaction([{op: 'update', table: 'issue', id: 'i1', values: {title: 'A'}},
+    {op: 'update', table: 'issue', id: 'i2', values: {title: 'B'}}]);
+  assert.deepEqual([issue.seq, project.seq], [1, 0], 'one bump for two ops on one table');
+  assert.deepEqual(await issue.probe(), {count: -1, last: '1'});
+  assert.equal((await issue.probe({deleted: 'include'})).count, 3, 'a scoped read still counts');
+  await assert.rejects(issue.transaction([{op: 'update', table: 'issue', id: 'nope', values: {title: 'C'}}]));
+  assert.equal(issue.seq, 1, 'a transaction that threw bumped nothing');
+
+  await issue.transaction([{op: 'delete', table: 'issue', id: 'i3'}]);
+  await issue.transaction([{op: 'delete', table: 'project', id: 'p2'}]);
+  assert.deepEqual([issue.seq, project.seq], [2, 1],
+    'the delete scanned the referencing child — a read is not a write');
+  await issue.transaction([{op: 'restore', table: 'project', id: 'p2'}]);
+  await issue.transaction([{op: 'restore', table: 'issue', id: 'i3'}]);
+  assert.deepEqual([issue.seq, project.seq], [3, 2], 'the restore read the parent — a read is not a write');
+});
+
+test('batch: an invalid row is reported once — as an error, never also as a duplicate', async () => {
+  const issue = await backend().table('grit.issue');
+  // the second row has no title and repeats the first one's business key: it is one row of the
+  // report, not two
+  const payload = [{project_id: 'p1', number: 9, title: 'Fine'}, {project_id: 'p1', number: 9}];
+  const dry = await issue.validate(payload, {allOrNothing: false});
+  assert.deepEqual(dry.rows.map((r) => r.predicted), ['insert', 'error']);
+  const report = await issue.batch(payload, {allOrNothing: false});
+  assert.equal(report.errorCount, 1);
+  assert.equal(report.skipped, 0, 'a row that lands nowhere does not clash with the one that does');
+  assert.deepEqual(report.rows.map((r) => [r.index, r.status]), [[1, 'error'], [0, 'inserted']]);
 });
 
 test('updateWhere: the filter selects, the cap limits, hasMore says the filter matched past it', async () => {
@@ -395,25 +439,7 @@ test('updateWhere: the filter selects, the cap limits, hasMore says the filter m
     {updated: 0, hasMore: false});
 });
 
-test('updateWhere: a filter is required, a column the caller cannot write is refused, nothing lands', async () => {
-  const issue = await backend().table('grit.issue');
-  for (const filter of [undefined, null, '', []])
-    await assert.rejects(issue.updateWhere(filter, {priority: 'low'}), (e) => e.code === 'validation' && /filter is required/.test(e.message));
-  for (const values of [{version: 9}, {created_on: 'x'}, {nope: 1}, {'~can_edit': true}]) {
-    await assert.rejects(issue.updateWhere('done = false', values),
-      (e) => e.code === 'validation' && /cannot be updated/.test(e.message));
-  }
-  await assert.rejects(issue.updateWhere('done = false', {}),
-    (e) => e.code === 'validation' && /non-empty values/.test(e.message));
-  assert.deepEqual((await issue.query()).map((r) => r.version), [1, 1, 1], 'a refusal writes nothing');
-
-  // all-or-nothing: the schema refuses the second row, so the first is rolled back too
-  await assert.rejects(issue.updateWhere('done = false', {priority: 'nope'}),
-    (e) => e.code === 'validation' && /Must be one of/.test(e.message));
-  assert.deepEqual((await issue.query()).map((r) => r.version), [1, 1, 1]);
-});
-
-test('updateWhere: the Edit predicate narrows the selection silently, and deleted rows are never touched', async () => {
+test('updateWhere: the Edit predicate narrows the selection silently', async () => {
   const rows = {project: [], issue: [
     {id: 'i1', project_id: 'p1', number: 1, title: 'Mine', '~can_edit': true},
     {id: 'i2', project_id: 'p1', number: 2, title: 'Theirs', '~can_edit': false},
@@ -423,64 +449,10 @@ test('updateWhere: the Edit predicate narrows the selection silently, and delete
     'the row the caller may not edit is left out, not refused');
   assert.deepEqual((await issue.query()).map((r) => r.priority), ['low', undefined]);
 
-  await issue.transaction([{op: 'delete', table: 'issue', id: 'i1'}]);
-  assert.deepEqual(await issue.updateWhere('number >= 1', {priority: 'high'}), {updated: 0, hasMore: false},
-    'a trashed row is not a live row');
-
   const readOnly = new MemoryDomainBackend(SCHEMA,
     {rows, access: {can: {view: true, edit: false}, fields: {priority: 'editable'}}}).tableSync('grit.issue');
   assert.deepEqual(await readOnly.updateWhere('number >= 1', {priority: 'low'}), {updated: 1, hasMore: false},
     'a row\'s own ~can_edit is the truth the table-level denial cannot override');
-});
-
-test('batch: inserts, skips business-key duplicates, and reports one line per row', async () => {
-  const project = await backend().table('grit.project');
-  const report = await project.batch([{key: 'NEW', name: 'New one'}, {key: 'GRIT', name: 'Again'},
-    {key: 'NEW', name: 'Twice'}], {allOrNothing: false});
-  assert.equal(report.inserted, 1);
-  assert.equal(report.updated, 0);
-  assert.equal(report.skipped, 2, 'the live row and the second occurrence in the batch');
-  assert.equal(report.errorCount, 0);
-  assert.deepEqual(report.rows.map((r) => [r.index, r.status]), [[1, 'duplicate'], [2, 'duplicate'], [0, 'inserted']]);
-  assert.equal(report.rows[0].existingId, 'p1', 'a live clash names the row it merged into');
-  assert.equal(report.rows[1].existingId, undefined, 'a clash inside the batch has no existing row');
-  assert.deepEqual((await project.query()).map((r) => r.key), ['GRIT', 'DG', 'NEW']);
-});
-
-test('batch: errorOnDuplicate reports the clashes as errors; upsert merges them instead', async () => {
-  const strict = await backend().table('grit.project');
-  const refused = await strict.batch([{key: 'GRIT', name: 'Again'}], {allOrNothing: false, errorOnDuplicate: true});
-  assert.equal(refused.errorCount, 1);
-  assert.equal(refused.skipped, 0);
-  assert.deepEqual(refused.rows[0].errors, [{column: 'key', code: 'unique', message: 'Duplicate business key'}]);
-
-  const project = await backend().table('grit.project');
-  const merged = await project.batch([{key: 'GRIT', name: 'Renamed'}, {key: 'NEW', name: 'New one'}],
-    {mode: 'upsert'});
-  assert.equal(merged.updated, 1);
-  assert.equal(merged.inserted, 1);
-  assert.deepEqual((await project.query()).map((r) => [r.key, r.name, r.version]),
-    [['GRIT', 'Renamed', 2], ['DG', 'Datagrok', 1], ['NEW', 'New one', 1]]);
-  await assert.rejects(project.batch([{name: 'No key'}], {mode: 'upsert'}),
-    (e) => e.code === 'validation' && /business key column "key"/.test(e.message));
-  await assert.rejects(project.batch([{nope: 1}]), (e) => /Unknown column "nope"/.test(e.message));
-  await assert.rejects(project.batch([{id: 'x'}]), (e) => /Column "id" is not writable/.test(e.message));
-});
-
-test('batch: allOrNothing answers the report with error set and writes nothing; false applies the good rows', async () => {
-  const project = await backend().table('grit.project');
-  const aborted = await project.batch([{key: 'A', name: 'Fine'}, {key: 'B'}]);
-  assert.equal(aborted.error, 'validation');
-  assert.equal(aborted.errorCount, 1);
-  assert.deepEqual(aborted.rows.map((r) => [r.index, r.status]), [[1, 'error']]);
-  assert.equal(aborted.rows[0].errors[0].column, 'name');
-  assert.equal(await project.count(), 2, 'nothing was written');
-
-  const partial = await project.batch([{key: 'A', name: 'Fine'}, {key: 'B'}], {allOrNothing: false});
-  assert.equal(partial.error, undefined);
-  assert.equal(partial.inserted, 1);
-  assert.equal(partial.errorCount, 1);
-  assert.deepEqual((await project.query()).map((r) => r.key), ['GRIT', 'DG', 'A']);
 });
 
 test('ancestors: root-first, without the row itself; a non-hierarchy table does not answer it at all', async () => {

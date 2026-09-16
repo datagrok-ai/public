@@ -9,7 +9,7 @@ import * as grok from 'datagrok-api/grok';
 import type * as DG from 'datagrok-api/dg';
 import {Control} from '../../core/component.js';
 import {signal, computed, batch, ReadonlySignal, Signal} from '../../core/signals.js';
-import {button, div, divV} from '../../core/elements.js';
+import {button, div, divV, span} from '../../core/elements.js';
 import {Filters} from '../../core/filter/index.js';
 import type {FilterGroup} from '../../core/filter/index.js';
 import type {IWidgetStatus} from '../../core/widget-like.js';
@@ -24,28 +24,52 @@ import {SharedSession, confirmDiscard} from '../../sources/session.js';
 import {Rows} from '../../sources/rows-like.js';
 import type {RowView} from '../../sources/rows-like.js';
 import {domains, DomainTable} from './index.js';
-import {DomainList} from './list.js';
-import type {DomainListMode} from './list.js';
-import {DomainForm, SAVE_SHORTCUTS, isSaveKey} from './form.js';
+import type {DomainList, DomainListMode} from './list.js';
+import {SAVE_SHORTCUTS, isSaveKey} from './form.js';
+import type {DomainForm} from './form.js';
 import {DomainFilters} from './filters.js';
 import type {DomainChildrenOptions} from './children.js';
+import {DomainAddress} from './address.js';
+import {ViewSync} from './view-sync.js';
+import type {ViewState} from './view-sync.js';
+import {buildList, buildEntity} from './builders.js';
 
 export type DomainAppPage = 'list' | 'entity';
 
-/** A row id as the platform spells one — what tells an id from a business key in an address. */
-const ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+export type DomainAppMode = 'live' | 'trash';
 
 /** What the status bar says while a live source is behind the server ({@link DomainApp.refresh}). */
 const STALE = 'Data changed — Refresh';
 
-/** How long the query and the search text must stand still before the entry they opened settles. */
-const SETTLE_MS = 600;
-
 /** The trash reads newest-deleted first: a soft delete is a write, so it stamps `updated_on`. */
 const TRASH_SORT = '!updated_on';
 
-/** What a user move changes: a path that changes without it is a rewrite of the same page. */
-interface AppState {page: DomainAppPage; entity: string | null; query: string; search: string; trash: boolean}
+/** What the app's status bar says, as VALUES rather than one composed sentence: a phase-4 view
+ * spec renders the slots it wants instead of parsing text, and a refusal no longer takes the row
+ * count off the line (U37). */
+export interface DomainAppStatus {
+  /** What the page holds: "50 of 2,077", "3 issues", "1 deleted issue", or the row's caption on
+   * the entity page. `''` while there is nothing to say yet. */
+  count: string;
+  /** How many rows a bulk action would act on; 0 on the entity page and with nothing picked. */
+  selected: number;
+  /** Something true that is not a failure: "Data changed — Refresh", "Filter not applied",
+   * "3 unsaved changes", "2 restores pending". Null when there is nothing to say. */
+  notice: string | null;
+  /** Why the pending changes are stuck, or why the load failed. Null when nothing is wrong. */
+  problem: string | null;
+}
+
+/** The ribbon as slots rather than positions: a subclass adds to the slot it means, and a phase-4
+ * view spec composes them without counting groups. */
+export interface DomainRibbon {
+  /** New, Save, Discard, the ⋯ menu, Refresh — the app's own verbs. */
+  main: (Control | HTMLElement)[];
+  /** What acts on the collection: the search box. */
+  tools: (Control | HTMLElement)[];
+  /** A query switch ({@link DomainApp.presets}); empty by default. */
+  presets: (Control | HTMLElement)[];
+}
 
 export interface DomainAppOptions {
   table: DomainTable;
@@ -54,12 +78,15 @@ export interface DomainAppOptions {
   /** The list's initial query. */
   query?: string;
   pageSize?: number;
-  /** Whether the list follows the server (`DomainSourceOptions.live`): it probes the table every
-   * {@link liveMs} and reloads while the session is clean, marking the page {@link DomainApp.stale}
-   * while it is not. The entity page is one row and is not polled. */
+  /** Whether the list follows the server (`DomainSourceOptions.live`), ON by default: it probes
+   * the table every {@link liveMs} and reloads while the session is clean, marking the page
+   * {@link DomainApp.stale} while it is not. The entity page is one row and is not polled. */
   live?: boolean;
   liveMs?: number;
   mode?: DomainListMode;
+  /** What every draft the app creates starts with — the preset a view that opened the app carries
+   * (a location's id on a containers app). Threaded into the entity page's draft source. */
+  defaults?: Record<string, unknown>;
   /** The form's columns, in this order; every column by default. */
   include?: string[];
   /** The entity page's panes under the form, on by default: the child collections (a tab per
@@ -98,6 +125,8 @@ export class DomainApp extends Control {
   /** `base?q=…&search=…` on the list page; on the entity page `base/<key>` where the app
    * addresses a row by a path segment ({@link entityPath}), else `base?entity=<id>`. */
   readonly path: ReadonlySignal<string>;
+  /** What the status bar says, slot by slot: the count, the selection, a notice, a problem. */
+  readonly status: ReadonlySignal<DomainAppStatus>;
   /** The session's pending changes when there are any, else the page's source. */
   readonly summary: ReadonlySignal<string>;
   /** Whether the page's collection is behind the server — a `live` source saw it move while this
@@ -110,14 +139,17 @@ export class DomainApp extends Control {
    * ribbon is one fixed 32px line with `overflow: hidden`, and a query is longer than that line
    * has to give. */
   readonly filters: DomainFilters;
-  /** Trash mode: the list answers the table's deleted rows — read-only, Restore on each — and
-   * every path it emits carries `?trash=1`. Written by the ⋯ menu ({@link setTrash}) and read
-   * back from the address bar by {@link open}. */
+  /** Which collection the list answers: the live rows, or the table's trash — where every path
+   * the app emits carries `?trash=1`. Written by the ⋯ menu ({@link setMode}) and read back from
+   * the address bar by {@link open}. */
+  readonly mode: ReadonlySignal<DomainAppMode>;
+  /** {@link mode} as the one question most of the app asks of it. */
   readonly trash: ReadonlySignal<boolean>;
   /** See {@link DomainAppOptions.shortcuts}; a subclass may declare its own. */
   shortcuts: Record<string, string>;
 
-  private readonly _trash = signal(false);
+  private readonly _mode = signal<DomainAppMode>('live');
+  private readonly _count = signal('');
   private readonly _filterProblem = signal<string | null>(null);
   private readonly _base: Signal<string>;
   private readonly _page = signal<DomainAppPage>('list');
@@ -126,13 +158,9 @@ export class DomainApp extends Control {
   private readonly _form = signal<DomainForm | null>(null);
   private readonly _formHost: HTMLElement;
   private _panes: Control[] = [];
-  private _ribbon: (Control | HTMLElement)[][] | undefined;
+  private _ribbon: DomainRibbon | undefined;
   private _unloadGuard: ((e: BeforeUnloadEvent) => void) | undefined;
-  /** Nonzero while a move is being restored from the address bar ({@link open}), which is where
-   * `popstate` and `handlePath` arrive: the entry exists already, so nothing is pushed. */
-  private _restoring = 0;
-  /** Set while a burst of typing is rewriting the entry it opened ({@link _arm}). */
-  private _typing: ReturnType<typeof setTimeout> | undefined;
+  private readonly _sync: ViewSync;
 
   private static readonly _byView = new WeakMap<DG.ViewBase, DomainApp>();
   private static readonly _views = new WeakMap<DomainApp, DG.ViewBase>();
@@ -148,7 +176,8 @@ export class DomainApp extends Control {
     this.entity = this._entity;
     this.entitySource = this._entitySource;
     this.form = this._form;
-    this.trash = this._trash;
+    this.mode = this._mode;
+    this.trash = computed(() => this._mode.value === 'trash');
     this.filterProblem = this._filterProblem;
     this.shortcuts = _options.shortcuts ?? {};
     this.root.classList.add('u2-domain-app');
@@ -160,13 +189,6 @@ export class DomainApp extends Control {
     const onSave = (e: KeyboardEvent) => this._save(e);
     document.addEventListener('keydown', onSave);
     this.own(() => document.removeEventListener('keydown', onSave));
-    // Back restores the app itself: the platform router re-parses the URL on `popstate` but never
-    // asks a JS-hosted view (`handlePath` is not called on the stand — probed 2026-09-15), so the
-    // address the entry carries would only move the URL. A router that does call `handlePath`
-    // lands on the same `open`, which is idempotent.
-    const onPop = () => this._restoreFromUrl();
-    window.addEventListener('popstate', onPop);
-    this.own(() => window.removeEventListener('popstate', onPop));
     DomainApp.live.add(this);
     DomainApp._bases.set(table.address, this.base);
     this.own(() => {
@@ -176,9 +198,9 @@ export class DomainApp extends Control {
     });
 
     this.listSource = this._source({query: _options.query ?? '', pageSize: _options.pageSize,
-      live: _options.live, liveMs: _options.liveMs});
+      live: _options.live ?? true, liveMs: _options.liveMs});
     this.own(() => this.listSource.dispose());
-    this.list = this.runInScope(() => new DomainList(this.listSource, {mode: _options.mode}));
+    this.list = buildList(this.listSource, this.scope, {mode: _options.mode});
     // Enter on a row is the way into the entity page
     let seen = this.listSource.activate.peek();
     this.effect(() => {
@@ -193,8 +215,10 @@ export class DomainApp extends Control {
 
     const title = DomainApp.titleOf(table.info);
     this.breadcrumbs = this.runInScope(() => new Breadcrumbs({items: [title], onClick: (index) => {
+      // in the trash the root crumb reads "Issues › Trash" and is the way back out of it; the ⋯
+      // menu's "Exit trash" must not be the only one
       if (index === 0)
-        void this.goTo('list');
+        void (this.trash.peek() ? this.setTrash(false) : this.goTo('list'));
     }}));
     this._formHost = div([], 'u2-domain-app-form');
     this.panes = div([], 'u2-domain-app-panes');
@@ -220,7 +244,7 @@ export class DomainApp extends Control {
       entityPage.hidden = page !== 'entity';
     });
     this.effect(() => {
-      const trash = this._trash.value;
+      const trash = this.trash.value;
       const entity = this._page.value === 'entity';
       this.breadcrumbs.root.hidden = !entity && !trash;
       if (trash) {
@@ -270,66 +294,60 @@ export class DomainApp extends Control {
       const path = this._withTrash(Filters.queryPath(this.base, typeof q === 'string' ? q : Filters.format(q)));
       return search === '' ? path : `${path}${path.includes('?') ? '&' : '?'}search=${encodeURIComponent(search)}`;
     });
-    // One history entry per user move. The shell mirrors `view.path` onto the address bar with
-    // `replaceState` (`routing.dart` onViewUrlChanged, a synchronous stream), so a move costs no
-    // entry of its own — the app pushes it, and the shell's replace then rewrites that same entry.
-    // The effect reads `path` and nothing else: a dependency on the state signals themselves would
-    // put it behind `appView`'s mirror in the flush order, too late to push.
-    // Typing is not navigating: five keystrokes in the search box were five entries and five
-    // Backs. A move that only changed the text rewrites the entry in place and arms a timer; the
-    // entry is pushed once the text has settled (or when the next real move needs one).
-    let state = this._state();
+    this._sync = new ViewSync({
+      path: this.path,
+      draftEntity: DomainApp.NEW,
+      state: () => this._state(),
+      open: (address) => this.open(address),
+      owns: (path) => DomainAddress.restOf(path, this._bases) !== null,
+      isCurrentView: () => this._isCurrentView(),
+    }, this);
+    // What the page HOLDS, and nothing else: a refusal, the pending changes and the poll's news
+    // are slots of their own, while the source folds all of them into its one summary line — so
+    // the count is taken while the source is saying nothing else, and stands until it can be
+    // taken again. A failed load holds nothing, and says nothing.
     this.effect(() => {
-      const path = this.path.value;
-      const previous = state;
-      state = this._state();
-      if (this._restoring !== 0 || typeof history === 'undefined' || !DomainApp._moved(previous, state))
-        return;
-      if (DomainApp._typed(previous, state)) {
-        // the first keystroke opens ONE entry for the search — Back still reaches the list as it
-        // was before it — and every keystroke after it rewrites that entry in place
-        if (this._typing === undefined)
-          history.pushState(null, '', path);
-        else
-          history.replaceState(null, '', path);
-        this._arm();
-        return;
-      }
-      this._disarm();
-      history.pushState(null, '', path);
-    });
-    this.summary = computed(() => {
       const entity = this._page.value === 'entity';
       const source = entity ? this._entitySource.value : this.listSource;
-      // the rows and the count answer the filter that was applied, not the one in the box: while
-      // that one is invalid the count stands down, and a refusal of the old one is not the news
-      if (!entity && this.list.stale.value && !this.session.isDirty.value)
-        return this._filterProblem.value ?? 'Filter not applied';
-      // a refusal outranks the change count: the summary says why the pending changes are stuck
-      if (source !== null && source.error.value !== undefined)
-        return source.summary.value;
+      if (source === null) {
+        this._count.value = '';
+        return;
+      }
+      // the rows tick is read for the same reason the breadcrumb reads it — a save writes the
+      // server's values into the cells of a proxy `currentRow` never stops pointing at
+      source.rows.items.value;
+      // the entity page shows one row, not a collection: it says which row, never "1 substance"
+      const row = entity ? source.currentRow.value : null;
+      if (row !== null && !Rows.isDraft(row))
+        this._count.value = this.table.renderer.caption(row);
+      else if (source.state.value === 'error')
+        this._count.value = '';
+      else if (source.error.value === undefined && source.changeCount.value === 0)
+        this._count.value = source.summary.value;
+    });
+    this.status = computed(() => {
+      const entity = this._page.value === 'entity';
+      const source = entity ? this._entitySource.value : this.listSource;
+      const dirty = this.session.isDirty.value;
+      const pending = dirty ? this._pendingSummary() : null;
+      const count = this._count.value;
+      // what a bulk action would act on, beside the count — the platform grid's own convention
+      const selected = entity ? 0 : this.listSource.selection.value.length;
+      const problem = source !== null && source.error.value !== undefined ? source.summary.value : null;
+      // the rows answer the filter that was applied, not the one in the box: while that one is
+      // invalid they are shown stale, and a refusal of the old one is not the news
+      if (!entity && this.list.stale.value && !dirty)
+        return {count, selected, notice: this._filterProblem.value ?? 'Filter not applied', problem};
       // a live source saw the collection move while this session had changes to protect: what is
       // pending still matters, and so does that the rows under it are no longer the server's
       if (source !== null && source.stale.value)
-        return this.session.isDirty.value ? `${this.session.summary.value} — ${STALE}` : STALE;
-      if (this.session.isDirty.value)
-        return this.session.summary.value;
-      // the entity page shows one row, not a collection: it says which row, never "1 substance".
-      // The rows tick is read for the same reason the breadcrumb reads it — a save writes the
-      // server's values into the cells of a proxy `currentRow` never stops pointing at.
-      source?.rows.items.value;
-      const row = entity ? source?.currentRow.value ?? null : null;
-      if (row !== null && !Rows.isDraft(row))
-        return this.table.renderer.caption(row);
-      const count = source?.summary.value ?? '';
-      // what a bulk action would act on, beside the count — the platform grid's own convention
-      const selected = entity ? 0 : this.listSource.selection.value.length;
-      return selected === 0 ? count : `${count} · ${selected} selected`;
+        return {count, selected, notice: pending === null ? STALE : `${pending} — ${STALE}`, problem};
+      return {count, selected, notice: pending, problem};
     });
+    this.summary = computed(() => DomainApp.summaryOf(this.status.value));
     this.stale = computed(() =>
       (this._page.value === 'entity' ? this._entitySource.value : this.listSource)?.stale.value ?? false);
-    this._wireTrash();
-    this.own(() => this._disarm());
+    this._wireMode();
     this.own(() => this._close());
   }
 
@@ -351,12 +369,7 @@ export class DomainApp extends Control {
    * hands an app func only the path under its root, `routing.dart` ~:351, never the query). This
    * is the restore side of the URL, so no move it makes costs a history entry. */
   async open(path?: string): Promise<boolean> {
-    this._restoring++;
-    try {
-      return await this._open(path);
-    } finally {
-      this._restoring--;
-    }
+    return this._sync.restore(() => this._open(path));
   }
 
   /** Moves between the pages through the gate: resolves to whether the move was made — a cancel
@@ -367,31 +380,20 @@ export class DomainApp extends Control {
     return this._goTo(page, entity);
   }
 
-  /** Whether a row is addressed by a path segment (`${base}/${key}`) rather than by `?entity=`:
-   * the platform's own `/domains/…` routes are, an app mounted at `/apps/…` is not (ruling R2). */
+  /** {@link DomainAddress.entityPath} over the app's base. */
   get entityPath(): boolean {
-    return this.base.startsWith('/domains/');
+    return DomainAddress.entityPath(this.base);
   }
 
-  /** How a row is spelled in a `/domains` path: the business key when it is unambiguous, the id
-   * otherwise — no key declared, a null component, or a composite key whose values carry a '-'
-   * (the TS half of `domain_row_meta.dart` `deepLink`). */
+  /** {@link DomainAddress.keyOf} over the table's business key. */
   keyOf(row: RowView): string {
-    const parts: string[] = [];
-    for (const column of this.table.info.businessKey) {
-      const value = row[column];
-      if (value === null || value === undefined)
-        return row.id;
-      parts.push(String(value));
-    }
-    if (parts.length === 0 || (parts.length > 1 && parts.some((part) => part.includes('-'))))
-      return row.id;
-    return parts.join('-');
+    return DomainAddress.keyOf(row, this.table.info.businessKey);
   }
 
-  /** The ribbon `appView` places: New, Save, Discard and the ⋯ menu; the search box and the
-   * filters on the list page. Built once, owned by the app. */
-  ribbon(): (Control | HTMLElement)[][] {
+  /** The ribbon `appView` places, in named slots: New, Save, Discard, the ⋯ menu and Refresh in
+   * `main`, the search box in `tools`, a subclass's query switch in `presets`. Built once, owned
+   * by the app. */
+  ribbon(): DomainRibbon {
     if (this._ribbon !== undefined)
       return this._ribbon;
     const add = new Control(button('New', () => void this.goTo('entity', DomainApp.NEW)));
@@ -405,22 +407,23 @@ export class DomainApp extends Control {
     reload.root.dataset.u2 = 'refresh-button';
     reload.effect(() => reload.root.hidden = !this.stale.value);
     const search = domains.search(this.listSource);
-    // nothing to save in the trash: its rows are read-only until they are restored
-    this.effect(() => {
-      const trash = this._trash.value;
-      save.root.hidden = trash;
-      discard.root.hidden = trash;
-    });
     for (const control of [add, save, discard, more, reload, search])
       this.own(() => control.dispose());
     this._listOnly(search);
-    return this._ribbon = [[add, save, discard, more, reload], [search]];
+    return this._ribbon = {main: [add, save, discard, more, reload], tools: [search], presets: []};
+  }
+
+  /** The ribbon as `appView` takes it — `[main, tools, presets]`, empty slots dropped.
+   * @deprecated build or override {@link ribbon}; this is the shape the platform wants. */
+  ribbonGroups(): (Control | HTMLElement)[][] {
+    const {main, tools, presets} = this.ribbon();
+    return [main, tools, presets].filter((group) => group.length > 0);
   }
 
   /** The table-wide actions of the ⋯ menu: the import wizard, the bulk edit over what the list
    * holds, and the trash. Nothing writes in the trash, so only the way out of it is offered there. */
   menuActions(): Action[] {
-    const trash = this._trash.peek();
+    const trash = this.trash.peek();
     // what the caller may do (`requires`) and what the table can do at all are different
     // questions: a permission hides an action, an undeclared support leaves it out entirely
     const support = this.table.table.support;
@@ -438,12 +441,13 @@ export class DomainApp extends Control {
     return out;
   }
 
-  /** Enters or leaves trash mode: the list's source answers the deleted rows instead of the live
-   * ones, under the same query and search. Through the gate — pending changes of the live list
-   * are not dropped silently — and resolves to whether the move was made. */
-  async setTrash(on: boolean): Promise<boolean> {
-    if (on === this._trash.peek())
+  /** Moves between the live collection and the trash — ONE switch: the list's `deleted` mode, its
+   * sort, the breadcrumb and the `?trash=1` in every path all read it. Through the gate, so pending
+   * changes are never dropped silently; resolves to whether the move was made. */
+  async setMode(mode: DomainAppMode): Promise<boolean> {
+    if (mode === this._mode.peek())
       return true;
+    const on = mode === 'trash';
     if (!await confirmDiscard(this.session, {action: on ? 'open the trash' : 'leave the trash'}))
       return false;
     // one move, one history entry: the page and the mode settle together
@@ -451,9 +455,14 @@ export class DomainApp extends Control {
       // the trash is a list view: an entity page open over a live row has nothing to show in it
       if (on && this._page.peek() === 'entity')
         this._show('list', null);
-      this._trash.value = on;
+      this._mode.value = mode;
     });
     return true;
+  }
+
+  /** {@link setMode} as the ⋯ menu and a subclass ask for it. */
+  async setTrash(on: boolean): Promise<boolean> {
+    return this.setMode(on ? 'trash' : 'live');
   }
 
   /** Reads the page's collection again — what the status bar's "Refresh" stands for while the
@@ -500,6 +509,42 @@ export class DomainApp extends Control {
 
   getWidgetStatus(): IWidgetStatus {
     return {...super.getWidgetStatus(), shortcuts: {...SAVE_SHORTCUTS, ...this.shortcuts}};
+  }
+
+  /** The status as one line — what a plain status bar and the tests read. */
+  static summaryOf(status: DomainAppStatus): string {
+    const head = status.selected === 0 ? status.count : `${status.count} · ${status.selected} selected`;
+    return [head, status.problem ?? status.notice].filter((part) => part !== null && part !== '').join(' — ');
+  }
+
+  /** One status-bar panel per slot (`appView` places them side by side): the count, the selection,
+   * the notice, the problem — so a refusal never takes the count off the line. */
+  static statusPanels(app: DomainApp): HTMLElement[] {
+    const slot = (name: string, read: (status: DomainAppStatus) => string): HTMLElement => {
+      const el = span('', `u2-domain-status-${name}`);
+      el.dataset.u2Part = name;
+      app.effect(() => {
+        const text = read(app.status.value);
+        el.textContent = text;
+        el.hidden = text === '';
+      });
+      return el;
+    };
+    return [
+      slot('count', (status) => status.count),
+      slot('selected', (status) => status.selected === 0 ? '' : `${status.selected} selected`),
+      slot('notice', (status) => status.notice ?? ''),
+      slot('problem', (status) => status.problem ?? ''),
+    ];
+  }
+
+  /** What the pending changes are called: one dirty source words them in its own terms ("1
+   * restore pending", "2 deletions pending"), several can only be counted. */
+  private _pendingSummary(): string {
+    const dirty = this.session.sources.value.filter((s) => s.isDirty.value);
+    // a source's summary leads with its refusal, which is the `problem` slot already
+    return dirty.length === 1 && dirty[0].error.value === undefined ?
+      dirty[0].summary.value : this.session.summary.value;
   }
 
   /** How a table is named in a view title, a breadcrumb root or a child tab: the display name
@@ -578,10 +623,10 @@ export class DomainApp extends Control {
 
   /** Trash mode is one flip of the list source's `deleted` mode: the search box, the filters and
    * the list stay bound to the one source, and its access narrows itself to read-only. */
-  private _wireTrash(): void {
+  private _wireMode(): void {
     let saved: string | null = null;
     this.effect(() => {
-      const on = this._trash.value;
+      const on = this.mode.value === 'trash';
       this.listSource.deleted.value = on ? 'only' : 'exclude';
       // what a trash list is read for is what went in last; leaving gives the user's order back
       if (on) {
@@ -597,7 +642,7 @@ export class DomainApp extends Control {
   }
 
   private _withTrash(path: string): string {
-    return this._trash.value ? `${path}${path.includes('?') ? '&' : '?'}trash=1` : path;
+    return this.trash.value ? `${path}${path.includes('?') ? '&' : '?'}trash=1` : path;
   }
 
   private _listOnly(...controls: Control[]): void {
@@ -695,11 +740,13 @@ export class DomainApp extends Control {
     const at = address.indexOf('?');
     const params = new URLSearchParams(at < 0 ? '' : address.slice(at + 1));
     // trash mode is the list's own view of the table, and a path is authoritative about it
-    this._trash.value = params.get('trash') === '1';
-    const segment = this._segmentOf(at < 0 ? address : address.slice(0, at));
+    this._mode.value = params.get('trash') === '1' ? 'trash' : 'live';
+    const segment = DomainAddress.segmentOf(at < 0 ? address : address.slice(0, at), this._bases);
     const entity = segment ?? params.get('entity');
-    if (entity !== null && entity !== '')
-      return this._goTo('entity', entity, segment === null ? null : this._keyQuery(segment));
+    if (entity !== null && entity !== '') {
+      return this._goTo('entity', entity, segment === null ? null :
+        DomainAddress.keyQuery(segment, this.table.info.businessKey, this.listSource.schema));
+    }
     if (!await this._goTo('list', null))
       return false;
     const q = params.get('q') ?? '';
@@ -740,94 +787,23 @@ export class DomainApp extends Control {
     return this.entityPath ? this.keyOf(row) : row.id;
   }
 
-  /** The address bar back into the app — only while the shell shows this app's view, and only for
-   * an address under one of its routes: another view's URL is not the app's to read. */
-  private _restoreFromUrl(): void {
-    if (this._isCurrentView() && this._restOf(location.pathname) !== null)
-      void this.open(`${location.pathname}${location.search}`);
+  /** Both of the app's routes: the one the shell mounted the view at, and the one it was built
+   * with — a `/domains/…` link still reaches an app that has rebased onto `/apps/…`. */
+  private get _bases(): string[] {
+    return [this.base, this._options.base];
   }
 
-  /** What an address carries under one of the app's routes: '' for the base itself, '/<row>…'
-   * below it; null when the address is another view's. Both routes count: a `/domains/…` link
-   * still reaches an app that has rebased onto `/apps/…`. */
-  private _restOf(path: string): string | null {
-    const here = path.toLowerCase();
-    for (const base of [this.base, this._options.base]) {
-      if (!here.startsWith(base.toLowerCase()))
-        continue;
-      const rest = path.slice(base.length);
-      if (rest === '' || rest.startsWith('/'))
-        return rest;
-    }
-    return null;
-  }
-
-  /** The trailing segment of an address under one of the app's routes — the row it names; null
-   * when the address is the app's base itself, or another view's. */
-  private _segmentOf(path: string): string | null {
-    const rest = this._restOf(path);
-    if (rest === null || rest === '')
-      return null;
-    const segment = rest.slice(1).split('/')[0];
-    return segment === '' ? null : decodeURIComponent(segment);
-  }
-
-  /** The query finding the row an address segment names, null where the segment IS the id: a uuid
-   * is one, and so is anything under a table with no business key; one key column takes the whole
-   * segment, a composite key splits on '-' and must match its arity (`domain_entity_view.dart`
-   * `_resolve`). A miss shows the form's not-found, as the Dart view does. */
-  private _keyQuery(segment: string): FilterGroup | null {
-    const key = this.table.info.businessKey;
-    if (key.length === 0 || ID.test(segment))
-      return null;
-    const parts = key.length === 1 ? [segment] : segment.split('-');
-    if (parts.length !== key.length)
-      return null;
-    const schema = this.listSource.schema;
-    return Filters.group('and', key.map((column, at) => {
-      const property = Filters.property(schema, column);
-      const kind = property === null ? Filters.KIND.STRING : Filters.kindOf(property);
-      const numeric = kind === Filters.KIND.INT || kind === Filters.KIND.FLOAT;
-      return Filters.cond(column, '=', numeric ? Number(parts[at]) : parts[at]);
-    }));
-  }
-
-  private _state(): AppState {
+  private _state(): ViewState {
     const q = this.listSource.query.peek();
     return {page: this._page.peek(), entity: this._entity.peek(), search: this.listSource.search.peek(),
-      query: typeof q === 'string' ? q : Filters.format(q), trash: this._trash.peek()};
-  }
-
-  /** A move rather than a rewrite of the page in place: the business key replacing the id the page
-   * was addressed by, and the draft that became a row, are the same page. */
-  /** A move that only rewrote the query or the search text: the page the user is on did not
-   * change, so it is typing, not navigating. */
-  private static _typed(from: AppState, to: AppState): boolean {
-    return from.page === to.page && from.entity === to.entity && from.trash === to.trash;
-  }
-
-  /** Holds the typing burst open; the entry settles once the text has stood still. */
-  private _arm(): void {
-    this._disarm();
-    this._typing = setTimeout(() => this._typing = undefined, SETTLE_MS);
-  }
-
-  private _disarm(): void {
-    if (this._typing !== undefined)
-      clearTimeout(this._typing);
-    this._typing = undefined;
-  }
-
-  private static _moved(from: AppState, to: AppState): boolean {
-    return from.page !== to.page || from.query !== to.query || from.search !== to.search ||
-      from.trash !== to.trash || (from.entity !== to.entity && from.entity !== DomainApp.NEW);
+      query: typeof q === 'string' ? q : Filters.format(q), mode: this._mode.peek()};
   }
 
   private _show(page: DomainAppPage, entity: string | null, query: FilterGroup | null = null): void {
     this._close();
     if (page === 'entity' && entity !== null) {
       const draft = entity === DomainApp.NEW;
-      const source = draft ? this._source({draft: true}) :
+      const source = draft ? this._source({draft: true, defaults: this._options.defaults}) :
         this._source({query: query ?? Filters.group('and', [Filters.cond('id', '=', entity)]), pageSize: 1});
       // a source of one has no list to make its row current
       source.effect(() => {
@@ -835,14 +811,11 @@ export class DomainApp extends Control {
         if (source.state.value === 'ready' && rows.length > 0 && source.currentRow.peek() === null)
           source.currentRow.value = rows[0];
       });
-      const form = this.runInScope(() => new DomainForm(source, {system: 'footer', include: this._options.include,
-        empty: `${this.table.info.singularName || 'Row'} "${entity}" was not found.`}));
+      const {children, history, include} = this._options;
+      const {form, panes} = buildEntity(source, this.scope, {include, children, history,
+        empty: `${this.table.info.singularName || 'Row'} "${entity}" was not found.`});
       this._formHost.replaceChildren(form.root);
-      const {children, history} = this._options;
-      this._panes = this.runInScope(() => [
-        ...(children === false ? [] : [domains.children(source, children === true ? undefined : children)]),
-        ...(history === false ? [] : [domains.history(source)]),
-      ]);
+      this._panes = panes;
       this.panes.replaceChildren(...this._panes.map((pane) => pane.root));
       batch(() => {
         this._entitySource.value = source;

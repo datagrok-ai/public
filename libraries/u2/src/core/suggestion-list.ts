@@ -35,6 +35,8 @@ export interface SuggestionListOptions<T> {
   onRetry: () => void;
   /** What the empty row says, per query; "No matches" by default. */
   emptyText?: string | ((query: string) => string);
+  /** A ceiling on the popup's height, under the room the overlay gives it. */
+  maxHeight?: number | string;
 }
 
 export class SuggestionList<T> {
@@ -78,7 +80,8 @@ export class SuggestionList<T> {
     if (this._open.peek())
       return;
     this._open.value = true;
-    this._closeOverlay = Overlay.show(this._options.anchor, this.popup, this._options.scope);
+    this._closeOverlay = Overlay.show(this._options.anchor, this.popup, this._options.scope,
+      {maxHeight: this._options.maxHeight});
   }
 
   dismiss(): void {

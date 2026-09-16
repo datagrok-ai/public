@@ -7,7 +7,6 @@
    time, so the modules behind it may import this one back. `TRow` (an app's own row type) types
    the rows every registry and source hands out; the default reads any column as unknown. */
 import * as DG from 'datagrok-api/dg';
-import * as grok from 'datagrok-api/grok';
 import {Access} from '../../core/access.js';
 import type {Capability} from '../../core/access.js';
 import type {IProperty} from '../../core/property-like.js';
@@ -19,7 +18,7 @@ import {DomainSource} from '../../sources/domain-source.js';
 import type {DomainSourceOptions} from '../../sources/domain-source.js';
 import {Rows} from '../../sources/rows-like.js';
 import type {ColumnOf, DomainRowLike, RowValues, RowView} from '../../sources/rows-like.js';
-import {SharedSession, confirmDiscard} from '../../sources/session.js';
+import {SharedSession} from '../../sources/session.js';
 import type {ReadonlySignal} from '../../core/signals.js';
 import {divV, span, timestamp} from '../../core/elements.js';
 import {text} from '../../core/text.js';
@@ -50,6 +49,7 @@ import {DomainChildren} from './children.js';
 import type {DomainChildrenOptions} from './children.js';
 import {saveButton, discardButton, newButton} from './buttons.js';
 import {route} from './routes.js';
+import {mountView} from './view-sync.js';
 import {bulkEdit} from './bulk.js';
 import {openImport} from './import.js';
 const REF_ADDRESS = /^\w+\.\w+$/;
@@ -184,8 +184,8 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
     return this._track(new DomainSource<TRow>({...options, table: this.address}));
   }
 
-  /** Brings a soft-deleted row back — the Delete grant undone. A source over the table re-reads
-   * through {@link DomainSource.restore}, which answers for the rows it is showing. */
+  /** Brings a soft-deleted row back at once — the Delete grant undone, with no session behind it.
+   * A source stages restores into its unit of work instead ({@link DomainSource.stageRestore}). */
   restore(id: string): Promise<void> {
     DomainSource.requireRestore(this.table);
     return this.table.restore!(id);
@@ -221,79 +221,13 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
     const base = path ?? `/domains/${this.address.replace('.', '/')}`;
     const session = new SharedSession();
     const app = SharedSession.runWith(session, () => new App({...rest, table: this, base}));
-    const view = appView({name: name ?? DomainApp.titleOf(this.info), content: app, ribbon: app.ribbon(),
-      status: app.summary, path: app.path});
-    // The shell mounts a package app at its own route and prepends it to every path the view
-    // reports (`View.path` = the app call's prefix + the view's own): the app rebases onto that
-    // route once the view is docked, so a zero-code `table.app()` lives at `/apps/<App>` and its
-    // deep links are the shell's. `/domains/<schema>/<table>` is what a view outside an app keeps.
-    const mounted = (): string => {
-      const full = view.path ?? '';
-      const at = full.indexOf('?');
-      const here = at < 0 ? full : full.slice(0, at);
-      if (path === undefined && here.endsWith(app.base) && here.length > app.base.length)
-        app.rebase(here.slice(0, here.length - app.base.length));
-      return app.base;
-    };
-    // both routes: the one the shell mounted the view at, and the address a view outside an app
-    // keeps — a `/domains/…` link must still reach an app that has rebased onto `/apps/…`
-    view.acceptsPath = (p) => {
-      const here = p.toLowerCase();
-      return DomainTable._under(here, mounted().toLowerCase()) || DomainTable._under(here, base.toLowerCase());
-    };
-    // the router has updated the address bar before it calls the handler (view.ts:188-195), and
-    // hands over the path alone — the row `/domains/…` carries as a segment is in it
-    view.handlePath = (p) => {
-      mounted();
-      void app.open(`${p}${location.search}`);
-    };
-    // A cold deep link (`/apps/Stockroom?entity=…`) reaches the app func, never a path handler —
-    // and the func is handed the path under the app root, never the query. The app opens the
-    // address bar itself, from the snapshot taken here: docking the view rewrites the URL to the
-    // view's own path (`routing.dart` setViewPath) before any event of ours runs. Only the app's
-    // own address counts — opened from the tree, it is another view's URL.
-    const from = {pathname: location.pathname.toLowerCase(), search: location.search};
-    let replayed = false;
-    const replay = (): void => {
-      const at = mounted().toLowerCase();
-      // only the app's own parameters: a URL carrying nothing but the platform's (`browse=`) has
-      // no page to restore, and opening it would drop the query the app was built with
-      const deep = new URLSearchParams(from.search);
-      const own = ['entity', 'q', 'search', 'trash'].some((key) => deep.has(key));
-      if (replayed || !own || !DomainTable._under(from.pathname, at))
-        return;
-      replayed = true;
-      void app.open(from.search);
-    };
-    const added = grok.events.onViewAdded.subscribe((v) => {
-      if (v.dart !== view.dart)
-        return;
-      added.unsubscribe();
-      replay();
-    });
-    // The view's path is the shell's only once it has docked, which is not guaranteed to be before
-    // onViewAdded: the route is derived again every time the view becomes current, so a rebase that
-    // lost the race still lands and the snapshot is still replayed (once).
-    const current = grok.events.onCurrentViewChanged.subscribe((e) => {
-      if (e.args?.current?.dart === view.dart)
-        replay();
-    });
-    app.own(() => {
-      added.unsubscribe();
-      current.unsubscribe();
-    });
+    const view = appView({name: name ?? DomainApp.titleOf(this.info), content: app,
+      ribbon: app.ribbonGroups(), status: DomainApp.statusPanels(app), path: app.path});
+    mountView({view, base, pinned: path !== undefined, session, params: ['entity', 'q', 'search', 'trash'],
+      baseOf: () => app.base, rebase: (prefix) => app.rebase(prefix), open: (address) => app.open(address),
+      own: (dispose) => app.own(dispose)});
     app.own(DomainApp.register(app, view));
     app.guardUnload();
-    // the pane's ✕: cancelled here, then closed for real once the user has decided
-    const removing = grok.events.onViewRemoving.subscribe((e) => {
-      // saving too: the rows read clean for the whole write-back, and closing through it would
-      // drop the batch's own re-read
-      if (e.args.view.dart !== view.dart || !(session.isDirty.peek() || session.isSaving.peek()))
-        return;
-      e.preventDefault();
-      void confirmDiscard(session, {action: 'close the view'}).then((ok) => ok && view.close());
-    });
-    app.own(() => removing.unsubscribe());
     return view;
   }
 
@@ -399,7 +333,7 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
       const error = source.error.value;
       if (error !== undefined && source.state.peek() !== 'error' &&
           DomainErrors.codeOf(error) !== DomainSource.REFUSED)
-        DomainErrors.report(error);
+        DomainErrors.report(error, source);
     });
     source.start();
     return source;
@@ -412,7 +346,7 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
     if (columns.length === 0)
       return null;
     for (const row of source.pending()) {
-      if (row[Rows.STATE] === 'deleted')
+      if (row[Rows.STATE] === 'deleted' || row[Rows.STATE] === 'restored')
         continue;
       for (const column of columns) {
         const problem = this.validators.check(column, row[column], row as RowView<TRow>);
@@ -430,15 +364,6 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
    * needs them — the writer's own "Value can't be empty" says nothing about which field. */
   private _nameCell(row: RowView<TRow>, column: string, problem: string): string {
     return `${this.renderer.caption(row)}: ${DomainTable._caption(this.properties, column)}: ${problem}`;
-  }
-
-  /** Whether a path is the app's own: its base, or a path continuing it at a segment boundary —
-   * an app at `/domains/grit/issue` does not answer for `/domains/grit/issue_label`. */
-  private static _under(path: string, base: string): boolean {
-    if (!path.startsWith(base))
-      return false;
-    const rest = path.slice(base.length);
-    return rest === '' || rest.startsWith('/') || rest.startsWith('?');
   }
 
   private static _caption(properties: IProperty[], column: string): string {

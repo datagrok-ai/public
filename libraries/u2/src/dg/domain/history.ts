@@ -143,7 +143,9 @@ export class DomainHistory extends Control {
   }
 
   /** A cell as the line shows it: a reference is the name it points at, an id standing in until
-   * the platform answers. */
+   * the platform answers. This one keeps its own lookup where the rest of the domain path reads
+   * `~caption_<column>` off the frame: an audit line's `before`/`after` values are ids out of a
+   * jsonb snapshot, not frame cells, and no caption column will ever carry them. */
   private _value(prop: IProperty, raw: unknown, resolved: () => void): HTMLElement {
     const el = span(text(raw), 'u2-domain-history-value');
     const id = text(raw);

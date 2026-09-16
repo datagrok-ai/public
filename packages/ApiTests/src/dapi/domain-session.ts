@@ -359,6 +359,41 @@ category('Dapi: domain session', () => {
     }
   });
 
+  test('a staged restore rides the session save: one transaction with an insert beside it', async () => {
+    const prefix = `ds-restore-${stamp()}`;
+    const [gone] = await items().insert({sku: `${prefix}-0`, name: 'Deleted'});
+    let trash: Editor | null = null;
+    let child: Editor | null = null;
+    try {
+      await items().delete(gone.id);
+      trash = await DG.DomainFrameEditor.create(items() as any,
+        {query: {filter: like('sku', prefix), deleted: 'only'} as any, quiet: true});
+      child = await eventsEditor(prefix);
+      expect(trash.dataFrame.rowCount, 1, 'the trash editor does not hold the deleted row');
+      trash.markRestored(0);
+      child.addRow({item_id: gone.id, kind: `${prefix}-ev`, amount: 1});
+
+      const session = new DG.DomainSession([trash, child]);
+      expect(session.changeCount, 2, 'the session does not count the staged restore');
+      expect(await session.save(), true, 'the session save did not land');
+      expect(trash.isDirty || child.isDirty, false, 'an editor stayed dirty after the session save');
+      expect(trash.dataFrame.get(DG.DOMAIN_DELETED_COLUMN, 0), false, 'the restored row still reads as deleted');
+      expect((await items().query({filter: like('sku', prefix)})).length, 1,
+        'the restored row is not in a default query');
+
+      // The restore and the insert are ONE transaction: the parent is live by the
+      // time its new child is written, and both audit rows share a tx_id.
+      const undelete = (await items().audit(gone.id)).find((a) => a.op === 'undelete');
+      const inserted = (await events().audit(child.dataFrame.get('id', 0)))[0];
+      expect(undelete?.tx_id != null && undelete!.tx_id === inserted?.tx_id, true,
+        `the restore and the insert do not share one tx_id: ${undelete?.tx_id} vs ${inserted?.tx_id}`);
+    } finally {
+      trash?.detach();
+      child?.detach();
+      await cleanup(prefix);
+    }
+  });
+
   test('a draft deleted before save produces no op; unmarkDeleted restores new', async () => {
     const prefix = `ds-drop-${stamp()}`;
     const editor = await itemsEditor(prefix);

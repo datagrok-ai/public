@@ -22,6 +22,9 @@ category('U2: domain import', () => {
     .find((b) => b.textContent === text)!;
   const reason = () => document.querySelector('.u2-wizard-reason')?.textContent ?? '';
   const report = () => document.querySelector('.u2-domain-import-report')?.textContent ?? '';
+  /** The preview's leading cell per row — what the server's dry run predicts for it. */
+  const verdicts = () => [...document.querySelectorAll('.u2-domain-import-rows .u2-data-table-row')]
+    .map((row) => row.firstElementChild?.textContent ?? '');
 
   /** The source frame: every value a string, the way a CSV arrives. `strayColumn` matches no column. */
   function frame(rows: {sku: string, name: string, quantity: string, strayColumn: string}[]): DG.DataFrame {
@@ -68,9 +71,7 @@ category('U2: domain import', () => {
     const rows = [1, 2, 3].map((i) => ({sku: `${prefix}-${i}`, name: `Row ${i}`, quantity: String(i), strayColumn: 'x'}));
     const {running} = await open(frame(rows));
     buttonNamed('NEXT').click();
-    await delay(200);
-    const preview = document.querySelector('.u2-domain-import-preview')!.textContent!;
-    expect(preview.includes('3 rows look valid'), true, preview);
+    await delay(400);
     buttonNamed('NEXT').click();
     for (let i = 0; i < 100 && !report().includes('inserted'); i++)
       await delay(50);
@@ -84,5 +85,22 @@ category('U2: domain import', () => {
     expect(landed.map((r) => `${r.name}:${r.quantity}`).join(), 'Row 1:1,Row 2:2,Row 3:3',
       'the mapped columns landed, the text coerced by the server');
     expect('strayColumn' in landed[0], false, 'a skipped source column never reached the server');
+  });
+
+  test('the preview verdicts are the server\'s dry run, and its counts are the commit\'s', async () => {
+    const rows = [1, 2].map((i) =>
+      ({sku: `${prefix}-p${i}`, name: `Preview ${i}`, quantity: String(i), strayColumn: 'x'}));
+    const {running} = await open(frame(rows));
+    buttonNamed('NEXT').click();
+    for (let i = 0; i < 100 && verdicts().length === 0; i++)
+      await delay(50);
+    expect(verdicts().join(), 'Add,Add', 'the leading column is what the dry run predicts, as a verb');
+    const predicted = verdicts().filter((v) => v === 'Add').length;
+    buttonNamed('NEXT').click();
+    for (let i = 0; i < 100 && !report().includes('inserted'); i++)
+      await delay(50);
+    expect(report().includes(`${predicted} inserted, 0 updated`), true, report());
+    buttonNamed('CLOSE').click();
+    await running;
   });
 });

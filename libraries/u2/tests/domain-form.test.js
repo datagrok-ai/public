@@ -22,6 +22,7 @@ import {backend} from './domain-fixtures.mjs';
 register('./dg-stub.mjs', import.meta.url);
 const {domains} = await import('../src/dg/domain/index.js');
 const {DomainForm} = await import('../src/dg/domain/form.js');
+const {DomainPick} = await import('../src/dg/domain/pick.js');
 const {Rows} = await import('../src/sources/rows-like.js');
 const {registerDomainComponents} = await import('../src/dg/domain/registrations.js');
 const grok = await import('datagrok-api/grok');
@@ -45,6 +46,22 @@ function scoped(name, body) {
 }
 
 const CAN = {view: true, insert: true, edit: true, delete: true, share: true};
+
+/** Runs `body` with a counter of the lookups the domain path makes — every one of them goes
+ * through `DomainPick.resolve`, and a caption that rides with the row costs none. */
+async function counting(body) {
+  const resolve = DomainPick.resolve;
+  const lookups = {calls: 0};
+  DomainPick.resolve = (...args) => {
+    lookups.calls++;
+    return resolve.apply(DomainPick, args);
+  };
+  try {
+    await body(lookups);
+  } finally {
+    DomainPick.resolve = resolve;
+  }
+}
 
 /** A started source over the issues, through the handle, with its first page loaded — over the
  * memory backend the test installed, or a fresh one (importing dg installs the platform one). */
@@ -401,25 +418,44 @@ scoped('spec round trip: a form and a list bound through `$.issues.source` over 
   instance.dispose();
 });
 
-scoped('a readonly reference shows the target\'s name, not its uuid — the id until it resolves, and after a refresh', async () => {
-  backends.domain = backend({access: {can: CAN, fields: {title: 'editable', project_id: 'readonly', reporter: 'readonly'}}});
-  const {src} = await issues();
-  src.currentRow.value = src.rows.byKey('i1');
-  const form = domains.form(src);
-  const value = () => form.root.querySelector('[data-u2-name="project_id"] [data-u2-part="readonly-value"]').textContent;
-  assert.equal(value(), 'p1', 'the id stands in until the name arrives');
-  await flush();
-  assert.equal(value(), 'Grit', 'the project\'s name column');
-  form.input('title').value.value = 'Aspirin 100';
-  await flush();
-  assert.equal(value(), 'Grit', 'a refresh re-reads the row and the caption is put back');
-  assert.equal(form.root.querySelector('[data-u2-name="reporter"] [data-u2-part="readonly-value"]').textContent, '',
-    'an empty reference stays empty');
-  src.currentRow.value = src.rows.byKey('i3');
-  await flush();
-  assert.equal(value(), 'Datagrok', 'a new row resolves its own reference');
-  form.dispose();
-  src.dispose();
+scoped('a readonly reference shows the target\'s name, not its uuid — off the frame, and after a refresh', async () => {
+  await counting(async (lookups) => {
+    backends.domain = backend({access: {can: CAN,
+      fields: {title: 'editable', project_id: 'readonly', reporter: 'readonly'}}});
+    const {src} = await issues();
+    src.currentRow.value = src.rows.byKey('i1');
+    const form = domains.form(src);
+    const value = () =>
+      form.root.querySelector('[data-u2-name="project_id"] [data-u2-part="readonly-value"]').textContent;
+    assert.equal(value(), 'Grit', 'the caption the query projected, on the first paint');
+    await flush();
+    assert.equal(value(), 'Grit', 'the project\'s name column');
+    form.input('title').value.value = 'Aspirin 100';
+    await flush();
+    assert.equal(value(), 'Grit', 'a refresh re-reads the row and the caption is put back');
+    assert.equal(form.root.querySelector('[data-u2-name="reporter"] [data-u2-part="readonly-value"]').textContent, '',
+      'an empty reference stays empty');
+    src.currentRow.value = src.rows.byKey('i3');
+    await flush();
+    assert.equal(value(), 'Datagrok', 'a new row carries its own');
+    assert.equal(lookups.calls, 0, 'and none of it cost a request');
+    form.dispose();
+    src.dispose();
+
+    // where the frame carries no caption — turned off here, a draft or a `User` over the platform —
+    // the id stands in until the one lookup answers
+    const {src: bare} = await issues({captions: []});
+    bare.currentRow.value = bare.rows.byKey('i1');
+    const lookup = domains.form(bare);
+    const shown = () =>
+      lookup.root.querySelector('[data-u2-name="project_id"] [data-u2-part="readonly-value"]').textContent;
+    assert.equal(shown(), 'p1', 'the id stands in until the name arrives');
+    await flush();
+    assert.equal(shown(), 'Grit');
+    assert.equal(lookups.calls, 1, 'one lookup for the one reference the frame did not carry');
+    lookup.dispose();
+    bare.dispose();
+  });
 });
 
 scoped('system columns: out by default, a muted footer on request — captions, local times, never a draft\'s key', async () => {

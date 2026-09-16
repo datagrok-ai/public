@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import {badge, div, divV, span} from '@datagrok-libraries/u2';
 import type {BadgeVariant, RowView} from '@datagrok-libraries/u2';
 import {DomainApp} from '@datagrok-libraries/u2/src/dg/index.js';
-import type {DomainTable} from '@datagrok-libraries/u2/src/dg/index.js';
+import type {DomainRibbon, DomainTable} from '@datagrok-libraries/u2/src/dg/index.js';
 import {GritIssueHandler, lookupName, warmLookups} from './grit-issue-handler';
 import {gritDb, IssueRow} from './generated/db';
 import {getGritDb, GritDb} from './generated/db-ui';
@@ -92,11 +92,11 @@ function priorityBadge(r: RowView<IssueRow>): HTMLElement[] {
 /** The Issues app: the platform ribbon plus the Mine / Open presets, and a key for each action. */
 export class IssuesApp extends DomainApp {
   shortcuts = {'m': 'Assign to me', 'c': 'Close'};
-  private _full: ReturnType<DomainApp['ribbon']> | undefined;
+  private _full: DomainRibbon | undefined;
 
-  ribbon(): ReturnType<DomainApp['ribbon']> {
-    return this._full ??= [...super.ribbon(),
-      [this.presets(['Mine', 'assignee = $me'], ['Open', 'status_id.name != "closed"'])]];
+  ribbon(): DomainRibbon {
+    return this._full ??= {...super.ribbon(),
+      presets: [this.presets(['Mine', 'assignee = $me'], ['Open', 'status_id.name != "closed"'])]};
   }
 }
 
@@ -108,9 +108,8 @@ export class IssuesApp extends DomainApp {
 //output: view result
 export async function issuesApp(path?: string): Promise<DG.ViewBase> {
   const {issues} = (await openGrit()).tables;
-  // live: the list follows the server, so an issue another session files shows up here
   const view = issues.app({name: 'Issues', path: '/apps/Grit/Issues', app: IssuesApp, mode: 'cards',
-    children: {tables: ['comment']}, live: true});
+    children: {tables: ['comment']}});
   void DomainApp.of(view)!.open(path || undefined);
   return view;
 }

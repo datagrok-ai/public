@@ -7,6 +7,7 @@
 import {signal, computed, batch, Signal, ReadonlySignal} from '../core/signals.js';
 import {Component} from '../core/component.js';
 import {Access} from '../core/access.js';
+import {plural} from '../core/text.js';
 import {Filters} from '../core/filter/index.js';
 import type {FilterGroup, FilterNode, FilterProperty, FilterScalar, FilterSchema} from '../core/filter/index.js';
 import {backends, requireBackend} from './backends.js';
@@ -58,6 +59,10 @@ export interface DomainSourceOptions {
   /** Ask for the per-row access columns with every row (default true); the table-level access is
    * always fetched. */
   withAccess?: boolean;
+  /** Ref columns whose target names ride with the rows (`~caption_<col>`), so a list, a grid and a
+   * form show names without a lookup per id. By default every ref column into another domain table
+   * that this caller may see; `[]` turns it off. */
+  captions?: string[];
   /** What every draft starts with — a parent's id on a child table. */
   defaults?: Record<string, unknown>;
   /** A source that loads no rows: the frame exists, so drafts can be added — a child collection
@@ -162,6 +167,8 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   private readonly _rows: FrameRows;
   private readonly _columns = new Map<string, Signal<unknown>>();
   private readonly _guards = new Set<() => string | null>();
+  /** What the caller listed as {@link DomainSourceOptions.captions}; undefined is the default. */
+  private readonly _captionOption: string[] | undefined;
   private _table: DomainTableLike | undefined;
   private _ready: Promise<DomainTableLike> | undefined;
   private _frame: DomainFrameLike | undefined;
@@ -190,6 +197,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     this.table = options.table ?? '';
     this.pageSize = options.pageSize ?? 50;
     this.withAccess = options.withAccess ?? true;
+    this._captionOption = options.captions;
     this.defaults = {...options.defaults};
     this.isDraft = options.draft ?? false;
     this.isEmpty = options.empty ?? this.isDraft;
@@ -266,6 +274,9 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       apply: () => this.save()});
     this.registerFunction({name: 'discard', description: 'Drop every pending change', inputs: [],
       apply: () => this.discard()});
+    // the registry keeps the name a spec binds a button to; the method is `stageRestoreSelection`
+    this.registerFunction({name: 'restoreSelection', description: 'Stage the restore of every selected row',
+      inputs: [], apply: () => this.stageRestoreSelection()});
     this.registerFunction({name: 'newRow', description: 'Add a pristine draft row and make it current',
       inputs: [{name: 'values', type: 'object', nullable: true}],
       apply: (params) => this.newRow(params?.values as RowValues<TRow> | undefined, {pristine: true})});
@@ -293,8 +304,11 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     this.effect(() => {
       this._stopPolling();
       this._failures = 0;
-      if (this.live.value)
+      if (this.live.value) {
         this._timer = setInterval(() => void this._probe(), this._liveMs);
+        // a Node timer keeps the process alive; a browser timer id ignores this
+        (this._timer as {unref?(): void}).unref?.();
+      }
     });
     this.own(() => this._stopPolling());
   }
@@ -351,13 +365,15 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       if (this.deleted.peek() !== 'exclude')
         DomainSource.requireRestore(table);
       // what the caller may do does not depend on the query: a filter the server refuses must not
-      // take New away with the rows
-      const access = table.access().then((a) => {
-        if (gen === this._gen)
-          this._access.value = Access.from(a);
-      });
-      const [, frame, total] = await Promise.all([
-        access, table.frame(this._spec(0)), this._noRows ? 0 : this._count(table)]);
+      // take New away with the rows. It is known BEFORE the spec is built, because the captions
+      // default is derived from it and `Access.readOnly` hides nothing — the cost is zero, the
+      // platform caches `access()` per table
+      const data = await table.access();
+      if (gen !== this._gen)
+        return;
+      this._access.value = Access.from(data);
+      const [frame, total] = await Promise.all([
+        table.frame(this._spec(0)), this._noRows ? 0 : this._count(table)]);
       if (gen !== this._gen) {
         frame.dispose();
         return;
@@ -423,42 +439,33 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     }
   }
 
-  /** Brings soft-deleted rows back through the backend, then re-reads — the restored rows have
-   * left a trash list, and a live list has them again. Answers how many were restored; the first
-   * refusal (a deleted parent) stops the run and stands as this source's error, naming the row. */
-  async restore(ids: readonly string[]): Promise<number> {
+  /** Stages the restore of soft-deleted rows into the session's unit of work — they are pending
+   * changes until Save, shown as such, dropped by Discard, and guarded by the unsaved gate. The
+   * write itself rides `save()`; `DomainTable.restore(id)` is still the way to restore a row with
+   * no session behind it. */
+  stageRestore(ids: readonly string[]): void {
     const table = this._table;
     if (table === undefined)
       throw new DomainBackendError('not-found', `${this.table}: the table is not loaded yet`);
     DomainSource.requireRestore(table);
-    let restored = 0;
-    let problem: unknown;
-    let at: string | null = null;
-    for (const id of ids) {
-      try {
-        await table.restore!(id);
-        restored++;
-      } catch (e) {
-        problem = e;
-        at = id;
-        break;
-      }
-    }
-    if (restored > 0)
-      await this.refresh();
-    // after the re-read, which clears the error the rows that did come back have nothing to do with
-    if (problem !== undefined) {
-      batch(() => {
-        this._problemRow.value = at;
-        this._error.value = problem;
-      });
-    }
-    return restored;
+    const edit = this._edit.peek();
+    if (edit === undefined)
+      throw new DomainBackendError('not-found', `${this.table}: the table is not loaded yet`);
+    for (const id of ids)
+      edit.markRestored(id);
   }
 
-  /** {@link restore} over the frame's selected rows — a trash list's bulk Restore. */
-  restoreSelection(): Promise<number> {
-    return this.restore(this._selection.peek().map((row) => row.id));
+  unstageRestore(ids: readonly string[]): void {
+    const edit = this._edit.peek();
+    if (edit === undefined)
+      return;
+    for (const id of ids)
+      edit.unmarkRestored(id);
+  }
+
+  /** {@link stageRestore} over the frame's selected rows — a trash list's bulk Restore. */
+  stageRestoreSelection(): void {
+    this.stageRestore(this._selection.peek().map((row) => row.id));
   }
 
   /** Refuses a trash source, or a restore, over a backend that cannot restore: `restore` is the
@@ -466,17 +473,14 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   static requireRestore(table: DomainTableLike): void {
     if (table.restore === undefined) {
       throw new DomainBackendError('unsupported',
-        `${table.address}: the backend does not support deleted rows`);
+        `${table.address}: the backend does not support restoring deleted rows`);
     }
   }
 
-  /** Through the session — the one Save every button and shortcut runs; a trash source refuses
-   * before the session sees it, so a batch of the live sources sharing that session still holds. */
+  /** Through the session — the one Save every button and shortcut runs; the trash source's own
+   * refusal lives in {@link check}, which the session runs for every source of the batch. */
   save(): Promise<boolean> {
-    if (!this.readOnly.peek())
-      return this.session.save();
-    this.check();
-    return Promise.resolve(false);
+    return this.session.save();
   }
 
   discard(): void {
@@ -496,7 +500,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
    * about to send, dirty or not: a pristine parent a child refers to is inserted by that batch,
    * and the app's rules over it hold. */
   check(): string | null {
-    if (this.readOnly.peek())
+    if (this.readOnly.peek() && this.pending().some((r) => r[Rows.STATE] !== 'restored'))
       return this._refuse('deleted rows are read-only until they are restored');
     const edit = this._edit.peek();
     if (edit === undefined)
@@ -867,8 +871,21 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
         ...(deleted === 'exclude' ? {} : {deleted})};
     }
     const sort = this.sort.peek();
+    const captions = this._captions();
     return {...this._scope(), ...(sort === '' ? {} : {sort}),
-      limit: this.isEmpty ? 0 : limit, offset, withAccess: this.withAccess};
+      limit: this.isEmpty ? 0 : limit, offset, withAccess: this.withAccess,
+      ...(captions.length === 0 ? {} : {captions})};
+  }
+
+  /** The ref columns worth a caption: a domain-table reference (`semType` is `<schema>.<table>`) the
+   * caller may see. `User`/`Group` refs are NOT domain tables — the server refuses a caption for one
+   * — and a column the caller's access hides would fail the whole query with the same refusal. */
+  private _captions(): string[] {
+    const listed = this._captionOption;
+    const access = this._access.peek();
+    const refs = this._schema.properties.filter((p) => REF_ADDRESS.test(p.semType ?? '') &&
+      access.field(p.name!) !== 'hidden').map((p) => p.name!);
+    return listed === undefined ? refs : listed.filter((name) => refs.includes(name));
   }
 
   /** What every read of this source is scoped to — the one object `_spec`, `count` and `probe`
@@ -910,11 +927,14 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       return DomainSource._message(error);
     const items = this.rows.items.value;
     const changes = this.changeCount.value;
-    const plural = (n: number, one: string, many: string) => `${n.toLocaleString()} ${n === 1 ? one : many}`;
     if (changes > 0) {
       const deleted = items.filter((r) => r[Rows.STATE] === 'deleted').length;
-      return deleted === changes ? `${plural(deleted, 'deletion', 'deletions')} pending` :
-        plural(changes, 'unsaved change', 'unsaved changes');
+      if (deleted === changes)
+        return `${plural(deleted, 'deletion', 'deletions')} pending`;
+      const restored = items.filter((r) => r[Rows.STATE] === 'restored').length;
+      if (restored === changes)
+        return `${plural(restored, 'restore', 'restores')} pending`;
+      return plural(changes, 'unsaved change', 'unsaved changes');
     }
     const state = this.state.value;
     const singular = this._schema.info.singularName.toLowerCase() || 'row';

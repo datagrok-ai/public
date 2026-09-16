@@ -152,6 +152,8 @@ scoped('Rows: the one holder of the ~ conventions', () => {
   assert.equal(Rows.isDraft({id: 'i1'}), false);
   assert.equal(Rows.unkeyed(3), '~row:3');
   assert.equal(Rows.isDraft('~row:3'), false, 'an id-less row of a plain frame is unkeyed, not a draft');
+  assert.equal(Rows.caption('location_id'), '~caption_location_id');
+  assert.equal(Rows.isService(Rows.caption('x')), true, 'a caption is never enumerated into a payload');
 });
 
 scoped('FrameRows.proxy: the row shape over any reader', () => {

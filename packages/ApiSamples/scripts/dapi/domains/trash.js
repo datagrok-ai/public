@@ -31,4 +31,24 @@ const restored = await items.restore(row.id);
 grok.shell.info(`restored ${restored.id} at version ${restored.version}; ` +
   `ops: ${(await items.audit(row.id)).map((a) => a.op).join(', ')}`);
 
+// The same restore as one op of a transaction — the very code path the route runs,
+// so a parent and its child come back together (the server orders the parent first).
+await items.delete(row.id);
+const [viaTransaction] = await grok.dapi.domains.transaction('apitests',
+  [{op: 'restore', table: 'item', id: row.id}]);
+grok.shell.info(`restored in a transaction at version ${viaTransaction.version}`);
+
+// …and in an editor a restore is a PENDING change like any other: markRestored stages
+// it, save() lands it together with everything else the batch holds, discard() takes
+// it back. Only a row the SERVER holds as deleted (DG.DOMAIN_DELETED_COLUMN) can be.
+await items.delete(row.id);
+const editor = await DG.DomainFrameEditor.create(items,
+  {query: {filter: `id = "${row.id}"`, deleted: 'only'}});
+editor.markRestored(0);
+grok.shell.info(`staged: state "${editor.stateOf(0)}", ${editor.changeCount} pending change`);
+await editor.save();
+grok.shell.info(`saved: ${DG.DOMAIN_DELETED_COLUMN} is now ` +
+  `${editor.dataFrame.get(DG.DOMAIN_DELETED_COLUMN, 0)}`);
+editor.detach();
+
 await items.delete(row.id);

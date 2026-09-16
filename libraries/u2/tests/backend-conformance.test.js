@@ -19,8 +19,11 @@ const SCHEMA = {name: 'conformance', tables: {folder: {
   },
 }}};
 
-/** What this fixture answers — a scenario asking for more is skipped, as on the stand. */
-const DECLARED = ['hierarchy', 'softDelete', 'updateWhere'];
+/** What this fixture answers, derived the way the stand harness derives it — the two flags the
+ * manifest declares, then the table's own `support`, then the optional seam member it carries. A
+ * constant list here would silently skip a scenario the stand runs (and did, for `updateWhere`). */
+const declares = (table, required) => required === 'hierarchy' || required === 'softDelete' ? true :
+  table.support[required] === true || table[required] !== undefined;
 
 const t = {
   ok: (value, message) => assert.ok(value, message),
@@ -44,9 +47,9 @@ async function seed(table, rows) {
 
 for (const scenario of scenarios) {
   test(`conformance: ${scenario.name}`, async () => {
-    assert.deepEqual(scenario.requires.filter((name) => !DECLARED.includes(name)), [],
-      'the memory fixture declares everything the pilot scenarios ask for');
     const table = new MemoryDomainBackend(SCHEMA).tableSync('conformance.folder');
+    assert.deepEqual(scenario.requires.filter((name) => !declares(table, name)), [],
+      'the memory fixture declares everything the scenarios ask for — it never skips');
     await scenario.run(table, await seed(table, scenario.seed), t);
   });
 }

@@ -1,9 +1,10 @@
-/* Trash and restore against a real domain table (3-5, 3-8): a row deleted in the app leaves the
-   list, the ⋯ menu's Trash puts the list on `deleted: 'only'` — the deleted rows, read-only, with
-   Restore as the only row action and `?trash=1` in the view path — and Restore brings the row
-   back into the live list. Needs the server's `deleted` query flag and `POST …/{id}/restore`
-   (WO 3-1) and the js-api `DomainTableClient.restore` (WO 3-4). Fixture: `apitests.item`, rows
-   prefixed per run and deleted afterwards. */
+/* Trash and restore against a real domain table (3-5, 3-8; R-c): a row deleted in the app leaves
+   the list, the ⋯ menu's Trash puts the list on `deleted: 'only'` — the deleted rows, read-only,
+   with Restore as the only row action and `?trash=1` in the view path — and Restore STAGES into
+   the session: nothing is written until Save, Discard takes it back, and a landed batch carries
+   the row out of the trash. This is the only place the staged restore meets the real server
+   before the gate. Needs the server's `deleted` query flag and the `restore` transaction op.
+   Fixture: `apitests.item`, rows prefixed per run and deleted afterwards. */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {after, before, category, delay, expect, test} from '@datagrok-libraries/test/src/test';
@@ -87,9 +88,30 @@ category('U2: domain trash', () => {
     expect(app.menuActions().map((a) => a.name).join(), 'Exit trash');
   });
 
-  test('Restore brings the row back into the live list', async () => {
+  const restore = (): void => {
     const row = app.listSource.rows.byKey(goneId)!;
-    app.list.actionsFor(row)[0].run();
+    app.list.actionsFor(row).find((a) => a.name === 'Restore')!.run();
+  };
+
+  test('Restore stages into the session, and Discard takes it back', async () => {
+    restore();
+    expect(app.session.isDirty.value, true, 'a staged restore is a pending change');
+    expect(app.session.changeCount.value, 1);
+    expect(app.listSource.summary.value, '1 restore pending');
+    const row = app.listSource.rows.byKey(goneId)!;
+    expect(app.list.actionsFor(row).map((a) => a.name).join(), 'Undo restore');
+    expect(app.list.root.querySelector(`[data-u2-row="${goneId}"]`)!
+      .classList.contains('u2-domain-list-restored'), true);
+    expect((await items().get(goneId, {deleted: 'only'}))['~is_deleted'], true, 'nothing was written');
+    app.session.discard();
+    await delay(200);
+    expect(app.session.isDirty.value, false);
+    expect(names(), 'Alpha', 'the row is still in the trash');
+  });
+
+  test('Save lands the restore and the row leaves the trash', async () => {
+    restore();
+    expect(await app.session.save(), true);
     await reloaded();
     expect(names(), '', 'the restored row left the trash');
     expect(await app.setTrash(false), true);

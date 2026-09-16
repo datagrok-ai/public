@@ -4,6 +4,7 @@ import {Signal, ReadonlySignal} from './signals.js';
 import {Scope} from './scope.js';
 import {Control} from './component.js';
 import {bindText} from './bind.js';
+import {Dates} from './dates.js';
 
 export type Child = HTMLElement | Control | string | ReadonlySignal<unknown>;
 export type Text = string | ReadonlySignal<unknown>;
@@ -103,9 +104,7 @@ export function timestamp(value: Date | number | string | DateLike, cls?: string
   // a value that falls on midnight UTC is a DATE, not a moment: read in the local zone it would
   // be the day before for half the world (`2026-10-02T00:00:00Z` → "Oct 1, 2026, 08:00 PM"), so
   // it is both decided and printed in UTC. Everything else is a real moment and stays local.
-  const utcDate = options.utcDates === true && date.getUTCHours() === 0 && date.getUTCMinutes() === 0 &&
-    date.getUTCSeconds() === 0;
-  if (utcDate) {
+  if (options.utcDates === true && Dates.isDateOnly(date)) {
     el.textContent = el.title = date.toLocaleDateString(undefined, {...day, timeZone: 'UTC'});
     return el;
   }

@@ -123,6 +123,8 @@ const METAS: ComponentMeta[] = [
       {name: 'withAccess', type: 'bool',
         description: 'Fetch the per-row access columns with every row (default true); the table-level ' +
           'access is always fetched.'},
+      {name: 'captions', type: 'string_list',
+        description: 'Ref columns whose target names ride with the rows; every visible ref column by default.'},
       {name: 'defaults', type: 'object',
         description: 'Column values every draft row starts with — a parent\'s id on a child table.'},
       {name: 'empty', type: 'bool',

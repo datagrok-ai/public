@@ -596,6 +596,15 @@ scoped('a batch of deletes alone is "deleted", not "saved" — in the table\'s o
   assert.equal(balloon(), '2 issues deleted');
 
   notify.closeAll();
+  const trash = new DomainSource({table: 'grit.issue', session, deleted: 'only'}, env);
+  trash.start();
+  await flush();
+  trash.stageRestore(['i1', 'i3']);
+  assert.equal(await session.save(), true);
+  assert.equal(balloon(), '2 issues restored', 'a batch of restores is restored, not saved');
+  trash.dispose();
+
+  notify.closeAll();
   issues.rows.byKey('i1');
   const live = new DomainSource({table: 'grit.project', session}, env);
   live.start();

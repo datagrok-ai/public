@@ -56,6 +56,10 @@ export interface DomainQueryLike {
   withAccess?: boolean;
   /** Default `'exclude'`; anything else projects `~is_deleted` with every row. */
   deleted?: DomainDeletedMode;
+  /** Ref columns whose target's display name should ride with the rows: each projects one
+   * `~caption_<column>` string cell (null where the caller may not see the target). Never a target
+   * field — a caller that wants fields uses a query of its own. */
+  captions?: string[];
 }
 
 /** What a read is scoped to — the part of a query that selects rows rather than shapes the page.
@@ -109,7 +113,8 @@ export interface DomainProbeLike {
  * schema or `'<schema>.<table>'`; an insert may name itself with `ref`, and any op's value
  * `'$<ref>'` — earlier or later in the batch — is replaced by that row's id. */
 export interface DomainTransactionOpLike {
-  op: 'insert' | 'update' | 'delete';
+  /** A `restore` carries `id` alone and undoes a landed soft delete — the Delete grant, not a new one. */
+  op: 'insert' | 'update' | 'delete' | 'restore';
   table: string;
   ref?: string;
   values?: Record<string, unknown>;
@@ -148,6 +153,27 @@ export interface DomainBatchReportLike {
   rows: {index: number, id: string | null, status: string, existingId?: string,
     errors?: {column?: string, code?: string, message: string}[]}[];
   error?: string;
+}
+
+/** One row of a dry run: what the batch WOULD do with it. */
+export interface DomainBatchValidationRowLike {
+  index: number;
+  predicted: 'insert' | 'update' | 'skip' | 'error';
+  /** The row the prediction is about, for `update` and `skip` — a predicted insert has no id. */
+  existingId?: string;
+  errors?: {column?: string, code?: string, message: string}[];
+}
+
+/** What a dry run answers (js-api `DomainBatchValidation`): the counts and one line per row, and
+ * no ids or statuses — nothing was written, and a verdict is about the table AS IT IS NOW. */
+export interface DomainBatchValidationLike {
+  validateOnly: true;
+  rowCount: number;
+  willInsert: number;
+  willUpdate: number;
+  willSkip: number;
+  errorCount: number;
+  rows: DomainBatchValidationRowLike[];
 }
 
 /** One line of a row's history (js-api `DomainAuditEntry`): what an op did to it, under which
@@ -213,10 +239,21 @@ export interface DomainTableLike {
    * declare it cannot be imported into — `domains.import` refuses by name before the wizard
    * opens, rather than standing a transaction in for the real thing. */
   batch?(rows: Record<string, unknown>[], options?: DomainBatchOptionsLike): Promise<DomainBatchReportLike>;
+  /** What {@link batch} WOULD do with these rows, without doing it: every check the commit runs —
+   * coercions, the schema's rules, business-key duplicates inside the batch and against the live
+   * rows, FK existence — inside a transaction that is rolled back. Installed wherever `batch` is,
+   * so an import preview is the backend's verdict instead of a second implementation of it. */
+  validate?(rows: Record<string, unknown>[], options?: DomainBatchOptionsLike):
+    Promise<DomainBatchValidationLike>;
 }
 
 export interface DomainBackend {
   table(address: string): Promise<DomainTableLike>;
+  /** The backend's batched display-name resolver for ref ids — the platform registry's, which
+   * coalesces every caller's ids into one narrow fetch per table and caches them. Every requested
+   * id is a key; an id the caller may not see, or that no row answers, maps to null. A backend
+   * without one is read row by row. */
+  resolveNames?(table: string, ids: readonly string[]): Promise<Record<string, string | null>>;
   /** Every writer's pending batch as ONE transaction; resolves to whether it landed. The memory
    * backend throws its `DomainBackendError`; the platform answers false after its own dialogs
    * (the js-api `DomainSession` owns the conflict and validation loop). */

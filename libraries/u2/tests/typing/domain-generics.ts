@@ -2,7 +2,8 @@
    app's own row interface, and the untyped default beside it. Type-checked by `npm run build`
    (tsconfig includes this folder); never run. */
 import {domains, DomainTable, DomainApp} from '../../src/dg/index.js';
-import type {Control, DomainSource, RowView} from '../../src/index.js';
+import type {DomainRibbon} from '../../src/dg/index.js';
+import type {DomainSource, RowView} from '../../src/index.js';
 
 interface IssueRow {
   id: string;
@@ -55,8 +56,8 @@ async function untyped(): Promise<void> {
   domains.newButton(src, {title: 'x'});
   class Sub extends DomainApp {
     shortcuts = {'Ctrl+Shift+C': 'Close'};
-    ribbon(): (Control | HTMLElement)[][] {
-      return [[this.presets(['Mine', 'reporter = $me'])], ...super.ribbon()];
+    ribbon(): DomainRibbon {
+      return {...super.ribbon(), presets: [this.presets(['Mine', 'reporter = $me'])]};
     }
   }
   issues.app({app: Sub, shortcuts: {'Delete': 'Delete'}});
