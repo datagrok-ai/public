@@ -19,7 +19,8 @@ import * as rxjs from 'rxjs';
 import $ from 'cash-dom';
 
 import * as C from './utils/constants';
-import {COLUMN_NAME, COLUMNS_NAMES} from './utils/constants';
+import {COLUMN_NAME, COLUMNS_NAMES, VIEWER_TYPE} from './utils/constants';
+export {VIEWER_TYPE};
 import * as type from './utils/types';
 import {PeptidesSettings} from './utils/types';
 import {
@@ -58,16 +59,6 @@ import {MCLSerializableOptions} from '@datagrok-libraries/ml/src/MCL';
 import {PeptideUtils} from './peptideUtils';
 import {getGPUAdapterDescription} from '@datagrok-libraries/math/src/webGPU/getGPUDevice';
 import {MCLViewer} from '@datagrok-libraries/ml/src/MCL/mcl-viewer';
-
-export enum VIEWER_TYPE {
-  SEQUENCE_VARIABILITY_MAP = 'Sequence Variability Map',
-  MOST_POTENT_RESIDUES = 'Most Potent Residues',
-  LOGO_SUMMARY_TABLE = 'Logo Summary Table',
-  DENDROGRAM = 'Dendrogram',
-  CLUSTER_MAX_ACTIVITY = 'Active peptide selection',
-  MCL = 'MCL',
-  SEQUENCE_MUTATION_CLIFFS = 'Sequence Mutation Cliffs',
-}
 
 export type CachedWebLogoTooltip = { bar: string, tooltip: HTMLDivElement | null };
 

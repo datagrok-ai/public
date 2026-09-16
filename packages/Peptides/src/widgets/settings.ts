@@ -5,7 +5,8 @@ import * as DG from 'datagrok-api/dg';
 
 import * as type from '../utils/types';
 import * as C from '../utils/constants';
-import {PeptidesModel, VIEWER_TYPE} from '../model';
+import {PeptidesModel} from '../model';
+import {VIEWER_TYPE} from '../utils/constants';
 
 import $ from 'cash-dom';
 import wu from 'wu';

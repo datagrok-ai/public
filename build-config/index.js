@@ -127,7 +127,13 @@ function bundler(o = {}) {
     },
     stats: 'errors-warnings',
   };
-  return mergeConfig(base, o);
+  const config = mergeConfig(base, o);
+  const externals = config.externals;
+  // Workers have no platform globals, so openchemlib is bundled into them instead of resolving to OCL.
+  config.externals = ({context, request}, callback) =>
+    externals[request] && !(/worker/i.test(context) && request.startsWith('openchemlib/full')) ?
+      callback(null, externals[request], 'var') : callback();
+  return config;
 }
 
 // The plugin generates src/package.g.ts and src/package-api.ts on every bundle; a build without it
