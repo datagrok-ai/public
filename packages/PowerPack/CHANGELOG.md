@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-20909: Open the playlist when the Learn > VIDEO play icon is clicked
 * GROK-20899: Spotlight: Workspace no longer lists favorites that cannot be pinned there (saved layouts, saved views, tables, function calls), and the "Group favorites" context menu is offered only for entities Workspace can host — favorites written elsewhere (the platform's star icon, the context menu) bypassed the drop-target filter
 * GROK-20488: Home: Optimized the "Most Recent Entities" query — parameters and entity types are filtered through id sets instead of per-row joins (dev: 1.1 s → 0.5 s warm, 3.3 s → 0.5 s cold)
 * GROK-20753: Added the columnless "Filter Builder" filter (`PowerPack:filterBuilder`); the saved state is `{model, query}`; the status line is off by default (`showStatus`)
