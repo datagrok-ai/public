@@ -1,5 +1,5 @@
 {
-  "name": "nodetodo",
+  "name": "@datagrok/nodetodo",
   "friendlyName": "NodeTodo",
   "version": "0.0.1",
   "description": "NodeJS Datagrok API demo",

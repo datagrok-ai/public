@@ -1,5 +1,5 @@
 {
-  "name": "scaffold",
+  "name": "@datagrok/scaffold",
   "friendlyName": "Scaffold",
   "version": "0.0.1",
   "description": "A customizable DMTA workflow skeleton with embedded AIDD — built on Datagrok.",
