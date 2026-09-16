@@ -107,7 +107,10 @@ code, .kgv-mono { font-family: var(--mono); font-size: 12px; }
   flex: 1;
   display: grid;
   grid-template-columns: var(--left) 4px 1fr 4px var(--right);
+  /* one row that never grows with its content: a long answer table must scroll, not stretch the canvas */
+  grid-template-rows: minmax(0, 1fr);
   min-height: 0;
+  overflow: hidden;
 }
 .kgv-main.kgv-left-closed { grid-template-columns: 0 4px 1fr 4px var(--right); }
 .kgv-main.kgv-right-closed { grid-template-columns: var(--left) 4px 1fr 4px 0; }
@@ -121,7 +124,7 @@ code, .kgv-mono { font-family: var(--mono); font-size: 12px; }
 .kgv-right { border-left: 1px solid var(--line); }
 .kgv-gutter { cursor: col-resize; background: transparent; }
 .kgv-gutter:hover { background: var(--accent-soft); }
-.kgv-center { position: relative; min-width: 0; display: flex; flex-direction: column; background: var(--canvas); }
+.kgv-center { position: relative; min-width: 0; min-height: 0; display: flex; flex-direction: column; background: var(--canvas); }
 .kgv-graph { flex: 1; min-height: 0; position: relative; }
 .kgv-graph canvas { display: block; }
 
@@ -248,13 +251,13 @@ code, .kgv-mono { font-family: var(--mono); font-size: 12px; }
 .kgv-slider { display: flex; align-items: center; gap: 6px; margin-top: 8px; color: var(--ink-2); }
 .kgv-slider input { flex: 1; }
 
-.kgv-drawer { border-top: 1px solid var(--line); background: var(--panel); max-height: 45%; display: flex; flex-direction: column; }
+.kgv-drawer { border-top: 1px solid var(--line); background: var(--panel); max-height: 45%; min-height: 0; flex: none; display: flex; flex-direction: column; overflow: hidden; }
 .kgv-drawer-bar { display: flex; gap: 8px; padding: 6px 10px; }
 .kgv-drawer-bar textarea { flex: 1; font-family: var(--mono); font-size: 12px; resize: vertical; }
 .kgv-drawer-actions { display: flex; flex-direction: column; gap: 4px; }
 .kgv-drawer-actions label { color: var(--ink-2); display: flex; gap: 4px; align-items: center; }
 #query-status { color: var(--ink-3); font-size: 11px; }
-.kgv-drawer .kgv-table { overflow: auto; padding: 0 10px 8px; }
+.kgv-drawer .kgv-table { overflow: auto; min-height: 0; padding: 0 10px 8px; }
 
 .kgv-table table { border-collapse: collapse; width: 100%; font-size: 12px; }
 .kgv-table th, .kgv-table td { text-align: left; padding: 2px 6px; border-bottom: 1px solid var(--line); vertical-align: top; max-width: 420px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

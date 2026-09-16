@@ -27,10 +27,19 @@ export interface Question {
   cypher: string;
   /** Columns that carry node ids, for the browser to light up. */
   highlight: string[];
+  /** What the browser shows while the answer is lit: a preset or a type list, and whether only the answer stays. */
+  view?: View;
   /** Manifest sources the answer depends on; a caveat is attached when one is not `ok`. */
   needs: string[];
   status: 'ok' | 'blocked';
   blocked_by?: string;
+}
+
+export interface View {
+  preset?: string;
+  types?: string[];
+  edges?: string[];
+  restrict?: boolean;
 }
 
 export interface Answer extends QueryRows {
@@ -75,7 +84,19 @@ function parse(doc: Record<string, unknown>, file: string, full: string): Questi
   if (status !== 'ok' && status !== 'blocked') throw new Error(`status must be ok or blocked`);
   if (status === 'blocked' && typeof doc.blocked_by !== 'string') throw new Error('a blocked question says what blocks it in blocked_by');
   return {id, file: full, question: String(doc.question), why: String(doc.why), tags: list(doc.tags), params, cypher: String(doc.cypher),
-    highlight: doc.highlight === undefined ? ['id'] : list(doc.highlight), needs: list(doc.needs), status, blocked_by: doc.blocked_by as string | undefined};
+    highlight: doc.highlight === undefined ? ['id'] : list(doc.highlight), view: view(doc.view), needs: list(doc.needs), status, blocked_by: doc.blocked_by as string | undefined};
+}
+
+function view(value: unknown): View | undefined {
+  if (value === undefined || value === null) return undefined;
+  if (typeof value !== 'object') throw new Error('view must be a map with preset, types, edges or restrict');
+  const v = value as Record<string, unknown>;
+  for (const key of Object.keys(v))
+    if (!['preset', 'types', 'edges', 'restrict'].includes(key)) throw new Error(`view: unknown key '${key}'`);
+  if (v.preset !== undefined && typeof v.preset !== 'string') throw new Error('view.preset must be a preset name');
+  if (v.restrict !== undefined && typeof v.restrict !== 'boolean') throw new Error('view.restrict must be true or false');
+  return {preset: v.preset as string | undefined, types: v.types === undefined ? undefined : list(v.types),
+    edges: v.edges === undefined ? undefined : list(v.edges), restrict: v.restrict as boolean | undefined};
 }
 
 function list(value: unknown): string[] {

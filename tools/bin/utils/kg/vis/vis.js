@@ -157,6 +157,7 @@ async function main() {
     if (!q) return;
     const params = Object.fromEntries([...$('question-params').querySelectorAll('input')].map((i) => [i.dataset.param, i.value.trim()]));
     $('question-status').textContent = 'asking…';
+    applyView(q.view);
     $('drawer').hidden = false;
     $('cypher').value = `// ${q.id}${Object.keys(params).length ? ' ' + Object.entries(params).map(([k, v]) => `${k}=${v}`).join(' ') : ''}\n${q.cypher.trim()}`;
     try {
@@ -169,6 +170,29 @@ async function main() {
       $('query-status').textContent = 'error';
       $('query-result').replaceChildren(el('div', {class: 'kgv-error'}, e.message));
     }
+  }
+  /** A question's view: the preset or the types to show while its answer is lit, and whether only the answer stays. */
+  function applyView(view) {
+    if (!view) return;
+    if (view.preset && PRESETS[view.preset]) {
+      filter.nodeTypes.clear();
+      for (const t of PRESETS[view.preset].types ?? data.nodeTypes) filter.nodeTypes.add(t);
+      state.preset = view.preset;
+    }
+    if (view.types) {
+      filter.nodeTypes.clear();
+      for (const t of view.types) filter.nodeTypes.add(t);
+      state.preset = 'custom';
+    }
+    if (view.edges) {
+      filter.edgeKinds.clear();
+      for (const k of view.edges) filter.edgeKinds.add(k);
+    }
+    leaveExplore();
+    filter.pinned.clear();
+    $('highlight').checked = true;
+    $('restrict').checked = view.restrict === true;
+    syncPresets();
   }
   function showAnswer(r, highlightColumns) {
     $('query-status').textContent = `${r.rows.length} row${r.rows.length === 1 ? '' : 's'}${r.truncated ? ' (truncated)' : ''} in ${r.ms} ms`;
@@ -347,12 +371,27 @@ async function main() {
     else if (Array.isArray(v)) for (const x of v) collectIds(x, into);
     else if (v && typeof v === 'object') for (const x of Object.values(v)) collectIds(x, into);
   }
+  /** A hit the current filter hides is pinned into the view, so an answer is never lit on nothing; the next answer
+   * takes those pins back. */
+  let answerPins = new Set();
   function applyQueryHits() {
     const restrict = $('restrict').checked && hits ? hits : null;
-    if ((restrict ?? null) !== (filter.restrict ?? null)) {
-      filter.restrict = restrict;
-      refresh({resimulate: true});
-    }
+    let changed = (restrict ?? null) !== (filter.restrict ?? null);
+    filter.restrict = restrict;
+    for (const i of answerPins)
+      if (!hits?.has(i)) {
+        filter.pinned.delete(i);
+        changed = true;
+      }
+    answerPins = new Set();
+    if ($('highlight').checked && hits)
+      for (const i of hits)
+        if (!masks.nodeOn[i] && !filter.pinned.has(i)) {
+          filter.pinned.add(i);
+          answerPins.add(i);
+          changed = true;
+        }
+    if (changed) refresh({resimulate: true});
     highlighted = $('highlight').checked && hits?.size ? hits : null;
     graph.highlight(highlighted);
   }
