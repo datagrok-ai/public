@@ -73,5 +73,10 @@
   ],
   "optionalDependencies": {
     "yargs": "^18.0.0"
+  },
+  "grok": {
+    "testDependencies": [
+      "@datagrok/db-tests"
+    ]
   }
 }

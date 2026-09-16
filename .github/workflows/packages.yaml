@@ -516,7 +516,7 @@ jobs:
           if [[ "${{ steps.datagrok-image.outputs.apiUrl }}" == *"127.0.0.1"* ]]; then
             if [[ "${{ matrix.package }}" == "Chemspace" ]]; then
               token=$(.github/scripts/dev-login.sh "${{ steps.datagrok-image.outputs.apiUrl }}" admin)
-              curl -s -H "Authorization: $token" -H "Content-Type": "application/json" '${{ steps.datagrok-image.outputs.apiUrl }}/credentials/for/Chemspace.Chemspace' -X POST -d "{\"apiKey\": \"$CHEMSPACE_APIKEY\"}"
+              curl -s -H "Authorization: $token" -H "Content-Type": "application/json" '${{ steps.datagrok-image.outputs.apiUrl }}/credentials/for/Chemspace' -X POST -d "{\"apiKey\": \"$CHEMSPACE_APIKEY\"}"
             fi
           fi
 
