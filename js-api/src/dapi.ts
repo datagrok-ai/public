@@ -418,7 +418,7 @@ export class HttpDataSource<T> {
   /** A source filtered by [w]; replaces the filter of this source, if any.
    *  Also can be set with {@link list} method "options" parameter
    *  See example: {@link https://public.datagrok.ai/js/samples/dapi/projects-list}
-   *  Smart filter: {@link https://datagrok.ai/help/datagrok/navigation/views/browse#entity-search} */
+   *  Smart filter: {@link https://datagrok.ai/help/datagrok/concepts/objects#entity-search} */
   filter(w: string): this {
     return this.with({filter: w});
   }

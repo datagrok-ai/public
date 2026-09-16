@@ -1,6 +1,7 @@
 ---
 title: "Link tables"
-description: Synchronize the current row, mouse-over row, filter, or selection between two tables based on shared key columns.
+
+description: Synchronize the current record, filter, or selection between two tables based on shared key columns.
 keywords:
   - link tables
   - synchronize tables
@@ -10,38 +11,24 @@ keywords:
   - cascading links
 ---
 
-Linking connects two open tables through key columns, so that an action in
-one table (changing the current row, hovering over a row, filtering, or
-selecting) changes the row state of the other table. No data is copied, and
-both tables stay as they are. This makes linking the right tool for
-one-to-many relations and for master-detail browsing.
+Linking connects two open tables through key columns without copying data.
+An action in one table (changing the current row, hovering, filtering, or
+selecting) updates the row state in the other table. Both tables remain
+separate.
+
+Linking is useful for one-to-many relationships and master-detail browsing,
+where you want to explore related rows without combining the tables.
 
 ## Joining or linking
 
-There are two ways to relate tables in Datagrok, and they answer different
-questions:
+Datagrok provides two ways to relate tables:
 
-| | [Join](join-tables.md) | Link |
-|---|---|---|
-| Result | One wider table | Both tables stay separate |
-| Rows | One row per match, according to the join type | Unchanged |
-| Data | Copied into the result | Nothing is copied |
-| Interaction | Filters and viewers work on the combined table | The current row, selection, or filter in one table drives the other |
-| Refresh | When done on a query result, recorded as a transformation step and replayed on refresh. Between two static tables, done once | Saved with the project, re-established on open |
-| Best for | One-to-one relations, enrichment, a single flat view for charts | One-to-many relations, master-detail browsing, keeping detail tables large |
-
-Use a join when you want a single flat table to chart. Use a link when the
-detail side has many rows per master row and you want to browse them.
-
-When both tables come from the same database, joining in the database is
-often better than joining in Datagrok. The
-[Visual Query Editor](../access/databases/databases.md#visual-query-editor)
-builds joins from foreign keys, and the database does the work before the
-data leaves the server. When the detail data lives in a database, you may
-not need to load it at all: the
-[Database Explorer](../access/databases/databases.md#database-explorer) and
-[data enrichment](../access/databases/databases.md#data-enrichment) fetch
-the related records for the row you are looking at.
+* [Join](join-tables.md) combines matching rows into one wider table. A
+  master row is repeated for each matching detail row. Use a join when you
+  need one flat table for analysis or visualization.
+* Link keeps the tables separate. The current row, selection, or filter in
+  one table drives the other. Use a link when you want to browse related
+  detail rows.
 
 ## Creating a link
 
@@ -125,7 +112,7 @@ master table filters the detail table. To set it up:
 Now clicking a row in the master grid filters the detail grid to the matching
 rows. You can put both grids side by side, or add a viewer on the detail
 table to the master view with **Row Source** set to **Filtered**. To learn
-more about the **Row Source** and **On click** settings, see
+more about the **Row Source** and **On Click** settings, see
 [Viewers as filters](../visualize/table-view-1.md#viewers-as-filters).
 
 ## Drilling down
@@ -138,15 +125,19 @@ Linking is also how you drill down from a summary to the rows behind it:
   grouping columns with `row to filter`. Clicking a summary row now shows the
   measurements it was computed from. A pivoted table works the same way.
 * **From a chart segment to its rows.** Any bar chart or pie chart can act as
-  the drill-down control: set **On click** to **Filter** on the viewer, and
+  the drill-down control: set **On Click** to **Filter** on the viewer, and
   clicking a bar filters the table to that category. See
-  [Viewers as filters](../visualize/table-view-1.md#viewers-as-filters).
+  Viewers as filters.
 * **From an identifier to related records.** When the
   [Database Explorer](../access/databases/databases.md#database-explorer) is
   configured for your database, clicking an identifier such as a compound or
-  batch ID anywhere in Datagrok shows the record and everything related to
-  it through foreign keys in the **Context Panel**, without loading the
-  detail tables or writing a query.
+  batch ID anywhere in Datagrok shows the record in the **Context Panel**,
+  together with everything related to it through foreign keys. No detail
+  table is loaded and no query is written.
+* **From a row into a parameterized query.** A query with an input such as
+  `compoundId`, run from the **Context Panel** for the current row, returns
+  that row's details from the database. See
+  [Parameterized queries](../access/databases/databases.md#parameterized-queries).
 
 ## Cascading links
 
@@ -162,13 +153,13 @@ filter the products table to the products in that order.
 
 ![link-tables](link-tables.gif)
 
-## Worked example
+<details>
+<summary>Worked example: a master-detail dashboard on the Northwind demo database</summary>
 
 This example builds a master-detail dashboard on the Northwind demo
 database: you pick an order and see its line items and the products in it.
-Northwind ships as a demo connection under **Browse** > **Databases** (for
-example **PostgresNorthwind** or **MySQLNorthwind**, depending on your
-instance).
+Northwind ships as a demo connection named **Northwind** under its database
+type in **Browse** > **Databases**.
 
 1. Open three tables. Expand the Northwind connection, right-click
    `orders`, `order_details`, and `products` in turn, and select **Get All**.
@@ -189,16 +180,18 @@ instance).
    `products` and **Row Source** to **Filtered**, and split it by `categoryid`.
 1. Click an order. The details grid shows its line items, and the bar chart
    shows the categories of the products in it.
-1. Click **SAVE**. Turn **Data sync** on for all three tables, so that the
+1. Click **SAVE**. Keep **Data sync** on for all three tables, so that the
    dashboard re-runs the three queries on every open, and share the
    dashboard and the Northwind connection with your team. See
-   [What recipients need](../datagrok/concepts/project/dashboard.md#what-recipients-need).
+   [What recipients get](../datagrok/concepts/project/dashboard.md#what-recipients-get).
 
 ![Northwind master-detail dashboard](link-tables-northwind.gif)
 
 For a smaller live example that needs no database, open the **Table Linking**
 demo under **Data Access** in the
 [demo app](https://public.datagrok.ai/apps/Tutorials/Demo/Data-Access/Table-Linking).
+
+</details>
 
 ## Links and viewers
 
@@ -219,43 +212,21 @@ choose the target table. See
 
 ## Links in projects
 
-Links are saved with the [dashboard](../datagrok/concepts/project/dashboard.md)
+Links are saved with the dashboard
 and re-established when it opens. If a linked table is dynamic (Data sync on)
 and its key column is renamed in the source query, the link stops matching,
 so keep key column names stable. For what else to check when saving a
 dashboard with several tables, see
-[Working with multiple tables](../datagrok/concepts/project/dashboard.md#multiple-tables).
+[Multiple tables](../datagrok/concepts/project/dashboard.md#multiple-tables).
 
 :::note developers
 
 To link tables from a script or a plugin, see the
-[Linking tables](https://public.datagrok.ai/js/samples/data-frame/link-tables) sample.
+[Linking tables](https://public.datagrok.ai/js/samples/data-frame/join-link/link-tables) sample.
 
 :::
 
-## Troubleshooting
-
-<details>
-<summary>Clicking a master row doesn't filter the detail table</summary>
-
-Check the key columns. Links compare values, so both columns must have the
-same type and the same formatting (no trailing spaces, same case). Open
-**Data** > **Link Tables...** to inspect the existing links and confirm that
-the link is enabled.
-
-</details>
-
-<details>
-<summary>A viewer shows no rows after linking</summary>
-
-Its **Row Source** is set to **Filtered** or **Selected** and the link
-produced an empty set. Click a master row that has details, or set **Row
-Source** to **All**.
-
-</details>
-
 See also:
 
-* [Multi-table analysis and drill-down](../datagrok/solutions/workflows/multi-table-analysis.md) (end-to-end workflow)
 * [Join tables](join-tables.md)
 * [Dashboards](../datagrok/concepts/project/dashboard.md)

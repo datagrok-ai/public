@@ -18,8 +18,8 @@ mdx:
 
 Datagrok stores both dashboards and [spaces](space.md) as projects. A space is
 a project that organizes other entities, like a folder. A dashboard is a
-project that holds data (one or more [tables](../table.md)) together with the
-visualizations applied to it (a [layout](../../../visualize/view-layout.md)).
+project that holds data (one or more tables) together with the
+visualizations applied to it (a layout).
 Data and layout are separate entities, which lets a dashboard refresh its
 data without losing its visuals, lets you apply the same layout to a
 different dataset, and lets each user keep personal customizations without
@@ -35,15 +35,17 @@ connect to a database and write the queries that feed a dashboard, see
 To create a dashboard, follow these steps:
 
 1. Open a table to access the [Table View](../../../visualize/table-view-1.md). The
-   table can come from a file, a [database query](../../../access/databases/databases.md#running-queries),
-   a script, or any other [function](../functions/functions.md).
+   table can come from a [file](../../../access/files/files.md), a
+   [database query](../../../access/databases/databases.md#running-queries),
+   a [script](../../../compute/scripting/scripting.mdx), or any other
+   [function](../functions/functions.md).
 1. In the **Table View**, you can:
    * Add [viewers](../../../visualize/viewers/viewers.md) to visualize your data
    * [Transform data](../../../transform/transform.md) as needed
-   * [Add filters](../../../visualize/table-view-1.md#select-and-filter)
+   * [Add filters](../../../visualize/table-view-1.md#filters-viewer)
    * Customize the grid, such as [color-coding grid columns](../../../visualize/viewers/grid.md#color-code-columns)
    * Optionally, add data from other tables. See [Multiple tables](#multiple-tables).
-1. [Save](#saving-a-dashboard) your dashboard.
+1. Save your dashboard.
 
 Until you save, everything you do stays in your browser's memory. If you close
 or refresh the browser tab, unsaved work is lost.
@@ -59,17 +61,22 @@ and the [upload data](../../../develop/how-to/data/upload-data.md) how-to.
 ## Multiple tables
 
 A dashboard can hold several tables. Every open table is listed in the
-**Table Manager** (<kbd>Alt + T</kbd>) and under **Scratchpad** in
-[Browse](../../navigation/views/browse.md), and each table has its own Table
-View. To bring them together, you can:
+**Tables** panel (<kbd>Alt + T</kbd>) and in the **Dashboards** panel on the
+**Sidebar** (see [Unsaved work](../../navigation/views/browse.md#unsaved-work)),
+and each table has its own Table View. To bring them together, you can:
 
-* Show another table in a viewer (**Gear** icon > **Data** > **Table**). See
-  [Viewers as filters](../../../visualize/table-view-1.md#viewers-as-filters).
 * [Link tables](../../../transform/link-tables.md), so that the current row,
   selection, or filter in one table drives the other. This is how
   master-detail and drill-down views work.
 * [Join tables](../../../transform/link-tables.md#joining-or-linking) into one
   when you need a single flat table to chart.
+* Point a viewer at another table. A Table View belongs to one table, but any
+  viewer in it can show a different open table: click the viewer's **Gear**
+  icon and, in the **Context Panel** under **Data**, change **Table**. With
+  **Row Source** set to **Filtered** or **Selected**, such a viewer shows only
+  the rows that a link selects, which is how a chart of the details sits next
+  to the master grid. See
+  [Viewers as filters](../../../visualize/table-view-1.md#viewers-as-filters).
 * Show linked rows [inside the grid](../../../visualize/viewers/grid.md#data-from-linked-tables)
   instead of in a separate view.
 * Fetch details on demand with the
@@ -77,30 +84,30 @@ View. To bring them together, you can:
   or [data enrichment](../../../access/databases/databases.md#data-enrichment)
   instead of loading them.
 * Add [several views](../../../visualize/table-view-1.md#multiple-views) of
-  one table (**Table** > **Add View**), each with its own layout. All views of
-  a table share the filter and selection.
+  one table (right-click the table and select **Add View**), each with its
+  own layout. All views of a table share the filter and selection.
 
 For a live example of linked tables, open the **Table Linking** demo under
 **Data Access** in the [demo app](https://public.datagrok.ai/apps/Tutorials/Demo/Data-Access/Table-Linking).
 For a step-by-step multi-table dashboard on the Northwind database, see the
-[worked example](../../../transform/link-tables.md#worked-example) on the
+[worked example](../../../transform/link-tables.md) on the
 Link tables page.
 
-When you save, the **Save project** dialog lists all open tables and views.
+When you save, the **Save project** dialog lists all open tables.
 Links between tables and viewers that point at other tables are saved with
 the project. For a multi-table dashboard, keep these points in mind:
 
 * **Data sync is set per table.** A live query table next to a static
-  reference table is a common combination. See [Data sync](#data-sync).
+  reference table is a common combination.
 * **Dependencies between tables are preserved.** If one table is derived from
   another (for example, a join of two query results), Datagrok records the
   order in which they were produced and replays it. Static tables load first,
-  and then the generation scripts run in the order they were recorded.
+  and then the creation scripts run in the order they were recorded.
 * **Tables from other projects can be linked or cloned.** A table you opened
   from another dashboard is saved either as a **Link** (a read-only reference
   that follows the original) or as a **Clone** (an independent copy).
-  Recipients need the **View and use** privilege on the original project to
-  see a linked table.
+  Recipients of your dashboard can read a linked table even if they can't
+  see the project it comes from.
 
 ## Saving a dashboard
 
@@ -110,40 +117,40 @@ To save, click the **SAVE** button at the top of the screen. This opens the
 For a new dashboard, enter a name and, optionally, a description. New
 dashboards are saved to your personal space under **My stuff** in
 [Browse](../../navigation/views/browse.md). You can
-[move them to a shared space](space.md#moving-entities-between-spaces) later.
+move them to a shared space later.
 
 For an existing dashboard, the dialog lists all open tables. Remove the ones
 you don't want in the project, and then choose how to save:
 
-| Option | What it does | When to use it |
-|---|---|---|
-| **Save original project** | Overwrites the project on the server | You own the dashboard and want to publish the change to everyone |
-| **Save a copy** | Creates a new project. For each table, you choose **Clone** (an independent copy) or **Link** (a read-only reference to the original table) | You want a variant, a "version", or you don't have the privilege to edit the original |
-| **Save personal view customizations** | Saves your layout changes for you only. The layout others see doesn't change | You want a different arrangement of viewers without affecting the team |
+* **Save original project**: Overwrites the project on the server. Choose it
+  when you own the dashboard and want to publish the change to everyone.
+* **Save a copy**: Creates a new project. For each table, you choose whether
+  to **Move** it, **Link** it if the copy should keep showing the same data as
+  the original, or, for a table that is already on the server, **Clone** it to
+  make the copy independent. Choose this option when you want a variant, a
+  "version", or when you don't have the privilege to edit the original.
+* **Save personal view customizations**: Saves your layout changes for you
+  only. The layout others see doesn't change. Choose it when you want a
+  different arrangement of viewers without affecting the team.
 
-The options available to you depend on your privilege on the dashboard:
+:::note
 
-| Your privilege | Save original project | Save a copy | Save personal view customizations |
-|---|---|---|---|
-| **Full access** (or you are the author) | Yes | Yes | Yes |
-| **View and use** | No | Yes | Yes |
+Without the privilege to edit the dashboard, you can't save the original
+project, but you can still save a copy under your own name or keep personal
+view customizations that nobody else sees.
 
-This means that a recipient with the **View and use** privilege can still keep
-working on a shared dashboard, either by saving a copy under their own name or
-by keeping personal customizations that nobody else sees. Neither option
-changes what the author published.
-
-![Save project dialog](img/dashboard-save-modes.gif)
+:::
 
 When you save the original project or a copy, the dialog offers two more
 settings:
 
-* **Data sync**, set per table, decides whether the dashboard stores a snapshot
-  of the data or re-runs the source each time it opens. For a new dashboard,
-  it is on by default for every table that has a generation script, so a
-  snapshot is what you get only if you turn it off. See [Data sync](#data-sync).
-* **Presentation mode** hides the toolbox, menus, ribbons, and context panels
-  when the dashboard opens. Use it for dashboards meant for data consumers
+* **Data sync**, set per table, decides where the data comes from when the
+  dashboard opens. When it is on, the table's creation script runs again.
+  When it is off, the dashboard shows the snapshot saved with it. New
+  dashboards have Data sync on for every table that has a creation script,
+  so turn it off for a table that should keep a snapshot. See [Data sync](#data-sync).
+* **Presentation mode** hides the sidebar, menus, ribbons, toolbox, and
+  status bar when the dashboard opens. Use it for dashboards meant for data consumers
   rather than analysts. A viewer can switch back by clicking the **Design
   mode** link at the top right.
 
@@ -151,150 +158,94 @@ After a successful save, the **SAVE** button turns grey, indicating that there
 are no unsaved changes. You can still click it to open the dialog again, for
 example to save a copy or personal customizations.
 
+![Save project dialog](img/dashboard-save-modes.gif)
+
 ## Data sync
 
-Whenever a table is produced by a function (a database query, a script, or a
-file import followed by transformations), Datagrok records how it was produced
-as the table's _generation script_. The **Data sync** switch in the **Save
-project** dialog determines what the dashboard stores:
+Tables created from queries, scripts, or files on a file share have a
+_creation script_ that records how the table was created and what was done
+to it afterwards. You can see it in the **Save project** dialog under
+**CREATION SCRIPT**. With the edit privilege, you can view and edit the
+script in the **Context Panel** > **Advanced** > **Creation scripts**.
 
-| | Data sync **off** (snapshot) | Data sync **on** (dynamic) |
+:::note
+
+If a dashboard fails to open, Datagrok offers to edit its creation script so
+that the dashboard can be opened.
+
+:::
+
+**Data sync** determines whether the creation script is run when the
+dashboard opens. When enabled, the dashboard stores the script and runs it
+each time, so the data can be refreshed from the source (a dynamic
+dashboard). When disabled, the dashboard stores the current data instead and
+does not need access to the source when opened (a static dashboard).
+
+:::note
+
+The only table that can't be saved with Data sync is one opened from a local
+file on your computer: Datagrok has no way to open that file again on its
+own. To sync such data, put the file on a file share and open it from there.
+
+:::
+
+<details>
+<summary>Static and dynamic dashboards compared</summary>
+
+| | Data sync **off** (static) | Data sync **on** (dynamic) |
 |---|---|---|
-| What is stored | The data itself, plus the generation script for lineage | The generation script only. No data is uploaded |
-| What happens on open | Opens immediately with the data as of the last save | Re-runs the source, then applies the layout to the fresh result |
-| Freshness | The data is as old as the last save | The data is always current |
+| What is stored | The data itself. The creation script is dropped | The creation script only. No data is uploaded |
+| What happens on open | Opens immediately with the data as of the last save | Runs the creation script, then applies the layout to the fresh result |
+| How current the data is | As old as the last save | Always current |
 | Open time | Fast | Depends on the query and the database |
 | Works if the source is unavailable | Yes | No. The dashboard stays on the loading spinner or fails to open |
 | Parameters | Fixed at save time | Users can change query parameters under **Toolbox** > **Source** and refresh |
+| What recipients need | Access to the dashboard | Access to the dashboard and to the database connection behind the query |
 
-A snapshot dashboard needs nothing but the dashboard itself, whereas a
-dynamic dashboard also needs its recipients to reach the database connection
-behind the query (see [What recipients need](#what-recipients-need)), and it
-is sensitive to changes in the source: renamed or removed columns can break
-viewers or the project (see [Changing the source](#changing-the-source)).
+Because the switch is per table, one dashboard can combine both modes, for
+example a live query table joined to a static reference table.
 
-Choose Data sync **on** for operational dashboards that must show current
-data. Choose Data sync **off** for reports, for snapshots you need to keep as
-they were, and for dashboards whose audience can't be given access to the
+</details>
+
+Choose dynamic for operational dashboards that must show current data, and
+static for reports and for audiences that can't be given access to the
 source.
-
-Because the switch is per table, one dashboard can combine both modes. A
-common pattern is a live query table joined to a static reference table.
-Datagrok loads static tables first and then runs the generation scripts in
-the order they were recorded, so a dynamic table can depend on a static one.
-
-:::caution
-
-Two things silently disable Data sync. A query whose name contains a dash
-(such as `assay-results`) can't be resolved by the generation script, and the
-dashboard fails to load its data on open, so name queries with letters,
-digits, and underscores only. And renaming a table after you opened it drops
-its generation script, so the **Save project** dialog offers no **Data sync**
-switch for it. Rename the query or the file instead, before opening.
-
-:::
-
-### Files as a source
-
-Data sync applies to files as well as to queries. When you open a file from a
-[file share](../../../access/files/files.md) (such as S3, Azure, SharePoint, or
-a network drive) by double-clicking it in the Browse tree, Datagrok records a
-generation script for it, and a dashboard saved with Data sync on re-reads the
-file every time it opens. A file opened in another way (for example, from a
-script) has no generation script, and the **Save project** dialog shows no
-**Data sync** switch for it.
-
-For example, suppose a lab instrument exports `plate-reader/2026-09/results.csv`
-to a shared S3 bucket every night. You open the file from **Browse** >
-**Files**, build a dashboard on it, and save the dashboard with Data sync on.
-When tonight's export replaces the file, anyone who opens the dashboard
-tomorrow sees the new rows with the same viewers, filters, and color coding,
-without anyone re-uploading anything. To learn more, see
-[Creating dynamic dashboards from files](../../../access/files/files.md#creating-dynamic-dashboards-from-files).
-
-![Dashboard picks up a replaced file](img/dashboard-file-refresh.gif)
-
-Two things determine how quickly a changed file shows up in the dashboard:
-
-* **The file share cache.** If the connection caches file content, the
-  dashboard reads the cached copy until the cache is flushed. This happens on
-  the cache's cron schedule, manually with the **Clear cache** command on the
-  connection, or on every read when **Preflight** is enabled. See
-  [Caching](../../../access/files/files.md#caching).
-* **The file path.** The generation script references the file by its path.
-
-:::caution
-
-Renaming or moving a file that a dynamic dashboard reads breaks the
-dashboard. Replace the file in place, or keep a stable name such as
-`results-latest.csv`.
-
-:::
-
-The same rules apply to files stored in a [space's](space.md) file storage.
-
-### Refreshing data
-
-With Data sync on, the data is refreshed every time the dashboard opens. To
-refresh it without reopening the dashboard, or to change the query
-parameters, use the **Source** pane on the **Toolbox**. With Data sync off,
-the same pane lets you re-run the source manually, provided you have access
-to it. Refreshing changes only what you see. The saved dashboard is updated
-when you click **SAVE**.
 
 ## Sharing a dashboard
 
 Saving a dashboard doesn't share it. A new dashboard is visible only to you
 until you share it explicitly.
 
-To share a dashboard, right-click it in [Browse](../../navigation/views/browse.md)
+To share a dashboard, right-click it in Browse
 and select **Share...** (you can also do this from the **Context Panel**).
 In the dialog, enter users, groups, or email addresses, choose the privilege,
 and click **OK**. For the general procedure, see
 [Share](../../navigation/basic-tasks/basic-tasks.md#share).
 
-| Privilege | What the recipient can do |
-|---|---|
-| **View and use** | Open the dashboard, interact with it, download data, and save a copy |
-| **Full access** | Everything above, plus save the original project, rename, delete, and share it further |
+:::tip
 
 Share with [groups](../../../govern/access-control/users-and-groups.md#groups)
 rather than with individual users where you can. When the team changes, you
 update the group instead of re-sharing every dashboard.
 
-Recipients get an in-app notification (or an email, if you entered an email
-address) with a link, and the dashboard appears under **Browse** >
-**Dashboards** for them. A dynamic dashboard opens for them with the query
-parameters that were in effect when it was saved, and they can change the
-parameters in the **Source** pane on the **Toolbox**.
+:::
 
-### What recipients need
+### What recipients get
 
-Permissions granted on a project cascade to everything the project contains.
-When you save a dashboard with Data sync on, the **Save project** dialog
-lists the query, script, or file connection each table depends on ("Some
-tables require this data query for data sync") and saves it as part of the
-dashboard. Sharing the dashboard therefore lets recipients re-run the query
-or script and re-read the file, even though no separate permission appears
-on those entities and they don't show up in the recipient's Browse tree.
-What is not saved with the dashboard is the database connection behind a
-query:
-
-| Source of a table | Covered by sharing the dashboard | What to share separately |
-|---|---|---|
-| Stored snapshot (Data sync off) | Yes | Nothing |
-| Database query (Data sync on) | The query, yes. The database connection, no | The connection, with the **View and use** privilege, unless it is already shared with the recipients (demo and team connections usually are) |
-| Script (Data sync on) | Yes | Nothing, unless the script itself reads from a connection the recipients can't access |
-| File in a file share (Data sync on) | Yes, for reading the file through the dashboard | The folder, if recipients should also browse it under **Files**. See [File sharing](../../../access/files/files.md#file-sharing-and-access-control) |
-| Linked table owned by another project | No | That project, with the **View and use** privilege |
+Permissions granted on a project apply to everything it contains. When a
+dashboard is saved with Data sync on, its tables keep the query, script, or
+file connection they depend on. These dependencies are saved with the
+dashboard, so recipients can re-run the query or script or re-read the file
+without separate permissions. They do not appear as separately shared
+entities in Browse.
 
 :::note
 
-A recipient who can't reach the database connection doesn't get an error.
-The dashboard never finishes loading: the page stays on the loading spinner
-with no message, and the only trace is a "connection not found" entry in the
-browser console. When a colleague reports a dashboard that never opens,
-check the connection first.
+Database connections are the exception. A database query is saved with the
+dashboard, but the database connection behind it is not. Recipients need
+**View and use** permission on the connection to run the query, unless they
+already have access to it (as is usually the case with demo and team
+connections).
 
 :::
 
@@ -305,94 +256,71 @@ spinner. Left: the author shares the connection. Right: the recipient reloads an
 dashboard opens with data. 800x500, ~20 s. -->
 <!-- ![](img/dashboard-share-sources.gif) -->
 
-The simplest way to keep these permissions aligned is to keep the dashboard
-and its sources in one [space](space.md) and to share the space. Space
-permissions cascade to everything in it, child spaces inherit the privileges
-of their root space, and new queries saved into the space are shared
-automatically. This is easier to maintain than sharing dashboards and
-connections one by one.
+The simplest way to align these permissions is to put the dashboard and its
+sources in one [space](space.md) and share that instead. Privileges granted
+on a space cascade to everything in it, child spaces inherit them from the
+root, and new queries saved there are shared automatically. This is easier
+to maintain than sharing dashboards and connections one by one.
 
 ### Sharing by link
 
-Every dashboard has a URL. Sending the URL is enough for anyone who already
-has the privilege to open the dashboard, but the URL itself doesn't grant
-anything. See [Share](../../navigation/basic-tasks/basic-tasks.md#share).
+Every dashboard has a URL. Anyone who already has permission to open the
+dashboard can use the URL, but the URL itself does not grant access.
 
-A query result also has a URL that re-executes the query, parameters
-included, without a saved project. Use it for ad hoc sharing when a layout
-is not needed. See
-[Sharing query results](../../../access/databases/databases.md#sharing-query-results).
+For a dynamic dashboard based on a parameterized query, the URL also
+includes the current parameter values. Change the values in **Toolbox** >
+**Source**, then copy the updated URL to share that configuration. The
+recipient opens the same dashboard with those parameter values, so you can
+share different configurations without creating copies. See
+[Project parameters](../../../develop/advanced/url-parameters.md#project-parameters).
 
-### Embedding
+## Editing a dashboard
 
-You can embed a saved dashboard, or a single viewer, into an external site as
-an iframe. Embedded views remain fully interactive and maintain the
-connection with the data from which they were created.
+You can edit a dashboard in two ways: change its layout or the data behind
+it.
 
-<details>
-<summary>How to embed a view</summary>
-
-1. Open your project.
-1. In the **Table View**'s **Top Menu**, click the **Hamburger** icon and select
-   **Embed...** This opens an **Embed** dialog.
-1. From the dialog, copy the generated iframe and use it on your site.
-
-</details>
-
-Viewers of the embedded page still need a Datagrok account with access to
-the dashboard.
-
-## Changing a dashboard
-
-### Changing the layout
+### Editing the layout
 
 Open the dashboard, rearrange or reconfigure the viewers, and click **SAVE**.
-Then choose **Save original project** to publish the change to everyone,
-**Save personal view customizations** to keep it to yourself, or **Save a
-copy** to leave the original untouched.
+Then choose:
+
+* **Save original project** to publish the change to everyone
+* **Save personal view customizations** to keep it to yourself
+* **Save a copy** to leave the original untouched
 
 If the layout is worth reusing on other datasets, also save it to the gallery
 (**View** > **Layout** > **Save to Gallery**). Layouts are independent
 entities, and a saved layout applies to any table whose columns match by name
-and type. To learn more, see [Layout](../../../visualize/view-layout.md).
+or semantic type. To learn more, see [Layout](../../../visualize/view-layout.md).
 
-### Changing the source
+### When the source changes
 
 Editing the query or script behind a dynamic dashboard changes what the
 dashboard shows the next time it opens. Renaming the query is safe, because
-Datagrok rewrites the generation script with the new name. Changing the
-query's output is where dashboards break:
+Datagrok rewrites the creation script with the new name. Changing the
+query's output is where dashboards can break.
+
+<details>
+<summary>What happens when the query output changes</summary>
 
 | Change in the source | Effect on the dashboard |
 |---|---|
 | A new column | Appears in the grid. Existing viewers are unaffected |
 | A column renamed or removed | Viewers bound to it show a placeholder with the missing column name. The dashboard opens |
-| A column removed that a recorded transformation step or a vector formula references | The project can fail to open |
-| The query deleted | The dashboard fails to open with an error |
+| A column removed that a calculated column uses | The dashboard opens with a warning, and the calculated column is empty |
+| A column removed that a recorded step on the result uses, such as a deleted or renamed column | A **Data loading error** dialog lists the failed step. After **Open anyway**, the rest of the data loads |
+| The query deleted | The dashboard fails to open with an error. A new query with the same name on the same connection repairs it |
 | The column order changed | Cosmetic. The grid restores the saved column order by name |
 
-![Viewer placeholder after a column is removed](img/dashboard-source-change.gif)
-
-To keep dynamic dashboards robust:
-
-* Keep column names stable. Layouts bind to columns by name.
-* Add derived metrics as [calculated columns](../../../transform/add-new-column.md)
-  with a scalar formula such as `${a} / ${b}`. Such a column is recorded in
-  the generation script like any other step, but when its input disappears
-  it shows a warning and the dashboard opens. A transformation step, or a
-  formula that calls a vector function on a whole column, stops the project
-  from opening instead. See [Where to put the logic](../../../transform/query-transformations.md#where-to-put-the-logic).
-* Test a source change by opening the dashboard yourself before the audience
-  does.
-* Never delete a query or script that a dashboard uses. Deletion is permanent
-  and affects all users.
+</details>
 
 ## Versioning
 
 Datagrok doesn't keep a history of dashboard versions. Every **Save original
-project** overwrites the previous state (see also
-[Version control](../../navigation/views/browse.md#version-control) on the
-Browse page, about how the local copy relates to the server). The following
+project** overwrites the previous state, including changes that others saved
+in the meantime, without a warning (see also
+[Local copy and server copy](../../navigation/views/browse.md#local-copy-and-server-copy)
+on the Browse page). The following
 practices serve as version control:
 
 * **Save a copy before a risky change.** Click **SAVE** > **Save a copy**
@@ -418,11 +346,11 @@ practices serve as version control:
 
 To take a dashboard out of a space without destroying it,
 [move it](space.md#moving-entities-between-spaces) to another space, for
-example to your **My stuff**. Note that moving leaves a view-only linked copy
-in the original space, so the team still sees the dashboard there. To remove
-that trace as well, move the linked copy too, or delete the dashboard.
+example to your **My stuff**. Nothing stays behind in the original space. If
+the team should still see the dashboard there, use **Link** instead of
+**Move**.
 
-To delete a dashboard, right-click it in Browse and select **Delete...**
+To delete a dashboard, right-click it in Browse and select **Delete Project**.
 
 :::danger
 
@@ -436,38 +364,6 @@ entities.
 Before deleting, check whether other dashboards link to its tables. A linked
 table is marked with a **Link** (<FAIcon icon="fa-solid fa-link" size="1x"/>)
 icon in Browse.
-
-## Troubleshooting
-
-<details>
-<summary>A shared dashboard never finishes loading for a colleague</summary>
-
-The colleague can't access the database connection behind a query. See
-[What recipients need](#what-recipients-need).
-
-</details>
-
-<details>
-<summary>The dashboard fails to open after a query change</summary>
-
-Either the query was deleted, or a recorded transformation step or a formula
-references a column that the query no longer returns. A deleted query can't
-be restored, so recreate it under the same name. For a missing column,
-restore it in the query, or open the query in the **Query Editor**, go to the
-**Transformations** tab, and remove or edit the step. See
-[Query transformations](../../../transform/query-transformations.md).
-
-</details>
-
-<details>
-<summary>The column order changed after a refresh</summary>
-
-The grid restores the saved column order by column name. If the dashboard has
-more than 1,000 columns, the order is not saved and follows the query output.
-Pivoted results also order new columns by the order in which they first
-appear in the data. For a stable order with many columns, sort in the query.
-
-</details>
 
 ## Resources
 
@@ -486,8 +382,6 @@ YouTube videos:
 
 See also:
 
-* [Dashboard lifecycle](../../solutions/workflows/dashboard-lifecycle.md) (end-to-end workflow)
-* [Work with connected datasets](../../solutions/workflows/connected-datasets.md)
 * [Spaces](space.md)
 * [Link tables](../../../transform/link-tables.md)
 * [Layout](../../../visualize/view-layout.md)

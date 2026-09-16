@@ -283,19 +283,19 @@ To create a dashboard with a file as a data source:
 The file connection is saved as part of the dashboard, so people you share
 the dashboard with can read the file through it. To let them browse the
 folder itself, [share the folder](#file-sharing-and-access-control). For
-details, see [What recipients need](../../datagrok/concepts/project/dashboard.md#what-recipients-need).
+details, see [What recipients get](../../datagrok/concepts/project/dashboard.md#what-recipients-get).
 
 A file-based dashboard picks up a changed file on the next open, subject to
-the connection's [cache](#caching). For the difference between a snapshot and
-a re-read dashboard, and what to watch when the file is renamed or moved, see
-[Files as a source](../../datagrok/concepts/project/dashboard.md#files-as-a-source).
+the connection's [cache](#caching). The creation script references the file
+by path, so replace the file in place. Renaming or moving it breaks the
+dashboard.
 
 ## File sharing and access control
 
 Datagrok lets you control who can access file shares, and grant them read or write privileges.
 You can share folders, including the root share, but not individual files.
 To share a folder, right-click on it, select "Share folder", specify users or groups,
-and the privilege (View / Edit). Once the folder is shared, it appears in the recipient's 
+and the privilege (**View and use** or **Full access**). Once the folder is shared, it appears in the recipient's 
 **Files** tree under Browse.
 
 The privilege level determines what the recipient can do:

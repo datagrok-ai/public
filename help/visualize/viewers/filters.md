@@ -243,6 +243,10 @@ You can save a filter configuration for later use:
 2. Enter a name for the saved configuration.
 
 Restore this configuration through **Save or apply** in the context menu.
+Presets are stored in your browser, not on the server, so they don't travel
+with the dashboard or to other users.
+
+![Saving a filter preset](img/filters-save-preset.gif)
 
 ## Column tags
 
