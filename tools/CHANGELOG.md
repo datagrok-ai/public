@@ -1,6 +1,10 @@
 # Datagrok-tools changelog
 
-## 6.7.0 (WIP)
+## 6.7.2 (WIP)
+
+* `grok publish` marks a bundled package for servers older than 1.28.0, which detect one only by a `webpack.config.js` in the archive; the marker is generated at publish time and never written to the package folder.
+
+## 6.7.1 (2026-09-15)
 
 * `grok login <server>` — keypair authentication, the replacement for the developer key. Generates an EC P-256 key, registers only its public half (in the browser, or with a one-shot `--code` from Profile > Public keys...), and keeps the private half in `~/.grok/keys/<alias>.json`. Logging in signs a server-issued nonce, so nothing reusable crosses the wire; keys can carry an expiry (`--expires`) and are revoked one at a time. `grok publish`, `grok test`, `grok stresstest` and `grok s` use it automatically whenever one is configured for the server, and fall back to the developer key otherwise. For CI, `GROK_PRIVATE_KEY` holds the private JWK (raw or base64) instead of a config file. Needs a server from 1.28 on; see https://datagrok.ai/help/govern/access-control/keypair-authentication
 * `grok s token` — prints a session token for the configured server, so shell scripts stop curling `/users/login/dev` with a long-lived key.
