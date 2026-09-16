@@ -53,13 +53,18 @@ interface Person {
   departed?: boolean;
 }
 
+/** The people of this build, loaded once: the packages extractor resolves its authors through them too. */
+export function peopleOf(ctx: BuildContext, emitter: Emitter): People {
+  return ctx.people ??= new People(ctx, emitter);
+}
+
 class ProcessLayer {
   private people: People;
   private homes: HomeSet;
   private gitPartial = false;
 
   constructor(private ctx: BuildContext, private emitter: Emitter) {
-    this.people = new People(ctx, emitter);
+    this.people = peopleOf(ctx, emitter);
     this.homes = homesOf(ctx);
   }
 
@@ -237,19 +242,23 @@ class ProcessLayer {
  * identifiers match the autofix roster's, then the roster itself as a stub. What none of the three know is listed
  * in `reports/unresolved-people.json` and leaves the people source partial.
  */
-class People {
+export class People {
   private roster: Record<string, Person> = {};
   private customers: Record<string, string> = {};
   private byHandle = new Map<string, string>();
   private byIdentity = new Map<string, string>();
   private byName = new Map<string, string>();
+  private byEmail = new Map<string, string>();
   private resolved = new Map<string, string | null>();
   private unresolved = new Map<string, number>();
   private rosterFile = true;
+  private loaded = false;
 
   constructor(private ctx: BuildContext, private emitter: Emitter) {}
 
   load(): void {
+    if (this.loaded) return;
+    this.loaded = true;
     const owners = path.join(this.ctx.repoRoot, ...OWNERS.split('/'));
     this.rosterFile = fs.existsSync(owners);
     if (this.rosterFile) this.roster = JSON.parse(fs.readFileSync(owners, 'utf8')).people ?? {};
@@ -269,6 +278,23 @@ class People {
   /** The canonical Jira Client name of a backlog customer label (`taxonomy.yaml` customers map). */
   customer(label: string): string {
     return this.customers[label] ?? label;
+  }
+
+  /**
+   * The person a `package.json` author names: the home or the roster entry that lists the email, else the local part
+   * as the handle. Emitted as a stub either way, so the owner edge stands wherever the person record lands later.
+   */
+  byAuthorEmail(email: string, name?: string): string {
+    this.load();
+    const key = email.toLowerCase();
+    const cached = this.byEmail.get(key);
+    if (cached) return cached;
+    const handle = key.split('@')[0];
+    const known = this.byIdentity.get(`email:${key}`) ?? this.fromRoster(key);
+    const id = known ?? `P:${handle}`;
+    this.emitter.stub(id, 'person', name || handle, 'registry', known ? {emails: [email]} : {handle, emails: [email]});
+    this.byEmail.set(key, id);
+    return id;
   }
 
   id(key: unknown): string | undefined {
@@ -306,6 +332,13 @@ class People {
     this.emitter.stub(id, 'person', person.name ?? rosterKey, 'external', {handle: rosterKey, github: person.github, bitbucket: person.bitbucket,
       jira: person.jira, slack: person.slack, emails: person.emails, departed: person.departed});
     return id;
+  }
+
+  /** The roster person who lists [email], resolved the way a tracker handle is. */
+  private fromRoster(email: string): string | undefined {
+    for (const [key, person] of Object.entries(this.roster))
+      if ((person.emails ?? []).some((e) => e.toLowerCase() === email)) return this.lookup(key);
+    return undefined;
   }
 
   private backlogTaxonomy(): Record<string, string> {

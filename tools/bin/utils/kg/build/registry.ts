@@ -15,6 +15,7 @@ import {importsExtractor} from './extract/ts/imports';
 import {usesExtractor} from './extract/ts/uses';
 import {inlineMarkersExtractor} from './extract/ts/inline-markers';
 import {processExtractor} from './extract/process';
+import type {People} from './extract/process';
 import {membershipExtractor} from './extract/membership';
 
 export type Mode = 'full' | 'public';
@@ -29,6 +30,8 @@ export interface BuildContext {
   /** The home documents: the caller's, when check already loaded them, else loaded once per build by whichever
    * extractor asks first (`homesOf`). */
   homes?: HomeSet;
+  /** The people the process layer resolves, shared with the packages extractor that runs before it (`peopleOf`). */
+  people?: People;
 }
 
 export interface Extractor {

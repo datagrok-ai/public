@@ -138,7 +138,7 @@ describe('ts-packages extractor (build-plan.md WO-3a)', () => {
     const {rows, manifest} = await graph;
     expect(manifest.sources).toEqual({'ts-functions': 'partial(2 rejected)', 'ts-packages': 'ok'});
     expect(byId(rows('nodes/package'), 'pkg:Demo')).toEqual({
-      id: 'pkg:Demo', type: 'package', name: 'Demo', author: 'Jane Dev', batch: expect.any(String), category: 'Cheminformatics', description: 'The fixture package with every folder.',
+      id: 'pkg:Demo', type: 'package', name: 'Demo', author: 'Jane Dev', owner: 'P:jane', batch: expect.any(String), category: 'Cheminformatics', description: 'The fixture package with every folder.',
       friendly_name: 'Demo', language: 'ts', npm: '@datagrok/demo', path: 'public/packages/Demo', provenance: 'registry', service: true, settings: ['Sketcher', 'TemplatesPath'],
       source_layer: 'public', sources: ['common/openchemlib-full.js'], status: 'active', version: '1.2.3', visibility: 'public',
     });
@@ -147,6 +147,19 @@ describe('ts-packages extractor (build-plan.md WO-3a)', () => {
       expect.objectContaining({id: 'lib:js-api', type: 'library', name: 'js-api', npm: 'datagrok-api', version: '1.27.11', language: 'ts', path: 'public/js-api', provenance: 'registry'}),
       expect.objectContaining({id: 'lib:utils', name: 'utils', npm: '@datagrok-libraries/utils', version: '4.7.9', path: 'public/libraries/utils'}),
     ]);
+  });
+
+  it('owns a package by the email of its package.json author, and a generic author owns nothing', async () => {
+    const {rows} = await graph;
+    expect(byId(rows('nodes/library'), 'lib:utils')).toMatchObject({owner: 'P:rob'});
+    expect(byId(rows('nodes/package'), 'pkg:Plain')).not.toHaveProperty('owner');
+    expect(rows('edges/owner').map((e) => [e.from, e.to])).toEqual([['lib:utils', 'P:rob'], ['pkg:Demo', 'P:jane'], ['pkg:Tested', 'P:snewcomer']]);
+    // the roster knows both emails: Jane by the home her github identifies, Rob as a stub of his own
+    expect(byId(rows('nodes/person'), 'P:rob')).toMatchObject({handle: 'rob', name: 'Rob Ops', emails: ['rob@example.com'], provenance: 'external', status: 'proposed'});
+    expect(byId(rows('nodes/person'), 'P:jane')).toMatchObject({name: 'Jane Dev', emails: ['jane@example.com']});
+    // an email neither a home nor the roster knows: the local part is the handle, and the stub waits for a person record
+    expect(byId(rows('nodes/person'), 'P:snewcomer')).toMatchObject({handle: 'snewcomer', name: 'Sam Newcomer', emails: ['snewcomer@example.com'],
+      provenance: 'registry', status: 'proposed'});
   });
 
   it('classifies dependencies into depends-on with kind and range; other npm names and unknown targets are left out', async () => {

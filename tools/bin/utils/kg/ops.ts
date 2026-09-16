@@ -202,9 +202,21 @@ export async function impact(conn: KuzuConnection, target: Record<string, unknow
       `RETURN f.${quote('id')} AS feature, t.${quote('id')} AS ticket, 'tracked-in' AS relation, t.${quote('state')} AS state`, {ids});
     sections.push(section('work', [...work.rows, ...tracked.rows], options.limit));
   }
+  else sections.push(await packageOwners(conn, id, options.limit));
   const callers = await callersOf(conn, id);
   if (callers) sections.push(section('callers', callers, options.limit));
   return {op: 'impact', target, sections};
+}
+
+/**
+ * The owner a file has when no feature owns it: the package or library that declares it answers for it through the
+ * author of its `package.json` (conventions.md §5.1). One `declares` hop for a file, two for what a file declares.
+ */
+async function packageOwners(conn: KuzuConnection, id: string, limit: number): Promise<Section> {
+  const {rows} = await run(conn, `MATCH (c)-[:${quote('DECLARES')}*1..2]->(n), (c)-[:${quote('owner')}]->(p) WHERE n.${quote('id')} = $id ` +
+    `RETURN DISTINCT c.${quote('id')} AS package, p.${quote('id')} AS owner, p.${quote('name')} AS name`, {id});
+  return section('owners', rows.map((r) => ({...r,
+    via: [id, hop('declares', 'in'), String(r.package), hop('owner', 'out'), String(r.owner)].join(' ')})), limit);
 }
 
 /** Who reaches this: a declaration through uses and calls, a source file through its imports and its declarations. */
@@ -228,7 +240,8 @@ export async function testsFor(conn: KuzuConnection, target: Record<string, unkn
   const roots = found.map((r) => String(r.feature));
   const sections: Section[] = [];
   if (!roots.length)
-    return {op: 'tests-for', target, sections: [section('features', [], options.limit, NODE_PATH.test(String(target.id)) ? UNOWNED : undefined)]};
+    return {op: 'tests-for', target, sections: [section('features', [], options.limit, NODE_PATH.test(String(target.id)) ? UNOWNED : undefined),
+      await packageOwners(conn, String(target.id), options.limit)]};
   const via = new Map(found.map((r) => [String(r.feature), r]));
   const descendants = await run(conn, `MATCH (d:Feature)-[:${quote('PART_OF')}*0..5]->(f:Feature) WHERE f.${quote('id')} IN $ids ` +
     `RETURN DISTINCT d.${quote('id')} AS feature, d.${quote('name')} AS name, d.${quote('status')} AS status, f.${quote('id')} AS root`, {ids: roots});

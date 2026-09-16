@@ -2,6 +2,7 @@
   "name": "@datagrok-libraries/utils",
   "version": "4.7.9",
   "description": "Common utilities",
+  "author": {"name": "Rob Ops", "email": "rob@example.com"},
   "dependencies": {
     "datagrok-api": "^1.27.7",
     "rxjs": "^6.5.5"

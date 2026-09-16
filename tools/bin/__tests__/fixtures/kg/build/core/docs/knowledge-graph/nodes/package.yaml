@@ -3,6 +3,7 @@ extends: component
 description: >
   A Datagrok plugin under public/packages: a deployable unit with functions, scripts,
   queries, connections, files and resources, described by its package.json. Id pkg:<Name>.
+  `package.json` is its record: `description`, `author` and, through the author's email, `owner`.
 properties:
   language:      "'ts' | 'js'"
   friendly_name?: string

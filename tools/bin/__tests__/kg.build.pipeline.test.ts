@@ -119,18 +119,18 @@ describe('grok kg build over the fixture monorepo (build-plan.md WO-10)', () => 
     expect(manifest.counts.nodes).toEqual({
       app: 2, 'cell-renderer': 1, 'changelog-entry': 5, commit: 2, connection: 2, container: 3, customer: 2,
       declaration: 59, 'doc-anchor': 21, 'doc-page': 14, editor: 1, feature: 9, 'file-handler': 1,
-      'file-viewer': 1, filter: 1, function: 13, library: 2, 'lifecycle-hook': 2, package: 7, panel: 2, person: 2,
+      'file-viewer': 1, filter: 1, function: 13, library: 2, 'lifecycle-hook': 2, package: 7, panel: 2, person: 3,
       query: 3, release: 2, sample: 4, scenario: 7, script: 3, 'script-environment': 1, 'script-handler': 1,
       'sem-type-detector': 6, 'semantic-type': 7, 'source-file': 44, test: 16, 'test-suite': 7, ticket: 13, tutorial: 1, viewer: 2,
     });
     expect(manifest.counts.edges).toEqual({
       affects: 2, assignee: 3, automates: 3, base: 1, calls: 6, changes: 2, connection: 3, covers: 1,
       declares: 170, demonstrates: 1, 'depends-on': 6, documents: 5, environment: 1, extends: 4,
-      implements: 1, imports: 26, includes: 2, 'is-implemented-in': 19, mentions: 16, owner: 6,
+      implements: 1, imports: 26, includes: 2, 'is-implemented-in': 19, mentions: 16, owner: 9,
       package: 72, page: 21, 'part-of': 11, 'participates-in': 6, reporter: 4, 'requested-by': 2, resolves: 1,
       suite: 16, 'targets-release': 5, 'targets-semtype': 13, tests: 13, 'tracked-in': 2, user_help: 1, uses: 18,
     });
-    expect(manifest.problems).toMatchObject({dangling_edges: 0, ambiguous_owners: 1, orphans: 28, partial_stubs: 22});
+    expect(manifest.problems).toMatchObject({dangling_edges: 0, ambiguous_owners: 1, orphans: 28, partial_stubs: 23});
   }, 120_000);
 
   it('writes the same bytes twice, with the same content-addressed batch and a later built_at', async () => {
@@ -189,7 +189,7 @@ describe('the reports build writes and the report verb prints (build-plan.md WO-
     const {report} = await graph;
     const orphans = report('orphans');
     expect(orphans.summary).toBe('28 files of 44 observed (16 owned, 5 participating) have no owner, 405 of 716 lines, in 8 groups; the 8 largest groups below.');
-    expect(orphans.sections[0].rows[0]).toEqual({group: 'public/js-api', files: 11, owned: 0, participating: 0, orphans: 11, loc: 155,
+    expect(orphans.sections[0].rows[0]).toEqual({group: 'public/js-api', owner: '', files: 11, owned: 0, participating: 0, orphans: 11, loc: 155,
       largest: expect.stringContaining('src/dataframe.ts (45)')});
     expect(orphans.sections[0].rows.map((r: any) => r.group)).toContain('core/client/d4');
     expect(orphans.sections[0].rows.map((r: any) => r.loc)).toEqual([...orphans.sections[0].rows.map((r: any) => r.loc)].sort((a: number, b: number) => b - a));
@@ -263,7 +263,8 @@ describe('the reports build writes and the report verb prints (build-plan.md WO-
     const {report} = await graph;
     const orphans = report('orphans');
     // one owned file used to make the whole Demo package look accounted for; it is 5 owned, 1 participating, 7 orphans
-    expect(orphans.sections[0].rows).toContainEqual({group: 'public/packages/Demo', files: 12, owned: 5, participating: 1, orphans: 7,
+    // and, whatever the features say, the package.json author owns all twelve
+    expect(orphans.sections[0].rows).toContainEqual({group: 'public/packages/Demo', owner: 'P:jane', files: 12, owned: 5, participating: 1, orphans: 7,
       loc: 153, largest: expect.stringContaining('detectors.js (69)')});
     expect(orphans.notes).toContain('the inventory covers the files the extractors observed, not every file in the repositories');
   });
@@ -505,6 +506,17 @@ describe('the index over the fixture graph (build-plan.md WO-7, WO-10)', () => {
       via: 'file:public/js-api/src/viewer.ts → declares → decl:public/js-api/src/viewer.ts#JsViewer → is-implemented-in ← visualize/viewers/scatter-plot'}]);
     expect(reached.sections[0].rows[0].path).toEqual(['file:public/js-api/src/viewer.ts', '→ declares →',
       'decl:public/js-api/src/viewer.ts#JsViewer', '→ is-implemented-in ←', 'visualize/viewers/scatter-plot']);
+  }, 120_000);
+
+  withKuzu('gives a file no feature owns the owner of the package that declares it', async () => {
+    const {conn} = index.opened!;
+    const file = (await resolveTarget(conn, 'public/packages/Demo/detectors.js'))!;
+    const reached = await impact(conn, file, LIMIT);
+    expect(reached.sections[0].rows).toEqual([]);
+    expect(reached.sections[0].empty).toContain('no home document owns this file');
+    expect(reached.sections[1].rows).toEqual([{package: 'pkg:Demo', owner: 'P:jane', name: 'Jane Dev',
+      via: 'file:public/packages/Demo/detectors.js → declares ← pkg:Demo → owner → P:jane'}]);
+    expect((await testsFor(conn, file, LIMIT)).sections[1].rows).toEqual(reached.sections[1].rows);
   }, 120_000);
 
   withKuzu('puts the evidence path behind an edge group', async () => {

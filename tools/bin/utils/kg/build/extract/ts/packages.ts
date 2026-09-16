@@ -6,6 +6,7 @@ import {Emitter} from '../../emitter';
 import {Row} from '../../normalize';
 import {BuildContext, Extractor} from '../../registry';
 import {pkgId, libId, semtypeId, posix} from '../../ids';
+import {peopleOf} from '../process';
 
 export interface PackageFolder {
   /** The folder name, which is the platform package name (`Chem`, `TensorFlow.js`). */
@@ -16,6 +17,8 @@ export interface PackageFolder {
 }
 
 const DEPENDENCY_KINDS: [string, string][] = [['dependencies', 'runtime'], ['devDependencies', 'dev'], ['peerDependencies', 'peer'], ['optionalDependencies', 'optional']];
+/** An author that names the company rather than a person: the package is described, not owned. */
+const GENERIC_AUTHORS = ['info@datagrok.ai', 'datagrok'];
 
 export const packagesExtractor: Extractor = {
   name: 'ts-packages',
@@ -32,7 +35,7 @@ export const packagesExtractor: Extractor = {
       const id = pkgId(p.folder);
       const {json} = p;
       const admitted = emitter.node({type: 'package', id, name: p.folder, description: json.description, friendly_name: json.friendlyName, version: json.version,
-        category: json.category, author: json.author?.name, service: json.servicePackage === true ? true : undefined,
+        category: json.category, author: json.author?.name, owner: ownerOf(ctx, emitter, json.author), service: json.servicePackage === true ? true : undefined,
         settings: Array.isArray(json.properties) ? json.properties.map((s: any) => s?.name).filter((n: unknown) => typeof n === 'string') : undefined,
         sources: json.sources, npm: json.name, language: ['src/package.ts', 'src/package.g.ts', 'tsconfig.json'].some((f) => fs.existsSync(path.join(ctx.repoRoot, p.dir, f))) ? 'ts' : 'js',
         path: p.dir, provenance: 'registry', source_layer: 'public'});
@@ -46,12 +49,19 @@ export const packagesExtractor: Extractor = {
     }
     for (const l of libraries) {
       const id = libId(l.folder);
-      if (!emitter.node({type: 'library', id, name: l.folder, description: l.json.description, npm: l.json.name, version: l.json.version, language: 'ts',
-        path: l.dir, provenance: 'registry', source_layer: 'public'}).accepted) continue;
+      if (!emitter.node({type: 'library', id, name: l.folder, description: l.json.description, owner: ownerOf(ctx, emitter, l.json.author),
+        npm: l.json.name, version: l.json.version, language: 'ts', path: l.dir, provenance: 'registry', source_layer: 'public'}).accepted) continue;
       emitDependencies(emitter, id, l, npm);
     }
   },
 };
+
+/** The person the `package.json` author names, through the people the process layer knows; a generic author owns nothing. */
+function ownerOf(ctx: BuildContext, emitter: Emitter, author: any): string | undefined {
+  const email = typeof author?.email === 'string' ? author.email.trim() : '';
+  if (!email || GENERIC_AUTHORS.includes(email.toLowerCase()) || GENERIC_AUTHORS.includes(String(author.name ?? '').toLowerCase())) return undefined;
+  return peopleOf(ctx, emitter).byAuthorEmail(email, author.name);
+}
 
 /** Every `package.json` one level under `public/packages`, sorted by folder. */
 export function listPackages(repoRoot: string): PackageFolder[] {

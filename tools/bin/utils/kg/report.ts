@@ -78,7 +78,7 @@ function needs(name: ReportName, system: TypeSystem): {nodes: string[], edges: s
   const features = concrete((t) => isSubtype(system, t, 'feature'));
   switch (name) {
     case 'orphans':
-      return {nodes: ['source-file'], edges: ['is-implemented-in', 'participates-in']};
+      return {nodes: ['source-file', 'package', 'library'], edges: ['is-implemented-in', 'participates-in']};
     case 'stale':
       return {nodes: ['ticket', 'declaration', 'doc-page', ...concrete((t) => !!system.nodes.get(t)!.members.help_url)], edges: ['tracked-in', 'defines-concept']};
     case 'coverage':
@@ -194,6 +194,7 @@ function cell(value: unknown): string {
  * Files no feature owns, grouped by the package or the core sub-project they sit in. A group's orphan count means
  * nothing on its own, so each row carries the files that are owned and the files that only take part, and the
  * summary carries the inventory this build observed — the denominator the numbers are a fraction of (review 3 #10).
+ * The `owner` column is the group's own owner, from the `package.json` author: no feature is not no owner.
  */
 function orphans(data: GraphData): Report {
   const owned = new Set((data.edges.get('is-implemented-in') ?? []).map((e) => String(e.to)));
@@ -215,8 +216,10 @@ function orphans(data: GraphData): Report {
     const entry = group(orphan.file);
     entry.orphans.push(orphan);
   }
+  const owners = new Map([...data.byType.get('package') ?? [], ...data.byType.get('library') ?? []]
+    .map((row) => [String(row.path), String(row.owner ?? '')] as [string, string]));
   const rows = [...groups].map(([name, e]) => ({
-    group: name, files: e.files, owned: e.owned, participating: e.participating, orphans: e.orphans.length,
+    group: name, owner: owners.get(name) ?? '', files: e.files, owned: e.owned, participating: e.participating, orphans: e.orphans.length,
     loc: e.orphans.reduce((sum, f) => sum + f.loc, 0),
     largest: [...e.orphans].sort((a, b) => b.loc - a.loc || compare(a.file, b.file)).slice(0, ORPHAN_FILES)
       .map((f) => `${f.file.slice(name.length + 1)} (${f.loc})`).join(', '),
