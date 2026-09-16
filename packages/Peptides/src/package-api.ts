@@ -30,27 +30,31 @@ export namespace funcs {
     return await grok.functions.call('Peptides:TestInitFunctionPeptides', { v });
   }
 
+  /**
+   * @param {DG.Column} col
+   *   semType: Macromolecule
+   */
   export async function peptidesPanel(col: DG.Column ): Promise<any> {
     return await grok.functions.call('Peptides:PeptidesPanel', { col });
   }
 
   /**
-  Peptides Sequence Variability Map Viewer
-  */
+   * Peptides Sequence Variability Map Viewer
+   */
   export async function monomerPosition(): Promise<any> {
     return await grok.functions.call('Peptides:MonomerPosition', {});
   }
 
   /**
-  Peptides Most Potent Residues Viewer
-  */
+   * Peptides Most Potent Residues Viewer
+   */
   export async function mostPotentResidues(): Promise<any> {
     return await grok.functions.call('Peptides:MostPotentResidues', {});
   }
 
   /**
-  Mutation Cliffs Line Chart
-  */
+   * Mutation Cliffs Line Chart
+   */
   export async function mutationCliffs(): Promise<any> {
     return await grok.functions.call('Peptides:MutationCliffs', {});
   }
@@ -68,19 +72,23 @@ export namespace funcs {
   }
 
   /**
-  Generates new candidate peptides from monomer-position statistics, ranked by predicted activity
-  */
+   * Generates new candidate peptides from monomer-position statistics, ranked by predicted activity
+   */
   export async function peptideGeneration(): Promise<any> {
     return await grok.functions.call('Peptides:PeptideGeneration', {});
   }
 
+  /**
+   * @param {string} _monomer
+   *   semType: Monomer
+   */
   export async function manualAlignment(_monomer: string ): Promise<any> {
     return await grok.functions.call('Peptides:ManualAlignment', { _monomer });
   }
 
   /**
-  Peptide SAR Analysis demo on peptide sequences in FASTA format
-  */
+   * Peptide SAR Analysis demo on peptide sequences in FASTA format
+   */
   export async function macromoleculeSarFastaDemo(): Promise<void> {
     return await grok.functions.call('Peptides:MacromoleculeSarFastaDemo', {});
   }

@@ -3,6 +3,8 @@
 ## 1.10.3 (WIP)
 
 FilterGroup: layout round-trip keeps two filters on one column (histogram and categorical on `age`)
+FilterGroup: a layout load with every viewer armed with `immediateRendering` on `onViewerAdded` (the BDD harness pattern) keeps the filter panel populated
+Widget: `widgets/widget-status-providers.ts` — `DG.Widget.addStatusProvider` / `removeStatusProvider` on plain, JS-override, native-alias and grid widgets, cleared on detach and rebinding
 Shell: `shell/shell.ts` pins `grok.shell.autostartsCompleted` (a promise that resolves)
 BitArray: new `bitset/bit-array.ts` category for `DG.BitArray` and its `BitSet` bridges; the `BitSet` category is registered again
 

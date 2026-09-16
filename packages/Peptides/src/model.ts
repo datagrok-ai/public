@@ -19,7 +19,8 @@ import * as rxjs from 'rxjs';
 import $ from 'cash-dom';
 
 import * as C from './utils/constants';
-import {COLUMN_NAME, COLUMNS_NAMES} from './utils/constants';
+import {COLUMN_NAME, COLUMNS_NAMES, VIEWER_TYPE} from './utils/constants';
+export {VIEWER_TYPE};
 import * as type from './utils/types';
 import {PeptidesSettings} from './utils/types';
 import {
@@ -59,16 +60,6 @@ import {PeptideUtils} from './peptideUtils';
 import {getGPUAdapterDescription} from '@datagrok-libraries/math/src/webGPU/getGPUDevice';
 import {MCLViewer} from '@datagrok-libraries/ml/src/MCL/mcl-viewer';
 
-export enum VIEWER_TYPE {
-  SEQUENCE_VARIABILITY_MAP = 'Sequence Variability Map',
-  MOST_POTENT_RESIDUES = 'Most Potent Residues',
-  LOGO_SUMMARY_TABLE = 'Logo Summary Table',
-  DENDROGRAM = 'Dendrogram',
-  CLUSTER_MAX_ACTIVITY = 'Active peptide selection',
-  MCL = 'MCL',
-  SEQUENCE_MUTATION_CLIFFS = 'Sequence Mutation Cliffs',
-}
-
 export type CachedWebLogoTooltip = { bar: string, tooltip: HTMLDivElement | null };
 
 /**
@@ -94,6 +85,9 @@ export class PeptidesModel {
   webLogoSelectedMonomers: type.SelectionStats = {};
   // WebLogo bounds used for interactivity (e.g. tooltips, selection)
   webLogoBounds: CR.WebLogoBounds = {};
+  private webLogoFrameSubscription?: rxjs.Subscription;
+  private highlightedRowCount = 0;
+  private updatingSequence = false;
   // Cached WebLogo tooltip. Because tooltip is requested for each mouse movement, it is cached unless mouse entered
   // bounds of other monomer in WebLogo
   cachedWebLogoTooltip: CachedWebLogoTooltip = {bar: '', tooltip: null};
@@ -188,6 +182,11 @@ export class PeptidesModel {
    * @param {type.PartialPeptidesSettings} s - Peptides analysis settings
    */
   set settings(s: type.PartialPeptidesSettings) {
+    this.applySettings(s).catch((error) => grok.shell.error(String(error)));
+  }
+
+  /** Applies settings and waits for the dependent viewers and clustering to finish. */
+  async applySettings(s: type.PartialPeptidesSettings): Promise<void> {
     const newSettingsEntries = Object.entries(s) as ([keyof type.PeptidesSettings, never])[];
     // Holds updated settings categories
     const oldSeqSpaceOptions: Partial<type.SequenceSpaceParams> =
@@ -265,22 +264,22 @@ export class PeptidesModel {
         this._monomerPositionStats = null;
         break;
       case 'dendrogram':
-        this.settings!.showDendrogram ? this.addDendrogram() : this.closeViewer(VIEWER_TYPE.DENDROGRAM);
+        this.settings!.showDendrogram ? await this.addDendrogram() : this.closeViewer(VIEWER_TYPE.DENDROGRAM);
         break;
       case 'clusterMaxActivity':
-        this.settings!.showClusterMaxActivity ? this.addClusterMaxActivityViewer() :
+        this.settings!.showClusterMaxActivity ? await this.addClusterMaxActivityViewer() :
           this.closeViewer(VIEWER_TYPE.CLUSTER_MAX_ACTIVITY);
         break;
       case 'logoSummaryTable':
-        this.settings!.showLogoSummaryTable ? this.addLogoSummaryTable() :
+        this.settings!.showLogoSummaryTable ? await this.addLogoSummaryTable() :
           this.closeViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE);
         break;
       case 'monomerPosition':
-        this.settings!.showMonomerPosition ? this.addMonomerPosition() :
+        this.settings!.showMonomerPosition ? await this.addMonomerPosition() :
           this.closeViewer(VIEWER_TYPE.SEQUENCE_VARIABILITY_MAP);
         break;
       case 'mostPotentResidues':
-        this.settings!.showMostPotentResidues ? this.addMostPotentResidues() :
+        this.settings!.showMostPotentResidues ? await this.addMostPotentResidues() :
           this.closeViewer(VIEWER_TYPE.MOST_POTENT_RESIDUES);
         break;
       case 'columns':
@@ -294,16 +293,17 @@ export class PeptidesModel {
         break;
       case 'sequenceSpaceParams':
         if (this.settings!.showSequenceSpace)
-          this.addSequenceSpace({clusterEmbeddings: this.settings!.sequenceSpaceParams?.clusterEmbeddings});
+          await this.addSequenceSpace({clusterEmbeddings: this.settings!.sequenceSpaceParams?.clusterEmbeddings});
         break;
       case 'clusterParams':
-        this.clusterEmbeddings();
+        await this.clusterEmbeddings();
         break;
       case 'mclSettings':
-        this.addMCLClusters();
+        await this.addMCLClusters();
         break;
       }
     }
+    grok.events.fireCustomEvent('peptides-sar-ready', {table: this.df.name});
   }
 
   // Current Monomer-Position selection that came from WebLogo in header
@@ -704,6 +704,30 @@ export class PeptidesModel {
     this.createScaledCol();
     this.webLogoBounds = {};
 
+    this.analysisView.grid.removeStatusProvider('peptides-weblogo');
+    this.webLogoFrameSubscription?.unsubscribe();
+    this.webLogoFrameSubscription = this.analysisView.grid.onBeforeDrawContent.subscribe(() => {
+      this.webLogoBounds = {};
+    });
+    this.analysisView.grid.addStatusProvider('peptides-weblogo', () => {
+      const hitAreas: DG.IWidgetStatus['hitAreas'] = {};
+      const grid = this.analysisView.grid;
+      const width = grid.canvas.clientWidth;
+      const height = grid.props.colHeaderHeight;
+      for (const [position, monomers] of Object.entries(this.webLogoBounds)) {
+        for (const [monomer, rect] of Object.entries(monomers)) {
+          const left = Math.max(0, rect.x);
+          const right = Math.min(width, rect.x + rect.width);
+          const top = Math.max(0, rect.y);
+          const bottom = Math.min(height, rect.y + rect.height);
+          if (right > left && bottom > top)
+            hitAreas[`${monomer} at ${position}`] = {x: left, y: top, width: right - left, height: bottom - top};
+        }
+      }
+      return {hitAreas, values: {'highlighted rows': this.highlightedRowCount}};
+    });
+    this.subs.push(this.webLogoFrameSubscription);
+
     const cellRendererOptions: CR.WebLogoCellRendererOptions = {
       selectionCallback: (monomerPosition: type.SelectionItem, options: type.SelectionOptions): void =>
         this.modifyWebLogoSelection(monomerPosition, options),
@@ -712,8 +736,7 @@ export class PeptidesModel {
       webLogoBounds: () => this.webLogoBounds,
       cachedWebLogoTooltip: () => this.cachedWebLogoTooltip,
       highlightCallback: (mp: type.SelectionItem, df: DG.DataFrame, mpStats: MonomerPositionStats): void => {
-        highlightMonomerPosition(mp, df, mpStats),
-        this.isHighlighting = true;
+        this.highlight(mp, mpStats);
       },
       isSelectionTable: false,
       headerSelectedMonomers: () => this.webLogoSelectedMonomers,
@@ -740,43 +763,102 @@ export class PeptidesModel {
   /**
    * Splits sequences and adds position columns to this.df.
    */
-  joinDataFrames(): void {
+  joinDataFrames(refreshValues = false): void {
     // append splitSeqDf columns to source table and make sure columns are not added more than once
     const name = this.df.name;
     const cols = this.df.columns;
     const splitSeqDf = splitAlignedSequences(this.df.getCol(this.settings!.sequenceColumnName), PeptideUtils.getSeqHelper());
-    const positionColumns = splitSeqDf.columns.names();
-    if (positionColumns.every((colName) => cols.contains(colName))) {
-      positionColumns.forEach((colName) => {
-        const col = this.df.col(colName)!;
-        col.setTag(C.TAGS.ANALYSIS_COL, `${true}`);
-        col.setTag(C.TAGS.POSITION_COL, `${true}`);
-        // Propagate canonicalizer tag from split columns if present
-        const canonTag = splitSeqDf.getCol(colName).getTag(MONOMER_CANONICALIZER_FUNC_TAG);
-        if (canonTag)
-          col.setTag(MONOMER_CANONICALIZER_FUNC_TAG, canonTag);
-        CR.setMonomerRenderer(col, this.alphabet);
-      });
-    } else {
-      for (const colName of positionColumns) {
-        let col = this.df.col(colName);
-        const newCol = splitSeqDf.getCol(colName);
-        if (col !== null)
-          cols.remove(colName);
-        const newColCat = newCol.categories;
-        const newColData = newCol.getRawData();
-        col = cols.addNew(newCol.name, newCol.type).init((i) => newColCat[newColData[i]]);
-        col.setTag(C.TAGS.ANALYSIS_COL, `${true}`);
-        col.setTag(C.TAGS.POSITION_COL, `${true}`);
-        // Propagate canonicalizer tag from split columns if present
-        const canonTag = newCol.getTag(MONOMER_CANONICALIZER_FUNC_TAG);
-        if (canonTag)
-          col.setTag(MONOMER_CANONICALIZER_FUNC_TAG, canonTag);
-        CR.setMonomerRenderer(col, this.alphabet);
+    for (const newCol of splitSeqDf.columns) {
+      let col = this.df.col(newCol.name);
+      const fill = refreshValues || col === null;
+      col ??= cols.addNew(newCol.name, newCol.type);
+      if (fill) {
+        for (let row = 0; row < this.df.rowCount; row++)
+          col.set(row, newCol.get(row), false);
+      }
+      col.setTag(C.TAGS.ANALYSIS_COL, `${true}`);
+      col.setTag(C.TAGS.POSITION_COL, `${true}`);
+      const canonTag = newCol.getTag(MONOMER_CANONICALIZER_FUNC_TAG);
+      if (canonTag)
+        col.setTag(MONOMER_CANONICALIZER_FUNC_TAG, canonTag);
+      CR.setMonomerRenderer(col, this.alphabet);
+    }
+    if (refreshValues) {
+      for (const col of this.positionColumns ?? []) {
+        if (!splitSeqDf.columns.contains(col.name))
+          cols.remove(col.name);
       }
     }
 
     this.df.name = name;
+  }
+
+  async updateSequence(rowIndex: number, sequence: string, columnName = this.df.currentCol?.name): Promise<void> {
+    const view = this.analysisView;
+    const originalContext = grok.shell.o;
+    this.updatingSequence = true;
+    try {
+      const sequenceColumn = this.df.getCol(this.settings!.sequenceColumnName);
+      PeptideUtils.getSeqHelper().getSeqHandler(sequenceColumn).splitter(sequence);
+      sequenceColumn.set(rowIndex, sequence, false);
+      this.joinDataFrames(true);
+      this._monomerPositionStats = null;
+      this._dm = null;
+      this.cachedWebLogoTooltip = {bar: '', tooltip: null};
+      this.unhighlight();
+      for (const col of this.positionColumns ?? [])
+        col.temp[C.TAGS.INVARIANT_MAP_COLOR_CACHE] = null;
+
+      const viewers = Array.from(this.analysisView.viewers).filter((viewer): viewer is DG.JsViewer =>
+        viewer instanceof DG.JsViewer && viewer.getProperty('sequenceColumnName')?.get(viewer) === sequenceColumn.name);
+      // Invalidate every shared cache before any viewer can borrow a sibling's statistics.
+      for (const viewer of viewers) {
+        if (viewer instanceof SARViewer) {
+          viewer._positionColumns = null;
+          viewer.onFilterChanged(false, true);
+          viewer._viewerGrid = null;
+        } else if (viewer instanceof LogoSummaryTable) {
+          viewer._positionColumns = null;
+          viewer._clusterStats = null;
+        }
+      }
+      this.df.fireValuesChanged();
+      this.updateGrid();
+      for (const viewer of viewers) {
+        if (viewer instanceof SARViewer) {
+          if (!viewer.mutationCliffs) {
+            const result = await viewer.calculateMutationCliffs();
+            viewer.mutationCliffs = result.cliffs;
+            viewer.cliffStats = result.cliffStats;
+          }
+          viewer.render();
+        } else {
+          if (viewer instanceof LogoSummaryTable)
+            viewer._clusterStats = null;
+          viewer.onPropertyChanged(viewer.getProperty('sequenceColumnName')!);
+        }
+      }
+      const activePeptides = this.findViewer(VIEWER_TYPE.CLUSTER_MAX_ACTIVITY) as ClusterMaxActivityViewer | null;
+      activePeptides?.onPropertyChanged(null);
+      this.fireBitsetChanged(null);
+      const context = grok.shell.o;
+      const sameCell = context instanceof DG.SemanticValue && context.cell?.dataFrame.id === this.df.id &&
+        context.cell.column.name === columnName && context.cell.rowIndex === rowIndex;
+      const sameTable = context instanceof DG.DataFrame && context.id === this.df.id;
+      if (columnName && this.df.col(columnName) && view.root.isConnected && grok.shell.v?.root === view.root &&
+        (context === originalContext || sameTable || sameCell)) {
+        const cell = this.df.cell(rowIndex, columnName);
+        this.df.currentCell = cell;
+        const gridRow = view.grid.tableRowToGrid(rowIndex);
+        if (gridRow >= 0)
+          view.grid.scrollToCell(columnName, gridRow);
+        grok.shell.setCurrentObject(gridRow >= 0 ?
+          DG.SemanticValue.fromGridCell(view.grid.cell(columnName, gridRow)) : DG.SemanticValue.fromTableCell(cell), false, true);
+      }
+    } finally {
+      this.updatingSequence = false;
+    }
+    grok.events.fireCustomEvent('peptides-sar-ready', {table: this.df.name});
   }
 
   /**
@@ -795,12 +877,18 @@ export class PeptidesModel {
   /**
    * Resets rows highlighting
    */
+  highlight(monomerPosition: type.SelectionItem, stats: MonomerPositionStats): void {
+    this.highlightedRowCount = highlightMonomerPosition(monomerPosition, this.df, stats);
+    this.isHighlighting = true;
+  }
+
   unhighlight(): void {
     if (!this.isHighlighting)
       return;
 
 
     this.df.rows.highlight(null);
+    this.highlightedRowCount = 0;
     this.isHighlighting = false;
   }
 
@@ -895,29 +983,21 @@ export class PeptidesModel {
 
     const selection = this.df.selection;
     const filter = this.df.filter;
-    let prevTimer: any = null;
     const showAccordion = (): void => {
+      if (this.updatingSequence || grok.shell.v?.root !== this._analysisView?.root)
+        return;
       try {
-        if (prevTimer != null) {
-          clearTimeout(prevTimer);
-          prevTimer = null;
-        }
         const acc = this.createAccordion();
         if (acc === null)
           return;
 
-        // these shinanigans are needed to prevent frozen custom accordion from sticking
-        grok.shell.o = acc.root;
-        prevTimer = setTimeout(() => {
-          if (grok.shell.o != acc.root)
-            grok.shell.o = acc.root;
-        }, 1500);
+        grok.shell.setCurrentObject(acc.root, false, true);
       } catch (e) {
         console.error(e);
       }
     };
 
-    selection.onChanged.subscribe(() => {
+    this.subs.push(selection.onChanged.subscribe(() => {
       if (this.controlFire) {
         this.controlFire = false;
         return;
@@ -931,9 +1011,9 @@ export class PeptidesModel {
       } finally {
         showAccordion();
       }
-    });
+    }));
 
-    filter.onChanged.subscribe(() => {
+    this.subs.push(filter.onChanged.subscribe(() => {
       try {
         if (this.controlFire) {
           this.controlFire = false;
@@ -951,7 +1031,18 @@ export class PeptidesModel {
       } finally {
         showAccordion();
       }
-    });
+    }));
+
+    const showsOwnRows = (): boolean => {
+      const context = grok.shell.o;
+      const table = context instanceof DG.RowGroup ? context.dataFrame : context instanceof DG.DataFrame ? context : null;
+      return table?.id === this.df.id;
+    };
+    this.subs.push(grok.events.onCurrentObjectChanged.subscribe(() => {
+      // the event bus is synchronous: setting the current object from inside its own dispatch throws
+      if (showsOwnRows())
+        void Promise.resolve().then(() => showsOwnRows() && showAccordion());
+    }));
 
     this.isBitsetChangedInitialized = true;
   }
@@ -1027,16 +1118,13 @@ export class PeptidesModel {
       gridCol.visible = posCols.includes(gridCol.column.name) || (gridCol.column.name === C.COLUMNS_NAMES.ACTIVITY);
     }
 
-    setTimeout(() => {
-      for (const positionCol of positionCols) {
-        const gridCol = sourceGrid.col(positionCol.name);
-        if (gridCol === null)
-          throw new Error(`PeptidesError: Could not set column width: grid column '${positionCol.name}' is null`);
+    for (const positionCol of positionCols) {
+      const gridCol = sourceGrid.col(positionCol.name);
+      if (gridCol === null)
+        throw new Error(`PeptidesError: Could not set column width: grid column '${positionCol.name}' is null`);
 
-
-        gridCol.width = maxWidth + 15;
-      }
-    }, 100);
+      gridCol.width = maxWidth + 15;
+    }
   }
 
   /**
@@ -1390,51 +1478,53 @@ export class PeptidesModel {
       }
     });
 
-    const serializedOptions: string = JSON.stringify({
-      cols: [seqCol].map((col) => col.name),
-      metrics: [mclParams!.distanceF],
-      weights: [1],
-      aggregationMethod: DistanceAggregationMethods.MANHATTAN,
-      preprocessingFuncs: ['macromoleculePreprocessingFunction'],
-      preprocessingFuncArgs: [{
-        gapOpen: mclParams!.gapOpen, gapExtend: mclParams!.gapExtend,
-        fingerprintType: mclParams!.fingerprintType,
-      }],
-      threshold: mclParams!.threshold,
-      maxIterations: mclParams!.maxIterations,
-      useWebGPU: mclParams.useWebGPU,
-      inflate: mclParams!.inflation,
-      minClusterSize: mclParams.minClusterSize,
-    } satisfies MCLSerializableOptions);
+    try {
+      const serializedOptions: string = JSON.stringify({
+        cols: [seqCol].map((col) => col.name),
+        metrics: [mclParams!.distanceF],
+        weights: [1],
+        aggregationMethod: DistanceAggregationMethods.MANHATTAN,
+        preprocessingFuncs: ['macromoleculePreprocessingFunction'],
+        preprocessingFuncArgs: [{
+          gapOpen: mclParams!.gapOpen, gapExtend: mclParams!.gapExtend,
+          fingerprintType: mclParams!.fingerprintType,
+        }],
+        threshold: mclParams!.threshold,
+        maxIterations: mclParams!.maxIterations,
+        useWebGPU: mclParams.useWebGPU,
+        inflate: mclParams!.inflation,
+        minClusterSize: mclParams.minClusterSize,
+      } satisfies MCLSerializableOptions);
 
-    const tv = this.analysisView ?? grok.shell.tableView(this.df.name);
-    if (tv) {
-      const func = DG.Func.find({package: 'EDA', name: 'markovClusteringViewer'})[0];
-      if (!func)
-        throw new Error('Markov clustering function is not found');
-      // make sure eda is loaded
-      await func.apply();
-      tv.addViewer(VIEWER_TYPE.MCL, {mclProps: serializedOptions}) as MCLViewer;
-      //tv.addViewer(VIEWER_TYPE.MCL, {mclProps: serializedOptions});
-      // the addviewer method goes through dart, so it returns JSViewer instead of MCLViewer, so also need to wait a bit
-      await DG.delay(500);
-      this._mclViewer = this.findViewer(VIEWER_TYPE.MCL) as MCLViewer;
-      await this._mclViewer.initPromise;
-      // after waiting for init promise, it can be resolved by just removing the viewer, so check again
-      this._mclViewer = this.findViewer(VIEWER_TYPE.MCL) as MCLViewer | null;
-      if (!this._mclViewer || !this._mclViewer.isDetached) {
-        mclAdditionSub?.unsubscribe();
-        columnAddedSub?.unsubscribe();
-        return;
+      const tv = this.analysisView ?? grok.shell.tableView(this.df.name);
+      if (tv) {
+        const func = DG.Func.find({package: 'EDA', name: 'markovClusteringViewer'})[0];
+        if (!func)
+          throw new Error('Markov clustering function is not found');
+        // make sure eda is loaded
+        await func.apply();
+        this._mclViewer = await this.df.plot.fromType(VIEWER_TYPE.MCL, {mclProps: serializedOptions}) as MCLViewer;
+        tv.addViewer(this._mclViewer);
+        await this._mclViewer.initPromise;
+        // after waiting for init promise, it can be resolved by just removing the viewer, so check again
+        this._mclViewer = this.findViewer(VIEWER_TYPE.MCL) as MCLViewer | null;
+        if (!this._mclViewer || this._mclViewer.isDetached) {
+          mclAdditionSub?.unsubscribe();
+          columnAddedSub?.unsubscribe();
+          return;
+        }
+        const lstViewer = this.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable | null;
+        if (lstViewer) { // beware, this is accessing private things
+          lstViewer._clusterStats = null;
+          lstViewer._clusterSelection = null;
+          lstViewer._viewerGrid = null;
+          lstViewer._logoSummaryTable = null;
+          lstViewer.render();
+        }
       }
-      const lstViewer = this.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable | null;
-      if (lstViewer) { // beware, this is accessing private things
-        lstViewer._clusterStats = null;
-        lstViewer._clusterSelection = null;
-        lstViewer._viewerGrid = null;
-        lstViewer._logoSummaryTable = null;
-        lstViewer.render();
-      }
+    } finally {
+      mclAdditionSub.unsubscribe();
+      columnAddedSub.unsubscribe();
     }
   }
 

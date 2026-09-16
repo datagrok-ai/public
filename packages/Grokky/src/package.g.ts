@@ -2,13 +2,13 @@ import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
 
 //tags: init
-//meta.role: init
+//meta.role: Init
 export async function init() : Promise<void> {
   await PackageFunctions.init();
 }
 
 //tags: autostart
-//meta.role: autostart
+//meta.role: Autostart
 export function autostart() : void {
   PackageFunctions.autostart();
 }

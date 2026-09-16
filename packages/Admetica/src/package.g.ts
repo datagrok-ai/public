@@ -10,7 +10,7 @@ export function info() : void {
 //description: Panel with ADMET predictions for a molecule.
 //input: semantic_value smiles { semType: Molecule; description: Molecule to predict. }
 //output: widget result
-//meta.role: widgets,panel
+//meta.role: widgets,Panel
 //meta.domain: chem
 export async function admeticaWidget(semValue: DG.SemanticValue) : Promise<any> {
   return await PackageFunctions.admeticaWidget(semValue);
@@ -39,7 +39,7 @@ export async function admeticaHT(table: DG.DataFrame, molecules: DG.Column, abso
 //name: AdmeticaEditor
 //input: funccall call 
 //output: widget result
-//meta.role: editor
+//meta.role: Editor
 export function admeticaEditor(call: DG.FuncCall) : any {
   return PackageFunctions.admeticaEditor(call);
 }
@@ -80,7 +80,7 @@ export async function getAdmePropertiesSingle(molecule: string) : Promise<any> {
 //output: view result
 //meta.icon: images/vlaaivis.png
 //meta.browsePath: Chem
-//meta.role: app
+//meta.role: App
 export async function runAdmeticaApplication() : Promise<any> {
   return await PackageFunctions.runAdmeticaApplication();
 }

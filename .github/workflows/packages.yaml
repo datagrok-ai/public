@@ -88,7 +88,7 @@ jobs:
                 job_name='Build'
               fi
 
-              unpublished_deps="$(jq -r '. | to_entries | map(select(.value | match("\\.\\./.*")))[] | "\(.key)=\(.value)"' <<<$dependencies | tr '\n' ' ')"
+              unpublished_deps=""
 
               job_test_env=''
               if [ -n "$(jq  '. | select( has("test") == true )' <<< "$scripts")" ] && \
@@ -97,7 +97,7 @@ jobs:
                 MATRIX_PUBLISH_JSON+=", \"test\": \"test\""
                 job_name='Build, test'
                 job_test_env='Datagrok'
-                grok_deps="$(jq  -r '. | select( has("devDependencies") == true ).devDependencies | to_entries[] | .key | select(test("@datagrok/.*")?)' ${DIR}/package.json)"
+                grok_deps="$(jq -r '.grok.testDependencies // [] | .[]' ${DIR}/package.json)"
                 if [[ "$(tr '[:upper:]' '[:lower:]' <<<${PACKAGE})" == "chem" ]] || \
                    [[ "$(tr '[:upper:]' '[:lower:]' <<<${PACKAGE})" == "simpkpd" ]] || \
                    [[ "$(tr '[:upper:]' '[:lower:]' <<<${PACKAGE})" == "dendrogram" ]] || \
@@ -225,47 +225,41 @@ jobs:
       matrix: ${{ fromJson(needs.matrix.outputs.matrix_publish) }}
     permissions:
       actions: write
+      contents: read
       id-token: write
     steps:
       - uses: actions/checkout@v4
         with:
-          token: ${{ secrets.WRITE_TOKEN || github.token }}
           sparse-checkout: |
             ./libraries
             ./packages
             ./js-api
+            ./tools
+            ./build-config
             ./.github
             ./docker
+            ./pnpm-workspace.yaml
+            ./pnpm-lock.yaml
+            ./package.json
+            ./turbo.json
+            ./.npmrc
+      - uses: pnpm/action-setup@v4
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20.x'
+          node-version: 22
           registry-url: 'https://registry.npmjs.org'
           scope: '@datagrok'
-          cache: 'npm'
-          cache-dependency-path: |
-            packages/${{ matrix.package }}/package-lock.json
-      - name: Upgrade npm
-        run: npm install -g npm@x
-      - name: npm version
-        run: npm version
-      - name: unpublished dependencies in package-lock.json
-        id: package-lock
-        if: ${{ matrix.unpublished_deps == '' }}
-        run: grep -q '\.\./\.\./' package-lock.json && rm -f package-lock.json || true
-        working-directory: packages/${{ matrix.package }}
-      - name: npm install
+          cache: pnpm
+      - name: pnpm install (whole workspace, one lockfile)
+        id: install
         env:
           SHARP_IGNORE_GLOBAL_LIBVIPS: 1
           SHARP_FORCE_GLOBAL_LIBVIPS: false
+          TURBO_TELEMETRY_DISABLED: 1
         run: |
-          npm config set fetch-retries 5
-          npm config set fetch-retry-factor 2
-          npm config set fetch-retry-mintimeout 20000
-          npm config set fetch-retry-maxtimeout 120000
-          npm install
-        id: install
-        working-directory: packages/${{ matrix.package }}
+          pnpm install --frozen-lockfile
+          echo "$PWD/node_modules/.bin" >> "$GITHUB_PATH"
       - name: Get build info
         id: info
         run: |
@@ -321,7 +315,7 @@ jobs:
         timeout-minutes: 15
         run: |
           echo "Find grok dependencies packages"
-          grok_deps="$(jq  -r '. | select( has("devDependencies") == true ).devDependencies | to_entries[] | .key | select(test("@datagrok/.*")?)' packages/${{ matrix.package }}/package.json)"
+          grok_deps="$(jq -r '.grok.testDependencies // [] | .[]' packages/${{ matrix.package }}/package.json)"
 
           # if [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "chem" ]] ||
           #    [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"chem"* ]] ||
@@ -398,51 +392,27 @@ jobs:
 
           echo "apiUrl=$apiUrl" >> $GITHUB_OUTPUT
           echo "alias=$alias" >> $GITHUB_OUTPUT
-      - id: datagrok-tools
-        run: npm install -g datagrok-tools@latest
-      - if: ${{ matrix.unpublished_deps != '' }}
-        run: grok link
-        working-directory: packages/${{ matrix.package }}
-      - name: Build unpublished dependencies
-        # `grok link` above symlinks EVERY in-repo dependency to its local source, including
-        # the PUBLISHED @datagrok-libraries version deps. Those libraries ship no compiled
-        # .js/.d.ts, and js-api is not built either, so the package build fails: `datagrok-api/dg`
-        # resolves to the raw js-api/dg.ts and crashes tsc ("Debug Failure" on TS 5.9.x),
-        # library src/*.ts hit "Module parse failed", and a nested datagrok-api causes
-        # duplicate-type (TS2345) errors. Only the unpublished PATH deps (js-api) need to be
-        # local — restore the published (compiled) libraries, then build the path deps so their
-        # declarations exist before the package's webpack/ts-loader build.
-        if: ${{ matrix.unpublished_deps != '' }}
-        working-directory: packages/${{ matrix.package }}
-        run: |
-          rm -rf node_modules/@datagrok-libraries
-          npm install --no-audit --no-fund
-          for dep in ${{ matrix.unpublished_deps }}; do
-            dir="$(cd "${dep#*=}" 2>/dev/null && pwd)" || continue
-            [ -d "$dir" ] || continue
-            echo "::group::Build unpublished dependency $dir"
-            ( cd "$dir" && npm install --no-audit --no-fund && npx tsc ) \
-              || echo "::warning::Failed to build unpublished dependency $dir"
-            echo "::endgroup::"
-          done
-      - name: webpack cache
+      - name: Turborepo cache
         uses: actions/cache@v4
         with:
-          path: packages/${{ matrix.package }}/node_modules/.cache/webpack/
-          key: ${{ matrix.package }}-${{ github.ref_name }}-webpack-build
+          path: .turbo
+          key: turbo-${{ matrix.package }}-${{ github.sha }}
           restore-keys: |
-            ${{ matrix.package }}-master-webpack-build
-      - name: Build package
+            turbo-${{ matrix.package }}-
+            turbo-
+      - name: Build package, its dependencies and its test dependencies
         if: ${{ matrix.build == 'build' }}
         id: build
         timeout-minutes: 25
+        env:
+          TURBO_TELEMETRY_DISABLED: 1
+          TURBO_UI: 0
         run: |
-          if [[ $(jq -r '. | select( has("scripts") == true ).scripts | select( has("build") == true ).build' "package.json") == "webpack" ]]; then
-            npm run build -- --mode=production
-          else
-            npm run build
-          fi
-        working-directory: packages/${{ matrix.package }}
+          filters="--filter={./packages/${{ matrix.package }}}..."
+          for dep in $(jq -r '.grok.testDependencies // [] | .[]' packages/${{ matrix.package }}/package.json); do
+            filters+=" --filter=${dep}..."
+          done
+          pnpm turbo run build $filters --cache-dir=.turbo --concurrency=4
       - name: Wait for Datagrok to become available
         if: ${{ matrix.test == 'test' }}
         timeout-minutes: 5
@@ -492,11 +462,11 @@ jobs:
         if: ${{ matrix.test == 'test' }}
         timeout-minutes: 20
         run: |
-          grok_deps="$(jq  -r '. | select( has("devDependencies") == true ).devDependencies | to_entries[] | .key | select(test("@datagrok/.*")?)' package.json)"
+          grok_deps="$(jq -r '.grok.testDependencies // [] | .[]' package.json)"
           if [ -n "$grok_deps" ]; then
             for dep in $grok_deps; do
               current_dir=$(pwd)
-              cd node_modules/$dep
+              cd "$(pnpm --filter "$dep" exec pwd)"
               count=0
               retries=5
               echo "Publishing $dep to ${{ steps.datagrok-image.outputs.alias }}..."
@@ -619,7 +589,17 @@ jobs:
               done
             fi
           fi
+      - name: Install Chromium for grok test
+        if: ${{ matrix.test == 'test' }}
+        run: pnpm --filter datagrok-tools exec puppeteer browsers install chrome
+      - name: Install Chromium for the Playwright pass
+        if: ${{ matrix.test == 'test' }}
+        run: |
+          if [ -n "$(jq -r '.playwrightTests // empty' packages/${{ matrix.package }}/package.json)" ]; then
+            pnpm --filter "./packages/${{ matrix.package }}" exec playwright install --with-deps chromium
+          fi
       - name: Configuration setuid sandbox
+        if: ${{ matrix.test == 'test' }}
         run: |
           linux_version=$(ls ~/.cache/puppeteer/chrome | grep linux- | sort -V | tail -n 1)
           cd ~/.cache/puppeteer/chrome/$linux_version/chrome-linux64/
@@ -703,13 +683,22 @@ jobs:
         run: npm install -g npm@latest
 
       - name: Publish to npm
-        run: npm publish --access public
         id: publish
         working-directory: packages/${{ matrix.package }}
+        run: |
+          tgz="$(pnpm pack --pack-destination "$RUNNER_TEMP" | tail -1)"
+          for dep in $(tar xzf "$tgz" -O package/package.json | jq -r '(.dependencies // {}) + (.peerDependencies // {}) | to_entries[] | select(.key | test("^(datagrok-api|datagrok-tools|@datagrok-libraries/)")) | "\(.key)@\(.value | ltrimstr("^"))"'); do
+            if [ "$(npm view "$dep" version 2>/dev/null)" != "${dep##*@}" ]; then
+              echo "::error title=${{ matrix.package }}::depends on $dep, which is not on npm yet; publish it first"
+              exit 1
+            fi
+          done
+          npm publish --access public "$tgz"
         if: matrix.publish == 'publish' && (steps.build.outcome == 'success' || steps.build.outcome == 'skipped') && steps.gen_checks.outcome == 'success' && (steps.check.outcome == 'success' || steps.check.outcome == 'skipped') && steps.install.outcome == 'success' && (steps.test-package.outcome == 'success' || steps.test-package.outcome == 'skipped' || (contains(matrix.package, 'Tests') || matrix.package == 'Chemspace' || matrix.package == 'DevTools' || matrix.package == 'ApiSamples'))
 
       - name: Get actors slack
         id: actor
+        continue-on-error: true
         uses: ./.github/actions/slack-user-action
         with:
           slack-token: ${{ secrets.SLACKBOT_TOKEN }}
@@ -720,12 +709,14 @@ jobs:
         working-directory: packages/${{ matrix.package }}
       - name: Get owners slack
         id: owner
+        continue-on-error: true
         uses: ./.github/actions/slack-user-action
         with:
           slack-token: ${{ secrets.SLACKBOT_TOKEN }}
           emails: ${{ steps.owner-email.outputs.owner }}
       - name: Get QA slack
         id: qa
+        continue-on-error: true
         uses: ./.github/actions/slack-user-action
         if: ${{ (matrix.package == 'Tutorials' || matrix.package == 'Chem' || matrix.package == 'DiffStidio' || matrix.package == 'PowerPack') }}
         with:
@@ -840,45 +831,6 @@ jobs:
             --data-urlencode "REINDEX_ONLY=true")
           echo "REINDEX_ONLY trigger -> HTTP ${code}"
           [ "$code" = "201" ] || echo "::warning::VEX index refresh not queued (HTTP ${code})"
-
-      - name: Commit package-lock.json
-        id: git
-        continue-on-error: true
-        if: steps.publish.outcome == 'success' || steps.package-lock.outcome == 'success'
-        run: |
-          git config --global user.name 'github-actions[bot]'
-          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-          git pull
-          continue=false
-          if [ -n "$(git status -s packages/${{ matrix.package }}/package-lock.json)" ]; then
-            git add packages/${{ matrix.package }}/package-lock.json
-            skip_ci=""
-            if [ ${{ github.ref }} == 'refs/heads/master' ]; then
-              skip_ci="[skip ci]"
-            fi
-            git commit -m "GitHub Actions: Update packages/${{ matrix.package }}/package-lock.json $skip_ci
-
-            Workflow ${{ github.workflow }} ${{ github.run_number }}
-            https://github.com/datagrok-ai/public/actions/runs/${{ github.run_id }}"
-            continue=true
-          fi
-          if [[ "${continue}" == "true" ]]; then
-            count=0
-            retries=10
-            until git push; do
-              exit=$?
-              wait=$((2 ** count))
-              count=$((count + 1))
-              if [ $count -lt "$retries" ]; then
-                echo "Retry $count/$retries exited $exit, retrying 'git push' in $wait seconds..."
-                sleep $wait
-                git pull --rebase
-              else
-                echo "Retry $count/$retries exited $exit, no more retries left for 'git push'."
-                exit $exit
-              fi
-            done
-          fi
 
       - name: Trigger help update
         continue-on-error: true

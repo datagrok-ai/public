@@ -9,50 +9,50 @@ import * as DG from 'datagrok-api/dg';
 
 export namespace queries {
   /**
-  Acquire a lock for a campaign. If the lock is expired, it will be removed and a new lock will be created.
-  */
+   * Acquire a lock for a campaign. If the lock is expired, it will be removed and a new lock will be created.
+   */
   export async function acquireCampaignLock(appName: string , campaignId: string , lockedBy?: string | null): Promise<DG.DataFrame> {
     return await grok.data.query('HitTriage:AcquireCampaignLock', { appName, campaignId, lockedBy });
   }
 
   /**
-  Release a lock for a campaign.
-  */
+   * Release a lock for a campaign.
+   */
   export async function releaseCampaignLock(appName: string , campaignId: string ): Promise<DG.DataFrame> {
     return await grok.data.query('HitTriage:ReleaseCampaignLock', { appName, campaignId });
   }
 
   /**
-  Get the last modified time of a campaign lock release (same as save).
-  */
+   * Get the last modified time of a campaign lock release (same as save).
+   */
   export async function getLastModified(appName: string , campaignId: string ): Promise<DG.DataFrame> {
     return await grok.data.query('HitTriage:GetLastModified', { appName, campaignId });
   }
 
   /**
-  Add a molecule to the dictionary. Returns VID for new or existing molecule.
-  */
+   * Add a molecule to the dictionary. Returns VID for new or existing molecule.
+   */
   export async function addMolecule(canonicalSmiles: string , appName: string , campaignId: string , createdBy: string ): Promise<DG.DataFrame> {
     return await grok.data.query('HitTriage:AddMolecule', { canonicalSmiles, appName, campaignId, createdBy });
   }
 
   /**
-  Add multiple molecules to the dictionary. Returns VIDs for new or existing molecules.
-  */
+   * Add multiple molecules to the dictionary. Returns VIDs for new or existing molecules.
+   */
   export async function addMolecules(smiles: any , appName: string , campaignId: string , createdBy: string ): Promise<DG.DataFrame> {
     return await grok.data.query('HitTriage:AddMolecules', { smiles, appName, campaignId, createdBy });
   }
 
   /**
-  Get a molecule's canonical SMILES by its VID.
-  */
+   * Get a molecule's canonical SMILES by its VID.
+   */
   export async function getMoleculeByVid(vid: string ): Promise<DG.DataFrame> {
     return await grok.data.query('HitTriage:GetMoleculeByVid', { vid });
   }
 
   /**
-  Get all campaigns and creators for a given VID.
-  */
+   * Get all campaigns and creators for a given VID.
+   */
   export async function getCampaignsByVid(vid: string , appName?: string | null): Promise<DG.DataFrame> {
     return await grok.data.query('HitTriage:GetCampaignsByVid', { vid, appName });
   }
@@ -103,6 +103,9 @@ export namespace funcs {
     return await grok.functions.call('HitTriage:DemoFileIngest1', {});
   }
 
+  /**
+   * @param {number} numberOfMolecules - Molecules counts
+   */
   export async function demoFileIngest2(numberOfMolecules: number ): Promise<DG.DataFrame> {
     return await grok.functions.call('HitTriage:DemoFileIngest2', { numberOfMolecules });
   }
@@ -111,6 +114,10 @@ export namespace funcs {
     return await grok.functions.call('HitTriage:DemoPeptideSequences', { peptideCount });
   }
 
+  /**
+   * @param {DG.DataFrame} df - Dataframe
+   * @param {string} molecules - Molecules column name
+   */
   export async function demoFileSubmit(df: DG.DataFrame , molecules: string ): Promise<void> {
     return await grok.functions.call('HitTriage:DemoFileSubmit', { df, molecules });
   }
@@ -119,6 +126,10 @@ export namespace funcs {
     return await grok.functions.call('HitTriage:RegisterMoleculesToViD', {});
   }
 
+  /**
+   * @param {any} vid
+   *   semType: HIT_DESIGN_VID
+   */
   export async function hitDesignVidPanel(vid: any ): Promise<any> {
     return await grok.functions.call('HitTriage:HitDesignVidPanel', { vid });
   }

@@ -42,7 +42,8 @@ const PAGE = `
   </div>
   <button>OK</button><button>CANCEL</button>
 </div>
-<div class="d4-toolbox">
+<div class="d4-toolbox"><div class="grok-toolbox-header">Pin toolbox</div></div>
+<div class="d4-toolbox" caption=" ">
   <div name="div-section--Viewers">
     <div name="icon-scatter-plot"></div><div name="icon-bar-chart"></div>
   </div>

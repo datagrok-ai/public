@@ -138,9 +138,11 @@ jobs:
           node-version: '18'
       # https://github.com/JulienKode/pull-request-name-linter-action/issues/236
       - name: Install commitlint dependencies
-        run: npm install @commitlint/config-conventional@v17 @commitlint/cli
+        run: npm install --prefix "$RUNNER_TEMP/commitlint" @commitlint/config-conventional@v17 @commitlint/cli
       - name: Commitlint PR title
         uses: JulienKode/pull-request-name-linter-action@v0.5.0
+        env:
+          NODE_PATH: ${{ runner.temp }}/commitlint/node_modules
         with:
           configuration-path: ./commitlint.config.js
 

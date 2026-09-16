@@ -5,12 +5,11 @@ import * as utils from '../utils/utils';
 import * as color from '../utils/color-utils';
 import {FuncMetadata, FuncParam, FuncValidator, ValidationResult} from '../utils/interfaces';
 import {PackageFile} from '../utils/interfaces';
-import * as testUtils from '../utils/test-utils';
 import {FuncRoleDescription, functionRoles} from '../utils/const';
 import {execSync} from 'child_process';
 
 
-const warns = ['Latest package version', 'Datagrok API version should contain'];
+const warns = ['Latest package version', 'Datagrok API version should contain', 'is served by the platform'];
 const forbiddenNames = ['function', 'class', 'export'];
 
 interface HeavyImportRule {
@@ -60,7 +59,7 @@ export function check(args: CheckArgs): boolean {
       color.error('File `package.json` not found. Run the command from the package directory');
       return false;
     }
-    return runChecks(curDir, args.soft ?? false, false);
+    return runChecks(curDir, args.soft ?? false, args['no-exit'] ?? false);
   }
 }
 
@@ -124,7 +123,7 @@ function runChecks(packagePath: string, soft: boolean = false, noExit: boolean =
     if (noExit)
       return false;
     else
-      testUtils.exitWithCode(1);
+      process.exit(1);
   }
   color.log(`Checking package ${path.basename(packagePath)}...\t\t\t\u2713 OK`);
   return true;
@@ -463,14 +462,24 @@ export function checkFuncSignatures(packagePath: string, files: string[]): [stri
   return [warnings, errors];
 }
 
-const sharedLibExternals: { [lib: string]: {} } = {
-  'common/html2canvas.min.js': {'exceljs': 'ExcelJS'},
-  'common/exceljs.min.js': {'html2canvas': 'html2canvas'},
-  'common/ngl_viewer/ngl.js': {'NGL': 'NGL'},
-  'common/openchemlib-full.js': {'openchemlib/full': 'OCL'},
-  'common/codemirror/codemirror.js': {'codemirror': 'CodeMirror'},
-  'common/vue.js': {'vue': 'Vue'},
-};
+/** Libraries the platform serves at runtime; versions live in build-config/platform-deps.json. */
+function platformDeps(packagePath: string): {[name: string]: {version: string, global: string, source?: string, imports?: {[spec: string]: string}}} {
+  try {
+    return require(require.resolve('@datagrok/build-config/platform-deps.json', {paths: [packagePath]}));
+  } catch {
+    return {};
+  }
+}
+
+/** For each `common/*.js` source: the import specifiers a bundled package must externalize, with their globals. */
+function sharedLibExternals(packagePath: string): {[source: string]: {[spec: string]: string}} {
+  const result: {[source: string]: {[spec: string]: string}} = {};
+  for (const [name, d] of Object.entries(platformDeps(packagePath))) {
+    if (d.source)
+      result[d.source] = {[name]: d.global, ...d.imports};
+  }
+  return result;
+}
 
 export function checkPackageFile(packagePath: string, json: PackageFile, options?: {
   externals?:
@@ -507,7 +516,7 @@ export function checkPackageFile(packagePath: string, json: PackageFile, options
   if (api) {
     if (api === '../../js-api') { } else if (api === 'latest')
       warnings.push('File "package.json": you should specify Datagrok API version constraint (for example ^1.16.0, >=1.16.0).');
-    else if (options?.isReleaseCandidateVersion === false && (!/^(\^|>|<|~).+/.test(api)))
+    else if (options?.isReleaseCandidateVersion === false && (!/^(\^|>|<|~|workspace:|catalog:).+/.test(api)))
       warnings.push('File "package.json": Datagrok API version should starts with > | >= | ~ | ^ | < | <=');
   }
 
@@ -515,6 +524,14 @@ export function checkPackageFile(packagePath: string, json: PackageFile, options
   // if (dt && dt !== 'latest')
   //   warnings.push('File "package.json": "datagrok-tools" dependency must be "latest" version.');
 
+  const platform = platformDeps(packagePath);
+  for (const [name, spec] of Object.entries({...json.dependencies, ...json.devDependencies})) {
+    if (name in platform && !spec.startsWith('catalog:'))
+      warnings.push(`File "package.json": "${name}" is served by the platform (${platform[name].version}, ` +
+        `see build-config/platform-deps.json); "${spec}" overrides it. Use "catalog:" unless the override is intended.`);
+  }
+
+  const shared = sharedLibExternals(packagePath);
   if (Array.isArray(json.sources) && json.sources.length > 0) {
     for (const source of json.sources) {
       if (typeof source !== 'string')
@@ -524,9 +541,10 @@ export function checkPackageFile(packagePath: string, json: PackageFile, options
       if (source.startsWith('common/')) {
         if (options?.isWebpack && source.endsWith('.js')) {
           if (options?.externals) {
-            if (source in sharedLibExternals) {
-              const [lib, name] = Object.entries(sharedLibExternals[source])[0];
-              if (!(lib in options.externals && options.externals[lib] === name)) {
+            if (source in shared) {
+              const expected = Object.entries(shared[source]);
+              if (!expected.some(([lib, name]) => options.externals![lib] === name)) {
+                const [lib, name] = expected[0];
                 warnings.push(`Webpack config parsing: Consider adding source "${source}" to webpack externals:\n` +
                   `'${lib}': '${name}'\n`);
               }
@@ -535,8 +553,8 @@ export function checkPackageFile(packagePath: string, json: PackageFile, options
 
           } else {
             warnings.push('Webpack config parsing: External modules not found.\n' +
-              `Consider adding source "${source}" to webpack externals` + (source in sharedLibExternals ? ':\n' +
-                `'${Object.keys(sharedLibExternals[source])[0]}': '${Object.values(sharedLibExternals[source])[0]}'\n` : ''));
+              `Consider adding source "${source}" to webpack externals` + (source in shared ? ':\n' +
+                `'${Object.keys(shared[source])[0]}': '${Object.values(shared[source])[0]}'\n` : ''));
           }
         }
         continue;
