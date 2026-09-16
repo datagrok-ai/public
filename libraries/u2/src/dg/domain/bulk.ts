@@ -44,16 +44,13 @@ export async function bulkEdit(source: DomainSource, options: DomainBulkEditOpti
     notify.error(`${source.table}: the backend does not support bulk edits`);
     return null;
   }
-  // before the narrowing below, which lifts an upper bound rather than reading past a false
-  // negative: a trash source is read-only until its rows are restored
+  // the trash mode of the source, not a bound on its access: nothing in it is written until the
+  // rows are restored, and the column policy below reads column security alone
   if (source.readOnly.peek()) {
     notify.warning(`${source.table}: deleted rows are read-only until they are restored`);
     return null;
   }
-  const access = source.access.peek();
-  // column security alone decides what is offered: on a row-mode table the table-level `edit` is a
-  // false negative (GOAL "Access"), and the server narrows the update by the row predicate anyway
-  const writable = access.narrow({edit: true});
+  const writable = source.access.peek().columnPolicy();
   const properties = source.schema.properties;
   const props: IProperty[] = [];
   for (const name of options.columns ?? properties.map((p) => p.name)) {
@@ -104,7 +101,7 @@ function _open(source: DomainSource, props: IProperty[], items: {value: string, 
   const values: Record<string, unknown> = {};
   const include = new Map<string, Signal<boolean>>();
   const form = dialog.runInScope(() =>
-    propertyForm(props, values, {access: source.access.peek().narrow({edit: true}), layout: 'tall'}));
+    propertyForm(props, values, {access: source.access.peek().columnPolicy(), layout: 'tall'}));
   for (const prop of props) {
     const on = signal(false);
     include.set(prop.name!, on);

@@ -574,11 +574,19 @@ export class DomainApp extends Control {
   /** Trash mode is one flip of the list source's `deleted` mode: the search box, the filters and
    * the list stay bound to the one source, and its access narrows itself to read-only. */
   private _wireTrash(): void {
+    let saved: string | null = null;
     this.effect(() => {
       const on = this._trash.value;
       this.listSource.deleted.value = on ? 'only' : 'exclude';
-      // what a trash list is read for is what went in last
-      this.listSource.sort.value = on ? TRASH_SORT : '';
+      // what a trash list is read for is what went in last; leaving gives the user's order back
+      if (on) {
+        saved ??= this.listSource.sort.peek();
+        this.listSource.sort.value = TRASH_SORT;
+      }
+      else if (saved !== null) {
+        this.listSource.sort.value = saved;
+        saved = null;
+      }
       this.root.classList.toggle('u2-domain-app-trash', on);
     });
   }

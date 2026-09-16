@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-20753: Added the `U2: domain conformance` test category — the u2 backend conformance scenarios run against the platform backend over a throwaway hierarchy schema, the same file the headless suite runs over the memory backend
 * GROK-20753: `U2: domain bulk` covers the L3 findings too — OK gated inline with the reason in the dialog, no "required" verdict on an unchecked field, and no target offered that the update endpoint would refuse
 * GROK-20753: `U2: domain bulk` covers the two live defects GD3 found — a real click on an include checkbox enabling its editor, and the “Apply to” picker having no empty option
 * GROK-20753: Added the `U2: domain bulk` and `U2: domain import` test categories — the ⋯ menu’s Import…/Bulk edit…, the bulk dialog writing one checked column into a selection and into everything the filter matches (and an immutable column refused by the server), and the import wizard auto-mapping a frame, gating on the blocking problems and posting the mapped columns only

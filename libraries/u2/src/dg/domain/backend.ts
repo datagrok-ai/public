@@ -9,8 +9,8 @@ import type {IProperty} from '../../core/property-like.js';
 import {backends} from '../../sources/backends.js';
 import type {DataFrameLike} from '../../sources/df-bindings.js';
 import type {AuditEntryLike, DomainBackend, DomainBatchOptionsLike, DomainBatchReportLike, DomainDeletedMode,
-  DomainFrameLike, DomainProbeLike, DomainQueryLike, DomainTableInfoLike, DomainTableLike, DomainTransactionOpLike,
-  DomainTransactionResultLike} from '../../sources/domain-backend.js';
+  DomainFrameLike, DomainProbeLike, DomainQueryLike, DomainReadScope, DomainTableInfoLike, DomainTableLike,
+  DomainTransactionOpLike, DomainTransactionResultLike} from '../../sources/domain-backend.js';
 import type {EditState} from '../../sources/edit-state.js';
 import {EditorEditState} from './editor-state.js';
 
@@ -38,6 +38,12 @@ interface PhaseThreeClient {
   aggregate(spec: unknown): Promise<Record<string, unknown>[]>;
 }
 
+/** {@link DgDomainBackend.saveAll}'s share of the same debt: `DomainSession.lastRefusal` is not
+ * in the published types either. */
+interface PhaseThreeSession {
+  lastRefusal: {message: string, editor: DG.DomainFrameEditor | null, opIndex?: number} | null;
+}
+
 export class DgDomainBackend implements DomainBackend {
   private readonly _tables = new Map<string, Promise<DgDomainTable>>();
 
@@ -63,24 +69,22 @@ export class DgDomainBackend implements DomainBackend {
    * what was saved. */
   async saveAll(edits: EditState[]): Promise<boolean> {
     const states = edits as EditorEditState[];
-    const session = new DG.DomainSession(states.map((e) => e.editor), {quiet: true});
-    // The platform session works out ONE sentence for a refusal ("Ethanol still has 3 containers"),
-    // balloons it and keeps it nowhere; a refusal naming no column reaches no cell either, so the
-    // u2 status line would have nothing but "the changes were refused". Captured off the editor
-    // for the length of this save — an instance property shadowing the prototype, put back after.
-    const patched = states.map((state) => {
+    for (const state of states)
       state.problem = null;
-      const editor = state.editor as unknown as
-        {refusalFor(e: unknown, op: unknown): Promise<string>, constructor: unknown};
-      const original = editor.refusalFor;
-      editor.refusalFor = async (e, op) => state.problem = await original.call(editor, e, op);
-      return () => delete (editor as unknown as Record<string, unknown>).refusalFor;
-    });
+    const session = new DG.DomainSession(states.map((e) => e.editor), {quiet: true});
     try {
-      return await session.save();
+      if (await session.save())
+        return true;
+      // the platform session works out ONE sentence for a refusal ("Ethanol still has 3
+      // containers") and balloons it; the u2 status line says it on the state whose editor it
+      // names, and on every one for a refusal the batch as a whole answers for
+      const refusal = (session as unknown as PhaseThreeSession).lastRefusal;
+      for (const state of states) {
+        if (refusal !== null && (refusal.editor === null || refusal.editor === state.editor))
+          state.problem = refusal.message;
+      }
+      return false;
     } finally {
-      for (const restore of patched)
-        restore();
       session.dispose();
     }
   }
@@ -124,8 +128,9 @@ export class DgDomainTable implements DomainTableLike {
     return this.client.query(DgDomainTable.spec(spec));
   }
 
-  count(filter?: DomainQueryLike['filter'], search?: string, deleted?: DomainDeletedMode): Promise<number> {
-    return this._phase3.count(filter as DG.DomainFilter | undefined, {search, deleted});
+  count(scope: DomainReadScope = {}): Promise<number> {
+    return this._phase3.count(scope.filter as DG.DomainFilter | undefined,
+      {search: scope.search, deleted: scope.deleted});
   }
 
   async restore(id: string): Promise<void> {
@@ -142,7 +147,7 @@ export class DgDomainTable implements DomainTableLike {
   }
 
   /** ONE aggregate for the poll: how many rows match, and when the newest of them was written. */
-  async probe(spec: Pick<DomainQueryLike, 'filter' | 'search' | 'deleted'>): Promise<DomainProbeLike> {
+  async probe(spec: DomainReadScope = {}): Promise<DomainProbeLike> {
     const rows = await this._phase3.aggregate({
       measures: [{fn: 'count'}, {fn: 'max', column: 'updated_on', as: 'last'}],
       ...(spec.filter === undefined ? {} : {filter: spec.filter}),

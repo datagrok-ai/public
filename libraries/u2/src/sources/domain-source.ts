@@ -17,8 +17,8 @@ import {FrameRows} from './df-rows.js';
 import type {EditState} from './edit-state.js';
 import type {DataFrameLike} from './df-bindings.js';
 import {DomainBackendError} from './domain-backend.js';
-import type {DomainBackend, DomainDeletedMode, DomainFrameLike, DomainQueryLike, DomainTableInfoLike,
-  DomainTableLike} from './domain-backend.js';
+import type {DomainBackend, DomainDeletedMode, DomainFrameLike, DomainQueryLike, DomainReadScope,
+  DomainTableInfoLike, DomainTableLike} from './domain-backend.js';
 import {SharedSession} from './session.js';
 import type {DomainSession} from './session.js';
 import type {BindProp, BindSource} from '../spec/bind-source.js';
@@ -796,7 +796,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   }
 
   private _count(table: DomainTableLike): Promise<number> {
-    return table.count(this._filter(), this.search.peek() || undefined, this.deleted.peek());
+    return table.count(this._scope());
   }
 
   /** One poll of a `live` source: the collection counted and dated in one request, against what
@@ -816,10 +816,8 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       return;
     this._probing = true;
     const gen = this._gen;
-    const search = this.search.peek();
     try {
-      const now = await table.probe({filter: this._filter(), ...(search === '' ? {} : {search}),
-        deleted: this.deleted.peek()});
+      const now = await table.probe(this._scope());
       if (gen !== this._gen)
         return;
       this._failures = 0;
@@ -864,18 +862,23 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     // refuses the `~new:` literal on a uuid column — the rows arrive when `rebind` puts the
     // assigned id in
     const deleted = this.deleted.peek();
-    const mode = deleted === 'exclude' ? {} : {deleted};
-    if (DomainSource._namesDraft(this.query.peek()))
-      return {limit: 0, offset, withAccess: this.withAccess, ...mode};
-    const search = this.search.peek();
+    if (DomainSource._namesDraft(this.query.peek())) {
+      return {limit: 0, offset, withAccess: this.withAccess,
+        ...(deleted === 'exclude' ? {} : {deleted})};
+    }
     const sort = this.sort.peek();
-    return {filter: this._filter(), ...(search === '' ? {} : {search}), ...(sort === '' ? {} : {sort}),
-      limit: this.isEmpty ? 0 : limit, offset, withAccess: this.withAccess, ...mode};
+    return {...this._scope(), ...(sort === '' ? {} : {sort}),
+      limit: this.isEmpty ? 0 : limit, offset, withAccess: this.withAccess};
   }
 
-  private _filter(): DomainQueryLike['filter'] {
+  /** What every read of this source is scoped to — the one object `_spec`, `count` and `probe`
+   * all take, so none of them can forward the query and forget the search or the trash mode. */
+  private _scope(): DomainReadScope {
     const q = this.query.peek();
-    return typeof q === 'string' ? (q === '' ? undefined : q) : Filters.toDomainTree(q);
+    const search = this.search.peek();
+    const deleted = this.deleted.peek();
+    return {filter: typeof q === 'string' ? (q === '' ? undefined : q) : Filters.toDomainTree(q),
+      ...(search === '' ? {} : {search}), ...(deleted === 'exclude' ? {} : {deleted})};
   }
 
   /** A two-way `currentRow.<column>` step: reads the current row live, writes through it. */

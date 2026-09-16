@@ -15,7 +15,12 @@ by the U2Demo `U2: domain source`, `U2: domain session`, `U2: domain trash`, `U2
 **Optional members** (`audit`, `restore`, `updateWhere`, `ancestors`, `probe`, `batch`) are the
 seam's escape hatch, not a licence to diverge: a backend that declares one answers it exactly as
 the table below says, and a control that needs one checks for it and refuses by name rather than
-degrading silently. The memory backend mirrors all of them except `batch`.
+degrading silently. The memory backend mirrors all of them.
+
+The cases that are the SAME question on both backends are written once, as scenarios in
+`tests/conformance/scenarios.mjs`, and run over the memory backend by
+`tests/backend-conformance.test.js` and against the server by the U2Demo `U2: domain
+conformance` category. A server rule belongs there, not in a memory-only assertion.
 
 ## Table handle
 
@@ -27,9 +32,9 @@ degrading silently. The memory backend mirrors all of them except `batch`.
 | `restore(id)` | a soft-deleted row brought back: `~is_deleted` off, `version + 1`, the `'undelete'` audit op; refused with `validation` naming the ref column where the row points at a row still deleted. Optional on the seam (dg fills it from `client.restore`) — a backend that does not declare it cannot answer a `deleted` query either, and `DomainSource` refuses one over it by name |
 | `audit(id)` | the row's history, oldest first: `{id, tx_id, op, actor_id, ts, before, after}` per op that touched it — every op of one transaction shares `tx_id`; the memory backend records `actor_id: null` and nothing for seeded rows. Optional on the seam (dg fills it from `client.audit`) |
 | `updateWhere(filter, values, {limit})` | `values` written into every LIVE row the filter matches that the caller may edit, as ONE transaction; answers `{updated, hasMore}`. A missing or empty filter is refused (`validation`) — there is no "update the whole table" — and so is an empty `values`; a column the caller may not write is refused BEFORE anything is written; the selection is capped at `limit` (default and maximum 1000, clamped to `[1, 1000]`) and `hasMore` says the filter matched past the cap. Rows are patched one by one inside the transaction, so validation, the version step and the audit line are per row, and a row outside the caller's Edit predicate is silently not selected rather than refused. Optional on the seam (dg fills it from `client.updateWhere`) |
-| `ancestors(id)` | the row's parents along `info.parentColumn`, **root first**, **excluding the row itself** — so a root answers `[]`, and so does a row the caller cannot see (no oracle). Only a table declaring `hierarchy` answers; anything else is a `filter` refusal on BOTH backends. The chain stops at the first invisible ancestor, at a cycle, and at depth 64. Optional on the seam (dg fills it from `client.pathTo`) |
-| `probe(spec)` | `{count, last}` — how many rows match `filter`/`search`/`deleted` and the newest `updated_on` among them (`null` over an empty match), in ONE request and never a page of rows. What a `live` source polls; a backend that does not declare it is never polled, so `live: true` over one is inert |
-| `batch(rows, options)` | whole rows uploaded in one call, which is where the `'upsert'` business-key merge, `allOrNothing` and `errorOnDuplicate` live, and which answers the per-row report `domains.import` renders. Optional and NOT mirrored in memory: the memory backend has no `batch`, so `domains.import` over it falls back to the same rows as one transaction with a business-key upsert — the report is synthesised from the transaction's results |
+| `ancestors(id)` | the row's parents along `info.parentColumn`, **root first**, **excluding the row itself** — so a root answers `[]`, and so does a row the caller cannot see (no oracle). Only a table declaring `hierarchy` answers; anything else is a `filter` refusal on BOTH backends. The SEED level alone takes a deleted row — a row opened from a trash list still has its breadcrumb — while the walk stops at the first invisible (here: deleted) ancestor, at a cycle, and at depth 64. Optional on the seam (dg fills it from `client.pathTo`) |
+| `probe(scope)` | `{count, last}` — how many rows match `filter`/`search`/`deleted` and the newest `updated_on` among them (`null` over an empty match), in ONE request and never a page of rows. What a `live` source polls; a backend that does not declare it is never polled, so `live: true` over one is inert |
+| `batch(rows, options)` | whole rows uploaded in one call, which is where the `'upsert'` business-key merge, `allOrNothing` and `errorOnDuplicate` live, and which answers the per-row report `domains.import` renders. A backend that does not declare it cannot be imported into: `domains.import` refuses by name before the wizard opens, rather than standing a transaction in for the real thing. Duplicates by business key — inside the payload (the first occurrence wins) and against the live rows — are `'duplicate'` lines under `skipped`, or per-row `'unique'` errors under `errorOnDuplicate`; `allOrNothing` (the default) answers the report with `error: 'validation'` set and writes nothing |
 
 ## Query
 
@@ -37,12 +42,13 @@ degrading silently. The memory backend mirrors all of them except `batch`.
 |---|---|
 | `filter` | a smart-filter string or the canonical condition tree; the same grammar, evaluated by the same rules (`Filters`); an unknown column or a parse error is a `validation` refusal. A column reference (`end_date >= start_date`) compares row-wise under the six comparators, null on either side false; a `$param` is bound by the caller (`Filters.bind`) before the query — an unbound one is refused |
 | `search` | a case-insensitive substring over `info.searchableColumns`, ORed across them and ANDed with `filter`; a table with no searchable column refuses with `validation` |
+| `under` | `<column> under <id>` matches the rows whose column points into the subtree rooted AT that id, the seed row included; the recursion walks the target's LIVE rows, so a deleted branch truncates the subtree instead of leaking it. Off `id` on a hierarchy table, or off a ref column pointing at one; anything else is a `filter` refusal |
 | `sort` | `'col,!col'`; nulls last ascending, first descending (Postgres) |
 | `limit`/`offset` | a page; `limit: 0` answers no rows (an empty or draft source) |
 | `columns` | a projection; absent, every column |
 | `withAccess` | adds `~can_edit`, `~can_delete`, `~can_share` (and `~can_<name>` per custom permission) to every row: booleans on a row-mode table; off row mode `~can_edit`/`~can_delete` are the table's answer and `~can_share` is **null** in JSON and **absent** from a frame (a bool column holds no null) — `Access.row` treats both as "not carried" |
 | `deleted` | which rows a query answers: `'exclude'` (the default — live rows only), `'include'` or `'only'` (the trash). Anything but `'exclude'` projects `~is_deleted` with every row (a bool column on a frame), and the filter, the search and the paging still apply |
-| `count(filter, search, deleted)` | the total under the same filter, search and deleted mode |
+| `count(scope)` | the total under the same read scope (`{filter, search, deleted}`) a query takes — the ONE object every read is scoped by |
 | `frame(spec)` | the rows as a frame with the writer attached (`DomainFrameLike`): the frame carries `~state` and the access columns as service columns; `append` adds a page into the same frame; `dispose` detaches the writer |
 
 ## Transaction

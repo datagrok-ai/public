@@ -116,7 +116,7 @@ export class DomainChildren extends Control {
       return;
     // a count nobody asked for: a table that refuses it just does not win the first tab
     const counts = await Promise.all(entries.map((e) =>
-      e.table.table.count(`${e.fk} = "${row.id}"`).catch(() => 0)));
+      e.table.table.count({filter: `${e.fk} = "${row.id}"`}).catch(() => 0)));
     const at = counts.findIndex((n) => n > 0);
     if (at > 0 && !this.scope.isDisposed && this.tabs.activeTab.peek() === opened)
       this.tabs.activeTab.value = entries[at].id;

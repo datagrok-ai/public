@@ -201,10 +201,16 @@ scoped('a refused row leaves nothing behind and the report says so', async () =>
   await flush();
   fire(buttonNamed('NEXT'), 'click');
   await flush();
-  assert.equal(issues(memory).length, 3, 'the transaction rolled back');
-  assert.match(document.body.querySelector('.u2-domain-import-report').textContent, /column "title"/);
+  assert.equal(issues(memory).length, 3, 'nothing was committed');
+  const shown = document.body.querySelector('.u2-domain-import-report').textContent;
+  assert.match(shown, /Import aborted — 1 row\(s\) with errors/);
+  assert.match(shown, /title/, 'the per-row report names the column the row was refused on');
+  assert.match(shown, /Value can't be empty/);
   fire(buttonNamed('CLOSE'), 'click');
-  assert.equal(await running, null, 'a failed import reports nothing');
+  const report = await running;
+  assert.equal(report.error, 'validation', 'an allOrNothing abort answers the report, not a throw');
+  assert.equal(report.errorCount, 1);
+  assert.deepEqual(report.rows.map((r) => [r.index, r.status]), [[1, 'error']]);
 });
 
 scoped('a table-level insert denial still opens the wizard; no visible column refuses it', async () => {

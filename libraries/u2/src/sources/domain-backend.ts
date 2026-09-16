@@ -58,6 +58,10 @@ export interface DomainQueryLike {
   deleted?: DomainDeletedMode;
 }
 
+/** What a read is scoped to — the part of a query that selects rows rather than shapes the page.
+ * Every read takes the same object, so a caller cannot forward `filter` and forget `deleted`. */
+export type DomainReadScope = Pick<DomainQueryLike, 'filter' | 'search' | 'deleted'>;
+
 /** What one poll of a live source learns: how many rows match the query and when the newest of
  * them was last written — the platform's aggregate `count` + `max(updated_on)` in one request.
  * `last` is null over an empty match. */
@@ -141,8 +145,8 @@ export interface DomainTableLike {
   info: DomainTableInfoLike;
   access(): Promise<AccessData>;
   query(spec: DomainQueryLike): Promise<Record<string, unknown>[]>;
-  /** The total under the same `filter`, `search` and `deleted` mode a query takes. */
-  count(filter?: DomainQueryLike['filter'], search?: string, deleted?: DomainDeletedMode): Promise<number>;
+  /** The total under the same scope a query takes. */
+  count(scope?: DomainReadScope): Promise<number>;
   transaction(ops: DomainTransactionOpLike[]): Promise<DomainTransactionResultLike[]>;
   /** The rows as a frame with the writer attached — the one collection a source holds. */
   frame(spec: DomainQueryLike): Promise<DomainFrameLike>;
@@ -162,14 +166,15 @@ export interface DomainTableLike {
    * itself (the platform's `GET …/{id}/path`). Only a hierarchy table answers it; the chain
    * stops at the first ancestor the caller cannot see, at a cycle, and at depth 64. */
   ancestors?(id: string): Promise<{id: string, name: string}[]>;
-  /** What the collection looks like on the server right now, under the same `filter`, `search`
-   * and `deleted` mode a query takes — ONE request, never a page of rows: a `live` source polls
-   * it and refreshes when the pair moved. A backend that does not declare it is not polled, so a
-   * `live` source over one is exactly as live as the backend can be: not at all. */
-  probe?(spec: Pick<DomainQueryLike, 'filter' | 'search' | 'deleted'>): Promise<DomainProbeLike>;
+  /** What the collection looks like on the server right now, under the same scope a query takes —
+   * ONE request, never a page of rows: a `live` source polls it and refreshes when the pair
+   * moved. A backend that does not declare it is not polled, so a `live` source over one is
+   * exactly as live as the backend can be: not at all. */
+  probe?(scope?: DomainReadScope): Promise<DomainProbeLike>;
   /** Uploads whole rows in one call (the platform's `POST …/{table}/batch`), which is where the
-   * upsert merge and the per-row report live. A backend without one takes the same rows as a
-   * transaction — see `domains.import`. */
+   * upsert merge, the duplicate rules and the per-row report live. A backend that does not
+   * declare it cannot be imported into — `domains.import` refuses by name before the wizard
+   * opens, rather than standing a transaction in for the real thing. */
   batch?(rows: Record<string, unknown>[], options?: DomainBatchOptionsLike): Promise<DomainBatchReportLike>;
 }
 

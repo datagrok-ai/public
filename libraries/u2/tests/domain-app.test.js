@@ -788,6 +788,19 @@ scoped('trash mode: the ⋯ menu toggles ?trash=1, the rows are read-only with R
   a.dispose();
 });
 
+scoped('the trash reads newest-deleted first and gives the sort back on the way out', async () => {
+  const {app: a} = await app();
+  a.listSource.sort.value = 'title';
+  await flush();
+  assert.equal(await a.setTrash(true), true);
+  await flush();
+  assert.equal(a.listSource.sort.value, '!updated_on', 'the trash order while it is on');
+  assert.equal(await a.setTrash(false), true);
+  await flush();
+  assert.equal(a.listSource.sort.value, 'title', 'the order the user chose is back');
+  a.dispose();
+});
+
 scoped('?trash=1 round-trips through open(); without the delete grant the menu drops Trash', async () => {
   const {app: a} = await app({query: 'done = false'});
   await flush();

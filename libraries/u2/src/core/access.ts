@@ -49,12 +49,26 @@ export class Access {
     return this._bound[capability] === false ? false : this._can[capability] ?? this._unlistedCan;
   }
 
-  /** The same access under an upper bound: `narrow({edit: false, insert: false})` — what a source
-   * over deleted rows reads — denies those for good, and a row's own `~can_edit` refines
-   * {@link row} within the bound instead of lifting it. */
+  /** The same access under an upper bound, DENY-ONLY: `narrow({edit: false, insert: false})` —
+   * what a source over deleted rows reads — denies those for good, and a row's own `~can_edit`
+   * refines {@link row} within the bound instead of lifting it. A `true` entry grants nothing and
+   * lifts no bound; to read column security alone, use {@link columnPolicy}. */
   narrow(can: Partial<Record<Capability, boolean>>): Access {
-    return new Access({...this._can, ...can}, this._fields, this._unlistedCan, this._unlistedField,
-      this._writes, {...this._bound, ...can});
+    const deny: Record<string, boolean> = {};
+    for (const [capability, allowed] of Object.entries(can)) {
+      if (allowed === false)
+        deny[capability] = false;
+    }
+    return new Access({...this._can, ...deny}, this._fields, this._unlistedCan, this._unlistedField,
+      this._writes, {...this._bound, ...deny});
+  }
+
+  /** The table's column security alone: the fields exactly as declared, every capability granted
+   * and unbounded. What a bulk edit and an import offer columns by — on a row-mode table the
+   * table-level `edit`/`insert` are false negatives (GOAL "Access"), and the server narrows the
+   * write by the row predicate anyway. */
+  columnPolicy(): Access {
+    return new Access({}, this._fields, true, this._unlistedField, this._writes);
   }
 
   /** `hidden` where the field is unlisted, `editable` where it is listed so AND the row may be

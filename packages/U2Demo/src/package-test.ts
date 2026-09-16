@@ -8,6 +8,7 @@ import './tests/domain-app';
 import './tests/domain-trash';
 import './tests/domain-bulk';
 import './tests/domain-import';
+import './tests/domain-conformance';
 
 export let _package = new DG.Package();
 export { tests };

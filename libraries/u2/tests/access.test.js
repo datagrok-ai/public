@@ -149,6 +149,27 @@ scoped('Access.narrow: an upper bound row() cannot lift, and a field follows it'
   assert.equal(Access.full.narrow({edit: false}).can('delete'), true);
 });
 
+scoped('Access.narrow is deny-only: a true entry grants nothing and lifts no bound', () => {
+  const access = Access.from(DATA);
+  assert.equal(access.can('delete'), false);
+  assert.equal(access.narrow({delete: true}).can('delete'), false, 'a true entry is not a grant');
+  const trash = access.narrow({edit: false});
+  assert.equal(trash.narrow({edit: true}).can('edit'), false, 'and cannot lift a bound it set');
+  assert.equal(trash.narrow({edit: true}).field('title'), 'readonly');
+  assert.equal(Access.readOnly.narrow({edit: true}).can('edit'), false);
+});
+
+scoped('Access.columnPolicy: the fields as declared, every capability granted and unbounded', () => {
+  const policy = Access.from(DATA).narrow({edit: false, insert: false}).columnPolicy();
+  assert.equal(policy.can('edit'), true, 'the bound a trash source set is not read here');
+  assert.equal(policy.can('delete'), true);
+  assert.equal(policy.can('approve'), true);
+  assert.equal(policy.field('title'), 'editable', 'an editable column is offered');
+  assert.equal(policy.field('number'), 'readonly', 'a restricted one is not');
+  assert.equal(policy.field('salary'), 'hidden', 'and an unlisted one stays hidden');
+  assert.equal(Access.readOnly.columnPolicy().field('anything'), 'readonly');
+});
+
 function actions(log) {
   return [
     {name: 'Open', icon: 'external-link-alt', run: () => log.push('open')},

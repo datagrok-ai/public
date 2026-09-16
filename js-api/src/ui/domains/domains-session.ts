@@ -49,6 +49,19 @@ export interface DomainSessionPart {
   pending: DomainPendingOp[];
 }
 
+/** Why a {@link DomainSession.save} did not land — see {@link DomainSession.lastRefusal}. */
+export interface DomainSessionRefusal {
+  /** The sentence the save reported; the same one the cell says where the refusal reaches
+   * cells. Bare — a surface that leads with its own "Cannot save:" (the balloon does) prefixes
+   * it itself. */
+  message: string;
+  /** The editor that owns the failing row; null for a refusal the batch as a whole
+   * answers for (nothing located it, or no single participant caused it). */
+  editor: DomainFrameEditor | null;
+  /** The transaction-wide index of the failing op, where the server named one. */
+  opIndex?: number;
+}
+
 /**
  * A set of editors that save as ONE transaction.
  *
@@ -64,6 +77,10 @@ export interface DomainSessionPart {
  * resubscribe — so a page can grow its session as widgets appear.
  */
 export class DomainSession implements IEditorHost {
+  /** What {@link lastRefusal} says when an editor refused its own batch: the blocking cells
+   * name themselves, and `prepareSave` has already ballooned the first of them. */
+  static readonly CELL_ERRORS = 'Fix the cell errors first';
+
   readonly editors: DomainFrameEditor[] = [];
 
   private readonly _subs = new Map<DomainFrameEditor, rxjs.Subscription[]>();
@@ -71,6 +88,7 @@ export class DomainSession implements IEditorHost {
   private readonly _schema?: string;
   private _dirty = false;
   private _saving = false;
+  private _lastRefusal: DomainSessionRefusal | null = null;
 
   private readonly _onChanged = new rxjs.Subject<DomainSession>();
   private readonly _onDirtyChanged = new rxjs.Subject<boolean>();
@@ -97,6 +115,11 @@ export class DomainSession implements IEditorHost {
 
   /** Whether a transaction is in flight (every editor is closed while it is). */
   get isSaving(): boolean { return this.editors.some((e) => e.isSaving); }
+
+  /** Why the last {@link save} did not land; null after a successful save or before the first
+   * one. A host that shows the refusal in its own words (a status line, a form footer) reads the
+   * sentence here instead of intercepting the balloon. */
+  get lastRefusal(): DomainSessionRefusal | null { return this._lastRefusal; }
 
   /** Fires on every service-state write of any editor. */
   get onChanged(): rxjs.Observable<DomainSession> { return this._onChanged; }
@@ -158,23 +181,27 @@ export class DomainSession implements IEditorHost {
    * `onDuplicate: 'error'` of every insert makes an atomic refusal — lands on the
    * offending editor's cells and everything stays pending. Every editor is
    * CLOSED while this runs (see
-   * `DomainFrameEditor.isSaving`).
+   * `DomainFrameEditor.isSaving`). Every unsuccessful return leaves its reason in
+   * {@link lastRefusal}.
    */
   async save(): Promise<boolean> {
     if (this.isSaving) {
-      balloon.warning('The batch is already being saved.');
-      return false;
+      const busy = 'The batch is already being saved.';
+      balloon.warning(busy);
+      return this._refuse(busy);
     }
     let parts = this.buildOps();
     if (parts == null)
-      return false;
+      return this._refuse(DomainSession.CELL_ERRORS);
     const overlapping = DomainSession._overlapping(parts);
     if (overlapping != null) {
       balloon.error(overlapping);
-      return false;
+      return this._refuse(overlapping);
     }
-    if (parts.every((p) => p.pending.length === 0))
+    if (parts.every((p) => p.pending.length === 0)) {
+      this._lastRefusal = null;
       return true;
+    }
     const schema = this.schema!;
     for (const editor of this.editors)
       editor.setSaving(true);
@@ -182,7 +209,7 @@ export class DomainSession implements IEditorHost {
       for (let attempt = 0; ; attempt++) {
         if (attempt > CONFLICT_RETRY_LIMIT) {
           balloon.error('Cannot save: too many version conflicts in a row');
-          return false;
+          return this._refuse('Too many version conflicts in a row');
         }
         let results: any[];
         try {
@@ -191,22 +218,23 @@ export class DomainSession implements IEditorHost {
           const at = this._locate(parts, e?.opIndex);
           if (e instanceof DomainVersionConflictError && at != null) {
             if (!(await at.editor.resolveConflict(e, at.failing)))
-              return false;
+              return this._refuse(e?.message ?? `${e}`, at.editor, e?.opIndex);
             parts = this.buildOps();
             if (parts == null)
-              return false;
+              return this._refuse(DomainSession.CELL_ERRORS);
             continue;
           }
           if (at == null) {
             balloon.error(e?.message ?? `${e}`);
-            return false;
+            return this._refuse(e?.message ?? `${e}`, null, e?.opIndex);
           }
-          // ONE sentence for all three surfaces: the cells, the status line that reads them, the balloon
+          // ONE sentence for all four surfaces: the cells, the status line that reads them,
+          // the balloon, and `lastRefusal` for a host that words it itself
           const message = await at.editor.refusalFor(e, at.failing);
           if (e instanceof DomainValidationError)
             at.editor.mapValidationError(e, at.failing, message);
           balloon.error(message);
-          return false;
+          return this._refuse(message, at.editor, e?.opIndex);
         }
         const total: DomainSaveResult = {inserted: 0, updated: 0, deleted: 0, assigned: Object.create(null)};
         const slices: any[][] = [];
@@ -228,6 +256,7 @@ export class DomainSession implements IEditorHost {
           total.deleted += r.deleted;
           Object.assign(total.assigned, r.assigned);
         }
+        this._lastRefusal = null;
         this._onSaved.next(total);
         const n = total.inserted + total.updated + total.deleted;
         if (!this.quiet)
@@ -252,6 +281,12 @@ export class DomainSession implements IEditorHost {
   discard(): void {
     for (const editor of this.editors)
       editor.discard();
+  }
+
+  private _refuse(message: string, editor?: DomainFrameEditor | null, opIndex?: unknown): false {
+    this._lastRefusal = {message: message, editor: editor ?? null,
+      opIndex: typeof opIndex === 'number' ? opIndex : undefined};
+    return false;
   }
 
   /** The same persisted row addressed by two participants: the transaction would carry two ops

@@ -9,7 +9,6 @@ import * as ui from 'datagrok-api/ui';
 import type * as DG from 'datagrok-api/dg';
 import {signal} from '../../core/signals.js';
 import {Control} from '../../core/component.js';
-import {Filters} from '../../core/filter/index.js';
 import {div, divV, span} from '../../core/elements.js';
 import {text} from '../../core/text.js';
 import type {IProperty} from '../../core/property-like.js';
@@ -22,8 +21,7 @@ import {BoolInput} from '../../components/inputs/bool-input.js';
 import {Form} from '../../components/forms/form.js';
 import {notify} from '../../components/display/notify.js';
 import {MemoryEditState} from '../../sources/edit-state.js';
-import type {DomainBatchOptionsLike, DomainBatchReportLike,
-  DomainTransactionOpLike} from '../../sources/domain-backend.js';
+import type {DomainBatchReportLike} from '../../sources/domain-backend.js';
 import {fromDartInput} from '../inputs/from-dart-input.js';
 import {DomainTable} from './index.js';
 import {DomainErrors} from './errors.js';
@@ -38,8 +36,6 @@ const SKIP = '(skip)';
 /** The preview scans at most this many rows — it is advisory, and the server re-validates every
  * row it is sent; the commit itself is unbounded. */
 const PREVIEW_ROWS = 1000;
-/** How many business keys one upsert lookup asks about at a time (a backend with no `/batch`). */
-const KEY_CHUNK = 100;
 /** Issue lines rendered in a preview or a report; the counts stay exact. */
 const ISSUE_CAP = 20;
 /** Rows the preview draws — what the import looks like, not all of it. */
@@ -52,9 +48,11 @@ interface Mapping {column: string}
  * cancelled. Exported as `domains.import` — `import` cannot name a function. */
 export function openImport(table: DomainTable, options: DomainImportOptions = {}):
   Promise<DomainBatchReportLike | null> {
-  // column security alone: on a row-mode table the table-level `insert`/`edit` are false negatives
-  // (GOAL "Access"), and the server refuses a column the caller may not write anyway
-  const writable = table.access.narrow({edit: true, insert: true});
+  if (table.table.batch === undefined) {
+    notify.error(`${table.address}: the backend does not support batch import`);
+    return Promise.resolve(null);
+  }
+  const writable = table.access.columnPolicy();
   const targets = table.properties.filter((p) => writable.field(p.name!) === 'editable');
   if (targets.length === 0) {
     notify.warning(`There is no column of ${table.address} you may write.`);
@@ -350,7 +348,7 @@ class ImportFlow {
           row[target] = frame.get(column, i);
         rows.push(row);
       }
-      this._result = await ImportFlow.post(this._table, rows, {mode, allOrNothing: this._allOrNothing.value.peek(),
+      this._result = await this._table.table.batch!(rows, {mode, allOrNothing: this._allOrNothing.value.peek(),
         errorOnDuplicate: mode === 'insert' && this._errorOnDuplicate.value.peek()});
     } catch (e) {
       this._report.replaceChildren(span(DomainErrors.message(e), 'u2-domain-import-problem'));
@@ -399,53 +397,6 @@ class ImportFlow {
     if (total > issues.length)
       host.append(span(`…and ${total - issues.length} more`));
     return host;
-  }
-
-  /** The rows posted as ONE write: the backend's bulk endpoint where it declares one (the
-   * platform's `/batch`, which owns the upsert merge and the per-row report), else one
-   * transaction — the memory backend's path, which has no bulk endpoint. */
-  static async post(table: DomainTable, rows: Record<string, unknown>[],
-    options: DomainBatchOptionsLike): Promise<DomainBatchReportLike> {
-    const handle = table.table;
-    if (handle.batch !== undefined)
-      return handle.batch(rows, options);
-    const existing = options.mode === 'upsert' ? await ImportFlow._byKey(table, rows) : new Map<string, string>();
-    const ops: DomainTransactionOpLike[] = rows.map((values) => {
-      const id = existing.get(ImportFlow._key(table, values));
-      return id === undefined ? {op: 'insert' as const, table: table.address, values} :
-        {op: 'update' as const, table: table.address, id, values};
-    });
-    const results = await handle.transaction(ops);
-    return {
-      inserted: ops.filter((op) => op.op === 'insert').length,
-      updated: ops.filter((op) => op.op === 'update').length,
-      skipped: 0, errorCount: 0,
-      rows: results.map((r, index) => ({index, id: r.id ?? null,
-        status: ops[index].op === 'insert' ? 'inserted' : 'updated'})),
-    };
-  }
-
-  /** Business key → id, for the rows an upsert would merge into — asked for by key, in chunks, so
-   * a table with more rows than one page does not silently insert duplicates. */
-  private static async _byKey(table: DomainTable, rows: Record<string, unknown>[]): Promise<Map<string, string>> {
-    const key = table.info.businessKey;
-    const wanted = new Set(rows.map((values) => ImportFlow._key(table, values)));
-    const heads = [...new Set(rows.map((values) => String(values[key[0]] ?? '')))];
-    const out = new Map<string, string>();
-    for (let at = 0; at < heads.length; at += KEY_CHUNK) {
-      const filter = Filters.toDomainTree(Filters.group('and',
-        [Filters.cond(key[0], 'in', heads.slice(at, at + KEY_CHUNK))]));
-      for (const row of await table.table.query({filter, columns: ['id', ...key], limit: KEY_CHUNK * 10})) {
-        const spelled = ImportFlow._key(table, row);
-        if (wanted.has(spelled))
-          out.set(spelled, String(row.id));
-      }
-    }
-    return out;
-  }
-
-  private static _key(table: DomainTable, values: Record<string, unknown>): string {
-    return table.info.businessKey.map((column) => String(values[column] ?? '')).join('\u0000');
   }
 
   /** The schema's rules on one cell, plus the coercion the batch engine applies to a TEXT cell:

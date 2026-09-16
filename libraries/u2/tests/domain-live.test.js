@@ -80,7 +80,7 @@ scoped('the first probe only baselines; a moved pair reloads a clean source', as
 
   await tick();
   assert.equal(be.probes.length, 1, 'ONE call per interval, not a page of rows');
-  assert.deepEqual(Object.keys(be.probes[0]).sort(), ['deleted', 'filter']);
+  assert.deepEqual(Object.keys(be.probes[0]).sort(), ['filter'], 'the one read scope, the default trash mode left off');
   assert.equal(src.stale.value, false);
 
   const issue = await be.backend.table('grit.issue');

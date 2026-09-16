@@ -8,16 +8,16 @@ import {BitArray} from 'datagrok-api/u2core';
 import {Filters} from '../core/filter/index.js';
 import {uuid4} from '../core/uuid.js';
 import {notify} from '../components/display/notify.js';
-import type {FilterGroup} from '../core/filter/model.js';
+import type {FilterCondition, FilterGroup} from '../core/filter/model.js';
 import {INT_NULL, FLOAT_NULL} from '../core/filter/evaluate.js';
 import type {MaskColumnLike, MaskFrameLike} from '../core/filter/evaluate.js';
 import type {IProperty} from '../core/property-like.js';
 import type {AccessData, FieldAccess} from '../core/access.js';
 import {Access} from '../core/access.js';
 import {DomainBackendError} from './domain-backend.js';
-import type {AuditEntryLike, DomainBackend, DomainDeletedMode, DomainFrameLike, DomainProbeLike,
-  DomainQueryLike, DomainTableInfoLike, DomainTableLike, DomainTransactionOpLike,
-  DomainTransactionResultLike} from './domain-backend.js';
+import type {AuditEntryLike, DomainBackend, DomainBatchOptionsLike, DomainBatchReportLike,
+  DomainFrameLike, DomainProbeLike, DomainQueryLike, DomainReadScope, DomainTableInfoLike,
+  DomainTableLike, DomainTransactionOpLike, DomainTransactionResultLike} from './domain-backend.js';
 import type {EditState} from './edit-state.js';
 import {MemoryEditState} from './edit-state.js';
 import {MemoryFrame} from './memory-frame.js';
@@ -374,7 +374,7 @@ export class MemoryTable implements DomainTableLike {
   }
 
   async query(spec: DomainQueryLike = {}): Promise<Row[]> {
-    let rows = await this._where(spec.filter, spec.search, spec.deleted);
+    let rows = await this._where(spec);
     if (spec.sort)
       rows = MemoryTable._sorted(rows, spec.sort);
     const offset = spec.offset ?? 0;
@@ -423,16 +423,15 @@ export class MemoryTable implements DomainTableLike {
     };
   }
 
-  async count(filter?: DomainQueryLike['filter'], search?: string,
-    deleted?: DomainDeletedMode): Promise<number> {
-    return (await this._where(filter, search, deleted)).length;
+  async count(scope: DomainReadScope = {}): Promise<number> {
+    return (await this._where(scope)).length;
   }
 
   /** The server's live probe mirrored: the matching rows counted and the newest `updated_on`
    * among them, in one call — `aggregate({measures: [{fn: 'count'}, {fn: 'max', column:
-   * 'updated_on'}]})` under the same filter, search and `deleted` mode. */
-  async probe(spec: Pick<DomainQueryLike, 'filter' | 'search' | 'deleted'> = {}): Promise<DomainProbeLike> {
-    const rows = await this._where(spec.filter, spec.search, spec.deleted);
+   * 'updated_on'}]})` under the same scope. */
+  async probe(scope: DomainReadScope = {}): Promise<DomainProbeLike> {
+    const rows = await this._where(scope);
     let last: string | null = null;
     for (const row of rows) {
       const updated = row.updated_on;
@@ -494,16 +493,108 @@ export class MemoryTable implements DomainTableLike {
     const cap = Math.max(1, Math.min(options.limit ?? MemoryTable.maxUpdateWhereRows,
       MemoryTable.maxUpdateWhereRows));
     // the Edit predicate narrows the selection silently, as the server's does
-    const matched = (await this._where(filter)).filter((row) => this._canEdit(row));
+    const matched = (await this._where({filter})).filter((row) => this._canEdit(row));
     const ids = matched.slice(0, cap).map((row) => String(row.id));
     await this.transaction(ids.map((id) => ({op: 'update' as const, table: this.address, id, values})));
     return {updated: ids.length, hasMore: matched.length > cap};
   }
 
+  /** The bulk upload, as the server's `POST …/{table}/batch` runs it (`batch_loader.dart`): the
+   * payload's columns are checked against column security before anything else, every row is
+   * validated, and then business-key duplicates — inside the batch and against the live rows —
+   * are skipped and reported, or reported as errors under `errorOnDuplicate`; `'upsert'` merges
+   * the matches instead of skipping them. `allOrNothing` (the default) answers the report with
+   * `error` set and writes nothing, the way the platform client hands the server's envelope back;
+   * otherwise the good rows land in ONE transaction and the bad ones are reported per row. */
+  async batch(rows: Record<string, unknown>[],
+    options: DomainBatchOptionsLike = {}): Promise<DomainBatchReportLike> {
+    const upsert = options.mode === 'upsert';
+    const key = this.info.businessKey;
+    const writable = new Set(this.properties.map((p) => p.name!)
+      .filter((name) => this._access.fields[name] === 'editable'));
+    for (const column of new Set(rows.flatMap((row) => Object.keys(row)))) {
+      if (!this.properties.some((p) => p.name === column))
+        throw new DomainBackendError('validation', `Unknown column "${column}"`);
+      if (!writable.has(column))
+        throw new DomainBackendError('validation', `Column "${column}" is not writable`);
+    }
+    if (upsert) {
+      if (key.length === 0)
+        throw new DomainBackendError('validation', `${this.address} declares no business key to upsert by`);
+      for (const column of key) {
+        if (!rows.every((row) => column in row)) {
+          throw new DomainBackendError('validation',
+            `Upsert requires business key column "${column}" in the payload`);
+        }
+      }
+    }
+    const errors = new Map<number, {column?: string, code?: string, message: string}[]>();
+    const addError = (index: number, column: string, code: string, message: string): void => {
+      const list = errors.get(index) ?? [];
+      list.push({column, code, message});
+      errors.set(index, list);
+    };
+    for (const [index, row] of rows.entries()) {
+      for (const prop of this.properties) {
+        const problem = MemoryEditState.problemOf(prop, row[prop.name!]);
+        if (problem !== null)
+          addError(index, prop.name!, 'invalid-value', problem);
+      }
+    }
+    const spell = (values: Row) => key.map((column) => String(values[column] ?? '')).join('\u0000');
+    const live = new Map<string, string>();
+    for (const row of this.rows) {
+      if (row[IS_DELETED] !== true)
+        live.set(spell(row), String(row.id));
+    }
+    const duplicate = new Map<number, string | null>();
+    const seen = new Set<string>();
+    for (const [index, row] of key.length === 0 ? [] : [...rows.entries()]) {
+      const spelled = spell(row);
+      // the first occurrence wins: the merge may not touch one target row twice
+      const clash = seen.has(spelled) ? 'Duplicate business key in batch' :
+        !upsert && live.has(spelled) ? 'Duplicate business key' : null;
+      seen.add(spelled);
+      if (clash === null)
+        continue;
+      if (options.errorOnDuplicate === true)
+        addError(index, key.join(','), 'unique', clash);
+      else
+        duplicate.set(index, live.get(spelled) ?? null);
+    }
+    const failed = [...errors.keys()].sort((a, b) => a - b).map((index) =>
+      ({index, id: null, status: 'error', errors: errors.get(index)!}));
+    if (options.allOrNothing !== false && errors.size > 0)
+      return {error: 'validation', inserted: 0, updated: 0, skipped: 0, errorCount: errors.size, rows: failed};
+    const ops: DomainTransactionOpLike[] = [];
+    const posted: number[] = [];
+    for (const [index, values] of rows.entries()) {
+      if (errors.has(index) || duplicate.has(index))
+        continue;
+      const id = upsert ? live.get(spell(values)) : undefined;
+      posted.push(index);
+      ops.push(id === undefined ? {op: 'insert', table: this.address, values} :
+        {op: 'update', table: this.address, id, values});
+    }
+    const results = await this.transaction(ops);
+    return {
+      inserted: ops.filter((op) => op.op === 'insert').length,
+      updated: ops.filter((op) => op.op === 'update').length,
+      skipped: duplicate.size,
+      errorCount: errors.size,
+      rows: [...failed,
+        ...[...duplicate.entries()].sort(([a], [b]) => a - b).map(([index, existingId]) =>
+          ({index, id: existingId, status: 'duplicate', ...(existingId === null ? {} : {existingId})})),
+        ...posted.map((index, i) => ({index, id: results[i].id ?? null,
+          status: ops[i].op === 'insert' ? 'inserted' : 'updated'}))],
+    };
+  }
+
   /** The row's ancestors along `info.parentColumn`, ROOT FIRST and without the row itself — the
-   * server's `GET …/{id}/path`. The walk stops at an ancestor the caller cannot see (here: a
-   * deleted one), at a cycle, and at {@link maxPathDepth}; a table the schema does not declare a
-   * hierarchy is refused by name (`DomainFilterError` on the wire). */
+   * server's `GET …/{id}/path`. The SEED level alone takes a deleted row, so a row opened from a
+   * trash list still has its breadcrumb; the walk stops at an ancestor the caller cannot see
+   * (here: a deleted one), at a cycle, and at {@link maxPathDepth}; a table the schema does not
+   * declare a hierarchy is refused by name (`DomainFilterError` on the wire). */
   async ancestors(id: string): Promise<{id: string, name: string}[]> {
     const parent = this.info.parentColumn;
     if (this.info.hierarchy !== true || parent === null || parent === undefined)
@@ -511,7 +602,7 @@ export class MemoryTable implements DomainTableLike {
     const visible = (key: unknown) => typeof key !== 'string' ? undefined :
       this.rows.find((row) => row.id === key && row[IS_DELETED] !== true);
     // no-oracle: a row the caller cannot see answers no path, never that it exists
-    let row = visible(id);
+    let row = this.rows.find((r) => r.id === id);
     if (row === undefined)
       return [];
     const chain: {id: string, name: string}[] = [];
@@ -557,11 +648,11 @@ export class MemoryTable implements DomainTableLike {
     return String((column === null ? undefined : row[column]) ?? row.id);
   }
 
-  private async _where(filter: DomainQueryLike['filter'], search?: string,
-    deleted: DomainDeletedMode = 'exclude'): Promise<Row[]> {
+  private async _where(scope: DomainReadScope): Promise<Row[]> {
+    const {filter, search, deleted = 'exclude'} = scope;
     let rows = this.rows;
     if (filter !== undefined && filter !== '') {
-      const mask = await Filters.toMask(this._frameLike(), MemoryTable._tree(filter));
+      const mask = await Filters.toMask(this._frameLike(), this._resolved(MemoryTable._tree(filter)));
       rows = rows.filter((_, i) => mask.get(i));
     }
     if (deleted !== 'include')
@@ -574,6 +665,37 @@ export class MemoryTable implements DomainTableLike {
       rows = rows.filter((row) => columns.some((c) => String(row[c] ?? '').toLowerCase().includes(q)));
     }
     return rows;
+  }
+
+  /** Every `under` term of the tree resolved over the store — the only operator with no
+   * DataFrame form the server answers, so the mask never sees one. */
+  private _resolved(root: FilterGroup): FilterGroup {
+    return {...root, nodes: root.nodes.map((node) => 'nodes' in node ? this._resolved(node) :
+      node.operator === 'under' ? this._subtree(node) : node)};
+  }
+
+  /** The hierarchy subtree term as the server compiles it: `<column> under <id>` matches the rows
+   * whose column points into the subtree rooted at that id, the seed included. The recursion
+   * walks the TARGET's live rows, so a deleted branch truncates the subtree instead of leaking
+   * it, and the seed is in the set whether or not a row carries it. */
+  private _subtree(condition: FilterCondition): FilterCondition {
+    const property = condition.property;
+    const target = property === 'id' ? this : this._backend.tableSync(this.refs[property] ?? '');
+    const parent = target === undefined ? null : target.info.parentColumn;
+    if (parent === null || parent === undefined)
+      throw new DomainBackendError('filter', `Unknown or inaccessible column "${property}"`);
+    const ids = new Set<string>([String(condition.value)]);
+    for (let grew = true; grew;) {
+      grew = false;
+      for (const row of target!.rows) {
+        if (row[IS_DELETED] !== true && typeof row.id === 'string' && !ids.has(row.id) &&
+            ids.has(String(row[parent]))) {
+          ids.add(row.id);
+          grew = true;
+        }
+      }
+    }
+    return {...condition, operator: 'in', value: [...ids]};
   }
 
   private static _tree(filter: NonNullable<DomainQueryLike['filter']>): FilterGroup {

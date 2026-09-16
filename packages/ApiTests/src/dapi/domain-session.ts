@@ -179,6 +179,33 @@ category('Dapi: domain session', () => {
     }
   });
 
+  test('lastRefusal holds the refusal sentence and a successful save clears it', async () => {
+    const prefix = `ds-refusal-${stamp()}`;
+    const [item] = await items().insert({sku: `${prefix}-0`, name: 'Item'});
+    const child = await eventsEditor(prefix);
+    const parent = await itemsEditor(prefix);
+    try {
+      child.addRow({item_id: item.id, kind: `${prefix}-ev`, amount: 1});
+      const row = parent.addRow({sku: `${prefix}-0`, name: 'Duplicate'});
+      const session = new DG.DomainSession([child, parent], {quiet: true});
+      expect(session.lastRefusal, null, 'a session refused before its first save');
+      expect(await session.save(), false, 'a duplicate sku was accepted');
+      const refusal = session.lastRefusal!;
+      expect(refusal != null, true, 'the refused save left no lastRefusal');
+      expect(refusal.editor === parent, true, 'lastRefusal names the wrong editor');
+      expect(refusal.message, parent.errorOf(row, 'sku')?.message,
+        'lastRefusal does not say what the cell says');
+      expect(typeof refusal.opIndex, 'number', 'lastRefusal carries no opIndex');
+      parent.setValue(row, 'sku', `${prefix}-1`);
+      expect(await session.save(), true, 'the corrected batch did not land');
+      expect(session.lastRefusal, null, 'a successful save did not clear lastRefusal');
+    } finally {
+      parent.detach();
+      child.detach();
+      await cleanup(prefix);
+    }
+  });
+
   test('confirmDiscardChanges(session) saves once (one transaction)', async () => {
     const prefix = `ds-gate-${stamp()}`;
     const [item] = await items().insert({sku: `${prefix}-0`, name: 'Item'});
