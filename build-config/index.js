@@ -9,20 +9,17 @@ const fs = require('fs');
 const path = require('path');
 const {rspack} = require('@rspack/core');
 
-// Provided by the platform at runtime; never bundled.
+// Provided by the platform at runtime; never bundled. Third-party libraries come from
+// platform-deps.json (a package that ships its own copy opts out with `externals: {codemirror: false}`);
+// the datagrok-api globals are the platform itself.
+const platformDeps = require('./platform-deps.json');
 const PLATFORM_EXTERNALS = {
   'datagrok-api/dg': 'DG',
   'datagrok-api/grok': 'grok',
   'datagrok-api/ui': 'ui',
-  'openchemlib/full.js': 'OCL',
-  'rxjs': 'rxjs',
-  'rxjs/operators': 'rxjs.operators',
-  'cash-dom': '$',
-  'dayjs': 'dayjs',
-  'wu': 'wu',
-  'exceljs': 'ExcelJS',
-  'html2canvas': 'html2canvas',
 };
+for (const [name, d] of Object.entries(platformDeps))
+  Object.assign(PLATFORM_EXTERNALS, {[name]: d.global}, d.imports);
 
 const ASSET_TEST = /\.(png|jpe?g|gif|svg|ico|sdf|mol|woff2?|ttf|eot|otf|csv|txt|md)$/;
 

@@ -47,6 +47,21 @@ come from the catalog in `pnpm-workspace.yaml`:
 module.exports = require('@datagrok/build-config').bundler({externals: {ngl: 'NGL'}, wasm: 'async', jsx: 'react'});
 ```
 
+## Platform-served libraries
+
+Libraries the Datagrok client provides at runtime (`rxjs`, `dayjs`, `cash-dom`, `wu`, `exceljs`,
+`html2canvas`, `openchemlib`, `vue`, `ngl`, `codemirror`) are bundled as externals and versioned once, in
+`build-config/platform-deps.json`, from where they enter the default catalog:
+
+```json
+"rxjs": "catalog:",
+"vue": "catalog:"
+```
+
+The manifest mirrors what the client ships, so bumping a version there is a platform change: the served
+file in core and the manifest move together in one release. A package may pin its own version instead;
+`grok check` warns about the override so it is visible.
+
 ## Publishing to npm
 
 Bump the version and merge to master; the Workspace workflow publishes every changed package whose

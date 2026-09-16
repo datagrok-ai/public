@@ -23,7 +23,7 @@
     "fflate": "^0.8.2",
     "lodash.clonedeepwith": "^4.5.0",
     "rxjs": "catalog:",
-    "vue": "^3.4.38",
+    "vue": "catalog:",
     "wu": "catalog:"
   },
   "devDependencies": {
