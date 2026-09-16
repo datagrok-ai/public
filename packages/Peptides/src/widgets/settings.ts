@@ -32,9 +32,7 @@ export enum GENERAL_INPUTS {
   ACTIVITY_SCALING = 'Activity scaling',
 }
 
-export enum VIEWERS_INPUTS {
-  DENDROGRAM = VIEWER_TYPE.DENDROGRAM,
-}
+export const VIEWERS_INPUTS = {DENDROGRAM: VIEWER_TYPE.DENDROGRAM} as const;
 
 export enum COLUMNS_INPUTS {
   IS_INCLUDED = '',

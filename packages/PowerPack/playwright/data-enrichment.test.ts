@@ -10,7 +10,7 @@ sub_features_covered: [powerpack.db-explorer, powerpack.db-explorer.config-wrapp
 // enrichments) — guaranteed-fail expects are replaced with console.warn until tickets land.
 
 import {test, expect, Page} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors, hasSecondUser} from '@datagrok-libraries/test/src/playwright/spec-login';
 import {
   openTableFromDbTable,
   provisionSystemDatagrokQuery,
@@ -704,7 +704,7 @@ test('PowerPack: Data enrichment — DB Explorer create/edit/apply/remove + mult
     // verified proxy. shareWithSecondUserAndVerify reloads the page + restores the primary session, so it
     // MUST be the last step before finally.
     await softStep('Sub-scenario 4: cross-user visibility — share project with second user + recipient sees it', async () => {
-      if (!projectId) return;
+      if (!projectId || !hasSecondUser()) return;
       const r = await shareWithSecondUserAndVerify(page, {id: projectId, name: projectName});
       if (!r.shared) { console.warn('Cross-user share skipped: ' + r.reason); return; }
       if (r.recipientVisible !== null) expect(r.recipientVisible).toBe(true);

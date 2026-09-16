@@ -1,9 +1,9 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {inventoryDb, ItemsRow, StockMovementsReason} from './generated/db';
+import {inventoryDb, ItemRow, StockMovementReason} from './generated/db';
 
-const reasons: StockMovementsReason[] = ['received', 'shipped', 'adjustment', 'damaged', 'returned'];
+const reasons: StockMovementReason[] = ['received', 'shipped', 'adjustment', 'damaged', 'returned'];
 
 /** Adjusts the stock of [itemId] by [delta] using optimistic concurrency: reads the
  * fresh row, then atomically updates `quantity` (guarded by its `version`) and logs
@@ -11,16 +11,16 @@ const reasons: StockMovementsReason[] = ['received', 'shipped', 'adjustment', 'd
  * `DG.retryOnVersionConflict` re-runs the whole read+write on a typed
  * DomainVersionConflictError (a concurrent adjustment bumped the version between
  * the read and the write) — no error-message matching. */
-export async function adjustStock(itemId: string, delta: number, reason: StockMovementsReason,
-  maxRetries: number = 5): Promise<ItemsRow> {
+export async function adjustStock(itemId: string, delta: number, reason: StockMovementReason,
+  maxRetries: number = 5): Promise<ItemRow> {
   return await DG.retryOnVersionConflict(async () => {
     const item = await inventoryDb.items.get(itemId);
     if (item == null)
       throw new Error('Item not found or not visible');
     const quantity = (item.quantity ?? 0) + delta;
     const [updated] = await inventoryDb.transaction([
-      {op: 'update', table: 'items', id: itemId, values: {quantity: quantity}, expectedVersion: item.version},
-      {op: 'insert', table: 'stock_movements',
+      {op: 'update', table: 'item', id: itemId, values: {quantity: quantity}, expectedVersion: item.version},
+      {op: 'insert', table: 'stock_movement',
         values: {item_id: itemId, delta: delta, reason: reason, moved_on: new Date().toISOString()}},
     ]);
     return {...item, quantity: quantity, version: updated.version};
@@ -140,7 +140,7 @@ export class InventoryApp {
     partial.setTooltip('Apply valid rows and report the bad ones per row instead of aborting the whole file');
     ui.dialog('Import items')
       .add(ui.divV([
-        ui.divText(`${file.name} → inventory.items, upsert by SKU`),
+        ui.divText(`${file.name} → inventory.item, upsert by SKU`),
         ui.inputs([partial]),
       ]))
       .onOK(() => this.runImport(file, partial.value === true))
@@ -177,7 +177,7 @@ export class InventoryApp {
     }
     const delta = ui.input.int('Delta', {value: 0});
     delta.setTooltip('Signed quantity change; the result may not go below zero');
-    const reason = ui.input.choice<StockMovementsReason>('Reason', {items: reasons, value: 'adjustment'});
+    const reason = ui.input.choice<StockMovementReason>('Reason', {items: reasons, value: 'adjustment'});
     ui.dialog(`Adjust stock: ${item.sku}`)
       .add(ui.inputs([delta, reason]))
       .onOK(async () => {
