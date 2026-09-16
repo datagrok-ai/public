@@ -12,9 +12,10 @@ export {STATES} from '../states.js';
 const INVALID_CLASSES = ['d4-invalid', 'd4-forced-invalid', 'u2-input-invalid'];
 
 const ROWS = ['.u2-list-row', '[role="option"]', '[role="row"]', '[role="tab"]', 'option', '.d4-list-item', '[name="legend-item"]', 'tbody tr', 'tr', 'li'];
-// a dock manager's tab says which of its handles is shown with a class of its own, and nothing else
+// a dock manager's tab says which of its handles is shown with a class of its own, and nothing
+// else; a Dart tree node marks its selection the same way (tree_view.dart, `selected`)
 const SELECTED = '[aria-selected="true"], [aria-pressed="true"], [aria-checked="true"], [aria-current]:not([aria-current="false"]), ' +
-  '.u2-list-row-selected, .tab-handle-selected, .dockspan-tab-handle-selected';
+  '.u2-list-row-selected, .tab-handle-selected, .dockspan-tab-handle-selected, .d4-tree-view-node-selected';
 
 export async function expectState(page: Page, target: ElementRef, state: State, negate = false): Promise<void> {
   const loc = ['visible', 'hidden', 'present', 'absent', 'enabled', 'disabled'].includes(state) ?
