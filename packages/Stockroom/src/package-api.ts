@@ -14,4 +14,11 @@ export namespace funcs {
   export async function stockroomApp(): Promise<DG.View> {
     return await grok.functions.call('Stockroom:StockroomApp', {});
   }
+
+  /**
+  The stockroom location tree, and the containers stored anywhere under the selected node
+  */
+  export async function stockroomLocations(): Promise<DG.View> {
+    return await grok.functions.call('Stockroom:StockroomLocations', {});
+  }
 }

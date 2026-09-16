@@ -150,6 +150,8 @@ const EDITORS: FilterOperator['editor'][] = ['default', 'range', 'list', 'none']
 const ORDERED: FilterKind[] = [KIND.INT, KIND.FLOAT, KIND.BIG_INT, KIND.DATE_TIME];
 const LISTABLE: FilterKind[] = [KIND.STRING, KIND.INT, KIND.FLOAT, KIND.BIG_INT, KIND.REF];
 const TEXT: FilterKind[] = [KIND.STRING, KIND.STRING_LIST];
+/** What `under` applies to: a ref column, and the string-kinded `id` column of a hierarchy table. */
+const SUBTREE: FilterKind[] = [KIND.REF, KIND.STRING];
 
 /** Escapes LIKE metacharacters. */
 export function escapeLike(s: string): string {
@@ -233,6 +235,13 @@ export const CORE_OPERATORS: FilterOperator[] = [
     id: 'not in', label: 'is not one of', arity: 'n', kinds: LISTABLE, editor: 'list',
     domain: (c, _prop, ctx) => node(c.property, '!=', domainValue(c.value, ctx)),
     mask: where((x, list: MaskCell[]) => !list.includes(x)),
+  },
+  {
+    // The hierarchy subtree term: the server walks the target's parent column
+    // recursively, so — like `fuzzy` — it has no DataFrame form and stays
+    // domain-only (an evaluation attempt is the standard 'not-expressible').
+    id: 'under', label: 'is under', arity: 1, kinds: SUBTREE, editor: 'default',
+    domain: (c, _prop, ctx) => node(c.property, 'under', domainValue(c.value, ctx)),
   },
   likeShape('like', 'contains', TEXT, 'like', (v) => `%${v}%`, (s, v) => s.includes(v)),
   {

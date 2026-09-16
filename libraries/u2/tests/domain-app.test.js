@@ -12,6 +12,8 @@ import {backends} from '../src/sources/backends.js';
 import {SharedSession} from '../src/sources/session.js';
 import {Rows} from '../src/sources/rows-like.js';
 import {notify} from '../src/components/display/notify.js';
+import {allowedActions} from '../src/components/actions/actions.js';
+import {Control} from '../src/core/component.js';
 import {backend} from './domain-fixtures.mjs';
 
 register('./dg-stub.mjs', import.meta.url);
@@ -40,6 +42,17 @@ function scoped(name, body) {
 
 const BASE = '/apps/T/Issues';
 const buttonNamed = (text) => [...document.body.querySelectorAll('.u2-dialog button')].find((b) => b.textContent === text);
+/** A ribbon control by its `data-u2`, wherever in the group it sits — the search box and the
+ * filter travel inside one wrapping item, and a subclass puts its own controls beside it. */
+function ribbonControl(group, u2) {
+  for (const control of group) {
+    const el = control.root.dataset.u2 === u2 ? control.root : control.root.querySelector(`[data-u2="${u2}"]`);
+    if (el)
+      return Control.forElement(el);
+  }
+  return undefined;
+}
+
 const crumbs = (app) => [...app.breadcrumbs.root.querySelectorAll('.u2-breadcrumbs-item, .u2-breadcrumbs-current')]
   .filter((el) => el.style.display !== 'none' && el.textContent !== '…').map((el) => el.textContent);
 
@@ -191,16 +204,19 @@ scoped('New: the entity page over a pristine draft; once saved the page is the r
   const ribbon = a.ribbon();
   assert.equal(ribbon.length, 2);
   assert.deepEqual(ribbon[0].map((c) => c.root.dataset.u2),
-    ['new-button', 'save-button', 'discard-button', 'actions-menu']);
-  assert.deepEqual(ribbon[1].map((c) => c.root.dataset.u2), ['domain-search', 'domain-filters']);
+    ['new-button', 'save-button', 'discard-button', 'actions-menu', 'refresh-button']);
+  // only the search box rides the ribbon: the shell's is one fixed 32px line with `overflow:
+  // hidden`, and the query box is a row of the LIST PAGE instead
+  assert.deepEqual(ribbon[1].map((c) => c.root.dataset.u2), ['domain-search']);
   assert.equal(ribbon[1][0].root.hidden, false);
+  const listPage = a.root.querySelector('[data-u2-part="list-page"]');
+  assert.equal(listPage.children[0] === a.filters.root, true, 'the query box is the list page first row');
   fire(ribbon[0][0].root, 'click');
   await flush();
   assert.equal(a.page.value, 'entity');
   assert.equal(a.entity.value, DomainApp.NEW);
   assert.equal(a.path.value, `${BASE}?entity=new`);
   assert.equal(ribbon[1][0].root.hidden, true, 'no search on the entity page');
-  assert.equal(ribbon[1][1].root.hidden, true);
   const source = a.entitySource.value;
   assert.equal(source.isDraft, true);
   assert.equal(Rows.isDraft(source.currentRow.value), true);
@@ -456,7 +472,7 @@ scoped('app({app: Sub}): the subclass owns the ribbon, a preset writes the query
     document.body.append(view.root);
     const a = DomainApp.of(view);
     assert.ok(a instanceof Sub);
-    assert.equal(view.ribbonPanels[1].length, 3, 'the presets beside the search box and the filters');
+    assert.equal(view.ribbonPanels[1].length, 2, 'the presets beside the search box');
     await flush();
     assert.equal(a.mine.root.dataset.u2, 'domain-presets');
     assert.deepEqual(a.mine.selected.value, [], 'no preset matches the empty query');
@@ -522,7 +538,8 @@ scoped('a query the backend refuses is the list\'s error, in the status bar and 
 scoped('a ?q= the backend refuses is not a dead end: the text stays in the box, New stands, Clear filter brings the rows back',
   async () => {
     const {app: a} = await app();
-    const [[add], [, filters]] = a.ribbon();
+    const [[add]] = a.ribbon();
+    const filters = a.filters;
     document.body.append(add.root, filters.root);
     await flush();
     assert.equal(await a.open('?q=validator'), true);
@@ -546,7 +563,7 @@ scoped('a ?q= the backend refuses is not a dead end: the text stays in the box, 
 
 scoped('an emptied box applies the empty query even when the refused one left no tree behind', async () => {
   const {app: a} = await app();
-  const [, [, filters]] = a.ribbon();
+  const filters = a.filters;
   document.body.append(filters.root);
   await flush();
   assert.equal(await a.open('?q=validator'), true);
@@ -562,7 +579,7 @@ scoped('an emptied box applies the empty query even when the refused one left no
 
 scoped('a refused filter leaves the rows as they were: shown stale, the count standing down', async () => {
   const {app: a} = await app();
-  const [, [, filters]] = a.ribbon();
+  const filters = a.filters;
   document.body.append(filters.root);
   await flush();
   assert.equal(a.summary.value, '3 issues');
@@ -572,7 +589,11 @@ scoped('a refused filter leaves the rows as they were: shown stale, the count st
   await flush();
   assert.equal(a.listSource.rows.items.value.length, 3, 'the rows still answer the previous filter');
   assert.equal(a.list.root.classList.contains('u2-domain-list-stale'), true);
-  assert.equal(a.summary.value, '—', 'the count does not confirm rows the box no longer reads as');
+  assert.match(a.summary.value, /Filter not applied|Unknown column/,
+    'the count does not confirm rows the box no longer reads as: it says why');
+  // and what it says is the box's own refusal, not a placeholder: a tooltip on a red box is not read
+  assert.equal(a.filterProblem.value, box.problems.value[0].message);
+  assert.equal(a.summary.value, a.filterProblem.value);
   box.text.value = 'done = true';
   assert.equal(box.commit(), true);
   await flush();
@@ -641,7 +662,7 @@ scoped('a preset shows in the filter box as it was written, not as the id it bin
   const a = DomainApp.of(view);
   await flush();
   await flush();
-  const filters = a.ribbon()[1].find((c) => c.root?.dataset?.u2 === 'domain-filters');
+  const filters = a.filters;
   const box = filters.input.value;
   fire(a.mine.root.querySelectorAll('.u2-btn-group-item')[0], 'click');
   await flush();
@@ -732,7 +753,8 @@ scoped('trash mode: the ⋯ menu toggles ?trash=1, the rows are read-only with R
   fire(more.root, 'click');
   await flush();
   const items = [...document.querySelectorAll('[role="menuitem"] .u2-menu-label')].map((el) => el.textContent);
-  assert.deepEqual(items, ['Trash']);
+  assert.deepEqual(items, ['Import…', 'Bulk edit…', 'Trash']);
+  assert.equal(a.breadcrumbs.root.hidden, true, 'a plain list has no breadcrumb: the view title names the table');
 
   a.listSource.edit.value.markDeleted('i2');
   assert.equal(await a.session.save(), true);
@@ -743,8 +765,9 @@ scoped('trash mode: the ⋯ menu toggles ?trash=1, the rows are read-only with R
   assert.equal(a.listSource.deleted.value, 'only');
   assert.equal(a.path.value, `${BASE}?trash=1`);
   assert.deepEqual(a.listSource.rows.items.value.map((r) => r.title), ['Ibuprofen']);
-  assert.equal(a.summary.value, '1 deleted row');
+  assert.equal(a.summary.value, '1 deleted issue', 'the table is named, as the live count names it');
   assert.deepEqual(crumbs(a), ['Issues', 'Trash']);
+  assert.equal(a.breadcrumbs.root.hidden, false, 'the LIST page reads "Issues › Trash" too');
   assert.equal(save.root.hidden, true, 'nothing to save in the trash');
   assert.equal(discard.root.hidden, true);
   assert.equal(add.root.hidden, true, 'and nothing to insert: the access is narrowed');
@@ -765,7 +788,7 @@ scoped('trash mode: the ⋯ menu toggles ?trash=1, the rows are read-only with R
   a.dispose();
 });
 
-scoped('?trash=1 round-trips through open(); without the delete grant there is no ⋯ menu', async () => {
+scoped('?trash=1 round-trips through open(); without the delete grant the menu drops Trash', async () => {
   const {app: a} = await app({query: 'done = false'});
   await flush();
   assert.equal(await a.open('?trash=1&q=done%20%3D%20false'), true);
@@ -783,8 +806,102 @@ scoped('?trash=1 round-trips through open(); without the delete grant there is n
   document.body.append(b.root);
   const ribbon = b.ribbon();
   await flush();
-  assert.equal(ribbon[0][3].root.hidden, true, 'permission ⇒ hidden: nothing in the menu is allowed');
+  assert.deepEqual(allowedActions(b.menuActions(), {access: b.listSource.access.value}).map((x) => x.name),
+    ['Import…', 'Bulk edit…'], 'permission ⇒ hidden: Trash alone is gone');
+  assert.equal(ribbon[0][3].root.hidden, false, 'the ⋯ button stands while anything in it is allowed');
   b.dispose();
+
+  backends.domain = backend({access: {can: {view: true, insert: false, edit: false, delete: false, share: false},
+    fields: {title: 'editable'}}});
+  const c = domains.app({table: await domains.table('grit.issue'), base: BASE, pageSize: 10});
+  document.body.append(c.root);
+  const bare = c.ribbon();
+  await flush();
+  assert.equal(bare[0][3].root.hidden, true, 'and the button goes when nothing in it is allowed');
+  c.dispose();
+});
+
+scoped('Refresh is in the ribbon only while the page is stale, and reloads through the gate', async () => {
+  const memory = backend();
+  let last = '2026-01-01T00:00:00Z';
+  memory.tableSync('grit.issue').probe = () => Promise.resolve({count: 3, last});
+  backends.domain = memory;
+  const table = await domains.table('grit.issue');
+  const a = domains.app({table, base: BASE, pageSize: 10});
+  document.body.append(a.root);
+  await flush();
+  const reload = a.ribbon()[0][4];
+  await flush();
+  assert.equal(reload.root.dataset.u2, 'refresh-button');
+  assert.equal(reload.root.hidden, true, 'nothing is behind the server yet');
+
+  // the poll's own tick, taken by hand: the first one only records what the server looks like
+  let tick;
+  const saved = globalThis.setInterval;
+  globalThis.setInterval = (fn) => (tick = fn, 0);
+  a.listSource.live.value = true;
+  await flush();
+  globalThis.setInterval = saved;
+  a.listSource.edit.value.setValue('i1', 'title', 'Edited');
+  tick();
+  await flush();
+  last = '2026-02-02T00:00:00Z';
+  tick();
+  await flush();
+  assert.equal(a.stale.value, true, 'the collection moved under pending changes');
+  assert.equal(reload.root.hidden, false);
+
+  fire(reload.root.querySelector('button') ?? reload.root, 'click');
+  await flush();
+  fire(buttonNamed('DISCARD'), 'click');
+  await flush();
+  assert.equal(a.session.isDirty.value, false);
+  assert.equal(a.stale.value, false, 'the reload cleared it');
+  assert.equal(reload.root.hidden, true);
+  a.dispose();
+});
+
+scoped('entering and leaving the trash is ONE history entry each, and Back leaves it', async () => {
+  const {app: a} = await app();
+  const saved = globalThis.history;
+  const pushes = [];
+  globalThis.history = {pushState: (_state, _title, url) => pushes.push(url), replaceState: () => {}};
+  try {
+    assert.equal(await a.setTrash(true), true);
+    await flush();
+    assert.deepEqual(pushes, [`${BASE}?trash=1`], 'one entry for the move into the trash');
+    assert.equal(await a.setTrash(false), true);
+    await flush();
+    assert.deepEqual(pushes, [`${BASE}?trash=1`, BASE], 'and one back out');
+    // Back: the entry before the trash is the bare list, which `open` restores without pushing
+    assert.equal(await a.setTrash(true), true);
+    await flush();
+    assert.equal(await a.open(BASE), true);
+    await flush();
+    assert.equal(a.trash.value, false, 'Back leaves the trash');
+    assert.equal(pushes.length, 3, 'and the restore pushed nothing');
+  } finally {
+    globalThis.history = saved;
+    a.dispose();
+  }
+});
+
+scoped('entering the trash from the entity page is still one entry', async () => {
+  const {app: a} = await app();
+  assert.equal(await a.goTo('entity', 'i2'), true);
+  await flush();
+  const saved = globalThis.history;
+  const pushes = [];
+  globalThis.history = {pushState: (_state, _title, url) => pushes.push(url), replaceState: () => {}};
+  try {
+    assert.equal(await a.setTrash(true), true);
+    await flush();
+    assert.equal(a.page.value, 'list');
+    assert.deepEqual(pushes, [`${BASE}?trash=1`], 'the page and the mode settle together');
+  } finally {
+    globalThis.history = saved;
+    a.dispose();
+  }
 });
 
 const UUID = '11111111-2222-3333-4444-555555555555';
@@ -891,7 +1008,8 @@ scoped('history: one entry per user move, none while restoring, and the push lan
     const table = await domains.table('grit.issue');
     const saved = globalThis.history;
     const log = [];
-    globalThis.history = {pushState: (_state, _title, url) => log.push(['push', url])};
+    globalThis.history = {pushState: (_state, _title, url) => log.push(['push', url]),
+      replaceState: (_state, _title, url) => log.push(['replace', url])};
     const pushes = () => log.filter(([kind]) => kind === 'push').map(([, url]) => url);
     let a;
     try {
@@ -912,24 +1030,29 @@ scoped('history: one entry per user move, none while restoring, and the push lan
       await flush();
       a.listSource.search.value = 'ibu';
       await flush();
-      assert.deepEqual(pushes(), [`${BASE}?entity=i2`, BASE, `${BASE}?q=done%20%3D%20true`,
-        `${BASE}?q=done%20%3D%20true&search=ibu`], 'a page, a query and a search are three moves');
+      // a page move is an entry each; the query OPENS one for the text and the search, still in
+      // the same burst, rewrites it — typing is not navigating (five keystrokes were five Backs)
+      assert.deepEqual(pushes(), [`${BASE}?entity=i2`, BASE, `${BASE}?q=done%20%3D%20true`],
+        'two page moves and one entry for the text');
+      assert.deepEqual(log[log.length - 1], ['path', `${BASE}?q=done%20%3D%20true&search=ibu`]);
+      assert.equal(log.some(([kind, url]) => kind === 'replace' &&
+        url === `${BASE}?q=done%20%3D%20true&search=ibu`), true, 'the search rewrote that entry');
       assert.equal(await a.open(`${BASE}?entity=i1`), true);
       await flush();
       assert.equal(await a.open(BASE), true);
       await flush();
-      assert.equal(pushes().length, 4, 'a restore from the address bar pushes nothing');
+      assert.equal(pushes().length, 3, 'a restore from the address bar pushes nothing');
       const ribbon = a.ribbon();
       fire(ribbon[0][0].root, 'click');
       await flush();
-      assert.equal(pushes().length, 5, 'New is a move');
+      assert.equal(pushes().length, 4, 'New is a move');
       a.form.value.input('project_id').value.value = 'p1';
       a.form.value.input('title').value.value = 'Fresh';
       await flush();
       assert.equal(await a.session.save(), true);
       await flush();
       assert.equal(a.entity.value, backends.domain.tableSync('grit.issue').rows.find((r) => r.title === 'Fresh').id);
-      assert.equal(pushes().length, 5, 'the draft that became a row is the same page');
+      assert.equal(pushes().length, 4, 'the draft that became a row is the same page');
     } finally {
       globalThis.history = saved;
       a?.dispose();
@@ -963,7 +1086,7 @@ scoped('Back restores the app from the address bar, and pushes nothing while doi
   const savedHistory = globalThis.history;
   const address = globalThis.location;
   const pushes = [];
-  globalThis.history = {pushState: (_state, _title, url) => pushes.push(url)};
+  globalThis.history = {pushState: (_state, _title, url) => pushes.push(url), replaceState: () => {}};
   let a;
   try {
     const view = table.app({path: BASE});
@@ -994,4 +1117,27 @@ scoped('Back restores the app from the address bar, and pushes nothing while doi
     grok.shell.v = undefined;
     a?.dispose();
   }
+});
+
+scoped('a selection is not a pending change: the unload gate stays down over a clean list', async () => {
+  const {app: a} = await app();
+  a.guardUnload();
+  a.list.list.root.clientHeight = 400;
+  fire(a.list.list.root, 'scroll');
+  await flush();
+  // the guard prevents the event; a prevented dispatch answers false
+  const armed = () => fire(globalThis, 'beforeunload', {cancelable: true}) === false;
+  assert.equal(armed(), false, 'nothing pending, nothing to hold the browser for');
+
+  fire(a.list.root.querySelector('[data-u2-row="i1"]'), 'click');
+  fire(a.list.root.querySelector('[data-u2-row="i3"]'), 'click', {ctrlKey: true});
+  await flush();
+  assert.deepEqual(a.listSource.selection.value.map((r) => r.id), ['i1', 'i3']);
+  assert.equal(a.session.isDirty.value, false, 'picking rows writes nothing');
+  assert.equal(armed(), false, 'so leaving a clean list asks nothing');
+
+  a.listSource.rows.byKey('i1').title = 'Edited';
+  await flush();
+  assert.equal(armed(), true, 'an actual change does hold it');
+  a.dispose();
 });

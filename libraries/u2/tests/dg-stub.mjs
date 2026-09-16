@@ -238,6 +238,40 @@ export const drops = [];
 export function makeDroppable(element, options) {
   drops.push({element, ...options});
 }
+
+/** The platform inputs u2 bridges through \`fromDartInput\`, as much of \`DG.InputBase\` as the
+ * bridge reads: a root carrying the platform editor, a value that notifies, and no dart handle
+ * (so the bridge skips the Dart-side validation hookup). A test picks by writing \`value\`. */
+export const input = {
+  table(name) {
+    const root = document.createElement('div');
+    root.className = 'ui-input-root ui-input-table';
+    const editor = document.createElement('select');
+    editor.className = 'ui-input-editor';
+    root.append(editor);
+    const listeners = [];
+    let held = null;
+    return {
+      root, caption: name, dart: null,
+      get value() { return held; },
+      set value(x) {
+        held = x;
+        for (const fn of listeners.slice())
+          fn(x);
+      },
+      onChanged: {
+        subscribe(fn) {
+          listeners.push(fn);
+          return {unsubscribe() {
+            const at = listeners.indexOf(fn);
+            if (at >= 0)
+              listeners.splice(at, 1);
+          }};
+        },
+      },
+    };
+  },
+};
 `;
 
 const URLS = {

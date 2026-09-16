@@ -460,6 +460,33 @@ paths:
       responses:
         "200":
           description: Successful response
+  /domains/{schema}/{table}/update:
+    post:
+      operationId: updateRows
+      summary: update rows
+      description: "Filtered bulk update: body {filter, values, limit?}. Applies [values] to up to [limit] (default and max 1000) matching rows the caller may edit, oldest first, in ONE transaction; a per-row refusal aborts the whole request. Returns {'updated': n, 'hasMore': bool}. 'filter' and 'values' are both required — an empty filter would be a full-table edit."
+      tags:
+        - domains
+      parameters:
+        - name: schema
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: table
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Map"
+      responses:
+        "200":
+          description: Successful response
   /domains/{schema}/transaction:
     post:
       operationId: runTransaction
@@ -717,6 +744,11 @@ paths:
           required: false
           schema:
             type: boolean
+        - name: deleted
+          in: query
+          required: false
+          schema:
+            type: string
       responses:
         "200":
           description: Successful response
@@ -774,6 +806,32 @@ paths:
       responses:
         "200":
           description: Successful response
+  /domains/{schema}/{table}/{id}/restore:
+    post:
+      operationId: restoreRow
+      summary: restore row
+      description: "Undo of [deleteRow]: clears the soft delete of a trashed row under the caller's Delete grant. Returns {'id', 'restored': true, 'version'}; a row whose FK points at a deleted parent is refused with a 409 naming it."
+      tags:
+        - domains
+      parameters:
+        - name: schema
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: table
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful response
   /domains/{schema}/{table}/{id}/promote:
     post:
       operationId: promoteRow
@@ -803,6 +861,32 @@ paths:
     get:
       operationId: rowAudit
       summary: row audit
+      tags:
+        - domains
+      parameters:
+        - name: schema
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: table
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful response
+  /domains/{schema}/{table}/{id}/path:
+    get:
+      operationId: ancestors
+      summary: ancestors
+      description: "Strict ancestors of a row on a `hierarchy` table: [{id, name}] root first, the row itself excluded, truncated at the first ancestor the caller may not see. A table that is not a hierarchy is a 400."
       tags:
         - domains
       parameters:

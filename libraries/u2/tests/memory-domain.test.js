@@ -6,10 +6,10 @@
 
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {MemoryDomainBackend} from '../src/sources/memory-domain.js';
+import {MemoryDomainBackend, MemoryTable} from '../src/sources/memory-domain.js';
 import {Filters} from '../src/core/filter/index.js';
 
-import {SCHEMA, backend} from './domain-fixtures.mjs';
+import {SCHEMA, backend, LOCATIONS, TREE, locations} from './domain-fixtures.mjs';
 
 test('schema: columns become properties, system columns first; info from the declaration', async () => {
   const issue = await backend().table('grit.issue');
@@ -35,7 +35,7 @@ test('schema: columns become properties, system columns first; info from the dec
   assert.deepEqual(issue.info, {nameColumn: 'title', businessKey: ['project_id', 'number'],
     singularName: 'Issue', pluralName: 'Issues', searchableColumns: ['title', 'description'],
     constraints: [{name: 'weight_positive', expr: 'weight >= 0', message: 'Weight is positive'}], refFilters: {},
-    permissions: ['escalate'], childTables: []});
+    permissions: ['escalate'], childTables: [], hierarchy: false, parentColumn: null});
   const project = await backend().table('grit.project');
   assert.equal(project.info.nameColumn, 'name', 'the convention fallback');
 
@@ -375,4 +375,102 @@ test('soft delete: a deleted child holds no delete back, and a deleted parent ve
   await project.restore('p2');
   await issue.restore('i3');
   assert.equal(await issue.count(), 3, 'the parent first, then the child');
+});
+
+test('updateWhere: the filter selects, the cap limits, hasMore says the filter matched past it', async () => {
+  const issue = await backend().table('grit.issue');
+  assert.deepEqual(await issue.updateWhere('id in ("i1", "i3")', {priority: 'low'}),
+    {updated: 2, hasMore: false});
+  const rows = await issue.query();
+  assert.deepEqual(rows.map((r) => r.priority), ['low', undefined, 'low']);
+  assert.deepEqual(rows.map((r) => r.version), [2, 1, 2], 'only the matched rows were written');
+  const audit = await issue.audit('i1');
+  assert.deepEqual(audit.map((a) => a.op), ['update'], 'one audit line per row');
+
+  assert.deepEqual(await issue.updateWhere('done = false', {priority: 'high'}, {limit: 1}),
+    {updated: 1, hasMore: true}, 'the cap stops at limit and reports the rest');
+  assert.deepEqual(await issue.updateWhere('done = false', {priority: 'low'}, {limit: 0}),
+    {updated: 1, hasMore: true}, 'a limit of 0 is clamped to one row, never an infinite drain');
+  assert.deepEqual(await issue.updateWhere('done = false', {priority: 'low'}, {limit: 9999}),
+    {updated: 2, hasMore: false}, 'and a limit past the cap is clamped down to it');
+  assert.deepEqual(await issue.updateWhere('title starts "zzz"', {priority: 'high'}),
+    {updated: 0, hasMore: false});
+});
+
+test('updateWhere: a filter is required, a column the caller cannot write is refused, nothing lands', async () => {
+  const issue = await backend().table('grit.issue');
+  for (const filter of [undefined, null, '', []])
+    await assert.rejects(issue.updateWhere(filter, {priority: 'low'}), (e) => e.code === 'validation' && /filter is required/.test(e.message));
+  for (const values of [{version: 9}, {created_on: 'x'}, {nope: 1}, {'~can_edit': true}]) {
+    await assert.rejects(issue.updateWhere('done = false', values),
+      (e) => e.code === 'validation' && /cannot be updated/.test(e.message));
+  }
+  await assert.rejects(issue.updateWhere('done = false', {}),
+    (e) => e.code === 'validation' && /non-empty values/.test(e.message));
+  assert.deepEqual((await issue.query()).map((r) => r.version), [1, 1, 1], 'a refusal writes nothing');
+
+  // all-or-nothing: the schema refuses the second row, so the first is rolled back too
+  await assert.rejects(issue.updateWhere('done = false', {priority: 'nope'}),
+    (e) => e.code === 'validation' && /Must be one of/.test(e.message));
+  assert.deepEqual((await issue.query()).map((r) => r.version), [1, 1, 1]);
+});
+
+test('updateWhere: the Edit predicate narrows the selection silently, and deleted rows are never touched', async () => {
+  const rows = {project: [], issue: [
+    {id: 'i1', project_id: 'p1', number: 1, title: 'Mine', '~can_edit': true},
+    {id: 'i2', project_id: 'p1', number: 2, title: 'Theirs', '~can_edit': false},
+  ]};
+  const issue = new MemoryDomainBackend(SCHEMA, {rows}).tableSync('grit.issue');
+  assert.deepEqual(await issue.updateWhere('number >= 1', {priority: 'low'}), {updated: 1, hasMore: false},
+    'the row the caller may not edit is left out, not refused');
+  assert.deepEqual((await issue.query()).map((r) => r.priority), ['low', undefined]);
+
+  await issue.transaction([{op: 'delete', table: 'issue', id: 'i1'}]);
+  assert.deepEqual(await issue.updateWhere('number >= 1', {priority: 'high'}), {updated: 0, hasMore: false},
+    'a trashed row is not a live row');
+
+  const readOnly = new MemoryDomainBackend(SCHEMA,
+    {rows, access: {can: {view: true, edit: false}, fields: {priority: 'editable'}}}).tableSync('grit.issue');
+  assert.deepEqual(await readOnly.updateWhere('number >= 1', {priority: 'low'}), {updated: 1, hasMore: false},
+    'a row\'s own ~can_edit is the truth the table-level denial cannot override');
+});
+
+test('ancestors: root-first, without the row itself; a non-hierarchy table is refused by name', async () => {
+  const location = locations();
+  assert.equal(location.info.hierarchy, true);
+  assert.equal(location.info.parentColumn, 'parent_id');
+  assert.deepEqual(await location.ancestors('l4'),
+    [{id: 'l1', name: 'Site'}, {id: 'l2', name: 'Room'}, {id: 'l3', name: 'Shelf'}]);
+  assert.deepEqual(await location.ancestors('l1'), [], 'a root has none');
+  assert.deepEqual(await location.ancestors('l9'), []);
+  assert.deepEqual(await location.ancestors('nope'), [], 'a row the caller cannot see answers no path');
+
+  const issue = await backend().table('grit.issue');
+  await assert.rejects(issue.ancestors('i1'),
+    (e) => e.code === 'filter' && /grit\.issue is not a hierarchy table/.test(e.message),
+    'the server answers DomainFilterError, whose wire code is "filter"');
+  assert.throws(() => new MemoryDomainBackend({name: 's', tables: {t: {hierarchy: true,
+    columns: {x: {type: 'int'}}}}}), (e) => /invalid-hierarchy/.test(e.message));
+});
+
+test('ancestors: the chain stops at an ancestor out of sight, at a cycle and at the depth cap', async () => {
+  const location = locations();
+  await location.transaction([{op: 'delete', table: 'location', id: 'l4'}]);
+  assert.deepEqual(await location.ancestors('l4'), [], 'a deleted row has no path either');
+  // no-oracle: an ancestor the caller cannot see is simply not there, and the chain ends where
+  // it stops resolving — a live row can never have a DELETED ancestor, the FK veto sees to that
+  const orphan = locations({rows: {location: [...TREE.location, {id: 'l5', name: 'Orphan', parent_id: 'hidden'}]}});
+  assert.deepEqual(await orphan.ancestors('l5'), []);
+
+  const cyclic = locations();
+  await cyclic.transaction([{op: 'update', table: 'location', id: 'l1', values: {parent_id: 'l4'}}]);
+  assert.deepEqual((await cyclic.ancestors('l4')).map((a) => a.id), ['l1', 'l2', 'l3'],
+    'a cycle terminates at the row it came back to');
+
+  const deep = new MemoryDomainBackend(LOCATIONS, {rows: {location:
+    Array.from({length: 80}, (_, i) => ({id: `d${i}`, name: `L${i}`, ...(i === 0 ? {} : {parent_id: `d${i - 1}`})}))}})
+    .tableSync('stock.location');
+  const chain = await deep.ancestors('d79');
+  assert.equal(chain.length, MemoryTable.maxPathDepth);
+  assert.equal(chain.at(-1).id, 'd78', 'root-first, truncated at the far end');
 });

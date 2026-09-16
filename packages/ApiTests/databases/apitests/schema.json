@@ -1,7 +1,7 @@
 {
   "$schema": "https://datagrok.ai/schemas/domain-schema.schema.json",
   "name": "apitests",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "tables": {
     "item": {
       "securityMode": "row",
@@ -11,7 +11,8 @@
       "columns": {
         "sku": {"type": "string", "required": true, "unique": true},
         "name": {"type": "string", "searchable": true},
-        "quantity": {"type": "int", "min": 0}
+        "quantity": {"type": "int", "min": 0},
+        "origin": {"type": "string", "immutable": true, "description": "Write-once fixture column for the updateWhere/immutable ApiTests"}
       },
       "schemas": ["item_meta"],
       "relations": {

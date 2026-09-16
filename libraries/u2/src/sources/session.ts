@@ -93,6 +93,9 @@ export class SharedSession implements DomainSession {
     try {
       const changes = this.changeCount.peek();
       const batch = this._withReferenced(dirty);
+      // what the batch DOES, read before it lands and empties the pending rows: a batch of deletes
+      // alone is not "saved", it is deleted, and the balloon has to say so
+      const deleting = batch.every((s) => s.pending().every((r) => r[Rows.STATE] === 'deleted'));
       for (const source of batch) {
         if (source.check() !== null)
           return false;
@@ -140,10 +143,9 @@ export class SharedSession implements DomainSession {
       } finally {
         SharedSession._hold(batch, false);
       }
-      const what = batch[0].schema.info.singularName || 'Row';
       const tables = new Set(batch.map((s) => s.table)).size;
       notify.info(tables > 1 ? `${changes} change${changes === 1 ? '' : 's'} saved in ${tables} tables` :
-        changes > 1 ? `${changes} changes saved` : `${what.charAt(0).toUpperCase()}${what.slice(1)} saved`);
+        SharedSession._landed(batch[0], changes, deleting));
       this.onSaved.fire();
       return true;
     } finally {
@@ -168,10 +170,23 @@ export class SharedSession implements DomainSession {
    * itself and answers false): the summary still has to say the changes are stuck, and the
    * column errors the editor mapped onto the cells name why. */
   private static _refused(batch: readonly DomainSource[]): void {
-    const problem = batch.map((s) => s.validity.peek()).find((v) => v !== null) ??
-      'the changes were refused';
+    // a refusal naming a column reaches that cell and is the source's validity; one about a whole
+    // row (a delete a child's reference vetoes) reaches nothing, and the writer kept the sentence
+    const problem = batch.map((s) => s.validity.peek() ?? s.edit.peek()?.problem ?? null)
+      .find((v) => v != null) ?? 'the changes were refused';
     for (const source of batch)
       source.refuse(problem);
+  }
+
+  /** What one table's landed batch says: the table's own words, and what was done to it. */
+  private static _landed(source: DomainSource, changes: number, deleting: boolean): string {
+    const info = source.schema.info;
+    const one = changes === 1;
+    const what = (one ? info.singularName || 'row' : info.pluralName || 'rows').replace(/_/g, ' ');
+    if (!deleting && !one)
+      return `${changes} changes saved`;
+    const subject = one ? `${what.charAt(0).toUpperCase()}${what.slice(1)}` : `${changes} ${what.toLowerCase()}`;
+    return `${subject} ${deleting ? 'deleted' : 'saved'}`;
   }
 
   /** The save set: the dirty sources, plus every source holding a draft one of them refers to — a

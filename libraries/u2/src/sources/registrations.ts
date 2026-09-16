@@ -129,8 +129,14 @@ const METAS: ComponentMeta[] = [
         description: 'Load no rows; drafts can still be added — a child collection under a draft parent.'},
       {name: 'draft', type: 'bool',
         description: 'Load nothing and start on one pristine draft — what a create form binds to.'},
+      {name: 'deleted', type: 'string', choices: ['exclude', 'include', 'only'],
+        description: 'Which rows the source answers: the live ones (default), the live and the ' +
+          'soft-deleted, or the deleted alone — a trash list, read-only until its rows are restored.'},
+      {name: 'live', type: 'bool', bindable: true,
+        description: 'Follow the server: the source probes the table every 30 s and reloads while there ' +
+          'is nothing unsaved to lose, marking itself stale while there is.'},
     ],
-    defaults: {pageSize: 50, withAccess: true, empty: false, draft: false},
+    defaults: {pageSize: 50, withAccess: true, empty: false, draft: false, deleted: 'exclude', live: false},
     example: {tag: 'u2-domain-source', name: 'issues', props: {table: 'grit.issue', pageSize: 50}},
   },
 ];

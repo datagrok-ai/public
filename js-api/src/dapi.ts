@@ -60,6 +60,7 @@ import {
   DomainTableClientOptions,
   DomainTableInfo,
   DomainTransactionOp,
+  DomainUpdateReport,
   DomainUpdateResult,
   DomainValidationError,
   DomainRowAccess,
@@ -1440,12 +1441,19 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
   get(id: string): Promise<TRow>;
   /** {@link get} with the row's {@link DOMAIN_ACCESS_COLUMNS} (`~can_edit`, `~can_delete`,
    * `~can_share`) — the {@link DomainRowAccess} keys beside the row's own. */
-  get(id: string, options: {withAccess: true}): Promise<TRow & DomainRowAccess>;
-  get(id: string, options?: {withAccess?: boolean}): Promise<TRow>;
-  async get(id: string, options?: {withAccess?: boolean}): Promise<TRow> {
+  get(id: string, options: {withAccess: true; deleted: 'include' | 'only'}):
+    Promise<TRow & DomainRowAccess & {'~is_deleted': boolean}>;
+  get(id: string, options: {withAccess: true; deleted?: 'exclude'}): Promise<TRow & DomainRowAccess>;
+  /** {@link get} scoped by `options.deleted` (see {@link DomainQuerySpec.deleted}): `'include'`
+   * or `'only'` make a soft-deleted row addressable — it comes back carrying `~is_deleted` and
+   * is read-only until {@link restore} brings it back. */
+  get(id: string, options: {deleted: 'include' | 'only'; withAccess?: false}):
+    Promise<TRow & {'~is_deleted': boolean}>;
+  get(id: string, options?: {withAccess?: boolean; deleted?: DomainQuerySpec['deleted']}): Promise<TRow>;
+  async get(id: string, options?: {withAccess?: boolean; deleted?: DomainQuerySpec['deleted']}): Promise<TRow> {
     const datetimes = this._datetimes();
     const row = await domainCall(api.grok_Dapi_Domains_GetRow(this.dart, this.schema, this.table, id,
-      options?.withAccess ?? false));
+      options?.withAccess ?? false, options?.deleted ?? 'exclude'));
     return this._fromWire(row, await datetimes);
   }
 
@@ -1526,6 +1534,31 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
   deleteWhere(filter: DomainFilter<TColumn>, options?: {limit?: number}): Promise<DomainDeleteReport> {
     return domainCall(api.grok_Dapi_Domains_DeleteWhere(this.dart, this.schema, this.table,
       filter, options?.limit ?? null));
+  }
+
+  /** Applies [values] to up to `options.limit` (≤1000, default 1000) matching rows you may edit,
+   * oldest first, in ONE transaction — the bulk-edit primitive (`updateWhere('id in ("…","…")',
+   * {status_id: closedId})` for a selection, a real filter for everything that matches).
+   * The filter is required — an empty one rejects with a {@link DomainValidationError} — and
+   * rows you may see but not edit are silently not selected. `values` is validated once, like
+   * an {@link update} payload: an immutable, system or `~` column, a relation name, or a value
+   * the column refuses rejects the WHOLE call ({@link DomainValidationError}); so does any row
+   * that fails on its turn — nothing is written. A row gone by then (deleted concurrently) is
+   * skipped, not an error. Each row runs through the per-row engine (validation, audit), so
+   * prefer a narrow filter and a modest limit, and loop while `hasMore`. */
+  updateWhere(filter: DomainFilter<TColumn>, values: TUpdate,
+              options?: {limit?: number}): Promise<DomainUpdateReport> {
+    return domainCall(api.grok_Dapi_Domains_UpdateWhere(this.dart, this.schema, this.table,
+      filter, values, options?.limit ?? null));
+  }
+
+  /** Ancestors of [id] in a table that declares a hierarchy ({@link DomainTableInfo.hierarchy}),
+   * root first — what a breadcrumb renders in front of the row. The row ITSELF is not in the
+   * list, so a root resolves to `[]`. Every level passes the View predicate, so a chain through
+   * an ancestor the caller cannot see is TRUNCATED (the visible tail, no hole and no leak), and
+   * a non-hierarchy table rejects with a {@link DomainFilterError}. Depth is capped at 64. */
+  pathTo(id: string): Promise<{id: string; name: string}[]> {
+    return domainCall(api.grok_Dapi_Domains_PathTo(this.dart, this.schema, this.table, id));
   }
 
   /** Creates the entities row for a domain row so it can be individually shared. */

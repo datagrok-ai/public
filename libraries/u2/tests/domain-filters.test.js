@@ -12,7 +12,7 @@ import {backends} from '../src/sources/backends.js';
 import {Filters} from '../src/core/filter/index.js';
 import {Registry} from '../src/spec/registry.js';
 import {registerAll} from '../src/spec/registrations.js';
-import {backend} from './domain-fixtures.mjs';
+import {backend, hierarchyBackend} from './domain-fixtures.mjs';
 
 register('./dg-stub.mjs', import.meta.url);
 const {domains} = await import('../src/dg/domain/index.js');
@@ -145,6 +145,127 @@ scoped('a schema the platform refuses leaves the box out, says why through the s
   await flush();
   await flush();
   assert.notEqual(filters.input.value, null, 'the latch released with the failure: the next state builds the box');
+  filters.dispose();
+  src.dispose();
+});
+
+scoped('"is under" is offered only where the hierarchy it walks exists', async () => {
+  backends.domain = hierarchyBackend();
+  const table = await domains.table('stock.location');
+  const src = table.source({pageSize: 10});
+  await flush();
+  const filters = domains.filters(src);
+  await flush();
+  const offers = (name) => filters.input.value.options.schema
+    .operators(src.schema.properties.find((p) => p.name === name), Filters.operators.for({name, kind: 'string'}))
+    .map((o) => o.id);
+  assert.equal(offers('parent_id').includes('under'), true, 'a ref column into a hierarchy table');
+  assert.equal(offers('id').includes('under'), true, 'and `id` on the hierarchy itself');
+  assert.equal(offers('name').includes('under'), false, 'a plain string column is not a subtree');
+  assert.equal(offers('name').includes('like'), true, 'and keeps everything else');
+  filters.dispose();
+  src.dispose();
+
+  backends.domain = backend();
+  const issue = await domains.table('grit.issue');
+  const issues = issue.source({pageSize: 10});
+  await flush();
+  const plain = domains.filters(issues);
+  await flush();
+  const prop = issues.schema.properties.find((p) => p.name === 'project_id');
+  assert.equal(plain.input.value.options.schema.operators(prop, Filters.operators.for(prop))
+    .map((o) => o.id).includes('under'), false, 'the ref target is not a hierarchy');
+  plain.dispose();
+  issues.dispose();
+});
+
+scoped('clearing a refused filter releases it: the box, the status and the stale mark all let go', async () => {
+  const src = await issues();
+  const filters = domains.filters(src);
+  await flush();
+  const input = filters.input.value;
+  commit(filters, 'zzz = "1"');
+  await flush();
+  assert.notEqual(filters.problem.value, null, 'an unknown column is refused');
+  assert.equal(input.problems.value.length > 0, true);
+
+  commit(filters, '');
+  await flush();
+  assert.equal(filters.problem.value, null, 'the box is about what is in it, not about what was');
+  assert.deepEqual(input.problems.value, []);
+  filters.dispose();
+  src.dispose();
+});
+
+scoped('an `under` value slot offers the rows of the hierarchy, not the values the column holds', async () => {
+  backends.domain = hierarchyBackend();
+  const table = await domains.table('stock.location');
+  const src = table.source({pageSize: 10});
+  await flush();
+  const filters = domains.filters(src);
+  await flush();
+  const schema = filters.input.value.options.schema;
+  const prop = src.schema.properties.find((p) => p.name === 'parent_id');
+  const signal = new AbortController().signal;
+
+  const under = await schema.values(prop, '', signal, {operator: 'under'});
+  assert.deepEqual(under.map((i) => i.label).sort(),
+    ['Box', 'Other site', 'Room', 'Shelf', 'Site'], 'every location, including the ones holding nothing');
+  assert.deepEqual(under[0].value, {type: 'stock.location', id: under[0].value.id, name: under[0].label},
+    'the caption is shown and the id is what lands in the query');
+  assert.deepEqual((await schema.values(prop, 'Sh', signal, {operator: 'under'})).map((i) => i.label), ['Shelf'],
+    'typed text narrows them');
+
+  // `id under` on the hierarchy itself picks from the same table
+  const id = src.schema.properties.find((p) => p.name === 'id');
+  assert.equal((await schema.values(id, '', signal, {operator: 'under'})).length, 5);
+  filters.dispose();
+  src.dispose();
+});
+
+scoped('an unquoted `under` value says what to do about it, in the status line as well as the box', async () => {
+  backends.domain = hierarchyBackend();
+  const table = await domains.table('stock.location');
+  const src = table.source({pageSize: 10});
+  await flush();
+  const filters = domains.filters(src);
+  await flush();
+  // this one fails in the GRAMMAR, before the schema check that knows what `under` takes —
+  // "Expected a value" named neither the operator nor the way out of it
+  commit(filters, 'parent_id under Building A');
+  await flush();
+  assert.match(filters.problem.value, /under takes a location — pick one from the list/);
+  assert.equal(filters.problem.value.includes('Expected'), false);
+
+  filters.dispose();
+  src.dispose();
+});
+
+scoped('over a real hierarchy: a two-word location narrows to it, and Enter does not swap it', async () => {
+  backends.domain = hierarchyBackend({rows: {location: [
+    {id: 'b1', name: 'Building A', kind: 'site'},
+    {id: 'b2', name: 'Building B', kind: 'site'},
+    {id: 'l1', name: 'Lab 101', parent_id: 'b1', kind: 'room'}]}});
+  const table = await domains.table('stock.location');
+  const src = table.source({pageSize: 10});
+  await flush();
+  const filters = domains.filters(src);
+  await flush();
+  const input = filters.input.value;
+
+  const el = input.root.querySelector('input');
+  document.body.append(input.root);
+  const suggest = async (text) => {
+    el.focus();
+    el.value = text;
+    fire(el, 'input');
+    await flush();
+    await flush();
+    return [...document.body.querySelectorAll('.u2-fq-option')].map((r) => r.textContent);
+  };
+  assert.deepEqual(await suggest('parent_id under Building A'), ['Building A'],
+    'the whole name is the search — not every location with "A" in it, "Lab 101" first');
+  assert.deepEqual(await suggest('parent_id under Building'), ['Building A', 'Building B']);
   filters.dispose();
   src.dispose();
 });

@@ -31,6 +31,11 @@ export interface DomainTableInfoLike {
   permissions: string[];
   /** Every table with a ref column pointing here; `label` is that column's caption. */
   childTables: {schema: string, table: string, fkColumn: string, label: string}[];
+  /** Whether the schema declares the table a hierarchy (`hierarchy: true`): exactly one ref
+   * column targets the table itself, and {@link DomainTableLike.ancestors} walks it. */
+  hierarchy?: boolean;
+  /** That self-referencing column, when the table is a hierarchy. */
+  parentColumn?: string | null;
 }
 
 /** Which rows a query answers: the live ones (the default), the live and the soft-deleted, or
@@ -51,6 +56,14 @@ export interface DomainQueryLike {
   withAccess?: boolean;
   /** Default `'exclude'`; anything else projects `~is_deleted` with every row. */
   deleted?: DomainDeletedMode;
+}
+
+/** What one poll of a live source learns: how many rows match the query and when the newest of
+ * them was last written — the platform's aggregate `count` + `max(updated_on)` in one request.
+ * `last` is null over an empty match. */
+export interface DomainProbeLike {
+  count: number;
+  last: string | null;
 }
 
 /** One `/transaction` op (js-api `DomainTransactionOp`): `table` is `'<table>'` in the writer's
@@ -74,6 +87,28 @@ export interface DomainTransactionResultLike {
   created_on?: string;
   updated_on?: string;
   author_id?: string;
+}
+
+/** What a bulk upload does with rows the table already has (js-api `DomainBatchOptions`). */
+export interface DomainBatchOptionsLike {
+  /** `'insert'` (the default) or `'upsert'` — merge by the table's business key. */
+  mode?: 'insert' | 'upsert';
+  /** Abort the whole upload on any row error (default true). */
+  allOrNothing?: boolean;
+  /** Report business-key duplicates as errors instead of skipping them. */
+  errorOnDuplicate?: boolean;
+}
+
+/** What a bulk upload answers (js-api `DomainBatchReport`): the counts, one line per row, and
+ * `error` where the upload failed but a per-row report survived it. */
+export interface DomainBatchReportLike {
+  inserted: number;
+  updated: number;
+  skipped: number;
+  errorCount: number;
+  rows: {index: number, id: string | null, status: string, existingId?: string,
+    errors?: {column?: string, code?: string, message: string}[]}[];
+  error?: string;
 }
 
 /** One line of a row's history (js-api `DomainAuditEntry`): what an op did to it, under which
@@ -117,6 +152,25 @@ export interface DomainTableLike {
    * `validation` where the row refers to a deleted parent. A backend that does not declare it
    * cannot answer a `deleted` query either — `DomainSource` refuses one over it. */
   restore?(id: string): Promise<void>;
+  /** Writes `values` into every live row the filter matches that the caller may edit, as ONE
+   * transaction (the platform's `POST …/{table}/update`): the filter is required, a column the
+   * caller may not write is refused before anything is written, and at most `limit` rows are
+   * touched — `hasMore` says the filter matched more than that. */
+  updateWhere?(filter: DomainQueryLike['filter'], values: Record<string, unknown>,
+    options?: {limit?: number}): Promise<{updated: number, hasMore: boolean}>;
+  /** The row's ancestors along the table's `parentColumn`, ROOT FIRST and without the row
+   * itself (the platform's `GET …/{id}/path`). Only a hierarchy table answers it; the chain
+   * stops at the first ancestor the caller cannot see, at a cycle, and at depth 64. */
+  ancestors?(id: string): Promise<{id: string, name: string}[]>;
+  /** What the collection looks like on the server right now, under the same `filter`, `search`
+   * and `deleted` mode a query takes — ONE request, never a page of rows: a `live` source polls
+   * it and refreshes when the pair moved. A backend that does not declare it is not polled, so a
+   * `live` source over one is exactly as live as the backend can be: not at all. */
+  probe?(spec: Pick<DomainQueryLike, 'filter' | 'search' | 'deleted'>): Promise<DomainProbeLike>;
+  /** Uploads whole rows in one call (the platform's `POST …/{table}/batch`), which is where the
+   * upsert merge and the per-row report live. A backend without one takes the same rows as a
+   * transaction — see `domains.import`. */
+  batch?(rows: Record<string, unknown>[], options?: DomainBatchOptionsLike): Promise<DomainBatchReportLike>;
 }
 
 export interface DomainBackend {

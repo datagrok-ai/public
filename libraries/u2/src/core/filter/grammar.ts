@@ -21,6 +21,11 @@ export interface FilterCompletion {
   replace: {start: number, end: number};
   property?: FilterProperty;
   operator?: FilterOperator;
+  /** For an unquoted value: the whole value slot, operator to the next connector or end of input
+   * — `Building A` in `location_id under Building A`, not just the token under the caret. A slot
+   * whose values are NAMES (a reference, a subtree) is searched and replaced by this span; the
+   * consumer decides, since the grammar does not know which values are names. */
+  valueSpan?: {start: number, end: number};
 }
 
 const WS = /[\t\n\v\f\r \u0085\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]/;
@@ -46,7 +51,7 @@ const NEGATED: Record<string, string> = {
 const LITERALS = new Set(['true', 'false', 'null', 'now', '@current']);
 /** The operators a bare column name may stand on the value side of: `end_date >= start_date`. */
 const COMPARISONS = new Set(['=', '!=', '<', '<=', '>', '>=']);
-const WORD_OPERATORS = new Set(['like', 'starts', 'ends', 'matches', 'fuzzy', 'in', 'between']);
+const WORD_OPERATORS = new Set(['like', 'starts', 'ends', 'matches', 'fuzzy', 'in', 'between', 'under']);
 const SYMBOL_OPERATORS = new Set(['=', '!=', '>', '>=', '<', '<=', '~', '~=', '!~', '!like', '!matches', '!in']);
 const SPELLINGS: Record<string, string> = {'~': 'matches', '!~': '!matches', '~=': 'fuzzy', '!in': 'not in'};
 const CONNECTORS = new Set(['and', 'or', '&&', '&', '||', '|']);
@@ -225,7 +230,7 @@ class Reader {
     if (property !== undefined) {
       const after = this.pos;
       for (const alternative of [this.fuzzyCondition, this.operatorCondition, this.inCondition,
-        this.betweenCondition]) {
+        this.underCondition, this.betweenCondition]) {
         const result = alternative.call(this, property);
         if (result !== undefined)
           return result;
@@ -410,6 +415,15 @@ class Reader {
     }
   }
 
+  /** `<property> under <id>` — the hierarchy subtree term. A bare column name is not a
+   * value here (the Dart grammar puts `columnRef` behind the six comparisons only). */
+  underCondition(property: string): DomainConditionNode | undefined {
+    if (!this.keyword('under'))
+      return undefined;
+    const value = this.value();
+    return value === undefined ? undefined : node(property, 'under', value);
+  }
+
   betweenCondition(property: string): DomainConditionNode | undefined {
     if (!this.keyword('between'))
       return undefined;
@@ -589,6 +603,21 @@ function tokenize(text: string): FilterToken[] {
   return tokens;
 }
 
+/** The value slot as one span: from the operator to the next top-level connector, or to the end
+ * of the text. A name is several words (`Building A`), and searching or replacing only the token
+ * under the caret lists every candidate and then rewrites the wrong half of the name. */
+function valueSpanAt(text: string, tokens: FilterToken[], from: number,
+  caret: number): {start: number, end: number} | undefined {
+  if (from < 0)
+    return undefined;
+  const next = tokens.find((t) => t.start >= from && t.start >= caret && t.type === 'name' &&
+    CONNECTORS.has(t.text.toLowerCase()));
+  const end = next === undefined ? text.length : next.start;
+  const start = from + (text.slice(from, end).length - text.slice(from, end).replace(/^\s+/, '').length);
+  return start > end ? undefined : {start, end: end - (text.slice(start, end).length -
+    text.slice(start, end).replace(/\s+$/, '').length)};
+}
+
 export function completionContext(text: string, caret: number, schema: FilterSchema): FilterCompletion {
   const tokens = tokenize(text);
   const closed = (t: FilterToken) => t.type === 'string' && t.end - t.start > 1 && t.text.endsWith(t.text[0]);
@@ -601,6 +630,8 @@ export function completionContext(text: string, caret: number, schema: FilterSch
   let between = 0;
   let threshold = false;
   let pendingNot = false;
+  /** Where the value slot begins — the end of the operator that opened it. */
+  let valueFrom = -1;
   const isValue = (t: FilterToken) => t.type === 'string' || t.type === 'number' ||
     (t.type === 'name' && LITERALS.has(t.text));
   const startCondition = (t: FilterToken) => {
@@ -634,6 +665,7 @@ export function completionContext(text: string, caret: number, schema: FilterSch
         list = operatorId === 'in' || operatorId === 'not in';
         between = operatorId === 'between' ? 1 : 0;
         expect = 'value';
+        valueFrom = t.end;
       }
     } else if (expect === 'value') {
       if (t.type === 'punct' && t.text === '(') {
@@ -666,6 +698,12 @@ export function completionContext(text: string, caret: number, schema: FilterSch
   const prefix = !current ? '' : text.slice(current.start + (current.type === 'string' ? 1 : 0), caret);
   const replace = current ? {start: current.start, end: current.end} : {start: caret, end: caret};
   const result: FilterCompletion = {expect, prefix, replace};
+  // one value only: inside a list or a `between` the slot holds several, and the span would run
+  // across all of them
+  const span = expect !== 'value' || current?.type === 'string' || list || threshold || between !== 0 ?
+    undefined : valueSpanAt(text, tokens, valueFrom, caret);
+  if (span !== undefined)
+    result.valueSpan = span;
   if (property)
     result.property = property;
   const operator = operatorId === undefined ? undefined :

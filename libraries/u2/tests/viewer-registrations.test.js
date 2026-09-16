@@ -189,10 +189,10 @@ scoped('registerPlatformComponents is the core registry plus the viewers; the co
   const reg = new Registry();
   registerPlatformComponents(reg);
   const core = reg.metas().filter((m) => !m.tag.startsWith('u2-viewer-'));
-  assert.equal(core.length, 51, 'the core registry, the dg entity controls and the eight domain tags');
-  assert.equal(reg.metas().length, 56);
+  assert.equal(core.length, 54, 'the core registry, the dg entity controls and the ten domain tags');
+  assert.equal(reg.metas().length, 59);
   registerPlatformComponents(reg);
-  assert.equal(reg.metas().length, 56);
+  assert.equal(reg.metas().length, 59);
   assert.deepEqual(['u2-domain-form', 'u2-domain-list', 'u2-domain-pick'].map((tag) => reg.get(tag)?.tag),
     ['u2-domain-form', 'u2-domain-list', 'u2-domain-pick']);
 

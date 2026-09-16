@@ -5,19 +5,31 @@ What every `DomainBackend` must agree on — the platform one (`DgDomainBackend`
 and the controls over it are written against this list, not against either backend; the memory
 backend is what the headless tests and the gallery run, so a case the platform answers
 differently is a bug in one of them, not a difference to code around. Pinned headless in
-`tests/memory-domain.test.js`, `tests/domain-source.test.js` and `tests/domain-session.test.js`;
-the platform side is pinned live by the U2Demo `U2: domain source` and `U2: domain session`
-categories over `apitests.item`.
+`tests/memory-domain.test.js`, `tests/domain-source.test.js` and `tests/domain-session.test.js`
+(the optional members additionally in `tests/domain-tree.test.js`, `tests/domain-bulk.test.js`,
+`tests/domain-import.test.js` and `tests/domain-live.test.js`); the platform side is pinned live
+by the U2Demo `U2: domain source`, `U2: domain session`, `U2: domain trash`, `U2: domain bulk` and
+`U2: domain import` categories over `apitests.item`, and by the ApiTests `Dapi: domain trash`,
+`Dapi: domain bulk` and `Dapi: domain hierarchy` categories against the server itself.
+
+**Optional members** (`audit`, `restore`, `updateWhere`, `ancestors`, `probe`, `batch`) are the
+seam's escape hatch, not a licence to diverge: a backend that declares one answers it exactly as
+the table below says, and a control that needs one checks for it and refuses by name rather than
+degrading silently. The memory backend mirrors all of them except `batch`.
 
 ## Table handle
 
 | Case | Both answer |
 |---|---|
 | `properties` | the system columns first — `id`, `version`, `created_on`, `updated_on`, `author_id` (semType `User`) — then the declared columns, in declaration order; a `ref` column carries its target address as `semType`; `user`/`group` columns `User`/`Group` |
-| `info` | `nameColumn` (the `isName` column, else a `name` string column, else null), `businessKey`, `singularName`, `pluralName`; `searchableColumns` (the `searchable: true` columns, else `[nameColumn]`, else `[]`); `constraints` (the `{expr, message?}` entries of the schema by name — SQL `check`s stay server-side); `refFilters` (`{column: expr}` for every ref column declaring a `filter`); `permissions` (the custom names the schema declares, list or map form); `childTables` (`{schema, table, fkColumn, label}` for every ref column pointing at this table, `label` the column's caption) |
+| `info` | `nameColumn` (the `isName` column, else a `name` string column, else null), `businessKey`, `singularName`, `pluralName`; `searchableColumns` (the `searchable: true` columns, else `[nameColumn]`, else `[]`); `constraints` (the `{expr, message?}` entries of the schema by name — SQL `check`s stay server-side); `refFilters` (`{column: expr}` for every ref column declaring a `filter`); `permissions` (the custom names the schema declares, list or map form); `childTables` (`{schema, table, fkColumn, label}` for every ref column pointing at this table, `label` the column's caption); `hierarchy` + `parentColumn` (the `hierarchy: true` declaration and its one self-referencing ref column; absent/false and null otherwise) |
 | `access()` | `{can, fields}`: `can.<capability>` for the five plus every custom permission (`can.<name>`, granted by default in memory); `fields[col]` for every column the caller may see — `readonly` for the system columns and autoNumber, `editable` for the rest. Column security only: a row's writability comes from `can.edit`/`can.insert` and the `~can_*` columns |
 | `restore(id)` | a soft-deleted row brought back: `~is_deleted` off, `version + 1`, the `'undelete'` audit op; refused with `validation` naming the ref column where the row points at a row still deleted. Optional on the seam (dg fills it from `client.restore`) — a backend that does not declare it cannot answer a `deleted` query either, and `DomainSource` refuses one over it by name |
 | `audit(id)` | the row's history, oldest first: `{id, tx_id, op, actor_id, ts, before, after}` per op that touched it — every op of one transaction shares `tx_id`; the memory backend records `actor_id: null` and nothing for seeded rows. Optional on the seam (dg fills it from `client.audit`) |
+| `updateWhere(filter, values, {limit})` | `values` written into every LIVE row the filter matches that the caller may edit, as ONE transaction; answers `{updated, hasMore}`. A missing or empty filter is refused (`validation`) — there is no "update the whole table" — and so is an empty `values`; a column the caller may not write is refused BEFORE anything is written; the selection is capped at `limit` (default and maximum 1000, clamped to `[1, 1000]`) and `hasMore` says the filter matched past the cap. Rows are patched one by one inside the transaction, so validation, the version step and the audit line are per row, and a row outside the caller's Edit predicate is silently not selected rather than refused. Optional on the seam (dg fills it from `client.updateWhere`) |
+| `ancestors(id)` | the row's parents along `info.parentColumn`, **root first**, **excluding the row itself** — so a root answers `[]`, and so does a row the caller cannot see (no oracle). Only a table declaring `hierarchy` answers; anything else is a `filter` refusal on BOTH backends. The chain stops at the first invisible ancestor, at a cycle, and at depth 64. Optional on the seam (dg fills it from `client.pathTo`) |
+| `probe(spec)` | `{count, last}` — how many rows match `filter`/`search`/`deleted` and the newest `updated_on` among them (`null` over an empty match), in ONE request and never a page of rows. What a `live` source polls; a backend that does not declare it is never polled, so `live: true` over one is inert |
+| `batch(rows, options)` | whole rows uploaded in one call, which is where the `'upsert'` business-key merge, `allOrNothing` and `errorOnDuplicate` live, and which answers the per-row report `domains.import` renders. Optional and NOT mirrored in memory: the memory backend has no `batch`, so `domains.import` over it falls back to the same rows as one transaction with a business-key upsert — the report is synthesised from the transaction's results |
 
 ## Query
 

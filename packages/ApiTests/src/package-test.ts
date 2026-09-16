@@ -41,6 +41,8 @@ import './dapi/domain-handlers';
 import './dapi/domain-frame-editor';
 import './dapi/domain-session';
 import './dapi/domain-trash';
+import './dapi/domain-bulk';
+import './dapi/domain-hierarchy';
 import './dapi/domain-search';
 import './dapi/domain-visual-queries';
 import './dapi/entity-properties';

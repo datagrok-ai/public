@@ -607,7 +607,15 @@ class Element extends Node {
 
   select() {}
 
+  /** A checkbox or a radio activates before the event fires, as the browser does — a test that
+   * clicks one must see the same `checked` and the same `change` a user's click produces. */
   click() {
+    if (this.tagName === 'INPUT' && (this.type === 'checkbox' || this.type === 'radio')) {
+      this.checked = this.type === 'radio' ? true : !this.checked;
+      this.dispatchEvent(new MouseEvent('click', {bubbles: true}));
+      this.dispatchEvent(new DomEvent('change', {bubbles: true}));
+      return;
+    }
     this.dispatchEvent(new MouseEvent('click', {bubbles: true}));
   }
 

@@ -51,6 +51,15 @@ const KIND_HINTS: Partial<Record<FilterKind, string[]>> = {
 const SPELLED: Record<string, string> = {'is null': '= null', 'is not null': '!= null'};
 /** Their value is a pattern: a picked literal is escaped the way the formatter spells it. */
 const LIKE_FAMILY = new Set(['like', '!like', 'starts', 'ends']);
+/** `<column> under <bare word…>` at the end of the text — the shape the grammar refuses. */
+const UNDER_BARE = /([A-Za-z_]\w*)\s+under\s+[^"'\s]\S*(\s+\S+)*\s*$/i;
+
+/** A value slot whose candidates are NAMES — several words, so the whole slot is the search text
+ * and the whole slot is what a pick replaces. */
+function namedSlot(ctx: FilterCompletion): boolean {
+  return ctx.valueSpan !== undefined && ctx.property !== undefined &&
+    (ctx.operator?.id === 'under' || Filters.kindOf(ctx.property) === KIND.REF);
+}
 
 function row(main: HTMLElement | string, secondary?: string, glyph?: HTMLElement): HTMLElement {
   const parts: HTMLElement[] = glyph ? [glyph] : [];
@@ -83,6 +92,8 @@ export class FilterQueryInput extends Input<FilterGroup, FilterQueryInputOptions
   private _context: FilterCompletion | undefined;
   private _abort: AbortController | undefined;
   private _dirty!: boolean;
+  /** Whether the highlight is the user's — an arrow key or a click, not the auto-highlight. */
+  private _moved = false;
 
   constructor(options: FilterQueryInputOptions) {
     super(options, Filters.group('and'));
@@ -103,11 +114,16 @@ export class FilterQueryInput extends Input<FilterGroup, FilterQueryInputOptions
     // the text is still exactly what the tree in force reads as: nothing to parse, and a displayed
     // form that is not the formatter's (a preset's `$me`) is not turned into a query of its own
     if (this._raw.peek() === null && this._text.peek() === this._display(this.value.peek())) {
+      // the text IS the tree in force again (the box was cleared back to it): whatever the last
+      // refused commit reported is no longer about what is in the box, and holding on to it left
+      // the box red and the collection marked stale over rows that were right all along
+      this._problems.value = [];
       this._dirty = false;
       return true;
     }
-    const {root, problems} = Filters.parse(this._text.peek(), o.schema, o.target);
-    this._problems.value = problems;
+    const text = this._text.peek();
+    const {root, problems} = Filters.parse(text, o.schema, o.target);
+    this._problems.value = FilterQueryInput.worded(text, o.schema, problems);
     if (problems.length > 0)
       return false;
     this._dirty = false;
@@ -118,6 +134,19 @@ export class FilterQueryInput extends Input<FilterGroup, FilterQueryInputOptions
     else
       this.value.value = root;
     return true;
+  }
+
+  /** `location_id under Building A` fails in the GRAMMAR (an unquoted value), long before the
+   * schema check that knows what `under` takes — and "Expected a value" says nothing about the
+   * one thing to do about it. The parse problems keep their places; the first one is re-worded. */
+  static worded(text: string, schema: FilterSchema, problems: FilterProblem[]): FilterProblem[] {
+    const match = problems.length === 0 ? null : UNDER_BARE.exec(text);
+    if (match === null)
+      return problems;
+    const prop = Filters.property(schema, match[1]);
+    const target = (prop?.ref ?? '').split('.').pop() || 'row';
+    return [{...problems[0], message: `under takes a ${target} — pick one from the list`},
+      ...problems.slice(1)];
   }
 
   /** Text the box did not produce — a `?q=` a link carried that the grammar or the schema refuses
@@ -176,7 +205,10 @@ export class FilterQueryInput extends Input<FilterGroup, FilterQueryInputOptions
       minChars: 0,
       render: (item) => item.render(),
       autoHighlight: true,
-      onPick: (index) => this._insert(index),
+      onPick: (index) => {
+        this._moved = true;
+        return this._insert(index);
+      },
       onDismiss: () => this._list.dismiss(),
       onRetry: () => this._refresh(),
     });
@@ -243,6 +275,7 @@ export class FilterQueryInput extends Input<FilterGroup, FilterQueryInputOptions
   /** Fresh rows for the caret, and the list open — unless a value expectation has nothing to
    * offer beyond `null`, which is not worth a popup. */
   private _suggest(): void {
+    this._moved = false;
     this._list.clearActive();
     if (this._refresh())
       this._list.open();
@@ -254,6 +287,12 @@ export class FilterQueryInput extends Input<FilterGroup, FilterQueryInputOptions
   private _refresh(): boolean {
     const ctx = Filters.completionContext(this._text.peek(), this._caret(), this.options.schema);
     this._context = ctx;
+    // `Building A` is one value: the token under the caret would search for `A` and offer every
+    // row, with the wrong one highlighted
+    if (namedSlot(ctx)) {
+      ctx.replace = ctx.valueSpan!;
+      ctx.prefix = this._text.peek().slice(ctx.valueSpan!.start, ctx.valueSpan!.end);
+    }
     this._prefix.value = ctx.prefix;
     this._abort?.abort();
     this._abort = undefined;
@@ -283,7 +322,10 @@ export class FilterQueryInput extends Input<FilterGroup, FilterQueryInputOptions
   }
 
   private _operators(prop: FilterProperty | undefined): FilterOperator[] {
-    return prop ? Filters.operators.for(prop) : Filters.operators.all().filter((o) => o.semType === undefined);
+    if (!prop)
+      return Filters.operators.all().filter((o) => o.semType === undefined);
+    const offered = Filters.operators.for(prop);
+    return this.options.schema.operators?.(prop, offered) ?? offered;
   }
 
   private _propertyOption(p: FilterProperty): Option {
@@ -319,7 +361,7 @@ export class FilterQueryInput extends Input<FilterGroup, FilterQueryInputOptions
       if (!abort.signal.aborted)
         this._view.value = {kind: 'error', message: e instanceof Error ? e.message : String(e)};
     };
-    values(prop, ctx.prefix, abort.signal).then((items) => {
+    values(prop, ctx.prefix, abort.signal, {operator: ctx.operator?.id}).then((items) => {
       if (abort.signal.aborted)
         return;
       const offered = [...items.map((item) => ({text: FilterQueryInput._valueText(ctx, item.value),
@@ -346,7 +388,8 @@ export class FilterQueryInput extends Input<FilterGroup, FilterQueryInputOptions
   }
 
   /** Replaces the token under the caret with the row's text and one space (the one already there
-   * when the pick lands mid-text), then re-opens for the next expectation. */
+   * when the pick lands mid-text), APPLIES it when what it made is a filter, and re-opens for the
+   * next expectation. */
   private _insert(index: number): boolean {
     const item = this._items.peek()[index];
     const ctx = this._context;
@@ -358,9 +401,43 @@ export class FilterQueryInput extends Input<FilterGroup, FilterQueryInputOptions
     this._dirty = true;
     this._text.value = text.slice(0, ctx.replace.start) + inserted + text.slice(ctx.replace.end);
     this._input.focus();
-    this._input.setSelectionRange?.(caret, caret);
+    // an applied pick re-formats the text, so the caret goes to the end of what it became; a pick
+    // that only filled a slot leaves the caret where the value ended
+    const at = this._applyPick() ? this._text.peek().length : caret;
+    this._input.setSelectionRange?.(at, at);
     this._suggest();
     return true;
+  }
+
+  /** A picked row is the user's answer, not a draft: when the text it made is a filter, it is
+   * applied in the same action — asking for a second Enter to confirm what was just chosen is a
+   * keystroke nobody expects, and the refusal on the status bar would stand over a box that is
+   * already right. A text that is not a filter YET (a `between` with one bound, a property with
+   * no operator) applies nothing, but the refusal that described the OLD text goes. */
+  private _applyPick(): boolean {
+    const o = this.options;
+    if (Filters.parse(this._text.peek(), o.schema, o.target).problems.length > 0) {
+      this._problems.value = [];
+      return false;
+    }
+    return this.commit();
+  }
+
+  /** Whether Enter may take the highlighted row. It may when the user put the highlight there
+   * (an arrow key or a click), and otherwise only when the row answers what is typed — an
+   * auto-highlight over a search that matched nothing would otherwise swap the typed name for an
+   * unrelated one on Enter, silently, and eat the keystroke that was meant to apply the filter. */
+  private _acceptable(index: number): boolean {
+    if (this._typed(index))
+      return false;
+    if (this._moved)
+      return true;
+    const item = this._items.peek()[index];
+    const ctx = this._context;
+    if (item === undefined || ctx === undefined)
+      return false;
+    const typed = this._text.peek().slice(ctx.replace.start, ctx.replace.end).trim().toLowerCase();
+    return typed === '' || item.text.toLowerCase().includes(typed);
   }
 
   /** The highlighted row spells exactly the token already under the caret — auto-highlight put it
@@ -377,14 +454,16 @@ export class FilterQueryInput extends Input<FilterGroup, FilterQueryInputOptions
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault();
-        if (open)
+        if (open) {
+          this._moved = true;
           this._list.move(1);
-        else
+        } else
           this._suggest();
         break;
       case 'ArrowUp':
         if (open) {
           e.preventDefault();
+          this._moved = true;
           this._list.move(-1);
         }
         break;
@@ -392,7 +471,8 @@ export class FilterQueryInput extends Input<FilterGroup, FilterQueryInputOptions
         if (e.ctrlKey || e.metaKey)
           break;
         e.preventDefault();
-        if (open && !this._typed(this._list.activeIndex.peek()) && this._insert(this._list.activeIndex.peek()))
+        if (open && this._acceptable(this._list.activeIndex.peek()) &&
+            this._insert(this._list.activeIndex.peek()))
           e.stopPropagation();
         else {
           this._list.dismiss();

@@ -13,6 +13,11 @@ const [deleted] = await items.query({filter: `id = "${row.id}"`, deleted: 'only'
 grok.shell.info(`in the trash: ${deleted.name} (~is_deleted: ${deleted['~is_deleted']}), ` +
   `${await items.count(null, {deleted: 'only'})} deleted rows in all`);
 
+// One trashed row is addressable too — `get` takes the same scope, so a trash entity
+// page can open a deleted row (read-only until it is restored).
+grok.shell.info(`get() in the default scope: ${await items.get(row.id)}; ` +
+  `in the trash: ${(await items.get(row.id, {deleted: 'only'})).name}`);
+
 // A frame over both scopes — a service column (DG.DOMAIN_SERVICE_COLUMNS) is one the
 // grid hides and no export carries.
 const df = await items.queryDf({filter: `id = "${row.id}"`, deleted: 'include'});

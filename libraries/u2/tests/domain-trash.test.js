@@ -63,11 +63,11 @@ source('a landed delete is soft: the trash shows the row, restore brings it back
   await trash.refresh();
   assert.deepEqual(titles(trash), ['Ibuprofen']);
   assert.equal(Rows.isDeleted(trash.rows.byKey('i2')), true, 'the row carries ~is_deleted');
-  assert.equal(trash.summary.value, '1 deleted row');
+  assert.equal(trash.summary.value, '1 deleted issue');
   assert.equal(await trash.restore(['i2']), 1);
   await flush();
   assert.deepEqual(titles(trash), [], 'the restored row left the trash');
-  assert.equal(trash.summary.value, '0 deleted rows');
+  assert.equal(trash.summary.value, '0 deleted issues');
 
   await live.refresh();
   assert.deepEqual(titles(live), ['Aspirin', 'Ibuprofen', 'Naproxen']);

@@ -84,6 +84,24 @@ category('Dapi: domain trash', () => {
     }
   });
 
+  test('get with deleted: only addresses a trashed row, the default scope does not', async () => {
+    const prefix = `dt-get-${stamp()}`;
+    const [row] = await items().insert({sku: `${prefix}-0`, name: 'Addressable'});
+    try {
+      await items().delete(row.id);
+      expect(await items().get(row.id), null, 'a deleted row is addressable in the default scope');
+
+      const trashed = await items().get(row.id, {deleted: 'only'});
+      expect(trashed?.id, row.id, `the trashed row is not addressable: ${JSON.stringify(trashed)}`);
+      expect(trashed['~is_deleted'], true, `~is_deleted is not set: ${JSON.stringify(trashed)}`);
+      expect((await items().get(row.id, {deleted: 'include'}))?.id, row.id, 'include does not reach the row');
+      expect((await items().get(row.id, {withAccess: true, deleted: 'only'}))['~can_delete'] != null, true,
+        'the access columns are missing on a trashed row');
+    } finally {
+      await cleanup(prefix);
+    }
+  });
+
   test('toCsv() of a deleted: include frame carries no service column', async () => {
     const prefix = `dt-csv-${stamp()}`;
     await items().insert({sku: `${prefix}-0`, name: 'Kept'});

@@ -5,15 +5,16 @@
    struck through with Restore until the save, and the source's loading, empty and error states
    shown under the rows. */
 import {Control} from '../../core/component.js';
-import {signal} from '../../core/signals.js';
+import {signal, untracked} from '../../core/signals.js';
 import type {ReadonlySignal, Signal} from '../../core/signals.js';
 import type {ObjectRenderer} from '../../core/object-renderer.js';
-import {button, div, divH, span} from '../../core/elements.js';
+import {button, div, divH, divV, span, timestamp} from '../../core/elements.js';
 import {text} from '../../core/text.js';
 import {VirtualList} from '../../components/collections/list.js';
 import {allowedActions, rowActions} from '../../components/actions/actions.js';
 import type {Action} from '../../components/actions/actions.js';
 import {loader} from '../../components/display/async-view.js';
+import {notify} from '../../components/display/notify.js';
 import type {DomainSource} from '../../sources/domain-source.js';
 import {Rows} from '../../sources/rows-like.js';
 import type {RowView} from '../../sources/rows-like.js';
@@ -86,6 +87,73 @@ export class DomainList extends Control {
       if (at !== this.list.selectedIndex.peek())
         this.list.selectedIndex.value = at;
     });
+    // the list's multi-selection IS the collection's: everything that acts on "the selected rows"
+    // — `domains.bulkEdit`, `source.restoreSelection` — reads `source.selection`, which follows
+    // the frame's selection bitset, and nothing else on a list page writes it. A selection is a
+    // USER's: the lead a load puts on the first row is not one, so nothing is mirrored until the
+    // list is clicked or keyed, and a new collection starts over.
+    const picked = signal(false);
+    const onPick = () => picked.value = true;
+    const onEscape = (e: Event) => {
+      if ((e as KeyboardEvent).key !== 'Escape')
+        return;
+      picked.value = false;
+      this.list.selectedIndex.value = -1;
+    };
+    this.list.root.addEventListener('click', onPick);
+    this.list.root.addEventListener('keydown', onPick);
+    this.list.root.addEventListener('keydown', onEscape);
+    this.own(() => {
+      this.list.root.removeEventListener('click', onPick);
+      this.list.root.removeEventListener('keydown', onPick);
+      this.list.root.removeEventListener('keydown', onEscape);
+    });
+    let frame: unknown;
+    let kept: string[] = [];
+    this.effect(() => {
+      const selected = this.list.selectedIndices.value;
+      const df = source.df.value;
+      const own = picked.value;
+      const bits = df?.selection as
+        {get?(i: number): boolean, set?(i: number, value: boolean): void} | null | undefined;
+      if (df === undefined || typeof bits?.set !== 'function')
+        return;
+      // a collection read again is the same collection: a selection survives it by KEY (a bulk
+      // edit refreshes, and the rows it wrote are still the rows the user picked), and a query
+      // that answers none of them is a new collection with nothing selected
+      if (df !== frame) {
+        frame = df;
+        // nothing to carry over leaves the list's own lead alone: a load puts it on the first row
+        const again = own ? kept : [];
+        if (again.length === 0) {
+          picked.value = false;
+          return;
+        }
+        // the scroller copies the items in an effect of its own, which runs AFTER this one: the
+        // restore waits for it, or it would look the keys up in the collection that just left
+        queueMicrotask(() => {
+          if (this.scope.isDisposed)
+            return;
+          const present = new Set(source.rows.items.peek().map((row) => row.id));
+          const back = again.filter((id) => present.has(id));
+          picked.value = back.length > 0;
+          if (back.length > 0)
+            untracked(() => this.list.selectKeys(back));
+        });
+        return;
+      }
+      // the emptying the scroller does when its items are replaced is not the user clearing
+      // the selection: only a non-empty one is remembered, and `own` is what clears it
+      if (own && selected.size > 0)
+        kept = this.list.selectedKeys();
+      // read before writing: a bitset that fires per write would send a change event per ROW on
+      // every pass, and a frame the platform writer holds is not to be touched for nothing
+      for (let i = 0; i < df.rowCount; i++) {
+        const on = own && selected.has(i);
+        if (typeof bits.get !== 'function' || bits.get(i) !== on)
+          bits.set(i, on);
+      }
+    });
     // a list over a table starts on its first row; a draft source is a form's, not a list's
     let seeded = source.isDraft;
     this.effect(() => {
@@ -122,10 +190,19 @@ export class DomainList extends Control {
         status.replaceChildren(divH([span(DomainErrors.message(source.error.value)), ...actions],
           'u2-domain-list-error'));
       } else if (state === 'ready' && count === 0) {
-        status.replaceChildren(span(_options.empty ??
-          `No ${source.schema.info.pluralName.toLowerCase() || 'rows'}.`, 'u2-domain-list-empty'));
+        const search = source.search.value;
+        const what = source.schema.info.pluralName.toLowerCase() || 'rows';
+        // an empty result the user asked for says so, and offers the way back out of it
+        const said = _options.empty ?? (search !== '' ? `No ${what} match "${search}".` :
+          filtered ? `No ${what} match the filter.` : `No ${what}.`);
+        status.replaceChildren(divV([span(said, 'u2-domain-list-empty'),
+          ...(search === '' ? [] : [button('Clear search', () => source.search.value = '')]),
+        ], 'u2-domain-list-nothing'));
       } else
         status.replaceChildren();
+      // the rows have nothing to scroll: the message takes their place instead of hanging under
+      // an empty box
+      this.root.classList.toggle('u2-domain-list-blank', state === 'ready' && count === 0);
     });
     // a refusal names one row: marked where it is drawn, and unmarked with the refusal
     this.effect(() => {
@@ -155,8 +232,10 @@ export class DomainList extends Control {
     if (row[Rows.STATE] === 'deleted')
       return [{name: 'Restore', icon: 'undo', run: () => source.edit.peek()?.unmarkDeleted(row.id)}];
     if (Rows.isDeleted(row)) {
+      const caption = this.renderer.caption(row);
       return allowedActions([{name: 'Restore', icon: 'trash-restore', requires: 'delete',
-        run: () => void source.restore([row.id])}], {access: source.access.peek(), row});
+        run: () => void source.restore([row.id]).then((n) => n > 0 && notify.info(`Restored "${caption}"`))}],
+      {access: source.access.peek(), row});
     }
     const draft = Rows.isDraft(row);
     const actions: Action[] = [];
@@ -199,6 +278,9 @@ export class DomainList extends Control {
     const brief = () => renderer.listItem?.(row) ?? span(renderer.caption(row), 'u2-domain-list-name');
     if (this.mode === 'cards')
       return renderer.card?.(row) ?? brief();
+    // the trash says WHEN, read in the reader's own zone with the full moment as its title
+    if (this.source.readOnly.peek())
+      return divH([brief(), timestamp(row.updated_on as string, 'u2-domain-list-details')], 'u2-domain-list-line');
     const details = this._details(row);
     return details === '' ? brief() :
       divH([brief(), span(details, 'u2-domain-list-details')], 'u2-domain-list-line');

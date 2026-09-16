@@ -108,8 +108,9 @@ export class IssuesApp extends DomainApp {
 //output: view result
 export async function issuesApp(path?: string): Promise<DG.ViewBase> {
   const {issues} = (await openGrit()).tables;
+  // live: the list follows the server, so an issue another session files shows up here
   const view = issues.app({name: 'Issues', path: '/apps/Grit/Issues', app: IssuesApp, mode: 'cards',
-    children: {tables: ['comment']}});
+    children: {tables: ['comment']}, live: true});
   void DomainApp.of(view)!.open(path || undefined);
   return view;
 }

@@ -1,7 +1,7 @@
 {
   "$schema": "https://datagrok.ai/schemas/domain-schema.schema.json",
   "name": "stockroom",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "tables": {
     "hazard_class": {
       "securityMode": "table",
@@ -76,6 +76,7 @@
       "securityMode": "table",
       "businessKey": ["site", "name"],
       "friendlyName": "Locations",
+      "hierarchy": true,
       "columns": {
         "name": {"type": "string", "required": true, "isName": true, "searchable": true},
         "kind": {"type": "string", "required": true, "choices": ["site", "building", "room", "cabinet"]},

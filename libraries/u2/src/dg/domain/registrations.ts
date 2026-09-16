@@ -11,7 +11,8 @@ import {DomainForm} from './form.js';
 import {DomainList} from './list.js';
 import type {DomainListMode} from './list.js';
 import {DomainPick} from './pick.js';
-import {DomainGrid} from './grid.js';
+import {DomainGrid, DomainDataTable} from './grid.js';
+import {DomainTree} from './tree.js';
 import {DomainHistory} from './history.js';
 import {DomainChildren} from './children.js';
 import type {DomainChildrenMode} from './children.js';
@@ -132,6 +133,50 @@ const METAS: ComponentMeta[] = [
       'Discard are the session\'s, not the grid\'s: wire them to `cmd:issues.save` / `cmd:issues.discard`.',
     props: [SOURCE],
     example: {tag: 'u2-domain-grid', bind: {source: '$.issues.source'}},
+  },
+  {
+    tag: 'u2-domain-data-table',
+    category: 'Display',
+    create: (props: Props) => new DomainDataTable(domainSourceProp(props.source, 'u2-domain-data-table'), {
+      columns: list(props.columns), hiddenColumns: list(props.hiddenColumns),
+      rowHeight: props.rowHeight as number | undefined,
+    }),
+    description: 'The rows of a domain source as an HTML table: virtualized rows of pooled cells under a ' +
+      'sticky header, the columns taken from the table\'s schema (the name column first, system and ' +
+      'service columns out), and the source\'s writer painting the cells — pending amber, refused red ' +
+      'with the message as the tooltip, a cell the caller may not write muted.',
+    usage: 'Bind `source` to a `u2-domain-source` (`$.issues.source`). Use it where the page needs a wide ' +
+      'collection beside a tree or a form and the canvas grid is more than it needs; use `u2-domain-grid` ' +
+      'when the rows are edited in place — this one shows the edits, it does not take them.',
+    props: [
+      SOURCE,
+      {name: 'columns', type: 'string_list', description: 'Columns to show, in this order; the schema\'s by default.'},
+      {name: 'hiddenColumns', type: 'string_list', description: 'Columns to leave out.'},
+      {name: 'rowHeight', type: 'int', description: 'Row and header height in pixels (24 by default).'},
+    ],
+    example: {tag: 'u2-domain-data-table', bind: {source: '$.issues.source'}},
+  },
+  {
+    tag: 'u2-domain-tree',
+    category: 'Display',
+    create: (props: Props) => new DomainTree(String(props.table ?? ''), {
+      expandTo: props.expandTo as string | undefined,
+      pageSize: props.pageSize as number | undefined,
+    }),
+    description: 'A tree over a domain table the schema declares a hierarchy: the roots are the rows ' +
+      'with no parent, a branch reads its children when it is opened, and each node is the table\'s own ' +
+      'rendering of the row with its actions.',
+    usage: 'Give `table` the address of a table declared `"hierarchy": true` (`stockroom.location`). What ' +
+      'a tree is for is driving a collection: bind a `u2-domain-source`\'s `query` to the selection and ' +
+      'write it as `<fk> under "<id>"`, which answers the whole subtree, not one level.',
+    props: [
+      {name: 'table', type: 'string', description: 'The hierarchy table, `<schema>.<table>`.'},
+      {name: 'expandTo', type: 'string', description: 'A row id to reveal: its ancestors opened, the row selected.'},
+      {name: 'pageSize', type: 'int', description: 'How many children one level loads (500 by default).'},
+      {name: 'selected', type: 'object', bindable: true,
+        description: 'The selected row; read-only — bind a source\'s query to it.'},
+    ],
+    example: {tag: 'u2-domain-tree', props: {table: 'stockroom.location'}},
   },
   {
     tag: 'u2-domain-history',

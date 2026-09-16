@@ -39,10 +39,21 @@ export interface DomainSourceOptions {
   query?: string | FilterGroup;
   /** A case-insensitive substring over the table's searchable columns, ANDed with the query. */
   search?: string;
+  /** `'col,!col'` — the row order, `!` for descending; the table's own default when empty. The
+   * system columns are orderable (`!updated_on` is what a trash list reads newest-first by),
+   * even though they cannot be projected. */
+  sort?: string;
   /** Which rows the source answers (default `'exclude'` — the live ones). Anything else is a
    * trash source: the rows carry `~is_deleted` and the access is narrowed to no edit and no
    * insert until they are restored. The backend must declare `restore`. */
   deleted?: DomainDeletedMode;
+  /** Whether the collection follows the server: the source probes the table every
+   * {@link DomainSourceOptions.liveMs} and refreshes while it is clean, marking itself
+   * {@link DomainSource.stale} while it is not. A signal on the source, so a menu toggles it;
+   * the timer rides the source's scope, so disposing the source stops it. */
+  live?: boolean;
+  /** How often a `live` source probes the server (default 30 s). */
+  liveMs?: number;
   pageSize?: number;
   /** Ask for the per-row access columns with every row (default true); the table-level access is
    * always fetched. */
@@ -73,6 +84,10 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   static readonly live = new Set<DomainSource>();
   /** The `code` of a refusal the backend already reported ({@link refuse}). */
   static readonly REFUSED = 'refused';
+  /** How often a `live` source probes the server by default. */
+  static readonly liveMs = 30000;
+  /** How many probes may fail in a row before the poll gives up ({@link DomainSource.live}). */
+  static readonly liveFailures = 3;
 
   readonly table: string;
   readonly pageSize: number;
@@ -85,9 +100,17 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   readonly query: Signal<string | FilterGroup>;
   /** The search text, re-queried on change like {@link query}. */
   readonly search: Signal<string>;
+  /** The row order — see {@link DomainSourceOptions.sort}; a signal, so a mode that wants its
+   * own order (the trash, newest first) is a write and the collection re-reads. */
+  readonly sort: Signal<string>;
   /** Which rows the collection holds — a signal, so an app's trash mode is a flip of it and the
    * search box, the filters and the list stay bound to the one source. */
   readonly deleted: Signal<DomainDeletedMode>;
+  /** Whether the collection follows the server — see {@link DomainSourceOptions.live}. */
+  readonly live: Signal<boolean>;
+  /** The rows the source holds are no longer the server's: a live probe saw the collection move
+   * while this session had changes of its own to protect. Cleared by the next load. */
+  readonly stale: ReadonlySignal<boolean>;
   /** A source over deleted rows: nothing in it may be edited or inserted, and `save` refuses. */
   readonly readOnly: ReadonlySignal<boolean>;
   readonly df: ReadonlySignal<DataFrameLike | undefined>;
@@ -130,6 +153,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   private readonly _total = signal<number | null>(null);
   private readonly _access = signal(Access.readOnly);
   private readonly _selection = signal<readonly RowView<TRow>[]>([]);
+  private readonly _isStale = signal(false);
   private readonly _errorStep: ReadonlySignal<string>;
   /** The `source` step: the resolver walks to a signal, so the source hands itself over in one. */
   private readonly _self = signal<DomainSource<TRow>>(this);
@@ -152,6 +176,13 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   /** Set while {@link rebind} rewrites the query: the caller re-reads, and a refresh here would
    * drop the frame the batch just landed in. */
   private _rebinding = false;
+  private readonly _liveMs: number;
+  private _timer: ReturnType<typeof setInterval> | undefined;
+  /** What the last probe answered — the pair the next one is compared against; undefined until
+   * the first probe after a load, which only sets the baseline. */
+  private _probed: {count: number, last: string | null} | undefined;
+  private _probing = false;
+  private _failures = 0;
 
   constructor(options: DomainSourceOptions, env: ComponentEnv = NO_ENV) {
     super();
@@ -164,7 +195,11 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     this.isEmpty = options.empty ?? this.isDraft;
     this.query = signal<string | FilterGroup>(options.query ?? '');
     this.search = signal(options.search ?? '');
+    this.sort = signal(options.sort ?? '');
     this.deleted = signal<DomainDeletedMode>(options.deleted ?? 'exclude');
+    this.live = signal(options.live ?? false);
+    this.stale = this._isStale;
+    this._liveMs = options.liveMs ?? DomainSource.liveMs;
     this.readOnly = computed(() => this.deleted.value !== 'exclude');
     this._backend = requireBackend(this, backends.domain, 'domain tables');
     this.df = this._df;
@@ -244,13 +279,24 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     const bound = subBind(this._env, 'query');
     if (bound !== null)
       this.effect(() => this.query.value = DomainSource._queryOf(bound.value));
+    const boundLive = subBind(this._env, 'live');
+    if (boundLive !== null)
+      this.effect(() => this.live.value = boundLive.value === true);
     this.effect(() => {
       this.query.value;
       this.search.value;
+      this.sort.value;
       this.deleted.value;
       if (!this.isDirty.peek() && !this._rebinding)
         void this.refresh();
     });
+    this.effect(() => {
+      this._stopPolling();
+      this._failures = 0;
+      if (this.live.value)
+        this._timer = setInterval(() => void this._probe(), this._liveMs);
+    });
+    this.own(() => this._stopPolling());
   }
 
   get schema(): DomainSchema {
@@ -272,6 +318,8 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
    * `pristine` keeps it from arming the dirty gate until its first edit. Needs the table: call
    * after the source is ready. */
   newRow(values: RowValues<TRow> = {}, options?: {pristine?: boolean}): RowView<TRow> {
+    if (this.readOnly.peek())
+      throw new DomainBackendError('forbidden', `${this.table}: deleted rows are read-only until they are restored`);
     const edit = this._edit.peek();
     if (edit === undefined)
       throw new Error(`${this.table}: the table is not loaded yet`);
@@ -289,6 +337,8 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   async refresh(): Promise<void> {
     const gen = ++this._gen;
     this._restart = false;
+    // the rows about to arrive are the server's again, and the next probe baselines on them
+    this._probed = undefined;
     batch(() => {
       this._error.value = undefined;
       this._state.value = 'loading';
@@ -328,6 +378,9 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
         this._edit.value = frame.edit;
         this._total.value = total;
         this._state.value = 'ready';
+        // cleared where the load LANDS, not where it starts: one that bails over pending changes
+        // leaves the rows behind the server, and the mark has to say so
+        this._isStale.value = false;
       });
       this._syncCurrent();
       this._syncSelection();
@@ -489,7 +542,12 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
    * from the offset the server agrees with, the total counted again, and every other live source
    * of the same table reloaded — it is holding the rows this batch just rewrote. */
   async afterSave(): Promise<void> {
+    // the batch moved the collection itself: the next probe baselines on what we just wrote
+    this._probed = undefined;
     await this._rebase();
+    // and the re-base has just re-read the window, so the rows are the server's again — a save
+    // clears the stale mark as a reload does, or "Data changed — Refresh" would stand for good
+    this._isStale.value = false;
     for (const source of DomainSource.live) {
       if (source !== this && source.table === this.table && !source.isDirty.peek())
         source.refresh().catch((e) => source.fail(e));
@@ -741,6 +799,54 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     return table.count(this._filter(), this.search.peek() || undefined, this.deleted.peek());
   }
 
+  /** One poll of a `live` source: the collection counted and dated in one request, against what
+   * the last poll saw. A moved pair refreshes while there is nothing to lose and marks the source
+   * {@link stale} while there is. Nothing is asked while the tab is hidden (throttled, and no one
+   * is reading it) or mid write-back (the batch moves `updated_on` itself), and a backend with no
+   * probe is not polled at all.
+   *
+   * A probe that fails leaves the last known pair standing, so a one-tick outage cannot baseline
+   * a change away; after {@link liveFailures} failures in a row the timer gives up rather than
+   * poll forever at something permanently broken (a 403, a table without `updated_on`). `live`
+   * stays what the caller asked for — setting it false and true again starts a new timer. */
+  private async _probe(): Promise<void> {
+    const table = this._table;
+    if (table === undefined || typeof table.probe !== 'function' || this._probing || this._noRows ||
+        this.isSaving.peek() || (typeof document !== 'undefined' && document.hidden))
+      return;
+    this._probing = true;
+    const gen = this._gen;
+    const search = this.search.peek();
+    try {
+      const now = await table.probe({filter: this._filter(), ...(search === '' ? {} : {search}),
+        deleted: this.deleted.peek()});
+      if (gen !== this._gen)
+        return;
+      this._failures = 0;
+      const before = this._probed;
+      this._probed = now;
+      if (before === undefined || (before.count === now.count && before.last === now.last))
+        return;
+      if (this.isDirty.peek() || this.isSaving.peek())
+        this._isStale.value = true;
+      else
+        await this.refresh();
+    } catch {
+      // the baseline stands: the next good probe compares against the last pair that WAS answered,
+      // so a change made during an outage is still seen
+      if (++this._failures >= DomainSource.liveFailures)
+        this._stopPolling();
+    } finally {
+      this._probing = false;
+    }
+  }
+
+  private _stopPolling(): void {
+    if (this._timer !== undefined)
+      clearInterval(this._timer);
+    this._timer = undefined;
+  }
+
   /** The access a row is written under — its own (`Access.row`: a draft under `insert`, an existing
    * row as its `~can_*` columns say), no row the table's. */
   private _view(row: RowView | null): Access {
@@ -762,8 +868,9 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     if (DomainSource._namesDraft(this.query.peek()))
       return {limit: 0, offset, withAccess: this.withAccess, ...mode};
     const search = this.search.peek();
-    return {filter: this._filter(), ...(search === '' ? {} : {search}), limit: this.isEmpty ? 0 : limit, offset,
-      withAccess: this.withAccess, ...mode};
+    const sort = this.sort.peek();
+    return {filter: this._filter(), ...(search === '' ? {} : {search}), ...(sort === '' ? {} : {sort}),
+      limit: this.isEmpty ? 0 : limit, offset, withAccess: this.withAccess, ...mode};
   }
 
   private _filter(): DomainQueryLike['filter'] {
@@ -818,11 +925,12 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     if (state !== 'ready' && loaded === 0)
       return state === 'loading' ? 'Loading…' : '';
     const total = this.total.value;
+    const many = this._schema.info.pluralName.toLowerCase() || 'rows';
     if (this.deleted.value === 'only')
-      return plural(total ?? loaded, 'deleted row', 'deleted rows');
+      return plural(total ?? loaded, `deleted ${singular}`, `deleted ${many}`);
     return !this.isDraft && total !== null && loaded < total ?
       `${loaded.toLocaleString()} of ${total.toLocaleString()}` :
-      plural(loaded, singular, this._schema.info.pluralName.toLowerCase() || 'rows');
+      plural(loaded, singular, many);
   }
 
   private static _namesDraft(query: string | FilterGroup): boolean {

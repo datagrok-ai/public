@@ -71,6 +71,16 @@ scoped('the table route opens the app as a view, under the /domains base', async
   a.dispose();
 });
 
+scoped('the platform route mounts a live app — one table, two addresses, one behaviour', async () => {
+  backends.domain = widgets();
+  const view = await domains.route('/domains/demo/widget');
+  document.body.append(view.root);
+  const a = DomainApp.of(view);
+  await flush();
+  assert.equal(a.listSource.live.value, true, 'the canonical address polls like a package app does');
+  a.dispose();
+});
+
 scoped('a row segment opens its entity page: a business key with a dash in it, and an id', async () => {
   backends.domain = widgets();
   const view = await domains.route('/domains/demo/widget/A-1');
@@ -80,7 +90,8 @@ scoped('a row segment opens its entity page: a business key with a dash in it, a
   await flush();
   assert.equal(a.form.value.input('name').value.value, 'Alpha', 'a single-column key keeps its dashes');
   assert.equal(a.path.value, '/domains/demo/widget/A-1');
-  assert.equal(await domains.route(`/domains/demo/widget/${UUID}`), null, 'the open app answers for the id too');
+  assert.equal(await domains.route(`/domains/demo/widget/${UUID}`) === view, true,
+    'the open app answers for the id too, as itself');
   await flush();
   assert.equal(a.form.value.input('name').value.value, 'Alpha');
   assert.equal(a.path.value, '/domains/demo/widget/A-1', 'the path settles on the key the row carries');
@@ -111,22 +122,34 @@ scoped('the query and the search travel with the address', async () => {
   a.dispose();
 });
 
-scoped('find-or-activate: an app already open over the table takes the address and nothing is docked', async () => {
+scoped('find-or-activate: an app already open takes the address and is answered as itself', async () => {
   backends.domain = widgets();
   const table = await domains.table('demo.widget');
   const open = table.app({path: '/domains/demo/widget'});
   document.body.append(open.root);
   const a = DomainApp.of(open);
   await flush();
-  assert.equal(await domains.route('/domains/demo/widget/B2'), null, 'the open app answers for it');
-  await flush();
-  assert.equal(a.page.value, 'entity');
-  assert.equal(a.form.value.input('name').value.value, 'Beta');
-  assert.equal(grok.shell.v, open, 'and its view comes to the front');
-  assert.equal(await domains.route(`/domains/demo/widget?q=${encodeURIComponent('code = "B2"')}`), null);
-  await flush();
-  assert.equal(a.page.value, 'list', 'the whole address, not just the row');
-  assert.equal(a.listSource.query.value, 'code = "B2"');
+  // THE view, never null: the platform reads null as "no u2 route" and opens the Dart domain
+  // view over the app that is already showing the address (Back off `?trash=1` did exactly that)
+  const pushes = [];
+  const saved = globalThis.history;
+  globalThis.history = {pushState: (_state, _title, url) => pushes.push(url)};
+  try {
+    assert.equal(await domains.route('/domains/demo/widget/B2') === open, true, 'the open app answers as itself');
+    await flush();
+    assert.equal(a.page.value, 'entity');
+    assert.equal(a.form.value.input('name').value.value, 'Beta');
+    assert.equal(grok.shell.v, open, 'and its view comes to the front');
+    const back = await domains.route(`/domains/demo/widget?q=${encodeURIComponent('code = "B2"')}`);
+    assert.equal(back === open, true);
+    await flush();
+    assert.equal(a.page.value, 'list', 'the whole address, not just the row');
+    assert.equal(a.listSource.query.value, 'code = "B2"');
+    // the address came FROM the history: restoring it must not push another entry onto it
+    assert.deepEqual(pushes, [], 'a route into an open app costs no history entry');
+  } finally {
+    globalThis.history = saved;
+  }
   grok.shell.v = undefined;
   a.dispose();
 });

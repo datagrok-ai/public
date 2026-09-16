@@ -165,7 +165,8 @@ smoke('a pick replaces the token, quotes strings, appends a space and re-opens f
   await type(q, 'name like nap');
   key(q, 'Enter');
   await flush();
-  assert.equal(box(q).value, 'name like "Naproxen" ', 'a string value is quoted');
+  // the pick IS the answer: it is quoted, applied and re-formatted in the one keystroke
+  assert.equal(box(q).value, 'name like "Naproxen"', 'a string value is quoted');
   assert.deepEqual(rows(), ['and', 'or']);
   key(q, 'Enter');
   assert.equal(q.isOpen.value, false, 'Enter with no active row commits');
@@ -320,7 +321,7 @@ smoke('a value picked under a like-family operator is spelled as a literal patte
   key(q, 'Enter');
   await flush();
   const spelled = (op, v) => Filters.format(Filters.group('and', [Filters.cond('name', op, v)]));
-  assert.equal(box(q).value, `${spelled('like', '50%')} `, 'escaped the way the formatter spells it');
+  assert.equal(box(q).value, spelled('like', '50%'), 'escaped the way the formatter spells it');
   key(q, 'Escape');
   key(q, 'Enter');
   const [cond] = q.value.peek().nodes;
@@ -329,11 +330,11 @@ smoke('a value picked under a like-family operator is spelled as a literal patte
   await type(q, 'name starts in');
   key(q, 'Enter');
   await flush();
-  assert.equal(box(q).value, `${spelled('starts', 'in_progress')} `);
+  assert.equal(box(q).value, spelled('starts', 'in_progress'));
   await type(q, 'name = 50');
   key(q, 'Enter');
   await flush();
-  assert.equal(box(q).value, 'name = "50%" ', 'equality takes the value as it is');
+  assert.equal(box(q).value, 'name = "50%"', 'equality takes the value as it is');
 });
 
 smoke('a builder and a query input on one signal stay in sync both ways', async () => {
@@ -488,4 +489,119 @@ smoke('`display` spells the bound tree the way a preset wrote it, and Enter on i
   await flush();
   assert.equal(q.value.peek(), bound, 'the displayed form is not parsed into a query of its own');
   assert.equal(box(q).value, 'name = $me');
+});
+
+/* B3/M1: a value that is a NAME is several words. Searching and replacing only the token under
+   the caret listed every row with the wrong one highlighted, and Enter swapped the typed name for
+   it — silently, and the keystroke meant to apply the filter was eaten. */
+const PLACES = Filters.schema([
+  {name: 'name', type: TYPE.STRING},
+  {name: 'location_id', type: TYPE.STRING, ref: 'stock.location'},
+], {location_id: ['Building A', 'Building B', 'Lab 101']});
+
+smoke('a multi-word entity value is one search: the whole slot, not the last word', async () => {
+  const q = mount(new FilterQueryInput({schema: PLACES, name: 'q'}));
+  await type(q, 'location_id under Buil');
+  assert.deepEqual(rows(), ['Building A', 'Building B'], 'one word narrows, as it always did');
+
+  await type(q, 'location_id under Building A');
+  assert.deepEqual(rows(), ['Building A'], 'and so does the whole name — not every row with "A" first');
+
+  // the shim has no caret, so the boundary is asserted where it is computed: the slot ends at
+  // the connector, and a quoted value keeps the old token-shaped span
+  const text = 'location_id under Building A and name = "x"';
+  assert.deepEqual(Filters.completionContext(text, 'location_id under Building A'.length, PLACES).valueSpan,
+    {start: 'location_id under '.length, end: 'location_id under Building A'.length});
+  assert.equal(Filters.completionContext('location_id under "Lab 101"', 26, PLACES).valueSpan, undefined,
+    'a quoted value is already one token');
+});
+
+smoke('Enter never swaps in a row the typed text does not answer', async () => {
+  // a provider free to answer whatever it likes — the platform's facets did exactly this, which
+  // is how Enter came to paste the id of a location nobody had typed
+  const unfiltered = {...PLACES,
+    values: () => Promise.resolve(['Lab 101', 'Building A'].map((value) => ({value, label: value})))};
+  const q = mount(new FilterQueryInput({schema: unfiltered, name: 'q'}));
+  await type(q, 'location_id under Nowhere');
+  assert.deepEqual(rows(), ['Lab 101', 'Building A'], 'the rows are whatever the provider answered');
+  key(q, 'Enter');
+  await flush();
+  assert.equal(box(q).value, 'location_id under Nowhere', 'the typed name stands — no silent swap');
+
+  // and the same keystroke applies the filter, so the guidance shows at once (it used to take two)
+  assert.match(q.problems.value[0].message, /under takes a location — pick one from the list/);
+});
+
+smoke('an explicit arrow pick still wins, and a matching row is still completed', async () => {
+  const q = mount(new FilterQueryInput({schema: PLACES, name: 'q'}));
+  await type(q, 'location_id under Lab');
+  key(q, 'ArrowDown');
+  key(q, 'Enter');
+  await flush();
+  assert.match(box(q).value, /location_id under "Lab 101"/, 'the row the user pointed at replaces the whole slot');
+});
+
+smoke('a list or a between slot holds several values, so it is never widened', () => {
+  const list = 'location_id in (Building A, Lab';
+  assert.equal(Filters.completionContext(list, list.length, PLACES).valueSpan, undefined);
+  const between = 'age between 10 and 2';
+  assert.equal(Filters.completionContext(between, between.length, SCHEMA).valueSpan, undefined);
+});
+
+/* M1 and its twin: a picked completion IS the answer. Applying it took a second Enter — and until
+   that second keystroke the status bar still carried the refusal the previous text earned. */
+smoke('a picked value applies in the same action, by keyboard and by mouse', async () => {
+  const q = mount(new FilterQueryInput({schema: PLACES, name: 'q'}));
+  await type(q, 'location_id under Lab');
+  key(q, 'ArrowDown');
+  key(q, 'Enter');
+  await flush();
+  // a ref column's value is the row it names, which is what the query carries
+  assert.deepEqual(q.value.peek().nodes.map((n) => [n.property, n.operator, n.value?.id]),
+    [['location_id', 'under', 'Lab 101']], 'one keystroke, one filter');
+  assert.equal(q.query.value, 'location_id under "Lab 101"');
+  assert.deepEqual(q.problems.value, []);
+
+  const mouse = mount(new FilterQueryInput({schema: PLACES, name: 'm'}));
+  await type(mouse, 'location_id under Buil');
+  fire(document.body.querySelector('.u2-fq-option'), 'pointerdown');
+  await flush();
+  assert.deepEqual(mouse.value.peek().nodes.map((n) => [n.property, n.operator, n.value?.id]),
+    [['location_id', 'under', 'Building A']], 'a click is the same answer');
+});
+
+smoke('picking clears the refusal the previous text earned', async () => {
+  const q = mount(new FilterQueryInput({schema: PLACES, name: 'q'}));
+  await type(q, 'location_id under Nowhere');
+  key(q, 'Enter');
+  await flush();
+  assert.match(q.problems.value[0].message, /under takes a location — pick one from the list/);
+
+  await type(q, 'location_id under Lab');
+  key(q, 'ArrowDown');
+  key(q, 'Enter');
+  await flush();
+  assert.deepEqual(q.problems.value, [], 'the guidance is not about this text any more');
+  assert.deepEqual(q.value.peek().nodes.map((n) => [n.property, n.operator, n.value?.id]),
+    [['location_id', 'under', 'Lab 101']]);
+});
+
+smoke('a pick that does not make a filter yet applies nothing, and still clears the refusal', async () => {
+  const q = mount(new FilterQueryInput({schema: SCHEMA, name: 'q',
+    value: Filters.group('and', [Filters.cond('age', '>', 30)])}));
+  await type(q, 'zzz = 1');
+  key(q, 'Enter');
+  await flush();
+  assert.equal(q.problems.value.length > 0, true, 'an unknown column is refused');
+  const applied = q.value.peek();
+
+  // a property with no operator yet is not a filter: nothing is applied, and the refusal that was
+  // about `zzz` is not about this text
+  await type(q, 'ag');
+  key(q, 'ArrowDown');
+  key(q, 'Enter');
+  await flush();
+  assert.equal(box(q).value, 'age ');
+  assert.equal(q.value.peek(), applied, 'the tree in force is untouched');
+  assert.deepEqual(q.problems.value, []);
 });

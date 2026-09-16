@@ -345,7 +345,7 @@ source('spec: the tray tag round-trips through dump, a bound query narrows, a bo
     assert.equal(meta.category, 'Data');
     assert.equal(typeof meta.usage, 'string');
     assert.deepEqual(meta.props.map((p) => p.name),
-      ['table', 'query', 'search', 'pageSize', 'withAccess', 'defaults', 'empty', 'draft']);
+      ['table', 'query', 'search', 'pageSize', 'withAccess', 'defaults', 'empty', 'draft', 'deleted', 'live']);
     assert.equal(meta.props.find((p) => p.name === 'query').bindable, true);
     assert.equal(meta.props.find((p) => p.name === 'search').bindable, true);
 
@@ -847,4 +847,88 @@ source('a query names a draft only through a quoted literal: other text is text,
   assert.equal(text.rebind({[Rows.DRAFT_PREFIX]: 'p1'}), false, 'and a substring is never rewritten');
   named.dispose();
   text.dispose();
+});
+
+source('the live option is a signal on the source; the poller\'s timer rides the source\'s scope', async () => {
+  backends.domain = backend();
+  const plain = await issues();
+  assert.equal(plain.live.value, false, 'off by default');
+  const watched = await issues({live: true});
+  assert.equal(watched.live.value, true);
+  watched.live.value = false;
+  assert.equal(watched.live.value, false, 'a menu flips it like the trash mode flips `deleted`');
+
+  // the dispose contract WO 3-11 polls under: what the poller owns goes with the source
+  let stopped = false;
+  watched.own(() => stopped = true);
+  watched.dispose();
+  assert.equal(stopped, true);
+  plain.dispose();
+});
+
+source('a trash source refuses to insert, and its writer is built from the NARROWED access', async () => {
+  backends.domain = backend();
+  const live = await issues();
+  live.edit.value.markDeleted('i2');
+  assert.equal(await live.save(), true);
+  await flush();
+
+  const trash = await issues({deleted: 'only'});
+  assert.deepEqual(titles(trash), ['Ibuprofen']);
+  assert.equal(trash.access.value.can('edit'), false);
+  assert.equal(trash.access.value.can('insert'), false);
+  assert.equal(trash.access.value.field('title'), 'readonly');
+  assert.throws(() => trash.newRow({title: 'Nope'}),
+    (e) => e.code === 'forbidden' && /read-only until they are restored/.test(e.message),
+    'a permission refusal, not a validation one');
+  assert.equal(trash.check(), 'deleted rows are read-only until they are restored');
+  assert.equal(await trash.save(), false);
+
+  // the writer the frame carries is under the same bound: an edit it does take builds no op
+  const edit = trash.edit.value;
+  edit.setValue('i2', 'title', 'Renamed');
+  assert.deepEqual(edit.buildOps(), [], 'no column is writable, so the batch is empty');
+  assert.equal(edit.isChanged('i2', 'title'), true, 'the frame still shows what was typed');
+  live.dispose();
+  trash.dispose();
+});
+
+source('the trash counts the table by name, and the row order is the source to set', async () => {
+  const be = backend();
+  backends.domain = be;
+  const src = new DomainSource({table: 'grit.issue', pageSize: 10}, env());
+  src.start();
+  await flush();
+  assert.equal(src.summary.value, '3 issues');
+
+  src.deleted.value = 'only';
+  await flush();
+  assert.equal(src.summary.value, '0 deleted issues', 'the plural the schema declares, not "rows"');
+  await (await be.table('grit.issue')).transaction([{op: 'delete', table: 'issue', id: 'i1'}]);
+  await src.refresh();
+  await flush();
+  assert.equal(src.summary.value, '1 deleted issue', 'and its singular');
+  src.dispose();
+});
+
+source('sort travels with the query: `!col` descending, dropped from the spec when empty', async () => {
+  const inner = backend();
+  const specs = [];
+  backends.domain = {saveAll: (edits) => inner.saveAll(edits), table: async (address) => {
+    const t = await inner.table(address);
+    return Object.assign(Object.create(Object.getPrototypeOf(t)), t,
+      {frame: (spec) => (specs.push(spec), t.frame(spec))});
+  }};
+  const src = new DomainSource({table: 'grit.issue', pageSize: 10, sort: '!weight'}, env());
+  src.start();
+  await flush();
+  assert.equal(specs[0].sort, '!weight');
+  assert.deepEqual(src.rows.items.value.map((r) => r.title), ['Naproxen', 'Aspirin', 'Ibuprofen'],
+    'heaviest first');
+
+  src.sort.value = '';
+  await flush();
+  assert.equal('sort' in specs[specs.length - 1], false, 'no order asked for is the table default');
+  assert.deepEqual(src.rows.items.value.map((r) => r.title), ['Aspirin', 'Ibuprofen', 'Naproxen']);
+  src.dispose();
 });

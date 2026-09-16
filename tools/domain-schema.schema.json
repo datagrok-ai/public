@@ -94,6 +94,11 @@
           "default": true,
           "description": "Per-table in-transaction audit trail (before/after diffs, history, restore)."
         },
+        "hierarchy": {
+          "type": "boolean",
+          "default": false,
+          "description": "The table is a tree: it must declare exactly one ref column targeting itself, which becomes its parent column. Enables the ancestor path endpoint and the 'under' subtree filter term."
+        },
         "extensible": {
           "type": "boolean",
           "default": false,

@@ -392,7 +392,7 @@ export class DomainForm extends Control {
       if (name === 'id' && draft)
         value.textContent = 'assigned on save';
       else if ((prop.propertyType ?? prop.type) === 'datetime' && raw !== null && raw !== undefined && raw !== '')
-        value.append(timestamp(raw as Date | number | string));
+        value.append(timestamp(raw as Date | number | string, undefined, {utcDates: true}));
       else
         value.textContent = text(raw);
       const line = div([span(caption, 'u2-input-label'), value], 'u2-form-readonly');

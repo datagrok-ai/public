@@ -25,6 +25,14 @@ export class Overlay {
       el.className = 'u2-overlay';
       el.style.cssText = 'position: fixed; left: 0; top: 0; width: 0; height: 0; z-index: var(--dg-z-overlay);';
       document.body.append(el);
+      // an empty layer reads as a leftover in a DOM dump, and every surface that puts something
+      // here takes it away somewhere else — a popup's close, a dialog's, a balloon's timer. The
+      // host watching itself is the one teardown all of them share; the getter builds a fresh one
+      // the moment anything needs one again.
+      new MutationObserver(() => {
+        if (el.isConnected && el.childNodes.length === 0)
+          el.remove();
+      }).observe(el, {childList: true});
       Overlay._host = el;
     }
     return Overlay._host;

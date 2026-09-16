@@ -5,13 +5,24 @@
    without a wire; Save and Discard are the session's, not the grid's. */
 import * as DG from 'datagrok-api/dg';
 import {Control} from '../../core/component.js';
+import {signal} from '../../core/signals.js';
 import type {ReadonlySignal} from '../../core/signals.js';
 import {Filters} from '../../core/filter/index.js';
+import {text} from '../../core/text.js';
+import {timestamp} from '../../core/elements.js';
+import type {IProperty} from '../../core/property-like.js';
+import type {ObjectRenderer} from '../../core/object-renderer.js';
+import {DataTable} from '../../components/collections/data-table.js';
+import type {CellStateLike, DataTableColumn} from '../../components/collections/data-table.js';
 import type {DomainSource} from '../../sources/domain-source.js';
+import {Rows} from '../../sources/rows-like.js';
+import type {RowView} from '../../sources/rows-like.js';
 import {viewers} from '../viewers/viewers.js';
 import type {Bindable} from '../viewers/viewer-control.js';
 import {SYSTEM_COLUMNS} from './backend.js';
 import {EditorEditState} from './editor-state.js';
+import {DomainTable} from './index.js';
+import {DomainForm} from './form.js';
 
 export interface DomainGridOptions {
   /** The grid's look, each option a value or a signal the grid follows. */
@@ -24,6 +35,8 @@ export interface DomainGridOptions {
 /** What a datetime column without a format of its own is drawn with: a `DateTime.toString()`
  * ("2026-02-03 00:00:00.000Z") is not a date. A column whose values all fall on midnight is a
  * date, the rest keep the time. */
+/** What a reference cell shows until its caption answers — never the id it holds. */
+const PENDING = '…';
 const DATE_FORMAT = 'MMM d, yyyy';
 const DATE_TIME_FORMAT = 'MMM d, yyyy HH:mm';
 const MICROSECONDS_PER_DAY = 86400000000;
@@ -122,5 +135,216 @@ export class DomainGrid extends Control {
         return false;
     }
     return true;
+  }
+}
+
+/** What `domains.dataTable` shows and hides — the grid's options in the HTML table's terms. */
+export interface DomainDataTableOptions {
+  /** The columns to show, in this order; the schema's own selection by default (the name column
+   * first, the system and service ones out). */
+  columns?: string[];
+  /** Columns the table never shows, on top of those — a child collection's FK to the parent. */
+  hiddenColumns?: string[];
+  /** Row and header height in pixels. */
+  rowHeight?: number;
+  /** Enter on the selected row, or a double-click on it; by default the row is handed to the
+   * form paired through the source, as a list's Enter hands it over. */
+  onActivate?: (row: RowView, index: number) => void;
+}
+
+/** `domains.dataTable` — the source's rows as the HTML {@link DataTable}: virtualized rows of
+ * pooled cells, the columns derived from the table's schema the way the grid's decoration
+ * derives them, and the source's writer painting the cells (pending amber, refused red, a cell
+ * the caller may not write muted). Read-only by design (ruling 5: the Dart grid stays THE
+ * editor) — what it is for is a wide collection beside a tree or a form, where a canvas viewer
+ * is more than the page needs. */
+export class DomainDataTable extends Control {
+  /** The table, once the source's schema is known — it is what the columns are derived from. */
+  readonly table: ReadonlySignal<DataTable<RowView> | null>;
+
+  private readonly _table = signal<DataTable<RowView> | null>(null);
+  /** `<semType>|<id>` → the referenced row's caption, once it has answered; a promise while it
+   * is on its way, so the same id is looked up once for the whole table. */
+  private readonly _captions = new Map<string, string>();
+  private readonly _resolving = new Map<string, Promise<void>>();
+  private _tick: {unsubscribe(): void} | undefined;
+  private _plain: ObjectRenderer<RowView> | undefined;
+  private _repainting = false;
+
+  constructor(readonly source: DomainSource, private readonly _options: DomainDataTableOptions = {}) {
+    super();
+    this.table = this._table;
+    this.root.classList.add('u2-domain-data-table');
+    this.root.dataset.u2 = 'domain-data-table';
+    this.effect(() => {
+      source.state.value;
+      if (this._table.peek() === null && source.schema.properties.length > 0)
+        this._build();
+    });
+    // the writer's verdicts are not the items: a pending edit repaints the window in place
+    this.effect(() => {
+      const edit = source.edit.value;
+      const table = this._table.value;
+      this._tick?.unsubscribe();
+      this._tick = edit === undefined || table === null ? undefined :
+        edit.onChanged.subscribe(() => table.refresh());
+    });
+    this.own(() => this._tick?.unsubscribe());
+  }
+
+  /** The columns the table shows: what the caller asked for, else every property the caller may
+   * see that is neither a system nor a service column, the name column first. */
+  columns(): string[] {
+    const hidden = new Set([...SYSTEM_COLUMNS.map(([column]) => column), ...(this._options.hiddenColumns ?? [])]);
+    const access = this.source.access.peek();
+    const shown = (name: string) => !hidden.has(name) && !Rows.isService(name) && access.field(name) !== 'hidden';
+    if (this._options.columns !== undefined)
+      return this._options.columns.filter(shown);
+    const names = this.source.schema.properties.map((p) => p.name!).filter(shown);
+    const name = this.source.schema.info.nameColumn;
+    return name === null || !names.includes(name) ? names : [name, ...names.filter((n) => n !== name)];
+  }
+
+  private _build(): void {
+    const source = this.source;
+    const byName = new Map(source.schema.properties.map((p): [string, IProperty] => [p.name!, p]));
+    const nameColumn = source.schema.info.nameColumn;
+    const columns = this.columns().map((name): DataTableColumn<RowView> => ({
+      name,
+      header: byName.get(name)?.friendlyName || name,
+      width: DomainDataTable.width(byName.get(name), name === nameColumn),
+      ...(DomainDataTable.isNumeric(byName.get(name)) ? {align: 'right' as const} : {}),
+      render: (row) => this._cell(row, name, byName.get(name)),
+    }));
+    const table = this.runInScope(() => new DataTable<RowView>({columns, rowHeight: this._options.rowHeight,
+      items: source.rows, cellState: this._cellState(),
+      onActivate: this._options.onActivate ??
+        (() => source.activate.value = source.activate.peek() + 1)}));
+    // the table's selection and the source's current row are one thing, as the list's are
+    this.effect(() => {
+      const row = source.rows.items.peek()[table.selectedIndex.value] ?? null;
+      if (row?.id !== source.currentRow.peek()?.id)
+        source.currentRow.value = row;
+    });
+    this.effect(() => {
+      const row = source.currentRow.value;
+      const items = source.rows.items.value;
+      const at = row === null ? -1 : items.findIndex((r) => r.id === row.id);
+      if (at !== table.selectedIndex.peek())
+        table.selectedIndex.value = at;
+    });
+    this.root.replaceChildren(table.root);
+    this._table.value = table;
+  }
+
+  /** The source's writer as the table reads a cell: keyed by ROW KEY, which is what the edit
+   * state is keyed by too — the frame index never leaves it. */
+  private _cellState(): CellStateLike {
+    const source = this.source;
+    return {
+      isChanged: (key, column) => source.edit.peek()?.isChanged(key, column) ?? false,
+      canEdit: (key, column) => {
+        const row = source.rows.byKey(key);
+        return row !== undefined && source.access.peek().row(row).field(column) === 'editable';
+      },
+      errorOf: (key, column) => {
+        const message = source.edit.peek()?.errorOf(key, column) ?? null;
+        return message === null ? null : {message, kind: 'error'};
+      },
+    };
+  }
+
+  /** A CSS grid track per column type: the name column takes the most room, a flag or a number
+   * the least. Without this every column of a wide table gets an equal share and all of them
+   * truncate together. */
+  static width(prop: IProperty | undefined, isName: boolean): string {
+    if (isName)
+      return 'minmax(120px, 1.5fr)';
+    switch (prop?.propertyType ?? prop?.type) {
+      case 'bool': case 'int': case 'bigint': case 'double': case 'float': case 'num':
+        return 'minmax(48px, 0.5fr)';
+      case 'datetime':
+        return 'minmax(96px, 0.8fr)';
+      default:
+        return 'minmax(72px, 1fr)';
+    }
+  }
+
+  /** A column whose values are read right-aligned, the way every table of numbers is read. */
+  static isNumeric(prop: IProperty | undefined): boolean {
+    switch (prop?.propertyType ?? prop?.type) {
+      case 'int': case 'bigint': case 'double': case 'float': case 'num': return true;
+      default: return false;
+    }
+  }
+
+  /** What a cell shows: the name column as the table's renderer captions the row (a draft as
+   * "New <singular>"), a reference as the row it points at, a datetime through the same
+   * `timestamp` every other u2 surface uses (a value at midnight is a date, the rest keep the
+   * time), a number through the platform's formatter where the schema declares a format — and a
+   * raw uuid or a `1.7999999999999998` nowhere. */
+  private _cell(row: RowView, column: string, prop: IProperty | undefined): HTMLElement | string {
+    if (column === this.source.schema.info.nameColumn) {
+      const renderer = DomainTable.of(this.source)?.renderer ??
+        (this._plain ??= DomainTable.schemaRenderer(() => this.source.schema));
+      return renderer.caption(row);
+    }
+    const value = row[column];
+    if (prop === undefined || value === null || value === undefined || value === '')
+      return text(value);
+    if (DomainTable.isReference(prop))
+      return this._caption(prop, String(value));
+    switch (prop.propertyType ?? prop.type) {
+      case 'datetime':
+        // a domain `datetime` carrying a date is stamped at midnight UTC, and reading it locally
+        // would move it a day back west of Greenwich
+        return timestamp(value as string, undefined, {utcDates: true});
+      case 'double': case 'float': case 'num':
+        return DomainDataTable.number(value as number, prop.format);
+      default:
+        return text(value);
+    }
+  }
+
+  /** The referenced row's caption, looked up the way a form's readonly reference and the history
+   * lines look one up (`DomainForm.captionOf`: a domain row by its name column, a user or a group
+   * by its friendly name) and cached per id — the rows of one window repeat their references, and
+   * a recycled cell cannot keep a patched element of its own. The id stands in until it answers. */
+  private _caption(prop: IProperty, id: string): string {
+    const key = `${prop.semType}|${id}`;
+    const known = this._captions.get(key);
+    if (known !== undefined)
+      return known;
+    if (!this._resolving.has(key)) {
+      // a lookup that fails settles on the id, so the cell stops asking on every repaint
+      const settle = (caption: string) => {
+        this._resolving.delete(key);
+        this._captions.set(key, caption);
+        this._repaint();
+      };
+      this._resolving.set(key, DomainForm.captionOf(prop, id)
+        .then((caption) => settle(caption === null || caption === '' ? id : caption), () => settle(id)));
+    }
+    // never the uuid: an id flashing in the cell for a moment reads as the value of the column
+    return PENDING;
+  }
+
+  /** One repaint per batch of answers, not one per id. */
+  private _repaint(): void {
+    if (this._repainting)
+      return;
+    this._repainting = true;
+    queueMicrotask(() => {
+      this._repainting = false;
+      this._table.peek()?.refresh();
+    });
+  }
+
+  /** A number as the schema wants it read: the platform's formatter under a declared `format`,
+   * else the value with the float noise rounded off (`1.7999999999999998` is `1.8`). */
+  static number(value: number, format?: string | null): string {
+    if (typeof value !== 'number' || !Number.isFinite(value))
+      return text(value);
+    return format ? DG.format(value, format) : String(Number(value.toFixed(4)));
   }
 }

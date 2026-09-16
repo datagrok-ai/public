@@ -2,6 +2,9 @@
 
 ## v.next
 
+* GROK-20753: `U2: domain bulk` covers the L3 findings too — OK gated inline with the reason in the dialog, no "required" verdict on an unchecked field, and no target offered that the update endpoint would refuse
+* GROK-20753: `U2: domain bulk` covers the two live defects GD3 found — a real click on an include checkbox enabling its editor, and the “Apply to” picker having no empty option
+* GROK-20753: Added the `U2: domain bulk` and `U2: domain import` test categories — the ⋯ menu’s Import…/Bulk edit…, the bulk dialog writing one checked column into a selection and into everything the filter matches (and an immutable column refused by the server), and the import wizard auto-mapping a frame, gating on the blocking problems and posting the mapped columns only
 * GROK-20753: Added the `U2: domain trash` test category — a row deleted in the app, the ⋯ menu's Trash on `deleted: 'only'` with `?trash=1` in the path, the deleted row read-only with Restore, and back into the live list
 * GROK-20753: Added the `U2: domain app` test category — `DomainTable.app()` over `apitests.item`/`item_event`: the list, search, the filter query and the entity in `view.path`, a parent edit and a child insert as one transaction, the gate on Back and on close, the history pane, deep links and find-or-activate
 * GROK-20753: Added the `U2: domain session` test category — two sources under one `SharedSession` saving a draft parent and its draft child as one transaction, `domains.grid` over the js-api editor, search, and the `confirmDiscard` gate

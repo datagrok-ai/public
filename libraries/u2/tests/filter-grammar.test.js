@@ -226,6 +226,22 @@ test('completionContext: connector after a value, a tag or ")"', () => {
   assert.equal(Filters.completionContext('name = 1 not ', 13, schema).expect, 'property');
 });
 
+test('under: the hierarchy subtree term, its refusals and its canonical string', () => {
+  const tree = (text) => Filters.parseTree(text).tree;
+  const root = '9d1c1e8a-0000-4000-8000-000000000001';
+  assert.deepEqual(tree(`location_id under "${root}"`),
+    [{property: 'location_id', operator: 'under', value: root}]);
+  assert.deepEqual(tree('id under $root'), [{property: 'id', operator: 'under', value: {$param: 'root'}}]);
+  assert.deepEqual(tree(`a = 1 and location_id under "${root}"`),
+    [{property: 'a', operator: '=', value: 1}, 'and',
+      {property: 'location_id', operator: 'under', value: root}]);
+  for (const text of ['location_id under parent_id', `location_id under ("${root}")`, 'location_id under'])
+    assert.equal(Filters.parseTree(text).errors.length, 1, text);
+  assert.equal(canonicalOf(`location_id under "${root}"`), `location_id under "${root}"`);
+  assert.equal(ctx('location_id un|').expect, 'operator', 'under completes as an operator');
+  assert.equal(ctx('name under |').expect, 'value');
+});
+
 test('column references and $params: the two phase-2 terms, their refusals and canonical strings', () => {
   const tree = (text) => Filters.parseTree(text).tree;
   assert.deepEqual(tree('end_date >= start_date'), [{property: 'end_date', operator: '>=', value: {$column: 'start_date'}}]);

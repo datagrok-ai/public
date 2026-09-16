@@ -40,14 +40,18 @@ import {DomainSearch} from './search.js';
 import type {DomainSearchOptions} from './search.js';
 import {DomainFilters} from './filters.js';
 import type {DomainFiltersOptions} from './filters.js';
-import {DomainGrid} from './grid.js';
-import type {DomainGridOptions} from './grid.js';
+import {DomainGrid, DomainDataTable} from './grid.js';
+import type {DomainGridOptions, DomainDataTableOptions} from './grid.js';
+import {DomainTree} from './tree.js';
+import type {DomainTreeOptions} from './tree.js';
 import {DomainHistory} from './history.js';
 import type {DomainHistoryTarget} from './history.js';
 import {DomainChildren} from './children.js';
 import type {DomainChildrenOptions} from './children.js';
 import {saveButton, discardButton, newButton} from './buttons.js';
 import {route} from './routes.js';
+import {bulkEdit} from './bulk.js';
+import {openImport} from './import.js';
 const REF_ADDRESS = /^\w+\.\w+$/;
 
 /** An action over one row: `requires` names the capability it needs (permission ⇒ hidden),
@@ -457,6 +461,12 @@ export const domains = {
   list: (source: DomainSource, options?: DomainListOptions): DomainList => new DomainList(source, options),
   pick: (table: string, options?: DomainPickOptions): DomainPick => new DomainPick(table, options),
   grid: (source: DomainSource, options?: DomainGridOptions): DomainGrid => new DomainGrid(source, options),
+  dataTable: (source: DomainSource, options?: DomainDataTableOptions): DomainDataTable =>
+    new DomainDataTable(source, options),
+  /** A tree over a table the schema declares a hierarchy; `selected` drives a collection's query
+   * as `<fk> under "<id>"`. */
+  tree: <TRow extends DomainRowLike = DomainRowLike>(table: DomainTable<TRow>,
+    options?: DomainTreeOptions<TRow>): DomainTree<TRow> => new DomainTree(table, options),
   search: (source: DomainSource, options?: DomainSearchOptions): DomainSearch => new DomainSearch(source, options),
   filters: (source: DomainSource, options?: DomainFiltersOptions): DomainFilters => new DomainFilters(source, options),
   history: (source: DomainSource, row?: DomainHistoryTarget): DomainHistory => new DomainHistory(source, row),
@@ -464,6 +474,9 @@ export const domains = {
     new DomainChildren(parent, options),
   app: (options: DomainAppOptions): DomainApp => new DomainApp(options),
   route,
+  bulkEdit,
+  /** The import wizard over a table: source → mapping → preview → the server's report. */
+  import: openImport,
   saveButton,
   discardButton,
   newButton,

@@ -16,6 +16,8 @@ export {VirtualList} from './components/collections/list.js';
 export type {VirtualListOptions} from './components/collections/list.js';
 export {VirtualGrid} from './components/collections/grid.js';
 export type {VirtualGridOptions} from './components/collections/grid.js';
+export {DataTable} from './components/collections/data-table.js';
+export type {DataTableOptions, DataTableColumn, CellStateLike} from './components/collections/data-table.js';
 export {rowActions, actionsMenu, allowedActions} from './components/actions/actions.js';
 export type {Action} from './components/actions/actions.js';
 export {Combobox} from './components/inputs/combobox.js';
@@ -144,7 +146,8 @@ export {arrayRows, Rows} from './sources/rows-like.js';
 export type {ColumnOf, DomainRowLike, RowsLike, RowValues, RowView} from './sources/rows-like.js';
 export {DomainBackendError} from './sources/domain-backend.js';
 export type {DomainBackend, DomainTableLike, DomainTableInfoLike, DomainFrameLike, DomainQueryLike,
-  DomainTransactionOpLike, DomainTransactionResultLike, AuditEntryLike} from './sources/domain-backend.js';
+  DomainTransactionOpLike, DomainTransactionResultLike, AuditEntryLike, DomainBatchOptionsLike,
+  DomainBatchReportLike, DomainProbeLike} from './sources/domain-backend.js';
 export {MemoryDomainBackend} from './sources/memory-domain.js';
 export type {MemorySchemaJson, MemoryTableJson, MemoryColumnJson, MemoryDomainOptions}
   from './sources/memory-domain.js';

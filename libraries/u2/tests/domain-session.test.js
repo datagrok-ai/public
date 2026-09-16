@@ -578,3 +578,74 @@ scoped('the assigned map is read by own properties only: a cell, a default or a 
   projects.dispose();
   issues.dispose();
 });
+
+scoped('a batch of deletes alone is "deleted", not "saved" — in the table\'s own words', async () => {
+  backends.domain = backend();
+  const session = new SharedSession();
+  const issues = new DomainSource({table: 'grit.issue', session}, env);
+  issues.start();
+  await flush();
+  issues.edit.peek().markDeleted('i2');
+  assert.equal(await session.save(), true);
+  assert.equal(balloon(), 'Issue deleted');
+
+  notify.closeAll();
+  issues.edit.peek().markDeleted('i1');
+  issues.edit.peek().markDeleted('i3');
+  assert.equal(await session.save(), true);
+  assert.equal(balloon(), '2 issues deleted');
+
+  notify.closeAll();
+  issues.rows.byKey('i1');
+  const live = new DomainSource({table: 'grit.project', session}, env);
+  live.start();
+  await flush();
+  live.rows.byKey('p1').name = 'Renamed';
+  assert.equal(await session.save(), true);
+  assert.equal(balloon(), 'Project saved', 'an edit is still saved');
+  live.dispose();
+  issues.dispose();
+});
+
+scoped('a refusal about a whole row names the reason, not just "the changes were refused"', async () => {
+  const memory = backend();
+  // the platform path: the backend answers FALSE and leaves the sentence the writer worked out on
+  // the edit state (`DgDomainBackend.saveAll`); nothing reaches a cell, so `validity` stays null
+  backends.domain = {
+    table: (address) => memory.table(address),
+    saveAll: (edits) => {
+      edits[0].problem = 'Ibuprofen still has 3 containers; remove or reassign them first';
+      return Promise.resolve(false);
+    },
+  };
+  const session = new SharedSession();
+  const issues = new DomainSource({table: 'grit.issue', session}, env);
+  issues.start();
+  await flush();
+  issues.edit.peek().markDeleted('i2');
+  assert.equal(issues.validity.value, null, 'a row-level refusal reaches no cell');
+  assert.equal(await session.save(), false);
+  assert.match(issues.summary.value, /still has 3 containers/, 'the status line says WHY');
+  assert.equal(issues.isDirty.value, true, 'and the change is still pending');
+  issues.dispose();
+});
+
+scoped('the shared overlay host does not outlive the dialogs in it', async () => {
+  backends.domain = backend();
+  const session = new SharedSession();
+  const issues = new DomainSource({table: 'grit.issue', session}, env);
+  issues.start();
+  await flush();
+  issues.edit.peek().setValue('i1', 'title', 'X');
+  const gate = confirmDiscard(session, {action: 'reload the rows'});
+  await flush();
+  assert.equal(document.body.querySelectorAll('.u2-overlay').length, 1, 'the layer host is up with the dialog');
+  fire(buttonNamed('DISCARD'), 'click');
+  assert.equal(await gate, true);
+  await flush();
+  assert.equal(document.body.querySelectorAll('.u2-dialog').length, 0);
+  assert.equal(document.body.querySelectorAll('.u2-dialog-backdrop').length, 0);
+  assert.equal(document.body.querySelectorAll('.u2-overlay').length, 0,
+    'and the empty host goes with it, instead of reading as a leftover in the DOM');
+  issues.dispose();
+});

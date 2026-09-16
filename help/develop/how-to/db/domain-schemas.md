@@ -94,6 +94,7 @@ Every table automatically gets the system columns `id` (UUID, also the row's ent
 | `defaultRowVisibility` | `table`   | Row/master modes: whether table-level View shows unshared rows (`none` hides them)               |
 | `businessKey`          | —         | Natural-key column list: powers deduplication on insert, upsert matching, and search handles     |
 | `audit`                | `true`    | In-transaction audit trail with before/after diffs; also enables row history and row-level watch |
+| `hierarchy`            | `false`   | The table is a tree: it must declare exactly one `ref` column targeting itself, which becomes its parent column. Enables a row's ancestor path and the `under` subtree filter term (`location_id under "<id>"`), and lets `domains.tree` walk it |
 | `softDelete`           | `true`    | Deletes mark `is_deleted` instead of removing rows                                               |
 | `idempotency`          | `false`   | Adds the `idempotency_key` column for replay-safe creates                                        |
 | `extensible`           | `false`   | Lets users add [their own columns](#extending-a-plugin-schema) to this table                     |
@@ -497,6 +498,18 @@ await issues.update(r.id, {status: 'resolved'}, {version: issue.version});
 // Soft delete (declared referential actions are enforced)
 await issues.delete(r.id);
 
+// The trash: a deleted row is still addressable, and Delete is also the grant that restores it
+const trashed = await issues.query({filter: `id = "${r.id}"`, deleted: 'only'});   // carries ~is_deleted
+await issues.restore(r.id);                                                        // audit op 'undelete'
+
+// One value into many rows, one transaction (per-row validation, version and audit line);
+// the filter is required, and the caller's Edit permission narrows the selection silently
+const {updated, hasMore} = await issues.updateWhere(
+  `id in ("${a}", "${b}")`, {status_id: closedId}, {limit: 1000});
+
+// On a table declaring `"hierarchy": true`: the row's ancestors, root first, row excluded
+const path = await grok.dapi.domains.table('stockroom.location').pathTo(shelfId);
+
 // Aggregate over the rows and columns the caller can see
 const counts = await issues.aggregate({
   groupBy: ['status'],
@@ -769,6 +782,9 @@ Runnable in the platform's samples gallery:
 [filters](https://public.datagrok.ai/js/samples/dapi/domains/filters),
 [dataframe](https://public.datagrok.ai/js/samples/dapi/domains/dataframe),
 [idempotency](https://public.datagrok.ai/js/samples/dapi/domains/idempotency),
+[trash](https://public.datagrok.ai/js/samples/dapi/domains/trash),
+[bulk-edit](https://public.datagrok.ai/js/samples/dapi/domains/bulk-edit),
+[hierarchy](https://public.datagrok.ai/js/samples/dapi/domains/hierarchy),
 [schema](https://public.datagrok.ai/js/samples/dapi/domains/schema),
 [platform-grid](https://public.datagrok.ai/js/samples/dapi/domains/platform-grid).
 
@@ -795,6 +811,31 @@ grok s domains create inventory && grok s domains apply inventory --json schema.
 Validation errors are printed per row, a schema `apply` shows its change plan with `--dry-run`
 and refuses destructive changes until `--confirm-destructive`, and `--output json` makes every
 command scriptable.
+
+## The table UI, and its addresses
+
+Every registered table has a UI with no code, at stable addresses:
+
+| Address | Opens |
+|---|---|
+| `/domains/<schema>/<table>` | the table — list, search, filters, ribbon |
+| `/domains/<schema>/<table>/<keyOrId>` | one row's page — its fields, its child rows, its history (the business key where it is unambiguous, the id otherwise) |
+| `/domains` and `/domains/<schema>` | the domain gallery and the schema diagram |
+| **Browse** > **Platform** > **Domains** > `<schema>` > `<table>` | the same table view as the first row |
+
+The table and row addresses open the **u2 domain app** (`@datagrok-libraries/u2`), which is what
+`domains.table(address).app()` gives a plugin — the same view, the same ribbon, the same gates,
+whether it is reached through `/domains/...`, through Browse, or mounted by a package at
+`/apps/<Package>/<App>`. Resolution goes through a `//tags: domainRoutes` package function
+(`PowerPack:domainRouteView`), so the platform loads it on demand and a stand without that package
+falls back to the built-in Dart view. The Dart view is also what
+**Settings** > **Beta** > **Dart domain UI** brings back, for a stand that needs it; the domain
+gallery and the schema diagram are Dart in either case.
+
+What the app gives on top of browsing — trash and restore, bulk edit, a CSV/frame import wizard,
+a tree over a self-referencing table — is described in
+`libraries/u2/docs/recipes/crud-app.md` and `hierarchies.md`, and is the same surface a plugin
+composes from (see [Building app UI: u2](#building-app-ui-u2) below).
 
 ## Customizing the UI
 
@@ -851,15 +892,20 @@ Three tiers, each a package in this repository:
   `DomainApp` subclass with presets and shortcuts:
   [Grit](https://github.com/datagrok-ai/public/tree/master/packages/Grit).
 
-The recipes in `libraries/u2/docs/recipes/` (`crud-app.md`) walk through the surface.
+The recipes in `libraries/u2/docs/recipes/` walk through the surface: `crud-app.md` (what the
+schema declares, what `app()` gives, and the ⋯ menu — import, bulk edit, trash/restore),
+`spec-app.md`, `custom-app.md`, and `hierarchies.md` (a self-referencing table as a tree, the
+`under` subtree filter). What every backend behind these controls must agree on is
+`libraries/u2/docs/domain-backend-contract.md`.
 
 ### Platform building blocks
 
 The lower-level blocks behind the standard UI ship in `datagrok-api` itself:
 
-* `DG.DomainView.create({schema: 'grit', table: 'issue'})` opens the full table view
-  (search, filters, render modes, editing) programmatically — the same view the
-  `/domains/...` routes open.
+* `DG.DomainView.create({schema: 'grit', table: 'issue'})` opens the Dart table view
+  (search, filters, render modes, editing) programmatically — the view the `/domains/...`
+  routes open with **Settings** > **Beta** > **Dart domain UI** on. To open what those
+  addresses normally open, use the u2 app: `(await domains.table('grit.issue')).app()`.
 * `grid.attachEditor(editor)` hosts the domain editing state in any `DG.Grid` you own —
   dirty / invalid / conflict cell markers and per-column writability — and
   `DG.DomainObjectHandler.decorateGrid(grid, table)` applies the table's rendering to it.

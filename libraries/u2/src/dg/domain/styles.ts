@@ -22,6 +22,8 @@ import '../../../css/file.css';
 import '../../../css/form.css';
 import '../../../css/entity.css';
 import '../../../css/list.css';
+import '../../../css/tree.css';
+import '../../../css/data-table.css';
 import '../../../css/grid.css';
 import '../../../css/menu.css';
 import '../../../css/breadcrumbs.css';

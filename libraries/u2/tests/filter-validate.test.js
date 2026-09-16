@@ -197,3 +197,12 @@ test('a bare name where a value was meant says how to spell it: a ref suggests t
   assert.equal(message([Filters.cond('age', '=', {column: 'High'})]), 'Unknown column "High"',
     'a number never meant a quoted value');
 });
+
+test('the unquoted-value hint points at the list for `under`, not at a dotted path', () => {
+  const [bare] = problems([Filters.cond('author', '=', {column: 'Building A'})], 'domain');
+  assert.match(bare.message, /did you mean `author\.name = "Building A"`\?/);
+  // a dotted `under` is refused server-side by design: `author.name under …` is a dead end
+  const [under] = problems([Filters.cond('author', 'under', {column: 'Building A'})], 'domain');
+  assert.match(under.message, /under takes a Core\.users — pick one from the list/);
+  assert.equal(under.message.includes('did you mean'), false);
+});

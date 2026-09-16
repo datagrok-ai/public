@@ -139,6 +139,10 @@ export interface DomainAuditEntry {
  * and whether more matching deletable rows remain (loop while `hasMore`). */
 export interface DomainDeleteReport { deleted: number; hasMore: boolean; }
 
+/** Report of domain table `updateWhere`: rows actually updated in this call, and whether
+ * more matching editable rows remain (loop while `hasMore`). */
+export interface DomainUpdateReport { updated: number; hasMore: boolean; }
+
 /** Grantable permission on a domain registry entity (table, schema, or column schema).
  * 'Extend' is grantable on SCHEMA entities only — it lets the holder add their own
  * tables and columns to a package-managed schema the plugin opted in to. Any other
@@ -243,6 +247,12 @@ export interface DomainTableInfo {
   pluralName: string;
   securityMode: 'table' | 'master' | 'row';
   audit: boolean;
+  /** The table declares a tree (`hierarchy` in schema.json): exactly one ref column
+   * targets the table itself, and {@link DomainTableClient.pathTo} / the `under`
+   * filter term walk it. */
+  hierarchy: boolean;
+  /** The self-referencing column the tree is built on; null off a hierarchy table. */
+  parentColumn: string | null;
   /** What the table holds, as declared in schema.json; null when undeclared. */
   description: string | null;
   childTables: DomainChildTableRef[];

@@ -48,3 +48,38 @@ export function backend(options = {}) {
   const rows = Object.fromEntries(Object.entries(ROWS).map(([t, list]) => [t, list.map((r) => ({...r}))]));
   return new MemoryDomainBackend(SCHEMA, {rows, ...options});
 }
+
+/* A hierarchy table the way the manifest declares one: `hierarchy: true` plus exactly one ref
+   column targeting the table itself. */
+export const LOCATIONS = {
+  name: 'stock',
+  tables: {
+    location: {
+      hierarchy: true, singularName: 'Location',
+      columns: {
+        name: {type: 'string', required: true, isName: true, searchable: true},
+        parent_id: {type: 'ref', ref: 'location'},
+        kind: {type: 'string', choices: ['site', 'room', 'shelf']},
+      },
+    },
+  },
+};
+
+/** site → room → shelf → box, plus an unrelated second site. */
+export const TREE = {location: [
+  {id: 'l1', name: 'Site', kind: 'site'},
+  {id: 'l2', name: 'Room', parent_id: 'l1', kind: 'room'},
+  {id: 'l3', name: 'Shelf', parent_id: 'l2', kind: 'shelf'},
+  {id: 'l4', name: 'Box', parent_id: 'l3'},
+  {id: 'l9', name: 'Other site', kind: 'site'},
+]};
+
+/** A fresh backend over the 3-level tree. */
+export function hierarchyBackend(options = {}) {
+  return new MemoryDomainBackend(LOCATIONS, {rows: {location: TREE.location.map((r) => ({...r}))}, ...options});
+}
+
+/** The `stock.location` table of a fresh {@link hierarchyBackend}. */
+export function locations(options = {}) {
+  return hierarchyBackend(options).tableSync('stock.location');
+}

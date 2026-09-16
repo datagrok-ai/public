@@ -15,8 +15,8 @@ import type {IProperty} from '../core/property-like.js';
 import type {AccessData, FieldAccess} from '../core/access.js';
 import {Access} from '../core/access.js';
 import {DomainBackendError} from './domain-backend.js';
-import type {AuditEntryLike, DomainBackend, DomainDeletedMode, DomainFrameLike, DomainQueryLike,
-  DomainTableInfoLike, DomainTableLike, DomainTransactionOpLike,
+import type {AuditEntryLike, DomainBackend, DomainDeletedMode, DomainFrameLike, DomainProbeLike,
+  DomainQueryLike, DomainTableInfoLike, DomainTableLike, DomainTransactionOpLike,
   DomainTransactionResultLike} from './domain-backend.js';
 import type {EditState} from './edit-state.js';
 import {MemoryEditState} from './edit-state.js';
@@ -51,6 +51,9 @@ export interface MemoryTableJson {
   /** `{name: {check: sql}}` or `{name: {expr: grammar, message?}}` — only `expr` entries reach `info`. */
   constraints?: Record<string, {check?: string, expr?: string, message?: string}>;
   permissions?: string[] | Record<string, {description?: string}>;
+  /** A self-referencing table: exactly one `ref` column must target it, and that column becomes
+   * `info.parentColumn` — what `ancestors` walks. */
+  hierarchy?: boolean;
 }
 
 /** The `schema.json` subset the backend reads — a real one satisfies it. */
@@ -310,6 +313,11 @@ export class MemoryDomainBackend implements DomainBackend {
 }
 
 export class MemoryTable implements DomainTableLike {
+  /** The server's `maxUpdateWhereRows` (= `maxDeleteWhereRows`). */
+  static readonly maxUpdateWhereRows = 1000;
+  /** How deep `ancestors` walks before it gives up — the server's recursion cap. */
+  static readonly maxPathDepth = 64;
+
   readonly address: string;
   readonly properties: IProperty[];
   readonly info: DomainTableInfoLike;
@@ -349,6 +357,8 @@ export class MemoryTable implements DomainTableLike {
       refFilters: Object.fromEntries(columns.filter(([, c]) => c.filter).map(([n, c]) => [n, c.filter!])),
       permissions,
       childTables: [],
+      hierarchy: json.hierarchy === true,
+      parentColumn: json.hierarchy === true ? MemoryTable._parentColumn(this.address, this.refs) : null,
     };
     this.rows = rows.map((row) => this.stamp({...row}, 1));
     const granted = Object.fromEntries(permissions.map((p) => [p, true]));
@@ -395,7 +405,11 @@ export class MemoryTable implements DomainTableLike {
       ...(spec.deleted === undefined || spec.deleted === 'exclude' ? [] : [{name: Rows.DELETED, type: 'bool'}]),
     ];
     const df = new MemoryFrame(columns, rows);
-    const edit = new MemoryEditState(this, df, Access.from(access));
+    // a frame over deleted rows is read-only until they are restored — the same upper bound
+    // `DomainSource.access` publishes, so the writer and the controls agree
+    const bound = Access.from(access);
+    const edit = new MemoryEditState(this, df,
+      spec.deleted === undefined || spec.deleted === 'exclude' ? bound : bound.narrow({edit: false, insert: false}));
     return {
       df,
       edit,
@@ -412,6 +426,20 @@ export class MemoryTable implements DomainTableLike {
   async count(filter?: DomainQueryLike['filter'], search?: string,
     deleted?: DomainDeletedMode): Promise<number> {
     return (await this._where(filter, search, deleted)).length;
+  }
+
+  /** The server's live probe mirrored: the matching rows counted and the newest `updated_on`
+   * among them, in one call — `aggregate({measures: [{fn: 'count'}, {fn: 'max', column:
+   * 'updated_on'}]})` under the same filter, search and `deleted` mode. */
+  async probe(spec: Pick<DomainQueryLike, 'filter' | 'search' | 'deleted'> = {}): Promise<DomainProbeLike> {
+    const rows = await this._where(spec.filter, spec.search, spec.deleted);
+    let last: string | null = null;
+    for (const row of rows) {
+      const updated = row.updated_on;
+      if (typeof updated === 'string' && (last === null || updated > last))
+        last = updated;
+    }
+    return {count: rows.length, last};
   }
 
   transaction(ops: DomainTransactionOpLike[]): Promise<DomainTransactionResultLike[]> {
@@ -445,6 +473,60 @@ export class MemoryTable implements DomainTableLike {
       ts: restored.updated_on as string, before: {...row}, after: {...restored}});
   }
 
+  /** The filtered bulk edit, as the server's `POST …/{table}/update`: a non-empty filter selects
+   * the LIVE rows the caller may edit, `values` is checked against the writable columns before
+   * anything is written, and at most `limit` rows (the server's cap of {@link maxUpdateWhereRows}
+   * at most) are patched inside ONE transaction — `hasMore` says the filter matched past the cap.
+   * Any refusal rolls the whole batch back. */
+  async updateWhere(filter: DomainQueryLike['filter'], values: Record<string, unknown>,
+    options: {limit?: number} = {}): Promise<{updated: number, hasMore: boolean}> {
+    if ((filter ?? '') === '' || (Array.isArray(filter) && filter.length === 0))
+      throw new DomainBackendError('validation', `${this.address}: a filter is required`);
+    if (Object.keys(values).length === 0)
+      throw new DomainBackendError('validation', `${this.address}: updateWhere requires non-empty values`);
+    const writable = new Set(this.properties.map((p) => p.name!)
+      .filter((name) => this._access.fields[name] === 'editable'));
+    for (const column of Object.keys(values)) {
+      if (!writable.has(column))
+        throw new DomainBackendError('validation', `${this.address}: column "${column}" cannot be updated`);
+    }
+    // as the server clamps it: a limit of 0 would report `hasMore` forever and write nothing
+    const cap = Math.max(1, Math.min(options.limit ?? MemoryTable.maxUpdateWhereRows,
+      MemoryTable.maxUpdateWhereRows));
+    // the Edit predicate narrows the selection silently, as the server's does
+    const matched = (await this._where(filter)).filter((row) => this._canEdit(row));
+    const ids = matched.slice(0, cap).map((row) => String(row.id));
+    await this.transaction(ids.map((id) => ({op: 'update' as const, table: this.address, id, values})));
+    return {updated: ids.length, hasMore: matched.length > cap};
+  }
+
+  /** The row's ancestors along `info.parentColumn`, ROOT FIRST and without the row itself — the
+   * server's `GET …/{id}/path`. The walk stops at an ancestor the caller cannot see (here: a
+   * deleted one), at a cycle, and at {@link maxPathDepth}; a table the schema does not declare a
+   * hierarchy is refused by name (`DomainFilterError` on the wire). */
+  async ancestors(id: string): Promise<{id: string, name: string}[]> {
+    const parent = this.info.parentColumn;
+    if (this.info.hierarchy !== true || parent === null || parent === undefined)
+      throw new DomainBackendError('filter', `${this.address} is not a hierarchy table`);
+    const visible = (key: unknown) => typeof key !== 'string' ? undefined :
+      this.rows.find((row) => row.id === key && row[IS_DELETED] !== true);
+    // no-oracle: a row the caller cannot see answers no path, never that it exists
+    let row = visible(id);
+    if (row === undefined)
+      return [];
+    const chain: {id: string, name: string}[] = [];
+    const seen = new Set<string>([id]);
+    while (chain.length < MemoryTable.maxPathDepth) {
+      const next = visible(row[parent]);
+      if (next === undefined || seen.has(next.id as string))
+        break;
+      seen.add(next.id as string);
+      chain.push({id: next.id as string, name: this._nameOf(next)});
+      row = next;
+    }
+    return chain.reverse();
+  }
+
   /** The schema's rules — required, choices, min, max — as the server's `_validateRow` refuses on. */
   check(row: Row, index: number): void {
     for (const prop of this.properties) {
@@ -462,6 +544,17 @@ export class MemoryTable implements DomainTableLike {
     row.updated_on = now;
     row.author_id ??= this._author;
     return row;
+  }
+
+  /** The row's own `~can_edit`, else the table's — the shape `query` projects. */
+  private _canEdit(row: Row): boolean {
+    const own = row[`${Access.ROW_PREFIX}edit`];
+    return typeof own === 'boolean' ? own : this._access.can.edit === true;
+  }
+
+  private _nameOf(row: Row): string {
+    const column = this.info.nameColumn;
+    return String((column === null ? undefined : row[column]) ?? row.id);
   }
 
   private async _where(filter: DomainQueryLike['filter'], search?: string,
@@ -558,6 +651,17 @@ export class MemoryTable implements DomainTableLike {
       }
       return 0;
     });
+  }
+
+  /** The manifest's `invalid-hierarchy` refusal: a hierarchy table declares exactly one ref
+   * column targeting itself. */
+  private static _parentColumn(address: string, refs: Record<string, string>): string {
+    const self = Object.entries(refs).filter(([, target]) => target === address).map(([column]) => column);
+    if (self.length !== 1) {
+      throw new DomainBackendError('validation', `${address}.hierarchy: invalid-hierarchy — exactly one ` +
+        `ref column must target the table itself, found ${self.length}`);
+    }
+    return self[0];
   }
 
   private static _address(schema: string, ref: string): string {

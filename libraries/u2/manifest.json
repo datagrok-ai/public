@@ -1886,6 +1886,55 @@
       }
     },
     {
+      "tag": "u2-data-table",
+      "category": "Display",
+      "description": "Virtualized table: pooled rows under a sticky header, one column per named property, only the visible window in the DOM.",
+      "usage": "For a list of records with several columns — bind `items` to a source's rows (`$.orders.rows`). Prefer `u2-domain-grid` for editing a domain table, and `u2-domain-list` for one line or a card per row; a handful of rows with rich cells belongs in a plain table.",
+      "props": [
+        {
+          "name": "columns",
+          "type": "string_list",
+          "description": "The item properties to show, in order; `name:Header` gives a column its own header."
+        },
+        {
+          "name": "items",
+          "type": "object",
+          "bindable": true,
+          "description": "The records to show — bind a source's rows (`$.substances.rows`)."
+        },
+        {
+          "name": "rowHeight",
+          "type": "int",
+          "description": "Row and header height in pixels (default 24)."
+        }
+      ],
+      "defaults": {
+        "columns": [
+          "name",
+          "value"
+        ]
+      },
+      "example": {
+        "tag": "u2-data-table",
+        "props": {
+          "columns": [
+            "name",
+            "cas:CAS number"
+          ],
+          "items": [
+            {
+              "name": "Aspirin",
+              "cas": "50-78-2"
+            },
+            {
+              "name": "Caffeine",
+              "cas": "58-08-2"
+            }
+          ]
+        }
+      }
+    },
+    {
       "tag": "u2-filter-builder",
       "category": "Inputs",
       "description": "Schema-driven query builder: condition rows (property, operator, value) joined by one and/or toggle, \"+\" adds and \"−\" removes; the value is a filter tree, `query` its string.",
@@ -2411,13 +2460,31 @@
           "name": "draft",
           "type": "bool",
           "description": "Load nothing and start on one pristine draft — what a create form binds to."
+        },
+        {
+          "name": "deleted",
+          "type": "string",
+          "choices": [
+            "exclude",
+            "include",
+            "only"
+          ],
+          "description": "Which rows the source answers: the live ones (default), the live and the soft-deleted, or the deleted alone — a trash list, read-only until its rows are restored."
+        },
+        {
+          "name": "live",
+          "type": "bool",
+          "bindable": true,
+          "description": "Follow the server: the source probes the table every 30 s and reloads while there is nothing unsaved to lose, marking itself stale while there is."
         }
       ],
       "defaults": {
         "pageSize": 50,
         "withAccess": true,
         "empty": false,
-        "draft": false
+        "draft": false,
+        "deleted": "exclude",
+        "live": false
       },
       "example": {
         "tag": "u2-domain-source",

@@ -6,6 +6,8 @@ import './tests/domain-source';
 import './tests/domain-session';
 import './tests/domain-app';
 import './tests/domain-trash';
+import './tests/domain-bulk';
+import './tests/domain-import';
 
 export let _package = new DG.Package();
 export { tests };

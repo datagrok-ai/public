@@ -6,16 +6,24 @@
 import {Control} from '../../core/component.js';
 import {computed, signal, ReadonlySignal} from '../../core/signals.js';
 import {Filters} from '../../core/filter/index.js';
-import type {FilterGroup, FilterProblem, FilterSchema} from '../../core/filter/index.js';
+import type {FilterGroup, FilterProblem, FilterProperty, FilterSchema,
+  FilterValueItem} from '../../core/filter/index.js';
 import {FilterQueryInput} from '../../components/filter/filter-query-input.js';
 import {FilterBuilder} from '../../components/filter/filter-builder.js';
 import {backends} from '../../sources/backends.js';
 import type {DomainSource} from '../../sources/domain-source.js';
 import {confirmDiscard} from '../../sources/session.js';
 import {FilterSchemas} from '../filter/schemas.js';
+import {DomainPick} from './pick.js';
 import {DgDomainBackend} from './backend.js';
 
 export type DomainFiltersMode = 'query' | 'builder';
+
+/** The subtree operator, offered only where the hierarchy it walks exists. */
+const UNDER = 'under';
+/** How many rows of the target table an `under` value slot offers at once. */
+const PICK_LIMIT = 50;
+const EMPTY: Promise<FilterValueItem[]> = Promise.resolve([]);
 
 export interface DomainFiltersOptions {
   /** The one-line query box with completion (default), or the row-per-condition builder. */
@@ -74,13 +82,52 @@ export class DomainFilters extends Control {
   }
 
   /** The table's schema with the platform's values behind it; over another backend (the gallery,
-   * the tests) the properties alone. */
+   * the tests) the properties alone. Either way the offer is narrowed the same way. */
   private async _schema(): Promise<FilterSchema> {
     const own = this.source.schema;
+    const operators = await this._operators();
     if (!(backends.domain instanceof DgDomainBackend))
-      return own;
+      return {...own, operators, values: (prop, query, signal, ctx) => this._under(prop, query, ctx) ?? EMPTY};
     const {values, resolveRef, renderer} = await FilterSchemas.forDomainTable(this.source.table);
-    return {...own, values, resolveRef, renderer};
+    return {...own, operators, resolveRef, renderer,
+      values: (prop, query, signal, ctx) => this._under(prop, query, ctx) ?? values!(prop, query, signal, ctx)};
+  }
+
+  /** The candidates for an `under` term: the ROWS of the hierarchy it walks — every location,
+   * not the handful the column happens to hold — read through the same search `u2-domain-pick`
+   * uses, so a caption is shown and the id is what lands in the query. Null for anything else,
+   * which leaves the schema's own values in force. */
+  private _under(prop: FilterProperty, query: string,
+    ctx?: {operator?: string}): Promise<FilterValueItem[]> | null {
+    if (ctx?.operator !== UNDER)
+      return null;
+    const address = prop.ref ?? (prop.name === 'id' ? this.source.table : undefined);
+    if (address === undefined)
+      return null;
+    return DomainPick.search(address, query, {limit: PICK_LIMIT}).then((items) => items.map((item) => ({
+      value: {type: address, id: item.id, name: item.name}, label: item.name})));
+  }
+
+  /** `under` is registered for every ref and string column — the operator registry cannot know
+   * which target is a hierarchy, and "is under" on a column the server would refuse is a dead end.
+   * Offered here on a ref column whose target IS one, and on `id` when this table is; the value
+   * slot's candidates are the target's rows, which the schema's `values` already answers. */
+  private async _operators(): Promise<FilterSchema['operators']> {
+    const backend = backends.domain;
+    const own = this.source.schema;
+    const hierarchies = new Set<string>();
+    if (backend !== undefined) {
+      const refs = new Set(own.properties.map((p) => p.ref).filter((ref): ref is string => ref !== undefined));
+      await Promise.all([...refs].map(async (address) => {
+        // a target the caller cannot read is simply not offered a subtree filter
+        const target = await backend.table(address).catch(() => undefined);
+        if (target?.info.hierarchy === true)
+          hierarchies.add(address);
+      }));
+    }
+    const applies = (prop: FilterProperty) => prop.ref !== undefined ? hierarchies.has(prop.ref) :
+      prop.name === 'id' && own.info.hierarchy === true;
+    return (prop, offered) => applies(prop) ? offered : offered.filter((o) => o.id !== UNDER);
   }
 
   private _build(schema: FilterSchema): void {
@@ -98,7 +145,9 @@ export class DomainFilters extends Control {
       // a query the grammar or the schema refuses would leave the box empty and the user with no
       // way back but the address bar: the text stays, with its problems, for them to fix
       this._raw = parsed !== null && parsed.problems.length > 0 ? q as string : null;
-      this._rawProblems = parsed?.problems ?? [];
+      // the same wording a typed refusal gets: a `?q=` a link carried fails the same way
+      this._rawProblems = parsed === null ? [] :
+        FilterQueryInput.worded(q as string, schema, parsed.problems);
       this._write(input, this._accepted);
       box?.showText(this._raw, this._rawProblems);
     });

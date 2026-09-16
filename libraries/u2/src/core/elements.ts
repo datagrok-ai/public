@@ -90,7 +90,8 @@ export interface DateLike { toDate(): Date }
  * year — the form a grid cell shows — and the time of day where the value carries one, with the
  * full date-time in the tooltip. Accepts anything date-shaped (`dayjs` satisfies {@link DateLike});
  * an invalid date renders empty. */
-export function timestamp(value: Date | number | string | DateLike, cls?: string): HTMLSpanElement {
+export function timestamp(value: Date | number | string | DateLike, cls?: string,
+  options: {utcDates?: boolean} = {}): HTMLSpanElement {
   const date = value instanceof Date ? value :
     typeof value === 'object' && value !== null ? value.toDate() :
       new Date(value);
@@ -99,6 +100,15 @@ export function timestamp(value: Date | number | string | DateLike, cls?: string
     return el;
   const day: Intl.DateTimeFormatOptions = {month: 'short', day: 'numeric', year: 'numeric'};
   const full: Intl.DateTimeFormatOptions = {...day, hour: '2-digit', minute: '2-digit'};
+  // a value that falls on midnight UTC is a DATE, not a moment: read in the local zone it would
+  // be the day before for half the world (`2026-10-02T00:00:00Z` → "Oct 1, 2026, 08:00 PM"), so
+  // it is both decided and printed in UTC. Everything else is a real moment and stays local.
+  const utcDate = options.utcDates === true && date.getUTCHours() === 0 && date.getUTCMinutes() === 0 &&
+    date.getUTCSeconds() === 0;
+  if (utcDate) {
+    el.textContent = el.title = date.toLocaleDateString(undefined, {...day, timeZone: 'UTC'});
+    return el;
+  }
   const midnight = date.getHours() === 0 && date.getMinutes() === 0;
   el.textContent = midnight ? date.toLocaleDateString(undefined, day) : date.toLocaleString(undefined, full);
   el.title = date.toLocaleString(undefined, full);

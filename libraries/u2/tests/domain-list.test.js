@@ -215,7 +215,7 @@ scoped('the status area: loading, then empty or the failure with a retry', async
   const status = list.root.querySelector('[data-u2-part="status"]');
   assert.equal(status.querySelector('.u2-loader') !== null, true, 'loading');
   await flush();
-  assert.equal(status.textContent, 'No issues.');
+  assert.equal(status.textContent, 'No issues match the filter.', 'an empty result says why it is empty');
   list.dispose();
   src.dispose();
 
@@ -429,5 +429,53 @@ scoped('no class inside a row is also on the list root: a row rule reaching the 
   assert.equal(row.querySelector('.u2-domain-list-line .u2-domain-list-details').textContent,
     'Acetylsalicylic acid');
   brief.dispose();
+  src.dispose();
+});
+
+scoped('an empty result says what it is empty OF, and a search offers the way out of it', async () => {
+  const {src} = await issues({query: 'number > 100'});
+  const list = domains.list(src);
+  mount(list);
+  await flush();
+  const status = list.root.querySelector('[data-u2-part="status"]');
+  assert.equal(list.root.classList.contains('u2-domain-list-blank'), true,
+    'the message takes the rows own area and the empty scroller goes');
+  assert.match(status.textContent, /No issues match the filter\./);
+  assert.equal(status.querySelector('button'), null, 'nothing to clear: the filter is not the search box');
+
+  src.query.value = '';
+  src.search.value = 'nonesuch';
+  await flush();
+  assert.match(status.textContent, /No issues match "nonesuch"\./);
+  fire(status.querySelector('button'), 'click');
+  await flush();
+  assert.equal(src.search.value, '', 'Clear search brings the rows back');
+  assert.equal(list.root.classList.contains('u2-domain-list-blank'), false);
+  list.dispose();
+  src.dispose();
+});
+
+scoped('a trash row says WHEN it was deleted, and Restore says so', async () => {
+  const {src: live} = await issues();
+  live.edit.value.markDeleted('i2');
+  assert.equal(await live.session.save(), true);
+  await flush();
+  live.dispose();
+  const {src} = await issues({deleted: 'only'});
+  const list = domains.list(src);
+  mount(list);
+  await flush();
+  const row = list.root.querySelector('[data-u2-row="i2"]');
+  const detail = row.querySelector('.u2-domain-list-details');
+  assert.notEqual(detail, null, 'a trash row carries a detail line');
+  assert.equal(detail.classList.contains('u2-timestamp'), true,
+    'when it was deleted, read in the reader own zone — never the wire string');
+  assert.equal(detail.textContent.includes('GMT'), false);
+  assert.match(detail.title, /2026/, 'the full moment is the title');
+  list.actionsFor(src.rows.byKey('i2'))[0].run();
+  await flush();
+  assert.match([...document.body.querySelectorAll('.u2-notify-info')].map((e) => e.textContent).join('|'),
+    /Restored "Ibuprofen"/, 'a restore says what came back');
+  list.dispose();
   src.dispose();
 });

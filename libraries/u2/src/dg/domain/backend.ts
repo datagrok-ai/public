@@ -8,8 +8,8 @@ import * as DG from 'datagrok-api/dg';
 import type {IProperty} from '../../core/property-like.js';
 import {backends} from '../../sources/backends.js';
 import type {DataFrameLike} from '../../sources/df-bindings.js';
-import type {AuditEntryLike, DomainBackend, DomainDeletedMode, DomainFrameLike, DomainQueryLike,
-  DomainTableInfoLike, DomainTableLike, DomainTransactionOpLike,
+import type {AuditEntryLike, DomainBackend, DomainBatchOptionsLike, DomainBatchReportLike, DomainDeletedMode,
+  DomainFrameLike, DomainProbeLike, DomainQueryLike, DomainTableInfoLike, DomainTableLike, DomainTransactionOpLike,
   DomainTransactionResultLike} from '../../sources/domain-backend.js';
 import type {EditState} from '../../sources/edit-state.js';
 import {EditorEditState} from './editor-state.js';
@@ -25,13 +25,17 @@ export const SYSTEM_COLUMNS: readonly (readonly [name: string, type: string, cap
   ['id', 'string', 'Id'], ['version', 'int', 'Version'], ['created_on', 'datetime', 'Created'],
   ['updated_on', 'datetime', 'Updated'], ['author_id', 'string', 'Author']];
 
-/** The soft-delete calls, through a cast: a package compiles these sources against the PUBLISHED
+/** The phase-3 calls, through a cast: a package compiles these sources against the PUBLISHED
  * `datagrok-api` types (1.27.11 in every plugin's node_modules), so `client.restore` — and
  * `deleted` in `count`'s options, which `dapi.ts` does not take at all yet — would break every
  * plugin build. Drops when the js-api release carrying them is out. */
-interface DeletedAwareClient {
+interface PhaseThreeClient {
   restore(id: string): Promise<{id: string, restored: boolean, version: number}>;
   count(filter: unknown, options: {search?: string, deleted?: DomainDeletedMode}): Promise<number>;
+  updateWhere(filter: unknown, values: Record<string, unknown>,
+    options?: {limit?: number}): Promise<{updated: number, hasMore: boolean}>;
+  pathTo(id: string): Promise<{id: string, name: string}[]>;
+  aggregate(spec: unknown): Promise<Record<string, unknown>[]>;
 }
 
 export class DgDomainBackend implements DomainBackend {
@@ -58,10 +62,25 @@ export class DgDomainBackend implements DomainBackend {
    * the conflict dialog, the validation mapping and the retry cap; quiet — the u2 session says
    * what was saved. */
   async saveAll(edits: EditState[]): Promise<boolean> {
-    const session = new DG.DomainSession(edits.map((e) => (e as EditorEditState).editor), {quiet: true});
+    const states = edits as EditorEditState[];
+    const session = new DG.DomainSession(states.map((e) => e.editor), {quiet: true});
+    // The platform session works out ONE sentence for a refusal ("Ethanol still has 3 containers"),
+    // balloons it and keeps it nowhere; a refusal naming no column reaches no cell either, so the
+    // u2 status line would have nothing but "the changes were refused". Captured off the editor
+    // for the length of this save — an instance property shadowing the prototype, put back after.
+    const patched = states.map((state) => {
+      state.problem = null;
+      const editor = state.editor as unknown as
+        {refusalFor(e: unknown, op: unknown): Promise<string>, constructor: unknown};
+      const original = editor.refusalFor;
+      editor.refusalFor = async (e, op) => state.problem = await original.call(editor, e, op);
+      return () => delete (editor as unknown as Record<string, unknown>).refusalFor;
+    });
     try {
       return await session.save();
     } finally {
+      for (const restore of patched)
+        restore();
       session.dispose();
     }
   }
@@ -106,15 +125,40 @@ export class DgDomainTable implements DomainTableLike {
   }
 
   count(filter?: DomainQueryLike['filter'], search?: string, deleted?: DomainDeletedMode): Promise<number> {
-    return this._deleted.count(filter as DG.DomainFilter | undefined, {search, deleted});
+    return this._phase3.count(filter as DG.DomainFilter | undefined, {search, deleted});
   }
 
   async restore(id: string): Promise<void> {
-    await this._deleted.restore(id);
+    await this._phase3.restore(id);
   }
 
-  private get _deleted(): DeletedAwareClient {
-    return this.client as unknown as DeletedAwareClient;
+  updateWhere(filter: DomainQueryLike['filter'], values: Record<string, unknown>,
+    options?: {limit?: number}): Promise<{updated: number, hasMore: boolean}> {
+    return this._phase3.updateWhere(filter, values, options);
+  }
+
+  ancestors(id: string): Promise<{id: string, name: string}[]> {
+    return this._phase3.pathTo(id);
+  }
+
+  /** ONE aggregate for the poll: how many rows match, and when the newest of them was written. */
+  async probe(spec: Pick<DomainQueryLike, 'filter' | 'search' | 'deleted'>): Promise<DomainProbeLike> {
+    const rows = await this._phase3.aggregate({
+      measures: [{fn: 'count'}, {fn: 'max', column: 'updated_on', as: 'last'}],
+      ...(spec.filter === undefined ? {} : {filter: spec.filter}),
+      ...(spec.search === undefined ? {} : {search: spec.search}),
+      ...(spec.deleted === undefined ? {} : {deleted: spec.deleted}),
+    });
+    const row = rows[0] ?? {};
+    return {count: Number(row.count ?? 0), last: row.last == null ? null : String(row.last)};
+  }
+
+  batch(rows: Record<string, unknown>[], options?: DomainBatchOptionsLike): Promise<DomainBatchReportLike> {
+    return this.client.batch(rows, options as DG.DomainBatchOptions) as Promise<DomainBatchReportLike>;
+  }
+
+  private get _phase3(): PhaseThreeClient {
+    return this.client as unknown as PhaseThreeClient;
   }
 
   transaction(ops: DomainTransactionOpLike[]): Promise<DomainTransactionResultLike[]> {
@@ -133,8 +177,11 @@ export class DgDomainTable implements DomainTableLike {
   async frame(spec: DomainQueryLike): Promise<DomainFrameLike> {
     const query = DgDomainTable.spec(spec);
     const [df, access] = await Promise.all([this.client.queryDf(query), this.client.access()]);
-    // quiet: the u2 buttons say what was saved; the editor keeps its error and conflict dialogs
-    const editor = await DG.DomainFrameEditor.attach(df, this.client, {query, access, quiet: true});
+    // quiet: the u2 buttons say what was saved; the editor keeps its error and conflict dialogs.
+    // A frame over deleted rows is read-only until they are restored — the writer is handed the
+    // same upper bound `DomainSource.access` publishes, so it and the controls agree.
+    const editor = await DG.DomainFrameEditor.attach(df, this.client,
+      {query, access: DgDomainTable.narrowed(access, spec.deleted), quiet: true});
     const edit = new EditorEditState(editor);
     return {
       df: df as unknown as DataFrameLike,
@@ -151,6 +198,12 @@ export class DgDomainTable implements DomainTableLike {
   /** The seam's query is the js-api spec: same filter tree, same paging keys. */
   static spec(spec: DomainQueryLike): DG.DomainQuerySpec {
     return spec as DG.DomainQuerySpec;
+  }
+
+  /** The access a frame's writer is built under: no edit and no insert over deleted rows. */
+  static narrowed(access: DG.DomainAccess, deleted: DomainDeletedMode | undefined): DG.DomainAccess {
+    return deleted === undefined || deleted === 'exclude' ? access :
+      {...access, can: {...access.can, edit: false, insert: false}};
   }
 
   /** A plain record over a registry property, get/set over a row record — the memory backend's

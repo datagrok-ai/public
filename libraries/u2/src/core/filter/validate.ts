@@ -26,6 +26,10 @@ function badScalar(v: FilterScalar, kind: FilterKind, prop: FilterProperty, op: 
       const bare = `Unknown column "${v.column}"`;
       if (v.column.includes('.'))
         return bare;
+      // `under` walks the hierarchy by id, and a dotted path through it is refused server-side:
+      // pointing at `<ref>.name` would send the user somewhere that cannot work
+      if (op.id === 'under')
+        return `${bare} — under takes a ${prop.ref ?? 'row'} — pick one from the list`;
       if (prop.ref)
         return `${bare} — did you mean \`${prop.name}.name ${op.id} "${v.column}"\`?`;
       return kind === KIND.STRING || kind === KIND.STRING_LIST || prop.choices !== undefined ?

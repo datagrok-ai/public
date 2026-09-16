@@ -17,6 +17,7 @@ export interface ItemRow {
   sku: string;
   name?: string;
   quantity?: number;
+  origin?: string;
   note?: string;
 }
 
@@ -25,6 +26,7 @@ export interface ItemInsert {
   sku: string;
   name?: string;
   quantity?: number;
+  origin?: string;
   note?: string;
   /** Link set: `tag` row ids. */
   tags?: string[];
@@ -36,7 +38,7 @@ export type ItemUpdate = Partial<ItemRow> & {
 };
 
 export type ItemColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'sku' | 'name' | 'quantity' |
-  'note';
+  'origin' | 'note';
 
 /** Expand keys of `apitests.item` → fields each adds to the row (consumed by query()/builder). */
 export type ItemExpand = {
@@ -88,7 +90,8 @@ export type ItemTagColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'au
 
 /** Expand keys of `apitests.item_tag` → fields each adds to the row (consumed by query()/builder). */
 export type ItemTagExpand = {
-  'item_id': {'item_id.sku'?: string; 'item_id.name'?: string; 'item_id.quantity'?: number; 'item_id.note'?: string};
+  'item_id': {'item_id.sku'?: string; 'item_id.name'?: string; 'item_id.quantity'?: number;
+    'item_id.origin'?: string; 'item_id.note'?: string};
   'tag_id': {'tag_id.name'?: string};
 };
 
@@ -116,7 +119,8 @@ export type ItemEventColumn = 'id' | 'version' | 'created_on' | 'updated_on' | '
 
 /** Expand keys of `apitests.item_event` → fields each adds to the row (consumed by query()/builder). */
 export type ItemEventExpand = {
-  'item_id': {'item_id.sku'?: string; 'item_id.name'?: string; 'item_id.quantity'?: number; 'item_id.note'?: string};
+  'item_id': {'item_id.sku'?: string; 'item_id.name'?: string; 'item_id.quantity'?: number;
+    'item_id.origin'?: string; 'item_id.note'?: string};
 };
 
 /** Row of `apitests.hidden_item`. */

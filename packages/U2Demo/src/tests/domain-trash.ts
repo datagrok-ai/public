@@ -59,7 +59,7 @@ category('U2: domain trash', () => {
 
   test('a deleted row leaves the list; the ⋯ menu offers Trash', async () => {
     expect(names(), 'Alpha,Beta');
-    expect(app.menuActions().map((a) => a.name).join(), 'Trash');
+    expect(app.menuActions().map((a) => a.name).join(), 'Import…,Bulk edit…,Trash');
     const row = app.listSource.rows.byKey(goneId)!;
     const del = app.list.actionsFor(row).find((a) => a.name === 'Delete')!;
     expect(del !== undefined, true, 'Delete is the row action on a live row');
@@ -76,7 +76,7 @@ category('U2: domain trash', () => {
     expect(app.listSource.deleted.value, 'only');
     expect(view.path, `${BASE}?q=${encodeURIComponent(query)}&trash=1`);
     expect(names(), 'Alpha');
-    expect(app.summary.value, '1 deleted row');
+    expect(app.summary.value, '1 deleted item');
     const row = app.listSource.rows.byKey(goneId)!;
     expect(Rows.isDeleted(row), true, 'the row carries ~is_deleted');
     expect(app.listSource.access.value.can('edit'), false, 'the trash is read-only');
