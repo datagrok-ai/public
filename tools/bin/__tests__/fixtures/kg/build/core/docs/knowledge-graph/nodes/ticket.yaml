@@ -19,7 +19,7 @@ properties:
   assignee?:     Person
   reporter?:     Person
   parent?:       Ticket                 # epic or parent issue; the only source of ticket part-of, and nothing propagates along it
-rules:
+notes:
   - id is the tracker key, no prefix
   - fix versions become targets-release, the Jira Client field becomes requested-by, the
     Feature field becomes affects; assignee, reporter and parent are reference properties

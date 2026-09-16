@@ -8,5 +8,5 @@ home: any markdown file carrying a `feature:` frontmatter key
 properties:
   user_help?:      DocPage
   developer_help?: DocPage
-rules:
+notes:
   - a second-level node (the area) must set owner

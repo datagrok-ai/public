@@ -25,7 +25,7 @@ node_type:
   properties?:   Record<string, Member>       # declared properties; a child may add or narrow, never remove or loosen
   inherit?:      string[]                     # property names that flow down part-of unless a child sets them
   home?:         Text                         # where instances' home documents live, for people; not enforced
-  rules?:        Text[]                       # constraints `grok kg check` enforces beyond the property types, in words
+  notes?:        Text[]                       # what a reader should know beyond the property types, in words; nothing here is enforced
 
 # ---------------------------------------------------------------------------------
 # What an edge type file may contain

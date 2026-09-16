@@ -7,5 +7,5 @@ properties:
   extensions:    string[]
   comment_start?: string
   editor_mode?:  string
-rules:
+notes:
   - roles contains 'scriptHandler'

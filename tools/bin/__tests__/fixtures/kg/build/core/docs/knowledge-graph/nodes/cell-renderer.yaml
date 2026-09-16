@@ -5,5 +5,5 @@ description: >
 properties:
   cell_type:     string               # //meta.cellType
   column_tags?:  string[]
-rules:
+notes:
   - roles contains 'cellRenderer'

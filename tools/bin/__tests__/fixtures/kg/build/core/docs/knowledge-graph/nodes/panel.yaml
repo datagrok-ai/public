@@ -5,5 +5,5 @@ description: >
 properties:
   condition?:    string               # //condition: expression over the current object
   target_type?:  string               # type of the single input
-rules:
+notes:
   - roles contains 'panel'

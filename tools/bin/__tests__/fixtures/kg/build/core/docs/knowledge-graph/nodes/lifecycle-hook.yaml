@@ -5,5 +5,5 @@ description: >
 properties:
   phase:         "'init' | 'autostart'"
   immediate?:    boolean
-rules:
+notes:
   - roles includes one of [init, autostart]

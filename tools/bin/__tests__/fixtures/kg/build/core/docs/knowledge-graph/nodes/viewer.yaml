@@ -7,5 +7,5 @@ properties:
   trellisable?:  boolean
   grid_chart?:   boolean
   builtin?:      boolean = false      # true for the 33 Dart viewers in d4
-rules:
+notes:
   - roles contains 'viewer'

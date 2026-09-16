@@ -17,6 +17,6 @@ properties:
   manual_only?:  boolean = false
   manual_only_reason?: string
   steps?:        number
-rules:
+notes:
   - "the Test Track frontmatter key feature migrates to covers"
   - "realized_as becomes automates from the named tests; related_bugs becomes mentions"

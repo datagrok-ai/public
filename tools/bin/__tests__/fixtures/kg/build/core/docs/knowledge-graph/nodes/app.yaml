@@ -7,5 +7,5 @@ properties:
   icon?:         Path
   url?:          string
   admin?:        boolean = false
-rules:
+notes:
   - roles contains 'app'

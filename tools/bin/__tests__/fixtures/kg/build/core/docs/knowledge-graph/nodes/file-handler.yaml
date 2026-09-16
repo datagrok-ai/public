@@ -5,5 +5,5 @@ description: >
 properties:
   extensions?:   string[]             # //meta.ext; exporters may declare none
   direction:     "'import' | 'export'"
-rules:
+notes:
   - roles includes one of [fileHandler, file-handler, fileExporter]

@@ -4,5 +4,5 @@ description: >
   A detector in detectors.js (or the Dart registry) that assigns a semantic type to a column.
 properties:                            # detected types are targets-semtype edges with role detects
   skip_test?:    boolean = false
-rules:
+notes:
   - roles contains 'semTypeDetector'

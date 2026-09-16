@@ -14,6 +14,6 @@ properties:
   area?:           "'data' | 'entity' | 'function' | 'ui' | 'service' | 'security' | 'domain'"
   user_help?:      DocPage
   developer_help?: DocPage
-rules:
+notes:
   - description is the glossary definition
   - edge keys accepted in the home doc are declared by edge files (defined_by, related)

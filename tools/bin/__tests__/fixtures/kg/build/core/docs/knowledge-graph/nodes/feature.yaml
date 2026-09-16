@@ -15,7 +15,7 @@ home: any markdown file carrying a `feature:` frontmatter key; a code folder's R
 properties:
   user_help?:      DocPage
   developer_help?: DocPage
-rules:
+notes:
   - a second-level node (the area) must set owner
   - one home document per id
   - edge keys accepted in the home doc are declared by edge files (code, concepts,

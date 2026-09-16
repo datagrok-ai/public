@@ -5,5 +5,5 @@ description: >
 properties:
   extensions:    string[]             # //meta.fileViewer
   check?:        string               # //meta.fileViewerCheck
-rules:
+notes:
   - roles contains 'fileViewer'

@@ -5,5 +5,5 @@ description: >
 properties:
   primary?:      boolean
   columnless?:   boolean
-rules:
+notes:
   - roles contains 'filter'

@@ -18,7 +18,7 @@ properties:
   cache?:        "'all' | 'server' | 'client' | 'none' = 'none'"
   demo_path?:    string
   meta?:         Record<string, string> # every other //meta.* key, verbatim
-rules:
+notes:
   - "//feature: in the header, or meta.feature in a @grok.decorators.func call, attaches the function to a feature (is-implemented-in)"
   - "a function with several roles (widgets,panel; viewer,panel; adminApp,app) gets the concrete subtype of its highest-precedence role, in this order: app, viewer, filter, cellRenderer, semTypeDetector, fileHandler, fileExporter, fileViewer, scriptHandler, panel, editor, valueEditor, cellEditor, init, autostart; every role stays in roles"
   - "the registered name (//name: or the decorator's name) is the identity; the source declaration that implements it points at it with declares"

@@ -12,5 +12,5 @@ home: core/docs/features/<group>/README.md and core/docs/features/<group>/<featu
 properties:
   state:         "'proposed' | 'design' | 'in-flight' | 'shipped' | 'closed' | 'abandoned'"
   record?:       Path
-rules:
+notes:
   - "edge keys accepted in the home doc: tickets, delivers, owner"
