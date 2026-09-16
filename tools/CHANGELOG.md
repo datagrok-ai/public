@@ -11,6 +11,7 @@
 * `grok config add` — `--key` is now optional: a server reached with a keypair has no developer key to record.
 * Against a server older than 1.28 — which has no keypair endpoints and refuses their paths before routing — the CLI names the version needed instead of reporting a bare 401, and falls back to the developer key when one is still configured for that server.
 * `grok login` reports its progress step by step (spinner on a terminal, one line per step in a log), including while it waits for the browser approval.
+* `grok check` — warns when a package pins its own version of a platform-served library (`build-config/platform-deps.json`) instead of `catalog:`; the `common/*.js` shared-library map is read from the same manifest.
 * `grok s push/migrate` — a migrated entity is stamped in its `metaParams` with `migrated_from` (the source stand URL) and `migrated_on`, so on the target it is clear the entity came from another stand. Written wherever the entity already carries `metaParams` (as `sync_id` is) and stripped before the idempotency comparison, so a re-push of an unchanged entity still reads as identical.
 
 ## 6.6.0 (2026-09-13)

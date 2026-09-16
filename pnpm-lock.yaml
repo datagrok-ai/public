@@ -13,26 +13,31 @@ catalogs:
       specifier: ^2.1.44
       version: 2.1.44
     cash-dom:
-      specifier: ^8.1.5
+      specifier: 8.1.5
       version: 8.1.5
     dayjs:
-      specifier: ^1.11.13
+      specifier: 1.11.23
       version: 1.11.23
     exceljs:
-      specifier: ^4.4.0
+      specifier: 4.4.0
       version: 4.4.0
     html2canvas:
-      specifier: ^1.4.1
+      specifier: 1.4.1
       version: 1.4.1
     openchemlib:
-      specifier: ^8.21.0
+      specifier: 8.21.0
       version: 8.21.0
     rxjs:
-      specifier: ^6.5.5
+      specifier: 6.6.7
       version: 6.6.7
+    vue:
+      specifier: 3.5.42
+      version: 3.5.42
     wu:
-      specifier: ^2.1.0
+      specifier: 2.1.0
       version: 2.1.0
+
+pnpmfileChecksum: sha256-WKQO/tbU3STGnggt5MbEiJZ3WCNsOSoj8rAdthbGk6o=
 
 importers:
 
@@ -759,7 +764,7 @@ importers:
         specifier: 'catalog:'
         version: 6.6.7
       vue:
-        specifier: ^3.4.38
+        specifier: 'catalog:'
         version: 3.5.42(typescript@7.0.2)
       wu:
         specifier: 'catalog:'
@@ -1650,7 +1655,7 @@ importers:
         specifier: 'catalog:'
         version: 6.6.7
       vue:
-        specifier: ^3.5.13
+        specifier: 'catalog:'
         version: 3.5.42(typescript@7.0.2)
       vue-json-pretty:
         specifier: ^2.4.0
@@ -2571,7 +2576,7 @@ importers:
         specifier: 'catalog:'
         version: 6.6.7
       vue:
-        specifier: ^3.4.38
+        specifier: 'catalog:'
         version: 3.5.42(typescript@7.0.2)
       wu:
         specifier: 'catalog:'

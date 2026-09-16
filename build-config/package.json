@@ -14,7 +14,8 @@
     "css",
     "tsconfig.base.json",
     "tsconfig.lib.json",
-    "eslintrc.json"
+    "eslintrc.json",
+    "platform-deps.json"
   ],
   "dependencies": {
     "@rspack/core": "^1.7.12",
