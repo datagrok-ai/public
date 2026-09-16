@@ -76,7 +76,7 @@
   },
   "grok": {
     "testDependencies": [
-      "@datagrok/db-tests"
+      "@datagrok/dbtests"
     ]
   }
 }

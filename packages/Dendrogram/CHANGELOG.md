@@ -4,6 +4,9 @@
 
 * GROK-20828: Answer a missing DataFrame in hierarchical clustering with the no-table warning instead of dereferencing it
 * GROK-20807: Open a table view for an unattached DataFrame in hierarchicalClusteringUI
+
+## 1.4.16 (2026-07-12)
+
 * Moved the Dendrogram Playwright E2E suite into the package (playwright/); helpers from @datagrok-libraries/test/src/playwright
 
 ## 1.4.15 (2026-06-23)

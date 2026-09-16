@@ -606,10 +606,10 @@ export function checkChangelog(packagePath: string, json: PackageFile): string[]
   let regex = /^##[^#].*$/gm;
   const h2 = clf.match(regex);
   if (!h2) return ['No versions found in CHANGELOG.md\n'];
-  regex = /^## \d+\.\d+\.\d+ \((\d{4}-\d{2}-\d{2}|WIP)\)$/;
+  regex = /^## (v\.next|\d+\.\d+\.\d+ \((\d{4}-\d{2}-\d{2}|WIP)\))$/;
   for (const h of h2) {
     if (!regex.test(h))
-      warnings.push(`CHANGELOG: '${h}' does not match the h2 format, expected: ## <version> (<yyyy-mm-dd> | WIP)\n`);
+      warnings.push(`CHANGELOG: '${h}' does not match the h2 format, expected: ## <version> (<yyyy-mm-dd> | WIP) or ## v.next\n`);
   }
   regex = /^## (\d+\.\d+\.\d+)/;
   const v1 = h2[0].match(regex)?.[1];

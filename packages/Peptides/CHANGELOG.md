@@ -9,6 +9,10 @@
 * Viewers: Added automation surfaces (`getWidgetStatus`, `isRenderPending`, `onRendered`) and a `peptides-sar-ready` event; Command works as Control for multi-selection on macOS
 * Added BDD feature files translating the Playwright specs (`bdd/`)
 
+## 1.27.11 (2026-07-12)
+
+* GROK-18695: Updated npm dependencies to clear reported vulnerabilities
+
 ## 1.27.10 (2026-07-08)
 
 ### Features

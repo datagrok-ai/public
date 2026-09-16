@@ -1,6 +1,10 @@
 # Datagrok-tools changelog
 
-## 6.7.2 (WIP)
+## v.next
+
+* `grok check` accepts `## v.next` as the top changelog heading, the section the repository keeps unreleased changes in.
+
+## 6.7.2 (2026-09-16)
 
 * `grok publish` marks a bundled package for servers older than 1.28.0, which detect one only by a `webpack.config.js` in the archive; the marker is generated at publish time and never written to the package folder.
 

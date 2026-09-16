@@ -15,6 +15,9 @@ catalogs:
     cash-dom:
       specifier: 8.1.5
       version: 8.1.5
+    codemirror:
+      specifier: 5.65.21
+      version: 5.65.21
     dayjs:
       specifier: 1.11.23
       version: 1.11.23
@@ -24,6 +27,9 @@ catalogs:
     html2canvas:
       specifier: 1.4.1
       version: 1.4.1
+    ngl:
+      specifier: 2.5.0
+      version: 2.5.0
     openchemlib:
       specifier: 8.21.0
       version: 8.21.0
@@ -1440,7 +1446,7 @@ importers:
         specifier: 3.10.1
         version: 3.10.1
       ngl:
-        specifier: ^2.4.0
+        specifier: 'catalog:'
         version: 2.5.0(@types/react@19.3.0)(fp-ts@2.16.11)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       offscreen-canvas:
         specifier: ^0.1.1
@@ -1840,7 +1846,7 @@ importers:
         specifier: workspace:^
         version: link:../../libraries/utils
       codemirror:
-        specifier: ^5.65.15
+        specifier: 'catalog:'
         version: 5.65.21
       datagrok-api:
         specifier: workspace:^

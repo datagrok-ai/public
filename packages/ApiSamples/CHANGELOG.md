@@ -45,6 +45,10 @@
 * GROK-20315: Added dapi/domains/batch.js, domains/transaction.js, domains/aggregate.js, domains/dataframe.js, domains/idempotency.js — batch upsert, multi-entity transactions, aggregation, queryDf → grid, idempotent retries + optimistic concurrency
 * GROK-20307: Added dapi/domains/crud.js — domain-table row CRUD via grok.dapi.domains
 
+## 1.2.2 (2025-12-18)
+
+* ApiSamples: Statistics: Added Pearson correlation sample
+
 ## 1.2.1 (2-24-11-24)
 
 * New samples, version bump
