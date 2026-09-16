@@ -63,8 +63,8 @@ function mergeConfig(base, o) {
 /**
  * Build an rspack config for the package in `o.dir` (default: cwd).
  * Options beyond rspack's own: `jsx: 'react'`, `wasm: 'async' | 'sync' | 'asset'` (asset, the default, copies
- * .wasm files to dist under their own names), `emit: []` (files bundled with the package entry so they land
- * in dist without being imported), `decorators: false`, `assets: RegExp` (extra asset/resource test),
+ * .wasm files to dist under their own names), `emit: []` (files copied to dist under their own names without
+ * being imported), `decorators: false`, `assets: RegExp` (extra asset/resource test),
  * `rules: []` (prepended).
  */
 function bundler(o = {}) {
@@ -76,7 +76,7 @@ function bundler(o = {}) {
   const {FuncGeneratorPlugin} = loadFuncGen();
 
   const ext = fs.existsSync(path.join(dir, 'src', 'package.ts')) ? 'ts' : 'js';
-  const entry = {package: o.emit ? [...o.emit, `./src/package.${ext}`] : `./src/package.${ext}`};
+  const entry = {package: `./src/package.${ext}`};
   const testEntry = ['ts', 'js'].map((e) => `./src/package-test.${e}`).find((e) => fs.existsSync(path.join(dir, e)));
   if (testEntry)
     entry.test = {filename: 'package-test.js', library: {type: 'var', name: `${name}_test`}, import: testEntry};
@@ -110,6 +110,7 @@ function bundler(o = {}) {
     plugins: [
       new rspack.DefinePlugin({'process.env.NODE_ENV': JSON.stringify(mode), 'process.env': '{}'}),
       ...(FuncGeneratorPlugin ? [new FuncGeneratorPlugin({outputPath: './src/package.g.ts'})] : []),
+      ...(o.emit ? [new rspack.CopyRspackPlugin({patterns: o.emit.map((f) => ({from: f, to: '[name][ext]'}))})] : []),
     ],
     output: {
       filename: '[name].js',
