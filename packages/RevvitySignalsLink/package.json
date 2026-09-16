@@ -1,5 +1,5 @@
 {
-  "name": "revvitysignalslink",
+  "name": "@datagrok/revvitysignalslink",
   "friendlyName": "RevvitySignalsLink",
   "version": "1.0.0",
   "description": "Integration with RevvitySignals",

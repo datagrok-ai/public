@@ -59,6 +59,7 @@ import './widgets/files-widget';
 import './widgets/legend';
 import './widgets/pickers';
 import './widgets/viewer-rendering';
+import './widgets/widget-status-providers';
 import './widgets/tree-view';
 import './utils/color';
 import './utils/string-utils';

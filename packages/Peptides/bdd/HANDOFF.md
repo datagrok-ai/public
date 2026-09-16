@@ -1,4 +1,42 @@
-# Peptides → bdd translation: handoff (2026-09-11, afternoon)
+# Peptides → bdd translation
+
+## State — 2026-09-15
+
+The translation is complete and green: see [README.md](README.md) for setup, coverage, scope and
+the run record. The historical survey below is retained for its decisions and original-test
+inventory; its environment notes describe the earlier Windows session. Nothing has been
+committed or pushed.
+
+What changed in the last session, beyond the run itself:
+
+- The status-provider seam was cut down to its minimum. `Widget` keeps one JS object
+  (`statusProviders`, cleared on detach/unregister) and the bridge exposes it
+  (`Widget_Get_StatusProviders`); `DG.Widget.addStatusProvider` / `removeStatusProvider` write
+  into it and the JS `getWidgetStatus()` merges the providers over the native snapshot. The
+  earlier per-instance wrapping of JS overrides, the reentrancy flag and the snapshot/apply
+  bridge functions are gone; a JS override composes with `super.getWidgetStatus()`. ApiTests
+  `Widget: status providers` covers it (6 tests).
+- The model re-shows its accordion when the platform makes the table's row group current, from a
+  microtask: the event bus is synchronous, and setting the current object from inside its own
+  dispatch threw on every selection.
+- Manual Alignment's Apply no longer re-runs MCL and Sequence Space (the original never did); it
+  refreshes the statistics, the SAR viewers and the current cell.
+- The cliff-chart oracle reads the position column with `Array.from` (a missing monomer is a hole
+  in `toList()`, which `map()` skips).
+- Every launch sets the MCL threshold to 93 (see the README): the suite went from 3.6 min to
+  under a minute serially.
+- Core: the grid's cell-tooltip listeners now live in `subs` (`grid_tooltip.dart`), so a grid
+  detached while the pointer rests on it (the Logo Summary Table replaces its inner grid on every
+  re-cluster) no longer reads `dataFrame.rows` of null from its 200 ms tooltip debounce.
+
+Facts that cost a run: `Select columns...` puts Activity first and ID second in the fixture and
+the feature asserts the label before clicking; cluster labels can refer to different memberships
+across MCL runs, so cluster statistics are checked against the actual source table; EDA supplies
+the live MCL viewer, so a change in `libraries/ml` reaches the stand only when EDA is republished;
+a stand whose Datlas predates the bundled-package detection fix needs a `webpack.config.js`
+stub in the published archive (the workspace commit added such stubs to a few packages).
+
+## Historical handoff — 2026-09-11, afternoon
 
 The task: translate the 14 hand-written Playwright specs of this package (`playwright/*.test.ts`,
 their `.md` under `public/playwright-public/Peptides/`) into Gherkin features on

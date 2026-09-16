@@ -32,7 +32,7 @@ category('Dapi: entities', () => {
     }
   });
 
-}, { owner: 'ppolovyi@datagrok.ai'});
+}, { owner: 'oserhiienko@datagrok.ai'});
 
 category('Dapi: entities: smart search', () => {
   test('users', async () => {

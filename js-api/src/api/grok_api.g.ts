@@ -333,6 +333,7 @@ export interface IDartApi {
   grok_WidgetDescriptor_Get_Events(d: any): any;
   grok_WidgetDescriptor_CreateIcon(d: any): any;
   grok_Widget_GetWidgetStatus(w: any): any;
+  grok_Widget_Get_StatusProviders(w: any): any;
   grok_Widget_OnEvent(w: any, eventId: String): any;
   grok_Viewer_GetViewerTypes(): any;
   grok_Viewer_Root(v: any): any;

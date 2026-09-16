@@ -51,5 +51,6 @@ onmessage = async (event) => {
     res = await reducer.transform(sparse, data[0].length);
   console.timeEnd('MCL');
 
-  postMessage({res});
+  // Report execution metadata with the result, rather than reading requested viewer properties later.
+  postMessage({res: res ? {...res, computation: {threshold, inflation: inflate ?? 2}} : res});
 };

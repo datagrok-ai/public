@@ -2,6 +2,8 @@
 
 ## v.next
 
+* Grid: Fixed grid/advanced/pinned-columns.js — uses the core `GridColumn.pin()` instead of the `PowerGrid:addPinnedColumn` shim, so the sample no longer depends on PowerGrid being published
+* Tests: Skipped the five samples that await a user-dismissed modal (projects-save-dialog, facade-form-dialog, facade-list-view, row-editor, pick-table)
 * GROK-20849: Added `data-frame/bitset/bit-array.js` — `DG.BitArray` built in JS and applied to a DataFrame filter
 * GROK-20799: Added dapi/entity-properties.js — `grok.meta.propertiesOf`/`coreLocationOf` discovery, from a type's catalog to a related-entity filter over its Core table
 * GROK-20799: Added dapi/domains/capabilities.js — `DomainTableClient.capabilities()` (server-composed, incl. `travelableRelations`/`securingTable`) gating a create form on `canInsert`/`writableColumns`
