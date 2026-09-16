@@ -9,7 +9,7 @@ Feature: The Files section of the Browse tree
 
   Browse-Files-04 (a file added on the server appears after Refresh, GROK-19844) is not translated:
   the old spec waived it in its own comment and asserted instead that the API sees what the API just
-  wrote. A real claim needs Refresh to say when it has finished — BROWSE_CORE_SIGNALS.md, gap 2.
+  wrote. A real claim needs Refresh to say when it has finished, and it says nothing.
   Browse-Files-05 (Shared with me grouped by sharer) depends on what other people happen to have
   shared with this account. Browse-Files-06 (download) is writable — the old spec used a plain
   download event and needed no configured path — and is simply not written yet.

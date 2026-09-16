@@ -6,7 +6,7 @@ Feature: The My stuff section of the Browse tree
   Browse-MyStuff-02 (Recent holds what was opened recently), -03 and -05 (Add to Favorites from
   My Files, GROK-19848) are not translated and no other file holds them: the Favorites and Recent
   nodes do not announce that they have reloaded, so a claim made right after the change reads the
-  old list (BROWSE_CORE_SIGNALS.md, gap 5). GROK-19848 therefore has no regression test here.
+  old list. GROK-19848 therefore has no regression test here.
   -06 (a new script appears under My stuff) is writable — the old spec made its own fixture and
   deleted it — and is simply not written yet. -04 depends on what others have shared with this
   account.

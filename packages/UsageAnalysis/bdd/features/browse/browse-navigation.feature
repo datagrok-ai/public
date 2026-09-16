@@ -17,8 +17,9 @@ Feature: The Browse panel and the icons of its toolbar
 
   Not translated here, and each for its own reason. Browse-Nav-06 has two halves: that a newly
   created object appears after Refresh, and that the expanded set survives it (GROK-16261). Only
-  the second needs a signal Refresh does not give (BROWSE_CORE_SIGNALS.md, gap 2); the first is
-  writable today and is simply not written yet. Browse-Nav-09 walks every icon of the header; the
+  the second needs a signal Refresh does not give — the icon's handler awaits the reload and then
+  chains the path parse without awaiting it, and nothing observable marks either boundary — while
+  the first is writable today and is simply not written yet. Browse-Nav-09 walks every icon of the header; the
   scenarios below cover Home, Open local file, Open text, Collapse tree and Find path, and leave
   Refresh and the panel's own close icon uncovered.
 

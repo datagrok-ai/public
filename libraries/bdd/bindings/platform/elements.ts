@@ -25,7 +25,9 @@ element('grid', {selector: '[name="viewer-Grid"]', aliases: ['the grid'], gestur
 element('gallery', {selector: '.grok-gallery-grid', aliases: ['item gallery'],
   parts: {card: '.grok-gallery-grid-item-wrapper'},
   description: 'the card gallery of the platform — the contents of a Files folder, a space, the Apps list; '
-    + 'the grid itself is built with the view and says nothing about what loaded, so claim a card'});
+    + 'the grid itself is built with the view and says nothing about what loaded, so claim a card. '
+    + 'The part names the wrapper rather than the card inside it, so a count is one per card; a '
+    + 'gallery that renders bare .grok-gallery-grid-item (predictive models) reports none'});
 element('gallery search', {selector: '.grok-gallery-search-bar .ui-input-type-ahead'});
 element('code editor', {selector: '.cm-editor, .CodeMirror', aliases: ['source editor'],
   description: 'the CodeMirror the platform embeds wherever code or a formula is edited — version 6 ' +

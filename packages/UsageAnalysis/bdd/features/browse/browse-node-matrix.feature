@@ -18,11 +18,15 @@ Feature: Every section of the Browse tree opens without an error
   Background:
     Given user is logged in
     And the browse panel is open
+    # open so that a pane which throws while rendering the clicked object lands in the floor
     And the context panel is open
 
+  # "first": a section that has been expanded far enough to paginate grows a "Show more" item
+  # carrying the section's own name (tree_view.dart addMoreLink calls addItem('')), so the bare
+  # name matches two elements once another feature has opened it.
   Scenario Outline: Clicking <node> logs no error
-    When user clicks on <node> tree node inside browse tree
-    Then <node> tree node inside browse tree should be selected
+    When user clicks on first <node> tree node inside browse tree
+    Then first <node> tree node inside browse tree should be selected
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
@@ -37,19 +41,23 @@ Feature: Every section of the Browse tree opens without an error
       | Platform  |
 
   # The tree remembers what was open, so each row closes its section before opening it: an
-  # "expand" on an already-open node returns without touching the tree.
+  # "expand" on an already-open node returns without touching the tree. The twistie alone would
+  # not be evidence either — it flips on the click, before the children are asked for — so each
+  # row names a child that has to arrive. Spaces and Dashboards are not here: the first has
+  # nothing under it on a stand without spaces, the second is a leaf that opens a view.
   Scenario Outline: Opening the <section> section logs no error
-    Given user collapses <section> tree node inside browse tree
-    And <section> tree node inside browse tree should be collapsed
-    When user expands <section> tree node inside browse tree
-    Then <section> tree node inside browse tree should be expanded
+    Given user collapses first <section> tree node inside browse tree
+    And first <section> tree node inside browse tree should be collapsed
+    When user expands first <section> tree node inside browse tree
+    Then first <section> tree node inside browse tree should be expanded
+    And <child> tree node inside browse tree should be visible
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
     Examples:
-      | section   |
-      | My stuff  |
-      | Apps      |
-      | Files     |
-      | Databases |
-      | Platform  |
+      | section   | child                     |
+      | My stuff  | My-stuff---Recent         |
+      | Apps      | Apps---Compute            |
+      | Files     | Files---Demo              |
+      | Databases | Databases---Postgres      |
+      | Platform  | Platform---Users          |

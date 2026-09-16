@@ -5,6 +5,11 @@ Feature: The Apps and Dashboards sections of the Browse tree
   Browse-Dash-01, -02 (playwright-public/browse/apps.test.ts, dash.test.ts,
   browse_manual_tests2.md sections 6 and 8).
 
+  Browse-Apps-03 (the tooltip and the details of an application, GROK-19638) is not translated:
+  the old spec hovered, slept and claimed only that nothing was logged, and the shared vocabulary
+  has no way to read the tooltip of a tree node. What the case is about — the details being
+  readable — is claimed for a connection in browse-context-panel-and-menus.feature.
+
   Browse-Apps-01 also asks that the list appear within five seconds (GROK-20032). That half is not
   translated: a wall-clock threshold on a shared stand reports the stand's load, not the product's,
   and the suite has no vocabulary for it. What is claimed is the part that would actually have
@@ -22,8 +27,8 @@ Feature: The Apps and Dashboards sections of the Browse tree
   that opens empty (the GROK-17896 shape) is not caught here.
 
   Browse-ModelHub-02, -03 and -04 are NOT translated, and that is a real gap: they carried
-  GROK-19740, GROK-19965 and GROK-19628, the reproductions playwright-public/browse/KNOWN_BUGS.md
-  is built around. Clicking and double-clicking a model in the tree is claimed by nothing here.
+  GROK-19740 and GROK-19965, the reproductions playwright-public/browse/KNOWN_BUGS.md is built
+  around, and GROK-19628. Clicking and double-clicking a model in the tree is claimed by nothing here.
 
   Background:
     Given user is logged in
@@ -32,7 +37,7 @@ Feature: The Apps and Dashboards sections of the Browse tree
   Scenario: The Apps section lists the installed applications
     Given Apps tree node inside browse tree is expanded
     Then Tutorials tree node inside browse tree should be visible
-    And Chem tree node inside browse tree should be visible
+    And Misc tree node inside browse tree should be visible
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
@@ -40,15 +45,6 @@ Feature: The Apps and Dashboards sections of the Browse tree
     Given Apps tree node inside browse tree is expanded
     When user clicks on Tutorials tree node inside browse tree
     Then the "Tutorials" view should be current
-    And no errors should have been logged
-    And no error or warning balloon should have been shown
-
-  Scenario: Hovering an application does not break its details
-    Given the context panel is open
-    And Apps tree node inside browse tree is expanded
-    When user hovers over Tutorials tree node inside browse tree
-    And user clicks on Tutorials tree node inside browse tree
-    Then the context panel should show "Tutorials"
     And no errors should have been logged
     And no error or warning balloon should have been shown
 

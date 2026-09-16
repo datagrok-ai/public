@@ -4,14 +4,11 @@ Feature: Working with the nodes of the Browse tree
   surviving a trip to another view. Translated from the manual cases Browse-Tree-01, -02 and -03
   (playwright-public/browse/tree.test.ts, browse_manual_tests2.md section 2).
 
-  Every node below the top level is named by its full path, so a child of Files cannot collide
-  with the top-level section of the same name.
-
   Browse-Tree-04 (the sidebar must not leave nested nodes stuck open, GROK-19802) is not here. The
   old spec allowed the expanded count to grow by one — which is exactly the defect the case is
   named for, so it passed with the bug present. A node-level claim is writable (collapse a child,
-  toggle the sidebar, claim that child still collapsed); what it needs is a positive anchor the
-  rebuild publishes, which is BROWSE_CORE_SIGNALS.md gap 1.
+  toggle the sidebar, claim that child still collapsed); what it needs is a positive anchor that
+  the rebuild publishes, and the tree publishes nothing when a group has finished loading.
 
   Browse-Tree-05 (the context menu of an entity) is in browse-context-panel-and-menus.feature,
   on a connection and on a file. The dashboard the manual case names is not used, so the entity

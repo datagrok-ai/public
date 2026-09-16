@@ -50,7 +50,7 @@ Feature: The context panel and the context menus of the Browse tree
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
-  Scenario: A connection offers the commands of a connection
+  Scenario: A connection offers Browse, the query commands, Edit, Rename, Clone, Delete and Clear cache
     Given Databases tree node inside browse tree is expanded
     And Databases---Postgres tree node inside browse tree is expanded
     When user opens the context menu of Databases---Postgres---Datagrok tree node inside browse tree

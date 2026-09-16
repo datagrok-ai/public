@@ -49,7 +49,7 @@ test.describe("The context panel and the context menus of the Browse tree", () =
     await session.step(50, "And no errors should have been logged", () => noErrors(page));
     await session.step(51, "And no error or warning balloon should have been shown", () => noBalloons(page));
   });
-  test("A connection offers the commands of a connection", {tag: ["@browse", "@realizes:views.browse"]}, async ({browser}) => {
+  test("A connection offers Browse, the query commands, Edit, Rename, Clone, Delete and Clear cache", {tag: ["@browse", "@realizes:views.browse"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(27, "Given user is logged in", () => loggedIn(page));
     await session.step(28, "And the browse panel is open", () => browsePanelOpen(page));

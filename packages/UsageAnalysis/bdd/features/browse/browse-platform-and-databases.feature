@@ -4,10 +4,10 @@ Feature: The Platform and Databases sections of the Browse tree
   view it names. Translated from the manual cases Browse-Platform-01, -02 and Browse-DB-01, -02
   (playwright-public/browse/platform.test.ts, db.test.ts, browse_manual_tests2.md sections 9 and 10).
 
-  The lists below are what a full stand carries. A minimal stack shows fewer providers and fewer
-  Platform sections, and these scenarios will fail there until the set is cut back to what every
-  stand has; the old spec claimed only Postgres, and Plugins/Credentials/Functions/Users/Groups/
-  Roles, for that reason.
+  The two "lists" scenarios are tagged @full-stand: they name what a full stand carries, and a
+  minimal stack has fewer providers and fewer Platform sections. Everything else here holds on any
+  stand — the old spec claimed only Postgres, and Plugins/Credentials/Functions/Users/Groups/Roles,
+  for the same reason.
 
   Browse-Platform-03 (Platform is hidden from a user without the privilege) needs the second
   account. Browse-DB-03 (Schema Browser) is writable — this file already assumes the same CHEMBL
@@ -24,6 +24,7 @@ Feature: The Platform and Databases sections of the Browse tree
     Given user is logged in
     And the browse panel is open
 
+  @full-stand
   Scenario: The Platform section lists what an administrator manages
     Given Platform tree node inside browse tree is expanded
     Then the following elements should be visible:
@@ -47,6 +48,7 @@ Feature: The Platform and Databases sections of the Browse tree
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
+  @full-stand
   Scenario: The Databases section lists the connected providers
     Given Databases tree node inside browse tree is expanded
     Then the following elements should be visible:
