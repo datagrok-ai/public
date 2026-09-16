@@ -592,6 +592,12 @@ jobs:
       - name: Install Chromium for grok test
         if: ${{ matrix.test == 'test' }}
         run: pnpm --filter datagrok-tools exec puppeteer browsers install chrome
+      - name: Install Chromium for the Playwright pass
+        if: ${{ matrix.test == 'test' }}
+        run: |
+          if [ -n "$(jq -r '.playwrightTests // empty' packages/${{ matrix.package }}/package.json)" ]; then
+            pnpm --filter "./packages/${{ matrix.package }}" exec playwright install --with-deps chromium
+          fi
       - name: Configuration setuid sandbox
         if: ${{ matrix.test == 'test' }}
         run: |

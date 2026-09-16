@@ -22,7 +22,7 @@ export function isSpotlightEntity(ent: DG.Entity): boolean {
   if (ent instanceof DG.FuncCall || ent instanceof DG.Group || ent instanceof DG.User || ent instanceof DG.Package ||
     ent instanceof DG.UserReport || ent.entityType === 'UserReport' || ent instanceof DG.TableInfo ||
     (ent instanceof DG.Func && !(ent instanceof DG.Script || ent instanceof DG.DataQuery || ent instanceof DG.DataJob || isApp(ent))) ||
-    ent instanceof DG.ViewInfo || ent instanceof DG.DataConnection ||
+    ent instanceof DG.ViewInfo || ent instanceof DG.ViewLayout || ent instanceof DG.DataConnection ||
     (ent instanceof DG.Project && (ent.isPackage || (!ent.isDashboard && !ent.isSpace))) ||
     //@ts-ignore
       (ent.hasOwnProperty('npmScope') && ent['npmScope'] == 'datagrok'))
