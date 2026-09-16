@@ -41,7 +41,7 @@ function swcOptions({jsx, decorators = true}) {
 function mergeConfig(base, o) {
   const out = {...base};
   for (const [k, v] of Object.entries(o)) {
-    if (['dir', 'jsx', 'wasm', 'decorators', 'assets', 'rules', 'mode', 'css'].includes(k)) continue;
+    if (['dir', 'jsx', 'wasm', 'emit', 'decorators', 'assets', 'rules', 'mode', 'css'].includes(k)) continue;
     if (k === 'externals') {
       out.externals = {...base.externals, ...v};
       for (const [name, value] of Object.entries(v)) if (value === false) delete out.externals[name];
@@ -59,8 +59,10 @@ function mergeConfig(base, o) {
 
 /**
  * Build an rspack config for the package in `o.dir` (default: cwd).
- * Options beyond rspack's own: `jsx: 'react'`, `wasm: 'async' | 'sync' | 'asset'`,
- * `decorators: false`, `assets: RegExp` (extra asset/resource test), `rules: []` (prepended).
+ * Options beyond rspack's own: `jsx: 'react'`, `wasm: 'async' | 'sync' | 'asset'` (asset, the default, copies
+ * .wasm files to dist under their own names), `emit: []` (files copied to dist under their own names without
+ * being imported), `decorators: false`, `assets: RegExp` (extra asset/resource test),
+ * `rules: []` (prepended).
  */
 function bundler(o = {}) {
   const dir = o.dir || process.cwd();
@@ -86,7 +88,7 @@ function bundler(o = {}) {
     {test: o.assets ? new RegExp(`${ASSET_TEST.source}|${o.assets.source}`) : ASSET_TEST, type: 'asset/resource'},
   ];
   if (o.wasm === 'asset' || !o.wasm)
-    rules.push({test: /\.wasm$/, type: 'asset/resource'});
+    rules.push({test: /\.wasm$/, type: 'asset/resource', generator: {filename: '[name][ext]'}});
 
   const base = {
     context: dir,
@@ -105,6 +107,7 @@ function bundler(o = {}) {
     plugins: [
       new rspack.DefinePlugin({'process.env.NODE_ENV': JSON.stringify(mode), 'process.env': '{}'}),
       ...(FuncGeneratorPlugin ? [new FuncGeneratorPlugin({outputPath: './src/package.g.ts'})] : []),
+      ...(o.emit ? [new rspack.CopyRspackPlugin({patterns: o.emit.map((f) => ({from: f, to: '[name][ext]'}))})] : []),
     ],
     output: {
       filename: '[name].js',
@@ -121,7 +124,13 @@ function bundler(o = {}) {
     },
     stats: 'errors-warnings',
   };
-  return mergeConfig(base, o);
+  const config = mergeConfig(base, o);
+  const externals = config.externals;
+  // Workers have no platform globals, so openchemlib is bundled into them instead of resolving to OCL.
+  config.externals = ({context, request}, callback) =>
+    externals[request] && !(/worker/i.test(context) && request.startsWith('openchemlib/full')) ?
+      callback(null, externals[request], 'var') : callback();
+  return config;
 }
 
 // The plugin generates src/package.g.ts and src/package-api.ts on every bundle; a build without it

@@ -1284,6 +1284,7 @@ export class GridCellRenderer<TData = any> extends CanvasRenderer {
     try {
       if (this.clip) {
         g.save()
+        g.beginPath();
         g.rect(x, y, w, h);
         g.clip();
       }

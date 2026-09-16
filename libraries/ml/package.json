@@ -12,7 +12,7 @@
     "email": "drizhinashvili@datagrok.ai"
   },
   "friendlyName": "Datagrok ML library",
-  "version": "6.10.16",
+  "version": "6.11.0",
   "description": "Machine learning supporting utilities",
   "dependencies": {
     "@datagrok-libraries/math": "workspace:^",

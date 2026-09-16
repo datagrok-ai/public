@@ -4,8 +4,8 @@
   "version": "1.4.1",
   "description": "Automated tests for JDBC Providers",
   "author": {
-    "name": "Pavlo Polovyi",
-    "email": "ppolovyi@datagrok.ai"
+    "name": "Oleksandra Serhiienko",
+    "email": "oserhiienko@datagrok.ai"
   },
   "servicePackage": true,
   "dependencies": {

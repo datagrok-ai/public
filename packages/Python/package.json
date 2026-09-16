@@ -1,5 +1,5 @@
 {
-  "name": "python",
+  "name": "@datagrok/python",
   "friendlyName": "Python",
   "version": "0.0.3",
   "description": "Python server for code execution and data processing",
@@ -17,8 +17,7 @@
   "scripts": {
     "build": "grok build",
     "typecheck": "grok tsc --noEmit -p tsconfig.json",
-    "lint": "eslint --ext .ts,.tsx src",
-    "test": "grok test"
+    "lint": "eslint --ext .ts,.tsx src"
   },
   "canEdit": [
     "Administrators"
