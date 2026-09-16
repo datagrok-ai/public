@@ -1,13 +1,13 @@
 /// Import statements resolved to files, libraries and packages (build-plan.md WO-3b): one `imports` edge per
 /// (file, target) with the union of the symbols named; bare npm specifiers and asset files stay out of the graph.
 import {Emitter} from '../../emitter';
-import {BuildContext, Extractor} from '../../registry';
-import {fileId} from '../../ids';
+import {BuildContext, Extractor} from '../../context';
+import {fileId} from '../../../ids';
 import {tsSources} from './declarations';
 
 export const importsExtractor: Extractor = {
   name: 'ts-imports',
-  layer: 'public',
+  describes: {'ts-imports': 'imports between source files'},
   modes: ['full'],
   run(ctx: BuildContext, emitter: Emitter): void {
     const sources = tsSources(ctx, emitter);

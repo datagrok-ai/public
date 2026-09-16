@@ -12,6 +12,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import {createRequire} from 'module';
 import {TypeSystem, Member, NodeType, pascal, graphLabel} from './types';
+import {readJsonl, dataFile} from './generation';
 
 export interface KuzuQueryResult {
   getAll(): Promise<Record<string, unknown>[]>;
@@ -346,7 +347,7 @@ export async function load(kgDir: string, system: TypeSystem, mb?: number): Prom
       const csv = new CsvTable(path.join(tmp, `${t.name}.csv`), presentColumns(t, system, kgDir));
       const late: Record<string, unknown>[] = [];
       for (const type of t.types)
-        for (const row of readJsonl(path.join(kgDir, 'data', 'nodes', `${type}.jsonl`))) {
+        for (const row of readJsonl(dataFile(kgDir, 'nodes', type))) {
           row.types = chains.get(String(row.type)) ?? [String(row.type)];
           table.set(String(row.id), t.name);
           if (!csv.write(row)) late.push(row);
@@ -364,7 +365,7 @@ export async function load(kgDir: string, system: TypeSystem, mb?: number): Prom
       const late: Record<string, unknown>[] = [];
       let rows = 0;
       for (const group of t.groups)
-        for (const row of readJsonl(path.join(kgDir, 'data', 'edges', `${group}.jsonl`))) {
+        for (const row of readJsonl(dataFile(kgDir, 'edges', group))) {
           const pair = {from: table.get(String(row.from)), to: table.get(String(row.to))};
           if (!pair.from || !pair.to) continue;
           const key = [pair.from, pair.to].join(SEPARATOR);
@@ -399,16 +400,10 @@ export async function load(kgDir: string, system: TypeSystem, mb?: number): Prom
 function presentColumns(table: NodeTable, system: TypeSystem, kgDir: string): Column[] {
   const present = new Set<string>([...BUILD_ORDER, ...system.buildFields.node.map((m) => m.name)]);
   for (const type of table.types) {
-    if (!fs.existsSync(path.join(kgDir, 'data', 'nodes', `${type}.jsonl`))) continue;
+    if (!fs.existsSync(dataFile(kgDir, 'nodes', type))) continue;
     for (const name of Object.keys(system.nodes.get(type)!.members)) present.add(name);
   }
   return table.columns.filter((c) => present.has(c.name));
-}
-
-export function* readJsonl(file: string): Generator<Record<string, unknown>> {
-  if (!fs.existsSync(file)) return;
-  for (const line of fs.readFileSync(file, 'utf8').split('\n'))
-    if (line) yield JSON.parse(line);
 }
 
 /** Rows a CSV cannot carry go in one by one, so a list value is never mangled by the reader. */

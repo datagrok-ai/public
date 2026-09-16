@@ -7,16 +7,15 @@ import * as path from 'path';
 import * as zlib from 'zlib';
 import {TypeSystem} from './types';
 import {KuzuConnection, KuzuDatabase, run, quote} from './kuzu';
-import {impact, testsFor, explain, find, resolveTarget, sourceCaveats, DEFAULT_LIMIT} from './ops';
-import {Manifest} from './build/write';
+import {impact, testsFor, explain, find, resolveTarget, DEFAULT_LIMIT} from './ops';
+import {caveatNotes} from './answer';
+import {Manifest} from './generation';
 import {visDir, BLOB, INDEX, SCHEMA} from './vis';
 import {Question, ask} from './questions';
 
 export const PAGE_DIR = path.join(__dirname, 'vis');
 /** Rows a Cypher answer may carry into the page. */
 export const QUERY_CAP = 5000;
-/** Neighbours listed per edge group in a node answer. */
-const SAMPLE = 20;
 const OPS: Record<string, string> = {impact: 'impact', 'tests-for': 'tests-for', explain: 'explain', find: 'find'};
 const MIME: Record<string, string> = {'.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
   '.css': 'text/css; charset=utf-8', '.json': 'application/json', '.bin': 'application/octet-stream', '.svg': 'image/svg+xml'};
@@ -80,10 +79,10 @@ async function handle(o: ServeOptions, queue: Queue, req: http.IncomingMessage):
   const route = url.pathname;
   if (!route.startsWith('/api/')) return page(route);
   if (route === '/api/manifest')
-    return json({...o.manifest, notes: sourceCaveats(o.manifest.sources), gen: path.basename(o.genDir), repo_root: o.repoRoot.replace(/\\/g, '/')});
+    return json({...o.manifest, notes: caveatNotes(o.manifest), gen: path.basename(o.genDir), repo_root: o.repoRoot.replace(/\\/g, '/')});
   if (route === '/api/schema' || route === '/api/index' || route === '/api/graph.bin')
     return file(path.join(visDir(o.genDir), route === '/api/schema' ? SCHEMA : route === '/api/index' ? INDEX : BLOB));
-  if (route === '/api/node') return queue.add(() => node(o.conn, required(url, 'id')));
+  if (route === '/api/node') return queue.add(() => node(o, required(url, 'id')));
   if (route === '/api/edge') return queue.add(() => edge(o.conn, required(url, 'from'), required(url, 'to'), required(url, 'kind')));
   if (route === '/api/query') {
     if (req.method !== 'POST') throw new HttpError(405, 'POST a JSON body {cypher, params, limit}');
@@ -98,7 +97,7 @@ async function handle(o: ServeOptions, queue: Queue, req: http.IncomingMessage):
     if (!question) throw new HttpError(404, `no question ${id}`);
     const given = Object.fromEntries([...url.searchParams].filter(([k]) => k !== 'limit'));
     return queue.add(async () => {
-      const answer = await ask(o.conn, question, given, o.manifest.sources).catch((e) => { throw new HttpError(400, e.message); });
+      const answer = await ask(o.conn, question, given, o.manifest).catch((e) => { throw new HttpError(400, e.message); });
       const {question: q, ...rest} = answer;
       return json({...rest, id: q.id, highlight: q.highlight});
     });
@@ -132,33 +131,14 @@ function file(p: string): Answer {
   return {status: 200, type: MIME[path.extname(p)] ?? 'application/octet-stream', body: fs.readFileSync(p)};
 }
 
-async function node(conn: KuzuConnection, id: string): Promise<Answer> {
+/** The node itself and its edge groups, the `edges` section `explain` answers with. */
+async function node(o: ServeOptions, id: string): Promise<Answer> {
+  const conn = o.conn;
+  const target = await resolveTarget(conn, id);
+  if (!target) throw new HttpError(404, `no node ${id}`);
   const found = await run(conn, `MATCH (n) WHERE n.${quote('id')} = $id RETURN n`, {id});
-  if (!found.rows.length) throw new HttpError(404, `no node ${id}`);
-  const edges = [...await groups(conn, id, 'out'), ...await groups(conn, id, 'in')];
+  const edges = (await explain(conn, target, {limit: QUERY_CAP, groups: o.manifest.edge_groups})).sections.find((s) => s.title === 'edges')!.rows;
   return json({node: found.rows[0].n, edges});
-}
-
-/** One row per edge kind and direction: how many, and the first few at the other end. */
-async function groups(conn: KuzuConnection, id: string, direction: 'in' | 'out'): Promise<Record<string, unknown>[]> {
-  const pattern = direction === 'out' ? '(n)-[e]->(m)' : '(n)<-[e]-(m)';
-  const {rows} = await run(conn, `MATCH ${pattern} WHERE n.${quote('id')} = $id ` +
-    `RETURN label(e) AS kind, m.${quote('id')} AS id, m.${quote('name')} AS name, m.${quote('type')} AS type, ` +
-    `e.${quote('confidence')} AS confidence, e.${quote('derived_by')} AS derived_by`, {id});
-  const byKind = new Map<string, {kind: string, direction: string, count: number, sample: Record<string, unknown>[], derived_by: Set<string>, min: number, max: number}>();
-  for (const row of rows) {
-    const kind = String(row.kind);
-    let g = byKind.get(kind);
-    if (!g) byKind.set(kind, g = {kind, direction, count: 0, sample: [], derived_by: new Set(), min: 1, max: 0});
-    g.count++;
-    const c = Number(row.confidence ?? 1);
-    g.min = Math.min(g.min, c);
-    g.max = Math.max(g.max, c);
-    g.derived_by.add(String(row.derived_by));
-    if (g.sample.length < SAMPLE) g.sample.push({id: row.id, name: row.name, type: row.type});
-  }
-  return [...byKind.values()].sort((a, b) => b.count - a.count)
-    .map((g) => ({kind: g.kind, direction: g.direction, count: g.count, derived_by: [...g.derived_by].sort(), confidence: [g.min, g.max], sample: g.sample}));
 }
 
 async function edge(conn: KuzuConnection, from: string, to: string, kind: string): Promise<Answer> {
@@ -168,18 +148,19 @@ async function edge(conn: KuzuConnection, from: string, to: string, kind: string
   return json({edge: rows[0].e, from, to, kind});
 }
 
-/** A statement without its own LIMIT gets one; a page never receives more than QUERY_CAP rows. */
+/** A page never receives more than [limit] rows, whatever LIMIT the statement carries; one row more is asked for, so
+ * `truncated` is a fact and not a guess. */
 async function query(conn: KuzuConnection, cypher: string, limit: number, params?: Record<string, unknown>): Promise<Answer> {
   const statement = cypher.trim().replace(/;\s*$/, '');
-  const bounded = /\bLIMIT\s+\d+\s*$/i.test(statement) ? statement : `${statement} LIMIT ${limit}`;
+  const bounded = /\bLIMIT\s+\d+\s*$/i.test(statement) ? statement : `${statement} LIMIT ${limit + 1}`;
   const started = Date.now();
   const bound = params && typeof params === 'object' && Object.keys(params).length ? params : undefined;
   const {columns, rows} = await run(conn, bounded, bound);
-  return json({columns, rows, ms: Date.now() - started, truncated: rows.length >= limit});
+  return json({columns, rows: rows.slice(0, limit), ms: Date.now() - started, truncated: rows.length > limit});
 }
 
 async function operation(o: ServeOptions, op: string, text: string, limit: number): Promise<Answer> {
-  const options = {limit};
+  const options = {limit, groups: o.manifest.edge_groups};
   let result;
   if (op === 'find') result = await find(o.conn, text, options);
   else {
@@ -187,7 +168,7 @@ async function operation(o: ServeOptions, op: string, text: string, limit: numbe
     if (!target) throw new HttpError(404, `${text}: no such node`);
     result = op === 'impact' ? await impact(o.conn, target, options) : op === 'tests-for' ? await testsFor(o.conn, target, options) : await explain(o.conn, target, options);
   }
-  result.notes = sourceCaveats(o.manifest.sources);
+  result.notes = caveatNotes(o.manifest);
   return json(result);
 }
 

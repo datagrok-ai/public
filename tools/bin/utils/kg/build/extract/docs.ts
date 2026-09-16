@@ -8,10 +8,10 @@ import {discoverHomeFiles, firstHeading, HomeSet} from '../../homes';
 import {splitFrontmatter, Frontmatter} from '../../frontmatter';
 import {proseLines, headings} from '../../citations';
 import {Emitter} from '../emitter';
-import {Row} from '../normalize';
-import {BuildContext, Extractor} from '../registry';
-import {pkgId, docId, docKind, ticketId, sourceLayerOf} from '../ids';
-import {homesOf, emitMentions, ticketStub, kebab} from './markers';
+import {Row} from '../../normalize';
+import {BuildContext, Extractor} from '../context';
+import {pkgId, docId, docKind, ticketId, sourceLayerOf, kebab} from '../../ids';
+import {homesOf, emitMentions, ticketStub} from './markers';
 import {firstParagraph} from './homes';
 import {parsePlaywrightTests, playwrightTestId} from './ts/tests';
 
@@ -29,7 +29,7 @@ const PAGE_IGNORE = /(^|\/)CHANGELOG\.mdx?$/i;
 
 export const docsExtractor: Extractor = {
   name: 'docs',
-  layer: 'docs',
+  describes: {docs: 'documentation pages, their headings and the mentions in them'},
   modes: ['full', 'public'],
   run(ctx: BuildContext, emitter: Emitter): void {
     const layer = new DocLayer(ctx.repoRoot, emitter, homesOf(ctx));

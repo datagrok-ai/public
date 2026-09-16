@@ -1,6 +1,4 @@
-/// The ordered extractors `grok kg build` runs (build-plan.md WO-1) and the context they share.
-import {TypeSystem} from '../types';
-import {HomeSet} from '../homes';
+/// The ordered extractors `grok kg build` runs (build-plan.md WO-1); what they share is `context.ts`.
 import {Emitter} from './emitter';
 import {homesExtractor} from './extract/homes';
 import {packagesExtractor} from './extract/ts/packages';
@@ -15,35 +13,17 @@ import {importsExtractor} from './extract/ts/imports';
 import {usesExtractor} from './extract/ts/uses';
 import {inlineMarkersExtractor} from './extract/ts/inline-markers';
 import {processExtractor} from './extract/process';
-import type {People} from './extract/process';
 import {membershipExtractor} from './extract/membership';
-
-export type Mode = 'full' | 'public';
-
-export interface BuildContext {
-  system: TypeSystem;
-  /** Absolute paths. */
-  kgRoot: string;
-  repoRoot: string;
-  mode: Mode;
-  backlogDir?: string;
-  /** The home documents: the caller's, when check already loaded them, else loaded once per build by whichever
-   * extractor asks first (`homesOf`). */
-  homes?: HomeSet;
-  /** The people the process layer resolves, shared with the packages extractor that runs before it (`peopleOf`). */
-  people?: People;
-}
-
-export interface Extractor {
-  name: string;
-  layer: string;
-  modes: Mode[];
-  run(ctx: BuildContext, emitter: Emitter): void | Promise<void>;
-}
+import {Mode, Extractor, BuildContext} from './context';
 
 /** In order; membership resolution reads the claims of all the others, so it stays last. */
 export const EXTRACTORS: Extractor[] = [homesExtractor, packagesExtractor, functionsExtractor, declarationsExtractor, importsExtractor, usesExtractor,
   testsExtractor, samplesExtractor, changelogExtractor, docsExtractor, inlineMarkersExtractor, dartExtractor, processExtractor, membershipExtractor];
+
+/** What the sources of [extractors] contribute, by source name, for the manifest. */
+export function provides(extractors: Extractor[]): Record<string, string> {
+  return Object.fromEntries(extractors.flatMap((e) => Object.entries(e.describes)).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0));
+}
 
 /** The extractors for [mode], narrowed by `--only`; names that match nothing are returned for the caller to refuse. */
 export function selectExtractors(mode: Mode, only?: string[]): {selected: Extractor[], unknown: string[]} {

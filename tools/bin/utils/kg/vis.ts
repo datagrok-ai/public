@@ -4,7 +4,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import {TypeSystem, NodeType, EdgeType, nodeOrder, edgeOrder, graphLabel, firstSentence} from './types';
-import {readJsonl} from './kuzu';
+import {readJsonl, dataFile, dataDir} from './generation';
 
 export const VIS_DIR = 'vis';
 export const BLOB = 'graph.bin';
@@ -69,7 +69,7 @@ export function exportVis(genDir: string, system: TypeSystem, batch: string): Vi
   const nodeTypes: string[] = [];
   const type: number[] = [], layer: number[] = [], visibility: number[] = [], status: number[] = [], provenance: number[] = [];
   for (const t of nodeOrder(system)) {
-    const file = path.join(genDir, 'data', 'nodes', `${t.name}.jsonl`);
+    const file = dataFile(genDir, 'nodes', t.name);
     if (t.abstract || !fs.existsSync(file)) continue;
     const typeIndex = nodeTypes.push(t.name) - 1;
     for (const row of readJsonl(file)) {
@@ -89,10 +89,10 @@ export function exportVis(genDir: string, system: TypeSystem, batch: string): Vi
   const degree = new Uint32Array(ids.length);
   const parent = new Int32Array(ids.length).fill(-1);
   let dropped = 0;
-  for (const file of fs.readdirSync(path.join(genDir, 'data', 'edges')).filter((f) => f.endsWith('.jsonl')).sort()) {
+  for (const file of fs.readdirSync(dataDir(genDir, 'edges')).filter((f) => f.endsWith('.jsonl')).sort()) {
     const name = file.slice(0, -'.jsonl'.length);
     const kindIndex = edgeKinds.push(name) - 1;
-    for (const row of readJsonl(path.join(genDir, 'data', 'edges', file))) {
+    for (const row of readJsonl(path.join(dataDir(genDir, 'edges'), file))) {
       const a = index.get(String(row.from)), b = index.get(String(row.to));
       if (a === undefined || b === undefined) {
         dropped++;

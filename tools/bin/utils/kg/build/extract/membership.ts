@@ -4,11 +4,10 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import {Emitter, Claim} from '../emitter';
-import {Row} from '../normalize';
-import {BuildContext, Extractor} from '../registry';
+import {Row} from '../../normalize';
+import {BuildContext, Extractor} from '../context';
 import {REPO_PREFIX, GLOB_MAGIC} from '../../homes';
-import {fileId, languageOf, sourceLayerOf, posix, docId, CODE_ROOTS} from '../ids';
-import {countLines} from './homes';
+import {fileId, posix, docId, CODE_ROOTS, countLines, sourceFileRow} from '../../ids';
 import {homesOf} from './markers';
 
 /** Claim properties an ownership edge carries; anything else the `code:` item said stays in the claim. */
@@ -17,7 +16,7 @@ const RUNGS: (1 | 2 | 3)[] = [1, 2, 3];
 
 export const membershipExtractor: Extractor = {
   name: 'membership',
-  layer: 'membership',
+  describes: {membership: 'file ownership'},
   modes: ['full'],
   run(ctx: BuildContext, emitter: Emitter): void {
     new Membership(ctx, emitter).run();
@@ -98,8 +97,7 @@ class Membership {
   private fileNode(file: string): Row | undefined {
     const full = path.join(this.ctx.repoRoot, file);
     if (!fs.existsSync(full) || !fs.statSync(full).isFile()) return undefined;
-    const row: Row = {type: 'source-file', id: fileId(file), name: path.posix.basename(file), path: file, loc: countLines(full),
-      language: languageOf(file), provenance: 'filesystem', source_layer: sourceLayerOf(file)};
+    const row = sourceFileRow(file, {loc: countLines(fs.readFileSync(full))});
     return this.emitter.node(row).accepted ? row : undefined;
   }
 

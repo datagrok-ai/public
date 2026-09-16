@@ -1,28 +1,13 @@
 /// The bounded operations agents get before raw Cypher (conventions.md §11.1, build-plan.md WO-7):
-/// impact, tests-for, explain and find, each a read-only template over the index. They answer with
-/// sections of rows, and say up front which sources the manifest reports they could not read.
-import {OutputFormat, printOutput} from '../server-output';
+/// impact, tests-for, explain and find, each a read-only template over the index, answering with the
+/// sections of `answer.ts`.
 import {KuzuConnection, run, quote} from './kuzu';
-
-export interface Section {
-  title: string;
-  rows: Record<string, unknown>[];
-  /** Rows before paging, when the section was paged: it is counted whole first, so a header can say `50 of 394`. */
-  total?: number;
-  /** The whole header line of a section that came back empty, saying why it did. */
-  empty?: string;
-}
-
-export interface OpsResult {
-  op: string;
-  target: Record<string, unknown> | null;
-  /** One line per source the manifest does not report as `ok`; the Dart clause leads. */
-  notes?: string[];
-  sections: Section[];
-}
+import {Section, Answer, EdgeGroup, section} from './answer';
 
 export interface OpsOptions {
   limit: number;
+  /** The manifest's `edge_groups`, for `explain` to head its edges by folder. */
+  groups?: Record<string, string[]>;
   /** `find`: how many substring matches one table may contribute. The exact query is not bounded by it. */
   scan?: number;
 }
@@ -30,8 +15,6 @@ export interface OpsOptions {
 export const DEFAULT_LIMIT = 50;
 const HOP_TARGETS = 20;
 const SEARCH_SCAN = 500;
-/** An op prints wider cells than `grok s`: its lists are ids, and half an id is worse than none. */
-const CELL_BUDGET = 80;
 const NO_AFFECTS = 'shipped (0): none derivable (no affects edges from tickets; the Jira Feature field is not populated yet)';
 const UNOWNED = 'features (0): no home document owns this file; see grok kg report proposed';
 /** How many nodes the containment expansion may reach before it answers from what it has. */
@@ -45,39 +28,25 @@ const CONTAINER = /^(?:pkg|lib|file):/;
 
 /** A `file:` or `doc:` node carries the path it was made from; a home document is a `doc:` node with no file of its own. */
 const NODE_PATH = /^(?:file|doc):(.+)$/;
-/**
- * Which `edges/` folder each edge type is written in, in folder order (conventions.md §4); the index holds the
- * labels but not the folders, so this is the query-side copy and a test pins it against the type files.
- */
-const EDGE_GROUPS: Record<string, string[]> = {
-  tree: ['PART_OF', 'RELATED_TO', 'SUPERSEDES', 'USES_CONCEPT', 'DEFINES_CONCEPT'],
-  ownership: ['IS_IMPLEMENTED_IN', 'PARTICIPATES_IN'],
-  code: ['DECLARES', 'EXTENDS', 'IMPLEMENTS', 'CALLS', 'IMPORTS', 'USES', 'DEPENDS_ON', 'TARGETS_SEMTYPE'],
-  evidence: ['TESTS', 'COVERS', 'DOCUMENTS', 'DEMONSTRATES', 'CHANGES', 'AUTOMATES', 'MENTIONS'],
-  work: ['AFFECTS', 'TRACKED_IN', 'TARGETS_RELEASE', 'RESOLVES', 'INCLUDES', 'MODIFIES', 'DELIVERS'],
-  people: ['REQUESTED_BY', 'MEMBER_OF', 'SERVES'],
-  infra: ['BUILDS', 'DEPLOYS', 'RUNS', 'RUNS_ON', 'USES_CREDENTIAL'],
-};
 /** Reference properties materialize as rel tables named after the property (§7.6); they are in no folder and share one heading. */
 const REFERENCE_GROUP = 'reference';
-export const GROUP_ORDER = [...Object.keys(EDGE_GROUPS), REFERENCE_GROUP];
-const GROUP_OF = new Map<string, string>(Object.entries(EDGE_GROUPS).flatMap(([g, labels]) => labels.map((l) => [l, g] as [string, string])));
 
-/** The group heading a rel table belongs under: its folder, or `reference` for the lowercase tables a reference property makes (§7.5). */
-export function groupOf(label: string): string {
-  return GROUP_OF.get(label) ?? (label === label.toLowerCase() ? REFERENCE_GROUP : '');
+/** The group headings in order: the manifest's `edge_groups` folders, then the reference predicates. */
+export function groupOrder(groups: Record<string, string[]> = {}): string[] {
+  return [...Object.keys(groups), REFERENCE_GROUP];
+}
+
+/** The group heading a rel table belongs under: its folder per the manifest's `edge_groups`, `reference` for the lowercase
+ * tables a reference property makes (§7.5), nothing over a generation that predates `edge_groups`. */
+export function groupOf(label: string, groups: Record<string, string[]> = {}): string {
+  for (const [group, labels] of Object.entries(groups))
+    if (labels.includes(label)) return group;
+  return label === label.toLowerCase() ? REFERENCE_GROUP : '';
 }
 
 /** Ids may be written with or without the sigil; a path names the source file it belongs to. */
 function bareId(arg: string): string {
   return arg.trim().replace(/^~/, '');
-}
-
-/** Every section is counted whole and paged after, so the header can tell a page from the total. */
-function section(title: string, rows: Record<string, unknown>[], limit: number, empty?: string): Section {
-  const paged: Section = {title, rows: rows.slice(0, limit), total: rows.length};
-  if (!rows.length && empty) paged.empty = empty;
-  return paged;
 }
 
 export async function resolveTarget(conn: KuzuConnection, arg: string): Promise<Record<string, unknown> | null> {
@@ -123,7 +92,7 @@ async function contained(conn: KuzuConnection, target: Record<string, unknown>):
   const step = async (ids: string[], pattern: string, edge: string, direction: 'in' | 'out') => {
     if (!ids.length) return;
     const {rows} = await run(conn, `MATCH ${pattern} WHERE n.${quote('id')} IN $ids ` +
-      `RETURN n.${quote('id')} AS anchor, m.${quote('id')} AS other`, {ids});
+      `RETURN n.${quote('id')} AS anchor, m.${quote('id')} AS other ORDER BY anchor, other`, {ids});
     for (const row of rows) add(String(row.anchor), edge, direction, String(row.other));
   };
   if (CONTAINER.test(id)) await step([id], `(n)-[:${quote('DECLARES')}]->(m)`, 'declares', 'out');
@@ -182,7 +151,7 @@ function stronger(a: Record<string, unknown>, b: Record<string, unknown>): boole
 }
 
 /** What a change to this file, declaration or feature reaches: the features that own it, their evidence and their work. */
-export async function impact(conn: KuzuConnection, target: Record<string, unknown>, options: OpsOptions): Promise<OpsResult> {
+export async function impact(conn: KuzuConnection, target: Record<string, unknown>, options: OpsOptions): Promise<Answer> {
   const id = String(target.id);
   const sections: Section[] = [];
   const features = await featuresOf(conn, target);
@@ -235,7 +204,7 @@ async function callersOf(conn: KuzuConnection, id: string): Promise<Record<strin
 }
 
 /** The tests, scenarios and automations of a feature and everything under it. */
-export async function testsFor(conn: KuzuConnection, target: Record<string, unknown>, options: OpsOptions): Promise<OpsResult> {
+export async function testsFor(conn: KuzuConnection, target: Record<string, unknown>, options: OpsOptions): Promise<Answer> {
   const found = await featuresOf(conn, target);
   const roots = found.map((r) => String(r.feature));
   const sections: Section[] = [];
@@ -271,7 +240,7 @@ export async function testsFor(conn: KuzuConnection, target: Record<string, unkn
 }
 
 /** Everything one hop away from a node, grouped by edge type and direction, with the evidence behind each group. */
-export async function explain(conn: KuzuConnection, target: Record<string, unknown>, options: OpsOptions): Promise<OpsResult> {
+export async function explain(conn: KuzuConnection, target: Record<string, unknown>, options: OpsOptions): Promise<Answer> {
   const id = String(target.id);
   const node = await run(conn, `MATCH (n) WHERE n.${quote('id')} = $id RETURN n`, {id});
   const properties = Object.entries((node.rows[0]?.n ?? {}) as Record<string, unknown>)
@@ -279,15 +248,16 @@ export async function explain(conn: KuzuConnection, target: Record<string, unkno
     .map(([property, value]) => ({property, value}));
   const sections: Section[] = [section('properties', properties, options.limit)];
   if (target.type === 'release') sections.push(...await releaseSections(conn, node.rows[0]?.n as Record<string, unknown> ?? {}, id, options.limit));
-  const select = `RETURN label(e) AS edge, m.${quote('id')} AS other, e.${quote('derived_by')} AS derived_by, ` +
-    `e.${quote('confidence')} AS confidence, e.${quote('evidence')} AS evidence`;
-  const out = await run(conn, `MATCH (n)-[e]->(m) WHERE n.${quote('id')} = $id ${select}`, {id});
-  const into = await run(conn, `MATCH (n)<-[e]-(m) WHERE n.${quote('id')} = $id ${select}`, {id});
+  const select = `RETURN label(e) AS edge, m.${quote('id')} AS other, m.${quote('name')} AS name, m.${quote('type')} AS type, ` +
+    `e.${quote('derived_by')} AS derived_by, e.${quote('confidence')} AS confidence, e.${quote('evidence')} AS evidence`;
+  const out = await run(conn, `MATCH (n)-[e]->(m) WHERE n.${quote('id')} = $id ${select} ORDER BY edge, other`, {id});
+  const into = await run(conn, `MATCH (n)<-[e]-(m) WHERE n.${quote('id')} = $id ${select} ORDER BY edge, other`, {id});
+  const order = groupOrder(options.groups);
   const rank = (row: Record<string, unknown>) => {
-    const at = GROUP_ORDER.indexOf(String(row.group));
-    return at < 0 ? GROUP_ORDER.length : at;
+    const at = order.indexOf(String(row.group));
+    return at < 0 ? order.length : at;
   };
-  const edges = [...group(out.rows, 'out'), ...group(into.rows, 'in')].sort((a, b) => rank(a) - rank(b));
+  const edges = [...group(out.rows, 'out', options.groups), ...group(into.rows, 'in', options.groups)].sort((a, b) => rank(a) - rank(b));
   sections.push(section('edges', edges, options.limit));
   return {op: 'explain', target, sections};
 }
@@ -329,8 +299,8 @@ async function releaseSections(conn: KuzuConnection, node: Record<string, unknow
   return sections;
 }
 
-/** One row per edge type and direction: how many, how they were derived, the first evidence, and the first few targets. */
-function group(rows: Record<string, unknown>[], direction: 'in' | 'out'): Record<string, unknown>[] {
+/** One row per edge type and direction: how many, how they were derived, the evidence of the first, and the first few targets. */
+function group(rows: Record<string, unknown>[], direction: 'in' | 'out', groups?: Record<string, string[]>): EdgeGroup[] {
   const byEdge = new Map<string, Record<string, unknown>[]>();
   for (const row of rows) {
     const key = String(row.edge);
@@ -340,13 +310,13 @@ function group(rows: Record<string, unknown>[], direction: 'in' | 'out'): Record
   }
   return [...byEdge].sort(([a], [b]) => a < b ? -1 : 1).map(([edge, list]) => {
     const confidences = list.map((r) => Number(r.confidence)).filter((c) => !Number.isNaN(c)).sort((a, b) => a - b);
-    const low = confidences[0], high = confidences[confidences.length - 1];
+    const text = (v: unknown) => v === null || v === undefined ? undefined : String(v);
     return {
-      group: groupOf(edge), edge, direction, count: list.length,
-      derived_by: [...new Set(list.map((r) => String(r.derived_by ?? '')).filter(Boolean))].sort().join(', '),
-      confidence: confidences.length === 0 ? '' : low === high ? String(low) : `${low}–${high}`,
-      evidence: String((list.find((r) => Array.isArray(r.evidence) && r.evidence.length)?.evidence as string[] ?? [])[0] ?? ''),
-      targets: list.slice(0, HOP_TARGETS).map((r) => String(r.other)).join(', ') + (list.length > HOP_TARGETS ? `, +${list.length - HOP_TARGETS} more` : ''),
+      group: groupOf(edge, groups), edge, direction, count: list.length,
+      derived_by: [...new Set(list.map((r) => String(r.derived_by ?? '')).filter(Boolean))].sort(),
+      confidence: confidences.length ? [confidences[0], confidences[confidences.length - 1]] as [number, number] : null,
+      evidence: (list.find((r) => Array.isArray(r.evidence) && r.evidence.length)?.evidence as string[] | undefined) ?? [],
+      targets: list.slice(0, HOP_TARGETS).map((r) => ({id: String(r.other), name: text(r.name), type: text(r.type)})),
     };
   });
 }
@@ -356,7 +326,7 @@ function group(rows: Record<string, unknown>[], direction: 'in' | 'out'): Record
  * the substring query can no longer drop it (review 3 #9); both sets are then ranked together — authored types first,
  * exact before prefix before substring — and only the ranked whole is paged.
  */
-export async function find(conn: KuzuConnection, text: string, options: OpsOptions): Promise<OpsResult> {
+export async function find(conn: KuzuConnection, text: string, options: OpsOptions): Promise<Answer> {
   const q = text.trim().toLowerCase();
   const select = `RETURN n.${quote('id')} AS id, n.${quote('type')} AS type, n.${quote('name')} AS name, n.${quote('status')} AS status`;
   const exact: Record<string, unknown>[] = [];
@@ -371,7 +341,7 @@ export async function find(conn: KuzuConnection, text: string, options: OpsOptio
     const both = await Promise.all([
       run(conn, `WITH $q AS q MATCH (n:${quote(table)}) WHERE ${hit('=')} ${select}`, {q}),
       run(conn, `WITH $q AS q MATCH (n:${quote(table)}) WHERE ${hit('CONTAINS')}` +
-        `${columns.includes('description') ? ` OR lower(n.${quote('description')}) CONTAINS q` : ''} ${select} LIMIT ${options.scan ?? SEARCH_SCAN}`, {q}),
+        `${columns.includes('description') ? ` OR lower(n.${quote('description')}) CONTAINS q` : ''} ${select} ORDER BY id LIMIT ${options.scan ?? SEARCH_SCAN}`, {q}),
     ]);
     exact.push(...both[0].rows);
     scanned.push(...both[1].rows);
@@ -389,8 +359,8 @@ export async function find(conn: KuzuConnection, text: string, options: OpsOptio
   };
   const seen = new Set<string>();
   const rows = [...exact, ...scanned].filter((r) => !seen.has(String(r.id)) && seen.add(String(r.id)))
-    .map((row) => ({...row, match: rank(row)}))
-    .sort((a, b) => vocabulary(a) - vocabulary(b) || a.match - b.match || (String(a.id) < String(b.id) ? -1 : 1));
+    .map((row): Record<string, unknown> => ({...row, match: rank(row)}))
+    .sort((a, b) => vocabulary(a) - vocabulary(b) || (a.match as number) - (b.match as number) || (String(a.id) < String(b.id) ? -1 : 1));
   return {op: 'find', target: {text}, sections: [section('matches', rows, options.limit)]};
 }
 
@@ -404,93 +374,4 @@ async function evidence(conn: KuzuConnection, ids: string[]): Promise<Record<str
   const automated = await run(conn, `MATCH (t)-[:${quote('AUTOMATES')}]->(s)-[:${quote('COVERS')}]->(f:Feature) WHERE f.${quote('id')} IN $ids ` +
     `RETURN f.${quote('id')} AS feature, t.${quote('id')} AS artifact, 'automation' AS kind, t.${quote('framework')} AS framework`, {ids});
   return [...rows, ...automated.rows];
-}
-
-/** What the manifest says about the Dart pass; every op and every report leads with it unless the pass is `ok`. */
-export function coverageNote(sources: Record<string, string> | undefined): string | undefined {
-  const status = sources?.dart;
-  if (status === undefined || status === 'missing') return 'Dart coverage unknown (the dart extractor did not run)';
-  return /^ok\b/.test(status) ? undefined : 'Dart coverage partial (some markers did not resolve)';
-}
-
-/** What each source contributes, so a caveat names what is missing instead of a status word. */
-const SOURCE_MEANS: Record<string, string> = {
-  backlog: 'tickets, their state and who they are assigned to',
-  docs: 'documentation pages, their headings and the mentions in them',
-  git: 'commits and what a release includes',
-  homes: 'feature homes and the files they claim',
-  membership: 'file ownership',
-  people: 'people, teams and customers',
-  process: 'releases, scenarios and tutorials',
-  releases: 'release records',
-  'ts-changelog': 'changelog entries',
-  'ts-declarations': 'source files, declarations and their inheritance',
-  'ts-functions': 'registered functions, scripts, queries and containers',
-  'ts-imports': 'imports between source files',
-  'ts-markers': 'the `//feature:` markers in source files',
-  'ts-packages': 'packages, libraries and their dependencies',
-  'ts-samples': 'API samples',
-  'ts-tests': 'tests and their suites',
-  'ts-uses': 'JS API usage',
-};
-
-/** One caveat per source the manifest does not report as `ok`, Dart first: what an answer here cannot be based on. */
-export function sourceCaveats(sources: Record<string, string> | undefined): string[] {
-  const notes: string[] = [];
-  const dart = coverageNote(sources);
-  if (dart) notes.push(dart);
-  for (const [name, status] of Object.entries(sources ?? {}).sort(([a], [b]) => a < b ? -1 : 1)) {
-    if (name === 'dart' || /^ok\b/.test(status)) continue;
-    const means = SOURCE_MEANS[name] ?? `what ${name} contributes`;
-    const reach = status === 'missing' ? 'no' : status === 'stale' ? 'possibly out-of-date' : 'incomplete';
-    notes.push(`${name} ${status}: ${reach} coverage of ${means}`);
-  }
-  return notes;
-}
-
-/** `via` is the chain a reader follows; `path` is the same chain as data. A table shows one, JSON the other. */
-function forOutput(rows: Record<string, unknown>[], output: OutputFormat): Record<string, unknown>[] {
-  if (!rows.some((r) => r.path !== undefined)) return rows;
-  const drop = output === 'json' ? 'via' : 'path';
-  return rows.map((row) => {
-    const {[drop]: _, ...rest} = row;
-    return rest;
-  });
-}
-
-export function printOps(result: OpsResult, output: OutputFormat): void {
-  if (output === 'json') {
-    printOutput({...result, sections: result.sections.map((s) => ({...s, rows: forOutput(s.rows, output)}))}, 'json');
-    return;
-  }
-  for (const note of result.notes ?? []) console.log(note);
-  if (result.target && result.op !== 'find') console.log(`${result.op} ${result.target.id}${result.target.name ? ` (${result.target.name})` : ''}`);
-  for (const section of result.sections) {
-    if (!section.rows.length) {
-      console.log(`\n${section.empty ?? `${section.title} (0)`}`);
-      continue;
-    }
-    const total = section.total ?? section.rows.length;
-    const count = section.rows.length < total ? `${section.rows.length} of ${total}; --limit to see more` : `${total}`;
-    console.log(`\n${section.title} (${count})`);
-    if (output !== 'table' || section.rows[0].group === undefined) {
-      printOutput(forOutput(section.rows, output), output, CELL_BUDGET);
-      continue;
-    }
-    // a table gets the group as a sub-header instead of a repeated column; the rows arrive already in group order
-    for (const [name, rows] of byGroup(section.rows)) {
-      console.log(`\n  ${name || 'ungrouped'}`);
-      printOutput(rows.map(({group: _, ...rest}) => rest), output, CELL_BUDGET);
-    }
-  }
-}
-
-function byGroup(rows: Record<string, unknown>[]): [string, Record<string, unknown>[]][] {
-  const out: [string, Record<string, unknown>[]][] = [];
-  for (const row of rows) {
-    const name = String(row.group ?? '');
-    if (!out.length || out[out.length - 1][0] !== name) out.push([name, []]);
-    out[out.length - 1][1].push(row);
-  }
-  return out;
 }

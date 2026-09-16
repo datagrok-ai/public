@@ -1,6 +1,6 @@
 /// `grok kg build` WO-3c (build-plan.md): the ts-tests, ts-samples, ts-changelog and docs extractors against the mini
 /// monorepo under fixtures/kg/build, and the text parsers they share.
-import {describe, it, expect, vi} from 'vitest';
+import {describe, it, expect} from 'vitest';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
@@ -8,12 +8,12 @@ import {fileURLToPath} from 'url';
 import {parseDgTests, parsePlaywrightTests, blankComments} from '../utils/kg/build/extract/ts/tests';
 import {parseChangelog} from '../utils/kg/build/extract/ts/changelog';
 import {parseSampleHeader} from '../utils/kg/build/extract/ts/samples';
-import {idTokens, ticketTokens, leadingId, kebab} from '../utils/kg/build/extract/markers';
-import {currentDir} from '../utils/kg/build/write';
+import {idTokens, ticketTokens, leadingId} from '../utils/kg/build/extract/markers';
+import {kebab} from '../utils/kg/ids';
 import {kg} from '../commands/kg';
+import {copyFixture, buildFixture} from './kg-fixture';
 
 const fixture = path.join(path.dirname(fileURLToPath(import.meta.url)), 'fixtures', 'kg', 'build');
-const KG_DIR = path.join('core', 'docs', 'knowledge-graph');
 const TESTS = 'public/packages/Tested/src/tests/demo-tests.ts';
 const PLAYWRIGHT = 'public/packages/Tested/playwright/basic.test.ts';
 const SPEC = 'public/packages/UsageAnalysis/files/TestTrack/Viewers/ScatterPlot/scatterplot-legend-spec.ts';
@@ -23,30 +23,8 @@ const BIO = 'public/help/domains/bio/bio.md';
 const PROJECT = 'public/help/datagrok/project.md';
 const SEQUENCES = 'public/help/domains/bio/sequences.md';
 
-async function build(): Promise<{manifest: any, rows: (file: string) => any[], problems: Record<string, string[]>}> {
-  const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'grok-kg-3c-'));
-  fs.cpSync(fixture, repo, {recursive: true});
-  const log = vi.spyOn(console, 'log').mockImplementation(() => {});
-  const error = vi.spyOn(console, 'error').mockImplementation(() => {});
-  const before = process.exitCode;
-  try {
-    await kg({_: ['kg', 'build'], kg: path.join(repo, KG_DIR), only: 'homes,ts-packages,ts-declarations,ts-tests,ts-samples,ts-changelog,docs', db: false, output: 'json'});
-    expect(error.mock.calls).toEqual([]);
-    expect(process.exitCode).toBeUndefined();
-    const out = currentDir(path.join(repo, '.kg'))!;
-    const rows = (file: string) => {
-      const p = path.join(out, file.startsWith('reports/') ? file : `data/${file}.jsonl`);
-      return fs.existsSync(p) ? fs.readFileSync(p, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l)) : [];
-    };
-    return {manifest: JSON.parse(String(log.mock.calls[0][0])), rows, problems: JSON.parse(fs.readFileSync(path.join(out, 'reports', 'problems.json'), 'utf8'))};
-  } finally {
-    process.exitCode = before;
-    log.mockRestore();
-    error.mockRestore();
-  }
-}
 
-const graph = build();
+const graph = buildFixture(copyFixture('build'), 'homes,ts-packages,ts-declarations,ts-tests,ts-samples,ts-changelog,docs');
 const byId = (rows: any[], id: string) => rows.find((r) => r.id === id);
 const edges = (rows: any[], from?: string, to?: string) => rows.filter((e) => (from === undefined || e.from === from) && (to === undefined || e.to === to));
 

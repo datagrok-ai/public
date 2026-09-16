@@ -1,6 +1,6 @@
 /// `grok kg build` WO-3a (build-plan.md): the annotation parser, and the ts-packages / ts-functions
 /// extractors against the mini monorepo under fixtures/kg/build, whose type files copy the real ones.
-import {describe, it, expect, vi} from 'vitest';
+import {describe, it, expect} from 'vitest';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
@@ -8,37 +8,15 @@ import {fileURLToPath} from 'url';
 import {parseHeaderLines, parseParam, parseFunctionHeaders, parseScriptHeader, parseQueryHeaders} from '../utils/kg/build/annotations';
 import {Emitter} from '../utils/kg/build/emitter';
 import {loadTypeSystem} from '../utils/kg/types';
-import {currentDir} from '../utils/kg/build/write';
 import {kg} from '../commands/kg';
+import {copyFixture, buildFixture} from './kg-fixture';
 
 const fixture = path.join(path.dirname(fileURLToPath(import.meta.url)), 'fixtures', 'kg', 'build');
 const KG_DIR = path.join('core', 'docs', 'knowledge-graph');
 const realKg = path.resolve(fixture, '..', '..', '..', '..', '..', '..', '..', 'core', 'docs', 'knowledge-graph');
 
-async function build(): Promise<{manifest: any, rows: (file: string) => any[], problems: Record<string, string[]>}> {
-  const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'grok-kg-3a-'));
-  fs.cpSync(fixture, repo, {recursive: true});
-  const log = vi.spyOn(console, 'log').mockImplementation(() => {});
-  const error = vi.spyOn(console, 'error').mockImplementation(() => {});
-  const before = process.exitCode;
-  try {
-    await kg({_: ['kg', 'build'], kg: path.join(repo, KG_DIR), only: 'ts-packages,ts-functions', db: false, output: 'json'});
-    expect(error.mock.calls).toEqual([]);
-    expect(process.exitCode).toBeUndefined();
-    const out = currentDir(path.join(repo, '.kg'))!;
-    const rows = (file: string) => {
-      const p = path.join(out, file.startsWith('reports/') ? file : `data/${file}.jsonl`);
-      return fs.existsSync(p) ? fs.readFileSync(p, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l)) : [];
-    };
-    return {manifest: JSON.parse(String(log.mock.calls[0][0])), rows, problems: JSON.parse(fs.readFileSync(path.join(out, 'reports', 'problems.json'), 'utf8'))};
-  } finally {
-    process.exitCode = before;
-    log.mockRestore();
-    error.mockRestore();
-  }
-}
 
-const graph = build();
+const graph = buildFixture(copyFixture('build'), 'ts-packages,ts-functions');
 const byId = (rows: any[], id: string) => rows.find((r) => r.id === id);
 
 describe('annotation parser (build-plan.md WO-3a)', () => {

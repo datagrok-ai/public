@@ -1,7 +1,9 @@
 /// Ids of extracted nodes (conventions.md §2.2, build-plan.md "Common contracts"): one constructor per
 /// scheme, the inverse `parseId`, and the path-derived conventions the extractors share (language,
-/// source layer, location visibility, doc kind).
+/// source layer, location visibility, doc kind), and the `source-file` row every extractor emits for a file.
+import * as fs from 'fs';
 import * as path from 'path';
+import type {Row} from './normalize';
 
 /** Extracted id schemes and the node types they name. */
 export const SCHEME_TYPES: Record<string, string[]> = {
@@ -18,6 +20,8 @@ export const JIRA_KEY = /^GROK-\d+$/;
 export const PAGE_PATH = /^[^\s:]+\/[^\s:]+\.mdx?$/i;
 /** The user help tree; a page under it documents whatever cites it. */
 export const HELP_DIR = 'public/help';
+/** A `//help-url:` or `HelpUrl` value: the site-relative or absolute help URL, with any extension, slash and fragment. */
+const HELP_URL = /^(?:https?:\/\/(?:[\w-]+\.)*datagrok\.ai)?\/help\/([^#?]+?)(?:\.mdx?)?\/?(?:[#?].*)?$/;
 /** Where a folder has to be for a home in it to own it, and where a file has to be to count as an orphan. */
 export const CODE_ROOTS = ['core/client/', 'core/server/', 'core/shared/', 'public/packages/', 'public/libraries/', 'public/js-api/'];
 export const GITHUB_KEY = /^gh:public#\d+$/;
@@ -169,6 +173,40 @@ export function stubName(id: string): string {
   if (p.path !== undefined) return path.posix.basename(p.path);
   if (p.parts) return p.parts[p.parts.length - 1];
   return titleCase(p.local.split('/').pop()!);
+}
+
+/** `ScatterPlot` -> `scatter-plot`, `MLMethods` -> `ml-methods`, `initial runs` -> `initial-runs`. */
+export function kebab(segment: string): string {
+  return segment.replace(/([a-z0-9])([A-Z])/g, '$1-$2').replace(/([A-Z]+)([A-Z][a-z])/g, '$1-$2').replace(/[\s_]+/g, '-').toLowerCase().replace(/-+/g, '-').replace(/^-|-$/g, '');
+}
+
+/** A Docusaurus link may drop the extension: `tile-viewer` is `tile-viewer.md`, `tile-viewer.mdx` or `tile-viewer/index.md`. */
+export function docCandidates(p: string): string[] {
+  return [`${p}.md`, `${p}.mdx`, `${p}/index.md`];
+}
+
+/** The help page a help URL points at, as a repo path: `.../help/datagrok/project` is one of `docCandidates` or
+ * `project/project.md` under public/help, whichever exists. */
+export function helpPage(repoRoot: string, url: string): string | undefined {
+  const m = HELP_URL.exec(url.trim());
+  if (!m) return undefined;
+  const p = `${HELP_DIR}/${m[1]}`;
+  return [...docCandidates(p), `${p}/${path.posix.basename(p)}.md`].find((c) => fs.existsSync(path.join(repoRoot, c)));
+}
+
+/** Lines of [text]: one per newline, plus one for an unterminated last line; empty is 0. */
+export function countLines(text: string | Buffer): number {
+  if (!text.length) return 0;
+  const buffer = typeof text === 'string' ? Buffer.from(text, 'utf8') : text;
+  let n = 0;
+  for (let at = buffer.indexOf(0x0A); at >= 0; at = buffer.indexOf(0x0A, at + 1)) n++;
+  return buffer[buffer.length - 1] === 0x0A ? n : n + 1;
+}
+
+/** The `source-file` row for [file]: what its path says, then [extra] (`loc`, `generated`, `package`). */
+export function sourceFileRow(file: string, extra: Row): Row {
+  return {type: 'source-file', id: fileId(file), name: path.posix.basename(file), path: file, language: languageOf(file), provenance: 'filesystem',
+    source_layer: sourceLayerOf(file), ...extra};
 }
 
 /** `scatter-plot` -> `Scatter plot`. */

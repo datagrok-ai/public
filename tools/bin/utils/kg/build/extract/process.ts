@@ -5,15 +5,14 @@ import * as fs from 'fs';
 import * as path from 'path';
 import {spawnSync} from 'child_process';
 import {Emitter} from '../emitter';
-import {Row} from '../normalize';
-import {BuildContext, Extractor} from '../registry';
+import {Row} from '../../normalize';
+import {BuildContext, Extractor} from '../context';
 import {splitFrontmatter, parseYamlDocument} from '../../frontmatter';
 import {HomeSet} from '../../homes';
-import {ticketId, relId, custId, commitId} from '../ids';
+import {ticketId, relId, custId, commitId} from '../../ids';
 import {homesOf, idTokens, ticketTokens, ticketStub, resolveMention} from './markers';
 
 /** The snapshot repo beside the monorepo, then the place it is cloned to on the dev boxes (build-plan.md WO-5). */
-const BACKLOG_FALLBACK = 'C:/dg/backlog';
 const RELEASE_DIR = 'core/docs/release';
 const OWNERS = 'autofix/cfg/owners.json';
 /** A fix version that names a release rather than a bucket such as `v1` or `Next patch version`. */
@@ -29,7 +28,8 @@ const RESOLUTION_CLAIM = /\b(?:fix|fixes|fixed|resolve|resolves|resolved|close|c
 
 export const processExtractor: Extractor = {
   name: 'process',
-  layer: 'process',
+  describes: {backlog: 'tickets, their state and who they are assigned to', git: 'commits and what a release includes',
+    people: 'people, teams and customers', process: 'releases, scenarios and tutorials', releases: 'release records'},
   modes: ['full'],
   run(ctx: BuildContext, emitter: Emitter): void {
     new ProcessLayer(ctx, emitter).run();
@@ -75,10 +75,10 @@ class ProcessLayer {
     this.people.finish();
   }
 
-  /** `<repoRoot>/../backlog`, the `--backlog` flag, or the dev-box clone; nothing of the three means no ticket layer. */
+  /** The snapshot the CLI resolved (`backlogRoot`); none means no ticket layer. */
   private backlogDir(): string | undefined {
-    const candidates = this.ctx.backlogDir ? [this.ctx.backlogDir] : [path.resolve(this.ctx.repoRoot, '..', 'backlog'), BACKLOG_FALLBACK];
-    return candidates.find((dir) => fs.existsSync(path.join(dir, 'index.jsonl')));
+    const dir = this.ctx.backlogDir;
+    return dir && fs.existsSync(path.join(dir, 'index.jsonl')) ? dir : undefined;
   }
 
   private tickets(): void {
@@ -342,12 +342,11 @@ export class People {
   }
 
   private backlogTaxonomy(): Record<string, string> {
-    const dir = this.ctx.backlogDir ?? path.resolve(this.ctx.repoRoot, '..', 'backlog');
-    for (const file of [path.join(dir, 'taxonomy.yaml'), path.join(BACKLOG_FALLBACK, 'taxonomy.yaml')])
-      if (fs.existsSync(file)) {
-        const customers = parseYamlDocument(fs.readFileSync(file, 'utf8')).data?.customers;
-        return customers && typeof customers === 'object' ? customers as Record<string, string> : {};
-      }
+    const file = this.ctx.backlogDir && path.join(this.ctx.backlogDir, 'taxonomy.yaml');
+    if (file && fs.existsSync(file)) {
+      const customers = parseYamlDocument(fs.readFileSync(file, 'utf8')).data?.customers;
+      return customers && typeof customers === 'object' ? customers as Record<string, string> : {};
+    }
     return {};
   }
 }

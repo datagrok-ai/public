@@ -249,12 +249,12 @@ export function generateFeatures(system: TypeSystem, homes: HomeSet, treeDir = '
   // The tree a type belongs to is the outermost hierarchical ancestor sharing its prefix: feature, concept, initiative, scenario.
   const familyOf = (t: NodeType) => [...t.chain].reverse().find((n) => system.nodes.get(n)?.hierarchical && system.nodes.get(n)?.prefix === t.prefix) ?? t.name;
   const insert = (family: string, localId: string, prefix: string | undefined, set: (n: TreeNode) => void) => {
-    let node = families.get(family);
+    let node: TreeNode | undefined = families.get(family);
     if (!node) families.set(family, node = {id: '', children: new Map()});
     const segments = localId.split('/');
     for (let i = 0; i < segments.length; i++) {
       const childId = (prefix ? `${prefix}:` : '') + segments.slice(0, i + 1).join('/');
-      let child = node.children.get(segments[i]);
+      let child: TreeNode | undefined = node.children.get(segments[i]);
       if (!child) node.children.set(segments[i], child = {id: childId, children: new Map()});
       node = child;
     }

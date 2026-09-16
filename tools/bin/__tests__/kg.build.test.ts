@@ -1,65 +1,40 @@
 /// `grok kg build` (build-plan.md WO-1, WO-2): the emitter's merge rules and finalize passes, the
 /// deterministic writer and manifest, the public projection, and the home-document layer's rows
 /// against the mini monorepo under fixtures/kg/good.
-import {describe, it, expect, vi} from 'vitest';
+import {describe, it, expect} from 'vitest';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import {fileURLToPath} from 'url';
 import {spawnSync} from 'child_process';
-import {loadTypeSystem, TypeSystem} from '../utils/kg/types';
+import {TypeSystem} from '../utils/kg/types';
 import {Emitter, Graph} from '../utils/kg/build/emitter';
-import {normalizeRow} from '../utils/kg/build/normalize';
-import {batchId, buildInputs, currentDir, readCurrent} from '../utils/kg/build/write';
-import {parseId, declId, docId, testId, epId, ticketId, stubName} from '../utils/kg/build/ids';
+import {normalizeRow} from '../utils/kg/normalize';
+import {batchId, buildInputs} from '../utils/kg/build/write';
+import {readCurrent} from '../utils/kg/generation';
+import {parseId, declId, docId, testId, epId, ticketId, stubName} from '../utils/kg/ids';
 import {firstParagraph} from '../utils/kg/build/extract/homes';
 import {createRequire} from 'module';
 import {readGraph, makeReport} from '../utils/kg/report';
 import {kg} from '../commands/kg';
+import {copyFixture, buildFixture, runKg, write, fixtureTypes, kgRoot, KG_DIR, Built} from './kg-fixture';
 
 const fixtures = path.join(path.dirname(fileURLToPath(import.meta.url)), 'fixtures', 'kg');
-const KG_DIR = path.join('core', 'docs', 'knowledge-graph');
-const system: TypeSystem = loadTypeSystem(path.join(fixtures, 'good', KG_DIR));
+const system: TypeSystem = fixtureTypes('good');
 const BATCH = 'b-test';
 const homesModule = createRequire(import.meta.url)('../utils/kg/homes.js');
 
+
+
+
+
 function makeRepo(): string {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'grok-kg-build-'));
-  fs.cpSync(path.join(fixtures, 'good'), dir, {recursive: true});
-  return dir;
-}
-
-function write(root: string, file: string, text: string): void {
-  fs.mkdirSync(path.dirname(path.join(root, file)), {recursive: true});
-  fs.writeFileSync(path.join(root, file), text);
-}
-
-async function run(argv: Record<string, unknown>): Promise<{ok: boolean, out: string[], err: string[], exitCode: number | undefined}> {
-  const log = vi.spyOn(console, 'log').mockImplementation(() => {});
-  const error = vi.spyOn(console, 'error').mockImplementation(() => {});
-  const before = process.exitCode;
-  try {
-    const ok = await kg(argv);
-    return {ok, out: log.mock.calls.map((c) => String(c[0])), err: error.mock.calls.map((c) => String(c[0])), exitCode: process.exitCode as number | undefined};
-  } finally {
-    process.exitCode = before;
-    log.mockRestore();
-    error.mockRestore();
-  }
+  return copyFixture('good');
 }
 
 /** Builds the homes layer of a fixture copy and returns the repo, the manifest and a JSONL reader. */
-async function build(repo = makeRepo(), extra: Record<string, unknown> = {}): Promise<{repo: string, manifest: any, rows: (file: string) => any[], out: string, root: string}> {
-  const root = typeof extra.out === 'string' ? extra.out : path.join(repo, ...(extra.public ? ['public', '.kg'] : ['.kg']));
-  const result = await run({_: ['kg', 'build'], kg: path.join(repo, KG_DIR), only: 'homes', db: false, output: 'json', ...extra});
-  expect(result.err).toEqual([]);
-  expect(result.exitCode).toBeUndefined();
-  const out = currentDir(root)!;
-  const rows = (file: string) => {
-    const p = path.join(out, file.startsWith('reports/') ? file : `data/${file}`) + (file.endsWith('.jsonl') ? '' : '.jsonl');
-    return fs.existsSync(p) ? fs.readFileSync(p, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l)) : [];
-  };
-  return {repo, manifest: JSON.parse(result.out[0]), rows, out, root};
+function build(repo = makeRepo(), extra: Record<string, unknown> = {}): Promise<Built> {
+  return buildFixture(repo, 'homes', extra);
 }
 
 function node(graph: Graph, id: string): any {
@@ -134,9 +109,10 @@ describe('emitter merge rules (build-plan.md WO-1)', () => {
     const uses = graph.edges.filter((x) => x.type === 'uses-concept');
     expect(uses).toHaveLength(1);
     expect(uses[0]).toMatchObject({confidence: 1, role: 'central', batch: BATCH});
-    expect(uses[0].evidence).toHaveLength(20);
-    expect(uses[0].evidence[0]).toBe('core/docs/0.md');
-    expect(uses[0].evidence).not.toContain('core/docs/zz.md');
+    const evidence = uses[0].evidence as string[];
+    expect(evidence).toHaveLength(20);
+    expect(evidence[0]).toBe('core/docs/0.md');
+    expect(evidence).not.toContain('core/docs/zz.md');
   });
 
   it('exempts a partial stub from required members, drops an incomplete real row into invalid.jsonl', () => {
@@ -296,10 +272,10 @@ describe('grok kg build: writer, manifest and public projection (build-plan.md W
     expect(fs.existsSync(path.join(out, 'gen', readCurrent(out)!, 'manifest.json'))).toBe(true);
     expect(fs.readFileSync(path.join(out, 'current'), 'utf8').trim()).toMatch(new RegExp(`^${manifest.batch}-`));
     expect(fs.existsSync(path.join(repo, '.kg'))).toBe(false);
-    const bad = await run({_: ['kg', 'build'], kg: path.join(repo, KG_DIR), only: 'homes,nope', db: false});
+    const bad = await runKg({_: ['kg', 'build'], kg: path.join(repo, KG_DIR), only: 'homes,nope', db: false});
     expect(bad.exitCode).toBe(1);
     expect(bad.err).toEqual(['--only names unknown extractors: nope (known: homes, ts-packages, ts-functions, ts-declarations, ts-imports, ts-uses, ts-tests, ts-samples, ts-changelog, docs, ts-markers, dart, process, membership)']);
-    const table = await run({_: ['kg', 'build'], kg: path.join(repo, KG_DIR), only: 'homes', db: false, out});
+    const table = await runKg({_: ['kg', 'build'], kg: path.join(repo, KG_DIR), only: 'homes', db: false, out});
     expect(table.out).toHaveLength(1);
     expect(table.out[0]).toMatch(/^wrote .*elsewhere\/gen\/b-[0-9a-f]{12}-\w{6}: \d+ nodes \(concept 2, .*feature 7.*\), \d+ edges \(.*part-of 5.*\); sources: homes ok; problems: partial_stubs \d+; batch b-[0-9a-f]{12} \(full\)$/);
   });

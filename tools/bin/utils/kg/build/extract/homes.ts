@@ -9,14 +9,14 @@ import {lookupHome, Home, HomeSet, AnnotatedPage, HOME_IGNORE, GLOB_MAGIC, REPO_
 import {extractCitations, proseLines, Citation} from '../../citations';
 import {keyLine, Frontmatter} from '../../frontmatter';
 import {Emitter} from '../emitter';
-import {Row} from '../normalize';
-import {BuildContext, Extractor} from '../registry';
+import {Row} from '../../normalize';
+import {BuildContext, Extractor} from '../context';
 import {homesOf} from './markers';
-import {PREFIXED_ID, SCHEMED_ID, JIRA_KEY, PAGE_PATH, CODE_ROOTS, HELP_DIR, parseId, ticketId, declId, docId, fileId, languageOf, sourceLayerOf, docKind} from '../ids';
+import {PREFIXED_ID, SCHEMED_ID, JIRA_KEY, PAGE_PATH, CODE_ROOTS, HELP_DIR, parseId, ticketId, declId, docId, fileId, languageOf, sourceLayerOf, docKind, docCandidates, countLines, sourceFileRow} from '../../ids';
 
 export const homesExtractor: Extractor = {
   name: 'homes',
-  layer: 'home-document',
+  describes: {homes: 'feature homes and the files they claim'},
   modes: ['full', 'public'],
   run(ctx: BuildContext, emitter: Emitter): void {
     const homes = homesOf(ctx);
@@ -120,8 +120,7 @@ class HomeLayer {
     }
     const line = keyLine(subject.fm, 'code');
     for (const p of this.expandRoot(file)) {
-      if (!this.emitter.node({type: 'source-file', id: fileId(p), name: path.posix.basename(p), path: p, loc: countLines(path.join(this.repoRoot, p)),
-        language: languageOf(p), provenance: 'filesystem', source_layer: sourceLayerOf(p)}).accepted) continue;
+      if (!this.emitter.node(sourceFileRow(p, {loc: countLines(fs.readFileSync(path.join(this.repoRoot, p)))})).accepted) continue;
       this.emitter.claim({file: p, feature: subject.id, rung: 2, source: 'home', props, line});
       claimed.add(p);
     }
@@ -180,7 +179,7 @@ class HomeLayer {
   private resolveDocLink(c: Citation): string {
     const p = c.resolved!;
     if (c.kind === 'backtick' || path.posix.extname(p) || fs.existsSync(path.join(this.repoRoot, p))) return p;
-    return [`${p}.md`, `${p}.mdx`, `${p}/index.md`].find((a) => fs.existsSync(path.join(this.repoRoot, a))) ?? p;
+    return docCandidates(p).find((a) => fs.existsSync(path.join(this.repoRoot, a))) ?? p;
   }
 
   private resolveMember(value: unknown, member: Member, where: string): unknown {
@@ -245,10 +244,3 @@ function repoPath(p: string): string {
   return repo ? `${repo[1]}/${repo[2]}` : p.trim();
 }
 
-export function countLines(file: string): number {
-  const buffer = fs.readFileSync(file);
-  if (!buffer.length) return 0;
-  let n = 0;
-  for (let at = buffer.indexOf(0x0A); at >= 0; at = buffer.indexOf(0x0A, at + 1)) n++;
-  return buffer[buffer.length - 1] === 0x0A ? n : n + 1;
-}

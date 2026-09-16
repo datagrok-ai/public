@@ -10,14 +10,15 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import {fileURLToPath} from 'url';
-import {spawnSync} from 'child_process';
-import {loadTypeSystem, TypeSystem} from '../utils/kg/types';
+import {loadTypeSystem, edgeGroups, TypeSystem} from '../utils/kg/types';
 import {loadKuzu, load as loadIndex, open, run} from '../utils/kg/kuzu';
-import {find, explain, impact, testsFor, resolveTarget, printOps, OpsResult} from '../utils/kg/ops';
+import {find, explain, impact, testsFor, resolveTarget} from '../utils/kg/ops';
+import {Answer} from '../utils/kg/answer';
+import {printAnswer} from '../utils/kg/print';
 import {OutputFormat} from '../utils/server-output';
 import {readGraph, makeReport, REPORT_NAMES, ReportName} from '../utils/kg/report';
-import {currentDir} from '../utils/kg/build/write';
 import {kg} from '../commands/kg';
+import {copyFixture, buildFixture, fixtureTypes, git, Built} from './kg-fixture';
 
 const fixture = path.join(path.dirname(fileURLToPath(import.meta.url)), 'fixtures', 'kg', 'build');
 const KG_DIR = path.join('core', 'docs', 'knowledge-graph');
@@ -25,24 +26,12 @@ const CACHING = 'core/docs/CACHING.md';
 const BIO_HOME = 'public/help/domains/bio/bio.md';
 const SEQUENCES = 'public/help/domains/bio/sequences.md';
 const RENDERER = 'core/client/d4/lib/src/legends/legend_renderer.dart';
-const LIMIT = {limit: 50};
+const LIMIT = {limit: 50, groups: edgeGroups(fixtureTypes('build'))};
 
-interface Built {
-  repo: string;
-  out: string;
-  manifest: any;
-  rows: (file: string) => any[];
-  report: (name: string) => any;
-}
-
-function git(repo: string, ...args: string[]): string {
-  return spawnSync('git', ['-c', 'user.email=kg@test', '-c', 'user.name=kg', '-C', repo, ...args], {encoding: 'utf8'}).stdout.trim();
-}
 
 /** The fixture as a git repository with one commit. */
 function makeRepo(): string {
-  const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'grok-kg-int-'));
-  fs.cpSync(fixture, repo, {recursive: true});
+  const repo = copyFixture('build');
   git(repo, 'init', '-q');
   git(repo, 'add', '-A');
   git(repo, 'commit', '-q', '-m', 'fixture');
@@ -52,8 +41,7 @@ function makeRepo(): string {
 
 /** The same fixture with `public/` as a repository of its own, which the monorepo commit records as a gitlink. */
 function makeSubmoduleRepo(): string {
-  const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'grok-kg-sub-'));
-  fs.cpSync(fixture, repo, {recursive: true});
+  const repo = copyFixture('build');
   const publicDir = path.join(repo, 'public');
   git(publicDir, 'init', '-q');
   git(publicDir, 'add', '-A');
@@ -72,27 +60,6 @@ function stampRelease(repo: string): void {
   fs.writeFileSync(file, fs.readFileSync(file, 'utf8').replace(/\b(?:aaaaaaaaaa|bbbbbbbbbb)\b/g, sha));
 }
 
-async function build(repo: string, extra: Record<string, unknown> = {}): Promise<Built> {
-  const log = vi.spyOn(console, 'log').mockImplementation(() => {});
-  const error = vi.spyOn(console, 'error').mockImplementation(() => {});
-  const before = process.exitCode;
-  try {
-    await kg({_: ['kg', 'build'], kg: path.join(repo, KG_DIR), backlog: path.join(repo, 'backlog'), db: false, output: 'json', ...extra});
-    expect(error.mock.calls).toEqual([]);
-    const out = currentDir(path.join(repo, ...(extra.public ? ['public', '.kg'] : ['.kg'])))!;
-    const rows = (file: string) => {
-      const p = path.join(out, file.startsWith('reports/') ? file : `data/${file}.jsonl`);
-      return fs.existsSync(p) ? fs.readFileSync(p, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l)) : [];
-    };
-    const report = (name: string) => JSON.parse(fs.readFileSync(path.join(out, 'reports', `${name}.json`), 'utf8'));
-    return {repo, out, manifest: JSON.parse(String(log.mock.calls[0][0])), rows, report};
-  }
-  finally {
-    process.exitCode = before;
-    log.mockRestore();
-    error.mockRestore();
-  }
-}
 
 /** Every JSONL file under `data/`, by name, so two builds can be compared byte for byte. */
 function dataFiles(out: string): Record<string, string> {
@@ -101,6 +68,10 @@ function dataFiles(out: string): Record<string, string> {
     for (const name of fs.readdirSync(path.join(out, 'data', kind)).sort())
       files[`${kind}/${name}`] = fs.readFileSync(path.join(out, 'data', kind, name), 'utf8');
   return files;
+}
+
+function build(repo: string, extra: Record<string, unknown> = {}): Promise<Built> {
+  return buildFixture(repo, undefined, extra);
 }
 
 const built = makeRepo();
@@ -131,7 +102,7 @@ describe('grok kg build over the fixture monorepo (build-plan.md WO-10)', () => 
       suite: 16, 'targets-release': 5, 'targets-semtype': 13, tests: 13, 'tracked-in': 2, user_help: 1, uses: 18,
     });
     expect(manifest.problems).toMatchObject({dangling_edges: 0, ambiguous_owners: 1, orphans: 28, partial_stubs: 23});
-  }, 120_000);
+  });
 
   it('writes the same bytes twice, with the same content-addressed batch and a later built_at', async () => {
     const {out, manifest} = await graph;
@@ -142,7 +113,7 @@ describe('grok kg build over the fixture monorepo (build-plan.md WO-10)', () => 
     expect(again.manifest.batch).toBe(manifest.batch);
     expect(again.manifest.built_at >= manifest.built_at).toBe(true);
     expect(Object.values(first).every((text) => !text.includes('built_at'))).toBe(true);
-  }, 120_000);
+  });
 
   it('reads the Dart sources of the fixture: files, declarations, tests and their suite', async () => {
     const {manifest, rows} = await graph;
@@ -156,7 +127,7 @@ describe('grok kg build over the fixture monorepo (build-plan.md WO-10)', () => 
       .toEqual(['HelpUrl', 'Histogram', 'Legend', 'LegendCache', 'LegendRenderer', 'ScatterPlot', 'Viewer', 'ViewerProps']);
     expect(rows('nodes/test').filter((t) => t.framework === 'dart').map((t) => t.category)).toEqual([undefined, 'placement']);
     expect(rows('nodes/test-suite').filter((s) => s.framework === 'dart')).toHaveLength(1);
-  }, 120_000);
+  });
 
   it('projects the public layer: public nodes only, no home, no owner, no source files, no reports', async () => {
     const {manifest, rows, out} = await build(makeRepo(), {public: true});
@@ -173,7 +144,7 @@ describe('grok kg build over the fixture monorepo (build-plan.md WO-10)', () => 
     // an edge survives only when both its ends did
     expect(rows('edges/owner')).toEqual([]);
     expect(rows('edges/covers')).toMatchObject([{from: 'TS:viewers/scatter-plot/ui', to: 'domains/bio'}]);
-  }, 120_000);
+  });
 });
 
 describe('the reports build writes and the report verb prints (build-plan.md WO-8, WO-10)', () => {
@@ -212,7 +183,7 @@ describe('the reports build writes and the report verb prints (build-plan.md WO-
     const {report} = await build(repo);
     expect(report('stale').sections[0].rows).toContainEqual({kind: 'citation', source: 'core/client/d4/lib/src/legends/README.md:9',
       target: 'core/client/d4/lib/src/legends/legend.dart', reason: "missing-cited-path: cited path 'core/client/d4/lib/src/legends/legend.dart' does not exist"});
-  }, 120_000);
+  });
 
   it('gives every feature a coverage row, counting its tests and the scenarios that cover it', async () => {
     const {report} = await graph;
@@ -257,7 +228,7 @@ describe('the reports build writes and the report verb prints (build-plan.md WO-
     expect(report.sections[0].rows).toEqual([{feature: 'platform/caching', name: 'Caching', owner: 'P:jane', relation: 'home', confidence: 1}]);
     expect(report.sections[1].rows).toEqual([{file: 'core/docs/CACHING.md', feature: 'platform/caching', relation: 'home', confidence: 1, change: 'modified'}]);
     expect(report.summary).toContain('1 files changed (0 deleted), 0 of them in no feature');
-  }, 120_000);
+  });
 
   it('separates owned, participating and orphan files per group, over the inventory it observed', async () => {
     const {report} = await graph;
@@ -276,7 +247,7 @@ describe('the reports build writes and the report verb prints (build-plan.md WO-
     expect(rows.length).toBeGreaterThan(0);
     expect(rows.every((r: any) => r.reason === 'unknown: the backlog snapshot is missing')).toBe(true);
     expect(report('stale').notes).toContain('the backlog snapshot was not read, so a tracked-in ticket is reported as unknown, not as absent');
-  }, 120_000);
+  });
 
   it('splits runnable, skipped and dynamic tests, counts what a feature inherits, and marks a stub', async () => {
     const {report} = await graph;
@@ -315,7 +286,7 @@ describe('the reports build writes and the report verb prints (build-plan.md WO-
     expect(report.summary).toContain('0 of them in no feature');
     expect(report.notes).toContain('1 deleted file had no owner in this graph either; they are listed as deleted');
     expect(report.notes).toContainEqual(expect.stringContaining('the graph was built at'));
-  }, 120_000);
+  });
 
   it('takes the public baseline from the gitlink the core base recorded', async () => {
     const repo = makeSubmoduleRepo();
@@ -330,7 +301,7 @@ describe('the reports build writes and the report verb prints (build-plan.md WO-
     // the monorepo sha names nothing inside the submodule: without the gitlink this diff failed and found no public file
     expect(report.notes.some((n: string) => n.startsWith('public/:'))).toBe(false);
     expect(report.sections[1].rows).toContainEqual({file: 'public/packages/Plain/src/package.ts', feature: '', relation: '', confidence: '', change: 'modified'});
-  }, 120_000);
+  });
 
   it('refuses a report it does not have, and diff without a base', async () => {
     const {repo} = await graph;
@@ -354,10 +325,10 @@ describe('the reports build writes and the report verb prints (build-plan.md WO-
 });
 
 /** What an op writes to the console, line by line. */
-function render(result: OpsResult, output: OutputFormat = 'table'): string[] {
+function render(result: Answer, output: OutputFormat = 'table'): string[] {
   const log = vi.spyOn(console, 'log').mockImplementation(() => {});
   try {
-    printOps(result, output);
+    printAnswer(result, output);
     return log.mock.calls.map((c) => String(c[0]));
   }
   finally {
@@ -365,7 +336,7 @@ function render(result: OpsResult, output: OutputFormat = 'table'): string[] {
   }
 }
 
-function csv(result: OpsResult): string {
+function csv(result: Answer): string {
   return render(result, 'csv').join('\n');
 }
 
@@ -382,11 +353,8 @@ describe('what an op prints (slice-results.md §10)', () => {
   });
 
   it('gives the edges section a sub-header per group in a table, and a group column in json and csv', () => {
-    const edges = {title: 'edges', total: 3, rows: [
-      {group: 'ownership', edge: 'IS_IMPLEMENTED_IN', direction: 'out', count: 2},
-      {group: 'evidence', edge: 'TESTS', direction: 'in', count: 4},
-      {group: 'reference', edge: 'owner', direction: 'out', count: 1},
-    ]};
+    const row = (group: string, edge: string, direction: string, count: number) => ({group, edge, direction, count, derived_by: [], confidence: null, evidence: [], targets: []});
+    const edges = {title: 'edges', total: 3, rows: [row('ownership', 'IS_IMPLEMENTED_IN', 'out', 2), row('evidence', 'TESTS', 'in', 4), row('reference', 'owner', 'out', 1)]};
     const lines = render({op: 'explain', target: {id: 'visualize/viewers'}, sections: [edges]});
     expect(lines.filter((l) => l.startsWith('\n  '))).toEqual(['\n  ownership', '\n  evidence', '\n  reference']);
     expect(lines.join('\n')).not.toContain('group');
@@ -433,7 +401,7 @@ describe('the index over the fixture graph (build-plan.md WO-7, WO-10)', () => {
     expect(rows[0].description).toBe(index.feature.description);
     expect((await run(conn, 'MATCH (n:Feature) RETURN count(n) AS n')).rows[0].n).toBe(9);
     expect(fs.existsSync(path.join(index.out, 'tmp'))).toBe(false);
-  }, 120_000);
+  });
 
   withKuzu('answers find, explain, impact and tests-for over the whole fixture', async () => {
     const {conn} = index.opened!;
@@ -443,7 +411,7 @@ describe('the index over the fixture graph (build-plan.md WO-7, WO-10)', () => {
     const bio = (await resolveTarget(conn, '~domains/bio'))!;
     const explained = await explain(conn, bio, LIMIT);
     expect(explained.sections[0].rows).toContainEqual({property: 'home', value: 'public/help/domains/bio/bio.md'});
-    expect(explained.sections[1].rows).toContainEqual(expect.objectContaining({edge: 'owner', direction: 'out', targets: 'P:jane'}));
+    expect(explained.sections[1].rows).toContainEqual(expect.objectContaining({edge: 'owner', direction: 'out', targets: [expect.objectContaining({id: 'P:jane'})]}));
 
     const tests = await testsFor(conn, bio, LIMIT);
     expect(tests.sections.find((s) => s.title === 'tests')!.rows.length).toBe(5);
@@ -454,7 +422,7 @@ describe('the index over the fixture graph (build-plan.md WO-7, WO-10)', () => {
     const reached = await impact(conn, renderer, LIMIT);
     expect(reached.sections[0].rows).toContainEqual(expect.objectContaining({feature: 'visualize/viewers/scatter-plot', relation: 'owns'}));
     expect(reached.sections[1].rows).toContainEqual({feature: 'visualize/viewers/scatter-plot', owner: 'P:jane', name: 'Jane Dev'});
-  }, 120_000);
+  });
 
   withKuzu('counts a section whole and pages it after, so a header tells a page from the total', async () => {
     const {conn} = index.opened!;
@@ -465,7 +433,7 @@ describe('the index over the fixture graph (build-plan.md WO-7, WO-10)', () => {
     expect(render({op: 'tests-for', target: bio, sections: [paged]})).toContain('\ntests (3 of 5; --limit to see more)');
     const whole = (await testsFor(conn, bio, LIMIT)).sections.find((s) => s.title === 'tests')!;
     expect(render({op: 'tests-for', target: bio, sections: [whole]})).toContain('\ntests (5)');
-  }, 120_000);
+  });
 
   withKuzu('answers for a home document and for a page that documents a feature, which have no file: node of their own', async () => {
     const {conn} = index.opened!;
@@ -481,7 +449,7 @@ describe('the index over the fixture graph (build-plan.md WO-7, WO-10)', () => {
       // a doc comment in viewer.dart names the page too, so it documents the feature that owns that file
       {feature: 'visualize/viewers', relation: 'documents', name: 'Viewers'},
     ]);
-  }, 120_000);
+  });
 
   withKuzu('answers for a package through what it declares, and for a file through what it declares', async () => {
     const {conn} = index.opened!;
@@ -490,8 +458,8 @@ describe('the index over the fixture graph (build-plan.md WO-7, WO-10)', () => {
     const viewers = (await resolveTarget(conn, '~visualize/viewers'))!;
     const byPackage = await testsFor(conn, pkg, LIMIT);
     const byFeature = await testsFor(conn, viewers, LIMIT);
-    const total = (r: OpsResult, title: string) => r.sections.find((s) => s.title === title)!.total;
-    const features = (r: OpsResult) => r.sections[0].rows.map((x) => String(x.feature)).sort();
+    const total = (r: Answer, title: string) => r.sections.find((s) => s.title === title)!.total;
+    const features = (r: Answer) => r.sections[0].rows.map((x) => String(x.feature)).sort();
     expect(features(byPackage)).toEqual(features(byFeature));
     expect(features(byPackage)).toEqual(['visualize/viewers', 'visualize/viewers/histogram', 'visualize/viewers/scatter-plot']);
     expect(total(byPackage, 'tests')).toBe(total(byFeature, 'tests'));
@@ -506,7 +474,7 @@ describe('the index over the fixture graph (build-plan.md WO-7, WO-10)', () => {
       via: 'file:public/js-api/src/viewer.ts → declares → decl:public/js-api/src/viewer.ts#JsViewer → is-implemented-in ← visualize/viewers/scatter-plot'}]);
     expect(reached.sections[0].rows[0].path).toEqual(['file:public/js-api/src/viewer.ts', '→ declares →',
       'decl:public/js-api/src/viewer.ts#JsViewer', '→ is-implemented-in ←', 'visualize/viewers/scatter-plot']);
-  }, 120_000);
+  });
 
   withKuzu('gives a file no feature owns the owner of the package that declares it', async () => {
     const {conn} = index.opened!;
@@ -517,15 +485,15 @@ describe('the index over the fixture graph (build-plan.md WO-7, WO-10)', () => {
     expect(reached.sections[1].rows).toEqual([{package: 'pkg:Demo', owner: 'P:jane', name: 'Jane Dev',
       via: 'file:public/packages/Demo/detectors.js → declares ← pkg:Demo → owner → P:jane'}]);
     expect((await testsFor(conn, file, LIMIT)).sections[1].rows).toEqual(reached.sections[1].rows);
-  }, 120_000);
+  });
 
   withKuzu('puts the evidence path behind an edge group', async () => {
     const {conn} = index.opened!;
     const viewers = (await resolveTarget(conn, '~visualize/viewers'))!;
     const edges = (await explain(conn, viewers, LIMIT)).sections.find((s) => s.title === 'edges')!;
     expect(edges.rows).toContainEqual(expect.objectContaining({edge: 'IS_IMPLEMENTED_IN', direction: 'out',
-      derived_by: 'annotation', confidence: '1', evidence: 'core/docs/VIEWERS.md'}));
-  }, 120_000);
+      derived_by: ['annotation'], confidence: [1, 1], evidence: ['core/docs/VIEWERS.md']}));
+  });
 
   withKuzu('separates what a release targeted, what it includes and what it shipped', async () => {
     const {conn} = index.opened!;
@@ -540,7 +508,7 @@ describe('the index over the fixture graph (build-plan.md WO-7, WO-10)', () => {
     // a dry run in testing cannot have shipped anything, and the record says so instead of showing an empty list
     expect(titled('shipped').rows).toEqual([]);
     expect(titled('shipped').empty).toBe('shipped (0): not derivable (the record is a dry run; release state testing)');
-  }, 120_000);
+  });
 
   withKuzu('keeps an exact match the substring scan would have cut, and still ranks the vocabulary first', async () => {
     const {conn} = index.opened!;
@@ -551,7 +519,7 @@ describe('the index over the fixture graph (build-plan.md WO-7, WO-10)', () => {
     // exactness is what the exact query matched, not what the id and the name happen to say: this is an alias
     const alias = await find(conn, 'cache, the', LIMIT);
     expect(alias.sections[0].rows[0]).toMatchObject({id: 'platform/caching', match: 0});
-  }, 120_000);
+  });
 
   withKuzu('leaves the reports to the JSONL: every one of them answers with the index open', async () => {
     const {repo} = await graph;
@@ -562,5 +530,5 @@ describe('the index over the fixture graph (build-plan.md WO-7, WO-10)', () => {
       expect(report.name, name).toBe(name);
       expect(report.sections[0].title, name).toBeTruthy();
     }
-  }, 120_000);
+  });
 });

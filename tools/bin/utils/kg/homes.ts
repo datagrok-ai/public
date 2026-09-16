@@ -8,8 +8,8 @@ import {globSync} from 'glob';
 import {splitFrontmatter, parseYamlDocument, keyLine, Frontmatter} from './frontmatter';
 import {extractCitations, headings, Citation} from './citations';
 import {TypeSystem, NodeType, EdgeType, Member, Issue, checkValue, isSubtype, pascal, kebabOfLabel, concreteAuthored} from './types';
-import {normalizeRow} from './build/normalize';
-import {SCHEME_TYPES, PREFIXED_ID, SCHEMED_ID, PAGE_PATH} from './build/ids';
+import {normalizeRow} from './normalize';
+import {SCHEME_TYPES, PREFIXED_ID, SCHEMED_ID, PAGE_PATH, docCandidates} from './ids';
 
 /** Where homes may live, relative to the monorepo root: any markdown document in the repos, and
  * the YAML records (concepts, people, teams, customers) inside the knowledge-graph folder. */
@@ -658,7 +658,7 @@ class HomeChecker {
       }
       // a Docusaurus link may drop the extension: [Tile viewer](tile-viewer) means tile-viewer.md beside the page
       const extensionless = c.kind !== 'backtick' && !path.posix.extname(c.resolved) && this.pathProblem(c.resolved) !== null;
-      const resolved = extensionless ? [`${c.resolved}.md`, `${c.resolved}.mdx`, `${c.resolved}/index.md`].find((a) => !this.pathProblem(a)) ?? c.resolved : c.resolved;
+      const resolved = extensionless ? docCandidates(c.resolved).find((a) => !this.pathProblem(a)) ?? c.resolved : c.resolved;
       const target = resolved === c.resolved ? c.target : 'doc';
       this.set.citations[target]++;
       const problem = this.pathProblem(resolved);

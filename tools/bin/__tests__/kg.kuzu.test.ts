@@ -5,18 +5,21 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import {fileURLToPath} from 'url';
-import {loadTypeSystem, graphLabel, TypeSystem} from '../utils/kg/types';
+import {edgeGroups, TypeSystem} from '../utils/kg/types';
 import {ddl, load, loadKuzu, open, run, Ddl, KuzuConnection, KuzuQueryResult} from '../utils/kg/kuzu';
-import {find, explain, impact, testsFor, resolveTarget, coverageNote, sourceCaveats, printOps, groupOf, GROUP_ORDER} from '../utils/kg/ops';
-import {currentDir} from '../utils/kg/build/write';
+import {find, explain, impact, testsFor, resolveTarget, groupOf, groupOrder} from '../utils/kg/ops';
+import {readManifest} from '../utils/kg/generation';
+import {EXTRACTORS, provides} from '../utils/kg/build/registry';
+import {coverageNote, caveatNotes} from '../utils/kg/answer';
+import {printAnswer} from '../utils/kg/print';
 import {kg} from '../commands/kg';
+import {copyFixture, buildFixture as buildGraph, fixtureTypes} from './kg-fixture';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const fixture = path.join(here, 'fixtures', 'kg', 'build');
-const KG_DIR = path.join('core', 'docs', 'knowledge-graph');
-const types = (): TypeSystem => loadTypeSystem(path.join(fixture, KG_DIR));
+const types = (): TypeSystem => fixtureTypes('build');
 const schema: Ddl = ddl(types());
-const LIMIT = {limit: 50};
+const LIMIT = {limit: 50, groups: edgeGroups(fixtureTypes('build'))};
 
 function table(name: string): string {
   const found = schema.statements.find((s) => s.startsWith(`CREATE NODE TABLE \`${name}\`(`) || s.startsWith(`CREATE REL TABLE \`${name}\`(`));
@@ -78,16 +81,7 @@ describe('the index DDL (build-plan.md WO-7)', () => {
 
 /** The fixture graph as JSONL, with one feature carrying values CSV cannot express. */
 async function buildFixture(): Promise<{kgDir: string, feature: Record<string, unknown>}> {
-  const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'grok-kg-kuzu-'));
-  fs.cpSync(fixture, repo, {recursive: true});
-  const log = vi.spyOn(console, 'log').mockImplementation(() => {});
-  try {
-    await kg({_: ['kg', 'build'], kg: path.join(repo, KG_DIR), only: 'homes,dart', db: false});
-  }
-  finally {
-    log.mockRestore();
-  }
-  const kgDir = currentDir(path.join(repo, '.kg'))!;
+  const {out: kgDir} = await buildGraph(copyFixture('build'), 'homes,dart');
   const file = path.join(kgDir, 'data', 'nodes', 'feature.jsonl');
   const rows = fs.readFileSync(file, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l));
   const feature = rows.find((r) => r.id === 'platform/caching')!;
@@ -114,7 +108,9 @@ describe('the index itself (build-plan.md WO-7, WO-10)', () => {
     const built = await buildFixture();
     const result = await load(built.kgDir, types());
     index = {...built, result, opened: await open(built.kgDir, true)};
-  }, 120_000);
+  });
+
+  const conn = () => index.opened!.conn;
 
   afterAll(async () => {
     if (!index?.opened) return;
@@ -141,7 +137,7 @@ describe('the index itself (build-plan.md WO-7, WO-10)', () => {
     // the Dart pass reached the index, and an integral DOUBLE comes back as a number, not 4.0
     const loc = await run(conn, 'MATCH (n:Component) WHERE n.`id` = $id RETURN n.`loc` AS loc', {id: 'file:core/client/d4/lib/src/legends/legend.dart'});
     expect(loc.rows[0].loc).toBe(4);
-  }, 60_000);
+  });
 
   withKuzu('closes every query result, and reads the type system with the database open', async () => {
     const {conn} = index.opened!;
@@ -159,7 +155,7 @@ describe('the index itself (build-plan.md WO-7, WO-10)', () => {
     for (const result of results) await expect(result.getAll()).rejects.toThrow(/closed/);
     // and the type system is read with the database open, which the same teardown used to take down with it
     expect(types().nodes.size).toBeGreaterThan(0);
-  }, 60_000);
+  });
 
   withKuzu('answers find, explain, impact and tests-for', async () => {
     const {conn} = index.opened!;
@@ -173,11 +169,11 @@ describe('the index itself (build-plan.md WO-7, WO-10)', () => {
       expect(caching).toMatchObject({id: 'platform/caching', root: 'Feature', type: 'feature'});
       const explained = await explain(conn, caching, LIMIT);
       expect(explained.sections[0].rows).toContainEqual({property: 'home', value: 'core/docs/CACHING.md'});
-      expect(explained.sections[1].rows).toContainEqual(expect.objectContaining({group: 'reference', edge: 'owner', direction: 'out', count: 1, targets: 'P:jane'}));
-      expect(explained.sections[1].rows).toContainEqual(expect.objectContaining({group: 'tree', edge: 'PART_OF', direction: 'out', targets: 'platform'}));
+      expect(explained.sections[1].rows).toContainEqual(expect.objectContaining({group: 'reference', edge: 'owner', direction: 'out', count: 1, targets: [{id: 'P:jane', name: 'Jane Dev', type: 'person'}]}));
+      expect(explained.sections[1].rows).toContainEqual(expect.objectContaining({group: 'tree', edge: 'PART_OF', direction: 'out', targets: [expect.objectContaining({id: 'platform'})]}));
       // the edges section is ordered by group, folder order first and the reference predicates last
       const groups = explained.sections[1].rows.map((r) => String(r.group));
-      expect(groups).toEqual([...groups].sort((a, b) => GROUP_ORDER.indexOf(a) - GROUP_ORDER.indexOf(b)));
+      expect(groups).toEqual([...groups].sort((a, b) => groupOrder(LIMIT.groups).indexOf(a) - groupOrder(LIMIT.groups).indexOf(b)));
 
       const reached = await impact(conn, caching, LIMIT);
       expect(reached.sections[0].rows).toEqual([{feature: 'platform/caching', relation: 'self', name: 'Caching', status: 'active',
@@ -192,36 +188,38 @@ describe('the index itself (build-plan.md WO-7, WO-10)', () => {
       expect(coverageNote(undefined)).toBe('Dart coverage unknown (the dart extractor did not run)');
       expect(coverageNote({dart: 'ok'})).toBeUndefined();
     }
-  }, 60_000);
+  });
 
   withKuzu('puts the evidence behind every edge group, and caveats every source that is not ok', async () => {
     const {conn} = index.opened!;
     const caching = (await resolveTarget(conn, '~platform/caching'))!;
     const edges = (await explain(conn, caching, LIMIT)).sections.find((s) => s.title === 'edges')!;
-    expect(edges.rows).toContainEqual(expect.objectContaining({edge: 'owner', direction: 'out', derived_by: 'annotation', confidence: '1'}));
-    expect(edges.rows).toContainEqual(expect.objectContaining({edge: 'PART_OF', direction: 'out', derived_by: 'filesystem', confidence: '1'}));
+    expect(edges.rows).toContainEqual(expect.objectContaining({edge: 'owner', direction: 'out', derived_by: ['annotation'], confidence: [1, 1]}));
+    expect(edges.rows).toContainEqual(expect.objectContaining({edge: 'PART_OF', direction: 'out', derived_by: ['filesystem'], confidence: [1, 1]}));
     expect(edges.rows.every((r) => r.derived_by !== undefined && r.confidence !== undefined && r.evidence !== undefined)).toBe(true);
     // the Dart clause used to be the only one; a partial docs or people source was silently passed off as complete
-    expect(sourceCaveats({dart: 'ok', backlog: 'missing', docs: 'partial', git: 'ok@2026-01-12T07:00:00Z', people: 'partial'})).toEqual([
+    expect(caveatNotes({sources: {dart: 'ok', backlog: 'missing', docs: 'partial', git: 'ok@2026-01-12T07:00:00Z', people: 'partial'}, provides: provides(EXTRACTORS)})).toEqual([
       'backlog missing: no coverage of tickets, their state and who they are assigned to',
       'docs partial: incomplete coverage of documentation pages, their headings and the mentions in them',
       'people partial: incomplete coverage of people, teams and customers',
     ]);
-    expect(sourceCaveats({dart: 'partial', homes: 'ok'})).toEqual(['Dart coverage partial (some markers did not resolve)']);
-  }, 60_000);
+    expect(caveatNotes({sources: {dart: 'partial', homes: 'ok'}})).toEqual(['Dart coverage partial (some markers did not resolve)']);
+    // a generation that predates `provides` still gets a caveat, without the description
+    expect(caveatNotes({sources: {dart: 'ok', backlog: 'missing'}})).toEqual(['backlog missing: no coverage of what backlog contributes']);
+  });
 
-  it('groups every edge label the way the real type files do: the index holds labels, not folders', () => {
-    const real = path.resolve(here, '..', '..', '..', '..', 'core', 'docs', 'knowledge-graph');
-    if (!fs.existsSync(path.join(real, 'schema.yaml'))) return;
-    const system = loadTypeSystem(real);
-    expect(system.errors).toEqual([]);
-    expect(GROUP_ORDER).toEqual([...system.edgeGroups, 'reference']);
-    for (const edge of system.edges.values()) {
-      if (edge.abstract) continue;
-      expect([edge.name, groupOf(graphLabel(edge.name))]).toEqual([edge.name, edge.group]);
-    }
-    expect(groupOf('owner')).toBe('reference');
-    expect(groupOf('user_help')).toBe('reference');
+  withKuzu('reads the edge groups from the manifest, and answers ungrouped over a generation that predates them', async () => {
+    const manifest = readManifest(index.kgDir)!;
+    expect(manifest.edge_groups).toEqual(edgeGroups(types()));
+    expect(manifest.provides).toEqual(provides(EXTRACTORS.filter((e) => ['homes', 'dart'].includes(e.name))));
+    expect(groupOf('PART_OF', manifest.edge_groups)).toBe('tree');
+    expect(groupOf('owner', manifest.edge_groups)).toBe('reference');
+    expect(groupOf('user_help', manifest.edge_groups)).toBe('reference');
+    expect(groupOf('PART_OF')).toBe('');
+    const caching = (await resolveTarget(conn(), '~platform/caching'))!;
+    const old = (await explain(conn(), caching, {limit: 50})).sections.find((s) => s.title === 'edges')!;
+    expect(old.rows.length).toBeGreaterThan(0);
+    expect(old.rows.map((r) => r.group)).toEqual(old.rows.map((r) => String(r.edge) === String(r.edge).toLowerCase() ? 'reference' : ''));
   });
 
   withKuzu('says why a section came back empty instead of printing nothing', async () => {
@@ -232,12 +230,12 @@ describe('the index itself (build-plan.md WO-7, WO-10)', () => {
     const log = vi.spyOn(console, 'log').mockImplementation(() => {});
     let printed: string[];
     try {
-      printOps(tests, 'table');
+      printAnswer(tests, 'table');
       printed = log.mock.calls.map((c) => String(c[0]));
     }
     finally {
       log.mockRestore();
     }
     expect(printed).toContain(`\n${reason}`);
-  }, 60_000);
+  });
 });

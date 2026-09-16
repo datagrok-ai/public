@@ -2,7 +2,7 @@
 /// dates canonical, lists deduplicated and scalars coerced into lists, then every present member
 /// shape-checked. Required members are not checked here: a node may still be assembled from
 /// several extractors and stubs before `finalize()` decides.
-import {TypeSystem, EdgeType, Member, ValueHooks, checkValue} from '../types';
+import {TypeSystem, EdgeType, Member, ValueHooks, checkValue} from './types';
 
 export type Row = Record<string, unknown>;
 

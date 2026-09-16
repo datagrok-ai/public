@@ -6,14 +6,11 @@ import * as fs from 'fs';
 import * as path from 'path';
 import {spawnSync} from 'child_process';
 import {TypeSystem, Issue, isSubtype} from './types';
-import {Row} from './build/normalize';
+import {Row, compare} from './normalize';
+import {helpPage, kebab} from './ids';
 import {Graph} from './build/emitter';
-import {Manifest} from './build/write';
-import {coverageNote} from './ops';
-import {helpPage} from './build/extract/ts/samples';
-import {kebab} from './build/extract/markers';
-import {printOutput} from '../server-output';
-import type {Section} from './ops';
+import {readJsonl, dataFile, readManifest} from './generation';
+import {Section, coverageNote} from './answer';
 
 export type ReportName = 'orphans' | 'stale' | 'coverage' | 'proposed' | 'diff';
 export type ReportFormat = 'table' | 'json' | 'md';
@@ -94,18 +91,18 @@ function needs(name: ReportName, system: TypeSystem): {nodes: string[], edges: s
 export function readGraph(kgDir: string, repoRoot: string, system: TypeSystem, name: ReportName): GraphData {
   const want = needs(name, system);
   const data = empty(repoRoot);
-  const manifest = readJson<Manifest>(path.join(kgDir, 'manifest.json'));
+  const manifest = readManifest(kgDir);
   data.sources = manifest?.sources ?? {};
   data.revisions = manifest?.revisions ?? {};
   data.ownership = readJson<Ownership>(path.join(kgDir, 'reports', 'ownership.json'));
   data.problems = readJson<Record<string, string[]>>(path.join(kgDir, 'reports', 'problems.json')) ?? {};
   data.homeIssues = readJson<Issue[]>(path.join(kgDir, 'reports', 'home-issues.json')) ?? [];
   for (const type of want.nodes)
-    for (const row of readJsonl(path.join(kgDir, 'data', 'nodes', `${type}.jsonl`))) {
+    for (const row of readJsonl(dataFile(kgDir, 'nodes', type))) {
       data.nodes.set(String(row.id), row);
       push(data.byType, type, row);
     }
-  for (const edge of want.edges) data.edges.set(edge, readJsonl(path.join(kgDir, 'data', 'edges', `${edge}.jsonl`)));
+  for (const edge of want.edges) data.edges.set(edge, [...readJsonl(dataFile(kgDir, 'edges', edge))] as Row[]);
   return data;
 }
 
@@ -147,48 +144,6 @@ export function writeReports(kgDir: string, data: GraphData, options: ReportOpti
   return written;
 }
 
-export function printReport(report: Report, format: ReportFormat): void {
-  if (format === 'json') {
-    printOutput(report, 'json');
-    return;
-  }
-  if (format === 'md') {
-    process.stdout.write(markdown(report));
-    return;
-  }
-  console.log(report.summary);
-  for (const note of report.notes) console.log(note);
-  for (const section of report.sections) {
-    console.log(`\n${section.title} (${section.rows.length})`);
-    printOutput(section.rows, 'table');
-  }
-}
-
-/** The PR-comment rendering: a title, the summary, the notes as a quote, and one table per section. */
-export function markdown(report: Report): string {
-  const out = [`# ${report.title}`, '', report.summary, ''];
-  for (const note of report.notes) out.push(`> ${note}`, '');
-  for (const section of report.sections) {
-    out.push(`## ${section.title} (${section.rows.length})`, '');
-    out.push(...table(section.rows), '');
-  }
-  return `${out.join('\n').replace(/\n+$/, '')}\n`;
-}
-
-/** A GitHub table with padded cells, or `_none_` when the section is empty. */
-function table(rows: Record<string, unknown>[]): string[] {
-  if (!rows.length) return ['_none_'];
-  const keys = [...new Set(rows.flatMap((r) => Object.keys(r)))];
-  const cells = rows.map((row) => keys.map((k) => cell(row[k])));
-  const widths = keys.map((k, i) => Math.max(k.length, ...cells.map((c) => c[i].length)));
-  const line = (values: string[]) => `| ${values.map((v, i) => v.padEnd(widths[i])).join(' | ')} |`;
-  return [line(keys), `|${widths.map((w) => '-'.repeat(w + 2)).join('|')}|`, ...cells.map(line)];
-}
-
-function cell(value: unknown): string {
-  if (value === null || value === undefined) return '';
-  return String(Array.isArray(value) ? value.join(', ') : value).replace(/\|/g, '\\|').replace(/\s*\n\s*/g, ' ');
-}
 
 /**
  * Files no feature owns, grouped by the package or the core sub-project they sit in. A group's orphan count means
@@ -583,15 +538,33 @@ function push<T>(map: Map<string, T[]>, key: string, value: T): void {
   else map.set(key, [value]);
 }
 
+/** The PR-comment rendering: a title, the summary, the notes as a quote, and one table per section. */
+export function markdown(report: Report): string {
+  const out = [`# ${report.title}`, '', report.summary, ''];
+  for (const note of report.notes) out.push(`> ${note}`, '');
+  for (const section of report.sections) {
+    out.push(`## ${section.title} (${section.rows.length})`, '');
+    out.push(...table(section.rows), '');
+  }
+  return `${out.join('\n').replace(/\n+$/, '')}\n`;
+}
+
+/** A GitHub table with padded cells, or `_none_` when the section is empty. */
+function table(rows: Record<string, unknown>[]): string[] {
+  if (!rows.length) return ['_none_'];
+  const keys = [...new Set(rows.flatMap((r) => Object.keys(r)))];
+  const cells = rows.map((row) => keys.map((k) => cell(row[k])));
+  const widths = keys.map((k, i) => Math.max(k.length, ...cells.map((c) => c[i].length)));
+  const line = (values: string[]) => `| ${values.map((v, i) => v.padEnd(widths[i])).join(' | ')} |`;
+  return [line(keys), `|${widths.map((w) => '-'.repeat(w + 2)).join('|')}|`, ...cells.map(line)];
+}
+
+function cell(value: unknown): string {
+  if (value === null || value === undefined) return '';
+  return String(Array.isArray(value) ? value.join(', ') : value).replace(/\|/g, '\\|').replace(/\s*\n\s*/g, ' ');
+}
+
 function readJson<T>(file: string): T | undefined {
   return fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')) as T : undefined;
 }
 
-function readJsonl(file: string): Row[] {
-  return fs.existsSync(file) ? fs.readFileSync(file, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l) as Row) : [];
-}
-
-/** Code-point order, the same on every platform and locale (write.ts). */
-function compare(a: string, b: string): number {
-  return a < b ? -1 : a > b ? 1 : 0;
-}

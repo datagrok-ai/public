@@ -6,9 +6,9 @@ import * as path from 'path';
 import {globSync} from 'glob';
 import {HomeSet} from '../../../homes';
 import {Emitter} from '../../emitter';
-import {Row} from '../../normalize';
-import {BuildContext, Extractor} from '../../registry';
-import {pkgId, testId, suiteId} from '../../ids';
+import {Row} from '../../../normalize';
+import {BuildContext, Extractor} from '../../context';
+import {pkgId, testId, suiteId} from '../../../ids';
 import {homesOf, leadingId, resolveMention} from '../markers';
 import {listPackages} from './packages';
 
@@ -47,7 +47,7 @@ const INTERPOLATION = '${';
 
 export const testsExtractor: Extractor = {
   name: 'ts-tests',
-  layer: 'public',
+  describes: {'ts-tests': 'tests and their suites'},
   modes: ['full'],
   run(ctx: BuildContext, emitter: Emitter): void {
     const layer = new TestLayer(ctx.repoRoot, emitter, homesOf(ctx));

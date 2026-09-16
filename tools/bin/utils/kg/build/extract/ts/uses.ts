@@ -4,8 +4,8 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import {Emitter} from '../../emitter';
-import {BuildContext, Extractor} from '../../registry';
-import {fileId, declId} from '../../ids';
+import {BuildContext, Extractor} from '../../context';
+import {fileId, declId} from '../../../ids';
 import {tsSources, isNode, ApiEntry, TsSources} from './declarations';
 
 const API_TOKEN = /\b(DG|ui|grok)((?:\.[A-Za-z_$][\w$]*){1,3})/g;
@@ -112,7 +112,7 @@ function useKind(entry: ApiEntry): string {
 
 export const usesExtractor: Extractor = {
   name: 'ts-uses',
-  layer: 'public',
+  describes: {'ts-uses': 'JS API usage'},
   modes: ['full'],
   run(ctx: BuildContext, emitter: Emitter): void {
     const sources = tsSources(ctx, emitter);

@@ -9,12 +9,11 @@ import {globSync} from 'glob';
 import {FUNC_TYPES} from '../../../../const';
 import {HomeSet} from '../../../homes';
 import {Emitter} from '../../emitter';
-import {Row} from '../../normalize';
-import {BuildContext, Extractor} from '../../registry';
-import {pkgId, fileId, declId, funcId, connId, envId, containerId, semtypeId, languageOf} from '../../ids';
+import {Row} from '../../../normalize';
+import {BuildContext, Extractor} from '../../context';
+import {pkgId, fileId, declId, funcId, connId, envId, containerId, semtypeId, languageOf, countLines, sourceFileRow} from '../../../ids';
 import {Header, HeaderBlock, parseFunctionHeaders, parseScriptHeader, parseQueryHeaders} from '../../annotations';
 import {homesOf, resolveMention} from '../markers';
-import {countLines} from '../homes';
 import {PackageFolder, listPackages} from './packages';
 
 /** function.yaml: the subtype of a function with several roles is that of its highest-precedence role. */
@@ -71,7 +70,7 @@ interface FunctionSpec {
 
 export const functionsExtractor: Extractor = {
   name: 'ts-functions',
-  layer: 'public',
+  describes: {'ts-functions': 'registered functions, scripts, queries and containers'},
   modes: ['full'],
   run(ctx: BuildContext, emitter: Emitter): void {
     const layer = new FunctionLayer(ctx.repoRoot, emitter, homesOf(ctx));
@@ -429,8 +428,8 @@ class FunctionLayer {
   private fileNode(pkg: PackageFolder, file: string): void {
     if (this.files.has(file)) return;
     this.files.add(file);
-    if (this.emitter.node({type: 'source-file', id: fileId(file), name: path.posix.basename(file), path: file, loc: countLines(path.join(this.repoRoot, file)), language: languageOf(file),
-      generated: file.endsWith('.g.ts') ? true : undefined, package: pkgId(pkg.folder), provenance: 'filesystem', source_layer: 'public'}).accepted) this.declares(pkg, fileId(file), file);
+    if (this.emitter.node(sourceFileRow(file, {loc: countLines(fs.readFileSync(path.join(this.repoRoot, file))), generated: file.endsWith('.g.ts') ? true : undefined,
+      package: pkgId(pkg.folder)})).accepted) this.declares(pkg, fileId(file), file);
   }
 
   private declares(pkg: PackageFolder, to: string, evidence: string): void {

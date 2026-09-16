@@ -717,6 +717,16 @@ export function edgeOrder(system: TypeSystem): EdgeType[] {
     (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
 }
 
+/** The labels of the concrete edge types under each `edges/` folder, folders in schema order: the index holds the
+ * labels and not the folders, so the manifest carries this map for every reader after the build. */
+export function edgeGroups(system: TypeSystem): Record<string, string[]> {
+  const out: Record<string, string[]> = {};
+  for (const g of system.edgeGroups) out[g] = [];
+  for (const e of edgeOrder(system))
+    if (!e.abstract && e.group) (out[e.group] ??= []).push(graphLabel(e.name));
+  return out;
+}
+
 function groupRank(system: TypeSystem, group: string): number {
   if (!group) return system.edgeGroups.length + 1;
   const index = system.edgeGroups.indexOf(group);

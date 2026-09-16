@@ -4,13 +4,13 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import {Emitter} from '../../emitter';
-import {BuildContext, Extractor} from '../../registry';
+import {BuildContext, Extractor} from '../../context';
 import {homesOf, resolveMention, MARKER_LINE} from '../markers';
 import {tsSources} from './declarations';
 
 export const inlineMarkersExtractor: Extractor = {
   name: 'ts-markers',
-  layer: 'public',
+  describes: {'ts-markers': 'the `//feature:` markers in source files'},
   modes: ['full'],
   run(ctx: BuildContext, emitter: Emitter): void {
     const homes = homesOf(ctx);

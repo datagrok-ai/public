@@ -5,13 +5,11 @@ import * as fs from 'fs';
 import * as path from 'path';
 import {globSync} from 'glob';
 import {Emitter} from '../emitter';
-import {BuildContext, Extractor} from '../registry';
+import {BuildContext, Extractor} from '../context';
 import {HomeSet} from '../../homes';
-import {fileId, declId, testId, suiteId, docId, docKind, HELP_DIR} from '../ids';
-import {countLines} from './homes';
+import {fileId, declId, testId, suiteId, docId, docKind, HELP_DIR, helpPage, countLines, sourceFileRow} from '../../ids';
 import {homesOf, resolveMention, MARKER_LINE} from './markers';
 import {blankComments, matchBrace} from './ts/tests';
-import {helpPage} from './ts/samples';
 
 const SOURCES = 'core/**/*.dart';
 const SOURCE_IGNORE = ['**/.dart_tool/**', '**/build/**', '**/packages/**', '**/node_modules/**'];
@@ -39,7 +37,7 @@ const HELP_DOC_PATH = /^\s*\/\/\/.*?(public\/help\/[\w./-]+\.mdx?)/;
 
 export const dartExtractor: Extractor = {
   name: 'dart',
-  layer: 'dart',
+  describes: {dart: 'Dart source files, their top-level types, tests and markers (a lexical pass)'},
   modes: ['full'],
   run(ctx: BuildContext, emitter: Emitter): void {
     const homes = homesOf(ctx);
@@ -52,8 +50,7 @@ export const dartExtractor: Extractor = {
       const text = fs.readFileSync(full, 'utf8');
       const lines = text.split(/\r?\n/);
       const generated = file.endsWith('.g.dart');
-      if (!emitter.node({type: 'source-file', id: fileId(file), name: path.posix.basename(file), path: file, loc: countLines(full),
-        language: 'dart', generated: generated ? true : undefined, provenance: 'filesystem', source_layer: 'core'}).accepted) continue;
+      if (!emitter.node(sourceFileRow(file, {loc: countLines(text), generated: generated ? true : undefined})).accepted) continue;
       const pkg = packageOf(file);
       if (pkg) perPackage.set(pkg, (perPackage.get(pkg) ?? 0) + 1);
       declarations(emitter, file, lines, generated);

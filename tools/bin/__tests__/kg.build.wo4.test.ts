@@ -1,20 +1,19 @@
 /// `grok kg build` WO-4 (build-plan.md): membership resolution over the mini monorepo under
 /// fixtures/kg/build — which feature owns each file (conventions.md §8), which ones only
 /// participate, the tests that follow an owned file, and reports/ownership.json.
-import {describe, it, expect, vi} from 'vitest';
+import {describe, it, expect} from 'vitest';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import {fileURLToPath} from 'url';
-import {loadTypeSystem, TypeSystem} from '../utils/kg/types';
+import {TypeSystem} from '../utils/kg/types';
 import {Emitter, Graph} from '../utils/kg/build/emitter';
 import {membershipExtractor} from '../utils/kg/build/extract/membership';
-import {currentDir} from '../utils/kg/build/write';
 import {kg} from '../commands/kg';
+import {copyFixture, buildFixture, kgRoot, fixtureTypes} from './kg-fixture';
 
 const fixture = path.join(path.dirname(fileURLToPath(import.meta.url)), 'fixtures', 'kg', 'build');
-const KG_DIR = path.join('core', 'docs', 'knowledge-graph');
-const system: TypeSystem = loadTypeSystem(path.join(fixture, KG_DIR));
+const system: TypeSystem = fixtureTypes('build');
 const SCATTER = 'core/client/d4/lib/src/viewers/scatterplot/scatter.dart';
 const LEGEND = 'core/client/d4/lib/src/legends/legend.dart';
 const RENDERER = 'core/client/d4/lib/src/legends/legend_renderer.dart';
@@ -24,45 +23,25 @@ const VIEWER = 'core/client/d4/lib/src/viewers/viewer.dart';
 const RUN = 'public/packages/Demo/scripts/run.js';
 const TESTS = 'public/packages/Tested/src/tests/demo-tests.ts';
 
-function copy(): string {
-  const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'grok-kg-wo4-'));
-  fs.cpSync(fixture, repo, {recursive: true});
-  return repo;
-}
+
 
 async function build(): Promise<{rows: (file: string) => any[], ownership: any, manifest: any}> {
-  const repo = copy();
-  const log = vi.spyOn(console, 'log').mockImplementation(() => {});
-  const error = vi.spyOn(console, 'error').mockImplementation(() => {});
-  const before = process.exitCode;
-  try {
-    await kg({_: ['kg', 'build'], kg: path.join(repo, KG_DIR), only: 'homes,ts-functions,ts-tests,membership', db: false, output: 'json'});
-    const out = currentDir(path.join(repo, '.kg'))!;
-    const rows = (file: string) => {
-      const p = path.join(out, `data/${file}.jsonl`);
-      return fs.existsSync(p) ? fs.readFileSync(p, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l)) : [];
-    };
-    return {rows, ownership: JSON.parse(fs.readFileSync(path.join(out, 'reports', 'ownership.json'), 'utf8')), manifest: JSON.parse(String(log.mock.calls[0][0]))};
-  } finally {
-    process.exitCode = before;
-    log.mockRestore();
-    error.mockRestore();
-  }
+  const b = await buildFixture(copyFixture('build'), 'homes,ts-functions,ts-tests,membership');
+  return {rows: b.rows, ownership: b.report('ownership'), manifest: b.manifest};
 }
-
 const graph = build();
 const owners = (rows: any[], file: string) => rows.filter((e) => e.to === `file:${file}`);
 const participants = (rows: any[], file: string) => rows.filter((e) => e.from === `file:${file}`).map((e) => e.to);
 
 /** The claims of one file against the fixture's homes, resolved on their own. */
 function resolveClaims(claims: any[], file = SCATTER): Graph {
-  const repo = copy();
+  const repo = copyFixture('build');
   const emitter = new Emitter(system, 'b-test');
   for (const id of ['visualize/viewers', 'visualize/viewers/scatter-plot', 'platform/caching', 'visualize/legends'])
     emitter.node({type: 'feature', id, name: id, provenance: 'annotation', source_layer: 'core'});
   emitter.node({type: 'source-file', id: `file:${file}`, name: path.posix.basename(file), path: file, loc: 3, language: 'dart', provenance: 'filesystem', source_layer: 'core'});
   for (const claim of claims) emitter.claim({file, source: 'marker', props: {}, ...claim});
-  membershipExtractor.run({system, kgRoot: path.join(repo, KG_DIR), repoRoot: repo, mode: 'full'}, emitter);
+  membershipExtractor.run({system, kgRoot: kgRoot(repo), repoRoot: repo, mode: 'full'}, emitter);
   return emitter.finalize();
 }
 

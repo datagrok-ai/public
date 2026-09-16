@@ -8,9 +8,8 @@ import * as path from 'path';
 import {globSync} from 'glob';
 import {ts} from 'ts-morph';
 import {Emitter} from '../../emitter';
-import {BuildContext, Extractor} from '../../registry';
-import {pkgId, libId, fileId, declId, languageOf} from '../../ids';
-import {countLines} from '../homes';
+import {BuildContext, Extractor} from '../../context';
+import {pkgId, libId, fileId, declId, countLines, sourceFileRow} from '../../../ids';
 import {listPackages, listLibraries} from './packages';
 
 const SOURCE_IGNORE = ['**/node_modules/**', '**/dist/**', '**/*.d.ts'];
@@ -246,7 +245,7 @@ export class TsSources {
       emitter.problem('invalid_rows', `${file}: ${e.message}`);
       return parsed;
     }
-    parsed.loc = countLines(path.join(this.ctx.repoRoot, file));
+    parsed.loc = countLines(text);
     const sf = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true, file.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS);
     const diagnostics = (sf as any).parseDiagnostics as ts.Diagnostic[] ?? [];
     if (diagnostics.length) {
@@ -359,7 +358,7 @@ class FileWalk {
   }
 
   private isExported(st: ts.Statement): boolean {
-    if (ts.getCombinedModifierFlags(st as ts.Declaration) & ts.ModifierFlags.Export) return true;
+    if (ts.getCombinedModifierFlags(st as unknown as ts.Declaration) & ts.ModifierFlags.Export) return true;
     const name = (st as any).name;
     if (name && ts.isIdentifier(name)) return this.exportList.has(name.text);
     return ts.isVariableStatement(st) && st.declarationList.declarations.some((d) => ts.isIdentifier(d.name) && this.exportList.has(d.name.text));
@@ -409,15 +408,14 @@ class FileWalk {
 
 export const declarationsExtractor: Extractor = {
   name: 'ts-declarations',
-  layer: 'public',
+  describes: {'ts-declarations': 'source files, declarations and their inheritance'},
   modes: ['full', 'public'],
   run(ctx: BuildContext, emitter: Emitter): void {
     const sources = tsSources(ctx, emitter);
     for (const file of sources.files) {
       const isPackage = file.unit.id.startsWith('pkg:');
       const isApi = file.unit.id === JS_API;
-      const admitted = emitter.node({type: 'source-file', id: fileId(file.path), name: path.posix.basename(file.path), path: file.path, loc: file.loc, language: languageOf(file.path),
-        generated: file.generated ? true : undefined, package: isPackage ? file.unit.id : undefined, provenance: 'filesystem', source_layer: 'public'});
+      const admitted = emitter.node(sourceFileRow(file.path, {loc: file.loc, generated: file.generated ? true : undefined, package: isPackage ? file.unit.id : undefined}));
       if (!admitted.accepted) continue;
       emitter.edge({type: 'declares', from: file.unit.id, to: fileId(file.path), derived_by: 'ast', confidence: 1, evidence: [file.path]});
       const emitted = new Set<string>();

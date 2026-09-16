@@ -1,6 +1,6 @@
 /// `grok kg check` / `grok kg gen` against the mini monorepo under fixtures/kg/good and the
 /// deliberately broken home documents under fixtures/kg/broken (conventions.md §5, §7, §10).
-import {describe, it, expect, vi} from 'vitest';
+import {describe, it, expect} from 'vitest';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
@@ -12,16 +12,16 @@ import {extractCitations, proseLines} from '../utils/kg/citations';
 import {loadHomes, makeReport, HomeSet} from '../utils/kg/homes';
 import {generate, generateDts, spliceGlossary, generateFeatures, writeOutputs} from '../utils/kg/gen';
 import {kg} from '../commands/kg';
+import {HELP_KG} from '../commands/help';
+import {EXTRACTORS} from '../utils/kg/build/registry';
+import {copyFixture, runKg, write, KG_DIR} from './kg-fixture';
 
 const fixtures = path.join(path.dirname(fileURLToPath(import.meta.url)), 'fixtures', 'kg');
-const KG_DIR = path.join('core', 'docs', 'knowledge-graph');
 const TYPES = ['feature', 'ticket', 'person', 'team', 'customer'];
 
-/** A throwaway copy of the good monorepo, so a test can break one file without touching the fixture. */
+
 function makeRepo(): string {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'grok-kg-'));
-  fs.cpSync(path.join(fixtures, 'good'), dir, {recursive: true});
-  return dir;
+  return copyFixture('good');
 }
 
 function load(repo: string): {system: TypeSystem, homes: HomeSet} {
@@ -48,25 +48,7 @@ function append(kgRoot: string, file: string, text: string): void {
   fs.appendFileSync(path.join(kgRoot, file), text);
 }
 
-function write(root: string, file: string, text: string): void {
-  fs.mkdirSync(path.dirname(path.join(root, file)), {recursive: true});
-  fs.writeFileSync(path.join(root, file), text);
-}
 
-/** Runs the command with console captured; resets the exit code it may have set. */
-async function run(argv: Record<string, unknown>): Promise<{ok: boolean, out: string[], err: string[], exitCode: number | undefined}> {
-  const log = vi.spyOn(console, 'log').mockImplementation(() => {});
-  const error = vi.spyOn(console, 'error').mockImplementation(() => {});
-  const before = process.exitCode;
-  try {
-    const ok = await kg(argv);
-    return {ok, out: log.mock.calls.map((c) => String(c[0])), err: error.mock.calls.map((c) => String(c[0])), exitCode: process.exitCode as number | undefined};
-  } finally {
-    process.exitCode = before;
-    log.mockRestore();
-    error.mockRestore();
-  }
-}
 
 describe('kg member syntax (conventions.md §7.1)', () => {
   it('reads a nullable scalar', () => {
@@ -539,7 +521,7 @@ describe('kg gen (conventions.md §11.2)', () => {
   });
 
   it('writes a note instead of a tree when there are no homes', () => {
-    const md = generateFeatures(system, {homes: [], stubs: [], errors: [], warnings: [], unresolvedExternal: [], scanned: 0, annotatedPages: 0, citations: {doc: 0, code: 0}});
+    const md = generateFeatures(system, {homes: [], pages: [], stubs: [], errors: [], warnings: [], unresolvedExternal: [], scanned: 0, annotatedPages: 0, citations: {doc: 0, code: 0}, index: {byId: new Map(), byAlias: new Map()}});
     expect(md).toContain('No home documents yet');
   });
 
@@ -568,9 +550,16 @@ describe('kg gen (conventions.md §11.2)', () => {
 });
 
 describe('grok kg command', () => {
+  it('help names every extractor the registry runs, and every extractor describes its sources', () => {
+    for (const e of EXTRACTORS) {
+      expect(HELP_KG, e.name).toContain(e.name);
+      expect(Object.keys(e.describes), e.name).toContain(e.name);
+    }
+  });
+
   it('check --output json prints the report and nothing else', async () => {
     const repo = makeRepo();
-    const {ok, out, exitCode} = await run({_: ['kg', 'check'], kg: path.join(repo, KG_DIR), output: 'json'});
+    const {ok, out, exitCode} = await runKg({_: ['kg', 'check'], kg: path.join(repo, KG_DIR), output: 'json'});
     expect(ok).toBe(true);
     expect(exitCode).toBeUndefined();
     expect(out).toHaveLength(1);
@@ -586,12 +575,12 @@ describe('grok kg command', () => {
 
   it('--types-only skips the home documents', async () => {
     const repo = makeRepo();
-    const {out} = await run({_: ['kg', 'check'], kg: path.join(repo, KG_DIR), output: 'json', 'types-only': true});
+    const {out} = await runKg({_: ['kg', 'check'], kg: path.join(repo, KG_DIR), output: 'json', 'types-only': true});
     expect(JSON.parse(out[0]).homes).toEqual({});
   });
 
   it('names an unknown verb and returns false so grok.js prints the usage', async () => {
-    const {ok, err} = await run({_: ['kg', 'frobnicate']});
+    const {ok, err} = await runKg({_: ['kg', 'frobnicate']});
     expect(ok).toBe(false);
     expect(err).toEqual(["unknown verb 'frobnicate'"]);
   });
@@ -606,7 +595,7 @@ describe('grok kg command', () => {
       [{_: ['kg', 'gen'], kg: kgRoot, check: true, 'types-only': true}, /--types-only cannot be combined with gen/],
       [{_: ['kg', 'check'], kg: 'C:\\nowhere\\kg'}, /^C:\/nowhere\/kg: no schema\.yaml$/],
     ] as const) {
-      const {ok, out, err, exitCode} = await run(argv);
+      const {ok, out, err, exitCode} = await runKg(argv);
       expect(ok).toBe(true);
       expect(exitCode).toBe(1);
       expect(out).toEqual([]);

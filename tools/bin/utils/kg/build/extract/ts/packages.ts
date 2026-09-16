@@ -3,9 +3,9 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import {Emitter} from '../../emitter';
-import {Row} from '../../normalize';
-import {BuildContext, Extractor} from '../../registry';
-import {pkgId, libId, semtypeId, posix} from '../../ids';
+import {Row} from '../../../normalize';
+import {BuildContext, Extractor} from '../../context';
+import {pkgId, libId, semtypeId, posix} from '../../../ids';
 import {peopleOf} from '../process';
 
 export interface PackageFolder {
@@ -22,7 +22,7 @@ const GENERIC_AUTHORS = ['info@datagrok.ai', 'datagrok'];
 
 export const packagesExtractor: Extractor = {
   name: 'ts-packages',
-  layer: 'public',
+  describes: {'ts-packages': 'packages, libraries and their dependencies'},
   modes: ['full', 'public'],
   run(ctx: BuildContext, emitter: Emitter): void {
     const packages = listPackages(ctx.repoRoot);

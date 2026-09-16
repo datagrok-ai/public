@@ -110,18 +110,17 @@ export class Panel {
   groups(node, edges) {
     if (!edges.length) return el('div', {class: 'kgv-section-empty'}, 'No edges.');
     return el('div', {}, ...edges.map((g) => {
-      const body = el('div', {class: 'kgv-group-body'}, ...g.sample.map((s) =>
+      const body = el('div', {class: 'kgv-group-body'}, ...g.targets.map((s) =>
         el('div', {class: 'kgv-neighbor' + (this.ctx.index(s.id) >= 0 && !this.ctx.isVisible(this.ctx.index(s.id)) ? ' kgv-hidden-node' : '')},
           this.ctx.badge(s.type), this.idLink(s.id, s.name ?? s.id),
-          el('span', {class: 'kgv-edge-link', title: 'The edge itself', on: {click: () => this.edge(g.direction === 'out' ? node.id : s.id, g.direction === 'out' ? s.id : node.id, g.kind)}}, 'edge'))));
-      if (g.count > g.sample.length)
-        body.append(el('div', {class: 'kgv-more', on: {click: () => this.ctx.showQuery(allOf(node.id, g))}}, `… ${g.count - g.sample.length} more: run as a query`));
+          el('span', {class: 'kgv-edge-link', title: 'The edge itself', on: {click: () => this.edge(g.direction === 'out' ? node.id : s.id, g.direction === 'out' ? s.id : node.id, g.edge)}}, 'edge'))));
+      if (g.count > g.targets.length)
+        body.append(el('div', {class: 'kgv-more', on: {click: () => this.ctx.showQuery(allOf(node.id, g))}}, `… ${g.count - g.targets.length} more: run as a query`));
       body.hidden = g.count > 8;
       const arrow = el('span', {class: 'kgv-arrow'}, body.hidden ? '▸' : '▾');
       const head = el('div', {class: 'kgv-group-head', on: {click: () => { body.hidden = !body.hidden; arrow.textContent = body.hidden ? '▸' : '▾'; }}},
-        arrow, el('span', {class: 'kgv-kind'}, g.direction === 'out' ? `${g.kind} →` : `← ${g.kind}`), el('span', {class: 'kgv-n'}, g.count),
-        el('span', {class: 'kgv-how', title: `derived by ${g.derived_by.join(', ')}; confidence ${g.confidence[0]}–${g.confidence[1]}`},
-          `${g.derived_by.join(', ')} ${g.confidence[0] === g.confidence[1] ? g.confidence[0] : `${g.confidence[0]}–${g.confidence[1]}`}`));
+        arrow, el('span', {class: 'kgv-kind'}, g.direction === 'out' ? `${g.edge} →` : `← ${g.edge}`), el('span', {class: 'kgv-n'}, g.count),
+        el('span', {class: 'kgv-how', title: `derived by ${g.derived_by.join(', ')}; confidence ${confidence(g)}`}, `${g.derived_by.join(', ')} ${confidence(g)}`));
       return el('div', {class: 'kgv-group'}, head, body);
     }));
   }
@@ -182,8 +181,13 @@ export class Panel {
   }
 }
 
+/** `1`, `0.8–1`, or nothing when no edge of the group carries a confidence. */
+function confidence(g) {
+  return g.confidence === null ? '' : g.confidence[0] === g.confidence[1] ? String(g.confidence[0]) : `${g.confidence[0]}–${g.confidence[1]}`;
+}
+
 /** The Cypher that lists one edge group in full. */
 function allOf(id, g) {
-  const pattern = g.direction === 'out' ? `(n)-[e:\`${g.kind}\`]->(m)` : `(n)<-[e:\`${g.kind}\`]-(m)`;
+  const pattern = g.direction === 'out' ? `(n)-[e:\`${g.edge}\`]->(m)` : `(n)<-[e:\`${g.edge}\`]-(m)`;
   return `MATCH ${pattern} WHERE n.id = '${id.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'\nRETURN m.id AS id, m.type AS type, m.name AS name, e.confidence AS confidence, e.derived_by AS derived_by\nORDER BY id LIMIT 1000`;
 }

@@ -3,9 +3,9 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import {Emitter} from '../../emitter';
-import {Row} from '../../normalize';
-import {BuildContext, Extractor} from '../../registry';
-import {pkgId, chgId} from '../../ids';
+import {Row} from '../../../normalize';
+import {BuildContext, Extractor} from '../../context';
+import {pkgId, chgId} from '../../../ids';
 import {homesOf, emitMentions} from '../markers';
 import {listPackages} from './packages';
 
@@ -26,7 +26,7 @@ const NAME_CAP = 100;
 
 export const changelogExtractor: Extractor = {
   name: 'ts-changelog',
-  layer: 'public',
+  describes: {'ts-changelog': 'changelog entries'},
   modes: ['full'],
   run(ctx: BuildContext, emitter: Emitter): void {
     const homes = homesOf(ctx);

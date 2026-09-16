@@ -1,17 +1,18 @@
 /// The graph browser's render tier and server (core/docs/knowledge-graph/vis/): the blob exported from a
 /// fixture generation, and — when the optional `kuzu` binding is installed — the routes over its index.
-import {describe, it, expect, vi, beforeAll, afterAll} from 'vitest';
+import {describe, it, expect, beforeAll, afterAll} from 'vitest';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import {fileURLToPath} from 'url';
-import {loadTypeSystem, TypeSystem} from '../utils/kg/types';
+import {TypeSystem} from '../utils/kg/types';
 import {load, loadKuzu, open} from '../utils/kg/kuzu';
-import {currentDir, readManifest} from '../utils/kg/build/write';
+import {readManifest} from '../utils/kg/generation';
 import {exportVis, hasVis, readBlobHeader, visDir, BLOB, INDEX, SCHEMA} from '../utils/kg/vis';
 import {serve, Served} from '../utils/kg/serve';
 import {loadQuestions, resolveParams, isoDate, ask} from '../utils/kg/questions';
 import {kg} from '../commands/kg';
+import {copyFixture, buildFixture as buildGraph, fixtureTypes} from './kg-fixture';
 
 const questionsRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..', '..', 'core', 'docs', 'knowledge-graph');
 
@@ -54,20 +55,11 @@ describe('the question set (questions/README.md)', () => {
 });
 
 const fixture = path.join(path.dirname(fileURLToPath(import.meta.url)), 'fixtures', 'kg', 'build');
-const KG_DIR = path.join('core', 'docs', 'knowledge-graph');
-const types = (): TypeSystem => loadTypeSystem(path.join(fixture, KG_DIR));
+const types = (): TypeSystem => fixtureTypes('build');
 
 async function buildFixture(): Promise<{repo: string, kgDir: string}> {
-  const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'grok-kg-vis-'));
-  fs.cpSync(fixture, repo, {recursive: true});
-  const log = vi.spyOn(console, 'log').mockImplementation(() => {});
-  try {
-    await kg({_: ['kg', 'build'], kg: path.join(repo, KG_DIR), only: 'homes,dart', db: false});
-  }
-  finally {
-    log.mockRestore();
-  }
-  return {repo, kgDir: currentDir(path.join(repo, '.kg'))!};
+  const {repo, out: kgDir} = await buildGraph(copyFixture('build'), 'homes,dart');
+  return {repo, kgDir};
 }
 
 function lines(file: string): number {
@@ -78,7 +70,7 @@ describe('the render tier (vis/plan.md WO-2)', () => {
   let kgDir: string;
   beforeAll(async () => {
     kgDir = (await buildFixture()).kgDir;
-  }, 60_000);
+  });
 
   it('writes the blob, the ids and the type tree once, byte for byte the same twice', () => {
     expect(hasVis(kgDir)).toBe(false);
@@ -152,7 +144,7 @@ describe('the server (vis/plan.md WO-3)', () => {
     opened = await open(kgDir, true);
     served = await serve({genDir: kgDir, repoRoot: repo, manifest: readManifest(kgDir)!, system: types(), questions: loadQuestions(questionsRoot).questions,
       db: opened!.db, conn: opened!.conn, port: 0});
-  }, 120_000);
+  });
 
   afterAll(async () => {
     await served?.close();
@@ -184,9 +176,9 @@ describe('the server (vis/plan.md WO-3)', () => {
     const node = await get('/api/node?id=platform/caching');
     expect(node.status).toBe(200);
     expect(node.body.node.name).toBe('Caching');
-    const partOf = node.body.edges.find((g: any) => g.kind === 'PART_OF' && g.direction === 'out');
+    const partOf = node.body.edges.find((g: any) => g.edge === 'PART_OF' && g.direction === 'out');
     expect(partOf.count).toBe(1);
-    expect(partOf.sample[0].id).toBe('platform');
+    expect(partOf.targets[0].id).toBe('platform');
     expect(partOf.derived_by).toEqual(['filesystem']);
     const edge = await get('/api/edge?from=platform/caching&to=platform&kind=PART_OF');
     expect(edge.body.edge.derived_by).toBe('filesystem');

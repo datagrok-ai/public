@@ -6,8 +6,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 import {globSync} from 'glob';
 import {Emitter} from '../../emitter';
-import {BuildContext, Extractor} from '../../registry';
-import {sampleId, docId, docKind, languageOf, HELP_DIR} from '../../ids';
+import {BuildContext, Extractor} from '../../context';
+import {sampleId, docId, docKind, languageOf, helpPage, HELP_DIR} from '../../../ids';
 import {commentPrefix} from '../../annotations';
 import {homesOf, idTokens, resolveMention} from '../markers';
 import {tsSources} from './declarations';
@@ -15,11 +15,10 @@ import {UsesLayer} from './uses';
 
 const SCRIPTS_DIR = 'public/packages/ApiSamples/scripts';
 const API_MEMBER = /\b((?:DG|ui|grok)(?:\.[A-Za-z_$][\w$]*){1,3})/g;
-const HELP_URL = /^(?:https?:\/\/(?:[\w-]+\.)*datagrok\.ai)?\/help\/([^#?]+?)(?:\.mdx?)?\/?(?:[#?].*)?$/;
 
 export const samplesExtractor: Extractor = {
   name: 'ts-samples',
-  layer: 'public',
+  describes: {'ts-samples': 'API samples'},
   modes: ['full', 'public'],
   run(ctx: BuildContext, emitter: Emitter): void {
     const files = globSync(`${SCRIPTS_DIR}/**/*.{js,py,R,r}`, {cwd: ctx.repoRoot, ignore: ['**/node_modules/**'], nodir: true, posix: true, windowsPathsNoEscape: true}).sort();
@@ -86,13 +85,4 @@ export function parseSampleHeader(source: string, prefix: string): SampleHeader 
   header.text = block.join('\n');
   header.body = lines.slice(i).join('\n');
   return header;
-}
-
-/** The help page a `//help-url:` points at, as a repo path: `.../help/datagrok/project` is `project.md`, `project.mdx`,
- * `project/index.md` or `project/project.md` under public/help, whichever exists. */
-export function helpPage(repoRoot: string, url: string): string | undefined {
-  const m = HELP_URL.exec(url.trim());
-  if (!m) return undefined;
-  const p = `${HELP_DIR}/${m[1]}`;
-  return [`${p}.md`, `${p}.mdx`, `${p}/index.md`, `${p}/${path.posix.basename(p)}.md`].find((c) => fs.existsSync(path.join(repoRoot, c)));
 }

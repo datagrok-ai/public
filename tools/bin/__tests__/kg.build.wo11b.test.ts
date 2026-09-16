@@ -2,65 +2,32 @@
 /// about a row it refused, about two assertions that differ only in a property, about a release record's
 /// word, about a test whose name it cannot know, and about the files it never saw. Every case here
 /// fails on the pipeline as the third review found it.
-import {describe, it, expect, vi} from 'vitest';
+import {describe, it, expect} from 'vitest';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import {fileURLToPath} from 'url';
 import {loadTypeSystem, TypeSystem} from '../utils/kg/types';
 import {Emitter} from '../utils/kg/build/emitter';
-import {currentDir} from '../utils/kg/build/write';
 import {kg} from '../commands/kg';
+import {copyFixture, buildFixture, write, Built} from './kg-fixture';
 
 const fixture = path.join(path.dirname(fileURLToPath(import.meta.url)), 'fixtures', 'kg', 'build');
 const KG_DIR = path.join('core', 'docs', 'knowledge-graph');
 const system: TypeSystem = loadTypeSystem(path.join(fixture, KG_DIR));
 const TESTED = 'public/packages/Tested/src';
 
-interface Built {
-  repo: string;
-  manifest: any;
-  rows: (file: string) => any[];
-  report: (name: string) => any;
-  problems: Record<string, string[]>;
-}
-
 function copy(prepare?: (repo: string) => void): string {
-  const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'grok-kg-11b-'));
-  fs.cpSync(fixture, repo, {recursive: true});
-  prepare?.(repo);
-  return repo;
+  return copyFixture('build', prepare);
 }
 
-function write(repo: string, file: string, text: string): void {
-  const full = path.join(repo, ...file.split('/'));
-  fs.mkdirSync(path.dirname(full), {recursive: true});
-  fs.writeFileSync(full, text);
+function build(repo: string, only: string): Promise<Built> {
+  return buildFixture(repo, only);
 }
 
-async function build(repo: string, only: string): Promise<Built> {
-  const log = vi.spyOn(console, 'log').mockImplementation(() => {});
-  const error = vi.spyOn(console, 'error').mockImplementation(() => {});
-  const before = process.exitCode;
-  try {
-    await kg({_: ['kg', 'build'], kg: path.join(repo, KG_DIR), backlog: path.join(repo, 'backlog'), only, db: false, output: 'json'});
-    expect(error.mock.calls).toEqual([]);
-    const out = currentDir(path.join(repo, '.kg'))!;
-    const read = (file: string) => fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
-    return {
-      repo,
-      manifest: JSON.parse(String(log.mock.calls[0][0])),
-      rows: (file) => read(path.join(out, `data/${file}.jsonl`)).split('\n').filter(Boolean).map((l) => JSON.parse(l)),
-      report: (name) => JSON.parse(read(path.join(out, 'reports', `${name}.json`)) || 'null'),
-      problems: JSON.parse(read(path.join(out, 'reports', 'problems.json')) || '{}'),
-    };
-  }
-  finally {
-    process.exitCode = before;
-    log.mockRestore();
-    error.mockRestore();
-  }
-}
+
+
+
 
 describe('admission: a refused row asserts nothing (review 3 #3)', () => {
   it('tells an extractor whether the node was taken, and names the reason', () => {

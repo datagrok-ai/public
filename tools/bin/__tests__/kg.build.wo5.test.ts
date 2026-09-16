@@ -1,67 +1,36 @@
 /// `grok kg build` WO-5 (build-plan.md): the process layer over the mini monorepo under
 /// fixtures/kg/build — tickets from the backlog snapshot, the release record with its picked
 /// commits, and the people the two of them name.
-import {describe, it, expect, vi} from 'vitest';
+import {describe, it, expect} from 'vitest';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import {fileURLToPath} from 'url';
-import {spawnSync} from 'child_process';
 
-import {currentDir} from '../utils/kg/build/write';
 import {kg} from '../commands/kg';
+import {copyFixture, buildFixture, git, Built} from './kg-fixture';
 
 const fixture = path.join(path.dirname(fileURLToPath(import.meta.url)), 'fixtures', 'kg', 'build');
-const KG_DIR = path.join('core', 'docs', 'knowledge-graph');
 const RECORD = 'core/docs/release/1.0.1.yaml';
 
-interface Built {
-  repo: string;
-  rows: (file: string) => any[];
-  report: (name: string) => any;
-  manifest: any;
-}
 
-async function build(extra: Record<string, unknown> = {}, prepare?: (repo: string) => void): Promise<Built> {
-  const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'grok-kg-wo5-'));
-  fs.cpSync(fixture, repo, {recursive: true});
-  prepare?.(repo);
-  const log = vi.spyOn(console, 'log').mockImplementation(() => {});
-  const error = vi.spyOn(console, 'error').mockImplementation(() => {});
-  const before = process.exitCode;
-  try {
-    await kg({_: ['kg', 'build'], kg: path.join(repo, KG_DIR), backlog: path.join(repo, 'backlog'), only: 'homes,process', db: false, output: 'json', ...extra});
-    const out = currentDir(path.join(repo, '.kg'))!;
-    const rows = (file: string) => {
-      const p = path.join(out, `data/${file}.jsonl`);
-      return fs.existsSync(p) ? fs.readFileSync(p, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l)) : [];
-    };
-    const report = (name: string) => {
-      const p = path.join(out, 'reports', `${name}.json`);
-      return fs.existsSync(p) ? JSON.parse(fs.readFileSync(p, 'utf8')) : undefined;
-    };
-    return {repo, rows, report, manifest: JSON.parse(String(log.mock.calls[0][0]))};
-  } finally {
-    process.exitCode = before;
-    log.mockRestore();
-    error.mockRestore();
-  }
-}
 
 /** Turns the fixture into two git repositories and rewrites the release record's picks with the shas they got. */
 function commits(repo: string): void {
-  const git = (cwd: string, ...args: string[]) => spawnSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@x', ...args], {cwd, encoding: 'utf8'});
   const shas: string[] = [];
   for (const dir of [repo, path.join(repo, 'public')]) {
     git(dir, 'init', '-q');
     git(dir, 'add', '-A');
     git(dir, 'commit', '-q', '-m', 'fixture');
-    shas.push(git(dir, 'rev-parse', '--short=10', 'HEAD').stdout.trim());
+    shas.push(git(dir, 'rev-parse', '--short=10', 'HEAD'));
   }
   const record = path.join(repo, ...RECORD.split('/'));
   fs.writeFileSync(record, fs.readFileSync(record, 'utf8').replace(/aaaaaaaaaa/g, shas[0]).replace(/bbbbbbbbbb/g, shas[1]));
 }
 
+function build(extra: Record<string, unknown> = {}, prepare?: (repo: string) => void): Promise<Built> {
+  return buildFixture(copyFixture('build', prepare), 'homes,process', extra);
+}
 const graph = build();
 const byId = (rows: any[], id: string) => rows.find((r) => r.id === id);
 const edges = (rows: any[], from?: string, to?: string) => rows.filter((e) => (from === undefined || e.from === from) && (to === undefined || e.to === to));
@@ -173,5 +142,5 @@ describe('releases and their picks (build-plan.md WO-5)', () => {
       .toEqual([['GROK-100', 0.7], ['GROK-101', 0.7]]);
     // targets-release is keyed by its kind as well, so a picked ticket that also carries the fix version keeps both assertions
     expect(edges(rows('edges/targets-release'), 'GROK-100').map((e) => [e.kind, e.confidence]).sort()).toEqual([['fix-version', 1], ['picked', 0.7]]);
-  }, 60_000);
+  });
 });

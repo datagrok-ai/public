@@ -3,8 +3,8 @@
 /// hierarchy, inherits down it, materializes reference properties, checks endpoints, enforces required
 /// members once and settles visibility.
 import {TypeSystem, NodeType, isSubtype, concreteAuthored} from '../types';
-import {normalizeRow, normalizeEdgeRow, isOrdered, compare, Row, RowProblem} from './normalize';
-import {PREFIXED_ID, SCHEMED_ID, SCHEME_TYPES, JIRA_KEY, parseId, stubName, titleCase, locationVisibility, sourceLayerOf} from './ids';
+import {normalizeRow, normalizeEdgeRow, isOrdered, compare, Row, RowProblem} from '../normalize';
+import {PREFIXED_ID, SCHEMED_ID, SCHEME_TYPES, JIRA_KEY, parseId, stubName, titleCase, locationVisibility, sourceLayerOf} from '../ids';
 
 export interface Claim {
   /** Posix path relative to the monorepo root. */

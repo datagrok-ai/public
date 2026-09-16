@@ -5,7 +5,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as yaml from 'js-yaml';
 import {KuzuConnection, run, QueryRows} from './kuzu';
-import {sourceCaveats} from './ops';
+import {sourceCaveats, Coverage} from './answer';
 
 export const QUESTIONS_DIR = 'questions';
 const TYPES = ['string', 'number', 'date'] as const;
@@ -113,11 +113,11 @@ export function isoDate(value: string, now: Date, what: string): string {
   return parsed.toISOString();
 }
 
-export async function ask(conn: KuzuConnection, question: Question, given: Record<string, unknown>, sources?: Record<string, string>): Promise<Answer> {
+export async function ask(conn: KuzuConnection, question: Question, given: Record<string, unknown>, coverage?: Coverage): Promise<Answer> {
   const params = resolveParams(question, given);
   const started = Date.now();
   const rows = await run(conn, question.cypher, Object.keys(params).length ? params : undefined);
-  const notes = sourceCaveats(sources).filter((n) => question.needs.some((s) => n.startsWith(`${s} `) || (s === 'dart' && n.startsWith('Dart'))));
+  const notes = sourceCaveats(coverage).filter((c) => question.needs.includes(c.source)).map((c) => c.note);
   if (question.status === 'blocked') notes.unshift(`blocked: ${question.blocked_by}`);
   return {...rows, question, params, ms: Date.now() - started, notes};
 }

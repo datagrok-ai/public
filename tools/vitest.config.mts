@@ -9,6 +9,9 @@ export default defineConfig({
           environment: 'node',
           include: ['bin/**/*.test.ts'],
           exclude: ['bin/**/*.integration.test.ts', 'bin/__tests__/fixtures/**'],
+          // a `grok kg build` over a fixture monorepo takes seconds and the box is often loaded; no test sets its own limit
+          testTimeout: 120_000,
+          hookTimeout: 120_000,
         },
       },
       {

@@ -3,16 +3,19 @@
 /// (conventions.md §11.1, build-plan.md).
 import * as fs from 'fs';
 import * as path from 'path';
-import {loadTypeSystem, Issue, TypeSystem} from '../utils/kg/types';
+import {loadTypeSystem, edgeGroups, Issue, TypeSystem} from '../utils/kg/types';
 import {loadHomes, makeReport, CheckReport} from '../utils/kg/homes';
 import {generate, writeOutputs} from '../utils/kg/gen';
 import {Emitter} from '../utils/kg/build/emitter';
-import {selectExtractors, runExtractors, EXTRACTORS, Mode} from '../utils/kg/build/registry';
-import {writeBuild, writeManifest, readManifest, projectPublic, gitRevisions, buildInputs, batchId, toolsVersion,
-  generationDir, newGeneration, currentDir, readCurrent, publish, generations, gc, Manifest} from '../utils/kg/build/write';
+import {selectExtractors, runExtractors, provides, EXTRACTORS} from '../utils/kg/build/registry';
+import {Mode} from '../utils/kg/build/context';
+import {writeBuild, writeManifest, projectPublic, gitRevisions, buildInputs, batchId, toolsVersion} from '../utils/kg/build/write';
+import {readManifest, generationDir, newGeneration, currentDir, readCurrent, publish, generations, gc, Manifest} from '../utils/kg/generation';
 import {loadKuzu, load as loadIndex, open, run, memoryMb, MISSING_KUZU, BUILD_MEMORY_MB, LoadResult, TableRows} from '../utils/kg/kuzu';
-import {impact, testsFor, explain, find, printOps, resolveTarget, sourceCaveats, OpsResult, DEFAULT_LIMIT} from '../utils/kg/ops';
-import {readGraph, fromGraph, makeReport as buildReport, printReport, writeReports, REPORT_NAMES, ReportName, ReportFormat} from '../utils/kg/report';
+import {impact, testsFor, explain, find, resolveTarget, DEFAULT_LIMIT} from '../utils/kg/ops';
+import {Answer, caveatNotes} from '../utils/kg/answer';
+import {printAnswer, printReport} from '../utils/kg/print';
+import {readGraph, fromGraph, makeReport as buildReport, writeReports, REPORT_NAMES, ReportName, ReportFormat} from '../utils/kg/report';
 import {OutputFormat, printOutput} from '../utils/server-output';
 import {exportVis, hasVis} from '../utils/kg/vis';
 import {serve as listen} from '../utils/kg/serve';
@@ -26,6 +29,7 @@ const VERBS = ['check', 'gen', 'build', 'report', 'gc', 'serve', 'ask'];
 const SERVE_PORT = 7475;
 /** How many generations `grok kg gc` keeps beside the current one. */
 const KEEP_GENERATIONS = 2;
+const BACKLOG_FALLBACK = 'C:/dg/backlog';
 
 export async function kg(argv: any): Promise<boolean> {
   const args: string[] = argv['_'].slice(1).map(String);
@@ -99,7 +103,7 @@ async function build(argv: any, kgRoot: string, repoRoot: string, output: string
   }
   const builder = toolsVersion();
   const revisions = gitRevisions(repoRoot);
-  const backlogDir = argv.backlog === undefined ? undefined : path.resolve(String(argv.backlog));
+  const backlogDir = backlogRoot(repoRoot, argv.backlog);
   const root = argv.out === undefined ? path.join(repoRoot, ...(mode === 'public' ? ['public', '.kg'] : ['.kg'])) : path.resolve(String(argv.out));
   const batch = batchId(buildInputs({repoRoot, mode, schemaVersion: system.schemaVersion, builder, revisions,
     extractors: selected.map((e) => e.name), backlogDir, outRoot: root}));
@@ -107,6 +111,7 @@ async function build(argv: any, kgRoot: string, repoRoot: string, output: string
   await runExtractors(selected, {system, kgRoot, repoRoot, mode, backlogDir}, emitter);
   let graph = emitter.finalize();
   if (mode === 'public') graph = projectPublic(graph, system);
+  Object.assign(graph.manifest, {edge_groups: edgeGroups(system), provides: provides(selected)});
   const genDir = newGeneration(root, batch);
   const manifest = writeBuild(graph, genDir, {mode, batch, builder, schemaVersion: system.schemaVersion, revisions});
   if (mode !== 'public') writeReports(genDir, fromGraph(graph, repoRoot, manifest.sources, manifest.revisions), {system, repoRoot});
@@ -210,18 +215,19 @@ async function graph(verb: string, args: string[], argv: any, output: OutputForm
       return true;
     }
     const limit = Number(argv.limit) > 0 ? Number(argv.limit) : DEFAULT_LIMIT;
-    const sources = readManifest(dir)?.sources;
-    let result: OpsResult;
-    if (verb === 'find') result = await find(opened.conn, text, {limit});
+    const manifest = readManifest(dir);
+    const options = {limit, groups: manifest?.edge_groups};
+    let result: Answer;
+    if (verb === 'find') result = await find(opened.conn, text, options);
     else {
       const target = await resolveTarget(opened.conn, text);
       if (!target) return fail(`${text}: no such node; try grok kg find ${text.replace(/^~/, '')}`);
-      result = verb === 'impact' ? await impact(opened.conn, target, {limit})
-        : verb === 'tests-for' ? await testsFor(opened.conn, target, {limit})
-          : await explain(opened.conn, target, {limit});
+      result = verb === 'impact' ? await impact(opened.conn, target, options)
+        : verb === 'tests-for' ? await testsFor(opened.conn, target, options)
+          : await explain(opened.conn, target, options);
     }
-    result.notes = sourceCaveats(sources);
-    printOps(result, output);
+    result.notes = caveatNotes(manifest);
+    printAnswer(result, output);
     return true;
   }
   catch (e: any) {
@@ -303,7 +309,7 @@ async function askVerb(argv: any, kgRoot: string, repoRoot: string, id: string |
     return true;
   }
   try {
-    const answer = await ask(opened.conn, question, given, readManifest(dir)?.sources);
+    const answer = await ask(opened.conn, question, given, readManifest(dir));
     if (output === 'json') console.log(JSON.stringify({id: question.id, question: question.question, params: answer.params, notes: answer.notes, columns: answer.columns, rows: answer.rows, ms: answer.ms}, null, 2));
     else {
       for (const note of answer.notes) console.log(`note: ${note}`);
@@ -323,6 +329,13 @@ async function askVerb(argv: any, kgRoot: string, repoRoot: string, id: string |
 }
 
 /** Full mode: `.kg` beside the type files. Public mode: the nearest committed `.kg` snapshot. */
+/** The backlog snapshot every consumer reads: `--backlog`, else `<repo>/../backlog`, else the dev-box clone; none of
+ * the three means no ticket layer and no taxonomy. Resolved once, so the batch identity and the extractors agree. */
+function backlogRoot(repoRoot: string, flag: unknown): string | undefined {
+  if (flag !== undefined) return path.resolve(String(flag));
+  return [path.resolve(repoRoot, '..', 'backlog'), BACKLOG_FALLBACK].find((d) => fs.existsSync(path.join(d, 'index.jsonl')));
+}
+
 function findOutRoot(argv: any): string | null {
   if (argv.out !== undefined) return path.resolve(String(argv.out));
   const kgRoot = argv.kg ? path.resolve(String(argv.kg)) : findKgRoot(process.cwd());

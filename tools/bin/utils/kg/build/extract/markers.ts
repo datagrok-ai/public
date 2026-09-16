@@ -2,10 +2,10 @@
 /// their resolution against the home documents, the ticket stubs a mention needs, and the mentions
 /// themselves counted per target.
 import {loadHomes, lookupHome, HomeSet} from '../../homes';
-import {ticketId} from '../ids';
+import {ticketId} from '../../ids';
 import {Emitter} from '../emitter';
-import {Row} from '../normalize';
-import {BuildContext} from '../registry';
+import {Row} from '../../normalize';
+import {BuildContext} from '../context';
 
 /** A `~id` in prose or a comment: an optional prefix, kebab segments, an anchor that is dropped; not a `~/` path or a `~~strike~~`. */
 export const ID_TOKEN = /(?<![\w~/.\\-])~((?:[A-Z][A-Za-z]{0,5}:)?[a-z][a-z0-9]*(?:-[a-z0-9]+)*(?:\/[a-z0-9]+(?:-[a-z0-9]+)*)*)(?:#[\w-]+)?/g;
@@ -91,9 +91,4 @@ export function emitMentions(emitter: Emitter, from: string, text: string, evide
     summary.tickets.push(id);
   }
   return summary;
-}
-
-/** `ScatterPlot` -> `scatter-plot`, `MLMethods` -> `ml-methods`, `initial runs` -> `initial-runs`. */
-export function kebab(segment: string): string {
-  return segment.replace(/([a-z0-9])([A-Z])/g, '$1-$2').replace(/([A-Z]+)([A-Z][a-z])/g, '$1-$2').replace(/[\s_]+/g, '-').toLowerCase().replace(/-+/g, '-').replace(/^-|-$/g, '');
 }

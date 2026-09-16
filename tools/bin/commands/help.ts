@@ -466,7 +466,8 @@ Verbs:
                 ts-imports and ts-uses (source files, declarations, extends/implements,
                 resolved imports and JS API usage over js-api, packages and libraries),
                 ts-tests (DG and Playwright tests in their suites), ts-samples (ApiSamples),
-                ts-changelog (CHANGELOG.md bullets), docs (markdown pages, headings,
+                ts-changelog (CHANGELOG.md bullets), ts-markers (the //feature: markers
+                in source files), docs (markdown pages, headings,
                 mentions, legacy Test Track scenarios, tutorials), dart (a lexical pass
                 over core/**/*.dart: files, top-level declarations, tests and ~id
                 markers), process (backlog
