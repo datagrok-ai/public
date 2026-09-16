@@ -251,6 +251,122 @@ scoped('a backend that cannot probe is simply not polled', async () => {
 register('./dg-stub.mjs', import.meta.url);
 const {domains} = await import('../src/dg/domain/index.js');
 const {DomainApp} = await import('../src/dg/domain/app.js');
+const {DgDomainBackend} = await import('../src/dg/domain/backend.js');
+const grok = await import('datagrok-api/grok');
+
+/** A `DgDomainTable` over a stubbed js-api client, with what the poll asked for counted. */
+async function platformTable(support = {}) {
+  const calls = {version: 0, aggregate: []};
+  const client = {
+    access: async () => ({can: {view: true}, fields: {}, support: {
+      systemColumns: ['id', 'version', 'created_on', 'updated_on', 'author_id'], writes: true,
+      deleted: true, restore: true, audit: true, ancestors: false, probe: true, watch: true, ...support}}),
+    version: async () => ({seq: ++calls.version, at: '2026-09-16T10:05:13Z'}),
+    aggregate: async (spec) => (calls.aggregate.push(spec), [{count: 3, last: '2026-09-16T10:00:00Z'}]),
+  };
+  grok.dapi.domains.table = () => client;
+  grok.dapi.domains.registry = {rowProperties: async () => [], tableInfo: async () => ({
+    nameColumn: 'title', singularName: 'issue', pluralName: 'issues', businessKey: [],
+    searchableColumns: [], constraints: [], refFilters: {}, permissions: [], childTables: []})};
+  return {calls, table: await new DgDomainBackend().table('grit.issue')};
+}
+
+/** The platform's probe adapter mirrored over the memory backend, so the source can be driven
+ * against the token shape headlessly; the adapter itself is pinned by the test above. */
+function tokened(options = {}) {
+  const inner = backend(options);
+  const calls = {token: 0, aggregate: 0};
+  const state = {seq: 1};
+  return {calls, state, backend: {
+    table: async (address) => {
+      const t = await inner.table(address);
+      return Object.assign(Object.create(Object.getPrototypeOf(t)), t, {
+        probe: async (scope) => {
+          if ((scope.filter ?? '') === '' && (scope.search ?? '') === '' && (scope.deleted ?? 'exclude') === 'exclude') {
+            calls.token++;
+            return {count: -1, last: String(state.seq)};
+          }
+          calls.aggregate++;
+          return t.probe(scope);
+        },
+      });
+    },
+    saveAll: (edits) => inner.saveAll(edits),
+  }};
+}
+
+scoped('the platform poll asks the change token over the whole table and aggregates over anything narrower',
+  async () => {
+    const {calls, table} = await platformTable();
+    try {
+      assert.deepEqual(await table.probe(), {count: -1, last: '1'}, 'not counted: the token answers alone');
+      assert.deepEqual(await table.probe({filter: undefined, search: undefined, deleted: undefined}),
+        {count: -1, last: '2'});
+      assert.deepEqual(await table.probe({filter: [], deleted: 'exclude'}), {count: -1, last: '3'},
+        'an empty condition tree is what an empty filter builder compiles to — still the whole table');
+      assert.deepEqual(calls.aggregate, [], 'and none of it costs a scan');
+
+      assert.deepEqual(await table.probe({filter: 'done = false'}), {count: 3, last: '2026-09-16T10:00:00Z'});
+      await table.probe({search: 'pro'});
+      await table.probe({deleted: 'only'});
+      assert.equal(calls.version, 3, 'a narrowed read never asks the token: it says nothing about a subset');
+      assert.equal(calls.aggregate.length, 3);
+      assert.deepEqual(calls.aggregate[0].measures,
+        [{fn: 'count'}, {fn: 'max', column: 'updated_on', as: 'last'}]);
+    } finally {
+      delete grok.dapi.domains.table;
+      delete grok.dapi.domains.registry;
+    }
+  });
+
+scoped('a change token that moves refreshes a clean source and marks a dirty one stale', async () => {
+  const be = tokened();
+  const src = await started(be);
+  await tick();
+  assert.equal(be.calls.token, 1, 'one token read per interval');
+  await tick();
+  assert.equal(src.stale.value, false, 'a token that did not move is not a change');
+
+  const issue = await be.backend.table('grit.issue');
+  await issue.transaction([{op: 'insert', table: 'issue', values: {project_id: 'p1', number: 9, title: 'Theirs'}}]);
+  be.state.seq++;
+  await tick();
+  await flush();
+  assert.equal(src.rows.items.value.length, 4, 'the token moved, so the rows were read again');
+
+  // the reload re-baselines, so the next poll is the one that can see a move again
+  await tick();
+  src.rows.items.value[0].title = 'Mine';
+  await flush();
+  be.state.seq++;
+  await tick();
+  assert.equal(src.stale.value, true, 'a session with changes of its own is marked, not reloaded');
+  assert.equal(be.calls.aggregate, 0, 'nothing was counted along the way');
+  src.dispose();
+});
+
+scoped('narrowing the query re-baselines: the shapes never meet in one comparison', async () => {
+  const be = tokened();
+  const src = await started(be);
+  await tick();
+  assert.equal(be.calls.token, 1);
+
+  src.query.value = 'done = false';
+  await flush();
+  await tick();
+  assert.equal(be.calls.aggregate, 1, 'a narrowed source counts');
+  assert.equal(src.stale.value, false, 'and the first poll after the change only baselines');
+  const rows = src.rows.items.value.length;
+  await tick();
+  assert.equal(src.rows.items.value.length, rows, 'no false change out of the shape swap');
+
+  src.query.value = '';
+  await flush();
+  await tick();
+  assert.equal(be.calls.token, 2, 'back to the whole table, back to the token');
+  assert.equal(src.stale.value, false);
+  src.dispose();
+});
 
 const dialogButton = (text) =>
   [...document.body.querySelectorAll('.u2-dialog button')].find((b) => b.textContent === text);

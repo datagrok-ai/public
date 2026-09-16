@@ -85,6 +85,13 @@ export type DomainRowAccess = {'~can_edit': boolean; '~can_delete': boolean; '~c
  * They all start with `'~'`: never exported, and hidden by `Grid.attachEditor`. */
 export const DOMAIN_SERVICE_COLUMNS = [...DOMAIN_ACCESS_COLUMNS, '~is_deleted'] as const;
 
+/** Prefix of the caption service columns (see {@link DomainQuerySpec.captions}) — spelled once. */
+export const DOMAIN_CAPTION_PREFIX = '~caption_';
+
+/** The service column `captions: ['<column>']` projects for a ref column: the target row's
+ * display name, or null where the caller cannot see the target. */
+export function domainCaptionColumn(column: string): string { return `${DOMAIN_CAPTION_PREFIX}${column}`; }
+
 /** Splits the `'<schema>.<table>'` address every domain client and UI component
  * takes, throwing on a malformed one — the single spelling of that contract. */
 export function splitDomainTable(name: string): [string, string] {
@@ -161,6 +168,36 @@ export interface DomainGrant {
  * {@link DomainAccess.fields} altogether. */
 export type FieldAccess = 'editable' | 'readonly';
 
+/** What a domain table can do AT ALL, independent of the caller — the server's one answer
+ * ({@link DomainAccess.support}) for every optional behaviour a client would otherwise guess
+ * from the table's shape. Orthogonal to {@link DomainAccess.can}: `can` is this caller's
+ * permission, `support` is the table's storage and declaration. A client installs an optional
+ * affordance only when its flag is true, and refuses by name when it is false — never probes. */
+export interface DomainSupport {
+  /** The system columns this table physically has, in projection order. A registration that
+   * declares a subset (a platform table exposed through the `Core` schema) lists only those. */
+  systemColumns: DomainSystemColumn[];
+  /** The engine accepts writes ({@link DomainTableClient.insert} / {@link DomainTableClient.update} /
+   * {@link DomainTableClient.batch} / {@link DomainTableClient.updateWhere}). False for a read-only,
+   * entity-backed or system-subset registration — which answers `403 read-only` for every write. */
+  writes: boolean;
+  /** Soft delete: `deleted: 'include' | 'only'` reads and the `~is_deleted` service column. */
+  deleted: boolean;
+  /** {@link DomainTableClient.restore} brings a soft-deleted row back ({@link writes} AND {@link deleted}). */
+  restore: boolean;
+  /** Writes leave an in-transaction audit trail ({@link DomainTableClient.audit} /
+   * {@link DomainTableClient.auditLog}); row watch needs it too. */
+  audit: boolean;
+  /** The table declares a hierarchy, so {@link DomainTableClient.pathTo} and the `under` filter
+   * term answer. On a flat table `pathTo` is a {@link DomainUnsupportedError}, while `under` on a
+   * column that is not a tree reads as an unknown column ({@link DomainFilterError}) — no oracle. */
+  ancestors: boolean;
+  /** The table carries `updated_on`, so a live client can poll for the newest write. */
+  probe: boolean;
+  /** {@link DomainTableClient.watch} subscribes to change notifications. */
+  watch: boolean;
+}
+
 /** Effective access of the CURRENT user on one domain table
  * (see `DomainTableClient.access`). Composed by the SERVER
  * (`GET /domains/{schema}/{table}/access`) from the same predicates its reads
@@ -216,6 +253,9 @@ export interface DomainAccess {
   /** Whether writes leave an in-transaction audit trail. */
   audit: boolean;
   hasBusinessKey: boolean;
+  /** What the TABLE can do, independent of this caller — computed once on the server from the
+   * registration, so a client never guesses an affordance from the table's shape. */
+  support: DomainSupport;
 }
 
 /** FK-inverted reference to a child (detail) table — drives detail-table links
@@ -285,7 +325,7 @@ export class DomainError extends Error {
     this.name = new.target.name;
   }
   /** Server discriminant: 'validation' | 'version-conflict' | 'restrict' | 'filter' |
-   * 'forbidden' | 'not-found' | 'manifest-validation' | 'invalid-mode' | 'id-collision' |
+   * 'forbidden' | 'not-found' | 'unsupported' | 'manifest-validation' | 'invalid-mode' | 'id-collision' |
    * 'destructive-confirmation-required' | schema-mgmt codes | '' (transport). */
   get code(): string { return `${this.body['error'] ?? ''}`; }
   /** Index of the failing op in a transaction ops list; undefined otherwise. */
@@ -312,6 +352,14 @@ export class DomainNotFoundError extends DomainError {}           // code 'not-f
 export class DomainManifestValidationError extends DomainError {  // code 'manifest-validation'
   get errors(): {[key: string]: any}[] { return this.body['errors'] ?? []; }
 }
+/** The one refusal for an operation this table's storage or declaration cannot do (422) —
+ * `pathTo` on a flat table. Distinct from a permission failure
+ * ({@link DomainForbiddenError}): no grant makes it succeed. {@link DomainAccess.support}
+ * says the same thing BEFORE the call, so a client should never see this one. */
+export class DomainUnsupportedError extends DomainError {         // code 'unsupported'
+  /** The operation the table cannot do ('ancestors', 'batch', …). */
+  get op(): string { return `${this.body['op'] ?? ''}`; }
+}
 
 /** Maps the interop's '#domainError' plain object to a typed class; passes anything else through. */
 export function toDomainError(e: any): any {
@@ -325,6 +373,7 @@ export function toDomainError(e: any): any {
     'filter': DomainFilterError,
     'forbidden': DomainForbiddenError,
     'not-found': DomainNotFoundError,
+    'unsupported': DomainUnsupportedError,
     'manifest-validation': DomainManifestValidationError,
   } as {[code: string]: typeof DomainError})[`${body['error']}`] ?? DomainError;
   return new ctor(`${e.message ?? body['message'] ?? 'Domain request failed'}`, e.status ?? 0, body);
@@ -375,12 +424,31 @@ export interface DomainQueryParams {
   offset?: number;
 }
 
-/** Query options for domain table `query`/`queryDf`. */
-export interface DomainQuerySpec<TColumn extends string = string, TExpandKey extends string = string> {
+/** The part of a read that selects ROWS rather than shapes the page: what
+ * {@link DomainTableClient.count}, {@link DomainTableClient.exists},
+ * {@link DomainTableClient.aggregate} and {@link DomainTableClient.query} all narrow by.
+ * One object, so a caller cannot pass `filter` and forget `deleted` — a total that disagrees
+ * with the rows it counts is the bug this shape removes. */
+export interface DomainReadScope<TColumn extends string = string> {
   /** Smart-filter string (same grammar as entity search, e.g. `barcode starts "P-1"`),
    * a single condition, or the canonical condition tree — values are bound server-side.
    * Row caps: JSON `query` 10k, d42 `queryDf` 10M. */
   filter?: DomainFilter<TColumn>;
+  /** Case-insensitive substring over the table's searchable columns — those declared
+   * `searchable: true`, else the name column ({@link DomainTableInfo.searchableColumns});
+   * a table with neither rejects with a filter error. ANDed with `filter`. */
+  search?: string;
+  /** Soft-deleted rows: `'exclude'` (the default — only live rows), `'include'` (both) or
+   * `'only'` (the trash). Anything but `'exclude'` also projects `~is_deleted`
+   * ({@link DOMAIN_SERVICE_COLUMNS}); a deleted row is read-only until
+   * {@link DomainTableClient.restore} brings it back. Needs {@link DomainSupport.deleted}. */
+  deleted?: 'exclude' | 'include' | 'only';
+}
+
+/** Query options for domain table `query`/`queryDf`: a {@link DomainReadScope} plus what
+ * shapes the page. */
+export interface DomainQuerySpec<TColumn extends string = string, TExpandKey extends string = string>
+    extends DomainReadScope<TColumn> {
   /** Comma-separated column list; `!` prefix for descending, e.g. `'name,!created_on'`. */
   sort?: string;
   /** Columns to return; omit for all viewable columns. */
@@ -398,15 +466,21 @@ export interface DomainQuerySpec<TColumn extends string = string, TExpandKey ext
    * `queryDf` frames as trailing bool columns. Row-level truth where the table-level
    * {@link DomainAccess.can} flags are false negatives. */
   withAccess?: boolean;
-  /** Case-insensitive substring over the table's searchable columns — those declared
-   * `searchable: true`, else the name column ({@link DomainTableInfo.searchableColumns});
-   * a table with neither rejects with a filter error. ANDed with `filter`. */
-  search?: string;
-  /** Soft-deleted rows: `'exclude'` (the default — only live rows), `'include'` (both) or
-   * `'only'` (the trash). Anything but `'exclude'` also projects `~is_deleted`
-   * ({@link DOMAIN_SERVICE_COLUMNS}); a deleted row is read-only until
-   * {@link DomainTableClient.restore} brings it back. */
-  deleted?: 'exclude' | 'include' | 'only';
+  /** Ref columns to project the TARGET ROW'S DISPLAY NAME for, each as one service column
+   * `'~caption_<column>'` ({@link domainCaptionColumn}) — string, nullable, in request order.
+   * A list renders `project_id` as 'Apollo' without a second round trip and without the
+   * caller knowing which column of the target is its name.
+   *
+   * Name only: never a target field (use {@link expand} for those), never nested
+   * (`'a.b'` rejects), never a duplicate, and never a non-ref or invisible column — all four
+   * reject with a {@link DomainFilterError} that names nothing else (no oracle). A target row
+   * the caller may not View reads NULL, exactly like a target that does not exist. Captions are
+   * not fields: absent from {@link DomainAccess.fields}, never editable, excluded from csv and
+   * binary export. Independent of {@link columns}: a caption may be asked for a ref column that
+   * is not projected, and asking for one never projects the ref column itself.
+   *
+   * One LEFT JOIN per caption per page — never default them on. */
+  captions?: TColumn[];
 }
 
 /** One measure of {@link DomainAggregateSpec}: `fn` over `column` (`count` needs no column);
@@ -417,14 +491,15 @@ export interface DomainAggregateMeasure<TColumn extends string = string, TAlias 
   as?: TAlias;
 }
 
-/** Spec for domain table `aggregate`. */
+/** Spec for domain table `aggregate`: a {@link DomainReadScope} (the rows aggregated —
+ * `search` and `deleted` narrow it exactly as they narrow {@link DomainQuerySpec}) plus the
+ * grouping. */
 export interface DomainAggregateSpec<TColumn extends string = string,
-    TGroup extends string = string, TAlias extends string = string> {
+    TGroup extends string = string, TAlias extends string = string>
+    extends DomainReadScope<TColumn> {
   /** Column names to group by; omit for a single-row grand total. */
   groupBy?: (DomainColumnRef<TColumn> & TGroup)[];
   measures: DomainAggregateMeasure<TColumn, TAlias>[];
-  /** Filter applied before aggregation (smart string, condition, or condition tree). */
-  filter?: DomainFilter<TColumn>;
   /** Comma-separated output names (group columns or measure aliases); `!` prefix for descending. */
   sort?: string;
   limit?: number;
@@ -541,6 +616,40 @@ export interface DomainBatchOptions {
    * Arrow is not installed). Ignored for other payloads — the format is inferred:
    * DataFrame → sent as d42, string → `'csv'`, object[] → `'json'`. */
   format?: 'csv' | 'd42' | 'parquet' | 'json';
+  /** Judge the payload and write NOTHING: the server runs the whole commit path — coercions,
+   * per-row validation, required and auto-number checks, intra-batch and live business-key
+   * duplicates, FK existence, immutable columns, and the merge itself — then rolls the
+   * transaction back, so the verdicts are the ones a real commit would produce. Resolves to a
+   * {@link DomainBatchValidation} instead of a {@link DomainBatchReport}; `allOrNothing` is
+   * forced false (a preview judges every row). */
+  validateOnly?: boolean;
+}
+
+/** Per-row verdict of a `batch({validateOnly: true})` preview. `predicted` is what the row WOULD
+ * do; there is no `id` and no `status` — the id of a rolled-back insert does not exist. */
+export interface DomainBatchValidationRow {
+  index: number;
+  predicted: 'insert' | 'update' | 'skip' | 'error';
+  /** The row this payload row matched by business key — set for `'update'` and `'skip'` only. */
+  existingId?: string;
+  errors?: DomainColumnError[];
+}
+
+/** What `batch({validateOnly: true})` answers: the counts a commit of this payload would report
+ * and the per-row verdicts (capped server-side at 1000, ordered errors → skips → updates →
+ * inserts). Its own shape, so a predicted insert can never be read as a completed write.
+ *
+ * A prediction against the table AS IT IS NOW: a concurrent write between the preview and the
+ * commit can change any verdict. Nothing is written, audited, counted or notified by a
+ * validation — not a row, not an audit entry, not an auto-number, not a watcher. */
+export interface DomainBatchValidation {
+  validateOnly: true;
+  rowCount: number;
+  willInsert: number;
+  willUpdate: number;
+  willSkip: number;
+  errorCount: number;
+  rows: DomainBatchValidationRow[];
 }
 
 /** Batch upload report of domain table `batch`. */
@@ -553,6 +662,14 @@ export interface DomainBatchReport {
   rows: DomainBatchRowResult[];
   /** Set when the batch failed but a per-row report is available (e.g. an allOrNothing abort). */
   error?: string;
+}
+
+/** The table's change token ({@link DomainTableClient.version}): `seq` moves by one per write
+ * TRANSACTION that touched the table's rows (not per row), `at` is when it last moved — null
+ * until the first write. */
+export interface DomainTableVersion {
+  seq: number;
+  at: string | null;
 }
 
 /** Insert payload for domain table `insert`: row values plus an optional

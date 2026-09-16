@@ -47,6 +47,21 @@ export const scenarios = [
     },
   },
   {
+    name: 'an unsupported op is refused by name: the member and the flag agree',
+    requires: [],
+    seed: [],
+    async run(table, ids, t) {
+      const support = table.support;
+      t.ok(support !== undefined, 'the backend declares what it can do');
+      for (const [member, flag] of [['restore', 'restore'], ['ancestors', 'ancestors'],
+        ['updateWhere', 'writes'], ['batch', 'writes'], ['probe', 'probe'], ['audit', 'audit']]) {
+        t.equal(table[member] !== undefined, support[flag] === true,
+          `${member} is installed exactly when support.${flag} says so`);
+      }
+      t.ok(support.systemColumns.includes('id'), 'the projection always carries the id');
+    },
+  },
+  {
     name: 'updateWhere: a limit of 0 is clamped to one row and says the filter matched more',
     requires: ['updateWhere'],
     seed: [

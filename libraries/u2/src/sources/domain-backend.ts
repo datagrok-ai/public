@@ -62,9 +62,44 @@ export interface DomainQueryLike {
  * Every read takes the same object, so a caller cannot forward `filter` and forget `deleted`. */
 export type DomainReadScope = Pick<DomainQueryLike, 'filter' | 'search' | 'deleted'>;
 
+/** What a table can do AT ALL, independent of the caller — the backend's own answer for every
+ * optional behaviour a control would otherwise guess from the table's shape. The platform
+ * computes it once per handle (`DomainAccess.support`); the memory backend computes it from the
+ * schema.
+ *
+ * The rule, once: an optional member of {@link DomainTableLike} is installed only when its flag
+ * is true, and a caller checks `=== undefined` and refuses BY NAME. Nothing is guessed, and a
+ * member that is there always works. */
+export interface DomainSupportLike {
+  /** The system columns the table physically has, in projection order — a registration declaring
+   * a subset lists only what it carries. */
+  systemColumns: string[];
+  /** The engine accepts writes: gates {@link DomainTableLike.updateWhere} and
+   * {@link DomainTableLike.batch}. */
+  writes: boolean;
+  /** Soft delete: `deleted: 'include' | 'only'` reads and `~is_deleted`. */
+  deleted: boolean;
+  /** Gates {@link DomainTableLike.restore} — and with it a `deleted` source at all. */
+  restore: boolean;
+  /** Gates {@link DomainTableLike.audit}. */
+  audit: boolean;
+  /** The table declares a hierarchy, so {@link DomainTableLike.ancestors} answers. */
+  ancestors: boolean;
+  /** Gates {@link DomainTableLike.probe} — the table carries `updated_on`, or a change token. */
+  probe: boolean;
+  /** The backend can tell a client that rows changed without being asked. The memory backend has
+   * no subscriptions and says so. */
+  watch: boolean;
+}
+
 /** What one poll of a live source learns: how many rows match the query and when the newest of
  * them was last written — the platform's aggregate `count` + `max(updated_on)` in one request.
- * `last` is null over an empty match. */
+ * `last` is null over an empty match.
+ *
+ * `count: -1` means NOT COUNTED: the backend answered the whole question with a change token
+ * ({@link DomainTableLike.probe} over an unscoped read), so `last` alone moves. A source only
+ * ever compares the pair against its own previous poll, and re-baselines whenever the scope
+ * changes, so the two shapes never meet in one comparison. */
 export interface DomainProbeLike {
   count: number;
   last: string | null;
@@ -143,6 +178,8 @@ export interface DomainTableLike {
   address: string;
   properties: IProperty[];
   info: DomainTableInfoLike;
+  /** What the table can do at all — declared, never guessed; see {@link DomainSupportLike}. */
+  readonly support: DomainSupportLike;
   access(): Promise<AccessData>;
   query(spec: DomainQueryLike): Promise<Record<string, unknown>[]>;
   /** The total under the same scope a query takes. */

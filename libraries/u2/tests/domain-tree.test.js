@@ -106,12 +106,13 @@ scoped('a non-hierarchy table is refused by name; no ancestors, no path', async 
   assert.throws(() => domains.tree(issue), (e) => e.code === 'filter' &&
     /grit\.issue is not a hierarchy table/.test(e.message));
 
-  // a backend without `ancestors` keeps the tree, and says why the path did not open
+  // a backend that declares no ancestors keeps the tree, and says why the path did not open
   const be = hierarchyBackend();
   const inner = await be.table('stock.location');
   const stripped = {...inner, query: (spec) => inner.query(spec), access: () => inner.access(),
     count: (f, s, d) => inner.count(f, s, d), transaction: (ops) => inner.transaction(ops),
-    frame: (spec) => inner.frame(spec), ancestors: undefined};
+    frame: (spec) => inner.frame(spec), ancestors: undefined,
+    support: {...inner.support, ancestors: false}};
   const {tree: t} = await tree({expandTo: 'l4'}, {table: () => Promise.resolve(stripped)});
   assert.deepEqual(labels(t), ['Other site', 'Site'], 'the roots are still there');
   assert.match(t.error.value, /cannot answer a row's ancestors/);

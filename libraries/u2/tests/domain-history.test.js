@@ -135,6 +135,25 @@ scoped('the actor is the user\'s name, looked up once per id; a draft is not sav
   draft.dispose();
 });
 
+scoped('a table that keeps no history says so instead of showing an empty list', async () => {
+  const memory = backend();
+  const issue = memory.tableSync('grit.issue');
+  issue.support = {...issue.support, audit: false};
+  Object.defineProperty(issue, 'audit', {value: undefined, configurable: true});
+  backends.domain = memory;
+  const table = await domains.table('grit.issue');
+  const source = table.source();
+  await flush();
+  source.currentRow.value = source.rows.items.value[0];
+  const history = domains.history(source);
+  await settle();
+  const hint = history.root.querySelector('[data-u2-part="hint"]');
+  assert.equal(hint.textContent, 'This table keeps no history.');
+  assert.equal(history.view.root.hidden, true, 'and no empty list nothing will ever fill');
+  history.dispose();
+  source.dispose();
+});
+
 scoped('spec: u2-domain-history over a bound source', async () => {
   backends.domain = backend();
   const table = await domains.table('grit.issue');

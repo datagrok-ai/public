@@ -1277,6 +1277,7 @@ export interface IDartApi {
   grok_Dapi_Domains_AggregateDf(c: any, schema: String, table: String, spec: any): Promise<any>;
   grok_Dapi_Domains_Upsert(c: any, schema: String, table: String, row: any): Promise<any>;
   grok_Dapi_Domains_TableAudit(c: any, schema: String, table: String, limit: any): Promise<any>;
+  grok_Dapi_Domains_Version(c: any, schema: String, table: String): Promise<any>;
   grok_Dapi_Domains_Watch(c: any, schema: String, table: String, id: String): Promise<any>;
   grok_Dapi_Domains_Unwatch(c: any, schema: String, table: String, id: String): Promise<any>;
   grok_Dapi_Domains_IsWatching(c: any, schema: String, table: String, id: String): Promise<any>;

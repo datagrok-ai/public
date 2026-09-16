@@ -483,20 +483,32 @@ test('batch: allOrNothing answers the report with error set and writes nothing; 
   assert.deepEqual((await project.query()).map((r) => r.key), ['GRIT', 'DG', 'A']);
 });
 
-test('ancestors: root-first, without the row itself; a non-hierarchy table is refused by name', async () => {
+test('ancestors: root-first, without the row itself; a non-hierarchy table does not answer it at all', async () => {
   const location = locations();
   assert.equal(location.info.hierarchy, true);
   assert.equal(location.info.parentColumn, 'parent_id');
+  assert.equal(location.support.ancestors, true);
   assert.deepEqual(await location.ancestors('l1'), [], 'a root has none');
   assert.deepEqual(await location.ancestors('l9'), []);
   assert.deepEqual(await location.ancestors('nope'), [], 'a row the caller cannot see answers no path');
 
+  // declared, never guessed: the member is absent and `support` says why, so a caller refuses by
+  // name instead of calling something that would throw
   const issue = await backend().table('grit.issue');
-  await assert.rejects(issue.ancestors('i1'),
-    (e) => e.code === 'filter' && /grit\.issue is not a hierarchy table/.test(e.message),
-    'the server answers DomainFilterError, whose wire code is "filter"');
+  assert.equal(issue.support.ancestors, false);
+  assert.equal(issue.ancestors, undefined);
   assert.throws(() => new MemoryDomainBackend({name: 's', tables: {t: {hierarchy: true,
     columns: {x: {type: 'int'}}}}}), (e) => /invalid-hierarchy/.test(e.message));
+});
+
+test('support: what the memory backend declares, and every optional member installed to match', async () => {
+  const issue = await backend().table('grit.issue');
+  assert.deepEqual(issue.support, {systemColumns: ['id', 'version', 'created_on', 'updated_on', 'author_id'],
+    writes: true, deleted: true, restore: true, audit: true, ancestors: false, probe: true, watch: false});
+  for (const [member, flag] of [['restore', 'restore'], ['ancestors', 'ancestors'], ['updateWhere', 'writes'],
+    ['batch', 'writes'], ['probe', 'probe'], ['audit', 'audit']])
+    assert.equal(issue[member] !== undefined, issue.support[flag], `${member} follows support.${flag}`);
+  assert.equal(locations().support.ancestors, true, 'a hierarchy table declares the walk it can do');
 });
 
 test('ancestors: the chain stops at an ancestor out of sight, at a cycle and at the depth cap', async () => {

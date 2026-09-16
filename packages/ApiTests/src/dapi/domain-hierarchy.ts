@@ -109,8 +109,8 @@ category('Dapi: domain hierarchy', () => {
       return;
     const [thing] = await things().query({limit: 1});
     const path = await thrown(() => things().pathTo(thing.id));
-    expect(path instanceof DG.DomainFilterError, true,
-      `pathTo on a flat table must be refused: ${path?.constructor?.name}: ${path}`);
+    expect(path instanceof DG.DomainUnsupportedError && path.op === 'ancestors', true,
+      `pathTo on a flat table must be refused as unsupported: ${path?.constructor?.name}: ${path}`);
     // No oracle: `under` on a column that is not a tree reads as an unknown column.
     const filter = await thrown(() => things().query({filter: `name under "${thing.id}"`}));
     expect(filter instanceof DG.DomainFilterError, true,

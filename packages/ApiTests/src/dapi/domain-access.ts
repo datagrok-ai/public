@@ -38,6 +38,51 @@ category('Dapi: domain access', () => {
     expect((await items().access()).can.edit, true, 'recompute after invalidation must succeed');
   });
 
+  test('support: what the TABLE can do, declared once and not guessed', async () => {
+    const support = (await items().access()).support;
+    expect(support != null, true,
+      'access() carries no `support` — the server predates the u2 x EMS contract (restart Datlas on this branch)');
+    expect(support.writes, true, 'a plugin-owned table accepts writes');
+    expect(support.deleted, true, 'a plugin-owned table soft-deletes');
+    expect(support.restore, true, 'writes + soft delete means restore');
+    expect(support.audit, true, 'apitests.item declares no audit:false, so the trail is on');
+    expect(support.ancestors, false, 'apitests.item declares no hierarchy');
+    expect(support.probe, true, 'apitests.item carries updated_on');
+    expect(support.watch, true, 'the platform backend has subscriptions');
+    expect(support.systemColumns.join(','), [...DG.DOMAIN_SYSTEM_COLUMNS].join(','),
+      `a full registration lists all five system columns: ${JSON.stringify(support.systemColumns)}`);
+    // Support is the TABLE's storage, `can` is this caller's permission: an admin with every
+    // right on a table that cannot do a thing still cannot do it.
+    expect(Object.keys(support).sort().join(','),
+      'ancestors,audit,deleted,probe,restore,systemColumns,watch,writes',
+      `unexpected support keys: ${JSON.stringify(support)}`);
+  });
+
+  test('support: a junction table declares the same storage as its master', async () => {
+    const support = (await grok.dapi.domains.table('apitests.item_tag').access()).support;
+    expect(support.writes, true, 'a junction is written through its links');
+    expect(support.ancestors, false, 'a junction declares no hierarchy');
+    expect(support.deleted && support.restore, true, 'a junction soft-deletes like any plugin table');
+    expect(support.systemColumns.length, 5, JSON.stringify(support.systemColumns));
+  });
+
+  test('support: a read-only Core registration installs no writes', async () => {
+    let access: any;
+    try {
+      access = await grok.dapi.domains.table('Core.users').access();
+    } catch (e: any) {
+      console.log(`skipped: Core.users is not registered on this stand (${e?.message ?? e})`);
+      return;
+    }
+    const support = access.support;
+    expect(support.writes, false, 'a read-only registration must not declare writes');
+    expect(support.restore, false, 'no writes means no restore');
+    expect(support.systemColumns.length < 5, true,
+      `a Core registration declares a system-column SUBSET: ${JSON.stringify(support.systemColumns)}`);
+    for (const c of support.systemColumns)
+      expect([...DG.DOMAIN_SYSTEM_COLUMNS].includes(c), true, `${c} is not a system column`);
+  });
+
   test('master mode secures on the delegate target', async () => {
     const junction = await grok.dapi.domains.table('apitests.item_tag').access();
     expect(junction.securityMode, 'master');

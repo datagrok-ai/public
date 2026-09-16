@@ -16,8 +16,9 @@ import type {AccessData, FieldAccess} from '../core/access.js';
 import {Access} from '../core/access.js';
 import {DomainBackendError} from './domain-backend.js';
 import type {AuditEntryLike, DomainBackend, DomainBatchOptionsLike, DomainBatchReportLike,
-  DomainFrameLike, DomainProbeLike, DomainQueryLike, DomainReadScope, DomainTableInfoLike,
-  DomainTableLike, DomainTransactionOpLike, DomainTransactionResultLike} from './domain-backend.js';
+  DomainFrameLike, DomainProbeLike, DomainQueryLike, DomainReadScope, DomainSupportLike,
+  DomainTableInfoLike, DomainTableLike, DomainTransactionOpLike,
+  DomainTransactionResultLike} from './domain-backend.js';
 import type {EditState} from './edit-state.js';
 import {MemoryEditState} from './edit-state.js';
 import {MemoryFrame} from './memory-frame.js';
@@ -321,6 +322,9 @@ export class MemoryTable implements DomainTableLike {
   readonly address: string;
   readonly properties: IProperty[];
   readonly info: DomainTableInfoLike;
+  readonly support: DomainSupportLike;
+  /** Installed only for a hierarchy table, as the seam's rule says — see {@link _ancestors}. */
+  readonly ancestors?: DomainTableLike['ancestors'];
   /** The store — what a query copies from and a transaction writes to. */
   readonly rows: Row[];
   /** Every ref column → its target address. */
@@ -360,6 +364,12 @@ export class MemoryTable implements DomainTableLike {
       hierarchy: json.hierarchy === true,
       parentColumn: json.hierarchy === true ? MemoryTable._parentColumn(this.address, this.refs) : null,
     };
+    // `watch` is false and means it: there are no subscriptions here, and declaring that is the
+    // point — a control gates on what the backend says, not on which backend it is
+    this.support = {systemColumns: SYSTEM.map(([column]) => column), writes: true, deleted: true,
+      restore: true, audit: true, ancestors: this.info.hierarchy === true, probe: true, watch: false};
+    if (this.support.ancestors)
+      this.ancestors = (id) => this._ancestors(id);
     this.rows = rows.map((row) => this.stamp({...row}, 1));
     const granted = Object.fromEntries(permissions.map((p) => [p, true]));
     this._access = access ? {can: {...granted, ...access.can}, fields: access.fields} : {
@@ -593,12 +603,9 @@ export class MemoryTable implements DomainTableLike {
   /** The row's ancestors along `info.parentColumn`, ROOT FIRST and without the row itself — the
    * server's `GET …/{id}/path`. The SEED level alone takes a deleted row, so a row opened from a
    * trash list still has its breadcrumb; the walk stops at an ancestor the caller cannot see
-   * (here: a deleted one), at a cycle, and at {@link maxPathDepth}; a table the schema does not
-   * declare a hierarchy is refused by name (`DomainFilterError` on the wire). */
-  async ancestors(id: string): Promise<{id: string, name: string}[]> {
-    const parent = this.info.parentColumn;
-    if (this.info.hierarchy !== true || parent === null || parent === undefined)
-      throw new DomainBackendError('filter', `${this.address} is not a hierarchy table`);
+   * (here: a deleted one), at a cycle, and at {@link maxPathDepth}. */
+  private async _ancestors(id: string): Promise<{id: string, name: string}[]> {
+    const parent = this.info.parentColumn!;
     const visible = (key: unknown) => typeof key !== 'string' ? undefined :
       this.rows.find((row) => row.id === key && row[IS_DELETED] !== true);
     // no-oracle: a row the caller cannot see answers no path, never that it exists

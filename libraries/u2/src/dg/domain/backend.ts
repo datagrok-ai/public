@@ -8,9 +8,10 @@ import * as DG from 'datagrok-api/dg';
 import type {IProperty} from '../../core/property-like.js';
 import {backends} from '../../sources/backends.js';
 import type {DataFrameLike} from '../../sources/df-bindings.js';
-import type {AuditEntryLike, DomainBackend, DomainBatchOptionsLike, DomainBatchReportLike, DomainDeletedMode,
-  DomainFrameLike, DomainProbeLike, DomainQueryLike, DomainReadScope, DomainTableInfoLike, DomainTableLike,
-  DomainTransactionOpLike, DomainTransactionResultLike} from '../../sources/domain-backend.js';
+import type {AuditEntryLike, DomainBackend, DomainBatchReportLike, DomainDeletedMode,
+  DomainFrameLike, DomainProbeLike, DomainQueryLike, DomainReadScope, DomainSupportLike, DomainTableInfoLike,
+  DomainTableLike, DomainTransactionOpLike, DomainTransactionResultLike} from '../../sources/domain-backend.js';
+import {DomainBackendError} from '../../sources/domain-backend.js';
 import type {EditState} from '../../sources/edit-state.js';
 import {EditorEditState} from './editor-state.js';
 
@@ -28,14 +29,21 @@ export const SYSTEM_COLUMNS: readonly (readonly [name: string, type: string, cap
 /** The phase-3 calls, through a cast: a package compiles these sources against the PUBLISHED
  * `datagrok-api` types (1.27.11 in every plugin's node_modules), so `client.restore` — and
  * `deleted` in `count`'s options, which `dapi.ts` does not take at all yet — would break every
- * plugin build. Drops when the js-api release carrying them is out. */
+ * plugin build. Typed here exactly as the server answers them, so the cast hides the version and
+ * nothing else. The shim STAYS until the js-api release carrying this surface is out; phase 3-7
+ * deletes it. */
 interface PhaseThreeClient {
   restore(id: string): Promise<{id: string, restored: boolean, version: number}>;
-  count(filter: unknown, options: {search?: string, deleted?: DomainDeletedMode}): Promise<number>;
-  updateWhere(filter: unknown, values: Record<string, unknown>,
+  count(filter: DomainQueryLike['filter'], options: {search?: string, deleted?: DomainDeletedMode}): Promise<number>;
+  updateWhere(filter: DomainQueryLike['filter'], values: Record<string, unknown>,
     options?: {limit?: number}): Promise<{updated: number, hasMore: boolean}>;
   pathTo(id: string): Promise<{id: string, name: string}[]>;
-  aggregate(spec: unknown): Promise<Record<string, unknown>[]>;
+  aggregate(spec: {measures: {fn: string, column?: string, as?: string}[]} & DomainReadScope):
+    Promise<Record<string, unknown>[]>;
+  /** The table's change token: one bump per write transaction that touched its rows. */
+  version(): Promise<{seq: number, at: string | null}>;
+  access(): Promise<{can: Record<string, boolean>, fields: Record<string, string>,
+    support?: DomainSupportLike}>;
 }
 
 /** {@link DgDomainBackend.saveAll}'s share of the same debt: `DomainSession.lastRefusal` is not
@@ -92,27 +100,61 @@ export class DgDomainBackend implements DomainBackend {
 
 export class DgDomainTable implements DomainTableLike {
   readonly properties: IProperty[];
+  /** The six optional members, installed only where {@link support} says the table has them:
+   * a control checks `=== undefined` and refuses by name, and never has to guess. */
+  readonly audit?: DomainTableLike['audit'];
+  readonly restore?: DomainTableLike['restore'];
+  readonly updateWhere?: DomainTableLike['updateWhere'];
+  readonly ancestors?: DomainTableLike['ancestors'];
+  readonly probe?: DomainTableLike['probe'];
+  readonly batch?: DomainTableLike['batch'];
 
   private constructor(readonly address: string, readonly client: DG.DomainTableClient,
-    readonly registryProperties: DG.Property[], readonly tableInfo: DG.DomainTableInfo) {
-    this.properties = DgDomainTable.withSystem(registryProperties.map((p) => DgDomainTable.property(p)));
+    readonly registryProperties: DG.Property[], readonly tableInfo: DG.DomainTableInfo,
+    readonly support: DomainSupportLike) {
+    this.properties = DgDomainTable.withSystem(registryProperties.map((p) => DgDomainTable.property(p)),
+      support.systemColumns);
+    if (support.audit)
+      this.audit = (id) => this._audit(id);
+    if (support.restore)
+      this.restore = (id) => this._restore(id);
+    if (support.writes) {
+      this.updateWhere = (filter, values, options) => this._phase3.updateWhere(filter, values, options);
+      this.batch = (rows, options) => this.client.batch(rows, options as DG.DomainBatchOptions) as
+        Promise<DomainBatchReportLike>;
+    }
+    if (support.ancestors)
+      this.ancestors = (id) => this._phase3.pathTo(id);
+    if (support.probe)
+      this.probe = (scope) => this._probe(scope);
   }
 
+  /** The handle keeps `support` for its lifetime — one registry generation, exactly as the
+   * js-api's access cache is; `can`/`fields` are read fresh at every {@link frame}. A server that
+   * does not declare it is one boundary failure, never a permissive default: guessing what a
+   * table can do is what the declaration replaces. */
   static async load(address: string): Promise<DgDomainTable> {
     const client = grok.dapi.domains.table(address);
     const registry = grok.dapi.domains.registry;
-    const [properties, info] = await Promise.all([registry.rowProperties(address), registry.tableInfo(address)]);
-    return new DgDomainTable(address, client, properties, info);
+    const [properties, info, access] = await Promise.all([registry.rowProperties(address),
+      registry.tableInfo(address), (client as unknown as PhaseThreeClient).access()]);
+    if (access.support === undefined) {
+      throw new DomainBackendError('unsupported',
+        `${address}: the server did not declare its support — restart Datlas on this branch`);
+    }
+    return new DgDomainTable(address, client, properties, info, access.support);
   }
 
-  /** The system columns every row carries, ahead of the declared ones — as the memory backend
-   * lists them, since the registry describes declared columns only. */
-  static withSystem(declared: IProperty[]): IProperty[] {
+  /** The system columns every row carries, ahead of the declared ones — `names` is what this
+   * table physically has (`support.systemColumns`), so a registration declaring a subset lists
+   * only that; the registry describes declared columns only. */
+  static withSystem(declared: IProperty[], names: readonly string[]): IProperty[] {
     const own = new Set(declared.map((p) => p.name));
-    const system = SYSTEM_COLUMNS.filter(([name]) => !own.has(name)).map(([name, type, caption]): IProperty => ({
-      name, type, propertyType: type, friendlyName: caption, ...(name === 'author_id' ? {semType: 'User'} : {}),
-      get: (row: Record<string, unknown>) => row[name],
-    } as IProperty));
+    const system = SYSTEM_COLUMNS.filter(([name]) => !own.has(name) && names.includes(name))
+      .map(([name, type, caption]): IProperty => ({
+        name, type, propertyType: type, friendlyName: caption, ...(name === 'author_id' ? {semType: 'User'} : {}),
+        get: (row: Record<string, unknown>) => row[name],
+      } as IProperty));
     return [...system, ...declared];
   }
 
@@ -129,25 +171,22 @@ export class DgDomainTable implements DomainTableLike {
   }
 
   count(scope: DomainReadScope = {}): Promise<number> {
-    return this._phase3.count(scope.filter as DG.DomainFilter | undefined,
-      {search: scope.search, deleted: scope.deleted});
+    return this._phase3.count(scope.filter, {search: scope.search, deleted: scope.deleted});
   }
 
-  async restore(id: string): Promise<void> {
+  private async _restore(id: string): Promise<void> {
     await this._phase3.restore(id);
   }
 
-  updateWhere(filter: DomainQueryLike['filter'], values: Record<string, unknown>,
-    options?: {limit?: number}): Promise<{updated: number, hasMore: boolean}> {
-    return this._phase3.updateWhere(filter, values, options);
-  }
-
-  ancestors(id: string): Promise<{id: string, name: string}[]> {
-    return this._phase3.pathTo(id);
-  }
-
-  /** ONE aggregate for the poll: how many rows match, and when the newest of them was written. */
-  async probe(spec: DomainReadScope = {}): Promise<DomainProbeLike> {
+  /** ONE aggregate for the poll: how many rows match, and when the newest of them was written —
+   * or, over the whole live table, ONE read of the change token, which moves once per write
+   * transaction and costs no scan at all. `count: -1` says nothing was counted; a source compares
+   * the pair against its own previous poll and re-baselines whenever the scope changes. */
+  private async _probe(spec: DomainReadScope = {}): Promise<DomainProbeLike> {
+    if (DgDomainTable._unscoped(spec)) {
+      const version = await this._phase3.version();
+      return {count: -1, last: String(version.seq)};
+    }
     const rows = await this._phase3.aggregate({
       measures: [{fn: 'count'}, {fn: 'max', column: 'updated_on', as: 'last'}],
       ...(spec.filter === undefined ? {} : {filter: spec.filter}),
@@ -158,8 +197,13 @@ export class DgDomainTable implements DomainTableLike {
     return {count: Number(row.count ?? 0), last: row.last == null ? null : String(row.last)};
   }
 
-  batch(rows: Record<string, unknown>[], options?: DomainBatchOptionsLike): Promise<DomainBatchReportLike> {
-    return this.client.batch(rows, options as DG.DomainBatchOptions) as Promise<DomainBatchReportLike>;
+  /** Whether a read selects nothing at all — the whole live table, which the change token answers
+   * for. An empty condition tree is what an empty filter builder compiles to. */
+  private static _unscoped(scope: DomainReadScope): boolean {
+    const filter = scope.filter;
+    return (filter === undefined || filter === '' || (Array.isArray(filter) && filter.length === 0)) &&
+      (scope.search === undefined || scope.search === '') &&
+      (scope.deleted === undefined || scope.deleted === 'exclude');
   }
 
   private get _phase3(): PhaseThreeClient {
@@ -172,7 +216,7 @@ export class DgDomainTable implements DomainTableLike {
 
   /** The row's history as the seam shapes it: `id` is the ROW (the memory backend's key), the
    * platform's audit sequence number is not kept. */
-  async audit(id: string): Promise<AuditEntryLike[]> {
+  private async _audit(id: string): Promise<AuditEntryLike[]> {
     const entries = await this.client.audit(id);
     return entries.map((e) => ({...e, id, tx_id: e.tx_id === null ? '' : String(e.tx_id)}));
   }

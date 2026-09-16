@@ -2,6 +2,8 @@
 
 ## v.next
 
+* GROK-20753: Added dapi/domains/captions.js (`captions: ['<ref>']` projecting `~caption_<ref>` — the target's display name, why it is not an expand, null for a target the caller cannot View, and the no-oracle refusals), dapi/domains/import-validate.js (`batch({validateOnly: true})` previewing an import — per-row `predicted` verdicts, no id, nothing written — then committing the same payload) and dapi/domains/live-version.js (`version()` as a live list's poll: one bump per write transaction, re-read only when `seq` moves); access.js gained the `support` block (what the TABLE can do, gated instead of guessed)
+
 * GROK-20753: Added dapi/domains/bulk-edit.js (`updateWhere` over a selection and over a filter, the `hasMore` loop, a refused value leaving nothing written) and dapi/domains/hierarchy.js (`pathTo` as a breadcrumb of ancestors, the `under` subtree term through the tree's id and through a ref column into it); trash.js shows `get(id, {deleted: 'only'})` addressing a trashed row
 * GROK-20753: Added dapi/domains/trash.js — the soft-delete round trip: `query({deleted: 'only'})` as the table's trash (rows carrying `~is_deleted`), a `deleted: 'include'` frame whose csv drops the service column, and `restore(id)` with its `'undelete'` audit entry
 * GROK-20753: Removed the `dapi/domains/facade-*.js` and `app-view.js` samples with the `@datagrok-libraries/domain-ui` library they demonstrated — app UI over domain tables is the u2 domain stack (see the Stockroom and Grit packages), which a sample script cannot import

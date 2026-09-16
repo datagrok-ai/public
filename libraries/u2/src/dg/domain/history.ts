@@ -4,6 +4,7 @@
    saves. A draft has no history yet, and says so. */
 import * as grok from 'datagrok-api/grok';
 import {Control} from '../../core/component.js';
+import {signal} from '../../core/signals.js';
 import type {ReadonlySignal} from '../../core/signals.js';
 import {AsyncSource} from '../../core/async-source.js';
 import {div, divH, span, timestamp} from '../../core/elements.js';
@@ -37,6 +38,9 @@ export class DomainHistory extends Control {
   readonly view: AsyncView<AuditEntryLike>;
 
   private readonly _hint: HTMLElement;
+  /** Whether the table keeps no history at all — its handle declares it, so the pane says so
+   * instead of showing an empty list nothing will ever fill. */
+  private readonly _noHistory = signal(false);
   /** id → the name behind it, resolved once per pane: the actors and the ref cells alike. */
   private readonly _names = new Map<string, Promise<string>>();
 
@@ -59,8 +63,9 @@ export class DomainHistory extends Control {
       const singular = source.schema.info.singularName.toLowerCase() || 'row';
       // a draft id, and any other key the frame stood in for a row it has no id for, names
       // nothing the server could be asked about
-      const hint = row === null ? `Select a ${singular} to see its history.` :
-        Rows.isService(row.id) ? 'Not saved yet' : null;
+      const hint = this._noHistory.value ? 'This table keeps no history.' :
+        row === null ? `Select a ${singular} to see its history.` :
+          Rows.isService(row.id) ? 'Not saved yet' : null;
       this._hint.textContent = hint ?? '';
       this._hint.hidden = hint === null;
       this.view.root.hidden = hint !== null;
@@ -97,7 +102,11 @@ export class DomainHistory extends Control {
 
   private async _load(id: string): Promise<AuditEntryLike[]> {
     const table = await backends.domain!.table(this.source.table);
-    const entries = await table.audit?.(id) ?? [];
+    if (table.audit === undefined) {
+      this._noHistory.value = true;
+      return [];
+    }
+    const entries = await table.audit(id);
     return entries.slice().reverse();
   }
 

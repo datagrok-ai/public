@@ -10,6 +10,9 @@ import {notify} from '../../components/display/notify.js';
 import {DgDomainBackend} from './backend.js';
 
 export class DomainErrors {
+  /** The seam's one code, from either backend: the memory one throws `DomainBackendError`, the
+   * platform's `DomainError.code` is the server's `body.error` — so `'unsupported'` reads the
+   * same whether the table refused the op here or the engine refused it there. */
   static codeOf(e: unknown): string {
     const code = (e as {code?: unknown} | null)?.code;
     return typeof code === 'string' ? code : '';

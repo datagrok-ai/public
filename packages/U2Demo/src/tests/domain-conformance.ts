@@ -62,7 +62,7 @@ category('U2: domain conformance', () => {
   /** What the fixture answers: the two flags its manifest declares, and for anything else the
    * optional seam member the table carries. A scenario asking for more is skipped, not failed. */
   const declares = (required: string): boolean =>
-    required === 'hierarchy' || required === 'softDelete' ? true : typeof (table as any)[required] === 'function';
+    required === 'hierarchy' || required === 'softDelete' ? true : (table as any)[required] !== undefined;
 
   /** The rows before this scenario, newest first: a child is created after its parent, so this
    * order never deletes a parent a live row still refers to. The business key's unique index

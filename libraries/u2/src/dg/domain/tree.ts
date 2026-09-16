@@ -143,7 +143,7 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
   async expandTo(id: string): Promise<void> {
     const handle = await this._ready;
     const table = handle.table;
-    if (typeof table.ancestors !== 'function') {
+    if (table.ancestors === undefined) {
       throw new DomainBackendError('unsupported',
         `${handle.address}: the backend cannot answer a row's ancestors`);
     }
@@ -167,7 +167,8 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
     return allowedActions(actions, {access: table.access, row});
   }
 
-  /** The named refusal the memory backend and the server both answer with. */
+  /** The named refusal for a table the registry does not declare a hierarchy: there is no column
+   * for a tree to walk, whichever backend holds the rows. */
   static requireHierarchy<T extends DomainRowLike>(table: DomainTable<T>): void {
     const parent = table.info.parentColumn;
     if (table.info.hierarchy !== true || parent === null || parent === undefined) {

@@ -788,6 +788,24 @@ scoped('trash mode: the ⋯ menu toggles ?trash=1, the rows are read-only with R
   a.dispose();
 });
 
+scoped('support ⇒ absent: a table that declares no writes and no soft delete offers neither', async () => {
+  // permission ⇒ hidden is the other question, and it is asked of the same menu below: here the
+  // table CANNOT do these things at all, so nothing offers them
+  const memory = backend();
+  const issue = memory.tableSync('grit.issue');
+  issue.support = {...issue.support, writes: false, deleted: false, restore: false};
+  for (const member of ['updateWhere', 'batch', 'restore'])
+    Object.defineProperty(issue, member, {value: undefined, configurable: true});
+  backends.domain = memory;
+  const a = domains.app({table: await domains.table('grit.issue'), base: BASE, pageSize: 10});
+  document.body.append(a.root);
+  const ribbon = a.ribbon();
+  await flush();
+  assert.deepEqual(a.menuActions().map((x) => x.name), [], 'no Import, no Bulk edit, no Trash');
+  assert.equal(ribbon[0][3].root.hidden, true, 'and the ⋯ button with them');
+  a.dispose();
+});
+
 scoped('the trash reads newest-deleted first and gives the sort back on the way out', async () => {
   const {app: a} = await app();
   a.listSource.sort.value = 'title';

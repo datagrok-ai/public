@@ -866,6 +866,30 @@ source('the live option is a signal on the source; the poller\'s timer rides the
   plain.dispose();
 });
 
+source('a backend that declares no restore refuses a deleted source by name, before any query', async () => {
+  const inner = backend();
+  let asked = 0;
+  backends.domain = {
+    table: async (address) => {
+      const t = await inner.table(address);
+      return Object.assign(Object.create(Object.getPrototypeOf(t)), t, {
+        support: {...t.support, deleted: false, restore: false},
+        restore: undefined,
+        query: (spec) => (asked++, t.query(spec)),
+      });
+    },
+    saveAll: (edits) => inner.saveAll(edits),
+  };
+  const src = new DomainSource({table: 'grit.issue', pageSize: 10, deleted: 'only'}, env());
+  src.start();
+  await flush();
+  assert.equal(src.state.value, 'error');
+  assert.equal(src.error.value.code, 'unsupported');
+  assert.match(src.error.value.message, /does not support deleted rows/);
+  assert.equal(asked, 0, 'the refusal comes before any row is read');
+  src.dispose();
+});
+
 source('a trash source refuses to insert, and its writer is built from the NARROWED access', async () => {
   backends.domain = backend();
   const live = await issues();

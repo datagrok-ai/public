@@ -283,10 +283,13 @@ scoped('a trash source is refused: deleted rows are read-only until they are res
   source.dispose();
 });
 
-scoped('a backend without updateWhere is refused by name', async () => {
+scoped('a backend that declares no writes offers no bulk edit, and says so by name', async () => {
   const memory = backend();
-  // the method lives on the prototype: shadowed here, as a backend that never declared it
-  Object.defineProperty(memory.tableSync('grit.issue'), 'updateWhere', {value: undefined, configurable: true});
+  // the method lives on the prototype: shadowed here, as a table whose declared support has no
+  // writes — the member and the flag always answer together
+  const issue = memory.tableSync('grit.issue');
+  Object.defineProperty(issue, 'updateWhere', {value: undefined, configurable: true});
+  issue.support = {...issue.support, writes: false};
   const {source} = await table(memory);
   assert.equal(await domains.bulkEdit(source), null);
   assert.match(balloon('error'), /does not support bulk edits/);

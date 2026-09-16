@@ -421,15 +421,20 @@ export class DomainApp extends Control {
    * holds, and the trash. Nothing writes in the trash, so only the way out of it is offered there. */
   menuActions(): Action[] {
     const trash = this._trash.peek();
+    // what the caller may do (`requires`) and what the table can do at all are different
+    // questions: a permission hides an action, an undeclared support leaves it out entirely
+    const support = this.table.table.support;
     const out: Action[] = [];
-    if (!trash) {
+    if (!trash && support.writes) {
       out.push({name: 'Import…', icon: 'upload', requires: 'insert', run: () =>
         void domains.import(this.table).then((report) => report === null ? null : this.listSource.refresh())});
       out.push({name: 'Bulk edit…', icon: 'edit', requires: 'edit',
         run: () => void domains.bulkEdit(this.listSource)});
     }
-    out.push({name: trash ? 'Exit trash' : 'Trash', icon: trash ? 'arrow-left' : 'trash-alt',
-      requires: 'delete', run: () => void this.setTrash(!trash)});
+    if (support.deleted && support.restore) {
+      out.push({name: trash ? 'Exit trash' : 'Trash', icon: trash ? 'arrow-left' : 'trash-alt',
+        requires: 'delete', run: () => void this.setTrash(!trash)});
+    }
     return out;
   }
 

@@ -464,7 +464,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   /** Refuses a trash source, or a restore, over a backend that cannot restore: `restore` is the
    * whole soft-delete lifecycle, and a `deleted` list without it shows rows nothing brings back. */
   static requireRestore(table: DomainTableLike): void {
-    if (typeof table.restore !== 'function') {
+    if (table.restore === undefined) {
       throw new DomainBackendError('unsupported',
         `${table.address}: the backend does not support deleted rows`);
     }
@@ -811,7 +811,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
    * stays what the caller asked for — setting it false and true again starts a new timer. */
   private async _probe(): Promise<void> {
     const table = this._table;
-    if (table === undefined || typeof table.probe !== 'function' || this._probing || this._noRows ||
+    if (table === undefined || table.probe === undefined || this._probing || this._noRows ||
         this.isSaving.peek() || (typeof document !== 'undefined' && document.hidden))
       return;
     this._probing = true;
