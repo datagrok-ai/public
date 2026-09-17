@@ -66,8 +66,9 @@ export async function setup(args: SetupArgs): Promise<boolean> {
     color.warn(`${staleModules.length} per-package node_modules from npm and ${staleLocks.length} package-lock.json file(s)` +
       (check ? ' would be removed' : ': removing'));
     if (!check) {
-      for (const d of staleModules) fs.rmSync(path.join(d, 'node_modules'), {recursive: true, force: true});
-      for (const f of staleLocks) fs.rmSync(f, {force: true});
+      const leftovers = [...staleModules.map((d) => path.join(d, 'node_modules')), ...staleLocks].filter((p) => !tryRemove(p));
+      if (leftovers.length)
+        color.warn(`could not remove ${leftovers.length} item(s) (locked by an editor, watcher or antivirus?), delete by hand:\n  ${leftovers.join('\n  ')}`);
     }
   }
   else
@@ -124,6 +125,18 @@ function isLegacyNodeModules(dir: string): boolean {
       return true;
   }
   return false;
+}
+
+/** Windows reports a directory as busy/non-empty while a handle is still open on it; retry, then give up on this one only. */
+function tryRemove(p: string): boolean {
+  try {
+    fs.rmSync(p, {recursive: true, force: true, maxRetries: 5, retryDelay: 200});
+    return !fs.existsSync(p);
+  }
+  catch (e) {
+    color.warn(`${p}: ${(e as NodeJS.ErrnoException).code || e}`);
+    return false;
+  }
 }
 
 function run(cmd: string, args: string[]): string | null {

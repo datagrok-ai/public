@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 //name: Databases | PubChem | Info
 //input: string molString { semType: Molecule }
 //output: widget result
-//meta.role: widgets,Panel
+//meta.role: widgets,panel
 export async function pubChemPanel(molString: string) : Promise<any> {
   return await PackageFunctions.pubChemPanel(molString);
 }
@@ -13,7 +13,7 @@ export async function pubChemPanel(molString: string) : Promise<any> {
 //description: Finds PubChem compounds that contain the query structure as a substructure.
 //input: string molString { semType: Molecule }
 //output: widget result
-//meta.role: widgets,Panel
+//meta.role: widgets,panel
 export async function pubChemSubstructureSearchPanel(molString: string) : Promise<any> {
   return await PackageFunctions.pubChemSubstructureSearchPanel(molString);
 }
@@ -22,7 +22,7 @@ export async function pubChemSubstructureSearchPanel(molString: string) : Promis
 //description: Finds PubChem compounds most similar to the query structure.
 //input: string molString { semType: Molecule }
 //output: widget result
-//meta.role: widgets,Panel
+//meta.role: widgets,panel
 export async function pubChemSimilaritySearchPanel(molString: string) : Promise<any> {
   return await PackageFunctions.pubChemSimilaritySearchPanel(molString);
 }
@@ -31,7 +31,7 @@ export async function pubChemSimilaritySearchPanel(molString: string) : Promise<
 //description: Finds the PubChem compound identical to the query structure.
 //input: string molString { semType: Molecule }
 //output: widget result
-//meta.role: widgets,Panel
+//meta.role: widgets,panel
 export async function pubChemIdentitySearchPanel(molString: string) : Promise<any> {
   return await PackageFunctions.pubChemIdentitySearchPanel(molString);
 }

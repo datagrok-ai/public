@@ -4,7 +4,7 @@
   "version": "0.0.1",
   "description": "A customizable DMTA workflow skeleton with embedded AIDD — built on Datagrok.",
   "author": {
-    "name": "Alex Skalkin",
+    "name": "Andrew Skalkin",
     "email": "askalkin@datagrok.ai"
   },
   "dependencies": {

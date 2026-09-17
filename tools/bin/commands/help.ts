@@ -218,7 +218,7 @@ Options:
 
 --all                  Publish all available packages (run in packages directory)
 --refresh              Publish all available already loaded packages (run in packages directory)
---link                 Link the package to local packages
+--link                 Link the package to local packages (no effect in a pnpm workspace checkout)
 --build                Builds the package (the default; kept for compatibility)
 --skip-build           Upload the existing dist/ without rebuilding
 --release              Publish package as release version
@@ -265,7 +265,7 @@ Options:
 --skip-playwright   Skip the Playwright pass; only run Puppeteer/DG.Test
 --skip-node         Skip the Node (browserless) pass; run all tests in the browser
 --node-only         Run only tests annotated {node: true} headless under Node, no browser
---link  	        Link the package to local utils
+--link  	        Link the package to local utils (no effect in a pnpm workspace checkout)
 --record            Records the test execution process in mp4 format
 --platform          Runs only platform tests (applicable for ApiTests package only)
 --core              Runs package & auto tests & core tests (core tests run only from DevTools package)

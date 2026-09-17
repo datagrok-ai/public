@@ -3,6 +3,9 @@
 `public/` is one pnpm workspace with a Turborepo task graph. There is nothing to link and nothing
 to install per package.
 
+This file is the quick reference. The full guide, with migration notes and troubleshooting, is
+[Build system](https://datagrok.ai/help/develop/dev-process/build-system) in the help.
+
 ```bash
 grok setup                        # once per checkout or worktree: pnpm via corepack, install, npm-era clean-up (plain `pnpm install` works too)
 grok build                        # this package and what it depends on, in order, cached
@@ -64,7 +67,7 @@ file in core and the manifest move together in one release. A package may pin it
 
 ## Publishing to npm
 
-Bump the version and merge to master; the Workspace workflow publishes every changed package whose
+Bump the version and merge to master; CI (the Packages, Libraries, JS API and Tools workflows) publishes every changed package whose
 version is not on npm yet (0.x never publishes). `grok publish` deploys to a Datagrok server; it is
 unrelated to npm.
 
