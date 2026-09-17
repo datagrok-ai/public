@@ -23,6 +23,13 @@ const confTemplate = yaml.load(fs.readFileSync(confTemplateDir, {encoding: 'utf-
 
 const dependencies: string[] = [];
 
+function apiVersion(): string {
+  let dir = path.dirname(require.resolve('datagrok-api/dg'));
+  while (!fs.existsSync(path.join(dir, 'package.json')))
+    dir = path.dirname(dir);
+  return JSON.parse(fs.readFileSync(path.join(dir, 'package.json'), 'utf8')).version;
+}
+
 function createDirectoryContents(name: string, friendlyName: string, config: utils.Config, templateDir: string,
   packageDir: string, ide: string = '', ts: boolean = true, eslint: boolean = false, test: boolean = false) {
 
@@ -59,7 +66,7 @@ function createDirectoryContents(name: string, friendlyName: string, config: uti
         // nothing to npm: pin published ranges and bring the toolchain in as a devDependency.
         if (!utils.isPnpmWorkspace(packageDir)) {
           const published: Record<string, string> = {
-            'datagrok-api': `^${require('datagrok-api/package.json').version}`,
+            'datagrok-api': `^${apiVersion()}`,
             '@datagrok-libraries/test': '^1.4.0',
             'rxjs': '^6.5.5', 'cash-dom': '^8.1.5', 'dayjs': '^1.11.13', 'wu': '^2.1.0', 'typescript': '^7.0.2',
           };
@@ -70,7 +77,7 @@ function createDirectoryContents(name: string, friendlyName: string, config: uti
             }
           }
           Object.assign(_package.devDependencies, {
-            '@datagrok/build-config': '^0.1.0',
+            '@datagrok/build-config': '^1.0.0',
             'eslint': '^8.57.1', '@typescript-eslint/parser': '^8.39.0', '@typescript-eslint/eslint-plugin': '^8.39.0',
             'eslint-config-google': '^0.14.0', 'typescript': '^5.9.3',
           });

@@ -1,5 +1,9 @@
 # Datagrok-tools changelog
 
+## 6.7.5 (2026-09-17)
+
+* `grok create` works outside the pnpm workspace and new packages use `@datagrok/build-config` 1.x
+
 ## 6.7.4 (2026-09-17)
 
 * `grok create`, `grok publish`, `grok test` and `grok run` work inside the pnpm workspace
