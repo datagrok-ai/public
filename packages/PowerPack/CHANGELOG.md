@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-20753: Added `domainRouteView` (`tags: domainRoutes`) — the platform's `/domains/<schema>/<table>[/<keyOrId>]` addresses resolve to the u2 domain app through it
 * GROK-17068: Formula Lines: The formula editor now accepts the axis tokens `X`/`Y` on the left side of a line (`Y = X + 25`) or a band (`X in(160, 190)`), not only a `${column}` reference, and no longer rewrites a token into a concrete column when the item is selected or the preview's axis changes
 * GROK-20909: Open the playlist when the Learn > VIDEO play icon is clicked
 * GROK-20899: Spotlight: Workspace no longer lists favorites that cannot be pinned there (saved layouts, saved views, tables, function calls), and the "Group favorites" context menu is offered only for entities Workspace can host — favorites written elsewhere (the platform's star icon, the context menu) bypassed the drop-target filter

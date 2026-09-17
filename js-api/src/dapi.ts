@@ -38,6 +38,7 @@ import {
   DomainAuditEntry,
   DomainBatchOptions,
   DomainBatchReport,
+  DomainBatchValidation,
   DomainDatetimeColumns,
   DomainDeleteReport,
   DomainError,
@@ -53,22 +54,28 @@ import {
   DomainPermission,
   DomainQueryBuilder,
   DomainQuerySpec,
+  DomainReadScope,
+  DomainRestoreResult,
   DomainRestrictError,
   DomainRowInsert,
+  DomainAccess,
   DomainSavedFilterInfo,
-  DomainTableCapabilities,
   DomainTableClientOptions,
   DomainTableInfo,
+  DomainTableVersion,
   DomainTransactionOp,
+  DomainUpdateReport,
   DomainUpdateResult,
   DomainValidationError,
+  DomainRowAccess,
   DomainVersionConflictError,
+  DOMAIN_ACCESS_COLUMNS,
   domainCall,
   retryOnVersionConflict,
   splitDomainTable,
 } from './domains';
-// Referenced from TSDoc only ({@link} on the relation expand/write docs below).
-import type {DomainRelationLink} from './domains';
+// Referenced from TSDoc only ({@link} on the relation expand/write and scope docs below).
+import type {DomainCondition, DomainRelationLink, DomainSupport} from './domains';
 
 const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
 
@@ -1300,8 +1307,8 @@ export class DomainsDataSource {
     return new DomainRegistryClient();
   }
 
-  /** Drops the client-side domain UI caches (table capabilities, row permissions,
-   * writable columns, resolved display names) so the next read re-probes server
+  /** Drops the client-side domain UI caches (table access, resolved display names)
+   * so the next read re-probes server
    * truth. Grant changes made through this client invalidate automatically; call
    * this after out-of-band grant changes (another session, `grok s`, server-side). */
   invalidateUiCaches(): void {
@@ -1525,6 +1532,9 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
    * template-built filter strings — condition values are bound server-side, so any string
    * value is safe (apostrophes included). */
   query(): DomainQueryBuilder<TRow, TColumn, TExpand, TRow, DataFrame>;
+  /** {@link query} with `withAccess`: every row also carries the {@link DomainRowAccess} keys. */
+  query(spec: DomainQuerySpec<TColumn, keyof TExpand & string> & {withAccess: true}):
+    Promise<(TRow & DomainRowAccess)[]>;
   /** Runs a filtered, sorted, paginated query; resolves to an array of row objects (10k row cap).
    * A declared many-to-many relation expands under its own name into a
    * {@link DomainRelationLink}`[]` (`expand: ['labels']` → `row.labels = [{id, name}, ...]`,
@@ -1549,13 +1559,24 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
    * `', '` (tagged so the grid draws chips) and the hidden companion `'~<relation>.id'` with
    * the ids in the same order — the ids are the source of truth (see
    * {@link DomainRelationLink}). */
-  queryDf(spec: DomainQuerySpec<TColumn, keyof TExpand & string> = {}): Promise<DataFrame> {
-    return domainCall(api.grok_Dapi_Domains_QueryDf(this.dart, this.schema, this.table, spec));
+  async queryDf(spec: DomainQuerySpec<TColumn, keyof TExpand & string> = {}): Promise<DataFrame> {
+    const df: DataFrame = await domainCall(api.grok_Dapi_Domains_QueryDf(this.dart, this.schema, this.table, spec));
+    // The server tags only CSV export: a binary-export tag would drop the columns
+    // from its own d42 response, so that one is stamped here, once.
+    for (const name of df.columns.names())
+      if (name.startsWith('~')) {
+        const col = df.columns.byName(name)!;
+        col.meta.includeInBinaryExport = false;
+        col.meta.includeInCsvExport = false;
+      }
+    return df;
   }
 
   /** Grouped aggregation over the rows and columns visible to the caller (10k row cap);
    * resolves to result rows named by group column / measure alias. Alias measures with `as`
-   * (and pass literal groupBy) to get typed result keys; without them, cast or use `aggregateDf`. */
+   * (and pass literal groupBy) to get typed result keys; without them, cast or use `aggregateDf`.
+   * The spec carries a whole {@link DomainReadScope}: `search` and `deleted` narrow the
+   * aggregated rows exactly as they narrow {@link query}, so a summary and a list agree. */
   aggregate<TGroup extends string = never, TAlias extends string = never>(
     spec: DomainAggregateSpec<TColumn, TGroup, TAlias>): Promise<DomainAggregateRow<TGroup | TAlias>[]> {
     return domainCall(api.grok_Dapi_Domains_Aggregate(this.dart, this.schema, this.table, spec));
@@ -1563,9 +1584,22 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
 
   /** Fetches one row by id; resolves to null if the row does not exist or is not visible
    * (typed `TRow` for backward compatibility — guard against null, or use `first`). */
-  async get(id: string): Promise<TRow> {
+  get(id: string): Promise<TRow>;
+  /** {@link get} with the row's {@link DOMAIN_ACCESS_COLUMNS} (`~can_edit`, `~can_delete`,
+   * `~can_share`) — the {@link DomainRowAccess} keys beside the row's own. */
+  get(id: string, options: {withAccess: true; deleted: 'include' | 'only'}):
+    Promise<TRow & DomainRowAccess & {'~is_deleted': boolean}>;
+  get(id: string, options: {withAccess: true; deleted?: 'exclude'}): Promise<TRow & DomainRowAccess>;
+  /** {@link get} scoped by `options.deleted` (see {@link DomainQuerySpec.deleted}): `'include'`
+   * or `'only'` make a soft-deleted row addressable — it comes back carrying `~is_deleted` and
+   * is read-only until {@link restore} brings it back. */
+  get(id: string, options: {deleted: 'include' | 'only'; withAccess?: false}):
+    Promise<TRow & {'~is_deleted': boolean}>;
+  get(id: string, options?: {withAccess?: boolean; deleted?: DomainQuerySpec['deleted']}): Promise<TRow>;
+  async get(id: string, options?: {withAccess?: boolean; deleted?: DomainQuerySpec['deleted']}): Promise<TRow> {
     const datetimes = this._datetimes();
-    const row = await domainCall(api.grok_Dapi_Domains_GetRow(this.dart, this.schema, this.table, id));
+    const row = await domainCall(api.grok_Dapi_Domains_GetRow(this.dart, this.schema, this.table, id,
+      options?.withAccess ?? false, options?.deleted ?? 'exclude'));
     return this._fromWire(row, await datetimes);
   }
 
@@ -1606,6 +1640,14 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
     return domainCall(api.grok_Dapi_Domains_Patch(this.dart, this.schema, this.table, id, values, options?.version));
   }
 
+  /** Judges the same payload and writes NOTHING (see {@link DomainBatchOptions.validateOnly}):
+   * the server runs the whole commit path and rolls it back, so the per-row `predicted` verdicts
+   * are the ones a real commit would produce. No row, no audit entry, no auto-number, no
+   * notification — and no id, because the id of a rolled-back insert does not exist. The
+   * verdicts are a prediction against the table as it is NOW; a concurrent write can change
+   * them before the commit. Needs {@link DomainSupport.writes} like the commit does. */
+  batch(data: DataFrame | string | object[] | Uint8Array,
+        options: DomainBatchOptions & {validateOnly: true}): Promise<DomainBatchValidation>;
   /** Bulk upload: a DataFrame (sent as d42), a CSV string, an array of row objects, or raw
    * bytes (`options.format`: `'d42'` default, `'parquet'` converted via the Arrow package).
    * `options.mode: 'upsert'` merges by the table's business key. Resolves to the batch report;
@@ -1613,7 +1655,9 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
    * `error` set, report-less failures reject. Declared many-to-many relations are REJECTED
    * here (the set diff is per row and would defeat the set-based load) — link with
    * {@link insert} / {@link update}. */
-  batch(data: DataFrame | string | object[] | Uint8Array, options: DomainBatchOptions = {}): Promise<DomainBatchReport> {
+  batch(data: DataFrame | string | object[] | Uint8Array,
+        options?: DomainBatchOptions): Promise<DomainBatchReport>;
+  batch(data: DataFrame | string | object[] | Uint8Array, options: DomainBatchOptions = {}): Promise<any> {
     const format = data instanceof DataFrame ? 'df' : typeof data === 'string' ? 'csv' :
       data instanceof Uint8Array ? (options.format ?? 'd42') : 'json';
     return domainCall(api.grok_Dapi_Domains_Batch(this.dart, this.schema, this.table,
@@ -1624,6 +1668,15 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
    * a restrict reference rejects with a {@link DomainRestrictError}). */
   delete(id: string): Promise<void> {
     return domainCall(api.grok_Dapi_Domains_Delete(this.dart, this.schema, this.table, id));
+  }
+
+  /** Brings a soft-deleted row back (the Delete right is what restores, and the audit trail
+   * gets an `'undelete'` entry). A row whose reference points at a still-deleted parent is
+   * refused with a {@link DomainRestrictError} naming that column — restore the parent first;
+   * nothing deleted under that id rejects like a missing row. Find the candidates with
+   * `query({deleted: 'only'})` ({@link DomainQuerySpec.deleted}). */
+  restore(id: string): Promise<DomainRestoreResult> {
+    return domainCall(api.grok_Dapi_Domains_Restore(this.dart, this.schema, this.table, id));
   }
 
   /** Soft-deletes up to `options.limit` (≤1000, default 1000) matching rows you may delete,
@@ -1637,6 +1690,31 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
   deleteWhere(filter: DomainFilter<TColumn>, options?: {limit?: number}): Promise<DomainDeleteReport> {
     return domainCall(api.grok_Dapi_Domains_DeleteWhere(this.dart, this.schema, this.table,
       filter, options?.limit ?? null));
+  }
+
+  /** Applies [values] to up to `options.limit` (≤1000, default 1000) matching rows you may edit,
+   * oldest first, in ONE transaction — the bulk-edit primitive (`updateWhere('id in ("…","…")',
+   * {status_id: closedId})` for a selection, a real filter for everything that matches).
+   * The filter is required — an empty one rejects with a {@link DomainValidationError} — and
+   * rows you may see but not edit are silently not selected. `values` is validated once, like
+   * an {@link update} payload: an immutable, system or `~` column, a relation name, or a value
+   * the column refuses rejects the WHOLE call ({@link DomainValidationError}); so does any row
+   * that fails on its turn — nothing is written. A row gone by then (deleted concurrently) is
+   * skipped, not an error. Each row runs through the per-row engine (validation, audit), so
+   * prefer a narrow filter and a modest limit, and loop while `hasMore`. */
+  updateWhere(filter: DomainFilter<TColumn>, values: TUpdate,
+              options?: {limit?: number}): Promise<DomainUpdateReport> {
+    return domainCall(api.grok_Dapi_Domains_UpdateWhere(this.dart, this.schema, this.table,
+      filter, values, options?.limit ?? null));
+  }
+
+  /** Ancestors of [id] in a table that declares a hierarchy ({@link DomainTableInfo.hierarchy}),
+   * root first — what a breadcrumb renders in front of the row. The row ITSELF is not in the
+   * list, so a root resolves to `[]`. Every level passes the View predicate, so a chain through
+   * an ancestor the caller cannot see is TRUNCATED (the visible tail, no hole and no leak), and
+   * a non-hierarchy table rejects with a {@link DomainFilterError}. Depth is capped at 64. */
+  pathTo(id: string): Promise<{id: string; name: string}[]> {
+    return domainCall(api.grok_Dapi_Domains_PathTo(this.dart, this.schema, this.table, id));
   }
 
   /** Creates the entities row for a domain row so it can be individually shared. */
@@ -1662,14 +1740,43 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
     return domainCall(api.grok_Dapi_Domains_Facets(this.dart, this.schema, this.table, spec));
   }
 
-  /** Row count under [filter] (condition tree or smart string; omit for the whole table). */
-  count(filter?: DomainFilter<TColumn>): Promise<number> {
-    return domainCall(api.grok_Dapi_Domains_Count(this.dart, this.schema, this.table, filter ?? null));
+  /** Rows matching one {@link DomainReadScope} — the same `{filter, search, deleted}` object
+   * {@link query} takes, so a paged source's total (a trash list's included) can never disagree
+   * with the rows it counts. Omit it for the whole table. */
+  count(scope?: DomainReadScope<TColumn>): Promise<number>;
+  /** @deprecated pass one scope: `count({filter, search, deleted})`. */
+  count(filter?: DomainFilter<TColumn>,
+        options?: {search?: string; deleted?: DomainQuerySpec['deleted']}): Promise<number>;
+  async count(a?: any, b?: any): Promise<number> {
+    const {filter, search, deleted} = DomainTableClient._scopeOf(a, b);
+    if ((search == null || search === '') && (deleted == null || deleted === 'exclude'))
+      return domainCall(api.grok_Dapi_Domains_Count(this.dart, this.schema, this.table, filter ?? null));
+    const spec: any = {measures: [{fn: 'count'}]};
+    if (search != null && search !== '')
+      spec.search = search;
+    if (deleted != null)
+      spec.deleted = deleted;
+    if (filter != null)
+      spec.filter = filter;
+    const rows = await this.aggregate(spec);
+    return rows.length === 0 ? 0 : Number((rows[0] as any).count);
   }
 
-  /** True when at least one visible row matches [filter]. */
-  async exists(filter?: DomainFilter<TColumn>): Promise<boolean> {
-    return (await this.count(filter)) > 0;
+  /** True when at least one row matches the scope. */
+  exists(scope?: DomainReadScope<TColumn>): Promise<boolean>;
+  /** @deprecated pass one scope: `exists({filter, search, deleted})`. */
+  exists(filter?: DomainFilter<TColumn>,
+         options?: {search?: string; deleted?: DomainQuerySpec['deleted']}): Promise<boolean>;
+  async exists(a?: any, b?: any): Promise<boolean> {
+    return (await this.count(DomainTableClient._scopeOf<TColumn>(a, b))) > 0;
+  }
+
+  /** Tells the scope object from the deprecated `(filter, options)` pair: a filter may itself be
+   * an object (a {@link DomainCondition}), so the discriminator is spelled once, here. */
+  private static _scopeOf<T extends string = string>(a: any, b?: any): DomainReadScope<T> {
+    const isScope = a != null && typeof a === 'object' && !Array.isArray(a) && !('property' in a) &&
+      !('operator' in a) && b === undefined;
+    return isScope ? a : {filter: a ?? undefined, ...(b ?? {})};
   }
 
   /** First matching row or null; shorthand for query({...spec, limit: 1}). */
@@ -1710,6 +1817,19 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
     return domainCall(api.grok_Dapi_Domains_TableAudit(this.dart, this.schema, this.table, options?.limit ?? null));
   }
 
+  /** The table's change token — "did anything change?" as ONE indexed read instead of an
+   * aggregate per open list. `seq` moves by exactly one per write TRANSACTION that touched this
+   * table's rows (a 50-row batch and a 3-op transaction each move it once, a rolled-back or
+   * validate-only write not at all), and `at` is when it last moved — null until the first
+   * write. A poll compares `seq` with the one it held; anything else about the change
+   * (which rows, by whom) comes from a re-read or {@link auditLog}.
+   *
+   * Needs View on the securing entity: a caller that reaches rows only through per-row grants
+   * is refused with a {@link DomainForbiddenError} and has to fall back to counting. */
+  version(): Promise<DomainTableVersion> {
+    return domainCall(api.grok_Dapi_Domains_Version(this.dart, this.schema, this.table));
+  }
+
   /** Subscribes the current user to change notifications for the table (or one row when
    * [id] is given; row watch requires the table's audit trail). Resolves to whether the
    * server confirmed the subscription. */
@@ -1728,14 +1848,16 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
     return domainCall(api.grok_Dapi_Domains_IsWatching(this.dart, this.schema, this.table, id ?? null));
   }
 
-  /** Effective {@link DomainTableCapabilities} of the CURRENT user on this table,
+  /** Effective {@link DomainAccess} of the CURRENT user on this table,
    * composed by the server from the predicates its reads and writes apply
-   * (`GET /domains/{schema}/{table}/capabilities`). Cached per registry generation +
+   * (`GET /domains/{schema}/{table}/access`). Cached per registry generation +
    * user; grant changes made through this client drop the cache automatically,
    * out-of-band changes require {@link DomainsDataSource.invalidateUiCaches}. Rejects
-   * with a {@link DomainValidationError} for unknown tables. */
-  capabilities(): Promise<DomainTableCapabilities> {
-    return domainCall(api.grok_Domains_TableCapabilities(this.schema, this.table));
+   * with a {@link DomainValidationError} for unknown tables. Also carries
+   * {@link DomainAccess.support} — what the TABLE can do at all, which does not depend on the
+   * caller and is what a client gates optional affordances on. */
+  access(): Promise<DomainAccess> {
+    return domainCall(api.grok_Domains_Access(this.schema, this.table));
   }
 
   /** Direct permission rows on this table's registry entity. Requires Share. */

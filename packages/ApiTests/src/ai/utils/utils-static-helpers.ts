@@ -85,4 +85,17 @@ category('AI: Utils: static helpers', () => {
     expect(t.length, 20);
     expect(/^[A-Za-z0-9]+$/.test(t), true);
   });
+
+  const uuid4Re = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+
+  test('uuid4 is a version-4 uuid', async () => {
+    expect(uuid4Re.test(DG.Utils.uuid4()), true);
+  });
+
+  test('uuid4 is unique over 1000 calls', async () => {
+    const ids = new Set<string>();
+    for (let i = 0; i < 1000; i++)
+      ids.add(DG.Utils.uuid4());
+    expect(ids.size, 1000);
+  });
 });

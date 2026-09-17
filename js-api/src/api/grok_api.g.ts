@@ -853,8 +853,7 @@ export interface IDartApi {
   grok_DomainRegistry_RowProperties(type: String): Promise<any>;
   grok_DomainRegistry_TableInfo(schemaName: String, tableName: String): Promise<any>;
   grok_Domains_ResolveNames(schemaName: String, tableName: String, ids: any): Promise<any>;
-  grok_Domains_TableCapabilities(schemaName: String, tableName: String): Promise<any>;
-  grok_Domains_RowPermissions(row: any): Promise<any>;
+  grok_Domains_Access(schemaName: String, tableName: String): Promise<any>;
   grok_Domains_InvalidateUiCaches(): any;
   grok_DomainMeta_ForType(type: String): any;
   grok_DomainMeta_DeepLink(row: any): any;
@@ -1261,13 +1260,16 @@ export interface IDartApi {
   grok_Dapi_Domains(): any;
   grok_Dapi_Domains_Schemas(c: any): any;
   grok_Dapi_Domains_Query(c: any, schema: String, table: String, spec: any): Promise<any>;
-  grok_Dapi_Domains_GetRow(c: any, schema: String, table: String, id: String): Promise<any>;
+  grok_Dapi_Domains_GetRow(c: any, schema: String, table: String, id: String, withAccess: Bool, deleted: String): Promise<any>;
   grok_Dapi_Domains_Insert(c: any, schema: String, table: String, rows: any, errorOnDuplicate: Bool): Promise<any>;
   grok_Dapi_Domains_Patch(c: any, schema: String, table: String, id: String, values: any, version: Num): Promise<any>;
   grok_Dapi_Domains_Delete(c: any, schema: String, table: String, id: String): Promise<any>;
+  grok_Dapi_Domains_Restore(c: any, schema: String, table: String, id: String): Promise<any>;
   grok_Dapi_Domains_DeleteWhere(c: any, schema: String, table: String, filter: any, limit: any): Promise<any>;
+  grok_Dapi_Domains_UpdateWhere(c: any, schema: String, table: String, filter: any, values: any, limit: any): Promise<any>;
   grok_Dapi_Domains_Promote(c: any, schema: String, table: String, id: String): Promise<any>;
   grok_Dapi_Domains_RowAudit(c: any, schema: String, table: String, id: String): Promise<any>;
+  grok_Dapi_Domains_PathTo(c: any, schema: String, table: String, id: String): Promise<any>;
   grok_Dapi_Domains_QueryDf(c: any, schema: String, table: String, spec: any): Promise<any>;
   grok_Dapi_Domains_Aggregate(c: any, schema: String, table: String, spec: any): Promise<any>;
   grok_Dapi_Domains_Transaction(c: any, schema: String, ops: any): Promise<any>;
@@ -1278,6 +1280,7 @@ export interface IDartApi {
   grok_Dapi_Domains_AggregateDf(c: any, schema: String, table: String, spec: any): Promise<any>;
   grok_Dapi_Domains_Upsert(c: any, schema: String, table: String, row: any): Promise<any>;
   grok_Dapi_Domains_TableAudit(c: any, schema: String, table: String, limit: any): Promise<any>;
+  grok_Dapi_Domains_Version(c: any, schema: String, table: String): Promise<any>;
   grok_Dapi_Domains_Watch(c: any, schema: String, table: String, id: String): Promise<any>;
   grok_Dapi_Domains_Unwatch(c: any, schema: String, table: String, id: String): Promise<any>;
   grok_Dapi_Domains_IsWatching(c: any, schema: String, table: String, id: String): Promise<any>;
@@ -2109,6 +2112,9 @@ export interface IDartApi {
   grok_FuncOptions_Create(): any;
   grok_FuncParamOptions_Create(): any;
 
+  // Generated from ../d4/lib/src/common/common.api.g.dart
+  grok_UsageType_Create(): any;
+
   // Generated from ../d4/lib/src/viewer_base/viewer_base.api.g.dart
   grok_ViewerEvent_Create(): any;
   grok_ViewerEvent_Get_viewer(x: any): any;
@@ -2175,9 +2181,22 @@ export interface IDartApi {
   grok_GridCellStyle_Set_choices(x: any, v: any): any;
   grok_renderMultipleHistograms(g: any, bounds: any, histograms: any, categoryColumn: any, colors: any, tension: Num, normalize: Bool, markerSize: Num, fill: Bool, minBin: Num, maxBin: Num, localMaximum: Bool, highlightedHistogram: Num): any;
 
+  // Generated from ../d4/lib/src/viewer_base/viewer_base.api.g.dart
+  grok_ViewerEvent_Create(): any;
+  grok_ViewerEvent_Get_viewer(x: any): any;
+  grok_ViewerEvent_Set_viewer(x: any, v: any): any;
+  grok_ViewerEvent_Get_type(x: any): any;
+  grok_ViewerEvent_Set_type(x: any, v: String): any;
+  grok_ViewerEvent_Get_eventFlag(x: any): any;
+  grok_ViewerEvent_Set_eventFlag(x: any, v: Bool): any;
+  grok_ViewerEvent_Get_filters(x: any): any;
+  grok_ViewerEvent_Set_filters(x: any, v: any): any;
+  grok_ViewerEvent_Get_row(x: any): any;
+  grok_ViewerEvent_Set_row(x: any, v: Num): any;
+  grok_ViewerEvent_Get_mouseEvent(x: any): any;
+  grok_ViewerEvent_Set_mouseEvent(x: any, v: any): any;
+  grok_ViewerEvent_Get_bitset(x: any): any;
+
   // Generated from ../d4/lib/src/widgets/widgets.api.g.dart
   grok_InputType_Create(): any;
-
-  // Generated from ../d4/lib/src/common/common.api.g.dart
-  grok_UsageType_Create(): any;
 }

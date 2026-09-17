@@ -52,7 +52,7 @@
         "project_id": {"type": "ref", "ref": "project", "onDelete": "restrict", "required": true},
         "number": {"type": "int", "min": 1, "autoNumber": {"scope": "project_id"}, "description": "Per-project issue number; assigned by the engine"},
         "title": {"type": "string", "required": true, "isName": true},
-        "description": {"type": "string"},
+        "description": {"type": "string", "editor": "textarea"},
         "status_id": {"type": "ref", "ref": "status", "onDelete": "restrict", "friendlyName": "Status"},
         "priority_id": {"type": "ref", "ref": "priority", "onDelete": "restrict", "friendlyName": "Priority"},
         "type_id": {"type": "ref", "ref": "issue_type", "onDelete": "setnull", "friendlyName": "Type"},
