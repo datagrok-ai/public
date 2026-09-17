@@ -1,5 +1,9 @@
 # Datagrok-tools changelog
 
+## 6.7.4 (2026-09-17)
+
+* `grok create`, `grok publish`, `grok test` and `grok run` work inside the pnpm workspace
+
 ## 6.7.3 (2026-09-17)
 
 * The function-metadata plugin emits decorator roles in camel case again (`fileHandler`, `app`, `viewer`, ...); since 6.7.1 it capitalised them, which broke JS code comparing `options.role` with `DG.FUNC_TYPES`.

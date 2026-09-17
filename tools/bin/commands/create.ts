@@ -18,14 +18,6 @@ const confPath = path.join(grokDir, 'config.yaml');
 
 const templateDir = path.join(path.dirname(path.dirname(__dirname)), 'package-template');
 
-function isPnpmWorkspace(dir: string): boolean {
-  for (let d = path.resolve(dir); ; d = path.dirname(d)) {
-    if (fs.existsSync(path.join(d, 'pnpm-workspace.yaml')))
-      return true;
-    if (path.dirname(d) === d)
-      return false;
-  }
-}
 const confTemplateDir = path.join(path.dirname(path.dirname(__dirname)), 'config-template.yaml');
 const confTemplate = yaml.load(fs.readFileSync(confTemplateDir, {encoding: 'utf-8'}));
 
@@ -65,7 +57,7 @@ function createDirectoryContents(name: string, friendlyName: string, config: uti
         _package.devDependencies = _package.devDependencies ?? {};
         // Outside the public/ pnpm workspace the template's workspace:/catalog: specifiers mean
         // nothing to npm: pin published ranges and bring the toolchain in as a devDependency.
-        if (!isPnpmWorkspace(packageDir)) {
+        if (!utils.isPnpmWorkspace(packageDir)) {
           const published: Record<string, string> = {
             'datagrok-api': `^${require('datagrok-api/package.json').version}`,
             '@datagrok-libraries/test': '^1.4.0',
@@ -220,8 +212,9 @@ export function create(args: CreateArgs) {
     color.success('Successfully created package ' + name);
     console.log(help.package(ts));
     console.log(`\nThe package has the following dependencies:\n${dependencies.join(' ')}\n`);
-    console.log('Running `npm install` to get the required dependencies...\n');
-    exec('npm install', {cwd: packageDir}, (err, stdout, stderr) => {
+    const install = utils.isPnpmWorkspace(packageDir) ? 'pnpm install' : 'npm install';
+    console.log(`Running \`${install}\` to get the required dependencies...\n`);
+    exec(install, {cwd: packageDir}, (err, stdout, stderr) => {
       if (err) throw err;
       else console.log(stderr, stdout);
     });
