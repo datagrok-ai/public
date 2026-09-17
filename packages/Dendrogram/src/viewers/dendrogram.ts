@@ -4,6 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import $ from 'cash-dom';
 import wu from 'wu';
+import * as rxjs from 'rxjs';
 import {Unsubscribable} from 'rxjs';
 
 import {intToHtmlA, setAlpha} from '@datagrok-libraries/utils/src/color';
@@ -387,6 +388,7 @@ export class Dendrogram extends DG.JsViewer implements IDendrogram {
     this.viewSubs.push(this._renderer.onCurrentChanged.subscribe(this.rendererOnCurrentChanged.bind(this)));
     this.viewSubs.push(this._renderer.onMouseOverChanged.subscribe(this.rendererOnMouseOverChanged.bind(this)));
     this.viewSubs.push(this._renderer.onSelectionChanged.subscribe(this.rendererOnSelectionChanged.bind(this)));
+    this.viewSubs.push(this._renderer.onAfterRender.subscribe(() => this._onRendered.next()));
     this._renderer.attach(this.treeDiv);
 
     this.viewSubs.push(ui.onSizeChanged(this.root).subscribe(this.rootOnSizeChanged.bind(this)));
@@ -398,6 +400,52 @@ export class Dendrogram extends DG.JsViewer implements IDendrogram {
     this.viewSubs.push(this.dataFrame.onMouseOverRowChanged.subscribe(this.dataFrameOnMouseOverRowChanged.bind(this)));
 
     this.viewSubs.push(this.onContextMenu.subscribe(this.onContextMenuHandler.bind(this)));
+  }
+
+  private readonly _onRendered: rxjs.Subject<void> = new rxjs.Subject<void>();
+
+  get onRendered(): rxjs.Observable<void> { return this._onRendered; }
+
+  /** The tree draws synchronously on every change, so nothing is ever waiting to be drawn. */
+  override get isRenderPending(): boolean { return false; }
+
+  /** What the viewer shows, for automation: the canvas, the tree it draws (`leaves` in drawing order,
+   * `newick`, `current node`) and the styling its renderer applies (`color coding`; the main
+   * styler's `line width`, `node size`, `show grid`; the stroke colors of the main, light, current,
+   * mouse-over and selection stylers as #rrggbb; `labels drawn`, `label font`, `row step` and
+   * `zoom step` as the renderer and placer hold them, empty where they hold none). */
+  override getWidgetStatus(): any {
+    const status = super.getWidgetStatus();
+    if (!this._renderer)
+      return status;
+    const canvas = this.treeDiv?.querySelector('canvas');
+    if (canvas)
+      status.parts = {...status.parts, canvas};
+    const th = new TreeHelper();
+    const root = this._renderer.treeRoot;
+    const main = this._renderer.mainStyler as DendrogramTreeStyler;
+    const color = (styler: DendrogramTreeStyler) => styler.strokeColor.slice(0, 7);
+    status.values = {
+      ...status.values,
+      'leaves': root ? th.getLeafList(root).map((n) => n.name).join(', ') : '',
+      'newick': this.treeNewick ?? '',
+      'current node': this._renderer.currentNode?.name ?? '',
+      'color coding': main instanceof DendrogramColorCodingTreeStyler ?
+        `${main.colorAggrType} of ${main.colorColumnName}` : 'none',
+      'line width': main.lineWidth,
+      'node size': main.nodeSize,
+      'show grid': main.showGrid,
+      'main color': color(main),
+      'light color': color(this.lightStyler),
+      'current color': color(this.currentStyler),
+      'mouse over color': color(this.mouseOverStyler),
+      'selections color': color(this.selectionsStyler),
+      'labels drawn': String((this._renderer as any).showLabels ?? false),
+      'label font': String((this._renderer as any).font ?? ''),
+      'row step': String((this._placer as any)?.step ?? ''),
+      'zoom step': String((this._renderer as any).stepZoom ?? ''),
+    };
+    return status;
   }
 
   private onContextMenuHandler(menu: DG.Menu): void {

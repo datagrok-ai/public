@@ -473,7 +473,20 @@ export const viewHoldsViewers = Then('the current view should hold at least {int
 /** A table in the workspace and nothing else: no view, so a form that offers the open tables in a
  * choice gains the option without losing the focus of the view it lives in. Named after the file,
  * which is the name such a choice shows. */
-export const loadTable = Given('the {string} file is loaded as a table', async (page: Page, path: string) => {
+export const openTableOf = Given('user opens a table {string} with:', async (page: Page, name: string, rows: string[][]) => {
+  const [header, ...body] = rows;
+  if (!header || body.length === 0)
+    throw new Error('the table needs a header row and at least one row of values');
+  await page.evaluate(([n, csv]) => {
+    const df = (window as any).DG.DataFrame.fromCsv(csv);
+    df.name = n;
+    grok.shell.addTableView(df);
+  }, [name, [header, ...body].map((r) => r.map((c) => /[",\n]/.test(c) ? `"${c.replace(/"/g, '""')}"` : c).join(',')).join('\n')] as [string, string]);
+  await expect.poll(() => page.evaluate((n) => grok.shell.tv?.dataFrame?.name === n && !!grok.shell.tv.grid, name),
+    {message: `a table view of "${name}"`}).toBe(true);
+}, {tier: 'api', description: 'a small table written in the feature — the header row names the columns, types are detected as from a CSV — in a table view of its own'});
+
+export const loadTable = Given('the {string} file is loaded as a table',async (page: Page, path: string) => {
   const name = await page.evaluate(async (p) => {
     const df = await grok.dapi.files.readCsv(p);
     df.name = p.replace(/^.*\//, '').replace(/\.[^.]+$/, '');

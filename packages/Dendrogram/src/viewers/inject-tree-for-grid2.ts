@@ -27,6 +27,70 @@ import '../css/injected-dendrogram.css';
  * dialog. `colNames` are the feature columns the tree was built on; `distance` is the metric used. */
 export type MedoidOptions = {colNames: string[], distance: DistanceMetric};
 
+const TREE_STATUS_NAME = 'dendrogram';
+
+type Box = {x: number, y: number, width: number, height: number};
+
+/** What the tree injected next to the grid shows, for automation, relative to the grid's canvas.
+ * Readings: `tree leaves` (distinct leaf names), `tree height`, `tree current node`, `tree mouse over node`,
+ * `tree selected leaves`, `tree zoom`, `tree top row` and, while Assign Clusters is open, `cut threshold`.
+ * Areas: `tree`, `tree margin` (left of the root, where no node is), a `leaf <name>` per leaf tip in
+ * view, a `node <first leaf>-<last leaf>` per inner node whose branch is wide enough to point at, and
+ * `cut line` while Assign Clusters is open. */
+function treeStatus(
+  grid: DG.Grid, treeNb: GridNeighbor, renderer: GridTreeRendererBase<MarkupNodeType>,
+  placer: GridTreePlacer<MarkupNodeType>, th: ITreeHelper,
+): {values: {[name: string]: number | string}, hitAreas?: {[name: string]: Box}} {
+  const root = renderer.treeRoot;
+  const selectedLeaves = new Set(renderer.selections.flatMap((s) => th.getLeafList(s.node).map((l) => l.name)));
+  const values: {[name: string]: number | string} = {
+    'tree leaves': root ? new Set(th.getLeafList(root).map((l) => l.name)).size : 0,
+    'tree height': root ? Math.round((root.subtreeLength ?? 0) * 100) / 100 : 0,
+    'tree current node': renderer.current?.node.name ?? '',
+    'tree mouse over node': renderer.mouseOverNode?.name ?? '',
+    'tree selected leaves': selectedLeaves.size,
+    'tree zoom': renderer.xZoom,
+    'tree top row': Math.round(placer.top + 0.5),
+  };
+  if (renderer.cutThreshold !== null)
+    values['cut threshold'] = Math.round(renderer.cutThreshold * 100) / 100;
+  const treeCanvas = treeNb.root?.querySelector('canvas');
+  const gridCanvas = grid.root.querySelector('canvas[name="canvas"]');
+  if (!treeCanvas || !gridCanvas || !root)
+    return {values};
+
+  const origin = gridCanvas.getBoundingClientRect();
+  const bounds = treeCanvas.getBoundingClientRect();
+  const dx = bounds.left - origin.left;
+  const dy = bounds.top - origin.top;
+  const hitAreas: {[name: string]: Box} = {
+    'tree': {x: dx, y: dy, width: bounds.width, height: bounds.height},
+    'tree margin': {x: dx, y: dy, width: Math.max(renderer.treeXToCanvasX(0) - 2, 1), height: bounds.height},
+  };
+  const radius = Math.max(renderer.mainStyler.nodeSize, 4) / 2;
+  const rowY = (index: number) => treeCanvas.clientHeight * (index - placer.top) / placer.height;
+  const inView = (index: number) => index >= placer.top && index <= placer.bottom;
+  (function addNodes(node: MarkupNodeType, height: number) {
+    const tipHeight = height + (node.branch_length ?? 0);
+    if (!node.children?.length) {
+      if (inView(node.index))
+        hitAreas[`leaf ${node.name}`] = {x: dx + renderer.treeXToCanvasX(tipHeight) - radius, y: dy + rowY(node.index) - radius, width: 2 * radius, height: 2 * radius};
+      return;
+    }
+    const left = renderer.treeXToCanvasX(height);
+    const right = renderer.treeXToCanvasX(tipHeight);
+    if (right - left >= 6 && inView(node.index)) {
+      const leaves = th.getLeafList(node);
+      hitAreas[`node ${leaves[0].name}-${leaves[leaves.length - 1].name}`] = {x: dx + left + 2, y: dy + rowY(node.index) - 1, width: right - left - 4, height: 2};
+    }
+    for (const child of node.children)
+      addNodes(child as MarkupNodeType, tipHeight);
+  })(root, 0);
+  if (renderer.cutThreshold !== null)
+    hitAreas['cut line'] = {x: dx + renderer.treeXToCanvasX(renderer.cutThreshold) - 1, y: dy, width: 2, height: bounds.height};
+  return {values, hitAreas};
+}
+
 export function injectTreeForGridUI2(
   grid: DG.Grid, treeRoot: NodeType | null, leafColName?: string, neighborWidth: number = 100,
   cut?: TreeCutOptions, medoidOptions?: MedoidOptions
@@ -132,6 +196,8 @@ export function injectTreeForGridUI2(
 
   // initial alignment tree with grid
   alignGridWithTree();
+
+  grid.addStatusProvider(TREE_STATUS_NAME, () => treeStatus(grid, treeNb, renderer, placer, th));
 
   // -- Handling events --
 
@@ -357,6 +423,7 @@ export function injectTreeForGridUI2(
   }
 
   function treeNeighborOnClosed() {
+    grid.removeStatusProvider(TREE_STATUS_NAME);
     for (const sub of subs)
       sub.unsubscribe();
   }
@@ -437,6 +504,8 @@ function showClusterAsignmentDialog(
     }
   }));
 
+  renderer.cutThreshold = cutSlider.value;
+  subs.push(cutSlider.onChanged.subscribe((value) => { renderer.cutThreshold = value; }));
   subs.push(DG.debounce(cutSlider.onChanged, 20).subscribe(() => {
     renderer.render('Invalidate');
   }));
@@ -529,6 +598,7 @@ function showClusterAsignmentDialog(
   }));
 
   const closeSub = dialog.onClose.subscribe(() => {
+    renderer.cutThreshold = null;
     for (const sub of subs)
       sub.unsubscribe();
     closeSub.unsubscribe();

@@ -6,8 +6,9 @@ import {expect} from '../../src/runtime/patience.js';
 import {Given, Then, When} from '../../src/registry.js';
 import type {ElementRef} from '../../src/runtime/args.js';
 import {el} from '../../src/runtime/args.js';
-import {expectCount, expectState, expectSwitched, expectText, expectValue, expectValueBetween, State} from '../../src/runtime/assertions.js';
+import {expectCount, expectOptions, expectState, expectSwitched, expectText, expectValue, expectValueBetween, State} from '../../src/runtime/assertions.js';
 import * as g from '../../src/runtime/gestures.js';
+import {locate} from '../../src/runtime/locate.js';
 
 export const clickOn = When('user clicks (on ){element}', (page: Page, target: ElementRef) => g.click(page, target), {tier: 'ui'});
 export const doubleClickOn = When('user double-clicks (on ){element}', (page: Page, target: ElementRef) => g.dblclick(page, target), {tier: 'ui'});
@@ -69,6 +70,22 @@ export const shouldBeSwitchedOff = Then('{element} should be switched off', (pag
 export const shouldHaveValueBetween = Then('{element} should have a value between {float} and {float}',
   (page: Page, target: ElementRef, lo: number, hi: number) => expectValueBetween(page, target, lo, hi),
   {description: 'a number a slider or a stepper arrives at, which no exact value would describe'});
+export const visibleCount = Then('there should be {int} visible {element}', async (page: Page, count: number, target: ElementRef) =>
+  expect((await locate(page, target)).filter({visible: true}), `visible ${target.phrase}`).toHaveCount(count),
+{description: 'how many of the elements the phrase names are shown — one of a kind, never a duplicate'});
+export const fillsParent = Then('{element} should fill its parent', async (page: Page, target: ElementRef) => {
+  const loc = (await locate(page, target)).filter({visible: true}).first();
+  await expect.poll(() => loc.evaluate((e) => {
+    const own = e.getBoundingClientRect();
+    const host = e.parentElement!;
+    const style = getComputedStyle(host);
+    const width = host.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+    const height = host.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
+    return Math.abs(own.width - width) <= 1 && Math.abs(own.height - height) <= 1 ? 'fills' : `${Math.round(own.width)}×${Math.round(own.height)} in ${Math.round(width)}×${Math.round(height)}`;
+  }), {message: `${target.phrase} against its parent`}).toBe('fills');
+}, {description: 'as wide and as tall as the content box of the element it sits in, to a pixel'});
+export const shouldOffer = Then('{element} should offer {string}', (page: Page, target: ElementRef, list: string) => expectOptions(page, target, list),
+  {description: 'the choices of a dropdown, comma-separated, exactly and in this order'});
 export const shouldHaveItems = Then('{element} should have {int} item(s)', (page: Page, target: ElementRef, count: number) => expectCount(page, target, count));
 export const shouldHaveRows = Then('{element} should have {int} row(s)', (page: Page, target: ElementRef, count: number) => expectCount(page, target, count));
 

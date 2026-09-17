@@ -93,6 +93,33 @@ test('a @journey feature is one test: the background once, every scenario a soft
   assert.match(code, /import \{ds, el, feature, journey\} from '@datagrok-libraries\/bdd\/runtime';/);
 });
 
+test('a @known-failure scenario outside a journey runs its own steps as the expected failure, the background plainly', () => {
+  const {code, diagnostics} = compile(`Feature: Toolbox
+  Background:
+    Given user opens spgi dataset
+
+  @known-failure
+  Scenario: Add a viewer
+    When user clicks on scatter plot icon on toolbox
+
+  Scenario Outline: Several viewers
+    When user clicks on <viewer> icon on toolbox
+    Examples:
+      | viewer    |
+      | histogram |
+
+    @known-failure
+    Examples:
+      | viewer    |
+      | bar chart |
+`);
+  assert.equal(diagnostics.filter((d) => d.level === 'error').length, 0);
+  assert.match(code, /test\("Add a viewer", \{tag: \["@known-failure"\]\}, async \(\{browser\}\) => \{\n    const page = await session\.page\(browser\);\n    await session\.step\(3, "Given user opens spgi dataset"[^\n]*\n    await knownFailure\(async \(\) => \{\n      await session\.step\(7, /);
+  assert.match(code, /test\("Several viewers \[viewer=bar chart\]", \{tag: \["@known-failure"\]\}[^\n]*\n[^\n]*\n[^\n]*\n    await knownFailure\(async \(\) => \{/);
+  assert.doesNotMatch(code.split('Several viewers [viewer=histogram]')[1].split('test(')[0], /knownFailure/);
+  assert.match(code, /import \{ds, el, feature, knownFailure\} from '@datagrok-libraries\/bdd\/runtime';/);
+});
+
 test('{widget} is an element phrase that names a viewer or a widget', () => {
   fns.setProp = When('user sets {string} property of {widget} to {string}', async () => undefined);
   const {code, diagnostics} = compile(`Feature: A

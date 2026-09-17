@@ -73,6 +73,18 @@ export function journey(test: Test, scenarios: number, page?: Page): Journey {
   };
 }
 
+/** A `@known-failure` scenario outside a journey: its steps failing is the defect it describes and
+ * passes the test; its steps passing fails it — the bug is fixed and the tag has to go. */
+export async function knownFailure(body: () => Promise<void>): Promise<void> {
+  try {
+    await whileExpectedToFail(body);
+  }
+  catch {
+    return;
+  }
+  throw new Error('tagged @known-failure and passed — the bug it describes is fixed, so the tag has to go');
+}
+
 /** `<root>/generated/x/y.test.ts` + `features/x/y.feature` → the feature file (the layout
  * `outFileFor` writes). */
 function featureFile(specUrl: string, path: string): string {
