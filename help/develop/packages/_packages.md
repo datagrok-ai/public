@@ -127,7 +127,7 @@ dependencies, and other data.
     "rxjs": "^6.5.5"
   },
   "devDependencies": {
-    "@datagrok/build-config": "^0.1.0"
+    "@datagrok/build-config": "^1.0.0"
   },
   "scripts": {
     "build": "grok build",

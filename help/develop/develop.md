@@ -96,7 +96,7 @@ In addition to that, it might contain the following folders:
     "datagrok-api": "^1.27.0"
   },
   "devDependencies": {
-    "@datagrok/build-config": "^0.1.0"
+    "@datagrok/build-config": "^1.0.0"
   },
   "scripts": {
     "build": "grok build",
