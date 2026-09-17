@@ -1,7 +1,8 @@
 # Datagrok-tools changelog
 
-## v.next
+## 6.7.3 (2026-09-17)
 
+* The function-metadata plugin emits decorator roles in camel case again (`fileHandler`, `app`, `viewer`, ...); since 6.7.1 it capitalised them, which broke JS code comparing `options.role` with `DG.FUNC_TYPES`.
 * `grok check` accepts `## v.next` as the top changelog heading, the section the repository keeps unreleased changes in.
 
 ## 6.7.2 (2026-09-16)

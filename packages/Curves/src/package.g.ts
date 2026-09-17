@@ -4,7 +4,7 @@ import {FitChartCellRenderer} from './fit/fit-renderer';
 import * as DG from 'datagrok-api/dg';
 //name: Fit
 //output: grid_cell_renderer renderer
-//meta.role: CellRenderer
+//meta.role: cellRenderer
 //meta.cellType: fit
 //meta.virtual: true
 export function _FitChartCellRenderer() {
@@ -14,7 +14,7 @@ export function _FitChartCellRenderer() {
 //name: MultiCurveViewer
 //description: A viewer that superimposes multiple in-cell curves on one chart
 //output: viewer result
-//meta.role: Viewer
+//meta.role: viewer
 //meta.icon: icons/multi-curve-viewer.png
 //meta.trellisable: true
 export function _MultiCurveViewer() {
@@ -37,7 +37,7 @@ export async function assayCurveFitDemo() : Promise<void> {
   await PackageFunctions.assayCurveFitDemo();
 }
 
-//meta.role: Init
+//meta.role: init
 export async function _initCurves() : Promise<void> {
   await PackageFunctions._initCurves();
 }
@@ -174,7 +174,7 @@ export function convertPzfxToJsonFunc() : any {
 
 //input: file file 
 //output: view result
-//meta.role: FileViewer
+//meta.role: fileViewer
 //meta.fileViewer: pzfx
 export async function previewPzfx(file: DG.FileInfo) : Promise<any> {
   return await PackageFunctions.previewPzfx(file);
@@ -183,7 +183,7 @@ export async function previewPzfx(file: DG.FileInfo) : Promise<any> {
 //description: Open a GraphPad Prism (.pzfx) file as data tables, fitting XY curve tables.
 //input: list bytes { description: Raw bytes of the .pzfx file }
 //output: list<dataframe> result
-//meta.role: FileHandler
+//meta.role: fileHandler
 //meta.ext: pzfx
 export function pzfxFileHandler(bytes: Uint8Array) : any {
   return PackageFunctions.pzfxFileHandler(bytes);
