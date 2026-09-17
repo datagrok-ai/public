@@ -556,11 +556,6 @@ export async function runTests(options?: TestExecutionOptions) : Promise<TestRes
         if (test?.options) {
           test.options.owner = t[i].options?.owner ?? category?.owner ?? packageOwner ?? '';
         }
-        // let isGBEnable = (window as any).gc && test.options?.skipReason == undefined;
-        // console.log(`********${isGBEnable}`);
-        // if (isGBEnable)
-        //   await (window as any).gc();
-        // memoryUsageBefore = (window?.performance as any)?.memory?.usedJSHeapSize;
         let testRun = await execTest(
             test,
             options?.test,
@@ -569,8 +564,8 @@ export async function runTests(options?: TestExecutionOptions) : Promise<TestRes
             options.verbose
         );
 
-        // if (isGBEnable)
-        //   await (window as any).gc();
+        if (!test.options?.skipReason && (window as any).gc)
+          await (window as any).gc();
         if (testRun) {
           res.push({ ...testRun,  widgetsDifference: getWidgetsCountSafe() - widgetsBefore });
           // Return early if returnOnFail is set and test failed (but ignore failure for the skipToTest test itself)
@@ -602,11 +597,6 @@ export async function runTests(options?: TestExecutionOptions) : Promise<TestRes
         if (test?.options) {
           test.options.owner = t[i].options?.owner ?? category?.owner ?? packageOwner ?? '';
         }
-        // let isGBEnable = (window as any).gc && test.options?.skipReason == undefined;
-        // console.log(`********${isGBEnable}`);
-        // if (isGBEnable)
-        //   await (window as any).gc();
-        // memoryUsageBefore = (window?.performance as any)?.memory?.usedJSHeapSize;
         let testRun = await execTest(
             test,
             options?.test,
@@ -616,8 +606,8 @@ export async function runTests(options?: TestExecutionOptions) : Promise<TestRes
             options.verbose
         );
 
-        // if (isGBEnable)
-        //   await (window as any).gc();
+        if (!test.options?.skipReason && (window as any).gc)
+          await (window as any).gc();
 
         if (testRun) {
           res.push({ ...testRun, widgetsDifference: getWidgetsCountSafe() - widgetsBefore });
