@@ -1,0 +1,643 @@
+/* ---
+realizes: []
+--- */
+
+import {expect, type Page} from '@playwright/test';
+import {localTest as test} from '@datagrok-libraries/test/src/playwright/shared-page';
+import {openDatagrok, specTestOptions, softStep, isLocalBootNoise} from '@datagrok-libraries/test/src/playwright/spec-login';
+import * as v from '@datagrok-libraries/test/src/playwright/viewers';
+
+declare const grok: any;
+
+test.use(specTestOptions);
+
+const datasetPath = 'System:DemoFiles/demog.csv';
+const spgiPath = 'System:AppData/Chem/tests/spgi-100.csv';
+
+async function openLineChartContextMenu(page: Page) {
+  await page.evaluate(() => {
+    document.querySelectorAll('.d4-menu-popup').forEach(m => m.remove());
+  });
+  const box = await page.evaluate(() => {
+    const lc = (Array.from(grok.shell.tv.viewers) as any[]).find(v => v.type === 'Line chart');
+    const canvases = lc!.root.querySelectorAll('canvas');
+    let mc: HTMLCanvasElement | null = null, ma = 0;
+    for (const c of canvases) {
+      const r = c.getBoundingClientRect();
+      if (r.width * r.height > ma) { ma = r.width * r.height; mc = c; }
+    }
+    const rect = mc!.getBoundingClientRect();
+    return {cx: rect.left + rect.width * 0.4, cy: rect.top + rect.height * 0.4};
+  });
+  await page.mouse.click(box.cx, box.cy, {button: 'right'});
+  await page.waitForFunction(() => {
+    const popup = document.querySelector('.d4-menu-popup');
+    return !!popup && popup.querySelectorAll('.d4-menu-item').length > 0;
+  }, null, {timeout: 500});
+}
+
+async function clickNamedMenuItem(page: Page, nameAttr: string) {
+  await page.evaluate((name) => {
+    const item = document.querySelector(`[name="${name}"]`);
+    if (!item) throw new Error(`Menu item not found: ${name}`);
+    const container = item.closest('.d4-menu-item-container') as HTMLElement;
+    if (container) container.style.display = '';
+    item.dispatchEvent(new MouseEvent('click', {bubbles: true}));
+  }, nameAttr);
+  await v.waitForViewerRendered(page, 'Line chart', 500);
+}
+
+async function clickMenuItemByLabel(page: Page, label: string) {
+  await page.evaluate((text) => {
+    const lbl = Array.from(document.querySelectorAll('.d4-menu-item-label'))
+      .find(el => (el.textContent ?? '').trim() === text);
+    if (!lbl) throw new Error(`Menu item not found: ${text}`);
+    const item = lbl.closest('.d4-menu-item') as HTMLElement;
+    const container = item.closest('.d4-menu-item-container') as HTMLElement | null;
+    if (container) container.style.display = '';
+    item.dispatchEvent(new MouseEvent('click', {bubbles: true}));
+  }, label);
+  await v.waitForViewerRendered(page, 'Line chart', 500);
+}
+
+async function closeMenuByOutsideClick(page: Page) {
+  const pt = await page.evaluate(() => {
+    const blockers = Array.from(document.querySelectorAll('.d4-menu-popup'))
+      .map(m => m.getBoundingClientRect());
+    blockers.push(document.querySelector('[name="viewer-Line-chart"]')!.getBoundingClientRect());
+    const y = 5;
+    const outside = (x: number) =>
+      !blockers.some(r => x >= r.left && x <= r.right && y >= r.top && y <= r.bottom);
+    const inert = (x: number) => {
+      const el = document.elementFromPoint(x, y);
+      return !!el && !el.closest('.d4-menu-popup, canvas, i, button, a, img, [name^="icon"]');
+    };
+    let pick = -1;
+    for (let x = 200; x < window.innerWidth - 20; x += 40) {
+      if (!outside(x)) continue;
+      if (pick < 0) pick = x;
+      if (inert(x)) { pick = x; break; }
+    }
+    return {x: pick, y,
+      sel: grok.shell.tv.dataFrame.selection.trueCount,
+      cur: grok.shell.tv.dataFrame.currentRowIdx};
+  });
+  expect(pt.x).toBeGreaterThan(0);
+  await page.mouse.click(pt.x, pt.y);
+  const after = await v.pollValue(() => page.evaluate(() => ({
+    menuOpen: !!document.querySelector('.d4-menu-popup'),
+    sel: grok.shell.tv.dataFrame.selection.trueCount,
+    cur: grok.shell.tv.dataFrame.currentRowIdx,
+  })), (s) => !s.menuOpen, 300, 50);
+  expect(after.menuOpen).toBe(false);
+  expect(after.sel).toBe(pt.sel);
+  expect(after.cur).toBe(pt.cur);
+}
+
+async function contextMenuClick(page: Page, nameAttr: string) {
+  await openLineChartContextMenu(page);
+  await clickNamedMenuItem(page, nameAttr);
+}
+
+async function lcProps(page: Page, ...propNames: string[]): Promise<Record<string, any>> {
+  return page.evaluate((names) => {
+    const lc = (Array.from(grok.shell.tv.viewers) as any[]).find(v => v.type === 'Line chart')!;
+    const result: Record<string, any> = {};
+    for (const n of names) result[n] = (lc.props as any)[n];
+    return result;
+  }, propNames);
+}
+
+async function lcSetProps(page: Page, props: Record<string, any>) {
+  await v.setViewerProps(page, 'Line chart', [{set: props}], 300);
+}
+
+async function addLineChart(page: Page) {
+  await v.addViewerByIcon(page, 'line-chart', 'Line-chart', 10_000, 'Line chart');
+}
+
+async function openDatasetWithLineChart(page: Page, path: string) {
+  await v.openTable(page, {path, semTypeTimeoutMs: 3000});
+  await addLineChart(page);
+}
+
+test('Line chart tests (Playwright) — UI-first', async ({page}) => {
+  test.setTimeout(300_000);
+
+  const pageErrors: string[] = [];
+  const consoleErrors: string[] = [];
+  page.on('pageerror', (e) => pageErrors.push(String(e)));
+  page.on('console', (m) => { if (m.type() === 'error' && !isLocalBootNoise(m.text())) consoleErrors.push(m.text()); });
+  const errorCount = () => pageErrors.length + consoleErrors.length;
+  const chartAlive = () => page.evaluate(() => {
+    const lc = (Array.from(grok.shell.tv.viewers) as any[]).find((x: any) => x.type === 'Line chart');
+    const root = document.querySelector('[name="viewer-Line-chart"]');
+    return !!lc && !!root && root.querySelectorAll('canvas').length > 0;
+  });
+
+  await openDatagrok(page);
+  await openDatasetWithLineChart(page, datasetPath);
+
+  await softStep('Chart types', async () => {
+    await contextMenuClick(page, 'div-Chart-Type---Area-Chart');
+    expect((await lcProps(page, 'chartTypes')).chartTypes).toContain('Area Chart');
+
+    await contextMenuClick(page, 'div-Chart-Type---Stacked-Area-Chart');
+    expect((await lcProps(page, 'chartTypes')).chartTypes).toContain('Stacked Area Chart');
+
+    await contextMenuClick(page, 'div-Chart-Type---Stacked-Bar-Chart');
+    expect((await lcProps(page, 'chartTypes')).chartTypes).toContain('Stacked Bar Chart');
+
+    await contextMenuClick(page, 'div-Chart-Type---Line-Chart');
+    expect((await lcProps(page, 'chartTypes')).chartTypes).toContain('Line Chart');
+  });
+
+  await softStep('Axis configuration', async () => {
+    const errBefore = errorCount();
+    await lcSetProps(page, {xColumnName: 'AGE', yColumnNames: ['WEIGHT']});
+    await lcSetProps(page, {xAxisType: 'logarithmic'});
+    await lcSetProps(page, {invertXAxis: true});
+    await lcSetProps(page, {yAxisType: 'logarithmic'});
+    await lcSetProps(page, {showVerticalGridLines: false});
+    await lcSetProps(page, {showHorizontalGridLines: false});
+    await lcSetProps(page, {xAxisLabelOrientation: 'Vert'});
+    await lcSetProps(page, {
+      xAxisType: 'linear', yAxisType: 'linear', invertXAxis: false,
+      showVerticalGridLines: true, showHorizontalGridLines: true, xAxisLabelOrientation: 'Auto'
+    });
+    expect(await chartAlive()).toBe(true);
+    expect(errorCount()).toBe(errBefore);
+  });
+
+  await softStep('Interpolation', async () => {
+    const errBefore = errorCount();
+    await lcSetProps(page, {interpolation: 'Spline'});
+    await lcSetProps(page, {splineTension: 1.0});
+    await lcSetProps(page, {interpolation: 'None'});
+    expect(await chartAlive()).toBe(true);
+    expect(errorCount()).toBe(errBefore);
+  });
+
+  await softStep('Left panel histogram', async () => {
+    const errBefore = errorCount();
+    await lcSetProps(page, {leftPanel: 'Histogram'});
+    await lcSetProps(page, {leftPanel: 'None'});
+    expect(await chartAlive()).toBe(true);
+    expect(errorCount()).toBe(errBefore);
+  });
+
+  await softStep('Controls visibility', async () => {
+    const errBefore = errorCount();
+    const controls = ['showXSelector', 'showYSelectors', 'showAggrTypeSelector', 'showSplitSelector', 'showXAxis', 'showYAxis'];
+    for (const ctrl of controls)
+      await lcSetProps(page, {[ctrl]: false});
+    const restoreProps: Record<string, boolean> = {};
+    for (const ctrl of controls) restoreProps[ctrl] = true;
+    await lcSetProps(page, restoreProps);
+    expect(await chartAlive()).toBe(true);
+    expect(errorCount()).toBe(errBefore);
+  });
+
+  await softStep('Y global scale', async () => {
+    const errBefore = errorCount();
+    await lcSetProps(page, {yColumnNames: ['AGE', 'HEIGHT']});
+    await lcSetProps(page, {multiAxis: true});
+    await lcSetProps(page, {yGlobalScale: true});
+    await lcSetProps(page, {yGlobalScale: false});
+    await lcSetProps(page, {multiAxis: false});
+    expect(await chartAlive()).toBe(true);
+    expect(errorCount()).toBe(errBefore);
+  });
+
+  await softStep('Title and description', async () => {
+    const errBefore = errorCount();
+    await lcSetProps(page, {showTitle: true});
+    await lcSetProps(page, {title: 'My Line Chart'});
+    await lcSetProps(page, {description: 'Test description'});
+    await lcSetProps(page, {descriptionPosition: 'Top'});
+    await lcSetProps(page, {descriptionPosition: 'Bottom'});
+    await lcSetProps(page, {descriptionVisibilityMode: 'Never'});
+    await lcSetProps(page, {showTitle: false, title: '', description: ''});
+    expect(await chartAlive()).toBe(true);
+    expect(errorCount()).toBe(errBefore);
+  });
+
+  await softStep('Date/time X axis', async () => {
+    const errBefore = errorCount();
+    await lcSetProps(page, {xColumnName: 'STARTED'});
+    await lcSetProps(page, {xMap: 'year'});
+    await lcSetProps(page, {xMap: 'month'});
+    await lcSetProps(page, {xMap: 'day'});
+    await lcSetProps(page, {xMap: ''});
+    expect(await chartAlive()).toBe(true);
+    expect(errorCount()).toBe(errBefore);
+  });
+
+  await softStep('Line styling', async () => {
+    const errBefore = errorCount();
+    await lcSetProps(page, {xColumnName: 'AGE', lineWidth: 3});
+    await lcSetProps(page, {lineTransparency: 0.5});
+    await lcSetProps(page, {lineColoringType: 'Custom'});
+    await lcSetProps(page, {lineWidth: 1, lineTransparency: 0, lineColoringType: 'Auto'});
+    expect(await chartAlive()).toBe(true);
+    expect(errorCount()).toBe(errBefore);
+  });
+
+  await softStep('Axis tickmarks modes', async () => {
+    const errBefore = errorCount();
+    await lcSetProps(page, {xColumnName: 'AGE', yColumnNames: ['HEIGHT']});
+    await lcSetProps(page, {xAxisTickmarksMode: 'MinMax'});
+    await lcSetProps(page, {xAxisTickmarksMode: 'Auto'});
+    await lcSetProps(page, {yAxisTickmarksMode: 'MinMax'});
+    await lcSetProps(page, {yAxisTickmarksMode: 'Auto'});
+    expect(await chartAlive()).toBe(true);
+    expect(errorCount()).toBe(errBefore);
+  });
+
+  await softStep('Overview chart', async () => {
+    await contextMenuClick(page, 'div-Overview---Line-Chart');
+    expect((await lcProps(page, 'overviewType')).overviewType).toBe('Line Chart');
+
+    await contextMenuClick(page, 'div-Overview---Area-Chart');
+    expect((await lcProps(page, 'overviewType')).overviewType).toBe('Area Chart');
+
+    await contextMenuClick(page, 'div-Overview---Stacked-Bar-Chart');
+    expect((await lcProps(page, 'overviewType')).overviewType).toBe('Stacked Bar Chart');
+
+    await contextMenuClick(page, 'div-Overview---None');
+    expect((await lcProps(page, 'overviewType')).overviewType).toBe('None');
+  });
+
+  await softStep('Legend', async () => {
+    const legend = () => page.evaluate(() => {
+      // a hidden legend keeps its element in the DOM with display:none (LegendHost.apply,
+      // legend_host.dart) — presence must check the computed style, not existence
+      const el = (Array.from(document.querySelectorAll('[name="viewer-Line-chart"] .d4-legend'))
+        .find((e) => getComputedStyle(e as HTMLElement).display !== 'none') ?? null) as HTMLElement | null;
+      return {
+        present: !!el,
+        labels: el ? (el.innerText || '').split('\n').map(s => s.trim()).filter(Boolean) : [],
+      };
+    });
+
+    const legendSettles = async (present: boolean) =>
+      expect.poll(async () => (await legend()).present, {timeout: 10_000}).toBe(present);
+
+    await lcSetProps(page, {
+      splitColumnName: '', legendVisibility: 'Auto', legendPosition: 'Auto',
+      lineColoringType: 'Auto', multiAxis: false, yColumnNames: ['AGE'],
+    });
+    await legendSettles(false);
+
+    await lcSetProps(page, {splitColumnName: 'SEX', legendVisibility: 'Always'});
+    await legendSettles(true);
+
+    expect((await legend()).labels.sort()).toEqual(['F', 'M']);
+
+    for (const pos of ['Left', 'Top', 'Bottom', 'Right'])
+      await lcSetProps(page, {legendPosition: pos});
+    await legendSettles(true);
+
+    await lcSetProps(page, {legendVisibility: 'Never'});
+    await legendSettles(false);
+
+    await lcSetProps(page, {legendVisibility: 'Auto'});
+    await legendSettles(true);
+    expect((await legend()).labels.sort()).toEqual(['F', 'M']);
+
+    await lcSetProps(page, {splitColumnName: ''});
+    await lcSetProps(page, {splitColumnNames: []});
+    await legendSettles(false);
+  });
+
+  await softStep('Axes follow filter — X axis bounds sync to filter range (contrast)', async () => {
+    await page.evaluate(() => {
+      const df = grok.shell.tv.dataFrame;
+      if (!df.columns.contains('rowIdx'))
+        df.columns.addNewInt('rowIdx').init((i: number) => i);
+    });
+    await lcSetProps(page, {xColumnName: 'rowIdx', yColumnNames: ['HEIGHT']});
+
+    expect((await lcProps(page, 'axesFollowFilter')).axesFollowFilter).toBe(true);
+
+    const setIdxFilter = (min: number, max: number) => page.evaluate(({lo, hi}) => {
+      const fg = grok.shell.tv.getFiltersGroup();
+      fg.updateOrAdd({type: 'histogram', column: 'rowIdx', min: lo, max: hi});
+    }, {lo: min, hi: max});
+
+    const xAxisBounds = () => page.evaluate(() => {
+      const lc = (Array.from(grok.shell.tv.viewers) as any[]).find(v => v.type === 'Line chart') as any;
+      const canvases = lc.root.querySelectorAll('canvas');
+      let mc: HTMLCanvasElement | null = null, ma = 0;
+      for (const c of canvases) {
+        const r = c.getBoundingClientRect();
+        if (r.width * r.height > ma) { ma = r.width * r.height; mc = c; }
+      }
+      const rect = mc!.getBoundingClientRect();
+      const y = rect.height * 0.5;
+      const x1 = rect.width * 0.3, x2 = rect.width * 0.7;
+      const w1 = lc.screenToWorld(x1, y).x, w2 = lc.screenToWorld(x2, y).x;
+      const perPx = (w2 - w1) / (x2 - x1);
+      return {min: w1 - perPx * x1, max: w1 + perPx * (rect.width - x1), span: perPx * rect.width};
+    });
+
+    await expect.poll(async () => (await xAxisBounds()).span, {timeout: 10_000})
+      .toBeGreaterThan(5000);
+    const base = await xAxisBounds();
+    console.log(`axesFollowFilter baseline bounds: min=${base.min.toFixed(2)} max=${base.max.toFixed(2)} span=${base.span.toFixed(2)}`);
+    expect(base.max).toBeGreaterThan(4400);
+
+    await v.snapshotCanvasColors(page, 'Line chart');
+    await setIdxFilter(2000, 3500);
+    await v.waitForViewerRendered(page, 'Line chart', 800);
+    const filteredCount = await page.evaluate(() => grok.shell.tv.dataFrame.filter.trueCount);
+    expect(filteredCount).toBeLessThan(5850);
+    const deltaTrue = (await v.diffCanvasColors(page, 'Line chart')).deltaPx;
+    await expect.poll(async () => (await xAxisBounds()).span, {timeout: 10_000})
+      .toBeLessThan(base.span * 0.7);
+    const bTrue = await xAxisBounds();
+    console.log(`axesFollowFilter=true bounds after rowIdx 2000-3500: min=${bTrue.min.toFixed(2)} max=${bTrue.max.toFixed(2)} span=${bTrue.span.toFixed(2)} deltaTrue=${deltaTrue}`);
+    expect(bTrue.min).toBeGreaterThan(1600);
+    expect(bTrue.min).toBeLessThan(2200);
+    expect(bTrue.max).toBeGreaterThan(3300);
+    expect(bTrue.max).toBeLessThan(3900);
+
+    await setIdxFilter(0, 5849);
+    await v.waitForViewerRendered(page, 'Line chart', 500);
+    await lcSetProps(page, {axesFollowFilter: false});
+    expect((await lcProps(page, 'axesFollowFilter')).axesFollowFilter).toBe(false);
+    await v.waitForViewerRendered(page, 'Line chart', 500);
+    const baseFalse = await xAxisBounds();
+    console.log(`axesFollowFilter=false pre-filter bounds: min=${baseFalse.min.toFixed(2)} max=${baseFalse.max.toFixed(2)} span=${baseFalse.span.toFixed(2)}`);
+    expect(baseFalse.span).toBeGreaterThan(base.span * 0.85);
+    await v.snapshotCanvasColors(page, 'Line chart');
+    await setIdxFilter(2000, 3500);
+    await v.waitForViewerRendered(page, 'Line chart', 800);
+    expect(await page.evaluate(() => grok.shell.tv.dataFrame.filter.trueCount)).toBeLessThan(5850);
+    const deltaFalse = (await v.diffCanvasColors(page, 'Line chart')).deltaPx;
+    const bFalse = await xAxisBounds();
+    console.log(`axesFollowFilter=false bounds after rowIdx 2000-3500: min=${bFalse.min.toFixed(2)} max=${bFalse.max.toFixed(2)} span=${bFalse.span.toFixed(2)} deltaFalse=${deltaFalse}`);
+
+    expect(Math.abs(bFalse.min - baseFalse.min)).toBeLessThan(baseFalse.span * 0.05);
+    expect(Math.abs(bFalse.max - baseFalse.max)).toBeLessThan(baseFalse.span * 0.05);
+
+    expect(bFalse.span).toBeGreaterThan(bTrue.span * 2);
+
+    await lcSetProps(page, {axesFollowFilter: true});
+    expect((await lcProps(page, 'axesFollowFilter')).axesFollowFilter).toBe(true);
+    await expect.poll(async () => (await xAxisBounds()).span, {timeout: 10_000})
+      .toBeLessThan(baseFalse.span * 0.7);
+    await setIdxFilter(0, 5849);
+    await v.waitForViewerRendered(page, 'Line chart', 300);
+
+    await page.evaluate(() => grok.shell.tv.dataFrame.columns.remove('rowIdx'));
+    await v.waitForViewerRendered(page, 'Line chart', 300);
+    expect(await page.evaluate(() => grok.shell.tv.dataFrame.columns.contains('rowIdx'))).toBe(false);
+    expect(await page.evaluate(() => grok.shell.tv.dataFrame.filter.trueCount)).toBe(5850);
+    await lcSetProps(page, {xColumnName: 'AGE', yColumnNames: ['HEIGHT']});
+  });
+
+  await softStep('Context menu — chart area', async () => {
+    await openLineChartContextMenu(page);
+    const items = await page.evaluate(() => {
+      const popup = document.querySelector('.d4-menu-popup');
+      if (!popup) return [];
+      return Array.from(popup.querySelectorAll(':scope > .d4-menu-item > .d4-menu-item-label'))
+        .map(el => el.textContent!.trim());
+    });
+
+    for (const expected of ['Reset View', 'Tools', 'Data', 'Markers', 'Chart Type', 'Overview', 'Selection', 'Controls'])
+      expect(items).toContain(expected);
+
+    await page.keyboard.press('Escape');
+  });
+
+  await softStep('Table switching and row source', async () => {
+    await page.evaluate(() => {
+      for (const v of (Array.from(grok.shell.tv.viewers) as any[]))
+        if (v.type === 'Line chart') v.close();
+    });
+    await page.locator('[name="viewer-Line-chart"]').first().waitFor({state: 'detached', timeout: 300});
+
+    await page.evaluate(async (path) => {
+      const spgi = await (window as any).__readCsv(path);
+      grok.shell.addTableView(spgi);
+      await new Promise(resolve => {
+        const sub = spgi.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(undefined); });
+        setTimeout(resolve, 3000);
+      });
+      const hasBioChem = Array.from({length: spgi.columns.length}, (_, i) => spgi.columns.byIndex(i))
+        .some(c => c.semType === 'Molecule' || c.semType === 'Macromolecule');
+      if (hasBioChem) {
+        for (let i = 0; i < 50; i++) {
+          if (document.querySelector('[name="viewer-Grid"] canvas')) break;
+          await new Promise(r => setTimeout(r, 200));
+        }
+        await (window as any).__quiet('viewer:Grid.onAfterDrawContent', 400, 5000);
+      }
+    }, spgiPath);
+
+    await page.evaluate(() => {
+      const demogTv = (Array.from(grok.shell.tableViews) as any[]).find(v => v.dataFrame.rowCount === 5850);
+      if (demogTv) grok.shell.v = demogTv;
+    });
+    await page.waitForFunction(() => grok.shell.tv?.dataFrame?.rowCount === 5850, null, {timeout: 500});
+
+    await addLineChart(page);
+
+    const toSpgi = await page.evaluate(() => {
+      const spgiTv = (Array.from(grok.shell.tableViews) as any[]).find(v => v.dataFrame.rowCount === 100);
+      const lc = (Array.from(grok.shell.tv.viewers) as any[]).find(v => v.type === 'Line chart')!;
+      lc.props.table = spgiTv!.dataFrame.name;
+      return {name: lc.props.table, wanted: spgiTv!.dataFrame.name};
+    });
+    await v.waitForViewerRendered(page, 'Line chart', 500);
+    expect(toSpgi.name).toBe(toSpgi.wanted);
+    expect(await page.evaluate(() => {
+      const lc = (Array.from(grok.shell.tv.viewers) as any[]).find(v => v.type === 'Line chart')!;
+      return (lc as any).dataFrame.rowCount;
+    })).toBe(100);
+
+    await page.evaluate(() => {
+      const demogTv = (Array.from(grok.shell.tableViews) as any[]).find(v => v.dataFrame.rowCount === 5850);
+      const lc = (Array.from(grok.shell.tv.viewers) as any[]).find(v => v.type === 'Line chart')!;
+      lc.props.table = demogTv!.dataFrame.name;
+    });
+    await v.waitForViewerRendered(page, 'Line chart', 500);
+    expect(await page.evaluate(() => {
+      const lc = (Array.from(grok.shell.tv.viewers) as any[]).find(v => v.type === 'Line chart')!;
+      return (lc as any).dataFrame.rowCount;
+    })).toBe(5850);
+
+    await lcSetProps(page, {xColumnName: 'AGE', yColumnNames: ['HEIGHT'], rowSource: 'Selected'});
+    await page.evaluate(() => grok.shell.tv.dataFrame.selection.setAll(false));
+    await v.waitForViewerQuiet(page, 'Line chart', {gapMs: 300, capMs: 800});
+    await v.snapshotCanvasColors(page, 'Line chart');
+    // with nothing selected the chart must stay put: any repaint within the window fails
+    const preSel = (await v.pollValue(() => v.diffCanvasColors(page, 'Line chart'),
+      (d) => d.deltaPx >= 200, 700, 100)).deltaPx;
+    expect(preSel).toBeGreaterThanOrEqual(0);
+    expect(preSel).toBeLessThan(200);
+    await v.snapshotCanvasColors(page, 'Line chart');
+    await page.evaluate(() => {
+      // one notification for the whole selection: 100 individual set() calls raised 100 of
+      // them and the viewer repainted against each
+      grok.shell.tv.dataFrame.selection.init((i: number) => i < 100);
+    });
+
+    const selDelta = await v.waitForCanvasChange(page, 'Line chart', {minDelta: 1000, timeoutMs: 1000});
+    console.log(`rowSource=Selected selection repaint: selDelta=${selDelta}`);
+    expect(selDelta).toBeGreaterThan(1000);
+
+    await lcSetProps(page, {rowSource: 'Filtered'});
+
+    const filtered = await v.applyNumericFilter(page, 'AGE', 20, 40, 500);
+    expect(filtered).toBeLessThan(5850);
+
+    await page.evaluate(() => grok.shell.tv.dataFrame.selection.setAll(false));
+    await v.applyNumericFilter(page, 'AGE', 0, 100, 300);
+    await lcSetProps(page, {rowSource: 'All'});
+
+    await page.evaluate(() => {
+      const spgiTv = (Array.from(grok.shell.tableViews) as any[]).find(v => v.dataFrame.rowCount === 100);
+      spgiTv?.close();
+    });
+  });
+
+  await softStep('Filter expression and collaborative filtering', async () => {
+    await openDatasetWithLineChart(page, spgiPath);
+
+    const full = await page.evaluate(() => grok.shell.tv.dataFrame.rowCount);
+
+    await lcSetProps(page, {filter: '${CAST Idea ID} <634834'});
+    const lcFiltered = await page.evaluate(() => {
+      const lc = (Array.from(grok.shell.tv.viewers) as any[]).find(v => v.type === 'Line chart')!;
+      return (lc as any).filter.trueCount;
+    });
+    expect(lcFiltered).toBeGreaterThan(0);
+    expect(lcFiltered).toBeLessThan(full);
+
+    const filtered = await v.applyNumericFilter(page, 'Average Mass', 200, 400, 500);
+    expect(filtered).toBeLessThan(full);
+
+    await v.applyNumericFilter(page, 'Average Mass', -Infinity, Infinity, 300);
+    await lcSetProps(page, {filter: ''});
+  });
+
+  await softStep('Selection checkboxes', async () => {
+    await openDatasetWithLineChart(page, datasetPath);
+    const errBefore = errorCount();
+
+    await lcSetProps(page, {xColumnName: 'AGE', yColumnNames: ['HEIGHT'], splitColumnName: '',
+      rowSource: 'All', showSelectedRows: true});
+
+    const box = await page.evaluate(() => {
+      const lc = (Array.from(grok.shell.tv.viewers) as any[]).find(v => v.type === 'Line chart')!;
+      const canvases = lc.root.querySelectorAll('canvas');
+      let mc: HTMLCanvasElement | null = null, ma = 0;
+      for (const c of canvases) {
+        const r = c.getBoundingClientRect();
+        if (r.width * r.height > ma) { ma = r.width * r.height; mc = c; }
+      }
+      const rect = mc!.getBoundingClientRect();
+      return {x1: rect.left + rect.width * 0.3, y1: rect.top + rect.height * 0.3,
+        x2: rect.left + rect.width * 0.6, y2: rect.top + rect.height * 0.6};
+    });
+
+    await page.keyboard.down('Shift');
+    await page.mouse.move(box.x1, box.y1);
+    await page.mouse.down();
+    await page.mouse.move(box.x2, box.y2, {steps: 10});
+    await page.mouse.up();
+    await page.keyboard.up('Shift');
+
+    const sel = await v.pollValue(
+      () => page.evaluate(() => grok.shell.tv.dataFrame.selection.trueCount),
+      (n) => n > 0, 700, 100);
+    expect(sel).toBeGreaterThan(0);
+
+    const hueSelected = await v.pollValue(
+      () => v.countSelectionHuePixels(page, 'Line chart'), (n) => n > 0, 700, 100);
+    expect(hueSelected).toBeGreaterThan(0);
+
+    await lcSetProps(page, {showSelectedRows: false});
+    const hueOff = await v.countSelectionHuePixels(page, 'Line chart');
+
+    expect(hueOff).toBeLessThan(hueSelected * 0.15);
+    await lcSetProps(page, {showSelectedRows: true});
+    expect(await v.countSelectionHuePixels(page, 'Line chart')).toBeGreaterThan(0);
+
+    for (const p of ['showCurrentRowLine', 'showMouseOverCategory', 'showMouseOverRowLine']) {
+      const cur = (await lcProps(page, p))[p];
+      await lcSetProps(page, {[p]: !cur});
+      expect((await lcProps(page, p))[p]).toBe(!cur);
+    }
+    expect(errorCount()).toBe(errBefore);
+
+    await lcSetProps(page, {showCurrentRowLine: false, showMouseOverCategory: true,
+      showSelectedRows: true, showMouseOverRowLine: true});
+    await page.evaluate(() => grok.shell.tv.dataFrame.selection.setAll(false));
+  });
+
+  await softStep('Lasso selection', async () => {
+    const errBefore = errorCount();
+
+    await lcSetProps(page, {xColumnName: 'AGE', yColumnNames: ['HEIGHT']});
+    await page.evaluate(() => grok.shell.tv.dataFrame.selection.setAll(false));
+
+    await openLineChartContextMenu(page);
+    await clickMenuItemByLabel(page, 'Lasso Tool');
+    expect((await lcProps(page, 'lassoTool')).lassoTool).toBe(true);
+
+    await closeMenuByOutsideClick(page);
+
+    const box = await page.evaluate(() => {
+      const lc = (Array.from(grok.shell.tv.viewers) as any[]).find(v => v.type === 'Line chart')!;
+      const canvases = lc.root.querySelectorAll('canvas');
+      let mc: HTMLCanvasElement | null = null, ma = 0;
+      for (const c of canvases) {
+        const r = c.getBoundingClientRect();
+        if (r.width * r.height > ma) { ma = r.width * r.height; mc = c; }
+      }
+      const rect = mc!.getBoundingClientRect();
+      return {left: rect.left, top: rect.top, width: rect.width, height: rect.height};
+    });
+    const px = (fx: number) => box.left + box.width * fx;
+    const py = (fy: number) => box.top + box.height * fy;
+
+    await page.keyboard.down('Shift');
+    await page.mouse.move(px(0.3), py(0.35));
+    await page.mouse.down();
+    await page.mouse.move(px(0.45), py(0.65), {steps: 5});
+    await page.mouse.move(px(0.55), py(0.3), {steps: 5});
+    await page.mouse.move(px(0.7), py(0.6), {steps: 5});
+    await page.mouse.up();
+    await page.keyboard.up('Shift');
+    const selCount = () => page.evaluate(() => grok.shell.tv.dataFrame.selection.trueCount);
+    expect(await v.pollValue(selCount, (n) => n > 0, 700, 100)).toBeGreaterThan(0);
+
+    await page.keyboard.press('Escape');
+    expect(await v.pollValue(selCount, (n) => n === 0, 500, 100)).toBe(0);
+
+    await openLineChartContextMenu(page);
+    await clickMenuItemByLabel(page, 'Lasso Tool');
+    expect((await lcProps(page, 'lassoTool')).lassoTool).toBe(false);
+
+    await closeMenuByOutsideClick(page);
+    expect(errorCount()).toBe(errBefore);
+  });
+
+  await softStep('Data panel checkboxes', async () => {
+    const errBefore = errorCount();
+    await lcSetProps(page, {xColumnName: 'AGE', yColumnNames: ['AGE', 'HEIGHT']});
+
+    await lcSetProps(page, {packCategories: false, multiAxis: true});
+    expect(errorCount()).toBe(errBefore);
+    expect(await lcProps(page, 'packCategories', 'multiAxis')).toEqual({packCategories: false, multiAxis: true});
+
+    await lcSetProps(page, {packCategories: true, multiAxis: false});
+  });
+
+  await v.closeAllAndWait(page);
+  v.finishSpec();
+});

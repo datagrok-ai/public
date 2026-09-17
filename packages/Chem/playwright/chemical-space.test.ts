@@ -1,9 +1,8 @@
-/* ---
-sub_features_covered: [chem.analyze.chemical-space, chem.analyze.chemical-space.editor, chem.analyze.chemical-space.embeddings, chem.analyze.chemical-space.top-menu, chem.analyze.chemical-space.transform]
---- */
-import {test, expect, Page} from '@playwright/test';
+import {expect, Page} from '@playwright/test';
+import {test} from '@datagrok-libraries/test/src/playwright/shared-page';
 import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu, waitForMolecule} from '@datagrok-libraries/test/src/playwright/spec-login';
 import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
+import {waitForChemMenuRoot} from './chem-fast-helpers';
 
 test.use(specTestOptions);
 
@@ -15,7 +14,7 @@ async function openDatasetAndWaitForMolecule(page: Page, label: string, datasetP
       try { (grok as any).shell.settings.showFiltersIconsConstantly = true; } catch (e) {}
       try { (grok as any).shell.windows.simpleMode = true; } catch (e) {}
       grok.shell.closeAll();
-      for (let i = 0; i < 50 && grok.shell.tv != null; i++) await new Promise(r => setTimeout(r, 100));
+      for (let i = 0; i < 50 && Array.from(grok.shell.tableViews).length > 0; i++) await new Promise(r => setTimeout(r, 100));
       if (isSdf) {
         await ((DG as any).Func.find({name: 'OpenFile'})[0])
           .prepare({fullPath: path}).call(undefined, undefined, {processed: false});
@@ -156,10 +155,7 @@ async function runChemicalSpaceWalk(page: Page, label: string, datasetPath: stri
 }
 
 test('Chem: Chemical Space multi-format walk (smiles-50 / molV2000 / molV3000)', async ({page}) => {
-  // CI SKIP (approved): 6 heavy dim-reduction (UMAP/t-SNE) runs across 3 datasets time out / race on the
-  // minimal CI stack ("Close active view" timeouts + "Concurrent modification"). Runs on a full stack.
-  // See PACKAGE-PLAYWRIGHT-CODE-FINDINGS.md §B1.
-  test.setTimeout(600_000); // 6 dim-reduction runs (2 × 3 datasets) @ ~45-90s each + margin
+  test.setTimeout(900_000);
 
   const consoleErrors: string[] = [];
   // WebGPU is absent in headless CI chromium and the dim-reduction code just reports it — same
@@ -172,6 +168,7 @@ test('Chem: Chemical Space multi-format walk (smiles-50 / molV2000 / molV3000)',
   page.on('pageerror', (err) => consoleErrors.push(`pageerror: ${err.message}`));
 
   await loginToDatagrok(page);
+  await waitForChemMenuRoot(page);
 
   await runChemicalSpaceWalk(page, 'D1 smiles-50', 'System:AppData/Chem/tests/smiles-50.csv', 'method');
   await runChemicalSpaceWalk(page, 'D2 molV2000', 'System:AppData/Chem/mol1K.sdf', 'method');

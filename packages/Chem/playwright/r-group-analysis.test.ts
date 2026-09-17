@@ -1,11 +1,9 @@
-/* ---
-sub_features_covered: [chem.analyze.r-groups, chem.analyze.r-groups.decomposition, chem.analyze.r-groups.top-menu, chem.sketcher]
---- */
-// Paired scenario: r-group-analysis.md
-import {test, expect} from '@playwright/test';
+import {expect} from '@playwright/test';
+import {test} from '@datagrok-libraries/test/src/playwright/shared-page';
 import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu} from '@datagrok-libraries/test/src/playwright/spec-login';
 import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 import * as chem from '@datagrok-libraries/test/src/playwright/chem';
+import {openChemMenuItemFast, waitForChemMenuRoot} from './chem-fast-helpers';
 
 test.use(specTestOptions);
 
@@ -14,7 +12,7 @@ async function openRGroupsDialog(page: any) {
   // swallowed (semType detection still settling, transient build balloons), so
   // re-dispatch until the dialog actually mounts instead of a single 10s wait.
   for (let attempt = 0; attempt < 4; attempt++) {
-    await chem.openChemMenuItem(page, 'R-Groups Analysis...', {delayMs: 800});
+    await openChemMenuItemFast(page, 'R-Groups Analysis...', {delayMs: 800});
     try {
       await page.locator('.d4-dialog').waitFor({timeout: 8000});
       return;
@@ -44,11 +42,10 @@ test('Chem: R-Groups Analysis Block A (GROK-16329) + Block B (Replace Latest mat
   test.setTimeout(180_000);
 
   await loginToDatagrok(page);
-
-  // ===== Block A — smiles-50.csv empty-result balloon (GROK-16329) =====
+  await waitForChemMenuRoot(page);
 
   await softStep('A1: Open smiles.csv (DIVERSE dataset — required for GROK-16329 empty-MCS trigger)', async () => {
-    // smiles.csv diversity triggers MCS-cannot-decompose → empty result; smiles-50.csv is too uniform.
+
     await page.evaluate(async () => {
       try { (grok as any).shell.settings.showFiltersIconsConstantly = true; } catch (e) {}
       try { (grok as any).shell.windows.simpleMode = true; } catch (e) {}
@@ -108,8 +105,6 @@ test('Chem: R-Groups Analysis Block A (GROK-16329) + Block B (Replace Latest mat
     expect(result.balloons.some(b => /No R-Groups were found/i.test(b)),
       `GROK-16329: expected "No R-Groups were found" balloon. balloons=${JSON.stringify(result.balloons)}`).toBe(true);
   });
-
-  // ===== Block B — sar_small.csv Replace Latest matrix =====
 
   await softStep('B1: Open sar_small.csv', async () => {
     await page.evaluate(async () => {

@@ -1,7 +1,5 @@
-/* ---
-sub_features_covered: [bio.analyze.sequence-space.transform, bio.api.get-seq-helper, bio.detector, bio.io.fasta-handler, bio.io.save-as-fasta, bio.rendering, bio.transform.convert-notation, bio.transform.convert-notation.action]
---- */
-import {test, expect} from '@playwright/test';
+import {expect} from '@playwright/test';
+import {test} from '@datagrok-libraries/test/src/playwright/shared-page';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
 import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 import * as bio from '@datagrok-libraries/test/src/playwright/bio';
@@ -19,7 +17,7 @@ test('Bio macromolecule_column source-class lifecycle: detect → convert → fa
   const fastaTempPath = `System:AppData/Bio/temp/bio-lifecycle-${stamp}.fasta`;
   let saved: {projectId: string; primaryTableInfoId: string; layoutId: string | null} | null = null;
   await loginToDatagrok(page);
-  // Scenario 1 — Detect on open + convert-notation round trip
+
   await page.evaluate(async (path) => {
     document.body.classList.add('selenium');
     grok.shell.settings.showFiltersIconsConstantly = true;
@@ -46,7 +44,7 @@ test('Bio macromolecule_column source-class lifecycle: detect → convert → fa
     const probes = ['Bio:getSeqHelper', 'Bio:getMonomerLibHelper', 'Bio:getBioLib'];
     for (let i = 0; i < 30; i++) {
       for (const fn of probes) {
-        try { await (grok as any).functions.call(fn, {}); return; } catch { /* try next */ }
+        try { await (grok as any).functions.call(fn, {}); return; } catch {  }
       }
       await new Promise((r) => setTimeout(r, 200));
     }
@@ -111,7 +109,7 @@ test('Bio macromolecule_column source-class lifecycle: detect → convert → fa
       () => document.querySelectorAll('[name="dialog-Convert-Sequence-Notation"]').length === 0,
       null, {timeout: 15_000}).catch(() => {});
   });
-  // Scenario 2 — Import FASTA → Export FASTA → re-import round trip
+
   await page.evaluate(async (path) => {
     grok.shell.closeAll();
     const df = await grok.dapi.files.readCsv(path);
@@ -206,7 +204,7 @@ test('Bio macromolecule_column source-class lifecycle: detect → convert → fa
       } catch (e) {
         reimportErr = String(e).slice(0, 200);
       }
-      try { await grok.dapi.files.delete(tempPath); } catch (_) { /* best effort */ }
+      try { await grok.dapi.files.delete(tempPath); } catch (_) {  }
       return {
         fastaShape: {
           startsWithHeader: fastaText.startsWith('>'),
@@ -231,7 +229,7 @@ test('Bio macromolecule_column source-class lifecycle: detect → convert → fa
     expect(result.reimportedFirstSeq, 'FASTA round-trip must preserve first sequence content')
       .toBe(result.originalFirstSeq);
   });
-  // Scenario 3 — Save project with analysis + reopen restores analysis output
+
   await softStep('S3.1: Open Bio | Analyze | Sequence Space with defaults — embedding columns + ScatterPlot dock', async () => {
     const baseCols: number = await page.evaluate(() => grok.shell.tv.dataFrame.columns.length);
     await bio.openBioAnalyze(page, 'div-Bio---Analyze---Sequence-Space...');
@@ -284,7 +282,7 @@ test('Bio macromolecule_column source-class lifecycle: detect → convert → fa
       expect(post.hasEmbedY).toBe(true);
     });
   } finally {
-    // Scenario 4 — Cleanup (runs regardless of earlier failures)
+
     if (saved) {
       await deleteProjectWithCleanup(page, {
         projectId: saved.projectId,
@@ -292,7 +290,7 @@ test('Bio macromolecule_column source-class lifecycle: detect → convert → fa
       });
     }
     await page.evaluate(async (p) => {
-      try { await grok.dapi.files.delete(p); } catch (_) { /* best effort */ }
+      try { await grok.dapi.files.delete(p); } catch (_) {  }
     }, fastaTempPath).catch(() => {});
   }
   finishSpec();

@@ -1,7 +1,5 @@
-/* ---
-sub_features_covered: [bio.analyze.activity-cliffs, bio.analyze.activity-cliffs.top-menu, bio.search.diversity, bio.search.diversity.top-menu, bio.search.similarity, bio.search.similarity.top-menu, bio.viewers.diversity-search, bio.viewers.similarity-search]
---- */
-import {test, expect} from '@playwright/test';
+import {expect} from '@playwright/test';
+import {test} from '@datagrok-libraries/test/src/playwright/shared-page';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
 import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 test.use(specTestOptions);
@@ -82,7 +80,7 @@ for (const vc of viewerCases) {
       const probes = ['Bio:getSeqHelper', 'Bio:getMonomerLibHelper', 'Bio:getBioLib'];
       for (let i = 0; i < 30; i++) {
         for (const fn of probes) {
-          try { await (grok as any).functions.call(fn, {}); return; } catch { /* try next */ }
+          try { await (grok as any).functions.call(fn, {}); return; } catch {  }
         }
         await new Promise((r) => setTimeout(r, 500));
       }
@@ -100,11 +98,11 @@ for (const vc of viewerCases) {
         const origWarn = grok.shell.warning.bind(grok.shell);
         const origErr = grok.shell.error.bind(grok.shell);
         grok.shell.warning = ((msg: any, opts?: any) => {
-          try { (window as any).__balloonCalls.push({type: 'warning', msg: String(msg).slice(0, 300)}); } catch { /* ignore */ }
+          try { (window as any).__balloonCalls.push({type: 'warning', msg: String(msg).slice(0, 300)}); } catch {  }
           return origWarn(msg, opts);
         }) as any;
         grok.shell.error = ((msg: any, opts?: any) => {
-          try { (window as any).__balloonCalls.push({type: 'error', msg: String(msg).slice(0, 300)}); } catch { /* ignore */ }
+          try { (window as any).__balloonCalls.push({type: 'error', msg: String(msg).slice(0, 300)}); } catch {  }
           return origErr(msg, opts);
         }) as any;
         return {
@@ -151,7 +149,7 @@ for (const vc of viewerCases) {
       await page.waitForFunction(() => {
         return Array.isArray((window as any).__balloonCalls)
           && (window as any).__balloonCalls.length > 0;
-      }, null, {timeout: 30_000}).catch(() => { /* bounded readiness gate; the balloon assertion below is the real check */ });
+      }, null, {timeout: 30_000}).catch(() => {  });
       const probe = await page.evaluate((viewerSel) => {
         const df = grok.shell.tv.dataFrame;
         const calls = ((window as any).__balloonCalls || []) as Array<{type: string; msg: string}>;
@@ -168,10 +166,8 @@ for (const vc of viewerCases) {
           docked,
         };
       }, vc.viewerSelector);
-      // Invariant 2 (.md): no silent zero-row result — the source table is not rewritten and the viewer reacts (docks or rejects), never a silent no-op.
       expect(probe.rowCount, `${vc.label}: source table must not be silently rewritten on empty input`).toBe(baseRowCount);
       expect(probe.docked || probe.balloonCount > 0, `${vc.label}: viewer must react on empty input (dock or reject), not silently no-op`).toBe(true);
-      // Invariant 1 (.md): empty current-row input must surface a rejection balloon. Fails on GROK-16111.
       expect(probe.balloonCount, 'GROK-16111: empty current-row input must surface a rejection balloon').toBeGreaterThan(0);
     });
     finishSpec();

@@ -1,7 +1,5 @@
-/* ---
-sub_features_covered: [bio.analyze.msa, bio.analyze.msa.align-sequences, bio.analyze.msa.dialog, bio.detector, bio.rendering.column-header]
---- */
-import {test, expect} from '@playwright/test';
+import {expect} from '@playwright/test';
+import {test} from '@datagrok-libraries/test/src/playwright/shared-page';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
 import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 test.use(specTestOptions);
@@ -48,11 +46,7 @@ test('Bio MSA on FASTA', async ({page}) => {
     expect(info.hasMacro).toBe(true);
   });
   await softStep('Add deterministic int Clusters column (setup for per-cluster MSA)', async () => {
-    // Create the Clusters column directly via the JS API. The Add-New-Column UI + RandBetween
-    // formula path is flaky on dev (CodeMirror autocomplete intercepts the editor click; the
-    // formula compute occasionally exceeds 60s), and this column is pure setup. The
-    // Add-New-Column dialog itself is covered by PowerPack/add-new-column-spec.ts. i%6 gives a
-    // deterministic 0..5 range matching the original RandBetween(0,5) formula.
+
     await page.evaluate(() => {
       const df = grok.shell.tv.dataFrame;
       if (df.col('Clusters') != null) df.columns.remove('Clusters');

@@ -1,9 +1,8 @@
-/* ---
-sub_features_covered: [chem.actions.copy-as, chem.actions.copy-molfile-v2000, chem.actions.copy-smiles, chem.sketcher, chem.sketcher.cell-editor, chem.sketcher.ocl]
---- */
-import {test, expect} from '@playwright/test';
+import {expect} from '@playwright/test';
+import {test} from '@datagrok-libraries/test/src/playwright/shared-page';
 import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu} from '@datagrok-libraries/test/src/playwright/spec-login';
 import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
+import {waitForChemMenuRoot} from './chem-fast-helpers';
 
 test.use(specTestOptions);
 
@@ -67,7 +66,7 @@ test('Chem: Sketcher Favorites + Recent + Copy as SMILES/MOLBLOCK + input round-
   };
 
   await loginToDatagrok(page);
-  await page.waitForTimeout(3000);
+  await waitForChemMenuRoot(page);
 
   // navigator.clipboard is only defined in a secure context (https:// or localhost). CI runs
   // against a plain-http dev host, so the Copy/Paste round-trip steps (8/8b/9/9b) can't read the

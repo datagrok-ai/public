@@ -1,3 +1,9 @@
+---
+feature: color-coding
+target_layer: manual-only
+coverage_type: smoke
+---
+
 ### Prerequisites
 demog table is open with no color coding applied.
 
@@ -46,3 +52,9 @@ demog table is open with no color coding applied.
 11. Click **OK** → verify the final scheme is applied to the grid.
 
 12. Click the **arrows icon** (invert) next to the scheme dropdown → verify the gradient is reversed in the grid.
+
+---
+{
+  "order": 1,
+  "datasets": ["System:DemoFiles/demog.csv"]
+}

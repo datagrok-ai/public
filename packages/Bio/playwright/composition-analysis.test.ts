@@ -1,7 +1,5 @@
-/* ---
-sub_features_covered: [bio.analyze.composition, bio.viewers.web-logo]
---- */
-import {test, expect} from '@playwright/test';
+import {expect} from '@playwright/test';
+import {test} from '@datagrok-libraries/test/src/playwright/shared-page';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
 import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 test.use(specTestOptions);
@@ -81,7 +79,6 @@ test('Bio | Analyze | Composition — composition analysis integration', async (
       expect(result.dialogOpen).toBe(false);
     });
     await softStep(`[${ds.name}] Scenario 2 Step 3 — Click letter in WebLogo selects ≥1 row in source grid`, async () => {
-      // Canvas may be in DOM before positions are computed and click handlers bound.
       await page.waitForFunction(() => {
         const wl: any = (window as any).grok.shell.tv.viewers.find((v: any) => v.type === 'WebLogo');
         return !!wl && Array.isArray(wl.positions) && wl.positions.length > 0 &&
@@ -114,7 +111,7 @@ test('Bio | Analyze | Composition — composition analysis integration', async (
             candidates.push({x: cx, y: cy, h: b.height});
           }
         }
-        // Tallest rect first — most frequent monomer is the largest hit target.
+
         candidates.sort((a, b) => b.h - a.h);
         for (const c of candidates) {
           df.selection.setAll(false);
@@ -135,7 +132,7 @@ test('Bio | Analyze | Composition — composition analysis integration', async (
         const g = (window as any).grok;
         g.shell.tv.dataFrame.selection.setAll(false);
         const w = g.shell.tv.viewers.find((v: any) => v.type === 'WebLogo');
-        // Gear lives on the outer docked-panel title bar (.panel-base ancestor).
+
         let panelBase: any = w.root;
         while (panelBase && !panelBase.classList?.contains('panel-base'))
           panelBase = panelBase.parentElement;
@@ -153,7 +150,7 @@ test('Bio | Analyze | Composition — composition analysis integration', async (
       });
       expect(opened.found).toBe(true);
       expect(opened.pg).toBe(true);
-      // Property row sits in a collapsed accordion — wait for 'attached', not 'visible'.
+
       await page.locator('tr[name="prop-show-position-labels"]').waitFor({
         state: 'attached', timeout: 10_000});
     });
