@@ -5,6 +5,7 @@ import {test, expect} from '@datagrok-libraries/test/src/playwright/shared-page'
 import {openDatagrok, specTestOptions, softStep} from '@datagrok-libraries/test/src/playwright/spec-login';
 import * as v from '@datagrok-libraries/test/src/playwright/viewers';
 import {saveProjectViaApi, deleteProjectWithCleanup} from '@datagrok-libraries/test/src/playwright/projects';
+import {knownOpenBug} from '@datagrok-libraries/test/src/playwright/known-open-bug';
 
 declare const grok: any;
 
@@ -62,7 +63,10 @@ test('Tile Viewer — layout and project persistence', async ({page}) => {
         const l = document.querySelector('[name="viewer-Tile-Viewer"] .d4-tile-viewer-lane-content') as HTMLElement;
         const first = l?.querySelector('.d4-tile-viewer-form');
         const val = (n: string) => (first?.querySelector(`input[name="input-${n}"]`) as HTMLInputElement)?.value ?? null;
-        return JSON.stringify({scrollTop: l?.scrollTop ?? -1, age: val('AGE'), sex: val('SEX'), weight: val('WEIGHT')});
+        const tops = Array.from(new Set(Array.from(l?.querySelectorAll('.d4-tile-viewer-form') ?? [])
+          .map((f) => (f as HTMLElement).offsetTop))).sort((a, b) => a - b);
+        return JSON.stringify({scrollTop: l?.scrollTop ?? -1, rowPitch: tops.length > 1 ? tops[1] - tops[0] : -1,
+          age: val('AGE'), sex: val('SEX'), weight: val('WEIGHT')});
       };
     });
     const readLane = () => page.evaluate(() => {
@@ -96,24 +100,40 @@ test('Tile Viewer — layout and project persistence', async ({page}) => {
     }
     const before = await readLane();
     // docking the histogram rebuilds the lane at scrollTop 0 and the viewer puts the position
-    // back ~800 ms later, so the wait is for the lane read to return to its pre-dock value
-    await page.evaluate(async (was) => {
+    // back ~800 ms later, snapped to the start of the tile row that was on top
+    await v.addViewerByIcon(page, 'histogram', 'Histogram', 10000);
+    await page.evaluate(() => {
       const w = window as any;
-      await w.__settled('grok.events.onViewerAdded', () => grok.shell.tv.addViewer('Histogram'), 2500);
-      await w.__poll(w.__laneRead, (s: string) => s === was, 2000, 50);
-    }, JSON.stringify(before));
+      return w.__poll(w.__laneRead, (s: string) => JSON.parse(s).scrollTop > 0, 2000, 50);
+    });
     const after = await readLane();
 
     // cleanup runs even on a failed assertion: the next step opens the editor from the top tile
     try {
       expect(before.scrollTop).toBeGreaterThan(0);
       expect(before.age).not.toBeNull();
+      expect(before.rowPitch).toBeGreaterThan(0);
 
       expect(after.scrollTop).toBeGreaterThan(0);
-      expect(Math.abs(after.scrollTop - before.scrollTop)).toBeLessThanOrEqual(2);
+      expect(after.scrollTop).toBeLessThanOrEqual(before.scrollTop);
+      expect(before.scrollTop - after.scrollTop).toBeLessThan(before.rowPitch);
       expect(after.age).toBe(before.age);
       expect(after.sex).toBe(before.sex);
       expect(after.weight).toBe(before.weight);
+
+      const closeBox = await page.evaluate(() => {
+        const b = document.querySelector('[name="viewer-Histogram"]')!.closest('.panel-base')!
+          .querySelector('.panel-titlebar-button-close')!.getBoundingClientRect();
+        return {x: b.x + b.width / 2, y: b.y + b.height / 2};
+      });
+      await page.mouse.click(closeBox.x, closeBox.y);
+      await expect.poll(() => page.evaluate(() =>
+        grok.shell.tv.viewers.filter((x: any) => x.type === 'Histogram').length), {timeout: 15_000, ...POLL}).toBe(0);
+      const afterClose = await readLane();
+      await knownOpenBug('GROK-20912', () => {
+        expect(Math.abs(afterClose.scrollTop - after.scrollTop)).toBeLessThan(after.rowPitch);
+        expect(afterClose.age).toBe(after.age);
+      });
     }
     finally {
       await page.evaluate(() => grok.shell.tv.viewers.find((x: any) => x.type === 'Histogram')?.close());
