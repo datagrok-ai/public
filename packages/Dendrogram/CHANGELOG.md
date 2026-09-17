@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-15981: Close the injected tree neighbor on grid detach so its DataFrame subscriptions are torn down with the grid
 * GROK-20828: Answer a missing DataFrame in hierarchical clustering with the no-table warning instead of dereferencing it
 * GROK-20807: Open a table view for an unattached DataFrame in hierarchicalClusteringUI
 

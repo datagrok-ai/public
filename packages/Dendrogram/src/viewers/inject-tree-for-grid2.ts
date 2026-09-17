@@ -361,8 +361,14 @@ export function injectTreeForGridUI2(
       sub.unsubscribe();
   }
 
+  // the DataFrame outlives the grid (other views, layout apply), so the tree goes with the grid
+  function gridOnDetached() {
+    treeNb.close();
+  }
+
   const subs: Unsubscribable[] = [];
   subs.push(treeNb.onClosed.subscribe(treeNeighborOnClosed));
+  subs.push(grid.onDetached.subscribe(gridOnDetached));
   subs.push(renderer.onCurrentChanged.subscribe(rendererOnCurrentChanged));
   subs.push(renderer.onMouseOverChanged.subscribe(rendererOnMouseOverChanged));
   subs.push(renderer.onSelectionChanged.subscribe(rendererOnSelectionChanged));
