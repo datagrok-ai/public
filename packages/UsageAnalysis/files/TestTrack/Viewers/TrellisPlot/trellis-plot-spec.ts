@@ -1337,6 +1337,10 @@ test('Trellis plot — on click, keyboard navigation, filter formula, undo/redo'
     await armDfEvent(page, 'onSelectionChanged');
     await page.keyboard.press('Escape');
     await awaitArmedDfEvent(page, 900);
+    // the grid clears the selection on Escape at once, the trellis drops its current cell on a 50ms
+    // debounce; switching to Filter before that re-applies the stale cell and a later click loses it
+    await page.waitForFunction(() => document.querySelector(
+      '[name="viewer-Trellis-plot"] .d4-trellis-cell-current') === null, null, {timeout: 2000});
     const selAfterEsc = await page.evaluate(() => grok.shell.tv.dataFrame.selection.trueCount);
     expect(selAfterEsc).toBe(0);
 
@@ -1425,6 +1429,7 @@ test('Trellis plot — on click, keyboard navigation, filter formula, undo/redo'
 
     await page.evaluate(async () => {
       const w = window as any;
+      w.__panelSub?.unsubscribe?.();
       for (const vw of Array.from(grok.shell.tv.viewers) as any[]) if (vw.type === 'Trellis plot') vw.close();
       await w.__poll(() => document.querySelector('[name="viewer-Trellis-plot"]'), (e: Element | null) => !e, 600, 40);
       const tp = grok.shell.tv.addViewer('Trellis plot') as any;

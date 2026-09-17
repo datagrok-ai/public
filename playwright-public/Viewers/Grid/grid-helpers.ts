@@ -117,22 +117,26 @@ export async function saveProjectViaRibbon(page: Page, name: string): Promise<st
 
   const found = await page.evaluate(async (n) => {
     const w = window as any;
-    let cancelled = false;
-    const cancel = () => {
-      const btn = Array.from(document.querySelectorAll('.d4-dialog .ui-btn, .d4-dialog button'))
+    // Only the follow-up Share dialog: cancelling Save project while its upload runs nulls the
+    // platform's dialog handle and the upload's own close() then raises a NullError balloon.
+    const shareDialog = () => Array.from(document.querySelectorAll('.d4-dialog'))
+      .find((d) => /^Share /.test((d.querySelector('.d4-dialog-title')?.textContent ?? '').trim()));
+    const cancelShare = () => {
+      const btn = Array.from(shareDialog()?.querySelectorAll('.ui-btn, button') ?? [])
         .find((b) => /^CANCEL$/i.test((b.textContent ?? '').trim())) as HTMLElement | undefined;
-      if (btn) { btn.click(); cancelled = true; }
+      if (btn) btn.click();
+      return !!btn;
     };
     const deadline = Date.now() + 30_000;
-    while (Date.now() < deadline) {
-      if (!cancelled) cancel();
-      try {
-        const p = await w.grok.dapi.projects.filter(`name = "${n}"`).first();
-        if (p) { cancel(); return {id: String(p.id), name: String(p.name)}; }
-      } catch (_) {  }
-      await new Promise((r) => setTimeout(r, 250));
+    let project: any = null;
+    while (Date.now() < deadline && !project) {
+      try { project = await w.grok.dapi.projects.filter(`name = "${n}"`).first(); } catch (_) {  }
+      if (!project) await new Promise((r) => setTimeout(r, 250));
     }
-    return null;
+    if (!project) return null;
+    // a new project always gets the Share dialog, opened right after the upload resolves
+    await w.__poll(() => cancelShare(), (done: boolean) => done, 5000, 50);
+    return {id: String(project.id), name: String(project.name)};
   }, name);
   if (!found)
     throw new Error(`saveProjectViaRibbon: project "${name}" not visible server-side 30s after the ribbon save`);
@@ -219,7 +223,10 @@ export interface ErrorTracker { list: string[]; count(): number; stop(): void; }
 /** Collects console errors (and page errors) until stop(); every spec on the shared page must stop it. */
 export function trackErrors(page: Page, isNoise: (t: string) => boolean = () => false): ErrorTracker {
   const list: string[] = [];
-  const onConsole = (m: any) => { if (m.type() === 'error' && !isNoise(m.text())) list.push(m.text()); };
+  // a stand that ships no help docs 404s on the context help page, which is not the viewer's error
+  const onConsole = (m: any) => {
+    if (m.type() === 'error' && !isNoise(m.text()) && !isHelpDoc404(m)) list.push(m.text());
+  };
   const onPageError = (e: any) => { if (!isNoise(String(e))) list.push(String(e)); };
   page.on('console', onConsole);
   page.on('pageerror', onPageError);
@@ -229,6 +236,9 @@ export function trackErrors(page: Page, isNoise: (t: string) => boolean = () => 
     stop: () => { page.off('console', onConsole); page.off('pageerror', onPageError); },
   };
 }
+
+export const isHelpDoc404 = (m: any): boolean =>
+  /Failed to load resource/.test(m.text()) && /\/help\/.*\.md$/.test(m.location().url);
 
 export const BENIGN_NOISE = (t: string): boolean =>
   /Unable to find element in cloned iframe/i.test(t) ||

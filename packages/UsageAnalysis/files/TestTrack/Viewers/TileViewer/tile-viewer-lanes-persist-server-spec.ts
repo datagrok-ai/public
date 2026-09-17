@@ -33,7 +33,9 @@ test('Tile Viewer — layout and project persistence', async ({page}) => {
 
   const AMBIENT = /Permissions policy violation: compute-pressure/i;
   const consoleErrors: string[] = [];
-  const onConsole = (m: any) => { if (m.type() === 'error') consoleErrors.push(m.text()); };
+  // a stand that ships no help docs 404s on the context help page, which is not the viewer's error
+  const helpDoc404 = (m: any) => /Failed to load resource/.test(m.text()) && /\/help\/.*\.md$/.test(m.location().url);
+  const onConsole = (m: any) => { if (m.type() === 'error' && !helpDoc404(m)) consoleErrors.push(m.text()); };
   const onPageError = (e: any) => { const t = String(e); if (!AMBIENT.test(t)) consoleErrors.push(t); };
   page.on('console', onConsole);
   page.on('pageerror', onPageError);

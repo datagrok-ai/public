@@ -434,7 +434,7 @@ test('Filter Panel — Expression filter driven through its own UI', async ({pag
             const [mm, dd, yyyy] = val.split('/').map(Number);
             const cutoff = new Date(yyyy, mm - 1, dd).getTime();
             const t = raw instanceof Date ? raw.getTime() : new Date(raw).getTime();
-            if (!Number.isNaN(t) && t > cutoff) n++;
+            if (!Number.isNaN(t) && t >= cutoff) n++;
           }
         }
         return n;
