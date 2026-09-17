@@ -143,7 +143,7 @@ If app URL contains the only slash, application becomes default for the package:
 Here's the full code used in the tutorial.
 
 ```javascript
-/* Do not change these import lines to match external modules in webpack configuration */
+/* Do not change these import lines to match external modules in the bundler configuration */
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 

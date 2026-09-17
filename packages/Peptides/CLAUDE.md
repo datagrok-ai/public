@@ -182,3 +182,66 @@ Receives a chunk of the upper-triangular pairwise comparison matrix. For each pa
 | Export mutation cliffs / invariant map | `src/viewers/sar-viewer.ts` → `SARViewer.exportMutationCliffs()`, `SARViewer.exportInvariantMap()` |
 | Demo data files | `files/aligned.csv`, `aligned_2.csv`, `aligned_3.csv` |
 | Benchmark test data | `files/tests/` (5k–200k .d42 files) |
+
+## Other viewer automation surfaces
+
+These viewers expose `getWidgetStatus()`, `isRenderPending`, `onRendered`, and
+`immediateRendering`. `src/viewers/viewer-render-state.ts` owns their deferred work and child
+render subscriptions. Pending includes queued callbacks, running asynchronous work, and pending
+renders of attached children. Immediate rendering forwards to every child and removes delays from
+new deferred work. Detach cancels callbacks and subscriptions and detaches owned children.
+
+### Logo Summary Table
+
+The inner grid is named `Logo-Summary-Table-grid`, so it does not collide with the main table's
+`viewer-Grid`. Canvas parts and ordinary grid areas come from that grid. Additional areas are
+re-keyed from its currently reported cells; they are absent when the cell is not reported or the
+grid has been replaced by an explanatory message.
+
+| Area | Source |
+|---|---|
+| `cluster <name>` | The cluster label cell |
+| `weblogo of cluster <name>` | The WebLogo host cell; individual glyphs are not exposed here |
+| `distribution of cluster <name>` | The activity-distribution host cell |
+
+| Reading | Source |
+|---|---|
+| `clusters` | Summary dataframe row count, before the members threshold |
+| `clusters shown` | Summary dataframe filter count |
+| `members total` | Sum of the summary Members column, before the threshold; custom clusters may overlap original clusters |
+| `Members of cluster <name>`, `Mean difference of cluster <name>`, `P-Value of cluster <name>` | Actual summary cells, including filtered-out clusters; missing values are `""` |
+| `clusters column` | Configured source cluster column name |
+| `selected clusters` | Current original and custom cluster selections, joined by `", "` |
+| `message` | The explanatory text currently rendered instead of the grid, otherwise `""` |
+
+Pending includes WebLogo creation, attached per-cell WebLogo/histogram renders, the 200 ms grid
+invalidation, and the current-cell selection debounce. Replacing the grid disposes its child
+viewers and subscriptions; a WebLogo that completes after replacement is detached. Cluster
+selection accepts both Control and Command modifiers.
+
+### Sequence Mutation Cliffs
+
+Parts, hit areas and chart readings come from the inner line chart. `position` is the position of
+the rendered result, `cliff rows` is its dataframe row count (unique participating peptides, not
+pair count), and `message` is the actual no-data/invalid-configuration text or `""`. Before a
+result renders, `position` is `""` and `cliff rows` is 0. A message has no chart areas.
+
+Pending includes mutation-cliff computation, the 300 ms render timer, filtering, both selection
+synchronization debounces, and deferred activity-column updates. A changed configuration or detach
+invalidates old computations so they cannot attach stale results or subscriptions.
+
+### Active peptide selection
+
+Parts, areas and chart readings come from the inner scatter plot. `cluster size threshold` and
+`activity threshold` record the values used in the latest threshold-line draw; they are `""`
+before a draw. `activity target` reflects the scatter plot's actual Y-axis inversion (`High` or
+`Low`), or `""` before creation. `message` contains the viewer's creation error, otherwise `""`.
+Pending includes render debounce, delayed invalidation, selection/accordion updates, and the
+scatter plot's rendering. Replacing the plot removes its listeners and cancels its deferred work.
+
+### Sequence Position Statistics
+
+Parts, areas and chart readings come from the inner box plot. `positions` lists the positions used
+to populate its category column, joined by `", "`; it is empty before the first render. Pending
+includes metadata-driven position changes, deferred value-column synchronization, and box-plot
+rendering. Replacing or detaching the viewer disposes the old box plot and its subscriptions.

@@ -9,15 +9,8 @@ import * as DG from 'datagrok-api/dg';
 
 export namespace scripts {
   /**
-  Compares two dataframes row by row and outputs differences with row numbers
-  */
-  export async function compareDataframes(df1: DG.DataFrame , df2: DG.DataFrame ): Promise<DG.DataFrame> {
-    return await grok.functions.call('RevvitySignalsLink:CompareDataframes', { df1, df2 });
-  }
-
-  /**
-  ETL process for Revvity Signals data - exports libraries, processes CSV files, and prepares data for MolTrack
-  */
+   * ETL process for Revvity Signals data - exports libraries, processes CSV files, and prepares data for MolTrack
+   */
   export async function revvityETL(): Promise<DG.DataFrame> {
     return await grok.functions.call('RevvitySignalsLink:RevvityETL', {});
   }
@@ -68,10 +61,18 @@ export namespace funcs {
     return await grok.functions.call('RevvitySignalsLink:GetStructureById', { id });
   }
 
+  /**
+   * @param {any} id
+   *   semType: revvity-id
+   */
   export async function entityTreeWidget(id: any ): Promise<any> {
     return await grok.functions.call('RevvitySignalsLink:EntityTreeWidget', { id });
   }
 
+  /**
+   * @param {any} id
+   *   semType: revvity-label
+   */
   export async function revvityLabelWidget(id: any ): Promise<any> {
     return await grok.functions.call('RevvitySignalsLink:RevvityLabelWidget', { id });
   }

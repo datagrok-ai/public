@@ -1,5 +1,9 @@
 # Bionemo changelog
 
+## 1.3.2 (2026-07-12)
+
+* GROK-18695: Updated npm dependencies to clear reported vulnerabilities
+
 ## 1.3.1 (2025-04-01)
 
 * GROK-18813: Top menu | Docking: Provide consistent naming for menu and dialog

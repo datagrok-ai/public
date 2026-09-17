@@ -4,7 +4,7 @@
 
 import * as DG from 'datagrok-api/dg';
 import dayjs from 'dayjs';
-import {toFeather} from '@datagrok-libraries/arrow';
+import {toFeather} from '@datagrok-libraries/arrow/src/index';
 import {LOSS} from '../constants';
 import type {OutputTargetItem, ValueBoundsData} from '../optimizer-misc';
 import type {

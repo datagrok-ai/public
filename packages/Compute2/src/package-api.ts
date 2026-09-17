@@ -37,29 +37,34 @@ export namespace funcs {
   }
 
   /**
-  Launch a compute workflow (pipeline) by its qualified name and open its editor.
-  */
+   * Launch a compute workflow (pipeline) by its qualified name and open its editor.
+   * @param {string} nqName - Qualified name of the workflow function to launch
+   * @param {string} version - Workflow version to run
+   * @param {any} instanceConfig - Optional initial pipeline configuration
+   */
   export async function startWorkflow(nqName: string , version: string , instanceConfig: any ): Promise<any> {
     return await grok.functions.call('Compute2:StartWorkflow', { nqName, version, instanceConfig });
   }
 
   /**
-  Open a saved run by its FuncCall id — a workflow run in the Tree Wizard, or a single function run in its editor.
-  */
+   * Open a saved run by its FuncCall id — a workflow run in the Tree Wizard, or a single function run in its editor.
+   * @param {string} id - Meta FuncCall id of the saved workflow run
+   */
   export async function openWorkflowRun(id: string ): Promise<void> {
     return await grok.functions.call('Compute2:OpenWorkflowRun', { id });
   }
 
   /**
-  Run parameter optimization (fitting) for a model and return the resulting function calls.
-  */
+   * Run parameter optimization (fitting) for a model and return the resulting function calls.
+   * @param {any} params - Optimizer parameters: target function, variables, and objective
+   */
   export async function runOptimizer(params: any ): Promise<any> {
     return await grok.functions.call('Compute2:RunOptimizer', { params });
   }
 
   /**
-  Compare data across model runs: scalars or a single table column
-  */
+   * Compare data across model runs: scalars or a single table column
+   */
   export async function compareRuns(): Promise<void> {
     return await grok.functions.call('Compute2:CompareRuns', {});
   }
@@ -77,15 +82,15 @@ export namespace funcs {
   }
 
   /**
-  Sample static two-step workflow configuration used for testing the workflow engine.
-  */
+   * Sample static two-step workflow configuration used for testing the workflow engine.
+   */
   export async function mockPipeline1(params: any ): Promise<any> {
     return await grok.functions.call('Compute2:MockPipeline1', { params });
   }
 
   /**
-  Sample sequential workflow configuration with links, actions, and validators for testing.
-  */
+   * Sample sequential workflow configuration with links, actions, and validators for testing.
+   */
   export async function mockPipeline2(params: any ): Promise<any> {
     return await grok.functions.call('Compute2:MockPipeline2', { params });
   }
@@ -119,15 +124,15 @@ export namespace funcs {
   }
 
   /**
-  Test for optimization: multiple scalars output
-  */
+   * Test for optimization: multiple scalars output
+   */
   export async function fitTestFunc(x1: number , x2: number , y: DG.DataFrame , bool: boolean ): Promise<{integer: number, float1: number, float2: number, table1: DG.DataFrame, table2: DG.DataFrame}> {
     return await grok.functions.call('Compute2:FitTestFunc', { x1, x2, y, bool });
   }
 
   /**
-  Test for optimization: multiple scalars output
-  */
+   * Test for optimization: multiple scalars output
+   */
   export async function testFittingOutputs(): Promise<void> {
     return await grok.functions.call('Compute2:TestFittingOutputs', {});
   }

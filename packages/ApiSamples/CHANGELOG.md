@@ -2,6 +2,8 @@
 
 ## v.next
 
+* Grid: Fixed grid/advanced/pinned-columns.js — uses the core `GridColumn.pin()` instead of the `PowerGrid:addPinnedColumn` shim, so the sample no longer depends on PowerGrid being published
+* Tests: Skipped the five samples that await a user-dismissed modal (projects-save-dialog, facade-form-dialog, facade-list-view, row-editor, pick-table)
 * GROK-20849: Added `data-frame/bitset/bit-array.js` — `DG.BitArray` built in JS and applied to a DataFrame filter
 * GROK-20799: Added dapi/entity-properties.js — `grok.meta.propertiesOf`/`coreLocationOf` discovery, from a type's catalog to a related-entity filter over its Core table
 * GROK-20799: Added dapi/domains/capabilities.js — `DomainTableClient.capabilities()` (server-composed, incl. `travelableRelations`/`securingTable`) gating a create form on `canInsert`/`writableColumns`
@@ -42,6 +44,10 @@
 * GROK-20316: Added dapi/domains-dapi2.js — querying domain-table rows via the generated grok.dapi2 REST client
 * GROK-20315: Added dapi/domains/batch.js, domains/transaction.js, domains/aggregate.js, domains/dataframe.js, domains/idempotency.js — batch upsert, multi-entity transactions, aggregation, queryDf → grid, idempotent retries + optimistic concurrency
 * GROK-20307: Added dapi/domains/crud.js — domain-table row CRUD via grok.dapi.domains
+
+## 1.2.2 (2025-12-18)
+
+* ApiSamples: Statistics: Added Pearson correlation sample
 
 ## 1.2.1 (2-24-11-24)
 

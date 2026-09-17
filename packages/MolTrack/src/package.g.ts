@@ -1,7 +1,7 @@
 import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
 
-//meta.role: init
+//meta.role: Init
 export async function init() : Promise<void> {
   await PackageFunctions.init();
 }
@@ -16,14 +16,14 @@ export async function initDB() : Promise<void> {
 //output: view result
 //meta.browsePath: Chem
 //meta.icon: images/moltrack.png
-//meta.role: app
+//meta.role: App
 export async function molTrackApp(path: string) : Promise<any> {
   return await PackageFunctions.molTrackApp(path);
 }
 
 //input: dynamic appNode 
 //input: view browseView 
-//meta.role: appTreeBrowser
+//meta.role: AppTreeBrowser
 //meta.app: MolTrack
 export async function molTrackAppTreeBrowser(appNode: any, browseView: any) : Promise<void> {
   await PackageFunctions.molTrackAppTreeBrowser(appNode, browseView);
@@ -115,7 +115,7 @@ export async function retrieveEntity(scope: string) : Promise<any> {
 //name: Databases | MolTrack
 //input: semantic_value id { semType: Grok ID }
 //output: widget res
-//meta.role: panel
+//meta.role: Panel
 export async function getMoltrackPropPanelById(id: DG.SemanticValue) : Promise<any> {
   return await PackageFunctions.getMoltrackPropPanelById(id);
 }

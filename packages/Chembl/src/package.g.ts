@@ -1,7 +1,7 @@
 import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
 
-//meta.role: autostart
+//meta.role: Autostart
 export function init() : void {
   PackageFunctions.init();
 }
@@ -17,7 +17,7 @@ export async function chemblSearchWidgetLocalDb(mol: string, substructure: boole
 //name: Databases | ChEMBL | Substructure Search (Internal)
 //input: string mol { semType: Molecule }
 //output: widget result
-//meta.role: widgets,panel
+//meta.role: widgets,Panel
 export async function chemblSubstructureSearchPanel(mol: string) : Promise<any> {
   return await PackageFunctions.chemblSubstructureSearchPanel(mol);
 }
@@ -25,12 +25,13 @@ export async function chemblSubstructureSearchPanel(mol: string) : Promise<any> 
 //name: Databases | ChEMBL | Similarity Search (Internal)
 //input: string mol { semType: Molecule }
 //output: widget result
-//meta.role: widgets,panel
+//meta.role: widgets,Panel
 export async function chemblSimilaritySearchPanel(mol: string) : Promise<any> {
   return await PackageFunctions.chemblSimilaritySearchPanel(mol);
 }
 
-//name: Chembl targets by organism
+//name: Compounds Active Against Organism
+//description: Loads ChEMBL compounds with bioactivity against bacterial targets of the given organism.
 //input: int maxNumberOfMolecules = 1000 { description: Maximum number of rows to return }
 //input: string organism = 'Shigella' { description: Organism name }
 //output: dataframe result
@@ -39,7 +40,8 @@ export async function getChemblCompoundsByOrganism(maxNumberOfMolecules: number,
   return await PackageFunctions.getChemblCompoundsByOrganism(maxNumberOfMolecules, organism);
 }
 
-//name: Chembl Compounds
+//name: ChEMBL Compounds
+//description: Loads a sample of ChEMBL compound structures as canonical SMILES.
 //input: int maxNumberOfMolecules = 1000 { description: Maximum number of rows to return }
 //output: dataframe result
 //meta.role: hitTriageDataSource

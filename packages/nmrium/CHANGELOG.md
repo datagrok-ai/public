@@ -1,6 +1,6 @@
 # NMRium changelog
 
-## v.next
+## 1.3.1 (2026-07-12)
 
 * GROK-18695: Dependency security updates (moved vite-plugin-pwa to devDependencies and added a d3-color override to clear npm audit advisories from the production graph)
 

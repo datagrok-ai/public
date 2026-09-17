@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 
 //name: Signals
 //output: view result
-//meta.role: app
+//meta.role: App
 //meta.icon: images/signals-icon.png
 //meta.browsePath: Chem
 export async function signalsApp() : Promise<any> {
@@ -11,7 +11,7 @@ export async function signalsApp() : Promise<any> {
 }
 
 //input: dynamic treeNode 
-//meta.role: appTreeBrowser
+//meta.role: AppTreeBrowser
 //meta.app: Signals
 export async function signalsAppTreeBrowser(treeNode: any) : Promise<void> {
   await PackageFunctions.signalsAppTreeBrowser(treeNode);

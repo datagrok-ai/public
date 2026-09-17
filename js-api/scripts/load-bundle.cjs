@@ -29,7 +29,7 @@ function stub(name) {
  * `frames` property holds the first call frames when the bundle fails to initialize. */
 function loadBundle(bundlePath = DEFAULT_BUNDLE) {
   if (!fs.existsSync(bundlePath))
-    throw new Error('bundle not found - run the webpack build first: ' + bundlePath);
+    throw new Error('bundle not found - run grok build first: ' + bundlePath);
 
   // Evaluating against stubs makes deferred work (timers, promises) fail in ways a real
   // browser never would. The synchronous module-init phase is the only part that matters.

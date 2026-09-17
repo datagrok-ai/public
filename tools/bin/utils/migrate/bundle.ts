@@ -43,9 +43,12 @@ export function normalize(type: string, json: any): any {
     delete copy[k];
   if (copy.package)
     copy.package = {id: copy.package.id};
-  // The stamp is written by the pusher, so it must not make an unchanged entity look different.
-  if (copy.metaParams)
+  // The stamps are written by the pusher, so they must not make an unchanged entity look different.
+  if (copy.metaParams) {
     delete copy.metaParams.sync_id;
+    delete copy.metaParams.migrated_from;
+    delete copy.metaParams.migrated_on;
+  }
   TYPES[type]?.strip?.(copy);
   return sortKeys(copy);
 }

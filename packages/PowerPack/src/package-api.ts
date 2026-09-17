@@ -9,15 +9,15 @@ import * as DG from 'datagrok-api/dg';
 
 export namespace queries {
   /**
-  Entities the user interacted with most recently (last 30 days)
-  */
+   * Entities the user interacted with most recently (last 30 days)
+   */
   export async function mostRecentEntities(user: string ): Promise<DG.DataFrame> {
     return await grok.data.query('PowerPack:MostRecentEntities', { user });
   }
 
   /**
-  Entities recently shared with the user or their groups (last 30 days)
-  */
+   * Entities recently shared with the user or their groups (last 30 days)
+   */
   export async function recentlySharedWithMe(user: string ): Promise<DG.DataFrame> {
     return await grok.data.query('PowerPack:RecentlySharedWithMe', { user });
   }
@@ -65,8 +65,8 @@ export namespace funcs {
   }
 
   /**
-  Schema-driven query builder (u2)
-  */
+   * Schema-driven query builder (u2)
+   */
   export async function filterBuilder(): Promise<any> {
     return await grok.functions.call('PowerPack:FilterBuilder', {});
   }
@@ -80,8 +80,8 @@ export namespace funcs {
   }
 
   /**
-  Formula editor bound to a table, editing an expression as a value
-  */
+   * Formula editor bound to a table, editing an expression as a value
+   */
   export async function expressionEditorWidget(call: any ): Promise<any> {
     return await grok.functions.call('PowerPack:ExpressionEditorWidget', { call });
   }
@@ -103,22 +103,22 @@ export namespace funcs {
   }
 
   /**
-  Windows Manager
-  */
+   * Windows Manager
+   */
   export async function windowsManager(): Promise<void> {
     return await grok.functions.call('PowerPack:WindowsManager', {});
   }
 
   /**
-  Open 'Viewer Gallery' dialog
-  */
+   * Open 'Viewer Gallery' dialog
+   */
   export async function viewerDialog(tv: any ): Promise<void> {
     return await grok.functions.call('PowerPack:ViewerDialog', { tv });
   }
 
   /**
-  ViewerGallery
-  */
+   * ViewerGallery
+   */
   export async function viewerGallery(): Promise<void> {
     return await grok.functions.call('PowerPack:ViewerGallery', {});
   }
@@ -128,15 +128,25 @@ export namespace funcs {
   }
 
   /**
-  Opens an Excel (.xlsx) file as one or more tables (one per sheet)
-  */
+   * Opens an Excel (.xlsx) file as one or more tables (one per sheet)
+   * @param {any} bytes - Raw bytes of the .xlsx file
+   * @param {string} sheetName - Name of a single sheet to open opens all sheets if omitted
+   */
   export async function xlsxFileHandler(bytes: any , sheetName?: string ): Promise<any> {
     return await grok.functions.call('PowerPack:XlsxFileHandler', { bytes, sheetName });
   }
 
   /**
-  Enriches a table with values looked up from a database column via a linked key
-  */
+   * Enriches a table with values looked up from a database column via a linked key
+   * @param {any} conn - Data connection to the enrichment database
+   * @param {string} schema - Database schema name
+   * @param {string} table - Source table name in the database
+   * @param {string} column - Source column to pull enrichment values from
+   * @param {string} name - Name for the new enriched column
+   * @param {DG.DataFrame} df - Table to enrich
+   * @param {string} db - Database name
+   * @param {string} localColumn - Local column used as the join key (defaults to the matching column)
+   */
   export async function runEnrichment(conn: any , schema: string , table: string , column: string , name: string , df: DG.DataFrame , db: string , localColumn?: string ): Promise<void> {
     return await grok.functions.call('PowerPack:RunEnrichment', { conn, schema, table, column, name, df, db, localColumn });
   }

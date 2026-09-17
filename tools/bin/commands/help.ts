@@ -10,14 +10,17 @@ Datagrok's package management tool
 Commands:
     add         Add an object template
     api         Create wrapper functions
-    build       Build a package or multiple packages
-    check       Check package content (function signatures, etgc.)
+    setup       Get a public/ checkout ready to build (pnpm, install, npm-era clean-up)
+    build       Build a package and its dependencies (Turborepo), or just this package
+    tsc         Run the workspace TypeScript compiler
+    check       Check package content (function signatures, etc.)
     claude      Launch Claude Code in a Datagrok dev container
     config      Create and manage config files
     create      Create a package
     docker-gen  Generate Celery Docker artifacts from Python functions
     init        Modify a package template
     link        Link \`datagrok-api\` and libraries for local development
+    login       Log in to a server with a keypair (replaces the developer key)
     publish     Upload a package
     report      Manage user error reports (fetch, resolve, create ticket)
     run         Build, publish, and open in browser
@@ -140,6 +143,30 @@ Options:
                   opt out again
 `;
 
+const HELP_LOGIN = `
+Usage: grok login <server>
+
+Log in to a Datagrok server with a keypair. Generates an EC P-256 key, registers
+its public half on your account, and stores the private half in
+~/.grok/keys/<alias>.json. Nothing reusable is ever copied out of the UI, and the
+key can be given an expiry and revoked on its own.
+
+grok login https://dev.datagrok.ai      Approve the key in the browser
+grok login dev --code AB12CD34          Use a code from your profile page
+                                        (Profile > Public keys...), no browser
+
+Options:
+[--code] [--name] [--expires] [--alias]
+
+--code      One-shot enrollment code from your profile page. Skips the browser
+--name      Key name shown in your profile (default: user@host)
+--expires   Days from now, or an ISO date (2027-01-31). Default: never
+--alias     Config alias to write (default: the server's first host label)
+
+For CI, set GROK_PRIVATE_KEY to the private key JWK (raw or base64) instead of a
+config file. Read more: https://datagrok.ai/help/govern/access-control/keypair-authentication
+`;
+
 const HELP_CONFIG = `
 Usage: grok config
 
@@ -152,6 +179,7 @@ Options:
 --server    Use to add a server to the config (\`grok config add --alias alias --server url --key key\`)
 --alias     Use in conjunction with the \`server\` option to set the server name
 --key       Use in conjunction with the \`server\` option to set the developer key
+            (deprecated - prefer \`grok login\`, which needs no key here)
 --default   Use in conjunction with the \`server\` option to set the added server as default
 --registry  Docker registry URL (default: registry.{server hostname})
 `;
@@ -188,7 +216,8 @@ Options:
 --all                  Publish all available packages (run in packages directory)
 --refresh              Publish all available already loaded packages (run in packages directory)
 --link                 Link the package to local packages
---build                Builds the package
+--build                Builds the package (the default; kept for compatibility)
+--skip-build           Upload the existing dist/ without rebuilding
 --release              Publish package as release version
 --rebuild-docker       Force rebuild Docker images locally before pushing to registry
 --skip-docker-rebuild  Skip auto-rebuild when Dockerfile folder has changed
@@ -291,6 +320,9 @@ https://datagrok.ai/help/develop/how-to/test-packages#local-testing
 const HELP_LINK = `
 Usage: grok link
 
+In a pnpm workspace checkout (public/) this is a no-op: \`pnpm install\` at the repository root
+links every in-repo dependency (workspace:^). The options below apply to standalone checkouts only.
+
 Links \`datagrok-api\`, all necessary libraries and packages for local development.
 Uses \`npm link\` unless the --path option specified. 
 By default, it links packages from the parent directory of the repository's root.
@@ -327,27 +359,63 @@ Example:
   meta: { role: 'viewer,ml' }
 `;
 
+const HELP_SETUP = `
+Usage: grok setup [--check] [--global]
+
+Gets a public/ checkout (or a fresh worktree) ready to build, and keeps it that way after a pull:
+  1. Node 20+ (22 recommended); pnpm through corepack, at the version the workspace pins
+  2. removes per-package node_modules left by the npm era and stray package-lock.json files
+  3. pnpm install at the workspace root
+  4. reports a global grok older than the workspace one
+
+--check     Report only, change nothing
+--global    Also update the global datagrok-tools to the workspace version
+
+Examples:
+  grok setup            After cloning, after a pull that changed dependencies, in a new worktree
+  grok setup --check    What would change
+`;
+
+const HELP_TSC = `
+Usage: grok tsc [tsc arguments]
+
+Runs the workspace TypeScript compiler (the version @datagrok/build-config pins) with the given arguments,
+so a package never needs its own tsc. After an emitting run in a library, the css/wasm/json assets its
+sources import are mirrored into dist/.
+
+Examples:
+  grok tsc --noEmit -p tsconfig.json     Type-check (what the \`typecheck\` script runs)
+  grok tsc -p tsconfig.build.json        A library with a custom build config
+`;
+
 const HELP_BUILD = `
 Usage: grok build
 
-Build a package in the current directory, or recursively build multiple packages.
+Inside the public/ workspace: build the package in the current directory and everything it depends
+on, in dependency order, through Turborepo (cached: unchanged packages take milliseconds). Never prompts.
+Inside a Turborepo task, in a standalone package, or with --local: build just this package — an rspack
+bundle (src/package.ts -> dist/package.js, function metadata generated, \`grok check --soft\`) for a
+plugin, a TypeScript emit into dist/ for a library.
 
 Options:
-[-r | --recursive] [-s | --silent] [--filter] [--no-incremental] [--parallel N] [-v | --verbose]
+[--all] [--affected] [--typecheck] [--filter <turbo filter>] [--parallel N] [--force] [--local] [--skip-check] [-v | --verbose]
 
---recursive       Build all packages in the current directory
---silent          Skip confirmation prompt (for recursive builds)
---filter          Filter packages by package.json fields (e.g. --filter "category:Cheminformatics")
---no-incremental  Run a full build instead of the default incremental build
---parallel N      Max parallel builds (default: 4)
---verbose         Print detailed output
+--all             Build the whole workspace
+--affected        Build everything the diff against origin/master affects, dependents included
+--typecheck       Also run the type-check task
+--filter          Extra Turborepo filter (e.g. --filter "@datagrok/chem...")
+--parallel N      Max parallel builds (default: 3)
+--force           Ignore the build cache
+--local           Build only this package, without Turborepo
+--skip-check      Local build: skip \`grok check\`
+--verbose         Show full build output instead of errors only
 
 Examples:
-  grok build                                          Build the current package
-  grok build -r                                       Build all packages in the current directory
-  grok build -r -s                                    Build all packages without confirmation
-  grok build -r --filter "category:Cheminformatics"   Build only matching packages
-  grok build -r --parallel 8                          Build with 8 parallel jobs
+  grok build                    This package and its dependencies
+  grok build --all              Everything
+  grok build --affected         What my change touches (CI does the same)
+  grok build --typecheck        Bundle and type-check
+  grok build --local            Just this package (what the package's build script runs)
 `;
 
 // const HELP_MIGRATE = `
@@ -424,13 +492,16 @@ export const help = {
   'docker-gen': HELP_DOCKER_GEN,
   init: HELP_INIT,
   link: HELP_LINK,
+  login: HELP_LOGIN,
   publish: HELP_PUBLISH,
   report: HELP_REPORT,
   run: HELP_RUN,
   test: HELP_TEST,
+  tsc: HELP_TSC,
   testall: HELP_TESTALL,
   migrate: HELP_MIGRATE,
   server: HELP_SERVER,
   s: HELP_SERVER,
+  setup: HELP_SETUP,
   help: HELP,
 };

@@ -6,14 +6,14 @@ import * as DG from 'datagrok-api/dg';
 
 //name: Preclinical Case
 //output: view result
-//meta.role: app
+//meta.role: App
 //meta.icon: /img/preclinical_case_icon.png
 export async function PreclinicalCaseApp() : Promise<any> {
   return await PackageFunctions.PreclinicalCaseApp();
 }
 
 //input: dynamic treeNode 
-//meta.role: appTreeBrowser
+//meta.role: AppTreeBrowser
 //meta.app: Preclinical Case
 export async function preclinicalCaseAppTreeBrowser(treeNode: any) : Promise<void> {
   await PackageFunctions.preclinicalCaseAppTreeBrowser(treeNode);
@@ -21,7 +21,7 @@ export async function preclinicalCaseAppTreeBrowser(treeNode: any) : Promise<voi
 
 //input: list file 
 //output: list<dataframe> result
-//meta.role: fileHandler
+//meta.role: FileHandler
 //meta.ext: xpt
 export async function xptFileHandler(file: DG.FileInfo) : Promise<any> {
   return await PackageFunctions.xptFileHandler(file);
@@ -48,7 +48,7 @@ export async function openPreclinicalCaseView(studyId: string, viewName: string)
 }
 //name: combinedMeasurementsRenderer
 //output: grid_cell_renderer renderer
-//meta.role: cellRenderer
+//meta.role: CellRenderer
 //meta.cellType: combined-measurements
 export function _CombinedMeasurementsCellRenderer() {
   return new CombinedMeasurementsCellRenderer();
@@ -56,7 +56,7 @@ export function _CombinedMeasurementsCellRenderer() {
 
 //name: sdiscRuleViolationRenderer
 //output: grid_cell_renderer renderer
-//meta.role: cellRenderer
+//meta.role: CellRenderer
 //meta.cellType: sdisc-rule-violation
 export function _SdiscRuleViolationCellRenderer() {
   return new SdiscRuleViolationCellRenderer();
@@ -64,7 +64,7 @@ export function _SdiscRuleViolationCellRenderer() {
 
 //name: yAxisRenderer
 //output: grid_cell_renderer renderer
-//meta.role: cellRenderer
+//meta.role: CellRenderer
 //meta.cellType: y-axis
 export function _YAxisCellRenderer() {
   return new YAxisCellRenderer();

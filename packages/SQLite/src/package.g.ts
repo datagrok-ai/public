@@ -1,7 +1,7 @@
 import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
 
-//meta.role: init
+//meta.role: Init
 export async function sqlJsInit() : Promise<void> {
   await PackageFunctions.sqlJsInit();
 }
@@ -9,7 +9,7 @@ export async function sqlJsInit() : Promise<void> {
 //description: Opens SQLite files
 //input: list bytes 
 //output: list<dataframe> result
-//meta.role: fileHandler
+//meta.role: FileHandler
 //meta.ext: sqlite
 export function importSQLite(bytes: Uint8Array) : any {
   return PackageFunctions.importSQLite(bytes);

@@ -165,6 +165,43 @@ getMatchedOutputs(): Readonly<Set<string>>;
 Same as [`getMatchedInputs`](#getmatchedinputs), but for the `to` query names.
 Use this to find out which optional outputs exist before writing to them.
 
+#### `getMatchedPositions`
+
+```
+type MatchedNodeInfo = {
+  path: Readonly<NodePath>;
+  position: number;
+  ioName?: string;
+};
+
+getMatchedPositions(name: string): MatchedNodeInfo[];
+```
+
+Receives a `from` or `to` query name. Returns the positions of the
+nodes it matched, in the same order as [`getAll`](#getall) values.
+`path` is the node path relative to the node the link is defined on.
+`position` is the index of the matched node among its parent's
+children, or `-1` when the query matched the link's own node (for
+example, a [node meta](#node-meta-links) output targeting the
+pipeline itself). Throws for query names without matches, so check
+[`getMatchedInputs`](#getmatchedinputs) /
+[`getMatchedOutputs`](#getmatchedoutputs) first for optional queries.
+
+Use this in [node meta](#node-meta-links) handlers to produce
+position-aware titles or descriptions, for example
+`` `Step ${controller.getMatchedPositions('in')[0].position + 1}` ``.
+
+#### `getBasePosition`
+
+```
+getBasePosition(): MatchedNodeInfo | undefined;
+```
+
+Returns the position of the matched `base` node for
+base-instantiated links, or `undefined` when the link has no `base`
+query. Each link instance created from a `base` match reports the
+position of its own base node.
+
 #### `getAdditionalParam`
 
 ```

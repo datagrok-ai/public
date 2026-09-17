@@ -21,9 +21,6 @@ import {
 } from '@datagrok-libraries/compute-utils';
 import {ModelHandler} from '@datagrok-libraries/compute-utils/model-catalog';
 import {
-  testPipeline as testPipelineInst,
-} from '@datagrok-libraries/compute-utils';
-import {
   deepCopy as  deepCopyInst,
 } from '@datagrok-libraries/compute-utils';
 
@@ -63,7 +60,6 @@ class InputMock implements FuncCallInput {
 }
 
 // for compute-api pakage
-export const testPipeline = testPipelineInst;
 export const deepCopy = deepCopyInst;
 export const CompView = ComputationViewInst;
 export const RFV = RichFunctionViewInst;

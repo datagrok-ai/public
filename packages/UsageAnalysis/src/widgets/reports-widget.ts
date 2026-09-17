@@ -33,13 +33,14 @@ export class ReportsWidget extends DG.Widget {
       const items = [];
       for (let report of result) {
         // todo: add css instead of inline styles
-        const userHandler = DG.ObjectHandler.forEntity(report.reporter)!;
+        const reporter = report.reporter;
+        const userHandler = reporter == null ? null : DG.ObjectHandler.forEntity(reporter);
         const reportHandler = DG.ObjectHandler.forEntity(report)!;
         const clock = ui.iconFA('clock', null, report.createdOn.toISOString());
         clock.style.marginRight = '10px';
-        const portrait = ui.tooltip.bind(userHandler.renderIcon(report.reporter.dart)!, () => {
-          return userHandler.renderTooltip(report.reporter.dart)!;
-        });
+        const portrait = userHandler == null
+          ? ui.iconFA('user', null, 'Unknown reporter')
+          : ui.tooltip.bind(userHandler.renderIcon(reporter.dart), () => userHandler.renderTooltip(reporter.dart));
         portrait.style.marginRight = '10px';
         const content = ui.divH([clock, portrait, ui.divText(this.truncate(report.description, 30))]);
         const item = ui.card(content);
