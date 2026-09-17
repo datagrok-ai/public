@@ -140,9 +140,7 @@ export class TreeViewer extends EChartViewer {
             rotate: this.labelRotate,
             fontSize: this.fontSize,
           },
-          labelLayout: {
-            hideOverlap: true,
-          },
+          labelLayout: (params: any) => this.layoutLabel(params),
           leaves: {
             label: {
               position: 'right',
@@ -841,6 +839,21 @@ export class TreeViewer extends EChartViewer {
     }
     const labelText = this.showCounts ? `${params.name}: ${params.value}` : `${params.name}`;
     return labelText;
+  }
+
+  layoutLabel(params: any): {hideOverlap: boolean, width?: number, height?: number} {
+    //@ts-ignore
+    const series: any = this.chart.getModel().getSeriesByIndex(0);
+    const data = series.getData();
+    const label = data.getRawDataItem(params.dataIndex)?.label;
+    if (!label?.backgroundColor?.image)
+      return {hideOverlap: true};
+    // zrender caches the background image rect, so without this hideOverlap keeps measuring the old box
+    for (const child of data.getItemGraphicEl(params.dataIndex)?.getSymbolPath()?.getTextContent()?.childrenRef() ?? [])
+      child.dirtyStyle();
+    const zoom = series.coordinateSystem.getZoom();
+    const {width: maxW, height: maxH} = this.moleculeSizesMap.large;
+    return {hideOverlap: true, width: Math.min(maxW, label.width * zoom), height: Math.min(maxH, label.height * zoom)};
   }
 
   isVerticalOrientation(): boolean {
