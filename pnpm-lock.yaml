@@ -316,8 +316,8 @@ importers:
         specifier: 'catalog:'
         version: 1.11.23
       diff-grok:
-        specifier: ^1.3.1
-        version: 1.3.1
+        specifier: ^1.4.0
+        version: 1.4.0
       ebnf:
         specifier: ^1.9.1
         version: 1.9.1
@@ -11215,9 +11215,6 @@ packages:
 
   didyoumean@1.2.2:
     resolution: {integrity: sha512-gxtyfqMg7GKyhQmb056K7M3xszy/myH8w+B4RT+QXBQsvAOdc3XymqDDPHx1BgPgsdAA5SIifona89YtRATDzw==}
-
-  diff-grok@1.3.1:
-    resolution: {integrity: sha512-dqc4Sm6vPeaJiarHRM/4m869UtdLiuJXyiaQtHYY9uLK8iGy/QBeKSSztPCJMDR0z214AB8RfatsYwxMlSQpsw==}
 
   diff-grok@1.4.0:
     resolution: {integrity: sha512-oO1RBT9YH6oGbyz4A1CXVlewfS2LyHtfkW7KlhztNDld8re5AFxmf8mbw/G6/JDq5MzHFAQqy+5h9mIzlcIeJw==}
@@ -28379,8 +28376,6 @@ snapshots:
   dfa@1.2.0: {}
 
   didyoumean@1.2.2: {}
-
-  diff-grok@1.3.1: {}
 
   diff-grok@1.4.0: {}
 
