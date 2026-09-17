@@ -3,6 +3,7 @@ import {DesirabilityMode} from '@datagrok-libraries/statistics/src/mpo/mpo';
 export const STORAGE_NAME = 'admet_models';
 export const KEY = 'selected';
 export const TEMPLATES_FOLDER = 'System:AppData/Admetica/templates';
+export const DEFAULT_TEMPLATE_FILE = 'template.json';
 export const DEFAULT_LOWER_VALUE = 0.8;
 export const DEFAULT_UPPER_VALUE = 1.0;
 export const DEFAULT_TABLE_NAME = 'table';

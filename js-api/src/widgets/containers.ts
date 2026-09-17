@@ -1,3 +1,11 @@
+/** Options of {@link Accordion.addPane}. */
+export interface AccordionPaneOptions {
+  expanded?: boolean;
+  /** Insert before this pane; appended when omitted. */
+  before?: AccordionPane | null;
+  allowDragOut?: boolean;
+}
+
 /**
  * Container widgets: Accordion, AccordionPane, TabControl, TabPane, ToolboxPage.
  * @module widgets/containers
@@ -15,12 +23,10 @@ const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) a
 
 /**
  * Accordion control with collapsible/expandable panes.
- * Samples: {@link https://public.datagrok.ai/js/samples/ui/accordion}
- * @extends {DartWidget}
- * */
+ * Samples: {@link https://public.datagrok.ai/js/samples/ui/components/accordion} */
 export class Accordion extends DartWidget {
 
-  /** @constructs Accordion */
+
   constructor(dart: any) {
     super(dart);
   }
@@ -38,7 +44,7 @@ export class Accordion extends DartWidget {
     return toJs(api.grok_Accordion(key));
   }
 
-  /** @type {AccordionPane[]} */
+
   get panes(): AccordionPane[] {
     return api.grok_TabControlBase_Get_Panes(this.dart).map(toJs);
   }
@@ -51,9 +57,7 @@ export class Accordion extends DartWidget {
   get autoHideTabHeader(): boolean { return api.grok_Accordion_Get_AutoHideTabHeader(this.dart); }
   set autoHideTabHeader(x) { api.grok_Accordion_Set_AutoHideTabHeader(this.dart, x); }
 
-  /** Returns a pane with the specified name.
-   * @param {string} name
-   * @returns {AccordionPane} */
+  /** Returns a pane with the specified name. */
   getPane(name: string): AccordionPane {
     return toJs(api.grok_TabControlBase_GetPane(this.dart, name));
   }
@@ -63,17 +67,22 @@ export class Accordion extends DartWidget {
     return api.grok_Accordion_AddTitle(this.dart, element);
   }
 
-  /** Adds a pane */
-  addPane(name: string, getContent: () => HTMLElement, expanded: boolean = false, before: AccordionPane | null = null,
+  /** Adds a pane; [getContent] runs when the pane is first expanded. */
+  addPane(name: string, getContent: () => HTMLElement, options?: AccordionPaneOptions): AccordionPane;
+  addPane(name: string, getContent: () => HTMLElement, expanded?: boolean, before?: AccordionPane | null, allowDragOut?: boolean): AccordionPane;
+  addPane(name: string, getContent: () => HTMLElement, expanded: boolean | AccordionPaneOptions = false, before: AccordionPane | null = null,
     allowDragOut: boolean = true): AccordionPane {
-    return toJs(api.grok_Accordion_AddPane(this.dart, name, getContent, expanded, before !== null ? before.dart : null, null, allowDragOut));
+    const o: AccordionPaneOptions = typeof expanded === 'boolean' ? {expanded, before, allowDragOut} : expanded ?? {};
+    return toJs(api.grok_Accordion_AddPane(this.dart, name, getContent, o.expanded ?? false, o.before?.dart ?? null, null, o.allowDragOut ?? true));
   }
 
-  /** Adds a pane with the count indicator next to the title.
-   * getCount() is executed immediately. */
-  addCountPane(name: string, getContent: () => HTMLElement, getCount: () => number, expanded: boolean = false, before: AccordionPane | null = null,
+  /** Adds a pane with a count indicator next to the title; [getCount] runs immediately. */
+  addCountPane(name: string, getContent: () => HTMLElement, getCount: () => number, options?: AccordionPaneOptions): AccordionPane;
+  addCountPane(name: string, getContent: () => HTMLElement, getCount: () => number, expanded?: boolean, before?: AccordionPane | null, allowDragOut?: boolean): AccordionPane;
+  addCountPane(name: string, getContent: () => HTMLElement, getCount: () => number, expanded: boolean | AccordionPaneOptions = false, before: AccordionPane | null = null,
     allowDragOut: boolean = true): AccordionPane {
-    return toJs(api.grok_Accordion_AddPane(this.dart, name, getContent, expanded, before !== null ? before.dart : null, getCount, allowDragOut));
+    const o: AccordionPaneOptions = typeof expanded === 'boolean' ? {expanded, before, allowDragOut} : expanded ?? {};
+    return toJs(api.grok_Accordion_AddPane(this.dart, name, getContent, o.expanded ?? false, o.before?.dart ?? null, getCount, o.allowDragOut ?? true));
   }
 
   /** Removed the specified pane. */
@@ -96,8 +105,7 @@ export class AccordionPane extends DartWidget {
     super(dart);
   }
 
-  /** Expanded state
-   * @type {boolean} */
+  /** Expanded state */
   get expanded(): boolean {
     return api.grok_AccordionPane_Get_Expanded(this.dart);
   }
@@ -106,7 +114,7 @@ export class AccordionPane extends DartWidget {
     api.grok_AccordionPane_Set_Expanded(this.dart, v);
   }
 
-  /** @type {string} */
+
   get name(): string {
     return api.grok_AccordionPane_Get_Name(this.dart);
   }
@@ -128,8 +136,12 @@ export class TabControl extends DartWidget {
   /** Creates a new TabControl.
    * When [options.key] is provided, the currently selected pane is persisted across sessions
    * in localStorage. Without a key, state is not remembered.
-   * @param options - see {@link ITabControlOptions}. Passing a boolean (`vertical`) is deprecated.
-   * @param key - deprecated, use `options.key` instead. */
+   * @param options - see {@link ITabControlOptions} */
+  static create(options?: ITabControlOptions): TabControl;
+  /** @deprecated Use `create({vertical, key})`. Removed in 1.29. */
+  static create(vertical: boolean, key?: string | null): TabControl;
+  /** @deprecated Pass the key in the options: `create({key})`. Removed in 1.29. */
+  static create(options: ITabControlOptions, key: string | null): TabControl;
   static create(options: boolean | ITabControlOptions = {}, key: string | null = null): TabControl {
     const o: ITabControlOptions = typeof options === 'boolean' ? {vertical: options} : (options ?? {});
     return toJs(api.grok_TabControl(o.vertical ?? false, o.key ?? key));

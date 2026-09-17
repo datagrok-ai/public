@@ -27,15 +27,15 @@ export namespace funcs {
   }
 
   /**
-  Run CDISC CORE validation on SEND datasets
-  */
+   * Run CDISC CORE validation on SEND datasets
+   */
   export async function runCoreValidate(standard: string , dataPath: string , version: string , outputFormat: string , options: any ): Promise<string> {
     return await grok.functions.call('PreclinicalCase:RunCoreValidate', { standard, dataPath, version, outputFormat, options });
   }
 
   /**
-  Open a Preclinical Case view by name. Loads the study if needed. Used by tests.
-  */
+   * Open a Preclinical Case view by name. Loads the study if needed. Used by tests.
+   */
   export async function openPreclinicalCaseView(studyId: string , viewName: string ): Promise<DG.View> {
     return await grok.functions.call('PreclinicalCase:OpenPreclinicalCaseView', { studyId, viewName });
   }

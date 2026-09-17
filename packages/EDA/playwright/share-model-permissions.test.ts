@@ -3,7 +3,7 @@ sub_features_covered: [sharing.advanced-editor, sharing.browse-shared-with-me, s
 --- */
 import {test, expect, Page} from '@playwright/test';
 import {
-  loginToDatagrok, loginAsSecondUser, getSecondUserLogin,
+  loginToDatagrok, loginAsSecondUser, getSecondUserLogin, hasSecondUser,
   specTestOptions, softStep, stepErrors, baseUrl,
 } from '@datagrok-libraries/test/src/playwright/spec-login';
 import {setPredict, selectFeaturesByName} from '@datagrok-libraries/test/src/playwright/models-helpers';
@@ -165,6 +165,7 @@ test('Sharing & Permissions — Model', async ({page}) => {
   // UI lifecycle + two-user login switches + permission round-trips (60s reachability/View
   // polls under the recipient identity); 240s covers the re-auths plus the UI steps.
   test.setTimeout(360_000);
+  test.skip(!hasSecondUser(), 'needs a second test user');
 
   
   await loginToDatagrok(page);

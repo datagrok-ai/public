@@ -18,11 +18,9 @@ type DataConnection = any;
 type Project = any;
 
 /**
- * Represents a user of the Datagrok platform.
- * @extends Entity
- * */
+ * Represents a user of the Datagrok platform. */
 export class User extends Entity {
-  /** @constructs User*/
+
   constructor(dart: any) {
     super(dart);
   }
@@ -89,11 +87,9 @@ export class User extends Entity {
 
 
 /**
- * Represents a user session in the Datagrok platform.
- * @extends Entity
- * */
+ * Represents a user session in the Datagrok platform. */
 export class UserSession extends Entity {
-  /** @constructs UserSession*/
+
   constructor(dart: any) {
     super(dart);
   }
@@ -113,55 +109,44 @@ export class UserSession extends Entity {
 }
 
 
-/** @extends Entity
- * Represents a User Group
- * */
+/**
+ * Represents a User Group */
 export class Group extends Entity {
-  /** @constructs Group */
+
   constructor(dart: any) {
     super(dart);
   }
 
   static create(name: string): Group { return new Group(api.grok_Group(name)); }
 
-  /** Adds a member to the group
-   * @param {Group} m */
+  /** Adds a member to the group */
   addMember(m: Group): void { api.grok_Group_Add_Member(this.dart, m.dart, false); }
 
-  /** Adds an admin member to the group
-   * @param {Group} m */
+  /** Adds an admin member to the group */
   addAdminMember(m: Group): void { api.grok_Group_Add_Member(this.dart, m.dart, true); }
 
-  /** Removes a member from the group
-   * @param {Group} m */
+  /** Removes a member from the group */
   removeMember(m: Group): void { api.grok_Group_Remove_Member(this.dart, m.dart); }
 
-  /** Adds the group to another one
-   * @param {Group} m */
+  /** Adds the group to another one */
   includeTo(m: Group): void { api.grok_Group_Add_Membership(this.dart, m.dart, false); }
 
-  /** Adds the group to another one as an admin
-   * @param {Group} m */
+  /** Adds the group to another one as an admin */
   includeAdminTo(m: Group): void { api.grok_Group_Add_Membership(this.dart, m.dart, true); }
 
-  /** Removes membership from another group
-   * @param {Group} m */
+  /** Removes membership from another group */
   excludeFrom(m: Group): void { api.grok_Group_Remove_Membership(this.dart, m.dart); }
 
-  /** Returns list of groups that belong to group, with no admin permissions
-   * @type {Array<Group>} */
+  /** Returns list of groups that belong to group, with no admin permissions */
   get members(): Group[] { return toJs(api.grok_Group_Get_Members(this.dart, false)); }
 
-  /** Returns list of groups that belong to group, with admin permissions
-   * @type {Array<Group>} */
+  /** Returns list of groups that belong to group, with admin permissions */
   get adminMembers(): Group[] { return toJs(api.grok_Group_Get_Members(this.dart, true)); }
 
-  /** Returns list of groups that group belongs to, with no admin permissions
-   * @type {Array<Group>} */
+  /** Returns list of groups that group belongs to, with no admin permissions */
   get memberships(): Group[] { return toJs(api.grok_Group_Get_Memberships(this.dart, false)); }
 
-  /** Returns list of groups that group belongs to, with admin permissions
-   * @type {list<Group>} */
+  /** Returns list of groups that group belongs to, with admin permissions */
   get adminMemberships(): Group[] { return toJs(api.grok_Group_Get_Memberships(this.dart, true)); }
 
   /** Personal user group */

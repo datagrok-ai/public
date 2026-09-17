@@ -16,74 +16,74 @@ migration_date: 2026-05-04
 related_bugs: []
 ---
 
-# Complex — Augment project (drag-drop add tables)
+# Complex — Augment project (drag-drop add a table)
 
-Verifies that tables can be added to an already-saved project
-(augmenting it) using files from `System:DemoFiles` as the source.
-Because the drag-and-drop UI for this can't be driven through
-Playwright, this scenario exercises the same augmentation through the
-JS API (`grok.dapi.projects.addRelation`) instead, and documents the
-UI path as a known manual-only gap.
+Checks that a table can be added to a project that is already saved,
+and that the added table is still there after the project is reopened.
 
 ## Setup
 
-1. Authenticate as test user.
-2. Project name: `augment-test-${Date.now()}`.
-3. Source tables (4 files from `System:DemoFiles`):
-   `demog.csv`, `cars.csv`, `iris.csv`, `geo.csv` (or any 4
-   reachable .csv files in DemoFiles).
-4. Cleanup: delete the project at the end.
+1. Log in as the test user.
+2. The project in this test is `augmentTest`.
 
-## Scenarios
+## Scenario
 
-### Main flow — augment via JS API
+1. **Save a one-table project.**
+   - Go to **Browse > Files > Demo**.
+   - Double-click `demog.csv`.
+   - Click **SAVE** on the ribbon.
+   - In the **Save project** dialog, enter `augmentTest` as the name.
+   - Leave **Data sync** ON for `demog`.
+   - Click **OK**.
+   - **Verify:** the balloon *Project "augmentTest" uploaded.* appears.
+   - In the **Share** dialog, click **CANCEL**.
 
-1. **Open the first table (`demog.csv`) and save baseline
-   project.** Open via Files browser. Save Project, name from
-   Setup, Data Sync **ON**, OK. Cancel auto-share. Verify
-   single-table project saved.
-2. **Augment project: add 3 more tables via JS API
-   (`addRelation`, Link mode).**
-   ```js
-   const project = await grok.dapi.projects.find(<id>);
-   for (const fileName of ['cars.csv', 'iris.csv', 'geo.csv']) {
-     const file = (await grok.dapi.files.list('System:DemoFiles', false, fileName))[0];
-     await grok.dapi.projects.addRelation(project, file, /*linkMode=*/true);
-   }
-   await grok.dapi.projects.save(project);
-   ```
-   - Verify the project now has 4 relations:
-     `(await grok.dapi.projects.find(<id>)).relations.length === 4`.
-3. **Re-open the augmented project and verify all 4 tables
-   load.** Close all views; reopen project from Browse >
-   Dashboards. Verify `grok.shell.tables.length === 4`. Verify
-   each table is the expected source file.
-4. **(Optional UI drag-drop verification — if/when
-   automatable.)** If the drag-drop UI mechanism becomes
-   automatable in the future, add an additional step that
-   exercises Browse > Files > drag-drop onto an open Dashboard.
-   Currently: UI path is documented as a known gap; this
-   scenario does NOT exercise the UI drag-drop path.
-5. **Cleanup.** Delete the project.
+2. **Open a second table.**
+   - Go to **Browse > Files > Demo**.
+   - Double-click `iris.csv`.
 
-### Expected results
+3. **Drag the table onto the project.**
+   - On the left sidebar, click the **Dashboards** icon.
+   - **Verify:** the panel lists **New Dashboard** with `iris`, and the
+     `augmentTest` node with `demog`.
+   - Collapse the `augmentTest` node.
+   - Drag `iris` from **New Dashboard** onto the `augmentTest` node.
+   - **Verify:** the **Move entity** dialog opens with the heading
+     *to …:AugmentTest project* and the row `iris`.
+   - Click **YES**.
+   - **Verify:** `iris` is listed under the `augmentTest` node.
 
-- `addRelation` JS API correctly adds source tables to an
-  existing project in Link mode.
-- All 4 tables persist across save → close → reopen.
-- The project's relations list reflects the 4 sources.
+4. **Save the project.**
+   - Click **SAVE** next to the `augmentTest` node.
+   - **Verify:** the **Save project** dialog lists `iris` and `demog`.
+   - Leave **Save original project** selected.
+   - Click **OK**.
 
-## Notes
+5. **Reopen the project.**
+   - Right-click the left sidebar and select **Close All**.
+   - **Verify:** the `demog` and `iris` views are closed.
+   - Go to **Browse > Dashboards**.
+   - Type `augmentTest` into the search box.
+   - Click the `augmentTest` tile.
+   - In the **Context Panel**, expand **Content**.
+   - **Verify:** **Content** lists `demog` and `iris`.
+   - Double-click the `augmentTest` tile.
+   - **Verify:** the views `demog` and `iris` open.
+   - **Verify:** the status bar of `iris` shows **Rows: 150** and
+     **Columns: 6**.
+   - **Verify:** no error balloon appears.
 
-- **JS API path is primary; UI drag-drop is a known gap.** The
-  drag-drop UI surface in the Browse tree could not be made to work
-  with Playwright after trying three different simulated-event
-  mechanisms, so this scenario exercises the equivalent
-  `addRelation` JS API call instead. If the drag-drop mechanism
-  becomes automatable in the future, a UI verification step should
-  be added.
-- **No related bug.** This is proactive coverage of project
-  augmentation; no GROK ticket targets it directly.
-- **UI coverage delegated.** No UI surface is exercised here beyond
-  Save Project, which is owned by `projects-ui-smoke.md`.
-- **Self-cleaning.** Step 5 deletes the project.
+6. **Cleanup.**
+   - Right-click the left sidebar and select **Close All**.
+   - Right-click the `augmentTest` tile and choose **Delete Project**.
+   - Click **DELETE**.
+   - Wait until the dialog closes.
+   - Click the refresh icon next to the search box.
+   - **Verify:** the `augmentTest` tile is gone.
+
+## Expected results
+
+- A table dropped on an open project and then saved becomes part of
+  that project.
+- After close and reopen, the project opens both tables with their
+  data.

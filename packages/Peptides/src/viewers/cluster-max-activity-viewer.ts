@@ -8,6 +8,7 @@ import wu from 'wu';
 import $ from 'cash-dom';
 import * as rxjs from 'rxjs';
 import {filter} from 'rxjs/operators';
+import {ViewerRenderState} from './viewer-render-state';
 export const enum ClusterMaxActivityProps {
     CLUSTER_COLUMN = 'cluster',
     ACTIVITY_COLUMN = 'activity',
@@ -38,8 +39,9 @@ export class ClusterMaxActivityViewer extends DG.JsViewer implements IClusterMax
   activityTarget: ACTIVITY_TARGET = ACTIVITY_TARGET.HIGH;
   _scViewer?: DG.ScatterPlotViewer | null;
   viewerError: string = '';
-  renderTimeout: NodeJS.Timeout | number | null = null;
   renderDebounceTime = 500;
+  private readonly renderState = new ViewerRenderState();
+  private drawnThresholds: {clusterSize: number, activity: number} | null = null;
   clusterSizeThreshold: number;
   activityThreshold: number;
   static clusterSizeColName = '~cluster.size' as const;
@@ -51,6 +53,29 @@ export class ClusterMaxActivityViewer extends DG.JsViewer implements IClusterMax
   private scFilterQuery = `\$\{${ClusterMaxActivityViewer.maxActivityInClusterColName}\} == 1` as const;
   private selectionSubscription: rxjs.Subscription | null = null;
   private linesDrawSubscription: rxjs.Subscription | null = null;
+
+  get isRenderPending(): boolean { return this.renderState.isPending; }
+  get onRendered() { return this.renderState.rendered.asObservable(); }
+  get immediateRendering(): boolean { return this.renderState.immediateRendering; }
+  set immediateRendering(value: boolean) { this.renderState.immediateRendering = value; }
+
+  getWidgetStatus(): any {
+    const status = (this._scViewer as any)?.getWidgetStatus() ?? {};
+    return {...status, values: {...status.values,
+      'cluster size threshold': this.drawnThresholds?.clusterSize ?? '',
+      'activity threshold': this.drawnThresholds?.activity ?? '',
+      'activity target': this._scViewer ?
+        (this._scViewer.props.invertYAxis ? ACTIVITY_TARGET.LOW : ACTIVITY_TARGET.HIGH) : '',
+      message: this.viewerError}};
+  }
+
+  detach(): void {
+    this.selectionSubscription?.unsubscribe();
+    this.linesDrawSubscription?.unsubscribe();
+    this.renderState.dispose();
+    this._scViewer = null;
+    super.detach();
+  }
   get scViewer(): DG.ScatterPlotViewer | null {
     if (!this._scViewer)
       this._scViewer = this.createSCViewer();
@@ -190,6 +215,7 @@ export class ClusterMaxActivityViewer extends DG.JsViewer implements IClusterMax
     scatterPlotProps.filter = this.scFilterQuery;
     this.viewerError = '';
     const sc = DG.Viewer.scatterPlot(this.dataFrame, scatterPlotProps);
+    this.renderState.add(sc);
 
     if (this.selectionSubscription)
       this.selectionSubscription.unsubscribe();
@@ -216,9 +242,9 @@ export class ClusterMaxActivityViewer extends DG.JsViewer implements IClusterMax
         if (maxConnectivityIndexPerClusterMap[cluster] != null)
           filterBitset.set(maxConnectivityIndexPerClusterMap[cluster], true);
       }
-      setTimeout(() => {
+      this.renderState.defer('selection', () => {
         this.dataFrame.selection.copyFrom(filterBitset, true);
-        setTimeout(() => {
+        this.renderState.defer('accordion', () => {
           if (this.model)
             this.model.createAccordion();
         }, 200);
@@ -268,6 +294,7 @@ export class ClusterMaxActivityViewer extends DG.JsViewer implements IClusterMax
       ctx.lineTo(endPointVer.x, endPointVer.y);
       ctx.stroke();
       ctx.closePath();
+      this.drawnThresholds = {clusterSize: this.clusterSizeThreshold, activity: this.activityThreshold};
     });
 
     return sc;
@@ -290,15 +317,13 @@ export class ClusterMaxActivityViewer extends DG.JsViewer implements IClusterMax
 
     this.render();
 
-    this.dataFrame?.onDataChanged.subscribe(() => {
+    this.subs.push(this.dataFrame.onDataChanged.subscribe(() => {
       this.render();
-    });
+    }));
   }
 
   render(): void {
-    if (this.renderTimeout)
-      clearTimeout(this.renderTimeout);
-    this.renderTimeout = setTimeout(() => {
+    this.renderState.defer('render', () => {
       if (!this.dataFrame)
         return;
       $(this.root).empty();
@@ -342,7 +367,7 @@ export class ClusterMaxActivityViewer extends DG.JsViewer implements IClusterMax
       );
       scViewer.root.style.width = '100%';
       //this.root.appendChild(scViewer.root);
-      setTimeout(() => {
+      this.renderState.defer('invalidate', () => {
         scViewer.props.filter = this.scFilterQuery;
         scViewer.invalidateCanvas();
       }, 100);
@@ -351,9 +376,17 @@ export class ClusterMaxActivityViewer extends DG.JsViewer implements IClusterMax
 
   onPropertyChanged(property: DG.Property | null): void {
     super.onPropertyChanged(property);
-    if (property?.name !== `${ClusterMaxActivityProps.COLOR_COLUMN}${COLUMN_NAME}`)
+    if (property?.name !== `${ClusterMaxActivityProps.COLOR_COLUMN}${COLUMN_NAME}`) {
+      this.renderState.cancel('selection');
+      this.renderState.cancel('accordion');
+      this.renderState.cancel('invalidate');
+      this.selectionSubscription?.unsubscribe();
+      this.linesDrawSubscription?.unsubscribe();
+      if (this._scViewer)
+        this.renderState.remove(this._scViewer);
       this._scViewer = null;
+      this.drawnThresholds = null;
+    }
     this.render();
   }
 }
-

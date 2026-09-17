@@ -7,15 +7,18 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 sub_features_covered: [viewers.box-plot]
 --- */
 import {test} from '@playwright/test';
+import '../../../bindings/spaces.js';
+import '../../../bindings/tile-viewer.js';
+import '../../../bindings/trellis-plot.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {zoomValueAxis} from '../../../bindings/box-plot.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {closeAllViews, openDataset, openProject, saveAsProject} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {addViewer, addViewerWith, loadLayout, narrowerRange, noErrors, notRepainted, propertiesShouldBe, propertyShouldBe, rangeWithinColumn, rememberRange, rememberedRange, repainted, sameRange, saveLayout, setProperties, setProperty, takeSnapshot} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {zoomValueAxis} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Box plot settings ladder", () => {

@@ -10,6 +10,8 @@ Domains: new `Dapi: domain session` (8 cases — draft ids, two editors in one t
 Domains: `Dapi: domain session` gained 4 cases (a `constructor` cell surviving a save that assigned a draft id, a batch in which two editors hold the same row refused before any call, `DomainFrameEditor.rebind` resolving a draft reference in an editor that was not in the batch while it stays pristine, and rebind rewriting exact draft ids only); `Dapi: domain frame editor` gained the v4-`draftId()` and cell-color/tooltip-surface cases; `Dapi: domain search` gained `toQuery()` refusing to drop a search
 Domains: new `Dapi: domain trash` category (3 cases) pins the soft-delete lifecycle from the client — delete → `query({deleted: 'only'})` with `~is_deleted` (and `count(filter, {deleted: 'only'})` agreeing with it) → `restore` (version +2, an `'undelete'` audit entry, the row back in a default query, a live row refused as not-found), a child under a deleted parent refused with `restrict` naming `item_id`, and `toCsv()` of a `deleted: 'include'` frame carrying no `~` column
 FilterGroup: layout round-trip keeps two filters on one column (histogram and categorical on `age`)
+FilterGroup: a layout load with every viewer armed with `immediateRendering` on `onViewerAdded` (the BDD harness pattern) keeps the filter panel populated
+Widget: `widgets/widget-status-providers.ts` — `DG.Widget.addStatusProvider` / `removeStatusProvider` on plain, JS-override, native-alias and grid widgets, cleared on detach and rebinding
 Shell: `shell/shell.ts` pins `grok.shell.autostartsCompleted` (a promise that resolves)
 BitArray: new `bitset/bit-array.ts` category for `DG.BitArray` and its `BitSet` bridges; the `BitSet` category is registered again
 

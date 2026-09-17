@@ -6,6 +6,7 @@ keywords:
   - combo box
   - axis selector
   - column preview
+  - formula
 ---
 
 A combo box for selecting a column
@@ -16,6 +17,21 @@ A combo box for selecting a column
 **Esc** to reset column filter, or hide popup.
 **Enter** to accept current choice.
 **Space** to pop up column selector.
+
+## Using a formula instead of a column
+
+A column property can be given a formula rather than an existing column. Open the
+[Context Panel](../../datagrok/navigation/panels/panels.md), find the property, and click the
+**plus** icon on its row to open [Add New Column](../../transform/add-new-column.md), then write an
+expression such as `${AGE} * 2`. On a scatter plot the **Color** selector carries the same icon
+directly on the plot.
+
+The result is stored as a hidden column, so it does not clutter the grid, and it is shared: once
+defined, the same formula can be picked from any other selector on that table. To change it, select it
+and click the **pencil** icon — the formula is edited in place, so every viewer using it updates. To
+keep the original and add a variant, select a regular column first and use the plus icon again.
+
+Formula columns are listed at the end of the column picker.
 
 See also:
 

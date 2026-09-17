@@ -119,6 +119,7 @@ export async function loginAndOpenFile(page: Page, relPath: string): Promise<voi
 // Throws when neither is available — a two-user spec MUST NOT silently pass without its second user.
 // Cached so the login claim can be read (getSecondUserLogin) without a second exchange.
 let _secondTokenCache: string | null = null;
+export const hasSecondUser = (): boolean => !!(process.env.DATAGROK_AUTH_TOKEN_2 || process.env.DATAGROK_DEV_KEY_2);
 export async function resolveSecondUserToken(): Promise<string> {
   if (_secondTokenCache) return _secondTokenCache;
   const envTok = process.env.DATAGROK_AUTH_TOKEN_2;
@@ -126,7 +127,7 @@ export async function resolveSecondUserToken(): Promise<string> {
   const key2 = process.env.DATAGROK_DEV_KEY_2;
   if (key2 && key2.length > 0) {
     const apiUrl = (process.env.DATAGROK_URL ?? baseUrl).replace(/\/$/, '') + '/api';
-    const resp = await fetch(`${apiUrl}/users/login/dev/${key2}`, {method: 'POST'});
+    const resp = await fetch(`${apiUrl}/users/login/dev`, {method: 'POST', headers: {'Authorization': `Dev ${key2}`}});
     const json = await resp.json() as any;
     if (json?.isSuccess === true && json?.token) return (_secondTokenCache = json.token);
     throw new Error(`Second-user dev-key login failed at ${apiUrl}: ${JSON.stringify(json).slice(0, 200)}`);

@@ -6,7 +6,7 @@ let card = (project) => ui.cards.summary(
   ]
 );
 
-grok.shell.windows.showProperties = true;
+grok.shell.windows.showContextPanel = true;
 let projects = await grok.dapi.projects
   .filter('#demo')
   .list({pageSize: 5});

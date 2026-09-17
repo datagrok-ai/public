@@ -63,6 +63,19 @@ Parameterized commands use the `command(param)` syntax:
 | `v`       | viewer ID           |         | Show a single viewer (used with `mode=embed`)      |
 | `q`       | search text         |         | Pre-fill the search filter in the functions browser|
 
+### URL aliases
+
+A URL alias is a stable, readable address on the platform origin — `https://host/sales` —
+that opens a dashboard, any other entity, or another URL. Administrators create and re-point
+aliases under **Browse > Platform > URL Aliases** (or from an entity's context menu,
+**Create URL alias...** — an open dashboard offers it under **Dashboard** in its view menu),
+so a link keeps working after the dashboard behind it is
+republished. Query parameters on an alias URL are passed to the target: `/sales?region=EU`
+opens the dashboard with `region` set. By default the address bar then shows the target's
+own URL; an alias saved with **Preserve URL** keeps `/sales` there and only the query
+parameters change as you work. Platform routes (`/p`, `/files`, `/apps`, ...) and view
+URLs cannot be aliased.
+
 ## Functions
 
 Any function - a script, a query, or a package function - can be opened by URL, with its
@@ -86,7 +99,8 @@ an app-like shareable link:
 ```
 
 To copy such a link for the parameters you currently see, click the **copy** icon next to
-the **Run** button.
+the **Run** button. Once the function has run and the parameter form is gone, the same icon
+sits next to **Refresh** in the **Source** pane of the Toolbox.
 
 ### Stored runs
 

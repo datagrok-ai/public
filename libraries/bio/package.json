@@ -15,49 +15,68 @@
   "version": "6.0.4",
   "description": "Bio utilities, types supporting Macromolecule, Molecule3D data",
   "dependencies": {
-    "@datagrok-libraries/chem-meta": "^1.2.7",
-    "@datagrok-libraries/gridext": "^1.4.0",
+    "@datagrok-libraries/chem-meta": "workspace:^",
+    "@datagrok-libraries/gridext": "workspace:^",
     "@datagrok-libraries/hwe": "^1.0.0",
-    "@datagrok-libraries/ml": "^6.10.16",
-    "@datagrok-libraries/utils": "^4.5.7",
+    "@datagrok-libraries/ml": "workspace:^",
+    "@datagrok-libraries/utils": "workspace:^",
     "@deck.gl/core": "8.8.12",
-    "cash-dom": "^8.1.5",
-    "datagrok-api": "^1.26.0",
-    "dayjs": "^1.11.13",
+    "cash-dom": "catalog:",
+    "datagrok-api": "workspace:^",
+    "dayjs": "catalog:",
     "fastest-levenshtein": "^1.0.16",
     "js-base64": "^3.7.5",
     "lru-cache": "^10.4.3",
     "mjolnir.js": "^2.7.0",
-    "rxjs": "^6.5.5",
+    "rxjs": "catalog:",
     "uuid": "^11.1.1",
-    "wu": "^2.1.0"
+    "wu": "catalog:"
   },
   "devDependencies": {
     "@types/signals": "1.0.1",
     "@types/three": "^0.159.0",
     "@types/uuid": "^9.0.1",
-    "@types/wu": "^2.1.44",
-    "@typescript-eslint/eslint-plugin": "^8.8.1",
-    "@typescript-eslint/parser": "^8.8.1",
-    "datagrok-tools": "^6.3.3",
-    "eslint": "8.57.1",
-    "eslint-config-google": "^0.14.0",
-    "eslint-plugin-deprecation": "^3.0.0",
-    "ts-loader": "^9.5.1",
-    "typescript": "^5.6.3"
+    "@types/wu": "catalog:",
+    "eslint-plugin-deprecation": "^3.0.0"
   },
   "scripts": {
-    "link": "npm link",
-    "link-api": "npm link datagrok-api",
-    "link-utils": "npm link @datagrok-libraries/utils",
-    "link-all": "npm link @datagrok-libraries/chem-meta datagrok-api @datagrok-libraries/gridext @datagrok-libraries/utils @datagrok-libraries/ml",
-    "build-bio": "git clean -f -X -d ./src && tsc",
-    "build": "grok check --soft && tsc",
-    "build-all": "npm --prefix ./../../libraries/chem-meta run build && npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/gridext run build && npm --prefix ./../../libraries/utils run build && npm --prefix ./../../libraries/ml run build && npm run build",
-    "lint": "eslint \"./src/**/*.ts\"",
-    "lint-fix": "eslint \"./src/**/*.ts\" --fix"
+    "build": "grok tsc -p tsconfig.json",
+    "lint": "eslint --ext .ts,.tsx src"
   },
-  "overrides": {
-    "uuid": "^11.1.1"
+  "exports": {
+    "./package.json": "./package.json",
+    "./css/*": "./css/*",
+    "./src/consts": {
+      "types": "./dist/src/consts/index.d.ts",
+      "default": "./dist/src/consts/index.js"
+    },
+    "./src/molecule-3d": {
+      "types": "./dist/src/molecule-3d/index.d.ts",
+      "default": "./dist/src/molecule-3d/index.js"
+    },
+    "./src/pdb": {
+      "types": "./dist/src/pdb/index.d.ts",
+      "default": "./dist/src/pdb/index.js"
+    },
+    "./src/trees": {
+      "types": "./dist/src/trees/index.d.ts",
+      "default": "./dist/src/trees/index.js"
+    },
+    "./src/types": {
+      "types": "./dist/src/types/index.d.ts",
+      "default": "./dist/src/types/index.js"
+    },
+    "./src/utils/macromolecule": {
+      "types": "./dist/src/utils/macromolecule/index.d.ts",
+      "default": "./dist/src/utils/macromolecule/index.js"
+    },
+    "./*.js": {
+      "types": "./dist/*.d.ts",
+      "default": "./dist/*.js"
+    },
+    "./*": {
+      "types": "./dist/*.d.ts",
+      "default": "./dist/*.js"
+    }
   }
 }

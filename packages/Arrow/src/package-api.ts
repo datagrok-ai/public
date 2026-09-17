@@ -21,29 +21,29 @@ export namespace funcs {
   }
 
   /**
-  Converts DG.DataFrame to arrow
-  */
+   * Converts DG.DataFrame to arrow
+   */
   export async function toFeather(table: DG.DataFrame , asStream: boolean ): Promise<any> {
     return await grok.functions.call('Arrow:ToFeather', { table, asStream });
   }
 
   /**
-  Converts arrow ipc stream to DG.DataFrame
-  */
+   * Converts arrow ipc stream to DG.DataFrame
+   */
   export async function fromFeather(bytes: any ): Promise<DG.DataFrame> {
     return await grok.functions.call('Arrow:FromFeather', { bytes });
   }
 
   /**
-  Converts DG.DataFrame to parquet
-  */
+   * Converts DG.DataFrame to parquet
+   */
   export async function toParquet(table: DG.DataFrame , compression: number | null): Promise<any> {
     return await grok.functions.call('Arrow:ToParquet', { table, compression });
   }
 
   /**
-  Converts binary data in parquet format to DG.DataFrame
-  */
+   * Converts binary data in parquet format to DG.DataFrame
+   */
   export async function fromParquet(bytes: any ): Promise<DG.DataFrame> {
     return await grok.functions.call('Arrow:FromParquet', { bytes });
   }
@@ -57,15 +57,15 @@ export namespace funcs {
   }
 
   /**
-  Save as Parquet
-  */
+   * Save as Parquet
+   */
   export async function saveAsParquet(): Promise<void> {
     return await grok.functions.call('Arrow:SaveAsParquet', {});
   }
 
   /**
-  Save as Feather
-  */
+   * Save as Feather
+   */
   export async function saveAsFeather(): Promise<void> {
     return await grok.functions.call('Arrow:SaveAsFeather', {});
   }

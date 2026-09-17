@@ -94,7 +94,9 @@ The `publish` command executes these steps:
 3. Process environment variables in `/connections/*.json` files (replace `${VAR}`)
 4. **Process Docker images** (see below)
 5. Create ZIP archive with archiver-promise (includes `image.json` metadata per container)
-6. Upload to server: `POST ${host}/packages/dev/${devKey}/${packageName}`
+6. Upload to server: `POST ${host}/packages/dev/${packageName}` with `Authorization: Dev ${devKey}`
+   (older servers only know `POST ${host}/packages/dev/${devKey}/${packageName}`; `devKeyFetch` in
+   `bin/utils/dev-key.ts` falls back to it on 404/401)
 
 **Key flags:**
 - `--debug` (default) - Package visible only to developer
@@ -139,12 +141,11 @@ Tests use Puppeteer for headless browser automation:
 
 ### `grok build` Command
 
-Builds packages with `npm install` + `npm run build`. Supports:
-- Single package: `grok build` (from package directory)
-- Recursive: `grok build --recursive` (discovers and builds all packages in subdirectories)
-- `--filter "name:Chem"` - Filter packages by package.json fields (supports regex, `&&` for multiple conditions)
-- `--parallel N` - Max parallel build jobs (default 4)
-- `--no-incremental` - Force full rebuild (default uses `--env incremental`)
+A front for Turborepo inside the `public/` pnpm workspace (`pnpm exec turbo run build ...`), never prompting:
+- `grok build` (from a package directory): the package and everything it depends on, in dependency order, cached
+- `grok build --all`: the whole workspace; `grok build --affected`: everything the diff against `origin/master` touches
+- `--typecheck` adds the type-check task; `--filter <turbo filter>`; `--parallel N` (default 3); `--force` ignores the cache
+- Outside a workspace it explains that `pnpm run build` / `npm run build` in the package is the way
 
 ### `grok claude` Command
 

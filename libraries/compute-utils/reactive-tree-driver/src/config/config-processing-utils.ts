@@ -1,5 +1,3 @@
-import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {AbstractPipelineActionConfiguration, AbstractPipelineDynamicConfiguration, AbstractPipelineStaticConfiguration, LoadedPipeline, DataActionConfiguraion, NestedItemContext, PipelineConfigurationInitial, PipelineConfigurationDynamicInitial, PipelineConfigurationStaticInitial, PipelineInitConfiguration, PipelineLinkConfigurationBase, PipelineMutationConfiguration, PipelineRefInitial, PipelineSelfRef, PipelineStepConfiguration, FuncCallActionConfiguration, PipelineReturnConfiguration, PipelineDynamicItem} from './PipelineConfiguration';
 import {isDynamicType, ItemId, LinkSpecString, NqName} from '../data/common-types';
@@ -50,7 +48,7 @@ function isStepConfigInitial(c: ConfigInitialTraverseItem): c is PipelineStepCon
   return !isPipelineStaticInitial(c) && !isPipelineDynamicInitial(c) && !isPipelineRefInitial(c) && !isActionConfigInitial(c);
 }
 
-function isPipelineConfigInitial(c: ConfigInitialTraverseItem): c is PipelineConfigurationInitial {
+function isPipelineConfigInitial(c: ConfigInitialTraverseItem): c is PipelineConfigurationStaticInitial | PipelineConfigurationDynamicInitial {
   return isPipelineStaticInitial(c) || isPipelineDynamicInitial(c);
 }
 
@@ -84,7 +82,7 @@ async function configProcessing(
   loadedPipelines: PipelineRefStore<null>,
   logger?: DriverLogger,
 ): Promise<PipelineConfigurationProcessed | PipelineStepConfiguration<FuncCallIODescription[]> | AbstractPipelineActionConfiguration | PipelineSelfRef> {
-  if (isPipelineConfigInitial(conf) && !isPipelineRefInitial(conf) && conf.nqName)
+  if (isPipelineConfigInitial(conf) && conf.nqName)
     addPipelineRef(loadedPipelines, conf.nqName, conf.version, null);
 
   if (isActionConfigInitial(conf)) {
@@ -95,8 +93,7 @@ async function configProcessing(
   } else if (isPipelineStaticInitial(conf)) {
     const pconf = processStaticConfig(conf, logger);
     const steps = await Promise.all(conf.steps.map(async (step) => {
-      processUIFlags(step);
-      const sconf = await configProcessing(step, loadedPipelines, logger);
+      const sconf = await configProcessing(processUIFlags(step), loadedPipelines, logger);
       return sconf;
     }));
     checkUniqId(steps, logger);
@@ -104,8 +101,7 @@ async function configProcessing(
   } else if (isPipelineDynamicInitial(conf)) {
     const pconf = processDynamicConfig(conf, logger);
     const stepTypes = await Promise.all(conf.stepTypes.map(async (item) => {
-      processUIFlags(item);
-      const nconf = await configProcessing(item, loadedPipelines, logger);
+      const nconf = await configProcessing(processUIFlags(item), loadedPipelines, logger);
       return nconf;
     }));
     checkUniqId(stepTypes, logger);
@@ -120,12 +116,10 @@ async function configProcessing(
   throw new Error(`Pipeline configuration node type matching failed: ${conf}`);
 }
 
-function processUIFlags(item: PipelineDynamicItem<never>) {
-  if (item.disableUIControlls) {
-    item.disableUIAdding = true;
-    item.disableUIDragging = true;
-    item.disableUIRemoving = true;
-  }
+function processUIFlags<T extends PipelineDynamicItem<never>>(item: T): T {
+  if (item.disableUIControlls)
+    return {...item, disableUIAdding: true, disableUIDragging: true, disableUIRemoving: true};
+  return item;
 }
 
 function processStaticConfig(conf: PipelineConfigurationStaticInitial, logger?: DriverLogger) {
@@ -246,6 +240,24 @@ function processLinkData<L extends PipelineLinkConfigurationBase<LinkSpecString>
         throw new Error(`Link ${link.id}: output ${io.name} uses (call); only funccall actions allow (call) on outputs.`);
     }
   }
+  // matching resolves the final segment of an io-consuming side as the io name
+  // (only ids[0], and never a tag or an empty path), so anything else would be
+  // silently dropped or fail per-match; node-selecting sides (skipIO) are exempt
+  const checkSingleIoTarget = (ios: LinkIOParsed[], isOutput: boolean) => {
+    const isNodeTarget = isOutput && (linkType === 'pipeline' || linkType === 'pipelineValidator');
+    for (const io of ios) {
+      if (io.flags?.includes('call') || isNodeTarget)
+        continue;
+      const kind = isOutput ? 'output' : 'input';
+      const lastSeg = indexFromEnd(io.segments);
+      if (lastSeg == null || lastSeg.type === 'tag')
+        throw new Error(`Link ${link.id}: ${kind} ${io.name} does not end with an io segment.`);
+      if (!lastSeg.ioExpand && (lastSeg.ids?.length ?? 0) > 1)
+        throw new Error(`Link ${link.id}: ${kind} ${io.name} targets multiple ids ${lastSeg.ids.join('|')}; use a single id or the (template) flag.`);
+    }
+  };
+  checkSingleIoTarget(from, false);
+  checkSingleIoTarget(to, true);
   return {...link, from, to, base, not, actions};
 }
 

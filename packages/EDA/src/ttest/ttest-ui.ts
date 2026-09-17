@@ -202,7 +202,7 @@ function getTTestGrid(res: TwoSampleTTest, label0: string, label1: string, featu
  *  When `showReport` is false, only the box plot is shown (no results table). */
 function addVisualization(df: DG.DataFrame, factor: DG.Column, feature: DG.Column,
   res: TwoSampleTTest, showReport: boolean): void {
-  const view = grok.shell.getTableView(df.name);
+  const view = grok.shell.tableView(df.name);
   grok.shell.v = view;
 
   const significant = res.pValue < res.alpha;
@@ -409,7 +409,7 @@ export function runTwoSampleTTest(): void {
   });
 
   const dlg = ui.dialog({title: 'Two-sample t-test', helpUrl: T_TEST_HELP_URL});
-  const view = grok.shell.getTableView(df.name);
+  const view = grok.shell.tableView(df.name);
   view.root.appendChild(dlg.root);
 
   dlg.addButton('Run', () => {

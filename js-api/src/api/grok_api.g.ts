@@ -333,6 +333,7 @@ export interface IDartApi {
   grok_WidgetDescriptor_Get_Events(d: any): any;
   grok_WidgetDescriptor_CreateIcon(d: any): any;
   grok_Widget_GetWidgetStatus(w: any): any;
+  grok_Widget_Get_StatusProviders(w: any): any;
   grok_Widget_OnEvent(w: any, eventId: String): any;
   grok_Viewer_GetViewerTypes(): any;
   grok_Viewer_Root(v: any): any;
@@ -1190,6 +1191,7 @@ export interface IDartApi {
   grok_DataSource_Save(s: any, e: any): Promise<any>;
   grok_DataSource_Delete(s: any, e: any): Promise<any>;
   grok_DataSource_Include(s: any, include: String): any;
+  grok_DataSource_ResetQuery(s: any): any;
   grok_DataSource_List(s: any): Promise<any>;
   grok_DataSource_Count(s: any): Promise<any>;
   grok_DataSource_First(s: any): Promise<any>;
@@ -2111,6 +2113,22 @@ export interface IDartApi {
 
   // Generated from ../d4/lib/src/common/common.api.g.dart
   grok_UsageType_Create(): any;
+
+  // Generated from ../d4/lib/src/viewer_base/viewer_base.api.g.dart
+  grok_ViewerEvent_Create(): any;
+  grok_ViewerEvent_Get_viewer(x: any): any;
+  grok_ViewerEvent_Set_viewer(x: any, v: any): any;
+  grok_ViewerEvent_Get_type(x: any): any;
+  grok_ViewerEvent_Set_type(x: any, v: String): any;
+  grok_ViewerEvent_Get_eventFlag(x: any): any;
+  grok_ViewerEvent_Set_eventFlag(x: any, v: Bool): any;
+  grok_ViewerEvent_Get_filters(x: any): any;
+  grok_ViewerEvent_Set_filters(x: any, v: any): any;
+  grok_ViewerEvent_Get_row(x: any): any;
+  grok_ViewerEvent_Set_row(x: any, v: Num): any;
+  grok_ViewerEvent_Get_mouseEvent(x: any): any;
+  grok_ViewerEvent_Set_mouseEvent(x: any, v: any): any;
+  grok_ViewerEvent_Get_bitset(x: any): any;
 
   // Generated from ../d4/lib/src/viewers/grid/grid.api.g.dart
   grok_GridCellStyle_Create(): any;

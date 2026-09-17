@@ -24,7 +24,7 @@ import {getRdKitModule} from '@datagrok-libraries/bio/src/chem/rdkit-module';
 import {_package} from '../package-test';
 
 const appPath = 'System:AppData/Bio';
-const fileSource = new DG.FileSource(appPath);
+const fileSource = new DG.FilesDataSource(appPath);
 
 const complexMonomerAllylRgroup: Monomer = {
   'symbol': 'allyl_mon',

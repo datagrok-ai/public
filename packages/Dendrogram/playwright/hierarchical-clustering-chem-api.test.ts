@@ -217,12 +217,12 @@ test('Dendrogram / Hierarchical Clustering (chem) — Distance × Linkage matrix
       const sliced = tmp.clone(sliceFilter);
       sliced.name = 'mol1K_slice60';
       // Open a TableView — the registered Dendrogram:hierarchicalClustering
-      // function calls `grok.shell.getTableView(df.name)` (hierarchical-
+      // function calls `grok.shell.tableView(df.name)` (hierarchical-
       // clustering.ts:96) and throws "TableView has no grid" without one.
       grok.shell.closeAll();
       for (let i = 0; i < 50 && grok.shell.tableViews.length > 0; i++) await new Promise(r => setTimeout(r, 100));
       grok.shell.addTableView(sliced);
-      for (let i = 0; i < 100 && !grok.shell.getTableView('mol1K_slice60')?.grid; i++) await new Promise(r => setTimeout(r, 100));
+      for (let i = 0; i < 100 && !grok.shell.tableView('mol1K_slice60')?.grid; i++) await new Promise(r => setTimeout(r, 100));
       return {rows: sliced.rowCount, molSemType: sliced.col('molecule')?.semType};
     });
     expect(slice.rows, 'slice row count').toBeGreaterThanOrEqual(50);

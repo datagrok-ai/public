@@ -1,19 +1,21 @@
 # UsageAnalysis behavioral tests
 
 Gherkin features under `features/`, compiled by `@datagrok-libraries/bdd` (`public/libraries/bdd`)
-into the Playwright specs under `generated/` — committed, never edited by hand. Today: the viewer
-features under `features/viewers/` (one page per worker): the six TestTrack box plot specs as six
-`@journey` features under `box-plot/` (property surface, group comparison, selection, filter,
-statistics and coloring, settings ladder; 50 scenarios), the seven TestTrack bar chart specs as
-seven under `bar-chart/` (property surface with the Data panel, setup and interaction, selection
-and filter overlays, sorting and orientation, stacking and relative values, stack aggregation and
-the datetime split, the value axis; 45 scenarios) and the 3D scatter plot spec as one under
-`scatter-plot-3d/` (14 scenarios) — 109 scenarios, 1.2 min for all fourteen on four workers, every
-old assertion matched or strengthened and each one backward-matched by an independent reviewer
-(the review record and checklist is the `/bdd-translate` skill under `public/.claude/skills/`).
-The bar chart's own steps (`bindings/bar-chart.ts`) read the order and the lengths of the bars
-from the chart's hit areas. The full guide, the vocabulary and the stand requirements are in the
-library's README.
+into the Playwright specs under `generated/` — committed, never edited by hand. `features/viewers/`
+holds one folder per platform viewer (every TestTrack viewer spec translated, most as `@journey`
+features: the data and the viewer opened once, the scenarios in order as soft steps) plus
+`viewer-chrome.feature`, the outline over the title and description every viewer shares;
+`features/spaces/` the Spaces features (the browse tree, the space view, sharing — the sharing
+one shares with `DATAGROK_SHARING_LOGIN`, or with the `bddsecond` user the library's setup
+creates when the variable is unset). `bindings/` keeps the steps only one
+viewer can define (the bar chart's bar order and lengths, the pie chart's slices, the pivot's
+aggregation against a `groupBy`, the correlation plot's coefficient against `DG.Stats`, the
+Forms viewer's card rows, the tile viewer's designer, the filter panel's hierarchical card); the
+rest of the vocabulary is the library's (`npx grok-bdd list-steps`).
+
+The [known-failure audit](../../../libraries/bdd/KNOWN_FAILURES.md) records the current defects,
+their observed failures and causes. The line-chart lasso scenario now passes without a tag:
+checkbox menu items keep the menu open, so close it before dragging on the chart.
 
 From a fresh checkout of `public`, against a local stand on `http://localhost:8888` (another one:
 `DATAGROK_URL=https://… npx grok-bdd run`):
@@ -23,22 +25,52 @@ cd public/libraries/bdd && npm ci && npm run build   # the library (a path depen
 npx playwright install chromium                      # its browser, once per machine (here, not in the package)
 cd ../../packages/UsageAnalysis && npm ci            # the package; npm links the library in and puts grok-bdd in .bin
 npx grok-bdd link                                    # ONE Playwright: the library's copy into node_modules (redo after every npm ci)
-npx grok-bdd run --reporter=list                     # compile --check, then Playwright
-npx grok-bdd run --workers 2 generated/viewers       # any Playwright flag or path passes through (the default is 4 workers)
+npx grok-bdd run --reporter=list                     # compile --check, then Playwright on 4 workers
+PLAYWRIGHT_WORKERS=2 npx grok-bdd run                # a stand whose pub serve or datlas falls behind at 4 (bundle loads past 30 s, 502s)
+npx grok-bdd run --workers 2 generated/viewers/box-plot   # any Playwright flag or path passes through
 ```
 
-The stand needs a platform from `core` at or after `6983855e91` (2026-09-07), the `Chem` package
-(`grok s packages install Chem`), the dev key of the `localhost` entry in `~/.grok/config.yaml`
-(`grok config`), and the 1000-row demog subset uploaded once:
+For a core dev server on port **8889**, set the URL once in the terminal session, then run from
+the package directory (the localhost dev key supplies authentication):
+
+```bash
+export DATAGROK_URL=http://localhost:8889
+npx grok-bdd run --workers 1 --reporter=list \
+  generated/viewers/viewer-chrome.test.ts -g 'box plot shows and clears'
+```
+
+Set `DATAGROK_LOGIN` and `DATAGROK_PASSWORD` for login-form authentication when no dev key
+is available. If the run reports `Requiring @playwright/test second time`, repeat
+`npx grok-bdd link` here: the local library and package must use one physical Playwright
+installation, even when their installed versions match.
+
+The library maps `Control` / `Ctrl` to Command on Mac for shortcuts and selection gestures,
+including typing and clearing, so existing features stay portable. `Shift+Delete` maps to
+Shift+Backspace on Mac, following Datagrok's delete-command binding. Physical Control is
+available as `ControlLeft`; the custom current-cell copy uses `ControlLeft+Shift+C` because
+its handler specifically requires it. Rebuild `libraries/bdd` after updating those helpers.
+
+The stand needs a platform from `core` at or after 2026-09-10, the dev key of the `localhost`
+entry in `~/.grok/config.yaml` (`grok config`), and the packages used by the viewers:
+
+```bash
+grok s packages install PowerGrid GIS Charts Chem Curves PowerPack --host localhost
+```
+
+The installed packages must include the automation support in this checkout. If a viewer reports
+no readings, build and publish its current package with `npx webpack && grok publish localhost`
+from that package directory. Forms comes from PowerGrid and also needs its
+`@datagrok-libraries/utils` dependency linked to this checkout; Map comes from GIS and Word cloud
+from Charts. A registry version can be current while still predating these source changes.
+
+Upload the 1000-row demog subset once (from the core repository root):
 
 ```bash
 grok s files put public/packages/ApiTests/files/datasets/demog-1000.csv "System:DemoFiles/demog-1000.csv" --host localhost
 ```
 
 Editing: change a feature, `npx grok-bdd compile`, commit the regenerated spec with it;
-`npx grok-bdd list-steps` prints every phrase this package can use; `npx grok-bdd compile --verbose`
-prints how every element phrase resolves; `npx grok-bdd run --trace on` records a trace with DOM
-snapshots; `PLAYWRIGHT_JSON_OUTPUT_NAME=run.json npx grok-bdd run --reporter=list,json` gives
-per-step timings. A failed step reports its feature line, the step, the reason, and what the page
-shows instead (the visible menu items, the nearest property captions) — see "Reading a failure"
-in the library README.
+`npx grok-bdd compile --verbose` prints how every element phrase resolves; `npx grok-bdd run
+--trace on` records a trace with DOM snapshots; `PLAYWRIGHT_JSON_OUTPUT_NAME=run.json npx grok-bdd
+run --reporter=list,json` gives per-step timings. A failed step reports its feature line, the
+step, the reason, and what the page shows instead — see "Reading a failure" in the library README.

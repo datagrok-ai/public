@@ -216,7 +216,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     const decript3 = 'Molecule pairs analysis on 2d scatter plot';
     const decript4 = 'Generation of molecules based on obtained rules';
 
-    const tabs = ui.tabControl(null, false);
+    const tabs = ui.tabControl(null, {vertical: false});
 
     const transformationsTab = tabs.addPane(MMP_NAMES.TAB_TRANSFORMATIONS, () => {
       return this.getTransformationsTab();

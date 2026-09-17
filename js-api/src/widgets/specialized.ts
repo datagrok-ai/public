@@ -278,8 +278,7 @@ export class DropDown extends Widget {
    *   menu.item('Add', () => grok.shell.info('add'));
    *   menu.separator();
    *   menu.item('Delete', () => grok.shell.info('delete'));
-   * });
-   */
+   * }); */
   static menu(label: string | Element, items: DropDownMenuItems | DropDownMenuBuilder, options?: DropDownOptions): DropDown {
     const dropdown = new DropDown(label, options);
     dropdown._initMenuDropDown(items);
@@ -290,8 +289,7 @@ export class DropDown extends Widget {
    * @param label - Text or element to display as the dropdown trigger
    * @param items - Array of string items to display
    * @param listOptions - Options including onItemClick callback
-   * @param options - Optional dropdown options
-   */
+   * @param options - Optional dropdown options */
   static list(label: string | Element, items: string[], listOptions?: DropDownListOptions, options?: DropDownOptions): DropDown {
     const dropdown = new DropDown(label, options);
     dropdown._initListDropDown(items, listOptions);
@@ -301,8 +299,7 @@ export class DropDown extends Widget {
   /** Creates a dropdown with custom content.
    * @param label - Text or element to display as the dropdown trigger
    * @param createElement - Function that creates the dropdown content element
-   * @param options - Optional dropdown options
-   */
+   * @param options - Optional dropdown options */
   static custom(label: string | Element, createElement: () => HTMLElement, options?: DropDownOptions): DropDown {
     const dropdown = new DropDown(label, options);
     dropdown._initCustomDropDown(createElement);

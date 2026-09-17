@@ -278,8 +278,8 @@ public class StringColumn extends AbstractColumn<String> {
         for (int i = 0; i < categories.size(); i++)
             remap[categoryMap.get(categories.get(i))] = i;
 
-        idxs = new int[length];
         for (int n = 0; n < length; n++)
-            idxs[n] = remap[tempIdxs[n]];
+            tempIdxs[n] = remap[tempIdxs[n]];
+        idxs = tempIdxs;
     }
 }

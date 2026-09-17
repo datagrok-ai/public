@@ -120,4 +120,13 @@ export class HistoricalRunsDelete extends DG.Dialog {
 
     this.onOK(async () => this._onFuncCallDelete.next(funcCalls));
   }
+
+  // Shows the dialog and resolves the runs to delete, or null when dismissed;
+  // same close semantics as EditRunMetadataDialog.awaitMetadata
+  awaitDelete(options?: {center?: boolean, width?: number}): Promise<Set<DG.FuncCall> | null> {
+    const result$ = race<Set<DG.FuncCall> | null>(this.onFuncCallDelete, this.onClose.pipe(map(() => null)))
+      .pipe(take(1));
+    this.show({center: true, width: 500, ...options});
+    return result$.toPromise();
+  }
 }

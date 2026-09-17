@@ -37,7 +37,7 @@ export function toRow(p: DesirabilityProfile): ProfileInsert {
     description: p.description,
     aggregation: (p.aggregation ?? null) as ProfileAggregation | undefined,
     format_version: CURRENT_MPO_VERSION,
-    properties: JSON.stringify(p.properties),
+    properties: p.properties,
   };
 }
 
@@ -52,7 +52,7 @@ export function fromRow(r: ProfileRow): MpoProfileInfo {
     name: r.name,
     description: r.description ?? '',
     aggregation: r.aggregation,
-    properties: JSON.parse(r.properties),
+    properties: r.properties as DesirabilityProfile['properties'],
   });
   return {...profile, id: r.id, rowVersion: r.version};
 }
@@ -127,12 +127,9 @@ export class MpoProfileStore {
     grok.events.fireCustomEvent(MPO_PROFILE_CHANGED_EVENT, {});
   }
 
-  /** Grants all users access, then seeds the profiles from the package's `mpo` AppData folder;
-   *  `batch` skips names that already exist, so re-running never touches saved profiles. */
+  /** Seeds the profiles from the package's `mpo` AppData folder; `batch` skips names that
+   *  already exist, so re-running never touches saved profiles. */
   async seedDefaults(): Promise<string> {
-    for (const permission of ['View', 'Edit', 'Delete'] as const)
-      await mpoDb.profiles.grant(DG.Group.defaultGroupsIds['All users'], permission);
-
     const rows: ProfileInsert[] = [];
     for (const f of (await _package.files.list(MPO_FOLDER)).filter((f) => f.isFile)) {
       const result = parseMpoProfile(await _package.files.readAsText(`${MPO_FOLDER}/${f.name}`),

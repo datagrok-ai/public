@@ -26,6 +26,7 @@ import {merge} from 'rxjs';
 import {HelpObjectHandler} from './search/help-entity';
 import {SpotlightWidget} from './spotlight/spotlight-widget';
 import {getAdminGroups, getMyGroupFavorites, pinEntityToGroup} from './spotlight/group-favorites';
+import {isSpotlightEntity} from './spotlight/entity-kinds';
 import {DBExplorerEditor} from '@datagrok-libraries/db-explorer/src/editor';
 import {setupDBQueryCellHandler, setupGlobalDBExplorer, runEnrichmentFromConfig} from './db-explorer';
 import {FilterBuilderFilter} from './filter/filter-builder-filter';
@@ -394,7 +395,7 @@ export class PackageFunctions {
     setupDBQueryCellHandler(); // db-explorer for any query result - lazy without await
     initSearch();
 
-    _properties = await _package.getProperties();
+    _properties = _package.settings;
     registerDGUserHandler(); // lazy without await
 
     // saving and restoring the scrolls when changing views
@@ -518,7 +519,7 @@ function getEntity(x: any) {
 grok.events.onContextMenu.subscribe((args) => {
   const item = args?.args?.item;
   const entity = DG.toJs(item?.value ?? item);
-  if (!(entity instanceof DG.Entity) || entity instanceof DG.User ||entity instanceof DG.Group)
+  if (!(entity instanceof DG.Entity) || !isSpotlightEntity(entity))
     return;
 
   const menu: DG.Menu = args.args.menu;

@@ -32,6 +32,7 @@ export class AdmeticaViewApp extends BaseViewApp {
 
   protected async processFileData(): Promise<void> {
     const gen = ++this._gen;
+    await setProperties();
     await grok.data.detectSemanticTypes(this.tableView!.dataFrame);
     if (this._outdated(gen))
       return;
@@ -47,7 +48,6 @@ export class AdmeticaViewApp extends BaseViewApp {
     await addColorCoding(this.tableView!.dataFrame, queryParams);
     await addSparklines(this.tableView!.dataFrame, queryParams, i, 'ADMET');
     i += 1;
-    await setProperties();
 
     for (const model of models)
       updateColumnProperties(this.tableView?.grid.col(model.name)!, model);
@@ -94,7 +94,7 @@ export class AdmeticaViewApp extends BaseViewApp {
           true,
         );
       } catch (e: any) {
-        const errorWidget = new DG.Widget(ui.divText(e, 'admetica-rdkit-error'));
+        const errorWidget = new DG.Widget(ui.divText(e?.message ?? String(e), 'admetica-rdkit-error'));
         return errorWidget.root;
       }
     }

@@ -18,6 +18,9 @@ const claimUniqueName = (base: string, taken: Set<string>) => {
   return name;
 };
 
+// dataframes may carry bigint (int64) columns; those values cannot enter a float column as-is
+const toFloatValues = (list: any[]) => list.map((v) => typeof v === 'bigint' ? Number(v) : v);
+
 export interface ScalarComparisonResult {
   chartDf: DG.DataFrame;
   // actual value column label: the display name deduped against the built-in columns
@@ -38,7 +41,7 @@ export function buildScalarComparison(
   const chartDf = DG.DataFrame.fromColumns([
     DG.Column.fromList(DG.COLUMN_TYPE.STRING, RUN_COLUMN, ordered.map((entry) => entry.name)),
     DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'Path', bindings.map((b) => b.friendlyPath ?? b.path)),
-    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, valueColumnName, bindings.map((b) => b.value)),
+    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, valueColumnName, toFloatValues(bindings.map((b) => b.value))),
   ]);
   chartDf.name = `Comparison: ${target.displayName}`;
   return {chartDf, valueColumnName};
@@ -72,8 +75,8 @@ export function buildMultiScalarComparison(
   const chartDf = DG.DataFrame.fromColumns([
     DG.Column.fromList(DG.COLUMN_TYPE.STRING, RUN_COLUMN, participating.map((entry) => entry.name)),
     ...targets.map((target) => DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, labels.get(target.key)!,
-      participating.map((entry) =>
-        target.bindings.find((b) => b.entryId === entry.id)?.value ?? null))),
+      toFloatValues(participating.map((entry) =>
+        target.bindings.find((b) => b.entryId === entry.id)?.value ?? null)))),
   ]);
   chartDf.name = 'Comparison: multiple values';
   return {chartDf, valueColumnNames};
@@ -161,7 +164,7 @@ const makeIndexColumn = (name: string, list: any[], axis: IndexAxis) => {
       data[i] = list[i] == null ? DG.FLOAT_NULL : list[i];
     return DG.Column.fromFloat64Array(name, data);
   }
-  return DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, name, list);
+  return DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, name, toFloatValues(list));
 };
 
 // per-run index values in milliseconds: datetime via epoch ms, numeric scaled by its
@@ -317,7 +320,7 @@ export function buildMultiColumnComparison(
       ...splitColumnName ? [DG.Column.fromList(DG.COLUMN_TYPE.STRING, splitColumnName, meltedSplits)] : [],
       DG.Column.fromList(DG.COLUMN_TYPE.STRING, RUN_COLUMN, meltedRuns),
       DG.Column.fromList(DG.COLUMN_TYPE.STRING, melted.seriesColumnName, meltedSeries),
-      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, melted.valueColumnName, meltedValues),
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, melted.valueColumnName, toFloatValues(meltedValues)),
     ]);
   } else {
     chartDf = DG.DataFrame.fromColumns([
@@ -325,7 +328,7 @@ export function buildMultiColumnComparison(
       ...splitColumnName ? [DG.Column.fromList(DG.COLUMN_TYPE.STRING, splitColumnName, longSplits)] : [],
       DG.Column.fromList(DG.COLUMN_TYPE.STRING, RUN_COLUMN, longRuns),
       ...valueColumnNames.map((label) =>
-        DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, label, longValues.get(label)!)),
+        DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, label, toFloatValues(longValues.get(label)!))),
     ]);
   }
   chartDf.name = 'Comparison: multiple values';

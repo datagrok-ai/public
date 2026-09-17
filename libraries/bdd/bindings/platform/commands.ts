@@ -2,7 +2,8 @@
    function call it starts awaited through the platform's own call events, and the columns it
    added to the table read against the columns it started with. A dialog a command shows in
    between is driven with the base steps (`OK button in "Sequence Space" dialog`). */
-import {expect, Page} from '@playwright/test';
+import {Page} from '@playwright/test';
+import {expect} from '../../src/runtime/patience.js';
 import {Then, When} from '../../src/registry.js';
 import {closeTopMenu, columnsSince, menuNames, openTopMenu, pickTopMenu, visibleLabels, waitCommand} from '../../src/runtime/menus.js';
 
@@ -12,11 +13,6 @@ const COMMAND_CAP = 120000;
 
 export const pickFromTopMenu = When('user picks {string} from the top menu', (page: Page, path: string) => pickTopMenu(page, path),
   {tier: 'ui', description: `${PATH}; the groups open under the pointer, the leaf is clicked; the function call it starts is watched for "the top menu command should have completed"`});
-
-export const openInTopMenu = When('user opens {string} in the top menu', (page: Page, path: string) => openTopMenu(page, path, false),
-  {tier: 'ui', description: 'a group of the top menu, left open — its items are then "\\"Bio > Analyze > MSA...\\" menu item"'});
-
-export const closeTheTopMenu = When('user closes the top menu', (page: Page) => closeTopMenu(page), {tier: 'ui'});
 
 /** The paths grouped by their parent: a group opens once, its leaves are checked, the menu
  * closes — as many walks as groups, not as leaves. */

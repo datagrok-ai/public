@@ -7,6 +7,8 @@
 * GROK-20753: Added dapi/domains/bulk-edit.js (`updateWhere` over a selection and over a filter, the `hasMore` loop, a refused value leaving nothing written) and dapi/domains/hierarchy.js (`pathTo` as a breadcrumb of ancestors, the `under` subtree term through the tree's id and through a ref column into it); trash.js shows `get(id, {deleted: 'only'})` addressing a trashed row
 * GROK-20753: Added dapi/domains/trash.js — the soft-delete round trip: `query({deleted: 'only'})` as the table's trash (rows carrying `~is_deleted`), a `deleted: 'include'` frame whose csv drops the service column, and `restore(id)` with its `'undelete'` audit entry
 * GROK-20753: Removed the `dapi/domains/facade-*.js` and `app-view.js` samples with the `@datagrok-libraries/domain-ui` library they demonstrated — app UI over domain tables is the u2 domain stack (see the Stockroom and Grit packages), which a sample script cannot import
+* Grid: Fixed grid/advanced/pinned-columns.js — uses the core `GridColumn.pin()` instead of the `PowerGrid:addPinnedColumn` shim, so the sample no longer depends on PowerGrid being published
+* Tests: Skipped the five samples that await a user-dismissed modal (projects-save-dialog, facade-form-dialog, facade-list-view, row-editor, pick-table)
 * GROK-20849: Added `data-frame/bitset/bit-array.js` — `DG.BitArray` built in JS and applied to a DataFrame filter
 * GROK-20799: Added dapi/entity-properties.js — `grok.meta.propertiesOf`/`coreLocationOf` discovery, from a type's catalog to a related-entity filter over its Core table
 * GROK-20799: Added dapi/domains/access.js — `DomainTableClient.access()` (server-composed `{can, fields}`, incl. `travelableRelations`/`securingTable`) gating a create form on `can.insert` / editable `fields`, plus `get(id, {withAccess: true})` for the per-row `~can_*` flags; handler.js and registry-reflection.js read the same shape
@@ -47,6 +49,10 @@
 * GROK-20316: Added dapi/domains-dapi2.js — querying domain-table rows via the generated grok.dapi2 REST client
 * GROK-20315: Added dapi/domains/batch.js, domains/transaction.js, domains/aggregate.js, domains/dataframe.js, domains/idempotency.js — batch upsert, multi-entity transactions, aggregation, queryDf → grid, idempotent retries + optimistic concurrency
 * GROK-20307: Added dapi/domains/crud.js — domain-table row CRUD via grok.dapi.domains
+
+## 1.2.2 (2025-12-18)
+
+* ApiSamples: Statistics: Added Pearson correlation sample
 
 ## 1.2.1 (2-24-11-24)
 

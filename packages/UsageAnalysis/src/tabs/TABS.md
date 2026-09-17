@@ -24,9 +24,18 @@ It builds a `ViewHandler`, calls `handler.init(...)`, and returns `handler.view`
 Tabs are a **fixed list** in `ViewHandler.init()`:
 
 ```ts
-const viewClasses = [OverviewView, PackagesView, FunctionsView, EventsView,
-                     ClicksView, LogView, ProjectsView, MetricsView, StressView, VulnerabilitiesView];
+const viewClasses = [OverviewView, PackagesView, FunctionsView, EventsView, ClicksView, LogView,
+                     SystemActivityView, ErrorsView, ProjectsView, MetricsView, StressView, VulnerabilitiesView];
 ```
+
+`SystemActivityView` (tab `System Activity`) lists the platform-level audit records datlas writes —
+`server-started`, `user-logged-in`, `user-logged-out`, `user-login-failed`, `user-impersonated`,
+`impersonation-failed`, `admin-session-started`, `admin-session-ended`, `dev-key-generated`,
+`settings-changed`, `log-settings-changed` (`LogAudit` in `grok_shared/lib/src/log_entities.dart`).
+`SystemActivitySummary` feeds a per-type timeline and `SystemActivity` the filterable grid; the grid
+resolves the record's user from its `user` parameter first (a failed login or a server start has no
+session), so the groups filter applies to records with a user and passes the rest through. The
+packages input is hidden on it, like Projects. Both queries are uncached: this is a security log.
 
 `VulnerabilitiesView` is toolbox-independent: it loads the published VEX index
 (`https://data.datagrok.ai/vex/index.json`) via `grok.dapi.fetchProxy` and drills into the
@@ -42,7 +51,8 @@ don't execute until clicked. To add a tab: create a `UaView` subclass in `tabs/`
 
 ## A tab (`UaView` subclass)
 
-- `name` — tab label (must match `${urlTab}View` for URL routing).
+- `name` — tab label; its URL segment is the name without spaces, lowercased (`ViewHandler.urlName`),
+  so `System Activity` routes as `/systemactivity`.
 - `rout` — optional sub-route (e.g. Packages flips `/Usage` ↔ `/InstallationTime` in `switchRout()`).
 - `viewers: UaQueryViewer[]` — built in `initViewers()`, appended to `this.root`.
 - Waits on `_toolboxReady` so viewers never build before the shared toolbox exists.

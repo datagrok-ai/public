@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Added webcomponents-vue ribbon service test suites (core, service, elements, components)
 * Arrow: Added round-trip regression tests for null int, float and datetime values
 
 ## 1.9.7 (2026-08-07)

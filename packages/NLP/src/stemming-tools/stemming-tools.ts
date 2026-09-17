@@ -199,7 +199,7 @@ export function getMarkedString(curIdx: number, queryIdx: number, strToBeMarked:
       e.stopImmediatePropagation();
       e.preventDefault();
 
-      stemCash.filters = grok.shell.getTableView(df.name).getFiltersGroup();
+      stemCash.filters = grok.shell.tableView(df.name).getFiltersGroup();
 
       setTimeout(() => {
         const state = stemCash.filters!.getStates(stemCash.colName!, 'text')[0];

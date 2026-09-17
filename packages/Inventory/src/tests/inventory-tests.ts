@@ -23,8 +23,8 @@ category('Inventory', () => {
     const schemas = await grok.dapi.domains.schemas.list();
     const s = schemas.find((x) => x.name === 'inventory');
     expect(s != null, true, 'inventory schema not registered');
-    const itemsTable = s!.tables.find((t) => t.name === 'items');
-    const movementsTable = s!.tables.find((t) => t.name === 'stock_movements');
+    const itemsTable = s!.tables.find((t) => t.name === 'item');
+    const movementsTable = s!.tables.find((t) => t.name === 'stock_movement');
     expect(itemsTable!.securityMode, 'table');
     expect(itemsTable!.businessKey.join(','), 'sku');
     expect(movementsTable!.securityMode, 'master');

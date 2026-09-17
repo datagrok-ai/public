@@ -1,4 +1,3 @@
-import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {Observable} from 'rxjs';
 import {IRuntimeLinkController, IRuntimeMetaController, IRuntimePipelineMutationController, INameSelectorController, IRuntimeValidatorController, IFuncallActionController, IRuntimeReturnController, IRuntimePipelineValidatorController} from '../RuntimeControllers';

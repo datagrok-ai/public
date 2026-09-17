@@ -84,7 +84,7 @@ export class ModelCatalogView extends DG.CustomCardView {
     this.showTree = true;
     this.initRibbon();
     this.initMenu();
-    grok.shell.windows.showProperties = false;
+    grok.shell.windows.showContextPanel = false;
   }
 
   async initRibbon() {

@@ -56,7 +56,7 @@ For a complete list of available decorators and their options, see the [Decorato
 
 :::
 
-Consider a simple example of a webpack-based package with just one trivial app in a `src/package.ts`:
+Consider a simple example of a bundled package with just one trivial app in a `src/package.ts`:
 
 ```ts
 import * as grok from 'datagrok-api/grok';
@@ -89,9 +89,8 @@ to prepare our simple package and deploy it.
 
     * A regular [Node.js](https://nodejs.org/en/download/)
       and [npm](https://docs.npmjs.com/about-npm) (comes with Node.js)
-    * `npm install webpack -g` (`-g` will make `webpack` globally available, that's convenient for further development)
-    * `npm install webpack-cli -g`
-    * `npm install datagrok-tools -g`
+    * `npm install datagrok-tools -g` (the bundler and TypeScript come with each package's
+      `@datagrok/build-config` dependency; nothing else is installed globally)
 
 2. [Create a new package](../../develop.md#packages):
 
@@ -175,7 +174,8 @@ shows how to add a [viewer](#visualizations) to a view.
 ### Working with intellisense
 
 We recommend restoring the package dependencies before starting development with an IDE. After the package is created,
-simply invoke `npm install` inside the package folder. This will bring npm modules with the Datagrok API.
+simply invoke `npm install` inside the package folder (or `pnpm install` at the root of the public repository, which
+covers every package there). This will bring npm modules with the Datagrok API.
 
 An alternative way to IntelliSense capability for Datagrok classes is by cloning the
 entire [public repository](https://github.com/datagrok-ai/public) and opening its whole folder in the IDE. This is
@@ -352,7 +352,7 @@ a dataframe.
 Let's create a dataframe and check what we can do with it.
 
 Try the below snippets in our interactive [JS playground](https://public.datagrok.ai/js), but don't forget to
-request `import * as DG from 'datagrok-api/DG'` in case you're using this code from a webpack package.
+request `import * as DG from 'datagrok-api/DG'` in case you are using this code from a bundled package.
 
 ```js
 let df = DG.DataFrame.fromColumns([
@@ -687,7 +687,7 @@ credentials, there are suitable means in Datagrok described below.
 
 It's possible to programmatically push credentials to Datagrok and deliver them to the package of interest. In such
 scenario, credentials are stored on a secured machine and delivered to Datagrok via a triggered bat/sh-script. This is
-usually on demand, e.g. through a deployment process — the `webpack && grok publish && ...` cycle.
+usually on demand, e.g. through a deployment process — the `grok publish ...` cycle (which builds first).
 
 For using this option, you need to provide an API developer's key, which is available in your user info pane in the
 Datagrok UI. Access it with the user avatar button in the left sidebar of Datagrok main window.
@@ -803,10 +803,10 @@ Read more about Datagrok events [here](../../packages/js-api.md#events).
 
 #### Structuring code
 
-Perhaps, one of the main things to know about webpack is that it allows you to structure JavaScript code in a way
+Perhaps, one of the main things to know about the bundler (rspack, through the shared build configuration) is that it allows you to structure JavaScript code in a way
 similar to how you are used to it in enterprise-grade environments, such as Java or .NET.
 
-Let's expand our previous example leveraging an `import` capability of webpack and modern JavaScript.
+Let's expand our previous example leveraging the `import` capability of the bundler and modern JavaScript.
 
 Create two separate files:
 
@@ -858,7 +858,7 @@ export function test02() {
 
 That would be an overkill to structure these super-trivial apps this way, though it is a highly desired practice for
 anything real-life built for production use. Notice how we include parts of Datagrok API for the corresponding features
-in `src/test-app-01.js`. You may find this `datagrok-api` is a predefined location, as per `webpack.config.js`.
+in `src/test-app-01.js`. You may find this `datagrok-api` is a predefined location, as per the shared build configuration.
 
 ### Application lifecycle
 

@@ -582,7 +582,10 @@ export class Shell {
   warning() {}
   error() {}
 
-  tableByName(name) { return this.dart.tables.find((table) => table.name === name) ?? null; }
+  table(name) { return this.dart.tables.find((table) => table.name === name) ?? null; }
+
+  /** @deprecated the platform's own alias of {@link table} — kept because the double mirrors it. */
+  tableByName(name) { return this.table(name); }
 
   /** The platform never opens two tables under one name; the second becomes `demog (2)`. */
   addTable(table) {

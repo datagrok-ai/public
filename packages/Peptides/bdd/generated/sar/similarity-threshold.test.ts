@@ -1,0 +1,134 @@
+/* eslint-disable max-len */
+/* eslint-disable comma-spacing */
+/* eslint-disable quotes */
+/* ---
+generated: features/sar/similarity-threshold.feature
+generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
+--- */
+import {test} from '@playwright/test';
+import '../../bindings/elements.js';
+import '@datagrok-libraries/bdd/bindings/common/kinds';
+import '@datagrok-libraries/bdd/bindings/common/parameter-types';
+import '@datagrok-libraries/bdd/bindings/platform/datasets';
+import '@datagrok-libraries/bdd/bindings/platform/elements';
+import {peptidesInitialized, sarReady, sarSetting} from '../../bindings/steps.js';
+import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
+import {clickOn, enterInto, shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
+import {pickFromTopMenu} from '@datagrok-libraries/bdd/bindings/platform/commands';
+import {noneSelected, onlyOfSelected, selectedRowCount} from '@datagrok-libraries/bdd/bindings/platform/data';
+import {listenCustom} from '@datagrok-libraries/bdd/bindings/platform/events';
+import {openDatasetRows} from '@datagrok-libraries/bdd/bindings/platform/steps';
+import {areaAtLeastTall, areaPainted, clickArea, noBalloons, noErrors, painted, readingIs, readingReads, viewerAdded} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {ds, el, feature} from '@datagrok-libraries/bdd/runtime';
+
+test.describe("Launch SAR at different similarity thresholds", () => {
+  const session = feature(test, "features/sar/similarity-threshold.feature", import.meta.url);
+  test("Similarity threshold 90 preserves the analysis and its selection behavior [threshold=90]", async ({browser}) => {
+    const page = await session.page(browser);
+    await session.step(6, "Given user is logged in", () => loggedIn(page));
+    await session.step(7, "And the Peptides package is initialized", () => peptidesInitialized(page));
+    await session.step(8, "And user opens peptides dataset keeping the first 200 rows", () => openDatasetRows(page, ds("peptides"), 200));
+    await session.step(9, "Then no errors should have been logged", () => noErrors(page));
+    await session.step(10, "And no error or warning balloon should have been shown", () => noBalloons(page));
+    await session.step(13, "When user picks \"Bio > Analyze > SAR...\" from the top menu", () => pickFromTopMenu(page, "Bio > Analyze > SAR..."));
+    await session.step(14, "Then \"Analyze Peptides\" dialog should be visible", () => shouldBe(page, el("\"Analyze Peptides\" dialog"), "visible"));
+    await session.step(15, "And \"Generate clusters\" checkbox in \"Analyze Peptides\" dialog should be checked", () => shouldBe(page, el("\"Generate clusters\" checkbox in \"Analyze Peptides\" dialog"), "checked"));
+    await session.step(16, "When user clicks on \"Adjust clustering parameters\" icon in \"Analyze Peptides\" dialog", () => clickOn(page, el("\"Adjust clustering parameters\" icon in \"Analyze Peptides\" dialog")));
+    await session.step(17, "Then \"Similarity Threshold\" input in \"Analyze Peptides\" dialog should be visible", () => shouldBe(page, el("\"Similarity Threshold\" input in \"Analyze Peptides\" dialog"), "visible"));
+    await session.step(18, "When user enters \"90\" into \"Similarity Threshold\" input in \"Analyze Peptides\" dialog", () => enterInto(page, "90", el("\"Similarity Threshold\" input in \"Analyze Peptides\" dialog")));
+    await session.step(19, "Given user listens for \"peptides-sar-ready\" custom event", () => listenCustom(page, "peptides-sar-ready"));
+    await session.step(20, "When user clicks on OK button in \"Analyze Peptides\" dialog", () => clickOn(page, el("OK button in \"Analyze Peptides\" dialog")));
+    await session.step(21, "Then the SAR analysis should be ready", () => sarReady(page));
+    await session.step(22, "And the SAR setting \"mclSettings.threshold\" should be \"90\"", () => sarSetting(page, "mclSettings.threshold", "90"));
+    await session.step(23, "And Sequence Variability Map viewer should be added to the open tableview", () => viewerAdded(page, "Sequence Variability Map"));
+    await session.step(24, "And Most Potent Residues viewer should be added to the open tableview", () => viewerAdded(page, "Most Potent Residues"));
+    await session.step(25, "And MCL viewer should be added to the open tableview", () => viewerAdded(page, "MCL"));
+    await session.step(26, "And Logo Summary Table viewer should be added to the open tableview", () => viewerAdded(page, "Logo Summary Table"));
+    await session.step(27, "And the \"positions\" reading of Sequence Variability Map viewer should be 17", () => readingIs(page, "positions", el("Sequence Variability Map viewer"), 17));
+    await session.step(28, "And the \"count of cell A at 2\" reading of Sequence Variability Map viewer should be 59", () => readingIs(page, "count of cell A at 2", el("Sequence Variability Map viewer"), 59));
+    await session.step(29, "And the \"header 2\" area of grid should be at least 100 pixels tall", () => areaAtLeastTall(page, "header 2", el("grid"), 100));
+    await session.step(30, "And the \"A at 2\" area of grid should be painted", () => areaPainted(page, "A at 2", el("grid")));
+    await session.step(31, "And scatter plot viewer in MCL viewer should be painted", () => painted(page, el("scatter plot viewer in MCL viewer")));
+    await session.step(32, "And the \"completed threshold\" reading of MCL viewer should be 90", () => readingIs(page, "completed threshold", el("MCL viewer"), 90));
+    await session.step(33, "And no rows should be selected", () => noneSelected(page));
+    await session.step(34, "When user clicks on \"Invariant Map\" checkbox in Sequence Variability Map viewer", () => clickOn(page, el("\"Invariant Map\" checkbox in Sequence Variability Map viewer")));
+    await session.step(35, "And user clicks on the \"cell A at 2\" area of Sequence Variability Map viewer", () => clickArea(page, "cell A at 2", el("Sequence Variability Map viewer")));
+    await session.step(36, "Then 59 rows should be selected", () => selectedRowCount(page, 59));
+    await session.step(37, "And only rows where \"2\" is \"A\" should be selected", () => onlyOfSelected(page, "2", "A"));
+    await session.step(38, "And the \"selected monomer-positions\" reading of Sequence Variability Map viewer should be \"2:A\"", () => readingReads(page, "selected monomer-positions", el("Sequence Variability Map viewer"), "2:A"));
+    await session.step(39, "And no errors should have been logged", () => noErrors(page));
+    await session.step(40, "And no error or warning balloon should have been shown", () => noBalloons(page));
+  });
+  test("Similarity threshold 93 preserves the analysis and its selection behavior [threshold=93]", async ({browser}) => {
+    const page = await session.page(browser);
+    await session.step(6, "Given user is logged in", () => loggedIn(page));
+    await session.step(7, "And the Peptides package is initialized", () => peptidesInitialized(page));
+    await session.step(8, "And user opens peptides dataset keeping the first 200 rows", () => openDatasetRows(page, ds("peptides"), 200));
+    await session.step(9, "Then no errors should have been logged", () => noErrors(page));
+    await session.step(10, "And no error or warning balloon should have been shown", () => noBalloons(page));
+    await session.step(13, "When user picks \"Bio > Analyze > SAR...\" from the top menu", () => pickFromTopMenu(page, "Bio > Analyze > SAR..."));
+    await session.step(14, "Then \"Analyze Peptides\" dialog should be visible", () => shouldBe(page, el("\"Analyze Peptides\" dialog"), "visible"));
+    await session.step(15, "And \"Generate clusters\" checkbox in \"Analyze Peptides\" dialog should be checked", () => shouldBe(page, el("\"Generate clusters\" checkbox in \"Analyze Peptides\" dialog"), "checked"));
+    await session.step(16, "When user clicks on \"Adjust clustering parameters\" icon in \"Analyze Peptides\" dialog", () => clickOn(page, el("\"Adjust clustering parameters\" icon in \"Analyze Peptides\" dialog")));
+    await session.step(17, "Then \"Similarity Threshold\" input in \"Analyze Peptides\" dialog should be visible", () => shouldBe(page, el("\"Similarity Threshold\" input in \"Analyze Peptides\" dialog"), "visible"));
+    await session.step(18, "When user enters \"93\" into \"Similarity Threshold\" input in \"Analyze Peptides\" dialog", () => enterInto(page, "93", el("\"Similarity Threshold\" input in \"Analyze Peptides\" dialog")));
+    await session.step(19, "Given user listens for \"peptides-sar-ready\" custom event", () => listenCustom(page, "peptides-sar-ready"));
+    await session.step(20, "When user clicks on OK button in \"Analyze Peptides\" dialog", () => clickOn(page, el("OK button in \"Analyze Peptides\" dialog")));
+    await session.step(21, "Then the SAR analysis should be ready", () => sarReady(page));
+    await session.step(22, "And the SAR setting \"mclSettings.threshold\" should be \"93\"", () => sarSetting(page, "mclSettings.threshold", "93"));
+    await session.step(23, "And Sequence Variability Map viewer should be added to the open tableview", () => viewerAdded(page, "Sequence Variability Map"));
+    await session.step(24, "And Most Potent Residues viewer should be added to the open tableview", () => viewerAdded(page, "Most Potent Residues"));
+    await session.step(25, "And MCL viewer should be added to the open tableview", () => viewerAdded(page, "MCL"));
+    await session.step(26, "And Logo Summary Table viewer should be added to the open tableview", () => viewerAdded(page, "Logo Summary Table"));
+    await session.step(27, "And the \"positions\" reading of Sequence Variability Map viewer should be 17", () => readingIs(page, "positions", el("Sequence Variability Map viewer"), 17));
+    await session.step(28, "And the \"count of cell A at 2\" reading of Sequence Variability Map viewer should be 59", () => readingIs(page, "count of cell A at 2", el("Sequence Variability Map viewer"), 59));
+    await session.step(29, "And the \"header 2\" area of grid should be at least 100 pixels tall", () => areaAtLeastTall(page, "header 2", el("grid"), 100));
+    await session.step(30, "And the \"A at 2\" area of grid should be painted", () => areaPainted(page, "A at 2", el("grid")));
+    await session.step(31, "And scatter plot viewer in MCL viewer should be painted", () => painted(page, el("scatter plot viewer in MCL viewer")));
+    await session.step(32, "And the \"completed threshold\" reading of MCL viewer should be 93", () => readingIs(page, "completed threshold", el("MCL viewer"), 93));
+    await session.step(33, "And no rows should be selected", () => noneSelected(page));
+    await session.step(34, "When user clicks on \"Invariant Map\" checkbox in Sequence Variability Map viewer", () => clickOn(page, el("\"Invariant Map\" checkbox in Sequence Variability Map viewer")));
+    await session.step(35, "And user clicks on the \"cell A at 2\" area of Sequence Variability Map viewer", () => clickArea(page, "cell A at 2", el("Sequence Variability Map viewer")));
+    await session.step(36, "Then 59 rows should be selected", () => selectedRowCount(page, 59));
+    await session.step(37, "And only rows where \"2\" is \"A\" should be selected", () => onlyOfSelected(page, "2", "A"));
+    await session.step(38, "And the \"selected monomer-positions\" reading of Sequence Variability Map viewer should be \"2:A\"", () => readingReads(page, "selected monomer-positions", el("Sequence Variability Map viewer"), "2:A"));
+    await session.step(39, "And no errors should have been logged", () => noErrors(page));
+    await session.step(40, "And no error or warning balloon should have been shown", () => noBalloons(page));
+  });
+  test("Similarity threshold 96 preserves the analysis and its selection behavior [threshold=96]", async ({browser}) => {
+    const page = await session.page(browser);
+    await session.step(6, "Given user is logged in", () => loggedIn(page));
+    await session.step(7, "And the Peptides package is initialized", () => peptidesInitialized(page));
+    await session.step(8, "And user opens peptides dataset keeping the first 200 rows", () => openDatasetRows(page, ds("peptides"), 200));
+    await session.step(9, "Then no errors should have been logged", () => noErrors(page));
+    await session.step(10, "And no error or warning balloon should have been shown", () => noBalloons(page));
+    await session.step(13, "When user picks \"Bio > Analyze > SAR...\" from the top menu", () => pickFromTopMenu(page, "Bio > Analyze > SAR..."));
+    await session.step(14, "Then \"Analyze Peptides\" dialog should be visible", () => shouldBe(page, el("\"Analyze Peptides\" dialog"), "visible"));
+    await session.step(15, "And \"Generate clusters\" checkbox in \"Analyze Peptides\" dialog should be checked", () => shouldBe(page, el("\"Generate clusters\" checkbox in \"Analyze Peptides\" dialog"), "checked"));
+    await session.step(16, "When user clicks on \"Adjust clustering parameters\" icon in \"Analyze Peptides\" dialog", () => clickOn(page, el("\"Adjust clustering parameters\" icon in \"Analyze Peptides\" dialog")));
+    await session.step(17, "Then \"Similarity Threshold\" input in \"Analyze Peptides\" dialog should be visible", () => shouldBe(page, el("\"Similarity Threshold\" input in \"Analyze Peptides\" dialog"), "visible"));
+    await session.step(18, "When user enters \"96\" into \"Similarity Threshold\" input in \"Analyze Peptides\" dialog", () => enterInto(page, "96", el("\"Similarity Threshold\" input in \"Analyze Peptides\" dialog")));
+    await session.step(19, "Given user listens for \"peptides-sar-ready\" custom event", () => listenCustom(page, "peptides-sar-ready"));
+    await session.step(20, "When user clicks on OK button in \"Analyze Peptides\" dialog", () => clickOn(page, el("OK button in \"Analyze Peptides\" dialog")));
+    await session.step(21, "Then the SAR analysis should be ready", () => sarReady(page));
+    await session.step(22, "And the SAR setting \"mclSettings.threshold\" should be \"96\"", () => sarSetting(page, "mclSettings.threshold", "96"));
+    await session.step(23, "And Sequence Variability Map viewer should be added to the open tableview", () => viewerAdded(page, "Sequence Variability Map"));
+    await session.step(24, "And Most Potent Residues viewer should be added to the open tableview", () => viewerAdded(page, "Most Potent Residues"));
+    await session.step(25, "And MCL viewer should be added to the open tableview", () => viewerAdded(page, "MCL"));
+    await session.step(26, "And Logo Summary Table viewer should be added to the open tableview", () => viewerAdded(page, "Logo Summary Table"));
+    await session.step(27, "And the \"positions\" reading of Sequence Variability Map viewer should be 17", () => readingIs(page, "positions", el("Sequence Variability Map viewer"), 17));
+    await session.step(28, "And the \"count of cell A at 2\" reading of Sequence Variability Map viewer should be 59", () => readingIs(page, "count of cell A at 2", el("Sequence Variability Map viewer"), 59));
+    await session.step(29, "And the \"header 2\" area of grid should be at least 100 pixels tall", () => areaAtLeastTall(page, "header 2", el("grid"), 100));
+    await session.step(30, "And the \"A at 2\" area of grid should be painted", () => areaPainted(page, "A at 2", el("grid")));
+    await session.step(31, "And scatter plot viewer in MCL viewer should be painted", () => painted(page, el("scatter plot viewer in MCL viewer")));
+    await session.step(32, "And the \"completed threshold\" reading of MCL viewer should be 96", () => readingIs(page, "completed threshold", el("MCL viewer"), 96));
+    await session.step(33, "And no rows should be selected", () => noneSelected(page));
+    await session.step(34, "When user clicks on \"Invariant Map\" checkbox in Sequence Variability Map viewer", () => clickOn(page, el("\"Invariant Map\" checkbox in Sequence Variability Map viewer")));
+    await session.step(35, "And user clicks on the \"cell A at 2\" area of Sequence Variability Map viewer", () => clickArea(page, "cell A at 2", el("Sequence Variability Map viewer")));
+    await session.step(36, "Then 59 rows should be selected", () => selectedRowCount(page, 59));
+    await session.step(37, "And only rows where \"2\" is \"A\" should be selected", () => onlyOfSelected(page, "2", "A"));
+    await session.step(38, "And the \"selected monomer-positions\" reading of Sequence Variability Map viewer should be \"2:A\"", () => readingReads(page, "selected monomer-positions", el("Sequence Variability Map viewer"), "2:A"));
+    await session.step(39, "And no errors should have been logged", () => noErrors(page));
+    await session.step(40, "And no error or warning balloon should have been shown", () => noBalloons(page));
+  });
+});

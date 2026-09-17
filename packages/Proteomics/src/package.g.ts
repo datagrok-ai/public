@@ -2,7 +2,7 @@ import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
 
 //tags: init
-//meta.role: init
+//meta.role: Init
 export async function initProteomics() : Promise<void> {
   await PackageFunctions.initProteomics();
 }
@@ -141,7 +141,7 @@ export async function proteomicsEnrichmentDemo() : Promise<void> {
 //description: UniProt protein details
 //input: string proteinId { semType: Proteomics-ProteinId }
 //output: widget result
-//meta.role: widgets,panel
+//meta.role: widgets,Panel
 export function uniprotPanelWidget(proteinId: string) : any {
   return PackageFunctions.uniprotPanelWidget(proteinId);
 }
@@ -155,7 +155,7 @@ export async function shareAnalysisForReview() : Promise<void> {
 //description: Audit context for a shared analysis snapshot
 //input: string proteinId { semType: Proteomics-ProteinId }
 //output: widget result
-//meta.role: widgets,panel
+//meta.role: widgets,Panel
 export function publishedAnalysisPanelWidget(proteinId: string) : any {
   return PackageFunctions.publishedAnalysisPanelWidget(proteinId);
 }

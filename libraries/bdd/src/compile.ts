@@ -76,6 +76,8 @@ export function compileFeature(feature: FeatureModel, ctx: CompileContext): Comp
   const relPath = posix(relative(ctx.root, feature.path));
   const diag = (line: number, level: DiagnosticLevel, message: string) =>
     diagnostics.push({file: relPath, line, level, message});
+  const emitText = (value: unknown): string => Array.isArray(value) ? `[${value.map(emitText).join(',')}]` :
+    typeof value === 'string' && value.includes('{run}') ? `session.text(${JSON.stringify(value)})` : JSON.stringify(value);
 
   const emitArg = (arg: MatchedArg, step: StepModel, context: ContextEntry | undefined): string => {
     switch (arg.type) {
@@ -93,7 +95,7 @@ export function compileFeature(feature: FeatureModel, ctx: CompileContext): Comp
           else
             throw e;
         }
-        return `el(${JSON.stringify(phrase)})`;
+        return `el(${emitText(phrase)})`;
       }
       case 'dataset': {
         helpers.add('ds');
@@ -107,7 +109,7 @@ export function compileFeature(feature: FeatureModel, ctx: CompileContext): Comp
       case 'double':
         return String(arg.value);
       default:
-        return JSON.stringify(arg.value);
+        return emitText(arg.value);
     }
   };
 
@@ -135,9 +137,9 @@ export function compileFeature(feature: FeatureModel, ctx: CompileContext): Comp
     named.get(exported.module.specifier)!.add(exported.name);
     const call = [...args.map((a) => emitArg(a, step, state.context))];
     if (step.table)
-      call.push(JSON.stringify(step.table));
+      call.push(emitText(step.table));
     if (step.docString !== undefined)
-      call.push(JSON.stringify(step.docString));
+      call.push(emitText(step.docString));
     const out = [`${indent}await session.step(${step.line}, ${title}, () => ${exported.name}(page${call.map((c) => ', ' + c).join('')}));`];
     if (def.meta.enters !== undefined) {
       const entered = lookupContext(def.meta.enters);
@@ -227,7 +229,7 @@ function emitJourney(feature: FeatureModel, uniqueTitle: (s: string) => string, 
     out.push(`    await run.scenario(${JSON.stringify(uniqueTitle(scenario.name))}, async () => {`);
     for (const step of scenario.steps)
       out.push(...emitStep(step, '      ', state));
-    out.push('    });');
+    out.push(scenario.tags.includes('@known-failure') ? '    }, {knownFailure: true});' : '    });');
   }
   out.push('    run.finish();');
   out.push('  });');

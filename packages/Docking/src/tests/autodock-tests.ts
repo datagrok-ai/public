@@ -5,7 +5,6 @@ import * as DG from 'datagrok-api/dg';
 import {before, category, expect, test} from '@datagrok-libraries/test/src/test';
 import {getAutoDockService, GridSize, IAutoDockService} from '@datagrok-libraries/bio/src/pdb/auto-dock-service';
 import {BiostructureData} from '@datagrok-libraries/bio/src/pdb/types';
-import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 
 import {_package} from '../package-test';
 import {buildDefaultAutodockGpf} from '../utils/auto-dock-service';
@@ -15,31 +14,19 @@ import {ensureContainerRunning} from '@datagrok-libraries/test/src/test-containe
 export const CONTAINER_TIMEOUT = 300000;
 
 category('AutoDock', () => {
-  let adSvc: IAutoDockService | null;
+  let adSvc: IAutoDockService;
 
   before(async () => {
-    try {
-      // Initialize the service if not already initialized
-      if (!adSvc)
-        adSvc = await getAutoDockService();
-    } catch (err: unknown) {
-      // Log any errors during initialization
-      const [errMsg, errStack] = errInfo(err);
-      _package.logger.error(errMsg, undefined, errStack);
-    }
+    adSvc = await getAutoDockService();
   });
 
   test('clinfo', async () => {
-    if (!adSvc) return;
-
     await ensureContainerRunning('docking', CONTAINER_TIMEOUT);
-    const clinfoCount = await fetchWrapper(() => adSvc!.checkOpenCl());
+    const clinfoCount = await fetchWrapper(() => adSvc.checkOpenCl());
     expect(clinfoCount > 0, true, 'OpenCL platform not found.');
   }, {timeout: CONTAINER_TIMEOUT + 25000});
 
   test('dock ligand', async () => {
-    if (!adSvc) return;
-
     await ensureContainerRunning('docking', CONTAINER_TIMEOUT);
     const receptorPdb = await _package.files.readAsText('samples/1bdq-wo-ligands.pdb');
     const ligandPdb = await _package.files.readAsText('samples/1bdq-ligand-0.by-babel.pdb');
@@ -50,13 +37,11 @@ category('AutoDock', () => {
     const ligandData: BiostructureData = {binary: false, ext: 'pdb', data: ligandPdb};
     const npts = new GridSize(20, 20, 20);
     const autodockGpf = buildDefaultAutodockGpf('1bdq', npts);
-    const posesDf = await fetchWrapper(() => adSvc!.dockLigand(receptorData, ligandData, autodockGpf, 10));
+    const posesDf = await fetchWrapper(() => adSvc.dockLigand(receptorData, ligandData, autodockGpf, 10));
     expect(posesDf.rowCount, 10);
   }, {timeout: CONTAINER_TIMEOUT + 25000});
 
   test('dock ligand column', async () => {
-    if (!adSvc) return;
-    
     await ensureContainerRunning('docking', CONTAINER_TIMEOUT);
     const receptorPdb = await _package.files.readAsText('samples/1bdq-wo-ligands.pdb');
     const sdfBytes: Uint8Array = await _package.files.readAsBytes('samples/1bdq-short.sdf');

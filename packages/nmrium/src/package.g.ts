@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 
 //input: string bytes 
 //output: list tables
-//meta.role: fileHandler
+//meta.role: FileHandler
 //meta.fileViewerCheck: Nmrium:checkNmriumJdx
 //meta.ext: jdx
 export async function jdxFileHandler(bytes: string) {
@@ -13,7 +13,7 @@ export async function jdxFileHandler(bytes: string) {
 //name: jdxFileHandler
 //input: string bytes 
 //output: list tables
-//meta.role: fileHandler
+//meta.role: FileHandler
 //meta.fileViewerCheck: Nmrium:checkNmriumJdx
 //meta.ext: dx
 export async function dxFileHandler(bytes: string) {
@@ -22,7 +22,7 @@ export async function dxFileHandler(bytes: string) {
 
 //input: string bytes 
 //output: list tables
-//meta.role: fileHandler
+//meta.role: FileHandler
 //meta.ext: nmrium
 export async function nmriumFileHandler(bytes: string) {
   return await PackageFunctions.nmriumFileHandler(bytes);
@@ -30,7 +30,7 @@ export async function nmriumFileHandler(bytes: string) {
 
 //input: file file 
 //output: view result
-//meta.role: fileViewer
+//meta.role: FileViewer
 //meta.fileViewer: nmrium
 export function previewNMRData(file: DG.FileInfo) : any {
   return PackageFunctions.previewNMRData(file);
@@ -38,7 +38,7 @@ export function previewNMRData(file: DG.FileInfo) : any {
 
 //input: file file 
 //output: view result
-//meta.role: fileViewer
+//meta.role: FileViewer
 //meta.fileViewer: dx, jdx
 //meta.fileViewerCheck: Nmrium:checkNmriumJdx
 export function previewNMRFromDX(file: DG.FileInfo) : any {

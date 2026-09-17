@@ -7,15 +7,19 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 sub_features_covered: [viewers.bar-chart]
 --- */
 import {test} from '@playwright/test';
+import '../../../bindings/spaces.js';
+import '../../../bindings/tile-viewer.js';
+import '../../../bindings/trellis-plot.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {barHangsBelow, barsAscend, barsDescend, barsStacked, tallestReaches} from '../../../bindings/bar-chart.js';
+import {barsAscend, barsDescend, barsStacked, tallestReaches} from '../../../bindings/bar-chart.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {shouldBe, shouldHaveItems} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {addViewerWith, areaPainted, noBalloons, noErrors, painted, propertiesShouldBe, propertyShouldBe, readingHigher, readingIs, repainted, setProperties, setProperty} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {areaHangsBelow} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Bar chart sorting and orientation", () => {
@@ -32,7 +36,7 @@ test.describe("Bar chart sorting and orientation", () => {
       await session.step(20, "When user sets properties of bar chart viewer:", () => setProperties(page, el("bar chart viewer"), [["Orientation","vertical"],["Bar Sort Type","by value"],["Bar Sort Order","desc"]]));
       await session.step(24, "Then bar chart viewer should have repainted", () => repainted(page, el("bar chart viewer")));
       await session.step(25, "And the bars of bar chart viewer should descend from left to right", () => barsDescend(page, el("bar chart viewer")));
-      await session.step(26, "And the \"bar Triazoles\" area of bar chart viewer should hang below the \"bar Aminopiperidines\" area", () => barHangsBelow(page, "bar Triazoles", el("bar chart viewer"), "bar Aminopiperidines"));
+      await session.step(26, "And the \"bar Triazoles\" area of bar chart viewer should hang below the \"bar Aminopiperidines\" area", () => areaHangsBelow(page, "bar Triazoles", el("bar chart viewer"), "bar Aminopiperidines"));
       await session.step(27, "And no errors should have been logged", () => noErrors(page));
       await session.step(28, "And no error or warning balloon should have been shown", () => noBalloons(page));
     });
@@ -55,7 +59,7 @@ test.describe("Bar chart sorting and orientation", () => {
       await session.step(48, "When user sets \"Bar Sort Order\" property of bar chart viewer to \"asc\"", () => setProperty(page, "Bar Sort Order", el("bar chart viewer"), "asc"));
       await session.step(49, "Then bar chart viewer should have repainted", () => repainted(page, el("bar chart viewer")));
       await session.step(50, "And the bars of bar chart viewer should ascend from left to right", () => barsAscend(page, el("bar chart viewer")));
-      await session.step(51, "And the \"bar Triazoles\" area of bar chart viewer should hang below the \"bar Aminopiperidines\" area", () => barHangsBelow(page, "bar Triazoles", el("bar chart viewer"), "bar Aminopiperidines"));
+      await session.step(51, "And the \"bar Triazoles\" area of bar chart viewer should hang below the \"bar Aminopiperidines\" area", () => areaHangsBelow(page, "bar Triazoles", el("bar chart viewer"), "bar Aminopiperidines"));
       await session.step(52, "When user sets \"Orientation\" property of bar chart viewer to \"horizontal\"", () => setProperty(page, "Orientation", el("bar chart viewer"), "horizontal"));
       await session.step(53, "Then bar chart viewer should have repainted", () => repainted(page, el("bar chart viewer")));
       await session.step(54, "And the bars of bar chart viewer should lie one under another", () => barsStacked(page, el("bar chart viewer")));

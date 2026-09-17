@@ -9,15 +9,15 @@ import * as DG from 'datagrok-api/dg';
 
 export namespace funcs {
   /**
-  Chemical stockroom on the GHS classification — the zero-code app over databases/stockroom/schema.json
-  */
+   * Chemical stockroom on the GHS classification — the zero-code app over databases/stockroom/schema.json
+   */
   export async function stockroomApp(): Promise<DG.View> {
     return await grok.functions.call('Stockroom:StockroomApp', {});
   }
 
   /**
-  The stockroom location tree, and the containers stored anywhere under the selected node
-  */
+   * The stockroom location tree, and the containers stored anywhere under the selected node
+   */
   export async function stockroomLocations(): Promise<DG.View> {
     return await grok.functions.call('Stockroom:StockroomLocations', {});
   }

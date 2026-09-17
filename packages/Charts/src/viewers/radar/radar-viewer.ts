@@ -58,7 +58,7 @@ export class RadarViewer extends EChartViewer {
       description: 'Minimum percentile value (indicated as dark blue area)'});
     this.max = <MaximumIndicator> this.string('max', '95', {choices: ['75', '90', '95', '99'],
       description: 'Maximum percentile value (indicated as light blue area)'});
-    this.showCurrentRow = this.bool('showCurrentRow', true, {description: 'Hides max and min values', category: 'Selection'});
+    this.showCurrentRow = this.bool('showCurrentRow', true, {description: 'Highlights the current row', category: 'Selection'});
     this.showMouseOverRow = this.bool('showMouseOverRow', true, {category: 'Selection'});
     this.showMouseOverRowGroup = this.bool('showMouseOverRowGroup', true, {category: 'Selection'});
     this.showTooltip = this.bool('showTooltip', true);
@@ -178,7 +178,7 @@ export class RadarViewer extends EChartViewer {
 
     this.chart.on('click', (params: any) => {
       const idx = parseInt(params.name.replace(/\D/g, ''), 10) - 1;
-      if (idx) {
+      if (!isNaN(idx) && idx >= 0) {
         this.dataFrame.currentRowIdx = idx;
         this.render();
       }
@@ -207,6 +207,11 @@ export class RadarViewer extends EChartViewer {
     this.filter = this.dataFrame.filter;
     this.valuesColumnNames = Array.from(this.dataFrame.columns.numericalNoDateTime)
       .map((c: DG.Column) => c.name).slice(0, MAXIMUM_COLUMN_NUMBER);
+    this.resubscribe(() => this.addSubs());
+    this.render();
+  }
+
+  addSubs() {
     this.subs.push(this.dataFrame.onCurrentRowChanged.subscribe((_) => this.render()));
     this.subs.push(this.dataFrame.onMouseOverRowChanged.subscribe((_) => {
       if (this.showMouseOverRow)
@@ -248,7 +253,6 @@ export class RadarViewer extends EChartViewer {
         });
       }),
     );
-    this.render();
   }
 
   public override onPropertyChanged(property: DG.Property) {
@@ -319,7 +323,7 @@ export class RadarViewer extends EChartViewer {
           continue;
       }
 
-      const value = this.columns.map((c) => this.cellValue(c, i));
+      const value = this.columns.map((c, colIdx) => this.cellValue(c, colIdx, i));
 
       const color = colorSourceColumn ? DG.Color.getRowColor(colorSourceColumn, i) : this.lineColor;
 
@@ -442,9 +446,13 @@ export class RadarViewer extends EChartViewer {
     };
   }
 
-  private cellValue(c: DG.Column, i: number): number {
-    const v = Number(c.get(i));
-    return v !== -2147483648 ? v : 0;
+  private cellValue(c: DG.Column, colIdx: number, rowIdx: number): number | null {
+    return c.isNone(rowIdx) ? null : this.clampToIndicator(colIdx, Number(c.get(rowIdx)));
+  }
+
+  private clampToIndicator(colIdx: number, value: number): number {
+    const indicator = this.option.radar.indicator[colIdx];
+    return indicator ? Math.min(Math.max(value, indicator.min), indicator.max) : value;
   }
 
   updateMin() {
@@ -487,7 +495,7 @@ export class RadarViewer extends EChartViewer {
 
   updateRow(color: string, currentRow: number) {
     this.option.series[2].data.push({
-      value: this.columns.map((c) => this.cellValue(c, currentRow)),
+      value: this.columns.map((c, colIdx) => this.cellValue(c, colIdx, currentRow)),
       name: `row ${currentRow + 1}`,
       lineStyle: {
         width: 2,
@@ -559,18 +567,15 @@ export class RadarViewer extends EChartViewer {
 
   /* Going to be replaced with perc in stats */
   getQuantile(columns: DG.Column<any>[], percent: number): number[] {
-    const isValidValue = (value: any) =>
-      typeof value === 'bigint' ?
-        value !== BigInt('-2147483648') :
-        value !== -2147483648;
-
-    return columns.map((column) => {
-      const validSorted = Array.from(column.values())
-        .filter(isValidValue)
-        .sort((a, b) => Number(a) - Number(b));
-
+    return columns.map((column, colIdx) => {
+      const validSorted: number[] = [];
+      for (let i = 0; i < column.length; i++) {
+        if (!column.isNone(i))
+          validSorted.push(Number(column.get(i)));
+      }
+      validSorted.sort((a, b) => a - b);
       const idx = Math.floor(percent * (validSorted.length - 1));
-      return Number(validSorted[idx]);
+      return this.clampToIndicator(colIdx, validSorted[idx]);
     });
   }
 }

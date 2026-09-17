@@ -1,5 +1,11 @@
 # webcomponents changelog
 
+## v.next
+
+* InputForm: Fixed rapid funcCall swaps racing (a stale form could land in the DOM and win over the newer one)
+* InputForm: Setting funcCall to undefined no longer permanently kills the input/validation event streams
+* ValidationIcon: Fixed unbounded status retention and stuck hover/scalar modes (distinct -> distinctUntilChanged); clearing the status hides the icon; severity colors actually apply (setProperty important instead of the dropped '!important' string)
+
 ## 0.3.6 (2026-08-11)
 
 * Viewer: Fixed `viewer-data-frame-changed` firing inside the Dart event (grid mutations in handlers crashed)

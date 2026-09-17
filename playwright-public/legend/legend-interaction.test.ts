@@ -111,7 +111,7 @@ test('Legend interaction — hover, click-to-filter, pickers', async ({page}) =>
       item.click();
       await new Promise((r) => setTimeout(r, 1500));
       return {before, after: x.filter.trueCount,
-        selected: item.getAttribute('data-item-selected')};
+        selected: item.getAttribute('aria-selected')};
     });
 
     expect(filtered, 'no markers section to click').not.toBeNull();

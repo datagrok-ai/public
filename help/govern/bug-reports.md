@@ -108,7 +108,7 @@ Reports are **never sent externally** and can be viewed in the **Reports** appli
 
 Administrators can configure error reporting under **Settings > Admin > Error reporting**:
 
-- **Report email:** Specify one or more email addresses (comma-separated) to receive user-submitted reports. `feedback@datagrok.ai` is recommended.
+- **Report email:** Specify one or more email addresses (comma-separated) to receive user-submitted reports. `feedback@datagrok.ai` is recommended. Each report arrives as a message with the subject `<user> bug report | <host>`, the report as a JSON attachment, and the screenshot as a PNG attachment. Attached tables stay on your instance.
 - **Auto report errors:** Enable automatic logging of internal exceptions.
 
 <details>

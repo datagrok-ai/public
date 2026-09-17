@@ -7,16 +7,20 @@
    scenario can assert a zero-error floor (`no errors should have been logged`). */
 import {join, sep} from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {randomUUID} from 'node:crypto';
 import type {Browser, Page, PlaywrightTestArgs, PlaywrightTestOptions, PlaywrightWorkerArgs, PlaywrightWorkerOptions,
   TestType} from '@playwright/test';
 import {leave} from './args.js';
 import {failure, isWaitFailure, journeyFailure} from './failure.js';
 import {explain} from './locate.js';
+import {whileExpectedToFail} from './patience.js';
 import {takeBalloons} from './viewers.js';
 
 type Test = TestType<PlaywrightTestArgs & PlaywrightTestOptions, PlaywrightWorkerArgs & PlaywrightWorkerOptions>;
 
 export interface FeatureSession {
+  /** Resolves {run} to this feature instance's unique suffix. */
+  text(value: string): string;
   /** The feature's page — opened on first use, shared by the scenarios that follow. */
   page(browser: Browser): Promise<Page>;
   /** One Gherkin step: a Playwright step located at the feature line, whose failure names the
@@ -26,32 +30,41 @@ export interface FeatureSession {
 }
 
 export interface Journey {
-  /** Runs a scenario as a soft step: a failure is recorded and the next scenario still runs. */
-  scenario(name: string, body: () => Promise<void>): Promise<void>;
+  /** Runs a scenario as a soft step: a failure is recorded and the next scenario still runs.
+   * `knownFailure` inverts that scenario: its failure is expected and does not fail the test,
+   * while its passing does — the bug it describes is fixed and the tag has to go. */
+  scenario(name: string, body: () => Promise<void>, options?: {knownFailure?: boolean}): Promise<void>;
   /** Fails the test when any scenario failed, listing them. */
   finish(): void;
 }
 
+/** What a journey scenario may add to the test's budget: a scenario takes a few seconds, and a
+ * hung one should not hold a worker for the whole per-test timeout times the scenario count. */
+const SCENARIO_BUDGET_MS = 20000;
+
 /** A `@journey` feature: one test, the Background once, the scenarios in order on the same shell
  * state — the way a hand-written spec chains `softStep`s. Each scenario leaves the state it changed
  * as it found it, so the next one starts where the Background left off, and owns its error and
- * balloon floors: what an earlier scenario logged is not charged to it. The test's budget is the
- * per-test timeout times the scenario count. */
+ * balloon floors: what an earlier scenario logged is not charged to it. */
 export function journey(test: Test, scenarios: number, page?: Page): Journey {
-  test.setTimeout(test.info().timeout * scenarios);
+  test.setTimeout(test.info().timeout + SCENARIO_BUDGET_MS * scenarios);
   const failed: {name: string; error: unknown}[] = [];
   return {
-    async scenario(name: string, body: () => Promise<void>): Promise<void> {
+    async scenario(name: string, body: () => Promise<void>, options?: {knownFailure?: boolean}): Promise<void> {
       try {
         if (page) {
           takeErrors(page);
           await takeBalloons(page).catch(() => undefined);
         }
-        await test.step(name, body);
+        await test.step(name, options?.knownFailure ? () => whileExpectedToFail(body) : body);
       }
       catch (e) {
-        failed.push({name, error: e});
+        if (!options?.knownFailure)
+          failed.push({name, error: e});
+        return;
       }
+      if (options?.knownFailure)
+        failed.push({name, error: new Error('tagged @known-failure and passed — the bug it describes is fixed, so the tag has to go')});
     },
     finish(): void {
       if (failed.length > 0)
@@ -69,8 +82,10 @@ function featureFile(specUrl: string, path: string): string {
 }
 
 const HOME_VIEW = 'datagrok';
-const LEFTOVERS = '[data-u2="dialog"], [data-u2="menu"], [data-u2="tooltip"], [data-u2="notify"] > *, ' +
-  '.d4-dialog, .d4-menu-popup, .d4-balloon, .d4-tooltip';
+// what Escape closes: dialogs and popup menus of both UI generations
+const CLOSABLE = '[data-u2="dialog"], [data-u2="menu"], .d4-dialog, .d4-menu-popup';
+// transient notifications, taken away as their close icons would
+const NOTICES = '[data-u2="notify"] > *, .d4-balloon';
 
 const errors = new WeakMap<Page, string[]>();
 const cleanups = new WeakMap<Page, (() => Promise<void>)[]>();
@@ -115,6 +130,8 @@ let shared: Page | undefined;
 
 export function feature(test: Test, path = '', specUrl = ''): FeatureSession {
   let page: Page | undefined;
+  const runId = randomUUID();
+  const text = (value: string): string => value.replaceAll('{run}', runId);
   const file = path && specUrl ? featureFile(specUrl, path) : undefined;
   test.afterEach(async () => {
     if (page && !page.isClosed()) {
@@ -123,14 +140,24 @@ export function feature(test: Test, path = '', specUrl = ''): FeatureSession {
     }
   });
   test.afterAll(async () => {
+    const failures: unknown[] = [];
     if (page && !page.isClosed()) {
-      for (const cleanup of cleanups.get(page) ?? [])
-        await cleanup().catch((e) => console.warn(`cleanup failed: ${(e as Error).message}`));
+      for (const cleanup of cleanups.get(page) ?? []) {
+        try {
+          await cleanup();
+        }
+        catch (error) {
+          failures.push(error);
+        }
+      }
       cleanups.delete(page);
     }
     page = undefined;
+    if (failures.length)
+      throw new AggregateError(failures, 'Feature cleanup failed');
   });
   return {
+    text,
     async page(browser: Browser): Promise<Page> {
       if (!page || page.isClosed()) {
         if (shared && shared.context().browser() !== browser) {
@@ -146,6 +173,7 @@ export function feature(test: Test, path = '', specUrl = ''): FeatureSession {
       return page;
     },
     async step(line: number, title: string, body: () => Promise<unknown>): Promise<void> {
+      title = text(title);
       await test.step(title, async () => {
         try {
           await body();
@@ -160,19 +188,47 @@ export function feature(test: Test, path = '', specUrl = ''): FeatureSession {
 }
 
 /** Everything closed and the Home view current — the state the next scenario starts from. A page
- * that is not in the shell (about:blank, the login page) is left alone. Errors the teardown itself
- * raises (work cancelled by `closeAll`) are dropped, so they are not charged to the next scenario. */
+ * that is not in the shell (about:blank, the login page) is left alone. Dialogs and menus are
+ * closed the platform's way (Escape, as many times as there are open ones), the tooltip through
+ * its API, notifications as their close icons would; a dialog that survives that is reported in
+ * the run's output rather than pulled out of the DOM behind the platform's back. Errors the
+ * teardown itself raises (work cancelled by `closeAll`) are dropped. */
 export async function resetShell(page: Page): Promise<void> {
   const inShell = await page.evaluate(() => typeof (window as any).grok?.shell?.closeAll === 'function').catch(() => false);
   if (!inShell)
     return;
-  await page.keyboard.press('Escape').catch(() => undefined);
-  await page.evaluate((leftovers) => {
-    (window as any).grok.shell.closeAll();
-    for (const e of document.querySelectorAll(leftovers))
+  const open = (): Promise<number> => page.locator(CLOSABLE).filter({visible: true}).count().catch(() => 0);
+  for (let i = 0; i < 3 && await open() > 0; i++)
+    await page.keyboard.press('Escape').catch(() => undefined);
+  const left: string = await page.evaluate((notices) => {
+    const w = window as any;
+    w.ui?.tooltip?.hide?.();
+    for (const e of document.querySelectorAll(notices))
       e.remove();
-  }, LEFTOVERS).catch(() => undefined);
+    w.grok.shell.closeAll();
+    return Array.from(document.querySelectorAll('.d4-dialog, [data-u2="dialog"]'))
+      .filter((e) => (e as HTMLElement).offsetParent !== null).map((e) => e.getAttribute('name') ?? e.tagName).join(', ');
+  }, NOTICES).catch(() => '');
+  if (left)
+    console.warn(`bdd: a dialog is still open after the shell reset: ${left}`);
+  // a view that closeAll leaves (the Model Hub's card view survives it) would otherwise keep the
+  // next scenario off the Home view: closed one by one, then reported rather than waited for
+  const stayed: string = await page.waitForFunction((home) => (window as any).grok?.shell?.v?.type === home, HOME_VIEW, {timeout: 5000})
+    .then(() => '')
+    .catch(() => page.evaluate((home) => {
+      const w = window as any;
+      const others = Array.from(w.grok.shell.views as Iterable<any>).filter((v) => v.type !== home);
+      for (const v of others)
+        v.close();
+      const still = Array.from(w.grok.shell.views as Iterable<any>).filter((v) => v.type !== home);
+      const homeView = Array.from(w.grok.shell.views as Iterable<any>).find((v) => v.type === home);
+      if (homeView)
+        w.grok.shell.v = homeView;
+      return still.map((v) => `${v.type}:${v.name}`).join(', ');
+    }, HOME_VIEW).catch(() => ''));
+  if (stayed)
+    console.warn(`bdd: views that survived closeAll and their own close() at the shell reset: ${stayed}`);
   await page.waitForFunction((home) => (window as any).grok?.shell?.v?.type === home, HOME_VIEW, {timeout: 60000})
-    .catch(() => undefined);
+    .catch(() => console.warn('bdd: the Home view is not current after the shell reset'));
   takeErrors(page);
 }

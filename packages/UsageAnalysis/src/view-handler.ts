@@ -9,6 +9,7 @@ import {PackagesView} from './tabs/packages';
 import {FunctionsView} from './tabs/functions';
 import {OverviewView} from './tabs/overview';
 import {LogView} from './tabs/log';
+import {SystemActivityView} from './tabs/system-activity';
 import {ErrorsView} from './tabs/errors';
 import {ProjectsView} from "./tabs/projects";
 import {ClicksView} from './tabs/clicks';
@@ -29,7 +30,8 @@ export class ViewHandler {
 
   async init(date?: string, groups?: string, packages?: string, tags?: string, categories?: string, projects?: string, path?: string): Promise<void> {
     const toolboxPromise = UaToolbox.construct(this);
-    const viewClasses: (typeof UaView)[] = [OverviewView, PackagesView, FunctionsView, EventsView, ClicksView, LogView, ErrorsView, ProjectsView, MetricsView, StressView, VulnerabilitiesView];
+    const viewClasses: (typeof UaView)[] = [OverviewView, PackagesView, FunctionsView, EventsView, ClicksView, LogView,
+      SystemActivityView, ErrorsView, ProjectsView, MetricsView, StressView, VulnerabilitiesView];
     const views: UaView[] = [];
     for (let i = 0; i < viewClasses.length; i++) {
       const currentView = new viewClasses[i]();
@@ -44,10 +46,9 @@ export class ViewHandler {
 
     if (path != undefined && path.length > 1) {
       const segments = path.split('/').filter((s) => s != '');
-      if (segments.length > 0) {
-        urlTab = segments[0];
-        urlTab = urlTab[0].toUpperCase() + urlTab.slice(1);
-      }
+      const urlView = segments.length > 0 ? views.find((v) => ViewHandler.urlName(v) === segments[0].toLowerCase()) : undefined;
+      if (urlView)
+        urlTab = urlView.name;
     }
 
     const indicatorTimer = setTimeout(() => ui.setUpdateIndicator(this.view.root, true, 'Loading...'), 200);
@@ -61,7 +62,7 @@ export class ViewHandler {
     toolbox.toggleCategoriesInput(urlTab == 'Packages');
     toolbox.toggleTagsInput(urlTab == 'Functions');
     toolbox.toggleProjectsInput(urlTab == 'Projects');
-    toolbox.togglePackagesInput(!['Projects', 'Metrics', 'Stress', 'Vulnerabilities'].includes(urlTab));
+    toolbox.togglePackagesInput(!['Projects', 'Metrics', 'Stress', 'Vulnerabilities', 'System Activity'].includes(urlTab));
     toolbox.toggleGroupsInput(!['Metrics', 'Stress', 'Vulnerabilities'].includes(urlTab));
 
     const paramsHaveDate = date != undefined;
@@ -137,7 +138,7 @@ export class ViewHandler {
       toolbox.toggleCategoriesInput(view.name === 'Packages');
       toolbox.toggleTagsInput(view.name === 'Functions');
       toolbox.toggleProjectsInput(view.name == 'Projects');
-      toolbox.togglePackagesInput(!['Projects', 'Metrics', 'Stress', 'Vulnerabilities'].includes(view.name));
+      toolbox.togglePackagesInput(!['Projects', 'Metrics', 'Stress', 'Vulnerabilities', 'System Activity'].includes(view.name));
       toolbox.toggleGroupsInput(!['Metrics', 'Stress', 'Vulnerabilities'].includes(view.name));
       // ViewHandler.UA.path = ViewHandler.UA.path.replace(/(UsageAnalysis\/)([a-zA-Z/]+)/, '$1' + view.name);
       this.updatePath();
@@ -171,8 +172,11 @@ export class ViewHandler {
       else
         fButtons.style.display = 'none';
     });
-    if (viewClasses.some((v) => v.name === `${urlTab}View`))
-      this.changeTab(urlTab);
+    this.changeTab(urlTab);
+  }
+
+  static urlName(view: DG.ViewBase): string {
+    return view.name.replace(/\s/g, '').toLowerCase();
   }
 
   public getView(name: string) {
@@ -199,13 +203,13 @@ export class ViewHandler {
     if (saveDuringChangingView)
       this.urlParams.set(key, value);
 
-    this.view.path = `/${this.getCurrentView().name}?${params.join('&')}`.toLowerCase();
+    this.view.path = `/${ViewHandler.urlName(this.getCurrentView())}?${params.join('&')}`.toLowerCase();
   }
 
    updatePath(): void {
     const v = this.getCurrentView();
     const s = this.view.path.split('?');
     const params = s.length === 2 ? s[1] : null;
-     this.view.path = `/${v.name}${v.rout ?? ''}${params ? '?' + params : ''}`.toLowerCase();
+     this.view.path = `/${ViewHandler.urlName(v)}${v.rout ?? ''}${params ? '?' + params : ''}`.toLowerCase();
   }
 }

@@ -315,8 +315,13 @@ export interface Config {
   servers: {
     [alias: string]: {
       url: string,
+      /** Developer key. Deprecated - see `grok login`. */
       key: string,
-      registry?: string
+      registry?: string,
+      /** Private key file written by `grok login`; defaults to ~/.grok/keys/<alias>.json. */
+      keyFile?: string,
+      /** Who the key belongs to, for the login prompt and error messages. */
+      login?: string,
     }
   },
   default: string,
@@ -328,6 +333,16 @@ export function isConnectivityError(error: any): boolean {
   const msg = (error?.message ?? '').toLowerCase() + ' ' + (error?.code ?? '').toLowerCase();
   return ['econnrefused', 'enotfound', 'etimedout', 'eai_again', 'econnreset', 'fetch failed', 'network error']
     .some((token) => msg.includes(token));
+}
+
+/** True when `dir` is inside a pnpm workspace (a pnpm-workspace.yaml in it or above it). */
+export function isPnpmWorkspace(dir: string): boolean {
+  for (let d = path.resolve(dir); ; d = path.dirname(d)) {
+    if (fs.existsSync(path.join(d, 'pnpm-workspace.yaml')))
+      return true;
+    if (path.dirname(d) === d)
+      return false;
+  }
 }
 
 export async function runScript(script: string, path: string, verbose: boolean = false) {

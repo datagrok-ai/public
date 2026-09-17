@@ -1,5 +1,12 @@
 # webcomponents-vue changelog
 
+## v.next
+
+* Introduced an injectable per-view service (`provideDgViewService`/`useViewService`/`useDgView`) that owns ribbon rendering and diffing
+* RibbonPanel/RibbonMenu: rewritten as thin descriptor-based wrappers over the view service; `view` prop removed, added `priority` ordering and built-in disabled state (debounced style, reason tooltip/popup)
+* wheelGuard: hint overlay colors use design tokens
+* ifOverlapping: a show scheduled within the debounce window no longer lands after unmount; the loader is removed on unmount
+
 ## 0.3.4 (2026-08-07)
 
 * `Viewer`: patch `dataFrame` before `options` so options referencing new columns don't hit the old frame

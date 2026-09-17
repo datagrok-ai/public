@@ -1055,7 +1055,7 @@ export class OpenLayers {
 
         // don't show GIS property panel
         //grok.shell.o = gisObj;
-        grok.shell.windows.showProperties = true;
+        grok.shell.windows.showContextPanel = true;
       }, 50);
     }
 

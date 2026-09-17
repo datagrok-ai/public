@@ -53,7 +53,7 @@ The app (`Apps | Inventory`) dogfoods `src/generated/db.ts` — the typed client
    -- View on the items table (row visibility) + a department schema (column visibility)
    insert into permissions (id, entity_id, user_group_id, permission_id)
    select uuid_generate_v4(), s.id, g.id, '34da1550-e870-11e6-9cb3-825892686412' -- View
-   from (select id from domain_tables where name = 'items'
+   from (select id from domain_tables where name = 'item'
          union select id from entity_property_schemas where name = 'chemistry') s,
         groups g
    where g.name = 'Chemists'

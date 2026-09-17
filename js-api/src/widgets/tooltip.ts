@@ -75,6 +75,7 @@ export class Tooltip {
     }, delay);
   }
 
+  /** Shows the standard tooltip for the rows of [dataFrame] that satisfy [indexPredicate]. */
   showRowGroup(dataFrame: DataFrame, indexPredicate: IndexPredicate, x: number, y: number): void {
     api.grok_Tooltip_ShowRowGroup(dataFrame.dart, indexPredicate, x, y);
   }
@@ -84,10 +85,14 @@ export class Tooltip {
     return api.grok_Tooltip_Get_Root();
   }
 
+  /** Whether a tooltip is currently shown. */
   get isVisible(): boolean { return api.grok_Tooltip_Get_IsVisible(); }
 
+  /** Fires when a tooltip is about to be shown. */
   get onTooltipRequest(): rxjs.Observable<any> { return __obs('d4-tooltip-request'); }
+  /** Fires after a tooltip is shown. */
   get onTooltipShown(): rxjs.Observable<any> { return __obs('d4-tooltip-shown'); }
+  /** Fires after the tooltip closes. */
   get onTooltipClosed(): rxjs.Observable<any> { return __obs('d4-tooltip-closed'); }
 }
 

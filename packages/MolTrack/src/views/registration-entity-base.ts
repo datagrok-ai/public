@@ -28,6 +28,7 @@ export class EntityBaseView extends RegistrationViewBase {
   constructor(buildUI: boolean = true, title: string = 'Register a new compound') {
     super(title);
     this.path = 'Compound';
+    DG.chem.currentSketcherType = 'Ketcher';
     this.sketcherInstance = new grok.chem.Sketcher();
 
     const validationFunc = (s: string) => {
@@ -40,7 +41,7 @@ export class EntityBaseView extends RegistrationViewBase {
       }
     };
     this.sketcherInstance._validationFunc = (s) => validationFunc(s);
-    this.sketcherInstance.onChanged.subscribe(async () => {
+    DG.debounce(this.sketcherInstance.onChanged, 300).subscribe(async () => {
       ui.empty(this.messageContainer);
       this.messageContainer.appendChild(ui.divText(this.title, 'moltrack-title'));
 
@@ -49,7 +50,6 @@ export class EntityBaseView extends RegistrationViewBase {
       this.invalidForm = !smiles || smiles.trim().length === 0;
       this.registerButton?.classList.toggle('dim', (this.compoundExists || this.invalidForm));
     });
-    DG.chem.currentSketcherType = 'Ketcher';
 
     if (buildUI)
       this.buildUIMethod();
@@ -107,10 +107,9 @@ export class EntityBaseView extends RegistrationViewBase {
   }
 
   private createCsvFile(smiles: string, propValues: Record<string, any>, scope: string): DG.FileInfo {
-    const headers = ['smiles', ...Object.keys(propValues)];
-    const row = [smiles, ...Object.values(propValues)];
-    const csvString = `${headers.join(',')}\n${row.join(',')}\n`;
-    return DG.FileInfo.fromString(`${scope}.csv`, csvString);
+    const columns = Object.entries({smiles, ...propValues})
+      .map(([name, value]) => DG.Column.fromList(DG.COLUMN_TYPE.STRING, name, [`${value}`]));
+    return DG.FileInfo.fromString(`${scope}.csv`, DG.DataFrame.fromColumns(columns).toCsv());
   }
 
   private extractResultData(df: DG.DataFrame): { status: string, compoundId: string, batchId: string, errorMsg: string } {
