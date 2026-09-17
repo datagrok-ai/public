@@ -626,10 +626,12 @@ jobs:
           CHROME_DEVEL_SANDBOX: /usr/local/sbin/chrome-devel-sandbox
         run: |
           npm list -g --depth=0 --json
+          # --skip-playwright: nothing here runs `npx playwright install`, so the pass can only
+          # fail on a missing browser. Jenkins owns the Playwright suites (test-package-playwright).
           if [ "${{ matrix.package }}" == "DevTools" ]; then
-            npm run test -- --skip-build --skip-publish --record --core --csv --host ${{ steps.datagrok-image.outputs.alias }} --verbose
+            npm run test -- --skip-build --skip-publish --skip-playwright --record --core --csv --host ${{ steps.datagrok-image.outputs.alias }} --verbose
           else
-            npm run test -- --skip-build --skip-publish --record --csv --host ${{ steps.datagrok-image.outputs.alias }} --verbose
+            npm run test -- --skip-build --skip-publish --skip-playwright --record --csv --host ${{ steps.datagrok-image.outputs.alias }} --verbose
           fi
         working-directory: packages/${{ matrix.package }}
       - name: Upload Artifact
