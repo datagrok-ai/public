@@ -829,9 +829,9 @@ The table and row addresses open the **u2 domain app** (`@datagrok-libraries/u2`
 whether it is reached through `/domains/...`, through Browse, or mounted by a package at
 `/apps/<Package>/<App>`. Resolution goes through a `//tags: domainRoutes` package function
 (`PowerPack:domainRouteView`), so the platform loads it on demand and a stand without that package
-falls back to the built-in Dart view. The Dart view is also what
-**Settings** > **Beta** > **Dart domain UI** brings back, for a stand that needs it; the domain
-gallery and the schema diagram are Dart in either case.
+falls back to the built-in Dart view. **Settings** > **Beta** > **Dart domain UI** brings the
+frozen Dart domain UI routes back for a stand that needs them; the domain gallery and the schema
+diagram are Dart in either case.
 
 What the app gives on top of browsing — trash and restore, bulk edit, a CSV/frame import wizard,
 a tree over a self-referencing table — is described in

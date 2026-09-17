@@ -328,7 +328,8 @@ export class DomainFrameEditor implements IFrameEditor {
   static readonly DRAFT_ID_PREFIX = '~new:';
 
   /** The referential refusal the server sends back, which names the child table and the column
-   * pointing here (`repository.dart` ~:2212) — {@link restrictRefusal} says it in the user's words. */
+   * pointing here (`DomainRepository._checkDeletable`) — {@link restrictRefusal} says it in the
+   * user's words. */
   static readonly LIVE_ROWS = /Live rows in "([^"]+)" reference this row via "([^"]+)"/;
 
   static isDraftId(v: unknown): boolean {

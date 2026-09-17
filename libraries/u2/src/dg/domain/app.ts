@@ -24,15 +24,14 @@ import {SharedSession, confirmDiscard} from '../../sources/session.js';
 import {Rows} from '../../sources/rows-like.js';
 import type {RowView} from '../../sources/rows-like.js';
 import {domains, DomainTable} from './index.js';
-import type {DomainList, DomainListMode} from './list.js';
-import {SAVE_SHORTCUTS, isSaveKey} from './form.js';
-import type {DomainForm} from './form.js';
+import {DomainList} from './list.js';
+import type {DomainListMode} from './list.js';
+import {SAVE_SHORTCUTS, isSaveKey, DomainForm} from './form.js';
 import {DomainFilters} from './filters.js';
 import type {DomainChildrenOptions} from './children.js';
 import {DomainAddress} from './address.js';
 import {ViewSync} from './view-sync.js';
 import type {ViewState} from './view-sync.js';
-import {buildList, buildEntity} from './builders.js';
 
 export type DomainAppPage = 'list' | 'entity';
 
@@ -200,7 +199,7 @@ export class DomainApp extends Control {
     this.listSource = this._source({query: _options.query ?? '', pageSize: _options.pageSize,
       live: _options.live ?? true, liveMs: _options.liveMs});
     this.own(() => this.listSource.dispose());
-    this.list = buildList(this.listSource, this.scope, {mode: _options.mode});
+    this.list = this.runInScope(() => new DomainList(this.listSource, {mode: _options.mode}));
     // Enter on a row is the way into the entity page
     let seen = this.listSource.activate.peek();
     this.effect(() => {
@@ -812,10 +811,13 @@ export class DomainApp extends Control {
           source.currentRow.value = rows[0];
       });
       const {children, history, include} = this._options;
-      const {form, panes} = buildEntity(source, this.scope, {include, children, history,
-        empty: `${this.table.info.singularName || 'Row'} "${entity}" was not found.`});
+      const form = this.runInScope(() => new DomainForm(source, {system: 'footer', include,
+        empty: `${this.table.info.singularName || 'Row'} "${entity}" was not found.`}));
+      this._panes = this.runInScope(() => [
+        ...(children === false ? [] : [domains.children(source, children === true ? undefined : children)]),
+        ...(history === false ? [] : [domains.history(source)]),
+      ]);
       this._formHost.replaceChildren(form.root);
-      this._panes = panes;
       this.panes.replaceChildren(...this._panes.map((pane) => pane.root));
       batch(() => {
         this._entitySource.value = source;

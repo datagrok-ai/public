@@ -10,15 +10,6 @@ import type {EditSaved, EditState} from '../../sources/edit-state.js';
 import {FrameRows} from '../../sources/df-rows.js';
 import type {DataFrameLike} from '../../sources/df-bindings.js';
 
-/** The staged restore, through a cast, for the same reason `PhaseThreeClient` exists in
- * `backend.ts`: `markRestored` is this batch's js-api surface and the published `datagrok-api`
- * types every plugin compiles against do not carry it yet. Deleted with the rest of the phase-3
- * shims once the release is out. */
-interface PhaseThreeEditor {
-  markRestored(rows: number | number[]): void;
-  unmarkRestored(rows: number | number[]): void;
-}
-
 export class EditorEditState implements EditState {
   readonly isDirty: ReadonlySignal<boolean>;
   readonly changeCount: ReadonlySignal<number>;
@@ -120,13 +111,13 @@ export class EditorEditState implements EditState {
   markRestored(key: string): void {
     const at = this.indexOf(key);
     if (at >= 0)
-      this._phase3.markRestored(at);
+      this.editor.markRestored(at);
   }
 
   unmarkRestored(key: string): void {
     const at = this.indexOf(key);
     if (at >= 0)
-      this._phase3.unmarkRestored(at);
+      this.editor.unmarkRestored(at);
   }
 
   discard(): void {
@@ -151,10 +142,6 @@ export class EditorEditState implements EditState {
     this.onChanged.clear();
     this.onSaved.clear();
     this.editor.detach();
-  }
-
-  private get _phase3(): PhaseThreeEditor {
-    return this.editor as unknown as PhaseThreeEditor;
   }
 
   /** The first blocking problem on a row that is neither deleted nor restored — what the editor's

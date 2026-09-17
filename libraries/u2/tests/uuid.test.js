@@ -5,7 +5,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {flush, resetDom} from './dom-shim.js';
 import {Scope} from '../src/core/scope.js';
-import {uuid4} from '../src/core/uuid.js';
+import {uuid4} from 'datagrok-api/u2core';
 import {Rows} from '../src/sources/rows-like.js';
 
 function scoped(name, body) {

@@ -1,7 +1,9 @@
 /* `npm run e2e:local` — preconditions, one browser, every check file, one results.json.
    Preconditions are the whole difference between this lane and a stand: pub serve must be up
    (it is the only server involved) and the package must be staged into web/local/pkg/.
-   `--only <substring>` runs the check files whose name contains it. */
+   `--only <substring>` runs the check files whose name contains it; `--lane <name>[,<name>…]`
+   (or `U2_E2E_LANES`) runs exactly those lanes — a lane is a check file, and its name is the
+   prefix its PASS/FAIL lines print (`domain`, `session`, `filters`, `leak`, `u2demo-inputs`, …). */
 import {execFileSync} from 'child_process';
 import {existsSync, readdirSync} from 'fs';
 import {join, resolve} from 'path';
@@ -46,7 +48,19 @@ if (onlyAt >= 0 && !only) {
   console.error(`u2 e2e: --only needs a check-file name — one of ${FILES.join(', ')}`);
   process.exit(2);
 }
-const selected = FILES.filter((name) => name.includes(only));
+const laneAt = process.argv.indexOf('--lane');
+const laneArg = laneAt < 0 ? (process.env.U2_E2E_LANES ?? '') : (process.argv[laneAt + 1] ?? '');
+if (laneAt >= 0 && !laneArg) {
+  console.error(`u2 e2e: --lane needs a lane name — one of ${FILES.join(', ')}`);
+  process.exit(2);
+}
+const lanes = laneArg.split(',').map((name) => name.trim()).filter((name) => name !== '');
+const unknown = lanes.filter((name) => !FILES.includes(name));
+if (unknown.length > 0) {
+  console.error(`u2 e2e: unknown lane ${unknown.join(', ')} — one of ${FILES.join(', ')}`);
+  process.exit(2);
+}
+const selected = FILES.filter((name) => name.includes(only) && (lanes.length === 0 || lanes.includes(name)));
 if (selected.length === 0) {
   console.error(`u2 e2e: no check file matches --only "${only}" — one of ${FILES.join(', ')}`);
   process.exit(2);

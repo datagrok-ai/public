@@ -172,7 +172,7 @@ export function mountView(options: ViewMountOptions): void {
     const here = p.toLowerCase();
     return DomainAddress.under(here, mounted().toLowerCase()) || DomainAddress.under(here, base.toLowerCase());
   };
-  // the router has updated the address bar before it calls the handler (view.ts:188-195), and
+  // the router has updated the address bar before it calls the handler (`ViewBase.path`), and
   // hands over the path alone — the row `/domains/…` carries as a segment is in it
   view.handlePath = (p) => {
     mounted();

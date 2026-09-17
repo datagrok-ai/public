@@ -12,7 +12,7 @@
    batch's code (the lead publishes U2Demo/Stockroom/Grit first); `U2_STAND_URL` points at the
    browser-facing composite, e.g. `http://localhost:56690` for the ems-u2 worktree. */
 import {execSync} from 'child_process';
-import {ARTIFACTS, launch, note, ok, report, results, shot} from './local.mjs';
+import {ARTIFACTS, consoleErrors, launch, note, ok, pageErrors, report, results, shot} from './local.mjs';
 import {STAND_URL, openStand} from './stand.mjs';
 
 /** The width every L3 geometry failure was found at. */
@@ -257,11 +257,39 @@ async function checkStagedRestore(page) {
 /* ------------------------------------------------------------------------------------ the run */
 
 /** The way in. A worktree stand answers the dev-key login and not the login form (brief.md), so
- * that is tried first; a stand without dev keys falls through to the shared form login. */
+ * that is tried first; a stand without dev keys falls through to the shared form login.
+ *
+ * A key that WORKED and a shell that then never booted is the defect this lane exists to report,
+ * so that case throws with the page's own errors instead of spending another 300 s in the form
+ * login it already knows will not answer either. */
 async function openDomainStand() {
   const {browser, page} = await launch({viewport: VIEWPORT});
   await page.goto(`${STAND_URL}/login.html`, {waitUntil: 'load', timeout: 180000});
-  await page.evaluate(() => fetch('/api/users/login/dev/admin', {method: 'POST'}).catch(() => {}));
+  // an ApiError body comes back as 200 too (the retired key-in-the-URL route answers that way),
+  // so the token, not the status alone, is what says the session was really created
+  const dev = await page.evaluate(async () => {
+    try {
+      const response = await fetch('/api/users/login/dev',
+        {method: 'POST', headers: {Authorization: 'Dev admin'}});
+      const text = (await response.text()).slice(0, 300);
+      let body = null;
+      try {
+        body = JSON.parse(text);
+      } catch (e) {
+        // a non-JSON body is an answer too — `text` carries it into the note
+      }
+      return {status: response.status, token: !!(body && body.token),
+        apiError: !!(body && body.token === undefined && body.message !== undefined), text};
+    } catch (e) {
+      return {status: 0, token: false, apiError: false, text: String(e).slice(0, 300)};
+    }
+  });
+  if (dev.status !== 200 || !dev.token) {
+    note('stand/login', `the dev key answered ${dev.status}` +
+      `${dev.apiError ? ' with an ApiError' : ''} (${dev.text}); falling back to the login form`);
+    await browser.close();
+    return openStand({viewport: VIEWPORT});
+  }
   await page.goto(`${STAND_URL}/`, {waitUntil: 'load', timeout: 180000});
   try {
     await page.waitForFunction(() => {
@@ -270,11 +298,12 @@ async function openDomainStand() {
       } catch (e) {
         return false;
       }
-    }, null, {timeout: 90000});
+    }, null, {timeout: 45000});
   } catch (e) {
-    note('stand/login', 'the dev key did not answer; falling back to the login form');
+    const errors = (list) => list.length === 0 ? 'none' : list.slice(-3).join(' | ');
     await browser.close();
-    return openStand({viewport: VIEWPORT});
+    throw new Error(`stand/login: the dev key logged in (200 with a token) but ${STAND_URL} did not ` +
+      `boot the shell in 45 s — page errors: ${errors(pageErrors)}; console errors: ${errors(consoleErrors)}`);
   }
   await page.waitForTimeout(4000);
   return {browser, page};

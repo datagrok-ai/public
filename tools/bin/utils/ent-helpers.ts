@@ -8,8 +8,8 @@ The application${appNames.length > 1 ? 's' : ''} ${appNames.join(', ')} ` +
 `(over ${tables.join(', ')}) ${appNames.length > 1 ? 'have' : 'has'} been added successfully
 
 Next steps:
-  npm install --install-links=false   link @datagrok-libraries/u2 (a relative-path dependency)
-  npm run build && grok publish       publish the package and open the app from the browse tree
+  pnpm install                   link @datagrok-libraries/u2 (a workspace dependency)
+  grok build && grok publish     publish the package and open the app from the browse tree
 
 The app is the u2 defaults alone — list, search, filters, entity page with children
 and history, editing under one session, permissions and deep links. src/app.spec.json

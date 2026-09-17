@@ -66,6 +66,15 @@ export interface DomainQueryLike {
  * Every read takes the same object, so a caller cannot forward `filter` and forget `deleted`. */
 export type DomainReadScope = Pick<DomainQueryLike, 'filter' | 'search' | 'deleted'>;
 
+/** Whether a read selects nothing at all — the whole live table, which a change token answers
+ * for. An empty condition tree is what an empty filter builder compiles to. */
+export function isUnscoped(scope: DomainReadScope): boolean {
+  const filter = scope.filter;
+  return (filter === undefined || filter === '' || (Array.isArray(filter) && filter.length === 0)) &&
+    (scope.search === undefined || scope.search === '') &&
+    (scope.deleted === undefined || scope.deleted === 'exclude');
+}
+
 /** What a table can do AT ALL, independent of the caller — the backend's own answer for every
  * optional behaviour a control would otherwise guess from the table's shape. The platform
  * computes it once per handle (`DomainAccess.support`); the memory backend computes it from the

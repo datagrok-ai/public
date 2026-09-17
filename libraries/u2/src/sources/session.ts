@@ -6,6 +6,7 @@
 import {signal, computed, ReadonlySignal} from '../core/signals.js';
 import {Emitter} from '../core/emitter.js';
 import type {ObservableLike} from '../core/widget-like.js';
+import {plural} from '../core/text.js';
 import {notify} from '../components/display/notify.js';
 import {Dialog} from '../components/containers/dialog.js';
 import {backends} from './backends.js';
@@ -62,7 +63,7 @@ export class SharedSession implements DomainSession {
       if (changes === 0)
         return '';
       const tables = new Set(this._sources.value.filter((s) => s.isDirty.value).map((s) => s.table)).size;
-      return `${changes} unsaved change${changes === 1 ? '' : 's'}${tables > 1 ? ` in ${tables} tables` : ''}`;
+      return `${plural(changes, 'unsaved change', 'unsaved changes')}${tables > 1 ? ` in ${tables} tables` : ''}`;
     });
   }
 
@@ -147,7 +148,7 @@ export class SharedSession implements DomainSession {
         SharedSession._hold(batch, false);
       }
       const tables = new Set(batch.map((s) => s.table)).size;
-      notify.info(tables > 1 ? `${changes} change${changes === 1 ? '' : 's'} saved in ${tables} tables` :
+      notify.info(tables > 1 ? `${plural(changes, 'change', 'changes')} saved in ${tables} tables` :
         SharedSession._landed(batch[0], changes, verb));
       this.onSaved.fire();
       return true;
@@ -273,7 +274,7 @@ export function confirmDiscard(session: DomainSession, options: {action?: string
   return new Promise((resolve) => {
     const text = document.createElement('div');
     const them = changes === 1 ? 'it' : 'them';
-    for (const line of [`${changes} unsaved change${changes === 1 ? '' : 's'} in ${subject}.`,
+    for (const line of [`${plural(changes, 'unsaved change', 'unsaved changes')} in ${subject}.`,
       `Save ${them}, discard ${them}, or cancel and do not ${action}.`]) {
       const p = document.createElement('p');
       p.textContent = line;

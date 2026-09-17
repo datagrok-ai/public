@@ -4,17 +4,14 @@
    own `toMask`, so a query means here what it means on the server; a transaction is ordered the
    way the server orders it (forward `$ref`s, child-first deletes) and lands on every table it
    touches or on none. */
-import {BitArray} from 'datagrok-api/u2core';
+import {uuid4} from 'datagrok-api/u2core';
 import {Filters} from '../core/filter/index.js';
-import {uuid4} from '../core/uuid.js';
 import {notify} from '../components/display/notify.js';
 import type {FilterCondition, FilterGroup} from '../core/filter/model.js';
-import {INT_NULL, FLOAT_NULL} from '../core/filter/evaluate.js';
-import type {MaskColumnLike, MaskFrameLike} from '../core/filter/evaluate.js';
 import type {IProperty} from '../core/property-like.js';
 import type {AccessData, FieldAccess} from '../core/access.js';
 import {Access} from '../core/access.js';
-import {DomainBackendError} from './domain-backend.js';
+import {DomainBackendError, isUnscoped} from './domain-backend.js';
 import type {AuditEntryLike, DomainBackend, DomainBatchOptionsLike, DomainBatchReportLike,
   DomainBatchValidationLike, DomainBatchValidationRowLike, DomainFrameLike, DomainProbeLike,
   DomainQueryLike, DomainReadScope, DomainSupportLike, DomainTableInfoLike, DomainTableLike,
@@ -178,36 +175,25 @@ export class MemoryDomainBackend implements DomainBackend {
       }
       return deps;
     });
-    for (const [i, child] of ops.entries()) {
-      for (const [j, parent] of ops.entries()) {
-        if (i === j || child.op !== 'delete' || parent.op !== 'delete')
-          continue;
-        const [b, a] = [tables[i], tables[j]];
-        if (b === a) {
-          const row = a.rows.find((r) => r.id === child.id);
-          if (row !== undefined && Object.entries(a.refs)
-            .some(([column, target]) => target === a.address && row[column] === parent.id))
+    const refers = (from: number, to: number): boolean => {
+      const [b, a] = [tables[from], tables[to]];
+      if (b !== a)
+        return Object.values(b.refs).includes(a.address) && !Object.values(a.refs).includes(b.address);
+      const row = a.rows.find((r) => r.id === ops[from].id);
+      return row !== undefined && Object.entries(a.refs)
+        .some(([column, target]) => target === a.address && row[column] === ops[to].id);
+    };
+    // one pass, read in both directions: a child's DELETE runs before its parent's, while a
+    // restore is the mirror — the restore arm below vetoes a child coming back under a still
+    // deleted parent, so the PARENT's restore runs first
+    for (const op of ['delete', 'restore'] as const) {
+      for (let i = 0; i < ops.length; i++) {
+        for (let j = 0; j < ops.length; j++) {
+          if (i === j || ops[i].op !== op || ops[j].op !== op)
+            continue;
+          if (op === 'delete' ? refers(i, j) : refers(j, i))
             before[j].add(i);
         }
-        else if (Object.values(b.refs).includes(a.address) && !Object.values(a.refs).includes(b.address))
-          before[j].add(i);
-      }
-    }
-    // restores read the other way round: `_checkParentsLive` vetoes a child coming back under a
-    // still-deleted parent, so the PARENT's restore runs first
-    for (const [i, parent] of ops.entries()) {
-      for (const [j, child] of ops.entries()) {
-        if (i === j || parent.op !== 'restore' || child.op !== 'restore')
-          continue;
-        const [a, b] = [tables[i], tables[j]];
-        if (b === a) {
-          const row = a.rows.find((r) => r.id === child.id);
-          if (row !== undefined && Object.entries(a.refs)
-            .some(([column, target]) => target === a.address && row[column] === parent.id))
-            before[j].add(i);
-        }
-        else if (Object.values(b.refs).includes(a.address) && !Object.values(a.refs).includes(b.address))
-          before[j].add(i);
       }
     }
     const order: number[] = [];
@@ -515,7 +501,7 @@ export class MemoryTable implements DomainTableLike {
    * 'updated_on'}]})` under the same scope. An unscoped read is answered by {@link seq} alone
    * with `count: -1`, the branch `DgDomainTable._probe` takes over the change token. */
   async probe(scope: DomainReadScope = {}): Promise<DomainProbeLike> {
-    if (MemoryTable._unscoped(scope))
+    if (isUnscoped(scope))
       return {count: -1, last: String(this.seq)};
     const rows = await this._where(scope);
     let last: string | null = null;
@@ -525,16 +511,6 @@ export class MemoryTable implements DomainTableLike {
         last = updated;
     }
     return {count: rows.length, last};
-  }
-
-  /** Whether a read selects nothing at all — the whole live table, which the change token answers
-   * for. Copied verbatim from `DgDomainTable._unscoped`: the two are three lines and live on
-   * opposite sides of the platform boundary, so they stay two. */
-  private static _unscoped(scope: DomainReadScope): boolean {
-    const filter = scope.filter;
-    return (filter === undefined || filter === '' || (Array.isArray(filter) && filter.length === 0)) &&
-      (scope.search === undefined || scope.search === '') &&
-      (scope.deleted === undefined || scope.deleted === 'exclude');
   }
 
   transaction(ops: DomainTransactionOpLike[]): Promise<DomainTransactionResultLike[]> {
@@ -768,7 +744,8 @@ export class MemoryTable implements DomainTableLike {
     const {filter, search, deleted = 'exclude'} = scope;
     let rows = this.rows;
     if (filter !== undefined && filter !== '') {
-      const mask = await Filters.toMask(this._frameLike(), this._resolved(MemoryTable._tree(filter)));
+      const mask = await Filters.toMask(Filters.recordsFrame(this.rows, this.properties),
+        this._resolved(MemoryTable._tree(filter)));
       rows = rows.filter((_, i) => mask.get(i));
     }
     if (deleted !== 'include')
@@ -821,54 +798,6 @@ export class MemoryTable implements DomainTableLike {
     if (problems.length > 0)
       throw new DomainBackendError('validation', problems[0].message);
     return root;
-  }
-
-  /** The store as `toMask` reads a frame: raw arrays per column, built on demand. */
-  private _frameLike(): MaskFrameLike {
-    const rows = this.rows;
-    const columns = new Map<string, MaskColumnLike>();
-    return {
-      rowCount: rows.length,
-      column: (name) => {
-        const prop = this.properties.find((p) => p.name === name);
-        if (prop === undefined)
-          return null;
-        let column = columns.get(name);
-        if (column === undefined)
-          columns.set(name, column = MemoryTable._maskColumn(name, prop.propertyType ?? prop.type ?? 'string', rows));
-        return column;
-      },
-    };
-  }
-
-  private static _maskColumn(name: string, type: string, rows: Row[]): MaskColumnLike {
-    const n = rows.length;
-    const cell = (i: number) => rows[i][name];
-    const isNull = (v: unknown) => v === null || v === undefined;
-    const number = (v: unknown, nil: number) => isNull(v) ? nil : Number(v);
-    const column = (raw: () => ArrayLike<number>, extra: Partial<MaskColumnLike> = {}): MaskColumnLike =>
-      ({name, type, length: n, getRawData: raw, ...extra});
-    switch (Filters.kindOf({name, type})) {
-      case Filters.KIND.INT:
-        return column(() => Int32Array.from(rows, (r) => number(r[name], INT_NULL)));
-      case Filters.KIND.FLOAT:
-        return column(() => Float64Array.from(rows, (r) => number(r[name], FLOAT_NULL)));
-      case Filters.KIND.DATE_TIME:
-        return column(() => Float64Array.from(rows, (r) => {
-          const v = r[name];
-          return isNull(v) ? FLOAT_NULL : (v instanceof Date ? v.getTime() : Date.parse(String(v))) * 1000;
-        }));
-      case Filters.KIND.BOOL:
-        return column(() => BitArray.create(n, (i) => cell(i) === true).getBuffer());
-      case Filters.KIND.BIG_INT: case Filters.KIND.STRING_LIST:
-        return column(() => new Int32Array(0), {get: cell});
-      default: {
-        const text = (v: unknown) => isNull(v) ? '' : String(v);
-        const categories = [...new Set(rows.map((r) => text(r[name])))];
-        const index = new Map(categories.map((c, i) => [c, i]));
-        return column(() => Int32Array.from(rows, (r) => index.get(text(r[name]))!), {categories});
-      }
-    }
   }
 
   private static _sorted(rows: Row[], sort: string): Row[] {

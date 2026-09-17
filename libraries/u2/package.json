@@ -14,7 +14,9 @@
   "main": "./dist/src/index.js",
   "types": "./dist/src/index.d.ts",
   "dependencies": {
+    "@floating-ui/core": "^1.8.0",
     "@floating-ui/dom": "^1.6.0",
+    "@floating-ui/utils": "^0.2.12",
     "rxjs": "catalog:"
   },
   "peerDependencies": {
@@ -30,6 +32,7 @@
     "prepublishOnly": "npm run build",
     "test": "grok tsc -p tsconfig.json --outDir . && node --test tests/*.test.js",
     "e2e:local": "node e2e/run.mjs",
+    "e2e:local:domain": "node e2e/run.mjs --lane domain,session",
     "e2e:boot": "node e2e/boot-smoke.mjs",
     "e2e:stand": "node e2e/designer.stand.spec.mjs",
     "e2e:stand-u2demo": "node e2e/u2demo.stand.spec.mjs",

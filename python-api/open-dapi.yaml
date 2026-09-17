@@ -416,7 +416,7 @@ paths:
     post:
       operationId: batchRows
       summary: batch rows
-      description: "Bulk upload (§5.6); the body format is selected by Content-Type: application/json (row-object array, bare or under 'rows'), text/csv, or application/octet-stream (d42 DataFrame). No server-side Parquet — see PLAN.md phase-2 decision 1 (clients convert via the Arrow package). The generated dapi2 client method is a non-functional stub (it sends no body): use grok.dapi.domains.table(...).batch (JS) or raw HTTP with a JSON/CSV/d42 body instead."
+      description: "Bulk upload (§5.6); the body format is selected by Content-Type: application/json (row-object array, bare or under 'rows'), text/csv, or application/octet-stream (d42 DataFrame). No server-side Parquet — see PLAN.md phase-2 decision 1 (clients convert via the Arrow package). The generated dapi2 client method is a non-functional stub (it sends no body): use grok.dapi.domains.table(...).batch (JS) or raw HTTP with a JSON/CSV/d42 body instead. `?validateOnly=true` (u2 x EMS 1-4) previews the same run and writes nothing: the answer is {validateOnly, rowCount, willInsert, willUpdate, willSkip, errorCount, rows: [{index, predicted, existingId?, errors?}]}, a shape of its own so a predicted insert is never read as a write."
       tags:
         - domains
       parameters:
@@ -491,7 +491,7 @@ paths:
     post:
       operationId: runTransaction
       summary: run transaction
-      description: "Ordered per-op results, shaped like the single-op endpoints; any failure rolls the whole transaction back and the error body carries 'opIndex'. [ops] is the ops list; a {'ops': [...]} wrapper is also accepted over the wire (`@RequestBody() dynamic`, not `List` — see insertRows)."
+      description: "Ordered per-op results, shaped like the single-op endpoints; any failure rolls the whole transaction back and the error body carries 'opIndex'. An op is insert|update|delete|restore; a `restore` carries 'id' alone and undoes a landed soft delete — the Delete grant, not a new permission, and a parent's restore is ordered before its child's. [ops] is the ops list; a {'ops': [...]} wrapper is also accepted over the wire (`@RequestBody() dynamic`, not `List` — see insertRows)."
       tags:
         - domains
       parameters:
@@ -700,7 +700,28 @@ paths:
     get:
       operationId: getAccess
       summary: get access
-      description: "Table-level access of the current user, composed by the server from the predicates the reads and writes apply: {can: {view, insert, edit, delete, share}, fields: {<column>: editable | readonly}, travelableRelations, securingTable, securityMode, audit, hasBusinessKey}. A restricted column is absent from `fields`; read-only registrations answer every write false and every field readonly; grants reaching individual rows show up in the `~can_edit`/`~can_delete`/`~can_share` (null off row mode) columns of a `withAccess` read instead."
+      description: "Table-level access of the current user, composed by the server from the predicates the reads and writes apply: {can: {view, insert, edit, delete, share}, fields: {<column>: editable | readonly}, travelableRelations, securingTable, securityMode, audit, hasBusinessKey, support}. `support` is caller-independent — {systemColumns, writes, deleted, restore, audit, ancestors, probe, watch} — and says what the table can do at all, so a client offers only what the server declared. A restricted column is absent from `fields`; read-only registrations answer every write false and every field readonly; grants reaching individual rows show up in the `~can_edit`/`~can_delete`/`~can_share` (null off row mode) columns of a `withAccess` read instead."
+      tags:
+        - domains
+      parameters:
+        - name: schema
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: table
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful response
+  /domains/{schema}/{table}/version:
+    get:
+      operationId: getVersion
+      summary: get version
+      description: "The table's change token: {seq, at}. `seq` moves once per write transaction that touched the table's rows and `at` is null until the first write, so a live client polls one indexed read instead of an aggregate. Requires View on the securing entity (403 `forbidden`)."
       tags:
         - domains
       parameters:
@@ -886,7 +907,7 @@ paths:
     get:
       operationId: ancestors
       summary: ancestors
-      description: "Strict ancestors of a row on a `hierarchy` table: [{id, name}] root first, the row itself excluded, truncated at the first ancestor the caller may not see. A table that is not a hierarchy is a 400."
+      description: "Strict ancestors of a row on a `hierarchy` table: [{id, name}] root first, the row itself excluded, truncated at the first ancestor the caller may not see. A table that is not a hierarchy is a 422 `unsupported`."
       tags:
         - domains
       parameters:

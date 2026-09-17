@@ -2,7 +2,7 @@
    array and a DataFrame feed a control alike — `arrayRows` here, `FrameRows` in df-rows.ts — and
    the row conventions every layer shares: the editor's service columns and the draft id. */
 import {signal, Signal, ReadonlySignal} from '../core/signals.js';
-import {uuid4} from '../core/uuid.js';
+import {uuid4} from 'datagrok-api/u2core';
 
 /** What a typed row type must carry: the key. An app's own row type (`IssueRow` from the
  * generated `db.ts`) satisfies it as an interface, so no index signature is asked for. */

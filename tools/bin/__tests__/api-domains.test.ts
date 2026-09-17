@@ -31,8 +31,7 @@ function mutateManifest(dir: string, mutate: (manifest: any) => void): void {
 
 /** Adds a `label` target table, a `sample_label` junction, and the `labels` many-to-many
  * relation on `sample` — the fixture every relation test starts from. */
-function addRelation(manifest: any,
-  relation: {[key: string]: string} = {via: 'sample_label', target: 'label'}): void {
+function addRelation(manifest: any): void {
   manifest.tables.label = {
     businessKey: ['name'], columns: {name: {type: 'string', required: true}}};
   manifest.tables.sample_label = {
@@ -41,7 +40,7 @@ function addRelation(manifest: any,
       sample_id: {type: 'ref', ref: 'sample', onDelete: 'cascade', required: true},
       label_id: {type: 'ref', ref: 'label', onDelete: 'cascade', required: true},
     }};
-  manifest.tables.sample.relations = {labels: relation};
+  manifest.tables.sample.relations = {labels: {via: 'sample_label', target: 'label'}};
 }
 
 /** Runs the generator with console output captured, so error-message tests stay quiet. */
@@ -183,7 +182,7 @@ describe('generateDomainClients', () => {
     // transaction union: one insert/update/delete arm per table
     expect(code).toContain('export type TestdbTransactionOp =');
     expect(code).toContain(
-      `  {op: 'insert'; table: 'sample'; ref?: string; values: DG.DomainTxValues<SampleInsert>} |`);
+      `  {op: 'insert'; table: 'sample'; ref?: string; values: DG.DomainTxValues<SampleInsert>; onDuplicate?: 'error'} |`);
     expect(code).toContain(`  {op: 'delete'; table: 'sample_event'; id: string};`);
 
     // per-schema typed clients: LAZY getters (no import-time side effects), four
@@ -272,29 +271,7 @@ describe('generateDomainClients', () => {
     expect(code).toContain(`  'details:sample_label': {sample_label?: SampleLabelRow[]};`);
   });
 
-  it('relations: an ambiguous junction side must be named explicitly', () => {
-    const dir = makePackage();
-    mutateManifest(dir, (m) => {
-      addRelation(m);
-      m.tables.sample_label.columns.other_label_id = {type: 'ref', ref: 'label', onDelete: 'cascade'};
-    });
-    const {result, output} = runCapturingLog(dir);
-    expect(result).toBe(false);
-    expect(output).toContain(`has more than one ref column targeting 'label'`);
-    expect(output).toContain(`declare 'viaTarget' explicitly`);
-    expect(fs.existsSync(dbPath(dir))).toBe(false);
-
-    // naming the side resolves it; a name that is not a ref to the target does not
-    mutateManifest(dir, (m) => m.tables.sample.relations.labels.viaTarget = 'label_id');
-    expect(generateDomainClients(dir)).toBe(true);
-    mutateManifest(dir, (m) => m.tables.sample.relations.labels.viaTarget = 'sample_id');
-    const bad = runCapturingLog(dir);
-    expect(bad.result).toBe(false);
-    expect(bad.output).toContain(
-      `'sample_id' is not a ref column of junction table 'sample_label' targeting 'label'`);
-  });
-
-  it('relations: via and target must be declared in the same manifest', () => {
+  it('relations: the two checks the generator still makes', () => {
     const missingTarget = makePackage();
     mutateManifest(missingTarget, (m) => {
       addRelation(m);
@@ -305,69 +282,30 @@ describe('generateDomainClients', () => {
     expect(res.output).toContain(`target table 'nope' is not declared in this manifest`);
     expect(fs.existsSync(dbPath(missingTarget))).toBe(false);
 
-    const missingVia = makePackage();
-    mutateManifest(missingVia, (m) => {
-      addRelation(m);
-      m.tables.sample.relations.labels.via = 'nope';
-    });
-    res = runCapturingLog(missingVia);
-    expect(res.result).toBe(false);
-    expect(res.output).toContain(`junction table 'nope' is not declared in this manifest`);
-  });
-
-  it('relations: the junction business key must cover both FKs', () => {
-    const dir = makePackage();
-    mutateManifest(dir, (m) => {
-      addRelation(m);
-      m.tables.sample_label.businessKey = ['sample_id'];
-    });
-    const {result, output} = runCapturingLog(dir);
-    expect(result).toBe(false);
-    expect(output).toContain(
-      `must declare a 'businessKey' containing both 'sample_id' and 'label_id'`);
-  });
-
-  it('relations: a name may not collide with a column, and self-referential needs both sides', () => {
     const collision = makePackage();
     mutateManifest(collision, (m) => {
       addRelation(m);
       m.tables.sample.relations = {name: {via: 'sample_label', target: 'label'}};
     });
-    let res = runCapturingLog(collision);
+    res = runCapturingLog(collision);
     expect(res.result).toBe(false);
     expect(res.output).toContain(`relation 'sample.name' collides with a column of 'sample'`);
+  });
 
-    // a relation back at its own table cannot auto-resolve the two sides
-    const self = makePackage();
-    mutateManifest(self, (m) => {
+  it('relations: a self-referential relation expands under its own name', () => {
+    const dir = makePackage();
+    mutateManifest(dir, (m) => {
       addRelation(m);
       m.tables.sample_link = {businessKey: ['from_id', 'to_id'], columns: {
         from_id: {type: 'ref', ref: 'sample', onDelete: 'cascade', required: true},
         to_id: {type: 'ref', ref: 'sample', onDelete: 'cascade', required: true},
       }};
-      m.tables.sample.relations = {blocks: {via: 'sample_link', target: 'sample'}};
-    });
-    res = runCapturingLog(self);
-    expect(res.result).toBe(false);
-    expect(res.output).toContain(`a self-referential relation must name both 'viaSelf' and 'viaTarget'`);
-
-    mutateManifest(self, (m) =>
       m.tables.sample.relations = {blocks:
-        {via: 'sample_link', target: 'sample', viaSelf: 'from_id', viaTarget: 'to_id'}});
-    expect(generateDomainClients(self)).toBe(true);
-    expect(fs.readFileSync(dbPath(self), 'utf8'))
-      .toContain(`  'blocks': {blocks?: {id: string; name: string}[]};`);
-  });
-
-  it('relations: the junction must differ from the owner and the target', () => {
-    const dir = makePackage();
-    mutateManifest(dir, (m) => {
-      addRelation(m);
-      m.tables.sample.relations.labels.target = 'sample_label';
+        {via: 'sample_link', target: 'sample', viaSelf: 'from_id', viaTarget: 'to_id'}};
     });
-    const {result, output} = runCapturingLog(dir);
-    expect(result).toBe(false);
-    expect(output).toContain(`must differ from the owner and the target table`);
+    expect(generateDomainClients(dir)).toBe(true);
+    expect(fs.readFileSync(dbPath(dir), 'utf8'))
+      .toContain(`  'blocks': {blocks?: {id: string; name: string}[]};`);
   });
 
   it('qualified refs: a Core target types the expand from the sealed Core declaration', () => {

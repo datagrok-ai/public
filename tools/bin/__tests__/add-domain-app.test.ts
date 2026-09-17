@@ -16,7 +16,7 @@ afterEach(() => process.chdir(cwd));
 
 /** A scratch package: [withManifest] brings the fixture's `databases/testdb/schema.json`
  * (a package declaring its own schema), [ts] its tsconfig (a TypeScript package),
- * [template] the `grok create --ts` webpack config and tsconfig the u2 wiring edits. */
+ * [template] the `grok create --ts` tsconfig — the shared one, which the u2 wiring leaves alone. */
 function makePackage(options?: {withManifest?: boolean, ts?: boolean, template?: boolean}): string {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'grok-add-domain-app-'));
   if (options?.withManifest)
@@ -24,10 +24,9 @@ function makePackage(options?: {withManifest?: boolean, ts?: boolean, template?:
   else
     fs.writeFileSync(path.join(dir, 'package.json'),
       '{"name": "@datagrok/scratch", "version": "1.0.0"}');
-  if (options?.template) {
-    fs.copyFileSync(path.join(toolsDir, 'package-template', 'ts.webpack.config.js'), path.join(dir, 'webpack.config.js'));
+  if (options?.template)
     fs.copyFileSync(path.join(toolsDir, 'package-template', 'tsconfig.json'), path.join(dir, 'tsconfig.json'));
-  } else if (options?.ts !== false)
+  else if (options?.ts !== false)
     fs.writeFileSync(path.join(dir, 'tsconfig.json'), '{"compilerOptions": {"strict": true}}');
   process.chdir(dir);
   return dir;
@@ -58,8 +57,7 @@ describe('grok add app --domain', () => {
 
     const code = entry(dir);
     expect(code).toContain(`import {domains} from '${u2Module}';`);
-    expect(code).toContain(`import '@datagrok-libraries/u2/css/tokens.css';`);
-    expect(code).toContain(`import '@datagrok-libraries/u2/css/domain.css';`);
+    expect(code).toContain(`import '@datagrok-libraries/u2/src/dg/domain/styles.js';`);
     expect(code).toContain('//name: Item');
     expect(code).toContain('//tags: app');
     expect(code).toContain('//output: view result');
@@ -71,9 +69,9 @@ describe('grok add app --domain', () => {
     expect(code.indexOf(u2Module)).toBeLessThan(code.indexOf('export const _package'));
 
     const packageObj = json(dir, 'package.json');
-    expect(packageObj.dependencies['@datagrok-libraries/u2']).toBe('../../libraries/u2');
-    expect(packageObj.devDependencies['css-loader']).toBeTruthy();
-    expect(packageObj.devDependencies['style-loader']).toBeTruthy();
+    expect(packageObj.dependencies['@datagrok-libraries/u2']).toBe('workspace:^');
+    // the css loaders come with @datagrok/build-config, not with the package
+    expect(packageObj.devDependencies).toBeUndefined();
 
     // the schema is the app's own: a one-table starter, and the typed clients + handles over it
     const manifest = json(dir, 'databases', 'tracker', 'schema.json');
@@ -94,33 +92,20 @@ describe('grok add app --domain', () => {
     expect(read(dir, 'src', 'app.spec.json')).toContain('"cmd:items.save"');
   });
 
-  it('wires webpack and tsconfig for u2 the way the Stockroom reference is wired', () => {
+  it('wires the u2core external for u2 the way the Grit reference is wired', () => {
     const dir = makePackage({template: true});
+    const tsconfig = read(dir, 'tsconfig.json');
     expect(addApp('tracker.item').result).toBe(true);
 
-    const webpack = read(dir, 'webpack.config.js');
-    expect(webpack).toContain(`alias: {'@datagrok-libraries/u2': path.resolve(__dirname, '../../libraries/u2')},`);
-    expect(webpack).toContain(`{test: /\\.css$/i, use: ['style-loader', 'css-loader']},`);
-    expect(webpack).toContain(`'datagrok-api/u2core': 'DG.U2',`);
-    // inside the blocks they belong to
-    expect(webpack.indexOf('resolve: {')).toBeLessThan(webpack.indexOf('alias:'));
-    expect(webpack.indexOf('alias:')).toBeLessThan(webpack.indexOf('module: {'));
-    expect(webpack.indexOf('rules: [')).toBeLessThan(webpack.indexOf('css-loader'));
-    expect(webpack.indexOf('css-loader')).toBeLessThan(webpack.indexOf('plugins: ['));
-
-    const tsconfig = read(dir, 'tsconfig.json');
-    expect(tsconfig).toContain('"lib": ["ES2022", "ESNext.Disposable", "dom"],');
-    expect(tsconfig).toContain('"@datagrok-libraries/u2": ["../../libraries/u2"],');
-    expect(tsconfig).toContain('"@datagrok-libraries/u2/*": ["../../libraries/u2/*"],');
-    expect(tsconfig).toContain('"datagrok-api/u2core": ["./node_modules/datagrok-api/src/u2core/index"]');
-    expect(tsconfig.indexOf('"moduleResolution"')).toBeLessThan(tsconfig.indexOf('"paths"'));
+    expect(read(dir, 'rspack.config.js')).toBe(
+      `const {bundler} = require('@datagrok/build-config');\n\n` +
+      `module.exports = bundler({externals: {'datagrok-api/u2core': 'DG.U2'}});\n`);
+    // everything else is @datagrok/build-config: the tsconfig that extends it stays as it is
+    expect(read(dir, 'tsconfig.json')).toBe(tsconfig);
 
     // rerun: every edit is made once
     expect(addApp('tracker.item').result).toBe(true);
-    expect(read(dir, 'webpack.config.js').match(/alias:/g)).toHaveLength(1);
-    expect(read(dir, 'webpack.config.js').match(/css-loader/g)).toHaveLength(1);
-    expect(read(dir, 'tsconfig.json').match(/^\s*"paths"/gm)).toHaveLength(1);
-    expect(read(dir, 'tsconfig.json').match(/ESNext\.Disposable/g)).toHaveLength(1);
+    expect(read(dir, 'rspack.config.js').match(/bundler\(/g)).toHaveLength(1);
   });
 
   it('names the app when told to', () => {
@@ -176,8 +161,8 @@ describe('grok add app --domain', () => {
     const manifest = read(dir, 'databases', 'tracker', 'schema.json');
     expect(addApp('tracker.item').result).toBe(true);
     expect(entry(dir).match(/export async function Item\(/g)).toHaveLength(1);
-    expect(entry(dir).match(/@datagrok-libraries\/u2\/src\/dg/g)).toHaveLength(1);
-    expect(entry(dir).match(/css\/tokens\.css/g)).toHaveLength(1);
+    expect(entry(dir).match(/@datagrok-libraries\/u2\/src\/dg\/index\.js/g)).toHaveLength(1);
+    expect(entry(dir).match(/domain\/styles\.js/g)).toHaveLength(1);
     expect(read(dir, 'src', 'app.spec.json')).toBe(spec);
     expect(read(dir, 'databases', 'tracker', 'schema.json')).toBe(manifest);
   });

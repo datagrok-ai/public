@@ -8,11 +8,10 @@ import * as DG from 'datagrok-api/dg';
 import type {IProperty} from '../../core/property-like.js';
 import {backends} from '../../sources/backends.js';
 import type {DataFrameLike} from '../../sources/df-bindings.js';
-import type {AuditEntryLike, DomainBackend, DomainBatchOptionsLike, DomainBatchReportLike,
-  DomainBatchValidationLike, DomainDeletedMode,
+import type {AuditEntryLike, DomainBackend, DomainBatchReportLike, DomainDeletedMode,
   DomainFrameLike, DomainProbeLike, DomainQueryLike, DomainReadScope, DomainSupportLike, DomainTableInfoLike,
   DomainTableLike, DomainTransactionOpLike, DomainTransactionResultLike} from '../../sources/domain-backend.js';
-import {DomainBackendError} from '../../sources/domain-backend.js';
+import {DomainBackendError, isUnscoped} from '../../sources/domain-backend.js';
 import type {EditState} from '../../sources/edit-state.js';
 import {EditorEditState} from './editor-state.js';
 
@@ -26,36 +25,6 @@ const COPIED = ['type', 'propertyType', 'semType', 'nullable', 'choices', 'min',
 export const SYSTEM_COLUMNS: readonly (readonly [name: string, type: string, caption: string])[] = [
   ['id', 'string', 'Id'], ['version', 'int', 'Version'], ['created_on', 'datetime', 'Created'],
   ['updated_on', 'datetime', 'Updated'], ['author_id', 'string', 'Author']];
-
-/** The phase-3 calls, through a cast: a package compiles these sources against the PUBLISHED
- * `datagrok-api` types (1.27.11 in every plugin's node_modules), so `client.restore` — and
- * `deleted` in `count`'s options, which `dapi.ts` does not take at all yet — would break every
- * plugin build. Typed here exactly as the server answers them, so the cast hides the version and
- * nothing else. The shim STAYS until the js-api release carrying this surface is out; phase 3-7
- * deletes it. */
-interface PhaseThreeClient {
-  restore(id: string): Promise<{id: string, restored: boolean, version: number}>;
-  count(filter: DomainQueryLike['filter'], options: {search?: string, deleted?: DomainDeletedMode}): Promise<number>;
-  updateWhere(filter: DomainQueryLike['filter'], values: Record<string, unknown>,
-    options?: {limit?: number}): Promise<{updated: number, hasMore: boolean}>;
-  pathTo(id: string): Promise<{id: string, name: string}[]>;
-  aggregate(spec: {measures: {fn: string, column?: string, as?: string}[]} & DomainReadScope):
-    Promise<Record<string, unknown>[]>;
-  /** The table's change token: one bump per write transaction that touched its rows. */
-  version(): Promise<{seq: number, at: string | null}>;
-  /** The dry run: `POST …/{table}/batch?validateOnly=true`, which answers a verdict per row and
-   * writes nothing. */
-  batch(rows: Record<string, unknown>[], options: DomainBatchOptionsLike & {validateOnly: true}):
-    Promise<DomainBatchValidationLike>;
-  access(): Promise<{can: Record<string, boolean>, fields: Record<string, string>,
-    support?: DomainSupportLike}>;
-}
-
-/** {@link DgDomainBackend.saveAll}'s share of the same debt: `DomainSession.lastRefusal` is not
- * in the published types either. */
-interface PhaseThreeSession {
-  lastRefusal: {message: string, editor: DG.DomainFrameEditor | null, opIndex?: number} | null;
-}
 
 export class DgDomainBackend implements DomainBackend {
   private readonly _tables = new Map<string, Promise<DgDomainTable>>();
@@ -95,7 +64,7 @@ export class DgDomainBackend implements DomainBackend {
       // the platform session works out ONE sentence for a refusal ("Ethanol still has 3
       // containers") and balloons it; the u2 status line says it on the state whose editor it
       // names, and on every one for a refusal the batch as a whole answers for
-      const refusal = (session as unknown as PhaseThreeSession).lastRefusal;
+      const refusal = session.lastRefusal;
       for (const state of states) {
         if (refusal !== null && (refusal.editor === null || refusal.editor === state.editor))
           state.problem = refusal.message;
@@ -129,14 +98,16 @@ export class DgDomainTable implements DomainTableLike {
     if (support.restore)
       this.restore = (id) => this._restore(id);
     if (support.writes) {
-      this.updateWhere = (filter, values, options) => this._phase3.updateWhere(filter, values, options);
+      this.updateWhere = (filter, values, options) =>
+        this.client.updateWhere(filter as DG.DomainFilter, values, options);
       this.batch = (rows, options) => this.client.batch(rows, options as DG.DomainBatchOptions) as
         Promise<DomainBatchReportLike>;
       // the dry run is the same endpoint, and it is there wherever the commit is
-      this.validate = (rows, options) => this._phase3.batch(rows, {...options, validateOnly: true});
+      this.validate = (rows, options) => this.client.batch(rows,
+        {...options, validateOnly: true} as DG.DomainBatchOptions & {validateOnly: true});
     }
     if (support.ancestors)
-      this.ancestors = (id) => this._phase3.pathTo(id);
+      this.ancestors = (id) => this.client.pathTo(id);
     if (support.probe)
       this.probe = (scope) => this._probe(scope);
   }
@@ -149,8 +120,8 @@ export class DgDomainTable implements DomainTableLike {
     const client = grok.dapi.domains.table(address);
     const registry = grok.dapi.domains.registry;
     const [properties, info, access] = await Promise.all([registry.rowProperties(address),
-      registry.tableInfo(address), (client as unknown as PhaseThreeClient).access()]);
-    if (access.support === undefined) {
+      registry.tableInfo(address), client.access()]);
+    if (access.support == null) {
       throw new DomainBackendError('unsupported',
         `${address}: the server did not declare its support — restart Datlas on this branch`);
     }
@@ -183,11 +154,11 @@ export class DgDomainTable implements DomainTableLike {
   }
 
   count(scope: DomainReadScope = {}): Promise<number> {
-    return this._phase3.count(scope.filter, {search: scope.search, deleted: scope.deleted});
+    return this.client.count(scope as DG.DomainReadScope);
   }
 
   private async _restore(id: string): Promise<void> {
-    await this._phase3.restore(id);
+    await this.client.restore(id);
   }
 
   /** ONE aggregate for the poll: how many rows match, and when the newest of them was written —
@@ -195,31 +166,18 @@ export class DgDomainTable implements DomainTableLike {
    * transaction and costs no scan at all. `count: -1` says nothing was counted; a source compares
    * the pair against its own previous poll and re-baselines whenever the scope changes. */
   private async _probe(spec: DomainReadScope = {}): Promise<DomainProbeLike> {
-    if (DgDomainTable._unscoped(spec)) {
-      const version = await this._phase3.version();
+    if (isUnscoped(spec)) {
+      const version = await this.client.version();
       return {count: -1, last: String(version.seq)};
     }
-    const rows = await this._phase3.aggregate({
+    const rows = await this.client.aggregate({
       measures: [{fn: 'count'}, {fn: 'max', column: 'updated_on', as: 'last'}],
-      ...(spec.filter === undefined ? {} : {filter: spec.filter}),
+      ...(spec.filter === undefined ? {} : {filter: spec.filter as DG.DomainFilter}),
       ...(spec.search === undefined ? {} : {search: spec.search}),
       ...(spec.deleted === undefined ? {} : {deleted: spec.deleted}),
     });
-    const row = rows[0] ?? {};
+    const row: Record<string, unknown> = rows[0] ?? {};
     return {count: Number(row.count ?? 0), last: row.last == null ? null : String(row.last)};
-  }
-
-  /** Whether a read selects nothing at all — the whole live table, which the change token answers
-   * for. An empty condition tree is what an empty filter builder compiles to. */
-  private static _unscoped(scope: DomainReadScope): boolean {
-    const filter = scope.filter;
-    return (filter === undefined || filter === '' || (Array.isArray(filter) && filter.length === 0)) &&
-      (scope.search === undefined || scope.search === '') &&
-      (scope.deleted === undefined || scope.deleted === 'exclude');
-  }
-
-  private get _phase3(): PhaseThreeClient {
-    return this.client as unknown as PhaseThreeClient;
   }
 
   transaction(ops: DomainTransactionOpLike[]): Promise<DomainTransactionResultLike[]> {

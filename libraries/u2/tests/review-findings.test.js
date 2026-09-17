@@ -175,7 +175,7 @@ scoped('finding 2: the cached row index is rebuilt after a saved deletion', {}, 
 // ───────────────────── 3. the grid hook cannot express row-level permissions ────────────────────
 
 scoped('finding 3: editability answers per row, not per table', {}, async () => {
-  const {DomainFrameEditor} = await import('../../../js-api/src/ui/domains/domains-editor.js');
+  const {DomainFrameEditor} = await import('../../../js-api/dist/src/ui/domains/domains-editor.js');
   const get = Object.getOwnPropertyDescriptor(DomainFrameEditor.prototype, 'writableColumns').get;
   // a row-mode table: the table-level right is false, the rows carry their own `~can_edit`
   const rowMode = {securityMode: 'row', can: {view: true, insert: true, edit: false, delete: false},
@@ -194,7 +194,7 @@ scoped('finding 3: editability answers per row, not per table', {}, async () => 
 
 scoped('finding 3: a table-mode frame carries `~can_edit` too, and a row added to it is editable',
   {}, async () => {
-    const {DomainFrameEditor} = await import('../../../js-api/src/ui/domains/domains-editor.js');
+    const {DomainFrameEditor} = await import('../../../js-api/dist/src/ui/domains/domains-editor.js');
     // the server computes `~can_edit` in BOTH security modes (`repository.dart` _accessColumns);
     // a row appended locally has no answer in it — a bool column has no null slot, so it reads
     // false — and the right that governs it is `insert`
@@ -278,8 +278,8 @@ async function sessionFake() {
 }
 
 scoped('finding 5: a standalone save leaves no subscription on the editor', {}, async () => {
-  const {DomainFrameEditor} = await import('../../../js-api/src/ui/domains/domains-editor.js');
-  const {DomainSession} = await import('../../../js-api/src/ui/domains/domains-session.js');
+  const {DomainFrameEditor} = await import('../../../js-api/dist/src/ui/domains/domains-editor.js');
+  const {DomainSession} = await import('../../../js-api/dist/src/ui/domains/domains-session.js');
   const editor = await sessionFake();
   // the standalone path: `DomainFrameEditor.save` builds a session of one and disposes it
   for (let i = 0; i < 5; i++)

@@ -16,10 +16,9 @@ import {Access} from '../../core/access.js';
 import type {Input, InputOptions} from '../../core/input-base.js';
 import type {IProperty} from '../../core/property-like.js';
 import {Filters} from '../../core/filter/index.js';
-import type {FilterGroup, FilterProperty, FilterSchema, MaskColumnLike, MaskFrameLike}
-  from '../../core/filter/index.js';
+import type {FilterGroup, FilterSchema} from '../../core/filter/index.js';
 import {div, span, timestamp} from '../../core/elements.js';
-import {text} from '../../core/text.js';
+import {EMPTY, isEmpty, text} from '../../core/text.js';
 import {loader} from '../../components/display/async-view.js';
 import type {IWidgetStatus} from '../../core/widget-like.js';
 import {propertyForm, ObjectForm} from '../forms/object-form.js';
@@ -63,7 +62,6 @@ export interface DomainFormOptions extends Pick<ObjectFormOptions,
 const UNTOUCHED = 'u2-input-untouched';
 const CHANGED = 'u2-input-changed';
 const REQUIRED = 'u2-input-required';
-const EMPTY = 'Value can\'t be empty';
 
 /** The keys that save. `DomainApp` listens for them across the whole view, since `appView` puts
  * the ribbon — where Tab from the last field lands — outside the app root. */
@@ -239,8 +237,7 @@ export class DomainForm extends Control {
 
   /** A required field without a value — what the focus goes to first. */
   static needsValue(input: Input<any>): boolean {
-    const value = input.value.peek();
-    return !input.nullable && (value === null || value === undefined || value === '');
+    return !input.nullable && isEmpty(input.value.peek());
   }
 
   /** The source and the row signal behind a target: a source's current row, a signal a
@@ -387,18 +384,10 @@ export class DomainForm extends Control {
         continue;
       const caption = SYSTEM_COLUMNS.find(([column]) => column === name)?.[2] ?? name;
       const raw = row[name];
-      const value = span('', 'u2-form-readonly-value');
-      value.dataset.u2Part = 'readonly-value';
-      if (name === 'id' && draft)
-        value.textContent = 'assigned on save';
-      else if ((prop.propertyType ?? prop.type) === 'datetime' && raw !== null && raw !== undefined && raw !== '')
-        value.append(timestamp(raw as Date | number | string, undefined, {utcDates: true}));
-      else
-        value.textContent = text(raw);
-      const line = div([span(caption, 'u2-input-label'), value], 'u2-form-readonly');
-      line.dataset.u2 = 'readonly-field';
-      line.dataset.u2Name = name;
-      block.append(line);
+      const content = name === 'id' && draft ? 'assigned on save' :
+        (prop.propertyType ?? prop.type) === 'datetime' && raw !== null && raw !== undefined && raw !== '' ?
+          timestamp(raw as Date | number | string, undefined, {utcDates: true}) : text(raw);
+      block.append(ObjectForm.readonlyField(caption, name, content).row);
     }
     return block;
   }
@@ -549,7 +538,7 @@ export class DomainForm extends Control {
     if (form === null || row === null || constraints.length === 0)
       return;
     const values: Record<string, unknown> = {...row, ...form.getValues()};
-    const frame = DomainForm.frameOf(values, this.source.schema.properties);
+    const frame = Filters.recordsFrame([values], this.source.schema.properties);
     const gen = ++this._checkGen;
     void Promise.all(constraints.map(async (c): Promise<string | null> => {
       try {
@@ -569,46 +558,6 @@ export class DomainForm extends Control {
         form.input(c.columns[0])?.revalidate();
       this._violationsVersion.value = this._violationsVersion.peek() + 1;
     });
-  }
-
-  /** One row as `Filters.toMask` reads a frame — the memory backend's column shapes, built per
-   * column on demand. */
-  static frameOf(values: Record<string, unknown>, properties: FilterProperty[]): MaskFrameLike {
-    const columns = new Map<string, MaskColumnLike>();
-    return {
-      rowCount: 1,
-      column: (name) => {
-        const prop = properties.find((p) => p.name === name);
-        if (prop === undefined)
-          return null;
-        let column = columns.get(name);
-        if (column === undefined)
-          columns.set(name, column = DomainForm._maskColumn(prop, values[name]));
-        return column;
-      },
-    };
-  }
-
-  private static _maskColumn(prop: FilterProperty, v: unknown): MaskColumnLike {
-    const type = prop.propertyType ?? prop.type ?? 'string';
-    const nil = v === null || v === undefined || v === '';
-    const column = (raw: ArrayLike<number>, extra: Partial<MaskColumnLike> = {}): MaskColumnLike =>
-      ({name: prop.name, type, length: 1, getRawData: () => raw, ...extra});
-    switch (Filters.kindOf(prop)) {
-      case Filters.KIND.INT:
-        return column(Int32Array.of(nil ? Filters.INT_NULL : Number(v)));
-      case Filters.KIND.FLOAT:
-        return column(Float64Array.of(nil ? Filters.FLOAT_NULL : Number(v)));
-      case Filters.KIND.DATE_TIME:
-        return column(Float64Array.of(nil ? Filters.FLOAT_NULL :
-          (v instanceof Date ? v.getTime() : Date.parse(String(v))) * 1000));
-      case Filters.KIND.BOOL:
-        return column(Uint32Array.of(v === true ? 1 : 0));
-      case Filters.KIND.BIG_INT: case Filters.KIND.STRING_LIST:
-        return column(new Int32Array(0), {get: () => nil ? null : v});
-      default:
-        return column(Int32Array.of(0), {categories: [nil ? '' : String(v)]});
-    }
   }
 
   static emptyHint(source: DomainSource): string {

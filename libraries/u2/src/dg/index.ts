@@ -142,8 +142,6 @@ export type {DomainAppOptions, DomainAppPage, DomainAppMode, DomainAppStatus, Do
 export {DomainAddress} from './domain/address.js';
 export {ViewSync, mountView} from './domain/view-sync.js';
 export type {ViewState, ViewSyncHost, ViewMountOptions} from './domain/view-sync.js';
-export {buildList, buildEntity} from './domain/builders.js';
-export type {BuildListOptions, BuildEntityOptions} from './domain/builders.js';
 export {DomainGrid, DomainDataTable} from './domain/grid.js';
 export type {DomainGridOptions, DomainDataTableOptions} from './domain/grid.js';
 export {DomainTree} from './domain/tree.js';

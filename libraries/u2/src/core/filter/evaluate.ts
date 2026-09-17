@@ -2,6 +2,8 @@ import {BitArray} from 'datagrok-api/u2core';
 import {FilterError, KIND, isColumnRef, isGroup, isParam, isSpan} from './model.js';
 import type {FilterCondition, FilterGroup, FilterKind, FilterScalar} from './model.js';
 import {domainValue, kindOf} from './kinds.js';
+import type {FilterProperty} from './schema.js';
+import type {IProperty} from '../property-like.js';
 import {resolveSpan} from '../span.js';
 // cycle with operators.ts is function-scoped only: neither module reads the other at load time
 import {operators} from './operators.js';
@@ -171,6 +173,68 @@ export class ColumnEvaluator {
         return v === true || v === 'true';
       default:
         return String(domainValue(v, ctx));
+    }
+  }
+}
+
+/** Plain records as {@link toMask} reads a frame — the raw-column shapes above, built per column
+ * on demand: the memory backend's whole store, or one form's values as a frame of one. A cell
+ * that is null, undefined or empty text is the column's null. */
+export function recordsFrame(rows: readonly Record<string, unknown>[],
+  properties: readonly IProperty[]): MaskFrameLike {
+  const columns = new Map<string, MaskColumnLike>();
+  return {
+    rowCount: rows.length,
+    column: (name) => {
+      const prop = properties.find((p) => p.name === name);
+      if (prop === undefined)
+        return null;
+      let column = columns.get(name);
+      if (column === undefined)
+        columns.set(name, column = recordsColumn(name, prop as FilterProperty, rows));
+      return column;
+    },
+  };
+}
+
+function recordsColumn(name: string, prop: FilterProperty,
+  rows: readonly Record<string, unknown>[]): MaskColumnLike {
+  const n = rows.length;
+  const cell = (i: number): unknown => {
+    const v = rows[i][name];
+    return v === null || v === undefined || v === '' ? null : v;
+  };
+  const text = (i: number): string => {
+    const v = cell(i);
+    return v === null ? '' : String(v);
+  };
+  const number = (i: number, nil: number): number => {
+    const v = cell(i);
+    return v === null ? nil : Number(v);
+  };
+  // the kind, not the declared type: a ref (or an explicit `kind`) over an int column is built
+  // categorical here, and `type` is what reads it back
+  const kind = kindOf(prop);
+  const column = (raw: () => ArrayLike<number>, extra: Partial<MaskColumnLike> = {}): MaskColumnLike =>
+    ({name, type: kind, length: n, getRawData: raw, ...extra});
+  switch (kind) {
+    case KIND.INT:
+      return column(() => Int32Array.from(rows, (_, i) => number(i, INT_NULL)));
+    case KIND.FLOAT:
+      return column(() => Float64Array.from(rows, (_, i) => number(i, FLOAT_NULL)));
+    case KIND.DATE_TIME:
+      return column(() => Float64Array.from(rows, (_, i) => {
+        const v = cell(i);
+        return v === null ? FLOAT_NULL : (v instanceof Date ? v.getTime() : Date.parse(String(v))) * 1000;
+      }));
+    case KIND.BOOL:
+      return column(() => BitArray.create(n, (i) => cell(i) === true).getBuffer());
+    case KIND.BIG_INT: case KIND.STRING_LIST:
+      return column(() => new Int32Array(0), {get: cell});
+    default: {
+      const categories = [...new Set(rows.map((_, i) => text(i)))];
+      const index = new Map(categories.map((c, i) => [c, i]));
+      return column(() => Int32Array.from(rows, (_, i) => index.get(text(i))!), {categories});
     }
   }
 }

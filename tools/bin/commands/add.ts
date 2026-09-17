@@ -5,29 +5,18 @@ import * as utils from '../utils/utils';
 import * as color from '../utils/color-utils';
 import {generateDomainClients, tableProp} from './api';
 
-/** What a u2 consumer package carries beside the imports (the Stockroom reference package is the
- * answer key): u2 is not on npm, so the dependency is the relative path, webpack builds against
- * the library itself and tsc type-checks against it; the css imports need the loaders. */
-const u2Dependency = '../../libraries/u2';
-const u2DevDependencies: {[name: string]: string} = {'css-loader': '^7.1.2', 'style-loader': '^4.0.0'};
+/** What a u2 consumer package carries beside the imports (the Grit reference package is the
+ * answer key): u2 is not on npm, so the dependency is the workspace link, and `u2core` is the one
+ * external `@datagrok/build-config` does not know about. The css imports and the tsconfig need
+ * nothing — the shared bundler config carries the loaders and the tsconfig extends the base. */
+const u2Dependency = 'workspace:^';
 const u2DgModule = '@datagrok-libraries/u2/src/dg/index.js';
-const u2WebpackAlias = [
-  '    // build against the library itself, not the copy `file:` deps leave in node_modules',
-  '    // (that copy goes stale on every u2 change until a reinstall)',
-  `    alias: {'@datagrok-libraries/u2': path.resolve(__dirname, '../../libraries/u2')},`];
-const u2WebpackCssRule = `      {test: /\\.css$/i, use: ['style-loader', 'css-loader']},`;
-const u2WebpackExternal = `    'datagrok-api/u2core': 'DG.U2',`;
-const u2TsconfigPaths = [
-  '    /* Type-check against the library itself, matching the webpack alias — the copy a `file:`',
-  '       dependency leaves in node_modules goes stale on every u2 change until a reinstall. */',
-  '    "paths": {',
-  '      "@datagrok-libraries/u2": ["../../libraries/u2"],',
-  '      "@datagrok-libraries/u2/*": ["../../libraries/u2/*"],',
-  '      "datagrok-api/dg": ["./node_modules/datagrok-api/dg"],',
-  '      "datagrok-api/grok": ["./node_modules/datagrok-api/grok"],',
-  '      "datagrok-api/ui": ["./node_modules/datagrok-api/ui"],',
-  '      "datagrok-api/u2core": ["./node_modules/datagrok-api/src/u2core/index"]',
-  '    },'];
+const u2RspackExternal = `'datagrok-api/u2core': 'DG.U2'`;
+const u2RspackConfig = [
+  `const {bundler} = require('@datagrok/build-config');`,
+  '',
+  `module.exports = bundler({externals: {${u2RspackExternal}}});`,
+  ''].join('\n');
 
 export function add(args: { _: string[], domain?: string | boolean }) {
   // `--domain` is the only option any `add` entity takes (`grok add app --domain`).
@@ -45,6 +34,7 @@ export function add(args: { _: string[], domain?: string | boolean }) {
   const tsPath = path.join(srcDir, 'package.ts');
   const detectorsPath = path.join(curDir, 'detectors.js');
   const webpackConfigPath = path.join(curDir, 'webpack.config.js');
+  const rspackConfigPath = path.join(curDir, 'rspack.config.js');
   const scriptsDir = path.join(curDir, 'scripts');
   const queryDir = path.join(curDir, 'queries');
   const queryPath = path.join(queryDir, 'queries.sql');
@@ -136,46 +126,18 @@ export function add(args: { _: string[], domain?: string | boolean }) {
     fs.writeFileSync(packageEntry, lines.join(eol), 'utf8');
   }
 
-  /** The u2 wiring of the build: the relative-path dependency and the css loaders in package.json,
-   * the alias, the css rule and the `u2core` external in webpack.config.js, `ESNext.Disposable` and
-   * the `paths` in tsconfig.json. Each edit is skipped where the file already carries it. */
+  /** The u2 wiring of the build: the workspace dependency in package.json and the `u2core`
+   * external in rspack.config.js. Each edit is skipped where the file already carries it. */
   function addU2Wiring() {
     const packageObj = JSON.parse(fs.readFileSync(packagePath, 'utf8'));
     packageObj.dependencies = packageObj.dependencies ?? {};
-    packageObj.devDependencies = packageObj.devDependencies ?? {};
     packageObj.dependencies['@datagrok-libraries/u2'] ??= u2Dependency;
-    for (const [name, version] of Object.entries(u2DevDependencies))
-      packageObj.devDependencies[name] ??= version;
     fs.writeFileSync(packagePath, JSON.stringify(packageObj, null, 2), 'utf8');
 
-    if (fs.existsSync(webpackConfigPath)) {
-      let config = fs.readFileSync(webpackConfigPath, 'utf8');
-      const eol = config.includes('\r\n') ? '\r\n' : '\n';
-      if (!config.includes('@datagrok-libraries/u2'))
-        config = config.replace(/(resolve:\s*{[^}]*?)(\r?\n\s*},)/, (_, block, close) =>
-          block + eol + u2WebpackAlias.join(eol) + close);
-      if (!config.includes('css-loader'))
-        config = config.replace(/(rules:\s*\[[^\]]*?)(\r?\n\s*\],)/, (_, block, close) =>
-          block + eol + u2WebpackCssRule + close);
-      if (!config.includes('datagrok-api/u2core'))
-        config = config.replace(/(\r?\n\s*'datagrok-api\/ui':\s*'ui',)/, (line) => line + eol + u2WebpackExternal);
-      fs.writeFileSync(webpackConfigPath, config, 'utf8');
-    }
-
-    const tsconfigPath = path.join(curDir, 'tsconfig.json');
-    if (ts) {
-      let config = fs.readFileSync(tsconfigPath, 'utf8');
-      const eol = config.includes('\r\n') ? '\r\n' : '\n';
-      config = config.replace(/"lib":\s*\[([^\]]*)\]/, (m, inner: string) => m.includes('ESNext.Disposable') ?
-        m : `"lib": [${inner.replace(/^(\s*"[^"]*")/, '$1, "ESNext.Disposable"')}]`);
-      if (!/^\s*"paths"\s*:/m.test(config)) {
-        if (/^\s*"moduleResolution":.*$/m.test(config))
-          config = config.replace(/^\s*"moduleResolution":.*$/m, (line) => line + eol + u2TsconfigPaths.join(eol));
-        else
-          color.warn('tsconfig.json has no `moduleResolution` line — add the `paths` to `@datagrok-libraries/u2` by hand');
-      }
-      fs.writeFileSync(tsconfigPath, config, 'utf8');
-    }
+    if (!fs.existsSync(rspackConfigPath))
+      fs.writeFileSync(rspackConfigPath, u2RspackConfig, 'utf8');
+    else if (!fs.readFileSync(rspackConfigPath, 'utf8').includes('datagrok-api/u2core'))
+      color.warn(`rspack.config.js is already there — add \`externals: {${u2RspackExternal}}\` to it by hand`);
   }
 
   /** Declares a one-table starter schema in `databases/<schema>/schema.json` — the fresh-package

@@ -7,6 +7,7 @@ import {Emitter} from '../core/emitter.js';
 import type {ObservableLike} from '../core/widget-like.js';
 import type {IProperty} from '../core/property-like.js';
 import type {Access} from '../core/access.js';
+import {EMPTY, isEmpty} from '../core/text.js';
 import type {DomainTableLike, DomainTransactionOpLike, DomainTransactionResultLike} from './domain-backend.js';
 import type {MemoryFrame} from './memory-frame.js';
 import {FrameRows} from './df-rows.js';
@@ -71,9 +72,6 @@ export interface MemoryPendingOp {
   op: DomainTransactionOpLike;
   row: Row;
 }
-
-const EMPTY = 'Value can\'t be empty';
-const isEmpty = (v: unknown) => v === null || v === undefined || v === '';
 
 /** Over the records of a `MemoryFrame`, keyed the way `FrameRows` keys them (the id cell, a
  * draft's stamped `~new:` id): originals per (row, column), the row's state in its `~state`

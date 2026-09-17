@@ -149,7 +149,8 @@ export type {ColumnOf, DomainRowLike, RowsLike, RowValues, RowView} from './sour
 export {DomainBackendError} from './sources/domain-backend.js';
 export type {DomainBackend, DomainTableLike, DomainTableInfoLike, DomainFrameLike, DomainQueryLike,
   DomainReadScope, DomainSupportLike, DomainTransactionOpLike, DomainTransactionResultLike, AuditEntryLike,
-  DomainBatchOptionsLike, DomainBatchReportLike, DomainProbeLike} from './sources/domain-backend.js';
+  DomainBatchOptionsLike, DomainBatchReportLike, DomainBatchValidationLike, DomainDeletedMode,
+  DomainProbeLike} from './sources/domain-backend.js';
 export {MemoryDomainBackend} from './sources/memory-domain.js';
 export type {MemorySchemaJson, MemoryTableJson, MemoryColumnJson, MemoryDomainOptions}
   from './sources/memory-domain.js';

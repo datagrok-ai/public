@@ -5,7 +5,7 @@
 import {batch} from '../../core/signals.js';
 import type {IProperty} from '../../core/property-like.js';
 import {Input, InputOptions, labelText} from '../../core/input-base.js';
-import {text} from '../../core/text.js';
+import {EMPTY, isEmpty, text} from '../../core/text.js';
 import {Access} from '../../core/access.js';
 import type {FieldAccess} from '../../core/access.js';
 import type {IFieldStatus, IWidgetStatus} from '../../core/widget-like.js';
@@ -107,7 +107,7 @@ export class PlatformInputs {
 }
 
 /** `InputType` → editor, the u2 half of the platform's `inputFactories` map
- * (`input_base.dart:580-607`); an input type u2 has no editor for falls through to the rest of
+ * (`input_base.dart` `inputFactories`); an input type u2 has no editor for falls through to the rest of
  * the routing, where Dart would reach for a JS-registered input instead. */
 const BY_INPUT_TYPE: Record<string, InputFactory> = {
   Text: (prop, options) => new TextInput(options),
@@ -135,9 +135,9 @@ const BY_INPUT_TYPE: Record<string, InputFactory> = {
   File: (prop, options) => fileInputFor(prop, options),
 };
 
-/** `editor` → editor (`input_base.dart:702-728`), matched case-insensitively: Dart compares against
- * lower-case 'textarea', while `Property.propertyOptions` writes the `InputType` spelling
- * ('TextArea') into its own `description` option (`property.ts:326`). */
+/** `editor` → editor (`input_base.dart` `_forProperty`), matched case-insensitively: Dart compares
+ * against lower-case 'textarea', while `Property.propertyOptions` writes the `InputType` spelling
+ * ('TextArea') into its own `description` option. */
 const BY_EDITOR: Record<string, InputFactory> = {
   textarea: (prop, options) => new TextArea(options),
   password: (prop, options) => new TextInput({...options, password: true}),
@@ -146,9 +146,9 @@ const BY_EDITOR: Record<string, InputFactory> = {
 };
 
 /** The property types each `editor` hint is honored for, mirroring where `_forProperty` reaches its
- * branch: switch under `pt == Types.BOOL` (`input_base.dart:702`), textarea and password under
- * `pt == Types.STRING` (`:725-728`), and the slider (`:705`) for everything the two bool branches
- * above it did not already take. A hint the type does not accept is ignored, and the type's own
+ * branch: switch under `pt == Types.BOOL`, textarea and password under `pt == Types.STRING`, and
+ * the slider for everything the two bool branches above it did not already take.
+ * A hint the type does not accept is ignored, and the type's own
  * editor is built — `{editor: 'textarea', type: 'int'}` is an int box on both sides. */
 const EDITOR_TYPES: Record<string, (type: string | null | undefined) => boolean> = {
   textarea: (type) => type === 'string',
@@ -235,7 +235,7 @@ function formatter(prop: IProperty): ((value: number) => string) | undefined {
   return (value) => dgFormat(value, format);
 }
 
-/** What `NumberInput.bindProperty` applies Dart-side (`number_input.dart:119-129`): bounds, step
+/** What `NumberInput.bindProperty` applies Dart-side (`number_input.dart`): bounds, step
  * and format from the property, a clicker on bounded ints, a slider on floats or on explicit
  * `showSlider`, units as the postfix. */
 function numberOptions(prop: IProperty, kind: 'int' | 'float',
@@ -384,12 +384,8 @@ export class ObjectForm extends Form {
   private _addField(prop: IProperty, override: FieldOverride): void {
     const access = this._access.field(prop.name!);
     if (access === 'readonly') {
-      const value = span(text(this._read(prop, 'readonly')), 'u2-form-readonly-value');
-      value.dataset.u2Part = 'readonly-value';
-      const caption = labelText(override.label) ?? ObjectForm._caption(prop);
-      const row = div([span(caption, 'u2-input-label'), value], 'u2-form-readonly');
-      row.dataset.u2 = 'readonly-field';
-      row.dataset.u2Name = prop.name!;
+      const {row, value} = ObjectForm.readonlyField(labelText(override.label) ?? ObjectForm._caption(prop),
+        prop.name!, text(this._read(prop, 'readonly')));
       const tooltip = labelText(override.tooltipText) ?? prop.description;
       if (tooltip)
         row.title = tooltip;
@@ -415,7 +411,7 @@ export class ObjectForm extends Form {
     if (!native) {
       input.value.value = this._read(prop, kind);
       if (prop.nullable === false)
-        input.addValidator((value) => ObjectForm.isEmpty(value) ? 'Value can\'t be empty' : null);
+        input.addValidator((value) => isEmpty(value) ? EMPTY : null);
     }
     this.add(input);
     this._fields.push({prop, kind: native ? null : kind, input, access});
@@ -445,6 +441,19 @@ export class ObjectForm extends Form {
       set(this.target, value);
       this._onChanged?.(prop.name!, value);
     });
+  }
+
+  /** The caption + value line a field renders as where it is text rather than an editor —
+   * the generated form's readonly fields, and a domain form's system footer. */
+  static readonlyField(caption: string, name: string,
+    content: string | Node): {row: HTMLElement, value: HTMLElement} {
+    const value = span('', 'u2-form-readonly-value');
+    value.dataset.u2Part = 'readonly-value';
+    value.append(content);
+    const row = div([span(caption, 'u2-input-label'), value], 'u2-form-readonly');
+    row.dataset.u2 = 'readonly-field';
+    row.dataset.u2Name = name;
+    return {row, value};
   }
 
   /** The platform's own editor for a real `DG.Property` under `auto`, or null wherever it has
@@ -496,7 +505,7 @@ export class ObjectForm extends Form {
         const parsed = value === null || value === undefined || value === '' ? NaN : Number(value);
         return isFinite(parsed) ? parsed : null;
       }
-      // js-api marshals a Dart `BigInt` to a JS one and back (wrappers_impl.ts:88,133); a property
+      // js-api marshals a Dart `BigInt` to a JS one and back (`wrappers_impl.ts`); a property
       // that hands over the digits as text is read here just as well
       case 'bigint':
         return typeof value === 'bigint' ? value :
@@ -546,7 +555,7 @@ export class ObjectForm extends Form {
   }
 
   static isEmpty(value: unknown): boolean {
-    return value === null || value === undefined || value === '';
+    return isEmpty(value);
   }
 }
 
