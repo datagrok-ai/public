@@ -237,7 +237,9 @@ to split values in the selected column.
 
 ## Saving a filter configuration
 
-You can save a filter configuration for later use:
+The current state of the **Filter Panel** is saved with the
+[layout](../view-layout.md) and with the dashboard. To keep several filter
+sets for one table, save them as named presets:
 
 1. In the **Filter Panel** context menu, select **Save or Apply > Save…**
 2. Enter a name for the saved configuration.

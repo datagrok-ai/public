@@ -18,8 +18,8 @@ mdx:
 
 Datagrok stores both dashboards and [spaces](space.md) as projects. A space is
 a project that organizes other entities, like a folder. A dashboard is a
-project that holds data (one or more tables) together with the
-visualizations applied to it (a layout).
+project that holds data (one or more [tables](../table.md)) together with
+the visualizations applied to it (a [layout](../../../visualize/view-layout.md)).
 Data and layout are separate entities, which lets a dashboard refresh its
 data without losing its visuals, lets you apply the same layout to a
 different dataset, and lets each user keep personal customizations without
@@ -45,7 +45,7 @@ To create a dashboard, follow these steps:
    * [Add filters](../../../visualize/table-view-1.md#filters-viewer)
    * Customize the grid, such as [color-coding grid columns](../../../visualize/viewers/grid.md#color-code-columns)
    * Optionally, add data from other tables. See [Multiple tables](#multiple-tables).
-1. Save your dashboard.
+1. [Save](#saving-a-dashboard) your dashboard.
 
 Until you save, everything you do stays in your browser's memory. If you close
 or refresh the browser tab, unsaved work is lost.
@@ -93,6 +93,8 @@ For a step-by-step multi-table dashboard on the Northwind database, see the
 [worked example](../../../transform/link-tables.md) on the
 Link tables page.
 
+![Master-detail dashboard on linked tables](../../../transform/link-tables-northwind.gif)
+
 When you save, the **Save project** dialog lists all open tables.
 Links between tables and viewers that point at other tables are saved with
 the project. For a multi-table dashboard, keep these points in mind:
@@ -104,8 +106,8 @@ the project. For a multi-table dashboard, keep these points in mind:
   order in which they were produced and replays it. Static tables load first,
   and then the creation scripts run in the order they were recorded.
 * **Tables from other projects can be linked or cloned.** A table you opened
-  from another dashboard is saved either as a **Link** (a read-only reference
-  that follows the original) or as a **Clone** (an independent copy).
+  from another dashboard is saved either as a _link_ (a read-only reference
+  that follows the original) or as a _clone_ (an independent copy).
   Recipients of your dashboard can read a linked table even if they can't
   see the project it comes from.
 
@@ -232,22 +234,18 @@ update the group instead of re-sharing every dashboard.
 
 ### What recipients get
 
-Permissions granted on a project apply to everything it contains. When a
-dashboard is saved with Data sync on, its tables keep the query, script, or
-file connection they depend on. These dependencies are saved with the
-dashboard, so recipients can re-run the query or script or re-read the file
-without separate permissions. They do not appear as separately shared
-entities in Browse.
+Sharing a dashboard gives recipients access to everything saved with it:
+the tables, the layout, and, for a dashboard saved with Data sync on, the
+queries and scripts used to load its tables, as well as the file connections
+they depend on. Recipients can re-run a query or script or re-read a file
+through the dashboard without separate permissions. These dependencies don't
+appear as separately shared entities in Browse.
 
-:::note
-
-Database connections are the exception. A database query is saved with the
-dashboard, but the database connection behind it is not. Recipients need
-**View and use** permission on the connection to run the query, unless they
-already have access to it (as is usually the case with demo and team
-connections).
-
-:::
+Database connections work differently. The query is saved with the
+dashboard, but the database connection it uses is not. Recipients must have
+**View and use** permission on the connection to run the query. Demo and
+team connections are usually shared already. A private connection must be
+shared separately.
 
 <!-- GIF TODO: img/dashboard-share-sources.gif
 Two browser windows side by side. Left: the author shares a dashboard built on a query
@@ -271,8 +269,14 @@ For a dynamic dashboard based on a parameterized query, the URL also
 includes the current parameter values. Change the values in **Toolbox** >
 **Source**, then copy the updated URL to share that configuration. The
 recipient opens the same dashboard with those parameter values, so you can
-share different configurations without creating copies. See
-[Project parameters](../../../develop/advanced/url-parameters.md#project-parameters).
+share different configurations without creating copies.
+
+:::note developers
+
+You can [define custom URL parameters](../../../develop/advanced/url-parameters.md#project-parameters)
+for a project and map them to the query's parameters.
+
+:::
 
 ## Editing a dashboard
 
@@ -362,8 +366,8 @@ entities.
 :::
 
 Before deleting, check whether other dashboards link to its tables. A linked
-table is marked with a **Link** (<FAIcon icon="fa-solid fa-link" size="1x"/>)
-icon in Browse.
+table is marked with a link icon (<FAIcon icon="fa-solid fa-link" size="1x"/>)
+in Browse.
 
 ## Resources
 
