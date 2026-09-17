@@ -13,7 +13,9 @@ export interface Section {
 
 export interface Answer {
   op: string;
-  target: Record<string, unknown> | null;
+  target?: Record<string, unknown> | null;
+  /** `tests-for` over several targets (or `--changed`) carries them here instead of `target`. */
+  targets?: Record<string, unknown>[];
   /** One line per source the manifest does not report as `ok`; the Dart clause leads. */
   notes?: string[];
   sections: Section[];

@@ -147,4 +147,31 @@ For more information on configuring connections, refer to the [Connections](http
   | core           | Runs package & core tests & autotests                                                                                                 |
   | debug          | Sets a debug breakpoint before each test execution, allowing you to debug the test. Only works in `gui` mode                          |
 
+  **Testing recent changes.** `grok test --recent` runs from anywhere in the monorepo: it takes the
+  change set (the merge base with `master` in both repos plus the working tree), asks the knowledge
+  graph which tests are linked to it (`grok kg tests-for --changed`), prints the plan by tier, and runs
+  each runner row in its own directory, continuing on failure, with one summary table and a non-zero
+  exit when anything failed. It needs a built index (`grok kg build`).
+
+  ```shell
+  grok test --recent                       # changes since the merge base with master, working tree included
+  grok test --recent --dry-run             # print the plan: tiers, tests, runner commands
+  grok test --recent --plan plan.json      # a saved tests-for JSON instead of the graph call (debugging the runners)
+  grok test --recent --tier linked         # the tests of other units and the import walk too
+  grok test --recent --tier all            # the owning features' tests too (the blast radius)
+  grok test --recent --framework dart,dg   # filter runners
+  grok test --recent=HEAD~3                # a different base
+  grok kg tests-for --changed              # the same answer without running anything
+  ```
+
+  `--tier` takes `immediate` (the default: the tests that import, mirror or use the changed files
+  from the same package or library), `reachable`, `feature`, `linked` (`immediate,reachable`),
+  `all`, or a comma list of the first three; a change to a document or a config file alone
+  produces no run row below `feature`. When at least half of a unit's test files are selected, the
+  row runs the whole suite instead. Runners: DG package tests through `grok test`,
+  client `regTest` cases through DevTools, Dart VM tests through `pub run test` (core is Dart 1.x),
+  Playwright specs, vitest files. `--package <Name>` keeps the rows of one package; `--host`, `--skip-build`, `--skip-publish`,
+  `--no-retry`, `--verbose` and `--csv` pass through to every child `grok test` (each child writes
+  its own `<name>-<i>.csv`).
+
 - `link` command is used for public plugins development to link `datagrok-api` and libraries.

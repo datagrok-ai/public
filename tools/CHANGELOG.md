@@ -2,6 +2,19 @@
 
 ## v.next
 
+* grok kg: tests-for sends what a hub helper reaches (a test-folder file most of the unit's test files import) to the reachable tier
+* grok kg: tests-for tiers a test by the units its file stands for (ApiTests for the JS API, a client regTest file for the library its category leads with, datlas tests for grok_shared too), so those suites are immediate for the code they exercise
+* grok kg: build draws the tests edge by name (derived_by name, 0.7): a test file's base name, a category segment or its Test Track folder spelling one feature's id or name; a spelling two features share is reported as ambiguous_test_names
+* grok kg: build observes the test folders of libraries, the JS API and the CLI (tests/, test/, __tests__/, scripts/unit/ in .ts, .js, .mjs, .cjs), node:test suites registering through a local wrapper, and resolves a compiled ../src/x.js import to the .ts source
+* grok kg: build draws lexical uses from every Dart file under a test folder (helpers such as the datlas setup too); tests-for reaches a declaration through a helper the test file imports, one hop
+* grok kg: the client run rows carry the exact DevTools category (Core: d4: Grid: Rendering) with --test for a single test, one row per category
+* grok kg: a barrel (a file that declares nothing and only re-exports; imports edges carry reexport) stands for the files it re-exports in tests-for and impact, with a note
+* grok kg serve: a question's or query's hits that the current filter hides are pinned into the view (and unpinned by the next answer), so an answer is never highlighted on nothing
+* grok kg: build draws the mirrors edge (a test file named after a source file of its unit) and lexical uses from Dart test files to the types they name, flags Dart library files with parts as entry files; tests-for tiers a link by unit (immediate in the changed file's package, reachable elsewhere) and runs a whole suite when at least half of its test files are selected; test --recent defaults to --tier immediate
+* grok test: Added --recent: runs the tests the knowledge graph links to the git change set across every runner (DG package tests, client regTest cases via DevTools, Dart VM tests, Playwright, vitest) with --tier, --framework, --package, --dry-run
+* grok kg: Added report replay, the history yardstick of the change-tests notation (the last N commits scored against the immediate and reachable tiers, per framework, with the misses); tests-for and test --recent take --tier as a comma list with linked (the default of --recent), the Dart runner is pub run test, and test --recent --plan <file> runs a saved plan
+* grok kg: tests-for takes several targets and --changed, answers in tiers (immediate, reachable, feature) with a run section of runner commands; impact lists direct and reachable importers and the docs citing a file
+* grok kg: build collects Dart imports, client regTest cases (framework xamgle), a declares edge from every test file to its tests, doc citations of source files, and the entry flag on package entry points
 * grok kg: Added serve, the graph browser over the current generation (type-tree filters, cosmos.gl rendering of every node, a node/edge pane with Explain / Impact / Tests-for, a Cypher drawer, explore and isolate modes with a view stack); the render tier is exported once into <gen>/vis/
 * grok kg: Added ask, the question set under core/docs/knowledge-graph/questions/ (YAML with Cypher, typed params and relative dates) run from the CLI, the browser and the benchmarks
 * grok kg: Added check and gen for the knowledge graph type files and home documents

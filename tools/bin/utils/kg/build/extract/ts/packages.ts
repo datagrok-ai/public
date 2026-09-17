@@ -68,11 +68,20 @@ export function listPackages(repoRoot: string): PackageFolder[] {
   return readFolders(repoRoot, 'public/packages');
 }
 
-/** Every `package.json` one level under `public/libraries`, and the JS API itself as `js-api`. */
+/** Every `package.json` one level under `public/libraries`, the JS API itself as `js-api` and the grok CLI as `tools`. */
 export function listLibraries(repoRoot: string): PackageFolder[] {
   const libraries = readFolders(repoRoot, 'public/libraries');
-  const jsApi = readJson(path.join(repoRoot, 'public', 'js-api', 'package.json'));
-  return jsApi ? [...libraries, {folder: 'js-api', dir: 'public/js-api', json: jsApi}] : libraries;
+  for (const folder of ['js-api', 'tools']) {
+    const json = readJson(path.join(repoRoot, 'public', folder, 'package.json'));
+    if (json) libraries.push({folder, dir: `public/${folder}`, json});
+  }
+  return libraries;
+}
+
+/** The files every test of a package imports and that import everything else, so an import walk stops at them. */
+export function entryPoints(p: PackageFolder): string[] {
+  const named = ['package.ts', 'package-test.ts', 'package-api.ts'].map((f) => `${p.dir}/src/${f}`);
+  return typeof p.json.main === 'string' ? [...named, path.posix.normalize(`${p.dir}/${posix(p.json.main)}`)] : named;
 }
 
 function readFolders(repoRoot: string, dir: string): PackageFolder[] {

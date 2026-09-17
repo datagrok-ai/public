@@ -8,7 +8,7 @@ import {HomeSet} from '../../../homes';
 import {Emitter} from '../../emitter';
 import {Row} from '../../../normalize';
 import {BuildContext, Extractor} from '../../context';
-import {pkgId, testId, suiteId} from '../../../ids';
+import {pkgId, fileId, testId, suiteId, countLines, sourceFileRow} from '../../../ids';
 import {homesOf, leadingId, resolveMention} from '../markers';
 import {listPackages} from './packages';
 
@@ -73,6 +73,7 @@ class TestLayer {
         skipped: t.skipReason !== undefined ? true : undefined, skip_conditional: t.skipConditional ? true : undefined, skip_reason: t.skipReason,
         benchmark: t.benchmark ? true : undefined, tags: t.tags.length ? t.tags : undefined, provenance: 'ast', source_layer: 'public'};
       if (!this.emitter.node(row).accepted) continue;
+      if (this.emitter.has(fileId(file))) this.emitter.edge({type: 'declares', from: fileId(file), to: id, derived_by: 'ast', confidence: 1, evidence: [file]});
       if (t.dynamic) this.emitter.problem('dynamic_tests', `${file}: ${t.category}/${t.name} names a registration site, not a runnable test: the title is built at run time`);
       if (!this.suites.has(suite)) {
         this.suites.add(suite);
@@ -83,11 +84,14 @@ class TestLayer {
     }
   }
 
+  /** A spec sits outside `src/`, so the file row the declarations pass gives every other test file is emitted here. */
   emitPlaywrightFile(file: string): void {
-    const tests = parsePlaywrightTests(this.read(file));
+    const text = this.read(file);
+    const tests = parsePlaywrightTests(text);
     if (!tests.length) return;
     const suite = suiteId('playwright', file);
     const pkg = /^public\/packages\/([^/]+)\//.exec(file)?.[1];
+    const declared = this.emitter.node(sourceFileRow(file, {loc: countLines(text), package: pkg ? pkgId(pkg) : undefined})).accepted;
     this.emitter.node({type: 'test-suite', id: suite, name: path.posix.basename(file), framework: 'playwright', path: file, package: pkg ? pkgId(pkg) : undefined,
       provenance: 'filesystem', source_layer: 'public'});
     for (const t of tests) {
@@ -95,6 +99,7 @@ class TestLayer {
       const id = playwrightTestId(file, t);
       if (!this.emitter.node({type: 'test', id, name: chain ? `${chain} > ${t.title}` : t.title, path: file, framework: 'playwright', level: 'e2e', category: chain || undefined, suite,
         skipped: t.skipped ? true : undefined, provenance: 'ast', source_layer: 'public'}).accepted) continue;
+      if (declared) this.emitter.edge({type: 'declares', from: fileId(file), to: id, derived_by: 'ast', confidence: 1, evidence: [file]});
       const feature = leadingId(t.title);
       if (feature) this.tests(id, feature, file);
     }
@@ -180,7 +185,7 @@ export function parsePlaywrightTests(source: string): PlaywrightTest[] {
 }
 
 /** The `{` opening the callback of a call whose title ends at [from]: the first brace after `=>` or `function(...)`. */
-function callbackBrace(text: string, from: number): number {
+export function callbackBrace(text: string, from: number): number {
   const arrow = /=>|function\b[^(]*\([^)]*\)/g;
   arrow.lastIndex = from;
   const m = arrow.exec(text);

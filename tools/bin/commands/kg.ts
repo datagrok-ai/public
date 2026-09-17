@@ -12,10 +12,11 @@ import {Mode} from '../utils/kg/build/context';
 import {writeBuild, writeManifest, projectPublic, gitRevisions, buildInputs, batchId, toolsVersion} from '../utils/kg/build/write';
 import {readManifest, generationDir, newGeneration, currentDir, readCurrent, publish, generations, gc, Manifest} from '../utils/kg/generation';
 import {loadKuzu, load as loadIndex, open, run, memoryMb, MISSING_KUZU, BUILD_MEMORY_MB, LoadResult, TableRows} from '../utils/kg/kuzu';
-import {impact, testsFor, explain, find, resolveTarget, DEFAULT_LIMIT} from '../utils/kg/ops';
+import {impact, testsFor, explain, find, resolveTarget, resolveTargets, parseTiers, DEFAULT_LIMIT, TIER_CHOICES, Change} from '../utils/kg/ops';
+import {changeSet} from '../utils/kg/changes';
 import {Answer, caveatNotes} from '../utils/kg/answer';
 import {printAnswer, printReport} from '../utils/kg/print';
-import {readGraph, fromGraph, makeReport as buildReport, writeReports, REPORT_NAMES, ReportName, ReportFormat} from '../utils/kg/report';
+import {readGraph, fromGraph, makeReport as buildReport, writeReports, readLog, replay, REPORT_NAMES, ReportName, ReportFormat, Repo, REPOS} from '../utils/kg/report';
 import {OutputFormat, printOutput} from '../utils/server-output';
 import {exportVis, hasVis} from '../utils/kg/vis';
 import {serve as listen} from '../utils/kg/serve';
@@ -30,6 +31,8 @@ const SERVE_PORT = 7475;
 /** How many generations `grok kg gc` keeps beside the current one. */
 const KEEP_GENERATIONS = 2;
 const BACKLOG_FALLBACK = 'C:/dg/backlog';
+/** How far back `report replay` looks by default. */
+const REPLAY_COMMITS = 200;
 
 export async function kg(argv: any): Promise<boolean> {
   const args: string[] = argv['_'].slice(1).map(String);
@@ -153,8 +156,9 @@ function collect(argv: any, output: string): boolean {
   return true;
 }
 
-/** `grok kg report <name>`: one maintainer report over the JSONL a build already wrote (build-plan.md WO-8). */
-function reportVerb(argv: any, kgRoot: string, repoRoot: string, name: string | undefined, output: ReportFormat): boolean {
+/** `grok kg report <name>`: one maintainer report over the JSONL a build already wrote (build-plan.md WO-8); `replay`
+ * alone reads the index, since it scores the tiers of `tests-for` against the history. */
+async function reportVerb(argv: any, kgRoot: string, repoRoot: string, name: string | undefined, output: ReportFormat): Promise<boolean> {
   if (!name) return fail(`grok kg report needs a report name: ${REPORT_NAMES.join(', ')}`);
   if (!REPORT_NAMES.includes(name as ReportName)) return fail(`unknown report '${name}': ${REPORT_NAMES.join(', ')}`);
   const base = argv.diff === undefined ? undefined : String(argv.diff);
@@ -163,10 +167,40 @@ function reportVerb(argv: any, kgRoot: string, repoRoot: string, name: string | 
   const root = argv.out === undefined ? path.join(repoRoot, '.kg') : path.resolve(String(argv.out));
   const outRoot = currentDir(root);
   if (!outRoot) return fail(`${slashes(root)}: nothing built yet; run grok kg build`);
+  if (name === 'replay') return replayVerb(argv, outRoot, repoRoot, output);
   const system = loadTypeSystem(kgRoot);
   const data = readGraph(outRoot, repoRoot, system, name as ReportName);
   printReport(buildReport(name as ReportName, data, {system, repoRoot, base}), output);
   return true;
+}
+
+/** `grok kg report replay [--commits N] [--repo core|public|both]`: the last N commits of each repository that changed
+ * a source file and a test file, scored against the tiers the current index computes for the source files. */
+async function replayVerb(argv: any, dir: string, repoRoot: string, output: ReportFormat): Promise<boolean> {
+  const commits = argv.commits === undefined ? REPLAY_COMMITS : Number(argv.commits);
+  if (!Number.isInteger(commits) || commits < 1) return fail(`--commits must be a positive integer, got '${argv.commits}'`);
+  const repo = argv.repo === undefined ? 'both' : String(argv.repo);
+  if (!REPOS.includes(repo as Repo)) return fail(`--repo must be ${REPOS.join(', ')}, got '${repo}'`);
+  if (!fs.existsSync(path.join(dir, 'kg.kuzu'))) return fail(`${slashes(path.join(dir, 'kg.kuzu'))}: no index yet; run grok kg build`);
+  const mismatch = indexMismatch(dir);
+  if (mismatch) return fail(mismatch);
+  const opened = await open(dir, true, argv.memory);
+  if (!opened) {
+    console.error(MISSING_KUZU);
+    process.exitCode = 2;
+    return true;
+  }
+  try {
+    printReport(await replay(opened.conn, readLog(repoRoot, commits, repo as Repo), readManifest(dir)?.sources), output);
+    return true;
+  }
+  catch (e: any) {
+    return fail(e.message ?? String(e));
+  }
+  finally {
+    await opened.conn.close();
+    await opened.db.close();
+  }
 }
 
 /** The JSONL is canonical: without the binding the build says so in one line and still succeeds. A load that
@@ -197,8 +231,12 @@ async function graph(verb: string, args: string[], argv: any, output: OutputForm
   if (!dir) return fail('no graph found: run grok kg build inside the monorepo, or pass --kg <folder>');
   const cypher = verb !== 'query' ? '' : argv.file ? fs.readFileSync(path.resolve(String(argv.file)), 'utf8') : args.join(' ');
   const text = args.join(' ').trim();
+  const changed: string | true | undefined = verb === 'tests-for' && argv.changed ? argv.changed === true ? true : String(argv.changed) : undefined;
+  const tiers = argv.tier === undefined ? undefined : parseTiers(String(argv.tier));
   if (verb === 'query' && !cypher.trim()) return fail('grok kg query needs a Cypher statement, or --file <path>');
-  if (verb !== 'query' && !text) return fail(`grok kg ${verb} needs ${verb === 'find' ? 'a text to search for' : 'a path or a ~id'}`);
+  if (verb !== 'query' && !text && !changed) return fail(`grok kg ${verb} needs ${verb === 'find' ? 'a text to search for' : 'a path or a ~id'}`);
+  if (argv.tier !== undefined && !tiers) return fail(`--tier must be ${TIER_CHOICES}, got '${argv.tier}'`);
+  const repoRoot = path.dirname(root);
   if (!fs.existsSync(path.join(dir, 'kg.kuzu'))) return fail(`${slashes(path.join(dir, 'kg.kuzu'))}: no index yet; run grok kg build`);
   const mismatch = indexMismatch(dir);
   if (mismatch) return fail(mismatch);
@@ -216,9 +254,29 @@ async function graph(verb: string, args: string[], argv: any, output: OutputForm
     }
     const limit = Number(argv.limit) > 0 ? Number(argv.limit) : DEFAULT_LIMIT;
     const manifest = readManifest(dir);
-    const options = {limit, groups: manifest?.edge_groups};
+    const options = {limit, groups: manifest?.edge_groups, tiers, repoRoot};
+    const notes: string[] = [];
     let result: Answer;
     if (verb === 'find') result = await find(opened.conn, text, options);
+    else if (verb === 'tests-for' && (changed || args.length > 1)) {
+      // several targets, or the change set: the unknown ones are reported in `changes` rather than refused
+      const changes: Change[] = args.map((p) => ({path: p, known: false, repo: p.startsWith('public/') ? 'public' : 'core'}));
+      if (changed) {
+        const set = changeSet(repoRoot, changed === true ? undefined : changed);
+        changes.push(...set.files.map((f) => ({path: f.path, known: false, repo: f.repo})));
+        notes.push(...set.notes);
+      }
+      const resolved = await resolveTargets(opened.conn, changes.map((c) => c.path));
+      const targets: Record<string, unknown>[] = [];
+      for (const c of changes) {
+        const target = resolved.get(c.path);
+        c.known = !!target;
+        if (target && !targets.some((t) => t.id === target.id)) targets.push(target);
+      }
+      const unknown = changes.filter((c) => !c.known).length;
+      if (unknown) notes.push(`changes: ${unknown} of ${changes.length} not in the index (new since the build, or not a source file); they contribute nothing`);
+      result = await testsFor(opened.conn, targets, options, changes);
+    }
     else {
       const target = await resolveTarget(opened.conn, text);
       if (!target) return fail(`${text}: no such node; try grok kg find ${text.replace(/^~/, '')}`);
@@ -226,7 +284,7 @@ async function graph(verb: string, args: string[], argv: any, output: OutputForm
         : verb === 'tests-for' ? await testsFor(opened.conn, target, options)
           : await explain(opened.conn, target, options);
     }
-    result.notes = caveatNotes(manifest);
+    result.notes = [...caveatNotes(manifest), ...notes, ...(result.notes ?? [])];
     printAnswer(result, output);
     return true;
   }

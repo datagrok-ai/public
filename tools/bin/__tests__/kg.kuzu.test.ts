@@ -183,7 +183,8 @@ describe('the index itself (build-plan.md WO-7, WO-10)', () => {
       const bio = (await resolveTarget(conn, 'domains/bio'))!;
       const tests = await testsFor(conn, bio, LIMIT);
       expect(tests.sections.find((s) => s.title === 'scenarios')!.rows).toMatchObject([{scenario: 'TS:viewers/scatter-plot/ui', feature: 'domains/bio', manual_only: true}]);
-      expect(tests.sections.find((s) => s.title === 'tests')!.rows).toEqual([]);
+      // the feature-level tests are the `feature` tier since change-tests/plan.md added the immediate and reachable tiers
+      expect(tests.sections.find((s) => s.title === 'feature')!.rows).toEqual([]);
       expect(coverageNote({dart: 'partial'})).toBe('Dart coverage partial (some markers did not resolve)');
       expect(coverageNote(undefined)).toBe('Dart coverage unknown (the dart extractor did not run)');
       expect(coverageNote({dart: 'ok'})).toBeUndefined();
@@ -224,9 +225,9 @@ describe('the index itself (build-plan.md WO-7, WO-10)', () => {
 
   withKuzu('says why a section came back empty instead of printing nothing', async () => {
     const {conn} = index.opened!;
-    const reason = 'tests (0): no test carries ~domains/bio and no owned file contains tests';
+    const reason = 'feature (0): no test carries ~domains/bio and no owned file contains tests';
     const tests = await testsFor(conn, (await resolveTarget(conn, 'domains/bio'))!, LIMIT);
-    expect(tests.sections.find((s) => s.title === 'tests')!.empty).toBe(reason);
+    expect(tests.sections.find((s) => s.title === 'feature')!.empty).toBe(reason);
     const log = vi.spyOn(console, 'log').mockImplementation(() => {});
     let printed: string[];
     try {

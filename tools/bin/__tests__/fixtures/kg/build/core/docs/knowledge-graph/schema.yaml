@@ -64,7 +64,7 @@ member:
     Version:     string of dot-separated integers, compared numerically
     Path:        repo-relative path or glob; must resolve at build time; "<repo>:" prefix for landing/ and infra/
     Url:         absolute URL
-    Provenance:  "'annotation' | 'filesystem' | 'ast' | 'registry' | 'git' | 'external' | 'llm' | 'manual'"
+    Provenance:  "'annotation' | 'filesystem' | 'ast' | 'lexical' | 'name' | 'registry' | 'git' | 'external' | 'llm' | 'manual'"
     TypeUnion:   union of node type names, e.g. "Feature | Ticket"
   references:    a node type name in a type position is a reference by id to that type or any subtype
   lists:         "T[]"

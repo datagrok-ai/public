@@ -6,7 +6,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import {globSync} from 'glob';
 import {splitFrontmatter, parseYamlDocument, keyLine, Frontmatter} from './frontmatter';
-import {extractCitations, headings, Citation} from './citations';
+import {extractCitations, headings, proseLines, Citation} from './citations';
 import {TypeSystem, NodeType, EdgeType, Member, Issue, checkValue, isSubtype, pascal, kebabOfLabel, concreteAuthored} from './types';
 import {normalizeRow} from './normalize';
 import {SCHEME_TYPES, PREFIXED_ID, SCHEMED_ID, PAGE_PATH, docCandidates} from './ids';
@@ -230,8 +230,8 @@ function readHome(system: TypeSystem, file: string, fm: Frontmatter, isYaml: boo
 }
 
 export function firstHeading(body: string): string | undefined {
-  for (const line of body.split('\n')) {
-    const m = /^#\s+(.+?)\s*#*\s*$/.exec(line);
+  for (const {text} of proseLines(body)) {
+    const m = /^#\s+(.+?)\s*#*\s*$/.exec(text);
     if (m) return m[1];
   }
   return undefined;

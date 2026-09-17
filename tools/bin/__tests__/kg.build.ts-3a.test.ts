@@ -123,6 +123,7 @@ describe('ts-packages extractor (build-plan.md WO-3a)', () => {
     expect(byId(rows('nodes/package'), 'pkg:Plain')).toMatchObject({language: 'ts', service: false, npm: '@datagrok/plain'});
     expect(rows('nodes/library')).toEqual([
       expect.objectContaining({id: 'lib:js-api', type: 'library', name: 'js-api', npm: 'datagrok-api', version: '1.27.11', language: 'ts', path: 'public/js-api', provenance: 'registry'}),
+      expect.objectContaining({id: 'lib:tools', name: 'tools', npm: 'datagrok-tools', version: '6.5.10', path: 'public/tools'}),
       expect.objectContaining({id: 'lib:utils', name: 'utils', npm: '@datagrok-libraries/utils', version: '4.7.9', path: 'public/libraries/utils'}),
     ]);
   });
@@ -143,6 +144,7 @@ describe('ts-packages extractor (build-plan.md WO-3a)', () => {
   it('classifies dependencies into depends-on with kind and range; other npm names and unknown targets are left out', async () => {
     const {rows, problems} = await graph;
     expect(rows('edges/depends-on').map((e) => [e.from, e.to, e.kind, e.range])).toEqual([
+      ['lib:tools', 'lib:js-api', 'runtime', '^1.27.7'],
       ['lib:utils', 'lib:js-api', 'runtime', '^1.27.7'],
       ['pkg:Demo', 'lib:js-api', 'runtime', '^1.27.7'],
       ['pkg:Demo', 'lib:utils', 'optional', '^4.7.9'],
@@ -150,7 +152,7 @@ describe('ts-packages extractor (build-plan.md WO-3a)', () => {
       ['pkg:Demo', 'pkg:Plain', 'dev', '^0.1.0'],
       ['pkg:Plain', 'lib:js-api', 'runtime', '^1.27.7'],
     ]);
-    expect(rows('edges/depends-on')[1]).toMatchObject({derived_by: 'registry', confidence: 1, evidence: ['public/packages/Demo/package.json']});
+    expect(rows('edges/depends-on')[2]).toMatchObject({derived_by: 'registry', confidence: 1, evidence: ['public/packages/Demo/package.json']});
     expect(problems.unresolved_ids).toContain('public/packages/Demo/package.json: peerDependencies @datagrok-libraries/nowhere is not under public/packages or public/libraries');
   });
 

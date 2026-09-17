@@ -18,6 +18,7 @@ import * as playwrightRunner from '../utils/playwright-runner';
 import {runNodeTests, NodeTestResult} from '../utils/node-test-runner';
 import {BrowserOptions, loadTestsList, runBrowser, ResultObject, saveCsvResults, printBrowsersResult, mergeBrowsersResults, Test, OrganizedTests as OrganizedTest, timeout, addColumnToCsv} from '../utils/test-utils';
 import {setAlphabeticalOrder} from '../utils/order-functions';
+import * as recent from '../utils/recent-tests';
 
 // Whole-run cap for the Puppeteer pass; when it fires, results collected so far
 // are discarded (they live in the page until a pass completes). CI runners on
@@ -25,7 +26,8 @@ import {setAlphabeticalOrder} from '../utils/order-functions';
 const testInvocationTimeout = parseInt(process.env['GROK_TEST_INVOCATION_TIMEOUT_MS'] ?? '', 10) || 3600000;
 
 const availableCommandOptions = ['host', 'package', 'csv', 'gui', 'catchUnhandled', 'platform', 'core',
-  'report', 'skip-build', 'skip-publish', 'path', 'record', 'verbose', 'benchmark', 'category', 'test', 'stress-test', 'link', 'tag', 'ci-cd', 'debug', 'no-retry', 'dartium', 'f', 'params', 'logfailed', 'skip-playwright', 'skip-puppeteer', 'skip-node', 'node-only'];
+  'report', 'skip-build', 'skip-publish', 'path', 'record', 'verbose', 'benchmark', 'category', 'test', 'stress-test', 'link', 'tag', 'ci-cd', 'debug', 'no-retry', 'dartium', 'f', 'params', 'logfailed', 'skip-playwright', 'skip-puppeteer', 'skip-node', 'node-only',
+  'recent', 'tier', 'framework', 'dry-run', 'plan'];
 
 const curDir = process.cwd();
 
@@ -150,6 +152,9 @@ function findGitRoot(startDir: string): string | undefined {
 export async function test(args: TestArgs): Promise<boolean> {
   if (args['_'][1] === 'list')
     return await listTests(args);
+
+  if (args.recent)
+    return await testRecent(args);
 
   if (args.dartium)
     return await testDartium(args);
@@ -353,6 +358,48 @@ export async function test(args: TestArgs): Promise<boolean> {
   } else
     testUtils.exitWithCode(0);
   return true;
+}
+
+/** `grok test --recent[=<base>]`: the graph names the tests linked to the change set, each runner row runs in its own directory. */
+async function testRecent(args: TestArgs): Promise<boolean> {
+  const root = recent.findMonorepoRoot(curDir);
+  if (!root) {
+    color.error(`grok test --recent needs the monorepo: run it inside a checkout with core/ and public/ (not ${curDir})`);
+    process.exit(1);
+  }
+  const tier = args.tier === undefined ? recent.DEFAULT_TIER : String(args.tier);
+  const tiers = recent.parseTiers(tier);
+  if (!tiers) {
+    color.error(`--tier must be ${recent.TIER_CHOICES}, got '${tier}'`);
+    process.exit(1);
+  }
+  const grokScript = recent.resolveGrokScript(root, path.resolve(__dirname, '..', 'grok.js'));
+  const plan = recent.parsePlan(args.plan ? JSON.parse(fs.readFileSync(path.resolve(curDir, String(args.plan)), 'utf-8')) : askGraph(root, grokScript, args, tier), tiers);
+  plan.runs = recent.filterRuns(plan.runs, {framework: args.framework, package: args.package});
+  recent.printPlan(plan);
+  if (args['dry-run'] || !plan.runs.length)
+    testUtils.exitWithCode(0);
+  const results = await recent.runPlan(plan.runs, recent.spawnInherited, {
+    root, grokScript, passThrough: recent.passThroughArgs(args),
+    csv: args.csv ? resolveCsvPath(args.csv) : undefined,
+  });
+  recent.printSummary(results);
+  testUtils.exitWithCode(recent.planFailed(results) ? 1 : 0);
+  return true;
+}
+
+/** The `tests-for --changed` answer from the worktree's own grok.js; a failure prints its tail and exits. */
+function askGraph(root: string, grokScript: string, args: TestArgs, tier: string): any {
+  const kg = spawnSync(process.execPath, [grokScript, ...recent.kgArgs(args.recent!, tier)], {cwd: root, encoding: 'utf-8', maxBuffer: 50 * 1024 * 1024});
+  const answer = kg.status === 0 ? recent.extractJson(kg.stdout ?? '') : undefined;
+  if (answer === undefined) {
+    const tail = `${kg.stderr ?? ''}\n${kg.stdout ?? ''}`.trim().split(/\r?\n/).slice(-20).join('\n');
+    color.error(`grok kg tests-for --changed failed (exit ${kg.status ?? kg.error?.message}):\n${tail}`);
+    if (/kg build/.test(tail))
+      color.warn('No built index: run `grok kg build` from the monorepo root first.');
+    process.exit(1);
+  }
+  return answer;
 }
 
 function resolveFilter(args: TestArgs): string | undefined {
@@ -599,6 +646,11 @@ interface TestArgs {
   'skip-puppeteer'?: boolean,
   'skip-node'?: boolean,
   'node-only'?: boolean,
+  recent?: boolean | string,
+  tier?: string,
+  framework?: string,
+  'dry-run'?: boolean,
+  plan?: string,
 }
 
 interface TestResult {

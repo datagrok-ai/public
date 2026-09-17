@@ -589,7 +589,7 @@ describe('grok kg command', () => {
     const repo = makeRepo();
     const kgRoot = path.join(repo, KG_DIR);
     for (const [argv, message] of [
-      [{_: ['kg', 'report'], kg: kgRoot}, /^grok kg report needs a report name: orphans, stale, coverage, proposed, diff$/],
+      [{_: ['kg', 'report'], kg: kgRoot}, /^grok kg report needs a report name: orphans, stale, coverage, proposed, diff, replay$/],
       [{_: ['kg', 'check'], kg: kgRoot, output: 'csv'}, /--output must be table or json, got 'csv'/],
       [{_: ['kg', 'check', 'extra'], kg: kgRoot}, /unexpected argument 'extra'/],
       [{_: ['kg', 'gen'], kg: kgRoot, check: true, 'types-only': true}, /--types-only cannot be combined with gen/],

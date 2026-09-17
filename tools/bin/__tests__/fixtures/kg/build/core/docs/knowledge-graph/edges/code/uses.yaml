@@ -1,9 +1,10 @@
 type: uses
 from: SourceFile | Package | Sample | Tutorial
 to: Declaration
-derived_by: [ast]
+derived_by: [ast, lexical]
 description: >
-  A package, file, sample or tutorial uses a JS API class, enum, function or ui helper. The edge behind "which
+  A package, file, sample or tutorial uses a JS API class, enum, function or ui helper (ast), or a Dart test file
+  names a type its package or an imported one declares (lexical, one candidate only). The edge behind "which
   packages would break if this API member changed".
 properties:
   kind:          "'class' | 'enum' | 'ui' | 'function' | 'type'"

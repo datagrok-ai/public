@@ -6,7 +6,7 @@ import * as path from 'path';
 import {globSync} from 'glob';
 import {discoverHomeFiles, firstHeading, HomeSet} from '../../homes';
 import {splitFrontmatter, Frontmatter} from '../../frontmatter';
-import {proseLines, headings} from '../../citations';
+import {proseLines, headings, extractCitations} from '../../citations';
 import {Emitter} from '../emitter';
 import {Row} from '../../normalize';
 import {BuildContext, Extractor} from '../context';
@@ -63,6 +63,8 @@ class DocLayer {
       this.emitter.node({type: 'doc-anchor', id: docId(file, h.slug), name: h.text, path: file, page: id, slug: h.slug, depth: h.depth,
         visibility, provenance: 'annotation', source_layer: sourceLayerOf(file)});
     this.unresolved += emitMentions(this.emitter, id, prose.map((l) => l.text).join('\n'), file, this.homes).unresolved.length;
+    for (const c of extractCitations(file, fm.body, fm.bodyLine))
+      if (c.target === 'code' && c.resolved) this.emitter.citation(file, c.resolved);
     if (file.startsWith(TEST_TRACK) && data.feature !== undefined && data.id === undefined) this.emitScenario(file, fm, name, prose.map((l) => l.text));
   }
 

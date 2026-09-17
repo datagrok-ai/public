@@ -13,19 +13,20 @@ export const importsExtractor: Extractor = {
     const sources = tsSources(ctx, emitter);
     for (const file of sources.files) {
       const from = fileId(file.path);
-      const targets = new Map<string, Set<string>>();
+      const targets = new Map<string, {symbols: Set<string>, reexport: boolean}>();
       for (const imp of file.imports) {
         const {to, unresolved} = sources.resolveImport(file, imp.specifier);
         if (!to || to === from) {
           if (unresolved) emitter.problem('unresolved_ids', `${file.path}: import '${imp.specifier}' resolves to no file, library or package`);
           continue;
         }
-        let symbols = targets.get(to);
-        if (!symbols) targets.set(to, symbols = new Set());
-        for (const s of imp.symbols) symbols.add(s);
+        let target = targets.get(to);
+        if (!target) targets.set(to, target = {symbols: new Set(), reexport: true});
+        for (const s of imp.symbols) target.symbols.add(s);
+        target.reexport = target.reexport && imp.reexport === true;
       }
-      for (const [to, symbols] of targets)
-        emitter.edge({type: 'imports', from, to, symbols: symbols.size ? [...symbols].sort() : undefined, derived_by: 'ast', confidence: 1, evidence: [file.path]});
+      for (const [to, {symbols, reexport}] of targets)
+        emitter.edge({type: 'imports', from, to, symbols: symbols.size ? [...symbols].sort() : undefined, reexport: reexport ? true : undefined, derived_by: 'ast', confidence: 1, evidence: [file.path]});
     }
     emitter.source('ts-imports', sources.failed ? 'partial' : 'ok');
   },

@@ -4,6 +4,7 @@ import {homesExtractor} from './extract/homes';
 import {packagesExtractor} from './extract/ts/packages';
 import {functionsExtractor} from './extract/ts/functions';
 import {testsExtractor} from './extract/ts/tests';
+import {nodeTestsExtractor} from './extract/ts/node-tests';
 import {samplesExtractor} from './extract/ts/samples';
 import {changelogExtractor} from './extract/ts/changelog';
 import {docsExtractor} from './extract/docs';
@@ -18,7 +19,7 @@ import {Mode, Extractor, BuildContext} from './context';
 
 /** In order; membership resolution reads the claims of all the others, so it stays last. */
 export const EXTRACTORS: Extractor[] = [homesExtractor, packagesExtractor, functionsExtractor, declarationsExtractor, importsExtractor, usesExtractor,
-  testsExtractor, samplesExtractor, changelogExtractor, docsExtractor, inlineMarkersExtractor, dartExtractor, processExtractor, membershipExtractor];
+  testsExtractor, nodeTestsExtractor, samplesExtractor, changelogExtractor, docsExtractor, inlineMarkersExtractor, dartExtractor, processExtractor, membershipExtractor];
 
 /** What the sources of [extractors] contribute, by source name, for the manifest. */
 export function provides(extractors: Extractor[]): Record<string, string> {

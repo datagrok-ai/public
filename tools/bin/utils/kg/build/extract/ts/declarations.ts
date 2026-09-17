@@ -10,10 +10,16 @@ import {ts} from 'ts-morph';
 import {Emitter} from '../../emitter';
 import {BuildContext, Extractor} from '../../context';
 import {pkgId, libId, fileId, declId, countLines, sourceFileRow} from '../../../ids';
-import {listPackages, listLibraries} from './packages';
+import {listPackages, listLibraries, entryPoints} from './packages';
 
-const SOURCE_IGNORE = ['**/node_modules/**', '**/dist/**', '**/*.d.ts'];
+const SOURCE_IGNORE = ['**/node_modules/**', '**/dist/**', '**/*.d.ts', '**/__tests__/fixtures/**'];
 const JS_API = libId('js-api');
+/** Where a unit's TypeScript is: `src/` for packages and libraries; the CLI keeps its sources beside their Babel output under `bin/`. */
+const SOURCE_GLOBS: Record<string, string> = {[libId('tools')]: 'bin/**/*.ts'};
+const DEFAULT_SOURCES = 'src/**/*.{ts,tsx}';
+/** The test folders of a library, the JS API and the CLI (u2's node:test suites, the JS API's scripts/unit), fixtures left out. */
+const LIB_TEST_SOURCES = '{tests,test,__tests__,scripts/unit}/**/*.{test,spec}.{ts,js,mjs,cjs}';
+const TEST_IGNORE = [...SOURCE_IGNORE, '**/fixtures/**'];
 const JS_API_ROOTS = ['ui.ts', 'grok.ts', 'dg.ts'];
 const SIGNATURE_CAP = 160;
 /** Files an import may name that are not TypeScript sources: present on disk, absent from the graph. */
@@ -52,6 +58,8 @@ export interface TsImport {
   namespace?: string;
   /** The exported name of `export * as X from`. */
   alias?: string;
+  /** An `export ... from` statement: the file re-exports what it names. */
+  reexport?: boolean;
 }
 
 /** A package, a library or the JS API: the owner of the files under its folder. */
@@ -59,6 +67,8 @@ export interface TsUnit {
   id: string;
   dir: string;
   npm?: string;
+  /** A package's entry points (`entryPoints`), flagged `entry` on their file rows. */
+  entries?: Set<string>;
 }
 
 export interface TsFile {
@@ -112,15 +122,16 @@ export class TsSources {
     const jsApi = listLibraries(ctx.repoRoot).find((l) => l.folder === 'js-api');
     const units: TsUnit[] = jsApi ? [{id: JS_API, dir: jsApi.dir, npm: jsApi.json.name}] : [];
     if (ctx.mode === 'full') {
-      for (const p of listPackages(ctx.repoRoot)) units.push({id: pkgId(p.folder), dir: p.dir, npm: p.json.name});
+      for (const p of listPackages(ctx.repoRoot)) units.push({id: pkgId(p.folder), dir: p.dir, npm: p.json.name, entries: new Set(entryPoints(p))});
       for (const l of listLibraries(ctx.repoRoot)) if (l.folder !== 'js-api') units.push({id: libId(l.folder), dir: l.dir, npm: l.json.name});
     }
     for (const unit of units) {
       this.units.set(unit.id, unit);
       if (unit.npm) this.byNpm.set(unit.npm, unit);
-      const files = globSync(`${unit.dir}/src/**/*.{ts,tsx}`, {cwd: ctx.repoRoot, ignore: SOURCE_IGNORE, nodir: true, posix: true, windowsPathsNoEscape: true});
+      const files = globSync(`${unit.dir}/${SOURCE_GLOBS[unit.id] ?? DEFAULT_SOURCES}`, {cwd: ctx.repoRoot, ignore: SOURCE_IGNORE, nodir: true, posix: true, windowsPathsNoEscape: true});
       if (unit.id === JS_API) files.push(...JS_API_ROOTS.map((f) => `${unit.dir}/${f}`).filter((f) => fs.existsSync(path.join(ctx.repoRoot, f))));
-      for (const file of files.sort()) {
+      if (unit.id.startsWith('lib:')) files.push(...globSync(`${unit.dir}/${LIB_TEST_SOURCES}`, {cwd: ctx.repoRoot, ignore: TEST_IGNORE, nodir: true, posix: true, windowsPathsNoEscape: true}));
+      for (const file of [...new Set(files)].sort()) {
         const parsed = this.parse(file, unit, emitter);
         this.files.push(parsed);
         this.byPath.set(file, parsed);
@@ -246,7 +257,8 @@ export class TsSources {
       return parsed;
     }
     parsed.loc = countLines(text);
-    const sf = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true, file.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS);
+    const kind = file.endsWith('.tsx') ? ts.ScriptKind.TSX : /\.[cm]?js$/.test(file) ? ts.ScriptKind.JS : ts.ScriptKind.TS;
+    const sf = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true, kind);
     const diagnostics = (sf as any).parseDiagnostics as ts.Diagnostic[] ?? [];
     if (diagnostics.length) {
       this.failed++;
@@ -375,6 +387,7 @@ class FileWalk {
     else {
       if (!st.moduleSpecifier || !ts.isStringLiteral(st.moduleSpecifier)) return;
       imp.specifier = st.moduleSpecifier.text;
+      if (ts.isExportDeclaration(st)) imp.reexport = true;
       const clause = ts.isImportDeclaration(st) ? st.importClause : st.exportClause;
       if (ts.isImportDeclaration(st) && clause && ts.isImportClause(clause) && clause.name) {
         imp.symbols.push('default');
@@ -415,7 +428,8 @@ export const declarationsExtractor: Extractor = {
     for (const file of sources.files) {
       const isPackage = file.unit.id.startsWith('pkg:');
       const isApi = file.unit.id === JS_API;
-      const admitted = emitter.node(sourceFileRow(file.path, {loc: file.loc, generated: file.generated ? true : undefined, package: isPackage ? file.unit.id : undefined}));
+      const admitted = emitter.node(sourceFileRow(file.path, {loc: file.loc, generated: file.generated ? true : undefined, package: isPackage ? file.unit.id : undefined,
+        entry: file.unit.entries?.has(file.path) ? true : undefined}));
       if (!admitted.accepted) continue;
       emitter.edge({type: 'declares', from: file.unit.id, to: fileId(file.path), derived_by: 'ast', confidence: 1, evidence: [file.path]});
       const emitted = new Set<string>();

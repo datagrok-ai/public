@@ -50,7 +50,7 @@ export interface Graph {
   manifest: Record<string, unknown>;
 }
 
-export const PROVENANCE_RANK = ['annotation', 'ast', 'registry', 'filesystem', 'external', 'git', 'manual', 'llm'];
+export const PROVENANCE_RANK = ['annotation', 'ast', 'lexical', 'registry', 'filesystem', 'name', 'external', 'git', 'manual', 'llm'];
 const VISIBILITY_ORDER = ['public', 'dev', 'internal'];
 const EVIDENCE_CAP = 20;
 const INVALID_CAP = 500;
@@ -71,6 +71,7 @@ export class Emitter {
   private edges = new Map<string, Row>();
   private claims: Claim[] = [];
   private helpPages: {file: string, page: string}[] = [];
+  private cited: {page: string, file: string}[] = [];
   private problems: Record<string, number> = Object.fromEntries(PROBLEM_KINDS.map((k) => [k, 0]));
   private details: Record<string, string[]> = {};
   private invalid: Row[] = [];
@@ -167,6 +168,24 @@ export class Emitter {
 
   get helpRefs(): {file: string, page: string}[] {
     return this.helpPages;
+  }
+
+  /** A repo path a doc page cites: membership draws `mentions` from it once every extractor has said which files exist. */
+  citation(page: string, file: string): void {
+    this.cited.push({page, file});
+  }
+
+  get citations(): {page: string, file: string}[] {
+    return this.cited;
+  }
+
+  has(id: string): boolean {
+    return this.nodes.has(id);
+  }
+
+  /** Whether an edge of [type] between these two nodes was emitted, whatever derived it (an edge type without identity properties). */
+  hasEdge(type: string, from: string, to: string): boolean {
+    return this.edges.has([type, from, to, ''].join(' '));
   }
 
   /** The rows emitted so far whose type is [type] or narrows it; membership resolution reads files and tests this way. */

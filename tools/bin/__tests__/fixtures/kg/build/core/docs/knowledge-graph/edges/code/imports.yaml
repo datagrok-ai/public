@@ -2,6 +2,9 @@ type: imports
 from: SourceFile
 to: SourceFile | Library | Package
 derived_by: [ast]
-description: An import statement resolved to its target file, library or package.
+description: >
+  An import statement resolved to its target file, library or package: a TypeScript
+  import, or a Dart `import`, `export` or `part` directive resolved through the package table.
 properties:
   symbols?:      string[]
+  reexport?:     boolean                    # every statement behind the edge is an `export ... from`: the file re-exports the target

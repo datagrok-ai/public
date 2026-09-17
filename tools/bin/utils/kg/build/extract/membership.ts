@@ -7,12 +7,19 @@ import {Emitter, Claim} from '../emitter';
 import {Row} from '../../normalize';
 import {BuildContext, Extractor} from '../context';
 import {REPO_PREFIX, GLOB_MAGIC} from '../../homes';
-import {fileId, posix, docId, CODE_ROOTS, countLines, sourceFileRow} from '../../ids';
+import {fileId, posix, docId, CODE_ROOTS, countLines, sourceFileRow, unitOf} from '../../ids';
 import {homesOf} from './markers';
 
 /** Claim properties an ownership edge carries; anything else the `code:` item said stays in the claim. */
 const OWNER_PROPS = ['role', 'layer'];
 const RUNGS: (1 | 2 | 3)[] = [1, 2, 3];
+/** A TypeScript file no mirror may point at: in a tests folder, or named as a test. */
+const TS_TEST_PATH = /(?:^|\/)(?:tests|__tests__)\/|\.(?:test|spec)\.(?:tsx?|[cm]?js)$/;
+const MIRROR_NAMES: [RegExp, string][] = [[/^(.+)_test\.dart$/, '_'], [/^(.+)-tests\.ts$/, '-'], [/^(.+)(?:\.test|-test)\.ts$/, '']];
+/** The Test Track specs, whose folder names the feature. */
+const TEST_TRACK = 'public/packages/UsageAnalysis/files/TestTrack/';
+const TEST_WORDS = ['tests', 'test', 'spec', 'ui'];
+const NAME_CONFIDENCE = 0.7;
 
 export const membershipExtractor: Extractor = {
   name: 'membership',
@@ -31,6 +38,7 @@ interface Owner {
 class Membership {
   /** Home file per feature, for the evidence of a claim and for the folders of rung 4. */
   private homeFile = new Map<string, string>();
+  private featureName = new Map<string, string>();
   /** Folder -> the features rung 4 may inherit from it; a folder several features claim is no candidate. */
   private folders = new Map<string, Set<string>>();
   private owners = new Map<string, string>();
@@ -59,7 +67,10 @@ class Membership {
       }
     for (const file of [...files.keys()].sort()) this.resolve(file, files.get(file)!, claims.get(file) ?? []);
     this.testEdges();
+    this.nameEdges();
+    this.mirrorEdges(files);
     this.helpEdges();
+    this.citationEdges(files);
     this.orphans.sort((a, b) => b.loc - a.loc || (a.file < b.file ? -1 : 1));
     this.emitter.manifest('inventory', this.inventory);
     this.emitter.report('ownership', {inventory: this.inventory, ambiguous: this.ambiguous, orphans: this.orphans, resolved_by_chain: this.chained});
@@ -70,6 +81,7 @@ class Membership {
     for (const home of homesOf(this.ctx).homes) {
       if (home.type.root !== 'feature') continue;
       this.homeFile.set(home.id, home.file);
+      this.featureName.set(home.id, home.name);
       const roots = codeRoots(home.data.code);
       // every root is a candidate, however many the feature has: rung 4 asks whether the folder is unambiguous, not the feature
       for (const folder of roots.map((r) => this.rootFolder(r)))
@@ -203,12 +215,72 @@ class Membership {
     }
   }
 
+  /** A page that cites a source file by its repo path mentions it; a cited path the graph holds no file for draws nothing. */
+  private citationEdges(files: Map<string, Row>): void {
+    for (const {page, file} of this.emitter.citations)
+      if (files.has(file)) this.emitter.edge({type: 'mentions', from: docId(page), to: fileId(file), derived_by: 'annotation', confidence: 0.8, evidence: [page]});
+  }
+
   private testEdges(): void {
     for (const test of this.emitter.rowsOf('test')) {
       const feature = this.owners.get(String(test.path));
       if (!feature) continue;
       this.emitter.edge({type: 'tests', from: String(test.id), to: feature, derived_by: 'filesystem', confidence: 0.9,
         evidence: [String(test.path)]});
+    }
+  }
+
+  /** §8.1 name: a test whose file's base name, a segment of its category or, under Test Track, its folder spells a feature's
+   * leaf id or name in the same words; a spelling several features share draws nothing and is reported once. */
+  private nameEdges(): void {
+    const byWords = new Map<string, string[]>();
+    for (const [feature, name] of this.featureName)
+      for (const key of new Set([nameWords(feature.slice(feature.lastIndexOf('/') + 1)), nameWords(name)]))
+        if (key) byWords.set(key, [...byWords.get(key) ?? [], feature]);
+    const reported = new Set<string>();
+    for (const test of this.emitter.rowsOf('test')) {
+      const file = String(test.path);
+      const base = path.posix.basename(file).replace(/\..*$/, '');
+      const spellings = new Set([nameWords(base, true), ...String(test.category ?? '').split(/[:|]/).map((s) => nameWords(s))]);
+      if (file.startsWith(TEST_TRACK)) spellings.add(nameWords(path.posix.basename(path.posix.dirname(file))));
+      for (const key of spellings) {
+        const features = byWords.get(key);
+        if (!features) continue;
+        if (features.length > 1) {
+          const detail = `${key}: ${[...features].sort().join(' and ')}`;
+          if (!reported.has(detail)) this.emitter.problem('ambiguous_test_names', detail);
+          reported.add(detail);
+        }
+        else if (!this.emitter.hasEdge('tests', String(test.id), features[0]))
+          this.emitter.edge({type: 'tests', from: String(test.id), to: features[0], derived_by: 'name', confidence: NAME_CONFIDENCE, evidence: [file]});
+      }
+    }
+  }
+
+  /** §8.1 mirror: a test file named after a source file of its unit, by the whole base name or the part before a suffix,
+   * when exactly one file of the unit bears that name (Dart under `lib/`, TypeScript outside the tests folders). */
+  private mirrorEdges(files: Map<string, Row>): void {
+    const tested = new Set(this.emitter.rowsOf('test').map((t) => String(t.path)));
+    const byName = new Map<string, string[]>();
+    for (const file of files.keys()) {
+      const unit = unitOf(file);
+      if (!unit || tested.has(file) || (file.endsWith('.dart') ? !file.startsWith(`${unit}/lib/`) : TS_TEST_PATH.test(file))) continue;
+      const key = `${unit} ${path.posix.basename(file)}`;
+      byName.set(key, [...byName.get(key) ?? [], file]);
+    }
+    for (const test of [...tested].sort()) {
+      const unit = unitOf(test);
+      const form = MIRROR_NAMES.map(([re, sep]) => ({m: re.exec(path.posix.basename(test)), sep})).find((f) => f.m);
+      if (!unit || !form) continue;
+      const parts = form.sep ? form.m![1].split(form.sep) : [form.m![1]];
+      for (let n = parts.length; n >= 1; n--) {
+        const hits = byName.get(`${unit} ${parts.slice(0, n).join(form.sep)}${path.posix.extname(test)}`);
+        if (!hits) continue;
+        if (hits.length === 1)
+          this.emitter.edge({type: 'mirrors', from: fileId(test), to: fileId(hits[0]), derived_by: 'filesystem', confidence: n === parts.length ? 0.9 : 0.8, evidence: [test]});
+        else this.emitter.problem('ambiguous_mirrors', `${test}: ${hits.join(' and ')} share the name`);
+        break;
+      }
     }
   }
 }
@@ -223,6 +295,14 @@ function codeRoots(code: unknown): string[] {
     out.push(posix(repo ? `${repo[1]}/${repo[2]}` : target.trim()).replace(/\/+$/, ''));
   }
   return out;
+}
+
+/** `ScatterPlot`, `scatter-plot`, `scatter_plot tests` and `Scatter plot` are all `scatterplot`: lower-case words joined,
+ * a trailing test word dropped from a file's base name. */
+function nameWords(text: string, fileName = false): string {
+  const words = text.replace(/([a-z0-9])([A-Z])/g, '$1 $2').toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+  if (fileName && words.length > 1 && TEST_WORDS.includes(words[words.length - 1])) words.pop();
+  return words.join('');
 }
 
 /** The deepest of [features] when they form one part-of chain (`a`, `a/b`, `a/b/c`), otherwise nothing. */

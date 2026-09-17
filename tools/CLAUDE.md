@@ -24,7 +24,8 @@ The CLI uses a modular command pattern. Each command is a separate module that:
 - `publish.ts` - Upload and deploy packages to Datagrok servers
 - `check.ts` - Validate package structure, signatures, imports
 - `build.ts` - Build one package or recursively build all packages in a directory
-- `test.ts` - Run Puppeteer-based tests for a single package
+- `test.ts` - Run Puppeteer-based tests for a single package; `--recent` runs the tests the knowledge graph links to your git changes across every runner (`bin/utils/recent-tests.ts`)
+- `kg.ts` - The codebase knowledge graph: `check`/`gen` over the type files and home documents in `core/docs/knowledge-graph/`, `build` (extractors under `bin/utils/kg/build/extract/` → JSONL → Kuzu 0.11.3 under `<repo>/.kg/gen/`), `query`, `impact`, `tests-for`, `explain`, `find`, `report`, `ask`, `serve`; contract in `core/docs/knowledge-graph/conventions.md`, entry point `readme.md` there
 - `test-all.ts` - Run tests across multiple packages
 - `stress-tests.ts` - Run stress tests (must be run from ApiTests package)
 - `api.ts` - Auto-generate TypeScript wrappers for scripts/queries

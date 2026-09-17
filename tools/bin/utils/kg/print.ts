@@ -9,7 +9,7 @@ const CELL_BUDGET = 80;
 
 /** `via` is the chain a reader follows; `path` is the same chain as data. A table shows one, JSON the other. */
 function forOutput(rows: Record<string, unknown>[], output: OutputFormat): Record<string, unknown>[] {
-  if (!rows.some((r) => r.path !== undefined)) return rows;
+  if (!rows.some((r) => Array.isArray(r.path))) return rows;
   const drop = output === 'json' ? 'via' : 'path';
   return rows.map((row) => {
     const {[drop]: _, ...rest} = row;
@@ -32,6 +32,7 @@ export function printAnswer(answer: Answer, output: OutputFormat): void {
   }
   for (const note of answer.notes ?? []) console.log(note);
   if (answer.target && answer.op !== 'find') console.log(`${answer.op} ${answer.target.id}${answer.target.name ? ` (${answer.target.name})` : ''}`);
+  if (answer.targets) console.log(`${answer.op} ${answer.targets.length} target${answer.targets.length === 1 ? '' : 's'}`);
   for (const section of answer.sections) {
     if (!section.rows.length) {
       console.log(`\n${section.empty ?? `${section.title} (0)`}`);

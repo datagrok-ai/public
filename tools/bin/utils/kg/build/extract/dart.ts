@@ -1,13 +1,14 @@
 /// The Dart sources of `core/` (build-plan.md WO-6): one lexical pass per file — the file itself, its
-/// top-level declarations, the tests of a test file and the `~id` markers of conventions.md §6. No
-/// analyzer and no AST: no members, no imports, no calls, no heritage, and nothing a regex cannot see.
+/// top-level declarations, its import directives, the tests of a test file (`test()` or the client's
+/// `regTest()`) and the `~id` markers of conventions.md §6. No analyzer and no AST: no members, no calls,
+/// no heritage, and nothing a regex cannot see.
 import * as fs from 'fs';
 import * as path from 'path';
 import {globSync} from 'glob';
 import {Emitter} from '../emitter';
 import {BuildContext, Extractor} from '../context';
 import {HomeSet} from '../../homes';
-import {fileId, declId, testId, suiteId, docId, docKind, HELP_DIR, helpPage, countLines, sourceFileRow} from '../../ids';
+import {fileId, declId, testId, suiteId, docId, docKind, HELP_DIR, DART_PACKAGES, REG_TEST_DIR, helpPage, countLines, sourceFileRow} from '../../ids';
 import {homesOf, resolveMention, MARKER_LINE} from './markers';
 import {blankComments, matchBrace} from './ts/tests';
 
@@ -24,8 +25,20 @@ const KINDS: Record<string, string> = {class: 'class', mixin: 'mixin', enum: 'en
 const OWN_MARKER = /^\/\/\/\s*~((?:[A-Z][A-Za-z]{0,5}:)?[a-z][a-z0-9]*(?:-[a-z0-9]+)*(?:\/[a-z0-9]+(?:-[a-z0-9]+)*)*)(?:#[\w-]+)?\s*$/;
 const ANNOTATION = /^@/;
 const DEPRECATED = /^@(?:deprecated\b|Deprecated\()/;
+const TEST_DIR = /(?:^|\/)test\//;
 const TEST_FILE = /(?:^|\/)test\/|_test\.dart$/;
 const TEST_CALL = /(?<![\w.$])(group|test)\s*\(\s*(['"])((?:\\.|(?!\2).)*)\2/g;
+/** The client's browser tests: `regTest('Area | Group | Name', ...)`, run by DevTools rather than `dart test`. */
+const REG_TEST_CALL = /(?<![\w.$])regTest\s*\(\s*(['"])((?:\\.|(?!\1).)*)\1/g;
+/** An `import`, `export` or `part` directive: its first specifier, then whatever clauses follow it. */
+const DIRECTIVE = /^\s*(import|export|part)\s+(['"])([^'"]+)\2([^;]*)/;
+const SHOW = /\bshow\s+([\w$,\s]+)/;
+/** A capitalized word of a test file, the lexical `uses` candidate of §8.1; shorter than MIN_TOKEN it is noise. */
+const TYPE_TOKEN = /\b[A-Z][A-Za-z0-9_]*\b/g;
+const MIN_TOKEN = 4;
+/** String literals, blanked before tokenizing: a type name inside a function expression or a message is not a use. */
+const STRING_LITERAL = /r?(?:'''[\s\S]*?'''|"""[\s\S]*?"""|'(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*")/g;
+const LEXICAL_CONFIDENCE = 0.7;
 
 /** The table of help urls every other file reaches a page through; one of its constants lacks the leading slash. */
 const HELP_TABLE = 'core/shared/grok_shared/lib/src/help_url.dart';
@@ -37,35 +50,56 @@ const HELP_DOC_PATH = /^\s*\/\/\/.*?(public\/help\/[\w./-]+\.mdx?)/;
 
 export const dartExtractor: Extractor = {
   name: 'dart',
-  describes: {dart: 'Dart source files, their top-level types, tests and markers (a lexical pass)'},
+  describes: {dart: 'Dart source files, their top-level types, imports, tests and markers (a lexical pass)'},
   modes: ['full'],
   run(ctx: BuildContext, emitter: Emitter): void {
     const homes = homesOf(ctx);
     const helpUrls = helpConstants(ctx.repoRoot);
     const files = globSync(SOURCES, {cwd: ctx.repoRoot, ignore: SOURCE_IGNORE, nodir: true, posix: true, windowsPathsNoEscape: true}).sort();
+    const known = new Set(files);
     const perPackage = new Map<string, number>();
+    const declared = new Map<string, Map<string, string[]>>();
+    const testFiles: {file: string, text: string, packages: string[]}[] = [];
+    const libraryOf = new Map<string, string>();
+    const packagesOf = new Map<string, string[]>();
     let unresolved = 0;
     for (const file of files) {
       const full = path.join(ctx.repoRoot, file);
       const text = fs.readFileSync(full, 'utf8');
       const lines = text.split(/\r?\n/);
       const generated = file.endsWith('.g.dart');
-      if (!emitter.node(sourceFileRow(file, {loc: countLines(text), generated: generated ? true : undefined})).accepted) continue;
+      const directives = lines.map((l) => DIRECTIVE.exec(l)).filter((m): m is RegExpExecArray => !!m);
+      const entry = directives.some((m) => m[1] === 'part');
+      if (!emitter.node(sourceFileRow(file, {loc: countLines(text), generated: generated ? true : undefined, entry: entry ? true : undefined})).accepted) continue;
       const pkg = packageOf(file);
       if (pkg) perPackage.set(pkg, (perPackage.get(pkg) ?? 0) + 1);
-      declarations(emitter, file, lines, generated);
-      if (TEST_FILE.test(file)) tests(emitter, file, text);
+      const names = declarations(emitter, file, lines, generated);
+      if (pkg && names.length) {
+        const index = declared.get(pkg) ?? new Map<string, string[]>();
+        for (const name of names) index.set(name, [...index.get(name) ?? [], file]);
+        declared.set(pkg, index);
+      }
+      const packages = imports(emitter, file, directives, known);
+      packagesOf.set(file, packages);
+      for (const m of directives)
+        if (m[1] === 'part' && importTarget(file, m[3]) !== undefined) libraryOf.set(importTarget(file, m[3])!, file);
+      const testing = file.startsWith(REG_TEST_DIR) ? regTests(emitter, file, text) : TEST_FILE.test(file) && tests(emitter, file, text);
+      // a helper of a test folder (a server setup, a fixture) uses types the tests importing it never name
+      if (testing || TEST_DIR.test(file)) testFiles.push({file, text, packages: [...new Set([pkg, ...packages])].filter((p): p is string => p !== undefined)});
       unresolved += markers(emitter, homes, file, lines);
       helpRefs(emitter, ctx.repoRoot, file, text, lines, helpUrls);
     }
+    for (const t of testFiles)
+      lexicalUses(emitter, t.file, t.text, [...new Set([...t.packages, ...packagesOf.get(libraryOf.get(t.file) ?? '') ?? []])], declared);
     emitter.manifest('dart_packages', coverage(ctx.repoRoot, perPackage));
     emitter.manifest('dart_depth', 'lexical');
     emitter.source('dart', unresolved ? 'partial' : 'ok');
   },
 };
 
-/** The top-level types of a file, with the doc comment and the annotations above each of them. */
-function declarations(emitter: Emitter, file: string, lines: string[], generated: boolean): void {
+/** The top-level types of a file, with the doc comment and the annotations above each of them; returns their names. */
+function declarations(emitter: Emitter, file: string, lines: string[], generated: boolean): string[] {
+  const names: string[] = [];
   for (let i = 0; i < lines.length; i++) {
     const declared = declarationOf(lines[i]);
     if (!declared) continue;
@@ -76,7 +110,9 @@ function declarations(emitter: Emitter, file: string, lines: string[], generated
       generated: generated ? true : undefined, documented, deprecated: deprecated ? true : undefined,
       line: i + 1, language: 'dart', path: file, provenance: 'ast', source_layer: 'core'}).accepted) continue;
     emitter.edge({type: 'declares', from: fileId(file), to: id, derived_by: 'ast', confidence: 1, evidence: [file]});
+    names.push(name);
   }
+  return names;
 }
 
 function declarationOf(line: string): {name: string, kind: string} | undefined {
@@ -98,16 +134,90 @@ function above(lines: string[], at: number): {documented: boolean, deprecated: b
   return {documented: false, deprecated};
 }
 
-/** One suite per test file, and its tests under the `group` titles that enclose them. */
-function tests(emitter: Emitter, file: string, text: string): void {
+/** One `imports` edge per file a directive names and the pass walked, with the names of a `show` clause (`part` for a
+ * part); a `dart:` library, a pub package or a file outside the walk resolves to nothing and is not counted. Returns
+ * the names of the `package:` imports the table knows. */
+function imports(emitter: Emitter, file: string, directives: RegExpExecArray[], known: Set<string>): string[] {
+  const targets = new Map<string, Set<string>>();
+  const packages = new Set<string>();
+  for (const m of directives) {
+    const pkg = /^package:([^/]+)\//.exec(m[3])?.[1];
+    if (pkg !== undefined && DART_PACKAGES[pkg] !== undefined) packages.add(pkg);
+    const to = importTarget(file, m[3]);
+    if (to === undefined || to === file || !known.has(to)) continue;
+    let symbols = targets.get(to);
+    if (!symbols) targets.set(to, symbols = new Set());
+    if (m[1] === 'part') symbols.add('part');
+    for (const s of SHOW.exec(m[4])?.[1].split(',') ?? [])
+      if (s.trim()) symbols.add(s.trim());
+  }
+  for (const [to, symbols] of targets)
+    emitter.edge({type: 'imports', from: fileId(file), to: fileId(to), symbols: symbols.size ? [...symbols].sort() : undefined, derived_by: 'ast', confidence: 1, evidence: [file]});
+  return [...packages];
+}
+
+/** §8.1 uses, lexically: a capitalized word of a test file that exactly one type of its own package or of a package it
+ * imports declares; a name several files declare is counted as ambiguous and drawn for nothing. */
+function lexicalUses(emitter: Emitter, file: string, text: string, packages: string[], declared: Map<string, Map<string, string[]>>): void {
+  const candidates = new Map<string, string[]>();
+  for (const pkg of packages)
+    for (const [name, files] of declared.get(pkg) ?? [])
+      candidates.set(name, [...candidates.get(name) ?? [], ...files.filter((f) => f !== file)]);
+  const seen = new Set<string>();
+  for (const m of blankComments(text).replace(STRING_LITERAL, (s) => ' '.repeat(s.length)).matchAll(TYPE_TOKEN)) {
+    const name = m[0];
+    if (name.length < MIN_TOKEN || seen.has(name)) continue;
+    seen.add(name);
+    const files = candidates.get(name);
+    if (!files?.length) continue;
+    if (files.length > 1) emitter.problem('ambiguous_uses', `${file}: ${name} is declared in ${files.join(' and ')}`);
+    else emitter.edge({type: 'uses', from: fileId(file), to: declId(files[0], name), kind: 'type', derived_by: 'lexical', confidence: LEXICAL_CONFIDENCE, evidence: [file]});
+  }
+}
+
+/** `package:<pkg>/<path>` through the package table into `<dir>/lib/<path>`; a relative specifier against the file. */
+function importTarget(file: string, specifier: string): string | undefined {
+  const pkg = /^package:([^/]+)\/(.+)$/.exec(specifier);
+  if (pkg) return DART_PACKAGES[pkg[1]] === undefined ? undefined : `${DART_PACKAGES[pkg[1]]}/lib/${pkg[2]}`;
+  return specifier.includes(':') ? undefined : path.posix.normalize(path.posix.join(path.posix.dirname(file), specifier));
+}
+
+/** One suite per test file, and its tests under the `group` titles that enclose them; whether the file holds any. */
+function tests(emitter: Emitter, file: string, text: string): boolean {
   const found = parseDartTests(text);
-  if (!found.length) return;
+  if (!found.length) return false;
   const suite = suiteId('dart', file);
   emitter.node({type: 'test-suite', id: suite, name: path.posix.basename(file), framework: 'dart', path: file,
     provenance: 'filesystem', source_layer: 'core'});
-  for (const t of found)
-    emitter.node({type: 'test', id: testId('dart', file, t.category, t.name), name: t.name, path: file, framework: 'dart',
-      level: 'unit', category: t.category || undefined, suite, provenance: 'ast', source_layer: 'core'});
+  for (const t of found) {
+    const id = testId('dart', file, t.category, t.name);
+    if (emitter.node({type: 'test', id, name: t.name, path: file, framework: 'dart',
+      level: 'unit', category: t.category || undefined, suite, provenance: 'ast', source_layer: 'core'}).accepted)
+      emitter.edge({type: 'declares', from: fileId(file), to: id, derived_by: 'ast', confidence: 1, evidence: [file]});
+  }
+  return true;
+}
+
+/** `regTest('A | B | C'` under the client tests folder: category `A | B`, name `C`, one suite per file. Whether a
+ * category is a d4 or an xamgle one is the runner's call, made from the text later. `${DartLibraryTestCategoryName.x}`
+ * is the constant `x` (tests.dart); any other interpolation makes the test dynamic and keeps the title as written. */
+function regTests(emitter: Emitter, file: string, text: string): boolean {
+  const found = [...blankComments(text).matchAll(REG_TEST_CALL)]
+    .map((m) => m[2].trim().replace(/\$\{DartLibraryTestCategoryName\.(\w+)\}/g, '$1'));
+  if (!found.length) return false;
+  const suite = suiteId('xamgle', file);
+  emitter.node({type: 'test-suite', id: suite, name: path.posix.basename(file), framework: 'xamgle', path: file,
+    provenance: 'filesystem', source_layer: 'core'});
+  for (const title of found) {
+    const segments = title.split('|').map((s) => s.trim());
+    const name = segments.pop()!;
+    const category = segments.join(' | ') || undefined;
+    const id = testId('xamgle', file, category ?? '', name);
+    if (emitter.node({type: 'test', id, name, path: file, framework: 'xamgle', level: 'e2e', category, suite,
+      dynamic: title.includes('$') ? true : undefined, provenance: 'ast', source_layer: 'core'}).accepted)
+      emitter.edge({type: 'declares', from: fileId(file), to: id, derived_by: 'ast', confidence: 1, evidence: [file]});
+  }
+  return true;
 }
 
 /** `test('name'` calls with the `group('title'` chain around each; a commented-out test is not a test. */

@@ -1,7 +1,8 @@
 /// The maintainer reports (build-plan.md WO-8, conventions.md §10, §11.2): what has no owner, what a
 /// home still cites that is gone, which features have no test or document, which folders want a feature
 /// of their own, and what a branch touches. They read the JSONL, the manifest and the build's own
-/// reports — never the index — so they answer wherever a build ran, with or without `kuzu`.
+/// reports — never the index — so they answer wherever a build ran, with or without `kuzu`. The one
+/// exception is `replay`, which scores the tiers of `tests-for` against the history and so needs the index.
 import * as fs from 'fs';
 import * as path from 'path';
 import {spawnSync} from 'child_process';
@@ -11,13 +12,17 @@ import {helpPage, kebab} from './ids';
 import {Graph} from './build/emitter';
 import {readJsonl, dataFile, readManifest} from './generation';
 import {Section, coverageNote} from './answer';
+import {KuzuConnection, run, quote} from './kuzu';
+import {resolveTargets, linkedTests} from './ops';
 
-export type ReportName = 'orphans' | 'stale' | 'coverage' | 'proposed' | 'diff';
+export type ReportName = 'orphans' | 'stale' | 'coverage' | 'proposed' | 'diff' | 'replay';
 export type ReportFormat = 'table' | 'json' | 'md';
+export type Repo = 'core' | 'public' | 'both';
 
-export const REPORT_NAMES: ReportName[] = ['orphans', 'stale', 'coverage', 'proposed', 'diff'];
-/** The four `build` writes; `diff` needs a base revision, so only the verb can produce it. */
+export const REPORT_NAMES: ReportName[] = ['orphans', 'stale', 'coverage', 'proposed', 'diff', 'replay'];
+/** The four `build` writes; `diff` needs a base revision and `replay` the index, so only the verb can produce them. */
 export const BUILD_REPORTS: ReportName[] = ['orphans', 'stale', 'coverage', 'proposed'];
+export const REPOS: Repo[] = ['core', 'public', 'both'];
 
 /** Where a folder earns a feature of its own, and the id shape that would be proposed for it. */
 const PROPOSED_PARENTS = ['public/packages', 'public/libraries', 'core/client/d4/lib/src/viewers', 'core/server/datlas/lib/src/services'];
@@ -27,6 +32,13 @@ const STALE_CODES = ['missing-cited-path', 'missing-doc-link', 'citation-escape'
 const HELP_LINK = /^(?:https?:\/\/(?:[\w-]+\.)*datagrok\.ai)?\/help\//;
 const ORPHAN_GROUPS = 50;
 const ORPHAN_FILES = 5;
+/** A test file by its path, for the files the index holds no test of (change-tests/plan.md § Validation); a fixture
+ * under a test folder is neither a test nor a source. */
+const TEST_PATH = /(?:^|\/)(?:tests?|__tests__)\/|\.test\.ts$|_test\.dart$/;
+const FIXTURE_PATH = /\/fixtures?\//;
+const SOURCE_PATH = /\.(?:ts|dart)$/;
+const REPLAY_SUBJECT = 60;
+const REPLAY_FILES = 3;
 
 export interface Report {
   name: ReportName;
@@ -520,6 +532,107 @@ function staleGraph(data: GraphData, repoRoot: string): string[] {
       'ownership may be out of date — run grok kg build');
   }
   return notes;
+}
+
+/** One commit of the history `replay` scores: its files under the prefix the graph gives them. */
+export interface Commit {
+  sha: string;
+  subject: string;
+  files: string[];
+}
+
+/** The last [n] non-merge commits of the monorepo, of `public/`, or of both, newest first, the public paths prefixed. */
+export function readLog(repoRoot: string, n: number, repo: Repo): Commit[] {
+  const out: Commit[] = [];
+  for (const [name, cwd, prefix] of [['core', repoRoot, ''], ['public', path.join(repoRoot, 'public'), 'public/']] as const) {
+    if (repo !== 'both' && repo !== name) continue;
+    const r = spawnSync('git', ['-C', cwd, '-c', 'core.quotepath=false', 'log', '--no-merges', '--name-only', '--format=%x01%H%x00%s', '-n', String(n)],
+      {encoding: 'utf8', maxBuffer: 64 * 1024 * 1024});
+    if (r.status !== 0) throw new Error(`${name}: git log failed: ${(r.stderr ?? '').trim().split('\n')[0] || `exit ${r.status}`}`);
+    for (const block of r.stdout.split('\x01').slice(1)) {
+      const [head, ...lines] = block.split('\n');
+      const [sha, subject] = head.split('\0');
+      out.push({sha, subject: subject ?? '', files: lines.map((l) => l.trim()).filter((f) => f && f !== 'public').map((f) => prefix + f)});
+    }
+  }
+  return out;
+}
+
+/**
+ * The yardstick of the notation (change-tests/plan.md § Validation): for each commit that changed a source file and
+ * a test file, the immediate and reachable tiers of its source files against the current index, and whether the
+ * test files it changed are in them. A test file is one the index holds a test of, or one named like one; a commit
+ * none of whose source files the index knows cannot be scored and is counted in the notes instead.
+ */
+export async function replay(conn: KuzuConnection, commits: Commit[], sources?: Record<string, string>): Promise<Report> {
+  const started = Date.now();
+  const paths = [...new Set(commits.flatMap((c) => c.files))];
+  const frameworks = new Map<string, string[]>();
+  const tests = await run(conn, `MATCH (t:Artifact) WHERE t.${quote('type')} = 'test' AND t.${quote('path')} IN $paths ` +
+    `RETURN DISTINCT t.${quote('path')} AS path, t.${quote('framework')} AS framework`, {paths});
+  for (const r of tests.rows) push(frameworks, String(r.path), String(r.framework ?? ''));
+  const isTest = (f: string) => frameworks.has(f) || TEST_PATH.test(f);
+  const candidates = commits.map((c) => {
+    const files = c.files.filter((f) => SOURCE_PATH.test(f) && !FIXTURE_PATH.test(f));
+    return {commit: c, sources: files.filter((f) => !isTest(f)), tests: files.filter(isTest)};
+  }).filter((c) => c.sources.length && c.tests.length);
+  const resolved = await resolveTargets(conn, [...new Set(candidates.flatMap((c) => c.sources))]);
+  const known = (f: string) => String(resolved.get(f)?.id ?? '').startsWith('file:');
+  const perFramework = new Map<string, {test_files: number, immediate: number, linked: number}>();
+  const misses: Record<string, unknown>[] = [];
+  const cache = new Map<string, {immediate: Set<string>, linked: Set<string>}>();
+  let considered = 0, hitImmediate = 0, hitLinked = 0, unscored = 0, partial = 0;
+  for (const {commit, sources: changed, tests: testFiles} of candidates) {
+    const ids = changed.filter(known).map((f) => String(resolved.get(f)!.id)).sort();
+    if (!ids.length) {
+      unscored++;
+      continue;
+    }
+    if (ids.length < changed.length) partial++;
+    considered++;
+    let tiers = cache.get(ids.join(' '));
+    if (!tiers) {
+      const linked = await linkedTests(conn, ids.map((id) => ({id})));
+      const immediate = new Set(linked.immediate.map((r) => String(r.path)));
+      cache.set(ids.join(' '), tiers = {immediate, linked: new Set([...immediate, ...linked.reachable.map((r) => String(r.path))])});
+    }
+    const missed = testFiles.filter((f) => !tiers!.immediate.has(f));
+    if (!missed.length) hitImmediate++;
+    if (testFiles.every((f) => tiers!.linked.has(f))) hitLinked++;
+    for (const f of testFiles)
+      for (const framework of frameworks.get(f) ?? ['']) {
+        const row = perFramework.get(framework) ?? {test_files: 0, immediate: 0, linked: 0};
+        row.test_files++;
+        if (tiers.immediate.has(f)) row.immediate++;
+        if (tiers.linked.has(f)) row.linked++;
+        perFramework.set(framework, row);
+      }
+    if (missed.length)
+      misses.push({commit: commit.sha.slice(0, 10), subject: commit.subject.slice(0, REPLAY_SUBJECT), sources: few(changed), missed: few(missed)});
+  }
+  const rate = (n: number) => considered ? `${Math.round(100 * n / considered)}% (${n}/${considered})` : 'n/a';
+  const frameworkRows = [...perFramework].sort(([a], [b]) => compare(a, b)).map(([framework, r]) => ({framework: framework || '(no test in the index)', ...r,
+    immediate_rate: `${Math.round(100 * r.immediate / r.test_files)}%`, linked_rate: `${Math.round(100 * r.linked / r.test_files)}%`}));
+  const note = coverageNote(sources);
+  return {
+    name: 'replay', title: `History replay over ${commits.length} commits`,
+    summary: `${considered} of ${commits.length} commits changed a source file the index knows and a test file; every changed test file is in the ` +
+      `immediate tier for ${rate(hitImmediate)}, in immediate or reachable for ${rate(hitLinked)}; ${((Date.now() - started) / 1000).toFixed(1)} s.`,
+    notes: [
+      ...(note ? [note] : []),
+      `${unscored} commit${unscored === 1 ? '' : 's'} with a source and a test file skipped: none of the source files is in the index (new or deleted ` +
+        `since the build); ${partial} of the scored commits have some source files the index does not know`,
+    ],
+    sections: [
+      {title: 'frameworks', rows: frameworkRows},
+      {title: 'misses', rows: misses},
+    ],
+  };
+}
+
+/** The first few paths and how many more there are: a commit can touch hundreds. */
+function few(files: string[]): string {
+  return `${files.slice(0, REPLAY_FILES).join(', ')}${files.length > REPLAY_FILES ? ` (+${files.length - REPLAY_FILES} more)` : ''}`;
 }
 
 function empty(repoRoot: string): GraphData {

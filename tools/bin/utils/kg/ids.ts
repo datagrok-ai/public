@@ -23,7 +23,21 @@ export const HELP_DIR = 'public/help';
 /** A `//help-url:` or `HelpUrl` value: the site-relative or absolute help URL, with any extension, slash and fragment. */
 const HELP_URL = /^(?:https?:\/\/(?:[\w-]+\.)*datagrok\.ai)?\/help\/([^#?]+?)(?:\.mdx?)?\/?(?:[#?].*)?$/;
 /** Where a folder has to be for a home in it to own it, and where a file has to be to count as an orphan. */
-export const CODE_ROOTS = ['core/client/', 'core/server/', 'core/shared/', 'public/packages/', 'public/libraries/', 'public/js-api/'];
+export const CODE_ROOTS = ['core/client/', 'core/server/', 'core/shared/', 'public/packages/', 'public/libraries/', 'public/js-api/', 'public/tools/'];
+/** The Dart packages of `core/` by the name a `package:` specifier uses (root CLAUDE.md "Dart Package → Directory Mapping"). */
+export const DART_PACKAGES: Record<string, string> = {
+  d4: 'core/client/d4', xamgle: 'core/client/xamgle', dock_spawn: 'core/client/libs/dock_spawn', property_grid: 'core/client/libs/property_grid',
+  ddt: 'core/shared/ddt', ddtx: 'core/shared/ddtx', dml: 'core/shared/dml', grok_shared: 'core/shared/grok_shared', prop_gen: 'core/shared/prop_gen',
+  datlas: 'core/server/datlas', dinq: 'core/server/dinq', dart_amqp: 'core/server/libs/dart_amqp', gcloud: 'core/server/libs/gcloud',
+  postgresql: 'core/server/libs/postgresql', shelf: 'core/server/libs/shelf',
+};
+/** A unit of the monorepo (conventions.md §8.1): a Dart package under `core/`, a package or library under `public/`, the JS API or the grok CLI. */
+const UNIT = /^(core\/(?:client|server|shared)\/(?:libs\/)?[^/]+|public\/(?:packages|libraries)\/[^/]+|public\/js-api|public\/tools)(?=\/)/;
+/** The client's browser tests (`regTest`), and the libraries their category may lead with (`d4 | Rendering | …`). */
+export const REG_TEST_DIR = 'core/client/xamgle/lib/src/tests/';
+export const CLIENT_TEST_LIBS = ['d4', 'ddt', 'dml', 'xamgle'];
+const API_TESTS_DIR = 'public/packages/ApiTests/';
+const DATLAS_TEST_DIR = 'core/server/datlas/test/';
 export const GITHUB_KEY = /^gh:public#\d+$/;
 const PATH_SCHEMES = ['file', 'decl', 'doc', 'mig', 'sample'];
 const LANGUAGES: Record<string, string> = {
@@ -80,7 +94,7 @@ export function testId(framework: string, file: string, category: string, name: 
 }
 
 /** `suite:dg:<Pkg>:<category>`, or `suite:<framework>:<path>` for a framework whose suite is a file. */
-export function suiteId(framework: 'dg' | 'playwright' | 'dart', pkgOrFile: string, category?: string): string {
+export function suiteId(framework: 'dg' | 'playwright' | 'dart' | 'xamgle' | 'node', pkgOrFile: string, category?: string): string {
   return framework === 'dg' ? `suite:dg:${pkgOrFile}:${category}` : `suite:${framework}:${posix(pkgOrFile)}`;
 }
 
@@ -217,6 +231,25 @@ export function titleCase(segment: string): string {
 
 export function languageOf(file: string): string {
   return LANGUAGES[path.posix.extname(posix(file)).toLowerCase()] ?? 'other';
+}
+
+/** The unit [file] lies in (`core/client/d4`, `public/packages/Chem`, `public/tools`), or nothing outside every unit. */
+export function unitOf(file: string): string | undefined {
+  return UNIT.exec(posix(file))?.[1];
+}
+
+/** The units a test file stands for (conventions.md §8.1): ApiTests is the JS API's suite as well as its own, a client
+ * `regTest` file is the library its category leads with, the datlas tests are grok_shared's too; any other test, its unit. */
+export function testUnitsOf(testPath: string, category?: string): string[] {
+  const p = posix(testPath);
+  if (p.startsWith(API_TESTS_DIR)) return ['public/js-api', unitOf(p)!];
+  if (p.startsWith(REG_TEST_DIR)) {
+    const lib = (category ?? '').split('|')[0].trim();
+    return [DART_PACKAGES[CLIENT_TEST_LIBS.includes(lib) ? lib : 'xamgle']];
+  }
+  if (p.startsWith(DATLAS_TEST_DIR)) return [unitOf(p)!, DART_PACKAGES.grok_shared];
+  const unit = unitOf(p);
+  return unit === undefined ? [] : [unit];
 }
 
 /** `source_layer` of a node by the location of its file (build-plan.md Decisions "Layers"). */

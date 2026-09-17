@@ -16,7 +16,7 @@ import {find, explain, impact, testsFor, resolveTarget} from '../utils/kg/ops';
 import {Answer} from '../utils/kg/answer';
 import {printAnswer} from '../utils/kg/print';
 import {OutputFormat} from '../utils/server-output';
-import {readGraph, makeReport, REPORT_NAMES, ReportName} from '../utils/kg/report';
+import {readGraph, makeReport, REPORT_NAMES, BUILD_REPORTS, ReportName} from '../utils/kg/report';
 import {kg} from '../commands/kg';
 import {copyFixture, buildFixture, fixtureTypes, git, Built} from './kg-fixture';
 
@@ -84,24 +84,29 @@ describe('grok kg build over the fixture monorepo (build-plan.md WO-10)', () => 
     expect(manifest.sources).toEqual({
       backlog: 'ok@2026-01-12T07:00:00Z', dart: 'ok', docs: 'partial', git: 'ok', homes: 'ok', membership: 'ok',
       people: 'partial', process: 'ok', releases: 'ok', 'ts-changelog': 'partial', 'ts-declarations': 'ok',
-      'ts-functions': 'partial(2 rejected)', 'ts-imports': 'ok', 'ts-markers': 'ok', 'ts-packages': 'ok', 'ts-samples': 'partial',
+      'ts-functions': 'partial(2 rejected)', 'ts-imports': 'ok', 'ts-markers': 'ok', 'ts-node-tests': 'ok', 'ts-packages': 'ok', 'ts-samples': 'partial',
       'ts-tests': 'ok', 'ts-uses': 'ok',
     });
     expect(manifest.counts.nodes).toEqual({
       app: 2, 'cell-renderer': 1, 'changelog-entry': 5, commit: 2, connection: 2, container: 3, customer: 2,
-      declaration: 59, 'doc-anchor': 21, 'doc-page': 14, editor: 1, feature: 9, 'file-handler': 1,
-      'file-viewer': 1, filter: 1, function: 13, library: 2, 'lifecycle-hook': 2, package: 7, panel: 2, person: 3,
+      declaration: 61, 'doc-anchor': 21, 'doc-page': 14, editor: 1, feature: 9, 'file-handler': 1,
+      'file-viewer': 1, filter: 1, function: 13, library: 3, 'lifecycle-hook': 2, package: 7, panel: 2, person: 3,
       query: 3, release: 2, sample: 4, scenario: 7, script: 3, 'script-environment': 1, 'script-handler': 1,
-      'sem-type-detector': 6, 'semantic-type': 7, 'source-file': 44, test: 16, 'test-suite': 7, ticket: 13, tutorial: 1, viewer: 2,
+      'sem-type-detector': 6, 'semantic-type': 7, 'source-file': 52, test: 22, 'test-suite': 9, ticket: 13, tutorial: 1, viewer: 2,
     });
+    // the CLI fixture (lib:tools: 4 files, 2 types, 5 vitest cases) and the vitest suite of the utils library (1 file, 1 case) account for
+    // the +1 library, +5 source-file, +2 declaration, +6 test, +2 test-suite; the two Test Track cases under Viewers/ScatterPlot test the
+    // scatter plot by folder name (+2 tests)
     expect(manifest.counts.edges).toEqual({
       affects: 2, assignee: 3, automates: 3, base: 1, calls: 6, changes: 2, connection: 3, covers: 1,
-      declares: 170, demonstrates: 1, 'depends-on': 6, documents: 5, environment: 1, extends: 4,
-      implements: 1, imports: 26, includes: 2, 'is-implemented-in': 19, mentions: 16, owner: 9,
-      package: 72, page: 21, 'part-of': 11, 'participates-in': 6, reporter: 4, 'requested-by': 2, resolves: 1,
-      suite: 16, 'targets-release': 5, 'targets-semtype': 13, tests: 13, 'tracked-in': 2, user_help: 1, uses: 18,
+      declares: 199, demonstrates: 1, 'depends-on': 7, documents: 5, environment: 1, extends: 4,
+      implements: 1, imports: 36, includes: 2, 'is-implemented-in': 19, mentions: 19, mirrors: 2, owner: 9,
+      package: 75, page: 21, 'part-of': 11, 'participates-in': 6, reporter: 4, 'requested-by': 2, resolves: 1,
+      suite: 22, 'targets-release': 5, 'targets-semtype': 13, tests: 15, 'tracked-in': 2, user_help: 1, uses: 19,
     });
-    expect(manifest.problems).toMatchObject({dangling_edges: 0, ambiguous_owners: 1, orphans: 28, partial_stubs: 23});
+    // and for the +13 declares (5 unit -> file, 2 file -> type, 6 file -> test), +5 imports, +6 suite, +1 depends-on (tools -> js-api),
+    // +1 uses (the CLI command reads DG.SEMTYPE); the 2 mirrors are legend_test.dart -> legend.dart and ids.test.ts -> utils/ids.ts (change-tests work order E)
+    expect(manifest.problems).toMatchObject({dangling_edges: 0, ambiguous_owners: 1, orphans: 36, partial_stubs: 23});
   });
 
   it('writes the same bytes twice, with the same content-addressed batch and a later built_at', async () => {
@@ -150,7 +155,7 @@ describe('grok kg build over the fixture monorepo (build-plan.md WO-10)', () => 
 describe('the reports build writes and the report verb prints (build-plan.md WO-8, WO-10)', () => {
   it('writes json and md for the four reports a build can answer on its own', async () => {
     const {out} = await graph;
-    for (const name of REPORT_NAMES.filter((n) => n !== 'diff'))
+    for (const name of BUILD_REPORTS)
       for (const ext of ['json', 'md']) expect(fs.existsSync(path.join(out, 'reports', `${name}.${ext}`)), `${name}.${ext}`).toBe(true);
     expect(fs.existsSync(path.join(out, 'reports', 'diff.json'))).toBe(false);
     expect(fs.readFileSync(path.join(out, 'reports', 'coverage.md'), 'utf8')).toContain('| visualize/viewers/scatter-plot |');
@@ -159,7 +164,8 @@ describe('the reports build writes and the report verb prints (build-plan.md WO-
   it('groups orphan files by package and core sub-project, largest first', async () => {
     const {report} = await graph;
     const orphans = report('orphans');
-    expect(orphans.summary).toBe('28 files of 44 observed (16 owned, 5 participating) have no owner, 405 of 716 lines, in 8 groups; the 8 largest groups below.');
+    // 5 more files: the CLI fixture under public/tools (4, its own group) and the vitest suite of the utils library
+    expect(orphans.summary).toBe('36 files of 52 observed (16 owned, 5 participating) have no owner, 499 of 820 lines, in 11 groups; the 11 largest groups below.');
     expect(orphans.sections[0].rows[0]).toEqual({group: 'public/js-api', owner: '', files: 11, owned: 0, participating: 0, orphans: 11, loc: 155,
       largest: expect.stringContaining('src/dataframe.ts (45)')});
     expect(orphans.sections[0].rows.map((r: any) => r.group)).toContain('core/client/d4');
@@ -207,11 +213,12 @@ describe('the reports build writes and the report verb prints (build-plan.md WO-
       {path: 'public/packages/Demo', files: 12, loc: 370, unowned_files: 7, unowned_loc: 153, suggested: 'domains/demo'},
       {path: 'public/packages/Plain', files: 3, loc: 35, unowned_files: 3, unowned_loc: 35, suggested: 'domains/plain'},
       {path: 'public/packages/Tutorials', files: 3, loc: 29, unowned_files: 3, unowned_loc: 29, suggested: 'domains/tutorials'},
-      {path: 'public/libraries/utils', files: 1, loc: 16, unowned_files: 1, unowned_loc: 16, suggested: ''},
+      {path: 'public/packages/Tested', files: 2, loc: 57, unowned_files: 1, unowned_loc: 25, suggested: 'domains/tested'},
+      {path: 'public/libraries/utils', files: 2, loc: 23, unowned_files: 2, unowned_loc: 23, suggested: ''},
+      {path: 'public/packages/UsageAnalysis', files: 2, loc: 16, unowned_files: 2, unowned_loc: 16, suggested: 'domains/usage-analysis'},
       {path: 'public/packages/ApiTests', files: 1, loc: 7, unowned_files: 1, unowned_loc: 7, suggested: 'domains/api-tests'},
     ]);
-    // the Tested package is owned file for file through the viewers home, and only that drops out
-    expect(rows.some((r: any) => r.path === 'public/packages/Tested')).toBe(false);
+    // the Tested sources are owned file for file through the viewers home; only its Playwright spec, outside src/, is not
   });
 
   it('names the features a branch touches through the home it changed, with the tests that cover them', async () => {
@@ -252,13 +259,13 @@ describe('the reports build writes and the report verb prints (build-plan.md WO-
   it('splits runnable, skipped and dynamic tests, counts what a feature inherits, and marks a stub', async () => {
     const {report} = await graph;
     const rows = report('coverage').sections[0].rows;
-    // 6 tests carry ~visualize/viewers: four that run, one skipped, one whose name is a template
+    // 6 tests carry ~visualize/viewers: four that run, one skipped, one whose name is a template; the scatter plot's two Test Track cases are inherited
     expect(rows.find((r: any) => r.feature === 'visualize/viewers')).toMatchObject({stub: false,
-      tests_runnable: 4, tests_skipped: 1, tests_dynamic: 1, inherited: 0});
+      tests_runnable: 4, tests_skipped: 1, tests_dynamic: 1, inherited: 2});
     // a stub has no home of its own; what it "has" is what the features under it have
-    expect(rows.find((r: any) => r.feature === 'visualize')).toMatchObject({stub: true, tests_runnable: 0, inherited: 8});
+    expect(rows.find((r: any) => r.feature === 'visualize')).toMatchObject({stub: true, tests_runnable: 0, inherited: 10});
     expect(rows.find((r: any) => r.feature === 'domains')).toMatchObject({stub: true, inherited: 5});
-    expect(report('coverage').summary).toBe('9 features, 3 of them stubs; of the 6 with a home, 3 have no test or scenario, ' +
+    expect(report('coverage').summary).toBe('9 features, 3 of them stubs; of the 6 with a home, 2 have no test or scenario, ' +
       '3 no document beside the home, 0 no first paragraph.');
   });
 
@@ -267,7 +274,7 @@ describe('the reports build writes and the report verb prints (build-plan.md WO-
     const rows = report('proposed').sections[0].rows;
     // the Demo package has an owned file and 7 unowned ones; the unowned remainder is what puts it first
     expect(rows[0]).toEqual({path: 'public/packages/Demo', files: 12, loc: 370, unowned_files: 7, unowned_loc: 153, suggested: 'domains/demo'});
-    expect(report('proposed').summary).toContain('1 of them is partly owned already');
+    expect(report('proposed').summary).toContain('2 of them are partly owned already');
   });
 
   it('keeps a deleted file with the owner the graph still has, and warns when the graph is behind the tree', async () => {
@@ -413,8 +420,9 @@ describe('the index over the fixture graph (build-plan.md WO-7, WO-10)', () => {
     expect(explained.sections[0].rows).toContainEqual({property: 'home', value: 'public/help/domains/bio/bio.md'});
     expect(explained.sections[1].rows).toContainEqual(expect.objectContaining({edge: 'owner', direction: 'out', targets: [expect.objectContaining({id: 'P:jane'})]}));
 
+    // the feature-level tests are the `feature` tier since change-tests/plan.md added the immediate and reachable tiers
     const tests = await testsFor(conn, bio, LIMIT);
-    expect(tests.sections.find((s) => s.title === 'tests')!.rows.length).toBe(5);
+    expect(tests.sections.find((s) => s.title === 'feature')!.rows.length).toBe(5);
     expect(tests.sections.find((s) => s.title === 'scenarios')!.rows).toMatchObject([{scenario: 'TS:viewers/scatter-plot/ui', manual_only: true}]);
 
     const renderer = (await resolveTarget(conn, RENDERER))!;
@@ -427,12 +435,12 @@ describe('the index over the fixture graph (build-plan.md WO-7, WO-10)', () => {
   withKuzu('counts a section whole and pages it after, so a header tells a page from the total', async () => {
     const {conn} = index.opened!;
     const bio = (await resolveTarget(conn, '~domains/bio'))!;
-    const paged = (await testsFor(conn, bio, {limit: 3})).sections.find((s) => s.title === 'tests')!;
+    const paged = (await testsFor(conn, bio, {limit: 3})).sections.find((s) => s.title === 'feature')!;
     expect(paged.rows.length).toBe(3);
     expect(paged.total).toBe(5);
-    expect(render({op: 'tests-for', target: bio, sections: [paged]})).toContain('\ntests (3 of 5; --limit to see more)');
-    const whole = (await testsFor(conn, bio, LIMIT)).sections.find((s) => s.title === 'tests')!;
-    expect(render({op: 'tests-for', target: bio, sections: [whole]})).toContain('\ntests (5)');
+    expect(render({op: 'tests-for', target: bio, sections: [paged]})).toContain('\nfeature (3 of 5; --limit to see more)');
+    const whole = (await testsFor(conn, bio, LIMIT)).sections.find((s) => s.title === 'feature')!;
+    expect(render({op: 'tests-for', target: bio, sections: [whole]})).toContain('\nfeature (5)');
   });
 
   withKuzu('answers for a home document and for a page that documents a feature, which have no file: node of their own', async () => {
@@ -441,7 +449,7 @@ describe('the index over the fixture graph (build-plan.md WO-7, WO-10)', () => {
     expect(home).toMatchObject({id: `doc:${BIO_HOME}`, root: 'Artifact', type: 'doc-page'});
     expect((await impact(conn, home, LIMIT)).sections[0].rows).toMatchObject([{feature: 'domains/bio', relation: 'home', name: 'Bioinformatics', status: 'active',
       via: `doc:${BIO_HOME} → home ← domains/bio`}]);
-    expect((await testsFor(conn, home, LIMIT)).sections.find((s) => s.title === 'tests')!.rows.length).toBe(5);
+    expect((await testsFor(conn, home, LIMIT)).sections.find((s) => s.title === 'feature')!.rows.length).toBe(5);
 
     const page = (await resolveTarget(conn, SEQUENCES))!;
     expect((await impact(conn, page, LIMIT)).sections[0].rows).toMatchObject([
@@ -462,8 +470,8 @@ describe('the index over the fixture graph (build-plan.md WO-7, WO-10)', () => {
     const features = (r: Answer) => r.sections[0].rows.map((x) => String(x.feature)).sort();
     expect(features(byPackage)).toEqual(features(byFeature));
     expect(features(byPackage)).toEqual(['visualize/viewers', 'visualize/viewers/histogram', 'visualize/viewers/scatter-plot']);
-    expect(total(byPackage, 'tests')).toBe(total(byFeature, 'tests'));
-    expect(total(byPackage, 'tests')).toBe(6);
+    expect(total(byPackage, 'feature')).toBe(total(byFeature, 'feature'));
+    expect(total(byPackage, 'feature')).toBe(8);
     expect(byPackage.sections[0].rows.find((r) => r.feature === 'visualize/viewers')!.via)
       .toBe('pkg:Tested → declares → file:public/packages/Tested/src/tests/demo-tests.ts → is-implemented-in ← visualize/viewers');
 
@@ -524,7 +532,7 @@ describe('the index over the fixture graph (build-plan.md WO-7, WO-10)', () => {
   withKuzu('leaves the reports to the JSONL: every one of them answers with the index open', async () => {
     const {repo} = await graph;
     const system = index.system;
-    for (const name of REPORT_NAMES) {
+    for (const name of REPORT_NAMES.filter((n) => n !== 'replay')) {
       const data = readGraph(index.out, repo, system, name as ReportName);
       const report = makeReport(name as ReportName, data, {system, repoRoot: repo, base: 'HEAD'});
       expect(report.name, name).toBe(name);

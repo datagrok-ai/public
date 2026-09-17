@@ -217,7 +217,7 @@ const HELP_TEST = `
 Usage: grok test
 
 Options:
-[--package] [--category] [--test] [--host] [--csv] [--gui] [--skip-build] [--skip-publish] [--link] [--catchUnhandled] [--report] [--record] [--verbose] [--platform] [--benchmark] [--stress-test] [--debug] [--all] [-r | --recursive] [--filter] [--parallel N]
+[--package] [--category] [--test] [--host] [--csv] [--gui] [--skip-build] [--skip-publish] [--link] [--catchUnhandled] [--report] [--record] [--verbose] [--platform] [--benchmark] [--stress-test] [--debug] [--all] [-r | --recursive] [--filter] [--parallel N] [--recent[=<base>]] [--tier] [--framework] [--dry-run] [--plan]
 
 --package           Specify a package name to run tests for
 --category          Specify a category name to run tests for
@@ -245,6 +245,13 @@ Options:
 --recursive         Test all packages in the current directory (parallel, table output)
 --filter            Filter packages by package.json fields (e.g. --filter "category:Cheminformatics")
 --parallel N        Max parallel test jobs (default: 4)
+--recent[=<base>]   Run the tests the knowledge graph links to the changes since <base> (default: the
+                    merge base with master, working tree included), across every runner; needs grok kg build
+--tier <tiers>      With --recent: immediate (default: the tests in the changed files' units), reachable,
+                    feature, linked (immediate,reachable), all, or a comma list of the first three
+--framework <a,b>   With --recent: keep the runner rows of these frameworks (dg, xamgle, dart, playwright, node)
+--dry-run           With --recent: print the plan, run nothing
+--plan <file>       With --recent: read the tests-for JSON from <file> instead of asking the graph (debugging)
 
 Run package tests
 
@@ -464,8 +471,10 @@ Verbs:
                 (registered functions, scripts, queries, connections, environments,
                 containers and by-name calls under public/packages), ts-declarations,
                 ts-imports and ts-uses (source files, declarations, extends/implements,
-                resolved imports and JS API usage over js-api, packages and libraries),
-                ts-tests (DG and Playwright tests in their suites), ts-samples (ApiSamples),
+                resolved imports and JS API usage over js-api, packages, libraries and
+                the CLI under public/tools), ts-tests (DG and Playwright tests in their
+                suites), ts-node-tests (vitest, jest and node:test cases in *.test.ts and
+                *.spec.ts sources, one suite per file), ts-samples (ApiSamples),
                 ts-changelog (CHANGELOG.md bullets), ts-markers (the //feature: markers
                 in source files), docs (markdown pages, headings,
                 mentions, legacy Test Track scenarios, tutorials), dart (a lexical pass
@@ -485,16 +494,26 @@ Verbs:
     query       Cypher over the built index: grok kg query "MATCH (n:Feature) RETURN n.id",
                 or --file q.cypher. Exit 2 when kuzu is not installed.
     impact      What a change reaches: the features that own or take part in a file,
-                declaration or feature, their owners, tests, docs and tickets, and for a
-                declaration or a file, who calls or imports it. The target is first
+                declaration or feature, their owners, tests, the documents citing the
+                target itself (cites) and those documenting its features, and tickets;
+                for a file, its direct importers and everything reaching it through
+                them (reachable), for a declaration its callers. The target is first
                 expanded through containment — a package or a file through what it
                 declares, a declaration through the file or package that declares it and
                 the functions it implements — so a package answers for the code it holds
                 and a file for the declarations inside it. Every feature row carries the
                 chain that produced it (\`via\` in a table, \`path\` in json).
-    tests-for   The tests, scenarios and automations of a feature (with everything under
-                it in the tree), or of the feature that owns a path, a package or a
-                declaration; the same containment expansion as impact.
+    tests-for   The tests for one target or several — files, declarations or features —
+                or for the change set (--changed), in tiers: immediate (tests in the
+                changed files, in the files importing them, in their mirror test files,
+                and in the files using what they declare, when the test file lies in the
+                unit of the changed file), reachable (the same links from another unit,
+                and tests whose file reaches a changed file through up to four import
+                hops, never through an entry file), and feature (every test of the owning features
+                and their subtrees, the same containment expansion as impact), then the
+                scenarios and automations of those features and one run row per runner
+                invocation (framework, cwd, command, tests, names). With several targets
+                or --changed a changes section leads, saying which paths the index knows.
     explain     One node: its properties, then every one-hop edge by type and direction
                 with how it was derived, its confidence and the first evidence path. A
                 release also gets three sections of its own: targeted (the tickets whose
@@ -519,8 +538,11 @@ Verbs:
                 the tests that cover them, \`--diff <ref>\`; the public baseline is the
                 gitlink that revision recorded, deleted files keep the owner the graph
                 still has, and a graph built from other commits than the working tree
-                says so; the md output is the PR comment). \`build\` writes the
-                first four to .kg/reports/ as both .json and .md.
+                says so; the md output is the PR comment) and replay (the last --commits
+                of each repository that changed a source and a test file, scored against
+                the immediate and reachable tiers the index computes for the source files:
+                hit rates, per framework, and the misses; the only report that reads the
+                index). \`build\` writes the first four to .kg/reports/ as both .json and .md.
     gc          Remove older generations under .kg/gen/, keeping the current one and
                 the --keep newest (default 2), and every interrupted build older than an
                 hour. A generation whose index a reader holds open is reported and left
@@ -555,6 +577,14 @@ Options:
                         query and the operations also take csv, report takes md
     --file <path>       With query: read the Cypher from a file
     --limit <n>         With the operations: rows per section (default 50)
+    --changed[=<ref>]   With tests-for: the targets are the files changed against <ref>
+                        (default: the merge base with master) in the monorepo and in
+                        public/, working tree and untracked files included; public/'s
+                        base is the gitlink <ref> recorded when it resolves
+    --tier <tiers>      With tests-for: immediate, reachable, feature, linked (immediate,reachable),
+                        all (default) or a comma list of the first three; the run rows follow the choice
+    --commits <n>       With report replay: how many commits to read per repository (default 200)
+    --repo <r>          With report replay: core, public or both (default)
     --quiet             Print errors only: no warnings, no summary line (check, gen)
     --public            With build: the public projection (public node types, visibility
                         public, no home or owner, edges with both ends public) into public/.kg/
@@ -585,6 +615,7 @@ Examples:
   grok kg find scatter
   grok kg report coverage --output json
   grok kg report diff --diff master --output md
+  grok kg report replay --commits 200
 
 The contract is core/docs/knowledge-graph/conventions.md.
 `;
