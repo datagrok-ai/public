@@ -90,10 +90,10 @@ and each table has its own Table View. To bring them together, you can:
 For a live example of linked tables, open the **Table Linking** demo under
 **Data Access** in the [demo app](https://public.datagrok.ai/apps/Tutorials/Demo/Data-Access/Table-Linking).
 For a step-by-step multi-table dashboard on the Northwind database, see the
-[worked example](../../../transform/link-tables.md) on the
+[worked example](../../../transform/link-tables.md#cascading-links) on the
 Link tables page.
 
-![Master-detail dashboard on linked tables](../../../transform/link-tables-northwind.gif)
+![Linking tables](../../../transform/link-tables.gif)
 
 When you save, the **Save project** dialog lists all open tables.
 Links between tables and viewers that point at other tables are saved with
