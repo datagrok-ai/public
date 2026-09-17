@@ -2,6 +2,7 @@
 
 ## v.next
 
+* BDD: Added the Browse suite — 9 features, 43 scenarios over the Browse panel and its toolbar, the tree and its keyboard, browsing versus persistent views, Files, My stuff, Platform, Databases, Apps, Dashboards, the context panel and menus, and the per-section error matrix. Translated from the manual cases rather than from the old specs, and each feature states what it did not translate and why
 * GROK-20891: Reports widget: Fixed the Home page widget failing with `Cannot read properties of undefined (reading 'renderIcon')` when a report has no reporter
 * BDD: Corrected the line-chart lasso test to close its checkbox menu before dragging and removed its stale known-failure tag. Fixed Spaces fixture cleanup and stale Browse nodes; file operations now require the test space to be current. Box-plot shortcut checks target the viewer explicitly. Rechecked and documented the remaining viewer failures
 * GROK-20874: System Activity: Added a tab listing the platform-level audit records datlas now writes — logins, logouts, failed logins, impersonation, admin session start/end, developer-key generation, settings and log-settings changes, and server starts — as a filterable grid with a per-type timeline (`SystemActivity` / `SystemActivitySummary` queries); a row's parameters open on the context panel. Tabs whose names contain spaces now route by their space-free lowercase name

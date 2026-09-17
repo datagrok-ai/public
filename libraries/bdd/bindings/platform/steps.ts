@@ -88,7 +88,7 @@ export const closeAllViews = When('user closes all views', async (page: Page) =>
 /** The project's table is uploaded and the view saved with its layout, as the ribbon's Save
  * dialog does it; a plain view info would drop the viewport. Deleted when the feature ends. */
 export const saveAsProject = When('user saves the current view as project {string}', async (page: Page, name: string) => {
-  const ids: {project: string; table: string} = await page.evaluate(async (n) => {
+  const ids: {project: string; table: string; view: string} = await page.evaluate(async (n) => {
     const tv = grok.shell.tv;
     const project = DG.Project.create();
     project.name = n;
@@ -103,10 +103,10 @@ export const saveAsProject = When('user saves the current view as project {strin
     await grok.dapi.projects.save(project);
     const w = window as any;
     w.__bddProjects = {...(w.__bddProjects ?? {}), [n]: String(project.id)};
-    return {project: String(project.id), table: String(tableInfo.id)};
+    return {project: String(project.id), table: String(tableInfo.id), view: String(viewInfo.id)};
   }, name);
   atFeatureEnd(page, () => page.evaluate(async (i) => {
-    for (const [source, id] of [[grok.dapi.projects, i.project], [grok.dapi.tables, i.table]]) {
+    for (const [source, id] of [[grok.dapi.projects, i.project], [grok.dapi.views, i.view], [grok.dapi.tables, i.table]]) {
       const e = await source.find(id).catch(() => null);
       if (e)
         await source.delete(e);
