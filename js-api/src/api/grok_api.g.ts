@@ -78,6 +78,7 @@ export interface IDartApi {
   grok_View_Set_Toolbox(v: any, e: any): any;
   grok_View_Get_ParentView(v: any): any;
   grok_View_Set_ParentView(v: any, c: any): any;
+  grok_View_Set_InnerView(v: any, inner: any): any;
   grok_View_Get_ParentCall(v: any): any;
   grok_View_Set_ParentCall(v: any, c: any): any;
   grok_View_Get_Temp(v: any): any;
