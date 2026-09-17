@@ -201,6 +201,10 @@ export interface DomainSupport {
   ancestors: boolean;
   /** The table carries `updated_on`, so a live client can poll for the newest write. */
   probe: boolean;
+  /** The change token ({@link DomainTableClient.version}) moves: every write goes through the
+   * engine. False for a registration the platform itself writes, whose token never advances —
+   * poll the aggregate instead. Reading the token also needs {@link DomainAccess.can}.view. */
+  version: boolean;
   /** {@link DomainTableClient.watch} subscribes to change notifications. */
   watch: boolean;
 }

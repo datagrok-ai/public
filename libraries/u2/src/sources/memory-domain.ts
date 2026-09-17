@@ -397,7 +397,8 @@ export class MemoryTable implements DomainTableLike {
     // `watch` is false and means it: there are no subscriptions here, and declaring that is the
     // point — a control gates on what the backend says, not on which backend it is
     this.support = {systemColumns: SYSTEM.map(([column]) => column), writes: true, deleted: true,
-      restore: true, audit: true, ancestors: this.info.hierarchy === true, probe: true, watch: false};
+      restore: true, audit: true, ancestors: this.info.hierarchy === true, probe: true, version: true,
+      watch: false};
     if (this.support.ancestors)
       this.ancestors = (id) => this._ancestors(id);
     this.rows = rows.map((row) => this.stamp({...row}, 1));

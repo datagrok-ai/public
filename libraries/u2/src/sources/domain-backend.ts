@@ -98,8 +98,11 @@ export interface DomainSupportLike {
   audit: boolean;
   /** The table declares a hierarchy, so {@link DomainTableLike.ancestors} answers. */
   ancestors: boolean;
-  /** Gates {@link DomainTableLike.probe} — the table carries `updated_on`, or a change token. */
+  /** Gates {@link DomainTableLike.probe} — the table carries `updated_on`. */
   probe: boolean;
+  /** The backend keeps a change token that moves with every write, so an unscoped probe can read
+   * it instead of aggregating. */
+  version: boolean;
   /** The backend can tell a client that rows changed without being asked. The memory backend has
    * no subscriptions and says so. */
   watch: boolean;

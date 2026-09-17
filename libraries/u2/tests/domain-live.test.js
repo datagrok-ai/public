@@ -255,12 +255,13 @@ const {DgDomainBackend} = await import('../src/dg/domain/backend.js');
 const grok = await import('datagrok-api/grok');
 
 /** A `DgDomainTable` over a stubbed js-api client, with what the poll asked for counted. */
-async function platformTable(support = {}) {
+async function platformTable(support = {}, can = {}) {
   const calls = {version: 0, aggregate: []};
   const client = {
-    access: async () => ({can: {view: true}, fields: {}, support: {
+    access: async () => ({can: {view: true, ...can}, fields: {}, support: {
       systemColumns: ['id', 'version', 'created_on', 'updated_on', 'author_id'], writes: true,
-      deleted: true, restore: true, audit: true, ancestors: false, probe: true, watch: true, ...support}}),
+      deleted: true, restore: true, audit: true, ancestors: false, probe: true, version: true, watch: true,
+      ...support}}),
     version: async () => ({seq: ++calls.version, at: '2026-09-16T10:05:13Z'}),
     aggregate: async (spec) => (calls.aggregate.push(spec), [{count: 3, last: '2026-09-16T10:00:00Z'}]),
   };
@@ -318,6 +319,38 @@ scoped('the platform poll asks the change token over the whole table and aggrega
       delete grok.dapi.domains.registry;
     }
   });
+
+scoped('the token is skipped where it cannot answer: no table-level View, or a token the engine does not move',
+  async () => {
+    for (const [support, can, why] of [
+      [{}, {view: false}, 'a reader who reaches rows through row grants only'],
+      [{version: false}, {}, 'a registration the platform writes, whose token never moves'],
+    ]) {
+      const {calls, table} = await platformTable(support, can);
+      try {
+        assert.deepEqual(await table.probe(), {count: 3, last: '2026-09-16T10:00:00Z'}, why);
+        assert.equal(calls.version, 0, `${why}: the token is never asked`);
+        assert.equal(calls.aggregate.length, 1, `${why}: the aggregate over what the caller sees answers`);
+      } finally {
+        delete grok.dapi.domains.table;
+        delete grok.dapi.domains.registry;
+      }
+    }
+  });
+
+scoped('a token refused mid-session hands the poll to the aggregate for good', async () => {
+  const {calls, table} = await platformTable();
+  try {
+    assert.deepEqual(await table.probe(), {count: -1, last: '1'});
+    grok.dapi.domains.table().version = async () => { throw new Error('403 forbidden'); };
+    assert.deepEqual(await table.probe(), {count: 3, last: '2026-09-16T10:00:00Z'}, 'the same poll answers');
+    await table.probe();
+    assert.equal(calls.aggregate.length, 2, 'and the token is not asked again');
+  } finally {
+    delete grok.dapi.domains.table;
+    delete grok.dapi.domains.registry;
+  }
+});
 
 scoped('a change token that moves refreshes a clean source and marks a dirty one stale', async () => {
   const be = tokened();

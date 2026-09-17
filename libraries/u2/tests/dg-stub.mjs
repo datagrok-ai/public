@@ -21,7 +21,7 @@
 const DOUBLES = new URL('./platform-doubles.mjs', import.meta.url).href;
 /** The real compiled implementation (a dependency-free js-api module), so the auto-pick pins
  * compute the SAME distances the platform does — requires a built datagrok-api. */
-const DISTANCES = new URL('../node_modules/datagrok-api/src/utils/string-distances.js',
+const DISTANCES = new URL('../node_modules/datagrok-api/dist/src/utils/string-distances.js',
   import.meta.url).href;
 
 const STUB = `

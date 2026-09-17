@@ -48,13 +48,14 @@ category('Dapi: domain access', () => {
     expect(support.audit, true, 'apitests.item declares no audit:false, so the trail is on');
     expect(support.ancestors, false, 'apitests.item declares no hierarchy');
     expect(support.probe, true, 'apitests.item carries updated_on');
+    expect(support.version, true, 'an engine-written table keeps its change token');
     expect(support.watch, true, 'the platform backend has subscriptions');
     expect(support.systemColumns.join(','), [...DG.DOMAIN_SYSTEM_COLUMNS].join(','),
       `a full registration lists all five system columns: ${JSON.stringify(support.systemColumns)}`);
     // Support is the TABLE's storage, `can` is this caller's permission: an admin with every
     // right on a table that cannot do a thing still cannot do it.
     expect(Object.keys(support).sort().join(','),
-      'ancestors,audit,deleted,probe,restore,systemColumns,watch,writes',
+      'ancestors,audit,deleted,probe,restore,systemColumns,version,watch,writes',
       `unexpected support keys: ${JSON.stringify(support)}`);
   });
 

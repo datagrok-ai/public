@@ -476,7 +476,8 @@ test('ancestors: root-first, without the row itself; a non-hierarchy table does 
 test('support: what the memory backend declares, and every optional member installed to match', async () => {
   const issue = await backend().table('grit.issue');
   assert.deepEqual(issue.support, {systemColumns: ['id', 'version', 'created_on', 'updated_on', 'author_id'],
-    writes: true, deleted: true, restore: true, audit: true, ancestors: false, probe: true, watch: false});
+    writes: true, deleted: true, restore: true, audit: true, ancestors: false, probe: true, version: true,
+    watch: false});
   for (const [member, flag] of [['restore', 'restore'], ['ancestors', 'ancestors'], ['updateWhere', 'writes'],
     ['batch', 'writes'], ['probe', 'probe'], ['audit', 'audit']])
     assert.equal(issue[member] !== undefined, issue.support[flag], `${member} follows support.${flag}`);

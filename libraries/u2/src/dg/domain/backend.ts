@@ -90,7 +90,7 @@ export class DgDomainTable implements DomainTableLike {
 
   private constructor(readonly address: string, readonly client: DG.DomainTableClient,
     readonly registryProperties: DG.Property[], readonly tableInfo: DG.DomainTableInfo,
-    readonly support: DomainSupportLike) {
+    readonly support: DomainSupportLike, private _token: boolean) {
     this.properties = DgDomainTable.withSystem(registryProperties.map((p) => DgDomainTable.property(p)),
       support.systemColumns);
     if (support.audit)
@@ -125,7 +125,10 @@ export class DgDomainTable implements DomainTableLike {
       throw new DomainBackendError('unsupported',
         `${address}: the server did not declare its support — restart Datlas on this branch`);
     }
-    return new DgDomainTable(address, client, properties, info, access.support);
+    // the change token is read behind the table-level View grant: a reader who reaches rows
+    // through row grants only polls the aggregate over what it may see
+    return new DgDomainTable(address, client, properties, info, access.support,
+      access.support.version && access.can.view);
   }
 
   /** The system columns every row carries, ahead of the declared ones — `names` is what this
@@ -166,9 +169,15 @@ export class DgDomainTable implements DomainTableLike {
    * transaction and costs no scan at all. `count: -1` says nothing was counted; a source compares
    * the pair against its own previous poll and re-baselines whenever the scope changes. */
   private async _probe(spec: DomainReadScope = {}): Promise<DomainProbeLike> {
-    if (isUnscoped(spec)) {
-      const version = await this.client.version();
-      return {count: -1, last: String(version.seq)};
+    if (this._token && isUnscoped(spec)) {
+      try {
+        const version = await this.client.version();
+        return {count: -1, last: String(version.seq)};
+      } catch {
+        // the grant behind the token went away mid-session: the aggregate answers from here on,
+        // instead of the failure counter stopping the poll
+        this._token = false;
+      }
     }
     const rows = await this.client.aggregate({
       measures: [{fn: 'count'}, {fn: 'max', column: 'updated_on', as: 'last'}],

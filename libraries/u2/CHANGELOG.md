@@ -2,6 +2,8 @@
 
 ## v.next
 
+* GROK-20753: The headless test stub loads `string-distances` from the js-api `dist/` emit, the layout the pnpm toolchain produces (the in-place `src/**/*.js` emit is gone)
+* GROK-20753: A live domain source reads the change token only where it answers — `support.version` AND the table-level View grant — and aggregates over what the caller may see otherwise, so a row-grant-only reader's live list no longer dies after three 403s and a platform-written table no longer looks frozen
 * GROK-20753: Fixed a virtualized list rendering three rows after an in-place refresh (a bulk edit, a filter, leaving the trash) while the status bar said fifty: a scroller measured mid-swap answers height 0, the window that yields is the overscan alone, and since the height afterwards is the height it had BEFORE, no resize ever fired to put the rest back — `VirtualRows` now re-renders on the next frame once per zero, so a list that is truly off screen still settles
 * GROK-20753: The domain query box left the ribbon for a row of its own at the top of the list page: the shell’s ribbon is one fixed 32px line with `overflow: hidden`, which clipped the box to a sliver and the buttons beside it to single letters. `DomainApp.filters` is the control; the ribbon keeps New/Save/Discard/Refresh/⋯ and the search box
 * GROK-20753: The shared overlay host takes itself down when it empties — one teardown for every surface that uses it (a popup, a dialog, a balloon) instead of a rule each of them has to remember
