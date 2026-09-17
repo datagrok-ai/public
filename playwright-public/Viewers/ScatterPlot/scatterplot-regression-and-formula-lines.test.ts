@@ -195,8 +195,13 @@ test('Scatter Plot — Regression Line, Formula Lines, Moving Average', async ({
   await sp.pickOnViewer(page, 'x', SETUP_X);
   await sp.pickOnViewer(page, 'y', SETUP_Y);
 
+  // the per-category rows grey out (aria-disabled) while their line is off, so each is set with its line on
+  await setLinesCheckbox(page, 'prop-show-regression-line', true);
   await setLinesCheckbox(page, 'prop-regression-per-category', false);
+  await setLinesCheckbox(page, 'prop-show-regression-line', false);
+  await setLinesCheckbox(page, 'prop-show-moving-average-line', true);
   await setLinesCheckbox(page, 'prop-moving-average-per-category', false);
+  await setLinesCheckbox(page, 'prop-show-moving-average-line', false);
   const setup = await viewerProps(page);
   expect(setup.x).toBe(SETUP_X);
   expect(setup.y).toBe(SETUP_Y);
@@ -413,8 +418,8 @@ test('Scatter Plot — Regression Line, Formula Lines, Moving Average', async ({
 
     await setLinesCheckbox(page, 'prop-show-moving-average-deviation', false);
     await setLinesCheckbox(page, 'prop-moving-average-per-category', false);
-    await setLinesCheckbox(page, 'prop-show-moving-average-line', false);
     await sp.setNumericProp(page, 'prop-moving-average-window', 'lines', defaultWindow);
+    await setLinesCheckbox(page, 'prop-show-moving-average-line', false);
     const restored = await settledBoth(page, deviation.data);
     console.log(`moving average data ink: restored=${restored.data}`);
     expect(Math.abs(restored.data - baseline.data)).toBeLessThan(DATA_RESTORE_TOLERANCE);

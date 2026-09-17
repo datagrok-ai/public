@@ -147,7 +147,7 @@ Steps:
 6. Verify no new console or page error appeared.
 7. Revert: click empty background to clear the selection and verify the
    overlay rendering moves back toward the baseline; then clear
-   **Label Columns** and set **Show Labels For** back to its default.
+   **Label Columns** and set **Show Labels For** back to its default (reset Show Labels For first: its row greys out once no label column is set).
 
 Expected:
 - The Shift-drag selects rows: the selected-row count rises above zero

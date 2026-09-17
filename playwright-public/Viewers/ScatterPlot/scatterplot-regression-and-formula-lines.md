@@ -125,7 +125,10 @@ itself asserted.
 4. Using the on-viewer column selectors, set X to WEIGHT and Y to HEIGHT (the
    auto-pick already matches on demog, but the auto-selection order is not
    contractual).
-5. Confirm the starting state: **Show Regression Line** off, no Color column,
+5. Turn **Regression Per Category** and **Moving Average Per Category** off
+   (each row greys out while its line is off, so switch the line on, clear the
+   per-category box, and switch the line off again).
+6. Confirm the starting state: **Show Regression Line** off, no Color column,
    no formula lines configured.
 
 ## Scenarios

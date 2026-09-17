@@ -286,9 +286,10 @@ Steps:
    columns have none, so the fixture is a categorical column carrying missing
    values, added to the table) and set it as the Color column.
 2. Verify the legend carries an entry for the empty values.
-3. Park the pointer and record the plot's ink, separating the saturated colour
-   of the valued categories from the pale grey the empty-value markers are
-   drawn in.
+3. Park the pointer and record the plot's ink from a repaint (a marker color seen
+   for the first time is drawn directly, then stamped from the marker sprite
+   cache on every later repaint), separating the saturated colour of the valued
+   categories from the pale grey the empty-value markers are drawn in.
 4. Click the empty-values entry in the legend with a real mouse click.
 5. Verify the click raised no console error, the legend marks that entry as
    current and shows it is filtering, and the saturated color on the plot
@@ -417,7 +418,7 @@ Expected:
   DIFFERENT columns. CAVEAT: when they are on the SAME column the legend renders
   JOINTLY — `-extra` is 0 and the glyph sits on the coloring entries themselves,
   so a `-extra` count is vacuous there. Define marker entries uniformly as
-  entries CARRYING a glyph (`i[name="legend-icon-color-picker"]`), which is
+  entries CARRYING a glyph (`i[name="legend-item-marker"]`), which is
   correct in both configurations. Assert counts and the category-name set, never
   a screenshot. `legendVisibility: Never` does NOT remove the `[name="legend"]`
   container from the markup — `LegendHost.apply` (`legend_host.dart`) sets

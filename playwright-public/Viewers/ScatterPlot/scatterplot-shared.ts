@@ -139,6 +139,21 @@ export async function revealPropEditor(page: Page, editorSelector: string, categ
   throw new Error(`property editor ${editorSelector} never became reachable`);
 }
 
+const rowEnabled = (page: Page, rowName: string) => page.evaluate((n: string) =>
+  document.querySelector(`[name="${n}"]`)?.getAttribute('aria-disabled') !== 'true', rowName);
+
+// A greyed-out row (dependsOn unmet) carries aria-disabled, which Playwright treats as not enabled.
+// A panel just rebound to a new plot can show the previous plot's state for a moment, so it is
+// reopened once before the row is declared greyed out.
+async function waitRowEnabled(page: Page, rowName: string, editorSelector: string, category: string): Promise<void> {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    if (await v.pollValue(() => rowEnabled(page, rowName), (ok) => ok, 3000, 50)) return;
+    await openSettings(page);
+    await revealPropEditor(page, editorSelector, category);
+  }
+  throw new Error(`${rowName} is greyed out (aria-disabled): its dependsOn condition is not met`);
+}
+
 export const rowProp = (rowName: string) =>
   rowName.replace(/^prop-/, '').replace(/-([a-z])/g, (_, c: string) => c.toUpperCase());
 
@@ -154,6 +169,7 @@ export async function setChoiceProp(
   const viewCell = rowName.replace(/^prop-/, 'prop-view-');
   await openSettings(page);
   await revealPropEditor(page, `[name="${viewCell}"]`, category);
+  await waitRowEnabled(page, rowName, `[name="${viewCell}"]`, category);
   const cell = page.locator(`[name="${viewCell}"]`);
   await cell.scrollIntoViewIfNeeded();
   await cell.click();
@@ -172,6 +188,7 @@ export async function setCheckboxProp(
   await openSettings(page);
   const box = `[name="${rowName}"] input.property-grid-item-editor-checkbox`;
   await revealPropEditor(page, box, category);
+  await waitRowEnabled(page, rowName, box, category);
   for (let i = 0; i < 3 && await readProp(page, propName) !== value; i++) {
     const locator = page.locator(box);
     await locator.scrollIntoViewIfNeeded();
@@ -189,6 +206,7 @@ export async function setNumericProp(
   await openSettings(page);
   const selector = `[name="${rowName}"] input.property-grid-slider-textbox, [name="${rowName}"] input`;
   await revealPropEditor(page, selector, category);
+  await waitRowEnabled(page, rowName, selector, category);
   const locator = page.locator(selector).first();
   await locator.scrollIntoViewIfNeeded();
   await locator.click();
