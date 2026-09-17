@@ -1438,6 +1438,8 @@ test('Trellis plot — on click, keyboard navigation, filter formula, undo/redo'
       }, w.__tpCells, 1800, tp);
     });
     await expect(cellLocator).toHaveCount(canonicalCellCount);
+    // the fresh viewer's first paint lands after its cells exist and wipes a current cell clicked before it
+    await v.waitForViewerQuiet(page, 'Trellis plot', {gapMs: 500, capMs: 3000});
 
     const navCats = await page.evaluate(() => {
       const df = grok.shell.tv.dataFrame;
@@ -2010,6 +2012,8 @@ test('Trellis plot — selectors, full screen, auto layout, title, legend', asyn
         tp.props.xColumnNames = ['SEX'];
         tp.props.yColumnNames = ['RACE'];
         tp.props.viewerType = 'Box plot';
+        // Show All Categories dependsOn Category1 && Category2: without a second category it is disabled
+        tp.setOptions({innerViewerLook: {category2ColumnName: 'CONTROL'}});
         tp.props.legendVisibility = 'Always';
       }, (window as any).__tpCells, 2500));
       await expect(page.locator(CELLS)).toHaveCount(canonicalCellCount);

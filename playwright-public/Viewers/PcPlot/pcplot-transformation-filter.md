@@ -14,7 +14,8 @@ related_bugs:
   - id: GROK-18091
     status: fixed
   - id: GROK-17306
-    status: open
+    status: fixed
+    fixed_in: 1.28.0
   - id: GROK-18489
     status: fixed
   - id: github-972
@@ -46,9 +47,8 @@ expected_results:
 ## Purpose
 
 Guard for four filter/selection/transformation integrity bugs in the PC Plot.
-Three are fixed (GROK-18091, GROK-18489, github-972); GROK-17306 (reset filters
-clears the selection when a transformation is present) is still OPEN, so
-Scenario 1 fails loudly until it is fixed. All bugs involve the PC Plot's
+All four are fixed (GROK-18091, GROK-18489, github-972, and GROK-17306 — reset filters
+cleared the selection when a transformation was present — fixed in 1.28.0). All bugs involve the PC Plot's
 interaction with the Filter Panel, row selection, or other viewers sharing the
 same DataFrame. Each scenario is judged by the filtered or selected row
 count, or by the absence of errors — not by how the canvas looks.

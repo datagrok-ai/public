@@ -4,7 +4,6 @@ realizes: [pcplot.cp.transformation-and-filter-integrity]
 import {localTest as test, expect} from '@datagrok-libraries/test/src/playwright/shared-page';
 import {openDatagrok, specTestOptions, softStep, isLocalBootNoise} from '@datagrok-libraries/test/src/playwright/spec-login';
 import * as v from '@datagrok-libraries/test/src/playwright/viewers';
-import {knownOpenBug} from '@datagrok-libraries/test/src/playwright/known-open-bug';
 
 declare const grok: any;
 
@@ -97,9 +96,7 @@ test('PC Plot — Transformation and Filter/Selection Integrity', async ({page})
 
     expect(result.restoredFilter).toBe(fullCount);
 
-    await knownOpenBug('GROK-17306', () => {
-      expect(result.selAfterReset).toBe(result.selCount);
-    });
+    expect(result.selAfterReset).toBe(result.selCount);
   });
 
   await softStep('Scenario 2 (GROK-18489) — second filter after DateTime color split works', async () => {

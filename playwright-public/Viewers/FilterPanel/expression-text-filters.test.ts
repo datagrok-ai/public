@@ -82,8 +82,8 @@ async function ruleRowPoint(page: Page, rowIndex: number, ruleCount: number, xIn
     Promise<{x: number; y: number}> {
   const pt = await page.evaluate(async ({idx, count, inset, header, pitch}) => {
     const card = (document.querySelector('.d4-expression-filter') as HTMLElement).closest('.d4-filter')!;
-    const overlay = card.querySelector('[name="viewer-Grid"] [name="overlay"]') as HTMLElement | null;
-    const canvas = card.querySelector('[name="viewer-Grid"] canvas[name="canvas"]') as HTMLCanvasElement | null;
+    const overlay = card.querySelector('[name="filter-grid"] [name="overlay"]') as HTMLElement | null;
+    const canvas = card.querySelector('[name="filter-grid"] canvas[name="canvas"]') as HTMLCanvasElement | null;
     if (!overlay || !canvas) return {error: 'the rule grid has no overlay or canvas'};
     // the canvas grows to its rows a frame after the rule lands in the state
     const tall = await (window as any).__poll(() => canvas.getBoundingClientRect().height,
@@ -105,7 +105,7 @@ async function removeQueryRow(page: Page, rowIndex: number, ruleCount: number): 
   const pt = await ruleRowPoint(page, rowIndex, ruleCount, -1);
   return page.evaluate(async ({x, y}) => {
     const card = (document.querySelector('.d4-expression-filter') as HTMLElement).closest('.d4-filter')!;
-    const overlay = card.querySelector('[name="viewer-Grid"] [name="overlay"]') as HTMLElement;
+    const overlay = card.querySelector('[name="filter-grid"] [name="overlay"]') as HTMLElement;
     overlay.dispatchEvent(new PointerEvent('pointermove', {bubbles: true, clientX: x, clientY: y}));
     overlay.dispatchEvent(new MouseEvent('mousemove', {bubbles: true, clientX: x, clientY: y}));
     await new Promise((res) => setTimeout(res, 400));
@@ -135,7 +135,7 @@ async function toggleRuleCheckbox(page: Page, rowIndex: number, ruleCount: numbe
   const pt = await ruleRowPoint(page, rowIndex, ruleCount, 8);
   return page.evaluate(async ({x, y}) => {
     const card = (document.querySelector('.d4-expression-filter') as HTMLElement).closest('.d4-filter')!;
-    const overlay = card.querySelector('[name="viewer-Grid"] [name="overlay"]') as HTMLElement;
+    const overlay = card.querySelector('[name="filter-grid"] [name="overlay"]') as HTMLElement;
     for (const type of ['pointermove', 'mousemove'])
       overlay.dispatchEvent(new MouseEvent(type, {bubbles: true, clientX: x, clientY: y}));
     await new Promise((res) => setTimeout(res, 300));

@@ -16,8 +16,12 @@ export async function drawnLabelNames(page: Page): Promise<string[]> {
     .map((e) => (e.textContent ?? '').trim()).filter((n) => n.length > 0), HOST);
 }
 
+// A stand without the Chem sketcher package raises this fallback notice on its own schedule
+const FOREIGN_BALLOON = /Package with Ketcher function is not installed/;
+
 export async function balloonCount(page: Page): Promise<number> {
-  return page.locator('.d4-balloon').count();
+  return page.evaluate((foreign) => Array.from(document.querySelectorAll('.d4-balloon'))
+    .filter((b) => !new RegExp(foreign).test(b.textContent ?? '')).length, FOREIGN_BALLOON.source);
 }
 
 export async function cardFieldValue(
@@ -55,7 +59,9 @@ export async function withConsoleErrorCount(
   page: Page, fn: () => Promise<void>, settleMs = 400, texts?: string[],
 ): Promise<number> {
   let count = 0;
-  const handler = (msg: {type(): string; text(): string}) => {
+  const handler = (msg: {type(): string; text(): string; location(): {url: string}}) => {
+    // a stand that ships no help docs 404s on the context help page, which is not the viewer's error
+    if (/Failed to load resource/.test(msg.text()) && /\/help\/.*\.md$/.test(msg.location().url)) return;
     if (msg.type() === 'error') { count++; if (texts) texts.push(msg.text()); }
   };
   page.on('console', handler);

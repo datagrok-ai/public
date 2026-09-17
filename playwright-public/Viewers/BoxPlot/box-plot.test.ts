@@ -427,11 +427,11 @@ test('Box plot property surface smoke', async ({page}) => {
 
   await softStep('[anchor: Controls visibility] Size selector absent by default; each visibility toggle adds/removes its chrome (DOM for the selectors, canvas repaint for the canvas-drawn chrome); the round trip restores the default baseline', async () => {
     console.log('showSizeSelector default:', await bpProp(page, 'showSizeSelector'));
-    const sizeBaseline = await selectorState(page, 'marker--size');
+    const sizeBaseline = await selectorState(page, 'marker-size');
     console.log('Size selector baseline state:', JSON.stringify(sizeBaseline));
     expect(sizeBaseline.display).toBe('none');
     await setBpProp(page, 'showSizeSelector', true, 700);
-    const sizeOn = await v.pollValue(() => selectorState(page, 'marker--size'),
+    const sizeOn = await v.pollValue(() => selectorState(page, 'marker-size'),
       (s) => s.display !== 'none' && s.w > 0, 3000, 150);
     console.log('Size selector after enable:', JSON.stringify(sizeOn));
     expect(sizeOn.display).not.toBe('none');
@@ -442,7 +442,7 @@ test('Box plot property surface smoke', async ({page}) => {
     console.log('Value selector after disable:', JSON.stringify(valueOff));
     expect(valueOff.display).toBe('none');
     await setBpProp(page, 'showColorSelector', false, 700);
-    const colorOff = await v.pollValue(() => selectorState(page, 'marker--color'),
+    const colorOff = await v.pollValue(() => selectorState(page, 'marker-color'),
       (s) => s.display === 'none', 3000, 150);
     console.log('Color selector after disable:', JSON.stringify(colorOff));
     expect(colorOff.display).toBe('none');
@@ -462,11 +462,11 @@ test('Box plot property surface smoke', async ({page}) => {
     await canvasToggle('showValueAxis', true);
     await canvasToggle('showCategorySelector', true);
     await setBpProps(page, {showValueSelector: true, showColorSelector: true, showSizeSelector: false}, 700);
-    const sizeRestored = await v.pollValue(() => selectorState(page, 'marker--size'),
+    const sizeRestored = await v.pollValue(() => selectorState(page, 'marker-size'),
       (s) => s.display === 'none', 3000, 150);
     const valueRestored = await v.pollValue(() => selectorState(page, 'value'),
       (s) => s.display !== 'none', 3000, 150);
-    const colorRestored = await v.pollValue(() => selectorState(page, 'marker--color'),
+    const colorRestored = await v.pollValue(() => selectorState(page, 'marker-color'),
       (s) => s.display !== 'none', 3000, 150);
     console.log('Controls restored size/value/color:', JSON.stringify(sizeRestored),
       JSON.stringify(valueRestored), JSON.stringify(colorRestored));

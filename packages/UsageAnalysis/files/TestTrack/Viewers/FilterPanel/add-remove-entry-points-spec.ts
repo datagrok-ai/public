@@ -187,7 +187,7 @@ async function removeAllViaHamburger(page: Page): Promise<void> {
 async function addViaHeaderCombo(page: Page, column: string): Promise<void> {
   await page.evaluate(() => {
     const header = document.querySelector('[name="viewer-Filters"] .d4-filter-group-header');
-    const combo = header?.querySelector('[name="div-column-combobox-"]');
+    const combo = header?.querySelector('[name="div-column-combobox-add-filter"]');
     document.body.dispatchEvent(new MouseEvent('mousedown', {bubbles: true}));
     const colLabel = combo?.querySelector('.d4-column-selector-column');
     (colLabel || combo)?.dispatchEvent(new MouseEvent('mousedown', {bubbles: true, button: 0}));
@@ -509,7 +509,7 @@ async function clickMultiValueRow(page: Page, rowIndex: number): Promise<MultiVa
   const res = await page.evaluate(async ({col, ft, ri, cx, band, pitch, centre}) => {
     const card = [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter')]
       .find((c) => (c.querySelector('.d4-filter-column-name')?.textContent ?? '').trim() === col);
-    const overlay = card?.querySelector('[name="viewer-Grid"] [name="overlay"]') as HTMLElement | null;
+    const overlay = card?.querySelector('[name="filter-grid"] [name="overlay"]') as HTMLElement | null;
     if (!overlay) return null;
     const read = () => {
       const f = grok.shell.tv.getFiltersGroup().filters
@@ -546,7 +546,7 @@ async function clickMultiValueRow(page: Page, rowIndex: number): Promise<MultiVa
   }, {col: MVF_COLUMN, ft: MULTI_VALUE_FILTER_TYPE, ri: rowIndex, cx: MVF_X_CHECKBOX,
     band: MVF_HEADER_BAND_H, pitch: MVF_ROW_PITCH, centre: MVF_ROW_CENTRE_OFFSET});
   expect(res, `the "${MVF_COLUMN}" card exposes no [name="overlay"] canvas inside its `
-    + `[name="viewer-Grid"] body, or no '${MULTI_VALUE_FILTER_TYPE}' filter to read back, so the `
+    + `[name="filter-grid"] body, or no '${MULTI_VALUE_FILTER_TYPE}' filter to read back, so the `
     + `row-${rowIndex} tick could neither be dispatched nor measured`).not.toBeNull();
   return res!.after;
 }

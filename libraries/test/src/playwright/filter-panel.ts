@@ -135,7 +135,7 @@ export async function addCardViaColumnSelector(page: Page, column: string): Prom
     .not.toContain(column);
   const combo = await page.evaluate(() => {
     const el = document.querySelector(
-      '[name="viewer-Filters"] .d4-filter-group-header [name="div-column-combobox-"]');
+      '[name="viewer-Filters"] .d4-filter-group-header [name="div-column-combobox-add-filter"]');
     if (!el) return null;
     const r = el.getBoundingClientRect();
     if (r.width === 0 || r.height === 0) return null;
