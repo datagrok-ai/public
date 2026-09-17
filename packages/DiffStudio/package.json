@@ -53,6 +53,7 @@
   "playwrightTests": "playwright",
   "grok": {
     "testDependencies": [
+      "@datagrok/webcomponents",
       "@datagrok/compute2"
     ]
   }
