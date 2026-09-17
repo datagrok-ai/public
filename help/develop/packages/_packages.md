@@ -77,8 +77,8 @@ Datagrok Tools also outputs the `config.yaml` file and the directory it's stored
 
 > **Note**: The package template uses TypeScript. If you want to create a simple JavaScript package, pass the `--js` option to the command.
 
-5. Cd into the package directory and install the dependencies (inside the public repository, skip this:
-   `pnpm install` at the repository root covers every package):
+5. Cd into the package directory and install the dependencies. Inside the public repository, skip this
+   step. See [Build system](../dev-process/build-system.md):
 
   ```shell
   npm install
@@ -147,9 +147,8 @@ bundles `src/package.ts` into `dist/`, generates the function metadata files and
 them with `npm run <script-name>`; to [publish the package], run `grok publish`, which builds first.
 
 To install the dependencies, run `npm install` from the terminal. You can install other npm packages (such
-as React) using `npm install <npm package>`. Inside the public repository the packages form one pnpm
-workspace: run `pnpm install` once at the repository root instead, and a package there declares no
-devDependencies at all (the toolchain is provided by the workspace, `datagrok-api` is `workspace:^`).
+as React) using `npm install <npm package>`. Inside the public repository, the packages form one pnpm
+workspace. See [Build system](../dev-process/build-system.md).
 
 ### <a href="#" id="package.js"></a>package.js
 
