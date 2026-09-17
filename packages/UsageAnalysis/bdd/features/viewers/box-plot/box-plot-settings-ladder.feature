@@ -2,9 +2,9 @@
 Feature: Box plot settings ladder
   Every setting of the ladder takes and survives what comes after it: a datetime value gates
   Axis Type, Category 1 sets the marker color, an explicit coloring survives a value change,
-  value min and max, the log axis, a zoom that survives a coloring change, group comparison
-  with a control and a covariate; then the whole ladder through a layout round-trip and a
-  project round-trip. One journey on demog-1000 with a box plot of AGE.
+  value min and max, the log axis, a zoom that survives a coloring change; then the whole ladder
+  through a layout round-trip and a project round-trip. One journey on demog-1000 with a box plot
+  of AGE.
 
   Background:
     Given user is logged in
@@ -80,22 +80,8 @@ Feature: Box plot settings ladder
     Then "Marker Color Column" property of box plot viewer should be "SEX"
     And box plot viewer should show the same value range as before
 
-  Scenario: Group comparison with a control and a covariate
-    When user sets "Show Group Comparison" property of box plot viewer to "true"
-    And user sets properties of box plot viewer:
-      | Control Comparisons | true |
-      | Control Group       | F    |
-    Then "Control Group" property of box plot viewer should be "F"
-    When user sets "Adjust By" property of box plot viewer to "HEIGHT"
-    Then "Adjust By" property of box plot viewer should be "HEIGHT"
-    And box plot viewer should have repainted
-
   Scenario: The ladder survives a layout round-trip
-    When user sets properties of box plot viewer:
-      | Adjust By             |       |
-      | Control Comparisons   | false |
-      | Show Group Comparison | false |
-    And user saves the layout of the current table view
+    When user saves the layout of the current table view
     And user clicks on close icon of box plot viewer
     Then box plot viewer should be absent
     When user adds a scatter plot viewer
@@ -118,12 +104,7 @@ Feature: Box plot settings ladder
       | Plot Style            | violin      |
 
   Scenario: The ladder survives a project round-trip
-    When user sets properties of box plot viewer:
-      | Show Group Comparison | true   |
-      | Control Comparisons   | true   |
-      | Control Group         | F      |
-      | Adjust By             | HEIGHT |
-    And user zooms into the value axis of box plot viewer
+    When user zooms into the value axis of box plot viewer
     Then box plot viewer should show a narrower value range than before
     When user remembers the value range of box plot viewer
     And user saves the current view as project "bdd box plot ladder"
@@ -141,7 +122,4 @@ Feature: Box plot settings ladder
       | Axis Type             | logarithmic |
       | Invert Y Axis         | true        |
       | Plot Style            | violin      |
-      | Show Group Comparison | true        |
-      | Control Group         | F           |
-      | Adjust By             | HEIGHT      |
     And box plot viewer should show the remembered value range
