@@ -2,7 +2,7 @@ import {expect} from '@playwright/test';
 import {test} from '@datagrok-libraries/test/src/playwright/shared-page';
 import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu, waitForMolecule} from '@datagrok-libraries/test/src/playwright/spec-login';
 import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
-import {waitForChemMenuRoot} from './chem-fast-helpers';
+import {waitForChemMenuRoot} from '../chem-fast-helpers';
 
 test.use(specTestOptions);
 
@@ -87,7 +87,7 @@ test('Chem: Scaffold Tree add + generate + node-click filter + toolbox + propert
 
   await softStep('Step 6-7: Click first scaffold node → table filters', async () => {
     const beforeFiltered = await page.evaluate(() => grok.shell.t.filter.trueCount);
-    const click = await page.evaluate(() => {
+    const click = await page.evaluate(async () => {
       const viewer = document.querySelector('[name="viewer-Scaffold-Tree"]');
       const nodes = Array.from(viewer!.querySelectorAll('.d4-tree-view-node'))
         .filter(n => n.querySelector('canvas'));

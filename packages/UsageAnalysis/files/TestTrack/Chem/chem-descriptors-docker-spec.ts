@@ -49,7 +49,7 @@ async function openSmilesAndWaitForChem(page: Page) {
 }
 
 async function openDescriptorsDialog(page: Page) {
-  await softStep('Chem > Calculate > Descriptors... opens the Chemical Descriptors dialog', async () => {
+  await softStep('Chem > Calculate > Descriptors (RDKit)... opens the Chemical Descriptors dialog', async () => {
     await page.evaluate(() => {
       const chemMenu = document.querySelector('[name="div-Chem"]') as HTMLElement | null;
       if (!chemMenu) throw new Error('Top-menu Chem entry not found');
@@ -66,11 +66,11 @@ async function openDescriptorsDialog(page: Page) {
       calcItem.dispatchEvent(new MouseEvent('mouseover', {bubbles: true}));
     });
     await page.waitForFunction(() => Array.from(document.querySelectorAll('.d4-menu-item-label'))
-      .some((m) => m.textContent!.trim() === 'Descriptors...'), null, {timeout: 15000});
+      .some((m) => m.textContent!.trim() === 'Descriptors (RDKit)...'), null, {timeout: 15000});
     await page.evaluate(() => {
       const descr = Array.from(document.querySelectorAll('.d4-menu-item-label'))
-        .find((m) => m.textContent!.trim() === 'Descriptors...') as HTMLElement | undefined;
-      if (!descr) throw new Error('"Descriptors..." leaf not found under Calculate');
+        .find((m) => m.textContent!.trim() === 'Descriptors (RDKit)...') as HTMLElement | undefined;
+      if (!descr) throw new Error('"Descriptors (RDKit)..." leaf not found under Calculate');
       (descr.closest('.d4-menu-item') as HTMLElement).dispatchEvent(new MouseEvent('click', {bubbles: true}));
     });
     await page.locator('[name="dialog-Chemical-Descriptors"]').waitFor({timeout: 15000});

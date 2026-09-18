@@ -40,16 +40,37 @@ test('Chem | Context Panel — External Database Search Panels', async ({page}) 
       g.shell.o = DG.SemanticValue.fromValueType(smiles, 'Molecule');
       await new Promise((r) => setTimeout(r, 4000));
     };
+    // The accordion is rebuilt whenever the context object changes, so a pane read straight after
+    // a selection can predate it; poll for the pane and for the content the callers read off it.
     w.__expand = async (root: Element, title: string, waitMs = 2000) => {
-      const pane = root.querySelector(`.d4-accordion-pane[d4-title="${title}"]`);
+      if (!root) return null;
+      let pane: Element | null = null;
+      const paneDeadline = Date.now() + 20000;
+      while (!pane && Date.now() < paneDeadline) {
+        pane = root.querySelector(`.d4-accordion-pane[d4-title="${title}"]`);
+        if (!pane) await new Promise((r) => setTimeout(r, 200));
+      }
       if (!pane) return null;
       const header = pane.querySelector('.d4-accordion-pane-header') as HTMLElement;
       if (!header.classList.contains('expanded')) header.click();
+      const contentDeadline = Date.now() + 20000;
+      while (!pane.querySelector('.d4-accordion-pane-content') && Date.now() < contentDeadline)
+        await new Promise((r) => setTimeout(r, 200));
       await new Promise((r) => setTimeout(r, waitMs));
       return pane;
     };
-    w.__dbContent = () => document
-      .querySelector('.grok-prop-panel .d4-accordion-pane[d4-title="Databases"] .d4-accordion-pane-content');
+    // The context panel is rebuilt whenever the context object changes, so the Databases content
+    // can be absent for a beat after a selection; re-expand it and poll rather than reading once.
+    w.__dbContent = async () => {
+      const find = () => document
+        .querySelector('.grok-prop-panel .d4-accordion-pane[d4-title="Databases"] .d4-accordion-pane-content');
+      const deadline = Date.now() + 30000;
+      while (!find() && Date.now() < deadline) {
+        await w.__expand(document.querySelector('.grok-prop-panel'), 'Databases', 0);
+        if (!find()) await new Promise((r) => setTimeout(r, 500));
+      }
+      return find();
+    };
     w.__dbInit = async () => {
       for (let i = 0; i < 10; i++) {
         try { await g.functions.call('DrugBank:initDrugBank'); return; }
@@ -77,7 +98,7 @@ test('Chem | Context Panel — External Database Search Panels', async ({page}) 
   await softStep('Scenario 2 — ChEMBL API search panels', async () => {
     const res = await page.evaluate(async () => {
       const w = window as any;
-      const chembl = await w.__expand(w.__dbContent(), 'ChEMBL', 2500);
+      const chembl = await w.__expand(await w.__dbContent(), 'ChEMBL', 2500);
       const subTitles = Array.from(chembl.querySelectorAll('.d4-accordion-pane'))
         .map((c: any) => c.getAttribute('d4-title')).filter(Boolean);
       const sim = await w.__expand(chembl, 'Similarity Search API', 0);
@@ -121,14 +142,20 @@ test('Chem | Context Panel — External Database Search Panels', async ({page}) 
   await softStep('Scenario 3 — Chemspace form + Similar/Substructure', async () => {
     const res = await page.evaluate(async () => {
       const w = window as any;
+      // Scenario 2 opened a second table view, and it is called "Table" too: match on the frame
+      // this spec owns, or the switch lands on the ChEMBL results and every read below is of
+      // another view's context panel.
       const views = Array.from(w.grok.shell.views);
-      w.grok.shell.v = views.find((v: any) => v.name === 'Table');
+      w.grok.shell.v = views.find((v: any) => v.dataFrame === w.__df) ?? views.find((v: any) => v.name === 'Table');
+      // simpleMode hides the context panel again on a view switch, and with it the Databases pane
+      // every read below goes through
+      w.grok.shell.windows.showContextPanel = true;
       await new Promise((r) => setTimeout(r, 1000));
       await w.__selectMol(w.__df.col('canonical_smiles').get(0));
       await w.__expand(document.querySelector('.grok-prop-panel'), 'Databases', 1500);
-      const chembl = w.__dbContent().querySelector('.d4-accordion-pane[d4-title="ChEMBL"] .d4-accordion-pane-header');
+      const chembl = (await w.__dbContent()).querySelector('.d4-accordion-pane[d4-title="ChEMBL"] .d4-accordion-pane-header');
       if (chembl && chembl.classList.contains('expanded')) chembl.click();
-      const cs = await w.__expand(w.__dbContent(), 'Chemspace', 10000);
+      const cs = await w.__expand(await w.__dbContent(), 'Chemspace', 10000);
       const csC = cs.querySelector('.d4-accordion-pane-content');
       const inputs = Array.from(csC.querySelectorAll('.ui-input-root'))
         .map((r: any) => r.querySelector('.ui-input-label,label')?.textContent).filter(Boolean);
@@ -155,9 +182,9 @@ test('Chem | Context Panel — External Database Search Panels', async ({page}) 
   await softStep('Scenario 4 — PubChem search panels resolve without crash', async () => {
     const res = await page.evaluate(async () => {
       const w = window as any;
-      const cs = w.__dbContent().querySelector('.d4-accordion-pane[d4-title="Chemspace"] .d4-accordion-pane-header');
+      const cs = (await w.__dbContent()).querySelector('.d4-accordion-pane[d4-title="Chemspace"] .d4-accordion-pane-header');
       if (cs && cs.classList.contains('expanded')) cs.click();
-      const pc = await w.__expand(w.__dbContent(), 'PubChem', 2500);
+      const pc = await w.__expand(await w.__dbContent(), 'PubChem', 2500);
       const pcC = pc.querySelector('.d4-accordion-pane-content');
       const nested = Array.from(pcC.querySelectorAll('.d4-accordion-pane'))
         .map((c: any) => c.getAttribute('d4-title')).filter(Boolean);
@@ -190,11 +217,11 @@ test('Chem | Context Panel — External Database Search Panels', async ({page}) 
     const res = await page.evaluate(async () => {
       const w = window as any;
       await w.__dbInit();
-      const pc = w.__dbContent().querySelector('.d4-accordion-pane[d4-title="PubChem"] .d4-accordion-pane-header');
+      const pc = (await w.__dbContent()).querySelector('.d4-accordion-pane[d4-title="PubChem"] .d4-accordion-pane-header');
       if (pc && pc.classList.contains('expanded')) pc.click();
       await w.__selectMol('CC(=O)Oc1ccccc1C(=O)O');
       await w.__expand(document.querySelector('.grok-prop-panel'), 'Databases', 1500);
-      const drb = await w.__expand(w.__dbContent(), 'DrugBank', 2500);
+      const drb = await w.__expand(await w.__dbContent(), 'DrugBank', 2500);
       const subTitles = Array.from(drb.querySelectorAll('.d4-accordion-pane'))
         .map((c: any) => c.getAttribute('d4-title')).filter(Boolean);
       const sim = await w.__expand(drb, 'Similarity Search', 2000);
@@ -222,7 +249,7 @@ test('Chem | Context Panel — External Database Search Panels', async ({page}) 
       const w = window as any;
       await w.__selectMol('');
       await w.__expand(document.querySelector('.grok-prop-panel'), 'Databases', 1500);
-      const drb = await w.__expand(w.__dbContent(), 'DrugBank', 2500);
+      const drb = await w.__expand(await w.__dbContent(), 'DrugBank', 2500);
       const txt = drb ? drb.querySelector('.d4-accordion-pane-content').innerText : '';
       return {emptyHandled: /SMILES is empty/.test(txt)};
     });

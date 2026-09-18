@@ -11,8 +11,10 @@ declare const grok: any;
 
 // Selector recon-notes (class-2: derived from the registered function signatures in
 // public/packages/Chem/src/package.g.ts, read 2026-08-22; added to chem.md in the same change):
-//   [name="dialog-Chemical-Properties"] — title "Chemical Properties", the top-menu editor dialog of
-//     `Chem | Calculate | Chemical Properties...` (package.g.ts:1057-1075, //top-menu: line).
+//   [name="dialog-Chemical-Properties"] — title "Chemical Properties". Since GROK-20277 this leaf
+//     opens the biochem calculator dialog (.biochem-calc-dialog, widgets/biochem-properties-widget.ts):
+//     a navigator of every `function_family: biochem-calculator` function plus the selected one's
+//     own editor. "Chemical Properties (OCL)" is the former top-menu function, now a calculator in it.
 //   Its checkbox inputs follow the caption→`[name="input-<Caption>"]` convention, captions taken
 //     verbatim from the //input: lines at package.g.ts:1060-1068 — input-MW, input-HBA, input-HBD,
 //     input-Log-P, input-Log-S, input-PSA, input-Rotatable-bonds, input-Stereo-centers,
@@ -32,6 +34,9 @@ declare const grok: any;
 test.use(specTestOptions);
 
 const MOL_COL = 'canonical_smiles';
+const CALC_DIALOG = '[name="dialog-Chemical-Properties"]';
+// The OpenChemLib calculator inside that dialog — renamed from "Chemical Properties" by GROK-20277.
+const OCL_CALCULATOR = 'Chemical Properties (OCL)';
 // technical: closed OCL risk-level vocabulary, verbatim from Chem/src/open-chem/ocl-service/consts.ts:16-21
 const RISK_LEVELS = ['Unknown', 'None', 'Low', 'High'];
 
@@ -41,6 +46,31 @@ async function columnNames(page: Page): Promise<string[]> {
 
 async function setBool(page: Page, dialogName: string, inputName: string, value: boolean): Promise<void> {
   await page.locator(`[name="${dialogName}"] [name="${inputName}"]`).setChecked(value);
+}
+
+// GROK-20277 turned `Chem | Calculate | Chemical Properties...` into the calculator dialog: it
+// discovers every biochem-calculator function and builds their editors asynchronously, so the
+// dialog root is visible well before the controls below exist.
+async function openCalculatorDialog(page: Page): Promise<void> {
+  const dialog = page.locator(CALC_DIALOG);
+  await dialog.waitFor({timeout: 15000});
+  await dialog.locator('.biochem-calc-nav-item').filter({hasText: OCL_CALCULATOR}).first()
+    .waitFor({timeout: 30000});
+  await dialog.locator('[name="input-MW"]').first().waitFor({state: 'attached', timeout: 30000});
+}
+
+// Nothing runs unless the calculator itself is ticked in the navigator — the property checkboxes
+// only configure it.
+async function selectOclCalculator(page: Page): Promise<void> {
+  await page.locator(`${CALC_DIALOG} .biochem-calc-nav-item`).filter({hasText: OCL_CALCULATOR})
+    .locator('input[type="checkbox"]').first().check({force: true});
+}
+
+// OK swaps the editor for a same-named progress dialog, which makes every later CALC_DIALOG read
+// strict-mode-ambiguous; wait the whole stack out.
+async function okCalculatorDialog(page: Page): Promise<void> {
+  await page.locator(`${CALC_DIALOG} [name="button-OK"]`).first().click();
+  await page.waitForFunction(() => (grok.shell.dialogs ?? []).length === 0, null, {timeout: 60000});
 }
 
 async function waitForAddedColumns(page: Page, before: string[], minNew: number, capMs: number): Promise<string[]> {
@@ -56,7 +86,10 @@ test('Chem: Calculate — Chemical Properties, Toxicity Risks, To InChI, To InCh
 
   const consoleErrors: string[] = [];
   const AMBIENT = [/favicon/i, /ResizeObserver loop/i, /Permissions policy violation/i,
-    /Unable to find element in cloned iframe/i];
+    /Unable to find element in cloned iframe/i,
+    // the platform probes /help/dialogs/<name>.md(x) for every dialog it opens; a dialog with no
+    // help page logs the 404 and nothing else
+    /Failed to load resource: the server responded with a status of 404/];
   const isAmbient = (text: string) => AMBIENT.some((re) => re.test(text));
   page.on('console', (msg) => { if (msg.type() === 'error' && !isAmbient(msg.text())) consoleErrors.push(msg.text()); });
   page.on('pageerror', (e) => { if (!isAmbient(String(e))) consoleErrors.push(String(e)); });
@@ -104,7 +137,7 @@ test('Chem: Calculate — Chemical Properties, Toxicity Risks, To InChI, To InCh
 
   await softStep('S1.1-3: Chem → Calculate → Chemical Properties → dialog opens, MW only, OK', async () => {
     await openChemMenuItem(page, 'Chemical Properties...', {delayMs: 700});
-    await page.locator('[name="dialog-Chemical-Properties"]').waitFor({timeout: 15000});
+    await openCalculatorDialog(page);
     const molHost = await page.locator(
       '[name="dialog-Chemical-Properties"] [name="input-host-Molecules"] .d4-column-selector-column')
       .allTextContents();
@@ -119,7 +152,8 @@ test('Chem: Calculate — Chemical Properties, Toxicity Risks, To InChI, To InCh
         `${b} must open unchecked, so that this run is the minimal MW-only case`).not.toBeChecked();
     await expect(page.locator('[name="dialog-Chemical-Properties"] [name="input-MW"]'),
       'MW must open checked — it is the only property whose registered default is true').toBeChecked();
-    await page.locator('[name="dialog-Chemical-Properties"] [name="button-OK"]').click();
+    await selectOclCalculator(page);
+    await okCalculatorDialog(page);
   });
 
   await softStep('S1.4: an MW column is appended with numeric values > 0; baseline row count unchanged; no console errors', async () => {
@@ -144,14 +178,15 @@ test('Chem: Calculate — Chemical Properties, Toxicity Risks, To InChI, To InCh
 
   await softStep('S1.6: re-open Chemical Properties, select all nine properties, OK; all nine columns appended, numeric, row count == baseline; no console errors', async () => {
     await openChemMenuItem(page, 'Chemical Properties...', {delayMs: 700});
-    await page.locator('[name="dialog-Chemical-Properties"]').waitFor({timeout: 15000});
+    await openCalculatorDialog(page);
     await expect(page.locator('[name="dialog-Chemical-Properties"] [name="input-MW"]'),
       'MW must re-open already checked — its registered default is true, so the full-property run writes nothing to it').toBeChecked();
     for (const b of ['input-HBA', 'input-HBD', 'input-Log-P', 'input-Log-S', 'input-PSA',
       'input-Rotatable-bonds', 'input-Stereo-centers', 'input-Molecule-charge'])
       await setBool(page, 'dialog-Chemical-Properties', b, true);
+    await selectOclCalculator(page);
     const before = await columnNames(page);
-    await page.locator('[name="dialog-Chemical-Properties"] [name="button-OK"]').click();
+    await okCalculatorDialog(page);
     const added = await waitForAddedColumns(page, before, 9, 90000);
     const probe = await page.evaluate(({added, baseline}) => {
       const t = grok.shell.t;

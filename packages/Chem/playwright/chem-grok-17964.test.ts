@@ -51,6 +51,10 @@ test('Chem: GROK-17964 Convert Notation column-action registration is exactly-on
 
   await softStep('Find molecule column + focus column on Context Panel + expand panes', async () => {
     const result = await page.evaluate(async () => {
+      // with the context panel hidden `grok.shell.o = column` is ignored and no Actions pane is
+      // built, which is how a neighbour that hides it starves the reads below
+      try { grok.shell.windows.simpleMode = false; } catch (e) {}
+      try { grok.shell.windows.showContextPanel = true; } catch (e) {}
       for (let i = 0; i < 30; i++) {
         const df = grok.shell.t;
         const molColName = df?.columns.toList().find((c: any) => c.semType === 'Molecule')?.name;
