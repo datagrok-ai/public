@@ -267,6 +267,8 @@ export const SEMTYPE = {
   Ki: 'Ki',      // [nM, µM] Inhibition constant (binding affinity to target)
 
   FUNCTION_NAME: 'FunctionName',  // namespace-qualified function name, such as 'Chem:SmilesToMw'
+  COLUMN_NAME: 'ColumnName',      // a string parameter that names a column; `options.table` names the parameter that supplies its table
+  TABLE_NAME: 'TableName',        // a string parameter that names an open table
 }
 
 export const UNITS = {

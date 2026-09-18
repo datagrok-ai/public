@@ -13,6 +13,7 @@ category('Add new column', () => {
 
   before(async () => {
     df = grok.data.demo.demog(10);
+    df.name = 'demog';
     grok.shell.addTableView(df);
   });
 
@@ -148,6 +149,96 @@ category('Add new column', () => {
     dlg.uiDialog!.close();
   });
 
+  test('function at caret becomes current object', async () => {
+    const call = DG.Func.find({name: 'AddNewColumn'})[0].prepare({'table': df});
+    const dlg = new AddNewColumnDialog(call);
+    await awaitCheck(() => dlg.codeMirror != null, 'cannot load CodeMirror', 5000);
+    await awaitCheck(() => isDialogPresent(dlg.addColumnTitle));
+    await awaitCheck(() => dlg.findFunc('Abs') != null, 'functions are not registered', 5000);
+    dlg.codeMirror!.dispatch({changes: {from: 0, to: 0, insert: 'Abs(${age})'}});
+    await awaitCheck(() => dlg.codeMirror!.state.doc.toString() === 'Abs(${age})');
+    dlg.codeMirror!.dispatch({selection: {anchor: 2}, userEvent: 'select.pointer'});
+    await awaitCheck(() => grok.shell.o instanceof DG.Func && (grok.shell.o as DG.Func).name === 'Abs',
+      'Abs is not the current object', 3000);
+    // inside the argument list the hint still describes the enclosing call
+    dlg.codeMirror!.dispatch({selection: {anchor: 6}, userEvent: 'select'});
+    await awaitCheck(() => dlg.hintDiv.children[0]?.textContent === 'Abs(x:num): num', 'no signature inside the call', 3000);
+    expect(dlg.hintDiv.children[1]?.textContent ?? '', dlg.findFunc('Abs')!.description ?? '', 'wrong description in the hint');
+    expect(dlg.functionInfo('Abs')[0]?.textContent, 'Abs(x:num): num', 'no completion info');
+    const table = dlg.findFunc('Table');
+    if (table)
+      expect(dlg.functionInfo('Table')[1]?.textContent, table.description, 'no description in completion info');
+    dlg.uiDialog!.close();
+  });
+
+  test('table and column argument selectors', async () => {
+    const {CompletionContext} = await import('@codemirror/autocomplete');
+    const {EditorState} = await import('@codemirror/state');
+    const call = DG.Func.find({name: 'AddNewColumn'})[0].prepare({'table': df});
+    const dlg = new AddNewColumnDialog(call);
+    await awaitCheck(() => dlg.codeMirror != null, 'cannot load CodeMirror', 5000);
+    await awaitCheck(() => isDialogPresent(dlg.addColumnTitle));
+    dlg.coreFunctionsParams['TestTableFunc'] = {isVectorFunc: false, params: [
+      {propName: 'table', propertyType: DG.TYPE.DATA_FRAME},
+      {propName: 'column', propertyType: DG.TYPE.COLUMN},
+      {propName: 'output', propertyType: DG.TYPE.INT},
+    ]};
+    // String parameters annotated the way Column(columnName, [tableName]) is: the
+    // semtype names the selector, `options.table` names the table parameter.
+    dlg.coreFunctionsParams['TestNamesFunc'] = {isVectorFunc: false, params: [
+      {propName: 'columnName', propertyType: DG.TYPE.STRING,
+        semType: DG.SEMTYPE.COLUMN_NAME, tableParam: 'tableName', columnTypeFilter: DG.COLUMN_TYPE_FILTER.NUMERICAL},
+      {propName: 'row', propertyType: DG.TYPE.INT},
+      {propName: 'tableName', propertyType: DG.TYPE.STRING, semType: DG.SEMTYPE.TABLE_NAME},
+      {propName: 'output', propertyType: DG.TYPE.INT},
+    ]};
+    const other = DG.DataFrame.fromCsv('x,y\n1,2');
+    other.name = 'other';
+    const otherView = grok.shell.addTableView(other);
+    const complete = (text: string, pos?: number) =>
+      dlg.argumentCompletions(new CompletionContext(EditorState.create({doc: text}), pos ?? text.length, true));
+    const labels = (text: string, pos?: number) => complete(text, pos)?.options.map((o) => o.label) ?? [];
+    const applied = (text: string, label: string) =>
+      complete(text)?.options.find((o) => o.label === label)?.apply;
+    try {
+      const ctx = dlg.getCallContext('Foo("a(b", Bar(1, ', 18);
+      expect(ctx?.funcName, 'Bar');
+      expect(ctx?.argIndex, 1);
+      expect(dlg.getCallContext('Foo("a(b", ', 11)?.argIndex, 1);
+
+      expect(labels('TestTableFunc(').includes(df.name), true, 'table names are not offered');
+      expect(labels('TestTableFunc(').includes('other'), true, 'the second table is not offered');
+      expect(applied('TestTableFunc(', 'other'), '"other"');
+      expect(applied('TestTableFunc("', 'other'), 'other"');
+      expect(complete('TestTableFunc("oth')?.from, 15);
+
+      expect(labels(`TestTableFunc("${df.name}", `).includes('age'), true, 'source columns are not offered');
+      expect(applied(`TestTableFunc("${df.name}", `, 'age'), '${age}');
+      expect(labels('TestTableFunc("other", ').join(','), 'x,y');
+      expect(applied('TestTableFunc("other", ', 'x'), '"x"');
+
+      const placeholder = complete('TestTableFunc(table, column)', 19)!;
+      expect(placeholder.from, 14);
+      expect(placeholder.filter, false);
+
+      expect(complete('Abs('), null);
+      expect(complete('TestTableFunc("other", ${'), null);
+
+      // semtype-driven selectors on string parameters
+      // earlier tests in this category add calculated columns to `df`, so derive the expectation
+      const numerical = df.columns.toList().filter((c) => c.matches(DG.COLUMN_TYPE_FILTER.NUMERICAL)).map((c) => c.name);
+      expect(labels('TestNamesFunc(').join(','), numerical.join(','), 'numerical filter is not applied');
+      expect(applied('TestNamesFunc(', 'age'), '"age"');
+      expect(labels('TestNamesFunc("age", 0, ').includes('other'), true, 'table names are not offered for TableName');
+      expect(labels('TestNamesFunc("x", 0, "other")', 15).join(','), 'x,y', 'options.table is not honoured');
+      expect(complete('TestNamesFunc("age", '), null);
+    } finally {
+      otherView.close();
+      grok.shell.closeTable(other);
+      dlg.uiDialog!.close();
+    }
+  });
+
   test('insert function on click', async () => {
     const clear = async () => {
       dlg.codeMirror!.dispatch({
@@ -166,7 +257,7 @@ category('Add new column', () => {
     const absFuncLink = dlg.widgetFunctions?.root.querySelector('[name="span-Abs"]') as HTMLElement;
     //check function is added on click
     absFuncLink.click();
-    await awaitCheck(() => dlg.codeMirror!.state.doc.toString() === 'Abs(num)', 'expression has\'t been set');
+    await awaitCheck(() => dlg.codeMirror!.state.doc.toString() === 'Abs(x)', 'expression has\'t been set');
     await clear();
     //check function is added on click and selected column with matching type is added automatically
     dlg.columnsDf!.currentRowIdx = 3;
