@@ -378,6 +378,9 @@ describe('generateDomainClients', () => {
       [(m: any) => m.storage = {kind: 'external', schema: 'public'}, /\/storage must have required property 'connection'/],
       [(m: any) => m.storage = {kind: 'domain', connection: 'A:B'}, /\/storage\/connection boolean schema is false/],
       [(m: any) => m.storage = {kind: 'domain', schema: 'public'}, /\/storage\/schema boolean schema is false/],
+      [(m: any) => m.storage = {kind: 'domain', writable: true}, /\/storage\/writable boolean schema is false/],
+      [(m: any) => m.storage = {kind: 'external', connection: 'A:B', schema: 'public', writable: 'yes'},
+        /\/storage\/writable must be boolean/],
     ] as [(m: any) => void, RegExp][]) {
       const dir = makePackage();
       mutateManifest(dir, mutate);
@@ -388,6 +391,25 @@ describe('generateDomainClients', () => {
     const dir = makePackage();
     mutateManifest(dir, (m) => m.storage = {kind: 'domain'});
     expect(generateDomainClients(dir)).toBe(true);
+  });
+
+  it('external storage: writable at the storage level, a per-table opt-out', () => {
+    const dir = makePackage();
+    mutateManifest(dir, (m) => {
+      m.storage = {kind: 'external', connection: 'ApiSamples:PostgresNorthwind', schema: 'public', writable: true};
+      m.tables = {
+        order: {table: 'orders', businessKey: ['order_id'], writable: false, columns: {
+          order_id: {type: 'int', column: 'orderid', required: true}}},
+        order_detail: {table: 'order_details', businessKey: ['order_id', 'product_id'], columns: {
+          order_id: {type: 'ref', ref: 'order'}, product_id: {type: 'int'}}},
+      };
+      delete m.propertySchemas;
+    });
+    expect(generateDomainClients(dir)).toBe(true);
+    mutateManifest(dir, (m) => m.tables.order.writable = 'no');
+    const {result, output} = runCapturingLog(dir);
+    expect(result).toBe(false);
+    expect(output).toMatch(/\/tables\/order\/writable must be boolean/);
   });
 
   it('external storage: the JSON Schema refuses an unknown kind and a dotted or bracketed remote name', () => {

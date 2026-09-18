@@ -18,7 +18,7 @@
     },
     "storage": {
       "type": "object",
-      "description": "Where the rows live. Absent = domain: the platform creates and owns the tables. external: the tables already exist in the database of the named platform connection and are read through it (read-only; no row security, soft delete, audit, relations, constraints, property schemas or extensions); every table then declares its remote primary key as businessKey, and 'table'/'column' carry the remote names when they differ from the declared ones.",
+      "description": "Where the rows live. Absent = domain: the platform creates and owns the tables. external: the tables already exist in the database of the named platform connection and are read through it (no row security, soft delete, audit, relations, constraints, property schemas or extensions; read-only unless 'writable'); every table then declares its remote primary key as businessKey, and 'table'/'column' carry the remote names when they differ from the declared ones.",
       "required": ["kind"],
       "additionalProperties": false,
       "properties": {
@@ -35,11 +35,16 @@
         "catalog": {
           "$ref": "#/definitions/remoteIdentifier",
           "description": "external: the catalog/database, for targets that have one."
+        },
+        "writable": {
+          "type": "boolean",
+          "default": false,
+          "description": "external: rows may be inserted, patched and deleted through the connection (one remote transaction per request, keyed by businessKey; on ClickHouse, which commits every statement, a request is one multi-row INSERT and patch/delete/upsert are refused). The publisher must hold Query, AddRows, ChangeValues and RemoveRows on the connection; a table opts out with its own 'writable': false."
         }
       },
       "if": {"properties": {"kind": {"const": "external"}}},
       "then": {"required": ["connection", "schema"]},
-      "else": {"properties": {"connection": false, "schema": false, "catalog": false}}
+      "else": {"properties": {"connection": false, "schema": false, "catalog": false, "writable": false}}
     },
     "extensible": {
       "type": "object",
@@ -104,6 +109,10 @@
         "table": {
           "$ref": "#/definitions/remoteIdentifier",
           "description": "External storage only: the remote table's name when it differs from the declared one (e.g. 'Order Details')."
+        },
+        "writable": {
+          "type": "boolean",
+          "description": "Writable external storage only: false keeps this table read-only while the rest of the binding accepts writes."
         },
         "securityMode": {
           "enum": ["table", "master", "row"],
