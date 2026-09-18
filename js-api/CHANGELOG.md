@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-20931: Added `Stats.cumSum(options?)` and `Stats.movingAvg(window, options?)` — a running total and a trailing average as a new column; `WindowOptions` = `{orderBy, ascending, by, order}` (walk along other columns, restart per group, or follow an explicit row order such as `grid.getRowOrder()`), plus `minPeriods` for `movingAvg`; the mask is the one the stats were created with (`Stats.fromColumn(col, mask)`)
 * GROK-20931: Added `DG.FuncOptions.Accessor` (a function that returns a table or a column for use inside a formula) and `DG.FuncParamOptions.Table`
 * GROK-20931: Added `DG.SEMTYPE.COLUMN_NAME` and `DG.SEMTYPE.TABLE_NAME` — semantic types for string parameters that name a column or a table; a column-name parameter's `options.table` names the parameter that supplies its table
 * GROK-20416: `ui.hints.addHintIndicator` accepts a function target and re-resolves it, so the blob follows an element that is rebuilt while the hint is up (a ribbon item) instead of being orphaned on the node that was replaced; ids are monotonic rather than one of 1000 random values, `ui.hints.remove` clears the reposition timer, and the highlight class is cleared wherever the hint ended up; a function whose target has not rendered yet returns the blob itself, which `remove` accepts, so the hint stays removable
