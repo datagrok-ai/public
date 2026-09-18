@@ -5,6 +5,7 @@ import {expect, Page} from '@playwright/test';
 import {test} from '../shared-page';
 import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu, waitForMolecule} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
+import {armBalloonRecorder, readRecordedBalloons} from '../helpers/balloons';
 import {openChemMenuItemFast as openChemMenuItem} from './chem-fast-helpers';
 
 declare const grok: any;
@@ -292,13 +293,20 @@ test('Chem: Calculate — Map Identifiers, Chemical Properties, Generate Conform
     const sketcher = page.locator('.d4-dialog').filter({has: page.locator('input[placeholder*="SMILES" i]')});
     await sketcher.locator('[name="button-OK"]').first().click();
     await sketcher.first().waitFor({state: 'detached', timeout: 15000});
+    await armBalloonRecorder(page);
     await page.locator('[name="dialog-Generate-Conformers"] [name="button-OK"]').click();
+    // The run is a server-side python script, so a dead or mis-provisioned scripting
+    // environment otherwise costs the whole 180 s and reports only "no table". Watch the
+    // balloon channel too, and quote what it said in the failure.
     await page.waitForFunction(() =>
-      grok.shell.tables.some((t: any) => t.name.toLowerCase().includes('conformer')),
+      grok.shell.tables.some((t: any) => t.name.toLowerCase().includes('conformer')) ||
+      [...document.querySelectorAll('.d4-balloon.error')].length > 0,
     null, {timeout: 180000}).catch(() => {});
     const names = await tablesWithName(page, 'conformer');
+    const said = names.length ? [] : (await readRecordedBalloons(page)).map((b) => `${b.cls}: ${b.text}`);
     expect(names.length,
-      'Generate Conformers must produce a conformers table within 180 s — no such table means the run did not complete')
+      'Generate Conformers must produce a conformers table within 180 s — no such table means the run did not ' +
+      `complete; balloons raised meanwhile: ${JSON.stringify(said)}`)
       .toBeGreaterThan(0);
     {
       const probe = await page.evaluate(({name, molecule}) => {

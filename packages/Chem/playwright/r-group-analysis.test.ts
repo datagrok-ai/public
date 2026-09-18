@@ -7,6 +7,12 @@ import {openChemMenuItemFast, waitForChemMenuRoot} from './chem-fast-helpers';
 
 test.use(specTestOptions);
 
+// The decomposition itself runs in the RDKit web workers, and on the CI node — four Playwright
+// workers deep, no warm client — it has been measured to land well after the 30 s the dev run
+// needs: build 394 reported B4 timed out and then B5 found B4's trellis already there. The cap
+// is the wait, not the assertion: nothing below is relaxed.
+const DECOMPOSITION_CAP = 120_000;
+
 async function openRGroupsDialog(page: any) {
   // Retry the menu-open: on a cold session the first Chem-menu click can be
   // swallowed (semType detection still settling, transient build balloons), so
@@ -39,7 +45,7 @@ async function clickMCS(page: any) {
 }
 
 test('Chem: R-Groups Analysis Block A (GROK-16329) + Block B (Replace Latest matrix)', async ({page}) => {
-  test.setTimeout(180_000);
+  test.setTimeout(600_000);
 
   await loginToDatagrok(page);
   await waitForChemMenuRoot(page);
@@ -125,7 +131,7 @@ test('Chem: R-Groups Analysis Block A (GROK-16329) + Block B (Replace Latest mat
     await expect.poll(async () => page.evaluate(() =>
       Array.from(grok.shell.tv.viewers).some((v: any) => v.type === 'Trellis plot') &&
       grok.shell.t.columns.toList().some((c: any) => /^R[1-4]$/.test(c.name))),
-    {timeout: 30_000, intervals: [250, 500, 1000]}).toBe(true);
+    {timeout: DECOMPOSITION_CAP, intervals: [250, 500, 1000]}).toBe(true);
     const result = await page.evaluate(() => {
       const names = grok.shell.t.columns.toList().map((c: any) => c.name);
       return {
@@ -150,7 +156,7 @@ test('Chem: R-Groups Analysis Block A (GROK-16329) + Block B (Replace Latest mat
     await page.locator('.d4-dialog [name="button-OK"]').click();
     await expect.poll(async () => page.evaluate(() =>
       Array.from(grok.shell.tv.viewers).filter((v: any) => v.type === 'Trellis plot').length),
-    {timeout: 30_000, intervals: [250, 500, 1000]}).toBe(2);
+    {timeout: DECOMPOSITION_CAP, intervals: [250, 500, 1000]}).toBe(2);
     const state = await page.evaluate(() => {
       const names = grok.shell.t.columns.toList().map((c: any) => c.name);
       return {
@@ -179,7 +185,7 @@ test('Chem: R-Groups Analysis Block A (GROK-16329) + Block B (Replace Latest mat
     await expect.poll(async () => page.evaluate(() => {
       const trellis = Array.from(grok.shell.tv.viewers).filter((v: any) => v.type === 'Trellis plot');
       return {total: trellis.length, fresh: trellis.filter((v: any) => !v.root.hasAttribute('data-rg-pre')).length};
-    }), {timeout: 30_000, intervals: [250, 500, 1000]}).toEqual({total: 2, fresh: 1});
+    }), {timeout: DECOMPOSITION_CAP, intervals: [250, 500, 1000]}).toEqual({total: 2, fresh: 1});
     const state = await page.evaluate(() => {
       const names = grok.shell.t.columns.toList().map((c: any) => c.name);
       return {

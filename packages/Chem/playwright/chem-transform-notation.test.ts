@@ -3,7 +3,7 @@ realizes: []
 --- */
 import {expect, Page} from '@playwright/test';
 import {test} from '@datagrok-libraries/test/src/playwright/shared-page';
-import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu, waitForMolecule} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {loginToDatagrok, specTestOptions, softStep, skipOnMinimalStack, waitForChemMenu, waitForMolecule} from '@datagrok-libraries/test/src/playwright/spec-login';
 import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 import {openChemMenuItemFast as openChemMenuItem} from './chem-fast-helpers';
 
@@ -17,6 +17,11 @@ const SMILES_FILE = 'System:DemoFiles/chem/smiles.csv';
 const NAMES_FILE = 'System:AppData/Chem/tests/names_to_smiles.csv';
 // A plainly non-chemical string, so no chemical registry can ever start resolving it.
 const UNRESOLVABLE_NAME = 'ZZZZ NOT A COMPOUND ZZZZ';
+// Names To Smiles delegates to the ChEMBL package query `ChEMBL:NamesToSmiles`, which runs against
+// the external ChemblSql database (Chembl/queries/converters.sql:46). The minimal CI stand has
+// neither that package nor the database behind it.
+const NAMES_TO_SMILES_NEEDS = 'resolution is the ChEMBL package query ChEMBL:NamesToSmiles against ' +
+  'the external ChemblSql database, absent from the minimal stand';
 // Each canonical comparison costs a round-trip through Chem:canonicalize per value, so the
 // row-for-row claims are checked over the first 30 valid rows rather than all 1000.
 const CANONICAL_SAMPLE = 30;
@@ -383,6 +388,7 @@ test('Chem: Transform notation roundtrip — Convert Notation, Recalculate Coord
   });
 
   await softStep('Scenario 3 Step 3 (via Step 2 Names To Smiles dialog): Chem → Transform → Names To Smiles → Names column, OK; resolved-row count is >0 and <total, blank names stay blank and the known-bad name yields no structure', async () => {
+    if (skipOnMinimalStack('Scenario 3 Step 3 Names To Smiles', NAMES_TO_SMILES_NEEDS)) return;
     const before = await columnNames(page);
     await openChemMenuItem(page, 'Names To Smiles...', {delayMs: 700});
     await page.locator('[name="dialog-Names-To-Smiles"]').waitFor({timeout: 15000});
@@ -453,6 +459,7 @@ test('Chem: Transform notation roundtrip — Convert Notation, Recalculate Coord
   });
 
   await softStep('Scenario 3 Step 4: the resolved column renders molecule cells (semType Molecule + Molecule cell renderer); rows with no SMILES stay empty', async () => {
+    if (skipOnMinimalStack('Scenario 3 Step 4 resolved-column rendering', NAMES_TO_SMILES_NEEDS)) return;
     const probe = await page.evaluate(({smilesCol}) => {
       const t = grok.shell.t;
       const c = t.col(smilesCol);

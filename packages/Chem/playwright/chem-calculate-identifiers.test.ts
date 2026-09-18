@@ -3,8 +3,9 @@ realizes: []
 --- */
 import {expect, Page} from '@playwright/test';
 import {test} from '@datagrok-libraries/test/src/playwright/shared-page';
-import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu, waitForMolecule} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {loginToDatagrok, specTestOptions, softStep, skipOnMinimalStack, waitForChemMenu, waitForMolecule} from '@datagrok-libraries/test/src/playwright/spec-login';
 import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
+import {armBalloonRecorder, readRecordedBalloons} from '@datagrok-libraries/test/src/playwright/balloons';
 import {openChemMenuItemFast as openChemMenuItem} from './chem-fast-helpers';
 
 declare const grok: any;
@@ -30,6 +31,12 @@ test.use(specTestOptions);
 
 const MOL_COL = 'canonical_smiles';
 const CALC_DIALOG = '[name="dialog-Chemical-Properties"]';
+
+// Map Identifiers resolves through the Chembl package's `chembl:unichem` connection
+// (Chem/src/widgets/identifiers.ts:418 and the INCHI_KEY_TO_CHEMBL query), i.e. an external
+// database. The minimal CI stand carries neither that package nor outside network.
+const MAP_IDENTIFIERS_NEEDS = 'resolution runs through the external UniChem/ChEMBL connection ' +
+  '(chembl:unichem), which the minimal stand has no package and no network for';
 
 // technical: pentane, deliberately NOT the script's default "CCCC" (Chem/scripts/generate_conformers.py:7);
 // it is canonical under RDKit, so the output `smiles` column reads back verbatim.
@@ -113,6 +120,7 @@ test('Chem: Calculate — Map Identifiers, Chemical Properties, Generate Conform
   });
 
   await softStep('S1.5: Chem → Calculate → Map Identifiers, smiles → chembl, OK; a chembl column resolves > 0 rows, no blank resolved cell, row count == baseline', async () => {
+    if (skipOnMinimalStack('S1.5 Map Identifiers', MAP_IDENTIFIERS_NEEDS)) return;
     const before = await columnNames(page);
     await openChemMenuItem(page, 'Map Identifiers...', {delayMs: 700});
     await page.locator('[name="dialog-Map-Identifiers"]').waitFor({timeout: 15000});
@@ -139,6 +147,7 @@ test('Chem: Calculate — Map Identifiers, Chemical Properties, Generate Conform
   });
 
   await softStep('S1.6: re-open Map Identifiers, smiles → pubchem, OK; a second column is appended and differs from chembl in ≥ 1 row; row count == baseline', async () => {
+    if (skipOnMinimalStack('S1.6 Map Identifiers', MAP_IDENTIFIERS_NEEDS)) return;
     const before = await columnNames(page);
     await openChemMenuItem(page, 'Map Identifiers...', {delayMs: 700});
     await page.locator('[name="dialog-Map-Identifiers"]').waitFor({timeout: 15000});
@@ -292,13 +301,20 @@ test('Chem: Calculate — Map Identifiers, Chemical Properties, Generate Conform
     const sketcher = page.locator('.d4-dialog').filter({has: page.locator('input[placeholder*="SMILES" i]')});
     await sketcher.locator('[name="button-OK"]').first().click();
     await sketcher.first().waitFor({state: 'detached', timeout: 15000});
+    await armBalloonRecorder(page);
     await page.locator('[name="dialog-Generate-Conformers"] [name="button-OK"]').click();
+    // The run is a server-side python script, so a dead or mis-provisioned scripting
+    // environment otherwise costs the whole 180 s and reports only "no table". Watch the
+    // balloon channel too, and quote what it said in the failure.
     await page.waitForFunction(() =>
-      grok.shell.tables.some((t: any) => t.name.toLowerCase().includes('conformer')),
+      grok.shell.tables.some((t: any) => t.name.toLowerCase().includes('conformer')) ||
+      [...document.querySelectorAll('.d4-balloon.error')].length > 0,
     null, {timeout: 180000}).catch(() => {});
     const names = await tablesWithName(page, 'conformer');
+    const said = names.length ? [] : (await readRecordedBalloons(page)).map((b) => `${b.cls}: ${b.text}`);
     expect(names.length,
-      'Generate Conformers must produce a conformers table within 180 s — no such table means the run did not complete')
+      'Generate Conformers must produce a conformers table within 180 s — no such table means the run did not ' +
+      `complete; balloons raised meanwhile: ${JSON.stringify(said)}`)
       .toBeGreaterThan(0);
     {
       const probe = await page.evaluate(({name, molecule}) => {

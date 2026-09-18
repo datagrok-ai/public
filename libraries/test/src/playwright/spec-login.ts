@@ -2,12 +2,29 @@ import {test, Page} from '@playwright/test';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
+import {secureOriginLaunchOptions} from './base-config';
 
 export const baseUrl = process.env.DATAGROK_URL ?? 'http://localhost:8888';
 
+// The Jenkins Test-Playwright stand is only ever reachable as http://xamgle-nginx:8889, and it
+// is deliberately minimal: no external network, no third-party packages, no platform DB beyond
+// the one the build creates. A step that needs any of those is gated on this and stays hard
+// everywhere else. `process.env.CI` is useless here — Jenkins does not set it.
+export const MINIMAL_CI_STACK = /xamgle-nginx/.test(process.env.DATAGROK_URL ?? '');
+
+/** Logs why a step is being skipped on the minimal CI stand, so a gated step is never silent. */
+export function skipOnMinimalStack(what: string, reason: string): boolean {
+  if (!MINIMAL_CI_STACK) return false;
+  console.log(`[minimal-stack] skipped ${what}: ${reason}`);
+  return true;
+}
+
 export const specTestOptions = {
   viewport: {width: 1920, height: 1080},
-  launchOptions: {args: ['--window-size=1920,1080', '--window-position=0,0']},
+  launchOptions: {
+    ...secureOriginLaunchOptions,
+    args: [...secureOriginLaunchOptions.args, '--window-size=1920,1080', '--window-position=0,0'],
+  },
   actionTimeout: 15_000,
   navigationTimeout: 60_000,
   // Stated rather than inherited: specs that read an exported artefact through

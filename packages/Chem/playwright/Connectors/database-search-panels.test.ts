@@ -1,10 +1,16 @@
 import {expect} from '@playwright/test';
 import {test} from '@datagrok-libraries/test/src/playwright/shared-page';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors, MINIMAL_CI_STACK} from '@datagrok-libraries/test/src/playwright/spec-login';
 
 test.use(specTestOptions);
 
 test('Chem | Context Panel — External Database Search Panels', async ({page}) => {
+  // Every panel this spec walks belongs to a separate package (ChemblAPI, Chemspace, PubChem,
+  // DrugBank) and every one of them queries a third-party API. The minimal CI stand installs
+  // none of them and has no outside network: build 394 read the Databases group as
+  // ["Synthon Search"], Chem's own panel and nothing else.
+  test.skip(MINIMAL_CI_STACK, 'external ChEMBL/Chemspace/PubChem/DrugBank packages and network — ' +
+    'absent on the minimal CI stand');
 
   test.setTimeout(300_000);
 

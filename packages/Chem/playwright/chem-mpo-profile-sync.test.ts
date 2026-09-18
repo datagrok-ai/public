@@ -31,14 +31,27 @@ const SYNC_PROFILE = 'SyncTest-Profile';
 const SCORE_PROFILE = 'ScoreTest-Profile';
 const SCORE_COLUMN = 'HeavyAtomCount';
 
+// The profiles table is rendered only when the store holds something: on an empty store the view
+// puts up "No MPO profiles yet" and tells the reader to run Chem:seedMpoProfiles
+// (mpo-profiles-view.ts:92-96). A freshly built stand — every CI stand — is exactly that, so an
+// empty store is seeded with the shipped defaults first. A populated stand is left alone: the seed
+// is idempotent but it would still add defaults an operator had deliberately removed.
 async function openMpoProfilesApp(page: Page): Promise<void> {
-  await page.evaluate(async () => {
+  const seeded = await page.evaluate(async () => {
     try { grok.shell.settings.showFiltersIconsConstantly = true; } catch (e) {}
     try { grok.shell.windows.simpleMode = true; } catch (e) {}
     grok.shell.closeAll();
+    let report = 'store already populated';
+    try {
+      const names: string[] = await grok.functions.call('Chem:getMpoProfileNames', {});
+      if (!names.length) report = await grok.functions.call('Chem:seedMpoProfiles', {});
+    }
+    catch (e: any) { report = `seed failed: ${e?.message ?? e}`; }
     const v = await grok.functions.call('Chem:mpoProfilesApp', {});
     grok.shell.addView(v);
+    return report;
   });
+  console.log(`[mpo] seedMpoProfiles: ${seeded}`);
   await page.locator('.chem-mpo-action-button').first().waitFor({timeout: 30_000, state: 'attached'});
   await page.locator('.chem-mpo-profiles-table').waitFor({timeout: 30_000, state: 'attached'});
 }
@@ -111,17 +124,30 @@ async function uploadProfile(page: Page, profile: Record<string, unknown>): Prom
 async function primeBrowseTree(page: Page): Promise<string> {
   return await page.evaluate(async () => {
     const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+    // Each level loads asynchronously, and the cold CI client takes longer over it than the
+    // warm dev one did — a flat settle after `expanded` read an unfilled level as an absent
+    // one (build 394: Apps expanded, Chem read back missing after 1.5 s).
+    const childNamed = async (node: any, match: (t: string) => boolean, capMs: number) => {
+      const deadline = Date.now() + capMs;
+      do {
+        const hit = (node.children || []).find((c: any) => match(c.text));
+        if (hit) return hit;
+        await wait(200);
+      } while (Date.now() < deadline);
+      return null;
+    };
     const mainTree = grok.shell.browsePanel?.mainTree;
     if (!mainTree) return '__NO_TREE__';
-    const apps = (mainTree.children || []).find((c: any) => c.text === 'Apps');
+    const apps = await childNamed(mainTree, (t: string) => t === 'Apps', 20000);
     if (!apps) return '__NO_APPS__';
-    apps.expanded = true; await wait(1500);
-    const chem = (apps.children || []).find((c: any) => c.text === 'Chem');
+    apps.expanded = true;
+    const chem = await childNamed(apps, (t: string) => t === 'Chem', 30000);
     if (!chem) return '__NO_CHEM__';
-    chem.expanded = true; await wait(1800);
-    const mpo = (chem.children || []).find((c: any) => /MPO/i.test(c.text));
+    chem.expanded = true;
+    const mpo = await childNamed(chem, (t: string) => /MPO/i.test(t), 30000);
     if (!mpo) return '__NO_MPO__';
-    mpo.expanded = true; await wait(2500);
+    mpo.expanded = true;
+    await childNamed(mpo, () => true, 30000);
     return 'OK';
   });
 }

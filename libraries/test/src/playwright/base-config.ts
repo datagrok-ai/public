@@ -14,6 +14,20 @@ import * as path from 'path';
 // do all of that against dev while the output still looked like a normal run. `grok test`
 // always sets it; anything else should say where it is pointing.
 const DATAGROK_URL = (process.env.DATAGROK_URL ?? 'http://localhost:8888').replace(/\/$/, '');
+// The CI stack is plain HTTP, so `navigator.clipboard` only exists if the origin is
+// allow-listed as secure. Measured on Chrome-for-Testing 153 (playwright chromium v1243):
+// the default `chromium-headless-shell` IGNORES
+// --unsafely-treat-insecure-origin-as-secure (isSecureContext stays false and
+// navigator.clipboard stays undefined), while the full Chrome build honours it headless.
+// So an insecure target also selects the full build. The origin must carry the port.
+const INSECURE_TARGET = DATAGROK_URL.startsWith('http://');
+
+// `test.use({launchOptions})` REPLACES this block rather than merging into it, so every
+// consumer that sets launch options of its own (specTestOptions) must spread this in.
+export const secureOriginLaunchOptions = {
+  ...(INSECURE_TARGET ? {channel: 'chromium'} : {}),
+  args: [`--unsafely-treat-insecure-origin-as-secure=${DATAGROK_URL}`],
+};
 
 export const baseConfig = defineConfig({
   testMatch: '**/*.test.ts',
@@ -44,11 +58,7 @@ export const baseConfig = defineConfig({
     // Grant clipboard access so headless-CI copy flows (copy-as-HELM, sketcher
     // Copy as SMILES/MOLBLOCK) can use navigator.clipboard instead of throwing.
     permissions: ['clipboard-read', 'clipboard-write'],
-    launchOptions: {
-      // The CI stack serves over plain HTTP; navigator.clipboard only exists in a
-      // secure context. Treat the target origin as secure to expose the Clipboard API.
-      args: [`--unsafely-treat-insecure-origin-as-secure=${DATAGROK_URL}`],
-    },
+    launchOptions: secureOriginLaunchOptions,
   },
   projects: [
     {name: 'chromium', use: {...devices['Desktop Chrome']}},
