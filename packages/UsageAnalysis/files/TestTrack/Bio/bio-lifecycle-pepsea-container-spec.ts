@@ -137,8 +137,9 @@ test('Bio pepsea_container source-class lifecycle: HELM → MSA (PepSeA engine) 
     });
     expect(engineOpts.hasSelect).toBe(true);
     const hasPepsea = engineOpts.options.some((o: string) => o.toLowerCase().indexOf('pepsea') >= 0);
-    if (!hasPepsea && skipOnMinimalStack('the PepSeA engine steps',
-      'the engine is offered only where the pepsea docker container runs; the minimal stand has none')) {
+    if ((!hasPepsea || engineOpts.options.length < 2) && skipOnMinimalStack('the PepSeA engine steps',
+      `the MSA dialog offers ${JSON.stringify(engineOpts.options)} — a full engine list needs the pepsea ` +
+      'docker container and the alignment engines the minimal stand does not run')) {
       envHasPepsea = false;
       return;
     }
