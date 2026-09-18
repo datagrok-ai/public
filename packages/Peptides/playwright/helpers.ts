@@ -25,16 +25,32 @@ export function attachedViewers(page: Page): Promise<string[]> {
  * is a far better failure message than a bare waitForFunction timeout.
  */
 export async function waitForViewers(page: Page, expected: string[], timeoutMs = 300_000): Promise<string[]> {
-  try {
-    await page.waitForFunction((want: string[]) => {
+  const started = Date.now();
+  while (Date.now() - started < timeoutMs) {
+    // TEMPORARY instrumentation (revert before merge): the SAR specs fail on GitHub Actions
+    // with Logo Summary Table never attached, while dev attaches it at 39-44 s. This says
+    // where the analysis stops on a two-core agent.
+    const probe = await page.evaluate((want: string[]) => {
       const tv = Array.from(grok.shell.tableViews).find((v) => v.dataFrame.temp['peptidesModel']) ?? grok.shell.tv;
-      const types = Array.from(tv.viewers).map((v) => v.type);
-      if (want.every((t) => types.includes(t)))
-        return true;
-      return !Array.from(document.querySelectorAll('.d4-task-bar, .d4-progress'))
-        .some((e) => (e.textContent ?? '').includes('Loading SAR'));
-    }, expected, {timeout: timeoutMs});
-  } catch (_) {
+      const model = tv?.dataFrame?.temp['peptidesModel'];
+      const types = Array.from(tv?.viewers ?? []).map((v) => v.type);
+      const bars = Array.from(document.querySelectorAll('.d4-task-bar, .d4-progress'))
+        .map((e) => (e.textContent ?? '').trim()).filter((t) => t.length > 0);
+      return {
+        done: want.every((t) => types.includes(t)),
+        types, bars,
+        mclCols: (model?._mclCols ?? []) as string[],
+        columns: (tv?.dataFrame?.columns?.names() ?? []).filter((n: string) => /cluster|embed/i.test(n)),
+      };
+    }, expected);
+    const elapsed = Math.round((Date.now() - started) / 1000);
+    console.log(`[sar-probe] ${elapsed}s viewers=${JSON.stringify(probe.types)} bars=${JSON.stringify(probe.bars)} ` +
+      `mclCols=${JSON.stringify(probe.mclCols)} clusterCols=${JSON.stringify(probe.columns)}`);
+    if (probe.done)
+      break;
+    if (elapsed > 5 && !probe.bars.some((t) => t.includes('Loading SAR')))
+      break;
+    await page.waitForTimeout(15_000);
   }
   return attachedViewers(page);
 }
