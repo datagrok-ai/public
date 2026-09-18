@@ -1004,6 +1004,27 @@ a molecule, a molecule sketcher pops up.
 
 </details>
 
+### Table and column names
+
+When a string parameter holds the name of a table or of a column, say so with the `TableName` and `ColumnName`
+semantic types. The formula editor in [Add new column](../../../transform/add-new-column.md) then offers the open
+tables or the table's columns for that argument. For a column name, the `table` option names the parameter that
+supplies the table. When it is omitted, the function's table parameter is used, and then the table the formula runs on.
+The `columns` filter narrows the list the same way it does for column inputs.
+
+```javascript
+//name: PriceOf
+//input: string tableName {semType: TableName}
+//input: string keyColumn {semType: ColumnName; table: tableName}
+//input: string valueColumn {semType: ColumnName; table: tableName; columns: numerical}
+//output: double result
+```
+
+Parameters of the `dataframe` and `column` types get the same selectors without any annotation.
+
+A function that returns a table or a column for use inside a formula, such as `Column("price", "products")`, is
+offered in the formula editor when it has the `meta.accessor: true` annotation.
+
 ## Search integrated functions
 
 Datagrok allows you to define a special patterns for calling any function or query with a human-readable sentence and visualize the resulting dashboard directly from the platform search.

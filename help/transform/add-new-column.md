@@ -26,6 +26,12 @@ functions registry on the right or use *plus* icon. You can combine functions wr
 ![functions suggestions](./add_new_column_functions_suggestions.gif)
 * Interactive preview of results as you type
 * Autocompletion for functions (including packages names) and columns. Suggestions appear as you type.
+  The highlighted function shows its signature and description, and the inserted function uses its parameter names
+  as placeholders.
+* Table and column selectors. When an argument takes a table or a column, the open tables or the table's columns
+  are offered as soon as you type the opening parenthesis or a comma.
+* Help for the function under the cursor. The line below the editor shows the signature and description of the
+  function you are in, and clicking a function name shows its details in the **Context Panel**.
 * Different highlights within the formula for better readability. For instance, column names are highlighted in bold blue font.
 * Validation against various types of mistakes including syntax errors, missing columns detection, incorrect data types, unmatching brackets.
 * Resulting column type autodetection
