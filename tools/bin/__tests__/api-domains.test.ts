@@ -345,6 +345,66 @@ describe('generateDomainClients', () => {
     expect(code).toMatch(/interface SampleInsert \{[^}]*  seq\?: number;/);
   });
 
+  it('external storage: rows carry id only, remote names are metadata, no expand map, no transaction', () => {
+    const dir = makePackage();
+    mutateManifest(dir, (m) => {
+      m.storage = {kind: 'external', connection: 'ApiSamples:PostgresNorthwind', schema: 'public'};
+      m.tables = {
+        order: {table: 'orders', businessKey: ['order_id'], columns: {
+          order_id: {type: 'int', column: 'orderid', required: true},
+          ship_country: {type: 'string', column: 'shipcountry', isName: true, searchable: true}}},
+        order_detail: {table: 'Order Details', businessKey: ['order_id', 'product_id'], columns: {
+          order_id: {type: 'ref', ref: 'order', column: 'OrderID'}, product_id: {type: 'int'}}},
+      };
+      delete m.propertySchemas;
+    });
+    expect(generateDomainClients(dir)).toBe(true);
+    const code = fs.readFileSync(dbPath(dir), 'utf8');
+    expect(code).toMatch(/interface OrderRow \{\r?\n  id: string;\r?\n  order_id: number;\r?\n  ship_country\?: string;\r?\n\}/);
+    expect(code).not.toMatch(/interface OrderDetailRow \{[^}]*(version|created_on|author_id)/);
+    expect(code).toContain(`export type OrderColumn = 'id' | 'order_id' | 'ship_country';`);
+    expect(code).toContain('export type OrderExpand = {};');
+    expect(code).toContain('export type OrderDetailExpand = {};');
+    expect(code).not.toContain('details:order_detail');
+    expect(code).not.toContain('TransactionOp');
+    expect(code).not.toContain('transaction<');
+    expect(code).toContain(`grok.dapi.domains.table<OrderRow, OrderInsert, OrderColumn, OrderExpand>('testdb.order')`);
+    expect(code).not.toContain(`'orders'`);
+    expect(code).not.toContain('OrderID');
+  });
+
+  it('external storage: the JSON Schema requires a connection under external and refuses one under domain', () => {
+    for (const [mutate, message] of [
+      [(m: any) => m.storage = {kind: 'external', schema: 'public'}, /\/storage must have required property 'connection'/],
+      [(m: any) => m.storage = {kind: 'domain', connection: 'A:B'}, /\/storage\/connection boolean schema is false/],
+      [(m: any) => m.storage = {kind: 'domain', schema: 'public'}, /\/storage\/schema boolean schema is false/],
+    ] as [(m: any) => void, RegExp][]) {
+      const dir = makePackage();
+      mutateManifest(dir, mutate);
+      const {result, output} = runCapturingLog(dir);
+      expect(result).toBe(false);
+      expect(output).toMatch(message);
+    }
+    const dir = makePackage();
+    mutateManifest(dir, (m) => m.storage = {kind: 'domain'});
+    expect(generateDomainClients(dir)).toBe(true);
+  });
+
+  it('external storage: the JSON Schema refuses an unknown kind and a dotted or bracketed remote name', () => {
+    for (const mutate of [
+      (m: any) => m.storage = {kind: 'warehouse'},
+      (m: any) => m.storage = {kind: 'external', connection: 'A:B', schema: 'dbo.sales'},
+      (m: any) => m.tables.sample.table = '[Samples]',
+      (m: any) => m.tables.sample.columns.name.column = 'na"me',
+    ]) {
+      const dir = makePackage();
+      mutateManifest(dir, mutate);
+      const {result, output} = runCapturingLog(dir);
+      expect(result).toBe(false);
+      expect(output).toMatch(/must match pattern|must be equal to one of the allowed values/);
+    }
+  });
+
   it('autoNumber: the JSON Schema rejects false, unknown keys and start below 1', () => {
     for (const bad of [false, {step: 1}, {start: 0}]) {
       const dir = makePackage();

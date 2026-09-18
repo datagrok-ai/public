@@ -16,6 +16,31 @@
       "type": "string",
       "description": "Manifest version (semver recommended). Recorded in the registry on deploy."
     },
+    "storage": {
+      "type": "object",
+      "description": "Where the rows live. Absent = domain: the platform creates and owns the tables. external: the tables already exist in the database of the named platform connection and are read through it (read-only; no row security, soft delete, audit, relations, constraints, property schemas or extensions); every table then declares its remote primary key as businessKey, and 'table'/'column' carry the remote names when they differ from the declared ones.",
+      "required": ["kind"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": {"enum": ["domain", "external"]},
+        "connection": {
+          "type": "string",
+          "minLength": 1,
+          "description": "external: the qualified name of the platform connection to read through ('Package:Connection'); required."
+        },
+        "schema": {
+          "$ref": "#/definitions/remoteIdentifier",
+          "description": "external: the schema inside the remote database (e.g. 'public', 'dbo'); required."
+        },
+        "catalog": {
+          "$ref": "#/definitions/remoteIdentifier",
+          "description": "external: the catalog/database, for targets that have one."
+        }
+      },
+      "if": {"properties": {"kind": {"const": "external"}}},
+      "then": {"required": ["connection", "schema"]},
+      "else": {"properties": {"connection": false, "schema": false, "catalog": false}}
+    },
     "extensible": {
       "type": "object",
       "description": "Opt-in for user extensions of this schema. Users holding the Extend permission on the schema entity may then add their own tables; per-table column extension is opted in with the table's own 'extensible' flag. User objects are retained across plugin upgrades and never appear in generated typed clients.",
@@ -64,11 +89,22 @@
         {"not": {"type": "string", "pattern": "^x_"}}
       ]
     },
+    "remoteIdentifier": {
+      "description": "A name inside the remote database, verbatim (spaces allowed, the connector quotes it); it may not contain brackets, quotes, backslashes or dots.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[^\\[\\]\"'`\\\\.]+$"
+    },
     "table": {
       "type": "object",
       "required": ["columns"],
       "additionalProperties": false,
       "properties": {
+        "table": {
+          "$ref": "#/definitions/remoteIdentifier",
+          "description": "External storage only: the remote table's name when it differs from the declared one (e.g. 'Order Details')."
+        },
         "securityMode": {
           "enum": ["table", "master", "row"],
           "default": "table",
@@ -263,7 +299,11 @@
       "properties": {
         "type": {
           "enum": ["string", "int", "float", "bool", "datetime", "string_list", "ref", "file", "json", "user", "group"],
-          "description": "Property type; ref = FK to another table in this manifest; user/group = aliases of ref Core.users / ref Core.groups (semantic type User / Group); file = a file://<connection>/<path> string into platform file storage (semantic type File); json = a jsonb-backed opaque object (filters, sorts, facets and aggregates refuse it)."
+          "description": "Property type; ref = FK to another table in this manifest; user/group = aliases of ref Core.users / ref Core.groups (semantic type User / Group); file = a file://<connection>/<path> string into platform file storage (semantic type File); json = a jsonb-backed opaque object (filters, sorts, facets and aggregates refuse it). An external storage admits string, int, float, bool, datetime and same-manifest ref only."
+        },
+        "column": {
+          "$ref": "#/definitions/remoteIdentifier",
+          "description": "External storage only: the remote column's name when it differs from the declared one (e.g. 'OrderID')."
         },
         "required": {"type": "boolean", "default": false},
         "unique": {
