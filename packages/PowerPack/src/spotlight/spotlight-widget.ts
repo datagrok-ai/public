@@ -103,8 +103,7 @@ export class SpotlightWidget extends DG.Widget {
       this.cleanLists();
       if (tabPane.name !== 'Workspace')
         clearWorkspacePreview();
-      tabPane.name === 'Learn' ? tabPane.content.parentElement?.classList.add('power-pack-overflow-hidden') :
-        tabPane.content.parentElement?.classList.remove('power-pack-overflow-hidden');
+      this.updateContentOverflow(tabPane);
       for (const id of Array.from(this.markedReadIds)) {
         for (const el of Array.from(tabPane.content.querySelectorAll(`[data-notification-id="${id}"]`))) {
           el.classList.remove('grok-notification-unread');
@@ -112,6 +111,7 @@ export class SpotlightWidget extends DG.Widget {
         }
       }
     }));
+    this.updateContentOverflow(this.tabControl.currentPane);
     const notifPane = this.tabControl.panes.find((p) => p.name === 'Notifications');
     if (notifPane) {
       this.notificationsPromise.then((notifications) => {
@@ -136,6 +136,10 @@ export class SpotlightWidget extends DG.Widget {
     //   if (this.root.contains(trigger))
     //     grok.shell.windows.context.visible = true;
     // })));
+  }
+
+  updateContentOverflow(tabPane: DG.TabPane): void {
+    tabPane.content.parentElement?.classList.toggle('power-pack-overflow-hidden', tabPane.name === 'Learn');
   }
 
   async getDemosOfTheDay(): Promise<string[]> {
