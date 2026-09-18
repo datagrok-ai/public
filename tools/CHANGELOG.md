@@ -2,6 +2,7 @@
 
 ## v.next
 
+* grok kg: membership gives a file two unrelated code: roots claim to the more specific root (exact path over folder, deeper folder over shallower), instead of leaving it an orphan
 * grok kg: tests-for sends what a hub helper reaches (a test-folder file most of the unit's test files import) to the reachable tier
 * grok kg: tests-for tiers a test by the units its file stands for (ApiTests for the JS API, a client regTest file for the library its category leads with, datlas tests for grok_shared too), so those suites are immediate for the code they exercise
 * grok kg: build draws the tests edge by name (derived_by name, 0.7): a test file's base name, a category segment or its Test Track folder spelling one feature's id or name; a spelling two features share is reported as ambiguous_test_names

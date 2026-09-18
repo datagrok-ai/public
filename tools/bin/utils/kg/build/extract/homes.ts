@@ -121,7 +121,7 @@ class HomeLayer {
     const line = keyLine(subject.fm, 'code');
     for (const p of this.expandRoot(file)) {
       if (!this.emitter.node(sourceFileRow(p, {loc: countLines(fs.readFileSync(path.join(this.repoRoot, p)))})).accepted) continue;
-      this.emitter.claim({file: p, feature: subject.id, rung: 2, source: 'home', props, line});
+      this.emitter.claim({file: p, feature: subject.id, rung: 2, source: 'home', props, line, root: file});
       claimed.add(p);
     }
   }

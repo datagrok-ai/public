@@ -64,12 +64,14 @@ describe('membership resolution: the rungs of conventions.md §8 (build-plan.md 
     expect(ownership.resolved_by_chain).toContainEqual({file: SCATTER, owner: 'visualize/viewers/scatter-plot', over: ['visualize/viewers']});
   });
 
-  it('leaves a file two unrelated roots claim without an owner: both participate and it is reported as ambiguous', async () => {
+  // conventions.md §8: between unrelated rung-2 roots the more specific one wins, the exact path of CACHING.md over the
+  // viewers glob; the other claimant participates and nothing is ambiguous
+  it('gives a file two unrelated roots claim to the more specific root; the other participates', async () => {
     const {rows, ownership, manifest} = await graph;
-    expect(owners(rows('edges/is-implemented-in'), CACHE)).toEqual([]);
-    expect(participants(rows('edges/participates-in'), CACHE).sort()).toEqual(['platform/caching', 'visualize/viewers']);
-    expect(ownership.ambiguous).toEqual([{file: CACHE, features: ['platform/caching', 'visualize/viewers'], rung: 2}]);
-    expect(manifest.problems.ambiguous_owners).toBe(1);
+    expect(owners(rows('edges/is-implemented-in'), CACHE)).toEqual([expect.objectContaining({from: 'platform/caching'})]);
+    expect(participants(rows('edges/participates-in'), CACHE)).toEqual(['visualize/viewers']);
+    expect(ownership.ambiguous).toEqual([]);
+    expect(manifest.problems.ambiguous_owners ?? 0).toBe(0);
   });
 
   it('lets a citation own only the files whose nearest home it is, and participate in the rest', async () => {

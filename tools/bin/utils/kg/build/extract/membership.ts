@@ -131,7 +131,7 @@ class Membership {
       let picked = features;
       if (rung === 3) picked = features.filter((f) => this.nearestHomes(file).includes(f));
       else if (rung === 2 && features.length > 1) {
-        const leaf = chainLeaf(features);
+        const leaf = chainLeaf(features) ?? mostSpecific(file, owning.filter((c) => c.rung === 2));
         if (leaf) {
           picked = [leaf];
           this.chained.push({file, owner: leaf, over: features.filter((f) => f !== leaf)});
@@ -311,6 +311,22 @@ function chainLeaf(features: string[]): string | undefined {
   for (let i = 1; i < sorted.length; i++)
     if (!sorted[i].startsWith(`${sorted[i - 1]}/`)) return undefined;
   return sorted[sorted.length - 1];
+}
+
+/** Among rung-2 claims from different branches, the root that spells the file most closely wins: its exact path over
+ * a folder, a deeper folder over a shallower one; equal depth stays ambiguous. */
+function mostSpecific(file: string, claims: Claim[]): string | undefined {
+  const depth = (root: string | undefined) => {
+    if (root === undefined) return 0;
+    if (root === file) return 1000;
+    const segments = root.split('/');
+    const magic = segments.findIndex((s) => GLOB_MAGIC.test(s));
+    return magic < 0 ? segments.length : magic;
+  };
+  const best = new Map<string, number>();
+  for (const c of claims) best.set(c.feature, Math.max(best.get(c.feature) ?? 0, depth(c.root)));
+  const sorted = [...best].sort((a, b) => b[1] - a[1]);
+  return sorted.length > 1 && sorted[0][1] > sorted[1][1] ? sorted[0][0] : undefined;
 }
 
 function under(root: string): boolean {

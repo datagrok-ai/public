@@ -100,13 +100,14 @@ describe('grok kg build over the fixture monorepo (build-plan.md WO-10)', () => 
     expect(manifest.counts.edges).toEqual({
       affects: 2, assignee: 3, automates: 3, base: 1, calls: 6, changes: 2, connection: 3, covers: 1,
       declares: 199, demonstrates: 1, 'depends-on': 7, documents: 5, environment: 1, extends: 4,
-      implements: 1, imports: 36, includes: 2, 'is-implemented-in': 19, mentions: 19, mirrors: 2, owner: 9,
-      package: 75, page: 21, 'part-of': 11, 'participates-in': 6, reporter: 4, 'requested-by': 2, resolves: 1,
+      implements: 1, imports: 36, includes: 2, 'is-implemented-in': 20, mentions: 19, mirrors: 2, owner: 9,
+      package: 75, page: 21, 'part-of': 11, 'participates-in': 5, reporter: 4, 'requested-by': 2, resolves: 1,
       suite: 22, 'targets-release': 5, 'targets-semtype': 13, tests: 15, 'tracked-in': 2, user_help: 1, uses: 19,
     });
     // and for the +13 declares (5 unit -> file, 2 file -> type, 6 file -> test), +5 imports, +6 suite, +1 depends-on (tools -> js-api),
     // +1 uses (the CLI command reads DG.SEMTYPE); the 2 mirrors are legend_test.dart -> legend.dart and ids.test.ts -> utils/ids.ts (change-tests work order E)
-    expect(manifest.problems).toMatchObject({dangling_edges: 0, ambiguous_owners: 1, orphans: 36, partial_stubs: 23});
+    // legend_cache.dart is no longer ambiguous: the exact-path root of CACHING.md wins over the viewers glob (conventions.md §8)
+    expect(manifest.problems).toMatchObject({dangling_edges: 0, ambiguous_owners: 0, orphans: 35, partial_stubs: 23});
   });
 
   it('writes the same bytes twice, with the same content-addressed batch and a later built_at', async () => {
@@ -165,10 +166,11 @@ describe('the reports build writes and the report verb prints (build-plan.md WO-
     const {report} = await graph;
     const orphans = report('orphans');
     // 5 more files: the CLI fixture under public/tools (4, its own group) and the vitest suite of the utils library
-    expect(orphans.summary).toBe('36 files of 52 observed (16 owned, 5 participating) have no owner, 499 of 820 lines, in 11 groups; the 11 largest groups below.');
+    expect(orphans.summary).toBe('35 files of 52 observed (17 owned, 5 participating) have no owner, 496 of 820 lines, in 10 groups; the 10 largest groups below.');
     expect(orphans.sections[0].rows[0]).toEqual({group: 'public/js-api', owner: '', files: 11, owned: 0, participating: 0, orphans: 11, loc: 155,
       largest: expect.stringContaining('src/dataframe.ts (45)')});
-    expect(orphans.sections[0].rows.map((r: any) => r.group)).toContain('core/client/d4');
+    // legend_cache.dart, d4's last orphan, now belongs to platform/caching by its exact-path root (conventions.md §8)
+    expect(orphans.sections[0].rows.map((r: any) => r.group)).not.toContain('core/client/d4');
     expect(orphans.sections[0].rows.map((r: any) => r.loc)).toEqual([...orphans.sections[0].rows.map((r: any) => r.loc)].sort((a: number, b: number) => b - a));
   });
 

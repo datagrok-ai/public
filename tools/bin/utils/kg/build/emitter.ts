@@ -14,6 +14,8 @@ export interface Claim {
   source: 'home' | 'marker';
   props: Record<string, unknown>;
   line?: number;
+  /** The `code:` root the file matched, for the specificity tie-break of conventions.md §8. */
+  root?: string;
   /** An inline `// ~id` marker (conventions.md §6): participates-in only, never ownership. */
   mode?: 'participates';
 }

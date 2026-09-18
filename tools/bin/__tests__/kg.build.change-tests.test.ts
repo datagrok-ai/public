@@ -37,6 +37,8 @@ function writeDdt(repo: string): void {
   write(repo, SORT_TEST, ["import 'package:ddt/ddt.dart';", '', 'void main() {', "  test('sorts', () {});", '}', ''].join('\n'));
   write(repo, ROWS_TEST, ['void main() {', "  test('rows', () {});", '}', ''].join('\n'));
   write(repo, SETUP, ["import 'package:ddt/ddt.dart';", '', 'DataFrame frame;', ''].join('\n'));
+  write(repo, `${DDT}/README.md`, ['---', 'feature: platform/toolkit', 'name: Toolkit', 'owner: P:jane', 'code:', `  - ${DDT}/lib/**`, '---', '', '# Toolkit', ''].join('\n'));
+  write(repo, `${DDT}/lib/src/grid/README.md`, ['---', 'feature: compute/toolkit-grid', 'name: Toolkit grid', 'owner: P:jane', 'code:', `  - ${DDT}/lib/src/grid/**`, '---', '', '# Toolkit grid', ''].join('\n'));
 }
 
 /** A DG test file named after a feature, a Test Track spec whose folder two features spell, and the second of them. */
@@ -165,6 +167,14 @@ describe('the graph rows a change walk needs (change-tests/plan.md, work order A
     expect(rows('edges/tests').filter((e) => e.from === named[0].from && e.to === 'visualize/viewers')).toEqual([expect.objectContaining({derived_by: 'filesystem'})]);
     expect(problems.ambiguous_test_names).toEqual(['legends: platform/legends and visualize/legends']);
     expect(rows('edges/tests').some((e) => e.from.includes('/Legends/colors-spec.ts'))).toBe(false);
+  });
+
+  it('gives a file claimed by two branches at rung 2 to the more specific root, the deeper folder over the shallower one', async () => {
+    const {rows, problems} = await graph;
+    const owner = (file: string) => rows('edges/is-implemented-in').find((e) => e.to === `file:${file}`)?.from;
+    expect(owner(`${DDT}/lib/src/grid/rows.dart`)).toBe('compute/toolkit-grid');
+    expect(owner(DATA_FRAME)).toBe('platform/toolkit');
+    expect((problems.ambiguous_owners ?? []).filter((p: string) => p.includes(DDT))).toEqual([]);
   });
 
   it('names a page by its first heading outside any fence', async () => {

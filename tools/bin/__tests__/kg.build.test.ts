@@ -377,10 +377,11 @@ describe('homes extractor (build-plan.md WO-2)', () => {
       .replace('tickets:', 'code:\n  - public/js-api/src/viewer.ts#ScatterPlotViewer\n  - {path: core/client/d4/lib, role: definition}\ntickets:'));
     const {rows} = await build(repo);
     const claims = rows('reports/claims.jsonl');
+    // a rung-2 claim carries the code: root it came from, for the specificity tie-break of conventions.md §8
     expect(claims).toEqual([
-      {feature: 'visualize/viewers', file: 'core/client/d4/lib/scatter.dart', line: 4, props: {role: 'definition'}, rung: 2, source: 'home'},
-      {feature: 'visualize/viewers/scatter-plot', file: 'core/client/d4/lib/scatter.dart', line: 12, props: {role: 'ui'}, rung: 2, source: 'home'},
-      {feature: 'visualize/viewers/scatter-plot', file: 'public/js-api/src/viewer.ts', line: 12, props: {}, rung: 2, source: 'home'},
+      {feature: 'visualize/viewers', file: 'core/client/d4/lib/scatter.dart', line: 4, props: {role: 'definition'}, rung: 2, source: 'home', root: 'core/client/d4/lib'},
+      {feature: 'visualize/viewers/scatter-plot', file: 'core/client/d4/lib/scatter.dart', line: 12, props: {role: 'ui'}, rung: 2, source: 'home', root: expect.any(String)},
+      {feature: 'visualize/viewers/scatter-plot', file: 'public/js-api/src/viewer.ts', line: 12, props: {}, rung: 2, source: 'home', root: expect.any(String)},
     ]);
     expect(rows('nodes/source-file')).toEqual([
       expect.objectContaining({id: 'file:core/client/d4/lib/scatter.dart', name: 'scatter.dart', path: 'core/client/d4/lib/scatter.dart', language: 'dart', loc: 1, provenance: 'filesystem', source_layer: 'core', visibility: 'dev'}),
