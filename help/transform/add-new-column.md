@@ -39,6 +39,11 @@ Adding columns to formulas:
   For example you can use this expression in function like that: `Round(${Width})`.
   * To reference a whole column, specify its name in the square brackets, preceded by the dollar sign: `$[Width]`. For
   example you can use this expression in function like that: `Avg($[Width])`.
+  * To reference tables and columns by name, including other open tables, use `Table([tableName])`,
+  `Column(columnName, [tableName])`, and `Value(columnName, [row], [tableName])`. The table name defaults to the
+  current table, and the row to the current row: `Avg(Column("Width", "other table"))`, `Table("other table").rowCount`,
+  `Value("Width", 0)`. When you type the opening parenthesis, the dialog offers the open tables or the table's columns.
+  See [Table and column functions](functions/table-functions.md) for lookups, running totals and moving averages.
 
 * vector function
   * To reference a whole column, specify its name in the curly brackets, preceded by the dollar sign: `${molecule}`. For example you can use this expression in function like that: `Chem:getInchis(${molecule})`.
@@ -76,6 +81,7 @@ corresponding sections of the help system:
 - [Math functions](functions/math-functions.md)
 - [Operators](formula-syntax.md#operators)
 - [Stats functions](functions/stats-functions.md)
+- [Table and column functions](functions/table-functions.md)
 - [Text functions](functions/text-functions.md)
 - [TimeSpan functions](functions/timespan-functions.md)
 

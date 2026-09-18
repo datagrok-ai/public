@@ -2,6 +2,11 @@
 
 ## v.next
 
+* GROK-20931: Add New Column: Resizing the dialog now widens only the formula and preview pane; the column and function lists keep their width
+* GROK-20931: Add New Column: Clicking a function in the formula makes it the current object, so its help shows in the context panel
+* GROK-20931: Add New Column: Table-name and column-name selectors pop up automatically for parameters that take a table or a column, or for string parameters with the `TableName` / `ColumnName` semantic type; a column argument is offered from the table named by the parameter's `options.table` sibling (else the call's table argument), filtered by the parameter's column type filter
+* GROK-20931: Add New Column: Autocomplete shows the highlighted function's signature and description; the hint below the editor describes the call the caret is inside of; inserted functions use parameter names as placeholders instead of types
+* GROK-20931: Add New Column: Functions marked with the `accessor` option (`Table`, `Column`) are offered in autocomplete although they return a table or a column; a column-returning call satisfies a column parameter in validation
 * GROK-20753: Added `domainRouteView` (`tags: domainRoutes`) — the platform's `/domains/<schema>/<table>[/<keyOrId>]` addresses resolve to the u2 domain app through it
 * GROK-17068: Formula Lines: The formula editor now accepts the axis tokens `X`/`Y` on the left side of a line (`Y = X + 25`) or a band (`X in(160, 190)`), not only a `${column}` reference, and no longer rewrites a token into a concrete column when the item is selected or the preview's axis changes
 * GROK-20909: Open the playlist when the Learn > VIDEO play icon is clicked
