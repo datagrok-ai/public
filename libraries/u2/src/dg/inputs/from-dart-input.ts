@@ -34,6 +34,7 @@ export class PlatformInput<T> extends Input<T, PlatformInputOptions<T>> {
     if (editor) {
       dgInput.root.classList.remove('u2-input-editor');
       editor.classList.add('u2-input-editor');
+      PlatformInput._makeTabbable(this, editor);
     }
 
     const changed = dgInput.onChanged.subscribe((value) => this.value.value = value);
@@ -66,6 +67,23 @@ export class PlatformInput<T> extends Input<T, PlatformInputOptions<T>> {
     this._messages = signal<string | null>(null);
     this.addValidator(() => this._messages.value);
     return this.options.dgInput.root;
+  }
+
+  /** An editor the platform paints itself (the molecule canvas) holds no focusable control, so Tab
+   * skips the whole field: it is given the tab stop, and Enter or Space does what a click does. */
+  private static _makeTabbable(input: {own(fn: () => void): void}, editor: HTMLElement): void {
+    if (editor.tabIndex >= 0 || editor.querySelector('input, textarea, select, button, [tabindex]') !== null)
+      return;
+    editor.tabIndex = 0;
+    const onKeyDown = (e: Event) => {
+      const key = (e as KeyboardEvent).key;
+      if (key !== 'Enter' && key !== ' ')
+        return;
+      e.preventDefault();
+      editor.click();
+    };
+    editor.addEventListener('keydown', onKeyDown);
+    input.own(() => editor.removeEventListener('keydown', onKeyDown));
   }
 
   private static _join(messages: string[] | null): string | null {

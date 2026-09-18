@@ -24,14 +24,19 @@ export interface SuggestionListOptions<T> {
   minChars: number;
   render: (item: T) => HTMLElement;
   /** Highlights the first row as soon as a non-empty query has matches, so plain Enter accepts it
-   * (VS Code convention). Off for owners whose box holds text of its own worth. */
-  autoHighlight?: boolean;
+   * (VS Code convention); `'always'` does so for the empty query too — a look-up opened on focus.
+   * Off for owners whose box holds text of its own worth. */
+  autoHighlight?: boolean | 'always';
   /** A row was clicked — index into {@link items}. */
   onPick: (index: number) => void;
   /** The overlay closed on its own (outside pointerdown, Esc, anchor detached): the owner runs
    * its own dismissal path, which ends in {@link dismiss}. */
   onDismiss: () => void;
   onRetry: () => void;
+  /** What the empty row says, per query; "No matches" by default. */
+  emptyText?: string | ((query: string) => string);
+  /** A ceiling on the popup's height, under the room the overlay gives it. */
+  maxHeight?: number | string;
 }
 
 export class SuggestionList<T> {
@@ -75,7 +80,8 @@ export class SuggestionList<T> {
     if (this._open.peek())
       return;
     this._open.value = true;
-    this._closeOverlay = Overlay.show(this._options.anchor, this.popup, this._options.scope);
+    this._closeOverlay = Overlay.show(this._options.anchor, this.popup, this._options.scope,
+      {maxHeight: this._options.maxHeight});
   }
 
   dismiss(): void {
@@ -148,7 +154,7 @@ export class SuggestionList<T> {
       popup.append(...els);
       this._rows.value = els;
       if (this._options.autoHighlight)
-        this._active.value = this._options.text.value.length > 0 ? 0 : -1;
+        this._active.value = this._options.autoHighlight === 'always' || this._options.text.value.length > 0 ? 0 : -1;
       return;
     }
     this._rows.value = [];
@@ -164,8 +170,11 @@ export class SuggestionList<T> {
       popup.append(row);
     } else if (state.kind === 'loading' || state.kind === 'idle')
       popup.append(this._row('loading', 'Loading…'));
-    else
-      popup.append(this._row('empty', 'No matches'));
+    else {
+      const empty = this._options.emptyText;
+      popup.append(this._row('empty',
+        typeof empty === 'function' ? empty(this._options.text.peek()) : empty ?? 'No matches'));
+    }
   }
 
   private _option(item: T, i: number): HTMLElement {

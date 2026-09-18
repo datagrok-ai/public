@@ -265,12 +265,12 @@ query, the computation, and the automatically generated end result:
 
 Note that the `Powder` and `Metal` inputs above have lists of allowed values that were retrieved dynamically by
 executing the specified `PowderNames` and `Metals` queries. If these queries slow the UI down,
-consider [caching](../access/databases/databases.md#caching-data) the results.
+consider [caching](../access/databases/databases.md#refreshing-and-caching) the results.
 
 Parameterized queries work via Datagrok's [data access](../access/access.md#data-connection) mechanism, allowing you to benefit
 from other access-related features:
 
-* [Result caching](../access/databases/databases.md#caching-data) (very useful when working with data that changes overnight)
+* [Result caching](../access/databases/databases.md#refreshing-and-caching) (very useful when working with data that changes overnight)
 * [Visual table query builder](../access/databases/databases.md#query-editor)
 <!--* [Visual schema query builder](../access/databases/databases.md#join-tables)-->
 * [DB explorer](../access/databases/databases.md#database-manager)
@@ -318,7 +318,7 @@ To open a model, double-click on it.
 
 ![model-browser](model-browser.png)
 
-Learn more about [navigation](../datagrok/navigation/views/browse.md) and [search](../datagrok/navigation/views/browse.md#entity-search).
+Learn more about [navigation](../datagrok/navigation/views/browse.md) and [search](../datagrok/concepts/objects.md#entity-search).
 
 ## Analytical blocks
 

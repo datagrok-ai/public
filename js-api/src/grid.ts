@@ -12,9 +12,12 @@ import {SemType} from './const';
 import {Property} from './entities';
 import {IFormSettings, IGridSettings} from "./interfaces/d4";
 import {IDartApi} from "./api/grok_api.g";
+import {Balloon} from './widgets/menu';
+import {tooltip} from './widgets/tooltip';
 
 
 const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
+const balloon = new Balloon();
 let _bytes = new Float64Array(4);
 
 export type ColorType = number | string;
@@ -526,6 +529,10 @@ export class GridCell<TData = any> {
 
   /** @returns Index of the corresponding table row. */
   get tableRowIndex(): number | null {
+    // the current-cell event fires with no cell at all when nothing is current (`grid_core.dart`
+    // ~:683) — a wrapper around nothing answers for no row rather than throwing from Dart
+    if (this.dart == null)
+      return null;
     return this.isTableCell || this.isRowHeader ? this.cell.rowIndex : null;
   }
 
@@ -899,7 +906,49 @@ export class Form {
 
 
 /** High-performance, flexible spreadsheet control */
+/**
+ * What a {@link Grid} needs from an editing engine over its frame (see
+ * {@link Grid.attachEditor}): the grid reports edits through `beginEdit` /
+ * `commitEdit`, paints from `isChanged` / `errorOf`, and gates editing on
+ * `writableColumns` / `isSaving`. `DG.DomainFrameEditor` is the platform's
+ * implementation; the editor itself subscribes to no grid events.
+ */
+export interface IFrameEditor {
+  beginEdit(row: number): void;
+  commitEdit(row: number, column: string): void;
+  isChanged(row: number, column: string): boolean;
+  errorOf(row: number, column: string): {message: string; kind: 'error' | 'conflict'} | null;
+  /** Whether this one cell may be edited — the row dimension {@link writableColumns}
+   * cannot express (a per-row right, a draft the caller may not insert). */
+  canEdit(row: number, column: string): boolean;
+  /** Why the cell may not be edited, in the user's own vocabulary (the row's name, the
+   * column's caption) — the grid's refusal message; optional, a generic one otherwise. */
+  refusalOf?(row: number, column: string): string | null;
+  /** Told that the host refused an edit of that cell, once per attempt — how a refusal the GRID
+   * detects reaches the editor's error channel (`DomainFrameEditor.onRefused`), and a host's
+   * status line; optional. */
+  refuse?(row: number, column: string, message: string): void;
+  /** The columns the user may edit; null (or empty) when NOTHING in the frame can
+   * be edited — the whole grid is read-only. */
+  readonly writableColumns: string[] | null;
+  readonly isSaving: boolean;
+  readonly onChanged: Observable<unknown>;
+  /** Fires with the NEW frame when the editor rebuilt it — the grid rebinds. */
+  readonly onRefreshed: Observable<DataFrame>;
+  readonly onSavingChanged: Observable<boolean>;
+}
+
 export class Grid extends Viewer<IGridSettings> {
+  /** Background of a cell with an unsaved edit. Canvas ARGB ints, matching the
+   * platform's own in-grid editing — cell backgrounds are painted on the canvas,
+   * so they are not CSS-token territory. The amber and the orange have no
+   * {@link Color} equivalent; the red is the platform's own grid warning. */
+  static readonly DIRTY_CELL_COLOR = 0xFFFFF3CD;    // soft amber: unsaved edit
+  static readonly INVALID_CELL_COLOR = Color.gridWarningBackground;
+  static readonly CONFLICT_CELL_COLOR = 0xFFFFE0B2; // soft orange: dismissed version conflict
+
+  private _editor: IFrameEditor | null = null;
+  private _editorSubs: {unsubscribe(): void}[] = [];
 
   constructor(dart: any) {
     super(dart);
@@ -918,6 +967,169 @@ export class Grid extends Viewer<IGridSettings> {
         (i: number) => p.get(items[i]), p.propertyType,
         p.set == null ? null : ((i: number, x: any) => p.set(items[i], x)));
     return Grid.create(t);
+  }
+
+  /** The editing engine attached through {@link attachEditor}, or null. */
+  get editor(): IFrameEditor | null { return this._editor; }
+
+  /**
+   * Makes this grid the host of [editor] (replacing any previous one): in-grid
+   * edits are reported to it, its state paints the cells (amber pending, red
+   * invalid, orange conflict, the message as the tooltip), every `~` service
+   * column is hidden and locked, and editability follows
+   * `editor.writableColumns` / `editor.isSaving` per column and
+   * `editor.canEdit` per cell. The grid never writes the editing state itself —
+   * the editor is its single writer.
+   *
+   * ```ts
+   * const editor = await DG.DomainFrameEditor.attach(df, grok.dapi.domains.table('grit.issue'));
+   * const grid = DG.Grid.create(df);
+   * DG.DomainObjectHandler.decorateGrid(grid, 'grit.issue', df);
+   * grid.attachEditor(editor);
+   * ```
+   */
+  attachEditor(editor: IFrameEditor): void {
+    this.detachEditor();
+    this._editor = editor;
+    const sub = (s: {unsubscribe(): void}) => this._editorSubs.push(s);
+    // the platform has no per-CELL editability hook (GridColumn.editable / checkEditable are
+    // per column), so a row the editor refuses is caught after the fact: the value the cell
+    // held when it became current goes back in.
+    let before: {row: number, column: string, value: any} | null = null;
+    // an edit attempt on a locked cell repeats with every keystroke, so the refusal is said ONCE
+    // for the cell the user is on, and again only after the current cell moved
+    let refused: string | null = null;
+    const refuse = (row: number | null | undefined, column: string | null | undefined) => {
+      if (row == null || column == null || column.startsWith('~'))
+        return;
+      if (!editor.isSaving && editor.canEdit(row, column))
+        return;
+      const at = `${row}:${column}`;
+      if (refused === at)
+        return;
+      refused = at;
+      const message = editor.isSaving ? 'Saving — the table is read-only until it finishes'
+        : editor.refusalOf?.(row, column) ?? 'This column is read-only';
+      balloon.warning(message);
+      editor.refuse?.(row, column, message);
+    };
+    sub(this.onCurrentCellChanged.subscribe((gc) => {
+      const cell = gc?.dart == null ? null : gc;
+      const row = cell?.tableRowIndex;
+      const column = cell?.tableColumn?.name;
+      before = row == null || column == null ? null : {row: row, column: column, value: cell!.cell.value};
+      // the grid echoes the current cell once more after a double-click: only a move to ANOTHER
+      // cell makes the refusal sayable again
+      if (refused !== (before == null ? null : `${before.row}:${before.column}`))
+        refused = null;
+      if (row != null)
+        editor.beginEdit(row);
+    }));
+    sub(this.onCellValueEdited.subscribe((gc) => {
+      const row = gc?.tableRowIndex;
+      const column = gc?.tableColumn?.name;
+      if (row == null || column == null || column.startsWith('~'))
+        return;
+      if (editor.canEdit(row, column))
+        editor.commitEdit(row, column);
+      else {
+        if (before != null && before.row === row && before.column === column)
+          gc.setValue(before.value, false);
+        refuse(row, column);
+      }
+    }));
+    // a locked COLUMN opens no editor at all, so the attempt shows up only as the key that asked
+    // for it — the triggers d4 itself edits on (`grid_editors.dart`: alphanumerics, Enter,
+    // Delete/Backspace, a double-click)
+    const overlay = this.overlay;
+    const onKeyDown = (e: KeyboardEvent) => {
+      const key = e.key;
+      if (!(e.ctrlKey || e.metaKey || e.altKey) &&
+          (key.length === 1 || key === 'Enter' || key === 'Backspace' || key === 'Delete'))
+        refuse(before?.row, before?.column);
+    };
+    if (overlay != null) {
+      overlay.addEventListener('keydown', onKeyDown);
+      sub({unsubscribe: () => overlay.removeEventListener('keydown', onKeyDown)});
+    }
+    sub(this.onCellDoubleClick.subscribe((gc) => refuse(gc?.tableRowIndex, gc?.tableColumn?.name)));
+    sub(editor.onChanged.subscribe(() => this.invalidate()));
+    sub(editor.onRefreshed.subscribe((df) => {
+      this.dataFrame = df;
+      this._applyEditor();
+    }));
+    sub(editor.onSavingChanged.subscribe(() => this._applyEditor()));
+    // a host that repoints the grid at another frame (u2's grid follows its source) starts the
+    // grid columns over — the per-column locks go with them and have to be re-applied
+    sub(this.onDataFrameChanged.subscribe(() => this._applyEditor()));
+    sub(this.onCellPrepare((gc) => {
+      if (!gc.isTableCell)
+        return;
+      const row = gc.tableRowIndex;
+      const column = gc.tableColumn?.name;
+      if (row == null || column == null)
+        return;
+      const error = editor.errorOf(row, column);
+      if (error != null)
+        gc.style.backColor = error.kind === 'conflict' ? Grid.CONFLICT_CELL_COLOR : Grid.INVALID_CELL_COLOR;
+      else if (editor.isChanged(row, column))
+        gc.style.backColor = Grid.DIRTY_CELL_COLOR;
+    }));
+    sub(this.onCellTooltip((gc, x, y) => {
+      if (!gc.isTableCell)
+        return false;
+      const row = gc.tableRowIndex;
+      const column = gc.tableColumn?.name;
+      const error = row == null || column == null ? null : editor.errorOf(row, column);
+      if (error == null)
+        return false;
+      tooltip.show(error.message, x, y);
+      return true;
+    }));
+    this._applyEditor();
+  }
+
+  /** Releases the editor's subscriptions; the grid keeps its frame and columns. */
+  detachEditor(): void {
+    for (const s of this._editorSubs)
+      s.unsubscribe();
+    this._editorSubs = [];
+    if (this._editor != null)
+      this.props.showReadOnlyNotifications = true;
+    this._editor = null;
+  }
+
+  detach(): void {
+    this.detachEditor();
+    super.detach();
+  }
+
+  /** Service columns hidden and locked; read-only degradation and column
+   * security in the platform's own shape: the whole grid when `writableColumns`
+   * is null or empty (or while a save is in flight), per column otherwise. */
+  private _applyEditor(): void {
+    const editor = this._editor;
+    if (editor == null)
+      return;
+    const writable = editor.writableColumns;
+    const editable = writable != null && writable.length > 0 && !editor.isSaving;
+    this.props.allowEdit = editable;
+    // the grid answers a refused edit itself — a generic message, one balloon per KEYSTROKE
+    // (d4 `grid_editors.dart` `requestEdit`); the editor's own refusal replaces it (see
+    // {@link attachEditor}), so the built-in one is off while an editor is attached
+    this.props.showReadOnlyNotifications = false;
+    for (let i = 0; i < this.columns.length; i++) {
+      const gc = this.columns.byIndex(i);
+      if (gc == null)
+        continue;
+      const name = gc.name ?? '';
+      if (name.startsWith('~')) {
+        gc.visible = false;
+        gc.editable = false;
+      }
+      else
+        gc.editable = editable && writable!.includes(name);
+    }
   }
 
   /** Grid columns. */

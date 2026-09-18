@@ -1,6 +1,9 @@
 /* DateInput / DateTimeInput: the text contract (parse, format, validity, clamping), the popup
    machine, and the calendar grid — one calendar shared by both, so the grid tests run on either. */
 
+// the zone the utcDates titles name, set here so those cases bite wherever the suite is run
+process.env.TZ = 'America/New_York';
+
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
@@ -405,4 +408,36 @@ smoke('two inputs on one signal stay in step; dispose closes the popup and kills
     await flush();
     assert.equal(popup(), null, 'listeners died with the scope');
     shared.dispose();
+  });
+
+smoke('utcDates: the field shows, parses and commits the UTC calendar day (TZ=America/New_York)',
+  async () => {
+    const stamped = new Date('2026-10-02T00:00:00Z');
+    const input = mount(new DateInput({label: 'Due', utcDates: true, value: stamped}));
+    assert.equal(editor(input).value, '2026-10-02', 'a UTC midnight is its own day, not the one before');
+
+    const plain = mount(new DateInput({label: 'Due', value: stamped}));
+    assert.equal(editor(plain).value, iso(stamped), 'without the flag the same instant is a local moment');
+    plain.dispose();
+
+    type(input, '2026-10-03');
+    fire(editor(input), 'blur');
+    assert.equal(input.value.value.toISOString(), '2026-10-03T00:00:00.000Z', 'typing commits UTC midnight');
+    assert.equal(editor(input).value, '2026-10-03');
+
+    await open(input);
+    assert.equal(popup().querySelector('.u2-date-title').textContent, 'October 2026');
+    assert.equal(day('2026-10-03').getAttribute('aria-selected'), 'true', 'the marked day is the UTC one');
+    fire(day('2026-10-05'), 'click');
+    assert.equal(input.value.value.toISOString(), '2026-10-05T00:00:00.000Z', 'a picked day commits UTC midnight');
+    assert.equal(editor(input).value, '2026-10-05');
+    input.dispose();
+
+    const dt = mount(new DateTimeInput({label: 'When', utcDates: true,
+      value: new Date('2026-10-02T13:45:00Z')}));
+    assert.equal(editor(dt).value, '2026-10-02 13:45', 'the time of day is the UTC one too');
+    type(dt, '2026-10-02 07:05');
+    fire(editor(dt), 'blur');
+    assert.equal(dt.value.value.toISOString(), '2026-10-02T07:05:00.000Z');
+    dt.dispose();
   });

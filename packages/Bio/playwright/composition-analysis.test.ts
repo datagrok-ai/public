@@ -141,9 +141,11 @@ test('Bio | Analyze | Composition — composition analysis integration', async (
       // builds asynchronously; a short in-page poll raced it under load.
       await page.locator('.grok-prop-panel .property-grid, .grok-prop-panel tr[name^="prop-"]')
         .first().waitFor({state: 'attached', timeout: 30_000});
-
+      // The property row sits in a collapsed accordion, so 'attached' rather than 'visible';
+      // the grid renders its rows in a second pass that a two-core CI agent does not finish
+      // within 10 s even once the pane itself is up.
       await page.locator('tr[name="prop-show-position-labels"]').waitFor({
-        state: 'attached', timeout: 10_000});
+        state: 'attached', timeout: 60_000});
     });
     await softStep(`[${ds.name}] Scenario 3 Step 5 — Edit ≥1 Context Pane property (SR-01: edit-acceptance only)`, async () => {
       const result: {changedShow: boolean, changedSkip: boolean} = await page.evaluate(async () => {

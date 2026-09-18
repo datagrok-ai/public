@@ -33,6 +33,17 @@ category('AI: App: View Geometry Ribbon', () => {
     });
   });
 
+  test('setRibbonPanels round-trip keeps platform panel names', async () => {
+    await withTableView(demog(), async (tv) => {
+      const names = () => Array.from(tv.root.parentElement!.querySelectorAll('.d4-ribbon-panel[name]'))
+        .map((p) => p.getAttribute('name'));
+      const before = names();
+      expect(before.includes('Selection'), true);
+      tv.setRibbonPanels(tv.getRibbonPanels());
+      expect(names().join(','), before.join(','));
+    });
+  });
+
   test('setRibbonPanels clear flag replaces vs appends', async () => {
     await withTableView(demog(), async (tv) => {
       // clear:true replaces user panels but one persistent system panel remains (count = user + 1);

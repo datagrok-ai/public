@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Chem | Calculate | IUPAC Name: Added a Python script that names molecules with openclatura
 * GROK-20753: Added `moleculeFilterOperators` (`meta.role: filterOperators`) — substructure, superstructure, exact, stereo-agnostic and similarity operators for the u2 filter builder
 * GROK-20808: MMP: Fixed a crash when no table was selected in the dialog
 * GROK-20829: Guard isBitsetStale against the valueless root tree group

@@ -174,8 +174,9 @@ shows how to add a [viewer](#visualizations) to a view.
 ### Working with intellisense
 
 We recommend restoring the package dependencies before starting development with an IDE. After the package is created,
-simply invoke `npm install` inside the package folder (or `pnpm install` at the root of the public repository, which
-covers every package there). This will bring npm modules with the Datagrok API.
+run `npm install` inside the package folder. Inside the public repository, run
+[`grok setup`](../../dev-process/build-system.md) at the repository root instead, which covers every package
+there. This brings npm modules with the Datagrok API.
 
 An alternative way to IntelliSense capability for Datagrok classes is by cloning the
 entire [public repository](https://github.com/datagrok-ai/public) and opening its whole folder in the IDE. This is

@@ -24,6 +24,7 @@ import type {FuncCallLike} from '../funcs/func-form.js';
 import {applyHistoryById} from '../funcs/func-history.js';
 import {rawEffect} from '../../core/signals.js';
 import {viewerControl} from './viewer-control.js';
+import {registerDomainComponents} from '../domain/registrations.js';
 
 const api = globalThis as {grok_Property_Get_PropertySubType?: (dart: unknown) => string | null};
 
@@ -463,4 +464,5 @@ export function registerPlatformComponents(reg: Registry = globalRegistry): void
     reg.register(funcCallInputMeta());
   if (reg.get(FF_TAG) === undefined)
     reg.register(funcFormMeta());
+  registerDomainComponents(reg);
 }

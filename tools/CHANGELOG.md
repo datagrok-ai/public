@@ -1,5 +1,19 @@
 # Datagrok-tools changelog
 
+## v.next
+
+* GROK-20753: `domain-schema.schema.json` accepts the `hierarchy` table key (the table is a tree: exactly one ref column targeting itself) — without it `grok api` / `grok check` refused a manifest the server accepts
+* GROK-20753: `grok api --ui` emits typed u2 handles instead of the retired `@datagrok-libraries/domain-ui` sugar: `src/generated/db-ui.ts` is now `get<Schema>Db(): Promise<<Schema>Db>` → `{schema, data: <schema>Db, tables: {<plural>: DomainTable<Row>, ...}}`, every table opened in parallel behind one await and cached per page (presence-persisted as before). `grok add app --domain <schema>.<table>` scaffolds the u2 zero-code tier the way the Stockroom package is built: a three-line `//tags: app` function over `domains.table(...).app()`, `src/app.spec.json` (the same app as a designer-editable `dg-ui/1` spec), a one-table starter `databases/<schema>/schema.json` when the package declares none, the `@datagrok-libraries/u2` workspace dependency and an `rspack.config.js` carrying the `u2core` external (everything else — the css loaders, the tsconfig — comes from `@datagrok/build-config`)
+* GROK-20298: `grok s domains access <schema.table>` replaces `capabilities` — the server's `{can, fields, ...}` access shape
+
+## 6.7.5 (2026-09-17)
+
+* `grok create` works outside the pnpm workspace and new packages use `@datagrok/build-config` 1.x
+
+## 6.7.4 (2026-09-17)
+
+* `grok create`, `grok publish`, `grok test` and `grok run` work inside the pnpm workspace
+
 ## 6.7.3 (2026-09-17)
 
 * The function-metadata plugin emits decorator roles in camel case again (`fileHandler`, `app`, `viewer`, ...); since 6.7.1 it capitalised them, which broke JS code comparing `options.role` with `DG.FUNC_TYPES`.

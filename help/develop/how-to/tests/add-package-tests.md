@@ -33,7 +33,8 @@ cd <package-name>
 grok add tests
 ```
 
-Once you get package dependencies (`npm install`), you can start writing tests.
+Once you get package dependencies (`npm install`, or [`grok setup`](../../dev-process/build-system.md) inside
+the public repository), you can start writing tests.
 First, create a folder for your test files:
 
 ```shell

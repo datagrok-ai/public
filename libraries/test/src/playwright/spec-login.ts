@@ -33,6 +33,12 @@ export const specTestOptions = {
   acceptDownloads: true,
 };
 
+/** A hosted GitHub Actions runner has 2-4 vCPU, so a CPU-bound analysis that a dev stand
+ * finishes in seconds takes minutes: Peptides MCL clustering measured 39-44 s on dev and
+ * 227 s there. A spec that drives one skips itself with this and stays covered by the
+ * nightly, which runs the same suites on a 32-core agent. */
+export const onHostedRunner = (): boolean => process.env.GITHUB_ACTIONS === 'true';
+
 export interface StepError { step: string; error: string; }
 
 /** test.step when a test is running, a plain call otherwise (worker fixtures, global setup). */

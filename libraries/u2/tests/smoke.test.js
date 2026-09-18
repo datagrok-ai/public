@@ -381,6 +381,14 @@ smoke('Splitter: keyboard resize clamps at minSize', () => {
   splitter.dispose();
 });
 
+smoke('Splitter: a panel given as a control is owned and disposed with the splitter', () => {
+  const owned = new Control();
+  const splitter = mount(new Splitter([owned, span('right')], {direction: 'horizontal'}));
+  assert.equal(splitter.root.querySelector('.u2-splitter-panel').firstChild, owned.root);
+  splitter.dispose();
+  assert.equal(owned.scope.isDisposed, true);
+});
+
 smoke('Splitter: a sizes list that does not match the panels falls back to equal shares', () => {
   const splitter = mount(new Splitter([span('a'), span('b'), span('c')],
     {direction: 'horizontal', sizes: [0.3, 0.7]}));

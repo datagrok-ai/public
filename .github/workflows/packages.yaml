@@ -624,6 +624,10 @@ jobs:
         id: test-package
         env:
           CHROME_DEVEL_SANDBOX: /usr/local/sbin/chrome-devel-sandbox
+          # A hosted runner has 2 vCPU (4 on the -m tier); the shared base config defaults to
+          # 4 Playwright workers, so four browsers competed for them. CPU-bound analyses then
+          # never finish: Peptides SAR sat 300 s with MCL clustering producing no columns.
+          PLAYWRIGHT_WORKERS: 2
         run: |
           npm list -g --depth=0 --json
           if [ "${{ matrix.package }}" == "DevTools" ]; then
