@@ -1,13 +1,72 @@
-import {expect} from '@playwright/test';
+import {expect, Page} from '@playwright/test';
 import {test} from '../shared-page';
 import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
 import {settleContextPanes, waitQuiet} from './chem-fast-helpers';
 
+declare const grok: any;
+declare const DG: any;
+
 test.use(specTestOptions);
 
+// `grok.shell.o = column` does not stay put: the grid sets its own current cell as it finishes
+// rendering, and the platform then makes THAT the current object — on smiles-50 the molregno
+// cell wins and the panel fills with ChEMBL link panes instead of the column's. So the column is
+// re-asserted until the panel is the column's.
+const ACTION_PANE_CAP = 60_000;
+
+// The link is what every assertion below reads, so when it does not arrive the state that
+// decides it is reported with the failure: what the panel is showing, whether the action
+// function is registered at all, and what the current object actually is.
+async function expectConvertNotationLink(page: Page, where: string): Promise<void> {
+  const present = async () => page.evaluate(() =>
+    Array.from(document.querySelectorAll('label.d4-link-action'))
+      .some((l) => (l.textContent ?? '').trim().startsWith('Convert Notation')));
+  const reassert = async () => page.evaluate(() => {
+    const name = (window as any).__grok17964_origMolCol;
+    const col = name ? grok.shell.t?.col(name) : null;
+    if (col && grok.shell.o !== col) { grok.shell.o = null; grok.shell.o = col; return true; }
+    return false;
+  });
+  const deadline = Date.now() + ACTION_PANE_CAP;
+  let reasserted = 0;
+  while (Date.now() < deadline) {
+    if (await present()) {
+      if (reasserted) console.log(`[17964] ${where}: the column had to be re-asserted ${reasserted}x`);
+      return;
+    }
+    // A re-asserted object rebuilds the accordion collapsed, and a collapsed pane holds no
+    // content, so the panes are re-expanded on every turn of this loop.
+    if (await reassert()) reasserted++;
+    await page.evaluate(async () => {
+      for (const p of Array.from(document.querySelectorAll('.grok-prop-panel .d4-accordion-pane'))) {
+        const h = p.querySelector('.d4-accordion-pane-header') as HTMLElement | null;
+        if (h && !h.classList.contains('expanded')) { h.click(); await new Promise((r) => setTimeout(r, 100)); }
+      }
+    });
+    await page.waitForTimeout(500);
+  }
+  const diag = await page.evaluate(() => {
+    const o: any = grok.shell.o;
+    const pane = document.querySelector('.grok-prop-panel .d4-accordion-pane[d4-title="Actions"]');
+    return {
+      currentObject: o ? `${o.constructor?.name} ${o.name ?? ''} semType=${o.semType ?? ''}` : null,
+      contextPanelShown: grok.shell.windows.showContextPanel, simpleMode: grok.shell.windows.simpleMode,
+      panes: Array.from(document.querySelectorAll('.grok-prop-panel .d4-accordion-pane'))
+        .map((x) => x.getAttribute('d4-title')),
+      actionsPaneText: pane ? (pane as HTMLElement).innerText.replace(/\s+/g, ' ').slice(0, 300) : null,
+      linkActions: Array.from(document.querySelectorAll('label.d4-link-action'))
+        .map((l) => (l.textContent ?? '').trim()),
+      actionFuncs: DG.Func.find({meta: {action: 'Convert Notation...'}}).map((f: any) => f.nqName),
+    };
+  });
+  expect(false, `${where}: the Chem "Convert Notation..." column action never rendered on the Context ` +
+    `Panel within ${ACTION_PANE_CAP} ms. state=${JSON.stringify(diag)}`).toBe(true);
+}
+
+
 test('Chem: GROK-17964 Convert Notation column-action registration is exactly-once', async ({page}) => {
-  test.setTimeout(180_000);
+  test.setTimeout(600_000);
 
   await loginToDatagrok(page);
 
@@ -70,10 +129,7 @@ test('Chem: GROK-17964 Convert Notation column-action registration is exactly-on
       }
     });
 
-    await expect.poll(async () => page.evaluate(() =>
-      Array.from(document.querySelectorAll('label.d4-link-action'))
-        .some(l => (l.textContent ?? '').trim().startsWith('Convert Notation')),
-    ), {timeout: 15_000, intervals: [250, 500, 1000]}).toBe(true);
+    await expectConvertNotationLink(page, 'after focusing the molecule column');
   });
 
   await softStep('Baseline: assert exactly 1 Convert Notation entry on the column Actions pane', async () => {

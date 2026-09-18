@@ -71,9 +71,10 @@ async function clickOkAndWaitForEmbedding(page: Page, label: string, minSuffix: 
           const maxSuffix = Math.max(...embedCols.map((c: any) => parseInt(c.name.match(/^Embed_X_(\d+)$/)![1])));
           if (maxSuffix > lastSuffix) {
             const xName = `Embed_X_${maxSuffix}`, yName = `Embed_Y_${maxSuffix}`;
-            // Tags are set asynchronously ~5-8s after column creation; poll up to 20s for both axes.
+            // Tags are set asynchronously ~5-8s after column creation; poll up to 60s for both axes
+            // (CI 401: D1 and D3 tagged in time, D2 did not — the stand, not a missing tag).
             let xTag = false, yTag = false;
-            for (let j = 0; j < 10; j++) {
+            for (let j = 0; j < 30; j++) {
               const cols = grok.shell.tv?.dataFrame;
               xTag = hasTag(cols?.col(xName), /chem-space-embedding-col/);
               yTag = hasTag(cols?.col(yName), /chem-space-embedding-col/);

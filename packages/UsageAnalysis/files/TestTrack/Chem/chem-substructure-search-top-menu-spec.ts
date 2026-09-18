@@ -151,7 +151,10 @@ async function typeQueryIntoOpenSketcher(
       return zero ? (c === 0 && settled) : (c !== base && settled);
     },
     {base: baseline, zero: opts.expectZero === true},
-    {timeout: 20_000, polling: 400},
+    // The first substructure query over the whole column builds the RDKit search library in the
+    // web workers; on a cold, loaded stand that lands well past the 20 s this used to allow
+    // (CI 401 timed out here while dev does the same step in 10 s).
+    {timeout: 90_000, polling: 400},
   );
   return readTrueCount(page);
 }

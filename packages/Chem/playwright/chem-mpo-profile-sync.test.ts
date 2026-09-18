@@ -5,7 +5,6 @@ import {expect, Page} from '@playwright/test';
 import {test} from '@datagrok-libraries/test/src/playwright/shared-page';
 import {loginToDatagrok, specTestOptions, softStep} from '@datagrok-libraries/test/src/playwright/spec-login';
 import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
-import {knownOpenBug} from '@datagrok-libraries/test/src/playwright/known-open-bug';
 
 declare const grok: any;
 declare const DG: any;
@@ -255,11 +254,10 @@ test('Chem: MPO profile CRUD and Browse tree sync (GROK-19624)', async ({page}) 
     await page.keyboard.type(SCORE_COLUMN);
     // chem.md:1344 — assert the box holds the intended name BEFORE the commit; a dropped
     // keystroke otherwise commits the registered default NewProperty1 (chem.md:1460), and
-    // every downstream assertion in this scenario still passes on that profile.
-    await knownOpenBug('GROK-20918', () => expect(propInput).toHaveValue(SCORE_COLUMN, {timeout: 10_000}));
-    // GROK-20918: every keystroke after the first is lost because the cell is rebuilt around the
-    // focused input, so the name goes in as one value write, which the model does accept.
-    await propInput.fill(SCORE_COLUMN);
+    // every downstream assertion in this scenario still passes on that profile. GROK-20918 (the
+    // cell rebuilt itself around the focused input and kept only the first character) is fixed in
+    // @datagrok-libraries/statistics 1.12.14, so the typed name is read back as a user's would be.
+    await expect(propInput).toHaveValue(SCORE_COLUMN, {timeout: 10_000});
     await propInput.press('Enter');
     await expect(propInput).toHaveValue(SCORE_COLUMN, {timeout: 10_000});
 

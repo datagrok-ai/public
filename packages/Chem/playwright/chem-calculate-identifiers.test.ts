@@ -244,8 +244,13 @@ test('Chem: Calculate — Map Identifiers, Chemical Properties, Generate Conform
     const navItem = page.locator('[name="dialog-Chemical-Properties"] .biochem-calc-nav-item')
       .filter({hasText: /^logP$/});
     await navItem.locator('input[type="checkbox"]').check({force: true});
+    // Unlike the OCL Chemical Properties pass above, logP is the server-side python script
+    // Chem:CalculateLogP (scripts/biochemical-calculators/calc_logP.py), so a stalled or failing
+    // scripting backend shows up here as "nothing was appended". Quote the balloons in that case.
+    await armBalloonRecorder(page);
     await okCalculatorDialog(page);
     const added = await pollForColumn(page, before, 120000);
+    const logPSaid = added.length ? [] : (await readRecordedBalloons(page)).map((b) => `${b.cls}: ${b.text}`);
     const probe = await page.evaluate(({added, baseline, firstPass}) => {
       const t = grok.shell.t;
       const finite = added.filter((n: string) => {
@@ -265,7 +270,8 @@ test('Chem: Calculate — Map Identifiers, Chemical Properties, Generate Conform
       .toBe(firstPassColumns.length);
     // technical: logP is OCL CrippenClogP — exactly one column, clogP, a different kind from MW.
     expect(added.map((n) => n.replace(/ \(\d+\)$/, '')),
-      `the logP pass must append its own clogP column and nothing else; appended: ${JSON.stringify(added)}`)
+      `the logP pass must append its own clogP column and nothing else; appended: ${JSON.stringify(added)}; ` +
+      `balloons raised meanwhile: ${JSON.stringify(logPSaid)}`)
       .toEqual(['clogP']);
     expect(probe.finiteCols,
       `every row of the appended clogP column must hold a finite number; appended: ${JSON.stringify(added)}`)

@@ -6,6 +6,7 @@ import {test} from '@datagrok-libraries/test/src/playwright/shared-page';
 import {loginToDatagrok, specTestOptions, softStep, waitForMolecule} from '@datagrok-libraries/test/src/playwright/spec-login';
 import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 import {withConsoleErrorCount} from '@datagrok-libraries/test/src/playwright/forms';
+import {armBalloonRecorder, readRecordedBalloons} from '@datagrok-libraries/test/src/playwright/balloons';
 import {waitForSemType} from './chem-fast-helpers';
 
 declare const grok: any;
@@ -371,12 +372,19 @@ test('Chem: Chemistry Mixture / MixtureTree panels differentiate mixture input a
       await withConsoleErrorCount(page, async () => {
         await openContextPanes(page, 'Molecule', 'Gasteiger Partial Charges');
         await expandPane(page, 'gasteiger|partial charge');
-        // The Python script runs server-side; the div only carries a payload once it returns.
+        // The Python script runs server-side; the div only carries a payload once it returns. A
+        // call that never comes back otherwise spends the whole budget and reports only a bare
+        // timeout, so the balloons raised meanwhile are quoted with it.
+        await armBalloonRecorder(page);
         await page.waitForFunction(() => {
           const pane = document.querySelector('.d4-pane-gasteiger_partial_charges');
           const el = pane ? pane.querySelector('.grok-scripting-image-container-info-panel') as HTMLElement | null : null;
           return !!el && /data:image\/png;base64,/.test(el.style.backgroundImage || '');
-        }, undefined, {timeout: 180_000, polling: 1000});
+        }, undefined, {timeout: 180_000, polling: 1000}).catch(async () => {
+          const said = (await readRecordedBalloons(page)).map((b) => `${b.cls}: ${b.text}`);
+          throw new Error('the Gasteiger panel produced no PNG payload within 180 s — the server-side ' +
+            `script did not return; balloons raised meanwhile: ${JSON.stringify(said)}`);
+        });
       }, CONSOLE_SETTLE_MS, smilesConsole);
 
       smilesGraphic = await gasteigerGraphic(page);

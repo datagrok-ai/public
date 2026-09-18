@@ -14,7 +14,8 @@ related_bugs:
   - id: GROK-19624
     status: fixed
   - id: GROK-20918
-    status: open
+    status: fixed
+    fixed_in: '@datagrok-libraries/statistics 1.12.14'
 source_text_fixes:
   - >-
     Setup Step 1, Scenario 1 Step 3 and Scenario 3 Steps 11 and 14 named MW as

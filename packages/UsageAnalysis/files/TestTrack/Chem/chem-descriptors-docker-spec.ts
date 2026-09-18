@@ -226,9 +226,25 @@ test('Chem: Descriptors via Docker — columns appended (happy path)', async ({p
   const consoleErrors: string[] = [];
   const AMBIENT = [/favicon/i, /ResizeObserver loop/i, /Permissions policy violation/i,
     /Unable to find element in cloned iframe/i];
+  // A 404 is the ANSWER to an existence or capability probe, not a failure, and the browser logs
+  // one for every such request: `grok.dapi.files.exists` HEADs the file share (PowerPack's
+  // db-explorer config is probed on every view change), and the platform asks whether a package
+  // has a compatible docker image. Judged by URL, the way forms.ts judges the help-page 404 —
+  // and the URL is recorded for every error that is NOT ambient, so a real 404 names itself.
+  const AMBIENT_404_URL = [
+    /\/connectors\/connections\/[^?]*\/file\//i,
+    /\/docker\/images\/[^/]+\/latest-compatible/i,
+    /\/help\/.*\.md$/i,
+  ];
   const isAmbient = (text: string) => AMBIENT.some((re) => re.test(text));
+  const isProbe404 = (text: string, url: string) =>
+    /Failed to load resource/i.test(text) && /404/.test(text) && AMBIENT_404_URL.some((re) => re.test(url));
   page.on('pageerror', (e) => { if (!isAmbient(String(e))) consoleErrors.push(String(e)); });
-  page.on('console', (m) => { if (m.type() === 'error' && !isAmbient(m.text())) consoleErrors.push(m.text()); });
+  page.on('console', (m) => {
+    const url = m.location()?.url ?? '';
+    if (m.type() === 'error' && !isAmbient(m.text()) && !isProbe404(m.text(), url))
+      consoleErrors.push(url ? `${m.text()} [${url}]` : m.text());
+  });
 
   await loginToDatagrok(page);
 
