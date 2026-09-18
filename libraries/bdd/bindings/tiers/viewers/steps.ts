@@ -188,6 +188,25 @@ export const wheelOverArea = When('user scrolls the mouse wheel {word} over the 
   await page.mouse.wheel(0, direction === 'up' ? -600 : 600);
 }, {tier: 'ui', description: 'up or down, a few notches, with the pointer at the centre of the area'});
 
+export const wheelOverAreaHolding = When('user scrolls the mouse wheel {word} over the {string} area of {widget} holding {key}', async (page: Page, direction: string, area: string, target: ElementRef, key: string) => {
+  if (direction !== 'up' && direction !== 'down')
+    throw new Error(`the wheel scrolls up or down, not "${direction}"`);
+  const c = v.centerOf(await v.hitArea(page, target, area, true));
+  await page.mouse.move(c.x, c.y);
+  await withKeys(page, keysOf(key), () => page.mouse.wheel(0, direction === 'up' ? -600 : 600));
+}, {tier: 'ui', description: 'the same notches with a modifier held — Control zooms where a plain wheel scrolls'});
+
+export const wheelOverAreaTimesHolding = When('user scrolls the mouse wheel {word} {int} times over the {string} area of {widget} holding {key}', async (page: Page, direction: string, times: number, area: string, target: ElementRef, key: string) => {
+  if (direction !== 'up' && direction !== 'down')
+    throw new Error(`the wheel scrolls up or down, not "${direction}"`);
+  const c = v.centerOf(await v.hitArea(page, target, area, true));
+  await page.mouse.move(c.x, c.y);
+  await withKeys(page, keysOf(key), async () => {
+    for (let i = 0; i < times; i++)
+      await page.mouse.wheel(0, direction === 'up' ? -600 : 600);
+  });
+}, {tier: 'ui', description: 'a run of wheel events with a modifier held — enough of them to reach a limit'});
+
 export const pointerAway = When('user moves the pointer away from {element}', async (page: Page, target: ElementRef) => {
   const box = await (await v.viewerLocator(page, target)).boundingBox();
   if (!box)
@@ -343,10 +362,10 @@ export const readingBetween = Then('the {string} reading of {widget} should be b
   }, {description: 'a reading that carries float noise or depends on the layout, bounded on both sides'});
 
 export const pickColorSwatch = When('user picks the color {string} in the color picker dialog', async (page: Page, hex: string) => {
-  const swatch = page.locator(`.d4-dialog [name="color-${hex.replace('#', '')}" i]`).filter({visible: true}).first();
+  const swatch = page.locator(`:is(.d4-dialog, .property-grid-item-editor-color-picker-host) [name="color-${hex.replace('#', '')}" i]`).filter({visible: true}).first();
   await expect(swatch, `a "${hex}" swatch in the open colour dialog`).toBeVisible();
   await swatch.click();
-}, {tier: 'ui', description: 'a swatch of the open colour dialog by its #rrggbb — the dialog every categorical legend opens'});
+}, {tier: 'ui', description: 'a swatch of the open colour dialog by its #rrggbb — the dialog every categorical legend opens, or the picker a color property opens'});
 
 export const readingAtLeast = Then('the {string} reading of {widget} should be at least {float}', async (page: Page, name: string, target: ElementRef, value: number) => {
   await expect.poll(() => v.readValue(page, target, name), {message: `"${name}" reading of ${target.phrase}`}).toBeGreaterThanOrEqual(value);

@@ -117,11 +117,26 @@ export async function hover(page: Page, target: ElementRef): Promise<void> {
   }
 }
 
+/** A Dart property grid row shows its value as a label and builds its editor (a select, an input)
+ * only when the value cell is clicked: open it first, so the gesture finds the editor. */
+async function openPropertyEditor(loc: Locator): Promise<void> {
+  const row = loc.first();
+  if (!await row.evaluate((e) => e.matches('tr.property-grid-item')).catch(() => false))
+    return;
+  // a row the grid redrew keeps its old editor detached from view: only a shown one counts
+  const editors = row.locator('input, select, textarea, .d4-column-selector').filter({visible: true});
+  if (await editors.count() > 0)
+    return;
+  await row.locator('.property-grid-item-value').click();
+  await expect(editors.first(), 'the editor of the property').toBeVisible();
+}
+
 /** The editable control of an element: itself when it is one, otherwise its editor part. A viewer
  * handles keys on its root (a form walks rows on the arrows, a plot zooms on +/-); its first input
  * is a field, not its editor. */
 export async function editorOf(page: Page, target: ElementRef): Promise<Locator> {
   const loc = await locate(page, target);
+  await openPropertyEditor(loc);
   const own = await loc.evaluate((e) => ['INPUT', 'SELECT', 'TEXTAREA'].includes(e.tagName) ||
     (e as HTMLElement).isContentEditable || e.matches('[name^="viewer-"], .d4-viewer')).catch(() => false);
   if (own)
@@ -257,6 +272,11 @@ export async function openColumnSelector(page: Page, selector: Locator, leave = 
 
 export async function select(page: Page, target: ElementRef, option: string): Promise<void> {
   const loc = await locate(page, target);
+  await openPropertyEditor(loc);
+  // a property grid redraws its rows after a change to another property, dropping the editor just
+  // opened: a row that lost it is opened once more
+  if (await loc.first().evaluate((e) => e.matches('tr.property-grid-item') && !e.querySelector('select, input, .d4-column-selector')).catch(() => false))
+    await openPropertyEditor(loc);
   // a Dart choice input's name can land on its <select> itself rather than on the host around it
   const native = await loc.first().evaluate((e) => e.tagName === 'SELECT') ? loc.first() : loc.locator('select').first();
   if (await native.count() > 0) {

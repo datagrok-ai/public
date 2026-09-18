@@ -187,6 +187,19 @@ export async function expectValue(page: Page, target: ElementRef, value: string,
   await expect.poll(() => readValue(page, target), {message}).not.toBe(value);
 }
 
+/** The choices a dropdown offers, in order: a native `<select>`'s options, else the element's own
+ * option rows. */
+export async function expectOptions(page: Page, target: ElementRef, list: string): Promise<void> {
+  const want = list.split(/\s*,\s*/).filter(Boolean);
+  const loc = await locate(page, target);
+  const read = () => loc.first().evaluate((e) => {
+    const select = e.tagName === 'SELECT' ? e as HTMLSelectElement : e.querySelector('select');
+    const items = select ? Array.from(select.options) : Array.from(e.querySelectorAll('[role="option"]'));
+    return items.map((o) => (o.textContent ?? '').trim());
+  }).catch(() => [] as string[]);
+  await expect.poll(read, {message: `the choices ${target.phrase} offers`}).toEqual(want);
+}
+
 /** Rows of a collection: the first row vocabulary that has any is the one counted. */
 export async function expectCount(page: Page, target: ElementRef, count: number): Promise<void> {
   const loc = await locate(page, target);

@@ -26,7 +26,8 @@
   "devDependencies": {
     "@playwright/test": "^1.48.0",
     "@types/wu": "catalog:",
-    "webpack-bundle-analyzer": "^4.10.2"
+    "webpack-bundle-analyzer": "^4.10.2",
+    "@datagrok-libraries/bdd": "workspace:^"
   },
   "scripts": {
     "build": "grok build",
