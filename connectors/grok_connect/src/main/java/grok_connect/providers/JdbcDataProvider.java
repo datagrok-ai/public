@@ -237,7 +237,8 @@ public abstract class JdbcDataProvider extends DataProvider {
                 List<String> names = getParameterNames(query, dataQuery, queryBuffer);
                 query = queryBuffer.toString();
                 logger.debug(EventType.QUERY_INTERPOLATION.getMarker(EventType.Stage.END), "Interpolated SQL query parameters. Detected {} parameters", names.size());
-                logger.info("Query before execution: {}", query);
+                if (queryRun.logQueryText)
+                    logger.info("Query before execution: {}", query);
 
                 logger.debug("Creating PreparedStatement...");
                 PreparedStatement statement = connection.prepareStatement(query);
@@ -274,11 +275,13 @@ public abstract class JdbcDataProvider extends DataProvider {
                 logger.debug(EventType.QUERY_INTERPOLATION.getMarker(EventType.Stage.START), "Interpolating manually SQL query parameters...");
                 query = manualQueryInterpolation(query, dataQuery);
                 logger.debug(EventType.QUERY_INTERPOLATION.getMarker(EventType.Stage.END), "Interpolated SQL query parameters");
-                logger.info("Query before execution: {}", query);
+                if (queryRun.logQueryText)
+                    logger.info("Query before execution: {}", query);
                 resultSet = executeStatement(connection.prepareStatement(query), queryRun, timeout, fetchSize);
             }
         } else {
-            logger.info("Query before execution: {}", query);
+            if (queryRun.logQueryText)
+                logger.info("Query before execution: {}", query);
             resultSet = executeStatement(connection.prepareStatement(query), queryRun, timeout, fetchSize);
         }
 

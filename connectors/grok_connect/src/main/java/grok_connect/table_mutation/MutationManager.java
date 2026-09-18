@@ -31,6 +31,7 @@ public class MutationManager {
     public final JdbcDataProvider provider;
     private final InsertRows mutation;
     private final String mainCallId;
+    private final boolean logSql;
     private Connection connection;
     private BulkLoader loader;
     private boolean finished;
@@ -47,6 +48,7 @@ public class MutationManager {
         if (!(call.func instanceof InsertRows))
             throw new MutationValidationException("Bulk mutation requires an InsertRows func, got: " + call.func.type);
         mainCallId = (String) call.aux.get("mainCallId");
+        logSql = call.logQueryText;
         mutation = (InsertRows) call.func;
         if (!mutation.bulk)
             throw new MutationValidationException("Bulk mutation header must set bulk=true");
@@ -77,7 +79,7 @@ public class MutationManager {
                 // mode=create (§3.4.3): create the derived all-nullable table BEFORE the loader prepares its
                 // INSERT/COPY (and before MUTATION READY); post-creation the load is a plain insert, so the
                 // provider's loader routing (the Postgres COPY guard) needs no create case.
-                DdlRunner.execute(provider, connection, DdlRunner.deriveCreateTable(mutation), mainCallId);
+                DdlRunner.execute(provider, connection, DdlRunner.deriveCreateTable(mutation), mainCallId, logSql);
                 if (!provider.descriptor.supportsTransactionalDdl)
                     createLeftoverNote = DdlRunner.createLeftoverNote(provider, mutation);
                 mutation.mode = "insert";

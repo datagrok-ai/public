@@ -37,6 +37,7 @@ public class MutationRunner {
         if (GrokConnectUtil.isNotEmpty(mutation.catalog))
             mutation.connection.parameters.put("db", mutation.catalog);
         String mainCallId = (String) call.aux.get("mainCallId");
+        boolean logSql = call.logQueryText;
         MutationResult result = new MutationResult();
         List<TableMutation> operations = mutation instanceof MutationBatch
                 ? ((MutationBatch) mutation).operations : Collections.singletonList(mutation);
@@ -73,12 +74,12 @@ public class MutationRunner {
                     provider.rollbackQuietly(connection); // pre-check SELECTs joined the transaction; nothing ran
                     return result;
                 }
-                result.plan = DdlRunner.execute(provider, connection, ddl, mainCallId); // affectedRows stays 0
+                result.plan = DdlRunner.execute(provider, connection, ddl, mainCallId, logSql); // affectedRows stays 0
             }
             else
                 for (int i = 0; i < operations.size(); i++) {
                     currentStatement = i;
-                    int affected = executeOperation(provider, connection, operations.get(i), mainCallId);
+                    int affected = executeOperation(provider, connection, operations.get(i), mainCallId, logSql);
                     result.affectedRows += affected;
                     if (result.perStatement != null) {
                         PerStatementResult statementResult = new PerStatementResult();
@@ -112,24 +113,24 @@ public class MutationRunner {
         }
     }
 
-    private static int executeOperation(JdbcDataProvider provider, Connection connection, TableMutation m, String mainCallId) throws SQLException {
+    private static int executeOperation(JdbcDataProvider provider, Connection connection, TableMutation m, String mainCallId, boolean logSql) throws SQLException {
         if (m instanceof MutationBatch) {
             List<TableMutation> operations = ((MutationBatch) m).operations;
             if (operations == null || operations.isEmpty())
                 throw new MutationValidationException("MutationBatch requires a non-empty operations list");
             int affected = 0;
             for (TableMutation operation : operations)
-                affected += executeOperation(provider, connection, operation, mainCallId);
+                affected += executeOperation(provider, connection, operation, mainCallId, logSql);
             return affected;
         }
         if (m instanceof UpsertRows) // must precede InsertRows: UpsertRows extends InsertRows
-            return executeUpsert(provider, connection, (UpsertRows) m, mainCallId);
+            return executeUpsert(provider, connection, (UpsertRows) m, mainCallId, logSql);
         if (m instanceof InsertRows)
-            return executeInsert(provider, connection, (InsertRows) m, mainCallId);
+            return executeInsert(provider, connection, (InsertRows) m, mainCallId, logSql);
         if (m instanceof UpdateRows)
-            return executeUpdate(provider, connection, (UpdateRows) m, mainCallId);
+            return executeUpdate(provider, connection, (UpdateRows) m, mainCallId, logSql);
         if (m instanceof DeleteRows)
-            return executeDelete(provider, connection, (DeleteRows) m, mainCallId);
+            return executeDelete(provider, connection, (DeleteRows) m, mainCallId, logSql);
         throw new MutationValidationException("Unsupported mutation type: " + m.type);
     }
 
@@ -208,20 +209,20 @@ public class MutationRunner {
             throw new UnsupportedOperationException("Upsert is not supported for provider " + provider.descriptor.type);
     }
 
-    private static int executeInsert(JdbcDataProvider provider, Connection connection, InsertRows m, String mainCallId) throws SQLException {
+    private static int executeInsert(JdbcDataProvider provider, Connection connection, InsertRows m, String mainCallId, boolean logSql) throws SQLException {
         if (GrokConnectUtil.isEmpty(m.mode)) // hand-built payloads may omit it; the contract default is insert
             m.mode = "insert";
         // an InsertRows carrying mode=upsert/update/create routes to the matching engine (bulk parity, WO-6);
         // any other mode fails loud rather than silently doing a plain insert
         switch (m.mode) {
             case "insert":
-                return executePlainInsert(provider, connection, m, mainCallId);
+                return executePlainInsert(provider, connection, m, mainCallId, logSql);
             case "upsert":
-                return executeUpsert(provider, connection, m instanceof UpsertRows ? (UpsertRows) m : new UpsertRows(m), mainCallId);
+                return executeUpsert(provider, connection, m instanceof UpsertRows ? (UpsertRows) m : new UpsertRows(m), mainCallId, logSql);
             case "update":
-                return executeUpdateByKey(provider, connection, m, mainCallId);
+                return executeUpdateByKey(provider, connection, m, mainCallId, logSql);
             case "create":
-                return executeCreate(provider, connection, m, mainCallId);
+                return executeCreate(provider, connection, m, mainCallId, logSql);
             default:
                 throw new MutationValidationException("Unsupported insert mode: " + m.mode);
         }
@@ -235,15 +236,15 @@ public class MutationRunner {
      * On transactional-DDL dialects a failed load rolls the CREATE back with the transaction; elsewhere
      * the created table remains, empty — reported honestly in the error message.
      */
-    private static int executeCreate(JdbcDataProvider provider, Connection connection, InsertRows m, String mainCallId) throws SQLException {
+    private static int executeCreate(JdbcDataProvider provider, Connection connection, InsertRows m, String mainCallId, boolean logSql) throws SQLException {
         CreateTable create = DdlRunner.deriveCreateTable(m); // validates columns/columnTypes before any DDL
         if (m.bulk && m.rows == null) // the streamed create path runs through MutationManager, not /mutate
             throw new UnsupportedOperationException("Bulk insert streaming is not supported yet");
         if (m.rows == null || m.rows.isEmpty())
             throw new MutationValidationException("InsertRows requires a non-empty rows list");
-        DdlRunner.execute(provider, connection, create, mainCallId); // additive — never destructive, no confirm
+        DdlRunner.execute(provider, connection, create, mainCallId, logSql); // additive — never destructive, no confirm
         try {
-            return executePlainInsert(provider, connection, m, mainCallId);
+            return executePlainInsert(provider, connection, m, mainCallId, logSql);
         } catch (SQLException e) {
             throw withCreateLeftoverNote(provider, m, e);
         } catch (MutationValidationException e) {
@@ -263,7 +264,7 @@ public class MutationRunner {
         return wrapped;
     }
 
-    private static int executePlainInsert(JdbcDataProvider provider, Connection connection, InsertRows m, String mainCallId) throws SQLException {
+    private static int executePlainInsert(JdbcDataProvider provider, Connection connection, InsertRows m, String mainCallId, boolean logSql) throws SQLException {
         if (m.bulk && m.rows == null) // WO-5 adds the streamed payload
             throw new UnsupportedOperationException("Bulk insert streaming is not supported yet");
         String sql = provider.insertSql(m);
@@ -271,7 +272,8 @@ public class MutationRunner {
             throw new MutationValidationException("InsertRows requires columnTypes parallel to columns");
         if (m.rows == null || m.rows.isEmpty())
             throw new MutationValidationException("InsertRows requires a non-empty rows list");
-        LOGGER.info("Mutation before execution: {}", sql);
+        if (logSql)
+            LOGGER.info("Mutation before execution: {}", sql);
         QueryMonitor queryMonitor = QueryMonitor.getInstance();
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             queryMonitor.addNewStatement(mainCallId, statement);
@@ -299,7 +301,7 @@ public class MutationRunner {
         }
     }
 
-    private static int executeUpsert(JdbcDataProvider provider, Connection connection, UpsertRows m, String mainCallId) throws SQLException {
+    private static int executeUpsert(JdbcDataProvider provider, Connection connection, UpsertRows m, String mainCallId, boolean logSql) throws SQLException {
         requireUpsertSupport(provider);
         if (m.bulk && m.rows == null) // WO-5 adds the streamed payload
             throw new UnsupportedOperationException("Bulk upsert streaming is not supported yet");
@@ -313,8 +315,8 @@ public class MutationRunner {
             throw new MutationValidationException("UpsertRows requires a non-empty rows list");
         int chunkRows = provider.upsertBatchRows(m.columns.size());
         return chunkRows <= 1
-                ? executeUpsertBatched(provider, connection, m, mainCallId)
-                : executeUpsertChunked(provider, connection, m, chunkRows, mainCallId);
+                ? executeUpsertBatched(provider, connection, m, mainCallId, logSql)
+                : executeUpsertChunked(provider, connection, m, chunkRows, mainCallId, logSql);
     }
 
     /**
@@ -322,7 +324,7 @@ public class MutationRunner {
      * Unlike the bulk loader, the inline path does not report missing keys in phase A — a row whose key
      * matches nothing (update count 0) is silently a no-op, not a {@code missing} RowError.
      */
-    private static int executeUpdateByKey(JdbcDataProvider provider, Connection connection, InsertRows m, String mainCallId) throws SQLException {
+    private static int executeUpdateByKey(JdbcDataProvider provider, Connection connection, InsertRows m, String mainCallId, boolean logSql) throws SQLException {
         if (m.columns == null || m.columns.isEmpty())
             throw new MutationValidationException("Update mode requires a non-empty columns list");
         if (m.columnTypes == null || m.columnTypes.size() != m.columns.size())
@@ -331,7 +333,8 @@ public class MutationRunner {
             throw new MutationValidationException("Update mode requires a non-empty rows list");
         String sql = provider.updateByKeySql(m);
         int[] bindOrder = provider.updateByKeyBindOrder(m);
-        LOGGER.info("Mutation before execution: {}", sql);
+        if (logSql)
+            LOGGER.info("Mutation before execution: {}", sql);
         QueryMonitor queryMonitor = QueryMonitor.getInstance();
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             queryMonitor.addNewStatement(mainCallId, statement);
@@ -360,9 +363,10 @@ public class MutationRunner {
     }
 
     /** addBatch single-row upsert (Postgres/MySQL: ON CONFLICT / ON DUPLICATE KEY; Oracle: MERGE FROM dual). */
-    private static int executeUpsertBatched(JdbcDataProvider provider, Connection connection, UpsertRows m, String mainCallId) throws SQLException {
+    private static int executeUpsertBatched(JdbcDataProvider provider, Connection connection, UpsertRows m, String mainCallId, boolean logSql) throws SQLException {
         String sql = provider.upsertSql(m, 1);
-        LOGGER.info("Mutation before execution: {}", sql);
+        if (logSql)
+            LOGGER.info("Mutation before execution: {}", sql);
         QueryMonitor queryMonitor = QueryMonitor.getInstance();
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             queryMonitor.addNewStatement(mainCallId, statement);
@@ -387,14 +391,15 @@ public class MutationRunner {
     }
 
     /** Multi-row VALUES chunks, one executeUpdate per chunk (MS SQL / Snowflake MERGE-over-VALUES). */
-    private static int executeUpsertChunked(JdbcDataProvider provider, Connection connection, UpsertRows m, int chunkRows, String mainCallId) throws SQLException {
+    private static int executeUpsertChunked(JdbcDataProvider provider, Connection connection, UpsertRows m, int chunkRows, String mainCallId, boolean logSql) throws SQLException {
         QueryMonitor queryMonitor = QueryMonitor.getInstance();
         int total = m.rows.size();
         int affected = 0;
         for (int start = 0; start < total; start += chunkRows) {
             int end = Math.min(start + chunkRows, total);
             String sql = provider.upsertSql(m, end - start);
-            LOGGER.info("Mutation before execution: {}", sql);
+            if (logSql)
+                LOGGER.info("Mutation before execution: {}", sql);
             try (PreparedStatement statement = connection.prepareStatement(sql)) {
                 queryMonitor.addNewStatement(mainCallId, statement);
                 try {
@@ -420,20 +425,20 @@ public class MutationRunner {
         return idx;
     }
 
-    private static int executeUpdate(JdbcDataProvider provider, Connection connection, UpdateRows m, String mainCallId) throws SQLException {
+    private static int executeUpdate(JdbcDataProvider provider, Connection connection, UpdateRows m, String mainCallId, boolean logSql) throws SQLException {
         List<FuncParam> whereParams = new ArrayList<>();
         String sql = provider.updateSql(m, whereParams);
-        return executeUpdateOrDelete(provider, connection, m, sql, whereParams, mainCallId);
+        return executeUpdateOrDelete(provider, connection, m, sql, whereParams, mainCallId, logSql);
     }
 
-    private static int executeDelete(JdbcDataProvider provider, Connection connection, DeleteRows m, String mainCallId) throws SQLException {
+    private static int executeDelete(JdbcDataProvider provider, Connection connection, DeleteRows m, String mainCallId, boolean logSql) throws SQLException {
         List<FuncParam> whereParams = new ArrayList<>();
         String sql = provider.deleteSql(m, whereParams);
-        return executeUpdateOrDelete(provider, connection, m, sql, whereParams, mainCallId);
+        return executeUpdateOrDelete(provider, connection, m, sql, whereParams, mainCallId, logSql);
     }
 
     private static int executeUpdateOrDelete(JdbcDataProvider provider, Connection connection, TableMutation m,
-                                             String sql, List<FuncParam> whereParams, String mainCallId) throws SQLException {
+                                             String sql, List<FuncParam> whereParams, String mainCallId, boolean logSql) throws SQLException {
         // getParameterNames resolves the @-named predicate params against m.params
         m.params = whereParams;
         StringBuilder queryBuffer = new StringBuilder();
@@ -442,7 +447,8 @@ public class MutationRunner {
         if (names.size() != whereParams.size())
             throw new MutationValidationException("Predicate parameter mismatch: " + whereParams.size()
                     + " collected, " + names.size() + " referenced in SQL");
-        LOGGER.info("Mutation before execution: {}", sql);
+        if (logSql)
+            LOGGER.info("Mutation before execution: {}", sql);
         QueryMonitor queryMonitor = QueryMonitor.getInstance();
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             queryMonitor.addNewStatement(mainCallId, statement);
