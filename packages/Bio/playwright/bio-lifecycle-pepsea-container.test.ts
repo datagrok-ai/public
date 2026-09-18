@@ -1,6 +1,6 @@
 import {expect} from '@playwright/test';
 import {test} from '@datagrok-libraries/test/src/playwright/shared-page';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors, skipOnMinimalStack} from '@datagrok-libraries/test/src/playwright/spec-login';
 import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 import * as bio from '@datagrok-libraries/test/src/playwright/bio';
 import {
@@ -136,8 +136,13 @@ test('Bio pepsea_container source-class lifecycle: HELM → MSA (PepSeA engine) 
       return {hasSelect: true, options};
     });
     expect(engineOpts.hasSelect).toBe(true);
-    expect(engineOpts.options.length).toBeGreaterThanOrEqual(2);
     const hasPepsea = engineOpts.options.some((o: string) => o.toLowerCase().indexOf('pepsea') >= 0);
+    if (!hasPepsea && skipOnMinimalStack('the PepSeA engine steps',
+      'the engine is offered only where the pepsea docker container runs; the minimal stand has none')) {
+      envHasPepsea = false;
+      return;
+    }
+    expect(engineOpts.options.length).toBeGreaterThanOrEqual(2);
     expect(hasPepsea).toBe(true);
     const hasKalign = engineOpts.options.some((o: string) =>
       o.toLowerCase().indexOf('datagrok') >= 0 || o.toLowerCase().indexOf('msa') >= 0);
