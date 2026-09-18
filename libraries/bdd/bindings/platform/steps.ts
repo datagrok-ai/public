@@ -116,8 +116,8 @@ export const saveAsProject = When('user saves the current view as project {strin
     const project = DG.Project.create();
     project.name = n;
     const tableInfo = tv.dataFrame.getTableInfo();
-    const viewInfo = tv.getInfo();
-    viewInfo.viewState = tv.saveLayout({saveWithData: true}).viewState;
+    const layout = tv.saveLayout({saveWithData: true});
+    const viewInfo = DG.ViewInfo.fromJson(layout.toJson());
     project.addChild(tableInfo);
     project.addChild(viewInfo);
     await grok.dapi.tables.uploadDataFrame(tv.dataFrame);

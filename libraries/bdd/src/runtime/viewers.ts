@@ -82,6 +82,12 @@ export async function setProperties(page: Page, target: ElementRef, entries: [st
   await onViewer(page, target, (el, [e, cap]) => (window as any).__bdd.writeProperties(el, e, cap), [entries, capMs] as [[string, string][], number]);
 }
 
+/** The properties written under `user adds a … viewer with:` — to the viewer `addViewer` just
+ * created, which a phrase naming the type would not reach when the view already had one. */
+export async function setPropertiesOfAdded(page: Page, entries: [string, string][], capMs = 300): Promise<void> {
+  await evaluate(page, ([e, cap]) => (window as any).__bdd.writePropertiesOfAdded(e, cap), [entries, capMs] as [[string, string][], number]);
+}
+
 export function readProperty(page: Page, target: ElementRef, caption: string, expected = ''): Promise<string> {
   return onViewer(page, target, (el, [c, x]) => (window as any).__bdd.readProperty(el, c, x), [caption, expected] as [string, string]);
 }

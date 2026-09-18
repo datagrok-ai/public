@@ -45,8 +45,8 @@ export const addViewer = Given('user adds (a ){viewer} viewer', (page: Page, vie
 
 export const addViewerWith = Given('user adds (a ){viewer} viewer with:', async (page: Page, viewer: string, table: string[][]) => {
   await v.addViewer(page, viewer);
-  await v.setProperties(page, {phrase: `${viewer} viewer`}, table.map(([caption, value]) => [caption, value]));
-}, {tier: 'api', description: '| property caption | value | rows applied right after adding'});
+  await v.setPropertiesOfAdded(page, table.map(([caption, value]) => [caption, value]));
+}, {tier: 'api', description: '| property caption | value | rows applied to the viewer just added, not to the first one of its type in the view'});
 
 export const setProperty = When('user sets {string} property of {widget} to {string}', (page: Page, caption: string, target: ElementRef, value: string) =>
   v.setProperties(page, target, [[caption, value]]),
