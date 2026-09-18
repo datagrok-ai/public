@@ -205,6 +205,24 @@ appears as a tab alongside **Browse** (at the bottom of the left panel). You can
 stack, close, or switch between **Browse** and **Toolbox** as needed. Reopen
 both from the **Sidebar**.
 
+##### Show and hide Top Menu sections
+
+The **Top Menu** is organized into sections: menus like **Edit** or **ML**, and
+panels of icons like **Selection**. Datagrok shows all of them by default. To
+hide the ones you don't use, right-click the **Top Menu** and clear their
+checkboxes.
+
+![Show and hide Top Menu sections](img/ribbon-sections.gif)
+
+Datagrok saves your choice with your account and applies it to every view that
+has the section. To bring a section back, right-click the **Top Menu** and
+select it again. To restore all of them, select **Reset to defaults**.
+
+You can edit the same lists on the **Settings** > **Ribbon** page. Administrators
+set them there for a group or for everyone, and lock them so members keep the
+shared value. To learn more, see
+[Managed settings](../../govern/access-control/managed-settings.md).
+
 ### Browse
 
 **Browse** is your entry point to everything on the platform - projects,
