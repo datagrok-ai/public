@@ -36,9 +36,21 @@ test('Chem | Context Panel — External Database Search Panels', async ({page}) 
 
   await page.evaluate(() => {
     const w = window as any; const DG = w.DG; const g = w.grok;
+    // Re-assert the molecule until the panel is the molecule's: a view activation restores that
+    // view's own context object, so a molecule set before that lands is overwritten.
     w.__selectMol = async (smiles: string) => {
-      g.shell.o = DG.SemanticValue.fromValueType(smiles, 'Molecule');
-      await new Promise((r) => setTimeout(r, 4000));
+      const molPanel = () => document.querySelector('.grok-prop-panel .d4-accordion-pane[d4-title="Databases"]');
+      // Assigning the same slot again is ignored while the panel already holds another object,
+      // so it is cleared first — after Scenario 2 the panel stayed on the ChEMBL result entity.
+      const deadline = Date.now() + 30000;
+      do {
+        g.shell.o = null;
+        await new Promise((r) => setTimeout(r, 300));
+        g.shell.o = DG.SemanticValue.fromValueType(smiles, 'Molecule');
+        for (let i = 0; i < 20 && !molPanel(); i++)
+          await new Promise((r) => setTimeout(r, 250));
+      } while (!molPanel() && Date.now() < deadline);
+      await new Promise((r) => setTimeout(r, 1000));
     };
     // The accordion is rebuilt whenever the context object changes, so a pane read straight after
     // a selection can predate it; poll for the pane and for the content the callers read off it.
@@ -51,7 +63,13 @@ test('Chem | Context Panel — External Database Search Panels', async ({page}) 
         if (!pane) await new Promise((r) => setTimeout(r, 200));
       }
       if (!pane) return null;
-      const header = pane.querySelector('.d4-accordion-pane-header') as HTMLElement;
+      let header = pane.querySelector('.d4-accordion-pane-header') as HTMLElement | null;
+      const headerDeadline = Date.now() + 10000;
+      while (!header && Date.now() < headerDeadline) {
+        await new Promise((r) => setTimeout(r, 200));
+        header = pane.querySelector('.d4-accordion-pane-header') as HTMLElement | null;
+      }
+      if (!header) return null;
       if (!header.classList.contains('expanded')) header.click();
       const contentDeadline = Date.now() + 20000;
       while (!pane.querySelector('.d4-accordion-pane-content') && Date.now() < contentDeadline)
@@ -153,10 +171,20 @@ test('Chem | Context Panel — External Database Search Panels', async ({page}) 
       await new Promise((r) => setTimeout(r, 1000));
       await w.__selectMol(w.__df.col('canonical_smiles').get(0));
       await w.__expand(document.querySelector('.grok-prop-panel'), 'Databases', 1500);
-      const chembl = (await w.__dbContent()).querySelector('.d4-accordion-pane[d4-title="ChEMBL"] .d4-accordion-pane-header');
+      const dbc = await w.__dbContent();
+      if (!dbc)
+        return {diag: 'no Databases pane content', panel: !!document.querySelector('.grok-prop-panel'),
+          panes: Array.from(document.querySelectorAll('.grok-prop-panel .d4-accordion-pane'))
+            .map((p: any) => p.getAttribute('d4-title')),
+          views: Array.from(w.grok.shell.views).map((v: any) => v.name), cur: w.grok.shell.v?.name};
+      const chembl = dbc.querySelector('.d4-accordion-pane[d4-title="ChEMBL"] .d4-accordion-pane-header');
       if (chembl && chembl.classList.contains('expanded')) chembl.click();
       const cs = await w.__expand(await w.__dbContent(), 'Chemspace', 10000);
+      if (!cs)
+        return {diag: 'no Chemspace pane', dbPanes: Array.from(dbc.querySelectorAll('.d4-accordion-pane'))
+          .map((p: any) => p.getAttribute('d4-title'))};
       const csC = cs.querySelector('.d4-accordion-pane-content');
+      if (!csC) return {diag: 'Chemspace pane has no content'};
       const inputs = Array.from(csC.querySelectorAll('.ui-input-root'))
         .map((r: any) => r.querySelector('.ui-input-label,label')?.textContent).filter(Boolean);
       const nested = Array.from(csC.querySelectorAll('.d4-accordion-pane')).map((p: any) => p.getAttribute('d4-title'));
@@ -171,6 +199,7 @@ test('Chem | Context Panel — External Database Search Panels', async ({page}) 
       }
       return {inputs, nested, authError, simResolved};
     });
+    expect(res.diag, `Scenario 3 could not reach the Chemspace panel: ${JSON.stringify(res)}`).toBeUndefined();
     expect(res.inputs).toContain('Ship to country');
     expect(res.inputs).toContain('Category');
     expect(res.nested).toContain('Similar');

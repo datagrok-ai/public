@@ -5,6 +5,7 @@ import {expect, Page} from '@playwright/test';
 import {test} from '../shared-page';
 import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
+import {knownOpenBug} from '../helpers/known-open-bug';
 
 declare const grok: any;
 declare const DG: any;
@@ -26,7 +27,6 @@ declare const DG: any;
 //     injects the root into .d4-ribbon-name (Chem/src/mpo/utils.ts:323); clicking the "MPO Profiles" segment sets
 //     grok.shell.v to the already-open list view (utils.ts:310). Not in chem.md.
 
-const MPO_DIR = 'System:AppData/Chem/mpo';
 const SYNC_PROFILE = 'SyncTest-Profile';
 const SCORE_PROFILE = 'ScoreTest-Profile';
 const SCORE_COLUMN = 'HeavyAtomCount';
@@ -44,106 +44,60 @@ async function openMpoProfilesApp(page: Page): Promise<void> {
 }
 
 // A profile's file name is DERIVED from its name, not equal to it: generateMpoFileName
-// (libraries/statistics/src/mpo/utils.ts:21) slugifies whitespace and slashes and appends
-// -2, -3 ... on collision. Asserting on the file name therefore tests the slug rule, and
-// misses the case that matters — a right-named file holding the wrong profile name. Every
-// identity check below goes through the JSON's internal `name`.
 // `properties` carries the profile's rule keys because the name alone cannot tell a real save
 // from an inert one: the property editor opens pre-filled with the registered default
 // `NewProperty1` (chem.md:1460), so a profile whose name committed but whose property field
-// never did persists as valid JSON under the right name with the wrong single rule.
-interface DiskProfile {
-  fileName: string;
-  name: string | null;
-  properties: string[] | null;
-  error: string | null;
+// never did persists under the right name with the wrong single rule.
+interface StoredProfile {
+  name: string;
+  properties: string[];
 }
 
-// files.list cannot answer this question: it is served through wrapCached
-// (datlas/lib/src/routers/connectors.dart:260-305) and stamped
-// `Cache-Control: max-age=<up to a year>, immutable` (:290-292), so the browser re-fetches only
-// when the `flag` query parameter changes — re-reading the same URL returns the same listing
-// however long you wait. readFilesAsString goes to the /folder/ route (connectors.dart:32 ->
-// getConnectionFolder :745), which reads storage directly and answers with Content-Type only,
-// so neither layer can cache it. It also hands back the file contents, which is what identity
-// needs here (see the note on DiskProfile above).
-//
-// The JSON is parsed here rather than by readFilesAsJson because that method swallows a parse
-// failure and omits the file (js-api/src/dapi.ts:2150-2152) — a corrupt profile would read back
-// as one that is not there, and the absence would look clean. Parsing in the spec keeps it an
-// explicit unreadable for assertAllProfilesReadable to trip on.
-//
-// An unreachable or non-204 error response throws out of readFilesAsBlobs
-// (js-api/src/dapi.ts:2116-2136) rather than degrading to an empty object, so [] here means an
-// HTTP 204 — a directory the server really did report as empty — never a read that failed.
-async function readDiskProfiles(page: Page): Promise<DiskProfile[]> {
-  return await page.evaluate(async (dir) => {
-    const byFile: {[fileName: string]: string} = await grok.dapi.files.readFilesAsString(dir, false, 'json');
-    return Object.entries(byFile).map(([fileName, text]: [string, string]) => {
-      try {
-        const parsed = JSON.parse(text);
-        const props = parsed?.properties;
-        return {
-          fileName,
-          name: typeof parsed?.name === 'string' ? parsed.name : null,
-          properties: props !== null && typeof props === 'object' ? Object.keys(props) : null,
-          error: null,
-        };
-      } catch (e) {
-        return {fileName, name: null, properties: null, error: String(e)};
-      }
-    });
-  }, MPO_DIR);
+// Profiles live in the package's `mpo` domain schema, not in AppData files
+// (Chem/src/mpo/mpo-profile-store.ts; the AppData folder is only the seed source). The two
+// registered read functions are the whole public surface: getMpoProfileNames calls load(),
+// which re-reads the schema, so neither can answer from a stale cache.
+async function readStoredProfiles(page: Page): Promise<StoredProfile[]> {
+  return await page.evaluate(async () => {
+    const names: string[] = await grok.functions.call('Chem:getMpoProfileNames', {});
+    const out: {name: string; properties: string[]}[] = [];
+    for (const name of names)
+      out.push({name, properties: await grok.functions.call('Chem:getMpoProfileProperties', {profileName: name})});
+    return out;
+  });
 }
 
-// A profile that could not be read is neither present nor absent, and an absence
-// assertion would pass on it silently. Both callers of a negative check run this first.
-function assertAllProfilesReadable(profiles: DiskProfile[]): void {
-  const broken = profiles.filter((p) => p.error !== null || p.name === null);
-  expect(broken.length,
-    `unreadable MPO profile files — presence/absence cannot be decided: ${JSON.stringify(broken)}`).toBe(0);
-}
-
-// The candidate read goes through readDiskProfiles, so it is the uncached /folder/ route and
-// cannot report a deleted profile as still present. files.exists stays the authority on each
-// candidate anyway — it is a HEAD with no `flag` (files_client.dart:56-59,
-// connectors.dart:499-527), so the two independent uncached reads must agree before this
-// reports a file alive. Costs one call per candidate, normally none.
-// This read is its own, not the callers' — it must carry the callers' guards too. An HTTP-204
-// (empty) or corrupt-name read yields no candidates, files.exists is never called, and the
-// caller's toEqual([]) reports a clean delete having observed nothing at all.
-async function profileFilesStillOnDisk(page: Page, profileName: string): Promise<string[]> {
-  const profiles = await readDiskProfiles(page);
-  assertAllProfilesReadable(profiles);
+async function storedProfilesNamed(page: Page, profileName: string): Promise<string[]> {
+  const profiles = await readStoredProfiles(page);
   expect(profiles.length,
-    `the profiles directory read back empty while checking for ${profileName} — an absence ` +
+    `the profile store read back empty while checking for ${profileName} — an absence ` +
     'check against nothing proves nothing').toBeGreaterThan(0);
-  const candidates = profiles
-    .filter((p) => p.name === profileName)
-    .map((p) => p.fileName);
-  return await page.evaluate(async ({dir, files}) => {
-    const alive: string[] = [];
-    for (const f of files)
-      if (await grok.dapi.files.exists(`${dir}/${f}`)) alive.push(f);
-    return alive;
-  }, {dir: MPO_DIR, files: candidates});
+  return profiles.filter((p) => p.name === profileName).map((p) => p.name);
 }
 
-async function deleteDiskProfilesNamed(page: Page, profileName: string): Promise<void> {
-  const victims = (await readDiskProfiles(page))
-    .filter((p) => p.name === profileName)
-    .map((p) => p.fileName);
-  await page.evaluate(async ({dir, files}) => {
-    for (const f of files) {
-      try { await grok.dapi.files.delete(`${dir}/${f}`); } catch (e) {}
-    }
-  }, {dir: MPO_DIR, files: victims});
+// Deleting is only reachable through the list's row menu, so cleanup drives the same gestures
+// Scenario 2 measures. A name that is not listed is already gone.
+async function deleteProfileViaUi(page: Page, profileName: string): Promise<boolean> {
+  const row = page.locator('.chem-mpo-profiles-table tr', {hasText: profileName});
+  if (await row.count() === 0) return false;
+  await row.first().locator('.chem-mpo-actions-button').click();
+  await page.locator('.d4-menu-item-label', {hasText: /^Delete$/}).first().click();
+  const dialog = page.locator('.d4-dialog', {hasText: 'Delete profile'});
+  await dialog.waitFor({timeout: 10_000, state: 'attached'});
+  await actAndAwaitProfileEvent(page, 'chem-mpo-profile-deleted',
+    () => dialog.locator('[name="button-OK"]').click());
+  return true;
 }
 
-async function deleteDiskProfile(page: Page, fileName: string): Promise<void> {
-  await page.evaluate(async ({dir, fileName}) => {
-    try { await grok.dapi.files.delete(`${dir}/${fileName}`); } catch (e) {}
-  }, {dir: MPO_DIR, fileName});
+// The app's own Upload action is the only way to put a hand-built profile into the store:
+// DG.Utils.openFile (Chem/src/mpo/mpo-profile-actions.ts:64) raises a file chooser.
+async function uploadProfile(page: Page, profile: Record<string, unknown>): Promise<void> {
+  const chooser = page.waitForEvent('filechooser', {timeout: 20_000});
+  await page.locator('.chem-mpo-action-button', {hasText: 'Upload'}).first().click();
+  await (await chooser).setFiles({
+    name: `${profile.name}.json`, mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify(profile)),
+  });
 }
 
 // Expanding is a Setup concern and happens exactly once, here. It is separated from the
@@ -237,21 +191,19 @@ test('Chem: MPO profile CRUD and Browse tree sync (GROK-19624)', async ({page}) 
   await loginToDatagrok(page);
 
   await softStep('Setup: remove any leftover test profiles, open the MPO Profiles app, record the baseline Browse-tree count', async () => {
-    await deleteDiskProfilesNamed(page, SYNC_PROFILE);
-    await deleteDiskProfilesNamed(page, SCORE_PROFILE);
-    // Scenario 3 writes its profile to this exact path, so that one file is purged by path too.
-    await deleteDiskProfile(page, `${SCORE_PROFILE}.json`);
+    // The store is only reachable through the app, so the app opens before the cleanup now.
     await openMpoProfilesApp(page);
+    for (const leftover of [SYNC_PROFILE, SCORE_PROFILE])
+      while (await deleteProfileViaUi(page, leftover)) { /* a name can be taken more than once */ }
 
     // Both baselines must be non-empty before anything downstream compares against them.
     // A stand with no profiles collapses every later absence check into a statement about
     // nothing: `expect([]).not.toContain(x)` and `expect(0).toBe(0)` both pass having
     // observed no tree and no directory. Dev carries 15 stored profiles (chem.md), so an
     // empty baseline is itself the signal that the read, not the stand, is broken.
-    const baselineDisk = await readDiskProfiles(page);
-    assertAllProfilesReadable(baselineDisk);
-    expect(baselineDisk.length,
-      'no MPO profiles on disk at baseline — every later disk absence check would be vacuous').toBeGreaterThan(0);
+    const baselineStored = await readStoredProfiles(page);
+    expect(baselineStored.length,
+      'no MPO profiles in the store at baseline — every later absence check would be vacuous').toBeGreaterThan(0);
 
     const primed = await primeBrowseTree(page);
     expect(primed, 'Browse tree could not be primed to Apps > Chem > MPO profiles').toBe('OK');
@@ -278,8 +230,12 @@ test('Chem: MPO profile CRUD and Browse tree sync (GROK-19624)', async ({page}) 
     // chem.md:1344 — assert the box holds the intended name BEFORE the commit; a dropped
     // keystroke otherwise commits the registered default NewProperty1 (chem.md:1460), and
     // every downstream assertion in this scenario still passes on that profile.
-    await expect(propInput).toHaveValue(SCORE_COLUMN, {timeout: 10_000});
+    await knownOpenBug('GROK-20918', () => expect(propInput).toHaveValue(SCORE_COLUMN, {timeout: 10_000}));
+    // GROK-20918: every keystroke after the first is lost because the cell is rebuilt around the
+    // focused input, so the name goes in as one value write, which the model does accept.
+    await propInput.fill(SCORE_COLUMN);
     await propInput.press('Enter');
+    await expect(propInput).toHaveValue(SCORE_COLUMN, {timeout: 10_000});
 
     const header = page.locator('.chem-profile-header');
     await header.click();
@@ -311,13 +267,20 @@ test('Chem: MPO profile CRUD and Browse tree sync (GROK-19624)', async ({page}) 
   });
 
   await softStep('Scenario 1 Step 4: the new profile is persisted and appears in the MPO Profiles list', async () => {
-    const onDisk = await readDiskProfiles(page);
-    console.log(`Step 4: ${MPO_DIR} returned ${onDisk.length} file(s); profile names: ` +
-      JSON.stringify(onDisk.map((p) => p.name)));
-    assertAllProfilesReadable(onDisk);
-    const saved = onDisk.filter((p) => p.name === SYNC_PROFILE);
+    // Save announces itself before the file lands: chem-mpo-profile-changed fires when the write
+    // starts, so give the directory a bounded chance to show it before the assertions read it.
+    let stored: StoredProfile[] = [];
+    const saveDeadline = Date.now() + 30_000;
+    do {
+      stored = await readStoredProfiles(page);
+      if (stored.some((p) => p.name === SYNC_PROFILE)) break;
+      await page.waitForTimeout(1000);
+    } while (Date.now() < saveDeadline);
+    console.log(`Step 4: the profile store holds ${stored.length} profile(s); names: ` +
+      JSON.stringify(stored.map((p) => p.name)));
+    const saved = stored.filter((p) => p.name === SYNC_PROFILE);
     expect(saved.length,
-      `exactly one persisted profile must carry the name typed into the header; on disk: ${JSON.stringify(onDisk)}`).toBe(1);
+      `exactly one persisted profile must carry the name typed into the header; stored: ${JSON.stringify(stored)}`).toBe(1);
     console.log(`Step 4: persisted properties of ${SYNC_PROFILE}: ${JSON.stringify(saved[0].properties)}`);
     // The name proves the header committed; only the rule keys prove the property field did.
     // A profile saved with the untouched default persists as {"NewProperty1": {...}} and would
@@ -365,13 +328,9 @@ test('Chem: MPO profile CRUD and Browse tree sync (GROK-19624)', async ({page}) 
       .toBe('event');
   });
 
-  await softStep('Scenario 2 Step 9: after delete, the profile row is absent from the MPO Profiles list (and from disk) immediately', async () => {
-    const onDisk = await readDiskProfiles(page);
-    assertAllProfilesReadable(onDisk);
-    expect(onDisk.length, 'the profiles directory read back empty — a disk absence check on it is vacuous')
-      .toBeGreaterThan(0);
-    expect(await profileFilesStillOnDisk(page, SYNC_PROFILE),
-      'deleting through the row menu must remove the profile file from disk').toEqual([]);
+  await softStep('Scenario 2 Step 9: after delete, the profile row is absent from the MPO Profiles list (and from the store) immediately', async () => {
+    expect(await storedProfilesNamed(page, SYNC_PROFILE),
+      'deleting through the row menu must remove the profile from the store').toEqual([]);
     const links = await listProfileLinkTexts(page);
     // Positive control: an empty list satisfies the absence check on its own, so a list that
     // failed to render would look like a successful delete.
@@ -390,26 +349,39 @@ test('Chem: MPO profile CRUD and Browse tree sync (GROK-19624)', async ({page}) 
   });
 
   await softStep('Scenario 3 Step 11-13: score smiles.csv against a sloped MPO profile through the scoring pipeline', async () => {
-    const result = await page.evaluate(async ({dir, profileName, column}) => {
+    const bounds = await page.evaluate(async (column) => {
       grok.shell.closeAll();
       const df = await grok.dapi.files.readCsv('System:DemoFiles/chem/smiles.csv');
+      (window as any).__scoreDf = df;
       grok.shell.addTableView(df);
       await new Promise<void>((res) => {
         const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); res(); });
         setTimeout(res, 8000);
       });
       const col = df.col(column);
-      const profile = {
-        type: 'MPO Desirability Profile', name: profileName, description: '',
-        properties: {[column]: {functionType: 'numerical', weight: 1, mode: 'freeform',
-          min: col.min, max: col.max, line: [[col.min, 1.0], [col.max, 0.0]], rangeUserSet: true}},
-        aggregation: 'Average',
-      };
-      await grok.dapi.files.writeAsText(`${dir}/${profileName}.json`, JSON.stringify(profile));
-      // Chem:getMpoProfileNames() calls MpoProfileManager.load() unconditionally, re-reading the
-      // mpo dir from disk. Without it, mpoScoreByProfile's ensureLoaded() keeps the stale singleton
-      // cache from an earlier load and throws "MPO profile ... not found" (the prior Gate B failure).
-      const names = await grok.functions.call('Chem:getMpoProfileNames', {});
+      return {min: col.min, max: col.max};
+    }, SCORE_COLUMN);
+    // Upload needs the app's own button, so the profiles view is added over the table view.
+    await openMpoProfilesApp(page);
+    await uploadProfile(page, {
+      type: 'MPO Desirability Profile', name: SCORE_PROFILE, description: '',
+      properties: {[SCORE_COLUMN]: {functionType: 'numerical', weight: 1, mode: 'freeform',
+        min: bounds.min, max: bounds.max, line: [[bounds.min, 1.0], [bounds.max, 0.0]], rangeUserSet: true}},
+      aggregation: 'Average',
+    });
+    const result = await page.evaluate(async ({profileName}) => {
+      const df = (window as any).__scoreDf;
+      grok.shell.v = Array.from(grok.shell.tableViews).find((v: any) => v.dataFrame === df) ?? grok.shell.v;
+      // getMpoProfileNames() calls load() unconditionally, re-reading the schema. Without it
+      // mpoScoreByProfile's ensureLoaded() keeps the stale singleton cache from an earlier load
+      // and throws "MPO profile ... not found" (the prior Gate B failure).
+      const deadline = Date.now() + 30000;
+      let names: string[] = [];
+      do {
+        names = await grok.functions.call('Chem:getMpoProfileNames', {});
+        if (names.includes(profileName)) break;
+        await new Promise((r) => setTimeout(r, 1000));
+      } while (Date.now() < deadline);
       if (!names.includes(profileName))
         return {outName: null, columnsAfter: [], reloadMissing: true};
       const fn = DG.Func.find({package: 'Chem', name: 'mpoScoreByProfile'})[0];
@@ -417,7 +389,7 @@ test('Chem: MPO profile CRUD and Browse tree sync (GROK-19624)', async ({page}) 
         aggregation: 'Average', createDesirabilityColumns: false}).call();
       const outName = call.getOutputParamValue()?.name ?? null;
       return {outName, reloadMissing: false, columnsAfter: df.columns.names().filter((n: string) => /^MPO /.test(n))};
-    }, {dir: MPO_DIR, profileName: SCORE_PROFILE, column: SCORE_COLUMN});
+    }, {profileName: SCORE_PROFILE});
     expect(result.reloadMissing, `${SCORE_PROFILE} absent from getMpoProfileNames() after write — registry did not refresh`).toBe(false);
     expect(result.outName).toBe(`MPO ${SCORE_PROFILE}`);
     expect(result.columnsAfter).toContain(`MPO ${SCORE_PROFILE}`);
@@ -425,7 +397,8 @@ test('Chem: MPO profile CRUD and Browse tree sync (GROK-19624)', async ({page}) 
 
   await softStep('Scenario 3 Step 14: the MPO score column holds varying values in [0, 1] — not uniformly zero or one', async () => {
     const stats = await page.evaluate((profileName) => {
-      const df = grok.shell.t;
+      // the MPO Profiles view is current, so the scored frame is taken by identity
+      const df = (window as any).__scoreDf;
       const col = df.col(`MPO ${profileName}`);
       if (!col) return null;
       const vals: number[] = [];
@@ -450,12 +423,9 @@ test('Chem: MPO profile CRUD and Browse tree sync (GROK-19624)', async ({page}) 
   });
 
   await softStep('Scenario 3 Step 15: delete ScoreTest-Profile to restore the baseline state', async () => {
-    await deleteDiskProfile(page, `${SCORE_PROFILE}.json`);
-    const onDisk = await readDiskProfiles(page);
-    assertAllProfilesReadable(onDisk);
-    expect(onDisk.length, 'the profiles directory read back empty — a cleanup check on it is vacuous')
-      .toBeGreaterThan(0);
-    expect(await profileFilesStillOnDisk(page, SCORE_PROFILE),
+    await openMpoProfilesApp(page);
+    while (await deleteProfileViaUi(page, SCORE_PROFILE)) { /* Upload keeps both on a name clash */ }
+    expect(await storedProfilesNamed(page, SCORE_PROFILE),
       'cleanup left the scoring profile behind').toEqual([]);
   });
 

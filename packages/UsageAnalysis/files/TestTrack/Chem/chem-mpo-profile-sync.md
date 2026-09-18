@@ -13,6 +13,8 @@ produced_from: atlas-driven
 related_bugs:
   - id: GROK-19624
     status: fixed
+  - id: GROK-20918
+    status: open
 source_text_fixes:
   - >-
     Setup Step 1, Scenario 1 Step 3 and Scenario 3 Steps 11 and 14 named MW as
@@ -49,10 +51,14 @@ scope_reductions:
     verdict_status: SCOPE_REDUCTION
   - anchor: "Scenario 3 Steps 11-13"
     reduction: >-
-      Profile creation and MPO scoring are driven through the JS API
-      (grok.dapi.files.writeAsText of the profile JSON, then DG.Func
-      mpoScoreByProfile.prepare().call()) instead of through Chem > Calculate >
-      MPO Score... and its Manage Profiles > Create profile route.
+      Profile creation and MPO scoring are driven through the app's own Upload
+      action (the profile JSON handed to the file chooser) and DG.Func
+      mpoScoreByProfile.prepare().call(), instead of through Chem > Calculate >
+      MPO Score... and its Manage Profiles > Create profile route. Profiles live
+      in the package's mpo domain schema since #4033, so persistence is verified
+      through Chem:getMpoProfileNames / Chem:getMpoProfileProperties rather than
+      by reading System:AppData/Chem/mpo, and deletion goes through the list's
+      row menu because the schema has no public delete function.
     rationale: >-
       The profile-editor UI path is actuated end-to-end in Scenario 1, so the
       editor itself is not left untested. Scenario 3 exists for the scoring
