@@ -2,7 +2,7 @@
 sub_features_covered: [peptides.compute.calculate-monomer-position-statistics, peptides.rendering.weblogo-header, peptides.util.get-selection-bitset, peptides.workflow.sar-dialog, peptides.workflow.start-analysis]
 --- */
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {loginToDatagrok, onHostedRunner, specTestOptions, softStep} from '@datagrok-libraries/test/src/playwright/spec-login';
 import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 import {waitForViewers} from './helpers';
 test.use(specTestOptions);
@@ -140,6 +140,8 @@ function assertNoNullReceiverCrash(lastError: string, threshold: number) {
 }
 test('SAR Similarity-threshold matrix — graceful across low/medium/high/extreme (GROK-19145)', async ({page}) => {
   test.setTimeout(600_000);
+  test.skip(onHostedRunner(),
+    'four SAR launches with MCL clustering: 227 s each on a hosted runner against 39-44 s on dev; the nightly covers it on a 32-core agent');
   await loginToDatagrok(page);
   await softStep('Setup: open the peptides Macromolecule table', async () => {
     const result = await openPeptidesTable(page);

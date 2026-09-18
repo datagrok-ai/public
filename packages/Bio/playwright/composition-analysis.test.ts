@@ -153,11 +153,6 @@ test('Bio | Analyze | Composition — composition analysis integration', async (
       });
       expect(opened.found).toBe(true);
       expect(opened.pg).toBe(true);
-      // TEMPORARY instrumentation (revert before merge): the row never appears on GitHub
-      // Actions while the pane itself is up — this says which rows the grid did render.
-      const rows = await page.evaluate(() => Array.from(
-        document.querySelectorAll('.grok-prop-panel tr[name^="prop-"]')).map((e) => e.getAttribute('name')));
-      console.log(`[weblogo-probe] prop rows=${JSON.stringify(rows)}`);
       // Property row sits in a collapsed accordion — wait for 'attached', not 'visible'.
       // The grid renders its rows in a second pass, which a two-core CI agent does not
       // finish within 10 s even though the pane itself is already up.
