@@ -5,6 +5,7 @@ import {expect, Page} from '@playwright/test';
 import {localTest as test} from '@datagrok-libraries/test/src/playwright/shared-page';
 import {openDatagrok, specTestOptions, softStep, isLocalBootNoise} from '@datagrok-libraries/test/src/playwright/spec-login';
 import * as v from '@datagrok-libraries/test/src/playwright/viewers';
+import {knownOpenBug} from '@datagrok-libraries/test/src/playwright/known-open-bug';
 
 declare const grok: any;
 declare const DG: any;
@@ -336,11 +337,6 @@ async function hoverRowHeaderTooltip(page: Page, g: Geometry): Promise<string> {
 }
 
 test('Correlation plot — property surface smoke', async ({page}) => {
-  // a known product defect, not a flaky step: the plot sets minScale=-1/maxScale=1 per grid column
-  // but color_coding.dart:322-337 colours each column over its own range, so a near-zero r is as
-  // saturated as a strong one and the Color-coding lightness probe fails; expected until fixed, so
-  // the run does not pay a worker restart (one boot) for it
-  test.fail(true, 'correlation plot ignores its own colour scale (color_coding.dart:322-337)');
   test.setTimeout(600_000);
 
   await openDatagrok(page);
@@ -973,9 +969,16 @@ test('Correlation plot — property surface smoke', async ({page}) => {
       expect(neg![2]).toBeGreaterThan(neg![0]);
       expect(pos![0]).toBeGreaterThan(pos![2]);
 
+      // GROK-20919: the cells are coloured over each column's own range instead of the plot's
+      // -1..1 scale, so the same coefficient differs between mirrored cells and a near-zero r is
+      // painted as strongly as a real one. Both consequences are asserted for the fixed behaviour.
+      const mirrorOfNearZero = await cellPixel(colsNow.x.indexOf('AGE'), colsNow.y.indexOf('WEIGHT'));
       const lightness = (p: number[]) => Math.min(p[0], p[1], p[2]);
-      expect(lightness(nearZero!)).toBeGreaterThan(lightness(neg!));
-      expect(lightness(nearZero!)).toBeGreaterThan(lightness(pos!));
+      await knownOpenBug('GROK-20919', () => {
+        expect(nearZero!.slice(0, 3)).toEqual(mirrorOfNearZero!.slice(0, 3));
+        expect(lightness(nearZero!)).toBeGreaterThan(lightness(neg!));
+        expect(lightness(nearZero!)).toBeGreaterThan(lightness(pos!));
+      });
 
       await openCellMenu(page, geom, xiH, yiA);
       await hoverMenuGroupTrusted(page, 'div-Grid');
