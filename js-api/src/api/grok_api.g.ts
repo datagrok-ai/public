@@ -1542,6 +1542,8 @@ export interface IDartApi {
   grok_Stats_Get_Q3(s: any): any;
   grok_Stats_Corr(s: any, other: any): any;
   grok_Stats_SpearmanCorr(s: any, other: any): any;
+  grok_Stats_CumSum(s: any, orderBy: any, ascending: any, by: any, order: any): any;
+  grok_Stats_MovingAvg(s: any, window: Num, minPeriods: Num, orderBy: any, ascending: any, by: any, order: any): any;
   grok_Stats_HistogramsByCategories(valueColumn: any, catColumn: any): any;
   grok_RowList_RemoveAt(rows: any, idx: Num, count?: Num, notify?: Bool): any;
   grok_RowList_RemoveWhere(rows: any, check: any): any;
