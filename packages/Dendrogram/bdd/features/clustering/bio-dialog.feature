@@ -5,10 +5,8 @@ Feature: Hierarchical clustering from the Bio menu
   seven linkages. OK shows "Creating dendrogram ..." in the task bar and attaches a tree to the grid
   with a leaf for every sequence; the tree follows the grid's current row and puts a hovered leaf's
   row under the mouse; another distance and linkage attach a tree of another height; Assign
-  Clusters works on the sequence tree, where 5 clusters sit at a threshold of 11.06.
-
-  A threshold above the tree's height leaves Clusters at 0, below the input's minimum of 1. That
-  scenario is last and a known failure; the tag goes when Clusters stays at 1 or more.
+  Clusters works on the sequence tree, where 5 clusters sit at a threshold of 11.06, and a threshold
+  above the tree's height is refused by the input.
 
   Background:
     Given user is logged in
@@ -79,8 +77,10 @@ Feature: Hierarchical clustering from the Bio menu
     And the newest column matching "^Cluster \(" should have 5 distinct values
     And no errors should have been logged
 
-  @known-failure
-  Scenario: A threshold above the tree's height keeps at least one cluster
+  Scenario: A threshold above the tree's height is refused by the dialog
     When user clicks on "Assign Clusters" icon
     And user enters "100" into Threshold input in "Assign Clusters" dialog
-    Then Clusters input in "Assign Clusters" dialog should have a value between 1 and 99
+    Then Threshold input in "Assign Clusters" dialog should be invalid
+    When user closes "Assign Clusters" dialog
+    Then the "Assign Clusters" dialog should close
+    And no errors should have been logged

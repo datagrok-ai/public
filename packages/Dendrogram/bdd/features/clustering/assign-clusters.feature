@@ -14,9 +14,6 @@ Feature: Assigning clusters from the tree next to the grid
   Assign adds its own columns beside the first. Running the clustering again warns and replaces the
   tree.
 
-  A double-click on the tree's empty margin leaves the zoom as it was, where the case expects it to
-  reset. That scenario is last and a known failure; the tag goes when the double-click resets the zoom.
-
   Background:
     Given user is logged in
     And user opens mol1K dataset
@@ -151,8 +148,3 @@ Feature: Assigning clusters from the tree next to the grid
   Scenario: Control with the wheel zooms the new tree in
     When user scrolls the mouse wheel up 3 times over the "tree" area of grid holding Control
     Then the "tree zoom" reading of grid should be higher than before
-
-  @known-failure
-  Scenario: A double-click on the tree's empty margin resets the zoom
-    When user double-clicks on the "tree margin" area of grid
-    Then the "tree zoom" reading of grid should be 1

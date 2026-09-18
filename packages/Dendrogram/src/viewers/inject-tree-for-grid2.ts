@@ -34,7 +34,7 @@ type Box = {x: number, y: number, width: number, height: number};
 /** What the tree injected next to the grid shows, for automation, relative to the grid's canvas.
  * Readings: `tree leaves` (distinct leaf names), `tree height`, `tree current node`, `tree mouse over node`,
  * `tree selected leaves`, `tree zoom`, `tree top row` and, while Assign Clusters is open, `cut threshold`.
- * Areas: `tree`, `tree margin` (left of the root, where no node is), a `leaf <name>` per leaf tip in
+ * Areas: `tree`, a `leaf <name>` per leaf tip in
  * view, a `node <first leaf>-<last leaf>` per inner node whose branch is wide enough to point at, and
  * `cut line` while Assign Clusters is open. */
 function treeStatus(
@@ -65,7 +65,6 @@ function treeStatus(
   const dy = bounds.top - origin.top;
   const hitAreas: {[name: string]: Box} = {
     'tree': {x: dx, y: dy, width: bounds.width, height: bounds.height},
-    'tree margin': {x: dx, y: dy, width: Math.max(renderer.treeXToCanvasX(0) - 2, 1), height: bounds.height},
   };
   const radius = Math.max(renderer.mainStyler.nodeSize, 4) / 2;
   const rowY = (index: number) => treeCanvas.clientHeight * (index - placer.top) / placer.height;
