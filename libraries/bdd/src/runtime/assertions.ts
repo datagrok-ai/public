@@ -79,9 +79,11 @@ async function expectExpanded(loc: Locator, expanded: boolean): Promise<void> {
 }
 
 /** Disabled: the element or an ancestor says so (`aria-disabled`, the u2/Dart disabled classes),
- * or it — or the control inside it — is natively disabled. Over the visible matches when there
- * are any (the Dart menu's hidden mirror), else all of them (a property row in a panel that is
- * not shown still says whether it is gated). One query per poll. */
+ * or it — or the control inside it — is natively disabled. A suspended filter card says so with
+ * `d4-filter-disabled` on itself alone, not inherited: its header keeps the checkbox that resumes
+ * it. Over the visible matches when there are any (the Dart menu's hidden mirror), else all of
+ * them (a property row in a panel that is not shown still says whether it is gated). One query
+ * per poll. */
 async function expectEnabled(loc: Locator, enabled: boolean): Promise<void> {
   const disabled = () => loc.evaluateAll((all) => {
     const shown = all.filter((e) => e.getClientRects().length > 0 && getComputedStyle(e).visibility !== 'hidden');
@@ -91,6 +93,8 @@ async function expectEnabled(loc: Locator, enabled: boolean): Promise<void> {
     const marked = (e: Element) => e.getAttribute('aria-disabled') === 'true' ||
       ['u2-input-disabled', 'd4-disabled', 'd4-menu-item-disabled'].some((c) => e.classList.contains(c));
     return els.every((el) => {
+      if (el.classList.contains('d4-filter-disabled'))
+        return true;
       for (let e: Element | null = el; e; e = e.parentElement) {
         if (marked(e))
           return true;
