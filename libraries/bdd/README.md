@@ -111,7 +111,9 @@ accept (`[a-z0-9._-]`) and a reader can sort: the users a creation feature makes
 so they are named by it. String arguments, element phrases, data tables and doc strings resolve both
 at runtime;
 generated specs stay deterministic. Cleanup registered with `atFeatureEnd` attempts every callback
-and fails the run if any callback fails.
+and fails the run if any callback fails; a run that was killed never gets there, so the server
+steps that make or clear a `{run}`- or `{time}`-named fixture also delete the ones of the same
+family left by any run older than an hour.
 
 **`@journey`** on the feature changes that: the feature is one test, the Background runs once, and
 the scenarios run in order on the same shell state, each a soft step — a failing scenario is

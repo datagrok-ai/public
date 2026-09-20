@@ -182,11 +182,14 @@ export const browsePanelOpen = Given('the browse panel is open', async (page: Pa
 export const toolboxPaneShown = Given('the toolbox pane is shown', async (page: Page) => {
   await page.evaluate(() => {
     grok.shell.windows.simpleMode = false;
+    // a toolbox restored open by the user's layout and hidden at startup while empty still reads
+    // as shown, and the setter ignores a value it already has: off, then on, docks it again
+    grok.shell.windows.showToolbox = false;
     grok.shell.windows.showToolbox = true;
   });
   await expect(page.locator('.d4-toolbox[caption]').first(), 'the toolbox pane').toBeVisible({timeout: 15000});
   atFeatureEnd(page, () => page.evaluate(() => { grok.shell.windows.showToolbox = false; grok.shell.windows.simpleMode = true; }));
-}, {tier: 'api', description: 'idempotent: leaves simple mode and shows the toolbox pane (off by default for a user, and hidden at startup while empty); puts both back at feature end'});
+}, {tier: 'api', description: 'idempotent: leaves simple mode and docks the toolbox pane afresh (off by default for a user, hidden at startup while empty); puts both back at feature end'});
 
 /* --- the context panel -------------------------------------------------------------------------
    The panel renders the current object (`grok.shell.o`) and nothing else: a click that did not
@@ -278,7 +281,7 @@ export const sharingPaneListsNot = Then('the sharing pane should not list the sh
 // Space and group name filters miss existing entities, so names are matched after reading every page.
 type NamedSource = 'spaces' | 'models' | 'groups';
 type CleanupSource = NamedSource | 'projects' | 'tables';
-type ServerEntity = {id: string; name: string; friendlyName: string; children?: string[]};
+type ServerEntity = {id: string; name: string; friendlyName: string; createdOn: number; children?: string[]};
 type CleanupStage = {source: CleanupSource; ids: string[]};
 
 async function serverEntities(page: Page, source: CleanupSource, filter = ''): Promise<ServerEntity[]> {
@@ -296,6 +299,7 @@ async function serverEntities(page: Page, source: CleanupSource, filter = ''): P
         const entities = await data.list({pageSize: 1000, pageNumber});
         for (const entity of entities)
           result.push({id: entity.id, name: entity.name, friendlyName: entity.friendlyName,
+            createdOn: entity.createdOn?.valueOf() ?? 0,
             children: src === 'projects' ? entity.children.map((child: any) => child.id) : undefined});
         if (entities.length < 1000)
           return result;
@@ -347,7 +351,24 @@ async function deleteGlobalGrantsOf(page: Page, entity: ServerEntity): Promise<v
       await api.remove(`/privileges/permissions/${grant.id}`);
 }
 
+/* A fixture name ends in its run's {run} or {time}. A run that was killed never reached its
+   feature-end cleanup, so the fixtures of the same family that are older than any live feature go too. */
+const RUN_SUFFIX = /-(\d{13,}|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/;
+const STALE_AFTER_MS = 60 * 60 * 1000;
+
+export const fixtureFamilies = (names: string[]): string[] =>
+  names.filter((name) => RUN_SUFFIX.test(name)).map((name) => name.replace(RUN_SUFFIX, ''));
+
+export function isStaleFixture(entity: {name: string; friendlyName: string; createdOn: number}, families: string[],
+  now = Date.now()): boolean {
+  if (entity.createdOn === 0 || now - entity.createdOn < STALE_AFTER_MS)
+    return false;
+  return [entity.friendlyName, entity.name]
+    .some((name) => RUN_SUFFIX.test(name) && families.includes(name.replace(RUN_SUFFIX, '')));
+}
+
 function namedCleanup(page: Page, source: NamedSource, what: string, names: string[]): () => Promise<void> {
+  const families = fixtureFamilies(names);
   let createdAfter: number | undefined;
   let authorId: string;
   const pending = new Map<string, CleanupStage[]>();
@@ -375,7 +396,8 @@ function namedCleanup(page: Page, source: NamedSource, what: string, names: stri
           authorId = owner.authorId;
         }
         const named = (await serverEntities(page, source))
-          .filter((entity) => names.includes(entity.friendlyName) || names.includes(entity.name));
+          .filter((entity) => names.includes(entity.friendlyName) || names.includes(entity.name) ||
+            isStaleFixture(entity, families));
         for (const entity of named) {
           if (pending.has(entity.id))
             continue;
