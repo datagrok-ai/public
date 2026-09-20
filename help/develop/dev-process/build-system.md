@@ -39,7 +39,8 @@ grok setup
 `grok setup` does the following:
 
 * Enables pnpm through `corepack` at the version the repository pins
-* Removes `node_modules` folders and `package-lock.json` files that npm left inside packages
+* Removes `node_modules` folders and `package-lock.json` files that npm left inside packages, and the
+  `.js`/`.d.ts` files that the npm-era `tsc` emitted next to JS API and library sources
 * Runs `pnpm install` for the whole workspace
 * Warns you when the global `grok` is older than the one in the repository
 
