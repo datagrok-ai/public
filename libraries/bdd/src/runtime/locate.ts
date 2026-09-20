@@ -83,7 +83,7 @@ export async function locate(page: Page, target: ElementRef | string, within?: L
 /** The element a gesture or a state check acts on: the visible matches of the phrase (a Dart menu
  * keeps a zero-size mirror of every item under "Properties..."; a closed view leaves its viewers
  * behind). Several visible matches stay ambiguous — Playwright's strict mode reports them; an
- * ordinal names its element as counted, visible or not. No roundtrip of its own. */
+ * ordinal counts the visible ones too. No roundtrip of its own. */
 export async function locateActionable(page: Page, target: ElementRef | string, within?: Locator): Promise<Locator> {
   const ref = refOf(page, target);
   const loc = await locateRef(page, ref, within);
@@ -118,10 +118,13 @@ export async function locateRef(page: Page, ref: NounRef, within?: Locator): Pro
   return pick(loc, ref);
 }
 
+/** An ordinal counts the visible matches: the Home page keeps viewers of its own in the page,
+ * hidden, under a table view. */
 function pick(loc: Locator, ref: NounRef): Locator {
-  if (ref.ordinal === 'last')
-    return loc.last();
-  return ref.ordinal === undefined ? loc : loc.nth(ref.ordinal);
+  if (ref.ordinal === undefined)
+    return loc;
+  const shown = loc.filter({visible: true});
+  return ref.ordinal === 'last' ? shown.last() : shown.nth(ref.ordinal);
 }
 
 async function inBase(page: Page, base: Base, ref: NounRef): Promise<Locator> {

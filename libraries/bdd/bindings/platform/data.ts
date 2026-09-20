@@ -589,3 +589,76 @@ export const nestedTableRows = Then('the {string} table should have at least {in
   async (page: Page, inside: string, count: number) => {
     expect((await nestedTable(page, inside)).rows, `rows of the table in "${inside}"`).toBeGreaterThanOrEqual(count);
   }, {tier: 'api', description: 'a dataframe-valued column of the current row'});
+
+// --- another open table, changed from the view that is shown ------------------------------------
+
+type NamedChange = {op: 'select', column: string, values: string[]} | {op: 'unselect'} | {op: 'current', row: number} |
+  {op: 'range', column: string, min: number, max: number};
+
+/** A change to an open table that is not the current view's — the one a viewer rebound to it
+ * draws — made without switching views; every viewer of every view is then waited on. */
+async function changeNamedTable(page: Page, name: string, change: NamedChange): Promise<void> {
+  await baselineAll(page);
+  await evaluate(page, ([n, ch]) => {
+    const b = (window as any).__bdd;
+    const t = b.tableNamed(n);
+    if (ch.op === 'select') {
+      const c = b.col(ch.column, t);
+      const have = new Set<string>();
+      for (let i = 0; i < c.length; i++)
+        have.add(String(c.get(i) ?? ''));
+      const missing = ch.values.filter((v: string) => !have.has(v));
+      if (missing.length > 0)
+        throw new Error(`${ch.column} of ${t.name} has no value ${missing.join(', ')}; it has: ${[...have].slice(0, 20).join(', ')}`);
+      t.selection.init((i: number) => ch.values.includes(String(c.get(i) ?? '')));
+    }
+    else if (ch.op === 'unselect')
+      t.selection.setAll(false);
+    else if (ch.op === 'current') {
+      if (ch.row < 1 || ch.row > t.rowCount)
+        throw new Error(`row ${ch.row} is outside the ${t.rowCount} rows of ${t.name}`);
+      t.currentRowIdx = ch.row - 1;
+    }
+    else {
+      b.col(ch.column, t);
+      const view = (Array.from(grok.shell.tableViews ?? []) as any[]).find((v) => v.dataFrame === t);
+      if (!view)
+        throw new Error(`${t.name} has no table view to hold a filter panel`);
+      view.getFiltersGroup({createDefaultFilters: false}).updateOrAdd({type: 'histogram', column: ch.column, min: ch.min, max: ch.max}, true);
+    }
+  }, [name, change] as [string, NamedChange]);
+  await settleAll(page);
+}
+
+export const selectInTableOneOf = When('user selects rows of table {string} where {string} is one of {string}',
+  (page: Page, name: string, column: string, values: string) => changeNamedTable(page, name, {op: 'select', column, values: list(values)}),
+  {tier: 'api', description: 'the selection of that open table, set from the view that is shown; comma-separated categories'});
+
+export const clearSelectionInTable = When('user clears the row selection of table {string}', (page: Page, name: string) =>
+  changeNamedTable(page, name, {op: 'unselect'}), {tier: 'api'});
+
+export const makeRowCurrentInTable = When('user makes row {int} of table {string} current', (page: Page, row: number, name: string) =>
+  changeNamedTable(page, name, {op: 'current', row}), {tier: 'api', description: 'rows count from 1'});
+
+export const addRangeFilterInTable = When('user adds a range filter on {string} of table {string} from {float} to {float}',
+  (page: Page, column: string, name: string, min: number, max: number) => changeNamedTable(page, name, {op: 'range', column, min, max}),
+  {tier: 'api', description: 'a histogram card in the filter panel of that table\'s own view, narrowed to the range, set from the view that is shown'});
+
+export const selectedInTable = Then('{int} row(s) of table {string} should be selected', (page: Page, count: number, name: string) =>
+  expect.poll(() => evaluate(page, (n) => (window as any).__bdd.tableNamed(n).selection.trueCount as number, name),
+    {message: `rows of "${name}" selected`}).toBe(count));
+
+export const currentRowOfTableValue = Then('{string} of the current row of table {string} should be {string}',
+  (page: Page, column: string, name: string, value: string) => expect.poll(() => evaluate(page, ([n, c]) => {
+    const b = (window as any).__bdd;
+    const t = b.tableNamed(n);
+    return t.currentRowIdx < 0 ? '(no current row)' : String(b.col(c, t).get(t.currentRowIdx) ?? '');
+  }, [name, column] as [string, string]), {message: `"${column}" of the current row of "${name}"`}).toBe(value));
+
+export const colorLinearThrough = When('user colors {string} column linearly through {string}', (page: Page, column: string, stops: string) =>
+  color(page, column, 'linear', {scheme: list(stops).map(argb)}),
+{tier: 'api', description: 'a linear scheme of any number of stops, comma-separated #rrggbb colors from the low end to the high one'});
+
+export const mouseOverRowIs = Then('the mouse-over row of the table should be {int}', (page: Page, row: number) =>
+  expect.poll(() => page.evaluate(() => grok.shell.t.mouseOverRowIdx + 1 as number), {message: 'the mouse-over row of the table (from 1, 0 for none)'}).toBe(row),
+{description: 'the row the pointer is over in some viewer, counted from 1; 0 when no row is hovered'});

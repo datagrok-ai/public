@@ -5,6 +5,9 @@ into the Playwright specs under `generated/` — committed, never edited by hand
 holds one folder per platform viewer (every TestTrack viewer spec translated, most as `@journey`
 features: the data and the viewer opened once, the scenarios in order as soft steps) plus
 `viewer-chrome.feature`, the outline over the title and description every viewer shares;
+`features/viewers/legend/` the Legend TestTrack section, translated from its manual-case md files
+(seven viewers sharing one legend column, the legend under filters, its placement, molecules in
+it; the section's scatter plot and line chart cases went into those viewers' legend features);
 `features/spaces/` the Spaces features (the browse tree, the space view, sharing — the sharing
 one shares with `DATAGROK_SHARING_LOGIN`, or with the `bddsecond` user the library's setup
 creates when the variable is unset). `bindings/` keeps the steps only one
@@ -16,6 +19,17 @@ rest of the vocabulary is the library's (`npx grok-bdd list-steps`).
 The [known-failure audit](../../../libraries/bdd/KNOWN_FAILURES.md) records the current defects,
 their observed failures and causes. The line-chart lasso scenario now passes without a tag:
 checkbox menu items keep the menu open, so close it before dragging on the chart.
+
+`features/viewers/filter-panel/` stands in for the TestTrack scenarios of
+`files/TestTrack/Viewers/FilterPanel/` — `panel-core-ladder.md`, `add-remove-entry-points.md`,
+`filter-type-selection-modes.md`, `hierarchical-and-combined-boolean.md`,
+`compose-viewer-filtering.md`, `expression-text-filters.md`, `cloned-view-sync.md`,
+`collaborative-filtering-for-linked-tables.md`, `save-and-reapply-state.md` and
+`filter-summary-ui.md` (not `bio-filters.md`, which belongs to Bio) — plus Scenario 4 of
+`PieChart/piechart-onclick-select-filter.md` and Scenario 1 of
+`TrellisPlot/trellis-plot-click-to-filter.md` in the click-filter outline of
+`compose-with-viewers.feature`. Each feature says in its description what of its md it does not
+translate, and why.
 
 From a fresh checkout of `public`, against a local stand on `http://localhost:8888` (another one:
 `DATAGROK_URL=https://… npx grok-bdd run`):

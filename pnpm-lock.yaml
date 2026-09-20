@@ -428,15 +428,6 @@ importers:
         specifier: 'catalog:'
         version: 2.1.44
 
-  libraries/domain-ui:
-    dependencies:
-      datagrok-api:
-        specifier: workspace:^
-        version: link:../../js-api
-      rxjs:
-        specifier: 'catalog:'
-        version: 6.6.7
-
   libraries/gridext:
     dependencies:
       datagrok-api:
@@ -667,9 +658,15 @@ importers:
 
   libraries/u2:
     dependencies:
+      '@floating-ui/core':
+        specifier: ^1.8.0
+        version: 1.8.0
       '@floating-ui/dom':
         specifier: ^1.6.0
         version: 1.8.0
+      '@floating-ui/utils':
+        specifier: ^0.2.12
+        version: 0.2.12
       rxjs:
         specifier: 'catalog:'
         version: 6.6.7
@@ -858,9 +855,6 @@ importers:
 
   packages/ApiTests:
     dependencies:
-      '@datagrok-libraries/domain-ui':
-        specifier: workspace:^
-        version: link:../../libraries/domain-ui
       '@datagrok-libraries/test':
         specifier: workspace:^
         version: link:../../libraries/test
@@ -2304,12 +2298,12 @@ importers:
 
   packages/Grit:
     dependencies:
-      '@datagrok-libraries/domain-ui':
-        specifier: workspace:^
-        version: link:../../libraries/domain-ui
       '@datagrok-libraries/test':
         specifier: workspace:^
         version: link:../../libraries/test
+      '@datagrok-libraries/u2':
+        specifier: workspace:^
+        version: link:../../libraries/u2
       '@datagrok-libraries/utils':
         specifier: workspace:^
         version: link:../../libraries/utils
@@ -3482,6 +3476,27 @@ importers:
       '@datagrok-libraries/test':
         specifier: workspace:^
         version: link:../../libraries/test
+      '@datagrok-libraries/utils':
+        specifier: workspace:^
+        version: link:../../libraries/utils
+      cash-dom:
+        specifier: 'catalog:'
+        version: 8.1.5
+      datagrok-api:
+        specifier: workspace:^
+        version: link:../../js-api
+      dayjs:
+        specifier: 'catalog:'
+        version: 1.11.23
+
+  packages/Stockroom:
+    dependencies:
+      '@datagrok-libraries/test':
+        specifier: workspace:^
+        version: link:../../libraries/test
+      '@datagrok-libraries/u2':
+        specifier: workspace:^
+        version: link:../../libraries/u2
       '@datagrok-libraries/utils':
         specifier: workspace:^
         version: link:../../libraries/utils

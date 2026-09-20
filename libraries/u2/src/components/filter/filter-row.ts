@@ -283,7 +283,8 @@ export class FilterRow extends Control {
   private _singleEditor(cond: FilterCondition, prop: FilterProperty): ValueEditor {
     const custom = this._host.editors?.(prop, {inline: true, value: cond.value, onChanged: (v) => this._change(v)});
     return custom ? valueEditor(custom, (v) => v) :
-      this._scalarEditor(prop, Array.isArray(cond.value) ? undefined : cond.value, (v) => this._change(v));
+      this._scalarEditor(prop, Array.isArray(cond.value) ? undefined : cond.value, (v) => this._change(v),
+        cond.operator);
   }
 
   private _listEditor(cond: FilterCondition, prop: FilterProperty): ValueEditor {
@@ -308,7 +309,7 @@ export class FilterRow extends Control {
 
   /** The core kind defaults; `onChange` gets `undefined` for a cleared editor. */
   private _scalarEditor(prop: FilterProperty, initial: FilterScalar | undefined,
-    onChange: (v: FilterScalar | undefined) => void): ValueEditor {
+    onChange: (v: FilterScalar | undefined) => void, operator?: string): ValueEditor {
     const kind = kindOf(prop);
     if (prop.choices) {
       const text = (v: FilterScalar | undefined) => v === undefined || v === null ? null : String(v);
@@ -318,7 +319,7 @@ export class FilterRow extends Control {
     }
     const values = this._host.schema.values;
     if (kind === KIND.REF && values) {
-      const input = new RefInput({inline: true, prop, schema: this._host.schema,
+      const input = new RefInput({inline: true, prop, schema: this._host.schema, operator,
         value: isRef(initial) ? initial : null, onChanged: (v) => onChange(v ?? undefined)});
       return scalarEditor(input, (v) => input.value.value = isRef(v) ? v : null);
     }

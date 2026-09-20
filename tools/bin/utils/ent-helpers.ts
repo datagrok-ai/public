@@ -8,13 +8,15 @@ The application${appNames.length > 1 ? 's' : ''} ${appNames.join(', ')} ` +
 `(over ${tables.join(', ')}) ${appNames.length > 1 ? 'have' : 'has'} been added successfully
 
 Next steps:
-  npm install                     install @datagrok-libraries/domain-ui
-  npm run build && grok publish   publish the package and open the app from the browse tree
+  pnpm install                   link @datagrok-libraries/u2 (a workspace dependency)
+  grok build && grok publish     publish the package and open the app from the browse tree
 
-The app is the domain-ui defaults alone — list, search, entity page, editing,
-permissions and deep links. Customize through the options of the handle's factories
-(domains.table(...).app({actions: ...})), or register a DG.DomainObjectHandler for
-the table to change how its rows render.
+The app is the u2 defaults alone — list, search, filters, entity page with children
+and history, editing under one session, permissions and deep links. src/app.spec.json
+is the same app as a designer-editable spec. To go further, run \`grok api --ui\` for
+typed handles (get<Schema>Db()) and declare on a table: actions.add(...),
+validators.add(column, ...), renderer, and app({app: <a DomainApp subclass>}) for
+presets and shortcuts — the Grit package is the reference.
 Read more at https://datagrok.ai/help/develop/how-to/build-an-app`;
 
 const connection = (connectionName: string) => `

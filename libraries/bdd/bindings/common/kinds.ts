@@ -291,6 +291,8 @@ kind('viewer', {
   parts: {
     title: `${PANEL}//*[contains(@class, "panel-titlebar-text")]`,
     'settings icon': `${PANEL}//*[contains(@class, "panel-titlebar")]//*[@name="icon-font-icon-settings"]`,
+    // the "?" of the title bar: its tooltip is the viewer's own summary above "Click for help (F1)"
+    'help icon': `${PANEL}//*[contains(@class, "panel-titlebar")]//*[@name="icon-font-icon-help"]`,
     'menu icon': `${PANEL}//*[contains(@class, "panel-titlebar")]//*[@name="icon-font-icon-menu"]`,
     'close icon': `${PANEL}//*[contains(@class, "panel-titlebar")]//*[@name="Close" or @name="icon-font-icon-close"]`,
     description: '.d4-viewer-description',
@@ -313,7 +315,7 @@ kind('legend item', {
   parts: {label: '.d4-legend-value', cross: '.d4-legend-cross', thumbnail: 'canvas.d4-legend-value', marker: '[name="legend-item-marker"]'},
 });
 // a card of the filter panel by its caption: "RACE" filter card, checkbox of "RACE" filter card;
-// aria-disabled while suspended, its own counter as the indicator part
+// aria-disabled on its body while suspended (the header, its checkbox and the mode word stay operable), its own counter as the indicator part
 kind('filter card', {
   selector: '.d4-filter',
   match: ['label', 'dart'],
