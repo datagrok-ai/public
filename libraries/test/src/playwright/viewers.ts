@@ -1415,12 +1415,18 @@ export async function setViewerProps(
     const out: any[] = [];
     for (var step of steps) {
       const wait = step.wait ?? delayMs;
-      const settled = wait === 'render' ? w.__viewerRendered(h.type) : new Promise<void>((resolve) => {
-        let sub: any = null;
-        try { sub = h.onViewerRendered.subscribe(() => { sub.unsubscribe(); resolve(); }); }
-        catch (_) {  }
-        setTimeout(() => { try { sub?.unsubscribe(); } catch (_) {} resolve(); }, wait);
-      });
+      // A step that names its own wait gets all of it: the first repaint is not the end of the
+      // change — a pie re-decides its Auto legend a beat after it — and cutting the wait short at
+      // that event read the stale placement in legend-auto-placement and legend-corner. Only the
+      // default wait, which is ours to tune, ends at the render event.
+      const settled = wait === 'render' ? w.__viewerRendered(h.type) :
+        step.wait !== undefined ? new Promise<void>((resolve) => setTimeout(resolve, wait)) :
+          new Promise<void>((resolve) => {
+            let sub: any = null;
+            try { sub = h.onViewerRendered.subscribe(() => { sub.unsubscribe(); resolve(); }); }
+            catch (_) {  }
+            setTimeout(() => { try { sub?.unsubscribe(); } catch (_) {} resolve(); }, wait);
+          });
       for (var k of Object.keys(step.set)) h.props[k] = step.set[k];
       // an immediately-rendering viewer repaints on a zero-delay timer armed during the set, so one
       // macrotask later the render event above has already resolved `settled`
