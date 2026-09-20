@@ -26,10 +26,10 @@ enter the root password if prompted.
 
 1. Install [Node.js](https://nodejs.org/en/) 22 or later (npm comes with it)
 2. Install [datagrok-tools](https://www.npmjs.com/package/datagrok-tools): `npm install -g datagrok-tools`
-3. If you work inside the [public repository](https://github.com/datagrok-ai/public), enable
-   [pnpm](https://pnpm.io) with `corepack enable` (the repository pins the pnpm version) and run
-   `grok setup` once at the repository root (it does the pnpm install and clean-up). A standalone package created with `grok create` uses plain
-   `npm install` and needs nothing else: the bundler and TypeScript come with the package's
+3. If you work inside the [public repository](https://github.com/datagrok-ai/public), run `grok setup`
+   once at the repository root. It enables [pnpm](https://pnpm.io) and installs dependencies for every
+   package. See [Build system](build-system.md). A standalone package created with `grok create` uses
+   `npm install` and needs nothing else. The bundler and TypeScript come with the package's
    `@datagrok/build-config` dependency.
 
 _NOTE_: The `Node.js` version from [Snap](https://snapcraft.io/)

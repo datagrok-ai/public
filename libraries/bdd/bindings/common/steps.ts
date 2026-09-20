@@ -89,6 +89,9 @@ export const clipboardHas = Then('the clipboard should have (the )text {string}'
   await expect.poll(() => g.readClipboard(page), {message: 'the clipboard text'}).toBe(text);
 }, {description: 'exactly, whitespace included'});
 
+export const pasteInto = When('user pastes {string} into {element}', async (page: Page, text: string, target: ElementRef) =>
+  g.paste(page, await g.editorOf(page, target), text), {tier: 'ui', description: 'through the clipboard and the paste key over what the editor held; "\\n" is a line break'});
+
 /** The state a scenario needs, rather than a gesture: `setExpanded` reads where the element is
  * first, so a group that is already open stays open — "user expands" on it would close it. */
 export const isExpanded = Given('{element} is expanded', (page: Page, target: ElementRef) => g.setExpanded(page, target, true), {tier: 'ui'});

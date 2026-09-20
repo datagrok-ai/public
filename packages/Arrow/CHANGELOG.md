@@ -1,5 +1,9 @@
 # Arrow changelog
 
+## 1.6.1 (2026-09-10)
+
+* Version bump without code changes
+
 ## 1.6.0 (2026-06-03)
 
 * Extracted conversion core into `@datagrok-libraries/arrow`; package now delegates to the library

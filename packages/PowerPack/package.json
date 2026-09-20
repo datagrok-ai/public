@@ -80,5 +80,10 @@
       }
     ]
   },
-  "playwrightTests": "playwright"
+  "playwrightTests": "playwright",
+  "grok": {
+    "testDependencies": [
+      "@datagrok/chem"
+    ]
+  }
 }

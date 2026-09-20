@@ -12,7 +12,12 @@ export interface FilterRef { type: string; id: string; name?: string }
 /** A relative date — `'-1w'`, `'2d'`, `'now'` — resolved against `now` only when the tree leaves
  * for a target, so a "last 7 days" template stays live. */
 export interface FilterSpan { span: string }
-export type FilterScalar = string | number | boolean | null | Date | FilterRef | FilterSpan;
+/** Another column of the same table on the value side — `end_date >= start_date`. */
+export interface FilterColumnRef { column: string }
+/** A `$name` placeholder the caller binds (`Filters.bind`) — a sibling's value in a ref filter. */
+export interface FilterParam { param: string }
+export type FilterScalar = string | number | boolean | null | Date | FilterRef | FilterSpan | FilterColumnRef |
+  FilterParam;
 export type FilterValue = FilterScalar | FilterScalar[];
 
 export interface FilterCondition {
@@ -264,6 +269,10 @@ export function valueEquals(a: FilterValue | undefined, b: FilterValue | undefin
     return isRef(a) && isRef(b) && a.type === b.type && a.id === b.id;
   if (isSpan(a) || isSpan(b))
     return isSpan(a) && isSpan(b) && a.span === b.span;
+  if (isColumnRef(a) || isColumnRef(b))
+    return isColumnRef(a) && isColumnRef(b) && a.column === b.column;
+  if (isParam(a) || isParam(b))
+    return isParam(a) && isParam(b) && a.param === b.param;
   return a === b;
 }
 
@@ -294,7 +303,8 @@ export function fromJson(json: unknown): FilterGroup {
   const scalar = (v: unknown): FilterScalar => {
     if (plain(v) && typeof v.date === 'string')
       return new Date(v.date);
-    if (v === null || ['string', 'number', 'boolean'].includes(typeof v) || isRef(v) || isSpan(v))
+    if (v === null || ['string', 'number', 'boolean'].includes(typeof v) || isRef(v) || isSpan(v) ||
+      isColumnRef(v) || isParam(v))
       return v as FilterScalar;
     throw new FilterError(`Filter value ${JSON.stringify(v)} is not a scalar`);
   };
@@ -341,6 +351,19 @@ export function isRef(v: unknown): v is FilterRef {
 
 export function isSpan(v: unknown): v is FilterSpan {
   return typeof v === 'object' && v !== null && typeof (v as FilterSpan).span === 'string';
+}
+
+export function isColumnRef(v: unknown): v is FilterColumnRef {
+  return typeof v === 'object' && v !== null && typeof (v as FilterColumnRef).column === 'string';
+}
+
+export function isParam(v: unknown): v is FilterParam {
+  return typeof v === 'object' && v !== null && typeof (v as FilterParam).param === 'string';
+}
+
+/** Whether a value, or any element of a list, is a column reference or a parameter. */
+export function hasPlaceholder(v: unknown): boolean {
+  return Array.isArray(v) ? v.some(hasPlaceholder) : isColumnRef(v) || isParam(v);
 }
 
 function plainEquals(a: unknown, b: unknown): boolean {

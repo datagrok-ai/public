@@ -38,7 +38,9 @@ a signal or a name is missing in the core, and the fix goes there** (`d4` viewer
 js-api) — never a `waitForTimeout` in a step. What was added that way: `viewer.immediateRendering`
 and `isRenderPending`, `onContextMenuShown/Closed`, `getWidgetStatus().hitAreas/values/parts`,
 `aria-disabled` on menu items, property rows and dialog buttons, `Func.topMenu`,
-`d4-balloon-shown`, `grok.shell.autostartsCompleted`, `Resizer.isResizePending`, `data-legend-*`.
+`d4-balloon-shown`, `grok.shell.autostartsCompleted`, `Resizer.isResizePending`, `data-legend-*`,
+`DG.Widget.addStatusProvider` (a package's own areas and readings on a native widget, e.g. the
+WebLogo glyphs Peptides draws in grid headers).
 
 ## Invariants — what must not regress
 

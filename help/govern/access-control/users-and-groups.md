@@ -30,7 +30,7 @@ icon="fa-solid fa-compass"/>) > Platform > Users**).
 
 A user is an [entity](../../datagrok/concepts/objects.md). This means a common set of
 operations apply to it, like getting its URL or using it as a parameter in the
-[audit record](../audit/audit.md). Like with other entities, you can [search](../../datagrok/navigation/views/browse.md#entity-search) for users using its [parameters](../../datagrok/concepts/objects.md#parameters).
+[audit record](../audit/audit.md). Like with other entities, you can [search](../../datagrok/concepts/objects.md#entity-search) for users using its [parameters](../../datagrok/concepts/objects.md#parameters).
 
 <details>
 <summary>User entity parameters</summary>
@@ -113,7 +113,7 @@ icon="fa-solid fa-compass"/>) > Platform > Groups**).
 
 A _group_ is an [entity](../../datagrok/concepts/objects.md), which means a common set of
 operations apply to it, like getting its URL or using it as a parameter in the
-[audit record](../audit/audit.md). Like with other entities, you can [search](../../datagrok/navigation/views/browse.md#entity-search) for groups using the group's [parameters](../../datagrok/concepts/objects.md#parameters).
+[audit record](../audit/audit.md). Like with other entities, you can [search](../../datagrok/concepts/objects.md#entity-search) for groups using the group's [parameters](../../datagrok/concepts/objects.md#parameters).
 
 <details>
 <summary>Group entity parameters</summary>

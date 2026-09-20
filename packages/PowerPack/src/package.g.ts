@@ -17,7 +17,7 @@ export function _welcomeView() : any {
 //name: Spotlight
 //output: widget result
 //meta.showName: false
-//meta.role: Dashboard
+//meta.role: dashboard
 //meta.order: -1
 export function activityDashboardWidget() : any {
   return PackageFunctions.activityDashboardWidget();
@@ -25,7 +25,7 @@ export function activityDashboardWidget() : any {
 
 //name: Community
 //output: widget result
-//meta.role: Dashboard
+//meta.role: dashboard
 //meta.order: 6
 export function communityWidget() : any {
   return PackageFunctions.communityWidget();
@@ -63,6 +63,14 @@ export function filterBuilder() : any {
   return PackageFunctions.filterBuilder();
 }
 
+//description: The u2 app behind a /domains/<schema>/<table>[/<keyOrId>] address
+//tags: domainRoutes
+//input: string address 
+//output: view result
+export async function domainRouteView(address: string) : Promise<any> {
+  return await PackageFunctions.domainRouteView(address);
+}
+
 //input: column col 
 //output: bool result
 export function isFormulaColumn(col: DG.Column) : boolean {
@@ -72,7 +80,7 @@ export function isFormulaColumn(col: DG.Column) : boolean {
 //name: Formula
 //input: column col 
 //output: widget result
-//meta.role: Panel
+//meta.role: panel
 //condition: PowerPack:isFormulaColumn(col)
 export function formulaWidget(col: DG.Column) : any {
   return PackageFunctions.formulaWidget(col);
@@ -108,13 +116,13 @@ export function formulaLinesDialog(src: any, currentIndexToSet?: number, isDataF
   PackageFunctions.formulaLinesDialog(src, currentIndexToSet, isDataFrameValue, isAnnotationArea);
 }
 
-//meta.role: Init
+//meta.role: init
 export async function powerPackInit() : Promise<void> {
   await PackageFunctions.powerPackInit();
 }
 
 //description: Windows Manager
-//meta.role: Autostart
+//meta.role: autostart
 export async function windowsManager() : Promise<void> {
   await PackageFunctions.windowsManager();
 }
@@ -126,14 +134,14 @@ export function viewerDialog(tv: any) : void {
 }
 
 //description: ViewerGallery
-//meta.role: Autostart
+//meta.role: autostart
 export function viewerGallery() : void {
   PackageFunctions.viewerGallery();
 }
 
 //input: file file 
 //output: view result
-//meta.role: FileViewer
+//meta.role: fileViewer
 //meta.fileViewer: md,mdx
 export async function markdownFileViewer(file: DG.FileInfo) : Promise<any> {
   return await PackageFunctions.markdownFileViewer(file);
@@ -143,7 +151,7 @@ export async function markdownFileViewer(file: DG.FileInfo) : Promise<any> {
 //input: list bytes { description: Raw bytes of the .xlsx file }
 //input: string sheetName { optional: true; description: Name of a single sheet to open opens all sheets if omitted }
 //output: list<dataframe> result
-//meta.role: FileHandler
+//meta.role: fileHandler
 //meta.ext: xlsx
 export async function xlsxFileHandler(bytes: Uint8Array, sheetName?: string) : Promise<any> {
   return await PackageFunctions.xlsxFileHandler(bytes, sheetName);

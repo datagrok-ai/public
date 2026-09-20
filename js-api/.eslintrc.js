@@ -1,5 +1,6 @@
 // eslint-disable-next-line no-undef
 module.exports = {
+  'root': true,
   'ignorePatterns': ['**/*.d.ts', 'src/api/*.g.ts', 'src/interfaces/*.ts', 'src/datagrok/**', 'node_modules/**'],
   'env': {
     'browser': true,
@@ -40,12 +41,7 @@ module.exports = {
       'quotes': 'off',
       'semi': 'off',
       'no-debugger': 'error',
-      '@typescript-eslint/ban-types': ['error', {
-        'extendDefaults': false,
-        'types': {
-          'Function': {'message': 'Declare the real signature, e.g. `() => void` or `(e: MouseEvent) => void`.'},
-        },
-      }],
+      '@typescript-eslint/no-unsafe-function-type': 'error',
     },
   }],
 };

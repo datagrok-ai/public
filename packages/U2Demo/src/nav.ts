@@ -15,9 +15,7 @@ import {filesPage, dataframesPage, entitiesPage, spacesPage, moleculesPage, brid
   from './pages/platform';
 import {msaWorkbenchPage} from './pages/msa-workbench';
 import {filtersPage} from './pages/filters';
-
-/** Repo-relative root of this package's sources; the source panel keys its bundled text by it. */
-export const SRC_ROOT = 'packages/U2Demo/src';
+import {SRC_ROOT} from './const';
 
 export interface SourceRef {
   /** Repo-relative path in datagrok-ai/public, e.g. 'packages/U2Demo/src/pages/inputs.ts'. */

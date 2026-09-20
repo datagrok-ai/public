@@ -76,4 +76,4 @@ category('UserSettingsStorage', () => {
     }
   });
 
-}, {owner: 'ppolovyi@datagrok.ai'});
+}, {owner: 'oserhiienko@datagrok.ai'});

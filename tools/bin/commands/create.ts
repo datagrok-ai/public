@@ -18,18 +18,17 @@ const confPath = path.join(grokDir, 'config.yaml');
 
 const templateDir = path.join(path.dirname(path.dirname(__dirname)), 'package-template');
 
-function isPnpmWorkspace(dir: string): boolean {
-  for (let d = path.resolve(dir); ; d = path.dirname(d)) {
-    if (fs.existsSync(path.join(d, 'pnpm-workspace.yaml')))
-      return true;
-    if (path.dirname(d) === d)
-      return false;
-  }
-}
 const confTemplateDir = path.join(path.dirname(path.dirname(__dirname)), 'config-template.yaml');
 const confTemplate = yaml.load(fs.readFileSync(confTemplateDir, {encoding: 'utf-8'}));
 
 const dependencies: string[] = [];
+
+function apiVersion(): string {
+  let dir = path.dirname(require.resolve('datagrok-api/dg'));
+  while (!fs.existsSync(path.join(dir, 'package.json')))
+    dir = path.dirname(dir);
+  return JSON.parse(fs.readFileSync(path.join(dir, 'package.json'), 'utf8')).version;
+}
 
 function createDirectoryContents(name: string, friendlyName: string, config: utils.Config, templateDir: string,
   packageDir: string, ide: string = '', ts: boolean = true, eslint: boolean = false, test: boolean = false) {
@@ -65,9 +64,9 @@ function createDirectoryContents(name: string, friendlyName: string, config: uti
         _package.devDependencies = _package.devDependencies ?? {};
         // Outside the public/ pnpm workspace the template's workspace:/catalog: specifiers mean
         // nothing to npm: pin published ranges and bring the toolchain in as a devDependency.
-        if (!isPnpmWorkspace(packageDir)) {
+        if (!utils.isPnpmWorkspace(packageDir)) {
           const published: Record<string, string> = {
-            'datagrok-api': `^${require('datagrok-api/package.json').version}`,
+            'datagrok-api': `^${apiVersion()}`,
             '@datagrok-libraries/test': '^1.4.0',
             'rxjs': '^6.5.5', 'cash-dom': '^8.1.5', 'dayjs': '^1.11.13', 'wu': '^2.1.0', 'typescript': '^7.0.2',
           };
@@ -78,7 +77,7 @@ function createDirectoryContents(name: string, friendlyName: string, config: uti
             }
           }
           Object.assign(_package.devDependencies, {
-            '@datagrok/build-config': '^0.1.0',
+            '@datagrok/build-config': '^1.0.0',
             'eslint': '^8.57.1', '@typescript-eslint/parser': '^8.39.0', '@typescript-eslint/eslint-plugin': '^8.39.0',
             'eslint-config-google': '^0.14.0', 'typescript': '^5.9.3',
           });
@@ -220,8 +219,9 @@ export function create(args: CreateArgs) {
     color.success('Successfully created package ' + name);
     console.log(help.package(ts));
     console.log(`\nThe package has the following dependencies:\n${dependencies.join(' ')}\n`);
-    console.log('Running `npm install` to get the required dependencies...\n');
-    exec('npm install', {cwd: packageDir}, (err, stdout, stderr) => {
+    const install = utils.isPnpmWorkspace(packageDir) ? 'pnpm install' : 'npm install';
+    console.log(`Running \`${install}\` to get the required dependencies...\n`);
+    exec(install, {cwd: packageDir}, (err, stdout, stderr) => {
       if (err) throw err;
       else console.log(stderr, stdout);
     });

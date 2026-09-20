@@ -9,11 +9,12 @@ set -euo pipefail
 # published (the weekly job then skips the version via the S3 delta).
 #
 # Audits the PRODUCTION dependency tree only (--omit=dev): devDependencies
-# never reach a consumer install. The workspace package-lock.json is used, so
-# the audit reflects the tree the shipped webpack bundle was built from
-# (including the package's own `overrides`).
+# never reach a consumer install. The manifest comes from `pnpm pack`, where the
+# workspace's `workspace:` and `catalog:` specifiers are already rewritten to the
+# versions the published package carries; a synthetic root keeps the package's
+# own `overrides`, which are in effect for the shipped bundle.
 #
-# Requires on PATH: npm, jq, aws. Env: AWS_ACCESS_KEY_ID/SECRET (S3 upload).
+# Requires on PATH: pnpm, npm, jq, aws. Env: AWS_ACCESS_KEY_ID/SECRET (S3 upload).
 # Usage: npm-audit-vex.sh <package_dir>   e.g. npm-audit-vex.sh packages/Chem
 
 PKG_DIR="${1:?package dir required}"
@@ -26,16 +27,20 @@ PUBLIC_BASE="${PUBLIC_BASE:-https://data.datagrok.ai/${S3_PREFIX}}"
 RUN_TS="$(date -u +%FT%TZ)"
 
 need() { command -v "$1" >/dev/null 2>&1 || { echo "Missing $1"; exit 1; }; }
-need npm; need jq; need aws
+need pnpm; need npm; need jq; need aws
 
 NAME="$(jq -r '.name' "${PKG_DIR}/package.json")"
 VER="$(jq -r '.version' "${PKG_DIR}/package.json")"
 SAFE="${NAME#@}"; SAFE="${SAFE//\//-}"      # @datagrok/chem → datagrok-chem
 PURL="pkg:npm/${NAME/@/%40}@${VER}"
 
-cd "$PKG_DIR"
-[[ -f package-lock.json ]] || \
-  npm install --package-lock-only --ignore-scripts --no-audit --no-fund --loglevel=error
+work="$(mktemp -d)"
+tgz="$(cd "$PKG_DIR" && pnpm pack --pack-destination "$work" | tail -1)"
+tar xzf "$tgz" -C "$work" package/package.json
+jq '{name: "datagrok-vex-audit", version: "0.0.0", dependencies: (.dependencies // {})}
+    + (if .overrides then {overrides: .overrides} else {} end)' "$work/package/package.json" > "$work/package.json"
+cd "$work"
+npm install --package-lock-only --ignore-scripts --no-audit --no-fund --loglevel=error
 
 audit="$(mktemp)"
 npm audit --omit=dev --package-lock-only --json > "$audit" 2>/dev/null || true

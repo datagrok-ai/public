@@ -47,7 +47,9 @@
       "@datagrok/chembl",
       "@datagrok/helm",
       "@datagrok/power-grid",
-      "@datagrok/usage-analysis"
+      "@datagrok/usage-analysis",
+      "@datagrok/api-tests",
+      "@datagrok/grit"
     ]
   }
 }

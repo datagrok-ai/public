@@ -1,11 +1,11 @@
 {
-  "name": "nodetodo",
+  "name": "@datagrok/nodetodo",
   "friendlyName": "NodeTodo",
   "version": "0.0.1",
   "description": "NodeJS Datagrok API demo",
   "author": {
-    "name": "Pavlo Polovyi",
-    "email": "ppolovyi@datagrok.ai"
+    "name": "Oleksandra Serhiienko",
+    "email": "oserhiienko@datagrok.ai"
   },
   "dependencies": {
     "datagrok-api": "workspace:^",
@@ -17,8 +17,7 @@
   "scripts": {
     "build": "grok build",
     "typecheck": "grok tsc --noEmit -p tsconfig.json",
-    "lint": "eslint --ext .ts,.tsx src",
-    "test": "grok test"
+    "lint": "eslint --ext .ts,.tsx src"
   },
   "canEdit": [
     "Developers"

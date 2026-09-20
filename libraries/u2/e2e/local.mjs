@@ -48,9 +48,10 @@ export function capture(page) {
   });
 }
 
-export async function launch({headless = process.env.U2_HEADED !== '1'} = {}) {
+export async function launch({headless = process.env.U2_HEADED !== '1',
+  viewport = {width: 1600, height: 1000}} = {}) {
   const browser = await chromium.launch({channel: 'chrome', headless});
-  const ctx = await browser.newContext({viewport: {width: 1600, height: 1000},
+  const ctx = await browser.newContext({viewport,
     permissions: ['clipboard-read', 'clipboard-write']});
   const page = await ctx.newPage();
   // the client is already up by the time checks run: a slow action means a broken one, not a busy one
