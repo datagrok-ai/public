@@ -18,7 +18,13 @@ stand (`bddviewed`, `bddmanaged`), and only users-create adds users: the two it 
 group and role features, and users-manage, which makes groups and roles too, are `@serial`: their
 gallery searches are fuzzy and bring up each other's fixtures, so they take turns while the rest runs
 in parallel. Every TestTrack case there is
-translated but Groups-19 (a group cannot be added to favorites). `bindings/` keeps the steps only one
+translated but Groups-19 (a group cannot be added to favorites); `features/browse/` the Browse
+panel itself (its toolbar, the tree and its keyboard, browsing versus persistent views, Files, My
+stuff, Platform, Databases, Apps, Dashboards, the context panel and menus, and the per-section
+error matrix), translated from the manual cases, each feature naming what it left out and why.
+Two of its scenarios are `@full-stand` (they name the providers and the Platform sections a full
+stand carries) and one is `@compute` (the Model Hub needs the Compute package): a smaller stand
+runs with `grok-bdd run --grep-invert "@full-stand|@compute"`. `bindings/` keeps the steps only one
 viewer can define (the bar chart's bar order and lengths, the pie chart's slices, the pivot's
 aggregation against a `groupBy`, the correlation plot's coefficient against `DG.Stats`, the
 Forms viewer's card rows, the tile viewer's designer, the filter panel's hierarchical card); the

@@ -85,10 +85,32 @@ export const closeAllViews = When('user closes all views', async (page: Page) =>
   await page.waitForFunction(() => grok.shell.v?.type === 'datagrok');
 }, {tier: 'api', description: 'grok.shell.closeAll — tables, views and viewers gone, the Home view current'});
 
+/** A project of this name, or of this family and older than an hour, is what a run that never
+ * reached its feature end left behind: it goes, with the table and the view it holds. */
+async function deleteLeftoverProjects(page: Page, name: string): Promise<void> {
+  const families = fixtureFamilies([name]);
+  const leftovers = (await serverEntities(page, 'projects'))
+    .filter((project) => [project.name, project.friendlyName].includes(name) || isStaleFixture(project, families));
+  for (const leftover of leftovers)
+    await page.evaluate(async (id) => {
+      const project = await grok.dapi.projects.filter(`id = "${id}"`).include('children').first();
+      if (!project)
+        return;
+      for (const child of project.children) {
+        const source = child instanceof DG.TableInfo ? grok.dapi.tables : child instanceof DG.ViewInfo ? grok.dapi.views : null;
+        if (source)
+          await source.delete(child);
+      }
+      await grok.dapi.projects.delete(project);
+    }, leftover.id);
+}
+
 /** The project's table is uploaded and the view saved with its layout, as the ribbon's Save
- * dialog does it; a plain view info would drop the viewport. Deleted when the feature ends. */
+ * dialog does it; a plain view info would drop the viewport. Deleted when the feature ends, and
+ * whatever an earlier run left under the name goes first. */
 export const saveAsProject = When('user saves the current view as project {string}', async (page: Page, name: string) => {
-  const ids: {project: string; table: string} = await page.evaluate(async (n) => {
+  await deleteLeftoverProjects(page, name);
+  const ids: {project: string; table: string; view: string} = await page.evaluate(async (n) => {
     const tv = grok.shell.tv;
     const project = DG.Project.create();
     project.name = n;
@@ -103,10 +125,10 @@ export const saveAsProject = When('user saves the current view as project {strin
     await grok.dapi.projects.save(project);
     const w = window as any;
     w.__bddProjects = {...(w.__bddProjects ?? {}), [n]: String(project.id)};
-    return {project: String(project.id), table: String(tableInfo.id)};
+    return {project: String(project.id), table: String(tableInfo.id), view: String(viewInfo.id)};
   }, name);
   atFeatureEnd(page, () => page.evaluate(async (i) => {
-    for (const [source, id] of [[grok.dapi.projects, i.project], [grok.dapi.tables, i.table]]) {
+    for (const [source, id] of [[grok.dapi.projects, i.project], [grok.dapi.views, i.view], [grok.dapi.tables, i.table]]) {
       const e = await source.find(id).catch(() => null);
       if (e)
         await source.delete(e);
