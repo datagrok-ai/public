@@ -17,8 +17,13 @@ export interface OpenTableOptions {
   semTypeTimeoutMs?: number;
 }
 
+// The default stays the full SPGI the legend specs were written against: they call openTable(page)
+// with no path and assert on its category counts, so a smaller default silently rewrites them.
+// Specs that only need a few rows ask for spgi-100.csv themselves.
+const DEFAULT_TABLE = 'System:DemoFiles/chem/SPGI.csv';
+
 export function openTable(page: Page, options?: OpenTableOptions): Promise<void> {
-  return phase('openTable ' + (options?.path ?? 'spgi-100'), () => openTableImpl(page, options));
+  return phase('openTable ' + (options?.path ?? DEFAULT_TABLE), () => openTableImpl(page, options));
 }
 
 async function openTableImpl(page: Page, options?: OpenTableOptions): Promise<void> {
@@ -27,7 +32,7 @@ async function openTableImpl(page: Page, options?: OpenTableOptions): Promise<vo
   // which is what this helper always did.
   await installCsvBridge(page);
   await installEventWaits(page);
-  const p = options?.path ?? 'System:AppData/Chem/tests/spgi-100.csv';
+  const p = options?.path ?? DEFAULT_TABLE;
   const useOpenFile = options?.sdf === true || /\.(sdf|nwk|pdb)$/i.test(p);
   // demog has no column any detector types, so the detected event never fires and every
   // cap set for it (3-5s in most specs) is paid in full: 151 opens, 94s in the final Viewers run

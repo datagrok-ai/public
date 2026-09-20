@@ -30,14 +30,22 @@ async function openRGroupsDialog(page: any) {
   }
 }
 
-// The dialog clears its update indicator before the core reaches the sketcher
-// (r-group-analysis.ts calls setUpdateIndicator(false) ahead of setMolFile), so a cleared
-// shadow only means getMCS resolved. The core is in the sketcher once the dialog canvas holds
-// ink and stops changing — build 404 clicked OK in that gap and got "No core was provided".
+// The Ketcher sketcher draws into the SVG under .StructEditor-module_intermediateCanvas, and
+// the dialog clears its update indicator before the core gets there (r-group-analysis.ts calls
+// setUpdateIndicator(false) ahead of setMolFile), so a cleared shadow only means getMCS resolved:
+// build 404 clicked OK in that gap and got "No core was provided". Wait for the drawing to grow
+// past what the empty sketcher holds and settle.
+const MCS_DRAWING = `(() => {
+  const svg = document.querySelector('.d4-dialog [class*="intermediateCanvas"] svg');
+  return svg ? svg.children.length * 1000 + svg.querySelectorAll('text').length : -1;
+})()`;
+
 async function clickMCS(page: any) {
+  await page.waitForFunction(`${MCS_DRAWING} >= 0`, null, {timeout: 10_000}).catch(() => {});
+  const empty = await page.evaluate(MCS_DRAWING);
   await page.evaluate(() => {
     const w = window as any;
-    w.__mcsHash = null;
+    w.__mcsDrawing = null;
     w.__mcsStable = 0;
     const mcs = Array.from(document.querySelectorAll('.d4-dialog button'))
       .find(b => b.textContent!.trim() === 'MCS') as HTMLElement;
@@ -46,24 +54,28 @@ async function clickMCS(page: any) {
   await page.waitForFunction(
     () => document.querySelector('.d4-dialog .d4-update-shadow') == null,
     null, {timeout: 60_000});
-  await page.waitForFunction(() => {
-    const w = window as any;
-    let h = 0;
-    let ink = 0;
-    for (const cv of Array.from(document.querySelectorAll('.d4-dialog canvas')) as HTMLCanvasElement[]) {
-      if (!cv.width || !cv.height) continue;
-      const d = cv.getContext('2d')!.getImageData(0, 0, cv.width, cv.height).data;
-      for (let i = 0; i < d.length; i += 401) {
-        h = (h * 31 + d[i]) | 0;
-        if (d[i + 3] > 0 && d[i] < 200) ink++;
-      }
-    }
-    if (ink > 0 && h === w.__mcsHash)
-      return ++w.__mcsStable >= 3;
-    w.__mcsHash = h;
-    w.__mcsStable = 0;
-    return false;
-  }, null, {timeout: 60_000, polling: 150});
+  if (empty < 0)
+    return;
+  try {
+    await page.waitForFunction((base: number) => {
+      const w = window as any;
+      const svg = document.querySelector('.d4-dialog [class*="intermediateCanvas"] svg');
+      if (!svg)
+        return false;
+      const drawing = svg.children.length * 1000 + svg.querySelectorAll('text').length;
+      if (drawing > base && drawing === w.__mcsDrawing)
+        return ++w.__mcsStable >= 3;
+      w.__mcsDrawing = drawing;
+      w.__mcsStable = 0;
+      return false;
+    }, empty, {timeout: 30_000, polling: 250});
+  }
+  catch (e) {
+    // Leaving the dialog open makes every later step in the block fail on a duplicate dialog.
+    await page.evaluate(() =>
+      (document.querySelector('.d4-dialog [name="button-CANCEL"]') as HTMLElement)?.click());
+    throw new Error(`MCS never drew a core into the sketcher (empty drawing was ${empty})`);
+  }
 }
 
 test('Chem: R-Groups Analysis Block A (GROK-16329) + Block B (Replace Latest matrix)', async ({page}) => {
