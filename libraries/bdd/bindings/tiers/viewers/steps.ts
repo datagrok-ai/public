@@ -396,6 +396,35 @@ export const legendSameItems = Then('the legend of {widget} should list the same
 export const legendDocked = Then('the legend of {widget} should be docked', (page: Page, target: ElementRef) => v.expectLegendMode(page, target, 'docked'),
   {description: 'the mode the legend publishes: docked at a side (in a corner over the plot, collapsed to the mini icon and shown in the tooltip are the other modes)'});
 
+export const legendInCorner = Then('the legend of {widget} should be in a corner', (page: Page, target: ElementRef) => v.expectLegendMode(page, target, 'corner'),
+  {description: 'the mode the legend publishes: laid over the plot in one of its four corners ("in the {string} slot" names which)'});
+
+export const legendMiniIcon = Then('the legend of {widget} should be collapsed to the mini icon', (page: Page, target: ElementRef) => v.expectLegendMode(page, target, 'mini icon'),
+  {description: 'the mode the legend publishes: folded into the small legend icon (a viewer too small under Visibility Auto, or a corner legend closed by its chevron); hovering the icon shows it in the tooltip'});
+
+export const legendPlacedNowhere = Then('the legend of {widget} should be placed nowhere', (page: Page, target: ElementRef) => v.expectLegendMode(page, target, 'hidden'),
+  {description: 'the mode the legend publishes: no place at all — Visibility Never, nothing to list, or a viewer too small even for the mini icon; unlike "legend of … should be hidden" it reads the decision, not the DOM'});
+
+export const dragLegendSplitter = When('user drags the legend splitter of {widget} by {int} pixels to the {word}',
+  (page: Page, target: ElementRef, px: number, direction: string) => v.dragLegendSplitter(page, target, px, direction),
+  {tier: 'ui', description: 'left, right, up or down — the bar between a docked legend and the plot; the baseline is taken before the drag'});
+
+export const legendWider = Then('the legend of {widget} should be wider than before', (page: Page, target: ElementRef) => v.expectLegendSize(page, target, 'wider'),
+  {description: 'the legend\'s own box against the snapshot before the last change, read once the viewer is quiet'});
+
+export const legendNarrower = Then('the legend of {widget} should be narrower than before', (page: Page, target: ElementRef) => v.expectLegendSize(page, target, 'narrower'));
+
+export const legendTaller = Then('the legend of {widget} should be taller than before', (page: Page, target: ElementRef) => v.expectLegendSize(page, target, 'taller'));
+
+export const legendShorter = Then('the legend of {widget} should be shorter than before', (page: Page, target: ElementRef) => v.expectLegendSize(page, target, 'shorter'));
+
+export const legendItemsAsStructures = Then('every item in the legend of {widget} should be drawn as a structure', (page: Page, target: ElementRef) =>
+  v.expectLegendItemsDrawnAs(page, target, 'structure'),
+  {description: 'every item — each section scrolled through, the list is virtualised — draws its category through the column\'s renderer: a canvas whose paint spans a figure, not a line of text (only the empty category\'s may stay blank)'});
+
+export const legendItemsAsText = Then('every item in the legend of {widget} should be drawn as text', (page: Page, target: ElementRef) =>
+  v.expectLegendItemsDrawnAs(page, target, 'text'), {description: 'every item, each section scrolled through, is a text label with no renderer canvas'});
+
 export const legendSlot = Then('the legend of {widget} should be in the {string} slot', (page: Page, target: ElementRef, slot: string) =>
   v.expectLegendSlot(page, target, slot), {description: 'left, right, top, bottom, leftTop, leftBottom, rightTop, rightBottom'});
 
